@@ -107,6 +107,35 @@ enum class TestType
 	NO_DUPLICATE_ANY_HIT,
 	REPORT_INTERSECTION_RESULT,
 	RAY_PAYLOAD_IN,
+	RECURSIVE_TRACES_1,
+	RECURSIVE_TRACES_2,
+	RECURSIVE_TRACES_3,
+	RECURSIVE_TRACES_4,
+	RECURSIVE_TRACES_5,
+	RECURSIVE_TRACES_6,
+	RECURSIVE_TRACES_7,
+	RECURSIVE_TRACES_8,
+	RECURSIVE_TRACES_9,
+	RECURSIVE_TRACES_10,
+	RECURSIVE_TRACES_11,
+	RECURSIVE_TRACES_12,
+	RECURSIVE_TRACES_13,
+	RECURSIVE_TRACES_14,
+	RECURSIVE_TRACES_15,
+	RECURSIVE_TRACES_16,
+	RECURSIVE_TRACES_17,
+	RECURSIVE_TRACES_18,
+	RECURSIVE_TRACES_19,
+	RECURSIVE_TRACES_20,
+	RECURSIVE_TRACES_21,
+	RECURSIVE_TRACES_22,
+	RECURSIVE_TRACES_23,
+	RECURSIVE_TRACES_24,
+	RECURSIVE_TRACES_25,
+	RECURSIVE_TRACES_26,
+	RECURSIVE_TRACES_27,
+	RECURSIVE_TRACES_28,
+	RECURSIVE_TRACES_29,
 	SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_1,
 	SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_2,
 	SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_3,
@@ -933,6 +962,11 @@ public:
 	virtual void										initPrograms				(	SourceCollections&		programCollection)	const	= 0;
 	virtual bool										verifyResultBuffer			(	const void*				inBufferPtr)		const	= 0;
 
+	virtual std::vector<std::string> getAHitShaderCollectionShaderNames() const
+	{
+		return {"ahit"};
+	}
+
 	virtual deUint32 getASBindingArraySize() const
 	{
 		return 1u;
@@ -943,12 +977,33 @@ public:
 		return std::vector<std::string>{};
 	}
 
+	virtual std::vector<std::string> getCHitShaderCollectionShaderNames() const
+	{
+		return {"chit"};
+	}
+
 	virtual deUint32 getDynamicStackSize() const
 	{
 		DE_ASSERT(false);
 
 		return 0;
 	}
+
+	virtual std::vector<std::string> getIntersectionShaderCollectionShaderNames() const
+	{
+		return {"intersection"};
+	}
+
+	virtual deUint32 getMaxRecursionDepthUsed() const
+	{
+		return 1;
+	}
+
+	virtual std::vector<std::string> getMissShaderCollectionShaderNames() const
+	{
+		return {"miss"};
+	}
+
 	virtual deUint32 getNTraceRayInvocationsNeeded() const
 	{
 		return 1;
@@ -1024,6 +1079,11 @@ public:
 	~AABBTriTLTest()
 	{
 		/* Stub */
+	}
+
+	std::vector<std::string> getCHitShaderCollectionShaderNames() const final
+	{
+		return {};
 	}
 
 	deUint32 getInstanceCustomIndex(const deUint32& nBL, const deUint32& nInstance) const final
@@ -1292,6 +1352,11 @@ public:
 		DE_ASSERT(m_nASesToUse != 0);
 
 		return m_nASesToUse;
+	}
+
+	std::vector<std::string> getCHitShaderCollectionShaderNames() const final
+	{
+		return {};
 	}
 
 	deUint32 getInstanceCustomIndex(const deUint32& nBL, const deUint32& nInstance) const final
@@ -2294,6 +2359,11 @@ public:
 		/* Stub */
 	}
 
+	std::vector<std::string> getCHitShaderCollectionShaderNames() const final
+	{
+		return {};
+	}
+
 	deUint8 getCullMask(const deUint32& nBL, const deUint32& nInstance) const final
 	{
 		DE_UNREF(nBL);
@@ -2989,6 +3059,11 @@ class MAXRTInvocationsSupportedTest :	public TestBase,
 		/* Stub */
 	}
 
+	std::vector<std::string> getCHitShaderCollectionShaderNames() const final
+	{
+		return {};
+	}
+
 	deUint32 getInstanceCustomIndex(const deUint32& nBL, const deUint32& nInstance) const final
 	{
 		DE_UNREF(nBL);
@@ -3276,6 +3351,11 @@ public:
 	~NoDuplicateAnyHitTest()
 	{
 		/* Stub */
+	}
+
+	std::vector<std::string> getCHitShaderCollectionShaderNames() const final
+	{
+		return {};
 	}
 
 	tcu::UVec3 getDispatchSize() const final
@@ -5862,6 +5942,849 @@ private:
 	std::unique_ptr<TopLevelAccelerationStructure>	m_tlPtr;
 };
 
+class RecursiveTracesTest : public TestBase
+{
+public:
+	RecursiveTracesTest(	const GeometryType&					geometryType,
+							const AccelerationStructureLayout&	asStructureLayout,
+							const deUint32&						depthToUse)
+		:	m_asStructureLayout				(asStructureLayout),
+			m_geometryType					(geometryType),
+			m_depthToUse					(depthToUse),
+			m_nRaysToTest					(512),
+			m_maxResultBufferSizePermitted	(512 * 1024768)
+	{
+		const auto nItemsExpectedPerRay			= static_cast<deUint32>((1 << (m_depthToUse + 0)) - 1);
+		const auto nItemsExpectedPerRayInclRgen	= static_cast<deUint32>((1 << (m_depthToUse + 1)) - 1);
+
+		m_nResultItemsExpected		= nItemsExpectedPerRayInclRgen	* m_nRaysToTest;
+		m_nCHitInvocationsExpected	= nItemsExpectedPerRay			* m_nRaysToTest;
+		m_nMissInvocationsExpected	= nItemsExpectedPerRay			* m_nRaysToTest;
+
+		{
+			const deUint32 nPreambleBytes = sizeof(deUint32) * 3;
+			const deUint32 resultItemSize = sizeof(deUint32) * 4;
+
+			m_nMaxResultItemsPermitted = (m_maxResultBufferSizePermitted - nPreambleBytes) / resultItemSize;
+		}
+	}
+
+	~RecursiveTracesTest()
+	{
+		/* Stub */
+	}
+
+	std::vector<std::string> getAHitShaderCollectionShaderNames() const final
+	{
+		return m_ahitShaderNameVec;
+	}
+
+	std::vector<std::string> getCHitShaderCollectionShaderNames() const final
+	{
+		return m_chitShaderNameVec;
+	}
+
+	tcu::UVec3 getDispatchSize() const final
+	{
+		DE_ASSERT(m_nRaysToTest != 0);
+
+		return tcu::UVec3(m_nRaysToTest, 1u, 1u);
+	}
+
+	std::vector<std::string> getIntersectionShaderCollectionShaderNames() const final
+	{
+		const auto nIntersectionShaders =	(	(m_geometryType == GeometryType::AABB)					||
+												(m_geometryType == GeometryType::AABB_AND_TRIANGLES) )	?	m_depthToUse
+																										: 0;
+
+		return std::vector<std::string>(nIntersectionShaders,
+										{"intersection0"});
+	}
+
+	deUint32 getMaxRecursionDepthUsed() const final
+	{
+		return m_depthToUse;
+	}
+
+	std::vector<std::string> getMissShaderCollectionShaderNames() const final
+	{
+		return m_missShaderNameVec;
+	}
+
+	deUint32 getResultBufferSize() const final
+	{
+		DE_ASSERT(m_depthToUse	!= 0);
+		DE_ASSERT(m_depthToUse  <  30); //< due to how nItemsExpectedPerRay is stored.
+		DE_ASSERT(m_nRaysToTest	!= 0);
+
+		/* NOTE: A single item is generated by rgen shader stage which is invoked once per each initial ray.
+		 *
+		 *       Each ray at level N generates two result items.
+		 *
+		 *       Thus, for a single initial traced ray, we need sum(2^depth)=2^(depth+1)-1 items.
+		 */
+		const auto nItemsExpectedPerRay	= static_cast<deUint32>((1 << (m_depthToUse + 1)) - 1);
+		const auto nResultItemsExpected	= de::min(nItemsExpectedPerRay * m_nRaysToTest, m_nMaxResultItemsPermitted);
+		const auto resultItemSize		= static_cast<deUint32>(sizeof(deUint32) * 4 /* nOriginRay, stage, depth, parentResultItem */);
+
+		return static_cast<deUint32>(sizeof(deUint32) * 3 /* nItemsRegistered, nCHitInvocations, nMissInvocations */) + nResultItemsExpected * resultItemSize;
+	}
+
+	VkSpecializationInfo* getSpecializationInfoPtr(const VkShaderStageFlagBits& shaderStage) final
+	{
+		VkSpecializationInfo* resultPtr = nullptr;
+
+		if (shaderStage == VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR ||
+			shaderStage == VK_SHADER_STAGE_MISS_BIT_KHR)
+		{
+			resultPtr = &m_specializationInfo;
+		}
+
+		return resultPtr;
+	}
+
+	std::vector<TopLevelAccelerationStructure*>	getTLASPtrVecToBind() const final
+	{
+		DE_ASSERT(m_tlPtr != nullptr);
+
+		return {m_tlPtr.get() };
+	}
+
+	bool init(	vkt::Context&			/* context    */,
+				RayTracingProperties*	/* rtPropsPtr */) final
+	{
+		DE_ASSERT(m_depthToUse != 0);
+
+		m_specializationEntry.constantID	= 1;
+		m_specializationEntry.offset		= 0;
+		m_specializationEntry.size			= sizeof(deUint32);
+
+		m_specializationInfo.dataSize		= sizeof(deUint32);
+		m_specializationInfo.mapEntryCount	= 1;
+		m_specializationInfo.pData			= &m_depthToUse;
+		m_specializationInfo.pMapEntries	= &m_specializationEntry;
+
+		return true;
+	}
+
+	void initAS(vkt::Context&			context,
+				RayTracingProperties*	/* rtPropertiesPtr */,
+				VkCommandBuffer			commandBuffer) final
+	{
+		std::unique_ptr<GridASProvider> asProviderPtr(
+			new GridASProvider(	tcu::Vec3 (0,					0,	0),				/* gridStartXYZ          */
+								tcu::Vec3 (1,					1,	1),				/* gridCellSizeXYZ       */
+								tcu::UVec3(1 + m_depthToUse,	1,	m_nRaysToTest),
+								tcu::Vec3 (2,					0,	2),				/* gridInterCellDeltaXYZ */
+								m_geometryType)
+		);
+
+		m_tlPtr  = asProviderPtr->createTLAS(	context,
+												m_asStructureLayout,
+												commandBuffer,
+												0,			/* bottomLevelGeometryFlags */
+												nullptr,	/* optASPropertyProviderPtr */
+												nullptr);	/* optASFeedbackPtr         */
+	}
+
+	void initPrograms(SourceCollections& programCollection) const final
+	{
+		const auto nLocationsPerPayload = 3; /* 3 scalar uints */
+
+		const vk::ShaderBuildOptions	buildOptions(	programCollection.usedVulkanVersion,
+														vk::SPIRV_VERSION_1_4,
+														0u,		/* flags        */
+														true);	/* allowSpirv14 */
+
+		std::vector<std::string> rayPayloadDefinitionVec  (m_depthToUse);
+		std::vector<std::string> rayPayloadInDefinitionVec(m_depthToUse);
+
+		for (deUint32 nLevel = 0; nLevel < m_depthToUse; ++nLevel)
+		{
+			rayPayloadDefinitionVec.at(nLevel) =
+				"layout(location = " + de::toString(nLocationsPerPayload * nLevel) + ") rayPayloadEXT block\n"
+				"{\n"
+				"    uint currentDepth;\n"
+				"    uint currentNOriginRay;\n"
+				"    uint currentResultItem;\n"
+				"};\n";
+
+			rayPayloadInDefinitionVec.at(nLevel) =
+				"layout(location = " + de::toString(nLocationsPerPayload * nLevel) + ") rayPayloadInEXT block\n"
+				"{\n"
+				"    uint parentDepth;\n"
+				"    uint parentNOriginRay;\n"
+				"    uint parentResultItem;\n"
+				"};\n";
+		}
+
+		const std::string constantVariableDefinition =
+			"layout(constant_id = 1) const uint MAX_RECURSIVE_DEPTH = " + de::toString(m_depthToUse) + ";\n";
+
+		const char* resultBufferDefinition =
+			"struct ResultData\n"
+			"{\n"
+			"    uint nOriginRay;\n"
+			"    uint shaderStage;\n"
+			"    uint depth;\n"
+			"    uint callerResultItem;\n"
+			"};\n"
+			"\n"
+			"layout(set = 0, binding = 0, std430) buffer result\n"
+			"{\n"
+			"    uint       nItemsStored;\n"
+			"    uint       nCHitInvocations;\n"
+			"    uint       nMissInvocations;\n"
+			"    ResultData resultItems[];\n"
+			"};\n";
+
+		{
+			m_ahitShaderNameVec.resize(m_depthToUse);
+
+			for (deUint32 nLevel = 0; nLevel < m_depthToUse; ++nLevel)
+			{
+				std::stringstream css;
+
+				css <<
+					"#version 460 core\n"
+					"\n"
+					"#extension GL_EXT_ray_tracing : require\n"
+					"\n"
+					+ de::toString					(resultBufferDefinition)
+					+ rayPayloadInDefinitionVec.at	(nLevel)					+
+					"\n"
+					"void main()\n"
+					"{\n"
+					/* Stub - don't care */
+					"}\n";
+
+				m_ahitShaderNameVec.at(nLevel) = std::string("ahit") + de::toString(nLevel);
+
+				programCollection.glslSources.add(m_ahitShaderNameVec.at(nLevel) ) << glu::AnyHitSource(css.str() ) << buildOptions;
+			}
+		}
+
+		{
+			m_chitShaderNameVec.resize(m_depthToUse);
+
+			for (deUint32 nLevel = 0; nLevel < m_depthToUse; ++nLevel)
+			{
+				std::stringstream	css;
+				const bool			shouldTraceRays = (nLevel != (m_depthToUse - 1) );
+
+				css <<
+					"#version 460 core\n"
+					"\n"
+					"#extension GL_EXT_ray_tracing : require\n"
+					"\n"
+					"layout(set = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
+					"\n"
+					+ constantVariableDefinition
+					+ de::toString(resultBufferDefinition)
+					+ de::toString(rayPayloadInDefinitionVec.at(nLevel) );
+
+				if (shouldTraceRays)
+				{
+					css << rayPayloadDefinitionVec.at(nLevel + 1);
+				}
+
+				css <<
+					"\n"
+					"void main()\n"
+					"{\n"
+					"    uint nItem = atomicAdd(nItemsStored, 1);\n"
+					"\n"
+					"    atomicAdd(nCHitInvocations, 1);\n"
+					"\n"
+					"    if (nItem < " + de::toString(m_nMaxResultItemsPermitted) + ")\n"
+					"    {\n"
+					"        resultItems[nItem].callerResultItem = parentResultItem;\n"
+					"        resultItems[nItem].depth            = parentDepth;\n"
+					"        resultItems[nItem].nOriginRay       = parentNOriginRay;\n"
+					"        resultItems[nItem].shaderStage      = 1;\n"
+					"    }\n"
+					"\n";
+
+				if (shouldTraceRays)
+				{
+					css <<
+						"    if (parentDepth < MAX_RECURSIVE_DEPTH - 1)\n"
+						"    {\n"
+						"        currentDepth      = parentDepth + 1;\n"
+						"        currentNOriginRay = parentNOriginRay;\n"
+						"        currentResultItem = nItem;\n"
+						"\n"
+						"        vec3  cellStartXYZ  = vec3(parentDepth * 2.0, 0.0, parentNOriginRay * 2.0);\n"
+						"        vec3  cellEndXYZ    = cellStartXYZ + vec3(1.0);\n"
+						"        vec3  targetHit     = mix(cellStartXYZ, cellEndXYZ, vec3(0.5) );\n"
+						"        vec3  targetMiss    = targetHit + vec3(0, 10, 0);\n"
+						"        vec3  origin        = targetHit - vec3(1, 0,  0);\n"
+						"        vec3  directionHit  = normalize(targetHit  - origin);\n"
+						"        vec3  directionMiss = normalize(targetMiss - origin);\n"
+						"        uint  rayFlags      = 0;\n"
+						"        uint  cullMask      = 0xFF;\n"
+						"        float tmin          = 0.001;\n"
+						"        float tmax          = 5.0;\n"
+						"\n"
+						"        traceRayEXT(accelerationStructure, rayFlags, cullMask, " + de::toString(nLevel + 1) + ", 0, 0, origin, tmin, directionHit,  tmax, " + de::toString(nLocationsPerPayload * (nLevel + 1) ) + ");\n"
+						"        traceRayEXT(accelerationStructure, rayFlags, cullMask, " + de::toString(nLevel + 1) + ", 0, 0, origin, tmin, directionMiss, tmax, " + de::toString(nLocationsPerPayload * (nLevel + 1) ) + ");\n"
+						"    }\n"
+						"\n";
+				}
+
+				css << "}\n";
+
+				m_chitShaderNameVec.at(nLevel) = std::string("chit") + de::toString(nLevel);
+
+				programCollection.glslSources.add(m_chitShaderNameVec.at(nLevel) ) << glu::ClosestHitSource(css.str() ) << buildOptions;
+			}
+		}
+
+		{
+			std::stringstream css;
+
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n"
+				"void main()\n"
+				"{\n"
+				"    reportIntersectionEXT(0.95f, 0);\n"
+				"}\n";
+
+			// There is stack caching code that assumes it knows which shader groups are what, but that doesn't apply to
+			// this test. The other hit group shaders don't hit this issue because they don't use the canonical name, so
+			// de-canonicalize the name to work around that
+			programCollection.glslSources.add("intersection0") << glu::IntersectionSource(css.str() ) << buildOptions;
+		}
+
+		{
+			m_missShaderNameVec.resize(m_depthToUse);
+
+			for (deUint32 nLevel = 0; nLevel < m_depthToUse; ++nLevel)
+			{
+				std::stringstream	css;
+				const bool			shouldTraceRays = (nLevel != (m_depthToUse - 1) );
+
+				css <<
+					"#version 460 core\n"
+					"\n"
+					"#extension GL_EXT_ray_tracing : require\n"
+					"\n"
+					"layout(set = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
+					"\n"
+					+	constantVariableDefinition
+					+	de::toString(resultBufferDefinition)
+					+	de::toString(rayPayloadInDefinitionVec.at(nLevel) );
+
+				if (shouldTraceRays)
+				{
+					css << rayPayloadDefinitionVec.at(nLevel + 1);
+				}
+
+				css <<
+					"\n"
+					"void main()\n"
+					"{\n"
+					"    uint nItem = atomicAdd(nItemsStored, 1);\n"
+					"\n"
+					"    atomicAdd(nMissInvocations, 1);\n"
+					"\n"
+					"    if (nItem < " + de::toString(m_nMaxResultItemsPermitted) + ")\n"
+					"    {\n"
+					"        resultItems[nItem].depth            = parentDepth;\n"
+					"        resultItems[nItem].nOriginRay       = parentNOriginRay;\n"
+					"        resultItems[nItem].callerResultItem = parentResultItem;\n"
+					"        resultItems[nItem].shaderStage      = 2;\n"
+					"    }\n"
+					"\n";
+
+				if (shouldTraceRays)
+				{
+					css <<
+						"    if (parentDepth < MAX_RECURSIVE_DEPTH - 1)\n"
+						"    {\n"
+						"        currentDepth      = parentDepth + 1;\n"
+						"        currentNOriginRay = parentNOriginRay;\n"
+						"        currentResultItem = nItem;\n"
+						"\n"
+						"        vec3  cellStartXYZ  = vec3(parentDepth * 2.0, 0.0, parentNOriginRay * 2.0);\n"
+						"        vec3  cellEndXYZ    = cellStartXYZ + vec3(1.0);\n"
+						"        vec3  targetHit     = mix(cellStartXYZ, cellEndXYZ, vec3(0.5) );\n"
+						"        vec3  targetMiss    = targetHit + vec3(0, 10, 0);\n"
+						"        vec3  origin        = targetHit - vec3(1, 0,  0);\n"
+						"        vec3  directionHit  = normalize(targetHit  - origin);\n"
+						"        vec3  directionMiss = normalize(targetMiss - origin);\n"
+						"\n"
+						"        uint  rayFlags      = 0;\n"
+						"        uint  cullMask      = 0xFF;\n"
+						"        float tmin          = 0.001;\n"
+						"        float tmax          = 5.0;\n"
+						"\n"
+						"        traceRayEXT(accelerationStructure, rayFlags, cullMask, " + de::toString(nLevel + 1) + ", 0, 0, origin, tmin, directionHit,  tmax, " + de::toString(nLocationsPerPayload * (nLevel + 1) ) + ");\n"
+						"        traceRayEXT(accelerationStructure, rayFlags, cullMask, " + de::toString(nLevel + 1) + ", 0, 0, origin, tmin, directionMiss, tmax, " + de::toString(nLocationsPerPayload * (nLevel + 1) ) + ");\n"
+						"    }\n";
+				}
+
+				css << "}\n";
+
+				m_missShaderNameVec.at(nLevel) = "miss" + de::toString(nLevel);
+
+				programCollection.glslSources.add(m_missShaderNameVec.at(nLevel)) << glu::MissSource(css.str() ) << buildOptions;
+			}
+		}
+
+		{
+			std::stringstream css;
+
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n"
+				"layout(set = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
+				"\n"
+				+	de::toString(resultBufferDefinition)
+				+	rayPayloadDefinitionVec.at(0)			+
+				"void main()\n"
+				"{\n"
+				"    uint  nInvocation  = gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;\n"
+				"    uint  rayFlags     = 0;\n"
+				"    float tmin         = 0.001;\n"
+				"    float tmax         = 9.0;\n"
+				"\n"
+				"    uint  cullMask      = 0xFF;\n"
+				"    vec3  cellStartXYZ  = vec3(0.0, 0.0, nInvocation * 2.0);\n"
+				"    vec3  cellEndXYZ    = cellStartXYZ + vec3(1.0);\n"
+				"    vec3  targetHit     = mix(cellStartXYZ, cellEndXYZ, vec3(0.5) );\n"
+				"    vec3  targetMiss    = targetHit + vec3(0, 10, 0);\n"
+				"    vec3  origin        = targetHit - vec3(1, 0,  0);\n"
+				"    vec3  directionHit  = normalize(targetHit  - origin);\n"
+				"    vec3  directionMiss = normalize(targetMiss - origin);\n"
+				"\n"
+				"    uint nItem = atomicAdd(nItemsStored, 1);\n"
+				"\n"
+				"    if (nItem < " + de::toString(m_nMaxResultItemsPermitted) + ")\n"
+				"    {\n"
+				"        resultItems[nItem].callerResultItem = 0xFFFFFFFF;\n"
+				"        resultItems[nItem].depth            = 0;\n"
+				"        resultItems[nItem].nOriginRay       = nInvocation;\n"
+				"        resultItems[nItem].shaderStage      = 3;\n"
+				"    }\n"
+				"\n"
+				"    currentDepth      = 0;\n"
+				"    currentNOriginRay = nInvocation;\n"
+				"    currentResultItem = nItem;\n"
+				"\n"
+				"    traceRayEXT(accelerationStructure, rayFlags, cullMask, 0, 0, 0, origin, tmin, directionHit,  tmax, 0);\n"
+				"    traceRayEXT(accelerationStructure, rayFlags, cullMask, 0, 0, 0, origin, tmin, directionMiss, tmax, 0);\n"
+				"}\n";
+
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(css.str() ) << buildOptions;
+		}
+	}
+
+	void resetTLAS() final
+	{
+		m_tlPtr.reset();
+	}
+
+	bool verifyResultBuffer (const void* resultDataPtr) const final
+	{
+		const deUint32* resultU32Ptr		= reinterpret_cast<const deUint32*>(resultDataPtr);
+		bool			result				= false;
+		auto			nItemsStored		= *resultU32Ptr;
+		const auto		nCHitInvocations	= *(resultU32Ptr + 1);
+		const auto		nMissInvocations	= *(resultU32Ptr + 2);
+		const bool		doFullCheck			= (m_nResultItemsExpected < m_nMaxResultItemsPermitted);
+
+		struct ResultItem
+		{
+			deUint32				depth;
+			deUint32				nOriginRay;
+			deUint32				nParentNode;
+
+			VkShaderStageFlagBits	stage;
+
+			ResultItem* childCHitNodePtr;
+			ResultItem* childMissNodePtr;
+
+			ResultItem()
+				:	depth				(0xFFFFFFFFu),
+					nOriginRay			(0xFFFFFFFFu),
+					nParentNode			(0xFFFFFFFFu),
+					stage				(VK_SHADER_STAGE_ALL),
+					childCHitNodePtr	(nullptr),
+					childMissNodePtr	(nullptr)
+			{
+				/* Stub */
+			}
+		};
+
+		std::map<deUint32, ResultItem*>										nItemToResultItemPtrMap;
+		std::map<deUint32, std::vector<std::unique_ptr<ResultItem> > >		nRayToResultItemPtrVecMap;
+		std::map<deUint32, std::map<deUint32, std::vector<ResultItem*> > >	nRayToNLevelToResultItemPtrVecMap;
+
+		if (doFullCheck)
+		{
+			if (nItemsStored != m_nResultItemsExpected)
+			{
+				goto end;
+			}
+		}
+		else
+		{
+			// Test shaders always use an atomic add to obtain a unique index, at which they should write the result item.
+			// Hence, the value we read back from the result buffer's preamble does not actually indicate how many items
+			// are available for reading, since a partial (!= full) check implies our result buffer only contains a fraction
+			// of all expected items (since more items would simply not fit in).
+			//
+			// Make sure to use a correct value in subsequent checks.
+			if (nItemsStored < m_nResultItemsExpected)
+			{
+				goto end;
+			}
+
+			nItemsStored = m_nMaxResultItemsPermitted;
+		}
+
+		if (nCHitInvocations != m_nCHitInvocationsExpected)
+		{
+			goto end;
+		}
+
+		if (nMissInvocations != m_nMissInvocationsExpected)
+		{
+			goto end;
+		}
+
+		/* Convert an array of result items, stored in undefined order, to a representation we can easily verify */
+		for (deUint32 nItem = 0; nItem < nItemsStored; ++nItem)
+		{
+			const deUint32*				currentItemU32Ptr = resultU32Ptr + 3 /* nItemsRegistered, nCHitInvocations, nMissInvocations*/ + 4 /* items per result item */ * nItem;
+			std::unique_ptr<ResultItem>	resultItemPtr;
+
+			resultItemPtr.reset(new ResultItem() );
+
+			resultItemPtr->depth		= *(currentItemU32Ptr + 2);
+			resultItemPtr->nOriginRay	= *(currentItemU32Ptr + 0);
+			resultItemPtr->nParentNode	= *(currentItemU32Ptr + 3);
+
+			switch (*(currentItemU32Ptr + 1) )
+			{
+				case 1: resultItemPtr->stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR; break;
+				case 2: resultItemPtr->stage = VK_SHADER_STAGE_MISS_BIT_KHR;		break;
+				case 3: resultItemPtr->stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;		break;
+
+				default:
+				{
+					/* This should never happen */
+					DE_ASSERT(false);
+
+					goto end;
+				}
+			}
+
+			if (resultItemPtr->depth >= m_depthToUse)
+			{
+				DE_ASSERT(resultItemPtr->depth < m_depthToUse);
+
+				goto end;
+			}
+
+			if (resultItemPtr->nOriginRay >= m_nRaysToTest)
+			{
+				DE_ASSERT(resultItemPtr->nOriginRay < m_nRaysToTest);
+
+				goto end;
+			}
+
+			nItemToResultItemPtrMap[nItem]	= resultItemPtr.get();
+
+			nRayToNLevelToResultItemPtrVecMap	[resultItemPtr->nOriginRay][resultItemPtr->depth].push_back	(resultItemPtr.get	() );
+			nRayToResultItemPtrVecMap			[resultItemPtr->nOriginRay].push_back						(std::move			(resultItemPtr) );
+		}
+
+		if (doFullCheck)
+		{
+			for (const auto& iterator1 : nRayToNLevelToResultItemPtrVecMap)
+			{
+				const auto& currentNLevelToResultItemPtrVecMap	= iterator1.second;
+				deUint32	nRayGenShaderResultItemsFound		= 0;
+
+				for (const auto& iterator2 : currentNLevelToResultItemPtrVecMap)
+				{
+					const auto& currentResultItemPtrVec = iterator2.second;
+
+					for (const auto& currentResultItemPtr : currentResultItemPtrVec)
+					{
+						if (currentResultItemPtr->stage == VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+						{
+							if (currentResultItemPtr->nParentNode != 0xFFFFFFFF)
+							{
+								DE_ASSERT(currentResultItemPtr->nParentNode == 0xFFFFFFFF);
+
+								goto end;
+							}
+
+							nRayGenShaderResultItemsFound++;
+						}
+						else
+						if (currentResultItemPtr->stage == VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
+						{
+							DE_ASSERT(currentResultItemPtr->nParentNode < nItemsStored);
+
+							auto parentNodePtr = nItemToResultItemPtrMap.at(currentResultItemPtr->nParentNode);
+
+							if (parentNodePtr->childCHitNodePtr != nullptr)
+							{
+								DE_ASSERT(parentNodePtr->childCHitNodePtr == nullptr);
+
+								goto end;
+							}
+
+							parentNodePtr->childCHitNodePtr = currentResultItemPtr;
+						}
+						else
+						{
+							DE_ASSERT(currentResultItemPtr->stage		==	VK_SHADER_STAGE_MISS_BIT_KHR);
+							DE_ASSERT(currentResultItemPtr->nParentNode <	nItemsStored);
+
+							auto parentNodePtr = nItemToResultItemPtrMap.at(currentResultItemPtr->nParentNode);
+
+							if (parentNodePtr->childMissNodePtr != nullptr)
+							{
+								DE_ASSERT(parentNodePtr->childMissNodePtr == nullptr);
+
+								goto end;
+							}
+
+							parentNodePtr->childMissNodePtr = currentResultItemPtr;
+						}
+					}
+				}
+
+				if (nRayGenShaderResultItemsFound != 1)
+				{
+					DE_ASSERT(nRayGenShaderResultItemsFound == 1);
+
+					goto end;
+				}
+			}
+		}
+
+		// 1. Verify all nodes that are not leaves have both child nodes attached, and that leaf nodes do not have any children assigned.
+		if (doFullCheck)
+		{
+			for (const auto& iterator1 : nRayToNLevelToResultItemPtrVecMap)
+			{
+				const auto& currentNLevelToResultItemPtrVecMap = iterator1.second;
+
+				for (const auto& iterator2 : currentNLevelToResultItemPtrVecMap)
+				{
+					const auto& currentNLevel			= iterator2.first;
+					const auto& currentResultItemPtrVec	= iterator2.second;
+
+					for (const auto& currentResultItemPtr : currentResultItemPtrVec)
+					{
+						if (	currentResultItemPtr->stage == VK_SHADER_STAGE_RAYGEN_BIT_KHR ||
+								currentNLevel				!= m_depthToUse - 1)
+						{
+							if (currentResultItemPtr->childCHitNodePtr == nullptr)
+							{
+								DE_ASSERT(currentResultItemPtr->childCHitNodePtr != nullptr);
+
+								goto end;
+							}
+
+							if (currentResultItemPtr->childMissNodePtr == nullptr)
+							{
+								DE_ASSERT(currentResultItemPtr->childMissNodePtr != nullptr);
+
+								goto end;
+							}
+						}
+						else
+						{
+							if (currentResultItemPtr->childCHitNodePtr != nullptr)
+							{
+								DE_ASSERT(currentResultItemPtr->childCHitNodePtr == nullptr);
+
+								goto end;
+							}
+
+							if (currentResultItemPtr->childMissNodePtr != nullptr)
+							{
+								DE_ASSERT(currentResultItemPtr->childMissNodePtr == nullptr);
+
+								goto end;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// 2. Verify depth level is correct for each node.
+		for (const auto& iterator1 : nRayToNLevelToResultItemPtrVecMap)
+		{
+			const auto& currentNLevelToResultItemPtrVecMap	= iterator1.second;
+
+			for (const auto& iterator2 : currentNLevelToResultItemPtrVecMap)
+			{
+				const auto& currentNLevel			= iterator2.first;
+				const auto& currentResultItemPtrVec	= iterator2.second;
+
+				for (const auto& currentResultItemPtr : currentResultItemPtrVec)
+				{
+					if (currentResultItemPtr->stage == VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+					{
+						if (currentResultItemPtr->depth != 0)
+						{
+							DE_ASSERT(currentResultItemPtr->depth == 0);
+
+							goto end;
+						}
+					}
+					else
+					if (currentResultItemPtr->depth != currentNLevel)
+					{
+						DE_ASSERT(currentResultItemPtr->depth == currentNLevel);
+
+						goto end;
+					}
+				}
+			}
+		}
+
+		// 3. Verify child node ptrs point to nodes that are assigned correct shader stage.
+		for (const auto& iterator : nItemToResultItemPtrMap)
+		{
+			const auto& currentResultItemPtr = iterator.second;
+
+			if (currentResultItemPtr->childCHitNodePtr			!= nullptr								&&
+				currentResultItemPtr->childCHitNodePtr->stage	!= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
+			{
+				DE_ASSERT(currentResultItemPtr->childCHitNodePtr->stage	== VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+
+				goto end;
+			}
+
+			if (currentResultItemPtr->childMissNodePtr			!= nullptr						&&
+				currentResultItemPtr->childMissNodePtr->stage	!= VK_SHADER_STAGE_MISS_BIT_KHR)
+			{
+				DE_ASSERT(currentResultItemPtr->childMissNodePtr->stage= VK_SHADER_STAGE_MISS_BIT_KHR);
+
+				goto end;
+			}
+		}
+
+		// 4. Verify nodes hold correct ray index.
+		for (const auto& iterator : nRayToResultItemPtrVecMap)
+		{
+			const auto& currentNRay = iterator.first;
+
+			for (const auto& currentResultItemPtr : iterator.second)
+			{
+				if (currentResultItemPtr->nOriginRay != currentNRay)
+				{
+					DE_ASSERT(currentResultItemPtr->nOriginRay == currentNRay);
+
+					goto end;
+				}
+			}
+		}
+
+		// 5. Verify child nodes are assigned correct depth levels.
+		for (const auto& iterator1 : nRayToNLevelToResultItemPtrVecMap)
+		{
+			const auto& currentNLevelToResultItemPtrVecMap	= iterator1.second;
+
+			for (const auto& iterator2 : currentNLevelToResultItemPtrVecMap)
+			{
+				const auto& currentNLevel			= iterator2.first;
+				const auto& currentResultItemPtrVec	= iterator2.second;
+
+				for (const auto& currentResultItemPtr : currentResultItemPtrVec)
+				{
+					const auto expectedChildNodeDepth = (currentResultItemPtr->stage == VK_SHADER_STAGE_RAYGEN_BIT_KHR) ? 0
+																														: currentResultItemPtr->depth + 1;
+
+					if (currentResultItemPtr->depth != currentNLevel)
+					{
+						DE_ASSERT(currentResultItemPtr->depth == currentNLevel);
+
+						goto end;
+					}
+
+					if (currentResultItemPtr->childCHitNodePtr			!= nullptr					&&
+						currentResultItemPtr->childCHitNodePtr->depth	!= expectedChildNodeDepth)
+					{
+						DE_ASSERT(currentResultItemPtr->childCHitNodePtr->depth	== expectedChildNodeDepth);
+
+						goto end;
+					}
+
+					if (currentResultItemPtr->childMissNodePtr			!= nullptr					&&
+						currentResultItemPtr->childMissNodePtr->depth	!= expectedChildNodeDepth)
+					{
+						DE_ASSERT(currentResultItemPtr->childMissNodePtr->depth	== expectedChildNodeDepth);
+
+						goto end;
+					}
+				}
+			}
+		}
+
+		// 6. Verify that RT shader stages were invoked for all anticipated recursion levels.
+		if (doFullCheck)
+		{
+			for (const auto& iterator1 : nRayToNLevelToResultItemPtrVecMap)
+			{
+				for (deUint32	nLevel = 0;
+								nLevel < m_depthToUse;
+								nLevel ++)
+				{
+					if (iterator1.second.find(nLevel) == iterator1.second.end())
+					{
+						DE_ASSERT(false);
+
+						goto end;
+					}
+				}
+			}
+		}
+
+		result = true;
+end:
+		return result;
+	}
+
+private:
+
+	const AccelerationStructureLayout	m_asStructureLayout;
+	const GeometryType					m_geometryType;
+
+	deUint32										m_depthToUse;
+	deUint32										m_nMaxResultItemsPermitted;
+	const deUint32									m_nRaysToTest;
+	std::unique_ptr<TopLevelAccelerationStructure>	m_tlPtr;
+
+	VkSpecializationInfo		m_specializationInfo;
+	VkSpecializationMapEntry	m_specializationEntry;
+
+	mutable std::vector<std::string> m_ahitShaderNameVec;
+	mutable std::vector<std::string> m_chitShaderNameVec;
+	mutable std::vector<std::string> m_missShaderNameVec;
+
+	deUint32 m_nCHitInvocationsExpected;
+	deUint32 m_nMissInvocationsExpected;
+	deUint32 m_nResultItemsExpected;
+
+	const deUint32 m_maxResultBufferSizePermitted;
+};
+
 // Test the return value of reportIntersectionEXT
 class ReportIntersectionResultTest : public TestBase
 {
@@ -5873,6 +6796,11 @@ public:
 		, m_gridSizeXYZ(tcu::UVec3(4, 4, 1))
 		, m_nRaysToTrace(16)
 	{
+	}
+
+	std::vector<std::string> getCHitShaderCollectionShaderNames() const final
+	{
+		return {};
 	}
 
 	tcu::UVec3 getDispatchSize() const final
@@ -6418,6 +7346,23 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 	m_testPtr->init(m_context,
 					rtPropertiesPtr.get() );
 
+	// Determine group indices
+	const auto ahitCollectionShaderNameVec			= m_testPtr->getAHitShaderCollectionShaderNames			();
+	const auto chitCollectionShaderNameVec			= m_testPtr->getCHitShaderCollectionShaderNames			();
+	const auto intersectionCollectionShaderNameVec	= m_testPtr->getIntersectionShaderCollectionShaderNames	();
+	const auto missCollectionShaderNameVec			= m_testPtr->getMissShaderCollectionShaderNames			();
+
+	const deUint32 nRaygenGroups	= 1;
+	const deUint32 nMissGroups		= static_cast<deUint32>(missCollectionShaderNameVec.size() );
+	const deUint32 nHitGroups		= de::max(
+											de::max(	static_cast<deUint32>(ahitCollectionShaderNameVec.size() ),
+														static_cast<deUint32>(chitCollectionShaderNameVec.size() ) ),
+											static_cast<deUint32>(intersectionCollectionShaderNameVec.size() ));
+
+	const deUint32 raygenGroupIndex = 0;
+	const deUint32 missGroupIndex   = nRaygenGroups;
+	const deUint32 hitGroupIndex    = missGroupIndex + nMissGroups;
+
 	const auto	callableShaderCollectionNames	= m_testPtr->getCallableShaderCollectionNames	();
 	auto&		collection						= m_context.getBinaryCollection					();
 	const auto resultBufferSize					= m_testPtr->getResultBufferSize				();
@@ -6468,59 +7413,82 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 																			deviceVk,
 																			collection.get("rgen"),
 																			0); /* flags */
-		Move<VkShaderModule>	missShader			= createShaderModule(	deviceInterface,
-																			deviceVk,
-																			collection.get("miss"),
-																			0); /* flags */
 
 		rayTracingPipelinePtr->addShader(	VK_SHADER_STAGE_RAYGEN_BIT_KHR,
 											makeVkSharedPtr(raygenShader),
-											static_cast<deUint32>(ShaderGroups::RAYGEN_GROUP),
+											raygenGroupIndex,
 											m_testPtr->getSpecializationInfoPtr(VK_SHADER_STAGE_RAYGEN_BIT_KHR) );
+	}
 
-		if (collection.contains("ahit") )
+	{
+		for (deUint32	nMissShaderName = 0;
+						nMissShaderName < static_cast<deUint32>(missCollectionShaderNameVec.size() );
+						nMissShaderName ++)
 		{
-			Move<VkShaderModule>	anyHitShader	= createShaderModule(	deviceInterface,
-																			deviceVk,
-																			collection.get("ahit"),
-																			0); /* flags */
+			const auto&				currentMissShaderName	= missCollectionShaderNameVec.at(nMissShaderName);
+			Move<VkShaderModule>	missShader				= createShaderModule(	deviceInterface,
+																					deviceVk,
+																					collection.get(currentMissShaderName),
+																					0); /* flags */
+
+			rayTracingPipelinePtr->addShader(	VK_SHADER_STAGE_MISS_BIT_KHR,
+											makeVkSharedPtr(missShader),
+											missGroupIndex + nMissShaderName,
+											m_testPtr->getSpecializationInfoPtr(VK_SHADER_STAGE_MISS_BIT_KHR) );
+		}
+	}
+
+	{
+		for (deUint32	nAHitShaderName = 0;
+						nAHitShaderName < static_cast<deUint32>(ahitCollectionShaderNameVec.size() );
+						nAHitShaderName ++)
+		{
+			const auto&				currentAHitShaderName	= ahitCollectionShaderNameVec.at(nAHitShaderName);
+			Move<VkShaderModule>	anyHitShader			= createShaderModule(	deviceInterface,
+																					deviceVk,
+																					collection.get(currentAHitShaderName),
+																					0); /* flags */
 
 			rayTracingPipelinePtr->addShader(	VK_SHADER_STAGE_ANY_HIT_BIT_KHR,
 												makeVkSharedPtr(anyHitShader),
-												static_cast<deUint32>(ShaderGroups::HIT_GROUP),
+												hitGroupIndex + nAHitShaderName,
 												m_testPtr->getSpecializationInfoPtr(VK_SHADER_STAGE_ANY_HIT_BIT_KHR) );
 		}
 
-		if (collection.contains("chit") )
+		for (deUint32	nCHitShaderName = 0;
+						nCHitShaderName < static_cast<deUint32>(chitCollectionShaderNameVec.size() );
+						nCHitShaderName ++)
 		{
-			Move<VkShaderModule>	closestHitShader	= createShaderModule(	deviceInterface,
-																				deviceVk,
-																				collection.get("chit"),
-																				0); /* flags */
+			const auto&				currentCHitShaderName	= chitCollectionShaderNameVec.at(nCHitShaderName);
+			Move<VkShaderModule>	closestHitShader		= createShaderModule(	deviceInterface,
+																					deviceVk,
+																					collection.get(currentCHitShaderName),
+																					0); /* flags */
 
 			rayTracingPipelinePtr->addShader(	VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
 												makeVkSharedPtr(closestHitShader),
-												static_cast<deUint32>(ShaderGroups::HIT_GROUP),
+												hitGroupIndex + nCHitShaderName,
 												m_testPtr->getSpecializationInfoPtr(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR) );
 		}
-
-		rayTracingPipelinePtr->addShader(	VK_SHADER_STAGE_MISS_BIT_KHR,
-											makeVkSharedPtr(missShader),
-											static_cast<deUint32>(ShaderGroups::MISS_GROUP),
-											m_testPtr->getSpecializationInfoPtr(VK_SHADER_STAGE_MISS_BIT_KHR) );
 
 		if (m_data.geometryType == GeometryType::AABB				||
 			m_data.geometryType == GeometryType::AABB_AND_TRIANGLES)
 		{
-			Move<VkShaderModule>	intersectionShader	= createShaderModule(	deviceInterface,
-																				deviceVk,
-																				collection.get("intersection"),
-																				0); /* flags */
+			for (deUint32	nIntersectionShaderName = 0;
+							nIntersectionShaderName < static_cast<deUint32>(intersectionCollectionShaderNameVec.size() );
+							nIntersectionShaderName ++)
+			{
+				const auto&				currentIntersectionShaderName	= intersectionCollectionShaderNameVec.at(nIntersectionShaderName);
+				Move<VkShaderModule>	intersectionShader				= createShaderModule(	deviceInterface,
+																								deviceVk,
+																								collection.get(currentIntersectionShaderName),
+																								0); /* flags */
 
-			rayTracingPipelinePtr->addShader(	VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
-												makeVkSharedPtr(intersectionShader),
-												static_cast<deUint32>(ShaderGroups::HIT_GROUP),
-												m_testPtr->getSpecializationInfoPtr(VK_SHADER_STAGE_INTERSECTION_BIT_KHR) );
+				rayTracingPipelinePtr->addShader(	VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
+													makeVkSharedPtr(intersectionShader),
+													hitGroupIndex + nIntersectionShaderName,
+													m_testPtr->getSpecializationInfoPtr(VK_SHADER_STAGE_INTERSECTION_BIT_KHR) );
+			}
 		}
 
 		for (deUint32 nCallableShader = 0; nCallableShader < static_cast<deUint32>(callableShaderCollectionNames.size() ); ++nCallableShader)
@@ -6541,6 +7509,8 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 		{
 			rayTracingPipelinePtr->addDynamicState(VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR);
 		}
+
+		rayTracingPipelinePtr->setMaxRecursionDepth(m_testPtr->getMaxRecursionDepthUsed() );
 
 		pipelineVkPtr = rayTracingPipelinePtr->createPipeline(	deviceInterface,
 																deviceVk,
@@ -6621,7 +7591,7 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 																							m_rayTracingPropsPtr->getShaderGroupHandleSize		(),
 																							m_rayTracingPropsPtr->getShaderGroupBaseAlignment	(),
 																							static_cast<deUint32>								(ShaderGroups::FIRST_CALLABLE_GROUP),
-static_cast<deUint32>								(callableShaderCollectionNames.size() ),	/* groupCount                  */
+																							static_cast<deUint32>								(callableShaderCollectionNames.size() ),	/* groupCount                  */
 																							0u,																								/* additionalBufferCreateFlags */
 																							0u,																								/* additionalBufferUsageFlags  */
 																							MemoryRequirement::Any,
@@ -6631,18 +7601,18 @@ static_cast<deUint32>								(callableShaderCollectionNames.size() ),	/* groupCo
 	}
 
 	const auto	raygenShaderBindingTablePtr	= rayTracingPipelinePtr->createShaderBindingTable(	deviceInterface,
-																									deviceVk,
-																									*pipelineVkPtr,
-																									allocator,
-																									m_rayTracingPropsPtr->getShaderGroupHandleSize		(),
-																									m_rayTracingPropsPtr->getShaderGroupBaseAlignment	(),
-																									static_cast<deUint32>								(ShaderGroups::RAYGEN_GROUP),
-																									1u,																								/* groupCount                  */
-																									0u,																								/* additionalBufferCreateFlags */
-																									0u,																								/* additionalBufferUsageFlags  */
-																									MemoryRequirement::Any,
-																									0u,																								/* opaqueCaptureAddress        */
-																									0u);																							/* shaderBindingTableOffset    */
+																								deviceVk,
+																								*pipelineVkPtr,
+																								allocator,
+																								m_rayTracingPropsPtr->getShaderGroupHandleSize		(),
+																								m_rayTracingPropsPtr->getShaderGroupBaseAlignment	(),
+																								raygenGroupIndex,
+																								nRaygenGroups,																					/* groupCount                  */
+																								0u,																								/* additionalBufferCreateFlags */
+																								0u,																								/* additionalBufferUsageFlags  */
+																								MemoryRequirement::Any,
+																								0u,																								/* opaqueCaptureAddress        */
+																								0u);																							/* shaderBindingTableOffset    */
 
 	const void*	missShaderBindingGroupShaderRecordDataPtr	= m_testPtr->getShaderRecordData(					ShaderGroups::MISS_GROUP);
 	const auto	missShaderBindingTablePtr					= rayTracingPipelinePtr->createShaderBindingTable(	deviceInterface,
@@ -6651,8 +7621,8 @@ static_cast<deUint32>								(callableShaderCollectionNames.size() ),	/* groupCo
 																												allocator,
 																												m_rayTracingPropsPtr->getShaderGroupHandleSize		(),
 																												m_rayTracingPropsPtr->getShaderGroupBaseAlignment	(),
-																												static_cast<deUint32>								(ShaderGroups::MISS_GROUP),
-																												1u,																								/* groupCount                  */
+																												missGroupIndex,
+																												nMissGroups,																					/* groupCount                  */
 																												0u,																								/* additionalBufferCreateFlags */
 																												0u,																								/* additionalBufferUsageFlags  */
 																												MemoryRequirement::Any,
@@ -6668,8 +7638,8 @@ static_cast<deUint32>								(callableShaderCollectionNames.size() ),	/* groupCo
 																												allocator,
 																												m_rayTracingPropsPtr->getShaderGroupHandleSize		(),
 																												m_rayTracingPropsPtr->getShaderGroupBaseAlignment	(),
-																												static_cast<deUint32>								(ShaderGroups::HIT_GROUP),
-																												1u,																								/* groupCount                  */
+																												hitGroupIndex,
+																												nHitGroups,																						/* groupCount                  */
 																												0u,																								/* additionalBufferCreateFlags */
 																												0u,																								/* additionalBufferUsageFlags  */
 																												MemoryRequirement::Any,
@@ -6804,7 +7774,6 @@ static_cast<deUint32>								(callableShaderCollectionNames.size() ),	/* groupCo
 																																										0 /* offset */),
 																																				m_rayTracingPropsPtr->getShaderGroupHandleSize(), /* stride */
 																																				(m_rayTracingPropsPtr->getShaderGroupHandleSize() + m_testPtr->getShaderRecordSize(ShaderGroups::FIRST_CALLABLE_GROUP) ) * static_cast<deUint32>(callableShaderCollectionNames.size() ) )
-
 																											: makeStridedDeviceAddressRegionKHR(DE_NULL,
 																																				0, /* stride */
 																																				0  /* size   */);
@@ -6922,6 +7891,7 @@ void RayTracingTestCase::checkSupport(Context& context) const
 
 	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR	= context.getAccelerationStructureFeatures	();
 	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR		= context.getRayTracingPipelineFeatures		();
+	const auto&												rayTracingPipelinePropertiesKHR		= context.getRayTracingPipelineProperties	();
 
 	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE)
 	{
@@ -6965,6 +7935,17 @@ void RayTracingTestCase::checkSupport(Context& context) const
 			ShaderRecordBlockTest::usesU64(m_data.type) )
 		{
 			context.requireDeviceCoreFeature(vkt::DeviceCoreFeature::DEVICE_CORE_FEATURE_SHADER_INT64);
+		}
+	}
+
+	if (static_cast<deUint32>(m_data.type) >= static_cast<deUint32>(TestType::RECURSIVE_TRACES_1)  &&
+		static_cast<deUint32>(m_data.type) <= static_cast<deUint32>(TestType::RECURSIVE_TRACES_29) )
+	{
+		const auto nLevels = static_cast<deUint32>(m_data.type) - static_cast<deUint32>(TestType::RECURSIVE_TRACES_1) + 1;
+
+		if (rayTracingPipelinePropertiesKHR.maxRayRecursionDepth < nLevels)
+		{
+			TCU_THROW(NotSupportedError, "Cannot use an unsupported ray recursion depth.");
 		}
 	}
 }
@@ -7047,6 +8028,47 @@ void RayTracingTestCase::initPrograms(SourceCollections& programCollection)	cons
 		{
 			m_testPtr.reset(
 				new NoDuplicateAnyHitTest(m_data.asLayout, m_data.geometryType)
+			);
+
+			m_testPtr->initPrograms(programCollection);
+
+			break;
+		}
+
+		case TestType::RECURSIVE_TRACES_1:
+		case TestType::RECURSIVE_TRACES_2:
+		case TestType::RECURSIVE_TRACES_3:
+		case TestType::RECURSIVE_TRACES_4:
+		case TestType::RECURSIVE_TRACES_5:
+		case TestType::RECURSIVE_TRACES_6:
+		case TestType::RECURSIVE_TRACES_7:
+		case TestType::RECURSIVE_TRACES_8:
+		case TestType::RECURSIVE_TRACES_9:
+		case TestType::RECURSIVE_TRACES_10:
+		case TestType::RECURSIVE_TRACES_11:
+		case TestType::RECURSIVE_TRACES_12:
+		case TestType::RECURSIVE_TRACES_13:
+		case TestType::RECURSIVE_TRACES_14:
+		case TestType::RECURSIVE_TRACES_15:
+		case TestType::RECURSIVE_TRACES_16:
+		case TestType::RECURSIVE_TRACES_17:
+		case TestType::RECURSIVE_TRACES_18:
+		case TestType::RECURSIVE_TRACES_19:
+		case TestType::RECURSIVE_TRACES_20:
+		case TestType::RECURSIVE_TRACES_21:
+		case TestType::RECURSIVE_TRACES_22:
+		case TestType::RECURSIVE_TRACES_23:
+		case TestType::RECURSIVE_TRACES_24:
+		case TestType::RECURSIVE_TRACES_25:
+		case TestType::RECURSIVE_TRACES_26:
+		case TestType::RECURSIVE_TRACES_27:
+		case TestType::RECURSIVE_TRACES_28:
+		case TestType::RECURSIVE_TRACES_29:
+		{
+			const auto nLevels = static_cast<deUint32>(m_data.type) - static_cast<deUint32>(TestType::RECURSIVE_TRACES_1) + 1;
+
+			m_testPtr.reset(
+				new RecursiveTracesTest(m_data.geometryType, m_data.asLayout, nLevels)
 			);
 
 			m_testPtr->initPrograms(programCollection);
@@ -7206,6 +8228,48 @@ TestInstance* RayTracingTestCase::createInstance (Context& context) const
 			{
 				m_testPtr.reset(
 					new NoDuplicateAnyHitTest(m_data.asLayout, m_data.geometryType)
+				);
+			}
+
+			break;
+		}
+
+		case TestType::RECURSIVE_TRACES_1:
+		case TestType::RECURSIVE_TRACES_2:
+		case TestType::RECURSIVE_TRACES_3:
+		case TestType::RECURSIVE_TRACES_4:
+		case TestType::RECURSIVE_TRACES_5:
+		case TestType::RECURSIVE_TRACES_6:
+		case TestType::RECURSIVE_TRACES_7:
+		case TestType::RECURSIVE_TRACES_8:
+		case TestType::RECURSIVE_TRACES_9:
+		case TestType::RECURSIVE_TRACES_10:
+		case TestType::RECURSIVE_TRACES_11:
+		case TestType::RECURSIVE_TRACES_12:
+		case TestType::RECURSIVE_TRACES_13:
+		case TestType::RECURSIVE_TRACES_14:
+		case TestType::RECURSIVE_TRACES_15:
+		case TestType::RECURSIVE_TRACES_16:
+		case TestType::RECURSIVE_TRACES_17:
+		case TestType::RECURSIVE_TRACES_18:
+		case TestType::RECURSIVE_TRACES_19:
+		case TestType::RECURSIVE_TRACES_20:
+		case TestType::RECURSIVE_TRACES_21:
+		case TestType::RECURSIVE_TRACES_22:
+		case TestType::RECURSIVE_TRACES_23:
+		case TestType::RECURSIVE_TRACES_24:
+		case TestType::RECURSIVE_TRACES_25:
+		case TestType::RECURSIVE_TRACES_26:
+		case TestType::RECURSIVE_TRACES_27:
+		case TestType::RECURSIVE_TRACES_28:
+		case TestType::RECURSIVE_TRACES_29:
+		{
+			const auto nLevels = static_cast<deUint32>(m_data.type) - static_cast<deUint32>(TestType::RECURSIVE_TRACES_1) + 1;
+
+			if (m_testPtr == nullptr)
+			{
+				m_testPtr.reset(
+					new RecursiveTracesTest(m_data.geometryType, m_data.asLayout, nLevels)
 				);
 			}
 
@@ -7548,6 +8612,22 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 		miscGroupPtr->addChild(newTestCaseExplicitSTD430Offset_4Ptr);
 		miscGroupPtr->addChild(newTestCaseExplicitSTD430Offset_5Ptr);
 		miscGroupPtr->addChild(newTestCaseExplicitSTD430Offset_6Ptr);
+	}
+
+	for (auto currentGeometryType = GeometryType::FIRST; currentGeometryType != GeometryType::COUNT; currentGeometryType = static_cast<GeometryType>(static_cast<deUint32>(currentGeometryType) + 1) )
+	{
+		const std::string newTestCaseName = "recursiveTraces_" + de::toString(getSuffixForGeometryType(currentGeometryType) ) + "_";
+
+		// TODO: for (deUint32 nLevels = 1; nLevels <= 29; ++nLevels)
+		for (deUint32 nLevels = 1; nLevels <= 15; ++nLevels)
+		{
+			auto newTestCasePtr = new RayTracingTestCase(	testCtx,
+															(newTestCaseName + de::toString(nLevels) ).data(),
+															"Verifies that relevant shader stages can correctly read large ray payloads provided by raygen shader stage.",
+															CaseDef{static_cast<TestType>(static_cast<deUint32>(TestType::RECURSIVE_TRACES_1) + (nLevels - 1) ), currentGeometryType, AccelerationStructureLayout::ONE_TL_ONE_BL_ONE_GEOMETRY});
+
+			miscGroupPtr->addChild(newTestCasePtr);
+		}
 	}
 
 	return miscGroupPtr.release();
