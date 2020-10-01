@@ -2446,7 +2446,18 @@ bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const Triang
 					bool friendFound = false;
 					for (int friendTriNdx = 0; friendTriNdx < (int)scene.triangles.size(); ++friendTriNdx)
 					{
-						if (friendTriNdx != triNdx && pixelOnlyOnASharedEdge(tcu::IVec2(x, y), scene.triangles[friendTriNdx], viewportSize))
+						if (friendTriNdx == triNdx)
+							continue;
+
+						const CoverageType friendCoverage	= calculateTriangleCoverage(scene.triangles[friendTriNdx].positions[0],
+																						scene.triangles[friendTriNdx].positions[1],
+																						scene.triangles[friendTriNdx].positions[2],
+																						tcu::IVec2(x, y),
+																						viewportSize,
+																						subPixelBits,
+																						multisampled);
+
+						if (friendCoverage != COVERAGE_NONE && pixelOnlyOnASharedEdge(tcu::IVec2(x, y), scene.triangles[friendTriNdx], viewportSize))
 						{
 							friendFound = true;
 							break;
