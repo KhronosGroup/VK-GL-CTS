@@ -580,6 +580,7 @@ private:
 
 	const Unique<VkCommandPool>			m_commandPool;
 	tcu::TextureLevel					m_sum;
+	tcu::TextureLevel					m_sumSrgb;
 	deUint32							m_sampleMask;
 	tcu::ResultCollector				m_resultCollector;
 };
@@ -606,9 +607,11 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& c
 
 	, m_commandPool				(createCommandPool(context.getDeviceInterface(), context.getDevice(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, context.getUniversalQueueFamilyIndex()))
 	, m_sum						(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), m_width, m_height, m_layerCount)
+	, m_sumSrgb					(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), m_width, m_height, m_layerCount)
 	, m_sampleMask				(0x0u)
 {
 	tcu::clear(m_sum.getAccess(), Vec4(0.0f, 0.0f, 0.0f, 0.0f));
+	tcu::clear(m_sumSrgb.getAccess(), Vec4(0.0f, 0.0f, 0.0f, 0.0f));
 }
 
 MultisampleRenderPassTestInstance::~MultisampleRenderPassTestInstance (void)
@@ -802,6 +805,9 @@ void MultisampleRenderPassTestInstance::verify (void)
 				{
 					const Vec4 old = m_sum.getAccess().getPixel(x, y, z);
 					m_sum.getAccess().setPixel(old + (tcu::isSRGB(format) ? tcu::sRGBToLinear(firstColor) : firstColor), x, y, z);
+
+					const Vec4 oldSrgb = m_sumSrgb.getAccess().getPixel(x, y, z);
+					m_sumSrgb.getAccess().setPixel(oldSrgb + firstColor, x, y, z);
 				}
 			}
 
@@ -1122,10 +1128,37 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 				m_sum.getAccess().setPixel(average, x, y, z);
 				errorMask.getAccess().setPixel(okColor, x, y, z);
 
-				if (diff[0] > threshold.x()
-						|| diff[1] > threshold.y()
-						|| diff[2] > threshold.z()
-						|| diff[3] > threshold.w())
+				bool failThreshold;
+
+				if (!tcu::isSRGB(format))
+				{
+					failThreshold = (diff[0] > threshold.x()
+										|| diff[1] > threshold.y()
+										|| diff[2] > threshold.z()
+										|| diff[3] > threshold.w());
+				}
+				else
+				{
+					const Vec4	sumSrgb(m_sumSrgb.getAccess().getPixel(x, y, z));
+					const Vec4	averageSrgb(sumSrgb / Vec4((float)(0x1u << m_sampleCount)));
+					const Vec4	diffSrgb(tcu::abs(averageSrgb - expectedAverage));
+
+					m_sumSrgb.getAccess().setPixel(averageSrgb, x, y, z);
+
+					// Spec doesn't restrict implementation to downsample in linear color space. So, comparing both non linear and
+					// linear diff's in case of srgb formats.
+					failThreshold = ((diff[0] > threshold.x()
+										|| diff[1] > threshold.y()
+										|| diff[2] > threshold.z()
+										|| diff[3] > threshold.w()) &&
+									(diffSrgb[0] > threshold.x()
+										|| diffSrgb[1] > threshold.y()
+										|| diffSrgb[2] > threshold.z()
+										|| diffSrgb[3] > threshold.w()));
+
+				}
+
+				if (failThreshold)
 				{
 					isOk	= false;
 					maxDiff	= tcu::max(maxDiff, diff);
