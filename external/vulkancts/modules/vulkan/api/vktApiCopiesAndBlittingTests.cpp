@@ -248,11 +248,12 @@ union CopyRegion
 
 struct ImageParms
 {
-	VkImageType		imageType;
-	VkFormat		format;
-	VkExtent3D		extent;
-	VkImageTiling	tiling;
-	VkImageLayout	operationLayout;
+	VkImageType			imageType;
+	VkFormat			format;
+	VkExtent3D			extent;
+	VkImageTiling		tiling;
+	VkImageLayout		operationLayout;
+	VkImageCreateFlags	createFlags;
 };
 
 struct TestParams
@@ -288,6 +289,8 @@ struct TestParams
 		singleCommand				= DE_TRUE;
 		barrierCount				= 1u;
 		separateDepthStencilLayouts	= DE_FALSE;
+		src.image.createFlags		= VK_IMAGE_CREATE_FLAG_BITS_MAX_ENUM;
+		dst.image.createFlags		= VK_IMAGE_CREATE_FLAG_BITS_MAX_ENUM;
 	}
 };
 
@@ -357,10 +360,12 @@ inline deUint32 getArraySize(const ImageParms& parms)
 	return (parms.imageType != VK_IMAGE_TYPE_3D) ? parms.extent.depth : 1u;
 }
 
-inline VkImageCreateFlags getCreateFlags(const ImageParms& parms)
+inline VkImageCreateFlags  getCreateFlags(const ImageParms& parms)
 {
-	return parms.imageType == VK_IMAGE_TYPE_2D && parms.extent.depth % 6 == 0 ?
-		VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
+	if (parms.createFlags == VK_IMAGE_CREATE_FLAG_BITS_MAX_ENUM)
+		return parms.imageType == VK_IMAGE_TYPE_2D && parms.extent.depth % 6 == 0 ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
+	else
+		return parms.createFlags;
 }
 
 inline VkExtent3D getExtent3D(const ImageParms& parms, deUint32 mipLevel = 0u)
@@ -6902,12 +6907,351 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 	}
 }
 
+void addImageToImageCubeTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+{
+	tcu::TestContext& testCtx	= group->getTestContext();
+
+	{
+		TestParams	paramsCubeToArray;
+		const deUint32	arrayLayers					= 6u;
+		paramsCubeToArray.src.image.createFlags		= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		paramsCubeToArray.src.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsCubeToArray.src.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsCubeToArray.src.image.extent			= defaultHalfExtent;
+		paramsCubeToArray.src.image.extent.depth	= arrayLayers;
+		paramsCubeToArray.src.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsCubeToArray.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		paramsCubeToArray.dst.image.createFlags		= 0;
+		paramsCubeToArray.dst.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsCubeToArray.dst.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsCubeToArray.dst.image.extent			= defaultHalfExtent;
+		paramsCubeToArray.dst.image.extent.depth	= arrayLayers;
+		paramsCubeToArray.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsCubeToArray.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		paramsCubeToArray.allocationKind			= allocationKind;
+		paramsCubeToArray.extensionUse				= extensionUse;
+
+		for (deUint32 arrayLayersNdx = 0; arrayLayersNdx < arrayLayers; ++arrayLayersNdx)
+		{
+			const VkImageSubresourceLayers	sourceLayer	=
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					arrayLayersNdx,				// deUint32				baseArrayLayer;
+					1u							// deUint32				layerCount;
+				};
+
+			const VkImageSubresourceLayers	destinationLayer	=
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					arrayLayersNdx,				// deUint32				baseArrayLayer;
+					1u							// deUint32				layerCount;
+				};
+
+			const VkImageCopy				testCopy	=
+				{
+					sourceLayer,				// VkImageSubresourceLayers	srcSubresource;
+					{0, 0, 0},					// VkOffset3D				srcOffset;
+					destinationLayer,			// VkImageSubresourceLayers	dstSubresource;
+					{0, 0, 0},					// VkOffset3D				dstOffset;
+					defaultHalfExtent				// VkExtent3D				extent;
+				};
+
+			CopyRegion	imageCopy;
+			imageCopy.imageCopy	= testCopy;
+
+			paramsCubeToArray.regions.push_back(imageCopy);
+		}
+
+		group->addChild(new CopyImageToImageTestCase(testCtx, "cube_to_array_layers", "copy cube compatible image to 2d layers layer by layer", paramsCubeToArray));
+	}
+
+	{
+		TestParams	paramsCubeToArray;
+		const deUint32	arrayLayers					= 6u;
+		paramsCubeToArray.src.image.createFlags		= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		paramsCubeToArray.src.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsCubeToArray.src.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsCubeToArray.src.image.extent			= defaultHalfExtent;
+		paramsCubeToArray.src.image.extent.depth	= arrayLayers;
+		paramsCubeToArray.src.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsCubeToArray.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		paramsCubeToArray.dst.image.createFlags		= 0;
+		paramsCubeToArray.dst.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsCubeToArray.dst.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsCubeToArray.dst.image.extent			= defaultHalfExtent;
+		paramsCubeToArray.dst.image.extent.depth	= arrayLayers;
+		paramsCubeToArray.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsCubeToArray.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		paramsCubeToArray.allocationKind			= allocationKind;
+		paramsCubeToArray.extensionUse				= extensionUse;
+
+		{
+			const VkImageSubresourceLayers	sourceLayer	=
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					0u,							// deUint32				baseArrayLayer;
+					arrayLayers					// deUint32				layerCount;
+				};
+
+			const VkImageSubresourceLayers	destinationLayer	=
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					0u,							// deUint32				baseArrayLayer;
+					arrayLayers					// deUint32				layerCount;
+				};
+
+			const VkImageCopy				testCopy	=
+				{
+					sourceLayer,				// VkImageSubresourceLayers	srcSubresource;
+					{0, 0, 0},					// VkOffset3D				srcOffset;
+					destinationLayer,			// VkImageSubresourceLayers	dstSubresource;
+					{0, 0, 0},					// VkOffset3D				dstOffset;
+					defaultHalfExtent			// VkExtent3D				extent;
+				};
+
+			CopyRegion	imageCopy;
+			imageCopy.imageCopy	= testCopy;
+
+			paramsCubeToArray.regions.push_back(imageCopy);
+		}
+
+		group->addChild(new CopyImageToImageTestCase(testCtx, "cube_to_array_whole", "copy cube compatible image to 2d layers all at once", paramsCubeToArray));
+	}
+
+	{
+		TestParams	paramsArrayToCube;
+		const deUint32	arrayLayers					= 6u;
+		paramsArrayToCube.src.image.createFlags		= 0;
+		paramsArrayToCube.src.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsArrayToCube.src.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsArrayToCube.src.image.extent			= defaultHalfExtent;
+		paramsArrayToCube.src.image.extent.depth	= arrayLayers;
+		paramsArrayToCube.src.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsArrayToCube.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		paramsArrayToCube.dst.image.createFlags		= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		paramsArrayToCube.dst.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsArrayToCube.dst.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsArrayToCube.dst.image.extent			= defaultHalfExtent;
+		paramsArrayToCube.dst.image.extent.depth	= arrayLayers;
+		paramsArrayToCube.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsArrayToCube.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		paramsArrayToCube.allocationKind			= allocationKind;
+		paramsArrayToCube.extensionUse				= extensionUse;
+
+		for (deUint32 arrayLayersNdx = 0; arrayLayersNdx < arrayLayers; ++arrayLayersNdx)
+		{
+			const VkImageSubresourceLayers	sourceLayer	=
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					arrayLayersNdx,				// deUint32				baseArrayLayer;
+					1u							// deUint32				layerCount;
+				};
+
+			const VkImageSubresourceLayers	destinationLayer =
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					arrayLayersNdx,				// deUint32				baseArrayLayer;
+					1u							// deUint32				layerCount;
+				};
+
+			const VkImageCopy				testCopy =
+				{
+					sourceLayer,				// VkImageSubresourceLayers	srcSubresource;
+					{0, 0, 0},					// VkOffset3D				srcOffset;
+					destinationLayer,			// VkImageSubresourceLayers	dstSubresource;
+					{0, 0, 0},					// VkOffset3D				dstOffset;
+					defaultHalfExtent			// VkExtent3D				extent;
+				};
+
+			CopyRegion	imageCopy;
+			imageCopy.imageCopy	= testCopy;
+
+			paramsArrayToCube.regions.push_back(imageCopy);
+		}
+
+		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_cube_layers", "copy 2d layers to cube compatible image layer by layer", paramsArrayToCube));
+	}
+
+	{
+		TestParams	paramsArrayToCube;
+		const deUint32	arrayLayers					= 6u;
+		paramsArrayToCube.src.image.createFlags		= 0;
+		paramsArrayToCube.src.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsArrayToCube.src.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsArrayToCube.src.image.extent			= defaultHalfExtent;
+		paramsArrayToCube.src.image.extent.depth	= arrayLayers;
+		paramsArrayToCube.src.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsArrayToCube.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		paramsArrayToCube.dst.image.createFlags		= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		paramsArrayToCube.dst.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsArrayToCube.dst.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsArrayToCube.dst.image.extent			= defaultHalfExtent;
+		paramsArrayToCube.dst.image.extent.depth	= arrayLayers;
+		paramsArrayToCube.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsArrayToCube.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		paramsArrayToCube.allocationKind			= allocationKind;
+		paramsArrayToCube.extensionUse				= extensionUse;
+
+		{
+			const VkImageSubresourceLayers sourceLayer =
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
+					0u,								// deUint32				mipLevel;
+					0u,								// deUint32				baseArrayLayer;
+					arrayLayers						// deUint32				layerCount;
+				};
+
+			const VkImageSubresourceLayers destinationLayer =
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
+					0u,								// deUint32				mipLevel;
+					0u,								// deUint32				baseArrayLayer;
+					arrayLayers						// deUint32				layerCount;
+				};
+
+			const VkImageCopy				testCopy =
+				{
+					sourceLayer,					// VkImageSubresourceLayers	srcSubresource;
+					{0, 0, 0},						// VkOffset3D				srcOffset;
+					destinationLayer,				// VkImageSubresourceLayers	dstSubresource;
+					{0, 0, 0},						// VkOffset3D				dstOffset;
+					defaultHalfExtent				// VkExtent3D				extent;
+				};
+
+			CopyRegion imageCopy;
+			imageCopy.imageCopy = testCopy;
+
+			paramsArrayToCube.regions.push_back(imageCopy);
+		}
+
+		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_cube_whole", "copy 2d layers to cube compatible image all at once", paramsArrayToCube));
+	}
+
+	{
+		TestParams	paramsCubeToArray;
+		const deUint32	arrayLayers					= 6u;
+		paramsCubeToArray.src.image.createFlags		= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		paramsCubeToArray.src.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsCubeToArray.src.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsCubeToArray.src.image.extent			= defaultHalfExtent;
+		paramsCubeToArray.src.image.extent.depth	= arrayLayers;
+		paramsCubeToArray.src.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsCubeToArray.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		paramsCubeToArray.dst.image.createFlags		= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		paramsCubeToArray.dst.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsCubeToArray.dst.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsCubeToArray.dst.image.extent			= defaultHalfExtent;
+		paramsCubeToArray.dst.image.extent.depth	= arrayLayers;
+		paramsCubeToArray.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsCubeToArray.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		paramsCubeToArray.allocationKind			= allocationKind;
+		paramsCubeToArray.extensionUse				= extensionUse;
+
+		for (deUint32 arrayLayersNdx = 0; arrayLayersNdx < arrayLayers; ++arrayLayersNdx)
+		{
+			const VkImageSubresourceLayers	sourceLayer	=
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					arrayLayersNdx,				// deUint32				baseArrayLayer;
+					1u							// deUint32				layerCount;
+				};
+
+			const VkImageSubresourceLayers	destinationLayer	=
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					arrayLayersNdx,				// deUint32				baseArrayLayer;
+					1u							// deUint32				layerCount;
+				};
+
+			const VkImageCopy				testCopy	=
+				{
+					sourceLayer,				// VkImageSubresourceLayers	srcSubresource;
+					{0, 0, 0},					// VkOffset3D				srcOffset;
+					destinationLayer,			// VkImageSubresourceLayers	dstSubresource;
+					{0, 0, 0},					// VkOffset3D				dstOffset;
+					defaultHalfExtent				// VkExtent3D				extent;
+				};
+
+			CopyRegion	imageCopy;
+			imageCopy.imageCopy	= testCopy;
+
+			paramsCubeToArray.regions.push_back(imageCopy);
+		}
+
+		group->addChild(new CopyImageToImageTestCase(testCtx, "cube_to_cube_layers", "copy cube compatible image to cube compatible image layer by layer", paramsCubeToArray));
+	}
+
+	{
+		TestParams	paramsCubeToCube;
+		const deUint32	arrayLayers					= 6u;
+		paramsCubeToCube.src.image.createFlags		= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		paramsCubeToCube.src.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsCubeToCube.src.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsCubeToCube.src.image.extent			= defaultHalfExtent;
+		paramsCubeToCube.src.image.extent.depth		= arrayLayers;
+		paramsCubeToCube.src.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsCubeToCube.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		paramsCubeToCube.dst.image.createFlags		= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		paramsCubeToCube.dst.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsCubeToCube.dst.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsCubeToCube.dst.image.extent			= defaultHalfExtent;
+		paramsCubeToCube.dst.image.extent.depth		= arrayLayers;
+		paramsCubeToCube.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsCubeToCube.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		paramsCubeToCube.allocationKind				= allocationKind;
+		paramsCubeToCube.extensionUse				= extensionUse;
+
+		{
+			const VkImageSubresourceLayers	sourceLayer	=
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					0u,							// deUint32				baseArrayLayer;
+					arrayLayers					// deUint32				layerCount;
+				};
+
+			const VkImageSubresourceLayers	destinationLayer	=
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					0u,							// deUint32				baseArrayLayer;
+					arrayLayers					// deUint32				layerCount;
+				};
+
+			const VkImageCopy				testCopy	=
+				{
+					sourceLayer,				// VkImageSubresourceLayers	srcSubresource;
+					{0, 0, 0},					// VkOffset3D				srcOffset;
+					destinationLayer,			// VkImageSubresourceLayers	dstSubresource;
+					{0, 0, 0},					// VkOffset3D				dstOffset;
+					defaultHalfExtent			// VkExtent3D				extent;
+				};
+
+			CopyRegion	imageCopy;
+			imageCopy.imageCopy	= testCopy;
+
+			paramsCubeToCube.regions.push_back(imageCopy);
+		}
+
+		group->addChild(new CopyImageToImageTestCase(testCtx, "cube_to_cube_whole", "copy cube compatible image to cube compatible image all at once", paramsCubeToCube));
+	}
+}
+
 void addImageToImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	addTestGroup(group, "simple_tests", "Copy from image to image simple tests", addImageToImageSimpleTests, allocationKind, extensionUse);
 	addTestGroup(group, "all_formats", "Copy from image to image with all compatible formats", addImageToImageAllFormatsTests, allocationKind, extensionUse);
 	addTestGroup(group, "3d_images", "Coping operations on 3d images", addImageToImage3dImagesTests, allocationKind, extensionUse);
 	addTestGroup(group, "dimensions", "Copying operations on different image dimensions", addImageToImageDimensionsTests, allocationKind, extensionUse);
+	addTestGroup(group, "cube", "Coping operations on cube compatible images", addImageToImageCubeTests, allocationKind, extensionUse);
 }
 
 void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
