@@ -4618,6 +4618,35 @@ struct VkCommandBufferInheritanceRenderPassTransformInfoQCOM
 	VkRect2D						renderArea;
 };
 
+struct VkPhysicalDeviceDeviceMemoryReportFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		deviceMemoryReport;
+};
+
+struct VkDeviceMemoryReportCallbackDataEXT
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkDeviceMemoryReportFlagsEXT		flags;
+	VkDeviceMemoryReportEventTypeEXT	type;
+	deUint64							memoryObjectId;
+	VkDeviceSize						size;
+	VkObjectType						objectType;
+	deUint64							objectHandle;
+	deUint32							heapIndex;
+};
+
+struct VkDeviceDeviceMemoryReportCreateInfoEXT
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkDeviceMemoryReportFlagsEXT		flags;
+	PFN_vkDeviceMemoryReportCallbackEXT	pfnUserCallback;
+	void*								pUserData;
+};
+
 struct VkPhysicalDeviceRobustness2FeaturesEXT
 {
 	VkStructureType	sType;

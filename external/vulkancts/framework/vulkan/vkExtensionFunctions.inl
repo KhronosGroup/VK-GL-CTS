@@ -764,6 +764,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_device_memory_report")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_robustness2")
 	{
 		return;
@@ -1791,6 +1795,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_QCOM_render_pass_transform")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_device_memory_report")
 	{
 		return;
 	}

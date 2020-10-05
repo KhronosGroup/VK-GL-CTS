@@ -19,6 +19,7 @@ const vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&	Context::g
 const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&					Context::getDepthClipEnableFeaturesEXT					(void) const { return m_device->getDepthClipEnableFeaturesEXT();				}
 const vk::VkPhysicalDeviceDescriptorIndexingFeatures&					Context::getDescriptorIndexingFeatures					(void) const { return m_device->getDescriptorIndexingFeatures();				}
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV&			Context::getDeviceGeneratedCommandsFeatures				(void) const { return m_device->getDeviceGeneratedCommandsFeatures();			}
+const vk::VkPhysicalDeviceDeviceMemoryReportFeaturesEXT&				Context::getDeviceMemoryReportFeaturesEXT				(void) const { return m_device->getDeviceMemoryReportFeaturesEXT();				}
 const vk::VkPhysicalDeviceDiagnosticsConfigFeaturesNV&					Context::getDiagnosticsConfigFeatures					(void) const { return m_device->getDiagnosticsConfigFeatures();					}
 const vk::VkPhysicalDeviceExclusiveScissorFeaturesNV&					Context::getExclusiveScissorFeatures					(void) const { return m_device->getExclusiveScissorFeatures();					}
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&				Context::getExtendedDynamicStateFeaturesEXT				(void) const { return m_device->getExtendedDynamicStateFeaturesEXT();			}

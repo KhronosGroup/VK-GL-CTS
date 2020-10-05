@@ -550,6 +550,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDER_PASS_TRANSFORM_INFO_QCOM:		return "VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDER_PASS_TRANSFORM_INFO_QCOM";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_TRANSFORM_BEGIN_INFO_QCOM:							return "VK_STRUCTURE_TYPE_RENDER_PASS_TRANSFORM_BEGIN_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_DEVICE_DEVICE_MEMORY_REPORT_CREATE_INFO_EXT:						return "VK_STRUCTURE_TYPE_DEVICE_DEVICE_MEMORY_REPORT_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_DEVICE_MEMORY_REPORT_CALLBACK_DATA_EXT:							return "VK_STRUCTURE_TYPE_DEVICE_MEMORY_REPORT_CALLBACK_DATA_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_PROPERTIES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT:						return "VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT";
@@ -2148,6 +2151,20 @@ const char* getIndirectCommandsTokenTypeNVName (VkIndirectCommandsTokenTypeNV va
 	}
 }
 
+const char* getDeviceMemoryReportEventTypeEXTName (VkDeviceMemoryReportEventTypeEXT value)
+{
+	switch (value)
+	{
+		case VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_ALLOCATE_EXT:			return "VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_ALLOCATE_EXT";
+		case VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_FREE_EXT:				return "VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_FREE_EXT";
+		case VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_IMPORT_EXT:				return "VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_IMPORT_EXT";
+		case VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_UNIMPORT_EXT:			return "VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_UNIMPORT_EXT";
+		case VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_ALLOCATION_FAILED_EXT:	return "VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_ALLOCATION_FAILED_EXT";
+		case VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_MAX_ENUM_EXT:			return "VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_MAX_ENUM_EXT";
+		default:														return DE_NULL;
+	}
+}
+
 const char* getAccelerationStructureBuildTypeKHRName (VkAccelerationStructureBuildTypeKHR value)
 {
 	switch (value)
@@ -3532,6 +3549,11 @@ tcu::Format::Bitfield<32> getPipelineCoverageReductionStateCreateFlagsNVStr (VkP
 }
 
 tcu::Format::Bitfield<32> getHeadlessSurfaceCreateFlagsEXTStr (VkHeadlessSurfaceCreateFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getDeviceMemoryReportFlagsEXTStr (VkDeviceMemoryReportFlagsEXT value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -9684,6 +9706,44 @@ std::ostream& operator<< (std::ostream& s, const VkCommandBufferInheritanceRende
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\ttransform = " << value.transform << '\n';
 	s << "\trenderArea = " << value.renderArea << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDeviceMemoryReportFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceDeviceMemoryReportFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdeviceMemoryReport = " << value.deviceMemoryReport << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceMemoryReportCallbackDataEXT& value)
+{
+	s << "VkDeviceMemoryReportCallbackDataEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getDeviceMemoryReportFlagsEXTStr(value.flags) << '\n';
+	s << "\ttype = " << value.type << '\n';
+	s << "\tmemoryObjectId = " << value.memoryObjectId << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << "\tobjectType = " << value.objectType << '\n';
+	s << "\tobjectHandle = " << value.objectHandle << '\n';
+	s << "\theapIndex = " << value.heapIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceDeviceMemoryReportCreateInfoEXT& value)
+{
+	s << "VkDeviceDeviceMemoryReportCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getDeviceMemoryReportFlagsEXTStr(value.flags) << '\n';
+	s << "\tpfnUserCallback = " << value.pfnUserCallback << '\n';
+	s << "\tpUserData = " << value.pUserData << '\n';
 	s << '}';
 	return s;
 }

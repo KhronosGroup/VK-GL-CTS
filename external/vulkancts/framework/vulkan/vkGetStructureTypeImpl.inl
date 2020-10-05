@@ -1901,6 +1901,21 @@ template<> VkStructureType getStructureType<VkCommandBufferInheritanceRenderPass
 	return VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDER_PASS_TRANSFORM_INFO_QCOM;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceDeviceMemoryReportFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDeviceMemoryReportCallbackDataEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_MEMORY_REPORT_CALLBACK_DATA_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDeviceDeviceMemoryReportCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_DEVICE_MEMORY_REPORT_CREATE_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceRobustness2FeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
