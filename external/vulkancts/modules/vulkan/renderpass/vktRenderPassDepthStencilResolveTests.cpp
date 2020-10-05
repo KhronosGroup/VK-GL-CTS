@@ -474,7 +474,8 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (VkFormat vkformat)
 	{
 		if (m_config.verifyBuffer == VB_DEPTH)
 		{
-			layout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR;
+			const tcu::TextureFormat format (mapVkFormat(vkformat));
+			layout = tcu::hasStencilComponent(format.order)	? layout : VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR;
 			stencilLayout.stencilLayout = VK_IMAGE_LAYOUT_GENERAL;
 			finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 			stencilFinalLayout.stencilFinalLayout = VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL_KHR; // This aspect should be unused.
