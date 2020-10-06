@@ -426,6 +426,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceVertexAttributeDivisorFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT physicalDeviceVertexInputDynamicStateFeaturesEXT;
+	deMemset(&physicalDeviceVertexInputDynamicStateFeaturesEXT, 0, sizeof(physicalDeviceVertexInputDynamicStateFeaturesEXT));
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_vertex_input_dynamic_state")) )
+	{
+		physicalDeviceVertexInputDynamicStateFeaturesEXT.sType = getStructureType<VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT>();
+		*nextPtr = &physicalDeviceVertexInputDynamicStateFeaturesEXT;
+		nextPtr  = &physicalDeviceVertexInputDynamicStateFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceVulkan11Features physicalDeviceVulkan11Features;
 	deMemset(&physicalDeviceVulkan11Features, 0, sizeof(physicalDeviceVulkan11Features));
 
@@ -1591,6 +1601,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceRayQueryFeaturesKHR.rayQuery == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature rayQuery not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_vertex_input_dynamic_state")) )
+	{
+		if ( physicalDeviceVertexInputDynamicStateFeaturesEXT.vertexInputDynamicState == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature vertexInputDynamicState not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

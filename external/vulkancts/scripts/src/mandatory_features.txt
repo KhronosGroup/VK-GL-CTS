@@ -129,3 +129,4 @@ VkPhysicalDeviceDescriptorIndexingFeaturesEXT				FEATURES ( runtimeDescriptorArr
 VkPhysicalDeviceRayTracingPipelineFeaturesKHR				FEATURES ( rayTracingPipeline rayTracingPipelineTraceRaysIndirect)	REQUIREMENTS ( VK_KHR_ray_tracing_pipeline )
 VkPhysicalDeviceRayTracingPipelineFeaturesKHR				FEATURES ( rayTraversalPrimitiveCulling )						REQUIREMENTS ( VK_KHR_ray_tracing_pipeline VK_KHR_ray_query )
 VkPhysicalDeviceRayQueryFeaturesKHR							FEATURES ( rayQuery )											REQUIREMENTS ( VK_KHR_ray_query )
+VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT			FEATURES ( vertexInputDynamicState )							REQUIREMENTS ( VK_EXT_vertex_input_dynamic_state  )
