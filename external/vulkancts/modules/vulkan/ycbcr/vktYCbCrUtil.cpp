@@ -350,7 +350,7 @@ void uploadImage (const DeviceInterface&		vkd,
 					VK_QUEUE_FAMILY_IGNORED,
 					VK_QUEUE_FAMILY_IGNORED,
 					image,
-					{ aspect, 0u, 1u, arrayLayer, 1u }
+					{ (VkImageAspectFlags)aspect, 0u, 1u, arrayLayer, 1u }
 				};
 
 			vkd.cmdPipelineBarrier(*cmdBuffer,
@@ -379,7 +379,7 @@ void uploadImage (const DeviceInterface&		vkd,
 					VK_QUEUE_FAMILY_IGNORED,
 					VK_QUEUE_FAMILY_IGNORED,
 					image,
-					{ aspect, 0u, 1u, arrayLayer, 1u }
+					{ (VkImageAspectFlags)aspect, 0u, 1u, arrayLayer, 1u }
 				};
 
 			vkd.cmdPipelineBarrier(*cmdBuffer,

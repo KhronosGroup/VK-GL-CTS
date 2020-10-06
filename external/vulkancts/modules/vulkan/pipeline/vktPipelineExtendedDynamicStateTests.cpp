@@ -103,13 +103,19 @@ public:
 	// For the pipeline.
 
 	// Vertex attributes for VkPipelineVertexInputStateCreateInfo.
-	virtual std::vector<vk::VkVertexInputAttributeDescription>	getAttributeDescriptions()	const = 0;
+	virtual std::vector<vk::VkVertexInputAttributeDescription>	getAttributeDescriptions(deUint32 offset)	const = 0;
 
 	// Size of each vertex.
 	virtual size_t												getVertexDataSize()			const = 0;
 
 	// Array of bytes containing vertex data. .size() should match getVertexDataSize().
 	virtual std::vector<deUint8>								getVertexData()				const = 0;
+
+	// Offset to the coords data.
+	virtual size_t												getCoordsOffset()			const = 0;
+
+	// Offset to the padding data.
+	virtual size_t												getPaddingOffset()			const = 0;
 };
 
 // Vertices in buffers will have 2 components and a padding to properly test the stride.
@@ -140,10 +146,10 @@ public:
 		return statements;
 	}
 
-	virtual std::vector<vk::VkVertexInputAttributeDescription> getAttributeDescriptions() const override
+	virtual std::vector<vk::VkVertexInputAttributeDescription> getAttributeDescriptions(deUint32 offset) const override
 	{
 		std::vector<vk::VkVertexInputAttributeDescription> descriptions;
-		descriptions.push_back(vk::makeVertexInputAttributeDescription(0u, 0u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
+		descriptions.push_back(vk::makeVertexInputAttributeDescription(0u, 0u, vk::VK_FORMAT_R32G32_SFLOAT, offset));
 		return descriptions;
 	}
 
@@ -160,6 +166,16 @@ public:
 		deMemcpy(&vertexData[0], &coords, sizeof(coords));
 		deMemcpy(&vertexData[sizeof(coords)], &padding, sizeof(padding));
 		return vertexData;
+	}
+
+	virtual size_t getCoordsOffset() const override
+	{
+		return 0;
+	}
+
+	virtual size_t getPaddingOffset() const override
+	{
+		return sizeof coords;
 	}
 };
 
@@ -194,10 +210,10 @@ public:
 		return statements;
 	}
 
-	virtual std::vector<vk::VkVertexInputAttributeDescription> getAttributeDescriptions() const override
+	virtual std::vector<vk::VkVertexInputAttributeDescription> getAttributeDescriptions(deUint32 offset) const override
 	{
 		std::vector<vk::VkVertexInputAttributeDescription> descriptions;
-		descriptions.push_back(vk::makeVertexInputAttributeDescription(0u, 0u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
+		descriptions.push_back(vk::makeVertexInputAttributeDescription(0u, 0u, vk::VK_FORMAT_R32G32_SFLOAT, offset));
 		descriptions.push_back(vk::makeVertexInputAttributeDescription(1u, 0u, vk::VK_FORMAT_R32G32_SFLOAT, static_cast<deUint32>(sizeof(coords) + sizeof(padding))));
 		return descriptions;
 	}
@@ -216,6 +232,16 @@ public:
 		deMemcpy(&vertexData[sizeof(coords)], &padding, sizeof(padding));
 		deMemcpy(&vertexData[sizeof(coords) + sizeof(padding)], &ones, sizeof(ones));
 		return vertexData;
+	}
+
+	virtual size_t getCoordsOffset() const override
+	{
+		return 0;
+	}
+
+	virtual size_t getPaddingOffset() const override
+	{
+		return sizeof coords;
 	}
 };
 
@@ -290,6 +316,7 @@ using DepthCompareOpConfig			= StaticAndDynamicPair<vk::VkCompareOp>;
 using DepthBoundsTestEnableConfig	= BooleanFlagConfig;
 using StencilTestEnableConfig		= BooleanFlagConfig;
 using StencilOpConfig				= StaticAndDynamicPair<StencilOpVec>;	// At least one element.
+using VertexInputConfig				= StaticAndDynamicPair<deUint32>;
 
 const tcu::Vec4	kDefaultTriangleColor	(0.0f, 0.0f, 1.0f, 1.0f);	// Opaque blue.
 const tcu::Vec4	kDefaultClearColor		(0.0f, 0.0f, 0.0f, 1.0f);	// Opaque black.
@@ -443,6 +470,7 @@ struct TestConfig
 	DepthBoundsTestEnableConfig	depthBoundsTestEnableConfig;
 	StencilTestEnableConfig		stencilTestEnableConfig;
 	StencilOpConfig				stencilOpConfig;
+	VertexInputConfig			vertexInputConfig;
 
 	// Sane defaults.
 	TestConfig (SequenceOrdering ordering, VertexFactory vertexFactory_ = getVertexWithPadding)
@@ -475,6 +503,7 @@ struct TestConfig
 		, depthBoundsTestEnableConfig	(false)
 		, stencilTestEnableConfig		(false)
 		, stencilOpConfig				(StencilOpVec(1u, kDefaultStencilOpParams))
+		, vertexInputConfig				(static_cast<deUint32>(vertexFactory(tcu::Vec2(0.0f, 0.0f))->getCoordsOffset()))
 		, m_swappedValues				(false)
 	{
 	}
@@ -522,6 +551,7 @@ struct TestConfig
 		depthBoundsTestEnableConfig.swapValues();
 		stencilTestEnableConfig.swapValues();
 		stencilOpConfig.swapValues();
+		vertexInputConfig.swapValues();
 
 		m_swappedValues = !m_swappedValues;
 	}
@@ -674,8 +704,11 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 	const auto&	vki				= context.getInstanceInterface();
 	const auto	physicalDevice	= context.getPhysicalDevice();
 
-	// This is always required.
-	context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state");
+	if (m_testConfig.vertexInputConfig.dynamicValue)
+		context.requireDeviceFunctionality("VK_EXT_vertex_input_dynamic_state");
+	else
+		// This is always required for the rest of the dynamic state tests.
+		context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state");
 
 	// Check the number of viewports needed and the corresponding limits.
 	const auto&	viewportConfig	= m_testConfig.viewportConfig;
@@ -920,6 +953,29 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	{
 		for (const auto& params : testConfig.stencilOpConfig.dynamicValue.get())
 			vkd.cmdSetStencilOpEXT(cmdBuffer, params.faceMask, params.failOp, params.passOp, params.depthFailOp, params.compareOp);
+	}
+
+	if (testConfig.vertexInputConfig.dynamicValue)
+	{
+		const vk::VkVertexInputBindingDescription2EXT vertexBinding =
+		{
+			vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT,	//	VkStructureType		sType;
+			nullptr,														//	void*				pNext;
+			0u,																//	deUint32			binding;
+			static_cast<deUint32>(testConfig.strideConfig.staticValue),		//	deUint32			stride;
+			vk::VK_VERTEX_INPUT_RATE_VERTEX,								//	VkVertexInputRate	inputRate;
+			1u,																//	deUint32			divisor;
+		};
+		const vk::VkVertexInputAttributeDescription2EXT vertexAttribute =
+		{
+			vk::VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,				//	VkStructureType	sType;
+			nullptr,																	//	void*			pNext;
+			0u,																			//	deUint32		location;
+			0u,																			//	deUint32		binding;
+			vk::VK_FORMAT_R32G32_SFLOAT,												//	VkFormat		format;
+			static_cast<deUint32>(testConfig.vertexInputConfig.dynamicValue.get()),		//	deUint32		offset;
+		};
+		vkd.cmdSetVertexInputEXT(cmdBuffer, 1, &vertexBinding, 1, &vertexAttribute);
 	}
 }
 
@@ -1306,7 +1362,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	// Input state.
 	DE_ASSERT(!vertexRawPtrs.empty());
 	const auto vertexBinding	= vk::makeVertexInputBindingDescription(0u, static_cast<deUint32>(m_testConfig.strideConfig.staticValue), vk::VK_VERTEX_INPUT_RATE_VERTEX);
-	const auto vertexAttributes	= vertexRawPtrs[0]->getAttributeDescriptions();
+	const auto vertexAttributes	= vertexRawPtrs[0]->getAttributeDescriptions(static_cast<deUint32>(m_testConfig.vertexInputConfig.staticValue));
 
 	const vk::VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo =
 	{
@@ -1473,6 +1529,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	if (m_testConfig.depthBoundsTestEnableConfig.dynamicValue)	dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE_EXT);
 	if (m_testConfig.stencilTestEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT);
 	if (m_testConfig.stencilOpConfig.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_STENCIL_OP_EXT);
+	if (m_testConfig.vertexInputConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_VERTEX_INPUT_EXT);
 
 	const vk::VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo =
 	{
@@ -2496,6 +2553,18 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 					}
 				}
 			}
+		}
+
+		// Vertex input.
+		{
+			const auto	dummyVertex		= getVertexWithPadding(tcu::Vec2(0.0f, 0.0f));
+
+			TestConfig config(kOrdering);
+			config.vertexInputConfig.staticValue	= static_cast<deUint32>(dummyVertex->getPaddingOffset());
+			config.vertexInputConfig.dynamicValue	= static_cast<deUint32>(dummyVertex->getCoordsOffset());
+			config.strideConfig.staticValue			= kCoordsSize;
+			config.strideConfig.dynamicValue		= static_cast<vk::VkDeviceSize>(dummyVertex->getVertexDataSize());
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input", "Dynamically set vertex input", config));
 		}
 
 		extendedDynamicStateGroup->addChild(orderingGroup.release());
