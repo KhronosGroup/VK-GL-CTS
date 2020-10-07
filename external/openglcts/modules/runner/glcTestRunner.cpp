@@ -665,10 +665,11 @@ static void writeRunSummary(const TestRunSummary& summary, const char* filename)
 
 #undef XML_CHECK
 
-TestRunner::TestRunner(tcu::Platform& platform, tcu::Archive& archive, const char* logDirPath, glu::ApiType type,
-					   deUint32 flags)
+TestRunner::TestRunner(tcu::Platform& platform, tcu::Archive& archive, const char* waiverPath,
+					   const char* logDirPath, glu::ApiType type, deUint32 flags)
 	: m_platform(platform)
 	, m_archive(archive)
+	, m_waiverPath(waiverPath)
 	, m_logDirPath(logDirPath)
 	, m_type(type)
 	, m_flags(flags)
@@ -796,6 +797,9 @@ void TestRunner::initSession(const TestRunParams& runParams)
 
 	if (!(m_flags & VERBOSE_SHADERS))
 		args.push_back("--deqp-log-shader-sources=disable");
+
+	if (!m_waiverPath.empty())
+		args.push_back(string("--deqp-waiver-file=") + m_waiverPath);
 
 	std::ostringstream			  ostr;
 	std::ostream_iterator<string> out_it(ostr, ", ");

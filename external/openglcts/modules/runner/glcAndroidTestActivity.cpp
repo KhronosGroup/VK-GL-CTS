@@ -42,6 +42,11 @@ using tcu::Android::NativeActivity;
 
 static const char* DEFAULT_LOG_PATH = "/sdcard";
 
+static std::string getWaiverPath(ANativeActivity* activity)
+{
+	return tcu::Android::getIntentStringExtra(activity, "waivers");
+}
+
 static std::string getLogPath(ANativeActivity* activity)
 {
 	std::string path = tcu::Android::getIntentStringExtra(activity, "logdir");
@@ -58,12 +63,12 @@ static deUint32 getFlags(ANativeActivity* activity)
 	return flags;
 }
 
-TestThread::TestThread(NativeActivity& activity, tcu::Android::AssetArchive& archive, const std::string& logPath,
-					   glu::ApiType runType, deUint32 runFlags)
+TestThread::TestThread(NativeActivity& activity, tcu::Android::AssetArchive& archive, const std::string& waiverPath,
+					   const std::string& logPath, glu::ApiType runType, deUint32 runFlags)
 	: RenderThread(activity)
 	, m_platform(activity)
 	, m_archive(archive)
-	, m_app(m_platform, m_archive, logPath.c_str(), runType, runFlags)
+	, m_app(m_platform, m_archive, waiverPath.c_str(), logPath.c_str(), runType, runFlags)
 	, m_finished(false)
 {
 }
@@ -108,7 +113,7 @@ TestActivity::TestActivity(ANativeActivity* activity, glu::ApiType runType)
 	: RenderActivity(activity)
 	, m_archive(activity->assetManager)
 	, m_cmdLine(tcu::Android::getIntentStringExtra(activity, "cmdLine"))
-	, m_testThread(*this, m_archive, getLogPath(activity), runType, getFlags(activity))
+	, m_testThread(*this, m_archive, getWaiverPath(activity), getLogPath(activity), runType, getFlags(activity))
 	, m_started(false)
 {
 	// Set initial orientation.

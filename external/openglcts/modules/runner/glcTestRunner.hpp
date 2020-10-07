@@ -97,8 +97,8 @@ public:
 		PRINT_SUMMARY = (1 << 3)
 	};
 
-	TestRunner(tcu::Platform& platform, tcu::Archive& archive, const char* logDirPath, glu::ApiType type,
-			   deUint32 flags);
+	TestRunner(tcu::Platform& platform, tcu::Archive& archive, const char* waiverPath, const char* logDirPath,
+			   glu::ApiType type, deUint32 flags);
 	~TestRunner(void);
 
 	bool iterate(void);
@@ -129,7 +129,8 @@ private:
 
 	tcu::Platform& m_platform;
 	tcu::Archive&  m_archive;
-	std::string	m_logDirPath;
+	std::string    m_waiverPath;
+	std::string    m_logDirPath;
 	glu::ApiType   m_type;
 	deUint32	   m_flags;
 

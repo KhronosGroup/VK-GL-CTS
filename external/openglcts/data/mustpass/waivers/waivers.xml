@@ -54,7 +54,7 @@
 
 	<waiver vendor="ATI Technologies Inc." url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/1141 , https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/1190">
 		<description></description>
-		<!--TODO: plase let me know for which renderers this waiver should be defined -->
+		<!--TODO: this waiver is not applied - please specify for which renderers it should be defined -->
 		<renderer_list>
 			<r>???</r>
 		</renderer_list>
