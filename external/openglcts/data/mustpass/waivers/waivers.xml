@@ -65,4 +65,25 @@
 		<t>KHR-GL46.texture_view.view_classes</t>
 	</waiver>
 
+	<waiver vendor="Intel" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/2601">
+		<description>Testing of wide-line attribute interpolation is too strict</description>
+		<renderer_list>
+			<r>*</r>
+		</renderer_list>
+		<t>dEQP-GLES2.functional.rasterization.interpolation.basic.line_loop_wide</t>
+		<t>dEQP-GLES2.functional.rasterization.interpolation.basic.line_strip_wide</t>
+		<t>dEQP-GLES2.functional.rasterization.interpolation.basic.lines_wide</t>
+		<t>dEQP-GLES2.functional.rasterization.interpolation.projected.line_loop_wide</t>
+		<t>dEQP-GLES2.functional.rasterization.interpolation.projected.line_strip_wide</t>
+		<t>dEQP-GLES2.functional.rasterization.interpolation.projected.lines_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.fbo.rbo_singlesample.interpolation.lines_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.fbo.texture_2d.interpolation.lines_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.interpolation.basic.line_loop_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.interpolation.basic.line_strip_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.interpolation.basic.lines_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.interpolation.projected.line_loop_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.interpolation.projected.line_strip_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.interpolation.projected.lines_wide</t>
+	</waiver>
+
 </waiver_list>
