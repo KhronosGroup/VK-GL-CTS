@@ -333,7 +333,6 @@ void chooseWritesRandomly(vk::VkDescriptorType type, RandomLayout& randomLayout,
 	switch (type)
 	{
 	case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-	case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
 		// Disable writes for these descriptor types.
 		return;
 	default:
