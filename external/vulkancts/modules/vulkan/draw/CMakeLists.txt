@@ -50,6 +50,8 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawDepthClampTests.hpp
 	vktDrawAhbTests.cpp
 	vktDrawAhbTests.hpp
+	vktDrawMultipleClearsWithinRenderPass.cpp
+	vktDrawMultipleClearsWithinRenderPass.hpp
 )
 
 set(DEQP_VK_DRAW_LIBS
