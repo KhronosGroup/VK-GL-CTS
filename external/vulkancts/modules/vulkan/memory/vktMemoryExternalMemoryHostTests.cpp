@@ -310,65 +310,52 @@ ExternalMemoryHostRenderImageTestInstance::ExternalMemoryHostRenderImageTestInst
 {
 }
 
+void* alignedRealloc (void* ptr, VkDeviceSize size, VkDeviceSize alignment)
+{
+	void* newPtr = deAlignedRealloc(ptr, static_cast<size_t>(size), static_cast<size_t>(alignment));
+	if (!newPtr)
+		TCU_FAIL("Failed to reallocate memory block.");
+	DE_ASSERT(deIsAlignedPtr(newPtr, static_cast<deUintptr>(alignment)));
+	return newPtr;
+}
+
 tcu::TestStatus ExternalMemoryHostRenderImageTestInstance::iterate ()
 {
 	VkClearColorValue					clearColorBlue					= { { 0.0f, 0.0f, 1.0f, 1.0f } };
 	const deUint32						queueFamilyIndex				= m_context.getUniversalQueueFamilyIndex();
-	deUint32							hostPointerMemoryTypeBits;
 	deUint32							memoryTypeIndexToTest;
 	VkMemoryRequirements				imageMemoryRequirements;
 	const VkImageTiling					tiling							= VK_IMAGE_TILING_OPTIMAL;
 	const VkImageUsageFlags				usageFlags						= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |	VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
-	m_image								= createImage(m_testParams.m_format, tiling, usageFlags);
+	// Verify image format properties before proceeding.
+	verifyFormatProperties(m_testParams.m_format, tiling, usageFlags);
 
-	//check memory requirements and reallocate memory if needed
-	imageMemoryRequirements				= getImageMemoryRequirements(m_vkd, m_device, *m_image);
+	// Create image with external host memory.
+	m_image = createImage(m_testParams.m_format, tiling, usageFlags);
 
-	if (m_testParams.m_useOffset == false)
+	// Check memory requirements and reallocate memory if needed.
+	imageMemoryRequirements = getImageMemoryRequirements(m_vkd, m_device, *m_image);
+
+	const VkDeviceSize requiredSize = imageMemoryRequirements.size + (m_testParams.m_useOffset ? imageMemoryRequirements.alignment : 0ull);
+	if (requiredSize > m_allocationSize)
 	{
-		VkDeviceSize requiredSize = imageMemoryRequirements.size;
-		if (requiredSize > m_allocationSize)
-		{
-			//calculate new size, this must me a multiple of minImportedHostPointerAlignment
-			VkDeviceSize newHostAllocationSize	= VkDeviceSize(deCeilFloatToInt32((float(requiredSize) / float(m_minImportedHostPointerAlignment))) * m_minImportedHostPointerAlignment);
+		// Reallocate block with a size that is a multiple of minImportedHostPointerAlignment.
+		const auto newHostAllocationSize	= de::roundUp(requiredSize, m_minImportedHostPointerAlignment);
+		m_hostMemoryAlloc					= alignedRealloc(m_hostMemoryAlloc, newHostAllocationSize, m_minImportedHostPointerAlignment);
+		m_allocationSize					= newHostAllocationSize;
 
-			m_log	<< tcu::TestLog::Message << "Realloc needed (required size: "  << requiredSize <<  "). " << "New host allocation size: " << newHostAllocationSize << ")."
-					<< tcu::TestLog::EndMessage;
-			//realocate
-			m_hostMemoryAlloc					= deAlignedRealloc(m_hostMemoryAlloc, (size_t)newHostAllocationSize, (size_t)m_minImportedHostPointerAlignment);
-			m_allocationSize					= newHostAllocationSize;
-		}
+		m_log	<< tcu::TestLog::Message << "Realloc needed (required size: "  << requiredSize <<  "). " << "New host allocation size: " << newHostAllocationSize << ")."
+				<< tcu::TestLog::EndMessage;
 	}
 
-	if (m_testParams.m_useOffset == true)
-	{
-		VkDeviceSize requiredSize = imageMemoryRequirements.size + imageMemoryRequirements.alignment;
-		if (requiredSize > m_allocationSize)
-		{
-			VkDeviceSize newHostAllocationSize	= VkDeviceSize(deCeilFloatToInt32((float(requiredSize) / float(m_minImportedHostPointerAlignment))) * m_minImportedHostPointerAlignment);
+	// Find the usable memory type index.
+	const auto hostPointerMemoryTypeBits = getHostPointerMemoryTypeBits(m_hostMemoryAlloc);
 
-			m_log	<< tcu::TestLog::Message << "Realloc needed (required size: " << requiredSize << "). " << "New host allocation size: " << newHostAllocationSize << ")."
-					<< tcu::TestLog::EndMessage;
-			m_hostMemoryAlloc					= deAlignedRealloc(m_hostMemoryAlloc, (size_t)newHostAllocationSize, (size_t)m_minImportedHostPointerAlignment);
-			m_allocationSize					= newHostAllocationSize;
-		}
-	}
-	//check if reallocation is successfull
-	if (!m_hostMemoryAlloc)
-		TCU_FAIL("Failed to reallocate memory block.");
-
-	DE_ASSERT(deIsAlignedPtr(m_hostMemoryAlloc, (deUintptr)m_minImportedHostPointerAlignment));
-
-	//find the usable memory type index
-	hostPointerMemoryTypeBits			= getHostPointerMemoryTypeBits(m_hostMemoryAlloc);
 	if (findCompatibleMemoryTypeIndexToTest(imageMemoryRequirements.memoryTypeBits, hostPointerMemoryTypeBits, &memoryTypeIndexToTest))
 		m_deviceMemoryAllocatedFromHostPointer = allocateMemoryFromHostPointer(memoryTypeIndexToTest);
 	else
 		TCU_THROW(NotSupportedError, "Compatible memory type not found");
-
-	// Verify image format properties before proceeding.
-	verifyFormatProperties(m_testParams.m_format, tiling, usageFlags);
 
 	VK_CHECK(m_vkd.bindImageMemory(m_device, *m_image, *m_deviceMemoryAllocatedFromHostPointer, (m_testParams.m_useOffset ? imageMemoryRequirements.alignment : 0)));
 
@@ -780,9 +767,11 @@ void ExternalMemoryHostRenderImageTestInstance::verifyFormatProperties (VkFormat
 		vk::VkImageFormatProperties()
 	};
 
-	// Memory type bits have been verified to be compatible previously. The call below should not fail.
-	VK_CHECK(m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(m_context.getPhysicalDevice(), &formatInfo, &formatProperties));
+	const auto result = m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(m_context.getPhysicalDevice(), &formatInfo, &formatProperties);
+	if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+		TCU_THROW(NotSupportedError, "Image format not supported for external host memory");
 
+	VK_CHECK(result);
 	checkExternalMemoryProperties(externalProperties.externalMemoryProperties);
 }
 
