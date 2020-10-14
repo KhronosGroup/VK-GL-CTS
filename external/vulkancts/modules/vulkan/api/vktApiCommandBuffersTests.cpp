@@ -40,6 +40,7 @@
 #include "vktApiBufferComputeInstance.hpp"
 #include "vktApiComputeInstanceResultBuffer.hpp"
 #include "deSharedPtr.hpp"
+#include "deRandom.hpp"
 #include <sstream>
 
 namespace vkt
@@ -2114,6 +2115,191 @@ tcu::TestStatus simultaneousUseSecondaryBufferOnePrimaryBufferTest(Context& cont
 		return tcu::TestStatus::fail("Simultaneous Secondary Command Buffer Execution FAILED");
 }
 
+enum class BadInheritanceInfoCase
+{
+	RANDOM_PTR = 0,
+	RANDOM_PTR_CONTINUATION,
+	RANDOM_DATA_PTR,
+	INVALID_STRUCTURE_TYPE,
+	VALID_NONSENSE_TYPE,
+};
+
+tcu::TestStatus badInheritanceInfoTest (Context& context, BadInheritanceInfoCase testCase)
+{
+	const auto&							vkd					= context.getDeviceInterface();
+	const auto							device				= context.getDevice();
+	const auto							queue				= context.getUniversalQueue();
+	const auto							queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	auto&								allocator			= context.getDefaultAllocator();
+	const ComputeInstanceResultBuffer	result				(vkd, device, allocator, 0.0f);
+
+	// Command pool and command buffer.
+	const auto							cmdPool			= makeCommandPool(vkd, device, queueFamilyIndex);
+	const auto							cmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto							cmdBuffer		= cmdBufferPtr.get();
+
+	// Buffers, descriptor set layouts and descriptor sets.
+	const deUint32							offset			= 0u;
+	const deUint32							addressableSize	= 256u;
+	const deUint32							dataSize		= 8u;
+
+	// The uniform buffer will not be used by the shader but is needed by auxiliar functions here.
+	de::MovePtr<Allocation>					bufferMem;
+	const Unique<VkBuffer>					buffer(createDataBuffer(context, offset, addressableSize, 0x00, dataSize, 0x5A, &bufferMem));
+
+	const Unique<VkDescriptorSetLayout>		descriptorSetLayout	(createDescriptorSetLayout(context));
+	const Unique<VkDescriptorPool>			descriptorPool		(createDescriptorPool(context));
+	const Unique<VkDescriptorSet>			descriptorSet		(createDescriptorSet(context, *descriptorPool, *descriptorSetLayout, *buffer, offset, result.getBuffer()));
+	const VkDescriptorSet					descriptorSets[]	= { *descriptorSet };
+	const int								numDescriptorSets	= DE_LENGTH_OF_ARRAY(descriptorSets);
+
+	// Pipeline layout.
+	const auto								pipelineLayout		= makePipelineLayout(vkd, device, descriptorSetLayout.get());
+
+	// Compute shader module.
+	const Unique<VkShaderModule>			computeModule		(createShaderModule(vkd, device, context.getBinaryCollection().get("compute_increment"), (VkShaderModuleCreateFlags)0u));
+
+	const VkPipelineShaderStageCreateInfo	shaderCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		DE_NULL,
+		(VkPipelineShaderStageCreateFlags)0,
+		VK_SHADER_STAGE_COMPUTE_BIT,								// stage
+		*computeModule,												// shader
+		"main",
+		DE_NULL,													// pSpecializationInfo
+	};
+
+	const VkComputePipelineCreateInfo		pipelineCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+		DE_NULL,
+		0u,															// flags
+		shaderCreateInfo,											// cs
+		*pipelineLayout,											// layout
+		(vk::VkPipeline)0,											// basePipelineHandle
+		0u,															// basePipelineIndex
+	};
+
+	const Unique<VkPipeline>				pipeline			(createComputePipeline(vkd, device, (VkPipelineCache)0u, &pipelineCreateInfo));
+
+	// Compute to host barrier to read result.
+	const VkBufferMemoryBarrier				bufferBarrier		=
+	{
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,					// sType
+		DE_NULL,													// pNext
+		VK_ACCESS_SHADER_WRITE_BIT,									// srcAccessMask
+		VK_ACCESS_HOST_READ_BIT,									// dstAccessMask
+		VK_QUEUE_FAMILY_IGNORED,									// srcQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,									// destQueueFamilyIndex
+		*buffer,													// buffer
+		(VkDeviceSize)0u,											// offset
+		(VkDeviceSize)VK_WHOLE_SIZE,								// size
+	};
+
+	// Record command buffer and submit it.
+	VkCommandBufferBeginInfo				beginInfo			=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	//	VkStructureType							sType;
+		nullptr,										//	const void*								pNext;
+		0u,												//	VkCommandBufferUsageFlags				flags;
+		nullptr,										//	const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
+	};
+
+	// Structures used in different test types.
+	VkCommandBufferInheritanceInfo			inheritanceInfo;
+	VkBufferCreateInfo						validNonsenseStructure;
+	struct
+	{
+		VkStructureType	sType;
+		void*			pNext;
+	} invalidStructure;
+
+	if (testCase == BadInheritanceInfoCase::RANDOM_PTR || testCase == BadInheritanceInfoCase::RANDOM_PTR_CONTINUATION)
+	{
+		de::Random						rnd		(1602600778u);
+		VkCommandBufferInheritanceInfo*	info;
+		auto							ptrData	= reinterpret_cast<deUint8*>(&info);
+
+		// Fill pointer value with pseudorandom garbage.
+		for (size_t i = 0; i < sizeof(info); ++i)
+			*ptrData++ = rnd.getUint8();
+
+		beginInfo.pInheritanceInfo = info;
+
+		// Try to trick the implementation into reading pInheritanceInfo one more way.
+		if (testCase == BadInheritanceInfoCase::RANDOM_PTR_CONTINUATION)
+			beginInfo.flags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+	}
+	else if (testCase == BadInheritanceInfoCase::RANDOM_DATA_PTR)
+	{
+		de::Random		rnd	(1602601141u);
+		auto			itr	= reinterpret_cast<deUint8*>(&inheritanceInfo);
+
+		// Fill inheritance info data structure with random data.
+		for (size_t i = 0; i < sizeof(inheritanceInfo); ++i)
+			*itr++ = rnd.getUint8();
+
+		beginInfo.pInheritanceInfo = &inheritanceInfo;
+	}
+	else if (testCase == BadInheritanceInfoCase::INVALID_STRUCTURE_TYPE)
+	{
+		de::Random	rnd			(1602658515u);
+		auto		ptrData		= reinterpret_cast<deUint8*>(&(invalidStructure.pNext));
+		invalidStructure.sType	= VK_STRUCTURE_TYPE_MAX_ENUM;
+
+		// Fill pNext pointer with random data.
+		for (size_t i = 0; i < sizeof(invalidStructure.pNext); ++i)
+			*ptrData++ = rnd.getUint8();
+
+		beginInfo.pInheritanceInfo = reinterpret_cast<VkCommandBufferInheritanceInfo*>(&invalidStructure);
+	}
+	else if (testCase == BadInheritanceInfoCase::VALID_NONSENSE_TYPE)
+	{
+		validNonsenseStructure.sType					= VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		validNonsenseStructure.pNext					= nullptr;
+		validNonsenseStructure.flags					= 0u;
+		validNonsenseStructure.size						= 1024u;
+		validNonsenseStructure.usage					= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		validNonsenseStructure.sharingMode				= VK_SHARING_MODE_EXCLUSIVE;
+		validNonsenseStructure.queueFamilyIndexCount	= 0u;
+		validNonsenseStructure.pQueueFamilyIndices		= nullptr;
+
+		beginInfo.pInheritanceInfo						= reinterpret_cast<VkCommandBufferInheritanceInfo*>(&validNonsenseStructure);
+	}
+	else
+	{
+		DE_ASSERT(false);
+	}
+
+	VK_CHECK(vkd.beginCommandBuffer(cmdBuffer, &beginInfo));
+	{
+		vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+		vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, numDescriptorSets, descriptorSets, 0, 0);
+		vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+		vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0,
+							   0, (const VkMemoryBarrier*)DE_NULL,
+							   1, &bufferBarrier,
+							   0, (const VkImageMemoryBarrier*)DE_NULL);
+	}
+	endCommandBuffer(vkd, cmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	deUint32 resultCount;
+	result.readResultContentsTo(&resultCount);
+
+	// Make sure the command buffer was run.
+	if (resultCount != 1u)
+	{
+		std::ostringstream msg;
+		msg << "Invalid value found in results buffer (expected value 1u but found " << resultCount << ")";
+		return tcu::TestStatus::fail(msg.str());
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 tcu::TestStatus simultaneousUseSecondaryBufferTwoPrimaryBuffersTest(Context& context)
 {
 	const VkDevice							vkDevice = context.getDevice();
@@ -3953,6 +4139,12 @@ void genComputeIncrementSource (SourceCollections& programCollection)
 	programCollection.glslSources.add("compute_increment") << glu::ComputeSource(bufIncrement.str());
 }
 
+void genComputeIncrementSourceBadInheritance (SourceCollections& programCollection, BadInheritanceInfoCase testCase)
+{
+	DE_UNREF(testCase);
+	return genComputeIncrementSource(programCollection);
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
@@ -3995,6 +4187,11 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 	addFunctionCase				(commandBuffersTests.get(), "record_query_precise_w_flag",		"",	recordBufferQueryPreciseWithFlagTest);
 	addFunctionCase				(commandBuffersTests.get(), "record_query_imprecise_w_flag",	"",	recordBufferQueryImpreciseWithFlagTest);
 	addFunctionCase				(commandBuffersTests.get(), "record_query_imprecise_wo_flag",	"",	recordBufferQueryImpreciseWithoutFlagTest);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_random",		"", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::RANDOM_PTR);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_random_cont",	"", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::RANDOM_PTR_CONTINUATION);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_random_data",	"", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::RANDOM_DATA_PTR);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_invalid_type", "", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::INVALID_STRUCTURE_TYPE);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_valid_nonsense_type", "", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::VALID_NONSENSE_TYPE);
 	/* 19.4. Command Buffer Submission (5.4 in VK 1.0 Spec) */
 	addFunctionCase				(commandBuffersTests.get(), "submit_count_non_zero",			"", submitBufferCountNonZero);
 	addFunctionCase				(commandBuffersTests.get(), "submit_count_equal_zero",			"", submitBufferCountEqualZero);
