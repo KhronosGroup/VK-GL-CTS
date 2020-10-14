@@ -7020,6 +7020,8 @@ void addBlittingImageSimpleTests (tcu::TestCaseGroup* group, TestParams& params)
 	}
 
 	// Filter is VK_FILTER_CUBIC_EXT.
+	// Cubic filtering can only be used with 2D images.
+	if (params.dst.image.imageType == VK_IMAGE_TYPE_2D)
 	{
 		params.filter					= VK_FILTER_CUBIC_EXT;
 		const std::string description	= "Cubic filter";
