@@ -369,17 +369,96 @@ SpvAsmComputeShaderCase::SpvAsmComputeShaderCase (tcu::TestContext& testCtx, con
 {
 }
 
+void SpvAsmComputeShaderCase::checkSupport(Context& context) const
+{
+	if (getMinRequiredVulkanVersion(m_shaderSpec.spirvVersion) > context.getUsedApiVersion())
+	{
+		TCU_THROW(NotSupportedError, std::string("Vulkan higher than or equal to " + getVulkanName(getMinRequiredVulkanVersion(m_shaderSpec.spirvVersion)) + " is required for this test to run").c_str());
+	}
+
+	// Check all required extensions are supported
+	for (const auto& ext : m_shaderSpec.extensions)
+		context.requireDeviceFunctionality(ext);
+
+	// Core features
+	{
+		const char*						unsupportedFeature = DE_NULL;
+		vk::VkPhysicalDeviceFeatures	localRequiredCoreFeatures = m_shaderSpec.requestedVulkanFeatures.coreFeatures;
+
+		// Skip check features not targeted to compute
+		localRequiredCoreFeatures.fullDrawIndexUint32						= DE_FALSE;
+		localRequiredCoreFeatures.independentBlend							= DE_FALSE;
+		localRequiredCoreFeatures.geometryShader							= DE_FALSE;
+		localRequiredCoreFeatures.tessellationShader						= DE_FALSE;
+		localRequiredCoreFeatures.sampleRateShading							= DE_FALSE;
+		localRequiredCoreFeatures.dualSrcBlend								= DE_FALSE;
+		localRequiredCoreFeatures.logicOp									= DE_FALSE;
+		localRequiredCoreFeatures.multiDrawIndirect							= DE_FALSE;
+		localRequiredCoreFeatures.drawIndirectFirstInstance					= DE_FALSE;
+		localRequiredCoreFeatures.depthClamp								= DE_FALSE;
+		localRequiredCoreFeatures.depthBiasClamp							= DE_FALSE;
+		localRequiredCoreFeatures.fillModeNonSolid							= DE_FALSE;
+		localRequiredCoreFeatures.depthBounds								= DE_FALSE;
+		localRequiredCoreFeatures.wideLines									= DE_FALSE;
+		localRequiredCoreFeatures.largePoints								= DE_FALSE;
+		localRequiredCoreFeatures.alphaToOne								= DE_FALSE;
+		localRequiredCoreFeatures.multiViewport								= DE_FALSE;
+		localRequiredCoreFeatures.occlusionQueryPrecise						= DE_FALSE;
+		localRequiredCoreFeatures.vertexPipelineStoresAndAtomics			= DE_FALSE;
+		localRequiredCoreFeatures.fragmentStoresAndAtomics					= DE_FALSE;
+		localRequiredCoreFeatures.shaderTessellationAndGeometryPointSize	= DE_FALSE;
+		localRequiredCoreFeatures.shaderClipDistance						= DE_FALSE;
+		localRequiredCoreFeatures.shaderCullDistance						= DE_FALSE;
+		localRequiredCoreFeatures.sparseBinding								= DE_FALSE;
+		localRequiredCoreFeatures.variableMultisampleRate					= DE_FALSE;
+
+		if (!isCoreFeaturesSupported(context, localRequiredCoreFeatures, &unsupportedFeature))
+			TCU_THROW(NotSupportedError, std::string("At least following requested core feature is not supported: ") + unsupportedFeature);
+	}
+
+	// Extension features
+	{
+		// 8bit storage features
+		if (!is8BitStorageFeaturesSupported(context, m_shaderSpec.requestedVulkanFeatures.ext8BitStorage))
+			TCU_THROW(NotSupportedError, "Requested 8bit storage features not supported");
+
+		// 16bit storage features
+		if (!is16BitStorageFeaturesSupported(context, m_shaderSpec.requestedVulkanFeatures.ext16BitStorage))
+			TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
+
+		// VariablePointers features
+		if (!isVariablePointersFeaturesSupported(context, m_shaderSpec.requestedVulkanFeatures.extVariablePointers))
+			TCU_THROW(NotSupportedError, "Requested Variable Pointer feature not supported");
+
+		// Float16/Int8 shader features
+		if (!isFloat16Int8FeaturesSupported(context, m_shaderSpec.requestedVulkanFeatures.extFloat16Int8))
+			TCU_THROW(NotSupportedError, "Requested 16bit float or 8bit int feature not supported");
+
+		// Vulkan Memory Model features
+		if (!isVulkanMemoryModelFeaturesSupported(context, m_shaderSpec.requestedVulkanFeatures.extVulkanMemoryModel))
+			TCU_THROW(NotSupportedError, "Requested Vulkan Memory Model feature not supported");
+
+		// FloatControls features
+		if (!isFloatControlsFeaturesSupported(context, m_shaderSpec.requestedVulkanFeatures.floatControlsProperties))
+			TCU_THROW(NotSupportedError, "Requested Float Controls features not supported");
+
+		if (m_shaderSpec.usesPhysStorageBuffer && !context.isBufferDeviceAddressSupported())
+			TCU_THROW(NotSupportedError, "Request physical storage buffer feature not supported");
+	}
+}
+
 void SpvAsmComputeShaderCase::initPrograms (SourceCollections& programCollection) const
 {
-	programCollection.spirvAsmSources.add("compute") << m_shaderSpec.assembly.c_str() << SpirVAsmBuildOptions(programCollection.usedVulkanVersion, m_shaderSpec.spirvVersion);
+	const auto&	extensions		= m_shaderSpec.extensions;
+	const bool	allowSpirv14	= (std::find(extensions.begin(), extensions.end(), "VK_KHR_spirv_1_4") != extensions.end());
+
+	programCollection.spirvAsmSources.add("compute")
+		<< m_shaderSpec.assembly.c_str()
+		<< SpirVAsmBuildOptions(programCollection.usedVulkanVersion, m_shaderSpec.spirvVersion, allowSpirv14);
 }
 
 TestInstance* SpvAsmComputeShaderCase::createInstance (Context& ctx) const
 {
-	if (getMinRequiredVulkanVersion(m_shaderSpec.spirvVersion) > ctx.getUsedApiVersion())
-	{
-		TCU_THROW(NotSupportedError, std::string("Vulkan higher than or equal to " + getVulkanName(getMinRequiredVulkanVersion(m_shaderSpec.spirvVersion)) + " is required for this test to run").c_str());
-	}
 	return new SpvAsmComputeShaderInstance(ctx, m_shaderSpec);
 }
 
@@ -421,86 +500,6 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	vector<VkDescriptorBufferInfo>		descriptorInfos;
 	vector<VkDescriptorImageInfo>		descriptorImageInfos;
 	vector<VkDescriptorType>			descriptorTypes;
-
-	// Check all required extensions are supported
-	for (const auto& ext : m_shaderSpec.extensions)
-		m_context.requireDeviceFunctionality(ext);
-
-	// Core features
-	{
-		const char*						unsupportedFeature			= DE_NULL;
-		vk::VkPhysicalDeviceFeatures	localRequiredCoreFeatures	= m_shaderSpec.requestedVulkanFeatures.coreFeatures;
-
-		// Skip check features not targeted to compute
-		localRequiredCoreFeatures.fullDrawIndexUint32						= DE_FALSE;
-		localRequiredCoreFeatures.independentBlend							= DE_FALSE;
-		localRequiredCoreFeatures.geometryShader							= DE_FALSE;
-		localRequiredCoreFeatures.tessellationShader						= DE_FALSE;
-		localRequiredCoreFeatures.sampleRateShading							= DE_FALSE;
-		localRequiredCoreFeatures.dualSrcBlend								= DE_FALSE;
-		localRequiredCoreFeatures.logicOp									= DE_FALSE;
-		localRequiredCoreFeatures.multiDrawIndirect							= DE_FALSE;
-		localRequiredCoreFeatures.drawIndirectFirstInstance					= DE_FALSE;
-		localRequiredCoreFeatures.depthClamp								= DE_FALSE;
-		localRequiredCoreFeatures.depthBiasClamp							= DE_FALSE;
-		localRequiredCoreFeatures.fillModeNonSolid							= DE_FALSE;
-		localRequiredCoreFeatures.depthBounds								= DE_FALSE;
-		localRequiredCoreFeatures.wideLines									= DE_FALSE;
-		localRequiredCoreFeatures.largePoints								= DE_FALSE;
-		localRequiredCoreFeatures.alphaToOne								= DE_FALSE;
-		localRequiredCoreFeatures.multiViewport								= DE_FALSE;
-		localRequiredCoreFeatures.occlusionQueryPrecise						= DE_FALSE;
-		localRequiredCoreFeatures.vertexPipelineStoresAndAtomics			= DE_FALSE;
-		localRequiredCoreFeatures.fragmentStoresAndAtomics					= DE_FALSE;
-		localRequiredCoreFeatures.shaderTessellationAndGeometryPointSize	= DE_FALSE;
-		localRequiredCoreFeatures.shaderClipDistance						= DE_FALSE;
-		localRequiredCoreFeatures.shaderCullDistance						= DE_FALSE;
-		localRequiredCoreFeatures.sparseBinding								= DE_FALSE;
-		localRequiredCoreFeatures.variableMultisampleRate					= DE_FALSE;
-
-		if (!isCoreFeaturesSupported(m_context, localRequiredCoreFeatures, &unsupportedFeature))
-			TCU_THROW(NotSupportedError, std::string("At least following requested core feature is not supported: ") + unsupportedFeature);
-	}
-
-	// Extension features
-	{
-		// 8bit storage features
-		{
-			if (!is8BitStorageFeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.ext8BitStorage))
-				TCU_THROW(NotSupportedError, "Requested 8bit storage features not supported");
-		}
-
-		// 16bit storage features
-		{
-			if (!is16BitStorageFeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.ext16BitStorage))
-				TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
-		}
-
-		// VariablePointers features
-		{
-			if (!isVariablePointersFeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.extVariablePointers))
-				TCU_THROW(NotSupportedError, "Requested Variable Pointer feature not supported");
-		}
-
-		// Float16/Int8 shader features
-		{
-			if (!isFloat16Int8FeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.extFloat16Int8))
-				TCU_THROW(NotSupportedError, "Requested 16bit float or 8bit int feature not supported");
-		}
-
-		// Vulkan Memory Model features
-		{
-			if (!isVulkanMemoryModelFeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.extVulkanMemoryModel))
-				TCU_THROW(NotSupportedError, "Requested Vulkan Memory Model feature not supported");
-		}
-
-		// FloatControls features
-		if (!isFloatControlsFeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.floatControlsProperties))
-			TCU_THROW(NotSupportedError, "Requested Float Controls features not supported");
-
-		if (m_shaderSpec.usesPhysStorageBuffer && !m_context.isBufferDeviceAddressSupported())
-			TCU_THROW(NotSupportedError, "Request physical storage buffer feature not supported");
-	}
 
 	DE_ASSERT(!m_shaderSpec.outputs.empty());
 

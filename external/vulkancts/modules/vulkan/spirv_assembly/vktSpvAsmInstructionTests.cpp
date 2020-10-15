@@ -63,6 +63,7 @@
 #include "vktSpvAsmComputeShaderTestUtil.hpp"
 #include "vktSpvAsmFloatControlsTests.hpp"
 #include "vktSpvAsmFromHlslTests.hpp"
+#include "vktSpvAsmEmptyStructTests.hpp"
 #include "vktSpvAsmGraphicsShaderTestUtil.hpp"
 #include "vktSpvAsmVariablePointersTests.hpp"
 #include "vktSpvAsmVariableInitTests.hpp"
@@ -20469,6 +20470,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createPtrAccessChainGroup(testCtx));
 	computeTests->addChild(createVectorShuffleGroup(testCtx));
 	computeTests->addChild(createHlslComputeGroup(testCtx));
+	computeTests->addChild(createEmptyStructComputeGroup(testCtx));
 	computeTests->addChild(create64bitCompareComputeGroup(testCtx));
 	computeTests->addChild(createOpArrayLengthComputeGroup(testCtx));
 
