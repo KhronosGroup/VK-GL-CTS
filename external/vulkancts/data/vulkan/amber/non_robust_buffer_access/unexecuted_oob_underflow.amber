@@ -1,0 +1,105 @@
+#!amber
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Overview of the test:
+#   data_out array composed of values read from two input arrays of half
+#   it's size, executed in 4 work groups, result equal to:
+#     data_out[2 * i    ] = data_in0[i]
+#     data_out[2 * i + 1] = data_in1[i]
+#
+#   data_in2 is used for condition and condition_index increment to avoid
+#   optimizing away the loop:
+#     data_in2 = (cond0, inc0, cond1, inc1, ... condN, incN)
+#
+#   Each iteration of the for-loop uses alternating (if-else) path while
+#   still always accessing and modifying the same index value (but
+#   swapping between used index variables), equivalent to:
+#     if (i % 2 == 0)
+#       data_out[base + index_out++] = data_in0[base + index_in  ]
+#     else
+#       data_out[base + index_out++] = data_in1[base + index_in++]
+#
+#   The unexecuted if-else path accesses out of bounds or overlapping
+#   with valid result indices.
+SHADER compute test_underflow GLSL
+#version 430
+
+layout(local_size_x = 4, local_size_y = 1, local_size_z = 1) in;
+layout(set = 0, binding = 0) readonly buffer In0 { int data_in0[512]; };
+layout(set = 0, binding = 1) readonly buffer In1 { int data_in1[512]; };
+layout(set = 0, binding = 2) readonly buffer In2 { int data_in2[8]; };
+layout(set = 0, binding = 3) writeonly buffer Out0 { int data_out0[1024]; };
+
+void main()
+{
+	uint base_index_in = 128 * gl_WorkGroupID.x;
+	uint base_index_out = 256 * gl_WorkGroupID.x;
+	int index_in0 = 0;
+	int index_in1 = -128;
+	int index_out0 = 0;
+	int index_out1 = -128;
+	int condition_index = 0;
+	for(int i = 0; i < 256; ++i)
+	{
+		if (data_in2[condition_index] == 0)
+		{
+			data_out0[base_index_out + index_out0] = data_in0[base_index_in + index_in0];
+			++index_out0;
+			++index_in1;
+		}
+		else
+		{
+			data_out0[base_index_out + index_out1] = data_in1[base_index_in + index_in1];
+			++index_out1;
+			++index_in1;
+		}
+		condition_index += data_in2[condition_index + 1];
+		int temp0 = index_in0;
+		index_in0 = index_in1;
+		index_in1 = temp0;
+		int temp1 = index_out0;
+		index_out0 = index_out1;
+		index_out1 = temp1;
+	}
+}
+END
+
+BUFFER data_in0 DATA_TYPE int32 SIZE 512 SERIES_FROM 0 INC_BY 2
+BUFFER data_in1 DATA_TYPE int32 SIZE 512 SERIES_FROM 1 INC_BY 2
+BUFFER data_in2 DATA_TYPE int32 DATA
+  0
+  2
+  1
+  2
+  0
+  2
+  1
+  -6
+END
+BUFFER data_out DATA_TYPE int32 SIZE 1024 FILL -1
+
+BUFFER expected DATA_TYPE int32 SIZE 1024 SERIES_FROM 0 INC_BY 1
+
+PIPELINE compute pipeline
+	ATTACH test_underflow
+	BIND BUFFER data_in0 AS storage DESCRIPTOR_SET 0 BINDING 0
+	BIND BUFFER data_in1 AS storage DESCRIPTOR_SET 0 BINDING 1
+	BIND BUFFER data_in2 AS storage DESCRIPTOR_SET 0 BINDING 2
+	BIND BUFFER data_out AS storage DESCRIPTOR_SET 0 BINDING 3
+END
+
+RUN pipeline 4 1 1
+
+EXPECT data_out EQ_BUFFER expected
