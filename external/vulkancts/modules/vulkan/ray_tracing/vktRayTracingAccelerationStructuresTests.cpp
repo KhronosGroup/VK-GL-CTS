@@ -105,7 +105,19 @@ enum class EmptyAccelerationStructureCase
 	NO_PRIMITIVES_TOP		= 5,	// primitiveCount zero when building.
 };
 
+enum class InstanceCustomIndexCase
+{
+	NONE			= 0,
+	CLOSEST_HIT		= 1,
+	ANY_HIT			= 2,
+	INTERSECTION	= 3,
+};
+
 static const deUint32 RTAS_DEFAULT_SIZE = 8u;
+
+// Chosen to have the most significant bit set to 1 when represented using 24 bits.
+// This will make sure the instance custom index will not be sign-extended by mistake.
+constexpr deUint32 INSTANCE_CUSTOM_INDEX_BASE = 0x807f00u;
 
 struct TestParams;
 
@@ -158,6 +170,7 @@ struct TestParams
 	de::SharedPtr<TestConfiguration>		testConfiguration;
 	deUint32								workerThreadsCount;
 	EmptyAccelerationStructureCase			emptyASCase;
+	InstanceCustomIndexCase					instanceCustomIndexCase;
 };
 
 deUint32 getShaderGroupSize (const InstanceInterface&	vki,
@@ -364,6 +377,10 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > CheckerboardConfig
 		}
 
 		bottomLevelAccelerationStructure->addGeometry(geometry);
+
+		if (testParams.instanceCustomIndexCase == InstanceCustomIndexCase::ANY_HIT)
+			geometry->setGeometryFlags(VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
+
 		result.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
 	}
 	else // m_data.topTestType == TTT_IDENTICAL_INSTANCES
@@ -460,6 +477,10 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > CheckerboardConfig
 			}
 
 			bottomLevelAccelerationStructure->addGeometry(geometry);
+
+			if (testParams.instanceCustomIndexCase == InstanceCustomIndexCase::ANY_HIT)
+				geometry->setGeometryFlags(VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
+
 			result.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
 		}
 	}
@@ -498,7 +519,8 @@ de::MovePtr<TopLevelAccelerationStructure> CheckerboardConfiguration::initTopAcc
 					{ 0.0f, 0.0f, 1.0f, 0.0f },
 				}
 			};
-			result->addInstance(bottomLevelAccelerationStructures[0], transformMatrixKHR, 0u, 0xFFu, 0u, instanceFlags);
+			const deUint32 instanceCustomIndex = ((testParams.instanceCustomIndexCase != InstanceCustomIndexCase::NONE) ? (INSTANCE_CUSTOM_INDEX_BASE + x + y) : 0u);
+			result->addInstance(bottomLevelAccelerationStructures[0], transformMatrixKHR, instanceCustomIndex, 0xFFu, 0u, instanceFlags);
 		}
 	}
 	else // testParams.topTestType == TTT_IDENTICAL_INSTANCES
@@ -510,7 +532,8 @@ de::MovePtr<TopLevelAccelerationStructure> CheckerboardConfiguration::initTopAcc
 		{
 			if (((x + y) % 2) == 0)
 				continue;
-			result->addInstance(bottomLevelAccelerationStructures[currentInstanceIndex++], identityMatrix3x4, 0u, 0xFFu, 0u, instanceFlags);
+			const deUint32 instanceCustomIndex = ((testParams.instanceCustomIndexCase != InstanceCustomIndexCase::NONE) ? (INSTANCE_CUSTOM_INDEX_BASE + x + y) : 0u);
+			result->addInstance(bottomLevelAccelerationStructures[currentInstanceIndex++], identityMatrix3x4, instanceCustomIndex, 0xFFu, 0u, instanceFlags);
 		}
 	}
 
@@ -525,9 +548,13 @@ void CheckerboardConfiguration::initRayTracingShaders(de::MovePtr<RayTracingPipe
 	const DeviceInterface&						vkd						= context.getDeviceInterface();
 	const VkDevice								device					= context.getDevice();
 
+	const bool useAnyHit		= (testParams.instanceCustomIndexCase == InstanceCustomIndexCase::ANY_HIT);
+	const auto hitShaderStage	= (useAnyHit ? VK_SHADER_STAGE_ANY_HIT_BIT_KHR : VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+	const auto hitShaderName	= (useAnyHit ? "ahit" : "chit");
+
 	rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,		createShaderModule(vkd, device, context.getBinaryCollection().get("rgen"),  0), 0);
-	rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,	createShaderModule(vkd, device, context.getBinaryCollection().get("chit"),  0), 1);
-	rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,	createShaderModule(vkd, device, context.getBinaryCollection().get("chit"),  0), 2);
+	rayTracingPipeline->addShader(hitShaderStage,						createShaderModule(vkd, device, context.getBinaryCollection().get(hitShaderName),  0), 1);
+	rayTracingPipeline->addShader(hitShaderStage,						createShaderModule(vkd, device, context.getBinaryCollection().get(hitShaderName),  0), 2);
 	if (testParams.bottomTestType == BTT_AABBS)
 		rayTracingPipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR,	createShaderModule(vkd, device, context.getBinaryCollection().get("isect"), 0), 2);
 	rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR,			createShaderModule(vkd, device, context.getBinaryCollection().get("miss"),  0), 3);
@@ -561,17 +588,21 @@ bool CheckerboardConfiguration::verifyImage(BufferWithMemory* resultBuffer, Cont
 	DE_ASSERT(testParams.emptyASCase == EmptyAccelerationStructureCase::NOT_EMPTY);
 
 	DE_UNREF(context);
-	const deUint32*						bufferPtr	= (deUint32*)resultBuffer->getAllocation().getHostPtr();
-	deUint32							pos			= 0;
-	deUint32							failures	= 0;
+	const auto*						bufferPtr	= (deInt32*)resultBuffer->getAllocation().getHostPtr();
+	deUint32						pos			= 0;
+	deUint32						failures	= 0;
 
 	// verify results - each test case should generate checkerboard pattern
 	for (deUint32 y = 0; y < testParams.height; ++y)
 	for (deUint32 x = 0; x < testParams.width; ++x)
 	{
-		deUint32 expectedResult = ((x + y) % 2) ? 2 : 1;
+		// The hit value should match the shader code.
+		const deInt32 hitValue			= ((testParams.instanceCustomIndexCase != InstanceCustomIndexCase::NONE) ? static_cast<deInt32>(INSTANCE_CUSTOM_INDEX_BASE + x + y) : 2);
+		const deInt32 expectedResult	= ((x + y) % 2) ? hitValue : 1;
+
 		if (bufferPtr[pos] != expectedResult)
 			failures++;
+
 		++pos;
 	}
 	return failures == 0;
@@ -579,7 +610,7 @@ bool CheckerboardConfiguration::verifyImage(BufferWithMemory* resultBuffer, Cont
 
 VkFormat CheckerboardConfiguration::getResultImageFormat()
 {
-	return VK_FORMAT_R32_UINT;
+	return VK_FORMAT_R32_SINT;
 }
 
 size_t CheckerboardConfiguration::getResultImageFormatSize()
@@ -642,6 +673,10 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > SingleTriangleConf
 																															 TestParams&		testParams)
 {
 	DE_UNREF(context);
+
+	// No other cases supported for the single triangle configuration.
+	DE_ASSERT(testParams.instanceCustomIndexCase == InstanceCustomIndexCase::NONE);
+
 	std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >	result;
 
 	de::MovePtr<BottomLevelAccelerationStructure>	bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
@@ -679,6 +714,9 @@ de::MovePtr<TopLevelAccelerationStructure> SingleTriangleConfiguration::initTopA
 {
 	DE_UNREF(context);
 	DE_UNREF(testParams);
+
+	// Unsupported in this configuration.
+	DE_ASSERT(testParams.instanceCustomIndexCase == InstanceCustomIndexCase::NONE);
 
 	de::MovePtr<TopLevelAccelerationStructure>	result = makeTopLevelAccelerationStructure();
 	result->setInstanceCount(1u);
@@ -860,68 +898,135 @@ void RayTracingASBasicTestCase::checkSupport(Context& context) const
 
 void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollection) const
 {
-	const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+	bool storeInRGen = false;
+	bool storeInAHit = false;
+	bool storeInCHit = false;
+	bool storeInISec = false;
+
+	switch (m_data.instanceCustomIndexCase)
+	{
+	case InstanceCustomIndexCase::NONE:			storeInRGen = true;	break;
+	case InstanceCustomIndexCase::CLOSEST_HIT:	storeInCHit = true; break;
+	case InstanceCustomIndexCase::ANY_HIT:		storeInAHit = true;	break;
+	case InstanceCustomIndexCase::INTERSECTION:	storeInISec = true; break;
+	default: DE_ASSERT(false); break;
+	}
+
+	const std::string				imageDeclaration	= "layout(r32i, set = 0, binding = 0) uniform iimage2D result;\n";
+	const std::string				storeCustomIndex	= "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), ivec4(gl_InstanceCustomIndexEXT, 0, 0, 1));\n";
+	const vk::ShaderBuildOptions	buildOptions		(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
 	{
 		std::stringstream css;
-		css <<
-			"#version 460 core\n"
-			"#extension GL_EXT_ray_tracing : require\n"
-			"layout(location = 0) rayPayloadEXT uvec4 hitValue;\n"
-			"layout(r32ui, set = 0, binding = 0) uniform uimage2D result;\n"
-			"layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;\n"
-			"\n"
-			"void main()\n"
-			"{\n"
-			"  float tmin      = 0.0;\n"
-			"  float tmax      = 1.0;\n"
-			"  vec3  origin    = vec3(float(gl_LaunchIDEXT.x) + 0.5f, float(gl_LaunchIDEXT.y) + 0.5f, 0.5);\n"
-			"  vec3  direction = vec3(0.0,0.0,-1.0);\n"
-			"  hitValue        = uvec4(0,0,0,0);\n"
-			"  traceRayEXT(topLevelAS, " << ((m_data.cullFlags == InstanceCullFlags::NONE) ? "0" : "gl_RayFlagsCullBackFacingTrianglesEXT") << ", 0xFF, 0, 0, 0, origin, tmin, direction, tmax, 0);\n"
-			"  imageStore(result, ivec2(gl_LaunchIDEXT.xy), hitValue);\n"
-			"}\n";
+		css
+			<< "#version 460 core\n"
+			<< "#extension GL_EXT_ray_tracing : require\n"
+			<< "layout(location = 0) rayPayloadEXT ivec4 hitValue;\n";
+
+		if (storeInRGen)
+			css << imageDeclaration;
+
+		css
+			<< "layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;\n"
+			<< "\n"
+			<< "void main()\n"
+			<< "{\n"
+			<< "  float tmin      = 0.0;\n"
+			<< "  float tmax      = 1.0;\n"
+			<< "  vec3  origin    = vec3(float(gl_LaunchIDEXT.x) + 0.5f, float(gl_LaunchIDEXT.y) + 0.5f, 0.5);\n"
+			<< "  vec3  direction = vec3(0.0,0.0,-1.0);\n"
+			<< "  hitValue        = ivec4(0,0,0,0);\n"
+			<< "  traceRayEXT(topLevelAS, " << ((m_data.cullFlags == InstanceCullFlags::NONE) ? "0" : "gl_RayFlagsCullBackFacingTrianglesEXT") << ", 0xFF, 0, 0, 0, origin, tmin, direction, tmax, 0);\n";
+
+		if (storeInRGen)
+			css << "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), hitValue);\n";
+
+		css << "}\n";
+
 		programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
 		std::stringstream css;
-		css <<
-			"#version 460 core\n"
-			"#extension GL_EXT_ray_tracing : require\n"
-			"layout(location = 0) rayPayloadInEXT uvec4 hitValue;\n"
-			"void main()\n"
-			"{\n"
-			"  hitValue = uvec4(2,0,0,1);\n"
-			"}\n";
+		css
+			<< "#version 460 core\n"
+			<< "#extension GL_EXT_ray_tracing : require\n"
+			<< "layout(location = 0) rayPayloadInEXT ivec4 hitValue;\n";
+
+		if (storeInCHit)
+			css << imageDeclaration;
+
+		css
+			<< "void main()\n"
+			<< "{\n"
+			<< "  hitValue = ivec4(2,0,0,1);\n";
+
+		if (storeInCHit)
+			css << storeCustomIndex;
+
+		css << "}\n";
 
 		programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
+	if (storeInAHit)
 	{
 		std::stringstream css;
-		css <<
-			"#version 460 core\n"
-			"#extension GL_EXT_ray_tracing : require\n"
-			"hitAttributeEXT uvec4 hitAttribute;\n"
-			"void main()\n"
-			"{\n"
-			"  hitAttribute = uvec4(0,0,0,0);\n"
-			"  reportIntersectionEXT(0.5f, 0);\n"
-			"}\n";
+		css
+			<< "#version 460 core\n"
+			<< "#extension GL_EXT_ray_tracing : require\n"
+			<< imageDeclaration
+			<< "void main()\n"
+			<< "{\n"
+			<< storeCustomIndex
+			<< "}\n";
+
+		programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
+	}
+
+	{
+		std::stringstream css;
+		css
+			<< "#version 460 core\n"
+			<< "#extension GL_EXT_ray_tracing : require\n"
+			<< "hitAttributeEXT ivec4 hitAttribute;\n";
+
+		if (storeInISec)
+			css << imageDeclaration;
+
+		css
+			<< "void main()\n"
+			<< "{\n"
+			<< "  hitAttribute = ivec4(0,0,0,0);\n"
+			<< "  reportIntersectionEXT(0.5f, 0);\n";
+
+		if (storeInISec)
+			css << storeCustomIndex;
+
+		css << "}\n";
 
 		programCollection.glslSources.add("isect") << glu::IntersectionSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
 		std::stringstream css;
-		css <<
-			"#version 460 core\n"
-			"#extension GL_EXT_ray_tracing : require\n"
-			"layout(location = 0) rayPayloadInEXT uvec4 hitValue;\n"
-			"void main()\n"
-			"{\n"
-			"  hitValue = uvec4(1,0,0,1);\n"
-			"}\n";
+		css
+			<< "#version 460 core\n"
+			<< "#extension GL_EXT_ray_tracing : require\n"
+			<< "layout(location = 0) rayPayloadInEXT ivec4 hitValue;\n";
+
+		if (!storeInRGen)
+			css << imageDeclaration;
+
+		css
+			<< "void main()\n"
+			<< "{\n"
+			<< "  hitValue = ivec4(1,0,0,1);\n";
+
+		if (!storeInRGen)
+			css << "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), hitValue);\n";
+
+		css << "}\n";
 
 		programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
@@ -1904,6 +2009,7 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 											de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration()),
 											0u,
 											EmptyAccelerationStructureCase::NOT_EMPTY,
+											InstanceCustomIndexCase::NONE,
 										};
 										paddingGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), testName.c_str(), "", testParams));
 									}
@@ -2014,6 +2120,7 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 						de::SharedPtr<TestConfiguration>(new SingleTriangleConfiguration()),
 						0u,
 						EmptyAccelerationStructureCase::NOT_EMPTY,
+						InstanceCustomIndexCase::NONE,
 					};
 					paddingGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), indexFormats[indexFormatNdx].name, "", testParams));
 				}
@@ -2112,6 +2219,7 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 						de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration()),
 						workerThreads,
 						EmptyAccelerationStructureCase::NOT_EMPTY,
+						InstanceCustomIndexCase::NONE,
 					};
 					operationTargetGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), bottomTestTypes[testTypeNdx].name, "", testParams));
 				}
@@ -2183,6 +2291,7 @@ void addFuncArgTests (tcu::TestCaseGroup* group)
 			de::SharedPtr<TestConfiguration>(new SingleTriangleConfiguration()),
 			0u,
 			EmptyAccelerationStructureCase::NOT_EMPTY,
+			InstanceCustomIndexCase::NONE,
 		};
 
 		group->addChild(new RayTracingASFuncArgTestCase(ctx, buildTypes[buildTypeNdx].name, "", testParams));
@@ -2271,6 +2380,7 @@ void addInstanceTriangleCullingTests (tcu::TestCaseGroup* group)
 						de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration()),
 						0u,
 						EmptyAccelerationStructureCase::NOT_EMPTY,
+						InstanceCustomIndexCase::NONE,
 					};
 					indexTypeGroup->addChild(new RayTracingASBasicTestCase(ctx, testName.c_str(), "", testParams));
 				}
@@ -2299,9 +2409,9 @@ void addEmptyAccelerationStructureTests (tcu::TestCaseGroup* group)
 		std::string								name;
 	} indexFormats[] =
 	{
-		{ VK_INDEX_TYPE_NONE_KHR ,				"index_none"		},
-		{ VK_INDEX_TYPE_UINT16 ,				"index_uint16"	},
-		{ VK_INDEX_TYPE_UINT32 ,				"index_uint32"	},
+		{ VK_INDEX_TYPE_NONE_KHR,				"index_none"	},
+		{ VK_INDEX_TYPE_UINT16,					"index_uint16"	},
+		{ VK_INDEX_TYPE_UINT32,					"index_uint32"	},
 	};
 
 	const struct
@@ -2350,10 +2460,75 @@ void addEmptyAccelerationStructureTests (tcu::TestCaseGroup* group)
 					de::SharedPtr<TestConfiguration>(new SingleTriangleConfiguration()),
 					0u,
 					emptyCases[emptyCaseIdx].emptyASCase,
+					InstanceCustomIndexCase::NONE,
 				};
 				indexTypeGroup->addChild(new RayTracingASBasicTestCase(ctx, emptyCases[emptyCaseIdx].name.c_str(), "", testParams));
 			}
 			buildTypeGroup->addChild(indexTypeGroup.release());
+		}
+		group->addChild(buildTypeGroup.release());
+	}
+}
+
+void addInstanceIndexTests (tcu::TestCaseGroup* group)
+{
+	const struct
+	{
+		vk::VkAccelerationStructureBuildTypeKHR				buildType;
+		std::string											name;
+	} buildTypes[] =
+	{
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,	"cpu_built"	},
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu_built"	},
+	};
+
+	const struct
+	{
+		InstanceCustomIndexCase						customIndexCase;
+		std::string									name;
+	} customIndexCases[] =
+	{
+		{ InstanceCustomIndexCase::NONE,			"no_instance_index"	},
+		{ InstanceCustomIndexCase::ANY_HIT,			"ahit"				},
+		{ InstanceCustomIndexCase::CLOSEST_HIT,		"chit"				},
+		{ InstanceCustomIndexCase::INTERSECTION,	"isec"				},
+	};
+
+	auto& ctx = group->getTestContext();
+
+	for (int buildTypeIdx = 0; buildTypeIdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeIdx)
+	{
+		de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str(), ""));
+
+		for (int customIndexCaseIdx = 0; customIndexCaseIdx < DE_LENGTH_OF_ARRAY(customIndexCases); ++customIndexCaseIdx)
+		{
+			const auto&	idxCase				= customIndexCases[customIndexCaseIdx].customIndexCase;
+			const auto	bottomGeometryType	= ((idxCase == InstanceCustomIndexCase::INTERSECTION) ? BTT_AABBS : BTT_TRIANGLES);
+
+			TestParams testParams
+			{
+				buildTypes[buildTypeIdx].buildType,
+				VK_FORMAT_R32G32B32_SFLOAT,
+				false,
+				VK_INDEX_TYPE_NONE_KHR,
+				bottomGeometryType,
+				InstanceCullFlags::NONE,
+				false,
+				false,
+				TTT_IDENTICAL_INSTANCES,
+				false,
+				false,
+				VkBuildAccelerationStructureFlagsKHR(0u),
+				OT_NONE,
+				OP_NONE,
+				RTAS_DEFAULT_SIZE,
+				RTAS_DEFAULT_SIZE,
+				de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration()),
+				0u,
+				EmptyAccelerationStructureCase::NOT_EMPTY,
+				customIndexCases[customIndexCaseIdx].customIndexCase,
+			};
+			buildTypeGroup->addChild(new RayTracingASBasicTestCase(ctx, customIndexCases[customIndexCaseIdx].name.c_str(), "", testParams));
 		}
 		group->addChild(buildTypeGroup.release());
 	}
@@ -2370,6 +2545,7 @@ tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "function_argument", "Test using AS as function argument using both pointers and bare values", addFuncArgTests);
 	addTestGroup(group.get(), "instance_triangle_culling", "Test building AS with counterclockwise triangles and/or disabling face culling", addInstanceTriangleCullingTests);
 	addTestGroup(group.get(), "empty", "Test building empty acceleration structures using different methods", addEmptyAccelerationStructureTests);
+	addTestGroup(group.get(), "instance_index", "Test using different values for the instance index and checking them in shaders", addInstanceIndexTests);
 
 	return group.release();
 }
