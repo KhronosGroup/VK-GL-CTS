@@ -238,6 +238,9 @@ struct TestConfig
 	// Force inclusion of passthrough geometry shader or not.
 	bool						forceGeometryShader;
 
+	// Offset for the vertex buffer data.
+	vk::VkDeviceSize			vertexDataOffset;
+
 	// Static and dynamic pipeline configuration.
 	CullModeConfig				cullModeConfig;
 	FrontFaceConfig				frontFaceConfig;
@@ -266,6 +269,7 @@ struct TestConfig
 		, minDepthBounds				(0.0f)
 		, maxDepthBounds				(1.0f)
 		, forceGeometryShader			(false)
+		, vertexDataOffset				(0ull)
 		, cullModeConfig				(static_cast<vk::VkCullModeFlags>(vk::VK_CULL_MODE_NONE))
 		, frontFaceConfig				(vk::VK_FRONT_FACE_COUNTER_CLOCKWISE)
 		// By default we will use a triangle fan with 6 vertices that could be wrongly interpreted as a triangle list with 2 triangles.
@@ -623,12 +627,21 @@ void logErrors(tcu::TestLog& log, const std::string& setName, const std::string&
 		<< tcu::TestLog::EndImageSet;
 }
 
-void copyAndFlush(const vk::DeviceInterface& vkd, vk::VkDevice device, vk::BufferWithMemory& buffer, const void* src, size_t size)
+void fillWithZeros(vk::BufferWithMemory& buffer, size_t size)
 {
-	auto& alloc	= buffer.getAllocation();
-	void* dst	= alloc.getHostPtr();
+	auto&	alloc	= buffer.getAllocation();
+	auto	ptr		= reinterpret_cast<char*>(alloc.getHostPtr());
 
-	deMemcpy(dst, src, size);
+	deMemset(ptr, 0, size);
+	// Note: no flush.
+}
+
+void copyAndFlush(const vk::DeviceInterface& vkd, vk::VkDevice device, vk::BufferWithMemory& buffer, size_t offset, const void* src, size_t size)
+{
+	auto&	alloc	= buffer.getAllocation();
+	auto	dst		= reinterpret_cast<char*>(alloc.getHostPtr());
+
+	deMemcpy(dst + offset, src, size);
 	vk::flushAlloc(vkd, device, alloc);
 }
 
@@ -680,7 +693,7 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 
 // Bind the appropriate vertex buffer with a dynamic stride if the test configuration needs a dynamic stride.
 // Return true if the vertex buffer was bound.
-bool maybeBindVertexBufferDynStride(const TestConfig& testConfig, const vk::DeviceInterface& vkd, vk::VkCommandBuffer cmdBuffer, size_t meshIdx, vk::VkBuffer vertBuffer, vk::VkBuffer rvertBuffer, vk::VkDeviceSize vertBufferSize, vk::VkDeviceSize vertBufferOffset)
+bool maybeBindVertexBufferDynStride(const TestConfig& testConfig, const vk::DeviceInterface& vkd, vk::VkCommandBuffer cmdBuffer, size_t meshIdx, vk::VkBuffer vertBuffer, vk::VkBuffer rvertBuffer, vk::VkDeviceSize vertDataSize)
 {
 	if (testConfig.strideConfig.dynamicValue)
 	{
@@ -688,12 +701,13 @@ bool maybeBindVertexBufferDynStride(const TestConfig& testConfig, const vk::Devi
 		DE_UNREF(viewportVec); // For release builds.
 
 		// When dynamically setting the vertex buffer stride, we cannot bind the vertex buffer in advance for some sequence
-		// orderings when we have several viewports or meshes.
+		// orderings if we have several viewports or meshes.
 		DE_ASSERT((viewportVec.size() == 1u && testConfig.meshParams.size() == 1u)
 					|| testConfig.sequenceOrdering == SequenceOrdering::BEFORE_DRAW
 					|| testConfig.sequenceOrdering == SequenceOrdering::AFTER_PIPELINES);
 
-		vkd.cmdBindVertexBuffers2EXT(cmdBuffer, 0u, 1u, (testConfig.meshParams[meshIdx].reversed ? &rvertBuffer : &vertBuffer), &vertBufferOffset, &vertBufferSize, &testConfig.strideConfig.dynamicValue.get());
+		const auto strideValue = (testConfig.strideConfig.dynamicValue ? testConfig.strideConfig.dynamicValue.get() : testConfig.strideConfig.staticValue);
+		vkd.cmdBindVertexBuffers2EXT(cmdBuffer, 0u, 1u, (testConfig.meshParams[meshIdx].reversed ? &rvertBuffer : &vertBuffer), &testConfig.vertexDataOffset, &vertDataSize, &strideValue);
 		return true;
 	}
 
@@ -859,15 +873,22 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		}
 	}
 
-	const auto vertBufferSize = static_cast<vk::VkDeviceSize>(vertices.size() * sizeof(decltype(vertices)::value_type));
-	const auto vertBufferInfo = vk::makeBufferCreateInfo(vertBufferSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	const auto vertDataSize				= static_cast<vk::VkDeviceSize>(vertices.size() * sizeof(decltype(vertices)::value_type));
+	const auto vertBufferSize			= m_testConfig.vertexDataOffset + vertDataSize;
+	const auto vertBufferInfo			= vk::makeBufferCreateInfo(vertBufferSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 	vk::BufferWithMemory vertBuffer		(vkd, device, allocator, vertBufferInfo, vk::MemoryRequirement::HostVisible);
 	vk::BufferWithMemory rvertBuffer	(vkd, device, allocator, vertBufferInfo, vk::MemoryRequirement::HostVisible);
 
 	// Copy data to vertex buffers and flush allocations.
-	copyAndFlush(vkd, device, vertBuffer, vertices.data(), static_cast<size_t>(vertBufferSize));
-	copyAndFlush(vkd, device, rvertBuffer, reversedVertices.data(), static_cast<size_t>(vertBufferSize));
-	const vk::VkDeviceSize vertBufferOffset = 0ull;
+	{
+		const auto dataSize	= static_cast<size_t>(vertDataSize);
+		const auto offset	= static_cast<size_t>(m_testConfig.vertexDataOffset);
+		const auto bufSize	= static_cast<size_t>(vertBufferSize);
+		fillWithZeros(vertBuffer, bufSize);
+		fillWithZeros(rvertBuffer, bufSize);
+		copyAndFlush(vkd, device, vertBuffer, offset, vertices.data(), dataSize);
+		copyAndFlush(vkd, device, rvertBuffer, offset, reversedVertices.data(), dataSize);
+	}
 
 	// Descriptor set layout.
 	vk::DescriptorSetLayoutBuilder layoutBuilder;
@@ -1300,7 +1321,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		if (kSequenceOrdering == SequenceOrdering::CMD_BUFFER_START)
 		{
 			setDynamicStates(m_testConfig, vkd, cmdBuffer);
-			boundInAdvance = maybeBindVertexBufferDynStride(m_testConfig, vkd, cmdBuffer, 0u, vertBuffer.get(), rvertBuffer.get(), vertBufferSize, vertBufferOffset);
+			boundInAdvance = maybeBindVertexBufferDynStride(m_testConfig, vkd, cmdBuffer, 0u, vertBuffer.get(), rvertBuffer.get(), vertDataSize);
 		}
 
 		// Begin render pass.
@@ -1314,7 +1335,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			if (kSequenceOrdering == SequenceOrdering::BETWEEN_PIPELINES)
 			{
 				setDynamicStates(m_testConfig, vkd, cmdBuffer);
-				boundInAdvance = maybeBindVertexBufferDynStride(m_testConfig, vkd, cmdBuffer, 0u, vertBuffer.get(), rvertBuffer.get(), vertBufferSize, vertBufferOffset);
+				boundInAdvance = maybeBindVertexBufferDynStride(m_testConfig, vkd, cmdBuffer, 0u, vertBuffer.get(), rvertBuffer.get(), vertDataSize);
 			}
 
 			// Bind dynamic pipeline.
@@ -1331,7 +1352,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 				(kSequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC && iteration == 0u))
 			{
 				setDynamicStates(m_testConfig, vkd, cmdBuffer);
-				boundInAdvance = maybeBindVertexBufferDynStride(m_testConfig, vkd, cmdBuffer, 0u, vertBuffer.get(), rvertBuffer.get(), vertBufferSize, vertBufferOffset);
+				boundInAdvance = maybeBindVertexBufferDynStride(m_testConfig, vkd, cmdBuffer, 0u, vertBuffer.get(), rvertBuffer.get(), vertDataSize);
 			}
 
 			// Bind a static pipeline last if needed.
@@ -1366,12 +1387,12 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 					if (kSequenceOrdering == SequenceOrdering::BEFORE_DRAW || kSequenceOrdering == SequenceOrdering::AFTER_PIPELINES)
 					{
 						setDynamicStates(m_testConfig, vkd, cmdBuffer);
-						boundBeforeDraw = maybeBindVertexBufferDynStride(m_testConfig, vkd, cmdBuffer, meshIdx, vertBuffer.get(), rvertBuffer.get(), vertBufferSize, vertBufferOffset);
+						boundBeforeDraw = maybeBindVertexBufferDynStride(m_testConfig, vkd, cmdBuffer, meshIdx, vertBuffer.get(), rvertBuffer.get(), vertDataSize);
 					}
 
 					// Bind vertex buffer with static stride if needed and draw.
 					if (!(boundInAdvance || boundBeforeDraw))
-						vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, (m_testConfig.meshParams[meshIdx].reversed ? &rvertBuffer.get() : &vertBuffer.get()), &vertBufferOffset);
+						vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, (m_testConfig.meshParams[meshIdx].reversed ? &rvertBuffer.get() : &vertBuffer.get()), &m_testConfig.vertexDataOffset);
 
 					// Draw mesh.
 					vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);
@@ -1726,6 +1747,13 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			config.strideConfig.staticValue		= kCoordsSize;
 			config.strideConfig.dynamicValue	= kVertexStride;
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "stride", "Dynamically set stride", config));
+		}
+		{
+			TestConfig config(kOrdering);
+			config.strideConfig.staticValue		= kCoordsSize;
+			config.strideConfig.dynamicValue	= kVertexStride;
+			config.vertexDataOffset				= static_cast<vk::VkDeviceSize>(2 * sizeof(GeometryVertex));
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "stride_with_offset", "Dynamically set stride using a nonzero vertex data offset", config));
 		}
 
 		// Depth test enable.
