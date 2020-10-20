@@ -1720,10 +1720,10 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 		*m_source,									// VkImage					image;
 		{											// VkImageSubresourceRange	subresourceRange;
 			getAspectFlags(m_textureFormat),	// VkImageAspectFlags	aspectMask;
-			0u,								// deUint32				baseMipLevel;
-			1u,								// deUint32				mipLevels;
-			0u,								// deUint32				baseArraySlice;
-			1u								// deUint32				arraySize;
+			0u,									// deUint32				baseMipLevel;
+			1u,									// deUint32				mipLevels;
+			0u,									// deUint32				baseArraySlice;
+			getArraySize(m_params.src.image)	// deUint32				arraySize;
 		}
 	};
 
@@ -1834,17 +1834,18 @@ void CopyImageToBuffer::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess sr
 	if (!imageHeight)
 		imageHeight = region.bufferImageCopy.imageExtent.height;
 
-	const int			texelSize	= src.getFormat().getPixelSize();
-	const VkExtent3D	extent		= region.bufferImageCopy.imageExtent;
-	const VkOffset3D	srcOffset	= region.bufferImageCopy.imageOffset;
-	const int			texelOffset	= (int) region.bufferImageCopy.bufferOffset / texelSize;
+	const int			texelSize		= src.getFormat().getPixelSize();
+	const VkExtent3D	extent			= region.bufferImageCopy.imageExtent;
+	const VkOffset3D	srcOffset		= region.bufferImageCopy.imageOffset;
+	const int			texelOffset		= (int) region.bufferImageCopy.bufferOffset / texelSize;
+	const deUint32		baseArrayLayer	= region.bufferImageCopy.imageSubresource.baseArrayLayer;
 
 	for (deUint32 z = 0; z < extent.depth; z++)
 	{
 		for (deUint32 y = 0; y < extent.height; y++)
 		{
 			int									texelIndex		= texelOffset + (z * imageHeight + y) *	rowLength;
-			const tcu::ConstPixelBufferAccess	srcSubRegion	= tcu::getSubregion(src, srcOffset.x, srcOffset.y + y, srcOffset.z + z,
+			const tcu::ConstPixelBufferAccess	srcSubRegion	= tcu::getSubregion(src, srcOffset.x, srcOffset.y + y, srcOffset.z + z + baseArrayLayer,
 																					region.bufferImageCopy.imageExtent.width, 1, 1);
 			const tcu::PixelBufferAccess		dstSubRegion	= tcu::getSubregion(dst, texelIndex, 0, region.bufferImageCopy.imageExtent.width, 1);
 			tcu::copy(dstSubRegion, srcSubRegion);
@@ -1968,7 +1969,7 @@ tcu::TestStatus CopyBufferToImage::iterate (void)
 			0u,								// deUint32				baseMipLevel;
 			1u,								// deUint32				mipLevels;
 			0u,								// deUint32				baseArraySlice;
-			1u								// deUint32				arraySize;
+			getArraySize(m_params.dst.image)								// deUint32				arraySize;
 		}
 	};
 
@@ -2066,19 +2067,20 @@ void CopyBufferToImage::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess sr
 	if (!imageHeight)
 		imageHeight = region.bufferImageCopy.imageExtent.height;
 
-	const int			texelSize	= dst.getFormat().getPixelSize();
-	const VkExtent3D	extent		= region.bufferImageCopy.imageExtent;
-	const VkOffset3D	dstOffset	= region.bufferImageCopy.imageOffset;
-	const int			texelOffset	= (int) region.bufferImageCopy.bufferOffset / texelSize;
+	const int			texelSize		= dst.getFormat().getPixelSize();
+	const VkExtent3D	extent			= region.bufferImageCopy.imageExtent;
+	const VkOffset3D	dstOffset		= region.bufferImageCopy.imageOffset;
+	const int			texelOffset		= (int) region.bufferImageCopy.bufferOffset / texelSize;
+	const deUint32		baseArrayLayer	= region.bufferImageCopy.imageSubresource.baseArrayLayer;
 
 	for (deUint32 z = 0; z < extent.depth; z++)
 	{
 		for (deUint32 y = 0; y < extent.height; y++)
 		{
-			int									texelIndex		= texelOffset + (z * imageHeight + y) *	rowLength;
-			const tcu::ConstPixelBufferAccess	srcSubRegion	= tcu::getSubregion(src, texelIndex, 0, region.bufferImageCopy.imageExtent.width, 1);
-			const tcu::PixelBufferAccess		dstSubRegion	= tcu::getSubregion(dst, dstOffset.x, dstOffset.y + y, dstOffset.z + z,
-																					region.bufferImageCopy.imageExtent.width, 1, 1);
+			int texelIndex = texelOffset + (z * imageHeight + y) * rowLength;
+			const tcu::ConstPixelBufferAccess srcSubRegion = tcu::getSubregion(src, texelIndex, 0, region.bufferImageCopy.imageExtent.width, 1);
+			const tcu::PixelBufferAccess dstSubRegion = tcu::getSubregion(dst, dstOffset.x, dstOffset.y + y, dstOffset.z + z + baseArrayLayer,
+																		  region.bufferImageCopy.imageExtent.width, 1, 1);
 			tcu::copy(dstSubRegion, srcSubRegion);
 		}
 	}
@@ -7245,6 +7247,118 @@ void addImageToImageCubeTests (tcu::TestCaseGroup* group, AllocationKind allocat
 	}
 }
 
+void addImageToImageArrayTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+{
+	tcu::TestContext& testCtx	= group->getTestContext();
+
+	{
+		TestParams	paramsArrayToArray;
+		const deUint32	arrayLayers					= 16u;
+		paramsArrayToArray.src.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsArrayToArray.src.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsArrayToArray.src.image.extent			= defaultHalfExtent;
+		paramsArrayToArray.src.image.extent.depth	= arrayLayers;
+		paramsArrayToArray.src.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsArrayToArray.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		paramsArrayToArray.dst.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsArrayToArray.dst.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsArrayToArray.dst.image.extent			= defaultHalfExtent;
+		paramsArrayToArray.dst.image.extent.depth	= arrayLayers;
+		paramsArrayToArray.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsArrayToArray.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		paramsArrayToArray.allocationKind			= allocationKind;
+		paramsArrayToArray.extensionUse				= extensionUse;
+
+		for (deUint32 arrayLayersNdx = 0; arrayLayersNdx < arrayLayers; ++arrayLayersNdx)
+		{
+			const VkImageSubresourceLayers	sourceLayer	=
+					{
+							VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+							0u,							// deUint32				mipLevel;
+							arrayLayersNdx,				// deUint32				baseArrayLayer;
+							1u							// deUint32				layerCount;
+					};
+
+			const VkImageSubresourceLayers	destinationLayer =
+					{
+							VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+							0u,							// deUint32				mipLevel;
+							arrayLayersNdx,				// deUint32				baseArrayLayer;
+							1u							// deUint32				layerCount;
+					};
+
+			const VkImageCopy				testCopy =
+					{
+							sourceLayer,				// VkImageSubresourceLayers	srcSubresource;
+							{0, 0, 0},					// VkOffset3D				srcOffset;
+							destinationLayer,			// VkImageSubresourceLayers	dstSubresource;
+							{0, 0, 0},					// VkOffset3D				dstOffset;
+							defaultHalfExtent			// VkExtent3D				extent;
+					};
+
+			CopyRegion	imageCopy;
+			imageCopy.imageCopy	= testCopy;
+
+			paramsArrayToArray.regions.push_back(imageCopy);
+		}
+
+		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_array_layers", "copy 2d array image to 2d array image layer by layer", paramsArrayToArray));
+	}
+
+	{
+		TestParams	paramsArrayToArray;
+		const deUint32	arrayLayers						= 16u;
+		paramsArrayToArray.src.image.imageType			= VK_IMAGE_TYPE_2D;
+		paramsArrayToArray.src.image.format				= VK_FORMAT_R8G8B8A8_UINT;
+		paramsArrayToArray.src.image.extent				= defaultHalfExtent;
+		paramsArrayToArray.src.image.extent.depth		= arrayLayers;
+		paramsArrayToArray.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+		paramsArrayToArray.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		paramsArrayToArray.dst.image.imageType			= VK_IMAGE_TYPE_2D;
+		paramsArrayToArray.dst.image.format				= VK_FORMAT_R8G8B8A8_UINT;
+		paramsArrayToArray.dst.image.extent				= defaultHalfExtent;
+		paramsArrayToArray.dst.image.extent.depth		= arrayLayers;
+		paramsArrayToArray.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+		paramsArrayToArray.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		paramsArrayToArray.allocationKind				= allocationKind;
+		paramsArrayToArray.extensionUse					= extensionUse;
+
+		{
+			const VkImageSubresourceLayers sourceLayer =
+					{
+							VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
+							0u,								// deUint32				mipLevel;
+							0u,								// deUint32				baseArrayLayer;
+							arrayLayers						// deUint32				layerCount;
+					};
+
+			const VkImageSubresourceLayers destinationLayer =
+					{
+							VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
+							0u,								// deUint32				mipLevel;
+							0u,								// deUint32				baseArrayLayer;
+							arrayLayers						// deUint32				layerCount;
+					};
+
+			const VkImageCopy				testCopy =
+					{
+							sourceLayer,					// VkImageSubresourceLayers	srcSubresource;
+							{0, 0, 0},						// VkOffset3D				srcOffset;
+							destinationLayer,				// VkImageSubresourceLayers	dstSubresource;
+							{0, 0, 0},						// VkOffset3D				dstOffset;
+							defaultHalfExtent				// VkExtent3D				extent;
+					};
+
+			CopyRegion imageCopy;
+			imageCopy.imageCopy = testCopy;
+
+			paramsArrayToArray.regions.push_back(imageCopy);
+		}
+
+		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_array_whole", "copy 2d array image to 2d array image all at once", paramsArrayToArray));
+	}
+};
+
 void addImageToImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	addTestGroup(group, "simple_tests", "Copy from image to image simple tests", addImageToImageSimpleTests, allocationKind, extensionUse);
@@ -7252,6 +7366,7 @@ void addImageToImageTests (tcu::TestCaseGroup* group, AllocationKind allocationK
 	addTestGroup(group, "3d_images", "Coping operations on 3d images", addImageToImage3dImagesTests, allocationKind, extensionUse);
 	addTestGroup(group, "dimensions", "Copying operations on different image dimensions", addImageToImageDimensionsTests, allocationKind, extensionUse);
 	addTestGroup(group, "cube", "Coping operations on cube compatible images", addImageToImageCubeTests, allocationKind, extensionUse);
+	addTestGroup(group, "array", "Copying operations on array of images", addImageToImageArrayTests, allocationKind, extensionUse);
 }
 
 void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
@@ -7437,6 +7552,84 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.regions.push_back(copyRegion);
 
 		group->addChild(new CopyImageToBufferTestCase(testCtx, "tightly_sized_buffer_offset", "Copy from image to a buffer that is just large enough to contain the data", params));
+	}
+
+	{
+		TestParams				params;
+		deUint32				arrayLayers = 16u;
+		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
+		params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+		params.src.image.extent				= defaultHalfExtent;
+		params.src.image.extent.depth		= arrayLayers;
+		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		params.dst.buffer.size				= defaultHalfSize * defaultHalfSize * arrayLayers;
+		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
+
+		const int pixelSize	= tcu::getPixelSize(mapVkFormat(params.src.image.format));
+		for (deUint32 arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
+		{
+			const VkDeviceSize offset = defaultHalfSize * defaultHalfSize * pixelSize * arrayLayerNdx;
+			const VkBufferImageCopy bufferImageCopy =
+				{
+					offset,													// VkDeviceSize				bufferOffset;
+					0u,														// deUint32					bufferRowLength;
+					0u,														// deUint32					bufferImageHeight;
+					{
+						VK_IMAGE_ASPECT_COLOR_BIT,						// VkImageAspectFlags	aspectMask;
+						0u,												// deUint32				mipLevel;
+						arrayLayerNdx,									// deUint32				baseArrayLayer;
+						1u,												// deUint32				layerCount;
+					},														// VkImageSubresourceLayers	imageSubresource;
+					{0, 0, 0},												// VkOffset3D				imageOffset;
+					defaultHalfExtent										// VkExtent3D				imageExtent;
+				};
+			CopyRegion copyRegion;
+			copyRegion.bufferImageCopy = bufferImageCopy;
+
+			params.regions.push_back(copyRegion);
+		}
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "array", "Copy each layer from array to buffer", params));
+	}
+
+	{
+		TestParams				params;
+		deUint32				arrayLayers = 16u;
+		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
+		params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+		params.src.image.extent				= defaultHalfExtent;
+		params.src.image.extent.depth		= arrayLayers;
+		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		params.dst.buffer.size				= defaultHalfSize * defaultHalfSize * arrayLayers;
+		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
+
+		const int pixelSize	= tcu::getPixelSize(mapVkFormat(params.src.image.format));
+		for (deUint32 arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
+		{
+			const VkDeviceSize offset = defaultHalfSize * defaultHalfSize * pixelSize * arrayLayerNdx;
+			const VkBufferImageCopy bufferImageCopy =
+				{
+					offset,													// VkDeviceSize				bufferOffset;
+					defaultHalfSize,										// deUint32					bufferRowLength;
+					defaultHalfSize,										// deUint32					bufferImageHeight;
+					{
+						VK_IMAGE_ASPECT_COLOR_BIT,						// VkImageAspectFlags	aspectMask;
+						0u,												// deUint32				mipLevel;
+						arrayLayerNdx,									// deUint32				baseArrayLayer;
+						1u,												// deUint32				layerCount;
+					},														// VkImageSubresourceLayers	imageSubresource;
+					{0, 0, 0},												// VkOffset3D				imageOffset;
+					defaultHalfExtent										// VkExtent3D				imageExtent;
+				};
+			CopyRegion copyRegion;
+			copyRegion.bufferImageCopy = bufferImageCopy;
+
+			params.regions.push_back(copyRegion);
+		}
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "array_tightly_sized_buffer", "Copy each layer from array to tightly sized buffer", params));
 	}
 }
 
@@ -7704,7 +7897,7 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
-			defaultFourthSize + 1u,					// VkDeviceSize				bufferOffset;
+			defaultFourthSize + 1u,						// VkDeviceSize				bufferOffset;
 			defaultHalfSize + defaultFourthSize,		// deUint32					bufferRowLength;
 			defaultHalfSize + defaultFourthSize,		// deUint32					bufferImageHeight;
 			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
@@ -7773,6 +7966,84 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.regions.push_back(copyRegion);
 
 		group->addChild(new CopyBufferToImageTestCase(testCtx, "tightly_sized_buffer_offset", "Copy from buffer that is just large enough to contain the accessed elements", params));
+	}
+
+	{
+		TestParams				params;
+		deUint32				arrayLayers = 16u;
+		params.src.buffer.size				= defaultHalfSize * defaultHalfSize * arrayLayers;
+		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
+		params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+		params.dst.image.extent				= defaultHalfExtent;
+		params.dst.image.extent.depth		= arrayLayers;
+		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
+
+		const int pixelSize	= tcu::getPixelSize(mapVkFormat(params.dst.image.format));
+		for (deUint32 arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
+		{
+			const VkDeviceSize offset = defaultHalfSize * defaultHalfSize * pixelSize * arrayLayerNdx;
+			const VkBufferImageCopy bufferImageCopy =
+				{
+					offset,													// VkDeviceSize				bufferOffset;
+					0u,														// deUint32					bufferRowLength;
+					0u,														// deUint32					bufferImageHeight;
+					{
+						VK_IMAGE_ASPECT_COLOR_BIT,						// VkImageAspectFlags	aspectMask;
+						0u,												// deUint32				mipLevel;
+						arrayLayerNdx,									// deUint32				baseArrayLayer;
+						1u,												// deUint32				layerCount;
+					},														// VkImageSubresourceLayers	imageSubresource;
+					{0, 0, 0},												// VkOffset3D				imageOffset;
+					defaultHalfExtent										// VkExtent3D				imageExtent;
+				};
+			CopyRegion copyRegion;
+			copyRegion.bufferImageCopy = bufferImageCopy;
+
+			params.regions.push_back(copyRegion);
+		}
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "array", "Copy from a different part of the buffer to each layer", params));
+	}
+
+	{
+		TestParams				params;
+		deUint32				arrayLayers = 16u;
+		params.src.buffer.size				= defaultHalfSize * defaultHalfSize * arrayLayers;
+		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
+		params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+		params.dst.image.extent				= defaultHalfExtent;
+		params.dst.image.extent.depth		= arrayLayers;
+		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
+
+		const int pixelSize	= tcu::getPixelSize(mapVkFormat(params.dst.image.format));
+		for (deUint32 arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
+		{
+			const VkDeviceSize offset = defaultHalfSize * defaultHalfSize * pixelSize * arrayLayerNdx;
+			const VkBufferImageCopy bufferImageCopy =
+				{
+					offset,													// VkDeviceSize				bufferOffset;
+					defaultHalfSize,										// deUint32					bufferRowLength;
+					defaultHalfSize,										// deUint32					bufferImageHeight;
+					{
+						VK_IMAGE_ASPECT_COLOR_BIT,						// VkImageAspectFlags	aspectMask;
+						0u,												// deUint32				mipLevel;
+						arrayLayerNdx,									// deUint32				baseArrayLayer;
+						1u,												// deUint32				layerCount;
+					},														// VkImageSubresourceLayers	imageSubresource;
+					{0, 0, 0},												// VkOffset3D				imageOffset;
+					defaultHalfExtent										// VkExtent3D				imageExtent;
+				};
+			CopyRegion copyRegion;
+			copyRegion.bufferImageCopy = bufferImageCopy;
+
+			params.regions.push_back(copyRegion);
+		}
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "array_tightly_sized_buffer", "Copy from different part of tightly sized buffer to each layer", params));
 	}
 }
 
