@@ -1478,7 +1478,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 			bufferSizes[2]							// size
 		};
 
-	deUint32 NUM_SUBMITS = 2;
+	deUint32 NUM_SUBMITS = 4;
 
 	for (deUint32 x = 0; x < NUM_SUBMITS; ++x)
 	{
@@ -1547,7 +1547,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 								8, sizeof(VkDeviceSize), &addr);
 		}
 
-		for (deUint32 iters = 0; iters < 100; ++iters)
+		for (deUint32 iters = 0; iters < 50; ++iters)
 		{
 			for (deUint32 i = 0; i < 2; ++i)
 			{
