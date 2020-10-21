@@ -485,6 +485,8 @@ struct TestParams
 	LayerRange						imageViewLayerRange;
 	VkClearValue					initValue;
 	VkClearValue					clearValue[2];		//!< the second value is used with more than one mip map
+	bool							useSeparateExpectedClearValue;
+	VkClearValue					expectedClearValue[2];
 	LayerRange						clearLayerRange;
 	AllocationKind					allocationKind;
 	bool							isCube;
@@ -1223,15 +1225,18 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 
 			for (deUint32 mipLevel = 0; mipLevel < m_imageMipLevels; ++mipLevel)
 			{
-				const int			clearColorNdx	= ((mipLevel < m_thresholdMipLevel || m_params.isColorMultipleSubresourceRangeTest) ? 0 : 1);
-				const VkExtent3D	extent			= getMipLevelExtent(m_params.imageExtent, mipLevel);
+				const int					clearColorNdx	= ((mipLevel < m_thresholdMipLevel || m_params.isColorMultipleSubresourceRangeTest) ? 0 : 1);
+				const VkExtent3D			extent			= getMipLevelExtent(m_params.imageExtent, mipLevel);
+				const VkClearColorValue*	pExpectedColorValue = &(m_params.useSeparateExpectedClearValue ? m_params.expectedClearValue : m_params.clearValue)[clearColorNdx].color;
 
 				for (deUint32 z = 0; z < extent.depth;  ++z)
 				for (deUint32 y = 0; y < extent.height; ++y)
 				for (deUint32 x = 0; x < extent.width;  ++x)
 				{
 					if (isInClearRange(clearCoords, x, y, arrayLayer, m_params.imageViewLayerRange, m_params.clearLayerRange))
-						pColorValue = &m_params.clearValue[clearColorNdx].color;
+					{
+						pColorValue = pExpectedColorValue;
+					}
 					else
 					{
 						if (isInInitialClearRange(m_isAttachmentFormat, mipLevel, arrayLayer, m_params.imageViewLayerRange))
@@ -1239,7 +1244,9 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 							pColorValue = &m_params.initValue.color;
 						}
 						else
+						{
 							continue;
+						}
 					}
 					if (!comparePixelToColorClearValue(image->getLevel(mipLevel), x, y, z, *pColorValue, message))
 						return TestStatus::fail("Color value mismatch! " + message);
@@ -1376,12 +1383,29 @@ TestStatus ClearColorImageTestInstance::iterate (void)
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);						// VkImageLayout			newLayout;
 	}
 
+	pipelineImageBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,				// VkPipelineStageFlags		srcStageMask
+						 VK_PIPELINE_STAGE_TRANSFER_BIT,				// VkPipelineStageFlags		dstStageMask
+						 VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			srcAccessMask
+						 VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			dstAccessMask
+						 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			oldLayout;
+						 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);			// VkImageLayout			newLayout;
+
 	// Different clear color per range
 	for (std::size_t i = 0u; i < subresourceRanges.size(); ++i)
 	{
 		m_vkd.cmdClearColorImage(*m_commandBuffer, *m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_params.clearValue[i].color, 1, &subresourceRanges[i]);
+
 		if (m_twoStep)
+		{
+			pipelineImageBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,				// VkPipelineStageFlags		srcStageMask
+								 VK_PIPELINE_STAGE_TRANSFER_BIT,				// VkPipelineStageFlags		dstStageMask
+								 VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			srcAccessMask
+								 VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			dstAccessMask
+								 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			oldLayout;
+								 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);			// VkImageLayout			newLayout;
+
 			m_vkd.cmdClearColorImage(*m_commandBuffer, *m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_params.clearValue[i].color, 1, &steptwoRanges[i]);
+		}
 	}
 
 	pipelineImageBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,				// VkPipelineStageFlags		srcStageMask
@@ -1940,6 +1964,45 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 	};
 	const size_t	numOfDepthStencilImageFormatsToTest		= DE_LENGTH_OF_ARRAY(depthStencilImageFormatsToTest);
 
+	struct ClearTestColorParams
+	{
+		bool				matchTextureChannelClass;
+		TextureChannelClass	textureChannelClass;
+		const char*			testNameSuffix;
+		float				clearColors[2][4];
+		bool				useSeparateExpectedColors;
+		float				expectedColors[2][4];
+	};
+	const ClearTestColorParams clearColorsToTest[] =
+	{
+		{
+			false,										// matchTextureChannelClass
+			TEXTURECHANNELCLASS_LAST,					// textureChannelClass
+			"",											// testNameSuffix
+			{
+				{ 0.1f, 0.5f, 0.3f, 0.9f },				// clearColors[0]
+				{ 0.3f, 0.6f, 0.2f, 0.7f },				// clearColors[1]
+			},
+			false,										// useSeparateExpectedColors
+			{ }											// expectedColors
+		},
+		{
+			true,										// matchTextureChannelClass
+			TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT,	// textureChannelClass
+			"_clamp_input",								// testNameSuffix
+			{
+				{ -0.1f, -1e6f, -0.3f, -1.5f },			// clearColors[0]
+				{ -1.5f, -0.6f, -1e6f, -0.7f },			// clearColors[1]
+			},
+			true,										// useSeparateExpectedColors
+			{
+				{ 0.0f, 0.0f, 0.0f, 0.0f },				// expectedColors[0]
+				{ 0.0f, 0.0f, 0.0f, 0.0f },				// expectedColors[1]
+			}
+		}
+	};
+	const size_t	numOfClearColorsToTest			= DE_LENGTH_OF_ARRAY(clearColorsToTest);
+
 	struct ImageLayerParams
 	{
 		deUint32		imageLayerCount;
@@ -2066,47 +2129,79 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 
 						for (size_t imageFormatIndex = 0; imageFormatIndex < numOfColorImageFormatsToTest; ++imageFormatIndex)
 						{
-							const VkFormat		format			= colorImageFormatsToTest[imageFormatIndex];
-							std::string	testCaseName	= getFormatCaseName(format) + dimensionsString;
-							TestParams	testParams		=
+							const	VkFormat			format			= colorImageFormatsToTest[imageFormatIndex];
+							const	TextureFormat		tcuFormat		= mapVkFormat(format);
+							const	TextureChannelClass	channelClass	= getTextureChannelClass(tcuFormat.type);
+							for (size_t clearColorIndex = 0; clearColorIndex < numOfClearColorsToTest; ++clearColorIndex)
 							{
-								false,																// bool								useSingleMipLevel;
-								imageTypesToTest[imageTypeIndex],									// VkImageType						imageType;
-								format,																// VkFormat							imageFormat;
-								imageTilingsToTest[imageTilingIndex],								// VkImageTiling					imageTiling;
-								dimensions,															// VkExtent3D						imageExtent;
-								imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,		// deUint32							imageLayerCount;
-								{
-									0u,
-									imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount
-								},																	// LayerRange						imageViewLayerRange;
-								makeClearColorValue(format, 0.2f, 0.1f, 0.7f, 0.8f),				// VkClearValue						initValue;
-								{
-									makeClearColorValue(format, 0.1f, 0.5f, 0.3f, 0.9f),				// VkClearValue						clearValue[0];
-									makeClearColorValue(format, 0.3f, 0.6f, 0.2f, 0.7f),				// VkClearValue						clearValue[1];
-								},
-								imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,		// LayerRange						clearLayerRange;
-								allocationKind,														// AllocationKind					allocationKind;
-								false,																// bool								isCube;
-								SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE,							// SeparateDepthStencilLayoutMode	separateDepthStencilLayoutMode;
-								false,																// bool								isColorMultipleSubresourceRangeTest;
-							};
+								const	ClearTestColorParams&	colorParams		= clearColorsToTest[clearColorIndex];
 
-							if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
-							{
-								imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image", testParams));
+								if (colorParams.matchTextureChannelClass && channelClass != colorParams.textureChannelClass)
+									continue;
 
-								// Removing linear images as the miplevels may be 1
-								if (imageTilingsToTest[imageTilingIndex] == VK_IMAGE_TILING_OPTIMAL)
+								VkClearValue					clearColors[2]	=
 								{
-									testParams.isColorMultipleSubresourceRangeTest = true;
-									testCaseName += "_multiple_subresourcerange";
-									imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageMultipleSubresourceRangeTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image with two ranges", testParams));
+									makeClearColorValue(format, colorParams.clearColors[0][0], colorParams.clearColors[0][1], colorParams.clearColors[0][2], colorParams.clearColors[0][3]),
+									makeClearColorValue(format, colorParams.clearColors[1][0], colorParams.clearColors[1][1], colorParams.clearColors[1][2], colorParams.clearColors[1][3]),
+								};
+								VkClearValue					expectedColors[2];
+								if (clearColorsToTest[clearColorIndex].useSeparateExpectedColors)
+								{
+									expectedColors[0] = makeClearColorValue(format, colorParams.expectedColors[0][0], colorParams.expectedColors[0][1], colorParams.expectedColors[0][2], colorParams.expectedColors[0][3]);
+									expectedColors[1] = makeClearColorValue(format, colorParams.expectedColors[1][0], colorParams.expectedColors[1][1], colorParams.expectedColors[1][2], colorParams.expectedColors[1][3]);
 								}
-							}
-							else
-							{
-								imageLayersGroup->addChild(new InstanceFactory1<TwoStepClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image", testParams));
+								else
+								{
+									expectedColors[0] = clearColors[0];
+									expectedColors[1] = clearColors[1];
+								}
+
+								std::string						testCaseName	= getFormatCaseName(format) + dimensionsString + colorParams.testNameSuffix;
+								TestParams						testParams		=
+								{
+									false,																// bool								useSingleMipLevel;
+									imageTypesToTest[imageTypeIndex],									// VkImageType						imageType;
+									format,																// VkFormat							imageFormat;
+									imageTilingsToTest[imageTilingIndex],								// VkImageTiling					imageTiling;
+									dimensions,															// VkExtent3D						imageExtent;
+									imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,		// deUint32							imageLayerCount;
+									{
+										0u,
+										imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount
+									},																	// LayerRange						imageViewLayerRange;
+									makeClearColorValue(format, 0.2f, 0.1f, 0.7f, 0.8f),				// VkClearValue						initValue;
+									{
+										clearColors[0],													// VkClearValue						clearValue[0];
+										clearColors[1],													// VkClearValue						clearValue[1];
+									},
+									clearColorsToTest[clearColorIndex].useSeparateExpectedColors,		// bool								useSeparateExpectedClearValue;
+									{
+										expectedColors[0],												// VkClearValue						expectedClearValue[0];
+										expectedColors[1],												// VkClearValue						expectedClearValue[1];
+									},
+									imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,		// LayerRange						clearLayerRange;
+									allocationKind,														// AllocationKind					allocationKind;
+									false,																// bool								isCube;
+									SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE,							// SeparateDepthStencilLayoutMode	separateDepthStencilLayoutMode;
+									false,																// bool								isColorMultipleSubresourceRangeTest;
+								};
+
+								if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
+								{
+									imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image", testParams));
+
+									// Removing linear images as the miplevels may be 1
+									if (imageTilingsToTest[imageTilingIndex] == VK_IMAGE_TILING_OPTIMAL)
+									{
+										testParams.isColorMultipleSubresourceRangeTest = true;
+										testCaseName += "_multiple_subresourcerange";
+										imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageMultipleSubresourceRangeTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image with two ranges", testParams));
+									}
+								}
+								else
+								{
+									imageLayersGroup->addChild(new InstanceFactory1<TwoStepClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image", testParams));
+								}
 							}
 						}
 					}
@@ -2168,6 +2263,8 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 								makeClearValueDepthStencil(0.1f, 0x06),								// VkClearValue						clearValue[0];
 								makeClearValueDepthStencil(0.3f, 0x04),								// VkClearValue						clearValue[1];
 							},
+							false,																// bool								useSeparateExpectedClearValue;
+							{ },																// VkClearValue[2]					expectedClearValue;
 							imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,		// LayerRange						clearLayerRange;
 							allocationKind,														// AllocationKind					allocationKind;
 							false,																// bool								isCube;
@@ -2219,31 +2316,63 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 
 					for (size_t imageFormatIndex = 0; imageFormatIndex < numOfColorImageFormatsToTest; ++imageFormatIndex)
 					{
-						const VkFormat		format			= colorImageFormatsToTest[imageFormatIndex];
-						const std::string	testCaseName	= getFormatCaseName(format) + dimensionsString;
-						const TestParams	testParams		=
+						const	VkFormat			format			= colorImageFormatsToTest[imageFormatIndex];
+						const	TextureFormat		tcuFormat		= mapVkFormat(format);
+						const	TextureChannelClass	channelClass	= getTextureChannelClass(tcuFormat.type);
+						for (size_t clearColorIndex = 0; clearColorIndex < numOfClearColorsToTest; ++clearColorIndex)
 						{
-							true,															// bool								useSingleMipLevel;
-							VK_IMAGE_TYPE_2D,												// VkImageType						imageType;
-							format,															// VkFormat							format;
-							VK_IMAGE_TILING_OPTIMAL,										// VkImageTiling					tiling;
-							dimensions,														// VkExtent3D						extent;
-							imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,	// deUint32							imageLayerCount;
-							imageLayerParamsToTest[imageLayerParamsIndex].imageViewRange,	// LayerRange						imageViewLayerRange;
-							makeClearColorValue(format, 0.2f, 0.1f, 0.7f, 0.8f),			// VkClearValue						initValue
+							const	ClearTestColorParams&	colorParams		= clearColorsToTest[clearColorIndex];
+
+							if (colorParams.matchTextureChannelClass && channelClass != colorParams.textureChannelClass)
+								continue;
+
+							VkClearValue					clearColors[2]	=
 							{
-								makeClearColorValue(format, 0.1f, 0.5f, 0.3f, 0.9f),			// VkClearValue						clearValue[0];
-								makeClearColorValue(format, 0.3f, 0.6f, 0.2f, 0.7f),			// VkClearValue						clearValue[1];
-							},
-							imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,	// LayerRange						clearLayerRange;
-							allocationKind,													// AllocationKind					allocationKind;
-							imageLayerParamsToTest[imageLayerParamsIndex].isCube,			// bool								isCube;
-							SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE,						// SeparateDepthStencilLayoutMode	separateDepthStencilLayoutMode;
-							false,															// bool								isColorMultipleSubresourceRangeTest;
-						};
-						colorAttachmentClearLayersGroup->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Attachment", testParams));
-						if (dimensions.width > 1)
-							partialColorAttachmentClearLayersGroup->addChild(new InstanceFactory1<PartialClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Partial Clear Color Attachment", testParams));
+								makeClearColorValue(format, colorParams.clearColors[0][0], colorParams.clearColors[0][1], colorParams.clearColors[0][2], colorParams.clearColors[0][3]),
+								makeClearColorValue(format, colorParams.clearColors[1][0], colorParams.clearColors[1][1], colorParams.clearColors[1][2], colorParams.clearColors[1][3]),
+							};
+							VkClearValue					expectedColors[2];
+							if (clearColorsToTest[clearColorIndex].useSeparateExpectedColors)
+							{
+								expectedColors[0] = makeClearColorValue(format, colorParams.expectedColors[0][0], colorParams.expectedColors[0][1], colorParams.expectedColors[0][2], colorParams.expectedColors[0][3]);
+								expectedColors[1] = makeClearColorValue(format, colorParams.expectedColors[1][0], colorParams.expectedColors[1][1], colorParams.expectedColors[1][2], colorParams.expectedColors[1][3]);
+							}
+							else
+							{
+								expectedColors[0] = clearColors[0];
+								expectedColors[1] = clearColors[1];
+							}
+
+							const std::string	testCaseName	= getFormatCaseName(format) + dimensionsString + colorParams.testNameSuffix;
+							const TestParams	testParams		=
+							{
+								true,															// bool								useSingleMipLevel;
+								VK_IMAGE_TYPE_2D,												// VkImageType						imageType;
+								format,															// VkFormat							format;
+								VK_IMAGE_TILING_OPTIMAL,										// VkImageTiling					tiling;
+								dimensions,														// VkExtent3D						extent;
+								imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,	// deUint32							imageLayerCount;
+								imageLayerParamsToTest[imageLayerParamsIndex].imageViewRange,	// LayerRange						imageViewLayerRange;
+								makeClearColorValue(format, 0.2f, 0.1f, 0.7f, 0.8f),			// VkClearValue						initValue
+								{
+									clearColors[0],												// VkClearValue						clearValue[0];
+									clearColors[1]												// VkClearValue						clearValue[1];
+								},
+								colorParams.useSeparateExpectedColors,							// bool								useSeparateExpectedClearValue;
+								{
+									expectedColors[0],											// VkClearValue						expectedClearValue[0];
+									expectedColors[1]											// VkClearValue						expectedClearValue[1];
+								},
+								imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,	// LayerRange						clearLayerRange;
+								allocationKind,													// AllocationKind					allocationKind;
+								imageLayerParamsToTest[imageLayerParamsIndex].isCube,			// bool								isCube;
+								SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE,						// SeparateDepthStencilLayoutMode	separateDepthStencilLayoutMode;
+								false,															// bool								isColorMultipleSubresourceRangeTest;
+							};
+							colorAttachmentClearLayersGroup->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Attachment", testParams));
+							if (dimensions.width > 1)
+								partialColorAttachmentClearLayersGroup->addChild(new InstanceFactory1<PartialClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Partial Clear Color Attachment", testParams));
+						}
 					}
 				}
 				colorAttachmentClearTests->addChild(colorAttachmentClearLayersGroup.release());
@@ -2303,6 +2432,8 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 									makeClearValueDepthStencil(0.1f, 0x06),							// VkClearValue						clearValue[0];
 									makeClearValueDepthStencil(0.3f, 0x04),							// VkClearValue						clearValue[1];
 								},
+								false,															// bool								useSeparateExpectedClearValue;
+								{ },															// VkClearValue[2]					expectedClearValue;
 								imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,	// LayerRange						clearLayerRange;
 								allocationKind,													// AllocationKind					allocationKind;
 								imageLayerParamsToTest[imageLayerParamsIndex].isCube,			// bool								isCube;

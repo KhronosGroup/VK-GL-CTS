@@ -321,33 +321,6 @@ void uploadImage (const DeviceInterface&		vkd,
 
 	beginCommandBuffer(vkd, *cmdBuffer);
 
-	{
-		const VkImageMemoryBarrier		preCopyBarrier	=
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			DE_NULL,
-			(VkAccessFlags)0,
-			VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			VK_QUEUE_FAMILY_IGNORED,
-			VK_QUEUE_FAMILY_IGNORED,
-			image,
-			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, arrayLayer, 1u }
-		};
-
-		vkd.cmdPipelineBarrier(*cmdBuffer,
-								(VkPipelineStageFlags)VK_PIPELINE_STAGE_HOST_BIT,
-								(VkPipelineStageFlags)VK_PIPELINE_STAGE_TRANSFER_BIT,
-								(VkDependencyFlags)0u,
-								0u,
-								(const VkMemoryBarrier*)DE_NULL,
-								0u,
-								(const VkBufferMemoryBarrier*)DE_NULL,
-								1u,
-								&preCopyBarrier);
-	}
-
 	for (deUint32 planeNdx = 0; planeNdx < imageData.getDescription().numPlanes; ++planeNdx)
 	{
 		const VkImageAspectFlagBits	aspect	= (formatDesc.numPlanes > 1)
@@ -365,34 +338,62 @@ void uploadImage (const DeviceInterface&		vkd,
 			planeExtent
 		};
 
-		vkd.cmdCopyBufferToImage(*cmdBuffer, **stagingBuffers[planeNdx], image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copy);
-	}
-
-	{
-		const VkImageMemoryBarrier		postCopyBarrier	=
 		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			DE_NULL,
-			VK_ACCESS_TRANSFER_WRITE_BIT,
-			nextAccess,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			finalLayout,
-			VK_QUEUE_FAMILY_IGNORED,
-			VK_QUEUE_FAMILY_IGNORED,
-			image,
-			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, arrayLayer, 1u }
-		};
+			const VkImageMemoryBarrier		preCopyBarrier	=
+				{
+					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					DE_NULL,
+					(VkAccessFlags)0,
+					VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_IMAGE_LAYOUT_UNDEFINED,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					VK_QUEUE_FAMILY_IGNORED,
+					VK_QUEUE_FAMILY_IGNORED,
+					image,
+					{ aspect, 0u, 1u, arrayLayer, 1u }
+				};
 
-		vkd.cmdPipelineBarrier(*cmdBuffer,
-								(VkPipelineStageFlags)VK_PIPELINE_STAGE_TRANSFER_BIT,
-								(VkPipelineStageFlags)VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-								(VkDependencyFlags)0u,
-								0u,
-								(const VkMemoryBarrier*)DE_NULL,
-								0u,
-								(const VkBufferMemoryBarrier*)DE_NULL,
-								1u,
-								&postCopyBarrier);
+			vkd.cmdPipelineBarrier(*cmdBuffer,
+								   (VkPipelineStageFlags)VK_PIPELINE_STAGE_HOST_BIT,
+								   (VkPipelineStageFlags)VK_PIPELINE_STAGE_TRANSFER_BIT,
+								   (VkDependencyFlags)0u,
+								   0u,
+								   (const VkMemoryBarrier*)DE_NULL,
+								   0u,
+								   (const VkBufferMemoryBarrier*)DE_NULL,
+								   1u,
+								   &preCopyBarrier);
+		}
+
+		vkd.cmdCopyBufferToImage(*cmdBuffer, **stagingBuffers[planeNdx], image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copy);
+
+		{
+			const VkImageMemoryBarrier		postCopyBarrier	=
+				{
+					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					DE_NULL,
+					VK_ACCESS_TRANSFER_WRITE_BIT,
+					nextAccess,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					finalLayout,
+					VK_QUEUE_FAMILY_IGNORED,
+					VK_QUEUE_FAMILY_IGNORED,
+					image,
+					{ aspect, 0u, 1u, arrayLayer, 1u }
+				};
+
+			vkd.cmdPipelineBarrier(*cmdBuffer,
+								   (VkPipelineStageFlags)VK_PIPELINE_STAGE_TRANSFER_BIT,
+								   (VkPipelineStageFlags)VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+								   (VkDependencyFlags)0u,
+								   0u,
+								   (const VkMemoryBarrier*)DE_NULL,
+								   0u,
+								   (const VkBufferMemoryBarrier*)DE_NULL,
+								   1u,
+								   &postCopyBarrier);
+		}
+
 	}
 
 	endCommandBuffer(vkd, *cmdBuffer);

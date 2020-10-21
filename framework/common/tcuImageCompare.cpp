@@ -851,10 +851,10 @@ bool dsThresholdCompare(TestLog& log, const char* imageSetName, const char* imag
 
 				if (hasDepth)
 				{
-					float	refDepth = reference.getPixDepth(x, y, z);
-					float	cmpDepth = result.getPixDepth(x, y, z);
+					float refDepth	= reference.getPixDepth(x, y, z);
+					float cmpDepth	= result.getPixDepth(x, y, z);
+					float diff		= de::abs(refDepth - cmpDepth);
 
-					float	diff = refDepth - cmpDepth;
 					isOk = diff <= threshold;
 					maxDiff = (float) deMax(maxDiff, diff);
 				}

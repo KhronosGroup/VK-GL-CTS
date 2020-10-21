@@ -24,6 +24,7 @@ const vk::VkPhysicalDeviceMultiviewProperties&						Context::getMultiviewPropert
 const vk::VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX&	Context::getMultiviewPerViewAttributesPropertiesX	(void) const { return m_device->getMultiviewPerViewAttributesPropertiesX();		}
 const vk::VkPhysicalDevicePerformanceQueryPropertiesKHR&			Context::getPerformanceQueryProperties				(void) const { return m_device->getPerformanceQueryProperties();				}
 const vk::VkPhysicalDevicePointClippingProperties&					Context::getPointClippingProperties					(void) const { return m_device->getPointClippingProperties();					}
+const vk::VkPhysicalDevicePortabilitySubsetPropertiesKHR&			Context::getPortabilitySubsetProperties				(void) const { return m_device->getPortabilitySubsetProperties();				}
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				Context::getProtectedMemoryProperties				(void) const { return m_device->getProtectedMemoryProperties();					}
 const vk::VkPhysicalDevicePushDescriptorPropertiesKHR&				Context::getPushDescriptorProperties				(void) const { return m_device->getPushDescriptorProperties();					}
 const vk::VkPhysicalDeviceRayTracingPropertiesNV&					Context::getRayTracingPropertiesNV					(void) const { return m_device->getRayTracingPropertiesNV();					}

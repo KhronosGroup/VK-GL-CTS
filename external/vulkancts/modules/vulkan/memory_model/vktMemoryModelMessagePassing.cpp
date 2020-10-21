@@ -99,6 +99,8 @@ typedef enum
 {
 	DATA_TYPE_UINT = 0,
 	DATA_TYPE_UINT64,
+	DATA_TYPE_FLOAT32,
+	DATA_TYPE_FLOAT64,
 } DataType;
 
 const VkFlags allShaderStages = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -250,6 +252,50 @@ void MemoryModelTestCase::checkSupport(Context& context) const
 		}
 	}
 
+	if (m_data.dataType == DATA_TYPE_FLOAT32)
+	{
+		if (!context.isDeviceFunctionalitySupported("VK_EXT_shader_atomic_float"))
+			TCU_THROW(NotSupportedError, "Missing extension: VK_EXT_shader_atomic_float");
+
+		if ((m_data.guardSC == SC_BUFFER || m_data.guardSC == SC_PHYSBUFFER) &&
+			(!context.getShaderAtomicFloatFeaturesEXT().shaderBufferFloat32Atomics))
+		{
+			TCU_THROW(NotSupportedError, "VkShaderAtomicFloat32: 32-bit floating point buffer atomic operations not supported");
+		}
+
+		if (m_data.guardSC == SC_IMAGE && (!context.getShaderAtomicFloatFeaturesEXT().shaderImageFloat32Atomics))
+		{
+			TCU_THROW(NotSupportedError, "VkShaderAtomicFloat32: 32-bit floating point image atomic operations not supported");
+		}
+
+		if (m_data.guardSC == SC_WORKGROUP && (!context.getShaderAtomicFloatFeaturesEXT().shaderSharedFloat32Atomics))
+		{
+			TCU_THROW(NotSupportedError, "VkShaderAtomicFloat32: 32-bit floating point shared atomic operations not supported");
+		}
+	}
+
+	if (m_data.dataType == DATA_TYPE_FLOAT64)
+	{
+		if (!context.isDeviceFunctionalitySupported("VK_EXT_shader_atomic_float"))
+			TCU_THROW(NotSupportedError, "Missing extension: VK_EXT_shader_atomic_float");
+
+		if ((m_data.guardSC == SC_BUFFER || m_data.guardSC == SC_PHYSBUFFER) &&
+			(!context.getShaderAtomicFloatFeaturesEXT().shaderBufferFloat64Atomics))
+		{
+			TCU_THROW(NotSupportedError, "VkShaderAtomicFloat64: 64-bit floating point buffer atomic operations not supported");
+		}
+
+		if (m_data.guardSC == SC_IMAGE || m_data.payloadSC == SC_IMAGE)
+		{
+			TCU_THROW(NotSupportedError, "VkShaderAtomicFloat64: 64-bit floating point image atomic operations not supported");
+		}
+
+		if (m_data.guardSC == SC_WORKGROUP && (!context.getShaderAtomicFloatFeaturesEXT().shaderSharedFloat64Atomics))
+		{
+			TCU_THROW(NotSupportedError, "VkShaderAtomicFloat64: 64-bit floating point shared atomic operations not supported");
+		}
+	}
+
 	if (m_data.transitive &&
 		!context.getVulkanMemoryModelFeatures().vulkanMemoryModelAvailabilityVisibilityChains)
 		TCU_THROW(NotSupportedError, "vulkanMemoryModelAvailabilityVisibilityChains not supported");
@@ -300,7 +346,9 @@ void MemoryModelTestCase::initPrograms (SourceCollections& programCollection) co
 	case SCOPE_SUBGROUP:	scopeStr = "gl_ScopeSubgroup"; break;
 	}
 
-	const char *typeStr = m_data.dataType == DATA_TYPE_UINT64 ? "uint64_t" : "uint";
+	const char *typeStr = (m_data.dataType == DATA_TYPE_UINT64) ? "uint64_t" : (m_data.dataType == DATA_TYPE_FLOAT32) ? "float" :
+		(m_data.dataType == DATA_TYPE_FLOAT64) ? "double" : "uint";
+	const bool intType = (m_data.dataType == DATA_TYPE_UINT || m_data.dataType == DATA_TYPE_UINT64);
 
 	// Construct storageSemantics strings. Both release and acquire
 	// always have the payload storage class. They only include the
@@ -359,6 +407,12 @@ void MemoryModelTestCase::initPrograms (SourceCollections& programCollection) co
 	{
 		css << "#pragma use_vulkan_memory_model\n";
 	}
+	if (!intType)
+	{
+		css <<
+			"#extension GL_EXT_shader_atomic_float : enable\n"
+			"#extension GL_KHR_memory_scope_semantics : enable\n";
+	}
 	css <<
 		"#extension GL_KHR_shader_subgroup_basic : enable\n"
 		"#extension GL_KHR_shader_subgroup_shuffle : enable\n"
@@ -411,7 +465,12 @@ void MemoryModelTestCase::initPrograms (SourceCollections& programCollection) co
 	case SC_PHYSBUFFER: css << "layout(buffer_reference) buffer PayloadRef { " << typeStr << " x[]; };\n";
 						pushConstMembers << "   layout(offset = 0) PayloadRef payloadref;\n"; break;
 	case SC_BUFFER:		css << "layout(set=0, binding=0) " << memqual << " buffer Payload { " << typeStr << " x[]; } payload;\n"; break;
-	case SC_IMAGE:		css << "layout(set=0, binding=0, r32ui) uniform " << memqual << " uimage2D payload;\n"; break;
+	case SC_IMAGE:
+		if (intType)
+			css << "layout(set=0, binding=0, r32ui) uniform " << memqual << " uimage2D payload;\n";
+		else
+			css << "layout(set=0, binding=0, r32f) uniform " << memqual << " image2D payload;\n";
+		break;
 	case SC_WORKGROUP:	css << "shared S payload;\n"; break;
 	}
 	if (m_data.syncType != ST_CONTROL_AND_MEMORY_BARRIER && m_data.syncType != ST_CONTROL_BARRIER)
@@ -423,7 +482,12 @@ void MemoryModelTestCase::initPrograms (SourceCollections& programCollection) co
 		case SC_PHYSBUFFER: css << "layout(buffer_reference) buffer GuardRef { " << typeStr << " x[]; };\n";
 							pushConstMembers << "layout(offset = 8) GuardRef guard;\n"; break;
 		case SC_BUFFER:		css << "layout(set=0, binding=1) buffer Guard { " << typeStr << " x[]; } guard;\n"; break;
-		case SC_IMAGE:		css << "layout(set=0, binding=1, r32ui) uniform uimage2D guard;\n"; break;
+		case SC_IMAGE:
+			if (intType)
+				css << "layout(set=0, binding=1, r32ui) uniform " << memqual << " uimage2D guard;\n";
+			else
+				css << "layout(set=0, binding=1, r32f) uniform " << memqual << " image2D guard;\n";
+			break;
 		case SC_WORKGROUP:	css << "shared S guard;\n"; break;
 		}
 	}
@@ -575,14 +639,29 @@ void MemoryModelTestCase::initPrograms (SourceCollections& programCollection) co
 
 	if (m_data.testType == TT_MP)
 	{
-		// Store payload
-		switch (m_data.payloadSC)
+		if (intType)
 		{
-		default: DE_ASSERT(0); // fall through
-		case SC_PHYSBUFFER: // fall through
-		case SC_BUFFER:		css << "   payload.x[bufferCoord] = bufferCoord + (payload.x[partnerBufferCoord]>>31);\n"; break;
-		case SC_IMAGE:		css << "   imageStore(payload, imageCoord, uvec4(bufferCoord + (imageLoad(payload, partnerImageCoord).x>>31), 0, 0, 0));\n"; break;
-		case SC_WORKGROUP:	css << "   payload.x[sharedCoord] = bufferCoord + (payload.x[partnerSharedCoord]>>31);\n"; break;
+			// Store payload
+			switch (m_data.payloadSC)
+			{
+			default: DE_ASSERT(0); // fall through
+			case SC_PHYSBUFFER: // fall through
+			case SC_BUFFER:		css << "   payload.x[bufferCoord] = bufferCoord + (payload.x[partnerBufferCoord]>>31);\n"; break;
+			case SC_IMAGE:		css << "   imageStore(payload, imageCoord, uvec4(bufferCoord + (imageLoad(payload, partnerImageCoord).x>>31), 0, 0, 0));\n"; break;
+			case SC_WORKGROUP:	css << "   payload.x[sharedCoord] = bufferCoord + (payload.x[partnerSharedCoord]>>31);\n"; break;
+			}
+		}
+		else
+		{
+			// Store payload
+			switch (m_data.payloadSC)
+			{
+			default: DE_ASSERT(0); // fall through
+			case SC_PHYSBUFFER: // fall through
+			case SC_BUFFER:		css << "   payload.x[bufferCoord] = " << typeStr << "(bufferCoord) + ((floatBitsToInt(float(payload.x[partnerBufferCoord])))>>31);\n"; break;
+			case SC_IMAGE:		css << "   imageStore(payload, imageCoord, vec4(" << typeStr << "(bufferCoord + (floatBitsToInt(float(imageLoad(payload, partnerImageCoord).x))>>31)), 0, 0, 0)); \n"; break;
+			case SC_WORKGROUP:	css << "   payload.x[sharedCoord] = " << typeStr << "(bufferCoord) + ((floatBitsToInt(float(payload.x[partnerSharedCoord])))>>31);\n"; break;
+			}
 		}
 	}
 	else
@@ -614,6 +693,8 @@ void MemoryModelTestCase::initPrograms (SourceCollections& programCollection) co
 	}
 	else
 	{
+		// Don't type cast for 64 bit image atomics
+		const char* typeCastStr = (m_data.dataType == DATA_TYPE_UINT64 || m_data.dataType == DATA_TYPE_FLOAT64) ? "" : typeStr;
 		// Release barrier
 		std::stringstream atomicReleaseSemantics;
 		if (m_data.syncType == ST_FENCE_ATOMIC || m_data.syncType == ST_FENCE_FENCE)
@@ -633,7 +714,7 @@ void MemoryModelTestCase::initPrograms (SourceCollections& programCollection) co
 			default: DE_ASSERT(0); // fall through
 			case SC_PHYSBUFFER: // fall through
 			case SC_BUFFER:		css << "   atomicExchange(guard.x[bufferCoord], " << typeStr << "(1u), " << scopeStr << atomicReleaseSemantics.str() << ");\n"; break;
-			case SC_IMAGE:		css << "   imageAtomicExchange(guard, imageCoord, (1u), " << scopeStr << atomicReleaseSemantics.str() << ");\n"; break;
+			case SC_IMAGE:		css << "   imageAtomicExchange(guard, imageCoord, " << typeCastStr << "(1u), " << scopeStr << atomicReleaseSemantics.str() << ");\n"; break;
 			case SC_WORKGROUP:	css << "   atomicExchange(guard.x[sharedCoord], " << typeStr << "(1u), " << scopeStr << atomicReleaseSemantics.str() << ");\n"; break;
 			}
 		}
@@ -644,7 +725,7 @@ void MemoryModelTestCase::initPrograms (SourceCollections& programCollection) co
 			default: DE_ASSERT(0); // fall through
 			case SC_PHYSBUFFER: // fall through
 			case SC_BUFFER:		css << "   atomicStore(guard.x[bufferCoord], " << typeStr << "(1u), " << scopeStr << atomicReleaseSemantics.str() << ");\n"; break;
-			case SC_IMAGE:		css << "   imageAtomicStore(guard, imageCoord, (1u), " << scopeStr << atomicReleaseSemantics.str() << ");\n"; break;
+			case SC_IMAGE:		css << "   imageAtomicStore(guard, imageCoord, " << typeCastStr << "(1u), " << scopeStr << atomicReleaseSemantics.str() << ");\n"; break;
 			case SC_WORKGROUP:	css << "   atomicStore(guard.x[sharedCoord], " << typeStr << "(1u), " << scopeStr << atomicReleaseSemantics.str() << ");\n"; break;
 			}
 		}
@@ -665,9 +746,9 @@ void MemoryModelTestCase::initPrograms (SourceCollections& programCollection) co
 			{
 			default: DE_ASSERT(0); // fall through
 			case SC_PHYSBUFFER: // fall through
-			case SC_BUFFER:		css << "   skip = atomicExchange(guard.x[partnerBufferCoord], 2u, " << scopeStr << atomicAcquireSemantics.str() << ") == 0;\n"; break;
-			case SC_IMAGE:		css << "   skip = imageAtomicExchange(guard, partnerImageCoord, 2u, " << scopeStr << atomicAcquireSemantics.str() << ") == 0;\n"; break;
-			case SC_WORKGROUP:	css << "   skip = atomicExchange(guard.x[partnerSharedCoord], 2u, " << scopeStr << atomicAcquireSemantics.str() << ") == 0;\n"; break;
+			case SC_BUFFER: css << "   skip = atomicExchange(guard.x[partnerBufferCoord], " << typeStr << "(2u), " << scopeStr << atomicAcquireSemantics.str() << ") == 0;\n"; break;
+			case SC_IMAGE:  css << "   skip = imageAtomicExchange(guard, partnerImageCoord, " << typeCastStr << "(2u), " << scopeStr << atomicAcquireSemantics.str() << ") == 0;\n"; break;
+			case SC_WORKGROUP: css << "   skip = atomicExchange(guard.x[partnerSharedCoord], " << typeStr << "(2u), " << scopeStr << atomicAcquireSemantics.str() << ") == 0;\n"; break;
 			}
 		} else
 		{
@@ -698,7 +779,7 @@ void MemoryModelTestCase::initPrograms (SourceCollections& programCollection) co
 		case SC_WORKGROUP:	css << "   " << typeStr << " r = payload.x[partnerSharedCoord];\n"; break;
 		}
 		css <<
-			"   if (!skip && r != partnerBufferCoord) { fail.x[bufferCoord] = 1; }\n"
+			"   if (!skip && r != " << typeStr << "(partnerBufferCoord)) { fail.x[bufferCoord] = 1; }\n"
 			"}\n";
 	}
 	else
@@ -710,9 +791,16 @@ void MemoryModelTestCase::initPrograms (SourceCollections& programCollection) co
 		{
 		default: DE_ASSERT(0); // fall through
 		case SC_PHYSBUFFER: // fall through
-		case SC_BUFFER:		css << "   payload.x[bufferCoord] = bufferCoord;\n"; break;
-		case SC_IMAGE:		css << "   imageStore(payload, imageCoord, uvec4(bufferCoord, 0, 0, 0));\n"; break;
-		case SC_WORKGROUP:	css << "   payload.x[sharedCoord] = bufferCoord;\n"; break;
+		case SC_BUFFER:		css << "   payload.x[bufferCoord] = " << typeStr << "(bufferCoord);\n"; break;
+		case SC_IMAGE:
+			if (intType) {
+				css << "   imageStore(payload, imageCoord, uvec4(bufferCoord, 0, 0, 0));\n";
+			}
+			else {
+				css << "   imageStore(payload, imageCoord, vec4(" << typeStr << "(bufferCoord), 0, 0, 0));\n";
+			}
+			break;
+		case SC_WORKGROUP:	css << "   payload.x[sharedCoord] = " << typeStr << "(bufferCoord);\n"; break;
 		}
 		css <<
 			"   }\n"
@@ -750,7 +838,9 @@ void MemoryModelTestCase::initProgramsTransitive (SourceCollections& programColl
 {
 	Scope invocationMapping = m_data.scope;
 
-	const char *typeStr = m_data.dataType == DATA_TYPE_UINT64 ? "uint64_t" : "uint";
+	const char* typeStr = (m_data.dataType == DATA_TYPE_UINT64) ? "uint64_t" : (m_data.dataType == DATA_TYPE_FLOAT32) ? "float" :
+		(m_data.dataType == DATA_TYPE_FLOAT64) ? "double" : "uint";
+	const bool intType = (m_data.dataType == DATA_TYPE_UINT || m_data.dataType == DATA_TYPE_UINT64);
 
 	// Construct storageSemantics strings. Both release and acquire
 	// always have the payload storage class. They only include the
@@ -778,6 +868,12 @@ void MemoryModelTestCase::initProgramsTransitive (SourceCollections& programColl
 	std::stringstream css;
 	css << "#version 450 core\n";
 	css << "#pragma use_vulkan_memory_model\n";
+	if (!intType)
+	{
+		css <<
+			"#extension GL_EXT_shader_atomic_float : enable\n"
+			"#extension GL_KHR_memory_scope_semantics : enable\n";
+	}
 	css <<
 		"#extension GL_KHR_shader_subgroup_basic : enable\n"
 		"#extension GL_KHR_shader_subgroup_shuffle : enable\n"
@@ -815,7 +911,12 @@ void MemoryModelTestCase::initProgramsTransitive (SourceCollections& programColl
 	case SC_PHYSBUFFER: css << "layout(buffer_reference) buffer PayloadRef { " << typeStr << " x[]; };\n";
 						pushConstMembers << "   layout(offset = 0) PayloadRef payloadref;\n"; break;
 	case SC_BUFFER:		css << "layout(set=0, binding=0) " << memqual << " buffer Payload { " << typeStr << " x[]; } payload;\n"; break;
-	case SC_IMAGE:		css << "layout(set=0, binding=0, r32ui) uniform " << memqual << " uimage2D payload;\n"; break;
+	case SC_IMAGE:
+		if (intType)
+			css << "layout(set=0, binding=0, r32ui) uniform " << memqual << " uimage2D payload;\n";
+		else
+			css << "layout(set=0, binding=0, r32f) uniform " << memqual << " image2D payload;\n";
+		break;
 	}
 	// The guard variable is only accessed with atomics and need not be declared coherent.
 	switch (m_data.guardSC)
@@ -824,7 +925,12 @@ void MemoryModelTestCase::initProgramsTransitive (SourceCollections& programColl
 	case SC_PHYSBUFFER: css << "layout(buffer_reference) buffer GuardRef { " << typeStr << " x[]; };\n";
 						pushConstMembers << "layout(offset = 8) GuardRef guard;\n"; break;
 	case SC_BUFFER:		css << "layout(set=0, binding=1) buffer Guard { " << typeStr << " x[]; } guard;\n"; break;
-	case SC_IMAGE:		css << "layout(set=0, binding=1, r32ui) uniform uimage2D guard;\n"; break;
+	case SC_IMAGE:
+		if (intType)
+			css << "layout(set=0, binding=1, r32ui) uniform " << memqual << " uimage2D guard;\n";
+		else
+			css << "layout(set=0, binding=1, r32f) uniform " << memqual << " image2D guard;\n";
+		break;
 	}
 
 	css << "layout(set=0, binding=2) buffer Fail { uint x[]; } fail;\n";
@@ -865,12 +971,25 @@ void MemoryModelTestCase::initProgramsTransitive (SourceCollections& programColl
 	}
 
 	// Store payload
-	switch (m_data.payloadSC)
+	if (intType)
 	{
-	default: DE_ASSERT(0); // fall through
-	case SC_PHYSBUFFER: // fall through
-	case SC_BUFFER:		css << "   payload.x[bufferCoord] = bufferCoord + (payload.x[partnerBufferCoord]>>31);\n"; break;
-	case SC_IMAGE:		css << "   imageStore(payload, imageCoord, uvec4(bufferCoord + (imageLoad(payload, partnerImageCoord).x>>31), 0, 0, 0));\n"; break;
+		switch (m_data.payloadSC)
+		{
+		default: DE_ASSERT(0); // fall through
+		case SC_PHYSBUFFER: // fall through
+		case SC_BUFFER:		css << "   payload.x[bufferCoord] = bufferCoord + (payload.x[partnerBufferCoord]>>31);\n"; break;
+		case SC_IMAGE:		css << "   imageStore(payload, imageCoord, uvec4(bufferCoord + (imageLoad(payload, partnerImageCoord).x>>31), 0, 0, 0));\n"; break;
+		}
+	}
+	else
+	{
+		switch (m_data.payloadSC)
+		{
+		default: DE_ASSERT(0); // fall through
+		case SC_PHYSBUFFER: // fall through
+		case SC_BUFFER:	css << "   payload.x[bufferCoord] = " << typeStr << "(bufferCoord) + ((floatBitsToInt(float(payload.x[partnerBufferCoord])))>>31);\n"; break;
+		case SC_IMAGE:	css << "   imageStore(payload, imageCoord, vec4(" << typeStr << "(bufferCoord + (floatBitsToInt(float(imageLoad(payload, partnerImageCoord).x)>>31))), 0, 0, 0)); \n"; break;
+		}
 	}
 
 	// Sync to other threads in the workgroup
@@ -881,13 +1000,14 @@ void MemoryModelTestCase::initProgramsTransitive (SourceCollections& programColl
 
 	// Device-scope release/availability in invocation(0,0)
 	css << "   if (all(equal(gl_LocalInvocationID.xy, ivec2(0,0)))) {\n";
+	const char* typeCastStr = (m_data.dataType == DATA_TYPE_UINT64 || m_data.dataType == DATA_TYPE_FLOAT64) ? "" : typeStr;
 	if (m_data.syncType == ST_ATOMIC_ATOMIC || m_data.syncType == ST_ATOMIC_FENCE) {
 		switch (m_data.guardSC)
 		{
 		default: DE_ASSERT(0); // fall through
 		case SC_PHYSBUFFER: // fall through
 		case SC_BUFFER:		css << "       atomicStore(guard.x[bufferCoord], " << typeStr << "(1u), gl_ScopeDevice, " << storageSemanticsPayload.str() << ", gl_SemanticsRelease | gl_SemanticsMakeAvailable);\n"; break;
-		case SC_IMAGE:		css << "       imageAtomicStore(guard, imageCoord, (1u), gl_ScopeDevice, " << storageSemanticsPayload.str() << ", gl_SemanticsRelease | gl_SemanticsMakeAvailable);\n"; break;
+		case SC_IMAGE:		css << "       imageAtomicStore(guard, imageCoord, " << typeCastStr << "(1u), gl_ScopeDevice, " << storageSemanticsPayload.str() << ", gl_SemanticsRelease | gl_SemanticsMakeAvailable);\n"; break;
 		}
 	} else {
 		css << "       memoryBarrier(gl_ScopeDevice, " << storageSemanticsAll.str() << ", gl_SemanticsRelease | gl_SemanticsMakeAvailable);\n";
@@ -896,7 +1016,7 @@ void MemoryModelTestCase::initProgramsTransitive (SourceCollections& programColl
 		default: DE_ASSERT(0); // fall through
 		case SC_PHYSBUFFER: // fall through
 		case SC_BUFFER:		css << "       atomicStore(guard.x[bufferCoord], " << typeStr << "(1u), gl_ScopeDevice, 0, 0);\n"; break;
-		case SC_IMAGE:		css << "       imageAtomicStore(guard, imageCoord, (1u), gl_ScopeDevice, 0, 0);\n"; break;
+		case SC_IMAGE:		css << "       imageAtomicStore(guard, imageCoord, " << typeCastStr << "(1u), gl_ScopeDevice, 0, 0);\n"; break;
 		}
 	}
 
@@ -945,7 +1065,7 @@ void MemoryModelTestCase::initProgramsTransitive (SourceCollections& programColl
 	case SC_IMAGE:		css << "   " << typeStr << " r = imageLoad(payload, partnerImageCoord).x;\n"; break;
 	}
 	css <<
-		"   if (!skip && r != partnerBufferCoord) { fail.x[bufferCoord] = 1; }\n"
+		"   if (!skip && r != " << typeStr << "(partnerBufferCoord)) { fail.x[bufferCoord] = 1; }\n"
 		"}\n";
 
 	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
@@ -986,7 +1106,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 
 	for (deUint32 i = 0; i < 3; ++i)
 	{
-		size_t elementSize = m_data.dataType == DATA_TYPE_UINT64 ? sizeof(deUint64) : sizeof(deUint32);
+		size_t elementSize = (m_data.dataType == DATA_TYPE_UINT64 || m_data.dataType == DATA_TYPE_FLOAT64)? sizeof(deUint64) : sizeof(deUint32);
 		// buffer2 is the "fail" buffer, and is always uint
 		if (i == 2)
 			elementSize = sizeof(deUint32);
@@ -1661,8 +1781,10 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 
 	TestGroupCase dtCases[] =
 	{
-		{ DATA_TYPE_UINT,	"u32",	"uint32_t atomics"		},
-		{ DATA_TYPE_UINT64,	"u64",	"uint64_t atomics"		},
+		{ DATA_TYPE_UINT,		"u32",	"uint32_t atomics"		},
+		{ DATA_TYPE_UINT64,		"u64",	"uint64_t atomics"		},
+		{ DATA_TYPE_FLOAT32,	"f32",	"float32 atomics"		},
+		{ DATA_TYPE_FLOAT64,	"f64",	"float64 atomics"		},
 	};
 
 	TestGroupCase cohCases[] =
@@ -1796,6 +1918,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 														c.syncType == ST_ATOMIC_FENCE ||
 														c.syncType == ST_ATOMIC_ATOMIC ||
 														c.dataType == DATA_TYPE_UINT64 ||
+														c.dataType == DATA_TYPE_FLOAT64 ||
 														c.scope == SCOPE_QUEUEFAMILY ||
 														c.payloadSC == SC_PHYSBUFFER ||
 														c.guardSC == SC_PHYSBUFFER))
@@ -1832,8 +1955,9 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 														continue;
 													}
 
-													// uint64 testing is primarily for atomics, so only test it for ST_ATOMIC_ATOMIC
-													if (c.dataType == DATA_TYPE_UINT64 && c.syncType != ST_ATOMIC_ATOMIC)
+													// uint64/float32/float64 testing is primarily for atomics, so only test it for ST_ATOMIC_ATOMIC
+													const bool atomicTesting = (c.dataType == DATA_TYPE_UINT64 || c.dataType == DATA_TYPE_FLOAT32 || c.dataType == DATA_TYPE_FLOAT64);
+													if (atomicTesting && c.syncType != ST_ATOMIC_ATOMIC)
 													{
 														continue;
 													}
@@ -1844,6 +1968,11 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 														continue;
 													}
 
+													// No support for atomic operations on 64-bit floating point images
+													if (c.dataType == DATA_TYPE_FLOAT64 && (c.payloadSC == SC_IMAGE || c.guardSC == SC_IMAGE))
+													{
+														continue;
+													}
 													// Control barrier tests don't use a guard variable, so only run them with gsc,gl==0
 													if ((c.syncType == ST_CONTROL_BARRIER || c.syncType == ST_CONTROL_AND_MEMORY_BARRIER) &&
 														(c.guardSC != 0 || c.guardMemLocal != 0))

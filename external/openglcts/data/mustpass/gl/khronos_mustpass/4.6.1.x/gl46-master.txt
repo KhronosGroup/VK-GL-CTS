@@ -8094,6 +8094,7 @@ KHR-GL46.direct_state_access.queries_creation
 KHR-GL46.direct_state_access.queries_defaults
 KHR-GL46.direct_state_access.queries_errors
 KHR-GL46.direct_state_access.queries_functional
+KHR-GL46.direct_state_access.queries_reuse
 KHR-GL46.direct_state_access.buffers_creation
 KHR-GL46.direct_state_access.buffers_data
 KHR-GL46.direct_state_access.buffers_clear

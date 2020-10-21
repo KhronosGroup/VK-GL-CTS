@@ -42,6 +42,7 @@
 #include <map>
 #include <algorithm>
 #include <memory>
+#include <cmath>
 
 namespace glcts
 {
@@ -131,11 +132,13 @@ tcu::TextureFormat NearestEdgeTestCase::toTextureFormat (const tcu::PixelFormat&
 		tcu::TextureFormat	texFmt;
 	} pixelFormatMap[] =
 	{
-		{ tcu::PixelFormat(8,8,8,8),	tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::UNORM_INT8)			},
-		{ tcu::PixelFormat(8,8,8,0),	tcu::TextureFormat(tcu::TextureFormat::RGB,		tcu::TextureFormat::UNORM_INT8)			},
-		{ tcu::PixelFormat(4,4,4,4),	tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::UNORM_SHORT_4444)	},
-		{ tcu::PixelFormat(5,5,5,1),	tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::UNORM_SHORT_5551)	},
-		{ tcu::PixelFormat(5,6,5,0),	tcu::TextureFormat(tcu::TextureFormat::RGB,		tcu::TextureFormat::UNORM_SHORT_565)	}
+		{ tcu::PixelFormat(8,8,8,8),	tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::UNORM_INT8)				},
+		{ tcu::PixelFormat(8,8,8,0),	tcu::TextureFormat(tcu::TextureFormat::RGB,		tcu::TextureFormat::UNORM_INT8)				},
+		{ tcu::PixelFormat(4,4,4,4),	tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::UNORM_SHORT_4444)		},
+		{ tcu::PixelFormat(5,5,5,1),	tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::UNORM_SHORT_5551)		},
+		{ tcu::PixelFormat(5,6,5,0),	tcu::TextureFormat(tcu::TextureFormat::RGB,		tcu::TextureFormat::UNORM_SHORT_565)		},
+		{ tcu::PixelFormat(10,10,10,2), tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::UNORM_INT_1010102_REV)	},
+		{ tcu::PixelFormat(16,16,16,16), tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::HALF_FLOAT)				},
 	};
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(pixelFormatMap); ndx++)
@@ -285,8 +288,9 @@ void NearestEdgeTestCase::renderQuad ()
 
 	// Apply offset of almost half a texel to the texture coordinates.
 	DE_ASSERT(m_offsetSign == 1.0f || m_offsetSign == -1.0f);
-	const float offsetWidth		= 0.499f / static_cast<float>(m_width);
-	const float offsetHeight	= 0.499f / static_cast<float>(m_height);
+	const float offset			= 0.5f - pow(2.0f, -8.0f);
+	const float offsetWidth		= offset / static_cast<float>(m_width);
+	const float offsetHeight	= offset / static_cast<float>(m_height);
 
 	minU += m_offsetSign * offsetWidth;
 	maxU += m_offsetSign * offsetWidth;

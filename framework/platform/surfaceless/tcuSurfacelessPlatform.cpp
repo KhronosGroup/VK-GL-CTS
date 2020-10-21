@@ -264,7 +264,7 @@ EglRenderContext::EglRenderContext(const glu::RenderConfig& config, const tcu::C
 	eglw::EGLint		eglMinorVersion;
 	eglw::EGLint		flags = 0;
 	eglw::EGLint		num_configs;
-	eglw::EGLConfig		egl_config;
+	eglw::EGLConfig		egl_config = NULL;
 	eglw::EGLSurface	egl_surface;
 
 	(void) cmdLine;
@@ -329,13 +329,39 @@ EglRenderContext::EglRenderContext(const glu::RenderConfig& config, const tcu::C
 	frame_buffer_attribs.push_back(EGL_STENCIL_SIZE);
 	frame_buffer_attribs.push_back(config.stencilBits);
 
+	frame_buffer_attribs.push_back(EGL_SAMPLES);
+	frame_buffer_attribs.push_back(config.numSamples);
+
 	frame_buffer_attribs.push_back(EGL_NONE);
 
 	if (!eglChooseConfig(m_eglDisplay, &frame_buffer_attribs[0], NULL, 0, &num_configs))
 		throw tcu::ResourceError("surfaceless couldn't find any config");
 
-	if (!eglChooseConfig(m_eglDisplay, &frame_buffer_attribs[0], &egl_config, 1, &num_configs))
+	eglw::EGLConfig		all_configs[num_configs];
+
+	if (!eglChooseConfig(m_eglDisplay, &frame_buffer_attribs[0], all_configs, num_configs, &num_configs))
 		throw tcu::ResourceError("surfaceless couldn't find any config");
+
+	for (int i = 0; i < num_configs; i++) {
+		EGLint red, green, blue, alpha, depth, stencil, samples;
+		eglGetConfigAttrib(m_eglDisplay, all_configs[i], EGL_RED_SIZE, &red);
+		eglGetConfigAttrib(m_eglDisplay, all_configs[i], EGL_GREEN_SIZE, &green);
+		eglGetConfigAttrib(m_eglDisplay, all_configs[i], EGL_BLUE_SIZE, &blue);
+		eglGetConfigAttrib(m_eglDisplay, all_configs[i], EGL_ALPHA_SIZE, &alpha);
+		eglGetConfigAttrib(m_eglDisplay, all_configs[i], EGL_DEPTH_SIZE, &depth);
+		eglGetConfigAttrib(m_eglDisplay, all_configs[i], EGL_STENCIL_SIZE, &stencil);
+		eglGetConfigAttrib(m_eglDisplay, all_configs[i], EGL_SAMPLES, &samples);
+
+		if ((red == config.redBits) && (green == config.greenBits) && (blue == config.blueBits) &&
+				(alpha == config.alphaBits) && (depth == config.depthBits) &&
+				(stencil == config.stencilBits) && (samples == config.numSamples)) {
+			egl_config = all_configs[i];
+			break;
+		}
+	}
+
+	if (!egl_config)
+		throw tcu::ResourceError("surfaceless couldn't find a matching config");
 
 	switch (config.surfaceType)
 	{

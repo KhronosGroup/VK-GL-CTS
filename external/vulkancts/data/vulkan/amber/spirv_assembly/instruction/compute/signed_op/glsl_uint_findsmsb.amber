@@ -1,0 +1,74 @@
+#!amber
+# Test GLSL.std.450 FindSMsb instruction
+
+SHADER compute test SPIRV-ASM
+                         OpCapability Shader
+                 %glsl = OpExtInstImport "GLSL.std.450"
+
+                         OpMemoryModel Logical GLSL450
+                         OpEntryPoint GLCompute %main "main" %gl_GlobalInvocationId
+                         OpExecutionMode %main LocalSize 1 1 1
+
+                         OpDecorate %gl_GlobalInvocationId BuiltIn GlobalInvocationId
+                         OpDecorate %ra_uint ArrayStride 4
+                         OpDecorate %struct_uint2 BufferBlock
+                         OpMemberDecorate %struct_uint2 0 Offset 0
+                         OpDecorate %input DescriptorSet 0
+                         OpDecorate %input Binding 0
+                         OpDecorate %output DescriptorSet 0
+                         OpDecorate %output Binding 1
+
+                 %uint = OpTypeInt 32 0
+             %ptr_uint = OpTypePointer Uniform %uint
+       %ptr_input_uint = OpTypePointer Input %uint
+                %uint3 = OpTypeVector %uint 3
+      %ptr_input_uint3 = OpTypePointer Input %uint3
+                 %void = OpTypeVoid
+               %voidFn = OpTypeFunction %void
+
+               %uint_0 = OpConstant %uint 0
+               %uint_1 = OpConstant %uint 1
+              %ra_uint = OpTypeRuntimeArray %uint
+                %uint2 = OpTypeVector %uint 2
+         %struct_uint2 = OpTypeStruct %ra_uint
+     %ptr_struct_uint2 = OpTypePointer Uniform %struct_uint2
+
+%gl_GlobalInvocationId = OpVariable %ptr_input_uint3 Input
+                %input = OpVariable %ptr_struct_uint2 Uniform
+
+               %output = OpVariable %ptr_struct_uint2 Uniform
+                 %main = OpFunction %void None %voidFn
+            %mainStart = OpLabel
+            %index_ptr = OpAccessChain %ptr_input_uint %gl_GlobalInvocationId %uint_0
+                %index = OpLoad %uint %index_ptr
+               %in_ptr = OpAccessChain %ptr_uint %input %uint_0 %index
+              %invalue = OpLoad %uint %in_ptr
+
+             %outvalue = OpExtInst %uint %glsl FindSMsb %invalue
+              %out_ptr = OpAccessChain %ptr_uint %output %uint_0 %index
+                         OpStore %out_ptr %outvalue
+
+                         OpReturn
+                         OpFunctionEnd
+END
+BUFFER data0 DATA_TYPE int32 DATA
+ 0 -8 -7 -6 -5 -4 -3 -2  0 -1  1  2  3  4  5  6
+END
+
+BUFFER data1 DATA_TYPE int32 DATA
+ 8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8
+END
+
+BUFFER expected0 DATA_TYPE int32 DATA
+-1  2  2  2  2  1  1  0 -1 -1  0  1  1  2  2  2
+END
+
+PIPELINE compute compute_pipeline
+	ATTACH test
+	BIND BUFFER data0 AS storage DESCRIPTOR_SET 0 BINDING 0
+	BIND BUFFER data1 AS storage DESCRIPTOR_SET 0 BINDING 1
+END
+
+RUN compute_pipeline 16 1 1
+
+EXPECT data1 EQ_BUFFER expected0

@@ -49,6 +49,12 @@ struct qpWatchDog_s
 	void*				timeOutUserPtr;
 	int					totalTimeLimit;			/* Total test case time limit in seconds	*/
 	int					intervalTimeLimit;		/* Iteration length limit in seconds		*/
+	/*
+		Iteration time limit in seconds specified to the constructor. This is stored so that
+		intervalTimeLimit can be restored after qpWatchDog_touchAndDisableIntervalTimeLimit
+		is called.
+	*/
+	int					defaultIntervalTimeLimit;
 
 	volatile deUint64	resetTime;
 	volatile deUint64	lastTouchTime;
@@ -98,10 +104,11 @@ qpWatchDog* qpWatchDog_create (qpWatchDogFunc timeOutFunc, void* userPtr, int to
 
 	DBGPRINT(("qpWatchDog::create(%ds, %ds)\n", totalTimeLimitSecs, intervalTimeLimitSecs));
 
-	dog->timeOutFunc		= timeOutFunc;
-	dog->timeOutUserPtr		= userPtr;
-	dog->totalTimeLimit		= totalTimeLimitSecs;
-	dog->intervalTimeLimit	= intervalTimeLimitSecs;
+	dog->timeOutFunc				= timeOutFunc;
+	dog->timeOutUserPtr				= userPtr;
+	dog->totalTimeLimit				= totalTimeLimitSecs;
+	dog->intervalTimeLimit			= intervalTimeLimitSecs;
+	dog->defaultIntervalTimeLimit	= intervalTimeLimitSecs;
 
 	/* Reset (sets time values). */
 	qpWatchDog_reset(dog);
@@ -148,4 +155,23 @@ void qpWatchDog_touch (qpWatchDog* dog)
 	DE_ASSERT(dog);
 	DBGPRINT(("qpWatchDog::touch()\n"));
 	dog->lastTouchTime = deGetMicroseconds();
+}
+
+/*
+	These function exists to allow the interval timer to be disabled for special cases
+	like very long shader compilations. Heavy code can be put between calls
+	to qpWatchDog_touchAndDisableIntervalTimeLimit and qpWatchDog_touchAndEnableIntervalTimeLimit
+	and during that period the interval time limit will become the same as the total
+	time limit. Afterwards, the interval timer is set back to its default.
+*/
+void qpWatchDog_touchAndDisableIntervalTimeLimit(qpWatchDog *dog)
+{
+	dog->intervalTimeLimit = dog->totalTimeLimit;
+	qpWatchDog_touch(dog);
+}
+
+void qpWatchDog_touchAndEnableIntervalTimeLimit(qpWatchDog *dog)
+{
+	dog->intervalTimeLimit = dog->defaultIntervalTimeLimit;
+	qpWatchDog_touch(dog);
 }

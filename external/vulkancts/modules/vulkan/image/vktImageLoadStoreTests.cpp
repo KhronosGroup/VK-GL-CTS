@@ -920,7 +920,7 @@ void ImageStoreTestInstance::commandBeforeCompute (const VkCommandBuffer cmdBuff
 
 	const VkImageSubresourceRange fullImageSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_texture.numLayers());
 	const VkImageMemoryBarrier setImageLayoutBarrier = makeImageMemoryBarrier(
-		0u, 0u,
+		0u, VK_ACCESS_SHADER_WRITE_BIT,
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
 		m_image->get(), fullImageSubresourceRange);
 

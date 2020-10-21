@@ -20,6 +20,7 @@ const vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&	Context::g
 const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&					Context::getDepthClipEnableFeaturesEXT					(void) const { return m_device->getDepthClipEnableFeaturesEXT();				}
 const vk::VkPhysicalDeviceDescriptorIndexingFeatures&					Context::getDescriptorIndexingFeatures					(void) const { return m_device->getDescriptorIndexingFeatures();				}
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV&			Context::getDeviceGeneratedCommandsFeatures				(void) const { return m_device->getDeviceGeneratedCommandsFeatures();			}
+const vk::VkPhysicalDeviceDeviceMemoryReportFeaturesEXT&				Context::getDeviceMemoryReportFeaturesEXT				(void) const { return m_device->getDeviceMemoryReportFeaturesEXT();				}
 const vk::VkPhysicalDeviceDiagnosticsConfigFeaturesNV&					Context::getDiagnosticsConfigFeatures					(void) const { return m_device->getDiagnosticsConfigFeatures();					}
 const vk::VkPhysicalDeviceExclusiveScissorFeaturesNV&					Context::getExclusiveScissorFeatures					(void) const { return m_device->getExclusiveScissorFeatures();					}
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&				Context::getExtendedDynamicStateFeaturesEXT				(void) const { return m_device->getExtendedDynamicStateFeaturesEXT();			}
@@ -39,6 +40,7 @@ const vk::VkPhysicalDeviceMultiviewFeatures&							Context::getMultiviewFeatures
 const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&					Context::getPerformanceQueryFeatures					(void) const { return m_device->getPerformanceQueryFeatures();					}
 const vk::VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT&		Context::getPipelineCreationCacheControlFeaturesEXT		(void) const { return m_device->getPipelineCreationCacheControlFeaturesEXT();	}
 const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&		Context::getPipelineExecutablePropertiesFeatures		(void) const { return m_device->getPipelineExecutablePropertiesFeatures();		}
+const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR&					Context::getPortabilitySubsetFeatures					(void) const { return m_device->getPortabilitySubsetFeatures();					}
 const vk::VkPhysicalDevicePrivateDataFeaturesEXT&						Context::getPrivateDataFeaturesEXT						(void) const { return m_device->getPrivateDataFeaturesEXT();					}
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&						Context::getProtectedMemoryFeatures						(void) const { return m_device->getProtectedMemoryFeatures();					}
 const vk::VkPhysicalDeviceRayQueryFeaturesKHR&							Context::getRayQueryFeatures							(void) const { return m_device->getRayQueryFeatures();							}
@@ -54,6 +56,7 @@ const vk::VkPhysicalDeviceShaderClockFeaturesKHR&						Context::getShaderClockFe
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT&	Context::getShaderDemoteToHelperInvocationFeaturesEXT	(void) const { return m_device->getShaderDemoteToHelperInvocationFeaturesEXT();	}
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&					Context::getShaderDrawParametersFeatures				(void) const { return m_device->getShaderDrawParametersFeatures();				}
 const vk::VkPhysicalDeviceShaderFloat16Int8Features&					Context::getShaderFloat16Int8Features					(void) const { return m_device->getShaderFloat16Int8Features();					}
+const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&			Context::getShaderImageAtomicInt64FeaturesEXT			(void) const { return m_device->getShaderImageAtomicInt64FeaturesEXT();			}
 const vk::VkPhysicalDeviceShaderImageFootprintFeaturesNV&				Context::getShaderImageFootprintFeatures				(void) const { return m_device->getShaderImageFootprintFeatures();				}
 const vk::VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL&			Context::getShaderIntegerFunctions2FeaturesINTEL		(void) const { return m_device->getShaderIntegerFunctions2FeaturesINTEL();		}
 const vk::VkPhysicalDeviceShaderSMBuiltinsFeaturesNV&					Context::getShaderSMBuiltinsFeatures					(void) const { return m_device->getShaderSMBuiltinsFeatures();					}

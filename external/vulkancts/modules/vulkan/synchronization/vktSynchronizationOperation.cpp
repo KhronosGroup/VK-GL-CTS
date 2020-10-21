@@ -509,7 +509,12 @@ public:
 		const DeviceInterface&	vk	= m_context.getDeviceInterface();
 
 		if (m_bufferOp == BUFFER_OP_FILL)
+		{
 			vk.cmdFillBuffer(cmdBuffer, m_resource.getBuffer().handle, m_resource.getBuffer().offset, m_resource.getBuffer().size, m_fillValue);
+
+			const VkBufferMemoryBarrier	barrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, m_resource.getBuffer().handle, 0u, m_resource.getBuffer().size);
+			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
+		}
 		else if (m_bufferOp == BUFFER_OP_UPDATE)
 			vk.cmdUpdateBuffer(cmdBuffer, m_resource.getBuffer().handle, m_resource.getBuffer().offset, m_resource.getBuffer().size, reinterpret_cast<deUint32*>(&m_data[0]));
 		else

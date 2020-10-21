@@ -105,6 +105,7 @@ enum TestType
 {
 	RESOLVE			= 0,
 	MAX_ATTACHMENTS,
+	COMPATIBILITY
 };
 
 struct TestConfig
@@ -141,7 +142,7 @@ struct RenderPass2Trait
 class MultisampleRenderPassTestBase : public TestInstance
 {
 public:
-	MultisampleRenderPassTestBase	(Context& context, TestConfig config, deUint32 attachmentsCount);
+	MultisampleRenderPassTestBase	(Context& context, TestConfig config);
 	~MultisampleRenderPassTestBase	(void);
 
 protected:
@@ -172,6 +173,7 @@ protected:
 
 	const bool						m_featuresSupported;
 	const bool						m_extensionSupported;
+	const bool						m_testCompatibility;
 	const RenderPassType			m_renderPassType;
 
 	const VkFormat					m_format;
@@ -182,15 +184,16 @@ protected:
 	const deUint32					m_height;
 };
 
-MultisampleRenderPassTestBase::MultisampleRenderPassTestBase (Context& context, TestConfig config, deUint32 attachmentsCount)
+MultisampleRenderPassTestBase::MultisampleRenderPassTestBase (Context& context, TestConfig config)
 	: TestInstance				(context)
 	, m_featuresSupported		(featuresSupported(context, config))
 	, m_extensionSupported		((config.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
+	, m_testCompatibility		(config.testType == COMPATIBILITY)
 	, m_renderPassType			(config.renderPassType)
 	, m_format					(config.format)
 	, m_sampleCount				(sampleCountBitFromSampleCount(config.sampleCount))
 	, m_layerCount				(config.layerCount)
-	, m_attachmentsCount		(attachmentsCount)
+	, m_attachmentsCount		(config.attachmentCount)
 	, m_width					(config.width)
 	, m_height					(config.height)
 {
@@ -554,8 +557,9 @@ private:
 	void					verify						(void);
 
 	template<typename RenderPassTrait>
-	Move<VkRenderPass>		createRenderPass			(void);
-	Move<VkRenderPass>		createRenderPassSwitch		(const RenderPassType renderPassType);
+	Move<VkRenderPass>		createRenderPass			(VkFormat format);
+	Move<VkRenderPass>		createRenderPassSwitch		(VkFormat format);
+	Move<VkRenderPass>		createRenderPassCompatible	(void);
 	Move<VkPipelineLayout>	createRenderPipelineLayout	(void);
 	Move<VkPipeline>		createRenderPipeline		(void);
 
@@ -570,6 +574,7 @@ private:
 	const std::vector<VkImageViewSp>	m_singlesampleImageViews;
 
 	const Unique<VkRenderPass>			m_renderPass;
+	const Unique<VkRenderPass>			m_renderPassCompatible;
 	const Unique<VkFramebuffer>			m_framebuffer;
 
 	const Unique<VkPipelineLayout>		m_renderPipelineLayout;
@@ -580,12 +585,13 @@ private:
 
 	const Unique<VkCommandPool>			m_commandPool;
 	tcu::TextureLevel					m_sum;
+	tcu::TextureLevel					m_sumSrgb;
 	deUint32							m_sampleMask;
 	tcu::ResultCollector				m_resultCollector;
 };
 
 MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& context, TestConfig config)
-	: MultisampleRenderPassTestBase(context, config, 4u)
+	: MultisampleRenderPassTestBase(context, config)
 
 	, m_multisampleImages		(createImages(m_sampleCount, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT))
 	, m_multisampleImageMemory	(createImageMemory(m_multisampleImages))
@@ -595,7 +601,8 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& c
 	, m_singlesampleImageMemory	(createImageMemory(m_singlesampleImages))
 	, m_singlesampleImageViews	(createImageViews(m_singlesampleImages))
 
-	, m_renderPass				(createRenderPassSwitch(config.renderPassType))
+	, m_renderPass				(createRenderPassSwitch(m_format))
+	, m_renderPassCompatible	(createRenderPassCompatible())
 	, m_framebuffer				(createFramebuffer(m_multisampleImageViews, m_singlesampleImageViews, *m_renderPass))
 
 	, m_renderPipelineLayout	(createRenderPipelineLayout())
@@ -606,9 +613,11 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& c
 
 	, m_commandPool				(createCommandPool(context.getDeviceInterface(), context.getDevice(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, context.getUniversalQueueFamilyIndex()))
 	, m_sum						(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), m_width, m_height, m_layerCount)
+	, m_sumSrgb					(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), m_width, m_height, m_layerCount)
 	, m_sampleMask				(0x0u)
 {
 	tcu::clear(m_sum.getAccess(), Vec4(0.0f, 0.0f, 0.0f, 0.0f));
+	tcu::clear(m_sumSrgb.getAccess(), Vec4(0.0f, 0.0f, 0.0f, 0.0f));
 }
 
 MultisampleRenderPassTestInstance::~MultisampleRenderPassTestInstance (void)
@@ -668,7 +677,7 @@ void MultisampleRenderPassTestInstance::submit (void)
 			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 			DE_NULL,
 
-			*m_renderPass,
+			m_testCompatibility ? *m_renderPassCompatible : *m_renderPass,
 			*m_framebuffer,
 
 			{
@@ -802,6 +811,9 @@ void MultisampleRenderPassTestInstance::verify (void)
 				{
 					const Vec4 old = m_sum.getAccess().getPixel(x, y, z);
 					m_sum.getAccess().setPixel(old + (tcu::isSRGB(format) ? tcu::sRGBToLinear(firstColor) : firstColor), x, y, z);
+
+					const Vec4 oldSrgb = m_sumSrgb.getAccess().getPixel(x, y, z);
+					m_sumSrgb.getAccess().setPixel(oldSrgb + firstColor, x, y, z);
 				}
 			}
 
@@ -1122,10 +1134,37 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 				m_sum.getAccess().setPixel(average, x, y, z);
 				errorMask.getAccess().setPixel(okColor, x, y, z);
 
-				if (diff[0] > threshold.x()
-						|| diff[1] > threshold.y()
-						|| diff[2] > threshold.z()
-						|| diff[3] > threshold.w())
+				bool failThreshold;
+
+				if (!tcu::isSRGB(format))
+				{
+					failThreshold = (diff[0] > threshold.x()
+										|| diff[1] > threshold.y()
+										|| diff[2] > threshold.z()
+										|| diff[3] > threshold.w());
+				}
+				else
+				{
+					const Vec4	sumSrgb(m_sumSrgb.getAccess().getPixel(x, y, z));
+					const Vec4	averageSrgb(sumSrgb / Vec4((float)(0x1u << m_sampleCount)));
+					const Vec4	diffSrgb(tcu::abs(averageSrgb - expectedAverage));
+
+					m_sumSrgb.getAccess().setPixel(averageSrgb, x, y, z);
+
+					// Spec doesn't restrict implementation to downsample in linear color space. So, comparing both non linear and
+					// linear diff's in case of srgb formats.
+					failThreshold = ((diff[0] > threshold.x()
+										|| diff[1] > threshold.y()
+										|| diff[2] > threshold.z()
+										|| diff[3] > threshold.w()) &&
+									(diffSrgb[0] > threshold.x()
+										|| diffSrgb[1] > threshold.y()
+										|| diffSrgb[2] > threshold.z()
+										|| diffSrgb[3] > threshold.w()));
+
+				}
+
+				if (failThreshold)
 				{
 					isOk	= false;
 					maxDiff	= tcu::max(maxDiff, diff);
@@ -1175,7 +1214,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 }
 
 template<typename RenderPassTrait>
-Move<VkRenderPass> MultisampleRenderPassTestInstance::createRenderPass (void)
+Move<VkRenderPass> MultisampleRenderPassTestInstance::createRenderPass (VkFormat format)
 {
 	// make name for RenderPass1Trait or RenderPass2Trait shorter
 	typedef RenderPassTrait RPT;
@@ -1198,7 +1237,7 @@ Move<VkRenderPass> MultisampleRenderPassTestInstance::createRenderPass (void)
 															// sType
 				DE_NULL,									// pNext
 				0u,											// flags
-				m_format,									// format
+				format,										// format
 				m_sampleCount,								// samples
 				VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// loadOp
 				VK_ATTACHMENT_STORE_OP_DONT_CARE,			// storeOp
@@ -1224,7 +1263,7 @@ Move<VkRenderPass> MultisampleRenderPassTestInstance::createRenderPass (void)
 															// sType
 				DE_NULL,									// pNext
 				0u,											// flags
-				m_format,									// format
+				format,										// format
 				VK_SAMPLE_COUNT_1_BIT,						// samples
 				VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// loadOp
 				VK_ATTACHMENT_STORE_OP_STORE,				// storeOp
@@ -1283,16 +1322,32 @@ Move<VkRenderPass> MultisampleRenderPassTestInstance::createRenderPass (void)
 	return renderPassCreator.createRenderPass(vkd, device);
 }
 
-Move<VkRenderPass> MultisampleRenderPassTestInstance::createRenderPassSwitch (const RenderPassType renderPassType)
+Move<VkRenderPass> MultisampleRenderPassTestInstance::createRenderPassSwitch (VkFormat format)
 {
-	switch (renderPassType)
+	switch (m_renderPassType)
 	{
 		case RENDERPASS_TYPE_LEGACY:
-			return createRenderPass<RenderPass1Trait>();
+			return createRenderPass<RenderPass1Trait>(format);
 		case RENDERPASS_TYPE_RENDERPASS2:
-			return createRenderPass<RenderPass2Trait>();
+			return createRenderPass<RenderPass2Trait>(format);
 		default:
 			TCU_THROW(InternalError, "Impossible");
+	}
+}
+
+Move<VkRenderPass> MultisampleRenderPassTestInstance::createRenderPassCompatible (void)
+{
+	// Create render pass with diffrent format that we currently use to test compatibility
+	if (m_testCompatibility)
+	{
+		VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+		if (format == m_format) format = VK_FORMAT_R8_UNORM;
+
+		return createRenderPassSwitch(format);
+	}
+	else
+	{
+		return {};
 	}
 }
 
@@ -1495,7 +1550,7 @@ private:
 };
 
 MaxAttachmenstsRenderPassTestInstance::MaxAttachmenstsRenderPassTestInstance (Context& context, TestConfig config)
-	: MultisampleRenderPassTestBase(context, config, config.attachmentCount)
+	: MultisampleRenderPassTestBase(context, config)
 
 	, m_multisampleImages		(createImages(m_sampleCount, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT))
 	, m_multisampleImageMemory	(createImageMemory(m_multisampleImages))
@@ -2393,7 +2448,7 @@ struct Programs
 		const tcu::StringTemplate genericLayoutTemplate("layout(location = ${INDEX}) out ${TYPE_PREFIX}vec4 o_color${INDEX};\n");
 		const tcu::StringTemplate genericBodyTemplate("\to_color${INDEX} = ${TYPE_PREFIX}vec4(${COLOR_VAL});\n");
 
-		if (config.testType == RESOLVE)
+		if (config.testType == RESOLVE || config.testType == COMPATIBILITY)
 		{
 			const tcu::StringTemplate fragTemplate("#version 450\n"
 												   "layout(push_constant) uniform PushConstant {\n"
@@ -2615,8 +2670,8 @@ void initTests (tcu::TestCaseGroup* group, RenderPassType renderPassType)
 				if (layerCount == 6 && sampleCount == 8)
 					continue;
 
-				std::string	testName	("samples_" + de::toString(sampleCount));
-				TestConfig	testConfig =
+				std::string			testName	("samples_" + de::toString(sampleCount));
+				const TestConfig	testConfig =
 				{
 					RESOLVE,
 					format,
@@ -2640,11 +2695,25 @@ void initTests (tcu::TestCaseGroup* group, RenderPassType renderPassType)
 				{
 					for (deUint32 power = 2; power < 5; ++power)
 					{
-						deUint32	attachmentCount = 1 << power;
-						std::string	maxAttName		= "max_attachments_" + de::toString(attachmentCount) + "_" + testName;
-						testConfig.testType			= MAX_ATTACHMENTS;
-						testConfig.attachmentCount	= attachmentCount;
-						formatGroup->addChild(new InstanceFactory1<MaxAttachmenstsRenderPassTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, maxAttName.c_str(), maxAttName.c_str(), testConfig));
+						deUint32	attachmentCount					= 1 << power;
+						std::string	maxAttName						= "max_attachments_" + de::toString(attachmentCount) + "_" + testName;
+
+						TestConfig	maxAttachmentsTestConfig		= testConfig;
+						maxAttachmentsTestConfig.testType			= MAX_ATTACHMENTS;
+						maxAttachmentsTestConfig.attachmentCount	= attachmentCount;
+
+						formatGroup->addChild(new InstanceFactory1<MaxAttachmenstsRenderPassTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, maxAttName.c_str(), maxAttName.c_str(), maxAttachmentsTestConfig));
+					}
+
+					if (sampleCountNdx == 0)
+					{
+						std::string	compatibilityTestName			= "compatibility_" + testName;
+
+						TestConfig	compatibilityTestConfig			= testConfig;
+						compatibilityTestConfig.testType			= COMPATIBILITY;
+						compatibilityTestConfig.attachmentCount		= 1;
+
+						formatGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, compatibilityTestName.c_str(), compatibilityTestName.c_str(), compatibilityTestConfig));
 					}
 				}
 			}

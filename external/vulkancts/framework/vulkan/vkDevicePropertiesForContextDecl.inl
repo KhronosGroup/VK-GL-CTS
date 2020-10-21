@@ -24,6 +24,7 @@ const vk::VkPhysicalDeviceMultiviewProperties&						getMultiviewProperties						
 const vk::VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX&	getMultiviewPerViewAttributesPropertiesX	(void) const;
 const vk::VkPhysicalDevicePerformanceQueryPropertiesKHR&			getPerformanceQueryProperties				(void) const;
 const vk::VkPhysicalDevicePointClippingProperties&					getPointClippingProperties					(void) const;
+const vk::VkPhysicalDevicePortabilitySubsetPropertiesKHR&			getPortabilitySubsetProperties				(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				getProtectedMemoryProperties				(void) const;
 const vk::VkPhysicalDevicePushDescriptorPropertiesKHR&				getPushDescriptorProperties					(void) const;
 const vk::VkPhysicalDeviceRayTracingPropertiesNV&					getRayTracingPropertiesNV					(void) const;

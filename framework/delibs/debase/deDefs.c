@@ -52,7 +52,7 @@ DE_STATIC_ASSERT(DE_PTR_SIZE		== sizeof(void*));
 #include <assert.h>
 #include <string.h>
 
-#if (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS)
+#if (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS) || defined(__FreeBSD__)
 #	include <signal.h>
 #	include <stdlib.h>
 #endif
@@ -122,16 +122,16 @@ void deAssertFail (const char* reason, const char* file, int line)
 	}
 #elif ((DE_OS == DE_OS_WIN32) && (DE_COMPILER == DE_COMPILER_CLANG))
 	_assert(reason, file, line);
+#elif (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS) || defined(__FreeBSD__)
+	fprintf(stderr, "Assertion '%s' failed at %s:%d\n", reason, file, line);
+	raise(SIGTRAP);
+	abort();
 #elif (DE_OS == DE_OS_UNIX)
 	__assert_fail(reason, file, (unsigned int)line, "Unknown function");
 #elif (DE_OS == DE_OS_QNX)
     __assert(reason, file, (unsigned int)line, "Unknown function");
 #elif (DE_OS == DE_OS_SYMBIAN)
 	__assert("Unknown function", file, line, reason);
-#elif (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS)
-	fprintf(stderr, "Assertion '%s' failed at %s:%d\n", reason, file, line);
-	raise(SIGTRAP);
-	abort();
 #elif (DE_OS == DE_OS_ANDROID)
 	__android_log_print(ANDROID_LOG_ERROR, "delibs", "Assertion '%s' failed at %s:%d", reason, file, line);
 	__assert(file, line, reason);

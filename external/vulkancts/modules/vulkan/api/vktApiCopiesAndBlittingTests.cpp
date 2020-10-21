@@ -82,6 +82,12 @@ enum AllocationKind
 	ALLOCATION_KIND_DEDICATED,
 };
 
+enum ExtensionUse
+{
+	EXTENSION_USE_NONE,
+	EXTENSION_USE_COPY_COMMANDS2,
+};
+
 template <typename Type>
 class BinaryCompare
 {
@@ -98,6 +104,100 @@ FormatSet dedicatedAllocationImageToImageFormatsToTestSet;
 FormatSet dedicatedAllocationBlittingFormatsToTestSet;
 
 using namespace vk;
+
+VkImageCopy2KHR convertvkImageCopyTovkImageCopy2KHR(VkImageCopy imageCopy)
+{
+	const VkImageCopy2KHR	imageCopy2 =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_COPY_2_KHR,		// VkStructureType				sType;
+		DE_NULL,								// const void*					pNext;
+		imageCopy.srcSubresource,				// VkImageSubresourceLayers		srcSubresource;
+		imageCopy.srcOffset,					// VkOffset3D					srcOffset;
+		imageCopy.dstSubresource,				// VkImageSubresourceLayers		dstSubresource;
+		imageCopy.dstOffset,					// VkOffset3D					dstOffset;
+		imageCopy.extent						// VkExtent3D					extent;
+	};
+	return imageCopy2;
+}
+VkBufferCopy2KHR convertvkBufferCopyTovkBufferCopy2KHR(VkBufferCopy bufferCopy)
+{
+	const VkBufferCopy2KHR	bufferCopy2 =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_COPY_2_KHR,	// VkStructureType				sType;
+		DE_NULL,								// const void*					pNext;
+		bufferCopy.srcOffset,					// VkDeviceSize					srcOffset;
+		bufferCopy.dstOffset,					// VkDeviceSize					dstOffset;
+		bufferCopy.size,						// VkDeviceSize					size;
+	};
+	return bufferCopy2;
+}
+
+VkBufferImageCopy2KHR convertvkBufferImageCopyTovkBufferImageCopy2KHR(VkBufferImageCopy bufferImageCopy)
+{
+	const VkBufferImageCopy2KHR	bufferImageCopy2 =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2_KHR,	// VkStructureType				sType;
+		DE_NULL,									// const void*					pNext;
+		bufferImageCopy.bufferOffset,				// VkDeviceSize					bufferOffset;
+		bufferImageCopy.bufferRowLength,			// uint32_t						bufferRowLength;
+		bufferImageCopy.bufferImageHeight,			// uint32_t						bufferImageHeight;
+		bufferImageCopy.imageSubresource,			// VkImageSubresourceLayers		imageSubresource;
+		bufferImageCopy.imageOffset,				// VkOffset3D					imageOffset;
+		bufferImageCopy.imageExtent					// VkExtent3D					imageExtent;
+	};
+	return bufferImageCopy2;
+}
+
+VkImageBlit2KHR convertvkImageBlitTovkImageBlit2KHR(VkImageBlit imageBlit)
+{
+	const VkImageBlit2KHR	imageBlit2 =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_BLIT_2_KHR,			// VkStructureType				sType;
+		DE_NULL,									// const void*					pNext;
+		imageBlit.srcSubresource,					// VkImageSubresourceLayers		srcSubresource;
+		{											// VkOffset3D					srcOffsets[2];
+			{
+				imageBlit.srcOffsets[0].x,				// VkOffset3D			srcOffsets[0].x;
+				imageBlit.srcOffsets[0].y,				// VkOffset3D			srcOffsets[0].y;
+				imageBlit.srcOffsets[0].z				// VkOffset3D			srcOffsets[0].z;
+			},
+			{
+				imageBlit.srcOffsets[1].x,				// VkOffset3D			srcOffsets[1].x;
+				imageBlit.srcOffsets[1].y,				// VkOffset3D			srcOffsets[1].y;
+				imageBlit.srcOffsets[1].z				// VkOffset3D			srcOffsets[1].z;
+			}
+		},
+		imageBlit.dstSubresource,					// VkImageSubresourceLayers		dstSubresource;
+		{											// VkOffset3D					srcOffsets[2];
+			{
+				imageBlit.dstOffsets[0].x,				// VkOffset3D			dstOffsets[0].x;
+				imageBlit.dstOffsets[0].y,				// VkOffset3D			dstOffsets[0].y;
+				imageBlit.dstOffsets[0].z				// VkOffset3D			dstOffsets[0].z;
+			},
+			{
+				imageBlit.dstOffsets[1].x,				// VkOffset3D			dstOffsets[1].x;
+				imageBlit.dstOffsets[1].y,				// VkOffset3D			dstOffsets[1].y;
+				imageBlit.dstOffsets[1].z				// VkOffset3D			dstOffsets[1].z;
+			}
+		}
+	};
+	return imageBlit2;
+}
+
+VkImageResolve2KHR convertvkImageResolveTovkImageResolve2KHR(VkImageResolve imageResolve)
+{
+	const VkImageResolve2KHR	imageResolve2 =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2_KHR,		// VkStructureType				sType;
+		DE_NULL,									// const void*					pNext;
+		imageResolve.srcSubresource,				// VkImageSubresourceLayers		srcSubresource;
+		imageResolve.srcOffset,						// VkOffset3D					srcOffset;
+		imageResolve.dstSubresource,				// VkImageSubresourceLayers		dstSubresource;
+		imageResolve.dstOffset,						// VkOffset3D					dstOffset;
+		imageResolve.extent							// VkExtent3D					extent;
+	};
+	return imageResolve2;
+}
 
 VkImageAspectFlags getAspectFlags (tcu::TextureFormat format)
 {
@@ -139,20 +239,21 @@ bool isFloatFormat (tcu::TextureFormat format)
 
 union CopyRegion
 {
-	VkBufferCopy		bufferCopy;
-	VkImageCopy			imageCopy;
-	VkBufferImageCopy	bufferImageCopy;
-	VkImageBlit			imageBlit;
-	VkImageResolve		imageResolve;
+	VkBufferCopy			bufferCopy;
+	VkImageCopy				imageCopy;
+	VkBufferImageCopy		bufferImageCopy;
+	VkImageBlit				imageBlit;
+	VkImageResolve			imageResolve;
 };
 
 struct ImageParms
 {
-	VkImageType		imageType;
-	VkFormat		format;
-	VkExtent3D		extent;
-	VkImageTiling	tiling;
-	VkImageLayout	operationLayout;
+	VkImageType			imageType;
+	VkFormat			format;
+	VkExtent3D			extent;
+	VkImageTiling		tiling;
+	VkImageLayout		operationLayout;
+	VkImageCreateFlags	createFlags;
 };
 
 struct TestParams
@@ -176,6 +277,7 @@ struct TestParams
 	};
 
 	AllocationKind	allocationKind;
+	ExtensionUse	extensionUse;
 	deUint32		mipLevels;
 	deBool			singleCommand;
 	deUint32		barrierCount;
@@ -187,6 +289,8 @@ struct TestParams
 		singleCommand				= DE_TRUE;
 		barrierCount				= 1u;
 		separateDepthStencilLayouts	= DE_FALSE;
+		src.image.createFlags		= VK_IMAGE_CREATE_FLAG_BITS_MAX_ENUM;
+		dst.image.createFlags		= VK_IMAGE_CREATE_FLAG_BITS_MAX_ENUM;
 	}
 };
 
@@ -256,10 +360,12 @@ inline deUint32 getArraySize(const ImageParms& parms)
 	return (parms.imageType != VK_IMAGE_TYPE_3D) ? parms.extent.depth : 1u;
 }
 
-inline VkImageCreateFlags getCreateFlags(const ImageParms& parms)
+inline VkImageCreateFlags  getCreateFlags(const ImageParms& parms)
 {
-	return parms.imageType == VK_IMAGE_TYPE_2D && parms.extent.depth % 6 == 0 ?
-		VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
+	if (parms.createFlags == VK_IMAGE_CREATE_FLAG_BITS_MAX_ENUM)
+		return parms.imageType == VK_IMAGE_TYPE_2D && parms.extent.depth % 6 == 0 ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
+	else
+		return parms.createFlags;
 }
 
 inline VkExtent3D getExtent3D(const ImageParms& parms, deUint32 mipLevel = 0u)
@@ -944,7 +1050,8 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 	const VkDevice				vkDevice			= m_context.getDevice();
 	const VkQueue				queue				= m_context.getUniversalQueue();
 
-	std::vector<VkImageCopy>	imageCopies;
+	std::vector<VkImageCopy>		imageCopies;
+	std::vector<VkImageCopy2KHR>	imageCopies2KHR;
 	for (deUint32 i = 0; i < m_params.regions.size(); i++)
 	{
 		VkImageCopy imageCopy = m_params.regions[i].imageCopy;
@@ -971,7 +1078,15 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 			imageCopy.dstOffset.y *= blockHeight;
 		}
 
-		imageCopies.push_back(imageCopy);
+		if (m_params.extensionUse == EXTENSION_USE_NONE)
+		{
+			imageCopies.push_back(imageCopy);
+		}
+		else
+		{
+			DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+			imageCopies2KHR.push_back(convertvkImageCopyTovkImageCopy2KHR(imageCopy));
+		}
 	}
 
 	const VkImageMemoryBarrier	imageBarriers[]		=
@@ -1018,7 +1133,29 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 
 	beginCommandBuffer(vk, *m_cmdBuffer);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
-	vk.cmdCopyImage(*m_cmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
+
+	if (m_params.extensionUse == EXTENSION_USE_NONE)
+	{
+		vk.cmdCopyImage(*m_cmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
+	}
+	else
+	{
+		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+		const VkCopyImageInfo2KHR copyImageInfo2KHR =
+		{
+			VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2_KHR,	// VkStructureType			sType;
+			DE_NULL,									// const void*				pNext;
+			m_source.get(),								// VkImage					srcImage;
+			m_params.src.image.operationLayout,			// VkImageLayout			srcImageLayout;
+			m_destination.get(),						// VkImage					dstImage;
+			m_params.dst.image.operationLayout,			// VkImageLayout			dstImageLayout;
+			(deUint32)imageCopies2KHR.size(),			// uint32_t					regionCount;
+			imageCopies2KHR.data()						// const VkImageCopy2KHR*	pRegions;
+		};
+
+		vk.cmdCopyImage2KHR(*m_cmdBuffer, &copyImageInfo2KHR);
+	}
+
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait (vk, vkDevice, queue, *m_cmdBuffer);
@@ -1186,6 +1323,12 @@ public:
 		{
 			if (!context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
 				TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
+		}
+
+		if (m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2)
+		{
+			if (!context.isDeviceFunctionalitySupported("VK_KHR_copy_commands2"))
+				TCU_THROW(NotSupportedError, "VK_KHR_copy_commands2 is not supported");
 		}
 
 		if (m_params.separateDepthStencilLayouts)
@@ -1376,12 +1519,43 @@ tcu::TestStatus CopyBufferToBuffer::iterate (void)
 	};
 
 	std::vector<VkBufferCopy>		bufferCopies;
+	std::vector<VkBufferCopy2KHR>	bufferCopies2KHR;
 	for (deUint32 i = 0; i < m_params.regions.size(); i++)
-		bufferCopies.push_back(m_params.regions[i].bufferCopy);
+	{
+		if (m_params.extensionUse == EXTENSION_USE_NONE)
+		{
+			bufferCopies.push_back(m_params.regions[i].bufferCopy);
+		}
+		else
+		{
+			DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+			bufferCopies2KHR.push_back(convertvkBufferCopyTovkBufferCopy2KHR(m_params.regions[i].bufferCopy));
+		}
+	}
 
 	beginCommandBuffer(vk, *m_cmdBuffer);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &srcBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
-	vk.cmdCopyBuffer(*m_cmdBuffer, m_source.get(), m_destination.get(), (deUint32)m_params.regions.size(), &bufferCopies[0]);
+
+	if (m_params.extensionUse == EXTENSION_USE_NONE)
+	{
+		vk.cmdCopyBuffer(*m_cmdBuffer, m_source.get(), m_destination.get(), (deUint32)m_params.regions.size(), &bufferCopies[0]);
+	}
+	else
+	{
+		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+		const VkCopyBufferInfo2KHR copyBufferInfo2KHR =
+		{
+			VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2_KHR,	// VkStructureType			sType;
+			DE_NULL,									// const void*				pNext;
+			m_source.get(),								// VkBuffer					srcBuffer;
+			m_destination.get(),						// VkBuffer					dstBuffer;
+			(deUint32)m_params.regions.size(),			// uint32_t					regionCount;
+			&bufferCopies2KHR[0]						// const VkBufferCopy2KHR*	pRegions;
+		};
+
+		vk.cmdCopyBuffer2KHR(*m_cmdBuffer, &copyBufferInfo2KHR);
+	}
+
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	endCommandBuffer(vk, *m_cmdBuffer);
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
@@ -1418,7 +1592,19 @@ public:
 							{
 								return new CopyBufferToBuffer(context, m_params);
 							}
-private:
+
+	virtual void			checkSupport(Context&	context) const
+	{
+							if (m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2)
+							{
+								if (!context.isDeviceFunctionalitySupported("VK_KHR_copy_commands2"))
+								{
+									TCU_THROW(NotSupportedError, "VK_KHR_copy_commands2 is not supported");
+								}
+							}
+	}
+
+	private:
 	TestParams				m_params;
 };
 
@@ -1555,13 +1741,45 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 	};
 
 	// Copy from image to buffer
-	std::vector<VkBufferImageCopy>	bufferImageCopies;
+	std::vector<VkBufferImageCopy>		bufferImageCopies;
+	std::vector<VkBufferImageCopy2KHR>	bufferImageCopies2KHR;
 	for (deUint32 i = 0; i < m_params.regions.size(); i++)
-		bufferImageCopies.push_back(m_params.regions[i].bufferImageCopy);
+	{
+		if (m_params.extensionUse == EXTENSION_USE_NONE)
+		{
+			bufferImageCopies.push_back(m_params.regions[i].bufferImageCopy);
+		}
+		else
+		{
+			DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+			bufferImageCopies2KHR.push_back(convertvkBufferImageCopyTovkBufferImageCopy2KHR(m_params.regions[i].bufferImageCopy));
+		}
+	}
 
 	beginCommandBuffer(vk, *m_cmdBuffer);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
-	vk.cmdCopyImageToBuffer(*m_cmdBuffer, m_source.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination.get(), (deUint32)m_params.regions.size(), &bufferImageCopies[0]);
+
+	if (m_params.extensionUse == EXTENSION_USE_NONE)
+	{
+		vk.cmdCopyImageToBuffer(*m_cmdBuffer, m_source.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination.get(), (deUint32)m_params.regions.size(), &bufferImageCopies[0]);
+	}
+	else
+	{
+		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+		const VkCopyImageToBufferInfo2KHR copyImageToBufferInfo2KHR =
+		{
+			VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2_KHR,	// VkStructureType				sType;
+			DE_NULL,											// const void*					pNext;
+			m_source.get(),										// VkImage						srcImage;
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,				// VkImageLayout				srcImageLayout;
+			m_destination.get(),								// VkBuffer						dstBuffer;
+			(deUint32)m_params.regions.size(),					// uint32_t						regionCount;
+			&bufferImageCopies2KHR[0]							// const VkBufferImageCopy2KHR*	pRegions;
+		};
+
+		vk.cmdCopyImageToBuffer2KHR(*m_cmdBuffer, &copyImageToBufferInfo2KHR);
+	}
+
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	endCommandBuffer(vk, *m_cmdBuffer);
 
@@ -1590,6 +1808,16 @@ public:
 							{
 								return new CopyImageToBuffer(context, m_params);
 							}
+
+	virtual void			checkSupport				(Context&				context) const
+							{
+								if ((m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2) &&
+									(!context.isDeviceFunctionalitySupported("VK_KHR_copy_commands2")))
+								{
+									TCU_THROW(NotSupportedError, "VK_KHR_copy_commands2 is not supported");
+								}
+							}
+
 private:
 	TestParams				m_params;
 };
@@ -1746,12 +1974,45 @@ tcu::TestStatus CopyBufferToImage::iterate (void)
 
 	// Copy from buffer to image
 	std::vector<VkBufferImageCopy>		bufferImageCopies;
+	std::vector<VkBufferImageCopy2KHR>	bufferImageCopies2KHR;
 	for (deUint32 i = 0; i < m_params.regions.size(); i++)
-		bufferImageCopies.push_back(m_params.regions[i].bufferImageCopy);
+	{
+		if (m_params.extensionUse == EXTENSION_USE_NONE)
+		{
+			bufferImageCopies.push_back(m_params.regions[i].bufferImageCopy);
+		}
+		else
+		{
+			DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+			bufferImageCopies2KHR.push_back(convertvkBufferImageCopyTovkBufferImageCopy2KHR(m_params.regions[i].bufferImageCopy));
+		}
+	}
 
 	beginCommandBuffer(vk, *m_cmdBuffer);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
-	vk.cmdCopyBufferToImage(*m_cmdBuffer, m_source.get(), m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), bufferImageCopies.data());
+
+	if (m_params.extensionUse == EXTENSION_USE_NONE)
+	{
+		vk.cmdCopyBufferToImage(*m_cmdBuffer, m_source.get(), m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), bufferImageCopies.data());
+	}
+	else
+	{
+		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+		const VkCopyBufferToImageInfo2KHR copyBufferToImageInfo2KHR =
+		{
+			VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2_KHR,	// VkStructureType				sType;
+			DE_NULL,											// const void*					pNext;
+			m_source.get(),										// VkBuffer						srcBuffer;
+			m_destination.get(),								// VkImage						dstImage;
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				// VkImageLayout				dstImageLayout;
+			(deUint32)m_params.regions.size(),					// uint32_t						regionCount;
+			bufferImageCopies2KHR.data()						// const VkBufferImageCopy2KHR*	pRegions;
+		};
+
+		vk.cmdCopyBufferToImage2KHR(*m_cmdBuffer, &copyBufferToImageInfo2KHR);
+	}
+
+
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait (vk, vkDevice, queue, *m_cmdBuffer);
@@ -1778,6 +2039,17 @@ public:
 							{
 								return new CopyBufferToImage(context, m_params);
 							}
+
+	virtual void			checkSupport				(Context&				context) const
+							{
+								if ((m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2) &&
+									(!context.isDeviceFunctionalitySupported("VK_KHR_copy_commands2")))
+								{
+									TCU_THROW(NotSupportedError, "VK_KHR_copy_commands2 is not supported");
+								}
+							}
+
+
 private:
 	TestParams				m_params;
 };
@@ -1981,7 +2253,8 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 
 	// Upload our source depth/stencil content to the source buffer
 	// This is the buffer that will be used by region commands
-	std::vector<VkBufferImageCopy>	bufferImageCopies;
+	std::vector<VkBufferImageCopy>		bufferImageCopies;
+	std::vector<VkBufferImageCopy2KHR>	bufferImageCopies2KHR;
 	VkDeviceSize					bufferOffset	= 0;
 	const VkDevice					vkDevice		= m_context.getDevice();
 	const DeviceInterface&			vk				= m_context.getDeviceInterface();
@@ -2040,7 +2313,15 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 			copyData.bufferOffset += stencilOffset;
 		}
 
-		bufferImageCopies.push_back(copyData);
+		if (m_params.extensionUse == EXTENSION_USE_NONE)
+		{
+			bufferImageCopies.push_back(copyData);
+		}
+		else
+		{
+			DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+			bufferImageCopies2KHR.push_back(convertvkBufferImageCopyTovkBufferImageCopy2KHR(copyData));
+		}
 	}
 
 	flushAlloc(vk, vkDevice, *m_sourceBufferAlloc);
@@ -2076,17 +2357,59 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 	beginCommandBuffer(vk, *m_cmdBuffer);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
 
-	if (m_params.singleCommand)
+	if (m_params.extensionUse == EXTENSION_USE_NONE)
 	{
-		// Issue a single copy command with regions defined by the test.
-		vk.cmdCopyBufferToImage(*m_cmdBuffer, m_source.get(), m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), bufferImageCopies.data());
+		if (m_params.singleCommand)
+		{
+			// Issue a single copy command with regions defined by the test.
+			vk.cmdCopyBufferToImage(*m_cmdBuffer, m_source.get(), m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), bufferImageCopies.data());
+		}
+		else
+		{
+			// Issue a a copy command per region defined by the test.
+			for (deUint32 i = 0; i < bufferImageCopies.size(); i++)
+			{
+				vk.cmdCopyBufferToImage(*m_cmdBuffer, m_source.get(), m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferImageCopies[i]);
+			}
+		}
 	}
 	else
 	{
-		// Issue a a copy command per region defined by the test.
-		for (deUint32 i = 0; i < bufferImageCopies.size(); i++)
+		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+
+		if (m_params.singleCommand)
 		{
-			vk.cmdCopyBufferToImage(*m_cmdBuffer, m_source.get(), m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferImageCopies[i]);
+			// Issue a single copy command with regions defined by the test.
+			const VkCopyBufferToImageInfo2KHR copyBufferToImageInfo2KHR =
+			{
+				VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2_KHR,	// VkStructureType				sType;
+				DE_NULL,											// const void*					pNext;
+				m_source.get(),										// VkBuffer						srcBuffer;
+				m_destination.get(),								// VkImage						dstImage;
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				// VkImageLayout				dstImageLayout;
+				(deUint32)m_params.regions.size(),					// uint32_t						regionCount;
+				bufferImageCopies2KHR.data()						// const VkBufferImageCopy2KHR*	pRegions;
+			};
+			vk.cmdCopyBufferToImage2KHR(*m_cmdBuffer, &copyBufferToImageInfo2KHR);
+		}
+		else
+		{
+			// Issue a a copy command per region defined by the test.
+			for (deUint32 i = 0; i < bufferImageCopies2KHR.size(); i++)
+			{
+				const VkCopyBufferToImageInfo2KHR copyBufferToImageInfo2KHR =
+				{
+					VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2_KHR,	// VkStructureType				sType;
+					DE_NULL,											// const void*					pNext;
+					m_source.get(),										// VkBuffer						srcBuffer;
+					m_destination.get(),								// VkImage						dstImage;
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				// VkImageLayout				dstImageLayout;
+					1,													// uint32_t						regionCount;
+					&bufferImageCopies2KHR[i]							// const VkBufferImageCopy2KHR*	pRegions;
+				};
+				// Issue a single copy command with regions defined by the test.
+				vk.cmdCopyBufferToImage2KHR(*m_cmdBuffer, &copyBufferToImageInfo2KHR);
+			}
 		}
 	}
 	endCommandBuffer(vk, *m_cmdBuffer);
@@ -2128,6 +2451,16 @@ public:
 							{
 								return new CopyBufferToDepthStencil(context, m_params);
 							}
+
+	virtual void			checkSupport						(Context&				context) const
+							{
+								if ((m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2) &&
+									(!context.isDeviceFunctionalitySupported("VK_KHR_copy_commands2")))
+								{
+									TCU_THROW(NotSupportedError, "VK_KHR_copy_commands2 is not supported");
+								}
+							}
+
 private:
 	TestParams				m_params;
 };
@@ -2248,9 +2581,20 @@ tcu::TestStatus BlittingImages::iterate (void)
 	const VkDevice				vkDevice			= m_context.getDevice();
 	const VkQueue				queue				= m_context.getUniversalQueue();
 
-	std::vector<VkImageBlit>	regions;
+	std::vector<VkImageBlit>		regions;
+	std::vector<VkImageBlit2KHR>	regions2KHR;
 	for (deUint32 i = 0; i < m_params.regions.size(); i++)
-		regions.push_back(m_params.regions[i].imageBlit);
+	{
+		if (m_params.extensionUse == EXTENSION_USE_NONE)
+		{
+			regions.push_back(m_params.regions[i].imageBlit);
+		}
+		else
+		{
+			DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+			regions2KHR.push_back(convertvkImageBlitTovkImageBlit2KHR(m_params.regions[i].imageBlit));
+		}
+	}
 
 	// Barriers for copying image to buffer
 	const VkImageMemoryBarrier		srcImageBarrier		=
@@ -2296,7 +2640,29 @@ tcu::TestStatus BlittingImages::iterate (void)
 	beginCommandBuffer(vk, *m_cmdBuffer);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &srcImageBarrier);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &dstImageBarrier);
-	vk.cmdBlitImage(*m_cmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)m_params.regions.size(), &regions[0], m_params.filter);
+
+	if (m_params.extensionUse == EXTENSION_USE_NONE)
+	{
+		vk.cmdBlitImage(*m_cmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)m_params.regions.size(), &regions[0], m_params.filter);
+	}
+	else
+	{
+		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+		const VkBlitImageInfo2KHR BlitImageInfo2KHR =
+		{
+			VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2_KHR,	// VkStructureType				sType;
+			DE_NULL,									// const void*					pNext;
+			m_source.get(),								// VkImage						srcImage;
+			m_params.src.image.operationLayout,			// VkImageLayout				srcImageLayout;
+			m_destination.get(),						// VkImage						dstImage;
+			m_params.dst.image.operationLayout,			// VkImageLayout				dstImageLayout;
+			(deUint32)m_params.regions.size(),			// uint32_t						regionCount;
+			&regions2KHR[0],							// const VkImageBlit2KHR*		pRegions;
+			m_params.filter								// VkFilter						filter;
+		};
+		vk.cmdBlitImage2KHR(*m_cmdBuffer, &BlitImageInfo2KHR);
+	}
+
 	endCommandBuffer(vk, *m_cmdBuffer);
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
 
@@ -3049,6 +3415,14 @@ public:
 				TCU_THROW(NotSupportedError, "Source format feature sampled image filter cubic not supported");
 			}
 		}
+
+		if (m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2)
+		{
+			if (!context.isDeviceFunctionalitySupported("VK_KHR_copy_commands2"))
+			{
+				TCU_THROW(NotSupportedError, "VK_KHR_copy_commands2 is not supported");
+			}
+		}
 	}
 
 private:
@@ -3166,9 +3540,20 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 	const VkDevice				vkDevice			= m_context.getDevice();
 	const VkQueue				queue				= m_context.getUniversalQueue();
 
-	std::vector<VkImageBlit>	regions;
+	std::vector<VkImageBlit>		regions;
+	std::vector<VkImageBlit2KHR>	regions2KHR;
 	for (deUint32 i = 0; i < m_params.regions.size(); i++)
-		regions.push_back(m_params.regions[i].imageBlit);
+	{
+		if (m_params.extensionUse == EXTENSION_USE_NONE)
+		{
+			regions.push_back(m_params.regions[i].imageBlit);
+		}
+		else
+		{
+			DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+			regions2KHR.push_back(convertvkImageBlitTovkImageBlit2KHR(m_params.regions[i].imageBlit));
+		}
+	}
 
 	// Copy source image to mip level 0 when generating mipmaps with multiple blit commands
 	if (!m_params.singleCommand)
@@ -3224,7 +3609,28 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 
 			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &srcImageBarrier);
 			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &dstImageBarrier);
-			vk.cmdBlitImage(*m_cmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)regions.size(), &regions[0], m_params.filter);
+
+			if (m_params.extensionUse == EXTENSION_USE_NONE)
+			{
+				vk.cmdBlitImage(*m_cmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)m_params.regions.size(), &regions[0], m_params.filter);
+			}
+			else
+			{
+				DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+				const VkBlitImageInfo2KHR BlitImageInfo2KHR =
+				{
+					VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2_KHR,	// VkStructureType				sType;
+					DE_NULL,									// const void*					pNext;
+					m_source.get(),								// VkImage						srcImage;
+					m_params.src.image.operationLayout,			// VkImageLayout				srcImageLayout;
+					m_destination.get(),						// VkImage						dstImage;
+					m_params.dst.image.operationLayout,			// VkImageLayout				dstImageLayout;
+					(deUint32)m_params.regions.size(),			// uint32_t						regionCount;
+					&regions2KHR[0],							// const VkImageBlit2KHR*		pRegions;
+					m_params.filter								// VkFilter						filter;
+				};
+				vk.cmdBlitImage2KHR(*m_cmdBuffer, &BlitImageInfo2KHR);
+			}
 		}
 	}
 	// Blit mip levels with multiple blit commands
@@ -3269,9 +3675,9 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 			}
 		}
 
-		for (deUint32 regionNdx = 0u; regionNdx < (deUint32)regions.size(); regionNdx++)
+		for (deUint32 regionNdx = 0u; regionNdx < (deUint32)m_params.regions.size(); regionNdx++)
 		{
-			const deUint32					mipLevel			= regions[regionNdx].dstSubresource.mipLevel;
+			const deUint32	mipLevel	= m_params.regions[regionNdx].imageBlit.dstSubresource.mipLevel;
 
 			// Prepare single mip level for writing
 			const VkImageMemoryBarrier		preImageBarrier		=
@@ -3316,7 +3722,29 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 			};
 
 			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &preImageBarrier);
-			vk.cmdBlitImage(*m_cmdBuffer, m_destination.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, 1u, &regions[regionNdx], m_params.filter);
+
+			if (m_params.extensionUse == EXTENSION_USE_NONE)
+			{
+				vk.cmdBlitImage(*m_cmdBuffer, m_destination.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, 1u, &regions[regionNdx], m_params.filter);
+			}
+			else
+			{
+				DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+				const VkBlitImageInfo2KHR BlitImageInfo2KHR =
+				{
+					VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2_KHR,	// VkStructureType				sType;
+					DE_NULL,									// const void*					pNext;
+					m_destination.get(),						// VkImage						srcImage;
+					m_params.src.image.operationLayout,			// VkImageLayout				srcImageLayout;
+					m_destination.get(),						// VkImage						dstImage;
+					m_params.dst.image.operationLayout,			// VkImageLayout				dstImageLayout;
+					1u,											// uint32_t						regionCount;
+					&regions2KHR[regionNdx],					// const VkImageBlit2KHR*		pRegions;
+					m_params.filter								// VkFilter						filter;
+				};
+				vk.cmdBlitImage2KHR(*m_cmdBuffer, &BlitImageInfo2KHR);
+			}
+
 			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 		}
 
@@ -3716,6 +4144,11 @@ public:
 			else if (m_params.mipLevels > properties.maxMipLevels)
 			{
 				TCU_THROW(NotSupportedError, "Number of mip levels not supported");
+			}
+			else if ((m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2)	&&
+					 (!context.isDeviceFunctionalitySupported("VK_KHR_copy_commands2")))
+			{
+				TCU_THROW(NotSupportedError, "VK_KHR_copy_commands2 is not supported");
 			}
 		}
 
@@ -4162,8 +4595,19 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 	const VkQueue					queue				= m_context.getUniversalQueue();
 
 	std::vector<VkImageResolve>		imageResolves;
+	std::vector<VkImageResolve2KHR>	imageResolves2KHR;
 	for (deUint32 i = 0; i < m_params.regions.size(); i++)
-		imageResolves.push_back(m_params.regions[i].imageResolve);
+	{
+		if (m_params.extensionUse == EXTENSION_USE_NONE)
+		{
+			imageResolves.push_back(m_params.regions[i].imageResolve);
+		}
+		else
+		{
+			DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+			imageResolves2KHR.push_back(convertvkImageResolveTovkImageResolve2KHR(m_params.regions[i].imageResolve));
+		}
+	}
 
 	const VkImageMemoryBarrier	imageBarriers[]		=
 	{
@@ -4229,7 +4673,28 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 
 	beginCommandBuffer(vk, *m_cmdBuffer);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
-	vk.cmdResolveImage(*m_cmdBuffer, sourceImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), imageResolves.data());
+
+	if (m_params.extensionUse == EXTENSION_USE_NONE)
+	{
+		vk.cmdResolveImage(*m_cmdBuffer, sourceImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), imageResolves.data());
+	}
+	else
+	{
+		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+		const VkResolveImageInfo2KHR ResolveImageInfo2KHR =
+		{
+			VK_STRUCTURE_TYPE_RESOLVE_IMAGE_INFO_2_KHR,	// VkStructureType				sType;
+			DE_NULL,									// const void*					pNext;
+			sourceImage,								// VkImage						srcImage;
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout				srcImageLayout;
+			m_destination.get(),						// VkImage						dstImage;
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout				dstImageLayout;
+			(deUint32)m_params.regions.size(),			// uint32_t						regionCount;
+			imageResolves2KHR.data()					// const  VkImageResolve2KHR*	pRegions;
+		};
+		vk.cmdResolveImage2KHR(*m_cmdBuffer, &ResolveImageInfo2KHR);
+	}
+
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 	endCommandBuffer(vk, *m_cmdBuffer);
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
@@ -4577,6 +5042,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 	const VkQueue					queue				= m_context.getUniversalQueue();
 	const tcu::TextureFormat		srcTcuFormat		= mapVkFormat(m_params.src.image.format);
 	std::vector<VkImageCopy>		imageCopies;
+	std::vector<VkImageCopy2KHR>	imageCopies2KHR;
 
 	for (deUint32 layerNdx = 0; layerNdx < copyArraySize; ++layerNdx)
 	{
@@ -4604,7 +5070,16 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 			{0, 0, 0},							// VkOffset3D				dstOffset;
 			 getExtent3D(m_params.src.image),	// VkExtent3D				extent;
 		};
-		imageCopies.push_back(imageCopy);
+
+		if (m_params.extensionUse == EXTENSION_USE_NONE)
+		{
+			imageCopies.push_back(imageCopy);
+		}
+		else
+		{
+			DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+			imageCopies2KHR.push_back(convertvkImageCopyTovkImageCopy2KHR(imageCopy));
+		}
 	}
 
 	const VkImageMemoryBarrier		imageBarriers[]		=
@@ -4672,7 +5147,29 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 
 	beginCommandBuffer(vk, *m_cmdBuffer);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
-	vk.cmdCopyImage(*m_cmdBuffer, m_multisampledImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_multisampledCopyImage.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)imageCopies.size(), imageCopies.data());
+
+	if (m_params.extensionUse == EXTENSION_USE_NONE)
+	{
+		vk.cmdCopyImage(*m_cmdBuffer, m_multisampledImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_multisampledCopyImage.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)imageCopies.size(), imageCopies.data());
+	}
+	else
+	{
+		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+		const VkCopyImageInfo2KHR copyImageInfo2KHR =
+		{
+			VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2_KHR,	// VkStructureType			sType;
+			DE_NULL,									// const void*				pNext;
+			m_multisampledImage.get(),					// VkImage					srcImage;
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			srcImageLayout;
+			m_multisampledCopyImage.get(),				// VkImage					dstImage;
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			dstImageLayout;
+			(deUint32)imageCopies2KHR.size(),			// uint32_t					regionCount;
+			imageCopies2KHR.data()						// const VkImageCopy2KHR*	pRegions;
+		};
+
+		vk.cmdCopyImage2KHR(*m_cmdBuffer, &copyImageInfo2KHR);
+	}
+
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &postImageBarriers);
 	endCommandBuffer(vk, *m_cmdBuffer);
 
@@ -4721,6 +5218,12 @@ public:
 																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
 		{
 			TCU_THROW(NotSupportedError, "Format not supported");
+		}
+
+		if ((m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2)	&&
+			(!context.isDeviceFunctionalitySupported("VK_KHR_copy_commands2")))
+		{
+			TCU_THROW(NotSupportedError, "VK_KHR_copy_commands2 is not supported");
 		}
 	}
 
@@ -4856,7 +5359,7 @@ const VkImageSubresourceLayers	defaultSourceLayer		=
 	1u,							// deUint32				layerCount;
 };
 
-void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	tcu::TestContext& testCtx	= group->getTestContext();
 
@@ -4873,6 +5376,7 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
 
 		{
 			const VkImageCopy				testCopy	=
@@ -4886,7 +5390,6 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 
 			CopyRegion	imageCopy;
 			imageCopy.imageCopy	= testCopy;
-
 			params.regions.push_back(imageCopy);
 		}
 
@@ -4906,6 +5409,7 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
 
 		{
 			const VkImageCopy				testCopy	=
@@ -4918,8 +5422,7 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 			};
 
 			CopyRegion	imageCopy;
-			imageCopy.imageCopy	= testCopy;
-
+			imageCopy.imageCopy = testCopy;
 			params.regions.push_back(imageCopy);
 		}
 
@@ -4939,6 +5442,7 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
 
 		{
 			const VkImageCopy				testCopy	=
@@ -4951,8 +5455,7 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 			};
 
 			CopyRegion	imageCopy;
-			imageCopy.imageCopy	= testCopy;
-
+			imageCopy.imageCopy = testCopy;
 			params.regions.push_back(imageCopy);
 		}
 
@@ -4972,6 +5475,7 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
 
 		{
 			const VkImageSubresourceLayers  sourceLayer =
@@ -4991,8 +5495,7 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 			};
 
 			CopyRegion	imageCopy;
-			imageCopy.imageCopy	= testCopy;
-
+			imageCopy.imageCopy = testCopy;
 			params.regions.push_back(imageCopy);
 		}
 
@@ -5012,6 +5515,7 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
 
 		{
 			const VkImageSubresourceLayers  sourceLayer =
@@ -5031,8 +5535,7 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 			};
 
 			CopyRegion	imageCopy;
-			imageCopy.imageCopy	= testCopy;
-
+			imageCopy.imageCopy = testCopy;
 			params.regions.push_back(imageCopy);
 		}
 
@@ -5410,7 +5913,7 @@ const VkFormat	dedicatedAllocationImageToImageFormatsToTest[]	=
 	VK_FORMAT_R64G64B64A64_SFLOAT,
 };
 
-void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	if (allocationKind == ALLOCATION_KIND_DEDICATED)
 	{
@@ -5431,6 +5934,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationK
 		params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 		params.allocationKind		= allocationKind;
+		params.extensionUse			= extensionUse;
 
 		for (deInt32 i = 0; i < defaultSize; i += defaultFourthSize)
 		{
@@ -5579,7 +6083,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationK
 	}
 }
 
-void addImageToImageDimensionsTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addImageToImageDimensionsTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	tcu::TestContext&		testCtx				= group->getTestContext();
 
@@ -5709,6 +6213,7 @@ void addImageToImageDimensionsTests (tcu::TestCaseGroup* group, AllocationKind a
 
 		copyRegion.imageCopy					= testCopy;
 		testParams.params.allocationKind		= allocationKind;
+		testParams.params.extensionUse			= extensionUse;
 
 		testParams.params.regions.push_back(copyRegion);
 
@@ -5812,7 +6317,7 @@ void addImageToImageAllFormatsDepthStencilFormatsTests (tcu::TestCaseGroup* grou
 	}
 }
 
-void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	const VkFormat	depthAndStencilFormats[]	=
 	{
@@ -5841,6 +6346,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Allo
 			params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 			params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 			params.allocationKind				= allocationKind;
+			params.extensionUse					= extensionUse;
 			params.separateDepthStencilLayouts	= DE_FALSE;
 
 			bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
@@ -5918,6 +6424,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Allo
 			params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 			params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 			params.allocationKind				= allocationKind;
+			params.extensionUse					= extensionUse;
 
 			bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
 			bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
@@ -5994,6 +6501,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Allo
 			params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 			params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 			params.allocationKind				= allocationKind;
+			params.extensionUse					= extensionUse;
 
 			bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
 			bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
@@ -6055,13 +6563,13 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Allo
 	}
 }
 
-void addImageToImageAllFormatsTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addImageToImageAllFormatsTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
-	addTestGroup(group, "color", "Copy image to image with color formats", addImageToImageAllFormatsColorTests, allocationKind);
-	addTestGroup(group, "depth_stencil", "Copy image to image with depth/stencil formats", addImageToImageAllFormatsDepthStencilTests, allocationKind);
+	addTestGroup(group, "color", "Copy image to image with color formats", addImageToImageAllFormatsColorTests, allocationKind, extensionUse);
+	addTestGroup(group, "depth_stencil", "Copy image to image with depth/stencil formats", addImageToImageAllFormatsDepthStencilTests, allocationKind, extensionUse);
 }
 
-void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	tcu::TestContext& testCtx	= group->getTestContext();
 
@@ -6081,6 +6589,7 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params3DTo2D.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params3DTo2D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params3DTo2D.allocationKind				= allocationKind;
+		params3DTo2D.extensionUse				= extensionUse;
 
 		for (deUint32 slicesLayersNdx = 0; slicesLayersNdx < slicesLayers; ++slicesLayersNdx)
 		{
@@ -6133,6 +6642,7 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params2DTo3D.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params2DTo3D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params2DTo3D.allocationKind				= allocationKind;
+		params2DTo3D.extensionUse				= extensionUse;
 
 		for (deUint32 slicesLayersNdx = 0; slicesLayersNdx < slicesLayers; ++slicesLayersNdx)
 		{
@@ -6186,6 +6696,7 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params3DTo2D.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params3DTo2D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params3DTo2D.allocationKind				= allocationKind;
+		params3DTo2D.extensionUse				= extensionUse;
 
 		{
 			const VkImageSubresourceLayers	sourceLayer	=
@@ -6237,6 +6748,7 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params2DTo3D.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params2DTo3D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params2DTo3D.allocationKind				= allocationKind;
+		params2DTo3D.extensionUse				= extensionUse;
 
 		{
 			const VkImageSubresourceLayers	sourceLayer	=
@@ -6289,6 +6801,7 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params3DTo2D.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params3DTo2D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params3DTo2D.allocationKind				= allocationKind;
+		params3DTo2D.extensionUse				= extensionUse;
 
 		const deUint32 regionWidth				= defaultHalfExtent.width / slicesLayers -1;
 		const deUint32 regionHeight				= defaultHalfExtent.height / slicesLayers -1 ;
@@ -6348,6 +6861,7 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params2DTo3D.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params2DTo3D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params2DTo3D.allocationKind				= allocationKind;
+		params2DTo3D.extensionUse				= extensionUse;
 
 		const deUint32 regionWidth				= defaultHalfExtent.width / slicesLayers -1;
 		const deUint32 regionHeight				= defaultHalfExtent.height / slicesLayers -1 ;
@@ -6393,15 +6907,354 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 	}
 }
 
-void addImageToImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addImageToImageCubeTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
-	addTestGroup(group, "simple_tests", "Copy from image to image simple tests", addImageToImageSimpleTests, allocationKind);
-	addTestGroup(group, "all_formats", "Copy from image to image with all compatible formats", addImageToImageAllFormatsTests, allocationKind);
-	addTestGroup(group, "3d_images", "Coping operations on 3d images", addImageToImage3dImagesTests, allocationKind);
-	addTestGroup(group, "dimensions", "Copying operations on different image dimensions", addImageToImageDimensionsTests, allocationKind);
+	tcu::TestContext& testCtx	= group->getTestContext();
+
+	{
+		TestParams	paramsCubeToArray;
+		const deUint32	arrayLayers					= 6u;
+		paramsCubeToArray.src.image.createFlags		= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		paramsCubeToArray.src.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsCubeToArray.src.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsCubeToArray.src.image.extent			= defaultHalfExtent;
+		paramsCubeToArray.src.image.extent.depth	= arrayLayers;
+		paramsCubeToArray.src.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsCubeToArray.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		paramsCubeToArray.dst.image.createFlags		= 0;
+		paramsCubeToArray.dst.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsCubeToArray.dst.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsCubeToArray.dst.image.extent			= defaultHalfExtent;
+		paramsCubeToArray.dst.image.extent.depth	= arrayLayers;
+		paramsCubeToArray.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsCubeToArray.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		paramsCubeToArray.allocationKind			= allocationKind;
+		paramsCubeToArray.extensionUse				= extensionUse;
+
+		for (deUint32 arrayLayersNdx = 0; arrayLayersNdx < arrayLayers; ++arrayLayersNdx)
+		{
+			const VkImageSubresourceLayers	sourceLayer	=
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					arrayLayersNdx,				// deUint32				baseArrayLayer;
+					1u							// deUint32				layerCount;
+				};
+
+			const VkImageSubresourceLayers	destinationLayer	=
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					arrayLayersNdx,				// deUint32				baseArrayLayer;
+					1u							// deUint32				layerCount;
+				};
+
+			const VkImageCopy				testCopy	=
+				{
+					sourceLayer,				// VkImageSubresourceLayers	srcSubresource;
+					{0, 0, 0},					// VkOffset3D				srcOffset;
+					destinationLayer,			// VkImageSubresourceLayers	dstSubresource;
+					{0, 0, 0},					// VkOffset3D				dstOffset;
+					defaultHalfExtent				// VkExtent3D				extent;
+				};
+
+			CopyRegion	imageCopy;
+			imageCopy.imageCopy	= testCopy;
+
+			paramsCubeToArray.regions.push_back(imageCopy);
+		}
+
+		group->addChild(new CopyImageToImageTestCase(testCtx, "cube_to_array_layers", "copy cube compatible image to 2d layers layer by layer", paramsCubeToArray));
+	}
+
+	{
+		TestParams	paramsCubeToArray;
+		const deUint32	arrayLayers					= 6u;
+		paramsCubeToArray.src.image.createFlags		= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		paramsCubeToArray.src.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsCubeToArray.src.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsCubeToArray.src.image.extent			= defaultHalfExtent;
+		paramsCubeToArray.src.image.extent.depth	= arrayLayers;
+		paramsCubeToArray.src.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsCubeToArray.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		paramsCubeToArray.dst.image.createFlags		= 0;
+		paramsCubeToArray.dst.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsCubeToArray.dst.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsCubeToArray.dst.image.extent			= defaultHalfExtent;
+		paramsCubeToArray.dst.image.extent.depth	= arrayLayers;
+		paramsCubeToArray.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsCubeToArray.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		paramsCubeToArray.allocationKind			= allocationKind;
+		paramsCubeToArray.extensionUse				= extensionUse;
+
+		{
+			const VkImageSubresourceLayers	sourceLayer	=
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					0u,							// deUint32				baseArrayLayer;
+					arrayLayers					// deUint32				layerCount;
+				};
+
+			const VkImageSubresourceLayers	destinationLayer	=
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					0u,							// deUint32				baseArrayLayer;
+					arrayLayers					// deUint32				layerCount;
+				};
+
+			const VkImageCopy				testCopy	=
+				{
+					sourceLayer,				// VkImageSubresourceLayers	srcSubresource;
+					{0, 0, 0},					// VkOffset3D				srcOffset;
+					destinationLayer,			// VkImageSubresourceLayers	dstSubresource;
+					{0, 0, 0},					// VkOffset3D				dstOffset;
+					defaultHalfExtent			// VkExtent3D				extent;
+				};
+
+			CopyRegion	imageCopy;
+			imageCopy.imageCopy	= testCopy;
+
+			paramsCubeToArray.regions.push_back(imageCopy);
+		}
+
+		group->addChild(new CopyImageToImageTestCase(testCtx, "cube_to_array_whole", "copy cube compatible image to 2d layers all at once", paramsCubeToArray));
+	}
+
+	{
+		TestParams	paramsArrayToCube;
+		const deUint32	arrayLayers					= 6u;
+		paramsArrayToCube.src.image.createFlags		= 0;
+		paramsArrayToCube.src.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsArrayToCube.src.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsArrayToCube.src.image.extent			= defaultHalfExtent;
+		paramsArrayToCube.src.image.extent.depth	= arrayLayers;
+		paramsArrayToCube.src.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsArrayToCube.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		paramsArrayToCube.dst.image.createFlags		= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		paramsArrayToCube.dst.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsArrayToCube.dst.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsArrayToCube.dst.image.extent			= defaultHalfExtent;
+		paramsArrayToCube.dst.image.extent.depth	= arrayLayers;
+		paramsArrayToCube.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsArrayToCube.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		paramsArrayToCube.allocationKind			= allocationKind;
+		paramsArrayToCube.extensionUse				= extensionUse;
+
+		for (deUint32 arrayLayersNdx = 0; arrayLayersNdx < arrayLayers; ++arrayLayersNdx)
+		{
+			const VkImageSubresourceLayers	sourceLayer	=
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					arrayLayersNdx,				// deUint32				baseArrayLayer;
+					1u							// deUint32				layerCount;
+				};
+
+			const VkImageSubresourceLayers	destinationLayer =
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					arrayLayersNdx,				// deUint32				baseArrayLayer;
+					1u							// deUint32				layerCount;
+				};
+
+			const VkImageCopy				testCopy =
+				{
+					sourceLayer,				// VkImageSubresourceLayers	srcSubresource;
+					{0, 0, 0},					// VkOffset3D				srcOffset;
+					destinationLayer,			// VkImageSubresourceLayers	dstSubresource;
+					{0, 0, 0},					// VkOffset3D				dstOffset;
+					defaultHalfExtent			// VkExtent3D				extent;
+				};
+
+			CopyRegion	imageCopy;
+			imageCopy.imageCopy	= testCopy;
+
+			paramsArrayToCube.regions.push_back(imageCopy);
+		}
+
+		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_cube_layers", "copy 2d layers to cube compatible image layer by layer", paramsArrayToCube));
+	}
+
+	{
+		TestParams	paramsArrayToCube;
+		const deUint32	arrayLayers					= 6u;
+		paramsArrayToCube.src.image.createFlags		= 0;
+		paramsArrayToCube.src.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsArrayToCube.src.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsArrayToCube.src.image.extent			= defaultHalfExtent;
+		paramsArrayToCube.src.image.extent.depth	= arrayLayers;
+		paramsArrayToCube.src.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsArrayToCube.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		paramsArrayToCube.dst.image.createFlags		= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		paramsArrayToCube.dst.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsArrayToCube.dst.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsArrayToCube.dst.image.extent			= defaultHalfExtent;
+		paramsArrayToCube.dst.image.extent.depth	= arrayLayers;
+		paramsArrayToCube.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsArrayToCube.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		paramsArrayToCube.allocationKind			= allocationKind;
+		paramsArrayToCube.extensionUse				= extensionUse;
+
+		{
+			const VkImageSubresourceLayers sourceLayer =
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
+					0u,								// deUint32				mipLevel;
+					0u,								// deUint32				baseArrayLayer;
+					arrayLayers						// deUint32				layerCount;
+				};
+
+			const VkImageSubresourceLayers destinationLayer =
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
+					0u,								// deUint32				mipLevel;
+					0u,								// deUint32				baseArrayLayer;
+					arrayLayers						// deUint32				layerCount;
+				};
+
+			const VkImageCopy				testCopy =
+				{
+					sourceLayer,					// VkImageSubresourceLayers	srcSubresource;
+					{0, 0, 0},						// VkOffset3D				srcOffset;
+					destinationLayer,				// VkImageSubresourceLayers	dstSubresource;
+					{0, 0, 0},						// VkOffset3D				dstOffset;
+					defaultHalfExtent				// VkExtent3D				extent;
+				};
+
+			CopyRegion imageCopy;
+			imageCopy.imageCopy = testCopy;
+
+			paramsArrayToCube.regions.push_back(imageCopy);
+		}
+
+		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_cube_whole", "copy 2d layers to cube compatible image all at once", paramsArrayToCube));
+	}
+
+	{
+		TestParams	paramsCubeToArray;
+		const deUint32	arrayLayers					= 6u;
+		paramsCubeToArray.src.image.createFlags		= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		paramsCubeToArray.src.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsCubeToArray.src.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsCubeToArray.src.image.extent			= defaultHalfExtent;
+		paramsCubeToArray.src.image.extent.depth	= arrayLayers;
+		paramsCubeToArray.src.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsCubeToArray.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		paramsCubeToArray.dst.image.createFlags		= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		paramsCubeToArray.dst.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsCubeToArray.dst.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsCubeToArray.dst.image.extent			= defaultHalfExtent;
+		paramsCubeToArray.dst.image.extent.depth	= arrayLayers;
+		paramsCubeToArray.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsCubeToArray.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		paramsCubeToArray.allocationKind			= allocationKind;
+		paramsCubeToArray.extensionUse				= extensionUse;
+
+		for (deUint32 arrayLayersNdx = 0; arrayLayersNdx < arrayLayers; ++arrayLayersNdx)
+		{
+			const VkImageSubresourceLayers	sourceLayer	=
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					arrayLayersNdx,				// deUint32				baseArrayLayer;
+					1u							// deUint32				layerCount;
+				};
+
+			const VkImageSubresourceLayers	destinationLayer	=
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					arrayLayersNdx,				// deUint32				baseArrayLayer;
+					1u							// deUint32				layerCount;
+				};
+
+			const VkImageCopy				testCopy	=
+				{
+					sourceLayer,				// VkImageSubresourceLayers	srcSubresource;
+					{0, 0, 0},					// VkOffset3D				srcOffset;
+					destinationLayer,			// VkImageSubresourceLayers	dstSubresource;
+					{0, 0, 0},					// VkOffset3D				dstOffset;
+					defaultHalfExtent				// VkExtent3D				extent;
+				};
+
+			CopyRegion	imageCopy;
+			imageCopy.imageCopy	= testCopy;
+
+			paramsCubeToArray.regions.push_back(imageCopy);
+		}
+
+		group->addChild(new CopyImageToImageTestCase(testCtx, "cube_to_cube_layers", "copy cube compatible image to cube compatible image layer by layer", paramsCubeToArray));
+	}
+
+	{
+		TestParams	paramsCubeToCube;
+		const deUint32	arrayLayers					= 6u;
+		paramsCubeToCube.src.image.createFlags		= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		paramsCubeToCube.src.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsCubeToCube.src.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsCubeToCube.src.image.extent			= defaultHalfExtent;
+		paramsCubeToCube.src.image.extent.depth		= arrayLayers;
+		paramsCubeToCube.src.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsCubeToCube.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		paramsCubeToCube.dst.image.createFlags		= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		paramsCubeToCube.dst.image.imageType		= VK_IMAGE_TYPE_2D;
+		paramsCubeToCube.dst.image.format			= VK_FORMAT_R8G8B8A8_UINT;
+		paramsCubeToCube.dst.image.extent			= defaultHalfExtent;
+		paramsCubeToCube.dst.image.extent.depth		= arrayLayers;
+		paramsCubeToCube.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
+		paramsCubeToCube.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		paramsCubeToCube.allocationKind				= allocationKind;
+		paramsCubeToCube.extensionUse				= extensionUse;
+
+		{
+			const VkImageSubresourceLayers	sourceLayer	=
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					0u,							// deUint32				baseArrayLayer;
+					arrayLayers					// deUint32				layerCount;
+				};
+
+			const VkImageSubresourceLayers	destinationLayer	=
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+					0u,							// deUint32				mipLevel;
+					0u,							// deUint32				baseArrayLayer;
+					arrayLayers					// deUint32				layerCount;
+				};
+
+			const VkImageCopy				testCopy	=
+				{
+					sourceLayer,				// VkImageSubresourceLayers	srcSubresource;
+					{0, 0, 0},					// VkOffset3D				srcOffset;
+					destinationLayer,			// VkImageSubresourceLayers	dstSubresource;
+					{0, 0, 0},					// VkOffset3D				dstOffset;
+					defaultHalfExtent			// VkExtent3D				extent;
+				};
+
+			CopyRegion	imageCopy;
+			imageCopy.imageCopy	= testCopy;
+
+			paramsCubeToCube.regions.push_back(imageCopy);
+		}
+
+		group->addChild(new CopyImageToImageTestCase(testCtx, "cube_to_cube_whole", "copy cube compatible image to cube compatible image all at once", paramsCubeToCube));
+	}
 }
 
-void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addImageToImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+{
+	addTestGroup(group, "simple_tests", "Copy from image to image simple tests", addImageToImageSimpleTests, allocationKind, extensionUse);
+	addTestGroup(group, "all_formats", "Copy from image to image with all compatible formats", addImageToImageAllFormatsTests, allocationKind, extensionUse);
+	addTestGroup(group, "3d_images", "Coping operations on 3d images", addImageToImage3dImagesTests, allocationKind, extensionUse);
+	addTestGroup(group, "dimensions", "Copying operations on different image dimensions", addImageToImageDimensionsTests, allocationKind, extensionUse);
+	addTestGroup(group, "cube", "Coping operations on cube compatible images", addImageToImageCubeTests, allocationKind, extensionUse);
+}
+
+void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	tcu::TestContext& testCtx	= group->getTestContext();
 
@@ -6414,6 +7267,7 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= defaultSize * defaultSize;
 		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -6441,6 +7295,7 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= defaultSize * defaultSize;
 		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -6468,6 +7323,7 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= defaultSize * defaultSize;
 		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -6495,6 +7351,7 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= defaultSize * defaultSize;
 		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
 
 		const int			pixelSize	= tcu::getPixelSize(mapVkFormat(params.src.image.format));
 		const VkDeviceSize	bufferSize	= pixelSize * params.dst.buffer.size;
@@ -6535,6 +7392,7 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= (defaultHalfSize - 1u) * defaultSize + defaultHalfSize;
 		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -6562,6 +7420,7 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= (defaultHalfSize - 1u) * defaultSize + defaultHalfSize + defaultFourthSize;
 		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -6581,7 +7440,7 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 	}
 }
 
-void addBufferToDepthStencilTests(tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addBufferToDepthStencilTests(tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	tcu::TestContext& testCtx = group->getTestContext();
 
@@ -6698,6 +7557,7 @@ void addBufferToDepthStencilTests(tcu::TestCaseGroup* group, AllocationKind allo
 			params.dst.image.tiling = VK_IMAGE_TILING_OPTIMAL;
 			params.dst.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 			params.allocationKind = allocationKind;
+			params.extensionUse = extensionUse;
 
 			if (hasDepth && hasStencil)
 			{
@@ -6740,7 +7600,7 @@ void addBufferToDepthStencilTests(tcu::TestCaseGroup* group, AllocationKind allo
 		}
 }
 
-void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	tcu::TestContext& testCtx	= group->getTestContext();
 
@@ -6753,6 +7613,7 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -6780,6 +7641,7 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
 
 		CopyRegion	region;
 		deUint32	divisor	= 1;
@@ -6810,6 +7672,7 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -6837,6 +7700,7 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -6864,6 +7728,7 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -6891,6 +7756,7 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -6910,7 +7776,7 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 	}
 }
 
-void addBufferToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addBufferToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	tcu::TestContext&				testCtx					= group->getTestContext();
 
@@ -6919,6 +7785,7 @@ void addBufferToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocatio
 		params.src.buffer.size	= defaultSize;
 		params.dst.buffer.size	= defaultSize;
 		params.allocationKind	= allocationKind;
+		params.extensionUse		= extensionUse;
 
 		const VkBufferCopy	bufferCopy	=
 		{
@@ -6940,6 +7807,7 @@ void addBufferToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocatio
 		params.src.buffer.size	= defaultFourthSize;
 		params.dst.buffer.size	= defaultFourthSize;
 		params.allocationKind	= allocationKind;
+		params.extensionUse		= extensionUse;
 
 		const VkBufferCopy	bufferCopy	=
 		{
@@ -6961,6 +7829,7 @@ void addBufferToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocatio
 		params.src.buffer.size	= size;
 		params.dst.buffer.size	= size * (size + 1);
 		params.allocationKind	= allocationKind;
+		params.extensionUse		= extensionUse;
 
 		// Copy region with size 1..size
 		for (unsigned int i = 1; i <= size; i++)
@@ -7443,7 +8312,7 @@ void addBlittingImageSimpleWithoutScalingPartialTests (tcu::TestCaseGroup* group
 	addBlittingImageSimpleTests(group, params);
 }
 
-void addBlittingImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addBlittingImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	TestParams params;
 	params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
@@ -7452,6 +8321,7 @@ void addBlittingImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind allo
 	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
+	params.extensionUse					= extensionUse;
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 	addTestGroup(group, "whole", "Blit without scaling (whole)", addBlittingImageSimpleWholeTests, params);
@@ -7909,7 +8779,7 @@ const FormatSet	onlyNearestAndLinearFormatsToTest =
 	VK_FORMAT_A8B8G8R8_SINT_PACK32
 };
 
-void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	const struct {
 		const VkFormat*	compatibleFormats;
@@ -7943,6 +8813,7 @@ void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, Allocation
 		params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 		params.allocationKind		= allocationKind;
+		params.extensionUse			= extensionUse;
 
 		CopyRegion	region;
 		for (int i = 0, j = 1; (i + defaultFourthSize / j < defaultSize) && (defaultFourthSize > j); i += defaultFourthSize / j++)
@@ -8200,7 +9071,7 @@ void addBlittingImageAllFormatsDepthStencilFormatsTests (tcu::TestCaseGroup* gro
 	}
 }
 
-void addBlittingImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addBlittingImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	const VkFormat	depthAndStencilFormats[]	=
 	{
@@ -8233,6 +9104,7 @@ void addBlittingImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, All
 			params.dst.image.format				= params.src.image.format;
 			params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 			params.allocationKind				= allocationKind;
+			params.extensionUse					= extensionUse;
 			params.separateDepthStencilLayouts	= DE_FALSE;
 
 			bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
@@ -8353,6 +9225,7 @@ void addBlittingImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, All
 			params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 			params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 			params.allocationKind				= allocationKind;
+			params.extensionUse					= extensionUse;
 
 			bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
 			bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
@@ -8472,6 +9345,7 @@ void addBlittingImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, All
 			params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 			params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 			params.allocationKind				= allocationKind;
+			params.extensionUse					= extensionUse;
 
 			bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
 			bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
@@ -8620,7 +9494,7 @@ void addBlittingImageAllFormatsMipmapFormatTests (tcu::TestCaseGroup* group, Bli
 	}
 }
 
-void addBlittingImageAllFormatsBaseLevelMipmapTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addBlittingImageAllFormatsBaseLevelMipmapTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	const struct
 	{
@@ -8650,6 +9524,7 @@ void addBlittingImageAllFormatsBaseLevelMipmapTests (tcu::TestCaseGroup* group, 
 	params.dst.image.extent		= defaultExtent;
 	params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 	params.allocationKind		= allocationKind;
+	params.extensionUse			= extensionUse;
 	params.mipLevels			= deLog2Floor32(deMinu32(defaultExtent.width, defaultExtent.height)) + 1u;
 	params.singleCommand		= DE_TRUE;
 
@@ -8730,7 +9605,7 @@ void addBlittingImageAllFormatsBaseLevelMipmapTests (tcu::TestCaseGroup* group, 
 	}
 }
 
-void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	const struct
 	{
@@ -8760,6 +9635,7 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 	params.dst.image.extent		= defaultExtent;
 	params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 	params.allocationKind		= allocationKind;
+	params.extensionUse			= extensionUse;
 	params.mipLevels			= deLog2Floor32(deMinu32(defaultExtent.width, defaultExtent.height)) + 1u;
 	params.singleCommand		= DE_FALSE;
 
@@ -8890,23 +9766,23 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 	}
 }
 
-void addBlittingImageAllFormatsMipmapTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addBlittingImageAllFormatsMipmapTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
-	addTestGroup(group, "from_base_level", "Generate all mipmap levels from base level", addBlittingImageAllFormatsBaseLevelMipmapTests, allocationKind);
-	addTestGroup(group, "from_previous_level", "Generate next mipmap level from previous level", addBlittingImageAllFormatsPreviousLevelMipmapTests, allocationKind);
+	addTestGroup(group, "from_base_level", "Generate all mipmap levels from base level", addBlittingImageAllFormatsBaseLevelMipmapTests, allocationKind, extensionUse);
+	addTestGroup(group, "from_previous_level", "Generate next mipmap level from previous level", addBlittingImageAllFormatsPreviousLevelMipmapTests, allocationKind, extensionUse);
 }
 
-void addBlittingImageAllFormatsTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addBlittingImageAllFormatsTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
-	addTestGroup(group, "color", "Blitting image with color formats", addBlittingImageAllFormatsColorTests, allocationKind);
-	addTestGroup(group, "depth_stencil", "Blitting image with depth/stencil formats", addBlittingImageAllFormatsDepthStencilTests, allocationKind);
-	addTestGroup(group, "generate_mipmaps", "Generating mipmaps with vkCmdBlitImage()", addBlittingImageAllFormatsMipmapTests, allocationKind);
+	addTestGroup(group, "color", "Blitting image with color formats", addBlittingImageAllFormatsColorTests, allocationKind, extensionUse);
+	addTestGroup(group, "depth_stencil", "Blitting image with depth/stencil formats", addBlittingImageAllFormatsDepthStencilTests, allocationKind, extensionUse);
+	addTestGroup(group, "generate_mipmaps", "Generating mipmaps with vkCmdBlitImage()", addBlittingImageAllFormatsMipmapTests, allocationKind, extensionUse);
 }
 
-void addBlittingImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addBlittingImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
-	addTestGroup(group, "simple_tests", "Blitting image simple tests", addBlittingImageSimpleTests, allocationKind);
-	addTestGroup(group, "all_formats", "Blitting image with all compatible formats", addBlittingImageAllFormatsTests, allocationKind);
+	addTestGroup(group, "simple_tests", "Blitting image simple tests", addBlittingImageSimpleTests, allocationKind, extensionUse);
+	addTestGroup(group, "all_formats", "Blitting image with all compatible formats", addBlittingImageAllFormatsTests, allocationKind, extensionUse);
 }
 
 const VkSampleCountFlagBits	samples[]		=
@@ -8920,7 +9796,7 @@ const VkSampleCountFlagBits	samples[]		=
 };
 const VkExtent3D			resolveExtent	= {256u, 256u, 1};
 
-void addResolveImageWholeTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addResolveImageWholeTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	TestParams	params;
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
@@ -8934,6 +9810,7 @@ void addResolveImageWholeTests (tcu::TestCaseGroup* group, AllocationKind alloca
 	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
+	params.extensionUse					= extensionUse;
 
 	{
 		const VkImageSubresourceLayers	sourceLayer	=
@@ -8965,7 +9842,7 @@ void addResolveImageWholeTests (tcu::TestCaseGroup* group, AllocationKind alloca
 	}
 }
 
-void addResolveImagePartialTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addResolveImagePartialTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	TestParams	params;
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
@@ -8979,6 +9856,7 @@ void addResolveImagePartialTests (tcu::TestCaseGroup* group, AllocationKind allo
 	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
+	params.extensionUse					= extensionUse;
 
 	{
 		const VkImageSubresourceLayers	sourceLayer	=
@@ -9010,7 +9888,7 @@ void addResolveImagePartialTests (tcu::TestCaseGroup* group, AllocationKind allo
 	}
 }
 
-void addResolveImageWithRegionsTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addResolveImageWithRegionsTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	TestParams	params;
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
@@ -9024,6 +9902,7 @@ void addResolveImageWithRegionsTests (tcu::TestCaseGroup* group, AllocationKind 
 	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
+	params.extensionUse					= extensionUse;
 
 	{
 		const VkImageSubresourceLayers	sourceLayer	=
@@ -9059,7 +9938,7 @@ void addResolveImageWithRegionsTests (tcu::TestCaseGroup* group, AllocationKind 
 	}
 }
 
-void addResolveImageWholeCopyBeforeResolvingTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addResolveImageWholeCopyBeforeResolvingTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	TestParams	params;
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
@@ -9073,6 +9952,7 @@ void addResolveImageWholeCopyBeforeResolvingTests (tcu::TestCaseGroup* group, Al
 	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
+	params.extensionUse					= extensionUse;
 
 	{
 		const VkImageSubresourceLayers	sourceLayer	=
@@ -9105,7 +9985,7 @@ void addResolveImageWholeCopyBeforeResolvingTests (tcu::TestCaseGroup* group, Al
 	}
 }
 
-void addResolveImageWholeArrayImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addResolveImageWholeArrayImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	TestParams	params;
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
@@ -9120,6 +10000,7 @@ void addResolveImageWholeArrayImageTests (tcu::TestCaseGroup* group, AllocationK
 	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
+	params.extensionUse					= extensionUse;
 
 	for (deUint32 layerNdx=0; layerNdx < params.dst.image.extent.depth; ++layerNdx)
 	{
@@ -9153,7 +10034,7 @@ void addResolveImageWholeArrayImageTests (tcu::TestCaseGroup* group, AllocationK
 	}
 }
 
-void addResolveImageWholeArrayImageSingleRegionTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addResolveImageWholeArrayImageSingleRegionTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	TestParams	params;
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
@@ -9166,6 +10047,7 @@ void addResolveImageWholeArrayImageSingleRegionTests (tcu::TestCaseGroup* group,
 	params.dst.image.extent.depth		= 5u;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
+	params.extensionUse					= extensionUse;
 
 	const VkImageSubresourceLayers	sourceLayer	=
 	{
@@ -9196,7 +10078,7 @@ void addResolveImageWholeArrayImageSingleRegionTests (tcu::TestCaseGroup* group,
 	}
 }
 
-void addResolveImageDiffImageSizeTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addResolveImageDiffImageSizeTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	tcu::TestContext&	testCtx			= group->getTestContext();
 	TestParams			params;
@@ -9209,6 +10091,7 @@ void addResolveImageDiffImageSizeTests (tcu::TestCaseGroup* group, AllocationKin
 	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
+	params.extensionUse					= extensionUse;
 
 	{
 		const VkImageSubresourceLayers	sourceLayer	=
@@ -9272,36 +10155,42 @@ void addResolveImageDiffImageSizeTests (tcu::TestCaseGroup* group, AllocationKin
 	}
 }
 
-void addResolveImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addResolveImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
-	addTestGroup(group, "whole", "Resolve from image to image (whole)", addResolveImageWholeTests, allocationKind);
-	addTestGroup(group, "partial", "Resolve from image to image (partial)", addResolveImagePartialTests, allocationKind);
-	addTestGroup(group, "with_regions", "Resolve from image to image (with regions)", addResolveImageWithRegionsTests, allocationKind);
-	addTestGroup(group, "whole_copy_before_resolving", "Resolve from image to image (whole copy before resolving)", addResolveImageWholeCopyBeforeResolvingTests, allocationKind);
-	addTestGroup(group, "whole_array_image", "Resolve from image to image (whole array image)", addResolveImageWholeArrayImageTests, allocationKind);
-	addTestGroup(group, "whole_array_image_one_region", "Resolve from image to image (whole array image with single region)", addResolveImageWholeArrayImageSingleRegionTests, allocationKind);
-	addTestGroup(group, "diff_image_size", "Resolve from image to image of different size", addResolveImageDiffImageSizeTests, allocationKind);
+	addTestGroup(group, "whole", "Resolve from image to image (whole)", addResolveImageWholeTests, allocationKind, extensionUse);
+	addTestGroup(group, "partial", "Resolve from image to image (partial)", addResolveImagePartialTests, allocationKind, extensionUse);
+	addTestGroup(group, "with_regions", "Resolve from image to image (with regions)", addResolveImageWithRegionsTests, allocationKind, extensionUse);
+	addTestGroup(group, "whole_copy_before_resolving", "Resolve from image to image (whole copy before resolving)", addResolveImageWholeCopyBeforeResolvingTests, allocationKind, extensionUse);
+	addTestGroup(group, "whole_array_image", "Resolve from image to image (whole array image)", addResolveImageWholeArrayImageTests, allocationKind, extensionUse);
+	addTestGroup(group, "whole_array_image_one_region", "Resolve from image to image (whole array image with single region)", addResolveImageWholeArrayImageSingleRegionTests, allocationKind, extensionUse);
+	addTestGroup(group, "diff_image_size", "Resolve from image to image of different size", addResolveImageDiffImageSizeTests, allocationKind, extensionUse);
 }
 
-void addCopiesAndBlittingTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+void addCopiesAndBlittingTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
-	addTestGroup(group, "image_to_image", "Copy from image to image", addImageToImageTests, allocationKind);
-	addTestGroup(group, "image_to_buffer", "Copy from image to buffer", addImageToBufferTests, allocationKind);
-	addTestGroup(group, "buffer_to_image", "Copy from buffer to image", addBufferToImageTests, allocationKind);
-	addTestGroup(group, "buffer_to_depthstencil", "Copy from buffer to depth/Stencil", addBufferToDepthStencilTests, allocationKind);
-	addTestGroup(group, "buffer_to_buffer", "Copy from buffer to buffer", addBufferToBufferTests, allocationKind);
-	addTestGroup(group, "blit_image", "Blitting image", addBlittingImageTests, allocationKind);
-	addTestGroup(group, "resolve_image", "Resolve image", addResolveImageTests, allocationKind);
+	addTestGroup(group, "image_to_image", "Copy from image to image", addImageToImageTests, allocationKind, extensionUse);
+	addTestGroup(group, "image_to_buffer", "Copy from image to buffer", addImageToBufferTests, allocationKind, extensionUse);
+	addTestGroup(group, "buffer_to_image", "Copy from buffer to image", addBufferToImageTests, allocationKind, extensionUse);
+	addTestGroup(group, "buffer_to_depthstencil", "Copy from buffer to depth/Stencil", addBufferToDepthStencilTests, allocationKind, extensionUse);
+	addTestGroup(group, "buffer_to_buffer", "Copy from buffer to buffer", addBufferToBufferTests, allocationKind, extensionUse);
+	addTestGroup(group, "blit_image", "Blitting image", addBlittingImageTests, allocationKind, extensionUse);
+	addTestGroup(group, "resolve_image", "Resolve image", addResolveImageTests, allocationKind, extensionUse);
 }
 
-void addCoreCopiesAndBlittingTests (tcu::TestCaseGroup* group)
+void addCoreCopiesAndBlittingTests(tcu::TestCaseGroup* group)
 {
-	addCopiesAndBlittingTests(group, ALLOCATION_KIND_SUBALLOCATED);
+	addCopiesAndBlittingTests(group, ALLOCATION_KIND_SUBALLOCATED, EXTENSION_USE_NONE);
 }
+
 
 void addDedicatedAllocationCopiesAndBlittingTests (tcu::TestCaseGroup* group)
 {
-	addCopiesAndBlittingTests(group, ALLOCATION_KIND_DEDICATED);
+	addCopiesAndBlittingTests(group, ALLOCATION_KIND_DEDICATED, EXTENSION_USE_NONE);
+}
+
+void addExtensionCopiesAndBlittingTests(tcu::TestCaseGroup* group)
+{
+	addCopiesAndBlittingTests(group, ALLOCATION_KIND_DEDICATED, EXTENSION_USE_COPY_COMMANDS2);
 }
 
 } // anonymous
@@ -9310,8 +10199,9 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	copiesAndBlittingTests(new tcu::TestCaseGroup(testCtx, "copy_and_blit", "Copies And Blitting Tests"));
 
-	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "core",					"Core Copies And Blitting Tests",								addCoreCopiesAndBlittingTests));
+	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "core", "Core Copies And Blitting Tests", addCoreCopiesAndBlittingTests));
 	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Copies And Blitting Tests For Dedicated Memory Allocation",	addDedicatedAllocationCopiesAndBlittingTests));
+	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "copy_commands2", "Copies And Blitting Tests using KHR_copy_commands2", addExtensionCopiesAndBlittingTests));
 
 	return copiesAndBlittingTests.release();
 }

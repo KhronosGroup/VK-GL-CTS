@@ -21,7 +21,7 @@ layout(location = 0) smooth out vec4 color_out[3];
 
 void main()
 {
-	gl_Position = vec4(position_in, 0, 1);
+    gl_Position = vec4(position_in, 0, 1);
     for (int i = 0; i < 3; i++)
         color_out[i] = color_in[i];
 }
@@ -61,6 +61,36 @@ void main()
 }
 END
 
+SHADER vertex vert_shader_verify GLSL
+#version 430
+layout(location = 0) in vec2 position_in;
+layout(location = 1) in vec2 texcoord_in;
+layout(location = 0) out vec2 texcoord_out;
+
+void main()
+{
+    gl_Position = vec4(position_in, 0, 1);
+    texcoord_out = texcoord_in;
+}
+END
+
+SHADER fragment frag_shader_verify GLSL
+#version 430
+layout(location = 0) in vec2 texcoord_in;
+layout(location = 0) out vec4 frag_out;
+uniform layout(set=0, binding=0) sampler2D result_sampler;
+uniform layout(set=0, binding=1) sampler2D ref_sampler;
+void main()
+{
+    vec4 result = texture(result_sampler, texcoord_in);
+    vec4 ref = texture(ref_sampler, texcoord_in);
+    if (distance(result, ref) > 0.1)
+        frag_out = vec4(1, 0, 0, 1);
+    else
+        frag_out = vec4(0, 1, 0, 1);
+}
+END
+
 BUFFER framebuffer0 FORMAT R32G32B32A32_SFLOAT
 BUFFER framebuffer1 FORMAT R32G32B32A32_SFLOAT
 BUFFER framebuffer2 FORMAT R32G32B32A32_SFLOAT
@@ -69,11 +99,22 @@ BUFFER ref0 FORMAT R32G32B32A32_SFLOAT
 BUFFER ref1 FORMAT R32G32B32A32_SFLOAT
 BUFFER ref2 FORMAT R32G32B32A32_SFLOAT
 
+BUFFER result0 FORMAT B8G8R8A8_UNORM
+BUFFER result1 FORMAT B8G8R8A8_UNORM
+BUFFER result2 FORMAT B8G8R8A8_UNORM
+
 BUFFER position DATA_TYPE vec2<float> DATA
 -1.0 -1.0
  1.0 -1.0
  1.0  1.0
 -1.0  1.0
+END
+
+BUFFER texcoord DATA_TYPE vec2<float> DATA
+0.0 0.0
+1.0 0.0
+1.0 1.0
+0.0 1.0
 END
 
 BUFFER color0 DATA_TYPE R32G32B32A32_SFLOAT DATA
@@ -97,6 +138,8 @@ BUFFER color2 DATA_TYPE R32G32B32A32_SFLOAT DATA
 0.0 1.0 0.0 1.0
 END
 
+
+SAMPLER sampler
 
 PIPELINE graphics pipeline
   ATTACH vert_shader
@@ -138,6 +181,39 @@ PIPELINE graphics pipeline_ref2
   FRAMEBUFFER_SIZE 60 60
 END
 
+PIPELINE graphics pipeline_verify0
+  ATTACH vert_shader_verify
+  ATTACH frag_shader_verify
+  VERTEX_DATA position LOCATION 0
+  VERTEX_DATA texcoord LOCATION 1
+  BIND BUFFER framebuffer0 AS combined_image_sampler SAMPLER sampler DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER ref0 AS combined_image_sampler SAMPLER sampler DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER result0 AS color LOCATION 0
+  FRAMEBUFFER_SIZE 60 60
+END
+
+PIPELINE graphics pipeline_verify1
+  ATTACH vert_shader_verify
+  ATTACH frag_shader_verify
+  VERTEX_DATA position LOCATION 0
+  VERTEX_DATA texcoord LOCATION 1
+  BIND BUFFER framebuffer1 AS combined_image_sampler SAMPLER sampler DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER ref1 AS combined_image_sampler SAMPLER sampler DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER result1 AS color LOCATION 0
+  FRAMEBUFFER_SIZE 60 60
+END
+
+PIPELINE graphics pipeline_verify2
+  ATTACH vert_shader_verify
+  ATTACH frag_shader_verify
+  VERTEX_DATA position LOCATION 0
+  VERTEX_DATA texcoord LOCATION 1
+  BIND BUFFER framebuffer2 AS combined_image_sampler SAMPLER sampler DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER ref2 AS combined_image_sampler SAMPLER sampler DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER result2 AS color LOCATION 0
+  FRAMEBUFFER_SIZE 60 60
+END
+
 CLEAR_COLOR pipeline 0 0 0 0
 CLEAR pipeline
 RUN pipeline DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
@@ -150,6 +226,16 @@ RUN pipeline_ref1 DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
 CLEAR_COLOR pipeline_ref2 0 0 0 0
 CLEAR pipeline_ref2
 RUN pipeline_ref2 DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
-EXPECT framebuffer0 EQ_BUFFER ref0
-EXPECT framebuffer1 EQ_BUFFER ref1
-EXPECT framebuffer2 EQ_BUFFER ref2
+CLEAR_COLOR pipeline_verify0 0 0 0 0
+CLEAR pipeline_verify0
+RUN pipeline_verify0 DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
+CLEAR_COLOR pipeline_verify1 0 0 0 0
+CLEAR pipeline_verify1
+RUN pipeline_verify1 DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
+CLEAR_COLOR pipeline_verify2 0 0 0 0
+CLEAR pipeline_verify2
+RUN pipeline_verify2 DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
+
+EXPECT result0 IDX 0 0 SIZE 60 60 EQ_RGBA 0 255 0 255
+EXPECT result1 IDX 0 0 SIZE 60 60 EQ_RGBA 0 255 0 255
+EXPECT result2 IDX 0 0 SIZE 60 60 EQ_RGBA 0 255 0 255

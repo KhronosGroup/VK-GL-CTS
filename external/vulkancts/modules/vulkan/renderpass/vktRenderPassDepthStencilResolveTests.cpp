@@ -108,6 +108,7 @@ struct TestConfig
 	deUint8						stencilExpectedValue;
 	bool						separateDepthStencilLayouts;
 	bool						unusedResolve;
+	bool						testCompatibility;
 };
 
 float get16bitDepthComponent(deUint8* pixelPtr)
@@ -148,7 +149,8 @@ protected:
 	AllocationSp				createBufferMemory				(void);
 	VkBufferSp					createBuffer					(void);
 
-	Move<VkRenderPass>			createRenderPass				(void);
+	Move<VkRenderPass>			createRenderPass				(VkFormat vkformat);
+	Move<VkRenderPass>			createRenderPassCompatible		(void);
 	Move<VkFramebuffer>			createFramebuffer				(VkRenderPass renderPass, VkImageViewSp multisampleImageView, VkImageViewSp singlesampleImageView);
 	Move<VkPipelineLayout>		createRenderPipelineLayout		(void);
 	Move<VkPipeline>			createRenderPipeline			(VkRenderPass renderPass, VkPipelineLayout renderPipelineLayout);
@@ -178,6 +180,7 @@ protected:
 	AllocationSp					m_bufferMemory;
 
 	Unique<VkRenderPass>			m_renderPass;
+	Unique<VkRenderPass>			m_renderPassCompatible;
 	Unique<VkFramebuffer>			m_framebuffer;
 	Unique<VkPipelineLayout>		m_renderPipelineLayout;
 	Unique<VkPipeline>				m_renderPipeline;
@@ -205,7 +208,8 @@ DepthStencilResolveTest::DepthStencilResolveTest (Context& context, TestConfig c
 	, m_buffer					(createBuffer())
 	, m_bufferMemory			(createBufferMemory())
 
-	, m_renderPass				(createRenderPass())
+	, m_renderPass				(createRenderPass(m_config.format))
+	, m_renderPassCompatible	(createRenderPassCompatible())
 	, m_framebuffer				(createFramebuffer(*m_renderPass, m_multisampleImageView, m_singlesampleImageView))
 	, m_renderPipelineLayout	(createRenderPipelineLayout())
 	, m_renderPipeline			(createRenderPipeline(*m_renderPass, *m_renderPipelineLayout))
@@ -382,12 +386,12 @@ VkImageViewSp DepthStencilResolveTest::createImageView (VkImageSp image, deUint3
 	return safeSharedPtr(new Unique<VkImageView>(vk::createImageView(m_vkd, m_device, &pCreateInfo)));
 }
 
-Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (void)
+Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (VkFormat vkformat)
 {
 	// When the depth/stencil resolve attachment is unused, it needs to be cleared outside the render pass so it has the expected values.
 	if (m_config.unusedResolve)
 	{
-		const tcu::TextureFormat			format			(mapVkFormat(m_config.format));
+		const tcu::TextureFormat			format			(mapVkFormat(vkformat));
 		const Unique<VkCommandBuffer>		commandBuffer	(allocateCommandBuffer(m_vkd, m_device, *m_commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 		const vk::VkImageSubresourceRange	imageRange		=
 		{
@@ -491,7 +495,7 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (void)
 															// VkStructureType					sType;
 		attachmentDescriptionStencil,						// const void*						pNext;
 		0u,													// VkAttachmentDescriptionFlags		flags;
-		m_config.format,									// VkFormat							format;
+		vkformat,											// VkFormat							format;
 		samples,											// VkSampleCountFlagBits			samples;
 		VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp;
 		VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				storeOp;
@@ -516,7 +520,7 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (void)
 															// VkStructureType					sType;
 		attachmentDescriptionStencil,						// const void*						pNext;
 		0u,													// VkAttachmentDescriptionFlags		flags;
-		m_config.format,									// VkFormat							format;
+		vkformat,											// VkFormat							format;
 		VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits			samples;
 		VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp;
 		VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp;
@@ -580,6 +584,22 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (void)
 	);
 
 	return renderPassCreator.createRenderPass(m_vkd, m_device);
+}
+
+Move<VkRenderPass> DepthStencilResolveTest::createRenderPassCompatible (void)
+{
+	// Create render pass with diffrent format that we currently use to test compatibility
+	if (m_config.testCompatibility)
+	{
+		vk::VkFormat format = vk::VK_FORMAT_D16_UNORM;
+		if (format == m_config.format) format = vk::VK_FORMAT_D32_SFLOAT;
+
+		return createRenderPass(format);
+	}
+	else
+	{
+		return {};
+	}
 }
 
 Move<VkFramebuffer> DepthStencilResolveTest::createFramebuffer (VkRenderPass renderPass, VkImageViewSp multisampleImageView, VkImageViewSp singlesampleImageView)
@@ -792,7 +812,7 @@ void DepthStencilResolveTest::submit (void)
 			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 			DE_NULL,
 
-			*m_renderPass,
+			m_config.testCompatibility ? *m_renderPassCompatible : *m_renderPass,
 			*m_framebuffer,
 
 			{
@@ -838,7 +858,7 @@ void DepthStencilResolveTest::submit (void)
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 			DE_NULL,
 
-			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 			VK_ACCESS_TRANSFER_READ_BIT,
 
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -1407,8 +1427,19 @@ void initTests (tcu::TestCaseGroup* group)
 										0u,
 										useSeparateDepthStencilLayouts,
 										unusedResolve,
+										false,
 									};
 									formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
+
+									if (sampleCountNdx == 0 && imageDataNdx == 0)
+									{
+										std::string	compatibilityTestName			= "compatibility_" + name;
+
+										TestConfig compatibilityTestConfig			= testConfig;
+										compatibilityTestConfig.testCompatibility	= true;
+
+										formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, compatibilityTestName.c_str(), compatibilityTestName.c_str(), compatibilityTestConfig));
+									}
 								}
 								if (hasStencil)
 								{
@@ -1435,8 +1466,19 @@ void initTests (tcu::TestCaseGroup* group)
 										expectedValue,
 										useSeparateDepthStencilLayouts,
 										unusedResolve,
+										false,
 									};
 									formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
+
+									if (sampleCountNdx == 0 && imageDataNdx == 0)
+									{
+										std::string	compatibilityTestName			= "compatibility_" + name;
+
+										TestConfig compatibilityTestConfig			= testConfig;
+										compatibilityTestConfig.testCompatibility	= true;
+
+										formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, compatibilityTestName.c_str(), compatibilityTestName.c_str(), compatibilityTestConfig));
+									}
 								}
 							}
 						}
@@ -1524,6 +1566,7 @@ void initTests (tcu::TestCaseGroup* group)
 									0u,
 									useSeparateDepthStencilLayouts,
 									unusedResolve,
+									false,
 								};
 								formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
 							}
@@ -1556,6 +1599,7 @@ void initTests (tcu::TestCaseGroup* group)
 									expectedValue,
 									useSeparateDepthStencilLayouts,
 									unusedResolve,
+									false,
 								};
 								formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
 							}

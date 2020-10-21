@@ -2129,6 +2129,79 @@ const glw::GLchar FunctionalTest::s_fragment_shader[] = "#version 450\n"
 /** Name of transform feedback varying in vertex shader. */
 const glw::GLchar* FunctionalTest::s_xfb_varying_name = "xfb_result";
 
+/******************************** Reuse Test Implementation   ********************************/
+
+/** @brief Reuse Test constructor.
+ *
+ *  @param [in] context     OpenGL context.
+ */
+ReuseTest::ReuseTest(deqp::Context& context) : deqp::TestCase(context, "queries_reuse", "Query Objects Reuse Test")
+{
+	/* Intentionally left blank. */
+}
+
+/** @brief Iterate Reuse Test cases.
+ *
+ *  @return Iteration result.
+ */
+tcu::TestNode::IterateResult ReuseTest::iterate()
+{
+	/* Shortcut for GL functionality. */
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+
+	/* Get context setup. */
+	bool is_at_least_gl_45 = (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)));
+	bool is_arb_direct_state_access = m_context.getContextInfo().isExtensionSupported("GL_ARB_direct_state_access");
+
+	if ((!is_at_least_gl_45) && (!is_arb_direct_state_access))
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
+
+		return STOP;
+	}
+
+	/* Running tests. */
+	bool is_ok = true;
+
+	GLuint query_id_a = 0;
+	GLuint query_id_b = 0;
+	/* Allocate query object */
+	gl.genQueries(1, &query_id_a);
+	/* Associate object with GL_TIMESTAMP */
+	gl.queryCounter(query_id_a, GL_TIMESTAMP);
+	/* Deallocate query object */
+	gl.deleteQueries(1, &query_id_a);
+
+	/* Allocate query object again - should result in the same id */
+	gl.genQueries(1, &query_id_b);
+	/* Use the id with something else */
+	gl.beginQuery(GL_TIME_ELAPSED, query_id_b);
+	if (gl.getError() != 0) /* Crash was reported here. */
+		is_ok = false;
+	gl.endQuery(GL_TIME_ELAPSED);
+	/* Clean up */
+	gl.deleteQueries(1, &query_id_b);
+
+	if (query_id_a != query_id_b)
+	{
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message << "Note: Queries got different id:s, so no actual reuse occurred."
+			<< tcu::TestLog::EndMessage;
+	}
+
+	/* Result's setup. */
+	if (is_ok)
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	}
+	else
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+	}
+
+	return STOP;
+}
+
 } /* Queries namespace. */
 } /* DirectStateAccess namespace. */
 } /* gl4cts namespace. */

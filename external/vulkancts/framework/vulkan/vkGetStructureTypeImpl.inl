@@ -1036,6 +1036,61 @@ template<> VkStructureType getStructureType<VkPipelineLibraryCreateInfoKHR> (voi
 	return VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkBufferCopy2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_BUFFER_COPY_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCopyBufferInfo2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkImageCopy2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_COPY_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCopyImageInfo2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkBufferImageCopy2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCopyBufferToImageInfo2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCopyImageToBufferInfo2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkImageBlit2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_BLIT_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkBlitImageInfo2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkImageResolve2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkResolveImageInfo2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_RESOLVE_IMAGE_INFO_2_KHR;
+}
+
 template<> VkStructureType getStructureType<VkDebugReportCallbackCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
@@ -1666,6 +1721,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceCoherentMemoryFeatur
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_ATOMIC_INT64_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceMemoryBudgetPropertiesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT;
@@ -1844,6 +1904,21 @@ template<> VkStructureType getStructureType<VkRenderPassTransformBeginInfoQCOM> 
 template<> VkStructureType getStructureType<VkCommandBufferInheritanceRenderPassTransformInfoQCOM> (void)
 {
 	return VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDER_PASS_TRANSFORM_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDeviceMemoryReportFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDeviceMemoryReportCallbackDataEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_MEMORY_REPORT_CALLBACK_DATA_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDeviceDeviceMemoryReportCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_DEVICE_MEMORY_REPORT_CREATE_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceRobustness2FeaturesEXT> (void)
@@ -2059,6 +2134,16 @@ template<> VkStructureType getStructureType<VkMemoryGetAndroidHardwareBufferInfo
 template<> VkStructureType getStructureType<VkExternalFormatANDROID> (void)
 {
 	return VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePortabilitySubsetFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePortabilitySubsetPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_PROPERTIES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkImagePipeSurfaceCreateInfoFUCHSIA> (void)

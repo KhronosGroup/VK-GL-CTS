@@ -43,6 +43,8 @@ qpWatchDog*		qpWatchDog_create		(qpWatchDogFunc watchDogFunc, void* userPtr, int
 void			qpWatchDog_destroy		(qpWatchDog* dog);
 void			qpWatchDog_reset		(qpWatchDog* dog);
 void			qpWatchDog_touch		(qpWatchDog* dog);
+void			qpWatchDog_touchAndDisableIntervalTimeLimit(qpWatchDog *dog);
+void			qpWatchDog_touchAndEnableIntervalTimeLimit(qpWatchDog *dog);
 
 DE_END_EXTERN_C
 

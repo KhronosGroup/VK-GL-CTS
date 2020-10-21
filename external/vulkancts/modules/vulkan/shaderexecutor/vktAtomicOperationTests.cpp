@@ -44,6 +44,7 @@
 
 #include <string>
 #include <memory>
+#include <cmath>
 
 namespace vkt
 {
@@ -212,8 +213,10 @@ enum DataType
 {
 	DATA_TYPE_INT32 = 0,
 	DATA_TYPE_UINT32,
+	DATA_TYPE_FLOAT32,
 	DATA_TYPE_INT64,
 	DATA_TYPE_UINT64,
+	DATA_TYPE_FLOAT64,
 
 	DATA_TYPE_LAST
 };
@@ -224,8 +227,10 @@ std::string dataType2Str(DataType type)
 	{
 		"int",
 		"uint",
+		"float",
 		"int64_t",
 		"uint64_t",
+		"double",
 	};
 	return de::getSizedArrayElement<DATA_TYPE_LAST>(s_names, type);
 }
@@ -340,6 +345,104 @@ public:
 
 };
 
+template<typename dataTypeT>
+class TestBufferFloatingPoint : public BufferInterface
+{
+public:
+
+	TestBufferFloatingPoint(AtomicOperation	atomicOp)
+		: m_atomicOp(atomicOp)
+	{}
+
+	template<typename T>
+	struct BufferDataFloatingPoint
+	{
+		// Use half the number of elements for inout to cause overlap between atomic operations.
+		// Each inout element at index i will have two atomic operations using input from
+		// indices i and i + NUM_ELEMENTS / 2.
+		T			inout[NUM_ELEMENTS / 2];
+		T			input[NUM_ELEMENTS];
+		T			compare[NUM_ELEMENTS];
+		T			output[NUM_ELEMENTS];
+		T			invocationHitCount[NUM_ELEMENTS];
+		deInt32		index;
+	};
+
+	virtual void setBuffer(void* ptr)
+	{
+		m_ptr = static_cast<BufferDataFloatingPoint<dataTypeT>*>(ptr);
+	}
+
+	virtual size_t bufferSize()
+	{
+		return sizeof(BufferDataFloatingPoint<dataTypeT>);
+	}
+
+	virtual void fillWithTestData(de::Random& rnd)
+	{
+		dataTypeT pattern;
+		deMemset(&pattern, 0xcd, sizeof(dataTypeT));
+
+		for (int i = 0; i < NUM_ELEMENTS / 2; i++)
+		{
+			m_ptr->inout[i] = static_cast<dataTypeT>(rnd.getFloat());
+			// The first half of compare elements match with every even index.
+			// The second half matches with odd indices. This causes the
+			// overlapping operations to only select one.
+			m_ptr->compare[i] = m_ptr->inout[i] + (dataTypeT)(i % 2);
+			m_ptr->compare[i + NUM_ELEMENTS / 2] = m_ptr->inout[i] + (dataTypeT)(1 - (i % 2));
+		}
+		for (int i = 0; i < NUM_ELEMENTS; i++)
+		{
+			m_ptr->input[i] = static_cast<dataTypeT>(rnd.getFloat());
+			m_ptr->output[i] = pattern;
+			m_ptr->invocationHitCount[i] = 0;
+		}
+		m_ptr->index = 0;
+
+		// Take a copy to be used when calculating expected values.
+		m_original = *m_ptr;
+	}
+
+	virtual void checkResults(tcu::ResultCollector& resultCollector)
+	{
+		checkOperationFloatingPoint(m_original, *m_ptr, resultCollector);
+	}
+
+	template<typename T>
+	struct Expected
+	{
+		T m_inout;
+		T m_output[2];
+
+		Expected(T inout, T output0, T output1)
+			: m_inout(inout)
+		{
+			m_output[0] = output0;
+			m_output[1] = output1;
+		}
+
+		bool compare(T inout, T output0, T output1)
+		{
+			T diff1 = static_cast<T>(fabs(m_inout - inout));
+			T diff2 = static_cast<T>(fabs(m_output[0] - output0));
+			T diff3 = static_cast<T>(fabs(m_output[1] - output1));
+			const T epsilon = static_cast<T>(0.00001);
+			return (diff1 < epsilon) && (diff2 < epsilon) && (diff3 < epsilon);
+		}
+	};
+
+	void checkOperationFloatingPoint(const BufferDataFloatingPoint<dataTypeT>& original,
+		const BufferDataFloatingPoint<dataTypeT>& result,
+		tcu::ResultCollector& resultCollector);
+
+	const AtomicOperation	m_atomicOp;
+
+	BufferDataFloatingPoint<dataTypeT>* m_ptr;
+	BufferDataFloatingPoint<dataTypeT>  m_original;
+
+};
+
 static BufferInterface* createTestBuffer(DataType type, AtomicOperation atomicOp)
 {
 	switch (type)
@@ -348,10 +451,14 @@ static BufferInterface* createTestBuffer(DataType type, AtomicOperation atomicOp
 		return new TestBuffer<deInt32>(atomicOp);
 	case DATA_TYPE_UINT32:
 		return new TestBuffer<deUint32>(atomicOp);
+	case DATA_TYPE_FLOAT32:
+		return new TestBufferFloatingPoint<float>(atomicOp);
 	case DATA_TYPE_INT64:
 		return new TestBuffer<deInt64>(atomicOp);
 	case DATA_TYPE_UINT64:
 		return new TestBuffer<deUint64>(atomicOp);
+	case DATA_TYPE_FLOAT64:
+		return new TestBufferFloatingPoint<double>(atomicOp);
 	default:
 		DE_ASSERT(false);
 		return DE_NULL;
@@ -484,6 +591,80 @@ void TestBuffer<T>::checkOperation (const BufferData<T>&	original,
 	}
 }
 
+// Use template to handle both float and double cases. SPIR-V should
+// have separate operations for both.
+template<typename T>
+void TestBufferFloatingPoint<T>::checkOperationFloatingPoint(const BufferDataFloatingPoint<T>& original,
+	const BufferDataFloatingPoint<T>& result,
+	tcu::ResultCollector& resultCollector)
+{
+	// originalInout = original inout
+	// input0 = input at index i
+	// iinput1 = input at index i + NUM_ELEMENTS / 2
+	//
+	// atomic operation will return the memory contents before
+	// the operation and this is stored as output. Two operations
+	// are executed for each InOut value (using input0 and input1).
+	//
+	// Since there is an overlap of two operations per each
+	// InOut element, the outcome of the resulting InOut and
+	// the outputs of the operations have two result candidates
+	// depending on the execution order. Verification passes
+	// if the results match one of these options.
+
+	for (int elementNdx = 0; elementNdx < NUM_ELEMENTS / 2; elementNdx++)
+	{
+		// Needed when reinterpeting the data as signed values.
+		const T originalInout = *reinterpret_cast<const T*>(&original.inout[elementNdx]);
+		const T input0 = *reinterpret_cast<const T*>(&original.input[elementNdx]);
+		const T input1 = *reinterpret_cast<const T*>(&original.input[elementNdx + NUM_ELEMENTS / 2]);
+
+		// Expected results are collected to this vector.
+		vector<Expected<T> > exp;
+
+		switch (m_atomicOp)
+		{
+		case ATOMIC_OP_ADD:
+		{
+			exp.push_back(Expected<T>(originalInout + input0 + input1, originalInout, originalInout + input0));
+			exp.push_back(Expected<T>(originalInout + input0 + input1, originalInout + input1, originalInout));
+		}
+		break;
+
+		case ATOMIC_OP_EXCHANGE:
+		{
+			exp.push_back(Expected<T>(input1, originalInout, input0));
+			exp.push_back(Expected<T>(input0, input1, originalInout));
+		}
+		break;
+
+		default:
+			DE_FATAL("Unexpected atomic operation.");
+			break;
+		};
+
+		const T resIo = result.inout[elementNdx];
+		const T resOutput0 = result.output[elementNdx];
+		const T resOutput1 = result.output[elementNdx + NUM_ELEMENTS / 2];
+
+
+		if (!exp[0].compare(resIo, resOutput0, resOutput1) && !exp[1].compare(resIo, resOutput0, resOutput1))
+		{
+			std::ostringstream errorMessage;
+			errorMessage << "ERROR: Result value check failed at index " << elementNdx
+				<< ". Expected one of the two outcomes: InOut = " << exp[0].m_inout
+				<< ", Output0 = " << exp[0].m_output[0] << ", Output1 = "
+				<< exp[0].m_output[1] << ", or InOut = " << exp[1].m_inout
+				<< ", Output0 = " << exp[1].m_output[0] << ", Output1 = "
+				<< exp[1].m_output[1] << ". Got: InOut = " << resIo
+				<< ", Output0 = " << resOutput0 << ", Output1 = "
+				<< resOutput1 << ". Using Input0 = " << original.input[elementNdx]
+				<< " and Input1 = " << original.input[elementNdx + NUM_ELEMENTS / 2] << ".";
+
+			resultCollector.fail(errorMessage.str());
+		}
+	}
+}
 
 class AtomicOperationCaseInstance : public TestInstance
 {
@@ -717,6 +898,84 @@ void AtomicOperationCase::checkSupport (Context& ctx) const
 		}
 	}
 
+	if (m_dataType == DATA_TYPE_FLOAT32)
+	{
+		ctx.requireDeviceFunctionality("VK_EXT_shader_atomic_float");
+		if (m_atomicOp == ATOMIC_OP_ADD)
+		{
+			if (m_shaderType.getMemoryType() == AtomicMemoryType::SHARED)
+			{
+				if (!ctx.getShaderAtomicFloatFeaturesEXT().shaderSharedFloat32AtomicAdd)
+				{
+					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat32: 32-bit floating point shared add atomic operation not supported");
+				}
+			}
+			else
+			{
+				if (!ctx.getShaderAtomicFloatFeaturesEXT().shaderBufferFloat32AtomicAdd)
+				{
+					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat32: 32-bit floating point buffer add atomic operation not supported");
+				}
+			}
+		}
+		if (m_atomicOp == ATOMIC_OP_EXCHANGE)
+		{
+			if (m_shaderType.getMemoryType() == AtomicMemoryType::SHARED)
+			{
+				if (!ctx.getShaderAtomicFloatFeaturesEXT().shaderSharedFloat32Atomics)
+				{
+					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat32: 32-bit floating point shared atomic operations not supported");
+				}
+			}
+			else
+			{
+				if (!ctx.getShaderAtomicFloatFeaturesEXT().shaderBufferFloat32Atomics)
+				{
+					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat32: 32-bit floating point buffer atomic operations not supported");
+				}
+			}
+		}
+	}
+
+	if (m_dataType == DATA_TYPE_FLOAT64)
+	{
+		ctx.requireDeviceFunctionality("VK_EXT_shader_atomic_float");
+		if (m_atomicOp == ATOMIC_OP_ADD)
+		{
+			if (m_shaderType.getMemoryType() == AtomicMemoryType::SHARED)
+			{
+				if (!ctx.getShaderAtomicFloatFeaturesEXT().shaderSharedFloat64AtomicAdd)
+				{
+					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat64: 64-bit floating point shared add atomic operation not supported");
+				}
+			}
+			else
+			{
+				if (!ctx.getShaderAtomicFloatFeaturesEXT().shaderBufferFloat64AtomicAdd)
+				{
+					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat64: 64-bit floating point buffer add atomic operation not supported");
+				}
+			}
+		}
+		if (m_atomicOp == ATOMIC_OP_EXCHANGE)
+		{
+			if (m_shaderType.getMemoryType() == AtomicMemoryType::SHARED)
+			{
+				if (!ctx.getShaderAtomicFloatFeaturesEXT().shaderSharedFloat64Atomics)
+				{
+					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat64: 64-bit floating point shared atomic operations not supported");
+				}
+			}
+			else
+			{
+				if (!ctx.getShaderAtomicFloatFeaturesEXT().shaderBufferFloat64Atomics)
+				{
+					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat64: 64-bit floating point buffer atomic operations not supported");
+				}
+			}
+		}
+	}
+
 	if (m_shaderType.getMemoryType() == AtomicMemoryType::REFERENCE)
 	{
 		ctx.requireDeviceFunctionality("VK_KHR_buffer_device_address");
@@ -760,7 +1019,7 @@ void AtomicOperationCase::createShaderSpec (void)
 		<< "    ${DATATYPE} inputValues[${N}];\n"
 		<< "    ${DATATYPE} compareValues[${N}];\n"
 		<< "    ${DATATYPE} outputValues[${N}];\n"
-		<< "    ${DATATYPE} invocationHitCount[${N}];\n"
+		<< "    int invocationHitCount[${N}];\n"
 		<< "    int index;\n"
 		<< "};\n"
 		<< "\n"
@@ -824,10 +1083,22 @@ void AtomicOperationCase::createShaderSpec (void)
 			;
 	}
 
-	nonVertexShaderTemplateStream
-		<< "int idx = atomicAdd(buf.data.index, 1);\n"
-		<< "buf.data.outputValues[idx] = ${ATOMICOP}(buf.data.inoutValues[idx % (${N}/2)], ${COMPARE_ARG}buf.data.inputValues[idx]);\n"
-		;
+	if (m_shaderType.getType() == glu::SHADERTYPE_FRAGMENT)
+	{
+		nonVertexShaderTemplateStream
+			<< "if (!gl_HelperInvocation) {\n"
+			<< "    int idx = atomicAdd(buf.data.index, 1);\n"
+			<< "    buf.data.outputValues[idx] = ${ATOMICOP}(buf.data.inoutValues[idx % (${N}/2)], ${COMPARE_ARG}buf.data.inputValues[idx]);\n"
+			<< "}\n"
+			;
+	}
+	else
+	{
+		nonVertexShaderTemplateStream
+			<< "int idx = atomicAdd(buf.data.index, 1);\n"
+			<< "buf.data.outputValues[idx] = ${ATOMICOP}(buf.data.inoutValues[idx % (${N}/2)], ${COMPARE_ARG}buf.data.inputValues[idx]);\n"
+			;
+	}
 
 	if (memoryType == AtomicMemoryType::SHARED)
 	{
@@ -860,6 +1131,13 @@ void AtomicOperationCase::createShaderSpec (void)
 		extensions
 			<< "#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable\n"
 			<< "#extension GL_EXT_shader_atomic_int64 : enable\n"
+			;
+	}
+	else if ((m_dataType == DATA_TYPE_FLOAT32) || (m_dataType == DATA_TYPE_FLOAT64))
+	{
+		extensions
+			<< "#extension GL_EXT_shader_atomic_float : enable\n"
+			<< "#extension GL_KHR_memory_scope_semantics : enable\n"
 			;
 	}
 
@@ -932,8 +1210,10 @@ void addAtomicOperationTests (tcu::TestCaseGroup* atomicOperationTestsGroup)
 	{
 		{ DATA_TYPE_INT32,	"signed",			"Tests using signed data (int)"				},
 		{ DATA_TYPE_UINT32,	"unsigned",			"Tests using unsigned data (uint)"			},
+		{ DATA_TYPE_FLOAT32,"float32",			"Tests using 32-bit float data"				},
 		{ DATA_TYPE_INT64,	"signed64bit",		"Tests using 64 bit signed data (int64)"	},
-		{ DATA_TYPE_UINT64,	"unsigned64bit",	"Tests using 64 bit unsigned data (uint64)"	}
+		{ DATA_TYPE_UINT64,	"unsigned64bit",	"Tests using 64 bit unsigned data (uint64)"	},
+		{ DATA_TYPE_FLOAT64,"float64",			"Tests using 64-bit float data)"			}
 	};
 
 	static const struct
@@ -958,6 +1238,15 @@ void addAtomicOperationTests (tcu::TestCaseGroup* atomicOperationTestsGroup)
 		{
 			for (int shaderTypeNdx = 0; shaderTypeNdx < DE_LENGTH_OF_ARRAY(shaderTypes); shaderTypeNdx++)
 			{
+				// Only ADD and EXCHANGE are supported on floating-point
+				if (dataSign[signNdx].dataType == DATA_TYPE_FLOAT32 || dataSign[signNdx].dataType == DATA_TYPE_FLOAT64)
+				{
+					if (atomicOp[opNdx].value != ATOMIC_OP_ADD && atomicOp[opNdx].value != ATOMIC_OP_EXCHANGE)
+					{
+						continue;
+					}
+				}
+
 				for (int memoryTypeNdx = 0; memoryTypeNdx < DE_LENGTH_OF_ARRAY(kMemoryTypes); ++memoryTypeNdx)
 				{
 					// Shared memory only available in compute shaders.

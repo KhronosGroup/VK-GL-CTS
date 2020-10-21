@@ -962,7 +962,7 @@ Move<VkRenderPass> makeRenderPassDifferentAttachmentSizes	(const DeviceInterface
 			VK_ATTACHMENT_STORE_OP_STORE,									// VkAttachmentStoreOp			storeOp;
 			VK_ATTACHMENT_LOAD_OP_DONT_CARE,								// VkAttachmentLoadOp			stencilLoadOp;
 			VK_ATTACHMENT_STORE_OP_DONT_CARE,								// VkAttachmentStoreOp			stencilStoreOp;
-			VK_IMAGE_LAYOUT_GENERAL,										// VkImageLayout				initialLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,						// VkImageLayout				initialLayout;
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,						// VkImageLayout				finalLayout;
 		};
 		attachmentDescriptions[i] = colorAttachmentDescription;
@@ -1151,9 +1151,9 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,													// VkStructureType			sType;
 					DE_NULL,																				// const void*				pNext;
 					VK_ACCESS_TRANSFER_WRITE_BIT,															// VkAccessFlags			srcAccessMask;
-					VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,													// VkAccessFlags			dstAccessMask;
+					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,													// VkAccessFlags			dstAccessMask;
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,													// VkImageLayout			oldLayout;
-					VK_IMAGE_LAYOUT_GENERAL,																// VkImageLayout			newLayout;
+					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,												// VkImageLayout			newLayout;
 					VK_QUEUE_FAMILY_IGNORED,																// deUint32					srcQueueFamilyIndex;
 					VK_QUEUE_FAMILY_IGNORED,																// deUint32					destQueueFamilyIndex;
 					caseDef.multisample ? *msColorImages[renderTargetIdx] : *colorImages[renderTargetIdx],	// VkImage					image;

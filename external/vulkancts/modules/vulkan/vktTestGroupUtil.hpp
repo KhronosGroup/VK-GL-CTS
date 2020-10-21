@@ -78,6 +78,37 @@ private:
 	const Arg0					m_arg0;
 };
 
+template<typename Arg0, typename Arg1>
+class TestGroupHelper2 : public tcu::TestCaseGroup
+{
+public:
+	typedef void(*CreateChildrenFunc) (tcu::TestCaseGroup* testGroup, Arg0 arg0, Arg1 arg1);
+	typedef void(*CleanupGroupFunc) (tcu::TestCaseGroup* testGroup, Arg0 arg0, Arg1 arg1);
+
+								TestGroupHelper2(tcu::TestContext&		testCtx,
+												const std::string&		name,
+												const std::string&		description,
+												CreateChildrenFunc		createChildren,
+												const Arg0&				arg0,
+												const Arg1&				arg1,
+												CleanupGroupFunc		cleanupGroup)
+									: tcu::TestCaseGroup	(testCtx, name.c_str(), description.c_str())
+									, m_createChildren		(createChildren)
+									, m_cleanupGroup		(cleanupGroup)
+									, m_arg0				(arg0)
+									, m_arg1				(arg1)
+								{}
+
+	void						init		(void) { m_createChildren(this, m_arg0, m_arg1); }
+	void						deinit		(void) { if (m_cleanupGroup) m_cleanupGroup(this, m_arg0, m_arg1); }
+
+private:
+	const CreateChildrenFunc	m_createChildren;
+	const CleanupGroupFunc		m_cleanupGroup;
+	const Arg0					m_arg0;
+	const Arg1					m_arg1;
+};
+
 inline tcu::TestCaseGroup* createTestGroup (tcu::TestContext&										testCtx,
 											const std::string&										name,
 											const std::string&										description,
@@ -97,6 +128,17 @@ tcu::TestCaseGroup* createTestGroup (tcu::TestContext&										testCtx,
 {
 	return new TestGroupHelper1<Arg0>(testCtx, name, description, createChildren, arg0, cleanupGroup);
 }
+template<typename Arg0, typename Arg1>
+tcu::TestCaseGroup* createTestGroup (tcu::TestContext&											testCtx,
+									 const std::string&											name,
+									 const std::string&											description,
+									 typename TestGroupHelper2<Arg0, Arg1>::CreateChildrenFunc	createChildren,
+									 Arg0														arg0,
+									 Arg1														arg1,
+									 typename TestGroupHelper2<Arg0, Arg1>::CleanupGroupFunc	cleanupGroup = DE_NULL)
+{
+	return new TestGroupHelper2<Arg0, Arg1>(testCtx, name, description, createChildren, arg0, arg1, cleanupGroup);
+}
 
 inline void addTestGroup (tcu::TestCaseGroup*					parent,
 						  const std::string&					name,
@@ -115,6 +157,18 @@ void addTestGroup (tcu::TestCaseGroup*									parent,
 				   typename TestGroupHelper1<Arg0>::CleanupGroupFunc	cleanupGroup = DE_NULL)
 {
 	parent->addChild(createTestGroup<Arg0>(parent->getTestContext(), name, description, createChildren, arg0, cleanupGroup));
+}
+
+template<typename Arg0, typename Arg1>
+void addTestGroup(tcu::TestCaseGroup*					parent,
+	const std::string&									name,
+	const std::string&									description,
+	typename TestGroupHelper2<Arg0,Arg1>::CreateChildrenFunc	createChildren,
+	Arg0												arg0,
+	Arg1												arg1,
+	typename TestGroupHelper2<Arg0,Arg1>::CleanupGroupFunc	cleanupGroup = DE_NULL)
+{
+	parent->addChild(createTestGroup<Arg0,Arg1>(parent->getTestContext(), name, description, createChildren, arg0, arg1, cleanupGroup));
 }
 
 } // vkt

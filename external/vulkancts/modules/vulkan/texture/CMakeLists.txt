@@ -37,6 +37,8 @@ set(DEQP_VK_TEXTURE_SRCS
 	vktTextureSwizzleTests.hpp
 	vktTextureTexelBufferTests.cpp
 	vktTextureTexelBufferTests.hpp
+	vktTextureTexelOffsetTests.cpp
+	vktTextureTexelOffsetTests.hpp
 	)
 
 set(DEQP_VK_TEXTURE_LIBS

@@ -101,6 +101,7 @@
 #include "vktModifiersTests.hpp"
 #include "vktRayTracingTests.hpp"
 #include "vktRayQueryTests.hpp"
+#include "vktPostmortemTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -479,8 +480,17 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 
 // TestPackage
 
+BaseTestPackage::BaseTestPackage (tcu::TestContext& testCtx, const char* name, const char* desc)
+	: tcu::TestPackage(testCtx, name, desc)
+{
+}
+
+BaseTestPackage::~BaseTestPackage (void)
+{
+}
+
 TestPackage::TestPackage (tcu::TestContext& testCtx)
-	: tcu::TestPackage(testCtx, "dEQP-VK", "dEQP Vulkan Tests")
+	: BaseTestPackage(testCtx, "dEQP-VK", "dEQP Vulkan Tests")
 {
 }
 
@@ -488,7 +498,16 @@ TestPackage::~TestPackage (void)
 {
 }
 
-tcu::TestCaseExecutor* TestPackage::createExecutor (void) const
+ExperimentalTestPackage::ExperimentalTestPackage (tcu::TestContext& testCtx)
+	: BaseTestPackage(testCtx, "dEQP-VK-experimental", "dEQP Vulkan Experimental Tests")
+{
+}
+
+ExperimentalTestPackage::~ExperimentalTestPackage (void)
+{
+}
+
+tcu::TestCaseExecutor* BaseTestPackage::createExecutor (void) const
 {
 	return new TestCaseExecutor(m_testCtx);
 }
@@ -536,6 +555,11 @@ void TestPackage::init (void)
 	addChild(modifiers::createTests				(m_testCtx));
 	addChild(RayTracing::createTests			(m_testCtx));
 	addChild(RayQuery::createTests				(m_testCtx));
+}
+
+void ExperimentalTestPackage::init (void)
+{
+	addChild(postmortem::createTests			(m_testCtx));
 }
 
 } // vkt

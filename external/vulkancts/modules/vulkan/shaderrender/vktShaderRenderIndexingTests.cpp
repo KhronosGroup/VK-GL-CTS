@@ -49,6 +49,10 @@ enum IndexAccessType
 	INDEXACCESS_STATIC_LOOP,
 	INDEXACCESS_DYNAMIC_LOOP,
 
+	/* Must be next to last, since most loop iterations won't include
+	 * _CONST
+	 */
+	INDEXACCESS_CONST,
 	INDEXACCESS_LAST
 };
 
@@ -59,7 +63,8 @@ static const char* getIndexAccessTypeName (IndexAccessType accessType)
 		"static",
 		"dynamic",
 		"static_loop",
-		"dynamic_loop"
+		"dynamic_loop",
+		"const"
 	};
 
 	DE_ASSERT(deInBounds32((int)accessType, 0, INDEXACCESS_LAST));
@@ -550,7 +555,7 @@ static de::MovePtr<ShaderIndexingCase> createTmpArrayCase (tcu::TestContext&	con
 	// Write array.
 	if (isVertexCase)
 		op << "	${PRECISION} ${VAR_TYPE} coords = ${VAR_TYPE}(a_coords);\n";
-	else
+	else if (writeAccess != INDEXACCESS_CONST)
 		op << "	${PRECISION} ${VAR_TYPE} coords = ${VAR_TYPE}(v_coords);\n";
 
 	op << "	${PRECISION} ${VAR_TYPE} arr[${ARRAY_LEN}];\n";
@@ -560,6 +565,30 @@ static de::MovePtr<ShaderIndexingCase> createTmpArrayCase (tcu::TestContext&	con
 		op << "	arr[1] = ${VAR_TYPE}(coords) * 0.5;\n";
 		op << "	arr[2] = ${VAR_TYPE}(coords) * 0.25;\n";
 		op << "	arr[3] = ${VAR_TYPE}(coords) * 0.125;\n";
+	}
+	else if (writeAccess == INDEXACCESS_CONST)
+	{
+		// Not using a loop inside the shader because we want it
+		// unrolled to encourage the shader compiler to store it as
+		// constant data.
+		static const char *constructors[] = {
+			"0.125",
+			"0.125, 0.25",
+			"0.125, 0.25, 0.5",
+			"0.125, 0.25, 0.5, 1.0"
+		};
+		const char *constructor_args =
+			constructors[getDataTypeNumComponents(varType) - 1];
+
+		op << "	arr[0] = ${VAR_TYPE}(" << constructor_args << ");\n";
+		op << "	arr[1] = ${VAR_TYPE}(" << constructor_args << ") * 0.5;\n";
+		op << "	arr[2] = ${VAR_TYPE}(" << constructor_args << ") * 0.25;\n";
+		op << "	arr[3] = ${VAR_TYPE}(" << constructor_args << ") * 0.125;\n";
+
+		/* Stuff unused values in the rest of the array. */
+		op << "	int i = 4;\n";
+		for (int i = 4; i < 40; i++)
+			op << "	arr[i++] = ${VAR_TYPE}(" << i << ".0);\n";
 	}
 	else if (writeAccess == INDEXACCESS_DYNAMIC)
 	{
@@ -621,7 +650,8 @@ static de::MovePtr<ShaderIndexingCase> createTmpArrayCase (tcu::TestContext&	con
 	}
 	else
 	{
-		vtx << "	v_coords = a_coords;\n";
+		if (writeAccess != INDEXACCESS_CONST)
+			vtx << "	v_coords = a_coords;\n";
 		frag << "	o_color = vec4(res${PADDING});\n";
 	}
 
@@ -631,7 +661,14 @@ static de::MovePtr<ShaderIndexingCase> createTmpArrayCase (tcu::TestContext&	con
 	// Fill in shader templates.
 	map<string, string> params;
 	params.insert(pair<string, string>("VAR_TYPE", getDataTypeName(varType)));
-	params.insert(pair<string, string>("ARRAY_LEN", "4"));
+	// For const indexing, size the array such that the compiler is
+	// more likely to optimize the temporary to constants.  40 was
+	// enough to trigger a compiler failure in Mesa's turnip driver
+	// without the optimization in place.
+	if (writeAccess == INDEXACCESS_CONST)
+		params.insert(pair<string, string>("ARRAY_LEN", "40"));
+	else
+		params.insert(pair<string, string>("ARRAY_LEN", "4"));
 	params.insert(pair<string, string>("PRECISION", "mediump"));
 
 	if (varType == TYPE_FLOAT)
@@ -648,7 +685,12 @@ static de::MovePtr<ShaderIndexingCase> createTmpArrayCase (tcu::TestContext&	con
 	string vertexShaderSource = vertTemplate.specialize(params);
 	string fragmentShaderSource = fragTemplate.specialize(params);
 
-	ShaderEvalFunc evalFunc = getArrayCoordsEvalFunc(varType);
+	ShaderEvalFunc evalFunc;
+	if (writeAccess == INDEXACCESS_CONST)
+		evalFunc = getArrayUniformEvalFunc(varType);
+	else
+		evalFunc = getArrayCoordsEvalFunc(varType);
+
 	return de::MovePtr<ShaderIndexingCase>(new ShaderIndexingCase(context, caseName, description, isVertexCase, evalFunc, vertexShaderSource, fragmentShaderSource, varType, false));
 }
 
@@ -1078,9 +1120,9 @@ void ShaderIndexingTests::init (void)
 		for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(s_floatAndVecTypes); typeNdx++)
 		{
 			DataType varType = s_floatAndVecTypes[typeNdx];
-			for (int vertAccess = 0; vertAccess < INDEXACCESS_LAST; vertAccess++)
+			for (int vertAccess = 0; vertAccess < INDEXACCESS_CONST; vertAccess++)
 			{
-				for (int fragAccess = 0; fragAccess < INDEXACCESS_LAST; fragAccess++)
+				for (int fragAccess = 0; fragAccess < INDEXACCESS_CONST; fragAccess++)
 				{
 					const char* vertAccessName = getIndexAccessTypeName((IndexAccessType)vertAccess);
 					const char* fragAccessName = getIndexAccessTypeName((IndexAccessType)fragAccess);
@@ -1102,7 +1144,7 @@ void ShaderIndexingTests::init (void)
 		for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(s_floatAndVecTypes); typeNdx++)
 		{
 			DataType varType = s_floatAndVecTypes[typeNdx];
-			for (int readAccess = 0; readAccess < INDEXACCESS_LAST; readAccess++)
+			for (int readAccess = 0; readAccess < INDEXACCESS_CONST; readAccess++)
 			{
 				const char* readAccessName = getIndexAccessTypeName((IndexAccessType)readAccess);
 				for (int shaderTypeNdx = 0; shaderTypeNdx < DE_LENGTH_OF_ARRAY(s_shaderTypes); shaderTypeNdx++)
@@ -1130,7 +1172,7 @@ void ShaderIndexingTests::init (void)
 			DataType varType = s_floatAndVecTypes[typeNdx];
 			for (int writeAccess = 0; writeAccess < INDEXACCESS_LAST; writeAccess++)
 			{
-				for (int readAccess = 0; readAccess < INDEXACCESS_LAST; readAccess++)
+				for (int readAccess = 0; readAccess < INDEXACCESS_CONST; readAccess++)
 				{
 					const char* writeAccessName = getIndexAccessTypeName((IndexAccessType)writeAccess);
 					const char* readAccessName = getIndexAccessTypeName((IndexAccessType)readAccess);
@@ -1210,9 +1252,9 @@ void ShaderIndexingTests::init (void)
 		for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(s_matrixTypes); typeNdx++)
 		{
 			DataType varType = s_matrixTypes[typeNdx];
-			for (int writeAccess = 0; writeAccess < INDEXACCESS_LAST; writeAccess++)
+			for (int writeAccess = 0; writeAccess < INDEXACCESS_CONST; writeAccess++)
 			{
-				for (int readAccess = 0; readAccess < INDEXACCESS_LAST; readAccess++)
+				for (int readAccess = 0; readAccess < INDEXACCESS_CONST; readAccess++)
 				{
 					const char* writeAccessName = getIndexAccessTypeName((IndexAccessType)writeAccess);
 					const char* readAccessName = getIndexAccessTypeName((IndexAccessType)readAccess);

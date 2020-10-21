@@ -445,7 +445,9 @@ struct TestParameters
 	{}
 };
 
-vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (Type								wsiType,
+vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (const InstanceInterface&			vki,
+																  VkPhysicalDevice					physicalDevice,
+																  Type								wsiType,
 																  TestDimension						dimension,
 																  const VkSurfaceCapabilitiesKHR&	capabilities,
 																  const vector<VkSurfaceFormatKHR>&	formats,
@@ -561,6 +563,17 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (Type								ws
 		{
 			for (deUint32 flags = 1u; flags <= capabilities.supportedUsageFlags; ++flags)
 			{
+				VkImageFormatProperties imageProps;
+
+				if (vki.getPhysicalDeviceImageFormatProperties(physicalDevice,
+															   baseParameters.imageFormat,
+															   VK_IMAGE_TYPE_2D,
+															   VK_IMAGE_TILING_OPTIMAL,
+															   flags,
+															   (VkImageCreateFlags)0u,
+															   &imageProps) != VK_SUCCESS)
+					continue;
+
 				if ((flags & ~capabilities.supportedUsageFlags) == 0)
 				{
 					cases.push_back(baseParameters);
@@ -663,7 +676,7 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (Type								ws
 																							   physicalDevice,
 																							   surface);
 
-	return generateSwapchainParameterCases(wsiType, dimension, capabilities, formats, presentModes);
+	return generateSwapchainParameterCases(vki, physicalDevice, wsiType, dimension, capabilities, formats, presentModes);
 }
 
 tcu::TestStatus createSwapchainTest (Context& context, TestParameters params)
@@ -1191,12 +1204,13 @@ typedef de::SharedPtr<Unique<VkSemaphore> >		SemaphoreSp;
 
 vector<FenceSp> createFences (const DeviceInterface&	vkd,
 							  const VkDevice			device,
-							  size_t					numFences)
+							  size_t					numFences,
+							  bool                      isSignaled = true)
 {
 	vector<FenceSp> fences(numFences);
 
 	for (size_t ndx = 0; ndx < numFences; ++ndx)
-		fences[ndx] = FenceSp(new Unique<VkFence>(createFence(vkd, device, vk::VK_FENCE_CREATE_SIGNALED_BIT)));
+		fences[ndx] = FenceSp(new Unique<VkFence>(createFence(vkd, device, (isSignaled) ? vk::VK_FENCE_CREATE_SIGNALED_BIT : 0)));
 
 	return fences;
 }
@@ -2526,7 +2540,7 @@ tcu::TestStatus acquireTooManyTest (Context& context, Type wsiType)
 	if (numImages < minImageCount) return tcu::TestStatus::fail("Get swapchain images returned less than minImageCount images");
 	const deUint32 numAcquirableImages = numImages - minImageCount + 1;
 
-	const auto fences = createFences(devHelper.vkd, *devHelper.device, numAcquirableImages + 1);
+	const auto fences = createFences(devHelper.vkd, *devHelper.device, numAcquirableImages + 1, false);
 	deUint32 dummy;
 	for (deUint32 i = 0; i < numAcquirableImages; ++i) {
 		VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, std::numeric_limits<deUint64>::max(), (VkSemaphore)0, **fences[i], &dummy));
@@ -2563,7 +2577,7 @@ tcu::TestStatus acquireTooManyTimeoutTest (Context& context, Type wsiType)
 	if (numImages < minImageCount) return tcu::TestStatus::fail("Get swapchain images returned less than minImageCount images");
 	const deUint32 numAcquirableImages = numImages - minImageCount + 1;
 
-	const auto fences = createFences(devHelper.vkd, *devHelper.device, numAcquirableImages + 1);
+	const auto fences = createFences(devHelper.vkd, *devHelper.device, numAcquirableImages + 1, false);
 	deUint32 dummy;
 	for (deUint32 i = 0; i < numAcquirableImages; ++i) {
 		VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, std::numeric_limits<deUint64>::max(), (VkSemaphore)0, **fences[i], &dummy));

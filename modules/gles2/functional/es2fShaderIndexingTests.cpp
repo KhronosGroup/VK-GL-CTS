@@ -53,6 +53,10 @@ enum IndexAccessType
 	INDEXACCESS_STATIC_LOOP,
 	INDEXACCESS_DYNAMIC_LOOP,
 
+	/* Must be next to last, since most loop iterations won't include
+	 * _CONST
+	 */
+	INDEXACCESS_CONST,
 	INDEXACCESS_LAST
 };
 
@@ -63,7 +67,8 @@ static const char* getIndexAccessTypeName (IndexAccessType accessType)
 		"static",
 		"dynamic",
 		"static_loop",
-		"dynamic_loop"
+		"dynamic_loop",
+		"const",
 	};
 
 	DE_ASSERT(deInBounds32((int)accessType, 0, INDEXACCESS_LAST));
@@ -495,7 +500,7 @@ static ShaderIndexingCase* createTmpArrayCase (Context& context, const char* cas
 		vtx << "varying mediump vec4 v_color;\n";
 		frag << "varying mediump vec4 v_color;\n";
 	}
-	else
+	else if (writeAccess != INDEXACCESS_CONST)
 	{
 		vtx << "varying mediump vec4 v_coords;\n";
 		frag << "varying mediump vec4 v_coords;\n";
@@ -517,10 +522,12 @@ static ShaderIndexingCase* createTmpArrayCase (Context& context, const char* cas
 	frag << "{\n";
 
 	// Write array.
-	if (isVertexCase)
-		op << "	${PRECISION} ${VAR_TYPE} coords = ${VAR_TYPE}(a_coords);\n";
-	else
-		op << "	${PRECISION} ${VAR_TYPE} coords = ${VAR_TYPE}(v_coords);\n";
+	if (writeAccess != INDEXACCESS_CONST) {
+		if (isVertexCase)
+			op << "	${PRECISION} ${VAR_TYPE} coords = ${VAR_TYPE}(a_coords);\n";
+		else
+			op << "	${PRECISION} ${VAR_TYPE} coords = ${VAR_TYPE}(v_coords);\n";
+	}
 
 	op << "	${PRECISION} ${VAR_TYPE} arr[${ARRAY_LEN}];\n";
 	if (writeAccess == INDEXACCESS_STATIC)
@@ -529,6 +536,30 @@ static ShaderIndexingCase* createTmpArrayCase (Context& context, const char* cas
 		op << "	arr[1] = ${VAR_TYPE}(coords) * 0.5;\n";
 		op << "	arr[2] = ${VAR_TYPE}(coords) * 0.25;\n";
 		op << "	arr[3] = ${VAR_TYPE}(coords) * 0.125;\n";
+	}
+	else if (writeAccess == INDEXACCESS_CONST)
+	{
+		// Not using a loop inside the shader because we want it
+		// unrolled to encourage the shader compiler to store it as
+		// constant data.
+		static const char *constructors[] = {
+			"0.125",
+			"0.125, 0.25",
+			"0.125, 0.25, 0.5",
+			"0.125, 0.25, 0.5, 1.0"
+		};
+		const char *constructor_args =
+			constructors[getDataTypeNumComponents(varType) - 1];
+
+		op << "	arr[0] = ${VAR_TYPE}(" << constructor_args << ");\n";
+		op << "	arr[1] = ${VAR_TYPE}(" << constructor_args << ") * 0.5;\n";
+		op << "	arr[2] = ${VAR_TYPE}(" << constructor_args << ") * 0.25;\n";
+		op << "	arr[3] = ${VAR_TYPE}(" << constructor_args << ") * 0.125;\n";
+
+		/* Stuff unused values in the rest of the array. */
+		op << "	int i = 4;\n";
+		for (int i = 4; i < 40; i++)
+			op << "	arr[i++] = ${VAR_TYPE}(" << i << ".0);\n";
 	}
 	else if (writeAccess == INDEXACCESS_DYNAMIC)
 	{
@@ -590,7 +621,8 @@ static ShaderIndexingCase* createTmpArrayCase (Context& context, const char* cas
 	}
 	else
 	{
-		vtx << "	v_coords = a_coords;\n";
+		if (writeAccess != INDEXACCESS_CONST)
+			vtx << "	v_coords = a_coords;\n";
 		frag << "	gl_FragColor = vec4(res${PADDING});\n";
 	}
 
@@ -600,7 +632,16 @@ static ShaderIndexingCase* createTmpArrayCase (Context& context, const char* cas
 	// Fill in shader templates.
 	map<string, string> params;
 	params.insert(pair<string, string>("VAR_TYPE", getDataTypeName(varType)));
-	params.insert(pair<string, string>("ARRAY_LEN", "4"));
+	// For const indexing, size the array such that the compiler is
+	// more likely to optimize the temporary to constants.  4 wasn't
+	// enough for Mesa's i965 driver to do it, while 40 was enough to
+	// trigger the pass, and also enough to trigger compile failures
+	// on the freedreno driver at vec3/vec4 without the optimization
+	// in place.
+	if (writeAccess == INDEXACCESS_CONST)
+		params.insert(pair<string, string>("ARRAY_LEN", "40"));
+	else
+		params.insert(pair<string, string>("ARRAY_LEN", "4"));
 	params.insert(pair<string, string>("PRECISION", "mediump"));
 
 	if (varType == TYPE_FLOAT)
@@ -617,7 +658,11 @@ static ShaderIndexingCase* createTmpArrayCase (Context& context, const char* cas
 	string vertexShaderSource = vertTemplate.specialize(params);
 	string fragmentShaderSource = fragTemplate.specialize(params);
 
-	ShaderEvalFunc evalFunc = getArrayCoordsEvalFunc(varType);
+	ShaderEvalFunc evalFunc;
+	if (writeAccess == INDEXACCESS_CONST)
+		evalFunc = getArrayUniformEvalFunc(varType);
+	else
+		evalFunc = getArrayCoordsEvalFunc(varType);
 	deUint32 requirements = 0;
 
 	if (readAccess == INDEXACCESS_DYNAMIC || writeAccess == INDEXACCESS_DYNAMIC)
@@ -1022,9 +1067,9 @@ void ShaderIndexingTests::init (void)
 		for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(s_floatAndVecTypes); typeNdx++)
 		{
 			DataType varType = s_floatAndVecTypes[typeNdx];
-			for (int vertAccess = 0; vertAccess < INDEXACCESS_LAST; vertAccess++)
+			for (int vertAccess = 0; vertAccess < INDEXACCESS_CONST; vertAccess++)
 			{
-				for (int fragAccess = 0; fragAccess < INDEXACCESS_LAST; fragAccess++)
+				for (int fragAccess = 0; fragAccess < INDEXACCESS_CONST; fragAccess++)
 				{
 					const char* vertAccessName = getIndexAccessTypeName((IndexAccessType)vertAccess);
 					const char* fragAccessName = getIndexAccessTypeName((IndexAccessType)fragAccess);
@@ -1044,7 +1089,7 @@ void ShaderIndexingTests::init (void)
 		for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(s_floatAndVecTypes); typeNdx++)
 		{
 			DataType varType = s_floatAndVecTypes[typeNdx];
-			for (int readAccess = 0; readAccess < INDEXACCESS_LAST; readAccess++)
+			for (int readAccess = 0; readAccess < INDEXACCESS_CONST; readAccess++)
 			{
 				const char* readAccessName = getIndexAccessTypeName((IndexAccessType)readAccess);
 				for (int shaderTypeNdx = 0; shaderTypeNdx < DE_LENGTH_OF_ARRAY(s_shaderTypes); shaderTypeNdx++)
@@ -1070,7 +1115,7 @@ void ShaderIndexingTests::init (void)
 			DataType varType = s_floatAndVecTypes[typeNdx];
 			for (int writeAccess = 0; writeAccess < INDEXACCESS_LAST; writeAccess++)
 			{
-				for (int readAccess = 0; readAccess < INDEXACCESS_LAST; readAccess++)
+				for (int readAccess = 0; readAccess < INDEXACCESS_CONST; readAccess++)
 				{
 					const char* writeAccessName = getIndexAccessTypeName((IndexAccessType)writeAccess);
 					const char* readAccessName = getIndexAccessTypeName((IndexAccessType)readAccess);
@@ -1140,9 +1185,9 @@ void ShaderIndexingTests::init (void)
 		for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(s_matrixTypes); typeNdx++)
 		{
 			DataType varType = s_matrixTypes[typeNdx];
-			for (int writeAccess = 0; writeAccess < INDEXACCESS_LAST; writeAccess++)
+			for (int writeAccess = 0; writeAccess < INDEXACCESS_CONST; writeAccess++)
 			{
-				for (int readAccess = 0; readAccess < INDEXACCESS_LAST; readAccess++)
+				for (int readAccess = 0; readAccess < INDEXACCESS_CONST; readAccess++)
 				{
 					const char* writeAccessName = getIndexAccessTypeName((IndexAccessType)writeAccess);
 					const char* readAccessName = getIndexAccessTypeName((IndexAccessType)readAccess);

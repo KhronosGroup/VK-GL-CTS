@@ -4,7 +4,7 @@
  * OpenGL Conformance Test Suite
  * -----------------------------
  *
- * Copyright (c) 2015-2016 The Khronos Group Inc.
+ * Copyright (c) 2015-2020 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1086,6 +1086,34 @@ private:
 	static const glw::GLchar* s_xfb_varying_name;
 };
 /* FunctionalTest class */
+
+/** @class ReuseTest
+ *
+ *  @brief Test cases for recycling query handles as different types.
+ *
+ *  @note Test follows the steps:
+ *
+ *            Use the EXT_disjoint_timer_query extension to allocate a
+ *            GL_TIMESTAMP_EXT type query.
+ *
+ *            Try to delete and reuse the object as a GL_TIME_ELAPSED
+ *            type query.
+ */
+class ReuseTest : public deqp::TestCase
+{
+public:
+	/* Public member functions */
+	ReuseTest(deqp::Context& context);
+
+	virtual tcu::TestNode::IterateResult iterate();
+
+private:
+	/* Private member functions */
+	ReuseTest(const ReuseTest& other);
+	ReuseTest& operator=(const ReuseTest& other);
+};
+/* ReuseTest class */
+
 } /* Queries namespace */
 
 namespace Buffers

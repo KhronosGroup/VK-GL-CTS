@@ -34,6 +34,7 @@
 #include "vktImageAstcDecodeModeTests.hpp"
 #include "vktImageMisalignedCubeTests.hpp"
 #include "vktImageSubresourceLayoutTests.hpp"
+#include "vktImageMismatchedFormatsTests.hpp"
 
 namespace vkt
 {
@@ -63,6 +64,7 @@ void createChildren (tcu::TestCaseGroup* imageTests)
 	imageTests->addChild(createMisalignedCubeTests(testCtx));
 	imageTests->addChild(createImageLoadStoreLodAMDTests(testCtx));
 	imageTests->addChild(createImageSubresourceLayoutTests(testCtx));
+	imageTests->addChild(createImageMismatchedFormatsTests(testCtx));
 }
 
 } // anonymous

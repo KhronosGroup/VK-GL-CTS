@@ -164,6 +164,7 @@ void deYield (void)
 
 deUint32 deGetNumAvailableLogicalCores (void)
 {
+#if !defined(__FreeBSD__)
 	unsigned long		mask		= 0;
 	const unsigned int	maskSize	= sizeof(mask);
 	long				ret;
@@ -178,6 +179,7 @@ deUint32 deGetNumAvailableLogicalCores (void)
 	}
 	else
 	{
+#endif
 #if defined(_SC_NPROCESSORS_ONLN)
 		const long count = sysconf(_SC_NPROCESSORS_ONLN);
 
@@ -188,7 +190,10 @@ deUint32 deGetNumAvailableLogicalCores (void)
 #else
 		return 1;
 #endif
+
+#if !defined(__FreeBSD__)
 	}
+#endif
 }
 
 #else

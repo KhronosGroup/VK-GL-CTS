@@ -413,7 +413,7 @@ tcu::TestStatus ImageSubresourceLayoutInstance::iterateAspect (VkImageAspectFlag
 	else
 		fillWithRandomData(rnd, bufferPtr, bufferSize);
 
-	invalidateAlloc(vkd, device, bufferAlloc);
+	flushAlloc(vkd, device, bufferAlloc);
 
 	// Reinterpret the depth dimension parameter as the number of layers if needed.
 	const auto	numLayers	= ((m_params.imageType == VK_IMAGE_TYPE_3D) ? 1u : m_params.dimensions.depth);

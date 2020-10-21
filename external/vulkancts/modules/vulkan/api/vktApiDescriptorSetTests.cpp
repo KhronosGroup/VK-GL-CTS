@@ -23,6 +23,10 @@
 
 #include "vktApiDescriptorSetTests.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vkCmdUtil.hpp"
+#include "vkMemUtil.hpp"
+#include "vktApiBufferComputeInstance.hpp"
+#include "vktApiComputeInstanceResultBuffer.hpp"
 
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
@@ -71,6 +75,8 @@ tcu::TestStatus descriptorSetLayoutLifetimeGraphicsTest (Context& context)
 {
 	const DeviceInterface&							vk								= context.getDeviceInterface();
 	const VkDevice									device							= context.getDevice();
+    deUint32					                    queueFamilyIndex                = context.getUniversalQueueFamilyIndex();
+    const VkQueue					                queue				            = context.getUniversalQueue();
 
 	Unique<VkPipelineLayout>						pipelineLayout					(createPipelineLayoutDestroyDescriptorSetLayout(vk, device));
 
@@ -178,6 +184,65 @@ tcu::TestStatus descriptorSetLayoutLifetimeGraphicsTest (Context& context)
 
 	Unique<VkPipeline>								graphicsPipeline				(createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo));
 
+
+	VkFramebufferCreateInfo framebufferCreateInfo
+	{
+		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		// VkStructureType			sType
+		DE_NULL,										// const void*				pNext
+		0,												// VkFramebufferCreateFlags	flags
+		*renderPass,									// VkRenderPass				renderPass
+		0,												// uint32_t					attachmentCount
+		DE_NULL,										// const VkImageView*		pAttachments
+		16,												// uint32_t					width
+		16,												// uint32_t					height
+		1												// uint32_t					layers
+	};
+
+	Move <VkFramebuffer> framebuffer = createFramebuffer(vk, device, &framebufferCreateInfo);
+
+	const VkCommandPoolCreateInfo cmdPoolInfo			=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// Stype
+		DE_NULL,										// PNext
+		DE_NULL,										// flags
+		queueFamilyIndex,								// queuefamilyindex
+	};
+
+	const Unique<VkCommandPool>				cmdPool(createCommandPool(vk, device, &cmdPoolInfo));
+
+	const VkCommandBufferAllocateInfo		cmdBufParams =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	//	VkStructureType			sType;
+		DE_NULL,										//	const void*				pNext;
+		*cmdPool,										//	VkCommandPool			pool;
+		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				//	VkCommandBufferLevel	level;
+		1u,												//	uint32_t				bufferCount;
+	};
+
+	const Unique<VkCommandBuffer>			cmdBuf(allocateCommandBuffer(vk, device, &cmdBufParams));
+
+	const VkRenderPassBeginInfo renderPassBeginInfo		=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		DE_NULL,
+		*renderPass,
+		*framebuffer,
+		{{0, 0}, {16, 16}},
+		0,
+		DE_NULL
+	};
+
+	beginCommandBuffer(vk, *cmdBuf, 0u);
+	{
+		vk.cmdBeginRenderPass(*cmdBuf, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vk.cmdBindPipeline(*cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
+		vk.cmdDraw(*cmdBuf, 3u, 1u, 0, 0);
+		vk.cmdEndRenderPass(*cmdBuf);
+    }
+    endCommandBuffer(vk, *cmdBuf);
+
+    submitCommandsAndWait(vk, device, queue, *cmdBuf);
+
 	// Test should always pass
 	return tcu::TestStatus::pass("Pass");
 }
@@ -186,8 +251,13 @@ tcu::TestStatus descriptorSetLayoutLifetimeComputeTest (Context& context)
 {
 	const DeviceInterface&					vk							= context.getDeviceInterface();
 	const VkDevice							device						= context.getDevice();
+    deUint32					            queueFamilyIndex            = context.getUniversalQueueFamilyIndex();
+    const VkQueue					        queue				        = context.getUniversalQueue();
+    Allocator&								allocator = context.getDefaultAllocator();
+    const ComputeInstanceResultBuffer		result(vk, device, allocator, 0.0f);
 
-	Unique<VkPipelineLayout>				pipelineLayout				(createPipelineLayoutDestroyDescriptorSetLayout(vk, device));
+
+    Unique<VkPipelineLayout>				pipelineLayout				(createPipelineLayoutDestroyDescriptorSetLayout(vk, device));
 
 	const Unique<VkShaderModule>			computeShaderModule			(createShaderModule(vk, device, context.getBinaryCollection().get("compute"), 0));
 
@@ -204,16 +274,56 @@ tcu::TestStatus descriptorSetLayoutLifetimeComputeTest (Context& context)
 
 	const VkComputePipelineCreateInfo		computePipelineCreateInfo	=
 	{
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType					sType
-		DE_NULL,											// const void*						pNext
-		(VkPipelineCreateFlags)0,							// VkPipelineCreateFlags			flags
-		shaderStageCreateInfo,								// VkPipelineShaderStageCreateInfo	stage
-		pipelineLayout.get(),								// VkPipelineLayout					layout
-		DE_NULL,											// VkPipeline						basePipelineHandle
-		0													// int								basePipelineIndex
+		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,			// VkStructureType					sType
+		DE_NULL,												// const void*						pNext
+		(VkPipelineCreateFlags)0,								// VkPipelineCreateFlags			flags
+		shaderStageCreateInfo,									// VkPipelineShaderStageCreateInfo	stage
+		pipelineLayout.get(),									// VkPipelineLayout					layout
+		DE_NULL,												// VkPipeline						basePipelineHandle
+		0														// int								basePipelineIndex
 	};
 
+	const deUint32							offset = (0u);
+	const deUint32							addressableSize = 256;
+	const deUint32							dataSize = 8;
+	de::MovePtr<Allocation>					bufferMem;
+	const Unique<VkBuffer>					buffer						(createDataBuffer(context, offset, addressableSize, 0x00, dataSize, 0x5A, &bufferMem));
+	const Unique<VkDescriptorSetLayout>		descriptorSetLayout			(createDescriptorSetLayout(context));
+	const Unique<VkDescriptorPool>			descriptorPool				(createDescriptorPool(context));
+	const Unique<VkDescriptorSet>			descriptorSet				(createDescriptorSet(context, *descriptorPool, *descriptorSetLayout, *buffer, offset, result.getBuffer()));
+
 	Unique<VkPipeline>						computePipeline				(createComputePipeline(vk, device, DE_NULL, &computePipelineCreateInfo));
+
+	const VkCommandPoolCreateInfo cmdPoolInfo				=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,				// Stype
+		DE_NULL,												// PNext
+		DE_NULL,												// flags
+		queueFamilyIndex,										// queuefamilyindex
+	};
+
+	const Unique<VkCommandPool>				cmdPool(createCommandPool(vk, device, &cmdPoolInfo));
+
+	const VkCommandBufferAllocateInfo		cmdBufParams	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,			//	VkStructureType			sType;
+		DE_NULL,												//	const void*				pNext;
+		*cmdPool,												//	VkCommandPool			pool;
+		VK_COMMAND_BUFFER_LEVEL_PRIMARY,						//	VkCommandBufferLevel	level;
+		1u,														//	uint32_t				bufferCount;
+	};
+
+	const Unique<VkCommandBuffer>			cmdBuf(allocateCommandBuffer(vk, device, &cmdBufParams));
+
+	beginCommandBuffer(vk, *cmdBuf, 0u);
+	{
+		vk.cmdBindPipeline(*cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
+		vk.cmdBindDescriptorSets(*cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1u, &*descriptorSet, 0, 0);
+		vk.cmdDispatch(*cmdBuf, 1u, 1u, 1u);
+	}
+	endCommandBuffer(vk, *cmdBuf);
+
+	submitCommandsAndWait(vk, device, queue, *cmdBuf);
 
 	// Test should always pass
 	return tcu::TestStatus::pass("Pass");

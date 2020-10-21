@@ -281,6 +281,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_copy_commands2")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_debug_report")
 	{
 		functions.push_back("vkCreateDebugReportCallbackEXT");
@@ -676,6 +680,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_image_atomic_int64")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_memory_budget")
 	{
 		return;
@@ -764,6 +772,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_device_memory_report")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_robustness2")
 	{
 		return;
@@ -818,6 +830,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_ANDROID_external_memory_android_hardware_buffer")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_portability_subset")
 	{
 		return;
 	}
@@ -1219,6 +1235,16 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_shader_non_semantic_info")
 	{
+		return;
+	}
+	if (extName == "VK_KHR_copy_commands2")
+	{
+		functions.push_back("vkCmdCopyBuffer2KHR");
+		functions.push_back("vkCmdCopyImage2KHR");
+		functions.push_back("vkCmdCopyBufferToImage2KHR");
+		functions.push_back("vkCmdCopyImageToBuffer2KHR");
+		functions.push_back("vkCmdBlitImage2KHR");
+		functions.push_back("vkCmdResolveImage2KHR");
 		return;
 	}
 	if (extName == "VK_EXT_debug_report")
@@ -1681,6 +1707,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_image_atomic_int64")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_memory_budget")
 	{
 		return;
@@ -1786,6 +1816,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_device_memory_report")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_robustness2")
 	{
 		return;
@@ -1868,6 +1902,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		functions.push_back("vkGetAndroidHardwareBufferPropertiesANDROID");
 		functions.push_back("vkGetMemoryAndroidHardwareBufferANDROID");
+		return;
+	}
+	if (extName == "VK_KHR_portability_subset")
+	{
 		return;
 	}
 	if (extName == "VK_FUCHSIA_imagepipe_surface")
@@ -2017,6 +2055,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_KHR_buffer_device_address",
 	"VK_KHR_deferred_host_operations",
 	"VK_KHR_pipeline_executable_properties",
+	"VK_KHR_copy_commands2",
 	"VK_EXT_debug_marker",
 	"VK_EXT_transform_feedback",
 	"VK_NVX_image_view_handle",

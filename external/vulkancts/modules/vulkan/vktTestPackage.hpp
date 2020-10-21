@@ -31,14 +31,31 @@
 namespace vkt
 {
 
-class TestPackage : public tcu::TestPackage
+class BaseTestPackage : public tcu::TestPackage
+{
+public:
+								BaseTestPackage		(tcu::TestContext& testCtx, const char* name, const char* desc);
+	virtual						~BaseTestPackage	(void);
+
+	tcu::TestCaseExecutor*		createExecutor		(void) const;
+};
+
+class TestPackage : public BaseTestPackage
 {
 public:
 								TestPackage			(tcu::TestContext& testCtx);
 	virtual						~TestPackage		(void);
 
 	virtual void				init				(void);
-	tcu::TestCaseExecutor*		createExecutor		(void) const;
+};
+
+class ExperimentalTestPackage : public BaseTestPackage
+{
+public:
+								ExperimentalTestPackage	 (tcu::TestContext& testCtx);
+	virtual						~ExperimentalTestPackage (void);
+
+	virtual void				init					 (void);
 };
 
 } // vkt

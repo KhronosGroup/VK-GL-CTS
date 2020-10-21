@@ -82,17 +82,19 @@ template<typename T>
 class BufferValidator
 {
 public:
-									BufferValidator			(const ValidationData<T> data)
+									BufferValidator			(const ValidationData<T> data, vk::VkFormat format)
 										: m_refData			(data)
 										, m_refDataStorage	(*reinterpret_cast<ValidationDataStorage<T>*>( &std::vector<char>(sizeof(ValidationDataStorage<T>), '\0').front()))
 										, m_bufferType		(SAMPLER_BUFFER)
+										, m_format			(format)
 									{
 									}
 
-									BufferValidator			(const ValidationDataStorage<T> data)
+									BufferValidator			(const ValidationDataStorage<T> data, vk::VkFormat format)
 										: m_refData			(*reinterpret_cast<ValidationData<T>*>( &std::vector<char>(sizeof(ValidationData<T>), '\0').front()))
 										, m_refDataStorage	(data)
 										, m_bufferType		(STORAGE_BUFFER)
+										, m_format			(format)
 									{
 									}
 
@@ -110,6 +112,7 @@ private:
 	const ValidationDataStorage<T>	m_refDataStorage;
 
 	BufferType						m_bufferType;
+	vk::VkFormat					m_format;
 };
 
 template<>
@@ -239,7 +242,7 @@ bool BufferValidator<T>::validateBuffer (ProtectedContext&		ctx,
 						DE_NULL,										// const void*				pNext
 						0u,												// VkBufferViewCreateFlags	flags
 						buffer,											// VkBuffer					buffer
-						vk::VK_FORMAT_R32G32B32A32_UINT,				// VkFormat					format
+						m_format,										// VkFormat					format
 						0u,												// VkDeviceSize				offset
 						VK_WHOLE_SIZE									// VkDeviceSize				range
 					};

@@ -26,10 +26,10 @@ void main()
 END
 
 BUFFER texel_buffer DATA_TYPE A8B8G8R8_SNORM_PACK32 DATA
-0x7f00007f # Unpacks to R = 127, G = 127, B = 127, A = 127
-0x7f007f00 # Unpacks to R = 127, G = 127, B = 127, A = 127
-0x7f7f0000 # Unpacks to R = 127, G = 127, B = 127, A = 127
-0x7f7f7f00 # Unpacks to R = 127, G = 127, B = 127, A = 127
+0x7f00007f # Unpacks to R = 127, G = 0, B = 0, A = 127
+0x7f007f00 # Unpacks to R = 0, G = 127, B = 0, A = 127
+0x7f7f0000 # Unpacks to R = 0, G = 0, B = 127, A = 127
+0x7f7f7f00 # Unpacks to R = 0, G = 127, B = 127, A = 127
 END
 
 BUFFER framebuffer FORMAT B8G8R8A8_UNORM

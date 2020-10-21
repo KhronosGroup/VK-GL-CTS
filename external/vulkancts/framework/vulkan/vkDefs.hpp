@@ -175,6 +175,8 @@ typedef VKAPI_ATTR VkBool32 (VKAPI_CALL *PFN_vkDebugUtilsMessengerCallbackEXT)	(
 																				 VkDebugUtilsMessageTypeFlagsEXT					messageTypes,
 																				 const struct VkDebugUtilsMessengerCallbackDataEXT*	pCallbackData,
 																				 void*												pUserData);
+typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkDeviceMemoryReportCallbackEXT)	(const struct VkDeviceMemoryReportCallbackDataEXT*	pCallbackData,
+																				 void*												pUserData);
 
 #include "vkStructTypes.inl"
 

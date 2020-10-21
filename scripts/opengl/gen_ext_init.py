@@ -53,7 +53,7 @@ def genExtensions (registry, iface, api):
 		yield "{"
 
 		def genInit (command):
-			ifaceName = command.alias.name if command.alias else command.name
+			ifaceName = command.alias.name if command.alias and command.name not in ALIASING_EXCEPTIONS else command.name
 			return "gl->%s\t= (%s)\tloader->get(\"%s\");" % (
 				getFunctionMemberName(ifaceName),
 				getFunctionTypeName(ifaceName),

@@ -25,7 +25,7 @@ layout(location = 2) smooth out float color_out2;
 
 void main()
 {
-	gl_Position = vec4(position_in, 0, 1);
+    gl_Position = vec4(position_in, 0, 1);
     color_out0 = color_in0;
     color_out1 = color_in1;
     color_out2 = color_in2;
@@ -56,7 +56,7 @@ layout(location = 0) smooth out vec3 color_out;
 
 void main()
 {
-	gl_Position = vec4(position_in, 0, 1);
+    gl_Position = vec4(position_in, 0, 1);
     color_out = color_in;
 }
 END
@@ -117,6 +117,70 @@ void main()
 }
 END
 
+SHADER vertex vert_shader_verify GLSL
+#version 430
+layout(location = 0) in vec2 position_in;
+layout(location = 1) in vec2 texcoord_in;
+layout(location = 0) out vec2 texcoord_out;
+
+void main()
+{
+	gl_Position = vec4(position_in, 0, 1);
+    texcoord_out = texcoord_in;
+}
+END
+
+SHADER fragment frag_shader_verify_vec4 GLSL
+#version 430
+layout(location = 0) in vec2 texcoord_in;
+layout(location = 0) out vec4 frag_out;
+uniform layout(set=0, binding=0) sampler2D result_sampler;
+uniform layout(set=0, binding=1) sampler2D ref_sampler;
+void main()
+{
+    vec4 result = texture(result_sampler, texcoord_in);
+    vec4 ref = texture(ref_sampler, texcoord_in);
+    if (result != ref)
+        frag_out = vec4(1, 0, 0, 1);
+    else
+        frag_out = vec4(0, 1, 0, 1);
+}
+END
+
+SHADER fragment frag_shader_verify_float GLSL
+#version 430
+layout(location = 0) in vec2 texcoord_in;
+layout(location = 0) out vec4 frag_out;
+uniform layout(set=0, binding=0) sampler2D result_sampler;
+uniform layout(set=0, binding=1) sampler2D ref_sampler;
+void main()
+{
+    float result = texture(result_sampler, texcoord_in).x;
+    float ref = texture(ref_sampler, texcoord_in).x;
+    if (distance(result, ref) > 0.1)
+        frag_out = vec4(1, 0, 0, 1);
+    else
+        frag_out = vec4(0, 1, 0, 1);
+}
+END
+
+SHADER fragment frag_shader_verify_uvec2 GLSL
+#version 430
+layout(location = 0) in vec2 texcoord_in;
+layout(location = 0) out vec4 frag_out;
+uniform layout(set=0, binding=0) usampler2D result_sampler;
+uniform layout(set=0, binding=1) usampler2D ref_sampler;
+void main()
+{
+    uvec2 result = texture(result_sampler, texcoord_in).xy;
+    uvec2 ref = texture(ref_sampler, texcoord_in).xy;
+    if (distance(result, ref) > 5)
+        frag_out = vec4(1, 0, 0, 1);
+    else
+        frag_out = vec4(0, 1, 0, 1);
+}
+END
+
 BUFFER framebuffer0 FORMAT R16_SFLOAT
 BUFFER framebuffer1 FORMAT R8G8_UINT
 BUFFER framebuffer2 FORMAT B8G8R8A8_UNORM
@@ -125,11 +189,22 @@ BUFFER ref0 FORMAT R16_SFLOAT
 BUFFER ref1 FORMAT R8G8_UINT
 BUFFER ref2 FORMAT B8G8R8A8_UNORM
 
+BUFFER result0 FORMAT B8G8R8A8_UNORM
+BUFFER result1 FORMAT B8G8R8A8_UNORM
+BUFFER result2 FORMAT B8G8R8A8_UNORM
+
 BUFFER position DATA_TYPE vec2<float> DATA
 -1.0 -1.0
  1.0 -1.0
  1.0  1.0
 -1.0  1.0
+END
+
+BUFFER texcoord DATA_TYPE vec2<float> DATA
+0.0 0.0
+1.0 0.0
+1.0 1.0
+0.0 1.0
 END
 
 BUFFER color0 DATA_TYPE B8G8R8A8_UNORM DATA
@@ -152,6 +227,8 @@ BUFFER color2 DATA_TYPE R16_SFLOAT DATA
 0.3
 0.2
 END
+
+SAMPLER sampler
 
 PIPELINE graphics pipeline
   ATTACH vert_shader
@@ -193,10 +270,48 @@ PIPELINE graphics pipeline_ref2
   FRAMEBUFFER_SIZE 60 60
 END
 
+PIPELINE graphics pipeline_verify0
+  ATTACH vert_shader_verify
+  ATTACH frag_shader_verify_float
+  VERTEX_DATA position LOCATION 0
+  VERTEX_DATA texcoord LOCATION 1
+  BIND BUFFER framebuffer0 AS combined_image_sampler SAMPLER sampler DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER ref0 AS combined_image_sampler SAMPLER sampler DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER result0 AS color LOCATION 0
+  FRAMEBUFFER_SIZE 60 60
+END
+
+PIPELINE graphics pipeline_verify1
+  ATTACH vert_shader_verify
+  ATTACH frag_shader_verify_uvec2
+  VERTEX_DATA position LOCATION 0
+  VERTEX_DATA texcoord LOCATION 1
+  BIND BUFFER framebuffer1 AS combined_image_sampler SAMPLER sampler DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER ref1 AS combined_image_sampler SAMPLER sampler DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER result1 AS color LOCATION 0
+  FRAMEBUFFER_SIZE 60 60
+END
+
+PIPELINE graphics pipeline_verify2
+  ATTACH vert_shader_verify
+  ATTACH frag_shader_verify_vec4
+  VERTEX_DATA position LOCATION 0
+  VERTEX_DATA texcoord LOCATION 1
+  BIND BUFFER framebuffer2 AS combined_image_sampler SAMPLER sampler DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER ref2 AS combined_image_sampler SAMPLER sampler DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER result2 AS color LOCATION 0
+  FRAMEBUFFER_SIZE 60 60
+END
+
+
 RUN pipeline DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
 RUN pipeline_ref0 DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
 RUN pipeline_ref1 DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
 RUN pipeline_ref2 DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
-EXPECT framebuffer0 EQ_BUFFER ref0
-EXPECT framebuffer1 EQ_BUFFER ref1
-EXPECT framebuffer2 EQ_BUFFER ref2
+RUN pipeline_verify0 DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
+RUN pipeline_verify1 DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
+RUN pipeline_verify2 DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
+
+EXPECT result0 IDX 0 0 SIZE 60 60 EQ_RGBA 0 255 0 255
+EXPECT result1 IDX 0 0 SIZE 60 60 EQ_RGBA 0 255 0 255
+EXPECT result2 IDX 0 0 SIZE 60 60 EQ_RGBA 0 255 0 255

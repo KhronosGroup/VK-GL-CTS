@@ -5385,28 +5385,44 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 
 							if (lastUseOfAttachment[colorAttachmentIndex])
 							{
-								const bool byRegion = rng.getBool();
+								deBool foundDuplicate = false;
+								const VkDependencyFlags dependencyFlags = rng.getBool() ? (VkDependencyFlags) VK_DEPENDENCY_BY_REGION_BIT : 0u;
 
-								deps.push_back(SubpassDependency(*lastUseOfAttachment[colorAttachmentIndex], subpassIndex,
-																 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-																	| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-																	| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
-																	| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+								for (const SubpassDependency& dependency : deps)
+								{
+									if (dependency.getSrcPass() == *lastUseOfAttachment[colorAttachmentIndex]
+										&& dependency.getDstPass() == subpassIndex
+										&& dependency.getSrcAccessMask() == VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+										&& dependency.getFlags() == dependencyFlags)
+									{
+										foundDuplicate = true;
+										break;
+									}
+								}
 
-																 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-																	| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-																	| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
-																	| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+								if (!foundDuplicate)
+								{
+									deps.push_back(SubpassDependency(*lastUseOfAttachment[colorAttachmentIndex], subpassIndex,
+																	  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+																	  | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+																	  | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
+																	  | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 
-																 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-																 VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+																	  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+																	  | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+																	  | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
+																	  | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 
-																 byRegion ? (VkDependencyFlags)VK_DEPENDENCY_BY_REGION_BIT : 0u));
+																	  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+																	  VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+
+																	  dependencyFlags));
+								}
+
+								lastUseOfAttachment[colorAttachmentIndex] = just(subpassIndex);
+
+								colorAttachmentReferences.push_back(AttachmentReference((deUint32)subpassColorAttachments[colorAttachmentNdx], VK_IMAGE_LAYOUT_GENERAL));
 							}
-
-							lastUseOfAttachment[colorAttachmentIndex] = just(subpassIndex);
-
-							colorAttachmentReferences.push_back(AttachmentReference((deUint32)subpassColorAttachments[colorAttachmentNdx], VK_IMAGE_LAYOUT_GENERAL));
 						}
 
 						for (size_t inputAttachmentNdx = 0; inputAttachmentNdx < subpassInputAttachments.size(); inputAttachmentNdx++)
@@ -5415,23 +5431,39 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 
 							if(lastUseOfAttachment[inputAttachmentIndex])
 							{
-								const bool byRegion = (*lastUseOfAttachment[inputAttachmentIndex] == subpassIndex) || rng.getBool();
+								deBool foundDuplicate = false;
+								const VkDependencyFlags dependencyFlags = (*lastUseOfAttachment[inputAttachmentIndex] == subpassIndex) || rng.getBool();
 
-								deps.push_back(SubpassDependency(*lastUseOfAttachment[inputAttachmentIndex], subpassIndex,
-																 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-																	| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-																	| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
-																	| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+								for (const SubpassDependency& dependency : deps)
+								{
+									if (dependency.getSrcPass() == *lastUseOfAttachment[inputAttachmentIndex]
+										&& dependency.getDstPass()== subpassIndex
+										&& dependency.getSrcAccessMask() == (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
+										&& dependency.getFlags() == dependencyFlags)
+									{
+										foundDuplicate = true;
+										break;
+									}
+								}
 
-																 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-																	| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-																	| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
-																	| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+								if (!foundDuplicate)
+								{
+									deps.push_back(SubpassDependency(*lastUseOfAttachment[inputAttachmentIndex], subpassIndex,
+																	 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+																		| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+																		| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
+																		| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 
-																 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-																 VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+																	 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+																		| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+																		| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
+																		| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 
-																 byRegion ? (VkDependencyFlags)VK_DEPENDENCY_BY_REGION_BIT : 0u));
+																	 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+																	 VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+
+																	 dependencyFlags));
+								}
 
 								lastUseOfAttachment[inputAttachmentIndex] = just(subpassIndex);
 
@@ -5445,30 +5477,44 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 							}
 						}
 
-						if (depthStencilAttachment)
+						if (depthStencilAttachment && lastUseOfAttachment[*depthStencilAttachment])
 						{
-							if (lastUseOfAttachment[*depthStencilAttachment])
-							{
-								const bool byRegion = (*lastUseOfAttachment[*depthStencilAttachment] == subpassIndex) || rng.getBool();
+							deBool foundDuplicate = false;
+							const VkDependencyFlags dependencyFlags = (*lastUseOfAttachment[*depthStencilAttachment] == subpassIndex) || rng.getBool();
 
+							for (const SubpassDependency& dependency : deps)
+							{
+								if (dependency.getSrcPass() == *lastUseOfAttachment[*depthStencilAttachment]
+									&& dependency.getDstPass() == subpassIndex
+									&& dependency.getSrcAccessMask() == (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
+									&& dependency.getFlags() == dependencyFlags)
+								{
+									foundDuplicate = true;
+									break;
+								}
+							}
+
+							if (!foundDuplicate)
+							{
 								deps.push_back(SubpassDependency(*lastUseOfAttachment[*depthStencilAttachment], subpassIndex,
 																 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-																	| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-																	| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
-																	| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+																 | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+																 | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
+																 | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 
 																 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-																	| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-																	| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
-																	| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+																 | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+																 | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
+																 | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 
 																 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-																 VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+																 VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
 
-																 byRegion ? (VkDependencyFlags)VK_DEPENDENCY_BY_REGION_BIT : 0u));
+																 dependencyFlags));
 							}
 
 							lastUseOfAttachment[*depthStencilAttachment] = just(subpassIndex);
+
 							depthStencilAttachmentReference = AttachmentReference(*depthStencilAttachment, VK_IMAGE_LAYOUT_GENERAL);
 						}
 						else
@@ -5652,25 +5698,6 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 													vector<AttachmentReference>(),
 													AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
 													vector<deUint32>()));
-					}
-
-					for (size_t subpassNdx = 0; subpassNdx < attachmentCount; subpassNdx++)
-					{
-						vector<AttachmentReference>	colorAttachmentReferences;
-
-						for (size_t attachmentNdx = 0; attachmentNdx < (attachmentCount - subpassNdx); attachmentNdx++)
-						{
-							const VkImageLayout subpassLayout = rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayoutsColor), DE_ARRAY_END(subpassLayoutsColor));
-
-							colorAttachmentReferences.push_back(AttachmentReference((deUint32)attachmentNdx, subpassLayout));
-						}
-
-						subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS, 0u,
-											vector<AttachmentReference>(),
-											colorAttachmentReferences,
-											vector<AttachmentReference>(),
-											AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
-											vector<deUint32>()));
 					}
 				}
 				else if (allocationType == ALLOCATIONTYPE_IO_CHAIN)

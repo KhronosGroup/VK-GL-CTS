@@ -20,6 +20,7 @@ const vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&	getDedicat
 const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&					getDepthClipEnableFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceDescriptorIndexingFeatures&					getDescriptorIndexingFeatures					(void) const;
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV&			getDeviceGeneratedCommandsFeatures				(void) const;
+const vk::VkPhysicalDeviceDeviceMemoryReportFeaturesEXT&				getDeviceMemoryReportFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceDiagnosticsConfigFeaturesNV&					getDiagnosticsConfigFeatures					(void) const;
 const vk::VkPhysicalDeviceExclusiveScissorFeaturesNV&					getExclusiveScissorFeatures						(void) const;
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&				getExtendedDynamicStateFeaturesEXT				(void) const;
@@ -39,6 +40,7 @@ const vk::VkPhysicalDeviceMultiviewFeatures&							getMultiviewFeatures							(v
 const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&					getPerformanceQueryFeatures						(void) const;
 const vk::VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT&		getPipelineCreationCacheControlFeaturesEXT		(void) const;
 const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&		getPipelineExecutablePropertiesFeatures			(void) const;
+const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR&					getPortabilitySubsetFeatures					(void) const;
 const vk::VkPhysicalDevicePrivateDataFeaturesEXT&						getPrivateDataFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&						getProtectedMemoryFeatures						(void) const;
 const vk::VkPhysicalDeviceRayQueryFeaturesKHR&							getRayQueryFeatures								(void) const;
@@ -54,6 +56,7 @@ const vk::VkPhysicalDeviceShaderClockFeaturesKHR&						getShaderClockFeatures			
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT&	getShaderDemoteToHelperInvocationFeaturesEXT	(void) const;
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&					getShaderDrawParametersFeatures					(void) const;
 const vk::VkPhysicalDeviceShaderFloat16Int8Features&					getShaderFloat16Int8Features					(void) const;
+const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&			getShaderImageAtomicInt64FeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceShaderImageFootprintFeaturesNV&				getShaderImageFootprintFeatures					(void) const;
 const vk::VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL&			getShaderIntegerFunctions2FeaturesINTEL			(void) const;
 const vk::VkPhysicalDeviceShaderSMBuiltinsFeaturesNV&					getShaderSMBuiltinsFeatures						(void) const;

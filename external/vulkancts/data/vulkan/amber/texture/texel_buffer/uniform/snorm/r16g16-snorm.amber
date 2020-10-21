@@ -1,0 +1,90 @@
+#!amber
+# Copyright 2020 The Amber Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+SHADER vertex vert_shader PASSTHROUGH
+SHADER fragment frag_shader GLSL
+#version 430
+layout(location = 0) out vec4 color_out;
+uniform layout(set=0, binding=0) samplerBuffer texels;
+
+void main()
+{
+    color_out = (texelFetch(texels, int(gl_FragCoord.x) % 35) + vec4(1.0)) / vec4(2.0);
+    color_out.b = 0;
+    color_out.a = 1;
+
+}
+END
+
+BUFFER texel_buffer DATA_TYPE R16G16_SNORM DATA
+0x8001 0x8800 0x8800 0x8fff 0x8fff 0x97fe 0x97fe 0x9ffd 0x9ffd 0xa7fc
+0xa7fc 0xaffb 0xaffb 0xb7fa 0xb7fa 0xbff9 0xbff9 0xc7f8 0xc7f8 0xcff7
+0xcff7 0xd7f6 0xd7f6 0xdff5 0xdff5 0xe7f4 0xe7f4 0xeff3 0xeff3 0xf7f2
+0xf7f2 0xfff1 0xfff1 0x07f0 0x07f0 0x0fef 0x0fef 0x17ee 0x17ee 0x1fed
+0x1fed 0x27ec 0x27ec 0x2feb 0x2feb 0x37ea 0x37ea 0x3fe9 0x3fe9 0x47e8
+0x47e8 0x4fe7 0x4fe7 0x57e6 0x57e6 0x5fe5 0x5fe5 0x67e4 0x67e4 0x6fe3
+0x6fe3 0x77e2 0x77e2 0x7fe1 0x7fe1 0x8000 0x8000 0x0000 0x0000 0x8001
+END
+
+BUFFER framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics pipeline
+  ATTACH vert_shader
+  ATTACH frag_shader
+  BIND BUFFER texel_buffer AS uniform_texel_buffer DESCRIPTOR_SET 0 BINDING 0
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER framebuffer AS color LOCATION 0
+END
+
+CLEAR_COLOR pipeline 0 0 255 255
+CLEAR pipeline
+RUN pipeline DRAW_RECT POS 0 0 SIZE 100 128
+
+EXPECT framebuffer IDX 0 0 SIZE 1 128 EQ_RGBA 0 7 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 1 0 SIZE 1 128 EQ_RGBA 7 15 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 2 0 SIZE 1 128 EQ_RGBA 15 23 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 3 0 SIZE 1 128 EQ_RGBA 23 31 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 4 0 SIZE 1 128 EQ_RGBA 31 39 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 5 0 SIZE 1 128 EQ_RGBA 39 47 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 6 0 SIZE 1 128 EQ_RGBA 47 55 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 7 0 SIZE 1 128 EQ_RGBA 55 63 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 8 0 SIZE 1 128 EQ_RGBA 63 71 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 9 0 SIZE 1 128 EQ_RGBA 71 79 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 10 0 SIZE 1 128 EQ_RGBA 79 87 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 11 0 SIZE 1 128 EQ_RGBA 87 95 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 12 0 SIZE 1 128 EQ_RGBA 95 103 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 13 0 SIZE 1 128 EQ_RGBA 103 111 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 14 0 SIZE 1 128 EQ_RGBA 111 119 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 15 0 SIZE 1 128 EQ_RGBA 119 127 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 16 0 SIZE 1 128 EQ_RGBA 127 135 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 17 0 SIZE 1 128 EQ_RGBA 135 143 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 18 0 SIZE 1 128 EQ_RGBA 143 151 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 19 0 SIZE 1 128 EQ_RGBA 151 159 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 20 0 SIZE 1 128 EQ_RGBA 159 167 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 21 0 SIZE 1 128 EQ_RGBA 167 175 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 22 0 SIZE 1 128 EQ_RGBA 175 183 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 23 0 SIZE 1 128 EQ_RGBA 183 191 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 24 0 SIZE 1 128 EQ_RGBA 191 199 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 25 0 SIZE 1 128 EQ_RGBA 199 207 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 26 0 SIZE 1 128 EQ_RGBA 207 215 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 27 0 SIZE 1 128 EQ_RGBA 215 223 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 28 0 SIZE 1 128 EQ_RGBA 223 230 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 29 0 SIZE 1 128 EQ_RGBA 230 238 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 30 0 SIZE 1 128 EQ_RGBA 238 246 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 31 0 SIZE 1 128 EQ_RGBA 246 254 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 32 0 SIZE 1 128 EQ_RGBA 254 0 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 33 0 SIZE 1 128 EQ_RGBA 0 127 0 255 TOLERANCE 1
+EXPECT framebuffer IDX 34 0 SIZE 1 128 EQ_RGBA 127 0 0 255 TOLERANCE 1
+

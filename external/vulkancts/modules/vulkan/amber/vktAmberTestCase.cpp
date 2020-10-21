@@ -166,6 +166,17 @@ void AmberTestCase::checkSupport(Context& ctx) const
 
 	for (auto req : m_imageRequirements)
 		checkImageSupport(ctx.getInstanceInterface(), ctx.getPhysicalDevice(), req);
+
+	for (auto req : m_bufferRequirements)
+	{
+		vk::VkFormatProperties prop;
+		ctx.getInstanceInterface().getPhysicalDeviceFormatProperties(ctx.getPhysicalDevice(), req.m_format, &prop);
+
+		if ((req.m_featureFlags & prop.bufferFeatures) != req.m_featureFlags)
+		{
+			TCU_THROW(NotSupportedError, "Buffer format doesn't support required feature flags");
+		}
+	}
 }
 
 class Delegate : public amber::Delegate
@@ -249,7 +260,7 @@ bool AmberTestCase::parse (const std::string& readFilename)
 	amber::Amber am (&delegate);
 	amber::Result r = am.Parse(script, m_recipe);
 
-	m_recipe->SetFenceTimeout(1000 * 60 * 10); // 10 minutes
+	m_recipe->SetFenceTimeout(~0u); // infinity of miliseconds
 
 	if (!r.IsSuccess())
 	{
@@ -402,6 +413,11 @@ void AmberTestCase::addRequirement (const std::string& requirement)
 void AmberTestCase::addImageRequirement (vk::VkImageCreateInfo info)
 {
 	m_imageRequirements.push_back(info);
+}
+
+void AmberTestCase::addBufferRequirement (BufferRequirement req)
+{
+	m_bufferRequirements.push_back(req);
 }
 
 } // cts_amber

@@ -3310,6 +3310,7 @@ deUint32 getFormatComponentWidth (const VkFormat format, const deUint32 componen
 			case tcu::TextureFormat::SNORM_INT32:
 			case tcu::TextureFormat::UNSIGNED_INT32:
 			case tcu::TextureFormat::SIGNED_INT32:
+			case tcu::TextureFormat::FLOAT:
 				return 32;
 
 			case tcu::TextureFormat::FLOAT64:

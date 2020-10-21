@@ -41,6 +41,7 @@ add_subdirectory(fragment_shader_interlock)
 add_subdirectory(modifiers)
 add_subdirectory(ray_tracing)
 add_subdirectory(ray_query)
+add_subdirectory(postmortem)
 
 
 include_directories(
@@ -85,6 +86,7 @@ include_directories(
 	modifiers
 	ray_tracing
 	ray_query
+	postmortem
 	)
 
 set(DEQP_VK_SRCS
@@ -149,6 +151,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-modifiers
 	deqp-vk-ray-tracing
 	deqp-vk-ray-query
+	deqp-vk-postmortem
 	)
 
 if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))

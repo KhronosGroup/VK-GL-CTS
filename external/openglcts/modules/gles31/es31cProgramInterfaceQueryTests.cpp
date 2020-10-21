@@ -1668,6 +1668,93 @@ class TransformFeedbackTypes : public SimpleShaders
 	}
 };
 
+class TransformFeedbackTypesFullArrayCapture : public SimpleShaders
+{
+	virtual std::string Title()
+	{
+		return "Transform Feedback Varying Types Without Element Capture";
+	}
+
+	virtual std::string ShadersDesc()
+	{
+		return "fallthrough fragment and vertex shaders with different types of out variables used";
+	}
+
+	virtual std::string PurposeExt()
+	{
+		return "\n\n Purpose is to verify calls using GL_TRANSFORM_FEEDBACK_VARYING as an interface param.\n";
+	}
+
+	virtual std::string VertexShader()
+	{
+		return "#version 310 es                      \n"
+			   "in vec4 position;                    \n"
+			   ""
+			   "flat out highp vec4 a;               \n"
+			   "out mediump float b[2];              \n"
+			   "flat out highp uvec2 c;              \n"
+			   "flat out highp uint d;               \n"
+			   "out mediump vec3 e[2];               \n"
+			   "flat out int f;                      \n"
+			   ""
+			   "void main(void)                      \n"
+			   "{                                    \n"
+			   "   vec4 pos;                         \n"
+			   "   a = vec4(1);                      \n"
+			   "   b[0] = 1.1;                       \n"
+			   "   b[1] = 1.1;                       \n"
+			   "   c = uvec2(1u);                    \n"
+			   "   d = 1u;                           \n"
+			   "   e[0] = vec3(1.1);                 \n"
+			   "   e[1] = vec3(1.1);                 \n"
+			   "   f = 1;                            \n"
+			   "   gl_Position = position;           \n"
+			   "}";
+	}
+
+	virtual long Run()
+	{
+		GLuint program = CreateProgram(VertexShader().c_str(), FragmentShader().c_str(), false);
+		glBindAttribLocation(program, 0, "position");
+		const char* varyings[5] = { "a", "b", "c", "d", "e" };
+		glTransformFeedbackVaryings(program, 5, varyings, GL_INTERLEAVED_ATTRIBS);
+		LinkProgram(program);
+
+		long error = NO_ERROR;
+
+		VerifyGetProgramInterfaceiv(program, GL_TRANSFORM_FEEDBACK_VARYING, GL_ACTIVE_RESOURCES, 5, error);
+		VerifyGetProgramInterfaceiv(program, GL_TRANSFORM_FEEDBACK_VARYING, GL_MAX_NAME_LENGTH, 2, error);
+
+		std::map<std::string, GLuint> indices;
+		VerifyGetProgramResourceIndex(program, GL_TRANSFORM_FEEDBACK_VARYING, indices, "a", error);
+		VerifyGetProgramResourceIndex(program, GL_TRANSFORM_FEEDBACK_VARYING, indices, "b", error);
+		VerifyGetProgramResourceIndex(program, GL_TRANSFORM_FEEDBACK_VARYING, indices, "c", error);
+		VerifyGetProgramResourceIndex(program, GL_TRANSFORM_FEEDBACK_VARYING, indices, "d", error);
+		VerifyGetProgramResourceIndex(program, GL_TRANSFORM_FEEDBACK_VARYING, indices, "e", error);
+
+		VerifyGetProgramResourceName(program, GL_TRANSFORM_FEEDBACK_VARYING, indices["a"], "a", error);
+		VerifyGetProgramResourceName(program, GL_TRANSFORM_FEEDBACK_VARYING, indices["b"], "b", error);
+		VerifyGetProgramResourceName(program, GL_TRANSFORM_FEEDBACK_VARYING, indices["c"], "c", error);
+		VerifyGetProgramResourceName(program, GL_TRANSFORM_FEEDBACK_VARYING, indices["d"], "d", error);
+		VerifyGetProgramResourceName(program, GL_TRANSFORM_FEEDBACK_VARYING, indices["e"], "e", error);
+
+		GLenum props[]	= { GL_NAME_LENGTH, GL_TYPE, GL_ARRAY_SIZE };
+		GLint  expected[] = { 2, GL_FLOAT_VEC4, 1 };
+		VerifyGetProgramResourceiv(program, GL_TRANSFORM_FEEDBACK_VARYING, indices["a"], 3, props, 3, expected, error);
+		GLint expected2[] = { 2, GL_FLOAT, 2 };
+		VerifyGetProgramResourceiv(program, GL_TRANSFORM_FEEDBACK_VARYING, indices["b"], 3, props, 3, expected2, error);
+		GLint expected3[] = { 2, GL_UNSIGNED_INT_VEC2, 1 };
+		VerifyGetProgramResourceiv(program, GL_TRANSFORM_FEEDBACK_VARYING, indices["c"], 3, props, 3, expected3, error);
+		GLint expected4[] = { 2, GL_UNSIGNED_INT, 1 };
+		VerifyGetProgramResourceiv(program, GL_TRANSFORM_FEEDBACK_VARYING, indices["d"], 3, props, 3, expected4, error);
+		GLint expected5[] = { 2, GL_FLOAT_VEC3, 2 };
+		VerifyGetProgramResourceiv(program, GL_TRANSFORM_FEEDBACK_VARYING, indices["e"], 3, props, 3, expected5, error);
+
+		glDeleteProgram(program);
+		return error;
+	}
+};
+
 class AtomicCounterSimple : public ComputeShaderTest
 {
 public:
@@ -3648,6 +3735,8 @@ void ProgramInterfaceQueryTests::init()
 	addChild(new TestSubcase(m_context, "uniform-block-types", TestSubcase::Create<UniformBlockTypes>));
 	addChild(new TestSubcase(m_context, "uniform-block-array", TestSubcase::Create<UniformBlockArray>));
 	addChild(new TestSubcase(m_context, "transform-feedback-types", TestSubcase::Create<TransformFeedbackTypes>));
+	addChild(new TestSubcase(m_context, "transform-feedback-types-full-array-capture",
+							 TestSubcase::Create<TransformFeedbackTypesFullArrayCapture>));
 	addChild(new TestSubcase(m_context, "atomic-counters", TestSubcase::Create<AtomicCounterSimple>));
 	addChild(
 		new TestSubcase(m_context, "atomic-counters-one-buffer", TestSubcase::Create<AtomicCounterSimpleOneBuffer>));
