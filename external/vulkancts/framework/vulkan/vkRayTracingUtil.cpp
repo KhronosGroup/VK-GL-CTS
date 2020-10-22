@@ -487,9 +487,6 @@ void finishDeferredOperation (const DeviceInterface&	vk,
 		if (maxThreadCountSupported == 0)
 			TCU_FAIL("vkGetDeferredOperationMaxConcurrencyKHR must not return 0");
 
-		if (testThreadCount > maxThreadCountSupported)
-			TCU_THROW(NotSupportedError, "Requested number of threads is greater than allowed maximum");
-
 		const DeferredThreadParams				deferredThreadParams	=
 		{
 			vk,					//  const DeviceInterface&	vk;
