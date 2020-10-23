@@ -1530,13 +1530,14 @@ bool BinaryAtomicIntermValuesInstance::areValuesCorrect(tcu::ConstPixelBufferAcc
 	for (deInt32 i = 0; i < static_cast<deInt32>(NUM_INVOCATIONS_PER_PIXEL); i++)
 	{
 		IVec3 gid(x + i*gridSize.x(), y, z);
-
-		resultValues[i] = *((T*)resultBuffer.getPixelPtr(gid.x(), gid.y(), gid.z()));
+		T data = *((T*)resultBuffer.getPixelPtr(gid.x(), gid.y(), gid.z()));
 		if (isFloatingPoint)
 		{
-			float *floatPtr = reinterpret_cast<float*>(&resultValues[i]);
-			resultValues[i] = static_cast<T>(*floatPtr);
+			float fData;
+			deMemcpy(&fData, &data, sizeof(fData));
+			data = static_cast<T>(fData);
 		}
+		resultValues[i] = data;
 		atomicArgs[i]	= getAtomicFuncArgument<T>(m_operation, gid, extendedGridSize);
 		argsUsed[i]		= false;
 	}
