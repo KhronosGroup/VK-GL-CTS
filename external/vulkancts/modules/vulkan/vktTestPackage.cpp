@@ -178,19 +178,6 @@ using de::UniquePtr;
 using de::MovePtr;
 using tcu::TestLog;
 
-namespace
-{
-
-MovePtr<vk::DebugReportRecorder> createDebugReportRecorder (const vk::PlatformInterface& vkp, const vk::InstanceInterface& vki, vk::VkInstance instance, bool printValidationErrors)
-{
-	if (isDebugReportSupported(vkp))
-		return MovePtr<vk::DebugReportRecorder>(new vk::DebugReportRecorder(vki, instance, printValidationErrors));
-	else
-		TCU_THROW(NotSupportedError, "VK_EXT_debug_report is not supported");
-}
-
-} // anonymous
-
 // TestCaseExecutor
 
 class TestCaseExecutor : public tcu::TestCaseExecutor
@@ -212,7 +199,6 @@ private:
 	const UniquePtr<vk::Library>				m_library;
 	Context										m_context;
 
-	const UniquePtr<vk::DebugReportRecorder>	m_debugReportRecorder;
 	const UniquePtr<vk::RenderDocUtil>			m_renderDoc;
 	vk::VkPhysicalDeviceProperties				m_deviceProperties;
 	tcu::WaiverUtil								m_waiverMechanism;
@@ -239,12 +225,6 @@ TestCaseExecutor::TestCaseExecutor (tcu::TestContext& testCtx)
 	: m_prebuiltBinRegistry	(testCtx.getArchive(), "vulkan/prebuilt")
 	, m_library				(createLibrary(testCtx))
 	, m_context				(testCtx, m_library->getPlatformInterface(), m_progCollection)
-	, m_debugReportRecorder	(testCtx.getCommandLine().isValidationEnabled()
-							 ? createDebugReportRecorder(m_library->getPlatformInterface(),
-														 m_context.getInstanceInterface(),
-														 m_context.getInstance(),
-														 testCtx.getCommandLine().printValidationErrors())
-							 : MovePtr<vk::DebugReportRecorder>(DE_NULL))
 	, m_renderDoc			(testCtx.getCommandLine().isRenderDocEnabled()
 							 ? MovePtr<vk::RenderDocUtil>(new vk::RenderDocUtil())
 							 : MovePtr<vk::RenderDocUtil>(DE_NULL))
@@ -366,8 +346,8 @@ void TestCaseExecutor::deinit (tcu::TestCase*)
 	if (m_renderDoc) m_renderDoc->endFrame(m_context.getInstance());
 
 	// Collect and report any debug messages
-	if (m_debugReportRecorder)
-		collectAndReportDebugMessages(*m_debugReportRecorder, m_context);
+	if (m_context.hasDebugReportRecorder())
+		collectAndReportDebugMessages(m_context.getDebugReportRecorder(), m_context);
 }
 
 tcu::TestNode::IterateResult TestCaseExecutor::iterate (tcu::TestCase*)
