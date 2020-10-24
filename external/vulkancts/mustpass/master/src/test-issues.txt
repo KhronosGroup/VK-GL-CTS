@@ -1,6 +1,3 @@
-# Issue 340: Cube map corner texel selection
-dEQP-VK.pipeline.sampler.view_type.cube.format.r5g6b5_unorm_pack16.mag_filter.linear
-
 # Issue 448: Precision issues with software texture sampling on X86 Linux
 dEQP-VK.glsl.texture_functions.textureoffset.isampler2darray_vertex
 dEQP-VK.glsl.texture_functions.textureoffset.usampler2darray_vertex
