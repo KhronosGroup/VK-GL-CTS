@@ -42,7 +42,7 @@ class TestThread : public tcu::Android::RenderThread
 {
 public:
 	TestThread(tcu::Android::NativeActivity& nativeActivity, tcu::Android::AssetArchive& archive,
-			   const std::string& logPath, glu::ApiType runType, deUint32 runFlags);
+			   const std::string& waiverPath, const std::string& logPath, glu::ApiType runType, deUint32 runFlags);
 	~TestThread(void);
 
 	void run(void);

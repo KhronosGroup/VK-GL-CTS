@@ -54,7 +54,7 @@
 
 	<waiver vendor="ATI Technologies Inc." url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/1141 , https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/1190">
 		<description></description>
-		<!--TODO: plase let me know for which renderers this waiver should be defined -->
+		<!--TODO: this waiver is not applied - please specify for which renderers it should be defined -->
 		<renderer_list>
 			<r>???</r>
 		</renderer_list>
@@ -75,6 +75,27 @@
 		<t>dEQP-GLES31.functional.program_interface_query.transform_feedback_varying.*_array_element</t>
 		<t>dEQP-GLES31.functional.program_interface_query.transform_feedback_varying.type.*.array.*</t>
 		<t>KHR-GLES31.core.program_interface_query.transform-feedback-types</t>
+	</waiver>
+
+	<waiver vendor="Intel" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/2601">
+		<description>Testing of wide-line attribute interpolation is too strict</description>
+		<renderer_list>
+			<r>*</r>
+		</renderer_list>
+		<t>dEQP-GLES2.functional.rasterization.interpolation.basic.line_loop_wide</t>
+		<t>dEQP-GLES2.functional.rasterization.interpolation.basic.line_strip_wide</t>
+		<t>dEQP-GLES2.functional.rasterization.interpolation.basic.lines_wide</t>
+		<t>dEQP-GLES2.functional.rasterization.interpolation.projected.line_loop_wide</t>
+		<t>dEQP-GLES2.functional.rasterization.interpolation.projected.line_strip_wide</t>
+		<t>dEQP-GLES2.functional.rasterization.interpolation.projected.lines_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.fbo.rbo_singlesample.interpolation.lines_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.fbo.texture_2d.interpolation.lines_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.interpolation.basic.line_loop_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.interpolation.basic.line_strip_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.interpolation.basic.lines_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.interpolation.projected.line_loop_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.interpolation.projected.line_strip_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.interpolation.projected.lines_wide</t>
 	</waiver>
 
 </waiver_list>

@@ -40,6 +40,7 @@ struct CommandLine
 	}
 
 	glu::ApiType runType;
+	std::string  waiverPath;
 	std::string  dstLogDir;
 	deUint32	 flags;
 };
@@ -80,6 +81,11 @@ static bool parseCommandLine(CommandLine& cmdLine, int argc, const char* const* 
 			if (ndx >= DE_LENGTH_OF_ARRAY(runTypes))
 				return false;
 		}
+		else if (deStringBeginsWith(arg, "--waivers="))
+		{
+			const char* value = arg + 10;
+			cmdLine.waiverPath = value;
+		}
 		else if (deStringBeginsWith(arg, "--logdir="))
 		{
 			const char* value = arg + 9;
@@ -104,6 +110,7 @@ static void printHelp(const char* binName)
 	printf("  --type=[esN[M]|glNM] Conformance test run type. Choose from\n");
 	printf("                       ES: es2, es3, es31, es32\n");
 	printf("                       GL: gl30, gl31, gl32, gl33, gl40, gl41, gl42, gl43, gl44, gl45, gl46\n");
+	printf("  --waivers=[path]     Path to xml file containing waived tests\n");
 	printf("  --logdir=[path]      Destination directory for log files\n");
 	printf("  --summary            Print summary without running the tests\n");
 	printf("  --verbose            Print out and log more information\n");
@@ -124,8 +131,8 @@ int main(int argc, char** argv)
 	{
 		de::UniquePtr<tcu::Platform> platform(createPlatform());
 		tcu::DirArchive				 archive(".");
-		glcts::TestRunner runner(static_cast<tcu::Platform&>(*platform.get()), archive, cmdLine.dstLogDir.c_str(),
-								 cmdLine.runType, cmdLine.flags);
+		glcts::TestRunner runner(static_cast<tcu::Platform&>(*platform.get()), archive, cmdLine.waiverPath.c_str(),
+								 cmdLine.dstLogDir.c_str(), cmdLine.runType, cmdLine.flags);
 
 		for (;;)
 		{
