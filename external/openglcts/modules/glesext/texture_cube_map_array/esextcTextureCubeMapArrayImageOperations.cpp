@@ -333,6 +333,19 @@ TextureCubeMapArrayImageOpCompute::TextureCubeMapArrayImageOpCompute(Context& co
 	/* Nothing to be done here */
 }
 
+glw::GLenum getQueryPname(SHADER_TO_CHECK stage) {
+	switch (stage) {
+		case STC_COMPUTE_SHADER:					return GL_MAX_COMPUTE_IMAGE_UNIFORMS;
+		case STC_VERTEX_SHADER:						return GL_MAX_VERTEX_IMAGE_UNIFORMS;
+		case STC_FRAGMENT_SHADER:					return GL_MAX_FRAGMENT_IMAGE_UNIFORMS;
+		case STC_GEOMETRY_SHADER:					return GL_MAX_GEOMETRY_IMAGE_UNIFORMS;
+		case STC_TESSELLATION_CONTROL_SHADER:		return GL_MAX_TESS_CONTROL_IMAGE_UNIFORMS;
+		case STC_TESSELLATION_EVALUATION_SHADER:	return GL_MAX_TESS_EVALUATION_IMAGE_UNIFORMS;
+	}
+	DE_ASSERT(0);
+	return GL_NONE;
+}
+
 /** Initialize test case */
 void TextureCubeMapArrayImageOpCompute::initTest(void)
 {
@@ -353,6 +366,12 @@ void TextureCubeMapArrayImageOpCompute::initTest(void)
 	{
 		throw tcu::NotSupportedError(TESSELLATION_SHADER_EXTENSION_NOT_SUPPORTED, "", __FILE__, __LINE__);
 	}
+
+	int maxImages;
+	glw::GLenum pname = getQueryPname(m_shader_to_check);
+	gl.getIntegerv(pname, &maxImages);
+	if (maxImages < 6)
+		throw tcu::NotSupportedError( "Shader stage does not support at least 6 image uniforms", "", __FILE__, __LINE__);
 
 	/* Generate and bind VAO */
 	gl.genVertexArrays(1, &m_vao_id);
@@ -777,7 +796,6 @@ void TextureCubeMapArrayImageOpCompute::configureProgram(void)
 
 		const char* csCode = getComputeShaderCode();
 
-		/* Images are required for compute shader */
 		if (!buildProgram(m_po_id, m_cs_id, 1 /* part */, &csCode))
 		{
 			TCU_FAIL("Could not create a program from valid compute shader code!");
@@ -785,24 +803,6 @@ void TextureCubeMapArrayImageOpCompute::configureProgram(void)
 		break;
 	}
 	case STC_VERTEX_SHADER:
-	{
-		m_vs_id = gl.createShader(GL_VERTEX_SHADER);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Could not create shader object!");
-		m_fs_id = gl.createShader(GL_FRAGMENT_SHADER);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Could not create shader object!");
-
-		const char* vsCode = getVertexShaderCode();
-		const char* fsCode = getFragmentShaderCodeBoilerPlate();
-
-		/* Execute test only if images are supported by vertex shader */
-		if (!buildProgram(m_po_id, m_fs_id, 1 /* part */, &fsCode, m_vs_id, 1 /* part */, &vsCode))
-		{
-			throw tcu::NotSupportedError(
-				"imageCubeArray/iimageCubeArray/uimageCubeArray are not supported by Vertex Shader", "", __FILE__,
-				__LINE__);
-		}
-		break;
-	}
 	case STC_FRAGMENT_SHADER:
 	{
 		m_vs_id = gl.createShader(GL_VERTEX_SHADER);
@@ -810,15 +810,15 @@ void TextureCubeMapArrayImageOpCompute::configureProgram(void)
 		m_fs_id = gl.createShader(GL_FRAGMENT_SHADER);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Could not create shader object!");
 
-		const char* vsCode = getVertexShaderCodeBoilerPlate();
-		const char* fsCode = getFragmentShaderCode();
+		bool vs = (m_shader_to_check == STC_VERTEX_SHADER);
+		const char* vsCode = vs	? getVertexShaderCode()
+								: getVertexShaderCodeBoilerPlate();
+		const char* fsCode = vs	? getFragmentShaderCodeBoilerPlate()
+								: getFragmentShaderCode();
 
-		/* Execute test only if images are supported by fragment shader */
 		if (!buildProgram(m_po_id, m_fs_id, 1 /* part */, &fsCode, m_vs_id, 1 /* part */, &vsCode))
 		{
-			throw tcu::NotSupportedError(
-				"imageCubeArray/iimageCubeArray/uimageCubeArray are not supported by Fragment Shader", "", __FILE__,
-				__LINE__);
+			TCU_FAIL("Could not create shader program.");
 		}
 		break;
 	}
@@ -835,42 +835,14 @@ void TextureCubeMapArrayImageOpCompute::configureProgram(void)
 		const char* gsCode = getGeometryShaderCode();
 		const char* fsCode = getFragmentShaderCodeBoilerPlate();
 
-		/* Execute test only if images are supported by geometry shader */
 		if (!buildProgram(m_po_id, m_fs_id, 1 /* part */, &fsCode, m_gs_id, 1 /* part */, &gsCode, m_vs_id,
 						  1 /* part */, &vsCode))
 		{
-			throw tcu::NotSupportedError(
-				"imageCubeArray/iimageCubeArray/uimageCubeArray are not supported by Geometry Shader", "", __FILE__,
-				__LINE__);
+			TCU_FAIL("Could not create shader program.");
 		}
 		break;
 	}
 	case STC_TESSELLATION_CONTROL_SHADER:
-	{
-		m_vs_id = gl.createShader(GL_VERTEX_SHADER);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Could not create shader object!");
-		m_tc_id = gl.createShader(m_glExtTokens.TESS_CONTROL_SHADER);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Could not create shader object!");
-		m_te_id = gl.createShader(m_glExtTokens.TESS_EVALUATION_SHADER);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Could not create shader object!");
-		m_fs_id = gl.createShader(GL_FRAGMENT_SHADER);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Could not create shader object!");
-
-		const char* vsCode  = getVertexShaderCodeBoilerPlate();
-		const char* tcsCode = getTessControlShaderCode();
-		const char* tesCode = getTessEvaluationShaderCodeBoilerPlate();
-		const char* fsCode  = getFragmentShaderCodeBoilerPlate();
-
-		/* Execute test only if images are supported by tessellation control shader */
-		if (!buildProgram(m_po_id, m_fs_id, 1 /* part */, &fsCode, m_tc_id, 1 /* part */, &tcsCode, m_te_id,
-						  1 /* part */, &tesCode, m_vs_id, 1 /* part */, &vsCode))
-		{
-			throw tcu::NotSupportedError(
-				"imageCubeArray/iimageCubeArray/uimageCubeArray are not supported by Tessellation Control Shader", "",
-				__FILE__, __LINE__);
-		}
-		break;
-	}
 	case STC_TESSELLATION_EVALUATION_SHADER:
 	{
 		m_vs_id = gl.createShader(GL_VERTEX_SHADER);
@@ -882,18 +854,18 @@ void TextureCubeMapArrayImageOpCompute::configureProgram(void)
 		m_fs_id = gl.createShader(GL_FRAGMENT_SHADER);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Could not create shader object!");
 
+		bool tcs = (m_shader_to_check == STC_TESSELLATION_CONTROL_SHADER);
 		const char* vsCode  = getVertexShaderCodeBoilerPlate();
-		const char* tcsCode = getTessControlShaderCodeBoilerPlate();
-		const char* tesCode = getTessEvaluationShaderCode();
+		const char* tcsCode = tcs	? getTessControlShaderCode()
+									: getTessControlShaderCodeBoilerPlate();
+		const char* tesCode = tcs	? getTessEvaluationShaderCodeBoilerPlate()
+									: getTessEvaluationShaderCode();
 		const char* fsCode  = getFragmentShaderCodeBoilerPlate();
 
-		/* Execute test only if images are supported by tessellation evaluation shader */
 		if (!buildProgram(m_po_id, m_fs_id, 1 /* part */, &fsCode, m_tc_id, 1 /* part */, &tcsCode, m_te_id,
 						  1 /* part */, &tesCode, m_vs_id, 1 /* part */, &vsCode))
 		{
-			throw tcu::NotSupportedError(
-				"imageCubeArray/iimageCubeArray/uimageCubeArray are not supported by Tessellation Evaluation Shader",
-				"", __FILE__, __LINE__);
+			TCU_FAIL("Could not create shader program.");
 		}
 		break;
 	}
