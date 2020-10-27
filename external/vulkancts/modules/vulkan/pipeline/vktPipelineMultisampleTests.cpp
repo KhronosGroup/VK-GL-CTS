@@ -2051,6 +2051,13 @@ tcu::TestStatus AlphaToOneInstance::verifyImage (const tcu::ConstPixelBufferAcce
 	{
 		for (int x = 0; x < m_renderSize.x(); x++)
 		{
+			if (alphaOneImage.getPixel(x, y).w() != 1.0)
+			{
+				std::ostringstream message;
+				message << "Unsatisfied condition: " << alphaOneImage.getPixel(x, y) << " doesn't have alpha set to 1";
+				return tcu::TestStatus::fail(message.str());
+			}
+
 			if (!tcu::boolAll(tcu::greaterThanEqual(alphaOneImage.getPixel(x, y), noAlphaOneImage.getPixel(x, y))))
 			{
 				std::ostringstream message;
