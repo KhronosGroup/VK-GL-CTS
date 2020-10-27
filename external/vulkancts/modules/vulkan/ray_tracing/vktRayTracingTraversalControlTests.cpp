@@ -346,7 +346,7 @@ bool SingleSquareConfiguration::verifyImage (BufferWithMemory* resultBuffer, Con
 			hitValue1	= missValue1;				// no chit - results should report miss value
 			break;
 		case HSTT_AHIT_TERMINATE_RAY:
-			hitValue0	= tcu::UVec4(1, 0, 0, 0);	// ahit should return 1. If it returned 2, then terminateRayEXT() did not terminate ahit shader
+			hitValue0	= tcu::UVec4(1, 0, 0, 0);	// ahit should return 1. If it returned 2, then terminateRayEXT did not terminate ahit shader
 			hitValue1	= tcu::UVec4(3, 0, 0, 0);	// chit returns 3
 			break;
 		default:
@@ -522,7 +522,7 @@ void TraversalControlTestCase::initPrograms (SourceCollections& programCollectio
 			"void main()\n"
 			"{\n"
 			"  hitValue.x = 1;\n"
-			"  ignoreIntersectionEXT();\n"
+			"  ignoreIntersectionEXT;\n"
 			"  hitValue.x = 2;\n"
 			"}\n";
 
@@ -538,7 +538,7 @@ void TraversalControlTestCase::initPrograms (SourceCollections& programCollectio
 			"void main()\n"
 			"{\n"
 			"  hitValue.x = 1;\n"
-			"  terminateRayEXT();\n"
+			"  terminateRayEXT;\n"
 			"  hitValue.x = 2;\n"
 			"}\n";
 

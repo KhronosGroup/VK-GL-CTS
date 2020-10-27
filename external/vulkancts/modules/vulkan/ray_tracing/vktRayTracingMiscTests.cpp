@@ -6876,7 +6876,7 @@ public:
 			"    if ((gl_RayTmaxEXT > 0.6) && (gl_RayTmaxEXT < 0.8))\n"
 			"    {\n"
 			"        atomicAdd(rayToHitProps[nRay].nHitsRejected, 1);\n"
-			"        ignoreIntersectionEXT();\n"							// reportIntersectionEXT should return false
+			"        ignoreIntersectionEXT;\n"							// reportIntersectionEXT should return false
 			"    }\n"
 			"    else if ((gl_RayTmaxEXT > 0.1) && (gl_RayTmaxEXT < 0.3))\n"
 			"    {\n"
