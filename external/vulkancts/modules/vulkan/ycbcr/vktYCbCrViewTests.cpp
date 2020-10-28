@@ -155,11 +155,11 @@ Move<VkDescriptorSetLayout> createDescriptorSetLayout (const DeviceInterface& vk
 	return createDescriptorSetLayout(vkd, device, &layoutInfo);
 }
 
-Move<VkDescriptorPool> createDescriptorPool (const DeviceInterface& vkd, VkDevice device)
+Move<VkDescriptorPool> createDescriptorPool (const DeviceInterface& vkd, VkDevice device, const deUint32 combinedSamplerDescriptorCount)
 {
 	const VkDescriptorPoolSize			poolSizes[]	=
 	{
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	2u	},
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	2u * combinedSamplerDescriptorCount	},
 	};
 	const VkDescriptorPoolCreateInfo	poolInfo	=
 	{
@@ -383,6 +383,7 @@ tcu::TestStatus testPlaneView (Context& context, TestParameters params)
 													 deInt32Hash((deUint32)params.planeNdx)	^
 													 deInt32Hash((deUint32)params.shaderType));
 
+	const InstanceInterface&		vk				= context.getInstanceInterface();
 	const DeviceInterface&			vkd				= context.getDeviceInterface();
 	const VkDevice					device			= context.getDevice();
 
@@ -502,11 +503,37 @@ tcu::TestStatus testPlaneView (Context& context, TestParameters params)
 		VK_FALSE,									// unnormalizedCoords
 	};
 
+	deUint32									combinedSamplerDescriptorCount = 1;
+	{
+		const VkPhysicalDeviceImageFormatInfo2			imageFormatInfo				=
+		{
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// sType;
+			DE_NULL,												// pNext;
+			format,													// format;
+			VK_IMAGE_TYPE_2D,										// type;
+			VK_IMAGE_TILING_OPTIMAL,								// tiling;
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+			VK_IMAGE_USAGE_SAMPLED_BIT,								// usage;
+			createFlags												// flags;
+		};
+
+		VkSamplerYcbcrConversionImageFormatProperties	samplerYcbcrConversionImage = {};
+		samplerYcbcrConversionImage.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
+		samplerYcbcrConversionImage.pNext = DE_NULL;
+
+		VkImageFormatProperties2						imageFormatProperties		= {};
+		imageFormatProperties.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
+		imageFormatProperties.pNext = &samplerYcbcrConversionImage;
+
+		VK_CHECK(vk.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo, &imageFormatProperties));
+		combinedSamplerDescriptorCount = samplerYcbcrConversionImage.combinedImageSamplerDescriptorCount;
+	}
+
 	const Unique<VkSampler>					wholeSampler(createSampler(vkd, device, &wholeSamplerInfo));
 	const Unique<VkSampler>					planeSampler(createSampler(vkd, device, &planeSamplerInfo));
 
 	const Unique<VkDescriptorSetLayout>		descLayout	(createDescriptorSetLayout(vkd, device, *wholeSampler));
-	const Unique<VkDescriptorPool>			descPool	(createDescriptorPool(vkd, device));
+	const Unique<VkDescriptorPool>			descPool	(createDescriptorPool(vkd, device, combinedSamplerDescriptorCount));
 	const Unique<VkDescriptorSet>			descSet		(createDescriptorSet(vkd, device, *descPool, *descLayout, *planeView, *planeSampler, *wholeView, *wholeSampler));
 
 	MultiPlaneImageData						imageData	(format, size);
