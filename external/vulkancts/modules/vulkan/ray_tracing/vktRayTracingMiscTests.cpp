@@ -890,17 +890,17 @@ private:
 				m_triVertexVec.push_back(G);
 
 				m_triVertexVec.push_back(H);
-				m_triVertexVec.push_back(F);
 				m_triVertexVec.push_back(E);
+				m_triVertexVec.push_back(F);
 
 				// X = X0 face
 				m_triVertexVec.push_back(A);
-				m_triVertexVec.push_back(C);
 				m_triVertexVec.push_back(G);
+				m_triVertexVec.push_back(C);
 
 				m_triVertexVec.push_back(G);
-				m_triVertexVec.push_back(E);
 				m_triVertexVec.push_back(A);
+				m_triVertexVec.push_back(E);
 
 				// X = X1 face
 				m_triVertexVec.push_back(B);
@@ -913,12 +913,12 @@ private:
 
 				// Y = Y0 face
 				m_triVertexVec.push_back(C);
-				m_triVertexVec.push_back(D);
 				m_triVertexVec.push_back(H);
+				m_triVertexVec.push_back(D);
 
 				m_triVertexVec.push_back(H);
-				m_triVertexVec.push_back(G);
 				m_triVertexVec.push_back(C);
+				m_triVertexVec.push_back(G);
 
 				// Y = y1 face
 				m_triVertexVec.push_back(A);
