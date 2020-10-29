@@ -59,8 +59,68 @@ struct Params
 	tcu::UVec2			size;
 	VkPrimitiveTopology	primitiveTopology;
 	bool				requireGeometryShader;
+	bool				transformFeedback;
 	ProvokingVertexMode	provokingVertexMode;
 };
+
+static VkDeviceSize getXfbBufferSize (deUint32 vertexCount, VkPrimitiveTopology topology)
+{
+	switch (topology)
+	{
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+			return vertexCount * sizeof(tcu::Vec4);
+		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
+			return (vertexCount - 1) * 2 * sizeof(tcu::Vec4);
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
+			return (vertexCount - 2) * 3 * sizeof(tcu::Vec4);
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+			return vertexCount / 2 * sizeof(tcu::Vec4);
+		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+			return (vertexCount - 3) * 2 * sizeof(tcu::Vec4);
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+			return (vertexCount / 2 - 2) * 3 * sizeof(tcu::Vec4);
+		default:
+			DE_FATAL("Unknown primitive topology");
+			return 0;
+	}
+}
+
+static bool verifyXfbBuffer (const tcu::Vec4* const	xfbResults,
+							 deUint32				count,
+							 VkPrimitiveTopology	topology,
+							 ProvokingVertexMode	mode,
+							 std::string&			errorMessage)
+{
+	const deUint32	primitiveSize	= ((topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST) ||
+									   (topology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP) ||
+									   (topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY) ||
+									   (topology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY))
+									? 2
+									: 3;
+
+	const tcu::Vec4	expected		(1.0f, 0.0f, 0.0f, 1.0f);
+	const deUint32	start			= (mode == PROVOKING_VERTEX_LAST)
+									? primitiveSize - 1
+									: 0;
+
+	DE_ASSERT(count % primitiveSize == 0);
+
+	for (deUint32 ndx = start; ndx < count; ndx += primitiveSize)
+	{
+		if (xfbResults[ndx] != expected)
+		{
+			errorMessage =	"Vertex " + de::toString(ndx) +
+							": Expected red, got " + de::toString(xfbResults[ndx]);
+			return false;
+		}
+	}
+
+	errorMessage = "";
+	return true;
+}
 
 class ProvokingVertexTestInstance : public TestInstance
 {
@@ -102,19 +162,28 @@ ProvokingVertexTestCase::ProvokingVertexTestCase (tcu::TestContext& testCtx,
 
 void ProvokingVertexTestCase::initPrograms (SourceCollections& programCollection) const
 {
-	const std::string	vertShader (
-		"#version 430\n"
-		"layout(location = 0) in vec4 in_position;\n"
-		"layout(location = 1) in vec4 in_color;\n"
-		"layout(location = 0) flat out vec4 out_color;\n"
-		"void main()\n"
-		"{\n"
-		"    out_color = in_color;\n"
-		"    gl_Position = in_position;\n"
-		"}\n");
+	std::ostringstream vertShader;
+
+	vertShader	<< "#version 450\n"
+				<< "layout(location = 0) in vec4 in_position;\n"
+				<< "layout(location = 1) in vec4 in_color;\n"
+				<< "layout(location = 0) flat out vec4 out_color;\n";
+
+	if (m_params.transformFeedback)
+		vertShader << "layout(xfb_buffer = 0, xfb_offset = 0, location = 1) out vec4 out_xfb;\n";
+
+	vertShader	<< "void main()\n"
+				<< "{\n";
+
+	if (m_params.transformFeedback)
+		vertShader << "    out_xfb = in_color;\n";
+
+	vertShader	<< "    out_color = in_color;\n"
+				<< "    gl_Position = in_position;\n"
+				<< "}\n";
 
 	const std::string	fragShader (
-		"#version 430\n"
+		"#version 450\n"
 		"layout(location = 0) flat in vec4 in_color;\n"
 		"layout(location = 0) out vec4 out_color;\n"
 		"void main()\n"
@@ -122,7 +191,7 @@ void ProvokingVertexTestCase::initPrograms (SourceCollections& programCollection
 		"    out_color = in_color;\n"
 		"}\n");
 
-	programCollection.glslSources.add("vert") << glu::VertexSource(vertShader);
+	programCollection.glslSources.add("vert") << glu::VertexSource(vertShader.str());
 	programCollection.glslSources.add("frag") << glu::FragmentSource(fragShader);
 }
 
@@ -131,51 +200,29 @@ void ProvokingVertexTestCase::checkSupport (Context& context) const
 	if (m_params.requireGeometryShader)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 
+	if (m_params.transformFeedback)
+		context.requireDeviceFunctionality("VK_EXT_transform_feedback");
+
 	if (m_params.provokingVertexMode != PROVOKING_VERTEX_DEFAULT)
 	{
+		const VkPhysicalDeviceProvokingVertexFeaturesEXT&	features	= context.getProvokingVertexFeaturesEXT();
+		const VkPhysicalDeviceProvokingVertexPropertiesEXT&	properties	= context.getProvokingVertexPropertiesEXT();
+
 		context.requireDeviceFunctionality("VK_EXT_provoking_vertex");
+
+		if (m_params.transformFeedback && features.transformFeedbackPreservesProvokingVertex != VK_TRUE)
+			TCU_THROW(NotSupportedError, "transformFeedbackPreservesProvokingVertex not supported");
+
+		if (m_params.transformFeedback && (m_params.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN) && (properties.transformFeedbackPreservesTriangleFanProvokingVertex != VK_TRUE))
+			TCU_THROW(NotSupportedError, "transformFeedbackPreservesTriangleFanProvokingVertex not supported");
 
 		if (m_params.provokingVertexMode != PROVOKING_VERTEX_FIRST)
 		{
-			const InstanceInterface&					instanceDriver			= context.getInstanceInterface();
-			VkPhysicalDeviceFeatures2					physicalDeviceFeatures;
-
-			VkPhysicalDeviceProvokingVertexFeaturesEXT	provokingVertexFeatures	=
-			{
-				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROVOKING_VERTEX_FEATURES_EXT,	// sType
-				DE_NULL,															// pNext
-				VK_FALSE,															// provokingVertexLast
-				VK_FALSE															// transformFeedbackPreservesProvokingVertex
-			};
-
-			deMemset(&physicalDeviceFeatures, 0, sizeof(physicalDeviceFeatures));
-			physicalDeviceFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-			physicalDeviceFeatures.pNext	= &provokingVertexFeatures;
-			instanceDriver.getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &physicalDeviceFeatures);
-
-			if (provokingVertexFeatures.provokingVertexLast != VK_TRUE)
+			if (features.provokingVertexLast != VK_TRUE)
 				TCU_THROW(NotSupportedError, "VK_PROVOKING_VERTEX_MODE_LAST_VERTEX_EXT not supported");
 
-			if (m_params.provokingVertexMode == PROVOKING_VERTEX_PER_PIPELINE)
-			{
-				VkPhysicalDeviceProvokingVertexPropertiesEXT	provokingVertexProperties	=
-				{
-					VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROVOKING_VERTEX_PROPERTIES_EXT,	// sType
-					DE_NULL,															// pNext
-					VK_FALSE,															// provokingVertexModePerPipeline
-					VK_FALSE															// transformFeedbackPreservesProvokingVertex
-				};
-
-				VkPhysicalDeviceProperties2						physicalDeviceProperties;
-
-				deMemset(&physicalDeviceProperties, 0, sizeof(physicalDeviceProperties));
-				physicalDeviceProperties.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-				physicalDeviceProperties.pNext	= &provokingVertexProperties;
-				instanceDriver.getPhysicalDeviceProperties2(context.getPhysicalDevice(), &physicalDeviceProperties);
-
-				if (provokingVertexProperties.provokingVertexModePerPipeline != VK_TRUE)
-					TCU_THROW(NotSupportedError, "provokingVertexModePerPipeline not supported");
-			}
+			if ((m_params.provokingVertexMode == PROVOKING_VERTEX_PER_PIPELINE) && (properties.provokingVertexModePerPipeline != VK_TRUE))
+				TCU_THROW(NotSupportedError, "provokingVertexModePerPipeline not supported");
 		}
 	}
 }
@@ -193,13 +240,14 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 	const deUint32				queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	const tcu::TextureFormat	textureFormat			= vk::mapVkFormat(m_params.format);
 	Allocator&					allocator				= m_context.getDefaultAllocator();
-	Move<VkCommandPool>			commandPool;
-	Move<VkCommandBuffer>		commandBuffer;
 	Move<VkImage>				image;
 	Move<VkImageView>			imageView;
 	de::MovePtr<Allocation>		imageMemory;
 	Move<VkBuffer>				resultBuffer;
 	de::MovePtr<Allocation>		resultBufferMemory;
+	Move<VkBuffer>				xfbBuffer;
+	de::MovePtr<Allocation>		xfbBufferMemory;
+	VkDeviceSize				xfbBufferSize			= 0;
 	Move<VkBuffer>				vertexBuffer;
 	de::MovePtr<Allocation>		vertexBufferMemory;
 	Move<VkRenderPass>			renderPass;
@@ -210,13 +258,7 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 
 	// Image
 	{
-		const VkExtent3D		extent		=
-		{
-			m_params.size.x(),	// width
-			m_params.size.y(),	// height
-			1					// depth
-		};
-
+		const VkExtent3D		extent		= makeExtent3D(m_params.size.x(), m_params.size.y(), 1u);
 		const VkImageUsageFlags	usage		= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
 											  VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
@@ -256,36 +298,13 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 			1u							// arraySize
 		};
 
-		const VkImageViewCreateInfo		createInfo			=
-		{
-			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	// sType
-			DE_NULL,									// pNext
-			0u,											// flags
-			*image,										// image
-			VK_IMAGE_VIEW_TYPE_2D,						// viewType
-			m_params.format,							// format
-			makeComponentMappingRGBA(),					// components
-			subresourceRange							// subresourceRange
-		};
-
-		imageView = createImageView(vk, device, &createInfo, DE_NULL);
+		imageView = makeImageView(vk, device, *image, VK_IMAGE_VIEW_TYPE_2D, m_params.format, subresourceRange, DE_NULL);
 	}
 
 	// Result Buffer
 	{
-		const VkDeviceSize			bufferSize		= textureFormat.getPixelSize() * m_params.size.x() * m_params.size.y();
-
-		const VkBufferCreateInfo	createInfo		=
-		{
-			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// sType
-			DE_NULL,								// pNext
-			0u,										// flags
-			bufferSize,								// size
-			VK_BUFFER_USAGE_TRANSFER_DST_BIT,		// usage
-			VK_SHARING_MODE_EXCLUSIVE,				// sharingMode
-			1u,										// queueFamilyIndexCount
-			&queueFamilyIndex						// pQueueFamilyIndices
-		};
+		const VkDeviceSize			bufferSize	= textureFormat.getPixelSize() * m_params.size.x() * m_params.size.y();
+		const VkBufferCreateInfo	createInfo	= makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 
 		resultBuffer		= createBuffer(vk, device, &createInfo);
 		resultBufferMemory	= allocator.allocate(getBufferMemoryRequirements(vk, device, *resultBuffer), MemoryRequirement::HostVisible);
@@ -293,73 +312,20 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 		VK_CHECK(vk.bindBufferMemory(device, *resultBuffer, resultBufferMemory->getMemory(), resultBufferMemory->getOffset()));
 	}
 
-	// Render pass
+	// Render pass and framebuffer
 	{
-		const VkAttachmentDescription	attachmentDesc	=
-		{
-			0u,											// flags
-			m_params.format,							// format
-			VK_SAMPLE_COUNT_1_BIT,						// samples
-			VK_ATTACHMENT_LOAD_OP_CLEAR,				// loadOp
-			VK_ATTACHMENT_STORE_OP_STORE,				// storeOp
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// stencilLoadOp
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,			// stencilStoreOp
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// initialLayout
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// finalLayout
-		};
+		renderPass = makeRenderPass(vk,
+									device,
+									m_params.format,							// colorFormat
+									VK_FORMAT_UNDEFINED,						// depthStencilFormat
+									VK_ATTACHMENT_LOAD_OP_CLEAR,				// loadOperation
+									VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// finalLayoutColor
+									VK_IMAGE_LAYOUT_UNDEFINED,					// finalLayoutDepthStencil
+									VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// subpassLayoutColor
+									VK_IMAGE_LAYOUT_UNDEFINED,					// subpassLayoutDepthStencil
+									DE_NULL);									// allocationCallbacks
 
-		const VkAttachmentReference		attachmentRef	=
-		{
-			0u,											// attachment
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// layout
-		};
-
-		const VkSubpassDescription		subpassDesc		=
-		{
-			0u,									// flags
-			VK_PIPELINE_BIND_POINT_GRAPHICS,	// pipelineBindPoint
-			0u,									// inputAttachmentCount
-			DE_NULL,							// pInputAttachments
-			1u,									// colorAttachmentCount
-			&attachmentRef,						// pColorAttachments
-			DE_NULL,							// pResolveAttachments
-			DE_NULL,							// pDepthStencilAttachment
-			0u,									// preserveAttachmentCount
-			DE_NULL								// pPreserveAttachments
-		};
-
-		const VkRenderPassCreateInfo	createInfo		=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// sType
-			DE_NULL,									// pNext
-			0u,											// flags
-			1u,											// attachmentCount
-			&attachmentDesc,							// pAttachments
-			1u,											// subpassCount
-			&subpassDesc,								// pSubpasses
-			0u,											// dependencyCount
-			DE_NULL									// pDependencies
-		};
-
-		renderPass = createRenderPass(vk, device, &createInfo, DE_NULL);
-	}
-
-	// Framebuffer
-	{
-		const VkFramebufferCreateInfo	createInfo	=
-		{
-			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// sType
-			DE_NULL,									// pNext
-			0u,											// flags
-			*renderPass,								// renderPass
-			1u,											// attachmentCount
-			&*imageView,								// pAttachments
-			m_params.size.x(),							// width
-			m_params.size.y(),							// height
-			1u											// layers
-		};
-
-		framebuffer = createFramebuffer(vk, device, &createInfo, DE_NULL);
+		framebuffer = makeFramebuffer(vk, device, *renderPass, *imageView, m_params.size.x(), m_params.size.y(), 1u);
 	}
 
 	// Pipelines
@@ -368,6 +334,7 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 		const Unique<VkShaderModule>									fragmentShader					(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0));
 		const std::vector<VkViewport>									viewports						(1, makeViewport(tcu::UVec2(m_params.size)));
 		const std::vector<VkRect2D>										scissors						(1, makeRect2D(tcu::UVec2(m_params.size)));;
+		const Move<VkPipelineLayout>									pipelineLayout					= makePipelineLayout(vk, device, 0, DE_NULL);
 
 		const VkVertexInputBindingDescription							vertexInputBindingDescription	=
 		{
@@ -375,19 +342,6 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 			sizeof(tcu::Vec4) * 2,		// strideInBytes
 			VK_VERTEX_INPUT_RATE_VERTEX	// stepRate
 		};
-
-		const VkPipelineLayoutCreateInfo								pipelineLayoutCreateInfo		=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// sType
-			DE_NULL,										// pNext
-			0u,												// flags
-			0u,												// descriptorSetCount
-			DE_NULL,										// pSetLayouts
-			0u,												// pushConstantRangeCount
-			DE_NULL											// pPushConstantRanges
-		};
-
-		const Move<VkPipelineLayout>									pipelineLayout					= createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
 
 		const VkVertexInputAttributeDescription							vertexAttributeDescriptions[2]	=
 		{
@@ -418,19 +372,6 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 			vertexAttributeDescriptions									// pVertexAttributeDescriptions
 		};
 
-		const VkPipelineMultisampleStateCreateInfo						multisampleStateParams			=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// sType
-			DE_NULL,													// pNext
-			0u,															// flags
-			VK_SAMPLE_COUNT_1_BIT,										// rasterizationSamples
-			VK_FALSE,													// sampleShadingEnable
-			0.0f,														// minSampleShading
-			DE_NULL,													// SampleMask
-			VK_FALSE,													// alphaToCoverageEnable
-			VK_FALSE													// alphaToOneEnable
-		};
-
 		const VkProvokingVertexModeEXT									provokingVertexMode				= m_params.provokingVertexMode == PROVOKING_VERTEX_LAST
 																										? VK_PROVOKING_VERTEX_MODE_LAST_VERTEX_EXT
 																										: VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT;
@@ -459,44 +400,6 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 			1.0f															// lineWidth
 		};
 
-		const VkColorComponentFlags										channelWriteMask				= VK_COLOR_COMPONENT_R_BIT |
-																										  VK_COLOR_COMPONENT_G_BIT |
-																										  VK_COLOR_COMPONENT_B_BIT |
-																										  VK_COLOR_COMPONENT_A_BIT;
-
-		const VkPipelineColorBlendAttachmentState						colorBlendAttachmentState		=
-		{
-			false,					// blendEnable
-			VK_BLEND_FACTOR_ONE,	// srcBlendColor
-			VK_BLEND_FACTOR_ZERO,	// destBlendColor
-			VK_BLEND_OP_ADD,		// blendOpColor
-			VK_BLEND_FACTOR_ONE,	// srcBlendAlpha
-			VK_BLEND_FACTOR_ZERO,	// destBlendAlpha
-			VK_BLEND_OP_ADD,		// blendOpAlpha
-			channelWriteMask		// channelWriteMask
-		};
-
-		const VkPipelineColorBlendStateCreateInfo						colorBlendStateParams			=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// sType
-			DE_NULL,													// pNext
-			0,															// flags
-			false,														// logicOpEnable
-			VK_LOGIC_OP_COPY,											// logicOp
-			1u,															// attachmentCount
-			&colorBlendAttachmentState,									// pAttachments
-			{ 0.0f, 0.0f, 0.0f, 0.0f }									// blendConst[4]
-		};
-
-		const VkPipelineDynamicStateCreateInfo							dynamicStateCreateInfo			=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	// sType
-			DE_NULL,												// pNext
-			0u,														// flags
-			0u,														// dynamicStateCount
-			DE_NULL													// pDynamicStates
-		};
-
 		pipeline = makeGraphicsPipeline(vk,
 										device,
 										*pipelineLayout,
@@ -513,10 +416,10 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 										0u,								// patchControlPoints
 										&vertexInputStateParams,
 										&rasterizationStateCreateInfo,
-										&multisampleStateParams,
-										DE_NULL,						// depthStencilStateCreateInfo,
-										&colorBlendStateParams,
-										&dynamicStateCreateInfo);
+										DE_NULL,						// multisampleStateCreateInfo
+										DE_NULL,						// depthStencilStateCreateInfo
+										DE_NULL,						// colorBlendStateCreateInfo
+										DE_NULL);						// dynamicStateCreateInfo
 
 		if (m_params.provokingVertexMode == PROVOKING_VERTEX_PER_PIPELINE)
 		{
@@ -560,192 +463,187 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 											   0u,								// patchControlPoints
 											   &vertexInputStateParams,
 											   &altRasterizationStateCreateInfo,
-											   &multisampleStateParams,
-											   DE_NULL,							// depthStencilStateCreateInfo,
-											   &colorBlendStateParams,
-											   &dynamicStateCreateInfo);
+											   DE_NULL,							// multisampleStateCreateInfo
+											   DE_NULL,							// depthStencilStateCreateInfo
+											   DE_NULL,							// colorBlendStateCreateInfo
+											   DE_NULL);						// dynamicStateCreateInfo
 		}
 	}
 
 	// Vertex buffer
 	{
+		const tcu::Vec4			red		(1.0f, 0.0f, 0.0f, 1.0f);
+		const tcu::Vec4			green	(0.0f, 1.0f, 0.0f, 1.0f);
+		const tcu::Vec4			blue	(0.0f, 0.0f, 1.0f, 1.0f);
+		const tcu::Vec4			yellow	(1.0f, 1.0f, 0.0f, 1.0f);
+		const tcu::Vec4			white	(1.0f, 1.0f, 1.0f, 1.0f);
+
 		std::vector<tcu::Vec4>	vertices;
 
 		switch (m_params.primitiveTopology)
 		{
 			case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
 				// Position												//Color
-				vertices.push_back(tcu::Vec4(-1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));	// line 0
-				vertices.push_back(tcu::Vec4( 1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4(-1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));	// line 1
-				vertices.push_back(tcu::Vec4( 1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
+				vertices.push_back(tcu::Vec4(-1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(red);	// line 0
+				vertices.push_back(tcu::Vec4( 1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(blue);
+				vertices.push_back(tcu::Vec4(-1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(red);	// line 1
+				vertices.push_back(tcu::Vec4( 1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(blue);
 
-				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));	// line 1 reverse
-				vertices.push_back(tcu::Vec4(-0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));	// line 0 reverse
-				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
+				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(blue);	// line 1 reverse
+				vertices.push_back(tcu::Vec4(-0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(blue);	// line 0 reverse
+				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
 				break;
 			case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
 				// Position												// Color
-				vertices.push_back(tcu::Vec4(-1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f)); // line strip
-				vertices.push_back(tcu::Vec4( 1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4(-1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
+				vertices.push_back(tcu::Vec4(-1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(red); // line strip
+				vertices.push_back(tcu::Vec4( 1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4(-1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(green);
 
-				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f)); // line strip reverse
-				vertices.push_back(tcu::Vec4(-0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
+				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(green); // line strip reverse
+				vertices.push_back(tcu::Vec4(-0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
 				break;
 			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
 				// Position												// Color
-				vertices.push_back(tcu::Vec4( 1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));	// triangle 0
-				vertices.push_back(tcu::Vec4(-0.6f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4(-0.2f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.2f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));	// triangle 1
-				vertices.push_back(tcu::Vec4( 0.6f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
+				vertices.push_back(tcu::Vec4( 1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);	// triangle 0
+				vertices.push_back(tcu::Vec4(-0.6f,-1.0f, 0.0f, 1.0f));	vertices.push_back(green);
+				vertices.push_back(tcu::Vec4(-0.2f, 1.0f, 0.0f, 1.0f));	vertices.push_back(blue);
+				vertices.push_back(tcu::Vec4( 0.2f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);	// triangle 1
+				vertices.push_back(tcu::Vec4( 0.6f,-1.0f, 0.0f, 1.0f));	vertices.push_back(green);
+				vertices.push_back(tcu::Vec4( 1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(blue);
 
-				vertices.push_back(tcu::Vec4(-1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));	// triangle 1 reverse
-				vertices.push_back(tcu::Vec4(-0.6f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4(-0.2f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.2f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));	// triangle 0 reverse
-				vertices.push_back(tcu::Vec4( 0.6f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4(-1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
+				vertices.push_back(tcu::Vec4(-1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(blue);	// triangle 1 reverse
+				vertices.push_back(tcu::Vec4(-0.6f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);
+				vertices.push_back(tcu::Vec4(-0.2f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.2f,-1.0f, 0.0f, 1.0f));	vertices.push_back(blue);	// triangle 0 reverse
+				vertices.push_back(tcu::Vec4( 0.6f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);
+				vertices.push_back(tcu::Vec4(-1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
 				break;
 			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
 				// Position												// Color
-				vertices.push_back(tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));	// triangle strip
-				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
+				vertices.push_back(tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);	// triangle strip
+				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(green);
+				vertices.push_back(tcu::Vec4( 1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(blue);
 
-				vertices.push_back(tcu::Vec4(-1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));	// triangle strip reverse
-				vertices.push_back(tcu::Vec4(-0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
+				vertices.push_back(tcu::Vec4(-1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(blue);	// triangle strip reverse
+				vertices.push_back(tcu::Vec4(-0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);
+				vertices.push_back(tcu::Vec4( 0.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
 				break;
 			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
 				// Position												// Color
-				vertices.push_back(tcu::Vec4( 0.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));	// triangle fan
-				vertices.push_back(tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
+				vertices.push_back(tcu::Vec4( 0.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);	// triangle fan
+				vertices.push_back(tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(blue);
 
-				vertices.push_back(tcu::Vec4( 0.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f)); // triangle fan reverse
-				vertices.push_back(tcu::Vec4(-1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4(-0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
+				vertices.push_back(tcu::Vec4( 0.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(green); // triangle fan reverse
+				vertices.push_back(tcu::Vec4(-1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(blue);
+				vertices.push_back(tcu::Vec4(-0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
 				break;
 			case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
 				// Position												// Color
-				vertices.push_back(tcu::Vec4(-1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));	// line 0
-				vertices.push_back(tcu::Vec4(-0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4(-1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));	// line 1
-				vertices.push_back(tcu::Vec4(-0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f));
+				vertices.push_back(tcu::Vec4(-1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(green);	// line 0
+				vertices.push_back(tcu::Vec4(-0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(blue);
+				vertices.push_back(tcu::Vec4( 1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(yellow);
+				vertices.push_back(tcu::Vec4(-1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(green);	// line 1
+				vertices.push_back(tcu::Vec4(-0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(blue);
+				vertices.push_back(tcu::Vec4( 1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(yellow);
 
-				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f));	// line 1 reverse
-				vertices.push_back(tcu::Vec4(-0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4(-0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4(-0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f));	// line 0 reverse
-				vertices.push_back(tcu::Vec4( 0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
+				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(yellow);	// line 1 reverse
+				vertices.push_back(tcu::Vec4(-0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(blue);
+				vertices.push_back(tcu::Vec4(-0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4(-0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);
+				vertices.push_back(tcu::Vec4( 0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(yellow);	// line 0 reverse
+				vertices.push_back(tcu::Vec4( 0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(blue);
+				vertices.push_back(tcu::Vec4( 0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);
 				break;
 			case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
 				// Position												// Color
-				vertices.push_back(tcu::Vec4(-1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));	// line strip
-				vertices.push_back(tcu::Vec4(-0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4(-0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f));
+				vertices.push_back(tcu::Vec4(-1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(green);	// line strip
+				vertices.push_back(tcu::Vec4(-0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4(-0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(blue);
+				vertices.push_back(tcu::Vec4( 1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(yellow);
 
-				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f));	// line strip reverse
-				vertices.push_back(tcu::Vec4(-0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4(-0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
+				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(yellow);	// line strip reverse
+				vertices.push_back(tcu::Vec4(-0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(blue);
+				vertices.push_back(tcu::Vec4(-0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);
 				break;
 			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
 				// Position												// Color
-				vertices.push_back(tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));	// triangle 0
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4(-0.6f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4(-0.2f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.2f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));	// triangle 1
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.6f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+				vertices.push_back(tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);	// triangle 0
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
+				vertices.push_back(tcu::Vec4(-0.6f,-1.0f, 0.0f, 1.0f));	vertices.push_back(green);
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
+				vertices.push_back(tcu::Vec4(-0.2f, 1.0f, 0.0f, 1.0f));	vertices.push_back(blue);
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
+				vertices.push_back(tcu::Vec4( 0.2f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);	// triangle 1
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
+				vertices.push_back(tcu::Vec4( 0.6f,-1.0f, 0.0f, 1.0f));	vertices.push_back(green);
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
+				vertices.push_back(tcu::Vec4( 1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(blue);
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 
-				vertices.push_back(tcu::Vec4(-1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));	// triangle 1 reverse
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4(-0.6f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4(-0.2f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.2f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));	// triangle 0 reverse
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.6f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+				vertices.push_back(tcu::Vec4(-1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(blue);	// triangle 1 reverse
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
+				vertices.push_back(tcu::Vec4(-0.6f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
+				vertices.push_back(tcu::Vec4(-0.2f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
+				vertices.push_back(tcu::Vec4( 0.2f,-1.0f, 0.0f, 1.0f));	vertices.push_back(blue);	// triangle 0 reverse
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
+				vertices.push_back(tcu::Vec4( 0.6f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
+				vertices.push_back(tcu::Vec4( 1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 				break;
 			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
 				// Position												// Color
-				vertices.push_back(tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));	// triangle strip
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+				vertices.push_back(tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);	// triangle strip
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
+				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
+				vertices.push_back(tcu::Vec4( 0.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
+				vertices.push_back(tcu::Vec4( 0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(green);
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
+				vertices.push_back(tcu::Vec4( 1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(blue);
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 
-				vertices.push_back(tcu::Vec4(-1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));	// triangle strip reverse
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4(-0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+				vertices.push_back(tcu::Vec4(-1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(blue);	// triangle strip reverse
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
+				vertices.push_back(tcu::Vec4(-0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
+				vertices.push_back(tcu::Vec4( 0.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
+				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
+				vertices.push_back(tcu::Vec4( 1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 				break;
 			default:
 				DE_FATAL("Unknown primitive topology");
 		}
 
 		const size_t				bufferSize	= vertices.size() * sizeof(tcu::Vec4);
-
-		const VkBufferCreateInfo	createInfo	=
-		{
-			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// sType
-			DE_NULL,								// pNext
-			0u,										// flags
-			(VkDeviceSize)bufferSize,				// size
-			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,		// usage
-			VK_SHARING_MODE_EXCLUSIVE,				// sharingMode
-			1u,										// queueFamilyCount
-			&queueFamilyIndex						// pQueueFamilyIndices
-		};
+		const VkBufferCreateInfo	createInfo	= makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
 		vertexCount			= (deUint32)vertices.size() / 4;
 		vertexBuffer		= createBuffer(vk, device, &createInfo);
@@ -755,18 +653,20 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 		flushAlloc(vk, device, *vertexBufferMemory);
 	}
 
-	// Command buffer
+	// Transform feedback buffer
+	if (m_params.transformFeedback)
 	{
-		const VkCommandPoolCreateInfo	commandPoolCreateInfo	=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,			// sType
-			DE_NULL,											// pNext
-			VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,	// flags
-			m_context.getUniversalQueueFamilyIndex()			// queueFamilyIndex
-		};
+		xfbBufferSize	= getXfbBufferSize(vertexCount, m_params.primitiveTopology);
 
-		commandPool		= createCommandPool(vk, device, &commandPoolCreateInfo);
-		commandBuffer	= allocateCommandBuffer(vk, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		if (m_params.provokingVertexMode ==PROVOKING_VERTEX_PER_PIPELINE)
+			xfbBufferSize = xfbBufferSize * 2;
+
+		const int					bufferUsage	= VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT;
+		const VkBufferCreateInfo	createInfo	= makeBufferCreateInfo(xfbBufferSize, bufferUsage);
+
+		xfbBuffer		= createBuffer(vk, device, &createInfo);
+		xfbBufferMemory	= allocator.allocate(getBufferMemoryRequirements(vk, device, *xfbBuffer), MemoryRequirement::HostVisible);
+		VK_CHECK(vk.bindBufferMemory(device, *xfbBuffer, xfbBufferMemory->getMemory(), xfbBufferMemory->getOffset()));
 	}
 
 	// Clear the color buffer to red and check the drawing doesn't add any
@@ -802,36 +702,70 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 			subResourcerange							// subresourceRange
 		};
 
+		const VkMemoryBarrier			xfbMemoryBarrier	=
+		{
+			VK_STRUCTURE_TYPE_MEMORY_BARRIER,			// sType
+			DE_NULL,									// pNext
+			VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT,	// srcAccessMask
+			VK_ACCESS_HOST_READ_BIT						// dstAccessMask
+		};
+
 		// The first half of the vertex buffer is for PROVOKING_VERTEX_FIRST,
 		// the second half for PROVOKING_VERTEX_LAST
 		const deUint32					firstVertex			= m_params.provokingVertexMode == PROVOKING_VERTEX_LAST
 															? vertexCount
 															: 0u;
 
+		Move<VkCommandPool>				commandPool			= makeCommandPool(vk, device, queueFamilyIndex);
+		Move<VkCommandBuffer>			commandBuffer		= allocateCommandBuffer(vk, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
 		beginCommandBuffer(vk, *commandBuffer, 0u);
-
-		vk.cmdPipelineBarrier(*commandBuffer, srcStageMask, dstStageMask, 0, 0, DE_NULL, 0, DE_NULL, 1, &imageBarrier);
-
-		beginRenderPass(vk, *commandBuffer, *renderPass, *framebuffer, renderArea, 1, &clearValue);
-		vk.cmdBindVertexBuffers(*commandBuffer, 0, 1, &*vertexBuffer, &vertexBufferOffset);
-		vk.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
-		vk.cmdDraw(*commandBuffer, vertexCount, 1u, firstVertex, 0u);
-
-		if (m_params.provokingVertexMode == PROVOKING_VERTEX_PER_PIPELINE)
 		{
-			vk.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *altPipeline);
-			vk.cmdDraw(*commandBuffer, vertexCount, 1u, vertexCount, 0u);
-		}
+			vk.cmdPipelineBarrier(*commandBuffer, srcStageMask, dstStageMask, 0, 0, DE_NULL, 0, DE_NULL, 1, &imageBarrier);
 
-		endRenderPass(vk, *commandBuffer);
-		copyImageToBuffer(vk, *commandBuffer, *image, *resultBuffer, tcu::IVec2(m_params.size.x(), m_params.size.y()));
+			beginRenderPass(vk, *commandBuffer, *renderPass, *framebuffer, renderArea, 1, &clearValue);
+			{
+				vk.cmdBindVertexBuffers(*commandBuffer, 0, 1, &*vertexBuffer, &vertexBufferOffset);
+				vk.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+
+				if (m_params.transformFeedback)
+				{
+					const VkDeviceSize	xfbBufferOffset	= 0;
+
+					vk.cmdBindTransformFeedbackBuffersEXT(*commandBuffer, 0, 1, &*xfbBuffer, &xfbBufferOffset, &xfbBufferSize);
+					vk.cmdBeginTransformFeedbackEXT(*commandBuffer, 0, 0, DE_NULL, DE_NULL);
+				}
+
+				vk.cmdDraw(*commandBuffer, vertexCount, 1u, firstVertex, 0u);
+
+				if (m_params.provokingVertexMode == PROVOKING_VERTEX_PER_PIPELINE)
+				{
+					vk.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *altPipeline);
+					vk.cmdDraw(*commandBuffer, vertexCount, 1u, vertexCount, 0u);
+				}
+
+				if (m_params.transformFeedback)
+					vk.cmdEndTransformFeedbackEXT(*commandBuffer, 0, 0, DE_NULL, DE_NULL);
+			}
+			endRenderPass(vk, *commandBuffer);
+
+			if (m_params.transformFeedback)
+				vk.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &xfbMemoryBarrier, 0u, DE_NULL, 0u, DE_NULL);
+
+			copyImageToBuffer(vk, *commandBuffer, *image, *resultBuffer, tcu::IVec2(m_params.size.x(), m_params.size.y()));
+		}
 		endCommandBuffer(vk, *commandBuffer);
+
 		submitCommandsAndWait(vk, device, queue, commandBuffer.get());
 		invalidateAlloc(vk, device, *resultBufferMemory);
+
+		if (m_params.transformFeedback)
+			invalidateAlloc(vk, device, *xfbBufferMemory);
 	}
 
 	// Verify result
 	{
+		tcu::TestLog&				log					= m_context.getTestContext().getLog();
 		const size_t				bufferSize			= textureFormat.getPixelSize() * m_params.size.x() * m_params.size.y();
 		tcu::Surface				referenceSurface	(m_params.size.x(), m_params.size.y());
 		tcu::ConstPixelBufferAccess	referenceAccess		= referenceSurface.getAccess();
@@ -839,6 +773,42 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 		tcu::ConstPixelBufferAccess	resultAccess		(textureFormat,
 														 tcu::IVec3(m_params.size.x(), m_params.size.y(), 1),
 														 resultBufferMemory->getHostPtr());
+
+		// Verify transform feedback buffer
+		if (m_params.transformFeedback)
+		{
+			const tcu::Vec4* const	xfbResults		= static_cast<tcu::Vec4*>(xfbBufferMemory->getHostPtr());
+			const deUint32			count			= static_cast<deUint32>(xfbBufferSize / sizeof(tcu::Vec4));
+			std::string				errorMessage	= "";
+
+			log << tcu::TestLog::Section("XFB Vertex colors", "vertex colors");
+
+			for (deUint32 i = 0; i < count; i++)
+			{
+				log	<< tcu::TestLog::Message
+					<< "[" << de::toString(i) << "]\t"
+					<< de::toString(xfbResults[i])
+					<< tcu::TestLog::EndMessage;
+			}
+
+			log << tcu::TestLog::EndSection;
+
+			if (m_params.provokingVertexMode != PROVOKING_VERTEX_PER_PIPELINE)
+			{
+				if (!verifyXfbBuffer(xfbResults, count, m_params.primitiveTopology, m_params.provokingVertexMode, errorMessage))
+					return tcu::TestStatus::fail(errorMessage);
+			}
+			else
+			{
+				const deUint32 halfCount = count / 2;
+
+				if (!verifyXfbBuffer(xfbResults, halfCount, m_params.primitiveTopology, PROVOKING_VERTEX_FIRST, errorMessage))
+					return tcu::TestStatus::fail(errorMessage);
+
+				if (!verifyXfbBuffer(&xfbResults[halfCount], halfCount, m_params.primitiveTopology, PROVOKING_VERTEX_LAST, errorMessage))
+					return tcu::TestStatus::fail(errorMessage);
+			}
+		}
 
 		// Create reference
 		for (deUint32 y = 0; y < m_params.size.y(); y++)
@@ -851,9 +821,9 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 		// Compare
 		if (deMemCmp(referenceAccess.getDataPtr(), resultAccess.getDataPtr(), bufferSize) != 0)
 		{
-			m_context.getTestContext().getLog()	<< tcu::TestLog::ImageSet("Result of rendering", "Result of rendering")
-												<< tcu::TestLog::Image("Result", "Result", resultSurface)
-												<< tcu::TestLog::EndImageSet;
+			log	<< tcu::TestLog::ImageSet("Result of rendering", "Result of rendering")
+				<< tcu::TestLog::Image("Result", "Result", resultSurface)
+				<< tcu::TestLog::EndImageSet;
 			return tcu::TestStatus::fail("Incorrect rendering");
 		}
 	}
@@ -865,7 +835,7 @@ void createTests (tcu::TestCaseGroup* testGroup)
 {
 	tcu::TestContext&	testCtx	= testGroup->getTestContext();
 
-	const struct
+	const struct Provoking
 	{
 		const char*			name;
 		const char*			desc;
@@ -878,7 +848,7 @@ void createTests (tcu::TestCaseGroup* testGroup)
 		{ "per_pipeline",	"Pipelines with different provokingVertexModes",	PROVOKING_VERTEX_PER_PIPELINE	}
 	};
 
-	const struct
+	const struct Topology
 	{
 		std::string			name;
 		VkPrimitiveTopology	type;
@@ -896,30 +866,51 @@ void createTests (tcu::TestCaseGroup* testGroup)
 		{ "triangle_strip_with_adjacency",	VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY,	true	}
 	};
 
-	for (deUint32 provokingVertexIdx = 0; provokingVertexIdx < DE_LENGTH_OF_ARRAY(provokingVertexModes); provokingVertexIdx++)
+	const struct TestType
 	{
-		const char*					groupName	= provokingVertexModes[provokingVertexIdx].name;
-		const char*					groupDesc	= provokingVertexModes[provokingVertexIdx].desc;
-		tcu::TestCaseGroup* const	subGroup	= new tcu::TestCaseGroup(testCtx, groupName, groupDesc);
+		const char*	name;
+		const char* desc;
+		bool		transformFeedback;
+	} testTypes[] =
+	{
+		{ "draw",				"Test that primitives are flat shaded with the provoking vertex color",			false	},
+		{ "transform_feedback",	"Test that transform feedback preserves the position of the provoking vertex",	true	}
+	};
 
-		for (deUint32 topologyIdx = 0; topologyIdx < DE_LENGTH_OF_ARRAY(topologies); topologyIdx++)
+	for (const TestType& testType: testTypes)
+	{
+		tcu::TestCaseGroup* const typeGroup = new tcu::TestCaseGroup(testCtx, testType.name, testType.desc);
+
+		for (const Provoking& provoking : provokingVertexModes)
 		{
-			const std::string	caseName	= topologies[topologyIdx].name;
-			const std::string	caseDesc	= "VK_PRIMITIVE_TOPOLOGY_" + de::toUpper(topologies[topologyIdx].name);
+			// Only test transformFeedbackPreservesProvokingVertex with VK_EXT_provoking_vertex
+			if (testType.transformFeedback && (provoking.mode == PROVOKING_VERTEX_DEFAULT))
+				continue;
 
-			const Params		params =
+			tcu::TestCaseGroup* const provokingGroup = new tcu::TestCaseGroup(testCtx, provoking.name, provoking.desc);
+
+			for (const Topology& topology : topologies)
 			{
-				VK_FORMAT_R8G8B8A8_UNORM,						// format
-				tcu::UVec2(32, 32),								// size
-				topologies[topologyIdx].type,					// primitiveTopology
-				topologies[topologyIdx].requiresGeometryShader,	// requireGeometryShader
-				provokingVertexModes[provokingVertexIdx].mode	// provokingVertexMode
-			};
+				const std::string	caseName	= topology.name;
+				const std::string	caseDesc	= getPrimitiveTopologyName(topology.type);
 
-			subGroup->addChild(new ProvokingVertexTestCase(testCtx, caseName, caseDesc, params));
+				const Params		params		=
+				{
+					VK_FORMAT_R8G8B8A8_UNORM,			// format
+					tcu::UVec2(32, 32),					// size
+					topology.type,						// primitiveTopology
+					topology.requiresGeometryShader,	// requireGeometryShader
+					testType.transformFeedback,			// transformFeedback
+					provoking.mode						// provokingVertexMode
+				};
+
+				provokingGroup->addChild(new ProvokingVertexTestCase(testCtx, caseName, caseDesc, params));
+			}
+
+			typeGroup->addChild(provokingGroup);
 		}
 
-		testGroup->addChild(subGroup);
+		testGroup->addChild(typeGroup);
 	}
 }
 
