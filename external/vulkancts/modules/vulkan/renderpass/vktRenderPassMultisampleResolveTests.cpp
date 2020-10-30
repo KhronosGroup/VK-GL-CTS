@@ -557,8 +557,8 @@ private:
 	void					verify						(void);
 
 	template<typename RenderPassTrait>
-	Move<VkRenderPass>		createRenderPass			(VkFormat format);
-	Move<VkRenderPass>		createRenderPassSwitch		(VkFormat format);
+	Move<VkRenderPass>		createRenderPass			(bool usedResolveAttachment);
+	Move<VkRenderPass>		createRenderPassSwitch		(bool usedResolveAttachment);
 	Move<VkRenderPass>		createRenderPassCompatible	(void);
 	Move<VkPipelineLayout>	createRenderPipelineLayout	(void);
 	Move<VkPipeline>		createRenderPipeline		(void);
@@ -601,7 +601,8 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& c
 	, m_singlesampleImageMemory	(createImageMemory(m_singlesampleImages))
 	, m_singlesampleImageViews	(createImageViews(m_singlesampleImages))
 
-	, m_renderPass				(createRenderPassSwitch(m_format))
+	// The "normal" render pass has an unused resolve attachment when testing compatibility.
+	, m_renderPass				(createRenderPassSwitch(!m_testCompatibility))
 	, m_renderPassCompatible	(createRenderPassCompatible())
 	, m_framebuffer				(createFramebuffer(m_multisampleImageViews, m_singlesampleImageViews, *m_renderPass))
 
@@ -1214,7 +1215,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 }
 
 template<typename RenderPassTrait>
-Move<VkRenderPass> MultisampleRenderPassTestInstance::createRenderPass (VkFormat format)
+Move<VkRenderPass> MultisampleRenderPassTestInstance::createRenderPass (bool usedResolveAttachment)
 {
 	// make name for RenderPass1Trait or RenderPass2Trait shorter
 	typedef RenderPassTrait RPT;
@@ -1237,7 +1238,7 @@ Move<VkRenderPass> MultisampleRenderPassTestInstance::createRenderPass (VkFormat
 															// sType
 				DE_NULL,									// pNext
 				0u,											// flags
-				format,										// format
+				m_format,									// format
 				m_sampleCount,								// samples
 				VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// loadOp
 				VK_ATTACHMENT_STORE_OP_DONT_CARE,			// storeOp
@@ -1263,7 +1264,7 @@ Move<VkRenderPass> MultisampleRenderPassTestInstance::createRenderPass (VkFormat
 															// sType
 				DE_NULL,									// pNext
 				0u,											// flags
-				format,										// format
+				m_format,									// format
 				VK_SAMPLE_COUNT_1_BIT,						// samples
 				VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// loadOp
 				VK_ATTACHMENT_STORE_OP_STORE,				// storeOp
@@ -1272,11 +1273,12 @@ Move<VkRenderPass> MultisampleRenderPassTestInstance::createRenderPass (VkFormat
 				VK_IMAGE_LAYOUT_UNDEFINED,					// initialLayout
 				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL		// finalLayout
 			);
+			const auto attachmentId = (usedResolveAttachment ? static_cast<deUint32>(attachments.size()) : VK_ATTACHMENT_UNUSED);
 			const AttRef attachmentRef
 			(
 															// sType
 				DE_NULL,									// pNext
-				(deUint32)attachments.size(),				// attachment
+				attachmentId,								// attachment
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// layout
 				0u											// aspectMask
 			);
@@ -1322,14 +1324,14 @@ Move<VkRenderPass> MultisampleRenderPassTestInstance::createRenderPass (VkFormat
 	return renderPassCreator.createRenderPass(vkd, device);
 }
 
-Move<VkRenderPass> MultisampleRenderPassTestInstance::createRenderPassSwitch (VkFormat format)
+Move<VkRenderPass> MultisampleRenderPassTestInstance::createRenderPassSwitch (bool usedResolveAttachment)
 {
 	switch (m_renderPassType)
 	{
 		case RENDERPASS_TYPE_LEGACY:
-			return createRenderPass<RenderPass1Trait>(format);
+			return createRenderPass<RenderPass1Trait>(usedResolveAttachment);
 		case RENDERPASS_TYPE_RENDERPASS2:
-			return createRenderPass<RenderPass2Trait>(format);
+			return createRenderPass<RenderPass2Trait>(usedResolveAttachment);
 		default:
 			TCU_THROW(InternalError, "Impossible");
 	}
@@ -1337,13 +1339,10 @@ Move<VkRenderPass> MultisampleRenderPassTestInstance::createRenderPassSwitch (Vk
 
 Move<VkRenderPass> MultisampleRenderPassTestInstance::createRenderPassCompatible (void)
 {
-	// Create render pass with diffrent format that we currently use to test compatibility
 	if (m_testCompatibility)
 	{
-		VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
-		if (format == m_format) format = VK_FORMAT_R8_UNORM;
-
-		return createRenderPassSwitch(format);
+		// The compatible render pass is always created with a used resolve attachment.
+		return createRenderPassSwitch(true);
 	}
 	else
 	{
@@ -2705,7 +2704,6 @@ void initTests (tcu::TestCaseGroup* group, RenderPassType renderPassType)
 						formatGroup->addChild(new InstanceFactory1<MaxAttachmenstsRenderPassTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, maxAttName.c_str(), maxAttName.c_str(), maxAttachmentsTestConfig));
 					}
 
-					if (sampleCountNdx == 0)
 					{
 						std::string	compatibilityTestName			= "compatibility_" + testName;
 
