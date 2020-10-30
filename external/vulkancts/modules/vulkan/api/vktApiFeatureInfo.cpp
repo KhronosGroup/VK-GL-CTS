@@ -1966,7 +1966,7 @@ void checkKhrExtensions (tcu::ResultCollector&		results,
 		if (de::beginsWith(*extIter, "VK_KHR_") &&
 			!de::contains(allowedExtSet, *extIter))
 		{
-			results.fail("Unknown  extension " + *extIter);
+			results.fail("Unknown extension " + *extIter);
 		}
 	}
 }

@@ -24,11 +24,13 @@
 #include "vktRayTracingPipelineLibraryTests.hpp"
 
 #include <list>
+#include <vector>
 
 #include "vkDefs.hpp"
 
 #include "vktTestCase.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkBuilderUtil.hpp"
@@ -38,6 +40,8 @@
 #include "vkTypeUtil.hpp"
 
 #include "vkRayTracingUtil.hpp"
+
+#include "tcuCommandLine.hpp"
 
 namespace vkt
 {
@@ -128,6 +132,102 @@ private:
 	TestParams				m_data;
 };
 
+struct DeviceTestFeatures
+{
+	VkPhysicalDeviceRayTracingPipelineFeaturesKHR		rayTracingPipelineFeatures;
+	VkPhysicalDeviceAccelerationStructureFeaturesKHR	accelerationStructureFeatures;
+	VkPhysicalDeviceBufferDeviceAddressFeaturesKHR		deviceAddressFeatures;
+	VkPhysicalDeviceFeatures2							deviceFeatures;
+
+	void linkStructures ()
+	{
+		rayTracingPipelineFeatures.pNext	= nullptr;
+		accelerationStructureFeatures.pNext	= &rayTracingPipelineFeatures;
+		deviceAddressFeatures.pNext			= &accelerationStructureFeatures;
+		deviceFeatures.pNext				= &deviceAddressFeatures;
+	}
+
+	DeviceTestFeatures (const InstanceInterface& vki, VkPhysicalDevice physicalDevice)
+	{
+		rayTracingPipelineFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+		accelerationStructureFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+		deviceAddressFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_KHR;
+		deviceFeatures.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+
+		linkStructures();
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures);
+	}
+};
+
+struct DeviceHelper
+{
+	Move<VkDevice>					device;
+	de::MovePtr<DeviceDriver>		vkd;
+	deUint32						queueFamilyIndex;
+	VkQueue							queue;
+	de::MovePtr<SimpleAllocator>	allocator;
+
+	DeviceHelper (Context& context)
+	{
+		const auto&	vkp				= context.getPlatformInterface();
+		const auto&	vki				= context.getInstanceInterface();
+		const auto	instance		= context.getInstance();
+		const auto	physicalDevice	= context.getPhysicalDevice();
+		const auto	queuePriority	= 1.0f;
+
+		// Queue index first.
+		queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+
+		// Get device features (these have already been checked in the test case).
+		DeviceTestFeatures features(vki, physicalDevice);
+		features.linkStructures();
+
+		// Make sure robust buffer access is disabled as in the default device.
+		features.deviceFeatures.features.robustBufferAccess = VK_FALSE;
+
+		const VkDeviceQueueCreateInfo queueInfo =
+		{
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	//	VkStructureType				sType;
+			nullptr,									//	const void*					pNext;
+			0u,											//	VkDeviceQueueCreateFlags	flags;
+			queueFamilyIndex,							//	deUint32					queueFamilyIndex;
+			1u,											//	deUint32					queueCount;
+			&queuePriority,								//	const float*				pQueuePriorities;
+		};
+
+		// Required extensions.
+		std::vector<const char*> requiredExtensions;
+		requiredExtensions.push_back("VK_KHR_ray_tracing_pipeline");
+		requiredExtensions.push_back("VK_KHR_pipeline_library");
+		requiredExtensions.push_back("VK_KHR_acceleration_structure");
+		requiredExtensions.push_back("VK_KHR_deferred_host_operations");
+		requiredExtensions.push_back("VK_KHR_buffer_device_address");
+		requiredExtensions.push_back("VK_EXT_descriptor_indexing");
+		requiredExtensions.push_back("VK_KHR_spirv_1_4");
+		requiredExtensions.push_back("VK_KHR_shader_float_controls");
+
+		const VkDeviceCreateInfo createInfo =
+		{
+			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,				//	VkStructureType					sType;
+			features.deviceFeatures.pNext,						//	const void*						pNext;
+			0u,													//	VkDeviceCreateFlags				flags;
+			1u,													//	deUint32						queueCreateInfoCount;
+			&queueInfo,											//	const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+			0u,													//	deUint32						enabledLayerCount;
+			nullptr,											//	const char* const*				ppEnabledLayerNames;
+			static_cast<deUint32>(requiredExtensions.size()),	//	deUint32						enabledExtensionCount;
+			requiredExtensions.data(),							//	const char* const*				ppEnabledExtensionNames;
+			&features.deviceFeatures.features,					//	const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+		};
+
+		// Create custom device and related objects.
+		device		= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &createInfo);
+		vkd			= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get()));
+		queue		= getDeviceQueue(*vkd, *device, queueFamilyIndex, 0u);
+		allocator	= de::MovePtr<SimpleAllocator>(new SimpleAllocator(*vkd, device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
+	}
+};
+
 class RayTracingPipelineLibraryTestInstance : public TestInstance
 {
 public:
@@ -136,10 +236,10 @@ public:
 	tcu::TestStatus													iterate									(void);
 
 protected:
-	std::vector<de::SharedPtr<BottomLevelAccelerationStructure>>	initBottomAccelerationStructures		(VkCommandBuffer												cmdBuffer);
-	de::MovePtr<TopLevelAccelerationStructure>						initTopAccelerationStructure			(VkCommandBuffer												cmdBuffer,
-																											 std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >&	bottomLevelAccelerationStructures);
-	de::MovePtr<BufferWithMemory>									runTest									();
+	std::vector<de::SharedPtr<BottomLevelAccelerationStructure>>	initBottomAccelerationStructures		(DeviceHelper& deviceHelper, VkCommandBuffer cmdBuffer);
+	de::MovePtr<TopLevelAccelerationStructure>						initTopAccelerationStructure			(DeviceHelper& deviceHelper, VkCommandBuffer cmdBuffer,
+																											 std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >& bottomLevelAccelerationStructures);
+	de::MovePtr<BufferWithMemory>									runTest									(DeviceHelper& deviceHelper);
 private:
 	TestParams														m_data;
 };
@@ -157,22 +257,41 @@ RayTracingPipelineLibraryTestCase::~RayTracingPipelineLibraryTestCase	(void)
 
 void RayTracingPipelineLibraryTestCase::checkSupport(Context& context) const
 {
-	context.requireDeviceFunctionality("VK_KHR_pipeline_library");
-	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
-	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+	const auto&	vki					= context.getInstanceInterface();
+	const auto	physicalDevice		= context.getPhysicalDevice();
+	const auto	supportedExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
-	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR		= context.getRayTracingPipelineFeatures();
-	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE )
-		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
+	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_ray_tracing_pipeline")))
+		TCU_THROW(NotSupportedError, "VK_KHR_ray_tracing_pipeline not supported");
 
-	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR	= context.getAccelerationStructureFeatures();
-	if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
-		TCU_THROW(TestError, "VK_KHR_ray_tracing_pipeline requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
+	// VK_KHR_pipeline_library must be supported if the ray tracing pipeline extension is supported, which it should be at this point.
+	// If it's not supported, this is considered a failure.
+	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_pipeline_library")))
+		TCU_FAIL("VK_KHR_pipeline_library not supported but VK_KHR_ray_tracing_pipeline supported");
 
-	if (m_data.pipelinesCreatedUsingDHO)
-	{
-		context.requireDeviceFunctionality("VK_KHR_deferred_host_operations");
-	}
+	// VK_KHR_acceleration_structure is required by VK_KHR_ray_tracing_pipeline.
+	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_acceleration_structure")))
+		TCU_FAIL("VK_KHR_acceleration_structure not supported but VK_KHR_ray_tracing_pipeline supported");
+
+	// VK_KHR_deferred_host_operations is required by VK_KHR_acceleration_structure.
+	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_deferred_host_operations")))
+		TCU_FAIL("VK_KHR_deferred_host_operations not supported but VK_KHR_acceleration_structure supported");
+
+	// The same for VK_KHR_buffer_device_address.
+	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_buffer_device_address")))
+		TCU_FAIL("VK_KHR_buffer_device_address not supported but VK_KHR_acceleration_structure supported");
+
+	// Get and check needed features.
+	DeviceTestFeatures testFeatures (vki, physicalDevice);
+
+	if (!testFeatures.rayTracingPipelineFeatures.rayTracingPipeline)
+		TCU_THROW(NotSupportedError, "Ray tracing pipelines not supported");
+
+	if (!testFeatures.accelerationStructureFeatures.accelerationStructure)
+		TCU_THROW(NotSupportedError, "Acceleration structures not supported");
+
+	if (!testFeatures.deviceAddressFeatures.bufferDeviceAddress)
+		TCU_FAIL("Acceleration structures supported but bufferDeviceAddress not supported");
 }
 
 void RayTracingPipelineLibraryTestCase::initPrograms (SourceCollections& programCollection) const
@@ -247,11 +366,11 @@ RayTracingPipelineLibraryTestInstance::~RayTracingPipelineLibraryTestInstance (v
 {
 }
 
-std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > RayTracingPipelineLibraryTestInstance::initBottomAccelerationStructures (VkCommandBuffer cmdBuffer)
+std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > RayTracingPipelineLibraryTestInstance::initBottomAccelerationStructures (DeviceHelper& deviceHelper, VkCommandBuffer cmdBuffer)
 {
-	const DeviceInterface&											vkd			= m_context.getDeviceInterface();
-	const VkDevice													device		= m_context.getDevice();
-	Allocator&														allocator	= m_context.getDefaultAllocator();
+	const auto&														vkd			= *deviceHelper.vkd;
+	const auto														device		= deviceHelper.device.get();
+	auto&															allocator	= *deviceHelper.allocator;
 	std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >	result;
 
 	tcu::Vec3 v0(0.0, 1.0, 0.0);
@@ -286,12 +405,12 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > RayTracingPipeline
 	return result;
 }
 
-de::MovePtr<TopLevelAccelerationStructure> RayTracingPipelineLibraryTestInstance::initTopAccelerationStructure (VkCommandBuffer													cmdBuffer,
-																												std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >&	bottomLevelAccelerationStructures)
+de::MovePtr<TopLevelAccelerationStructure> RayTracingPipelineLibraryTestInstance::initTopAccelerationStructure (DeviceHelper& deviceHelper, VkCommandBuffer cmdBuffer,
+																												std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >& bottomLevelAccelerationStructures)
 {
-	const DeviceInterface&						vkd			= m_context.getDeviceInterface();
-	const VkDevice								device		= m_context.getDevice();
-	Allocator&									allocator	= m_context.getDefaultAllocator();
+	const auto&									vkd			= *deviceHelper.vkd;
+	const auto									device		= deviceHelper.device.get();
+	auto&										allocator	= *deviceHelper.allocator;
 
 	deUint32 instanceCount = m_data.width * m_data.height / 2;
 
@@ -325,10 +444,11 @@ de::MovePtr<TopLevelAccelerationStructure> RayTracingPipelineLibraryTestInstance
 	return result;
 }
 
-void compileShaders (Context& context, de::SharedPtr<de::MovePtr<RayTracingPipeline>>& pipeline, const std::vector<std::tuple<std::string, VkShaderStageFlagBits>>& shaderData)
+void compileShaders (DeviceHelper& deviceHelper, Context& context, de::SharedPtr<de::MovePtr<RayTracingPipeline>>& pipeline, const std::vector<std::tuple<std::string, VkShaderStageFlagBits>>& shaderData)
 {
-	const DeviceInterface&				vkd		= context.getDeviceInterface();
-	const VkDevice						device	= context.getDevice();
+	const auto&	vkd		= *deviceHelper.vkd;
+	const auto	device	= deviceHelper.device.get();
+
 	for (deUint32 i=0; i< shaderData.size(); ++i)
 	{
 		std::string				shaderName;
@@ -340,6 +460,7 @@ void compileShaders (Context& context, de::SharedPtr<de::MovePtr<RayTracingPipel
 
 struct CompileShadersMultithreadData
 {
+	DeviceHelper&														deviceHelper;
 	Context&															context;
 	de::SharedPtr<de::MovePtr<RayTracingPipeline>>&						pipeline;
 	const std::vector<std::tuple<std::string, VkShaderStageFlagBits>>&	shaderData;
@@ -348,18 +469,18 @@ struct CompileShadersMultithreadData
 void compileShadersThread (void* param)
 {
 	CompileShadersMultithreadData* csmd = (CompileShadersMultithreadData*)param;
-	compileShaders(csmd->context, csmd->pipeline, csmd->shaderData);
+	compileShaders(csmd->deviceHelper, csmd->context, csmd->pipeline, csmd->shaderData);
 }
 
-de::MovePtr<BufferWithMemory> RayTracingPipelineLibraryTestInstance::runTest ()
+de::MovePtr<BufferWithMemory> RayTracingPipelineLibraryTestInstance::runTest (DeviceHelper& deviceHelper)
 {
 	const InstanceInterface&			vki									= m_context.getInstanceInterface();
-	const DeviceInterface&				vkd									= m_context.getDeviceInterface();
-	const VkDevice						device								= m_context.getDevice();
 	const VkPhysicalDevice				physicalDevice						= m_context.getPhysicalDevice();
-	const deUint32						queueFamilyIndex					= m_context.getUniversalQueueFamilyIndex();
-	const VkQueue						queue								= m_context.getUniversalQueue();
-	Allocator&							allocator							= m_context.getDefaultAllocator();
+	const auto&							vkd									= *deviceHelper.vkd;
+	const auto							device								= deviceHelper.device.get();
+	const auto							queueFamilyIndex					= deviceHelper.queueFamilyIndex;
+	const auto							queue								= deviceHelper.queue;
+	auto&								allocator							= *deviceHelper.allocator;
 	const deUint32						pixelCount							= m_data.height * m_data.width;
 	const deUint32						shaderGroupHandleSize				= getShaderGroupSize(vki, physicalDevice);
 	const deUint32						shaderGroupBaseAlignment			= getShaderGroupBaseAlignment(vki, physicalDevice);
@@ -432,7 +553,7 @@ de::MovePtr<BufferWithMemory> RayTracingPipelineLibraryTestInstance::runTest ()
 	{
 		std::vector<CompileShadersMultithreadData> csmds;
 		for (deUint32 i = 0; i < pipelineLibraries.size(); ++i)
-			csmds.push_back(CompileShadersMultithreadData{ m_context, pipelineLibraries[i], pipelineShaders[i] });
+			csmds.push_back(CompileShadersMultithreadData{ deviceHelper, m_context, pipelineLibraries[i], pipelineShaders[i] });
 
 		std::vector<deThread>	threads;
 		for (deUint32 i = 0; i < csmds.size(); ++i)
@@ -447,7 +568,7 @@ de::MovePtr<BufferWithMemory> RayTracingPipelineLibraryTestInstance::runTest ()
 	else // m_data.multithreadedCompilation == false
 	{
 		for (deUint32 i = 0; i < pipelineLibraries.size(); ++i)
-			compileShaders(m_context, pipelineLibraries[i], pipelineShaders[i]);
+			compileShaders(deviceHelper, m_context, pipelineLibraries[i], pipelineShaders[i]);
 	}
 
 	// connect libraries into a tree structure
@@ -512,8 +633,8 @@ de::MovePtr<BufferWithMemory> RayTracingPipelineLibraryTestInstance::runTest ()
 																					**image, imageSubresourceRange);
 		cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, &postImageBarrier);
 
-		bottomLevelAccelerationStructures	= initBottomAccelerationStructures(*cmdBuffer);
-		topLevelAccelerationStructure		= initTopAccelerationStructure(*cmdBuffer, bottomLevelAccelerationStructures);
+		bottomLevelAccelerationStructures	= initBottomAccelerationStructures(deviceHelper, *cmdBuffer);
+		topLevelAccelerationStructure		= initTopAccelerationStructure(deviceHelper, *cmdBuffer, bottomLevelAccelerationStructures);
 
 		const TopLevelAccelerationStructure*			topLevelAccelerationStructurePtr		= topLevelAccelerationStructure.get();
 		VkWriteDescriptorSetAccelerationStructureKHR	accelerationStructureWriteDescriptorSet	=
@@ -558,7 +679,8 @@ de::MovePtr<BufferWithMemory> RayTracingPipelineLibraryTestInstance::runTest ()
 tcu::TestStatus RayTracingPipelineLibraryTestInstance::iterate (void)
 {
 	// run test using arrays of pointers
-	const de::MovePtr<BufferWithMemory>	buffer		= runTest();
+	DeviceHelper						deviceHelper(m_context);
+	const de::MovePtr<BufferWithMemory>	buffer		= runTest(deviceHelper);
 	const deUint32*						bufferPtr	= (deUint32*)buffer->getAllocation().getHostPtr();
 
 	deUint32							failures		= 0;
