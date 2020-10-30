@@ -1064,9 +1064,8 @@ void BottomLevelAccelerationStructureKHR::build (const DeviceInterface&						vk,
 		}
 		else
 		{
-			VkDeferredOperationKHR deferredOperation	= DE_NULL;
-
-			VK_CHECK(vk.createDeferredOperationKHR(device, DE_NULL, &deferredOperation));
+			const auto deferredOperationPtr	= createDeferredOperationKHR(vk, device);
+			const auto deferredOperation	= deferredOperationPtr.get();
 
 			VkResult result = vk.buildAccelerationStructuresKHR(device, deferredOperation, 1u, &accelerationStructureBuildGeometryInfoKHR, (const VkAccelerationStructureBuildRangeInfoKHR**)&accelerationStructureBuildRangeInfoKHRPtr);
 
@@ -1114,9 +1113,8 @@ void BottomLevelAccelerationStructureKHR::copyFrom (const DeviceInterface&						
 	}
 	else
 	{
-		VkDeferredOperationKHR deferredOperation	= DE_NULL;
-
-		VK_CHECK(vk.createDeferredOperationKHR(device, DE_NULL, &deferredOperation));
+		const auto deferredOperationPtr	= createDeferredOperationKHR(vk, device);
+		const auto deferredOperation	= deferredOperationPtr.get();
 
 		VkResult result = vk.copyAccelerationStructureKHR(device, deferredOperation, &copyAccelerationStructureInfo);
 
@@ -1162,9 +1160,8 @@ void BottomLevelAccelerationStructureKHR::serialize (const DeviceInterface&		vk,
 	}
 	else
 	{
-		VkDeferredOperationKHR deferredOperation = DE_NULL;
-
-		VK_CHECK(vk.createDeferredOperationKHR(device, DE_NULL, &deferredOperation));
+		const auto deferredOperationPtr	= createDeferredOperationKHR(vk, device);
+		const auto deferredOperation	= deferredOperationPtr.get();
 
 		const VkResult result = vk.copyAccelerationStructureToMemoryKHR(device, deferredOperation, &copyAccelerationStructureInfo);
 
@@ -1202,9 +1199,8 @@ void BottomLevelAccelerationStructureKHR::deserialize (const DeviceInterface&	vk
 	}
 	else
 	{
-		VkDeferredOperationKHR deferredOperation = DE_NULL;
-
-		VK_CHECK(vk.createDeferredOperationKHR(device, DE_NULL, &deferredOperation));
+		const auto deferredOperationPtr	= createDeferredOperationKHR(vk, device);
+		const auto deferredOperation	= deferredOperationPtr.get();
 
 		const VkResult result = vk.copyMemoryToAccelerationStructureKHR(device, deferredOperation, &copyAccelerationStructureInfo);
 
@@ -1841,9 +1837,8 @@ void TopLevelAccelerationStructureKHR::build (const DeviceInterface&	vk,
 	}
 	else
 	{
-		VkDeferredOperationKHR deferredOperation	= DE_NULL;
-
-		VK_CHECK(vk.createDeferredOperationKHR(device, DE_NULL, &deferredOperation));
+		const auto deferredOperationPtr	= createDeferredOperationKHR(vk, device);
+		const auto deferredOperation	= deferredOperationPtr.get();
 
 		VkResult result = vk.buildAccelerationStructuresKHR(device, deferredOperation, 1u, &accelerationStructureBuildGeometryInfoKHR, (const VkAccelerationStructureBuildRangeInfoKHR**)&accelerationStructureBuildRangeInfoKHRPtr);
 
@@ -1892,9 +1887,8 @@ void TopLevelAccelerationStructureKHR::copyFrom (const DeviceInterface&				vk,
 	}
 	else
 	{
-		VkDeferredOperationKHR deferredOperation	= DE_NULL;
-
-		VK_CHECK(vk.createDeferredOperationKHR(device, DE_NULL, &deferredOperation));
+		const auto deferredOperationPtr	= createDeferredOperationKHR(vk, device);
+		const auto deferredOperation	= deferredOperationPtr.get();
 
 		VkResult result = vk.copyAccelerationStructureKHR(device, deferredOperation, &copyAccelerationStructureInfo);
 
@@ -1941,9 +1935,8 @@ void TopLevelAccelerationStructureKHR::serialize (const DeviceInterface&	vk,
 	}
 	else
 	{
-		VkDeferredOperationKHR deferredOperation = DE_NULL;
-
-		VK_CHECK(vk.createDeferredOperationKHR(device, DE_NULL, &deferredOperation));
+		const auto deferredOperationPtr	= createDeferredOperationKHR(vk, device);
+		const auto deferredOperation	= deferredOperationPtr.get();
 
 		const VkResult result = vk.copyAccelerationStructureToMemoryKHR(device, deferredOperation, &copyAccelerationStructureInfo);
 
@@ -1981,9 +1974,8 @@ void TopLevelAccelerationStructureKHR::deserialize (const DeviceInterface&	vk,
 	}
 	else
 	{
-		VkDeferredOperationKHR deferredOperation = DE_NULL;
-
-		VK_CHECK(vk.createDeferredOperationKHR(device, DE_NULL, &deferredOperation));
+		const auto deferredOperationPtr	= createDeferredOperationKHR(vk, device);
+		const auto deferredOperation	= deferredOperationPtr.get();
 
 		const VkResult result = vk.copyMemoryToAccelerationStructureKHR(device, deferredOperation, &copyAccelerationStructureInfo);
 
@@ -2285,9 +2277,9 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 	const VkRayTracingPipelineInterfaceCreateInfoKHR*	pipelineInterfaceCreateInfoPtr	= addPipelineInterfaceCreateInfo ? &pipelineInterfaceCreateInfo : DE_NULL;
 	const VkPipelineLibraryCreateInfoKHR*				librariesCreateInfoPtr			= (vkPipelineLibraries.empty() ? nullptr : &librariesCreateInfo);
 
-	VkDeferredOperationKHR								deferredOperation				= DE_NULL;
-	if(m_deferredOperation)
-		VK_CHECK(vk.createDeferredOperationKHR(device, DE_NULL, &deferredOperation));
+	Move<VkDeferredOperationKHR>						deferredOperation;
+	if (m_deferredOperation)
+		deferredOperation = createDeferredOperationKHR(vk, device);
 
 	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo	=
 	{
@@ -2316,7 +2308,7 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 		0,														//  deInt32										basePipelineIndex;
 	};
 	VkPipeline											object							= DE_NULL;
-	VkResult											result							= vk.createRayTracingPipelinesKHR(device, deferredOperation, DE_NULL, 1u, &pipelineCreateInfo, DE_NULL, &object);
+	VkResult											result							= vk.createRayTracingPipelinesKHR(device, deferredOperation.get(), DE_NULL, 1u, &pipelineCreateInfo, DE_NULL, &object);
 	Move<VkPipeline>									pipeline						(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, DE_NULL));
 
 	if (m_deferredOperation)
@@ -2324,7 +2316,7 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
 		DE_UNREF(result);
 
-		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
+		finishDeferredOperation(vk, device, deferredOperation.get(), m_workerThreadCount);
 	}
 
 	return pipeline;
