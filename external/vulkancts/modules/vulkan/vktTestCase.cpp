@@ -89,14 +89,20 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
 	{
+		const auto& extName = extensions[extNdx].extensionName;
+
+		// Skip enabling VK_KHR_pipeline_library unless needed.
+		if (deStringEqual(extName, "VK_KHR_pipeline_library"))
+			continue;
+
 		// VK_EXT_buffer_device_address is deprecated and must not be enabled if VK_KHR_buffer_device_address is enabled
-		if (khrBufferDeviceAddress && deStringEqual(extensions[extNdx].extensionName, "VK_EXT_buffer_device_address"))
+		if (khrBufferDeviceAddress && deStringEqual(extName, "VK_EXT_buffer_device_address"))
 			continue;
 
 		for (int extGroupNdx = 0; extGroupNdx < DE_LENGTH_OF_ARRAY(extensionGroups); extGroupNdx++)
 		{
-			if (deStringBeginsWith(extensions[extNdx].extensionName, extensionGroups[extGroupNdx]))
-				enabledExtensions.push_back(extensions[extNdx].extensionName);
+			if (deStringBeginsWith(extName, extensionGroups[extGroupNdx]))
+				enabledExtensions.push_back(extName);
 		}
 	}
 
