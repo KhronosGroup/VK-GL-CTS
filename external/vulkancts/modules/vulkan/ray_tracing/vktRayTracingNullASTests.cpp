@@ -26,6 +26,7 @@
 #include "vkDefs.hpp"
 
 #include "vktTestCase.hpp"
+#include "vktCustomInstancesDevices.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkBuilderUtil.hpp"
@@ -35,6 +36,8 @@
 #include "vkTypeUtil.hpp"
 
 #include "vkRayTracingUtil.hpp"
+
+#include "tcuCommandLine.hpp"
 
 #include "deClock.h"
 
@@ -136,6 +139,107 @@ VkImageCreateInfo makeImageCreateInfo (deUint32 width, deUint32 height, VkFormat
 	return imageCreateInfo;
 }
 
+struct TestDeviceFeatures
+{
+	VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features;
+	VkPhysicalDeviceRayTracingPipelineFeaturesKHR		rayTracingPipelineFeatures;
+	VkPhysicalDeviceAccelerationStructureFeaturesKHR	accelerationStructureFeatures;
+	VkPhysicalDeviceBufferDeviceAddressFeaturesKHR		deviceAddressFeatures;
+	VkPhysicalDeviceFeatures2							deviceFeatures;
+
+	void linkStructures ()
+	{
+		robustness2Features.pNext			= nullptr;
+		rayTracingPipelineFeatures.pNext	= &robustness2Features;
+		accelerationStructureFeatures.pNext	= &rayTracingPipelineFeatures;
+		deviceAddressFeatures.pNext			= &accelerationStructureFeatures;
+		deviceFeatures.pNext				= &deviceAddressFeatures;
+	}
+
+	TestDeviceFeatures (const InstanceInterface& vki, VkPhysicalDevice physicalDevice)
+	{
+		robustness2Features.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
+		rayTracingPipelineFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+		accelerationStructureFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+		deviceAddressFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_KHR;
+		deviceFeatures.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+
+		linkStructures();
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures);
+	}
+};
+
+struct DeviceHelper
+{
+	Move<VkDevice>					device;
+	de::MovePtr<DeviceDriver>		vkd;
+	deUint32						queueFamilyIndex;
+	VkQueue							queue;
+	de::MovePtr<SimpleAllocator>	allocator;
+
+	DeviceHelper (Context& context)
+	{
+		const auto&	vkp				= context.getPlatformInterface();
+		const auto&	vki				= context.getInstanceInterface();
+		const auto	instance		= context.getInstance();
+		const auto	physicalDevice	= context.getPhysicalDevice();
+		const auto	queuePriority	= 1.0f;
+
+		// Queue index first.
+		queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+
+		// Get device features (these have already been checked in the test case).
+		TestDeviceFeatures features(vki, physicalDevice);
+		features.linkStructures();
+
+		// Make sure uneeded robustness features are disabled.
+		features.deviceFeatures.features.robustBufferAccess	= VK_FALSE;
+		features.robustness2Features.robustBufferAccess2	= VK_FALSE;
+		features.robustness2Features.robustImageAccess2		= VK_FALSE;
+
+		const VkDeviceQueueCreateInfo queueInfo =
+		{
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	//	VkStructureType				sType;
+			nullptr,									//	const void*					pNext;
+			0u,											//	VkDeviceQueueCreateFlags	flags;
+			queueFamilyIndex,							//	deUint32					queueFamilyIndex;
+			1u,											//	deUint32					queueCount;
+			&queuePriority,								//	const float*				pQueuePriorities;
+		};
+
+		// Required extensions.
+		std::vector<const char*> requiredExtensions;
+		requiredExtensions.push_back("VK_KHR_ray_tracing_pipeline");
+		requiredExtensions.push_back("VK_KHR_acceleration_structure");
+		requiredExtensions.push_back("VK_KHR_buffer_device_address");
+		requiredExtensions.push_back("VK_KHR_deferred_host_operations");
+		requiredExtensions.push_back("VK_EXT_descriptor_indexing");
+		requiredExtensions.push_back("VK_KHR_spirv_1_4");
+		requiredExtensions.push_back("VK_KHR_shader_float_controls");
+		requiredExtensions.push_back("VK_EXT_robustness2");
+
+		const VkDeviceCreateInfo createInfo =
+		{
+			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,				//	VkStructureType					sType;
+			features.deviceFeatures.pNext,						//	const void*						pNext;
+			0u,													//	VkDeviceCreateFlags				flags;
+			1u,													//	deUint32						queueCreateInfoCount;
+			&queueInfo,											//	const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+			0u,													//	deUint32						enabledLayerCount;
+			nullptr,											//	const char* const*				ppEnabledLayerNames;
+			static_cast<deUint32>(requiredExtensions.size()),	//	deUint32						enabledExtensionCount;
+			requiredExtensions.data(),							//	const char* const*				ppEnabledExtensionNames;
+			&features.deviceFeatures.features,					//	const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+		};
+
+		// Create custom device and related objects.
+		device		= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &createInfo);
+		vkd			= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get()));
+		queue		= getDeviceQueue(*vkd, *device, queueFamilyIndex, 0u);
+		allocator	= de::MovePtr<SimpleAllocator>(new SimpleAllocator(*vkd, device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
+	}
+};
+
 class RayTracingBuildTestInstance : public TestInstance
 {
 public:
@@ -145,7 +249,7 @@ public:
 
 protected:
 	deUint32						validateBuffer						(de::MovePtr<BufferWithMemory> buffer);
-	de::MovePtr<BufferWithMemory>	runTest								(void);
+	de::MovePtr<BufferWithMemory>	runTest								(DeviceHelper& deviceHelper);
 
 private:
 	CaseDef							m_data;
@@ -187,18 +291,36 @@ RayTracingTestCase::~RayTracingTestCase	(void)
 
 void RayTracingTestCase::checkSupport(Context& context) const
 {
-	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+	const auto&	vki					= context.getInstanceInterface();
+	const auto	physicalDevice		= context.getPhysicalDevice();
+	const auto	supportedExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
-	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR		= context.getRayTracingPipelineFeatures();
-	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE )
-		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
+	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_ray_tracing_pipeline")))
+		TCU_THROW(NotSupportedError, "VK_KHR_ray_tracing_pipeline not supported");
 
-	context.requireDeviceFunctionality("VK_EXT_robustness2");
+	// VK_KHR_acceleration_structure is required by VK_KHR_ray_tracing_pipeline.
+	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_acceleration_structure")))
+		TCU_FAIL("VK_KHR_acceleration_structure not supported but VK_KHR_ray_tracing_pipeline supported");
 
-	const vk::VkPhysicalDeviceRobustness2FeaturesEXT&	robustness2FeaturesEXT	= context.getRobustness2FeaturesEXT();
+	// VK_KHR_deferred_host_operations is required by VK_KHR_ray_tracing_pipeline.
+	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_deferred_host_operations")))
+		TCU_FAIL("VK_KHR_deferred_host_operations not supported but VK_KHR_ray_tracing_pipeline supported");
 
-	if (!robustness2FeaturesEXT.nullDescriptor)
-		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRobustness2FeaturesEXT::nullDescriptor");
+	// VK_KHR_buffer_device_address is required by VK_KHR_acceleration_structure.
+	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_buffer_device_address")))
+		TCU_FAIL("VK_KHR_buffer_device_address not supported but VK_KHR_acceleration_structure supported");
+
+	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_EXT_robustness2")))
+		TCU_THROW(NotSupportedError, "VK_EXT_robustness2 not supported");
+
+	// Required extensions supported: check features.
+	TestDeviceFeatures testFeatures(vki, physicalDevice);
+
+	if (!testFeatures.rayTracingPipelineFeatures.rayTracingPipeline)
+		TCU_THROW(NotSupportedError, "Ray tracing pipelines not supported");
+
+	if (!testFeatures.robustness2Features.nullDescriptor)
+		TCU_THROW(NotSupportedError, "Null descriptors not supported");
 }
 
 void RayTracingTestCase::initPrograms (SourceCollections& programCollection) const
@@ -284,15 +406,15 @@ TestInstance* RayTracingTestCase::createInstance (Context& context) const
 	return new RayTracingBuildTestInstance(context, m_data);
 }
 
-de::MovePtr<BufferWithMemory> RayTracingBuildTestInstance::runTest (void)
+de::MovePtr<BufferWithMemory> RayTracingBuildTestInstance::runTest (DeviceHelper& deviceHelper)
 {
 	const InstanceInterface&			vki									= m_context.getInstanceInterface();
-	const DeviceInterface&				vkd									= m_context.getDeviceInterface();
-	const VkDevice						device								= m_context.getDevice();
 	const VkPhysicalDevice				physicalDevice						= m_context.getPhysicalDevice();
-	const deUint32						queueFamilyIndex					= m_context.getUniversalQueueFamilyIndex();
-	const VkQueue						queue								= m_context.getUniversalQueue();
-	Allocator&							allocator							= m_context.getDefaultAllocator();
+	const DeviceDriver&					vkd									= *deviceHelper.vkd;
+	const VkDevice						device								= *deviceHelper.device;
+	const deUint32						queueFamilyIndex					= deviceHelper.queueFamilyIndex;
+	const VkQueue						queue								= deviceHelper.queue;
+	SimpleAllocator&					allocator							= *deviceHelper.allocator;
 	const VkFormat						format								= VK_FORMAT_R32_UINT;
 	const deUint32						pixelCount							= m_data.width * m_data.height;
 	const deUint32						shaderGroupHandleSize				= getShaderGroupSize(vki, physicalDevice);
@@ -412,8 +534,9 @@ deUint32 RayTracingBuildTestInstance::validateBuffer (de::MovePtr<BufferWithMemo
 
 tcu::TestStatus RayTracingBuildTestInstance::iterate (void)
 {
-	de::MovePtr<BufferWithMemory>	buffer		= runTest();
-	const deUint32					failures	= validateBuffer(buffer);
+	DeviceHelper					deviceHelper	(m_context);
+	de::MovePtr<BufferWithMemory>	buffer			= runTest(deviceHelper);
+	const deUint32					failures		= validateBuffer(buffer);
 
 	if (failures == 0)
 		return tcu::TestStatus::pass("Pass");
