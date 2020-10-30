@@ -26,6 +26,7 @@
 #include "vkDefs.hpp"
 
 #include "vktTestCase.hpp"
+#include "vktCustomInstancesDevices.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
@@ -40,6 +41,7 @@
 #include "tcuTextureUtil.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuImageCompare.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "vkRayTracingUtil.hpp"
 
@@ -105,6 +107,21 @@ namespace vkt
 
 			struct TestParams;
 
+			// Similar to a subset of the test context but allows us to plug in a custom device when needed.
+			// Note TestEnvironment objects do not own the resources they point to.
+			struct TestEnvironment
+			{
+				const InstanceInterface*	vki;
+				VkPhysicalDevice			physicalDevice;
+				const DeviceInterface*		vkd;
+				VkDevice					device;
+				Allocator*					allocator;
+				VkQueue						queue;
+				deUint32					queueFamilyIndex;
+				BinaryCollection*			binaryCollection;
+				tcu::TestLog*				log;
+			};
+
 			typedef void (*CheckSupportFunc)(Context& context, const TestParams& testParams);
 			typedef void (*InitProgramsFunc)(SourceCollections& programCollection, const TestParams& testParams);
 			typedef const std::string(*ShaderBodyTextFunc)(const TestParams& testParams);
@@ -115,9 +132,9 @@ namespace vkt
 				PipelineConfiguration() {};
 				virtual			~PipelineConfiguration() {};
 
-				virtual void	initConfiguration(Context& context,
+				virtual void	initConfiguration(const TestEnvironment& env,
 					TestParams& testParams) = 0;
-				virtual void	fillCommandBuffer(Context& context,
+				virtual void	fillCommandBuffer(const TestEnvironment& env,
 					TestParams& testParams,
 					VkCommandBuffer					commandBuffer,
 					const VkAccelerationStructureKHR* rayQueryTopAccelerationStructurePtr,
@@ -127,49 +144,50 @@ namespace vkt
 			class TestConfiguration
 			{
 			public:
-				TestConfiguration()
+				TestConfiguration(Context& context)
 					: m_bottomAccelerationStructures()
 					, m_topAccelerationStructure()
 					, m_expected()
+					, m_testEnvironment()
 				{
+					prepareTestEnvironment(context);
 				}
 				virtual															~TestConfiguration()
 				{
 				}
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
-					VkCommandBuffer					cmdBuffer) = 0;
-				virtual bool													verify(BufferWithMemory* resultBuffer,
-					Context& context,
-					TestParams& testParams);
+				const TestEnvironment&						getTestEnvironment			() const;
+				virtual const VkAccelerationStructureKHR*	initAccelerationStructures	(TestParams& testParams, VkCommandBuffer cmdBuffer) = 0;
+				virtual bool								verify						(BufferWithMemory* resultBuffer, TestParams& testParams);
 
 			protected:
+				void										prepareTestEnvironment		(Context& context);
+
 				std::vector<de::SharedPtr<BottomLevelAccelerationStructure>>	m_bottomAccelerationStructures;
 				de::SharedPtr<TopLevelAccelerationStructure>					m_topAccelerationStructure;
 				std::vector<deInt32>											m_expected;
+				de::MovePtr<TestEnvironment>									m_testEnvironment;
 			};
 
 			class TestConfigurationFloat : public TestConfiguration
 			{
 			public:
-				TestConfigurationFloat()
-					: TestConfiguration()
+				TestConfigurationFloat(Context& context)
+					: TestConfiguration(context)
 				{
 				}
 				virtual															~TestConfigurationFloat()
 				{
 				}
 				virtual bool													verify(BufferWithMemory* resultBuffer,
-					Context& context,
 					TestParams& testParams) override;
 			};
 
 			class TestConfigurationVector : public TestConfiguration
 			{
 			public:
-				TestConfigurationVector(bool useStrictComponentMatching = true)
-					: TestConfiguration(),
+				TestConfigurationVector(Context& context, bool useStrictComponentMatching = true)
+					: TestConfiguration(context),
 					m_useStrictComponentMatching(useStrictComponentMatching)
 				{
 				}
@@ -177,7 +195,6 @@ namespace vkt
 				{
 				}
 				virtual bool													verify(BufferWithMemory* resultBuffer,
-					Context& context,
 					TestParams& testParams) override;
 
 			private:
@@ -187,15 +204,14 @@ namespace vkt
 			class TestConfigurationMatrix : public TestConfiguration
 			{
 			public:
-				TestConfigurationMatrix()
-					: TestConfiguration()
+				TestConfigurationMatrix(Context& context)
+					: TestConfiguration(context)
 				{
 				}
 				virtual															~TestConfigurationMatrix()
 				{
 				}
 				virtual bool													verify(BufferWithMemory* resultBuffer,
-					Context& context,
 					TestParams& testParams) override;
 			};
 
@@ -365,13 +381,13 @@ namespace vkt
 				GraphicsConfiguration();
 				virtual							~GraphicsConfiguration() {};
 
-				void							initVertexBuffer(Context& context,
+				void							initVertexBuffer(const TestEnvironment& env,
 					TestParams& testParams);
-				Move<VkPipeline>				makeGraphicsPipeline(Context& context,
+				Move<VkPipeline>				makeGraphicsPipeline(const TestEnvironment& env,
 					TestParams& testParams);
-				virtual void					initConfiguration(Context& context,
+				virtual void					initConfiguration(const TestEnvironment& env,
 					TestParams& testParams) override;
-				virtual void					fillCommandBuffer(Context& context,
+				virtual void					fillCommandBuffer(const TestEnvironment& env,
 					TestParams& testParams,
 					VkCommandBuffer					commandBuffer,
 					const VkAccelerationStructureKHR* rayQueryTopAccelerationStructurePtr,
@@ -744,14 +760,14 @@ namespace vkt
 				}
 			}
 
-			void GraphicsConfiguration::initVertexBuffer(Context& context,
+			void GraphicsConfiguration::initVertexBuffer(const TestEnvironment& env,
 				TestParams& testParams)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice			device = context.getDevice();
+				const DeviceInterface&	vkd = *env.vkd;
+				const VkDevice			device = env.device;
+				Allocator&				allocator = *env.allocator;
 				const deUint32			width = testParams.width;
 				const deUint32			height = testParams.height;
-				Allocator& allocator = context.getDefaultAllocator();
 				std::vector<tcu::Vec4>	vertices;
 
 				switch (testParams.stage)
@@ -879,11 +895,11 @@ namespace vkt
 				}
 			}
 
-			Move<VkPipeline> GraphicsConfiguration::makeGraphicsPipeline(Context& context,
+			Move<VkPipeline> GraphicsConfiguration::makeGraphicsPipeline(const TestEnvironment& env,
 				TestParams& testParams)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice					device = context.getDevice();
+				const DeviceInterface&			vkd = *env.vkd;
+				const VkDevice					device = env.device;
 				const bool						tessStageTest = (testParams.stage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT || testParams.stage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
 				const VkPrimitiveTopology		topology = tessStageTest ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 				const deUint32					patchControlPoints = tessStageTest ? 4 : 0;
@@ -906,13 +922,13 @@ namespace vkt
 					patchControlPoints);
 			}
 
-			void GraphicsConfiguration::initConfiguration(Context& context,
+			void GraphicsConfiguration::initConfiguration(const TestEnvironment& env,
 				TestParams& testParams)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice			device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
-				vk::BinaryCollection& collection = context.getBinaryCollection();
+				const DeviceInterface&	vkd = *env.vkd;
+				const VkDevice			device = env.device;
+				Allocator&				allocator = *env.allocator;
+				vk::BinaryCollection&	collection = *env.binaryCollection;
 				VkShaderStageFlags		shaders = static_cast<VkShaderStageFlags>(0);
 				deUint32				shaderCount = 0;
 
@@ -949,21 +965,21 @@ namespace vkt
 				m_renderPass = makeRenderPass(vkd, device, m_framebufferFormat);
 				m_framebuffer = makeFramebuffer(vkd, device, *m_renderPass, *m_framebufferAttachment, testParams.width, testParams.height);
 				m_pipelineLayout = makePipelineLayout(vkd, device, m_descriptorSetLayout.get());
-				m_pipeline = makeGraphicsPipeline(context, testParams);
+				m_pipeline = makeGraphicsPipeline(env, testParams);
 
-				initVertexBuffer(context, testParams);
+				initVertexBuffer(env, testParams);
 			}
 
-			void GraphicsConfiguration::fillCommandBuffer(Context& context,
+			void GraphicsConfiguration::fillCommandBuffer(const TestEnvironment& env,
 				TestParams& testParams,
 				VkCommandBuffer						cmdBuffer,
 				const VkAccelerationStructureKHR* rayQueryTopAccelerationStructurePtr,
 				const VkDescriptorImageInfo& resultImageInfo)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice										device = context.getDevice();
-				const VkDeviceSize									vertexBufferOffset = 0;
-				const VkWriteDescriptorSetAccelerationStructureKHR	rayQueryAccelerationStructureWriteDescriptorSet =
+				const DeviceInterface&								vkd												= *env.vkd;
+				const VkDevice										device											= env.device;
+				const VkDeviceSize									vertexBufferOffset								= 0;
+				const VkWriteDescriptorSetAccelerationStructureKHR	rayQueryAccelerationStructureWriteDescriptorSet	=
 				{
 					VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,	//  VkStructureType						sType;
 					DE_NULL,															//  const void*							pNext;
@@ -998,9 +1014,9 @@ namespace vkt
 				static void					initPrograms(SourceCollections& programCollection,
 					const TestParams& testParams);
 
-				virtual void				initConfiguration(Context& context,
+				virtual void				initConfiguration(const TestEnvironment& env,
 					TestParams& testParams) override;
-				virtual void				fillCommandBuffer(Context& context,
+				virtual void				fillCommandBuffer(const TestEnvironment& env,
 					TestParams& testParams,
 					VkCommandBuffer					commandBuffer,
 					const VkAccelerationStructureKHR* rayQueryTopAccelerationStructurePtr,
@@ -1073,14 +1089,14 @@ namespace vkt
 				}
 			}
 
-			void ComputeConfiguration::initConfiguration(Context& context,
+			void ComputeConfiguration::initConfiguration(const TestEnvironment& env,
 				TestParams& testParams)
 			{
 				DE_UNREF(testParams);
 
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice			device = context.getDevice();
-				vk::BinaryCollection& collection = context.getBinaryCollection();
+				const DeviceInterface&	vkd = *env.vkd;
+				const VkDevice			device = env.device;
+				vk::BinaryCollection&	collection = *env.binaryCollection;
 
 				m_descriptorSetLayout = DescriptorSetLayoutBuilder()
 					.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
@@ -1096,15 +1112,15 @@ namespace vkt
 				m_pipeline = makeComputePipeline(vkd, device, *m_pipelineLayout, *m_shaderModule);
 			}
 
-			void ComputeConfiguration::fillCommandBuffer(Context& context,
+			void ComputeConfiguration::fillCommandBuffer(const TestEnvironment& env,
 				TestParams& testParams,
 				VkCommandBuffer					cmdBuffer,
 				const VkAccelerationStructureKHR* rayQueryTopAccelerationStructurePtr,
 				const VkDescriptorImageInfo& resultImageInfo)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice										device = context.getDevice();
-				const VkWriteDescriptorSetAccelerationStructureKHR	rayQueryAccelerationStructureWriteDescriptorSet =
+				const DeviceInterface&								vkd												= *env.vkd;
+				const VkDevice										device											= env.device;
+				const VkWriteDescriptorSetAccelerationStructureKHR	rayQueryAccelerationStructureWriteDescriptorSet	=
 				{
 					VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,	//  VkStructureType						sType;
 					DE_NULL,															//  const void*							pNext;
@@ -1135,9 +1151,9 @@ namespace vkt
 				static void										initPrograms(SourceCollections& programCollection,
 					const TestParams& testParams);
 
-				virtual void									initConfiguration(Context& context,
+				virtual void									initConfiguration(const TestEnvironment& env,
 					TestParams& testParams) override;
-				virtual void									fillCommandBuffer(Context& context,
+				virtual void									fillCommandBuffer(const TestEnvironment& env,
 					TestParams& testParams,
 					VkCommandBuffer					commandBuffer,
 					const VkAccelerationStructureKHR* rayQueryTopAccelerationStructurePtr,
@@ -1446,17 +1462,17 @@ namespace vkt
 				return shaderBindingTable;
 			}
 
-			void RayTracingConfiguration::initConfiguration(Context& context,
+			void RayTracingConfiguration::initConfiguration(const TestEnvironment& env,
 				TestParams& testParams)
 			{
 				DE_UNREF(testParams);
 
-				const InstanceInterface& vki = context.getInstanceInterface();
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice				device = context.getDevice();
-				const VkPhysicalDevice		physicalDevice = context.getPhysicalDevice();
-				vk::BinaryCollection& collection = context.getBinaryCollection();
-				Allocator& allocator = context.getDefaultAllocator();
+				const InstanceInterface&	vki = *env.vki;
+				const DeviceInterface&		vkd = *env.vkd;
+				const VkDevice				device = env.device;
+				const VkPhysicalDevice		physicalDevice = env.physicalDevice;
+				vk::BinaryCollection&		collection = *env.binaryCollection;
+				Allocator&					allocator = *env.allocator;
 				const deUint32				shaderGroupHandleSize = getShaderGroupHandleSize(vki, physicalDevice);
 				const VkShaderStageFlags	hitStages = VK_SHADER_STAGE_ANY_HIT_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
 				deUint32					shaderCount = 0;
@@ -1523,17 +1539,17 @@ namespace vkt
 				m_callableShaderBindingTableRegion = m_callableShaderBindingTable.get() != NULL ? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, m_callableShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize) : makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
 			}
 
-			void RayTracingConfiguration::fillCommandBuffer(Context& context,
+			void RayTracingConfiguration::fillCommandBuffer(const TestEnvironment& env,
 				TestParams& testParams,
 				VkCommandBuffer					commandBuffer,
 				const VkAccelerationStructureKHR* rayQueryTopAccelerationStructurePtr,
 				const VkDescriptorImageInfo& resultImageInfo)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice									device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
-				de::MovePtr<BottomLevelAccelerationStructure>	bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
-				de::MovePtr<TopLevelAccelerationStructure>		topLevelAccelerationStructure = makeTopLevelAccelerationStructure();
+				const DeviceInterface&							vkd									= *env.vkd;
+				const VkDevice									device								= env.device;
+				Allocator&										allocator							= *env.allocator;
+				de::MovePtr<BottomLevelAccelerationStructure>	bottomLevelAccelerationStructure	= makeBottomLevelAccelerationStructure();
+				de::MovePtr<TopLevelAccelerationStructure>		topLevelAccelerationStructure		= makeTopLevelAccelerationStructure();
 
 				m_bottomLevelAccelerationStructure = de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release());
 				m_bottomLevelAccelerationStructure->setDefaultGeometryData(testParams.stage);
@@ -1579,9 +1595,31 @@ namespace vkt
 					testParams.width, testParams.height, 1);
 			}
 
-			bool TestConfiguration::verify(BufferWithMemory* resultBuffer, Context& context, TestParams& testParams)
+			void TestConfiguration::prepareTestEnvironment (Context& context)
 			{
-				tcu::TestLog& log = context.getTestContext().getLog();
+				// By default, all data comes from the context.
+				m_testEnvironment = de::MovePtr<TestEnvironment>(new TestEnvironment
+				{
+					&context.getInstanceInterface(),		//	const InstanceInterface*	vki;
+					context.getPhysicalDevice(),			//	VkPhysicalDevice			physicalDevice;
+					&context.getDeviceInterface(),			//	const DeviceInterface*		vkd;
+					context.getDevice(),					//	VkDevice					device;
+					&context.getDefaultAllocator(),			//	Allocator*					allocator;
+					context.getUniversalQueue(),			//	VkQueue						queue;
+					context.getUniversalQueueFamilyIndex(),	//	deUint32					queueFamilyIndex;
+					&context.getBinaryCollection(),			//	BinaryCollection*			binaryCollection;
+					&context.getTestContext().getLog(),		//	tcu::TestLog*				log;
+				});
+			}
+
+			const TestEnvironment& TestConfiguration::getTestEnvironment () const
+			{
+				return *m_testEnvironment;
+			}
+
+			bool TestConfiguration::verify(BufferWithMemory* resultBuffer, TestParams& testParams)
+			{
+				tcu::TestLog&	log = *(m_testEnvironment->log);
 				const deUint32	width = testParams.width;
 				const deUint32	height = testParams.height;
 				const deInt32* resultPtr = (deInt32*)resultBuffer->getAllocation().getHostPtr();
@@ -1631,9 +1669,9 @@ namespace vkt
 				return (failures == 0);
 			}
 
-			bool TestConfigurationFloat::verify(BufferWithMemory* resultBuffer, Context& context, TestParams& testParams)
+			bool TestConfigurationFloat::verify(BufferWithMemory* resultBuffer, TestParams& testParams)
 			{
-				tcu::TestLog& log = context.getTestContext().getLog();
+				tcu::TestLog&	log = *(m_testEnvironment->log);
 				const float		eps = float(FIXED_POINT_ALLOWED_ERROR) / float(FIXED_POINT_DIVISOR);
 				const deUint32	width = testParams.width;
 				const deUint32	height = testParams.height;
@@ -1690,9 +1728,9 @@ namespace vkt
 				return (failures == 0);
 			}
 
-			bool TestConfigurationVector::verify(BufferWithMemory* resultBuffer, Context& context, TestParams& testParams)
+			bool TestConfigurationVector::verify(BufferWithMemory* resultBuffer, TestParams& testParams)
 			{
-				tcu::TestLog& log = context.getTestContext().getLog();
+				tcu::TestLog&	log = *(m_testEnvironment->log);
 				const float		eps = float(FIXED_POINT_ALLOWED_ERROR) / float(FIXED_POINT_DIVISOR);
 				const deUint32	width = testParams.width;
 				const deUint32	height = testParams.height;
@@ -1812,9 +1850,9 @@ namespace vkt
 				return failures == 0;
 			}
 
-			bool TestConfigurationMatrix::verify(BufferWithMemory* resultBuffer, Context& context, TestParams& testParams)
+			bool TestConfigurationMatrix::verify(BufferWithMemory* resultBuffer, TestParams& testParams)
 			{
-				tcu::TestLog& log = context.getTestContext().getLog();
+				tcu::TestLog&	log = *(m_testEnvironment->log);
 				const float		eps = float(FIXED_POINT_ALLOWED_ERROR) / float(FIXED_POINT_DIVISOR);
 				const deUint32	width = testParams.width;
 				const deUint32	height = testParams.height;
@@ -1884,20 +1922,20 @@ namespace vkt
 			class TestConfigurationFlow : public TestConfiguration
 			{
 			public:
+				TestConfigurationFlow (Context& context) : TestConfiguration(context) {}
+
 				static const std::string					getShaderBodyText(const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(TestParams& testParams,
 					VkCommandBuffer					cmdBuffer) override;
 			};
 
-			const VkAccelerationStructureKHR* TestConfigurationFlow::initAccelerationStructures(Context& context,
-				TestParams& testParams,
+			const VkAccelerationStructureKHR* TestConfigurationFlow::initAccelerationStructures(TestParams& testParams,
 				VkCommandBuffer	cmdBuffer)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice								device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
+				const DeviceInterface&						vkd = *m_testEnvironment->vkd;
+				const VkDevice								device = m_testEnvironment->device;
+				Allocator&									allocator = *m_testEnvironment->allocator;
 				const deUint32								width = testParams.width;
 				const deUint32								height = testParams.height;
 				const deUint32								instancesGroupCount = testParams.instancesGroupCount;
@@ -2042,20 +2080,19 @@ namespace vkt
 			class TestConfigurationPrimitiveId : public TestConfiguration
 			{
 			public:
+				TestConfigurationPrimitiveId (Context& context) : TestConfiguration(context) {}
 				static const std::string					getShaderBodyText(const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(TestParams& testParams,
 					VkCommandBuffer					cmdBuffer) override;
 			};
 
-			const VkAccelerationStructureKHR* TestConfigurationPrimitiveId::initAccelerationStructures(Context& context,
-				TestParams& testParams,
+			const VkAccelerationStructureKHR* TestConfigurationPrimitiveId::initAccelerationStructures(TestParams& testParams,
 				VkCommandBuffer	cmdBuffer)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice								device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
+				const DeviceInterface&						vkd = *m_testEnvironment->vkd;
+				const VkDevice								device = m_testEnvironment->device;
+				Allocator&									allocator = *m_testEnvironment->allocator;
 				const deUint32								width = testParams.width;
 				const deUint32								height = testParams.height;
 				const deUint32								instancesGroupCount = testParams.instancesGroupCount;
@@ -2204,18 +2241,18 @@ namespace vkt
 			class TestConfigurationGetRayTMin : public TestConfiguration
 			{
 			public:
+				TestConfigurationGetRayTMin (Context& context) : TestConfiguration(context) {}
 				static const std::string					getShaderBodyText(const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(TestParams& testParams,
 					VkCommandBuffer					cmdBuffer) override;
 			};
 
-			const VkAccelerationStructureKHR* TestConfigurationGetRayTMin::initAccelerationStructures(Context& context, TestParams& testParams, VkCommandBuffer cmdBuffer)
+			const VkAccelerationStructureKHR* TestConfigurationGetRayTMin::initAccelerationStructures(TestParams& testParams, VkCommandBuffer cmdBuffer)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice								device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
+				const DeviceInterface&						vkd = *m_testEnvironment->vkd;
+				const VkDevice								device = m_testEnvironment->device;
+				Allocator&									allocator = *m_testEnvironment->allocator;
 				const deUint32								width = testParams.width;
 				const deUint32								height = testParams.height;
 				const deUint32								instancesGroupCount = testParams.instancesGroupCount;
@@ -2328,18 +2365,18 @@ namespace vkt
 			class TestConfigurationGetWorldRayOrigin : public TestConfigurationVector
 			{
 			public:
+				TestConfigurationGetWorldRayOrigin (Context& context) : TestConfigurationVector(context) {}
 				static const std::string					getShaderBodyText(const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(TestParams& testParams,
 					VkCommandBuffer					cmdBuffer) override;
 			};
 
-			const VkAccelerationStructureKHR* TestConfigurationGetWorldRayOrigin::initAccelerationStructures(Context& context, TestParams& testParams, VkCommandBuffer cmdBuffer)
+			const VkAccelerationStructureKHR* TestConfigurationGetWorldRayOrigin::initAccelerationStructures(TestParams& testParams, VkCommandBuffer cmdBuffer)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice								device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
+				const DeviceInterface&						vkd = *m_testEnvironment->vkd;
+				const VkDevice								device = m_testEnvironment->device;
+				Allocator&									allocator = *m_testEnvironment->allocator;
 				const deUint32								width = testParams.width;
 				const deUint32								height = testParams.height;
 				const deUint32								instancesGroupCount = testParams.instancesGroupCount;
@@ -2481,18 +2518,18 @@ namespace vkt
 			class TestConfigurationGetWorldRayDirection : public TestConfigurationVector
 			{
 			public:
+				TestConfigurationGetWorldRayDirection (Context& context) : TestConfigurationVector(context) {}
 				static const std::string					getShaderBodyText(const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(TestParams& testParams,
 					VkCommandBuffer					cmdBuffer) override;
 			};
 
-			const VkAccelerationStructureKHR* TestConfigurationGetWorldRayDirection::initAccelerationStructures(Context& context, TestParams& testParams, VkCommandBuffer cmdBuffer)
+			const VkAccelerationStructureKHR* TestConfigurationGetWorldRayDirection::initAccelerationStructures(TestParams& testParams, VkCommandBuffer cmdBuffer)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice								device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
+				const DeviceInterface&						vkd = *m_testEnvironment->vkd;
+				const VkDevice								device = m_testEnvironment->device;
+				Allocator&									allocator = *m_testEnvironment->allocator;
 				const deUint32								width = testParams.width;
 				const deUint32								height = testParams.height;
 				const deUint32								instancesGroupCount = testParams.instancesGroupCount;
@@ -2639,20 +2676,19 @@ namespace vkt
 			class TestConfigurationInstanceId : public TestConfiguration
 			{
 			public:
+				TestConfigurationInstanceId (Context& context) : TestConfiguration(context) {}
 				static const std::string					getShaderBodyText(const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(TestParams& testParams,
 					VkCommandBuffer					cmdBuffer) override;
 			};
 
-			const VkAccelerationStructureKHR* TestConfigurationInstanceId::initAccelerationStructures(Context& context,
-				TestParams& testParams,
+			const VkAccelerationStructureKHR* TestConfigurationInstanceId::initAccelerationStructures(TestParams& testParams,
 				VkCommandBuffer	cmdBuffer)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice								device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
+				const DeviceInterface&						vkd = *m_testEnvironment->vkd;
+				const VkDevice								device = m_testEnvironment->device;
+				Allocator&									allocator = *m_testEnvironment->allocator;
 				const deUint32								width = testParams.width;
 				const deUint32								height = testParams.height;
 				const deUint32								instancesGroupCount = testParams.instancesGroupCount;
@@ -2801,20 +2837,19 @@ namespace vkt
 			class TestConfigurationInstanceCustomIndex : public TestConfiguration
 			{
 			public:
+				TestConfigurationInstanceCustomIndex (Context& context) : TestConfiguration(context) {}
 				static const std::string					getShaderBodyText(const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(TestParams& testParams,
 					VkCommandBuffer					cmdBuffer) override;
 			};
 
-			const VkAccelerationStructureKHR* TestConfigurationInstanceCustomIndex::initAccelerationStructures(Context& context,
-				TestParams& testParams,
+			const VkAccelerationStructureKHR* TestConfigurationInstanceCustomIndex::initAccelerationStructures(TestParams& testParams,
 				VkCommandBuffer	cmdBuffer)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice								device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
+				const DeviceInterface&						vkd = *m_testEnvironment->vkd;
+				const VkDevice								device = m_testEnvironment->device;
+				Allocator&									allocator = *m_testEnvironment->allocator;
 				const deUint32								width = testParams.width;
 				const deUint32								height = testParams.height;
 				const deUint32								instancesGroupCount = testParams.instancesGroupCount;
@@ -2963,20 +2998,19 @@ namespace vkt
 			class TestConfigurationIntersectionT : public TestConfigurationFloat
 			{
 			public:
+				TestConfigurationIntersectionT (Context& context) : TestConfigurationFloat(context) {}
 				static const std::string					getShaderBodyText(const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(TestParams& testParams,
 					VkCommandBuffer					cmdBuffer) override;
 			};
 
-			const VkAccelerationStructureKHR* TestConfigurationIntersectionT::initAccelerationStructures(Context& context,
-				TestParams& testParams,
+			const VkAccelerationStructureKHR* TestConfigurationIntersectionT::initAccelerationStructures(TestParams& testParams,
 				VkCommandBuffer	cmdBuffer)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice								device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
+				const DeviceInterface&						vkd = *m_testEnvironment->vkd;
+				const VkDevice								device = m_testEnvironment->device;
+				Allocator&									allocator = *m_testEnvironment->allocator;
 				const deUint32								width = testParams.width;
 				const deUint32								height = testParams.height;
 				const bool									triangles = (testParams.geomType == GEOM_TYPE_TRIANGLES);
@@ -3130,20 +3164,19 @@ namespace vkt
 			class TestConfigurationObjectRayOrigin : public TestConfigurationVector
 			{
 			public:
+				TestConfigurationObjectRayOrigin (Context& context) : TestConfigurationVector(context) {}
 				static const std::string					getShaderBodyText(const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(TestParams& testParams,
 					VkCommandBuffer					cmdBuffer) override;
 			};
 
-			const VkAccelerationStructureKHR* TestConfigurationObjectRayOrigin::initAccelerationStructures(Context& context,
-				TestParams& testParams,
+			const VkAccelerationStructureKHR* TestConfigurationObjectRayOrigin::initAccelerationStructures(TestParams& testParams,
 				VkCommandBuffer	cmdBuffer)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice								device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
+				const DeviceInterface&						vkd = *m_testEnvironment->vkd;
+				const VkDevice								device = m_testEnvironment->device;
+				Allocator&									allocator = *m_testEnvironment->allocator;
 				const deUint32								width = testParams.width;
 				const deUint32								height = testParams.height;
 				const deUint32								depth = testParams.depth;
@@ -3311,20 +3344,19 @@ namespace vkt
 			class TestConfigurationObjectRayDirection : public TestConfigurationVector
 			{
 			public:
+				TestConfigurationObjectRayDirection (Context& context) : TestConfigurationVector(context) {}
 				static const std::string					getShaderBodyText(const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(TestParams& testParams,
 					VkCommandBuffer					cmdBuffer) override;
 			};
 
-			const VkAccelerationStructureKHR* TestConfigurationObjectRayDirection::initAccelerationStructures(Context& context,
-				TestParams& testParams,
+			const VkAccelerationStructureKHR* TestConfigurationObjectRayDirection::initAccelerationStructures(TestParams& testParams,
 				VkCommandBuffer	cmdBuffer)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice								device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
+				const DeviceInterface&						vkd = *m_testEnvironment->vkd;
+				const VkDevice								device = m_testEnvironment->device;
+				Allocator&									allocator = *m_testEnvironment->allocator;
 				const deUint32								width = testParams.width;
 				const deUint32								height = testParams.height;
 				const deUint32								depth = testParams.depth;
@@ -3492,20 +3524,19 @@ namespace vkt
 			class TestConfigurationObjectToWorld : public TestConfigurationMatrix
 			{
 			public:
+				TestConfigurationObjectToWorld (Context& context) : TestConfigurationMatrix(context) {}
 				static const std::string					getShaderBodyText(const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(TestParams& testParams,
 					VkCommandBuffer					cmdBuffer) override;
 			};
 
-			const VkAccelerationStructureKHR* TestConfigurationObjectToWorld::initAccelerationStructures(Context& context,
-				TestParams& testParams,
+			const VkAccelerationStructureKHR* TestConfigurationObjectToWorld::initAccelerationStructures(TestParams& testParams,
 				VkCommandBuffer	cmdBuffer)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice								device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
+				const DeviceInterface&						vkd = *m_testEnvironment->vkd;
+				const VkDevice								device = m_testEnvironment->device;
+				Allocator&									allocator = *m_testEnvironment->allocator;
 				const deUint32								width = testParams.width;
 				const deUint32								height = testParams.height;
 				const bool									triangles = (testParams.geomType == GEOM_TYPE_TRIANGLES);
@@ -3709,20 +3740,19 @@ namespace vkt
 			class TestConfigurationWorldToObject : public TestConfigurationMatrix
 			{
 			public:
+				TestConfigurationWorldToObject (Context& context) : TestConfigurationMatrix(context) {}
 				static const std::string					getShaderBodyText(const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(TestParams& testParams,
 					VkCommandBuffer					cmdBuffer) override;
 			};
 
-			const VkAccelerationStructureKHR* TestConfigurationWorldToObject::initAccelerationStructures(Context& context,
-				TestParams& testParams,
+			const VkAccelerationStructureKHR* TestConfigurationWorldToObject::initAccelerationStructures(TestParams& testParams,
 				VkCommandBuffer	cmdBuffer)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice								device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
+				const DeviceInterface&						vkd = *m_testEnvironment->vkd;
+				const VkDevice								device = m_testEnvironment->device;
+				Allocator&									allocator = *m_testEnvironment->allocator;
 				const deUint32								width = testParams.width;
 				const deUint32								height = testParams.height;
 				const bool									triangles = (testParams.geomType == GEOM_TYPE_TRIANGLES);
@@ -3926,35 +3956,39 @@ namespace vkt
 			class TestConfigurationNullASStruct : public TestConfiguration
 			{
 			public:
-				TestConfigurationNullASStruct();
+				TestConfigurationNullASStruct(Context& context);
 				~TestConfigurationNullASStruct();
 
-				static const std::string					getShaderBodyText(const TestParams& testParams);
-				static void									checkSupport(Context& context,
-					const TestParams& testParams);
+				static const std::string					getShaderBodyText			(const TestParams& testParams);
+				static void									checkSupport				(Context& context, const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
-					VkCommandBuffer					cmdBuffer) override;
+				virtual const VkAccelerationStructureKHR*	initAccelerationStructures	(TestParams& testParams, VkCommandBuffer cmdBuffer) override;
 			protected:
+				void										prepareTestEnvironment		(Context& context);
 				Move<VkAccelerationStructureKHR>			m_emptyAccelerationStructure;
+
+				Move<VkDevice>								m_device;
+				de::MovePtr<DeviceDriver>					m_vkd;
+				de::MovePtr<SimpleAllocator>				m_allocator;
 			};
 
-			TestConfigurationNullASStruct::TestConfigurationNullASStruct()
-				: TestConfiguration()
+			TestConfigurationNullASStruct::TestConfigurationNullASStruct(Context& context)
+				: TestConfiguration(context)
 				, m_emptyAccelerationStructure()
+				, m_device()
+				, m_vkd()
+				, m_allocator()
 			{
+				prepareTestEnvironment(context);
 			}
 
 			TestConfigurationNullASStruct::~TestConfigurationNullASStruct()
 			{
 			}
 
-			const VkAccelerationStructureKHR* TestConfigurationNullASStruct::initAccelerationStructures(Context& context,
-				TestParams& testParams,
+			const VkAccelerationStructureKHR* TestConfigurationNullASStruct::initAccelerationStructures(TestParams& testParams,
 				VkCommandBuffer	cmdBuffer)
 			{
-				DE_UNREF(context);
 				DE_UNREF(cmdBuffer);
 
 				m_expected = std::vector<deInt32>(testParams.width * testParams.height, 1);
@@ -3967,12 +4001,136 @@ namespace vkt
 			{
 				DE_UNREF(testParams);
 
-				context.requireDeviceFunctionality("VK_EXT_robustness2");
+				// Check if the physical device supports VK_EXT_robustness2 and the nullDescriptor feature.
+				const auto&	vki					= context.getInstanceInterface();
+				const auto	physicalDevice		= context.getPhysicalDevice();
+				const auto	supportedExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
-				const vk::VkPhysicalDeviceRobustness2FeaturesEXT& robustness2FeaturesEXT = context.getRobustness2FeaturesEXT();
+				if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_EXT_robustness2")))
+					TCU_THROW(NotSupportedError, "VK_EXT_robustness2 not supported");
 
-				if (!robustness2FeaturesEXT.nullDescriptor)
-					TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRobustness2FeaturesEXT::nullDescriptor");
+				VkPhysicalDeviceRobustness2FeaturesEXT	robustness2Features	= initVulkanStructure();
+				VkPhysicalDeviceFeatures2				features2			= initVulkanStructure(&robustness2Features);
+
+				vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+				if (!robustness2Features.nullDescriptor)
+					TCU_THROW(NotSupportedError, "VkPhysicalDeviceRobustness2FeaturesEXT::nullDescriptor not supported");
+			}
+
+			void TestConfigurationNullASStruct::prepareTestEnvironment (Context& context)
+			{
+				// Check if the physical device supports VK_EXT_robustness2 and the nullDescriptor feature.
+				const auto&	vkp					= context.getPlatformInterface();
+				const auto&	vki					= context.getInstanceInterface();
+				const auto	instance			= context.getInstance();
+				const auto	physicalDevice		= context.getPhysicalDevice();
+				const auto	supportedExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+				const auto	queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+				const auto	queuePriority		= 1.0f;
+				bool		accelStructSupport	= false;
+
+				// Add anything that's supported and may be needed, including nullDescriptor.
+				VkPhysicalDeviceFeatures2							features2						= initVulkanStructure();
+				VkPhysicalDeviceBufferDeviceAddressFeaturesKHR		deviceAddressFeatures			= initVulkanStructure();
+				VkPhysicalDeviceAccelerationStructureFeaturesKHR	accelerationStructureFeatures	= initVulkanStructure();
+				VkPhysicalDeviceRayQueryFeaturesKHR					rayQueryFeatures				= initVulkanStructure();
+				VkPhysicalDeviceRayTracingPipelineFeaturesKHR		raytracingPipelineFeatures		= initVulkanStructure();
+				VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features				= initVulkanStructure();
+				std::vector<const char*>							deviceExtensions;
+
+				if (isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_deferred_host_operations")))
+				{
+					deviceExtensions.push_back("VK_KHR_deferred_host_operations");
+				}
+
+				if (isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_buffer_device_address")))
+				{
+					deviceAddressFeatures.pNext = features2.pNext;
+					features2.pNext = &deviceAddressFeatures;
+					deviceExtensions.push_back("VK_KHR_buffer_device_address");
+				}
+
+				if (isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_acceleration_structure")))
+				{
+					accelerationStructureFeatures.pNext = features2.pNext;
+					features2.pNext = &accelerationStructureFeatures;
+					deviceExtensions.push_back("VK_KHR_acceleration_structure");
+					accelStructSupport = true;
+				}
+
+				if (isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_ray_query")))
+				{
+					rayQueryFeatures.pNext = features2.pNext;
+					features2.pNext = &rayQueryFeatures;
+					deviceExtensions.push_back("VK_KHR_ray_query");
+				}
+
+				if (isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_ray_tracing_pipeline")))
+				{
+					raytracingPipelineFeatures.pNext = features2.pNext;
+					features2.pNext = &raytracingPipelineFeatures;
+					deviceExtensions.push_back("VK_KHR_ray_tracing_pipeline");
+				}
+
+				vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+
+				// Add robustness2 features to the chain and make sure robustBufferAccess is consistent with robustBufferAccess2.
+				features2.features.robustBufferAccess = VK_FALSE;
+				robustness2Features.nullDescriptor = VK_TRUE;
+				robustness2Features.pNext = features2.pNext;
+				features2.pNext = &robustness2Features;
+
+				// Add more needed extensions.
+				deviceExtensions.push_back("VK_EXT_robustness2");
+				if (accelStructSupport)
+				{
+					// Not promoted yet in Vulkan 1.1.
+					deviceExtensions.push_back("VK_EXT_descriptor_indexing");
+					deviceExtensions.push_back("VK_KHR_spirv_1_4");
+					deviceExtensions.push_back("VK_KHR_shader_float_controls");
+				}
+
+				const VkDeviceQueueCreateInfo queueInfo =
+				{
+					VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	//	VkStructureType				sType;
+					nullptr,									//	const void*					pNext;
+					0u,											//	VkDeviceQueueCreateFlags	flags;
+					queueFamilyIndex,							//	deUint32					queueFamilyIndex;
+					1u,											//	deUint32					queueCount;
+					&queuePriority,								//	const float*				pQueuePriorities;
+				};
+
+				const VkDeviceCreateInfo createInfo =
+				{
+					VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,				//	VkStructureType					sType;
+					features2.pNext,									//	const void*						pNext;
+					0u,													//	VkDeviceCreateFlags				flags;
+					1u,													//	deUint32						queueCreateInfoCount;
+					&queueInfo,											//	const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+					0u,													//	deUint32						enabledLayerCount;
+					nullptr,											//	const char* const*				ppEnabledLayerNames;
+					static_cast<deUint32>(deviceExtensions.size()),		//	deUint32						enabledExtensionCount;
+					deviceExtensions.data(),							//	const char* const*				ppEnabledExtensionNames;
+					&features2.features,								//	const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+				};
+
+				m_device			= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &createInfo);
+				m_vkd				= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, m_device.get()));
+				const auto queue	= getDeviceQueue(*m_vkd, *m_device, queueFamilyIndex, 0u);
+				m_allocator			= de::MovePtr<SimpleAllocator>(new SimpleAllocator(*m_vkd, m_device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
+
+				m_testEnvironment	= de::MovePtr<TestEnvironment>(new TestEnvironment
+				{
+					&vki,									//	const InstanceInterface*	vki;
+					physicalDevice,							//	VkPhysicalDevice			physicalDevice;
+					m_vkd.get(),							//	const DeviceInterface*		vkd;
+					m_device.get(),							//	VkDevice					device;
+					m_allocator.get(),						//	Allocator*					allocator;
+					queue,									//	VkQueue						queue;
+					queueFamilyIndex,						//	deUint32					queueFamilyIndex;
+					&context.getBinaryCollection(),			//	BinaryCollection*			binaryCollection;
+					&context.getTestContext().getLog(),		//	tcu::TestLog*				log;
+				});
 			}
 
 			const std::string TestConfigurationNullASStruct::getShaderBodyText(const TestParams& testParams)
@@ -4006,18 +4164,18 @@ namespace vkt
 			class TestConfigurationGetIntersectionCandidateAABBOpaque : public TestConfiguration
 			{
 			public:
+				TestConfigurationGetIntersectionCandidateAABBOpaque (Context& context) : TestConfiguration(context) {}
 				static const std::string					getShaderBodyText(const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(TestParams& testParams,
 					VkCommandBuffer					cmdBuffer) override;
 			};
 
-			const VkAccelerationStructureKHR* TestConfigurationGetIntersectionCandidateAABBOpaque::initAccelerationStructures(Context& context, TestParams& testParams, VkCommandBuffer cmdBuffer)
+			const VkAccelerationStructureKHR* TestConfigurationGetIntersectionCandidateAABBOpaque::initAccelerationStructures(TestParams& testParams, VkCommandBuffer cmdBuffer)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice								device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
+				const DeviceInterface&						vkd = *m_testEnvironment->vkd;
+				const VkDevice								device = m_testEnvironment->device;
+				Allocator&									allocator = *m_testEnvironment->allocator;
 				const deUint32								width = testParams.width;
 				const deUint32								height = testParams.height;
 				const deUint32								instancesGroupCount = testParams.instancesGroupCount;
@@ -4133,19 +4291,19 @@ namespace vkt
 			class TestConfigurationGetIntersectionFrontFace : public TestConfiguration
 			{
 			public:
+				TestConfigurationGetIntersectionFrontFace (Context& context) : TestConfiguration(context) {}
 				static const std::string					getShaderBodyTextCandidate(const TestParams& testParams);
 				static const std::string					getShaderBodyTextCommitted(const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(TestParams& testParams,
 					VkCommandBuffer					cmdBuffer) override;
 			};
 
-			const VkAccelerationStructureKHR* TestConfigurationGetIntersectionFrontFace::initAccelerationStructures(Context& context, TestParams& testParams, VkCommandBuffer cmdBuffer)
+			const VkAccelerationStructureKHR* TestConfigurationGetIntersectionFrontFace::initAccelerationStructures(TestParams& testParams, VkCommandBuffer cmdBuffer)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice								device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
+				const DeviceInterface&						vkd = *m_testEnvironment->vkd;
+				const VkDevice								device = m_testEnvironment->device;
+				Allocator&									allocator = *m_testEnvironment->allocator;
 				const deUint32								width = testParams.width;
 				const deUint32								height = testParams.height;
 				const deUint32								instancesGroupCount = testParams.instancesGroupCount;
@@ -4298,19 +4456,19 @@ namespace vkt
 			class TestConfigurationGetIntersectionGeometryIndex : public TestConfiguration
 			{
 			public:
+				TestConfigurationGetIntersectionGeometryIndex (Context& context) : TestConfiguration(context) {}
 				static const std::string					getShaderBodyTextCandidate(const TestParams& testParams);
 				static const std::string					getShaderBodyTextCommitted(const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(TestParams& testParams,
 					VkCommandBuffer					cmdBuffer) override;
 			};
 
-			const VkAccelerationStructureKHR* TestConfigurationGetIntersectionGeometryIndex::initAccelerationStructures(Context& context, TestParams& testParams, VkCommandBuffer cmdBuffer)
+			const VkAccelerationStructureKHR* TestConfigurationGetIntersectionGeometryIndex::initAccelerationStructures(TestParams& testParams, VkCommandBuffer cmdBuffer)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice								device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
+				const DeviceInterface&						vkd = *m_testEnvironment->vkd;
+				const VkDevice								device = m_testEnvironment->device;
+				Allocator&									allocator = *m_testEnvironment->allocator;
 				const deUint32								width = testParams.width;
 				const deUint32								height = testParams.height;
 				const deUint32								instancesGroupCount = testParams.instancesGroupCount;
@@ -4463,8 +4621,8 @@ namespace vkt
 			class TestConfigurationGetIntersectionBarycentrics : public TestConfigurationVector
 			{
 			public:
-				TestConfigurationGetIntersectionBarycentrics()
-					: TestConfigurationVector(false)
+				TestConfigurationGetIntersectionBarycentrics(Context& context)
+					: TestConfigurationVector(context, false)
 				{
 					/* Stub */
 				}
@@ -4472,16 +4630,15 @@ namespace vkt
 				static const std::string	getShaderBodyTextCandidate(const TestParams& testParams);
 				static const std::string	getShaderBodyTextCommitted(const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(TestParams& testParams,
 					VkCommandBuffer					cmdBuffer) override;
 			};
 
-			const VkAccelerationStructureKHR* TestConfigurationGetIntersectionBarycentrics::initAccelerationStructures(Context& context, TestParams& testParams, VkCommandBuffer cmdBuffer)
+			const VkAccelerationStructureKHR* TestConfigurationGetIntersectionBarycentrics::initAccelerationStructures(TestParams& testParams, VkCommandBuffer cmdBuffer)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice								device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
+				const DeviceInterface&						vkd = *m_testEnvironment->vkd;
+				const VkDevice								device = m_testEnvironment->device;
+				Allocator&									allocator = *m_testEnvironment->allocator;
 				const deUint32								width = testParams.width;
 				const deUint32								height = testParams.height;
 				const deUint32								instancesGroupCount = testParams.instancesGroupCount;
@@ -4663,19 +4820,19 @@ namespace vkt
 			class TestConfigurationGetIntersectionInstanceShaderBindingTableRecordOffset : public TestConfiguration
 			{
 			public:
+				TestConfigurationGetIntersectionInstanceShaderBindingTableRecordOffset (Context& context) : TestConfiguration(context) {}
 				static const std::string					getShaderBodyTextCandidate(const TestParams& testParams);
 				static const std::string					getShaderBodyTextCommitted(const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(TestParams& testParams,
 					VkCommandBuffer					cmdBuffer) override;
 			};
 
-			const VkAccelerationStructureKHR* TestConfigurationGetIntersectionInstanceShaderBindingTableRecordOffset::initAccelerationStructures(Context& context, TestParams& testParams, VkCommandBuffer cmdBuffer)
+			const VkAccelerationStructureKHR* TestConfigurationGetIntersectionInstanceShaderBindingTableRecordOffset::initAccelerationStructures(TestParams& testParams, VkCommandBuffer cmdBuffer)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice								device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
+				const DeviceInterface&						vkd = *m_testEnvironment->vkd;
+				const VkDevice								device = m_testEnvironment->device;
+				Allocator&									allocator = *m_testEnvironment->allocator;
 				const deUint32								width = testParams.width;
 				const deUint32								height = testParams.height;
 				const deUint32								instancesGroupCount = testParams.instancesGroupCount;
@@ -4825,10 +4982,10 @@ namespace vkt
 			class TestConfigurationRayQueryTerminate: public TestConfiguration
 			{
 			public:
+				TestConfigurationRayQueryTerminate (Context& context) : TestConfiguration(context) {}
 				static const std::string getShaderBodyText(const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(TestParams& testParams,
 					VkCommandBuffer					cmdBuffer) override;
 
 				private:
@@ -4837,11 +4994,11 @@ namespace vkt
 
 			const deUint32 TestConfigurationRayQueryTerminate::N_RAY_QUERIES_TO_USE = 8;
 
-			const VkAccelerationStructureKHR* TestConfigurationRayQueryTerminate::initAccelerationStructures(Context& context, TestParams& testParams, VkCommandBuffer cmdBuffer)
+			const VkAccelerationStructureKHR* TestConfigurationRayQueryTerminate::initAccelerationStructures(TestParams& testParams, VkCommandBuffer cmdBuffer)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice								device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
+				const DeviceInterface&						vkd = *m_testEnvironment->vkd;
+				const VkDevice								device = m_testEnvironment->device;
+				Allocator&									allocator = *m_testEnvironment->allocator;
 				const deUint32								width = testParams.width;
 				const deUint32								height = testParams.height;
 				const deUint32								instancesGroupCount = testParams.instancesGroupCount;
@@ -5005,19 +5162,19 @@ namespace vkt
 			class TestConfigurationGetIntersectionType : public TestConfiguration
 			{
 			public:
+				TestConfigurationGetIntersectionType (Context& context) : TestConfiguration(context) {}
 				static const std::string	getShaderBodyTextCandidate(const TestParams& testParams);
 				static const std::string	getShaderBodyTextCommitted(const TestParams& testParams);
 
-				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
-					TestParams& testParams,
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(TestParams& testParams,
 					VkCommandBuffer					cmdBuffer) override;
 			};
 
-			const VkAccelerationStructureKHR* TestConfigurationGetIntersectionType::initAccelerationStructures(Context& context, TestParams& testParams, VkCommandBuffer cmdBuffer)
+			const VkAccelerationStructureKHR* TestConfigurationGetIntersectionType::initAccelerationStructures(TestParams& testParams, VkCommandBuffer cmdBuffer)
 			{
-				const DeviceInterface& vkd = context.getDeviceInterface();
-				const VkDevice								device = context.getDevice();
-				Allocator& allocator = context.getDefaultAllocator();
+				const DeviceInterface&						vkd = *m_testEnvironment->vkd;
+				const VkDevice								device = m_testEnvironment->device;
+				Allocator&									allocator = *m_testEnvironment->allocator;
 				const deUint32								width = testParams.width;
 				const deUint32								height = testParams.height;
 				const deUint32								instancesGroupCount = testParams.instancesGroupCount;
@@ -5191,18 +5348,18 @@ namespace vkt
 			class TestConfigurationUsingWrapperFunction : public TestConfiguration
 			{
 			public:
-				virtual const VkAccelerationStructureKHR*	initAccelerationStructures(Context&				context,
-																					   TestParams&			testParams,
+				TestConfigurationUsingWrapperFunction (Context& context) : TestConfiguration(context) {}
+				virtual const VkAccelerationStructureKHR*	initAccelerationStructures(TestParams&			testParams,
 																					   VkCommandBuffer		cmdBuffer) override;
 
 				static const std::string getShaderBodyText(const TestParams& testParams);
 			};
 
-			const VkAccelerationStructureKHR* TestConfigurationUsingWrapperFunction::initAccelerationStructures(Context& context, TestParams& testParams, VkCommandBuffer cmdBuffer)
+			const VkAccelerationStructureKHR* TestConfigurationUsingWrapperFunction::initAccelerationStructures(TestParams& testParams, VkCommandBuffer cmdBuffer)
 			{
-				const DeviceInterface&	vkd = context.getDeviceInterface();
-				const VkDevice			device = context.getDevice();
-				Allocator&				allocator = context.getDefaultAllocator();
+				const DeviceInterface&	vkd = *m_testEnvironment->vkd;
+				const VkDevice			device = m_testEnvironment->device;
+				Allocator&				allocator = *m_testEnvironment->allocator;
 				const deUint32			width = testParams.width;
 				const deUint32			height = testParams.height;
 				const deUint32			instancesGroupCount = testParams.instancesGroupCount;
@@ -5462,32 +5619,32 @@ namespace vkt
 			{
 				switch (m_data.testType)
 				{
-				case TEST_TYPE_FLOW:																	m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationFlow());														break;
-				case TEST_TYPE_PRIMITIVE_ID:															m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationPrimitiveId());												break;
-				case TEST_TYPE_INSTANCE_ID:																m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationInstanceId());												break;
-				case TEST_TYPE_INSTANCE_CUSTOM_INDEX:													m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationInstanceCustomIndex());										break;
-				case TEST_TYPE_INTERSECTION_T_KHR:														m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationIntersectionT());											break;
-				case TEST_TYPE_OBJECT_RAY_ORIGIN_KHR:													m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationObjectRayOrigin());											break;
-				case TEST_TYPE_OBJECT_RAY_DIRECTION_KHR:												m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationObjectRayDirection());										break;
-				case TEST_TYPE_OBJECT_TO_WORLD_KHR:														m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationObjectToWorld());											break;
-				case TEST_TYPE_WORLD_TO_OBJECT_KHR:														m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationWorldToObject());											break;
-				case TEST_TYPE_NULL_ACCELERATION_STRUCTURE:												m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationNullASStruct());												break;
-				case TEST_TYPE_USING_WRAPPER_FUNCTION:													m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationUsingWrapperFunction());										break;
-				case TEST_TYPE_GET_RAY_TMIN:															m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetRayTMin());												break;
-				case TEST_TYPE_GET_WORLD_RAY_ORIGIN:													m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetWorldRayOrigin());										break;
-				case TEST_TYPE_GET_WORLD_RAY_DIRECTION:													m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetWorldRayDirection());										break;
-				case TEST_TYPE_GET_INTERSECTION_CANDIDATE_AABB_OPAQUE:									m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionCandidateAABBOpaque());						break;
-				case TEST_TYPE_GET_INTERSECTION_FRONT_FACE_CANDIDATE:									m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionFrontFace());									break;
-				case TEST_TYPE_GET_INTERSECTION_FRONT_FACE_COMMITTED:									m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionFrontFace());									break;
-				case TEST_TYPE_GET_INTERSECTION_GEOMETRY_INDEX_CANDIDATE:								m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionGeometryIndex());								break;
-				case TEST_TYPE_GET_INTERSECTION_GEOMETRY_INDEX_COMMITTED:								m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionGeometryIndex());								break;
-				case TEST_TYPE_GET_INTERSECTION_BARYCENTRICS_CANDIDATE:									m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionBarycentrics());								break;
-				case TEST_TYPE_GET_INTERSECTION_BARYCENTRICS_COMMITTED:									m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionBarycentrics());								break;
-				case TEST_TYPE_GET_INTERSECTION_INSTANCE_SHADER_BINDING_TABLE_RECORD_OFFSET_CANDIDATE:	m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionInstanceShaderBindingTableRecordOffset());	break;
-				case TEST_TYPE_GET_INTERSECTION_INSTANCE_SHADER_BINDING_TABLE_RECORD_OFFSET_COMMITTED:	m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionInstanceShaderBindingTableRecordOffset());	break;
-				case TEST_TYPE_RAY_QUERY_TERMINATE:														m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationRayQueryTerminate());										break;
-				case TEST_TYPE_GET_INTERSECTION_TYPE_CANDIDATE:											m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionType());										break;
-				case TEST_TYPE_GET_INTERSECTION_TYPE_COMMITTED:											m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionType());										break;
+				case TEST_TYPE_FLOW:																	m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationFlow(context));													break;
+				case TEST_TYPE_PRIMITIVE_ID:															m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationPrimitiveId(context));											break;
+				case TEST_TYPE_INSTANCE_ID:																m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationInstanceId(context));											break;
+				case TEST_TYPE_INSTANCE_CUSTOM_INDEX:													m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationInstanceCustomIndex(context));									break;
+				case TEST_TYPE_INTERSECTION_T_KHR:														m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationIntersectionT(context));											break;
+				case TEST_TYPE_OBJECT_RAY_ORIGIN_KHR:													m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationObjectRayOrigin(context));										break;
+				case TEST_TYPE_OBJECT_RAY_DIRECTION_KHR:												m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationObjectRayDirection(context));									break;
+				case TEST_TYPE_OBJECT_TO_WORLD_KHR:														m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationObjectToWorld(context));											break;
+				case TEST_TYPE_WORLD_TO_OBJECT_KHR:														m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationWorldToObject(context));											break;
+				case TEST_TYPE_NULL_ACCELERATION_STRUCTURE:												m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationNullASStruct(context));											break;
+				case TEST_TYPE_USING_WRAPPER_FUNCTION:													m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationUsingWrapperFunction(context));									break;
+				case TEST_TYPE_GET_RAY_TMIN:															m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetRayTMin(context));											break;
+				case TEST_TYPE_GET_WORLD_RAY_ORIGIN:													m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetWorldRayOrigin(context));										break;
+				case TEST_TYPE_GET_WORLD_RAY_DIRECTION:													m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetWorldRayDirection(context));									break;
+				case TEST_TYPE_GET_INTERSECTION_CANDIDATE_AABB_OPAQUE:									m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionCandidateAABBOpaque(context));					break;
+				case TEST_TYPE_GET_INTERSECTION_FRONT_FACE_CANDIDATE:									m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionFrontFace(context));								break;
+				case TEST_TYPE_GET_INTERSECTION_FRONT_FACE_COMMITTED:									m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionFrontFace(context));								break;
+				case TEST_TYPE_GET_INTERSECTION_GEOMETRY_INDEX_CANDIDATE:								m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionGeometryIndex(context));							break;
+				case TEST_TYPE_GET_INTERSECTION_GEOMETRY_INDEX_COMMITTED:								m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionGeometryIndex(context));							break;
+				case TEST_TYPE_GET_INTERSECTION_BARYCENTRICS_CANDIDATE:									m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionBarycentrics(context));							break;
+				case TEST_TYPE_GET_INTERSECTION_BARYCENTRICS_COMMITTED:									m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionBarycentrics(context));							break;
+				case TEST_TYPE_GET_INTERSECTION_INSTANCE_SHADER_BINDING_TABLE_RECORD_OFFSET_CANDIDATE:	m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionInstanceShaderBindingTableRecordOffset(context));	break;
+				case TEST_TYPE_GET_INTERSECTION_INSTANCE_SHADER_BINDING_TABLE_RECORD_OFFSET_COMMITTED:	m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionInstanceShaderBindingTableRecordOffset(context));	break;
+				case TEST_TYPE_RAY_QUERY_TERMINATE:														m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationRayQueryTerminate(context));										break;
+				case TEST_TYPE_GET_INTERSECTION_TYPE_CANDIDATE:											m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionType(context));									break;
+				case TEST_TYPE_GET_INTERSECTION_TYPE_COMMITTED:											m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionType(context));									break;
 
 				default: TCU_THROW(InternalError, "Unknown test type");
 				}
@@ -5532,11 +5689,12 @@ namespace vkt
 
 			tcu::TestStatus RayQueryBuiltinTestInstance::iterate (void)
 			{
-				const DeviceInterface&				vkd									= m_context.getDeviceInterface();
-				const VkDevice						device								= m_context.getDevice();
-				const VkQueue						queue								= m_context.getUniversalQueue();
-				Allocator&							allocator							= m_context.getDefaultAllocator();
-				const deUint32						queueFamilyIndex					= m_context.getUniversalQueueFamilyIndex();
+				const TestEnvironment&				testEnv								= m_testConfig->getTestEnvironment();
+				const DeviceInterface&				vkd									= *testEnv.vkd;
+				const VkDevice						device								= testEnv.device;
+				const VkQueue						queue								= testEnv.queue;
+				Allocator&							allocator							= *testEnv.allocator;
+				const deUint32						queueFamilyIndex					= testEnv.queueFamilyIndex;
 
 				const deUint32						width								= m_data.width;
 				const deUint32						height								= m_data.height;
@@ -5558,7 +5716,7 @@ namespace vkt
 				const Move<VkCommandBuffer>			cmdBuffer							= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 				const VkAccelerationStructureKHR*	topAccelerationStructurePtr			= DE_NULL;
 
-				m_pipelineConfig->initConfiguration(m_context, m_data);
+				m_pipelineConfig->initConfiguration(testEnv, m_data);
 
 				beginCommandBuffer(vkd, *cmdBuffer, 0u);
 				{
@@ -5571,9 +5729,9 @@ namespace vkt
 					vkd.cmdClearColorImage(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.color, 1, &imageSubresourceRange);
 					cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, &postImageBarrier);
 
-					topAccelerationStructurePtr = m_testConfig->initAccelerationStructures(m_context, m_data, *cmdBuffer);
+					topAccelerationStructurePtr = m_testConfig->initAccelerationStructures(m_data, *cmdBuffer);
 
-					m_pipelineConfig->fillCommandBuffer(m_context, m_data, *cmdBuffer, topAccelerationStructurePtr, resultImageInfo);
+					m_pipelineConfig->fillCommandBuffer(testEnv, m_data, *cmdBuffer, topAccelerationStructurePtr, resultImageInfo);
 
 					cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &postTestMemoryBarrier);
 
@@ -5585,7 +5743,7 @@ namespace vkt
 
 				invalidateMappedMemoryRange(vkd, device, resultBuffer->getAllocation().getMemory(), resultBuffer->getAllocation().getOffset(), VK_WHOLE_SIZE);
 
-				if (m_testConfig->verify(resultBuffer.get(), m_context, m_data))
+				if (m_testConfig->verify(resultBuffer.get(), m_data))
 					return tcu::TestStatus::pass("Pass");
 				else
 					return tcu::TestStatus::fail("Fail");
@@ -5599,7 +5757,7 @@ namespace vkt
 
 				virtual void			checkSupport(Context& context) const;
 				virtual	void			initPrograms(SourceCollections& programCollection) const;
-				virtual TestInstance* createInstance(Context& context) const;
+				virtual TestInstance*	createInstance(Context& context) const;
 
 			private:
 				TestParams				m_data;
