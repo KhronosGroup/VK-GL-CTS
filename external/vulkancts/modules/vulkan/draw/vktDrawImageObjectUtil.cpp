@@ -199,7 +199,7 @@ tcu::ConstPixelBufferAccess Image::readDepth (vk::VkQueue				queue,
 											  unsigned int				arrayElement)
 {
 	DE_ASSERT(aspect == vk::VK_IMAGE_ASPECT_DEPTH_BIT);
-	tcu::TextureFormat tcuFormat = (m_format == vk::VK_FORMAT_D32_SFLOAT_S8_UINT) ? tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::FLOAT) : vk::mapVkFormat(m_format);
+	const tcu::TextureFormat tcuFormat = getDepthCopyFormat(m_format);
 	m_pixelAccessData.resize(width * height * tcuFormat.getPixelSize());
 	deMemset(m_pixelAccessData.data(), 0, m_pixelAccessData.size());
 

@@ -163,6 +163,21 @@ const TestParams	depthClearValuesToTest[]			=
 	}
 };
 
+bool isUnormDepthFormat(VkFormat format)
+{
+	switch (format)
+	{
+		case VK_FORMAT_D24_UNORM_S8_UINT:
+		case VK_FORMAT_X8_D24_UNORM_PACK32:
+		case VK_FORMAT_D16_UNORM_S8_UINT:
+			/* Special case for combined depth-stencil-unorm modes for which tcu::getTextureChannelClass()
+			   returns TEXTURECHANNELCLASS_LAST */
+			return true;
+		default:
+			return vk::isUnormFormat(format);
+	}
+}
+
 class DepthClampTestInstance : public TestInstance {
 public:
 								DepthClampTestInstance	(Context& context, const TestParams& params, const VkFormat format, const float epsilon);
@@ -380,6 +395,9 @@ tcu::TestStatus DepthClampTestInstance::iterate (void)
 	};
 	const tcu::ConstPixelBufferAccess	resultImage	= draw(viewport);
 
+	DE_ASSERT((isUnormDepthFormat(m_format) == false) ||
+		(m_params.expectedValue >= 0.0f && m_params.expectedValue <= 1.0f));
+
 	for(int z = 0; z < resultImage.getDepth(); ++z)
 	for(int y = 0; y < resultImage.getHeight(); ++y)
 	for(int x = 0; x < resultImage.getWidth(); ++x)
@@ -465,20 +483,6 @@ private:
 std::string getFormatCaseName (VkFormat format)
 {
 	return de::toLower(de::toString(getFormatStr(format)).substr(10));
-}
-
-bool isUnormDepthFormat(VkFormat format)
-{
-	switch(format)
-	{
-		case VK_FORMAT_D24_UNORM_S8_UINT:
-		case VK_FORMAT_X8_D24_UNORM_PACK32:
-			/* Special case for combined depth-stencil-unorm modes for which tcu::getTextureChannelClass()
-			   returns TEXTURECHANNELCLASS_LAST */
-			return true;
-		default:
-			return vk::isUnormFormat(format);
-	}
 }
 
 void createTests (tcu::TestCaseGroup* testGroup)
