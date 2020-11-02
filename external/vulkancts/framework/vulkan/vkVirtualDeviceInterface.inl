@@ -171,6 +171,7 @@ virtual VkResult			importFenceFdKHR								(VkDevice device, const VkImportFence
 virtual VkResult			getFenceFdKHR									(VkDevice device, const VkFenceGetFdInfoKHR* pGetFdInfo, int* pFd) const = 0;
 virtual VkResult			acquireProfilingLockKHR							(VkDevice device, const VkAcquireProfilingLockInfoKHR* pInfo) const = 0;
 virtual void				releaseProfilingLockKHR							(VkDevice device) const = 0;
+virtual void				cmdSetFragmentShadingRateKHR					(VkCommandBuffer commandBuffer, const VkExtent2D* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]) const = 0;
 virtual VkResult			getPipelineExecutablePropertiesKHR				(VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, deUint32* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties) const = 0;
 virtual VkResult			getPipelineExecutableStatisticsKHR				(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, deUint32* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics) const = 0;
 virtual VkResult			getPipelineExecutableInternalRepresentationsKHR	(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, deUint32* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations) const = 0;

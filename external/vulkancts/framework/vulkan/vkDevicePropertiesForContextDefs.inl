@@ -14,6 +14,7 @@ const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			Context::getExterna
 const vk::VkPhysicalDeviceFloatControlsProperties&					Context::getFloatControlsProperties					(void) const { return m_device->getFloatControlsProperties();					}
 const vk::VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			Context::getFragmentDensityMapPropertiesEXT			(void) const { return m_device->getFragmentDensityMapPropertiesEXT();			}
 const vk::VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&			Context::getFragmentDensityMap2PropertiesEXT		(void) const { return m_device->getFragmentDensityMap2PropertiesEXT();			}
+const vk::VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			Context::getFragmentShadingRateProperties			(void) const { return m_device->getFragmentShadingRateProperties();				}
 const vk::VkPhysicalDeviceIDProperties&								Context::getIDProperties							(void) const { return m_device->getIDProperties();								}
 const vk::VkPhysicalDeviceInlineUniformBlockPropertiesEXT&			Context::getInlineUniformBlockPropertiesEXT			(void) const { return m_device->getInlineUniformBlockPropertiesEXT();			}
 const vk::VkPhysicalDeviceLineRasterizationPropertiesEXT&			Context::getLineRasterizationPropertiesEXT			(void) const { return m_device->getLineRasterizationPropertiesEXT();			}

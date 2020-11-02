@@ -245,6 +245,15 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_terminate_invocation")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_fragment_shading_rate")
+	{
+		functions.push_back("vkGetPhysicalDeviceFragmentShadingRatesKHR");
+		return;
+	}
 	if (extName == "VK_KHR_spirv_1_4")
 	{
 		return;
@@ -1182,6 +1191,15 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_terminate_invocation")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_fragment_shading_rate")
+	{
+		functions.push_back("vkCmdSetFragmentShadingRateKHR");
+		return;
+	}
 	if (extName == "VK_KHR_spirv_1_4")
 	{
 		return;
@@ -1992,6 +2010,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_KHR_performance_query",
 	"VK_KHR_get_surface_capabilities2",
 	"VK_KHR_get_display_properties2",
+	"VK_KHR_fragment_shading_rate",
 	"VK_EXT_debug_report",
 	"VK_NV_external_memory_capabilities",
 	"VK_EXT_direct_mode_display",

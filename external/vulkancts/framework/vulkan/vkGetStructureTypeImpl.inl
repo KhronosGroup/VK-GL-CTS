@@ -996,6 +996,36 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderClockFeaturesK
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TERMINATE_INVOCATION_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkFragmentShadingRateAttachmentInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPipelineFragmentShadingRateStateCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentShadingRateFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentShadingRatePropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_PROPERTIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentShadingRateKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_KHR;
+}
+
 template<> VkStructureType getStructureType<VkSurfaceProtectedCapabilitiesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR;
@@ -1979,6 +2009,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentDensityMap2F
 template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentDensityMap2PropertiesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkCopyCommandTransformInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_COMMAND_TRANSFORM_INFO_QCOM;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceImageRobustnessFeaturesEXT> (void)

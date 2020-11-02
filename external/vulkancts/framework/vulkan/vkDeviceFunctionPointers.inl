@@ -171,6 +171,7 @@ ImportFenceFdKHRFunc								importFenceFdKHR;
 GetFenceFdKHRFunc									getFenceFdKHR;
 AcquireProfilingLockKHRFunc							acquireProfilingLockKHR;
 ReleaseProfilingLockKHRFunc							releaseProfilingLockKHR;
+CmdSetFragmentShadingRateKHRFunc					cmdSetFragmentShadingRateKHR;
 GetPipelineExecutablePropertiesKHRFunc				getPipelineExecutablePropertiesKHR;
 GetPipelineExecutableStatisticsKHRFunc				getPipelineExecutableStatisticsKHR;
 GetPipelineExecutableInternalRepresentationsKHRFunc	getPipelineExecutableInternalRepresentationsKHR;

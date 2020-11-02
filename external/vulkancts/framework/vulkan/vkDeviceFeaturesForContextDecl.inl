@@ -27,6 +27,7 @@ const vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT&				getFragmentDensityMa
 const vk::VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&				getFragmentDensityMap2FeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV&			getFragmentShaderBarycentricFeatures			(void) const;
 const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&			getFragmentShaderInterlockFeaturesEXT			(void) const;
+const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&				getFragmentShadingRateFeatures					(void) const;
 const vk::VkPhysicalDeviceHostQueryResetFeatures&						getHostQueryResetFeatures						(void) const;
 const vk::VkPhysicalDeviceImagelessFramebufferFeatures&					getImagelessFramebufferFeatures					(void) const;
 const vk::VkPhysicalDeviceImageRobustnessFeaturesEXT&					getImageRobustnessFeaturesEXT					(void) const;
@@ -59,6 +60,7 @@ const vk::VkPhysicalDeviceShaderImageFootprintFeaturesNV&				getShaderImageFootp
 const vk::VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL&			getShaderIntegerFunctions2FeaturesINTEL			(void) const;
 const vk::VkPhysicalDeviceShaderSMBuiltinsFeaturesNV&					getShaderSMBuiltinsFeatures						(void) const;
 const vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures&			getShaderSubgroupExtendedTypesFeatures			(void) const;
+const vk::VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR&			getShaderTerminateInvocationFeatures			(void) const;
 const vk::VkPhysicalDeviceShadingRateImageFeaturesNV&					getShadingRateImageFeatures						(void) const;
 const vk::VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&				getSubgroupSizeControlFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&				getTexelBufferAlignmentFeaturesEXT				(void) const;

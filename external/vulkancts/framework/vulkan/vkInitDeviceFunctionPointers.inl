@@ -227,6 +227,7 @@ m_vk.importFenceFdKHR									= (ImportFenceFdKHRFunc)								GET_PROC_ADDR("vkI
 m_vk.getFenceFdKHR										= (GetFenceFdKHRFunc)									GET_PROC_ADDR("vkGetFenceFdKHR");
 m_vk.acquireProfilingLockKHR							= (AcquireProfilingLockKHRFunc)							GET_PROC_ADDR("vkAcquireProfilingLockKHR");
 m_vk.releaseProfilingLockKHR							= (ReleaseProfilingLockKHRFunc)							GET_PROC_ADDR("vkReleaseProfilingLockKHR");
+m_vk.cmdSetFragmentShadingRateKHR						= (CmdSetFragmentShadingRateKHRFunc)					GET_PROC_ADDR("vkCmdSetFragmentShadingRateKHR");
 m_vk.getPipelineExecutablePropertiesKHR					= (GetPipelineExecutablePropertiesKHRFunc)				GET_PROC_ADDR("vkGetPipelineExecutablePropertiesKHR");
 m_vk.getPipelineExecutableStatisticsKHR					= (GetPipelineExecutableStatisticsKHRFunc)				GET_PROC_ADDR("vkGetPipelineExecutableStatisticsKHR");
 m_vk.getPipelineExecutableInternalRepresentationsKHR	= (GetPipelineExecutableInternalRepresentationsKHRFunc)	GET_PROC_ADDR("vkGetPipelineExecutableInternalRepresentationsKHR");

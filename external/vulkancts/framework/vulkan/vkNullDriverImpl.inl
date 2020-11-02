@@ -1638,6 +1638,21 @@ VKAPI_ATTR VkResult VKAPI_CALL getDisplayPlaneCapabilities2KHR (VkPhysicalDevice
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceFragmentShadingRatesKHR (VkPhysicalDevice physicalDevice, deUint32* pFragmentShadingRateCount, VkPhysicalDeviceFragmentShadingRateKHR* pFragmentShadingRates)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pFragmentShadingRateCount);
+	DE_UNREF(pFragmentShadingRates);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetFragmentShadingRateKHR (VkCommandBuffer commandBuffer, const VkExtent2D* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR combinerOps[2])
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pFragmentSize);
+	DE_UNREF(combinerOps);
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getPipelineExecutablePropertiesKHR (VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, deUint32* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties)
 {
 	DE_UNREF(device);
@@ -2890,6 +2905,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPlaneProperties2KHR,						getPhysicalDeviceDisplayPlaneProperties2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetDisplayModeProperties2KHR,										getDisplayModeProperties2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneCapabilities2KHR,									getDisplayPlaneCapabilities2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFragmentShadingRatesKHR,							getPhysicalDeviceFragmentShadingRatesKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateDebugReportCallbackEXT,										createDebugReportCallbackEXT),
 	VK_NULL_FUNC_ENTRY(vkDestroyDebugReportCallbackEXT,										destroyDebugReportCallbackEXT),
 	VK_NULL_FUNC_ENTRY(vkDebugReportMessageEXT,												debugReportMessageEXT),
@@ -3121,6 +3137,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetSemaphoreCounterValueKHR,						getSemaphoreCounterValue),
 	VK_NULL_FUNC_ENTRY(vkWaitSemaphoresKHR,									waitSemaphores),
 	VK_NULL_FUNC_ENTRY(vkSignalSemaphoreKHR,								signalSemaphore),
+	VK_NULL_FUNC_ENTRY(vkCmdSetFragmentShadingRateKHR,						cmdSetFragmentShadingRateKHR),
 	VK_NULL_FUNC_ENTRY(vkGetBufferDeviceAddressKHR,							getBufferDeviceAddress),
 	VK_NULL_FUNC_ENTRY(vkGetBufferOpaqueCaptureAddressKHR,					getBufferOpaqueCaptureAddress),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceMemoryOpaqueCaptureAddressKHR,			getDeviceMemoryOpaqueCaptureAddress),

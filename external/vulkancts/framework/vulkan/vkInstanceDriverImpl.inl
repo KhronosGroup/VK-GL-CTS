@@ -272,6 +272,11 @@ VkResult InstanceDriver::getDisplayPlaneCapabilities2KHR (VkPhysicalDevice physi
 	return m_vk.getDisplayPlaneCapabilities2KHR(physicalDevice, pDisplayPlaneInfo, pCapabilities);
 }
 
+VkResult InstanceDriver::getPhysicalDeviceFragmentShadingRatesKHR (VkPhysicalDevice physicalDevice, deUint32* pFragmentShadingRateCount, VkPhysicalDeviceFragmentShadingRateKHR* pFragmentShadingRates) const
+{
+	return m_vk.getPhysicalDeviceFragmentShadingRatesKHR(physicalDevice, pFragmentShadingRateCount, pFragmentShadingRates);
+}
+
 VkResult InstanceDriver::createDebugReportCallbackEXT (VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback) const
 {
 	return m_vk.createDebugReportCallbackEXT(instance, pCreateInfo, pAllocator, pCallback);

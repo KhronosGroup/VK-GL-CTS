@@ -53,6 +53,7 @@ const char*	getColorSpaceKHRName									(VkColorSpaceKHR value);
 const char*	getPerformanceCounterUnitKHRName						(VkPerformanceCounterUnitKHR value);
 const char*	getPerformanceCounterScopeKHRName						(VkPerformanceCounterScopeKHR value);
 const char*	getPerformanceCounterStorageKHRName						(VkPerformanceCounterStorageKHR value);
+const char*	getFragmentShadingRateCombinerOpKHRName					(VkFragmentShadingRateCombinerOpKHR value);
 const char*	getPipelineExecutableStatisticFormatKHRName				(VkPipelineExecutableStatisticFormatKHR value);
 const char*	getDebugReportObjectTypeEXTName							(VkDebugReportObjectTypeEXT value);
 const char*	getRasterizationOrderAMDName							(VkRasterizationOrderAMD value);
@@ -145,6 +146,7 @@ inline tcu::Format::Enum<VkColorSpaceKHR>									getColorSpaceKHRStr										(
 inline tcu::Format::Enum<VkPerformanceCounterUnitKHR>						getPerformanceCounterUnitKHRStr							(VkPerformanceCounterUnitKHR value)							{ return tcu::Format::Enum<VkPerformanceCounterUnitKHR>(getPerformanceCounterUnitKHRName, value);											}
 inline tcu::Format::Enum<VkPerformanceCounterScopeKHR>						getPerformanceCounterScopeKHRStr						(VkPerformanceCounterScopeKHR value)						{ return tcu::Format::Enum<VkPerformanceCounterScopeKHR>(getPerformanceCounterScopeKHRName, value);											}
 inline tcu::Format::Enum<VkPerformanceCounterStorageKHR>					getPerformanceCounterStorageKHRStr						(VkPerformanceCounterStorageKHR value)						{ return tcu::Format::Enum<VkPerformanceCounterStorageKHR>(getPerformanceCounterStorageKHRName, value);										}
+inline tcu::Format::Enum<VkFragmentShadingRateCombinerOpKHR>				getFragmentShadingRateCombinerOpKHRStr					(VkFragmentShadingRateCombinerOpKHR value)					{ return tcu::Format::Enum<VkFragmentShadingRateCombinerOpKHR>(getFragmentShadingRateCombinerOpKHRName, value);								}
 inline tcu::Format::Enum<VkPipelineExecutableStatisticFormatKHR>			getPipelineExecutableStatisticFormatKHRStr				(VkPipelineExecutableStatisticFormatKHR value)				{ return tcu::Format::Enum<VkPipelineExecutableStatisticFormatKHR>(getPipelineExecutableStatisticFormatKHRName, value);						}
 inline tcu::Format::Enum<VkDebugReportObjectTypeEXT>						getDebugReportObjectTypeEXTStr							(VkDebugReportObjectTypeEXT value)							{ return tcu::Format::Enum<VkDebugReportObjectTypeEXT>(getDebugReportObjectTypeEXTName, value);												}
 inline tcu::Format::Enum<VkRasterizationOrderAMD>							getRasterizationOrderAMDStr								(VkRasterizationOrderAMD value)								{ return tcu::Format::Enum<VkRasterizationOrderAMD>(getRasterizationOrderAMDName, value);													}
@@ -237,6 +239,7 @@ inline std::ostream&	operator<<	(std::ostream& s, VkColorSpaceKHR value)								
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceCounterUnitKHR value)						{ return s << getPerformanceCounterUnitKHRStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceCounterScopeKHR value)						{ return s << getPerformanceCounterScopeKHRStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceCounterStorageKHR value)						{ return s << getPerformanceCounterStorageKHRStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkFragmentShadingRateCombinerOpKHR value)					{ return s << getFragmentShadingRateCombinerOpKHRStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkPipelineExecutableStatisticFormatKHR value)				{ return s << getPipelineExecutableStatisticFormatKHRStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportObjectTypeEXT value)							{ return s << getDebugReportObjectTypeEXTStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkRasterizationOrderAMD value)							{ return s << getRasterizationOrderAMDStr(value);							}
@@ -679,6 +682,12 @@ std::ostream&	operator<<	(std::ostream& s, const VkDisplayModeProperties2KHR& va
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayPlaneInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayPlaneCapabilities2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderClockFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkFragmentShadingRateAttachmentInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineFragmentShadingRateStateCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShadingRateFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShadingRatePropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShadingRateKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceProtectedCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineInfoKHR& value);
@@ -907,6 +916,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDiagnosticsConf
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceDiagnosticsConfigCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2FeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2PropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCopyCommandTransformInfoQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageRobustnessFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice4444FormatsFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidSurfaceCreateInfoKHR& value);

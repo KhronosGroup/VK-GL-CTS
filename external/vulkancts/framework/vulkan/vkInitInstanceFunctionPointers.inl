@@ -77,6 +77,7 @@ m_vk.getPhysicalDeviceDisplayProperties2KHR								= (GetPhysicalDeviceDisplayPr
 m_vk.getPhysicalDeviceDisplayPlaneProperties2KHR						= (GetPhysicalDeviceDisplayPlaneProperties2KHRFunc)						GET_PROC_ADDR("vkGetPhysicalDeviceDisplayPlaneProperties2KHR");
 m_vk.getDisplayModeProperties2KHR										= (GetDisplayModeProperties2KHRFunc)									GET_PROC_ADDR("vkGetDisplayModeProperties2KHR");
 m_vk.getDisplayPlaneCapabilities2KHR									= (GetDisplayPlaneCapabilities2KHRFunc)									GET_PROC_ADDR("vkGetDisplayPlaneCapabilities2KHR");
+m_vk.getPhysicalDeviceFragmentShadingRatesKHR							= (GetPhysicalDeviceFragmentShadingRatesKHRFunc)						GET_PROC_ADDR("vkGetPhysicalDeviceFragmentShadingRatesKHR");
 m_vk.createDebugReportCallbackEXT										= (CreateDebugReportCallbackEXTFunc)									GET_PROC_ADDR("vkCreateDebugReportCallbackEXT");
 m_vk.destroyDebugReportCallbackEXT										= (DestroyDebugReportCallbackEXTFunc)									GET_PROC_ADDR("vkDestroyDebugReportCallbackEXT");
 m_vk.debugReportMessageEXT												= (DebugReportMessageEXTFunc)											GET_PROC_ADDR("vkDebugReportMessageEXT");

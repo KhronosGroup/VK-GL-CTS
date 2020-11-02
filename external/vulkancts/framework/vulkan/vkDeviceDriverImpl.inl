@@ -852,6 +852,11 @@ void DeviceDriver::releaseProfilingLockKHR (VkDevice device) const
 	m_vk.releaseProfilingLockKHR(device);
 }
 
+void DeviceDriver::cmdSetFragmentShadingRateKHR (VkCommandBuffer commandBuffer, const VkExtent2D* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]) const
+{
+	m_vk.cmdSetFragmentShadingRateKHR(commandBuffer, pFragmentSize, combinerOps);
+}
+
 VkResult DeviceDriver::getPipelineExecutablePropertiesKHR (VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, deUint32* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties) const
 {
 	return m_vk.getPipelineExecutablePropertiesKHR(device, pPipelineInfo, pExecutableCount, pProperties);
