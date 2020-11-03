@@ -715,6 +715,9 @@ public:
 					const auto										nVerticesPerPrimitive	= (usesAABB)								? 2u
 																																		: 12u /* tris */  * 3 /* verts */;
 
+					// For this case, AABBs use the first shader group and triangles use the second shader group in the table.
+					const auto										instanceSBTOffset		= (usesAABB ? 0u : 1u);
+
 					blPtr->setGeometryCount(nPrimitivesPerBLAS);
 
 					for (deUint32 nGeometry = 0; nGeometry < nPrimitivesPerBLAS; nGeometry++)
@@ -741,7 +744,8 @@ public:
 					tlPtr->addInstance(	de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release() ),
 										identityMatrix3x4,
 										instanceCustomIndex,
-										cullMask);
+										cullMask,
+										instanceSBTOffset);
 
 					if (optASFeedbackPtr != nullptr)
 					{
@@ -1079,6 +1083,11 @@ public:
 	~AABBTriTLTest()
 	{
 		/* Stub */
+	}
+
+	virtual std::vector<std::string> getAHitShaderCollectionShaderNames() const
+	{
+		return {"ahit", "ahit"};
 	}
 
 	std::vector<std::string> getCHitShaderCollectionShaderNames() const final
@@ -7341,7 +7350,6 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 
 	de::MovePtr<BufferWithMemory>					resultBufferPtr;
 	auto											rtPropertiesPtr		= makeRayTracingProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice() );
-	std::unique_ptr<TopLevelAccelerationStructure>	tlPtr;
 
 	m_testPtr->init(m_context,
 					rtPropertiesPtr.get() );
@@ -7826,7 +7834,7 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 								deviceVk,
 								resultBufferPtr->getAllocation().getMemory(),
 								resultBufferPtr->getAllocation().getOffset(),
-								resultBufferSize);
+								VK_WHOLE_SIZE);
 
 	m_testPtr->resetTLAS();
 
