@@ -612,7 +612,8 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::iterate (void)
 
 	const auto vtxBufferBarrier	= vk::makeBufferMemoryBarrier(vk::VK_ACCESS_HOST_WRITE_BIT, vk::VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT, vertexBuffer.get(), 0ull, vertexBufferSize);
 	const auto preClearBarrier	= vk::makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mainImage.get(), colorSubresourceRange);
-	const auto postClearBarrier	= vk::makeImageMemoryBarrier(vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_SHADER_READ_BIT, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, getMainImageShaderLayout(), mainImage.get(), colorSubresourceRange);
+	const auto postClearBarrier	= vk::makeImageMemoryBarrier(vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_SHADER_READ_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+						vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, getMainImageShaderLayout(), mainImage.get(), colorSubresourceRange);
 	const auto clearDescColor	= vk::makeClearValueColor(kDescriptorColor);
 
 	vk::beginCommandBuffer(vkd, cmdBuffer);
@@ -620,7 +621,7 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::iterate (void)
 	vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0u, 0u, nullptr, 1u, &vtxBufferBarrier, 0u, nullptr);
 	vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &preClearBarrier);
 	vkd.cmdClearColorImage(cmdBuffer, mainImage.get(), vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearDescColor.color, 1u, &colorSubresourceRange);
-	vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &postClearBarrier);
+	vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &postClearBarrier);
 
 	vk::beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), renderArea, clearFbColor);
 	vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());

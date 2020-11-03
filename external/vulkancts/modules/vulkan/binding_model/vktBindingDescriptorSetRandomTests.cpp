@@ -2453,9 +2453,9 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 			VK_SUBPASS_EXTERNAL,							// deUint32				srcSubpass
 			0,												// deUint32				dstSubpass
 			VK_PIPELINE_STAGE_TRANSFER_BIT,					// VkPipelineStageFlags	srcStageMask
-			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags	dstStageMask
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // dstStageMask
 			VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags		srcAccessMask
-			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT | VK_ACCESS_SHADER_READ_BIT,	//	dstAccessMask
+			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT  | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,	//	dstAccessMask
 			VK_DEPENDENCY_BY_REGION_BIT						// VkDependencyFlags	dependencyFlags
 		};
 
