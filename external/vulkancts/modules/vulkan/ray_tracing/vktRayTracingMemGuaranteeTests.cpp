@@ -308,7 +308,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 	const std::string	glslExtensions		= (m_data.testType == TEST_TYPE_BETWEEN_STAGES ? "#extension GL_KHR_memory_scope_semantics : require\n" : "");
 	const bool			calleeIsAnyHit		= (m_data.stage == VK_SHADER_STAGE_INTERSECTION_BIT_KHR);
 	const std::string	repackInstruction	= calleeIsAnyHit
-											? "reportIntersectionEXT(0.95f, gl_HitKindFrontFacingTriangleEXT)"
+											? "reportIntersectionEXT(0.95f, 0u)"
 											: "executeCallableEXT(0, 0)";
 	const std::string	updateBarrierCaller	= (m_data.testType == TEST_TYPE_BETWEEN_STAGES ? "  memoryBarrier(gl_ScopeShaderCallEXT, gl_StorageSemanticsImage, gl_SemanticsRelease);\n" : "");
 	const std::string	updateBarrierCallee	= (m_data.testType == TEST_TYPE_BETWEEN_STAGES ? "  memoryBarrier(gl_ScopeShaderCallEXT, gl_StorageSemanticsImage, gl_SemanticsAcquire);\n" : "");

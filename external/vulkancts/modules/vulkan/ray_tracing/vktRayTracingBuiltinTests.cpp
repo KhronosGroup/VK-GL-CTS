@@ -337,7 +337,7 @@ const std::string RayTracingTestCase::getIntersectionPassthrough (void)
 		"\n"
 		"void main()\n"
 		"{\n"
-		"  reportIntersectionEXT(0.95f, gl_HitKindFrontFacingTriangleEXT);\n"
+		"  reportIntersectionEXT(0.95f, 0x7Eu);\n"
 		"}\n";
 
 	return intersectionPassthrough;
@@ -660,7 +660,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						"void main()\n"
 						"{\n"
 						"  int r = int(gl_" + std::string(m_data.name) + ");\n"
-						+ condition + "  reportIntersectionEXT(0.95f, gl_HitKindFrontFacingTriangleEXT);\n"
+						+ condition + "  reportIntersectionEXT(0.95f, 0x7Eu);\n"
 						"}\n";
 					const std::string intersectionShader		= condition.empty() ? getIntersectionPassthrough() : intersectionShaderSingle;
 
@@ -721,7 +721,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			"\n"
 			"void main()\n"
 			"{\n"
-			"  uint hitKind = " + std::string(m_data.frontFace ? "gl_HitKindFrontFacingTriangleEXT" : "gl_HitKindBackFacingTriangleEXT") + ";\n"
+			"  uint hitKind = " + std::string(m_data.frontFace ? "0x7Eu" : "0x7Fu") + ";\n"
 			"  reportIntersectionEXT(0.95f, hitKind);\n"
 			"}\n";
 		const std::string	raygenFlagsFragment		=
@@ -999,7 +999,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						"\n"
 						"  float a = float(gl_LaunchIDEXT.x) / gl_LaunchSizeEXT.x;\n"
 						"  float b = 1.0f + float(gl_LaunchIDEXT.y) / gl_LaunchSizeEXT.y;\n"
-						"  reportIntersectionEXT(0.4375f + 0.25f * a / b, gl_HitKindFrontFacingTriangleEXT);\n"
+						"  reportIntersectionEXT(0.4375f + 0.25f * a / b, 0x7Eu);\n"
 						"}\n";
 
 					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(css.str())) << buildOptions;
@@ -1961,9 +1961,9 @@ std::vector<deInt32> RayTracingBuiltinLaunchTestInstance::expectedIntValuesBuffe
 		{
 			const deUint32	n				= x + m_data.width * (y + m_data.height * z);
 			const deUint32	geometryNdx		= n / m_data.squaresGroupCount;
-			const deUint32	hitKind			= ((geometryNdx & 1) == 0) ? 0xFE : 0xFF;
+			const deUint32	hitKind			= ((geometryNdx & 1) == 0) ? 0xFEu : 0xFFu;
 			const bool		geometryOpaque	= ((geometryNdx & 2) == 0) ? true : false;
-			deUint32		v				= (m_data.geomType == GEOM_TYPE_TRIANGLES) ? hitKind : 0xFE;
+			deUint32		v				= (m_data.geomType == GEOM_TYPE_TRIANGLES) ? hitKind : 0x7Eu;
 
 			if (m_data.stage == VK_SHADER_STAGE_ANY_HIT_BIT_KHR && geometryOpaque)
 				v = DEFAULT_UINT_CLEAR_VALUE;

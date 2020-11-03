@@ -1077,7 +1077,7 @@ const std::string ComplexControlFlowTestCase::getIntersectionPassthrough (void)
 		"\n"
 		"void main()\n"
 		"{\n"
-		"  reportIntersectionEXT(0.95f, gl_HitKindFrontFacingTriangleEXT);\n"
+		"  reportIntersectionEXT(0.95f, 0u);\n"
 		"}\n";
 
 	return intersectionPassthrough;
@@ -1126,7 +1126,7 @@ void ComplexControlFlowTestCase::initPrograms (SourceCollections& programCollect
 	const std::string				idTemplate				= "$";
 	const std::string				shaderCallInstruction	= (m_data.testOp == TEST_OP_EXECUTE_CALLABLE)    ? "executeCallableEXT(0, " + idTemplate + ")"
 															: (m_data.testOp == TEST_OP_TRACE_RAY)           ? "traceRayEXT(as, 0, 0xFF, p.hitOfs, 0, p.miss, vec3((gl_LaunchIDEXT.x) + vec3(0.5f)) / vec3(gl_LaunchSizeEXT), 1.0f, vec3(0.0f, 0.0f, 1.0f), 100.0f, " + idTemplate + ")"
-															: (m_data.testOp == TEST_OP_REPORT_INTERSECTION) ? "reportIntersectionEXT(1.0f, gl_HitKindFrontFacingTriangleEXT)"
+															: (m_data.testOp == TEST_OP_REPORT_INTERSECTION) ? "reportIntersectionEXT(1.0f, 0u)"
 															: "TEST_OP_NOT_IMPLEMENTED_FAILURE";
 	std::string						declsPreMain			=
 		"#version 460 core\n"
