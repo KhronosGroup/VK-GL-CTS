@@ -831,7 +831,8 @@ void clearStencil (const PixelBufferAccess& access, int stencil)
 enum GradientStyle
 {
 	GRADIENT_STYLE_OLD = 0,
-	GRADIENT_STYLE_NEW = 1
+	GRADIENT_STYLE_NEW = 1,
+	GRADIENT_STYLE_PYRAMID = 2
 };
 
 static void fillWithComponentGradients1D (const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal, GradientStyle)
@@ -850,21 +851,59 @@ static void fillWithComponentGradients1D (const PixelBufferAccess& access, const
 	}
 }
 
-static void fillWithComponentGradients2D (const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal, GradientStyle)
+static void fillWithComponentGradients2D (const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal, GradientStyle style)
 {
-	for (int y = 0; y < access.getHeight(); y++)
+	if (style == GRADIENT_STYLE_PYRAMID)
 	{
-		for (int x = 0; x < access.getWidth(); x++)
+		int xedge = deFloorFloatToInt32(float(access.getWidth()) * 0.6f);
+		int yedge = deFloorFloatToInt32(float(access.getHeight()) * 0.6f);
+
+		for (int y = 0; y < access.getHeight(); y++)
 		{
-			float s = ((float)x + 0.5f) / (float)access.getWidth();
-			float t = ((float)y + 0.5f) / (float)access.getHeight();
+			for (int x = 0; x < access.getWidth(); x++)
+			{
+				float s = ((float)x + 0.5f) / (float)access.getWidth();
+				float t = ((float)y + 0.5f) / (float)access.getHeight();
+				float coefR = 0.0f;
+				float coefG = 0.0f;
+				float coefB = 0.0f;
+				float coefA = 0.0f;
 
-			float r = linearInterpolate((      s  +       t) *0.5f, minVal.x(), maxVal.x());
-			float g = linearInterpolate((      s  + (1.0f-t))*0.5f, minVal.y(), maxVal.y());
-			float b = linearInterpolate(((1.0f-s) +       t) *0.5f, minVal.z(), maxVal.z());
-			float a = linearInterpolate(((1.0f-s) + (1.0f-t))*0.5f, minVal.w(), maxVal.w());
+				coefR = (x < xedge) ? s * 0.4f : (1 - s) * 0.6f;
+				coefG = (x < xedge) ? s * 0.4f : (1 - s) * 0.6f;
+				coefB = (x < xedge) ? (1.0f - s) * 0.4f : s * 0.6f - 0.2f;
+				coefA = (x < xedge) ? (1.0f - s) * 0.4f : s * 0.6f - 0.2f;
 
-			access.setPixel(tcu::Vec4(r, g, b, a), x, y);
+				coefR += (y < yedge) ? t * 0.4f : (1 - t) * 0.6f;
+				coefG += (y < yedge) ? (1.0f - t) * 0.4f : t * 0.6f - 0.2f;
+				coefB += (y < yedge) ? t * 0.4f : (1 - t) * 0.6f;
+				coefA += (y < yedge) ? (1.0f - t) * 0.4f : t * 0.6f - 0.2f;
+
+				float r = linearInterpolate(coefR, minVal.x(), maxVal.x());
+				float g = linearInterpolate(coefG, minVal.y(), maxVal.y());
+				float b = linearInterpolate(coefB, minVal.z(), maxVal.z());
+				float a = linearInterpolate(coefA, minVal.w(), maxVal.w());
+
+				access.setPixel(tcu::Vec4(r, g, b, a), x, y);
+			}
+		}
+	}
+	else
+	{
+		for (int y = 0; y < access.getHeight(); y++)
+		{
+			for (int x = 0; x < access.getWidth(); x++)
+			{
+				float s = ((float)x + 0.5f) / (float)access.getWidth();
+				float t = ((float)y + 0.5f) / (float)access.getHeight();
+
+				float r = linearInterpolate((s + t) *0.5f, minVal.x(), maxVal.x());
+				float g = linearInterpolate((s + (1.0f - t))*0.5f, minVal.y(), maxVal.y());
+				float b = linearInterpolate(((1.0f - s) + t) *0.5f, minVal.z(), maxVal.z());
+				float a = linearInterpolate(((1.0f - s) + (1.0f - t))*0.5f, minVal.w(), maxVal.w());
+
+				access.setPixel(tcu::Vec4(r, g, b, a), x, y);
+			}
 		}
 	}
 }
@@ -940,6 +979,11 @@ void fillWithComponentGradients (const PixelBufferAccess& access, const Vec4& mi
 void fillWithComponentGradients2 (const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal)
 {
 	fillWithComponentGradientsStyled(access, minVal, maxVal, GRADIENT_STYLE_NEW);
+}
+
+void fillWithComponentGradients3(const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal)
+{
+	fillWithComponentGradientsStyled(access, minVal, maxVal, GRADIENT_STYLE_PYRAMID);
 }
 
 static void fillWithGrid1D (const PixelBufferAccess& access, int cellSize, const Vec4& colorA, const Vec4& colorB)

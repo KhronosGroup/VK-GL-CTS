@@ -2203,6 +2203,11 @@ Vec4 computeFloatingPointThreshold (const IVec4& bits, const Vec4& value)
 	return computeFloatingPointError(value, bits);
 }
 
+Vec4 computeColorBitsThreshold(const IVec4& bits, const IVec4& numAccurateBits)
+{
+	return computeColorBitsError(bits, numAccurateBits);
+}
+
 Vec2 computeLodBoundsFromDerivates (const float dudx, const float dvdx, const float dwdx, const float dudy, const float dvdy, const float dwdy, const LodPrecision& prec)
 {
 	const float		mux			= deFloatAbs(dudx);
