@@ -1410,6 +1410,8 @@ tcu::TestStatus DepthImagelessTestInstance::iterate (void)
 	const VkQueue					queue				= m_context.getUniversalQueue();
 	Allocator&						allocator			= m_context.getDefaultAllocator();
 
+	const deUint32					sampleCount			= 1u;
+	const VkSampleCountFlagBits		sampleCountFlag		= sampleCountBitFromSampleCount(sampleCount);
 	const tcu::Vec4					clearColor			= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 	const VkFormat					colorFormat			= m_parameters.colorFormat;
 	const VkDeviceSize				colorBufferSize		= m_imageExtent2D.width * m_imageExtent2D.height * tcu::getPixelSize(mapVkFormat(colorFormat));
@@ -1443,7 +1445,7 @@ tcu::TestStatus DepthImagelessTestInstance::iterate (void)
 
 	const Unique<VkShaderModule>	vertModule			(createShaderModule		(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
 	const Unique<VkShaderModule>	fragModule			(createShaderModule		(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
-	const Unique<VkRenderPass>		renderPass			(makeRenderPass			(vk, device, colorFormat, dsFormat));
+	const Unique<VkRenderPass>		renderPass			(makeRenderPass			(vk, device, colorFormat, dsFormat, sampleCountFlag));
 	const Unique<VkFramebuffer>		framebuffer			(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, &colorFormat, m_colorImageUsage, &dsFormat, m_dsImageUsage));
 	const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout		(vk, device));
 	const Unique<VkPipeline>		pipeline			(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertModule, *fragModule, m_imageExtent2D, ASPECT_DEPTH_STENCIL));
