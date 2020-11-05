@@ -3798,17 +3798,23 @@ bool logAndVerifyImages (TestLog&											log,
 
 					if (!depthOK || !stencilOK)
 					{
-						log << TestLog::ImageSet("TestImages", "Output depth and stencil attachments, reference images and error masks");
-						log << TestLog::Image("Attachment" + de::toString(attachmentNdx) + "Depth", "Attachment " + de::toString(attachmentNdx) + " Depth", depthAccess);
-						log << TestLog::Image("Attachment" + de::toString(attachmentNdx) + "Stencil", "Attachment " + de::toString(attachmentNdx) + " Stencil", stencilAccess);
-						log << TestLog::Image("AttachmentReference" + de::toString(attachmentNdx), "Attachment reference " + de::toString(attachmentNdx), referenceAttachments[attachmentNdx].getAccess());
+						const auto attachmentNdxStr = de::toString(attachmentNdx);
 
+						// Output images.
+						log << TestLog::ImageSet("OutputAttachments" + attachmentNdxStr, "Output depth and stencil attachments " + attachmentNdxStr);
+						log << TestLog::Image("Attachment" + attachmentNdxStr + "Depth", "Attachment " + attachmentNdxStr + " Depth", depthAccess);
+						log << TestLog::Image("Attachment" + attachmentNdxStr + "Stencil", "Attachment " + attachmentNdxStr + " Stencil", stencilAccess);
+						log << TestLog::EndImageSet;
+
+						// Reference images. These will be logged as image sets due to having depth and stencil aspects.
+						log << TestLog::Image("AttachmentReferences" + attachmentNdxStr, "Reference images " + attachmentNdxStr, referenceAttachments[attachmentNdx].getAccess());
+
+						// Error masks.
+						log << TestLog::ImageSet("ErrorMasks" + attachmentNdxStr, "Error masks " + attachmentNdxStr);
 						if (!depthOK)
-							log << TestLog::Image("DepthAttachmentError" + de::toString(attachmentNdx), "Depth Attachment Error " + de::toString(attachmentNdx), depthErrorImage.getAccess());
-
+							log << TestLog::Image("DepthAttachmentError" + attachmentNdxStr, "Depth Attachment Error " + attachmentNdxStr, depthErrorImage.getAccess());
 						if (!stencilOK)
-							log << TestLog::Image("StencilAttachmentError" + de::toString(attachmentNdx), "Stencil Attachment Error " + de::toString(attachmentNdx), stencilErrorImage.getAccess());
-
+							log << TestLog::Image("StencilAttachmentError" + attachmentNdxStr, "Stencil Attachment Error " + attachmentNdxStr, stencilErrorImage.getAccess());
 						log << TestLog::EndImageSet;
 
 						attachmentOK = false;
