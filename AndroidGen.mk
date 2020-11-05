@@ -277,6 +277,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ray_query/vktRayQueryAccelerationStructuresTests.cpp \
 	external/vulkancts/modules/vulkan/ray_query/vktRayQueryBuiltinTests.cpp \
 	external/vulkancts/modules/vulkan/ray_query/vktRayQueryCullRayFlagsTests.cpp \
+	external/vulkancts/modules/vulkan/ray_query/vktRayQueryProceduralGeometryTests.cpp \
 	external/vulkancts/modules/vulkan/ray_query/vktRayQueryTests.cpp \
 	external/vulkancts/modules/vulkan/ray_query/vktRayQueryTraversalControlTests.cpp \
 	external/vulkancts/modules/vulkan/ray_query/vktRayQueryWatertightnessTests.cpp \
@@ -294,6 +295,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingMiscTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingNullASTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingPipelineLibraryTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingProceduralGeometryTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingShaderBindingTableTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingTraceRaysTests.cpp \

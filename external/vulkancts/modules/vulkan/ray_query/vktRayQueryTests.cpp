@@ -25,6 +25,7 @@
 #include "vktRayQueryBuiltinTests.hpp"
 #include "vktRayQueryTraversalControlTests.hpp"
 #include "vktRayQueryAccelerationStructuresTests.hpp"
+#include "vktRayQueryProceduralGeometryTests.hpp"
 #include "vktRayQueryWatertightnessTests.hpp"
 #include "vktRayQueryCullRayFlagsTests.hpp"
 
@@ -44,6 +45,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createBuiltinTests(testCtx));
 	group->addChild(createTraversalControlTests(testCtx));
 	group->addChild(createAccelerationStructuresTests(testCtx));
+	group->addChild(createProceduralGeometryTests(testCtx));
 	group->addChild(createAdvancedTests(testCtx));
 	group->addChild(createWatertightnessTests(testCtx));
 	group->addChild(createCullRayFlagsTests(testCtx));

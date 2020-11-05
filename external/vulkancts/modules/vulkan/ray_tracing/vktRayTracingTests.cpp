@@ -30,6 +30,7 @@
 #include "vktRayTracingShaderBindingTableTests.hpp"
 #include "vktRayTracingTraversalControlTests.hpp"
 #include "vktRayTracingAccelerationStructuresTests.hpp"
+#include "vktRayTracingProceduralGeometryTests.hpp"
 #include "vktRayTracingBuildIndirectTests.hpp"
 #include "vktRayTracingWatertightnessTests.hpp"
 #include "vktRayTracingPipelineLibraryTests.hpp"
@@ -63,6 +64,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createShaderBindingTableTests(testCtx));
 	group->addChild(createTraversalControlTests(testCtx));
 	group->addChild(createAccelerationStructuresTests(testCtx));
+	group->addChild(createProceduralGeometryTests(testCtx));
 	group->addChild(createBuildIndirectTests(testCtx));
 	group->addChild(createWatertightnessTests(testCtx));
 	group->addChild(createPipelineLibraryTests(testCtx));
