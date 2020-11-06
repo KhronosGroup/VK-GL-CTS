@@ -823,10 +823,9 @@ void TestRunner::deinitSession(void)
 	// Collect results.
 	// \note NotSupported is treated as pass.
 	const tcu::TestRunStatus& result = m_curSession->getResult();
-	bool					  isOk =
-		result.numExecuted == (result.numPassed + result.numNotSupported + result.numWarnings) && result.isComplete;
+	bool isOk = result.numFailed == 0 && result.isComplete;
 
-	DE_ASSERT(result.numExecuted == result.numPassed + result.numFailed + result.numNotSupported + result.numWarnings);
+	DE_ASSERT(result.numExecuted == result.numPassed + result.numFailed + result.numNotSupported + result.numWarnings + result.numWaived);
 
 	m_sessionsExecuted += 1;
 	(isOk ? m_sessionsPassed : m_sessionsFailed) += 1;
