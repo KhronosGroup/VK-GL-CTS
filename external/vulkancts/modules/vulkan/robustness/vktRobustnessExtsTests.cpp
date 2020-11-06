@@ -60,37 +60,54 @@ using namespace vk;
 using namespace std;
 using de::SharedPtr;
 
-// Class to wrap a singleton instance and device
+enum RobustnessFeatureBits
+{
+	RF_IMG_ROBUSTNESS	= (1		),
+	RF_ROBUSTNESS2		= (1 << 1	),
+};
+
+using RobustnessFeatures = deUint32;
+
+// Class to wrap a singleton device with the indicated robustness features.
+template <RobustnessFeatures FEATURES>
 class SingletonDevice
 {
-	VkPhysicalDeviceFeatures2 getFeaturesWithRobustBufferAccess(Context& context)
-	{
-		VkPhysicalDeviceFeatures2 features = context.getDeviceFeatures2();
-		features.features.robustBufferAccess = true;
-
-		// Intentionally make this the only structure in the chain, to avoid a duplicate
-		// robustness2Features structure. Fortunately, these tests don't rely on enabling
-		// lots of other features.
-		features.pNext = &m_robustness2Features;
-		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features);
-
-		return features;
-	}
-
 	SingletonDevice	(Context& context)
-		: m_robustness2Features	(initVulkanStructure())
-		, m_features2			(getFeaturesWithRobustBufferAccess(context))
-		, m_logicalDevice		(createRobustBufferAccessDevice(context, &m_features2))
+		: m_logicalDevice ()
 	{
+		// Note we are already checking the needed features are available in checkSupport().
+		VkPhysicalDeviceRobustness2FeaturesEXT		robustness2Features			= initVulkanStructure();
+		VkPhysicalDeviceImageRobustnessFeaturesEXT	imageRobustnessFeatures		= initVulkanStructure();
+		VkPhysicalDeviceScalarBlockLayoutFeatures	scalarBlockLayoutFeatures	= initVulkanStructure();
+		VkPhysicalDeviceFeatures2					features2					= initVulkanStructure();
+
+		features2.pNext = &scalarBlockLayoutFeatures;
+
+		if (FEATURES & RF_IMG_ROBUSTNESS)
+		{
+			DE_ASSERT(context.isDeviceFunctionalitySupported("VK_EXT_image_robustness"));
+			imageRobustnessFeatures.pNext = features2.pNext;
+			features2.pNext = &imageRobustnessFeatures;
+		}
+
+		if (FEATURES & RF_ROBUSTNESS2)
+		{
+			DE_ASSERT(context.isDeviceFunctionalitySupported("VK_EXT_robustness2"));
+			robustness2Features.pNext = features2.pNext;
+			features2.pNext = &robustness2Features;
+		}
+
+		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+		m_logicalDevice = createRobustBufferAccessDevice(context, &features2);
 	}
 
 public:
-	static const Unique<vk::VkDevice>& getDevice(Context& context)
+	static VkDevice getDevice(Context& context)
 	{
 		if (!m_singletonDevice)
 			m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
 		DE_ASSERT(m_singletonDevice);
-		return m_singletonDevice->m_logicalDevice;
+		return m_singletonDevice->m_logicalDevice.get();
 	}
 
 	static void destroy()
@@ -99,13 +116,18 @@ public:
 	}
 
 private:
-	VkPhysicalDeviceRobustness2FeaturesEXT		m_robustness2Features;
-	VkPhysicalDeviceFeatures2					m_features2;
-	const Unique<vk::VkDevice>					m_logicalDevice;
-
-	static SharedPtr<SingletonDevice>			m_singletonDevice;
+	Move<vk::VkDevice>							m_logicalDevice;
+	static SharedPtr<SingletonDevice<FEATURES>>	m_singletonDevice;
 };
-SharedPtr<SingletonDevice>		SingletonDevice::m_singletonDevice;
+
+template <RobustnessFeatures FEATURES>
+SharedPtr<SingletonDevice<FEATURES>> SingletonDevice<FEATURES>::m_singletonDevice;
+
+constexpr RobustnessFeatures kImageRobustness	= RF_IMG_ROBUSTNESS;
+constexpr RobustnessFeatures kRobustness2		= RF_ROBUSTNESS2;
+
+using ImageRobustnessSingleton	= SingletonDevice<kImageRobustness>;
+using Robustness2Singleton		= SingletonDevice<kRobustness2>;
 
 // Render target / compute grid dimensions
 static const deUint32 DIM = 8;
@@ -140,6 +162,14 @@ struct CaseDef
 	bool testRobustness2;
 	deUint32 imageDim[3]; // width, height, depth or layers
 };
+
+// Returns the appropriate singleton device for the given case.
+VkDevice getLogicalDevice (Context& ctx, const CaseDef& caseDef)
+{
+	if (caseDef.testRobustness2)
+		return Robustness2Singleton::getDevice(ctx);
+	return ImageRobustnessSingleton::getDevice(ctx);
+}
 
 class Layout
 {
@@ -234,30 +264,44 @@ static bool supportsStores(int descriptorType)
 
 void RobustnessExtsTestCase::checkSupport(Context& context) const
 {
-	// Get needed properties.
-	VkPhysicalDeviceProperties2 properties;
-	deMemset(&properties, 0, sizeof(properties));
-	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-	void** pNextTail = &properties.pNext;
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
 
-	*pNextTail = NULL;
+	// We need to query feature support using the physical device instead of using the reported context features because robustness2
+	// and image robustness are always disabled in the default device but they may be available.
+	VkPhysicalDeviceRobustness2FeaturesEXT		robustness2Features		= initVulkanStructure();
+	VkPhysicalDeviceImageRobustnessFeaturesEXT	imageRobustnessFeatures	= initVulkanStructure();
+	VkPhysicalDeviceScalarBlockLayoutFeatures	scalarLayoutFeatures	= initVulkanStructure();
+	VkPhysicalDeviceFeatures2KHR				features2				= initVulkanStructure();
 
-	context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
+	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 
-	// Get needed features.
-	auto features				= context.getDeviceFeatures2();
+	context.requireDeviceFunctionality("VK_EXT_scalar_block_layout");
+	features2.pNext = &scalarLayoutFeatures;
+
+	if (context.isDeviceFunctionalitySupported("VK_EXT_image_robustness"))
+	{
+		imageRobustnessFeatures.pNext = features2.pNext;
+		features2.pNext = &imageRobustnessFeatures;
+	}
+
+	if (context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+	{
+		robustness2Features.pNext = features2.pNext;
+		features2.pNext = &robustness2Features;
+	}
+
+	vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 
 	// Check needed properties and features
-	if (m_data.stage == STAGE_VERTEX && !features.features.vertexPipelineStoresAndAtomics)
+	if (!scalarLayoutFeatures.scalarBlockLayout)
+		TCU_THROW(NotSupportedError, "Scalar block layout not supported");
+
+	if (m_data.stage == STAGE_VERTEX && !features2.features.vertexPipelineStoresAndAtomics)
 		TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
-	else if (m_data.stage == STAGE_RAYGEN)
+
+	if (m_data.stage == STAGE_RAYGEN)
 		context.requireDeviceFunctionality("VK_NV_ray_tracing");
-
-	if (!m_data.testRobustness2 && !context.getImageRobustnessFeaturesEXT().robustImageAccess)
-		TCU_THROW(NotSupportedError, "robustImageAccess not supported");
-
-	if (m_data.nullDescriptor && !context.getRobustness2FeaturesEXT().nullDescriptor)
-		TCU_THROW(NotSupportedError, "nullDescriptor not supported");
 
 	switch (m_data.descriptorType)
 	{
@@ -269,19 +313,38 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 	case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
 	case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
 	case VERTEX_ATTRIBUTE_FETCH:
-		if (m_data.testRobustness2 && !context.getRobustness2FeaturesEXT().robustBufferAccess2)
-			TCU_THROW(NotSupportedError, "robustBufferAccess2 not supported");
+		if (m_data.testRobustness2)
+		{
+			if (!robustness2Features.robustBufferAccess2)
+				TCU_THROW(NotSupportedError, "robustBufferAccess2 not supported");
+		}
+		else
+		{
+			// This case is not tested here.
+			DE_ASSERT(false);
+		}
 		break;
 	case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
 	case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-		if (m_data.testRobustness2 && !context.getRobustness2FeaturesEXT().robustImageAccess2)
-			TCU_THROW(NotSupportedError, "robustImageAccess2 not supported");
+		if (m_data.testRobustness2)
+		{
+			if (!robustness2Features.robustImageAccess2)
+				TCU_THROW(NotSupportedError, "robustImageAccess2 not supported");
+		}
+		else
+		{
+			if (!imageRobustnessFeatures.robustImageAccess)
+				TCU_THROW(NotSupportedError, "robustImageAccess not supported");
+		}
 		break;
 	}
 
+	if (m_data.nullDescriptor && !robustness2Features.nullDescriptor)
+		TCU_THROW(NotSupportedError, "nullDescriptor not supported");
+
 	if ((m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) &&
 		m_data.samples != VK_SAMPLE_COUNT_1_BIT &&
-		!context.getDeviceFeatures().shaderStorageImageMultisample)
+		!features2.features.shaderStorageImageMultisample)
 		TCU_THROW(NotSupportedError, "shaderStorageImageMultisample not supported");
 
 	if (m_data.useTemplate && !context.contextSupports(vk::ApiVersion(1, 1, 0)))
@@ -289,11 +352,11 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 
 	if ((m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER || m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) &&
 		!m_data.formatQualifier &&
-		(!context.getDeviceFeatures().shaderStorageImageReadWithoutFormat || !context.getDeviceFeatures().shaderStorageImageWriteWithoutFormat))
+		(!features2.features.shaderStorageImageReadWithoutFormat || !features2.features.shaderStorageImageWriteWithoutFormat))
 		TCU_THROW(NotSupportedError, "shaderStorageImageReadWithoutFormat or shaderStorageImageWriteWithoutFormat not supported");
 
-	if (m_data.pushDescriptor && !context.isDeviceFunctionalitySupported("VK_KHR_push_descriptor"))
-		TCU_THROW(NotSupportedError, "VK_KHR_push_descriptor extension not supported");
+	if (m_data.pushDescriptor)
+		context.requireDeviceFunctionality("VK_KHR_push_descriptor");
 }
 
 void generateLayout(Layout &layout, const CaseDef &caseDef)
@@ -1226,7 +1289,7 @@ TestInstance* RobustnessExtsTestCase::createInstance (Context& context) const
 tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 {
 	const InstanceInterface&	vki					= m_context.getInstanceInterface();
-	const VkDevice				device				= *SingletonDevice::getDevice(m_context);
+	const VkDevice				device				= getLogicalDevice(m_context, m_data);
 	const DeviceDriver			vk					(m_context.getPlatformInterface(), m_context.getInstance(), device);
 	const VkPhysicalDevice		physicalDevice		= m_context.getPhysicalDevice();
 	SimpleAllocator				allocator			(vk, device, getPhysicalDeviceMemoryProperties(vki, physicalDevice));
@@ -2584,8 +2647,9 @@ static void createImageRobustnessTests (tcu::TestCaseGroup* group)
 static void cleanupGroup (tcu::TestCaseGroup* group)
 {
 	DE_UNREF(group);
-	// Destroy singleton object
-	SingletonDevice::destroy();
+	// Destroy singleton objects.
+	ImageRobustnessSingleton::destroy();
+	Robustness2Singleton::destroy();
 }
 
 tcu::TestCaseGroup* createRobustness2Tests (tcu::TestContext& testCtx)

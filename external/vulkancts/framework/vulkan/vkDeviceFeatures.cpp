@@ -32,6 +32,9 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 								 const std::vector<std::string>&	instanceExtensions,
 								 const std::vector<std::string>&	deviceExtensions)
 {
+	VkPhysicalDeviceRobustness2FeaturesEXT*		robustness2Features		= nullptr;
+	VkPhysicalDeviceImageRobustnessFeaturesEXT*	imageRobustnessFeatures	= nullptr;
+
 	m_coreFeatures2		= initVulkanStructure();
 	m_vulkan11Features	= initVulkanStructure();
 	m_vulkan12Features	= initVulkanStructure();
@@ -75,19 +78,13 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 				else
 				{
 					if (p->getFeatureDesc().sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT)
-					{
-						VkPhysicalDeviceFeatures2 coreFeatures2 = initVulkanStructure();
+						robustness2Features = reinterpret_cast<VkPhysicalDeviceRobustness2FeaturesEXT*>(p->getFeatureTypeRaw());
+					else if (p->getFeatureDesc().sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES_EXT)
+						imageRobustnessFeatures = reinterpret_cast<VkPhysicalDeviceImageRobustnessFeaturesEXT*>(p->getFeatureTypeRaw());
 
-						coreFeatures2.pNext = p->getFeatureTypeRaw();
-
-						vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures2);
-					}
-					else
-					{
-						// add to chain
-						*nextPtr = p->getFeatureTypeRaw();
-						nextPtr = p->getFeatureTypeNext();
-					}
+					// add to chain
+					*nextPtr = p->getFeatureTypeRaw();
+					nextPtr = p->getFeatureTypeNext();
 				}
 				m_features.push_back(p);
 			}
@@ -113,6 +110,16 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 		m_coreFeatures2.features = getPhysicalDeviceFeatures(vki, physicalDevice);
 
 	// Disable robustness by default, as it has an impact on performance on some HW.
+	if (robustness2Features)
+	{
+		robustness2Features->robustBufferAccess2	= false;
+		robustness2Features->robustImageAccess2		= false;
+		robustness2Features->nullDescriptor			= false;
+	}
+	if (imageRobustnessFeatures)
+	{
+		imageRobustnessFeatures->robustImageAccess	= false;
+	}
 	m_coreFeatures2.features.robustBufferAccess = false;
 }
 
