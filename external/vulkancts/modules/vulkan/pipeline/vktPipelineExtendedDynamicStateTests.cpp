@@ -34,6 +34,7 @@
 #include "vkImageWithMemory.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkImageUtil.hpp"
 
 #include "tcuVector.hpp"
 #include "tcuMaybe.hpp"
@@ -51,6 +52,7 @@
 #include <string>
 #include <limits>
 #include <memory>
+#include <functional>
 
 namespace vkt
 {
@@ -212,6 +214,59 @@ enum class SequenceOrdering
 	TWO_DRAWS_STATIC	= 6,	// Bind bad dynamic pipeline and draw, followed by binding correct static pipeline and drawing again.
 };
 
+using ReferenceColorGenerator = std::function<void(tcu::PixelBufferAccess&)>;
+
+// Most tests expect a single output color in the whole image.
+class SingleColorGenerator
+{
+public:
+	SingleColorGenerator (const tcu::Vec4& color)
+		: m_color(color)
+	{}
+
+	void operator()(tcu::PixelBufferAccess& access)
+	{
+		constexpr auto kWidth	= static_cast<int>(kFramebufferWidth);
+		constexpr auto kHeight	= static_cast<int>(kFramebufferHeight);
+
+		for (int y = 0; y < kHeight; ++y)
+		for (int x = 0; x < kWidth; ++x)
+		{
+			access.setPixel(m_color, x, y);
+		}
+	}
+
+private:
+	const tcu::Vec4 m_color;
+};
+
+// Some tests expect the upper half and the lower half having different color values.
+class HorizontalSplitGenerator
+{
+public:
+	HorizontalSplitGenerator (const tcu::Vec4& top, const tcu::Vec4& bottom)
+		: m_top(top), m_bottom(bottom)
+	{}
+
+	void operator()(tcu::PixelBufferAccess& access)
+	{
+		constexpr auto kWidth		= static_cast<int>(kFramebufferWidth);
+		constexpr auto kHeight		= static_cast<int>(kFramebufferHeight);
+		constexpr auto kHalfHeight	= kHeight / 2;
+
+		for (int y = 0; y < kHeight; ++y)
+		for (int x = 0; x < kWidth; ++x)
+		{
+			const auto& color = (y < kHalfHeight ? m_top : m_bottom);
+			access.setPixel(color, x, y);
+		}
+	}
+
+private:
+	const tcu::Vec4 m_top;
+	const tcu::Vec4 m_bottom;
+};
+
 struct TestConfig
 {
 	// Main sequence ordering.
@@ -227,7 +282,7 @@ struct TestConfig
 	deUint32					clearStencilValue;
 
 	// Expected output in the attachments.
-	tcu::Vec4					expectedColor;
+	ReferenceColorGenerator		referenceColor;
 	float						expectedDepth;
 	deUint32					expectedStencil;
 
@@ -238,8 +293,9 @@ struct TestConfig
 	// Force inclusion of passthrough geometry shader or not.
 	bool						forceGeometryShader;
 
-	// Offset for the vertex buffer data.
+	// Offset and extra room after the vertex buffer data.
 	vk::VkDeviceSize			vertexDataOffset;
+	vk::VkDeviceSize			vertexDataExtraBytes;
 
 	// Static and dynamic pipeline configuration.
 	CullModeConfig				cullModeConfig;
@@ -263,13 +319,14 @@ struct TestConfig
 		, clearColorValue				(kDefaultClearColor)
 		, clearDepthValue				(1.0f)
 		, clearStencilValue				(0u)
-		, expectedColor					(kDefaultTriangleColor)
+		, referenceColor				(SingleColorGenerator(kDefaultTriangleColor))
 		, expectedDepth					(1.0f)
 		, expectedStencil				(0u)
 		, minDepthBounds				(0.0f)
 		, maxDepthBounds				(1.0f)
 		, forceGeometryShader			(false)
 		, vertexDataOffset				(0ull)
+		, vertexDataExtraBytes			(0ull)
 		, cullModeConfig				(static_cast<vk::VkCullModeFlags>(vk::VK_CULL_MODE_NONE))
 		, frontFaceConfig				(vk::VK_FRONT_FACE_COUNTER_CLOCKWISE)
 		// By default we will use a triangle fan with 6 vertices that could be wrongly interpreted as a triangle list with 2 triangles.
@@ -627,13 +684,21 @@ void logErrors(tcu::TestLog& log, const std::string& setName, const std::string&
 		<< tcu::TestLog::EndImageSet;
 }
 
-void fillWithZeros(vk::BufferWithMemory& buffer, size_t size)
+// Fill a section of the given buffer (from offset to offset+count) with repeating copies of the given data.
+void fillWithPattern(vk::BufferWithMemory& buffer, size_t offset, size_t count, const void* src, size_t srcSize)
 {
 	auto&	alloc	= buffer.getAllocation();
 	auto	ptr		= reinterpret_cast<char*>(alloc.getHostPtr());
+	size_t	done	= 0u;
+	size_t	pending	= count;
 
-	deMemset(ptr, 0, size);
-	// Note: no flush.
+	while (pending > 0u)
+	{
+		const size_t stepSize = de::min(srcSize, pending);
+		deMemcpy(ptr + offset + done, src, stepSize);
+		done += stepSize;
+		pending -= stepSize;
+	}
 }
 
 void copyAndFlush(const vk::DeviceInterface& vkd, vk::VkDevice device, vk::BufferWithMemory& buffer, size_t offset, const void* src, size_t size)
@@ -825,7 +890,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 
 	if (topologyClass == TopologyClass::TRIANGLE)
 	{
-		// Full-scren triangle fan with 6 vertices.
+		// Full-screen triangle fan with 6 vertices.
 		//
 		// 4        3        2
 		//  +-------+-------+
@@ -874,18 +939,27 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	}
 
 	const auto vertDataSize				= static_cast<vk::VkDeviceSize>(vertices.size() * sizeof(decltype(vertices)::value_type));
-	const auto vertBufferSize			= m_testConfig.vertexDataOffset + vertDataSize;
+	const auto vertBufferSize			= m_testConfig.vertexDataOffset + vertDataSize + m_testConfig.vertexDataExtraBytes;
 	const auto vertBufferInfo			= vk::makeBufferCreateInfo(vertBufferSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 	vk::BufferWithMemory vertBuffer		(vkd, device, allocator, vertBufferInfo, vk::MemoryRequirement::HostVisible);
 	vk::BufferWithMemory rvertBuffer	(vkd, device, allocator, vertBufferInfo, vk::MemoryRequirement::HostVisible);
 
 	// Copy data to vertex buffers and flush allocations.
 	{
-		const auto dataSize	= static_cast<size_t>(vertDataSize);
-		const auto offset	= static_cast<size_t>(m_testConfig.vertexDataOffset);
-		const auto bufSize	= static_cast<size_t>(vertBufferSize);
-		fillWithZeros(vertBuffer, bufSize);
-		fillWithZeros(rvertBuffer, bufSize);
+		const GeometryVertex	offScreenVertex		(tcu::Vec2(0.0f, 3.0f));
+		const auto				offScreenVertexSz	= sizeof(offScreenVertex);
+		const auto				dataSize			= static_cast<size_t>(vertDataSize);
+		const auto				offset				= static_cast<size_t>(m_testConfig.vertexDataOffset);
+		const auto				extraSize			= static_cast<size_t>(m_testConfig.vertexDataExtraBytes);
+
+		std::vector<vk::BufferWithMemory*> buffersToFill = { &vertBuffer, &rvertBuffer };
+		for (auto b : buffersToFill)
+		{
+			// Fill bytes surrounding vertex data with the offScreenVertex.
+			fillWithPattern(*b, 0u, offset, &offScreenVertex, offScreenVertexSz);
+			fillWithPattern(*b, offset + dataSize, extraSize, &offScreenVertex, offScreenVertexSz);
+		}
+
 		copyAndFlush(vkd, device, vertBuffer, offset, vertices.data(), dataSize);
 		copyAndFlush(vkd, device, rvertBuffer, offset, reversedVertices.data(), dataSize);
 	}
@@ -1419,6 +1493,12 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	const int kWidth	= static_cast<int>(kFramebufferWidth);
 	const int kHeight	= static_cast<int>(kFramebufferHeight);
 
+	// Generate reference color buffer.
+	const auto				tcuColorFormat			= vk::mapVkFormat(kColorFormat);
+	tcu::TextureLevel		referenceColorLevel		(tcuColorFormat, kWidth, kHeight);
+	tcu::PixelBufferAccess	referenceColorAccess	= referenceColorLevel.getAccess();
+	m_testConfig.referenceColor(referenceColorAccess);
+
 	const tcu::TextureFormat	errorFormat			(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
 	tcu::TextureLevel			colorError			(errorFormat, kWidth, kHeight);
 	tcu::TextureLevel			depthError			(errorFormat, kWidth, kHeight);
@@ -1440,8 +1520,10 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	for (int y = 0; y < kHeight; ++y)
 	for (int x = 0; x < kWidth; ++x)
 	{
-		const auto colorPixel = colorAccess.getPixel(x, y);
-		match = tcu::boolAll(tcu::lessThan(tcu::absDiff(colorPixel, m_testConfig.expectedColor), kColorThreshold));
+		const auto colorPixel		= colorAccess.getPixel(x, y);
+		const auto expectedPixel	= referenceColorAccess.getPixel(x, y);
+
+		match = tcu::boolAll(tcu::lessThan(tcu::absDiff(colorPixel, expectedPixel), kColorThreshold));
 		colorErrorAccess.setPixel((match ? kGood : kBad), x, y);
 		if (!match)
 			colorMatch = false;
@@ -1573,7 +1655,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			TestConfig config(kOrdering);
 			config.cullModeConfig.staticValue	= vk::VK_CULL_MODE_NONE;
 			config.cullModeConfig.dynamicValue	= tcu::just<vk::VkCullModeFlags>(vk::VK_CULL_MODE_FRONT_AND_BACK);
-			config.expectedColor				= kDefaultClearColor;
+			config.referenceColor				= SingleColorGenerator(kDefaultClearColor);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "cull_front_and_back", "Dynamically set cull mode to front and back", config));
 		}
 
@@ -1599,7 +1681,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			config.cullModeConfig.staticValue	= vk::VK_CULL_MODE_BACK_BIT;
 			config.frontFaceConfig.staticValue	= vk::VK_FRONT_FACE_COUNTER_CLOCKWISE;
 			config.frontFaceConfig.dynamicValue	= tcu::just<vk::VkFrontFace>(vk::VK_FRONT_FACE_CLOCKWISE);
-			config.expectedColor				= kDefaultClearColor;
+			config.referenceColor				= SingleColorGenerator(kDefaultClearColor);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "front_face_cw_reversed", "Dynamically set front face to clockwise with a counter-clockwise mesh", config));
 		}
 		{
@@ -1609,7 +1691,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			config.cullModeConfig.staticValue	= vk::VK_CULL_MODE_BACK_BIT;
 			config.frontFaceConfig.staticValue	= vk::VK_FRONT_FACE_CLOCKWISE;
 			config.frontFaceConfig.dynamicValue	= tcu::just<vk::VkFrontFace>(vk::VK_FRONT_FACE_COUNTER_CLOCKWISE);
-			config.expectedColor				= kDefaultClearColor;
+			config.referenceColor				= SingleColorGenerator(kDefaultClearColor);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "front_face_ccw_reversed", "Dynamically set front face to counter-clockwise with a clockwise mesh", config));
 		}
 
@@ -1685,7 +1767,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 				vk::makeViewport(kHalfWidthF, 0.0f, kHalfWidthF, kHeightF, 0.0f, 1.0f),	// Right.
 			};
 			config.viewportConfig.dynamicValue	= ViewportVec{config.viewportConfig.staticValue.back(), config.viewportConfig.staticValue.front()};
-			config.expectedColor				= kDefaultClearColor;
+			config.referenceColor				= SingleColorGenerator(kDefaultClearColor);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "2_viewports_switch_clean", "Dynamically switch the order with 2 viewports resulting in clean image", config));
 		}
 
@@ -1737,7 +1819,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 				vk::makeRect2D(kHalfWidthI, 0, kHalfWidthU, kFramebufferHeight),
 			};
 			config.scissorConfig.dynamicValue	= ScissorVec{config.scissorConfig.staticValue.back(), config.scissorConfig.staticValue.front()};
-			config.expectedColor				= kDefaultClearColor;
+			config.referenceColor				= SingleColorGenerator(kDefaultClearColor);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "2_scissors_switch_clean", "Dynamically switch the order with 2 scissors to avoid drawing", config));
 		}
 
@@ -1752,8 +1834,23 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			TestConfig config(kOrdering);
 			config.strideConfig.staticValue		= kCoordsSize;
 			config.strideConfig.dynamicValue	= kVertexStride;
-			config.vertexDataOffset				= static_cast<vk::VkDeviceSize>(2 * sizeof(GeometryVertex));
+			config.vertexDataOffset				= static_cast<vk::VkDeviceSize>(sizeof(GeometryVertex));
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "stride_with_offset", "Dynamically set stride using a nonzero vertex data offset", config));
+		}
+		{
+			TestConfig config(kOrdering);
+			config.strideConfig.staticValue		= kCoordsSize;
+			config.strideConfig.dynamicValue	= kVertexStride;
+			config.vertexDataOffset				= static_cast<vk::VkDeviceSize>(sizeof(GeometryVertex));
+			config.vertexDataExtraBytes			= config.vertexDataOffset;
+
+			// Make the mesh cover the top half only. If the implementation reads data outside the vertex data it should read the
+			// offscreen vertex and draw something in the bottom half.
+			config.referenceColor				= HorizontalSplitGenerator(kDefaultTriangleColor, kDefaultClearColor);
+			config.meshParams[0].scaleY			= 0.5f;
+			config.meshParams[0].offsetY		= -0.5f;
+
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "stride_with_offset_and_padding", "Dynamically set stride using a nonzero vertex data offset and extra bytes", config));
 		}
 
 		// Depth test enable.
@@ -1762,14 +1859,14 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			config.depthTestEnableConfig.staticValue	= false;
 			config.depthTestEnableConfig.dynamicValue	= tcu::just(true);
 			// By default, the depth test never passes when enabled.
-			config.expectedColor						= kDefaultClearColor;
+			config.referenceColor						= SingleColorGenerator(kDefaultClearColor);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_test_enable", "Dynamically enable depth test", config));
 		}
 		{
 			TestConfig config(kOrdering);
 			config.depthTestEnableConfig.staticValue	= true;
 			config.depthTestEnableConfig.dynamicValue	= tcu::just(false);
-			config.expectedColor						= kDefaultTriangleColor;
+			config.referenceColor						= SingleColorGenerator(kDefaultTriangleColor);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_test_disable", "Dynamically disable depth test", config));
 		}
 
@@ -1822,7 +1919,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 				config.depthCompareOpConfig.dynamicValue	= vk::VK_COMPARE_OP_NEVER;
 				config.meshParams[0].depth					= 0.25f;
 				config.expectedDepth						= 0.5f;
-				config.expectedColor						= kDefaultClearColor;
+				config.referenceColor						= SingleColorGenerator(kDefaultClearColor);
 				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_never", "Dynamically set the depth compare operator to NEVER", config));
 			}
 			{
@@ -1847,7 +1944,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 				// Draw another mesh in front to verify it does not pass the equality test.
 				config.meshParams.push_back(MeshParams(kDefaultTriangleColor, 0.25f));
 				config.expectedDepth						= 0.5f;
-				config.expectedColor						= kAlternativeColor;
+				config.referenceColor						= SingleColorGenerator(kAlternativeColor);
 				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_equal", "Dynamically set the depth compare operator to EQUAL", config));
 			}
 			{
@@ -1871,7 +1968,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 				// Draw another mesh with the same depth in front of it.
 				config.meshParams.push_back(MeshParams(kAlternativeColor, 0.25f));
 				config.expectedDepth						= 0.25f;
-				config.expectedColor						= kAlternativeColor;
+				config.referenceColor						= SingleColorGenerator(kAlternativeColor);
 				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_less_equal_less_then_equal", "Dynamically set the depth compare operator to LESS_OR_EQUAL and draw two meshes with less and equal depth", config));
 			}
 			{
@@ -1895,7 +1992,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 				// Draw another mesh with the same depth in front of it.
 				config.meshParams.push_back(MeshParams(kAlternativeColor, 0.75f));
 				config.expectedDepth						= 0.75f;
-				config.expectedColor						= kAlternativeColor;
+				config.referenceColor						= SingleColorGenerator(kAlternativeColor);
 				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_greater_equal_greater_then_equal", "Dynamically set the depth compare operator to GREATER_OR_EQUAL and draw two meshes with greater and equal depth", config));
 			}
 			{
@@ -1909,7 +2006,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 				// Finally a new mesh with the same depth. This should not pass.
 				config.meshParams.push_back(MeshParams(kDefaultTriangleColor, 0.5f));
 
-				config.expectedColor						= kAlternativeColor;
+				config.referenceColor						= SingleColorGenerator(kAlternativeColor);
 				config.expectedDepth						= 0.5f;
 				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_not_equal", "Dynamically set the depth compare operator to NOT_EQUAL", config));
 			}
@@ -1942,14 +2039,14 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 				TestConfig config = baseConfig;
 				config.depthBoundsTestEnableConfig.staticValue	= false;
 				config.depthBoundsTestEnableConfig.dynamicValue	= tcu::just(true);
-				config.expectedColor							= kDefaultClearColor;
+				config.referenceColor							= SingleColorGenerator(kDefaultClearColor);
 				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_bounds_test_enable", "Dynamically enable the depth bounds test", config));
 			}
 			{
 				TestConfig config = baseConfig;
 				config.depthBoundsTestEnableConfig.staticValue	= true;
 				config.depthBoundsTestEnableConfig.dynamicValue	= tcu::just(false);
-				config.expectedColor							= kDefaultTriangleColor;
+				config.referenceColor							= SingleColorGenerator(kDefaultTriangleColor);
 				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_bounds_test_disable", "Dynamically disable the depth bounds test", config));
 			}
 		}
@@ -1960,7 +2057,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			config.stencilTestEnableConfig.staticValue				= false;
 			config.stencilTestEnableConfig.dynamicValue				= tcu::just(true);
 			config.stencilOpConfig.staticValue.front().compareOp	= vk::VK_COMPARE_OP_NEVER;
-			config.expectedColor									= kDefaultClearColor;
+			config.referenceColor									= SingleColorGenerator(kDefaultClearColor);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "stencil_test_enable", "Dynamically enable the stencil test", config));
 		}
 		{
@@ -1968,7 +2065,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			config.stencilTestEnableConfig.staticValue				= true;
 			config.stencilTestEnableConfig.dynamicValue				= tcu::just(false);
 			config.stencilOpConfig.staticValue.front().compareOp	= vk::VK_COMPARE_OP_NEVER;
-			config.expectedColor									= kDefaultTriangleColor;
+			config.referenceColor									= SingleColorGenerator(kDefaultTriangleColor);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "stencil_test_disable", "Dynamically disable the stencil test", config));
 		}
 
@@ -2172,7 +2269,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 							}
 
 							// Set expected outcome.
-							config.expectedColor	= (globalPass ? kDefaultTriangleColor : kDefaultClearColor);
+							config.referenceColor	= SingleColorGenerator(globalPass ? kDefaultTriangleColor : kDefaultClearColor);
 							config.expectedDepth	= config.clearDepthValue; // No depth writing by default.
 							config.expectedStencil	= stencilResult(op.stencilOp, clearVal, refValU8, kMinVal, kMaxVal);
 
