@@ -27,6 +27,7 @@
 #include "glcAggressiveShaderOptimizationsTests.hpp"
 #include "glcExposedExtensionsTests.hpp"
 #include "glcFragDepthTests.hpp"
+#include "glcGLSLVectorConstructorTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcInternalformatTests.hpp"
 #include "glcPackedDepthStencilTests.hpp"
@@ -150,6 +151,7 @@ public:
 		addChild(new deqp::ShaderStructTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::ShaderSwitchTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::UniformBlockTests(m_context, glu::GLSL_VERSION_300_ES));
+		addChild(new deqp::GLSLVectorConstructorTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::ShaderIntegerMixTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::ShaderNegativeTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new glcts::AggressiveShaderOptimizationsTests(m_context));

@@ -48,6 +48,7 @@
 #include "glcTextureRepeatModeTests.hpp"
 #include "glcUniformBlockTests.hpp"
 #include "glcNearestEdgeTests.hpp"
+#include "glcGLSLVectorConstructorTests.hpp"
 #include "gluStateReset.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuWaiverUtil.hpp"
@@ -144,6 +145,7 @@ public:
 	void init(void)
 	{
 		addChild(new deqp::ShaderLibraryGroup(m_context, "declarations", "Declaration Tests", "gl30/declarations.test"));
+		addChild(new deqp::GLSLVectorConstructorTests(m_context, glu::GLSL_VERSION_330));
 	}
 };
 
