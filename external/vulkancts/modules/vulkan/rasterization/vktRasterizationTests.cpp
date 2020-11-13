@@ -7289,6 +7289,55 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 		}
 	}
 
+	// .depth bias
+	{
+		tcu::TestCaseGroup* const	depthBias	= new tcu::TestCaseGroup(testCtx, "depth_bias", "Test depth bias");
+		static const char			dataDir[]	= "rasterization/depth_bias";
+
+		static const struct
+		{
+			std::string name;
+			vk::VkFormat format;
+			std::string description;
+		} cases [] =
+		{
+			{"d16_unorm",	vk::VK_FORMAT_D16_UNORM,			"Test depth bias with format D16_UNORM"},
+			{"d32_sfloat",	vk::VK_FORMAT_D32_SFLOAT,			"Test depth bias with format D32_SFLOAT"},
+			{"d24_unorm",	vk::VK_FORMAT_D24_UNORM_S8_UINT,	"Test depth bias with format D24_UNORM_S8_UINT"}
+		};
+
+		for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
+		{
+			const VkImageCreateInfo vkImageCreateInfo = {
+				VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,			// sType
+				nullptr,										// pNext
+				0,												// flags
+				VK_IMAGE_TYPE_2D,								// imageType
+				cases[i].format,								// format
+				{250, 250, 1},									// extent
+				1,												// mipLevels
+				1,												// arrayLayers
+				VK_SAMPLE_COUNT_1_BIT,							// samples
+				VK_IMAGE_TILING_OPTIMAL,						// tiling
+				VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,	// usage
+				VK_SHARING_MODE_EXCLUSIVE,						// sharingMode
+				0,												// queueFamilyIndexCount
+				nullptr,										// pQueueFamilyIndices
+				VK_IMAGE_LAYOUT_UNDEFINED,						// initialLayout
+			};
+
+			std::vector<std::string>		requirements = std::vector<std::string>(0);
+			std::vector<VkImageCreateInfo>	imageRequirements;
+			imageRequirements.push_back(vkImageCreateInfo);
+			const std::string			fileName	= cases[i].name + ".amber";
+			cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].name.c_str(), cases[i].description.c_str(), dataDir, fileName, requirements, imageRequirements);
+
+			depthBias->addChild(testCase);
+		}
+
+		rasterizationTests->addChild(depthBias);
+	}
+
 	// Fragment shader side effects.
 	{
 		rasterizationTests->addChild(createFragSideEffectsTests(testCtx));
