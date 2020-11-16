@@ -2850,7 +2850,7 @@ tcu::TestStatus deviceMandatoryFeatures(Context& context)
 	return tcu::TestStatus::fail("Not all mandatory features are supported ( see: vkspec.html#features-requirements )");
 }
 
-VkFormatFeatureFlags getRequiredOptimalTilingFeatures (VkFormat format)
+VkFormatFeatureFlags getBaseRequiredOptimalTilingFeatures (VkFormat format)
 {
 	struct Formatpair
 	{
@@ -3188,76 +3188,6 @@ VkFormatFeatureFlags getRequiredBufferFeatures (VkFormat format)
 	return flags;
 }
 
-tcu::TestStatus formatProperties (Context& context, VkFormat format)
-{
-	TestLog&					log					= context.getTestContext().getLog();
-	const VkFormatProperties	properties			= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
-	bool						allOk				= true;
-
-	// \todo [2017-05-16 pyry] This should be extended to cover for example COLOR_ATTACHMENT for depth formats etc.
-	// \todo [2017-05-18 pyry] Any other color conversion related features that can't be supported by regular formats?
-	const VkFormatFeatureFlags	extOptimalFeatures	= getRequiredOptimalExtendedTilingFeatures(context, format, properties.optimalTilingFeatures);
-
-	const VkFormatFeatureFlags	notAllowedFeatures	= VK_FORMAT_FEATURE_DISJOINT_BIT;
-
-	const struct
-	{
-		VkFormatFeatureFlags VkFormatProperties::*	field;
-		const char*									fieldName;
-		VkFormatFeatureFlags						requiredFeatures;
-	} fields[] =
-	{
-		{ &VkFormatProperties::linearTilingFeatures,	"linearTilingFeatures",		(VkFormatFeatureFlags)0											},
-		{ &VkFormatProperties::optimalTilingFeatures,	"optimalTilingFeatures",	getRequiredOptimalTilingFeatures(format) | extOptimalFeatures	},
-		{ &VkFormatProperties::bufferFeatures,			"bufferFeatures",			getRequiredBufferFeatures(format)								}
-	};
-
-	log << TestLog::Message << properties << TestLog::EndMessage;
-
-	for (int fieldNdx = 0; fieldNdx < DE_LENGTH_OF_ARRAY(fields); fieldNdx++)
-	{
-		const char* const				fieldName	= fields[fieldNdx].fieldName;
-		const VkFormatFeatureFlags		supported	= properties.*fields[fieldNdx].field;
-		const VkFormatFeatureFlags		required	= fields[fieldNdx].requiredFeatures;
-
-		if ((supported & required) != required)
-		{
-			log << TestLog::Message << "ERROR in " << fieldName << ":\n"
-									<< "  required: " << getFormatFeatureFlagsStr(required) << "\n  "
-									<< "  missing: " << getFormatFeatureFlagsStr(~supported & required)
-				<< TestLog::EndMessage;
-			allOk = false;
-		}
-
-		// Compressed formats have optional support for some features
-		if (isCompressedFormat(format) && supported & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)
-		{
-			const VkFormatFeatureFlags		required2	= VK_FORMAT_FEATURE_TRANSFER_SRC_BIT |  VK_FORMAT_FEATURE_TRANSFER_DST_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_BLIT_SRC_BIT;
-			if ((supported & required2) != required2)
-			{
-				log << TestLog::Message << "ERROR in " << fieldName << ":\n"
-					<< "  required: " << getFormatFeatureFlagsStr(required2) << "\n  "
-					<< "  missing: " << getFormatFeatureFlagsStr(~supported & required2)
-					<< TestLog::EndMessage;
-				allOk = false;
-			}
-		}
-
-		if ((supported & notAllowedFeatures) != 0)
-		{
-			log << TestLog::Message << "ERROR in " << fieldName << ":\n"
-									<< "  has: " << getFormatFeatureFlagsStr(supported & notAllowedFeatures)
-				<< TestLog::EndMessage;
-			allOk = false;
-		}
-	}
-
-	if (allOk)
-		return tcu::TestStatus::pass("Query and validation passed");
-	else
-		return tcu::TestStatus::fail("Required features not supported");
-}
-
 VkPhysicalDeviceSamplerYcbcrConversionFeatures getPhysicalDeviceSamplerYcbcrConversionFeatures (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
 {
 	VkPhysicalDeviceFeatures2						coreFeatures;
@@ -3300,98 +3230,129 @@ bool isYcbcrConversionSupported (Context& context)
 	return (ycbcrFeatures.samplerYcbcrConversion == VK_TRUE);
 }
 
-VkFormatFeatureFlags getAllowedYcbcrFormatFeatures (VkFormat format)
+VkFormatFeatureFlags getRequiredYcbcrFormatFeatures (Context& context, VkFormat format)
 {
-	DE_ASSERT(isYCbCrFormat(format));
+	bool req = isYcbcrConversionSupported(context) && (	format == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM ||
+														format == VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM);
 
-	VkFormatFeatureFlags	flags	= (VkFormatFeatureFlags)0;
-
-	// all formats *may* support these
-	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
-	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
-	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG;
-	flags |= VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
-	flags |= VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
-	flags |= VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT;
-	flags |= VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT;
-	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT;
-	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT;
-	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT;
-	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT;
-	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT;
-
-	// multi-plane formats *may* support DISJOINT_BIT
-	if (getPlaneCount(format) >= 2)
-		flags |= VK_FORMAT_FEATURE_DISJOINT_BIT;
-
-	if (isChromaSubsampled(format))
-		flags |= VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT;
-
-	return flags;
+	const VkFormatFeatureFlags	required	= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+											| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+											| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+											| VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT;
+	return req ? required : (VkFormatFeatureFlags)0;
 }
 
-tcu::TestStatus ycbcrFormatProperties (Context& context, VkFormat format)
+VkFormatFeatureFlags getRequiredOptimalTilingFeatures (Context& context, VkFormat format)
 {
-	DE_ASSERT(isYCbCrFormat(format));
-	// check if Ycbcr format enums are valid given the version and extensions
-	checkYcbcrApiSupport(context);
-
-	TestLog&					log						= context.getTestContext().getLog();
-	const VkFormatProperties	properties				= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
-	bool						allOk					= true;
-	const VkFormatFeatureFlags	allowedImageFeatures	= getAllowedYcbcrFormatFeatures(format);
-
-	const struct
+	if (isYCbCrFormat(format))
+		return getRequiredYcbcrFormatFeatures(context, format);
+	else
 	{
-		VkFormatFeatureFlags VkFormatProperties::*	field;
-		const char*									fieldName;
-		bool										requiredFeatures;
-		VkFormatFeatureFlags						allowedFeatures;
+		VkFormatFeatureFlags ret = getBaseRequiredOptimalTilingFeatures(format);
+
+		// \todo [2017-05-16 pyry] This should be extended to cover for example COLOR_ATTACHMENT for depth formats etc.
+		// \todo [2017-05-18 pyry] Any other color conversion related features that can't be supported by regular formats?
+		ret |= getRequiredOptimalExtendedTilingFeatures(context, format, ret);
+
+		// Compressed formats have optional support for some features
+		// TODO: Is this really correct? It looks like it should be checking the different compressed features
+		if (isCompressedFormat(format) && (ret & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+			ret |=	VK_FORMAT_FEATURE_TRANSFER_SRC_BIT |
+					VK_FORMAT_FEATURE_TRANSFER_DST_BIT |
+					VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
+					VK_FORMAT_FEATURE_BLIT_SRC_BIT;
+
+		return ret;
+	}
+}
+
+bool requiresYCbCrConversion(VkFormat format)
+{
+	return isYCbCrFormat(format) &&
+			format != VK_FORMAT_R10X6_UNORM_PACK16 && format != VK_FORMAT_R10X6G10X6_UNORM_2PACK16 &&
+			format != VK_FORMAT_R12X4_UNORM_PACK16 && format != VK_FORMAT_R12X4G12X4_UNORM_2PACK16;
+}
+
+VkFormatFeatureFlags getAllowedOptimalTilingFeatures (VkFormat format)
+{
+	// YCbCr formats only support a subset of format feature flags
+	const VkFormatFeatureFlags ycbcrAllows =
+		VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
+		VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT |
+		VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG |
+		VK_FORMAT_FEATURE_TRANSFER_SRC_BIT |
+		VK_FORMAT_FEATURE_TRANSFER_DST_BIT |
+		VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT |
+		VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT |
+		VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT |
+		VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT |
+		VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT |
+		VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT |
+		VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT |
+		VK_FORMAT_FEATURE_DISJOINT_BIT;
+
+	// By default everything is allowed.
+	VkFormatFeatureFlags allow = (VkFormatFeatureFlags)~0u;
+	// Formats for which SamplerYCbCrConversion is required may not support certain features.
+	if (requiresYCbCrConversion(format))
+		allow &= ycbcrAllows;
+	// single-plane formats *may not* support DISJOINT_BIT
+	if (!isYCbCrFormat(format) || getPlaneCount(format) == 1)
+		allow &= ~VK_FORMAT_FEATURE_DISJOINT_BIT;
+
+	return allow;
+}
+
+VkFormatFeatureFlags getAllowedBufferFeatures (VkFormat format)
+{
+	// TODO: Do we allow non-buffer flags in the bufferFeatures?
+	return requiresYCbCrConversion(format) ? (VkFormatFeatureFlags)0 : (VkFormatFeatureFlags)(~VK_FORMAT_FEATURE_DISJOINT_BIT);
+}
+
+tcu::TestStatus formatProperties (Context& context, VkFormat format)
+{
+	// check if Ycbcr format enums are valid given the version and extensions
+	if (isYCbCrFormat(format))
+		checkYcbcrApiSupport(context);
+
+	TestLog&					log			= context.getTestContext().getLog();
+	const VkFormatProperties	properties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+	bool						allOk		= true;
+
+	const VkFormatFeatureFlags reqImg	= getRequiredOptimalTilingFeatures(context, format);
+	const VkFormatFeatureFlags reqBuf	= getRequiredBufferFeatures(format);
+	const VkFormatFeatureFlags allowImg	= getAllowedOptimalTilingFeatures(format);
+	const VkFormatFeatureFlags allowBuf	= getAllowedBufferFeatures(format);
+
+	const struct feature_req
+	{
+		const char*				fieldName;
+		VkFormatFeatureFlags	supportedFeatures;
+		VkFormatFeatureFlags	requiredFeatures;
+		VkFormatFeatureFlags	allowedFeatures;
 	} fields[] =
 	{
-		{ &VkFormatProperties::linearTilingFeatures,	"linearTilingFeatures",		false,	allowedImageFeatures	},
-		{ &VkFormatProperties::optimalTilingFeatures,	"optimalTilingFeatures",	true,	allowedImageFeatures	},
-		{ &VkFormatProperties::bufferFeatures,			"bufferFeatures",			false,	(VkFormatFeatureFlags)0	}
+		{ "linearTilingFeatures",	properties.linearTilingFeatures,	(VkFormatFeatureFlags)0,	allowImg },
+		{ "optimalTilingFeatures",	properties.optimalTilingFeatures,	reqImg,						allowImg },
+		{ "bufferFeatures",			properties.bufferFeatures,			reqBuf,						allowBuf }
 	};
-	static const VkFormat		s_requiredBaseFormats[]	=
-	{
-		VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,
-		VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM
-	};
-	const bool					isRequiredBaseFormat	= isYcbcrConversionSupported(context) &&
-														  de::contains(DE_ARRAY_BEGIN(s_requiredBaseFormats), DE_ARRAY_END(s_requiredBaseFormats), format);
 
 	log << TestLog::Message << properties << TestLog::EndMessage;
 
 	for (int fieldNdx = 0; fieldNdx < DE_LENGTH_OF_ARRAY(fields); fieldNdx++)
 	{
-		const char* const				fieldName	= fields[fieldNdx].fieldName;
-		const VkFormatFeatureFlags		supported	= properties.*fields[fieldNdx].field;
-		const VkFormatFeatureFlags		allowed		= fields[fieldNdx].allowedFeatures;
+		const char* const			fieldName	= fields[fieldNdx].fieldName;
+		const VkFormatFeatureFlags	supported	= fields[fieldNdx].supportedFeatures;
+		const VkFormatFeatureFlags	required	= fields[fieldNdx].requiredFeatures;
+		const VkFormatFeatureFlags	allowed		= fields[fieldNdx].allowedFeatures;
 
-		if (isRequiredBaseFormat && fields[fieldNdx].requiredFeatures)
+		if ((supported & required) != required)
 		{
-			const VkFormatFeatureFlags	required	= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
-													| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
-													| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
-													| VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT;
-
-			if ((supported & required) != required)
-			{
-				log << TestLog::Message << "ERROR in " << fieldName << ":\n"
-										<< "  required: " << getFormatFeatureFlagsStr(required) << "\n  "
-										<< "  missing: " << getFormatFeatureFlagsStr(~supported & required)
-					<< TestLog::EndMessage;
-				allOk = false;
-			}
-
-			if ((supported & (VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT | VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT)) == 0)
-			{
-				log << TestLog::Message << "ERROR in " << fieldName << ":\n"
-										<< "  Either VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT or VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT required"
-					<< TestLog::EndMessage;
-				allOk = false;
-			}
+			log << TestLog::Message << "ERROR in " << fieldName << ":\n"
+									<< "  required: " << getFormatFeatureFlagsStr(required) << "\n  "
+									<< "  missing: " << getFormatFeatureFlagsStr(~supported & required)
+				<< TestLog::EndMessage;
+			allOk = false;
 		}
 
 		if ((supported & ~allowed) != 0)
@@ -3589,30 +3550,28 @@ void createFormatTests (tcu::TestCaseGroup* testGroup)
 
 	static const struct
 	{
-		VkFormat								begin;
-		VkFormat								end;
-		FunctionInstance1<VkFormat>::Function	testFunction;
+		VkFormat	begin;
+		VkFormat	end;
 	} s_formatRanges[] =
 	{
 		// core formats
-		{ (VkFormat)(VK_FORMAT_UNDEFINED+1),	VK_CORE_FORMAT_LAST,										formatProperties },
+		{ (VkFormat)(VK_FORMAT_UNDEFINED+1),	VK_CORE_FORMAT_LAST										},
 
 		// YCbCr formats
-		{ VK_FORMAT_G8B8G8R8_422_UNORM,			(VkFormat)(VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM+1),	ycbcrFormatProperties },
+		{ VK_FORMAT_G8B8G8R8_422_UNORM,			(VkFormat)(VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM+1)	},
 	};
 
 	for (int rangeNdx = 0; rangeNdx < DE_LENGTH_OF_ARRAY(s_formatRanges); ++rangeNdx)
 	{
 		const VkFormat								rangeBegin		= s_formatRanges[rangeNdx].begin;
 		const VkFormat								rangeEnd		= s_formatRanges[rangeNdx].end;
-		const FunctionInstance1<VkFormat>::Function	testFunction	= s_formatRanges[rangeNdx].testFunction;
 
 		for (VkFormat format = rangeBegin; format != rangeEnd; format = (VkFormat)(format+1))
 		{
 			const char* const	enumName	= getFormatName(format);
 			const string		caseName	= de::toLower(string(enumName).substr(10));
 
-			addFunctionCase(testGroup, caseName, enumName, testFunction, format);
+			addFunctionCase(testGroup, caseName, enumName, formatProperties, format);
 		}
 	}
 
