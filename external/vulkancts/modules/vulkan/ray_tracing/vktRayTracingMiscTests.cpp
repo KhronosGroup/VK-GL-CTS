@@ -108,6 +108,7 @@ enum class TestType
 	NO_DUPLICATE_ANY_HIT,
 	REPORT_INTERSECTION_RESULT,
 	RAY_PAYLOAD_IN,
+	RECURSIVE_TRACES_0,
 	RECURSIVE_TRACES_1,
 	RECURSIVE_TRACES_2,
 	RECURSIVE_TRACES_3,
@@ -6023,7 +6024,6 @@ public:
 
 	deUint32 getResultBufferSize() const final
 	{
-		DE_ASSERT(m_depthToUse	!= 0);
 		DE_ASSERT(m_depthToUse  <  30); //< due to how nItemsExpectedPerRay is stored.
 		DE_ASSERT(m_nRaysToTest	!= 0);
 
@@ -6063,8 +6063,6 @@ public:
 	bool init(	vkt::Context&			/* context    */,
 				RayTracingProperties*	/* rtPropsPtr */) final
 	{
-		DE_ASSERT(m_depthToUse != 0);
-
 		m_specializationEntry.constantID	= 1;
 		m_specializationEntry.offset		= 0;
 		m_specializationEntry.size			= sizeof(deUint32);
@@ -6346,6 +6344,8 @@ public:
 		}
 
 		{
+			const std::string rayPayloadDefinition = ((m_depthToUse == 0u) ? "" : rayPayloadDefinitionVec.at(0));
+
 			std::stringstream css;
 
 			css <<
@@ -6356,7 +6356,7 @@ public:
 				"layout(set = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
 				"\n"
 				+	de::toString(resultBufferDefinition)
-				+	rayPayloadDefinitionVec.at(0)			+
+				+	rayPayloadDefinition +
 				"void main()\n"
 				"{\n"
 				"    uint  nInvocation  = gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;\n"
@@ -6383,12 +6383,14 @@ public:
 				"        resultItems[nItem].shaderStage      = 3;\n"
 				"    }\n"
 				"\n"
-				"    currentDepth      = 0;\n"
-				"    currentNOriginRay = nInvocation;\n"
-				"    currentResultItem = nItem;\n"
-				"\n"
-				"    traceRayEXT(accelerationStructure, rayFlags, cullMask, 0, 0, 0, origin, tmin, directionHit,  tmax, 0);\n"
-				"    traceRayEXT(accelerationStructure, rayFlags, cullMask, 0, 0, 0, origin, tmin, directionMiss, tmax, 0);\n"
+				+ ((m_depthToUse == 0u) ? "" :
+					"    currentDepth      = 0;\n"
+					"    currentNOriginRay = nInvocation;\n"
+					"    currentResultItem = nItem;\n"
+					"\n"
+					"    traceRayEXT(accelerationStructure, rayFlags, cullMask, 0, 0, 0, origin, tmin, directionHit,  tmax, 0);\n"
+					"    traceRayEXT(accelerationStructure, rayFlags, cullMask, 0, 0, 0, origin, tmin, directionMiss, tmax, 0);\n"
+				) +
 				"}\n";
 
 			programCollection.glslSources.add("rgen") << glu::RaygenSource(css.str() ) << buildOptions;
@@ -6496,7 +6498,7 @@ public:
 				}
 			}
 
-			if (resultItemPtr->depth >= m_depthToUse)
+			if (resultItemPtr->depth >= m_depthToUse && m_depthToUse > 0u)
 			{
 				DE_ASSERT(resultItemPtr->depth < m_depthToUse);
 
@@ -6601,14 +6603,14 @@ public:
 						if (	currentResultItemPtr->stage == VK_SHADER_STAGE_RAYGEN_BIT_KHR ||
 								currentNLevel				!= m_depthToUse - 1)
 						{
-							if (currentResultItemPtr->childCHitNodePtr == nullptr)
+							if (currentResultItemPtr->childCHitNodePtr == nullptr && m_depthToUse > 0u)
 							{
 								DE_ASSERT(currentResultItemPtr->childCHitNodePtr != nullptr);
 
 								goto end;
 							}
 
-							if (currentResultItemPtr->childMissNodePtr == nullptr)
+							if (currentResultItemPtr->childMissNodePtr == nullptr && m_depthToUse > 0u)
 							{
 								DE_ASSERT(currentResultItemPtr->childMissNodePtr != nullptr);
 
@@ -7568,10 +7570,13 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 			}
 		}
 
-		missShaderStackSize = deviceInterface.getRayTracingShaderGroupStackSizeKHR(	deviceVk,
-																					*pipelineVkPtr,
-																					static_cast<deUint32>(ShaderGroups::MISS_GROUP),
-																					VK_SHADER_GROUP_SHADER_GENERAL_KHR);
+		if (nMissGroups > 0u)
+		{
+			missShaderStackSize = deviceInterface.getRayTracingShaderGroupStackSizeKHR(	deviceVk,
+																						*pipelineVkPtr,
+																						static_cast<deUint32>(ShaderGroups::MISS_GROUP),
+																						VK_SHADER_GROUP_SHADER_GENERAL_KHR);
+		}
 
 		for (deUint32 nCallableShader = 0; nCallableShader < static_cast<deUint32>(callableShaderCollectionNames.size() ); ++nCallableShader)
 		{
@@ -7623,39 +7628,47 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 																								0u,																								/* opaqueCaptureAddress        */
 																								0u);																							/* shaderBindingTableOffset    */
 
-	const void*	missShaderBindingGroupShaderRecordDataPtr	= m_testPtr->getShaderRecordData(					ShaderGroups::MISS_GROUP);
-	const auto	missShaderBindingTablePtr					= rayTracingPipelinePtr->createShaderBindingTable(	deviceInterface,
-																												deviceVk,
-																												*pipelineVkPtr,
-																												allocator,
-																												m_rayTracingPropsPtr->getShaderGroupHandleSize		(),
-																												m_rayTracingPropsPtr->getShaderGroupBaseAlignment	(),
-																												missGroupIndex,
-																												nMissGroups,																					/* groupCount                  */
-																												0u,																								/* additionalBufferCreateFlags */
-																												0u,																								/* additionalBufferUsageFlags  */
-																												MemoryRequirement::Any,
-																												0u,																								/* opaqueCaptureAddress       */
-																												0u,																								/* shaderBindingTableOffset   */
-																												m_testPtr->getShaderRecordSize(ShaderGroups::MISS_GROUP),
-																												&missShaderBindingGroupShaderRecordDataPtr);
+	auto missShaderBindingTablePtr = de::MovePtr<BufferWithMemory>();
+	if (nMissGroups > 0u)
+	{
+		const void*	missShaderBindingGroupShaderRecordDataPtr	= m_testPtr->getShaderRecordData(					ShaderGroups::MISS_GROUP);
+		missShaderBindingTablePtr								= rayTracingPipelinePtr->createShaderBindingTable(	deviceInterface,
+																													deviceVk,
+																													*pipelineVkPtr,
+																													allocator,
+																													m_rayTracingPropsPtr->getShaderGroupHandleSize		(),
+																													m_rayTracingPropsPtr->getShaderGroupBaseAlignment	(),
+																													missGroupIndex,
+																													nMissGroups,																					/* groupCount                  */
+																													0u,																								/* additionalBufferCreateFlags */
+																													0u,																								/* additionalBufferUsageFlags  */
+																													MemoryRequirement::Any,
+																													0u,																								/* opaqueCaptureAddress       */
+																													0u,																								/* shaderBindingTableOffset   */
+																													m_testPtr->getShaderRecordSize(ShaderGroups::MISS_GROUP),
+																													&missShaderBindingGroupShaderRecordDataPtr);
+	}
 
-	const void*	hitShaderBindingGroupShaderRecordDataPtr	= m_testPtr->getShaderRecordData(					ShaderGroups::HIT_GROUP);
-	const auto	hitShaderBindingTablePtr					= rayTracingPipelinePtr->createShaderBindingTable(	deviceInterface,
-																												deviceVk,
-																												*pipelineVkPtr,
-																												allocator,
-																												m_rayTracingPropsPtr->getShaderGroupHandleSize		(),
-																												m_rayTracingPropsPtr->getShaderGroupBaseAlignment	(),
-																												hitGroupIndex,
-																												nHitGroups,																						/* groupCount                  */
-																												0u,																								/* additionalBufferCreateFlags */
-																												0u,																								/* additionalBufferUsageFlags  */
-																												MemoryRequirement::Any,
-																												0u,																								/* opaqueCaptureAddress       */
-																												0u,																								/* shaderBindingTableOffset   */
-																												m_testPtr->getShaderRecordSize(ShaderGroups::HIT_GROUP),
-																												&hitShaderBindingGroupShaderRecordDataPtr);
+	auto hitShaderBindingTablePtr = de::MovePtr<BufferWithMemory>();
+	if (nHitGroups > 0u)
+	{
+		const void*	hitShaderBindingGroupShaderRecordDataPtr	= m_testPtr->getShaderRecordData(					ShaderGroups::HIT_GROUP);
+		hitShaderBindingTablePtr								= rayTracingPipelinePtr->createShaderBindingTable(	deviceInterface,
+																													deviceVk,
+																													*pipelineVkPtr,
+																													allocator,
+																													m_rayTracingPropsPtr->getShaderGroupHandleSize		(),
+																													m_rayTracingPropsPtr->getShaderGroupBaseAlignment	(),
+																													hitGroupIndex,
+																													nHitGroups,																						/* groupCount                  */
+																													0u,																								/* additionalBufferCreateFlags */
+																													0u,																								/* additionalBufferUsageFlags  */
+																													MemoryRequirement::Any,
+																													0u,																								/* opaqueCaptureAddress       */
+																													0u,																								/* shaderBindingTableOffset   */
+																													m_testPtr->getShaderRecordSize(ShaderGroups::HIT_GROUP),
+																													&hitShaderBindingGroupShaderRecordDataPtr);
+	}
 
 	{
 		const auto resultBufferCreateInfo	= makeBufferCreateInfo(	resultBufferSize,
@@ -7764,18 +7777,24 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 																														0 /* offset */),
 																								m_rayTracingPropsPtr->getShaderGroupHandleSize(),
 																								m_rayTracingPropsPtr->getShaderGroupHandleSize() );
-			const auto	missShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(	deviceInterface,
-																														deviceVk,
-																														missShaderBindingTablePtr->get(),
-																														0 /* offset */),
-																								m_rayTracingPropsPtr->getShaderGroupHandleSize() + m_testPtr->getShaderRecordSize(ShaderGroups::MISS_GROUP),
-																								m_rayTracingPropsPtr->getShaderGroupHandleSize());
-			const auto	hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(	deviceInterface,
-																														deviceVk,
-																														hitShaderBindingTablePtr->get(),
-																														0 /* offset */),
-																								m_rayTracingPropsPtr->getShaderGroupHandleSize() + m_testPtr->getShaderRecordSize(ShaderGroups::HIT_GROUP),
-																								m_rayTracingPropsPtr->getShaderGroupHandleSize() );
+			const auto	missShaderBindingTableRegion		= ((nMissGroups > 0u)	?	makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(	deviceInterface,
+																																					deviceVk,
+																																					missShaderBindingTablePtr->get(),
+																																					0 /* offset */),
+																															m_rayTracingPropsPtr->getShaderGroupHandleSize() + m_testPtr->getShaderRecordSize(ShaderGroups::MISS_GROUP),
+																															m_rayTracingPropsPtr->getShaderGroupHandleSize())
+																					:	makeStridedDeviceAddressRegionKHR(DE_NULL,
+																														  0, /* stride */
+																														  0  /* size   */));
+			const auto	hitShaderBindingTableRegion			= ((nHitGroups > 0u)	?	makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(	deviceInterface,
+																																					deviceVk,
+																																					hitShaderBindingTablePtr->get(),
+																																					0 /* offset */),
+																															m_rayTracingPropsPtr->getShaderGroupHandleSize() + m_testPtr->getShaderRecordSize(ShaderGroups::HIT_GROUP),
+																															m_rayTracingPropsPtr->getShaderGroupHandleSize() )
+																					:	makeStridedDeviceAddressRegionKHR(DE_NULL,
+																														  0, /* stride */
+																														  0  /* size   */));
 
 			const auto	callableShaderBindingTableRegion	=	(callableShaderCollectionNames.size() > 0)	? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(	deviceInterface,
 																																										deviceVk,
@@ -8044,6 +8063,7 @@ void RayTracingTestCase::initPrograms(SourceCollections& programCollection)	cons
 			break;
 		}
 
+		case TestType::RECURSIVE_TRACES_0:
 		case TestType::RECURSIVE_TRACES_1:
 		case TestType::RECURSIVE_TRACES_2:
 		case TestType::RECURSIVE_TRACES_3:
@@ -8074,7 +8094,9 @@ void RayTracingTestCase::initPrograms(SourceCollections& programCollection)	cons
 		case TestType::RECURSIVE_TRACES_28:
 		case TestType::RECURSIVE_TRACES_29:
 		{
-			const auto nLevels = static_cast<deUint32>(m_data.type) - static_cast<deUint32>(TestType::RECURSIVE_TRACES_1) + 1;
+			const auto nLevels	= ((m_data.type == TestType::RECURSIVE_TRACES_0)
+								? 0u
+								: (static_cast<deUint32>(m_data.type) - static_cast<deUint32>(TestType::RECURSIVE_TRACES_1) + 1));
 
 			m_testPtr.reset(
 				new RecursiveTracesTest(m_data.geometryType, m_data.asLayout, nLevels)
@@ -8243,6 +8265,7 @@ TestInstance* RayTracingTestCase::createInstance (Context& context) const
 			break;
 		}
 
+		case TestType::RECURSIVE_TRACES_0:
 		case TestType::RECURSIVE_TRACES_1:
 		case TestType::RECURSIVE_TRACES_2:
 		case TestType::RECURSIVE_TRACES_3:
@@ -8273,7 +8296,9 @@ TestInstance* RayTracingTestCase::createInstance (Context& context) const
 		case TestType::RECURSIVE_TRACES_28:
 		case TestType::RECURSIVE_TRACES_29:
 		{
-			const auto nLevels = static_cast<deUint32>(m_data.type) - static_cast<deUint32>(TestType::RECURSIVE_TRACES_1) + 1;
+			const auto nLevels	= ((m_data.type == TestType::RECURSIVE_TRACES_0)
+								? 0u
+								: (static_cast<deUint32>(m_data.type) - static_cast<deUint32>(TestType::RECURSIVE_TRACES_1) + 1));
 
 			if (m_testPtr == nullptr)
 			{
@@ -8626,6 +8651,16 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 	for (auto currentGeometryType = GeometryType::FIRST; currentGeometryType != GeometryType::COUNT; currentGeometryType = static_cast<GeometryType>(static_cast<deUint32>(currentGeometryType) + 1) )
 	{
 		const std::string newTestCaseName = "recursiveTraces_" + de::toString(getSuffixForGeometryType(currentGeometryType) ) + "_";
+
+		// 0 recursion levels.
+		{
+			auto newTestCasePtr = new RayTracingTestCase(	testCtx,
+															(newTestCaseName + "0").data(),
+															"Verifies that relevant shader stages can correctly read large ray payloads provided by raygen shader stage.",
+															CaseDef{TestType::RECURSIVE_TRACES_0, currentGeometryType, AccelerationStructureLayout::ONE_TL_ONE_BL_ONE_GEOMETRY});
+
+			miscGroupPtr->addChild(newTestCasePtr);
+		}
 
 		// TODO: for (deUint32 nLevels = 1; nLevels <= 29; ++nLevels)
 		for (deUint32 nLevels = 1; nLevels <= 15; ++nLevels)
