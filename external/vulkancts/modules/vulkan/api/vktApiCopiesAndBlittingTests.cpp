@@ -5990,6 +5990,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationK
 		params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 		params.allocationKind		= allocationKind;
+		params.extensionUse			= extensionUse;
 
 		for (deInt32 i = defaultFourthSize; i < defaultSize; i += defaultSize / 2)
 		{
@@ -6043,6 +6044,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationK
 		params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 		params.allocationKind		= allocationKind;
+		params.extensionUse			= extensionUse;
 
 		for (deInt32 i = 0; i < defaultFourthSize; i += defaultSixteenthSize)
 		{
@@ -9165,6 +9167,7 @@ void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, Allocation
 		params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 		params.allocationKind		= allocationKind;
+		params.extensionUse			= extensionUse;
 
 		CopyRegion	region;
 		for (int i = 0; i < defaultSize; i += defaultSize / 2)
@@ -9244,6 +9247,7 @@ void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, Allocation
 		params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 		params.allocationKind		= allocationKind;
+		params.extensionUse			= extensionUse;
 
 		CopyRegion	region;
 		for (int i = 0, j = 1; (i + defaultSixteenthSize / j < defaultFourthSize) && (defaultSixteenthSize > j); i += defaultSixteenthSize / j++)
