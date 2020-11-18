@@ -3163,6 +3163,28 @@ void addOpUnreachableAmberTests(tcu::TestCaseGroup& group, tcu::TestContext& tes
 	}
 }
 
+void addOpSwitchAmberTests(tcu::TestCaseGroup& group, tcu::TestContext& testCtx)
+{
+	static const char dataDir[] = "spirv_assembly/instruction/compute/switch";
+
+	struct Case
+	{
+		string	name;
+		string	desc;
+	};
+
+	static const Case cases[] =
+	{
+		{ "switch-case-to-merge-block",	"Test switch containing a case that jumps directly to the merge block"	},
+	};
+
+	for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
+	{
+		const string fileName = cases[i].name + ".amber";
+		group.addChild(cts_amber::createAmberTestCase(testCtx, cases[i].name.c_str(), cases[i].desc.c_str(), dataDir, fileName));
+	}
+}
+
 tcu::TestCaseGroup* createOpArrayLengthComputeGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group		(new tcu::TestCaseGroup(testCtx, "oparraylength", "Test the OpArrayLength instruction"));
@@ -7936,6 +7958,8 @@ tcu::TestCaseGroup* createSwitchBlockOrderTests(tcu::TestContext& testCtx)
 	outputColors[3]			= RGBA(51,  153, 229, 255);
 
 	createTestsForAllStages("out_of_order", inputColors, outputColors, fragments, group.get());
+
+	addOpSwitchAmberTests(*group, testCtx);
 
 	return group.release();
 }
