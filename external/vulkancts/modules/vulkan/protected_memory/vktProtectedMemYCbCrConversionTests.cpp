@@ -495,7 +495,8 @@ void logBoundImages (tcu::TestLog& log, const tcu::UVec2 size, const std::vector
 bool validateImage (ProtectedContext&							ctx,
 					 const std::vector<YCbCrValidationData>&	refData,
 					 const vk::VkSampler						sampler,
-					 const vk::VkImageView						imageView)
+					 const vk::VkImageView						imageView,
+					 const deUint32								combinedSamplerDescriptorCount)
 {
 	{
 		tcu::TestLog&	log	(ctx.getTestContext().getLog());
@@ -546,7 +547,7 @@ bool validateImage (ProtectedContext&							ctx,
 		.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT)
 		.build(vk, device));
 	const vk::Unique<vk::VkDescriptorPool>		descriptorPool(vk::DescriptorPoolBuilder()
-		.addType(vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1u)
+		.addType(vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, combinedSamplerDescriptorCount)
 		.addType(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u)
 		.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u)
 		.build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
@@ -821,7 +822,8 @@ void renderYCbCrToColor (ProtectedContext&							ctx,
 						 const vk::VkImage							colorImage,
 						 const vk::VkImageView						colorImageView,
 						 const std::vector<YCbCrValidationData>&	referenceData,
-						 const std::vector<tcu::Vec2>&				posCoords)
+						 const std::vector<tcu::Vec2>&				posCoords,
+						 const deUint32								combinedSamplerDescriptorCount)
 {
 	const vk::DeviceInterface&					vk					= ctx.getDeviceInterface();
 	const vk::VkDevice							device				= ctx.getDevice();
@@ -839,7 +841,7 @@ void renderYCbCrToColor (ProtectedContext&							ctx,
 																		.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, vk::VK_SHADER_STAGE_ALL)
 																		.build(vk, device));
 	const vk::Unique<vk::VkDescriptorPool>		descriptorPool		(vk::DescriptorPoolBuilder()
-																		.addType(vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1u)
+																		.addType(vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, combinedSamplerDescriptorCount)
 																		.addType(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u)
 																		.build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 	const vk::Unique<vk::VkDescriptorSet>		descriptorSet		(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
@@ -1182,6 +1184,31 @@ tcu::TestStatus conversionTest (Context& context, TestConfig config)
 																							   *conversion));
 	const vk::Unique<vk::VkImageView>					ycbcrImageView			(createImageView(vk, device, **ycbcrImage, config.format, *conversion));
 
+	deUint32											combinedSamplerDescriptorCount = 1;
+	{
+		const vk::VkPhysicalDeviceImageFormatInfo2			imageFormatInfo				=
+		{
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// sType
+			DE_NULL,													// pNext
+			config.format,												// format
+			vk::VK_IMAGE_TYPE_2D,										// type
+			vk::VK_IMAGE_TILING_OPTIMAL,								// tiling
+			vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+			vk::VK_IMAGE_USAGE_SAMPLED_BIT,								// usage
+			ycbcrImageFlags												// flags
+		};
+
+		vk::VkSamplerYcbcrConversionImageFormatProperties	samplerYcbcrConversionImage = {};
+		samplerYcbcrConversionImage.sType = vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
+		samplerYcbcrConversionImage.pNext = DE_NULL;
+
+		vk::VkImageFormatProperties2						imageFormatProperties		= {};
+		imageFormatProperties.sType = vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
+		imageFormatProperties.pNext = &samplerYcbcrConversionImage;
+
+		VK_CHECK(context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo, &imageFormatProperties));
+		combinedSamplerDescriptorCount = samplerYcbcrConversionImage.combinedImageSamplerDescriptorCount;
+	}
 
 	// Input attributes
 	std::vector<tcu::Vec2>								texCoords;
@@ -1244,14 +1271,14 @@ tcu::TestStatus conversionTest (Context& context, TestConfig config)
 		const vk::Unique<vk::VkImageView>			colorImageView		(createImageView(ctx, **colorImage, s_colorFormat));
 		const vk::Unique<vk::VkSampler>				colorSampler		(makeSampler(vk, device));
 
-		renderYCbCrToColor(ctx, size, *ycbcrSampler, *ycbcrImageView, **colorImage, *colorImageView, referenceData, posCoords);
+		renderYCbCrToColor(ctx, size, *ycbcrSampler, *ycbcrImageView, **colorImage, *colorImageView, referenceData, posCoords, combinedSamplerDescriptorCount);
 
-		if (!validateImage(ctx, colorReferenceData, *colorSampler, *colorImageView))
+		if (!validateImage(ctx, colorReferenceData, *colorSampler, *colorImageView, combinedSamplerDescriptorCount))
 			return tcu::TestStatus::fail("YCbCr image conversion via fragment shader failed");
 	}
 	else if (config.shaderType == glu::SHADERTYPE_COMPUTE)
 	{
-		if (!validateImage(ctx, referenceData, *ycbcrSampler, *ycbcrImageView))
+		if (!validateImage(ctx, referenceData, *ycbcrSampler, *ycbcrImageView, combinedSamplerDescriptorCount))
 			return tcu::TestStatus::fail("YCbCr image conversion via compute shader failed");
 	}
 	else
