@@ -3180,8 +3180,8 @@ void GeometryShaderMaxCombinedTextureUnitsTest::prepareProgramInput()
 	/* Prepare texture storage and fill data */
 	for (int i = 0; i < m_n_texture_units; ++i)
 	{
-		/* unique intensity equal to index of the texture */
-		m_textures[i].data = i;
+		/* Reset texture data to 0 after each 16 iterations */
+		m_textures[i].data = i % 16;
 
 		/* Generate and bind texture */
 		gl.genTextures(1, &m_textures[i].texture_id);
