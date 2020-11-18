@@ -3503,10 +3503,10 @@ static VkBorderColor mapBorderColor (tcu::TextureChannelClass channelClass, cons
 
 VkSamplerCreateInfo mapSampler (const tcu::Sampler& sampler, const tcu::TextureFormat& format, float minLod, float maxLod, bool unnormal)
 {
-	const bool					compareEnabled	= (sampler.compare != tcu::Sampler::COMPAREMODE_NONE);
-	const VkCompareOp			compareOp		= (compareEnabled) ? (mapCompareMode(sampler.compare)) : (VK_COMPARE_OP_ALWAYS);
-	const VkBorderColor			borderColor		= mapBorderColor(getTextureChannelClass(format.type), sampler.borderColor);
-	const bool					isMipmapEnabled	= (sampler.minFilter != tcu::Sampler::NEAREST && sampler.minFilter != tcu::Sampler::LINEAR);
+	const bool			compareEnabled	= (sampler.compare != tcu::Sampler::COMPAREMODE_NONE);
+	const VkCompareOp	compareOp		= (compareEnabled) ? (mapCompareMode(sampler.compare)) : (VK_COMPARE_OP_ALWAYS);
+	const VkBorderColor	borderColor		= mapBorderColor(getTextureChannelClass(format.type), sampler.borderColor);
+	const bool			isMipmapEnabled = (sampler.minFilter != tcu::Sampler::NEAREST && sampler.minFilter != tcu::Sampler::LINEAR && sampler.minFilter != tcu::Sampler::CUBIC);
 
 	const VkSamplerCreateInfo	createInfo		=
 	{
