@@ -144,7 +144,8 @@ enum ValueId
 	V_DOT_RTE_RESULT,
 
 	// non comon results of some operation - corner cases
-	V_MINUS_ONE_OR_CLOSE,			// value used only fur fp16 subtraction result of preserved denorm and one
+	V_ZERO_OR_DENORM_TIMES_TWO,		// fp16 addition of non-flushed denorm with itself (or equivalent dot-product or vector-matrix multiply)
+	V_MINUS_ONE_OR_CLOSE,			// value used only for fp16 subtraction result of preserved denorm and one
 	V_PI_DIV_2,
 	V_ZERO_OR_MINUS_ZERO,			// both +0 and -0 are accepted
 	V_ZERO_OR_ONE,					// both +0 and 1 are accepted
@@ -967,19 +968,22 @@ TypeTestResults<deFloat16>::TypeTestResults()
 	// to those that return denorm as those are the ones affected by tested extension
 	const BinaryCase binaryOpFTZArr[] = {
 		//operation		den op one		den op den		den op inf		den op nan
-		{ O_ADD,		V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
+		{ O_ADD,		V_ONE,			V_ZERO_OR_DENORM_TIMES_TWO,
+														V_INF,			V_UNUSED },
 		{ O_SUB,		V_MINUS_ONE,	V_ZERO,			V_MINUS_INF,	V_UNUSED },
 		{ O_MUL,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
 		{ O_DIV,		V_ZERO,			V_UNUSED,		V_ZERO,			V_UNUSED },
 		{ O_REM,		V_ZERO,			V_UNUSED,		V_UNUSED,		V_UNUSED },
 		{ O_MOD,		V_ZERO,			V_UNUSED,		V_UNUSED,		V_UNUSED },
 		{ O_VEC_MUL_S,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_VEC_MUL_M,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ O_VEC_MUL_M,	V_ZERO_OR_DENORM_TIMES_TWO,
+										V_ZERO,			V_UNUSED,		V_UNUSED },
 		{ O_MAT_MUL_S,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
 		{ O_MAT_MUL_V,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
 		{ O_MAT_MUL_M,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
 		{ O_OUT_PROD,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_DOT,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ O_DOT,		V_ZERO_OR_DENORM_TIMES_TWO,
+										V_ZERO,			V_UNUSED,		V_UNUSED },
 		{ O_ATAN2,		V_ZERO,			V_UNUSED,		V_ZERO,			V_UNUSED },
 		{ O_POW,		V_ZERO,			V_UNUSED,		V_ZERO,			V_UNUSED },
 		{ O_MIX,		V_HALF,			V_ZERO,			V_INF,			V_UNUSED },
@@ -2505,6 +2509,12 @@ bool compareBytes(vector<deUint8>& expectedBytes, AllocationSp outputAlloc, Test
 		return isZeroOrOtherValue<TYPE, FLOAT_TYPE>(returnedFloat, V_CONV_DENORM_SMALLER, log);
 	if (expectedValueId == V_ZERO_OR_FP32_DENORM_TO_FP64)
 		return isZeroOrOtherValue<TYPE, FLOAT_TYPE>(returnedFloat, V_CONV_DENORM_BIGGER, log);
+	if (expectedValueId == V_ZERO_OR_DENORM_TIMES_TWO)
+	{
+		// this expected value is only needed for fp16
+		DE_ASSERT(returnedFloat.EXPONENT_BIAS == 15);
+		return isZeroOrOtherValue<TYPE, FLOAT_TYPE>(returnedFloat, V_DENORM_TIMES_TWO, log);
+	}
 	if (expectedValueId == V_MINUS_ONE_OR_CLOSE)
 	{
 		// this expected value is only needed for fp16
@@ -3436,7 +3446,7 @@ void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo&	testCas
 
 		addArgs[0]					= V_DENORM;
 		addArgs[1]					= V_DENORM;
-		fp16resultValue				= fp16DenormPreserve ? V_DENORM_TIMES_TWO : V_ZERO;
+		fp16resultValue				= fp16DenormPreserve ? V_DENORM_TIMES_TWO : V_ZERO_OR_DENORM_TIMES_TWO;
 		fp32resultValue				= fp32DenormPreserve ? V_DENORM_TIMES_TWO : V_ZERO;
 		fp64resultValue				= fp64DenormPreserve ? V_DENORM_TIMES_TWO : V_ZERO;
 
