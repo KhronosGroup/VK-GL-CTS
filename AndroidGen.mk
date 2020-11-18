@@ -116,6 +116,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/descriptor_indexing/vktDescriptorSetsIndexingTestsUtils.cpp \
 	external/vulkancts/modules/vulkan/device_group/vktDeviceGroupRendering.cpp \
 	external/vulkancts/modules/vulkan/draw/vktBasicDrawTests.cpp \
+	external/vulkancts/modules/vulkan/draw/vktDrawAhbTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawBaseClass.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawBufferObjectUtil.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawConcurrentTests.cpp \

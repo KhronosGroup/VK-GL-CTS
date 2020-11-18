@@ -112,7 +112,7 @@ ImageViewCreateInfo::ImageViewCreateInfo (vk::VkImage					_image,
 			break;
 	}
 
-	subresourceRange = ImageSubresourceRange(aspectFlags);;
+	subresourceRange = ImageSubresourceRange(aspectFlags);
 	flags = _flags;
 }
 

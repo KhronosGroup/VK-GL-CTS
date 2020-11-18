@@ -43,6 +43,7 @@
 #include "vktDrawExplicitVertexParameterTests.hpp"
 #include "vktDrawOutputLocationTests.hpp"
 #include "vktDrawDepthClampTests.hpp"
+#include "vktDrawAhbTests.hpp"
 
 namespace vkt
 {
@@ -75,6 +76,7 @@ void createChildren (tcu::TestCaseGroup* group)
 	group->addChild(createExplicitVertexParameterTests	(testCtx));
 	group->addChild(createOutputLocationTests	        (testCtx));
 	group->addChild(createDepthClampTests				(testCtx));
+	group->addChild(createAhbTests						(testCtx));
 }
 
 } // anonymous

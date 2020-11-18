@@ -48,6 +48,8 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawOutputLocationTests.hpp
 	vktDrawDepthClampTests.cpp
 	vktDrawDepthClampTests.hpp
+	vktDrawAhbTests.cpp
+	vktDrawAhbTests.hpp
 )
 
 set(DEQP_VK_DRAW_LIBS
