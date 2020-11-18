@@ -217,6 +217,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMakeUtil.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMatchedAttachmentsTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMaxVaryingsTests.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineMiscTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampleBase.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampleBaseResolve.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampleBaseResolveAndPerSampleFetch.cpp \
@@ -241,7 +242,6 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineTimestampTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexInputTests.cpp \
-	external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexOnlyTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexUtil.cpp \
 	external/vulkancts/modules/vulkan/postmortem/vktPostmortemShaderTimeoutTests.cpp \
 	external/vulkancts/modules/vulkan/postmortem/vktPostmortemTests.cpp \

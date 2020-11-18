@@ -76,8 +76,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineVertexInputTests.hpp
 	vktPipelineTimestampTests.cpp
 	vktPipelineTimestampTests.hpp
-	vktPipelineVertexOnlyTests.cpp
-	vktPipelineVertexOnlyTests.hpp
+	vktPipelineMiscTests.cpp
+	vktPipelineMiscTests.hpp
 	vktPipelineVertexUtil.cpp
 	vktPipelineVertexUtil.hpp
 	vktPipelineCacheTests.cpp

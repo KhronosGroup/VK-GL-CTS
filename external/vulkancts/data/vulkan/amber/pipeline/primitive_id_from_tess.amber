@@ -1,0 +1,114 @@
+#!amber
+#
+# Copyright 2020 The Khronos Group Inc.
+# Copyright 2020 Valve Corporation.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+DEVICE_FEATURE geometryShader
+DEVICE_FEATURE tessellationShader
+
+SHADER vertex vert GLSL
+#version 450
+layout (location=0) in vec4 in_pos;
+void main(void)
+{
+    gl_Position = in_pos;
+}
+END
+
+SHADER tessellation_control tesc GLSL
+#version 450
+layout (vertices = 3) out;
+void main(void)
+{
+    gl_TessLevelInner[0] = 1.0;
+    gl_TessLevelInner[1] = 1.0;
+    gl_TessLevelOuter[0] = 1.0;
+    gl_TessLevelOuter[1] = 1.0;
+    gl_TessLevelOuter[2] = 1.0;
+    gl_TessLevelOuter[3] = 1.0;
+
+    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
+}
+END
+
+SHADER tessellation_evaluation tese GLSL
+#version 450
+layout (triangles, fractional_odd_spacing, cw) in;
+void main(void)
+{
+    gl_Position = (gl_TessCoord.x * gl_in[0].gl_Position) +
+                  (gl_TessCoord.y * gl_in[1].gl_Position) +
+                  (gl_TessCoord.z * gl_in[2].gl_Position);
+}
+END
+
+SHADER fragment frag GLSL
+#version 450
+layout (location=0) out vec4 out_color;
+void main(void)
+{
+    vec4 primitive_color;
+    switch (gl_PrimitiveID) {
+        case 0:
+        case 1:
+            primitive_color = vec4(0, 0, 1, 1);
+            break;
+        case 2:
+        case 3:
+            primitive_color = vec4(1, 0, 1, 1);
+            break;
+        default:
+            primitive_color = vec4(0, 0, 0, 1);
+            break;
+    }
+    out_color = primitive_color;
+}
+END
+
+BUFFER position DATA_TYPE vec4<float> DATA
+-1 -1 0 1
+ 1 -1 0 1
+-1  0 0 1
+
+-1  0 0 1
+ 1 -1 0 1
+ 1  0 0 1
+
+-1  0 0 1
+ 1  0 0 1
+-1  1 0 1
+
+-1  1 0 1
+ 1  0 0 1
+ 1  1 0 1
+
+END
+
+BUFFER framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics graphics_pipeline
+  ATTACH vert
+  ATTACH tesc
+  ATTACH tese
+  ATTACH frag
+  VERTEX_DATA position LOCATION 0
+  BIND BUFFER framebuffer AS color LOCATION 0
+END
+
+CLEAR_COLOR graphics_pipeline 255 255 255 255
+CLEAR graphics_pipeline
+RUN graphics_pipeline DRAW_ARRAY AS PATCH_LIST START_IDX 0 COUNT 12
+EXPECT framebuffer IDX 0 0   SIZE 250 125 EQ_RGBA 0   0 255 255
+EXPECT framebuffer IDX 0 125 SIZE 250 125 EQ_RGBA 255 0 255 255
