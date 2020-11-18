@@ -575,7 +575,8 @@ void BottomLevelAccelerationStructure::setGeometryData (const std::vector<tcu::V
 	addGeometry(geometryData, triangles, geometryFlags);
 }
 
-void BottomLevelAccelerationStructure::setDefaultGeometryData (const VkShaderStageFlagBits	testStage)
+void BottomLevelAccelerationStructure::setDefaultGeometryData (const VkShaderStageFlagBits	testStage,
+															   const VkGeometryFlagsKHR		geometryFlags)
 {
 	bool					trianglesData	= false;
 	float					z				= 0.0f;
@@ -613,7 +614,7 @@ void BottomLevelAccelerationStructure::setDefaultGeometryData (const VkShaderSta
 
 	setGeometryCount(1u);
 
-	addGeometry(geometryData, trianglesData);
+	addGeometry(geometryData, trianglesData, geometryFlags);
 }
 
 void BottomLevelAccelerationStructure::setGeometryCount (const size_t geometryCount)

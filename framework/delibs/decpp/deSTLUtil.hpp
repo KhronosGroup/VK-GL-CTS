@@ -114,6 +114,13 @@ bool insert (M& map, const typename M::key_type& key, const typename M::mapped_t
 	return ret.second;
 }
 
+// Returns the total size in bytes for contiguous-storage containers.
+template <typename T>
+size_t dataSize (const T& container)
+{
+	return (container.size() * sizeof(typename T::value_type));
+}
+
 } // de
 
 #endif // _DESTLUTIL_HPP

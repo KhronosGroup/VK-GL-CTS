@@ -39,6 +39,7 @@
 #include "vktRayTracingMiscTests.hpp"
 #include "vktRayTracingComplexControlFlowTests.hpp"
 #include "vktRayTracingBarrierTests.hpp"
+#include "vktRayTracingDataSpillTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -71,6 +72,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createMiscTests(testCtx));
 	group->addChild(createComplexControlFlowTests(testCtx));
 	group->addChild(createBarrierTests(testCtx));
+	group->addChild(createDataSpillTests(testCtx));
 
 	return group.release();
 }

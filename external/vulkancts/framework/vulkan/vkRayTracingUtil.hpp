@@ -489,7 +489,8 @@ public:
 	virtual void										setGeometryData							(const std::vector<tcu::Vec3>&					geometryData,
 																								 const bool										triangles,
 																								 const VkGeometryFlagsKHR						geometryFlags			= 0u );
-	virtual void										setDefaultGeometryData					(const VkShaderStageFlagBits					testStage);
+	virtual void										setDefaultGeometryData					(const VkShaderStageFlagBits					testStage,
+																								 const VkGeometryFlagsKHR						geometryFlags			= 0u );
 	virtual void										setGeometryCount						(const size_t									geometryCount);
 	virtual void										addGeometry								(de::SharedPtr<RaytracedGeometryBase>&			raytracedGeometry);
 	virtual void										addGeometry								(const std::vector<tcu::Vec3>&					geometryData,
