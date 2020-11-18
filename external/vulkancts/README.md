@@ -231,10 +231,15 @@ as part of the submission package (3). This can be done by running:
 
 	git format-patch -o <submission pkg dir> <release tag>..HEAD
 
-In general, bugfixes and changes to platform-specific code (mostly under
-`framework/platform`) are allowed. The commit message for each change must
-include a clear description of the change and why it is necessary. Non-porting
-related changes must be accompanied by a waiver (see below).
+Changes to platform-specific code (mostly under `framework/platform`)
+are allowed. The commit message for each change must include a clear
+description of the change and why it is necessary.
+
+Bugfixes to the tests are allowed. Before being used for a submission,
+bugfixes must be accepted and merged into the CTS repository.
+`git cherry-pick` is strongly recommended as a method of applying bug fixes.
+
+Other changes must be accompanied by a waiver (see below).
 
 NOTE: When cherry-picking patches on top of release tag, please use `git cherry-pick -x`
 to include original commit hash in the commit message.
