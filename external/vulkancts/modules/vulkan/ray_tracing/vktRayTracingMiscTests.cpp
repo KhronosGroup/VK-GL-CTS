@@ -6083,7 +6083,7 @@ public:
 		std::unique_ptr<GridASProvider> asProviderPtr(
 			new GridASProvider(	tcu::Vec3 (0,					0,	0),				/* gridStartXYZ          */
 								tcu::Vec3 (1,					1,	1),				/* gridCellSizeXYZ       */
-								tcu::UVec3(1 + m_depthToUse,	1,	m_nRaysToTest),
+								tcu::UVec3(1,					1,	1),
 								tcu::Vec3 (2,					0,	2),				/* gridInterCellDeltaXYZ */
 								m_geometryType)
 		);
@@ -6223,7 +6223,7 @@ public:
 						"        currentNOriginRay = parentNOriginRay;\n"
 						"        currentResultItem = nItem;\n"
 						"\n"
-						"        vec3  cellStartXYZ  = vec3(parentDepth * 2.0, 0.0, parentNOriginRay * 2.0);\n"
+						"        vec3  cellStartXYZ  = vec3(0.0, 0.0, 0.0);\n"
 						"        vec3  cellEndXYZ    = cellStartXYZ + vec3(1.0);\n"
 						"        vec3  targetHit     = mix(cellStartXYZ, cellEndXYZ, vec3(0.5) );\n"
 						"        vec3  targetMiss    = targetHit + vec3(0, 10, 0);\n"
@@ -6318,7 +6318,7 @@ public:
 						"        currentNOriginRay = parentNOriginRay;\n"
 						"        currentResultItem = nItem;\n"
 						"\n"
-						"        vec3  cellStartXYZ  = vec3(parentDepth * 2.0, 0.0, parentNOriginRay * 2.0);\n"
+						"        vec3  cellStartXYZ  = vec3(0.0, 0.0, 0.0);\n"
 						"        vec3  cellEndXYZ    = cellStartXYZ + vec3(1.0);\n"
 						"        vec3  targetHit     = mix(cellStartXYZ, cellEndXYZ, vec3(0.5) );\n"
 						"        vec3  targetMiss    = targetHit + vec3(0, 10, 0);\n"
@@ -6364,7 +6364,7 @@ public:
 				"    float tmax         = 9.0;\n"
 				"\n"
 				"    uint  cullMask      = 0xFF;\n"
-				"    vec3  cellStartXYZ  = vec3(0.0, 0.0, nInvocation * 2.0);\n"
+				"    vec3  cellStartXYZ  = vec3(0.0, 0.0, 0.0);\n"
 				"    vec3  cellEndXYZ    = cellStartXYZ + vec3(1.0);\n"
 				"    vec3  targetHit     = mix(cellStartXYZ, cellEndXYZ, vec3(0.5) );\n"
 				"    vec3  targetMiss    = targetHit + vec3(0, 10, 0);\n"
