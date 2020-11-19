@@ -152,11 +152,11 @@ Move<VkDescriptorSetLayout> createDescriptorSetLayout (const DeviceInterface& vk
 	return createDescriptorSetLayout(vkd, device, &layoutInfo);
 }
 
-Move<VkDescriptorPool> createDescriptorPool (const DeviceInterface& vkd, VkDevice device)
+Move<VkDescriptorPool> createDescriptorPool (const DeviceInterface& vkd, VkDevice device, const deUint32 combinedSamplerDescriptorCount)
 {
 	const VkDescriptorPoolSize			poolSizes[]	=
 	{
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	1u	},
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	combinedSamplerDescriptorCount	},
 	};
 	const VkDescriptorPoolCreateInfo	poolInfo	=
 	{
@@ -380,14 +380,6 @@ tcu::TestStatus testFormat (Context& context, TestParameters params)
 		VK_FALSE,									// unnormalizedCoords
 	};
 
-	const Unique<VkSampler>					sampler					(createSampler(vkd, device, &samplerInfo));
-
-	const Unique<VkDescriptorSetLayout>		descLayout				(createDescriptorSetLayout(vkd, device, *sampler));
-	const Unique<VkDescriptorPool>			descPool				(createDescriptorPool(vkd, device));
-	const Unique<VkDescriptorSet>			descSet					(createDescriptorSet(vkd, device, *descPool, *descLayout, *imageView));
-
-	MultiPlaneImageData						imageData				(format, size);
-
 	const VkPhysicalDeviceImageFormatInfo2			imageFormatInfo	=
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
@@ -395,16 +387,16 @@ tcu::TestStatus testFormat (Context& context, TestParameters params)
 		params.format,
 		VK_IMAGE_TYPE_2D,
 		params.tiling,
-		VK_IMAGE_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_SAMPLED_BIT,
+		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 		params.flags,
 	};
-	VkSamplerYcbcrConversionImageFormatProperties		ycbcrProperties =
+	VkSamplerYcbcrConversionImageFormatProperties	ycbcrProperties	=
 	{
 		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES,
 		DE_NULL,
 		0,
 	};
-	VkImageFormatProperties2				extProperties =
+	VkImageFormatProperties2						extProperties	=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
 		&ycbcrProperties,
@@ -420,7 +412,7 @@ tcu::TestStatus testFormat (Context& context, TestParameters params)
 			0u,		// maxResourceSize
 		},
 	};
-	VkResult				propsResult;
+	VkResult						propsResult;
 	const CustomInstance			instance	(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
 	const InstanceDriver&			vki			(instance.getDriver());
 
@@ -429,6 +421,14 @@ tcu::TestStatus testFormat (Context& context, TestParameters params)
 
 	TCU_CHECK(propsResult == VK_SUCCESS);
 	TCU_CHECK(ycbcrProperties.combinedImageSamplerDescriptorCount >= 1);
+
+	const Unique<VkSampler>					sampler					(createSampler(vkd, device, &samplerInfo));
+
+	const Unique<VkDescriptorSetLayout>		descLayout				(createDescriptorSetLayout(vkd, device, *sampler));
+	const Unique<VkDescriptorPool>			descPool				(createDescriptorPool(vkd, device, ycbcrProperties.combinedImageSamplerDescriptorCount));
+	const Unique<VkDescriptorSet>			descSet					(createDescriptorSet(vkd, device, *descPool, *descLayout, *imageView));
+
+	MultiPlaneImageData						imageData				(format, size);
 
 	// Zero fill unused layer
 	if (params.useArrayLayers)
