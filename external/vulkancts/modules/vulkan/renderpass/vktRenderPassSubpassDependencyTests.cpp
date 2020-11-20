@@ -381,16 +381,18 @@ vector<SharedPtrVkDescriptorPool> createDescriptorPools (const DeviceInterface&	
 
 struct ExternalTestConfig
 {
-	ExternalTestConfig	(VkFormat			format_,
-						 UVec2				imageSize_,
-						 vector<RenderPass>	renderPasses_,
-						 RenderPassType		renderPassType_,
-						 deUint32			blurKernel_ = 4)
-		: format			(format_)
-		, imageSize			(imageSize_)
-		, renderPasses		(renderPasses_)
-		, renderPassType	(renderPassType_)
-		, blurKernel		(blurKernel_)
+	ExternalTestConfig	(VkFormat				format_,
+						 UVec2					imageSize_,
+						 vector<RenderPass>		renderPasses_,
+						 RenderPassType			renderPassType_,
+						 SynchronizationType	synchronizationType_,
+						 deUint32				blurKernel_ = 4)
+		: format				(format_)
+		, imageSize				(imageSize_)
+		, renderPasses			(renderPasses_)
+		, renderPassType		(renderPassType_)
+		, synchronizationType	(synchronizationType_)
+		, blurKernel			(blurKernel_)
 	{
 	}
 
@@ -398,6 +400,7 @@ struct ExternalTestConfig
 	UVec2				imageSize;
 	vector<RenderPass>	renderPasses;
 	RenderPassType		renderPassType;
+	SynchronizationType	synchronizationType;
 	deUint32			blurKernel;
 };
 
@@ -424,9 +427,10 @@ public:
 	vector<SharedPtrVkRenderPass>			createRenderPasses				(const DeviceInterface&					vkd,
 																			 VkDevice								device,
 																			 vector<RenderPass>						renderPassInfos,
-																			 const RenderPassType					renderPassType);
+																			 const RenderPassType					renderPassType,
+																			 const SynchronizationType				synchronizationType);
 
-	 vector<SharedPtrVkFramebuffer>			createFramebuffers				(const DeviceInterface&					vkd,
+	vector<SharedPtrVkFramebuffer>			createFramebuffers				(const DeviceInterface&					vkd,
 																			 VkDevice								device,
 																			 vector<SharedPtrVkRenderPass>&			renderPasses,
 																			 vector<SharedPtrVkImageView>&			dstImageViews,
@@ -459,7 +463,8 @@ public:
 	tcu::TestStatus							iterateInternal					(void);
 
 private:
-	const bool								m_extensionSupported;
+	const bool								m_renderPass2Supported;
+	const bool								m_synchronization2Supported;
 	const RenderPassType					m_renderPassType;
 
 	const deUint32							m_width;
@@ -491,7 +496,8 @@ private:
 
 ExternalDependencyTestInstance::ExternalDependencyTestInstance (Context& context, ExternalTestConfig testConfig)
 	: TestInstance					(context)
-	, m_extensionSupported			((testConfig.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
+	, m_renderPass2Supported		((testConfig.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
+	, m_synchronization2Supported	((testConfig.synchronizationType == SYNCHRONIZATION_TYPE_SYNCHRONIZATION2) && context.requireDeviceFunctionality("VK_KHR_synchronization2"))
 	, m_renderPassType				(testConfig.renderPassType)
 	, m_width						(testConfig.imageSize.x())
 	, m_height						(testConfig.imageSize.y())
@@ -502,7 +508,7 @@ ExternalDependencyTestInstance::ExternalDependencyTestInstance (Context& context
 	, m_samplers					(createSamplers(context.getDeviceInterface(), context.getDevice(), testConfig.renderPasses))
 	, m_dstBuffer					(createBuffer(context.getDeviceInterface(), context.getDevice(), m_format, m_width, m_height))
 	, m_dstBufferMemory				(createBufferMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), *m_dstBuffer))
-	, m_renderPasses				(createRenderPasses(context.getDeviceInterface(), context.getDevice(), testConfig.renderPasses, testConfig.renderPassType))
+	, m_renderPasses				(createRenderPasses(context.getDeviceInterface(), context.getDevice(), testConfig.renderPasses, testConfig.renderPassType, testConfig.synchronizationType))
 	, m_framebuffers				(createFramebuffers(context.getDeviceInterface(), context.getDevice(), m_renderPasses, m_imageViews, m_width, m_height))
 	, m_subpassDescriptorSetLayouts	(createDescriptorSetLayouts(context.getDeviceInterface(), context.getDevice(), m_samplers))
 	, m_subpassDescriptorPools		(createDescriptorPools(context.getDeviceInterface(), context.getDevice(), m_subpassDescriptorSetLayouts, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER))
@@ -606,14 +612,14 @@ vector<SharedPtrVkSampler> ExternalDependencyTestInstance::createSamplers (const
 vector<SharedPtrVkRenderPass> ExternalDependencyTestInstance::createRenderPasses (const DeviceInterface&	vkd,
 																				  VkDevice					device,
 																				  vector<RenderPass>		renderPassInfos,
-																				  const RenderPassType		renderPassType)
+																				  const RenderPassType		renderPassType,
+																				  const SynchronizationType	synchronizationType)
 {
 	vector<SharedPtrVkRenderPass> renderPasses;
+	renderPasses.reserve(renderPassInfos.size());
 
-	for (size_t renderPassNdx = 0; renderPassNdx < renderPassInfos.size(); renderPassNdx++)
-	{
-		renderPasses.push_back(makeSharedPtr(createRenderPass(vkd, device, renderPassInfos[renderPassNdx], renderPassType)));
-	}
+	for (const auto& renderPassInfo : renderPassInfos)
+		renderPasses.push_back(makeSharedPtr(createRenderPass(vkd, device, renderPassInfo, renderPassType, synchronizationType)));
 
 	return renderPasses;
 }
@@ -3885,8 +3891,8 @@ void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
 
 		for (size_t renderSizeNdx = 0; renderSizeNdx < DE_LENGTH_OF_ARRAY(renderSizes); renderSizeNdx++)
 		{
-			string groupName	("render_size_" + de::toString(renderSizes[renderSizeNdx].x()) + "_" + de::toString(renderSizes[renderSizeNdx].y()));
-			de::MovePtr<tcu::TestCaseGroup>	renderSizeGroup	(new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupName.c_str()));
+			string groupName ("render_size_" + de::toString(renderSizes[renderSizeNdx].x()) + "_" + de::toString(renderSizes[renderSizeNdx].y()));
+			de::MovePtr<tcu::TestCaseGroup> renderSizeGroup	(new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupName.c_str()));
 
 			for (size_t renderPassCountNdx = 0; renderPassCountNdx < DE_LENGTH_OF_ARRAY(renderPassCounts); renderPassCountNdx++)
 			{
@@ -3936,11 +3942,25 @@ void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
 					renderPasses.push_back(renderPass);
 				}
 
-				const deUint32				blurKernel	(12u);
-				const ExternalTestConfig	testConfig	(VK_FORMAT_R8G8B8A8_UNORM, renderSizes[renderSizeNdx], renderPasses, renderPassType, blurKernel);
-				const string				testName	("render_passes_" + de::toString(renderPassCounts[renderPassCountNdx]));
+				const deUint32		blurKernel	(12u);
+				string				testName	("render_passes_" + de::toString(renderPassCounts[renderPassCountNdx]));
+				ExternalTestConfig	testConfig
+				{
+					VK_FORMAT_R8G8B8A8_UNORM,
+					renderSizes[renderSizeNdx],
+					renderPasses,
+					renderPassType,
+					SYNCHRONIZATION_TYPE_LEGACY,
+					blurKernel
+				};
 
 				renderSizeGroup->addChild(new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
+				if (renderPassType == RENDERPASS_TYPE_RENDERPASS2)
+				{
+					testName += "_sync_2";
+					testConfig.synchronizationType = SYNCHRONIZATION_TYPE_SYNCHRONIZATION2;
+					renderSizeGroup->addChild(new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
+				}
 			}
 
 			externalGroup->addChild(renderSizeGroup.release());
@@ -4002,7 +4022,7 @@ void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
 			}
 
 			const deUint32				blurKernel	(12u);
-			const ExternalTestConfig	testConfig	(VK_FORMAT_R8G8B8A8_UNORM, UVec2(128, 128), renderPasses, renderPassType, blurKernel);
+			const ExternalTestConfig	testConfig	(VK_FORMAT_R8G8B8A8_UNORM, UVec2(128, 128), renderPasses, renderPassType, SYNCHRONIZATION_TYPE_LEGACY, blurKernel);
 			const string				testName	("render_passes_" + de::toString(renderPassCounts[renderPassCountNdx]));
 
 			implicitGroup->addChild(new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
