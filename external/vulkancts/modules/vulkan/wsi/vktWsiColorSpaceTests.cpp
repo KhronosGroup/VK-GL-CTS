@@ -43,6 +43,8 @@
 #include "vkAllocationCallbackUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "tcuSurface.hpp"
+#include "vkImageUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
@@ -326,12 +328,31 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters (Type						wsiType,
 													  VkSurfaceKHR				surface,
 													  VkSurfaceFormatKHR		surfaceFormat,
 													  const tcu::UVec2&			desiredSize,
-													  deUint32					desiredImageCount)
+													  deUint32					desiredImageCount,
+													  VkColorSpaceKHR			desiredColorspace = VK_COLOR_SPACE_MAX_ENUM_KHR)
 {
+	bool setColorspaceManually = desiredColorspace != VK_COLOR_SPACE_MAX_ENUM_KHR;
+
 	const VkSurfaceCapabilitiesKHR		capabilities		= getPhysicalDeviceSurfaceCapabilities(vki,
 																								   physicalDevice,
 																								   surface);
 	const PlatformProperties&			platformProperties	= getPlatformProperties(wsiType);
+	const VkSurfaceCapabilitiesKHR		surfaceCapabilities	= getPhysicalDeviceSurfaceCapabilities(vki,physicalDevice, surface);
+
+	// Check that the device has at least one supported alpha compositing mode
+	// and pick the first supported mode to be used.
+	vk::VkCompositeAlphaFlagsKHR		alpha				= 0;
+	for (deUint32 i = 1u; i <= surfaceCapabilities.supportedCompositeAlpha; i <<= 1u)
+	{
+		if ((i & surfaceCapabilities.supportedCompositeAlpha) != 0)
+		{
+			alpha = i;
+			break;
+		}
+	}
+	if (alpha == 0)
+		TCU_THROW(NotSupportedError, "No supported composite alphas available.");
+
 	const VkSurfaceTransformFlagBitsKHR transform			= (capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) ? VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR : capabilities.currentTransform;
 	const VkSwapchainCreateInfoKHR		parameters			=
 	{
@@ -341,16 +362,15 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters (Type						wsiType,
 		surface,
 		de::clamp(desiredImageCount, capabilities.minImageCount, capabilities.maxImageCount > 0 ? capabilities.maxImageCount : capabilities.minImageCount + desiredImageCount),
 		surfaceFormat.format,
-		surfaceFormat.colorSpace,
-		(platformProperties.swapchainExtent == PlatformProperties::SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE
-			? capabilities.currentExtent : vk::makeExtent2D(desiredSize.x(), desiredSize.y())),
+		(setColorspaceManually ? desiredColorspace : surfaceFormat.colorSpace),
+		(platformProperties.swapchainExtent == PlatformProperties::SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE ? capabilities.currentExtent : vk::makeExtent2D(desiredSize.x(), desiredSize.y())),
 		1u,									// imageArrayLayers
-		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 		VK_SHARING_MODE_EXCLUSIVE,
 		0u,
 		(const deUint32*)DE_NULL,
 		transform,
-		VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+		static_cast<VkCompositeAlphaFlagBitsKHR>(alpha),
 		VK_PRESENT_MODE_FIFO_KHR,
 		VK_FALSE,							// clipped
 		(VkSwapchainKHR)0					// oldSwapchain
@@ -401,6 +421,46 @@ vector<CommandBufferSp> allocateCommandBuffers (const DeviceInterface&		vkd,
 	return buffers;
 }
 
+tcu::Vec4 getPixel (const DeviceInterface&		vkd,
+					const VkDevice				device,
+					const VkQueue				queue,
+					const VkCommandPool&		commandPool,
+					Allocator&					allocator,
+					const tcu::UVec2			size,
+					const tcu::TextureFormat	textureFormat,
+					const VkImage*				image)
+{
+	Move<VkCommandBuffer>		commandBuffer;
+	Move<VkBuffer>				resultBuffer;
+	de::MovePtr<Allocation>		resultBufferMemory;
+
+	commandBuffer = allocateCommandBuffer(vkd, device, commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	// Result Buffer
+	{
+		const VkDeviceSize			bufferSize = textureFormat.getPixelSize() * size.x() * size.y();
+		const VkBufferCreateInfo	createInfo = makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+		resultBuffer				= createBuffer(vkd, device, &createInfo);
+		resultBufferMemory			= allocator.allocate(getBufferMemoryRequirements(vkd, device, *resultBuffer), MemoryRequirement::HostVisible);
+
+		VK_CHECK(vkd.bindBufferMemory(device, *resultBuffer, resultBufferMemory->getMemory(), resultBufferMemory->getOffset()));
+	}
+
+	beginCommandBuffer(vkd, *commandBuffer, 0u);
+	{
+		copyImageToBuffer(vkd, *commandBuffer, *image, *resultBuffer, tcu::IVec2(size.x(), size.y()), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+	}
+	endCommandBuffer(vkd, *commandBuffer);
+	submitCommandsAndWait(vkd, device, queue, commandBuffer.get());
+
+	tcu::ConstPixelBufferAccess	resultAccess(textureFormat,
+											 tcu::IVec3(size.x(), size.y(), 1),
+											 resultBufferMemory->getHostPtr());
+
+	return (resultAccess.getPixel(128, 128));
+}
+
 tcu::TestStatus basicExtensionTest (Context& context, Type wsiType)
 {
 	const tcu::UVec2				desiredSize		(256, 256);
@@ -432,6 +492,177 @@ tcu::TestStatus basicExtensionTest (Context& context, Type wsiType)
 	return tcu::TestStatus::pass("Extension tests succeeded");
 }
 
+struct TestParams
+{
+	Type		wsiType;
+	VkFormat	format;
+};
+
+// Create swapchain with multiple images on different colorspaces and compare pixels on those images.
+tcu::TestStatus colorspaceCompareTest (Context& context, TestParams params)
+{
+	if (!context.isInstanceFunctionalitySupported("VK_EXT_swapchain_colorspace"))
+		TCU_THROW(NotSupportedError, "Extension VK_EXT_swapchain_colorspace not supported");
+
+	const tcu::UVec2					desiredSize				(256, 256);
+	const InstanceHelper				instHelper				(context, params.wsiType);
+	const NativeObjects					native					(context, instHelper.supportedExtensions, params.wsiType, tcu::just(desiredSize));
+	const Unique<VkSurfaceKHR>			surface					(createSurface(instHelper.vki, instHelper.instance, params.wsiType, *native.display, *native.window));
+	const DeviceHelper					devHelper				(context, instHelper.vki, instHelper.instance, *surface);
+
+	const vector<VkSurfaceFormatKHR>	queriedFormats		=	getPhysicalDeviceSurfaceFormats(instHelper.vki,
+																								devHelper.physicalDevice,
+																								*surface);
+
+	vector<vk::VkColorSpaceKHR> supportedColorSpaces;
+	for (const auto& queriedFormat : queriedFormats)
+	{
+		if (queriedFormat.format == params.format)
+		{
+			supportedColorSpaces.push_back(queriedFormat.colorSpace);
+		}
+	}
+
+	// Not supported if there's no color spaces for the format.
+	if(supportedColorSpaces.size() < 2)
+		TCU_THROW(NotSupportedError, "Format not supported");
+
+	// Surface format is used to create the swapchain.
+	VkSurfaceFormatKHR surfaceFormat =
+	{
+		params.format,				// format
+		supportedColorSpaces.at(0)	// colorSpace
+	};
+
+	tcu::Vec4						 referenceColorspacePixel;
+	const tcu::TextureFormat		 textureFormat				= vk::mapVkFormat(surfaceFormat.format);
+	const DeviceInterface&			 vkd						= devHelper.vkd;
+	const VkDevice					 device						= *devHelper.device;
+	SimpleAllocator					 allocator					(vkd,
+																 device,
+																 getPhysicalDeviceMemoryProperties(instHelper.vki,
+																 context.getPhysicalDevice()));
+
+	for (size_t colorspaceNdx = 0; colorspaceNdx < supportedColorSpaces.size(); ++colorspaceNdx)
+	{
+		const VkSwapchainCreateInfoKHR swapchainInfo = getBasicSwapchainParameters(params.wsiType,
+																				   instHelper.vki,
+																				   devHelper.physicalDevice,
+																				   *surface,
+																				   surfaceFormat,
+																				   desiredSize,
+																				   2,
+																				   supportedColorSpaces[colorspaceNdx]);
+		const Unique<VkSwapchainKHR>		swapchain			(createSwapchainKHR(vkd, device, &swapchainInfo));
+		const vector<VkImage>				swapchainImages		= getSwapchainImages(vkd, device, *swapchain);
+		const vector<VkExtensionProperties>	deviceExtensions	(enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, DE_NULL));
+
+		const WsiTriangleRenderer renderer(vkd,
+										   device,
+										   allocator,
+										   context.getBinaryCollection(),
+										   true,
+										   swapchainImages,
+										   swapchainImages,
+										   swapchainInfo.imageFormat,
+										   tcu::UVec2(swapchainInfo.imageExtent.width, swapchainInfo.imageExtent.height));
+
+		const Move<VkCommandPool>	commandPool					(createCommandPool(vkd,
+																				   device,
+																				   VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+																				   devHelper.queueFamilyIndex));
+		const Move<VkSemaphore>		imageReadySemaphore			= createSemaphore(vkd, device);
+		const Move<VkSemaphore>		renderingCompleteSemaphore	= createSemaphore(vkd, device);
+		const Move<VkCommandBuffer>	commandBuffer				= allocateCommandBuffer(vkd,
+																						device,
+																						*commandPool,
+																						VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+		try
+		{
+			deUint32 imageNdx = ~0u;
+
+			{
+				const VkResult acquireResult = vkd.acquireNextImageKHR(device,
+																	   *swapchain,
+																	   std::numeric_limits<deUint64>::max(),
+																	   imageReadySemaphore.get(),
+																	   DE_NULL,
+																	   &imageNdx);
+
+				if (acquireResult == VK_SUBOPTIMAL_KHR)
+				{
+					context.getTestContext().getLog() << TestLog::Message << "Got " << acquireResult
+													  << TestLog::EndMessage;
+				}
+				else
+				{
+					VK_CHECK(acquireResult);
+				}
+			}
+
+			TCU_CHECK((size_t) imageNdx < swapchainImages.size());
+
+			{
+				const VkPipelineStageFlags waitDstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+				const VkSubmitInfo submitInfo =
+				{
+					VK_STRUCTURE_TYPE_SUBMIT_INFO,
+					DE_NULL,
+					0u,
+					&imageReadySemaphore.get(),
+					&waitDstStage,
+					1u,
+					&commandBuffer.get(),
+					1u,
+					&renderingCompleteSemaphore.get()
+				};
+				const VkPresentInfoKHR presentInfo =
+				{
+					VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+					DE_NULL,
+					1u,
+					&renderingCompleteSemaphore.get(),
+					1u,
+					&swapchain.get(),
+					&imageNdx,
+					(VkResult *) DE_NULL
+				};
+
+				renderer.recordFrame(commandBuffer.get(), imageNdx, 0);
+				VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, DE_NULL));
+				VK_CHECK_WSI(vkd.queuePresentKHR(devHelper.queue, &presentInfo));
+			}
+
+			// Set reference pixelBufferAccess for comparison.
+			if (colorspaceNdx == 0)
+			{
+				referenceColorspacePixel = getPixel(vkd, device, devHelper.queue, commandPool.get(),
+													allocator, desiredSize, textureFormat,
+													&swapchainImages[imageNdx]);
+				continue;
+			}
+
+			// Compare pixels from images to make sure the colorspace makes no difference.
+			if (referenceColorspacePixel == getPixel(vkd, device, devHelper.queue, commandPool.get(),
+													 allocator, desiredSize, textureFormat,
+													 &swapchainImages[imageNdx]))
+				continue;
+			else
+				return tcu::TestStatus::fail("Colorspace comparison test failed");
+			VK_CHECK(vkd.deviceWaitIdle(device));
+		}
+		catch (...)
+		{
+			// Make sure device is idle before destroying resources
+			vkd.deviceWaitIdle(device);
+			throw;
+		}
+	}
+
+	return tcu::TestStatus::pass("Colorspace comparison test succeeded");
+}
+
 tcu::TestStatus surfaceFormatRenderTest (Context& context,
 										 Type wsiType,
 										 const InstanceHelper& instHelper,
@@ -457,7 +688,7 @@ tcu::TestStatus surfaceFormatRenderTest (Context& context,
 																 device,
 																 allocator,
 																 context.getBinaryCollection(),
-																 false,
+																 true,
 																 swapchainImages,
 																 swapchainImages,
 																 swapchainInfo.imageFormat,
@@ -619,11 +850,17 @@ tcu::TestStatus surfaceFormatRenderWithHdrTests (Context& context, Type wsiType)
 	return tcu::TestStatus::pass("Rendering tests succeeded");
 }
 
-void getBasicRenderPrograms (SourceCollections& dst, Type)
+// We need different versions of this function in order to invoke
+// different overloaded versions of addFunctionCaseWithPrograms.
+void getBasicRenderPrograms2 (SourceCollections& dst, TestParams)
 {
 	WsiTriangleRenderer::getPrograms(dst);
 }
 
+void getBasicRenderPrograms (SourceCollections& dst, Type)
+{
+	WsiTriangleRenderer::getPrograms(dst);
+}
 } // anonymous
 
 void createColorSpaceTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
@@ -631,6 +868,31 @@ void createColorSpaceTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType
 	addFunctionCase(testGroup, "extensions", "Verify Colorspace Extensions", basicExtensionTest, wsiType);
 	addFunctionCaseWithPrograms(testGroup, "basic", "Basic Rendering Tests", getBasicRenderPrograms, surfaceFormatRenderTests, wsiType);
 	addFunctionCaseWithPrograms(testGroup, "hdr", "Basic Rendering Tests with HDR", getBasicRenderPrograms, surfaceFormatRenderWithHdrTests, wsiType);
+}
+
+void createColorspaceCompareTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
+{
+	const VkFormat formatList[] = {
+									VK_FORMAT_B8G8R8A8_UNORM,
+									VK_FORMAT_R8G8B8A8_UNORM,
+									VK_FORMAT_R8G8B8A8_SRGB,
+									VK_FORMAT_R5G6B5_UNORM_PACK16,
+									VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+									VK_FORMAT_R16G16B16A16_SFLOAT
+									};
+
+	// Create test for every format.
+	for (const VkFormat& format : formatList)
+	{
+		const char* const	enumName	= getFormatName(format);
+		const string		caseName	= de::toLower(string(enumName).substr(10));
+		const TestParams params =
+		{
+			wsiType,
+			format
+		};
+		addFunctionCaseWithPrograms(testGroup, caseName, "", getBasicRenderPrograms2, colorspaceCompareTest, params);
+	}
 }
 
 } // wsi
