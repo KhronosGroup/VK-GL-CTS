@@ -48,6 +48,7 @@
 
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCase.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "deDefs.h"
 #include "deMath.h"
@@ -57,6 +58,7 @@
 
 #include "tcuTestCase.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuCommandLine.hpp"
 
 #include <string>
 #include <sstream>
@@ -85,6 +87,63 @@ typedef enum
 	INT_SHADING_RATE_ORDERED,
 	INT_SHADING_RATE_UNORDERED,
 } Interlock;
+
+de::SharedPtr<Move<vk::VkDevice>>	g_singletonDevice;
+
+VkDevice getDevice(Context& context, Interlock interlock)
+{
+	if (interlock == INT_SHADING_RATE_ORDERED || interlock == INT_SHADING_RATE_UNORDERED)
+	{
+		if (!g_singletonDevice)
+		{
+			const float queuePriority = 1.0f;
+
+			// Create a universal queue that supports graphics and compute
+			const VkDeviceQueueCreateInfo	queueParams =
+			{
+				VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	// VkStructureType				sType;
+				DE_NULL,									// const void*					pNext;
+				0u,											// VkDeviceQueueCreateFlags		flags;
+				context.getUniversalQueueFamilyIndex(),		// deUint32						queueFamilyIndex;
+				1u,											// deUint32						queueCount;
+				&queuePriority								// const float*					pQueuePriorities;
+			};
+
+			const char * extensions[] =
+			{
+				"VK_EXT_fragment_shader_interlock",
+				"VK_NV_shading_rate_image",
+			};
+
+			VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT	fragmentShaderInterlockFeatures	= initVulkanStructure();
+			VkPhysicalDeviceShadingRateImageFeaturesNV			shadingRateImageFeatures		= initVulkanStructure(&fragmentShaderInterlockFeatures);
+			VkPhysicalDeviceFeatures2							features2						= initVulkanStructure(&shadingRateImageFeatures);
+
+			context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+
+			const VkDeviceCreateInfo					deviceCreateInfo =
+			{
+				VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//sType;
+				&features2,														//pNext;
+				(VkDeviceCreateFlags)0u,										//flags
+				1,																//queueRecordCount;
+				&queueParams,													//pRequestedQueues;
+				0,																//layerCount;
+				DE_NULL,														//ppEnabledLayerNames;
+				DE_LENGTH_OF_ARRAY(extensions),									// deUint32							enabledExtensionCount;
+				extensions,														// const char* const*				ppEnabledExtensionNames;
+				DE_NULL,														//pEnabledFeatures;
+			};
+
+			Move<VkDevice> device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceCreateInfo);
+			g_singletonDevice = de::SharedPtr<Move<VkDevice>>(new Move<VkDevice>(device));
+		}
+
+		return g_singletonDevice->get();
+	}
+
+	return context.getDevice();
+}
 
 struct CaseDef
 {
@@ -165,16 +224,22 @@ void FSITestCase::checkSupport(Context& context) const
 		TCU_THROW(NotSupportedError, "Fragment shader pixel interlock not supported");
 	}
 
-	if ((m_data.interlock == INT_SHADING_RATE_ORDERED || m_data.interlock == INT_SHADING_RATE_UNORDERED) &&
-		!context.getFragmentShaderInterlockFeaturesEXT().fragmentShaderShadingRateInterlock)
+	if ((m_data.interlock == INT_SHADING_RATE_ORDERED || m_data.interlock == INT_SHADING_RATE_UNORDERED))
 	{
-		TCU_THROW(NotSupportedError, "Fragment shader shading rate interlock not supported");
-	}
+		if (!context.getFragmentShaderInterlockFeaturesEXT().fragmentShaderShadingRateInterlock)
+			TCU_THROW(NotSupportedError, "Fragment shader shading rate interlock not supported");
 
-	if ((m_data.interlock == INT_SHADING_RATE_ORDERED || m_data.interlock == INT_SHADING_RATE_UNORDERED) &&
-		!context.getShadingRateImageFeatures().shadingRateImage)
-	{
-		TCU_THROW(NotSupportedError, "Shading rate image not supported");
+		context.requireDeviceFunctionality("VK_NV_shading_rate_image");
+
+		// We need to query the VK_NV_shading_rate_image features because they might be disabled
+		// in the default context due to a conflict with VK_KHR_fragment_shading_rate.
+		VkPhysicalDeviceShadingRateImageFeaturesNV	shadingRateImageFeatures	= initVulkanStructure();
+		VkPhysicalDeviceFeatures2KHR				features2					= initVulkanStructure(&shadingRateImageFeatures);
+
+		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+
+		if (!shadingRateImageFeatures.shadingRateImage)
+			TCU_THROW(NotSupportedError, "Shading rate image not supported");
 	}
 }
 
@@ -321,7 +386,7 @@ TestInstance* FSITestCase::createInstance (Context& context) const
 tcu::TestStatus FSITestInstance::iterate (void)
 {
 	const DeviceInterface&	vk						= m_context.getDeviceInterface();
-	const VkDevice			device					= m_context.getDevice();
+	const VkDevice			device					= getDevice(m_context, m_data.interlock);
 	Allocator&				allocator				= m_context.getDefaultAllocator();
 	VkFlags					allShaderStages			= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	VkFlags					allPipelineStages		= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
@@ -387,7 +452,7 @@ tcu::TestStatus FSITestInstance::iterate (void)
 
 	flushAlloc(vk, device, buffer->getAllocation());
 
-	const VkQueue					queue					= m_context.getUniversalQueue();
+	const VkQueue					queue					= getDeviceQueue(vk, device, m_context.getUniversalQueueFamilyIndex(), 0);
 	Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, 0, m_context.getUniversalQueueFamilyIndex());
 	Move<VkCommandBuffer>			cmdBuffer				= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
@@ -894,6 +959,11 @@ tcu::TestCaseGroup*	createBasicTests (tcu::TestContext& testCtx)
 		group->addChild(killGroup.release());
 	}
 	return group.release();
+}
+
+void cleanupDevice()
+{
+	g_singletonDevice.clear();
 }
 
 }	// FragmentShaderInterlock
