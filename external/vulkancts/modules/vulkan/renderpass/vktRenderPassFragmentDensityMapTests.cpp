@@ -25,6 +25,8 @@
 #include "pipeline/vktPipelineImageUtil.hpp"
 #include "deMath.h"
 #include "vktTestCase.hpp"
+#include "vktTestGroupUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
@@ -32,11 +34,13 @@
 #include "vkObjUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkBuilderUtil.hpp"
+#include "tcuCommandLine.hpp"
 #include "tcuStringTemplate.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuTestLog.hpp"
 #include <sstream>
 #include <vector>
+#include <set>
 
 // Each test generates an image with a color gradient where all colors should be unique when rendered without density map
 // ( and for multi_view tests - the quantity of each color in a histogram should be 2 instead of 1 ).
@@ -103,6 +107,79 @@ struct Vertex4RGBA
 	tcu::Vec4	uv;
 	tcu::Vec4	color;
 };
+
+de::SharedPtr<Move<vk::VkDevice>>	g_singletonDevice;
+
+static std::vector<std::string> removeExtensions (const std::vector<std::string>& a, const std::vector<const char*>& b)
+{
+	std::vector<std::string>	res;
+	std::set<std::string>		removeExts	(b.begin(), b.end());
+
+	for (std::vector<std::string>::const_iterator aIter = a.begin(); aIter != a.end(); ++aIter)
+	{
+		if (!de::contains(removeExts, *aIter))
+			res.push_back(*aIter);
+	}
+
+	return res;
+}
+
+VkDevice getDevice(Context& context)
+{
+	if (!g_singletonDevice)
+	{
+		const float queuePriority = 1.0f;
+
+		// Create a universal queue that supports graphics and compute
+		const VkDeviceQueueCreateInfo	queueParams =
+		{
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	// VkStructureType				sType;
+			DE_NULL,									// const void*					pNext;
+			0u,											// VkDeviceQueueCreateFlags		flags;
+			context.getUniversalQueueFamilyIndex(),		// deUint32						queueFamilyIndex;
+			1u,											// deUint32						queueCount;
+			&queuePriority								// const float*					pQueuePriorities;
+		};
+
+		// \note Extensions in core are not explicitly enabled even though
+		//		 they are in the extension list advertised to tests.
+		std::vector<const char*>	extensionPtrs;
+		std::vector<const char*>	coreExtensions;
+		getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
+		std::vector<std::string>	nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
+
+		extensionPtrs.resize(nonCoreExtensions.size());
+
+		for (size_t ndx = 0; ndx < nonCoreExtensions.size(); ++ndx)
+			extensionPtrs[ndx] = nonCoreExtensions[ndx].c_str();
+
+		VkPhysicalDeviceFragmentDensityMapFeaturesEXT	fragmentDensityMapFeatures	= initVulkanStructure();
+		VkPhysicalDeviceFragmentDensityMap2FeaturesEXT	fragmentDensityMap2Features	= initVulkanStructure(&fragmentDensityMapFeatures);
+		VkPhysicalDeviceFeatures2						features2					= initVulkanStructure(&fragmentDensityMap2Features);
+
+		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+		const VkPhysicalDeviceFeatures2 & feature2ptr = context.getDeviceFeatures2();
+
+		const VkDeviceCreateInfo					deviceCreateInfo =
+		{
+			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//sType;
+			&feature2ptr,													//pNext;
+			(VkDeviceCreateFlags)0u,										//flags
+			1,																//queueRecordCount;
+			&queueParams,													//pRequestedQueues;
+			0,																//layerCount;
+			DE_NULL,														//ppEnabledLayerNames;
+			(deUint32)extensionPtrs.size(),			// deUint32				enabledExtensionCount;
+			(extensionPtrs.empty() ? DE_NULL : &extensionPtrs[0]),			// const char* const*				ppEnabledExtensionNames;
+			DE_NULL,														//pEnabledFeatures;
+		};
+
+		Move<VkDevice> device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceCreateInfo);
+		g_singletonDevice = de::SharedPtr<Move<VkDevice>>(new Move<VkDevice>(device));
+	}
+
+	return g_singletonDevice->get();
+}
 
 std::vector<Vertex4RGBA> createFullscreenMesh(deUint32 viewCount, tcu::Vec2 redGradient, tcu::Vec2 greenGradient)
 {
@@ -1073,7 +1150,14 @@ void FragmentDensityMapTest::checkSupport(Context& context) const
 #else
 	context.requireDeviceFunctionality("VK_EXT_fragment_density_map");
 
-	const auto& fragmentDensityMapFeatures		= context.getFragmentDensityMapFeaturesEXT();
+
+
+	VkPhysicalDeviceFragmentDensityMapFeaturesEXT		fragmentDensityMapFeatures		= initVulkanStructure();
+	VkPhysicalDeviceFragmentDensityMap2FeaturesEXT		fragmentDensityMap2Features		= initVulkanStructure(&fragmentDensityMapFeatures);
+	VkPhysicalDeviceFeatures2KHR						features2						= initVulkanStructure(&fragmentDensityMap2Features);
+
+	context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+
 	const auto& fragmentDensityMap2Properties	= context.getFragmentDensityMap2PropertiesEXT();
 
 	if (!fragmentDensityMapFeatures.fragmentDensityMap)
@@ -1086,7 +1170,7 @@ void FragmentDensityMapTest::checkSupport(Context& context) const
 	if (m_testParams.deferredDensityMap)
 	{
 		context.requireDeviceFunctionality("VK_EXT_fragment_density_map2");
-		if (!context.getFragmentDensityMap2FeaturesEXT().fragmentDensityMapDeferred)
+		if (!fragmentDensityMap2Features.fragmentDensityMapDeferred)
 			TCU_THROW(NotSupportedError, "fragmentDensityMapDeferred feature is not supported");
 	}
 	if (m_testParams.subsampledLoads)
@@ -1147,9 +1231,10 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 	m_viewMask			= (m_testParams.viewCount > 1) ? ((1u << m_testParams.viewCount) - 1u) : 0u;
 
 	const DeviceInterface&		vk							= m_context.getDeviceInterface();
-	const VkDevice				vkDevice					= m_context.getDevice();
+	const VkDevice				vkDevice					= getDevice(m_context);
 	const VkPhysicalDevice		vkPhysicalDevice			= m_context.getPhysicalDevice();
 	const deUint32				queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue				queue						= getDeviceQueue(vk, vkDevice, queueFamilyIndex, 0);
 	SimpleAllocator				memAlloc					(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), vkPhysicalDevice));
 	const VkComponentMapping	componentMappingRGBA		= makeComponentMappingRGBA();
 
@@ -1271,7 +1356,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 
 			copyBufferToImage
 			(
-				vk, vkDevice, m_context.getUniversalQueue(), queueFamilyIndex,
+				vk, vkDevice, queue, queueFamilyIndex,
 				*stagingBuffer, stagingBufferSize,
 				densityMapImageSize, densityMapImageLayers, **m_densityMapImages[mapIndex]
 			);
@@ -1714,8 +1799,8 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 tcu::TestStatus FragmentDensityMapTestInstance::iterate (void)
 {
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
-	const VkDevice			vkDevice	= m_context.getDevice();
-	const VkQueue			queue		= m_context.getUniversalQueue();
+	const VkDevice			vkDevice	= getDevice(m_context);
+	const VkQueue			queue		= getDeviceQueue(vk, vkDevice, m_context.getUniversalQueueFamilyIndex(), 0);
 
 	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
@@ -1743,9 +1828,9 @@ struct Vec4Sorter
 tcu::TestStatus FragmentDensityMapTestInstance::verifyImage (void)
 {
 	const DeviceInterface&				vk					= m_context.getDeviceInterface();
-	const VkDevice						vkDevice			= m_context.getDevice();
-	const VkQueue						queue				= m_context.getUniversalQueue();
+	const VkDevice						vkDevice			= getDevice(m_context);
 	const deUint32						queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue						queue				= getDeviceQueue(vk, vkDevice, queueFamilyIndex, 0);
 	SimpleAllocator						memAlloc			(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 	tcu::UVec2							renderSize			(m_renderSize.x(), m_renderSize.y());
 	de::UniquePtr<tcu::TextureLevel>	outputImage			(pipeline::readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, memAlloc, *m_outputImage, VK_FORMAT_R8G8B8A8_UNORM, renderSize).release());
@@ -1796,9 +1881,9 @@ tcu::TestStatus FragmentDensityMapTestInstance::verifyImage (void)
 
 } // anonymous
 
-tcu::TestCaseGroup* createFragmentDensityMapTests (tcu::TestContext& testCtx)
+static void createChildren (tcu::TestCaseGroup* fdmTests)
 {
-	de::MovePtr<tcu::TestCaseGroup> fdmTests(new tcu::TestCaseGroup(testCtx, "fragment_density_map", "VK_EXT_fragment_density_map and VK_EXT_fragment_density_map2 extensions tests"));
+	tcu::TestContext&	testCtx		= fdmTests->getTestContext();
 
 	const struct
 	{
@@ -1967,8 +2052,18 @@ tcu::TestCaseGroup* createFragmentDensityMapTests (tcu::TestContext& testCtx)
 	params.coarseReconstruction	= true;
 	propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "subsampled_coarse_reconstruction", "", params));
 	fdmTests->addChild(propertiesGroup.release());
+}
 
-	return fdmTests.release();
+static void cleanupGroup (tcu::TestCaseGroup* group)
+{
+	DE_UNREF(group);
+	// Destroy singleton objects.
+	g_singletonDevice.clear();
+}
+
+tcu::TestCaseGroup* createFragmentDensityMapTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "fragment_density_map", "VK_EXT_fragment_density_map and VK_EXT_fragment_density_map2 extensions tests", createChildren, cleanupGroup);
 }
 
 } // renderpass

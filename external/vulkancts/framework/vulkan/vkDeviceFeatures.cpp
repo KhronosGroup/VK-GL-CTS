@@ -32,8 +32,11 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 								 const std::vector<std::string>&	instanceExtensions,
 								 const std::vector<std::string>&	deviceExtensions)
 {
-	VkPhysicalDeviceRobustness2FeaturesEXT*		robustness2Features		= nullptr;
-	VkPhysicalDeviceImageRobustnessFeaturesEXT*	imageRobustnessFeatures	= nullptr;
+	VkPhysicalDeviceRobustness2FeaturesEXT*			robustness2Features			= nullptr;
+	VkPhysicalDeviceImageRobustnessFeaturesEXT*		imageRobustnessFeatures		= nullptr;
+	VkPhysicalDeviceFragmentShadingRateFeaturesKHR*	fragmentShadingRateFeatures	= nullptr;
+	VkPhysicalDeviceShadingRateImageFeaturesNV*		shadingRateImageFeatures	= nullptr;
+	VkPhysicalDeviceFragmentDensityMapFeaturesEXT*	fragmentDensityMapFeatures	= nullptr;
 
 	m_coreFeatures2		= initVulkanStructure();
 	m_vulkan11Features	= initVulkanStructure();
@@ -77,14 +80,23 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 					featuresToFillFromBlob.push_back(p);
 				else
 				{
-					if (p->getFeatureDesc().sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT)
-						robustness2Features = reinterpret_cast<VkPhysicalDeviceRobustness2FeaturesEXT*>(p->getFeatureTypeRaw());
-					else if (p->getFeatureDesc().sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES_EXT)
-						imageRobustnessFeatures = reinterpret_cast<VkPhysicalDeviceImageRobustnessFeaturesEXT*>(p->getFeatureTypeRaw());
+					VkStructureType	structType		= p->getFeatureDesc().sType;
+					void*			rawStructPtr	= p->getFeatureTypeRaw();
+
+					if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT)
+						robustness2Features = reinterpret_cast<VkPhysicalDeviceRobustness2FeaturesEXT*>(rawStructPtr);
+					else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES_EXT)
+						imageRobustnessFeatures = reinterpret_cast<VkPhysicalDeviceImageRobustnessFeaturesEXT*>(rawStructPtr);
+					else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR)
+						fragmentShadingRateFeatures = reinterpret_cast<VkPhysicalDeviceFragmentShadingRateFeaturesKHR*>(rawStructPtr);
+					else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADING_RATE_IMAGE_FEATURES_NV)
+						shadingRateImageFeatures = reinterpret_cast<VkPhysicalDeviceShadingRateImageFeaturesNV*>(rawStructPtr);
+					else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_EXT)
+						fragmentDensityMapFeatures = reinterpret_cast<VkPhysicalDeviceFragmentDensityMapFeaturesEXT*>(rawStructPtr);
 
 					// add to chain
-					*nextPtr = p->getFeatureTypeRaw();
-					nextPtr = p->getFeatureTypeNext();
+					*nextPtr	= rawStructPtr;
+					nextPtr		= p->getFeatureTypeNext();
 				}
 				m_features.push_back(p);
 			}
@@ -121,6 +133,19 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 		imageRobustnessFeatures->robustImageAccess	= false;
 	}
 	m_coreFeatures2.features.robustBufferAccess = false;
+
+	// Disable VK_EXT_fragment_density_map and VK_NV_shading_rate_image features
+	// that must: not be enabled if KHR fragment shading rate features are enabled.
+	if (fragmentShadingRateFeatures &&
+		(fragmentShadingRateFeatures->pipelineFragmentShadingRate ||
+			fragmentShadingRateFeatures->primitiveFragmentShadingRate ||
+			fragmentShadingRateFeatures->attachmentFragmentShadingRate))
+	{
+		if (shadingRateImageFeatures)
+			shadingRateImageFeatures->shadingRateImage = false;
+		if (fragmentDensityMapFeatures)
+			fragmentDensityMapFeatures->fragmentDensityMap = false;
+	}
 }
 
 bool DeviceFeatures::verifyFeatureAddCriteria (const FeatureStructCreationData& item, const std::vector<VkExtensionProperties>& properties)
