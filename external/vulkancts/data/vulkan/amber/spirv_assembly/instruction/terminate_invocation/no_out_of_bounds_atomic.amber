@@ -20,7 +20,7 @@ OpDecorate %block Block
 OpMemberDecorate %block 0 BuiltIn Position
 %void = OpTypeVoid
 %bool = OpTypeBool
-%int = OpTypeInt 32 0
+%int = OpTypeInt 32 1
 %int_0 = OpConstant %int 0
 %float = OpTypeFloat 32
 %float_1 = OpConstant %float 1
@@ -92,7 +92,8 @@ OpDecorate %rta ArrayStride 4
 OpDecorate %ptr_int_ssbo ArrayStride 4
 %void = OpTypeVoid
 %bool = OpTypeBool
-%int = OpTypeInt 32 0
+%uint = OpTypeInt 32 0
+%int = OpTypeInt 32 1
 %int_0 = OpConstant %int 0
 %int_1 = OpConstant %int 1
 %int_8 = OpConstant %int 8
@@ -138,7 +139,7 @@ OpBranchConditional %cmp %then %exit
 OpTerminateInvocation
 %exit = OpLabel
 %a_gep = OpAccessChain %ptr_int_ssbo %a %int_0 %idx
-%a_len = OpArrayLength %int %a 0
+%a_len = OpArrayLength %uint %a 0
 %a_0_gep = OpAccessChain %ptr_int_ssbo %a %int_0 %int_0
 %oob_ptr = OpPtrAccessChain %ptr_int_ssbo %a_0_gep %a_len
 %cmp2 = OpIEqual %bool %add %int_0

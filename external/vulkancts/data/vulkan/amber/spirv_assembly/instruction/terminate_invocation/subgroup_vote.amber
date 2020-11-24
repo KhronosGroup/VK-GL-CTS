@@ -20,7 +20,7 @@ OpDecorate %block Block
 OpMemberDecorate %block 0 BuiltIn Position
 %void = OpTypeVoid
 %bool = OpTypeBool
-%int = OpTypeInt 32 0
+%int = OpTypeInt 32 1
 %int_0 = OpConstant %int 0
 %float = OpTypeFloat 32
 %float_1 = OpConstant %float 1
@@ -81,7 +81,7 @@ OpDecorate %subgroupID BuiltIn SubgroupLocalInvocationId
 %void = OpTypeVoid
 %bool = OpTypeBool
 %true = OpConstantTrue %bool
-%int = OpTypeInt 32 0
+%int = OpTypeInt 32 1
 %int_0 = OpConstant %int 0
 %int_1 = OpConstant %int 1
 %subgroup = OpConstant %int 3

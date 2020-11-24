@@ -20,7 +20,7 @@ OpDecorate %block Block
 OpMemberDecorate %block 0 BuiltIn Position
 %void = OpTypeVoid
 %bool = OpTypeBool
-%int = OpTypeInt 32 0
+%int = OpTypeInt 32 1
 %int_0 = OpConstant %int 0
 %float = OpTypeFloat 32
 %float_1 = OpConstant %float 1
@@ -92,7 +92,8 @@ OpDecorate %rta ArrayStride 4
 OpDecorate %ptr_int_ssbo ArrayStride 4
 %void = OpTypeVoid
 %bool = OpTypeBool
-%int = OpTypeInt 32 0
+%int = OpTypeInt 32 1
+%uint = OpTypeInt 32 0
 %int_0 = OpConstant %int 0
 %int_1 = OpConstant %int 1
 %int_8 = OpConstant %int 8
@@ -130,7 +131,7 @@ OpStore %out_data %int_1
 %offset = OpIMul %int %y %int_8
 %idx = OpIAdd %int %x %offset
 %b_ptr = OpAccessChain %ptr_int_ssbo %b %int_0 %idx
-%len = OpArrayLength %int %b 0
+%len = OpArrayLength %uint %b 0
 %b_0_ptr = OpAccessChain %ptr_int_ssbo %b %int_0 %int_0
 %oob_ptr = OpPtrAccessChain %ptr_int_ssbo %b_0_ptr %len
 %cmp2 = OpIEqual %bool %add %int_0

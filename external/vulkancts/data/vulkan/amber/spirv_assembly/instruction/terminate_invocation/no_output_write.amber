@@ -20,7 +20,7 @@ OpDecorate %block Block
 OpMemberDecorate %block 0 BuiltIn Position
 %void = OpTypeVoid
 %bool = OpTypeBool
-%int = OpTypeInt 32 0
+%int = OpTypeInt 32 1
 %int_0 = OpConstant %int 0
 %float = OpTypeFloat 32
 %float_1 = OpConstant %float 1
@@ -73,7 +73,7 @@ OpDecorate %in_data Flat
 OpDecorate %out_data Location 0
 %void = OpTypeVoid
 %bool = OpTypeBool
-%int = OpTypeInt 32 0
+%int = OpTypeInt 32 1
 %int_1 = OpConstant %int 1
 %float = OpTypeFloat 32
 %float4 = OpTypeVector %float 4

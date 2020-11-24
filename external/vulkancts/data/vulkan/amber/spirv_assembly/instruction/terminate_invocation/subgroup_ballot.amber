@@ -20,7 +20,7 @@ OpDecorate %block Block
 OpMemberDecorate %block 0 BuiltIn Position
 %void = OpTypeVoid
 %bool = OpTypeBool
-%int = OpTypeInt 32 0
+%int = OpTypeInt 32 1
 %int_0 = OpConstant %int 0
 %float = OpTypeFloat 32
 %float_1 = OpConstant %float 1
@@ -94,7 +94,8 @@ OpDecorate %subgroupID BuiltIn SubgroupLocalInvocationId
 %void = OpTypeVoid
 %bool = OpTypeBool
 %true = OpConstantTrue %bool
-%int = OpTypeInt 32 0
+%int = OpTypeInt 32 1
+%uint = OpTypeInt 32 0
 %int_0 = OpConstant %int 0
 %int_1 = OpConstant %int 1
 %int_2 = OpConstant %int 2
@@ -103,7 +104,7 @@ OpDecorate %subgroupID BuiltIn SubgroupLocalInvocationId
 %int_64 = OpConstant %int 64
 %int_96 = OpConstant %int 96
 %subgroup = OpConstant %int 3
-%int4 = OpTypeVector %int 4
+%uint4 = OpTypeVector %uint 4
 %float = OpTypeFloat 32
 %float4 = OpTypeVector %float 4
 %ptr_int_input = OpTypePointer Input %int
@@ -136,34 +137,34 @@ OpTerminateInvocation
 %exit = OpLabel
 %y_2 = OpIMul %int %int_2 %y_and_1
 %quad_idx = OpIAdd %int %x_and_1 %y_2
-%b = OpGroupNonUniformBallot %int4 %subgroup %true
+%b = OpGroupNonUniformBallot %uint4 %subgroup %true
 %sid = OpLoad %int %subgroupID
 %less_than_32 = OpULessThan %bool %sid %int_32
 OpSelectionMerge %merge_32 None
 OpBranchConditional %less_than_32 %then_32 %else_32
 %then_32 = OpLabel
-%element_0 = OpCompositeExtract %int %b 0
+%element_0 = OpCompositeExtract %uint %b 0
 OpBranch %merge_32
 %else_32 = OpLabel
 %less_than_64 = OpULessThan %bool %sid %int_64
 OpSelectionMerge %merge_64 None
 OpBranchConditional %less_than_64 %then_64 %else_64
 %then_64 = OpLabel
-%element_1 = OpCompositeExtract %int %b 1
+%element_1 = OpCompositeExtract %uint %b 1
 OpBranch %merge_64
 %else_64 = OpLabel
 %less_than_96 = OpULessThan %bool %sid %int_96
-%element_2 = OpCompositeExtract %int %b 2
-%element_3 = OpCompositeExtract %int %b 3
-%sel_96 = OpSelect %int %less_than_96 %element_2 %element_3
+%element_2 = OpCompositeExtract %uint %b 2
+%element_3 = OpCompositeExtract %uint %b 3
+%sel_96 = OpSelect %uint %less_than_96 %element_2 %element_3
 OpBranch %merge_64
 %merge_64 = OpLabel
-%phi_64 = OpPhi %int %element_1 %then_64 %sel_96 %else_64
+%phi_64 = OpPhi %uint %element_1 %then_64 %sel_96 %else_64
 OpBranch %merge_32
 %merge_32 = OpLabel
-%phi_32 = OpPhi %int %element_0 %then_32 %phi_64 %merge_64
+%phi_32 = OpPhi %uint %element_0 %then_32 %phi_64 %merge_64
 %bit = OpISub %int %sid %quad_idx
-%base_bit = OpUMod %int %bit %int_32
+%base_bit = OpSMod %int %bit %int_32
 %idx_0_shift = OpShiftRightLogical %int %phi_32 %base_bit
 %idx_0_shift_and_1 = OpBitwiseAnd %int %idx_0_shift %int_1
 %idx_0_check = OpIEqual %bool %idx_0_shift_and_1 %int_0
