@@ -316,18 +316,18 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
 		None,
-		"671914c28e8249f0a555726a0f3f38691fe5c1df",
+		"cd590fa3341284cd6d1ee82366155786cfd44c96",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		None,
-		"7f6559d2802d0653541060f0909e33d137b9c8ba",
+		"ffccefddfd9a02ec0c0b6dd04ef5e1042279c97f",
 		"glslang",
 		removeTags = ["master-tot"]),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
 		None,
-		"5ab5c96198f30804a6a29961b8905f292a8ae600",
+		"104ecc356c1bea4476320faca64440cd1df655a3",
 		"spirv-headers"),
 	GitRepo(
 		"https://github.com/google/amber.git",
