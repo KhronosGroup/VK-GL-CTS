@@ -302,6 +302,13 @@ static void writeResultItem (const ri::Item& item, xml::Writer& dst)
 				case ri::Shader::SHADERTYPE_TESS_CONTROL:		tagName = "TessControlShader";		break;
 				case ri::Shader::SHADERTYPE_TESS_EVALUATION:	tagName = "TessEvaluationShader";	break;
 				case ri::Shader::SHADERTYPE_COMPUTE:			tagName = "ComputeShader";			break;
+				case ri::Shader::SHADERTYPE_RAYGEN:				tagName = "RaygenShader";			break;
+				case ri::Shader::SHADERTYPE_ANY_HIT:			tagName = "AnyHitShader";			break;
+				case ri::Shader::SHADERTYPE_CLOSEST_HIT:		tagName = "ClosestHitShader";		break;
+				case ri::Shader::SHADERTYPE_MISS:				tagName = "MissShader";				break;
+				case ri::Shader::SHADERTYPE_INTERSECTION:		tagName = "IntersectionShader";		break;
+				case ri::Shader::SHADERTYPE_CALLABLE:			tagName = "CallableShader";			break;
+
 				default:
 					throw Error("Unknown shader type");
 			}

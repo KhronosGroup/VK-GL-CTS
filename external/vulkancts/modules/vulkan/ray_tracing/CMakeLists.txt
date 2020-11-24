@@ -1,0 +1,50 @@
+include_directories(..)
+
+set(DEQP_VK_RAY_TRACING_SRCS
+	vktRayTracingBarrierTests.cpp
+	vktRayTracingBarrierTests.hpp
+	vktRayTracingBuildIndirectTests.cpp
+	vktRayTracingBuildIndirectTests.hpp
+	vktRayTracingBuiltinTests.cpp
+	vktRayTracingBuiltinTests.hpp
+	vktRayTracingBuildLargeTests.cpp
+	vktRayTracingBuildLargeTests.hpp
+	vktRayTracingBuildTests.cpp
+	vktRayTracingBuildTests.hpp
+	vktRayTracingCallableShadersTests.cpp
+	vktRayTracingCallableShadersTests.hpp
+	vktRayTracingComplexControlFlowTests.cpp
+	vktRayTracingComplexControlFlowTests.hpp
+	vktRayTracingTraceRaysTests.cpp
+	vktRayTracingTraceRaysTests.hpp
+	vktRayTracingMemGuaranteeTests.cpp
+	vktRayTracingMemGuaranteeTests.hpp
+	vktRayTracingMiscTests.cpp
+	vktRayTracingMiscTests.hpp
+	vktRayTracingNullASTests.cpp
+	vktRayTracingNullASTests.hpp
+	vktRayTracingShaderBindingTableTests.cpp
+	vktRayTracingShaderBindingTableTests.hpp
+	vktRayTracingTraversalControlTests.cpp
+	vktRayTracingTraversalControlTests.hpp
+	vktRayTracingAccelerationStructuresTests.cpp
+	vktRayTracingAccelerationStructuresTests.hpp
+	vktRayTracingWatertightnessTests.cpp
+	vktRayTracingWatertightnessTests.hpp
+	vktRayTracingPipelineLibraryTests.cpp
+	vktRayTracingPipelineLibraryTests.hpp
+	vktRayTracingCaptureReplayTests.cpp
+	vktRayTracingCaptureReplayTests.hpp
+	vktRayTracingTests.cpp
+	vktRayTracingTests.hpp
+	)
+
+set(DEQP_VK_RAY_TRACING_LIBS
+	tcutil
+	vkutil
+	)
+
+PCH(DEQP_VK_RAY_TRACING_SRCS ../pch.cpp)
+
+add_library(deqp-vk-ray-tracing STATIC ${DEQP_VK_RAY_TRACING_SRCS})
+target_link_libraries(deqp-vk-ray-tracing ${DEQP_VK_RAY_TRACING_LIBS})

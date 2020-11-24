@@ -239,6 +239,15 @@ public:
 		return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, numDescriptors, descriptorType, DE_NULL, DE_NULL, pTexelBufferView);
 	}
 
+	inline DescriptorSetUpdateBuilder&	writeArray					(VkDescriptorSet										destSet,
+																	 const Location&										destLocation,
+																	 VkDescriptorType										descriptorType,
+																	 deUint32												numDescriptors,
+																	 const VkWriteDescriptorSetAccelerationStructureKHR*	pAccelerationStructure)
+	{
+		return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, numDescriptors, descriptorType, DE_NULL, DE_NULL, DE_NULL, pAccelerationStructure);
+	}
+
 	inline DescriptorSetUpdateBuilder&	copySingle					(VkDescriptorSet	srcSet,
 																	 const Location&	srcLocation,
 																	 VkDescriptorSet	destSet,

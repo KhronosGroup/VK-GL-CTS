@@ -1,6 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  */
+const VkPhysicalDeviceAccelerationStructurePropertiesKHR&		getAccelerationStructureProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceAccelerationStructurePropertiesKHR>();			}
 const VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT&		getBlendOperationAdvancedPropertiesEXT		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT>();		}
 const VkPhysicalDeviceConservativeRasterizationPropertiesEXT&	getConservativeRasterizationPropertiesEXT	(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceConservativeRasterizationPropertiesEXT>();		}
 const VkPhysicalDeviceCooperativeMatrixPropertiesNV&			getCooperativeMatrixProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceCooperativeMatrixPropertiesNV>();				}
@@ -15,6 +16,7 @@ const VkPhysicalDeviceFloatControlsProperties&					getFloatControlsProperties			
 const VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			getFragmentDensityMapPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentDensityMapPropertiesEXT>();			}
 const VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&			getFragmentDensityMap2PropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentDensityMap2PropertiesEXT>();			}
 const VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			getFragmentShadingRateProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentShadingRatePropertiesKHR>();			}
+const VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV&		getFragmentShadingRateEnumsProperties		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV>();		}
 const VkPhysicalDeviceIDProperties&								getIDProperties								(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceIDProperties>();								}
 const VkPhysicalDeviceInlineUniformBlockPropertiesEXT&			getInlineUniformBlockPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceInlineUniformBlockPropertiesEXT>();			}
 const VkPhysicalDeviceLineRasterizationPropertiesEXT&			getLineRasterizationPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceLineRasterizationPropertiesEXT>();				}
@@ -27,8 +29,8 @@ const VkPhysicalDevicePointClippingProperties&					getPointClippingProperties			
 const VkPhysicalDevicePortabilitySubsetPropertiesKHR&			getPortabilitySubsetProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDevicePortabilitySubsetPropertiesKHR>();				}
 const VkPhysicalDeviceProtectedMemoryProperties&				getProtectedMemoryProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceProtectedMemoryProperties>();					}
 const VkPhysicalDevicePushDescriptorPropertiesKHR&				getPushDescriptorProperties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDevicePushDescriptorPropertiesKHR>();				}
-const VkPhysicalDeviceRayTracingPropertiesKHR&					getRayTracingProperties						(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceRayTracingPropertiesKHR>();					}
 const VkPhysicalDeviceRayTracingPropertiesNV&					getRayTracingPropertiesNV					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceRayTracingPropertiesNV>();						}
+const VkPhysicalDeviceRayTracingPipelinePropertiesKHR&			getRayTracingPipelineProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceRayTracingPipelinePropertiesKHR>();			}
 const VkPhysicalDeviceRobustness2PropertiesEXT&					getRobustness2PropertiesEXT					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceRobustness2PropertiesEXT>();					}
 const VkPhysicalDeviceSamplerFilterMinmaxProperties&			getSamplerFilterMinmaxProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceSamplerFilterMinmaxProperties>();				}
 const VkPhysicalDeviceSampleLocationsPropertiesEXT&				getSampleLocationsPropertiesEXT				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceSampleLocationsPropertiesEXT>();				}

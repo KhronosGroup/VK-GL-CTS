@@ -74,7 +74,7 @@ const char*	getRayTracingShaderGroupTypeKHRName						(VkRayTracingShaderGroupTyp
 const char*	getGeometryTypeKHRName									(VkGeometryTypeKHR value);
 const char*	getAccelerationStructureTypeKHRName						(VkAccelerationStructureTypeKHR value);
 const char*	getCopyAccelerationStructureModeKHRName					(VkCopyAccelerationStructureModeKHR value);
-const char*	getAccelerationStructureMemoryRequirementsTypeKHRName	(VkAccelerationStructureMemoryRequirementsTypeKHR value);
+const char*	getAccelerationStructureMemoryRequirementsTypeNVName	(VkAccelerationStructureMemoryRequirementsTypeNV value);
 const char*	getQueueGlobalPriorityEXTName							(VkQueueGlobalPriorityEXT value);
 const char*	getTimeDomainEXTName									(VkTimeDomainEXT value);
 const char*	getMemoryOverallocationBehaviorAMDName					(VkMemoryOverallocationBehaviorAMD value);
@@ -91,101 +91,111 @@ const char*	getCoverageReductionModeNVName							(VkCoverageReductionModeNV valu
 const char*	getLineRasterizationModeEXTName							(VkLineRasterizationModeEXT value);
 const char*	getIndirectCommandsTokenTypeNVName						(VkIndirectCommandsTokenTypeNV value);
 const char*	getDeviceMemoryReportEventTypeEXTName					(VkDeviceMemoryReportEventTypeEXT value);
+const char*	getFragmentShadingRateTypeNVName						(VkFragmentShadingRateTypeNV value);
+const char*	getFragmentShadingRateNVName							(VkFragmentShadingRateNV value);
+const char*	getBuildAccelerationStructureModeKHRName				(VkBuildAccelerationStructureModeKHR value);
 const char*	getAccelerationStructureBuildTypeKHRName				(VkAccelerationStructureBuildTypeKHR value);
+const char*	getAccelerationStructureCompatibilityKHRName			(VkAccelerationStructureCompatibilityKHR value);
+const char*	getShaderGroupShaderKHRName								(VkShaderGroupShaderKHR value);
 const char*	getFullScreenExclusiveEXTName							(VkFullScreenExclusiveEXT value);
 
-inline tcu::Format::Enum<VkResult>											getResultStr											(VkResult value)											{ return tcu::Format::Enum<VkResult>(getResultName, value);																					}
-inline tcu::Format::Enum<VkStructureType>									getStructureTypeStr										(VkStructureType value)										{ return tcu::Format::Enum<VkStructureType>(getStructureTypeName, value);																	}
-inline tcu::Format::Enum<VkImageLayout>										getImageLayoutStr										(VkImageLayout value)										{ return tcu::Format::Enum<VkImageLayout>(getImageLayoutName, value);																		}
-inline tcu::Format::Enum<VkObjectType>										getObjectTypeStr										(VkObjectType value)										{ return tcu::Format::Enum<VkObjectType>(getObjectTypeName, value);																			}
-inline tcu::Format::Enum<VkVendorId>										getVendorIdStr											(VkVendorId value)											{ return tcu::Format::Enum<VkVendorId>(getVendorIdName, value);																				}
-inline tcu::Format::Enum<VkPipelineCacheHeaderVersion>						getPipelineCacheHeaderVersionStr						(VkPipelineCacheHeaderVersion value)						{ return tcu::Format::Enum<VkPipelineCacheHeaderVersion>(getPipelineCacheHeaderVersionName, value);											}
-inline tcu::Format::Enum<VkSystemAllocationScope>							getSystemAllocationScopeStr								(VkSystemAllocationScope value)								{ return tcu::Format::Enum<VkSystemAllocationScope>(getSystemAllocationScopeName, value);													}
-inline tcu::Format::Enum<VkInternalAllocationType>							getInternalAllocationTypeStr							(VkInternalAllocationType value)							{ return tcu::Format::Enum<VkInternalAllocationType>(getInternalAllocationTypeName, value);													}
-inline tcu::Format::Enum<VkFormat>											getFormatStr											(VkFormat value)											{ return tcu::Format::Enum<VkFormat>(getFormatName, value);																					}
-inline tcu::Format::Enum<VkImageTiling>										getImageTilingStr										(VkImageTiling value)										{ return tcu::Format::Enum<VkImageTiling>(getImageTilingName, value);																		}
-inline tcu::Format::Enum<VkImageType>										getImageTypeStr											(VkImageType value)											{ return tcu::Format::Enum<VkImageType>(getImageTypeName, value);																			}
-inline tcu::Format::Enum<VkPhysicalDeviceType>								getPhysicalDeviceTypeStr								(VkPhysicalDeviceType value)								{ return tcu::Format::Enum<VkPhysicalDeviceType>(getPhysicalDeviceTypeName, value);															}
-inline tcu::Format::Enum<VkQueryType>										getQueryTypeStr											(VkQueryType value)											{ return tcu::Format::Enum<VkQueryType>(getQueryTypeName, value);																			}
-inline tcu::Format::Enum<VkSharingMode>										getSharingModeStr										(VkSharingMode value)										{ return tcu::Format::Enum<VkSharingMode>(getSharingModeName, value);																		}
-inline tcu::Format::Enum<VkComponentSwizzle>								getComponentSwizzleStr									(VkComponentSwizzle value)									{ return tcu::Format::Enum<VkComponentSwizzle>(getComponentSwizzleName, value);																}
-inline tcu::Format::Enum<VkImageViewType>									getImageViewTypeStr										(VkImageViewType value)										{ return tcu::Format::Enum<VkImageViewType>(getImageViewTypeName, value);																	}
-inline tcu::Format::Enum<VkBlendFactor>										getBlendFactorStr										(VkBlendFactor value)										{ return tcu::Format::Enum<VkBlendFactor>(getBlendFactorName, value);																		}
-inline tcu::Format::Enum<VkBlendOp>											getBlendOpStr											(VkBlendOp value)											{ return tcu::Format::Enum<VkBlendOp>(getBlendOpName, value);																				}
-inline tcu::Format::Enum<VkCompareOp>										getCompareOpStr											(VkCompareOp value)											{ return tcu::Format::Enum<VkCompareOp>(getCompareOpName, value);																			}
-inline tcu::Format::Enum<VkDynamicState>									getDynamicStateStr										(VkDynamicState value)										{ return tcu::Format::Enum<VkDynamicState>(getDynamicStateName, value);																		}
-inline tcu::Format::Enum<VkFrontFace>										getFrontFaceStr											(VkFrontFace value)											{ return tcu::Format::Enum<VkFrontFace>(getFrontFaceName, value);																			}
-inline tcu::Format::Enum<VkVertexInputRate>									getVertexInputRateStr									(VkVertexInputRate value)									{ return tcu::Format::Enum<VkVertexInputRate>(getVertexInputRateName, value);																}
-inline tcu::Format::Enum<VkPrimitiveTopology>								getPrimitiveTopologyStr									(VkPrimitiveTopology value)									{ return tcu::Format::Enum<VkPrimitiveTopology>(getPrimitiveTopologyName, value);															}
-inline tcu::Format::Enum<VkPolygonMode>										getPolygonModeStr										(VkPolygonMode value)										{ return tcu::Format::Enum<VkPolygonMode>(getPolygonModeName, value);																		}
-inline tcu::Format::Enum<VkStencilOp>										getStencilOpStr											(VkStencilOp value)											{ return tcu::Format::Enum<VkStencilOp>(getStencilOpName, value);																			}
-inline tcu::Format::Enum<VkLogicOp>											getLogicOpStr											(VkLogicOp value)											{ return tcu::Format::Enum<VkLogicOp>(getLogicOpName, value);																				}
-inline tcu::Format::Enum<VkBorderColor>										getBorderColorStr										(VkBorderColor value)										{ return tcu::Format::Enum<VkBorderColor>(getBorderColorName, value);																		}
-inline tcu::Format::Enum<VkFilter>											getFilterStr											(VkFilter value)											{ return tcu::Format::Enum<VkFilter>(getFilterName, value);																					}
-inline tcu::Format::Enum<VkSamplerAddressMode>								getSamplerAddressModeStr								(VkSamplerAddressMode value)								{ return tcu::Format::Enum<VkSamplerAddressMode>(getSamplerAddressModeName, value);															}
-inline tcu::Format::Enum<VkSamplerMipmapMode>								getSamplerMipmapModeStr									(VkSamplerMipmapMode value)									{ return tcu::Format::Enum<VkSamplerMipmapMode>(getSamplerMipmapModeName, value);															}
-inline tcu::Format::Enum<VkDescriptorType>									getDescriptorTypeStr									(VkDescriptorType value)									{ return tcu::Format::Enum<VkDescriptorType>(getDescriptorTypeName, value);																	}
-inline tcu::Format::Enum<VkAttachmentLoadOp>								getAttachmentLoadOpStr									(VkAttachmentLoadOp value)									{ return tcu::Format::Enum<VkAttachmentLoadOp>(getAttachmentLoadOpName, value);																}
-inline tcu::Format::Enum<VkAttachmentStoreOp>								getAttachmentStoreOpStr									(VkAttachmentStoreOp value)									{ return tcu::Format::Enum<VkAttachmentStoreOp>(getAttachmentStoreOpName, value);															}
-inline tcu::Format::Enum<VkPipelineBindPoint>								getPipelineBindPointStr									(VkPipelineBindPoint value)									{ return tcu::Format::Enum<VkPipelineBindPoint>(getPipelineBindPointName, value);															}
-inline tcu::Format::Enum<VkCommandBufferLevel>								getCommandBufferLevelStr								(VkCommandBufferLevel value)								{ return tcu::Format::Enum<VkCommandBufferLevel>(getCommandBufferLevelName, value);															}
-inline tcu::Format::Enum<VkIndexType>										getIndexTypeStr											(VkIndexType value)											{ return tcu::Format::Enum<VkIndexType>(getIndexTypeName, value);																			}
-inline tcu::Format::Enum<VkSubpassContents>									getSubpassContentsStr									(VkSubpassContents value)									{ return tcu::Format::Enum<VkSubpassContents>(getSubpassContentsName, value);																}
-inline tcu::Format::Enum<VkPointClippingBehavior>							getPointClippingBehaviorStr								(VkPointClippingBehavior value)								{ return tcu::Format::Enum<VkPointClippingBehavior>(getPointClippingBehaviorName, value);													}
-inline tcu::Format::Enum<VkTessellationDomainOrigin>						getTessellationDomainOriginStr							(VkTessellationDomainOrigin value)							{ return tcu::Format::Enum<VkTessellationDomainOrigin>(getTessellationDomainOriginName, value);												}
-inline tcu::Format::Enum<VkSamplerYcbcrModelConversion>						getSamplerYcbcrModelConversionStr						(VkSamplerYcbcrModelConversion value)						{ return tcu::Format::Enum<VkSamplerYcbcrModelConversion>(getSamplerYcbcrModelConversionName, value);										}
-inline tcu::Format::Enum<VkSamplerYcbcrRange>								getSamplerYcbcrRangeStr									(VkSamplerYcbcrRange value)									{ return tcu::Format::Enum<VkSamplerYcbcrRange>(getSamplerYcbcrRangeName, value);															}
-inline tcu::Format::Enum<VkChromaLocation>									getChromaLocationStr									(VkChromaLocation value)									{ return tcu::Format::Enum<VkChromaLocation>(getChromaLocationName, value);																	}
-inline tcu::Format::Enum<VkDescriptorUpdateTemplateType>					getDescriptorUpdateTemplateTypeStr						(VkDescriptorUpdateTemplateType value)						{ return tcu::Format::Enum<VkDescriptorUpdateTemplateType>(getDescriptorUpdateTemplateTypeName, value);										}
-inline tcu::Format::Enum<VkDriverId>										getDriverIdStr											(VkDriverId value)											{ return tcu::Format::Enum<VkDriverId>(getDriverIdName, value);																				}
-inline tcu::Format::Enum<VkShaderFloatControlsIndependence>					getShaderFloatControlsIndependenceStr					(VkShaderFloatControlsIndependence value)					{ return tcu::Format::Enum<VkShaderFloatControlsIndependence>(getShaderFloatControlsIndependenceName, value);								}
-inline tcu::Format::Enum<VkSamplerReductionMode>							getSamplerReductionModeStr								(VkSamplerReductionMode value)								{ return tcu::Format::Enum<VkSamplerReductionMode>(getSamplerReductionModeName, value);														}
-inline tcu::Format::Enum<VkSemaphoreType>									getSemaphoreTypeStr										(VkSemaphoreType value)										{ return tcu::Format::Enum<VkSemaphoreType>(getSemaphoreTypeName, value);																	}
-inline tcu::Format::Enum<VkPresentModeKHR>									getPresentModeKHRStr									(VkPresentModeKHR value)									{ return tcu::Format::Enum<VkPresentModeKHR>(getPresentModeKHRName, value);																	}
-inline tcu::Format::Enum<VkColorSpaceKHR>									getColorSpaceKHRStr										(VkColorSpaceKHR value)										{ return tcu::Format::Enum<VkColorSpaceKHR>(getColorSpaceKHRName, value);																	}
-inline tcu::Format::Enum<VkPerformanceCounterUnitKHR>						getPerformanceCounterUnitKHRStr							(VkPerformanceCounterUnitKHR value)							{ return tcu::Format::Enum<VkPerformanceCounterUnitKHR>(getPerformanceCounterUnitKHRName, value);											}
-inline tcu::Format::Enum<VkPerformanceCounterScopeKHR>						getPerformanceCounterScopeKHRStr						(VkPerformanceCounterScopeKHR value)						{ return tcu::Format::Enum<VkPerformanceCounterScopeKHR>(getPerformanceCounterScopeKHRName, value);											}
-inline tcu::Format::Enum<VkPerformanceCounterStorageKHR>					getPerformanceCounterStorageKHRStr						(VkPerformanceCounterStorageKHR value)						{ return tcu::Format::Enum<VkPerformanceCounterStorageKHR>(getPerformanceCounterStorageKHRName, value);										}
-inline tcu::Format::Enum<VkFragmentShadingRateCombinerOpKHR>				getFragmentShadingRateCombinerOpKHRStr					(VkFragmentShadingRateCombinerOpKHR value)					{ return tcu::Format::Enum<VkFragmentShadingRateCombinerOpKHR>(getFragmentShadingRateCombinerOpKHRName, value);								}
-inline tcu::Format::Enum<VkPipelineExecutableStatisticFormatKHR>			getPipelineExecutableStatisticFormatKHRStr				(VkPipelineExecutableStatisticFormatKHR value)				{ return tcu::Format::Enum<VkPipelineExecutableStatisticFormatKHR>(getPipelineExecutableStatisticFormatKHRName, value);						}
-inline tcu::Format::Enum<VkDebugReportObjectTypeEXT>						getDebugReportObjectTypeEXTStr							(VkDebugReportObjectTypeEXT value)							{ return tcu::Format::Enum<VkDebugReportObjectTypeEXT>(getDebugReportObjectTypeEXTName, value);												}
-inline tcu::Format::Enum<VkRasterizationOrderAMD>							getRasterizationOrderAMDStr								(VkRasterizationOrderAMD value)								{ return tcu::Format::Enum<VkRasterizationOrderAMD>(getRasterizationOrderAMDName, value);													}
-inline tcu::Format::Enum<VkShaderInfoTypeAMD>								getShaderInfoTypeAMDStr									(VkShaderInfoTypeAMD value)									{ return tcu::Format::Enum<VkShaderInfoTypeAMD>(getShaderInfoTypeAMDName, value);															}
-inline tcu::Format::Enum<VkValidationCheckEXT>								getValidationCheckEXTStr								(VkValidationCheckEXT value)								{ return tcu::Format::Enum<VkValidationCheckEXT>(getValidationCheckEXTName, value);															}
-inline tcu::Format::Enum<VkDisplayPowerStateEXT>							getDisplayPowerStateEXTStr								(VkDisplayPowerStateEXT value)								{ return tcu::Format::Enum<VkDisplayPowerStateEXT>(getDisplayPowerStateEXTName, value);														}
-inline tcu::Format::Enum<VkDeviceEventTypeEXT>								getDeviceEventTypeEXTStr								(VkDeviceEventTypeEXT value)								{ return tcu::Format::Enum<VkDeviceEventTypeEXT>(getDeviceEventTypeEXTName, value);															}
-inline tcu::Format::Enum<VkDisplayEventTypeEXT>								getDisplayEventTypeEXTStr								(VkDisplayEventTypeEXT value)								{ return tcu::Format::Enum<VkDisplayEventTypeEXT>(getDisplayEventTypeEXTName, value);														}
-inline tcu::Format::Enum<VkViewportCoordinateSwizzleNV>						getViewportCoordinateSwizzleNVStr						(VkViewportCoordinateSwizzleNV value)						{ return tcu::Format::Enum<VkViewportCoordinateSwizzleNV>(getViewportCoordinateSwizzleNVName, value);										}
-inline tcu::Format::Enum<VkDiscardRectangleModeEXT>							getDiscardRectangleModeEXTStr							(VkDiscardRectangleModeEXT value)							{ return tcu::Format::Enum<VkDiscardRectangleModeEXT>(getDiscardRectangleModeEXTName, value);												}
-inline tcu::Format::Enum<VkConservativeRasterizationModeEXT>				getConservativeRasterizationModeEXTStr					(VkConservativeRasterizationModeEXT value)					{ return tcu::Format::Enum<VkConservativeRasterizationModeEXT>(getConservativeRasterizationModeEXTName, value);								}
-inline tcu::Format::Enum<VkBlendOverlapEXT>									getBlendOverlapEXTStr									(VkBlendOverlapEXT value)									{ return tcu::Format::Enum<VkBlendOverlapEXT>(getBlendOverlapEXTName, value);																}
-inline tcu::Format::Enum<VkCoverageModulationModeNV>						getCoverageModulationModeNVStr							(VkCoverageModulationModeNV value)							{ return tcu::Format::Enum<VkCoverageModulationModeNV>(getCoverageModulationModeNVName, value);												}
-inline tcu::Format::Enum<VkValidationCacheHeaderVersionEXT>					getValidationCacheHeaderVersionEXTStr					(VkValidationCacheHeaderVersionEXT value)					{ return tcu::Format::Enum<VkValidationCacheHeaderVersionEXT>(getValidationCacheHeaderVersionEXTName, value);								}
-inline tcu::Format::Enum<VkShadingRatePaletteEntryNV>						getShadingRatePaletteEntryNVStr							(VkShadingRatePaletteEntryNV value)							{ return tcu::Format::Enum<VkShadingRatePaletteEntryNV>(getShadingRatePaletteEntryNVName, value);											}
-inline tcu::Format::Enum<VkCoarseSampleOrderTypeNV>							getCoarseSampleOrderTypeNVStr							(VkCoarseSampleOrderTypeNV value)							{ return tcu::Format::Enum<VkCoarseSampleOrderTypeNV>(getCoarseSampleOrderTypeNVName, value);												}
-inline tcu::Format::Enum<VkRayTracingShaderGroupTypeKHR>					getRayTracingShaderGroupTypeKHRStr						(VkRayTracingShaderGroupTypeKHR value)						{ return tcu::Format::Enum<VkRayTracingShaderGroupTypeKHR>(getRayTracingShaderGroupTypeKHRName, value);										}
-inline tcu::Format::Enum<VkGeometryTypeKHR>									getGeometryTypeKHRStr									(VkGeometryTypeKHR value)									{ return tcu::Format::Enum<VkGeometryTypeKHR>(getGeometryTypeKHRName, value);																}
-inline tcu::Format::Enum<VkAccelerationStructureTypeKHR>					getAccelerationStructureTypeKHRStr						(VkAccelerationStructureTypeKHR value)						{ return tcu::Format::Enum<VkAccelerationStructureTypeKHR>(getAccelerationStructureTypeKHRName, value);										}
-inline tcu::Format::Enum<VkCopyAccelerationStructureModeKHR>				getCopyAccelerationStructureModeKHRStr					(VkCopyAccelerationStructureModeKHR value)					{ return tcu::Format::Enum<VkCopyAccelerationStructureModeKHR>(getCopyAccelerationStructureModeKHRName, value);								}
-inline tcu::Format::Enum<VkAccelerationStructureMemoryRequirementsTypeKHR>	getAccelerationStructureMemoryRequirementsTypeKHRStr	(VkAccelerationStructureMemoryRequirementsTypeKHR value)	{ return tcu::Format::Enum<VkAccelerationStructureMemoryRequirementsTypeKHR>(getAccelerationStructureMemoryRequirementsTypeKHRName, value);	}
-inline tcu::Format::Enum<VkQueueGlobalPriorityEXT>							getQueueGlobalPriorityEXTStr							(VkQueueGlobalPriorityEXT value)							{ return tcu::Format::Enum<VkQueueGlobalPriorityEXT>(getQueueGlobalPriorityEXTName, value);													}
-inline tcu::Format::Enum<VkTimeDomainEXT>									getTimeDomainEXTStr										(VkTimeDomainEXT value)										{ return tcu::Format::Enum<VkTimeDomainEXT>(getTimeDomainEXTName, value);																	}
-inline tcu::Format::Enum<VkMemoryOverallocationBehaviorAMD>					getMemoryOverallocationBehaviorAMDStr					(VkMemoryOverallocationBehaviorAMD value)					{ return tcu::Format::Enum<VkMemoryOverallocationBehaviorAMD>(getMemoryOverallocationBehaviorAMDName, value);								}
-inline tcu::Format::Enum<VkPerformanceConfigurationTypeINTEL>				getPerformanceConfigurationTypeINTELStr					(VkPerformanceConfigurationTypeINTEL value)					{ return tcu::Format::Enum<VkPerformanceConfigurationTypeINTEL>(getPerformanceConfigurationTypeINTELName, value);							}
-inline tcu::Format::Enum<VkQueryPoolSamplingModeINTEL>						getQueryPoolSamplingModeINTELStr						(VkQueryPoolSamplingModeINTEL value)						{ return tcu::Format::Enum<VkQueryPoolSamplingModeINTEL>(getQueryPoolSamplingModeINTELName, value);											}
-inline tcu::Format::Enum<VkPerformanceOverrideTypeINTEL>					getPerformanceOverrideTypeINTELStr						(VkPerformanceOverrideTypeINTEL value)						{ return tcu::Format::Enum<VkPerformanceOverrideTypeINTEL>(getPerformanceOverrideTypeINTELName, value);										}
-inline tcu::Format::Enum<VkPerformanceParameterTypeINTEL>					getPerformanceParameterTypeINTELStr						(VkPerformanceParameterTypeINTEL value)						{ return tcu::Format::Enum<VkPerformanceParameterTypeINTEL>(getPerformanceParameterTypeINTELName, value);									}
-inline tcu::Format::Enum<VkPerformanceValueTypeINTEL>						getPerformanceValueTypeINTELStr							(VkPerformanceValueTypeINTEL value)							{ return tcu::Format::Enum<VkPerformanceValueTypeINTEL>(getPerformanceValueTypeINTELName, value);											}
-inline tcu::Format::Enum<VkValidationFeatureEnableEXT>						getValidationFeatureEnableEXTStr						(VkValidationFeatureEnableEXT value)						{ return tcu::Format::Enum<VkValidationFeatureEnableEXT>(getValidationFeatureEnableEXTName, value);											}
-inline tcu::Format::Enum<VkValidationFeatureDisableEXT>						getValidationFeatureDisableEXTStr						(VkValidationFeatureDisableEXT value)						{ return tcu::Format::Enum<VkValidationFeatureDisableEXT>(getValidationFeatureDisableEXTName, value);										}
-inline tcu::Format::Enum<VkComponentTypeNV>									getComponentTypeNVStr									(VkComponentTypeNV value)									{ return tcu::Format::Enum<VkComponentTypeNV>(getComponentTypeNVName, value);																}
-inline tcu::Format::Enum<VkScopeNV>											getScopeNVStr											(VkScopeNV value)											{ return tcu::Format::Enum<VkScopeNV>(getScopeNVName, value);																				}
-inline tcu::Format::Enum<VkCoverageReductionModeNV>							getCoverageReductionModeNVStr							(VkCoverageReductionModeNV value)							{ return tcu::Format::Enum<VkCoverageReductionModeNV>(getCoverageReductionModeNVName, value);												}
-inline tcu::Format::Enum<VkLineRasterizationModeEXT>						getLineRasterizationModeEXTStr							(VkLineRasterizationModeEXT value)							{ return tcu::Format::Enum<VkLineRasterizationModeEXT>(getLineRasterizationModeEXTName, value);												}
-inline tcu::Format::Enum<VkIndirectCommandsTokenTypeNV>						getIndirectCommandsTokenTypeNVStr						(VkIndirectCommandsTokenTypeNV value)						{ return tcu::Format::Enum<VkIndirectCommandsTokenTypeNV>(getIndirectCommandsTokenTypeNVName, value);										}
-inline tcu::Format::Enum<VkDeviceMemoryReportEventTypeEXT>					getDeviceMemoryReportEventTypeEXTStr					(VkDeviceMemoryReportEventTypeEXT value)					{ return tcu::Format::Enum<VkDeviceMemoryReportEventTypeEXT>(getDeviceMemoryReportEventTypeEXTName, value);									}
-inline tcu::Format::Enum<VkAccelerationStructureBuildTypeKHR>				getAccelerationStructureBuildTypeKHRStr					(VkAccelerationStructureBuildTypeKHR value)					{ return tcu::Format::Enum<VkAccelerationStructureBuildTypeKHR>(getAccelerationStructureBuildTypeKHRName, value);							}
-inline tcu::Format::Enum<VkFullScreenExclusiveEXT>							getFullScreenExclusiveEXTStr							(VkFullScreenExclusiveEXT value)							{ return tcu::Format::Enum<VkFullScreenExclusiveEXT>(getFullScreenExclusiveEXTName, value);													}
+inline tcu::Format::Enum<VkResult>											getResultStr										(VkResult value)										{ return tcu::Format::Enum<VkResult>(getResultName, value);																					}
+inline tcu::Format::Enum<VkStructureType>									getStructureTypeStr									(VkStructureType value)									{ return tcu::Format::Enum<VkStructureType>(getStructureTypeName, value);																	}
+inline tcu::Format::Enum<VkImageLayout>										getImageLayoutStr									(VkImageLayout value)									{ return tcu::Format::Enum<VkImageLayout>(getImageLayoutName, value);																		}
+inline tcu::Format::Enum<VkObjectType>										getObjectTypeStr									(VkObjectType value)									{ return tcu::Format::Enum<VkObjectType>(getObjectTypeName, value);																			}
+inline tcu::Format::Enum<VkVendorId>										getVendorIdStr										(VkVendorId value)										{ return tcu::Format::Enum<VkVendorId>(getVendorIdName, value);																				}
+inline tcu::Format::Enum<VkPipelineCacheHeaderVersion>						getPipelineCacheHeaderVersionStr					(VkPipelineCacheHeaderVersion value)					{ return tcu::Format::Enum<VkPipelineCacheHeaderVersion>(getPipelineCacheHeaderVersionName, value);											}
+inline tcu::Format::Enum<VkSystemAllocationScope>							getSystemAllocationScopeStr							(VkSystemAllocationScope value)							{ return tcu::Format::Enum<VkSystemAllocationScope>(getSystemAllocationScopeName, value);													}
+inline tcu::Format::Enum<VkInternalAllocationType>							getInternalAllocationTypeStr						(VkInternalAllocationType value)						{ return tcu::Format::Enum<VkInternalAllocationType>(getInternalAllocationTypeName, value);													}
+inline tcu::Format::Enum<VkFormat>											getFormatStr										(VkFormat value)										{ return tcu::Format::Enum<VkFormat>(getFormatName, value);																					}
+inline tcu::Format::Enum<VkImageTiling>										getImageTilingStr									(VkImageTiling value)									{ return tcu::Format::Enum<VkImageTiling>(getImageTilingName, value);																		}
+inline tcu::Format::Enum<VkImageType>										getImageTypeStr										(VkImageType value)										{ return tcu::Format::Enum<VkImageType>(getImageTypeName, value);																			}
+inline tcu::Format::Enum<VkPhysicalDeviceType>								getPhysicalDeviceTypeStr							(VkPhysicalDeviceType value)							{ return tcu::Format::Enum<VkPhysicalDeviceType>(getPhysicalDeviceTypeName, value);															}
+inline tcu::Format::Enum<VkQueryType>										getQueryTypeStr										(VkQueryType value)										{ return tcu::Format::Enum<VkQueryType>(getQueryTypeName, value);																			}
+inline tcu::Format::Enum<VkSharingMode>										getSharingModeStr									(VkSharingMode value)									{ return tcu::Format::Enum<VkSharingMode>(getSharingModeName, value);																		}
+inline tcu::Format::Enum<VkComponentSwizzle>								getComponentSwizzleStr								(VkComponentSwizzle value)								{ return tcu::Format::Enum<VkComponentSwizzle>(getComponentSwizzleName, value);																}
+inline tcu::Format::Enum<VkImageViewType>									getImageViewTypeStr									(VkImageViewType value)									{ return tcu::Format::Enum<VkImageViewType>(getImageViewTypeName, value);																	}
+inline tcu::Format::Enum<VkBlendFactor>										getBlendFactorStr									(VkBlendFactor value)									{ return tcu::Format::Enum<VkBlendFactor>(getBlendFactorName, value);																		}
+inline tcu::Format::Enum<VkBlendOp>											getBlendOpStr										(VkBlendOp value)										{ return tcu::Format::Enum<VkBlendOp>(getBlendOpName, value);																				}
+inline tcu::Format::Enum<VkCompareOp>										getCompareOpStr										(VkCompareOp value)										{ return tcu::Format::Enum<VkCompareOp>(getCompareOpName, value);																			}
+inline tcu::Format::Enum<VkDynamicState>									getDynamicStateStr									(VkDynamicState value)									{ return tcu::Format::Enum<VkDynamicState>(getDynamicStateName, value);																		}
+inline tcu::Format::Enum<VkFrontFace>										getFrontFaceStr										(VkFrontFace value)										{ return tcu::Format::Enum<VkFrontFace>(getFrontFaceName, value);																			}
+inline tcu::Format::Enum<VkVertexInputRate>									getVertexInputRateStr								(VkVertexInputRate value)								{ return tcu::Format::Enum<VkVertexInputRate>(getVertexInputRateName, value);																}
+inline tcu::Format::Enum<VkPrimitiveTopology>								getPrimitiveTopologyStr								(VkPrimitiveTopology value)								{ return tcu::Format::Enum<VkPrimitiveTopology>(getPrimitiveTopologyName, value);															}
+inline tcu::Format::Enum<VkPolygonMode>										getPolygonModeStr									(VkPolygonMode value)									{ return tcu::Format::Enum<VkPolygonMode>(getPolygonModeName, value);																		}
+inline tcu::Format::Enum<VkStencilOp>										getStencilOpStr										(VkStencilOp value)										{ return tcu::Format::Enum<VkStencilOp>(getStencilOpName, value);																			}
+inline tcu::Format::Enum<VkLogicOp>											getLogicOpStr										(VkLogicOp value)										{ return tcu::Format::Enum<VkLogicOp>(getLogicOpName, value);																				}
+inline tcu::Format::Enum<VkBorderColor>										getBorderColorStr									(VkBorderColor value)									{ return tcu::Format::Enum<VkBorderColor>(getBorderColorName, value);																		}
+inline tcu::Format::Enum<VkFilter>											getFilterStr										(VkFilter value)										{ return tcu::Format::Enum<VkFilter>(getFilterName, value);																					}
+inline tcu::Format::Enum<VkSamplerAddressMode>								getSamplerAddressModeStr							(VkSamplerAddressMode value)							{ return tcu::Format::Enum<VkSamplerAddressMode>(getSamplerAddressModeName, value);															}
+inline tcu::Format::Enum<VkSamplerMipmapMode>								getSamplerMipmapModeStr								(VkSamplerMipmapMode value)								{ return tcu::Format::Enum<VkSamplerMipmapMode>(getSamplerMipmapModeName, value);															}
+inline tcu::Format::Enum<VkDescriptorType>									getDescriptorTypeStr								(VkDescriptorType value)								{ return tcu::Format::Enum<VkDescriptorType>(getDescriptorTypeName, value);																	}
+inline tcu::Format::Enum<VkAttachmentLoadOp>								getAttachmentLoadOpStr								(VkAttachmentLoadOp value)								{ return tcu::Format::Enum<VkAttachmentLoadOp>(getAttachmentLoadOpName, value);																}
+inline tcu::Format::Enum<VkAttachmentStoreOp>								getAttachmentStoreOpStr								(VkAttachmentStoreOp value)								{ return tcu::Format::Enum<VkAttachmentStoreOp>(getAttachmentStoreOpName, value);															}
+inline tcu::Format::Enum<VkPipelineBindPoint>								getPipelineBindPointStr								(VkPipelineBindPoint value)								{ return tcu::Format::Enum<VkPipelineBindPoint>(getPipelineBindPointName, value);															}
+inline tcu::Format::Enum<VkCommandBufferLevel>								getCommandBufferLevelStr							(VkCommandBufferLevel value)							{ return tcu::Format::Enum<VkCommandBufferLevel>(getCommandBufferLevelName, value);															}
+inline tcu::Format::Enum<VkIndexType>										getIndexTypeStr										(VkIndexType value)										{ return tcu::Format::Enum<VkIndexType>(getIndexTypeName, value);																			}
+inline tcu::Format::Enum<VkSubpassContents>									getSubpassContentsStr								(VkSubpassContents value)								{ return tcu::Format::Enum<VkSubpassContents>(getSubpassContentsName, value);																}
+inline tcu::Format::Enum<VkPointClippingBehavior>							getPointClippingBehaviorStr							(VkPointClippingBehavior value)							{ return tcu::Format::Enum<VkPointClippingBehavior>(getPointClippingBehaviorName, value);													}
+inline tcu::Format::Enum<VkTessellationDomainOrigin>						getTessellationDomainOriginStr						(VkTessellationDomainOrigin value)						{ return tcu::Format::Enum<VkTessellationDomainOrigin>(getTessellationDomainOriginName, value);												}
+inline tcu::Format::Enum<VkSamplerYcbcrModelConversion>						getSamplerYcbcrModelConversionStr					(VkSamplerYcbcrModelConversion value)					{ return tcu::Format::Enum<VkSamplerYcbcrModelConversion>(getSamplerYcbcrModelConversionName, value);										}
+inline tcu::Format::Enum<VkSamplerYcbcrRange>								getSamplerYcbcrRangeStr								(VkSamplerYcbcrRange value)								{ return tcu::Format::Enum<VkSamplerYcbcrRange>(getSamplerYcbcrRangeName, value);															}
+inline tcu::Format::Enum<VkChromaLocation>									getChromaLocationStr								(VkChromaLocation value)								{ return tcu::Format::Enum<VkChromaLocation>(getChromaLocationName, value);																	}
+inline tcu::Format::Enum<VkDescriptorUpdateTemplateType>					getDescriptorUpdateTemplateTypeStr					(VkDescriptorUpdateTemplateType value)					{ return tcu::Format::Enum<VkDescriptorUpdateTemplateType>(getDescriptorUpdateTemplateTypeName, value);										}
+inline tcu::Format::Enum<VkDriverId>										getDriverIdStr										(VkDriverId value)										{ return tcu::Format::Enum<VkDriverId>(getDriverIdName, value);																				}
+inline tcu::Format::Enum<VkShaderFloatControlsIndependence>					getShaderFloatControlsIndependenceStr				(VkShaderFloatControlsIndependence value)				{ return tcu::Format::Enum<VkShaderFloatControlsIndependence>(getShaderFloatControlsIndependenceName, value);								}
+inline tcu::Format::Enum<VkSamplerReductionMode>							getSamplerReductionModeStr							(VkSamplerReductionMode value)							{ return tcu::Format::Enum<VkSamplerReductionMode>(getSamplerReductionModeName, value);														}
+inline tcu::Format::Enum<VkSemaphoreType>									getSemaphoreTypeStr									(VkSemaphoreType value)									{ return tcu::Format::Enum<VkSemaphoreType>(getSemaphoreTypeName, value);																	}
+inline tcu::Format::Enum<VkPresentModeKHR>									getPresentModeKHRStr								(VkPresentModeKHR value)								{ return tcu::Format::Enum<VkPresentModeKHR>(getPresentModeKHRName, value);																	}
+inline tcu::Format::Enum<VkColorSpaceKHR>									getColorSpaceKHRStr									(VkColorSpaceKHR value)									{ return tcu::Format::Enum<VkColorSpaceKHR>(getColorSpaceKHRName, value);																	}
+inline tcu::Format::Enum<VkPerformanceCounterUnitKHR>						getPerformanceCounterUnitKHRStr						(VkPerformanceCounterUnitKHR value)						{ return tcu::Format::Enum<VkPerformanceCounterUnitKHR>(getPerformanceCounterUnitKHRName, value);											}
+inline tcu::Format::Enum<VkPerformanceCounterScopeKHR>						getPerformanceCounterScopeKHRStr					(VkPerformanceCounterScopeKHR value)					{ return tcu::Format::Enum<VkPerformanceCounterScopeKHR>(getPerformanceCounterScopeKHRName, value);											}
+inline tcu::Format::Enum<VkPerformanceCounterStorageKHR>					getPerformanceCounterStorageKHRStr					(VkPerformanceCounterStorageKHR value)					{ return tcu::Format::Enum<VkPerformanceCounterStorageKHR>(getPerformanceCounterStorageKHRName, value);										}
+inline tcu::Format::Enum<VkFragmentShadingRateCombinerOpKHR>				getFragmentShadingRateCombinerOpKHRStr				(VkFragmentShadingRateCombinerOpKHR value)				{ return tcu::Format::Enum<VkFragmentShadingRateCombinerOpKHR>(getFragmentShadingRateCombinerOpKHRName, value);								}
+inline tcu::Format::Enum<VkPipelineExecutableStatisticFormatKHR>			getPipelineExecutableStatisticFormatKHRStr			(VkPipelineExecutableStatisticFormatKHR value)			{ return tcu::Format::Enum<VkPipelineExecutableStatisticFormatKHR>(getPipelineExecutableStatisticFormatKHRName, value);						}
+inline tcu::Format::Enum<VkDebugReportObjectTypeEXT>						getDebugReportObjectTypeEXTStr						(VkDebugReportObjectTypeEXT value)						{ return tcu::Format::Enum<VkDebugReportObjectTypeEXT>(getDebugReportObjectTypeEXTName, value);												}
+inline tcu::Format::Enum<VkRasterizationOrderAMD>							getRasterizationOrderAMDStr							(VkRasterizationOrderAMD value)							{ return tcu::Format::Enum<VkRasterizationOrderAMD>(getRasterizationOrderAMDName, value);													}
+inline tcu::Format::Enum<VkShaderInfoTypeAMD>								getShaderInfoTypeAMDStr								(VkShaderInfoTypeAMD value)								{ return tcu::Format::Enum<VkShaderInfoTypeAMD>(getShaderInfoTypeAMDName, value);															}
+inline tcu::Format::Enum<VkValidationCheckEXT>								getValidationCheckEXTStr							(VkValidationCheckEXT value)							{ return tcu::Format::Enum<VkValidationCheckEXT>(getValidationCheckEXTName, value);															}
+inline tcu::Format::Enum<VkDisplayPowerStateEXT>							getDisplayPowerStateEXTStr							(VkDisplayPowerStateEXT value)							{ return tcu::Format::Enum<VkDisplayPowerStateEXT>(getDisplayPowerStateEXTName, value);														}
+inline tcu::Format::Enum<VkDeviceEventTypeEXT>								getDeviceEventTypeEXTStr							(VkDeviceEventTypeEXT value)							{ return tcu::Format::Enum<VkDeviceEventTypeEXT>(getDeviceEventTypeEXTName, value);															}
+inline tcu::Format::Enum<VkDisplayEventTypeEXT>								getDisplayEventTypeEXTStr							(VkDisplayEventTypeEXT value)							{ return tcu::Format::Enum<VkDisplayEventTypeEXT>(getDisplayEventTypeEXTName, value);														}
+inline tcu::Format::Enum<VkViewportCoordinateSwizzleNV>						getViewportCoordinateSwizzleNVStr					(VkViewportCoordinateSwizzleNV value)					{ return tcu::Format::Enum<VkViewportCoordinateSwizzleNV>(getViewportCoordinateSwizzleNVName, value);										}
+inline tcu::Format::Enum<VkDiscardRectangleModeEXT>							getDiscardRectangleModeEXTStr						(VkDiscardRectangleModeEXT value)						{ return tcu::Format::Enum<VkDiscardRectangleModeEXT>(getDiscardRectangleModeEXTName, value);												}
+inline tcu::Format::Enum<VkConservativeRasterizationModeEXT>				getConservativeRasterizationModeEXTStr				(VkConservativeRasterizationModeEXT value)				{ return tcu::Format::Enum<VkConservativeRasterizationModeEXT>(getConservativeRasterizationModeEXTName, value);								}
+inline tcu::Format::Enum<VkBlendOverlapEXT>									getBlendOverlapEXTStr								(VkBlendOverlapEXT value)								{ return tcu::Format::Enum<VkBlendOverlapEXT>(getBlendOverlapEXTName, value);																}
+inline tcu::Format::Enum<VkCoverageModulationModeNV>						getCoverageModulationModeNVStr						(VkCoverageModulationModeNV value)						{ return tcu::Format::Enum<VkCoverageModulationModeNV>(getCoverageModulationModeNVName, value);												}
+inline tcu::Format::Enum<VkValidationCacheHeaderVersionEXT>					getValidationCacheHeaderVersionEXTStr				(VkValidationCacheHeaderVersionEXT value)				{ return tcu::Format::Enum<VkValidationCacheHeaderVersionEXT>(getValidationCacheHeaderVersionEXTName, value);								}
+inline tcu::Format::Enum<VkShadingRatePaletteEntryNV>						getShadingRatePaletteEntryNVStr						(VkShadingRatePaletteEntryNV value)						{ return tcu::Format::Enum<VkShadingRatePaletteEntryNV>(getShadingRatePaletteEntryNVName, value);											}
+inline tcu::Format::Enum<VkCoarseSampleOrderTypeNV>							getCoarseSampleOrderTypeNVStr						(VkCoarseSampleOrderTypeNV value)						{ return tcu::Format::Enum<VkCoarseSampleOrderTypeNV>(getCoarseSampleOrderTypeNVName, value);												}
+inline tcu::Format::Enum<VkRayTracingShaderGroupTypeKHR>					getRayTracingShaderGroupTypeKHRStr					(VkRayTracingShaderGroupTypeKHR value)					{ return tcu::Format::Enum<VkRayTracingShaderGroupTypeKHR>(getRayTracingShaderGroupTypeKHRName, value);										}
+inline tcu::Format::Enum<VkGeometryTypeKHR>									getGeometryTypeKHRStr								(VkGeometryTypeKHR value)								{ return tcu::Format::Enum<VkGeometryTypeKHR>(getGeometryTypeKHRName, value);																}
+inline tcu::Format::Enum<VkAccelerationStructureTypeKHR>					getAccelerationStructureTypeKHRStr					(VkAccelerationStructureTypeKHR value)					{ return tcu::Format::Enum<VkAccelerationStructureTypeKHR>(getAccelerationStructureTypeKHRName, value);										}
+inline tcu::Format::Enum<VkCopyAccelerationStructureModeKHR>				getCopyAccelerationStructureModeKHRStr				(VkCopyAccelerationStructureModeKHR value)				{ return tcu::Format::Enum<VkCopyAccelerationStructureModeKHR>(getCopyAccelerationStructureModeKHRName, value);								}
+inline tcu::Format::Enum<VkAccelerationStructureMemoryRequirementsTypeNV>	getAccelerationStructureMemoryRequirementsTypeNVStr	(VkAccelerationStructureMemoryRequirementsTypeNV value)	{ return tcu::Format::Enum<VkAccelerationStructureMemoryRequirementsTypeNV>(getAccelerationStructureMemoryRequirementsTypeNVName, value);	}
+inline tcu::Format::Enum<VkQueueGlobalPriorityEXT>							getQueueGlobalPriorityEXTStr						(VkQueueGlobalPriorityEXT value)						{ return tcu::Format::Enum<VkQueueGlobalPriorityEXT>(getQueueGlobalPriorityEXTName, value);													}
+inline tcu::Format::Enum<VkTimeDomainEXT>									getTimeDomainEXTStr									(VkTimeDomainEXT value)									{ return tcu::Format::Enum<VkTimeDomainEXT>(getTimeDomainEXTName, value);																	}
+inline tcu::Format::Enum<VkMemoryOverallocationBehaviorAMD>					getMemoryOverallocationBehaviorAMDStr				(VkMemoryOverallocationBehaviorAMD value)				{ return tcu::Format::Enum<VkMemoryOverallocationBehaviorAMD>(getMemoryOverallocationBehaviorAMDName, value);								}
+inline tcu::Format::Enum<VkPerformanceConfigurationTypeINTEL>				getPerformanceConfigurationTypeINTELStr				(VkPerformanceConfigurationTypeINTEL value)				{ return tcu::Format::Enum<VkPerformanceConfigurationTypeINTEL>(getPerformanceConfigurationTypeINTELName, value);							}
+inline tcu::Format::Enum<VkQueryPoolSamplingModeINTEL>						getQueryPoolSamplingModeINTELStr					(VkQueryPoolSamplingModeINTEL value)					{ return tcu::Format::Enum<VkQueryPoolSamplingModeINTEL>(getQueryPoolSamplingModeINTELName, value);											}
+inline tcu::Format::Enum<VkPerformanceOverrideTypeINTEL>					getPerformanceOverrideTypeINTELStr					(VkPerformanceOverrideTypeINTEL value)					{ return tcu::Format::Enum<VkPerformanceOverrideTypeINTEL>(getPerformanceOverrideTypeINTELName, value);										}
+inline tcu::Format::Enum<VkPerformanceParameterTypeINTEL>					getPerformanceParameterTypeINTELStr					(VkPerformanceParameterTypeINTEL value)					{ return tcu::Format::Enum<VkPerformanceParameterTypeINTEL>(getPerformanceParameterTypeINTELName, value);									}
+inline tcu::Format::Enum<VkPerformanceValueTypeINTEL>						getPerformanceValueTypeINTELStr						(VkPerformanceValueTypeINTEL value)						{ return tcu::Format::Enum<VkPerformanceValueTypeINTEL>(getPerformanceValueTypeINTELName, value);											}
+inline tcu::Format::Enum<VkValidationFeatureEnableEXT>						getValidationFeatureEnableEXTStr					(VkValidationFeatureEnableEXT value)					{ return tcu::Format::Enum<VkValidationFeatureEnableEXT>(getValidationFeatureEnableEXTName, value);											}
+inline tcu::Format::Enum<VkValidationFeatureDisableEXT>						getValidationFeatureDisableEXTStr					(VkValidationFeatureDisableEXT value)					{ return tcu::Format::Enum<VkValidationFeatureDisableEXT>(getValidationFeatureDisableEXTName, value);										}
+inline tcu::Format::Enum<VkComponentTypeNV>									getComponentTypeNVStr								(VkComponentTypeNV value)								{ return tcu::Format::Enum<VkComponentTypeNV>(getComponentTypeNVName, value);																}
+inline tcu::Format::Enum<VkScopeNV>											getScopeNVStr										(VkScopeNV value)										{ return tcu::Format::Enum<VkScopeNV>(getScopeNVName, value);																				}
+inline tcu::Format::Enum<VkCoverageReductionModeNV>							getCoverageReductionModeNVStr						(VkCoverageReductionModeNV value)						{ return tcu::Format::Enum<VkCoverageReductionModeNV>(getCoverageReductionModeNVName, value);												}
+inline tcu::Format::Enum<VkLineRasterizationModeEXT>						getLineRasterizationModeEXTStr						(VkLineRasterizationModeEXT value)						{ return tcu::Format::Enum<VkLineRasterizationModeEXT>(getLineRasterizationModeEXTName, value);												}
+inline tcu::Format::Enum<VkIndirectCommandsTokenTypeNV>						getIndirectCommandsTokenTypeNVStr					(VkIndirectCommandsTokenTypeNV value)					{ return tcu::Format::Enum<VkIndirectCommandsTokenTypeNV>(getIndirectCommandsTokenTypeNVName, value);										}
+inline tcu::Format::Enum<VkDeviceMemoryReportEventTypeEXT>					getDeviceMemoryReportEventTypeEXTStr				(VkDeviceMemoryReportEventTypeEXT value)				{ return tcu::Format::Enum<VkDeviceMemoryReportEventTypeEXT>(getDeviceMemoryReportEventTypeEXTName, value);									}
+inline tcu::Format::Enum<VkFragmentShadingRateTypeNV>						getFragmentShadingRateTypeNVStr						(VkFragmentShadingRateTypeNV value)						{ return tcu::Format::Enum<VkFragmentShadingRateTypeNV>(getFragmentShadingRateTypeNVName, value);											}
+inline tcu::Format::Enum<VkFragmentShadingRateNV>							getFragmentShadingRateNVStr							(VkFragmentShadingRateNV value)							{ return tcu::Format::Enum<VkFragmentShadingRateNV>(getFragmentShadingRateNVName, value);													}
+inline tcu::Format::Enum<VkBuildAccelerationStructureModeKHR>				getBuildAccelerationStructureModeKHRStr				(VkBuildAccelerationStructureModeKHR value)				{ return tcu::Format::Enum<VkBuildAccelerationStructureModeKHR>(getBuildAccelerationStructureModeKHRName, value);							}
+inline tcu::Format::Enum<VkAccelerationStructureBuildTypeKHR>				getAccelerationStructureBuildTypeKHRStr				(VkAccelerationStructureBuildTypeKHR value)				{ return tcu::Format::Enum<VkAccelerationStructureBuildTypeKHR>(getAccelerationStructureBuildTypeKHRName, value);							}
+inline tcu::Format::Enum<VkAccelerationStructureCompatibilityKHR>			getAccelerationStructureCompatibilityKHRStr			(VkAccelerationStructureCompatibilityKHR value)			{ return tcu::Format::Enum<VkAccelerationStructureCompatibilityKHR>(getAccelerationStructureCompatibilityKHRName, value);					}
+inline tcu::Format::Enum<VkShaderGroupShaderKHR>							getShaderGroupShaderKHRStr							(VkShaderGroupShaderKHR value)							{ return tcu::Format::Enum<VkShaderGroupShaderKHR>(getShaderGroupShaderKHRName, value);														}
+inline tcu::Format::Enum<VkFullScreenExclusiveEXT>							getFullScreenExclusiveEXTStr						(VkFullScreenExclusiveEXT value)						{ return tcu::Format::Enum<VkFullScreenExclusiveEXT>(getFullScreenExclusiveEXTName, value);													}
 
 inline std::ostream&	operator<<	(std::ostream& s, VkResult value)											{ return s << getResultStr(value);											}
 inline std::ostream&	operator<<	(std::ostream& s, VkStructureType value)									{ return s << getStructureTypeStr(value);									}
@@ -260,7 +270,7 @@ inline std::ostream&	operator<<	(std::ostream& s, VkRayTracingShaderGroupTypeKHR
 inline std::ostream&	operator<<	(std::ostream& s, VkGeometryTypeKHR value)									{ return s << getGeometryTypeKHRStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, VkAccelerationStructureTypeKHR value)						{ return s << getAccelerationStructureTypeKHRStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkCopyAccelerationStructureModeKHR value)					{ return s << getCopyAccelerationStructureModeKHRStr(value);				}
-inline std::ostream&	operator<<	(std::ostream& s, VkAccelerationStructureMemoryRequirementsTypeKHR value)	{ return s << getAccelerationStructureMemoryRequirementsTypeKHRStr(value);	}
+inline std::ostream&	operator<<	(std::ostream& s, VkAccelerationStructureMemoryRequirementsTypeNV value)	{ return s << getAccelerationStructureMemoryRequirementsTypeNVStr(value);	}
 inline std::ostream&	operator<<	(std::ostream& s, VkQueueGlobalPriorityEXT value)							{ return s << getQueueGlobalPriorityEXTStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkTimeDomainEXT value)									{ return s << getTimeDomainEXTStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, VkMemoryOverallocationBehaviorAMD value)					{ return s << getMemoryOverallocationBehaviorAMDStr(value);					}
@@ -277,7 +287,12 @@ inline std::ostream&	operator<<	(std::ostream& s, VkCoverageReductionModeNV valu
 inline std::ostream&	operator<<	(std::ostream& s, VkLineRasterizationModeEXT value)							{ return s << getLineRasterizationModeEXTStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkIndirectCommandsTokenTypeNV value)						{ return s << getIndirectCommandsTokenTypeNVStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkDeviceMemoryReportEventTypeEXT value)					{ return s << getDeviceMemoryReportEventTypeEXTStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkFragmentShadingRateTypeNV value)						{ return s << getFragmentShadingRateTypeNVStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkFragmentShadingRateNV value)							{ return s << getFragmentShadingRateNVStr(value);							}
+inline std::ostream&	operator<<	(std::ostream& s, VkBuildAccelerationStructureModeKHR value)				{ return s << getBuildAccelerationStructureModeKHRStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkAccelerationStructureBuildTypeKHR value)				{ return s << getAccelerationStructureBuildTypeKHRStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkAccelerationStructureCompatibilityKHR value)			{ return s << getAccelerationStructureCompatibilityKHRStr(value);			}
+inline std::ostream&	operator<<	(std::ostream& s, VkShaderGroupShaderKHR value)								{ return s << getShaderGroupShaderKHRStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkFullScreenExclusiveEXT value)							{ return s << getFullScreenExclusiveEXTStr(value);							}
 
 tcu::Format::Bitfield<32>	getAccessFlagsStr											(VkAccessFlags value);
@@ -359,6 +374,7 @@ tcu::Format::Bitfield<32>	getIndirectStateFlagsNVStr									(VkIndirectStateFla
 tcu::Format::Bitfield<32>	getIndirectCommandsLayoutUsageFlagsNVStr					(VkIndirectCommandsLayoutUsageFlagsNV value);
 tcu::Format::Bitfield<32>	getPrivateDataSlotCreateFlagsEXTStr							(VkPrivateDataSlotCreateFlagsEXT value);
 tcu::Format::Bitfield<32>	getDeviceDiagnosticsConfigFlagsNVStr						(VkDeviceDiagnosticsConfigFlagsNV value);
+tcu::Format::Bitfield<32>	getAccelerationStructureCreateFlagsKHRStr					(VkAccelerationStructureCreateFlagsKHR value);
 tcu::Format::Bitfield<32>	getInstanceCreateFlagsStr									(VkInstanceCreateFlags value);
 tcu::Format::Bitfield<32>	getDeviceCreateFlagsStr										(VkDeviceCreateFlags value);
 tcu::Format::Bitfield<32>	getMemoryMapFlagsStr										(VkMemoryMapFlags value);
@@ -696,6 +712,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineExecutableInfoKHR& va
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineExecutableStatisticValueKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineExecutableStatisticKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineExecutableInternalRepresentationKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineLibraryCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferCopy2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCopyBufferInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageCopy2KHR& value);
@@ -803,8 +820,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkGeometryDataNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkGeometryNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureCreateInfoNV& value);
-std::ostream&	operator<<	(std::ostream& s, const VkBindAccelerationStructureMemoryInfoKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkWriteDescriptorSetAccelerationStructureKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBindAccelerationStructureMemoryInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkWriteDescriptorSetAccelerationStructureNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureMemoryRequirementsInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkTransformMatrixKHR& value);
@@ -914,11 +931,41 @@ std::ostream&	operator<<	(std::ostream& s, const VkPrivateDataSlotCreateInfoEXT&
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDiagnosticsConfigFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceDiagnosticsConfigCreateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineFragmentShadingRateEnumStateCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2FeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2PropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCopyCommandTransformInfoQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageRobustnessFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice4444FormatsFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressConstKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildRangeInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryTrianglesDataKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryAabbsDataKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryInstancesDataKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryDataKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildGeometryInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkWriteDescriptorSetAccelerationStructureKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAccelerationStructureFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAccelerationStructurePropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureDeviceAddressInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureVersionInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCopyAccelerationStructureToMemoryInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCopyMemoryToAccelerationStructureInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCopyAccelerationStructureInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildSizesInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRayTracingShaderGroupCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRayTracingPipelineInterfaceCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRayTracingPipelineCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingPipelineFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkStridedDeviceAddressRegionKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkTraceRaysIndirectCommandKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayQueryFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidSurfaceCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferUsageANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferPropertiesANDROID& value);
@@ -928,32 +975,6 @@ std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetAndroidHardwareBuffe
 std::ostream&	operator<<	(std::ostream& s, const VkExternalFormatANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePortabilitySubsetFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePortabilitySubsetPropertiesKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDeferredOperationInfoKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPipelineLibraryCreateInfoKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressConstKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildOffsetInfoKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkRayTracingShaderGroupCreateInfoKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkRayTracingPipelineInterfaceCreateInfoKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkRayTracingPipelineCreateInfoKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryTrianglesDataKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryAabbsDataKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryInstancesDataKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryDataKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildGeometryInfoKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureCreateGeometryTypeInfoKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureCreateInfoKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureMemoryRequirementsInfoKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingFeaturesKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingPropertiesKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureDeviceAddressInfoKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureVersionKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkStridedBufferRegionKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkTraceRaysIndirectCommandKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkCopyAccelerationStructureToMemoryInfoKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkCopyMemoryToAccelerationStructureInfoKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkCopyAccelerationStructureInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImagePipeSurfaceCreateInfoFUCHSIA& value);
 std::ostream&	operator<<	(std::ostream& s, const VkStreamDescriptorSurfaceCreateInfoGGP& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentFrameTokenGGP& value);

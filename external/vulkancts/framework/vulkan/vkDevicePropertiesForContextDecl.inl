@@ -1,6 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  */
+const vk::VkPhysicalDeviceAccelerationStructurePropertiesKHR&		getAccelerationStructureProperties			(void) const;
 const vk::VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT&		getBlendOperationAdvancedPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceConservativeRasterizationPropertiesEXT&	getConservativeRasterizationPropertiesEXT	(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesNV&			getCooperativeMatrixProperties				(void) const;
@@ -15,6 +16,7 @@ const vk::VkPhysicalDeviceFloatControlsProperties&					getFloatControlsPropertie
 const vk::VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			getFragmentDensityMapPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&			getFragmentDensityMap2PropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			getFragmentShadingRateProperties			(void) const;
+const vk::VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV&		getFragmentShadingRateEnumsProperties		(void) const;
 const vk::VkPhysicalDeviceIDProperties&								getIDProperties								(void) const;
 const vk::VkPhysicalDeviceInlineUniformBlockPropertiesEXT&			getInlineUniformBlockPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceLineRasterizationPropertiesEXT&			getLineRasterizationPropertiesEXT			(void) const;
@@ -27,8 +29,8 @@ const vk::VkPhysicalDevicePointClippingProperties&					getPointClippingPropertie
 const vk::VkPhysicalDevicePortabilitySubsetPropertiesKHR&			getPortabilitySubsetProperties				(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				getProtectedMemoryProperties				(void) const;
 const vk::VkPhysicalDevicePushDescriptorPropertiesKHR&				getPushDescriptorProperties					(void) const;
-const vk::VkPhysicalDeviceRayTracingPropertiesKHR&					getRayTracingProperties						(void) const;
 const vk::VkPhysicalDeviceRayTracingPropertiesNV&					getRayTracingPropertiesNV					(void) const;
+const vk::VkPhysicalDeviceRayTracingPipelinePropertiesKHR&			getRayTracingPipelineProperties				(void) const;
 const vk::VkPhysicalDeviceRobustness2PropertiesEXT&					getRobustness2PropertiesEXT					(void) const;
 const vk::VkPhysicalDeviceSamplerFilterMinmaxProperties&			getSamplerFilterMinmaxProperties			(void) const;
 const vk::VkPhysicalDeviceSampleLocationsPropertiesEXT&				getSampleLocationsPropertiesEXT				(void) const;

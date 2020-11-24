@@ -35,13 +35,13 @@ template<> inline VkObjectType	getObjectType<VkSurfaceKHR>						(void) { return 
 template<> inline VkObjectType	getObjectType<VkSwapchainKHR>					(void) { return VK_OBJECT_TYPE_SWAPCHAIN_KHR;					}
 template<> inline VkObjectType	getObjectType<VkDisplayKHR>						(void) { return VK_OBJECT_TYPE_DISPLAY_KHR;						}
 template<> inline VkObjectType	getObjectType<VkDisplayModeKHR>					(void) { return VK_OBJECT_TYPE_DISPLAY_MODE_KHR;				}
+template<> inline VkObjectType	getObjectType<VkDeferredOperationKHR>			(void) { return VK_OBJECT_TYPE_DEFERRED_OPERATION_KHR;			}
 template<> inline VkObjectType	getObjectType<VkDebugReportCallbackEXT>			(void) { return VK_OBJECT_TYPE_DEBUG_REPORT_CALLBACK_EXT;		}
 template<> inline VkObjectType	getObjectType<VkDebugUtilsMessengerEXT>			(void) { return VK_OBJECT_TYPE_DEBUG_UTILS_MESSENGER_EXT;		}
 template<> inline VkObjectType	getObjectType<VkValidationCacheEXT>				(void) { return VK_OBJECT_TYPE_VALIDATION_CACHE_EXT;			}
-template<> inline VkObjectType	getObjectType<VkAccelerationStructureKHR>		(void) { return VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR;		}
+template<> inline VkObjectType	getObjectType<VkAccelerationStructureNV>		(void) { return VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_NV;		}
 template<> inline VkObjectType	getObjectType<VkPerformanceConfigurationINTEL>	(void) { return VK_OBJECT_TYPE_PERFORMANCE_CONFIGURATION_INTEL;	}
 template<> inline VkObjectType	getObjectType<VkIndirectCommandsLayoutNV>		(void) { return VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV;		}
 template<> inline VkObjectType	getObjectType<VkPrivateDataSlotEXT>				(void) { return VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT;			}
-template<> inline VkObjectType	getObjectType<VkDeferredOperationKHR>			(void) { return VK_OBJECT_TYPE_DEFERRED_OPERATION_KHR;			}
-template<> inline VkObjectType	getObjectType<VkAccelerationStructureNV>		(void) { return VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_NV;		}
+template<> inline VkObjectType	getObjectType<VkAccelerationStructureKHR>		(void) { return VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR;		}
 }

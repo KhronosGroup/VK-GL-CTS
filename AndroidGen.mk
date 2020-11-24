@@ -272,6 +272,30 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolTests.cpp \
 	external/vulkancts/modules/vulkan/rasterization/vktRasterizationFragShaderSideEffectsTests.cpp \
 	external/vulkancts/modules/vulkan/rasterization/vktRasterizationTests.cpp \
+	external/vulkancts/modules/vulkan/ray_query/vktRayQueryAccelerationStructuresTests.cpp \
+	external/vulkancts/modules/vulkan/ray_query/vktRayQueryBuiltinTests.cpp \
+	external/vulkancts/modules/vulkan/ray_query/vktRayQueryCullRayFlagsTests.cpp \
+	external/vulkancts/modules/vulkan/ray_query/vktRayQueryTests.cpp \
+	external/vulkancts/modules/vulkan/ray_query/vktRayQueryTraversalControlTests.cpp \
+	external/vulkancts/modules/vulkan/ray_query/vktRayQueryWatertightnessTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingAccelerationStructuresTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingBarrierTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingBuildIndirectTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingBuildLargeTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingBuildTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingBuiltinTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingCallableShadersTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingCaptureReplayTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingComplexControlFlowTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingMemGuaranteeTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingMiscTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingNullASTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingPipelineLibraryTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingShaderBindingTableTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingTraceRaysTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingTraversalControlTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingWatertightnessTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassDepthStencilResolveTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassFragmentDensityMapTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.cpp \
@@ -1185,6 +1209,8 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/protected_memory \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/query_pool \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/rasterization \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/ray_query \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/ray_tracing \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/renderpass \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/robustness \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/shaderexecutor \

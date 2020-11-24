@@ -60,6 +60,13 @@ static const char* getShaderTypeSuffix (const xe::ri::Shader::ShaderType shaderT
 		case xe::ri::Shader::SHADERTYPE_TESS_CONTROL:		return "tesc";
 		case xe::ri::Shader::SHADERTYPE_TESS_EVALUATION:	return "tese";
 		case xe::ri::Shader::SHADERTYPE_COMPUTE:			return "comp";
+		case xe::ri::Shader::SHADERTYPE_RAYGEN:				return "rgen";
+		case xe::ri::Shader::SHADERTYPE_ANY_HIT:			return "ahit";
+		case xe::ri::Shader::SHADERTYPE_CLOSEST_HIT:		return "chit";
+		case xe::ri::Shader::SHADERTYPE_MISS:				return "miss";
+		case xe::ri::Shader::SHADERTYPE_INTERSECTION:		return "sect";
+		case xe::ri::Shader::SHADERTYPE_CALLABLE:			return "call";
+
 		default:
 			throw xe::Error("Invalid shader type");
 	}

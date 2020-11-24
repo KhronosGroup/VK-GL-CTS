@@ -27,6 +27,7 @@ Move<VkRenderPass>					createRenderPass2					(const DeviceInterface& vk, VkDevic
 Move<VkSwapchainKHR>				createSwapchainKHR					(const DeviceInterface& vk, VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkSurfaceKHR>					createDisplayPlaneSurfaceKHR		(const InstanceInterface& vk, VkInstance instance, const VkDisplaySurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkSwapchainKHR>				createSharedSwapchainsKHR			(const DeviceInterface& vk, VkDevice device, deUint32 swapchainCount, const VkSwapchainCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator = DE_NULL);
+Move<VkDeferredOperationKHR>		createDeferredOperationKHR			(const DeviceInterface& vk, VkDevice device, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkDebugReportCallbackEXT>		createDebugReportCallbackEXT		(const InstanceInterface& vk, VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkDebugUtilsMessengerEXT>		createDebugUtilsMessengerEXT		(const InstanceInterface& vk, VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkValidationCacheEXT>			createValidationCacheEXT			(const DeviceInterface& vk, VkDevice device, const VkValidationCacheCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
@@ -34,9 +35,8 @@ Move<VkAccelerationStructureNV>		createAccelerationStructureNV		(const DeviceInt
 Move<VkSurfaceKHR>					createHeadlessSurfaceEXT			(const InstanceInterface& vk, VkInstance instance, const VkHeadlessSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkIndirectCommandsLayoutNV>	createIndirectCommandsLayoutNV		(const DeviceInterface& vk, VkDevice device, const VkIndirectCommandsLayoutCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkPrivateDataSlotEXT>			createPrivateDataSlotEXT			(const DeviceInterface& vk, VkDevice device, const VkPrivateDataSlotCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
-Move<VkSurfaceKHR>					createAndroidSurfaceKHR				(const InstanceInterface& vk, VkInstance instance, const VkAndroidSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
-Move<VkDeferredOperationKHR>		createDeferredOperationKHR			(const DeviceInterface& vk, VkDevice device, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkAccelerationStructureKHR>	createAccelerationStructureKHR		(const DeviceInterface& vk, VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
+Move<VkSurfaceKHR>					createAndroidSurfaceKHR				(const InstanceInterface& vk, VkInstance instance, const VkAndroidSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkSurfaceKHR>					createImagePipeSurfaceFUCHSIA		(const InstanceInterface& vk, VkInstance instance, const VkImagePipeSurfaceCreateInfoFUCHSIA* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkSurfaceKHR>					createStreamDescriptorSurfaceGGP	(const InstanceInterface& vk, VkInstance instance, const VkStreamDescriptorSurfaceCreateInfoGGP* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkSurfaceKHR>					createIOSSurfaceMVK					(const InstanceInterface& vk, VkInstance instance, const VkIOSSurfaceCreateInfoMVK* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);

@@ -98,8 +98,9 @@
 #include "vktImagelessFramebufferTests.hpp"
 #include "vktFragmentShaderInterlockTests.hpp"
 #include "vktShaderClockTests.hpp"
-#include "vktShaderClockTests.hpp"
 #include "vktModifiersTests.hpp"
+#include "vktRayTracingTests.hpp"
+#include "vktRayQueryTests.hpp"
 #include "vktPostmortemTests.hpp"
 
 #include <vector>
@@ -532,6 +533,8 @@ void TestPackage::init (void)
 	addChild(DescriptorIndexing::createTests	(m_testCtx));
 	addChild(FragmentShaderInterlock::createTests(m_testCtx));
 	addChild(modifiers::createTests				(m_testCtx));
+	addChild(RayTracing::createTests			(m_testCtx));
+	addChild(RayQuery::createTests				(m_testCtx));
 }
 
 void ExperimentalTestPackage::init (void)

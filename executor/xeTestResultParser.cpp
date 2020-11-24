@@ -113,6 +113,12 @@ static const EnumMapEntry s_resultItemMap[] =
 	{ 0x235a931c,	"TessControlShader",	ri::TYPE_SHADER			},
 	{ 0xa1bf7153,	"TessEvaluationShader",	ri::TYPE_SHADER			},
 	{ 0x6c1415d9,	"ComputeShader",		ri::TYPE_SHADER			},
+	{ 0x68738b22,	"RaygenShader",			ri::TYPE_SHADER			},
+	{ 0x51d29ce9,	"AnyHitShader",			ri::TYPE_SHADER			},
+	{ 0x8c64a6be,	"ClosestHitShader",		ri::TYPE_SHADER			},
+	{ 0xb30ed398,	"MissShader",			ri::TYPE_SHADER			},
+	{ 0x26150e53,	"IntersectionShader",	ri::TYPE_SHADER			},
+	{ 0x7e50944c,	"CallableShader",		ri::TYPE_SHADER			},
 	{ 0x72863a54,	"ShaderProgram",		ri::TYPE_SHADERPROGRAM	},
 	{ 0xb4efc08d,	"ShaderSource",			ri::TYPE_SHADERSOURCE	},
 	{ 0xaee4380a,	"SpirVAssemblySource",	ri::TYPE_SPIRVSOURCE	},
@@ -126,7 +132,7 @@ static const EnumMapEntry s_resultItemMap[] =
 	{ 0xf0feae93,	"SampleInfo",			ri::TYPE_SAMPLEINFO		},
 	{ 0x2aa6f14e,	"ValueInfo",			ri::TYPE_VALUEINFO		},
 	{ 0xd09429e7,	"Sample",				ri::TYPE_SAMPLE			},
-	{ 0x0e4a4722,	"Value",				ri::TYPE_SAMPLEVALUE	},
+	{ 0x0e4a4722,	"Value",				ri::TYPE_SAMPLEVALUE	}
 };
 
 static const EnumMapEntry s_imageFormatMap[] =
@@ -149,6 +155,12 @@ static const EnumMapEntry s_shaderTypeFromTagMap[] =
 	{ 0x235a931c,	"TessControlShader",	ri::Shader::SHADERTYPE_TESS_CONTROL		},
 	{ 0xa1bf7153,	"TessEvaluationShader",	ri::Shader::SHADERTYPE_TESS_EVALUATION	},
 	{ 0x6c1415d9,	"ComputeShader",		ri::Shader::SHADERTYPE_COMPUTE			},
+	{ 0x68738b22,	"RaygenShader",			ri::Shader::SHADERTYPE_RAYGEN			},
+	{ 0x51d29ce9,	"AnyHitShader",			ri::Shader::SHADERTYPE_ANY_HIT			},
+	{ 0x8c64a6be,	"ClosestHitShader",		ri::Shader::SHADERTYPE_CLOSEST_HIT		},
+	{ 0xb30ed398,	"MissShader",			ri::Shader::SHADERTYPE_MISS				},
+	{ 0x26150e53,	"IntersectionShader",	ri::Shader::SHADERTYPE_INTERSECTION		},
+	{ 0x7e50944c,	"CallableShader",		ri::Shader::SHADERTYPE_CALLABLE			}
 };
 
 static const EnumMapEntry s_testTypeMap[] =

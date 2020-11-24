@@ -43,6 +43,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkRayTracingUtil.hpp"
 
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCase.hpp"
@@ -74,6 +75,13 @@ using namespace std;
 
 static const deUint32 DIM = 8;
 
+static const VkFlags	ALL_RAY_TRACING_STAGES	= VK_SHADER_STAGE_RAYGEN_BIT_KHR
+												| VK_SHADER_STAGE_ANY_HIT_BIT_KHR
+												| VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
+												| VK_SHADER_STAGE_MISS_BIT_KHR
+												| VK_SHADER_STAGE_INTERSECTION_BIT_KHR
+												| VK_SHADER_STAGE_CALLABLE_BIT_KHR;
+
 typedef enum
 {
 	INDEX_TYPE_NONE = 0,
@@ -88,7 +96,13 @@ typedef enum
 	STAGE_COMPUTE = 0,
 	STAGE_VERTEX,
 	STAGE_FRAGMENT,
-	STAGE_RAYGEN
+	STAGE_RAYGEN_NV,
+	STAGE_RAYGEN,
+	STAGE_INTERSECT,
+	STAGE_ANY_HIT,
+	STAGE_CLOSEST_HIT,
+	STAGE_MISS,
+	STAGE_CALLABLE,
 } Stage;
 
 typedef enum
@@ -121,6 +135,47 @@ struct WriteInfo
 	deInt32		expected;
 	bool		writeGenerated;
 };
+
+bool isRayTracingStageKHR (const Stage stage)
+{
+	switch (stage)
+	{
+		case STAGE_COMPUTE:
+		case STAGE_VERTEX:
+		case STAGE_FRAGMENT:
+		case STAGE_RAYGEN_NV:
+			return false;
+
+		case STAGE_RAYGEN:
+		case STAGE_INTERSECT:
+		case STAGE_ANY_HIT:
+		case STAGE_CLOSEST_HIT:
+		case STAGE_MISS:
+		case STAGE_CALLABLE:
+			return true;
+
+		default: TCU_THROW(InternalError, "Unknown stage specified");
+	}
+}
+
+VkShaderStageFlagBits getShaderStageFlag (const Stage stage)
+{
+	switch (stage)
+	{
+		case STAGE_RAYGEN:		return VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+		case STAGE_ANY_HIT:		return VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+		case STAGE_CLOSEST_HIT:	return VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+		case STAGE_MISS:		return VK_SHADER_STAGE_MISS_BIT_KHR;
+		case STAGE_INTERSECT:	return VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
+		case STAGE_CALLABLE:	return VK_SHADER_STAGE_CALLABLE_BIT_KHR;
+		default: TCU_THROW(InternalError, "Unknown stage specified");
+	}
+}
+
+bool usesAccelerationStructure (const Stage stage)
+{
+	return (isRayTracingStageKHR(stage) && stage != STAGE_RAYGEN && stage != STAGE_CALLABLE);
+}
 
 class RandomLayout
 {
@@ -236,7 +291,6 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 		*pNextTail = &inlineUniformProperties;
 		pNextTail = &inlineUniformProperties.pNext;
 	}
-
 	*pNextTail = NULL;
 
 	context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
@@ -251,9 +305,22 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 	{
 		TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
 	}
-	else if (m_data.stage == STAGE_RAYGEN)
+	else if (m_data.stage == STAGE_RAYGEN_NV)
 	{
 		context.requireDeviceFunctionality("VK_NV_ray_tracing");
+	}
+	else if (isRayTracingStageKHR(m_data.stage))
+	{
+		context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+		context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+
+		const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR = context.getRayTracingPipelineFeatures();
+		if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE)
+			TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
+
+		const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR = context.getAccelerationStructureFeatures();
+		if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
+			TCU_THROW(TestError, "VK_KHR_ray_tracing_pipeline requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
 	}
 
 	// Note binding 0 in set 0 is the output storage image, always present and not subject to dynamic indexing.
@@ -382,6 +449,11 @@ void generateRandomLayout(RandomLayout& randomLayout, const CaseDef &caseDef, de
 		{
 			numBindings = 1;
 		}
+		// Guarantee room for the raytracing acceleration structure
+		if (s == 0 && numBindings < 2 && usesAccelerationStructure(caseDef.stage))
+		{
+			numBindings = 2;
+		}
 
 		bindings = vector<VkDescriptorSetLayoutBinding>(numBindings);
 		bindingsFlags = vector<VkDescriptorBindingFlags>(numBindings);
@@ -417,6 +489,16 @@ void generateRandomLayout(RandomLayout& randomLayout, const CaseDef &caseDef, de
 				binding.descriptorCount = 1;
 				binding.stageFlags = caseDef.allShaderStages;
 				numImage++;
+				arraySizes[b] = 0;
+				continue;
+			}
+
+			// Raytracing acceleration structure
+			if (s == 0 && b == 1 && usesAccelerationStructure(caseDef.stage))
+			{
+				binding.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+				binding.descriptorCount = 1;
+				binding.stageFlags = caseDef.allShaderStages;
 				arraySizes[b] = 0;
 				continue;
 			}
@@ -566,6 +648,7 @@ void generateRandomLayout(RandomLayout& randomLayout, const CaseDef &caseDef, de
 			bindings[bindings.size()-1].descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC &&
 			bindings[bindings.size()-1].descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC &&
 			bindings[bindings.size()-1].descriptorType != VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT &&
+			bindings[bindings.size()-1].descriptorType != VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR &&
 			bindings[bindings.size()-1].descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE &&
 			!(s == 0 && bindings.size() == 1) && // Don't cut out the output image binding
 			randRange(&rnd, 1,4) == 1) // 1 in 4 chance
@@ -625,6 +708,8 @@ private:
 
 void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollection) const
 {
+	const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
 	deRandom rnd;
 	deRandom_init(&rnd, m_data.seed);
 
@@ -695,6 +780,11 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 					decls << "layout(input_attachment_index = " << inputAttachments << ", set = " << s << ", binding = " << b << ") uniform isubpassInput attachment" << s << "_" << b << array.str()  << ";\n";
 					inputAttachments += binding.descriptorCount;
 					break;
+				case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+					DE_ASSERT(s == 0 && b == 1);
+					DE_ASSERT(bindings.size() >= 2);
+					decls << "layout(set = " << s << ", binding = " << b << ") uniform accelerationStructureEXT as" << s << "_" << b << ";\n";
+					break;
 				default: DE_ASSERT(0);
 				}
 
@@ -725,6 +815,12 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 					if (s == 0 && b == 0)
 					{
 						// This is the output image, skip.
+						continue;
+					}
+
+					if (s == 0 && b == 1 && usesAccelerationStructure(m_data.stage))
+					{
+						// This is the raytracing acceleration structure, skip.
 						continue;
 					}
 
@@ -878,7 +974,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 			programCollection.glslSources.add("test") << glu::ComputeSource(css.str());
 			break;
 		}
-	case STAGE_RAYGEN:
+	case STAGE_RAYGEN_NV:
 	{
 		std::stringstream css;
 		css <<
@@ -897,6 +993,188 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 			"}\n";
 
 		programCollection.glslSources.add("test") << glu::RaygenSource(css.str());
+		break;
+	}
+	case STAGE_RAYGEN:
+	{
+		std::stringstream css;
+		css <<
+			"#version 460 core\n"
+			"#extension GL_EXT_nonuniform_qualifier : enable\n"
+			"#extension GL_EXT_ray_tracing : require\n"
+			<< pushdecl.str()
+			<< decls.str() <<
+			"void main()\n"
+			"{\n"
+			"  const int invocationID = int(gl_LaunchIDEXT.y) * " << DIM << " + int(gl_LaunchIDEXT.x);\n"
+			"  int accum = 0, temp;\n"
+			<< checks.str() <<
+			"  ivec4 color = (accum != 0) ? ivec4(0,0,0,0) : ivec4(1,0,0,1);\n"
+			"  imageStore(simage0_0, ivec2(gl_LaunchIDEXT.xy), color);\n"
+			"}\n";
+
+		programCollection.glslSources.add("test") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
+		break;
+	}
+	case STAGE_INTERSECT:
+	{
+		{
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+			css <<
+				"#version 460 core\n"
+				"#extension GL_EXT_nonuniform_qualifier : enable\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"hitAttributeEXT vec3 hitAttribute;\n"
+				<< pushdecl.str()
+				<< decls.str() <<
+				"void main()\n"
+				"{\n"
+				"  const int invocationID = int(gl_LaunchIDEXT.y) * " << DIM << " + int(gl_LaunchIDEXT.x);\n"
+				"  int accum = 0, temp;\n"
+				<< checks.str() <<
+				"  ivec4 color = (accum != 0) ? ivec4(0,0,0,0) : ivec4(1,0,0,1);\n"
+				"  imageStore(simage0_0, ivec2(gl_LaunchIDEXT.xy), color);\n"
+				"  hitAttribute = vec3(0.0f, 0.0f, 0.0f);\n"
+				"  reportIntersectionEXT(1.0f, 0);\n"
+				"}\n";
+
+			programCollection.glslSources.add("test") << glu::IntersectionSource(updateRayTracingGLSL(css.str())) << buildOptions;
+		}
+
+		break;
+	}
+	case STAGE_ANY_HIT:
+	{
+		{
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+			css <<
+				"#version 460 core\n"
+				"#extension GL_EXT_nonuniform_qualifier : enable\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"layout(location = 0) rayPayloadInEXT vec3 hitValue;\n"
+				"hitAttributeEXT vec3 attribs;\n"
+				<< pushdecl.str()
+				<< decls.str() <<
+				"void main()\n"
+				"{\n"
+				"  const int invocationID = int(gl_LaunchIDEXT.y) * " << DIM << " + int(gl_LaunchIDEXT.x);\n"
+				"  int accum = 0, temp;\n"
+				<< checks.str() <<
+				"  ivec4 color = (accum != 0) ? ivec4(0,0,0,0) : ivec4(1,0,0,1);\n"
+				"  imageStore(simage0_0, ivec2(gl_LaunchIDEXT.xy), color);\n"
+				"}\n";
+
+			programCollection.glslSources.add("test") << glu::AnyHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
+		}
+
+		break;
+	}
+	case STAGE_CLOSEST_HIT:
+	{
+		{
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+			css <<
+				"#version 460 core\n"
+				"#extension GL_EXT_nonuniform_qualifier : enable\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"layout(location = 0) rayPayloadInEXT vec3 hitValue;\n"
+				"hitAttributeEXT vec3 attribs;\n"
+				<< pushdecl.str()
+				<< decls.str() <<
+				"void main()\n"
+				"{\n"
+				"  const int invocationID = int(gl_LaunchIDEXT.y) * " << DIM << " + int(gl_LaunchIDEXT.x);\n"
+				"  int accum = 0, temp;\n"
+				<< checks.str() <<
+				"  ivec4 color = (accum != 0) ? ivec4(0,0,0,0) : ivec4(1,0,0,1);\n"
+				"  imageStore(simage0_0, ivec2(gl_LaunchIDEXT.xy), color);\n"
+				"}\n";
+
+			programCollection.glslSources.add("test") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
+		}
+
+		break;
+	}
+	case STAGE_MISS:
+	{
+		{
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+			css <<
+				"#version 460 core\n"
+				"#extension GL_EXT_nonuniform_qualifier : enable\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"layout(location = 0) rayPayloadInEXT dummyPayload { vec4 dummy; };\n"
+				<< pushdecl.str()
+				<< decls.str() <<
+				"void main()\n"
+				"{\n"
+				"  const int invocationID = int(gl_LaunchIDEXT.y) * " << DIM << " + int(gl_LaunchIDEXT.x);\n"
+				"  int accum = 0, temp;\n"
+				<< checks.str() <<
+				"  ivec4 color = (accum != 0) ? ivec4(0,0,0,0) : ivec4(1,0,0,1);\n"
+				"  imageStore(simage0_0, ivec2(gl_LaunchIDEXT.xy), color);\n"
+				"}\n";
+
+			programCollection.glslSources.add("test") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
+		}
+
+		break;
+	}
+	case STAGE_CALLABLE:
+	{
+		{
+			std::stringstream css;
+			css <<
+				"#version 460 core\n"
+				"#extension GL_EXT_nonuniform_qualifier : enable\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"layout(location = 0) callableDataEXT float dummy;"
+				"layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;\n"
+				"\n"
+				"void main()\n"
+				"{\n"
+				"  executeCallableEXT(0, 0);\n"
+				"}\n";
+
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+			css <<
+				"#version 460 core\n"
+				"#extension GL_EXT_nonuniform_qualifier : enable\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"layout(location = 0) callableDataInEXT float dummy;"
+				<< pushdecl.str()
+				<< decls.str() <<
+				"void main()\n"
+				"{\n"
+				"  const int invocationID = int(gl_LaunchIDEXT.y) * " << DIM << " + int(gl_LaunchIDEXT.x);\n"
+				"  int accum = 0, temp;\n"
+				<< checks.str() <<
+				"  ivec4 color = (accum != 0) ? ivec4(0,0,0,0) : ivec4(1,0,0,1);\n"
+				"  imageStore(simage0_0, ivec2(gl_LaunchIDEXT.xy), color);\n"
+				"}\n";
+
+			programCollection.glslSources.add("test") << glu::CallableSource(updateRayTracingGLSL(css.str())) << buildOptions;
+		}
 		break;
 	}
 	case STAGE_VERTEX:
@@ -963,32 +1241,36 @@ TestInstance* DescriptorSetRandomTestCase::createInstance (Context& context) con
 
 tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 {
-	const InstanceInterface&	vki					= m_context.getInstanceInterface();
-	const DeviceInterface&		vk					= m_context.getDeviceInterface();
-	const VkDevice				device				= m_context.getDevice();
-	const VkPhysicalDevice		physicalDevice		= m_context.getPhysicalDevice();
-	Allocator&					allocator			= m_context.getDefaultAllocator();
-	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const InstanceInterface&	vki							= m_context.getInstanceInterface();
+	const DeviceInterface&		vk							= m_context.getDeviceInterface();
+	const VkDevice				device						= m_context.getDevice();
+	const VkPhysicalDevice		physicalDevice				= m_context.getPhysicalDevice();
+	Allocator&					allocator					= m_context.getDefaultAllocator();
+	const deUint32				queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
+
 	deRandom					rnd;
+	VkPhysicalDeviceProperties2	properties					= getPhysicalDeviceExtensionProperties(vki, physicalDevice);
+	deUint32					shaderGroupHandleSize		= 0;
+	deUint32					shaderGroupBaseAlignment	= 1;
 
 	deRandom_init(&rnd, m_data.seed);
 	RandomLayout& randomLayout = *m_data.randomLayout.get();
 
-	// Get needed properties.
-	VkPhysicalDeviceProperties2 properties;
-	deMemset(&properties, 0, sizeof(properties));
-	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-
-	VkPhysicalDeviceRayTracingPropertiesNV rayTracingProperties;
-	deMemset(&rayTracingProperties, 0, sizeof(rayTracingProperties));
-	rayTracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV;
-
-	if (m_context.isDeviceFunctionalitySupported("VK_NV_ray_tracing"))
+	if (m_data.stage == STAGE_RAYGEN_NV)
 	{
-		properties.pNext = &rayTracingProperties;
+		const VkPhysicalDeviceRayTracingPropertiesNV rayTracingProperties = getPhysicalDeviceExtensionProperties(vki, physicalDevice);
+
+		shaderGroupHandleSize = rayTracingProperties.shaderGroupHandleSize;
 	}
 
-	vki.getPhysicalDeviceProperties2(physicalDevice, &properties);
+	if (isRayTracingStageKHR(m_data.stage))
+	{
+		de::MovePtr<RayTracingProperties>	rayTracingPropertiesKHR;
+
+		rayTracingPropertiesKHR		= makeRayTracingProperties(vki, physicalDevice);
+		shaderGroupHandleSize		= rayTracingPropertiesKHR->getShaderGroupHandleSize();
+		shaderGroupBaseAlignment	= rayTracingPropertiesKHR->getShaderGroupBaseAlignment();
+	}
 
 	// Get needed features.
 	auto descriptorIndexingSupported	= m_context.isDeviceFunctionalitySupported("VK_EXT_descriptor_indexing");
@@ -1002,11 +1284,11 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	case STAGE_COMPUTE:
 		bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
 		break;
-	case STAGE_RAYGEN:
+	case STAGE_RAYGEN_NV:
 		bindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_NV;
 		break;
 	default:
-		bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		bindPoint = (isRayTracingStageKHR(m_data.stage) ? VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR : VK_PIPELINE_BIND_POINT_GRAPHICS);
 		break;
 	}
 
@@ -1042,7 +1324,8 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 				(binding.descriptorType != VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT	|| inlineUniformFeatures.descriptorBindingInlineUniformBlockUpdateAfterBind) &&
 				(binding.descriptorType != VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT) &&
 				(binding.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) &&
-				(binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC))
+				(binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC) &&
+				(binding.descriptorType != VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR))
 			{
 				bindingsFlags[b] |= VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
 				layoutCreateFlags |= VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT;
@@ -1067,12 +1350,11 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 		const VkDescriptorSetLayoutCreateInfo setLayoutCreateInfo =
 		{
-			vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-			(descriptorIndexingSupported ? &bindingFlagsInfo : DE_NULL),
-
-			layoutCreateFlags,
-			(deUint32)bindings.size(),
-			bindings.empty() ? DE_NULL : bindings.data()
+			vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	//  VkStructureType						sType;
+			(descriptorIndexingSupported ? &bindingFlagsInfo : DE_NULL),//  const void*							pNext;
+			layoutCreateFlags,											//  VkDescriptorSetLayoutCreateFlags	flags;
+			(deUint32)bindings.size(),									//  deUint32							bindingCount;
+			bindings.empty() ? DE_NULL : bindings.data()				//  const VkDescriptorSetLayoutBinding*	pBindings;
 		};
 
 		descriptorSetLayouts[s] = vk::createDescriptorSetLayout(vk, device, &setLayoutCreateInfo);
@@ -1092,6 +1374,10 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		if (m_data.maxInlineUniformBlocks > 0u)
 		{
 			poolBuilder.addType(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT, m_data.maxInlineUniformBlocks * m_data.maxInlineUniformBlockSize);
+		}
+		if (usesAccelerationStructure(m_data.stage))
+		{
+			poolBuilder.addType(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1u);
 		}
 
 		VkDescriptorPoolInlineUniformBlockCreateInfoEXT inlineUniformBlockPoolCreateInfo =
@@ -1421,9 +1707,13 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 			{
 				continue;
 			}
-			if (binding.descriptorType != VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT &&
-				binding.descriptorType != VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT &&
-				binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+			if (binding.descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+			{
+				descriptor++;
+			}
+			else if (binding.descriptorType != VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT &&
+					 binding.descriptorType != VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT &&
+					 binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 			{
 				for (deUint32 d = descriptor; d < descriptor + binding.descriptorCount; ++d)
 				{
@@ -1485,19 +1775,9 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 					clearValue.int32[0]				= (isWrite ? -1 : static_cast<deInt32>(d));
 					postStorageImageBarrier.image	= img;
 
-					VkPipelineStageFlags usedStage	= 0;
-					switch (m_data.stage)
-					{
-						case STAGE_COMPUTE:		usedStage |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;			break;
-						case STAGE_VERTEX:		usedStage |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;			break;
-						case STAGE_FRAGMENT:	usedStage |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;			break;
-						case STAGE_RAYGEN:		usedStage |= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV;	break;
-						default:				DE_ASSERT(0); break;
-					}
-
 					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &preStorageImageBarrier);
 					vk.cmdClearColorImage(*cmdBuffer, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue, 1, &clearRange);
-					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, usedStage, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postStorageImageBarrier);
+					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, m_data.allShaderStages, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postStorageImageBarrier);
 
 					++storageImgIndex;
 				}
@@ -1544,13 +1824,13 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 	const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,				// sType
-		DE_NULL,													// pNext
-		(VkPipelineLayoutCreateFlags)0,
-		m_data.numDescriptorSets,									// setLayoutCount
-		&descriptorSetLayoutsRaw[0],								// pSetLayouts
-		m_data.indexType == INDEX_TYPE_PUSHCONSTANT ? 1u : 0u,		// pushConstantRangeCount
-		&pushConstRange,											// pPushConstantRanges
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,				//  VkStructureType					sType;
+		DE_NULL,													//  const void*						pNext;
+		(VkPipelineLayoutCreateFlags)0,								//  VkPipelineLayoutCreateFlags		flags;
+		m_data.numDescriptorSets,									//  deUint32						setLayoutCount;
+		&descriptorSetLayoutsRaw[0],								//  const VkDescriptorSetLayout*	pSetLayouts;
+		m_data.indexType == INDEX_TYPE_PUSHCONSTANT ? 1u : 0u,		//  deUint32						pushConstantRangeCount;
+		&pushConstRange,											//  const VkPushConstantRange*		pPushConstantRanges;
 	};
 
 	Move<VkPipelineLayout> pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
@@ -1626,6 +1906,36 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	imageViewCreateInfo.image = **image;
 	imageView = createImageView(vk, device, &imageViewCreateInfo, NULL);
 
+	// Create ray tracing structures
+	de::MovePtr<vk::BottomLevelAccelerationStructure>	bottomLevelAccelerationStructure;
+	de::MovePtr<vk::TopLevelAccelerationStructure>		topLevelAccelerationStructure;
+	VkStridedDeviceAddressRegionKHR						raygenShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR						missShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR						hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR						callableShaderBindingTableRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+
+	if (usesAccelerationStructure(m_data.stage))
+	{
+		// Create bottom level acceleration structure
+		{
+			bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
+
+			bottomLevelAccelerationStructure->setDefaultGeometryData(getShaderStageFlag(m_data.stage));
+
+			bottomLevelAccelerationStructure->createAndBuild(vk, device, *cmdBuffer, allocator);
+		}
+
+		// Create top level acceleration structure
+		{
+			topLevelAccelerationStructure = makeTopLevelAccelerationStructure();
+
+			topLevelAccelerationStructure->setInstanceCount(1);
+			topLevelAccelerationStructure->addInstance(de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
+
+			topLevelAccelerationStructure->createAndBuild(vk, device, *cmdBuffer, allocator);
+		}
+	}
+
 	descriptor		= 0;
 	attachmentIndex	= 0;
 	storageImgIndex = 0;
@@ -1641,6 +1951,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		vector<VkDescriptorImageInfo> imageInfoVec(numDescriptors);
 		vector<VkBufferView> bufferViewVec(numDescriptors);
 		vector<VkWriteDescriptorSetInlineUniformBlockEXT> inlineInfoVec(numDescriptors);
+		vector<VkWriteDescriptorSetAccelerationStructureKHR> accelerationInfoVec(numDescriptors);
 		vector<deUint32> descriptorNumber(numDescriptors);
 		vector<VkWriteDescriptorSet> writesBeforeBindVec(0);
 		vector<VkWriteDescriptorSet> writesAfterBindVec(0);
@@ -1704,6 +2015,9 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 					case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:
 						// Handled below.
 						break;
+					case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+						// Handled below.
+						break;
 					default:
 						// Other descriptor types.
 						bufferInfoVec[vecIndex] = makeDescriptorBufferInfo(**buffer, descriptor*align, sizeof(deUint32));
@@ -1715,16 +2029,16 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 					VkWriteDescriptorSet w =
 					{
-						VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,		// sType
-						DE_NULL,									// pNext
-						*descriptorSets[s],							// dstSet
-						(deUint32)b,								// binding
-						ai,											// dstArrayElement
-						1u,											// descriptorCount
-						binding.descriptorType,						// descriptorType
-						&imageInfoVec[vecIndex],					// pImageInfo
-						&bufferInfoVec[vecIndex],					// pBufferInfo
-						&bufferViewVec[vecIndex],					// pTexelBufferView
+						VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,		//  VkStructureType					sType;
+						DE_NULL,									//  const void*						pNext;
+						*descriptorSets[s],							//  VkDescriptorSet					dstSet;
+						(deUint32)b,								//  deUint32						dstBinding;
+						ai,											//  deUint32						dstArrayElement;
+						1u,											//  deUint32						descriptorCount;
+						binding.descriptorType,						//  VkDescriptorType				descriptorType;
+						&imageInfoVec[vecIndex],					//  const VkDescriptorImageInfo*	pImageInfo;
+						&bufferInfoVec[vecIndex],					//  const VkDescriptorBufferInfo*	pBufferInfo;
+						&bufferViewVec[vecIndex],					//  const VkBufferView*				pTexelBufferView;
 					};
 
 					if (binding.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
@@ -1743,6 +2057,22 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 						w.descriptorCount = sizeof(deUint32);
 					}
 
+					if (binding.descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+					{
+						const TopLevelAccelerationStructure*			topLevelAccelerationStructurePtr		= topLevelAccelerationStructure.get();
+						VkWriteDescriptorSetAccelerationStructureKHR	accelerationStructureWriteDescriptorSet	=
+						{
+							VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,	//  VkStructureType						sType;
+							DE_NULL,															//  const void*							pNext;
+							w.descriptorCount,													//  deUint32							accelerationStructureCount;
+							topLevelAccelerationStructurePtr->getPtr(),							//  const VkAccelerationStructureKHR*	pAccelerationStructures;
+						};
+
+						accelerationInfoVec[vecIndex] = accelerationStructureWriteDescriptorSet;
+						w.dstArrayElement = 0;
+						w.pNext = &accelerationInfoVec[vecIndex];
+					}
+
 					VkDescriptorUpdateTemplateEntry templateEntry =
 					{
 						(deUint32)b,				// uint32_t				dstBinding;
@@ -1755,30 +2085,36 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 					switch (binding.descriptorType)
 					{
-					default: DE_ASSERT(0); // Fallthrough
-					case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-					case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
-						templateEntry.offset = vecIndex * sizeof(VkDescriptorImageInfo);
-						(updateAfterBind ? imgTemplateEntriesAfter : imgTemplateEntriesBefore).push_back(templateEntry);
-						break;
-					case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-					case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-						templateEntry.offset = vecIndex * sizeof(VkBufferView);
-						(updateAfterBind ? texelBufTemplateEntriesAfter : texelBufTemplateEntriesBefore).push_back(templateEntry);
-						break;
-					case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-					case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-					case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-					case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
-						templateEntry.offset = vecIndex * sizeof(VkDescriptorBufferInfo);
-						(updateAfterBind ? bufTemplateEntriesAfter : bufTemplateEntriesBefore).push_back(templateEntry);
-						break;
-					case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:
-						templateEntry.offset = descriptor * sizeof(deUint32);
-						templateEntry.dstArrayElement = ai*16 + 16; // add 16 to skip "ivec4 dummy"
-						templateEntry.descriptorCount = sizeof(deUint32);
-						(updateAfterBind ? inlineTemplateEntriesAfter : inlineTemplateEntriesBefore).push_back(templateEntry);
-						break;
+						default:
+							TCU_THROW(InternalError, "Unknown descriptor type");
+
+						case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+						case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+							templateEntry.offset = vecIndex * sizeof(VkDescriptorImageInfo);
+							(updateAfterBind ? imgTemplateEntriesAfter : imgTemplateEntriesBefore).push_back(templateEntry);
+							break;
+						case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+						case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+							templateEntry.offset = vecIndex * sizeof(VkBufferView);
+							(updateAfterBind ? texelBufTemplateEntriesAfter : texelBufTemplateEntriesBefore).push_back(templateEntry);
+							break;
+						case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+						case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+						case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+						case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+							templateEntry.offset = vecIndex * sizeof(VkDescriptorBufferInfo);
+							(updateAfterBind ? bufTemplateEntriesAfter : bufTemplateEntriesBefore).push_back(templateEntry);
+							break;
+						case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:
+							templateEntry.offset = descriptor * sizeof(deUint32);
+							templateEntry.dstArrayElement = ai*16 + 16; // add 16 to skip "ivec4 dummy"
+							templateEntry.descriptorCount = sizeof(deUint32);
+							(updateAfterBind ? inlineTemplateEntriesAfter : inlineTemplateEntriesBefore).push_back(templateEntry);
+							break;
+						case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+							DE_ASSERT(!updateAfterBind);
+							DE_ASSERT(usesAccelerationStructure(m_data.stage));
+							break;
 					}
 
 					vecIndex++;
@@ -1801,8 +2137,11 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 		// Randomly select between vkUpdateDescriptorSets and vkUpdateDescriptorSetWithTemplate
 		if (randRange(&rnd, 1, 2) == 1 &&
-			m_context.contextSupports(vk::ApiVersion(1, 1, 0)))
+			m_context.contextSupports(vk::ApiVersion(1, 1, 0)) &&
+			!usesAccelerationStructure(m_data.stage))
 		{
+			DE_ASSERT(!usesAccelerationStructure(m_data.stage));
+
 			VkDescriptorUpdateTemplateCreateInfo templateCreateInfo =
 			{
 				VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO,	// VkStructureType							sType;
@@ -1886,7 +2225,12 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	Move<VkRenderPass> renderPass;
 	Move<VkFramebuffer> framebuffer;
 
-	de::MovePtr<BufferWithMemory> sbtBuffer;
+	de::MovePtr<BufferWithMemory>	sbtBuffer;
+	de::MovePtr<BufferWithMemory>	raygenShaderBindingTable;
+	de::MovePtr<BufferWithMemory>	missShaderBindingTable;
+	de::MovePtr<BufferWithMemory>	hitShaderBindingTable;
+	de::MovePtr<BufferWithMemory>	callableShaderBindingTable;
+	de::MovePtr<RayTracingPipeline>	rayTracingPipeline;
 
 	if (m_data.stage == STAGE_COMPUTE)
 	{
@@ -1915,59 +2259,145 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		};
 		pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
 	}
-	else if (m_data.stage == STAGE_RAYGEN)
+	else if (m_data.stage == STAGE_RAYGEN_NV)
 	{
 		const Unique<VkShaderModule>	shader(createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0));
 
-		const VkPipelineShaderStageCreateInfo	shaderCreateInfo =
+		const VkPipelineShaderStageCreateInfo	shaderCreateInfo	=
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			DE_NULL,
-			(VkPipelineShaderStageCreateFlags)0,
-			VK_SHADER_STAGE_RAYGEN_BIT_NV,								// stage
-			*shader,													// shader
-			"main",
-			DE_NULL,													// pSpecializationInfo
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		//  VkStructureType						sType;
+			DE_NULL,													//  const void*							pNext;
+			(VkPipelineShaderStageCreateFlags)0,						//  VkPipelineShaderStageCreateFlags	flags;
+			VK_SHADER_STAGE_RAYGEN_BIT_NV,								//  VkShaderStageFlagBits				stage;
+			*shader,													//  VkShaderModule						module;
+			"main",														//  const char*							pName;
+			DE_NULL,													//  const VkSpecializationInfo*			pSpecializationInfo;
 		};
 
-		VkRayTracingShaderGroupCreateInfoNV group =
+		VkRayTracingShaderGroupCreateInfoNV		group				=
 		{
-			VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_NV,
-			DE_NULL,
-			VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_NV,			// type
-			0,														// generalShader
-			VK_SHADER_UNUSED_NV,									// closestHitShader
-			VK_SHADER_UNUSED_NV,									// anyHitShader
-			VK_SHADER_UNUSED_NV,									// intersectionShader
+			VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_NV,	//  VkStructureType					sType;
+			DE_NULL,													//  const void*						pNext;
+			VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_NV,				//  VkRayTracingShaderGroupTypeNV	type;
+			0,															//  deUint32						generalShader;
+			VK_SHADER_UNUSED_NV,										//  deUint32						closestHitShader;
+			VK_SHADER_UNUSED_NV,										//  deUint32						anyHitShader;
+			VK_SHADER_UNUSED_NV,										//  deUint32						intersectionShader;
 		};
 
-		VkRayTracingPipelineCreateInfoNV pipelineCreateInfo = {
-			VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_NV,	// sType
-			DE_NULL,												// pNext
-			0,														// flags
-			1,														// stageCount
-			&shaderCreateInfo,										// pStages
-			1,														// groupCount
-			&group,													// pGroups
-			0,														// maxRecursionDepth
-			*pipelineLayout,										// layout
-			(vk::VkPipeline)0,										// basePipelineHandle
-			0u,														// basePipelineIndex
+		VkRayTracingPipelineCreateInfoNV		pipelineCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_NV,	//  VkStructureType								sType;
+			DE_NULL,												//  const void*									pNext;
+			0,														//  VkPipelineCreateFlags						flags;
+			1,														//  deUint32									stageCount;
+			&shaderCreateInfo,										//  const VkPipelineShaderStageCreateInfo*		pStages;
+			1,														//  deUint32									groupCount;
+			&group,													//  const VkRayTracingShaderGroupCreateInfoNV*	pGroups;
+			0,														//  deUint32									maxRecursionDepth;
+			*pipelineLayout,										//  VkPipelineLayout							layout;
+			(vk::VkPipeline)0,										//  VkPipeline									basePipelineHandle;
+			0u,														//  deInt32										basePipelineIndex;
 		};
 
 		pipeline = createRayTracingPipelineNV(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
 
-		const auto shaderGroupHandleSize	= static_cast<VkDeviceSize>(rayTracingProperties.shaderGroupHandleSize);
-		const auto allocSize				= de::roundUp(shaderGroupHandleSize, properties.properties.limits.nonCoherentAtomSize);
+		const auto allocSize = de::roundUp(static_cast<VkDeviceSize>(shaderGroupHandleSize), properties.properties.limits.nonCoherentAtomSize);
 
-		sbtBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
-			vk, device, allocator, makeBufferCreateInfo(allocSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_RAY_TRACING_BIT_NV), MemoryRequirement::HostVisible));
+		sbtBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator,
+			makeBufferCreateInfo(allocSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_RAY_TRACING_BIT_NV), MemoryRequirement::HostVisible));
 
 		const auto&	alloc	= sbtBuffer->getAllocation();
 		const auto	ptr		= reinterpret_cast<deUint32*>(alloc.getHostPtr());
 
 		invalidateAlloc(vk, device, alloc);
 		vk.getRayTracingShaderGroupHandlesNV(device, *pipeline, 0, 1, static_cast<deUintptr>(allocSize), ptr);
+	}
+	else if (m_data.stage == STAGE_RAYGEN)
+	{
+		rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
+
+		rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0), 0);
+
+		pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
+
+		raygenShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
+		raygenShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, raygenShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+	}
+	else if (m_data.stage == STAGE_INTERSECT)
+	{
+		rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
+
+		rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,		createShaderModule(vk, device, m_context.getBinaryCollection().get("rgen"), 0), 0);
+		rayTracingPipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR,	createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0), 1);
+
+		pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
+
+		raygenShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
+		raygenShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, raygenShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+
+		hitShaderBindingTable					= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
+		hitShaderBindingTableRegion				= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, hitShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+	}
+	else if (m_data.stage == STAGE_ANY_HIT)
+	{
+		rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
+
+		rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,		createShaderModule(vk, device, m_context.getBinaryCollection().get("rgen"), 0), 0);
+		rayTracingPipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR,		createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0), 1);
+
+		pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
+
+		raygenShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
+		raygenShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, raygenShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+
+		hitShaderBindingTable					= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
+		hitShaderBindingTableRegion				= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, hitShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+	}
+	else if (m_data.stage == STAGE_CLOSEST_HIT)
+	{
+		rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
+
+		rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,		createShaderModule(vk, device, m_context.getBinaryCollection().get("rgen"), 0), 0);
+		rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,	createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0), 1);
+
+		pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
+
+		raygenShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
+		raygenShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, raygenShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+
+		hitShaderBindingTable					= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
+		hitShaderBindingTableRegion				= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, hitShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+	}
+	else if (m_data.stage == STAGE_MISS)
+	{
+		rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
+
+		rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,	createShaderModule(vk, device, m_context.getBinaryCollection().get("rgen"), 0), 0);
+		rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR,		createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0), 1);
+
+		pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
+
+		raygenShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
+		raygenShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, raygenShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+
+		missShaderBindingTable					= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
+		missShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, missShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+	}
+	else if (m_data.stage == STAGE_CALLABLE)
+	{
+		rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
+
+		rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,	createShaderModule(vk, device, m_context.getBinaryCollection().get("rgen"), 0), 0);
+		rayTracingPipeline->addShader(VK_SHADER_STAGE_CALLABLE_BIT_KHR,	createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0), 1);
+
+		pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
+
+		raygenShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
+		raygenShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, raygenShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+
+		callableShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
+		callableShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, callableShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
 	}
 	else
 	{
@@ -2239,13 +2669,23 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	{
 		vk.cmdDispatch(*cmdBuffer, DIM, DIM, 1);
 	}
-	else if (m_data.stage == STAGE_RAYGEN)
+	else if (m_data.stage == STAGE_RAYGEN_NV)
 	{
 		vk.cmdTraceRaysNV(*cmdBuffer,
 			**sbtBuffer, 0,
 			DE_NULL, 0, 0,
 			DE_NULL, 0, 0,
 			DE_NULL, 0, 0,
+			DIM, DIM, 1);
+	}
+	else if (isRayTracingStageKHR(m_data.stage))
+	{
+		cmdTraceRays(vk,
+			*cmdBuffer,
+			&raygenShaderBindingTableRegion,
+			&missShaderBindingTableRegion,
+			&hitShaderBindingTableRegion,
+			&callableShaderBindingTableRegion,
 			DIM, DIM, 1);
 	}
 	else
@@ -2347,15 +2787,15 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	deUint32 *ptr = (deUint32 *)copyBuffer->getAllocation().getHostPtr();
 	invalidateAlloc(vk, device, copyBuffer->getAllocation());
 
-	auto&			log = m_context.getTestContext().getLog();
-	qpTestResult	res = QP_TEST_RESULT_PASS;
+	deUint32	failures = 0;
+	auto&		log = m_context.getTestContext().getLog();
 
 	for (deUint32 i = 0; i < DIM*DIM; ++i)
 	{
 		if (ptr[i] != 1)
 		{
+			failures++;
 			log << tcu::TestLog::Message << "Failure in copy buffer, ptr[" << i << "] = " << ptr[i] << tcu::TestLog::EndMessage;
-			res = QP_TEST_RESULT_FAIL;
 		}
 	}
 
@@ -2368,12 +2808,15 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		const auto& writeInfo = descIdWriteInfo.second;
 		if (writeInfo.writeGenerated && *writeInfo.ptr != writeInfo.expected)
 		{
+			failures++;
 			log << tcu::TestLog::Message << "Failure in write operation; expected " << writeInfo.expected << " and found " << *writeInfo.ptr << tcu::TestLog::EndMessage;
-			res = QP_TEST_RESULT_FAIL;
 		}
 	}
 
-	return tcu::TestStatus(res, qpGetTestResultName(res));
+	if (failures == 0)
+		return tcu::TestStatus::pass("Pass");
+	else
+		return tcu::TestStatus::fail("Fail (failures=" + de::toString(failures) + ")");
 }
 
 }	// anonymous
@@ -2466,10 +2909,16 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 
 	TestGroupCase stageCases[] =
 	{
-		{ STAGE_COMPUTE,	"comp",		"compute"	},
-		{ STAGE_FRAGMENT,	"frag",		"fragment"	},
-		{ STAGE_VERTEX,		"vert",		"vertex"	},
-		{ STAGE_RAYGEN,		"rgen",		"raygen"	},
+		{ STAGE_COMPUTE,	"comp",		"compute"		},
+		{ STAGE_FRAGMENT,	"frag",		"fragment"		},
+		{ STAGE_VERTEX,		"vert",		"vertex"		},
+		{ STAGE_RAYGEN_NV,	"rgnv",		"raygen_nv"		},
+		{ STAGE_RAYGEN,		"rgen",		"raygen"		},
+		{ STAGE_INTERSECT,	"sect",		"intersect"		},
+		{ STAGE_ANY_HIT,	"ahit",		"any_hit"		},
+		{ STAGE_CLOSEST_HIT,"chit",		"closest_hit"	},
+		{ STAGE_MISS,		"miss",		"miss"			},
+		{ STAGE_CALLABLE,	"call",		"callable"		},
 	};
 
 	TestGroupCase uabCases[] =
@@ -2504,7 +2953,14 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 									de::MovePtr<tcu::TestCaseGroup> uabGroup(new tcu::TestCaseGroup(testCtx, uabCases[uabNdx].name, uabCases[uabNdx].description));
 									for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
 									{
-										Stage currentStage = static_cast<Stage>(stageCases[stageNdx].count);
+										const Stage		currentStage			= static_cast<Stage>(stageCases[stageNdx].count);
+										const VkFlags	rtShaderStagesNV		= currentStage == STAGE_RAYGEN_NV ? VK_SHADER_STAGE_RAYGEN_BIT_NV : 0;
+										const VkFlags	rtPipelineStagesNV		= currentStage == STAGE_RAYGEN_NV ? VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV : 0;
+										const VkFlags	rtShaderStagesKHR		= isRayTracingStageKHR(currentStage) ? ALL_RAY_TRACING_STAGES : 0;
+										const VkFlags	rtPipelineStagesKHR		= isRayTracingStageKHR(currentStage) ? VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR : 0;
+										const VkFlags	rtShaderStages			= rtShaderStagesNV | rtShaderStagesKHR;
+										const VkFlags	rtPipelineStages		= rtPipelineStagesNV | rtPipelineStagesKHR;
+
 										de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stageCases[stageNdx].name, stageCases[stageNdx].description));
 										for (int iaNdx = 0; iaNdx < DE_LENGTH_OF_ARRAY(iaCases); ++iaNdx)
 										{
@@ -2551,35 +3007,29 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 
 											for (deUint32 rnd = 0; rnd < numSeeds; ++rnd)
 											{
-												VkFlags allShaderStages		= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-												VkFlags allPipelineStages	= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-
-												if ((Stage)stageCases[stageNdx].count == STAGE_RAYGEN)
-												{
-													allShaderStages		|= VK_SHADER_STAGE_RAYGEN_BIT_NV;
-													allPipelineStages	|= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV;
-												}
+												const VkFlags allShaderStages	= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+												const VkFlags allPipelineStages	= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
 												CaseDef c =
 												{
-													(IndexType)indexCases[indexNdx].count,		// IndexType indexType;
-													setsCases[setsNdx].count,					// deUint32 numDescriptorSets;
-													uboCases[uboNdx].count,						// deUint32 maxPerStageUniformBuffers;
-													8,											// deUint32 maxUniformBuffersDynamic;
-													sboCases[sboNdx].count,						// deUint32 maxPerStageStorageBuffers;
-													4,											// deUint32 maxStorageBuffersDynamic;
-													sampledImgCases[sampledImgNdx].count,		// deUint32 maxPerStageSampledImages;
-													sImgTexCases[storageImgNdx].sImgCount,		// deUint32 maxPerStageStorageImages;
-													sImgTexCases[storageImgNdx].sTexCount,		// deUint32 maxPerStageStorageTexelBuffers;
-													iubCases[iubNdx].iubCount,					// deUint32 maxInlineUniformBlocks;
-													iubCases[iubNdx].iubSize,					// deUint32 maxInlineUniformBlockSize;
-													iaCases[iaNdx].count,						// deUint32 maxPerStageInputAttachments;
-													currentStage,								// Stage stage;
-													(UpdateAfterBind)uabCases[uabNdx].count,	// UpdateAfterBind uab;
-													seed++,										// deUint32 seed;
-													allShaderStages,							// VkFlags allShaderStages;
-													allPipelineStages,							// VkFlags allPipelineStages;
-													nullptr,									// std::shared_ptr<RandomLayout> randomLayout;
+													(IndexType)indexCases[indexNdx].count,						// IndexType indexType;
+													setsCases[setsNdx].count,									// deUint32 numDescriptorSets;
+													uboCases[uboNdx].count,										// deUint32 maxPerStageUniformBuffers;
+													8,															// deUint32 maxUniformBuffersDynamic;
+													sboCases[sboNdx].count,										// deUint32 maxPerStageStorageBuffers;
+													4,															// deUint32 maxStorageBuffersDynamic;
+													sampledImgCases[sampledImgNdx].count,						// deUint32 maxPerStageSampledImages;
+													sImgTexCases[storageImgNdx].sImgCount,						// deUint32 maxPerStageStorageImages;
+													sImgTexCases[storageImgNdx].sTexCount,						// deUint32 maxPerStageStorageTexelBuffers;
+													iubCases[iubNdx].iubCount,									// deUint32 maxInlineUniformBlocks;
+													iubCases[iubNdx].iubSize,									// deUint32 maxInlineUniformBlockSize;
+													iaCases[iaNdx].count,										// deUint32 maxPerStageInputAttachments;
+													currentStage,												// Stage stage;
+													(UpdateAfterBind)uabCases[uabNdx].count,					// UpdateAfterBind uab;
+													seed++,														// deUint32 seed;
+													rtShaderStages ? rtShaderStages : allShaderStages,			// VkFlags allShaderStages;
+													rtPipelineStages ? rtPipelineStages : allPipelineStages,	// VkFlags allPipelineStages;
+													nullptr,													// std::shared_ptr<RandomLayout> randomLayout;
 												};
 
 												string name = de::toString(rnd);

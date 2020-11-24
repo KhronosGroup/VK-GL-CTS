@@ -39,6 +39,8 @@ add_subdirectory(imageless_framebuffer)
 add_subdirectory(descriptor_indexing)
 add_subdirectory(fragment_shader_interlock)
 add_subdirectory(modifiers)
+add_subdirectory(ray_tracing)
+add_subdirectory(ray_query)
 add_subdirectory(postmortem)
 
 
@@ -82,6 +84,8 @@ include_directories(
 	descriptor_indexing
 	fragment_shader_interlock
 	modifiers
+	ray_tracing
+	ray_query
 	postmortem
 	)
 
@@ -145,6 +149,8 @@ set(DEQP_VK_LIBS
 	deqp-vk-descriptor-indexing
 	deqp-vk-fragment-shader-interlock
 	deqp-vk-modifiers
+	deqp-vk-ray-tracing
+	deqp-vk-ray-query
 	deqp-vk-postmortem
 	)
 

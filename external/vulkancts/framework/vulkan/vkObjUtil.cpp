@@ -571,6 +571,27 @@ Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 	return createPipelineLayout(vk, device, &pipelineLayoutParams);
 }
 
+Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
+										   const VkDevice				device,
+										   const deUint32				setLayoutCount,
+										   const VkDescriptorSetLayout*	descriptorSetLayout,
+										   const deUint32               pushConstantRangeCount,
+										   const VkPushConstantRange*   pPushConstantRanges)
+{
+	const VkPipelineLayoutCreateInfo pipelineLayoutParams =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
+		DE_NULL,											// const void*						pNext;
+		0u,													// VkPipelineLayoutCreateFlags		flags;
+		setLayoutCount,										// deUint32							setLayoutCount;
+		descriptorSetLayout,								// const VkDescriptorSetLayout*		pSetLayouts;
+		pushConstantRangeCount,								// deUint32							pushConstantRangeCount;
+		pPushConstantRanges,								// const VkPushConstantRange*		pPushConstantRanges;
+	};
+
+	return createPipelineLayout(vk, device, &pipelineLayoutParams);
+}
+
 Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
 									 const VkDevice			device,
 									 const VkRenderPass		renderPass,
