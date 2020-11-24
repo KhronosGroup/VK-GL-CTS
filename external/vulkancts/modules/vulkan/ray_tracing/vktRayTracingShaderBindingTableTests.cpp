@@ -486,7 +486,7 @@ void CheckerboardConfiguration::initShaderBindingTables (de::MovePtr<RayTracingP
 				missShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 2, shaderCount[STT_MISS], 0u, 0u, MemoryRequirement::Any, 0u, shaderBindingTableOffset);
 
 			raygenShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
-			hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+			hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
 			if (testParams.shaderRecordPresent)
 				missShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), shaderBindingTableOffset), shaderRecordAlignedSize, shaderCount[STT_MISS] * shaderRecordAlignedSize);
 			else
