@@ -1250,7 +1250,7 @@ tcu::TestStatus BarrierTestInstance::iterate (void)
 
 	std::unique_ptr<ImageWithMemory>	resourceImg;
 	Move<VkImageView>					resourceImgView;
-	VkImageLayout						resourceImgLayout;
+	VkImageLayout						resourceImgLayout			= VK_IMAGE_LAYOUT_UNDEFINED;
 	const auto							resourceImgSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 	std::unique_ptr<BufferWithMemory>	stagingBuffer;
 	std::unique_ptr<BufferWithMemory>	resourceBuffer;
