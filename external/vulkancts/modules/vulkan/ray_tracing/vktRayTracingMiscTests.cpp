@@ -3828,11 +3828,11 @@ public:
 								tcu::Vec3	(1,		1,		1),		/* gridCellSizeXYZ       */
 								m_gridSizeXYZ,
 								tcu::Vec3	(2.0f,	2.0f,	2.0f),  /* gridInterCellDeltaXYZ */
-								GeometryType::AABB_AND_TRIANGLES)
+								GeometryType::AABB)
 		);
 
 		m_tlPtr  = m_asProviderPtr->createTLAS(	context,
-												AccelerationStructureLayout::ONE_TL_MANY_BLS_MANY_GEOMETRIES_WITH_VARYING_PRIM_TYPES,
+												AccelerationStructureLayout::ONE_TL_MANY_BLS_MANY_GEOMETRIES,
 												commandBuffer,
 												VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR,
 												nullptr,	/* optASPropertyProviderPtr */
