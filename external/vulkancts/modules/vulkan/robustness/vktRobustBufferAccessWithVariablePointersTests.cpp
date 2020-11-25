@@ -1550,9 +1550,9 @@ bool AccessInstance::isExpectedValueFromInBuffer (VkDeviceSize	offsetInBytes,
 
 bool AccessInstance::isOutBufferValueUnchanged (VkDeviceSize offsetInBytes, VkDeviceSize valueSize)
 {
-	DE_ASSERT(valueSize <= 4);
+	DE_ASSERT(valueSize <= 8);
 	const deUint8 *const	outValuePtr		= (deUint8*)m_outBufferAlloc->getHostPtr() + offsetInBytes;
-	const deUint32			defaultValue	= 0xBABABABAu;
+	const deUint64			defaultValue	= 0xBABABABABABABABAull;
 
 	return !deMemCmp(outValuePtr, &defaultValue, (size_t)valueSize);
 }
@@ -1612,11 +1612,13 @@ bool AccessInstance::verifyResult (void)
 	bool				allOk				= true;
 	deUint32			valueNdx			= 0;
 	const VkDeviceSize	maxAccessRange		= isReadAccess ? m_inBufferAccess.maxAccessRange : m_outBufferAccess.maxAccessRange;
+	const bool			isR64				= (m_bufferFormat == VK_FORMAT_R64_UINT || m_bufferFormat == VK_FORMAT_R64_SINT);
+	const deUint32		elementSize			= isR64 ? 8 : 4;
 
-	for (VkDeviceSize offsetInBytes = 0; offsetInBytes < m_outBufferAccess.allocSize; offsetInBytes += 4)
+	for (VkDeviceSize offsetInBytes = 0; offsetInBytes < m_outBufferAccess.allocSize; offsetInBytes += elementSize)
 	{
 		const deUint8*		outValuePtr		= static_cast<const deUint8*>(outDataPtr) + offsetInBytes;
-		const size_t		outValueSize	= static_cast<size_t>(deMinu64(4, (m_outBufferAccess.allocSize - offsetInBytes)));
+		const size_t		outValueSize	= static_cast<size_t>(deMinu64(elementSize, (m_outBufferAccess.allocSize - offsetInBytes)));
 
 		if (offsetInBytes >= RobustAccessWithPointersTest::s_numberOfBytesAccessed)
 		{
@@ -1642,23 +1644,23 @@ bool AccessInstance::verifyResult (void)
 				isOutOfBoundsAccess = true;
 
 			// Check if the shader operation accessed an operand located less than 16 bytes away
-			// from the out of bounds address.
-			if (!isOutOfBoundsAccess && distanceToOutOfBounds < 16)
+			// from the out of bounds address. Less than 32 bytes away for 64 bit accesses.
+			if (!isOutOfBoundsAccess && distanceToOutOfBounds < (isR64 ? 32 : 16))
 			{
 				deUint32 operandSize = 0;
 
 				switch (m_shaderType)
 				{
 					case SHADER_TYPE_SCALAR_COPY:
-						operandSize		= 4; // Size of scalar
+						operandSize		= elementSize; // Size of scalar
 						break;
 
 					case SHADER_TYPE_VECTOR_COPY:
-						operandSize		= 4 * 4; // Size of vec4
+						operandSize		= elementSize * 4; // Size of vec4
 						break;
 
 					case SHADER_TYPE_MATRIX_COPY:
-						operandSize		= 4 * 16; // Size of mat4
+						operandSize		= elementSize * 16; // Size of mat4
 						break;
 
 					default:
@@ -1672,7 +1674,7 @@ bool AccessInstance::verifyResult (void)
 			{
 				logMsg << " (out of bounds " << (isReadAccess ? "read": "write") << ")";
 
-				const bool	isValuePartiallyOutOfBounds = ((distanceToOutOfBounds > 0) && ((deUint32)distanceToOutOfBounds < 4));
+				const bool	isValuePartiallyOutOfBounds = ((distanceToOutOfBounds > 0) && ((deUint32)distanceToOutOfBounds < elementSize));
 				bool		isValidValue				= false;
 
 				if (isValuePartiallyOutOfBounds && !m_accessOutOfBackingMemory)
