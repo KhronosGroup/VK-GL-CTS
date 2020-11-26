@@ -66,7 +66,7 @@ protected:
 	VkSamplerCreateInfo				getSamplerInfo				(VkFilter								minMagFilter,
 																 const VkSamplerYcbcrConversionInfo*	samplerConversionInfo = DE_NULL);
 	Move<VkDescriptorSetLayout>		createDescriptorSetLayout	(VkSampler sampler);
-	Move<VkDescriptorPool>			createDescriptorPool		(void);
+	Move<VkDescriptorPool>			createDescriptorPool		(const deUint32 combinedSamplerDescriptorCount);
 	Move<VkDescriptorSet>			createDescriptorSet			(VkDescriptorPool		descPool,
 																 VkDescriptorSetLayout	descLayout);
 	Move<VkSamplerYcbcrConversion>	createYCbCrConversion		(void);
@@ -155,11 +155,11 @@ Move<VkDescriptorSetLayout> LinearFilteringTestInstance::createDescriptorSetLayo
 	return ::createDescriptorSetLayout(m_vkd, m_device, &layoutInfo);
 }
 
-Move<VkDescriptorPool> LinearFilteringTestInstance::createDescriptorPool()
+Move<VkDescriptorPool> LinearFilteringTestInstance::createDescriptorPool(const deUint32 combinedSamplerDescriptorCount)
 {
 	const VkDescriptorPoolSize poolSizes[] =
 	{
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	1u	},
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	combinedSamplerDescriptorCount	},
 	};
 	const VkDescriptorPoolCreateInfo poolInfo =
 	{
@@ -383,8 +383,35 @@ tcu::TestStatus LinearFilteringTestInstance::iterate(void)
 	const VkSamplerYcbcrConversionInfo		samplerConvInfo		{ VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO, DE_NULL, *conversion };
 	const VkSamplerCreateInfo				samplerCreateInfo	(getSamplerInfo(VK_FILTER_LINEAR, &samplerConvInfo));
 	const Unique<VkSampler>					sampler				(createSampler(m_vkd, m_device, &samplerCreateInfo));
+
+	deUint32								combinedSamplerDescriptorCount = 1;
+	{
+		const VkPhysicalDeviceImageFormatInfo2			imageFormatInfo				=
+		{
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// sType
+			DE_NULL,												// pNext
+			m_format,												// format
+			VK_IMAGE_TYPE_2D,										// type
+			VK_IMAGE_TILING_OPTIMAL,								// tiling
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+			VK_IMAGE_USAGE_SAMPLED_BIT,								// usage
+			(VkImageCreateFlags)0u									// flags
+		};
+
+		VkSamplerYcbcrConversionImageFormatProperties	samplerYcbcrConversionImage = {};
+		samplerYcbcrConversionImage.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
+		samplerYcbcrConversionImage.pNext = DE_NULL;
+
+		VkImageFormatProperties2						imageFormatProperties		= {};
+		imageFormatProperties.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
+		imageFormatProperties.pNext = &samplerYcbcrConversionImage;
+
+		VK_CHECK(instInt.getPhysicalDeviceImageFormatProperties2(physicalDevice, &imageFormatInfo, &imageFormatProperties));
+		combinedSamplerDescriptorCount = samplerYcbcrConversionImage.combinedImageSamplerDescriptorCount;
+	}
+
 	const Unique<VkDescriptorSetLayout>		descLayout			(createDescriptorSetLayout(*sampler));
-	const Unique<VkDescriptorPool>			descPool			(createDescriptorPool());
+	const Unique<VkDescriptorPool>			descPool			(createDescriptorPool(combinedSamplerDescriptorCount));
 	const Unique<VkDescriptorSet>			descSet				(createDescriptorSet(*descPool, *descLayout));
 	const Unique<VkImage>					testImage			(createImage(imageSize.x(), imageSize.y()));
 	const vector<AllocationSp>				allocations			(allocateAndBindImageMemory(m_vkd, m_device, m_context.getDefaultAllocator(), *testImage, m_format, 0u));
