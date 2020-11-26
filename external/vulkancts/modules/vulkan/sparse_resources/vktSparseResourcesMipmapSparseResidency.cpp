@@ -41,6 +41,7 @@
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
+#include "tcuTextureUtil.hpp"
 
 #include <string>
 #include <vector>
@@ -437,12 +438,6 @@ tcu::TestStatus MipmapSparseResidencyInstance::iterate (void)
 		for (deUint32 valueNdx = 0; valueNdx < imageSizeInBytes; ++valueNdx)
 		{
 			referenceData[valueNdx] = static_cast<deUint8>((valueNdx % imageMemoryRequirements.alignment) + 1u);
-
-			// Simply avoid using 0x80 which is out of range for 8bit SNORM
-			if (referenceData[valueNdx] == 0x80)
-			{
-				referenceData[valueNdx] = 0x81;
-			}
 		}
 
 		{
@@ -546,11 +541,40 @@ tcu::TestStatus MipmapSparseResidencyInstance::iterate (void)
 		{
 			for (deUint32 mipmapNdx = 0; mipmapNdx < imageSparseInfo.mipLevels; ++mipmapNdx)
 			{
-				const deUint32 mipLevelSizeInBytes	= getImageMipLevelSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, formatDescription, planeNdx, mipmapNdx);
-				const deUint32 bufferOffset			= static_cast<deUint32>(bufferImageCopy[planeNdx*imageSparseInfo.mipLevels + mipmapNdx].bufferOffset);
+				const deUint32	mipLevelSizeInBytes		= getImageMipLevelSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, formatDescription, planeNdx, mipmapNdx);
+				const deUint32	bufferOffset			= static_cast<deUint32>(bufferImageCopy[planeNdx*imageSparseInfo.mipLevels + mipmapNdx].bufferOffset);
+				bool			is8bitSnormComponent	= false;
 
-				if (deMemCmp(outputData + bufferOffset, &referenceData[bufferOffset], mipLevelSizeInBytes) != 0)
-					return tcu::TestStatus::fail("Failed");
+				// Validate results
+				for (deUint32 channelNdx = 0; channelNdx < 4; ++channelNdx)
+				{
+					if (!formatDescription.hasChannelNdx(channelNdx))
+						continue;
+
+					if ((formatDescription.channels[channelNdx].type == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT) &&
+						(formatDescription.channels[channelNdx].sizeBits == 8))
+					{
+						is8bitSnormComponent = true;
+						break;
+					}
+				}
+
+				if (!is8bitSnormComponent)
+				{
+					if (deMemCmp(outputData + bufferOffset, &referenceData[bufferOffset], mipLevelSizeInBytes) != 0)
+						return tcu::TestStatus::fail("Failed");
+				}
+				else
+				{
+					for (deUint32 byte = 0; byte < mipLevelSizeInBytes; byte++)
+					{
+						deUint32 entryOffset = bufferOffset + byte;
+
+						// Ignore 0x80 which is undefined data for a 8 bit snorm component
+						if ((referenceData[entryOffset] != 0x80) && (deMemCmp(outputData + entryOffset, &referenceData[entryOffset], 1) != 0))
+							return tcu::TestStatus::fail("Failed");
+					}
+				}
 			}
 		}
 	}
