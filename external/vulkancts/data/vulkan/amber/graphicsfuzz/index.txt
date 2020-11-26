@@ -334,6 +334,7 @@
 {	"stable-mergesort-reversed-for-loop.amber",													"stable-mergesort-reversed-for-loop",												"A fragment shader with once iterated reversed for loop"							},
 {	"stable-colorgrid-modulo-float-mat-determinant-clamp.amber",								"stable-colorgrid-modulo-float-mat-determinant-clamp",								"A fragment shader with clamped float in determinant matrix"						},
 {	"stable-colorgrid-modulo-injected-conditional-true.amber",									"stable-colorgrid-modulo-injected-conditional-true",								"A fragment shader with an always true conditional"									},
+{	"stable-colorgrid-modulo-true-conditional-divided-1.amber",									"stable-colorgrid-modulo-true-conditional-divided-1",								"A fragment shader with true conditional divided by 1"								},
 {	"stable-colorgrid-modulo-true-conditional-simple-loop.amber",								"stable-colorgrid-modulo-true-conditional-simple-loop",								"A fragment shader with conditional and simple loop"								},
 {	"stable-colorgrid-modulo-vec3-values-from-matrix.amber",									"stable-colorgrid-modulo-vec3-values-from-matrix",									"A fragment shader with vec3 values set from matrix4x2"								},
 {	"stable-mergesort-clamped-conditional-bit-shift.amber",										"stable-mergesort-clamped-conditional-bit-shift",									"Two shaders with diff: conditional bit shift in a clamp"							},
