@@ -397,12 +397,16 @@ deInt32 randRange(deRandom *rnd, deInt32 min, deInt32 max)
 
 void chooseWritesRandomly(vk::VkDescriptorType type, RandomLayout& randomLayout, deRandom& rnd, deUint32 set, deUint32 binding, deUint32 count)
 {
+	// Make sure the type supports writes.
 	switch (type)
 	{
+	case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+	case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
 	case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-		// Disable writes for these descriptor types.
-		return;
+	case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+		break;
 	default:
+		DE_ASSERT(false);
 		break;
 	}
 
@@ -1777,7 +1781,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &preStorageImageBarrier);
 					vk.cmdClearColorImage(*cmdBuffer, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue, 1, &clearRange);
-					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, m_data.allShaderStages, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postStorageImageBarrier);
+					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, m_data.allPipelineStages, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postStorageImageBarrier);
 
 					++storageImgIndex;
 				}
