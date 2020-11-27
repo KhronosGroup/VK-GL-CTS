@@ -378,7 +378,7 @@ public:
 		: TestInstance		(context)
 		, m_type			(type)
 		, m_queues			(MultiQueues::getInstance(context, type, timelineSemaphore))
-		, m_opContext		(new OperationContext(context, pipelineCacheData, m_queues->getDeviceInterface(), m_queues->getDevice(), m_queues->getAllocator()))
+		, m_opContext		(new OperationContext(context, type, m_queues->getDeviceInterface(), m_queues->getDevice(), m_queues->getAllocator(), pipelineCacheData))
 		, m_resourceDesc	(resourceDesc)
 		, m_writeOp			(writeOp)
 		, m_readOp			(readOp)

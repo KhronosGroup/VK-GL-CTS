@@ -57,7 +57,7 @@ public:
 	BaseTestInstance (Context& context, SynchronizationType type, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp, PipelineCacheData& pipelineCacheData)
 		: TestInstance	(context)
 		, m_type		(type)
-		, m_opContext	(context, pipelineCacheData)
+		, m_opContext	(context, type, pipelineCacheData)
 		, m_resource	(new Resource(m_opContext, resourceDesc, writeOp.getOutResourceUsageFlags() | readOp.getInResourceUsageFlags()))
 		, m_writeOp		(writeOp.build(m_opContext, *m_resource))
 		, m_readOp		(readOp.build(m_opContext, *m_resource))
@@ -369,7 +369,7 @@ public:
 	TimelineSemaphoreTestInstance (Context& context, SynchronizationType type, const ResourceDescription& resourceDesc, const de::SharedPtr<OperationSupport>& writeOp, const de::SharedPtr<OperationSupport>& readOp, PipelineCacheData& pipelineCacheData)
 		: TestInstance	(context)
 		, m_type		(type)
-		, m_opContext	(context, pipelineCacheData)
+		, m_opContext	(context, type, pipelineCacheData)
 	{
 		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
 			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");

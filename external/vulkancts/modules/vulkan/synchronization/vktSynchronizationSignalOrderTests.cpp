@@ -606,8 +606,8 @@ public:
 																																								 m_context.getPhysicalDevice())));
 		UniquePtr<SimpleAllocator>							allocatorB					(new SimpleAllocator(vkB, *deviceB, vk::getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(),
 																																								  m_context.getPhysicalDevice())));
-		UniquePtr<OperationContext>							operationContextA			(new OperationContext(m_context, m_pipelineCacheData, vkA, deviceA, *allocatorA));
-		UniquePtr<OperationContext>							operationContextB			(new OperationContext(m_context, m_pipelineCacheData, vkB, *deviceB, *allocatorB));
+		UniquePtr<OperationContext>							operationContextA			(new OperationContext(m_context, m_type, vkA, deviceA, *allocatorA, m_pipelineCacheData));
+		UniquePtr<OperationContext>							operationContextB			(new OperationContext(m_context, m_type, vkB, *deviceB, *allocatorB, m_pipelineCacheData));
 		const deUint32										universalQueueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 		const VkQueue										queueA						= m_context.getUniversalQueue();
 		const VkQueue										queueB						= getDeviceQueue(vkB, *deviceB, m_context.getUniversalQueueFamilyIndex(), 0);
@@ -1283,7 +1283,7 @@ public:
 													 *m_device,
 													 getPhysicalDeviceMemoryProperties(context.getInstanceInterface(),
 																					   context.getPhysicalDevice())))
-		, m_operationContext	(new OperationContext(context, pipelineCacheData, m_deviceInterface, *m_device, *m_allocator))
+		, m_operationContext	(new OperationContext(context, type, m_deviceInterface, *m_device, *m_allocator, pipelineCacheData))
 		, m_queueA				(DE_NULL)
 		, m_queueB				(DE_NULL)
 		, m_rng					(1234)

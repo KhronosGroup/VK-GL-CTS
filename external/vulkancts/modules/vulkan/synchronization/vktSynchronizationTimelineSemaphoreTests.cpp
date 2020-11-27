@@ -863,7 +863,7 @@ public:
 							PipelineCacheData&					pipelineCacheData)
 		: TestInstance		(context)
 		, m_type			(type)
-		, m_opContext		(context, pipelineCacheData)
+		, m_opContext		(context, type, pipelineCacheData)
 		, m_resourceDesc	(resourceDesc)
 	{
 		de::Random	rng		(1234);
@@ -1364,7 +1364,7 @@ public:
 		, m_allocator		(new SimpleAllocator(*m_deviceDriver, *m_device,
 												 getPhysicalDeviceMemoryProperties(context.getInstanceInterface(),
 																				   context.getPhysicalDevice())))
-		, m_opContext		(context, pipelineCacheData, *m_deviceDriver, *m_device, *m_allocator)
+		, m_opContext		(context, type, *m_deviceDriver, *m_device, *m_allocator, pipelineCacheData)
 	{
 		const DeviceInterface&						vk							= *m_deviceDriver;
 		const VkDevice								device						= *m_device;
@@ -1781,7 +1781,7 @@ public:
 		, m_allocator		(new SimpleAllocator(*m_deviceDriver, *m_device,
 												 getPhysicalDeviceMemoryProperties(context.getInstanceInterface(),
 																				   context.getPhysicalDevice())))
-		, m_opContext		(context, pipelineCacheData, *m_deviceDriver, *m_device, *m_allocator)
+		, m_opContext		(context, type, *m_deviceDriver, *m_device, *m_allocator, pipelineCacheData)
 	{
 		const DeviceInterface&									vk				= *m_deviceDriver;
 		const VkDevice											device			= *m_device;

@@ -129,24 +129,28 @@ enum OperationName
 class OperationContext
 {
 public:
-									OperationContext		(Context&			context,
-															 PipelineCacheData&	pipelineCacheData);
+									OperationContext		(Context&						context,
+															 SynchronizationType			syncType,
+															 PipelineCacheData&				pipelineCacheData);
 
-									OperationContext		(Context&					context,
-															 PipelineCacheData&			pipelineCacheData,
-															 const vk::DeviceInterface&	vk,
-															 const vk::VkDevice			device,
-															 vk::Allocator&				allocator);
+									OperationContext		(Context&						context,
+															 SynchronizationType			syncType,
+															 const vk::DeviceInterface&		vkd,
+															 const vk::VkDevice				device,
+															 vk::Allocator&					allocator,
+															 PipelineCacheData&				pipelineCacheData);
 
-									OperationContext		(Context&							context,
-															 const vk::InstanceInterface&		vki,
-															 const vk::DeviceInterface&			vkd,
-															 vk::VkPhysicalDevice				physicalDevice,
-															 vk::VkDevice						device,
-															 vk::Allocator&						allocator,
-															 vk::BinaryCollection&				programCollection,
-															 PipelineCacheData&					pipelineCacheData);
+									OperationContext		(Context&						context,
+															 SynchronizationType			syncType,
+															 const vk::InstanceInterface&	vki,
+															 const vk::DeviceInterface&		vkd,
+															 vk::VkPhysicalDevice			physicalDevice,
+															 vk::VkDevice					device,
+															 vk::Allocator&					allocator,
+															 vk::BinaryCollection&			programCollection,
+															 PipelineCacheData&				pipelineCacheData);
 
+	SynchronizationType				getSynchronizationType	(void) const { return m_syncType; }
 	const vk::InstanceInterface&	getInstanceInterface	(void) const { return m_vki; }
 	const vk::DeviceInterface&		getDeviceInterface		(void) const { return m_vk; }
 	vk::VkPhysicalDevice			getPhysicalDevice		(void) const { return m_physicalDevice; }
@@ -162,6 +166,7 @@ public:
 
 private:
 	const vkt::Context&				m_context;
+	const SynchronizationType		m_syncType;
 	const vk::InstanceInterface&	m_vki;
 	const vk::DeviceInterface&		m_vk;
 	const vk::VkPhysicalDevice		m_physicalDevice;

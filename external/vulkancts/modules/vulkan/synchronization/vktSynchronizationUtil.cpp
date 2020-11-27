@@ -395,7 +395,7 @@ protected:
 		std::size_t		signalSemaphoreValueIndexPlusOne;
 	};
 
-	bool isStageFlagAllowed(VkPipelineStageFlags2KHR stage)
+	bool isStageFlagAllowed(VkPipelineStageFlags2KHR stage) const
 	{
 		// synchronization2 suports more stages then legacy synchronization
 		// and so SynchronizationWrapper can only be used for cases that
@@ -440,7 +440,7 @@ protected:
 		return (allowedStages.find(static_cast<deUint32>(stage)) != allowedStages.end());
 	}
 
-	bool isAccessFlagAllowed(VkAccessFlags2KHR access)
+	bool isAccessFlagAllowed(VkAccessFlags2KHR access) const
 	{
 		// synchronization2 suports more access flags then legacy synchronization
 		// and so SynchronizationWrapper can only be used for cases that
@@ -563,7 +563,7 @@ public:
 		}
 	}
 
-	void cmdPipelineBarrier(VkCommandBuffer commandBuffer, const VkDependencyInfoKHR* pDependencyInfo) override
+	void cmdPipelineBarrier(VkCommandBuffer commandBuffer, const VkDependencyInfoKHR* pDependencyInfo) const override
 	{
 		DE_ASSERT(pDependencyInfo);
 
@@ -673,7 +673,7 @@ public:
 		);
 	}
 
-	void cmdSetEvent(VkCommandBuffer commandBuffer, VkEvent event, const VkDependencyInfoKHR* pDependencyInfo) override
+	void cmdSetEvent(VkCommandBuffer commandBuffer, VkEvent event, const VkDependencyInfoKHR* pDependencyInfo) const override
 	{
 		DE_ASSERT(pDependencyInfo);
 
@@ -689,14 +689,14 @@ public:
 		m_vk.cmdSetEvent(commandBuffer, event, static_cast<VkPipelineStageFlags>(srcStageMask));
 	}
 
-	void cmdResetEvent(VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags2KHR flag) override
+	void cmdResetEvent(VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags2KHR flag) const override
 	{
 		DE_ASSERT(isStageFlagAllowed(flag));
 		VkPipelineStageFlags legacyStageMask = static_cast<VkPipelineStageFlags>(flag);
 		m_vk.cmdResetEvent(commandBuffer, event, legacyStageMask);
 	}
 
-	void cmdWaitEvents(VkCommandBuffer commandBuffer, deUint32 eventCount, const VkEvent* pEvents, const VkDependencyInfoKHR* pDependencyInfo) override
+	void cmdWaitEvents(VkCommandBuffer commandBuffer, deUint32 eventCount, const VkEvent* pEvents, const VkDependencyInfoKHR* pDependencyInfo) const override
 	{
 		DE_ASSERT(pDependencyInfo);
 
@@ -899,22 +899,22 @@ public:
 		});
 	}
 
-	void cmdPipelineBarrier(VkCommandBuffer commandBuffer, const VkDependencyInfoKHR* pDependencyInfo) override
+	void cmdPipelineBarrier(VkCommandBuffer commandBuffer, const VkDependencyInfoKHR* pDependencyInfo) const override
 	{
 		m_vk.cmdPipelineBarrier2KHR(commandBuffer, pDependencyInfo);
 	}
 
-	void cmdSetEvent(VkCommandBuffer commandBuffer, VkEvent event, const VkDependencyInfoKHR* pDependencyInfo) override
+	void cmdSetEvent(VkCommandBuffer commandBuffer, VkEvent event, const VkDependencyInfoKHR* pDependencyInfo) const override
 	{
 		m_vk.cmdSetEvent2KHR(commandBuffer, event, pDependencyInfo);
 	}
 
-	void cmdWaitEvents(VkCommandBuffer commandBuffer, deUint32 eventCount, const VkEvent* pEvents, const VkDependencyInfoKHR* pDependencyInfo) override
+	void cmdWaitEvents(VkCommandBuffer commandBuffer, deUint32 eventCount, const VkEvent* pEvents, const VkDependencyInfoKHR* pDependencyInfo) const override
 	{
 		m_vk.cmdWaitEvents2KHR(commandBuffer, eventCount, pEvents, pDependencyInfo);
 	}
 
-	void cmdResetEvent(VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags2KHR flag) override
+	void cmdResetEvent(VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags2KHR flag) const override
 	{
 		m_vk.cmdResetEvent2KHR(commandBuffer, event, flag);
 	}
