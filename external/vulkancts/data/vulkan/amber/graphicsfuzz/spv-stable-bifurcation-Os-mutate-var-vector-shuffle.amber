@@ -1,0 +1,446 @@
+#!amber
+
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by the GraphicsFuzz project.
+
+# Short description: Three shaders diff: mutate var, vector shuffle
+
+# The test renders three images using semantically equivalent shaders, and then
+# checks that the images are similar.
+# The test passes because the shaders have the same semantics and so the images
+# should be the same.
+
+SHADER vertex reference_vertex_shader PASSTHROUGH
+
+SHADER fragment reference_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 107
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %12 %74
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %12 "gl_FragCoord"
+               OpName %15 "buf0"
+               OpMemberName %15 0 "resolution"
+               OpName %17 ""
+               OpName %74 "_GLF_color"
+               OpName %100 "indexable"
+               OpDecorate %12 BuiltIn FragCoord
+               OpMemberDecorate %15 0 Offset 0
+               OpDecorate %15 Block
+               OpDecorate %17 DescriptorSet 0
+               OpDecorate %17 Binding 0
+               OpDecorate %74 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 2
+         %10 = OpTypeVector %6 4
+         %11 = OpTypePointer Input %10
+         %12 = OpVariable %11 Input
+         %15 = OpTypeStruct %7
+         %16 = OpTypePointer Uniform %15
+         %17 = OpVariable %16 Uniform
+         %18 = OpTypeInt 32 1
+         %19 = OpConstant %18 0
+         %20 = OpTypePointer Uniform %7
+         %27 = OpTypeInt 32 0
+         %32 = OpConstant %6 10
+         %47 = OpConstant %18 10
+         %51 = OpConstant %18 100
+         %60 = OpTypeBool
+         %62 = OpConstant %18 4
+         %65 = OpConstant %18 1000
+         %71 = OpConstant %18 1
+         %73 = OpTypePointer Output %10
+         %74 = OpVariable %73 Output
+         %75 = OpConstant %27 16
+         %76 = OpTypeArray %10 %75
+         %77 = OpConstant %6 0
+         %78 = OpConstant %6 1
+         %79 = OpConstantComposite %10 %77 %77 %77 %78
+         %80 = OpConstant %6 0.5
+         %81 = OpConstantComposite %10 %80 %77 %77 %78
+         %82 = OpConstantComposite %10 %77 %80 %77 %78
+         %83 = OpConstantComposite %10 %80 %80 %77 %78
+         %84 = OpConstantComposite %10 %77 %77 %80 %78
+         %85 = OpConstantComposite %10 %80 %77 %80 %78
+         %86 = OpConstantComposite %10 %77 %80 %80 %78
+         %87 = OpConstantComposite %10 %80 %80 %80 %78
+         %88 = OpConstantComposite %10 %78 %77 %77 %78
+         %89 = OpConstantComposite %10 %77 %78 %77 %78
+         %90 = OpConstantComposite %10 %78 %78 %77 %78
+         %91 = OpConstantComposite %10 %77 %77 %78 %78
+         %92 = OpConstantComposite %10 %78 %77 %78 %78
+         %93 = OpConstantComposite %10 %77 %78 %78 %78
+         %94 = OpConstantComposite %10 %78 %78 %78 %78
+         %95 = OpConstantComposite %76 %79 %81 %82 %83 %84 %85 %86 %87 %79 %88 %89 %90 %91 %92 %93 %94
+         %97 = OpConstant %18 16
+         %99 = OpTypePointer Function %76
+        %101 = OpTypePointer Function %10
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+        %100 = OpVariable %99 Function
+         %13 = OpLoad %10 %12
+         %14 = OpVectorShuffle %7 %13 %13 0 1
+         %21 = OpAccessChain %20 %17 %19
+         %22 = OpLoad %7 %21
+         %23 = OpFDiv %7 %14 %22
+         %31 = OpCompositeExtract %6 %23 0
+         %33 = OpFMul %6 %31 %32
+         %34 = OpConvertFToS %18 %33
+         %37 = OpCompositeExtract %6 %23 1
+         %38 = OpFMul %6 %37 %32
+         %39 = OpConvertFToS %18 %38
+         %48 = OpIMul %18 %39 %47
+         %49 = OpIAdd %18 %34 %48
+               OpBranch %53
+         %53 = OpLabel
+        %106 = OpPhi %18 %51 %5 %69 %54
+        %104 = OpPhi %18 %19 %5 %72 %54
+         %61 = OpSLessThan %60 %104 %49
+               OpLoopMerge %55 %54 None
+               OpBranchConditional %61 %54 %55
+         %54 = OpLabel
+         %64 = OpIMul %18 %62 %106
+         %67 = OpISub %18 %65 %106
+         %68 = OpIMul %18 %64 %67
+         %69 = OpSDiv %18 %68 %65
+         %72 = OpIAdd %18 %104 %71
+               OpBranch %53
+         %55 = OpLabel
+         %98 = OpSMod %18 %106 %97
+               OpStore %100 %95
+        %102 = OpAccessChain %101 %100 %98
+        %103 = OpLoad %10 %102
+               OpStore %74 %103
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for reference
+
+# resolution
+BUFFER reference_resolution DATA_TYPE vec2<float> STD140 DATA
+ 256.0 256.0
+END
+
+BUFFER reference_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics reference_pipeline
+  ATTACH reference_vertex_shader
+  ATTACH reference_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER reference_framebuffer AS color LOCATION 0
+  BIND BUFFER reference_resolution AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR reference_pipeline 0 0 0 255
+
+CLEAR reference_pipeline
+RUN reference_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 263
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %12 %74
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %12 "gl_FragCoord"
+               OpName %15 "buf0"
+               OpMemberName %15 0 "resolution"
+               OpName %17 ""
+               OpName %74 "_GLF_color"
+               OpName %100 "indexable"
+               OpDecorate %12 BuiltIn FragCoord
+               OpMemberDecorate %15 0 Offset 0
+               OpDecorate %15 Block
+               OpDecorate %17 DescriptorSet 0
+               OpDecorate %17 Binding 0
+               OpDecorate %74 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 2
+         %10 = OpTypeVector %6 4
+         %11 = OpTypePointer Input %10
+         %12 = OpVariable %11 Input
+         %15 = OpTypeStruct %7
+         %16 = OpTypePointer Uniform %15
+         %17 = OpVariable %16 Uniform
+         %18 = OpTypeInt 32 1
+         %19 = OpConstant %18 0
+         %20 = OpTypePointer Uniform %7
+         %27 = OpTypeInt 32 0
+         %32 = OpConstant %6 10
+         %47 = OpConstant %18 10
+         %51 = OpConstant %18 100
+         %60 = OpTypeBool
+         %62 = OpConstant %18 4
+         %65 = OpConstant %18 1000
+         %71 = OpConstant %18 1
+         %73 = OpTypePointer Output %10
+         %74 = OpVariable %73 Output
+         %75 = OpConstant %27 16
+         %76 = OpTypeArray %10 %75
+         %77 = OpConstant %6 0
+         %78 = OpConstant %6 1
+         %79 = OpConstantComposite %10 %77 %77 %77 %78
+         %80 = OpConstant %6 0.5
+         %81 = OpConstantComposite %10 %80 %77 %77 %78
+         %82 = OpConstantComposite %10 %77 %80 %77 %78
+         %83 = OpConstantComposite %10 %80 %80 %77 %78
+         %84 = OpConstantComposite %10 %77 %77 %80 %78
+         %85 = OpConstantComposite %10 %80 %77 %80 %78
+         %86 = OpConstantComposite %10 %77 %80 %80 %78
+         %87 = OpConstantComposite %10 %80 %80 %80 %78
+         %88 = OpConstantComposite %10 %78 %77 %77 %78
+         %89 = OpConstantComposite %10 %77 %78 %77 %78
+         %90 = OpConstantComposite %10 %78 %78 %77 %78
+         %91 = OpConstantComposite %10 %77 %77 %78 %78
+         %92 = OpConstantComposite %10 %78 %77 %78 %78
+         %93 = OpConstantComposite %10 %77 %78 %78 %78
+         %94 = OpConstantComposite %10 %78 %78 %78 %78
+         %95 = OpConstantComposite %76 %79 %81 %82 %83 %84 %85 %86 %87 %79 %88 %89 %90 %91 %92 %93 %94
+         %97 = OpConstant %18 16
+         %99 = OpTypePointer Function %76
+        %101 = OpTypePointer Function %10
+        %234 = OpConstant %6 0
+        %235 = OpConstantComposite %10 %234 %234 %234 %234
+        %236 = OpConstantComposite %76 %235 %235 %235 %235 %235 %235 %235 %235 %235 %235 %235 %235 %235 %235 %235 %235
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+        %100 = OpVariable %99 Function
+         %13 = OpLoad %10 %12
+         %14 = OpVectorShuffle %7 %13 %13 0 1
+         %21 = OpAccessChain %20 %17 %19
+         %22 = OpLoad %7 %21
+         %23 = OpFDiv %7 %14 %22
+         %31 = OpCompositeExtract %6 %23 0
+         %33 = OpFMul %6 %31 %32
+         %34 = OpConvertFToS %18 %33
+         %37 = OpCompositeExtract %6 %23 1
+         %38 = OpFMul %6 %37 %32
+         %39 = OpConvertFToS %18 %38
+         %48 = OpIMul %18 %39 %47
+         %49 = OpIAdd %18 %34 %48
+               OpBranch %53
+         %53 = OpLabel
+        %106 = OpPhi %18 %51 %5 %69 %54
+        %104 = OpPhi %18 %19 %5 %72 %54
+         %61 = OpSLessThan %60 %104 %49
+               OpLoopMerge %55 %54 None
+               OpBranchConditional %61 %54 %55
+         %54 = OpLabel
+         %64 = OpIMul %18 %62 %106
+         %67 = OpISub %18 %65 %106
+         %68 = OpIMul %18 %64 %67
+         %69 = OpSDiv %18 %68 %65
+         %72 = OpIAdd %18 %104 %71
+               OpBranch %53
+         %55 = OpLabel
+         %98 = OpSMod %18 %106 %97
+               OpStore %100 %95
+        %262 = OpLoad %76 %100
+               OpStore %100 %236
+               OpStore %100 %262
+        %231 = OpVectorShuffle %7 %89 %85 1 4
+        %102 = OpAccessChain %101 %100 %98
+        %103 = OpLoad %10 %102
+               OpStore %74 %103
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+# resolution
+BUFFER variant_resolution DATA_TYPE vec2<float> STD140 DATA
+ 256.0 256.0
+END
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+  BIND BUFFER variant_resolution AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+
+SHADER vertex variant_2_vertex_shader PASSTHROUGH
+
+SHADER fragment variant_2_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 237
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %12 %74
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %12 "gl_FragCoord"
+               OpName %15 "buf0"
+               OpMemberName %15 0 "resolution"
+               OpName %17 ""
+               OpName %74 "_GLF_color"
+               OpName %100 "indexable"
+               OpDecorate %12 BuiltIn FragCoord
+               OpMemberDecorate %15 0 Offset 0
+               OpDecorate %15 Block
+               OpDecorate %17 DescriptorSet 0
+               OpDecorate %17 Binding 0
+               OpDecorate %74 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 2
+         %10 = OpTypeVector %6 4
+         %11 = OpTypePointer Input %10
+         %12 = OpVariable %11 Input
+         %15 = OpTypeStruct %7
+         %16 = OpTypePointer Uniform %15
+         %17 = OpVariable %16 Uniform
+         %18 = OpTypeInt 32 1
+         %19 = OpConstant %18 0
+         %20 = OpTypePointer Uniform %7
+         %27 = OpTypeInt 32 0
+         %32 = OpConstant %6 10
+         %47 = OpConstant %18 10
+         %51 = OpConstant %18 100
+         %60 = OpTypeBool
+         %62 = OpConstant %18 4
+         %65 = OpConstant %18 1000
+         %71 = OpConstant %18 1
+         %73 = OpTypePointer Output %10
+         %74 = OpVariable %73 Output
+         %75 = OpConstant %27 16
+         %76 = OpTypeArray %10 %75
+         %77 = OpConstant %6 0
+         %78 = OpConstant %6 1
+         %79 = OpConstantComposite %10 %77 %77 %77 %78
+         %80 = OpConstant %6 0.5
+         %81 = OpConstantComposite %10 %80 %77 %77 %78
+         %82 = OpConstantComposite %10 %77 %80 %77 %78
+         %83 = OpConstantComposite %10 %80 %80 %77 %78
+         %84 = OpConstantComposite %10 %77 %77 %80 %78
+         %85 = OpConstantComposite %10 %80 %77 %80 %78
+         %86 = OpConstantComposite %10 %77 %80 %80 %78
+         %87 = OpConstantComposite %10 %80 %80 %80 %78
+         %88 = OpConstantComposite %10 %78 %77 %77 %78
+         %89 = OpConstantComposite %10 %77 %78 %77 %78
+         %90 = OpConstantComposite %10 %78 %78 %77 %78
+         %91 = OpConstantComposite %10 %77 %77 %78 %78
+         %92 = OpConstantComposite %10 %78 %77 %78 %78
+         %93 = OpConstantComposite %10 %77 %78 %78 %78
+         %94 = OpConstantComposite %10 %78 %78 %78 %78
+         %95 = OpConstantComposite %76 %79 %81 %82 %83 %84 %85 %86 %87 %79 %88 %89 %90 %91 %92 %93 %94
+         %97 = OpConstant %18 16
+         %99 = OpTypePointer Function %76
+        %101 = OpTypePointer Function %10
+        %234 = OpConstant %6 0
+        %235 = OpConstantComposite %10 %234 %234 %234 %234
+        %236 = OpConstantComposite %76 %235 %235 %235 %235 %235 %235 %235 %235 %235 %235 %235 %235 %235 %235 %235 %235
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+        %100 = OpVariable %99 Function
+         %13 = OpLoad %10 %12
+         %14 = OpVectorShuffle %7 %13 %13 0 1
+         %21 = OpAccessChain %20 %17 %19
+         %22 = OpLoad %7 %21
+         %23 = OpFDiv %7 %14 %22
+         %31 = OpCompositeExtract %6 %23 0
+         %33 = OpFMul %6 %31 %32
+         %34 = OpConvertFToS %18 %33
+         %37 = OpCompositeExtract %6 %23 1
+         %38 = OpFMul %6 %37 %32
+         %39 = OpConvertFToS %18 %38
+         %48 = OpIMul %18 %39 %47
+         %49 = OpIAdd %18 %34 %48
+               OpBranch %53
+         %53 = OpLabel
+        %106 = OpPhi %18 %51 %5 %69 %54
+        %104 = OpPhi %18 %19 %5 %72 %54
+         %61 = OpSLessThan %60 %104 %49
+               OpLoopMerge %55 %54 None
+               OpBranchConditional %61 %54 %55
+         %54 = OpLabel
+         %64 = OpIMul %18 %62 %106
+         %67 = OpISub %18 %65 %106
+         %68 = OpIMul %18 %64 %67
+         %69 = OpSDiv %18 %68 %65
+         %72 = OpIAdd %18 %104 %71
+               OpBranch %53
+         %55 = OpLabel
+         %98 = OpSMod %18 %106 %97
+               OpStore %100 %95
+        %231 = OpVectorShuffle %7 %89 %85 1 4
+        %102 = OpAccessChain %101 %100 %98
+        %103 = OpLoad %10 %102
+               OpStore %74 %103
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for variant_2
+
+# resolution
+BUFFER variant_2_resolution DATA_TYPE vec2<float> STD140 DATA
+ 256.0 256.0
+END
+
+BUFFER variant_2_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_2_pipeline
+  ATTACH variant_2_vertex_shader
+  ATTACH variant_2_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_2_framebuffer AS color LOCATION 0
+  BIND BUFFER variant_2_resolution AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR variant_2_pipeline 0 0 0 255
+
+CLEAR variant_2_pipeline
+RUN variant_2_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT reference_framebuffer EQ_HISTOGRAM_EMD_BUFFER variant_framebuffer TOLERANCE 0.005
+EXPECT reference_framebuffer EQ_HISTOGRAM_EMD_BUFFER variant_2_framebuffer TOLERANCE 0.005
