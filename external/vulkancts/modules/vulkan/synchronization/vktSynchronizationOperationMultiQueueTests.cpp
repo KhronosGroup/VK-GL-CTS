@@ -348,7 +348,7 @@ void createBarrierMultiQueue (SynchronizationWrapperPtr synchronizationWrapper,
 			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 		}
 	}
-	else if (resource.getType() == RESOURCE_TYPE_BUFFER || isIndirectBuffer(resource.getType()))
+	else
 	{
 		VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
 			secondQueue ? VkPipelineStageFlags(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT) : writeSync.stageMask,

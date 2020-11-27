@@ -659,7 +659,7 @@ Move<VkImage> createImage(const vk::DeviceInterface&				vkd,
 		extent,
 		1u,
 		1u,
-		vk::VK_SAMPLE_COUNT_1_BIT,
+		resourceDesc.imageSamples,
 		vk::VK_IMAGE_TILING_OPTIMAL,
 		readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags(),
 		vk::VK_SHARING_MODE_EXCLUSIVE,
@@ -786,7 +786,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 			extent,
 			1u,
 			1u,
-			vk::VK_SAMPLE_COUNT_1_BIT,
+			resourceDesc.imageSamples,
 			vk::VK_IMAGE_TILING_OPTIMAL,
 			readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags(),
 			vk::VK_SHARING_MODE_EXCLUSIVE,
@@ -838,11 +838,11 @@ void recordWriteBarrier (SynchronizationWrapperPtr	synchronizationWrapper,
 						 deUint32					writeQueueFamilyIndex,
 						 const SyncInfo&			readSync)
 {
-	const vk::VkPipelineStageFlags	srcStageMask		= writeSync.stageMask;
-	const vk::VkAccessFlags			srcAccessMask		= writeSync.accessMask;
+	const vk::VkPipelineStageFlags2KHR	srcStageMask	= writeSync.stageMask;
+	const vk::VkAccessFlags2KHR			srcAccessMask	= writeSync.accessMask;
 
-	const vk::VkPipelineStageFlags	dstStageMask		= readSync.stageMask;
-	const vk::VkAccessFlags			dstAccessMask		= readSync.accessMask;
+	const vk::VkPipelineStageFlags2KHR	dstStageMask	= readSync.stageMask;
+	const vk::VkAccessFlags2KHR			dstAccessMask	= readSync.accessMask;
 
 	if (resource.getType() == RESOURCE_TYPE_IMAGE)
 	{
@@ -886,11 +886,11 @@ void recordReadBarrier (SynchronizationWrapperPtr	synchronizationWrapper,
 						const SyncInfo&				readSync,
 						deUint32					readQueueFamilyIndex)
 {
-	const vk::VkPipelineStageFlags	srcStageMask		= readSync.stageMask;
-	const vk::VkAccessFlags			srcAccessMask		= readSync.accessMask;
+	const vk::VkPipelineStageFlags2KHR	srcStageMask	= readSync.stageMask;
+	const vk::VkAccessFlags2KHR			srcAccessMask	= readSync.accessMask;
 
-	const vk::VkPipelineStageFlags	dstStageMask		= readSync.stageMask;
-	const vk::VkAccessFlags			dstAccessMask		= readSync.accessMask;
+	const vk::VkPipelineStageFlags2KHR	dstStageMask	= readSync.stageMask;
+	const vk::VkAccessFlags2KHR			dstAccessMask	= readSync.accessMask;
 
 	if (resource.getType() == RESOURCE_TYPE_IMAGE)
 	{

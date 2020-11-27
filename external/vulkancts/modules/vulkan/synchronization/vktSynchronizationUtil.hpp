@@ -245,6 +245,7 @@ enum ResourceType
 	RESOURCE_TYPE_INDIRECT_BUFFER_DRAW,
 	RESOURCE_TYPE_INDIRECT_BUFFER_DRAW_INDEXED,
 	RESOURCE_TYPE_INDIRECT_BUFFER_DISPATCH,
+	RESOURCE_TYPE_INDEX_BUFFER,
 };
 
 struct ResourceDescription
@@ -254,6 +255,7 @@ struct ResourceDescription
 	vk::VkImageType					imageType;
 	vk::VkFormat					imageFormat;
 	vk::VkImageAspectFlags			imageAspect;
+	vk::VkSampleCountFlagBits		imageSamples;
 };
 
 struct BufferResource
@@ -274,16 +276,20 @@ struct ImageResource
 };
 
 typedef std::shared_ptr<SynchronizationWrapperBase> SynchronizationWrapperPtr;
-SynchronizationWrapperPtr			getSynchronizationWrapper					(SynchronizationType			type,
-																				 const vk::DeviceInterface&		vk,
-																				 bool							usingTimelineSemaphores,
-																				 deUint32						submitInfoCount = 1u);
-void								submitCommandsAndWait						(SynchronizationWrapperPtr		synchronizationWrapper,
-																				 const vk::DeviceInterface&		vk,
-																				 const vk::VkDevice				device,
-																				 const vk::VkQueue				queue,
-																				 const vk::VkCommandBuffer		cmdBuffer);
-vk::VkImageCreateInfo				makeImageCreateInfo							(const vk::VkImageType imageType, const vk::VkExtent3D& extent, const vk::VkFormat format, const vk::VkImageUsageFlags usage);
+SynchronizationWrapperPtr			getSynchronizationWrapper					(SynchronizationType				type,
+																				 const vk::DeviceInterface&			vk,
+																				 bool								usingTimelineSemaphores,
+																				 deUint32							submitInfoCount = 1u);
+void								submitCommandsAndWait						(SynchronizationWrapperPtr			synchronizationWrapper,
+																				 const vk::DeviceInterface&			vk,
+																				 const vk::VkDevice					device,
+																				 const vk::VkQueue					queue,
+																				 const vk::VkCommandBuffer			cmdBuffer);
+vk::VkImageCreateInfo				makeImageCreateInfo							(const vk::VkImageType				imageType,
+																				 const vk::VkExtent3D&				extent,
+																				 const vk::VkFormat					format,
+																				 const vk::VkImageUsageFlags		usage,
+																				 const vk::VkSampleCountFlagBits	samples = vk::VK_SAMPLE_COUNT_1_BIT);
 vk::Move<vk::VkCommandBuffer>		makeCommandBuffer							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkCommandPool commandPool);
 vk::Move<vk::VkPipeline>			makeComputePipeline							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkShaderModule shaderModule, const vk::VkSpecializationInfo* specInfo, PipelineCacheData& pipelineCacheData);
 void								beginRenderPassWithRasterizationDisabled	(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const vk::VkFramebuffer framebuffer);

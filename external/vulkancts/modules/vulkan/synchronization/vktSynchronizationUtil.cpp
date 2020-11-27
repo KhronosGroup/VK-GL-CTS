@@ -86,9 +86,13 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&		vk,
 	}
 }
 
-VkImageCreateInfo makeImageCreateInfo (const VkImageType imageType, const VkExtent3D& extent, const VkFormat format, const VkImageUsageFlags usage)
+VkImageCreateInfo makeImageCreateInfo (const VkImageType			imageType,
+									   const VkExtent3D&			extent,
+									   const VkFormat				format,
+									   const VkImageUsageFlags		usage,
+									   const VkSampleCountFlagBits	samples)
 {
-	const VkImageCreateInfo imageInfo =
+	return
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		// VkStructureType          sType;
 		DE_NULL,									// const void*              pNext;
@@ -98,7 +102,7 @@ VkImageCreateInfo makeImageCreateInfo (const VkImageType imageType, const VkExte
 		extent,										// VkExtent3D               extent;
 		1u,											// uint32_t                 mipLevels;
 		1u,											// uint32_t                 arrayLayers;
-		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits    samples;
+		samples,									// VkSampleCountFlagBits    samples;
 		VK_IMAGE_TILING_OPTIMAL,					// VkImageTiling            tiling;
 		usage,										// VkImageUsageFlags        usage;
 		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode            sharingMode;
@@ -106,7 +110,6 @@ VkImageCreateInfo makeImageCreateInfo (const VkImageType imageType, const VkExte
 		DE_NULL,									// const uint32_t*          pQueueFamilyIndices;
 		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout            initialLayout;
 	};
-	return imageInfo;
 }
 
 void beginRenderPassWithRasterizationDisabled (const DeviceInterface&	vk,
@@ -995,8 +998,11 @@ std::string getResourceName (const ResourceDescription& resource)
 {
 	std::ostringstream str;
 
-	if (resource.type == RESOURCE_TYPE_BUFFER)
+	if ((resource.type == RESOURCE_TYPE_BUFFER) ||
+		(resource.type == RESOURCE_TYPE_INDEX_BUFFER))
+	{
 		str << "buffer_" << resource.size.x();
+	}
 	else if (resource.type == RESOURCE_TYPE_IMAGE)
 	{
 		str << "image_" << resource.size.x()

@@ -35,28 +35,32 @@ namespace synchronization
 
 static const ResourceDescription s_resources[] =
 {
-	{ RESOURCE_TYPE_BUFFER,	tcu::IVec4( 0x4000, 0, 0, 0),	vk::VK_IMAGE_TYPE_LAST,	vk::VK_FORMAT_UNDEFINED,		(vk::VkImageAspectFlags)0	  },	// 16 KiB (min max UBO range)
-	{ RESOURCE_TYPE_BUFFER,	tcu::IVec4(0x40000, 0, 0, 0),	vk::VK_IMAGE_TYPE_LAST,	vk::VK_FORMAT_UNDEFINED,		(vk::VkImageAspectFlags)0	  },	// 256 KiB
+	{ RESOURCE_TYPE_BUFFER,	tcu::IVec4( 0x4000, 0, 0, 0),	vk::VK_IMAGE_TYPE_LAST,	vk::VK_FORMAT_UNDEFINED,			(vk::VkImageAspectFlags)0,			vk::VK_SAMPLE_COUNT_1_BIT },	// 16 KiB (min max UBO range)
+	{ RESOURCE_TYPE_BUFFER,	tcu::IVec4(0x40000, 0, 0, 0),	vk::VK_IMAGE_TYPE_LAST,	vk::VK_FORMAT_UNDEFINED,			(vk::VkImageAspectFlags)0,			vk::VK_SAMPLE_COUNT_1_BIT },	// 256 KiB
 
-	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 0, 0, 0),		vk::VK_IMAGE_TYPE_1D,	vk::VK_FORMAT_R32_UINT,				vk::VK_IMAGE_ASPECT_COLOR_BIT },
+	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 0, 0, 0),		vk::VK_IMAGE_TYPE_1D,	vk::VK_FORMAT_R32_UINT,				vk::VK_IMAGE_ASPECT_COLOR_BIT,		vk::VK_SAMPLE_COUNT_1_BIT },
 
-	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R8_UNORM,				vk::VK_IMAGE_ASPECT_COLOR_BIT },
-	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R16_UINT,				vk::VK_IMAGE_ASPECT_COLOR_BIT },
-	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R8G8B8A8_UNORM,		vk::VK_IMAGE_ASPECT_COLOR_BIT },
-	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R16G16B16A16_UINT,	vk::VK_IMAGE_ASPECT_COLOR_BIT },
-	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R32G32B32A32_SFLOAT,	vk::VK_IMAGE_ASPECT_COLOR_BIT },
+	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R8_UNORM,				vk::VK_IMAGE_ASPECT_COLOR_BIT,		vk::VK_SAMPLE_COUNT_1_BIT },
+	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R16_UINT,				vk::VK_IMAGE_ASPECT_COLOR_BIT,		vk::VK_SAMPLE_COUNT_1_BIT },
+	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R8G8B8A8_UNORM,		vk::VK_IMAGE_ASPECT_COLOR_BIT,		vk::VK_SAMPLE_COUNT_1_BIT },
+	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R16G16B16A16_UINT,	vk::VK_IMAGE_ASPECT_COLOR_BIT,		vk::VK_SAMPLE_COUNT_1_BIT },
+	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R32G32B32A32_SFLOAT,	vk::VK_IMAGE_ASPECT_COLOR_BIT,		vk::VK_SAMPLE_COUNT_1_BIT },
 
-	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(64, 64, 8, 0),		vk::VK_IMAGE_TYPE_3D,	vk::VK_FORMAT_R32_SFLOAT,			vk::VK_IMAGE_ASPECT_COLOR_BIT },
+	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(64, 64, 8, 0),		vk::VK_IMAGE_TYPE_3D,	vk::VK_FORMAT_R32_SFLOAT,			vk::VK_IMAGE_ASPECT_COLOR_BIT,		vk::VK_SAMPLE_COUNT_1_BIT },
 
 	// \note Mixed depth/stencil formats add complexity in image<->buffer transfers (packing), so we just avoid them here
-	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_D16_UNORM,			vk::VK_IMAGE_ASPECT_DEPTH_BIT },
-	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_D32_SFLOAT,			vk::VK_IMAGE_ASPECT_DEPTH_BIT },
-	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_S8_UINT,				vk::VK_IMAGE_ASPECT_STENCIL_BIT },
+	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_D16_UNORM,			vk::VK_IMAGE_ASPECT_DEPTH_BIT,		vk::VK_SAMPLE_COUNT_1_BIT },
+	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_D32_SFLOAT,			vk::VK_IMAGE_ASPECT_DEPTH_BIT,		vk::VK_SAMPLE_COUNT_1_BIT },
+	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_S8_UINT,				vk::VK_IMAGE_ASPECT_STENCIL_BIT,	vk::VK_SAMPLE_COUNT_1_BIT },
 
 	// \note Special resources, when test case isn't strictly a copy and comparison of some data
-	{ RESOURCE_TYPE_INDIRECT_BUFFER_DRAW,			tcu::IVec4(sizeof(vk::VkDrawIndirectCommand),        0, 0, 0),	vk::VK_IMAGE_TYPE_LAST, vk::VK_FORMAT_UNDEFINED, (vk::VkImageAspectFlags)0	},
-	{ RESOURCE_TYPE_INDIRECT_BUFFER_DRAW_INDEXED,	tcu::IVec4(sizeof(vk::VkDrawIndexedIndirectCommand), 0, 0, 0),	vk::VK_IMAGE_TYPE_LAST, vk::VK_FORMAT_UNDEFINED, (vk::VkImageAspectFlags)0	},
-	{ RESOURCE_TYPE_INDIRECT_BUFFER_DISPATCH,		tcu::IVec4(sizeof(vk::VkDispatchIndirectCommand),    0, 0, 0),	vk::VK_IMAGE_TYPE_LAST, vk::VK_FORMAT_UNDEFINED, (vk::VkImageAspectFlags)0	},
+	{ RESOURCE_TYPE_INDIRECT_BUFFER_DRAW,			tcu::IVec4(sizeof(vk::VkDrawIndirectCommand),        0, 0, 0),	vk::VK_IMAGE_TYPE_LAST, vk::VK_FORMAT_UNDEFINED, (vk::VkImageAspectFlags)0, vk::VK_SAMPLE_COUNT_1_BIT },
+	{ RESOURCE_TYPE_INDIRECT_BUFFER_DRAW_INDEXED,	tcu::IVec4(sizeof(vk::VkDrawIndexedIndirectCommand), 0, 0, 0),	vk::VK_IMAGE_TYPE_LAST, vk::VK_FORMAT_UNDEFINED, (vk::VkImageAspectFlags)0, vk::VK_SAMPLE_COUNT_1_BIT },
+	{ RESOURCE_TYPE_INDIRECT_BUFFER_DISPATCH,		tcu::IVec4(sizeof(vk::VkDispatchIndirectCommand),    0, 0, 0),	vk::VK_IMAGE_TYPE_LAST, vk::VK_FORMAT_UNDEFINED, (vk::VkImageAspectFlags)0, vk::VK_SAMPLE_COUNT_1_BIT },
+	{ RESOURCE_TYPE_INDEX_BUFFER,					tcu::IVec4(sizeof(deUint32) * 5,                     0, 0, 0),	vk::VK_IMAGE_TYPE_LAST, vk::VK_FORMAT_UNDEFINED, (vk::VkImageAspectFlags)0, vk::VK_SAMPLE_COUNT_1_BIT },
+
+	// \note Special multisampled image resource needed to test resolve
+	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(64, 64, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R32_UINT,				vk::VK_IMAGE_ASPECT_COLOR_BIT,		vk::VK_SAMPLE_COUNT_4_BIT },
 };
 
 } // synchronization

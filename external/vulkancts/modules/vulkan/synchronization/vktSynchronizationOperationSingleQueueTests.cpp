@@ -97,22 +97,7 @@ public:
 
 		m_writeOp->recordCommands(*cmdBuffer);
 
-		if (m_resource->getType() == RESOURCE_TYPE_BUFFER || isIndirectBuffer(m_resource->getType()))
-		{
-			const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
-				writeSync.stageMask,							// VkPipelineStageFlags2KHR			srcStageMask
-				writeSync.accessMask,							// VkAccessFlags2KHR				srcAccessMask
-				readSync.stageMask,								// VkPipelineStageFlags2KHR			dstStageMask
-				readSync.accessMask,							// VkAccessFlags2KHR				dstAccessMask
-				m_resource->getBuffer().handle,					// VkBuffer							buffer
-				m_resource->getBuffer().offset,					// VkDeviceSize						offset
-				m_resource->getBuffer().size					// VkDeviceSize						size
-			);
-			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
-			synchronizationWrapper->cmdSetEvent(*cmdBuffer, *event, &dependencyInfo);
-			synchronizationWrapper->cmdWaitEvents(*cmdBuffer, 1u, &event.get(), &dependencyInfo);
-		}
-		else if (m_resource->getType() == RESOURCE_TYPE_IMAGE)
+		if (m_resource->getType() == RESOURCE_TYPE_IMAGE)
 		{
 			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
 				writeSync.stageMask,							// VkPipelineStageFlags2KHR			srcStageMask
@@ -125,6 +110,21 @@ public:
 				m_resource->getImage().subresourceRange			// VkImageSubresourceRange			subresourceRange
 			);
 			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+			synchronizationWrapper->cmdSetEvent(*cmdBuffer, *event, &dependencyInfo);
+			synchronizationWrapper->cmdWaitEvents(*cmdBuffer, 1u, &event.get(), &dependencyInfo);
+		}
+		else
+		{
+			const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+				writeSync.stageMask,							// VkPipelineStageFlags2KHR			srcStageMask
+				writeSync.accessMask,							// VkAccessFlags2KHR				srcAccessMask
+				readSync.stageMask,								// VkPipelineStageFlags2KHR			dstStageMask
+				readSync.accessMask,							// VkAccessFlags2KHR				dstAccessMask
+				m_resource->getBuffer().handle,					// VkBuffer							buffer
+				m_resource->getBuffer().offset,					// VkDeviceSize						offset
+				m_resource->getBuffer().size					// VkDeviceSize						size
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
 			synchronizationWrapper->cmdSetEvent(*cmdBuffer, *event, &dependencyInfo);
 			synchronizationWrapper->cmdWaitEvents(*cmdBuffer, 1u, &event.get(), &dependencyInfo);
 		}
@@ -181,21 +181,7 @@ public:
 
 		m_writeOp->recordCommands(*cmdBuffer);
 
-		if (m_resource->getType() == RESOURCE_TYPE_BUFFER || isIndirectBuffer(m_resource->getType()))
-		{
-			const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
-				writeSync.stageMask,							// VkPipelineStageFlags2KHR			srcStageMask
-				writeSync.accessMask,							// VkAccessFlags2KHR				srcAccessMask
-				readSync.stageMask,								// VkPipelineStageFlags2KHR			dstStageMask
-				readSync.accessMask,							// VkAccessFlags2KHR				dstAccessMask
-				m_resource->getBuffer().handle,					// VkBuffer							buffer
-				m_resource->getBuffer().offset,					// VkDeviceSize						offset
-				m_resource->getBuffer().size					// VkDeviceSize						size
-			);
-			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
-			synchronizationWrapper->cmdPipelineBarrier(*cmdBuffer, &dependencyInfo);
-		}
-		else if (m_resource->getType() == RESOURCE_TYPE_IMAGE)
+		if (m_resource->getType() == RESOURCE_TYPE_IMAGE)
 		{
 			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
 				writeSync.stageMask,							// VkPipelineStageFlags2KHR			srcStageMask
@@ -208,6 +194,20 @@ public:
 				m_resource->getImage().subresourceRange			// VkImageSubresourceRange			subresourceRange
 			);
 			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(*cmdBuffer, &dependencyInfo);
+		}
+		else
+		{
+			const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+				writeSync.stageMask,							// VkPipelineStageFlags2KHR			srcStageMask
+				writeSync.accessMask,							// VkAccessFlags2KHR				srcAccessMask
+				readSync.stageMask,								// VkPipelineStageFlags2KHR			dstStageMask
+				readSync.accessMask,							// VkAccessFlags2KHR				dstAccessMask
+				m_resource->getBuffer().handle,					// VkBuffer							buffer
+				m_resource->getBuffer().offset,					// VkDeviceSize						offset
+				m_resource->getBuffer().size					// VkDeviceSize						size
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
 			synchronizationWrapper->cmdPipelineBarrier(*cmdBuffer, &dependencyInfo);
 		}
 

@@ -61,6 +61,7 @@ enum OperationName
 	OPERATION_NAME_WRITE_IMAGE_FRAGMENT,
 	OPERATION_NAME_WRITE_IMAGE_COMPUTE,
 	OPERATION_NAME_WRITE_IMAGE_COMPUTE_INDIRECT,
+	OPERATION_NAME_WRITE_IMAGE_COMPUTE_MULTISAMPLE,
 	OPERATION_NAME_WRITE_CLEAR_COLOR_IMAGE,
 	OPERATION_NAME_WRITE_CLEAR_DEPTH_STENCIL_IMAGE,
 	OPERATION_NAME_WRITE_DRAW,
@@ -71,6 +72,7 @@ enum OperationName
 	OPERATION_NAME_WRITE_INDIRECT_BUFFER_DRAW,
 	OPERATION_NAME_WRITE_INDIRECT_BUFFER_DRAW_INDEXED,
 	OPERATION_NAME_WRITE_INDIRECT_BUFFER_DISPATCH,
+	OPERATION_NAME_WRITE_UPDATE_INDEX_BUFFER,
 
 	// Read operations
 	OPERATION_NAME_READ_COPY_BUFFER,
@@ -78,6 +80,7 @@ enum OperationName
 	OPERATION_NAME_READ_COPY_IMAGE_TO_BUFFER,
 	OPERATION_NAME_READ_COPY_IMAGE,
 	OPERATION_NAME_READ_BLIT_IMAGE,
+	OPERATION_NAME_READ_RESOLVE_IMAGE,
 	OPERATION_NAME_READ_UBO_VERTEX,
 	OPERATION_NAME_READ_UBO_TESSELLATION_CONTROL,
 	OPERATION_NAME_READ_UBO_TESSELLATION_EVALUATION,
@@ -103,6 +106,7 @@ enum OperationName
 	OPERATION_NAME_READ_INDIRECT_BUFFER_DRAW_INDEXED,
 	OPERATION_NAME_READ_INDIRECT_BUFFER_DISPATCH,
 	OPERATION_NAME_READ_VERTEX_INPUT,
+	OPERATION_NAME_READ_INDEX_INPUT,
 
 	// Copy operations
 	OPERATION_NAME_COPY_BUFFER,
@@ -223,9 +227,9 @@ private:
 //       write - the layout image will be in after the write operation has finished
 struct SyncInfo
 {
-	vk::VkPipelineStageFlags	stageMask;		// pipeline stage where read/write takes place
-	vk::VkAccessFlags			accessMask;		// type of access that is performed
-	vk::VkImageLayout			imageLayout;	// src (for reads) or dst (for writes) image layout
+	vk::VkPipelineStageFlags2KHR	stageMask;		// pipeline stage where read/write takes place
+	vk::VkAccessFlags2KHR			accessMask;		// type of access that is performed
+	vk::VkImageLayout				imageLayout;	// src (for reads) or dst (for writes) image layout
 };
 
 struct Data

@@ -398,7 +398,7 @@ de::MovePtr<Resource> importResource (const DeviceInterface&				vkd,
 			extent,
 			1u,
 			1u,
-			VK_SAMPLE_COUNT_1_BIT,
+			resourceDesc.imageSamples,
 			VK_IMAGE_TILING_OPTIMAL,
 			readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags(),
 			VK_SHARING_MODE_EXCLUSIVE,
@@ -554,7 +554,7 @@ public:
 			extent,
 			1u,
 			1u,
-			VK_SAMPLE_COUNT_1_BIT,
+			m_resourceDesc.imageSamples,
 			VK_IMAGE_TILING_OPTIMAL,
 			m_readOpSupport->getInResourceUsageFlags() | m_writeOpSupport->getOutResourceUsageFlags(),
 			VK_SHARING_MODE_EXCLUSIVE,
@@ -626,7 +626,7 @@ public:
 		std::vector<deUint64>								timelineValuesA;
 		std::vector<deUint64>								timelineValuesB;
 		std::vector<QueueSubmitOrderSharedIteration>		iterations(12);
-		std::vector<VkPipelineStageFlags>					stageBits;
+		std::vector<VkPipelineStageFlags2KHR>				stageBits;
 
 		// Create a dozen of set of write/read operations.
 		for (deUint32 iterIdx = 0; iterIdx < iterations.size(); iterIdx++)
@@ -764,7 +764,7 @@ public:
 		DE_ASSERT(semaphoreHandlesA.size() == iterations.size());
 
 		// Record all read operations into a single command buffer and record the union of their stage masks.
-		VkPipelineStageFlags readStages = 0;
+		VkPipelineStageFlags2KHR readStages = 0;
 		ptrCmdBufferB = makeVkSharedPtr(makeCommandBuffer(vkB, *deviceB, *cmdPoolB));
 		cmdBufferB = **(ptrCmdBufferB);
 		beginCommandBuffer(vkB, cmdBufferB);
@@ -1354,7 +1354,7 @@ public:
 		std::vector<deUint64>								timelineValuesA;
 		std::vector<deUint64>								timelineValuesB;
 		std::vector<QueueSubmitOrderIteration>				iterations;
-		std::vector<VkPipelineStageFlags>					stageBits;
+		std::vector<VkPipelineStageFlags2KHR>				stageBits;
 		std::vector<deUint32>								queueFamilies;
 		SynchronizationWrapperPtr							syncWrapper					= getSynchronizationWrapper(m_type, vk, isTimelineSemaphore);
 
@@ -1442,7 +1442,7 @@ public:
 		DE_ASSERT(semaphoreHandlesA.size() == iterations.size());
 
 		// Record all read operations into a single command buffer and track the union of their execution stages.
-		VkPipelineStageFlags readStages = 0;
+		VkPipelineStageFlags2KHR readStages = 0;
 		ptrCmdBufferB = makeVkSharedPtr(makeCommandBuffer(vk, device, *cmdPoolB));
 		cmdBufferB = **(ptrCmdBufferB);
 		beginCommandBuffer(vk, cmdBufferB);
