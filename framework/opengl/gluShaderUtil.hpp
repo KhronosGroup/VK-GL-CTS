@@ -282,6 +282,10 @@ inline bool		isDataTypeMatrix					(DataType dataType)	{
 																		}
 inline bool		isDataTypeIntOrIVec					(DataType dataType)	{ return (dataType >= TYPE_INT)        && (dataType <= TYPE_INT_VEC4);     }
 inline bool		isDataTypeUintOrUVec				(DataType dataType)	{ return (dataType >= TYPE_UINT)       && (dataType <= TYPE_UINT_VEC4);    }
+inline bool		isDataTypeIntOrIVec8Bit				(DataType dataType)	{ return (dataType >= TYPE_INT8)       && (dataType <= TYPE_INT8_VEC4);    }
+inline bool		isDataTypeUintOrUVec8Bit			(DataType dataType)	{ return (dataType >= TYPE_UINT8)      && (dataType <= TYPE_UINT8_VEC4);   }
+inline bool		isDataTypeIntOrIVec16Bit			(DataType dataType)	{ return (dataType >= TYPE_INT16)      && (dataType <= TYPE_INT16_VEC4);   }
+inline bool		isDataTypeUintOrUVec16Bit			(DataType dataType)	{ return (dataType >= TYPE_UINT16)     && (dataType <= TYPE_UINT16_VEC4);  }
 inline bool		isDataTypeBoolOrBVec				(DataType dataType)	{ return (dataType >= TYPE_BOOL)       && (dataType <= TYPE_BOOL_VEC4);    }
 inline bool		isDataTypeScalar					(DataType dataType) {
 																			return (dataType == TYPE_FLOAT)

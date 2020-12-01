@@ -64,6 +64,15 @@ struct CheckSupportParams
 	bool needsInt64;
 	bool needsFloat16;
 	bool needsFloat64;
+
+	void useType(glu::DataType dt)
+	{
+		using namespace glu;
+
+		needsInt8		|= isDataTypeIntOrIVec8Bit(dt) || isDataTypeUintOrUVec8Bit(dt);
+		needsInt16		|= isDataTypeIntOrIVec16Bit(dt) || isDataTypeUintOrUVec16Bit(dt);
+		needsFloat16	|= isDataTypeFloat16OrVec(dt);
+	}
 };
 
 void checkSupportWithParams(Context& context, const CheckSupportParams& params)
@@ -779,6 +788,242 @@ void AddAliasTests(tcu::TestCaseGroup* group)
 	}
 }
 
+class ZeroTest : public vkt::TestCase
+{
+public:
+	struct CaseDef
+	{
+		glu::DataType zeroElementType;
+		glu::DataType fieldType[2];
+		deUint32 elements;
+
+		std::string testName() const
+		{
+			std::string name = glu::getDataTypeName(zeroElementType);
+			name += "_array_to";
+
+			for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(fieldType); ++i)
+			{
+				if (fieldType[i] == glu::TYPE_INVALID)
+					break;
+				name += "_";
+				name += glu::getDataTypeName(fieldType[i]);
+			}
+			name += "_array_" + de::toString(elements);
+			return name;
+		}
+	};
+
+	ZeroTest(tcu::TestContext& testCtx, const CaseDef& caseDef)
+		: TestCase(testCtx, caseDef.testName(), caseDef.testName()),
+		m_caseDef(caseDef)
+	{
+	}
+
+	virtual void checkSupport(Context& context) const;
+	void initPrograms(SourceCollections& sourceCollections) const;
+
+	class Instance : public vkt::TestInstance
+	{
+	public:
+		Instance(Context& context)
+			: TestInstance(context)
+		{
+		}
+
+		tcu::TestStatus iterate(void)
+		{
+			return runCompute(m_context, 1u);
+		}
+	};
+
+	TestInstance* createInstance(Context& context) const
+	{
+		return new Instance(context);
+	}
+
+private:
+	CaseDef m_caseDef;
+};
+
+void ZeroTest::checkSupport(Context& context) const
+{
+	CheckSupportParams p;
+	deMemset(&p, 0, sizeof(p));
+
+	DE_ASSERT(!glu::isDataTypeFloat16OrVec(m_caseDef.zeroElementType));
+
+	p.useType(m_caseDef.zeroElementType);
+	p.useType(m_caseDef.fieldType[0]);
+	p.useType(m_caseDef.fieldType[1]);
+
+	checkSupportWithParams(context, p);
+}
+
+std::string getDataTypeLiteral(glu::DataType dt, std::string baseValue)
+{
+	using namespace glu;
+
+	if (isDataTypeVector(dt))
+	{
+		std::string elemValue = getDataTypeLiteral(getDataTypeScalarType(dt), baseValue);
+
+		std::ostringstream result;
+		result << getDataTypeName(dt) << "(";
+		for (int i = 0; i < getDataTypeScalarSize(dt); ++i)
+		{
+			if (i > 0)
+				result << ", ";
+			result << elemValue;
+		}
+		result << ")";
+		return result.str();
+	}
+	else if (isDataTypeScalar(dt))
+	{
+		return getDataTypeName(dt) + std::string("(") + baseValue + std::string(")");
+	}
+	else
+	{
+		DE_ASSERT(0);
+		return std::string();
+	}
+}
+
+void ZeroTest::initPrograms(SourceCollections& sourceCollections) const
+{
+	using namespace glu;
+
+	std::ostringstream src;
+
+	src << "#version 450\n"
+		<< "#extension GL_EXT_shared_memory_block : enable\n"
+		<< "#extension GL_EXT_shader_explicit_arithmetic_types : enable\n"
+		<< "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
+
+	// Large enough to cover the largest B block even if just 8-bit elements.
+	// Small enough to fit in the minimum shared memory size limit even if with uvec4.
+	src << "shared A { " << getDataTypeName(m_caseDef.zeroElementType) << " arr[128]; } zero;\n";
+
+	src << "struct st {\n"
+		<< "    " << getDataTypeName(m_caseDef.fieldType[0]) << " x;\n";
+	if (m_caseDef.fieldType[1])
+		src << "    " << getDataTypeName(m_caseDef.fieldType[1]) << " y;\n";
+	src << "};\n";
+
+
+	src << "shared B { st arr[4]; };\n"
+		<< "layout(set = 0, binding = 0) buffer Result { uint result; };\n"
+		<< "void main() {\n"
+		<< "for (int i = 0; i < zero.arr.length(); i++) {\n"
+		<< "    zero.arr[i] = " << getDataTypeLiteral(m_caseDef.zeroElementType, "1") << ";\n"
+		<< "  }\n"
+		<< "  for (int i = 0; i < zero.arr.length(); i++) {\n"
+		<< "    zero.arr[i] = " << getDataTypeLiteral(m_caseDef.zeroElementType, "0") << ";\n"
+		<< "  }\n"
+		<< "  result = (\n";
+
+	for (deUint32 i = 0; i < 4; i++)
+	{
+		src << "    ";
+		if (i > 0)
+			src << "&& ";
+		src << "(arr[" << de::toString(i) << "].x == " << getDataTypeLiteral(m_caseDef.fieldType[0], "0") << ")\n";
+		if (m_caseDef.fieldType[1])
+			src << "    && (arr[" << de::toString(i) << "].y == " << getDataTypeLiteral(m_caseDef.fieldType[1], "0") << ")\n";
+	}
+
+	src << "  ) ? 0 : 0xFF;\n"
+		<< "}\n";
+
+	sourceCollections.glslSources.add("comp")
+		<< ComputeSource(src.str())
+		<< vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_4,
+								  vk::ShaderBuildOptions::Flags(0u));
+}
+
+bool isTestedZeroElementType(glu::DataType dt)
+{
+	using namespace glu;
+
+	// Select only a few interesting types.
+	switch (dt)
+	{
+	case TYPE_UINT:
+	case TYPE_UINT_VEC4:
+	case TYPE_UINT8:
+	case TYPE_UINT8_VEC4:
+	case TYPE_UINT16:
+		return true;
+	default:
+		return false;
+	}
+}
+
+bool isTestedFieldType(glu::DataType dt)
+{
+	using namespace glu;
+
+	// Select only a few interesting types.
+	switch (dt)
+	{
+	case TYPE_UINT:
+	case TYPE_UINT_VEC3:
+	case TYPE_UINT8:
+	case TYPE_UINT16:
+	case TYPE_FLOAT:
+	case TYPE_FLOAT_VEC4:
+	case TYPE_FLOAT16:
+	case TYPE_DOUBLE:
+	case TYPE_DOUBLE_VEC4:
+	case TYPE_BOOL:
+		return true;
+
+	default:
+		return false;
+	}
+}
+
+void AddZeroTests(tcu::TestCaseGroup* group)
+{
+	using namespace glu;
+
+	ZeroTest::CaseDef c;
+
+	for (deUint32 i = 0; i < TYPE_LAST; ++i)
+	{
+		c.zeroElementType = DataType(i);
+
+		if (isTestedZeroElementType(c.zeroElementType))
+		{
+			deUint32 idx[2] = { 0, 0 };
+
+			while (idx[1] < TYPE_LAST && idx[0] < TYPE_LAST)
+			{
+				c.fieldType[0] = DataType(idx[0]);
+				c.fieldType[1] = DataType(idx[1]);
+
+				if (isTestedFieldType(c.fieldType[0]) &&
+					(c.fieldType[1] == TYPE_INVALID || isTestedFieldType(c.fieldType[1])))
+				{
+					for (deUint32 elements = 1; elements <= 4; ++elements)
+					{
+						c.elements = elements;
+						group->addChild(new ZeroTest(group->getTestContext(), c));
+					}
+				}
+
+				idx[0]++;
+				if (idx[0] >= TYPE_LAST)
+				{
+					idx[1]++;
+					idx[0] = 0;
+				}
+			}
+		}
+	}
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createWorkgroupMemoryExplicitLayoutTests(tcu::TestContext& testCtx)
@@ -788,6 +1033,10 @@ tcu::TestCaseGroup* createWorkgroupMemoryExplicitLayoutTests(tcu::TestContext& t
 	tcu::TestCaseGroup* alias = new tcu::TestCaseGroup(testCtx, "alias", "Aliasing between different blocks and types");
 	AddAliasTests(alias);
 	tests->addChild(alias);
+
+	tcu::TestCaseGroup* zero = new tcu::TestCaseGroup(testCtx, "zero", "Manually zero initialize a block and read from another");
+	AddZeroTests(zero);
+	tests->addChild(zero);
 
 	return tests.release();
 }
