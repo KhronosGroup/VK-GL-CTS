@@ -447,7 +447,7 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 		!features2.features.shaderStorageImageMultisample)
 		TCU_THROW(NotSupportedError, "shaderStorageImageMultisample not supported");
 
-	if (m_data.useTemplate && !context.contextSupports(vk::ApiVersion(1, 1, 0)))
+	if ((m_data.useTemplate || formatIsR64(m_data.format)) && !context.contextSupports(vk::ApiVersion(1, 1, 0)))
 		TCU_THROW(NotSupportedError, "Vulkan 1.1 not supported");
 
 	if ((m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER || m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) &&
@@ -1338,10 +1338,13 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 		}
 	}
 	checks << "  }\n";
-	std::string SupportR64 = (formatIsR64(m_data.format) ?
+
+	const bool is64BitFormat = formatIsR64(m_data.format);
+	std::string SupportR64 = (is64BitFormat ?
 							std::string("#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
 							"#extension GL_EXT_shader_image_int64 : require\n") :
 							std::string());
+
 	switch (m_data.stage)
 	{
 	default: DE_ASSERT(0); // Fallthrough
@@ -1368,7 +1371,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				"}\n";
 
 			programCollection.glslSources.add("test") << glu::ComputeSource(css.str())
-				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
+				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, is64BitFormat ? vk::SPIRV_VERSION_1_3 : vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
 			break;
 		}
 	case STAGE_RAYGEN:
@@ -1463,8 +1466,8 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 		}
 	}
 
-
-	if ((m_data.samples > VK_SAMPLE_COUNT_1_BIT) && formatIsR64(m_data.format))
+	// The 64-bit conditions below are redundant. Can we support the below shader for other than 64-bit formats?
+	if ((m_data.samples > VK_SAMPLE_COUNT_1_BIT) && is64BitFormat)
 	{
 		const std::string	ivecCords = (m_data.viewType == VK_IMAGE_VIEW_TYPE_2D ? "ivec2(gx, gy)" : "ivec3(gx, gy, gz)");
 		std::stringstream	fillShader;
@@ -1475,11 +1478,11 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 			<< "\n"
 			"layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 			"layout (" + getShaderImageFormatQualifier(mapVkFormat(m_data.format)) + ", binding=0) volatile uniform "
-			<< string(formatIsSignedInt(m_data.format) ? "i" : "u") + string(formatIsR64(m_data.format) ? "64" : "") << "image" << imageDim << +" u_resultImage;\n"
+			<< string(formatIsSignedInt(m_data.format) ? "i" : "u") + string(is64BitFormat ? "64" : "") << "image" << imageDim << +" u_resultImage;\n"
 			"\n"
 			"layout(std430, binding = 1) buffer inputBuffer\n"
 			"{\n"
-			"  int" << (formatIsR64(m_data.format) ? "64_t" : "") << " data[];\n"
+			"  int" << (is64BitFormat ? "64_t" : "") << " data[];\n"
 			"} inBuffer;\n"
 			"\n"
 			"void main(void)\n"
@@ -1497,7 +1500,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 			fillShader << "}\n";
 
 		programCollection.glslSources.add("fillShader") << glu::ComputeSource(fillShader.str())
-			<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
+			<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, is64BitFormat ? vk::SPIRV_VERSION_1_3 : vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
 	}
 
 }
