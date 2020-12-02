@@ -2558,7 +2558,7 @@ public:
 				"    uint  nInvocation  = gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;\n"
 				"    uint  rayFlags     = 0;\n"
 				"    float tmin         = 0.001;\n"
-				"    float tmax         = 9.0;\n"
+				"    float tmax         = 4.0;\n"
 				"\n"
 				"    if (nInvocation >= 256 / nRaysPerInvocation)\n"
 				"    {\n"
