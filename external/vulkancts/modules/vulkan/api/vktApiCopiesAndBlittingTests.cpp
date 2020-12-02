@@ -282,6 +282,7 @@ struct TestParams
 	deBool			singleCommand;
 	deUint32		barrierCount;
 	deBool			separateDepthStencilLayouts;
+	deBool			clearDestination;
 
 	TestParams (void)
 	{
@@ -291,6 +292,7 @@ struct TestParams
 		separateDepthStencilLayouts	= DE_FALSE;
 		src.image.createFlags		= VK_IMAGE_CREATE_FLAG_BITS_MAX_ENUM;
 		dst.image.createFlags		= VK_IMAGE_CREATE_FLAG_BITS_MAX_ENUM;
+		clearDestination			= DE_FALSE;
 	}
 };
 
@@ -1040,7 +1042,7 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 																				(int)m_params.dst.image.extent.width,
 																				(int)m_params.dst.image.extent.height,
 																				(int)m_params.dst.image.extent.depth));
-	generateBuffer(m_destinationTextureLevel->getAccess(), m_params.dst.image.extent.width, m_params.dst.image.extent.height, m_params.dst.image.extent.depth, FILL_MODE_GRADIENT);
+	generateBuffer(m_destinationTextureLevel->getAccess(), m_params.dst.image.extent.width, m_params.dst.image.extent.height, m_params.dst.image.extent.depth, m_params.clearDestination ? FILL_MODE_WHITE : FILL_MODE_GRADIENT);
 	generateExpectedResult();
 
 	uploadImage(m_sourceTextureLevel->getAccess(), m_source.get(), m_params.src.image);
@@ -1133,6 +1135,18 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 
 	beginCommandBuffer(vk, *m_cmdBuffer);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
+
+	if (m_params.clearDestination)
+	{
+		VkImageSubresourceRange	range		= { VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u };
+		VkClearColorValue		clearColor;
+
+		clearColor.float32[0] = 1.0f;
+		clearColor.float32[1] = 1.0f;
+		clearColor.float32[2] = 1.0f;
+		clearColor.float32[3] = 1.0f;
+		vk.cmdClearColorImage(*m_cmdBuffer, m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1u, &range);
+	}
 
 	if (m_params.extensionUse == EXTENSION_USE_NONE)
 	{
@@ -5462,6 +5476,43 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 		}
 
 		group->addChild(new CopyImageToImageTestCase(testCtx, "partial_image", "Partial image", params));
+	}
+
+	{
+		VkExtent3D	extent					= { 65u, 63u, 1u };
+
+		TestParams	params;
+		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
+		params.src.image.format				= VK_FORMAT_R32_UINT;
+		params.src.image.extent				= extent;
+		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
+		params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+		params.dst.image.extent				= extent;
+		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		params.allocationKind				= allocationKind;
+		params.extensionUse					= extensionUse;
+		params.clearDestination				= VK_TRUE;
+
+		{
+			const VkImageCopy	testCopy	=
+			{
+				defaultSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+				{34, 34, 0},		// VkOffset3D				srcOffset;
+				defaultSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+				{0, 0, 0},			// VkOffset3D				dstOffset;
+				{31, 29, 1}			// VkExtent3D				extent;
+			};
+
+			CopyRegion			imageCopy;
+
+			imageCopy.imageCopy = testCopy;
+			params.regions.push_back(imageCopy);
+		}
+
+		group->addChild(new CopyImageToImageTestCase(testCtx, "partial_image_npot_diff_format_clear", "Partial image with npot dimensions, different format, and clearing of the destination image", params));
 	}
 
 	{
