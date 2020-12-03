@@ -38,6 +38,7 @@
 
 #include "deRandom.hpp"
 #include <algorithm>
+#include <memory>
 
 namespace vkt
 {

@@ -263,7 +263,7 @@ if `vk::Platform::describePlatform()` is implemented.
 If the submission package covers multiple products, you can list them by appending
 additional `PRODUCT:` lines to the conformance statement. For example:
 
-	CONFORM_VERSION:         vulkan-cts-1.2.4.0
+	CONFORM_VERSION:         vulkan-cts-1.2.5.0
 	PRODUCT:                 Product A
 	PRODUCT:                 Product B
 	...

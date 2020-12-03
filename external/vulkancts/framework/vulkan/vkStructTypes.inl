@@ -2767,62 +2767,6 @@ struct VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR
 	VkBool32		shaderTerminateInvocation;
 };
 
-struct VkFragmentShadingRateAttachmentInfoKHR
-{
-	VkStructureType					sType;
-	const void*						pNext;
-	const VkAttachmentReference2*	pFragmentShadingRateAttachment;
-	VkExtent2D						shadingRateAttachmentTexelSize;
-};
-
-struct VkPipelineFragmentShadingRateStateCreateInfoKHR
-{
-	VkStructureType						sType;
-	const void*							pNext;
-	VkExtent2D							fragmentSize;
-	VkFragmentShadingRateCombinerOpKHR	combinerOps[2];
-};
-
-struct VkPhysicalDeviceFragmentShadingRateFeaturesKHR
-{
-	VkStructureType	sType;
-	void*			pNext;
-	VkBool32		pipelineFragmentShadingRate;
-	VkBool32		primitiveFragmentShadingRate;
-	VkBool32		attachmentFragmentShadingRate;
-};
-
-struct VkPhysicalDeviceFragmentShadingRatePropertiesKHR
-{
-	VkStructureType			sType;
-	void*					pNext;
-	VkExtent2D				minFragmentShadingRateAttachmentTexelSize;
-	VkExtent2D				maxFragmentShadingRateAttachmentTexelSize;
-	deUint32				maxFragmentShadingRateAttachmentTexelSizeAspectRatio;
-	VkBool32				primitiveFragmentShadingRateWithMultipleViewports;
-	VkBool32				layeredShadingRateAttachments;
-	VkBool32				fragmentShadingRateNonTrivialCombinerOps;
-	VkExtent2D				maxFragmentSize;
-	deUint32				maxFragmentSizeAspectRatio;
-	deUint32				maxFragmentShadingRateCoverageSamples;
-	VkSampleCountFlagBits	maxFragmentShadingRateRasterizationSamples;
-	VkBool32				fragmentShadingRateWithShaderDepthStencilWrites;
-	VkBool32				fragmentShadingRateWithSampleMask;
-	VkBool32				fragmentShadingRateWithShaderSampleMask;
-	VkBool32				fragmentShadingRateWithConservativeRasterization;
-	VkBool32				fragmentShadingRateWithFragmentShaderInterlock;
-	VkBool32				fragmentShadingRateWithCustomSampleLocations;
-	VkBool32				fragmentShadingRateStrictMultiplyCombiner;
-};
-
-struct VkPhysicalDeviceFragmentShadingRateKHR
-{
-	VkStructureType		sType;
-	void*				pNext;
-	VkSampleCountFlags	sampleCounts;
-	VkExtent2D			fragmentSize;
-};
-
 struct VkSurfaceProtectedCapabilitiesKHR
 {
 	VkStructureType	sType;
@@ -4798,31 +4742,6 @@ struct VkDeviceDiagnosticsConfigCreateInfoNV
 	VkStructureType						sType;
 	const void*							pNext;
 	VkDeviceDiagnosticsConfigFlagsNV	flags;
-};
-
-struct VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV
-{
-	VkStructureType	sType;
-	void*			pNext;
-	VkBool32		fragmentShadingRateEnums;
-	VkBool32		supersampleFragmentShadingRates;
-	VkBool32		noInvocationFragmentShadingRates;
-};
-
-struct VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV
-{
-	VkStructureType			sType;
-	void*					pNext;
-	VkSampleCountFlagBits	maxFragmentShadingRateInvocationCount;
-};
-
-struct VkPipelineFragmentShadingRateEnumStateCreateInfoNV
-{
-	VkStructureType						sType;
-	const void*							pNext;
-	VkFragmentShadingRateTypeNV			shadingRateType;
-	VkFragmentShadingRateNV				shadingRate;
-	VkFragmentShadingRateCombinerOpKHR	combinerOps[2];
 };
 
 struct VkPhysicalDeviceFragmentDensityMap2FeaturesEXT

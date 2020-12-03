@@ -171,7 +171,6 @@ virtual VkResult			importFenceFdKHR								(VkDevice device, const VkImportFence
 virtual VkResult			getFenceFdKHR									(VkDevice device, const VkFenceGetFdInfoKHR* pGetFdInfo, int* pFd) const;
 virtual VkResult			acquireProfilingLockKHR							(VkDevice device, const VkAcquireProfilingLockInfoKHR* pInfo) const;
 virtual void				releaseProfilingLockKHR							(VkDevice device) const;
-virtual void				cmdSetFragmentShadingRateKHR					(VkCommandBuffer commandBuffer, const VkExtent2D* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]) const;
 virtual VkResult			createDeferredOperationKHR						(VkDevice device, const VkAllocationCallbacks* pAllocator, VkDeferredOperationKHR* pDeferredOperation) const;
 virtual void				destroyDeferredOperationKHR						(VkDevice device, VkDeferredOperationKHR operation, const VkAllocationCallbacks* pAllocator) const;
 virtual uint32_t			getDeferredOperationMaxConcurrencyKHR			(VkDevice device, VkDeferredOperationKHR operation) const;
@@ -286,7 +285,6 @@ virtual VkResult			createPrivateDataSlotEXT						(VkDevice device, const VkPriva
 virtual void				destroyPrivateDataSlotEXT						(VkDevice device, VkPrivateDataSlotEXT privateDataSlot, const VkAllocationCallbacks* pAllocator) const;
 virtual VkResult			setPrivateDataEXT								(VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64 data) const;
 virtual void				getPrivateDataEXT								(VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64* pData) const;
-virtual void				cmdSetFragmentShadingRateEnumNV					(VkCommandBuffer commandBuffer, VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]) const;
 virtual VkResult			createAccelerationStructureKHR					(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const;
 virtual void				destroyAccelerationStructureKHR					(VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator) const;
 virtual void				cmdBuildAccelerationStructuresKHR				(VkCommandBuffer commandBuffer, deUint32 infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos) const;
