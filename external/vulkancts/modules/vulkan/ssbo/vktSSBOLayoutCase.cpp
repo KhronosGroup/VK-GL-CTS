@@ -1099,6 +1099,18 @@ void generateDeclaration (std::ostream& src, const BufferBlock& block, int bindi
 
 	src << ") ";
 
+	bool readonly = true;
+	for (BufferBlock::const_iterator varIter = block.begin(); varIter != block.end(); varIter++)
+	{
+		const BufferVar& bufVar = *varIter;
+		if (bufVar.getFlags() & ACCESS_WRITE) {
+			readonly = false;
+			break;
+		}
+	}
+	if (readonly)
+		src << "readonly ";
+
 	src << "buffer " << block.getBlockName();
 	src << "\n{\n";
 
@@ -1376,9 +1388,9 @@ void generateCompareSrc (
 					generateImmMatrixSrc(src, basicType, varLayout.matrixStride, varLayout.isRowMajor, valuePtr, resultVar, typeName, shaderName);
 				else
 				{
-					src << "\t" << resultVar << " = " << resultVar << " && compare_" << typeName << "(" << shaderName << ", ";
+					src << "\t" << resultVar << " = compare_" << typeName << "(" << shaderName << ", ";
 					generateImmMatrixSrc (src, basicType, varLayout.matrixStride, varLayout.isRowMajor, false, -1, valuePtr);
-					src << ");\n";
+					src << ") && " << resultVar << ";\n";
 				}
 			}
 			else
@@ -1388,9 +1400,9 @@ void generateCompareSrc (
 				if (basicType != promoteType)
 					castName = glu::getDataTypeName(promoteType);
 
-				src << "\t" << resultVar << " = " << resultVar << " && compare_" << typeName << "(" << castName << "(" << shaderName << "), ";
+				src << "\t" << resultVar << " = compare_" << typeName << "(" << castName << "(" << shaderName << "), ";
 				generateImmScalarVectorSrc(src, basicType, valuePtr);
-				src << ");\n";
+				src << ") && " << resultVar << ";\n";
 			}
 		}
 	}
