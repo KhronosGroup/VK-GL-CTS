@@ -885,12 +885,33 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 	else
 		bufType = imgprefix + "vec" + std::to_string(numComponents);
 
+	// For UBO's, which have a declared size in the shader, don't access outside that size.
+	bool declaredSize = false;
+	switch (m_data.descriptorType) {
+	case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+	case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+		declaredSize = true;
+		break;
+	default:
+		break;
+	}
+
 	checks << "  int inboundcoords, clampedLayer;\n";
 	checks << "  " << vecType << " expectedIB2;\n";
 	if (m_data.unroll)
-		checks << "  [[unroll]] for (int c = -10; c <= 10; ++c) {\n";
+	{
+		if (declaredSize)
+			checks << "  [[unroll]] for (int c = 0; c <= 10; ++c) {\n";
+		else
+			checks << "  [[unroll]] for (int c = -10; c <= 10; ++c) {\n";
+	}
 	else
-		checks << "  [[dont_unroll]] for (int c = 1050; c >= -1050; --c) {\n";
+	{
+		if (declaredSize)
+			checks << "  [[dont_unroll]] for (int c = 1023; c >= 0; --c) {\n";
+		else
+			checks << "  [[dont_unroll]] for (int c = 1050; c >= -1050; --c) {\n";
+	}
 
 	if (m_data.descriptorType == VERTEX_ATTRIBUTE_FETCH)
 		checks << "    int idx = smod(gl_VertexIndex * " << numComponents << ", " << refDataNumElements << ");\n";
@@ -910,9 +931,8 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 		break;
 	case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
 	case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-		decls << "layout(scalar, set = 0, binding = 1) " << vol << "buffer sbodef0_1 { " << bufType << " val[1024]; } ssbo0_1;\n";
-		decls << "layout(scalar, set = 0, binding = 1) " << vol << "buffer sbodef0_1_unsized { " << bufType << " val[]; } ssbo0_1_unsized;\n";
-		decls << "layout(scalar, set = 0, binding = 1) " << vol << "buffer sbodef0_1_unsized_pad { vec4 pad; " << bufType << " val[]; } ssbo0_1_unsized_pad;\n";
+		decls << "layout(scalar, set = 0, binding = 1) " << vol << "buffer sbodef0_1 { " << bufType << " val[]; } ssbo0_1;\n";
+		decls << "layout(scalar, set = 0, binding = 1) " << vol << "buffer sbodef0_1_pad { vec4 pad; " << bufType << " val[]; } ssbo0_1_pad;\n";
 		break;
 	case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
 		switch(format)
@@ -1330,9 +1350,9 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
 			{
 				// expect zero for runtime-sized array .length()
-				checks << "    temp = " << vecType << "(ssbo0_1_unsized.val.length());\n";
+				checks << "    temp = " << vecType << "(ssbo0_1.val.length());\n";
 				checks << "    accum += abs(temp);\n";
-				checks << "    temp = " << vecType << "(ssbo0_1_unsized_pad.val.length());\n";
+				checks << "    temp = " << vecType << "(ssbo0_1_pad.val.length());\n";
 				checks << "    accum += abs(temp);\n";
 			}
 		}
