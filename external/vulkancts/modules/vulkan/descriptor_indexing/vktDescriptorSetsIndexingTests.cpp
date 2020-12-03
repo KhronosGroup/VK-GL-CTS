@@ -1376,6 +1376,7 @@ tcu::TestStatus	CommonDescriptorInstance::iterate					(void)
 			vk::endRenderPass		(m_vki, *v.commandBuffer);
 
 			iterateCommandEnd(v, programResult, referenceResult);
+			programResult->invalidate();
 		}
 
 	return ( iterateVerifyResults(v, programResult, referenceResult) ? tcu::TestStatus::pass : tcu::TestStatus::fail)("");
@@ -2290,6 +2291,7 @@ tcu::TestStatus	DynamicBuffersInstance::iterate						(void)
 	vk::endRenderPass	(m_vki, *v.commandBuffer);
 
 			iterateCommandEnd(v, programResult, referenceResult);
+			programResult->invalidate();
 		}
 
 	return (iterateVerifyResults(v, programResult, referenceResult) ? tcu::TestStatus::pass : tcu::TestStatus::fail)("");
