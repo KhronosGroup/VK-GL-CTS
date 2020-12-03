@@ -1024,6 +1024,193 @@ void AddZeroTests(tcu::TestCaseGroup* group)
 	}
 }
 
+class PaddingTest : public vkt::TestCase
+{
+public:
+	struct CaseDef
+	{
+		std::vector<glu::DataType> types;
+		std::vector<deUint32> offsets;
+		std::vector<std::string> values;
+		deUint32 expected[32];
+
+		std::string testName() const
+		{
+			DE_ASSERT(types.size() > 0);
+			DE_ASSERT(types.size() == offsets.size());
+			DE_ASSERT(types.size() == values.size());
+
+			std::string name;
+			for (deUint32 i = 0; i < types.size(); ++i)
+			{
+				if (i > 0)
+					name += "_";
+				name += glu::getDataTypeName(types[i]);
+				name += "_" + de::toString(offsets[i]);
+			}
+			return name;
+		}
+
+		void add(glu::DataType dt, deUint32 offset, const std::string& v)
+		{
+			types.push_back(dt);
+			offsets.push_back(offset);
+			values.push_back(v);
+		}
+
+		bool needsScalar() const
+		{
+			for (deUint32 i = 0; i < offsets.size(); ++i)
+			{
+				if (offsets[i] % 4 != 0)
+					return true;
+			}
+			return false;
+		}
+	};
+
+	PaddingTest(tcu::TestContext& testCtx, const CaseDef& caseDef)
+		: TestCase(testCtx, caseDef.testName(), caseDef.testName()),
+		m_caseDef(caseDef)
+	{
+	}
+
+	virtual void checkSupport(Context& context) const;
+	void initPrograms(SourceCollections& sourceCollections) const;
+
+	class Instance : public vkt::TestInstance
+	{
+	public:
+		Instance(Context& context, const CaseDef& caseDef)
+			: TestInstance(context),
+			  m_caseDef(caseDef)
+		{
+		}
+
+		tcu::TestStatus iterate(void)
+		{
+			return runCompute(m_context, 1u);
+		}
+
+	private:
+		CaseDef m_caseDef;
+	};
+
+	TestInstance* createInstance(Context& context) const
+	{
+		return new Instance(context, m_caseDef);
+	}
+
+private:
+	CaseDef m_caseDef;
+};
+
+void PaddingTest::checkSupport(Context& context) const
+{
+	CheckSupportParams p;
+	deMemset(&p, 0, sizeof(p));
+
+	for (deUint32 i = 0; i < m_caseDef.types.size(); ++i)
+		p.useType(m_caseDef.types[i]);
+
+	p.needsScalar = m_caseDef.needsScalar();
+
+	checkSupportWithParams(context, p);
+}
+
+void PaddingTest::initPrograms(SourceCollections& sourceCollections) const
+{
+	using namespace glu;
+
+	std::ostringstream src;
+
+	src << "#version 450\n"
+		<< "#extension GL_EXT_shared_memory_block : enable\n"
+		<< "#extension GL_EXT_shader_explicit_arithmetic_types : enable\n"
+		<< "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
+
+	src	<< "shared A { uint32_t words[32]; };\n";
+
+	if (m_caseDef.needsScalar())
+	{
+		src << "#extension GL_EXT_scalar_block_layout : enable\n"
+			<< "layout (scalar) ";
+	}
+
+	src << "shared B {\n";
+
+	for (deUint32 i = 0; i < m_caseDef.types.size(); ++i)
+	{
+		src << "  layout(offset = " << m_caseDef.offsets[i] << ") "
+			<< glu::getDataTypeName(m_caseDef.types[i]) << " x" << i << ";\n";
+	}
+
+	src	<< "};\n"
+		<< "layout(set = 0, binding = 0) buffer Result { uint result; };\n";
+
+	src	<< "void main() {\n"
+		<< "for (int i = 0; i < 32; i++) words[i] = 0;\n";
+
+	for (deUint32 i = 0; i < m_caseDef.values.size(); ++i)
+		src << "x" << i << " = " << m_caseDef.values[i] << ";\n";
+
+	src << "result = 32;\n";
+	for (deUint32 i = 0; i < 32; ++i)
+	{
+		src	<< "if (words[" << std::dec << i << "] == 0x"
+			<< std::uppercase << std::hex << m_caseDef.expected[i]
+			<< ") result--;\n";
+	}
+
+	src << "}\n";
+
+	sourceCollections.glslSources.add("comp")
+		<< ComputeSource(src.str())
+		<< vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_4,
+								  vk::ShaderBuildOptions::Flags(0u));
+}
+
+void AddPaddingTests(tcu::TestCaseGroup* group)
+{
+	using namespace glu;
+
+	for (deUint32 i = 0; i < 31; ++i)
+	{
+		for (deUint32 j = i + 1; j < 32; j += 4)
+		{
+			PaddingTest::CaseDef c;
+			deMemset(&c, 0, sizeof(c));
+
+			c.add(TYPE_UINT, 4 * i, "0x1234");
+			c.expected[i] = 0x1234;
+
+			c.add(TYPE_UINT, 4 * j, "0x5678");
+			c.expected[j] = 0x5678;
+
+			group->addChild(new PaddingTest(group->getTestContext(), c));
+		}
+	}
+
+	for (deUint32 i = 0; i < 127; ++i)
+	{
+		for (deUint32 j = i + 1; j < 32; j += 16)
+		{
+			PaddingTest::CaseDef c;
+			deMemset(&c, 0, sizeof(c));
+
+			deUint8* expected = reinterpret_cast<deUint8*>(c.expected);
+
+			c.add(TYPE_UINT8, i, "uint8_t(0xAA)");
+			expected[i] = 0xAA;
+
+			c.add(TYPE_UINT8, j, "uint8_t(0xBB)");
+			expected[j] = 0xBB;
+
+			group->addChild(new PaddingTest(group->getTestContext(), c));
+		}
+	}
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createWorkgroupMemoryExplicitLayoutTests(tcu::TestContext& testCtx)
@@ -1037,6 +1224,10 @@ tcu::TestCaseGroup* createWorkgroupMemoryExplicitLayoutTests(tcu::TestContext& t
 	tcu::TestCaseGroup* zero = new tcu::TestCaseGroup(testCtx, "zero", "Manually zero initialize a block and read from another");
 	AddZeroTests(zero);
 	tests->addChild(zero);
+
+	tcu::TestCaseGroup* padding = new tcu::TestCaseGroup(testCtx, "padding", "Padding as part of the explicit layout");
+	AddPaddingTests(padding);
+	tests->addChild(padding);
 
 	return tests.release();
 }
