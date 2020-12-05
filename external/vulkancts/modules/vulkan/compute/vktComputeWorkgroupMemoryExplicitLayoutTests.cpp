@@ -1211,6 +1211,118 @@ void AddPaddingTests(tcu::TestCaseGroup* group)
 	}
 }
 
+class SizeTest : public vkt::TestCase
+{
+public:
+	SizeTest(tcu::TestContext& testCtx, deUint32 size)
+		: TestCase(testCtx, de::toString(size), de::toString(size))
+		, m_size(size)
+	{
+		DE_ASSERT(size % 8 == 0);
+	}
+
+	virtual void checkSupport(Context& context) const;
+	void initPrograms(SourceCollections& sourceCollections) const;
+
+	class Instance : public vkt::TestInstance
+	{
+	public:
+		Instance(Context& context)
+			: TestInstance(context)
+		{
+		}
+
+		tcu::TestStatus iterate(void)
+		{
+			return runCompute(m_context, 1u);
+		}
+	};
+
+	TestInstance* createInstance(Context& context) const
+	{
+		return new Instance(context);
+	}
+
+private:
+	deUint32 m_size;
+};
+
+void SizeTest::checkSupport(Context& context) const
+{
+	context.requireDeviceFunctionality("VK_KHR_workgroup_memory_explicit_layout");
+	context.requireDeviceFunctionality("VK_KHR_spirv_1_4");
+
+	if (context.getDeviceProperties().limits.maxComputeSharedMemorySize < m_size)
+		TCU_THROW(NotSupportedError, "Not enough shared memory supported.");
+}
+
+void SizeTest::initPrograms(SourceCollections& sourceCollections) const
+{
+	using namespace glu;
+
+	std::ostringstream src;
+
+	src << "#version 450\n";
+	src << "#extension GL_EXT_shared_memory_block : enable\n";
+	src << "#extension GL_EXT_shader_explicit_arithmetic_types : enable\n";
+	src << "layout(local_size_x = 8, local_size_y = 1, local_size_z = 1) in;\n";
+
+	for (deUint32 i = 0; i < 8; ++i)
+		src << "shared B" << i << " { uint32_t words[" << (m_size / 4) << "]; } b" << i << ";\n";
+
+	src << "layout(set = 0, binding = 0) buffer Result { uint result; };\n";
+
+	src	<< "void main() {\n";
+	src << "  int index = int(gl_LocalInvocationIndex);\n";
+	src << "  int size = " << (m_size / 4) << ";\n";
+
+	src << "  if (index == 0) for (int x = 0; x < size; x++) b0.words[x] = 0xFFFF;\n";
+	src << "  barrier();\n";
+
+	src << "  for (int x = 0; x < size; x++) {\n";
+	src << "    if (x % 8 != index) continue;\n";
+	for (deUint32 i = 0; i < 8; ++i)
+		src << "    if (index == " << i << ") b" << i << ".words[x] = (x << 3) | " << i << ";\n";
+	src << "  }\n";
+
+	src << "  barrier();\n";
+	src << "  if (index != 0) return;\n";
+
+	src << "  int r = size;\n";
+	src << "  for (int x = 0; x < size; x++) {\n";
+	src << "    int expected = (x << 3) | (x % 8);\n";
+	src << "    if (b0.words[x] == expected) r--;\n";
+	src << "  }\n";
+	src << "  result = r;\n";
+	src << "}\n";
+
+	sourceCollections.glslSources.add("comp")
+		<< ComputeSource(src.str())
+		<< vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_4,
+								  vk::ShaderBuildOptions::Flags(0u));
+}
+
+void AddSizeTests(tcu::TestCaseGroup* group)
+{
+	deUint32 sizes[] =
+	{
+		8u,
+		64u,
+		4096u,
+
+		// Dynamic generation of shaders based on properties reported
+		// by devices is not allowed in the CTS, so let's create a few
+		// variants based on common known maximum sizes.
+		16384u,
+		32768u,
+		49152u,
+		65536u,
+	};
+
+	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(sizes); ++i)
+		group->addChild(new SizeTest(group->getTestContext(), sizes[i]));
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createWorkgroupMemoryExplicitLayoutTests(tcu::TestContext& testCtx)
@@ -1228,6 +1340,10 @@ tcu::TestCaseGroup* createWorkgroupMemoryExplicitLayoutTests(tcu::TestContext& t
 	tcu::TestCaseGroup* padding = new tcu::TestCaseGroup(testCtx, "padding", "Padding as part of the explicit layout");
 	AddPaddingTests(padding);
 	tests->addChild(padding);
+
+	tcu::TestCaseGroup* size = new tcu::TestCaseGroup(testCtx, "size", "Test blocks of various sizes");
+	AddSizeTests(size);
+	tests->addChild(size);
 
 	return tests.release();
 }
