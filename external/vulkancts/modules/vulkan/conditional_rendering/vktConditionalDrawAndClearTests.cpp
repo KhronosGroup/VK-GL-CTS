@@ -726,7 +726,8 @@ tcu::TestStatus ConditionalRenderingClearAttachmentsTestInstance::iterate (void)
 
 	imageMemoryBarrier(m_testParams.m_testDepth ? m_depthTargetImage->object() : m_colorTargetImage->object(),										//VkImage							image
 					   VK_ACCESS_TRANSFER_WRITE_BIT,																								//VkAccessFlags						srcAccessMask
-					   m_testParams.m_testDepth ? VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,				//VkAccessFlags						dstAccessMask
+					   m_testParams.m_testDepth ? (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
+												: (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),						//VkAccessFlags						dstAccessMask
 					   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,																						//VkImageLayout						oldLayout
 					   m_testParams.m_testDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL: VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		//VkImageLayout						newLayout
 					   VK_PIPELINE_STAGE_TRANSFER_BIT,																								//VkPipelineStageFlags				srcStageMask
@@ -763,7 +764,8 @@ tcu::TestStatus ConditionalRenderingClearAttachmentsTestInstance::iterate (void)
 	}
 
 	imageMemoryBarrier(m_testParams.m_testDepth ? m_depthTargetImage->object() : m_colorTargetImage->object(),										//VkImage							image
-					   m_testParams.m_testDepth ? VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,				//VkAccessFlags						srcAccessMask
+					   m_testParams.m_testDepth ? (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
+												: (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),						//VkAccessFlags						dstAccessMask
 					   VK_ACCESS_TRANSFER_READ_BIT,																									//VkAccessFlags						dstAccessMask
 					   m_testParams.m_testDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		//VkImageLayout						oldLayout
 					   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,																						//VkImageLayout						newLayout
@@ -891,7 +893,7 @@ tcu::TestStatus ConditionalRenderingDrawTestInstance::iterate (void)
 
 	imageMemoryBarrier(m_colorTargetImage->object(),																				//VkImage							image
 					   VK_ACCESS_TRANSFER_WRITE_BIT,																				//VkAccessFlags						srcAccessMask
-					   VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,																		//VkAccessFlags						dstAccessMask
+					   VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,									//VkAccessFlags						dstAccessMask
 					   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,																		//VkImageLayout						oldLayout
 					   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,																	//VkImageLayout						newLayout
 					   VK_PIPELINE_STAGE_TRANSFER_BIT,																				//VkPipelineStageFlags				srcStageMask
@@ -1214,7 +1216,7 @@ tcu::TestStatus ConditionalRenderingUpdateBufferWithDrawTestInstance::iterate (v
 
 	imageMemoryBarrier(m_colorTargetImage->object(),																				//VkImage							image
 					   VK_ACCESS_TRANSFER_WRITE_BIT,																				//VkAccessFlags						srcAccessMask
-					   VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,																		//VkAccessFlags						dstAccessMask
+					   VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,									//VkAccessFlags						dstAccessMask
 					   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,																		//VkImageLayout						oldLayout
 					   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,																	//VkImageLayout						newLayout
 					   VK_PIPELINE_STAGE_TRANSFER_BIT,																				//VkPipelineStageFlags				srcStageMask
@@ -1241,7 +1243,7 @@ tcu::TestStatus ConditionalRenderingUpdateBufferWithDrawTestInstance::iterate (v
 	endRenderPass(m_vkd, *m_cmdBufferPrimary);
 
 	imageMemoryBarrier(m_colorTargetImage->object(),																				//VkImage							image
-					   VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,																		//VkAccessFlags						srcAccessMask
+					   VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,																		//VkAccessFlags						srcAccessMask
 					   VK_ACCESS_TRANSFER_READ_BIT,																					//VkAccessFlags						dstAccessMask
 					   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,																	//VkImageLayout						oldLayout
 					   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,																		//VkImageLayout						newLayout
