@@ -1638,6 +1638,21 @@ VKAPI_ATTR VkResult VKAPI_CALL getDisplayPlaneCapabilities2KHR (VkPhysicalDevice
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceFragmentShadingRatesKHR (VkPhysicalDevice physicalDevice, deUint32* pFragmentShadingRateCount, VkPhysicalDeviceFragmentShadingRateKHR* pFragmentShadingRates)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pFragmentShadingRateCount);
+	DE_UNREF(pFragmentShadingRates);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetFragmentShadingRateKHR (VkCommandBuffer commandBuffer, const VkExtent2D* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR combinerOps[2])
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pFragmentSize);
+	DE_UNREF(combinerOps);
+}
+
 VKAPI_ATTR uint32_t VKAPI_CALL getDeferredOperationMaxConcurrencyKHR (VkDevice device, VkDeferredOperationKHR operation)
 {
 	DE_UNREF(device);
@@ -2529,6 +2544,28 @@ VKAPI_ATTR void VKAPI_CALL getPrivateDataEXT (VkDevice device, VkObjectType obje
 	DE_UNREF(pData);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdSetFragmentShadingRateEnumNV (VkCommandBuffer commandBuffer, VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR combinerOps[2])
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(shadingRate);
+	DE_UNREF(combinerOps);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL acquireWinrtDisplayNV (VkPhysicalDevice physicalDevice, VkDisplayKHR display)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(display);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getWinrtDisplayNV (VkPhysicalDevice physicalDevice, deUint32 deviceRelativeId, VkDisplayKHR* pDisplay)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(deviceRelativeId);
+	DE_UNREF(pDisplay);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructuresKHR (VkCommandBuffer commandBuffer, deUint32 infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos)
 {
 	DE_UNREF(commandBuffer);
@@ -2903,6 +2940,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPlaneProperties2KHR,						getPhysicalDeviceDisplayPlaneProperties2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetDisplayModeProperties2KHR,										getDisplayModeProperties2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneCapabilities2KHR,									getDisplayPlaneCapabilities2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFragmentShadingRatesKHR,							getPhysicalDeviceFragmentShadingRatesKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateDebugReportCallbackEXT,										createDebugReportCallbackEXT),
 	VK_NULL_FUNC_ENTRY(vkDestroyDebugReportCallbackEXT,										destroyDebugReportCallbackEXT),
 	VK_NULL_FUNC_ENTRY(vkDebugReportMessageEXT,												debugReportMessageEXT),
@@ -2918,6 +2956,8 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesNV,					getPhysicalDeviceCooperativeMatrixPropertiesNV),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV,	getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV),
 	VK_NULL_FUNC_ENTRY(vkCreateHeadlessSurfaceEXT,											createHeadlessSurfaceEXT),
+	VK_NULL_FUNC_ENTRY(vkAcquireWinrtDisplayNV,												acquireWinrtDisplayNV),
+	VK_NULL_FUNC_ENTRY(vkGetWinrtDisplayNV,													getWinrtDisplayNV),
 	VK_NULL_FUNC_ENTRY(vkCreateAndroidSurfaceKHR,											createAndroidSurfaceKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateImagePipeSurfaceFUCHSIA,										createImagePipeSurfaceFUCHSIA),
 	VK_NULL_FUNC_ENTRY(vkCreateStreamDescriptorSurfaceGGP,									createStreamDescriptorSurfaceGGP),
@@ -3134,6 +3174,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetSemaphoreCounterValueKHR,						getSemaphoreCounterValue),
 	VK_NULL_FUNC_ENTRY(vkWaitSemaphoresKHR,									waitSemaphores),
 	VK_NULL_FUNC_ENTRY(vkSignalSemaphoreKHR,								signalSemaphore),
+	VK_NULL_FUNC_ENTRY(vkCmdSetFragmentShadingRateKHR,						cmdSetFragmentShadingRateKHR),
 	VK_NULL_FUNC_ENTRY(vkGetBufferDeviceAddressKHR,							getBufferDeviceAddress),
 	VK_NULL_FUNC_ENTRY(vkGetBufferOpaqueCaptureAddressKHR,					getBufferOpaqueCaptureAddress),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceMemoryOpaqueCaptureAddressKHR,			getDeviceMemoryOpaqueCaptureAddress),
@@ -3252,6 +3293,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDestroyPrivateDataSlotEXT,							destroyPrivateDataSlotEXT),
 	VK_NULL_FUNC_ENTRY(vkSetPrivateDataEXT,									setPrivateDataEXT),
 	VK_NULL_FUNC_ENTRY(vkGetPrivateDataEXT,									getPrivateDataEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetFragmentShadingRateEnumNV,					cmdSetFragmentShadingRateEnumNV),
 	VK_NULL_FUNC_ENTRY(vkCreateAccelerationStructureKHR,					createAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkDestroyAccelerationStructureKHR,					destroyAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdBuildAccelerationStructuresKHR,					cmdBuildAccelerationStructuresKHR),

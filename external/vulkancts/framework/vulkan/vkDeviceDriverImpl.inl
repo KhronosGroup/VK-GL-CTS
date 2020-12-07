@@ -852,6 +852,11 @@ void DeviceDriver::releaseProfilingLockKHR (VkDevice device) const
 	m_vk.releaseProfilingLockKHR(device);
 }
 
+void DeviceDriver::cmdSetFragmentShadingRateKHR (VkCommandBuffer commandBuffer, const VkExtent2D* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]) const
+{
+	m_vk.cmdSetFragmentShadingRateKHR(commandBuffer, pFragmentSize, combinerOps);
+}
+
 VkResult DeviceDriver::createDeferredOperationKHR (VkDevice device, const VkAllocationCallbacks* pAllocator, VkDeferredOperationKHR* pDeferredOperation) const
 {
 	return m_vk.createDeferredOperationKHR(device, pAllocator, pDeferredOperation);
@@ -1420,6 +1425,11 @@ VkResult DeviceDriver::setPrivateDataEXT (VkDevice device, VkObjectType objectTy
 void DeviceDriver::getPrivateDataEXT (VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64* pData) const
 {
 	m_vk.getPrivateDataEXT(device, objectType, objectHandle, privateDataSlot, pData);
+}
+
+void DeviceDriver::cmdSetFragmentShadingRateEnumNV (VkCommandBuffer commandBuffer, VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]) const
+{
+	m_vk.cmdSetFragmentShadingRateEnumNV(commandBuffer, shadingRate, combinerOps);
 }
 
 VkResult DeviceDriver::createAccelerationStructureKHR (VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const

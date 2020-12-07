@@ -255,6 +255,8 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndexedIndirectCountKHRFunc)				
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSemaphoreCounterValueKHRFunc)										(VkDevice device, VkSemaphore semaphore, deUint64* pValue);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* WaitSemaphoresKHRFunc)													(VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, deUint64 timeout);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SignalSemaphoreKHRFunc)												(VkDevice device, const VkSemaphoreSignalInfo* pSignalInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceFragmentShadingRatesKHRFunc)							(VkPhysicalDevice physicalDevice, deUint32* pFragmentShadingRateCount, VkPhysicalDeviceFragmentShadingRateKHR* pFragmentShadingRates);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetFragmentShadingRateKHRFunc)										(VkCommandBuffer commandBuffer, const VkExtent2D* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]);
 typedef VKAPI_ATTR VkDeviceAddress		(VKAPI_CALL* GetBufferDeviceAddressKHRFunc)											(VkDevice device, const VkBufferDeviceAddressInfo* pInfo);
 typedef VKAPI_ATTR uint64_t				(VKAPI_CALL* GetBufferOpaqueCaptureAddressKHRFunc)									(VkDevice device, const VkBufferDeviceAddressInfo* pInfo);
 typedef VKAPI_ATTR uint64_t				(VKAPI_CALL* GetDeviceMemoryOpaqueCaptureAddressKHRFunc)							(VkDevice device, const VkDeviceMemoryOpaqueCaptureAddressInfo* pInfo);
@@ -388,6 +390,9 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreatePrivateDataSlotEXTFunc)							
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyPrivateDataSlotEXTFunc)											(VkDevice device, VkPrivateDataSlotEXT privateDataSlot, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetPrivateDataEXTFunc)													(VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64 data);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetPrivateDataEXTFunc)													(VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64* pData);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetFragmentShadingRateEnumNVFunc)									(VkCommandBuffer commandBuffer, VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquireWinrtDisplayNVFunc)												(VkPhysicalDevice physicalDevice, VkDisplayKHR display);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetWinrtDisplayNVFunc)													(VkPhysicalDevice physicalDevice, deUint32 deviceRelativeId, VkDisplayKHR* pDisplay);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateAccelerationStructureKHRFunc)									(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyAccelerationStructureKHRFunc)									(VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBuildAccelerationStructuresKHRFunc)									(VkCommandBuffer commandBuffer, deUint32 infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos);

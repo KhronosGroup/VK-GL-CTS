@@ -502,6 +502,11 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT:	return "VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR:						return "VK_STRUCTURE_TYPE_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR:			return "VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_PROPERTIES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_ATOMIC_INT64_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_ATOMIC_INT64_FEATURES_EXT";
@@ -566,6 +571,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV:						return "VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_PROPERTIES_NV:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_PROPERTIES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_ENUM_STATE_CREATE_INFO_NV:		return "VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_ENUM_STATE_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_COPY_COMMAND_TRANSFORM_INFO_QCOM:								return "VK_STRUCTURE_TYPE_COPY_COMMAND_TRANSFORM_INFO_QCOM";
@@ -583,6 +591,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2_KHR:												return "VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE";
+		case VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_VALVE:						return "VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_VALVE";
 		case VK_STRUCTURE_TYPE_MAX_ENUM:														return "VK_STRUCTURE_TYPE_MAX_ENUM";
 		default:																				return DE_NULL;
 	}
@@ -675,6 +685,7 @@ const char* getVendorIdName (VkVendorId value)
 		case VK_VENDOR_ID_KAZAN:	return "VK_VENDOR_ID_KAZAN";
 		case VK_VENDOR_ID_CODEPLAY:	return "VK_VENDOR_ID_CODEPLAY";
 		case VK_VENDOR_ID_MESA:		return "VK_VENDOR_ID_MESA";
+		case VK_VENDOR_ID_POCL:		return "VK_VENDOR_ID_POCL";
 		case VK_VENDOR_ID_MAX_ENUM:	return "VK_VENDOR_ID_MAX_ENUM";
 		default:					return DE_NULL;
 	}
@@ -1190,6 +1201,7 @@ const char* getDynamicStateName (VkDynamicState value)
 		case VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV:		return "VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV";
 		case VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV:		return "VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV";
 		case VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV:					return "VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV";
+		case VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR:			return "VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR";
 		case VK_DYNAMIC_STATE_LINE_STIPPLE_EXT:						return "VK_DYNAMIC_STATE_LINE_STIPPLE_EXT";
 		case VK_DYNAMIC_STATE_CULL_MODE_EXT:						return "VK_DYNAMIC_STATE_CULL_MODE_EXT";
 		case VK_DYNAMIC_STATE_FRONT_FACE_EXT:						return "VK_DYNAMIC_STATE_FRONT_FACE_EXT";
@@ -1377,6 +1389,7 @@ const char* getDescriptorTypeName (VkDescriptorType value)
 		case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:	return "VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT";
 		case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:	return "VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR";
 		case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV:	return "VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV";
+		case VK_DESCRIPTOR_TYPE_MUTABLE_VALVE:				return "VK_DESCRIPTOR_TYPE_MUTABLE_VALVE";
 		case VK_DESCRIPTOR_TYPE_MAX_ENUM:					return "VK_DESCRIPTOR_TYPE_MAX_ENUM";
 		default:											return DE_NULL;
 	}
@@ -1664,6 +1677,20 @@ const char* getPerformanceCounterStorageKHRName (VkPerformanceCounterStorageKHR 
 		case VK_PERFORMANCE_COUNTER_STORAGE_FLOAT64_KHR:	return "VK_PERFORMANCE_COUNTER_STORAGE_FLOAT64_KHR";
 		case VK_PERFORMANCE_COUNTER_STORAGE_MAX_ENUM_KHR:	return "VK_PERFORMANCE_COUNTER_STORAGE_MAX_ENUM_KHR";
 		default:											return DE_NULL;
+	}
+}
+
+const char* getFragmentShadingRateCombinerOpKHRName (VkFragmentShadingRateCombinerOpKHR value)
+{
+	switch (value)
+	{
+		case VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR:		return "VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR";
+		case VK_FRAGMENT_SHADING_RATE_COMBINER_OP_REPLACE_KHR:	return "VK_FRAGMENT_SHADING_RATE_COMBINER_OP_REPLACE_KHR";
+		case VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MIN_KHR:		return "VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MIN_KHR";
+		case VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MAX_KHR:		return "VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MAX_KHR";
+		case VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MUL_KHR:		return "VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MUL_KHR";
+		case VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MAX_ENUM_KHR:	return "VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MAX_ENUM_KHR";
+		default:												return DE_NULL;
 	}
 }
 
@@ -2173,6 +2200,38 @@ const char* getDeviceMemoryReportEventTypeEXTName (VkDeviceMemoryReportEventType
 	}
 }
 
+const char* getFragmentShadingRateTypeNVName (VkFragmentShadingRateTypeNV value)
+{
+	switch (value)
+	{
+		case VK_FRAGMENT_SHADING_RATE_TYPE_FRAGMENT_SIZE_NV:	return "VK_FRAGMENT_SHADING_RATE_TYPE_FRAGMENT_SIZE_NV";
+		case VK_FRAGMENT_SHADING_RATE_TYPE_ENUMS_NV:			return "VK_FRAGMENT_SHADING_RATE_TYPE_ENUMS_NV";
+		case VK_FRAGMENT_SHADING_RATE_TYPE_MAX_ENUM_NV:			return "VK_FRAGMENT_SHADING_RATE_TYPE_MAX_ENUM_NV";
+		default:												return DE_NULL;
+	}
+}
+
+const char* getFragmentShadingRateNVName (VkFragmentShadingRateNV value)
+{
+	switch (value)
+	{
+		case VK_FRAGMENT_SHADING_RATE_1_INVOCATION_PER_PIXEL_NV:		return "VK_FRAGMENT_SHADING_RATE_1_INVOCATION_PER_PIXEL_NV";
+		case VK_FRAGMENT_SHADING_RATE_1_INVOCATION_PER_1X2_PIXELS_NV:	return "VK_FRAGMENT_SHADING_RATE_1_INVOCATION_PER_1X2_PIXELS_NV";
+		case VK_FRAGMENT_SHADING_RATE_1_INVOCATION_PER_2X1_PIXELS_NV:	return "VK_FRAGMENT_SHADING_RATE_1_INVOCATION_PER_2X1_PIXELS_NV";
+		case VK_FRAGMENT_SHADING_RATE_1_INVOCATION_PER_2X2_PIXELS_NV:	return "VK_FRAGMENT_SHADING_RATE_1_INVOCATION_PER_2X2_PIXELS_NV";
+		case VK_FRAGMENT_SHADING_RATE_1_INVOCATION_PER_2X4_PIXELS_NV:	return "VK_FRAGMENT_SHADING_RATE_1_INVOCATION_PER_2X4_PIXELS_NV";
+		case VK_FRAGMENT_SHADING_RATE_1_INVOCATION_PER_4X2_PIXELS_NV:	return "VK_FRAGMENT_SHADING_RATE_1_INVOCATION_PER_4X2_PIXELS_NV";
+		case VK_FRAGMENT_SHADING_RATE_1_INVOCATION_PER_4X4_PIXELS_NV:	return "VK_FRAGMENT_SHADING_RATE_1_INVOCATION_PER_4X4_PIXELS_NV";
+		case VK_FRAGMENT_SHADING_RATE_2_INVOCATIONS_PER_PIXEL_NV:		return "VK_FRAGMENT_SHADING_RATE_2_INVOCATIONS_PER_PIXEL_NV";
+		case VK_FRAGMENT_SHADING_RATE_4_INVOCATIONS_PER_PIXEL_NV:		return "VK_FRAGMENT_SHADING_RATE_4_INVOCATIONS_PER_PIXEL_NV";
+		case VK_FRAGMENT_SHADING_RATE_8_INVOCATIONS_PER_PIXEL_NV:		return "VK_FRAGMENT_SHADING_RATE_8_INVOCATIONS_PER_PIXEL_NV";
+		case VK_FRAGMENT_SHADING_RATE_16_INVOCATIONS_PER_PIXEL_NV:		return "VK_FRAGMENT_SHADING_RATE_16_INVOCATIONS_PER_PIXEL_NV";
+		case VK_FRAGMENT_SHADING_RATE_NO_INVOCATIONS_NV:				return "VK_FRAGMENT_SHADING_RATE_NO_INVOCATIONS_NV";
+		case VK_FRAGMENT_SHADING_RATE_MAX_ENUM_NV:						return "VK_FRAGMENT_SHADING_RATE_MAX_ENUM_NV";
+		default:														return DE_NULL;
+	}
+}
+
 const char* getBuildAccelerationStructureModeKHRName (VkBuildAccelerationStructureModeKHR value)
 {
 	switch (value)
@@ -2326,6 +2385,7 @@ tcu::Format::Bitfield<32> getFormatFeatureFlagsStr (VkFormatFeatureFlags value)
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG,												"VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_ACCELERATION_STRUCTURE_VERTEX_BUFFER_BIT_KHR,									"VK_FORMAT_FEATURE_ACCELERATION_STRUCTURE_VERTEX_BUFFER_BIT_KHR"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_FRAGMENT_DENSITY_MAP_BIT_EXT,													"VK_FORMAT_FEATURE_FRAGMENT_DENSITY_MAP_BIT_EXT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,										"VK_FORMAT_FEATURE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR,															"VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR,															"VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT,												"VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT"),
@@ -2392,17 +2452,18 @@ tcu::Format::Bitfield<32> getImageUsageFlagsStr (VkImageUsageFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSFER_SRC_BIT,				"VK_IMAGE_USAGE_TRANSFER_SRC_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSFER_DST_BIT,				"VK_IMAGE_USAGE_TRANSFER_DST_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_SAMPLED_BIT,					"VK_IMAGE_USAGE_SAMPLED_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_STORAGE_BIT,					"VK_IMAGE_USAGE_STORAGE_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,			"VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,	"VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,		"VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,			"VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV,		"VK_IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT,	"VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM,				"VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSFER_SRC_BIT,							"VK_IMAGE_USAGE_TRANSFER_SRC_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSFER_DST_BIT,							"VK_IMAGE_USAGE_TRANSFER_DST_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_SAMPLED_BIT,								"VK_IMAGE_USAGE_SAMPLED_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_STORAGE_BIT,								"VK_IMAGE_USAGE_STORAGE_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,						"VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,				"VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,					"VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,						"VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV,					"VK_IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT,				"VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,	"VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM,							"VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2464,35 +2525,36 @@ tcu::Format::Bitfield<32> getPipelineStageFlagsStr (VkPipelineStageFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,							"VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,						"VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,						"VK_PIPELINE_STAGE_VERTEX_INPUT_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,						"VK_PIPELINE_STAGE_VERTEX_SHADER_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT,			"VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT,		"VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,						"VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,						"VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,				"VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,					"VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,				"VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,						"VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TRANSFER_BIT,							"VK_PIPELINE_STAGE_TRANSFER_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,						"VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_HOST_BIT,								"VK_PIPELINE_STAGE_HOST_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,						"VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,						"VK_PIPELINE_STAGE_ALL_COMMANDS_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,				"VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT,			"VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,	"VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,				"VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV,				"VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV,						"VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV,						"VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT,		"VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV,				"VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV,				"VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV,		"VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM,						"VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,								"VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,							"VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,							"VK_PIPELINE_STAGE_VERTEX_INPUT_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,							"VK_PIPELINE_STAGE_VERTEX_SHADER_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT,				"VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT,			"VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,							"VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,							"VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,					"VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,						"VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,					"VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,							"VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TRANSFER_BIT,								"VK_PIPELINE_STAGE_TRANSFER_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,							"VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_HOST_BIT,									"VK_PIPELINE_STAGE_HOST_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,							"VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,							"VK_PIPELINE_STAGE_ALL_COMMANDS_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,					"VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT,				"VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,		"VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,					"VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV,					"VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV,							"VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV,							"VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT,			"VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV,					"VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV,					"VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV,			"VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,	"VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM,							"VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2752,6 +2814,7 @@ tcu::Format::Bitfield<32> getDescriptorPoolCreateFlagsStr (VkDescriptorPoolCreat
 	{
 		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,		"VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT"),
 		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT,		"VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_VALVE,			"VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_VALVE"),
 		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT,	"VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT"),
 		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_FLAG_BITS_MAX_ENUM,			"VK_DESCRIPTOR_POOL_CREATE_FLAG_BITS_MAX_ENUM"),
 	};
@@ -2764,6 +2827,7 @@ tcu::Format::Bitfield<32> getDescriptorSetLayoutCreateFlagsStr (VkDescriptorSetL
 	{
 		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,		"VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT"),
 		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR,			"VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_VALVE,			"VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_VALVE"),
 		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT,	"VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT"),
 		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_FLAG_BITS_MAX_ENUM,				"VK_DESCRIPTOR_SET_LAYOUT_CREATE_FLAG_BITS_MAX_ENUM"),
 	};
@@ -7286,6 +7350,77 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderTerminate
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkFragmentShadingRateAttachmentInfoKHR& value)
+{
+	s << "VkFragmentShadingRateAttachmentInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpFragmentShadingRateAttachment = " << value.pFragmentShadingRateAttachment << '\n';
+	s << "\tshadingRateAttachmentTexelSize = " << value.shadingRateAttachmentTexelSize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineFragmentShadingRateStateCreateInfoKHR& value)
+{
+	s << "VkPipelineFragmentShadingRateStateCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfragmentSize = " << value.fragmentSize << '\n';
+	s << "\tcombinerOps = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.combinerOps), DE_ARRAY_END(value.combinerOps)) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentShadingRateFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceFragmentShadingRateFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpipelineFragmentShadingRate = " << value.pipelineFragmentShadingRate << '\n';
+	s << "\tprimitiveFragmentShadingRate = " << value.primitiveFragmentShadingRate << '\n';
+	s << "\tattachmentFragmentShadingRate = " << value.attachmentFragmentShadingRate << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentShadingRatePropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceFragmentShadingRatePropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tminFragmentShadingRateAttachmentTexelSize = " << value.minFragmentShadingRateAttachmentTexelSize << '\n';
+	s << "\tmaxFragmentShadingRateAttachmentTexelSize = " << value.maxFragmentShadingRateAttachmentTexelSize << '\n';
+	s << "\tmaxFragmentShadingRateAttachmentTexelSizeAspectRatio = " << value.maxFragmentShadingRateAttachmentTexelSizeAspectRatio << '\n';
+	s << "\tprimitiveFragmentShadingRateWithMultipleViewports = " << value.primitiveFragmentShadingRateWithMultipleViewports << '\n';
+	s << "\tlayeredShadingRateAttachments = " << value.layeredShadingRateAttachments << '\n';
+	s << "\tfragmentShadingRateNonTrivialCombinerOps = " << value.fragmentShadingRateNonTrivialCombinerOps << '\n';
+	s << "\tmaxFragmentSize = " << value.maxFragmentSize << '\n';
+	s << "\tmaxFragmentSizeAspectRatio = " << value.maxFragmentSizeAspectRatio << '\n';
+	s << "\tmaxFragmentShadingRateCoverageSamples = " << value.maxFragmentShadingRateCoverageSamples << '\n';
+	s << "\tmaxFragmentShadingRateRasterizationSamples = " << value.maxFragmentShadingRateRasterizationSamples << '\n';
+	s << "\tfragmentShadingRateWithShaderDepthStencilWrites = " << value.fragmentShadingRateWithShaderDepthStencilWrites << '\n';
+	s << "\tfragmentShadingRateWithSampleMask = " << value.fragmentShadingRateWithSampleMask << '\n';
+	s << "\tfragmentShadingRateWithShaderSampleMask = " << value.fragmentShadingRateWithShaderSampleMask << '\n';
+	s << "\tfragmentShadingRateWithConservativeRasterization = " << value.fragmentShadingRateWithConservativeRasterization << '\n';
+	s << "\tfragmentShadingRateWithFragmentShaderInterlock = " << value.fragmentShadingRateWithFragmentShaderInterlock << '\n';
+	s << "\tfragmentShadingRateWithCustomSampleLocations = " << value.fragmentShadingRateWithCustomSampleLocations << '\n';
+	s << "\tfragmentShadingRateStrictMultiplyCombiner = " << value.fragmentShadingRateStrictMultiplyCombiner << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentShadingRateKHR& value)
+{
+	s << "VkPhysicalDeviceFragmentShadingRateKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsampleCounts = " << getSampleCountFlagsStr(value.sampleCounts) << '\n';
+	s << "\tfragmentSize = " << value.fragmentSize << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkSurfaceProtectedCapabilitiesKHR& value)
 {
 	s << "VkSurfaceProtectedCapabilitiesKHR = {\n";
@@ -9944,6 +10079,40 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceDiagnosticsConfigCreate
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfragmentShadingRateEnums = " << value.fragmentShadingRateEnums << '\n';
+	s << "\tsupersampleFragmentShadingRates = " << value.supersampleFragmentShadingRates << '\n';
+	s << "\tnoInvocationFragmentShadingRates = " << value.noInvocationFragmentShadingRates << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV& value)
+{
+	s << "VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxFragmentShadingRateInvocationCount = " << value.maxFragmentShadingRateInvocationCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineFragmentShadingRateEnumStateCreateInfoNV& value)
+{
+	s << "VkPipelineFragmentShadingRateEnumStateCreateInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshadingRateType = " << value.shadingRateType << '\n';
+	s << "\tshadingRate = " << value.shadingRate << '\n';
+	s << "\tcombinerOps = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.combinerOps), DE_ARRAY_END(value.combinerOps)) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2FeaturesEXT& value)
 {
 	s << "VkPhysicalDeviceFragmentDensityMap2FeaturesEXT = {\n";
@@ -9994,6 +10163,36 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevice4444FormatsFeat
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tformatA4R4G4B4 = " << value.formatA4R4G4B4 << '\n';
 	s << "\tformatA4B4G4R4 = " << value.formatA4B4G4R4 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE& value)
+{
+	s << "VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmutableDescriptorType = " << value.mutableDescriptorType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMutableDescriptorTypeListVALVE& value)
+{
+	s << "VkMutableDescriptorTypeListVALVE = {\n";
+	s << "\tdescriptorTypeCount = " << value.descriptorTypeCount << '\n';
+	s << "\tpDescriptorTypes = " << value.pDescriptorTypes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMutableDescriptorTypeCreateInfoVALVE& value)
+{
+	s << "VkMutableDescriptorTypeCreateInfoVALVE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmutableDescriptorTypeListCount = " << value.mutableDescriptorTypeListCount << '\n';
+	s << "\tpMutableDescriptorTypeLists = " << value.pMutableDescriptorTypeLists << '\n';
 	s << '}';
 	return s;
 }
