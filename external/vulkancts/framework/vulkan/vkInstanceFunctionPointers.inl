@@ -55,6 +55,7 @@ GetPhysicalDeviceDisplayProperties2KHRFunc							getPhysicalDeviceDisplayPropert
 GetPhysicalDeviceDisplayPlaneProperties2KHRFunc						getPhysicalDeviceDisplayPlaneProperties2KHR;
 GetDisplayModeProperties2KHRFunc									getDisplayModeProperties2KHR;
 GetDisplayPlaneCapabilities2KHRFunc									getDisplayPlaneCapabilities2KHR;
+GetPhysicalDeviceFragmentShadingRatesKHRFunc						getPhysicalDeviceFragmentShadingRatesKHR;
 CreateDebugReportCallbackEXTFunc									createDebugReportCallbackEXT;
 DestroyDebugReportCallbackEXTFunc									destroyDebugReportCallbackEXT;
 DebugReportMessageEXTFunc											debugReportMessageEXT;
@@ -70,6 +71,8 @@ GetPhysicalDeviceToolPropertiesEXTFunc								getPhysicalDeviceToolPropertiesEXT
 GetPhysicalDeviceCooperativeMatrixPropertiesNVFunc					getPhysicalDeviceCooperativeMatrixPropertiesNV;
 GetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNVFunc	getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV;
 CreateHeadlessSurfaceEXTFunc										createHeadlessSurfaceEXT;
+AcquireWinrtDisplayNVFunc											acquireWinrtDisplayNV;
+GetWinrtDisplayNVFunc												getWinrtDisplayNV;
 CreateAndroidSurfaceKHRFunc											createAndroidSurfaceKHR;
 CreateImagePipeSurfaceFUCHSIAFunc									createImagePipeSurfaceFUCHSIA;
 CreateStreamDescriptorSurfaceGGPFunc								createStreamDescriptorSurfaceGGP;

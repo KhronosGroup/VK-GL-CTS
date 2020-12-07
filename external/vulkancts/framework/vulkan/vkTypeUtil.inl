@@ -615,6 +615,14 @@ inline VkIndirectCommandsStreamNV makeIndirectCommandsStreamNV (VkBuffer buffer,
 	return res;
 }
 
+inline VkMutableDescriptorTypeListVALVE makeMutableDescriptorTypeListVALVE (deUint32 descriptorTypeCount, const VkDescriptorType* pDescriptorTypes)
+{
+	VkMutableDescriptorTypeListVALVE res;
+	res.descriptorTypeCount	= descriptorTypeCount;
+	res.pDescriptorTypes	= pDescriptorTypes;
+	return res;
+}
+
 inline VkAccelerationStructureBuildRangeInfoKHR makeAccelerationStructureBuildRangeInfoKHR (deUint32 primitiveCount, deUint32 primitiveOffset, deUint32 firstVertex, deUint32 transformOffset)
 {
 	VkAccelerationStructureBuildRangeInfoKHR res;
