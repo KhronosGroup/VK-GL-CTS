@@ -86,9 +86,6 @@ VkPhysicalDeviceVulkan12Features							FEATURES ( samplerMirrorClampToEdge )				
 VkPhysicalDeviceVulkan12Features							FEATURES ( samplerFilterMinmax )								REQUIREMENTS ( "ApiVersion(1, 2, 0)" VK_EXT_sampler_filter_minmax )
 VkPhysicalDeviceVulkan12Features							FEATURES ( shaderOutputViewportIndex )							REQUIREMENTS ( "ApiVersion(1, 2, 0)" VK_EXT_shader_viewport_index_layer )
 VkPhysicalDeviceVulkan12Features							FEATURES ( shaderOutputLayer )									REQUIREMENTS ( "ApiVersion(1, 2, 0)" VK_EXT_shader_viewport_index_layer )
-<<<<<<< HEAD
 VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR		FEATURES ( shaderTerminateInvocation )							REQUIREMENTS ( VK_KHR_shader_terminate_invocation )
 VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT			FEATURES ( shaderImageInt64Atomics )							REQUIREMENTS ( VK_EXT_shader_image_atomic_int64 )
-=======
 VkPhysicalDevice4444FormatsFeaturesEXT			            FEATURES ( formatA4R4G4B4 )										REQUIREMENTS ( VK_EXT_4444_formats )
->>>>>>> 91ed2fec3... Add tests for VK_EXT_4444_formats
