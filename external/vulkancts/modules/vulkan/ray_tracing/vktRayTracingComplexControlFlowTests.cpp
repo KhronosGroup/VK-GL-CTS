@@ -56,7 +56,9 @@ static const VkFlags	ALL_RAY_TRACING_STAGES	= VK_SHADER_STAGE_RAYGEN_BIT_KHR
 												| VK_SHADER_STAGE_INTERSECTION_BIT_KHR
 												| VK_SHADER_STAGE_CALLABLE_BIT_KHR;
 
+#if defined(DE_DEBUG)
 static const deUint32	PUSH_CONSTANTS_COUNT	= 6;
+#endif
 static const deUint32	DEFAULT_CLEAR_VALUE		= 999999;
 
 enum TestType
