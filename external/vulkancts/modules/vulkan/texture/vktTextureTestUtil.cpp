@@ -161,7 +161,7 @@ VkImageType imageViewTypeToImageType (VkImageViewType type)
 	return VK_IMAGE_TYPE_2D;
 }
 
-void initializePrograms (vk::SourceCollections& programCollection, glu::Precision texCoordPrecision, const std::vector<Program>& programs, const char* texCoordSwizzle)
+void initializePrograms (vk::SourceCollections& programCollection, glu::Precision texCoordPrecision, const std::vector<Program>& programs, const char* texCoordSwizzle, glu::Precision fragOutputPrecision)
 {
 	static const char* vertShaderTemplate =
 		"${VTX_HEADER}"
@@ -179,7 +179,7 @@ void initializePrograms (vk::SourceCollections& programCollection, glu::Precisio
 	static const char* fragShaderTemplate =
 		"${FRAG_HEADER}"
 		"layout(location = 0) ${FRAG_IN} ${PRECISION} ${TEXCOORD_TYPE} v_texCoord;\n"
-		"layout(location = 0) out mediump vec4 ${FRAG_COLOR};\n"
+		"layout(location = 0) out ${FRAG_PRECISION} vec4 ${FRAG_COLOR};\n"
 		"layout (set=0, binding=0, std140) uniform Block \n"
 		"{\n"
 		"  ${PRECISION} float u_bias;\n"
@@ -218,14 +218,15 @@ void initializePrograms (vk::SourceCollections& programCollection, glu::Precisio
 
 		const std::string	version	= glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450);
 
-		params["FRAG_HEADER"]	= version + "\n";
-		params["VTX_HEADER"]	= version + "\n";
-		params["VTX_IN"]		= "in";
-		params["VTX_OUT"]		= "out";
-		params["FRAG_IN"]		= "in";
-		params["FRAG_COLOR"]	= "dEQP_FragColor";
+		params["FRAG_HEADER"]		= version + "\n";
+		params["VTX_HEADER"]		= version + "\n";
+		params["VTX_IN"]			= "in";
+		params["VTX_OUT"]			= "out";
+		params["FRAG_IN"]			= "in";
+		params["FRAG_COLOR"]		= "dEQP_FragColor";
 
-		params["PRECISION"]		= glu::getPrecisionName(texCoordPrecision);
+		params["PRECISION"]			= glu::getPrecisionName(texCoordPrecision);
+		params["FRAG_PRECISION"]	= glu::getPrecisionName(fragOutputPrecision);
 
 		if (isCubeArray)
 			params["TEXCOORD_TYPE"]	= "vec4";
@@ -474,7 +475,7 @@ TextureRenderer::TextureRenderer(Context& context, vk::VkSampleCountFlagBits sam
 {
 }
 
-TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sampleCount, deUint32 renderWidth, deUint32 renderHeight, deUint32 renderDepth, VkComponentMapping componentMapping, VkImageType imageType, VkImageViewType imageViewType)
+TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sampleCount, deUint32 renderWidth, deUint32 renderHeight, deUint32 renderDepth, VkComponentMapping componentMapping, VkImageType imageType, VkImageViewType imageViewType, vk::VkFormat imageFormat)
 	: m_context					(context)
 	, m_log						(context.getTestContext().getLog())
 	, m_renderWidth				(renderWidth)
@@ -482,7 +483,7 @@ TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sample
 	, m_renderDepth				(renderDepth)
 	, m_sampleCount				(sampleCount)
 	, m_multisampling			(m_sampleCount != VK_SAMPLE_COUNT_1_BIT)
-	, m_imageFormat				(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_imageFormat				(imageFormat)
 	, m_textureFormat			(vk::mapVkFormat(m_imageFormat))
 	, m_uniformBufferSize		(sizeof(ShaderParameters))
 	, m_resultBufferSize		(renderWidth * renderHeight * m_textureFormat.getPixelSize())
@@ -985,6 +986,11 @@ void TextureRenderer::renderQuad (tcu::Surface& result, int texUnit, const float
 
 void TextureRenderer::renderQuad (tcu::Surface& result, int texUnit, const float* texCoord, const ReferenceParams& params)
 {
+	renderQuad(result.getAccess(), texUnit, texCoord, params);
+}
+
+void TextureRenderer::renderQuad (const tcu::PixelBufferAccess& result, int texUnit, const float* texCoord, const ReferenceParams& params)
+{
 	const float	maxAnisotropy = 1.0f;
 	float		positions[]	=
 	{
@@ -997,6 +1003,16 @@ void TextureRenderer::renderQuad (tcu::Surface& result, int texUnit, const float
 }
 
 void TextureRenderer::renderQuad (tcu::Surface&									result,
+								  const float*									positions,
+								  int											texUnit,
+								  const float*									texCoord,
+								  const glu::TextureTestUtil::ReferenceParams&	params,
+								  const float									maxAnisotropy)
+{
+	renderQuad(result.getAccess(), positions, texUnit, texCoord, params, maxAnisotropy);
+}
+
+void TextureRenderer::renderQuad (const tcu::PixelBufferAccess&					result,
 								  const float*									positions,
 								  int											texUnit,
 								  const float*									texCoord,
@@ -1447,7 +1463,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 
 	invalidateMappedMemoryRange(vkd, vkDevice, m_resultBufferMemory->getMemory(), m_resultBufferMemory->getOffset(), VK_WHOLE_SIZE);
 
-	tcu::copy(result.getAccess(), tcu::ConstPixelBufferAccess(m_textureFormat, tcu::IVec3(m_renderWidth, m_renderHeight, 1u), m_resultBufferMemory->getHostPtr()));
+	tcu::copy(result, tcu::ConstPixelBufferAccess(m_textureFormat, tcu::IVec3(m_renderWidth, m_renderHeight, 1u), m_resultBufferMemory->getHostPtr()));
 }
 
 /*--------------------------------------------------------------------*//*!

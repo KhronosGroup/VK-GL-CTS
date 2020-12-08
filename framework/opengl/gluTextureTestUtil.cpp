@@ -424,7 +424,8 @@ static void sampleTextureNonProjected (const tcu::SurfaceAccess& dst, const tcu:
 	}
 }
 
-static void sampleTextureNonProjected (const tcu::SurfaceAccess& dst, const tcu::Texture2DView& rawSrc, const tcu::Vec4& sq, const tcu::Vec4& tq, const ReferenceParams& params)
+template<class PixelAccess>
+static void sampleTextureNonProjected (const PixelAccess& dst, const tcu::Texture2DView& rawSrc, const tcu::Vec4& sq, const tcu::Vec4& tq, const ReferenceParams& params)
 {
 	// Separate combined DS formats
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
@@ -501,7 +502,8 @@ static void sampleTextureProjected (const tcu::SurfaceAccess& dst, const tcu::Te
 	}
 }
 
-static void sampleTextureProjected (const tcu::SurfaceAccess& dst, const tcu::Texture2DView& rawSrc, const tcu::Vec4& sq, const tcu::Vec4& tq, const ReferenceParams& params)
+template<class PixelAccess>
+static void sampleTextureProjected (const PixelAccess& dst, const tcu::Texture2DView& rawSrc, const tcu::Vec4& sq, const tcu::Vec4& tq, const ReferenceParams& params)
 {
 	// Separate combined DS formats
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
@@ -543,6 +545,18 @@ static void sampleTextureProjected (const tcu::SurfaceAccess& dst, const tcu::Te
 			dst.setPixel(execSample(src, params, s, t, lod) * params.colorScale + params.colorBias, px, py);
 		}
 	}
+}
+
+void sampleTexture (const tcu::PixelBufferAccess& dst, const tcu::Texture2DView& src, const float* texCoord, const ReferenceParams& params)
+{
+	const tcu::Texture2DView	view	= getSubView(src, params.baseLevel, params.maxLevel);
+	const tcu::Vec4				sq		= tcu::Vec4(texCoord[0+0], texCoord[2+0], texCoord[4+0], texCoord[6+0]);
+	const tcu::Vec4				tq		= tcu::Vec4(texCoord[0+1], texCoord[2+1], texCoord[4+1], texCoord[6+1]);
+
+	if (params.flags & ReferenceParams::PROJECTED)
+		sampleTextureProjected(dst, view, sq, tq, params);
+	else
+		sampleTextureNonProjected(dst, view, sq, tq, params);
 }
 
 void sampleTexture (const tcu::SurfaceAccess& dst, const tcu::Texture2DView& src, const float* texCoord, const ReferenceParams& params)

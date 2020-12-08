@@ -114,7 +114,7 @@ enum Program
 	PROGRAM_LAST
 };
 
-void initializePrograms (vk::SourceCollections& programCollection, glu::Precision texCoordPrecision, const std::vector<Program>& programs, const char* texCoordSwizzle = DE_NULL);
+void initializePrograms (vk::SourceCollections& programCollection, glu::Precision texCoordPrecision, const std::vector<Program>& programs, const char* texCoordSwizzle = DE_NULL, glu::Precision fragOutputPrecision = glu::Precision::PRECISION_MEDIUMP);
 
 typedef de::SharedPtr<pipeline::TestTexture>		TestTextureSp;
 typedef de::SharedPtr<pipeline::TestTexture2D>		TestTexture2DSp;
@@ -192,13 +192,22 @@ public:
 																	 deUint32 renderDepth,
 																	 vk::VkComponentMapping componentMapping = vk::makeComponentMappingRGBA(),
 																	 vk::VkImageType imageType = vk::VK_IMAGE_TYPE_2D,
-																	 vk::VkImageViewType imageViewType = vk::VK_IMAGE_VIEW_TYPE_2D);
+																	 vk::VkImageViewType imageViewType = vk::VK_IMAGE_VIEW_TYPE_2D,
+																	 vk::VkFormat imageFormat = vk::VK_FORMAT_R8G8B8A8_UNORM);
 
 										~TextureRenderer			(void);
 
 	void								renderQuad					(tcu::Surface& result, int texUnit, const float* texCoord, glu::TextureTestUtil::TextureType texType);
 	void								renderQuad					(tcu::Surface& result, int texUnit, const float* texCoord, const glu::TextureTestUtil::ReferenceParams& params);
 	void								renderQuad					(tcu::Surface&									result,
+																	 const float*									positions,
+																	 const int										texUnit,
+																	 const float*									texCoord,
+																	 const glu::TextureTestUtil::ReferenceParams&	params,
+																	 const float									maxAnisotropy);
+
+	void								renderQuad					(const tcu::PixelBufferAccess& result, int texUnit, const float* texCoord, const glu::TextureTestUtil::ReferenceParams& params);
+	void								renderQuad					(const tcu::PixelBufferAccess&					result,
 																	 const float*									positions,
 																	 const int										texUnit,
 																	 const float*									texCoord,
