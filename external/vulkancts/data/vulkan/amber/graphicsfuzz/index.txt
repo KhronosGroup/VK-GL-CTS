@@ -52,7 +52,6 @@
 {	"cov-fold-bitwise-or-full-mask.amber",														"cov-fold-bitwise-or-full-mask",													"A fragment shader that covers a specific instruction folding path."				},
 {	"cov-fold-bitwise-xor.amber",																"cov-fold-bitwise-xor",																"A fragment shader that covers a specific instruction folding path."				},
 {	"cov-fold-div-uniform-by-zero.amber",														"cov-fold-div-uniform-by-zero",														"A fragment shader that covers a specific instruction folding path."				},
-{	"cov-fold-div-variable-by-zero.amber",														"cov-fold-div-variable-by-zero",													"A fragment shader that covers a specific instruction folding path."				},
 {	"cov-fold-logical-and-const-variable.amber",												"cov-fold-logical-and-const-variable",												"A fragment shader that covers a specific instruction folding path."				},
 {	"cov-fold-logical-and-constant.amber",														"cov-fold-logical-and-constant",													"A fragment shader that covers a specific instruction folding path."				},
 {	"cov-fold-logical-or-constant.amber",														"cov-fold-logical-or-constant",														"A fragment shader that covers a specific instruction folding path."				},
