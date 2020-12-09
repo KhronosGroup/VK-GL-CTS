@@ -1168,7 +1168,7 @@ tcu::TestStatus testSemaphoreImportSyncFdSignaled (Context&						context,
 												   const SemaphoreTestConfig	config)
 {
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const CustomInstance				instance			(createTestInstance(context, 0u, 0u, config.externalType));
+	const CustomInstance				instance			(createTestInstance(context, config.externalType, 0u, 0u));
 	const vk::InstanceDriver&			vki					(instance.getDriver());
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -4087,7 +4087,7 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 
 	const vk::VkExternalMemoryHandleTypeFlagBits  externalMemoryType  =	vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
 	const vk::PlatformInterface&				  vkp					(context.getPlatformInterface());
-	const CustomInstance						  instance				(createTestInstance(context, externalMemoryType, 0u, 0u));
+	const CustomInstance						  instance				(createTestInstance(context, 0u, externalMemoryType, 0u));
 	const vk::InstanceDriver&					  vki					(instance.getDriver());
 	const vk::VkPhysicalDevice					  physicalDevice		(vk::chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
 	const deUint32								  queueFamilyIndex		(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
