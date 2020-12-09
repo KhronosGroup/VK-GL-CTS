@@ -851,7 +851,7 @@ tcu::TestStatus ExternalDependencyTestInstance::iterateInternal (void)
 		{
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType
 			DE_NULL,									// const void*				pNext
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			srcAccessMask
+			0,											// VkAccessFlags			srcAccessMask
 			VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,	// VkImageLayout			oldLayout
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout
@@ -860,8 +860,11 @@ tcu::TestStatus ExternalDependencyTestInstance::iterateInternal (void)
 			**m_images[m_renderPasses.size() - 1],		// VkImage					image
 			imageSubresourceRange						// VkImageSubresourceRange	subresourceRange
 		};
-
-		vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+		// Since the implicit 'end' subpass dependency has VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT in its dstStageMask,
+		// we can't form an execution dependency chain with a specific pipeline stage. The cases that provide an explict
+		// 'end' subpass dependency could use a specific pipline stage, but there isn't a way to distinguish between the
+		// implicit and explicit cases here.
+		vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
 	}
 
 	// Copy image memory to buffer
@@ -3989,10 +3992,10 @@ void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
 				{
 					deps.push_back(SubpassDependency(VK_SUBPASS_EXTERNAL,										// deUint32				srcPass
 													 0,															// deUint32				dstPass
-													 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,				// VkPipelineStageFlags	srcStageMask
-													 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,						// VkPipelineStageFlags	dstStageMask
-													 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,						// VkAccessFlags		srcAccessMask
-													 VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,	// VkAccessFlags		dstAccessMask
+													 VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,				// VkPipelineStageFlags	srcStageMask
+													 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,						// VkPipelineStageFlags	dstStageMask
+													 0,						// VkAccessFlags		srcAccessMask
+													 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,	// VkAccessFlags		dstAccessMask
 													 0));														// VkDependencyFlags	flags
 				}
 
@@ -4098,6 +4101,13 @@ void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
 															 VK_DEPENDENCY_BY_REGION_BIT));						// VkDependencyFlags	flags
 						}
 					}
+					deps.push_back(SubpassDependency((deUint32)subpassCount - 1,								// deUint32				srcPass
+													 VK_SUBPASS_EXTERNAL,										// deUint32				dstPass
+													 VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,					// VkPipelineStageFlags	srcStageMask
+													 VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,					// VkPipelineStageFlags	dstStageMask
+													 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,				// VkAccessFlags		srcAccessMask
+													 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, // VkAccessFlags		dstAccessMask
+													 VK_DEPENDENCY_BY_REGION_BIT));								// VkDependencyFlags	flags
 
 					const RenderPass		renderPass	(attachments, subpasses, deps);
 					const SubpassTestConfig	testConfig	(formats[formatNdx], renderSizes[renderSizeNdx], renderPass, renderPassType);

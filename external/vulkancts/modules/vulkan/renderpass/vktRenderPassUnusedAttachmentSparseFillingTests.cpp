@@ -717,6 +717,20 @@ Move<VkRenderPass> InputAttachmentSparseFillingTestInstance::createRenderPass (c
 			DE_NULL												// const deUint32*					pPreserveAttachments
 		),
 	};
+	std::vector<SubpassDep>		subpassDependencies =
+	{
+		SubpassDep (
+			DE_NULL,
+			0u,										// deUint32				srcPass
+			VK_SUBPASS_EXTERNAL,					// deUint32				dstPass
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,	// VkPipelineStageFlags	srcStageMask
+			VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,	// VkPipelineStageFlags	dstStageMask
+			VK_ACCESS_SHADER_WRITE_BIT,				// VkAccessFlags		srcAccessMask
+			VK_ACCESS_INDIRECT_COMMAND_READ_BIT,	// VkAccessFlags		dstAccessMask
+			0,										// VkDependencyFlags	flags
+			0										// deInt32				viewOffset
+		),
+	};
 
 	const RenderPassCreateInfo	renderPassInfo					(
 		DE_NULL,												// const void*						pNext
@@ -725,8 +739,8 @@ Move<VkRenderPass> InputAttachmentSparseFillingTestInstance::createRenderPass (c
 		attachmentDescriptions.data(),							// const VkAttachmentDescription*	pAttachments
 		static_cast<deUint32>(subpassDescriptions.size()),		// deUint32							subpassCount
 		subpassDescriptions.data(),								// const VkSubpassDescription*		pSubpasses
-		0u,														// deUint32							dependencyCount
-		DE_NULL,												// const VkSubpassDependency*		pDependencies
+		static_cast<deUint32>(subpassDependencies.size()),		// deUint32							dependencyCount
+		subpassDependencies.data(),								// const VkSubpassDependency*		pDependencies
 		0u,														// deUint32							correlatedViewMaskCount
 		DE_NULL													// const deUint32*					pCorrelatedViewMasks
 	);
