@@ -2245,7 +2245,7 @@ public:
 
 					for (deUint32 nItem = 0; nItem < nValidItemsRequired; ++nItem)
 					{
-						if (abs(currentItem.dataChunk.at(nItem) - static_cast<float>(nRay + nItem)) > 1e-3f)
+						if (fabsf(currentItem.dataChunk.at(nItem) - static_cast<float>(nRay + nItem)) > 1e-3f)
 						{
 							goto end;
 						}
