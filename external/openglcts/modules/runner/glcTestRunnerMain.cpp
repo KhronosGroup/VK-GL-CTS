@@ -29,6 +29,7 @@
 #include "tcuResource.hpp"
 
 #include <cstdio>
+#include <cstdlib>
 
 // See tcuMain.cpp
 tcu::Platform* createPlatform(void);
