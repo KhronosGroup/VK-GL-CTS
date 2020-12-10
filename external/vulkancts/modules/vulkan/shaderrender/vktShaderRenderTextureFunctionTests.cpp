@@ -1573,14 +1573,14 @@ static std::string getTextureSizeString (TextureType type, const tcu::IVec3& tex
 	return str.str();
 }
 
-static bool isValidCase (TextureType type, const tcu::IVec3& textureSize, int lod, int lodBase)
+static bool isValidCase (TextureType type, const tcu::IVec3& textureSize, int lodBase)
 {
-	const bool		isSquare		= textureSize.x() == textureSize.y();
-	const bool		isCubeArray		= isSquare && (textureSize.z() % 6) == 0;
-	const int		maxSize			= getMaxTextureSize(type, textureSize);
-	const bool		isLodValid		= (maxSize >> (lod + lodBase)) != 0;
+	const bool	isSquare	= textureSize.x() == textureSize.y();
+	const bool	isCubeArray	= isSquare && (textureSize.z() % 6) == 0;
+	const int	maxSize		= getMaxTextureSize(type, textureSize);
+	const bool	isBaseValid	= (maxSize >> lodBase) != 0;
 
-	if (!isLodValid)
+	if (!isBaseValid)
 		return false;
 	if (type == TEXTURETYPE_CUBE_MAP && !isSquare)
 		return false;
@@ -1770,7 +1770,7 @@ void TextureSizeInstance::setupUniforms (const tcu::Vec4& constCoords)
 void TextureSizeInstance::initTexture (void)
 {
 	tcu::TestLog&			log					= m_context.getTestContext().getLog();
-	const int				numLevels			= m_testSize.lod + m_testSize.lodBase + 1;
+	const int				numLevels			= deLog2Floor32(getMaxTextureSize(m_textureSpec.type, m_testSize.textureSize)) + 1;
 	TextureBindingSp		textureBinding;
 
 	log << tcu::TestLog::Message << "Testing image size " << getTextureSizeString(m_textureSpec.type, m_testSize.textureSize) << tcu::TestLog::EndMessage;
@@ -1867,6 +1867,18 @@ tcu::TestStatus TextureSizeInstance::iterate (void)
 		{ tcu::IVec3(128, 64, 32),		3,		1,	tcu::IVec3(8, 4, 2)			},
 		{ tcu::IVec3(64, 64, 64),		1,		1,	tcu::IVec3(16, 16, 16)		},
 
+		{ tcu::IVec3(100, 31, 18),		1,		2,	tcu::IVec3(12, 3, 2)		},
+		{ tcu::IVec3(100, 31, 18),		2,		2,	tcu::IVec3(6, 1, 1)			},
+		{ tcu::IVec3(100, 31, 18),		1,		4,	tcu::IVec3(3, 1, 1)			},
+
+		// out-of-range mip levels
+		{ tcu::IVec3(1, 3, 2),			-7,		0,	tcu::IVec3(0, 0, 0)			},
+		{ tcu::IVec3(1, 3, 2),			106,	0,	tcu::IVec3(0, 0, 0)			},
+		{ tcu::IVec3(100, 31, 18),		7,		0,	tcu::IVec3(0, 0, 0)			},
+		{ tcu::IVec3(32, 32, 12),		6,		0,	tcu::IVec3(0, 0, 0)			},
+		{ tcu::IVec3(32, 32, 12),		-9,		0,	tcu::IVec3(0, 0, 0)			},
+		{ tcu::IVec3(32, 32, 12),		4396,	0,	tcu::IVec3(0, 0, 0)			},
+
 		// w == h and d % 6 == 0 (for cube array)
 		{ tcu::IVec3(1, 1, 6),			0,		0,	tcu::IVec3(1, 1, 6)			},
 		{ tcu::IVec3(32, 32, 12),		0,		0,	tcu::IVec3(32, 32, 12)		},
@@ -1901,7 +1913,7 @@ bool TextureSizeInstance::testTextureSize (void)
 	bool					success			= true;
 
 	// skip incompatible cases
-	if (!isValidCase(m_textureSpec.type, m_testSize.textureSize, m_testSize.lod, m_testSize.lodBase))
+	if (!isValidCase(m_textureSpec.type, m_testSize.textureSize, m_testSize.lodBase))
 		return true;
 
 	// setup texture
@@ -1945,7 +1957,11 @@ bool TextureSizeInstance::testTextureSize (void)
 
 		for (int ndx = 0; ndx < resultComponents; ndx++)
 		{
-			if (output[ndx] != m_expectedSize[ndx])
+			// We test all levels, but only compare results for valid LoDs. The others give
+			// undefined values.
+			const int	maxSize		= getMaxTextureSize(m_textureSpec.type, m_testSize.textureSize);
+			const bool	isLodValid	= (maxSize >> (m_testSize.lod + m_testSize.lodBase)) != 0;
+			if (isLodValid && output[ndx] != m_expectedSize[ndx])
 			{
 				success = false;
 				break;
@@ -2286,7 +2302,7 @@ bool TextureQueryLevelsInstance::testTextureLevels (void)
 	bool					success			= true;
 
 	// skip incompatible cases
-	if (!isValidCase(m_textureSpec.type, m_testSize.textureSize, 0, m_testSize.lodBase))
+	if (!isValidCase(m_textureSpec.type, m_testSize.textureSize, m_testSize.lodBase))
 		return true;
 
 	// setup texture
