@@ -716,6 +716,25 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 				dependencies.push_back(dependency);
 			}
 		};
+		// the last subpass must synchronize with all prior subpasses
+		for (deUint32 splitSubpassIndex = 0; splitSubpassIndex < (splitSubpassCount - 1); splitSubpassIndex++)
+		{
+				const SubpassDep	dependency																//  VkSubpassDependency							||  VkSubpassDependency2KHR
+				(
+																											//												||	VkStructureType			sType;
+					DE_NULL,																				//												||	const void*				pNext;
+					splitSubpassIndex + 1,																	//  deUint32				srcSubpass;			||	deUint32				srcSubpass;
+					splitSubpassCount,																		//  deUint32				dstSubpass;			||	deUint32				dstSubpass;
+					VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
+					| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,											//  VkPipelineStageFlags	srcStageMask;		||	VkPipelineStageFlags	srcStageMask;
+					VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,													//  VkPipelineStageFlags	dstStageMask;		||	VkPipelineStageFlags	dstStageMask;
+					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,	//  VkAccessFlags			srcAccessMask;		||	VkAccessFlags			srcAccessMask;
+					VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,													//  VkAccessFlags			dstAccessMask;		||	VkAccessFlags			dstAccessMask;
+					VK_DEPENDENCY_BY_REGION_BIT,															//  VkDependencyFlags		dependencyFlags;	||	VkDependencyFlags		dependencyFlags;
+					0u																						//												||	deInt32					viewOffset;
+				);
+				dependencies.push_back(dependency);
+		}
 		const RenderPassCreateInfo	renderPassCreator						//  VkRenderPassCreateInfo										||  VkRenderPassCreateInfo2KHR
 		(
 																			//  VkStructureType					sType;						||  VkStructureType						sType;

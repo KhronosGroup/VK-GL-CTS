@@ -2977,6 +2977,21 @@ void MultisampleRenderer::initialize (Context&									context,
 					};
 					subpassDependencies.push_back(copySampleSubpassDependency);
 				}
+				// the very last sample pass must synchronize with all prior subpasses
+				for (size_t i = 0; i < (m_perSampleImages.size() - 1); ++i)
+				{
+					const VkSubpassDependency storeSubpassDependency =
+					{
+						1u + static_cast<deUint32>(i),						// deUint32							srcSubpass
+						static_cast<deUint32>(m_perSampleImages.size()),    // deUint32							dstSubpass
+						VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,		// VkPipelineStageFlags				srcStageMask
+						VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,				// VkPipelineStageFlags				dstStageMask
+						VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,				// VkAccessFlags					srcAccessMask
+						VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,				// VkAccessFlags					dstAccessMask
+						0u,													// VkDependencyFlags				dependencyFlags
+					};
+					subpassDependencies.push_back(storeSubpassDependency);
+				}
 			}
 		}
 

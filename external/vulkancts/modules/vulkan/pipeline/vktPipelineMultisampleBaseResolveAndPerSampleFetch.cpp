@@ -258,7 +258,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 	}
 
 	std::vector<VkSubpassDescription> subpasses(1u + numSamples);
-	std::vector<VkSubpassDependency>  subpassDependencies(numSamples);
+	std::vector<VkSubpassDependency>  subpassDependencies;
 
 	const VkSubpassDescription firstSubpassDesc =
 	{
@@ -305,7 +305,23 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 			0u,												// VkDependencyFlags       dependencyFlags;
 		};
 
-		subpassDependencies[sampleNdx] = subpassDependency;
+		subpassDependencies.push_back(subpassDependency);
+	}
+	// now handle the very last sample pass, which must synchronize with all prior subpasses
+	for (deUint32 sampleNdx = 0u; sampleNdx < (numSamples - 1); ++sampleNdx)
+	{
+		const VkSubpassDependency subpassDependency =
+		{
+			1u + sampleNdx,									// uint32_t					srcSubpass;
+			numSamples,										// uint32_t					dstSubpass;
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	// VkPipelineStageFlags		srcStageMask;
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags		dstStageMask;
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags			dstAccessMask;
+			0u,												// VkDependencyFlags		dependencyFlags;
+		};
+
+		subpassDependencies.push_back(subpassDependency);
 	}
 
 	const VkRenderPassCreateInfo renderPassInfo =
