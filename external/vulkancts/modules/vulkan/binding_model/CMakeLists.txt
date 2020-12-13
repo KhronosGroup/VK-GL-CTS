@@ -10,6 +10,8 @@ set(DEQP_VK_BINDING_MODEL_SRCS
 	vktBindingModelTests.hpp
 	vktBindingShaderAccessTests.cpp
 	vktBindingShaderAccessTests.hpp
+	vktBindingDescriptorUpdateASTests.cpp
+	vktBindingDescriptorUpdateASTests.hpp
 	vktBindingDescriptorUpdateTests.cpp
 	vktBindingDescriptorUpdateTests.hpp
 	vktBindingDescriptorSetRandomTests.cpp
