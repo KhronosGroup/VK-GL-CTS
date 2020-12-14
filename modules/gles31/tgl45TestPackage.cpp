@@ -2,7 +2,7 @@
  * drawElements Quality Program OpenGL ES 3.1 Module
  * -------------------------------------------------
  *
- * Copyright 2014 The Android Open Source Project
+ * Copyright 2019 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@
  *
  *//*!
  * \file
- * \brief OpenGL ES 3.1 Test Package
+ * \brief OpenGL ES 3.1 Test Package that runs on GL4.5 context
  *//*--------------------------------------------------------------------*/
 
-#include "tes31TestPackage.hpp"
+#include "tgl45TestPackage.hpp"
 #include "tes31TestCaseWrapper.hpp"
 #include "tes31InfoTests.hpp"
 #include "es31fFunctionalTests.hpp"
@@ -39,27 +39,27 @@ namespace deqp
 namespace gles31
 {
 
-TestPackage::TestPackage (tcu::TestContext& testCtx)
-	: tcu::TestPackage	(testCtx, "dEQP-GLES31", "dEQP OpenGL ES 3.1 Tests")
+TestPackageGL45::TestPackageGL45 (tcu::TestContext& testCtx)
+	: tcu::TestPackage	(testCtx, "dEQP-GL45", "dEQP OpenGL ES 3.1 Tests On GL4.5 Context")
 	, m_archive			(testCtx.getRootArchive(), "gles31/")
 	, m_context			(DE_NULL)
 	, m_waiverMechanism (new tcu::WaiverUtil)
 {
 }
 
-TestPackage::~TestPackage (void)
+TestPackageGL45::~TestPackageGL45 (void)
 {
 	// Destroy children first since destructors may access context.
 	TestNode::deinit();
 	delete m_context;
 }
 
-void TestPackage::init (void)
+void TestPackageGL45::init (void)
 {
 	try
 	{
 		// Create context
-		m_context = new Context(m_testCtx);
+		m_context = new Context(m_testCtx, glu::ApiType::core(4, 5));
 
 		// Setup waiver mechanism
 		if (m_testCtx.getCommandLine().getRunMode() == tcu::RUNMODE_EXECUTE)
@@ -76,7 +76,6 @@ void TestPackage::init (void)
 		// Add main test groups
 		addChild(new InfoTests						(*m_context));
 		addChild(new Functional::FunctionalTests	(*m_context));
-		addChild(new Stress::StressTests			(*m_context));
 	}
 	catch (...)
 	{
@@ -87,16 +86,16 @@ void TestPackage::init (void)
 	}
 }
 
-void TestPackage::deinit (void)
+void TestPackageGL45::deinit (void)
 {
 	TestNode::deinit();
 	delete m_context;
 	m_context = DE_NULL;
 }
 
-tcu::TestCaseExecutor* TestPackage::createExecutor (void) const
+tcu::TestCaseExecutor* TestPackageGL45::createExecutor (void) const
 {
-	return new TestCaseWrapper<TestPackage>(const_cast<TestPackage&>(*this), m_waiverMechanism);
+	return new TestCaseWrapper<TestPackageGL45>(const_cast<TestPackageGL45&>(*this), m_waiverMechanism);
 }
 
 } // gles31

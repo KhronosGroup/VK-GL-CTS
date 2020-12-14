@@ -22,6 +22,8 @@ set(DEQP_GLES31_SRCS
 	tes31TestCase.hpp
 	tes31TestPackage.cpp
 	tes31TestPackage.hpp
+	tgl45TestPackage.cpp
+	tgl45TestPackage.hpp
 	)
 
 set(DEQP_GLES31_LIBS

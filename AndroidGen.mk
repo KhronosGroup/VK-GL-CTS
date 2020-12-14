@@ -1138,6 +1138,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/tes31TestCase.cpp \
 	modules/gles31/tes31TestPackage.cpp \
 	modules/gles31/tes31TestPackageEntry.cpp \
+	modules/gles31/tgl45TestPackage.cpp \
 	modules/glshared/glsAttributeLocationTests.cpp \
 	modules/glshared/glsBufferTestUtil.cpp \
 	modules/glshared/glsBuiltinPrecisionTests.cpp \
