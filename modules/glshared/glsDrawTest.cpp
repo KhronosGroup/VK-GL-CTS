@@ -3162,8 +3162,9 @@ DrawTest::IterateResult DrawTest::iterate (void)
 		spec.drawMethod == DrawTestSpec::DRAWMETHOD_DRAWELEMENTS_INSTANCED_BASEVERTEX ||
 		spec.drawMethod == DrawTestSpec::DRAWMETHOD_DRAWELEMENTS_RANGED_BASEVERTEX)
 	{
-		const bool supportsES32 = contextSupports(m_renderCtx.getType(), glu::ApiType::es(3, 2));
-		TCU_CHECK_AND_THROW(NotSupportedError, supportsES32 || m_contextInfo->isExtensionSupported("GL_EXT_draw_elements_base_vertex"), "GL_EXT_draw_elements_base_vertex is not supported.");
+		const bool supportsES32orGL45 = contextSupports(m_renderCtx.getType(), glu::ApiType::es(3, 2)) ||
+										contextSupports(m_renderCtx.getType(), glu::ApiType::core(4, 5));
+		TCU_CHECK_AND_THROW(NotSupportedError, supportsES32orGL45 || m_contextInfo->isExtensionSupported("GL_EXT_draw_elements_base_vertex"), "GL_EXT_draw_elements_base_vertex is not supported.");
 	}
 
 	const bool					drawStep		= (m_iteration % 2) == 0;
