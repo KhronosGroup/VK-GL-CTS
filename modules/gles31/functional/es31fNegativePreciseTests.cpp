@@ -156,10 +156,16 @@ void generateAndVerifyShader (NegativeTestContext& ctx, glu::ShaderType shaderTy
 		ctx.fail("Shader was not expected to compile.");
 }
 
+static bool checkSupport(NegativeTestContext& ctx)
+{
+	return ctx.isExtensionSupported("GL_EXT_gpu_shader5") ||
+		   contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+		   contextSupports(ctx.getRenderContext().getType(), glu::ApiType::core(4, 5));
+}
+
 void precise_as_variable_name (NegativeTestContext& ctx)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError,
-		ctx.isExtensionSupported("GL_EXT_gpu_shader5") || contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)),
+	TCU_CHECK_AND_THROW(NotSupportedError, checkSupport(ctx),
 		"This test requires support for the extension GL_EXT_gpu_shader5 or context version 3.2 or higher.");
 
 	ctx.beginSection("Test that precise cannot be used as a variable name.");
@@ -173,8 +179,7 @@ void precise_as_variable_name (NegativeTestContext& ctx)
 
 void precise_as_function_name (NegativeTestContext& ctx)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError,
-		ctx.isExtensionSupported("GL_EXT_gpu_shader5") || contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)),
+	TCU_CHECK_AND_THROW(NotSupportedError, checkSupport(ctx),
 		"This test requires support for the extension GL_EXT_gpu_shader5 or context version 3.2 or higher.");
 
 	ctx.beginSection("Test that precise cannot be used as a function name.");
@@ -188,8 +193,7 @@ void precise_as_function_name (NegativeTestContext& ctx)
 
 void precise_as_function_argument (NegativeTestContext& ctx)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError,
-		ctx.isExtensionSupported("GL_EXT_gpu_shader5") || contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)),
+	TCU_CHECK_AND_THROW(NotSupportedError, checkSupport(ctx),
 		"This test requires support for the extension GL_EXT_gpu_shader5 or context version 3.2 or higher.");
 
 	ctx.beginSection("Test that precise cannot be used as a argument name.");

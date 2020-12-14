@@ -75,6 +75,12 @@ static deUint32 cubeFaceToGLFace (tcu::CubeFace face)
 	}
 }
 
+static bool supportsES32orGL45(NegativeTestContext& ctx)
+{
+	return contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+		   contextSupports(ctx.getRenderContext().getType(), glu::ApiType::core(4, 5));
+}
+
 #define FOR_CUBE_FACES(FACE_GL_VAR, BODY)												\
 	do																					\
 	{																					\
@@ -150,7 +156,7 @@ void bindtexture (NegativeTestContext& ctx)
 	ctx.glBindTexture(GL_TEXTURE_3D, texture[3]);
 	ctx.expectError(GL_INVALID_OPERATION);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
 		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, texture[0]);
 		ctx.expectError(GL_INVALID_OPERATION);
@@ -401,55 +407,58 @@ void compressedteximage2d_max_width_height (NegativeTestContext& ctx)
 
 void compressedteximage2d_invalid_border (NegativeTestContext& ctx)
 {
+	bool	isES	= glu::isContextTypeES(ctx.getRenderContext().getType());
+	GLenum	error	= isES ? GL_INVALID_VALUE : GL_INVALID_OPERATION;
+
 	ctx.beginSection("GL_INVALID_VALUE is generated if border is not 0.");
 
 	ctx.beginSection("GL_TEXTURE_2D target");
 	ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 1, 0, 0);
-	ctx.expectError(GL_INVALID_VALUE);
+	ctx.expectError(error);
 	ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, -1, 0, 0);
-	ctx.expectError(GL_INVALID_VALUE);
+	ctx.expectError(error);
 	ctx.endSection();
 
 	ctx.beginSection("GL_TEXTURE_CUBE_MAP_POSITIVE_X target");
 	ctx.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 1, 0, 0);
-	ctx.expectError(GL_INVALID_VALUE);
+	ctx.expectError(error);
 	ctx.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, -1, 0, 0);
-	ctx.expectError(GL_INVALID_VALUE);
+	ctx.expectError(error);
 	ctx.endSection();
 
 	ctx.beginSection("GL_TEXTURE_CUBE_MAP_POSITIVE_Y target");
 	ctx.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 1, 0, 0);
-	ctx.expectError(GL_INVALID_VALUE);
+	ctx.expectError(error);
 	ctx.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, -1, 0, 0);
-	ctx.expectError(GL_INVALID_VALUE);
+	ctx.expectError(error);
 	ctx.endSection();
 
 	ctx.beginSection("GL_TEXTURE_CUBE_MAP_POSITIVE_Z target");
 	ctx.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 1, 0, 0);
-	ctx.expectError(GL_INVALID_VALUE);
+	ctx.expectError(error);
 	ctx.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, -1, 0, 0);
-	ctx.expectError(GL_INVALID_VALUE);
+	ctx.expectError(error);
 	ctx.endSection();
 
 	ctx.beginSection("GL_TEXTURE_CUBE_MAP_NEGATIVE_X target");
 	ctx.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 1, 0, 0);
-	ctx.expectError(GL_INVALID_VALUE);
+	ctx.expectError(error);
 	ctx.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, -1, 0, 0);
-	ctx.expectError(GL_INVALID_VALUE);
+	ctx.expectError(error);
 	ctx.endSection();
 
 	ctx.beginSection("GL_TEXTURE_CUBE_MAP_NEGATIVE_Y target");
 	ctx.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 1, 0, 0);
-	ctx.expectError(GL_INVALID_VALUE);
+	ctx.expectError(error);
 	ctx.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, -1, 0, 0);
-	ctx.expectError(GL_INVALID_VALUE);
+	ctx.expectError(error);
 	ctx.endSection();
 
 	ctx.beginSection("GL_TEXTURE_CUBE_MAP_NEGATIVE_Z target");
 	ctx.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 1, 0, 0);
-	ctx.expectError(GL_INVALID_VALUE);
+	ctx.expectError(error);
 	ctx.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, -1, 0, 0);
-	ctx.expectError(GL_INVALID_VALUE);
+	ctx.expectError(error);
 	ctx.endSection();
 
 	ctx.endSection();
@@ -480,7 +489,7 @@ void compressedteximage2d_invalid_size (NegativeTestContext& ctx)
 	ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC, 1, 1, 0, divRoundUp(1, 4) * divRoundUp(1, 4) * 16 - 1, 0);
 	ctx.expectError(GL_INVALID_VALUE);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (supportsES32orGL45(ctx))
 	{
 	    ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_4x4, 1, 1, 0, divRoundUp(1, 4) * divRoundUp(1, 4) * 16 - 1, 0);
 	    ctx.expectError(GL_INVALID_VALUE);
@@ -964,6 +973,9 @@ void copytexsubimage2d_read_buffer_is_none (NegativeTestContext& ctx)
 
 void copytexsubimage2d_texture_internalformat (NegativeTestContext& ctx)
 {
+	if (!glu::isContextTypeES(ctx.getRenderContext().getType()))
+		return;
+
 	GLuint texture = 0x1234;
 	ctx.glGenTextures	(1, &texture);
 	ctx.glBindTexture	(GL_TEXTURE_2D, texture);
@@ -1178,29 +1190,32 @@ void generatemipmap (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.endSection();
 
-	ctx.beginSection("GL_INVALID_OPERATION is generated if the zero level array is stored in a compressed internal format.");
-	ctx.glBindTexture(GL_TEXTURE_2D, texture[1]);
-	ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 0, 0, 0);
-	ctx.glGenerateMipmap(GL_TEXTURE_2D);
-	ctx.expectError(GL_INVALID_OPERATION);
-	ctx.endSection();
-
-	ctx.beginSection("GL_INVALID_OPERATION is generated if the level base array was not specified with an unsized internal format or a sized internal format that is both color-renderable and texture-filterable.");
-	ctx.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8_SNORM, 0, 0, 0, GL_RGB, GL_BYTE, 0);
-	ctx.glGenerateMipmap(GL_TEXTURE_2D);
-	ctx.expectError(GL_INVALID_OPERATION);
-	ctx.glTexImage2D(GL_TEXTURE_2D, 0, GL_R8I, 0, 0, 0, GL_RED_INTEGER, GL_BYTE, 0);
-	ctx.glGenerateMipmap(GL_TEXTURE_2D);
-	ctx.expectError(GL_INVALID_OPERATION);
-
-	if (!(ctx.getContextInfo().isExtensionSupported("GL_EXT_color_buffer_float") && ctx.getContextInfo().isExtensionSupported("GL_OES_texture_float_linear")))
+	if (glu::isContextTypeES(ctx.getRenderContext().getType()))
 	{
-		ctx.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 0, 0, 0, GL_RGBA, GL_FLOAT, 0);
+		ctx.beginSection("GL_INVALID_OPERATION is generated if the zero level array is stored in a compressed internal format.");
+		ctx.glBindTexture(GL_TEXTURE_2D, texture[1]);
+		ctx.glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 0, 0, 0);
 		ctx.glGenerateMipmap(GL_TEXTURE_2D);
 		ctx.expectError(GL_INVALID_OPERATION);
-	}
+		ctx.endSection();
 
-	ctx.endSection();
+		ctx.beginSection("GL_INVALID_OPERATION is generated if the level base array was not specified with an unsized internal format or a sized internal format that is both color-renderable and texture-filterable.");
+		ctx.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8_SNORM, 0, 0, 0, GL_RGB, GL_BYTE, 0);
+		ctx.glGenerateMipmap(GL_TEXTURE_2D);
+		ctx.expectError(GL_INVALID_OPERATION);
+		ctx.glTexImage2D(GL_TEXTURE_2D, 0, GL_R8I, 0, 0, 0, GL_RED_INTEGER, GL_BYTE, 0);
+		ctx.glGenerateMipmap(GL_TEXTURE_2D);
+		ctx.expectError(GL_INVALID_OPERATION);
+
+		if (!(ctx.getContextInfo().isExtensionSupported("GL_EXT_color_buffer_float") && ctx.getContextInfo().isExtensionSupported("GL_OES_texture_float_linear")))
+		{
+			ctx.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 0, 0, 0, GL_RGBA, GL_FLOAT, 0);
+			ctx.glGenerateMipmap(GL_TEXTURE_2D);
+			ctx.expectError(GL_INVALID_OPERATION);
+		}
+
+		ctx.endSection();
+	}
 
 	ctx.glDeleteTextures(2, texture);
 }
@@ -1267,16 +1282,19 @@ void teximage2d (NegativeTestContext& ctx)
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if the combination of internalFormat, format and type is invalid.");
-	ctx.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGB, GL_UNSIGNED_SHORT_4_4_4_4, 0);
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5_A1, 1, 1, 0, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, 0);
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB10_A2, 1, 1, 0, GL_RGB, GL_UNSIGNED_INT_2_10_10_10_REV, 0);
 	ctx.expectError(GL_INVALID_OPERATION);
-	ctx.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32UI, 1, 1, 0, GL_RGBA_INTEGER, GL_INT, 0);
-	ctx.expectError(GL_INVALID_OPERATION);
+	if (glu::isContextTypeES(ctx.getRenderContext().getType()))
+	{
+		ctx.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_OPERATION);
+		ctx.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32UI, 1, 1, 0, GL_RGBA_INTEGER, GL_INT, 0);
+		ctx.expectError(GL_INVALID_OPERATION);
+	}
 	ctx.endSection();
 }
 
@@ -1584,8 +1602,11 @@ void texsubimage2d (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 4, 4, GL_RGBA_INTEGER, GL_UNSIGNED_INT, 0);
 	ctx.expectError(GL_INVALID_OPERATION);
-	ctx.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 4, 4, GL_RGB, GL_FLOAT, 0);
-	ctx.expectError(GL_INVALID_OPERATION);
+	if (glu::isContextTypeES(ctx.getRenderContext().getType()))
+	{
+		ctx.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 4, 4, GL_RGB, GL_FLOAT, 0);
+		ctx.expectError(GL_INVALID_OPERATION);
+	}
 	ctx.endSection();
 
 	ctx.glDeleteTextures	(1, &texture);
@@ -1800,7 +1821,7 @@ void texparameteri (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (supportsES32orGL45(ctx))
 	{
 		ctx.beginSection("GL_INVALID_ENUM is generated if pname is a non-scalar parameter.");
 		ctx.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, 0);
@@ -1830,7 +1851,7 @@ void texparameteri (NegativeTestContext& ctx)
 	ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_COMPARE_FUNC, textureMode);
 	ctx.expectError(GL_INVALID_ENUM);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 	{
 		ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BORDER_COLOR, textureMode);
 		ctx.expectError(GL_INVALID_ENUM);
@@ -1859,7 +1880,7 @@ void texparameteri (NegativeTestContext& ctx)
 	ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, 1);
 	ctx.expectError(GL_INVALID_OPERATION);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 	{
 		ctx.glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, 1);
 		ctx.expectError(GL_INVALID_OPERATION);
@@ -1921,7 +1942,7 @@ void texparameterf (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (supportsES32orGL45(ctx))
 	{
 		ctx.beginSection("GL_INVALID_ENUM is generated if pname is a non-scalar parameter.");
 		ctx.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, 0.0f);
@@ -1951,7 +1972,7 @@ void texparameterf (NegativeTestContext& ctx)
 	ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_COMPARE_FUNC, textureMode);
 	ctx.expectError(GL_INVALID_ENUM);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 	{
 		ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BORDER_COLOR, textureMode);
 		ctx.expectError(GL_INVALID_ENUM);
@@ -1980,7 +2001,7 @@ void texparameterf (NegativeTestContext& ctx)
 	ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, 1.0f);
 	ctx.expectError(GL_INVALID_OPERATION);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 	{
 		ctx.glTexParameterf(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, 1.0f);
 		ctx.expectError(GL_INVALID_OPERATION);
@@ -2066,7 +2087,7 @@ void texparameteriv (NegativeTestContext& ctx)
 	ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_COMPARE_FUNC, &params[0]);
 	ctx.expectError(GL_INVALID_ENUM);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 	{
 		ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BORDER_COLOR, &params[0]);
 		ctx.expectError(GL_INVALID_ENUM);
@@ -2096,7 +2117,7 @@ void texparameteriv (NegativeTestContext& ctx)
 	ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, &params[0]);
 	ctx.expectError(GL_INVALID_OPERATION);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 	{
 		params[0] = 1;
 		ctx.glTexParameteriv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, &params[0]);
@@ -2183,7 +2204,7 @@ void texparameterfv (NegativeTestContext& ctx)
 	ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_COMPARE_FUNC, &params[0]);
 	ctx.expectError(GL_INVALID_ENUM);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 	{
 		ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BORDER_COLOR, &params[0]);
 		ctx.expectError(GL_INVALID_ENUM);
@@ -2213,7 +2234,7 @@ void texparameterfv (NegativeTestContext& ctx)
 	ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_BASE_LEVEL, &params[0]);
 	ctx.expectError(GL_INVALID_OPERATION);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 	{
 		params[0] = 1.0f;
 		ctx.glTexParameterfv(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_BASE_LEVEL, &params[0]);
@@ -2228,7 +2249,7 @@ void texparameterfv (NegativeTestContext& ctx)
 
 void texparameterIiv (NegativeTestContext& ctx)
 {
-	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!supportsES32orGL45(ctx))
 		throw tcu::NotSupportedError("glTexParameterIiv is not supported.", DE_NULL, __FILE__, __LINE__);
 
 	GLint textureMode[] = { GL_DEPTH_COMPONENT, GL_STENCIL_INDEX };
@@ -2338,7 +2359,7 @@ void texparameterIiv (NegativeTestContext& ctx)
 
 void texparameterIuiv (NegativeTestContext& ctx)
 {
-	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!supportsES32orGL45(ctx))
 		throw tcu::NotSupportedError("glTexParameterIuiv is not supported.", DE_NULL, __FILE__, __LINE__);
 
 	GLuint textureMode[] = { GL_DEPTH_COMPONENT, GL_STENCIL_INDEX };
@@ -2682,19 +2703,23 @@ void teximage3d (NegativeTestContext& ctx)
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if the combination of internalFormat, format and type is invalid.");
-	ctx.glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, 1, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_SHORT_4_4_4_4, 0);
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB5_A1, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, 0);
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB10_A2, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_INT_2_10_10_10_REV, 0);
 	ctx.expectError(GL_INVALID_OPERATION);
-	ctx.glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32UI, 1, 1, 1, 0, GL_RGBA_INTEGER, GL_INT, 0);
-	ctx.expectError(GL_INVALID_OPERATION);
+
+	if (glu::isContextTypeES(ctx.getRenderContext().getType()))
+	{
+		ctx.glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, 1, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		ctx.expectError(GL_INVALID_OPERATION);
+		ctx.glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32UI, 1, 1, 1, 0, GL_RGBA_INTEGER, GL_INT, 0);
+		ctx.expectError(GL_INVALID_OPERATION);
+	}
 	ctx.endSection();
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
 		ctx.beginSection("GL_INVALID_VALUE is generated if target is GL_TEXTURE_CUBE_MAP_ARRAY and width and height are not equal.");
 		ctx.glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA, 2, 1, 6, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
@@ -2716,7 +2741,7 @@ void teximage3d_neg_level (NegativeTestContext& ctx)
 	ctx.glTexImage3D(GL_TEXTURE_2D_ARRAY, -1, GL_RGB, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 	ctx.expectError(GL_INVALID_VALUE);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
 		ctx.glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, -1, GL_RGBA, 1, 1, 6, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 		ctx.expectError(GL_INVALID_VALUE);
@@ -2762,7 +2787,7 @@ void teximage3d_neg_width_height_depth (NegativeTestContext& ctx)
 	ctx.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, -1, -1, -1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	ctx.expectError(GL_INVALID_VALUE);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
 		ctx.glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA, -1, 1, 6, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 		ctx.expectError(GL_INVALID_VALUE);
@@ -2817,7 +2842,7 @@ void teximage3d_invalid_border (NegativeTestContext& ctx)
 	ctx.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB, 1, 1, 1, 2, GL_RGB, GL_UNSIGNED_BYTE, 0);
 	ctx.expectError(GL_INVALID_VALUE);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
 		ctx.glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 1, GL_RGBA, 1, 1, 6, -1, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 		ctx.expectError(GL_INVALID_VALUE);
@@ -2903,8 +2928,11 @@ void texsubimage3d (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, 4, 4, 4, GL_RGBA_INTEGER, GL_UNSIGNED_INT, 0);
 	ctx.expectError(GL_INVALID_OPERATION);
-	ctx.glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, 4, 4, 4, GL_RGB, GL_FLOAT, 0);
-	ctx.expectError(GL_INVALID_OPERATION);
+	if (glu::isContextTypeES(ctx.getRenderContext().getType()))
+	{
+		ctx.glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, 4, 4, 4, GL_RGB, GL_FLOAT, 0);
+		ctx.expectError(GL_INVALID_OPERATION);
+	}
 	ctx.endSection();
 
 	ctx.glDeleteTextures	(1, &texture);
@@ -2926,7 +2954,7 @@ void texsubimage3d_neg_level (NegativeTestContext& ctx)
 	ctx.glTexSubImage3D(GL_TEXTURE_2D_ARRAY, -1, 0, 0, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	ctx.expectError(GL_INVALID_VALUE);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
 		ctx.glBindTexture		(GL_TEXTURE_CUBE_MAP_ARRAY, textures[2]);
 		ctx.glTexImage3D		(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA, 4, 4, 6, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
@@ -2995,7 +3023,7 @@ void texsubimage3d_neg_offset (NegativeTestContext& ctx)
 	ctx.glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, -1, -1, -1, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	ctx.expectError(GL_INVALID_VALUE);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
 		ctx.glBindTexture		(GL_TEXTURE_CUBE_MAP_ARRAY, textures[2]);
 		ctx.glTexImage3D		(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA, 4, 4, 6, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
@@ -3054,7 +3082,7 @@ void texsubimage3d_neg_width_height (NegativeTestContext& ctx)
 	ctx.glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, -1, -1, -1, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	ctx.expectError(GL_INVALID_VALUE);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
 		ctx.glTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, 0, 0, 0, -1, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 		ctx.expectError(GL_INVALID_VALUE);
@@ -3146,7 +3174,7 @@ void copytexsubimage3d_neg_level (NegativeTestContext& ctx)
 	ctx.glCopyTexSubImage3D(GL_TEXTURE_2D_ARRAY, -1, 0, 0, 0, 0, 0, 4, 4);
 	ctx.expectError(GL_INVALID_VALUE);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
 		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, textures[2]);
 		ctx.glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA, 4, 4, 6, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
@@ -3184,7 +3212,7 @@ void copytexsubimage3d_max_level (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
 		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, textures[2]);
 		ctx.glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA, 4, 4, 6, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
@@ -3350,20 +3378,25 @@ void compressedteximage3d_max_width_height_depth (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, maxTextureSize, 0, 0, 0, 0);
 	ctx.expectError(GL_INVALID_VALUE);
-	ctx.glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, maxTextureLayers, 0, 0, 0);
-	ctx.expectError(GL_INVALID_VALUE);
 	ctx.glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, maxTextureSize, maxTextureSize, maxTextureLayers, 0, 0, 0);
 	ctx.expectError(GL_INVALID_VALUE);
+	if (glu::isContextTypeES(ctx.getRenderContext().getType()))
+	{
+		ctx.glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, maxTextureLayers, 0, 0, 0);
+		ctx.expectError(GL_INVALID_VALUE);
+	}
 	ctx.endSection();
 }
 
 void compressedteximage3d_invalid_border (NegativeTestContext& ctx)
 {
+	bool	isES	= glu::isContextTypeES(ctx.getRenderContext().getType());
+	GLenum	error	= isES ? GL_INVALID_VALUE : GL_INVALID_OPERATION;
 	ctx.beginSection("GL_INVALID_VALUE is generated if border is not 0.");
 	ctx.glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 0, -1, 0, 0);
-	ctx.expectError(GL_INVALID_VALUE);
+	ctx.expectError(error);
 	ctx.glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, 0, 1, 0, 0);
-	ctx.expectError(GL_INVALID_VALUE);
+	ctx.expectError(error);
 	ctx.endSection();
 }
 
@@ -3383,7 +3416,7 @@ void compressedteximage3d_invalid_size (NegativeTestContext& ctx)
 
 void compressedteximage3d_invalid_width_height (NegativeTestContext& ctx)
 {
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
 		const int				width		= 4;
 		const int				height		= 6;
@@ -3656,7 +3689,7 @@ void texstorage2d (NegativeTestContext& ctx)
 	ctx.glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 0, 0);
 	ctx.expectError(GL_INVALID_VALUE);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (supportsES32orGL45(ctx))
 	{
 		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP, textures[1]);
 		ctx.expectError(GL_NO_ERROR);
@@ -3676,14 +3709,14 @@ void texstorage2d_invalid_binding (NegativeTestContext& ctx)
 {
 	deUint32	textures[]		= {0x1234, 0x1234};
 	deInt32		immutable		= 0x1234;
-	const bool	supportsES32	= contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool	isES32orGL45	= supportsES32orGL45(ctx);
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if the default texture object is curently bound to target.");
 	ctx.glBindTexture(GL_TEXTURE_2D, 0);
 	ctx.glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 16, 16);
 	ctx.expectError(GL_INVALID_OPERATION);
 
-	if (supportsES32)
+	if (isES32orGL45)
 	{
 		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, GL_RGBA8, 16, 16);
@@ -3704,7 +3737,7 @@ void texstorage2d_invalid_binding (NegativeTestContext& ctx)
 	ctx.glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 16, 16);
 	ctx.expectError(GL_INVALID_OPERATION);
 
-	if (supportsES32)
+	if (isES32orGL45)
 	{
 		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP, textures[1]);
 		ctx.glGetTexParameteriv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_IMMUTABLE_FORMAT, &immutable);
@@ -3725,12 +3758,12 @@ void texstorage2d_invalid_levels (NegativeTestContext& ctx)
 {
 	deUint32	textures[]		= {0x1234, 0x1234};
 	deUint32	log2MaxSize		= deLog2Floor32(deMax32(16, 16)) + 1 + 1;
-	const bool	supportsES32	= contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool	isES32orGL45	= supportsES32orGL45(ctx);
 
 	ctx.glGenTextures(2, textures);
 	ctx.glBindTexture(GL_TEXTURE_2D, textures[0]);
 
-	if (supportsES32)
+	if (isES32orGL45)
 		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP, textures[1]);
 
 	ctx.expectError(GL_NO_ERROR);
@@ -3741,7 +3774,7 @@ void texstorage2d_invalid_levels (NegativeTestContext& ctx)
 	ctx.glTexStorage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 0, 0);
 	ctx.expectError(GL_INVALID_VALUE);
 
-	if (supportsES32)
+	if (isES32orGL45)
 	{
 		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, 0, GL_RGBA8, 16, 16);
 		ctx.expectError(GL_INVALID_VALUE);
@@ -3754,7 +3787,7 @@ void texstorage2d_invalid_levels (NegativeTestContext& ctx)
 	ctx.glTexStorage2D(GL_TEXTURE_2D, log2MaxSize, GL_RGBA8, 16, 16);
 	ctx.expectError(GL_INVALID_OPERATION);
 
-	if (supportsES32)
+	if (isES32orGL45)
 	{
 		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, log2MaxSize, GL_RGBA8, 16, 16);
 		ctx.expectError(GL_INVALID_OPERATION);
@@ -3800,7 +3833,7 @@ void texstorage3d (NegativeTestContext& ctx)
 	ctx.glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA8, 0, 0, 0);
 	ctx.expectError(GL_INVALID_VALUE);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
 		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, textures[1]);
 		ctx.expectError(GL_NO_ERROR);
@@ -3828,7 +3861,7 @@ void texstorage3d_invalid_binding (NegativeTestContext& ctx)
 	ctx.glTexStorage3D	(GL_TEXTURE_3D, 1, GL_RGBA8, 4, 4, 4);
 	ctx.expectError		(GL_INVALID_OPERATION);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
 		ctx.glBindTexture	(GL_TEXTURE_CUBE_MAP_ARRAY, 0);
 		ctx.glTexStorage3D	(GL_TEXTURE_CUBE_MAP_ARRAY, 1, GL_RGBA8, 4, 4, 6);
@@ -3849,7 +3882,7 @@ void texstorage3d_invalid_binding (NegativeTestContext& ctx)
 	ctx.glTexStorage3D	(GL_TEXTURE_3D, 1, GL_RGBA8, 4, 4, 4);
 	ctx.expectError		(GL_INVALID_OPERATION);
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	if (supportsES32orGL45(ctx) || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
 		ctx.glBindTexture	(GL_TEXTURE_CUBE_MAP_ARRAY, textures[1]);
 		ctx.glGetTexParameteriv(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_IMMUTABLE_FORMAT, &immutable);
@@ -3870,7 +3903,7 @@ void texstorage3d_invalid_levels (NegativeTestContext& ctx)
 {
 	deUint32	textures[]		= {0x1234, 0x1234};
 	deUint32	log2MaxSize		= deLog2Floor32(8) + 1 + 1;
-	const bool	supportsES32	= contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool	isES32orGL45	= supportsES32orGL45(ctx);
 	ctx.glGenTextures(2, textures);
 	ctx.glBindTexture(GL_TEXTURE_3D, textures[0]);
 
@@ -3880,7 +3913,7 @@ void texstorage3d_invalid_levels (NegativeTestContext& ctx)
 	ctx.glTexStorage3D(GL_TEXTURE_3D, 0, GL_RGBA8, 0, 0, 0);
 	ctx.expectError(GL_INVALID_VALUE);
 
-	if (supportsES32 || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	if (isES32orGL45 || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
 		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, textures[1]);
 		ctx.glTexStorage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA8, 4, 4, 6);
@@ -3900,7 +3933,7 @@ void texstorage3d_invalid_levels (NegativeTestContext& ctx)
 	ctx.glTexStorage3D	(GL_TEXTURE_3D, log2MaxSize, GL_RGBA8, 8, 8, 8);
 	ctx.expectError		(GL_INVALID_OPERATION);
 
-	if (supportsES32 || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	if (isES32orGL45 || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
 		ctx.glTexStorage3D	(GL_TEXTURE_CUBE_MAP_ARRAY, log2MaxSize, GL_RGBA8, 2, 2, 6);
 		ctx.expectError		(GL_INVALID_OPERATION);
@@ -3992,7 +4025,7 @@ void srgb_decode_texparameterfv (NegativeTestContext& ctx)
 
 void srgb_decode_texparameterIiv (NegativeTestContext& ctx)
 {
-	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!supportsES32orGL45(ctx))
 		TCU_THROW(NotSupportedError,"glTexParameterIiv is not supported.");
 
 	if (!ctx.isExtensionSupported("GL_EXT_texture_sRGB_decode"))
@@ -4016,7 +4049,7 @@ void srgb_decode_texparameterIiv (NegativeTestContext& ctx)
 
 void srgb_decode_texparameterIuiv (NegativeTestContext& ctx)
 {
-	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!supportsES32orGL45(ctx))
 		TCU_THROW(NotSupportedError,"glTexParameterIuiv is not supported.");
 
 	if (!ctx.isExtensionSupported("GL_EXT_texture_sRGB_decode"))
