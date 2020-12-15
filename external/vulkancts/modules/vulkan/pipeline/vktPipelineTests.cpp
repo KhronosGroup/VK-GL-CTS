@@ -28,6 +28,7 @@
 #include "vktPipelineDepthTests.hpp"
 #include "vktPipelineDynamicOffsetTests.hpp"
 #include "vktPipelineEarlyDestroyTests.hpp"
+#include "vktPipelineLogicOpTests.hpp"
 #include "vktPipelineImageTests.hpp"
 #include "vktPipelineInputAssemblyTests.hpp"
 #include "vktPipelineSamplerTests.hpp"
@@ -76,6 +77,7 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createImageTests					(testCtx));
 	pipelineTests->addChild(createSamplerTests					(testCtx));
 	pipelineTests->addChild(createImageViewTests				(testCtx));
+	pipelineTests->addChild(createLogicOpTests					(testCtx));
 	pipelineTests->addChild(createPushConstantTests				(testCtx));
 	pipelineTests->addChild(createPushDescriptorTests			(testCtx));
 	pipelineTests->addChild(createSpecConstantTests				(testCtx));
