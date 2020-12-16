@@ -101,6 +101,7 @@ DE_DECLARE_COMMAND_LINE_OPT(RenderDoc,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(CaseFraction,				std::vector<int>);
 DE_DECLARE_COMMAND_LINE_OPT(CaseFractionMandatoryTests,	std::string);
 DE_DECLARE_COMMAND_LINE_OPT(WaiverFile,					std::string);
+DE_DECLARE_COMMAND_LINE_OPT(RunnerType,					tcu::TestRunnerType);
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -153,6 +154,12 @@ void registerOptions (de::cmdline::Parser& parser)
 		{ "180",			SCREENROTATION_180			},
 		{ "270",			SCREENROTATION_270			}
 	};
+	static const NamedValue<tcu::TestRunnerType> s_runnerTypes[] =
+	{
+		{ "any",	tcu::RUNNERTYPE_ANY		},
+		{ "none",	tcu::RUNNERTYPE_NONE	},
+		{ "amber",	tcu::RUNNERTYPE_AMBER	},
+	};
 
 	parser
 		<< Option<CasePath>						("n",		"deqp-case",								"Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*)")
@@ -200,7 +207,8 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<RenderDoc>					(DE_NULL,	"deqp-renderdoc",							"Enable RenderDoc frame markers",					s_enableNames,		"disable")
 		<< Option<CaseFraction>					(DE_NULL,	"deqp-fraction",							"Run a fraction of the test cases (e.g. N,M means run group%M==N)",	parseIntList,	"")
 		<< Option<CaseFractionMandatoryTests>	(DE_NULL,	"deqp-fraction-mandatory-caselist-file",	"Case list file that must be run for each fraction",					"")
-		<< Option<WaiverFile>					(DE_NULL,	"deqp-waiver-file",							"Read waived tests from given file",									"");
+		<< Option<WaiverFile>					(DE_NULL,	"deqp-waiver-file",							"Read waived tests from given file",									"")
+		<< Option<RunnerType>					(DE_NULL,	"deqp-runner-type",							"Filter test cases based on runner",				s_runnerTypes,		"any");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -851,6 +859,7 @@ const char*				CommandLine::getWaiverFileName				(void) const	{ return m_cmdLine
 const std::vector<int>&	CommandLine::getCaseFraction				(void) const	{ return m_cmdLine.getOption<opt::CaseFraction>();							}
 const char*				CommandLine::getCaseFractionMandatoryTests	(void) const	{ return m_cmdLine.getOption<opt::CaseFractionMandatoryTests>().c_str();	}
 const char*				CommandLine::getArchiveDir					(void) const	{ return m_cmdLine.getOption<opt::ArchiveDir>().c_str();					}
+tcu::TestRunnerType		CommandLine::getRunnerType					(void) const	{ return m_cmdLine.getOption<opt::RunnerType>();							}
 
 const char* CommandLine::getGLContextType (void) const
 {
@@ -960,12 +969,14 @@ bool CaseListFilter::checkCaseFraction (int i, const std::string& testCaseName) 
 }
 
 CaseListFilter::CaseListFilter (void)
-	: m_caseTree(DE_NULL)
+	: m_caseTree	(DE_NULL)
+	, m_runnerType	(tcu::RUNNERTYPE_ANY)
 {
 }
 
 CaseListFilter::CaseListFilter (const de::cmdline::CommandLine& cmdLine, const tcu::Archive& archive)
-	: m_caseTree(DE_NULL)
+	: m_caseTree	(DE_NULL)
+	, m_runnerType	(cmdLine.getOption<opt::RunnerType>())
 {
 	if (cmdLine.hasOption<opt::CaseList>())
 	{

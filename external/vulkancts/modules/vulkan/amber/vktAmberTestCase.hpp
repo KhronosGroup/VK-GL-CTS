@@ -69,7 +69,7 @@ public:
 
 	virtual ~AmberTestCase (void);
 
-	virtual TestInstance* createInstance (Context& ctx) const;
+	TestInstance* createInstance (Context& ctx) const override;
 
 	// Check that the Vulkan implementation supports this test.
 	// We have the principle that client code in dEQP should independently
@@ -79,13 +79,13 @@ public:
 	//  - Otherwise, we do a secondary sanity check depending on code inside
 	//    Amber itself: if the Amber test says it is not supported, then
 	//    throw an internal error exception.
-	virtual void checkSupport (Context& ctx) const; // override
+	void checkSupport (Context& ctx) const override;
 
 	// If the test case uses SPIR-V Assembly, use these build options.
 	// Otherwise, defaults to target Vulkan 1.0, SPIR-V 1.0.
 	void setSpirVAsmBuildOptions(const vk::SpirVAsmBuildOptions& asm_options);
-	virtual void delayedInit (void);
-	virtual void initPrograms (vk::SourceCollections& programCollection) const;
+	void delayedInit (void) override;
+	void initPrograms (vk::SourceCollections& programCollection) const override;
 
 	// Add a required instance extension, device extension, or feature bit.
 	// A feature bit is represented by a string of form "<structure>.<feature>", where
@@ -96,6 +96,8 @@ public:
 
 	void addImageRequirement(vk::VkImageCreateInfo info);
 	void addBufferRequirement(BufferRequirement req);
+
+	tcu::TestRunnerType getRunnerType (void) const override { return tcu::RUNNERTYPE_AMBER; }
 
 private:
 	bool parse (const std::string& readFilename);

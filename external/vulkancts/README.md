@@ -170,6 +170,12 @@ the following command line option may be used:
 
 	--deqp-waiver-file=<path>
 
+Some CTS tests use third-party runners. By default all tests are executed
+regardless of runner type (`any`). To exclude all tests using any of the
+external runners (`none`) or to only include tests using a certain runner:
+
+	--deqp-runner-type=(any|none|amber)
+
 No other command line options are allowed.
 
 ### Win32
