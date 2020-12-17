@@ -4314,7 +4314,7 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 	vector<float>					outputFloats4	(numElements, 0);
 	vector<float>					outputFloats5	(numElements, 0);
 	std::string						codestring		= "ABC";
-	const int						test4Width		= 1024;
+	const int						test4Width		= 512;
 
 	// Build case 5 code string. Each iteration makes the hierarchy more complicated.
 	// 9 iterations with (7, 24) parameters makes the hierarchy 8 deep with about 1500 lines of
