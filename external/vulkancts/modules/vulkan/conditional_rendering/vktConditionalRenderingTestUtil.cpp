@@ -33,17 +33,15 @@ namespace conditional
 
 void checkConditionalRenderingCapabilities (vkt::Context& context, const ConditionalData& data)
 {
-	if (!context.isDeviceFunctionalitySupported("VK_EXT_conditional_rendering"))
-		TCU_THROW(NotSupportedError, "Missing extension: VK_EXT_conditional_rendering");
+	context.requireDeviceFunctionality("VK_EXT_conditional_rendering");
 
-	if (data.conditionInherited)
-	{
-		const vk::VkPhysicalDeviceConditionalRenderingFeaturesEXT& conditionalRenderingFeatures = context.getConditionalRenderingFeaturesEXT();
-		if (!conditionalRenderingFeatures.inheritedConditionalRendering)
-		{
-			TCU_THROW(NotSupportedError, "Device does not support inherited conditional rendering");
-		}
-	}
+	const auto& conditionalRenderingFeatures = context.getConditionalRenderingFeaturesEXT();
+
+	if (conditionalRenderingFeatures.conditionalRendering == VK_FALSE)
+		TCU_FAIL("conditionalRendering feature not supported but VK_EXT_conditional_rendering present");
+
+	if (data.conditionInherited && !conditionalRenderingFeatures.inheritedConditionalRendering)
+		TCU_THROW(NotSupportedError, "Device does not support inherited conditional rendering");
 }
 
 de::SharedPtr<Draw::Buffer>	createConditionalRenderingBuffer (vkt::Context& context, const ConditionalData& data)

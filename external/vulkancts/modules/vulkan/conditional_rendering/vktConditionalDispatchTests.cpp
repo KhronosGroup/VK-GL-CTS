@@ -79,6 +79,7 @@ public:
 												 const ConditionalTestSpec& testSpec);
 
 	void				initPrograms			(vk::SourceCollections& sourceCollections) const;
+	void				checkSupport			(Context&				context) const;
 	TestInstance*		createInstance			(Context&			    context) const;
 
 private:
@@ -127,6 +128,14 @@ void ConditionalDispatchTest::initPrograms (vk::SourceCollections& sourceCollect
 	sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
 }
 
+void ConditionalDispatchTest::checkSupport(Context& context) const
+{
+	checkConditionalRenderingCapabilities(context, m_testSpec.conditionalData);
+
+	if (m_testSpec.command == DISPATCH_COMMAND_TYPE_DISPATCH_BASE)
+		context.requireDeviceFunctionality("VK_KHR_device_group");
+}
+
 TestInstance* ConditionalDispatchTest::createInstance (Context& context) const
 {
 	return new ConditionalDispatchTestInstance(context, m_testSpec);
@@ -138,7 +147,6 @@ ConditionalDispatchTestInstance::ConditionalDispatchTestInstance (Context &conte
 	, m_numCalls(testSpec.numCalls)
 	, m_conditionalData(testSpec.conditionalData)
 {
-	checkConditionalRenderingCapabilities(context, m_conditionalData);
 };
 
 void ConditionalDispatchTestInstance::recordDispatch (const vk::DeviceInterface& vk,
