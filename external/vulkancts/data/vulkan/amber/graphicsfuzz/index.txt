@@ -194,6 +194,7 @@
 {	"cov-single-store-elim-assume-store.amber",													"cov-single-store-elim-assume-store",												"A fragment shader that covers a specific single store elimination path."			},
 {	"cov-ssa-rewrite-case-with-default.amber",													"cov-ssa-rewrite-case-with-default",												"A fragment shader that covers a specific SSA rewrite path."						},
 {	"cov-tail-duplicator-for-for-for.amber",													"cov-tail-duplicator-for-for-for",													"A fragment shader that covers a specific tail duplicator code path"				},
+{	"cov-tail-duplicator-infinite-loops.amber",													"cov-tail-duplicator-infinite-loops",												"A fragment shader that covers a specific tail duplicator code path"				},
 {	"cov-target-lowering-dfdx-cos.amber",														"cov-target-lowering-dfdx-cos",														"A fragment shader that covers a specific target lowering code path."				},
 {	"cov-target-lowering-inst-combine-compares-struct-array-clamp-function-cal.amber",			"cov-target-lowering-inst-combine-compares-struct-array-clamp-function-cal",		"Covers target lowering and compare combining code paths"							},
 {	"cov-types-return-in-main-never-hit.amber",													"cov-types-return-in-main-never-hit",												"A fragment shader that covers a specific types optimization path."					},
