@@ -915,6 +915,7 @@ void DepthStencilResolveTest::submit (void)
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 			DE_NULL,
 
+			// Note: as per the spec, depth/stencil *resolve* operations are synchronized using the color attachment write access.
 			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 			VK_ACCESS_TRANSFER_READ_BIT,
 
