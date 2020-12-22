@@ -1814,7 +1814,8 @@ bool RectangleTest::isCopyValid(const InternalFormat& copyInternalFormat, const 
 		// and conversions to SNORM internalformats are not allowed by Table 3.2
 		(copyInternalFormat.sampler == SAMPLER_NORM) ||
 		((copyInternalFormat.sizedFormat == GL_RGB9_E5) &&
-		 !contextInfo.isExtensionSupported("GL_APPLE_color_buffer_packed_float")))
+		 (!contextInfo.isExtensionSupported("GL_APPLE_color_buffer_packed_float") &&
+		  !contextInfo.isExtensionSupported("GL_QCOM_render_shared_exponent"))))
 	{
 		/* Some formats are activated by extensions, check. */
 		if (((internalFormat.baseFormat == GL_LUMINANCE && copyInternalFormat.baseFormat == GL_LUMINANCE) ||
@@ -1909,6 +1910,12 @@ bool RectangleTest::isFBOImageAttachValid(const InternalFormat& internalformat, 
 
 				if ((GL_R11F_G11F_B10F == validFormat->internalformat || GL_RGB9_E5 == validFormat->internalformat) &&
 					contextInfo.isExtensionSupported("GL_APPLE_color_buffer_packed_float"))
+				{
+					return true;
+				}
+
+				if ((GL_RGB9_E5 == validFormat->internalformat) &&
+					contextInfo.isExtensionSupported("GL_QCOM_render_shared_exponent"))
 				{
 					return true;
 				}
