@@ -46,15 +46,19 @@ void checkConditionalRenderingCapabilities (vkt::Context& context, const Conditi
 
 de::SharedPtr<Draw::Buffer>	createConditionalRenderingBuffer (vkt::Context& context, const ConditionalData& data)
 {
-	const vk::DeviceInterface& vk = context.getDeviceInterface();
-	de::SharedPtr<Draw::Buffer> buffer = Draw::Buffer::createAndAlloc(vk, context.getDevice(),
-											Draw::BufferCreateInfo(sizeof(deUint32),
-															 vk::VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT),
-											context.getDefaultAllocator(),
-											vk::MemoryRequirement::HostVisible);
+	// When padding the condition value, it will be surounded by two additional values with nonzero bytes in them.
+	const auto					bufferSize	= static_cast<vk::VkDeviceSize>(sizeof(data.conditionValue)) * (data.padConditionValue ? 3ull : 1ull);
+	const auto					dataOffset	= static_cast<vk::VkDeviceSize>(data.padConditionValue ? sizeof(data.conditionValue) : 0);
+	const vk::DeviceInterface&	vk			= context.getDeviceInterface();
+	de::SharedPtr<Draw::Buffer>	buffer		= Draw::Buffer::createAndAlloc(vk, context.getDevice(),
+												Draw::BufferCreateInfo(bufferSize,
+																 vk::VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT),
+												context.getDefaultAllocator(),
+												vk::MemoryRequirement::HostVisible);
 
-	deUint8* conditionBufferPtr = reinterpret_cast<deUint8*>(buffer->getBoundMemory().getHostPtr());
-	*(deUint32*)(conditionBufferPtr) = data.conditionValue;
+	deUint8* conditionBufferPtr = reinterpret_cast<deUint8*>(buffer->getBoundMemory().getHostPtr()) + buffer->getBoundMemory().getOffset();
+	deMemset(conditionBufferPtr, 1, static_cast<size_t>(bufferSize));
+	deMemcpy(conditionBufferPtr + dataOffset, &data.conditionValue, sizeof(data.conditionValue));
 
 	vk::flushMappedMemoryRange(	vk,
 								context.getDevice(),
@@ -67,11 +71,11 @@ de::SharedPtr<Draw::Buffer>	createConditionalRenderingBuffer (vkt::Context& cont
 void beginConditionalRendering (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, Draw::Buffer& buffer, const ConditionalData& data)
 {
 	vk::VkConditionalRenderingBeginInfoEXT conditionalRenderingBeginInfo;
-	conditionalRenderingBeginInfo.sType = vk::VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT;
-	conditionalRenderingBeginInfo.pNext = DE_NULL;
-	conditionalRenderingBeginInfo.buffer = buffer.object();
-	conditionalRenderingBeginInfo.offset = 0;
-	conditionalRenderingBeginInfo.flags = data.conditionInverted ? vk::VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT : 0;
+	conditionalRenderingBeginInfo.sType		= vk::VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT;
+	conditionalRenderingBeginInfo.pNext		= nullptr;
+	conditionalRenderingBeginInfo.buffer	= buffer.object();
+	conditionalRenderingBeginInfo.offset	= static_cast<vk::VkDeviceSize>(data.padConditionValue ? sizeof(data.conditionValue) : 0u);
+	conditionalRenderingBeginInfo.flags		= data.conditionInverted ? vk::VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT : 0;
 
 	vk.cmdBeginConditionalRenderingEXT(cmdBuffer, &conditionalRenderingBeginInfo);
 }
@@ -85,7 +89,8 @@ std::ostream& operator<< (std::ostream& str, ConditionalData const& c)
 	{
 		str << "_secondary_buffer";
 	}
-	else if (c.conditionInherited)
+
+	if (c.conditionInherited)
 	{
 		str << "_inherited";
 	}
@@ -95,6 +100,11 @@ std::ostream& operator<< (std::ostream& str, ConditionalData const& c)
 	if (c.conditionInverted)
 	{
 		str << "_inverted";
+	}
+
+	if (c.padConditionValue)
+	{
+		str << "_padded";
 	}
 
 	return str;
