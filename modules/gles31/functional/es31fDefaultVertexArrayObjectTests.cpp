@@ -41,12 +41,21 @@ class VertexAttributeDivisorCase : public TestCase
 {
 public:
 					VertexAttributeDivisorCase	(Context& context, const char* name, const char* description);
+	void			init						(void);
 	IterateResult	iterate						(void);
 };
 
 VertexAttributeDivisorCase::VertexAttributeDivisorCase (Context& context, const char* name, const char* description)
 	: TestCase(context, name, description)
 {
+}
+
+void VertexAttributeDivisorCase::init (void)
+{
+	if (!glu::isContextTypeES(m_context.getRenderContext().getType()))
+	{
+		throw tcu::NotSupportedError("The Use VertexAttribDivisor with default VAO test is not supported in the GL context");
+	}
 }
 
 VertexAttributeDivisorCase::IterateResult VertexAttributeDivisorCase::iterate (void)
