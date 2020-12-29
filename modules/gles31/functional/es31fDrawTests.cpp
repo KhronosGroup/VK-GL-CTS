@@ -178,9 +178,9 @@ static void addTestIterations (gls::DrawTest* test, gls::DrawTestSpec& spec, Tes
 		DE_ASSERT(false);
 }
 
-static void genBasicSpec (gls::DrawTestSpec& spec, gls::DrawTestSpec::DrawMethod method)
+static void genBasicSpec (gls::DrawTestSpec& spec, glu::ContextType contextType, gls::DrawTestSpec::DrawMethod method)
 {
-	spec.apiType							= glu::ApiType::es(3,1);
+	spec.apiType							= glu::isContextTypeES(contextType) ? glu::ApiType::es(3, 1) : contextType.getAPI();
 	spec.primitive							= gls::DrawTestSpec::PRIMITIVE_TRIANGLES;
 	spec.primitiveCount						= 5;
 	spec.drawMethod							= method;
@@ -260,9 +260,10 @@ void AttributeGroup::init (void)
 	// Single attribute
 	{
 		gls::DrawTest*		test				= new gls::DrawTest(m_testCtx, m_context.getRenderContext(), "single_attribute", "Single attribute array.");
+		glu::ContextType	contextType			= m_context.getRenderContext().getType();
 		gls::DrawTestSpec	spec;
 
-		spec.apiType							= glu::ApiType::es(3,1);
+		spec.apiType							= glu::isContextTypeES(contextType) ? glu::ApiType::es(3, 1) : contextType.getAPI();
 		spec.primitive							= m_primitive;
 		spec.primitiveCount						= 5;
 		spec.drawMethod							= m_method;
@@ -296,9 +297,10 @@ void AttributeGroup::init (void)
 	// Multiple attribute
 	{
 		gls::DrawTest*		test				= new gls::DrawTest(m_testCtx, m_context.getRenderContext(), "multiple_attributes", "Multiple attribute arrays.");
+		glu::ContextType	contextType			= m_context.getRenderContext().getType();
 		gls::DrawTestSpec	spec;
 
-		spec.apiType							= glu::ApiType::es(3,1);
+		spec.apiType							= glu::isContextTypeES(contextType) ? glu::ApiType::es(3, 1) : contextType.getAPI();
 		spec.primitive							= m_primitive;
 		spec.primitiveCount						= 5;
 		spec.drawMethod							= m_method;
@@ -343,9 +345,10 @@ void AttributeGroup::init (void)
 	// Multiple attribute, second one divided
 	{
 		gls::DrawTest*		test					= new gls::DrawTest(m_testCtx, m_context.getRenderContext(), "instanced_attributes", "Instanced attribute array.");
+		glu::ContextType	contextType				= m_context.getRenderContext().getType();
 		gls::DrawTestSpec	spec;
 
-		spec.apiType								= glu::ApiType::es(3,1);
+		spec.apiType								= glu::isContextTypeES(contextType) ? glu::ApiType::es(3, 1) : contextType.getAPI();
 		spec.primitive								= m_primitive;
 		spec.primitiveCount							= 5;
 		spec.drawMethod								= m_method;
@@ -404,9 +407,10 @@ void AttributeGroup::init (void)
 	// Multiple attribute, second one default
 	{
 		gls::DrawTest*		test				= new gls::DrawTest(m_testCtx, m_context.getRenderContext(), "default_attribute", "Attribute specified with glVertexAttrib*.");
+		glu::ContextType	contextType			= m_context.getRenderContext().getType();
 		gls::DrawTestSpec	spec;
 
-		spec.apiType							= glu::ApiType::es(3,1);
+		spec.apiType							= glu::isContextTypeES(contextType) ? glu::ApiType::es(3, 1) : contextType.getAPI();
 		spec.primitive							= m_primitive;
 		spec.primitiveCount						= 5;
 		spec.drawMethod							= m_method;
@@ -505,7 +509,7 @@ void IndexGroup::init (void)
 	};
 
 	gls::DrawTestSpec spec;
-	genBasicSpec(spec, m_method);
+	genBasicSpec(spec, m_context.getRenderContext().getType(), m_method);
 
 	spec.indexStorage = gls::DrawTestSpec::STORAGE_BUFFER;
 
@@ -572,7 +576,7 @@ void BaseVertexGroup::init (void)
 	};
 
 	gls::DrawTestSpec spec;
-	genBasicSpec(spec, m_method);
+	genBasicSpec(spec, m_context.getRenderContext().getType(), m_method);
 
 	spec.indexStorage = gls::DrawTestSpec::STORAGE_BUFFER;
 
@@ -627,7 +631,7 @@ void FirstGroup::init (void)
 	};
 
 	gls::DrawTestSpec spec;
-	genBasicSpec(spec, m_method);
+	genBasicSpec(spec, m_context.getRenderContext().getType(), m_method);
 
 	for (int firstNdx = 0; firstNdx < DE_LENGTH_OF_ARRAY(firsts); ++firstNdx)
 	{
@@ -2139,6 +2143,8 @@ void RandomGroup::init (void)
 
 	std::set<deUint32>	insertedHashes;
 	size_t				insertedCount = 0;
+	glu::ContextType	contextType = m_context.getRenderContext().getType();
+	glu::ApiType		apiType = glu::isContextTypeES(contextType) ? glu::ApiType::es(3,1) : contextType.getAPI();
 
 	for (int ndx = 0; ndx < numAttempts; ++ndx)
 	{
@@ -2148,7 +2154,7 @@ void RandomGroup::init (void)
 		int					drawCommandSize;
 		gls::DrawTestSpec	spec;
 
-		spec.apiType				= glu::ApiType::es(3,1);
+		spec.apiType				= apiType;
 		spec.primitive				= random.chooseWeighted<gls::DrawTestSpec::Primitive>	(DE_ARRAY_BEGIN(primitives),		DE_ARRAY_END(primitives),		primitiveWeights.weights);
 		spec.primitiveCount			= random.chooseWeighted<int, const int*, const float*>	(DE_ARRAY_BEGIN(primitiveCounts),	DE_ARRAY_END(primitiveCounts),	primitiveCountWeights);
 		spec.drawMethod				= random.chooseWeighted<gls::DrawTestSpec::DrawMethod>	(DE_ARRAY_BEGIN(drawMethods),		DE_ARRAY_END(drawMethods),		drawMethodWeights.weights);
@@ -2449,6 +2455,14 @@ BadStateCase::~BadStateCase (void)
 
 void BadStateCase::init (void)
 {
+	if (!glu::isContextTypeES(m_context.getRenderContext().getType()))
+	{
+		if (m_caseType == CASE_CLIENT_BUFFER_VERTEXATTR)
+			throw tcu::NotSupportedError("The negative test for vertex attrib array in the client memory is not supported in the GL context");
+		if (m_caseType == CASE_DEFAULT_VAO)
+			throw tcu::NotSupportedError("The negative test for use with default vao is not supported in the GL context");
+	}
+
 }
 
 void BadStateCase::deinit (void)
