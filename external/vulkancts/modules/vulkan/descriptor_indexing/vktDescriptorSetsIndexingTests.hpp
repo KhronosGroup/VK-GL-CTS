@@ -120,6 +120,7 @@ std::string				buildShaderName			(VkShaderStageFlagBits			stage,
 												VkDescriptorType				descriptorType,
 												deBool							updateAfterBind,
 												bool							calculateInLoop,
+												bool							minNonUniform,
 												bool							performWritesInVertex);
 
 std::vector<deUint32>	generatePrimes			(deUint32						limit);

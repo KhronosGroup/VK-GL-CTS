@@ -75,6 +75,7 @@ std::string buildShaderName			(VkShaderStageFlagBits			stage,
 									 VkDescriptorType				descriptorType,
 									 deBool							updateAfterBind,
 									 bool							calculateInLoop,
+									 bool							minNonUniform,
 									 bool							performWritesInVertex)
 {
 	const char* stageName = DE_NULL;
@@ -95,9 +96,10 @@ std::string buildShaderName			(VkShaderStageFlagBits			stage,
 	m["DESC"]	= de::toString(deUint32(descriptorType));
 	m["ABIND"]	= updateAfterBind		? "_afterBind"		: "";
 	m["LOOP"]	= calculateInLoop		? "_inLoop"			: "";
+	m["MINNU"]	= minNonUniform			? "_minNonUniform"	: "";
 	m["SHWR"]	= performWritesInVertex	? "_shaderWrites"	: "";
 
-	return tcu::StringTemplate("descriptorIndexing_${STAGE}${DESC}${ABIND}${LOOP}${SHWR}").specialize(m);
+	return tcu::StringTemplate("descriptorIndexing_${STAGE}${DESC}${ABIND}${LOOP}${MINNU}${SHWR}").specialize(m);
 }
 
 std::vector<deUint32> generatePrimes (deUint32						limit)
