@@ -119,7 +119,9 @@ TexBindingCase::TexBindingCase (Context& context, const char* name, const char* 
 
 void TexBindingCase::init (void)
 {
-	if (contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	auto ctxType = m_context.getRenderContext().getType();
+	if (contextSupports(ctxType, glu::ApiType::es(3, 2)) ||
+		contextSupports(ctxType, glu::ApiType::core(4, 5)))
 		return;
 
 	if (m_texTarget == GL_TEXTURE_2D_MULTISAMPLE_ARRAY && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
@@ -204,7 +206,8 @@ MinimumValueCase::MinimumValueCase (Context& context, const char* name, const ch
 
 MinimumValueCase::IterateResult MinimumValueCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(m_context.getRenderContext().getType(), m_minimumVersion), "Test not supported in this context version.");
+	if (!contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)))
+		TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(m_context.getRenderContext().getType(), m_minimumVersion), "Test not supported in this context version.");
 
 	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
@@ -258,7 +261,8 @@ AlignmentCase::AlignmentCase (Context& context, const char* name, const char* de
 
 AlignmentCase::IterateResult AlignmentCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(m_context.getRenderContext().getType(), m_minimumVersion), "Test not supported in this context.");
+	if (!contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)))
+		TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(m_context.getRenderContext().getType(), m_minimumVersion), "Test not supported in this context.");
 
 	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
@@ -508,7 +512,8 @@ CombinedUniformComponentsCase::CombinedUniformComponentsCase (Context& context, 
 
 CombinedUniformComponentsCase::IterateResult CombinedUniformComponentsCase::iterate (void)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(m_context.getRenderContext().getType(), m_minimumVersion), "Test not supported in this context.");
+	if (!contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)))
+		TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(m_context.getRenderContext().getType(), m_minimumVersion), "Test not supported in this context.");
 
 	glu::CallLogWrapper		gl							(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result						(m_testCtx.getLog(), " // ERROR: ");
