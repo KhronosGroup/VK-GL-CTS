@@ -431,7 +431,7 @@ void GLES31FunctionalTests::init (void)
 	addChild(new TessellationGeometryInteractionTests	(m_context));
 	addChild(new DebugTests								(m_context));
 	addChild(new FboTests								(m_context));
-	addChild(new ProgramInterfaceQueryTests				(m_context));
+	addChild(new ProgramInterfaceQueryTests				(m_context, false));
 	addChild(new LayoutBindingTests						(m_context));
 	addChild(new PrimitiveBoundingBoxTests				(m_context));
 	addChild(new AndroidExtensionPackES31ATests			(m_context));
@@ -476,7 +476,7 @@ void GL45FunctionalTests::init (void)
 	addChild(new TessellationGeometryInteractionTests	(m_context));
 	addChild(new DebugTests								(m_context));
 	addChild(new FboTests								(m_context));
-	addChild(new ProgramInterfaceQueryTests				(m_context));
+	addChild(new ProgramInterfaceQueryTests				(m_context, true));
 	addChild(new LayoutBindingTests						(m_context));
 	addChild(new PrimitiveBoundingBoxTests				(m_context));
 	addChild(createCopyImageTests						(m_context));

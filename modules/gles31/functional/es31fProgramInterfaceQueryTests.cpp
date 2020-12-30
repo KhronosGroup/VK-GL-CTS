@@ -209,6 +209,13 @@ static glu::ShaderType getShaderMaskLastStage (deUint32 mask)
 	return glu::SHADERTYPE_LAST;
 }
 
+static bool checkSupport(Context& ctx)
+{
+	auto ctxType = ctx.getRenderContext().getType();
+	return contextSupports(ctxType, glu::ApiType::es(3, 2)) ||
+		   contextSupports(ctxType, glu::ApiType::core(4, 5));
+}
+
 static std::string specializeShader(Context& context, const char* code)
 {
 	const glu::GLSLVersion				glslVersion			= glu::getContextTypeGLSLVersion(context.getRenderContext().getType());
@@ -922,20 +929,20 @@ ResourceListTestCase::~ResourceListTestCase (void)
 void ResourceListTestCase::init (void)
 {
 	m_programDefinition	= generateProgramDefinitionFromResource(m_targetResource.get()).release();
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool supportsES32orGL45 = checkSupport(m_context);
 
 	if ((m_programDefinition->hasStage(glu::SHADERTYPE_TESSELLATION_CONTROL) || m_programDefinition->hasStage(glu::SHADERTYPE_TESSELLATION_EVALUATION)) &&
-		!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+		!supportsES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
 	{
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
 	}
 	if (m_programDefinition->hasStage(glu::SHADERTYPE_GEOMETRY) &&
-		!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+		!supportsES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
 	{
 		throw tcu::NotSupportedError("Test requires GL_EXT_geometry_shader extension");
 	}
 	if (programContainsIOBlocks(m_programDefinition) &&
-		!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_shader_io_blocks"))
+		!supportsES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_shader_io_blocks"))
 	{
 		throw tcu::NotSupportedError("Test requires GL_EXT_shader_io_blocks extension");
 	}
@@ -2715,11 +2722,11 @@ void AtomicCounterReferencedByCase::init (void)
 	const deUint32				tessellationMask	= (1 << glu::SHADERTYPE_TESSELLATION_CONTROL) | (1 << glu::SHADERTYPE_TESSELLATION_EVALUATION);
 	glu::VariableDeclaration	atomicVar			(glu::VarType(glu::TYPE_UINT_ATOMIC_COUNTER, glu::PRECISION_LAST), "targetCounter", glu::STORAGE_UNIFORM);
 	const glu::GLSLVersion		glslVersion			= glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
-	const bool					supportsES32		= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool					supportsES32orGL45	= checkSupport(m_context);
 
-	if ((m_presentStagesMask & tessellationMask) != 0 && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+	if ((m_presentStagesMask & tessellationMask) != 0 && !supportsES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
-	if ((m_presentStagesMask & geometryMask) != 0 && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if ((m_presentStagesMask & geometryMask) != 0 && !supportsES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_geometry_shader extension");
 
 	atomicVar.layout.binding = 1;
@@ -2751,7 +2758,9 @@ void AtomicCounterReferencedByCase::deinit (void)
 
 AtomicCounterReferencedByCase::IterateResult AtomicCounterReferencedByCase::iterate (void)
 {
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glu::RenderContext& rc = m_context.getRenderContext();
+	const bool isES32orGL45 = glu::contextSupports(rc.getType(), glu::ApiType::es(3, 2)) ||
+							  glu::contextSupports(rc.getType(), glu::ApiType::core(4, 5));
 
 	const struct
 	{
@@ -2763,16 +2772,16 @@ AtomicCounterReferencedByCase::IterateResult AtomicCounterReferencedByCase::iter
 		{ GL_REFERENCED_BY_VERTEX_SHADER,			glu::SHADERTYPE_VERTEX,						DE_NULL												},
 		{ GL_REFERENCED_BY_FRAGMENT_SHADER,			glu::SHADERTYPE_FRAGMENT,					DE_NULL												},
 		{ GL_REFERENCED_BY_COMPUTE_SHADER,			glu::SHADERTYPE_COMPUTE,					DE_NULL												},
-		{ GL_REFERENCED_BY_TESS_CONTROL_SHADER,		glu::SHADERTYPE_TESSELLATION_CONTROL,		(supportsES32 ? DE_NULL : "GL_EXT_tessellation_shader")	},
-		{ GL_REFERENCED_BY_TESS_EVALUATION_SHADER,	glu::SHADERTYPE_TESSELLATION_EVALUATION,	(supportsES32 ? DE_NULL : "GL_EXT_tessellation_shader")	},
-		{ GL_REFERENCED_BY_GEOMETRY_SHADER,			glu::SHADERTYPE_GEOMETRY,					(supportsES32 ? DE_NULL : "GL_EXT_geometry_shader")		},
+		{ GL_REFERENCED_BY_TESS_CONTROL_SHADER,		glu::SHADERTYPE_TESSELLATION_CONTROL,		(isES32orGL45 ? DE_NULL : "GL_EXT_tessellation_shader")	},
+		{ GL_REFERENCED_BY_TESS_EVALUATION_SHADER,	glu::SHADERTYPE_TESSELLATION_EVALUATION,	(isES32orGL45 ? DE_NULL : "GL_EXT_tessellation_shader")	},
+		{ GL_REFERENCED_BY_GEOMETRY_SHADER,			glu::SHADERTYPE_GEOMETRY,					(isES32orGL45 ? DE_NULL : "GL_EXT_geometry_shader")		},
 	};
 
-	const glw::Functions&		gl			= m_context.getRenderContext().getFunctions();
-	const glu::ShaderProgram	program		(m_context.getRenderContext(), generateProgramInterfaceProgramSources(m_program));
+	const glw::Functions&		gl			= rc.getFunctions();
+	const glu::ShaderProgram	program		(rc, generateProgramInterfaceProgramSources(m_program));
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	checkAndLogProgram(program, m_program, m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	checkAndLogProgram(program, m_program, rc.getFunctions(), m_testCtx.getLog());
 
 	// check props
 	for (int propNdx = 0; propNdx < DE_LENGTH_OF_ARRAY(targetProps); ++propNdx)
@@ -2864,11 +2873,11 @@ void ProgramInputOutputReferencedByCase::init (void)
 	const bool hasGeometryShader =		(m_caseType == CASE_VERTEX_GEO_FRAGMENT)		||
 										(m_caseType == CASE_VERTEX_TESS_GEO_FRAGMENT)	||
 										(m_caseType == CASE_SEPARABLE_GEOMETRY);
-	const bool supportsES32 =			glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool supportsES32orGL45 =		checkSupport(m_context);
 
-	if (hasTessellationShader && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+	if (hasTessellationShader && !supportsES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
-	if (hasGeometryShader && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (hasGeometryShader && !supportsES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_geometry_shader extension");
 
 	glu::GLSLVersion glslVersion = glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
@@ -5036,7 +5045,7 @@ void AtomicCounterTestGroup::init (void)
 	}
 }
 
-static void generateProgramInputOutputShaderCaseBlocks (Context& context, tcu::TestCaseGroup* targetGroup, glu::GLSLVersion glslVersion, bool withCompute, bool inputCase, void (*blockContentGenerator)(Context&, const ResourceDefinition::Node::SharedPtr&, tcu::TestCaseGroup*, deUint32))
+static void generateProgramInputOutputShaderCaseBlocks (Context& context, tcu::TestCaseGroup* targetGroup, glu::GLSLVersion glslVersion, bool withCompute, bool inputCase, bool isGL45, void (*blockContentGenerator)(Context&, const ResourceDefinition::Node::SharedPtr&, tcu::TestCaseGroup*, deUint32, bool))
 {
 	static const struct
 	{
@@ -5064,7 +5073,7 @@ static void generateProgramInputOutputShaderCaseBlocks (Context& context, tcu::T
 
 		targetGroup->addChild(blockGroup);
 
-		blockContentGenerator(context, defaultBlock, blockGroup, (1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT));
+		blockContentGenerator(context, defaultBlock, blockGroup, (1 << glu::SHADERTYPE_VERTEX) | (1 << glu::SHADERTYPE_FRAGMENT), isGL45);
 	}
 
 	// .separable_*
@@ -5076,7 +5085,7 @@ static void generateProgramInputOutputShaderCaseBlocks (Context& context, tcu::T
 		const ResourceDefinition::Node::SharedPtr	defaultBlock		(new ResourceDefinition::DefaultBlock(shader));
 
 		targetGroup->addChild(blockGroup);
-		blockContentGenerator(context, defaultBlock, blockGroup, (1 << singleStageCases[ndx].stage));
+		blockContentGenerator(context, defaultBlock, blockGroup, (1 << singleStageCases[ndx].stage), isGL45);
 	}
 
 	// .compute
@@ -5089,7 +5098,7 @@ static void generateProgramInputOutputShaderCaseBlocks (Context& context, tcu::T
 
 		targetGroup->addChild(blockGroup);
 
-		blockContentGenerator(context, defaultBlock, blockGroup, (1 << glu::SHADERTYPE_COMPUTE));
+		blockContentGenerator(context, defaultBlock, blockGroup, (1 << glu::SHADERTYPE_COMPUTE), isGL45);
 	}
 
 	// .interface_blocks
@@ -5148,7 +5157,7 @@ static void generateProgramInputOutputShaderCaseBlocks (Context& context, tcu::T
 
 				ioBlockGroup->addChild(blockGroup);
 
-				blockContentGenerator(context, block, blockGroup, (1 << shaderType));
+				blockContentGenerator(context, block, blockGroup, (1 << shaderType), isGL45);
 			}
 
 			// .named_block_explicit_location
@@ -5159,17 +5168,18 @@ static void generateProgramInputOutputShaderCaseBlocks (Context& context, tcu::T
 
 				ioBlockGroup->addChild(blockGroup);
 
-				blockContentGenerator(context, block, blockGroup, (1 << shaderType));
+				blockContentGenerator(context, block, blockGroup, (1 << shaderType), isGL45);
 			}
 
 			// .unnamed_block
+			if (!isGL45)
 			{
 				const ResourceDefinition::Node::SharedPtr	block		(new ResourceDefinition::InterfaceBlock(storage, false));
 				tcu::TestCaseGroup* const					blockGroup	= new TestCaseGroup(context, "unnamed_block", "Unnamed block");
 
 				ioBlockGroup->addChild(blockGroup);
 
-				blockContentGenerator(context, block, blockGroup, (1 << shaderType));
+				blockContentGenerator(context, block, blockGroup, (1 << shaderType), isGL45);
 			}
 
 			// .block_array
@@ -5180,7 +5190,7 @@ static void generateProgramInputOutputShaderCaseBlocks (Context& context, tcu::T
 
 				ioBlockGroup->addChild(blockGroup);
 
-				blockContentGenerator(context, block, blockGroup, (1 << shaderType));
+				blockContentGenerator(context, block, blockGroup, (1 << shaderType), isGL45);
 			}
 		}
 	}
@@ -5394,13 +5404,15 @@ static void addProgramInputOutputResourceListCase (Context& context, const Resou
 	targetGroup->addChild(resourceListCase);
 }
 
-static void generateProgramInputResourceListBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask)
+static void generateProgramInputResourceListBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask, bool isGL45)
 {
+	DE_UNREF(isGL45);
 	generateProgramInputBlockContents(context, parentStructure, targetGroup, presentShadersMask, true, addProgramInputOutputResourceListCase);
 }
 
-static void generateProgramOutputResourceListBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask)
+static void generateProgramOutputResourceListBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask, bool isGL45)
 {
+	DE_UNREF(isGL45);
 	generateProgramOutputBlockContents(context, parentStructure, targetGroup, presentShadersMask, true, addProgramInputOutputResourceListCase);
 }
 
@@ -5412,19 +5424,22 @@ static void addProgramInputOutputResourceTestCase (Context& context, const Resou
 }
 
 template <ProgramResourcePropFlags TargetProp>
-static void generateProgramInputBasicBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask)
+static void generateProgramInputBasicBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask, bool isGL45)
 {
+	DE_UNREF(isGL45);
 	generateProgramInputBlockContents(context, parentStructure, targetGroup, presentShadersMask, false, addProgramInputOutputResourceTestCase<TargetProp>);
 }
 
 template <ProgramResourcePropFlags TargetProp>
-static void generateProgramOutputBasicBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask)
+static void generateProgramOutputBasicBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask, bool isGL45)
 {
+	DE_UNREF(isGL45);
 	generateProgramOutputBlockContents(context, parentStructure, targetGroup, presentShadersMask, false, addProgramInputOutputResourceTestCase<TargetProp>);
 }
 
-static void generateProgramInputLocationBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask)
+static void generateProgramInputLocationBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask, bool isGL45)
 {
+	DE_UNREF(isGL45);
 	const bool									inDefaultBlock	= parentStructure->getType() == ResourceDefinition::Node::TYPE_DEFAULT_BLOCK;
 	const ResourceDefinition::Node::SharedPtr	input			= (inDefaultBlock)
 																	? (ResourceDefinition::Node::SharedPtr(new ResourceDefinition::StorageQualifier(parentStructure, glu::STORAGE_IN)))
@@ -5573,13 +5588,15 @@ static void generateProgramInputLocationBlockContents (Context& context, const R
 		DE_ASSERT(false);
 }
 
-static void generateProgramOutputLocationBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask)
+static void generateProgramOutputLocationBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask, bool isGL45)
 {
 	const bool									inDefaultBlock	= parentStructure->getType() == ResourceDefinition::Node::TYPE_DEFAULT_BLOCK;
 	const ResourceDefinition::Node::SharedPtr	output			= (inDefaultBlock)
 																	? (ResourceDefinition::Node::SharedPtr(new ResourceDefinition::StorageQualifier(parentStructure, glu::STORAGE_OUT)))
 																	: (parentStructure);
 	const glu::ShaderType						lastStage		= getShaderMaskLastStage(presentShadersMask);
+
+	const bool									inBlockArray	= 0 == deStringEqual("block_array", targetGroup->getName());
 
 	if (lastStage == glu::SHADERTYPE_VERTEX						||
 		lastStage == glu::SHADERTYPE_GEOMETRY					||
@@ -5592,6 +5609,7 @@ static void generateProgramOutputLocationBlockContents (Context& context, const 
 			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "var"));
 		}
 		// .var_explicit_location
+		if (!(isGL45 && inBlockArray))
 		{
 			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(output, glu::Layout(2)));
 			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(layout, glu::TYPE_FLOAT_VEC4));
@@ -5604,6 +5622,7 @@ static void generateProgramOutputLocationBlockContents (Context& context, const 
 			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "var_struct"));
 		}
 		// .var_struct_explicit_location
+		if (!(isGL45 && inBlockArray))
 		{
 			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(output, glu::Layout(2)));
 			const ResourceDefinition::Node::SharedPtr structMbr	(new ResourceDefinition::StructMember(layout));
@@ -5617,6 +5636,7 @@ static void generateProgramOutputLocationBlockContents (Context& context, const 
 			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "var_array"));
 		}
 		// .var_array_explicit_location
+		if (!(isGL45 && inBlockArray))
 		{
 			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(output, glu::Layout(2)));
 			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(layout));
@@ -5632,6 +5652,7 @@ static void generateProgramOutputLocationBlockContents (Context& context, const 
 			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "var"));
 		}
 		// .var_explicit_location
+		if (!(isGL45 && inBlockArray))
 		{
 			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(output, glu::Layout(2)));
 			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(layout, glu::TYPE_FLOAT_VEC4));
@@ -5644,6 +5665,7 @@ static void generateProgramOutputLocationBlockContents (Context& context, const 
 			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "var_array"));
 		}
 		// .var_array_explicit_location
+		if (!(isGL45 && inBlockArray))
 		{
 			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(output, glu::Layout(1)));
 			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(layout));
@@ -5788,8 +5810,9 @@ static void generateProgramInputOutputTypeBasicTypeCases (Context& context, cons
 	}
 }
 
-static void generateProgramInputTypeBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask)
+static void generateProgramInputTypeBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask, bool isGL45)
 {
+	DE_UNREF(isGL45);
 	const bool									inDefaultBlock						= parentStructure->getType() == ResourceDefinition::Node::TYPE_DEFAULT_BLOCK;
 	const ResourceDefinition::Node::SharedPtr	input								= (inDefaultBlock)
 																						? (ResourceDefinition::Node::SharedPtr(new ResourceDefinition::StorageQualifier(parentStructure, glu::STORAGE_IN)))
@@ -5884,8 +5907,9 @@ static void generateProgramInputTypeBlockContents (Context& context, const Resou
 		DE_ASSERT(false);
 }
 
-static void generateProgramOutputTypeBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask)
+static void generateProgramOutputTypeBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask, bool isGL45)
 {
+	DE_UNREF(isGL45);
 	const bool									inDefaultBlock						= parentStructure->getType() == ResourceDefinition::Node::TYPE_DEFAULT_BLOCK;
 	const ResourceDefinition::Node::SharedPtr	output								= (inDefaultBlock)
 																						? (ResourceDefinition::Node::SharedPtr(new ResourceDefinition::StorageQualifier(parentStructure, glu::STORAGE_OUT)))
@@ -5992,12 +6016,16 @@ static void generateProgramOutputTypeBlockContents (Context& context, const Reso
 class ProgramInputTestGroup : public TestCaseGroup
 {
 public:
-			ProgramInputTestGroup	(Context& context);
+			ProgramInputTestGroup	(Context& context, bool is_GL45);
 	void	init					(void);
+
+private:
+	bool m_isGL45;
 };
 
-ProgramInputTestGroup::ProgramInputTestGroup (Context& context)
+ProgramInputTestGroup::ProgramInputTestGroup (Context& context, bool is_GL45)
 	: TestCaseGroup(context, "program_input", "Program input")
+	, m_isGL45(is_GL45)
 {
 }
 
@@ -6009,28 +6037,28 @@ void ProgramInputTestGroup::init (void)
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "resource_list", "Resource list");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, true, true, generateProgramInputResourceListBlockContents);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, true, true, m_isGL45, generateProgramInputResourceListBlockContents);
 	}
 
 	// .array_size
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "array_size", "Array size");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, true, generateProgramInputBasicBlockContents<PROGRAMRESOURCEPROP_ARRAY_SIZE>);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, true, m_isGL45, generateProgramInputBasicBlockContents<PROGRAMRESOURCEPROP_ARRAY_SIZE>);
 	}
 
 	// .location
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "location", "Location");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, true, generateProgramInputLocationBlockContents);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, true, m_isGL45, generateProgramInputLocationBlockContents);
 	}
 
 	// .name_length
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "name_length", "Name length");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, true, generateProgramInputBasicBlockContents<PROGRAMRESOURCEPROP_NAME_LENGTH>);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, true, m_isGL45, generateProgramInputBasicBlockContents<PROGRAMRESOURCEPROP_NAME_LENGTH>);
 	}
 
 	// .referenced_by
@@ -6044,26 +6072,30 @@ void ProgramInputTestGroup::init (void)
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "type", "Type");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, true, generateProgramInputTypeBlockContents);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, true, m_isGL45, generateProgramInputTypeBlockContents);
 	}
 
 	// .is_per_patch
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "is_per_patch", "Is per patch");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, true, generateProgramInputBasicBlockContents<PROGRAMRESOURCEPROP_IS_PER_PATCH>);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, true, m_isGL45, generateProgramInputBasicBlockContents<PROGRAMRESOURCEPROP_IS_PER_PATCH>);
 	}
 }
 
 class ProgramOutputTestGroup : public TestCaseGroup
 {
 public:
-			ProgramOutputTestGroup	(Context& context);
+			ProgramOutputTestGroup	(Context& context, bool is_GL45);
 	void	init					(void);
+
+private:
+	bool m_isGL45;
 };
 
-ProgramOutputTestGroup::ProgramOutputTestGroup (Context& context)
+ProgramOutputTestGroup::ProgramOutputTestGroup (Context& context, bool is_GL45)
 	: TestCaseGroup(context, "program_output", "Program output")
+	, m_isGL45(is_GL45)
 {
 }
 
@@ -6075,28 +6107,28 @@ void ProgramOutputTestGroup::init (void)
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "resource_list", "Resource list");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, true, false, generateProgramOutputResourceListBlockContents);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, true, false, m_isGL45, generateProgramOutputResourceListBlockContents);
 	}
 
 	// .array_size
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "array_size", "Array size");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, false, generateProgramOutputBasicBlockContents<PROGRAMRESOURCEPROP_ARRAY_SIZE>);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, false, m_isGL45, generateProgramOutputBasicBlockContents<PROGRAMRESOURCEPROP_ARRAY_SIZE>);
 	}
 
 	// .location
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "location", "Location");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, false, generateProgramOutputLocationBlockContents);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, false, m_isGL45, generateProgramOutputLocationBlockContents);
 	}
 
 	// .name_length
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "name_length", "Name length");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, false, generateProgramOutputBasicBlockContents<PROGRAMRESOURCEPROP_NAME_LENGTH>);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, false, m_isGL45, generateProgramOutputBasicBlockContents<PROGRAMRESOURCEPROP_NAME_LENGTH>);
 	}
 
 	// .referenced_by
@@ -6110,14 +6142,14 @@ void ProgramOutputTestGroup::init (void)
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "type", "Type");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, false, generateProgramOutputTypeBlockContents);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, false, m_isGL45, generateProgramOutputTypeBlockContents);
 	}
 
 	// .is_per_patch
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "is_per_patch", "Is per patch");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, false, generateProgramOutputBasicBlockContents<PROGRAMRESOURCEPROP_IS_PER_PATCH>);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, false, m_isGL45, generateProgramOutputBasicBlockContents<PROGRAMRESOURCEPROP_IS_PER_PATCH>);
 	}
 }
 
@@ -7021,8 +7053,9 @@ void BufferVariableTestGroup::init (void)
 
 } // anonymous
 
-ProgramInterfaceQueryTests::ProgramInterfaceQueryTests (Context& context)
+ProgramInterfaceQueryTests::ProgramInterfaceQueryTests (Context& context, bool is_GL45)
 	: TestCaseGroup(context, "program_interface_query", "Program interface query tests")
+	, m_isGL45 (is_GL45)
 {
 }
 
@@ -7056,10 +7089,10 @@ void ProgramInterfaceQueryTests::init (void)
 	addChild(new AtomicCounterTestGroup(m_context));
 
 	// .program_input
-	addChild(new ProgramInputTestGroup(m_context));
+	addChild(new ProgramInputTestGroup(m_context, m_isGL45));
 
 	// .program_output
-	addChild(new ProgramOutputTestGroup(m_context));
+	addChild(new ProgramOutputTestGroup(m_context, m_isGL45));
 
 	// .transform_feedback_varying
 	addChild(new TransformFeedbackVaryingTestGroup(m_context));
