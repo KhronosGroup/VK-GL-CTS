@@ -862,8 +862,8 @@ TestInstance* ImageTranscodingCase::createInstance (Context& context) const
 
 	if (differenceFound)
 	{
-		const auto portabilitySubsetFeatures = context.getPortabilitySubsetFeatures();
-		if (!portabilitySubsetFeatures.imageViewFormatReinterpretation)
+		if ((context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+			!context.getPortabilitySubsetFeatures().imageViewFormatReinterpretation))
 		{
 			tcu::TextureFormat	textureImageFormat	= vk::mapVkFormat(m_parameters.featuredFormat);
 			tcu::TextureFormat	textureViewFormat	= vk::mapVkFormat(featurelessFormat);
