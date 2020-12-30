@@ -26,6 +26,7 @@
 #include "tcuSurface.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuStringTemplate.hpp"
+#include "gluContextInfo.hpp"
 #include "gluShaderProgram.hpp"
 #include "gluRenderContext.hpp"
 #include "gluPixelTransfer.hpp"
@@ -116,9 +117,7 @@ void MultisampleRenderCase::init (void)
 
 		case TARGET_TEXTURE:
 		{
-			deInt32 maxTextureSamples = 0;
-			gl.getInternalformativ(GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA8, GL_SAMPLES, 1, &maxTextureSamples);
-
+			deInt32 maxTextureSamples = getMaxConformantSampleCount(GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA8);
 			if (m_numRequestedSamples > maxTextureSamples)
 				throw tcu::NotSupportedError("Sample count not supported");
 			break;
@@ -126,9 +125,7 @@ void MultisampleRenderCase::init (void)
 
 		case TARGET_RENDERBUFFER:
 		{
-			deInt32 maxRboSamples = 0;
-			gl.getInternalformativ(GL_RENDERBUFFER, GL_RGBA8, GL_SAMPLES, 1, &maxRboSamples);
-
+			deInt32 maxRboSamples = getMaxConformantSampleCount(GL_RENDERBUFFER, GL_RGBA8);
 			if (m_numRequestedSamples > maxRboSamples)
 				throw tcu::NotSupportedError("Sample count not supported");
 			break;
@@ -781,6 +778,46 @@ void MultisampleRenderCase::setupRenderData (void)
 
 	gl.bindBuffer(GL_ARRAY_BUFFER, m_buffer);
 	gl.bufferData(GL_ARRAY_BUFFER, (int)sizeof(fullscreenQuad), fullscreenQuad, GL_STATIC_DRAW);
+}
+
+glw::GLint MultisampleRenderCase::getMaxConformantSampleCount(glw::GLenum target, glw::GLenum internalFormat)
+{
+	deInt32					maxTextureSamples	= 0;
+	const glw::Functions&	gl					= m_context.getRenderContext().getFunctions();
+
+	if (m_context.getContextInfo().isExtensionSupported("GL_NV_internalformat_sample_query"))
+	{
+		glw::GLint gl_sample_counts = 0;
+		gl.getInternalformativ(target, internalFormat, GL_NUM_SAMPLE_COUNTS, 1, &gl_sample_counts);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetInternalformativ() failed for GL_NUM_SAMPLE_COUNTS pname");
+
+		/* Check and return the first conformant sample count */
+		glw::GLint* gl_supported_samples = new glw::GLint[gl_sample_counts];
+		if (gl_supported_samples)
+		{
+			gl.getInternalformativ(target, internalFormat, GL_SAMPLES, gl_sample_counts, gl_supported_samples);
+
+			for (glw::GLint i = 0; i < gl_sample_counts; i++)
+			{
+				glw::GLint isConformant = 0;
+				gl.getInternalformatSampleivNV(target, internalFormat, gl_supported_samples[i], GL_CONFORMANT_NV, 1,
+					&isConformant);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "glGetInternalformatSampleivNV() call(s) failed");
+
+				if (isConformant && gl_supported_samples[i] > maxTextureSamples)
+				{
+					maxTextureSamples = gl_supported_samples[i];
+				}
+			}
+			delete[] gl_supported_samples;
+		}
+	}
+	else
+	{
+		gl.getInternalformativ(target, internalFormat, GL_SAMPLES, 1, &maxTextureSamples);
+	}
+
+	return maxTextureSamples;
 }
 
 } // MultisampleShaderRenderUtil

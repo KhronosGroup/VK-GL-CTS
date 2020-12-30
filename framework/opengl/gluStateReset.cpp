@@ -1163,6 +1163,27 @@ void resetStateGLCore (const RenderContext& renderCtx, const ContextInfo& ctxInf
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Buffer copy state reset failed");
 	}
 
+	// Images.
+	if (contextSupports(type, ApiType::core(4,4)))
+	{
+		int numImageUnits = 0;
+		gl.getIntegerv(GL_MAX_IMAGE_UNITS, &numImageUnits);
+
+		for (int ndx = 0; ndx < numImageUnits; ndx++)
+			gl.bindImageTexture(ndx, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
+
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Image state reset failed");
+	}
+
+	// Sample shading state.
+	if (contextSupports(type, ApiType::core(2,0)))
+	{
+		gl.minSampleShading(0.0f);
+		gl.disable(GL_SAMPLE_SHADING);
+
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Sample shading state reset failed");
+	}
+
 	// Debug state
 	if (ctxInfo.isExtensionSupported("GL_KHR_debug"))
 	{

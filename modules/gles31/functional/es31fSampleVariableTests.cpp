@@ -276,8 +276,9 @@ MultisampleRenderCase::~MultisampleRenderCase (void)
 
 void MultisampleRenderCase::init (void)
 {
-	const bool	supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables"))
+	const bool supportsES32orGL45 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+		contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
+	if (!supportsES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables"))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_sample_variables extension or a context version 3.2 or higher.");
 
 	MultisampleShaderRenderUtil::MultisampleRenderCase::init();
@@ -920,9 +921,12 @@ SamplePosCorrectnessCase::~SamplePosCorrectnessCase (void)
 
 void SamplePosCorrectnessCase::init (void)
 {
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	auto		ctxType			= m_context.getRenderContext().getType();
+	const bool	isES32orGL45	= glu::contextSupports(ctxType, glu::ApiType::es(3, 2)) ||
+								  glu::contextSupports(ctxType, glu::ApiType::core(4, 5));
+
 	// requirements: per-invocation interpolation required
-	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation") &&
+	if (!isES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation") &&
 		!m_context.getContextInfo().isExtensionSupported("GL_OES_sample_shading"))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation or GL_OES_sample_shading extension or a context version 3.2 or higher.");
 
@@ -971,11 +975,14 @@ std::string SamplePosCorrectnessCase::genVertexSource (int numTargetSamples) con
 {
 	DE_UNREF(numTargetSamples);
 
+	auto		ctxType	= m_context.getRenderContext().getType();
+	const bool	isES32	= glu::contextSupports(ctxType, glu::ApiType::es(3, 2));
+	const bool	isGL45	= glu::contextSupports(ctxType, glu::ApiType::core(4, 5));
+
 	std::ostringstream	buf;
-	const bool			supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	map<string, string>	args;
-	args["GLSL_VERSION_DECL"]	= supportsES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	args["GLSL_EXTENSION"]		= supportsES32 ? "" : m_useSampleQualifier ? "#extension GL_OES_shader_multisample_interpolation : require" : "";
+	args["GLSL_VERSION_DECL"]	= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION"]		= (isES32 || isGL45) ? "" : m_useSampleQualifier ? "#extension GL_OES_shader_multisample_interpolation : require" : "";
 
 	buf <<	"${GLSL_VERSION_DECL}\n"
 			"${GLSL_EXTENSION}\n"
@@ -1078,9 +1085,10 @@ SampleMaskBaseCase::~SampleMaskBaseCase (void)
 
 void SampleMaskBaseCase::init (void)
 {
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool supportsES32orGL45 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+		contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
 	// required extra extension
-	if (m_runMode == RUN_PER_TWO_SAMPLES && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_sample_shading"))
+	if (m_runMode == RUN_PER_TWO_SAMPLES && !supportsES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_OES_sample_shading"))
 			TCU_THROW(NotSupportedError, "Test requires GL_OES_sample_shading extension or a context version 3.2 or higher.");
 
 	MultisampleRenderCase::init();
@@ -1208,10 +1216,11 @@ std::string SampleMaskCase::genFragmentSource (int numTargetSamples) const
 
 	const bool			multisampleTarget	= (m_numRequestedSamples > 0) || (m_renderTarget == TARGET_DEFAULT && m_context.getRenderTarget().getNumSamples() > 1);
 	std::ostringstream	buf;
-	const bool			supportsES32		= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool			supportsES32orGL45	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+							contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
 	map<string, string>	args;
-	args["GLSL_VERSION_DECL"]				= supportsES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	args["GLSL_EXTENSION"]					= supportsES32 ? "" : "#extension GL_OES_sample_variables : require";
+	args["GLSL_VERSION_DECL"]				= supportsES32orGL45 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION"]					= supportsES32orGL45 ? "" : "#extension GL_OES_sample_variables : require";
 
 	// test supports only one sample mask word
 	if (numTargetSamples > 32)
@@ -1367,10 +1376,11 @@ std::string SampleMaskCountCase::genFragmentSource (int numTargetSamples) const
 	DE_ASSERT(numTargetSamples != 0);
 
 	std::ostringstream	buf;
-	const bool			supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool			supportsES32orGL45	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+							contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
 	map<string, string>	args;
-	args["GLSL_VERSION_DECL"]	= supportsES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	args["GLSL_EXTENSION"]		= supportsES32 ? "" : "#extension GL_OES_sample_variables : require";
+	args["GLSL_VERSION_DECL"]	= supportsES32orGL45 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION"]		= supportsES32orGL45 ? "" : "#extension GL_OES_sample_variables : require";
 
 	// test supports only one sample mask word
 	if (numTargetSamples > 32)
@@ -1468,10 +1478,11 @@ std::string SampleMaskUniqueCase::genFragmentSource (int numTargetSamples) const
 	DE_ASSERT(numTargetSamples != 0);
 
 	std::ostringstream	buf;
-	const bool			supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool			supportsES32orGL45	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+							contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
 	map<string, string>	args;
-	args["GLSL_VERSION_DECL"]	= supportsES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	args["GLSL_EXTENSION"]		= supportsES32 ? "" : "#extension GL_OES_sample_variables : require";
+	args["GLSL_VERSION_DECL"]	= supportsES32orGL45 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION"]		= supportsES32orGL45 ? "" : "#extension GL_OES_sample_variables : require";
 
 	// test supports only one sample mask word
 	if (numTargetSamples > 32)
@@ -1711,10 +1722,11 @@ std::string SampleMaskUniqueSetCase::genFragmentSource (int numTargetSamples) co
 	DE_ASSERT(numTargetSamples != 0);
 
 	std::ostringstream	buf;
-	const bool			supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool			supportsES32orGL45	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+							contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
 	map<string, string>	args;
-	args["GLSL_VERSION_DECL"]	= supportsES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	args["GLSL_EXTENSION"]		= supportsES32 ? "" : "#extension GL_OES_sample_variables : require";
+	args["GLSL_VERSION_DECL"]	= supportsES32orGL45 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION"]		= supportsES32orGL45 ? "" : "#extension GL_OES_sample_variables : require";
 
 	// test supports only one sample mask word
 	if (numTargetSamples > 32)
@@ -2081,10 +2093,11 @@ std::string SampleMaskWriteCase::genFragmentSource (int numTargetSamples) const
 	DE_UNREF(numTargetSamples);
 
 	std::ostringstream	buf;
-	const bool			supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool			supportsES32orGL45	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+							contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
 	map<string, string>	args;
-	args["GLSL_VERSION_DECL"]	= supportsES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	args["GLSL_EXTENSION"]		= supportsES32 ? "" : "#extension GL_OES_sample_variables : require";
+	args["GLSL_VERSION_DECL"]	= supportsES32orGL45 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_EXTENSION"]		= supportsES32orGL45 ? "" : "#extension GL_OES_sample_variables : require";
 
 	if (m_testMode == TEST_DISCARD)
 	{

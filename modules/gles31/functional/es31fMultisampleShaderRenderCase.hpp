@@ -97,6 +97,8 @@ private:
 	virtual bool		verifySampleBuffers				(const std::vector<tcu::Surface>& resultBuffers);
 	virtual void		setupRenderData					(void);
 
+	glw::GLint			getMaxConformantSampleCount		(glw::GLenum target, glw::GLenum internalFormat);
+
 protected:
 	struct Attrib
 	{
