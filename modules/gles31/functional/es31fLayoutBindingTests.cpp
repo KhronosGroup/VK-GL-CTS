@@ -337,6 +337,7 @@ protected:
 	const glw::GLenum					m_maxFragmentUnitsEnum;
 	const glw::GLenum					m_maxCombinedUnitsEnum;
 
+	glw::GLuint							m_vao;
 	glw::GLuint							m_vertexBuffer;
 	glw::GLuint							m_indexBuffer;
 	glw::GLint							m_shaderProgramLoc;
@@ -369,6 +370,7 @@ LayoutBindingRenderCase::LayoutBindingRenderCase (Context&				context,
 	, m_maxVertexUnitsEnum			(maxVertexUnitsEnum)
 	, m_maxFragmentUnitsEnum		(maxFragmentUnitsEnum)
 	, m_maxCombinedUnitsEnum		(maxCombinedUnitsEnum)
+	, m_vao							(0)
 	, m_vertexBuffer				(0)
 	, m_indexBuffer					(0)
 	, m_shaderProgramLoc			(0)
@@ -502,6 +504,13 @@ void LayoutBindingRenderCase::init (void)
 
 		TCU_CHECK((m_shaderProgramPosLoc >= 0) && (m_shaderProgramArrayNdxLoc >= 0));
 
+		// Generate and bind vao
+		if (!glu::isContextTypeES(m_context.getRenderContext().getType()))
+		{
+			gl.genVertexArrays(1, &m_vao);
+			gl.bindVertexArray(m_vao);
+		}
+
 		// Generate and bind index buffer
 		gl.genBuffers(1, &m_indexBuffer);
 		gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
@@ -528,6 +537,9 @@ void LayoutBindingRenderCase::deinit (void)
 
 	if (m_shaderProgramPosLoc)
 		m_context.getRenderContext().getFunctions().disableVertexAttribArray(m_shaderProgramPosLoc);
+
+	if (m_vao)
+		m_context.getRenderContext().getFunctions().deleteVertexArrays(1, &m_vao);
 
 	if (m_vertexBuffer)
 	{
@@ -771,7 +783,8 @@ void LayoutBindingNegativeCase::init (void)
 	glw::GLint				maxUnits			= 0;	// Maximum available uniforms for this test
 
 	m_tessSupport = m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader")
-					|| contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+					|| contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2))
+					|| contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
 
 	if (!m_tessSupport && (m_shaderType == SHADERTYPE_TESS_EVALUATION || m_shaderType == SHADERTYPE_TESS_CONTROL))
 		TCU_THROW(NotSupportedError, "Tesselation shaders not supported");
