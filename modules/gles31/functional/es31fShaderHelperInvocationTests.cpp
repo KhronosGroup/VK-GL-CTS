@@ -178,7 +178,7 @@ static void drawRandomPrimitives (const glu::RenderContext& renderCtx, deUint32 
 	// Special state for certain primitives
 	if (primType == PRIMITIVETYPE_POINT || primType == PRIMITIVETYPE_WIDE_POINT)
 	{
-		const Vec2		range			= getRange(gl, GL_ALIASED_POINT_SIZE_RANGE);
+		const Vec2		range			= getRange(gl, glu::isContextTypeES(renderCtx.getType()) ? GL_ALIASED_POINT_SIZE_RANGE : GL_SMOOTH_POINT_SIZE_RANGE);
 		const bool		isWidePoint		= primType == PRIMITIVETYPE_WIDE_POINT;
 		const float		pointSize		= isWidePoint ? de::min(rnd->getFloat(minPointSize, maxPointSize), range.y()) : 1.0f;
 		const int		pointSizeLoc	= gl.getUniformLocation(program, "u_pointSize");
