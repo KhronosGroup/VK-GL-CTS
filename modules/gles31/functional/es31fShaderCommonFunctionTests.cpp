@@ -265,7 +265,8 @@ void CommonFunctionCase::init (void)
 {
 	DE_ASSERT(!m_executor);
 
-	m_spec.version = contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ? glu::GLSL_VERSION_320_ES : glu::GLSL_VERSION_310_ES;
+	glu::ContextType contextType = m_context.getRenderContext().getType();
+	m_spec.version = glu::getContextTypeGLSLVersion(contextType);
 
 	m_executor = createExecutor(m_context.getRenderContext(), m_shaderType, m_spec);
 	m_testCtx.getLog() << m_executor;
@@ -1939,8 +1940,9 @@ public:
 	void init (void)
 	{
 		if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2))
-				&& !m_context.getContextInfo().isExtensionSupported("GL_EXT_gpu_shader5"))
-			throw tcu::NotSupportedError("GL_EXT_gpu_shader5 not supported");
+				&& !m_context.getContextInfo().isExtensionSupported("GL_EXT_gpu_shader5")
+				&& !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)))
+			throw tcu::NotSupportedError("OpenGL ES 3.2, GL_EXT_gpu_shader5 not supported and OpenGL 4.5");
 
 		CommonFunctionCase::init();
 	}
