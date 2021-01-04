@@ -47,6 +47,7 @@
 #include "glcTextureRepeatModeTests.hpp"
 #include "glcUniformBlockTests.hpp"
 #include "glcNearestEdgeTests.hpp"
+#include "glcFramebufferCompleteness.hpp"
 #include "gluStateReset.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
@@ -189,6 +190,7 @@ void ES30TestPackage::init(void)
 		addChild(new glcts::ParallelShaderCompileTests(getContext()));
 		addChild(new glcts::PackedPixelsTests(getContext()));
 		addChild(new glcts::PackedDepthStencilTests(getContext()));
+		addChild(new glcts::FramebufferCompletenessTests(getContext()));
 		addChild(new es3cts::CopyTexImageConversionsTests(getContext()));
 		addChild(new es3cts::NumberParsingTests(getContext()));
 	}

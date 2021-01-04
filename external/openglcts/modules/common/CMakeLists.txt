@@ -117,6 +117,8 @@ set(GLCTS_COMMON_SRCS
 	glcWaiver.hpp
 	glcGLSLVectorConstructorTests.cpp
 	glcGLSLVectorConstructorTests.hpp
+	glcFramebufferCompleteness.cpp
+	glcFramebufferCompleteness.hpp
 	)
 
 set(GLCTS_COMMON_LIBS
