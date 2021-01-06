@@ -601,15 +601,26 @@ MixedVertexBindingOffsetCase::MixedVertexBindingOffsetCase (Context& context, co
 
 void MixedVertexBindingOffsetCase::test (tcu::ResultCollector& result)
 {
-	glu::CallLogWrapper gl					(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	glu::Buffer			buffer				(m_context.getRenderContext());
+	glu::RenderContext&	renderContext		= m_context.getRenderContext();
+	glu::CallLogWrapper gl					(renderContext.getFunctions(), m_testCtx.getLog());
+	glu::Buffer			buffer				(renderContext);
+	deUint32			vao					= 0;
 
 	gl.enableLogging(true);
+
+	if (!glu::isContextTypeES(renderContext.getType()))
+	{
+		gl.glGenVertexArrays(1, &vao);
+		gl.glBindVertexArray(vao);
+	}
 
 	gl.glBindBuffer(GL_ARRAY_BUFFER, *buffer);
 	gl.glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, glu::BufferOffsetAsPointer(12));
 
 	verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_OFFSET, 1, 12, m_verifier);
+
+	if (vao)
+		gl.glDeleteVertexArrays(1, &vao);
 }
 
 class MixedVertexBindingStrideCase : public IndexedCase
@@ -626,10 +637,18 @@ MixedVertexBindingStrideCase::MixedVertexBindingStrideCase (Context& context, co
 
 void MixedVertexBindingStrideCase::test (tcu::ResultCollector& result)
 {
-	glu::CallLogWrapper gl					(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	glu::Buffer			buffer				(m_context.getRenderContext());
+	glu::RenderContext&	renderContext		= m_context.getRenderContext();
+	glu::CallLogWrapper gl					(renderContext.getFunctions(), m_testCtx.getLog());
+	glu::Buffer			buffer				(renderContext);
+	deUint32			vao					= 0;
 
 	gl.enableLogging(true);
+
+	if (!glu::isContextTypeES(renderContext.getType()))
+	{
+		gl.glGenVertexArrays(1, &vao);
+		gl.glBindVertexArray(vao);
+	}
 
 	gl.glBindBuffer(GL_ARRAY_BUFFER, *buffer);
 	gl.glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 12, 0);
@@ -638,6 +657,9 @@ void MixedVertexBindingStrideCase::test (tcu::ResultCollector& result)
 	// test effectiveStride
 	gl.glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, 0);
 	verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_STRIDE, 1, 16, m_verifier);
+
+	if (vao)
+		gl.glDeleteVertexArrays(1, &vao);
 }
 
 class MixedVertexBindingBufferCase : public IndexedCase
@@ -654,14 +676,25 @@ MixedVertexBindingBufferCase::MixedVertexBindingBufferCase (Context& context, co
 
 void MixedVertexBindingBufferCase::test (tcu::ResultCollector& result)
 {
-	glu::CallLogWrapper gl					(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	glu::Buffer			buffer				(m_context.getRenderContext());
+	glu::RenderContext&	renderContext		= m_context.getRenderContext();
+	glu::CallLogWrapper gl					(renderContext.getFunctions(), m_testCtx.getLog());
+	glu::Buffer			buffer				(renderContext);
+	deUint32			vao					= 0;
 
 	gl.enableLogging(true);
+
+	if (!glu::isContextTypeES(renderContext.getType()))
+	{
+		gl.glGenVertexArrays(1, &vao);
+		gl.glBindVertexArray(vao);
+	}
 
 	gl.glBindBuffer(GL_ARRAY_BUFFER, *buffer);
 	gl.glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, 0);
 	verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_BUFFER, 1, *buffer, m_verifier);
+
+	if (vao)
+		gl.glDeleteVertexArrays(1, &vao);
 }
 
 } // anonymous
