@@ -126,6 +126,15 @@ RenderBits operator| (RenderBits a, RenderBits b)
 namespace
 {
 
+static void checkSupport(Context& ctx)
+{
+	auto	ctxType	 = ctx.getRenderContext().getType();
+	if (!glu::contextSupports(ctxType, glu::ApiType::es(3, 2)) &&
+		!glu::contextSupports(ctxType, glu::ApiType::core(4, 5)) &&
+		!ctx.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"))
+		TCU_THROW(NotSupportedError, "GL_EXT_texture_buffer is not supported");
+}
+
 using namespace gls::StateQueryUtil;
 
 class LimitQueryCase : public TestCase
@@ -151,8 +160,7 @@ LimitQueryCase::LimitQueryCase (Context& context, const char* name, const char* 
 
 LimitQueryCase::IterateResult LimitQueryCase::iterate (void)
 {
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	TCU_CHECK_AND_THROW(NotSupportedError, supportsES32 || m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"), "GL_EXT_texture_buffer is not supported");
+	checkSupport(m_context);
 
 	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
@@ -187,8 +195,7 @@ AlignmentQueryCase::AlignmentQueryCase (Context& context, const char* name, cons
 
 AlignmentQueryCase::IterateResult AlignmentQueryCase::iterate (void)
 {
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	TCU_CHECK_AND_THROW(NotSupportedError, supportsES32 || m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"), "GL_EXT_texture_buffer is not supported");
+	checkSupport(m_context);
 
 	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
@@ -219,8 +226,7 @@ TextureBufferBindingQueryCase::TextureBufferBindingQueryCase (Context& context, 
 
 TextureBufferBindingQueryCase::IterateResult TextureBufferBindingQueryCase::iterate (void)
 {
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	TCU_CHECK_AND_THROW(NotSupportedError, supportsES32 || m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"), "GL_EXT_texture_buffer is not supported");
+	checkSupport(m_context);
 
 	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
@@ -279,8 +285,7 @@ TextureBindingBufferQueryCase::TextureBindingBufferQueryCase (Context& context, 
 
 TextureBindingBufferQueryCase::IterateResult TextureBindingBufferQueryCase::iterate (void)
 {
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	TCU_CHECK_AND_THROW(NotSupportedError, supportsES32 || m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"), "GL_EXT_texture_buffer is not supported");
+	checkSupport(m_context);
 
 	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
@@ -339,8 +344,7 @@ TextureBufferDataStoreQueryCase::TextureBufferDataStoreQueryCase (Context& conte
 
 TextureBufferDataStoreQueryCase::IterateResult TextureBufferDataStoreQueryCase::iterate (void)
 {
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	TCU_CHECK_AND_THROW(NotSupportedError, supportsES32 || m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"), "GL_EXT_texture_buffer is not supported");
+	checkSupport(m_context);
 
 	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
@@ -411,8 +415,7 @@ TextureBufferOffsetQueryCase::TextureBufferOffsetQueryCase (Context& context, co
 
 TextureBufferOffsetQueryCase::IterateResult TextureBufferOffsetQueryCase::iterate (void)
 {
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	TCU_CHECK_AND_THROW(NotSupportedError, supportsES32 || m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"), "GL_EXT_texture_buffer is not supported");
+	checkSupport(m_context);
 
 	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
@@ -493,8 +496,7 @@ TextureBufferSizeQueryCase::TextureBufferSizeQueryCase (Context& context, const 
 
 TextureBufferSizeQueryCase::IterateResult TextureBufferSizeQueryCase::iterate (void)
 {
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	TCU_CHECK_AND_THROW(NotSupportedError, supportsES32 || m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"), "GL_EXT_texture_buffer is not supported");
+	checkSupport(m_context);
 
 	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
