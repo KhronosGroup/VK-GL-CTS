@@ -625,7 +625,7 @@ TestCase::IterateResult FboRenderCase::iterate (void)
 	}
 
 	// Compare images
-	const float		threshold	= 0.03f;
+	const float		threshold	= 0.05f;
 	bool			imagesOk	= tcu::fuzzyCompare(log, "ComparisonResult", "Image comparison result", refFrame, gles2Frame, threshold, tcu::COMPARE_LOG_RESULT);
 
 	if (!imagesOk && !failReason)
