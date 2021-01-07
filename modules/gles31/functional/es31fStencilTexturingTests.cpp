@@ -491,8 +491,11 @@ static void checkDepthStencilFormatSupport (Context& context, deUint32 format)
 {
 	if (format == GL_STENCIL_INDEX8)
 	{
-		const char* reqExt = "GL_OES_texture_stencil8";
-		if ((context.getRenderContext().getType().getAPI() != glu::ApiType::core(3,2)) && !context.getContextInfo().isExtensionSupported(reqExt))
+		const char*			reqExt		= "GL_OES_texture_stencil8";
+		glu::ContextType	contextType	= context.getRenderContext().getType();
+		if (!glu::contextSupports(contextType, glu::ApiType::es(3, 2)) &&
+			!glu::contextSupports(contextType, glu::ApiType::core(4, 5)) &&
+			!context.getContextInfo().isExtensionSupported(reqExt))
 			throw tcu::NotSupportedError(glu::getTextureFormatStr(format).toString() + " requires " + reqExt);
 	}
 	else
