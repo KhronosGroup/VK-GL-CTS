@@ -25,6 +25,7 @@
 
 #include "vktTestGroupUtil.hpp"
 #include "vktApiSmokeTests.hpp"
+#include "vktApiDeviceDrmPropertiesTests.hpp"
 #include "vktApiDeviceInitializationTests.hpp"
 #include "vktApiDriverPropertiesTests.hpp"
 #include "vktApiObjectManagementTests.hpp"
@@ -73,6 +74,7 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 	apiTests->addChild(createDriverPropertiesTests				(testCtx));
 	apiTests->addChild(createSmokeTests							(testCtx));
 	apiTests->addChild(api::createFeatureInfoTests				(testCtx));
+	apiTests->addChild(createDeviceDrmPropertiesTests			(testCtx));
 	apiTests->addChild(createDeviceInitializationTests			(testCtx));
 	apiTests->addChild(createObjectManagementTests				(testCtx));
 	apiTests->addChild(createBufferTests						(testCtx));

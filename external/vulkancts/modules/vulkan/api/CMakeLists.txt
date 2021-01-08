@@ -12,6 +12,8 @@ set(DEQP_VK_API_SRCS
 	vktApiTests.hpp
 	vktApiSmokeTests.cpp
 	vktApiSmokeTests.hpp
+	vktApiDeviceDrmPropertiesTests.cpp
+	vktApiDeviceDrmPropertiesTests.hpp
 	vktApiDeviceInitializationTests.cpp
 	vktApiDeviceInitializationTests.hpp
 	vktApiDriverPropertiesTests.cpp
