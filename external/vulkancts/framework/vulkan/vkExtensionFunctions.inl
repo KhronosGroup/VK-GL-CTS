@@ -851,6 +851,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_physical_device_drm")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_acceleration_structure")
 	{
 		return;
@@ -1939,6 +1943,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_VALVE_mutable_descriptor_type")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_physical_device_drm")
 	{
 		return;
 	}

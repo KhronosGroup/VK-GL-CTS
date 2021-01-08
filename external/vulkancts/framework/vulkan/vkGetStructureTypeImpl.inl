@@ -2116,6 +2116,11 @@ template<> VkStructureType getStructureType<VkMutableDescriptorTypeCreateInfoVAL
 	return VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_VALVE;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceDrmPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkAccelerationStructureGeometryTrianglesDataKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;

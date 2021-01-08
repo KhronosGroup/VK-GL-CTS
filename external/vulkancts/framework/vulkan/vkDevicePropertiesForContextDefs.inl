@@ -11,6 +11,7 @@ const vk::VkPhysicalDeviceDescriptorIndexingProperties&				Context::getDescripto
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&		Context::getDeviceGeneratedCommandsProperties		(void) const { return m_device->getDeviceGeneratedCommandsProperties();			}
 const vk::VkPhysicalDeviceDiscardRectanglePropertiesEXT&			Context::getDiscardRectanglePropertiesEXT			(void) const { return m_device->getDiscardRectanglePropertiesEXT();				}
 const vk::VkPhysicalDeviceDriverProperties&							Context::getDriverProperties						(void) const { return m_device->getDriverProperties();							}
+const vk::VkPhysicalDeviceDrmPropertiesEXT&							Context::getDrmPropertiesEXT						(void) const { return m_device->getDrmPropertiesEXT();							}
 const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			Context::getExternalMemoryHostPropertiesEXT			(void) const { return m_device->getExternalMemoryHostPropertiesEXT();			}
 const vk::VkPhysicalDeviceFloatControlsProperties&					Context::getFloatControlsProperties					(void) const { return m_device->getFloatControlsProperties();					}
 const vk::VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			Context::getFragmentDensityMapPropertiesEXT			(void) const { return m_device->getFragmentDensityMapPropertiesEXT();			}

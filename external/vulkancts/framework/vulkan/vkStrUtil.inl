@@ -955,6 +955,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice4444FormatsFeat
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeListVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeCreateInfoVALVE& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDrmPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressConstKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildRangeInfoKHR& value);

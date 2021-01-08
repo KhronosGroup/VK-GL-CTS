@@ -639,6 +639,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE = 1000351000,
     VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_VALVE = 1000351002,
     VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX = 1000378000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT = 1000353000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
     VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
@@ -11736,6 +11737,22 @@ typedef struct VkMutableDescriptorTypeCreateInfoVALVE {
     uint32_t                                   mutableDescriptorTypeListCount;
     const VkMutableDescriptorTypeListVALVE*    pMutableDescriptorTypeLists;
 } VkMutableDescriptorTypeCreateInfoVALVE;
+
+
+
+#define VK_EXT_physical_device_drm 1
+#define VK_EXT_PHYSICAL_DEVICE_DRM_SPEC_VERSION 1
+#define VK_EXT_PHYSICAL_DEVICE_DRM_EXTENSION_NAME "VK_EXT_physical_device_drm"
+typedef struct VkPhysicalDeviceDrmPropertiesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           hasPrimary;
+    VkBool32           hasRender;
+    int64_t            primaryMajor;
+    int64_t            primaryMinor;
+    int64_t            renderMajor;
+    int64_t            renderMinor;
+} VkPhysicalDeviceDrmPropertiesEXT;
 
 
 

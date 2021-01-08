@@ -606,6 +606,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE";
 		case VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_VALVE:						return "VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_VALVE";
 		case VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX:									return "VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_MAX_ENUM:														return "VK_STRUCTURE_TYPE_MAX_ENUM";
 		default:																				return DE_NULL;
 	}
@@ -10385,6 +10386,21 @@ std::ostream& operator<< (std::ostream& s, const VkMutableDescriptorTypeCreateIn
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmutableDescriptorTypeListCount = " << value.mutableDescriptorTypeListCount << '\n';
 	s << "\tpMutableDescriptorTypeLists = " << value.pMutableDescriptorTypeLists << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDrmPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceDrmPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thasPrimary = " << value.hasPrimary << '\n';
+	s << "\thasRender = " << value.hasRender << '\n';
+	s << "\tprimaryMajor = " << value.primaryMajor << '\n';
+	s << "\tprimaryMinor = " << value.primaryMinor << '\n';
+	s << "\trenderMajor = " << value.renderMajor << '\n';
+	s << "\trenderMinor = " << value.renderMinor << '\n';
 	s << '}';
 	return s;
 }

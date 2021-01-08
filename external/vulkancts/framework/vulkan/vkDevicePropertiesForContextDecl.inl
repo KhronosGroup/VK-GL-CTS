@@ -11,6 +11,7 @@ const vk::VkPhysicalDeviceDescriptorIndexingProperties&				getDescriptorIndexing
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&		getDeviceGeneratedCommandsProperties		(void) const;
 const vk::VkPhysicalDeviceDiscardRectanglePropertiesEXT&			getDiscardRectanglePropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceDriverProperties&							getDriverProperties							(void) const;
+const vk::VkPhysicalDeviceDrmPropertiesEXT&							getDrmPropertiesEXT							(void) const;
 const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			getExternalMemoryHostPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceFloatControlsProperties&					getFloatControlsProperties					(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			getFragmentDensityMapPropertiesEXT			(void) const;

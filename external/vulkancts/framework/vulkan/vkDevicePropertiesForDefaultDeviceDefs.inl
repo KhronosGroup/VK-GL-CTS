@@ -11,6 +11,7 @@ const VkPhysicalDeviceDescriptorIndexingProperties&				getDescriptorIndexingProp
 const VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&		getDeviceGeneratedCommandsProperties		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV>();		}
 const VkPhysicalDeviceDiscardRectanglePropertiesEXT&			getDiscardRectanglePropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDiscardRectanglePropertiesEXT>();				}
 const VkPhysicalDeviceDriverProperties&							getDriverProperties							(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDriverProperties>();							}
+const VkPhysicalDeviceDrmPropertiesEXT&							getDrmPropertiesEXT							(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDrmPropertiesEXT>();							}
 const VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			getExternalMemoryHostPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceExternalMemoryHostPropertiesEXT>();			}
 const VkPhysicalDeviceFloatControlsProperties&					getFloatControlsProperties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFloatControlsProperties>();					}
 const VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			getFragmentDensityMapPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentDensityMapPropertiesEXT>();			}

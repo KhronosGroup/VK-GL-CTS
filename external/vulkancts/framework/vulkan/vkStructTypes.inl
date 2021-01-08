@@ -5009,6 +5009,18 @@ struct VkMutableDescriptorTypeCreateInfoVALVE
 	const VkMutableDescriptorTypeListVALVE*	pMutableDescriptorTypeLists;
 };
 
+struct VkPhysicalDeviceDrmPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		hasPrimary;
+	VkBool32		hasRender;
+	deInt64			primaryMajor;
+	deInt64			primaryMinor;
+	deInt64			renderMajor;
+	deInt64			renderMinor;
+};
+
 union VkDeviceOrHostAddressKHR
 {
 	VkDeviceAddress	deviceAddress;
