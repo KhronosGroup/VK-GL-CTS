@@ -1938,6 +1938,8 @@ def generateDevicePropertiesDefs(src):
 				extType = "MAINTENANCE2"
 			elif extType == "SHADER_CORE":
 				extType = "SHADER_CORE_PROPERTIES"
+			elif extType == "DRM":
+				extType = "PHYSICAL_DEVICE_DRM"
 			# end handling special cases
 			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sExtSuffix + '_' + extType + sVerSuffix +'[_0-9]*_EXTENSION_NAME).+$'
 			matchExtensionName	= re.search(ptrnExtensionName, src, re.M)
