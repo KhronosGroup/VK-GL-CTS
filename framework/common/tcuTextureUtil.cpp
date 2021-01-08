@@ -569,10 +569,12 @@ static IVec4 getChannelBitDepth (TextureFormat::ChannelType channelType)
 		case TextureFormat::SIGNED_INT8:					return IVec4(8);
 		case TextureFormat::SIGNED_INT16:					return IVec4(16);
 		case TextureFormat::SIGNED_INT32:					return IVec4(32);
+		case TextureFormat::SIGNED_INT64:					return IVec4(64);
 		case TextureFormat::UNSIGNED_INT8:					return IVec4(8);
 		case TextureFormat::UNSIGNED_INT16:					return IVec4(16);
 		case TextureFormat::UNSIGNED_INT24:					return IVec4(24);
 		case TextureFormat::UNSIGNED_INT32:					return IVec4(32);
+		case TextureFormat::UNSIGNED_INT64:					return IVec4(64);
 		case TextureFormat::SIGNED_INT_1010102_REV:			return IVec4(10,10,10,2);
 		case TextureFormat::UNSIGNED_INT_1010102_REV:		return IVec4(10,10,10,2);
 		case TextureFormat::UNSIGNED_INT_16_8_8:			return IVec4(16,8,0,0);
