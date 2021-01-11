@@ -20441,6 +20441,37 @@ tcu::TestCaseGroup* createEarlyFragmentTests(tcu::TestContext& testCtx)
 	return earlyFragTests.release();
 }
 
+tcu::TestCaseGroup* createQueryGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "image_query", "image query tests"));
+
+	static const char data_dir[] = "spirv_assembly/instruction/image_query";
+
+	static const struct
+	{
+		const std::string name;
+		const std::string desc;
+	} cases[] =
+	{
+		{ "samples_storage", "Test samples query can be used on storage images" },
+	};
+
+	vector<string> requirements(1, "Features.shaderStorageImageMultisample");
+
+	for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
+	{
+		cts_amber::AmberTestCase *testCase = cts_amber::createAmberTestCase(testCtx,
+																			cases[i].name.c_str(),
+																			cases[i].desc.c_str(),
+																			data_dir,
+																			cases[i].name + ".amber",
+																			requirements);
+		testGroup->addChild(testCase);
+	}
+
+	return testGroup.release();
+}
+
 tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 {
 	const bool testComputePipeline = true;
@@ -20608,6 +20639,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	instructionTests->addChild(graphicsTests.release());
 	instructionTests->addChild(createSpirvVersion1p4Group(testCtx));
 	instructionTests->addChild(createFunctionParamsGroup(testCtx));
+	instructionTests->addChild(createQueryGroup(testCtx));
 	instructionTests->addChild(createTrinaryMinMaxGroup(testCtx));
 	instructionTests->addChild(createTerminateInvocationGroup(testCtx));
 
