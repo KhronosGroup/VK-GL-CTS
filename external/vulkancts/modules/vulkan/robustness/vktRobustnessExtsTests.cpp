@@ -51,6 +51,7 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <limits>
 
 namespace vkt
 {
@@ -759,9 +760,10 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 
 	std::stringstream decls, checks;
 
-	const string	r64		= formatIsR64(format) ? "64" : "";
-	const string	i64Type	= formatIsR64(format) ? "64_t" : "";
-	const string	vecType	= formatIsFloat(format) ? "vec4" : (formatIsSignedInt(format) ? ("i" + r64 + "vec4") : ("u" + r64 + "vec4"));
+	const string	r64			= formatIsR64(format) ? "64" : "";
+	const string	i64Type		= formatIsR64(format) ? "64_t" : "";
+	const string	vecType		= formatIsFloat(format) ? "vec4" : (formatIsSignedInt(format) ? ("i" + r64 + "vec4") : ("u" + r64 + "vec4"));
+	const string	qLevelType	= vecType == "vec4" ? "float" : ((vecType == "ivec4") | (vecType == "i64vec4")) ? ("int" + i64Type) : ("uint" + i64Type);
 
 	decls << "uvec4 abs(uvec4 x) { return x; }\n";
 	if (formatIsR64(format))
@@ -1322,6 +1324,12 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				{
 					checks << "    temp = textureSize(texture0_1, 0)" << sizeswiz <<";\n";
 					checks << "    accum += abs(temp);\n";
+
+					// checking textureSize with clearly out of range LOD values
+					checks << "    temp = textureSize(texture0_1, " << -i << ")" << sizeswiz <<";\n";
+					checks << "    accum += abs(temp);\n";
+					checks << "    temp = textureSize(texture0_1, " << (std::numeric_limits<deInt32>::max() - i) << ")" << sizeswiz <<";\n";
+					checks << "    accum += abs(temp);\n";
 				}
 				else
 				{
@@ -1359,6 +1367,16 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 	}
 	checks << "  }\n";
 
+	// outside the coordinates loop because we only need to call it once
+	if (m_data.nullDescriptor &&
+		m_data.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER &&
+		m_data.samples == VK_SAMPLE_COUNT_1_BIT)
+	{
+		checks << "  temp_ql = " << qLevelType << "(textureQueryLevels(texture0_1));\n";
+		checks << "  temp = " << vecType << "(temp_ql);\n";
+		checks << "  accum += abs(temp);\n";
+	}
+
 	const bool is64BitFormat = formatIsR64(m_data.format);
 	std::string SupportR64 = (is64BitFormat ?
 							std::string("#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
@@ -1385,6 +1403,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				"{\n"
 				"  " << vecType << " accum = " << vecType << "(0);\n"
 				"  " << vecType << " temp;\n"
+				"  " << qLevelType << " temp_ql;\n"
 				<< checks.str() <<
 				"  " << vecType << " color = (accum != " << vecType << "(0)) ? " << vecType << "(0,0,0,0) : " << vecType << "(1,0,0,1);\n"
 				"  imageStore(image0_0, ivec2(gl_GlobalInvocationID.xy), color);\n"
@@ -1411,6 +1430,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 			"{\n"
 			"  " << vecType << " accum = " << vecType << "(0);\n"
 			"  " << vecType << " temp;\n"
+			"  " << qLevelType << " temp_ql;\n"
 			<< checks.str() <<
 			"  " << vecType << " color = (accum != " << vecType << "(0)) ? " << vecType << "(0,0,0,0) : " << vecType << "(1,0,0,1);\n"
 			"  imageStore(image0_0, ivec2(gl_LaunchIDNV.xy), color);\n"
@@ -1436,6 +1456,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				"{\n"
 				"  " << vecType << " accum = " << vecType << "(0);\n"
 				"  " << vecType << " temp;\n"
+				"  " << qLevelType << " temp_ql;\n"
 				<< checks.str() <<
 				"  " << vecType << " color = (accum != " << vecType << "(0)) ? " << vecType << "(0,0,0,0) : " << vecType << "(1,0,0,1);\n"
 				"  imageStore(image0_0, ivec2(gl_VertexIndex % " << DIM << ", gl_VertexIndex / " << DIM << "), color);\n"
@@ -1449,6 +1470,22 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 		}
 	case STAGE_FRAGMENT:
 		{
+			if (m_data.nullDescriptor &&
+				m_data.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER &&
+				m_data.samples == VK_SAMPLE_COUNT_1_BIT)
+			{
+				// as here we only want to check that textureQueryLod returns 0 when
+				// texture0_1 is null, we don't need to use the actual texture coordinates
+				// (and modify the vertex shader below to do so). Any coordinates are fine.
+				// gl_FragCoord has been selected "randomly", instead of selecting 0 for example.
+				std::string lod_str = (numNormalizedCoords == 1) ? ");" : (numNormalizedCoords == 2) ? "y);" : "yz);";
+				checks << "  vec2 lod = textureQueryLod(texture0_1, gl_FragCoord.x" << lod_str << "\n";
+				checks << "  temp_ql = " << qLevelType <<
+"(ceil(abs(lod.x) + abs(lod.y)));\n";
+				checks << "  temp = " << vecType << "(temp_ql);\n";
+				checks << "  accum += abs(temp);\n";
+			}
+
 			std::stringstream vss;
 			vss <<
 				"#version 450 core\n"
@@ -1475,6 +1512,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				"{\n"
 				"  " << vecType << " accum = " << vecType << "(0);\n"
 				"  " << vecType << " temp;\n"
+				"  " << qLevelType << " temp_ql;\n"
 				<< checks.str() <<
 				"  " << vecType << " color = (accum != " << vecType << "(0)) ? " << vecType << "(0,0,0,0) : " << vecType << "(1,0,0,1);\n"
 				"  imageStore(image0_0, ivec2(gl_FragCoord.x, gl_FragCoord.y), color);\n"
@@ -1672,15 +1710,15 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 		{
 			size = deIntRoundToPow2((int)size, (int)robustness2Properties.robustUniformBufferAccessSizeAlignment);
 		}
-
-		if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
-			m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
+		else if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+				 m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
 		{
 			size = deIntRoundToPow2((int)size, (int)robustness2Properties.robustStorageBufferAccessSizeAlignment);
 		}
-
-		if (m_data.descriptorType == VERTEX_ATTRIBUTE_FETCH)
+		else if (m_data.descriptorType == VERTEX_ATTRIBUTE_FETCH)
+		{
 			size = m_data.bufferLen;
+		}
 
 		buffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 			vk, device, allocator, makeBufferCreateInfo(size,
@@ -1700,8 +1738,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 		{
 			deMemset(bufferPtr, 0, deIntRoundToPow2(m_data.bufferLen, (int)robustness2Properties.robustUniformBufferAccessSizeAlignment));
 		}
-		if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
-			m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
+		else if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+				 m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
 		{
 			deMemset(bufferPtr, 0, deIntRoundToPow2(m_data.bufferLen, (int)robustness2Properties.robustStorageBufferAccessSizeAlignment));
 		}
