@@ -106,6 +106,18 @@ include_directories(external/renderdoc/src)
 
 include_directories(${PNG_INCLUDE_PATH})
 
+# DRM (Direct Rendering Manager) Headers
+find_path(XF86DRM_H_PATH NAMES xf86drm.h)
+find_path(DRM_H_PATH NAMES drm.h PATH_SUFFIXES libdrm drm)
+
+if (DEFINED XF86DRM_H_PATH AND DEFINED DRM_H_PATH)
+	include_directories(${XF86DRM_H_PATH})
+	include_directories(${DRM_H_PATH})
+	set(DEQP_SUPPORT_DRM ON CACHE BOOL "Build code requiring the Linux/Unix Direct Rendering Manager")
+else ()
+	set(DEQP_SUPPORT_DRM OFF CACHE BOOL "Build code requiring the Linux/Unix Direct Rendering Manager")
+endif ()
+
 message(STATUS "DEQP_TARGET_NAME        = ${DEQP_TARGET_NAME}")
 message(STATUS "DEQP_SUPPORT_GLES1      = ${DEQP_SUPPORT_GLES1}")
 message(STATUS "DEQP_GLES1_LIBRARIES    = ${DEQP_GLES1_LIBRARIES}")
@@ -117,6 +129,7 @@ message(STATUS "DEQP_SUPPORT_VG         = ${DEQP_SUPPORT_VG}")
 message(STATUS "DEQP_VG_LIBRARIES       = ${DEQP_VG_LIBRARIES}")
 message(STATUS "DEQP_EGL_LIBRARIES      = ${DEQP_EGL_LIBRARIES}")
 message(STATUS "DEQP_PLATFORM_LIBRARIES = ${DEQP_PLATFORM_LIBRARIES}")
+message(STATUS "DEQP_SUPPORT_DRM        = ${DEQP_SUPPORT_DRM}")
 
 # Defines
 add_definitions(-DDEQP_TARGET_NAME="${DEQP_TARGET_NAME}")
@@ -157,6 +170,10 @@ if (DEQP_SUPPORT_VG)
 	if (NOT DEFINED DEQP_VG_LIBRARIES)
 		message(FATAL_ERROR "Run-time loading of VG is not supported (DEQP_VG_LIBRARIES is not set)")
 	endif ()
+endif ()
+
+if (DEQP_SUPPORT_DRM)
+	add_definitions(-DDEQP_SUPPORT_DRM=1)
 endif ()
 
 if (DE_COMPILER_IS_MSC)
