@@ -26,6 +26,7 @@
 #include "vktShaderRenderTextureGatherTests.hpp"
 #include "vktShaderRender.hpp"
 #include "vkImageUtil.hpp"
+#include "vkQueryUtil.hpp"
 #include "gluTextureUtil.hpp"
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
@@ -1234,12 +1235,16 @@ void TextureGatherInstance::init (void)
 			VK_FALSE,														//	VkBool32		supportsTextureGatherLODBiasAMD;
 		};
 
-		vk::VkImageFormatProperties2 properties2;
-		deMemset(&properties2, 0, sizeof(properties2));
-		properties2.sType = vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
+		vk::VkImageFormatProperties2 properties2 = vk::initVulkanStructure();
 		properties2.pNext = &lodGatherProperties;
 
-		VK_CHECK(m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(m_context.getPhysicalDevice(), &formatInfo, &properties2));
+		const auto retCode = m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(m_context.getPhysicalDevice(), &formatInfo, &properties2);
+
+		if (retCode != vk::VK_SUCCESS && retCode != vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties2 returned " + de::toString(retCode));
+
+		if (retCode == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Format does not support the required parameters");
 
 		if (!lodGatherProperties.supportsTextureGatherLODBiasAMD)
 			TCU_THROW(NotSupportedError, "Format does not support texture gather LOD/Bias operations");
