@@ -106,6 +106,10 @@ Move<VkDescriptorSet> makeDescriptorSet (const DeviceInterface&			vk,
 VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			size,
 										 const VkBufferUsageFlags	usage);
 
+VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize				size,
+										 const VkBufferUsageFlags		usage,
+										 const std::vector<deUint32>&	queueFamilyIndices);
+
 Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 										   const VkDevice				device,
 										   const VkDescriptorSetLayout	descriptorSetLayout = DE_NULL);

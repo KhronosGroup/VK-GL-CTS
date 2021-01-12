@@ -29,6 +29,8 @@
 
 #include "tcuVector.hpp"
 
+#include "deSTLUtil.hpp"
+
 namespace vk
 {
 
@@ -544,6 +546,28 @@ VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			size,
 	};
 	return bufferCreateInfo;
 }
+
+VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize				size,
+										 const VkBufferUsageFlags		usage,
+										 const std::vector<deUint32>&	queueFamilyIndices)
+{
+	const deUint32				queueFamilyIndexCount	= static_cast<deUint32>(queueFamilyIndices.size());
+	const deUint32*				pQueueFamilyIndices		= de::dataSafe(queueFamilyIndices);
+	const VkBufferCreateInfo	bufferCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
+		DE_NULL,								// const void*			pNext;
+		(VkBufferCreateFlags)0,					// VkBufferCreateFlags	flags;
+		size,									// VkDeviceSize			size;
+		usage,									// VkBufferUsageFlags	usage;
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
+		queueFamilyIndexCount,					// deUint32				queueFamilyIndexCount;
+		pQueueFamilyIndices,					// const deUint32*		pQueueFamilyIndices;
+	};
+
+	return bufferCreateInfo;
+}
+
 
 Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 										   const VkDevice				device,

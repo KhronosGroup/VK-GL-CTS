@@ -44,6 +44,7 @@
 #include <iostream>
 #include <functional>
 #include <set>
+#include <algorithm>
 
 namespace vkt
 {
@@ -87,6 +88,7 @@ enum TestType
 	TEST_TYPE_QUERY_GET,
 	TEST_TYPE_QUERY_COPY,
 	TEST_TYPE_QUERY_RESET,
+	TEST_TYPE_MULTIQUERY,
 	TEST_TYPE_LAST
 };
 
@@ -108,6 +110,12 @@ struct TestParameters
 	StreamId0Mode	streamId0Mode;
 	bool			query64bits;
 	bool			noOffsetArray;
+};
+
+struct TransformFeedbackQuery
+{
+	deUint32	written;
+	deUint32	attempts;
 };
 
 const deUint32 MINIMUM_TF_BUFFER_SIZE	= (1<<27);
@@ -385,7 +393,6 @@ public:
 													TransformFeedbackTestInstance	(Context& context, const TestParameters& parameters);
 protected:
 	void											validateLimits					();
-	deUint32										getNextChunkSize				(const deUint32 usedBytes, const deUint32 bufBytes);
 	std::vector<VkDeviceSize>						generateSizesList				(const size_t bufBytes, const size_t chunkCount);
 	std::vector<VkDeviceSize>						generateOffsetsList				(const std::vector<VkDeviceSize>& sizesList);
 	void											verifyTransformFeedbackBuffer	(const MovePtr<Allocation>& bufAlloc,
@@ -1011,7 +1018,7 @@ void TransformFeedbackBuiltinTestInstance::verifyTransformFeedbackBuffer (const 
 
 	invalidateAlloc(vk, device, *bufAlloc);
 
-	const deUint32			numPoints	= static_cast<deUint32>(bufBytes / sizeof(float));
+	const deUint32			numPoints	= bufBytes / static_cast<deUint32>(sizeof(float));
 	const deUint8*			tfDataBytes	= (deUint8*)bufAlloc->getHostPtr();
 	const float*			tfData		= (float*)&tfDataBytes[offset];
 
@@ -1880,6 +1887,208 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
+class TransformFeedbackMultiQueryTestInstance : public TransformFeedbackTestInstance
+{
+public:
+								TransformFeedbackMultiQueryTestInstance	(Context& context, const TestParameters& parameters);
+
+protected:
+	std::vector<VkDeviceSize>	generateSizesList							(const size_t bufBytes, const size_t chunkCount);
+	void						verifyTransformFeedbackBuffer				(const MovePtr<Allocation>& bufAlloc, const deUint32 bufBytes, const deUint32 bufOffset, const float expected);
+	tcu::TestStatus				iterate										(void);
+};
+
+TransformFeedbackMultiQueryTestInstance::TransformFeedbackMultiQueryTestInstance (Context& context, const TestParameters& parameters)
+	: TransformFeedbackTestInstance	(context, parameters)
+{
+	const InstanceInterface&								vki							= m_context.getInstanceInterface();
+	const VkPhysicalDevice									physDevice					= m_context.getPhysicalDevice();
+	const VkPhysicalDeviceFeatures							features					= getPhysicalDeviceFeatures(vki, physDevice);
+	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeaturesEXT();
+	const deUint32											streamsSupported			= m_transformFeedbackProperties.maxTransformFeedbackStreams;
+	const deUint32											streamsRequired				= m_parameters.streamId + 1;
+	const deUint32											tfBuffersSupported			= m_transformFeedbackProperties.maxTransformFeedbackBuffers;
+	const deUint32											tfBuffersRequired			= m_parameters.partCount;
+	const deUint32											bytesPerVertex				= m_parameters.bufferSize / m_parameters.partCount;
+	const deUint32											tfStreamDataSizeSupported	= m_transformFeedbackProperties.maxTransformFeedbackStreamDataSize;
+	const deUint32											tfBufferDataSizeSupported	= m_transformFeedbackProperties.maxTransformFeedbackBufferDataSize;
+	const deUint32											tfBufferDataStrideSupported	= m_transformFeedbackProperties.maxTransformFeedbackBufferDataStride;
+
+	DE_ASSERT(m_parameters.partCount == 2u);
+
+	if (!features.geometryShader)
+		TCU_THROW(NotSupportedError, "Missing feature: geometryShader");
+
+	if (transformFeedbackFeatures.geometryStreams == DE_FALSE)
+		TCU_THROW(NotSupportedError, "geometryStreams feature is not supported");
+
+	if (streamsSupported < streamsRequired)
+		TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackStreams=" + de::toString(streamsSupported) + ", while test requires " + de::toString(streamsRequired)).c_str());
+
+	if (tfBuffersSupported < tfBuffersRequired)
+		TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackBuffers=" + de::toString(tfBuffersSupported) + ", while test requires " + de::toString(tfBuffersRequired)).c_str());
+
+	if (tfStreamDataSizeSupported < bytesPerVertex)
+		TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackStreamDataSize=" + de::toString(tfStreamDataSizeSupported) + ", while test requires " + de::toString(bytesPerVertex)).c_str());
+
+	if (tfBufferDataSizeSupported < bytesPerVertex)
+		TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackBufferDataSize=" + de::toString(tfBufferDataSizeSupported) + ", while test requires " + de::toString(bytesPerVertex)).c_str());
+
+	if (tfBufferDataStrideSupported < bytesPerVertex)
+		TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackBufferDataStride=" + de::toString(tfBufferDataStrideSupported) + ", while test requires " + de::toString(bytesPerVertex)).c_str());
+
+	if (m_transformFeedbackProperties.transformFeedbackQueries == DE_FALSE)
+		TCU_THROW(NotSupportedError, "transformFeedbackQueries feature is not supported");
+}
+
+std::vector<VkDeviceSize> TransformFeedbackMultiQueryTestInstance::generateSizesList (const size_t bufBytes, const size_t chunkCount)
+{
+	const VkDeviceSize			chunkSize	= bufBytes / chunkCount;
+	std::vector<VkDeviceSize>	result		(chunkCount, chunkSize);
+
+	DE_ASSERT(chunkSize * chunkCount == bufBytes);
+	DE_ASSERT(bufBytes <= MINIMUM_TF_BUFFER_SIZE);
+	DE_ASSERT(bufBytes % sizeof(deUint32) == 0);
+	DE_ASSERT(chunkCount > 0);
+	DE_ASSERT(result.size() == chunkCount);
+
+	return result;
+}
+
+void TransformFeedbackMultiQueryTestInstance::verifyTransformFeedbackBuffer (const MovePtr<Allocation>& bufAlloc, const deUint32 bufBytes, const deUint32 bufOffset, const float expected)
+{
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			device		= m_context.getDevice();
+
+	invalidateAlloc(vk, device, *bufAlloc);
+
+	const deUint32			numPoints	= bufBytes / static_cast<deUint32>(sizeof(float));
+	const deUint8*			tfDataRaw	= reinterpret_cast<const deUint8*>(bufAlloc->getHostPtr());
+	const float*			tfData		= reinterpret_cast<const float*>(&tfDataRaw[bufOffset]);
+
+	for (deUint32 i = 0; i < numPoints; ++i)
+		if (tfData[i] != expected)
+			TCU_FAIL(std::string("Failed at item ") + de::toString(i) + " received:" + de::toString(tfData[i]) + " expected:" + de::toString(expected));
+}
+
+tcu::TestStatus TransformFeedbackMultiQueryTestInstance::iterate (void)
+{
+	const DeviceInterface&						vk							= m_context.getDeviceInterface();
+	const VkDevice								device						= m_context.getDevice();
+	const deUint32								queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
+	const std::vector<deUint32>					queueFamilyIndices			= { queueFamilyIndex };
+	const VkQueue								queue						= m_context.getUniversalQueue();
+	Allocator&									allocator					= m_context.getDefaultAllocator();
+
+	const Unique<VkRenderPass>					renderPass					(makeRenderPass							(vk, device, VK_FORMAT_UNDEFINED));
+
+	const Unique<VkShaderModule>				vertModule					(createShaderModule						(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
+	const Unique<VkShaderModule>				geomModule					(createShaderModule						(vk, device, m_context.getBinaryCollection().get("geom"), 0u));
+
+	const Unique<VkFramebuffer>					framebuffer					(makeFramebuffer						(vk, device, *renderPass, 0u, DE_NULL, m_imageExtent2D.width, m_imageExtent2D.height));
+	const Unique<VkPipelineLayout>				pipelineLayout				(TransformFeedback::makePipelineLayout	(vk, device));
+	const Unique<VkPipeline>					pipeline					(makeGraphicsPipeline					(vk, device, *pipelineLayout, *renderPass, *vertModule, DE_NULL, DE_NULL, *geomModule, DE_NULL, m_imageExtent2D, 0u));
+	const Unique<VkCommandPool>					cmdPool						(createCommandPool						(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>				cmdBuffer					(allocateCommandBuffer					(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+	const VkBufferCreateInfo					tfBufCreateInfo				= makeBufferCreateInfo(m_parameters.bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);
+	const Move<VkBuffer>						tfBuf						= createBuffer(vk, device, &tfBufCreateInfo);
+	const std::vector<VkBuffer>					tfBufArray					= std::vector<VkBuffer>(m_parameters.partCount, *tfBuf);
+	const MovePtr<Allocation>					tfBufAllocation				= allocator.allocate(getBufferMemoryRequirements(vk, device, *tfBuf), MemoryRequirement::HostVisible);
+	const VkMemoryBarrier						tfMemoryBarrier				= makeMemoryBarrier(VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT, VK_ACCESS_HOST_READ_BIT);
+	const std::vector<VkDeviceSize>				tfBufBindingSizes			= generateSizesList(m_parameters.bufferSize, m_parameters.partCount);
+	const std::vector<VkDeviceSize>				tfBufBindingOffsets			= generateOffsetsList(tfBufBindingSizes);
+	const std::vector<float>					tfBufExpectedValues			= { 0.5f, 0.5f + float(m_parameters.streamId) };
+	const deUint32								maxBufferSizeBytes			= static_cast<deUint32>(*std::max_element(tfBufBindingSizes.begin(), tfBufBindingSizes.end()));
+	const deUint32								bytesPerVertex				= static_cast<deUint32>(4 * sizeof(float));
+	const deUint32								numVerticesInBuffer			= maxBufferSizeBytes / bytesPerVertex;
+	const deUint32								numDrawVertices				= numVerticesInBuffer / 2;
+
+	const deUint32								queryIndex					= 0u;
+	const deUint32								queryCountersNumber			= 2u;
+	const deUint32								queryStride					= sizeof(TransformFeedbackQuery);
+	const deUint32								queryDataSize				= queryCountersNumber * queryStride;
+	const VkQueryPoolCreateInfo					queryPoolCreateInfo			= makeQueryPoolCreateInfo(queryCountersNumber);
+	const Unique<VkQueryPool>					queryPool					(createQueryPool(vk, device, &queryPoolCreateInfo));
+	const deUint32								queryInvalidCounterValue	= 999999u;
+	std::vector<TransformFeedbackQuery>			queryResultData				(queryCountersNumber, TransformFeedbackQuery{ queryInvalidCounterValue, queryInvalidCounterValue });
+	const std::vector<TransformFeedbackQuery>	queryExpectedData			({ TransformFeedbackQuery{ numVerticesInBuffer, 3 * numDrawVertices }, TransformFeedbackQuery{ numDrawVertices, numDrawVertices } });
+
+	const VkBufferCreateInfo					queryBufferCreateInfo		= makeBufferCreateInfo(queryDataSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, queueFamilyIndices);
+	const Move<VkBuffer>						queryPoolResultsBuffer		= createBuffer(vk, device, &queryBufferCreateInfo);
+	const MovePtr<Allocation>					queryPoolResultsBufferAlloc	= allocator.allocate(getBufferMemoryRequirements(vk, device, *queryPoolResultsBuffer), MemoryRequirement::HostVisible);
+
+	DE_ASSERT(queryCountersNumber == queryExpectedData.size());
+
+	VK_CHECK(vk.bindBufferMemory(device, *queryPoolResultsBuffer, queryPoolResultsBufferAlloc->getMemory(), queryPoolResultsBufferAlloc->getOffset()));
+
+	VK_CHECK(vk.bindBufferMemory(device, *tfBuf, tfBufAllocation->getMemory(), tfBufAllocation->getOffset()));
+
+	beginCommandBuffer(vk, *cmdBuffer);
+	{
+		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(m_imageExtent2D));
+		{
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+
+			vk.cmdBindTransformFeedbackBuffersEXT(*cmdBuffer, 0u, m_parameters.partCount, &tfBufArray[0], &tfBufBindingOffsets[0], &tfBufBindingSizes[0]);
+
+			vk.cmdBeginQueryIndexedEXT(*cmdBuffer, *queryPool, queryIndex + 0, 0u, 0u);
+			vk.cmdBeginQueryIndexedEXT(*cmdBuffer, *queryPool, queryIndex + 1, 0u, m_parameters.streamId);
+			{
+				vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, 0, 0, DE_NULL, DE_NULL);
+				{
+					vk.cmdDraw(*cmdBuffer, numDrawVertices, 1u, 0u, 0u);
+				}
+				vk.cmdEndTransformFeedbackEXT(*cmdBuffer, 0, 0, DE_NULL, DE_NULL);
+			}
+			vk.cmdEndQueryIndexedEXT(*cmdBuffer, *queryPool, queryIndex + 1, m_parameters.streamId);
+			vk.cmdEndQueryIndexedEXT(*cmdBuffer, *queryPool, queryIndex + 0, 0);
+		}
+		endRenderPass(vk, *cmdBuffer);
+
+		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &tfMemoryBarrier, 0u, DE_NULL, 0u, DE_NULL);
+	}
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	vk.getQueryPoolResults(device, *queryPool, queryIndex, queryCountersNumber, queryDataSize, queryResultData.data(), queryStride, (vk::VK_QUERY_RESULT_WAIT_BIT));
+
+	DE_ASSERT(queryResultData.size() == queryCountersNumber && queryExpectedData.size() == queryCountersNumber);
+	DE_ASSERT(queryCountersNumber > 0);
+
+	for (size_t counterNdx = 0; counterNdx < queryCountersNumber; ++counterNdx)
+	{
+		const TransformFeedbackQuery&	result		= queryResultData[counterNdx];
+		const TransformFeedbackQuery&	expected	= queryExpectedData[counterNdx];
+
+		DE_ASSERT(expected.written != queryInvalidCounterValue);
+		DE_ASSERT(expected.attempts != queryInvalidCounterValue);
+
+		if (result.written == queryInvalidCounterValue || result.attempts == queryInvalidCounterValue)
+			return tcu::TestStatus::fail("Query counters read failed");
+
+		if (result.written != expected.written)
+		{
+			const std::string	comment	= "At counter " + de::toString(counterNdx) + " vertices written " + de::toString(result.written) + ", while expected " + de::toString(expected.written);
+
+			return tcu::TestStatus::fail(comment.c_str());
+		}
+
+
+		if (result.attempts != expected.attempts)
+		{
+			const std::string	comment = "At counter " + de::toString(counterNdx) + " attempts committed " + de::toString(result.attempts) + ", while expected " + de::toString(expected.attempts);
+
+			return tcu::TestStatus::fail(comment.c_str());
+		}
+
+		verifyTransformFeedbackBuffer(tfBufAllocation, bytesPerVertex * expected.written, static_cast<deUint32>(tfBufBindingOffsets[counterNdx]), tfBufExpectedValues[counterNdx]);
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+
 class TransformFeedbackTestCase : public vkt::TestCase
 {
 public:
@@ -1960,6 +2169,9 @@ vkt::TestInstance*	TransformFeedbackTestCase::createInstance (vkt::Context& cont
 	    m_parameters.testType == TEST_TYPE_QUERY_RESET)
 		return new TransformFeedbackQueryTestInstance(context, m_parameters);
 
+	if (m_parameters.testType == TEST_TYPE_MULTIQUERY)
+		return new TransformFeedbackMultiQueryTestInstance(context, m_parameters);
+
 	TCU_THROW(InternalError, "Specified test type not found");
 }
 
@@ -2024,7 +2236,6 @@ void TransformFeedbackTestCase::initPrograms (SourceCollections& programCollecti
 				<< "} uInput;\n"
 				<< "void main(void)\n"
 				<< "{\n"
-				<< "    //idx_out = uInput.start + gl_VertexIndex;\n"				// TODO
 				<< "}\n";
 			programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
 		}
@@ -2524,6 +2735,67 @@ void TransformFeedbackTestCase::initPrograms (SourceCollections& programCollecti
 		return;
 	}
 
+	if (m_parameters.testType == TEST_TYPE_MULTIQUERY)
+	{
+		// vertex shader
+		{
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+				<< "\n"
+				<< "layout(location = 0) out ivec4 out0;\n"
+				<< "\n"
+				<< "void main(void)\n"
+				<< "{\n"
+				<< "    out0 = ivec4(gl_VertexIndex);\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+		}
+
+		// geometry shader
+		{
+			const deUint32		s	= m_parameters.streamId;
+			std::ostringstream	src;
+
+			DE_ASSERT(s != 0);
+
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+				<< "\n"
+				<< "layout(points) in;\n"
+				<< "\n"
+				<< "layout(points, max_vertices = 4) out;\n"
+				<< "\n"
+				<< "layout(stream = " << 0 << ", xfb_buffer = 0, xfb_offset = 0, xfb_stride = 16, location = 0) out vec4 out0;\n"
+				<< "layout(stream = " << s << ", xfb_buffer = 1, xfb_offset = 0, xfb_stride = 16, location = 1) out vec4 out1;\n"
+				<< "\n"
+				<< "void main(void)\n"
+				<< "{\n"
+				<< "    const int   n0 = 3;\n"
+				<< "    const int   n1 = 1;\n"
+				<< "    const float c0 = 0.5f;\n"
+				<< "    const float c1 = 0.5f + float(" << s << ");\n"
+				<< "\n"
+				<< "    for (int j = 0; j < n0; j++)\n"
+				<< "    {\n"
+				<< "        out0 = vec4(c0);\n"
+				<< "        EmitStreamVertex(0);\n"
+				<< "        EndStreamPrimitive(0);\n"
+				<< "    }\n"
+				<< "\n"
+				<< "    for (int j = 0; j < n1; j++)\n"
+				<< "    {\n"
+				<< "        out1 = vec4(c1);\n"
+				<< "        EmitStreamVertex(" << s << ");\n"
+				<< "        EndStreamPrimitive(" << s << ");\n"
+				<< "    }\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("geom") << glu::GeometrySource(src.str());
+		}
+
+		return;
+	}
+
 	DE_ASSERT(0 && "Unknown test");
 }
 
@@ -2722,6 +2994,21 @@ void createTransformFeedbackStreamsSimpleTests (tcu::TestCaseGroup* group)
 			const TestParameters	parameters			= { testType, maxBytesPerVertex * streamsUsed, streamsUsed, streamId, 0u, 0u, STREAM_ID_0_NORMAL, false, false };
 
 			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(streamId)).c_str(), "Simultaneous multiple streams usage test", parameters));
+		}
+	}
+
+	{
+		const TestType		testType	= TEST_TYPE_MULTIQUERY;
+		const std::string	testName	= "multiquery";
+
+		for (deUint32 bufferCountsNdx = 0; bufferCountsNdx < DE_LENGTH_OF_ARRAY(usedStreamId); ++bufferCountsNdx)
+		{
+			const deUint32			streamId			= usedStreamId[bufferCountsNdx];
+			const deUint32			streamsUsed			= 2u;
+			const deUint32			maxBytesPerVertex	= 256u;
+			const TestParameters	parameters			= { testType, maxBytesPerVertex * streamsUsed, streamsUsed, streamId, 0u, 0u, STREAM_ID_0_NORMAL, false, false };
+
+			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(streamId)).c_str(), "Simultaneous multiple queries usage test", parameters));
 		}
 	}
 }
