@@ -25,6 +25,9 @@ The following tools must be installed and present in the PATH variable:
 ### Linux
 
  * Standard toolchain (make, gcc/clang)
+ * If you have X11 installed, then the build assumes you also have the `GL/glx.h` header
+   file.
+    * You can get this from the `mesa-common-dev` Ubuntu package.
 
 ### Android
 
