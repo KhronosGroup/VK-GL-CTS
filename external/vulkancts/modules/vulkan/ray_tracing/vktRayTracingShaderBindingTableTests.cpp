@@ -271,7 +271,7 @@ de::MovePtr<TopLevelAccelerationStructure> CheckerboardConfiguration::initTopAcc
 
 	VkTransformMatrixKHR						identityMatrix				= { { { 1.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f, 0.0f } } };
 	for (deUint32 i = 0; i < instanceCount; ++i)
-		result->addInstance(bottomLevelAccelerationStructures[i], identityMatrix, 0u, 0xFF, i);
+		result->addInstance(bottomLevelAccelerationStructures[i], identityMatrix, 0u, 0xFF, (testParams.shaderTestType == STT_MISS) ? 0 : i);
 
 	return result;
 }
