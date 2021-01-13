@@ -417,6 +417,8 @@ tcu::TestStatus testImageQuery (Context& context, TestParameters params)
 	};
 
 	deUint32										combinedSamplerDescriptorCount	= 1;
+
+	if (isYCbCrImage)
 	{
 		const VkPhysicalDeviceImageFormatInfo2			imageFormatInfo				=
 		{
@@ -596,6 +598,8 @@ tcu::TestStatus testImageQueryLod (Context& context, TestParameters params)
 	};
 
 	deUint32										combinedSamplerDescriptorCount	= 1;
+
+	if (isYCbCrImage)
 	{
 		const VkPhysicalDeviceImageFormatInfo2		imageFormatInfo					=
 		{
