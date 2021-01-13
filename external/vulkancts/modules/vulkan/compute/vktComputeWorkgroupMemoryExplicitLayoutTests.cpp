@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktComputeWorkgroupMemoryExplicitLayoutTests.hpp"
+#include "vktAmberTestCase.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -1323,6 +1324,31 @@ void AddSizeTests(tcu::TestCaseGroup* group)
 		group->addChild(new SizeTest(group->getTestContext(), sizes[i]));
 }
 
+cts_amber::AmberTestCase* CreateAmberTestCase(tcu::TestContext& testCtx,
+											  const char* name,
+											  const char* description,
+											  const std::string& filename,
+											  const std::vector<std::string>& requirements = std::vector<std::string>())
+{
+	vk::SpirVAsmBuildOptions asm_options(VK_MAKE_VERSION(1, 1, 0), vk::SPIRV_VERSION_1_4);
+	asm_options.supports_VK_KHR_spirv_1_4 = true;
+
+	cts_amber::AmberTestCase *t = cts_amber::createAmberTestCase(testCtx, name, description, "compute/workgroup_memory_explicit_layout", filename, requirements);
+	t->setSpirVAsmBuildOptions(asm_options);
+	t->addRequirement("VK_KHR_workgroup_memory_explicit_layout");
+	return t;
+}
+
+void AddCopyMemoryTests(tcu::TestCaseGroup* group)
+{
+	tcu::TestContext& testCtx = group->getTestContext();
+
+	group->addChild(CreateAmberTestCase(testCtx, "basic", "", "copy_memory_basic.amber"));
+	group->addChild(CreateAmberTestCase(testCtx, "two_invocations", "", "copy_memory_two_invocations.amber"));
+	group->addChild(CreateAmberTestCase(testCtx, "variable_pointers", "", "copy_memory_variable_pointers.amber",
+										{ "VariablePointerFeatures.variablePointers" }));
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createWorkgroupMemoryExplicitLayoutTests(tcu::TestContext& testCtx)
@@ -1344,6 +1370,10 @@ tcu::TestCaseGroup* createWorkgroupMemoryExplicitLayoutTests(tcu::TestContext& t
 	tcu::TestCaseGroup* size = new tcu::TestCaseGroup(testCtx, "size", "Test blocks of various sizes");
 	AddSizeTests(size);
 	tests->addChild(size);
+
+	tcu::TestCaseGroup* copy_memory = new tcu::TestCaseGroup(testCtx, "copy_memory", "Test OpCopyMemory with Workgroup memory");
+	AddCopyMemoryTests(copy_memory);
+	tests->addChild(copy_memory);
 
 	return tests.release();
 }
