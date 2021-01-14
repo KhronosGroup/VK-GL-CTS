@@ -96,6 +96,9 @@ void checkWsiResult (VkResult result, const char* msg, const char* file, int lin
 	if (result == VK_SUBOPTIMAL_KHR)
 		return;
 
+	if (result == VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT)
+		return;
+
 	checkResult(result, msg, file, line);
 }
 

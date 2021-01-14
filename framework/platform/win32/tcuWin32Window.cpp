@@ -101,6 +101,11 @@ void Window::setVisible (bool visible)
 	ShowWindow(m_window, visible ? SW_SHOW : SW_HIDE);
 }
 
+void Window::setForeground(void)
+{
+	SetForegroundWindow(m_window);
+}
+
 void Window::setSize (int width, int height)
 {
 	RECT rc;

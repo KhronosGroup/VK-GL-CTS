@@ -39,6 +39,7 @@ public:
 				~Window				(void);
 
 	void		setVisible			(bool visible);
+	void		setForeground		(void);
 	void		setSize				(int width, int height);
 
 	LRESULT		windowProc			(UINT uMsg, WPARAM wParam, LPARAM lParam);
