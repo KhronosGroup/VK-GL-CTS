@@ -1350,6 +1350,15 @@ void AddCopyMemoryTests(tcu::TestCaseGroup* group)
 										{ "VariablePointerFeatures.variablePointers" }));
 }
 
+void AddZeroInitializeExtensionTests(tcu::TestCaseGroup* group)
+{
+	tcu::TestContext& testCtx = group->getTestContext();
+
+	group->addChild(CreateAmberTestCase(testCtx, "block", "", "zero_ext_block.amber"));
+	group->addChild(CreateAmberTestCase(testCtx, "other_block", "", "zero_ext_other_block.amber"));
+	group->addChild(CreateAmberTestCase(testCtx, "block_with_offset", "", "zero_ext_block_with_offset.amber"));
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createWorkgroupMemoryExplicitLayoutTests(tcu::TestContext& testCtx)
@@ -1375,6 +1384,10 @@ tcu::TestCaseGroup* createWorkgroupMemoryExplicitLayoutTests(tcu::TestContext& t
 	tcu::TestCaseGroup* copy_memory = new tcu::TestCaseGroup(testCtx, "copy_memory", "Test OpCopyMemory with Workgroup memory");
 	AddCopyMemoryTests(copy_memory);
 	tests->addChild(copy_memory);
+
+	tcu::TestCaseGroup* zero_ext = new tcu::TestCaseGroup(testCtx, "zero_ext", "Test interaction with VK_KHR_zero_initialize_workgroup_memory");
+	AddZeroInitializeExtensionTests(zero_ext);
+	tests->addChild(zero_ext);
 
 	return tests.release();
 }
