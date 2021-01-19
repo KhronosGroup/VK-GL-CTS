@@ -272,9 +272,14 @@ public:
 		else if (exp <= HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP)
 		{
 			/* store a denorm half-float value or zero */
-			exp = (HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP - exp) >> 23;
+			exp = ((HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP - exp) >> 23) + 14;
+			// handle 0.0 specially to avoid a right-shift by too many bits
+			if (exp >= 32)
+			{
+				return 0;
+			}
 			mantissa |= (1 << 23);
-			mantissa >>= (14 + exp);
+			mantissa >>= exp;
 			hf = (GLhalf)((((GLhalf)sign) << 15) | (GLhalf)(mantissa));
 		}
 		else
