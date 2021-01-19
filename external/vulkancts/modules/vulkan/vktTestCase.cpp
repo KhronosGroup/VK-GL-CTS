@@ -66,7 +66,6 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_EXT_",
 		"VK_KHX_",
 		"VK_NV_cooperative_matrix",
-		"VK_NV_shading_rate_image",
 		"VK_NV_ray_tracing",
 		"VK_AMD_mixed_attachment_samples",
 		"VK_AMD_shader_fragment_mask",

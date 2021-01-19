@@ -88,3 +88,4 @@ VK_KHR_ray_query							DEVICE
 VK_KHR_acceleration_structure				DEVICE
 VK_KHR_pipeline_library						DEVICE
 VK_KHR_deferred_host_operations				DEVICE
+VK_KHR_fragment_shading_rate				DEVICE

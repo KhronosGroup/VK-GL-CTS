@@ -2884,7 +2884,13 @@ tcu::TextureFormat mapVkFormat (VkFormat format)
 		case VK_FORMAT_R32G32B32A32_SFLOAT:		return TextureFormat(TextureFormat::RGBA,	TextureFormat::FLOAT);
 
 		case VK_FORMAT_R64_UINT:				return TextureFormat(TextureFormat::R,		TextureFormat::UNSIGNED_INT64);
+		case VK_FORMAT_R64G64_UINT:				return TextureFormat(TextureFormat::RG,		TextureFormat::UNSIGNED_INT64);
+		case VK_FORMAT_R64G64B64_UINT:			return TextureFormat(TextureFormat::RGB,	TextureFormat::UNSIGNED_INT64);
+		case VK_FORMAT_R64G64B64A64_UINT:		return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNSIGNED_INT64);
 		case VK_FORMAT_R64_SINT:				return TextureFormat(TextureFormat::R,		TextureFormat::SIGNED_INT64);
+		case VK_FORMAT_R64G64_SINT:				return TextureFormat(TextureFormat::RG,		TextureFormat::SIGNED_INT64);
+		case VK_FORMAT_R64G64B64_SINT:			return TextureFormat(TextureFormat::RGB,	TextureFormat::SIGNED_INT64);
+		case VK_FORMAT_R64G64B64A64_SINT:		return TextureFormat(TextureFormat::RGBA,	TextureFormat::SIGNED_INT64);
 		case VK_FORMAT_R64_SFLOAT:				return TextureFormat(TextureFormat::R,		TextureFormat::FLOAT64);
 		case VK_FORMAT_R64G64_SFLOAT:			return TextureFormat(TextureFormat::RG,		TextureFormat::FLOAT64);
 		case VK_FORMAT_R64G64B64_SFLOAT:		return TextureFormat(TextureFormat::RGB,	TextureFormat::FLOAT64);

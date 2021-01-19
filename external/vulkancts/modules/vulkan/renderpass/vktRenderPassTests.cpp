@@ -2124,7 +2124,7 @@ public:
 
 			bindBufferMemory(vk, device, *m_vertexBuffer, m_vertexBufferMemory->getMemory(), m_vertexBufferMemory->getOffset());
 
-			uploadBufferData(vk, device, *m_vertexBufferMemory, static_cast<size_t>(vertexBufferSize), renderQuad.getVertexPointer(), properties.limits.nonCoherentAtomSize);
+			uploadBufferData(vk, device, *m_vertexBufferMemory, renderQuad.getVertexDataSize(), renderQuad.getVertexPointer(), properties.limits.nonCoherentAtomSize);
 
 			if (renderInfo.getInputAttachmentCount() > 0)
 			{

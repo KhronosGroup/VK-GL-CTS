@@ -102,6 +102,7 @@
 #include "vktRayTracingTests.hpp"
 #include "vktRayQueryTests.hpp"
 #include "vktPostmortemTests.hpp"
+#include "vktFragmentShadingRateTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -535,6 +536,7 @@ void TestPackage::init (void)
 	addChild(modifiers::createTests				(m_testCtx));
 	addChild(RayTracing::createTests			(m_testCtx));
 	addChild(RayQuery::createTests				(m_testCtx));
+	addChild(FragmentShadingRate::createTests	(m_testCtx));
 }
 
 void ExperimentalTestPackage::init (void)
