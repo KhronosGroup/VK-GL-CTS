@@ -273,7 +273,7 @@ struct VulkanFeatures
 	ExtensionVariablePointersFeatures	extVariablePointers;
 	ExtensionVulkanMemoryModelFeatures	extVulkanMemoryModel;
 	ExtensionFloatControlsFeatures		floatControlsProperties;
-
+	vk::VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR extIntegerDotProduct;
 
 	VulkanFeatures				(void)
 		: extFloat16Int8		(0)

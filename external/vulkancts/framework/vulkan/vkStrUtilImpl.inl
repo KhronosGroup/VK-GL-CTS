@@ -599,6 +599,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INHERITED_VIEWPORT_SCISSOR_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INHERITED_VIEWPORT_SCISSOR_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_VIEWPORT_SCISSOR_INFO_NV:				return "VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_VIEWPORT_SCISSOR_INFO_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDER_PASS_TRANSFORM_INFO_QCOM:		return "VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDER_PASS_TRANSFORM_INFO_QCOM";
@@ -8116,6 +8118,55 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineExecutableInternalRep
 	s << "\tisText = " << value.isText << '\n';
 	s << "\tdataSize = " << value.dataSize << '\n';
 	s << "\tpData = " << value.pData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderIntegerDotProduct = " << value.shaderIntegerDotProduct << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tintegerDotProduct8BitUnsignedAccelerated = " << value.integerDotProduct8BitUnsignedAccelerated << '\n';
+	s << "\tintegerDotProduct8BitSignedAccelerated = " << value.integerDotProduct8BitSignedAccelerated << '\n';
+	s << "\tintegerDotProduct8BitMixedSignednessAccelerated = " << value.integerDotProduct8BitMixedSignednessAccelerated << '\n';
+	s << "\tintegerDotProduct4x8BitPackedUnsignedAccelerated = " << value.integerDotProduct4x8BitPackedUnsignedAccelerated << '\n';
+	s << "\tintegerDotProduct4x8BitPackedSignedAccelerated = " << value.integerDotProduct4x8BitPackedSignedAccelerated << '\n';
+	s << "\tintegerDotProduct4x8BitPackedMixedSignednessAccelerated = " << value.integerDotProduct4x8BitPackedMixedSignednessAccelerated << '\n';
+	s << "\tintegerDotProduct16BitUnsignedAccelerated = " << value.integerDotProduct16BitUnsignedAccelerated << '\n';
+	s << "\tintegerDotProduct16BitSignedAccelerated = " << value.integerDotProduct16BitSignedAccelerated << '\n';
+	s << "\tintegerDotProduct16BitMixedSignednessAccelerated = " << value.integerDotProduct16BitMixedSignednessAccelerated << '\n';
+	s << "\tintegerDotProduct32BitUnsignedAccelerated = " << value.integerDotProduct32BitUnsignedAccelerated << '\n';
+	s << "\tintegerDotProduct32BitSignedAccelerated = " << value.integerDotProduct32BitSignedAccelerated << '\n';
+	s << "\tintegerDotProduct32BitMixedSignednessAccelerated = " << value.integerDotProduct32BitMixedSignednessAccelerated << '\n';
+	s << "\tintegerDotProduct64BitUnsignedAccelerated = " << value.integerDotProduct64BitUnsignedAccelerated << '\n';
+	s << "\tintegerDotProduct64BitSignedAccelerated = " << value.integerDotProduct64BitSignedAccelerated << '\n';
+	s << "\tintegerDotProduct64BitMixedSignednessAccelerated = " << value.integerDotProduct64BitMixedSignednessAccelerated << '\n';
+	s << "\tintegerDotProductAccumulatingSaturating8BitUnsignedAccelerated = " << value.integerDotProductAccumulatingSaturating8BitUnsignedAccelerated << '\n';
+	s << "\tintegerDotProductAccumulatingSaturating8BitSignedAccelerated = " << value.integerDotProductAccumulatingSaturating8BitSignedAccelerated << '\n';
+	s << "\tintegerDotProductAccumulatingSaturating8BitMixedSignednessAccelerated = " << value.integerDotProductAccumulatingSaturating8BitMixedSignednessAccelerated << '\n';
+	s << "\tintegerDotProductAccumulatingSaturating4x8BitPackedUnsignedAccelerated = " << value.integerDotProductAccumulatingSaturating4x8BitPackedUnsignedAccelerated << '\n';
+	s << "\tintegerDotProductAccumulatingSaturating4x8BitPackedSignedAccelerated = " << value.integerDotProductAccumulatingSaturating4x8BitPackedSignedAccelerated << '\n';
+	s << "\tintegerDotProductAccumulatingSaturating4x8BitPackedMixedSignednessAccelerated = " << value.integerDotProductAccumulatingSaturating4x8BitPackedMixedSignednessAccelerated << '\n';
+	s << "\tintegerDotProductAccumulatingSaturating16BitUnsignedAccelerated = " << value.integerDotProductAccumulatingSaturating16BitUnsignedAccelerated << '\n';
+	s << "\tintegerDotProductAccumulatingSaturating16BitSignedAccelerated = " << value.integerDotProductAccumulatingSaturating16BitSignedAccelerated << '\n';
+	s << "\tintegerDotProductAccumulatingSaturating16BitMixedSignednessAccelerated = " << value.integerDotProductAccumulatingSaturating16BitMixedSignednessAccelerated << '\n';
+	s << "\tintegerDotProductAccumulatingSaturating32BitUnsignedAccelerated = " << value.integerDotProductAccumulatingSaturating32BitUnsignedAccelerated << '\n';
+	s << "\tintegerDotProductAccumulatingSaturating32BitSignedAccelerated = " << value.integerDotProductAccumulatingSaturating32BitSignedAccelerated << '\n';
+	s << "\tintegerDotProductAccumulatingSaturating32BitMixedSignednessAccelerated = " << value.integerDotProductAccumulatingSaturating32BitMixedSignednessAccelerated << '\n';
+	s << "\tintegerDotProductAccumulatingSaturating64BitUnsignedAccelerated = " << value.integerDotProductAccumulatingSaturating64BitUnsignedAccelerated << '\n';
+	s << "\tintegerDotProductAccumulatingSaturating64BitSignedAccelerated = " << value.integerDotProductAccumulatingSaturating64BitSignedAccelerated << '\n';
+	s << "\tintegerDotProductAccumulatingSaturating64BitMixedSignednessAccelerated = " << value.integerDotProductAccumulatingSaturating64BitMixedSignednessAccelerated << '\n';
 	s << '}';
 	return s;
 }

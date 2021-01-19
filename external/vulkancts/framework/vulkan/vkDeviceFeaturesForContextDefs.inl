@@ -64,6 +64,7 @@ const vk::VkPhysicalDeviceShaderDrawParametersFeatures&					Context::getShaderDr
 const vk::VkPhysicalDeviceShaderFloat16Int8Features&					Context::getShaderFloat16Int8Features					(void) const { return m_device->getShaderFloat16Int8Features();					}
 const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&			Context::getShaderImageAtomicInt64FeaturesEXT			(void) const { return m_device->getShaderImageAtomicInt64FeaturesEXT();			}
 const vk::VkPhysicalDeviceShaderImageFootprintFeaturesNV&				Context::getShaderImageFootprintFeatures				(void) const { return m_device->getShaderImageFootprintFeatures();				}
+const vk::VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR&			Context::getShaderIntegerDotProductFeatures				(void) const { return m_device->getShaderIntegerDotProductFeatures();			}
 const vk::VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL&			Context::getShaderIntegerFunctions2FeaturesINTEL		(void) const { return m_device->getShaderIntegerFunctions2FeaturesINTEL();		}
 const vk::VkPhysicalDeviceShaderSMBuiltinsFeaturesNV&					Context::getShaderSMBuiltinsFeatures					(void) const { return m_device->getShaderSMBuiltinsFeatures();					}
 const vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures&			Context::getShaderSubgroupExtendedTypesFeatures			(void) const { return m_device->getShaderSubgroupExtendedTypesFeatures();		}

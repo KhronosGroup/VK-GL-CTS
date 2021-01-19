@@ -133,3 +133,4 @@ VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT			FEATURES ( vertexInputDynam
 VkPhysicalDeviceColorWriteEnableFeaturesEXT					FEATURES ( colorWriteEnable )									REQUIREMENTS ( VK_EXT_color_write_enable )
 VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT			FEATURES ( ycbcr2plane444Formats )								REQUIREMENTS ( VK_EXT_ycbcr_2plane_444_formats )
 VkPhysicalDeviceExtendedDynamicState2FeaturesEXT			FEATURES ( extendedDynamicState2 )								REQUIREMENTS ( VK_EXT_extended_dynamic_state2 )
+VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR          FEATURES ( shaderIntegerDotProduct )							REQUIREMENTS ( VK_KHR_shader_integer_dot_product )

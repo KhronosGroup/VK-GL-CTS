@@ -1740,7 +1740,8 @@ def writeDeviceFeatures2(api, filename):
 		'VkPhysicalDeviceDescriptorIndexingFeatures',
 		'VkPhysicalDeviceTimelineSemaphoreFeatures',
 		'VkPhysicalDeviceFragmentDensityMapFeaturesEXT',
-		'VkPhysicalDeviceFragmentDensityMap2FeaturesEXT'
+		'VkPhysicalDeviceFragmentDensityMap2FeaturesEXT',
+		'VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR',
 	]
 	# helper class used to encapsulate all data needed during generation
 	class StructureDetail:
