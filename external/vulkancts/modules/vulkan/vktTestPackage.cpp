@@ -194,6 +194,8 @@ public:
 	virtual tcu::TestNode::IterateResult		iterate				(tcu::TestCase* testCase);
 
 private:
+	void										logUnusedShaders	(tcu::TestCase* testCase);
+
 	bool										spirvVersionSupported(vk::SpirvVersion);
 	vk::BinaryCollection						m_progCollection;
 	vk::BinaryRegistryReader					m_prebuiltBinRegistry;
@@ -340,7 +342,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 	m_context.resultSetOnValidation(false);
 }
 
-void TestCaseExecutor::deinit (tcu::TestCase*)
+void TestCaseExecutor::deinit (tcu::TestCase* testCase)
 {
 	delete m_instance;
 	m_instance = DE_NULL;
@@ -350,6 +352,46 @@ void TestCaseExecutor::deinit (tcu::TestCase*)
 	// Collect and report any debug messages
 	if (m_context.hasDebugReportRecorder())
 		collectAndReportDebugMessages(m_context.getDebugReportRecorder(), m_context);
+
+	if (testCase != DE_NULL)
+		logUnusedShaders(testCase);
+}
+
+void TestCaseExecutor::logUnusedShaders (tcu::TestCase* testCase)
+{
+	const qpTestResult	testResult	= testCase->getTestContext().getTestResult();
+
+	if (testResult == QP_TEST_RESULT_PASS || testResult == QP_TEST_RESULT_QUALITY_WARNING || testResult == QP_TEST_RESULT_COMPATIBILITY_WARNING)
+	{
+		bool	unusedShaders	= false;
+
+		for (vk::BinaryCollection::Iterator it = m_progCollection.begin(); it != m_progCollection.end(); ++it)
+		{
+			if (!it.getProgram().getUsed())
+			{
+				unusedShaders = true;
+
+				break;
+			}
+		}
+
+		if (unusedShaders)
+		{
+			std::string message;
+
+			for (vk::BinaryCollection::Iterator it = m_progCollection.begin(); it != m_progCollection.end(); ++it)
+			{
+				if (!it.getProgram().getUsed())
+					message += it.getName() + ",";
+			}
+
+			message.resize(message.size() - 1);
+
+			message = std::string("Unused shaders: ") + message;
+
+			m_context.getTestContext().getLog() << TestLog::Message << message << TestLog::EndMessage;
+		}
+	}
 }
 
 tcu::TestNode::IterateResult TestCaseExecutor::iterate (tcu::TestCase*)

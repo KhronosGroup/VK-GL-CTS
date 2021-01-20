@@ -53,9 +53,13 @@ public:
 	size_t						getSize			(void) const { return m_binary.size();								}
 	const deUint8*				getBinary		(void) const { return m_binary.empty() ? DE_NULL : &m_binary[0];	}
 
+	inline void					setUsed			(void) const { m_used = true;										}
+	inline bool					getUsed			(void) const { return m_used;										}
+
 private:
 	const ProgramFormat			m_format;
 	const std::vector<deUint8>	m_binary;
+	mutable bool				m_used;
 };
 
 struct BinaryBuildOptions

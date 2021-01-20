@@ -60,6 +60,7 @@ using std::map;
 ProgramBinary::ProgramBinary (ProgramFormat format, size_t binarySize, const deUint8* binary)
 	: m_format	(format)
 	, m_binary	(binary, binary+binarySize)
+	, m_used	(false)
 {
 }
 
@@ -696,6 +697,8 @@ Move<VkShaderModule> createShaderModule (const DeviceInterface& deviceInterface,
 			(deUintptr)binary.getSize(),
 			(const deUint32*)binary.getBinary(),
 		};
+
+		binary.setUsed();
 
 		return createShaderModule(deviceInterface, device, &shaderModuleInfo);
 	}
