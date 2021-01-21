@@ -479,10 +479,8 @@ void GL45FunctionalTests::init (void)
 	addChild(new ProgramInterfaceQueryTests				(m_context));
 	addChild(new LayoutBindingTests						(m_context));
 	addChild(new PrimitiveBoundingBoxTests				(m_context));
-	addChild(new AndroidExtensionPackES31ATests			(m_context));
 	addChild(createCopyImageTests						(m_context));
 	addChild(createDrawBuffersIndexedTests				(m_context));
-	addChild(new DefaultVertexArrayObjectTests			(m_context));
 	addChild(new SRGBTextureDecodeTests					(m_context));
 	addChild(new DrawElementsBaseVertexTests			(m_context));
 }
