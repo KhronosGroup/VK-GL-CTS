@@ -59,7 +59,16 @@ void TestPackage::init (void)
 	try
 	{
 		// Create context
-		m_context = new Context(m_testCtx);
+		// Some of the tests will test ES3.2 functionality if supported so try to create a 3.2 context
+		// first. If that doesn't work then create an ES3.1 context.
+		try
+		{
+			m_context = new Context(m_testCtx, glu::ApiType::es(3, 2));
+		}
+		catch (...)
+		{
+			m_context = new Context(m_testCtx, glu::ApiType::es(3, 1));
+		}
 
 		// Setup waiver mechanism
 		if (m_testCtx.getCommandLine().getRunMode() == tcu::RUNMODE_EXECUTE)

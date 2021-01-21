@@ -61,15 +61,7 @@ void Context::createRenderContext (void)
 
 	try
 	{
-		try
-		{
-			m_renderCtx		= glu::createDefaultRenderContext(m_testCtx.getPlatform(), m_testCtx.getCommandLine(), m_apiType);
-		}
-		catch (...)
-		{
-			m_apiType		= glu::ApiType::es(3, 1);
-			m_renderCtx		= glu::createDefaultRenderContext(m_testCtx.getPlatform(), m_testCtx.getCommandLine(), m_apiType);
-		}
+		m_renderCtx		= glu::createDefaultRenderContext(m_testCtx.getPlatform(), m_testCtx.getCommandLine(), m_apiType);
 		m_contextInfo	= glu::ContextInfo::create(*m_renderCtx);
 	}
 	catch (...)
