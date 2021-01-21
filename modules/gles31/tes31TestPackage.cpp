@@ -83,9 +83,9 @@ void TestPackage::init (void)
 		}
 
 		// Add main test groups
-		addChild(new InfoTests						(*m_context));
-		addChild(new Functional::FunctionalTests	(*m_context));
-		addChild(new Stress::StressTests			(*m_context));
+		addChild(new InfoTests							(*m_context));
+		addChild(new Functional::GLES31FunctionalTests	(*m_context));
+		addChild(new Stress::StressTests				(*m_context));
 	}
 	catch (...)
 	{

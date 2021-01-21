@@ -397,16 +397,16 @@ public:
 	}
 };
 
-FunctionalTests::FunctionalTests (Context& context)
+GLES31FunctionalTests::GLES31FunctionalTests (Context& context)
 	: TestCaseGroup(context, "functional", "Functionality Tests")
 {
 }
 
-FunctionalTests::~FunctionalTests (void)
+GLES31FunctionalTests::~GLES31FunctionalTests (void)
 {
 }
 
-void FunctionalTests::init (void)
+void GLES31FunctionalTests::init (void)
 {
 	addChild(new ShaderTests							(m_context));
 	addChild(new ComputeTests							(m_context));
@@ -426,7 +426,52 @@ void FunctionalTests::init (void)
 	addChild(new VertexAttributeBindingTests			(m_context));
 	addChild(new ProgramUniformTests					(m_context));
 	addChild(new AdvancedBlendTests						(m_context));
-	addChild(createSeparateShaderTests					(m_context));
+	addChild(createGLESSeparateShaderTests				(m_context));
+	addChild(new UniformLocationTests					(m_context));
+	addChild(new TessellationGeometryInteractionTests	(m_context));
+	addChild(new DebugTests								(m_context));
+	addChild(new FboTests								(m_context));
+	addChild(new ProgramInterfaceQueryTests				(m_context));
+	addChild(new LayoutBindingTests						(m_context));
+	addChild(new PrimitiveBoundingBoxTests				(m_context));
+	addChild(new AndroidExtensionPackES31ATests			(m_context));
+	addChild(createCopyImageTests						(m_context));
+	addChild(createDrawBuffersIndexedTests				(m_context));
+	addChild(new DefaultVertexArrayObjectTests			(m_context));
+	addChild(new SRGBTextureDecodeTests					(m_context));
+	addChild(new DrawElementsBaseVertexTests			(m_context));
+}
+
+GL45FunctionalTests::GL45FunctionalTests (Context& context)
+	: TestCaseGroup(context, "functional", "Functionality Tests")
+{
+}
+
+GL45FunctionalTests::~GL45FunctionalTests (void)
+{
+}
+
+void GL45FunctionalTests::init (void)
+{
+	addChild(new ShaderTests							(m_context));
+	addChild(new ComputeTests							(m_context));
+	addChild(new DrawTests								(m_context));
+	addChild(new TessellationTests						(m_context));
+	addChild(new SSBOTests								(m_context));
+	addChild(new UniformBlockTests						(m_context));
+	addChild(new ShaderImageLoadStoreTests				(m_context));
+	addChild(new AtomicCounterTests						(m_context));
+	addChild(new StencilTexturingTests					(m_context));
+	addChild(new TextureTests							(m_context));
+	addChild(new StateQueryTests						(m_context));
+	addChild(new MultisampleTests						(m_context));
+	addChild(new SynchronizationTests					(m_context));
+	addChild(new GeometryShaderTests					(m_context));
+	addChild(new SampleShadingTests						(m_context));
+	addChild(new VertexAttributeBindingTests			(m_context));
+	addChild(new ProgramUniformTests					(m_context));
+	addChild(new AdvancedBlendTests						(m_context));
+	addChild(createCommonSeparateShaderTests			(m_context));
 	addChild(new UniformLocationTests					(m_context));
 	addChild(new TessellationGeometryInteractionTests	(m_context));
 	addChild(new DebugTests								(m_context));

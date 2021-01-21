@@ -74,8 +74,8 @@ void TestPackageGL45::init (void)
 		}
 
 		// Add main test groups
-		addChild(new InfoTests						(*m_context));
-		addChild(new Functional::FunctionalTests	(*m_context));
+		addChild(new InfoTests							(*m_context));
+		addChild(new Functional::GL45FunctionalTests	(*m_context));
 	}
 	catch (...)
 	{
