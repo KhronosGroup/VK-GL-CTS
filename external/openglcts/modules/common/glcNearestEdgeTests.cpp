@@ -74,7 +74,7 @@ public:
 
 	static std::string				getName			(OffsetDirection direction);
 	static std::string				getDesc			(OffsetDirection direction);
-	static tcu::TextureFormat		toTextureFormat	(const tcu::PixelFormat& pixelFmt);
+	static tcu::TextureFormat		toTextureFormat	(deqp::Context& context, const tcu::PixelFormat& pixelFmt);
 
 private:
 	static const glw::GLenum kTextureType	= GL_TEXTURE_2D;
@@ -124,7 +124,7 @@ std::string NearestEdgeTestCase::getDesc (OffsetDirection direction)
 
 // Translate pixel format in the frame buffer to texture format.
 // Copied from sglrReferenceContext.cpp.
-tcu::TextureFormat NearestEdgeTestCase::toTextureFormat (const tcu::PixelFormat& pixelFmt)
+tcu::TextureFormat NearestEdgeTestCase::toTextureFormat (deqp::Context& context, const tcu::PixelFormat& pixelFmt)
 {
 	static const struct
 	{
@@ -144,7 +144,24 @@ tcu::TextureFormat NearestEdgeTestCase::toTextureFormat (const tcu::PixelFormat&
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(pixelFormatMap); ndx++)
 	{
 		if (pixelFormatMap[ndx].pixelFmt == pixelFmt)
-			return pixelFormatMap[ndx].texFmt;
+		{
+			// Some implementations treat GL_RGB8 as GL_RGBA8888,so the test should pass implementation format to ReadPixels.
+			if (pixelFmt == tcu::PixelFormat(8,8,8,0))
+			{
+				const auto& gl = context.getRenderContext().getFunctions();
+
+				glw::GLint implFormat = GL_NONE;
+				glw::GLint implType   = GL_NONE;
+				gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT,&implFormat);
+				gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE,&implType);
+				if(implFormat == GL_RGBA && implType == GL_UNSIGNED_BYTE)
+					return tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::UNORM_INT8);
+			}
+			else
+			{
+				return pixelFormatMap[ndx].texFmt;
+			}
+		}
 	}
 
 	TCU_FAIL("Unable to map pixel format to texture format");
@@ -156,7 +173,7 @@ NearestEdgeTestCase::NearestEdgeTestCase (deqp::Context& context, OffsetDirectio
 	, m_width			{context.getRenderTarget().getWidth()}
 	, m_height			{context.getRenderTarget().getHeight()}
 	, m_format			{context.getRenderTarget().getPixelFormat()}
-	, m_texFormat		{toTextureFormat(m_format)}
+	, m_texFormat		{toTextureFormat(context, m_format)}
 	, m_texFormatInfo	{tcu::getTextureFormatInfo(m_texFormat)}
 	, m_transFormat		{glu::getTransferFormat(m_texFormat)}
 {
