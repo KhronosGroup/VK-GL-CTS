@@ -18,7 +18,7 @@
  *
  *//*!
  * \file vktPipelineInterfaceMatchingTests.cpp
- * \brief Tests for decorations matching
+ * \brief Interface matching tests
  *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineInterfaceMatchingTests.hpp"
@@ -53,7 +53,8 @@ namespace
 
 enum class TestType
 {
-	DECORATION_MISMATCH = 0,
+	VECTOR_LENGTH			= 0,
+	DECORATION_MISMATCH,
 };
 
 enum class VecType
@@ -101,6 +102,11 @@ enum class PipelineType
 enum class DefinitionType
 {
 	LOOSE_VARIABLE = 0,
+	MEMBER_OF_BLOCK,
+	MEMBER_OF_STRUCTURE,
+	MEMBER_OF_ARRAY_OF_STRUCTURES,
+	MEMBER_OF_STRUCTURE_IN_BLOCK,
+	MEMBER_OF_ARRAY_OF_STRUCTURES_IN_BLOCK,
 };
 
 struct TestParams
@@ -434,6 +440,7 @@ protected:
 
 	const VecData&			getVecData					(VecType vecType) const;
 	const DecorationData&	getDecorationData			(DecorationType decorationType) const;
+
 	const PipelineData&		getPipelineData				(PipelineType pipelineType) const;
 	std::string				generateName				(const TestParams& testParams) const;
 
@@ -487,6 +494,89 @@ void InterfaceMatchingTestCase::initPrograms(SourceCollections& sourceCollection
 		inDeclaration			= "layout(location = 0" +  inDecorationData.glslComponent + ") in "  +  inDecoration +  inVecData.glslType + " looseVariable" + inDeclArray  + ";\n";
 		variableToAssignName	= "looseVariable" + variableToAssignArray;
 		variableToVerifyName	= "looseVariable" + variableToVerifyArray;
+		break;
+
+	case DefinitionType::MEMBER_OF_BLOCK:
+		outDeclaration		   += "layout(location = 0) out block {\n"
+								  "  vec2 dummy;\n"
+								  "layout(location = 1) " +
+								  outDecoration + outVecData.glslType + " variableInBlock;\n"
+								  "} testBlock" + outDeclArray + ";\n";
+		inDeclaration		   += "in block {\n"
+								  "layout(location = 0) vec2 dummy;\n"
+								  "layout(location = 1) " +
+								  inDecoration + inVecData.glslType + " variableInBlock;\n"
+								  "} testBlock" + inDeclArray + ";\n";
+		variableToAssignName	= "testBlock" + variableToAssignArray + ".variableInBlock";
+		variableToVerifyName	= "testBlock" + variableToVerifyArray + ".variableInBlock";
+		break;
+
+	case DefinitionType::MEMBER_OF_STRUCTURE:
+		outDeclaration		   += "layout(location = 0) out " + outDecoration + "struct {\n"
+								  "  vec2 dummy;\n"
+								  "  " + outVecData.glslType + " variableInStruct;\n"
+								  "} testStruct" + outDeclArray + ";\n";
+		inDeclaration		   += "layout(location = 0) in " + inDecoration + "struct {\n"
+								  "  vec2 dummy;\n"
+								  "  " + inVecData.glslType + " variableInStruct;\n"
+								  "} testStruct" + inDeclArray + ";\n";
+		variableToAssignName	= "testStruct" + variableToAssignArray + ".variableInStruct";
+		variableToVerifyName	= "testStruct" + variableToVerifyArray + ".variableInStruct";
+		break;
+
+	case DefinitionType::MEMBER_OF_ARRAY_OF_STRUCTURES:
+		outDeclaration		   += "layout(location = 0) out " + outDecoration + "struct {\n"
+								  "  float dummy;\n"
+								  "  " + outVecData.glslType + " variableInStruct;\n"
+								  "} testStructArray" + outDeclArray + "[3];\n";
+		inDeclaration		   += "layout(location = 0) in " + inDecoration + "struct {\n"
+								  "  float dummy;\n"
+								  "  " + inVecData.glslType + " variableInStruct;\n"
+								  "} testStructArray" + inDeclArray + "[3];\n";
+		// just verify last item from array
+		variableToAssignName	= "testStructArray" + variableToAssignArray + "[2].variableInStruct";
+		variableToVerifyName	= "testStructArray" + variableToVerifyArray + "[2].variableInStruct";
+		break;
+
+	case DefinitionType::MEMBER_OF_STRUCTURE_IN_BLOCK:
+		outDeclaration		   += "struct TestStruct {\n"
+								  "  vec2 dummy;\n"
+								  "  " + outVecData.glslType + " variableInStruct;\n"
+								  "};\n"
+								  "layout(location = 0) out block {\n"
+								  "  vec2 dummy;\n"
+								  "  " + outDecoration + "TestStruct structInBlock;\n"
+								  "} testBlock" + outDeclArray + ";\n";
+		inDeclaration		   += "struct TestStruct {\n"
+								  "  vec2 dummy;\n"
+								  "  " + inVecData.glslType + " variableInStruct;\n"
+								  "};\n"
+								  "layout(location = 0) in block {\n"
+								  "  vec2 dummy;\n"
+								  "  " + inDecoration + "TestStruct structInBlock;\n"
+								  "} testBlock" + inDeclArray + ";\n";
+		variableToAssignName	= "testBlock" + variableToAssignArray  + ".structInBlock.variableInStruct";
+		variableToVerifyName	= "testBlock" + variableToVerifyArray  + ".structInBlock.variableInStruct";
+		break;
+
+	case DefinitionType::MEMBER_OF_ARRAY_OF_STRUCTURES_IN_BLOCK:
+		outDeclaration		   += "struct TestStruct {\n"
+								  "  vec4 dummy;\n"
+								  "  " + outVecData.glslType + " variableInStruct;\n"
+								  "};\n"
+								  "layout(location = 0) out block {\n"
+								  "  " + outDecoration + "TestStruct structArrayInBlock[3];\n"
+								  "} testBlock" + outDeclArray + ";\n";
+		inDeclaration		   += "struct TestStruct {\n"
+								  "  vec4 dummy;\n"
+								  "  " + inVecData.glslType + " variableInStruct;\n"
+								  "};"
+								  "layout(location = 0) in block {\n"
+								  "  " + inDecoration + "TestStruct structArrayInBlock[3];\n"
+								  "} testBlock" + inDeclArray + ";\n";
+		// just verify second item from array
+		variableToAssignName	= "testBlock" + variableToAssignArray  + ".structArrayInBlock[1].variableInStruct";
+		variableToVerifyName	= "testBlock" + variableToVerifyArray  + ".structArrayInBlock[1].variableInStruct";
 		break;
 
 	default:
@@ -880,14 +970,24 @@ std::string InterfaceMatchingTestCase::generateName(const TestParams& testParams
 	static const std::map <DefinitionType, std::string> definitionTypeMap
 	{
 		{ DefinitionType::LOOSE_VARIABLE,							"loose_variable" },
+		{ DefinitionType::MEMBER_OF_BLOCK,							"member_of_block" },
+		{ DefinitionType::MEMBER_OF_STRUCTURE,						"member_of_structure" },
+		{ DefinitionType::MEMBER_OF_ARRAY_OF_STRUCTURES,			"member_of_array_of_structures" },
+		{ DefinitionType::MEMBER_OF_STRUCTURE_IN_BLOCK,				"member_of_structure_in_block" },
+		{ DefinitionType::MEMBER_OF_ARRAY_OF_STRUCTURES_IN_BLOCK,	"member_of_array_of_structures_in_block" },
 	};
 
 	DE_ASSERT(pipelineTypeMap.find(testParams.pipelineType) != pipelineTypeMap.end());
 	DE_ASSERT(definitionTypeMap.find(testParams.definitionType) != definitionTypeMap.end());
 
 	std::string caseName;
-	caseName = "out_" + getDecorationData(testParams.outDeclDecoration).namePart +
-			   "_in_" + getDecorationData(testParams.inDeclDecoration).namePart;
+
+	if (testParams.testType == TestType::VECTOR_LENGTH)
+		caseName = "out_" + getVecData(testParams.outVecType).glslType +
+				   "_in_" + getVecData(testParams.inVecType).glslType;
+	else
+		caseName = "out_" + getDecorationData(testParams.outDeclDecoration).namePart +
+				   "_in_" + getDecorationData(testParams.inDeclDecoration).namePart;
 
 	return caseName + "_" +
 		   definitionTypeMap.at(testParams.definitionType) + "_" +
@@ -898,6 +998,13 @@ std::string InterfaceMatchingTestCase::generateName(const TestParams& testParams
 
 tcu::TestCaseGroup* createInterfaceMatchingTests(tcu::TestContext& testCtx)
 {
+	VecType vecTypeList[3][3]
+	{
+		{ VecType::VEC4,	VecType::VEC3,		VecType::VEC2 },	// float
+		{ VecType::IVEC4,	VecType::IVEC3,		VecType::IVEC2 },	// int
+		{ VecType::UVEC4,	VecType::UVEC3,		VecType::UVEC2 },	// uint
+	};
+
 	PipelineType pipelineTypeList[]
 	{
 		PipelineType::VERT_OUT_FRAG_IN,
@@ -914,9 +1021,42 @@ tcu::TestCaseGroup* createInterfaceMatchingTests(tcu::TestContext& testCtx)
 	DefinitionType definitionsTypeList[]
 	{
 		DefinitionType::LOOSE_VARIABLE,
+		DefinitionType::MEMBER_OF_BLOCK,
+		DefinitionType::MEMBER_OF_STRUCTURE,
+		DefinitionType::MEMBER_OF_ARRAY_OF_STRUCTURES,
+		DefinitionType::MEMBER_OF_STRUCTURE_IN_BLOCK,
+		DefinitionType::MEMBER_OF_ARRAY_OF_STRUCTURES_IN_BLOCK,
 	};
 
 	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "interface_matching", ""));
+
+	de::MovePtr<tcu::TestCaseGroup> vectorMatching(new tcu::TestCaseGroup(testCtx, "vector_length", "Tests vector matching"));
+	for (PipelineType pipelineType : pipelineTypeList)
+		for (DefinitionType defType : definitionsTypeList)
+		{
+			// iterate over vector type - float, int or uint
+			for (deUint32 vecDataFormat = 0; vecDataFormat < 3; ++vecDataFormat)
+			{
+				// iterate over all out/in lenght combinations
+				const VecType* currentVecTypeList = vecTypeList[vecDataFormat];
+				for (deUint32 vecSizeIndex = 0; vecSizeIndex < 3; ++vecSizeIndex)
+				{
+					VecType vecType = currentVecTypeList[vecSizeIndex];
+					auto testParams = new TestParams
+					{
+						TestType::VECTOR_LENGTH,
+						vecType,
+						vecType,
+						DecorationType::NONE,
+						DecorationType::NONE,
+						pipelineType,
+						defType
+					};
+					vectorMatching->addChild(new InterfaceMatchingTestCase(testCtx, TestParamsSp(testParams)));
+				}
+			}
+		}
+	testGroup->addChild(vectorMatching.release());
 
 	std::vector<std::pair<DecorationType, DecorationType> > decorationPairs
 	{
@@ -932,27 +1072,20 @@ tcu::TestCaseGroup* createInterfaceMatchingTests(tcu::TestContext& testCtx)
 
 	de::MovePtr<tcu::TestCaseGroup> decorationMismatching(new tcu::TestCaseGroup(testCtx, "decoration_mismatch", "Decoration mismatch tests"));
 	for (PipelineType stageType : pipelineTypeList)
-		for (DefinitionType defType : definitionsTypeList)
-			for (const auto& decoration : decorationPairs)
+		for (const auto& decoration : decorationPairs)
+		{
+			auto testParams = new TestParams
 			{
-				// tests component = 0 only for loose variables or member of block
-				if (((decoration.first == DecorationType::COMPONENT0) ||
-					 (decoration.second == DecorationType::COMPONENT0)) &&
-					 (defType == DefinitionType::LOOSE_VARIABLE))
-					continue;
-
-				auto testParams = new TestParams
-				{
-					TestType::DECORATION_MISMATCH,
-					VecType::VEC4,
-					VecType::VEC4,
-					decoration.first,
-					decoration.second,
-					stageType,
-					defType
-				};
-				decorationMismatching->addChild(new InterfaceMatchingTestCase(testCtx, TestParamsSp(testParams)));
-			}
+				TestType::DECORATION_MISMATCH,
+				VecType::VEC4,
+				VecType::VEC4,
+				decoration.first,
+				decoration.second,
+				stageType,
+				DefinitionType::LOOSE_VARIABLE
+			};
+			decorationMismatching->addChild(new InterfaceMatchingTestCase(testCtx, TestParamsSp(testParams)));
+		}
 
 	testGroup->addChild(decorationMismatching.release());
 	return testGroup.release();

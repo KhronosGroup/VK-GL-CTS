@@ -20,7 +20,7 @@
  *
  *//*!
  * \file vktPipelineInterfaceMatchingTests.hpp
- * \brief Tests for decorations matching
+ * \brief Interface matching tests
  *//*--------------------------------------------------------------------*/
 
 #include "vktTestCase.hpp"
