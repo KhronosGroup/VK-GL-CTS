@@ -2672,7 +2672,8 @@ void NegativeTextureApiTests::init (void)
 			// textures ... result in an INVALID_OPERATION error.
 			// Also, if LDR is supported, formats cannot be invalid enums
 
-			if (m_context.getContextInfo().isExtensionSupported("GL_KHR_texture_compression_astc_hdr") ||
+			if (m_context.getContextInfo().isExtensionSupported("GL_KHR_texture_compression_astc_sliced_3d") ||
+				m_context.getContextInfo().isExtensionSupported("GL_KHR_texture_compression_astc_hdr") ||
 				m_context.getContextInfo().isExtensionSupported("GL_OES_texture_compression_astc"))
 			{
 				m_log.writeMessage("Full ASTC supported. No negative API requirements.");
@@ -3128,7 +3129,8 @@ void NegativeTextureApiTests::init (void)
 			// no effect.
 			// In conclusion: Expect same errors as with TexImage?D
 
-			if (m_context.getContextInfo().isExtensionSupported("GL_KHR_texture_compression_astc_hdr") ||
+			if (m_context.getContextInfo().isExtensionSupported("GL_KHR_texture_compression_astc_sliced_3d") ||
+				m_context.getContextInfo().isExtensionSupported("GL_KHR_texture_compression_astc_hdr") ||
 				m_context.getContextInfo().isExtensionSupported("GL_OES_texture_compression_astc"))
 			{
 				m_log.writeMessage("Full ASTC supported. No negative API requirements.");
