@@ -1,0 +1,280 @@
+#!amber
+
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a coverage-gap found by the GraphicsFuzz project.
+
+# Short description: A fragment shader that covers specific NIR code paths
+
+# The test passes because the shader always writes red.
+
+SHADER vertex texgen_vert PASSTHROUGH
+
+SHADER fragment texgen_frag GLSL
+#version 430
+precision highp float;
+
+layout(location = 0) out vec4 _GLF_color;
+
+void main()
+{
+ _GLF_color = vec4(
+ gl_FragCoord.x * (1.0 / 256.0),
+ (int(gl_FragCoord.x) ^ int(gl_FragCoord.y)) * (1.0 / 256.0),
+ gl_FragCoord.y * (1.0 / 256.0),
+ 1.0);
+}
+END
+BUFFER default_texture FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics texgen_pipeline
+  ATTACH texgen_vert
+  ATTACH texgen_frag
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER default_texture AS color LOCATION 0
+END
+
+CLEAR_COLOR texgen_pipeline 0 0 0 255
+CLEAR texgen_pipeline
+RUN texgen_pipeline DRAW_RECT POS 0 0  SIZE 256 256
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 320 es
+# #define _int_100 _GLF_uniform_int_values[0]
+# #define _int_0 _GLF_uniform_int_values[1]
+# #define _int_1 _GLF_uniform_int_values[2]
+# #define _float_0_0 _GLF_uniform_float_values[0]
+# #define _float_1_0 _GLF_uniform_float_values[1]
+# #define _float_256_0 _GLF_uniform_float_values[2]
+#
+# precision highp int;
+# precision highp float;
+#
+# // Contents of _GLF_uniform_float_values: [0.0, 1.0, 256.0]
+# layout(set = 0, binding = 0) uniform buf0
+# {
+#     float _GLF_uniform_float_values[3];
+# };
+# // Contents of _GLF_uniform_int_values: [100, 0, 1]
+# layout(set = 0, binding = 1) uniform buf1
+# {
+#     int _GLF_uniform_int_values[3];
+# };
+# layout(location = 0) out vec4 _GLF_color;
+#
+# layout(set = 0, binding = 2) uniform sampler2D tex;
+#
+# void main()
+# {
+#     vec4 texel = texture(tex, vec2(_float_0_0));
+#     vec4 texelCopy = texel;
+#
+#     // Sample from different location than texelCopy which should
+#     // result in different color value too.
+#     for(int i = _int_0; i < _int_100; i++)
+#         texel = texture(tex, vec2(_float_1_0 / _float_256_0));
+#
+#     // Always true.
+#     if(texelCopy != texel)
+#         _GLF_color = vec4(_int_1, _int_0, _int_0, _int_1);
+#     else
+#         _GLF_color = vec4(_int_0);
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 10
+; Bound: 89
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %70
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %9 "texel"
+               OpName %13 "tex"
+               OpName %18 "buf0"
+               OpMemberName %18 0 "_GLF_uniform_float_values"
+               OpName %20 ""
+               OpName %29 "texelCopy"
+               OpName %32 "i"
+               OpName %34 "buf1"
+               OpMemberName %34 0 "_GLF_uniform_int_values"
+               OpName %36 ""
+               OpName %70 "_GLF_color"
+               OpDecorate %13 RelaxedPrecision
+               OpDecorate %13 DescriptorSet 0
+               OpDecorate %13 Binding 2
+               OpDecorate %14 RelaxedPrecision
+               OpDecorate %17 ArrayStride 16
+               OpMemberDecorate %18 0 Offset 0
+               OpDecorate %18 Block
+               OpDecorate %20 DescriptorSet 0
+               OpDecorate %20 Binding 0
+               OpDecorate %27 RelaxedPrecision
+               OpDecorate %28 RelaxedPrecision
+               OpDecorate %33 ArrayStride 16
+               OpMemberDecorate %34 0 Offset 0
+               OpDecorate %34 Block
+               OpDecorate %36 DescriptorSet 0
+               OpDecorate %36 Binding 1
+               OpDecorate %51 RelaxedPrecision
+               OpDecorate %58 RelaxedPrecision
+               OpDecorate %59 RelaxedPrecision
+               OpDecorate %70 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 4
+          %8 = OpTypePointer Function %7
+         %10 = OpTypeImage %6 2D 0 0 0 1 Unknown
+         %11 = OpTypeSampledImage %10
+         %12 = OpTypePointer UniformConstant %11
+         %13 = OpVariable %12 UniformConstant
+         %15 = OpTypeInt 32 0
+         %16 = OpConstant %15 3
+         %17 = OpTypeArray %6 %16
+         %18 = OpTypeStruct %17
+         %19 = OpTypePointer Uniform %18
+         %20 = OpVariable %19 Uniform
+         %21 = OpTypeInt 32 1
+         %22 = OpConstant %21 0
+         %23 = OpTypePointer Uniform %6
+         %26 = OpTypeVector %6 2
+         %31 = OpTypePointer Function %21
+         %33 = OpTypeArray %21 %16
+         %34 = OpTypeStruct %33
+         %35 = OpTypePointer Uniform %34
+         %36 = OpVariable %35 Uniform
+         %37 = OpConstant %21 1
+         %38 = OpTypePointer Uniform %21
+         %49 = OpTypeBool
+         %54 = OpConstant %21 2
+         %64 = OpTypeVector %49 4
+         %69 = OpTypePointer Output %7
+         %70 = OpVariable %69 Output
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %9 = OpVariable %8 Function
+         %29 = OpVariable %8 Function
+         %32 = OpVariable %31 Function
+         %14 = OpLoad %11 %13
+         %24 = OpAccessChain %23 %20 %22 %22
+         %25 = OpLoad %6 %24
+         %27 = OpCompositeConstruct %26 %25 %25
+         %28 = OpImageSampleImplicitLod %7 %14 %27
+               OpStore %9 %28
+         %30 = OpLoad %7 %9
+               OpStore %29 %30
+         %39 = OpAccessChain %38 %36 %22 %37
+         %40 = OpLoad %21 %39
+               OpStore %32 %40
+               OpBranch %41
+         %41 = OpLabel
+               OpLoopMerge %43 %44 None
+               OpBranch %45
+         %45 = OpLabel
+         %46 = OpLoad %21 %32
+         %47 = OpAccessChain %38 %36 %22 %22
+         %48 = OpLoad %21 %47
+         %50 = OpSLessThan %49 %46 %48
+               OpBranchConditional %50 %42 %43
+         %42 = OpLabel
+         %51 = OpLoad %11 %13
+         %52 = OpAccessChain %23 %20 %22 %37
+         %53 = OpLoad %6 %52
+         %55 = OpAccessChain %23 %20 %22 %54
+         %56 = OpLoad %6 %55
+         %57 = OpFDiv %6 %53 %56
+         %58 = OpCompositeConstruct %26 %57 %57
+         %59 = OpImageSampleImplicitLod %7 %51 %58
+               OpStore %9 %59
+               OpBranch %44
+         %44 = OpLabel
+         %60 = OpLoad %21 %32
+         %61 = OpIAdd %21 %60 %37
+               OpStore %32 %61
+               OpBranch %41
+         %43 = OpLabel
+         %62 = OpLoad %7 %29
+         %63 = OpLoad %7 %9
+         %65 = OpFUnordNotEqual %64 %62 %63
+         %66 = OpAny %49 %65
+               OpSelectionMerge %68 None
+               OpBranchConditional %66 %67 %84
+         %67 = OpLabel
+         %71 = OpAccessChain %38 %36 %22 %54
+         %72 = OpLoad %21 %71
+         %73 = OpConvertSToF %6 %72
+         %74 = OpAccessChain %38 %36 %22 %37
+         %75 = OpLoad %21 %74
+         %76 = OpConvertSToF %6 %75
+         %77 = OpAccessChain %38 %36 %22 %37
+         %78 = OpLoad %21 %77
+         %79 = OpConvertSToF %6 %78
+         %80 = OpAccessChain %38 %36 %22 %54
+         %81 = OpLoad %21 %80
+         %82 = OpConvertSToF %6 %81
+         %83 = OpCompositeConstruct %7 %73 %76 %79 %82
+               OpStore %70 %83
+               OpBranch %68
+         %84 = OpLabel
+         %85 = OpAccessChain %38 %36 %22 %37
+         %86 = OpLoad %21 %85
+         %87 = OpConvertSToF %6 %86
+         %88 = OpCompositeConstruct %7 %87 %87 %87 %87
+               OpStore %70 %88
+               OpBranch %68
+         %68 = OpLabel
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+# tex
+SAMPLER variant_tex
+
+# _GLF_uniform_int_values
+BUFFER variant__GLF_uniform_int_values DATA_TYPE int32[] STD140 DATA
+ 100 0 1
+END
+# _GLF_uniform_float_values
+BUFFER variant__GLF_uniform_float_values DATA_TYPE float[] STD140 DATA
+ 0.0 1.0 256.0
+END
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+  BIND BUFFER default_texture AS combined_image_sampler SAMPLER variant_tex DESCRIPTOR_SET 0 BINDING 2
+  BIND BUFFER variant__GLF_uniform_int_values AS uniform DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER variant__GLF_uniform_float_values AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255
