@@ -1017,19 +1017,21 @@ public:
 		RENDERWIDTH		= 16,
 		RENDERHEIGHT	= 16
 	};
-				BuiltinFragCoordMsaaCaseInstance	(Context& context, VkSampleCountFlagBits sampleCount);
+				BuiltinFragCoordMsaaCaseInstance	(Context& context, VkSampleCountFlagBits sampleCount, bool useEnable);
 	TestStatus	iterate								(void);
 private:
 	bool		validateSampleLocations				(const ConstPixelBufferAccess& sampleLocationBuffer) const;
 
 	const tcu::UVec2				m_renderSize;
 	const VkSampleCountFlagBits		m_sampleCount;
+	const bool						m_useEnable;
 };
 
-BuiltinFragCoordMsaaCaseInstance::BuiltinFragCoordMsaaCaseInstance (Context& context, VkSampleCountFlagBits sampleCount)
+BuiltinFragCoordMsaaCaseInstance::BuiltinFragCoordMsaaCaseInstance (Context& context, VkSampleCountFlagBits sampleCount, bool useEnable)
 	: TestInstance		(context)
 	, m_renderSize		(RENDERWIDTH, RENDERHEIGHT)
 	, m_sampleCount		(sampleCount)
+	, m_useEnable		(useEnable)
 {
 	const InstanceInterface&	vki					= m_context.getInstanceInterface();
 	const VkPhysicalDevice		physicalDevice		= m_context.getPhysicalDevice();
@@ -1262,7 +1264,7 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate (void)
 		VulkanProgram				vulkanProgram(shaders);
 
 		frameBufferState.numSamples				= m_sampleCount;
-		pipelineState.sampleShadingEnable		= true;
+		pipelineState.sampleShadingEnable		= m_useEnable; // When m_useEnable is false, we rely on the gl_SampleID input to enable sample shading
 		vulkanProgram.descriptorSetLayout	= *descriptorSetLayout;
 		vulkanProgram.descriptorSet			= *descriptorSet;
 
@@ -1417,17 +1419,19 @@ bool BuiltinFragCoordMsaaCaseInstance::validateSampleLocations (const ConstPixel
 class BuiltinFragCoordMsaaTestCase : public TestCase
 {
 public:
-					BuiltinFragCoordMsaaTestCase	(TestContext& testCtx, const char* name, const char* description, VkSampleCountFlagBits sampleCount);
+					BuiltinFragCoordMsaaTestCase	(TestContext& testCtx, const char* name, const char* description, VkSampleCountFlagBits sampleCount, bool useEnable);
 	virtual			~BuiltinFragCoordMsaaTestCase	(void);
 	void			initPrograms					(SourceCollections& sourceCollections) const;
 	TestInstance*	createInstance					(Context& context) const;
 private:
 	const VkSampleCountFlagBits			m_sampleCount;
+	const bool							m_useEnable;
 };
 
-BuiltinFragCoordMsaaTestCase::BuiltinFragCoordMsaaTestCase (TestContext& testCtx, const char* name, const char* description, VkSampleCountFlagBits sampleCount)
+BuiltinFragCoordMsaaTestCase::BuiltinFragCoordMsaaTestCase (TestContext& testCtx, const char* name, const char* description, VkSampleCountFlagBits sampleCount, bool useEnable)
 	: TestCase			(testCtx, name, description)
 	, m_sampleCount		(sampleCount)
+	, m_useEnable		(useEnable)
 {
 }
 
@@ -1468,7 +1472,7 @@ void BuiltinFragCoordMsaaTestCase::initPrograms (SourceCollections& programColle
 
 TestInstance* BuiltinFragCoordMsaaTestCase::createInstance (Context& context) const
 {
-	return new BuiltinFragCoordMsaaCaseInstance(context, m_sampleCount);
+	return new BuiltinFragCoordMsaaCaseInstance(context, m_sampleCount, m_useEnable);
 }
 
 class BuiltinFragDepthCase : public TestCase
@@ -2320,6 +2324,7 @@ TestCaseGroup* createBuiltinVarTests (TestContext& testCtx)
 	de::MovePtr<TestCaseGroup> frontFacingGroup		(new TestCaseGroup(testCtx, "frontfacing", "Test gl_Frontfacing keyword."));
 	de::MovePtr<TestCaseGroup> fragDepthGroup		(new TestCaseGroup(testCtx, "fragdepth", "Test gl_FragDepth keyword."));
 	de::MovePtr<TestCaseGroup> fragCoordMsaaGroup	(new TestCaseGroup(testCtx, "fragcoord_msaa", "Test interation between gl_FragCoord and msaa"));
+	de::MovePtr<TestCaseGroup> fragCoordMsaaInputGroup	(new TestCaseGroup(testCtx, "fragcoord_msaa_input", "Test interation between gl_FragCoord and msaa"));
 
 	simpleGroup->addChild(new BuiltinGlFragCoordXYZCase(testCtx, "fragcoord_xyz", "FragCoord xyz test"));
 	simpleGroup->addChild(new BuiltinGlFragCoordWCase(testCtx, "fragcoord_w", "FragCoord w test"));
@@ -2346,7 +2351,10 @@ TestCaseGroup* createBuiltinVarTests (TestContext& testCtx)
 		};
 
 		for (deUint32 caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(fragCoordMsaaCaseList); caseNdx++)
-			fragCoordMsaaGroup->addChild(new BuiltinFragCoordMsaaTestCase(testCtx, fragCoordMsaaCaseList[caseNdx].name, fragCoordMsaaCaseList[caseNdx].description, fragCoordMsaaCaseList[caseNdx].sampleCount));
+		{
+			fragCoordMsaaGroup->addChild(new BuiltinFragCoordMsaaTestCase(testCtx, fragCoordMsaaCaseList[caseNdx].name, fragCoordMsaaCaseList[caseNdx].description, fragCoordMsaaCaseList[caseNdx].sampleCount, true));
+			fragCoordMsaaInputGroup->addChild(new BuiltinFragCoordMsaaTestCase(testCtx, fragCoordMsaaCaseList[caseNdx].name, fragCoordMsaaCaseList[caseNdx].description, fragCoordMsaaCaseList[caseNdx].sampleCount, false));
+		}
 	}
 
 	// gl_FrontFacing tests
@@ -2421,6 +2429,7 @@ TestCaseGroup* createBuiltinVarTests (TestContext& testCtx)
 	builtinGroup->addChild(frontFacingGroup.release());
 	builtinGroup->addChild(fragDepthGroup.release());
 	builtinGroup->addChild(fragCoordMsaaGroup.release());
+	builtinGroup->addChild(fragCoordMsaaInputGroup.release());
 	builtinGroup->addChild(simpleGroup.release());
 
 	for (deUint16 shaderType = 0; shaderType <= (SHADER_INPUT_BUILTIN_BIT | SHADER_INPUT_VARYING_BIT | SHADER_INPUT_CONSTANT_BIT); ++shaderType)
