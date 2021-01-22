@@ -345,11 +345,12 @@ void NearestEdgeTestCase::renderQuad ()
 	gl.uniform1i(gl.getUniformLocation(program.getProgram(), "texSampler"), 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i failed");
 
-	gl.uniform1i(gl.getUniformLocation(program.getProgram(), "texOffset"),m_offsetSign);
+	gl.uniform1i(gl.getUniformLocation(program.getProgram(), "texOffset"), m_offsetSign);
 	gl.uniform1f(gl.getUniformLocation(program.getProgram(), "texWidth"), float(m_width));
 	gl.uniform1f(gl.getUniformLocation(program.getProgram(), "texHeight"), float(m_height));
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i failed");
 
+	gl.disable(GL_DITHER);
 	gl.clear(GL_COLOR_BUFFER_BIT);
 
 	glu::draw(renderContext, program.getProgram(),
