@@ -110,8 +110,10 @@ public:
 	bool										resultSetOnValidation			() const		{ return m_resultSetOnValidation;	}
 	void										resultSetOnValidation			(bool value)	{ m_resultSetOnValidation = value;	}
 
+#ifndef CTS_USES_VULKANSC
 	bool										hasDebugReportRecorder			() const;
 	vk::DebugReportRecorder&					getDebugReportRecorder			() const;
+#endif // CTS_USES_VULKANSC
 
 protected:
 	tcu::TestContext&							m_testCtx;
@@ -171,7 +173,11 @@ inline TestCase::TestCase (tcu::TestContext& testCtx, tcu::TestNodeType type, co
 {
 }
 
+#ifndef CTS_USES_VULKANSC
+
 void collectAndReportDebugMessages(vk::DebugReportRecorder &debugReportRecorder, Context& context);
+
+#endif // CTS_USES_VULKANSC
 
 } // vkt
 

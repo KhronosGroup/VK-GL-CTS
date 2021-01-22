@@ -348,8 +348,10 @@ void TestCaseExecutor::deinit (tcu::TestCase*)
 	if (m_renderDoc) m_renderDoc->endFrame(m_context.getInstance());
 
 	// Collect and report any debug messages
+#ifndef CTS_USES_VULKANSC
 	if (m_context.hasDebugReportRecorder())
 		collectAndReportDebugMessages(m_context.getDebugReportRecorder(), m_context);
+#endif // CTS_USES_VULKANSC
 }
 
 tcu::TestNode::IterateResult TestCaseExecutor::iterate (tcu::TestCase*)
@@ -384,6 +386,8 @@ bool TestCaseExecutor::spirvVersionSupported (vk::SpirvVersion spirvVersion)
 }
 
 // GLSL shader tests
+
+#ifndef CTS_USES_VULKANSC
 
 void createGlslTests (tcu::TestCaseGroup* glslTests)
 {
@@ -459,6 +463,8 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 	glslTests->addChild(cts_amber::createCombinedOperationsGroup		(testCtx));
 }
 
+#endif // CTS_USES_VULKANSC
+
 // TestPackage
 
 BaseTestPackage::BaseTestPackage (tcu::TestContext& testCtx, const char* name, const char* desc)
@@ -469,6 +475,8 @@ BaseTestPackage::BaseTestPackage (tcu::TestContext& testCtx, const char* name, c
 BaseTestPackage::~BaseTestPackage (void)
 {
 }
+
+#ifdef CTS_USES_VULKAN
 
 TestPackage::TestPackage (tcu::TestContext& testCtx)
 	: BaseTestPackage(testCtx, "dEQP-VK", "dEQP Vulkan Tests")
@@ -488,10 +496,27 @@ ExperimentalTestPackage::~ExperimentalTestPackage (void)
 {
 }
 
+#endif
+
+#ifdef CTS_USES_VULKANSC
+
+TestPackageSC::TestPackageSC (tcu::TestContext& testCtx)
+	: BaseTestPackage(testCtx, "dEQP-VKSC", "dEQP Vulkan SC Tests")
+{
+}
+
+TestPackageSC::~TestPackageSC (void)
+{
+}
+
+#endif // CTS_USES_VULKANSC
+
 tcu::TestCaseExecutor* BaseTestPackage::createExecutor (void) const
 {
 	return new TestCaseExecutor(m_testCtx);
 }
+
+#ifdef CTS_USES_VULKAN
 
 void TestPackage::init (void)
 {
@@ -543,5 +568,56 @@ void ExperimentalTestPackage::init (void)
 {
 	addChild(postmortem::createTests			(m_testCtx));
 }
+
+#endif
+
+#ifdef CTS_USES_VULKANSC
+
+void TestPackageSC::init (void)
+{
+//	addChild(createTestGroup					(m_testCtx, "info", "Build and Device Info Tests", createInfoTests));
+	addChild(api::createTests					(m_testCtx));
+//	addChild(memory::createTests				(m_testCtx));
+//	addChild(pipeline::createTests				(m_testCtx));
+//	addChild(BindingModel::createTests			(m_testCtx));
+//	addChild(SpirVAssembly::createTests			(m_testCtx));
+//	addChild(createTestGroup					(m_testCtx, "glsl", "GLSL shader execution tests", createGlslTests));
+//	addChild(createRenderPassTests				(m_testCtx));
+//	addChild(createRenderPass2Tests				(m_testCtx));
+//	addChild(ubo::createTests					(m_testCtx));
+//	addChild(DynamicState::createTests			(m_testCtx));
+//	addChild(ssbo::createTests					(m_testCtx));
+//	addChild(QueryPool::createTests				(m_testCtx));
+//	addChild(Draw::createTests					(m_testCtx));
+//	addChild(compute::createTests				(m_testCtx));
+//	addChild(image::createTests					(m_testCtx));
+//	addChild(wsi::createTests					(m_testCtx));
+//	addChild(synchronization::createTests		(m_testCtx));
+//	addChild(sparse::createTests				(m_testCtx));
+//	addChild(tessellation::createTests			(m_testCtx));
+//	addChild(rasterization::createTests			(m_testCtx));
+//	addChild(clipping::createTests				(m_testCtx));
+//	addChild(FragmentOperations::createTests	(m_testCtx));
+//	addChild(texture::createTests				(m_testCtx));
+//	addChild(geometry::createTests				(m_testCtx));
+//	addChild(robustness::createTests			(m_testCtx));
+//	addChild(MultiView::createTests				(m_testCtx));
+//	addChild(subgroups::createTests				(m_testCtx));
+//	addChild(ycbcr::createTests					(m_testCtx));
+//	addChild(ProtectedMem::createTests			(m_testCtx));
+//	addChild(DeviceGroup::createTests			(m_testCtx));
+//	addChild(MemoryModel::createTests			(m_testCtx));
+//	addChild(conditional::createTests			(m_testCtx));
+//	addChild(cts_amber::createGraphicsFuzzTests	(m_testCtx));
+//	addChild(imageless::createTests				(m_testCtx));
+//	addChild(TransformFeedback::createTests		(m_testCtx));
+//	addChild(DescriptorIndexing::createTests	(m_testCtx));
+//	addChild(FragmentShaderInterlock::createTests(m_testCtx));
+//	addChild(modifiers::createTests				(m_testCtx));
+//	addChild(RayTracing::createTests			(m_testCtx));
+//	addChild(RayQuery::createTests				(m_testCtx));
+}
+
+#endif // CTS_USES_VULKANSC
 
 } // vkt

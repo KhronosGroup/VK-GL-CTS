@@ -50,6 +50,8 @@ Move<VkPipeline> createComputePipeline (const DeviceInterface&				vk,
 	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, pAllocator));
 }
 
+#ifndef CTS_USES_VULKANSC
+
 Move<VkPipeline> createRayTracingPipelineNV (const DeviceInterface&						vk,
 											 VkDevice									device,
 											 VkPipelineCache							pipelineCache,
@@ -72,6 +74,8 @@ Move<VkPipeline> createRayTracingPipelineKHR (const DeviceInterface&					vk,
 	VK_CHECK(vk.createRayTracingPipelinesKHR(device, deferredOperation, pipelineCache, 1u, pCreateInfo, pAllocator, &object));
 	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, pAllocator));
 }
+
+#endif // CTS_USES_VULKANSC
 
 Move<VkCommandBuffer> allocateCommandBuffer (const DeviceInterface& vk, VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo)
 {
@@ -198,5 +202,48 @@ Move<VkEvent> createEvent (const DeviceInterface&		vk,
 
 	return createEvent(vk, device, &createInfo, pAllocateInfo);
 }
+
+#ifdef CTS_USES_VULKANSC
+
+// stubs for functions removed in Vulkan SC
+
+template<>
+void Deleter<VkDeviceMemory>::operator() (VkDeviceMemory obj) const
+{
+	DE_UNREF(obj);
+}
+
+template<>
+void Deleter<VkShaderModule>::operator() (VkShaderModule obj) const
+{
+	DE_UNREF(obj);
+}
+
+template<>
+void Deleter<VkQueryPool>::operator() (VkQueryPool obj) const
+{
+	DE_UNREF(obj);
+}
+
+template<>
+void Deleter<VkDescriptorPool>::operator() (VkDescriptorPool obj) const
+{
+	DE_UNREF(obj);
+}
+
+template<>
+void Deleter<VkCommandPool>::operator() (VkCommandPool obj) const
+{
+	DE_UNREF(obj);
+}
+
+template<>
+void Deleter<VkSwapchainKHR>::operator() (VkSwapchainKHR obj) const
+{
+	DE_UNREF(obj);
+}
+
+#endif // CTS_USES_VULKANSC
+
 
 } // vk

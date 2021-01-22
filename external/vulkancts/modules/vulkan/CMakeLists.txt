@@ -157,13 +157,65 @@ set(DEQP_VK_LIBS
 	deqp-vk-fragment-shading-rate
 	)
 
+set(DEQP_VKSC_LIBS
+	tcutil
+	vkscutil
+	glutil
+	deqp-vksc-api
+#	deqp-vksc-pipeline
+#	deqp-vksc-binding-model
+#	deqp-vksc-spirv-assembly
+#	deqp-vksc-shaderrender
+#	deqp-vksc-shaderexecutor
+#	deqp-vksc-memory
+#	deqp-vksc-ubo
+#	deqp-vksc-dynamic-state
+#	deqp-vksc-ssbo
+#	deqp-vksc-query-pool
+#	deqp-vksc-conditional-rendering
+#	deqp-vksc-draw
+#	deqp-vksc-device-group
+#	deqp-vksc-compute
+#	deqp-vksc-image
+#	deqp-vksc-wsi
+#	deqp-vksc-sparse-resources
+#	deqp-vksc-tessellation
+#	deqp-vksc-rasterization
+#	deqp-vksc-synchronization
+#	deqp-vksc-clipping
+#	deqp-vksc-fragment-ops
+#	deqp-vksc-texture
+#	deqp-vksc-geometry
+#	deqp-vksc-robustness
+#	deqp-vksc-render-pass
+#	deqp-vksc-multiview
+#	deqp-vksc-subgroups
+#	deqp-vksc-ycbcr
+#	deqp-vksc-protected-memory
+#	deqp-vksc-memory-model
+#	deqp-vksc-amber
+#	deqp-vksc-imageless-framebuffer
+#	deqp-vksc-transform-feedback
+#	deqp-vksc-descriptor-indexing
+#	deqp-vksc-fragment-shader-interlock
+#	deqp-vksc-modifiers
+#	deqp-vksc-ray-tracing
+#	deqp-vksc-ray-query
+#	deqp-vksc-postmortem
+	)
+
+
 if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
 endif ()
 
 PCH(DEQP_VK_SRCS pch.cpp)
 
-add_deqp_module(deqp-vk "${DEQP_VK_SRCS}" "${DEQP_VK_LIBS}" vktTestPackageEntry.cpp)
+add_deqp_module(deqp-vk "${DEQP_VK_SRCS}" "${DEQP_VK_LIBS}" "tcutil-platform" vktTestPackageEntry.cpp )
+
+add_deqp_module(deqp-vksc "${DEQP_VK_SRCS}" "${DEQP_VKSC_LIBS}" "tcutil-sc-platform" vktTestPackageEntrySC.cpp)
+target_include_directories(deqp-vksc-package BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
+target_include_directories(deqp-vksc BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 
 add_data_dir(deqp-vk ../../data/vulkan	vulkan)
 

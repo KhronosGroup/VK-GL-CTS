@@ -37,6 +37,9 @@
 
 namespace vk
 {
+
+#ifndef CTS_USES_VULKANSC
+
 const VkTransformMatrixKHR identityMatrix3x4 = { { { 1.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f, 0.0f } } };
 
 template<typename T>
@@ -787,6 +790,13 @@ void cmdTraceRaysIndirect	(const DeviceInterface&					vk,
 							 const VkStridedDeviceAddressRegionKHR*	hitShaderBindingTableRegion,
 							 const VkStridedDeviceAddressRegionKHR*	callableShaderBindingTableRegion,
 							 VkDeviceAddress						indirectDeviceAddress);
+
+#else
+
+deUint32 rayTracingDefineAnything();
+
+#endif // CTS_USES_VULKANSC
+
 } // vk
 
 #endif // _VKRAYTRACINGUTIL_HPP

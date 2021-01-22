@@ -2075,6 +2075,8 @@ tcu::TestStatus enumerateInstanceExtensions (Context& context)
 		checkInstanceExtensions(results, extensionNames);
 		CheckEnumerateInstanceExtensionPropertiesIncompleteResult()(context, results, properties.size());
 
+#ifndef CTS_USES_VULKANSC
+
 		for (const auto& version : releasedApiVersions)
 		{
 			deUint32 versionMajor, versionMinor;
@@ -2090,6 +2092,9 @@ tcu::TestStatus enumerateInstanceExtensions (Context& context)
 				break;
 			}
 		}
+
+#endif // CTS_USES_VULKANSC
+
 	}
 
 	{
@@ -2199,6 +2204,8 @@ tcu::TestStatus enumerateDeviceExtensions (Context& context)
 		checkDeviceExtensions(results, deviceExtensionNames);
 		CheckEnumerateDeviceExtensionPropertiesIncompleteResult()(context, results, deviceExtensionProperties.size());
 
+#ifndef CTS_USES_VULKANSC
+
 		for (const auto& version : releasedApiVersions)
 		{
 			deUint32 versionMajor, versionMinor;
@@ -2215,6 +2222,9 @@ tcu::TestStatus enumerateDeviceExtensions (Context& context)
 				break;
 			}
 		}
+
+#endif // CTS_USES_VULKANSC
+
 	}
 
 	{

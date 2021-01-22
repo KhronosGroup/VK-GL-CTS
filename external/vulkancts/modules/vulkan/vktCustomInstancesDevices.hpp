@@ -67,7 +67,9 @@ private:
 	Context*									m_context;
 	vk::Move<vk::VkInstance>					m_instance;
 	std::unique_ptr<vk::InstanceDriver>			m_driver;
+#ifndef CTS_USES_VULKANSC
 	std::unique_ptr<vk::DebugReportRecorder>	m_recorder;
+#endif // CTS_USES_VULKANSC
 };
 
 class UncheckedInstance
@@ -89,7 +91,9 @@ private:
 	const vk::VkAllocationCallbacks*			m_allocator;
 	vk::VkInstance								m_instance;
 	std::unique_ptr<vk::InstanceDriver>			m_driver;
+#ifndef CTS_USES_VULKANSC
 	std::unique_ptr<vk::DebugReportRecorder>	m_recorder;
+#endif // CTS_USES_VULKANSC
 };
 
 // Custom instances.

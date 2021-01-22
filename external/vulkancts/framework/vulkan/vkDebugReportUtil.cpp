@@ -30,6 +30,8 @@
 namespace vk
 {
 
+#ifndef CTS_USES_VULKANSC
+
 namespace
 {
 
@@ -169,10 +171,17 @@ DebugReportRecorder::~DebugReportRecorder (void)
 {
 }
 
+#endif // CTS_USES_VULKANSC
+
 bool isDebugReportSupported (const PlatformInterface& vkp)
 {
+#ifndef CTS_USES_VULKANSC
 	return isExtensionSupported(enumerateInstanceExtensionProperties(vkp, DE_NULL),
 								RequiredExtension("VK_EXT_debug_report"));
+#else // CTS_USES_VULKANSC
+	DE_UNREF(vkp);
+	return false;
+#endif // CTS_USES_VULKANSC
 }
 
 } // vk

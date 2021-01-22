@@ -162,6 +162,8 @@ typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkInternalFreeNotification)		(void*			
 																				 VkInternalAllocationType	allocationType,
 																				 VkSystemAllocationScope	allocationScope);
 
+#ifndef CTS_USES_VULKANSC
+
 typedef VKAPI_ATTR VkBool32	(VKAPI_CALL* PFN_vkDebugReportCallbackEXT)			(VkDebugReportFlagsEXT		flags,
 																				 VkDebugReportObjectTypeEXT	objectType,
 																				 deUint64					object,
@@ -175,8 +177,18 @@ typedef VKAPI_ATTR VkBool32 (VKAPI_CALL *PFN_vkDebugUtilsMessengerCallbackEXT)	(
 																				 VkDebugUtilsMessageTypeFlagsEXT					messageTypes,
 																				 const struct VkDebugUtilsMessengerCallbackDataEXT*	pCallbackData,
 																				 void*												pUserData);
+
+#endif // CTS_USES_VULKANSC
+
 typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkDeviceMemoryReportCallbackEXT)	(const struct VkDeviceMemoryReportCallbackDataEXT*	pCallbackData,
 																				 void*												pUserData);
+
+#ifdef CTS_USES_VULKANSC
+struct VkFaultData;
+typedef VKAPI_ATTR void		(VKAPI_CALL *PFN_vkFaultCallbackFunction)			(VkBool32											incompleteFaultData,
+																				 deUint32											faultCount,
+																				 VkFaultData*										pFaultData);
+#endif // CTS_USES_VULKANSC
 
 #include "vkStructTypes.inl"
 

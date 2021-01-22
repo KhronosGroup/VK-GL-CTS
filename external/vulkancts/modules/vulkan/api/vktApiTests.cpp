@@ -24,6 +24,7 @@
 #include "vktApiTests.hpp"
 
 #include "vktTestGroupUtil.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktApiSmokeTests.hpp"
 #include "vktApiDeviceInitializationTests.hpp"
 #include "vktApiDriverPropertiesTests.hpp"
@@ -42,12 +43,15 @@
 #include "vktApiGranularityTests.hpp"
 #include "vktApiGetMemoryCommitment.hpp"
 #include "vktApiExternalMemoryTests.hpp"
+#endif // CTS_USES_VULKANSC
 #include "vktApiVersionCheck.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktApiMaintenance3Check.hpp"
 #include "vktApiDescriptorSetTests.hpp"
 #include "vktApiPipelineTests.hpp"
 #include "vktApiMemoryRequirementInvarianceTests.hpp"
 #include "vktApiToolingInfoTests.hpp"
+#endif // CTS_USES_VULKANSC
 
 namespace vkt
 {
@@ -57,6 +61,7 @@ namespace api
 namespace
 {
 
+#ifndef CTS_USES_VULKANSC
 void createBufferViewTests (tcu::TestCaseGroup* bufferViewTests)
 {
 	tcu::TestContext&	testCtx		= bufferViewTests->getTestContext();
@@ -64,12 +69,14 @@ void createBufferViewTests (tcu::TestCaseGroup* bufferViewTests)
 	bufferViewTests->addChild(createBufferViewCreateTests	(testCtx));
 	bufferViewTests->addChild(createBufferViewAccessTests	(testCtx));
 }
+#endif // CTS_USES_VULKANSC
 
 void createApiTests (tcu::TestCaseGroup* apiTests)
 {
 	tcu::TestContext&	testCtx		= apiTests->getTestContext();
 
 	apiTests->addChild(createVersionSanityCheckTests			(testCtx));
+#ifndef CTS_USES_VULKANSC
 	apiTests->addChild(createDriverPropertiesTests				(testCtx));
 	apiTests->addChild(createSmokeTests							(testCtx));
 	apiTests->addChild(api::createFeatureInfoTests				(testCtx));
@@ -92,6 +99,7 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 	apiTests->addChild(createPipelineTests						(testCtx));
 	apiTests->addChild(createMemoryRequirementInvarianceTests	(testCtx));
 	apiTests->addChild(createToolingInfoTests					(testCtx));
+#endif // CTS_USES_VULKANSC
 }
 
 } // anonymous

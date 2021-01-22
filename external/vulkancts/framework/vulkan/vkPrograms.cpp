@@ -686,6 +686,7 @@ bool validateProgram (const ProgramBinary& program, std::ostream* dst, const Spi
 
 Move<VkShaderModule> createShaderModule (const DeviceInterface& deviceInterface, VkDevice device, const ProgramBinary& binary, VkShaderModuleCreateFlags flags)
 {
+#ifndef CTS_USES_VULKANSC
 	if (binary.getFormat() == PROGRAM_FORMAT_SPIRV)
 	{
 		const struct VkShaderModuleCreateInfo		shaderModuleInfo	=
@@ -701,6 +702,9 @@ Move<VkShaderModule> createShaderModule (const DeviceInterface& deviceInterface,
 	}
 	else
 		TCU_THROW(NotSupportedError, "Unsupported program format");
+#else // CTS_USES_VULKANSC
+	TCU_THROW(NotSupportedError, "Vulkan SC does not have vkCreateShaderModule() defined");
+#endif // CTS_USES_VULKANSC
 }
 
 glu::ShaderType getGluShaderType (VkShaderStageFlagBits shaderStage)
@@ -729,12 +733,21 @@ VkShaderStageFlagBits getVkShaderStage (glu::ShaderType shaderType)
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
 		VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
 		VK_SHADER_STAGE_COMPUTE_BIT,
+#ifndef CTS_USES_VULKANSC
 		VK_SHADER_STAGE_RAYGEN_BIT_NV,
 		VK_SHADER_STAGE_ANY_HIT_BIT_NV,
 		VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV,
 		VK_SHADER_STAGE_MISS_BIT_NV,
 		VK_SHADER_STAGE_INTERSECTION_BIT_NV,
 		VK_SHADER_STAGE_CALLABLE_BIT_NV,
+#else // CTS_USES_VULKANSC
+		(VkShaderStageFlagBits)64u,
+		(VkShaderStageFlagBits)128u,
+		(VkShaderStageFlagBits)256u,
+		(VkShaderStageFlagBits)512u,
+		(VkShaderStageFlagBits)1024u,
+		(VkShaderStageFlagBits)2048u
+#endif // CTS_USES_VULKANSC
 	};
 
 	return de::getSizedArrayElement<glu::SHADERTYPE_LAST>(s_shaderStages, shaderType);

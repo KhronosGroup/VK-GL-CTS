@@ -35,7 +35,9 @@ using std::string;
 using vk::Move;
 using vk::VkInstance;
 using vk::InstanceDriver;
+#ifndef CTS_USES_VULKANSC
 using vk::DebugReportRecorder;
+#endif // CTS_USES_VULKANSC
 
 namespace vkt
 {
@@ -92,15 +94,23 @@ CustomInstance::CustomInstance (Context& context, Move<VkInstance> instance, boo
 	: m_context		(&context)
 	, m_instance	(instance)
 	, m_driver		(new InstanceDriver(context.getPlatformInterface(), *m_instance))
+#ifndef CTS_USES_VULKANSC
 	, m_recorder	(enableDebugReportRecorder ? (new DebugReportRecorder(*m_driver, *m_instance, printValidationErrors)) : nullptr)
+#endif // CTS_USES_VULKANSC
 {
+#ifdef CTS_USES_VULKANSC
+	DE_UNREF(enableDebugReportRecorder);
+	DE_UNREF(printValidationErrors);
+#endif // CTS_USES_VULKANSC
 }
 
 CustomInstance::CustomInstance ()
 	: m_context		(nullptr)
 	, m_instance	()
 	, m_driver		(nullptr)
+#ifndef CTS_USES_VULKANSC
 	, m_recorder	(nullptr)
+#endif // CTS_USES_VULKANSC
 {
 }
 
@@ -128,7 +138,9 @@ void CustomInstance::swap (CustomInstance& other)
 	std::swap(m_context, other.m_context);
 	Move<VkInstance> aux = m_instance; m_instance = other.m_instance; other.m_instance = aux;
 	m_driver.swap(other.m_driver);
+#ifndef CTS_USES_VULKANSC
 	m_recorder.swap(other.m_recorder);
+#endif // CTS_USES_VULKANSC
 }
 
 CustomInstance::operator VkInstance () const
@@ -143,8 +155,10 @@ const vk::InstanceDriver& CustomInstance::getDriver() const
 
 void CustomInstance::collectMessages ()
 {
+#ifndef CTS_USES_VULKANSC
 	if (m_recorder)
 		collectAndReportDebugMessages(*m_recorder, *m_context);
+#endif // CTS_USES_VULKANSC
 }
 
 UncheckedInstance::UncheckedInstance ()
@@ -152,7 +166,9 @@ UncheckedInstance::UncheckedInstance ()
 	, m_allocator	(nullptr)
 	, m_instance	(DE_NULL)
 	, m_driver		(nullptr)
+#ifndef CTS_USES_VULKANSC
 	, m_recorder	(nullptr)
+#endif // CTS_USES_VULKANSC
 {
 }
 
@@ -161,18 +177,28 @@ UncheckedInstance::UncheckedInstance (Context& context, vk::VkInstance instance,
 	, m_allocator	(pAllocator)
 	, m_instance	(instance)
 	, m_driver		((m_instance != DE_NULL) ? new InstanceDriver(context.getPlatformInterface(), m_instance) : nullptr)
+#ifndef CTS_USES_VULKANSC
 	, m_recorder	((enableDebugReportRecorder && m_instance != DE_NULL) ? (new DebugReportRecorder(*m_driver, m_instance, printValidationErrors)) : nullptr)
+#endif // CTS_USES_VULKANSC
 {
+#ifdef CTS_USES_VULKANSC
+	DE_UNREF(enableDebugReportRecorder);
+	DE_UNREF(printValidationErrors);
+#endif // CTS_USES_VULKANSC
 }
 
 UncheckedInstance::~UncheckedInstance ()
 {
+#ifndef CTS_USES_VULKANSC
 	if (m_recorder)
 		collectAndReportDebugMessages(*m_recorder, *m_context);
+#endif // CTS_USES_VULKANSC
 
 	if (m_instance != DE_NULL)
 	{
+#ifndef CTS_USES_VULKANSC
 		m_recorder.reset(nullptr);
+#endif // CTS_USES_VULKANSC
 		m_driver->destroyInstance(m_instance, m_allocator);
 	}
 }
@@ -183,7 +209,9 @@ void UncheckedInstance::swap (UncheckedInstance& other)
 	std::swap(m_allocator, other.m_allocator);
 	vk::VkInstance aux = m_instance; m_instance = other.m_instance; other.m_instance = aux;
 	m_driver.swap(other.m_driver);
+#ifndef CTS_USES_VULKANSC
 	m_recorder.swap(other.m_recorder);
+#endif // CTS_USES_VULKANSC
 }
 
 UncheckedInstance::UncheckedInstance (UncheckedInstance&& other)

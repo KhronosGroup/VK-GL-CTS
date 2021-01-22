@@ -5,11 +5,14 @@ include_directories(
 	../util
 	)
 
-set(DEQP_VK_API_SRCS
+set(DEQP_VK_VKSC_API_SRCS
 	vktApiVersionCheck.cpp
 	vktApiVersionCheck.hpp
 	vktApiTests.cpp
 	vktApiTests.hpp
+	)
+
+set(DEQP_VK_API_SRCS
 	vktApiSmokeTests.cpp
 	vktApiSmokeTests.hpp
 	vktApiDeviceInitializationTests.cpp
@@ -64,13 +67,11 @@ set(DEQP_VK_API_SRCS
     vktApiToolingInfoTests.hpp
 	)
 
-set(DEQP_VK_API_LIBS
-	deqp-vk-util
-	tcutil
-	vkutil
-	)
-
 PCH(DEQP_VK_API_SRCS ../pch.cpp)
 
-add_library(deqp-vk-api STATIC ${DEQP_VK_API_SRCS})
-target_link_libraries(deqp-vk-api ${DEQP_VK_API_LIBS})
+add_library(deqp-vk-api STATIC ${DEQP_VK_VKSC_API_SRCS} ${DEQP_VK_API_SRCS})
+target_link_libraries(deqp-vk-api PUBLIC deqp-vk-util tcutil vkutil)
+
+add_library(deqp-vksc-api STATIC ${DEQP_VK_VKSC_API_SRCS})
+target_include_directories(deqp-vksc-api BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
+target_link_libraries(deqp-vksc-api PUBLIC deqp-vksc-util tcutil vkscutil)

@@ -52,6 +52,7 @@ GLES2_MODULE					= getModuleByName("dEQP-GLES2")
 GLES3_MODULE					= getModuleByName("dEQP-GLES3")
 GLES31_MODULE					= getModuleByName("dEQP-GLES31")
 VULKAN_MODULE					= getModuleByName("dEQP-VK")
+VULKANSC_MODULE					= getModuleByName("dEQP-VKSC")
 
 # Master
 
@@ -262,8 +263,18 @@ MASTER_VULKAN_PKG				= Package(module = VULKAN_MODULE, configurations = [
 					  runtime		= "10m"),
 	])
 
+MASTER_VULKANSC_FILTERS			= [
+		include("vksc-master.txt"),
+	]
+MASTER_VULKANSC_PKG				= Package(module = VULKANSC_MODULE, configurations = [
+		Configuration(name			= "master",
+					  filters		= MASTER_VULKANSC_FILTERS,
+					  runtime		= "2h39m",
+					  runByDefault	= False),
+	])
+
 MUSTPASS_LISTS				= [
-		Mustpass(project = CTS_PROJECT, version = "master",		packages = [MASTER_EGL_PKG, MASTER_GLES2_PKG, MASTER_GLES3_PKG, MASTER_GLES31_PKG, MASTER_VULKAN_PKG])
+		Mustpass(project = CTS_PROJECT, version = "master",		packages = [MASTER_EGL_PKG, MASTER_GLES2_PKG, MASTER_GLES3_PKG, MASTER_GLES31_PKG, MASTER_VULKAN_PKG, MASTER_VULKANSC_PKG])
 	]
 
 if __name__ == "__main__":

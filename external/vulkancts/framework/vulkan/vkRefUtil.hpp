@@ -41,6 +41,7 @@ Move<VkPipeline>		createComputePipeline	(const DeviceInterface&					vk,
 												 VkPipelineCache						pipelineCache,
 												 const VkComputePipelineCreateInfo*		pCreateInfo,
 												 const VkAllocationCallbacks*			pAllocator = DE_NULL);
+#ifndef CTS_USES_VULKANSC
 Move<VkPipeline>		createRayTracingPipelineNV(const DeviceInterface&					vk,
 												 VkDevice								device,
 												 VkPipelineCache						pipelineCache,
@@ -52,6 +53,8 @@ Move<VkPipeline>		createRayTracingPipelineKHR	(const DeviceInterface&					vk,
 												 VkPipelineCache							pipelineCache,
 												 const VkRayTracingPipelineCreateInfoKHR*	pCreateInfo,
 												 const VkAllocationCallbacks*				pAllocator = DE_NULL);
+#endif // CTS_USES_VULKANSC
+
 Move<VkCommandBuffer>	allocateCommandBuffer	(const DeviceInterface& vk, VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo);
 Move<VkDescriptorSet>	allocateDescriptorSet	(const DeviceInterface& vk, VkDevice device, const VkDescriptorSetAllocateInfo* pAllocateInfo);
 

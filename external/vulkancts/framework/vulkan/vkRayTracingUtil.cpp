@@ -36,6 +36,9 @@
 
 namespace vk
 {
+
+#ifndef CTS_USES_VULKANSC
+
 struct DeferredThreadParams
 {
 	const DeviceInterface&	vk;
@@ -2581,5 +2584,14 @@ void cmdTraceRaysIndirect (const DeviceInterface&					vk,
 								   callableShaderBindingTableRegion,
 								   indirectDeviceAddress);
 }
+
+#else
+
+deUint32 rayTracingDefineAnything()
+{
+	return 0;
+}
+
+#endif // CTS_USES_VULKANSC
 
 } // vk

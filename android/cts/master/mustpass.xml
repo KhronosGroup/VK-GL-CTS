@@ -51,4 +51,7 @@
 		<Configuration caseListFile="vk-master-2019-03-01.txt" commandLine="--deqp-watchdog=enable" name="master-2019-03-01"/>
 		<Configuration caseListFile="vk-master-2020-03-01.txt" commandLine="--deqp-watchdog=enable" name="master-2020-03-01"/>
 	</TestPackage>
+	<TestPackage name="dEQP-VKSC">
+		<Configuration caseListFile="vksc-master.txt" commandLine="--deqp-watchdog=enable" name="master"/>
+	</TestPackage>
 </Mustpass>

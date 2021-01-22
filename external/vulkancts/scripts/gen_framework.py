@@ -24,6 +24,7 @@ import os
 import re
 import sys
 import copy
+import argparse
 from itertools import chain
 from collections import OrderedDict
 
@@ -33,7 +34,8 @@ from build.common import DEQP_DIR
 from khr_util.format import indentLines, writeInlFile
 
 VULKAN_H_DIR	= os.path.join(os.path.dirname(__file__), "src")
-VULKAN_DIR		= os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan")
+VULKAN_DIR		= { "" :	os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkan"),
+					"SC" :	os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkansc") }
 
 INL_HEADER = """\
 /* WARNING: This is auto-generated file. Do not modify, since changes will
@@ -153,6 +155,8 @@ def prefixName (prefix, name):
 	name = name.replace("VULKAN_11_PROPERTIES", "VULKAN_1_1_PROPERTIES")
 	name = name.replace("VULKAN_12_FEATURES", "VULKAN_1_2_FEATURES")
 	name = name.replace("VULKAN_12_PROPERTIES", "VULKAN_1_2_PROPERTIES")
+	name = name.replace("VULKAN_SC_10_FEATURES", "VULKAN_SC_1_0_FEATURES")
+	name = name.replace("VULKAN_SC_10_PROPERTIES", "VULKAN_SC_1_0_PROPERTIES")
 	name = name.replace("INT_8_", "INT8_")
 	name = name.replace("AABBNV", "AABB_NV")
 
@@ -160,13 +164,16 @@ def prefixName (prefix, name):
 
 class Version:
 	def __init__ (self, versionTuple):
-		self.major = versionTuple[0]
-		self.minor = versionTuple[1]
-		self.patch = versionTuple[2]
+		self.api   = versionTuple[0]
+		self.major = versionTuple[1]
+		self.minor = versionTuple[2]
+		self.patch = versionTuple[3]
 
 	def getInHex (self):
 		if self.patch == 0:
-			return "VK_API_VERSION_%d_%d" % (self.major, self.minor)
+			if self.api == None:
+				return "VK_API_VERSION_%d_%d" % (self.major, self.minor)
+			return "VK%s_API_VERSION_%d_%d" % (self.api, self.major, self.minor)
 		return '0x%Xu' % (hash(self))
 
 	def isStandardVersion (self):
@@ -185,10 +192,13 @@ class Version:
 		return 'VERSION_%d_%d_%d' % (self.major, self.minor, self.patch)
 
 	def __hash__ (self):
-		return (self.major << 22) | (self.minor << 12) | self.patch
+		apiNumber = 0;
+		if self.api == 'SC':
+			apiNumber = 1 << 25;
+		return (apiNumber) | (self.major << 22) | (self.minor << 12) | self.patch
 
 	def __eq__ (self, other):
-		return self.major == other.major and self.minor == other.minor and self.patch == other.patch
+		return self.api == other.api and self.major == other.major and self.minor == other.minor and self.patch == other.patch
 
 	def __str__ (self):
 		return self.getBestRepresentation()
@@ -492,7 +502,7 @@ def parseCompositeTypesByVersion (src, versionsData):
 	# we cant assign apiVersion to found structures
 	extPtrn		= r'#define\s+[A-Z0-9_]+_EXTENSION_NAME\s+"([^"]+)"'
 	versionEnd	= re.search(extPtrn, src)
-	versions	= [Version((v[2], v[3], 0)) for v in versionsData]
+	versions	= [Version((v[2], v[3], v[4], 0)) for v in versionsData]
 	versions.append(None)
 
 	# construct list of locations where version definitions start, and add the end of the file to it
@@ -521,7 +531,7 @@ def parseVersions (src):
 	# 2. starting point off version specific definitions in vulkan.h.in
 	# 3. major version number
 	# 4. minor version number
-	return [(m.group()[:-2], m.start(), int(m.group(1)), int(m.group(2))) for m in re.finditer('VK_VERSION_([1-9])_([0-9]) 1', src)]
+	return [(m.group()[:-2], m.start(), m.group(1), int(m.group(2)), int(m.group(3))) for m in re.finditer('VK(SC)?_VERSION_([1-9])_([0-9]) 1', src)]
 
 def parseHandles (src):
 	matches	= re.findall(r'VK_DEFINE(_NON_DISPATCHABLE|)_HANDLE\((' + IDENT_PTRN + r')\)[ \t]*[\n\r]', src)
@@ -724,7 +734,7 @@ def parseBitfieldNames (src):
 
 def parseAPI (src):
 	versionsData = parseVersions(src)
-	versions     = [Version((v[2], v[3], 0)) for v in versionsData]
+	versions     = [Version((v[2], v[3], v[4], 0)) for v in versionsData]
 	definitions	 = [Definition("deUint32", v.getInHex(), parsePreprocDefinedValue(src, v.getInHex())) for v in versions]
 	definitions.extend([Definition(type, name, parsePreprocDefinedValue(src, name)) for name, type in DEFINITIONS])
 
@@ -1460,7 +1470,7 @@ def writeTypeUtil (api, filename):
 
 	writeInlFile(filename, INL_HEADER, gen())
 
-def writeDriverIds(filename):
+def writeDriverIds(apiName, filename):
 
 	driverIdsString = []
 	driverIdsString.append("static const struct\n"
@@ -1470,7 +1480,10 @@ def writeDriverIds(filename):
 					 "} driverIds [] =\n"
 					 "{")
 
-	vulkanCore = readFile(os.path.join(VULKAN_H_DIR, "vulkan_core.h"))
+	vulkanHeaderFile = {"" :	"vulkan_core.h",
+						"SC" :	"vulkan_sc_core.h" }
+
+	vulkanCore = readFile(os.path.join(VULKAN_H_DIR, vulkanHeaderFile[apiName]))
 
 	items = re.search(r'(?:typedef\s+enum\s+VkDriverId\s*{)((.*\n)*)(?:}\s*VkDriverId\s*;)', vulkanCore).group(1).split(',')
 	driverItems = dict()
@@ -1509,21 +1522,25 @@ def writeSupportedExtenions(api, filename):
 				result.append('		dst.push_back("' + extension.name + '");')
 			result.append("	}")
 
+		if  not map:
+			result.append("	DE_UNREF(coreVersion);")
+
 		return result
 
 	instanceMap		= {}
 	deviceMap		= {}
 	versionSet		= set()
+	apiTuple		= [None]
 
 	for ext in api.extensions:
 		if ext.versionInCore != None:
 			if ext.versionInCore[0] == 'INSTANCE':
-				list = instanceMap.get(Version(ext.versionInCore[1:]))
-				instanceMap[Version(ext.versionInCore[1:])] = list + [ext] if list else [ext]
+				list = instanceMap.get(Version(apiTuple + ext.versionInCore[1:]))
+				instanceMap[Version(apiTuple + ext.versionInCore[1:])] = list + [ext] if list else [ext]
 			else:
-				list = deviceMap.get(Version(ext.versionInCore[1:]))
-				deviceMap[Version(ext.versionInCore[1:])] = list + [ext] if list else [ext]
-			versionSet.add(Version(ext.versionInCore[1:]))
+				list = deviceMap.get(Version(apiTuple + ext.versionInCore[1:]))
+				deviceMap[Version(apiTuple + ext.versionInCore[1:])] = list + [ext] if list else [ext]
+			versionSet.add(Version(apiTuple + ext.versionInCore[1:]))
 
 	lines = addVersionDefines(versionSet) + [
 	"",
@@ -1656,6 +1673,12 @@ def writeCoreFunctionalities(api, filename):
 	writeInlFile(filename, INL_HEADER, lines)
 
 def writeDeviceFeatures2(api, filename):
+	def structInAPI(name):
+		for c in api.compositeTypes:
+			if c.name == name:
+				return True
+		return False
+
 	# list of structures that should be tested with getPhysicalDeviceFeatures2
 	# this is not posible to determine from vulkan_core.h, if new feature structures
 	# are added they should be manualy added to this list
@@ -1708,7 +1731,8 @@ def writeDeviceFeatures2(api, filename):
 	# helper extension class used in algorith below
 	class StructureFoundContinueToNextOne(Exception):
 		pass
-	testedStructureDetail = [StructureDetail(struct) for struct in testedStructures]
+	existingStructures = list(filter(structInAPI, testedStructures)) # remove features not found in API ( important for Vulkan SC )
+	testedStructureDetail = [StructureDetail(struct) for struct in existingStructures]
 	# iterate over all searched structures and find extensions that enable them
 	for structureDetail in testedStructureDetail:
 		try:
@@ -2185,7 +2209,12 @@ def splitWithQuotation(line):
 		result.append(s.replace('"', ''))
 	return result
 
-def writeMandatoryFeatures(filename):
+def writeMandatoryFeatures(api, filename):
+	def structInAPI(name):
+		for c in api.compositeTypes:
+			if c.name == name:
+				return True
+		return False
 	stream = []
 	pattern = r'\s*([\w]+)\s+FEATURES\s+\((.*)\)\s+REQUIREMENTS\s+\((.*)\)'
 	mandatoryFeatures = readFile(os.path.join(VULKAN_H_DIR, "mandatory_features.txt"))
@@ -2217,8 +2246,9 @@ def writeMandatoryFeatures(filename):
 				   '\tvoid** nextPtr = &coreFeatures.pNext;',
 				   ''])
 
-	listStruct = sorted(dictStructs.items(), key=lambda tup: tup[0]) # sort to have same results for py2 and py3
-	for k, v in listStruct:
+	listStruct	= sorted(dictStructs.items(), key=lambda tup: tup[0]) # sort to have same results for py2 and py3
+	apiStruct	= list( filter(lambda x : structInAPI(x[0]), listStruct)) # remove items not defined in current API ( important for Vulkan SC )
+	for k, v in apiStruct:
 		if (v[1].startswith("ApiVersion")):
 			cond = '\tif (context.contextSupports(vk::' + v[1] + '))'
 		else:
@@ -2249,6 +2279,8 @@ def writeMandatoryFeatures(filename):
 				   ''])
 
 	for v in dictData:
+		if not structInAPI(v[0]): # remove items not defined in current API ( important for Vulkan SC )
+			continue
 		structType = v[0];
 		structName = 'coreFeatures.features';
 		if v[0] != 'VkPhysicalDeviceFeatures' :
@@ -2300,13 +2332,32 @@ def writeExtensionList(filename, patternPart):
 	stream.append('};\n')
 	writeInlFile(filename, INL_HEADER, stream)
 
+def parseCmdLineArgs():
+	parser = argparse.ArgumentParser(description = "Generate Vulkan INL files",
+									 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+	parser.add_argument("-a",
+						"--api",
+						dest="api",
+						default="",
+						help="Choose between Vulkan and Vulkan SC")
+	return parser.parse_args()
+
 if __name__ == "__main__":
-	# Read all .h files, with vulkan_core.h first
-	files			= os.listdir(VULKAN_H_DIR)
-	files			= [f for f in files if f.endswith(".h")]
-	files.sort()
-	files.remove("vulkan_core.h")
-	files.insert(0, "vulkan_core.h")
+	args = parseCmdLineArgs()
+
+	files = []
+	if args.api=='':
+		# Read all .h files, with vulkan_core.h first, skip vulkan_sc_core.h
+		files			= os.listdir(VULKAN_H_DIR)
+		files			= [f for f in files if f.endswith(".h")]
+		files.sort()
+		files.remove("vulkan_core.h")
+		files.remove("vulkan_sc_core.h")
+		files.insert(0, "vulkan_core.h")
+	elif args.api=='SC':
+		# Read only vulkan_sc_core.h
+		files.insert(0, "vulkan_sc_core.h")
+
 	src				= ""
 	for file in files:
 		src += readFile(os.path.join(VULKAN_H_DIR,file))
@@ -2317,50 +2368,50 @@ if __name__ == "__main__":
 	deviceFuncs		= [Function.TYPE_DEVICE]
 
 	dfd										= generateDeviceFeaturesDefs(src)
-	writeDeviceFeatures						(api, dfd, os.path.join(VULKAN_DIR, "vkDeviceFeatures.inl"))
-	writeDeviceFeaturesDefaultDeviceDefs	(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
-	writeDeviceFeaturesContextDecl			(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForContextDecl.inl"))
-	writeDeviceFeaturesContextDefs			(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForContextDefs.inl"))
+	writeDeviceFeatures						(api, dfd, os.path.join(VULKAN_DIR[args.api], "vkDeviceFeatures.inl"))
+	writeDeviceFeaturesDefaultDeviceDefs	(dfd, os.path.join(VULKAN_DIR[args.api], "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
+	writeDeviceFeaturesContextDecl			(dfd, os.path.join(VULKAN_DIR[args.api], "vkDeviceFeaturesForContextDecl.inl"))
+	writeDeviceFeaturesContextDefs			(dfd, os.path.join(VULKAN_DIR[args.api], "vkDeviceFeaturesForContextDefs.inl"))
 
 	dpd										= generateDevicePropertiesDefs(src)
-	writeDeviceProperties					(api, dpd, os.path.join(VULKAN_DIR, "vkDeviceProperties.inl"))
+	writeDeviceProperties					(api, dpd, os.path.join(VULKAN_DIR[args.api], "vkDeviceProperties.inl"))
 
-	writeDevicePropertiesDefaultDeviceDefs	(dpd, os.path.join(VULKAN_DIR, "vkDevicePropertiesForDefaultDeviceDefs.inl"))
-	writeDevicePropertiesContextDecl		(dpd, os.path.join(VULKAN_DIR, "vkDevicePropertiesForContextDecl.inl"))
-	writeDevicePropertiesContextDefs		(dpd, os.path.join(VULKAN_DIR, "vkDevicePropertiesForContextDefs.inl"))
+	writeDevicePropertiesDefaultDeviceDefs	(dpd, os.path.join(VULKAN_DIR[args.api], "vkDevicePropertiesForDefaultDeviceDefs.inl"))
+	writeDevicePropertiesContextDecl		(dpd, os.path.join(VULKAN_DIR[args.api], "vkDevicePropertiesForContextDecl.inl"))
+	writeDevicePropertiesContextDefs		(dpd, os.path.join(VULKAN_DIR[args.api], "vkDevicePropertiesForContextDefs.inl"))
 
-	writeHandleType							(api, os.path.join(VULKAN_DIR, "vkHandleType.inl"))
-	writeBasicTypes							(api, os.path.join(VULKAN_DIR, "vkBasicTypes.inl"))
-	writeCompositeTypes						(api, os.path.join(VULKAN_DIR, "vkStructTypes.inl"))
-	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR, "vkVirtualPlatformInterface.inl"),		platformFuncs,	False)
-	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR, "vkVirtualInstanceInterface.inl"),		instanceFuncs,	False)
-	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR, "vkVirtualDeviceInterface.inl"),			deviceFuncs,	False)
-	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR, "vkConcretePlatformInterface.inl"),		platformFuncs,	True)
-	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR, "vkConcreteInstanceInterface.inl"),		instanceFuncs,	True)
-	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR, "vkConcreteDeviceInterface.inl"),		deviceFuncs,	True)
-	writeFunctionPtrTypes					(api, os.path.join(VULKAN_DIR, "vkFunctionPointerTypes.inl"))
-	writeFunctionPointers					(api, os.path.join(VULKAN_DIR, "vkPlatformFunctionPointers.inl"),		platformFuncs)
-	writeFunctionPointers					(api, os.path.join(VULKAN_DIR, "vkInstanceFunctionPointers.inl"),		instanceFuncs)
-	writeFunctionPointers					(api, os.path.join(VULKAN_DIR, "vkDeviceFunctionPointers.inl"),			deviceFuncs)
-	writeInitFunctionPointers				(api, os.path.join(VULKAN_DIR, "vkInitPlatformFunctionPointers.inl"),	platformFuncs,	lambda f: f.name != "vkGetInstanceProcAddr")
-	writeInitFunctionPointers				(api, os.path.join(VULKAN_DIR, "vkInitInstanceFunctionPointers.inl"),	instanceFuncs)
-	writeInitFunctionPointers				(api, os.path.join(VULKAN_DIR, "vkInitDeviceFunctionPointers.inl"),		deviceFuncs)
-	writeFuncPtrInterfaceImpl				(api, os.path.join(VULKAN_DIR, "vkPlatformDriverImpl.inl"),				platformFuncs,	"PlatformDriver")
-	writeFuncPtrInterfaceImpl				(api, os.path.join(VULKAN_DIR, "vkInstanceDriverImpl.inl"),				instanceFuncs,	"InstanceDriver")
-	writeFuncPtrInterfaceImpl				(api, os.path.join(VULKAN_DIR, "vkDeviceDriverImpl.inl"),				deviceFuncs,	"DeviceDriver")
-	writeStrUtilProto						(api, os.path.join(VULKAN_DIR, "vkStrUtil.inl"))
-	writeStrUtilImpl						(api, os.path.join(VULKAN_DIR, "vkStrUtilImpl.inl"))
-	writeRefUtilProto						(api, os.path.join(VULKAN_DIR, "vkRefUtil.inl"))
-	writeRefUtilImpl						(api, os.path.join(VULKAN_DIR, "vkRefUtilImpl.inl"))
-	writeStructTraitsImpl					(api, os.path.join(VULKAN_DIR, "vkGetStructureTypeImpl.inl"))
-	writeNullDriverImpl						(api, os.path.join(VULKAN_DIR, "vkNullDriverImpl.inl"))
-	writeTypeUtil							(api, os.path.join(VULKAN_DIR, "vkTypeUtil.inl"))
-	writeSupportedExtenions					(api, os.path.join(VULKAN_DIR, "vkSupportedExtensions.inl"))
-	writeCoreFunctionalities				(api, os.path.join(VULKAN_DIR, "vkCoreFunctionalities.inl"))
-	writeExtensionFunctions					(api, os.path.join(VULKAN_DIR, "vkExtensionFunctions.inl"))
-	writeDeviceFeatures2					(api, os.path.join(VULKAN_DIR, "vkDeviceFeatures2.inl"))
-	writeMandatoryFeatures					(     os.path.join(VULKAN_DIR, "vkMandatoryFeatures.inl"))
-	writeExtensionList						(     os.path.join(VULKAN_DIR, "vkInstanceExtensions.inl"),				'INSTANCE')
-	writeExtensionList						(     os.path.join(VULKAN_DIR, "vkDeviceExtensions.inl"),				'DEVICE')
-	writeDriverIds							(     os.path.join(VULKAN_DIR, "vkKnownDriverIds.inl"))
-	writeObjTypeImpl						(api, os.path.join(VULKAN_DIR, "vkObjTypeImpl.inl"))
+	writeHandleType							(api, os.path.join(VULKAN_DIR[args.api], "vkHandleType.inl"))
+	writeBasicTypes							(api, os.path.join(VULKAN_DIR[args.api], "vkBasicTypes.inl"))
+	writeCompositeTypes						(api, os.path.join(VULKAN_DIR[args.api], "vkStructTypes.inl"))
+	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR[args.api], "vkVirtualPlatformInterface.inl"),		platformFuncs,	False)
+	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR[args.api], "vkVirtualInstanceInterface.inl"),		instanceFuncs,	False)
+	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR[args.api], "vkVirtualDeviceInterface.inl"),			deviceFuncs,	False)
+	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR[args.api], "vkConcretePlatformInterface.inl"),		platformFuncs,	True)
+	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR[args.api], "vkConcreteInstanceInterface.inl"),		instanceFuncs,	True)
+	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR[args.api], "vkConcreteDeviceInterface.inl"),		deviceFuncs,	True)
+	writeFunctionPtrTypes					(api, os.path.join(VULKAN_DIR[args.api], "vkFunctionPointerTypes.inl"))
+	writeFunctionPointers					(api, os.path.join(VULKAN_DIR[args.api], "vkPlatformFunctionPointers.inl"),		platformFuncs)
+	writeFunctionPointers					(api, os.path.join(VULKAN_DIR[args.api], "vkInstanceFunctionPointers.inl"),		instanceFuncs)
+	writeFunctionPointers					(api, os.path.join(VULKAN_DIR[args.api], "vkDeviceFunctionPointers.inl"),			deviceFuncs)
+	writeInitFunctionPointers				(api, os.path.join(VULKAN_DIR[args.api], "vkInitPlatformFunctionPointers.inl"),	platformFuncs,	lambda f: f.name != "vkGetInstanceProcAddr")
+	writeInitFunctionPointers				(api, os.path.join(VULKAN_DIR[args.api], "vkInitInstanceFunctionPointers.inl"),	instanceFuncs)
+	writeInitFunctionPointers				(api, os.path.join(VULKAN_DIR[args.api], "vkInitDeviceFunctionPointers.inl"),		deviceFuncs)
+	writeFuncPtrInterfaceImpl				(api, os.path.join(VULKAN_DIR[args.api], "vkPlatformDriverImpl.inl"),				platformFuncs,	"PlatformDriver")
+	writeFuncPtrInterfaceImpl				(api, os.path.join(VULKAN_DIR[args.api], "vkInstanceDriverImpl.inl"),				instanceFuncs,	"InstanceDriver")
+	writeFuncPtrInterfaceImpl				(api, os.path.join(VULKAN_DIR[args.api], "vkDeviceDriverImpl.inl"),				deviceFuncs,	"DeviceDriver")
+	writeStrUtilProto						(api, os.path.join(VULKAN_DIR[args.api], "vkStrUtil.inl"))
+	writeStrUtilImpl						(api, os.path.join(VULKAN_DIR[args.api], "vkStrUtilImpl.inl"))
+	writeRefUtilProto						(api, os.path.join(VULKAN_DIR[args.api], "vkRefUtil.inl"))
+	writeRefUtilImpl						(api, os.path.join(VULKAN_DIR[args.api], "vkRefUtilImpl.inl"))
+	writeStructTraitsImpl					(api, os.path.join(VULKAN_DIR[args.api], "vkGetStructureTypeImpl.inl"))
+	writeNullDriverImpl						(api, os.path.join(VULKAN_DIR[args.api], "vkNullDriverImpl.inl"))
+	writeTypeUtil							(api, os.path.join(VULKAN_DIR[args.api], "vkTypeUtil.inl"))
+	writeSupportedExtenions					(api, os.path.join(VULKAN_DIR[args.api], "vkSupportedExtensions.inl"))
+	writeCoreFunctionalities				(api, os.path.join(VULKAN_DIR[args.api], "vkCoreFunctionalities.inl"))
+	writeExtensionFunctions					(api, os.path.join(VULKAN_DIR[args.api], "vkExtensionFunctions.inl"))
+	writeDeviceFeatures2					(api, os.path.join(VULKAN_DIR[args.api], "vkDeviceFeatures2.inl"))
+	writeMandatoryFeatures					(api, os.path.join(VULKAN_DIR[args.api], "vkMandatoryFeatures.inl"))
+	writeExtensionList						(     os.path.join(VULKAN_DIR[args.api], "vkInstanceExtensions.inl"),				'INSTANCE')
+	writeExtensionList						(     os.path.join(VULKAN_DIR[args.api], "vkDeviceExtensions.inl"),				'DEVICE')
+	writeDriverIds							(args.api, os.path.join(VULKAN_DIR[args.api], "vkKnownDriverIds.inl"))
+	writeObjTypeImpl						(api, os.path.join(VULKAN_DIR[args.api], "vkObjTypeImpl.inl"))

@@ -1,0 +1,2 @@
+dEQP-VKSC.api.version_check.version
+dEQP-VKSC.api.version_check.entry_points

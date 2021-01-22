@@ -35,6 +35,6 @@ set(DE_INTERNAL_TESTS_LIBS
 	vkutil
 	)
 
-add_deqp_module(de-internal-tests "${DE_INTERNAL_TESTS_SRCS}" "${DE_INTERNAL_TESTS_LIBS}" ditTestPackageEntry.cpp)
+add_deqp_module(de-internal-tests "${DE_INTERNAL_TESTS_SRCS}" "${DE_INTERNAL_TESTS_LIBS}" "tcutil-platform" ditTestPackageEntry.cpp)
 
 add_data_dir(de-internal-tests ../../data/internal/data	internal/data)

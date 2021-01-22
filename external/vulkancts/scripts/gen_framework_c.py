@@ -22,15 +22,21 @@
 
 import os
 import sys
-
+import argparse
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
 
 from build.common import DEQP_DIR
 from khr_util.format import writeInlFile
 
-VULKAN_H	= os.path.join(os.path.dirname(__file__), "src", "vulkan_core.h")
-VULKAN_DIR	= os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan")
+VK_API_NAMES					= { "" :	"Vulkan API",
+									"SC" :	"Vulkan SC API"}
+
+
+VULKAN_H	= { "" :	os.path.join(os.path.dirname(__file__), "src", "vulkan_core.h"),
+				"SC" :	os.path.join(os.path.dirname(__file__), "src", "vulkan_sc_core.h") }
+VULKAN_DIR	= { "" :	os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan"),
+				"SC" :	os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkansc") }
 
 INL_HEADER = """\
 /* WARNING: This is auto-generated file. Do not modify, since changes will
@@ -64,6 +70,22 @@ def writeVulkanCHeader (src, filename):
 		yield dst
 	writeInlFile(filename, INL_HEADER, gen())
 
+def parseCmdLineArgs():
+	parser = argparse.ArgumentParser(description = "Generate Vulkan INL files",
+									 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+	parser.add_argument("-a",
+						"--api",
+						dest="api",
+						default="",
+						help="Choose between Vulkan and Vulkan SC")
+	return parser.parse_args()
+
+def getApiName (args):
+	if len(args)<2:
+		return ''
+	return args[1]
+
 if __name__ == "__main__":
-	src				= readFile(VULKAN_H)
-	writeVulkanCHeader				(src, os.path.join(VULKAN_DIR, "vkVulkan_c.inl"))
+	args					= parseCmdLineArgs()
+	src						= readFile(VULKAN_H[args.api])
+	writeVulkanCHeader		(src, os.path.join(VULKAN_DIR[args.api], "vkVulkan_c.inl"))

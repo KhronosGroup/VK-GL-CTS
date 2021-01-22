@@ -34,9 +34,11 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 {
 	VkPhysicalDeviceRobustness2FeaturesEXT*			robustness2Features			= nullptr;
 	VkPhysicalDeviceImageRobustnessFeaturesEXT*		imageRobustnessFeatures		= nullptr;
-	VkPhysicalDeviceFragmentShadingRateFeaturesKHR*	fragmentShadingRateFeatures	= nullptr;
+#ifndef CTS_USES_VULKANSC
+	VkPhysicalDeviceFragmentShadingRateFeaturesKHR*	fragmentShadingRateFeatures = nullptr;
 	VkPhysicalDeviceShadingRateImageFeaturesNV*		shadingRateImageFeatures	= nullptr;
 	VkPhysicalDeviceFragmentDensityMapFeaturesEXT*	fragmentDensityMapFeatures	= nullptr;
+#endif // CTS_USES_VULKANSC
 
 	m_coreFeatures2		= initVulkanStructure();
 	m_vulkan11Features	= initVulkanStructure();
@@ -87,13 +89,14 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 						robustness2Features = reinterpret_cast<VkPhysicalDeviceRobustness2FeaturesEXT*>(rawStructPtr);
 					else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES_EXT)
 						imageRobustnessFeatures = reinterpret_cast<VkPhysicalDeviceImageRobustnessFeaturesEXT*>(rawStructPtr);
+#ifndef CTS_USES_VULKANSC
 					else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR)
 						fragmentShadingRateFeatures = reinterpret_cast<VkPhysicalDeviceFragmentShadingRateFeaturesKHR*>(rawStructPtr);
 					else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADING_RATE_IMAGE_FEATURES_NV)
 						shadingRateImageFeatures = reinterpret_cast<VkPhysicalDeviceShadingRateImageFeaturesNV*>(rawStructPtr);
 					else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_EXT)
 						fragmentDensityMapFeatures = reinterpret_cast<VkPhysicalDeviceFragmentDensityMapFeaturesEXT*>(rawStructPtr);
-
+#endif // CTS_USES_VULKANSC
 					// add to chain
 					*nextPtr	= rawStructPtr;
 					nextPtr		= p->getFeatureTypeNext();
@@ -134,6 +137,7 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 	}
 	m_coreFeatures2.features.robustBufferAccess = false;
 
+#ifndef CTS_USES_VULKANSC
 	// Disable VK_EXT_fragment_density_map and VK_NV_shading_rate_image features
 	// that must: not be enabled if KHR fragment shading rate features are enabled.
 	if (fragmentShadingRateFeatures &&
@@ -146,10 +150,12 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 		if (fragmentDensityMapFeatures)
 			fragmentDensityMapFeatures->fragmentDensityMap = false;
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 bool DeviceFeatures::verifyFeatureAddCriteria (const FeatureStructCreationData& item, const std::vector<VkExtensionProperties>& properties)
 {
+#ifndef CTS_USES_VULKANSC
 	if (deStringEqual(item.name, VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME))
 	{
 		for (const auto& property : properties)
@@ -158,6 +164,10 @@ bool DeviceFeatures::verifyFeatureAddCriteria (const FeatureStructCreationData& 
 				return (property.specVersion == item.specVersion);
 		}
 	}
+#else // CTS_USES_VULKANSC
+	DE_UNREF(item);
+	DE_UNREF(properties);
+#endif // CTS_USES_VULKANSC
 
 	return true;
 }

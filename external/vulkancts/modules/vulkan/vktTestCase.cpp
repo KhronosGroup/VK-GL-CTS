@@ -330,11 +330,15 @@ public:
 	deUint32														getSparseQueueFamilyIndex				(void) const { return m_sparseQueueFamilyIndex;								}
 	VkQueue															getSparseQueue							(void) const;
 
+#ifndef CTS_USES_VULKANSC
 	bool															hasDebugReportRecorder					(void) const { return m_debugReportRecorder.get() != nullptr;				}
 	vk::DebugReportRecorder&										getDebugReportRecorder					(void) const { return *m_debugReportRecorder.get();							}
+#endif // CTS_USES_VULKANSC
 
 private:
+#ifndef CTS_USES_VULKANSC
 	using DebugReportRecorderPtr		= de::UniquePtr<vk::DebugReportRecorder>;
+#endif // CTS_USES_VULKANSC
 
 	const deUint32						m_maximumFrameworkVulkanVersion;
 	const deUint32						m_availableInstanceVersion;
@@ -346,8 +350,9 @@ private:
 	const vector<string>				m_instanceExtensions;
 	const Unique<VkInstance>			m_instance;
 	const InstanceDriver				m_instanceInterface;
+#ifndef CTS_USES_VULKANSC
 	const DebugReportRecorderPtr		m_debugReportRecorder;
-
+#endif // CTS_USES_VULKANSC
 	const VkPhysicalDevice				m_physicalDevice;
 	const deUint32						m_deviceVersion;
 
@@ -370,6 +375,7 @@ deUint32 sanitizeApiVersion(deUint32 v)
 	return VK_MAKE_VERSION( VK_VERSION_MAJOR(v), VK_VERSION_MINOR(v), 0 );
 }
 
+#ifndef CTS_USES_VULKANSC
 de::MovePtr<vk::DebugReportRecorder> createDebugReportRecorder (const vk::PlatformInterface& vkp, const vk::InstanceInterface& vki, vk::VkInstance instance, bool printValidationErrors)
 {
 	if (isDebugReportSupported(vkp))
@@ -377,7 +383,7 @@ de::MovePtr<vk::DebugReportRecorder> createDebugReportRecorder (const vk::Platfo
 	else
 		TCU_THROW(NotSupportedError, "VK_EXT_debug_report is not supported");
 }
-
+#endif // CTS_USES_VULKANSC
 } // anonymous
 
 DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine)
@@ -391,12 +397,14 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 	, m_instance						(createInstance(vkPlatform, m_usedApiVersion, m_instanceExtensions, cmdLine))
 
 	, m_instanceInterface				(vkPlatform, *m_instance)
+#ifndef CTS_USES_VULKANSC
 	, m_debugReportRecorder				(cmdLine.isValidationEnabled()
 										 ? createDebugReportRecorder(vkPlatform,
 																	 m_instanceInterface,
 																	 *m_instance,
 																	 cmdLine.printValidationErrors())
 										 : de::MovePtr<vk::DebugReportRecorder>(DE_NULL))
+#endif // CTS_USES_VULKANSC
 	, m_physicalDevice					(chooseDevice(m_instanceInterface, *m_instance, cmdLine))
 	, m_deviceVersion					(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice).apiVersion)
 
@@ -685,6 +693,8 @@ bool Context::isBufferDeviceAddressSupported(void) const
 		   isDeviceFunctionalitySupported("VK_EXT_buffer_device_address");
 }
 
+#ifndef CTS_USES_VULKANSC
+
 bool Context::hasDebugReportRecorder () const
 {
 	return m_device->hasDebugReportRecorder();
@@ -694,6 +704,8 @@ vk::DebugReportRecorder& Context::getDebugReportRecorder () const
 {
 	return m_device->getDebugReportRecorder();
 }
+
+#endif // CTS_USES_VULKANSC
 
 // TestCase
 
@@ -708,6 +720,8 @@ void TestCase::checkSupport (Context&) const
 void TestCase::delayedInit (void)
 {
 }
+
+#ifndef CTS_USES_VULKANSC
 
 void collectAndReportDebugMessages(vk::DebugReportRecorder &debugReportRecorder, Context& context)
 {
@@ -740,5 +754,7 @@ void collectAndReportDebugMessages(vk::DebugReportRecorder &debugReportRecorder,
 		}
 	}
 }
+
+#endif // CTS_USES_VULKANSC
 
 } // vkt

@@ -34,7 +34,7 @@ VK_SOURCE						= khr_util.registry_cache.RegistrySource(
 									"xml/vk.xml",
 									"cee0f4b12acde766e64d0d038b03458c74bb67f1",
 									"eb31286278b1ecf55ae817198a4238f82ea8fe028aa0631e2c1b09747f10ebb4")
-VK_INL_FILE						= os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "vkApiExtensionDependencyInfo.inl")
+VK_INL_FILE						= os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkan", "vkApiExtensionDependencyInfo.inl")
 VK_INL_HEADER					= khr_util.format.genInlHeader("Khronos Vulkan API description (vk.xml)", VK_SOURCE.getRevision())
 
 def VK_MAKE_VERSION(major, minor, patch):
