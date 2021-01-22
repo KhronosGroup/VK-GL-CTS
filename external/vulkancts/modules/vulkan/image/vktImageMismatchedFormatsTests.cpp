@@ -190,6 +190,31 @@ enum class TestType
 	WRITE
 };
 
+void fillImageCreateInfo (VkImageCreateInfo& imageCreateInfo, TestType testType, VkFormat format)
+{
+	const VkImageCreateFlags	imageFlags		= ((testType == TestType::SPARSE_READ) ? (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT) : 0u);
+	const VkImageCreateInfo		createInfo		=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,																// VkStructureType			sType;
+		nullptr,																							// const void*				pNext;
+		imageFlags,																							// VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,																					// VkImageType				imageType;
+		format,																								// VkFormat					format;
+		makeExtent3D(8, 8, 1),																				// VkExtent3D				extent;
+		1u,																									// deUint32					mipLevels;
+		1u,																									// deUint32					arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,																				// VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,																			// VkImageTiling			tiling;
+		VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,		// VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,																			// VkSharingMode			sharingMode;
+		0u,																									// deUint32					queueFamilyIndexCount;
+		nullptr,																							// const deUint32*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED																			// VkImageLayout			initialLayout;
+	};
+
+	imageCreateInfo = createInfo;
+}
+
 class MismatchedFormatTest : public TestCase
 {
 public:
@@ -225,17 +250,25 @@ MismatchedFormatTest::MismatchedFormatTest (tcu::TestContext&	testCtx,
 
 void MismatchedFormatTest::checkSupport (Context& context) const
 {
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
+
 	if (m_type == TestType::SPARSE_READ)
 	{
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
 
-		if (!getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice()).sparseResidencyBuffer)
-		{
+		if (!getPhysicalDeviceFeatures(vki, physicalDevice).sparseResidencyBuffer)
 			TCU_THROW(NotSupportedError, "Sparse partially resident buffers not supported");
-		}
+
+		// Check sparse operations support before creating the image.
+		VkImageCreateInfo imageCreateInfo;
+		fillImageCreateInfo(imageCreateInfo, m_type, m_format);
+
+		if (!checkSparseImageFormatSupport(physicalDevice, vki, imageCreateInfo))
+			TCU_THROW(NotSupportedError, "The image format does not support sparse operations.");
 	}
 
-	VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), m_format);
+	VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(vki, physicalDevice, m_format);
 
 	if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
 	{
@@ -335,6 +368,9 @@ tcu::TestStatus MismatchedFormatTestInstance::iterate (void)
 	const VkDevice					device				= m_context.getDevice();
 	const VkQueue					queue				= m_context.getUniversalQueue();
 	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	auto&							allocator			= m_context.getDefaultAllocator();
+	const auto						physicalDevice		= m_context.getPhysicalDevice();
+	const auto&						instance			= m_context.getInstanceInterface();
 
 	Move<VkShaderModule>			shaderModule		= createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0);
 
@@ -350,28 +386,11 @@ tcu::TestStatus MismatchedFormatTestInstance::iterate (void)
 
 	Move<VkPipeline>				pipeline			= makeComputePipeline(vk, device, *pipelineLayout, *shaderModule);
 
-	VkImageCreateFlags				imageFlag			= m_type == TestType::SPARSE_READ ? (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT) : 0u;
-
-	const VkImageCreateInfo			imageCreateInfo		=
-	{
-		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,																// VkStructureType			sType;
-		DE_NULL,																							// const void*				pNext;
-		imageFlag,																							// VkImageCreateFlags		flags;
-		VK_IMAGE_TYPE_2D,																					// VkImageType				imageType;
-		m_format,																							// VkFormat					format;
-		makeExtent3D(8, 8, 1),																				// VkExtent3D				extent;
-		1u,																									// deUint32					mipLevels;
-		1u,																									// deUint32					arrayLayers;
-		VK_SAMPLE_COUNT_1_BIT,																				// VkSampleCountFlagBits	samples;
-		VK_IMAGE_TILING_OPTIMAL,																			// VkImageTiling			tiling;
-		VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,		// VkImageUsageFlags		usage;
-		VK_SHARING_MODE_EXCLUSIVE,																			// VkSharingMode			sharingMode;
-		0u,																									// deUint32					queueFamilyIndexCount;
-		DE_NULL,																							// const deUint32*			pQueueFamilyIndices;
-		VK_IMAGE_LAYOUT_UNDEFINED																			// VkImageLayout			initialLayout;
-	};
+	VkImageCreateInfo				imageCreateInfo;
+	fillImageCreateInfo(imageCreateInfo, m_type, m_format);
 
 	vk::Move<vk::VkImage>			storageImage		= createImage(vk, device, &imageCreateInfo);
+	const auto						tcuFormat			= mapVkFormat(m_format);
 
 	de::MovePtr<vk::Allocation>					storageAllocation;
 	vk::Move<vk::VkSemaphore>					bindSemaphore;
@@ -379,19 +398,20 @@ tcu::TestStatus MismatchedFormatTestInstance::iterate (void)
 
 	if (m_type == TestType::SPARSE_READ)
 	{
-		bindSemaphore = createSemaphore(m_context.getDeviceInterface(), m_context.getDevice());
+		bindSemaphore = createSemaphore(vk, device);
 
-		allocateAndBindSparseImage(	vk, device, m_context.getPhysicalDevice(), m_context.getInstanceInterface(),
+		allocateAndBindSparseImage(	vk, device, physicalDevice, instance,
 									imageCreateInfo, *bindSemaphore, m_context.getSparseQueue(),
-									m_context.getDefaultAllocator(), allocations, mapVkFormat(m_format), *storageImage	);
+									allocator, allocations, tcuFormat, *storageImage	);
 	}
 	else
 	{
-		storageAllocation = m_context.getDefaultAllocator().allocate(getImageMemoryRequirements(vk, device, *storageImage), MemoryRequirement::Any);
+		storageAllocation = allocator.allocate(getImageMemoryRequirements(vk, device, *storageImage), MemoryRequirement::Any);
 		VK_CHECK(vk.bindImageMemory(device, *storageImage, storageAllocation->getMemory(), storageAllocation->getOffset()));
 	}
 
-	Move<VkImageView>				storageImageView	= makeImageView(vk, device, *storageImage, VK_IMAGE_VIEW_TYPE_2D, m_format, makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
+	const auto						subresourceRange	= makeImageSubresourceRange(getImageAspectFlags(tcuFormat), 0u, 1u, 0u, 1u);
+	Move<VkImageView>				storageImageView	= makeImageView(vk, device, *storageImage, VK_IMAGE_VIEW_TYPE_2D, m_format, subresourceRange);
 	VkDescriptorImageInfo			storageImageInfo	= makeDescriptorImageInfo(DE_NULL, *storageImageView, VK_IMAGE_LAYOUT_GENERAL);
 
 	DescriptorSetUpdateBuilder		builder;
@@ -402,7 +422,10 @@ tcu::TestStatus MismatchedFormatTestInstance::iterate (void)
 	Move<VkCommandPool>				cmdPool				= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 	Move<VkCommandBuffer>			cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
+	const auto						layoutBarrier		= makeImageMemoryBarrier(0u, (VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, *storageImage, subresourceRange);
+
 	beginCommandBuffer(vk, *cmdBuffer);
+		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &layoutBarrier);
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 		vk.cmdDispatch(*cmdBuffer, 8, 8, 1);
