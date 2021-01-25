@@ -155,6 +155,7 @@ struct SamplerlessParams
 {
 	vk::VkDescriptorType	type;
 	PointerCase				pointer;
+	deUint32				descriptorSet;
 };
 
 class SamplerlessDescriptorWriteTestCase : public vkt::TestCase
@@ -222,15 +223,15 @@ void SamplerlessDescriptorWriteTestCase::initPrograms (vk::SourceCollections& pr
 	{
 	case vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
 		extensions		= "#extension GL_EXT_samplerless_texture_functions : require\n";
-		descriptorDecl	= "layout(set=0, binding=0) uniform texture2D img;";
+		descriptorDecl	= "layout(set=" + std::to_string(m_params.descriptorSet) + ", binding=0) uniform texture2D img;";
 		readOp			= "texelFetch(img, ivec2(0, 0), 0)";
 		break;
 	case vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-		descriptorDecl	= "layout(rgba8, set=0, binding=0) uniform image2D img;";
+		descriptorDecl	= "layout(rgba8, set=" + std::to_string(m_params.descriptorSet) + ", binding=0) uniform image2D img;";
 		readOp			= "imageLoad(img, ivec2(0, 0))";
 		break;
 	case vk::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
-		descriptorDecl	= "layout(input_attachment_index=0, set=0, binding=0) uniform subpassInput img;";
+		descriptorDecl	= "layout(input_attachment_index=0, set=" + std::to_string(m_params.descriptorSet) + ", binding=0) uniform subpassInput img;";
 		readOp			= "subpassLoad(img)";
 		break;
 	default:
@@ -477,24 +478,36 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::iterate (void)
 	deMemcpy(vertexDataPtr, fullScreenQuad.data(), static_cast<size_t>(vertexBufferSize));
 	vk::flushAlloc(vkd, device, vertexAlloc);
 
-	// Descriptor set layout.
+	// Descriptor set layouts.
 	vk::DescriptorSetLayoutBuilder layoutBuilder;
-	layoutBuilder.addSingleBinding(m_params.type, vk::VK_SHADER_STAGE_ALL_GRAPHICS);
-	const auto descriptorSetLayout = layoutBuilder.build(vkd, device);
+	std::vector<vk::Move<vk::VkDescriptorSetLayout>> descriptorSetLayouts;
+	// Create layouts for required amount of empty descriptor sets before the one that is actually used.
+	for (deUint32 descIdx = 0u; descIdx < m_params.descriptorSet; descIdx++)
+	{
+		descriptorSetLayouts.push_back(layoutBuilder.build(vkd, device));
+	}
+	// Create a layout for the descriptor set that is actually used.
+	layoutBuilder.addSingleBinding(m_params.type, vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+	descriptorSetLayouts.push_back(layoutBuilder.build(vkd, device));
 
 	// Descriptor pool.
 	vk::DescriptorPoolBuilder poolBuilder;
 	poolBuilder.addType(m_params.type);
-	const auto descriptorPool = poolBuilder.build(vkd, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	const auto descriptorPool = poolBuilder.build(vkd, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, m_params.descriptorSet + 1);
 
-	// Descriptor set.
-	const auto descriptorSet = vk::makeDescriptorSet(vkd, device, descriptorPool.get(), descriptorSetLayout.get());
+	// Descriptor sets.
+	std::vector<vk::Move<vk::VkDescriptorSet>> descriptorSets;
+	for (deUint32 descIdx = 0u; descIdx < m_params.descriptorSet; descIdx++)
+	{
+		descriptorSets.push_back(vk::makeDescriptorSet(vkd, device, descriptorPool.get(), descriptorSetLayouts[descIdx].get()));
+	}
+	descriptorSets.push_back(vk::makeDescriptorSet(vkd, device, descriptorPool.get(), descriptorSetLayouts[m_params.descriptorSet].get()));
 
 	// Update descriptor set with the descriptor.
 	// IMPORTANT: the chosen sampler handle is used here.
 	vk::DescriptorSetUpdateBuilder updateBuilder;
 	const auto descriptorImageInfo = vk::makeDescriptorImageInfo(getSamplerHandle(), mainView.get(), getMainImageShaderLayout());
-	updateBuilder.writeSingle(descriptorSet.get(), vk::DescriptorSetUpdateBuilder::Location::binding(0u), m_params.type, &descriptorImageInfo);
+	updateBuilder.writeSingle(descriptorSets[m_params.descriptorSet].get(), vk::DescriptorSetUpdateBuilder::Location::binding(0u), m_params.type, &descriptorImageInfo);
 	updateBuilder.update(vkd, device);
 
 	// Shader modules.
@@ -593,7 +606,7 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::iterate (void)
 	const auto framebuffer = vk::makeFramebuffer(vkd, device, renderPass.get(), static_cast<deUint32>(attachments.size()), attachments.data(), kFramebufferExtent.width, kFramebufferExtent.height, kFramebufferExtent.depth);
 
 	// Pipeline layout.
-	const auto pipelineLayout = vk::makePipelineLayout(vkd, device, descriptorSetLayout.get());
+	const auto pipelineLayout = vk::makePipelineLayout(vkd, device, descriptorSetLayouts);
 
 	// Graphics pipeline.
 	const std::vector<vk::VkViewport>	viewports(1u, vk::makeViewport(kFramebufferExtent));
@@ -629,7 +642,7 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::iterate (void)
 
 	vk::beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), renderArea, clearFbColor);
 	vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
-	vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), m_params.descriptorSet, 1u, &descriptorSets[m_params.descriptorSet].get(), 0u, nullptr);
 	vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 	vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(fullScreenQuad.size()), 1u, 0u, 0u);
 	vk::endRenderPass(vkd, cmdBuffer);
@@ -687,9 +700,14 @@ tcu::TestCaseGroup* createSamplerlessWriteTests (tcu::TestContext& testCtx)
 
 	for (const auto& typeCase		: descriptorTypes)
 	for (const auto& pointerCase	: pointerCases)
+	for (deUint32 descriptorSet = 0u; descriptorSet < 2u; descriptorSet++)
 	{
-		const std::string		caseName	= typeCase.second + "_" + pointerCase.second;
-		const SamplerlessParams	params		{typeCase.first, pointerCase.first};
+		std::string			caseName	= typeCase.second + "_" + pointerCase.second;
+		SamplerlessParams	params		{typeCase.first, pointerCase.first, descriptorSet};
+		if (descriptorSet > 0u)
+		{
+			caseName += "_set_" + std::to_string(descriptorSet);
+		}
 
 		group->addChild(new SamplerlessDescriptorWriteTestCase(testCtx, caseName, "", params));
 	}

@@ -552,6 +552,19 @@ Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 	return makePipelineLayout(vk, device, (descriptorSetLayout == DE_NULL) ? 0u : 1u, &descriptorSetLayout);
 }
 
+Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&								vk,
+										   const VkDevice										device,
+										   const std::vector<vk::Move<VkDescriptorSetLayout>>	&descriptorSetLayouts)
+{
+	// Create a list of descriptor sets without move pointers.
+	std::vector<vk::VkDescriptorSetLayout> descriptorSetLayoutsUnWrapped;
+	for (const auto& descriptorSetLayout : descriptorSetLayouts)
+	{
+		descriptorSetLayoutsUnWrapped.push_back(descriptorSetLayout.get());
+	}
+	return vk::makePipelineLayout(vk, device, static_cast<deUint32>(descriptorSetLayoutsUnWrapped.size()), descriptorSetLayoutsUnWrapped.data());
+}
+
 Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 										   const VkDevice				device,
 										   const deUint32				setLayoutCount,

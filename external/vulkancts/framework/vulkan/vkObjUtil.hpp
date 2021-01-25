@@ -110,6 +110,10 @@ Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 										   const VkDevice				device,
 										   const VkDescriptorSetLayout	descriptorSetLayout = DE_NULL);
 
+Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&								vk,
+										   const VkDevice										device,
+										   const std::vector<vk::Move<VkDescriptorSetLayout>>	&descriptorSetLayouts);
+
 Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 										   const VkDevice				device,
 										   const deUint32				setLayoutCount,
