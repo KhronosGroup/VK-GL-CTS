@@ -987,7 +987,7 @@ void TestTexture::populateCompressedLevels (tcu::CompressedTexFormat format, con
 void TestTexture::fillWithGradient (const tcu::PixelBufferAccess& levelAccess)
 {
 	const tcu::TextureFormatInfo formatInfo = tcu::getTextureFormatInfo(levelAccess.getFormat());
-	tcu::fillWithComponentGradients(levelAccess, formatInfo.valueMin, formatInfo.valueMax);
+	tcu::fillWithComponentGradients2(levelAccess, formatInfo.valueMin, formatInfo.valueMax);
 }
 
 // TestTexture1D
