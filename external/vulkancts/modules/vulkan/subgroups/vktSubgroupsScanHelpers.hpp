@@ -48,9 +48,9 @@ enum ScanType
 	SCAN_EXCLUSIVE
 };
 
-std::string getScanOpName(std::string prefix, std::string suffix, Operator op, ScanType scanType);
-std::string getOpOperation(Operator op, vk::VkFormat format, std::string lhs, std::string rhs);
-std::string getIdentity(Operator op, vk::VkFormat format);
-std::string getCompare(Operator op, vk::VkFormat format, std::string lhs, std::string rhs);
+std::string getScanOpName (std::string prefix, std::string suffix, Operator op, ScanType scanType);
+std::string getOpOperation (Operator op, vk::VkFormat format, std::string lhs, std::string rhs);
+std::string getIdentity (Operator op, vk::VkFormat format);
+std::string getCompare (Operator op, vk::VkFormat format, std::string lhs, std::string rhs);
 
 #endif // _VKTSUBGROUPSSCANHELPERS_HPP

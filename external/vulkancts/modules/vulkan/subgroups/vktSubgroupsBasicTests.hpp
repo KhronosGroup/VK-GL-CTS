@@ -32,7 +32,7 @@ namespace vkt
 namespace subgroups
 {
 
-tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createSubgroupsBasicTests (tcu::TestContext& testCtx);
 
 } // subgroups
 } // vkt

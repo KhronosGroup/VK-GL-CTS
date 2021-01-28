@@ -2174,12 +2174,22 @@ RayTracingPipeline::~RayTracingPipeline ()
 	else															\
 		TCU_THROW(InternalError, "Attempt to reassign shader")
 
-void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, Move<VkShaderModule> shaderModule, deUint32 group, const VkSpecializationInfo* specializationInfo)
+void RayTracingPipeline::addShader (VkShaderStageFlagBits					shaderStage,
+									Move<VkShaderModule>					shaderModule,
+									deUint32								group,
+									const VkSpecializationInfo*				specializationInfo,
+									const VkPipelineShaderStageCreateFlags	pipelineShaderStageCreateFlags,
+									const void*								pipelineShaderStageCreateInfopNext)
 {
-	addShader(shaderStage, makeVkSharedPtr(shaderModule), group, specializationInfo);
+	addShader(shaderStage, makeVkSharedPtr(shaderModule), group, specializationInfo, pipelineShaderStageCreateFlags, pipelineShaderStageCreateInfopNext);
 }
 
-void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, de::SharedPtr<Move<VkShaderModule>> shaderModule, deUint32 group, const VkSpecializationInfo* specializationInfoPtr)
+void RayTracingPipeline::addShader (VkShaderStageFlagBits					shaderStage,
+									de::SharedPtr<Move<VkShaderModule>>		shaderModule,
+									deUint32								group,
+									const VkSpecializationInfo*				specializationInfoPtr,
+									const VkPipelineShaderStageCreateFlags	pipelineShaderStageCreateFlags,
+									const void*								pipelineShaderStageCreateInfopNext)
 {
 	if (group >= m_shadersGroupCreateInfos.size())
 	{
@@ -2246,8 +2256,8 @@ void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, de::Share
 		const VkPipelineShaderStageCreateInfo	shaderCreateInfo	=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	//  VkStructureType						sType;
-			DE_NULL,												//  const void*							pNext;
-			(VkPipelineShaderStageCreateFlags)0,					//  VkPipelineShaderStageCreateFlags	flags;
+			pipelineShaderStageCreateInfopNext,						//  const void*							pNext;
+			pipelineShaderStageCreateFlags,							//  VkPipelineShaderStageCreateFlags	flags;
 			shaderStage,											//  VkShaderStageFlagBits				stage;
 			**shaderModule,											//  VkShaderModule						module;
 			"main",													//  const char*							pName;

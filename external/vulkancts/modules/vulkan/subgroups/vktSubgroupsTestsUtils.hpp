@@ -37,6 +37,7 @@
 #include "vkTypeUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vkRayTracingUtil.hpp"
 
 #include "tcuFormatUtil.hpp"
 #include "tcuTestLog.hpp"
@@ -54,9 +55,26 @@ namespace vkt
 {
 namespace subgroups
 {
+typedef bool (*CheckResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize);
+typedef bool (*CheckResultFragment)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 height, deUint32 subgroupSize);
+typedef bool (*CheckResultCompute)(const void* internalData, std::vector<const void*> datas, const deUint32 numWorkgroups[3], const deUint32 localSize[3], deUint32 subgroupSize);
+
 // A struct to represent input data to a shader
 struct SSBOData
 {
+	enum InputDataInitializeType
+	{
+		InitializeNone = 0,
+		InitializeNonZero,
+		InitializeZero,
+	};
+	enum InputDataLayoutType
+	{
+		LayoutStd140 = 0,
+		LayoutStd430,
+		LayoutPacked
+	};
+
 	SSBOData() :
 		initializeType	(InitializeNone),
 		layout			(LayoutStd140),
@@ -64,88 +82,93 @@ struct SSBOData
 		numElements		(0),
 		isImage			(false),
 		binding			(0u),
-		stages			((vk::VkShaderStageFlagBits)0u)
+		stages			((vk::VkShaderStageFlags)0u)
 	{}
 
-	enum InputDataInitializeType
-	{
-		InitializeNone = 0,
-		InitializeNonZero,
-		InitializeZero,
-	} initializeType;
+	SSBOData (InputDataInitializeType	initializeType_,
+			  InputDataLayoutType		layout_,
+			  vk::VkFormat				format_,
+			  vk::VkDeviceSize			numElements_,
+			  bool						isImage_	= false,
+			  deUint32					binding_	= 0u,
+			  vk::VkShaderStageFlags	stages_		= static_cast<vk::VkShaderStageFlags>(0u))
+		: initializeType	(initializeType_)
+		, layout			(layout_)
+		, format			(format_)
+		, numElements		(numElements_)
+		, isImage			(isImage_)
+		, binding			(binding_)
+		, stages			(stages_)
+	{}
 
-	enum InputDataLayoutType
-	{
-		LayoutStd140 = 0,
-		LayoutStd430,
-		LayoutPacked
-	} layout;
-
+	InputDataInitializeType		initializeType;
+	InputDataLayoutType			layout;
 	vk::VkFormat				format;
 	vk::VkDeviceSize			numElements;
 	bool						isImage;
 	deUint32					binding;
-	vk::VkShaderStageFlagBits	stages;
+	vk::VkShaderStageFlags		stages;
 };
 
-std::string getSharedMemoryBallotHelper();
+deUint32 getStagesCount (vk::VkShaderStageFlags shaderStages);
 
-std::string getSharedMemoryBallotHelperARB();
+std::string getSharedMemoryBallotHelper ();
 
-deUint32 getSubgroupSize(Context& context);
+std::string getSharedMemoryBallotHelperARB ();
 
-vk::VkDeviceSize maxSupportedSubgroupSize();
+deUint32 getSubgroupSize (Context& context);
 
-std::string getShaderStageName(vk::VkShaderStageFlags stage);
+deUint32 maxSupportedSubgroupSize ();
 
-std::string getSubgroupFeatureName(vk::VkSubgroupFeatureFlagBits bit);
+std::string getShaderStageName (vk::VkShaderStageFlags stage);
+
+std::string getSubgroupFeatureName (vk::VkSubgroupFeatureFlagBits bit);
 
 void addNoSubgroupShader (vk::SourceCollections& programCollection);
 
-std::string getVertShaderForStage(vk::VkShaderStageFlags stage);//TODO
+void initStdFrameBufferPrograms (vk::SourceCollections&				programCollection,
+								 const vk::ShaderBuildOptions&		buildOptions,
+								 vk::VkShaderStageFlags				shaderStage,
+								 vk::VkFormat						format,
+								 bool								gsPointSize,
+								 const std::string&					extHeader,
+								 const std::string&					testSrc,
+								 const std::string&					helperStr,
+								 const std::vector<std::string>&	declarations	= std::vector<std::string>());
 
-void initStdFrameBufferPrograms(	vk::SourceCollections&			programCollection,
-									const vk::ShaderBuildOptions&	buildOptions,
-									vk::VkShaderStageFlags			shaderStage,
-									vk::VkFormat					format,
-									bool							gsPointSize,
-									std::string						extHeader,
-									std::string						testSrc,
-									std::string						helperStr);
+void initStdPrograms (vk::SourceCollections&			programCollection,
+					  const vk::ShaderBuildOptions&		buildOptions,
+					  vk::VkShaderStageFlags			shaderStage,
+					  vk::VkFormat						format,
+					  bool								gsPointSize,
+					  const std::string&				extHeader,
+					  const std::string&				testSrc,
+					  const std::string&				helperStr,
+					  const std::vector<std::string>&	declarations			= std::vector<std::string>(),
+					  const bool						avoidHelperInvocations	= false,
+					  const std::string&				tempRes					= "  uint tempRes;\n");
 
-void initStdPrograms(	vk::SourceCollections&			programCollection,
-								const vk::ShaderBuildOptions&	buildOptions,
-								vk::VkShaderStageFlags			shaderStage,
-								vk::VkFormat					format,
-								bool							gsPointSize,
-								std::string						extHeader,
-								std::string						testSrc,
-								std::string						helperStr);
+bool isSubgroupSupported (Context& context);
 
-bool isSubgroupSupported(Context& context);
+bool areSubgroupOperationsSupportedForStage (Context& context, vk::VkShaderStageFlags stage);
 
-bool areSubgroupOperationsSupportedForStage(
-	Context& context, vk::VkShaderStageFlags stage);
+bool isSubgroupFeatureSupportedForDevice (Context& context, vk::VkSubgroupFeatureFlagBits bit);
 
-bool areSubgroupOperationsRequiredForStage(vk::VkShaderStageFlags stage);
+bool isFragmentSSBOSupportedForDevice (Context& context);
 
-bool isSubgroupFeatureSupportedForDevice(Context& context, vk::VkSubgroupFeatureFlagBits bit);
+bool isVertexSSBOSupportedForDevice (Context& context);
 
-bool isFragmentSSBOSupportedForDevice(Context& context);
+bool isFormatSupportedForDevice (Context& context, vk::VkFormat format);
 
-bool isVertexSSBOSupportedForDevice(Context& context);
+bool isInt64SupportedForDevice (Context& context);
 
-bool isFormatSupportedForDevice(Context& context, vk::VkFormat format);
+bool isTessellationAndGeometryPointSizeSupported (Context& context);
 
-bool isInt64SupportedForDevice(Context& context);
+bool is16BitUBOStorageSupported (Context& context);
 
-bool isTessellationAndGeometryPointSizeSupported(Context& context);
+bool is8BitUBOStorageSupported (Context& context);
 
-bool is16BitUBOStorageSupported(Context& context);
-
-bool is8BitUBOStorageSupported(Context& context);
-
-bool isSubgroupBroadcastDynamicIdSupported(Context& context);
+bool isSubgroupBroadcastDynamicIdSupported (Context& context);
 
 std::string getFormatNameForGLSL (vk::VkFormat format);
 
@@ -157,8 +180,8 @@ bool isFormatSigned (vk::VkFormat format);
 bool isFormatUnsigned (vk::VkFormat format);
 bool isFormatFloat (vk::VkFormat format);
 bool isFormatBool (vk::VkFormat format);
-bool isFormat8bitTy(vk::VkFormat format);
-bool isFormat16BitTy(vk::VkFormat format);
+bool isFormat8bitTy (vk::VkFormat format);
+bool isFormat16BitTy (vk::VkFormat format);
 
 void addGeometryShadersFromTemplate (const std::string& glslTemplate, const vk::ShaderBuildOptions& options, vk::GlslSourceCollection& collection);
 void addGeometryShadersFromTemplate (const std::string& spirvTemplate, const vk::SpirVAsmBuildOptions& options, vk::SpirVAsmCollection& collection);
@@ -173,21 +196,27 @@ void setTesCtrlShaderFrameBuffer (vk::SourceCollections& programCollection);
 
 void setTesEvalShaderFrameBuffer (vk::SourceCollections& programCollection);
 
-bool check(std::vector<const void*> datas,
-	deUint32 width, deUint32 ref);
+bool check (std::vector<const void*> datas, deUint32 width, deUint32 ref);
 
-bool checkCompute(std::vector<const void*> datas,
-	const deUint32 numWorkgroups[3], const deUint32 localSize[3],
-	deUint32 ref);
+bool checkCompute (std::vector<const void*>		datas,
+				   const deUint32				numWorkgroups[3],
+				   const deUint32				localSize[3],
+				   deUint32						ref);
 
-tcu::TestStatus makeTessellationEvaluationFrameBufferTest(Context& context, vk::VkFormat format,
-	SSBOData* extraData, deUint32 extraDataCount, const void* internalData,
-	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
-	const vk::VkShaderStageFlags shaderStage = vk::VK_SHADER_STAGE_ALL_GRAPHICS);
+tcu::TestStatus makeTessellationEvaluationFrameBufferTest (Context&						context,
+														   vk::VkFormat					format,
+														   const SSBOData*				extraData,
+														   deUint32						extraDataCount,
+														   const void*					internalData,
+														   CheckResult					checkResult,
+														   const vk::VkShaderStageFlags	shaderStage = vk::VK_SHADER_STAGE_ALL_GRAPHICS);
 
-tcu::TestStatus makeGeometryFrameBufferTest(Context& context, vk::VkFormat format, SSBOData* extraData,
-	deUint32 extraDataCount, const void* internalData,
-	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize));
+tcu::TestStatus makeGeometryFrameBufferTest (Context&			context,
+											 vk::VkFormat		format,
+											 const SSBOData*	extraData,
+											 deUint32			extraDataCount,
+											 const void*		internalData,
+											 CheckResult		checkResult);
 
 // Allows using verification functions with or without the optional last boolean argument.
 // If using a function that does not need the last argument, it will not be passed down to it.
@@ -217,72 +246,129 @@ private:
 	AllArgsVariant		m_allArgsFunc;
 };
 
-tcu::TestStatus allStages(Context& context, vk::VkFormat format,
-	SSBOData* extraData, deUint32 extraDataCount, const void* internalData,
-	const VerificationFunctor& checkResult,
-	const vk::VkShaderStageFlags shaderStage);
+vk::VkShaderStageFlags getPossibleGraphicsSubgroupStages (Context& context, const vk::VkShaderStageFlags testedStages);
 
-tcu::TestStatus makeVertexFrameBufferTest(Context& context, vk::VkFormat format,
-	SSBOData* extraData, deUint32 extraDataCount, const void* internalData,
-	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize));
+tcu::TestStatus allStages (Context&						context,
+						   vk::VkFormat					format,
+						   const SSBOData*				extraData,
+						   deUint32						extraDataCount,
+						   const void*					internalData,
+						   const VerificationFunctor&	checkResult,
+						   const vk::VkShaderStageFlags	shaderStage);
 
-tcu::TestStatus makeFragmentFrameBufferTest(Context& context, vk::VkFormat format,
-	SSBOData* extraData, deUint32 extraDataCount, const void* internalData,
-	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width,
-						deUint32 height, deUint32 subgroupSize));
+tcu::TestStatus makeVertexFrameBufferTest (Context&			context,
+										   vk::VkFormat		format,
+										   const SSBOData*	extraData,
+										   deUint32			extraDataCount,
+										   const void*		internalData,
+										   CheckResult		checkResult);
 
-tcu::TestStatus makeComputeTest(
-	Context& context, vk::VkFormat format, SSBOData* inputs,
-	deUint32 inputsCount,const void* internalData,
-	bool (*checkResult)(const void* internalData, std::vector<const void*> datas,
-		const deUint32 numWorkgroups[3], const deUint32 localSize[3],
-		deUint32 subgroupSize),
-	deUint32 requiredSubgroupSize = 0u, const deUint32 pipelineShaderStageCreateFlags = 0u);
+tcu::TestStatus makeFragmentFrameBufferTest (Context&				context,
+											 vk::VkFormat			format,
+											 const SSBOData*		extraData,
+											 deUint32				extraDataCount,
+											 const void*			internalData,
+											 CheckResultFragment	checkResult);
+
+tcu::TestStatus makeComputeTest (Context&				context,
+								 vk::VkFormat			format,
+								 const SSBOData*		inputs,
+								 deUint32				inputsCount,
+								 const void*			internalData,
+								 CheckResultCompute		checkResult,
+								 deUint32				requiredSubgroupSize = 0u,
+								 const deUint32			pipelineShaderStageCreateFlags = 0u);
 
 /* Functions needed for VK_EXT_subgroup_size_control tests */
-tcu::TestStatus makeTessellationEvaluationFrameBufferTestRequiredSubgroupSize(Context& context, vk::VkFormat format,
-	SSBOData* extraData, deUint32 extraDataCount, const void* internalData,
-	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
-	const vk::VkShaderStageFlags shaderStage = vk::VK_SHADER_STAGE_ALL_GRAPHICS,
-	const deUint32 tessShaderStageCreateFlags = 0u, const deUint32 requiredSubgroupSize = 0u);
+tcu::TestStatus makeTessellationEvaluationFrameBufferTestRequiredSubgroupSize (Context&							context,
+																			   vk::VkFormat						format,
+																			   const SSBOData*					extraData,
+																			   deUint32							extraDataCount,
+																			   const void*						internalData,
+																			   CheckResult						checkResult,
+																			   const vk::VkShaderStageFlags		shaderStage = vk::VK_SHADER_STAGE_ALL_GRAPHICS,
+																			   const deUint32					tessShaderStageCreateFlags = 0u,
+																			   const deUint32					requiredSubgroupSize = 0u);
 
-tcu::TestStatus makeGeometryFrameBufferTestRequiredSubgroupSize(Context& context, vk::VkFormat format, SSBOData* extraData,
-	deUint32 extraDataCount, const void* internalData,
-	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
-	const deUint32 geometryShaderStageCreateFlags = 0u, const deUint32 requiredSubgroupSize = 0u);
+tcu::TestStatus makeGeometryFrameBufferTestRequiredSubgroupSize (Context&			context,
+																 vk::VkFormat		format,
+																 const SSBOData*	extraData,
+																 deUint32			extraDataCount,
+																 const void*		internalData,
+																 CheckResult		checkResult,
+																 const deUint32		geometryShaderStageCreateFlags = 0u,
+																 const deUint32		requiredSubgroupSize = 0u);
 
-tcu::TestStatus allStagesRequiredSubgroupSize(Context& context, vk::VkFormat format,
-	SSBOData* extraData, deUint32 extraDataCount, const void* internalData,
-	const VerificationFunctor& checkResult,
-	const vk::VkShaderStageFlags shaderStage,
-	const deUint32 vertexShaderStageCreateFlags,
-	const deUint32 tessellationControlShaderStageCreateFlags,
-	const deUint32 tessellationEvalShaderStageCreateFlags,
-	const deUint32 geometryShaderStageCreateFlags,
-	const deUint32 fragmentShaderStageCreateFlags,
-	const deUint32 requiredSubgroupSize[5]);
+tcu::TestStatus allStagesRequiredSubgroupSize (Context&						context,
+											   vk::VkFormat					format,
+											   const SSBOData*				extraDatas,
+											   deUint32						extraDatasCount,
+											   const void*					internalData,
+											   const VerificationFunctor&	checkResult,
+											   const vk::VkShaderStageFlags	shaderStageTested,
+											   const deUint32				vertexShaderStageCreateFlags,
+											   const deUint32				tessellationControlShaderStageCreateFlags,
+											   const deUint32				tessellationEvalShaderStageCreateFlags,
+											   const deUint32				geometryShaderStageCreateFlags,
+											   const deUint32				fragmentShaderStageCreateFlags,
+											   const deUint32				requiredSubgroupSize[5]);
 
-tcu::TestStatus makeVertexFrameBufferTestRequiredSubgroupSize(Context& context, vk::VkFormat format,
-	SSBOData* extraData, deUint32 extraDataCount, const void* internalData,
-	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
-	const deUint32 vertexShaderStageCreateFlags = 0u,
-	const deUint32 requiredSubgroupSize = 0u);
+tcu::TestStatus makeVertexFrameBufferTestRequiredSubgroupSize (Context&				context,
+															   vk::VkFormat			format,
+															   const SSBOData*		extraData,
+															   deUint32				extraDataCount,
+															   const void*			internalData,
+															   CheckResult			checkResult,
+															   const deUint32		vertexShaderStageCreateFlags = 0u,
+															   const deUint32		requiredSubgroupSize = 0u);
 
-tcu::TestStatus makeFragmentFrameBufferTestRequiredSubgroupSize(Context& context, vk::VkFormat format,
-	SSBOData* extraData, deUint32 extraDataCount, const void* internalData,
-	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width,
-						deUint32 height, deUint32 subgroupSize),
-	const deUint32 fragmentShaderStageCreateFlags = 0u, const deUint32 requiredSubgroupSize = 0u);
+tcu::TestStatus makeFragmentFrameBufferTestRequiredSubgroupSize (Context&				context,
+																 vk::VkFormat			format,
+																 const SSBOData*		extraData,
+																 deUint32				extraDataCount,
+																 const void*			internalData,
+																 CheckResultFragment	checkResult,
+																 const deUint32			fragmentShaderStageCreateFlags = 0u,
+																 const deUint32			requiredSubgroupSize = 0u);
 
-tcu::TestStatus makeComputeTestRequiredSubgroupSize(
-	Context& context, vk::VkFormat format, SSBOData* inputs, deUint32 inputsCount, const void* internalData,
-	bool (*checkResult)(const void* internalData, std::vector<const void*> datas,
-						const deUint32 numWorkgroups[3], const deUint32 localSize[3],
-						deUint32 subgroupSize),
-	const deUint32 pipelineShaderStageCreateFlags, const deUint32 numWorkgroups[3],
-	const deBool isRequiredSubgroupSize, const deUint32 subgroupSize, const deUint32 localSizesToTest[][3], const deUint32 localSizesToTestCount);
+tcu::TestStatus makeComputeTestRequiredSubgroupSize (Context&				context,
+													 vk::VkFormat			format,
+													 const SSBOData*		inputs,
+													 deUint32				inputsCount,
+													 const void*			internalData,
+													 CheckResultCompute		checkResult,
+													 const deUint32			pipelineShaderStageCreateFlags,
+													 const deUint32			numWorkgroups[3],
+													 const deBool			isRequiredSubgroupSize,
+													 const deUint32			subgroupSize,
+													 const deUint32			localSizesToTest[][3],
+													 const deUint32			localSizesToTestCount);
 
-void supportedCheckShader(Context& context, const vk::VkShaderStageFlags shaderStage);
+void supportedCheckShader (Context& context, const vk::VkShaderStageFlags shaderStage);
+
+const std::vector<vk::VkFormat> getAllRayTracingFormats();
+
+void addRayTracingNoSubgroupShader (vk::SourceCollections& programCollection);
+
+vk::VkShaderStageFlags getPossibleRayTracingSubgroupStages (Context& context, const vk::VkShaderStageFlags testedStages);
+
+tcu::TestStatus allRayTracingStages (Context&						context,
+									 vk::VkFormat					format,
+									 const SSBOData*				extraData,
+									 deUint32						extraDataCount,
+									 const void*					internalData,
+									 const VerificationFunctor&		checkResult,
+									 const vk::VkShaderStageFlags	shaderStage);
+
+tcu::TestStatus allRayTracingStagesRequiredSubgroupSize (Context&						context,
+														 vk::VkFormat					format,
+														 const SSBOData*				extraDatas,
+														 deUint32						extraDatasCount,
+														 const void*					internalData,
+														 const VerificationFunctor&		checkResult,
+														 const vk::VkShaderStageFlags	shaderStageTested,
+														 const deUint32					shaderStageCreateFlags[6],
+														 const deUint32					requiredSubgroupSize[6]);
 } // subgroups
 } // vkt
 

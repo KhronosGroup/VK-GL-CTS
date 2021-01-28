@@ -37,6 +37,13 @@
 
 namespace vk
 {
+constexpr VkShaderStageFlags	SHADER_STAGE_ALL_RAY_TRACING	= VK_SHADER_STAGE_RAYGEN_BIT_KHR
+																| VK_SHADER_STAGE_ANY_HIT_BIT_KHR
+																| VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
+																| VK_SHADER_STAGE_MISS_BIT_KHR
+																| VK_SHADER_STAGE_INTERSECTION_BIT_KHR
+																| VK_SHADER_STAGE_CALLABLE_BIT_KHR;
+
 const VkTransformMatrixKHR identityMatrix3x4 = { { { 1.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f, 0.0f } } };
 
 template<typename T>
@@ -702,11 +709,15 @@ public:
 	void														addShader					(VkShaderStageFlagBits									shaderStage,
 																							 Move<VkShaderModule>									shaderModule,
 																							 deUint32												group,
-																							 const VkSpecializationInfo*							specializationInfo = nullptr);
+																							 const VkSpecializationInfo*							specializationInfo = nullptr,
+																							 const VkPipelineShaderStageCreateFlags					pipelineShaderStageCreateFlags = static_cast<VkPipelineShaderStageCreateFlags>(0),
+																							 const void*											pipelineShaderStageCreateInfopNext = nullptr);
 	void														addShader					(VkShaderStageFlagBits									shaderStage,
 																							 de::SharedPtr<Move<VkShaderModule>>					shaderModule,
 																							 deUint32												group,
-																							 const VkSpecializationInfo*							specializationInfoPtr = nullptr);
+																							 const VkSpecializationInfo*							specializationInfoPtr = nullptr,
+																							 const VkPipelineShaderStageCreateFlags					pipelineShaderStageCreateFlags = static_cast<VkPipelineShaderStageCreateFlags>(0),
+																							 const void*											pipelineShaderStageCreateInfopNext = nullptr);
 	void														addLibrary					(de::SharedPtr<de::MovePtr<RayTracingPipeline>>			pipelineLibrary);
 	Move<VkPipeline>											createPipeline				(const DeviceInterface&									vk,
 																							 const VkDevice											device,

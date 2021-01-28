@@ -221,6 +221,33 @@ inline bool isPrimitiveTopologyPatch (const VkPrimitiveTopology primitiveTopolog
 	return primitiveTopologyCastToList(primitiveTopology) == VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
 }
 
+inline bool isAllInStage (const VkShaderStageFlags shaderStageFlags, const VkShaderStageFlags stageMask)
+{
+	return (shaderStageFlags & stageMask) != 0 && ((shaderStageFlags & ~stageMask) == 0);
+}
+
+inline bool isAllComputeStages (const VkShaderStageFlags shaderStageFlags)
+{
+	return isAllInStage(shaderStageFlags, VK_SHADER_STAGE_COMPUTE_BIT);
+}
+
+inline bool isAllGraphicsStages (const VkShaderStageFlags shaderStageFlags)
+{
+	return isAllInStage(shaderStageFlags, VK_SHADER_STAGE_ALL_GRAPHICS);
+}
+
+inline bool isAllRayTracingStages (const VkShaderStageFlags shaderStageFlags)
+{
+	const VkShaderStageFlags	rayTracingStageFlags	= VK_SHADER_STAGE_RAYGEN_BIT_KHR
+														| VK_SHADER_STAGE_ANY_HIT_BIT_KHR
+														| VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
+														| VK_SHADER_STAGE_MISS_BIT_KHR
+														| VK_SHADER_STAGE_INTERSECTION_BIT_KHR
+														| VK_SHADER_STAGE_CALLABLE_BIT_KHR;
+
+	return isAllInStage(shaderStageFlags, rayTracingStageFlags);
+}
+
 } // vk
 
 #endif // _VKTYPEUTIL_HPP
