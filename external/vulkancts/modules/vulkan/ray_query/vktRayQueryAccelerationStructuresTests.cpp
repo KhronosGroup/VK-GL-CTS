@@ -388,7 +388,7 @@ void GraphicsConfiguration::initConfiguration (Context&						context,
 		{	SST_VERTEX_SHADER,					{	"vert_%s",		"",				"",				"",				"",			}	},
 		{	SST_TESSELATION_CONTROL_SHADER,		{	"vert",			"tesc_%s",		"tese",			"",				"",			}	},
 		{	SST_TESSELATION_EVALUATION_SHADER,	{	"vert",			"tesc",			"tese_%s",		"",				"",			}	},
-		{	SST_GEOMETRY_SHADER,				{	"vert",			"",				"",				"geom_%s",		"",			}	},
+		{	SST_GEOMETRY_SHADER,				{	"vert_vid",		"",				"",				"geom_%s",		"",			}	},
 		{	SST_FRAGMENT_SHADER,				{	"vert",			"",				"",				"",				"frag_%s",	}	},
 	};
 
@@ -1625,6 +1625,24 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 			std::stringstream css;
 			css <<
 				"#version 460 core\n"
+				"layout (location = 0) in vec3 position;\n"
+				"out gl_PerVertex\n"
+				"{\n"
+				"  vec4 gl_Position;\n"
+				"};\n"
+				"layout(location = 0) out int vertexIndex;\n"
+				"void main()\n"
+				"{\n"
+				"  gl_Position = vec4(position, 1.0);\n"
+				"  vertexIndex = gl_VertexIndex;\n"
+				"}\n";
+			programCollection.glslSources.add("vert_vid") << glu::VertexSource(css.str()) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+			css <<
+				"#version 460 core\n"
 				"#extension GL_EXT_ray_query : require\n"
 				"layout (location = 0) in vec3 position;\n"
 				"layout(r32ui, set = 0, binding = 0) uniform uimage3D result;\n"
@@ -1749,13 +1767,30 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 				"in gl_PerVertex {\n"
 				"  vec4  gl_Position;\n"
 				"} gl_in[];\n"
+				"layout(location = 0) in int vertexIndex[];\n"
 				"out gl_PerVertex {\n"
 				"  vec4 gl_Position;\n"
 				"};\n"
 				"void main (void)\n"
 				"{\n"
+				"  // geometry shader may reorder the vertices, keeping only the winding of the triangles.\n"
+				"  // To iterate from the 'first vertex' of the triangle we need to find it first by looking for\n"
+				"  // smallest vertex index value.\n"
+				"  int minVertexIndex = 10000;"
+				"  int firstVertex;"
 				"  for (int i = 0; i < gl_in.length(); ++i)\n"
 				"  {\n"
+				"    if (minVertexIndex > vertexIndex[i])\n"
+				"    {\n"
+				"      minVertexIndex = vertexIndex[i];\n"
+				"      firstVertex    = i;\n"
+				"    }\n"
+				"  }\n"
+				"  for (int j = 0; j < gl_in.length(); ++j)\n"
+				"  {\n"
+				"    // iterate starting at firstVertex, possibly wrapping around, so the triangle is\n"
+				"    // always iterated starting from the smallest vertex index, as found above.\n"
+				"    int i = (firstVertex + j) % gl_in.length();\n"
 				"    vec3  origin   = vec3(gl_in[i].gl_Position.x + 0.5, gl_in[i].gl_Position.y + 0.5, 0.5);\n"
 				"    uvec4 hitValue = uvec4(0,0,0,0);\n" <<
 				rayQueryTest[m_data.bottomTestType] <<
