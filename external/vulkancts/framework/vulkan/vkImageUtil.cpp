@@ -4750,13 +4750,6 @@ void allocateAndBindSparseImage (const DeviceInterface&						vk,
 	const VkSparseImageMemoryRequirements		aspectRequirements	= sparseImageMemoryRequirements[aspectIndex];
 	VkExtent3D									blockSize			= aspectRequirements.formatProperties.imageGranularity;
 
-	if (isCompressedFormat(imageCreateInfo.format))
-	{
-		// 28.4.3 block dimensions of block-compressed format
-		blockSize.width *= getBlockWidth(imageCreateInfo.format);
-		blockSize.height *= getBlockHeight(imageCreateInfo.format);
-	}
-
 	std::vector<VkSparseImageMemoryBind>		imageResidencyMemoryBinds;
 	std::vector<VkSparseMemoryBind>				imageMipTailMemoryBinds;
 
