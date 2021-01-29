@@ -73,6 +73,7 @@ struct CheckSupportParams
 		needsInt8		|= isDataTypeIntOrIVec8Bit(dt) || isDataTypeUintOrUVec8Bit(dt);
 		needsInt16		|= isDataTypeIntOrIVec16Bit(dt) || isDataTypeUintOrUVec16Bit(dt);
 		needsFloat16	|= isDataTypeFloat16OrVec(dt);
+		needsFloat64	|= isDataTypeDoubleOrDVec(dt);
 	}
 };
 
