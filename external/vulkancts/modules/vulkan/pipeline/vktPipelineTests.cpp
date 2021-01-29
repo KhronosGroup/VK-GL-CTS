@@ -55,6 +55,7 @@
 #include "vktPipelineBlendOperationAdvancedTests.hpp"
 #include "vktPipelineExtendedDynamicStateTests.hpp"
 #include "vktPipelineCreationCacheControlTests.hpp"
+#include "vktPipelineNoPositionTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -101,6 +102,7 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createBlendOperationAdvancedTests	(testCtx));
 	pipelineTests->addChild(createExtendedDynamicStateTests		(testCtx));
 	pipelineTests->addChild(createCacheControlTests				(testCtx));
+	pipelineTests->addChild(createNoPositionTests				(testCtx));
 }
 
 } // anonymous

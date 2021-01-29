@@ -100,6 +100,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineExtendedDynamicStateTests.hpp
 	vktPipelineCreationCacheControlTests.cpp
 	vktPipelineCreationCacheControlTests.hpp
+	vktPipelineNoPositionTests.cpp
+	vktPipelineNoPositionTests.hpp
 	)
 
 set(DEQP_VK_PIPELINE_LIBS
