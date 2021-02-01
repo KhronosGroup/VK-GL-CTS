@@ -9,6 +9,8 @@ set(DEQP_VK_DYNAMIC_STATE_SRCS
 	vktDynamicStateBaseClass.cpp
 	vktDynamicStateCBTests.cpp
 	vktDynamicStateCBTests.hpp
+	vktDynamicStateComputeTests.cpp
+	vktDynamicStateComputeTests.hpp
 	vktDynamicStateDSTests.cpp
 	vktDynamicStateDSTests.hpp
 	vktDynamicStateGeneralTests.cpp
