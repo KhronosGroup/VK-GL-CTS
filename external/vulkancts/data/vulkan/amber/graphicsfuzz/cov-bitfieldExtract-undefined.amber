@@ -29,6 +29,7 @@ SHADER vertex variant_vertex_shader PASSTHROUGH
 # #define _int_0 _GLF_uniform_int_values[1]
 #
 # precision highp float;
+# precision highp int;
 #
 # // Contents of _GLF_uniform_int_values: [1, 0]
 # layout(set = 0, binding = 0) uniform buf0
@@ -77,30 +78,12 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
                OpName %34 "buf0"
                OpMemberName %34 0 "_GLF_uniform_int_values"
                OpName %36 ""
-               OpDecorate %8 RelaxedPrecision
-               OpDecorate %10 RelaxedPrecision
-               OpDecorate %11 RelaxedPrecision
-               OpDecorate %15 RelaxedPrecision
-               OpDecorate %16 RelaxedPrecision
-               OpDecorate %17 RelaxedPrecision
-               OpDecorate %18 RelaxedPrecision
-               OpDecorate %19 RelaxedPrecision
-               OpDecorate %20 RelaxedPrecision
-               OpDecorate %21 RelaxedPrecision
-               OpDecorate %22 RelaxedPrecision
-               OpDecorate %23 RelaxedPrecision
                OpDecorate %31 Location 0
                OpDecorate %33 ArrayStride 16
-               OpMemberDecorate %34 0 RelaxedPrecision
                OpMemberDecorate %34 0 Offset 0
                OpDecorate %34 Block
                OpDecorate %36 DescriptorSet 0
                OpDecorate %36 Binding 0
-               OpDecorate %40 RelaxedPrecision
-               OpDecorate %43 RelaxedPrecision
-               OpDecorate %46 RelaxedPrecision
-               OpDecorate %49 RelaxedPrecision
-               OpDecorate %54 RelaxedPrecision
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 0
