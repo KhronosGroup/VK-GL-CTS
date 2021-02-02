@@ -20,7 +20,7 @@
  *
  *//*!
  * \file
- * \brief Testing writing and reading for mismatched vector sizes.
+ * \brief Image OpImageWrite tests.
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
@@ -32,7 +32,7 @@ namespace vkt
 namespace image
 {
 
-tcu::TestCaseGroup* createImageMismatchedVectorSizesTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createImageWriteOpTests (tcu::TestContext& testCtx);
 
 } // image
 } // vkt

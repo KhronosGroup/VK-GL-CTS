@@ -66,7 +66,7 @@ void createChildren (tcu::TestCaseGroup* imageTests)
 	imageTests->addChild(createImageLoadStoreLodAMDTests(testCtx));
 	imageTests->addChild(createImageSubresourceLayoutTests(testCtx));
 	imageTests->addChild(createImageMismatchedFormatsTests(testCtx));
-	imageTests->addChild(createImageMismatchedVectorSizesTests(testCtx));
+	imageTests->addChild(createImageWriteOpTests(testCtx));
 }
 
 } // anonymous
