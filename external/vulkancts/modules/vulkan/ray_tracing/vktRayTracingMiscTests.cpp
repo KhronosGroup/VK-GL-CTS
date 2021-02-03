@@ -3111,14 +3111,18 @@ class MAXRTInvocationsSupportedTest :	public TestBase,
 				RayTracingProperties*	rtPropertiesPtr) final
 	{
 		/* NOTE: In order to avoid running into a situation where the test attempts to create a buffer of size larger than permitted by Vulkan,
-		 *       we limit the maximum number of testable invocations to 2^29. */
+		 *       we limit the maximum number of testable invocations to 2^29 on 64bit CTS build and driver or to 2^27 on 32bit */
 		const auto		maxComputeWorkGroupCount		= context.getDeviceProperties().limits.maxComputeWorkGroupCount;
 		const auto		maxComputeWorkGroupSize			= context.getDeviceProperties().limits.maxComputeWorkGroupSize;
 		const deUint64	maxGlobalRTWorkGroupSize[3]		= {	static_cast<deUint64>(maxComputeWorkGroupCount[0]) * static_cast<deUint64>(maxComputeWorkGroupSize[0]),
 															static_cast<deUint64>(maxComputeWorkGroupCount[1]) * static_cast<deUint64>(maxComputeWorkGroupSize[1]),
 															static_cast<deUint64>(maxComputeWorkGroupCount[2]) * static_cast<deUint64>(maxComputeWorkGroupSize[2]) };
 		const auto		maxRayDispatchInvocationCount	= de::min(	static_cast<deUint64>(rtPropertiesPtr->getMaxRayDispatchInvocationCount() ),
+#if (DE_PTR_SIZE == 4)
+																	static_cast<deUint64>(1ULL << 27) );
+#else
 																	static_cast<deUint64>(1ULL << 29) );
+#endif
 
 		m_gridSizeXYZ[0] = de::max(	1u,
 									static_cast<deUint32>((maxRayDispatchInvocationCount)										% maxGlobalRTWorkGroupSize[0]) );
