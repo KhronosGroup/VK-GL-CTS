@@ -1380,6 +1380,7 @@ bool gl3cts::TransformFeedback::APIErrors::testInstanced(void)
 									  GL_TRIANGLES,
 									  GL_TRIANGLE_STRIP_ADJACENCY,
 									  GL_TRIANGLES_ADJACENCY,
+									  GL_QUADS,
 									  GL_PATCHES };
 
 	std::set<glw::GLenum> supported_mode(_supported_mode,
