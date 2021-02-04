@@ -1066,6 +1066,16 @@ template<> VkStructureType getStructureType<VkPipelineLibraryCreateInfoKHR> (voi
 	return VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkBufferCopy2KHR> (void)
 {
 	return VK_STRUCTURE_TYPE_BUFFER_COPY_2_KHR;

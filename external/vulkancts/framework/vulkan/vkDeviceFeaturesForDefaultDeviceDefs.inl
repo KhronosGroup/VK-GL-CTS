@@ -75,4 +75,6 @@ const VkPhysicalDeviceUniformBufferStandardLayoutFeatures&			getUniformBufferSta
 const VkPhysicalDeviceVariablePointersFeatures&						getVariablePointersFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVariablePointersFeatures>();						}
 const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&			getVertexAttributeDivisorFeaturesEXT			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT>();				}
 const VkPhysicalDeviceVulkanMemoryModelFeatures&					getVulkanMemoryModelFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVulkanMemoryModelFeatures>();						}
+const VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR&		getWorkgroupMemoryExplicitLayoutFeatures		(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>();		}
 const VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&					getYcbcrImageArraysFeaturesEXT					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceYcbcrImageArraysFeaturesEXT>();					}
+const VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR&		getZeroInitializeWorkgroupMemoryFeatures		(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR>();		}

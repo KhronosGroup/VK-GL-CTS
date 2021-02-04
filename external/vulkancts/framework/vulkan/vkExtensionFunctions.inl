@@ -290,6 +290,14 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_zero_initialize_workgroup_memory")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_workgroup_memory_explicit_layout")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_copy_commands2")
 	{
 		return;
@@ -817,6 +825,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_QCOM_rotated_copy_commands")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_image_robustness")
 	{
 		return;
@@ -1266,6 +1278,14 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_KHR_shader_non_semantic_info")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_zero_initialize_workgroup_memory")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_workgroup_memory_explicit_layout")
 	{
 		return;
 	}
@@ -1886,6 +1906,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_EXT_fragment_density_map2")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_rotated_copy_commands")
 	{
 		return;
 	}

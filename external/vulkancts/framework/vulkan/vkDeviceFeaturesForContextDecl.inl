@@ -75,4 +75,6 @@ const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures&			getUniformBuffe
 const vk::VkPhysicalDeviceVariablePointersFeatures&						getVariablePointersFeatures						(void) const;
 const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&			getVertexAttributeDivisorFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceVulkanMemoryModelFeatures&					getVulkanMemoryModelFeatures					(void) const;
+const vk::VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR&		getWorkgroupMemoryExplicitLayoutFeatures		(void) const;
 const vk::VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&					getYcbcrImageArraysFeaturesEXT					(void) const;
+const vk::VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR&		getZeroInitializeWorkgroupMemoryFeatures		(void) const;
