@@ -571,6 +571,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV:						return "VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES_KHR:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_PROPERTIES_NV:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_ENUM_STATE_CREATE_INFO_NV:		return "VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_ENUM_STATE_CREATE_INFO_NV";
@@ -578,6 +579,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_COPY_COMMAND_TRANSFORM_INFO_QCOM:								return "VK_STRUCTURE_TYPE_COPY_COMMAND_TRANSFORM_INFO_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_FEATURES_KHR:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2_KHR:											return "VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2_KHR";
 		case VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2_KHR:											return "VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2_KHR";
 		case VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2_KHR:									return "VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2_KHR";
@@ -7520,6 +7522,29 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineLibraryCreateInfoKHR&
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tlibraryCount = " << value.libraryCount << '\n';
 	s << "\tpLibraries = " << value.pLibraries << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderZeroInitializeWorkgroupMemory = " << value.shaderZeroInitializeWorkgroupMemory << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tworkgroupMemoryExplicitLayout = " << value.workgroupMemoryExplicitLayout << '\n';
+	s << "\tworkgroupMemoryExplicitLayoutScalarBlockLayout = " << value.workgroupMemoryExplicitLayoutScalarBlockLayout << '\n';
+	s << "\tworkgroupMemoryExplicitLayout8BitAccess = " << value.workgroupMemoryExplicitLayout8BitAccess << '\n';
+	s << "\tworkgroupMemoryExplicitLayout16BitAccess = " << value.workgroupMemoryExplicitLayout16BitAccess << '\n';
 	s << '}';
 	return s;
 }

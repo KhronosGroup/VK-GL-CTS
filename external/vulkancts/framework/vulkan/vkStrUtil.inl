@@ -713,6 +713,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineExecutableStatisticVa
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineExecutableStatisticKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineExecutableInternalRepresentationKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineLibraryCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferCopy2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCopyBufferInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageCopy2KHR& value);
