@@ -198,13 +198,25 @@ void endRenderPass (const DeviceInterface&	vk,
 	vk.cmdEndRenderPass(commandBuffer);
 }
 
-void submitCommandsAndWait (const DeviceInterface&	vk,
-							const VkDevice			device,
-							const VkQueue			queue,
-							const VkCommandBuffer	commandBuffer,
-							const bool				useDeviceGroups,
-							const deUint32			deviceMask)
+void submitCommandsAndWait (const DeviceInterface&		vk,
+							const VkDevice				device,
+							const VkQueue				queue,
+							const VkCommandBuffer		commandBuffer,
+							const bool					useDeviceGroups,
+							const deUint32				deviceMask,
+							const deUint32				waitSemaphoreCount,
+							const VkSemaphore*			waitSemaphores,
+							const VkPipelineStageFlags*	waitStages)
 {
+	// For simplicity. A more complete approach can be found in vkt::sparse::submitCommandsAndWait().
+	DE_ASSERT(!(useDeviceGroups && waitSemaphoreCount > 0u));
+
+	if (waitSemaphoreCount > 0u)
+	{
+		DE_ASSERT(waitSemaphores != nullptr);
+		DE_ASSERT(waitStages != nullptr);
+	}
+
 	const Unique<VkFence>	fence					(createFence(vk, device));
 
 	VkDeviceGroupSubmitInfo	deviceGroupSubmitInfo	=
@@ -223,13 +235,13 @@ void submitCommandsAndWait (const DeviceInterface&	vk,
 	{
 		VK_STRUCTURE_TYPE_SUBMIT_INFO,						// VkStructureType				sType;
 		useDeviceGroups ? &deviceGroupSubmitInfo : DE_NULL,	// const void*					pNext;
-		0u,													// deUint32						waitSemaphoreCount;
-		DE_NULL,											// const VkSemaphore*			pWaitSemaphores;
-		(const VkPipelineStageFlags*)DE_NULL,				// const VkPipelineStageFlags*	pWaitDstStageMask;
+		waitSemaphoreCount,									// deUint32						waitSemaphoreCount;
+		waitSemaphores,										// const VkSemaphore*			pWaitSemaphores;
+		waitStages,											// const VkPipelineStageFlags*	pWaitDstStageMask;
 		1u,													// deUint32						commandBufferCount;
 		&commandBuffer,										// const VkCommandBuffer*		pCommandBuffers;
 		0u,													// deUint32						signalSemaphoreCount;
-		DE_NULL,											// const VkSemaphore*			pSignalSemaphores;
+		nullptr,											// const VkSemaphore*			pSignalSemaphores;
 	};
 
 	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));

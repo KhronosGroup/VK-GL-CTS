@@ -136,6 +136,20 @@ T* dataSafe (std::vector<T>& container)
 	return container.empty() ? static_cast<T*>(DE_NULL) : container.data();
 }
 
+// Returns the data pointer or a null pointer if the vector is empty.
+template <typename T>
+T* dataOrNull (std::vector<T>& container)
+{
+	return (container.empty() ? nullptr : container.data());
+}
+
+// Returns the data pointer or a null pointer if the vector is empty.
+template <typename T>
+const T* dataOrNull (const std::vector<T>& container)
+{
+	return (container.empty() ? nullptr : container.data());
+}
+
 } // de
 
 #endif // _DESTLUTIL_HPP

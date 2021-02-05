@@ -53,8 +53,30 @@ Image::Image (const DeviceInterface&	vk,
 			  const MemoryRequirement	memoryRequirement)
 {
 	m_image = createImage(vk, device, &imageCreateInfo);
-	m_allocation = allocator.allocate(getImageMemoryRequirements(vk, device, *m_image), memoryRequirement);
-	VK_CHECK(vk.bindImageMemory(device, *m_image, m_allocation->getMemory(), m_allocation->getOffset()));
+	de::SharedPtr<vk::Allocation> allocation(allocator.allocate(getImageMemoryRequirements(vk, device, *m_image), memoryRequirement).release());
+	m_allocations.push_back(allocation);
+	VK_CHECK(vk.bindImageMemory(device, *m_image, allocation->getMemory(), allocation->getOffset()));
+}
+
+Image::Image (void)
+	: m_allocations	()
+	, m_image		()
+{}
+
+SparseImage::SparseImage (const vk::DeviceInterface&	vkd,
+						  vk::VkDevice					device,
+						  vk::VkPhysicalDevice			physicalDevice,
+						  const vk::InstanceInterface&	vki,
+						  const vk::VkImageCreateInfo&	createInfo,
+						  const vk::VkQueue				sparseQueue,
+						  vk::Allocator&				allocator,
+						  const tcu::TextureFormat&		format)
+	: Image			()
+	, m_semaphore	()
+{
+	m_image		= createImage(vkd, device, &createInfo);
+	m_semaphore	= createSemaphore(vkd, device);
+	allocateAndBindSparseImage(vkd, device, physicalDevice, vki, createInfo, m_semaphore.get(), sparseQueue, allocator, m_allocations, format, m_image.get());
 }
 
 tcu::UVec3 getShaderGridSize (const ImageType imageType, const tcu::UVec3& imageSize)

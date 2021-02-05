@@ -26,6 +26,7 @@
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
+#include "deSTLUtil.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vkPrograms.hpp"
@@ -96,6 +97,18 @@ enum AtomicOperation
 	ATOMIC_OPERATION_LAST
 };
 
+enum class ShaderReadType
+{
+	NORMAL = 0,
+	SPARSE,
+};
+
+enum class ImageBackingType
+{
+	NORMAL = 0,
+	SPARSE,
+};
+
 static string getCoordStr (const ImageType		imageType,
 						   const std::string&	x,
 						   const std::string&	y,
@@ -118,6 +131,38 @@ static string getCoordStr (const ImageType		imageType,
 			DE_ASSERT(false);
 			return DE_NULL;
 	}
+}
+
+static string getComponentTypeStr (deUint32 componentWidth, bool intFormat, bool uintFormat, bool floatFormat)
+{
+	DE_ASSERT(intFormat || uintFormat || floatFormat);
+
+	const bool is64 = (componentWidth == 64);
+
+	if (intFormat)
+		return (is64 ? "int64_t" : "int");
+	if (uintFormat)
+		return (is64 ? "uint64_t" : "uint");
+	if (floatFormat)
+		return (is64 ? "double" : "float");
+
+	return "";
+}
+
+static string getVec4TypeStr (deUint32 componentWidth, bool intFormat, bool uintFormat, bool floatFormat)
+{
+	DE_ASSERT(intFormat || uintFormat || floatFormat);
+
+	const bool is64 = (componentWidth == 64);
+
+	if (intFormat)
+		return (is64 ? "i64vec4" : "ivec4");
+	if (uintFormat)
+		return (is64 ? "u64vec4" : "uvec4");
+	if (floatFormat)
+		return (is64 ? "f64vec4" : "vec4");
+
+	return "";
 }
 
 static string getAtomicFuncArgumentShaderStr (const AtomicOperation	op,
@@ -348,18 +393,34 @@ static T computeBinaryAtomicOperationResult (const AtomicOperation op, const T a
 	}
 }
 
+VkImageUsageFlags getUsageFlags (bool useTransfer)
+{
+	VkImageUsageFlags usageFlags = VK_IMAGE_USAGE_STORAGE_BIT;
+
+	if (useTransfer)
+		usageFlags |= (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+	return usageFlags;
+}
+
 void AddFillReadShader (SourceCollections&			sourceCollections,
 						const ImageType&			imageType,
 						const tcu::TextureFormat&	format,
-						const string&				type)
+						const string&				componentType,
+						const string&				vec4Type)
 {
 	const string	imageInCoord			= getCoordStr(imageType, "gx", "gy", "gz");
 	const string	shaderImageFormatStr	= getShaderImageFormatQualifier(format);
 	const string	shaderImageTypeStr		= getShaderImageType(format, imageType);
+	const auto		componentWidth			= getFormatComponentWidth(mapTextureFormat(format), 0u);
+	const string	extensions				= ((componentWidth == 64u)
+											?	"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
+												"#extension GL_EXT_shader_image_int64 : require\n"
+											:	"");
+
 
 	const string fillShader =	"#version 450\n"
-								"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
-								"#extension GL_EXT_shader_image_int64 : require\n"
+								+ extensions +
 								"precision highp " + shaderImageTypeStr + ";\n"
 								"\n"
 								"layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
@@ -367,7 +428,7 @@ void AddFillReadShader (SourceCollections&			sourceCollections,
 								"\n"
 								"layout(std430, binding = 1) buffer inputBuffer\n"
 								"{\n"
-								"	"+ type + " data[];\n"
+								"	"+ componentType + " data[];\n"
 								"} inBuffer;\n"
 								"\n"
 								"void main(void)\n"
@@ -376,12 +437,11 @@ void AddFillReadShader (SourceCollections&			sourceCollections,
 								"	int gy = int(gl_GlobalInvocationID.y);\n"
 								"	int gz = int(gl_GlobalInvocationID.z);\n"
 								"	uint index = gx + (gy * gl_NumWorkGroups.x) + (gz *gl_NumWorkGroups.x * gl_NumWorkGroups.y);\n"
-								"	imageStore(u_resultImage, " + imageInCoord + ", i64vec4(inBuffer.data[index]));\n"
+								"	imageStore(u_resultImage, " + imageInCoord + ", " + vec4Type + "(inBuffer.data[index]));\n"
 								"}\n";
 
 	const string readShader =	"#version 450\n"
-								"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
-								"#extension GL_EXT_shader_image_int64 : require\n"
+								+ extensions +
 								"precision highp " + shaderImageTypeStr + ";\n"
 								"\n"
 								"layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
@@ -389,7 +449,7 @@ void AddFillReadShader (SourceCollections&			sourceCollections,
 								"\n"
 								"layout(std430, binding = 1) buffer outputBuffer\n"
 								"{\n"
-								"	" + type + " data[];\n"
+								"	" + componentType + " data[];\n"
 								"} outBuffer;\n"
 								"\n"
 								"void main(void)\n"
@@ -406,12 +466,9 @@ void AddFillReadShader (SourceCollections&			sourceCollections,
 		(imageType != IMAGE_TYPE_1D_ARRAY) &&
 		(imageType != IMAGE_TYPE_BUFFER))
 	{
-		const string gvec4 = isUintFormat(mapTextureFormat(format)) ? "u64vec4" : "i64vec4";
-
 		const string readShaderResidency  = "#version 450\n"
 											"#extension GL_ARB_sparse_texture2 : require\n"
-											"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
-											"#extension GL_EXT_shader_image_int64 : require\n"
+											+ extensions +
 											"precision highp " + shaderImageTypeStr + ";\n"
 											"\n"
 											"layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
@@ -419,7 +476,7 @@ void AddFillReadShader (SourceCollections&			sourceCollections,
 											"\n"
 											"layout(std430, binding = 1) buffer outputBuffer\n"
 											"{\n"
-											"	" + type + " data[];\n"
+											"	" + componentType + " data[];\n"
 											"} outBuffer;\n"
 											"\n"
 											"void main(void)\n"
@@ -429,10 +486,10 @@ void AddFillReadShader (SourceCollections&			sourceCollections,
 											"	int gz = int(gl_GlobalInvocationID.z);\n"
 											"	uint index = gx + (gy * gl_NumWorkGroups.x) + (gz *gl_NumWorkGroups.x * gl_NumWorkGroups.y);\n"
 											"	outBuffer.data[index] = imageLoad(u_resultImage, " + imageInCoord + ").x;\n"
-											"	" + gvec4 + " sparseValue;\n"
+											"	" + vec4Type + " sparseValue;\n"
 											"	sparseImageLoadARB(u_resultImage, " + imageInCoord + ", sparseValue);\n"
 											"	if (outBuffer.data[index] != sparseValue.x)\n"
-											"		outBuffer.data[index] = " + gvec4 + "(1234).x;\n"
+											"		outBuffer.data[index] = " + vec4Type + "(1234).x;\n"
 											"}\n";
 
 		sourceCollections.glslSources.add("readShaderResidency") << glu::ComputeSource(readShaderResidency.c_str()) << vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
@@ -440,15 +497,6 @@ void AddFillReadShader (SourceCollections&			sourceCollections,
 
 	sourceCollections.glslSources.add("fillShader") << glu::ComputeSource(fillShader.c_str()) << vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 	sourceCollections.glslSources.add("readShader") << glu::ComputeSource(readShader.c_str()) << vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-}
-
-static bool isSupportedFeatureTransfer (const Context& context, const VkFormat& format)
-{
-	const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
-																						context.getPhysicalDevice(), format);
-
-	return ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_SRC_BIT) &&
-			(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_DST_BIT));
 }
 
 //! Prepare the initial data for the image
@@ -489,6 +537,93 @@ static void initDataForImage (const VkDevice			device,
 	flushAlloc(deviceInterface, device, bufferAllocation);
 }
 
+void commonCheckSupport (Context& context, const tcu::TextureFormat& tcuFormat, ImageType imageType, AtomicOperation operation, bool useTransfer, ShaderReadType readType, ImageBackingType backingType)
+{
+	const VkFormat				format				= mapTextureFormat(tcuFormat);
+	const VkImageType			vkImgType			= mapImageType(imageType);
+	const VkFormatFeatureFlags	texelBufferSupport	= (VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT | VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT);
+	const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+																						context.getPhysicalDevice(), format);
+
+	if ((imageType == IMAGE_TYPE_BUFFER) &&
+		((formatProperties.bufferFeatures & texelBufferSupport) != texelBufferSupport))
+		TCU_THROW(NotSupportedError, "Atomic storage texel buffers not supported");
+
+	if (imageType == IMAGE_TYPE_CUBE_ARRAY)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
+
+	if (backingType == ImageBackingType::SPARSE)
+	{
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+
+		switch (vkImgType)
+		{
+		case VK_IMAGE_TYPE_2D:	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_IMAGE2D); break;
+		case VK_IMAGE_TYPE_3D:	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_IMAGE3D); break;
+		default:				DE_ASSERT(false); break;
+		}
+
+		if (!checkSparseImageFormatSupport(context.getPhysicalDevice(), context.getInstanceInterface(), format, vkImgType, VK_SAMPLE_COUNT_1_BIT, getUsageFlags(useTransfer), VK_IMAGE_TILING_OPTIMAL))
+			TCU_THROW(NotSupportedError, "Format does not support sparse images");
+	}
+
+	if (isFloatFormat(format))
+	{
+		context.requireDeviceFunctionality("VK_EXT_shader_atomic_float");
+
+		const VkFormatFeatureFlags	requiredFeatures	= (VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT | VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT);
+		const auto&					atomicFloatFeatures	= context.getShaderAtomicFloatFeaturesEXT();
+
+		if (!atomicFloatFeatures.shaderImageFloat32Atomics)
+			TCU_THROW(NotSupportedError, "shaderImageFloat32Atomics not supported");
+
+		if ((operation == ATOMIC_OPERATION_ADD) && !atomicFloatFeatures.shaderImageFloat32AtomicAdd)
+			TCU_THROW(NotSupportedError, "shaderImageFloat32AtomicAdd not supported");
+
+		if ((formatProperties.optimalTilingFeatures & requiredFeatures) != requiredFeatures)
+			TCU_FAIL("Required format feature bits not supported");
+
+		if (backingType == ImageBackingType::SPARSE)
+		{
+			if (!atomicFloatFeatures.sparseImageFloat32Atomics)
+				TCU_THROW(NotSupportedError, "sparseImageFloat32Atomics not supported");
+
+			if (operation == ATOMIC_OPERATION_ADD && !atomicFloatFeatures.sparseImageFloat32AtomicAdd)
+				TCU_THROW(NotSupportedError, "sparseImageFloat32AtomicAdd not supported");
+		}
+
+	}
+	else if (format == VK_FORMAT_R64_UINT || format == VK_FORMAT_R64_SINT)
+	{
+		context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
+
+		const VkFormatFeatureFlags	requiredFeatures	= (VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT | VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT);
+		const auto&					atomicInt64Features	= context.getShaderImageAtomicInt64FeaturesEXT();
+
+		if (!atomicInt64Features.shaderImageInt64Atomics)
+			TCU_THROW(NotSupportedError, "shaderImageInt64Atomics not supported");
+
+		if (backingType == ImageBackingType::SPARSE && !atomicInt64Features.sparseImageInt64Atomics)
+			TCU_THROW(NotSupportedError, "sparseImageInt64Atomics not supported");
+
+		if ((formatProperties.optimalTilingFeatures & requiredFeatures) != requiredFeatures)
+			TCU_FAIL("Mandatory format features not supported");
+	}
+
+	if (useTransfer)
+	{
+		const VkFormatFeatureFlags transferFeatures = (VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT);
+		if ((formatProperties.optimalTilingFeatures & transferFeatures) != transferFeatures)
+			TCU_THROW(NotSupportedError, "Transfer features not supported for this format");
+	}
+
+	if (readType == ShaderReadType::SPARSE)
+	{
+		DE_ASSERT(imageType != IMAGE_TYPE_1D && imageType != IMAGE_TYPE_1D_ARRAY && imageType != IMAGE_TYPE_BUFFER);
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_RESOURCE_RESIDENCY);
+	}
+}
+
 class BinaryAtomicEndResultCase : public vkt::TestCase
 {
 public:
@@ -499,6 +634,9 @@ public:
 															 const tcu::UVec3&			imageSize,
 															 const tcu::TextureFormat&	format,
 															 const AtomicOperation		operation,
+															 const bool					useTransfer,
+															 const ShaderReadType		shaderReadType,
+															 const ImageBackingType		backingType,
 															 const glu::GLSLVersion		glslVersion);
 
 	void						initPrograms				(SourceCollections&			sourceCollections) const;
@@ -510,6 +648,9 @@ private:
 	const tcu::UVec3			m_imageSize;
 	const tcu::TextureFormat	m_format;
 	const AtomicOperation		m_operation;
+	const bool					m_useTransfer;
+	const ShaderReadType		m_readType;
+	const ImageBackingType		m_backingType;
 	const glu::GLSLVersion		m_glslVersion;
 };
 
@@ -520,80 +661,38 @@ BinaryAtomicEndResultCase::BinaryAtomicEndResultCase (tcu::TestContext&			testCt
 													  const tcu::UVec3&			imageSize,
 													  const tcu::TextureFormat&	format,
 													  const AtomicOperation		operation,
+													  const bool				useTransfer,
+													  const ShaderReadType		shaderReadType,
+													  const ImageBackingType	backingType,
 													  const glu::GLSLVersion	glslVersion)
 	: TestCase		(testCtx, name, description)
 	, m_imageType	(imageType)
 	, m_imageSize	(imageSize)
 	, m_format		(format)
 	, m_operation	(operation)
+	, m_useTransfer	(useTransfer)
+	, m_readType	(shaderReadType)
+	, m_backingType	(backingType)
 	, m_glslVersion	(glslVersion)
 {
 }
 
 void BinaryAtomicEndResultCase::checkSupport (Context& context) const
 {
-	const VkFormat				format				= mapTextureFormat(m_format);
-	const VkFormatFeatureFlags	texelBufferSupport	= VkFormatFeatureFlags(VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT |
-																		   VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT);
-	const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
-																						context.getPhysicalDevice(), format);
-
-	if ((m_imageType == IMAGE_TYPE_BUFFER) &&
-		((formatProperties.bufferFeatures & texelBufferSupport) != texelBufferSupport))
-		TCU_THROW(NotSupportedError, "STORAGE_TEXEL_BUFFER_ATOMIC is not supported");
-
-	if (m_imageType == IMAGE_TYPE_CUBE_ARRAY)
-		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
-
-	if (isFloatFormat(mapTextureFormat(m_format)))
-	{
-		const VkFormatFeatureFlags	requiredFormatSupport = VkFormatFeatureFlags(VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT |
-																				VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT);
-
-		context.requireDeviceFunctionality("VK_EXT_shader_atomic_float");
-		if (!context.getShaderAtomicFloatFeaturesEXT().shaderImageFloat32Atomics)
-		{
-			TCU_THROW(NotSupportedError, "VkShaderAtomicFloat32: 32-bit floating point image atomic operations not supported");
-		}
-		if ((m_operation == ATOMIC_OPERATION_ADD) && !context.getShaderAtomicFloatFeaturesEXT().shaderImageFloat32AtomicAdd)
-		{
-			TCU_THROW(NotSupportedError, "VkShaderAtomicFloat32: 32-bit floating point image atomic add not supported");
-		}
-		if ((formatProperties.optimalTilingFeatures & requiredFormatSupport) != requiredFormatSupport)
-			TCU_FAIL("VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT and VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT must be supported");
-	}
-
-	if (format == VK_FORMAT_R64_UINT || format == VK_FORMAT_R64_SINT)
-	{
-		const VkFormatFeatureFlags	requisiteSupportR64 = VkFormatFeatureFlags(VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT |
-																				VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT);
-
-		context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
-
-		if (!context.getShaderImageAtomicInt64FeaturesEXT().shaderImageInt64Atomics)
-		{
-			TCU_THROW(NotSupportedError, "shaderImageInt64Atomics is not supported");
-		}
-
-		if ((formatProperties.optimalTilingFeatures & requisiteSupportR64) != requisiteSupportR64)
-			TCU_FAIL("VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT and VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT must be supported");
-	}
+	commonCheckSupport(context, m_format, m_imageType, m_operation, m_useTransfer, m_readType, m_backingType);
 }
 
 void BinaryAtomicEndResultCase::initPrograms (SourceCollections& sourceCollections) const
 {
 	const VkFormat	imageFormat		= mapTextureFormat(m_format);
 	const deUint32	componentWidth	= getFormatComponentWidth(imageFormat, 0);
-	const bool		uintFormat		= isUintFormat(imageFormat);
 	const bool		intFormat		= isIntFormat(imageFormat);
-	const string	type			= (64 == componentWidth ?
-									  (uintFormat ? "uint64_t" : intFormat ? "int64_t" : "double") :
-									  (uintFormat ? "uint" : intFormat ? "int" : "float"));
+	const bool		uintFormat		= isUintFormat(imageFormat);
+	const bool		floatFormat		= isFloatFormat(imageFormat);
+	const string	type			= getComponentTypeStr(componentWidth, intFormat, uintFormat, floatFormat);
+	const string	vec4Type		= getVec4TypeStr(componentWidth, intFormat, uintFormat, floatFormat);
 
-	if (imageFormat == VK_FORMAT_R64_UINT || imageFormat == VK_FORMAT_R64_SINT)
-	{
-		AddFillReadShader(sourceCollections, m_imageType, m_format, type);
-	}
+	AddFillReadShader(sourceCollections, m_imageType, m_format, type, vec4Type);
 
 	if (isSpirvAtomicOperation(m_operation))
 	{
@@ -661,6 +760,9 @@ public:
 																 const tcu::UVec3&			imageSize,
 																 const tcu::TextureFormat&	format,
 																 const AtomicOperation		operation,
+																 const bool					useTransfer,
+																 const ShaderReadType		shaderReadType,
+																 const ImageBackingType		backingType,
 																 const glu::GLSLVersion		glslVersion);
 
 	void						initPrograms					(SourceCollections&			sourceCollections) const;
@@ -672,6 +774,9 @@ private:
 	const tcu::UVec3			m_imageSize;
 	const tcu::TextureFormat	m_format;
 	const AtomicOperation		m_operation;
+	const bool					m_useTransfer;
+	const ShaderReadType		m_readType;
+	const ImageBackingType		m_backingType;
 	const glu::GLSLVersion		m_glslVersion;
 };
 
@@ -682,79 +787,38 @@ BinaryAtomicIntermValuesCase::BinaryAtomicIntermValuesCase (TestContext&			testC
 															const tcu::UVec3&		imageSize,
 															const TextureFormat&	format,
 															const AtomicOperation	operation,
+															const bool				useTransfer,
+															const ShaderReadType	shaderReadType,
+															const ImageBackingType	backingType,
 															const glu::GLSLVersion	glslVersion)
 	: TestCase		(testCtx, name, description)
 	, m_imageType	(imageType)
 	, m_imageSize	(imageSize)
 	, m_format		(format)
 	, m_operation	(operation)
+	, m_useTransfer	(useTransfer)
+	, m_readType	(shaderReadType)
+	, m_backingType	(backingType)
 	, m_glslVersion	(glslVersion)
 {
 }
 
 void BinaryAtomicIntermValuesCase::checkSupport (Context& context) const
 {
-	const VkFormat				format				= mapTextureFormat(m_format);
-	const VkFormatFeatureFlags	texelBufferSupport	= VkFormatFeatureFlags(VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT |
-																		   VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT);
-	const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
-																						context.getPhysicalDevice(), format);
-
-	if ((m_imageType == IMAGE_TYPE_BUFFER) &&
-		((formatProperties.bufferFeatures & texelBufferSupport) != texelBufferSupport))
-		TCU_THROW(NotSupportedError, "STORAGE_TEXEL_BUFFER_ATOMIC is not supported");
-
-	if (m_imageType == IMAGE_TYPE_CUBE_ARRAY)
-		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
-
-	if (isFloatFormat(mapTextureFormat(m_format)))
-	{
-		const VkFormatFeatureFlags	requiredFormatSupport = VkFormatFeatureFlags(VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT |
-																				VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT);
-		context.requireDeviceFunctionality("VK_EXT_shader_atomic_float");
-		if (!context.getShaderAtomicFloatFeaturesEXT().shaderImageFloat32Atomics)
-		{
-			TCU_THROW(NotSupportedError, "VkShaderAtomicFloat32: 32-bit floating point image atomic operations not supported");
-		}
-		if ((m_operation == ATOMIC_OPERATION_ADD) && !context.getShaderAtomicFloatFeaturesEXT().shaderImageFloat32AtomicAdd)
-		{
-			TCU_THROW(NotSupportedError, "VkShaderAtomicFloat32: 32-bit floating point image atomic add not supported");
-		}
-		if ((formatProperties.optimalTilingFeatures & requiredFormatSupport) != requiredFormatSupport)
-			TCU_FAIL("VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT and VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT must be supported");
-	}
-
-	if (format == VK_FORMAT_R64_UINT || format == VK_FORMAT_R64_SINT)
-	{
-		const VkFormatFeatureFlags	requisiteSupportR64 = VkFormatFeatureFlags(VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT |
-																				VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT);
-
-		context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
-
-		if (!context.getShaderImageAtomicInt64FeaturesEXT().shaderImageInt64Atomics)
-		{
-			TCU_THROW(NotSupportedError, "shaderImageInt64Atomics is not supported");
-		}
-
-		if ((formatProperties.optimalTilingFeatures & requisiteSupportR64) != requisiteSupportR64)
-			TCU_FAIL("VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT and VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT must be supported");
-	}
+	commonCheckSupport(context, m_format, m_imageType, m_operation, m_useTransfer, m_readType, m_backingType);
 }
 
 void BinaryAtomicIntermValuesCase::initPrograms (SourceCollections& sourceCollections) const
 {
-	const VkFormat	imageFormat = mapTextureFormat(m_format);
+	const VkFormat	imageFormat		= mapTextureFormat(m_format);
 	const deUint32	componentWidth	= getFormatComponentWidth(imageFormat, 0);
-	const bool		uintFormat		= isUintFormat(imageFormat);
 	const bool		intFormat		= isIntFormat(imageFormat);
-	const string	type			= (64 == componentWidth ?
-									  (uintFormat ? "uint64_t" : intFormat ? "int64_t" : "double") :
-									  (uintFormat ? "uint" : intFormat ? "int" : "float"));
+	const bool		uintFormat		= isUintFormat(imageFormat);
+	const bool		floatFormat		= isFloatFormat(imageFormat);
+	const string	type			= getComponentTypeStr(componentWidth, intFormat, uintFormat, floatFormat);
+	const string	vec4Type		= getVec4TypeStr(componentWidth, intFormat, uintFormat, floatFormat);
 
-	if (imageFormat == VK_FORMAT_R64_UINT || imageFormat == VK_FORMAT_R64_SINT)
-	{
-		AddFillReadShader(sourceCollections, m_imageType, m_format, type);
-	}
+	AddFillReadShader(sourceCollections, m_imageType, m_format, type, vec4Type);
 
 	if (isSpirvAtomicOperation(m_operation))
 	{
@@ -771,7 +835,6 @@ void BinaryAtomicIntermValuesCase::initPrograms (SourceCollections& sourceCollec
 	else
 	{
 		const string	versionDecl				= glu::getGLSLVersionDeclaration(m_glslVersion);
-		const string	colorVecTypeName		= string(uintFormat ? "u" : intFormat ? "i" : "") + (64 == componentWidth ? "64" : "") + "vec4";
 		const UVec3		gridSize				= getShaderGridSize(m_imageType, m_imageSize);
 		const string	atomicCoord				= getCoordStr(m_imageType, "gx % " + toString(gridSize.x()), "gy", "gz");
 		const string	invocationCoord			= getCoordStr(m_imageType, "gx", "gy", "gz");
@@ -807,7 +870,7 @@ void BinaryAtomicIntermValuesCase::initPrograms (SourceCollections& sourceCollec
 						"	int gx = int(gl_GlobalInvocationID.x);\n"
 						"	int gy = int(gl_GlobalInvocationID.y);\n"
 						"	int gz = int(gl_GlobalInvocationID.z);\n"
-						"	imageStore(u_intermValuesImage, " + invocationCoord + ", " + colorVecTypeName + "(" + atomicInvocation + "));\n"
+						"	imageStore(u_intermValuesImage, " + invocationCoord + ", " + vec4Type + "(" + atomicInvocation + "));\n"
 						"}\n";
 
 		sourceCollections.glslSources.add(m_name) << glu::ComputeSource(source.c_str());
@@ -823,13 +886,16 @@ public:
 														  const ImageType				imageType,
 														  const tcu::UVec3&				imageSize,
 														  const TextureFormat&			format,
-														  const AtomicOperation			operation);
+														  const AtomicOperation			operation,
+														  const bool					useTransfer,
+														  const ShaderReadType			shaderReadType,
+														  const ImageBackingType		backingType);
 
 	tcu::TestStatus				iterate					 (void);
 
 	virtual deUint32			getOutputBufferSize		 (void) const = 0;
 
-	virtual void				prepareResources		 (const bool					isSupportedTransfer) = 0;
+	virtual void				prepareResources		 (const bool					useTransfer) = 0;
 	virtual void				prepareDescriptors		 (const bool					isTexelBuffer) = 0;
 
 	virtual void				commandsBeforeCompute	 (const VkCommandBuffer			cmdBuffer) const = 0;
@@ -838,7 +904,7 @@ public:
 														  const VkPipelineLayout		pipelineLayout,
 														   const VkDescriptorSet		descriptorSet,
 														  const VkDeviceSize&			range,
-														  const bool					isSupportedTransfer) = 0;
+														  const bool					useTransfer) = 0;
 
 	virtual bool				verifyResult			 (Allocation&					outputBufferAllocation,
 														  const bool					is64Bit) const = 0;
@@ -853,14 +919,23 @@ protected:
 														  const VkDeviceSize&			range,
 														  const tcu::UVec3&				gridSize);
 
-	void						createdImageResources	(const VkFormat&				imageFormat,
-														  const bool					isSupportedTransfer);
+	void						createImageAndView		(VkFormat						imageFormat,
+														 const tcu::UVec3&				imageExent,
+														 bool							useTransfer,
+														 de::MovePtr<Image>&			imagePtr,
+														 Move<VkImageView>&				imageViewPtr);
+
+	void						createImageResources	(const VkFormat&				imageFormat,
+														 const bool						useTransfer);
 
 	const string				m_name;
 	const ImageType				m_imageType;
 	const tcu::UVec3			m_imageSize;
 	const TextureFormat			m_format;
 	const AtomicOperation		m_operation;
+	const bool					m_useTransfer;
+	const ShaderReadType		m_readType;
+	const ImageBackingType		m_backingType;
 
 	de::MovePtr<Buffer>			m_inputBuffer;
 	de::MovePtr<Buffer>			m_outputBuffer;
@@ -875,6 +950,8 @@ protected:
 
 	de::MovePtr<Image>			m_resultImage;
 	Move<VkImageView>			m_resultImageView;
+
+	std::vector<VkSemaphore>	m_waitSemaphores;
 };
 
 BinaryAtomicInstanceBase::BinaryAtomicInstanceBase (Context&				context,
@@ -882,13 +959,19 @@ BinaryAtomicInstanceBase::BinaryAtomicInstanceBase (Context&				context,
 													const ImageType			imageType,
 													const tcu::UVec3&		imageSize,
 													const TextureFormat&	format,
-													const AtomicOperation	operation)
+													const AtomicOperation	operation,
+													const bool				useTransfer,
+													const ShaderReadType	shaderReadType,
+													const ImageBackingType	backingType)
 	: vkt::TestInstance	(context)
 	, m_name			(name)
 	, m_imageType		(imageType)
 	, m_imageSize		(imageSize)
 	, m_format			(format)
 	, m_operation		(operation)
+	, m_useTransfer		(useTransfer)
+	, m_readType		(shaderReadType)
+	, m_backingType		(backingType)
 {
 }
 
@@ -902,17 +985,14 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 	const VkDeviceSize		imageSizeInBytes	= tcu::getPixelSize(m_format) * getNumPixels(m_imageType, m_imageSize);
 	const VkDeviceSize		outBuffSizeInBytes	= getOutputBufferSize();
 	const VkFormat			imageFormat			= mapTextureFormat(m_format);
-	const bool				isSupportedTransfer	= (imageFormat != VK_FORMAT_R64_SINT) &&
-												  (imageFormat != VK_FORMAT_R64_UINT) &&
-												  isSupportedFeatureTransfer(m_context, imageFormat);
 	const bool				isTexelBuffer		= (m_imageType == IMAGE_TYPE_BUFFER);
 
 	if (!isTexelBuffer)
 	{
-		createdImageResources(imageFormat, isSupportedTransfer);
+		createImageResources(imageFormat, m_useTransfer);
 	}
 
-	tcu::UVec3			gridSize		= getShaderGridSize(m_imageType, m_imageSize);
+	tcu::UVec3				gridSize			= getShaderGridSize(m_imageType, m_imageSize);
 
 	//Prepare the buffer with the initial data for the image
 	m_inputBuffer = de::MovePtr<Buffer>(new Buffer(deviceInterface,
@@ -939,7 +1019,7 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 
 	if (!isTexelBuffer)
 	{
-		prepareResources(isSupportedTransfer);
+		prepareResources(m_useTransfer);
 	}
 
 	prepareDescriptors(isTexelBuffer);
@@ -954,7 +1034,7 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 	Move<VkPipelineLayout>	pipelineLayoutReadImage;
 	Move<VkPipeline>		pipelineReadImage;
 
-	if (!isSupportedTransfer)
+	if (!m_useTransfer)
 	{
 		m_descriptorSetLayoutNoTransfer =
 			DescriptorSetLayoutBuilder()
@@ -982,13 +1062,7 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 		pipelineLayoutFillImage	= makePipelineLayout(deviceInterface, device, *m_descriptorSetLayoutNoTransfer);
 		pipelineFillImage		= makeComputePipeline(deviceInterface, device, *pipelineLayoutFillImage, *shaderModuleFillImage);
 
-		const VkPhysicalDeviceFeatures deviceFeatures = getPhysicalDeviceFeatures(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
-
-		if ((deviceFeatures.shaderResourceResidency == VK_TRUE) &&
-			m_context.getShaderImageAtomicInt64FeaturesEXT().sparseImageInt64Atomics &&
-			(m_imageType != IMAGE_TYPE_1D) &&
-			(m_imageType != IMAGE_TYPE_1D_ARRAY) &&
-			(m_imageType != IMAGE_TYPE_BUFFER))
+		if (m_readType == ShaderReadType::SPARSE)
 		{
 			shaderModuleReadImage = createShaderModule(deviceInterface, device, m_context.getBinaryCollection().get("readShaderResidency"), 0);
 		}
@@ -1013,7 +1087,7 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 
 	if (!isTexelBuffer)
 	{
-		if (isSupportedTransfer)
+		if (m_useTransfer)
 		{
 			const vector<VkBufferImageCopy>	bufferImageCopy(1, makeBufferImageCopy(makeExtent3D(getLayerSize(m_imageType, m_imageSize)), getNumLayers(m_imageType, m_imageSize)));
 			copyBufferToImage(deviceInterface,
@@ -1042,24 +1116,26 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 						 *pipelineLayoutReadImage,
 						 *descriptorSetReadImage,
 						 outBuffSizeInBytes,
-						 isSupportedTransfer);
+						 m_useTransfer);
 
 	const VkBufferMemoryBarrier	outputBufferPreHostReadBarrier
-		= makeBufferMemoryBarrier(((isSupportedTransfer || isTexelBuffer) ? VK_ACCESS_TRANSFER_WRITE_BIT : VK_ACCESS_SHADER_WRITE_BIT),
+		= makeBufferMemoryBarrier(((m_useTransfer || isTexelBuffer) ? VK_ACCESS_TRANSFER_WRITE_BIT : VK_ACCESS_SHADER_WRITE_BIT),
 								  VK_ACCESS_HOST_READ_BIT,
 								  m_outputBuffer->get(),
 								  0ull,
 								  outBuffSizeInBytes);
 
 	deviceInterface.cmdPipelineBarrier(*cmdBuffer,
-									   ((isSupportedTransfer || isTexelBuffer) ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT),
+									   ((m_useTransfer || isTexelBuffer) ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT),
 									   VK_PIPELINE_STAGE_HOST_BIT,
 									   DE_FALSE, 0u, DE_NULL,
 									   1u, &outputBufferPreHostReadBarrier, 0u, DE_NULL);
 
 	endCommandBuffer(deviceInterface, *cmdBuffer);
 
-	submitCommandsAndWait(deviceInterface, device, queue, *cmdBuffer);
+	std::vector<VkPipelineStageFlags> waitStages(m_waitSemaphores.size(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+	submitCommandsAndWait(deviceInterface, device, queue, *cmdBuffer, false, 1u,
+		static_cast<deUint32>(m_waitSemaphores.size()), de::dataOrNull(m_waitSemaphores), de::dataOrNull(waitStages));
 
 	Allocation& outputBufferAllocation = m_outputBuffer->getAllocation();
 
@@ -1126,45 +1202,77 @@ void BinaryAtomicInstanceBase::shaderFillImage (const VkCommandBuffer	cmdBuffer,
 										1, &imageBarrierPost);
 }
 
-void BinaryAtomicInstanceBase::createdImageResources (const VkFormat&	imageFormat,
-													  const bool		isSupportedTransfer)
+void BinaryAtomicInstanceBase::createImageAndView	(VkFormat						imageFormat,
+													 const tcu::UVec3&				imageExent,
+													 bool							useTransfer,
+													 de::MovePtr<Image>&			imagePtr,
+													 Move<VkImageView>&				imageViewPtr)
 {
 	const VkDevice			device			= m_context.getDevice();
 	const DeviceInterface&	deviceInterface	= m_context.getDeviceInterface();
 	Allocator&				allocator		= m_context.getDefaultAllocator();
+	const VkImageUsageFlags	usageFlags		= getUsageFlags(useTransfer);
+	VkImageCreateFlags		createFlags		= 0u;
 
-	const VkImageCreateInfo imageParams =
+	if (m_imageType == IMAGE_TYPE_CUBE || m_imageType == IMAGE_TYPE_CUBE_ARRAY)
+		createFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+
+	const auto numLayers = getNumLayers(m_imageType, m_imageSize);
+
+	VkImageCreateInfo createInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,					// VkStructureType			sType;
 		DE_NULL,												// const void*				pNext;
-		(m_imageType == IMAGE_TYPE_CUBE ||
-		 m_imageType == IMAGE_TYPE_CUBE_ARRAY ?
-		 (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT :
-		 (VkImageCreateFlags)0u),								// VkImageCreateFlags		flags;
+		createFlags,											// VkImageCreateFlags		flags;
 		mapImageType(m_imageType),								// VkImageType				imageType;
 		imageFormat,											// VkFormat					format;
-		makeExtent3D(getLayerSize(m_imageType, m_imageSize)),	// VkExtent3D				extent;
+		makeExtent3D(imageExent),								// VkExtent3D				extent;
 		1u,														// deUint32					mipLevels;
-		getNumLayers(m_imageType, m_imageSize),					// deUint32					arrayLayers;
+		numLayers,												// deUint32					arrayLayers;
 		VK_SAMPLE_COUNT_1_BIT,									// VkSampleCountFlagBits	samples;
 		VK_IMAGE_TILING_OPTIMAL,								// VkImageTiling			tiling;
-		(VkImageUsageFlags)(isSupportedTransfer ?
-			(VK_IMAGE_USAGE_STORAGE_BIT |
-			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-			VK_IMAGE_USAGE_TRANSFER_DST_BIT) :
-			VK_IMAGE_USAGE_STORAGE_BIT),						// VkImageUsageFlags		usage;
+		usageFlags,												// VkImageUsageFlags		usage;
 		VK_SHARING_MODE_EXCLUSIVE,								// VkSharingMode			sharingMode;
 		0u,														// deUint32					queueFamilyIndexCount;
 		DE_NULL,												// const deUint32*			pQueueFamilyIndices;
 		VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout			initialLayout;
 	};
 
+	if (m_backingType == ImageBackingType::SPARSE)
+	{
+		const auto&		vki				= m_context.getInstanceInterface();
+		const auto		physicalDevice	= m_context.getPhysicalDevice();
+		const auto		sparseQueue		= m_context.getSparseQueue();
+		const auto		sparseQueueIdx	= m_context.getSparseQueueFamilyIndex();
+		const auto		universalQIdx	= m_context.getUniversalQueueFamilyIndex();
+		const deUint32	queueIndices[]	= { universalQIdx, sparseQueueIdx };
+
+		createInfo.flags |= (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
+
+		if (sparseQueueIdx != universalQIdx)
+		{
+			createInfo.sharingMode				= VK_SHARING_MODE_CONCURRENT;
+			createInfo.queueFamilyIndexCount	= static_cast<deUint32>(DE_LENGTH_OF_ARRAY(queueIndices));
+			createInfo.pQueueFamilyIndices		= queueIndices;
+		}
+
+		const auto sparseImage = new SparseImage(deviceInterface, device, physicalDevice, vki, createInfo, sparseQueue, allocator, m_format);
+		m_waitSemaphores.push_back(sparseImage->getSemaphore());
+		imagePtr = de::MovePtr<Image>(sparseImage);
+	}
+	else
+		imagePtr = de::MovePtr<Image>(new Image(deviceInterface, device, allocator, createInfo, MemoryRequirement::Any));
+
+	const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, numLayers);
+
+	imageViewPtr = makeImageView(deviceInterface, device, imagePtr->get(), mapImageViewType(m_imageType), imageFormat, subresourceRange);
+}
+
+void BinaryAtomicInstanceBase::createImageResources (const VkFormat&	imageFormat,
+													 const bool			useTransfer)
+{
 	//Create the image that is going to store results of atomic operations
-	m_resultImage = de::MovePtr<Image>(new Image(deviceInterface, device, allocator, imageParams, MemoryRequirement::Any));
-
-	const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, getNumLayers(m_imageType, m_imageSize));
-
-	m_resultImageView = makeImageView(deviceInterface, device, m_resultImage->get(), mapImageViewType(m_imageType), imageFormat, subresourceRange);
+	createImageAndView(imageFormat, getLayerSize(m_imageType, m_imageSize), useTransfer, m_resultImage, m_resultImageView);
 }
 
 class BinaryAtomicEndResultInstance : public BinaryAtomicInstanceBase
@@ -1176,12 +1284,15 @@ public:
 														const ImageType				imageType,
 														const tcu::UVec3&			imageSize,
 														const TextureFormat&		format,
-														const AtomicOperation		operation)
-							: BinaryAtomicInstanceBase(context, name, imageType, imageSize, format, operation) {}
+														const AtomicOperation		operation,
+														const bool					useTransfer,
+														const ShaderReadType		shaderReadType,
+														const ImageBackingType		backingType)
+							: BinaryAtomicInstanceBase(context, name, imageType, imageSize, format, operation, useTransfer, shaderReadType, backingType) {}
 
 	virtual deUint32	getOutputBufferSize			   (void) const;
 
-	virtual void		prepareResources			   (const bool					isSupportedTransfer) { DE_UNREF(isSupportedTransfer); }
+	virtual void		prepareResources			   (const bool					useTransfer) { DE_UNREF(useTransfer); }
 	virtual void		prepareDescriptors			   (const bool					isTexelBuffer);
 
 	virtual void		commandsBeforeCompute		   (const VkCommandBuffer) const {}
@@ -1190,7 +1301,7 @@ public:
 														const VkPipelineLayout		pipelineLayout,
 														const VkDescriptorSet		descriptorSet,
 														const VkDeviceSize&			range,
-														const bool					isSupportedTransfer);
+														const bool					useTransfer);
 
 	virtual bool		verifyResult				   (Allocation&					outputBufferAllocation,
 														const bool					is64Bit) const;
@@ -1230,6 +1341,7 @@ void BinaryAtomicEndResultInstance::prepareDescriptors (const bool	isTexelBuffer
 		.build(deviceInterface, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
 	m_descriptorSet = makeDescriptorSet(deviceInterface, device, *m_descriptorPool, *m_descriptorSetLayout);
+
 	if (isTexelBuffer)
 	{
 		m_descResultBufferView = makeBufferView(deviceInterface, device, *(*m_inputBuffer), mapTextureFormat(m_format), 0, VK_WHOLE_SIZE);
@@ -1253,7 +1365,7 @@ void BinaryAtomicEndResultInstance::commandsAfterCompute (const VkCommandBuffer	
 														  const VkPipelineLayout	pipelineLayout,
 														  const VkDescriptorSet		descriptorSet,
 														  const VkDeviceSize&		range,
-														  const bool				isSupportedTransfer)
+														  const bool				useTransfer)
 {
 	const DeviceInterface&			deviceInterface		= m_context.getDeviceInterface();
 	const VkImageSubresourceRange	subresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, getNumLayers(m_imageType, m_imageSize));
@@ -1263,7 +1375,7 @@ void BinaryAtomicEndResultInstance::commandsAfterCompute (const VkCommandBuffer	
 	{
 		m_outputBuffer = m_inputBuffer;
 	}
-	else if (isSupportedTransfer)
+	else if (useTransfer)
 	{
 		const VkImageMemoryBarrier	resultImagePostDispatchBarrier =
 			makeImageMemoryBarrier(	VK_ACCESS_SHADER_WRITE_BIT,
@@ -1295,12 +1407,12 @@ void BinaryAtomicEndResultInstance::commandsAfterCompute (const VkCommandBuffer	
 			.update(deviceInterface, device);
 
 		const VkImageMemoryBarrier	resultImagePostDispatchBarrier =
-		makeImageMemoryBarrier(	VK_ACCESS_SHADER_WRITE_BIT,
-								VK_ACCESS_SHADER_READ_BIT,
-								VK_IMAGE_LAYOUT_GENERAL,
-								VK_IMAGE_LAYOUT_GENERAL,
-								m_resultImage->get(),
-								subresourceRange);
+			makeImageMemoryBarrier(	VK_ACCESS_SHADER_WRITE_BIT,
+									VK_ACCESS_SHADER_READ_BIT,
+									VK_IMAGE_LAYOUT_GENERAL,
+									VK_IMAGE_LAYOUT_GENERAL,
+									m_resultImage->get(),
+									subresourceRange);
 
 		deviceInterface.cmdPipelineBarrier(	cmdBuffer,
 											VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
@@ -1442,7 +1554,7 @@ bool BinaryAtomicEndResultInstance::isValueCorrect(const T resultValue, deInt32 
 
 TestInstance* BinaryAtomicEndResultCase::createInstance (Context& context) const
 {
-	return new BinaryAtomicEndResultInstance(context, m_name, m_imageType, m_imageSize, m_format, m_operation);
+	return new BinaryAtomicEndResultInstance(context, m_name, m_imageType, m_imageSize, m_format, m_operation, m_useTransfer, m_readType, m_backingType);
 }
 
 class BinaryAtomicIntermValuesInstance : public BinaryAtomicInstanceBase
@@ -1454,12 +1566,15 @@ public:
 															const ImageType			imageType,
 															const tcu::UVec3&		imageSize,
 															const TextureFormat&	format,
-															const AtomicOperation	operation)
-							: BinaryAtomicInstanceBase(context, name, imageType, imageSize, format, operation) {}
+															const AtomicOperation	operation,
+															const bool				useTransfer,
+															const ShaderReadType	shaderReadType,
+															const ImageBackingType	backingType)
+							: BinaryAtomicInstanceBase(context, name, imageType, imageSize, format, operation, useTransfer, shaderReadType, backingType) {}
 
 	virtual deUint32	getOutputBufferSize				   (void) const;
 
-	virtual void		prepareResources				   (const bool				isSupportedTransfer);
+	virtual void		prepareResources				   (const bool				useTransfer);
 	virtual void		prepareDescriptors				   (const bool				isTexelBuffer);
 
 	virtual void		commandsBeforeCompute			   (const VkCommandBuffer	cmdBuffer) const;
@@ -1468,7 +1583,7 @@ public:
 															const VkPipelineLayout	pipelineLayout,
 															const VkDescriptorSet	descriptorSet,
 															const VkDeviceSize&		range,
-															const bool				isSupportedTransfer);
+															const bool				useTransfer);
 
 	virtual bool		verifyResult					   (Allocation&				outputBufferAllocation,
 															const bool				is64Bit) const;
@@ -1499,48 +1614,14 @@ deUint32 BinaryAtomicIntermValuesInstance::getOutputBufferSize (void) const
 	return NUM_INVOCATIONS_PER_PIXEL * tcu::getPixelSize(m_format) * getNumPixels(m_imageType, m_imageSize);
 }
 
-void BinaryAtomicIntermValuesInstance::prepareResources (const bool isSupportedTransfer)
+void BinaryAtomicIntermValuesInstance::prepareResources (const bool useTransfer)
 {
-	const VkDevice			device			= m_context.getDevice();
-	const DeviceInterface&	deviceInterface = m_context.getDeviceInterface();
-	Allocator&				allocator		= m_context.getDefaultAllocator();
-
 	const UVec3 layerSize			= getLayerSize(m_imageType, m_imageSize);
 	const bool  isCubeBasedImage	= (m_imageType == IMAGE_TYPE_CUBE || m_imageType == IMAGE_TYPE_CUBE_ARRAY);
 	const UVec3 extendedLayerSize	= isCubeBasedImage	? UVec3(NUM_INVOCATIONS_PER_PIXEL * layerSize.x(), NUM_INVOCATIONS_PER_PIXEL * layerSize.y(), layerSize.z())
 														: UVec3(NUM_INVOCATIONS_PER_PIXEL * layerSize.x(), layerSize.y(), layerSize.z());
 
-	const VkImageCreateInfo imageParams =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		// VkStructureType			sType;
-		DE_NULL,									// const void*				pNext;
-		(m_imageType == IMAGE_TYPE_CUBE ||
-		 m_imageType == IMAGE_TYPE_CUBE_ARRAY ?
-		 (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT :
-		 (VkImageCreateFlags)0u),					// VkImageCreateFlags		flags;
-		mapImageType(m_imageType),					// VkImageType				imageType;
-		mapTextureFormat(m_format),					// VkFormat					format;
-		makeExtent3D(extendedLayerSize),			// VkExtent3D				extent;
-		1u,											// deUint32					mipLevels;
-		getNumLayers(m_imageType, m_imageSize),		// deUint32					arrayLayers;
-		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits	samples;
-		VK_IMAGE_TILING_OPTIMAL,					// VkImageTiling			tiling;
-		(VkImageUsageFlags)(isSupportedTransfer ?
-			(VK_IMAGE_USAGE_STORAGE_BIT |
-			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-			VK_IMAGE_USAGE_TRANSFER_DST_BIT) :
-			VK_IMAGE_USAGE_STORAGE_BIT),			// VkImageUsageFlags
-		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode			sharingMode;
-		0u,											// deUint32					queueFamilyIndexCount;
-		DE_NULL,									// const deUint32*			pQueueFamilyIndices;
-		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			initialLayout;
-	};
-
-	m_intermResultsImage = de::MovePtr<Image>(new Image(deviceInterface, device, allocator, imageParams, MemoryRequirement::Any));
-
-	const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, getNumLayers(m_imageType, m_imageSize));
-
-	m_intermResultsImageView = makeImageView(deviceInterface, device, m_intermResultsImage->get(), mapImageViewType(m_imageType), mapTextureFormat(m_format), subresourceRange);
+	createImageAndView(mapTextureFormat(m_format), extendedLayerSize, useTransfer, m_intermResultsImage, m_intermResultsImageView);
 }
 
 void BinaryAtomicIntermValuesInstance::prepareDescriptors (const bool	isTexelBuffer)
@@ -1608,7 +1689,7 @@ void BinaryAtomicIntermValuesInstance::commandsAfterCompute (const VkCommandBuff
 															 const VkPipelineLayout		pipelineLayout,
 															 const VkDescriptorSet		descriptorSet,
 															 const VkDeviceSize&		range,
-															 const bool					isSupportedTransfer)
+															 const bool					useTransfer)
 {
 	// nothing is needed for texel image buffer
 	if (m_imageType == IMAGE_TYPE_BUFFER)
@@ -1618,7 +1699,7 @@ void BinaryAtomicIntermValuesInstance::commandsAfterCompute (const VkCommandBuff
 	const VkImageSubresourceRange	subresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, getNumLayers(m_imageType, m_imageSize));
 	const UVec3						layerSize			= getLayerSize(m_imageType, m_imageSize);
 
-	if (isSupportedTransfer)
+	if (useTransfer)
 	{
 		const VkImageMemoryBarrier	imagePostDispatchBarrier =
 			makeImageMemoryBarrier(	VK_ACCESS_SHADER_WRITE_BIT,
@@ -1785,7 +1866,7 @@ bool BinaryAtomicIntermValuesInstance::verifyRecursive (const deInt32	index,
 
 TestInstance* BinaryAtomicIntermValuesCase::createInstance (Context& context) const
 {
-	return new BinaryAtomicIntermValuesInstance(context, m_name, m_imageType, m_imageSize, m_format, m_operation);
+	return new BinaryAtomicIntermValuesInstance(context, m_name, m_imageType, m_imageSize, m_format, m_operation, m_useTransfer, m_readType, m_backingType);
 }
 
 } // anonymous ns
@@ -1805,7 +1886,7 @@ tcu::TestCaseGroup* createImageAtomicOperationTests (tcu::TestContext& testCtx)
 		const tcu::UVec3	m_imageSize;
 	};
 
-	static const ImageParams imageParamsArray[] =
+	const ImageParams imageParamsArray[] =
 	{
 		ImageParams(IMAGE_TYPE_1D,			tcu::UVec3(64u, 1u, 1u)),
 		ImageParams(IMAGE_TYPE_1D_ARRAY,	tcu::UVec3(64u, 1u, 8u)),
@@ -1817,13 +1898,33 @@ tcu::TestCaseGroup* createImageAtomicOperationTests (tcu::TestContext& testCtx)
 		ImageParams(IMAGE_TYPE_BUFFER,		tcu::UVec3(64u, 1u, 1u))
 	};
 
-	static const tcu::TextureFormat formats[] =
+	const tcu::TextureFormat formats[] =
 	{
 		tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT32),
 		tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32),
 		tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::FLOAT),
 		tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT64),
 		tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64)
+	};
+
+	const struct
+	{
+		ShaderReadType		type;
+		const char*			name;
+	} readTypes[] =
+	{
+		{	ShaderReadType::NORMAL,	"normal_read"	},
+		{	ShaderReadType::SPARSE,	"sparse_read"	},
+	};
+
+	const struct
+	{
+		ImageBackingType	type;
+		const char*			name;
+	} backingTypes[] =
+	{
+		{	ImageBackingType::NORMAL,	"normal_img"	},
+		{	ImageBackingType::SPARSE,	"sparse_img"	},
 	};
 
 	for (deUint32 operationI = 0; operationI < ATOMIC_OPERATION_LAST; operationI++)
@@ -1839,33 +1940,77 @@ tcu::TestCaseGroup* createImageAtomicOperationTests (tcu::TestContext& testCtx)
 
 			de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str(), ""));
 
-			for (deUint32 formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
+			for (int useTransferIdx = 0; useTransferIdx < 2; ++useTransferIdx)
 			{
-				const TextureFormat&	format		= formats[formatNdx];
-				const std::string		formatName	= getShaderImageFormatQualifier(format);
+				const bool				useTransfer	= (useTransferIdx > 0);
+				const string			groupName	= (!useTransfer ? "no" : "") + string("transfer");
 
-				// Need SPIRV programs in vktImageAtomicSpirvShaders.cpp
-				if (imageType == IMAGE_TYPE_BUFFER && (format.type != tcu::TextureFormat::FLOAT))
-				{
-					continue;
-				}
+				de::MovePtr<tcu::TestCaseGroup> transferGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str(), ""));
 
-				// Only ADD and EXCHANGE are supported on floating-point
-				if (format.type == tcu::TextureFormat::FLOAT)
+				for (int readTypeIdx = 0; readTypeIdx < DE_LENGTH_OF_ARRAY(readTypes); ++readTypeIdx)
 				{
-					if (operation != ATOMIC_OPERATION_ADD && operation != ATOMIC_OPERATION_EXCHANGE)
+					const auto& readType = readTypes[readTypeIdx];
+
+					de::MovePtr<tcu::TestCaseGroup> readTypeGroup(new tcu::TestCaseGroup(testCtx, readType.name, ""));
+
+					for (int backingTypeIdx = 0; backingTypeIdx < DE_LENGTH_OF_ARRAY(backingTypes); ++backingTypeIdx)
 					{
-						continue;
+						const auto& backingType = backingTypes[backingTypeIdx];
+
+						de::MovePtr<tcu::TestCaseGroup> backingTypeGroup(new tcu::TestCaseGroup(testCtx, backingType.name, ""));
+
+						for (deUint32 formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
+						{
+							const TextureFormat&	format		= formats[formatNdx];
+							const std::string		formatName	= getShaderImageFormatQualifier(format);
+
+							// Need SPIRV programs in vktImageAtomicSpirvShaders.cpp
+							if (imageType == IMAGE_TYPE_BUFFER && (format.type != tcu::TextureFormat::FLOAT))
+							{
+								continue;
+							}
+
+							// Only 2D and 3D images may support sparse residency.
+							const auto vkImageType = mapImageType(imageType);
+							if (backingType.type == ImageBackingType::SPARSE && (vkImageType != VK_IMAGE_TYPE_2D && vkImageType != VK_IMAGE_TYPE_3D))
+								continue;
+
+							// Only ADD and EXCHANGE are supported on floating-point
+							if (format.type == tcu::TextureFormat::FLOAT)
+							{
+								if (operation != ATOMIC_OPERATION_ADD && operation != ATOMIC_OPERATION_EXCHANGE)
+								{
+									continue;
+								}
+							}
+
+							if (readType.type == ShaderReadType::SPARSE)
+							{
+								// When using transfer, shader reads will not be used, so avoid creating two identical cases.
+								if (useTransfer)
+									continue;
+
+								// Sparse reads are not supported for all types of images.
+								if (imageType == IMAGE_TYPE_1D || imageType == IMAGE_TYPE_1D_ARRAY || imageType == IMAGE_TYPE_BUFFER)
+									continue;
+							}
+
+							//!< Atomic case checks the end result of the operations, and not the intermediate return values
+							const string caseEndResult = formatName + "_end_result";
+							backingTypeGroup->addChild(new BinaryAtomicEndResultCase(testCtx, caseEndResult, "", imageType, imageSize, format, operation, useTransfer, readType.type, backingType.type, glu::GLSL_VERSION_450));
+
+							//!< Atomic case checks the return values of the atomic function and not the end result.
+							const string caseIntermValues = formatName + "_intermediate_values";
+							backingTypeGroup->addChild(new BinaryAtomicIntermValuesCase(testCtx, caseIntermValues, "", imageType, imageSize, format, operation, useTransfer, readType.type, backingType.type, glu::GLSL_VERSION_450));
+						}
+
+						readTypeGroup->addChild(backingTypeGroup.release());
 					}
+
+					transferGroup->addChild(readTypeGroup.release());
 				}
 
-				//!< Atomic case checks the end result of the operations, and not the intermediate return values
-				const string caseEndResult = formatName + "_end_result";
-				imageTypeGroup->addChild(new BinaryAtomicEndResultCase(testCtx, caseEndResult, "", imageType, imageSize, format, operation, glu::GLSL_VERSION_450));
-
-				//!< Atomic case checks the return values of the atomic function and not the end result.
-				const string caseIntermValues = formatName + "_intermediate_values";
-				imageTypeGroup->addChild(new BinaryAtomicIntermValuesCase(testCtx, caseIntermValues, "", imageType, imageSize, format, operation, glu::GLSL_VERSION_450));
+				imageTypeGroup->addChild(transferGroup.release());
 			}
 
 			operationGroup->addChild(imageTypeGroup.release());

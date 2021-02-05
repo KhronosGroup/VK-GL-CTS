@@ -327,6 +327,14 @@ void	initDepthStencilImageChessboardPattern	(const DeviceInterface&							vk,
  * Checks if the physical device supports creation of the specified
  * image format.
  *//*--------------------------------------------------------------------*/
+bool	checkSparseImageFormatSupport			(const VkPhysicalDevice							physicalDevice,
+												 const InstanceInterface&						instance,
+												 const VkFormat									format,
+												 const VkImageType								imageType,
+												 const VkSampleCountFlagBits					sampleCount,
+												 const VkImageUsageFlags						usageFlags,
+												 const VkImageTiling							imageTiling);
+
 bool	checkSparseImageFormatSupport			(const vk::VkPhysicalDevice						physicalDevice,
 												 const vk::InstanceInterface&					instance,
 												 const vk::VkImageCreateInfo&					imageCreateInfo);

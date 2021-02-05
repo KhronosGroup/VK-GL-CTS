@@ -4971,12 +4971,21 @@ void allocateAndBindSparseImage (const DeviceInterface&						vk,
 
 bool checkSparseImageFormatSupport (const VkPhysicalDevice		physicalDevice,
 									const InstanceInterface&	instance,
+									const VkFormat				format,
+									const VkImageType			imageType,
+									const VkSampleCountFlagBits	sampleCount,
+									const VkImageUsageFlags		usageFlags,
+									const VkImageTiling			imageTiling)
+{
+	const auto propVec = getPhysicalDeviceSparseImageFormatProperties(instance, physicalDevice, format, imageType, sampleCount, usageFlags, imageTiling);
+	return (propVec.size() != 0);
+}
+
+bool checkSparseImageFormatSupport (const VkPhysicalDevice		physicalDevice,
+									const InstanceInterface&	instance,
 									const VkImageCreateInfo&	imageCreateInfo)
 {
-	const std::vector<VkSparseImageFormatProperties> sparseImageFormatPropVec =
-		getPhysicalDeviceSparseImageFormatProperties(instance, physicalDevice, imageCreateInfo.format, imageCreateInfo.imageType, imageCreateInfo.samples, imageCreateInfo.usage, imageCreateInfo.tiling);
-
-	return (sparseImageFormatPropVec.size() != 0);
+	return checkSparseImageFormatSupport(physicalDevice, instance, imageCreateInfo.format, imageCreateInfo.imageType, imageCreateInfo.samples, imageCreateInfo.usage, imageCreateInfo.tiling);
 }
 
 } // vk
