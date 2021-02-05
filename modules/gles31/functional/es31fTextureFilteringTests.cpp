@@ -197,9 +197,11 @@ TextureCubeArrayFilteringCase::~TextureCubeArrayFilteringCase (void)
 
 void TextureCubeArrayFilteringCase::init (void)
 {
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	auto		ctxType			= m_context.getRenderContext().getType();
+	const bool	isES32orGL45	= glu::contextSupports(ctxType, glu::ApiType::es(3, 2)) ||
+								  glu::contextSupports(ctxType, glu::ApiType::core(4, 5));
 
-	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_cube_map_array"))
+	if (!isES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_cube_map_array"))
 		throw tcu::NotSupportedError("GL_EXT_texture_cube_map_array not supported");
 
 	if (m_internalFormat == GL_SR8_EXT && !(m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_sRGB_R8")))
@@ -207,12 +209,16 @@ void TextureCubeArrayFilteringCase::init (void)
 
 	try
 	{
+		const glw::Functions&			gl			= m_context.getRenderContext().getFunctions();
 		const tcu::TextureFormat		texFmt		= glu::mapGLInternalFormat(m_internalFormat);
 		const tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(texFmt);
 		const tcu::Vec4					cScale		= fmtInfo.valueMax-fmtInfo.valueMin;
 		const tcu::Vec4					cBias		= fmtInfo.valueMin;
 		const int						numLevels	= deLog2Floor32(m_size) + 1;
 		const int						numLayers	= m_depth / 6;
+
+		if (!isContextTypeES(ctxType))
+			gl.enable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
 		// Create textures.
 		m_gradientTex	= new glu::TextureCubeArray(m_context.getRenderContext(), m_internalFormat, m_size, m_depth);
@@ -319,6 +325,9 @@ void TextureCubeArrayFilteringCase::deinit (void)
 
 	m_renderer.clear();
 	m_cases.clear();
+
+	if (!isContextTypeES(m_context.getRenderContext().getType()))
+		m_context.getRenderContext().getFunctions().disable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 }
 
 TextureCubeArrayFilteringCase::IterateResult TextureCubeArrayFilteringCase::iterate (void)
