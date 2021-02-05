@@ -618,7 +618,8 @@ SRGBTestProgram::SRGBTestProgram	(Context& context, const FragmentShaderParamete
 	const int				totalShaderStages	= 2;
 
 	// default vertex shader used in all tests
-	m_shaderVertex =	"#version 310 es \n"
+	std::string ver(glu::isContextTypeGLCore(m_context.getRenderContext().getType()) ? "#version 450\n" : "#version 310 es\n");
+	m_shaderVertex =	ver +
 						"layout (location = 0) in mediump vec3 aPosition; \n"
 						"layout (location = 1) in mediump vec2 aTexCoord; \n"
 						"out mediump vec2 vs_aTexCoord; \n"
@@ -789,7 +790,7 @@ void SRGBTestProgram::genFragmentShader (void)
 	// fragment shader cannot contain more outputs than the number of texture uniforms
 	DE_ASSERT( !(static_cast<int>(m_shaderFragmentParameters.outputTotal) > static_cast<int>(m_shaderFragmentParameters.uniformTotal)) ) ;
 
-	source << "#version 310 es \n"
+	source << (glu::isContextTypeGLCore(m_context.getRenderContext().getType()) ? "#version 450\n" : "#version 310 es\n")
 		<< "in mediump vec2 vs_aTexCoord; \n";
 
 	for (int output = 0; output < m_shaderFragmentParameters.outputTotal; output++)
@@ -945,6 +946,8 @@ SRGBTestCase::~SRGBTestCase (void)
 
 void SRGBTestCase::init (void)
 {
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+
 	// extension requirements for test
 	if ( (glu::getInternalFormat(m_internalFormat) == GL_SRGB8_ALPHA8) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_sRGB_decode") )
 	{
@@ -957,6 +960,11 @@ void SRGBTestCase::init (void)
 	}
 
 	m_framebuffer = de::MovePtr<glu::Framebuffer>(new glu::Framebuffer(m_context.getRenderContext()));
+
+	if (glu::isContextTypeGLCore(m_context.getRenderContext().getType()))
+	{
+		gl.enable(GL_FRAMEBUFFER_SRGB);
+	}
 }
 
 void SRGBTestCase::deinit (void)
@@ -970,6 +978,11 @@ void SRGBTestCase::deinit (void)
 		gl.deleteRenderbuffers(1, &m_renderBufferList[renderBufferIdx]);
 	}
 	m_renderBufferList.clear();
+
+	if (glu::isContextTypeGLCore(m_context.getRenderContext().getType()))
+	{
+		gl.disable(GL_FRAMEBUFFER_SRGB);
+	}
 
 	for (std::size_t textureSourceIdx = 0; textureSourceIdx < m_textureSourceList.size(); textureSourceIdx++)
 	{
