@@ -146,21 +146,19 @@ tcu::TextureFormat NearestEdgeTestCase::toTextureFormat (deqp::Context& context,
 		if (pixelFormatMap[ndx].pixelFmt == pixelFmt)
 		{
 			// Some implementations treat GL_RGB8 as GL_RGBA8888,so the test should pass implementation format to ReadPixels.
-			if (pixelFmt == tcu::PixelFormat(8,8,8,0))
+			if (pixelFmt == tcu::PixelFormat(8, 8, 8, 0))
 			{
 				const auto& gl = context.getRenderContext().getFunctions();
 
 				glw::GLint implFormat = GL_NONE;
-				glw::GLint implType   = GL_NONE;
-				gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT,&implFormat);
-				gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE,&implType);
-				if(implFormat == GL_RGBA && implType == GL_UNSIGNED_BYTE)
-					return tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::UNORM_INT8);
+				glw::GLint implType	  = GL_NONE;
+				gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &implFormat);
+				gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &implType);
+				if (implFormat == GL_RGBA && implType == GL_UNSIGNED_BYTE)
+					return tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
 			}
-			else
-			{
-				return pixelFormatMap[ndx].texFmt;
-			}
+
+			return pixelFormatMap[ndx].texFmt;
 		}
 	}
 

@@ -4631,7 +4631,5 @@ dEQP-GLES3.functional.clipping.triangle_vertex.clip_three.clip_neg_x_pos_y_pos_z
 dEQP-GLES3.functional.polygon_offset.default_enable
 dEQP-GLES3.functional.polygon_offset.default_displacement_with_units
 dEQP-GLES3.functional.polygon_offset.default_render_with_units
-dEQP-GLES3.functional.polygon_offset.default_result_depth_clamp
 dEQP-GLES3.functional.polygon_offset.default_render_with_factor
 dEQP-GLES3.functional.polygon_offset.default_factor_0_slope
-dEQP-GLES3.functional.polygon_offset.default_factor_1_slope

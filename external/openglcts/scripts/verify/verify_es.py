@@ -61,6 +61,9 @@ def retrieveReportedConfigs(caseName, log):
 	res = {caseName : configs}
 	return res
 
+def cmpElements(a, b):
+	return ((a > b) - (a < b))
+
 def compareConfigs(filename, baseConfigs, cmpConfigs):
 	messages = []
 	assert len(list(baseConfigs.keys())) == 1
@@ -68,7 +71,7 @@ def compareConfigs(filename, baseConfigs, cmpConfigs):
 	baseKey = list(baseConfigs.keys())[0]
 	cmpKey = list(cmpConfigs.keys())[0]
 
-	if cmp(baseConfigs[baseKey], cmpConfigs[cmpKey]) != 0:
+	if cmpElements(baseConfigs[baseKey], cmpConfigs[cmpKey]) != 0:
 		messages.append(error(filename, "Confomant configs reported for %s and %s do not match" % (baseKey,cmpKey)))
 
 	return messages
@@ -242,6 +245,9 @@ def isGitLogFileEmpty (package, modulePath, gitLog):
 	if process.returncode != 0:
 		raise Exception("Failed to execute '%s', got %d" % (str(args), process.returncode))
 
+	# Python 3 returns process output as bytes, while reading the log file gives a string.
+	if sys.version_info > (3, 0):
+		output = output.decode('utf-8', 'ignore')
 	return log == output
 
 def verifyGitLogFile (package):
