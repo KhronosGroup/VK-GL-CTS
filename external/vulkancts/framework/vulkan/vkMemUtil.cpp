@@ -237,7 +237,7 @@ MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memRe
 
 	if (requirement & MemoryRequirement::DeviceAddress)
 	{
-		allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
+		allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
 		allocInfo.pNext = &allocFlagsInfo;
 	}
 
@@ -292,7 +292,7 @@ de::MovePtr<Allocation> allocateDedicated (const InstanceInterface&	vki,
 	const VkMemoryRequirements				memoryRequirements		= getBufferMemoryRequirements(vkd, device, buffer);
 	const VkMemoryDedicatedAllocateInfo		dedicatedAllocationInfo	=
 	{
-		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,				// VkStructureType		sType
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,					// VkStructureType		sType
 		DE_NULL,															// const void*			pNext
 		DE_NULL,															// VkImage				image
 		buffer																// VkBuffer				buffer
@@ -311,7 +311,7 @@ de::MovePtr<Allocation> allocateDedicated (const InstanceInterface&	vki,
 	const VkMemoryRequirements				memoryRequirements		= getImageMemoryRequirements(vkd, device, image);
 	const VkMemoryDedicatedAllocateInfo		dedicatedAllocationInfo	=
 	{
-		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,			// VkStructureType		sType
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,				// VkStructureType		sType
 		DE_NULL,														// const void*			pNext
 		image,															// VkImage				image
 		DE_NULL															// VkBuffer				buffer
@@ -391,7 +391,7 @@ void bindImagePlanesMemory (const DeviceInterface&		vkd,
 
 		VkBindImagePlaneMemoryInfo	planeInfo	=
 		{
-			VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO_KHR,
+			VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO,
 			DE_NULL,
 			planeAspect
 		};
@@ -399,7 +399,7 @@ void bindImagePlanesMemory (const DeviceInterface&		vkd,
 
 		VkBindImageMemoryInfo		coreInfo	=
 		{
-			VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHR,
+			VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO,
 			&planeInfos.back(),
 			image,
 			allocations.back()->getMemory(),

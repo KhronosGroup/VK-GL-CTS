@@ -209,7 +209,7 @@ void submitCommandsAndWait (const DeviceInterface&	vk,
 
 	VkDeviceGroupSubmitInfo	deviceGroupSubmitInfo	=
 	{
-		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO_KHR,	//	VkStructureType		sType;
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO,		//	VkStructureType		sType;
 		DE_NULL,										//	const void*			pNext;
 		0u,												//	deUint32			waitSemaphoreCount;
 		DE_NULL,										//	const deUint32*		pWaitSemaphoreDeviceIndices;

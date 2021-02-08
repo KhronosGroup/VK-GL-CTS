@@ -88,7 +88,7 @@ Move<VkImageView> makeImageView (const DeviceInterface&					vk,
 								 const VkImageViewType					imageViewType,
 								 const VkFormat							format,
 								 const VkImageSubresourceRange			subresourceRange,
-								 const vk::VkImageViewUsageCreateInfo*	imageUsageCreateInfoKHR = DE_NULL);
+								 const vk::VkImageViewUsageCreateInfo*	imageUsageCreateInfo = DE_NULL);
 
 Move<VkBufferView> makeBufferView (const DeviceInterface&	vk,
 								   const VkDevice			vkDevice,
