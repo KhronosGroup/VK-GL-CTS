@@ -1243,7 +1243,7 @@ VKAPI_ATTR VkResult VKAPI_CALL allocateMemory (VkDevice device, const VkMemoryAl
 #if defined(USE_ANDROID_O_HARDWARE_BUFFER)
 		VK_NULL_RETURN((*pMemory = allocateNonDispHandle<ExternalDeviceMemoryAndroid, DeviceMemory, VkDeviceMemory>(device, pAllocateInfo, pAllocator)));
 #else
-		return VK_ERROR_INVALID_EXTERNAL_HANDLE_KHR;
+		return VK_ERROR_INVALID_EXTERNAL_HANDLE;
 #endif
 	}
 	else
@@ -1391,7 +1391,7 @@ VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceExternalBufferPropertiesKHR (VkPhysi
 
 	if (pExternalBufferInfo->handleType == VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
 	{
-		pExternalBufferProperties->externalMemoryProperties.externalMemoryFeatures = VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR | VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR;
+		pExternalBufferProperties->externalMemoryProperties.externalMemoryFeatures = VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT | VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT;
 		pExternalBufferProperties->externalMemoryProperties.exportFromImportedHandleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
 		pExternalBufferProperties->externalMemoryProperties.compatibleHandleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
 	}
@@ -1434,8 +1434,8 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceImageFormatProperties2KHR (VkPhy
 		}
 
 		if ((pImageFormatInfo->flags & ~(VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT
-										/*| VK_IMAGE_CREATE_PROTECTED_BIT_KHR*/
-										/*| VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR*/))
+										/*| VK_IMAGE_CREATE_PROTECTED_BIT*/
+										/*| VK_IMAGE_CREATE_EXTENDED_USAGE_BIT*/))
 			!= 0)
 		{
 			return VK_ERROR_FORMAT_NOT_SUPPORTED;
@@ -1443,9 +1443,9 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceImageFormatProperties2KHR (VkPhy
 
 		if (externalProperties)
 		{
-			externalProperties->externalMemoryProperties.externalMemoryFeatures			= VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR
-																						| VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR
-																						| VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR;
+			externalProperties->externalMemoryProperties.externalMemoryFeatures			= VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT
+																						| VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT
+																						| VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT;
 			externalProperties->externalMemoryProperties.exportFromImportedHandleTypes	= VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
 			externalProperties->externalMemoryProperties.compatibleHandleTypes			= VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
 		}

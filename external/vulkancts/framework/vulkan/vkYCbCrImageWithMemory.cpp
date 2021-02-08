@@ -38,7 +38,7 @@ YCbCrImageWithMemory::YCbCrImageWithMemory (const vk::DeviceInterface&		vk,
 											const vk::MemoryRequirement		requirement)
 	: m_image	(createImage(vk, device, &imageCreateInfo))
 {
-	if ((imageCreateInfo.flags & VK_IMAGE_CREATE_DISJOINT_BIT_KHR) != 0)
+	if ((imageCreateInfo.flags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0)
 	{
 		const deUint32	numPlanes	= getPlaneCount(imageCreateInfo.format);
 
