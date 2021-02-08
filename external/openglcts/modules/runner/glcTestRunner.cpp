@@ -779,7 +779,6 @@ void TestRunner::deinit(void)
 	writeRunSummary(m_summary, de::FilePath::join(m_logDirPath, "cts-run-summary.xml").getPath());
 
 	m_runSessions.clear();
-	m_summary.clear();
 }
 
 void TestRunner::initSession(const TestRunParams& runParams)
