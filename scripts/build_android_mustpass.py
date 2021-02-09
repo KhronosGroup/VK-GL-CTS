@@ -258,7 +258,10 @@ MASTER_VULKAN_PKG				= Package(module = VULKAN_MODULE, configurations = [
 					  filters		= [include("vk-master-2019-03-01.txt")],
 					  runtime		= "2h29m"),
 		Configuration(name			= "master-2020-03-01",
-					  filters		= MASTER_VULKAN_FILTERS + [exclude("vk-master-2019-03-01.txt")],
+					  filters		= [include("vk-master-2020-03-01.txt")],
+					  runtime		= "2h29m"),
+		Configuration(name			= "master-2021-03-01",
+					  filters		= MASTER_VULKAN_FILTERS + [exclude("vk-master-2019-03-01.txt"), exclude("vk-master-2020-03-01.txt")],
 					  runtime		= "10m"),
 	])
 
