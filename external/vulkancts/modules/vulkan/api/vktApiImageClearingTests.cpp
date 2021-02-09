@@ -875,44 +875,44 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass (VkFormat format)
 
 		VkImageLayout								initialLayout			= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		VkImageLayout								finalLayout				= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		VkAttachmentDescriptionStencilLayoutKHR		stencilLayouts			=
+		VkAttachmentDescriptionStencilLayout		stencilLayouts			=
 		{
-			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_STENCIL_LAYOUT_KHR,
+			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_STENCIL_LAYOUT,
 			DE_NULL,
 			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 		};
 
 		VkImageLayout								imageLayout;
-		VkAttachmentReferenceStencilLayoutKHR		stencilLayoutRef		=
+		VkAttachmentReferenceStencilLayout			stencilLayoutRef		=
 		{
-			VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_STENCIL_LAYOUT_KHR,
+			VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_STENCIL_LAYOUT,
 			DE_NULL,
 			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 		};
 
 		if (m_params.separateDepthStencilLayoutMode == SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_DEPTH)
 		{
-			initialLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR;
-			finalLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR;
+			initialLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+			finalLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
 			stencilLayouts.stencilInitialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			stencilLayouts.stencilFinalLayout = VK_IMAGE_LAYOUT_GENERAL;
-			imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR;
+			imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
 			stencilLayoutRef.stencilLayout = VK_IMAGE_LAYOUT_GENERAL;
 		}
 		else
 		{
 			initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			finalLayout = VK_IMAGE_LAYOUT_GENERAL;
-			stencilLayouts.stencilInitialLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR;
-			stencilLayouts.stencilFinalLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR;
+			stencilLayouts.stencilInitialLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
+			stencilLayouts.stencilFinalLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
 			imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-			stencilLayoutRef.stencilLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR;
+			stencilLayoutRef.stencilLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
 		}
 
-		const VkAttachmentDescription2KHR			attachmentDesc			=
+		const VkAttachmentDescription2				attachmentDesc			=
 		{
-			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR,		// VkStructureType					sType;
+			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,			// VkStructureType					sType;
 			&stencilLayouts,									// const void*						pNext;
 			0u,													// VkAttachmentDescriptionFlags		flags;
 			format,												// VkFormat							format;
@@ -925,18 +925,18 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass (VkFormat format)
 			finalLayout,										// VkImageLayout					finalLayout;
 		};
 
-		const VkAttachmentReference2KHR				attachmentRef			=
+		const VkAttachmentReference2				attachmentRef			=
 		{
-			VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR,		// VkStructureType		sType;
+			VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,			// VkStructureType		sType;
 			&stencilLayoutRef,									// const void*			pNext;
 			0u,													// deUint32				attachment;
 			imageLayout,										// VkImageLayout		layout;
 			0u,													// VkImageAspectFlags	aspectMask;
 		};
 
-		const VkSubpassDescription2KHR				subpassDesc			=
+		const VkSubpassDescription2					subpassDesc			=
 		{
-			VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR,	// VkStructureType					sType;
+			VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,		// VkStructureType					sType;
 			DE_NULL,										// const void*						pNext;
 			0u,												// VkSubpassDescriptionFlags		flags;
 			VK_PIPELINE_BIND_POINT_GRAPHICS,				// VkPipelineBindPoint				pipelineBindPoint;
@@ -951,9 +951,9 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass (VkFormat format)
 			DE_NULL,										// const VkAttachmentReference2KHR*	pPreserveAttachments;
 		};
 
-		const VkRenderPassCreateInfo2KHR			renderPassCreateInfo	=
+		const VkRenderPassCreateInfo2				renderPassCreateInfo	=
 		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2_KHR,	// VkStructureType					sType;
+			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,		// VkStructureType					sType;
 			DE_NULL,											// const void*						pNext;
 			0u,													// VkRenderPassCreateFlags			flags;
 			1u,													// deUint32							attachmentCount;
@@ -1508,12 +1508,12 @@ TestStatus ClearDepthStencilImageTestInstance::iterate (void)
 	VkImageAspectFlags	aspectMask	= m_imageAspectFlags;
 	if (m_params.separateDepthStencilLayoutMode == SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_DEPTH)
 	{
-		layout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR;
+		layout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
 		aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 	}
 	else if (m_params.separateDepthStencilLayoutMode == SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_STENCIL)
 	{
-		layout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR;
+		layout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
 		aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
 	}
 
@@ -1599,12 +1599,12 @@ public:
 
 		if (m_params.separateDepthStencilLayoutMode == SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_DEPTH)
 		{
-			attachmentLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR;
+			attachmentLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
 			aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 		}
 		else if (m_params.separateDepthStencilLayoutMode == SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_STENCIL)
 		{
-			attachmentLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR;
+			attachmentLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
 			aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
 		}
 

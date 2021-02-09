@@ -77,8 +77,10 @@ DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 		{
 			const char* propertyName = propertyStructCreationData.name;
 
-			// check if this property is available on current device
-			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), propertyName))
+			// check if this property is available on current device.
+			// For Vulkan SC extensions have been removed, so we have to check if extension associated with specific property
+			// has "core_property" name - all these property structs are available in core ( works for multiview, descriptor indexing and maintenance3 extensions )
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), propertyName) || deStringEqual("core_property", propertyName))
 			{
 				PropertyStructWrapperBase* p = (*propertyStructCreationData.creatorFunction)();
 				if (p == DE_NULL)

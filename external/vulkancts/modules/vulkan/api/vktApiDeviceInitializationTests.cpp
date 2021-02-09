@@ -35,6 +35,7 @@
 #include "vkDeviceUtil.hpp"
 #include "vkApiVersion.hpp"
 #include "vkAllocationCallbackUtil.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuResultCollector.hpp"
@@ -631,10 +632,17 @@ tcu::TestStatus createDeviceTest (Context& context)
 		&queuePriority,							//pQueuePriorities;
 	};
 
+	void* pNext												= DE_NULL;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+#endif // CTS_USES_VULKANSC
+
 	const VkDeviceCreateInfo		deviceCreateInfo	=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	//sType;
-		DE_NULL,								//pNext;
+		pNext,									//pNext;
 		(VkDeviceCreateFlags)0u,
 		1,										//queueRecordCount;
 		&deviceQueueCreateInfo,					//pRequestedQueues;
@@ -678,10 +686,17 @@ tcu::TestStatus createMultipleDevicesTest (Context& context)
 		&queuePriority,									//pQueuePriorities;
 	};
 
+	void* pNext												= DE_NULL;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+#endif // CTS_USES_VULKANSC
+
 	const VkDeviceCreateInfo							deviceCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,			//sType;
-		DE_NULL,										//pNext;
+		pNext,											//pNext;
 		(VkDeviceCreateFlags)0u,
 		1,												//queueRecordCount;
 		&deviceQueueCreateInfo,							//pRequestedQueues;
@@ -763,10 +778,18 @@ tcu::TestStatus createDeviceWithUnsupportedExtensionsTest (Context& context)
 		&queuePriority,							//pQueuePriorities;
 	};
 
+	void* pNext												= DE_NULL;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+#endif // CTS_USES_VULKANSC
+
+
 	const VkDeviceCreateInfo		deviceCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	//sType;
-		DE_NULL,								//pNext;
+		pNext,									//pNext;
 		(VkDeviceCreateFlags)0u,
 		1,										//queueRecordCount;
 		&deviceQueueCreateInfo,					//pRequestedQueues;
@@ -849,11 +872,17 @@ tcu::TestStatus createDeviceWithVariousQueueCountsTest (Context& context)
 
 	for (size_t testNdx = 0; testNdx < deviceQueueCreateInfos.size(); testNdx++)
 	{
-		const VkDeviceQueueCreateInfo&	queueCreateInfo		= deviceQueueCreateInfos[testNdx];
-		const VkDeviceCreateInfo		deviceCreateInfo	=
+		const VkDeviceQueueCreateInfo&	queueCreateInfo			= deviceQueueCreateInfos[testNdx];
+		void* pNext												= DE_NULL;
+#ifdef CTS_USES_VULKANSC
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+		memReservationInfo.pNext								= pNext;
+		pNext													= &memReservationInfo;
+#endif // CTS_USES_VULKANSC
+		const VkDeviceCreateInfo		deviceCreateInfo		=
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	//sType;
-			DE_NULL,								//pNext;
+			pNext,									//pNext;
 			(VkDeviceCreateFlags)0u,
 			1,										//queueRecordCount;
 			&queueCreateInfo,						//pRequestedQueues;
@@ -926,10 +955,17 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context)
 			queuePriorities.data()						//pQueuePriorities;
 		};
 
-		const VkDeviceCreateInfo		deviceCreateInfo	=
+		void* pNext												= DE_NULL;
+#ifdef CTS_USES_VULKANSC
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+		memReservationInfo.pNext								= pNext;
+		pNext													= &memReservationInfo;
+#endif // CTS_USES_VULKANSC
+
+		const VkDeviceCreateInfo		deviceCreateInfo		=
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	//sType;
-			DE_NULL,								//pNext;
+			pNext,									//pNext;
 			(VkDeviceCreateFlags)0u,				//flags;
 			1,										//queueRecordCount;
 			&queueCreateInfo,						//pRequestedQueues;
@@ -1014,10 +1050,17 @@ tcu::TestStatus createDeviceFeatures2Test (Context& context)
 		&queuePriority,
 	};
 
-	const VkDeviceCreateInfo		deviceCreateInfo	=
+	void* pNext												= &enabledFeatures;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+#endif // CTS_USES_VULKANSC
+
+	const VkDeviceCreateInfo		deviceCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-		&enabledFeatures,
+		pNext,
 		(VkDeviceCreateFlags)0u,
 		1,
 		&deviceQueueCreateInfo,
@@ -1151,10 +1194,17 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest (Context& context)
 			queueCount,
 			&queuePriority
 		};
+		void* pNext												= DE_NULL;
+#ifdef CTS_USES_VULKANSC
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+		memReservationInfo.pNext								= pNext;
+		pNext													= &memReservationInfo;
+#endif // CTS_USES_VULKANSC
+
 		const VkDeviceCreateInfo		deviceCreateInfo		=
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-			DE_NULL,
+			pNext,
 			(VkDeviceCreateFlags)0u,
 			1,
 			&deviceQueueCreateInfo,
@@ -1221,10 +1271,18 @@ tcu::TestStatus createDeviceQueue2Test (Context& context)
 		queueCount,														// deUint32							queueCount;
 		&queuePriority,													// const float*						pQueuePriorities;
 	};
+
+	void* pNext												= &features2;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+#endif // CTS_USES_VULKANSC
+
 	const VkDeviceCreateInfo				deviceCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							// VkStructureType					sType;
-		&features2,														// const void*						pNext;
+		pNext,															// const void*						pNext;
 		(VkDeviceCreateFlags)0u,										// VkDeviceCreateFlags				flags;
 		1,																// deUint32							queueCreateInfoCount;
 		&deviceQueueCreateInfo,											// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
@@ -1305,17 +1363,25 @@ tcu::TestStatus createDeviceQueue2UnmatchedFlagsTest (Context& context)
 	VkPhysicalDeviceFeatures				emptyDeviceFeatures;
 	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
 
-	const VkPhysicalDeviceFeatures2			deviceFeatures			=
+	VkPhysicalDeviceFeatures2				deviceFeatures			=
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,					// VkStructureType				sType;
 		&protectedFeatures,												// void*						pNext;
 		emptyDeviceFeatures												// VkPhysicalDeviceFeatures		features;
 	};
 
+	void* pNext														= &deviceFeatures;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo			= resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext										= pNext;
+	pNext															= &memReservationInfo;
+#endif // CTS_USES_VULKANSC
+
+
 	const VkDeviceCreateInfo				deviceCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,		// VkStructureType					sType;
-		&deviceFeatures,							// const void*						pNext;
+		pNext,										// const void*						pNext;
 		(VkDeviceCreateFlags)0u,					// VkDeviceCreateFlags				flags;
 		1,											// deUint32							queueCreateInfoCount;
 		&deviceQueueCreateInfo,						// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
@@ -1666,10 +1732,18 @@ tcu::TestStatus createInstanceDeviceIntentionalAllocFail (Context& context)
 			&queuePriority								// pQueuePriorities
 		};
 
+		void* pNext												= DE_NULL;
+#ifdef CTS_USES_VULKANSC
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+		memReservationInfo.pNext								= pNext;
+		pNext													= &memReservationInfo;
+#endif // CTS_USES_VULKANSC
+
+
 		const VkDeviceCreateInfo		deviceCreateInfo		=
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,		// sType
-			DE_NULL,									// pNext
+			pNext,										// pNext
 			(VkDeviceCreateFlags)0u,					// flags
 			1u,											// queueCreateInfoCount
 			&deviceQueueCreateInfo,						// pQueueCreateInfos

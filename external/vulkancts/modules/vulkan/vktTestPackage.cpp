@@ -616,7 +616,7 @@ void ExperimentalTestPackage::init (void)
 
 void TestPackageSC::init (void)
 {
-//	addChild(createTestGroup					(m_testCtx, "info", "Build and Device Info Tests", createInfoTests));
+	addChild(createTestGroup					(m_testCtx, "info", "Build and Device Info Tests", createInfoTests));
 	addChild(api::createTests					(m_testCtx));
 //	addChild(memory::createTests				(m_testCtx));
 //	addChild(pipeline::createTests				(m_testCtx));

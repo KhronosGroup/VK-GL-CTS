@@ -318,6 +318,7 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest			(VkDeviceSize				
 	}
 
 	// Bind the memory
+#ifndef CTS_USES_VULKANSC
 	if ((m_testCase.flags & (VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT | VK_BUFFER_CREATE_SPARSE_ALIASED_BIT)) != 0)
 	{
 		const VkQueue					queue							= m_context.getSparseQueue();
@@ -364,6 +365,7 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest			(VkDeviceSize				
 	}
 	else if (vk.bindBufferMemory(vkDevice, *buffer, *memory, 0) != VK_SUCCESS)
 		return tcu::TestStatus::fail("Bind buffer memory failed! (requested memory size: " + de::toString(size) + ")");
+#endif // CTS_USES_VULKANSC
 
 	return tcu::TestStatus::pass("Pass");
 }

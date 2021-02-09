@@ -483,6 +483,8 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 		VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM,
 		VK_FORMAT_G16_B16R16_2PLANE_422_UNORM,
 		VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM,
+#ifndef CTS_USES_VULKANSC
+		// Removed from Vulkan SC test set: VK_IMG_format_pvrtc extension does not exist in Vulkan SC
 		VK_FORMAT_PVRTC1_2BPP_UNORM_BLOCK_IMG,
 		VK_FORMAT_PVRTC1_4BPP_UNORM_BLOCK_IMG,
 		VK_FORMAT_PVRTC2_2BPP_UNORM_BLOCK_IMG,
@@ -497,6 +499,7 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 		VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT,
 		VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT,
 		VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT,
+#endif
 	};
 	int										formatCount						= (int)(sizeof(formatlist) / sizeof(unsigned int));
 

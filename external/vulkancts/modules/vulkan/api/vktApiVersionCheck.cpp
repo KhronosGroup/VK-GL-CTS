@@ -36,6 +36,7 @@
 #include "vkApiVersion.hpp"
 #include "vkDefs.hpp"
 #include "vkPlatform.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include "vktApiVersionCheck.hpp"
 #include "vktTestCase.hpp"
@@ -350,9 +351,16 @@ private:
 			&queuePriority
 		};
 
+		void* pNext									= DE_NULL;
+#ifdef CTS_USES_VULKANSC
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+		memReservationInfo.pNext								= pNext;
+		pNext													= &memReservationInfo;
+#endif // CTS_USES_VULKANSC
+
 		const VkDeviceCreateInfo	deviceInfo		= {
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-			DE_NULL,
+			pNext,
 			static_cast<VkDeviceCreateFlags>(0u),
 			1u,
 			&queueInfo,

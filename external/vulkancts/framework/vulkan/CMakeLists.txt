@@ -74,6 +74,8 @@ set(VKUTILNOSHADER_SRCS
 	vkDeviceProperties.cpp
 	vkRayTracingUtil.hpp
 	vkRayTracingUtil.cpp
+	vkSafetyCriticalUtil.hpp
+	vkSafetyCriticalUtil.cpp
 	)
 
 set(VKUTILNOSHADER_INLS

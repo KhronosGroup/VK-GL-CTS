@@ -1,1 +1,2 @@
 vksc-master/api.txt
+vksc-master/info.txt

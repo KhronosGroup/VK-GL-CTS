@@ -51,12 +51,24 @@ inline void release (Context& context, VkBufferView bufferView, const VkAllocati
 
 inline void release (Context& context, VkCommandPool commandPool, const VkAllocationCallbacks* pAllocator)
 {
+#ifndef CTS_USES_VULKANSC
 	context.getDeviceInterface().destroyCommandPool(context.getDevice(), commandPool, pAllocator);
+#else
+	DE_UNREF(context);
+	DE_UNREF(commandPool);
+	DE_UNREF(pAllocator);
+#endif // CTS_USES_VULKANSC
 }
 
 inline void release (Context& context, VkDescriptorPool descriptorPool, const VkAllocationCallbacks* pAllocator)
 {
+#ifndef CTS_USES_VULKANSC
 	context.getDeviceInterface().destroyDescriptorPool(context.getDevice(), descriptorPool, pAllocator);
+#else
+	DE_UNREF(context);
+	DE_UNREF(descriptorPool);
+	DE_UNREF(pAllocator);
+#endif // CTS_USES_VULKANSC
 }
 
 inline void release (Context& context, VkDescriptorSetLayout descriptorSetLayout, const VkAllocationCallbacks* pAllocator)
@@ -116,7 +128,13 @@ inline void release (Context& context, VkPipelineLayout pipelineLayout, const Vk
 
 inline void release (Context& context, VkQueryPool queryPool, const VkAllocationCallbacks* pAllocator)
 {
+#ifndef CTS_USES_VULKANSC
 	context.getDeviceInterface().destroyQueryPool(context.getDevice(), queryPool, pAllocator);
+#else
+	DE_UNREF(context);
+	DE_UNREF(queryPool);
+	DE_UNREF(pAllocator);
+#endif // CTS_USES_VULKANSC
 }
 
 inline void release (Context& context, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator)
@@ -136,7 +154,13 @@ inline void release (Context& context, VkSemaphore semaphore, const VkAllocation
 
 inline void release (Context& context, VkShaderModule shaderModule, const VkAllocationCallbacks* pAllocator)
 {
+#ifndef CTS_USES_VULKANSC
 	context.getDeviceInterface().destroyShaderModule(context.getDevice(), shaderModule, pAllocator);
+#else
+	DE_UNREF(context);
+	DE_UNREF(shaderModule);
+	DE_UNREF(pAllocator);
+#endif // CTS_USES_VULKANSC
 }
 
 inline void release (Context& context, VkDevice device, VkCommandPool cmdPool, deUint32 numCmdBuffers, const VkCommandBuffer* pCmdBuffers)
@@ -157,7 +181,13 @@ inline void release (Context& context, VkDevice device, VkDescriptorPool descrip
 
 inline void release (Context& context, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator)
 {
+#ifndef CTS_USES_VULKANSC
 	context.getDeviceInterface().freeMemory(context.getDevice(), memory, pAllocator);
+#else
+	DE_UNREF(context);
+	DE_UNREF(memory);
+	DE_UNREF(pAllocator);
+#endif // CTS_USES_VULKANSC
 }
 
 tcu::TestStatus reportStatus (const bool success)
@@ -267,16 +297,23 @@ tcu::TestStatus test<VkDescriptorSet> (Context& context)
 
 void checkEventSupport (Context& context)
 {
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().events)
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
+#else
+	DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
 }
 
 void addTestsToGroup (tcu::TestCaseGroup* group)
 {
 	addFunctionCase(group,	"destroy_buffer",					"",		test<VkBuffer>);
 	addFunctionCase(group,	"destroy_buffer_view",				"",		test<VkBufferView>);
+#ifndef CTS_USES_VULKANSC
+	// Removed from Vulkan SC test set: vkDestroyCommandPool and vkDestroyDescriptorPool command do not exist in Vulkan SC
 	addFunctionCase(group,	"destroy_command_pool",				"",		test<VkCommandPool>);
 	addFunctionCase(group,	"destroy_descriptor_pool",			"",		test<VkDescriptorPool>);
+#endif // CTS_USES_VULKANSC
 	addFunctionCase(group,	"destroy_descriptor_set_layout",	"",		test<VkDescriptorSetLayout>);
 	addFunctionCase(group,	"destroy_device",					"",		test<VkDevice>);
 	addFunctionCase(group,	"destroy_event",					"",		checkEventSupport, test<VkEvent>);
@@ -288,14 +325,20 @@ void addTestsToGroup (tcu::TestCaseGroup* group)
 	addFunctionCase(group,	"destroy_pipeline",					"",		test<VkPipeline>);
 	addFunctionCase(group,	"destroy_pipeline_cache",			"",		test<VkPipelineCache>);
 	addFunctionCase(group,	"destroy_pipeline_layout",			"",		test<VkPipelineLayout>);
+#ifndef CTS_USES_VULKANSC
+	// Removed from Vulkan SC test set: vkDestroyQueryPool command does not exist in Vulkan SC
 	addFunctionCase(group,	"destroy_query_pool",				"",		test<VkQueryPool>);
+#endif // CTS_USES_VULKANSC
 	addFunctionCase(group,	"destroy_render_pass",				"",		test<VkRenderPass>);
 	addFunctionCase(group,	"destroy_sampler",					"",		test<VkSampler>);
 	addFunctionCase(group,	"destroy_semaphore",				"",		test<VkSemaphore>);
 	addFunctionCase(group,	"destroy_shader_module",			"",		test<VkShaderModule>);
 	addFunctionCase(group,	"free_command_buffers",				"",		test<VkCommandBuffer>);
 	addFunctionCase(group,	"free_descriptor_sets",				"",		test<VkDescriptorSet>);
+#ifndef CTS_USES_VULKANSC
+	// Removed from Vulkan SC test set: vkFreeMemory command does not exist in Vulkan SC
 	addFunctionCase(group,	"free_memory",						"",		test<VkDeviceMemory>);
+#endif // CTS_USES_VULKANSC
 }
 
 } // anonymous

@@ -433,6 +433,8 @@ private:
 	void* const			m_memory;
 };
 
+#ifndef CTS_USES_VULKANSC
+
 #if defined(USE_ANDROID_O_HARDWARE_BUFFER)
 AHardwareBuffer* findOrCreateHwBuffer (const VkMemoryAllocateInfo* pAllocInfo)
 {
@@ -536,8 +538,6 @@ private:
 	AHardwareBuffer* const	m_hwbuffer;
 };
 #endif // defined(USE_ANDROID_O_HARDWARE_BUFFER)
-
-#ifndef CTS_USES_VULKANSC
 
 class IndirectCommandsLayoutNV
 {

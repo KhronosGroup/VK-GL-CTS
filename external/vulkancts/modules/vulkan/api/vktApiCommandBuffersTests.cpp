@@ -965,6 +965,8 @@ bool executeSecondaryCmdBuffer (Context&						context,
 	return returnValue;
 }
 
+#ifndef CTS_USES_VULKANSC
+
 tcu::TestStatus trimCommandPoolTest (Context& context, const VkCommandBufferLevel cmdBufferLevel)
 {
 	if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance1"))
@@ -1048,6 +1050,8 @@ tcu::TestStatus trimCommandPoolTest (Context& context, const VkCommandBufferLeve
 
 	return tcu::TestStatus::pass("Pass");
 }
+
+#endif // CTS_USES_VULKANSC
 
 /******** 19.3. Command Buffer Recording (5.3 in VK 1.0 Spec) *****************/
 tcu::TestStatus recordSinglePrimaryBufferTest(Context& context)
@@ -4151,8 +4155,12 @@ void genComputeIncrementSourceBadInheritance(SourceCollections& programCollectio
 
 void checkEventSupport (Context& context)
 {
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().events)
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
+#else
+	DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
 }
 
 void checkEventSupport (Context& context, const VkCommandBufferLevel)
@@ -4771,8 +4779,10 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 	addFunctionCase				(commandBuffersTests.get(), "execute_small_primary",			"",	checkEventSupport, executePrimaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "execute_large_primary",			"",	checkEventSupport, executeLargePrimaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "reset_implicit",					"", checkEventSupport, resetBufferImplicitlyTest);
+#ifndef CTS_USES_VULKANSC
 	addFunctionCase				(commandBuffersTests.get(), "trim_command_pool",				"", checkEventSupport, trimCommandPoolTest, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	addFunctionCase				(commandBuffersTests.get(), "trim_command_pool_secondary",		"", checkEventSupport, trimCommandPoolTest, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+#endif
 	/* 19.3. Command Buffer Recording (5.3 in VK 1.0 Spec) */
 	addFunctionCase				(commandBuffersTests.get(), "record_single_primary",			"",	checkEventSupport, recordSinglePrimaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "record_many_primary",				"", checkEventSupport, recordLargePrimaryBufferTest);

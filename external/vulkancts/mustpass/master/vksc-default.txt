@@ -1,1 +1,2 @@
 vksc-default/api.txt
+vksc-default/info.txt

@@ -37,6 +37,7 @@
 #include "vkAllocationCallbackUtil.hpp"
 #include "vkObjTypeImpl.inl"
 #include "vkObjUtil.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include "vktTestGroupUtil.hpp"
 
@@ -594,10 +595,17 @@ struct Device
 			}
 		};
 
+		void* pNext									= DE_NULL;
+#ifdef CTS_USES_VULKANSC
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+		memReservationInfo.pNext								= pNext;
+		pNext													= &memReservationInfo;
+#endif // CTS_USES_VULKANSC
+
 		const VkDeviceCreateInfo		deviceInfo	=
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-			DE_NULL,
+			pNext,
 			(VkDeviceCreateFlags)0,
 			DE_LENGTH_OF_ARRAY(queues),
 			queues,
@@ -699,7 +707,7 @@ struct DeviceGroup
 			}
 		};
 
-		const VkDeviceGroupDeviceCreateInfo deviceGroupInfo =
+		VkDeviceGroupDeviceCreateInfo deviceGroupInfo =
 		{
 			VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO,	//stype
 			DE_NULL,											//pNext
@@ -707,10 +715,17 @@ struct DeviceGroup
 			res.physicalDevices.data()							//physicalDevices
 		};
 
+		void* pNext									= &deviceGroupInfo;
+#ifdef CTS_USES_VULKANSC
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+		memReservationInfo.pNext								= pNext;
+		pNext													= &memReservationInfo;
+#endif // CTS_USES_VULKANSC
+
 		const VkDeviceCreateInfo			deviceGroupCreateInfo =
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-			&deviceGroupInfo,
+			pNext,
 			(VkDeviceCreateFlags)0,
 			DE_LENGTH_OF_ARRAY(queues),
 			queues,
@@ -1264,6 +1279,7 @@ struct ShaderModule
 
 	static Move<VkShaderModule> create (const Environment& env, const Resources& res, const Parameters&)
 	{
+#ifndef CTS_USES_VULKANSC
 		const VkShaderModuleCreateInfo	shaderModuleInfo	=
 		{
 			VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -1274,6 +1290,11 @@ struct ShaderModule
 		};
 
 		return createShaderModule(env.vkd, env.device, &shaderModuleInfo, env.allocationCallbacks);
+#else // CTS_USES_VULKANSC
+		DE_UNREF(env);
+		DE_UNREF(res);
+		TCU_THROW(NotSupportedError, "Vulkan SC does not have vkCreateShaderModule() defined (vktApiObjectManagementTests.cpp)");
+#endif // CTS_USES_VULKANSC
 	}
 };
 
@@ -2336,6 +2357,7 @@ tcu::TestStatus createMultipleSharedResourcesTest (Context& context, typename Ob
 	return tcu::TestStatus::pass("Ok");
 }
 
+#ifndef CTS_USES_VULKANSC
 
 // Class to wrap singleton devices used by private_data tests
 class SingletonDevice
@@ -2605,6 +2627,8 @@ tcu::TestStatus createPrivateDataTest (Context& context, typename Object::Parame
 
 	return tcu::TestStatus::pass("Ok");
 }
+
+#endif // CTS_USES_VULKANSC
 
 template<typename Object>
 tcu::TestStatus createMaxConcurrentTest (Context& context, typename Object::Parameters params)
@@ -3092,8 +3116,12 @@ void addCases (tcu::TestCaseGroup *group, const CaseDescription<Object>& cases)
 
 void checkEventSupport (Context& context, const Event::Parameters)
 {
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().events)
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
+#else
+	DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
 }
 
 // specialization for Event
@@ -3145,7 +3173,10 @@ static void cleanupGroup (tcu::TestCaseGroup* group, CaseDescriptions cases)
 	DE_UNREF(group);
 	DE_UNREF(cases);
 	// Destroy singleton object
+
+#ifndef CTS_USES_VULKANSC
 	SingletonDevice::destroy();
+#endif // CTS_USES_VULKANSC
 }
 
 tcu::TestCaseGroup* createGroup (tcu::TestContext& testCtx, const char* name, const char* desc, const CaseDescriptions& cases)
@@ -3506,6 +3537,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_shared_resources", "Multithreaded object construction with shared resources", s_multithreadedCreateSharedResourcesGroup));
 
+#ifndef CTS_USES_VULKANSC
+// Removed from Vulkan SC test set: VkAllocationCallbacks is not supported and pointers to this type must be NULL
 	const CaseDescriptions	s_createSingleAllocCallbacksGroup	=
 	{
 		CASE_DESC(createSingleAllocCallbacksTest	<Instance>,					s_instanceCases),
@@ -3535,7 +3568,11 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createSingleAllocCallbacksTest	<CommandBuffer>,			s_commandBufferCases),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "single_alloc_callbacks", "Create single object", s_createSingleAllocCallbacksGroup));
+#endif // CTS_USES_VULKANSC
 
+
+#ifndef CTS_USES_VULKANSC
+	// Removed from Vulkan SC test set: VkAllocationCallbacks is not supported and pointers to this type must be NULL
 	// \note Skip pooled objects in this test group. They are properly handled by the "multiple" group farther down below.
 	const CaseDescriptions	s_allocCallbackFailGroup	=
 	{
@@ -3566,7 +3603,10 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		EMPTY_CASE_DESC(CommandBuffer),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "alloc_callback_fail", "Allocation callback failure", s_allocCallbackFailGroup));
+#endif // CTS_USES_VULKANSC
 
+#ifndef CTS_USES_VULKANSC
+	// Removed from Vulkan SC test set: VkAllocationCallbacks is not supported and pointers to this type must be NULL
 	// \note Test objects that can be created in bulk
 	const CaseDescriptions	s_allocCallbackFailMultipleObjectsGroup	=
 	{
@@ -3597,7 +3637,10 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(allocCallbackFailMultipleObjectsTest <CommandBuffer>,			s_commandBufferCases),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "alloc_callback_fail_multiple", "Allocation callback failure creating multiple objects with one call", s_allocCallbackFailMultipleObjectsGroup));
+#endif // CTS_USES_VULKANSC
 
+#ifndef CTS_USES_VULKANSC
+	// Removed from Vulkan SC test set: VK_EXT_private_data extension does not exist in Vulkan SC
 	const CaseDescriptions	s_privateDataResourcesGroup	=
 	{
 		EMPTY_CASE_DESC(Instance),		// Does not make sense
@@ -3627,6 +3670,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createPrivateDataTest	<CommandBuffer>,			s_commandBufferCases),
 	};
 	objectMgmtTests->addChild(createTestGroup(testCtx, "private_data", "Multiple objects with private data", createTests, s_privateDataResourcesGroup, cleanupGroup));
+#endif // CTS_USES_VULKANSC
 
 	return objectMgmtTests.release();
 }

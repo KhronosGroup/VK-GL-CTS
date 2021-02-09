@@ -198,6 +198,25 @@ typedef VKAPI_ATTR void		(VKAPI_CALL *PFN_vkFaultCallbackFunction)			(VkBool32		
 
 #include "vkStructTypes.inl"
 
+#ifdef CTS_USES_VULKANSC
+
+enum VkShaderModuleCreateFlagBits
+{
+	VK_SHADER_MODULE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF,
+};
+typedef deUint32 VkShaderModuleCreateFlags;
+
+struct VkShaderModuleCreateInfo
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkShaderModuleCreateFlags	flags;
+	deUintptr					codeSize;
+	const deUint32*				pCode;
+};
+
+#endif // CTS_USES_VULKANSC
+
 extern "C"
 {
 #include "vkFunctionPointerTypes.inl"
