@@ -960,8 +960,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			fillWithPattern(*b, offset + dataSize, extraSize, &offScreenVertex, offScreenVertexSz);
 		}
 
-		copyAndFlush(vkd, device, vertBuffer, offset, vertices.data(), dataSize);
-		copyAndFlush(vkd, device, rvertBuffer, offset, reversedVertices.data(), dataSize);
+		copyAndFlush(vkd, device, vertBuffer, offset, vertices.data(), static_cast<size_t>(vertices.size() * sizeof(vertices[0])));
+		copyAndFlush(vkd, device, rvertBuffer, offset, reversedVertices.data(), static_cast<size_t>(reversedVertices.size() * sizeof(reversedVertices[0])));
 	}
 
 	// Descriptor set layout.
