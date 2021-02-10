@@ -424,7 +424,24 @@ tcu::TestStatus fullScreenExclusiveTest(Context& context,
 	}
 #endif
 
-	const Unique<VkSwapchainKHR>				swapchain					(createSwapchainKHR(vkd, device, &swapchainInfo));
+	Move<VkSwapchainKHR>						swapchain;
+	{
+		VkSwapchainKHR object = 0;
+		VkResult result = vkd.createSwapchainKHR(device, &swapchainInfo, DE_NULL, &object);
+		if (result == VK_ERROR_INITIALIZATION_FAILED && testParams.fseType == VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT)
+		{
+			// In some cases, swapchain creation may fail if exclusive full-screen mode is requested for application control,
+			// but for some implementation-specific reason exclusive full-screen access is unavailable for the particular combination
+			// of parameters provided. If this occurs, VK_ERROR_INITIALIZATION_FAILED will be returned.
+			return  tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed to create swapchain with exclusive full-screen mode for application control.");
+		}
+		else
+		{
+			VK_CHECK(result);
+		}
+
+		swapchain = Move<VkSwapchainKHR>(check<VkSwapchainKHR>(object), Deleter<VkSwapchainKHR>(vkd, device, DE_NULL));
+	}
 	const std::vector<VkImage>					swapchainImages				= getSwapchainImages(vkd, device, *swapchain);
 
 	const WsiTriangleRenderer					renderer					(vkd,
