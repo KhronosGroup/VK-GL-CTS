@@ -632,6 +632,7 @@ tcu::TestStatus initialValueCase (Context& context, SynchronizationType type)
 
 	const DeviceInterface&							vk							= context.getDeviceInterface();
 	const VkDevice&									device						= context.getDevice();
+	const VkQueue									queue						= context.getUniversalQueue();
 	const deUint64									maxTimelineValueDifference	= getMaxTimelineSemaphoreValueDifference(context.getInstanceInterface(), context.getPhysicalDevice());
 	de::Random										rng							(1234);
 	const deUint64									nonZeroValue				= 1 + rng.getUint64() % (maxTimelineValueDifference - 1);
@@ -655,6 +656,26 @@ tcu::TestStatus initialValueCase (Context& context, SynchronizationType type)
 	result = vk.waitSemaphores(device, &waitInfo, 0ull);
 	if (result != VK_SUCCESS)
 		return tcu::TestStatus::fail("Wait zero initial value failed");
+
+	{
+		VkSemaphoreSubmitInfoKHR	waitSemaphoreSubmitInfo		= makeCommonSemaphoreSubmitInfo(*semaphoreDefaultValue, initialValue, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR);
+		SynchronizationWrapperPtr	synchronizationWrapper		= getSynchronizationWrapper(type, vk, DE_TRUE);
+
+		synchronizationWrapper->addSubmitInfo(
+			1u,										// deUint32								waitSemaphoreInfoCount
+			&waitSemaphoreSubmitInfo,				// const VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos
+			0u,										// deUint32								commandBufferInfoCount
+			DE_NULL,								// const VkCommandBufferSubmitInfoKHR*	pCommandBufferInfos
+			0u,										// deUint32								signalSemaphoreInfoCount
+			DE_NULL,								// const VkSemaphoreSubmitInfoKHR*		pSignalSemaphoreInfos
+			DE_TRUE,
+			DE_FALSE
+		);
+
+		VK_CHECK(synchronizationWrapper->queueSubmit(queue, DE_NULL));
+
+		VK_CHECK(vk.deviceWaitIdle(device));
+	}
 
 	VK_CHECK(vk.getSemaphoreCounterValue(device, *semaphoreDefaultValue, &value));
 	if (value != initialValue)
