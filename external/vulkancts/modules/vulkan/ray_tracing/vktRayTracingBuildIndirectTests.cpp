@@ -282,7 +282,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			"\n"
 			"void main()\n"
 			"{\n"
-			"  uint primitiveCount  = " << m_data.depth << "u;\n"
+			"  uint primitiveCount  = " << m_data.instancesGroupCount << "u;\n"
 			"  uint primitiveOffset = " << 0 << "u;\n"
 			"  uint firstVertex     = " << 0 << "u;\n"
 			"  uint transformOffset = " << 0 << "u;\n"
