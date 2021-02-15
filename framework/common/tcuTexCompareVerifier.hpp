@@ -52,9 +52,12 @@ struct TexComparePrecision
 	}
 } DE_WARN_UNUSED_TYPE;
 
-bool		isTexCompareResultValid				(const Texture2DView&		texture, const Sampler& sampler, const TexComparePrecision& prec, const Vec2& coord, const Vec2& lodBounds, const float cmpReference, const float result);
-bool		isTexCompareResultValid				(const TextureCubeView&		texture, const Sampler& sampler, const TexComparePrecision& prec, const Vec3& coord, const Vec2& lodBounds, const float cmpReference, const float result);
-bool		isTexCompareResultValid				(const Texture2DArrayView&	texture, const Sampler& sampler, const TexComparePrecision& prec, const Vec3& coord, const Vec2& lodBounds, const float cmpReference, const float result);
+bool		isTexCompareResultValid				(const Texture2DView&			texture, const Sampler& sampler, const TexComparePrecision& prec, const Vec2& coord, const Vec2& lodBounds, const float cmpReference, const float result);
+bool		isTexCompareResultValid				(const TextureCubeView&			texture, const Sampler& sampler, const TexComparePrecision& prec, const Vec3& coord, const Vec2& lodBounds, const float cmpReference, const float result);
+bool		isTexCompareResultValid				(const Texture2DArrayView&		texture, const Sampler& sampler, const TexComparePrecision& prec, const Vec3& coord, const Vec2& lodBounds, const float cmpReference, const float result);
+bool		isTexCompareResultValid				(const Texture1DView&			texture, const Sampler& sampler, const TexComparePrecision& prec, const Vec1& coord, const Vec2& lodBounds, const float cmpReference, const float result);
+bool		isTexCompareResultValid				(const Texture1DArrayView&		texture, const Sampler& sampler, const TexComparePrecision& prec, const Vec2& coord, const Vec2& lodBounds, const float cmpReference, const float result);
+bool		isTexCompareResultValid				(const TextureCubeArrayView&	texture, const Sampler& sampler, const TexComparePrecision& prec, const Vec4& coord, const Vec2& lodBounds, const float cmpReference, const float result);
 
 bool		isGatherOffsetsCompareResultValid	(const Texture2DView&		texture, const Sampler& sampler, const TexComparePrecision& prec, const Vec2& coord, const IVec2 (&offsets)[4], float cmpReference, const Vec4& result);
 bool		isGatherOffsetsCompareResultValid	(const Texture2DArrayView&	texture, const Sampler& sampler, const TexComparePrecision& prec, const Vec3& coord, const IVec2 (&offsets)[4], float cmpReference, const Vec4& result);

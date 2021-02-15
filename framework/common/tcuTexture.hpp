@@ -519,57 +519,6 @@ CubeFaceFloatCoords		getCubeFaceCoords		(const Vec3& coords);
 CubeFaceIntCoords		remapCubeEdgeCoords		(const CubeFaceIntCoords& coords, int size);
 
 /*--------------------------------------------------------------------*//*!
- * \brief 1D Texture View
- *//*--------------------------------------------------------------------*/
-class Texture1DView
-{
-public:
-									Texture1DView		(int numLevels, const ConstPixelBufferAccess* levels, bool es2);
-
-	int								getNumLevels		(void) const	{ return m_numLevels;										}
-	int								getWidth			(void) const	{ return m_numLevels > 0 ? m_levels[0].getWidth()	: 0;	}
-	const ConstPixelBufferAccess&	getLevel			(int ndx) const	{ DE_ASSERT(de::inBounds(ndx, 0, m_numLevels)); return m_levels[ndx];	}
-	const ConstPixelBufferAccess*	getLevels			(void) const	{ return m_levels;											}
-	bool								isES2					(void) const	{ return false;												}
-
-	Vec4							sample				(const Sampler& sampler, float s, float lod) const;
-	Vec4							sampleOffset		(const Sampler& sampler, float s, float lod, deInt32 offset) const;
-	float							sampleCompare		(const Sampler& sampler, float ref, float s, float lod) const;
-	float							sampleCompareOffset	(const Sampler& sampler, float ref, float s, float lod, deInt32 offset) const;
-
-protected:
-	int								m_numLevels;
-	const ConstPixelBufferAccess*	m_levels;
-} DE_WARN_UNUSED_TYPE;
-
-inline Texture1DView::Texture1DView (int numLevels, const ConstPixelBufferAccess* levels, bool es2 DE_UNUSED_ATTR = false)
-	: m_numLevels	(numLevels)
-	, m_levels		(levels)
-{
-	DE_ASSERT(m_numLevels >= 0 && ((m_numLevels == 0) == !m_levels));
-}
-
-inline Vec4 Texture1DView::sample (const Sampler& sampler, float s, float lod) const
-{
-	return sampleLevelArray1D(m_levels, m_numLevels, sampler, s, 0 /* depth */, lod);
-}
-
-inline Vec4 Texture1DView::sampleOffset (const Sampler& sampler, float s, float lod, deInt32 offset) const
-{
-	return sampleLevelArray1DOffset(m_levels, m_numLevels, sampler, s, lod, IVec2(offset, 0));
-}
-
-inline float Texture1DView::sampleCompare (const Sampler& sampler, float ref, float s, float lod) const
-{
-	return sampleLevelArray1DCompare(m_levels, m_numLevels, sampler, ref, s, lod, IVec2(0, 0));
-}
-
-inline float Texture1DView::sampleCompareOffset (const Sampler& sampler, float ref, float s, float lod, deInt32 offset) const
-{
-	return sampleLevelArray1DCompare(m_levels, m_numLevels, sampler, ref, s, lod, IVec2(offset, 0));
-}
-
-/*--------------------------------------------------------------------*//*!
  * \brief 2D Texture View
  *//*--------------------------------------------------------------------*/
 class Texture2DView
@@ -668,62 +617,6 @@ private:
 	std::vector<LevelData>			m_data;
 	std::vector<PixelBufferAccess>	m_access;
 } DE_WARN_UNUSED_TYPE;
-
-/*--------------------------------------------------------------------*//*!
- * \brief 1D Texture reference implementation
- *//*--------------------------------------------------------------------*/
-class Texture1D : private TextureLevelPyramid
-{
-public:
-									Texture1D			(const TextureFormat& format, int width);
-									Texture1D			(const Texture1D& other);
-									~Texture1D			(void);
-
-	int								getWidth			(void) const	{ return m_width;	}
-	const Texture1DView&			getView				(void) const	{ return m_view;	}
-
-	void							allocLevel			(int levelNdx);
-
-	// Sampling
-	Vec4							sample				(const Sampler& sampler, float s, float lod) const;
-	Vec4							sampleOffset		(const Sampler& sampler, float s, float lod, deInt32 offset) const;
-	float							sampleCompare		(const Sampler& sampler, float ref, float s, float lod) const;
-	float							sampleCompareOffset	(const Sampler& sampler, float ref, float s, float lod, deInt32 offset) const;
-
-	using TextureLevelPyramid::getFormat;
-	using TextureLevelPyramid::getNumLevels;
-	using TextureLevelPyramid::getLevel;
-	using TextureLevelPyramid::clearLevel;
-	using TextureLevelPyramid::isLevelEmpty;
-
-	Texture1D&						operator=			(const Texture1D& other);
-
-	operator Texture1DView (void) const { return m_view; }
-
-private:
-	int								m_width;
-	Texture1DView					m_view;
-} DE_WARN_UNUSED_TYPE;
-
-inline Vec4 Texture1D::sample (const Sampler& sampler, float s, float lod) const
-{
-	return m_view.sample(sampler, s, lod);
-}
-
-inline Vec4 Texture1D::sampleOffset (const Sampler& sampler, float s, float lod, deInt32 offset) const
-{
-	return m_view.sampleOffset(sampler, s, lod, offset);
-}
-
-inline float Texture1D::sampleCompare (const Sampler& sampler, float ref, float s, float lod) const
-{
-	return m_view.sampleCompare(sampler, ref, s, lod);
-}
-
-inline float Texture1D::sampleCompareOffset	(const Sampler& sampler, float ref, float s, float lod, deInt32 offset) const
-{
-	return m_view.sampleCompareOffset(sampler, ref, s, lod, offset);
-}
 
 /*--------------------------------------------------------------------*//*!
  * \brief 2D Texture reference implementation
@@ -887,6 +780,113 @@ inline Vec4 TextureCube::gatherCompare (const Sampler& sampler, float ref, float
 }
 
 /*--------------------------------------------------------------------*//*!
+ * \brief 1D Texture View
+ *//*--------------------------------------------------------------------*/
+class Texture1DView
+{
+public:
+									Texture1DView		(int numLevels, const ConstPixelBufferAccess* levels, bool es2);
+
+	int								getNumLevels		(void) const	{ return m_numLevels;										}
+	int								getWidth			(void) const	{ return m_numLevels > 0 ? m_levels[0].getWidth()	: 0;	}
+	const ConstPixelBufferAccess&	getLevel			(int ndx) const	{ DE_ASSERT(de::inBounds(ndx, 0, m_numLevels)); return m_levels[ndx];	}
+	const ConstPixelBufferAccess*	getLevels			(void) const	{ return m_levels;											}
+	bool								isES2					(void) const	{ return false;												}
+
+	Vec4							sample				(const Sampler& sampler, float s, float lod) const;
+	Vec4							sampleOffset		(const Sampler& sampler, float s, float lod, deInt32 offset) const;
+	float							sampleCompare		(const Sampler& sampler, float ref, float s, float lod) const;
+	float							sampleCompareOffset	(const Sampler& sampler, float ref, float s, float lod, deInt32 offset) const;
+
+protected:
+	int								m_numLevels;
+	const ConstPixelBufferAccess*	m_levels;
+} DE_WARN_UNUSED_TYPE;
+
+inline Texture1DView::Texture1DView (int numLevels, const ConstPixelBufferAccess* levels, bool es2 DE_UNUSED_ATTR = false)
+	: m_numLevels	(numLevels)
+	, m_levels		(levels)
+{
+	DE_ASSERT(m_numLevels >= 0 && ((m_numLevels == 0) == !m_levels));
+}
+
+inline Vec4 Texture1DView::sample (const Sampler& sampler, float s, float lod) const
+{
+	return sampleLevelArray1D(m_levels, m_numLevels, sampler, s, 0 /* depth */, lod);
+}
+
+inline Vec4 Texture1DView::sampleOffset (const Sampler& sampler, float s, float lod, deInt32 offset) const
+{
+	return sampleLevelArray1DOffset(m_levels, m_numLevels, sampler, s, lod, IVec2(offset, 0));
+}
+
+inline float Texture1DView::sampleCompare (const Sampler& sampler, float ref, float s, float lod) const
+{
+	return sampleLevelArray1DCompare(m_levels, m_numLevels, sampler, ref, s, lod, IVec2(0, 0));
+}
+
+inline float Texture1DView::sampleCompareOffset (const Sampler& sampler, float ref, float s, float lod, deInt32 offset) const
+{
+	return sampleLevelArray1DCompare(m_levels, m_numLevels, sampler, ref, s, lod, IVec2(offset, 0));
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief 1D Texture reference implementation
+ *//*--------------------------------------------------------------------*/
+class Texture1D : private TextureLevelPyramid
+{
+public:
+									Texture1D			(const TextureFormat& format, int width);
+									Texture1D			(const Texture1D& other);
+									~Texture1D			(void);
+
+	int								getWidth			(void) const	{ return m_width;	}
+	const Texture1DView&			getView				(void) const	{ return m_view;	}
+
+	void							allocLevel			(int levelNdx);
+
+	// Sampling
+	Vec4							sample				(const Sampler& sampler, float s, float lod) const;
+	Vec4							sampleOffset		(const Sampler& sampler, float s, float lod, deInt32 offset) const;
+	float							sampleCompare		(const Sampler& sampler, float ref, float s, float lod) const;
+	float							sampleCompareOffset	(const Sampler& sampler, float ref, float s, float lod, deInt32 offset) const;
+
+	using TextureLevelPyramid::getFormat;
+	using TextureLevelPyramid::getNumLevels;
+	using TextureLevelPyramid::getLevel;
+	using TextureLevelPyramid::clearLevel;
+	using TextureLevelPyramid::isLevelEmpty;
+
+	Texture1D&						operator=			(const Texture1D& other);
+
+	operator Texture1DView (void) const { return m_view; }
+
+private:
+	int								m_width;
+	Texture1DView					m_view;
+} DE_WARN_UNUSED_TYPE;
+
+inline Vec4 Texture1D::sample (const Sampler& sampler, float s, float lod) const
+{
+	return m_view.sample(sampler, s, lod);
+}
+
+inline Vec4 Texture1D::sampleOffset (const Sampler& sampler, float s, float lod, deInt32 offset) const
+{
+	return m_view.sampleOffset(sampler, s, lod, offset);
+}
+
+inline float Texture1D::sampleCompare (const Sampler& sampler, float ref, float s, float lod) const
+{
+	return m_view.sampleCompare(sampler, ref, s, lod);
+}
+
+inline float Texture1D::sampleCompareOffset	(const Sampler& sampler, float ref, float s, float lod, deInt32 offset) const
+{
+	return m_view.sampleCompareOffset(sampler, ref, s, lod, offset);
+}
+
+/*--------------------------------------------------------------------*//*!
  * \brief 1D Array Texture View
  *//*--------------------------------------------------------------------*/
 class Texture1DArrayView
@@ -905,37 +905,6 @@ public:
 	Vec4							sampleOffset		(const Sampler& sampler, float s, float t, float lod, deInt32 offset) const;
 	float							sampleCompare		(const Sampler& sampler, float ref, float s, float t, float lod) const;
 	float							sampleCompareOffset	(const Sampler& sampler, float ref, float s, float t, float lod, deInt32 offset) const;
-
-protected:
-	int								selectLayer			(float r) const;
-
-	int								m_numLevels;
-	const ConstPixelBufferAccess*	m_levels;
-} DE_WARN_UNUSED_TYPE;
-
-/*--------------------------------------------------------------------*//*!
- * \brief 2D Array Texture View
- *//*--------------------------------------------------------------------*/
-class Texture2DArrayView
-{
-public:
-									Texture2DArrayView	(int numLevels, const ConstPixelBufferAccess* levels, bool es2 = false);
-
-	int								getWidth			(void) const	{ return m_numLevels > 0 ? m_levels[0].getWidth()	: 0;	}
-	int								getHeight			(void) const	{ return m_numLevels > 0 ? m_levels[0].getHeight()	: 0;	}
-	int								getNumLayers		(void) const	{ return m_numLevels > 0 ? m_levels[0].getDepth()	: 0;	}
-	int								getNumLevels		(void) const	{ return m_numLevels;										}
-	const ConstPixelBufferAccess&	getLevel			(int ndx) const	{ DE_ASSERT(de::inBounds(ndx, 0, m_numLevels)); return m_levels[ndx];	}
-	const ConstPixelBufferAccess*	getLevels			(void) const	{ return m_levels;											}
-	bool								isES2						(void) const	{ return false;												}
-
-	Vec4							sample				(const Sampler& sampler, float s, float t, float r, float lod) const;
-	Vec4							sampleOffset		(const Sampler& sampler, float s, float t, float r, float lod, const IVec2& offset) const;
-	float							sampleCompare		(const Sampler& sampler, float ref, float s, float t, float r, float lod) const;
-	float							sampleCompareOffset	(const Sampler& sampler, float ref, float s, float t, float r, float lod, const IVec2& offset) const;
-
-	Vec4							gatherOffsets		(const Sampler& sampler, float s, float t, float r, int componentNdx, const IVec2 (&offsets)[4]) const;
-	Vec4							gatherOffsetsCompare(const Sampler& sampler, float ref, float s, float t, float r, const IVec2 (&offsets)[4]) const;
 
 protected:
 	int								selectLayer			(float r) const;
@@ -999,6 +968,37 @@ inline float Texture1DArray::sampleCompareOffset (const Sampler& sampler, float 
 {
 	return m_view.sampleCompareOffset(sampler, ref, s, t, lod, offset);
 }
+
+/*--------------------------------------------------------------------*//*!
+ * \brief 2D Array Texture View
+ *//*--------------------------------------------------------------------*/
+class Texture2DArrayView
+{
+public:
+									Texture2DArrayView	(int numLevels, const ConstPixelBufferAccess* levels, bool es2 = false);
+
+	int								getWidth			(void) const	{ return m_numLevels > 0 ? m_levels[0].getWidth()	: 0;	}
+	int								getHeight			(void) const	{ return m_numLevels > 0 ? m_levels[0].getHeight()	: 0;	}
+	int								getNumLayers		(void) const	{ return m_numLevels > 0 ? m_levels[0].getDepth()	: 0;	}
+	int								getNumLevels		(void) const	{ return m_numLevels;										}
+	const ConstPixelBufferAccess&	getLevel			(int ndx) const	{ DE_ASSERT(de::inBounds(ndx, 0, m_numLevels)); return m_levels[ndx];	}
+	const ConstPixelBufferAccess*	getLevels			(void) const	{ return m_levels;											}
+	bool								isES2						(void) const	{ return false;												}
+
+	Vec4							sample				(const Sampler& sampler, float s, float t, float r, float lod) const;
+	Vec4							sampleOffset		(const Sampler& sampler, float s, float t, float r, float lod, const IVec2& offset) const;
+	float							sampleCompare		(const Sampler& sampler, float ref, float s, float t, float r, float lod) const;
+	float							sampleCompareOffset	(const Sampler& sampler, float ref, float s, float t, float r, float lod, const IVec2& offset) const;
+
+	Vec4							gatherOffsets		(const Sampler& sampler, float s, float t, float r, int componentNdx, const IVec2 (&offsets)[4]) const;
+	Vec4							gatherOffsetsCompare(const Sampler& sampler, float ref, float s, float t, float r, const IVec2 (&offsets)[4]) const;
+
+protected:
+	int								selectLayer			(float r) const;
+
+	int								m_numLevels;
+	const ConstPixelBufferAccess*	m_levels;
+} DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
  * \brief 2D Array Texture reference implementation

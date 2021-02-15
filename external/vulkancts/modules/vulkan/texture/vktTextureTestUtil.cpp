@@ -139,11 +139,11 @@ VkImageViewType textureTypeToImageViewType (TextureBinding::Type type)
 		case TextureBinding::TYPE_2D_ARRAY:		return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
 		case TextureBinding::TYPE_CUBE_MAP:		return VK_IMAGE_VIEW_TYPE_CUBE;
 		case TextureBinding::TYPE_3D:			return VK_IMAGE_VIEW_TYPE_3D;
-		default:
-			DE_ASSERT(false);
+		case TextureBinding::TYPE_1D:			return VK_IMAGE_VIEW_TYPE_1D;
+		case TextureBinding::TYPE_1D_ARRAY:		return VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+		case TextureBinding::TYPE_CUBE_ARRAY:	return VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+		default:								TCU_THROW(InternalError, "Unhandled TextureBinding");
 	}
-
-	return VK_IMAGE_VIEW_TYPE_2D;
 }
 
 VkImageType imageViewTypeToImageType (VkImageViewType type)
@@ -154,11 +154,11 @@ VkImageType imageViewTypeToImageType (VkImageViewType type)
 		case VK_IMAGE_VIEW_TYPE_2D_ARRAY:
 		case VK_IMAGE_VIEW_TYPE_CUBE:			return VK_IMAGE_TYPE_2D;
 		case VK_IMAGE_VIEW_TYPE_3D:				return VK_IMAGE_TYPE_3D;
-		default:
-			DE_ASSERT(false);
+		case VK_IMAGE_VIEW_TYPE_1D:
+		case VK_IMAGE_VIEW_TYPE_1D_ARRAY:		return VK_IMAGE_TYPE_1D;
+		case VK_IMAGE_VIEW_TYPE_CUBE_ARRAY:		return VK_IMAGE_TYPE_2D;
+		default:								TCU_THROW(InternalError, "Unhandled ImageViewType");
 	}
-
-	return VK_IMAGE_TYPE_2D;
 }
 
 void initializePrograms (vk::SourceCollections& programCollection, glu::Precision texCoordPrecision, const std::vector<Program>& programs, const char* texCoordSwizzle, glu::Precision fragOutputPrecision)
@@ -338,7 +338,7 @@ void TextureBinding::updateTextureData (const TestTextureSp& textureData, const 
 	m_type			= textureType;
 	m_textureData	= textureData;
 
-	const bool									isCube					= m_type == TYPE_CUBE_MAP;
+	const bool									isCube					= (m_type == TYPE_CUBE_MAP) || (m_type == TYPE_CUBE_ARRAY);
 	VkImageCreateFlags							imageCreateFlags		= (isCube ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0) | (sparse ? (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT) : 0);
 	const VkImageViewType						imageViewType			= textureTypeToImageViewType(textureType);
 	const VkImageType							imageType				= imageViewTypeToImageType(imageViewType);
@@ -877,6 +877,21 @@ void TextureRenderer::add3DTexture (const TestTexture3DSp& texture, const vk::Vk
 	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_3D, aspectMask, backingMode, m_componentMapping)));
 }
 
+void TextureRenderer::add1DTexture (const TestTexture1DSp& texture, const vk::VkImageAspectFlags& aspectMask, TextureBinding::ImageBackingMode backingMode)
+{
+	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_1D, aspectMask, backingMode, m_componentMapping)));
+}
+
+void TextureRenderer::add1DArrayTexture (const TestTexture1DArraySp& texture, const vk::VkImageAspectFlags& aspectMask, TextureBinding::ImageBackingMode backingMode)
+{
+	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_1D_ARRAY, aspectMask, backingMode, m_componentMapping)));
+}
+
+void TextureRenderer::addCubeArrayTexture (const TestTextureCubeArraySp& texture, const vk::VkImageAspectFlags& aspectMask, TextureBinding::ImageBackingMode backingMode)
+{
+	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_CUBE_ARRAY, aspectMask, backingMode, m_componentMapping)));
+}
+
 const pipeline::TestTexture2D& TextureRenderer::get2DTexture (int textureIndex) const
 {
 	DE_ASSERT(m_textureBindings.size() > (size_t)textureIndex);
@@ -907,6 +922,30 @@ const pipeline::TestTexture3D& TextureRenderer::get3DTexture (int textureIndex) 
 	DE_ASSERT(m_textureBindings[textureIndex]->getType() == TextureBinding::TYPE_3D);
 
 	return dynamic_cast<const pipeline::TestTexture3D&>(m_textureBindings[textureIndex]->getTestTexture());
+}
+
+const pipeline::TestTexture1D& TextureRenderer::get1DTexture (int textureIndex) const
+{
+	DE_ASSERT(m_textureBindings.size() > (size_t)textureIndex);
+	DE_ASSERT(m_textureBindings[textureIndex]->getType() == TextureBinding::TYPE_1D);
+
+	return dynamic_cast<const pipeline::TestTexture1D&>(m_textureBindings[textureIndex]->getTestTexture());
+}
+
+const pipeline::TestTexture1DArray& TextureRenderer::get1DArrayTexture (int textureIndex) const
+{
+	DE_ASSERT(m_textureBindings.size() > (size_t)textureIndex);
+	DE_ASSERT(m_textureBindings[textureIndex]->getType() == TextureBinding::TYPE_1D_ARRAY);
+
+	return dynamic_cast<const pipeline::TestTexture1DArray&>(m_textureBindings[textureIndex]->getTestTexture());
+}
+
+const pipeline::TestTextureCubeArray& TextureRenderer::getCubeArrayTexture (int textureIndex) const
+{
+	DE_ASSERT(m_textureBindings.size() > (size_t)textureIndex);
+	DE_ASSERT(m_textureBindings[textureIndex]->getType() == TextureBinding::TYPE_CUBE_ARRAY);
+
+	return dynamic_cast<const pipeline::TestTextureCubeArray&>(m_textureBindings[textureIndex]->getTestTexture());
 }
 
 void TextureRenderer::setViewport (float viewportX, float viewportY, float viewportW, float viewportH)
@@ -1648,31 +1687,48 @@ TextureCommonTestCaseParameters::TextureCommonTestCaseParameters (void)
 	, minFilter				(tcu::Sampler::LINEAR)
 	, magFilter				(tcu::Sampler::LINEAR)
 	, wrapS					(tcu::Sampler::REPEAT_GL)
-	, wrapT					(tcu::Sampler::REPEAT_GL)
 	, format				(VK_FORMAT_R8G8B8A8_UNORM)
 	, unnormal				(false)
 {
 }
 
 Texture2DTestCaseParameters::Texture2DTestCaseParameters (void)
-	: width					(64)
+	: wrapT					(tcu::Sampler::REPEAT_GL)
+	, width					(64)
 	, height				(64)
 {
 }
 
 TextureCubeTestCaseParameters::TextureCubeTestCaseParameters (void)
-	: size					(64)
+	: wrapT					(tcu::Sampler::REPEAT_GL)
+	, size					(64)
 {
 }
 
 Texture2DArrayTestCaseParameters::Texture2DArrayTestCaseParameters (void)
-	: numLayers				(8)
+	: wrapT					(tcu::Sampler::REPEAT_GL)
+	, numLayers				(8)
 {
 }
 
 Texture3DTestCaseParameters::Texture3DTestCaseParameters (void)
 	: wrapR					(tcu::Sampler::REPEAT_GL)
 	, depth					(64)
+{
+}
+
+Texture1DTestCaseParameters::Texture1DTestCaseParameters (void)
+	: width					(64)
+{
+}
+
+Texture1DArrayTestCaseParameters::Texture1DArrayTestCaseParameters (void)
+	: numLayers				(8)
+{
+}
+
+TextureCubeArrayTestCaseParameters::TextureCubeArrayTestCaseParameters (void)
+	: numLayers				(8)
 {
 }
 

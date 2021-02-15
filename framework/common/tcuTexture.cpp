@@ -3758,10 +3758,10 @@ Texture1DArrayView::Texture1DArrayView (int numLevels, const ConstPixelBufferAcc
 {
 }
 
-inline int Texture1DArrayView::selectLayer (float r) const
+inline int Texture1DArrayView::selectLayer (float t) const
 {
 	DE_ASSERT(m_numLevels > 0 && m_levels);
-	return de::clamp(deFloorFloatToInt32(r + 0.5f), 0, m_levels[0].getHeight()-1);
+	return de::clamp(deFloorFloatToInt32(t + 0.5f), 0, m_levels[0].getHeight()-1);
 }
 
 Vec4 Texture1DArrayView::sample (const Sampler& sampler, float s, float t, float lod) const

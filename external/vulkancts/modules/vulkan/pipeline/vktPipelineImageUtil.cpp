@@ -1055,7 +1055,7 @@ de::MovePtr<TestTexture> TestTexture1D::copy(const tcu::TextureFormat format) co
 // TestTexture1DArray
 
 TestTexture1DArray::TestTexture1DArray (const tcu::TextureFormat& format, int width, int arraySize)
-	: TestTexture	(format, width, 1, arraySize)
+	: TestTexture	(format, width, arraySize, 1)
 	, m_texture		(format, width, arraySize)
 {
 	allocateLevels(m_texture);
@@ -1063,7 +1063,7 @@ TestTexture1DArray::TestTexture1DArray (const tcu::TextureFormat& format, int wi
 }
 
 TestTexture1DArray::TestTexture1DArray (const tcu::CompressedTexFormat& format, int width, int arraySize)
-	: TestTexture	(format, width, 1, arraySize)
+	: TestTexture	(format, width, arraySize, 1)
 	, m_texture		(tcu::getUncompressedFormat(format), width, arraySize)
 {
 	allocateLevels(m_texture);

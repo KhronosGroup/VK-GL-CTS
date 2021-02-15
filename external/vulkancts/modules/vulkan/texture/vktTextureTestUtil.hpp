@@ -116,11 +116,14 @@ enum Program
 
 void initializePrograms (vk::SourceCollections& programCollection, glu::Precision texCoordPrecision, const std::vector<Program>& programs, const char* texCoordSwizzle = DE_NULL, glu::Precision fragOutputPrecision = glu::Precision::PRECISION_MEDIUMP);
 
-typedef de::SharedPtr<pipeline::TestTexture>		TestTextureSp;
-typedef de::SharedPtr<pipeline::TestTexture2D>		TestTexture2DSp;
-typedef de::SharedPtr<pipeline::TestTextureCube>	TestTextureCubeSp;
-typedef de::SharedPtr<pipeline::TestTexture2DArray>	TestTexture2DArraySp;
-typedef de::SharedPtr<pipeline::TestTexture3D>		TestTexture3DSp;
+typedef de::SharedPtr<pipeline::TestTexture>			TestTextureSp;
+typedef de::SharedPtr<pipeline::TestTexture2D>			TestTexture2DSp;
+typedef de::SharedPtr<pipeline::TestTextureCube>		TestTextureCubeSp;
+typedef de::SharedPtr<pipeline::TestTexture2DArray>		TestTexture2DArraySp;
+typedef de::SharedPtr<pipeline::TestTexture3D>			TestTexture3DSp;
+typedef de::SharedPtr<pipeline::TestTexture1D>			TestTexture1DSp;
+typedef de::SharedPtr<pipeline::TestTexture1DArray>		TestTexture1DArraySp;
+typedef de::SharedPtr<pipeline::TestTextureCubeArray>	TestTextureCubeArraySp;
 
 class TextureBinding {
 public:
@@ -131,6 +134,10 @@ public:
 		TYPE_CUBE_MAP,
 		TYPE_2D_ARRAY,
 		TYPE_3D,
+
+		TYPE_1D,
+		TYPE_1D_ARRAY,
+		TYPE_CUBE_ARRAY,
 
 		TYPE_LAST
 	};
@@ -179,124 +186,140 @@ typedef de::SharedPtr<TextureBinding>	TextureBindingSp;
 class TextureRenderer
 {
 public:
-										TextureRenderer				(Context& context,
-																	 vk::VkSampleCountFlagBits sampleCount,
-																	 deUint32 renderWidth,
-																	 deUint32 renderHeight,
-																	 vk::VkComponentMapping componentMapping = vk::makeComponentMappingRGBA());
+											TextureRenderer				(Context& context,
+																		 vk::VkSampleCountFlagBits sampleCount,
+																		 deUint32 renderWidth,
+																		 deUint32 renderHeight,
+																		 vk::VkComponentMapping componentMapping = vk::makeComponentMappingRGBA());
 
-										TextureRenderer				(Context& context,
-																	 vk::VkSampleCountFlagBits sampleCount,
-																	 deUint32 renderWidth,
-																	 deUint32 renderHeight,
-																	 deUint32 renderDepth,
-																	 vk::VkComponentMapping componentMapping = vk::makeComponentMappingRGBA(),
-																	 vk::VkImageType imageType = vk::VK_IMAGE_TYPE_2D,
-																	 vk::VkImageViewType imageViewType = vk::VK_IMAGE_VIEW_TYPE_2D,
-																	 vk::VkFormat imageFormat = vk::VK_FORMAT_R8G8B8A8_UNORM);
+											TextureRenderer				(Context& context,
+																		 vk::VkSampleCountFlagBits sampleCount,
+																		 deUint32 renderWidth,
+																		 deUint32 renderHeight,
+																		 deUint32 renderDepth,
+																		 vk::VkComponentMapping componentMapping = vk::makeComponentMappingRGBA(),
+																		 vk::VkImageType imageType = vk::VK_IMAGE_TYPE_2D,
+																		 vk::VkImageViewType imageViewType = vk::VK_IMAGE_VIEW_TYPE_2D,
+																		 vk::VkFormat imageFormat = vk::VK_FORMAT_R8G8B8A8_UNORM);
 
-										~TextureRenderer			(void);
+											~TextureRenderer			(void);
 
-	void								renderQuad					(tcu::Surface& result, int texUnit, const float* texCoord, glu::TextureTestUtil::TextureType texType);
-	void								renderQuad					(tcu::Surface& result, int texUnit, const float* texCoord, const glu::TextureTestUtil::ReferenceParams& params);
-	void								renderQuad					(tcu::Surface&									result,
-																	 const float*									positions,
-																	 const int										texUnit,
-																	 const float*									texCoord,
-																	 const glu::TextureTestUtil::ReferenceParams&	params,
-																	 const float									maxAnisotropy);
+	void									renderQuad					(tcu::Surface& result, int texUnit, const float* texCoord, glu::TextureTestUtil::TextureType texType);
+	void									renderQuad					(tcu::Surface& result, int texUnit, const float* texCoord, const glu::TextureTestUtil::ReferenceParams& params);
+	void									renderQuad					(tcu::Surface&									result,
+																		 const float*									positions,
+																		 const int										texUnit,
+																		 const float*									texCoord,
+																		 const glu::TextureTestUtil::ReferenceParams&	params,
+																		 const float									maxAnisotropy);
 
-	void								renderQuad					(const tcu::PixelBufferAccess& result, int texUnit, const float* texCoord, const glu::TextureTestUtil::ReferenceParams& params);
-	void								renderQuad					(const tcu::PixelBufferAccess&					result,
-																	 const float*									positions,
-																	 const int										texUnit,
-																	 const float*									texCoord,
-																	 const glu::TextureTestUtil::ReferenceParams&	params,
-																	 const float									maxAnisotropy);
+	void									renderQuad					(const tcu::PixelBufferAccess& result, int texUnit, const float* texCoord, const glu::TextureTestUtil::ReferenceParams& params);
+	void									renderQuad					(const tcu::PixelBufferAccess&					result,
+																		 const float*									positions,
+																		 const int										texUnit,
+																		 const float*									texCoord,
+																		 const glu::TextureTestUtil::ReferenceParams&	params,
+																		 const float									maxAnisotropy);
 
-	void								clearImage					(vk::VkImage image);
-	void								add2DTexture				(const TestTexture2DSp& texture,
-																	 const vk::VkImageAspectFlags& aspectMask,
-																	 TextureBinding::ImageBackingMode backingMode = TextureBinding::IMAGE_BACKING_MODE_REGULAR);
-	const pipeline::TestTexture2D&		get2DTexture				(int textureIndex) const;
+	void									clearImage					(vk::VkImage image);
 
-	void								addCubeTexture				(const TestTextureCubeSp& texture,
-																	 const vk::VkImageAspectFlags& aspectMask,
-																	 TextureBinding::ImageBackingMode backingMode = TextureBinding::IMAGE_BACKING_MODE_REGULAR);
-	const pipeline::TestTextureCube&	getCubeTexture				(int textureIndex) const;
+	void									add2DTexture				(const TestTexture2DSp& texture,
+																		 const vk::VkImageAspectFlags& aspectMask,
+																		 TextureBinding::ImageBackingMode backingMode = TextureBinding::IMAGE_BACKING_MODE_REGULAR);
+	const pipeline::TestTexture2D&			get2DTexture				(int textureIndex) const;
 
-	void								add2DArrayTexture			(const TestTexture2DArraySp& texture,
-																	 const vk::VkImageAspectFlags& aspectMask,
-																	 TextureBinding::ImageBackingMode backingMode = TextureBinding::IMAGE_BACKING_MODE_REGULAR);
-	const pipeline::TestTexture2DArray&	get2DArrayTexture			(int textureIndex) const;
+	void									addCubeTexture				(const TestTextureCubeSp& texture,
+																		 const vk::VkImageAspectFlags& aspectMask,
+																		 TextureBinding::ImageBackingMode backingMode = TextureBinding::IMAGE_BACKING_MODE_REGULAR);
+	const pipeline::TestTextureCube&		getCubeTexture				(int textureIndex) const;
 
-	void								add3DTexture				(const TestTexture3DSp& texture,
-																	 const vk::VkImageAspectFlags& aspectMask,
-																	 TextureBinding::ImageBackingMode backingMode = TextureBinding::IMAGE_BACKING_MODE_REGULAR);
-	const pipeline::TestTexture3D&		get3DTexture				(int textureIndex) const;
+	void									add2DArrayTexture			(const TestTexture2DArraySp& texture,
+																		 const vk::VkImageAspectFlags& aspectMask,
+																		 TextureBinding::ImageBackingMode backingMode = TextureBinding::IMAGE_BACKING_MODE_REGULAR);
+	const pipeline::TestTexture2DArray&		get2DArrayTexture			(int textureIndex) const;
 
-	void								setViewport					(float viewportX, float viewportY, float viewportW, float viewportH);
+	void									add3DTexture				(const TestTexture3DSp& texture,
+																		 const vk::VkImageAspectFlags& aspectMask,
+																		 TextureBinding::ImageBackingMode backingMode = TextureBinding::IMAGE_BACKING_MODE_REGULAR);
+	const pipeline::TestTexture3D&			get3DTexture				(int textureIndex) const;
 
-	TextureBinding*						getTextureBinding			(int textureIndex) const;
+	void									add1DTexture				(const TestTexture1DSp& texture,
+																		 const vk::VkImageAspectFlags& aspectMask,
+																		 TextureBinding::ImageBackingMode backingMode = TextureBinding::IMAGE_BACKING_MODE_REGULAR);
+	const pipeline::TestTexture1D&			get1DTexture				(int textureIndex) const;
 
-	deUint32							getRenderWidth				(void) const;
-	deUint32							getRenderHeight				(void) const;
+	void									add1DArrayTexture			(const TestTexture1DArraySp& texture,
+																		 const vk::VkImageAspectFlags& aspectMask,
+																		 TextureBinding::ImageBackingMode backingMode = TextureBinding::IMAGE_BACKING_MODE_REGULAR);
+	const pipeline::TestTexture1DArray&		get1DArrayTexture			(int textureIndex) const;
+
+	void									addCubeArrayTexture			(const TestTextureCubeArraySp& texture,
+																		 const vk::VkImageAspectFlags& aspectMask,
+																		 TextureBinding::ImageBackingMode backingMode = TextureBinding::IMAGE_BACKING_MODE_REGULAR);
+	const pipeline::TestTextureCubeArray&	getCubeArrayTexture			(int textureIndex) const;
+
+	void									setViewport					(float viewportX, float viewportY, float viewportW, float viewportH);
+
+	TextureBinding*							getTextureBinding			(int textureIndex) const;
+
+	deUint32								getRenderWidth				(void) const;
+	deUint32								getRenderHeight				(void) const;
 
 protected:
-										TextureRenderer				(const TextureRenderer& other);
-	TextureRenderer&					operator=					(const TextureRenderer& other);
+											TextureRenderer				(const TextureRenderer& other);
+	TextureRenderer&						operator=					(const TextureRenderer& other);
 
-	Context&							m_context;
-	tcu::TestLog&						m_log;
+	Context&								m_context;
+	tcu::TestLog&							m_log;
 
-	const deUint32						m_renderWidth;
-	const deUint32						m_renderHeight;
-	const deUint32						m_renderDepth;
-	const vk::VkSampleCountFlagBits		m_sampleCount;
-	const deBool						m_multisampling;
+	const deUint32							m_renderWidth;
+	const deUint32							m_renderHeight;
+	const deUint32							m_renderDepth;
+	const vk::VkSampleCountFlagBits			m_sampleCount;
+	const deBool							m_multisampling;
 
-	const vk::VkFormat					m_imageFormat;
-	const tcu::TextureFormat			m_textureFormat;
+	const vk::VkFormat						m_imageFormat;
+	const tcu::TextureFormat				m_textureFormat;
 
-	vk::Move<vk::VkImage>				m_image;
-	de::MovePtr<vk::Allocation>			m_imageMemory;
-	vk::Move<vk::VkImageView>			m_imageView;
+	vk::Move<vk::VkImage>					m_image;
+	de::MovePtr<vk::Allocation>				m_imageMemory;
+	vk::Move<vk::VkImageView>				m_imageView;
 
-	vk::Move<vk::VkImage>				m_resolvedImage;
-	de::MovePtr<vk::Allocation>			m_resolvedImageMemory;
-	vk::Move<vk::VkImageView>			m_resolvedImageView;
+	vk::Move<vk::VkImage>					m_resolvedImage;
+	de::MovePtr<vk::Allocation>				m_resolvedImageMemory;
+	vk::Move<vk::VkImageView>				m_resolvedImageView;
 
-	vk::Move<vk::VkCommandPool>			m_commandPool;
-	vk::Move<vk::VkRenderPass>			m_renderPass;
-	vk::Move<vk::VkFramebuffer>			m_frameBuffer;
+	vk::Move<vk::VkCommandPool>				m_commandPool;
+	vk::Move<vk::VkRenderPass>				m_renderPass;
+	vk::Move<vk::VkFramebuffer>				m_frameBuffer;
 
-	vk::Move<vk::VkDescriptorPool>		m_descriptorPool;
+	vk::Move<vk::VkDescriptorPool>			m_descriptorPool;
 
-	vk::Move<vk::VkBuffer>				m_uniformBuffer;
-	de::MovePtr<vk::Allocation>			m_uniformBufferMemory;
-	const vk::VkDeviceSize				m_uniformBufferSize;
+	vk::Move<vk::VkBuffer>					m_uniformBuffer;
+	de::MovePtr<vk::Allocation>				m_uniformBufferMemory;
+	const vk::VkDeviceSize					m_uniformBufferSize;
 
-	vk::Move<vk::VkBuffer>				m_vertexIndexBuffer;
-	de::MovePtr<vk::Allocation>			m_vertexIndexBufferMemory;
-	static const vk::VkDeviceSize		s_vertexIndexBufferSize;
-	static const deUint16				s_vertexIndices[6];
+	vk::Move<vk::VkBuffer>					m_vertexIndexBuffer;
+	de::MovePtr<vk::Allocation>				m_vertexIndexBufferMemory;
+	static const vk::VkDeviceSize			s_vertexIndexBufferSize;
+	static const deUint16					s_vertexIndices[6];
 
-	vk::Move<vk::VkBuffer>				m_resultBuffer;
-	de::MovePtr<vk::Allocation>			m_resultBufferMemory;
-	const vk::VkDeviceSize				m_resultBufferSize;
+	vk::Move<vk::VkBuffer>					m_resultBuffer;
+	de::MovePtr<vk::Allocation>				m_resultBufferMemory;
+	const vk::VkDeviceSize					m_resultBufferSize;
 
-	std::vector<TextureBindingSp>		m_textureBindings;
+	std::vector<TextureBindingSp>			m_textureBindings;
 
-	float								m_viewportOffsetX;
-	float								m_viewportOffsetY;
-	float								m_viewportWidth;
-	float								m_viewportHeight;
+	float									m_viewportOffsetX;
+	float									m_viewportOffsetY;
+	float									m_viewportWidth;
+	float									m_viewportHeight;
 
-	vk::VkComponentMapping				m_componentMapping;
+	vk::VkComponentMapping					m_componentMapping;
 
 private:
-	vk::Move<vk::VkDescriptorSet>		makeDescriptorSet			(const vk::VkDescriptorPool descriptorPool, const vk::VkDescriptorSetLayout setLayout) const;
-	void								addImageTransitionBarrier	(vk::VkCommandBuffer commandBuffer, vk::VkImage image, vk::VkPipelineStageFlags srcStageMask, vk::VkPipelineStageFlags dstStageMask, vk::VkAccessFlags srcAccessMask, vk::VkAccessFlags dstAccessMask, vk::VkImageLayout oldLayout, vk::VkImageLayout newLayout) const;
+	vk::Move<vk::VkDescriptorSet>			makeDescriptorSet			(const vk::VkDescriptorPool descriptorPool, const vk::VkDescriptorSetLayout setLayout) const;
+	void									addImageTransitionBarrier	(vk::VkCommandBuffer commandBuffer, vk::VkImage image, vk::VkPipelineStageFlags srcStageMask, vk::VkPipelineStageFlags dstStageMask, vk::VkAccessFlags srcAccessMask, vk::VkAccessFlags dstAccessMask, vk::VkImageLayout oldLayout, vk::VkImageLayout newLayout) const;
 
 };
 
@@ -354,7 +377,6 @@ struct TextureCommonTestCaseParameters
 	tcu::Sampler::FilterMode	minFilter;
 	tcu::Sampler::FilterMode	magFilter;
 	tcu::Sampler::WrapMode		wrapS;
-	tcu::Sampler::WrapMode		wrapT;
 
 	vk::VkFormat				format;
 
@@ -367,6 +389,7 @@ struct TextureCommonTestCaseParameters
 struct Texture2DTestCaseParameters : public TextureCommonTestCaseParameters
 {
 								Texture2DTestCaseParameters		(void);
+	tcu::Sampler::WrapMode		wrapT;
 	int							width;
 	int							height;
 	bool						mipmaps;
@@ -375,12 +398,14 @@ struct Texture2DTestCaseParameters : public TextureCommonTestCaseParameters
 struct TextureCubeTestCaseParameters : public TextureCommonTestCaseParameters
 {
 								TextureCubeTestCaseParameters	(void);
+	tcu::Sampler::WrapMode		wrapT;
 	int							size;
 };
 
 struct Texture2DArrayTestCaseParameters : public Texture2DTestCaseParameters
 {
 								Texture2DArrayTestCaseParameters(void);
+	tcu::Sampler::WrapMode		wrapT;
 	int							numLayers;
 };
 
@@ -389,6 +414,24 @@ struct Texture3DTestCaseParameters : public Texture2DTestCaseParameters
 								Texture3DTestCaseParameters		(void);
 	tcu::Sampler::WrapMode		wrapR;
 	int							depth;
+};
+
+struct Texture1DTestCaseParameters : public TextureCommonTestCaseParameters
+{
+								Texture1DTestCaseParameters		(void);
+	int							width;
+};
+
+struct Texture1DArrayTestCaseParameters : public Texture1DTestCaseParameters
+{
+								Texture1DArrayTestCaseParameters(void);
+	int							numLayers;
+};
+
+struct TextureCubeArrayTestCaseParameters : public TextureCubeTestCaseParameters
+{
+								TextureCubeArrayTestCaseParameters	(void);
+	int							numLayers;
 };
 
 } // util

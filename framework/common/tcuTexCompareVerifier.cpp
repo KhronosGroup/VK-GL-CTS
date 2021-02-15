@@ -1080,6 +1080,322 @@ static bool isCubeLevelCompareResultValid (const TextureCubeView&			texture,
 		return isNearestCompareResultValid(texture.getLevelFace(levelNdx, coords.face), sampler, prec, Vec2(coords.s, coords.t), 0, cmpReference, result);
 }
 
+static bool isCubeLevelCompareResultValid (const TextureCubeArrayView&	texture,
+										   const int					baseLevelNdx,
+										   const Sampler&				sampler,
+										   const Sampler::FilterMode	filterMode,
+										   const TexComparePrecision&	prec,
+										   const CubeFaceFloatCoords&	coords,
+										   const float					depth,
+										   const float					cmpReference,
+										   const float					result)
+{
+	const float	depthErr	= computeFloatingPointError(depth, prec.coordBits.z()) + computeFixedPointError(prec.uvwBits.z());
+	const float	minZ		= depth - depthErr;
+	const float	maxZ		= depth + depthErr;
+	const int	minLayer	= de::clamp(deFloorFloatToInt32(minZ + 0.5f), 0, texture.getNumLayers() - 1);
+	const int	maxLayer	= de::clamp(deFloorFloatToInt32(maxZ + 0.5f), 0, texture.getNumLayers() - 1);
+	const int	numLevels	= texture.getNumLevels();
+
+	for (int layer = minLayer; layer <= maxLayer; layer++)
+	{
+		std::vector<tcu::ConstPixelBufferAccess>	levelsAtLayer[CUBEFACE_LAST];
+
+		for (int faceNdx = 0; faceNdx < CUBEFACE_LAST; faceNdx++)
+		{
+			levelsAtLayer[faceNdx].resize(numLevels);
+
+			for (int levelNdx = 0; levelNdx < numLevels; ++levelNdx)
+			{
+				const tcu::ConstPixelBufferAccess&	level	= texture.getLevel(levelNdx);
+
+				levelsAtLayer[faceNdx][levelNdx] = ConstPixelBufferAccess(level.getFormat(), level.getWidth(), level.getHeight(), 1, level.getPixelPtr(0, 0, CUBEFACE_LAST * layer + faceNdx));
+			}
+		}
+
+		const tcu::ConstPixelBufferAccess*	levels[CUBEFACE_LAST]
+		{
+			// Such a strange order due to sampleCompare TextureCubeArrayView uses getCubeArrayFaceIndex while in TextureCubeView does not
+			&levelsAtLayer[1][0],
+			&levelsAtLayer[0][0],
+			&levelsAtLayer[3][0],
+			&levelsAtLayer[2][0],
+			&levelsAtLayer[5][0],
+			&levelsAtLayer[4][0],
+		};
+
+		if (isCubeLevelCompareResultValid(TextureCubeView(numLevels, levels), baseLevelNdx, sampler, filterMode, prec, coords, cmpReference, result))
+			return true;
+	}
+
+	return false;
+}
+
+static bool isCubeMipmapLinearCompareResultValid (const TextureCubeArrayView&	texture,
+												  const int						baseLevelNdx,
+												  const Sampler&				sampler,
+												  const Sampler::FilterMode		levelFilter,
+												  const TexComparePrecision&	prec,
+												  const CubeFaceFloatCoords&	coords,
+												  const float					depth,
+												  const Vec2&					fBounds,
+												  const float					cmpReference,
+												  const float					result)
+{
+	const float	depthErr	= computeFloatingPointError(depth, prec.coordBits.z()) + computeFixedPointError(prec.uvwBits.z());
+	const float	minZ		= depth - depthErr;
+	const float	maxZ		= depth + depthErr;
+	const int	minLayer	= de::clamp(deFloorFloatToInt32(minZ + 0.5f), 0, texture.getNumLayers() - 1);
+	const int	maxLayer	= de::clamp(deFloorFloatToInt32(maxZ + 0.5f), 0, texture.getNumLayers() - 1);
+	const int	numLevels	= texture.getNumLevels();
+
+	for (int layer = minLayer; layer <= maxLayer; layer++)
+	{
+		std::vector<tcu::ConstPixelBufferAccess>	levelsAtLayer[CUBEFACE_LAST];
+
+		for (int faceNdx = 0; faceNdx < CUBEFACE_LAST; faceNdx++)
+		{
+			levelsAtLayer[faceNdx].resize(numLevels);
+
+			for (int levelNdx = 0; levelNdx < numLevels; ++levelNdx)
+			{
+				const tcu::ConstPixelBufferAccess&	level	= texture.getLevel(levelNdx);
+
+				levelsAtLayer[faceNdx][levelNdx] = ConstPixelBufferAccess(level.getFormat(), level.getWidth(), level.getHeight(), 1, level.getPixelPtr(0, 0, CUBEFACE_LAST * layer + faceNdx));
+			}
+		}
+
+		const tcu::ConstPixelBufferAccess*	levels[CUBEFACE_LAST]
+		{
+			// Such a strange order due to sampleCompare TextureCubeArrayView uses getCubeArrayFaceIndex while in TextureCubeView does not
+			&levelsAtLayer[1][0],
+			&levelsAtLayer[0][0],
+			&levelsAtLayer[3][0],
+			&levelsAtLayer[2][0],
+			&levelsAtLayer[5][0],
+			&levelsAtLayer[4][0],
+		};
+
+		if (isCubeMipmapLinearCompareResultValid(TextureCubeView(numLevels, levels), baseLevelNdx, sampler, levelFilter, prec, coords, fBounds, cmpReference, result))
+			return true;
+	}
+
+	return false;
+}
+
+static bool isNearestCompareResultValid (const ConstPixelBufferAccess&		level,
+										 const Sampler&						sampler,
+										 const TexComparePrecision&			prec,
+										 const Vec1&						coord,
+										 const int							coordZ,
+										 const float						cmpReference,
+										 const float						result)
+{
+	const bool	isFixedPointDepth	= isFixedPointDepthTextureFormat(level.getFormat());
+	const Vec2	uBounds				= computeNonNormalizedCoordBounds(sampler.normalizedCoords, level.getWidth(), coord.x(), prec.coordBits.x(), prec.uvwBits.x());
+
+	// Integer coordinates - without wrap mode
+	const int	minI				= deFloorFloatToInt32(uBounds.x());
+	const int	maxI				= deFloorFloatToInt32(uBounds.y());
+
+	for (int i = minI; i <= maxI; i++)
+	{
+		const int			x		= wrap(sampler.wrapS, i, level.getWidth());
+		const float			depth	= lookupDepth(level, sampler, x, coordZ, 0);
+		const CmpResultSet	resSet	= execCompare(sampler.compare, depth, cmpReference, prec.referenceBits, isFixedPointDepth);
+
+		if (isResultInSet(resSet, result, prec.resultBits))
+			return true;
+	}
+
+	return false;
+}
+
+static bool isLinearCompareResultValid (const ConstPixelBufferAccess&		level,
+										const Sampler&						sampler,
+										const TexComparePrecision&			prec,
+										const Vec1&							coord,
+										const int							coordZ,
+										const float							cmpReference,
+										const float							result)
+{
+	const bool	isFixedPointDepth	= isFixedPointDepthTextureFormat(level.getFormat());
+	const Vec2	uBounds				= computeNonNormalizedCoordBounds(sampler.normalizedCoords, level.getWidth(), coord.x(), prec.coordBits.x(), prec.uvwBits.x());
+
+	// Integer coordinate bounds for (x0,y0) - without wrap mode
+	const int	minI				= deFloorFloatToInt32(uBounds.x() - 0.5f);
+	const int	maxI				= deFloorFloatToInt32(uBounds.y() - 0.5f);
+
+	const int	w					= level.getWidth();
+
+	// \todo [2013-07-03 pyry] This could be optimized by first computing ranges based on wrap mode.
+
+	for (int i = minI; i <= maxI; i++)
+	{
+		// Wrapped coordinates
+		const int	x0		= wrap(sampler.wrapS, i    , w);
+		const int	x1		= wrap(sampler.wrapS, i + 1, w);
+
+		// Bounds for filtering factors
+		const float	minA	= de::clamp((uBounds.x() - 0.5f) - float(i), 0.0f, 1.0f);
+		const float	maxA	= de::clamp((uBounds.y() - 0.5f) - float(i), 0.0f, 1.0f);
+
+		const Vec2	depths	(lookupDepth(level, sampler, x0, coordZ, 0),
+							 lookupDepth(level, sampler, x1, coordZ, 0));
+
+		if (isLinearCompareValid(sampler.compare, prec, depths, Vec2(minA, maxA), cmpReference, result, isFixedPointDepth))
+			return true;
+	}
+
+	return false;
+}
+
+static bool isLevelCompareResultValid (const ConstPixelBufferAccess&	level,
+									   const Sampler&					sampler,
+									   const Sampler::FilterMode		filterMode,
+									   const TexComparePrecision&		prec,
+									   const Vec1&						coord,
+									   const int						coordZ,
+									   const float						cmpReference,
+									   const float						result)
+{
+	if (filterMode == Sampler::LINEAR)
+		return isLinearCompareResultValid(level, sampler, prec, coord, coordZ, cmpReference, result);
+	else
+		return isNearestCompareResultValid(level, sampler, prec, coord, coordZ, cmpReference, result);
+}
+
+static bool isNearestMipmapLinearCompareResultValid (const ConstPixelBufferAccess&	level0,
+													 const ConstPixelBufferAccess&	level1,
+													 const Sampler&					sampler,
+													 const TexComparePrecision&		prec,
+													 const Vec1&					coord,
+													 const int						coordZ,
+													 const Vec2&					fBounds,
+													 const float					cmpReference,
+													 const float					result)
+{
+	DE_UNREF(fBounds);
+	const bool	isFixedPointDepth	= isFixedPointDepthTextureFormat(level0.getFormat());
+
+	const int	w0					= level0.getWidth();
+	const int	w1					= level1.getWidth();
+
+	const Vec2	uBounds0			= computeNonNormalizedCoordBounds(sampler.normalizedCoords, w0,	coord.x(), prec.coordBits.x(), prec.uvwBits.x());
+	const Vec2	uBounds1			= computeNonNormalizedCoordBounds(sampler.normalizedCoords, w1,	coord.x(), prec.coordBits.x(), prec.uvwBits.x());
+
+	// Integer coordinates - without wrap mode
+	const int	minI0				= deFloorFloatToInt32(uBounds0.x());
+	const int	maxI0				= deFloorFloatToInt32(uBounds0.y());
+	const int	minI1				= deFloorFloatToInt32(uBounds1.x());
+	const int	maxI1				= deFloorFloatToInt32(uBounds1.y());
+
+	for (int i0 = minI0; i0 <= maxI0; i0++)
+	{
+		const float	depth0	= lookupDepth(level0, sampler, wrap(sampler.wrapS, i0, w0), coordZ, 0);
+
+		for (int i1 = minI1; i1 <= maxI1; i1++)
+		{
+			const float	depth1	= lookupDepth(level1, sampler, wrap(sampler.wrapS, i1, w1), coordZ, 0);
+
+			if (isLinearCompareValid(sampler.compare, prec, Vec2(depth0, depth1), fBounds, cmpReference, result, isFixedPointDepth))
+				return true;
+		}
+	}
+
+	return false;
+}
+
+
+static bool isLinearMipmapLinearCompareResultValid (const ConstPixelBufferAccess&	level0,
+													const ConstPixelBufferAccess&	level1,
+													const Sampler&					sampler,
+													const TexComparePrecision&		prec,
+													const Vec1&						coord,
+													const int						coordZ,
+													const Vec2&						fBounds,
+													const float						cmpReference,
+													const float						result)
+{
+	DE_UNREF(fBounds);
+	const bool	isFixedPointDepth	= isFixedPointDepthTextureFormat(level0.getFormat());
+
+	// \todo [2013-07-04 pyry] This is strictly not correct as coordinates between levels should be dependent.
+	//						   Right now this allows pairing any two valid bilinear quads.
+
+	const int	w0					= level0.getWidth();
+	const int	w1					= level1.getWidth();
+
+	const Vec2	uBounds0			= computeNonNormalizedCoordBounds(sampler.normalizedCoords, w0,	coord.x(), prec.coordBits.x(), prec.uvwBits.x());
+	const Vec2	uBounds1			= computeNonNormalizedCoordBounds(sampler.normalizedCoords, w1,	coord.x(), prec.coordBits.x(), prec.uvwBits.x());
+
+	// Integer coordinates - without wrap mode
+	const int	minI0				= deFloorFloatToInt32(uBounds0.x()-0.5f);
+	const int	maxI0				= deFloorFloatToInt32(uBounds0.y()-0.5f);
+	const int	minI1				= deFloorFloatToInt32(uBounds1.x()-0.5f);
+	const int	maxI1				= deFloorFloatToInt32(uBounds1.y()-0.5f);
+
+	for (int i0 = minI0; i0 <= maxI0; i0++)
+	{
+		const float	minA0	= de::clamp((uBounds0.x() - 0.5f) - float(i0), 0.0f, 1.0f);
+		const float	maxA0	= de::clamp((uBounds0.y() - 0.5f) - float(i0), 0.0f, 1.0f);
+		const Vec2	ptA0	= Vec2(minA0, maxA0);
+		Vec4		depths;
+
+		{
+			const int	x0		= wrap(sampler.wrapS, i0    , w0);
+			const int	x1		= wrap(sampler.wrapS, i0 + 1, w0);
+
+			depths[0] = lookupDepth(level0, sampler, x0, coordZ, 0);
+			depths[1] = lookupDepth(level0, sampler, x1, coordZ, 0);
+		}
+
+		for (int i1 = minI1; i1 <= maxI1; i1++)
+		{
+			const float	minA1	= de::clamp((uBounds1.x() - 0.5f) - float(i1), 0.0f, 1.0f);
+			const float	maxA1	= de::clamp((uBounds1.y() - 0.5f) - float(i1), 0.0f, 1.0f);
+			const Vec2	ptA1	= Vec2(minA1, maxA1);
+
+			{
+				const int	x0		= wrap(sampler.wrapS, i1    , w1);
+				const int	x1		= wrap(sampler.wrapS, i1 + 1, w1);
+
+				depths[2] = lookupDepth(level1, sampler, x0, coordZ, 0);
+				depths[3] = lookupDepth(level1, sampler, x1, coordZ, 0);
+			}
+
+			if (isBilinearCompareValid(sampler.compare,
+									   prec,
+									   depths,
+									   ptA0,
+									   ptA1,
+									   cmpReference,
+									   result,
+									   isFixedPointDepth))
+				return true;
+		}
+	}
+
+	return false;
+}
+
+static bool isMipmapLinearCompareResultValid (const ConstPixelBufferAccess&		level0,
+											  const ConstPixelBufferAccess&		level1,
+											  const Sampler&					sampler,
+											  const Sampler::FilterMode			levelFilter,
+											  const TexComparePrecision&		prec,
+											  const Vec1&						coord,
+											  const int							coordZ,
+											  const Vec2&						fBounds,
+											  const float						cmpReference,
+											  const float						result)
+{
+	if (levelFilter == Sampler::LINEAR)
+		return isLinearMipmapLinearCompareResultValid(level0, level1, sampler, prec, coord, coordZ, fBounds, cmpReference, result);
+	else
+		return isNearestMipmapLinearCompareResultValid(level0, level1, sampler, prec, coord, coordZ, fBounds, cmpReference, result);
+}
+
 bool isTexCompareResultValid (const TextureCubeView& texture, const Sampler& sampler, const TexComparePrecision& prec, const Vec3& coord, const Vec2& lodBounds, const float cmpReference, const float result)
 {
 	int			numPossibleFaces				= 0;
@@ -1223,6 +1539,235 @@ bool isTexCompareResultValid (const Texture2DArrayView& texture, const Sampler& 
 			else
 			{
 				if (isLevelCompareResultValid(texture.getLevel(0), sampler, sampler.minFilter, prec, coord.swizzle(0,1), layer, cmpReference, result))
+					return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+bool isTexCompareResultValid (const Texture1DView&			texture,
+							  const Sampler&				sampler,
+							  const TexComparePrecision&	prec,
+							  const Vec1&					coord,
+							  const Vec2&					lodBounds,
+							  const float					cmpReference,
+							  const float					result)
+{
+	const float		minLod			= lodBounds.x();
+	const float		maxLod			= lodBounds.y();
+	const bool		canBeMagnified	= minLod <= sampler.lodThreshold;
+	const bool		canBeMinified	= maxLod > sampler.lodThreshold;
+
+	DE_ASSERT(isSamplerSupported(sampler));
+
+	if (canBeMagnified)
+	{
+		if (isLevelCompareResultValid(texture.getLevel(0), sampler, sampler.magFilter, prec, coord, 0, cmpReference, result))
+			return true;
+	}
+
+	if (canBeMinified)
+	{
+		const bool	isNearestMipmap	= isNearestMipmapFilter(sampler.minFilter);
+		const bool	isLinearMipmap	= isLinearMipmapFilter(sampler.minFilter);
+		const int	minTexLevel		= 0;
+		const int	maxTexLevel		= texture.getNumLevels()-1;
+
+		DE_ASSERT(minTexLevel < maxTexLevel);
+
+		if (isLinearMipmap)
+		{
+			const int		minLevel		= de::clamp((int)deFloatFloor(minLod), minTexLevel, maxTexLevel-1);
+			const int		maxLevel		= de::clamp((int)deFloatFloor(maxLod), minTexLevel, maxTexLevel-1);
+
+			DE_ASSERT(minLevel <= maxLevel);
+
+			for (int level = minLevel; level <= maxLevel; level++)
+			{
+				const float		minF	= de::clamp(minLod - float(level), 0.0f, 1.0f);
+				const float		maxF	= de::clamp(maxLod - float(level), 0.0f, 1.0f);
+
+				if (isMipmapLinearCompareResultValid(texture.getLevel(level), texture.getLevel(level+1), sampler, getLevelFilter(sampler.minFilter), prec, coord, 0, Vec2(minF, maxF), cmpReference, result))
+					return true;
+			}
+		}
+		else if (isNearestMipmap)
+		{
+			// \note The accurate formula for nearest mipmapping is level = ceil(lod + 0.5) - 1 but Khronos has made
+			//		 decision to allow floor(lod + 0.5) as well.
+			const int		minLevel		= de::clamp((int)deFloatCeil(minLod + 0.5f) - 1,	minTexLevel, maxTexLevel);
+			const int		maxLevel		= de::clamp((int)deFloatFloor(maxLod + 0.5f),		minTexLevel, maxTexLevel);
+
+			DE_ASSERT(minLevel <= maxLevel);
+
+			for (int level = minLevel; level <= maxLevel; level++)
+			{
+				if (isLevelCompareResultValid(texture.getLevel(level), sampler, getLevelFilter(sampler.minFilter), prec, coord, 0, cmpReference, result))
+					return true;
+			}
+		}
+		else
+		{
+			if (isLevelCompareResultValid(texture.getLevel(0), sampler, sampler.minFilter, prec, coord, 0, cmpReference, result))
+				return true;
+		}
+	}
+
+	return false;
+}
+
+bool isTexCompareResultValid (const Texture1DArrayView&		texture,
+							  const Sampler&				sampler,
+							  const TexComparePrecision&	prec,
+							  const Vec2&					coord,
+							  const Vec2&					lodBounds,
+							  const float					cmpReference,
+							  const float					result)
+{
+	const float		depthErr	= computeFloatingPointError(coord.y(), prec.coordBits.y()) + computeFixedPointError(prec.uvwBits.y()); //\todo: should we go with y in prec?
+	const float		minZ		= coord.y()-depthErr;
+	const float		maxZ		= coord.y()+depthErr;
+	const int		minLayer	= de::clamp(deFloorFloatToInt32(minZ + 0.5f), 0, texture.getNumLayers()-1);
+	const int		maxLayer	= de::clamp(deFloorFloatToInt32(maxZ + 0.5f), 0, texture.getNumLayers()-1);
+
+	DE_ASSERT(isSamplerSupported(sampler));
+
+	for (int layer = minLayer; layer <= maxLayer; layer++)
+	{
+		const float		minLod			= lodBounds.x();
+		const float		maxLod			= lodBounds.y();
+		const bool		canBeMagnified	= minLod <= sampler.lodThreshold;
+		const bool		canBeMinified	= maxLod > sampler.lodThreshold;
+
+		if (canBeMagnified)
+		{
+			if (isLevelCompareResultValid(texture.getLevel(0), sampler, sampler.magFilter, prec, Vec1(coord.x()), layer, cmpReference, result))
+				return true;
+		}
+
+		if (canBeMinified)
+		{
+			const bool	isNearestMipmap	= isNearestMipmapFilter(sampler.minFilter);
+			const bool	isLinearMipmap	= isLinearMipmapFilter(sampler.minFilter);
+			const int	minTexLevel		= 0;
+			const int	maxTexLevel		= texture.getNumLevels()-1;
+
+			DE_ASSERT(minTexLevel < maxTexLevel);
+
+			if (isLinearMipmap)
+			{
+				const int		minLevel		= de::clamp((int)deFloatFloor(minLod), minTexLevel, maxTexLevel-1);
+				const int		maxLevel		= de::clamp((int)deFloatFloor(maxLod), minTexLevel, maxTexLevel-1);
+
+				DE_ASSERT(minLevel <= maxLevel);
+
+				for (int level = minLevel; level <= maxLevel; level++)
+				{
+					const float		minF	= de::clamp(minLod - float(level), 0.0f, 1.0f);
+					const float		maxF	= de::clamp(maxLod - float(level), 0.0f, 1.0f);
+
+					if (isMipmapLinearCompareResultValid(texture.getLevel(level), texture.getLevel(level+1), sampler, getLevelFilter(sampler.minFilter), prec, Vec1(coord.x()), layer, Vec2(minF, maxF), cmpReference, result))
+						return true;
+				}
+			}
+			else if (isNearestMipmap)
+			{
+				// \note The accurate formula for nearest mipmapping is level = ceil(lod + 0.5) - 1 but Khronos has made
+				//		 decision to allow floor(lod + 0.5) as well.
+				const int		minLevel		= de::clamp((int)deFloatCeil(minLod + 0.5f) - 1,	minTexLevel, maxTexLevel);
+				const int		maxLevel		= de::clamp((int)deFloatFloor(maxLod + 0.5f),		minTexLevel, maxTexLevel);
+
+				DE_ASSERT(minLevel <= maxLevel);
+
+				for (int level = minLevel; level <= maxLevel; level++)
+				{
+					if (isLevelCompareResultValid(texture.getLevel(level), sampler, getLevelFilter(sampler.minFilter), prec, Vec1(coord.x()), layer, cmpReference, result))
+						return true;
+				}
+			}
+			else
+			{
+				if (isLevelCompareResultValid(texture.getLevel(0), sampler, sampler.minFilter, prec, Vec1(coord.x()), layer, cmpReference, result))
+					return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+bool isTexCompareResultValid (const TextureCubeArrayView& texture, const Sampler& sampler, const TexComparePrecision& prec, const Vec4& coord, const Vec2& lodBounds, const float cmpReference, const float result)
+{
+	const Vec3	coord3							= coord.swizzle(0,1,2);
+	int			numPossibleFaces				= 0;
+	CubeFace	possibleFaces[CUBEFACE_LAST];
+
+	DE_ASSERT(isSamplerSupported(sampler));
+
+	getPossibleCubeFaces(coord3, prec.coordBits, &possibleFaces[0], numPossibleFaces);
+
+	if (numPossibleFaces == 0)
+		return true; // Result is undefined.
+
+	for (int tryFaceNdx = 0; tryFaceNdx < numPossibleFaces; tryFaceNdx++)
+	{
+		const CubeFaceFloatCoords	faceCoords		(possibleFaces[tryFaceNdx], projectToFace(possibleFaces[tryFaceNdx], coord3));
+		const float					minLod			= lodBounds.x();
+		const float					maxLod			= lodBounds.y();
+		const bool					canBeMagnified	= minLod <= sampler.lodThreshold;
+		const bool					canBeMinified	= maxLod > sampler.lodThreshold;
+
+		if (canBeMagnified)
+		{
+			if (isCubeLevelCompareResultValid(texture, 0, sampler, sampler.magFilter, prec, faceCoords, coord.w(), cmpReference, result))
+				return true;
+		}
+
+		if (canBeMinified)
+		{
+			const bool	isNearestMipmap	= isNearestMipmapFilter(sampler.minFilter);
+			const bool	isLinearMipmap	= isLinearMipmapFilter(sampler.minFilter);
+			const int	minTexLevel		= 0;
+			const int	maxTexLevel		= texture.getNumLevels()-1;
+
+			DE_ASSERT(minTexLevel < maxTexLevel);
+
+			if (isLinearMipmap)
+			{
+				const int		minLevel		= de::clamp((int)deFloatFloor(minLod), minTexLevel, maxTexLevel-1);
+				const int		maxLevel		= de::clamp((int)deFloatFloor(maxLod), minTexLevel, maxTexLevel-1);
+
+				DE_ASSERT(minLevel <= maxLevel);
+
+				for (int level = minLevel; level <= maxLevel; level++)
+				{
+					const float		minF	= de::clamp(minLod - float(level), 0.0f, 1.0f);
+					const float		maxF	= de::clamp(maxLod - float(level), 0.0f, 1.0f);
+
+					if (isCubeMipmapLinearCompareResultValid(texture, level, sampler, getLevelFilter(sampler.minFilter), prec, faceCoords, coord.w(), Vec2(minF, maxF), cmpReference, result))
+						return true;
+				}
+			}
+			else if (isNearestMipmap)
+			{
+				// \note The accurate formula for nearest mipmapping is level = ceil(lod + 0.5) - 1 but Khronos has made
+				//		 decision to allow floor(lod + 0.5) as well.
+				const int		minLevel		= de::clamp((int)deFloatCeil(minLod + 0.5f) - 1,	minTexLevel, maxTexLevel);
+				const int		maxLevel		= de::clamp((int)deFloatFloor(maxLod + 0.5f),		minTexLevel, maxTexLevel);
+
+				DE_ASSERT(minLevel <= maxLevel);
+
+				for (int level = minLevel; level <= maxLevel; level++)
+				{
+					if (isCubeLevelCompareResultValid(texture, level, sampler, getLevelFilter(sampler.minFilter), prec, faceCoords, coord.w(), cmpReference, result))
+						return true;
+				}
+			}
+			else
+			{
+				if (isCubeLevelCompareResultValid(texture, 0, sampler, sampler.minFilter, prec, faceCoords, coord.w(), cmpReference, result))
 					return true;
 			}
 		}
