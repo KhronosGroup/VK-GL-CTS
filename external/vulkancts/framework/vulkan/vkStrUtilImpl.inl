@@ -571,6 +571,16 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV:						return "VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR:											return "VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR";
+		case VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR:										return "VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR";
+		case VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR:										return "VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR";
+		case VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR:												return "VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR";
+		case VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR:												return "VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR:										return "VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR";
+		case VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR:									return "VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_2_NV:							return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_2_NV";
+		case VK_STRUCTURE_TYPE_CHECKPOINT_DATA_2_NV:											return "VK_STRUCTURE_TYPE_CHECKPOINT_DATA_2_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES_KHR:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_PROPERTIES_NV:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_FEATURES_NV";
@@ -623,6 +633,8 @@ const char* getImageLayoutName (VkImageLayout value)
 		case VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR:							return "VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR";
 		case VK_IMAGE_LAYOUT_SHADING_RATE_OPTIMAL_NV:						return "VK_IMAGE_LAYOUT_SHADING_RATE_OPTIMAL_NV";
 		case VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT:				return "VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT";
+		case VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL_KHR:							return "VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL_KHR";
+		case VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR:						return "VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR";
 		case VK_IMAGE_LAYOUT_MAX_ENUM:										return "VK_IMAGE_LAYOUT_MAX_ENUM";
 		default:															return DE_NULL;
 	}
@@ -2326,6 +2338,7 @@ tcu::Format::Bitfield<32> getAccessFlagsStr (VkAccessFlags value)
 		tcu::Format::BitDesc(VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT,				"VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_NV,					"VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_NV"),
 		tcu::Format::BitDesc(VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_NV,					"VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_NV"),
+		tcu::Format::BitDesc(VK_ACCESS_NONE_KHR,										"VK_ACCESS_NONE_KHR"),
 		tcu::Format::BitDesc(VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV,				"VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV"),
 		tcu::Format::BitDesc(VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV,				"VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV"),
 		tcu::Format::BitDesc(VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR,	"VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR"),
@@ -2553,6 +2566,7 @@ tcu::Format::Bitfield<32> getPipelineStageFlagsStr (VkPipelineStageFlags value)
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV,							"VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT,			"VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV,					"VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_NONE_KHR,									"VK_PIPELINE_STAGE_NONE_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV,					"VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV,			"VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,	"VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
@@ -2589,6 +2603,16 @@ tcu::Format::Bitfield<32> getFenceCreateFlagsStr (VkFenceCreateFlags value)
 	{
 		tcu::Format::BitDesc(VK_FENCE_CREATE_SIGNALED_BIT,			"VK_FENCE_CREATE_SIGNALED_BIT"),
 		tcu::Format::BitDesc(VK_FENCE_CREATE_FLAG_BITS_MAX_ENUM,	"VK_FENCE_CREATE_FLAG_BITS_MAX_ENUM"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getEventCreateFlagsStr (VkEventCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_EVENT_CREATE_DEVICE_ONLY_BIT_KHR,	"VK_EVENT_CREATE_DEVICE_ONLY_BIT_KHR"),
+		tcu::Format::BitDesc(VK_EVENT_CREATE_FLAG_BITS_MAX_ENUM,	"VK_EVENT_CREATE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3276,6 +3300,16 @@ tcu::Format::Bitfield<32> getAcquireProfilingLockFlagsKHRStr (VkAcquireProfiling
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+tcu::Format::Bitfield<32> getSubmitFlagsKHRStr (VkSubmitFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_SUBMIT_PROTECTED_BIT_KHR,		"VK_SUBMIT_PROTECTED_BIT_KHR"),
+		tcu::Format::BitDesc(VK_SUBMIT_FLAG_BITS_MAX_ENUM_KHR,	"VK_SUBMIT_FLAG_BITS_MAX_ENUM_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getDebugReportFlagsEXTStr (VkDebugReportFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -3525,11 +3559,6 @@ tcu::Format::Bitfield<32> getMemoryMapFlagsStr (VkMemoryMapFlags value)
 }
 
 tcu::Format::Bitfield<32> getSemaphoreCreateFlagsStr (VkSemaphoreCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
-}
-
-tcu::Format::Bitfield<32> getEventCreateFlagsStr (VkEventCreateFlags value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -7522,6 +7551,143 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineLibraryCreateInfoKHR&
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tlibraryCount = " << value.libraryCount << '\n';
 	s << "\tpLibraries = " << value.pLibraries << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryBarrier2KHR& value)
+{
+	s << "VkMemoryBarrier2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcStageMask = " << value.srcStageMask << '\n';
+	s << "\tsrcAccessMask = " << value.srcAccessMask << '\n';
+	s << "\tdstStageMask = " << value.dstStageMask << '\n';
+	s << "\tdstAccessMask = " << value.dstAccessMask << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBufferMemoryBarrier2KHR& value)
+{
+	s << "VkBufferMemoryBarrier2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcStageMask = " << value.srcStageMask << '\n';
+	s << "\tsrcAccessMask = " << value.srcAccessMask << '\n';
+	s << "\tdstStageMask = " << value.dstStageMask << '\n';
+	s << "\tdstAccessMask = " << value.dstAccessMask << '\n';
+	s << "\tsrcQueueFamilyIndex = " << value.srcQueueFamilyIndex << '\n';
+	s << "\tdstQueueFamilyIndex = " << value.dstQueueFamilyIndex << '\n';
+	s << "\tbuffer = " << value.buffer << '\n';
+	s << "\toffset = " << value.offset << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageMemoryBarrier2KHR& value)
+{
+	s << "VkImageMemoryBarrier2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcStageMask = " << value.srcStageMask << '\n';
+	s << "\tsrcAccessMask = " << value.srcAccessMask << '\n';
+	s << "\tdstStageMask = " << value.dstStageMask << '\n';
+	s << "\tdstAccessMask = " << value.dstAccessMask << '\n';
+	s << "\toldLayout = " << value.oldLayout << '\n';
+	s << "\tnewLayout = " << value.newLayout << '\n';
+	s << "\tsrcQueueFamilyIndex = " << value.srcQueueFamilyIndex << '\n';
+	s << "\tdstQueueFamilyIndex = " << value.dstQueueFamilyIndex << '\n';
+	s << "\timage = " << value.image << '\n';
+	s << "\tsubresourceRange = " << value.subresourceRange << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDependencyInfoKHR& value)
+{
+	s << "VkDependencyInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdependencyFlags = " << getDependencyFlagsStr(value.dependencyFlags) << '\n';
+	s << "\tmemoryBarrierCount = " << value.memoryBarrierCount << '\n';
+	s << "\tpMemoryBarriers = " << value.pMemoryBarriers << '\n';
+	s << "\tbufferMemoryBarrierCount = " << value.bufferMemoryBarrierCount << '\n';
+	s << "\tpBufferMemoryBarriers = " << value.pBufferMemoryBarriers << '\n';
+	s << "\timageMemoryBarrierCount = " << value.imageMemoryBarrierCount << '\n';
+	s << "\tpImageMemoryBarriers = " << value.pImageMemoryBarriers << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSemaphoreSubmitInfoKHR& value)
+{
+	s << "VkSemaphoreSubmitInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsemaphore = " << value.semaphore << '\n';
+	s << "\tvalue = " << value.value << '\n';
+	s << "\tstageMask = " << value.stageMask << '\n';
+	s << "\tdeviceIndex = " << value.deviceIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCommandBufferSubmitInfoKHR& value)
+{
+	s << "VkCommandBufferSubmitInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcommandBuffer = " << value.commandBuffer << '\n';
+	s << "\tdeviceMask = " << value.deviceMask << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSubmitInfo2KHR& value)
+{
+	s << "VkSubmitInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getSubmitFlagsKHRStr(value.flags) << '\n';
+	s << "\twaitSemaphoreInfoCount = " << value.waitSemaphoreInfoCount << '\n';
+	s << "\tpWaitSemaphoreInfos = " << value.pWaitSemaphoreInfos << '\n';
+	s << "\tcommandBufferInfoCount = " << value.commandBufferInfoCount << '\n';
+	s << "\tpCommandBufferInfos = " << value.pCommandBufferInfos << '\n';
+	s << "\tsignalSemaphoreInfoCount = " << value.signalSemaphoreInfoCount << '\n';
+	s << "\tpSignalSemaphoreInfos = " << value.pSignalSemaphoreInfos << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSynchronization2FeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceSynchronization2FeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsynchronization2 = " << value.synchronization2 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkQueueFamilyCheckpointProperties2NV& value)
+{
+	s << "VkQueueFamilyCheckpointProperties2NV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcheckpointExecutionStageMask = " << value.checkpointExecutionStageMask << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCheckpointData2NV& value)
+{
+	s << "VkCheckpointData2NV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstage = " << value.stage << '\n';
+	s << "\tpCheckpointMarker = " << value.pCheckpointMarker << '\n';
 	s << '}';
 	return s;
 }

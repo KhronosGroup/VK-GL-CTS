@@ -23,15 +23,15 @@
  * \brief Signal ordering tests
  *//*--------------------------------------------------------------------*/
 
-#include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
+#include "vktSynchronizationUtil.hpp"
 
 namespace vkt
 {
 namespace synchronization
 {
 
-tcu::TestCaseGroup*		createSignalOrderTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*		createSignalOrderTests	(tcu::TestContext& testCtx, SynchronizationType type);
 
 } //synchronization
 } // vkt

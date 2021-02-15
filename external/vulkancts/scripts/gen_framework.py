@@ -399,12 +399,13 @@ class Extension:
 		return 'EXT:\n%s ->\nENUMS:\n%s\nCOMPOS:\n%s\nFUNCS:\n%s\nBITF:\n%s\nHAND:\n%s\nDEFS:\n%s\n' % (self.name, self.enums, self.compositeTypes, self.functions, self.bitfields, self.handles, self.definitions, self.versionInCore)
 
 class API:
-	def __init__ (self, versions, definitions, handles, enums, bitfields, compositeTypes, functions, extensions):
+	def __init__ (self, versions, definitions, handles, enums, bitfields, bitfields64, compositeTypes, functions, extensions):
 		self.versions		= versions
 		self.definitions	= definitions
 		self.handles		= handles
 		self.enums			= enums
 		self.bitfields		= bitfields
+		self.bitfields64	= bitfields64
 		self.compositeTypes	= compositeTypes
 		self.functions		= functions # \note contains extension functions as well
 		self.extensions		= extensions
@@ -635,6 +636,7 @@ def parseDefinitions (extensionName, src):
 		if extensionName == None:
 			return True
 		extNameUpper = extensionName.upper()
+		extNameUpper = extNameUpper.replace("VK_KHR_SYNCHRONIZATION2", "VK_KHR_SYNCHRONIZATION_2")
 		extNameUpper = extNameUpper.replace("VK_INTEL_SHADER_INTEGER_FUNCTIONS2", "VK_INTEL_SHADER_INTEGER_FUNCTIONS_2")
 		extNameUpper = extNameUpper.replace("VK_EXT_ROBUSTNESS2", "VK_EXT_ROBUSTNESS_2")
 		extNameUpper = extNameUpper.replace("VK_EXT_FRAGMENT_DENSITY_MAP2", "VK_EXT_FRAGMENT_DENSITY_MAP_2")
@@ -712,7 +714,6 @@ def parseExtensions (src, versions, allFunctions, allCompositeTypes, allEnums, a
 			populateExtensionAliases(enumsByName, extEnums)
 			populateExtensionAliases(bitfieldsByName, extBitfields)
 			populateExtensionAliases(compositeTypesByName, extCompositeTypes)
-
 		extensions.append(Extension(extensionName, extHandles, extEnums, extBitfields, extCompositeTypes, extFunctions, extDefinitions, additionalDefinitions, typedefs, extCoreVersion))
 	return extensions
 
@@ -722,20 +723,38 @@ def parseBitfieldNames (src):
 
 	return matches
 
-def parseAPI (src):
-	versionsData = parseVersions(src)
-	versions     = [Version((v[2], v[3], 0)) for v in versionsData]
-	definitions	 = [Definition("deUint32", v.getInHex(), parsePreprocDefinedValue(src, v.getInHex())) for v in versions]
-	definitions.extend([Definition(type, name, parsePreprocDefinedValue(src, name)) for name, type in DEFINITIONS])
+def parse64bitBitfieldNames (src):
+	ptrn		= r'typedef\s+VkFlags64\s(' + IDENT_PTRN + r')\s*;'
+	matches		= re.findall(ptrn, src)
 
-	handles			= parseHandles(src)
-	rawEnums		= parseEnums(src)
-	bitfieldNames	= parseBitfieldNames(src)
-	enums			= []
-	bitfields		= []
-	bitfieldEnums	= set([getBitEnumNameForBitfield(n) for n in bitfieldNames if getBitEnumNameForBitfield(n) in [enum.name for enum in rawEnums]])
-	compositeTypes	= parseCompositeTypesByVersion(src, versionsData)
-	allFunctions	= parseFunctionsByVersion(src, versionsData)
+	return matches
+
+def parse64bitBitfieldValues (src, bitfieldNamesList):
+
+	bitfields64 = []
+	for bitfieldName in bitfieldNamesList:
+		ptrn		= r'static const ' + bitfieldName + r'\s*(' + IDENT_PTRN + r')\s*=\s*([a-zA-Z0-9_]+)\s*;'
+		matches		= re.findall(ptrn, src)
+		bitfields64.append(Bitfield(bitfieldName, matches))
+
+	return bitfields64
+
+def parseAPI (src):
+	versionsData	= parseVersions(src)
+	versions		= [Version((v[2], v[3], 0)) for v in versionsData]
+	definitions		= [Definition("deUint32", v.getInHex(), parsePreprocDefinedValue(src, v.getInHex())) for v in versions] +\
+					  [Definition(type, name, parsePreprocDefinedValue(src, name)) for name, type in DEFINITIONS]
+
+	handles				= parseHandles(src)
+	rawEnums			= parseEnums(src)
+	bitfieldNames		= parseBitfieldNames(src)
+	bitfieldEnums		= set([getBitEnumNameForBitfield(n) for n in bitfieldNames if getBitEnumNameForBitfield(n) in [enum.name for enum in rawEnums]])
+	bitfield64Names		= parse64bitBitfieldNames(src)
+	bitfields64			= parse64bitBitfieldValues(src, bitfield64Names)
+	enums				= []
+	bitfields			= []
+	compositeTypes		= parseCompositeTypesByVersion(src, versionsData)
+	allFunctions		= parseFunctionsByVersion(src, versionsData)
 
 	for enum in rawEnums:
 		if enum.name in bitfieldEnums:
@@ -759,7 +778,6 @@ def parseAPI (src):
 	for enum in enums:
 		removeAliasedValues(enum)
 
-
 	# Make generator to create Deleter<VkAccelerationStructureNV>
 	for f in allFunctions:
 		if (f.name == 'vkDestroyAccelerationStructureNV'):
@@ -777,6 +795,7 @@ def parseAPI (src):
 		handles			= handles,
 		enums			= enums,
 		bitfields		= bitfields,
+		bitfields64		= bitfields64,
 		compositeTypes	= compositeTypes,
 		functions		= allFunctions,
 		extensions		= extensions)
@@ -870,6 +889,14 @@ def genBitfieldSrc (bitfield):
 		yield "};"
 	yield "typedef deUint32 %s;" % bitfield.name
 
+def genBitfield64Src (bitfield64):
+	if len(bitfield64.values) > 0:
+		yield "typedef deUint64 %s;" % bitfield64.name
+		ptrn = "static const " + bitfield64.name + " %s\t= %s;"
+		for line in indentLines([ptrn % v for v in bitfield64.values]):
+			yield line
+		yield ""
+
 def genCompositeTypeSrc (type):
 	yield "%s %s" % (type.getClassName(), type.name)
 	yield "{"
@@ -959,6 +986,11 @@ def writeBasicTypes (api, filename):
 					if bitfield2.alias == bitfield:
 						yield "typedef %s %s;" % (bitfield2.name, bitfield.name)
 			yield ""
+
+		for bitfield64 in api.bitfields64:
+			for line in genBitfield64Src(bitfield64):
+				yield line
+
 		for line in indentLines(["VK_DEFINE_PLATFORM_TYPE(%s,\t%s);" % (s[0], c) for n, s, c in PLATFORM_TYPES]):
 			yield line
 
@@ -966,6 +998,7 @@ def writeBasicTypes (api, filename):
 			if ext.additionalDefs != None:
 				for definition in ext.additionalDefs:
 					yield "#define " + definition.name + " " + definition.value
+
 	writeInlFile(filename, INL_HEADER, gen())
 
 def writeCompositeTypes (api, filename):

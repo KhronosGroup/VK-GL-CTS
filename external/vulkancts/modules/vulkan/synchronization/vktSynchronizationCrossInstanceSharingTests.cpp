@@ -25,6 +25,7 @@
 
 #include "vkDeviceUtil.hpp"
 #include "vkPlatform.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "deSharedPtr.hpp"
@@ -57,14 +58,16 @@ using de::SharedPtr;
 
 struct TestConfig
 {
-								TestConfig		(const ResourceDescription&						resource_,
+								TestConfig		(SynchronizationType							type_,
+												 const ResourceDescription&						resource_,
 												 vk::VkSemaphoreType							semaphoreType_,
 												 OperationName									writeOp_,
 												 OperationName									readOp_,
 												 vk::VkExternalMemoryHandleTypeFlagBits			memoryHandleType_,
 												 vk::VkExternalSemaphoreHandleTypeFlagBits		semaphoreHandleType_,
 												 bool											dedicated_)
-		: resource				(resource_)
+		: type					(type_)
+		, resource				(resource_)
 		, semaphoreType			(semaphoreType_)
 		, writeOp				(writeOp_)
 		, readOp				(readOp_)
@@ -74,6 +77,7 @@ struct TestConfig
 	{
 	}
 
+	const SynchronizationType							type;
 	const ResourceDescription							resource;
 	const vk::VkSemaphoreType							semaphoreType;
 	const OperationName									writeOp;
@@ -108,9 +112,10 @@ public:
 		m_context.requireDeviceFunctionality("VK_KHR_external_memory");
 
 		if (config.semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE_KHR)
-		{
 			m_context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
-		}
+
+		if (config.type == SynchronizationType::SYNCHRONIZATION2)
+			m_context.requireDeviceFunctionality("VK_KHR_synchronization2");
 
 		if (config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR
 			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR
@@ -352,6 +357,8 @@ vk::Move<vk::VkDevice> createTestDevice (const Context&					context,
 
 	if (context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
 		extensions.push_back("VK_KHR_timeline_semaphore");
+	if (context.isDeviceFunctionalitySupported("VK_KHR_synchronization2"))
+		extensions.push_back("VK_KHR_synchronization2");
 
 	try
 	{
@@ -824,7 +831,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 	}
 }
 
-void recordWriteBarrier (const vk::DeviceInterface&	vkd,
+void recordWriteBarrier (SynchronizationWrapperPtr	synchronizationWrapper,
 						 vk::VkCommandBuffer		commandBuffer,
 						 const Resource&			resource,
 						 const SyncInfo&			writeSync,
@@ -837,53 +844,42 @@ void recordWriteBarrier (const vk::DeviceInterface&	vkd,
 	const vk::VkPipelineStageFlags	dstStageMask		= readSync.stageMask;
 	const vk::VkAccessFlags			dstAccessMask		= readSync.accessMask;
 
-	const vk::VkDependencyFlags		dependencyFlags		= 0;
-
 	if (resource.getType() == RESOURCE_TYPE_IMAGE)
 	{
-		const vk::VkImageMemoryBarrier	barrier				=
-		{
-			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			DE_NULL,
-
-			srcAccessMask,
-			dstAccessMask,
-
-			writeSync.imageLayout,
-			readSync.imageLayout,
-
-			writeQueueFamilyIndex,
-			VK_QUEUE_FAMILY_EXTERNAL,
-
-			resource.getImage().handle,
-			resource.getImage().subresourceRange
-		};
-
-		vkd.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, 0u, (const vk::VkMemoryBarrier*)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1u, (const vk::VkImageMemoryBarrier*)&barrier);
+		const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+			srcStageMask,									// VkPipelineStageFlags2KHR			srcStageMask
+			srcAccessMask,									// VkAccessFlags2KHR				srcAccessMask
+			dstStageMask,									// VkPipelineStageFlags2KHR			dstStageMask
+			dstAccessMask,									// VkAccessFlags2KHR				dstAccessMask
+			writeSync.imageLayout,							// VkImageLayout					oldLayout
+			readSync.imageLayout,							// VkImageLayout					newLayout
+			resource.getImage().handle,						// VkImage							image
+			resource.getImage().subresourceRange,			// VkImageSubresourceRange			subresourceRange
+			writeQueueFamilyIndex,							// deUint32							srcQueueFamilyIndex
+			VK_QUEUE_FAMILY_EXTERNAL						// deUint32							dstQueueFamilyIndex
+		);
+		VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+		synchronizationWrapper->cmdPipelineBarrier(commandBuffer, &dependencyInfo);
 	}
 	else
 	{
-		const vk::VkBufferMemoryBarrier	barrier				=
-		{
-			vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-			DE_NULL,
-
-			srcAccessMask,
-			dstAccessMask,
-
-			writeQueueFamilyIndex,
-			VK_QUEUE_FAMILY_EXTERNAL,
-
-			resource.getBuffer().handle,
-			0u,
-			VK_WHOLE_SIZE
-		};
-
-		vkd.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, 0u, (const vk::VkMemoryBarrier*)DE_NULL, 1u, (const vk::VkBufferMemoryBarrier*)&barrier, 0u, (const vk::VkImageMemoryBarrier*)DE_NULL);
+		const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+			srcStageMask,									// VkPipelineStageFlags2KHR			srcStageMask
+			srcAccessMask,									// VkAccessFlags2KHR				srcAccessMask
+			dstStageMask,									// VkPipelineStageFlags2KHR			dstStageMask
+			dstAccessMask,									// VkAccessFlags2KHR				dstAccessMask
+			resource.getBuffer().handle,					// VkBuffer							buffer
+			0,												// VkDeviceSize						offset
+			VK_WHOLE_SIZE,									// VkDeviceSize						size
+			writeQueueFamilyIndex,							// deUint32							srcQueueFamilyIndex
+			VK_QUEUE_FAMILY_EXTERNAL						// deUint32							dstQueueFamilyIndex
+		);
+		VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+		synchronizationWrapper->cmdPipelineBarrier(commandBuffer, &dependencyInfo);
 	}
 }
 
-void recordReadBarrier (const vk::DeviceInterface&	vkd,
+void recordReadBarrier (SynchronizationWrapperPtr	synchronizationWrapper,
 						vk::VkCommandBuffer			commandBuffer,
 						const Resource&				resource,
 						const SyncInfo&				writeSync,
@@ -896,49 +892,38 @@ void recordReadBarrier (const vk::DeviceInterface&	vkd,
 	const vk::VkPipelineStageFlags	dstStageMask		= readSync.stageMask;
 	const vk::VkAccessFlags			dstAccessMask		= readSync.accessMask;
 
-	const vk::VkDependencyFlags		dependencyFlags		= 0;
-
 	if (resource.getType() == RESOURCE_TYPE_IMAGE)
 	{
-		const vk::VkImageMemoryBarrier	barrier				=
-		{
-			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			DE_NULL,
-
-			srcAccessMask,
-			dstAccessMask,
-
-			writeSync.imageLayout,
-			readSync.imageLayout,
-
-			VK_QUEUE_FAMILY_EXTERNAL,
-			readQueueFamilyIndex,
-
-			resource.getImage().handle,
-			resource.getImage().subresourceRange
-		};
-
-		vkd.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, 0u, (const vk::VkMemoryBarrier*)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1u, (const vk::VkImageMemoryBarrier*)&barrier);
+		const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+			srcStageMask,										// VkPipelineStageFlags2KHR			srcStageMask
+			srcAccessMask,										// VkAccessFlags2KHR				srcAccessMask
+			dstStageMask,										// VkPipelineStageFlags2KHR			dstStageMask
+			dstAccessMask,										// VkAccessFlags2KHR				dstAccessMask
+			writeSync.imageLayout,								// VkImageLayout					oldLayout
+			readSync.imageLayout,								// VkImageLayout					newLayout
+			resource.getImage().handle,							// VkImage							image
+			resource.getImage().subresourceRange,				// VkImageSubresourceRange			subresourceRange
+			VK_QUEUE_FAMILY_EXTERNAL,							// deUint32							srcQueueFamilyIndex
+			readQueueFamilyIndex								// deUint32							dstQueueFamilyIndex
+		);
+		VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+		synchronizationWrapper->cmdPipelineBarrier(commandBuffer, &dependencyInfo);
 	}
 	else
 	{
-		const vk::VkBufferMemoryBarrier	barrier				=
-		{
-			vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-			DE_NULL,
-
-			srcAccessMask,
-			dstAccessMask,
-
-			VK_QUEUE_FAMILY_EXTERNAL,
-			readQueueFamilyIndex,
-
-			resource.getBuffer().handle,
-			0u,
-			VK_WHOLE_SIZE
-		};
-
-		vkd.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, 0u, (const vk::VkMemoryBarrier*)DE_NULL, 1u, (const vk::VkBufferMemoryBarrier*)&barrier, 0u, (const vk::VkImageMemoryBarrier*)DE_NULL);
+		const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+			srcStageMask,										// VkPipelineStageFlags2KHR			srcStageMask
+			srcAccessMask,										// VkAccessFlags2KHR				srcAccessMask
+			dstStageMask,										// VkPipelineStageFlags2KHR			dstStageMask
+			dstAccessMask,										// VkAccessFlags2KHR				dstAccessMask
+			resource.getBuffer().handle,						// VkBuffer							buffer
+			0,													// VkDeviceSize						offset
+			VK_WHOLE_SIZE,										// VkDeviceSize						size
+			VK_QUEUE_FAMILY_EXTERNAL,							// deUint32							srcQueueFamilyIndex
+			readQueueFamilyIndex								// deUint32							dstQueueFamilyIndex
+		);
+		VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+		synchronizationWrapper->cmdPipelineBarrier(commandBuffer, &dependencyInfo);
 	}
 }
 
@@ -1032,21 +1017,21 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 tcu::TestStatus SharingTestInstance::iterate (void)
 {
 	TestLog&								log					(m_context.getTestContext().getLog());
-
+	bool									isTimelineSemaphore (m_config.semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE_KHR);
 	try
 	{
-		const deUint32							queueFamilyA		= (deUint32)m_queueANdx;
-		const deUint32							queueFamilyB		= (deUint32)m_queueBNdx;
+		const deUint32						queueFamilyA		= (deUint32)m_queueANdx;
+		const deUint32						queueFamilyB		= (deUint32)m_queueBNdx;
 
-		const tcu::ScopedLogSection				queuePairSection	(log,
-																	"WriteQueue-" + de::toString(queueFamilyA) + "-ReadQueue-" + de::toString(queueFamilyB),
-																	"WriteQueue-" + de::toString(queueFamilyA) + "-ReadQueue-" + de::toString(queueFamilyB));
+		const tcu::ScopedLogSection			queuePairSection	(log,
+																"WriteQueue-" + de::toString(queueFamilyA) + "-ReadQueue-" + de::toString(queueFamilyB),
+																"WriteQueue-" + de::toString(queueFamilyA) + "-ReadQueue-" + de::toString(queueFamilyB));
 
-		const vk::Unique<vk::VkSemaphore>		semaphoreA			(createExportableSemaphoreType(m_vkdA, *m_deviceA, m_config.semaphoreType, m_semaphoreHandleType));
-		const vk::Unique<vk::VkSemaphore>		semaphoreB			(createSemaphoreType(m_vkdB, *m_deviceB, m_config.semaphoreType));
+		const vk::Unique<vk::VkSemaphore>	semaphoreA			(createExportableSemaphoreType(m_vkdA, *m_deviceA, m_config.semaphoreType, m_semaphoreHandleType));
+		const vk::Unique<vk::VkSemaphore>	semaphoreB			(createSemaphoreType(m_vkdB, *m_deviceB, m_config.semaphoreType));
 
-		const ResourceDescription&				resourceDesc		= m_config.resource;
-		de::MovePtr<Resource>					resourceA;
+		const ResourceDescription&			resourceDesc		= m_config.resource;
+		de::MovePtr<Resource>				resourceA;
 
 		deUint32 exportedMemoryTypeIndex = ~0U;
 		if (resourceDesc.type == RESOURCE_TYPE_IMAGE)
@@ -1104,8 +1089,6 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 		getMemoryNative(m_vkdA, *m_deviceA, resourceA->getMemory(), m_memoryHandleType, nativeMemoryHandle);
 
 		const de::UniquePtr<Resource>			resourceB			(importResource(m_vkdB, *m_deviceB, resourceDesc, m_queueFamilyIndicesB, *m_supportReadOp, *m_supportWriteOp, nativeMemoryHandle, m_memoryHandleType, exportedMemoryTypeIndex, m_config.dedicated));
-
-
 		const vk::VkQueue						queueA				(getQueue(m_vkdA, *m_deviceA, queueFamilyA));
 		const vk::Unique<vk::VkCommandPool>		commandPoolA		(createCommandPool(m_vkdA, *m_deviceA, queueFamilyA));
 		const vk::Unique<vk::VkCommandBuffer>	commandBufferA		(createCommandBuffer(m_vkdA, *m_deviceA, *commandPoolA));
@@ -1129,45 +1112,37 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 
 		const SyncInfo							writeSync			= writeOp->getOutSyncInfo();
 		const SyncInfo							readSync			= readOp->getInSyncInfo();
+		SynchronizationWrapperPtr				synchronizationWrapperA = getSynchronizationWrapper(m_config.type, m_vkdA, isTimelineSemaphore);
+		SynchronizationWrapperPtr				synchronizationWrapperB = getSynchronizationWrapper(m_config.type, m_vkdB, isTimelineSemaphore);
 
 		beginCommandBuffer(m_vkdA, *commandBufferA);
 		writeOp->recordCommands(*commandBufferA);
-		recordWriteBarrier(m_vkdA, *commandBufferA, *resourceA, writeSync, queueFamilyA, readSync);
+		recordWriteBarrier(synchronizationWrapperA, *commandBufferA, *resourceA, writeSync, queueFamilyA, readSync);
 		endCommandBuffer(m_vkdA, *commandBufferA);
 
 		beginCommandBuffer(m_vkdB, *commandBufferB);
-		recordReadBarrier(m_vkdB, *commandBufferB, *resourceB, writeSync, readSync, queueFamilyB);
+		recordReadBarrier(synchronizationWrapperB, *commandBufferB, *resourceB, writeSync, readSync, queueFamilyB);
 		readOp->recordCommands(*commandBufferB);
 		endCommandBuffer(m_vkdB, *commandBufferB);
 
 		{
 			de::Random									rng							(1234);
-			const deUint64								timelineValue				= rng.getInt(1, deIntMaxValue32(32));
-			const vk::VkCommandBuffer					commandBuffer				= *commandBufferA;
-			const vk::VkSemaphore						semaphore					= *semaphoreA;
-			const vk::VkTimelineSemaphoreSubmitInfo		semaphoreSubmitInfo	=
-			{
-				vk::VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,		// VkStructureType	sType;
-				DE_NULL,													// const void*		pNext;
-				0u,															// deUint32			waitSemaphoreValueCount
-				DE_NULL,													// const deUint64*	pWaitSemaphoreValues
-				1u,															// deUint32			signalSemaphoreValueCount
-				&timelineValue,												// const deUint64*	pSignalSemaphoreValues
-			};
-			const vk::VkSubmitInfo						submitInfo					=
-			{
-				vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-				m_config.semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE_KHR ? &semaphoreSubmitInfo : DE_NULL,
+			vk::VkCommandBufferSubmitInfoKHR			cmdBufferInfos				= makeCommonCommandBufferSubmitInfo(*commandBufferA);
+			VkSemaphoreSubmitInfoKHR					signalSemaphoreSubmitInfo	=
+				makeCommonSemaphoreSubmitInfo(*semaphoreA, rng.getInt(1, deIntMaxValue32(32)), VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR);
+
+			synchronizationWrapperA->addSubmitInfo(
 				0u,
 				DE_NULL,
-				DE_NULL,
 				1u,
-				&commandBuffer,
+				&cmdBufferInfos,
 				1u,
-				&semaphore
-			};
+				&signalSemaphoreSubmitInfo,
+				DE_FALSE,
+				isTimelineSemaphore
+			);
 
-			VK_CHECK(m_vkdA.queueSubmit(queueA, 1u, &submitInfo, DE_NULL));
+			VK_CHECK(synchronizationWrapperA->queueSubmit(queueA, DE_NULL));
 
 			{
 				NativeHandle	nativeSemaphoreHandle;
@@ -1177,35 +1152,21 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 			}
 		}
 		{
-			const deUint64								timelineValue			= 1u;
-			const vk::VkCommandBuffer					commandBuffer			= *commandBufferB;
-			const vk::VkSemaphore						semaphore				= *semaphoreB;
-			const vk::VkPipelineStageFlags				dstStage				= readSync.stageMask;
-			const vk::VkTimelineSemaphoreSubmitInfo		semaphoreSubmitInfo		=
-			{
-				vk::VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,		// VkStructureType	sType;
-				DE_NULL,													// const void*		pNext;
-				1u,															// deUint32			waitSemaphoreValueCount
-				&timelineValue,												// const deUint64*	pWaitSemaphoreValues
-				0u,															// deUint32			signalSemaphoreValueCount
-				DE_NULL,													// const deUint64*	pSignalSemaphoreValues
-			};
-			const vk::VkSubmitInfo						submitInfo				=
-			{
-				vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-				m_config.semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE_KHR ? &semaphoreSubmitInfo : DE_NULL,
+			vk::VkCommandBufferSubmitInfoKHR			cmdBufferInfos			= makeCommonCommandBufferSubmitInfo(*commandBufferB);
+			VkSemaphoreSubmitInfoKHR					waitSemaphoreSubmitInfo =
+				makeCommonSemaphoreSubmitInfo(*semaphoreB, 1u, readSync.stageMask);
 
+			synchronizationWrapperB->addSubmitInfo(
 				1u,
-				&semaphore,
-				&dstStage,
-
+				&waitSemaphoreSubmitInfo,
 				1u,
-				&commandBuffer,
+				&cmdBufferInfos,
 				0u,
 				DE_NULL,
-			};
+				isTimelineSemaphore
+			);
 
-			VK_CHECK(m_vkdB.queueSubmit(queueB, 1u, &submitInfo, DE_NULL));
+			VK_CHECK(synchronizationWrapperB->queueSubmit(queueB, DE_NULL));
 		}
 
 		VK_CHECK(m_vkdA.queueWaitIdle(queueA));
@@ -1341,7 +1302,7 @@ struct Progs
 
 } // anonymous
 
-static void createTests (tcu::TestCaseGroup* group)
+static void createTests (tcu::TestCaseGroup* group, SynchronizationType type)
 {
 	tcu::TestContext& testCtx = group->getTestContext();
 	const struct
@@ -1409,7 +1370,7 @@ static void createTests (tcu::TestCaseGroup* group)
 					{
 						if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
 						{
-							const TestConfig	config (resource, (vk::VkSemaphoreType)semaphoreType, writeOp, readOp, cases[caseNdx].memoryType, cases[caseNdx].semaphoreType, dedicated);
+							const TestConfig	config (type, resource, (vk::VkSemaphoreType)semaphoreType, writeOp, readOp, cases[caseNdx].memoryType, cases[caseNdx].semaphoreType, dedicated);
 							std::string			name	= getResourceName(resource) + semaphoreNames[semaphoreType] + cases[caseNdx].nameSuffix;
 
 							opGroup->addChild(new InstanceFactory1<SharingTestInstance, TestConfig, Progs>(testCtx, tcu::NODETYPE_SELF_VALIDATE,  name, "", Progs(), config));
@@ -1427,16 +1388,17 @@ static void createTests (tcu::TestCaseGroup* group)
 	}
 }
 
-static void cleanupGroup (tcu::TestCaseGroup* group)
+static void cleanupGroup (tcu::TestCaseGroup* group, SynchronizationType type)
 {
 	DE_UNREF(group);
+	DE_UNREF(type);
 	// Destroy singleton object
 	InstanceAndDevice::destroy();
 }
 
-tcu::TestCaseGroup* createCrossInstanceSharingTest (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createCrossInstanceSharingTest (tcu::TestContext& testCtx, SynchronizationType type)
 {
-	return createTestGroup(testCtx, "cross_instance", "", createTests, cleanupGroup);
+	return createTestGroup(testCtx, "cross_instance", "", createTests, type, cleanupGroup);
 }
 
 } // synchronization

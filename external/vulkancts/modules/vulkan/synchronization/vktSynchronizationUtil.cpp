@@ -24,6 +24,7 @@
 #include "vktSynchronizationUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "deStringUtil.hpp"
 
 namespace vkt
@@ -374,6 +375,470 @@ Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 	}
 }
 
+// Uses some structures added by VK_KHR_synchronization2 to fill legacy structures.
+// With this approach we dont have to create branch in each test (one for legacy
+// second for new synchronization), this helps to reduce code of some tests.
+class LegacySynchronizationWrapper : public SynchronizationWrapperBase
+{
+protected:
+
+	struct SubmitInfoData
+	{
+		deUint32		waitSemaphoreCount;
+		std::size_t		waitSemaphoreIndex;
+		std::size_t		waitSemaphoreValueIndexPlusOne;
+		deUint32		commandBufferCount;
+		deUint32		commandBufferIndex;
+		deUint32		signalSemaphoreCount;
+		std::size_t		signalSemaphoreIndex;
+		std::size_t		signalSemaphoreValueIndexPlusOne;
+	};
+
+public:
+	LegacySynchronizationWrapper(const DeviceInterface& vk, bool usingTimelineSemaphores, deUint32 submitInfoCount = 1u)
+		: SynchronizationWrapperBase	(vk)
+		, m_submited					(DE_FALSE)
+	{
+		m_waitSemaphores.reserve(submitInfoCount);
+		m_signalSemaphores.reserve(submitInfoCount);
+		m_waitDstStageMasks.reserve(submitInfoCount);
+		m_commandBuffers.reserve(submitInfoCount);
+		m_submitInfoData.reserve(submitInfoCount);
+
+		if (usingTimelineSemaphores)
+			m_timelineSemaphoreValues.reserve(2 * submitInfoCount);
+	}
+
+	~LegacySynchronizationWrapper() = default;
+
+	void addSubmitInfo(deUint32								waitSemaphoreInfoCount,
+					   const VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos,
+					   deUint32								commandBufferInfoCount,
+					   const VkCommandBufferSubmitInfoKHR*	pCommandBufferInfos,
+					   deUint32								signalSemaphoreInfoCount,
+					   const VkSemaphoreSubmitInfoKHR*		pSignalSemaphoreInfos,
+					   bool									usingWaitTimelineSemaphore,
+					   bool									usingSignalTimelineSemaphore) override
+	{
+		m_submitInfoData.push_back(SubmitInfoData{ waitSemaphoreInfoCount, 0, 0, commandBufferInfoCount, 0u, signalSemaphoreInfoCount, 0, 0 });
+		SubmitInfoData& si = m_submitInfoData.back();
+
+		// memorize wait values
+		if (usingWaitTimelineSemaphore)
+		{
+			DE_ASSERT(pWaitSemaphoreInfos);
+			si.waitSemaphoreValueIndexPlusOne = m_timelineSemaphoreValues.size() + 1;
+			for (deUint32 i = 0; i < waitSemaphoreInfoCount; ++i)
+				m_timelineSemaphoreValues.push_back(pWaitSemaphoreInfos[i].value);
+		}
+
+		// memorize signal values
+		if (usingSignalTimelineSemaphore)
+		{
+			DE_ASSERT(pSignalSemaphoreInfos);
+			si.signalSemaphoreValueIndexPlusOne = m_timelineSemaphoreValues.size() + 1;
+			for (deUint32 i = 0; i < signalSemaphoreInfoCount; ++i)
+				m_timelineSemaphoreValues.push_back(pSignalSemaphoreInfos[i].value);
+		}
+
+		// construct list of semaphores that we need to wait on
+		if (waitSemaphoreInfoCount)
+		{
+			si.waitSemaphoreIndex = m_waitSemaphores.size();
+			for (deUint32 i = 0; i < waitSemaphoreInfoCount; ++i)
+			{
+				m_waitSemaphores.push_back(pWaitSemaphoreInfos[i].semaphore);
+				m_waitDstStageMasks.push_back(static_cast<VkPipelineStageFlags>(pWaitSemaphoreInfos[i].stageMask));
+			}
+		}
+
+		// construct list of command buffers
+		if (commandBufferInfoCount)
+		{
+			si.commandBufferIndex = static_cast<deUint32>(m_commandBuffers.size());
+			for (deUint32 i = 0; i < commandBufferInfoCount; ++i)
+				m_commandBuffers.push_back(pCommandBufferInfos[i].commandBuffer);
+		}
+
+		// construct list of semaphores that will be signaled
+		if (signalSemaphoreInfoCount)
+		{
+			si.signalSemaphoreIndex = m_signalSemaphores.size();
+			for (deUint32 i = 0; i < signalSemaphoreInfoCount; ++i)
+				m_signalSemaphores.push_back(pSignalSemaphoreInfos[i].semaphore);
+		}
+	}
+
+	void cmdPipelineBarrier(VkCommandBuffer commandBuffer, VkDependencyInfoKHR* pDependencyInfo) override
+	{
+		DE_ASSERT(pDependencyInfo);
+
+		VkPipelineStageFlags	srcStageMask				= VK_PIPELINE_STAGE_NONE_KHR;
+		VkPipelineStageFlags	dstStageMask				= VK_PIPELINE_STAGE_NONE_KHR;
+		deUint32				memoryBarrierCount			= pDependencyInfo->memoryBarrierCount;
+		VkMemoryBarrier*		pMemoryBarriers				= DE_NULL;
+		deUint32				bufferMemoryBarrierCount	= pDependencyInfo->bufferMemoryBarrierCount;
+		VkBufferMemoryBarrier*	pBufferMemoryBarriers		= DE_NULL;
+		deUint32				imageMemoryBarrierCount		= pDependencyInfo->imageMemoryBarrierCount;
+		VkImageMemoryBarrier*	pImageMemoryBarriers		= DE_NULL;
+
+		// translate VkMemoryBarrier2KHR to VkMemoryBarrier
+		std::vector<VkMemoryBarrier> memoryBarriers;
+		if (memoryBarrierCount)
+		{
+			memoryBarriers.reserve(memoryBarrierCount);
+			for (deUint32 i = 0; i < memoryBarrierCount; ++i)
+			{
+				const VkMemoryBarrier2KHR& pMemoryBarrier = pDependencyInfo->pMemoryBarriers[i];
+				srcStageMask |= static_cast<VkPipelineStageFlags>(pMemoryBarrier.srcStageMask);
+				dstStageMask |= static_cast<VkPipelineStageFlags>(pMemoryBarrier.dstStageMask);
+				memoryBarriers.push_back(makeMemoryBarrier(
+					static_cast<VkAccessFlags>(pMemoryBarrier.srcAccessMask),
+					static_cast<VkAccessFlags>(pMemoryBarrier.dstAccessMask)
+				));
+			}
+			pMemoryBarriers = &memoryBarriers[0];
+		}
+
+		// translate VkBufferMemoryBarrier2KHR to VkBufferMemoryBarrier
+		std::vector<VkBufferMemoryBarrier> bufferMemoryBarriers;
+		if (bufferMemoryBarrierCount)
+		{
+			bufferMemoryBarriers.reserve(bufferMemoryBarrierCount);
+			for (deUint32 i = 0; i < bufferMemoryBarrierCount; ++i)
+			{
+				const VkBufferMemoryBarrier2KHR& pBufferMemoryBarrier = pDependencyInfo->pBufferMemoryBarriers[i];
+				srcStageMask |= static_cast<VkPipelineStageFlags>(pBufferMemoryBarrier.srcStageMask);
+				dstStageMask |= static_cast<VkPipelineStageFlags>(pBufferMemoryBarrier.dstStageMask);
+				bufferMemoryBarriers.push_back(makeBufferMemoryBarrier(
+					static_cast<VkAccessFlags>(pBufferMemoryBarrier.srcAccessMask),
+					static_cast<VkAccessFlags>(pBufferMemoryBarrier.dstAccessMask),
+					pBufferMemoryBarrier.buffer,
+					pBufferMemoryBarrier.offset,
+					pBufferMemoryBarrier.size,
+					pBufferMemoryBarrier.srcQueueFamilyIndex,
+					pBufferMemoryBarrier.dstQueueFamilyIndex
+				));
+			}
+			pBufferMemoryBarriers = &bufferMemoryBarriers[0];
+		}
+
+		// translate VkImageMemoryBarrier2KHR to VkImageMemoryBarrier
+		std::vector<VkImageMemoryBarrier> imageMemoryBarriers;
+		if (imageMemoryBarrierCount)
+		{
+			imageMemoryBarriers.reserve(imageMemoryBarrierCount);
+			for (deUint32 i = 0; i < imageMemoryBarrierCount; ++i)
+			{
+				const VkImageMemoryBarrier2KHR& pImageMemoryBarrier = pDependencyInfo->pImageMemoryBarriers[i];
+				srcStageMask |= static_cast<VkPipelineStageFlags>(pImageMemoryBarrier.srcStageMask);
+				dstStageMask |= static_cast<VkPipelineStageFlags>(pImageMemoryBarrier.dstStageMask);
+				imageMemoryBarriers.push_back(makeImageMemoryBarrier(
+					static_cast<VkAccessFlags>(pImageMemoryBarrier.srcAccessMask),
+					static_cast<VkAccessFlags>(pImageMemoryBarrier.dstAccessMask),
+					pImageMemoryBarrier.oldLayout,
+					pImageMemoryBarrier.newLayout,
+					pImageMemoryBarrier.image,
+					pImageMemoryBarrier.subresourceRange,
+					pImageMemoryBarrier.srcQueueFamilyIndex,
+					pImageMemoryBarrier.dstQueueFamilyIndex
+				));
+			}
+			pImageMemoryBarriers = &imageMemoryBarriers[0];
+		}
+
+		m_vk.cmdPipelineBarrier(
+			commandBuffer,
+			srcStageMask,
+			dstStageMask,
+			(VkDependencyFlags)0,
+			memoryBarrierCount,
+			pMemoryBarriers,
+			bufferMemoryBarrierCount,
+			pBufferMemoryBarriers,
+			imageMemoryBarrierCount,
+			pImageMemoryBarriers
+		);
+	}
+
+	void cmdSetEvent(VkCommandBuffer commandBuffer, VkEvent event, VkDependencyInfoKHR* pDependencyInfo) override
+	{
+		DE_ASSERT(pDependencyInfo);
+
+		VkPipelineStageFlags2KHR srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR;
+		if (pDependencyInfo->pMemoryBarriers)
+			srcStageMask = pDependencyInfo->pMemoryBarriers[0].srcStageMask;
+		if (pDependencyInfo->pBufferMemoryBarriers)
+			srcStageMask = pDependencyInfo->pBufferMemoryBarriers[0].srcStageMask;
+		if (pDependencyInfo->pImageMemoryBarriers)
+			srcStageMask = pDependencyInfo->pImageMemoryBarriers[0].srcStageMask;
+
+		m_vk.cmdSetEvent(commandBuffer, event, static_cast<VkPipelineStageFlags>(srcStageMask));
+	}
+
+	void cmdResetEvent(VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags2KHR flag) override
+	{
+		VkPipelineStageFlags legacyStageMask = static_cast<VkPipelineStageFlags>(flag);
+		m_vk.cmdResetEvent(commandBuffer, event, legacyStageMask);
+	}
+
+	void cmdWaitEvents(VkCommandBuffer commandBuffer, deUint32 eventCount, const VkEvent* pEvents, VkDependencyInfoKHR* pDependencyInfo) override
+	{
+		DE_ASSERT(pDependencyInfo);
+
+		VkPipelineStageFlags2KHR			srcStageMask				= VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR;
+		VkPipelineStageFlags2KHR			dstStageMask				= VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR;
+		deUint32							memoryBarrierCount			= pDependencyInfo->memoryBarrierCount;
+		deUint32							bufferMemoryBarrierCount	= pDependencyInfo->bufferMemoryBarrierCount;
+		deUint32							imageMemoryBarrierCount		= pDependencyInfo->imageMemoryBarrierCount;
+		VkMemoryBarrier*					pMemoryBarriers				= DE_NULL;
+		VkBufferMemoryBarrier*				pBufferMemoryBarriers		= DE_NULL;
+		VkImageMemoryBarrier*				pImageMemoryBarriers		= DE_NULL;
+		std::vector<VkMemoryBarrier>		memoryBarriers;
+		std::vector<VkBufferMemoryBarrier>	bufferMemoryBarriers;
+		std::vector<VkImageMemoryBarrier>	imageMemoryBarriers;
+
+		if (pDependencyInfo->pMemoryBarriers)
+		{
+			srcStageMask = pDependencyInfo->pMemoryBarriers[0].srcStageMask;
+			dstStageMask = pDependencyInfo->pMemoryBarriers[0].dstStageMask;
+
+			memoryBarriers.reserve(memoryBarrierCount);
+			for (deUint32 i = 0; i < memoryBarrierCount; ++i)
+			{
+				const VkMemoryBarrier2KHR& mb = pDependencyInfo->pMemoryBarriers[i];
+				memoryBarriers.push_back(
+					makeMemoryBarrier(
+						static_cast<VkAccessFlags>(mb.srcAccessMask),
+						static_cast<VkAccessFlags>(mb.dstAccessMask)
+					)
+				);
+			}
+			pMemoryBarriers = &memoryBarriers[0];
+		}
+		if (pDependencyInfo->pBufferMemoryBarriers)
+		{
+			srcStageMask = pDependencyInfo->pBufferMemoryBarriers[0].srcStageMask;
+			dstStageMask = pDependencyInfo->pBufferMemoryBarriers[0].dstStageMask;
+
+			bufferMemoryBarriers.reserve(bufferMemoryBarrierCount);
+			for (deUint32 i = 0; i < bufferMemoryBarrierCount; ++i)
+			{
+				const VkBufferMemoryBarrier2KHR& bmb = pDependencyInfo->pBufferMemoryBarriers[i];
+				bufferMemoryBarriers.push_back(
+					makeBufferMemoryBarrier(
+						static_cast<VkAccessFlags>(bmb.srcAccessMask),
+						static_cast<VkAccessFlags>(bmb.dstAccessMask),
+						bmb.buffer,
+						bmb.offset,
+						bmb.size,
+						bmb.srcQueueFamilyIndex,
+						bmb.dstQueueFamilyIndex
+					)
+				);
+			}
+			pBufferMemoryBarriers = &bufferMemoryBarriers[0];
+		}
+		if (pDependencyInfo->pImageMemoryBarriers)
+		{
+			srcStageMask = pDependencyInfo->pImageMemoryBarriers[0].srcStageMask;
+			dstStageMask = pDependencyInfo->pImageMemoryBarriers[0].dstStageMask;
+
+			imageMemoryBarriers.reserve(imageMemoryBarrierCount);
+			for (deUint32 i = 0; i < imageMemoryBarrierCount; ++i)
+			{
+				const VkImageMemoryBarrier2KHR& imb = pDependencyInfo->pImageMemoryBarriers[i];
+				imageMemoryBarriers.push_back(
+					makeImageMemoryBarrier(
+						static_cast<VkAccessFlags>(imb.srcAccessMask),
+						static_cast<VkAccessFlags>(imb.dstAccessMask),
+						imb.oldLayout,
+						imb.newLayout,
+						imb.image,
+						imb.subresourceRange,
+						imb.srcQueueFamilyIndex,
+						imb.dstQueueFamilyIndex
+					)
+				);
+			}
+			pImageMemoryBarriers = &imageMemoryBarriers[0];
+		}
+
+		m_vk.cmdWaitEvents(commandBuffer, eventCount, pEvents,
+			static_cast<VkPipelineStageFlags>(srcStageMask), static_cast<VkPipelineStageFlags>(dstStageMask),
+			memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers);
+	}
+
+	VkResult queueSubmit(VkQueue queue, VkFence fence) override
+	{
+		// make sure submit info was added
+		DE_ASSERT(!m_submitInfoData.empty());
+
+		// make sure separate LegacySynchronizationWrapper is created per single submit
+		DE_ASSERT(!m_submited);
+
+		std::vector<VkSubmitInfo> submitInfo(m_submitInfoData.size(), { VK_STRUCTURE_TYPE_SUBMIT_INFO, DE_NULL, 0u, DE_NULL, DE_NULL, 0u, DE_NULL, 0u, DE_NULL });
+
+		std::vector<VkTimelineSemaphoreSubmitInfo> timelineSemaphoreSubmitInfo;
+		timelineSemaphoreSubmitInfo.reserve(m_submitInfoData.size());
+
+		// translate indexes from m_submitInfoData to pointers and construct VkSubmitInfo
+		for (deUint32 i = 0; i < m_submitInfoData.size(); ++i)
+		{
+			auto&			data	= m_submitInfoData[i];
+			VkSubmitInfo&	si		= submitInfo[i];
+
+			si.waitSemaphoreCount	= data.waitSemaphoreCount;
+			si.commandBufferCount	= data.commandBufferCount;
+			si.signalSemaphoreCount	= data.signalSemaphoreCount;
+
+			if (data.waitSemaphoreValueIndexPlusOne || data.signalSemaphoreValueIndexPlusOne)
+			{
+				deUint64* pWaitSemaphoreValues = DE_NULL;
+				if (data.waitSemaphoreValueIndexPlusOne)
+					pWaitSemaphoreValues = &m_timelineSemaphoreValues[data.waitSemaphoreValueIndexPlusOne - 1];
+
+				deUint64* pSignalSemaphoreValues = DE_NULL;
+				if (data.signalSemaphoreValueIndexPlusOne)
+					pSignalSemaphoreValues = &m_timelineSemaphoreValues[data.signalSemaphoreValueIndexPlusOne - 1];
+
+				timelineSemaphoreSubmitInfo.push_back({
+					VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,		// VkStructureType	sType;
+					DE_NULL,												// const void*		pNext;
+					data.waitSemaphoreCount,								// deUint32			waitSemaphoreValueCount
+					pWaitSemaphoreValues,									// const deUint64*	pWaitSemaphoreValues
+					data.signalSemaphoreCount,								// deUint32			signalSemaphoreValueCount
+					pSignalSemaphoreValues									// const deUint64*	pSignalSemaphoreValues
+				});
+				si.pNext = &timelineSemaphoreSubmitInfo.back();
+			}
+
+			if (data.waitSemaphoreCount)
+			{
+				si.pWaitSemaphores		= &m_waitSemaphores[data.waitSemaphoreIndex];
+				si.pWaitDstStageMask	= &m_waitDstStageMasks[data.waitSemaphoreIndex];
+			}
+
+			if (data.commandBufferCount)
+				si.pCommandBuffers = &m_commandBuffers[data.commandBufferIndex];
+
+			if (data.signalSemaphoreCount)
+				si.pSignalSemaphores = &m_signalSemaphores[data.signalSemaphoreIndex];
+		}
+
+		m_submited = DE_TRUE;
+		return m_vk.queueSubmit(queue, static_cast<deUint32>(submitInfo.size()), &submitInfo[0], fence);
+	}
+
+protected:
+
+	std::vector<VkSemaphore>			m_waitSemaphores;
+	std::vector<VkSemaphore>			m_signalSemaphores;
+	std::vector<VkPipelineStageFlags>	m_waitDstStageMasks;
+	std::vector<VkCommandBuffer>		m_commandBuffers;
+	std::vector<SubmitInfoData>			m_submitInfoData;
+	std::vector<deUint64>				m_timelineSemaphoreValues;
+	bool								m_submited;
+};
+
+class Synchronization2Wrapper : public SynchronizationWrapperBase
+{
+public:
+	Synchronization2Wrapper(const DeviceInterface& vk, deUint32 submitInfoCount)
+		: SynchronizationWrapperBase(vk)
+	{
+		m_submitInfo.reserve(submitInfoCount);
+	}
+
+	~Synchronization2Wrapper() = default;
+
+	void addSubmitInfo(deUint32								waitSemaphoreInfoCount,
+					   const VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos,
+					   deUint32								commandBufferInfoCount,
+					   const VkCommandBufferSubmitInfoKHR*	pCommandBufferInfos,
+					   deUint32								signalSemaphoreInfoCount,
+					   const VkSemaphoreSubmitInfoKHR*		pSignalSemaphoreInfos,
+					   bool									usingWaitTimelineSemaphore,
+					   bool									usingSignalTimelineSemaphore) override
+	{
+		DE_UNREF(usingWaitTimelineSemaphore);
+		DE_UNREF(usingSignalTimelineSemaphore);
+
+		m_submitInfo.push_back(VkSubmitInfo2KHR{
+			VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR,		// VkStructureType						sType
+			DE_NULL,									// const void*							pNext
+			0u,											// VkSubmitFlagsKHR						flags
+			waitSemaphoreInfoCount,						// deUint32								waitSemaphoreInfoCount
+			pWaitSemaphoreInfos,						// const VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos
+			commandBufferInfoCount,						// deUint32								commandBufferInfoCount
+			pCommandBufferInfos,						// const VkCommandBufferSubmitInfoKHR*	pCommandBufferInfos
+			signalSemaphoreInfoCount,					// deUint32								signalSemaphoreInfoCount
+			pSignalSemaphoreInfos						// const VkSemaphoreSubmitInfoKHR*		pSignalSemaphoreInfos
+		});
+	}
+
+	void cmdPipelineBarrier(VkCommandBuffer commandBuffer, VkDependencyInfoKHR* pDependencyInfo) override
+	{
+		m_vk.cmdPipelineBarrier2KHR(commandBuffer, pDependencyInfo);
+	}
+
+	void cmdSetEvent(VkCommandBuffer commandBuffer, VkEvent event, VkDependencyInfoKHR* pDependencyInfo) override
+	{
+		m_vk.cmdSetEvent2KHR(commandBuffer, event, pDependencyInfo);
+	}
+
+	void cmdWaitEvents(VkCommandBuffer commandBuffer, deUint32 eventCount, const VkEvent* pEvents, VkDependencyInfoKHR* pDependencyInfo) override
+	{
+		m_vk.cmdWaitEvents2KHR(commandBuffer, eventCount, pEvents, pDependencyInfo);
+	}
+
+	void cmdResetEvent(VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags2KHR flag) override
+	{
+		m_vk.cmdResetEvent2KHR(commandBuffer, event, flag);
+	}
+
+	VkResult queueSubmit(VkQueue queue, VkFence fence) override
+	{
+		return m_vk.queueSubmit2KHR(queue, static_cast<deUint32>(m_submitInfo.size()), &m_submitInfo[0], fence);
+	}
+
+protected:
+
+	std::vector<VkSubmitInfo2KHR> m_submitInfo;
+};
+
+SynchronizationWrapperPtr getSynchronizationWrapper(SynchronizationType		type,
+													const DeviceInterface&	vk,
+													bool					usingTimelineSemaphores,
+													deUint32				submitInfoCount)
+{
+	return (type == SynchronizationType::LEGACY)
+		? SynchronizationWrapperPtr(new LegacySynchronizationWrapper(vk, usingTimelineSemaphores, submitInfoCount))
+		: SynchronizationWrapperPtr(new Synchronization2Wrapper(vk, submitInfoCount));
+}
+
+void submitCommandsAndWait(SynchronizationWrapperPtr	synchronizationWrapper,
+						   const DeviceInterface&		vk,
+						   const VkDevice				device,
+						   const VkQueue				queue,
+						   const VkCommandBuffer		cmdBuffer)
+{
+	VkCommandBufferSubmitInfoKHR commandBufferInfoCount = makeCommonCommandBufferSubmitInfo(cmdBuffer);
+
+	synchronizationWrapper->addSubmitInfo(
+		0u,										// deUint32								waitSemaphoreInfoCount
+		DE_NULL,								// const VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos
+		1u,										// deUint32								commandBufferInfoCount
+		&commandBufferInfoCount,				// const VkCommandBufferSubmitInfoKHR*	pCommandBufferInfos
+		0u,										// deUint32								signalSemaphoreInfoCount
+		DE_NULL									// const VkSemaphoreSubmitInfoKHR*		pSignalSemaphoreInfos
+	);
+
+	const Unique<VkFence> fence(createFence(vk, device));
+	VK_CHECK(synchronizationWrapper->queueSubmit(queue, *fence));
+	VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
+}
+
 void requireFeatures (const InstanceInterface& vki, const VkPhysicalDevice physDevice, const FeatureFlags flags)
 {
 	const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(vki, physDevice);
@@ -438,6 +903,46 @@ bool isIndirectBuffer (const ResourceType type)
 			return false;
 	}
 }
+
+VkCommandBufferSubmitInfoKHR makeCommonCommandBufferSubmitInfo (const VkCommandBuffer cmdBuf)
+{
+	return
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR,	// VkStructureType		sType
+		DE_NULL,											// const void*			pNext
+		cmdBuf,												// VkCommandBuffer		commandBuffer
+		0u													// uint32_t				deviceMask
+	};
+}
+
+VkSemaphoreSubmitInfoKHR makeCommonSemaphoreSubmitInfo(VkSemaphore semaphore, deUint64 value, VkPipelineStageFlags2KHR stageMask)
+{
+	return
+	{
+		VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR,	// VkStructureType				sType
+		DE_NULL,										// const void*					pNext
+		semaphore,										// VkSemaphore					semaphore
+		value,											// deUint64						value
+		stageMask,										// VkPipelineStageFlags2KHR		stageMask
+		0u												// deUint32						deviceIndex
+	};
+}
+
+VkDependencyInfoKHR makeCommonDependencyInfo(const VkMemoryBarrier2KHR* pMemoryBarrier, const VkBufferMemoryBarrier2KHR* pBufferMemoryBarrier, const VkImageMemoryBarrier2KHR* pImageMemoryBarrier)
+{
+	return
+	{
+		VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,		// VkStructureType					sType
+		DE_NULL,									// const void*						pNext
+		VK_DEPENDENCY_BY_REGION_BIT,				// VkDependencyFlags				dependencyFlags
+		!!pMemoryBarrier,							// deUint32							memoryBarrierCount
+		pMemoryBarrier,								// const VkMemoryBarrier2KHR*		pMemoryBarriers
+		!!pBufferMemoryBarrier,						// deUint32							bufferMemoryBarrierCount
+		pBufferMemoryBarrier,						// const VkBufferMemoryBarrier2KHR* pBufferMemoryBarriers
+		!!pImageMemoryBarrier,						// deUint32							imageMemoryBarrierCount
+		pImageMemoryBarrier							// const VkImageMemoryBarrier2KHR*	pImageMemoryBarriers
+	};
+};
 
 PipelineCacheData::PipelineCacheData (void)
 {

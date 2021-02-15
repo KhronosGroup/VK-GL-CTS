@@ -1066,6 +1066,56 @@ template<> VkStructureType getStructureType<VkPipelineLibraryCreateInfoKHR> (voi
 	return VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkMemoryBarrier2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkBufferMemoryBarrier2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkImageMemoryBarrier2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDependencyInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkSemaphoreSubmitInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCommandBufferSubmitInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkSubmitInfo2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceSynchronization2FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkQueueFamilyCheckpointProperties2NV> (void)
+{
+	return VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_2_NV;
+}
+
+template<> VkStructureType getStructureType<VkCheckpointData2NV> (void)
+{
+	return VK_STRUCTURE_TYPE_CHECKPOINT_DATA_2_NV;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES_KHR;

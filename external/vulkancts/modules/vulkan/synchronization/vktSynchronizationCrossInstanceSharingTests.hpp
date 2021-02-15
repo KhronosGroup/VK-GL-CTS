@@ -23,16 +23,15 @@
  * \brief Synchronization tests for resources shared between instances.
  *//*--------------------------------------------------------------------*/
 
-#include "vkDefs.hpp"
-
 #include "tcuTestCase.hpp"
+#include "vktSynchronizationUtil.hpp"
 
 namespace vkt
 {
 namespace synchronization
 {
 
-tcu::TestCaseGroup* createCrossInstanceSharingTest (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createCrossInstanceSharingTest (tcu::TestContext& testCtx, SynchronizationType type);
 
 } // synchronization
 } // vkt

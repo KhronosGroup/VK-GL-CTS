@@ -70,6 +70,7 @@ typedef deUint64	VkDeviceSize;
 typedef deUint32	VkSampleMask;
 typedef deUint32	VkBool32;
 typedef deUint32	VkFlags;
+typedef deUint64	VkFlags64;
 typedef deUint64	VkDeviceAddress;
 
 // enum HandleType { HANDLE_TYPE_INSTANCE, ... };

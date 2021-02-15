@@ -2899,6 +2899,113 @@ struct VkPipelineLibraryCreateInfoKHR
 	const VkPipeline*	pLibraries;
 };
 
+struct VkMemoryBarrier2KHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkPipelineStageFlags2KHR	srcStageMask;
+	VkAccessFlags2KHR			srcAccessMask;
+	VkPipelineStageFlags2KHR	dstStageMask;
+	VkAccessFlags2KHR			dstAccessMask;
+};
+
+struct VkBufferMemoryBarrier2KHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkPipelineStageFlags2KHR	srcStageMask;
+	VkAccessFlags2KHR			srcAccessMask;
+	VkPipelineStageFlags2KHR	dstStageMask;
+	VkAccessFlags2KHR			dstAccessMask;
+	deUint32					srcQueueFamilyIndex;
+	deUint32					dstQueueFamilyIndex;
+	VkBuffer					buffer;
+	VkDeviceSize				offset;
+	VkDeviceSize				size;
+};
+
+struct VkImageMemoryBarrier2KHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkPipelineStageFlags2KHR	srcStageMask;
+	VkAccessFlags2KHR			srcAccessMask;
+	VkPipelineStageFlags2KHR	dstStageMask;
+	VkAccessFlags2KHR			dstAccessMask;
+	VkImageLayout				oldLayout;
+	VkImageLayout				newLayout;
+	deUint32					srcQueueFamilyIndex;
+	deUint32					dstQueueFamilyIndex;
+	VkImage						image;
+	VkImageSubresourceRange		subresourceRange;
+};
+
+struct VkDependencyInfoKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkDependencyFlags					dependencyFlags;
+	deUint32							memoryBarrierCount;
+	const VkMemoryBarrier2KHR*			pMemoryBarriers;
+	deUint32							bufferMemoryBarrierCount;
+	const VkBufferMemoryBarrier2KHR*	pBufferMemoryBarriers;
+	deUint32							imageMemoryBarrierCount;
+	const VkImageMemoryBarrier2KHR*		pImageMemoryBarriers;
+};
+
+struct VkSemaphoreSubmitInfoKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkSemaphore					semaphore;
+	deUint64					value;
+	VkPipelineStageFlags2KHR	stageMask;
+	deUint32					deviceIndex;
+};
+
+struct VkCommandBufferSubmitInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkCommandBuffer	commandBuffer;
+	deUint32		deviceMask;
+};
+
+struct VkSubmitInfo2KHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkSubmitFlagsKHR					flags;
+	deUint32							waitSemaphoreInfoCount;
+	const VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos;
+	deUint32							commandBufferInfoCount;
+	const VkCommandBufferSubmitInfoKHR*	pCommandBufferInfos;
+	deUint32							signalSemaphoreInfoCount;
+	const VkSemaphoreSubmitInfoKHR*		pSignalSemaphoreInfos;
+};
+
+struct VkPhysicalDeviceSynchronization2FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		synchronization2;
+};
+
+struct VkQueueFamilyCheckpointProperties2NV
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkPipelineStageFlags2KHR	checkpointExecutionStageMask;
+};
+
+struct VkCheckpointData2NV
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkPipelineStageFlags2KHR	stage;
+	void*						pCheckpointMarker;
+};
+
 struct VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR
 {
 	VkStructureType	sType;

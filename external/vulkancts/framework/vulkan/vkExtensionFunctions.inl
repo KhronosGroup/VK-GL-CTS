@@ -290,6 +290,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_synchronization2")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_zero_initialize_workgroup_memory")
 	{
 		return;
@@ -1281,6 +1285,18 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_synchronization2")
+	{
+		functions.push_back("vkCmdSetEvent2KHR");
+		functions.push_back("vkCmdResetEvent2KHR");
+		functions.push_back("vkCmdWaitEvents2KHR");
+		functions.push_back("vkCmdPipelineBarrier2KHR");
+		functions.push_back("vkCmdWriteTimestamp2KHR");
+		functions.push_back("vkQueueSubmit2KHR");
+		functions.push_back("vkCmdWriteBufferMarker2AMD");
+		functions.push_back("vkGetQueueCheckpointData2NV");
+		return;
+	}
 	if (extName == "VK_KHR_zero_initialize_workgroup_memory")
 	{
 		return;
@@ -2126,6 +2142,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_KHR_buffer_device_address",
 	"VK_KHR_deferred_host_operations",
 	"VK_KHR_pipeline_executable_properties",
+	"VK_KHR_synchronization2",
 	"VK_KHR_copy_commands2",
 	"VK_EXT_debug_marker",
 	"VK_EXT_transform_feedback",
