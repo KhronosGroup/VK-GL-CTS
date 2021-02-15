@@ -474,6 +474,8 @@ tcu::TestStatus fullScreenExclusiveTest(Context& context,
 
 	bool										fullScreenAcquired			= (testParams.fseType != VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT);
 
+	bool										fullScreenLost				= false;
+
 	try
 	{
 		const deUint32	numFramesToRender					= 60;
@@ -517,21 +519,28 @@ tcu::TestStatus fullScreenExclusiveTest(Context& context,
 
 			VK_CHECK(vkd.resetFences(device, 1, &imageReadyFence));
 
+			VkResult	acquireResult;
+
 			{
-				const VkResult	acquireResult	= vkd.acquireNextImageKHR(device,
-																		  *swapchain,
-																		  std::numeric_limits<deUint64>::max(),
-																		  imageReadySemaphore,
-																		  (vk::VkFence)0,
-																		  &imageNdx);
+				acquireResult	= vkd.acquireNextImageKHR(device,
+														  *swapchain,
+														  std::numeric_limits<deUint64>::max(),
+														  imageReadySemaphore,
+														  (vk::VkFence)0,
+														  &imageNdx);
 				if (acquireResult == VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT)
+				{
 					context.getTestContext().getLog() << tcu::TestLog::Message << "Got VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT at vkAcquireNextImageKHR" << tcu::TestLog::EndMessage;
+
+					fullScreenLost = true;
+				}
 				VK_CHECK_WSI(acquireResult);
 			}
 
-			TCU_CHECK((size_t)imageNdx < swapchainImages.size());
-
+			if (acquireResult != VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT)
 			{
+				TCU_CHECK((size_t)imageNdx < swapchainImages.size());
+
 				const VkSemaphore			renderingCompleteSemaphore	= **renderingCompleteSemaphores[frameNdx%renderingCompleteSemaphores.size()];
 				const VkCommandBuffer		commandBuffer				= **commandBuffers[frameNdx%commandBuffers.size()];
 				const VkPipelineStageFlags	waitDstStage				= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -563,8 +572,17 @@ tcu::TestStatus fullScreenExclusiveTest(Context& context,
 				VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, imageReadyFence));
 				const VkResult presentResult = vkd.queuePresentKHR(devHelper.queue, &presentInfo);
 				if (presentResult == VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT)
+				{
 					context.getTestContext().getLog() << tcu::TestLog::Message << "Got VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT at vkQueuePresentKHR" << tcu::TestLog::EndMessage;
+
+					fullScreenLost = true;
+				}
 				VK_CHECK_WSI(presentResult);
+			}
+			else
+			{
+				// image was not acquired, just roll the synchronization
+				VK_CHECK(vkd.queueSubmit(devHelper.queue, 0u, DE_NULL, imageReadyFence));
 			}
 		}
 
@@ -581,19 +599,30 @@ tcu::TestStatus fullScreenExclusiveTest(Context& context,
 	{
 		const VkResult releaseResult = vkd.releaseFullScreenExclusiveModeEXT(device, *swapchain);
 		if (releaseResult == VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT)
+		{
 			context.getTestContext().getLog() << tcu::TestLog::Message << "Got VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT at vkReleaseFullScreenExclusiveModeEXT" << tcu::TestLog::EndMessage;
+
+			fullScreenLost = true;
+		}
 		VK_CHECK_WSI(releaseResult);
 	}
 
 	native.window->setVisible(false);
 
-	if (fullScreenAcquired)
+	if (fullScreenAcquired && !fullScreenLost)
 	{
 		return tcu::TestStatus::pass("Rendering tests succeeded");
 	}
 	else
 	{
-		return  tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed to acquire full screen exclusive, but did not end with an error.");
+		if (fullScreenLost)
+		{
+			return  tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Full screen exclusive was lost during test, but did not end with an error.");
+		}
+		else
+		{
+			return  tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed to acquire full screen exclusive, but did not end with an error.");
+		}
 	}
 }
 
