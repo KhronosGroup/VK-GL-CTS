@@ -7979,7 +7979,7 @@ tcu::TestCaseGroup* createDecorationGroupTests(tcu::TestContext& testCtx)
 
 		"OpDecorate %group1 RelaxedPrecision\n"
 		"OpDecorate %group3 RelaxedPrecision\n"
-		"OpDecorate %group3 Invariant\n"
+		"OpDecorate %group3 Flat\n"
 		"OpDecorate %group3 Restrict\n"
 		"%group0 = OpDecorationGroup\n"
 		"%group1 = OpDecorationGroup\n"
