@@ -1293,8 +1293,6 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdPipelineBarrier2KHR");
 		functions.push_back("vkCmdWriteTimestamp2KHR");
 		functions.push_back("vkQueueSubmit2KHR");
-		functions.push_back("vkCmdWriteBufferMarker2AMD");
-		functions.push_back("vkGetQueueCheckpointData2NV");
 		return;
 	}
 	if (extName == "VK_KHR_zero_initialize_workgroup_memory")
@@ -1629,7 +1627,6 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdCopyAccelerationStructureNV");
 		functions.push_back("vkCmdTraceRaysNV");
 		functions.push_back("vkCreateRayTracingPipelinesNV");
-		functions.push_back("vkGetRayTracingShaderGroupHandlesKHR");
 		functions.push_back("vkGetRayTracingShaderGroupHandlesNV");
 		functions.push_back("vkGetAccelerationStructureHandleNV");
 		functions.push_back("vkCmdWriteAccelerationStructuresPropertiesNV");
