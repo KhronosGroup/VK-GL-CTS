@@ -73,6 +73,7 @@ struct CheckSupportParams
 		needsInt8		|= isDataTypeIntOrIVec8Bit(dt) || isDataTypeUintOrUVec8Bit(dt);
 		needsInt16		|= isDataTypeIntOrIVec16Bit(dt) || isDataTypeUintOrUVec16Bit(dt);
 		needsFloat16	|= isDataTypeFloat16OrVec(dt);
+		needsFloat64	|= isDataTypeDoubleOrDVec(dt);
 	}
 };
 
@@ -904,7 +905,7 @@ void ZeroTest::initPrograms(SourceCollections& sourceCollections) const
 
 	// Large enough to cover the largest B block even if just 8-bit elements.
 	// Small enough to fit in the minimum shared memory size limit even if with uvec4.
-	src << "shared A { " << getDataTypeName(m_caseDef.zeroElementType) << " arr[128]; } zero;\n";
+	src << "shared A { " << getDataTypeName(m_caseDef.zeroElementType) << " arr[256]; } zero;\n";
 
 	src << "struct st {\n"
 		<< "    " << getDataTypeName(m_caseDef.fieldType[0]) << " x;\n";

@@ -668,7 +668,7 @@ bool exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat f
 
 	copyImageToBuffer(vkd, *cmdBuffer2, *outImage,
 										outputBuffer->get(), tcu::IVec2(imageSize.x(), imageSize.y()),
-										0, VK_IMAGE_LAYOUT_UNDEFINED, 1);
+										VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, 1);
 
 	VK_CHECK(vkd.endCommandBuffer(*cmdBuffer2));
 
