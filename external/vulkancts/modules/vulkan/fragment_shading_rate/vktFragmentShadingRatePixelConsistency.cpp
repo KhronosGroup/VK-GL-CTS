@@ -171,6 +171,11 @@ FSRPixelConsistencyInstance::FSRPixelConsistencyInstance(Context& context, const
 	context.getInstanceInterface().getPhysicalDeviceFragmentShadingRatesKHR(context.getPhysicalDevice(), &m_supportedFragmentShadingRateCount, DE_NULL);
 
 	m_supportedFragmentShadingRates.resize(m_supportedFragmentShadingRateCount);
+	for (deUint32 i = 0; i < m_supportedFragmentShadingRateCount; ++i)
+	{
+		m_supportedFragmentShadingRates[i].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_KHR;
+		m_supportedFragmentShadingRates[i].pNext = nullptr;
+	}
 	context.getInstanceInterface().getPhysicalDeviceFragmentShadingRatesKHR(context.getPhysicalDevice(), &m_supportedFragmentShadingRateCount, &m_supportedFragmentShadingRates[0]);
 
 	clampShadingRate();
