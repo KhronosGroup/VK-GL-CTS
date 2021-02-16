@@ -1,5 +1,7 @@
 
 set(DEQP_VK_PIPELINE_SRCS
+	vktPipelineBindPointTests.cpp
+	vktPipelineBindPointTests.hpp
 	vktPipelineBlendTests.cpp
 	vktPipelineBlendTests.hpp
 	vktPipelineClearUtil.cpp
