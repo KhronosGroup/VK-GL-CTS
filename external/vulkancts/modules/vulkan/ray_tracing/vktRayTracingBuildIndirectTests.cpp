@@ -255,7 +255,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			"  for (uint i = 0; i < " << m_data.depth << "; i++)\n"
 			"  {\n"
 			"    uint primitiveCount  = " << m_data.width * m_data.height << "u;\n"
-			"    uint primitiveOffset = " << m_data.width * m_data.height << "u * i;\n"
+			"    uint primitiveOffset = " << m_data.width * m_data.height * 3u * sizeof(tcu::Vec3) << "u * i;\n"
 			"    uint firstVertex     = " << 0 << "u;\n"
 			"    uint transformOffset = " << 0 << "u;\n"
 			"\n"

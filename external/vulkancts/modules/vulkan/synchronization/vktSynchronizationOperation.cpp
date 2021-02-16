@@ -280,12 +280,12 @@ VkPipelineStageFlags pipelineStageFlagsFromShaderStageFlagBits (const VkShaderSt
 {
 	switch (shaderStage)
 	{
-		case VK_SHADER_STAGE_VERTEX_BIT:					return VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
-		case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:		return VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
-		case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:	return VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
-		case VK_SHADER_STAGE_GEOMETRY_BIT:					return VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
-		case VK_SHADER_STAGE_FRAGMENT_BIT:					return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		case VK_SHADER_STAGE_COMPUTE_BIT:					return VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+		case VK_SHADER_STAGE_VERTEX_BIT:					return VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT_KHR;
+		case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:		return VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT_KHR;
+		case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:	return VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT_KHR;
+		case VK_SHADER_STAGE_GEOMETRY_BIT:					return VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT_KHR;
+		case VK_SHADER_STAGE_FRAGMENT_BIT:					return VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT_KHR;
+		case VK_SHADER_STAGE_COMPUTE_BIT:					return VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR;
 
 		// Other usages are probably an error, so flag that.
 		default:
@@ -295,13 +295,22 @@ VkPipelineStageFlags pipelineStageFlagsFromShaderStageFlagBits (const VkShaderSt
 }
 
 //! Fill destination buffer with a repeating pattern.
-void fillPattern (void* const pData, const VkDeviceSize size)
+void fillPattern (void* const pData, const VkDeviceSize size, bool useIndexPattern = false)
 {
-	static const deUint8	pattern[]	= { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31 };
-	deUint8* const			pBytes		= static_cast<deUint8*>(pData);
+	// There are two pattern options - most operations use primePattern,
+	// indexPattern is only needed for testing vertex index bufffer.
+	static const deUint8	primePattern[]	= { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31 };
+	static const deUint32	indexPattern[]	= { 0, 1, 2, 3, 4 };
+
+	const deUint8*			pattern			= (useIndexPattern ? reinterpret_cast<const deUint8*>(indexPattern)
+															   : primePattern);
+	const deUint32			patternSize		= static_cast<deUint32>(useIndexPattern
+															   ? DE_LENGTH_OF_ARRAY(indexPattern)*sizeof(deUint32)
+															   : DE_LENGTH_OF_ARRAY(primePattern));
+	deUint8* const			pBytes			= static_cast<deUint8*>(pData);
 
 	for (deUint32 i = 0; i < size; ++i)
-		pBytes[i] = pattern[i % DE_LENGTH_OF_ARRAY(pattern)];
+		pBytes[i] = pattern[i % patternSize];
 }
 
 //! Get size in bytes of a pixel buffer with given extent.
@@ -469,6 +478,7 @@ enum BufferOp
 {
 	BUFFER_OP_FILL,
 	BUFFER_OP_UPDATE,
+	BUFFER_OP_UPDATE_WITH_INDEX_PATTERN,
 };
 
 class Implementation : public Operation
@@ -497,10 +507,9 @@ public:
 		{
 			fillPattern(&m_data[0], m_data.size());
 		}
-		else
+		else if(m_bufferOp == BUFFER_OP_UPDATE_WITH_INDEX_PATTERN)
 		{
-			// \todo Really??
-			// Do nothing
+			fillPattern(&m_data[0], m_data.size(), true);
 		}
 	}
 
@@ -512,16 +521,21 @@ public:
 		{
 			vk.cmdFillBuffer(cmdBuffer, m_resource.getBuffer().handle, m_resource.getBuffer().offset, m_resource.getBuffer().size, m_fillValue);
 
-			const VkBufferMemoryBarrier	barrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, m_resource.getBuffer().handle, 0u, m_resource.getBuffer().size);
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
+			SynchronizationWrapperPtr synchronizationWrapper = getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
+			const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+				VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,					// VkPipelineStageFlags2KHR			srcStageMask
+				VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,						// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,					// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_TRANSFER_READ_BIT_KHR,						// VkAccessFlags2KHR				dstAccessMask
+				m_resource.getBuffer().handle,							// VkBuffer							buffer
+				0u,														// VkDeviceSize						offset
+				m_resource.getBuffer().size								// VkDeviceSize						size
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 		}
-		else if (m_bufferOp == BUFFER_OP_UPDATE)
-			vk.cmdUpdateBuffer(cmdBuffer, m_resource.getBuffer().handle, m_resource.getBuffer().offset, m_resource.getBuffer().size, reinterpret_cast<deUint32*>(&m_data[0]));
 		else
-		{
-			// \todo Really??
-			// Do nothing
-		}
+			vk.cmdUpdateBuffer(cmdBuffer, m_resource.getBuffer().handle, m_resource.getBuffer().offset, m_resource.getBuffer().size, reinterpret_cast<deUint32*>(&m_data[0]));
 	}
 
 	SyncInfo getInSyncInfo (void) const
@@ -533,9 +547,9 @@ public:
 	{
 		const SyncInfo syncInfo =
 		{
-			VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_TRANSFER_WRITE_BIT,		// VkAccessFlags			accessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,	// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,		// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			imageLayout;
 		};
 
 		return syncInfo;
@@ -571,8 +585,8 @@ public:
 		: m_resourceDesc	(resourceDesc)
 		, m_bufferOp		(bufferOp)
 	{
-		DE_ASSERT(m_bufferOp == BUFFER_OP_FILL || m_bufferOp == BUFFER_OP_UPDATE);
-		DE_ASSERT(m_resourceDesc.type == RESOURCE_TYPE_BUFFER);
+		DE_ASSERT(m_bufferOp == BUFFER_OP_FILL || m_bufferOp == BUFFER_OP_UPDATE || m_bufferOp == BUFFER_OP_UPDATE_WITH_INDEX_PATTERN);
+		DE_ASSERT(m_resourceDesc.type == RESOURCE_TYPE_BUFFER || m_resourceDesc.type == RESOURCE_TYPE_INDEX_BUFFER);
 	}
 
 	deUint32 getInResourceUsageFlags (void) const
@@ -643,22 +657,41 @@ public:
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
-		const DeviceInterface&	vk			= m_context.getDeviceInterface();
-		const VkBufferCopy		copyRegion	= makeBufferCopy(0u, 0u, m_resource.getBuffer().size);
+		const DeviceInterface&		vk						= m_context.getDeviceInterface();
+		const VkBufferCopy			copyRegion				= makeBufferCopy(0u, 0u, m_resource.getBuffer().size);
+		SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
 
 		if (m_mode == ACCESS_MODE_READ)
 		{
 			vk.cmdCopyBuffer(cmdBuffer, m_resource.getBuffer().handle, **m_hostBuffer, 1u, &copyRegion);
 
 			// Insert a barrier so copied data is available to the host
-			const VkBufferMemoryBarrier	barrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, **m_hostBuffer, 0u, m_resource.getBuffer().size);
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
+			const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+				VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,					// VkPipelineStageFlags2KHR			srcStageMask
+				VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,						// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_2_HOST_BIT_KHR,						// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_HOST_READ_BIT_KHR,							// VkAccessFlags2KHR				dstAccessMask
+				**m_hostBuffer,											// VkBuffer							buffer
+				0u,														// VkDeviceSize						offset
+				m_resource.getBuffer().size								// VkDeviceSize						size
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 		}
 		else
 		{
-			// // Insert a barrier so buffer data is available to the device
-			// const VkBufferMemoryBarrier	barrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, **m_hostBuffer, 0u, m_resource.getBuffer().size);
-			// vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
+			// Insert a barrier so buffer data is available to the device
+			//const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+			//	VK_PIPELINE_STAGE_2_HOST_BIT_KHR,						// VkPipelineStageFlags2KHR			srcStageMask
+			//	VK_ACCESS_2_HOST_WRITE_BIT_KHR,							// VkAccessFlags2KHR				srcAccessMask
+			//	VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,					// VkPipelineStageFlags2KHR			dstStageMask
+			//	VK_ACCESS_2_TRANSFER_READ_BIT_KHR,						// VkAccessFlags2KHR				dstAccessMask
+			//	**m_hostBuffer,											// VkBuffer							buffer
+			//	0u,														// VkDeviceSize						offset
+			//	m_resource.getBuffer().size								// VkDeviceSize						size
+			//);
+			//VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+			//synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 
 			vk.cmdCopyBuffer(cmdBuffer, **m_hostBuffer, m_resource.getBuffer().handle, 1u, &copyRegion);
 		}
@@ -666,24 +699,24 @@ public:
 
 	SyncInfo getInSyncInfo (void) const
 	{
-		const VkAccessFlags access		= (m_mode == ACCESS_MODE_READ ? VK_ACCESS_TRANSFER_READ_BIT : 0);
+		const VkAccessFlags access		= (m_mode == ACCESS_MODE_READ ? VK_ACCESS_2_TRANSFER_READ_BIT_KHR : 0);
 		const SyncInfo		syncInfo	=
 		{
-			VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		stageMask;
-			access,								// VkAccessFlags			accessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,	// VkPipelineStageFlags		stageMask;
+			access,									// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
 	}
 
 	SyncInfo getOutSyncInfo (void) const
 	{
-		const VkAccessFlags access		= (m_mode == ACCESS_MODE_WRITE ? VK_ACCESS_TRANSFER_WRITE_BIT : 0);
+		const VkAccessFlags access		= (m_mode == ACCESS_MODE_WRITE ? VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR : 0);
 		const SyncInfo		syncInfo	=
 		{
-			VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		stageMask;
-			access,								// VkAccessFlags			accessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,	// VkPipelineStageFlags		stageMask;
+			access,									// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
 	}
@@ -769,9 +802,9 @@ public:
 	{
 		const SyncInfo		syncInfo	=
 		{
-			VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_TRANSFER_READ_BIT,		// VkAccessFlags			accessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,	// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_TRANSFER_READ_BIT_KHR,		// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
 	}
@@ -780,9 +813,9 @@ public:
 	{
 		const SyncInfo		syncInfo	=
 		{
-			VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_TRANSFER_WRITE_BIT,		// VkAccessFlags			accessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,	// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,		// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
 	}
@@ -844,7 +877,7 @@ public:
 
 } // CopyBuffer ns
 
-namespace CopyBlitImage
+namespace CopyBlitResolveImage
 {
 
 class ImplementationBase : public Operation
@@ -852,6 +885,9 @@ class ImplementationBase : public Operation
 public:
 	//! Copy/Blit/Resolve etc. operation
 	virtual void recordCopyCommand (const VkCommandBuffer cmdBuffer) = 0;
+
+	//! Get source stage mask that is used during read - added to test synchronization2 new stage masks
+	virtual VkPipelineStageFlags2KHR getReadSrcStageMask() const = 0;
 
 	ImplementationBase (OperationContext& context, Resource& resource, const AccessMode mode)
 		: m_context		(context)
@@ -883,23 +919,24 @@ public:
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
-		const DeviceInterface&	vk					= m_context.getDeviceInterface();
-		const VkBufferImageCopy	bufferCopyRegion	= makeBufferImageCopy(m_resource.getImage().extent, m_resource.getImage().subresourceLayers);
-
-		const VkImageMemoryBarrier stagingImageTransferSrcLayoutBarrier = makeImageMemoryBarrier(
-			VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			**m_image, m_resource.getImage().subresourceRange);
+		const DeviceInterface&		vk						= m_context.getDeviceInterface();
+		const VkBufferImageCopy		bufferCopyRegion		= makeBufferImageCopy(m_resource.getImage().extent, m_resource.getImage().subresourceLayers);
+		SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
 
 		// Staging image layout
 		{
-			const VkImageMemoryBarrier layoutBarrier = makeImageMemoryBarrier(
-				(VkAccessFlags)0, VK_ACCESS_TRANSFER_WRITE_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				**m_image, m_resource.getImage().subresourceRange);
-
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
-				0u, DE_NULL, 0u, DE_NULL, 1u, &layoutBarrier);
+			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+				VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,		// VkPipelineStageFlags2KHR			srcStageMask
+				(VkAccessFlags)0,								// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,			// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+				VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout					oldLayout
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout					newLayout
+				**m_image,										// VkImage							image
+				m_resource.getImage().subresourceRange			// VkImageSubresourceRange			subresourceRange
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 		}
 
 		if (m_mode == ACCESS_MODE_READ)
@@ -908,15 +945,34 @@ public:
 			recordCopyCommand(cmdBuffer);
 
 			// Staging image layout
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
-				0u, DE_NULL, 0u, DE_NULL, 1u, &stagingImageTransferSrcLayoutBarrier);
+			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+				getReadSrcStageMask(),							// VkPipelineStageFlags2KHR			srcStageMask
+				VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,				// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,			// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_TRANSFER_READ_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout					oldLayout
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,			// VkImageLayout					newLayout
+				**m_image,										// VkImage							image
+				m_resource.getImage().subresourceRange			// VkImageSubresourceRange			subresourceRange
+			);
+			VkDependencyInfoKHR imageDependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &imageDependencyInfo);
 
 			// Image -> Host buffer
 			vk.cmdCopyImageToBuffer(cmdBuffer, **m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_hostBuffer, 1u, &bufferCopyRegion);
 
 			// Insert a barrier so copied data is available to the host
-			const VkBufferMemoryBarrier	barrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, **m_hostBuffer, 0u, m_bufferSize);
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
+			const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+				VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,			// VkPipelineStageFlags2KHR			srcStageMask
+				VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,				// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_2_HOST_BIT_KHR,				// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_HOST_READ_BIT_KHR,					// VkAccessFlags2KHR				dstAccessMask
+				**m_hostBuffer,									// VkBuffer							buffer
+				0u,												// VkDeviceSize						offset
+				m_bufferSize									// VkDeviceSize						size
+			);
+			VkDependencyInfoKHR bufferDependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &bufferDependencyInfo);
 		}
 		else
 		{
@@ -924,18 +980,35 @@ public:
 			vk.cmdCopyBufferToImage(cmdBuffer, **m_hostBuffer, **m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &bufferCopyRegion);
 
 			// Staging image layout
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
-				0u, DE_NULL, 0u, DE_NULL, 1u, &stagingImageTransferSrcLayoutBarrier);
+			{
+				const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+					VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,			// VkPipelineStageFlags2KHR			srcStageMask
+					VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,				// VkAccessFlags2KHR				srcAccessMask
+					VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,			// VkPipelineStageFlags2KHR			dstStageMask
+					VK_ACCESS_2_TRANSFER_READ_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout					oldLayout
+					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,			// VkImageLayout					newLayout
+					**m_image,										// VkImage							image
+					m_resource.getImage().subresourceRange			// VkImageSubresourceRange			subresourceRange
+				);
+				VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+				synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
+			}
 
 			// Resource image layout
 			{
-				const VkImageMemoryBarrier layoutBarrier = makeImageMemoryBarrier(
-					(VkAccessFlags)0, VK_ACCESS_TRANSFER_WRITE_BIT,
-					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-					m_resource.getImage().handle, m_resource.getImage().subresourceRange);
-
-				vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
-					0u, DE_NULL, 0u, DE_NULL, 1u, &layoutBarrier);
+				const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+					VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,		// VkPipelineStageFlags2KHR			srcStageMask
+					(VkAccessFlags2KHR)0,							// VkAccessFlags2KHR				srcAccessMask
+					VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,			// VkPipelineStageFlags2KHR			dstStageMask
+					VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+					VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout					oldLayout
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout					newLayout
+					m_resource.getImage().handle,					// VkImage							image
+					m_resource.getImage().subresourceRange			// VkImageSubresourceRange			subresourceRange
+				);
+				VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+				synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 			}
 
 			// Staging image -> Resource Image
@@ -945,26 +1018,26 @@ public:
 
 	SyncInfo getInSyncInfo (void) const
 	{
-		const VkAccessFlags access		= (m_mode == ACCESS_MODE_READ ? VK_ACCESS_TRANSFER_READ_BIT : VK_ACCESS_TRANSFER_WRITE_BIT);
-		const VkImageLayout layout		= (m_mode == ACCESS_MODE_READ ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		const SyncInfo		syncInfo	=
+		const VkAccessFlags2KHR	access		= (m_mode == ACCESS_MODE_READ ? VK_ACCESS_2_TRANSFER_READ_BIT_KHR : VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR);
+		const VkImageLayout		layout		= (m_mode == ACCESS_MODE_READ ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		const SyncInfo			syncInfo	=
 		{
-			VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		stageMask;
-			access,								// VkAccessFlags			accessMask;
-			layout,								// VkImageLayout			imageLayout;
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,	// VkPipelineStageFlags		stageMask;
+			access,									// VkAccessFlags			accessMask;
+			layout,									// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
 	}
 
 	SyncInfo getOutSyncInfo (void) const
 	{
-		const VkAccessFlags access		= (m_mode == ACCESS_MODE_READ ? VK_ACCESS_TRANSFER_READ_BIT : VK_ACCESS_TRANSFER_WRITE_BIT);
-		const VkImageLayout layout		= (m_mode == ACCESS_MODE_READ ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		const SyncInfo		syncInfo	=
+		const VkAccessFlags2KHR	access		= (m_mode == ACCESS_MODE_READ ? VK_ACCESS_2_TRANSFER_READ_BIT_KHR : VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR);
+		const VkImageLayout		layout		= (m_mode == ACCESS_MODE_READ ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		const SyncInfo			syncInfo	=
 		{
-			VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		stageMask;
-			access,								// VkAccessFlags			accessMask;
-			layout,								// VkImageLayout			imageLayout;
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,	// VkPipelineStageFlags		stageMask;
+			access,									// VkAccessFlags			accessMask;
+			layout,									// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
 	}
@@ -1052,13 +1125,20 @@ public:
 		}
 	}
 
+	VkPipelineStageFlags2KHR getReadSrcStageMask() const
+	{
+		return (m_context.getSynchronizationType() == SynchronizationType::LEGACY) ? VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR : VK_PIPELINE_STAGE_2_BLIT_BIT_KHR;
+	}
+
+
 private:
 	const VkImageBlit	m_blitRegion;
 };
 
-VkImageCopy makeImageCopyRegion (const Resource& resource)
+template <typename ImageCopyOrResolve>
+ImageCopyOrResolve makeImageRegion (const Resource& resource)
 {
-	const VkImageCopy imageCopyRegion =
+	return
 	{
 		resource.getImage().subresourceLayers,		// VkImageSubresourceLayers    srcSubresource;
 		makeOffset3D(0, 0, 0),						// VkOffset3D                  srcOffset;
@@ -1066,7 +1146,6 @@ VkImageCopy makeImageCopyRegion (const Resource& resource)
 		makeOffset3D(0, 0, 0),						// VkOffset3D                  dstOffset;
 		resource.getImage().extent,					// VkExtent3D                  extent;
 	};
-	return imageCopyRegion;
 }
 
 class CopyImplementation : public ImplementationBase
@@ -1074,7 +1153,7 @@ class CopyImplementation : public ImplementationBase
 public:
 	CopyImplementation (OperationContext& context, Resource& resource, const AccessMode mode)
 		: ImplementationBase	(context, resource, mode)
-		, m_imageCopyRegion		(makeImageCopyRegion(m_resource))
+		, m_imageCopyRegion		(makeImageRegion<VkImageCopy>(m_resource))
 	{
 	}
 
@@ -1094,14 +1173,47 @@ public:
 		}
 	}
 
+	VkPipelineStageFlags2KHR getReadSrcStageMask() const
+	{
+		return (m_context.getSynchronizationType() == SynchronizationType::LEGACY) ? VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR : VK_PIPELINE_STAGE_2_COPY_BIT_KHR;
+	}
+
 private:
 	const VkImageCopy	m_imageCopyRegion;
+};
+
+class ResolveImplementation : public ImplementationBase
+{
+public:
+	ResolveImplementation(OperationContext& context, Resource& resource, const AccessMode mode)
+		: ImplementationBase	(context, resource, mode)
+		, m_imageResolveRegion	(makeImageRegion<VkImageResolve>(resource))
+	{
+		DE_ASSERT(m_mode == ACCESS_MODE_READ);
+	}
+
+	void recordCopyCommand(const VkCommandBuffer cmdBuffer)
+	{
+		const DeviceInterface&	vk = m_context.getDeviceInterface();
+
+		// Resource Image -> Staging image
+		vk.cmdResolveImage(cmdBuffer, m_resource.getImage().handle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &m_imageResolveRegion);
+	}
+
+	VkPipelineStageFlags2KHR getReadSrcStageMask() const
+	{
+		return (m_context.getSynchronizationType() == SynchronizationType::LEGACY) ? VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR : VK_PIPELINE_STAGE_2_RESOLVE_BIT_KHR;
+	}
+
+private:
+	VkImageResolve m_imageResolveRegion;
 };
 
 enum Type
 {
 	TYPE_COPY,
 	TYPE_BLIT,
+	TYPE_RESOLVE,
 };
 
 class Support : public OperationSupport
@@ -1114,7 +1226,7 @@ public:
 		DE_ASSERT(resourceDesc.type == RESOURCE_TYPE_IMAGE);
 
 		const bool isDepthStencil	= isDepthStencilFormat(resourceDesc.imageFormat);
-		m_requiredQueueFlags		= (isDepthStencil || m_type == TYPE_BLIT ? VK_QUEUE_GRAPHICS_BIT : VK_QUEUE_TRANSFER_BIT);
+		m_requiredQueueFlags		= (isDepthStencil || m_type != TYPE_COPY ? VK_QUEUE_GRAPHICS_BIT : VK_QUEUE_TRANSFER_BIT);
 
 		// Don't blit depth/stencil images.
 		DE_ASSERT(m_type != TYPE_BLIT || !isDepthStencil);
@@ -1140,8 +1252,10 @@ public:
 	{
 		if (m_type == TYPE_COPY)
 			return de::MovePtr<Operation>(new CopyImplementation(context, resource, m_mode));
-		else
+		else if (m_type == TYPE_BLIT)
 			return de::MovePtr<Operation>(new BlitImplementation(context, resource, m_mode));
+		else
+			return de::MovePtr<Operation>(new ResolveImplementation(context, resource, m_mode));
 	}
 
 	de::MovePtr<Operation> build (OperationContext&, Resource&, Resource&) const
@@ -1180,17 +1294,22 @@ public:
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
-		const DeviceInterface&	vk	= m_context.getDeviceInterface();
+		const DeviceInterface&		vk						= m_context.getDeviceInterface();
+		SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
 
 		{
-			const VkImageMemoryBarrier layoutBarrier =
-				makeImageMemoryBarrier(
-					(VkAccessFlags)0, VK_ACCESS_TRANSFER_WRITE_BIT,
-					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-					m_outResource.getImage().handle, m_outResource.getImage().subresourceRange);
-
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
-								  0u, DE_NULL, 0u, DE_NULL, 1u, &layoutBarrier);
+			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,				// VkPipelineStageFlags2KHR			srcStageMask
+				(VkAccessFlags2KHR)0,							// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_TRANSFER_BIT,					// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+				VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout					oldLayout
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout					newLayout
+				m_outResource.getImage().handle,				// VkImage							image
+				m_outResource.getImage().subresourceRange		// VkImageSubresourceRange			subresourceRange
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 		}
 
 		vk.cmdBlitImage(cmdBuffer,
@@ -1204,7 +1323,7 @@ public:
 		const SyncInfo		syncInfo	=
 		{
 			VK_PIPELINE_STAGE_TRANSFER_BIT,			// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_TRANSFER_READ_BIT,			// VkAccessFlags			accessMask;
+			VK_ACCESS_2_TRANSFER_READ_BIT_KHR,		// VkAccessFlags			accessMask;
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,	// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
@@ -1215,7 +1334,7 @@ public:
 		const SyncInfo		syncInfo	=
 		{
 			VK_PIPELINE_STAGE_TRANSFER_BIT,			// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_TRANSFER_WRITE_BIT,			// VkAccessFlags			accessMask;
+			VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,		// VkAccessFlags			accessMask;
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,	// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
@@ -1246,7 +1365,7 @@ public:
 		: m_context			(context)
 		, m_inResource		(inResource)
 		, m_outResource		(outResource)
-		, m_imageCopyRegion	(makeImageCopyRegion(m_inResource))
+		, m_imageCopyRegion	(makeImageRegion<VkImageCopy>(m_inResource))
 	{
 		DE_ASSERT(m_inResource.getType() == RESOURCE_TYPE_IMAGE);
 		DE_ASSERT(m_outResource.getType() == RESOURCE_TYPE_IMAGE);
@@ -1254,17 +1373,22 @@ public:
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
-		const DeviceInterface&	vk	= m_context.getDeviceInterface();
+		const DeviceInterface&		vk						= m_context.getDeviceInterface();
+		SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
 
 		{
-			const VkImageMemoryBarrier layoutBarrier =
-				makeImageMemoryBarrier(
-					(VkAccessFlags)0, VK_ACCESS_TRANSFER_WRITE_BIT,
-					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-					m_outResource.getImage().handle, m_outResource.getImage().subresourceRange);
-
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
-								  0u, DE_NULL, 0u, DE_NULL, 1u, &layoutBarrier);
+			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,				// VkPipelineStageFlags2KHR			srcStageMask
+				(VkAccessFlags)0,								// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_TRANSFER_BIT,					// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+				VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout					oldLayout
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout					newLayout
+				m_outResource.getImage().handle,				// VkImage							image
+				m_outResource.getImage().subresourceRange		// VkImageSubresourceRange			subresourceRange
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 		}
 
 		vk.cmdCopyImage(cmdBuffer,
@@ -1278,7 +1402,7 @@ public:
 		const SyncInfo		syncInfo	=
 		{
 			VK_PIPELINE_STAGE_TRANSFER_BIT,			// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_TRANSFER_READ_BIT,			// VkAccessFlags			accessMask;
+			VK_ACCESS_2_TRANSFER_READ_BIT_KHR,		// VkAccessFlags			accessMask;
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,	// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
@@ -1289,7 +1413,7 @@ public:
 		const SyncInfo		syncInfo	=
 		{
 			VK_PIPELINE_STAGE_TRANSFER_BIT,			// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_TRANSFER_WRITE_BIT,			// VkAccessFlags			accessMask;
+			VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,		// VkAccessFlags			accessMask;
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,	// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
@@ -1423,17 +1547,23 @@ public:
 
 	void recordCommands (OperationContext& context, const VkCommandBuffer cmdBuffer, const VkDescriptorSet descriptorSet)
 	{
-		const DeviceInterface&	vk	= context.getDeviceInterface();
+		const DeviceInterface&		vk						= context.getDeviceInterface();
+		SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(context.getSynchronizationType(), vk, DE_FALSE);
 
 		// Change color attachment image layout
 		{
-			const VkImageMemoryBarrier colorAttachmentLayoutBarrier = makeImageMemoryBarrier(
-				(VkAccessFlags)0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-				**m_colorAttachmentImage, m_colorImageSubresourceRange);
-
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0,
-				0u, DE_NULL, 0u, DE_NULL, 1u, &colorAttachmentLayoutBarrier);
+			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,				// VkPipelineStageFlags2KHR			srcStageMask
+				(VkAccessFlags)0,								// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR,		// VkAccessFlags2KHR				dstAccessMask
+				VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout					oldLayout
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		// VkImageLayout					newLayout
+				**m_colorAttachmentImage,						// VkImage							image
+				m_colorImageSubresourceRange					// VkImageSubresourceRange			subresourceRange
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 		}
 
 		{
@@ -1606,20 +1736,30 @@ public:
 
 		if (m_mode == ACCESS_MODE_READ)
 		{
-			const DeviceInterface&	vk	= m_context.getDeviceInterface();
+			const DeviceInterface&		vk						= m_context.getDeviceInterface();
+			SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
 
 			// Insert a barrier so data written by the shader is available to the host
-			const VkBufferMemoryBarrier	barrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, **m_hostBuffer, 0u, m_resource.getBuffer().size);
-			vk.cmdPipelineBarrier(cmdBuffer, m_pipelineStage, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
+			const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+				m_pipelineStage,							// VkPipelineStageFlags2KHR			srcStageMask
+				VK_ACCESS_2_SHADER_WRITE_BIT_KHR,			// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_HOST_BIT,					// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_HOST_READ_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+				**m_hostBuffer,								// VkBuffer							buffer
+				0u,											// VkDeviceSize						offset
+				m_resource.getBuffer().size					// VkDeviceSize						size
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 		}
 	}
 
 	SyncInfo getInSyncInfo (void) const
 	{
-		const VkAccessFlags	accessFlags = (m_mode == ACCESS_MODE_READ ? (m_bufferType == BUFFER_TYPE_UNIFORM ? VK_ACCESS_UNIFORM_READ_BIT
-																											 : VK_ACCESS_SHADER_READ_BIT)
-																	  : VK_ACCESS_SHADER_WRITE_BIT);
-		const SyncInfo		syncInfo	=
+		const VkAccessFlags2KHR	accessFlags = (m_mode == ACCESS_MODE_READ ? (m_bufferType == BUFFER_TYPE_UNIFORM ? VK_ACCESS_2_UNIFORM_READ_BIT_KHR
+																											 : VK_ACCESS_2_SHADER_READ_BIT_KHR)
+																	  : VK_ACCESS_2_SHADER_WRITE_BIT_KHR);
+		const SyncInfo			syncInfo	=
 		{
 			m_pipelineStage,				// VkPipelineStageFlags		stageMask;
 			accessFlags,					// VkAccessFlags			accessMask;
@@ -1630,7 +1770,7 @@ public:
 
 	SyncInfo getOutSyncInfo (void) const
 	{
-		const VkAccessFlags	accessFlags = m_mode == ACCESS_MODE_WRITE ? VK_ACCESS_SHADER_WRITE_BIT : 0;
+		const VkAccessFlags	accessFlags = m_mode == ACCESS_MODE_WRITE ? VK_ACCESS_2_SHADER_WRITE_BIT_KHR : 0;
 		const SyncInfo		syncInfo	=
 		{
 			m_pipelineStage,				// VkPipelineStageFlags		stageMask;
@@ -1764,18 +1904,24 @@ public:
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
-		const DeviceInterface&	vk					= m_context.getDeviceInterface();
-		const VkBufferImageCopy	bufferCopyRegion	= makeBufferImageCopy(m_resource.getImage().extent, m_resource.getImage().subresourceLayers);
+		const DeviceInterface&		vk						= m_context.getDeviceInterface();
+		const VkBufferImageCopy		bufferCopyRegion		= makeBufferImageCopy(m_resource.getImage().extent, m_resource.getImage().subresourceLayers);
+		SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
 
 		// Destination image layout
 		{
-			const VkImageMemoryBarrier barrier = makeImageMemoryBarrier(
-				(VkAccessFlags)0, VK_ACCESS_SHADER_WRITE_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
-				*m_dstImage, m_resource.getImage().subresourceRange);
-
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_pipelineStage, (VkDependencyFlags)0,
-				0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,			// VkPipelineStageFlags2KHR			srcStageMask
+				(VkAccessFlags)0,							// VkAccessFlags2KHR				srcAccessMask
+				m_pipelineStage,							// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_SHADER_WRITE_BIT_KHR,			// VkAccessFlags2KHR				dstAccessMask
+				VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout					oldLayout
+				VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout					newLayout
+				*m_dstImage,								// VkImage							image
+				m_resource.getImage().subresourceRange		// VkImageSubresourceRange			subresourceRange
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 		}
 
 		// In write mode, source image must be filled with data.
@@ -1783,13 +1929,18 @@ public:
 		{
 			// Layout for transfer
 			{
-				const VkImageMemoryBarrier barrier = makeImageMemoryBarrier(
-					(VkAccessFlags)0, VK_ACCESS_TRANSFER_WRITE_BIT,
-					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-					*m_srcImage, m_resource.getImage().subresourceRange);
-
-				vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
-					0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+				const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+					VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,			// VkPipelineStageFlags2KHR			srcStageMask
+					(VkAccessFlags)0,							// VkAccessFlags2KHR				srcAccessMask
+					VK_PIPELINE_STAGE_TRANSFER_BIT,				// VkPipelineStageFlags2KHR			dstStageMask
+					VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,			// VkAccessFlags2KHR				dstAccessMask
+					VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout					oldLayout
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout					newLayout
+					*m_srcImage,								// VkImage							image
+					m_resource.getImage().subresourceRange		// VkImageSubresourceRange			subresourceRange
+				);
+				VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+				synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 			}
 
 			// Host buffer -> Src image
@@ -1797,13 +1948,18 @@ public:
 
 			// Layout for shader reading
 			{
-				const VkImageMemoryBarrier barrier = makeImageMemoryBarrier(
-					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
-					*m_srcImage, m_resource.getImage().subresourceRange);
-
-				vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, m_pipelineStage, (VkDependencyFlags)0,
-					0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+				const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+					VK_PIPELINE_STAGE_TRANSFER_BIT,				// VkPipelineStageFlags2KHR			srcStageMask
+					VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,			// VkAccessFlags2KHR				srcAccessMask
+					m_pipelineStage,							// VkPipelineStageFlags2KHR			dstStageMask
+					VK_ACCESS_2_SHADER_READ_BIT_KHR,			// VkAccessFlags2KHR				dstAccessMask
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout					oldLayout
+					VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout					newLayout
+					*m_srcImage,								// VkImage							image
+					m_resource.getImage().subresourceRange		// VkImageSubresourceRange			subresourceRange
+				);
+				VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+				synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 			}
 		}
 
@@ -1817,13 +1973,18 @@ public:
 		{
 			// Layout for transfer
 			{
-				const VkImageMemoryBarrier barrier = makeImageMemoryBarrier(
-					VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-					VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-					*m_dstImage, m_resource.getImage().subresourceRange);
-
-				vk.cmdPipelineBarrier(cmdBuffer, m_pipelineStage, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
-					0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+				const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+					m_pipelineStage,							// VkPipelineStageFlags2KHR			srcStageMask
+					VK_ACCESS_2_SHADER_WRITE_BIT_KHR,			// VkAccessFlags2KHR				srcAccessMask
+					VK_PIPELINE_STAGE_TRANSFER_BIT,				// VkPipelineStageFlags2KHR			dstStageMask
+					VK_ACCESS_2_TRANSFER_READ_BIT_KHR,			// VkAccessFlags2KHR				dstAccessMask
+					VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout					oldLayout
+					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout					newLayout
+					*m_dstImage,								// VkImage							image
+					m_resource.getImage().subresourceRange		// VkImageSubresourceRange			subresourceRange
+				);
+				VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+				synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 			}
 
 			// Dst image -> Host buffer
@@ -1831,15 +1992,24 @@ public:
 
 			// Insert a barrier so data written by the shader is available to the host
 			{
-				const VkBufferMemoryBarrier	barrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, **m_hostBuffer, 0u, m_hostBufferSizeBytes);
-				vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
+				const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+					VK_PIPELINE_STAGE_TRANSFER_BIT,				// VkPipelineStageFlags2KHR			srcStageMask
+					VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,			// VkAccessFlags2KHR				srcAccessMask
+					VK_PIPELINE_STAGE_HOST_BIT,					// VkPipelineStageFlags2KHR			dstStageMask
+					VK_ACCESS_2_HOST_READ_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+					**m_hostBuffer,								// VkBuffer							buffer
+					0u,											// VkDeviceSize						offset
+					m_hostBufferSizeBytes						// VkDeviceSize						size
+				);
+				VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+				synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 			}
 		}
 	}
 
 	SyncInfo getInSyncInfo (void) const
 	{
-		const VkAccessFlags	accessFlags = (m_mode == ACCESS_MODE_READ ? VK_ACCESS_SHADER_READ_BIT : 0);
+		const VkAccessFlags	accessFlags = (m_mode == ACCESS_MODE_READ ? VK_ACCESS_2_SHADER_READ_BIT_KHR : 0);
 		const SyncInfo		syncInfo	=
 		{
 			m_pipelineStage,			// VkPipelineStageFlags		stageMask;
@@ -1851,7 +2021,7 @@ public:
 
 	SyncInfo getOutSyncInfo (void) const
 	{
-		const VkAccessFlags	accessFlags = (m_mode == ACCESS_MODE_WRITE ? VK_ACCESS_SHADER_WRITE_BIT : 0);
+		const VkAccessFlags	accessFlags = (m_mode == ACCESS_MODE_WRITE ? VK_ACCESS_2_SHADER_WRITE_BIT_KHR : 0);
 		const SyncInfo		syncInfo	=
 		{
 			m_pipelineStage,			// VkPipelineStageFlags		stageMask;
@@ -2286,9 +2456,9 @@ public:
 	{
 		const SyncInfo		syncInfo	=
 		{
-			m_pipelineStage,				// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_SHADER_READ_BIT,		// VkAccessFlags			accessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,		// VkImageLayout			imageLayout;
+			m_pipelineStage,					// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_SHADER_READ_BIT_KHR,	// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
 	}
@@ -2297,9 +2467,9 @@ public:
 	{
 		const SyncInfo		syncInfo	=
 		{
-			m_pipelineStage,				// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_SHADER_WRITE_BIT,		// VkAccessFlags			accessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,		// VkImageLayout			imageLayout;
+			m_pipelineStage,					// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_SHADER_WRITE_BIT_KHR,	// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
 	}
@@ -2479,24 +2649,48 @@ public:
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
 		{
-			const DeviceInterface&		vk			= m_context.getDeviceInterface();
-			const VkImageMemoryBarrier	barriers[]	= {
-				 makeImageMemoryBarrier(
-					(VkAccessFlags)0, VK_ACCESS_SHADER_WRITE_BIT,
-					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
-					m_outResource.getImage().handle, m_outResource.getImage().subresourceRange),
-				 makeImageMemoryBarrier(
-					(VkAccessFlags) 0, VK_ACCESS_SHADER_READ_BIT,
-					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
-					m_inResource.getImage().handle, m_inResource.getImage().subresourceRange),
-			};
+			const DeviceInterface&		vk						= m_context.getDeviceInterface();
+			SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
 
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_pipelineStage, (VkDependencyFlags)0,
-								  0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers);
+			const VkImageMemoryBarrier2KHR imageMemoryBarriers2[]
+			{
+				makeImageMemoryBarrier2(
+					VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,				// VkPipelineStageFlags2KHR			srcStageMask
+					(VkAccessFlags)0,								// VkAccessFlags2KHR				srcAccessMask
+					m_pipelineStage,								// VkPipelineStageFlags2KHR			dstStageMask
+					VK_ACCESS_2_SHADER_WRITE_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+					VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout					oldLayout
+					VK_IMAGE_LAYOUT_GENERAL,						// VkImageLayout					newLayout
+					m_outResource.getImage().handle,				// VkImage							image
+					m_outResource.getImage().subresourceRange		// VkImageSubresourceRange			subresourceRange
+				),
+				makeImageMemoryBarrier2(
+					VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,				// VkPipelineStageFlags2KHR			srcStageMask
+					(VkAccessFlags)0,								// VkAccessFlags2KHR				srcAccessMask
+					m_pipelineStage,								// VkPipelineStageFlags2KHR			dstStageMask
+					VK_ACCESS_2_SHADER_READ_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+					VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout					oldLayout
+					VK_IMAGE_LAYOUT_GENERAL,						// VkImageLayout					newLayout
+					m_inResource.getImage().handle,					// VkImage							image
+					m_inResource.getImage().subresourceRange		// VkImageSubresourceRange			subresourceRange
+				)
+			};
+			VkDependencyInfoKHR dependencyInfo
+			{
+				VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,				// VkStructureType					sType
+				DE_NULL,											// const void*						pNext
+				VK_DEPENDENCY_BY_REGION_BIT,						// VkDependencyFlags				dependencyFlags
+				0u,													// deUint32							memoryBarrierCount
+				DE_NULL,											// const VkMemoryBarrier2KHR*		pMemoryBarriers
+				0u,													// deUint32							bufferMemoryBarrierCount
+				DE_NULL,											// const VkBufferMemoryBarrier2KHR* pBufferMemoryBarriers
+				2,													// deUint32							imageMemoryBarrierCount
+				imageMemoryBarriers2								// const VkImageMemoryBarrier2KHR*	pImageMemoryBarriers
+			};
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 		}
 
 		// Execute shaders
-
 		m_pipeline->recordCommands(m_context, cmdBuffer, *m_descriptorSet);
 	}
 
@@ -2504,9 +2698,9 @@ public:
 	{
 		const SyncInfo		syncInfo	=
 		{
-			m_pipelineStage,			// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_SHADER_READ_BIT,	// VkAccessFlags			accessMask;
-			VK_IMAGE_LAYOUT_GENERAL,	// VkImageLayout			imageLayout;
+			m_pipelineStage,					// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_SHADER_READ_BIT_KHR,	// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_GENERAL,			// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
 	}
@@ -2515,9 +2709,9 @@ public:
 	{
 		const SyncInfo		syncInfo	=
 		{
-			m_pipelineStage,			// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_SHADER_WRITE_BIT,	// VkAccessFlags			accessMask;
-			VK_IMAGE_LAYOUT_GENERAL,	// VkImageLayout			imageLayout;
+			m_pipelineStage,					// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_SHADER_WRITE_BIT_KHR,	// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_GENERAL,			// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
 	}
@@ -2630,6 +2824,195 @@ private:
 	const DispatchCall			m_dispatchCall;
 };
 
+class MSImageImplementation : public Operation
+{
+public:
+	MSImageImplementation(OperationContext&	context,
+						  Resource&			resource)
+		: m_context		(context)
+		, m_resource	(resource)
+		, m_hostBufferSizeBytes(getPixelBufferSize(m_resource.getImage().format, m_resource.getImage().extent))
+	{
+		const DeviceInterface&			vk			= m_context.getDeviceInterface();
+		const InstanceInterface&		vki			= m_context.getInstanceInterface();
+		const VkDevice					device		= m_context.getDevice();
+		const VkPhysicalDevice			physDevice	= m_context.getPhysicalDevice();
+		const VkPhysicalDeviceFeatures	features	= getPhysicalDeviceFeatures(vki, physDevice);
+		Allocator&						allocator	= m_context.getAllocator();
+
+		requireStorageImageSupport(vki, physDevice, m_resource.getImage().format);
+		if (!features.shaderStorageImageMultisample)
+			TCU_THROW(NotSupportedError, "Using multisample images as storage is not supported");
+
+		VkBufferCreateInfo bufferCreateInfo = makeBufferCreateInfo(m_hostBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+		m_hostBuffer = de::MovePtr<Buffer>(new Buffer(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible));
+		const Allocation& alloc = m_hostBuffer->getAllocation();
+		fillPattern(alloc.getHostPtr(), m_hostBufferSizeBytes);
+		flushAlloc(vk, device, alloc);
+
+		const ImageResource&  image		= m_resource.getImage();
+		const VkImageViewType viewType	= getImageViewType(image.imageType);
+		m_imageView = makeImageView(vk, device, image.handle, viewType, image.format, image.subresourceRange);
+
+		// Prepare descriptors
+		{
+			m_descriptorSetLayout = DescriptorSetLayoutBuilder()
+				.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+				.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_COMPUTE_BIT)
+				.build(vk, device);
+
+			m_descriptorPool = DescriptorPoolBuilder()
+				.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+				.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+				.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+			m_descriptorSet = makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout);
+
+			const VkDescriptorBufferInfo bufferInfo	= makeDescriptorBufferInfo(**m_hostBuffer, 0u, m_hostBufferSizeBytes);
+			const VkDescriptorImageInfo  imageInfo	= makeDescriptorImageInfo(DE_NULL, *m_imageView, VK_IMAGE_LAYOUT_GENERAL);
+
+			DescriptorSetUpdateBuilder()
+				.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo)
+				.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  &imageInfo)
+				.update(vk, device);
+		}
+
+		// Create pipeline
+		const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, context.getBinaryCollection().get("comp"), (VkShaderModuleCreateFlags)0));
+		m_pipelineLayout	= makePipelineLayout (vk, device, *m_descriptorSetLayout);
+		m_pipeline			= makeComputePipeline(vk, device, *m_pipelineLayout, *shaderModule, DE_NULL, context.getPipelineCacheData());
+	}
+
+	void recordCommands(const VkCommandBuffer cmdBuffer)
+	{
+		const DeviceInterface&		vk						= m_context.getDeviceInterface();
+		SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
+
+		// change image layout
+		{
+			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+				VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,	// VkPipelineStageFlags2KHR			srcStageMask
+				(VkAccessFlags)0,							// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR,	// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_SHADER_WRITE_BIT_KHR,			// VkAccessFlags2KHR				dstAccessMask
+				VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout					oldLayout
+				VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout					newLayout
+				m_resource.getImage().handle,				// VkImage							image
+				m_resource.getImage().subresourceRange		// VkImageSubresourceRange			subresourceRange
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
+		}
+
+		// execute shader
+		vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipeline);
+		vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u, &*m_descriptorSet, 0u, DE_NULL);
+		vk.cmdDispatch(cmdBuffer, m_resource.getImage().extent.width, m_resource.getImage().extent.height, 1u);
+	}
+
+	SyncInfo getInSyncInfo(void) const
+	{
+		DE_ASSERT(false);
+		return emptySyncInfo;
+	}
+
+	SyncInfo getOutSyncInfo(void) const
+	{
+		return
+		{
+			VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR,	// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_SHADER_WRITE_BIT_KHR,			// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout			imageLayout;
+		};
+	}
+
+	Data getData(void) const
+	{
+		return getHostBufferData(m_context, *m_hostBuffer, m_hostBufferSizeBytes);
+	}
+
+	void setData(const Data&)
+	{
+		DE_ASSERT(false);
+	}
+
+private:
+	OperationContext&			m_context;
+	Resource&					m_resource;
+	Move<VkImageView>			m_imageView;
+
+	const VkDeviceSize			m_hostBufferSizeBytes;
+	de::MovePtr<Buffer>			m_hostBuffer;
+
+	Move<VkDescriptorPool>		m_descriptorPool;
+	Move<VkDescriptorSetLayout>	m_descriptorSetLayout;
+	Move<VkDescriptorSet>		m_descriptorSet;
+	Move<VkPipelineLayout>		m_pipelineLayout;
+	Move<VkPipeline>			m_pipeline;
+};
+
+class MSImageSupport : public OperationSupport
+{
+public:
+	MSImageSupport(const ResourceDescription& resourceDesc)
+		: m_resourceDesc	(resourceDesc)
+	{
+		DE_ASSERT(m_resourceDesc.type == RESOURCE_TYPE_IMAGE);
+	}
+
+	void initPrograms (SourceCollections& programCollection) const
+	{
+		std::stringstream source;
+		source <<
+			"#version 440\n"
+			"\n"
+			"layout(local_size_x = 1) in;\n"
+			"layout(set = 0, binding = 0, std430) readonly buffer Input {\n"
+			"    uint data[];\n"
+			"} inData;\n"
+			"layout(set = 0, binding = 1, r32ui) writeonly uniform uimage2DMS msImage;\n"
+			"\n"
+			"void main (void)\n"
+			"{\n"
+			"  int  gx    = int(gl_GlobalInvocationID.x);\n"
+			"  int  gy    = int(gl_GlobalInvocationID.y);\n"
+			"  uint value = inData.data[gy * " << m_resourceDesc.size.x() << " + gx];\n"
+			"  for (int sampleNdx = 0; sampleNdx < " << m_resourceDesc.imageSamples << "; ++sampleNdx)\n"
+			"    imageStore(msImage, ivec2(gx, gy), sampleNdx, uvec4(value));\n"
+			"}\n";
+		programCollection.glslSources.add("comp") << glu::ComputeSource(source.str().c_str());
+	}
+
+	deUint32 getInResourceUsageFlags (void) const
+	{
+		return 0;
+	}
+
+	deUint32 getOutResourceUsageFlags (void) const
+	{
+		return VK_IMAGE_USAGE_STORAGE_BIT;
+	}
+
+	VkQueueFlags getQueueFlags (const OperationContext&) const
+	{
+		return VK_QUEUE_COMPUTE_BIT;
+	}
+
+	de::MovePtr<Operation> build (OperationContext& context, Resource& resource) const
+	{
+		return de::MovePtr<Operation>(new MSImageImplementation(context, resource));
+	}
+
+	de::MovePtr<Operation> build (OperationContext&, Resource&, Resource&) const
+	{
+		DE_ASSERT(0);
+		return de::MovePtr<Operation>();
+	}
+
+private:
+	const ResourceDescription	m_resourceDesc;
+};
+
 } // ShaderAccess ns
 
 namespace CopyBufferToImage
@@ -2659,14 +3042,22 @@ public:
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
-		const DeviceInterface&	vk			= m_context.getDeviceInterface();
-		const VkBufferImageCopy	copyRegion	= makeBufferImageCopy(m_resource.getImage().extent, m_resource.getImage().subresourceLayers);
+		const DeviceInterface&		vk						= m_context.getDeviceInterface();
+		const VkBufferImageCopy		copyRegion				= makeBufferImageCopy(m_resource.getImage().extent, m_resource.getImage().subresourceLayers);
+		SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
 
-		const VkImageMemoryBarrier layoutBarrier = makeImageMemoryBarrier(
-			(VkAccessFlags)0, VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			m_resource.getImage().handle, m_resource.getImage().subresourceRange);
-		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, 1u, &layoutBarrier);
+		const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+			VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,			// VkPipelineStageFlags2KHR			srcStageMask
+			(VkAccessFlags)0,									// VkAccessFlags2KHR				srcAccessMask
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,				// VkPipelineStageFlags2KHR			dstStageMask
+			VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,					// VkAccessFlags2KHR				dstAccessMask
+			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout					oldLayout
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				// VkImageLayout					newLayout
+			m_resource.getImage().handle,						// VkImage							image
+			m_resource.getImage().subresourceRange				// VkImageSubresourceRange			subresourceRange
+		);
+		VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+		synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 
 		vk.cmdCopyBufferToImage(cmdBuffer, **m_hostBuffer, m_resource.getImage().handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
 	}
@@ -2680,8 +3071,8 @@ public:
 	{
 		const SyncInfo syncInfo =
 		{
-			VK_PIPELINE_STAGE_TRANSFER_BIT,			// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_TRANSFER_WRITE_BIT,			// VkAccessFlags			accessMask;
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,	// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,		// VkAccessFlags			accessMask;
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,	// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
@@ -2735,31 +3126,55 @@ public:
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
-		const DeviceInterface&	vk			= m_context.getDeviceInterface();
-		const VkBufferImageCopy	copyRegion	= makeBufferImageCopy(m_imageExtent, m_subresourceLayers);
+		const DeviceInterface&		vk						= m_context.getDeviceInterface();
+		const VkBufferImageCopy		copyRegion				= makeBufferImageCopy(m_imageExtent, m_subresourceLayers);
+		SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
 
 		// Resource -> Image
 		{
-			const VkImageMemoryBarrier layoutBarrier = makeImageMemoryBarrier(
-				(VkAccessFlags)0, VK_ACCESS_TRANSFER_WRITE_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				**m_image, m_subresourceRange);
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, 1u, &layoutBarrier);
+			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+				VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,			// VkPipelineStageFlags2KHR			srcStageMask
+				(VkAccessFlags)0,									// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,				// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,					// VkAccessFlags2KHR				dstAccessMask
+				VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout					oldLayout
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				// VkImageLayout					newLayout
+				**m_image,											// VkImage							image
+				m_subresourceRange									// VkImageSubresourceRange			subresourceRange
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 
 			vk.cmdCopyBufferToImage(cmdBuffer, m_resource.getBuffer().handle, **m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
 		}
 		// Image -> Host buffer
 		{
-			const VkImageMemoryBarrier layoutBarrier = makeImageMemoryBarrier(
-				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-				**m_image, m_subresourceRange);
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, 1u, &layoutBarrier);
+			const VkImageMemoryBarrier2KHR imageLayoutBarrier2 = makeImageMemoryBarrier2(
+				VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,				// VkPipelineStageFlags2KHR			srcStageMask
+				VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,					// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,				// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_TRANSFER_READ_BIT_KHR,					// VkAccessFlags2KHR				dstAccessMask
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				// VkImageLayout					oldLayout
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,				// VkImageLayout					newLayout
+				**m_image,											// VkImage							image
+				m_subresourceRange									// VkImageSubresourceRange			subresourceRange
+			);
+			VkDependencyInfoKHR layoutDependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageLayoutBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &layoutDependencyInfo);
 
 			vk.cmdCopyImageToBuffer(cmdBuffer, **m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_hostBuffer, 1u, &copyRegion);
 
-			const VkBufferMemoryBarrier	barrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, **m_hostBuffer, 0u, m_resource.getBuffer().size);
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
+			const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+				VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,				// VkPipelineStageFlags2KHR			srcStageMask
+				VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,					// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_2_HOST_BIT_KHR,					// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_HOST_READ_BIT_KHR,						// VkAccessFlags2KHR				dstAccessMask
+				**m_hostBuffer,										// VkBuffer							buffer
+				0u,													// VkDeviceSize						offset
+				m_resource.getBuffer().size							// VkDeviceSize						size
+			);
+			VkDependencyInfoKHR bufferDependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &bufferDependencyInfo);
 		}
 	}
 
@@ -2767,9 +3182,9 @@ public:
 	{
 		const SyncInfo syncInfo =
 		{
-			VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_TRANSFER_READ_BIT,		// VkAccessFlags			accessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,	// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_TRANSFER_READ_BIT_KHR,		// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
 	}
@@ -2872,20 +3287,31 @@ public:
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
-		const DeviceInterface&	vk			= m_context.getDeviceInterface();
-		const VkBufferImageCopy	copyRegion	= makeBufferImageCopy(m_outResource.getImage().extent, m_outResource.getImage().subresourceLayers);
+		const DeviceInterface&		vk						= m_context.getDeviceInterface();
+		const VkBufferImageCopy		copyRegion				= makeBufferImageCopy(m_outResource.getImage().extent, m_outResource.getImage().subresourceLayers);
+		SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
 
-		const VkBufferMemoryBarrier bufferLayoutBarrier =
-			makeBufferMemoryBarrier(
-				(VkAccessFlags)0, VK_ACCESS_TRANSFER_READ_BIT,
-				m_inResource.getBuffer().handle, 0, m_inResource.getBuffer().size);
-		const VkImageMemoryBarrier imageLayoutBarrier =
-			makeImageMemoryBarrier(
-				(VkAccessFlags)0, VK_ACCESS_TRANSFER_WRITE_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				m_outResource.getImage().handle, m_outResource.getImage().subresourceRange);
-		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, DE_NULL,
-							  1u, &bufferLayoutBarrier, 1u, &imageLayoutBarrier);
+		const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+			VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,		// VkPipelineStageFlags2KHR			srcStageMask
+			(VkAccessFlags)0,								// VkAccessFlags2KHR				srcAccessMask
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,			// VkPipelineStageFlags2KHR			dstStageMask
+			VK_ACCESS_2_TRANSFER_READ_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+			m_inResource.getBuffer().handle,				// VkBuffer							buffer
+			0u,												// VkDeviceSize						offset
+			m_inResource.getBuffer().size					// VkDeviceSize						size
+		);
+		const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+			VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,		// VkPipelineStageFlags2KHR			srcStageMask
+			(VkAccessFlags)0,								// VkAccessFlags2KHR				srcAccessMask
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,			// VkPipelineStageFlags2KHR			dstStageMask
+			VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+			VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout					oldLayout
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout					newLayout
+			m_outResource.getImage().handle,				// VkImage							image
+			m_outResource.getImage().subresourceRange		// VkImageSubresourceRange			subresourceRange
+		);
+		VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2, &imageMemoryBarrier2);
+		synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 
 		vk.cmdCopyBufferToImage(cmdBuffer, m_inResource.getBuffer().handle, m_outResource.getImage().handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
 	}
@@ -2894,8 +3320,8 @@ public:
 	{
 		const SyncInfo syncInfo =
 		{
-			VK_PIPELINE_STAGE_TRANSFER_BIT,			// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_TRANSFER_READ_BIT,			// VkAccessFlags			accessMask;
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,	// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_TRANSFER_READ_BIT_KHR,		// VkAccessFlags			accessMask;
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,	// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
@@ -2905,8 +3331,8 @@ public:
 	{
 		const SyncInfo syncInfo =
 		{
-			VK_PIPELINE_STAGE_TRANSFER_BIT,			// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_TRANSFER_WRITE_BIT,			// VkAccessFlags			accessMask;
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,	// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,		// VkAccessFlags			accessMask;
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,	// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
@@ -3016,26 +3442,41 @@ public:
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
-		const DeviceInterface&	vk			= m_context.getDeviceInterface();
-		const VkBufferImageCopy	copyRegion	= makeBufferImageCopy(m_imageExtent, m_subresourceLayers);
+		const DeviceInterface&		vk						= m_context.getDeviceInterface();
+		const VkBufferImageCopy		copyRegion				= makeBufferImageCopy(m_imageExtent, m_subresourceLayers);
+		SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
 
 		// Host buffer -> Image
 		{
-			const VkImageMemoryBarrier layoutBarrier = makeImageMemoryBarrier(
-				(VkAccessFlags)0, VK_ACCESS_TRANSFER_WRITE_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				**m_image, m_subresourceRange);
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, 1u, &layoutBarrier);
+			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+				VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,		// VkPipelineStageFlags2KHR			srcStageMask
+				(VkAccessFlags)0,								// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,			// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+				VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout					oldLayout
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout					newLayout
+				**m_image,										// VkImage							image
+				m_subresourceRange								// VkImageSubresourceRange			subresourceRange
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 
 			vk.cmdCopyBufferToImage(cmdBuffer, **m_hostBuffer, **m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
 		}
 		// Image -> Resource
 		{
-			const VkImageMemoryBarrier layoutBarrier = makeImageMemoryBarrier(
-				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-				**m_image, m_subresourceRange);
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, 1u, &layoutBarrier);
+			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+				VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,			// VkPipelineStageFlags2KHR			srcStageMask
+				VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,				// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,			// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_TRANSFER_READ_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout					oldLayout
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,			// VkImageLayout					newLayout
+				**m_image,										// VkImage							image
+				m_subresourceRange								// VkImageSubresourceRange			subresourceRange
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 
 			vk.cmdCopyImageToBuffer(cmdBuffer, **m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_resource.getBuffer().handle, 1u, &copyRegion);
 		}
@@ -3050,9 +3491,9 @@ public:
 	{
 		const SyncInfo syncInfo =
 		{
-			VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_TRANSFER_WRITE_BIT,		// VkAccessFlags			accessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,		// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,			// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
 	}
@@ -3101,15 +3542,25 @@ public:
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
-		const DeviceInterface&	vk			= m_context.getDeviceInterface();
-		const VkBufferImageCopy	copyRegion	= makeBufferImageCopy(m_resource.getImage().extent, m_resource.getImage().subresourceLayers);
+		const DeviceInterface&		vk						= m_context.getDeviceInterface();
+		const VkBufferImageCopy		copyRegion				= makeBufferImageCopy(m_resource.getImage().extent, m_resource.getImage().subresourceLayers);
+		SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
 
 		vk.cmdCopyImageToBuffer(cmdBuffer, m_resource.getImage().handle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_hostBuffer, 1u, &copyRegion);
 
 		// Insert a barrier so data written by the transfer is available to the host
 		{
-			const VkBufferMemoryBarrier	barrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, **m_hostBuffer, 0u, VK_WHOLE_SIZE);
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
+			const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+				VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,			// VkPipelineStageFlags2KHR			srcStageMask
+				VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,				// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_2_HOST_BIT_KHR,				// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_HOST_READ_BIT_KHR,					// VkAccessFlags2KHR				dstAccessMask
+				**m_hostBuffer,									// VkBuffer							buffer
+				0u,												// VkDeviceSize						offset
+				VK_WHOLE_SIZE									// VkDeviceSize						size
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 		}
 	}
 
@@ -3117,8 +3568,8 @@ public:
 	{
 		const SyncInfo syncInfo =
 		{
-			VK_PIPELINE_STAGE_TRANSFER_BIT,			// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_TRANSFER_READ_BIT,			// VkAccessFlags			accessMask;
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,	// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_TRANSFER_READ_BIT_KHR,		// VkAccessFlags			accessMask;
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,	// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
@@ -3162,20 +3613,32 @@ public:
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
-		const DeviceInterface&	vk			= m_context.getDeviceInterface();
-		const VkBufferImageCopy	copyRegion	= makeBufferImageCopy(m_inResource.getImage().extent, m_subresourceLayers);
+		const DeviceInterface&		vk						= m_context.getDeviceInterface();
+		const VkBufferImageCopy		copyRegion				= makeBufferImageCopy(m_inResource.getImage().extent, m_subresourceLayers);
+		SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
 
 		{
-			const VkImageMemoryBarrier imageLayoutBarrier = makeImageMemoryBarrier(
-				(VkAccessFlags)0, VK_ACCESS_TRANSFER_READ_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-				m_inResource.getImage().handle, m_subresourceRange);
-			const VkBufferMemoryBarrier bufferLayoutBarrier = makeBufferMemoryBarrier(
-				(VkAccessFlags)0, VK_ACCESS_TRANSFER_WRITE_BIT,
-				m_outResource.getBuffer().handle, 0, m_outResource.getBuffer().size);
-
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, DE_NULL,
-								  1u, &bufferLayoutBarrier, 1u, &imageLayoutBarrier);
+			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+				VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,		// VkPipelineStageFlags2KHR			srcStageMask
+				(VkAccessFlags)0,								// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,			// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_TRANSFER_READ_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+				VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout					oldLayout
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout					newLayout
+				m_inResource.getImage().handle,					// VkImage							image
+				m_inResource.getImage().subresourceRange		// VkImageSubresourceRange			subresourceRange
+			);
+			const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+				VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,		// VkPipelineStageFlags2KHR			srcStageMask
+				(VkAccessFlags)0,								// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,			// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+				m_outResource.getBuffer().handle,				// VkBuffer							buffer
+				0u,												// VkDeviceSize						offset
+				m_outResource.getBuffer().size					// VkDeviceSize						size
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2, &imageMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 		}
 
 		vk.cmdCopyImageToBuffer(cmdBuffer, m_inResource.getImage().handle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_outResource.getBuffer().handle, 1u, &copyRegion);
@@ -3185,9 +3648,9 @@ public:
 	{
 		const SyncInfo syncInfo =
 		{
-			VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_TRANSFER_READ_BIT,		// VkAccessFlags			accessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,	// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_TRANSFER_READ_BIT_KHR,		// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
 	}
@@ -3196,9 +3659,9 @@ public:
 	{
 		const SyncInfo syncInfo =
 		{
-			VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_TRANSFER_WRITE_BIT,		// VkAccessFlags			accessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,	// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,		// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
 	}
@@ -3301,14 +3764,25 @@ public:
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
-		const DeviceInterface&	vk	= m_context.getDeviceInterface();
+		const DeviceInterface&		vk						= m_context.getDeviceInterface();
+		SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
 
-		const VkImageMemoryBarrier layoutBarrier = makeImageMemoryBarrier(
-			(VkAccessFlags)0, VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			m_resource.getImage().handle, m_resource.getImage().subresourceRange);
+		VkPipelineStageFlags2KHR dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR;
+		if (m_context.getSynchronizationType() == SynchronizationType::SYNCHRONIZATION2)
+			dstStageMask = VK_PIPELINE_STAGE_2_CLEAR_BIT_KHR;
 
-		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, 1u, &layoutBarrier);
+		const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+			VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,		// VkPipelineStageFlags2KHR			srcStageMask
+			(VkAccessFlags)0,								// VkAccessFlags2KHR				srcAccessMask
+			dstStageMask,									// VkPipelineStageFlags2KHR			dstStageMask
+			VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+			VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout					oldLayout
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout					newLayout
+			m_resource.getImage().handle,					// VkImage							image
+			m_resource.getImage().subresourceRange			// VkImageSubresourceRange			subresourceRange
+		);
+		VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+		synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 
 		if (m_mode == CLEAR_MODE_COLOR)
 			vk.cmdClearColorImage(cmdBuffer, m_resource.getImage().handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_clearValue.color, 1u, &m_resource.getImage().subresourceRange);
@@ -3323,13 +3797,16 @@ public:
 
 	SyncInfo getOutSyncInfo (void) const
 	{
-		const SyncInfo syncInfo =
+		VkPipelineStageFlags2KHR stageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR;
+		if (m_context.getSynchronizationType() == SynchronizationType::SYNCHRONIZATION2)
+			stageMask = VK_PIPELINE_STAGE_2_CLEAR_BIT_KHR;
+
+		return
 		{
-			VK_PIPELINE_STAGE_TRANSFER_BIT,			// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_TRANSFER_WRITE_BIT,			// VkAccessFlags			accessMask;
+			stageMask,								// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,		// VkAccessFlags			accessMask;
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,	// VkImageLayout			imageLayout;
 		};
-		return syncInfo;
 	}
 
 	Data getData (void) const
@@ -3497,17 +3974,23 @@ public:
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
-		const DeviceInterface&	vk	= m_context.getDeviceInterface();
+		const DeviceInterface&		vk						= m_context.getDeviceInterface();
+		SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
 
 		// Change color attachment image layout
 		{
-			const VkImageMemoryBarrier colorAttachmentLayoutBarrier = makeImageMemoryBarrier(
-				(VkAccessFlags)0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-				m_colorImage, m_colorSubresourceRange);
-
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0,
-				0u, DE_NULL, 0u, DE_NULL, 1u, &colorAttachmentLayoutBarrier);
+			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+				VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,				// VkPipelineStageFlags2KHR			srcStageMask
+				(VkAccessFlags)0,										// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR,	// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+				VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout					oldLayout
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout					newLayout
+				m_colorImage,											// VkImage							image
+				m_colorSubresourceRange									// VkImageSubresourceRange			subresourceRange
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 		}
 
 		{
@@ -3558,9 +4041,9 @@ public:
 	{
 		const SyncInfo syncInfo =
 		{
-			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,		// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,				// VkAccessFlags			accessMask;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout			imageLayout;
+			VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR,	// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR,				// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
 	}
@@ -3786,17 +4269,17 @@ public:
 	SyncInfo getOutSyncInfo (void) const
 	{
 		SyncInfo syncInfo;
-		syncInfo.stageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+		syncInfo.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR;
 
 		switch (m_resource.getImage().subresourceRange.aspectMask)
 		{
 			case VK_IMAGE_ASPECT_COLOR_BIT:
-				syncInfo.accessMask		= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+				syncInfo.accessMask		= VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR;
 				syncInfo.imageLayout	= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			break;
 			case VK_IMAGE_ASPECT_STENCIL_BIT:
 			case VK_IMAGE_ASPECT_DEPTH_BIT:
-				syncInfo.accessMask		= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+				syncInfo.accessMask		= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT_KHR;
 				syncInfo.imageLayout	= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 			break;
 			default:
@@ -3931,17 +4414,23 @@ public:
 
 	void recordCommands (OperationContext& context, const VkCommandBuffer cmdBuffer, const VkDescriptorSet descriptorSet)
 	{
-		const DeviceInterface&	vk	= context.getDeviceInterface();
+		const DeviceInterface&		vk						= context.getDeviceInterface();
+		SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(context.getSynchronizationType(), vk, DE_FALSE);
 
 		// Change color attachment image layout
 		{
-			const VkImageMemoryBarrier colorAttachmentLayoutBarrier = makeImageMemoryBarrier(
-				(VkAccessFlags)0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-				**m_colorAttachmentImage, m_colorImageSubresourceRange);
-
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0,
-				0u, DE_NULL, 0u, DE_NULL, 1u, &colorAttachmentLayoutBarrier);
+			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+				VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,				// VkPipelineStageFlags2KHR			srcStageMask
+				(VkAccessFlags)0,										// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR,	// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+				VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout					oldLayout
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout					newLayout
+				**m_colorAttachmentImage,								// VkImage							image
+				m_colorImageSubresourceRange							// VkImageSubresourceRange			subresourceRange
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 		}
 
 		{
@@ -4079,22 +4568,32 @@ public:
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
-		const DeviceInterface&	vk	= m_context.getDeviceInterface();
+		const DeviceInterface&		vk						= m_context.getDeviceInterface();
+		SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
 
 		m_pipeline->recordCommands(m_context, cmdBuffer, *m_descriptorSet);
 
 		// Insert a barrier so data written by the shader is available to the host
-		const VkBufferMemoryBarrier	barrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, **m_hostBuffer, 0u, m_hostBufferSizeBytes);
-		vk.cmdPipelineBarrier(cmdBuffer, m_pipelineStage, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
+		const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+			m_pipelineStage,							// VkPipelineStageFlags2KHR			srcStageMask
+			VK_ACCESS_2_SHADER_WRITE_BIT_KHR,			// VkAccessFlags2KHR				srcAccessMask
+			VK_PIPELINE_STAGE_2_HOST_BIT_KHR,			// VkPipelineStageFlags2KHR			dstStageMask
+			VK_ACCESS_2_HOST_READ_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+			**m_hostBuffer,								// VkBuffer							buffer
+			0u,											// VkDeviceSize						offset
+			m_hostBufferSizeBytes						// VkDeviceSize						size
+		);
+		VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+		synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 	}
 
 	SyncInfo getInSyncInfo (void) const
 	{
 		const SyncInfo syncInfo =
 		{
-			VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,	// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_INDIRECT_COMMAND_READ_BIT,	// VkAccessFlags			accessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			imageLayout;
+			VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT_KHR,	// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT_KHR,	// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
 	}
@@ -4195,9 +4694,9 @@ public:
 	{
 		const SyncInfo syncInfo =
 		{
-			VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_TRANSFER_WRITE_BIT,		// VkAccessFlags			accessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,	// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,		// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
 	}
@@ -4373,26 +4872,48 @@ public:
 namespace VertexInput
 {
 
+enum DrawMode
+{
+	DRAW_MODE_VERTEX	= 0,
+	DRAW_MODE_INDEXED,
+};
+
 class Implementation : public Operation
 {
 public:
-	Implementation (OperationContext& context, Resource& resource)
+	Implementation (OperationContext& context, Resource& resource, DrawMode drawMode)
 		: m_context		(context)
 		, m_resource	(resource)
+		, m_drawMode	(drawMode)
 	{
 		requireFeaturesForSSBOAccess (m_context, VK_SHADER_STAGE_VERTEX_BIT);
 
 		const DeviceInterface&		vk				= context.getDeviceInterface();
 		const VkDevice				device			= context.getDevice();
 		Allocator&					allocator		= context.getAllocator();
+		VkFormat					attributeFormat = VK_FORMAT_R32G32B32A32_UINT;
 		const VkDeviceSize			dataSizeBytes	= m_resource.getBuffer().size;
 
-		m_outputBuffer = de::MovePtr<Buffer>(new Buffer(vk, device, allocator,
-			makeBufferCreateInfo(dataSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible));
-
+		// allocate ssbo that will store data used for verification
 		{
+			m_outputBuffer = de::MovePtr<Buffer>(new Buffer(vk, device, allocator,
+				makeBufferCreateInfo(dataSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible));
+
 			const Allocation& alloc = m_outputBuffer->getAllocation();
 			deMemset(alloc.getHostPtr(), 0, static_cast<size_t>(dataSizeBytes));
+			flushAlloc(vk, device, alloc);
+		}
+
+		// allocate buffer that will be used for vertex attributes when we use resource for indices
+		if (m_drawMode == DRAW_MODE_INDEXED)
+		{
+			attributeFormat = VK_FORMAT_R32_UINT;
+
+			m_inputBuffer = de::MovePtr<Buffer>(new Buffer(vk, device, allocator,
+				makeBufferCreateInfo(dataSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
+
+			const Allocation& alloc = m_inputBuffer->getAllocation();
+			fillPattern(alloc.getHostPtr(), dataSizeBytes, true);
 			flushAlloc(vk, device, alloc);
 		}
 
@@ -4428,7 +4949,7 @@ public:
 		m_pipeline = GraphicsPipelineBuilder()
 			.setPrimitiveTopology			(VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
 			.setRenderSize					(tcu::IVec2(static_cast<int>(m_colorImageExtent.width), static_cast<int>(m_colorImageExtent.height)))
-			.setVertexInputSingleAttribute	(VK_FORMAT_R32G32B32A32_UINT, tcu::getPixelSize(mapVkFormat(VK_FORMAT_R32G32B32A32_UINT)))
+			.setVertexInputSingleAttribute	(attributeFormat, tcu::getPixelSize(mapVkFormat(attributeFormat)))
 			.setShader						(vk, device, VK_SHADER_STAGE_VERTEX_BIT,	context.getBinaryCollection().get("input_vert"), DE_NULL)
 			.setShader						(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("input_frag"), DE_NULL)
 			.build							(vk, device, *m_pipelineLayout, *m_renderPass, context.getPipelineCacheData());
@@ -4436,18 +4957,24 @@ public:
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
-		const DeviceInterface&	vk				= m_context.getDeviceInterface();
-		const VkDeviceSize		dataSizeBytes	= m_resource.getBuffer().size;
+		const DeviceInterface&		vk						= m_context.getDeviceInterface();
+		const VkDeviceSize			dataSizeBytes			= m_resource.getBuffer().size;
+		SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
 
 		// Change color attachment image layout
 		{
-			const VkImageMemoryBarrier colorAttachmentLayoutBarrier = makeImageMemoryBarrier(
-				(VkAccessFlags)0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-				**m_colorAttachmentImage, m_colorImageSubresourceRange);
-
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0,
-				0u, DE_NULL, 0u, DE_NULL, 1u, &colorAttachmentLayoutBarrier);
+			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+				VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,				// VkPipelineStageFlags2KHR			srcStageMask
+				(VkAccessFlags)0,										// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR,	// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
+				VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout					oldLayout
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout					newLayout
+				**m_colorAttachmentImage,								// VkImage							image
+				m_colorImageSubresourceRange							// VkImageSubresourceRange			subresourceRange
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 		}
 
 		{
@@ -4459,29 +4986,64 @@ public:
 
 		vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 		vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &m_descriptorSet.get(), 0u, DE_NULL);
-		{
-			const VkDeviceSize vertexBufferOffset = 0ull;
-			vk.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &m_resource.getBuffer().handle, &vertexBufferOffset);
-		}
 
-		vk.cmdDraw(cmdBuffer, static_cast<deUint32>(dataSizeBytes / sizeof(tcu::UVec4)), 1u, 0u, 0u);
+		const VkDeviceSize vertexBufferOffset	= 0ull;
+		if (m_drawMode == DRAW_MODE_VERTEX)
+		{
+			const deUint32 count = static_cast<deUint32>(dataSizeBytes / sizeof(tcu::UVec4));
+			vk.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &m_resource.getBuffer().handle, &vertexBufferOffset);
+			vk.cmdDraw(cmdBuffer, count, 1u, 0u, 0u);
+		}
+		else // (m_drawMode == DRAW_MODE_INDEXED)
+		{
+			const deUint32 count = static_cast<deUint32>(dataSizeBytes / sizeof(deUint32));
+			vk.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &**m_inputBuffer, &vertexBufferOffset);
+			vk.cmdBindIndexBuffer(cmdBuffer, m_resource.getBuffer().handle, 0u, VK_INDEX_TYPE_UINT32);
+			vk.cmdDrawIndexed(cmdBuffer, count, 1, 0, 0, 0);
+		}
 
 		endRenderPass(vk, cmdBuffer);
 
 		// Insert a barrier so data written by the shader is available to the host
 		{
-			const VkBufferMemoryBarrier	barrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, **m_outputBuffer, 0u, m_resource.getBuffer().size);
-			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
+			const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+				VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT_KHR,		// VkPipelineStageFlags2KHR			srcStageMask
+				VK_ACCESS_2_SHADER_WRITE_BIT_KHR,				// VkAccessFlags2KHR				srcAccessMask
+				VK_PIPELINE_STAGE_2_HOST_BIT_KHR,				// VkPipelineStageFlags2KHR			dstStageMask
+				VK_ACCESS_2_HOST_READ_BIT_KHR,					// VkAccessFlags2KHR				dstAccessMask
+				**m_outputBuffer,								// VkBuffer							buffer
+				0u,												// VkDeviceSize						offset
+				m_resource.getBuffer().size						// VkDeviceSize						size
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 		}
 	}
 
 	SyncInfo getInSyncInfo (void) const
 	{
+		const bool					usingIndexedDraw	= (m_drawMode == DRAW_MODE_INDEXED);
+		VkPipelineStageFlags2KHR	stageMask			= VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT_KHR;
+		VkAccessFlags2KHR			accessMask			= usingIndexedDraw ? VK_ACCESS_2_INDEX_READ_BIT_KHR
+																		   : VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT_KHR;
+
+		if (m_context.getSynchronizationType() == SynchronizationType::SYNCHRONIZATION2)
+		{
+			// test new stages added with VK_KHR_synchronization2 (no need to further duplicate those tests);
+			// with this operation we can test pre_rasterization, index_input and attribute_input flags;
+			// since this operation is executed for three buffers of different size we use diferent flags depending on the size
+			if (m_resource.getBuffer().size > MAX_UPDATE_BUFFER_SIZE)
+				stageMask = VK_PIPELINE_STAGE_2_PRE_RASTERIZATION_SHADERS_BIT_KHR;
+			else
+				stageMask = usingIndexedDraw ? VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT_KHR
+											 : VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT_KHR;
+		}
+
 		const SyncInfo syncInfo =
 		{
-			VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,		// VkPipelineStageFlags		stageMask;
-			VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,	// VkAccessFlags			accessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			imageLayout;
+			stageMask,									// VkPipelineStageFlags		stageMask;
+			accessMask,									// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			imageLayout;
 		};
 		return syncInfo;
 	}
@@ -4504,9 +5066,9 @@ public:
 private:
 	OperationContext&			m_context;
 	Resource&					m_resource;
+	DrawMode					m_drawMode;
+	de::MovePtr<Buffer>			m_inputBuffer;
 	de::MovePtr<Buffer>			m_outputBuffer;
-	de::MovePtr<Buffer>			m_indexBuffer;
-	de::MovePtr<Buffer>			m_indirectBuffer;
 	Move<VkRenderPass>			m_renderPass;
 	Move<VkFramebuffer>			m_framebuffer;
 	Move<VkPipelineLayout>		m_pipelineLayout;
@@ -4524,30 +5086,45 @@ private:
 class Support : public OperationSupport
 {
 public:
-	Support (const ResourceDescription& resourceDesc)
+	Support(const ResourceDescription& resourceDesc, DrawMode drawMode)
 		: m_resourceDesc	(resourceDesc)
+		, m_drawMode		(drawMode)
 	{
-		DE_ASSERT(m_resourceDesc.type == RESOURCE_TYPE_BUFFER);
+		DE_ASSERT(m_resourceDesc.type == RESOURCE_TYPE_BUFFER || m_resourceDesc.type == RESOURCE_TYPE_INDEX_BUFFER);
 	}
 
 	void initPrograms (SourceCollections& programCollection) const
 	{
 		// Vertex
 		{
-			int vertexStride = sizeof(tcu::UVec4);
 			std::ostringstream src;
-			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
-				<< "\n"
-				<< "layout(location = 0) in uvec4 v_in_data;\n"
-				<< "layout(set = 0, binding = 0, std140) writeonly buffer Output {\n"
-				<< "    uvec4 data[" << m_resourceDesc.size.x()/vertexStride << "];\n"
-				<< "} b_out;\n"
-				<< "\n"
-				<< "void main (void)\n"
-				<< "{\n"
-				<< "    b_out.data[gl_VertexIndex] = v_in_data;\n"
-				<< "    gl_PointSize = 1.0f;\n"
-				<< "}\n";
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n";
+			if (m_drawMode == DRAW_MODE_VERTEX)
+			{
+				src << "layout(location = 0) in uvec4 v_in_data;\n"
+					<< "layout(set = 0, binding = 0, std140) writeonly buffer Output {\n"
+					<< "    uvec4 data[" << m_resourceDesc.size.x() / sizeof(tcu::UVec4) << "];\n"
+					<< "} b_out;\n"
+					<< "\n"
+					<< "void main (void)\n"
+					<< "{\n"
+					<< "    b_out.data[gl_VertexIndex] = v_in_data;\n"
+					<< "    gl_PointSize = 1.0f;\n"
+					<< "}\n";
+			}
+			else // DRAW_MODE_INDEXED
+			{
+				src << "layout(location = 0) in uint v_in_data;\n"
+					<< "layout(set = 0, binding = 0, std430) writeonly buffer Output {\n"
+					<< "    uint data[" << m_resourceDesc.size.x() / sizeof(deUint32) << "];\n"
+					<< "} b_out;\n"
+					<< "\n"
+					<< "void main (void)\n"
+					<< "{\n"
+					<< "    b_out.data[gl_VertexIndex] = v_in_data;\n"
+					<< "    gl_PointSize = 1.0f;\n"
+					<< "}\n";
+			}
 			programCollection.glslSources.add("input_vert") << glu::VertexSource(src.str());
 		}
 
@@ -4568,7 +5145,7 @@ public:
 
 	deUint32 getInResourceUsageFlags (void) const
 	{
-		return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		return (m_drawMode == DRAW_MODE_VERTEX) ? VK_BUFFER_USAGE_VERTEX_BUFFER_BIT : VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 	}
 
 	deUint32 getOutResourceUsageFlags (void) const
@@ -4576,15 +5153,14 @@ public:
 		return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 	}
 
-	VkQueueFlags getQueueFlags (const OperationContext& context) const
+	VkQueueFlags getQueueFlags (const OperationContext&) const
 	{
-		DE_UNREF(context);
 		return VK_QUEUE_GRAPHICS_BIT;
 	}
 
 	de::MovePtr<Operation> build (OperationContext& context, Resource& resource) const
 	{
-		return de::MovePtr<Operation>(new Implementation(context, resource));
+		return de::MovePtr<Operation>(new Implementation(context, resource, m_drawMode));
 	}
 
 	de::MovePtr<Operation> build (OperationContext&, Resource&, Resource&) const
@@ -4595,14 +5171,16 @@ public:
 
 private:
 	const ResourceDescription	m_resourceDesc;
+	const DrawMode				m_drawMode;
 };
 
 } // VertexInput
 
 } // anonymous ns
 
-OperationContext::OperationContext (Context& context, PipelineCacheData& pipelineCacheData)
+OperationContext::OperationContext (Context& context, SynchronizationType syncType, PipelineCacheData& pipelineCacheData)
 	: m_context				(context)
+	, m_syncType			(syncType)
 	, m_vki					(context.getInstanceInterface())
 	, m_vk					(context.getDeviceInterface())
 	, m_physicalDevice		(context.getPhysicalDevice())
@@ -4613,8 +5191,14 @@ OperationContext::OperationContext (Context& context, PipelineCacheData& pipelin
 {
 }
 
-OperationContext::OperationContext (Context& context, PipelineCacheData& pipelineCacheData, const DeviceInterface& vk, const VkDevice device, vk::Allocator& allocator)
+OperationContext::OperationContext (Context&				context,
+									SynchronizationType		syncType,
+									const DeviceInterface&	vk,
+									const VkDevice			device,
+									vk::Allocator&			allocator,
+									PipelineCacheData&		pipelineCacheData)
 	: m_context				(context)
+	, m_syncType			(syncType)
 	, m_vki					(context.getInstanceInterface())
 	, m_vk					(vk)
 	, m_physicalDevice		(context.getPhysicalDevice())
@@ -4626,6 +5210,7 @@ OperationContext::OperationContext (Context& context, PipelineCacheData& pipelin
 }
 
 OperationContext::OperationContext (Context&						context,
+									SynchronizationType				syncType,
 									const vk::InstanceInterface&	vki,
 									const vk::DeviceInterface&		vkd,
 									vk::VkPhysicalDevice			physicalDevice,
@@ -4634,6 +5219,7 @@ OperationContext::OperationContext (Context&						context,
 									vk::BinaryCollection&			programCollection,
 									PipelineCacheData&				pipelineCacheData)
 	: m_context				(context)
+	, m_syncType			(syncType)
 	, m_vki					(vki)
 	, m_vk					(vkd)
 	, m_physicalDevice		(physicalDevice)
@@ -4653,7 +5239,7 @@ Resource::Resource (OperationContext& context, const ResourceDescription& desc, 
 	const VkPhysicalDevice		physDevice	= context.getPhysicalDevice();
 	Allocator&					allocator	= context.getAllocator();
 
-	if (m_type == RESOURCE_TYPE_BUFFER || isIndirectBuffer(m_type))
+	if (m_type == RESOURCE_TYPE_BUFFER || m_type == RESOURCE_TYPE_INDEX_BUFFER || isIndirectBuffer(m_type))
 	{
 		m_bufferData.offset					= 0u;
 		m_bufferData.size					= static_cast<VkDeviceSize>(desc.size.x());
@@ -4674,7 +5260,7 @@ Resource::Resource (OperationContext& context, const ResourceDescription& desc, 
 		m_imageData.format				= desc.imageFormat;
 		m_imageData.subresourceRange	= makeImageSubresourceRange(desc.imageAspect, 0u, 1u, 0u, 1u);
 		m_imageData.subresourceLayers	= makeImageSubresourceLayers(desc.imageAspect, 0u, 0u, 1u);
-		VkImageCreateInfo imageInfo		= makeImageCreateInfo(m_imageData.imageType, m_imageData.extent, m_imageData.format, usage);
+		VkImageCreateInfo imageInfo		= makeImageCreateInfo(m_imageData.imageType, m_imageData.extent, m_imageData.format, usage, desc.imageSamples);
 		imageInfo.sharingMode			= sharingMode;
 		if (queueFamilyIndex.size() > 0)
 		{
@@ -4687,6 +5273,9 @@ Resource::Resource (OperationContext& context, const ResourceDescription& desc, 
 
 		if (formatResult != VK_SUCCESS)
 			TCU_THROW(NotSupportedError, "Image format is not supported");
+
+		if ((imageFormatProperties.sampleCounts & desc.imageSamples) != desc.imageSamples)
+			TCU_THROW(NotSupportedError, "Requested sample count is not supported");
 
 		m_image							= de::MovePtr<Image>(new Image(vk, device, allocator, imageInfo, MemoryRequirement::Any));
 		m_imageData.handle				= **m_image;
@@ -4776,6 +5365,10 @@ bool isResourceSupported (const OperationName opName, const ResourceDescription&
 		case OPERATION_NAME_READ_INDIRECT_BUFFER_DISPATCH:
 			return resourceDesc.type == RESOURCE_TYPE_INDIRECT_BUFFER_DISPATCH;
 
+		case OPERATION_NAME_WRITE_UPDATE_INDEX_BUFFER:
+		case OPERATION_NAME_READ_INDEX_INPUT:
+			return resourceDesc.type == RESOURCE_TYPE_INDEX_BUFFER;
+
 		case OPERATION_NAME_WRITE_UPDATE_BUFFER:
 			return resourceDesc.type == RESOURCE_TYPE_BUFFER && resourceDesc.size.x() <= MAX_UPDATE_BUFFER_SIZE;
 
@@ -4783,10 +5376,16 @@ bool isResourceSupported (const OperationName opName, const ResourceDescription&
 		case OPERATION_NAME_WRITE_COPY_BUFFER_TO_IMAGE:
 		case OPERATION_NAME_READ_COPY_IMAGE:
 		case OPERATION_NAME_READ_COPY_IMAGE_TO_BUFFER:
-			return resourceDesc.type == RESOURCE_TYPE_IMAGE;
+			return resourceDesc.type == RESOURCE_TYPE_IMAGE && resourceDesc.imageSamples == VK_SAMPLE_COUNT_1_BIT;
 
 		case OPERATION_NAME_WRITE_CLEAR_ATTACHMENTS:
-			return resourceDesc.type == RESOURCE_TYPE_IMAGE && resourceDesc.imageType != VK_IMAGE_TYPE_3D;
+			return resourceDesc.type == RESOURCE_TYPE_IMAGE && resourceDesc.imageType != VK_IMAGE_TYPE_3D
+				&& resourceDesc.imageSamples == VK_SAMPLE_COUNT_1_BIT;
+
+		case OPERATION_NAME_WRITE_IMAGE_COMPUTE_MULTISAMPLE:
+		case OPERATION_NAME_READ_RESOLVE_IMAGE:
+			return resourceDesc.type == RESOURCE_TYPE_IMAGE && resourceDesc.imageAspect == VK_IMAGE_ASPECT_COLOR_BIT
+				&& resourceDesc.imageSamples != VK_SAMPLE_COUNT_1_BIT;
 
 		case OPERATION_NAME_WRITE_BLIT_IMAGE:
 		case OPERATION_NAME_READ_BLIT_IMAGE:
@@ -4804,7 +5403,8 @@ bool isResourceSupported (const OperationName opName, const ResourceDescription&
 		case OPERATION_NAME_READ_IMAGE_FRAGMENT:
 		case OPERATION_NAME_READ_IMAGE_COMPUTE:
 		case OPERATION_NAME_READ_IMAGE_COMPUTE_INDIRECT:
-			return resourceDesc.type == RESOURCE_TYPE_IMAGE && resourceDesc.imageAspect == VK_IMAGE_ASPECT_COLOR_BIT;
+			return resourceDesc.type == RESOURCE_TYPE_IMAGE && resourceDesc.imageAspect == VK_IMAGE_ASPECT_COLOR_BIT
+				&& resourceDesc.imageSamples == VK_SAMPLE_COUNT_1_BIT;
 
 		case OPERATION_NAME_READ_UBO_VERTEX:
 		case OPERATION_NAME_READ_UBO_TESSELLATION_CONTROL:
@@ -4816,17 +5416,20 @@ bool isResourceSupported (const OperationName opName, const ResourceDescription&
 			return resourceDesc.type == RESOURCE_TYPE_BUFFER && resourceDesc.size.x() <= MAX_UBO_RANGE;
 
 		case OPERATION_NAME_WRITE_CLEAR_COLOR_IMAGE:
-			return resourceDesc.type == RESOURCE_TYPE_IMAGE && resourceDesc.imageAspect == VK_IMAGE_ASPECT_COLOR_BIT;
+			return resourceDesc.type == RESOURCE_TYPE_IMAGE && resourceDesc.imageAspect == VK_IMAGE_ASPECT_COLOR_BIT
+				&& resourceDesc.imageSamples == VK_SAMPLE_COUNT_1_BIT;
 
 		case OPERATION_NAME_WRITE_CLEAR_DEPTH_STENCIL_IMAGE:
-			return resourceDesc.type == RESOURCE_TYPE_IMAGE && (resourceDesc.imageAspect & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT));
+			return resourceDesc.type == RESOURCE_TYPE_IMAGE && (resourceDesc.imageAspect & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT))
+				&& resourceDesc.imageSamples == VK_SAMPLE_COUNT_1_BIT;
 
 		case OPERATION_NAME_WRITE_DRAW:
 		case OPERATION_NAME_WRITE_DRAW_INDEXED:
 		case OPERATION_NAME_WRITE_DRAW_INDIRECT:
 		case OPERATION_NAME_WRITE_DRAW_INDEXED_INDIRECT:
 			return resourceDesc.type == RESOURCE_TYPE_IMAGE && resourceDesc.imageType == VK_IMAGE_TYPE_2D
-				&& (resourceDesc.imageAspect & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) == 0;
+				&& (resourceDesc.imageAspect & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) == 0
+				&& resourceDesc.imageSamples == VK_SAMPLE_COUNT_1_BIT;
 
 		case OPERATION_NAME_COPY_BUFFER:
 		case OPERATION_NAME_COPY_SSBO_VERTEX:
@@ -4847,7 +5450,8 @@ bool isResourceSupported (const OperationName opName, const ResourceDescription&
 		case OPERATION_NAME_COPY_IMAGE_FRAGMENT:
 		case OPERATION_NAME_COPY_IMAGE_COMPUTE:
 		case OPERATION_NAME_COPY_IMAGE_COMPUTE_INDIRECT:
-			return resourceDesc.type == RESOURCE_TYPE_IMAGE && resourceDesc.imageAspect == VK_IMAGE_ASPECT_COLOR_BIT;
+			return resourceDesc.type == RESOURCE_TYPE_IMAGE && resourceDesc.imageAspect == VK_IMAGE_ASPECT_COLOR_BIT
+				&& resourceDesc.imageSamples == VK_SAMPLE_COUNT_1_BIT;
 
 		default:
 			DE_ASSERT(0);
@@ -4879,6 +5483,7 @@ std::string getOperationName (const OperationName opName)
 		case OPERATION_NAME_WRITE_IMAGE_GEOMETRY:					return "write_image_geometry";
 		case OPERATION_NAME_WRITE_IMAGE_FRAGMENT:					return "write_image_fragment";
 		case OPERATION_NAME_WRITE_IMAGE_COMPUTE:					return "write_image_compute";
+		case OPERATION_NAME_WRITE_IMAGE_COMPUTE_MULTISAMPLE:		return "write_image_compute_multisample";
 		case OPERATION_NAME_WRITE_IMAGE_COMPUTE_INDIRECT:			return "write_image_compute_indirect";
 		case OPERATION_NAME_WRITE_CLEAR_COLOR_IMAGE:				return "write_clear_color_image";
 		case OPERATION_NAME_WRITE_CLEAR_DEPTH_STENCIL_IMAGE:		return "write_clear_depth_stencil_image";
@@ -4890,12 +5495,14 @@ std::string getOperationName (const OperationName opName)
 		case OPERATION_NAME_WRITE_INDIRECT_BUFFER_DRAW:				return "write_indirect_buffer_draw";
 		case OPERATION_NAME_WRITE_INDIRECT_BUFFER_DRAW_INDEXED:		return "write_indirect_buffer_draw_indexed";
 		case OPERATION_NAME_WRITE_INDIRECT_BUFFER_DISPATCH:			return "write_indirect_buffer_dispatch";
+		case OPERATION_NAME_WRITE_UPDATE_INDEX_BUFFER:				return "write_update_index_buffer";
 
 		case OPERATION_NAME_READ_COPY_BUFFER:						return "read_copy_buffer";
 		case OPERATION_NAME_READ_COPY_BUFFER_TO_IMAGE:				return "read_copy_buffer_to_image";
 		case OPERATION_NAME_READ_COPY_IMAGE_TO_BUFFER:				return "read_copy_image_to_buffer";
 		case OPERATION_NAME_READ_COPY_IMAGE:						return "read_copy_image";
 		case OPERATION_NAME_READ_BLIT_IMAGE:						return "read_blit_image";
+		case OPERATION_NAME_READ_RESOLVE_IMAGE:						return "read_resolve_image";
 		case OPERATION_NAME_READ_UBO_VERTEX:						return "read_ubo_vertex";
 		case OPERATION_NAME_READ_UBO_TESSELLATION_CONTROL:			return "read_ubo_tess_control";
 		case OPERATION_NAME_READ_UBO_TESSELLATION_EVALUATION:		return "read_ubo_tess_eval";
@@ -4921,6 +5528,7 @@ std::string getOperationName (const OperationName opName)
 		case OPERATION_NAME_READ_INDIRECT_BUFFER_DRAW_INDEXED:		return "read_indirect_buffer_draw_indexed";
 		case OPERATION_NAME_READ_INDIRECT_BUFFER_DISPATCH:			return "read_indirect_buffer_dispatch";
 		case OPERATION_NAME_READ_VERTEX_INPUT:						return "read_vertex_input";
+		case OPERATION_NAME_READ_INDEX_INPUT:						return "read_index_input";
 
 		case OPERATION_NAME_COPY_BUFFER:							return "copy_buffer";
 		case OPERATION_NAME_COPY_IMAGE:								return "copy_image";
@@ -4954,8 +5562,8 @@ de::MovePtr<OperationSupport> makeOperationSupport (const OperationName opName, 
 		case OPERATION_NAME_WRITE_COPY_BUFFER:						return de::MovePtr<OperationSupport>(new CopyBuffer			::Support		(resourceDesc, ACCESS_MODE_WRITE));
 		case OPERATION_NAME_WRITE_COPY_BUFFER_TO_IMAGE:				return de::MovePtr<OperationSupport>(new CopyBufferToImage	::Support		(resourceDesc, ACCESS_MODE_WRITE));
 		case OPERATION_NAME_WRITE_COPY_IMAGE_TO_BUFFER:				return de::MovePtr<OperationSupport>(new CopyImageToBuffer	::Support		(resourceDesc, ACCESS_MODE_WRITE));
-		case OPERATION_NAME_WRITE_COPY_IMAGE:						return de::MovePtr<OperationSupport>(new CopyBlitImage		::Support		(resourceDesc, CopyBlitImage::TYPE_COPY, ACCESS_MODE_WRITE));
-		case OPERATION_NAME_WRITE_BLIT_IMAGE:						return de::MovePtr<OperationSupport>(new CopyBlitImage		::Support		(resourceDesc, CopyBlitImage::TYPE_BLIT, ACCESS_MODE_WRITE));
+		case OPERATION_NAME_WRITE_COPY_IMAGE:						return de::MovePtr<OperationSupport>(new CopyBlitResolveImage	::Support	(resourceDesc, CopyBlitResolveImage::TYPE_COPY, ACCESS_MODE_WRITE));
+		case OPERATION_NAME_WRITE_BLIT_IMAGE:						return de::MovePtr<OperationSupport>(new CopyBlitResolveImage	::Support	(resourceDesc, CopyBlitResolveImage::TYPE_BLIT, ACCESS_MODE_WRITE));
 		case OPERATION_NAME_WRITE_SSBO_VERTEX:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_WRITE, VK_SHADER_STAGE_VERTEX_BIT));
 		case OPERATION_NAME_WRITE_SSBO_TESSELLATION_CONTROL:		return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_WRITE, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
 		case OPERATION_NAME_WRITE_SSBO_TESSELLATION_EVALUATION:		return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, ACCESS_MODE_WRITE, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
@@ -4970,6 +5578,7 @@ de::MovePtr<OperationSupport> makeOperationSupport (const OperationName opName, 
 		case OPERATION_NAME_WRITE_IMAGE_FRAGMENT:					return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_WRITE, VK_SHADER_STAGE_FRAGMENT_BIT));
 		case OPERATION_NAME_WRITE_IMAGE_COMPUTE:					return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_WRITE, VK_SHADER_STAGE_COMPUTE_BIT));
 		case OPERATION_NAME_WRITE_IMAGE_COMPUTE_INDIRECT:			return de::MovePtr<OperationSupport>(new ShaderAccess		::ImageSupport	(resourceDesc, ACCESS_MODE_WRITE, VK_SHADER_STAGE_COMPUTE_BIT, ShaderAccess::DISPATCH_CALL_DISPATCH_INDIRECT));
+		case OPERATION_NAME_WRITE_IMAGE_COMPUTE_MULTISAMPLE:		return de::MovePtr<OperationSupport>(new ShaderAccess		::MSImageSupport(resourceDesc));
 		case OPERATION_NAME_WRITE_CLEAR_COLOR_IMAGE:				return de::MovePtr<OperationSupport>(new ClearImage			::Support		(resourceDesc, ClearImage::CLEAR_MODE_COLOR));
 		case OPERATION_NAME_WRITE_CLEAR_DEPTH_STENCIL_IMAGE:		return de::MovePtr<OperationSupport>(new ClearImage			::Support		(resourceDesc, ClearImage::CLEAR_MODE_DEPTH_STENCIL));
 		case OPERATION_NAME_WRITE_DRAW:								return de::MovePtr<OperationSupport>(new Draw				::Support		(resourceDesc, Draw::DRAW_CALL_DRAW));
@@ -4980,12 +5589,14 @@ de::MovePtr<OperationSupport> makeOperationSupport (const OperationName opName, 
 		case OPERATION_NAME_WRITE_INDIRECT_BUFFER_DRAW:				return de::MovePtr<OperationSupport>(new IndirectBuffer		::WriteSupport	(resourceDesc));
 		case OPERATION_NAME_WRITE_INDIRECT_BUFFER_DRAW_INDEXED:		return de::MovePtr<OperationSupport>(new IndirectBuffer		::WriteSupport	(resourceDesc));
 		case OPERATION_NAME_WRITE_INDIRECT_BUFFER_DISPATCH:			return de::MovePtr<OperationSupport>(new IndirectBuffer		::WriteSupport	(resourceDesc));
+		case OPERATION_NAME_WRITE_UPDATE_INDEX_BUFFER:				return de::MovePtr<OperationSupport>(new FillUpdateBuffer	::Support		(resourceDesc, FillUpdateBuffer::BUFFER_OP_UPDATE_WITH_INDEX_PATTERN));
 
 		case OPERATION_NAME_READ_COPY_BUFFER:						return de::MovePtr<OperationSupport>(new CopyBuffer			::Support		(resourceDesc, ACCESS_MODE_READ));
 		case OPERATION_NAME_READ_COPY_BUFFER_TO_IMAGE:				return de::MovePtr<OperationSupport>(new CopyBufferToImage	::Support		(resourceDesc, ACCESS_MODE_READ));
 		case OPERATION_NAME_READ_COPY_IMAGE_TO_BUFFER:				return de::MovePtr<OperationSupport>(new CopyImageToBuffer	::Support		(resourceDesc, ACCESS_MODE_READ));
-		case OPERATION_NAME_READ_COPY_IMAGE:						return de::MovePtr<OperationSupport>(new CopyBlitImage		::Support		(resourceDesc, CopyBlitImage::TYPE_COPY, ACCESS_MODE_READ));
-		case OPERATION_NAME_READ_BLIT_IMAGE:						return de::MovePtr<OperationSupport>(new CopyBlitImage		::Support		(resourceDesc, CopyBlitImage::TYPE_BLIT, ACCESS_MODE_READ));
+		case OPERATION_NAME_READ_COPY_IMAGE:						return de::MovePtr<OperationSupport>(new CopyBlitResolveImage::Support		(resourceDesc, CopyBlitResolveImage::TYPE_COPY,		ACCESS_MODE_READ));
+		case OPERATION_NAME_READ_BLIT_IMAGE:						return de::MovePtr<OperationSupport>(new CopyBlitResolveImage::Support		(resourceDesc, CopyBlitResolveImage::TYPE_BLIT,		ACCESS_MODE_READ));
+		case OPERATION_NAME_READ_RESOLVE_IMAGE:						return de::MovePtr<OperationSupport>(new CopyBlitResolveImage::Support		(resourceDesc, CopyBlitResolveImage::TYPE_RESOLVE,	ACCESS_MODE_READ));
 		case OPERATION_NAME_READ_UBO_VERTEX:						return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM, ACCESS_MODE_READ, VK_SHADER_STAGE_VERTEX_BIT));
 		case OPERATION_NAME_READ_UBO_TESSELLATION_CONTROL:			return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM, ACCESS_MODE_READ, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
 		case OPERATION_NAME_READ_UBO_TESSELLATION_EVALUATION:		return de::MovePtr<OperationSupport>(new ShaderAccess		::BufferSupport	(resourceDesc, BUFFER_TYPE_UNIFORM, ACCESS_MODE_READ, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
@@ -5010,11 +5621,12 @@ de::MovePtr<OperationSupport> makeOperationSupport (const OperationName opName, 
 		case OPERATION_NAME_READ_INDIRECT_BUFFER_DRAW:				return de::MovePtr<OperationSupport>(new IndirectBuffer		::ReadSupport	(resourceDesc));
 		case OPERATION_NAME_READ_INDIRECT_BUFFER_DRAW_INDEXED:		return de::MovePtr<OperationSupport>(new IndirectBuffer		::ReadSupport	(resourceDesc));
 		case OPERATION_NAME_READ_INDIRECT_BUFFER_DISPATCH:			return de::MovePtr<OperationSupport>(new IndirectBuffer		::ReadSupport	(resourceDesc));
-		case OPERATION_NAME_READ_VERTEX_INPUT:						return de::MovePtr<OperationSupport>(new VertexInput		::Support		(resourceDesc));
+		case OPERATION_NAME_READ_VERTEX_INPUT:						return de::MovePtr<OperationSupport>(new VertexInput		::Support		(resourceDesc, VertexInput::DRAW_MODE_VERTEX));
+		case OPERATION_NAME_READ_INDEX_INPUT:						return de::MovePtr<OperationSupport>(new VertexInput		::Support		(resourceDesc, VertexInput::DRAW_MODE_INDEXED));
 
 		case OPERATION_NAME_COPY_BUFFER:							return de::MovePtr<OperationSupport>(new CopyBuffer			::CopySupport		(resourceDesc));
-		case OPERATION_NAME_COPY_IMAGE:								return de::MovePtr<OperationSupport>(new CopyBlitImage		::CopySupport		(resourceDesc, CopyBlitImage::TYPE_COPY));
-		case OPERATION_NAME_BLIT_IMAGE:								return de::MovePtr<OperationSupport>(new CopyBlitImage		::CopySupport		(resourceDesc, CopyBlitImage::TYPE_BLIT));
+		case OPERATION_NAME_COPY_IMAGE:								return de::MovePtr<OperationSupport>(new CopyBlitResolveImage::CopySupport		(resourceDesc, CopyBlitResolveImage::TYPE_COPY));
+		case OPERATION_NAME_BLIT_IMAGE:								return de::MovePtr<OperationSupport>(new CopyBlitResolveImage::CopySupport		(resourceDesc, CopyBlitResolveImage::TYPE_BLIT));
 		case OPERATION_NAME_COPY_SSBO_VERTEX:						return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, VK_SHADER_STAGE_VERTEX_BIT));
 		case OPERATION_NAME_COPY_SSBO_TESSELLATION_CONTROL:			return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
 		case OPERATION_NAME_COPY_SSBO_TESSELLATION_EVALUATION:		return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));

@@ -67,6 +67,7 @@ const VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures&			getShaderSubgroupEx
 const VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR&			getShaderTerminateInvocationFeatures			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR>();			}
 const VkPhysicalDeviceShadingRateImageFeaturesNV&					getShadingRateImageFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShadingRateImageFeaturesNV>();					}
 const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&				getSubgroupSizeControlFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceSubgroupSizeControlFeaturesEXT>();				}
+const VkPhysicalDeviceSynchronization2FeaturesKHR&					getSynchronization2Features						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceSynchronization2FeaturesKHR>();					}
 const VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&				getTexelBufferAlignmentFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT>();				}
 const VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT&			getTextureCompressionASTCHDRFeaturesEXT			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT>();			}
 const VkPhysicalDeviceTimelineSemaphoreFeatures&					getTimelineSemaphoreFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceTimelineSemaphoreFeatures>();						}

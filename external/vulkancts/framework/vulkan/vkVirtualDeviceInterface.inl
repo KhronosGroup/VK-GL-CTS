@@ -180,6 +180,14 @@ virtual VkResult			deferredOperationJoinKHR						(VkDevice device, VkDeferredOpe
 virtual VkResult			getPipelineExecutablePropertiesKHR				(VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, deUint32* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties) const = 0;
 virtual VkResult			getPipelineExecutableStatisticsKHR				(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, deUint32* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics) const = 0;
 virtual VkResult			getPipelineExecutableInternalRepresentationsKHR	(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, deUint32* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations) const = 0;
+virtual void				cmdSetEvent2KHR									(VkCommandBuffer commandBuffer, VkEvent event, const VkDependencyInfoKHR* pDependencyInfo) const = 0;
+virtual void				cmdResetEvent2KHR								(VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags2KHR stageMask) const = 0;
+virtual void				cmdWaitEvents2KHR								(VkCommandBuffer commandBuffer, deUint32 eventCount, const VkEvent* pEvents, const VkDependencyInfoKHR* pDependencyInfos) const = 0;
+virtual void				cmdPipelineBarrier2KHR							(VkCommandBuffer commandBuffer, const VkDependencyInfoKHR* pDependencyInfo) const = 0;
+virtual void				cmdWriteTimestamp2KHR							(VkCommandBuffer commandBuffer, VkPipelineStageFlags2KHR stage, VkQueryPool queryPool, deUint32 query) const = 0;
+virtual VkResult			queueSubmit2KHR									(VkQueue queue, deUint32 submitCount, const VkSubmitInfo2KHR* pSubmits, VkFence fence) const = 0;
+virtual void				cmdWriteBufferMarker2AMD						(VkCommandBuffer commandBuffer, VkPipelineStageFlags2KHR stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, deUint32 marker) const = 0;
+virtual void				getQueueCheckpointData2NV						(VkQueue queue, deUint32* pCheckpointDataCount, VkCheckpointData2NV* pCheckpointData) const = 0;
 virtual void				cmdCopyBuffer2KHR								(VkCommandBuffer commandBuffer, const VkCopyBufferInfo2KHR* pCopyBufferInfo) const = 0;
 virtual void				cmdCopyImage2KHR								(VkCommandBuffer commandBuffer, const VkCopyImageInfo2KHR* pCopyImageInfo) const = 0;
 virtual void				cmdCopyBufferToImage2KHR						(VkCommandBuffer commandBuffer, const VkCopyBufferToImageInfo2KHR* pCopyBufferToImageInfo) const = 0;

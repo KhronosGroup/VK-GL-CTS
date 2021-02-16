@@ -67,6 +67,7 @@ const vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures&			getShaderSubgro
 const vk::VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR&			getShaderTerminateInvocationFeatures			(void) const;
 const vk::VkPhysicalDeviceShadingRateImageFeaturesNV&					getShadingRateImageFeatures						(void) const;
 const vk::VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&				getSubgroupSizeControlFeaturesEXT				(void) const;
+const vk::VkPhysicalDeviceSynchronization2FeaturesKHR&					getSynchronization2Features						(void) const;
 const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&				getTexelBufferAlignmentFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT&			getTextureCompressionASTCHDRFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceTimelineSemaphoreFeatures&					getTimelineSemaphoreFeatures					(void) const;

@@ -512,7 +512,8 @@ void TestPackage::init (void)
 	addChild(compute::createTests				(m_testCtx));
 	addChild(image::createTests					(m_testCtx));
 	addChild(wsi::createTests					(m_testCtx));
-	addChild(synchronization::createTests		(m_testCtx));
+	addChild(createSynchronizationTests			(m_testCtx));
+	addChild(createSynchronization2Tests		(m_testCtx));
 	addChild(sparse::createTests				(m_testCtx));
 	addChild(tessellation::createTests			(m_testCtx));
 	addChild(rasterization::createTests			(m_testCtx));

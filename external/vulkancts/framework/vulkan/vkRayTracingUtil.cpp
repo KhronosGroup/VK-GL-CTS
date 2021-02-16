@@ -472,8 +472,22 @@ void finishDeferredOperationThreaded (DeferredThreadParams* deferredThreadParams
 void finishDeferredOperation (const DeviceInterface&	vk,
 							  VkDevice					device,
 							  VkDeferredOperationKHR	deferredOperation,
-							  const deUint32			workerThreadCount)
+							  const deUint32			workerThreadCount,
+							  const bool				operationNotDeferred)
 {
+
+	if (operationNotDeferred)
+	{
+		// when the operation deferral returns VK_OPERATION_NOT_DEFERRED_KHR,
+		// the deferred operation should act as if no command was deferred
+		VK_CHECK(vk.getDeferredOperationResultKHR(device, deferredOperation));
+
+
+		// there is not need to join any threads to the deferred operation,
+		// so below can be skipped.
+		return;
+	}
+
 	if (workerThreadCount == 0)
 	{
 		VK_CHECK(finishDeferredOperation(vk, device, deferredOperation));
@@ -1071,9 +1085,8 @@ void BottomLevelAccelerationStructureKHR::build (const DeviceInterface&						vk,
 			VkResult result = vk.buildAccelerationStructuresKHR(device, deferredOperation, 1u, &accelerationStructureBuildGeometryInfoKHR, (const VkAccelerationStructureBuildRangeInfoKHR**)&accelerationStructureBuildRangeInfoKHRPtr);
 
 			DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-			DE_UNREF(result);
 
-			finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
+			finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 		}
 	}
 
@@ -1120,9 +1133,8 @@ void BottomLevelAccelerationStructureKHR::copyFrom (const DeviceInterface&						
 		VkResult result = vk.copyAccelerationStructureKHR(device, deferredOperation, &copyAccelerationStructureInfo);
 
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-		DE_UNREF(result);
 
-		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
+		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 	}
 
 	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
@@ -1167,9 +1179,8 @@ void BottomLevelAccelerationStructureKHR::serialize (const DeviceInterface&		vk,
 		const VkResult result = vk.copyAccelerationStructureToMemoryKHR(device, deferredOperation, &copyAccelerationStructureInfo);
 
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-		DE_UNREF(result);
 
-		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
+		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 	}
 }
 
@@ -1206,9 +1217,8 @@ void BottomLevelAccelerationStructureKHR::deserialize (const DeviceInterface&	vk
 		const VkResult result = vk.copyMemoryToAccelerationStructureKHR(device, deferredOperation, &copyAccelerationStructureInfo);
 
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-		DE_UNREF(result);
 
-		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
+		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 	}
 
 	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
@@ -1844,9 +1854,8 @@ void TopLevelAccelerationStructureKHR::build (const DeviceInterface&	vk,
 		VkResult result = vk.buildAccelerationStructuresKHR(device, deferredOperation, 1u, &accelerationStructureBuildGeometryInfoKHR, (const VkAccelerationStructureBuildRangeInfoKHR**)&accelerationStructureBuildRangeInfoKHRPtr);
 
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-		DE_UNREF(result);
 
-		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
+		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 
 		accelerationStructureBuildGeometryInfoKHR.pNext = DE_NULL;
 	}
@@ -1894,9 +1903,8 @@ void TopLevelAccelerationStructureKHR::copyFrom (const DeviceInterface&				vk,
 		VkResult result = vk.copyAccelerationStructureKHR(device, deferredOperation, &copyAccelerationStructureInfo);
 
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-		DE_UNREF(result);
 
-		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
+		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 	}
 
 	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
@@ -1942,9 +1950,8 @@ void TopLevelAccelerationStructureKHR::serialize (const DeviceInterface&	vk,
 		const VkResult result = vk.copyAccelerationStructureToMemoryKHR(device, deferredOperation, &copyAccelerationStructureInfo);
 
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-		DE_UNREF(result);
 
-		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
+		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 	}
 }
 
@@ -1981,9 +1988,8 @@ void TopLevelAccelerationStructureKHR::deserialize (const DeviceInterface&	vk,
 		const VkResult result = vk.copyMemoryToAccelerationStructureKHR(device, deferredOperation, &copyAccelerationStructureInfo);
 
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-		DE_UNREF(result);
 
-		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
+		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 	}
 
 	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
@@ -2315,9 +2321,8 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 	if (m_deferredOperation)
 	{
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-		DE_UNREF(result);
 
-		finishDeferredOperation(vk, device, deferredOperation.get(), m_workerThreadCount);
+		finishDeferredOperation(vk, device, deferredOperation.get(), m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 	}
 
 	return pipeline;

@@ -103,51 +103,42 @@ deUint64 getMaxTimelineSemaphoreValueDifference(const InstanceInterface& vk,
 	return timelineSemaphoreProperties.maxTimelineSemaphoreValueDifference;
 }
 
-void deviceSignal (const DeviceInterface&	vk,
-				   const VkDevice			device,
-				   const VkQueue			queue,
-				   const VkFence			fence,
-				   const VkSemaphore		semaphore,
-				   const deUint64			timelineValue)
+void deviceSignal (const DeviceInterface&		vk,
+				   const VkDevice				device,
+				   const VkQueue				queue,
+				   const VkFence				fence,
+				   const SynchronizationType	type,
+				   const VkSemaphore			semaphore,
+				   const deUint64				timelineValue)
 {
-	VkTimelineSemaphoreSubmitInfo		tsi			=
 	{
-		VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,		// VkStructureType				sType;
-		DE_NULL,												// const void*					pNext;
-		0u,														// deUint32						waitSemaphoreValueCount
-		DE_NULL,												// const deUint64*				pWaitSemaphoreValues
-		1u,														// deUint32						signalSemaphoreValueCount
-		&timelineValue,											// const deUint64*				pSignalSemaphoreValues
-	};
-	VkSubmitInfo						si[2]		=
-	{
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,						// VkStructureType				sType;
-			&tsi,												// const void*					pNext;
-			0,													// deUint32						waitSemaphoreCount;
-			DE_NULL,											// const VkSemaphore*			pWaitSemaphores;
-			DE_NULL,											// const VkPipelineStageFlags*	pWaitDstStageMask;
-			0,													// deUint32						commandBufferCount;
-			DE_NULL,											// const VkCommandBuffer*		pCommandBuffers;
-			1,													// deUint32						signalSemaphoreCount;
-			&semaphore,											// const VkSemaphore*			pSignalSemaphores;
-		},
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,						// VkStructureType				sType;
-			&tsi,												// const void*					pNext;
-			0,													// deUint32						waitSemaphoreCount;
-			DE_NULL,											// const VkSemaphore*			pWaitSemaphores;
-			DE_NULL,											// const VkPipelineStageFlags*	pWaitDstStageMask;
-			0,													// deUint32						commandBufferCount;
-			DE_NULL,											// const VkCommandBuffer*		pCommandBuffers;
-			0,													// deUint32						signalSemaphoreCount;
-			DE_NULL,											// const VkSemaphore*			pSignalSemaphores;
-		}
-	};
+		VkSemaphoreSubmitInfoKHR	signalSemaphoreSubmitInfo	= makeCommonSemaphoreSubmitInfo(semaphore, timelineValue, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR);
+		SynchronizationWrapperPtr	synchronizationWrapper		= getSynchronizationWrapper(type, vk, DE_TRUE);
+		synchronizationWrapper->addSubmitInfo(
+			0u,										// deUint32								waitSemaphoreInfoCount
+			DE_NULL,								// const VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos
+			0u,										// deUint32								commandBufferInfoCount
+			DE_NULL,								// const VkCommandBufferSubmitInfoKHR*	pCommandBufferInfos
+			1u,										// deUint32								signalSemaphoreInfoCount
+			&signalSemaphoreSubmitInfo,				// const VkSemaphoreSubmitInfoKHR*		pSignalSemaphoreInfos
+			DE_FALSE,
+			DE_TRUE
+		);
+		VK_CHECK(synchronizationWrapper->queueSubmit(queue, DE_NULL));
+	}
 
-	VK_CHECK(vk.queueSubmit(queue, 1u, &si[0], DE_NULL));
-	if (fence != DE_NULL) {
-		VK_CHECK(vk.queueSubmit(queue, 1u, &si[1], fence));
+	if (fence != DE_NULL)
+	{
+		SynchronizationWrapperPtr synchronizationWrapper = getSynchronizationWrapper(type, vk, 1u);
+		synchronizationWrapper->addSubmitInfo(
+			0u,										// deUint32								waitSemaphoreInfoCount
+			DE_NULL,								// const VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos
+			0u,										// deUint32								commandBufferInfoCount
+			DE_NULL,								// const VkCommandBufferSubmitInfoKHR*	pCommandBufferInfos
+			0u,										// deUint32								signalSemaphoreInfoCount
+			DE_NULL									// const VkSemaphoreSubmitInfoKHR*		pSignalSemaphoreInfos
+		);
+		VK_CHECK(synchronizationWrapper->queueSubmit(queue, fence));
 		VK_CHECK(vk.waitForFences(device, 1u, &fence, VK_TRUE, ~(0ull)));
 	}
 }
@@ -168,8 +159,9 @@ void hostSignal (const DeviceInterface& vk, const VkDevice& device, VkSemaphore 
 class WaitTestInstance : public TestInstance
 {
 public:
-	WaitTestInstance (Context& context, bool waitAll, bool signalFromDevice)
+	WaitTestInstance (Context& context, SynchronizationType type, bool waitAll, bool signalFromDevice)
 		: TestInstance			(context)
+		, m_type				(type)
 		, m_waitAll				(waitAll)
 		, m_signalFromDevice	(signalFromDevice)
 	{
@@ -199,7 +191,7 @@ public:
 			{
 				if (m_signalFromDevice)
 				{
-					deviceSignal(vk, device, queue, *fence, semaphores[semIdx], timelineValues[semIdx]);
+					deviceSignal(vk, device, queue, *fence, m_type, semaphores[semIdx], timelineValues[semIdx]);
 					VK_CHECK(vk.resetFences(device, 1, &fence.get()));
 				}
 				else
@@ -211,7 +203,7 @@ public:
 			deUint32	randomIdx	= rng.getInt(0, (deUint32)(semaphores.size() - 1));
 
 			if (m_signalFromDevice)
-				deviceSignal(vk, device, queue, *fence, semaphores[randomIdx], timelineValues[randomIdx]);
+				deviceSignal(vk, device, queue, *fence, m_type, semaphores[randomIdx], timelineValues[randomIdx]);
 			else
 				hostSignal(vk, device, semaphores[randomIdx], timelineValues[randomIdx]);
 		}
@@ -226,10 +218,8 @@ public:
 				&semaphores[0],															// const VkSemaphore*		pSemaphores;
 				&timelineValues[0],														// const deUint64*			pValues;
 			};
-			VkResult						result;
 
-			result = vk.waitSemaphores(device, &waitInfo, 0ull);
-
+			VkResult result = vk.waitSemaphores(device, &waitInfo, 0ull);
 			if (result != VK_SUCCESS)
 				return tcu::TestStatus::fail("Wait failed");
 		}
@@ -251,33 +241,38 @@ private:
 		return semaphores;
 	}
 
-	bool m_waitAll;
-	bool m_signalFromDevice;
+	const SynchronizationType	m_type;
+	bool						m_waitAll;
+	bool						m_signalFromDevice;
 };
 
 class WaitTestCase : public TestCase
 {
 public:
-	WaitTestCase (tcu::TestContext& testCtx, const std::string& name, bool waitAll, bool signalFromDevice)
+	WaitTestCase (tcu::TestContext& testCtx, const std::string& name, SynchronizationType type, bool waitAll, bool signalFromDevice)
 		: TestCase				(testCtx, name.c_str(), "")
+		, m_type				(type)
 		, m_waitAll				(waitAll)
 		, m_signalFromDevice	(signalFromDevice)
 	{
 	}
 
-	virtual void checkSupport(Context& context) const
+	void checkSupport(Context& context) const override
 	{
 		context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
+		if (m_type == SynchronizationType::SYNCHRONIZATION2)
+			context.requireDeviceFunctionality("VK_KHR_synchronization2");
 	}
 
-	TestInstance* createInstance (Context& context) const
+	TestInstance* createInstance (Context& context) const override
 	{
-		return new WaitTestInstance(context, m_waitAll, m_signalFromDevice);
+		return new WaitTestInstance(context, m_type, m_waitAll, m_signalFromDevice);
 	}
 
 private:
-	bool m_waitAll;
-	bool m_signalFromDevice;
+	const SynchronizationType	m_type;
+	bool						m_waitAll;
+	bool						m_signalFromDevice;
 };
 
 // This test verifies that waiting from the host on a timeline point
@@ -285,8 +280,9 @@ private:
 class HostWaitBeforeSignalTestInstance : public TestInstance
 {
 public:
-	HostWaitBeforeSignalTestInstance (Context& context)
+	HostWaitBeforeSignalTestInstance (Context& context, SynchronizationType type)
 		: TestInstance			(context)
+		, m_type				(type)
 	{
 	}
 
@@ -304,37 +300,29 @@ public:
 
 		for (deUint32 i = 0; i < 12; i++)
 		{
-			const deUint64							newTimelineValue	= (timelineValues.back() + rng.getInt(1, 10000));
-			const VkTimelineSemaphoreSubmitInfo		timelineSubmitInfo	=
-			{
-				VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,		// VkStructureType	sType;
-				DE_NULL,												// const void*		pNext;
-				1u,														// deUint32			waitSemaphoreValueCount
-				&timelineValues.back(),									// const deUint64*	pWaitSemaphoreValues
-				1u,														// deUint32			signalSemaphoreValueCount
-				&newTimelineValue,										// const deUint64*	pSignalSemaphoreValues
-			};
-			const VkPipelineStageFlags				stageBits[]			= { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT };
-			const VkSubmitInfo						submitInfo			=
-			{
-				VK_STRUCTURE_TYPE_SUBMIT_INFO,							// VkStructureType			sType;
-				&timelineSubmitInfo,									// const void*				pNext;
-				1u,														// deUint32					waitSemaphoreCount;
-				&semaphore.get(),										// const VkSemaphore*		pWaitSemaphores;
-				stageBits,
-				0u,														// deUint32					commandBufferCount;
-				DE_NULL,												// const VkCommandBuffer*	pCommandBuffers;
-				1u,														// deUint32					signalSemaphoreCount;
-				&semaphore.get(),										// const VkSemaphore*		pSignalSemaphores;
-			};
+			const deUint64				newTimelineValue			= (timelineValues.back() + rng.getInt(1, 10000));
+			VkSemaphoreSubmitInfoKHR	waitSemaphoreSubmitInfo		= makeCommonSemaphoreSubmitInfo(*semaphore, timelineValues.back(), VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR);
+			VkSemaphoreSubmitInfoKHR	signalSemaphoreSubmitInfo	= makeCommonSemaphoreSubmitInfo(*semaphore, newTimelineValue, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR);
+			SynchronizationWrapperPtr	synchronizationWrapper		= getSynchronizationWrapper(m_type, vk, DE_TRUE);
 
-			VK_CHECK(vk.queueSubmit(queue, (deUint32) 1u, &submitInfo, DE_NULL));
+			synchronizationWrapper->addSubmitInfo(
+				1u,										// deUint32								waitSemaphoreInfoCount
+				&waitSemaphoreSubmitInfo,				// const VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos
+				0u,										// deUint32								commandBufferInfoCount
+				DE_NULL,								// const VkCommandBufferSubmitInfoKHR*	pCommandBufferInfos
+				1u,										// deUint32								signalSemaphoreInfoCount
+				&signalSemaphoreSubmitInfo,				// const VkSemaphoreSubmitInfoKHR*		pSignalSemaphoreInfos
+				DE_TRUE,
+				DE_TRUE
+			);
+
+			VK_CHECK(synchronizationWrapper->queueSubmit(queue, DE_NULL));
 
 			timelineValues.push_back(newTimelineValue);
 		}
 
 		{
-			const VkSemaphoreWaitInfoKHR	waitInfo	=
+			const VkSemaphoreWaitInfoKHR waitInfo =
 			{
 				VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR,										// VkStructureType			sType;
 				DE_NULL,																		// const void*				pNext;
@@ -343,10 +331,8 @@ public:
 				&semaphore.get(),																// const VkSemaphore*		pSemaphores;
 				&timelineValues[rng.getInt(0, static_cast<int>(timelineValues.size() - 1))],	// const deUint64*			pValues;
 			};
-			VkResult						result;
 
-			result = vk.waitSemaphores(device, &waitInfo, 0ull);
-
+			VkResult result = vk.waitSemaphores(device, &waitInfo, 0ull);
 			if (result != VK_TIMEOUT)
 				return tcu::TestStatus::fail("Wait failed");
 		}
@@ -354,7 +340,7 @@ public:
 		hostSignal(vk, device, *semaphore, timelineValues.front());
 
 		{
-			const VkSemaphoreWaitInfoKHR	waitInfo	=
+			const VkSemaphoreWaitInfoKHR waitInfo =
 			{
 				VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR,	// VkStructureType			sType;
 				DE_NULL,									// const void*				pNext;
@@ -363,10 +349,8 @@ public:
 				&semaphore.get(),							// const VkSemaphore*		pSemaphores;
 				&timelineValues.back(),						// const deUint64*			pValues;
 			};
-			VkResult						result;
 
-			result = vk.waitSemaphores(device, &waitInfo, ~(0ull));
-
+			VkResult result = vk.waitSemaphores(device, &waitInfo, ~(0ull));
 			if (result != VK_SUCCESS)
 				return tcu::TestStatus::fail("Wait failed");
 		}
@@ -387,25 +371,37 @@ private:
 
 		return semaphores;
 	}
+
+protected:
+
+	const SynchronizationType m_type;
 };
 
 class HostWaitBeforeSignalTestCase : public TestCase
 {
 public:
-	HostWaitBeforeSignalTestCase (tcu::TestContext& testCtx, const std::string& name)
-		: TestCase				(testCtx, name.c_str(), "")
+	HostWaitBeforeSignalTestCase(tcu::TestContext&		testCtx,
+								 const std::string&		name,
+								 SynchronizationType	type)
+		: TestCase(testCtx, name.c_str(), "")
+		, m_type(type)
 	{
 	}
 
-	virtual void checkSupport(Context& context) const
+	void checkSupport(Context& context) const override
 	{
 		context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
+		if (m_type == SynchronizationType::SYNCHRONIZATION2)
+			context.requireDeviceFunctionality("VK_KHR_synchronization2");
 	}
 
-	TestInstance* createInstance (Context& context) const
+	TestInstance* createInstance(Context& context) const override
 	{
-		return new HostWaitBeforeSignalTestInstance(context);
+		return new HostWaitBeforeSignalTestInstance(context, m_type);
 	}
+
+protected:
+	const SynchronizationType m_type;
 };
 
 class PollTestInstance : public TestInstance
@@ -440,7 +436,7 @@ public:
 		{
 			if (m_signalFromDevice)
 			{
-				deviceSignal(vk, device, queue, semIdx == (semaphores.size() - 1) ? *fence : DE_NULL, semaphores[semIdx], timelineValues[semIdx]);
+				deviceSignal(vk, device, queue, semIdx == (semaphores.size() - 1) ? *fence : DE_NULL, SynchronizationType::LEGACY, semaphores[semIdx], timelineValues[semIdx]);
 			}
 			else
 				hostSignal(vk, device, semaphores[semIdx], timelineValues[semIdx]);
@@ -559,16 +555,17 @@ private:
 	tcu::TestStatus				m_status;
 };
 
-void checkTimelineSupport (Context& context)
+void checkSupport (Context& context, SynchronizationType type)
 {
-	if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
-		TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
+	context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
+	if (type == SynchronizationType::SYNCHRONIZATION2)
+		context.requireDeviceFunctionality("VK_KHR_synchronization2");
 }
 
 // Queue device signaling close to the edges of the
 // maxTimelineSemaphoreValueDifference value and verify that the value
 // of the semaphore never goes backwards.
-tcu::TestStatus maxDifferenceValueCase (Context& context)
+tcu::TestStatus maxDifferenceValueCase (Context& context, SynchronizationType type)
 {
 	const DeviceInterface&							vk							= context.getDeviceInterface();
 	const VkDevice&									device						= context.getDevice();
@@ -604,13 +601,13 @@ tcu::TestStatus maxDifferenceValueCase (Context& context)
 		deUint64	fenceValue;
 
 		for (deUint32 j = 1; j <= 10; j++)
-			deviceSignal(vk, device, queue, DE_NULL, *semaphore, ++timelineFrontValue);
+			deviceSignal(vk, device, queue, DE_NULL, type, *semaphore, ++timelineFrontValue);
 
 		timelineFrontValue = timelineBackValue + maxTimelineValueDifference - 10;
 		fenceValue = timelineFrontValue;
-		deviceSignal(vk, device, queue, *fence, *semaphore, fenceValue);
+		deviceSignal(vk, device, queue, *fence, type, *semaphore, fenceValue);
 		for (deUint32 j = 1; j < 10; j++)
-			deviceSignal(vk, device, queue, DE_NULL, *semaphore, ++timelineFrontValue);
+			deviceSignal(vk, device, queue, DE_NULL, type, *semaphore, ++timelineFrontValue);
 
 		deUint64 value;
 		VK_CHECK(vk.getSemaphoreCounterValue(device, *semaphore, &value));
@@ -629,8 +626,10 @@ tcu::TestStatus maxDifferenceValueCase (Context& context)
 	return checkerThread.getStatus();
 }
 
-tcu::TestStatus initialValueCase (Context& context)
+tcu::TestStatus initialValueCase (Context& context, SynchronizationType type)
 {
+	DE_UNREF(type);
+
 	const DeviceInterface&							vk							= context.getDeviceInterface();
 	const VkDevice&									device						= context.getDevice();
 	const deUint64									maxTimelineValueDifference	= getMaxTimelineSemaphoreValueDifference(context.getInstanceInterface(), context.getPhysicalDevice());
@@ -693,8 +692,9 @@ tcu::TestStatus initialValueCase (Context& context)
 class WaitTests : public tcu::TestCaseGroup
 {
 public:
-	WaitTests (tcu::TestContext& testCtx)
+	WaitTests (tcu::TestContext& testCtx, SynchronizationType type)
 		: tcu::TestCaseGroup(testCtx, "wait", "Various wait cases of timeline semaphores")
+		, m_type(type)
 	{
 	}
 
@@ -714,11 +714,14 @@ public:
 		};
 
 		for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(waitCases); caseIdx++)
-			addChild(new WaitTestCase(m_testCtx, waitCases[caseIdx].name, waitCases[caseIdx].waitAll, waitCases[caseIdx].signalFromDevice));
-		addChild(new HostWaitBeforeSignalTestCase(m_testCtx, "host_wait_before_signal"));
+			addChild(new WaitTestCase(m_testCtx, waitCases[caseIdx].name, m_type, waitCases[caseIdx].waitAll, waitCases[caseIdx].signalFromDevice));
+		addChild(new HostWaitBeforeSignalTestCase(m_testCtx, "host_wait_before_signal", m_type));
 		addChild(new PollTestCase(m_testCtx, "poll_signal_from_device", true));
 		addChild(new PollTestCase(m_testCtx, "poll_signal_from_host", false));
 	}
+
+protected:
+	SynchronizationType m_type;
 };
 
 struct TimelineIteration
@@ -853,12 +856,14 @@ class DeviceHostTestInstance : public TestInstance
 {
 public:
 	DeviceHostTestInstance (Context&							context,
+							SynchronizationType					type,
 							const ResourceDescription&			resourceDesc,
 							const SharedPtr<OperationSupport>&	writeOp,
 							const SharedPtr<OperationSupport>&	readOp,
 							PipelineCacheData&					pipelineCacheData)
 		: TestInstance		(context)
-		, m_opContext		(context, pipelineCacheData)
+		, m_type			(type)
+		, m_opContext		(context, type, pipelineCacheData)
 		, m_resourceDesc	(resourceDesc)
 	{
 		de::Random	rng		(1234);
@@ -880,19 +885,16 @@ public:
 		const deUint32										queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 		const Unique<VkSemaphore>							semaphore				(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR));
 		const Unique<VkCommandPool>							cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-		const VkPipelineStageFlags							stageBits[]				= { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT };
 		HostCopyThread										hostCopyThread			(vk, device, *semaphore, m_iterations);
 		std::vector<SharedPtr<Move<VkCommandBuffer> > >		ptrCmdBuffers;
-		std::vector<VkCommandBuffer>						cmdBuffers;
-		std::vector<VkTimelineSemaphoreSubmitInfo>			timelineSubmitInfos;
-		std::vector<VkSubmitInfo>							submitInfos;
+		std::vector<VkCommandBufferSubmitInfoKHR>			commandBufferSubmitInfos(m_iterations.size() * 2, makeCommonCommandBufferSubmitInfo(0));
 
 		hostCopyThread.start();
 
 		for (deUint32 opNdx = 0; opNdx < (m_iterations.size() * 2); opNdx++)
 		{
 			ptrCmdBuffers.push_back(makeVkSharedPtr(makeCommandBuffer(vk, device, *cmdPool)));
-			cmdBuffers.push_back(**(ptrCmdBuffers.back()));
+			commandBufferSubmitInfos[opNdx].commandBuffer = **(ptrCmdBuffers.back());
 		}
 
 		// Randomize the data copied over.
@@ -908,103 +910,102 @@ public:
 			m_iterations.front()->writeOp->setData(randomizedData);
 		}
 
-		timelineSubmitInfos.resize(m_iterations.size() * 2);
-		submitInfos.resize(m_iterations.size() * 2);
+		SynchronizationWrapperPtr				synchronizationWrapper		= getSynchronizationWrapper(m_type, vk, DE_TRUE, (deUint32)m_iterations.size() * 2u);
+		std::vector<VkSemaphoreSubmitInfoKHR>	waitSemaphoreSubmitInfos	(m_iterations.size() * 2, makeCommonSemaphoreSubmitInfo(*semaphore, 0u, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR));
+		std::vector<VkSemaphoreSubmitInfoKHR>	signalSemaphoreSubmitInfos	(m_iterations.size() * 2, makeCommonSemaphoreSubmitInfo(*semaphore, 0u, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR));
 
 		for (deUint32 iterIdx = 0; iterIdx < m_iterations.size(); iterIdx++)
 		{
 			// Write operation
 			{
-				const VkTimelineSemaphoreSubmitInfo		timelineSubmitInfo	=
-				{
-					VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,				// VkStructureType	sType;
-					DE_NULL,														// const void*		pNext;
-					iterIdx == 0 ? 0u : 1u,											// deUint32			waitSemaphoreValueCount
-					iterIdx == 0 ? DE_NULL : &m_iterations[iterIdx - 1]->cpuValue,	// const deUint64*	pWaitSemaphoreValues
-					1u,																// deUint32			signalSemaphoreValueCount
-					&m_iterations[iterIdx]->writeValue,								// const deUint64*	pSignalSemaphoreValues
-				};
-				const VkSubmitInfo						submitInfo			=
-				{
-					VK_STRUCTURE_TYPE_SUBMIT_INFO,							// VkStructureType			sType;
-					&timelineSubmitInfos[2 * iterIdx],						// const void*				pNext;
-					iterIdx == 0 ? 0u : 1u,									// deUint32					waitSemaphoreCount;
-					&semaphore.get(),										// const VkSemaphore*		pWaitSemaphores;
-					stageBits,
-					1u,														// deUint32					commandBufferCount;
-					&cmdBuffers[2 * iterIdx],								// const VkCommandBuffer*	pCommandBuffers;
-					1u,														// deUint32					signalSemaphoreCount;
-					&semaphore.get(),										// const VkSemaphore*		pSignalSemaphores;
-				};
+				deUint32 wIdx = 2 * iterIdx;
 
-				timelineSubmitInfos[2 * iterIdx]	=	timelineSubmitInfo;
-				submitInfos[2 * iterIdx]			=	submitInfo;
+				waitSemaphoreSubmitInfos[wIdx].value	= wIdx == 0 ? 0u : m_iterations[iterIdx - 1]->cpuValue;
+				signalSemaphoreSubmitInfos[wIdx].value	= m_iterations[iterIdx]->writeValue;
 
-				beginCommandBuffer(vk, cmdBuffers[2 * iterIdx]);
-				m_iterations[iterIdx]->writeOp->recordCommands(cmdBuffers[2 * iterIdx]);
+				synchronizationWrapper->addSubmitInfo(
+					wIdx == 0 ? 0u : 1u,							// deUint32								waitSemaphoreInfoCount
+					&waitSemaphoreSubmitInfos[wIdx],				// const VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos
+					1u,												// deUint32								commandBufferInfoCount
+					&commandBufferSubmitInfos[wIdx],				// const VkCommandBufferSubmitInfoKHR*	pCommandBufferInfos
+					1u,												// deUint32								signalSemaphoreInfoCount
+					&signalSemaphoreSubmitInfos[wIdx],				// const VkSemaphoreSubmitInfoKHR*		pSignalSemaphoreInfos
+					wIdx == 0 ? DE_FALSE : DE_TRUE,
+					DE_TRUE
+				);
+
+				VkCommandBuffer cmdBuffer = commandBufferSubmitInfos[wIdx].commandBuffer;
+				beginCommandBuffer(vk, cmdBuffer);
+				m_iterations[iterIdx]->writeOp->recordCommands(cmdBuffer);
 
 				{
 					const SyncInfo	writeSync	= m_iterations[iterIdx]->writeOp->getOutSyncInfo();
 					const SyncInfo	readSync	= m_iterations[iterIdx]->readOp->getInSyncInfo();
-					const Resource&	resource	= *(m_iterations[iterIdx]->resource);
+					const Resource& resource	= *(m_iterations[iterIdx]->resource);
 
 					if (resource.getType() == RESOURCE_TYPE_IMAGE)
 					{
 						DE_ASSERT(writeSync.imageLayout != VK_IMAGE_LAYOUT_UNDEFINED);
 						DE_ASSERT(readSync.imageLayout != VK_IMAGE_LAYOUT_UNDEFINED);
-						const VkImageMemoryBarrier barrier =  makeImageMemoryBarrier(writeSync.accessMask, readSync.accessMask,
-																					 writeSync.imageLayout, readSync.imageLayout,
-																					 resource.getImage().handle,
-																					 resource.getImage().subresourceRange);
-						vk.cmdPipelineBarrier(cmdBuffers[2 * iterIdx], writeSync.stageMask, readSync.stageMask, (VkDependencyFlags)0,
-											  0u, (const VkMemoryBarrier*)DE_NULL, 0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &barrier);
+
+						const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+							writeSync.stageMask,							// VkPipelineStageFlags2KHR			srcStageMask
+							writeSync.accessMask,							// VkAccessFlags2KHR				srcAccessMask
+							readSync.stageMask,								// VkPipelineStageFlags2KHR			dstStageMask
+							readSync.accessMask,							// VkAccessFlags2KHR				dstAccessMask
+							writeSync.imageLayout,							// VkImageLayout					oldLayout
+							readSync.imageLayout,							// VkImageLayout					newLayout
+							resource.getImage().handle,						// VkImage							image
+							resource.getImage().subresourceRange			// VkImageSubresourceRange			subresourceRange
+						);
+						VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+						synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 					}
 					else
 					{
-						const VkBufferMemoryBarrier barrier = makeBufferMemoryBarrier(writeSync.accessMask, readSync.accessMask,
-																					  resource.getBuffer().handle, 0, VK_WHOLE_SIZE);
-						vk.cmdPipelineBarrier(cmdBuffers[2 * iterIdx], writeSync.stageMask, readSync.stageMask, (VkDependencyFlags)0,
-											  0u, (const VkMemoryBarrier*)DE_NULL, 1u, &barrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
+						const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+							writeSync.stageMask,							// VkPipelineStageFlags2KHR			srcStageMask
+							writeSync.accessMask,							// VkAccessFlags2KHR				srcAccessMask
+							readSync.stageMask,								// VkPipelineStageFlags2KHR			dstStageMask
+							readSync.accessMask,							// VkAccessFlags2KHR				dstAccessMask
+							resource.getBuffer().handle,					// VkBuffer							buffer
+							0,												// VkDeviceSize						offset
+							VK_WHOLE_SIZE									// VkDeviceSize						size
+						);
+						VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+						synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 					}
 				}
 
-				endCommandBuffer(vk, cmdBuffers[2 * iterIdx]);
+				endCommandBuffer(vk, cmdBuffer);
 			}
 
 			// Read operation
 			{
-				const VkTimelineSemaphoreSubmitInfo		timelineSubmitInfo	=
-				{
-					VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,		// VkStructureType	sType;
-					DE_NULL,												// const void*		pNext;
-					1u,														// deUint32			waitSemaphoreValueCount
-					&m_iterations[iterIdx]->writeValue,						// const deUint64*	pWaitSemaphoreValues
-					1u,														// deUint32			signalSemaphoreValueCount
-					&m_iterations[iterIdx]->readValue,						// const deUint64*	pSignalSemaphoreValues
-				};
-				const VkSubmitInfo						submitInfo			=
-				{
-					VK_STRUCTURE_TYPE_SUBMIT_INFO,							// VkStructureType			sType;
-					&timelineSubmitInfos[2 * iterIdx + 1],					// const void*				pNext;
-					1u,														// deUint32					waitSemaphoreCount;
-					&semaphore.get(),										// const VkSemaphore*		pWaitSemaphores;
-					stageBits,
-					1u,														// deUint32					commandBufferCount;
-					&cmdBuffers[2 * iterIdx + 1],							// const VkCommandBuffer*	pCommandBuffers;
-					1u,														// deUint32					signalSemaphoreCount;
-					&semaphore.get(),										// const VkSemaphore*		pSignalSemaphores;
-				};
+				deUint32 rIdx = 2 * iterIdx + 1;
 
-				timelineSubmitInfos[2 * iterIdx + 1]	=	timelineSubmitInfo;
-				submitInfos[2 * iterIdx + 1]			=	submitInfo;
+				waitSemaphoreSubmitInfos[rIdx].value = m_iterations[iterIdx]->writeValue;
+				signalSemaphoreSubmitInfos[rIdx].value = m_iterations[iterIdx]->readValue;
 
-				beginCommandBuffer(vk, cmdBuffers[2 * iterIdx + 1]);
-				m_iterations[iterIdx]->readOp->recordCommands(cmdBuffers[2 * iterIdx + 1]);
-				endCommandBuffer(vk, cmdBuffers[2 * iterIdx + 1]);
+				synchronizationWrapper->addSubmitInfo(
+					1u,												// deUint32								waitSemaphoreInfoCount
+					&waitSemaphoreSubmitInfos[rIdx],				// const VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos
+					1u,												// deUint32								commandBufferInfoCount
+					&commandBufferSubmitInfos[rIdx],				// const VkCommandBufferSubmitInfoKHR*	pCommandBufferInfos
+					1u,												// deUint32								signalSemaphoreInfoCount
+					&signalSemaphoreSubmitInfos[rIdx],				// const VkSemaphoreSubmitInfoKHR*		pSignalSemaphoreInfos
+					rIdx == 0 ? DE_FALSE : DE_TRUE,
+					DE_TRUE
+				);
+
+				VkCommandBuffer cmdBuffer = commandBufferSubmitInfos[rIdx].commandBuffer;
+				beginCommandBuffer(vk, cmdBuffer);
+				m_iterations[iterIdx]->readOp->recordCommands(cmdBuffer);
+				endCommandBuffer(vk, cmdBuffer);
 			}
 		}
 
-		VK_CHECK(vk.queueSubmit(queue, (deUint32) submitInfos.size(), &submitInfos[0], DE_NULL));
+		VK_CHECK(synchronizationWrapper->queueSubmit(queue, DE_NULL));
 
 		VK_CHECK(vk.deviceWaitIdle(device));
 
@@ -1022,6 +1023,7 @@ public:
 	}
 
 protected:
+	const SynchronizationType					m_type;
 	OperationContext							m_opContext;
 	const ResourceDescription					m_resourceDesc;
 	std::vector<SharedPtr<TimelineIteration> >	m_iterations;
@@ -1033,11 +1035,13 @@ public:
 	DeviceHostSyncTestCase	(tcu::TestContext&			testCtx,
 							 const std::string&			name,
 							 const std::string&			description,
+							 SynchronizationType		type,
 							 const ResourceDescription	resourceDesc,
 							 const OperationName		writeOp,
 							 const OperationName		readOp,
 							 PipelineCacheData&			pipelineCacheData)
 		: TestCase				(testCtx, name, description)
+		, m_type				(type)
 		, m_resourceDesc		(resourceDesc)
 		, m_writeOp				(makeOperationSupport(writeOp, resourceDesc).release())
 		, m_readOp				(makeOperationSupport(readOp, resourceDesc).release())
@@ -1045,38 +1049,42 @@ public:
 	{
 	}
 
-	virtual void checkSupport(Context& context) const
+	void checkSupport(Context& context) const override
 	{
 		context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
+		if (m_type == SynchronizationType::SYNCHRONIZATION2)
+			context.requireDeviceFunctionality("VK_KHR_synchronization2");
 	}
 
-	void initPrograms (SourceCollections& programCollection) const
+	void initPrograms (SourceCollections& programCollection) const override
 	{
 		m_writeOp->initPrograms(programCollection);
 		m_readOp->initPrograms(programCollection);
 	}
 
-	TestInstance* createInstance (Context& context) const
+	TestInstance* createInstance (Context& context) const override
 	{
-		return new DeviceHostTestInstance(context, m_resourceDesc, m_writeOp, m_readOp, m_pipelineCacheData);
+		return new DeviceHostTestInstance(context, m_type, m_resourceDesc, m_writeOp, m_readOp, m_pipelineCacheData);
 	}
 
 private:
+	const SynchronizationType			m_type;
 	const ResourceDescription			m_resourceDesc;
 	const SharedPtr<OperationSupport>	m_writeOp;
 	const SharedPtr<OperationSupport>	m_readOp;
 	PipelineCacheData&					m_pipelineCacheData;
 };
 
-class DeviceHostTests : public tcu::TestCaseGroup
+class DeviceHostTestsBase : public tcu::TestCaseGroup
 {
 public:
-	DeviceHostTests (tcu::TestContext& testCtx)
+	DeviceHostTestsBase(tcu::TestContext& testCtx, SynchronizationType type)
 		: tcu::TestCaseGroup(testCtx, "device_host", "Synchronization of serialized device/host operations")
+		, m_type(type)
 	{
 	}
 
-	void init (void)
+	void initCommonTests (void)
 	{
 		static const OperationName		writeOps[]	=
 		{
@@ -1151,26 +1159,59 @@ public:
 
 				if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
 				{
-					opGroup->addChild(new DeviceHostSyncTestCase(m_testCtx, name, "", resource, writeOp, readOp, m_pipelineCacheData));
+					opGroup->addChild(new DeviceHostSyncTestCase(m_testCtx, name, "", m_type, resource, writeOp, readOp, m_pipelineCacheData));
 					empty = false;
 				}
 			}
 			if (!empty)
 				addChild(opGroup.release());
 		}
-
-		{
-			de::MovePtr<tcu::TestCaseGroup> miscGroup	(new tcu::TestCaseGroup(m_testCtx, "misc", ""));
-			addFunctionCase(miscGroup.get(), "max_difference_value", "Timeline semaphore properties test", checkTimelineSupport, maxDifferenceValueCase);
-			addFunctionCase(miscGroup.get(), "initial_value", "Timeline semaphore initial value test", checkTimelineSupport, initialValueCase);
-			addChild(miscGroup.release());
-		}
 	}
+
+protected:
+	SynchronizationType m_type;
 
 private:
 	// synchronization.op tests share pipeline cache data to speed up test
 	// execution.
 	PipelineCacheData	m_pipelineCacheData;
+};
+
+class LegacyDeviceHostTests : public DeviceHostTestsBase
+{
+public:
+	LegacyDeviceHostTests(tcu::TestContext& testCtx)
+		: DeviceHostTestsBase(testCtx, SynchronizationType::LEGACY)
+	{
+	}
+
+	void init(void)
+	{
+		initCommonTests();
+
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(m_testCtx, "misc", ""));
+		addFunctionCase(miscGroup.get(), "max_difference_value", "Timeline semaphore properties test", checkSupport, maxDifferenceValueCase, m_type);
+		addFunctionCase(miscGroup.get(), "initial_value", "Timeline semaphore initial value test", checkSupport, initialValueCase, m_type);
+		addChild(miscGroup.release());
+	}
+};
+
+class Sytnchronization2DeviceHostTests : public DeviceHostTestsBase
+{
+public:
+	Sytnchronization2DeviceHostTests(tcu::TestContext& testCtx)
+		: DeviceHostTestsBase(testCtx, SynchronizationType::SYNCHRONIZATION2)
+	{
+	}
+
+	void init(void)
+	{
+		initCommonTests();
+
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(m_testCtx, "misc", ""));
+		addFunctionCase(miscGroup.get(), "max_difference_value", "Timeline semaphore properties test", checkSupport, maxDifferenceValueCase, m_type);
+		addChild(miscGroup.release());
+	}
 };
 
 struct QueueTimelineIteration
@@ -1215,30 +1256,42 @@ std::vector<VkDeviceQueueCreateInfo> getQueueCreateInfo(const std::vector<VkQueu
 	return infos;
 }
 
-Move<VkDevice> createDevice(const Context& context)
+Move<VkDevice> createDevice(const Context& context, SynchronizationType type)
 {
-	const std::vector<VkQueueFamilyProperties>		queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
-	std::vector<VkDeviceQueueCreateInfo>			queueCreateInfos		= getQueueCreateInfo(queueFamilyProperties);
-	const char *									extensions[]			=
+	const std::vector<VkQueueFamilyProperties>		queueFamilyProperties		= getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+	std::vector<VkDeviceQueueCreateInfo>			queueCreateInfos			= getQueueCreateInfo(queueFamilyProperties);
+	VkPhysicalDeviceSynchronization2FeaturesKHR		synchronization2Features	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR, DE_NULL, DE_TRUE };
+	VkPhysicalDeviceTimelineSemaphoreFeatures		timelineSemaphoreFeatures	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES, DE_NULL, DE_TRUE };
+	VkPhysicalDeviceFeatures2						createPhysicalFeatures		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &timelineSemaphoreFeatures, context.getDeviceFeatures() };
+	void**											nextPtr						= &timelineSemaphoreFeatures.pNext;
+
+	std::vector<const char*> deviceExtensions =
 	{
 		"VK_KHR_timeline_semaphore"
 	};
+	if (type == SynchronizationType::SYNCHRONIZATION2)
+	{
+		deviceExtensions.push_back("VK_KHR_synchronization2");
+		addToChainVulkanStructure(&nextPtr, synchronization2Features);
+	}
+
 	const VkDeviceCreateInfo						deviceInfo				=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//VkStructureType					sType;
-		DE_NULL,														//const void*						pNext;
+		&createPhysicalFeatures,										//const void*						pNext;
 		0u,																//VkDeviceCreateFlags				flags;
 		static_cast<deUint32>(queueCreateInfos.size()),					//deUint32							queueCreateInfoCount;
 		&queueCreateInfos[0],											//const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
 		0u,																//deUint32							enabledLayerCount;
 		DE_NULL,														//const char* const*				ppEnabledLayerNames;
-		1u,																//deUint32							enabledExtensionCount;
-		extensions,														//const char* const*				ppEnabledExtensionNames;
-		&context.getDeviceFeatures()									//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+		static_cast<deUint32>(deviceExtensions.size()),					//deUint32							enabledExtensionCount;
+		&deviceExtensions[0],											//const char* const*				ppEnabledExtensionNames;
+		0u																//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	std::vector<SharedPtr<std::vector<float> > >	queuePriorities;
 
-	for (auto& queueCreateInfo : queueCreateInfos) {
+	for (auto& queueCreateInfo : queueCreateInfos)
+	{
 		MovePtr<std::vector<float> > priorities(new std::vector<float>);
 
 		for (deUint32 i = 0; i < queueCreateInfo.queueCount; i++)
@@ -1257,17 +1310,17 @@ Move<VkDevice> createDevice(const Context& context)
 // Class to wrap a singleton instance and device
 class SingletonDevice
 {
-	SingletonDevice	(const Context& context)
-		: m_logicalDevice	(createDevice(context))
+	SingletonDevice	(const Context& context, SynchronizationType type)
+		: m_logicalDevice	(createDevice(context, type))
 	{
 	}
 
 public:
 
-	static const Unique<vk::VkDevice>& getDevice(const Context& context)
+	static const Unique<vk::VkDevice>& getDevice(const Context& context, SynchronizationType type)
 	{
 		if (!m_singletonDevice)
-			m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
+			m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context, type));
 
 		DE_ASSERT(m_singletonDevice);
 		return m_singletonDevice->m_logicalDevice;
@@ -1279,7 +1332,7 @@ public:
 	}
 
 private:
-	const Unique<vk::VkDevice>					m_logicalDevice;
+	const Unique<vk::VkDevice>			m_logicalDevice;
 
 	static SharedPtr<SingletonDevice>	m_singletonDevice;
 };
@@ -1298,18 +1351,20 @@ class WaitBeforeSignalTestInstance : public TestInstance
 {
 public:
 	WaitBeforeSignalTestInstance (Context&								context,
+								  SynchronizationType					type,
 								  const ResourceDescription&			resourceDesc,
 								  const SharedPtr<OperationSupport>&	writeOp,
 								  const SharedPtr<OperationSupport>&	readOp,
 								  PipelineCacheData&					pipelineCacheData)
 		: TestInstance		(context)
+		, m_type			(type)
 		, m_resourceDesc	(resourceDesc)
-		, m_device			(SingletonDevice::getDevice(context))
+		, m_device			(SingletonDevice::getDevice(context, type))
 		, m_deviceDriver	(MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device)))
 		, m_allocator		(new SimpleAllocator(*m_deviceDriver, *m_device,
 												 getPhysicalDeviceMemoryProperties(context.getInstanceInterface(),
 																				   context.getPhysicalDevice())))
-		, m_opContext		(context, pipelineCacheData, *m_deviceDriver, *m_device, *m_allocator)
+		, m_opContext		(context, type, *m_deviceDriver, *m_device, *m_allocator, pipelineCacheData)
 	{
 		const DeviceInterface&						vk							= *m_deviceDriver;
 		const VkDevice								device						= *m_device;
@@ -1385,20 +1440,21 @@ public:
 
 	tcu::TestStatus	iterate (void)
 	{
-		const DeviceInterface&								vk						= *m_deviceDriver;
-		const VkDevice										device					= *m_device;
-		const Unique<VkSemaphore>							semaphore				(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR));
-		const VkPipelineStageFlags							stageBits[]				= { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT };
-		std::vector<SharedPtr<Move<VkCommandPool> > >		cmdPools;
-		std::vector<SharedPtr<Move<VkCommandBuffer> > >		ptrCmdBuffers;
-		std::vector<VkCommandBuffer>						cmdBuffers;
+		const DeviceInterface&							vk							= *m_deviceDriver;
+		const VkDevice									device						= *m_device;
+		const Unique<VkSemaphore>						semaphore					(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR));
+		std::vector<SharedPtr<Move<VkCommandPool> > >	cmdPools;
+		std::vector<SharedPtr<Move<VkCommandBuffer> > >	ptrCmdBuffers;
+		std::vector<VkCommandBufferSubmitInfoKHR>		commandBufferSubmitInfos	(m_iterations.size(), makeCommonCommandBufferSubmitInfo(0));
+		VkSemaphoreSubmitInfoKHR						waitSemaphoreSubmitInfo		= makeCommonSemaphoreSubmitInfo(*semaphore, 0u, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR);
+		VkSemaphoreSubmitInfoKHR						signalSemaphoreSubmitInfo	= makeCommonSemaphoreSubmitInfo(*semaphore, 0u, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR);
 
 		for (deUint32 opNdx = 0; opNdx < m_iterations.size(); opNdx++)
 		{
 			cmdPools.push_back(makeVkSharedPtr(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
 																 m_iterations[opNdx]->queueFamilyIdx)));
 			ptrCmdBuffers.push_back(makeVkSharedPtr(makeCommandBuffer(vk, device, **cmdPools.back())));
-			cmdBuffers.push_back(**(ptrCmdBuffers.back()));
+			commandBufferSubmitInfos[opNdx].commandBuffer = **(ptrCmdBuffers.back());
 		}
 
 		// Randomize the data copied over.
@@ -1418,32 +1474,26 @@ public:
 		{
 			// Submit in reverse order of the dependency order to
 			// exercise the wait-before-submit behavior.
-			deUint32 iterIdx = (deUint32)(m_iterations.size() - 2 - _iterIdx);
+			deUint32					iterIdx					= (deUint32)(m_iterations.size() - 2 - _iterIdx);
+			VkCommandBuffer				cmdBuffer				= commandBufferSubmitInfos[iterIdx].commandBuffer;
+			SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_type, vk, DE_TRUE);
 
-			const VkTimelineSemaphoreSubmitInfo		timelineSubmitInfo	=
-			{
-				VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,									// VkStructureType	sType;
-				DE_NULL,																			// const void*		pNext;
-				1u,																					// deUint32			waitSemaphoreValueCount
-				iterIdx == 0 ? &m_hostTimelineValue : &m_iterations[iterIdx - 1]->timelineValue,	// const deUint64*	pWaitSemaphoreValues
-				1u,																					// deUint32			signalSemaphoreValueCount
-				&m_iterations[iterIdx]->timelineValue,												// const deUint64*	pSignalSemaphoreValues
-			};
-			const VkSubmitInfo						submitInfo			=
-			{
-				VK_STRUCTURE_TYPE_SUBMIT_INFO,														// VkStructureType			sType;
-				&timelineSubmitInfo,																// const void*				pNext;
-				1u,																					// deUint32					waitSemaphoreCount;
-				&semaphore.get(),																	// const VkSemaphore*		pWaitSemaphores;
-				stageBits,
-				1u,																					// deUint32					commandBufferCount;
-				&cmdBuffers[iterIdx],																// const VkCommandBuffer*	pCommandBuffers;
-				1u,																					// deUint32					signalSemaphoreCount;
-				&semaphore.get(),																	// const VkSemaphore*		pSignalSemaphores;
-			};
+			waitSemaphoreSubmitInfo.value		= iterIdx == 0 ? m_hostTimelineValue : m_iterations[iterIdx - 1]->timelineValue;
+			signalSemaphoreSubmitInfo.value		= m_iterations[iterIdx]->timelineValue;
 
-			beginCommandBuffer(vk, cmdBuffers[iterIdx]);
-			m_iterations[iterIdx]->op->recordCommands(cmdBuffers[iterIdx]);
+			synchronizationWrapper->addSubmitInfo(
+				1u,										// deUint32								waitSemaphoreInfoCount
+				&waitSemaphoreSubmitInfo,				// const VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos
+				1u,										// deUint32								commandBufferInfoCount
+				&commandBufferSubmitInfos[iterIdx],		// const VkCommandBufferSubmitInfoKHR*	pCommandBufferInfos
+				1u,										// deUint32								signalSemaphoreInfoCount
+				&signalSemaphoreSubmitInfo,				// const VkSemaphoreSubmitInfoKHR*		pSignalSemaphoreInfos
+				DE_TRUE,
+				DE_TRUE
+			);
+
+			beginCommandBuffer(vk, cmdBuffer);
+			m_iterations[iterIdx]->op->recordCommands(cmdBuffer);
 
 			{
 				const SyncInfo	writeSync	= m_iterations[iterIdx]->op->getOutSyncInfo();
@@ -1454,61 +1504,70 @@ public:
 				{
 					DE_ASSERT(writeSync.imageLayout != VK_IMAGE_LAYOUT_UNDEFINED);
 					DE_ASSERT(readSync.imageLayout != VK_IMAGE_LAYOUT_UNDEFINED);
-					const VkImageMemoryBarrier barrier =  makeImageMemoryBarrier(writeSync.accessMask, readSync.accessMask,
-																				 writeSync.imageLayout, readSync.imageLayout,
-																				 resource.getImage().handle,
-																				 resource.getImage().subresourceRange,
-																				 m_iterations[iterIdx]->queueFamilyIdx,
-																				 m_iterations[iterIdx + 1]->queueFamilyIdx);
-					vk.cmdPipelineBarrier(cmdBuffers[iterIdx], writeSync.stageMask, readSync.stageMask, (VkDependencyFlags)0,
-										  0u, (const VkMemoryBarrier*)DE_NULL, 0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &barrier);
+
+					const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+						writeSync.stageMask,							// VkPipelineStageFlags2KHR			srcStageMask
+						writeSync.accessMask,							// VkAccessFlags2KHR				srcAccessMask
+						readSync.stageMask,								// VkPipelineStageFlags2KHR			dstStageMask
+						readSync.accessMask,							// VkAccessFlags2KHR				dstAccessMask
+						writeSync.imageLayout,							// VkImageLayout					oldLayout
+						readSync.imageLayout,							// VkImageLayout					newLayout
+						resource.getImage().handle,						// VkImage							image
+						resource.getImage().subresourceRange,			// VkImageSubresourceRange			subresourceRange
+						m_iterations[iterIdx]->queueFamilyIdx,			// deUint32							srcQueueFamilyIndex
+						m_iterations[iterIdx + 1]->queueFamilyIdx		// deUint32							destQueueFamilyIndex
+					);
+					VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+					synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 				}
 				else
 				{
-					const VkBufferMemoryBarrier barrier = makeBufferMemoryBarrier(writeSync.accessMask, readSync.accessMask,
-																				  resource.getBuffer().handle, 0, VK_WHOLE_SIZE,
-																				  m_iterations[iterIdx]->queueFamilyIdx,
-																				  m_iterations[iterIdx + 1]->queueFamilyIdx);
-					vk.cmdPipelineBarrier(cmdBuffers[iterIdx], writeSync.stageMask, readSync.stageMask, (VkDependencyFlags)0,
-										  0u, (const VkMemoryBarrier*)DE_NULL, 1u, &barrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
+					const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+						writeSync.stageMask,							// VkPipelineStageFlags2KHR			srcStageMask
+						writeSync.accessMask,							// VkAccessFlags2KHR				srcAccessMask
+						readSync.stageMask,								// VkPipelineStageFlags2KHR			dstStageMask
+						readSync.accessMask,							// VkAccessFlags2KHR				dstAccessMask
+						resource.getBuffer().handle,					// VkBuffer							buffer
+						0,												// VkDeviceSize						offset
+						VK_WHOLE_SIZE,									// VkDeviceSize						size
+						m_iterations[iterIdx]->queueFamilyIdx,			// deUint32							srcQueueFamilyIndex
+						m_iterations[iterIdx + 1]->queueFamilyIdx		// deUint32							dstQueueFamilyIndex
+					);
+					VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+					synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 				}
 			}
 
-			endCommandBuffer(vk, cmdBuffers[iterIdx]);
+			endCommandBuffer(vk, cmdBuffer);
 
-			VK_CHECK(vk.queueSubmit(m_iterations[iterIdx]->queue, 1u, &submitInfo, DE_NULL));
+			VK_CHECK(synchronizationWrapper->queueSubmit(m_iterations[iterIdx]->queue, DE_NULL));
 		}
 
 		// Submit the last read operation in order.
 		{
-			const deUint32							iterIdx				= (deUint32) (m_iterations.size() - 1);
-			const VkTimelineSemaphoreSubmitInfo		timelineSubmitInfo	=
-			{
-				VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,					// VkStructureType	sType;
-				DE_NULL,															// const void*		pNext;
-				1u,																	// deUint32			waitSemaphoreValueCount
-				&m_iterations[iterIdx - 1]->timelineValue,							// const deUint64*	pWaitSemaphoreValues
-				1u,																	// deUint32			signalSemaphoreValueCount
-				&m_iterations[iterIdx]->timelineValue,								// const deUint64*	pSignalSemaphoreValues
-			};
-			const VkSubmitInfo						submitInfo			=
-			{
-				VK_STRUCTURE_TYPE_SUBMIT_INFO,							// VkStructureType			sType;
-				&timelineSubmitInfo,									// const void*				pNext;
-				1u,														// deUint32					waitSemaphoreCount;
-				&semaphore.get(),										// const VkSemaphore*		pWaitSemaphores;
-				stageBits,
-				1u,														// deUint32					commandBufferCount;
-				&cmdBuffers[iterIdx],									// const VkCommandBuffer*	pCommandBuffers;
-				1u,														// deUint32					signalSemaphoreCount;
-				&semaphore.get(),										// const VkSemaphore*		pSignalSemaphores;
-			};
+			const deUint32				iterIdx					= (deUint32) (m_iterations.size() - 1);
+			SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_type, vk, DE_TRUE);
 
-			beginCommandBuffer(vk, cmdBuffers[iterIdx]);
-			m_iterations[iterIdx]->op->recordCommands(cmdBuffers[iterIdx]);
-			endCommandBuffer(vk, cmdBuffers[iterIdx]);
+			waitSemaphoreSubmitInfo.value		= m_iterations[iterIdx - 1]->timelineValue;
+			signalSemaphoreSubmitInfo.value		= m_iterations[iterIdx]->timelineValue;
 
-			VK_CHECK(vk.queueSubmit(m_iterations[iterIdx]->queue, 1u, &submitInfo, DE_NULL));
+			synchronizationWrapper->addSubmitInfo(
+				1u,										// deUint32								waitSemaphoreInfoCount
+				&waitSemaphoreSubmitInfo,				// const VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos
+				1u,										// deUint32								commandBufferInfoCount
+				&commandBufferSubmitInfos[iterIdx],		// const VkCommandBufferSubmitInfoKHR*	pCommandBufferInfos
+				1u,										// deUint32								signalSemaphoreInfoCount
+				&signalSemaphoreSubmitInfo,				// const VkSemaphoreSubmitInfoKHR*		pSignalSemaphoreInfos
+				DE_TRUE,
+				DE_TRUE
+			);
+
+			VkCommandBuffer cmdBuffer = commandBufferSubmitInfos[iterIdx].commandBuffer;
+			beginCommandBuffer(vk, cmdBuffer);
+			m_iterations[iterIdx]->op->recordCommands(cmdBuffer);
+			endCommandBuffer(vk, cmdBuffer);
+
+			VK_CHECK(synchronizationWrapper->queueSubmit(m_iterations[iterIdx]->queue, DE_NULL));
 		}
 
 		{
@@ -1529,6 +1588,7 @@ public:
 	}
 
 protected:
+	const SynchronizationType						m_type;
 	const ResourceDescription						m_resourceDesc;
 	const Unique<VkDevice>&							m_device;
 	MovePtr<DeviceDriver>							m_deviceDriver;
@@ -1545,11 +1605,13 @@ public:
 	WaitBeforeSignalTestCase	(tcu::TestContext&			testCtx,
 								 const std::string&			name,
 								 const std::string&			description,
+								 SynchronizationType		type,
 								 const ResourceDescription	resourceDesc,
 								 const OperationName		writeOp,
 								 const OperationName		readOp,
 								 PipelineCacheData&			pipelineCacheData)
 		: TestCase				(testCtx, name, description)
+		, m_type				(type)
 		, m_resourceDesc		(resourceDesc)
 		, m_writeOp				(makeOperationSupport(writeOp, resourceDesc).release())
 		, m_readOp				(makeOperationSupport(readOp, resourceDesc).release())
@@ -1557,12 +1619,14 @@ public:
 	{
 	}
 
-	virtual void checkSupport(Context& context) const
+	void checkSupport(Context& context) const override
 	{
 		context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
+		if (m_type == SynchronizationType::SYNCHRONIZATION2)
+			context.requireDeviceFunctionality("VK_KHR_synchronization2");
 	}
 
-	void initPrograms (SourceCollections& programCollection) const
+	void initPrograms (SourceCollections& programCollection) const override
 	{
 		m_writeOp->initPrograms(programCollection);
 		m_readOp->initPrograms(programCollection);
@@ -1574,12 +1638,13 @@ public:
 		}
 	}
 
-	TestInstance* createInstance (Context& context) const
+	TestInstance* createInstance (Context& context) const override
 	{
-		return new WaitBeforeSignalTestInstance(context, m_resourceDesc, m_writeOp, m_readOp, m_pipelineCacheData);
+		return new WaitBeforeSignalTestInstance(context, m_type, m_resourceDesc, m_writeOp, m_readOp, m_pipelineCacheData);
 	}
 
 private:
+	SynchronizationType					m_type;
 	const ResourceDescription			m_resourceDesc;
 	const SharedPtr<OperationSupport>	m_writeOp;
 	const SharedPtr<OperationSupport>	m_readOp;
@@ -1589,8 +1654,9 @@ private:
 class WaitBeforeSignalTests : public tcu::TestCaseGroup
 {
 public:
-	WaitBeforeSignalTests (tcu::TestContext& testCtx)
+	WaitBeforeSignalTests (tcu::TestContext& testCtx, SynchronizationType type)
 		: tcu::TestCaseGroup(testCtx, "wait_before_signal", "Synchronization of out of order submissions to queues")
+		, m_type(type)
 	{
 	}
 
@@ -1669,7 +1735,7 @@ public:
 
 				if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
 				{
-					opGroup->addChild(new WaitBeforeSignalTestCase(m_testCtx, name, "", resource, writeOp, readOp, m_pipelineCacheData));
+					opGroup->addChild(new WaitBeforeSignalTestCase(m_testCtx, name, "", m_type, resource, writeOp, readOp, m_pipelineCacheData));
 					empty = false;
 				}
 			}
@@ -1684,6 +1750,8 @@ public:
 	}
 
 private:
+	SynchronizationType m_type;
+
 	// synchronization.op tests share pipeline cache data to speed up test
 	// execution.
 	PipelineCacheData	m_pipelineCacheData;
@@ -1700,18 +1768,20 @@ class OneToNTestInstance : public TestInstance
 {
 public:
 	OneToNTestInstance (Context&							context,
+						SynchronizationType					type,
 						const ResourceDescription&			resourceDesc,
 						const SharedPtr<OperationSupport>&	writeOp,
 						const SharedPtr<OperationSupport>&	readOp,
 						PipelineCacheData&					pipelineCacheData)
 		: TestInstance		(context)
+		, m_type			(type)
 		, m_resourceDesc	(resourceDesc)
-		, m_device			(SingletonDevice::getDevice(context))
+		, m_device			(SingletonDevice::getDevice(context, type))
 		, m_deviceDriver	(MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device)))
 		, m_allocator		(new SimpleAllocator(*m_deviceDriver, *m_device,
 												 getPhysicalDeviceMemoryProperties(context.getInstanceInterface(),
 																				   context.getPhysicalDevice())))
-		, m_opContext		(context, pipelineCacheData, *m_deviceDriver, *m_device, *m_allocator)
+		, m_opContext		(context, type, *m_deviceDriver, *m_device, *m_allocator, pipelineCacheData)
 	{
 		const DeviceInterface&									vk				= *m_deviceDriver;
 		const VkDevice											device			= *m_device;
@@ -1815,68 +1885,73 @@ public:
 
 	void recordBarrier (const DeviceInterface&	vk, VkCommandBuffer cmdBuffer, const QueueTimelineIteration& inIter, const QueueTimelineIteration& outIter, const Resource& resource)
 	{
-		const SyncInfo	writeSync	= inIter.op->getOutSyncInfo();
-		const SyncInfo	readSync	= outIter.op->getInSyncInfo();
+		const SyncInfo				writeSync				= inIter.op->getOutSyncInfo();
+		const SyncInfo				readSync				= outIter.op->getInSyncInfo();
+		SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_type, vk, DE_TRUE);
 
 		if (resource.getType() == RESOURCE_TYPE_IMAGE)
 		{
 			DE_ASSERT(writeSync.imageLayout != VK_IMAGE_LAYOUT_UNDEFINED);
 			DE_ASSERT(readSync.imageLayout != VK_IMAGE_LAYOUT_UNDEFINED);
-			const VkImageMemoryBarrier barrier =  makeImageMemoryBarrier(writeSync.accessMask, readSync.accessMask,
-																		 writeSync.imageLayout, readSync.imageLayout,
-																		 resource.getImage().handle,
-																		 resource.getImage().subresourceRange,
-																		 inIter.queueFamilyIdx,
-																		 outIter.queueFamilyIdx);
-			vk.cmdPipelineBarrier(cmdBuffer, writeSync.stageMask, readSync.stageMask, (VkDependencyFlags)0,
-								  0u, (const VkMemoryBarrier*)DE_NULL, 0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &barrier);
+
+			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+				writeSync.stageMask,							// VkPipelineStageFlags2KHR			srcStageMask
+				writeSync.accessMask,							// VkAccessFlags2KHR				srcAccessMask
+				readSync.stageMask,								// VkPipelineStageFlags2KHR			dstStageMask
+				readSync.accessMask,							// VkAccessFlags2KHR				dstAccessMask
+				writeSync.imageLayout,							// VkImageLayout					oldLayout
+				readSync.imageLayout,							// VkImageLayout					newLayout
+				resource.getImage().handle,						// VkImage							image
+				resource.getImage().subresourceRange,			// VkImageSubresourceRange			subresourceRange
+				inIter.queueFamilyIdx,							// deUint32							srcQueueFamilyIndex
+				outIter.queueFamilyIdx							// deUint32							destQueueFamilyIndex
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 		}
 		else
 		{
-			const VkBufferMemoryBarrier barrier = makeBufferMemoryBarrier(writeSync.accessMask, readSync.accessMask,
-																		  resource.getBuffer().handle, 0, VK_WHOLE_SIZE,
-																		  inIter.queueFamilyIdx,
-																		  outIter.queueFamilyIdx);
-			vk.cmdPipelineBarrier(cmdBuffer, writeSync.stageMask, readSync.stageMask, (VkDependencyFlags)0,
-								  0u, (const VkMemoryBarrier*)DE_NULL, 1u, &barrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
+			const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+				writeSync.stageMask,							// VkPipelineStageFlags2KHR			srcStageMask
+				writeSync.accessMask,							// VkAccessFlags2KHR				srcAccessMask
+				readSync.stageMask,								// VkPipelineStageFlags2KHR			dstStageMask
+				readSync.accessMask,							// VkAccessFlags2KHR				dstAccessMask
+				resource.getBuffer().handle,					// VkBuffer							buffer
+				0,												// VkDeviceSize						offset
+				VK_WHOLE_SIZE,									// VkDeviceSize						size
+				inIter.queueFamilyIdx,							// deUint32							srcQueueFamilyIndex
+				outIter.queueFamilyIdx							// deUint32							dstQueueFamilyIndex
+			);
+			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 		}
 	}
 
 	void submit (const DeviceInterface&	vk, VkCommandBuffer cmdBuffer, const QueueTimelineIteration& iter, VkSemaphore semaphore, const deUint64 *waitValues, const deUint32 waitValuesCount)
 	{
-		const VkPipelineStageFlags				stageBits[2]		=
+		VkSemaphoreSubmitInfoKHR		waitSemaphoreSubmitInfo[] =
 		{
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			makeCommonSemaphoreSubmitInfo(semaphore, waitValues[0], VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR),
+			makeCommonSemaphoreSubmitInfo(semaphore, waitValues[1], VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR)
 		};
-		const VkTimelineSemaphoreSubmitInfo		timelineSubmitInfo	=
-		{
-			VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,				// VkStructureType	sType;
-			DE_NULL,														// const void*		pNext;
-			waitValuesCount,												// deUint32			waitSemaphoreValueCount
-			waitValues,														// const deUint64*	pWaitSemaphoreValues
-			1u,																// deUint32			signalSemaphoreValueCount
-			&iter.timelineValue,											// const deUint64*	pSignalSemaphoreValues
-		};
-		const VkSemaphore						waitSemaphores[2]	=
-		{
-			semaphore,
-			semaphore,
-		};
-		const VkSubmitInfo						submitInfo			=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,									// VkStructureType			sType;
-			&timelineSubmitInfo,											// const void*				pNext;
-			waitValuesCount,												// deUint32					waitSemaphoreCount;
-			waitSemaphores,													// const VkSemaphore*		pWaitSemaphores;
-			stageBits,
-			1u,																// deUint32					commandBufferCount;
-			&cmdBuffer,														// const VkCommandBuffer*	pCommandBuffers;
-			1u,																// deUint32					signalSemaphoreCount;
-			&semaphore,														// const VkSemaphore*		pSignalSemaphores;
-		};
+		VkSemaphoreSubmitInfoKHR		signalSemaphoreSubmitInfo =
+			makeCommonSemaphoreSubmitInfo(semaphore, iter.timelineValue, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR);
 
-		VK_CHECK(vk.queueSubmit(iter.queue, 1u, &submitInfo, DE_NULL));
+		VkCommandBufferSubmitInfoKHR	commandBufferSubmitInfo	= makeCommonCommandBufferSubmitInfo(cmdBuffer);
+		SynchronizationWrapperPtr		synchronizationWrapper	= getSynchronizationWrapper(m_type, vk, DE_TRUE);
+
+		synchronizationWrapper->addSubmitInfo(
+			waitValuesCount,						// deUint32								waitSemaphoreInfoCount
+			waitSemaphoreSubmitInfo,				// const VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos
+			1u,										// deUint32								commandBufferInfoCount
+			&commandBufferSubmitInfo,				// const VkCommandBufferSubmitInfoKHR*	pCommandBufferInfos
+			1u,										// deUint32								signalSemaphoreInfoCount
+			&signalSemaphoreSubmitInfo,				// const VkSemaphoreSubmitInfoKHR*		pSignalSemaphoreInfos
+			DE_TRUE,
+			DE_TRUE
+		);
+
+		VK_CHECK(synchronizationWrapper->queueSubmit(iter.queue, DE_NULL));
 	}
 
 	tcu::TestStatus	iterate (void)
@@ -1986,6 +2061,7 @@ public:
 	}
 
 protected:
+	SynchronizationType								m_type;
 	ResourceDescription								m_resourceDesc;
 	const Unique<VkDevice>&							m_device;
 	MovePtr<DeviceDriver>							m_deviceDriver;
@@ -2005,11 +2081,13 @@ public:
 	OneToNTestCase	(tcu::TestContext&			testCtx,
 					 const std::string&			name,
 					 const std::string&			description,
+					 SynchronizationType		type,
 					 const ResourceDescription	resourceDesc,
 					 const OperationName		writeOp,
 					 const OperationName		readOp,
 					 PipelineCacheData&			pipelineCacheData)
 		: TestCase				(testCtx, name, description)
+		, m_type				(type)
 		, m_resourceDesc		(resourceDesc)
 		, m_writeOp				(makeOperationSupport(writeOp, resourceDesc).release())
 		, m_readOp				(makeOperationSupport(readOp, resourceDesc).release())
@@ -2017,12 +2095,14 @@ public:
 	{
 	}
 
-	virtual void checkSupport(Context& context) const
+	void checkSupport(Context& context) const override
 	{
 		context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
+		if (m_type == SynchronizationType::SYNCHRONIZATION2)
+			context.requireDeviceFunctionality("VK_KHR_synchronization2");
 	}
 
-	void initPrograms (SourceCollections& programCollection) const
+	void initPrograms (SourceCollections& programCollection) const override
 	{
 		m_writeOp->initPrograms(programCollection);
 		m_readOp->initPrograms(programCollection);
@@ -2034,12 +2114,13 @@ public:
 		}
 	}
 
-	TestInstance* createInstance (Context& context) const
+	TestInstance* createInstance (Context& context) const override
 	{
-		return new OneToNTestInstance(context, m_resourceDesc, m_writeOp, m_readOp, m_pipelineCacheData);
+		return new OneToNTestInstance(context, m_type, m_resourceDesc, m_writeOp, m_readOp, m_pipelineCacheData);
 	}
 
 private:
+	SynchronizationType					m_type;
 	const ResourceDescription			m_resourceDesc;
 	const SharedPtr<OperationSupport>	m_writeOp;
 	const SharedPtr<OperationSupport>	m_readOp;
@@ -2049,8 +2130,9 @@ private:
 class OneToNTests : public tcu::TestCaseGroup
 {
 public:
-	OneToNTests (tcu::TestContext& testCtx)
+	OneToNTests (tcu::TestContext& testCtx, SynchronizationType type)
 		: tcu::TestCaseGroup(testCtx, "one_to_n", "Synchronization multiple waiter on a signal producer")
+		, m_type(type)
 	{
 	}
 
@@ -2129,7 +2211,7 @@ public:
 
 				if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
 				{
-					opGroup->addChild(new OneToNTestCase(m_testCtx, name, "", resource, writeOp, readOp, m_pipelineCacheData));
+					opGroup->addChild(new OneToNTestCase(m_testCtx, name, "", m_type, resource, writeOp, readOp, m_pipelineCacheData));
 					empty = false;
 				}
 			}
@@ -2144,6 +2226,8 @@ public:
 	}
 
 private:
+	SynchronizationType	m_type;
+
 	// synchronization.op tests share pipeline cache data to speed up test
 	// execution.
 	PipelineCacheData	m_pipelineCacheData;
@@ -2420,13 +2504,27 @@ public:
 
 tcu::TestCaseGroup* createTimelineSemaphoreTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> basicTests(new tcu::TestCaseGroup(testCtx, "timeline_semaphore", "Timeline semaphore tests"));
+	const SynchronizationType			type		(SynchronizationType::LEGACY);
+	de::MovePtr<tcu::TestCaseGroup>		basicTests	(new tcu::TestCaseGroup(testCtx, "timeline_semaphore", "Timeline semaphore tests"));
 
-	basicTests->addChild(new DeviceHostTests(testCtx));
-	basicTests->addChild(new OneToNTests(testCtx));
-	basicTests->addChild(new WaitBeforeSignalTests(testCtx));
-	basicTests->addChild(new WaitTests(testCtx));
+	basicTests->addChild(new LegacyDeviceHostTests(testCtx));
+	basicTests->addChild(new OneToNTests(testCtx, type));
+	basicTests->addChild(new WaitBeforeSignalTests(testCtx, type));
+	basicTests->addChild(new WaitTests(testCtx, type));
 	basicTests->addChild(new SparseBindGroup(testCtx));
+
+	return basicTests.release();
+}
+
+tcu::TestCaseGroup* createSynchronization2TimelineSemaphoreTests(tcu::TestContext& testCtx)
+{
+	const SynchronizationType			type		(SynchronizationType::SYNCHRONIZATION2);
+	de::MovePtr<tcu::TestCaseGroup>		basicTests	(new tcu::TestCaseGroup(testCtx, "timeline_semaphore", "Timeline semaphore tests"));
+
+	basicTests->addChild(new Sytnchronization2DeviceHostTests(testCtx));
+	basicTests->addChild(new OneToNTests(testCtx, type));
+	basicTests->addChild(new WaitBeforeSignalTests(testCtx, type));
+	basicTests->addChild(new WaitTests(testCtx, type));
 
 	return basicTests.release();
 }

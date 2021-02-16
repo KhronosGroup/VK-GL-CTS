@@ -99,11 +99,13 @@ Window::~Window (void)
 void Window::setVisible (bool visible)
 {
 	ShowWindow(m_window, visible ? SW_SHOW : SW_HIDE);
+	processEvents();
 }
 
 void Window::setForeground(void)
 {
 	SetForegroundWindow(m_window);
+	processEvents();
 }
 
 void Window::setSize (int width, int height)

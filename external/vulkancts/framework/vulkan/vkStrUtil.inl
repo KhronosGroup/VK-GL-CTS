@@ -309,6 +309,7 @@ tcu::Format::Bitfield<32>	getPipelineStageFlagsStr									(VkPipelineStageFlags
 tcu::Format::Bitfield<32>	getSparseMemoryBindFlagsStr									(VkSparseMemoryBindFlags value);
 tcu::Format::Bitfield<32>	getSparseImageFormatFlagsStr								(VkSparseImageFormatFlags value);
 tcu::Format::Bitfield<32>	getFenceCreateFlagsStr										(VkFenceCreateFlags value);
+tcu::Format::Bitfield<32>	getEventCreateFlagsStr										(VkEventCreateFlags value);
 tcu::Format::Bitfield<32>	getQueryPipelineStatisticFlagsStr							(VkQueryPipelineStatisticFlags value);
 tcu::Format::Bitfield<32>	getQueryResultFlagsStr										(VkQueryResultFlags value);
 tcu::Format::Bitfield<32>	getBufferCreateFlagsStr										(VkBufferCreateFlags value);
@@ -356,6 +357,7 @@ tcu::Format::Bitfield<32>	getDeviceGroupPresentModeFlagsKHRStr						(VkDeviceGro
 tcu::Format::Bitfield<32>	getDisplayPlaneAlphaFlagsKHRStr								(VkDisplayPlaneAlphaFlagsKHR value);
 tcu::Format::Bitfield<32>	getPerformanceCounterDescriptionFlagsKHRStr					(VkPerformanceCounterDescriptionFlagsKHR value);
 tcu::Format::Bitfield<32>	getAcquireProfilingLockFlagsKHRStr							(VkAcquireProfilingLockFlagsKHR value);
+tcu::Format::Bitfield<32>	getSubmitFlagsKHRStr										(VkSubmitFlagsKHR value);
 tcu::Format::Bitfield<32>	getDebugReportFlagsEXTStr									(VkDebugReportFlagsEXT value);
 tcu::Format::Bitfield<32>	getExternalMemoryHandleTypeFlagsNVStr						(VkExternalMemoryHandleTypeFlagsNV value);
 tcu::Format::Bitfield<32>	getExternalMemoryFeatureFlagsNVStr							(VkExternalMemoryFeatureFlagsNV value);
@@ -379,7 +381,6 @@ tcu::Format::Bitfield<32>	getInstanceCreateFlagsStr									(VkInstanceCreateFla
 tcu::Format::Bitfield<32>	getDeviceCreateFlagsStr										(VkDeviceCreateFlags value);
 tcu::Format::Bitfield<32>	getMemoryMapFlagsStr										(VkMemoryMapFlags value);
 tcu::Format::Bitfield<32>	getSemaphoreCreateFlagsStr									(VkSemaphoreCreateFlags value);
-tcu::Format::Bitfield<32>	getEventCreateFlagsStr										(VkEventCreateFlags value);
 tcu::Format::Bitfield<32>	getQueryPoolCreateFlagsStr									(VkQueryPoolCreateFlags value);
 tcu::Format::Bitfield<32>	getBufferViewCreateFlagsStr									(VkBufferViewCreateFlags value);
 tcu::Format::Bitfield<32>	getPipelineVertexInputStateCreateFlagsStr					(VkPipelineVertexInputStateCreateFlags value);
@@ -713,6 +714,16 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineExecutableStatisticVa
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineExecutableStatisticKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineExecutableInternalRepresentationKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineLibraryCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryBarrier2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBufferMemoryBarrier2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImageMemoryBarrier2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDependencyInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreSubmitInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCommandBufferSubmitInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSubmitInfo2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSynchronization2FeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyCheckpointProperties2NV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCheckpointData2NV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferCopy2KHR& value);

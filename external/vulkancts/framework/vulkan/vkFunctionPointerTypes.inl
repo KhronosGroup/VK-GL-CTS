@@ -268,6 +268,14 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* DeferredOperationJoinKHRFunc)							
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPipelineExecutablePropertiesKHRFunc)								(VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, deUint32* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPipelineExecutableStatisticsKHRFunc)								(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, deUint32* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPipelineExecutableInternalRepresentationsKHRFunc)					(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, deUint32* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetEvent2KHRFunc)													(VkCommandBuffer commandBuffer, VkEvent event, const VkDependencyInfoKHR* pDependencyInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdResetEvent2KHRFunc)													(VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags2KHR stageMask);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdWaitEvents2KHRFunc)													(VkCommandBuffer commandBuffer, deUint32 eventCount, const VkEvent* pEvents, const VkDependencyInfoKHR* pDependencyInfos);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdPipelineBarrier2KHRFunc)											(VkCommandBuffer commandBuffer, const VkDependencyInfoKHR* pDependencyInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdWriteTimestamp2KHRFunc)												(VkCommandBuffer commandBuffer, VkPipelineStageFlags2KHR stage, VkQueryPool queryPool, deUint32 query);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* QueueSubmit2KHRFunc)													(VkQueue queue, deUint32 submitCount, const VkSubmitInfo2KHR* pSubmits, VkFence fence);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdWriteBufferMarker2AMDFunc)											(VkCommandBuffer commandBuffer, VkPipelineStageFlags2KHR stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, deUint32 marker);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetQueueCheckpointData2NVFunc)											(VkQueue queue, deUint32* pCheckpointDataCount, VkCheckpointData2NV* pCheckpointData);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyBuffer2KHRFunc)													(VkCommandBuffer commandBuffer, const VkCopyBufferInfo2KHR* pCopyBufferInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyImage2KHRFunc)													(VkCommandBuffer commandBuffer, const VkCopyImageInfo2KHR* pCopyImageInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyBufferToImage2KHRFunc)											(VkCommandBuffer commandBuffer, const VkCopyBufferToImageInfo2KHR* pCopyBufferToImageInfo);

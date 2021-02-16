@@ -79,14 +79,14 @@ using de::SharedPtr;
 
 static const ResourceDescription s_resourcesWin32KeyedMutex[] =
 {
-	{ RESOURCE_TYPE_BUFFER,	tcu::IVec4( 0x4000, 0, 0, 0),	vk::VK_IMAGE_TYPE_LAST,	vk::VK_FORMAT_UNDEFINED,			(vk::VkImageAspectFlags)0	  },	// 16 KiB (min max UBO range)
-	{ RESOURCE_TYPE_BUFFER,	tcu::IVec4(0x40000, 0, 0, 0),	vk::VK_IMAGE_TYPE_LAST,	vk::VK_FORMAT_UNDEFINED,			(vk::VkImageAspectFlags)0	  },	// 256 KiB
+	{ RESOURCE_TYPE_BUFFER,	tcu::IVec4( 0x4000, 0, 0, 0),	vk::VK_IMAGE_TYPE_LAST,	vk::VK_FORMAT_UNDEFINED,			(vk::VkImageAspectFlags)0,		vk::VK_SAMPLE_COUNT_1_BIT },	// 16 KiB (min max UBO range)
+	{ RESOURCE_TYPE_BUFFER,	tcu::IVec4(0x40000, 0, 0, 0),	vk::VK_IMAGE_TYPE_LAST,	vk::VK_FORMAT_UNDEFINED,			(vk::VkImageAspectFlags)0,		vk::VK_SAMPLE_COUNT_1_BIT },	// 256 KiB
 
-	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R8_UNORM,				vk::VK_IMAGE_ASPECT_COLOR_BIT },
-	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R16_UINT,				vk::VK_IMAGE_ASPECT_COLOR_BIT },
-	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R8G8B8A8_UNORM,		vk::VK_IMAGE_ASPECT_COLOR_BIT },
-	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R16G16B16A16_UINT,	vk::VK_IMAGE_ASPECT_COLOR_BIT },
-	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R32G32B32A32_SFLOAT,	vk::VK_IMAGE_ASPECT_COLOR_BIT },
+	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R8_UNORM,				vk::VK_IMAGE_ASPECT_COLOR_BIT,	vk::VK_SAMPLE_COUNT_1_BIT },
+	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R16_UINT,				vk::VK_IMAGE_ASPECT_COLOR_BIT,	vk::VK_SAMPLE_COUNT_1_BIT },
+	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R8G8B8A8_UNORM,		vk::VK_IMAGE_ASPECT_COLOR_BIT,	vk::VK_SAMPLE_COUNT_1_BIT },
+	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R16G16B16A16_UINT,	vk::VK_IMAGE_ASPECT_COLOR_BIT,	vk::VK_SAMPLE_COUNT_1_BIT },
+	{ RESOURCE_TYPE_IMAGE,	tcu::IVec4(128, 128, 0, 0),		vk::VK_IMAGE_TYPE_2D,	vk::VK_FORMAT_R32G32B32A32_SFLOAT,	vk::VK_IMAGE_ASPECT_COLOR_BIT,	vk::VK_SAMPLE_COUNT_1_BIT },
 };
 
 struct TestConfig
@@ -429,7 +429,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 			extent,
 			1u,
 			1u,
-			vk::VK_SAMPLE_COUNT_1_BIT,
+			resourceDesc.imageSamples,
 			vk::VK_IMAGE_TILING_OPTIMAL,
 			readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags(),
 			vk::VK_SHARING_MODE_EXCLUSIVE,
@@ -481,11 +481,11 @@ void recordWriteBarrier (const vk::DeviceInterface&	vkd,
 						 deUint32					writeQueueFamilyIndex,
 						 const SyncInfo&			readSync)
 {
-	const vk::VkPipelineStageFlags		srcStageMask		= writeSync.stageMask;
-	const vk::VkAccessFlags				srcAccessMask		= writeSync.accessMask;
+	const vk::VkPipelineStageFlags		srcStageMask		= static_cast<VkPipelineStageFlags>(writeSync.stageMask);
+	const vk::VkAccessFlags				srcAccessMask		= static_cast<VkAccessFlags>(writeSync.accessMask);
 
-	const vk::VkPipelineStageFlags		dstStageMask		= readSync.stageMask;
-	const vk::VkAccessFlags				dstAccessMask		= readSync.accessMask;
+	const vk::VkPipelineStageFlags		dstStageMask		= static_cast<VkPipelineStageFlags>(readSync.stageMask);
+	const vk::VkAccessFlags				dstAccessMask		= static_cast<VkAccessFlags>(readSync.accessMask);
 
 	const vk::VkDependencyFlags			dependencyFlags		= 0;
 
@@ -540,11 +540,11 @@ void recordReadBarrier (const vk::DeviceInterface&	vkd,
 						const SyncInfo&				readSync,
 						deUint32					readQueueFamilyIndex)
 {
-	const vk::VkPipelineStageFlags		srcStageMask		= readSync.stageMask;
-	const vk::VkAccessFlags				srcAccessMask		= readSync.accessMask;
+	const vk::VkPipelineStageFlags		srcStageMask		= static_cast<VkPipelineStageFlags>(readSync.stageMask);
+	const vk::VkAccessFlags				srcAccessMask		= static_cast<VkAccessFlags>(readSync.accessMask);
 
-	const vk::VkPipelineStageFlags		dstStageMask		= readSync.stageMask;
-	const vk::VkAccessFlags				dstAccessMask		= readSync.accessMask;
+	const vk::VkPipelineStageFlags		dstStageMask		= static_cast<VkPipelineStageFlags>(readSync.stageMask);
+	const vk::VkAccessFlags				dstAccessMask		= static_cast<VkAccessFlags>(readSync.accessMask);
 
 	const vk::VkDependencyFlags			dependencyFlags		= 0;
 
@@ -1644,7 +1644,7 @@ tcu::TestStatus Win32KeyedMutexTestInstance::iterate (void)
 		const vk::Unique<vk::VkCommandBuffer>	commandBufferWrite	(allocateCommandBuffer(m_vkd, *m_device, *commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 		const vk::Unique<vk::VkCommandBuffer>	commandBufferRead	(allocateCommandBuffer(m_vkd, *m_device, *commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 		vk::SimpleAllocator						allocator			(m_vkd, *m_device, vk::getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice));
-		OperationContext						operationContext	(m_context, m_vki, m_vkd, m_physicalDevice, *m_device, allocator, m_context.getBinaryCollection(), m_pipelineCacheData);
+		OperationContext						operationContext	(m_context, SynchronizationType::LEGACY, m_vki, m_vkd, m_physicalDevice, *m_device, allocator, m_context.getBinaryCollection(), m_pipelineCacheData);
 
 		if (!checkQueueFlags(m_queueFamilies[m_queueNdx].queueFlags, vk::VK_QUEUE_GRAPHICS_BIT))
 			TCU_THROW(NotSupportedError, "Operation not supported by the source queue");

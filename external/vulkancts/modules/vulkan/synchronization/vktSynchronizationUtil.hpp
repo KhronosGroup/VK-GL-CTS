@@ -31,11 +31,18 @@
 #include "vkPrograms.hpp"
 #include "tcuVector.hpp"
 #include "deMutex.hpp"
+#include <memory>
 
 namespace vkt
 {
 namespace synchronization
 {
+
+enum class SynchronizationType
+{
+	LEGACY				= 0,
+	SYNCHRONIZATION2,
+};
 
 class Buffer
 {
@@ -168,6 +175,49 @@ private:
 	GraphicsPipelineBuilder& operator= (const GraphicsPipelineBuilder&);
 };
 
+// Base class that abstracts over legacy synchronization and synchronization changes
+// introduced with VK_KHR_synchronization2 extension. Since structures in
+// VK_KHR_synchronization2 have more features this wrapper uses them and when legacy
+// implementation is used in tests then data from new structures is used to fill legacy ones.
+class SynchronizationWrapperBase
+{
+public:
+	SynchronizationWrapperBase(const vk::DeviceInterface& vk)
+		: m_vk(vk)
+	{}
+
+	virtual ~SynchronizationWrapperBase() = default;
+
+	virtual void			addSubmitInfo		(deUint32									waitSemaphoreInfoCount,
+												 const vk::VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos,
+												 deUint32									commandBufferInfoCount,
+												 const vk::VkCommandBufferSubmitInfoKHR*	pCommandBufferInfos,
+												 deUint32									signalSemaphoreInfoCount,
+												 const vk::VkSemaphoreSubmitInfoKHR*		pSignalSemaphoreInfos,
+												 bool										usingWaitTimelineSemaphore = DE_FALSE,
+												 bool										usingSignalTimelineSemaphore = DE_FALSE) = 0;
+
+	virtual void			cmdPipelineBarrier	(vk::VkCommandBuffer						commandBuffer,
+												 const vk::VkDependencyInfoKHR*				pDependencyInfo) const = 0;
+
+	virtual void			cmdSetEvent			(vk::VkCommandBuffer						commandBuffer,
+												 vk::VkEvent								event,
+												 const vk::VkDependencyInfoKHR*				pDependencyInfo) const = 0;
+	virtual void			cmdResetEvent		(vk::VkCommandBuffer						commandBuffer,
+												 vk::VkEvent								event,
+												 vk::VkPipelineStageFlags2KHR				flag) const = 0;
+	virtual void			cmdWaitEvents		(vk::VkCommandBuffer						commandBuffer,
+												 deUint32									eventCount,
+												 const vk::VkEvent*							pEvents,
+												 const vk::VkDependencyInfoKHR*				pDependencyInfo) const = 0;
+
+	virtual vk::VkResult	queueSubmit			(vk::VkQueue								queue,
+												 vk::VkFence								fence) = 0;
+
+protected:
+	const vk::DeviceInterface& m_vk;
+};
+
 enum FeatureFlagBits
 {
 	FEATURE_TESSELLATION_SHADER							= 1u << 0,
@@ -195,6 +245,7 @@ enum ResourceType
 	RESOURCE_TYPE_INDIRECT_BUFFER_DRAW,
 	RESOURCE_TYPE_INDIRECT_BUFFER_DRAW_INDEXED,
 	RESOURCE_TYPE_INDIRECT_BUFFER_DISPATCH,
+	RESOURCE_TYPE_INDEX_BUFFER,
 };
 
 struct ResourceDescription
@@ -204,6 +255,7 @@ struct ResourceDescription
 	vk::VkImageType					imageType;
 	vk::VkFormat					imageFormat;
 	vk::VkImageAspectFlags			imageAspect;
+	vk::VkSampleCountFlagBits		imageSamples;
 };
 
 struct BufferResource
@@ -223,14 +275,31 @@ struct ImageResource
 	vk::VkImageSubresourceLayers	subresourceLayers;
 };
 
-vk::VkImageCreateInfo			makeImageCreateInfo							(const vk::VkImageType imageType, const vk::VkExtent3D& extent, const vk::VkFormat format, const vk::VkImageUsageFlags usage);
-vk::Move<vk::VkCommandBuffer>	makeCommandBuffer							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkCommandPool commandPool);
-vk::Move<vk::VkPipeline>		makeComputePipeline							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkShaderModule shaderModule, const vk::VkSpecializationInfo* specInfo, PipelineCacheData& pipelineCacheData);
-void							beginRenderPassWithRasterizationDisabled	(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const vk::VkFramebuffer framebuffer);
-void							requireFeatures								(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const FeatureFlags flags);
-void							requireStorageImageSupport					(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const vk::VkFormat fmt);
-std::string						getResourceName								(const ResourceDescription& resource);
-bool							isIndirectBuffer							(const ResourceType type);
+typedef std::shared_ptr<SynchronizationWrapperBase> SynchronizationWrapperPtr;
+SynchronizationWrapperPtr			getSynchronizationWrapper					(SynchronizationType				type,
+																				 const vk::DeviceInterface&			vk,
+																				 bool								usingTimelineSemaphores,
+																				 deUint32							submitInfoCount = 1u);
+void								submitCommandsAndWait						(SynchronizationWrapperPtr			synchronizationWrapper,
+																				 const vk::DeviceInterface&			vk,
+																				 const vk::VkDevice					device,
+																				 const vk::VkQueue					queue,
+																				 const vk::VkCommandBuffer			cmdBuffer);
+vk::VkImageCreateInfo				makeImageCreateInfo							(const vk::VkImageType				imageType,
+																				 const vk::VkExtent3D&				extent,
+																				 const vk::VkFormat					format,
+																				 const vk::VkImageUsageFlags		usage,
+																				 const vk::VkSampleCountFlagBits	samples = vk::VK_SAMPLE_COUNT_1_BIT);
+vk::Move<vk::VkCommandBuffer>		makeCommandBuffer							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkCommandPool commandPool);
+vk::Move<vk::VkPipeline>			makeComputePipeline							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkShaderModule shaderModule, const vk::VkSpecializationInfo* specInfo, PipelineCacheData& pipelineCacheData);
+void								beginRenderPassWithRasterizationDisabled	(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const vk::VkFramebuffer framebuffer);
+void								requireFeatures								(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const FeatureFlags flags);
+void								requireStorageImageSupport					(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const vk::VkFormat fmt);
+std::string							getResourceName								(const ResourceDescription& resource);
+bool								isIndirectBuffer							(const ResourceType type);
+vk::VkCommandBufferSubmitInfoKHR	makeCommonCommandBufferSubmitInfo			(const vk::VkCommandBuffer cmdBuf);
+vk::VkSemaphoreSubmitInfoKHR		makeCommonSemaphoreSubmitInfo				(vk::VkSemaphore semaphore, deUint64 value, vk::VkPipelineStageFlags2KHR stageMask);
+vk::VkDependencyInfoKHR				makeCommonDependencyInfo					(const vk::VkMemoryBarrier2KHR* pMemoryBarrier = DE_NULL, const vk::VkBufferMemoryBarrier2KHR* pBufferMemoryBarrier = DE_NULL, const vk::VkImageMemoryBarrier2KHR* pImageMemoryBarrier = DE_NULL);
 
 } // synchronization
 } // vkt

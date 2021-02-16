@@ -23,16 +23,16 @@
  * \brief Synchronization semaphore basic tests
  *//*--------------------------------------------------------------------*/
 
-#include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
+#include "vktSynchronizationUtil.hpp"
 
 namespace vkt
 {
 namespace synchronization
 {
 
-tcu::TestCaseGroup*		createBasicBinarySemaphoreTests		(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*		createBasicTimelineSemaphoreTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*		createBasicBinarySemaphoreTests		(tcu::TestContext& testCtx, SynchronizationType type);
+tcu::TestCaseGroup*		createBasicTimelineSemaphoreTests	(tcu::TestContext& testCtx, SynchronizationType type);
 
 } //synchronization
 } // vkt
