@@ -133,6 +133,7 @@ dEQP-VK.draw.depth_clamp.d32_sfloat_depth_bias_clamp_input_negative
 dEQP-VK.draw.depth_clamp.d32_sfloat_depth_bias_clamp_input_positive
 dEQP-VK.draw.depth_clamp.d32_sfloat_depth_range_unrestricted_negative
 dEQP-VK.draw.depth_clamp.d32_sfloat_depth_range_unrestricted_positive
+dEQP-VK.draw.depth_clamp.d32_sfloat_clamp_four_viewports
 dEQP-VK.draw.depth_clamp.d16_unorm_s8_uint
 dEQP-VK.draw.depth_clamp.d16_unorm_s8_uint_clamp_input_negative
 dEQP-VK.draw.depth_clamp.d16_unorm_s8_uint_clamp_input_positive
@@ -150,6 +151,7 @@ dEQP-VK.draw.depth_clamp.d32_sfloat_s8_uint_depth_bias_clamp_input_negative
 dEQP-VK.draw.depth_clamp.d32_sfloat_s8_uint_depth_bias_clamp_input_positive
 dEQP-VK.draw.depth_clamp.d32_sfloat_s8_uint_depth_range_unrestricted_negative
 dEQP-VK.draw.depth_clamp.d32_sfloat_s8_uint_depth_range_unrestricted_positive
+dEQP-VK.draw.depth_clamp.d32_sfloat_s8_uint_clamp_four_viewports
 dEQP-VK.draw.ahb.triangle_list
 dEQP-VK.draw.ahb.triangle_list_layers_3
 dEQP-VK.draw.ahb.triangle_list_layers_5
