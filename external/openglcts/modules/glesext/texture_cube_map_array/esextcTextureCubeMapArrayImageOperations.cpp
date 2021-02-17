@@ -181,6 +181,14 @@ bool checkResults(Context& context, glw::GLuint copy_po_id, glw::GLuint id, glw:
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Error querying old program!");
 		gl.useProgram(copy_po_id);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Error setting active program object!");
+
+		gl.memoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Error setting memory barrier!");
+	}
+	else
+	{
+		gl.memoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Error setting memory barrier!");
 	}
 
 	bool result = true;
@@ -195,6 +203,9 @@ bool checkResults(Context& context, glw::GLuint copy_po_id, glw::GLuint id, glw:
 			GLU_EXPECT_NO_ERROR(gl.getError(), "Error binding floating point texture for copy source");
 			gl.dispatchCompute(width, height, 1);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "Error dispatching float-to-integer compute shader");
+
+			gl.memoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Error setting memory barrier!");
 
 			/* Read data as unsigned ints */
 			gl.readPixels(0, 0, width, height, GL_RGBA_INTEGER, GL_UNSIGNED_INT, &resultData[0]);
@@ -704,8 +715,6 @@ void TextureCubeMapArrayImageOpCompute::runShaders(glw::GLuint width, glw::GLuin
 	{
 		gl.dispatchCompute(width, height, depth);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Error running compute shader!");
-		gl.memoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Error setting memory barrier!");
 
 		break;
 	}
@@ -727,8 +736,6 @@ void TextureCubeMapArrayImageOpCompute::runShaders(glw::GLuint width, glw::GLuin
 
 		gl.drawArrays(GL_POINTS, 0, 1);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Rendering failed!");
-		gl.memoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Error setting memory barrier!");
 
 		break;
 	}
@@ -751,8 +758,6 @@ void TextureCubeMapArrayImageOpCompute::runShaders(glw::GLuint width, glw::GLuin
 
 		gl.drawArrays(m_glExtTokens.PATCHES, 0, 1);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Rendering failed!");
-		gl.memoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Error setting memory barrier!");
 
 		gl.patchParameteri(m_glExtTokens.PATCH_VERTICES, 3);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Error setting patch parameter!");
