@@ -375,16 +375,6 @@ TestInstance* MismatchedVectorSizesTest::createInstance	(Context& context) const
 	return new MismatchedVectorSizesTestInstance(context, m_params);
 }
 
-void MismatchedVectorSizesTest::checkSupport (Context& context) const
-{
-	VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), m_params->vkFormat);
-
-	if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
-	{
-		TCU_THROW(NotSupportedError, "Creating storage image with this format is not supported");
-	}
-}
-
 enum class OpCapability
 {
 	Shader,
@@ -498,6 +488,29 @@ TextureFormat makeBufferFormat (tcu::TextureChannelClass channelClass, bool doub
 	return TextureFormat(TextureFormat::ChannelOrder::RGBA, channelType);
 }
 
+void MismatchedVectorSizesTest::checkSupport (Context& context) const
+{
+	const FormatInfo* info = findFormatInfo(m_params->vkFormat);
+
+	// capabilities that may be used in the shader
+	if (info->capability == OpCapability::Int64ImageEXT)
+	{
+		context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
+	}
+
+	// extensions used statically in the shader
+	context.requireDeviceFunctionality("VK_KHR_variable_pointers");
+	context.requireDeviceFunctionality("VK_KHR_storage_buffer_storage_class");
+
+	VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), m_params->vkFormat);
+
+	if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
+	{
+		TCU_THROW(NotSupportedError, "Creating storage image with this format is not supported");
+	}
+}
+
+
 void MismatchedVectorSizesTest::initPrograms (SourceCollections& programCollection) const
 {
 	tcu::StringTemplate shaderTemplate(R"(
@@ -505,9 +518,9 @@ void MismatchedVectorSizesTest::initPrograms (SourceCollections& programCollecti
 							  ${ENABLING_CAPABILITIES}
 							  OpCapability	   Int64
 							  OpCapability	   Float64
-							  OpExtension	   "SPV_EXT_shader_image_int64"
 							  OpExtension      "SPV_KHR_variable_pointers"
 							  OpExtension      "SPV_KHR_storage_buffer_storage_class"
+							  ${EXTENSIONS}
 
 					%std450 = OpExtInstImport  "GLSL.std.450"
 							  OpMemoryModel    Logical GLSL450
@@ -654,6 +667,13 @@ void MismatchedVectorSizesTest::initPrograms (SourceCollections& programCollecti
 
 	specs["SPIRV_IMAGE_FORMAT"]						= info->spirvName;
 	specs["ENABLING_CAPABILITIES"]					= std::string("OpCapability ") + OpCapabilityToStr(info->capability);
+
+	if (info->capability == OpCapability::Int64ImageEXT)
+		specs["EXTENSIONS"]								= "OpExtension	   \"SPV_EXT_shader_image_int64\"";
+	else
+		specs["EXTENSIONS"]								= "";
+
+
 	specs["SAMPLED_TYPE"]							= getChannelStr(buffFormat);
 	specs["IMAGE_WIDTH"]							= std::to_string(m_params->textureWidth);
 	specs["IMAGE_HEIGHT"]							= std::to_string(m_params->textureHeight);
