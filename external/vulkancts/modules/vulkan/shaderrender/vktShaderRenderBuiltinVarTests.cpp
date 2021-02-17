@@ -1372,6 +1372,18 @@ bool BuiltinFragCoordMsaaCaseInstance::validateSampleLocations (const ConstPixel
 				const UVec2 pixelAddress	= UVec2(sampleNdx + m_sampleCount * colNdx, rowNdx);
 				const Vec4  pixelData		= sampleLocationBuffer.getPixel(pixelAddress.x(), pixelAddress.y());
 
+				if (pixelData.z() != 0.0f)
+				{
+					log << TestLog::Message << "Pixel (" << colNdx << "," << rowNdx << "): has unexpected .z component, expected: 0.0, got: " << pixelData.z() << TestLog::EndMessage;
+					return false;
+				}
+
+				if (pixelData.w() != 1.0f)
+				{
+					log << TestLog::Message << "Pixel (" << colNdx << "," << rowNdx << "): has unexpected .w component, expected: 1.0, got: " << pixelData.w() << TestLog::EndMessage;
+					return false;
+				}
+
 				locations.push_back(Vec2(pixelData.x(), pixelData.y()));
 			}
 
@@ -1463,7 +1475,7 @@ void BuiltinFragCoordMsaaTestCase::initPrograms (SourceCollections& programColle
 			<< "{\n"
 			<< "	const int sampleNdx = int(gl_SampleID);\n"
 			<< "	ivec2 imageCoord = ivec2(sampleNdx + int(gl_FragCoord.x) * " << m_sampleCount << ", int(gl_FragCoord.y));\n"
-			<< "	imageStore(storageImage, imageCoord, vec4(gl_FragCoord.xy,vec2(0)));\n"
+			<< "	imageStore(storageImage, imageCoord, gl_FragCoord);\n"
 			<< "	color = vec4(1.0, 0.0, 0.0, 1.0);\n"
 			<< "}\n";
 		programCollection.glslSources.add("FragCoordMsaaFrag") << glu::FragmentSource(fragmentSource.str());
