@@ -6,25 +6,25 @@ VK_KHR_spirv_1_4
 ;
 ; layout(local_size_x = 2) in;
 ; layout(local_size_y = 2) in;
-; layout(local_size_z = 2) in;
+; layout(local_size_z = 1) in;
 ;
 ; layout(std430, binding = 1) buffer output_buffer
 ; {
-;	uint x[8];
+;      uint x[4];
 ; };
 ;
-; shared uint wg_data[8];
+; shared uint wg_data[4];
 ;
 ; void main() {
 ;     atomicExchange(wg_data[gl_LocalInvocationIndex], gl_LocalInvocationIndex);
-;     uint val = atomicExchange(wg_data[(gl_LocalInvocationIndex+1)%8], 0);
+;     uint val = atomicExchange(wg_data[(gl_LocalInvocationIndex+1)%4], 0);
 ;     x[gl_LocalInvocationIndex] = val;
 ; }
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %main "main" %wg_data %gl_LocalInvocationIndex %_
-               OpExecutionMode %main LocalSize 2 2 2
+               OpExecutionMode %main LocalSize 2 2 1
                OpSource GLSL 430
                OpName %main "main"
                OpName %wg_data "wg_data"
@@ -34,7 +34,7 @@ VK_KHR_spirv_1_4
                OpMemberName %output_buffer 0 "x"
                OpName %_ ""
                OpDecorate %gl_LocalInvocationIndex BuiltIn LocalInvocationIndex
-               OpDecorate %_arr_uint_uint_8_0 ArrayStride 4
+               OpDecorate %_arr_uint_uint_4_0 ArrayStride 4
                OpMemberDecorate %output_buffer 0 Offset 0
                OpDecorate %output_buffer Block
                OpDecorate %_ DescriptorSet 0
@@ -43,18 +43,18 @@ VK_KHR_spirv_1_4
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
        %uint = OpTypeInt 32 0
-     %uint_8 = OpConstant %uint 8
-%_arr_uint_uint_8 = OpTypeArray %uint %uint_8
-%_ptr_Workgroup__arr_uint_uint_8 = OpTypePointer Workgroup %_arr_uint_uint_8
-    %wg_data = OpVariable %_ptr_Workgroup__arr_uint_uint_8 Workgroup
+     %uint_4 = OpConstant %uint 4
+%_arr_uint_uint_4 = OpTypeArray %uint %uint_4
+%_ptr_Workgroup__arr_uint_uint_4 = OpTypePointer Workgroup %_arr_uint_uint_4
+    %wg_data = OpVariable %_ptr_Workgroup__arr_uint_uint_4 Workgroup
 %_ptr_Input_uint = OpTypePointer Input %uint
 %gl_LocalInvocationIndex = OpVariable %_ptr_Input_uint Input
 %_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
      %uint_1 = OpConstant %uint 1
      %uint_0 = OpConstant %uint 0
 %_ptr_Function_uint = OpTypePointer Function %uint
-%_arr_uint_uint_8_0 = OpTypeArray %uint %uint_8
-%output_buffer = OpTypeStruct %_arr_uint_uint_8_0
+%_arr_uint_uint_4_0 = OpTypeArray %uint %uint_4
+%output_buffer = OpTypeStruct %_arr_uint_uint_4_0
 %_ptr_StorageBuffer_output_buffer = OpTypePointer StorageBuffer %output_buffer
           %_ = OpVariable %_ptr_StorageBuffer_output_buffer StorageBuffer
         %int = OpTypeInt 32 1
@@ -62,7 +62,7 @@ VK_KHR_spirv_1_4
 %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
      %v3uint = OpTypeVector %uint 3
      %uint_2 = OpConstant %uint 2
-%gl_WorkGroupSize = OpConstantComposite %v3uint %uint_2 %uint_2 %uint_2
+%gl_WorkGroupSize = OpConstantComposite %v3uint %uint_2 %uint_2 %uint_1
        %main = OpFunction %void None %3
           %5 = OpLabel
         %val = OpVariable %_ptr_Function_uint Function
@@ -72,7 +72,7 @@ VK_KHR_spirv_1_4
          %19 = OpAtomicExchange %uint %15 %uint_1 %uint_0 %16
          %22 = OpLoad %uint %gl_LocalInvocationIndex
          %23 = OpIAdd %uint %22 %uint_1
-         %24 = OpUMod %uint %23 %uint_8
+         %24 = OpUMod %uint %23 %uint_4
          %25 = OpAccessChain %_ptr_Workgroup_uint %wg_data %24
          %26 = OpAtomicExchange %uint %25 %uint_1 %uint_0 %uint_0
                OpStore %val %26
@@ -84,9 +84,8 @@ VK_KHR_spirv_1_4
                OpFunctionEnd
 
 [test]
-ssbo 0:1 subdata int 0 -1 -1 -1 -1 -1 -1 -1 -1
-
+ssbo 0:1 subdata int 0 -1 -1 -1 -1
 compute entrypoint main
 compute 1 1 1
 
-probe ssbo int 0:1 0 == 1 2 3 4 5 6 7 0
+probe ssbo int 0:1 0 == 1 2 3 0
