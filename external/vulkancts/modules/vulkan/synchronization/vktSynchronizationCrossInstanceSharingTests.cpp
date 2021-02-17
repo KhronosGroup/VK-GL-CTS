@@ -325,10 +325,15 @@ vk::Move<vk::VkDevice> createTestDevice (const Context&					context,
 										 const vk::InstanceInterface&	vki,
 										 const vk::VkPhysicalDevice		physicalDevice)
 {
-	const bool										validationEnabled		= context.getTestContext().getCommandLine().isValidationEnabled();
-	const float										priority				= 0.0f;
-	const std::vector<vk::VkQueueFamilyProperties>	queueFamilyProperties	= vk::getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
-	std::vector<deUint32>							queueFamilyIndices		(queueFamilyProperties.size(), 0xFFFFFFFFu);
+	const bool										validationEnabled			= context.getTestContext().getCommandLine().isValidationEnabled();
+	const float										priority					= 0.0f;
+	const std::vector<vk::VkQueueFamilyProperties>	queueFamilyProperties		= vk::getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
+	std::vector<deUint32>							queueFamilyIndices			(queueFamilyProperties.size(), 0xFFFFFFFFu);
+
+	VkPhysicalDeviceFeatures2						createPhysicalFeature		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, DE_NULL, context.getDeviceFeatures() };
+	VkPhysicalDeviceTimelineSemaphoreFeatures		timelineSemaphoreFeatures	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES, DE_NULL, DE_TRUE };
+	VkPhysicalDeviceSynchronization2FeaturesKHR		synchronization2Features	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR, DE_NULL, DE_TRUE };
+	void**											nextPtr						= &createPhysicalFeature.pNext;
 	std::vector<const char*>						extensions;
 
 	if (context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
@@ -356,9 +361,15 @@ vk::Move<vk::VkDevice> createTestDevice (const Context&					context,
 		extensions.push_back("VK_KHR_external_memory_win32");
 
 	if (context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
+	{
 		extensions.push_back("VK_KHR_timeline_semaphore");
+		addToChainVulkanStructure(&nextPtr, timelineSemaphoreFeatures);
+	}
 	if (context.isDeviceFunctionalitySupported("VK_KHR_synchronization2"))
+	{
 		extensions.push_back("VK_KHR_synchronization2");
+		addToChainVulkanStructure(&nextPtr, synchronization2Features);
+	}
 
 	try
 	{
@@ -380,12 +391,6 @@ vk::Move<vk::VkDevice> createTestDevice (const Context&					context,
 			queues.push_back(createInfo);
 		}
 
-		const vk::VkPhysicalDeviceFeatures2	createPhysicalFeature	=
-		{
-			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-			DE_NULL,
-			context.getDeviceFeatures(),
-		};
 		const vk::VkDeviceCreateInfo		createInfo				=
 		{
 			vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
