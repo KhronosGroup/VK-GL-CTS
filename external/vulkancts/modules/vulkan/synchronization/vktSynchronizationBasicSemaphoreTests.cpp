@@ -30,9 +30,9 @@
 #include "vkPlatform.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
-
-
 #include "vkRef.hpp"
+
+#include <thread>
 
 #include "tcuCommandLine.hpp"
 
@@ -177,9 +177,6 @@ tcu::TestStatus basicChainCase(Context & context, TestConfig config)
 
 tcu::TestStatus basicChainTimelineCase (Context& context, TestConfig config)
 {
-	if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
-		TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
-
 	VkResult					err			= VK_SUCCESS;
 	const DeviceInterface&		vk			= context.getDeviceInterface();
 	const VkDevice&				device		= context.getDevice();
@@ -243,6 +240,83 @@ tcu::TestStatus basicChainTimelineCase (Context& context, TestConfig config)
 		return tcu::TestStatus::pass("Basic semaphore chain test passed");
 
 	return tcu::TestStatus::fail("Basic semaphore chain test failed");
+}
+
+tcu::TestStatus basicThreadTimelineCase(Context& context, TestConfig)
+{
+	const DeviceInterface&				vk				= context.getDeviceInterface();
+	const VkDevice&						device			= context.getDevice();
+	const VkSemaphoreTypeCreateInfo		scti			= { VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR, DE_NULL, VK_SEMAPHORE_TYPE_TIMELINE_KHR, 0 };
+	const VkSemaphoreCreateInfo			sci				= { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &scti, 0 };
+	const VkFenceCreateInfo				fci				= { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, DE_NULL, 0 };
+	const vk::Unique<vk::VkSemaphore>	semaphore		(createSemaphore(vk, device, &sci));
+	const Unique<VkFence>				fence			(createFence(vk, device, &fci));
+	const deUint64						waitTimeout		= 50ull * 1000000ull;		// miliseconds
+	VkResult							threadResult	= VK_SUCCESS;
+
+	// helper creating VkSemaphoreSignalInfo
+	auto makeSemaphoreSignalInfo = [&semaphore](deUint64 value) -> VkSemaphoreSignalInfo
+	{
+		return
+		{
+			VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO,		// VkStructureType				sType
+			DE_NULL,										// const void*					pNext
+			*semaphore,										// VkSemaphore					semaphore
+			value											// deUint64						value
+		};
+	};
+
+	// helper creating VkSemaphoreWaitInfo
+	auto makeSemaphoreWaitInfo = [&semaphore](deUint64* valuePtr) -> VkSemaphoreWaitInfo
+	{
+		return
+		{
+			VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,			// VkStructureType				sType
+			DE_NULL,										// const void*					pNext
+			VK_SEMAPHORE_WAIT_ANY_BIT,						// VkSemaphoreWaitFlags			flags;
+			1u,												// deUint32						semaphoreCount;
+			&*semaphore,									// const VkSemaphore*			pSemaphores;
+			valuePtr										// const deUint64*				pValues;
+		};
+	};
+
+	// start thread - semaphore has value 0
+	de::MovePtr<std::thread> thread(new std::thread([=, &vk, &threadResult]
+	{
+		// wait till semaphore has value 1
+		deUint64 waitValue = 1;
+		VkSemaphoreWaitInfo waitOne = makeSemaphoreWaitInfo(&waitValue);
+		threadResult = vk.waitSemaphores(device, &waitOne, waitTimeout);
+
+		if (threadResult == VK_SUCCESS)
+		{
+			// signal semaphore with value 2
+			VkSemaphoreSignalInfo signalTwo = makeSemaphoreSignalInfo(2);
+			threadResult = vk.signalSemaphore(device, &signalTwo);
+		}
+	}));
+
+	// wait some time to give thread chance to start
+	deSleep(1);		// milisecond
+
+	// signal semaphore with value 1
+	VkSemaphoreSignalInfo signalOne = makeSemaphoreSignalInfo(1);
+	vk.signalSemaphore(device, &signalOne);
+
+	// wait till semaphore has value 2
+	deUint64				waitValue	= 2;
+	VkSemaphoreWaitInfo		waitTwo		= makeSemaphoreWaitInfo(&waitValue);
+	VkResult				mainResult	= vk.waitSemaphores(device, &waitTwo, waitTimeout);
+
+	thread->join();
+
+	if (mainResult == VK_SUCCESS)
+		return tcu::TestStatus::pass("Pass");
+
+	if ((mainResult == VK_TIMEOUT) || (threadResult == VK_TIMEOUT))
+		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Reached wait timeout");
+
+	return tcu::TestStatus::fail("Fail");
 }
 
 tcu::TestStatus basicMultiQueueCase(Context& context, TestConfig config)
@@ -521,6 +595,10 @@ tcu::TestCaseGroup* createBasicTimelineSemaphoreTests (tcu::TestContext& testCtx
 	addFunctionCase(basicTests.get(), "one_queue",		"Basic timeline semaphore tests with one queue",	checkSupport, basicOneQueueCase, config);
 	addFunctionCase(basicTests.get(), "multi_queue",	"Basic timeline semaphore tests with multi queue",	checkSupport, basicMultiQueueCase, config);
 	addFunctionCase(basicTests.get(), "chain",			"Timeline semaphore chain test",					checkSupport, basicChainTimelineCase, config);
+
+	// dont repeat this test for synchronization2
+	if (type == SynchronizationType::LEGACY)
+		addFunctionCase(basicTests.get(), "two_threads","Timeline semaphore used by two threads",			checkSupport, basicThreadTimelineCase, config);
 
 	return basicTests.release();
 }
