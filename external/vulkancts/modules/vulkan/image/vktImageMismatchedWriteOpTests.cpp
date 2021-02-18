@@ -495,6 +495,11 @@ void MismatchedVectorSizesTest::checkSupport (Context& context) const
 	// capabilities that may be used in the shader
 	if (info->capability == OpCapability::Int64ImageEXT)
 	{
+		const VkPhysicalDeviceFeatures deviceFeatures = getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
+		if(!deviceFeatures.shaderInt64)
+		{
+			TCU_THROW(NotSupportedError, "Device feature shaderInt64 is not supported");
+		}
 		context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
 	}
 
@@ -516,8 +521,7 @@ void MismatchedVectorSizesTest::initPrograms (SourceCollections& programCollecti
 	tcu::StringTemplate shaderTemplate(R"(
 
 							  ${ENABLING_CAPABILITIES}
-							  OpCapability	   Int64
-							  OpCapability	   Float64
+							  ${CAPABILITY_INT64}
 							  OpExtension      "SPV_KHR_variable_pointers"
 							  OpExtension      "SPV_KHR_storage_buffer_storage_class"
 							  ${EXTENSIONS}
@@ -542,25 +546,11 @@ void MismatchedVectorSizesTest::initPrograms (SourceCollections& programCollecti
 					  %void = OpTypeVoid
 				   %fn_void = OpTypeFunction %void
 
-					%double = OpTypeFloat 64
-					 %slong = OpTypeInt 64 1
-					 %ulong = OpTypeInt 64 0
+					${TYPES_INT64}
 
 					 %float = OpTypeFloat 32
 					  %sint = OpTypeInt 32 1
 					  %uint = OpTypeInt 32 0
-
-				  %v4double = OpTypeVector %double 4
-				  %v3double = OpTypeVector %double 3
-				  %v2double = OpTypeVector %double 2
-
-				   %v4slong = OpTypeVector %slong 4
-				   %v3slong = OpTypeVector %slong 3
-				   %v2slong = OpTypeVector %slong 2
-
-				   %v4ulong = OpTypeVector %ulong 4
-				   %v3ulong = OpTypeVector %ulong 3
-				   %v2ulong = OpTypeVector %ulong 2
 
 				   %v4float = OpTypeVector %float 4
 				   %v3float = OpTypeVector %float 3
@@ -641,6 +631,19 @@ void MismatchedVectorSizesTest::initPrograms (SourceCollections& programCollecti
 							  OpFunctionEnd
 	)");
 
+	const std::string typesInt64(R"(
+					 %slong = OpTypeInt 64 1
+					 %ulong = OpTypeInt 64 0
+
+				   %v4slong = OpTypeVector %slong 4
+				   %v3slong = OpTypeVector %slong 3
+				   %v2slong = OpTypeVector %slong 2
+
+				   %v4ulong = OpTypeVector %ulong 4
+				   %v3ulong = OpTypeVector %ulong 3
+				   %v2ulong = OpTypeVector %ulong 2
+	)");
+
 	const tcu::StringTemplate writeFromSingleComponent(R"(
 					 OpImageWrite %img %id_xy %red
 	)");
@@ -667,11 +670,16 @@ void MismatchedVectorSizesTest::initPrograms (SourceCollections& programCollecti
 
 	specs["SPIRV_IMAGE_FORMAT"]						= info->spirvName;
 	specs["ENABLING_CAPABILITIES"]					= std::string("OpCapability ") + OpCapabilityToStr(info->capability);
+	specs["CAPABILITY_INT64"]						= "";
+	specs["EXTENSIONS"]								= "";
+	specs["TYPES_INT64"]							= "";
 
 	if (info->capability == OpCapability::Int64ImageEXT)
-		specs["EXTENSIONS"]								= "OpExtension	   \"SPV_EXT_shader_image_int64\"";
-	else
-		specs["EXTENSIONS"]								= "";
+	{
+		specs["EXTENSIONS"]							= "OpExtension	   \"SPV_EXT_shader_image_int64\"";
+		specs["CAPABILITY_INT64"]					= std::string("OpCapability Int64");
+		specs["TYPES_INT64"]						= typesInt64;
+	}
 
 
 	specs["SAMPLED_TYPE"]							= getChannelStr(buffFormat);
