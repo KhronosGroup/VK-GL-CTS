@@ -25,6 +25,7 @@
 
 #include "vktSSBOLayoutTests.hpp"
 #include "vktSSBOLayoutCase.hpp"
+#include "vktSSBOCornerCase.hpp"
 
 #include "deUniquePtr.hpp"
 #include "tcuCommandLine.hpp"
@@ -1821,6 +1822,8 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> physGroup(new tcu::TestCaseGroup(testCtx, "phys", "Physical Storage Buffer Pointer Tests"));
 	physGroup->addChild(new SSBOLayoutTests(testCtx, true, false));
 	ssboTestGroup->addChild(physGroup.release());
+
+	ssboTestGroup->addChild(createSSBOCornerCaseTests(testCtx));
 
 	return ssboTestGroup.release();
 }

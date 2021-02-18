@@ -12156,3 +12156,4 @@ dEQP-VK.ssbo.phys.layout.random.8bit.descriptor_indexing.46
 dEQP-VK.ssbo.phys.layout.random.8bit.descriptor_indexing.47
 dEQP-VK.ssbo.phys.layout.random.8bit.descriptor_indexing.48
 dEQP-VK.ssbo.phys.layout.random.8bit.descriptor_indexing.49
+dEQP-VK.ssbo.corner_case.long_shader_bitwise_and
