@@ -101,8 +101,6 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 				${TCUTIL_PLATFORM_SRCS}
 				android/tcuAndroidAssets.cpp
 				android/tcuAndroidAssets.hpp
-				android/tcuAndroidInternals.cpp
-				android/tcuAndroidInternals.hpp
 				android/tcuAndroidNativeActivity.cpp
 				android/tcuAndroidNativeActivity.hpp
 				android/tcuAndroidPlatform.cpp

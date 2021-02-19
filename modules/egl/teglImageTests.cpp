@@ -352,7 +352,13 @@ public:
 			case GL_LUMINANCE_ALPHA:	return "luminance_alpha";
 			case GL_RGB:				return "rgb";
 			case GL_RGBA:				return "rgba";
+			case GL_RGBA16F:			return "rgba16f";
 			case GL_DEPTH_COMPONENT16:	return "depth_component_16";
+			case GL_DEPTH_COMPONENT24:	return "depth_component_24";
+			case GL_DEPTH_COMPONENT32F:	return "depth_component_32f";
+			case GL_DEPTH24_STENCIL8:	return "depth24_stencil8";
+			case GL_DEPTH32F_STENCIL8:	return "depth32f_stencil8";
+			case GL_RGB10_A2:			return "rgb10_a2";
 			case GL_RGBA4:				return "rgba4";
 			case GL_RGB5_A1:			return "rgb5_a1";
 			case GL_RGB565:				return "rgb565";
@@ -422,7 +428,7 @@ public:
 
 		log << TestLog::Message << "Using EGL config " << eglu::getConfigID(egl, dpy, context.getConfig()) << TestLog::EndMessage;
 
-		UniquePtr<ClientBuffer>	clientBuffer	(m_source->createBuffer(context.gl()));
+		UniquePtr<ClientBuffer>	clientBuffer	(m_source->createBuffer(egl, context.gl()));
 		const EGLImageKHR		image			= m_source->createImage(egl, dpy, eglContext, clientBuffer->get());
 
 		if (image == EGL_NO_IMAGE_KHR)
@@ -590,9 +596,17 @@ public:
 		{
 			GL_RGB565,
 			GL_RGB8,
+			GL_RGBA8,
 			GL_RGBA4,
 			GL_RGB5_A1,
-			GL_RGBA8,
+			GL_DEPTH_COMPONENT16,
+			GL_DEPTH_COMPONENT24,
+			GL_DEPTH24_STENCIL8,
+			GL_DEPTH_COMPONENT32F,
+			GL_DEPTH32F_STENCIL8,
+			GL_RGB10_A2,
+			GL_RGBA16F,
+			GL_STENCIL_INDEX8
 		};
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(androidFormats); ++formatNdx)

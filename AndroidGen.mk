@@ -696,7 +696,6 @@ LOCAL_SRC_FILES := \
 	framework/opengl/wrapper/glwWrapper.cpp \
 	framework/platform/android/tcuAndroidAssets.cpp \
 	framework/platform/android/tcuAndroidExecService.cpp \
-	framework/platform/android/tcuAndroidInternals.cpp \
 	framework/platform/android/tcuAndroidJNI.cpp \
 	framework/platform/android/tcuAndroidMain.cpp \
 	framework/platform/android/tcuAndroidNativeActivity.cpp \

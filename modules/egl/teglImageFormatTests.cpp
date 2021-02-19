@@ -315,7 +315,7 @@ bool GLES2ImageApi::GLES2Action::invoke (ImageApi& api, MovePtr<UniqueImage>& im
 
 bool GLES2ImageApi::Create::invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const
 {
-	de::UniquePtr<ClientBuffer>	buffer	(m_imgSource->createBuffer(api.m_gl, &ref));
+	de::UniquePtr<ClientBuffer>	buffer	(m_imgSource->createBuffer(api.m_egl, api.m_gl, &ref));
 
 	GLU_CHECK_GLW_CALL(api.m_gl, finish());
 
@@ -706,22 +706,31 @@ bool GLES2ImageApi::RenderReadPixelsRenderbuffer::invokeGLES2 (GLES2ImageApi& ap
 	tcu::Surface			screen			(reference.getWidth(), reference.getHeight());
 	tcu::Surface			refSurface		(reference.getWidth(), reference.getHeight());
 
-	// Branch only taken in TryAll case
-	if (reference.getFormat().order == tcu::TextureFormat::DS || reference.getFormat().order == tcu::TextureFormat::D)
-		throw IllegalRendererException(); // Skip, GLES2 does not support ReadPixels for depth attachments
-	if (reference.getFormat().order == tcu::TextureFormat::S)
-		throw IllegalRendererException(); // Skip, GLES2 does not support ReadPixels for stencil attachments
+	switch (glu::getInternalFormat(reference.getFormat()))
+	{
+		case GL_RGBA4:
+		case GL_RGB5_A1:
+		case GL_RGB565:
+			break;
+		default:
+			// Skip, not in the list of allowed render buffer formats for GLES2.
+			throw tcu::NotSupportedError("Image format not allowed for glReadPixels.");
+			break;
+	}
 
 	log << tcu::TestLog::Message << "Reading with ReadPixels from renderbuffer" << tcu::TestLog::EndMessage;
 
 	GLU_CHECK_GLW_CALL(gl, bindFramebuffer(GL_FRAMEBUFFER, *framebuffer));
 	GLU_CHECK_GLW_CALL(gl, bindRenderbuffer(GL_RENDERBUFFER, *renderbuffer));
 	imageTargetRenderbuffer(api.m_egl, gl, **img);
+
+	GLU_EXPECT_NO_ERROR(gl.getError(), "imageTargetRenderbuffer");
 	framebufferRenderbuffer(gl, GL_COLOR_ATTACHMENT0, *renderbuffer);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "framebufferRenderbuffer");
 
 	GLU_CHECK_GLW_CALL(gl, viewport(0, 0, reference.getWidth(), reference.getHeight()));
 
-	gl.readPixels(0, 0, screen.getWidth(), screen.getHeight(), GL_RGBA, GL_UNSIGNED_BYTE, screen.getAccess().getDataPtr());
+	GLU_CHECK_GLW_CALL(gl, readPixels(0, 0, screen.getWidth(), screen.getHeight(), GL_RGBA, GL_UNSIGNED_BYTE, screen.getAccess().getDataPtr()));
 
 	GLU_CHECK_GLW_CALL(gl, bindFramebuffer(GL_FRAMEBUFFER, 0));
 	GLU_CHECK_GLW_CALL(gl, bindRenderbuffer(GL_RENDERBUFFER, 0));
@@ -1060,7 +1069,7 @@ struct LabeledActions
 	void			add				(const string& label, MovePtr<Action> action);
 	int				size			(void) const			{ return m_numActions; }
 private:
-	LabeledAction	m_actions[32];
+	LabeledAction	m_actions[64];
 	int				m_numActions;
 };
 
@@ -1134,11 +1143,19 @@ void ImageTests::addCreateRenderbufferActions (void)
 
 void ImageTests::addCreateAndroidNativeActions (void)
 {
-	addCreateAndroidNative("android_native_rgb565",		GL_RGB565);
-	addCreateAndroidNative("android_native_rgb8",		GL_RGB8);
 	addCreateAndroidNative("android_native_rgba4",		GL_RGBA4);
 	addCreateAndroidNative("android_native_rgb5_a1",	GL_RGB5_A1);
+	addCreateAndroidNative("android_native_rgb565",		GL_RGB565);
+	addCreateAndroidNative("android_native_rgb8",		GL_RGB8);
 	addCreateAndroidNative("android_native_rgba8",		GL_RGBA8);
+	addCreateAndroidNative("android_native_d16",		GL_DEPTH_COMPONENT16);
+	addCreateAndroidNative("android_native_d24",		GL_DEPTH_COMPONENT24);
+	addCreateAndroidNative("android_native_d24s8",		GL_DEPTH24_STENCIL8);
+	addCreateAndroidNative("android_native_d32f",		GL_DEPTH_COMPONENT32F);
+	addCreateAndroidNative("android_native_d32fs8",		GL_DEPTH32F_STENCIL8);
+	addCreateAndroidNative("android_native_rgb10a2",	GL_RGB10_A2);
+	addCreateAndroidNative("android_native_rgba16f",	GL_RGBA16F);
+	addCreateAndroidNative("android_native_s8",			GL_STENCIL_INDEX8);
 }
 
 class RenderTests : public ImageTests
@@ -1177,9 +1194,16 @@ bool isDepthFormat (GLenum format)
 		case GL_RGBA4:
 		case GL_RGBA8:
 		case GL_RGB5_A1:
+		case GL_RGB10_A2:
+		case GL_RGBA16F:
 			return false;
 
 		case GL_DEPTH_COMPONENT16:
+		case GL_DEPTH_COMPONENT24:
+		case GL_DEPTH_COMPONENT32:
+		case GL_DEPTH_COMPONENT32F:
+		case GL_DEPTH24_STENCIL8:
+		case GL_DEPTH32F_STENCIL8:
 			return true;
 
 		case GL_STENCIL_INDEX8:
@@ -1202,12 +1226,19 @@ bool isStencilFormat (GLenum format)
 		case GL_RGBA4:
 		case GL_RGBA8:
 		case GL_RGB5_A1:
+		case GL_RGB10_A2:
+		case GL_RGBA16F:
 			return false;
 
 		case GL_DEPTH_COMPONENT16:
+		case GL_DEPTH_COMPONENT24:
+		case GL_DEPTH_COMPONENT32:
+		case GL_DEPTH_COMPONENT32F:
 			return false;
 
 		case GL_STENCIL_INDEX8:
+		case GL_DEPTH24_STENCIL8:
+		case GL_DEPTH32F_STENCIL8:
 			return true;
 
 		default:
@@ -1439,9 +1470,9 @@ MultiContextRenderTests::MultiContextRenderTests (EglTestContext& eglTestCtx, co
 
 void MultiContextRenderTests::addClearActions (void)
 {
-	m_clearActions.add("renderbuffer_clear_color",		MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearColor(tcu::Vec4(0.8f, 0.2f, 0.9f, 1.0f))));
-	m_clearActions.add("renderbuffer_clear_depth",		MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearDepth(0.75f)));
-	m_clearActions.add("renderbuffer_clear_stencil",	MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearStencil(97)));
+	m_clearActions.add("clear_color",	MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearColor(tcu::Vec4(0.8f, 0.2f, 0.9f, 1.0f))));
+	m_clearActions.add("clear_depth",	MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearDepth(0.75f)));
+	m_clearActions.add("clear_stencil",	MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearStencil(97)));
 }
 
 void MultiContextRenderTests::init (void)
@@ -1469,6 +1500,15 @@ void MultiContextRenderTests::init (void)
 			continue;
 
 		spec.name = std::string("gles2_") + createAction.label + "_" + renderAction.label;
+
+		const GLenum createFormat = dynamic_cast<const GLES2ImageApi::Create*>(createAction.action.get())->getEffectiveFormat();
+		if (isDepthFormat(createFormat) && isStencilFormat(createFormat))
+		{
+			// Combined depth and stencil format. Add the clear action label to avoid test
+			// name clashes.
+			spec.name += std::string("_") + clearAction.label;
+		}
+
 		spec.desc = spec.name;
 
 		spec.contexts.push_back(TestSpec::API_GLES2);
