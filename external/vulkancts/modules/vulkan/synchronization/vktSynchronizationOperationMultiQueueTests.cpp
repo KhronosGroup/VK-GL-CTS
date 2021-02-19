@@ -735,23 +735,6 @@ public:
 			VkCommandBuffer					writeCmdBuffer	= cmdBufferInfos[QUEUETYPE_WRITE].commandBuffer;
 			VkCommandBuffer					readCmdBuffer	= cmdBufferInfos[QUEUETYPE_READ].commandBuffer;
 
-			synchronizationWrapper[QUEUETYPE_WRITE]->addSubmitInfo(
-				0u,
-				DE_NULL,
-				1u,
-				&cmdBufferInfos[QUEUETYPE_WRITE],
-				0u,
-				DE_NULL
-			);
-			synchronizationWrapper[QUEUETYPE_READ]->addSubmitInfo(
-				0u,
-				DE_NULL,
-				1u,
-				&cmdBufferInfos[QUEUETYPE_READ],
-				0u,
-				DE_NULL
-			);
-
 			beginCommandBuffer		(vk, writeCmdBuffer);
 			writeOp->recordCommands	(writeCmdBuffer);
 			createBarrierMultiQueue	(synchronizationWrapper[QUEUETYPE_WRITE], writeCmdBuffer, writeSync, readSync, *resource, queuePairs[pairNdx].familyIndexWrite, queuePairs[pairNdx].familyIndexRead, m_sharingMode);
@@ -764,7 +747,7 @@ public:
 			readOp->recordCommands	(readCmdBuffer);
 			endCommandBuffer		(vk, readCmdBuffer);
 
-			submitCommandsAndWait	(vk, device, queuePairs[pairNdx].queueRead, readCmdBuffer);
+			submitCommandsAndWait(synchronizationWrapper[QUEUETYPE_READ], vk, device, queuePairs[pairNdx].queueRead, readCmdBuffer);
 
 			{
 				const Data	expected = writeOp->getData();
