@@ -4601,6 +4601,11 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 		multisampleTests->addChild(createMultisampleStorageImageTests(testCtx));
 	}
 
+	// Sampling from a multisampled image texture (texelFetch), checking supersample positions
+	{
+		multisampleTests->addChild(createMultisampleStandardSamplePositionTests(testCtx));
+	}
+
 	// VK_EXT_sample_locations
 	{
 		multisampleTests->addChild(createMultisampleSampleLocationsExtTests(testCtx));
