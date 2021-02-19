@@ -1623,7 +1623,12 @@ def writeExtensionFunctions (api, filename):
 			if ext.name:
 				for func in ext.functions:
 					if func.getType() == functionType:
-						funcNames.append(func.name)
+						# only add functions with same vendor as extension
+						# this is a workaroudn for entrypoints requiring more
+						# than one excetions and lack of the dependency in vulkan_core.h
+						vendor = ext.name.split('_')[1]
+						if func.name.endswith(vendor):
+							funcNames.append(func.name)
 			if ext.name:
 				yield '\tif (extName == "%s")' % ext.name
 				yield '\t{'

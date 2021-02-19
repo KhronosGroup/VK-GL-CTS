@@ -263,9 +263,6 @@ void verifyNeighboringFrames (const FrameTimes& frame1, const FrameTimes& frame2
 	check_lt(result, frame1.dequeueReady, frame2.dequeueReady, "Dequeue ready times not monotonic.");
 
 	// GPU timeline.
-	// Same rendering complete time is fine.
-	check_le(result, frame1.renderingComplete, frame2.renderingComplete, "Rendering complete times not monotonic.");
-
 	if (timestampValid(frame1.firstCompositionGpuFinished) && timestampValid(frame2.firstCompositionGpuFinished))
 		check_lt(result, frame1.firstCompositionGpuFinished, frame2.firstCompositionGpuFinished, "Composition GPU work complete times not monotonic.");
 
