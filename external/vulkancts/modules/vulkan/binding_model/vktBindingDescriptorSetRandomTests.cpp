@@ -898,16 +898,9 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 								break;
 							default: DE_ASSERT(0);
 							}
-							if (m_data.indexType == INDEX_TYPE_DEPENDENT || m_data.indexType == INDEX_TYPE_RUNTIME_SIZE)
-							{
-								// Set accum to zero, it is added to the next index.
-								checks << "  accum = temp - " << descriptor << ";\n";
-							}
-							else
-							{
-								// Accumulate any incorrect values.
-								checks << "  accum |= temp - " << descriptor << ";\n";
-							}
+
+							// Accumulate any incorrect values.
+							checks << "  accum |= temp - " << descriptor << ";\n";
 						}
 						else
 						{
