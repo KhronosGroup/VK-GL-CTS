@@ -42,6 +42,7 @@
 #include <map>
 #include <algorithm>
 #include <memory>
+#include <cmath>
 
 namespace glcts
 {
@@ -202,7 +203,7 @@ void NearestEdgeTestCase::init()
         "out highp vec4 fragColor;\n"
         "\n"
         "uniform highp sampler2D texSampler;\n"
-        "uniform int texOffset;\n"
+        "uniform float texOffset;\n"
         "uniform float texWidth;\n"
         "uniform float texHeight;\n"
         "\n"
@@ -210,16 +211,8 @@ void NearestEdgeTestCase::init()
         "{\n"
         "    float texCoordX;\n"
         "    float texCoordY;\n"
-        "    if(texOffset > 0)\n"
-        "    {\n"
-        "        texCoordX  = (gl_FragCoord.x + 0.499) / texWidth;\n "
-        "        texCoordY = (gl_FragCoord.y + 0.499) / texHeight;\n"
-        "    }\n"
-        "    else\n"
-        "    {\n"
-        "       texCoordX  = (gl_FragCoord.x - 0.499) / texWidth;\n"
-        "       texCoordY = (gl_FragCoord.y - 0.499) / texHeight;\n"
-        "    }\n"
+        "    texCoordX = (gl_FragCoord.x + texOffset) / texWidth;\n "
+        "    texCoordY = (gl_FragCoord.y + texOffset) / texHeight;\n"
         "    vec2 sampleCoord = vec2(texCoordX, texCoordY);\n"
         "    fragColor = texture(texSampler, sampleCoord);\n"
         "}\n"
@@ -314,8 +307,10 @@ void NearestEdgeTestCase::renderQuad ()
 
 	// Apply offset of almost half a texel to the texture coordinates.
 	DE_ASSERT(m_offsetSign == 1.0f || m_offsetSign == -1.0f);
-	const float offsetWidth		= 0.499f / static_cast<float>(m_width);
-	const float offsetHeight	= 0.499f / static_cast<float>(m_height);
+
+	const float offset			= 0.5f - pow(2.0f, -8.0f);
+	const float offsetWidth		= offset / static_cast<float>(m_width);
+	const float offsetHeight	= offset / static_cast<float>(m_height);
 
 	minU += m_offsetSign * offsetWidth;
 	maxU += m_offsetSign * offsetWidth;
@@ -341,7 +336,7 @@ void NearestEdgeTestCase::renderQuad ()
 	gl.uniform1i(gl.getUniformLocation(program.getProgram(), "texSampler"), 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i failed");
 
-	gl.uniform1i(gl.getUniformLocation(program.getProgram(), "texOffset"), m_offsetSign);
+	gl.uniform1f(gl.getUniformLocation(program.getProgram(), "texOffset"), m_offsetSign * offset);
 	gl.uniform1f(gl.getUniformLocation(program.getProgram(), "texWidth"), float(m_width));
 	gl.uniform1f(gl.getUniformLocation(program.getProgram(), "texHeight"), float(m_height));
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i failed");
