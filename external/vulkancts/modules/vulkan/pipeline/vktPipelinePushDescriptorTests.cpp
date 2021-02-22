@@ -76,10 +76,11 @@ struct TestParams
 	deUint32			numCalls; // Number of draw or dispatch calls
 };
 
-VkDeviceSize calcItemSize (const InstanceInterface& vki, VkPhysicalDevice physicalDevice)
+VkDeviceSize calcItemSize (const InstanceInterface& vki, VkPhysicalDevice physicalDevice, deUint32 numElements = 1u)
 {
-	const auto minAlignment = getPhysicalDeviceProperties(vki, physicalDevice).limits.minStorageBufferOffsetAlignment;
-	return de::lcm(de::max(VkDeviceSize{1}, minAlignment), kSizeofVec4);
+	const auto minAlignment	= getPhysicalDeviceProperties(vki, physicalDevice).limits.minStorageBufferOffsetAlignment;
+	const auto lcm			= de::lcm(de::max(VkDeviceSize{1}, minAlignment), kSizeofVec4);
+	return de::roundUp(kSizeofVec4 * numElements, lcm);
 }
 
 void checkAllSupported (const Extensions& supportedExtensions, const vector<string>& requiredExtensions)
@@ -1897,6 +1898,8 @@ private:
 	const Unique<VkDevice>		m_device;
 	const DeviceDriver			m_vkd;
 	const VkQueue				m_queue;
+	const VkDeviceSize			m_itemSize;
+	const VkDeviceSize			m_blockSize;
 	SimpleAllocator				m_allocator;
 	const tcu::UVec2			m_textureSize;
 	const VkFormat				m_colorFormat;
@@ -1929,6 +1932,8 @@ PushDescriptorImageComputeTestInstance::PushDescriptorImageComputeTestInstance (
 	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex))
 	, m_vkd					(m_vkp, m_instance, *m_device)
 	, m_queue				(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
+	, m_itemSize			(calcItemSize(m_vki, m_physicalDevice, 2u))
+	, m_blockSize			(kSizeofVec4 * 2u)
 	, m_allocator			(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
 	, m_textureSize			(32, 32)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
@@ -2232,12 +2237,14 @@ void PushDescriptorImageComputeTestInstance::init (void)
 
 	// Create output buffer
 	{
+		DE_ASSERT(m_params.numCalls <= 2u);
+
 		const VkBufferCreateInfo bufferCreateInfo =
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,								// const void*			pNext;
 			0u,										// VkBufferCreateFlags	flags
-			64u,									// VkDeviceSize			size;
+			m_itemSize * 2u,						// VkDeviceSize			size;
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,		// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
 			1u,										// deUint32				queueFamilyCount;
@@ -2362,9 +2369,9 @@ void PushDescriptorImageComputeTestInstance::init (void)
 
 			const VkDescriptorBufferInfo descriptorBufferInfoOutput	=
 			{
-				*m_outputBuffer,	// VkBuffer		buffer;
-				32u * dispatchNdx,	// VkDeviceSize	offset;
-				32u					// VkDeviceSize	range;
+				*m_outputBuffer,			// VkBuffer		buffer;
+				m_itemSize * dispatchNdx,	// VkDeviceSize	offset;
+				m_blockSize,				// VkDeviceSize	range;
 			};
 
 			// Write output buffer descriptor set
@@ -2407,7 +2414,9 @@ tcu::TestStatus PushDescriptorImageComputeTestInstance::iterate (void)
 
 tcu::TestStatus PushDescriptorImageComputeTestInstance::verifyOutput (void)
 {
-	float ref[16];
+	const auto			floatsPerDispatch	= 8u; // 8 floats (2 vec4s) per dispatch.
+	std::vector<float>	ref					(floatsPerDispatch * 2u);
+
 	invalidateAlloc(m_vkd, *m_device, *m_outputBufferAlloc);
 
 	switch(m_params.descriptorType)
@@ -2504,17 +2513,36 @@ tcu::TestStatus PushDescriptorImageComputeTestInstance::verifyOutput (void)
 	};
 
 	// Verify result
-	if (deMemCmp((void*)ref, m_outputBufferAlloc->getHostPtr(), (size_t)(32u * m_params.numCalls)))
+	const auto			bufferDataPtr		= reinterpret_cast<const char*>(m_outputBufferAlloc->getHostPtr());
+	const auto			blockSize			= static_cast<size_t>(m_blockSize);
+
+	for (deUint32 dispatchNdx = 0u; dispatchNdx < m_params.numCalls; ++dispatchNdx)
 	{
-		const float* ptr = (float*)m_outputBufferAlloc->getHostPtr();
-		std::string debugMsg = "Output buffer contents:\n";
+		const auto refIdx		= floatsPerDispatch * dispatchNdx;
+		const auto bufferOffset	= m_itemSize * dispatchNdx;	// Each dispatch uses m_itemSize bytes in the buffer to meet alignment reqs.
 
-		for (deUint32 i = 0; i < m_params.numCalls * 8; i++)
-			debugMsg += de::toString(ptr[i]) + " vs " + de::toString(ref[i]) + "\n";
+		if (deMemCmp(&ref[refIdx], bufferDataPtr + bufferOffset, blockSize) != 0)
+		{
+			std::vector<float> buffferValues	(floatsPerDispatch);
+			std::vector<float> refValues		(floatsPerDispatch);
 
-		m_context.getTestContext().getLog() << tcu::TestLog::Message << debugMsg << tcu::TestLog::EndMessage;
-		return tcu::TestStatus::fail("Output mismatch");
+			deMemcpy(refValues.data(), &ref[refIdx], blockSize);
+			deMemcpy(buffferValues.data(), bufferDataPtr + bufferOffset, blockSize);
+
+			std::ostringstream msg;
+			msg << "Output mismatch at dispatch " << dispatchNdx << ": Reference ";
+			for (deUint32 i = 0; i < floatsPerDispatch; ++i)
+				msg << ((i == 0) ? "[" : ", ") << refValues[i];
+			msg << "]; Buffer ";
+			for (deUint32 i = 0; i < floatsPerDispatch; ++i)
+				msg << ((i == 0) ? "[" : ", ") << buffferValues[i];
+			msg << "]";
+
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+			return tcu::TestStatus::fail("Output mismatch");
+		}
 	}
+
 	return tcu::TestStatus::pass("Output matches expected values");
 }
 
