@@ -106,6 +106,8 @@ Move<VkDevice> createImageRobustnessDevice(Context& context)
 	// Add image robustness extension if supported
 	std::vector<const char*> deviceExtensions;
 
+	deviceExtensions.push_back("VK_KHR_fragment_shading_rate");
+
 	if (context.isDeviceFunctionalitySupported("VK_EXT_image_robustness"))
 	{
 		deviceExtensions.push_back("VK_EXT_image_robustness");
