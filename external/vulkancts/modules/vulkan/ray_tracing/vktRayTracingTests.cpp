@@ -41,6 +41,7 @@
 #include "vktRayTracingComplexControlFlowTests.hpp"
 #include "vktRayTracingBarrierTests.hpp"
 #include "vktRayTracingDataSpillTests.hpp"
+#include "vktRayTracingDirectionTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -75,6 +76,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createComplexControlFlowTests(testCtx));
 	group->addChild(createBarrierTests(testCtx));
 	group->addChild(createDataSpillTests(testCtx));
+	group->addChild(createDirectionTests(testCtx));
 
 	return group.release();
 }

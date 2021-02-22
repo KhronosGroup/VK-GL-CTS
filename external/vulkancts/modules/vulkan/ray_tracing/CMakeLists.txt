@@ -17,6 +17,8 @@ set(DEQP_VK_RAY_TRACING_SRCS
 	vktRayTracingComplexControlFlowTests.hpp
 	vktRayTracingDataSpillTests.cpp
 	vktRayTracingDataSpillTests.hpp
+	vktRayTracingDirectionTests.cpp
+	vktRayTracingDirectionTests.hpp
 	vktRayTracingTraceRaysTests.cpp
 	vktRayTracingTraceRaysTests.hpp
 	vktRayTracingMemGuaranteeTests.cpp
