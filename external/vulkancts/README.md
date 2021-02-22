@@ -284,12 +284,8 @@ codes are allowed:
 	QualityWarning
 	CompatibilityWarning
 
-Submission package can be verified using `external/vulkancts/scripts/verify_submission.py`
-script. The script takes two arguments: path to extracted submission package
-and path to current mustpass list. For example:
-
-	python external/vulkancts/scripts/verify_submission.py VK_10_Khronos_1/ external/vulkancts/mustpass/1.0.2/vk-default.txt
-
+Submission package can be verified using `verify_submission.py`
+script located in [VK-GL-CTS-Tools](https://github.com/KhronosGroup/VK-GL-CTS-Tools).
 
 Vulkan platform port
 --------------------
