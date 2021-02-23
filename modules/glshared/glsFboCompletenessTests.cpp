@@ -267,7 +267,7 @@ static const FormatExtEntry s_esExtFormats[] =
 	},
 	{
 		"GL_EXT_texture_rg",
-		(deUint32)(REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID),
+		(deUint32)(REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID | TEXTURE_VALID),
 		GLS_ARRAY_RANGE(s_extTextureRgRboFormats)
 	},
 	// These are not specified to be color-renderable, but the wording is
