@@ -204,7 +204,6 @@
 	<waiver vendorName="Broadcom" vendorId="0x14E4" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/757">
 		<description>On affected devices depth clipping is incorrectly disabled when the viewport minDepth is equal to maxDepth.</description>
 		<device_list>
-			<d>0x8E002214</d>
 			<d>0x001E43CB</d>
 			<d>0xBE485FD3</d>
 		</device_list>
