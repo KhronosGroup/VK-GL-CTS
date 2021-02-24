@@ -1,0 +1,145 @@
+#!amber
+
+# Copyright 2021 Google LLC.
+# Copyright 2021 The Khronos Group Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Test 'DepthLess' execution mode.
+# Polygon depth:            0.6
+# FragDepth:                0.3
+# Depth compare op:         less
+# Execution mode:           DepthLess
+# Depth buffer clear value: 0.5
+# Description:              FragDepth < Polygon depth: depth test should pass.
+
+SHADER vertex vtex_shader GLSL
+#version 430
+layout(location = 0) in vec4 position;
+
+void main()
+{
+    gl_Position = vec4(position.xy, 0.6, 1.0);
+}
+END
+
+# The fragment shader is generated from following GLSL code:
+# #version 430
+#
+# layout(location = 0) out vec4 outColor;
+# layout(depth_less) out float gl_FragDepth;
+#
+# void main()
+# {
+#   outColor = vec4(0.0, 0.0, 0.0, 0.0);
+#   gl_FragDepth = 0.3;
+# }
+SHADER fragment frag_shader SPIRV-ASM TARGET_ENV spv1.0
+
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %outColor %gl_FragDepth
+               OpExecutionMode %main OriginUpperLeft
+               OpExecutionMode %main DepthReplacing
+               OpExecutionMode %main DepthLess
+               OpSource GLSL 430
+               OpName %main "main"
+               OpName %outColor "outColor"
+               OpName %gl_FragDepth "gl_FragDepth"
+               OpDecorate %outColor Location 0
+               OpDecorate %gl_FragDepth BuiltIn FragDepth
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+   %outColor = OpVariable %_ptr_Output_v4float Output
+    %float_0 = OpConstant %float 0
+         %11 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+%_ptr_Output_float = OpTypePointer Output %float
+%gl_FragDepth = OpVariable %_ptr_Output_float Output
+%float_out_depth = OpConstant %float 0.3
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpStore %outColor %11
+               OpStore %gl_FragDepth %float_out_depth
+               OpReturn
+               OpFunctionEnd
+
+END
+
+BUFFER framebuffer FORMAT B8G8R8A8_UNORM
+BUFFER depth_buf FORMAT D16_UNORM
+
+PIPELINE graphics my_pipeline
+  ATTACH vtex_shader
+  ATTACH frag_shader
+  DEPTH
+    TEST on
+    WRITE on
+    COMPARE_OP less
+    CLAMP off
+    BOUNDS min 0.0 max 1.0
+    BIAS constant 0.0 clamp 0.0 slope 0.0
+  END
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER framebuffer AS color LOCATION 0
+  BIND BUFFER depth_buf AS depth_stencil
+END
+
+CLEAR_COLOR my_pipeline 0 0 0 255
+CLEAR_DEPTH my_pipeline 0.5
+CLEAR my_pipeline
+RUN my_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+# ---------------- VERIFY PIPELINE ------------------
+# This pipeline verifies the dept buffer contents.
+# The fragment shader writes color green if the value is expected,
+# otherwise red.
+
+SHADER vertex vtex_shader_verify PASSTHROUGH
+
+SHADER fragment frag_shader_verify GLSL
+#version 430
+
+layout(location = 0) out vec4 outColor;
+uniform layout(set=0, binding=0) sampler2D imageSampler;
+const float expectedValue = 0.3;
+const float tolerance = 0.01;
+
+void main()
+{
+  float value = texelFetch(imageSampler, ivec2(gl_FragCoord.xy), 0).r;
+  if (abs(value - expectedValue) < tolerance)
+    outColor = vec4(0.0, 1.0, 0.0, 1.0);
+  else
+    outColor = vec4(1.0, 0.0, 0.0, 1.0);
+}
+END
+
+BUFFER framebuffer_verify FORMAT B8G8R8A8_UNORM
+SAMPLER sampler
+
+PIPELINE graphics verify_pipeline
+  ATTACH vtex_shader_verify
+  ATTACH frag_shader_verify
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER depth_buf AS combined_image_sampler SAMPLER sampler DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER framebuffer_verify AS color LOCATION 0
+END
+
+CLEAR_COLOR verify_pipeline 0 0 0 255
+CLEAR verify_pipeline
+RUN verify_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+EXPECT framebuffer_verify IDX 0 0 SIZE 256 256 EQ_RGBA 0 255 0 255
