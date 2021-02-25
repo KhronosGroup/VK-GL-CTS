@@ -201,6 +201,8 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/memory/vktMemoryTests.cpp \
 	external/vulkancts/modules/vulkan/memory_model/vktMemoryModelMessagePassing.cpp \
 	external/vulkancts/modules/vulkan/memory_model/vktMemoryModelPadding.cpp \
+	external/vulkancts/modules/vulkan/memory_model/vktMemoryModelSharedLayout.cpp \
+	external/vulkancts/modules/vulkan/memory_model/vktMemoryModelSharedLayoutCase.cpp \
 	external/vulkancts/modules/vulkan/modifiers/vktModifiersTests.cpp \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewRenderPassUtil.cpp \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewRenderTests.cpp \
@@ -500,6 +502,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockTests.cpp \
 	external/vulkancts/modules/vulkan/util/vktDrawUtil.cpp \
 	external/vulkancts/modules/vulkan/util/vktExternalMemoryUtil.cpp \
+	external/vulkancts/modules/vulkan/util/vktTypeComparisonUtil.cpp \
 	external/vulkancts/modules/vulkan/vktCustomInstancesDevices.cpp \
 	external/vulkancts/modules/vulkan/vktInfoTests.cpp \
 	external/vulkancts/modules/vulkan/vktShaderLibrary.cpp \
