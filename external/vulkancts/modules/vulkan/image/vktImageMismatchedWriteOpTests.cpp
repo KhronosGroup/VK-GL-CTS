@@ -234,7 +234,7 @@ void StorageImage2D::upload (const VkCommandBuffer cmdBuffer)
 
 	{
 		const VkBufferMemoryBarrier bufferBarrier = makeBufferMemoryBarrier(
-			(VkAccessFlags)0, VK_ACCESS_TRANSFER_READ_BIT,
+			VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
 			m_buffer.getBuffer(), 0ull, m_buffer.getSize());
 
 		const VkImageMemoryBarrier beforeCopyBarrier = makeImageMemoryBarrier(
@@ -242,8 +242,8 @@ void StorageImage2D::upload (const VkCommandBuffer cmdBuffer)
 			m_layout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			*m_image, fullImageSubresourceRange);
 
-		invalidateMappedMemoryRange(vki, dev, m_buffer.getMemory().getMemory(), m_buffer.getMemory().getOffset(), VK_WHOLE_SIZE);
-		vki.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
+		flushMappedMemoryRange(vki, dev, m_buffer.getMemory().getMemory(), m_buffer.getMemory().getOffset(), VK_WHOLE_SIZE);
+		vki.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
 							   0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 1, &beforeCopyBarrier);
 	}
 
@@ -256,7 +256,7 @@ void StorageImage2D::upload (const VkCommandBuffer cmdBuffer)
 
 		m_layout = VK_IMAGE_LAYOUT_GENERAL;
 		const VkImageMemoryBarrier afterCopyBarrier = makeImageMemoryBarrier(
-			VK_ACCESS_TRANSFER_WRITE_BIT, (VkAccessFlags)0,
+			VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_WRITE_BIT,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_layout,
 			*m_image, fullImageSubresourceRange);
 
@@ -278,7 +278,7 @@ void StorageImage2D::download (const VkCommandBuffer cmdBuffer)
 			m_buffer.getBuffer(), 0ull, m_buffer.getSize());
 
 		const VkImageMemoryBarrier beforeCopyBarrier = makeImageMemoryBarrier(
-			(VkAccessFlagBits)0, VK_ACCESS_TRANSFER_READ_BIT,
+			VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
 			m_layout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 			*m_image, fullImageSubresourceRange);
 
@@ -290,7 +290,7 @@ void StorageImage2D::download (const VkCommandBuffer cmdBuffer)
 
 	{
 		const VkBufferMemoryBarrier bufferBarrier = makeBufferMemoryBarrier(
-			VK_ACCESS_TRANSFER_WRITE_BIT, (VkAccessFlags)0,
+			VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
 			m_buffer.getBuffer(), 0ull, m_buffer.getSize());
 
 		const VkImageMemoryBarrier afterCopyBarrier = makeImageMemoryBarrier(
@@ -298,8 +298,8 @@ void StorageImage2D::download (const VkCommandBuffer cmdBuffer)
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_layout,
 			*m_image, fullImageSubresourceRange);
 
-		vki.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0,
-							   0, (const VkMemoryBarrier*)DE_NULL, 0, &bufferBarrier, 1, &afterCopyBarrier);
+		vki.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0,
+							   0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 1, &afterCopyBarrier);
 	}
 
 	invalidateMappedMemoryRange(vki, dev, m_buffer.getMemory().getMemory(), m_buffer.getMemory().getOffset(), VK_WHOLE_SIZE);
