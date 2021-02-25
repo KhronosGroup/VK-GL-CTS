@@ -34,6 +34,37 @@
 namespace vk
 {
 
+Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
+									  const VkDevice							device,
+									  const VkPipelineLayout					pipelineLayout,
+									  const VkPipelineCreateFlags				pipelineFlags,
+									  const VkShaderModule						shaderModule,
+									  const VkPipelineShaderStageCreateFlags	shaderFlags,
+									  const VkSpecializationInfo*				specializationInfo)
+{
+	const VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
+		nullptr,												// const void*							pNext;
+		shaderFlags,											// VkPipelineShaderStageCreateFlags		flags;
+		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
+		shaderModule,											// VkShaderModule						module;
+		"main",													// const char*							pName;
+		specializationInfo,										// const VkSpecializationInfo*			pSpecializationInfo;
+	};
+	const VkComputePipelineCreateInfo pipelineCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType					sType;
+		nullptr,											// const void*						pNext;
+		pipelineFlags,										// VkPipelineCreateFlags			flags;
+		pipelineShaderStageParams,							// VkPipelineShaderStageCreateInfo	stage;
+		pipelineLayout,										// VkPipelineLayout					layout;
+		DE_NULL,											// VkPipeline						basePipelineHandle;
+		0,													// deInt32							basePipelineIndex;
+	};
+	return createComputePipeline(vk, device, DE_NULL , &pipelineCreateInfo);
+}
+
 Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface&						vk,
 									  const VkDevice								device,
 									  const VkPipelineLayout						pipelineLayout,

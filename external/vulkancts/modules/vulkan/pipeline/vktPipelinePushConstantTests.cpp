@@ -27,6 +27,7 @@
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
 #include "vktPipelineReferenceRenderer.hpp"
+
 #include "vktTestCase.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
@@ -38,12 +39,17 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkImageWithMemory.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkBarrierUtil.hpp"
+
 #include "tcuImageCompare.hpp"
+#include "tcuTestLog.hpp"
+
 #include "deMemory.h"
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
-#include "tcuTestLog.hpp"
 
 #include <algorithm>
 #include <sstream>
@@ -97,7 +103,7 @@ struct CommandData
 struct PushConstantData
 {
 	struct PushConstantRange
-{
+	{
 		VkShaderStageFlags		shaderStage;
 		deUint32				offset;
 		deUint32				size;
@@ -2595,6 +2601,338 @@ tcu::TestStatus PushConstantLifetimeTestInstance::verify (deBool verifyGraphics,
 	return tcu::TestStatus::pass("Result image matches reference");
 }
 
+// The overwrite-values cases will use a 2x2 storage image and 4 separate draws or dispatches to store the color of each pixel in
+// the image. The color will be calculated as baseColor*multiplier+colorOffset, and the base color, multiplier, color component
+// offsets and coords will be changed with multiple push commands before each draw/dispatch, to verify overwriting multiple ranges
+// works as expected.
+
+struct OverwritePushConstants
+{
+	tcu::IVec4	coords;				// We will only use the first two components, but an IVec4 eases matching alignments.
+	tcu::UVec4	baseColor;
+	tcu::UVec4	multiplier;
+	deUint32	colorOffsets[4];
+	tcu::UVec4	transparentGreen;
+};
+
+struct OverwriteTestParams
+{
+	OverwritePushConstants	pushConstantValues[4];
+	VkPipelineBindPoint		bindPoint;
+};
+
+class OverwriteTestCase : public vkt::TestCase
+{
+public:
+							OverwriteTestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const OverwriteTestParams& params);
+	virtual					~OverwriteTestCase		(void) {}
+
+	virtual void			initPrograms			(vk::SourceCollections& programCollection) const;
+	virtual TestInstance*	createInstance			(Context& context) const;
+
+protected:
+	OverwriteTestParams		m_params;
+};
+
+class OverwriteTestInstance : public vkt::TestInstance
+{
+public:
+								OverwriteTestInstance	(Context& context, const OverwriteTestParams& params);
+	virtual						~OverwriteTestInstance	(void) {}
+
+	virtual tcu::TestStatus		iterate					(void);
+
+protected:
+	OverwriteTestParams			m_params;
+};
+
+OverwriteTestCase::OverwriteTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const OverwriteTestParams& params)
+	: vkt::TestCase	(testCtx, name, description)
+	, m_params		(params)
+{}
+
+void OverwriteTestCase::initPrograms (vk::SourceCollections& programCollection) const
+{
+	std::ostringstream shader;
+
+	shader
+		<< "#version 450\n"
+		<< "layout (push_constant, std430) uniform PushConstants {\n"
+		<< "    ivec4   coords;\n" // Note we will only use the .xy swizzle.
+		<< "    uvec4   baseColor;\n"
+		<< "    uvec4   multiplier;\n"
+		<< "    uint    colorOffsets[4];\n"
+		<< "    uvec4   transparentGreen;\n"
+		<< "} pc;\n"
+		<< "layout(rgba8ui, set=0, binding=0) uniform uimage2D simage;\n"
+		<< "void main() {\n"
+		<< "    uvec4   colorOffsets = uvec4(pc.colorOffsets[0], pc.colorOffsets[1], pc.colorOffsets[2], pc.colorOffsets[3]);\n"
+		<< "    uvec4   finalColor   = pc.baseColor * pc.multiplier + colorOffsets + pc.transparentGreen;\n"
+		<< "    imageStore(simage, pc.coords.xy, finalColor);\n"
+		<< "}\n"
+		;
+
+	if (m_params.bindPoint == VK_PIPELINE_BIND_POINT_COMPUTE)
+	{
+		programCollection.glslSources.add("comp") << glu::ComputeSource(shader.str());
+	}
+	else if (m_params.bindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS)
+	{
+		std::ostringstream vert;
+		vert
+			<< "#version 450\n"
+			<< "\n"
+			<< "void main()\n"
+			<< "{\n"
+			// Full-screen clockwise triangle fan with 4 vertices.
+			<< "    const float x = (-1.0+2.0*(((gl_VertexIndex+1)&2)>>1));\n"
+			<< "    const float y = (-1.0+2.0*(( gl_VertexIndex   &2)>>1));\n"
+			<< "	gl_Position = vec4(x, y, 0.0, 1.0);\n"
+			<< "}\n"
+			;
+
+		programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+		programCollection.glslSources.add("frag") << glu::FragmentSource(shader.str());
+	}
+	else
+		DE_ASSERT(false);
+}
+
+TestInstance* OverwriteTestCase::createInstance (Context& context) const
+{
+	return new OverwriteTestInstance(context, m_params);
+}
+
+OverwriteTestInstance::OverwriteTestInstance (Context& context, const OverwriteTestParams& params)
+	: vkt::TestInstance	(context)
+	, m_params			(params)
+{}
+
+tcu::TestStatus OverwriteTestInstance::iterate (void)
+{
+	const auto&	vkd		= m_context.getDeviceInterface();
+	const auto	device	= m_context.getDevice();
+	auto&		alloc	= m_context.getDefaultAllocator();
+	const auto	queue	= m_context.getUniversalQueue();
+	const auto	qIndex	= m_context.getUniversalQueueFamilyIndex();
+	const bool	isComp	= (m_params.bindPoint == VK_PIPELINE_BIND_POINT_COMPUTE);
+
+	const VkShaderStageFlags	stageFlags	= (isComp ? VK_SHADER_STAGE_COMPUTE_BIT : VK_SHADER_STAGE_FRAGMENT_BIT);
+	const VkPipelineStageFlags	writeStages	= (isComp ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+	const auto					imageFormat	= VK_FORMAT_R8G8B8A8_UINT;
+	const auto					imageExtent	= makeExtent3D(2u, 2u, 1u);
+
+	// Storage image.
+	const VkImageCreateInfo imageCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,							//	VkStructureType			sType;
+		nullptr,														//	const void*				pNext;
+		0u,																//	VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,												//	VkImageType				imageType;
+		imageFormat,													//	VkFormat				format;
+		imageExtent,													//	VkExtent3D				extent;
+		1u,																//	deUint32				mipLevels;
+		1u,																//	deUint32				arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,											//	VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,										//	VkImageTiling			tiling;
+		(VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT),	//	VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,										//	VkSharingMode			sharingMode;
+		0u,																//	deUint32				queueFamilyIndexCount;
+		nullptr,														//	const deUint32*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,										//	VkImageLayout			initialLayout;
+	};
+	ImageWithMemory storageImage (vkd, device, alloc, imageCreateInfo, MemoryRequirement::Any);
+	const auto subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const auto storageImageView = makeImageView(vkd, device, storageImage.get(), VK_IMAGE_VIEW_TYPE_2D, imageFormat, subresourceRange);
+
+	// Buffer to copy output pixels to.
+	const auto tcuFormat	= mapVkFormat(imageFormat);
+	const auto pixelSize	= static_cast<VkDeviceSize>(tcu::getPixelSize(tcuFormat));
+	const auto bufferSize	= pixelSize * imageExtent.width * imageExtent.height * imageExtent.depth;
+
+	const auto bufferCreateInfo = makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	BufferWithMemory transferBuffer (vkd, device, alloc, bufferCreateInfo, MemoryRequirement::HostVisible);
+
+	// Descriptor set layout and pipeline layout.
+	DescriptorSetLayoutBuilder layoutBuilder;
+	layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, stageFlags);
+	const auto descriptorSetLayout = layoutBuilder.build(vkd, device);
+
+	const VkPushConstantRange pcRange =
+	{
+		stageFlags,												//	VkShaderStageFlags	stageFlags;
+		0u,														//	deUint32			offset;
+		static_cast<deUint32>(sizeof(OverwritePushConstants)),	//	deUint32			size;
+	};
+	const auto pipelineLayout = makePipelineLayout(vkd, device, 1u, &descriptorSetLayout.get(), 1u, &pcRange);
+
+	// Descriptor pool and set.
+	DescriptorPoolBuilder poolBuilder;
+	poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+	const auto descriptorPool = poolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	const auto descriptorSet = makeDescriptorSet(vkd, device, descriptorPool.get(), descriptorSetLayout.get());
+
+	DescriptorSetUpdateBuilder updateBuilder;
+	const auto descriptorImageInfo = makeDescriptorImageInfo(DE_NULL, storageImageView.get(), VK_IMAGE_LAYOUT_GENERAL);
+	updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfo);
+	updateBuilder.update(vkd, device);
+
+	// Command pool and set.
+	const auto cmdPool		= makeCommandPool(vkd, device, qIndex);
+	const auto cmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto cmdBuffer	= cmdBufferPtr.get();
+
+	// Pipeline.
+	const std::vector<VkViewport>	viewports	(1, makeViewport(imageExtent));
+	const std::vector<VkRect2D>		scissors	(1, makeRect2D(imageExtent));
+
+	Move<VkShaderModule>	vertModule;
+	Move<VkShaderModule>	fragModule;
+	Move<VkShaderModule>	compModule;
+
+	Move<VkRenderPass>		renderPass;
+	Move<VkFramebuffer>		framebuffer;
+	Move<VkPipeline>		pipeline;
+
+	if (isComp)
+	{
+		compModule	= createShaderModule(vkd, device, m_context.getBinaryCollection().get("comp"), 0u);
+		pipeline	= makeComputePipeline(vkd, device, pipelineLayout.get(), 0u, compModule.get(), 0u, nullptr);
+	}
+	else
+	{
+		vertModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+		fragModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+
+		const VkPipelineVertexInputStateCreateInfo inputState =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType                             sType
+			nullptr,													// const void*                                 pNext
+			0u,															// VkPipelineVertexInputStateCreateFlags       flags
+			0u,															// deUint32                                    vertexBindingDescriptionCount
+			nullptr,													// const VkVertexInputBindingDescription*      pVertexBindingDescriptions
+			0u,															// deUint32                                    vertexAttributeDescriptionCount
+			nullptr,													// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
+		};
+		renderPass	= makeRenderPass(vkd, device);
+		framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), 0u, nullptr, imageExtent.width, imageExtent.height);
+		pipeline	= makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
+			vertModule.get(), DE_NULL, DE_NULL, DE_NULL, fragModule.get(), renderPass.get(),
+			viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN, 0u, 0u, &inputState);
+	}
+
+	// Offsets and sizes.
+	const struct
+	{
+		size_t offset;
+		size_t size;
+	} pcPush[] =
+	{
+		// Push members doing some back-and-forth in the range.
+		{	offsetof(OverwritePushConstants, baseColor),		sizeof(OverwritePushConstants::baseColor)			},
+		{	offsetof(OverwritePushConstants, coords),			sizeof(OverwritePushConstants::coords)				},
+		{	offsetof(OverwritePushConstants, colorOffsets),		sizeof(OverwritePushConstants::colorOffsets)		},
+		{	offsetof(OverwritePushConstants, multiplier),		sizeof(OverwritePushConstants::multiplier)			},
+		{	offsetof(OverwritePushConstants, transparentGreen),	sizeof(OverwritePushConstants::transparentGreen)	},
+	};
+
+	beginCommandBuffer(vkd, cmdBuffer);
+
+	// Transition layout for storage image.
+	const auto preImageBarrier = makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, storageImage.get(), subresourceRange);
+	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, writeStages, 0u, 0u, nullptr, 0u, nullptr, 1u, &preImageBarrier);
+
+	vkd.cmdBindDescriptorSets(cmdBuffer, m_params.bindPoint, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	vkd.cmdBindPipeline(cmdBuffer, m_params.bindPoint, pipeline.get());
+
+	if (!isComp)
+		beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors[0]);
+
+	for (int pcIndex = 0; pcIndex < DE_LENGTH_OF_ARRAY(m_params.pushConstantValues); ++pcIndex)
+	{
+		const auto& pc = m_params.pushConstantValues[pcIndex];
+
+		// Push all structure members separately.
+		for (int pushIdx = 0; pushIdx < DE_LENGTH_OF_ARRAY(pcPush); ++pushIdx)
+		{
+			const auto&	push	= pcPush[pushIdx];
+			const void*	dataPtr	= reinterpret_cast<const void*>(reinterpret_cast<const char*>(&pc) + push.offset);
+			vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), stageFlags, static_cast<deUint32>(push.offset), static_cast<deUint32>(push.size), dataPtr);
+		}
+
+		// Draw or dispatch.
+		if (isComp)
+			vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+		else
+			vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+	}
+
+	if (!isComp)
+		endRenderPass(vkd, cmdBuffer);
+
+	// Copy storage image to output buffer.
+	const auto postImageBarrier = makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, storageImage.get(), subresourceRange);
+	vkd.cmdPipelineBarrier(cmdBuffer, writeStages, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &postImageBarrier);
+
+	const auto copyRegion = makeBufferImageCopy(imageExtent, makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u));
+	vkd.cmdCopyImageToBuffer(cmdBuffer, storageImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, transferBuffer.get(), 1u, &copyRegion);
+
+	const auto bufferBarrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, transferBuffer.get(), 0ull, bufferSize);
+	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u, &bufferBarrier, 0u, nullptr);
+
+	endCommandBuffer(vkd, cmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	// Verify output colors match.
+	auto&		bufferAlloc		= transferBuffer.getAllocation();
+	const void*	bufferHostPtr	= bufferAlloc.getHostPtr();
+	invalidateAlloc(vkd, device, bufferAlloc);
+
+	const int iWidth	= static_cast<int>(imageExtent.width);
+	const int iHeight	= static_cast<int>(imageExtent.height);
+	const int iDepth	= static_cast<int>(imageExtent.depth);
+
+	tcu::ConstPixelBufferAccess outputAccess (tcuFormat, iWidth, iHeight, iDepth, bufferHostPtr);
+
+	for (int pixelIdx = 0; pixelIdx < DE_LENGTH_OF_ARRAY(m_params.pushConstantValues); ++pixelIdx)
+	{
+		const auto&			pc				= m_params.pushConstantValues[pixelIdx];
+		const tcu::UVec4	expectedValue	= pc.baseColor * pc.multiplier + tcu::UVec4(pc.colorOffsets[0], pc.colorOffsets[1], pc.colorOffsets[2], pc.colorOffsets[3]) + pc.transparentGreen;
+		const tcu::UVec4	outputValue		= outputAccess.getPixelUint(pc.coords.x(), pc.coords.y());
+
+		if (expectedValue != outputValue)
+		{
+			std::ostringstream msg;
+			msg << "Unexpected value in output image at coords " << pc.coords << ": found " << outputValue << " and expected " << expectedValue;
+			TCU_FAIL(msg.str());
+		}
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+void addOverwriteCase (tcu::TestCaseGroup* group, tcu::TestContext& testCtx, VkPipelineBindPoint bindPoint)
+{
+	const OverwritePushConstants pushConstants[4] =
+	{
+	//	coords						baseColor					multiplier							colorOffsets				transparentGreen
+		{ tcu::IVec4(0, 0, 0, 0),	tcu::UVec4(1u, 0u, 0u, 0u),	tcu::UVec4( 2u,  2u,  2u,  2u),		{ 128u, 129u, 130u, 131u },	tcu::UVec4(0u, 1u, 0u, 0u) },
+		{ tcu::IVec4(0, 1, 0, 0),	tcu::UVec4(0u, 1u, 0u, 0u),	tcu::UVec4( 4u,  4u,  4u,  4u),		{ 132u, 133u, 134u, 135u },	tcu::UVec4(0u, 1u, 0u, 0u) },
+		{ tcu::IVec4(1, 0, 0, 0),	tcu::UVec4(0u, 0u, 1u, 0u),	tcu::UVec4( 8u,  8u,  8u,  8u),		{ 136u, 137u, 138u, 139u },	tcu::UVec4(0u, 1u, 0u, 0u) },
+		{ tcu::IVec4(1, 1, 0, 0),	tcu::UVec4(0u, 0u, 0u, 1u),	tcu::UVec4(16u, 16u, 16u, 16u),		{ 140u, 141u, 142u, 143u },	tcu::UVec4(0u, 1u, 0u, 0u) },
+	};
+
+	OverwriteTestParams testParams;
+
+	DE_ASSERT(DE_LENGTH_OF_ARRAY(pushConstants) == DE_LENGTH_OF_ARRAY(testParams.pushConstantValues));
+	for (int pixelIdx = 0; pixelIdx < DE_LENGTH_OF_ARRAY(pushConstants); ++pixelIdx)
+		testParams.pushConstantValues[pixelIdx] = pushConstants[pixelIdx];
+
+	testParams.bindPoint = bindPoint;
+
+	group->addChild(new OverwriteTestCase(testCtx, "overwrite", "Test push constant range overwrites", testParams));
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
@@ -2944,10 +3282,12 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 	{
 		graphicsTests->addChild(new PushConstantGraphicsOverlapTest(testCtx, overlapGraphicsParams[ndx].name, overlapGraphicsParams[ndx].description, overlapGraphicsParams[ndx].count, overlapGraphicsParams[ndx].range));
 	}
+	addOverwriteCase(graphicsTests.get(), testCtx, VK_PIPELINE_BIND_POINT_GRAPHICS);
 	pushConstantTests->addChild(graphicsTests.release());
 
 	de::MovePtr<tcu::TestCaseGroup>	computeTests	(new tcu::TestCaseGroup(testCtx, "compute_pipeline", "compute pipeline"));
 	computeTests->addChild(new PushConstantComputeTest(testCtx, computeParams[0].name, computeParams[0].description, computeParams[0].range));
+	addOverwriteCase(computeTests.get(), testCtx, VK_PIPELINE_BIND_POINT_COMPUTE);
 	pushConstantTests->addChild(computeTests.release());
 
 	de::MovePtr<tcu::TestCaseGroup>	lifetimeTests	(new tcu::TestCaseGroup(testCtx, "lifetime", "lifetime tests"));

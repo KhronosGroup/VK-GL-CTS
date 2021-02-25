@@ -29,6 +29,13 @@
 
 namespace vk
 {
+Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
+									  const VkDevice							device,
+									  const VkPipelineLayout					pipelineLayout,
+									  const VkPipelineCreateFlags				pipelineFlags,
+									  const VkShaderModule						shaderModule,
+									  const VkPipelineShaderStageCreateFlags	shaderFlags,
+									  const VkSpecializationInfo*				specializationInfo);
 
 Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkDevice									device,
