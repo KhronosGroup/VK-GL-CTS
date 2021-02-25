@@ -71,6 +71,10 @@ enum ShaderGroups
 	GROUP_COUNT
 };
 
+const deUint32 HIT				= 1;
+const deUint32 MISS				= 2;
+const deUint32 HIT_MISS_PATTERN	= 7;
+
 deUint32 getShaderGroupSize (const InstanceInterface&	vki,
 							 const VkPhysicalDevice		physicalDevice)
 {
@@ -324,7 +328,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			"layout(set = 0, binding = 0, r32ui) uniform uimage3D result;\n"
 			"void main()\n"
 			"{\n"
-			"  uvec4 color = uvec4(1,0,0,1);\n"
+			"  uvec4 color = uvec4(" << HIT << ",0,0,1);\n"
 			"  imageStore(result, ivec3(gl_LaunchIDEXT.xyz), color);\n"
 			"}\n";
 
@@ -340,7 +344,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			"layout(set = 0, binding = 0, r32ui) uniform uimage3D result;\n"
 			"void main()\n"
 			"{\n"
-			"  uvec4 color = uvec4(2,0,0,1);\n"
+			"  uvec4 color = uvec4(" << MISS << ",0,0,1);\n"
 			"  imageStore(result, ivec3(gl_LaunchIDEXT.xyz), color);\n"
 			"}\n";
 
@@ -390,31 +394,27 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildIndirectTestInsta
 	{
 		std::vector<tcu::Vec3>	geometryData;
 
-		geometryData.reserve(m_data.depth * m_data.squaresGroupCount * 3u);
+		geometryData.reserve(m_data.squaresGroupCount * 3u);
 
-		for (size_t depthNdx = 0; depthNdx < m_data.depth; ++depthNdx)
+		tcu::UVec2	startPos	= tcu::UVec2(0u, 0u);
+
+		for (size_t squareNdx = 0; squareNdx < m_data.squaresGroupCount; ++squareNdx)
 		{
-			tcu::UVec2	startPos	= tcu::UVec2(0u, 0u);
+			const deUint32	n	= m_data.width * startPos.y() + startPos.x();
+			const float		x0	= float(startPos.x() + 0) / float(m_data.width);
+			const float		y0	= float(startPos.y() + 0) / float(m_data.height);
+			const float		x1	= float(startPos.x() + 1) / float(m_data.width);
+			const float		y1	= float(startPos.y() + 1) / float(m_data.height);
+			const float		xm	= (x0 + x1) / 2.0f;
+			const float		ym	= (y0 + y1) / 2.0f;
+			const float		z	= (n % HIT_MISS_PATTERN == 0) ? +1.0f : (float(geometryNdx) + 0.25f) / float(m_data.geometriesGroupCount);
 
-			for (size_t squareNdx = 0; squareNdx < m_data.squaresGroupCount; ++squareNdx)
-			{
-				const deUint32	n	= m_data.width * startPos.y() + startPos.x();
-				const float		x0	= float(startPos.x() + 0) / float(m_data.width);
-				const float		y0	= float(startPos.y() + 0) / float(m_data.height);
-				const float		x1	= float(startPos.x() + 1) / float(m_data.width);
-				const float		y1	= float(startPos.y() + 1) / float(m_data.height);
-				const float		xm	= (x0 + x1) / 2.0f;
-				const float		ym	= (y0 + y1) / 2.0f;
-				const float		z	= (n % 7 == 0) ? +1.0f : (float(depthNdx) + 0.25f) / float(m_data.depth);
-				const deUint32	m	= (13 * (n + 1)) % (m_data.width * m_data.height);
+			geometryData.push_back(tcu::Vec3(x0, y0, z));
+			geometryData.push_back(tcu::Vec3(xm, y1, z));
+			geometryData.push_back(tcu::Vec3(x1, ym, z));
 
-				geometryData.push_back(tcu::Vec3(x0, y0, z));
-				geometryData.push_back(tcu::Vec3(xm, y1, z));
-				geometryData.push_back(tcu::Vec3(x1, ym, z));
-
-				startPos.y() = m / m_data.width;
-				startPos.x() = m % m_data.width;
-			}
+			startPos.y() = (n + 1) / m_data.width;
+			startPos.x() = (n + 1) % m_data.width;
 		}
 
 		result->addGeometry(geometryData, true);
@@ -656,7 +656,7 @@ tcu::TestStatus RayTracingBuildIndirectTestInstance::iterate (void)
 		for (deUint32 x = 0; x < m_data.width; ++x)
 		{
 			const deUint32	n				= m_data.width * y + x;
-			const deUint32	expectedValue	= (n % 7 == 0) ? 2 : 1;
+			const deUint32	expectedValue	= (n % HIT_MISS_PATTERN == 0) ? MISS : HIT;
 
 			if (bufferPtrLevel[n] != expectedValue)
 				failures++;

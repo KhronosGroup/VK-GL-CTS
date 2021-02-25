@@ -141,16 +141,27 @@ class MultiQueues
 		}
 
 		{
+			VkPhysicalDeviceFeatures2					createPhysicalFeature		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, DE_NULL, context.getDeviceFeatures() };
+			VkPhysicalDeviceTimelineSemaphoreFeatures	timelineSemaphoreFeatures	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES, DE_NULL, DE_TRUE };
+			VkPhysicalDeviceSynchronization2FeaturesKHR	synchronization2Features	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR, DE_NULL, DE_TRUE };
+			void**										nextPtr						= &createPhysicalFeature.pNext;
+
 			std::vector<const char*> deviceExtensions;
 			if (timelineSemaphore)
+			{
 				deviceExtensions.push_back("VK_KHR_timeline_semaphore");
+				addToChainVulkanStructure(&nextPtr, timelineSemaphoreFeatures);
+			}
 			if (type == SynchronizationType::SYNCHRONIZATION2)
+			{
 				deviceExtensions.push_back("VK_KHR_synchronization2");
+				addToChainVulkanStructure(&nextPtr, synchronization2Features);
+			}
 
 			const VkDeviceCreateInfo deviceInfo =
 			{
 				VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//VkStructureType					sType;
-				DE_NULL,														//const void*						pNext;
+				&createPhysicalFeature,											//const void*						pNext;
 				0u,																//VkDeviceCreateFlags				flags;
 				static_cast<deUint32>(queueInfos.size()),						//deUint32							queueCreateInfoCount;
 				&queueInfos[0],													//const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
@@ -158,7 +169,7 @@ class MultiQueues
 				DE_NULL,														//const char* const*				ppEnabledLayerNames;
 				static_cast<deUint32>(deviceExtensions.size()),					//deUint32							enabledExtensionCount;
 				deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0],		//const char* const*				ppEnabledExtensionNames;
-				&context.getDeviceFeatures()									//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+				DE_NULL															//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 			};
 
 			m_logicalDevice	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), instance, physicalDevice, &deviceInfo);
@@ -735,23 +746,6 @@ public:
 			VkCommandBuffer					writeCmdBuffer	= cmdBufferInfos[QUEUETYPE_WRITE].commandBuffer;
 			VkCommandBuffer					readCmdBuffer	= cmdBufferInfos[QUEUETYPE_READ].commandBuffer;
 
-			synchronizationWrapper[QUEUETYPE_WRITE]->addSubmitInfo(
-				0u,
-				DE_NULL,
-				1u,
-				&cmdBufferInfos[QUEUETYPE_WRITE],
-				0u,
-				DE_NULL
-			);
-			synchronizationWrapper[QUEUETYPE_READ]->addSubmitInfo(
-				0u,
-				DE_NULL,
-				1u,
-				&cmdBufferInfos[QUEUETYPE_READ],
-				0u,
-				DE_NULL
-			);
-
 			beginCommandBuffer		(vk, writeCmdBuffer);
 			writeOp->recordCommands	(writeCmdBuffer);
 			createBarrierMultiQueue	(synchronizationWrapper[QUEUETYPE_WRITE], writeCmdBuffer, writeSync, readSync, *resource, queuePairs[pairNdx].familyIndexWrite, queuePairs[pairNdx].familyIndexRead, m_sharingMode);
@@ -764,7 +758,7 @@ public:
 			readOp->recordCommands	(readCmdBuffer);
 			endCommandBuffer		(vk, readCmdBuffer);
 
-			submitCommandsAndWait	(vk, device, queuePairs[pairNdx].queueRead, readCmdBuffer);
+			submitCommandsAndWait(synchronizationWrapper[QUEUETYPE_READ], vk, device, queuePairs[pairNdx].queueRead, readCmdBuffer);
 
 			{
 				const Data	expected = writeOp->getData();

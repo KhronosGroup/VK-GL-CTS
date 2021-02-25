@@ -56,8 +56,6 @@ static const int basicChainLength	= 32768;
 
 Move<VkSemaphore> createTestSemaphore(Context& context, const DeviceInterface& vk, const VkDevice device, const TestConfig& config)
 {
-	Move<VkSemaphore> semaphore;
-
 	if (config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE_KHR && !context.getTimelineSemaphoreFeatures().timelineSemaphore)
 		TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 
@@ -324,13 +322,30 @@ tcu::TestStatus basicMultiQueueCase(Context& context, TestConfig config)
 	deMemset(&deviceInfo, 0, sizeof(deviceInfo));
 	instance.getPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
 
+	VkPhysicalDeviceFeatures2					createPhysicalFeature		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, DE_NULL, deviceFeatures };
+	VkPhysicalDeviceTimelineSemaphoreFeatures	timelineSemaphoreFeatures	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES, DE_NULL, DE_TRUE };
+	VkPhysicalDeviceSynchronization2FeaturesKHR	synchronization2Features	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR, DE_NULL, DE_TRUE };
+	void**										nextPtr						= &createPhysicalFeature.pNext;
+
+	std::vector<const char*> deviceExtensions;
+	if (isTimelineSemaphore)
+	{
+		deviceExtensions.push_back("VK_KHR_timeline_semaphore");
+		addToChainVulkanStructure(&nextPtr, timelineSemaphoreFeatures);
+	}
+	if (config.type == SynchronizationType::SYNCHRONIZATION2)
+	{
+		deviceExtensions.push_back("VK_KHR_synchronization2");
+		addToChainVulkanStructure(&nextPtr, synchronization2Features);
+	}
+
 	deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceInfo.pNext = DE_NULL;
-	deviceInfo.enabledExtensionCount = 0u;
-	deviceInfo.ppEnabledExtensionNames = DE_NULL;
+	deviceInfo.pNext = &createPhysicalFeature;
+	deviceInfo.enabledExtensionCount = static_cast<deUint32>(deviceExtensions.size());
+	deviceInfo.ppEnabledExtensionNames = deviceExtensions.empty() ? DE_NULL : deviceExtensions.data();
 	deviceInfo.enabledLayerCount = 0u;
 	deviceInfo.ppEnabledLayerNames = DE_NULL;
-	deviceInfo.pEnabledFeatures = &deviceFeatures;
+	deviceInfo.pEnabledFeatures = 0u;
 	deviceInfo.queueCreateInfoCount = (queues[FIRST].queueFamilyIndex == queues[SECOND].queueFamilyIndex) ? 1 : COUNT;
 	deviceInfo.pQueueCreateInfos = queueInfos;
 
@@ -460,6 +475,9 @@ tcu::TestStatus basicMultiQueueCase(Context& context, TestConfig config)
 
 void checkSupport(Context& context, TestConfig config)
 {
+	if (config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE_KHR)
+		context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
+
 	if (config.type == SynchronizationType::SYNCHRONIZATION2)
 		context.requireDeviceFunctionality("VK_KHR_synchronization2");
 }
