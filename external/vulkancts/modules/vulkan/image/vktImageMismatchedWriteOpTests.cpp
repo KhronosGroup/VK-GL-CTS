@@ -146,7 +146,7 @@ public:
 
 	tcu::PixelBufferAccess&			getPixelAccess	(void)			{ return m_buffer.getPixelAccess(); }
 
-	void							upload			(const VkCommandBuffer	cmdBuffer) const;
+	void							upload			(const VkCommandBuffer	cmdBuffer);
 	void							download		(const VkCommandBuffer	cmdBuffer);
 
 private:
@@ -225,7 +225,7 @@ StorageImage2D::StorageImage2D (Context& context, VkFormat vkFormat, const int w
 	}
 }
 
-void StorageImage2D::upload (const VkCommandBuffer cmdBuffer) const
+void StorageImage2D::upload (const VkCommandBuffer cmdBuffer)
 {
 	const VkDevice					dev							= m_context.getDevice();
 	const DeviceInterface&			vki							= m_context.getDeviceInterface();
@@ -254,7 +254,7 @@ void StorageImage2D::upload (const VkCommandBuffer cmdBuffer) const
 			VK_ACCESS_TRANSFER_READ_BIT, (VkAccessFlags)0,
 			m_buffer.getBuffer(), 0ull, m_buffer.getSize());
 
-		const_cast<StorageImage2D*>(this)->m_layout = VK_IMAGE_LAYOUT_GENERAL;
+		m_layout = VK_IMAGE_LAYOUT_GENERAL;
 		const VkImageMemoryBarrier afterCopyBarrier = makeImageMemoryBarrier(
 			VK_ACCESS_TRANSFER_WRITE_BIT, (VkAccessFlags)0,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_layout,
