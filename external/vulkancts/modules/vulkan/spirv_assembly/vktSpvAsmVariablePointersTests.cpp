@@ -219,7 +219,7 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 
 	stringTemplate +=
 		physPtrs ?
-		"OpExtension \"SPV_EXT_physical_storage_buffer\"\n"
+		"OpExtension \"SPV_KHR_physical_storage_buffer\"\n"
 		:
 		"OpExtension \"SPV_KHR_variable_pointers\"\n";
 
@@ -878,7 +878,7 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* 
 
 	stringTemplate +=
 		physPtrs ?
-		"OpExtension \"SPV_EXT_physical_storage_buffer\"\n"
+		"OpExtension \"SPV_KHR_physical_storage_buffer\"\n"
 		:
 		"OpExtension \"SPV_KHR_variable_pointers\"\n";
 
@@ -2760,7 +2760,7 @@ tcu::TestCaseGroup* createVariablePointersComputeGroup (tcu::TestContext& testCt
 
 tcu::TestCaseGroup* createPhysicalPointersComputeGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, "physical_pointers", "Compute tests for SPV_EXT_physical_storage_buffer extension"));
+	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, "physical_pointers", "Compute tests for SPV_KHR_physical_storage_buffer extension"));
 	addTestGroup(group.get(), "compute", "Test the physical storage buffer extension using a compute shader", addPhysicalPointersComputeGroup);
 	addTestGroup(group.get(),
 				 "complex_types_compute",
