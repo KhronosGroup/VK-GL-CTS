@@ -116,7 +116,10 @@ public:
 	VkBuffer						getBuffer			(void) const { return *m_buffer; }
 	VkDeviceSize					getSize				(void) const { return m_bufferSize; }
 
-	tcu::PixelBufferAccess&			getPixelAccess		(void);
+	tcu::PixelBufferAccess&			getPixelAccess		(void) { return m_access[0]; }
+
+	void							flush				(void) { flushAlloc(m_context.getDeviceInterface(), m_context.getDevice(), *m_bufferMemory); }
+	void							invalidate			(void) { invalidateAlloc(m_context.getDeviceInterface(), m_context.getDevice(), *m_bufferMemory); }
 
 protected:
 	friend class StorageImage2D;
@@ -145,6 +148,9 @@ public:
 	VkImageView						getView			(void) const	{ return *m_view; }
 
 	tcu::PixelBufferAccess&			getPixelAccess	(void)			{ return m_buffer.getPixelAccess(); }
+
+	void							flush			(void) { m_buffer.flush(); }
+	void							invalidate		(void) { m_buffer.invalidate(); }
 
 	void							upload			(const VkCommandBuffer	cmdBuffer);
 	void							download		(const VkCommandBuffer	cmdBuffer);
@@ -227,7 +233,6 @@ StorageImage2D::StorageImage2D (Context& context, VkFormat vkFormat, const int w
 
 void StorageImage2D::upload (const VkCommandBuffer cmdBuffer)
 {
-	const VkDevice					dev							= m_context.getDevice();
 	const DeviceInterface&			vki							= m_context.getDeviceInterface();
 	const VkImageSubresourceRange	fullImageSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 	const VkBufferImageCopy			copyRegion					= makeBufferImageCopy(makeExtent3D(tcu::IVec3(m_width, m_height, 1)), 1u);
@@ -242,7 +247,6 @@ void StorageImage2D::upload (const VkCommandBuffer cmdBuffer)
 			m_layout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			*m_image, fullImageSubresourceRange);
 
-		flushMappedMemoryRange(vki, dev, m_buffer.getMemory().getMemory(), m_buffer.getMemory().getOffset(), VK_WHOLE_SIZE);
 		vki.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
 							   0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 1, &beforeCopyBarrier);
 	}
@@ -267,7 +271,6 @@ void StorageImage2D::upload (const VkCommandBuffer cmdBuffer)
 
 void StorageImage2D::download (const VkCommandBuffer cmdBuffer)
 {
-	const VkDevice					dev							= m_context.getDevice();
 	const DeviceInterface&			vki							= m_context.getDeviceInterface();
 	const VkImageSubresourceRange	fullImageSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 	const VkBufferImageCopy			copyRegion					= makeBufferImageCopy(makeExtent3D(tcu::IVec3(m_width, m_height, 1)), 1u);
@@ -302,7 +305,6 @@ void StorageImage2D::download (const VkCommandBuffer cmdBuffer)
 							   0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 1, &afterCopyBarrier);
 	}
 
-	invalidateMappedMemoryRange(vki, dev, m_buffer.getMemory().getMemory(), m_buffer.getMemory().getOffset(), VK_WHOLE_SIZE);
 }
 
 StorageBuffer2D::StorageBuffer2D (Context& context, const tcu::TextureFormat& format, deUint32 width, deUint32 height)
@@ -337,14 +339,6 @@ StorageBuffer2D::StorageBuffer2D (Context& context, const tcu::TextureFormat& fo
 	VK_CHECK(vki.bindBufferMemory(dev, *m_buffer, m_bufferMemory->getMemory(), m_bufferMemory->getOffset()));
 
 	m_access.emplace_back(m_format, tcu::IVec3(m_width, m_height, 1), m_bufferMemory->getHostPtr());
-}
-
-tcu::PixelBufferAccess& StorageBuffer2D::getPixelAccess (void)
-{
-	const VkDevice			dev	= m_context.getDevice();
-	const DeviceInterface&	vki	= m_context.getDeviceInterface();
-	invalidateMappedMemoryRange(vki, dev, m_bufferMemory->getMemory(), m_bufferMemory->getOffset(), VK_WHOLE_SIZE);
-	return m_access[0];
 }
 
 tcu::Vec4 gluePixels (const tcu::Vec4& a, const tcu::Vec4& b, const int pivot)
@@ -888,7 +882,13 @@ tcu::TestStatus MismatchedVectorSizesTestInstance::iterate (void)
 		image.download(*cmdBuffer);
 	endCommandBuffer(vki, *cmdBuffer);
 
+	image.flush();
+	buffer.flush();
+
 	submitCommandsAndWait(vki, dev, queue, *cmdBuffer);
+
+	image.invalidate();
+	buffer.invalidate();
 
 	return compare(image.getPixelAccess(), buffer.getPixelAccess())
 			? tcu::TestStatus::pass("")
