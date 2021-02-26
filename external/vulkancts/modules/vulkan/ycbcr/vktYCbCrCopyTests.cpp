@@ -587,13 +587,15 @@ tcu::TestStatus imageCopyTest (Context& context, const TestConfig config)
 		vector<vk::VkImageCopy>	copies;
 
 		de::Random				rng			(buildSeed(config));
+		const bool				noNan		= true;
 
 		genCopies(rng, copyCount, config.src.format, config.src.size, config.dst.format, config.dst.size, &copies);
 
 		logTestCaseInfo(log, config, copies);
 
-		fillRandom(&rng, &srcData);
-		fillRandom(&rng, &dstData);
+		// To avoid putting NaNs in dst in the image copy
+		fillRandom(&rng, &srcData, config.dst.format, noNan);
+		fillRandom(&rng, &dstData, config.dst.format, noNan);
 
 		{
 			const vk::DeviceInterface&		vkd						(context.getDeviceInterface());
