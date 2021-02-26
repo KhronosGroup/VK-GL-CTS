@@ -29,6 +29,7 @@
 #include "glwFunctions.hpp"
 #include "tcuStringTemplate.hpp"
 
+#include <algorithm>
 #include <functional>
 #include <map>
 #include <memory>
