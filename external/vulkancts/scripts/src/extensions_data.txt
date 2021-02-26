@@ -92,3 +92,4 @@ VK_KHR_fragment_shading_rate				DEVICE
 VK_KHR_zero_initialize_workgroup_memory		DEVICE
 VK_KHR_workgroup_memory_explicit_layout			DEVICE
 VK_KHR_synchronization2						DEVICE
+VK_EXT_color_write_enable					DEVICE

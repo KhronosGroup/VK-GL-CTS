@@ -73,5 +73,6 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_zero_initialize_workgroup_memory",
 	"VK_KHR_workgroup_memory_explicit_layout",
 	"VK_KHR_synchronization2",
+	"VK_EXT_color_write_enable",
 };
 

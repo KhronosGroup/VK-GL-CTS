@@ -210,6 +210,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineBlendTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineCacheTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineClearUtil.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineColorWriteEnableTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineCreationCacheControlTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineCreationFeedbackTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineDepthRangeUnrestrictedTests.cpp \
