@@ -499,7 +499,7 @@ public:
 		{
 			VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR,
 			DE_NULL,
-			VK_SEMAPHORE_TYPE_TIMELINE_KHR,
+			semaphoreType,
 			0,
 		};
 		const VkPhysicalDeviceExternalSemaphoreInfo	info				=
