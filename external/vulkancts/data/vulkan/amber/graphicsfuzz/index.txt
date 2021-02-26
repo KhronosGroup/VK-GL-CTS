@@ -409,6 +409,7 @@
 {	"spv-stable-orbit-O-mutate-variable.amber",													"spv-stable-orbit-O-mutate-variable",												"Two shaders with diff: variable mutated"											},
 {	"spv-stable-orbit-Os-access-chain-mutate-pointer.amber",									"spv-stable-orbit-Os-access-chain-mutate-pointer",									"Three shaders with diff: added mutate pointer"										},
 {	"spv-stable-pillars-O-op-select-to-op-phi.amber",											"spv-stable-pillars-O-op-select-to-op-phi",											"Three shaders diff: OpSelect -> OpPhi"												},
+{	"spv-stable-pillars-volatile-nontemporal-store.amber",										"spv-stable-pillars-volatile-nontemporal-store",									"Equivalent shaders, one with additional memory usage"								},
 {	"spv-stable-quicksort-dontinline.amber",													"spv-stable-quicksort-dontinline",													"Equivalent shaders, one with DontInline attribute"									},
 {	"spv-stable-quicksort-mat-func-param.amber",												"spv-stable-quicksort-mat-func-param",												"Two shaders with diff: added mat3x3 func param"									},
 {	"spv-stable-rects-Os-mutate-var-push-through-var.amber",									"spv-stable-rects-Os-mutate-var-push-through-var",									"Three shaders diff: new variable used and mutated"									},

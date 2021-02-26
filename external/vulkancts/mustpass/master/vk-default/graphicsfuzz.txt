@@ -409,6 +409,7 @@ dEQP-VK.graphicsfuzz.spv-stable-mergesort-func-inline-mutate-var
 dEQP-VK.graphicsfuzz.spv-stable-orbit-O-mutate-variable
 dEQP-VK.graphicsfuzz.spv-stable-orbit-Os-access-chain-mutate-pointer
 dEQP-VK.graphicsfuzz.spv-stable-pillars-O-op-select-to-op-phi
+dEQP-VK.graphicsfuzz.spv-stable-pillars-volatile-nontemporal-store
 dEQP-VK.graphicsfuzz.spv-stable-quicksort-dontinline
 dEQP-VK.graphicsfuzz.spv-stable-quicksort-mat-func-param
 dEQP-VK.graphicsfuzz.spv-stable-rects-Os-mutate-var-push-through-var
