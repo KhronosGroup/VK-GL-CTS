@@ -66,6 +66,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceBufferDeviceAddressFeaturesKHR.pNext;
 	}
 
+	vk::VkPhysicalDeviceColorWriteEnableFeaturesEXT physicalDeviceColorWriteEnableFeaturesEXT;
+	deMemset(&physicalDeviceColorWriteEnableFeaturesEXT, 0, sizeof(physicalDeviceColorWriteEnableFeaturesEXT));
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_color_write_enable")) )
+	{
+		physicalDeviceColorWriteEnableFeaturesEXT.sType = getStructureType<VkPhysicalDeviceColorWriteEnableFeaturesEXT>();
+		*nextPtr = &physicalDeviceColorWriteEnableFeaturesEXT;
+		nextPtr  = &physicalDeviceColorWriteEnableFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceConditionalRenderingFeaturesEXT physicalDeviceConditionalRenderingFeaturesEXT;
 	deMemset(&physicalDeviceConditionalRenderingFeaturesEXT, 0, sizeof(physicalDeviceConditionalRenderingFeaturesEXT));
 
@@ -1610,6 +1620,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceVertexInputDynamicStateFeaturesEXT.vertexInputDynamicState == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature vertexInputDynamicState not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_color_write_enable")) )
+	{
+		if ( physicalDeviceColorWriteEnableFeaturesEXT.colorWriteEnable == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature colorWriteEnable not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

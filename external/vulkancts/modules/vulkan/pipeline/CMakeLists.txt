@@ -6,6 +6,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineBlendTests.hpp
 	vktPipelineClearUtil.cpp
 	vktPipelineClearUtil.hpp
+	vktPipelineColorWriteEnableTests.cpp
+	vktPipelineColorWriteEnableTests.hpp
 	vktPipelineCombinationsIterator.hpp
 	vktPipelineDepthTests.cpp
 	vktPipelineDepthTests.hpp
