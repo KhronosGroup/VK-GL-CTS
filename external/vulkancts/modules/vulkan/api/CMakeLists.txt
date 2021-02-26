@@ -52,6 +52,8 @@ set(DEQP_VK_VKSC_API_SRCS
 	vktApiDescriptorSetTests.cpp
 	vktApiMemoryRequirementInvarianceTests.cpp
 	vktApiMemoryRequirementInvarianceTests.hpp
+	vktApiPipelineTests.hpp
+	vktApiPipelineTests.cpp
 	)
 
 set(DEQP_VK_API_SRCS
@@ -61,8 +63,6 @@ set(DEQP_VK_API_SRCS
 	vktApiBufferMarkerTests.hpp
 	vktApiExternalMemoryTests.cpp
 	vktApiExternalMemoryTests.hpp
-	vktApiPipelineTests.hpp
-	vktApiPipelineTests.cpp
     vktApiToolingInfoTests.cpp
     vktApiToolingInfoTests.hpp
 	)

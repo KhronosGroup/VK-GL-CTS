@@ -146,6 +146,7 @@ public:
 	bool							parse							(int argc, const char* const* argv);
 	bool							parse							(const std::string& cmdLine);
 
+	const std::string&				getApplicationName				(void) const;
 	const std::string&				getInitialCmdLine				(void) const;
 
 	//! Get log file name (--deqp-log-filename)
@@ -272,6 +273,13 @@ public:
 	//! Should the run be terminated on first failure (--deqp-terminate-on-fail)
 	bool							isTerminateOnFailEnabled	(void) const;
 
+	//! Start as subprocess
+	bool							isSubProcess				(void) const;
+
+	//! Define number of tests performed in main process ( Vulkan SC )
+	int								getSubprocessTestCount		(void) const;
+
+
 	/*--------------------------------------------------------------------*//*!
 	 * \brief Creates case list filter
 	 * \param archive Resources
@@ -299,6 +307,7 @@ private:
 
 	virtual void					registerExtendedOptions		(de::cmdline::Parser& parser);
 
+	std::string						m_appName;
 	de::cmdline::CommandLine		m_cmdLine;
 	deUint32						m_logFlags;
 

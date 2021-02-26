@@ -105,6 +105,8 @@ DE_DECLARE_COMMAND_LINE_OPT(CaseFractionMandatoryTests,	std::string);
 DE_DECLARE_COMMAND_LINE_OPT(WaiverFile,					std::string);
 DE_DECLARE_COMMAND_LINE_OPT(RunnerType,					tcu::TestRunnerType);
 DE_DECLARE_COMMAND_LINE_OPT(TerminateOnFail,			bool);
+DE_DECLARE_COMMAND_LINE_OPT(SubProcess,					bool);
+DE_DECLARE_COMMAND_LINE_OPT(SubprocessTestCount,		int);
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -214,7 +216,9 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<CaseFractionMandatoryTests>	(DE_NULL,	"deqp-fraction-mandatory-caselist-file",	"Case list file that must be run for each fraction",					"")
 		<< Option<WaiverFile>					(DE_NULL,	"deqp-waiver-file",							"Read waived tests from given file",									"")
 		<< Option<RunnerType>					(DE_NULL,	"deqp-runner-type",							"Filter test cases based on runner",				s_runnerTypes,		"any")
-		<< Option<TerminateOnFail>				(DE_NULL,	"deqp-terminate-on-fail",					"Terminate the run on first failure",				s_enableNames,		"disable");
+		<< Option<TerminateOnFail>				(DE_NULL,	"deqp-terminate-on-fail",					"Terminate the run on first failure",				s_enableNames,		"disable")
+		<< Option<SubProcess>					(DE_NULL,	"deqp-subprocess",							"Inform app that it works as subprocess (Vulkan SC only, do not use)", s_enableNames, "disable")
+		<< Option<SubprocessTestCount>			(DE_NULL,	"deqp-subprocess-test-count",				"Define number of tests performed in subprocess (Vulkan SC only)",		"64");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -739,7 +743,7 @@ bool CasePaths::matches (const string& caseName, bool allowPrefix) const
  * \note CommandLine is not fully initialized until parse() has been called.
  *//*--------------------------------------------------------------------*/
 CommandLine::CommandLine (void)
-	: m_logFlags	(0)
+	: m_appName(), m_logFlags(0)
 {
 }
 
@@ -752,7 +756,7 @@ CommandLine::CommandLine (void)
  * \param argv Command line arguments
  *//*--------------------------------------------------------------------*/
 CommandLine::CommandLine (int argc, const char* const* argv)
-	: m_logFlags	(0)
+	: m_appName(argv[0]), m_logFlags (0)
 {
 	if (argc > 1)
 	{
@@ -778,7 +782,7 @@ CommandLine::CommandLine (int argc, const char* const* argv)
  * \param cmdLine Full command line string.
  *//*--------------------------------------------------------------------*/
 CommandLine::CommandLine (const std::string& cmdLine)
-	: m_initialCmdLine	(cmdLine)
+	: m_appName(), m_initialCmdLine	(cmdLine)
 {
 	if (!parse(cmdLine))
 		throw Exception("Failed to parse command line");
@@ -797,6 +801,11 @@ void CommandLine::clear (void)
 const de::cmdline::CommandLine& CommandLine::getCommandLine (void) const
 {
 	return m_cmdLine;
+}
+
+const std::string& CommandLine::getApplicationName(void) const
+{
+	return m_appName;
 }
 
 const std::string& CommandLine::getInitialCmdLine(void) const
@@ -847,6 +856,9 @@ bool CommandLine::parse (int argc, const char* const* argv)
 
 	if (!m_cmdLine.getOption<opt::LogEmptyLoginfo>())
 		m_logFlags |= QP_TEST_LOG_EXCLUDE_EMPTY_LOGINFO;
+
+	if (m_cmdLine.getOption<opt::SubProcess>())
+		m_logFlags |= QP_TEST_LOG_NO_INITIAL_OUTPUT;
 
 	if ((m_cmdLine.hasOption<opt::CasePath>()?1:0) +
 		(m_cmdLine.hasOption<opt::CaseList>()?1:0) +
@@ -933,6 +945,9 @@ const char*				CommandLine::getCaseFractionMandatoryTests	(void) const	{ return 
 const char*				CommandLine::getArchiveDir					(void) const	{ return m_cmdLine.getOption<opt::ArchiveDir>().c_str();					}
 tcu::TestRunnerType		CommandLine::getRunnerType					(void) const	{ return m_cmdLine.getOption<opt::RunnerType>();							}
 bool					CommandLine::isTerminateOnFailEnabled		(void) const	{ return m_cmdLine.getOption<opt::TerminateOnFail>();						}
+bool					CommandLine::isSubProcess					(void) const	{ return m_cmdLine.getOption<opt::SubProcess>();							}
+int						CommandLine::getSubprocessTestCount			(void) const	{ return m_cmdLine.getOption<opt::SubprocessTestCount>();					};
+
 
 const char* CommandLine::getGLContextType (void) const
 {

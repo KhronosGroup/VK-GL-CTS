@@ -26,6 +26,14 @@
 #include "vkDefs.hpp"
 
 #include <ostream>
+#include <deSharedPtr.hpp>
+#ifdef CTS_USES_VULKANSC
+#include <mutex>
+	#include <vector>
+	#include <map>
+	#include "vkResourceInterface.hpp"
+#include "tcuCommandLine.hpp"
+#endif // CTS_USES_VULKANSC
 
 namespace tcu
 {
@@ -69,13 +77,15 @@ protected:
 class InstanceDriver : public InstanceInterface
 {
 public:
-				InstanceDriver	(const PlatformInterface& platformInterface, VkInstance instance);
+				InstanceDriver	(const PlatformInterface&	platformInterface,
+								 VkInstance					instance);
 				~InstanceDriver	(void);
 
 #include "vkConcreteInstanceInterface.inl"
 
 protected:
-	void		loadFunctions	(const PlatformInterface& platformInterface, VkInstance instance);
+	void		loadFunctions	(const PlatformInterface&	platformInterface,
+								VkInstance					instance);
 
 	struct Functions
 	{
@@ -88,10 +98,19 @@ protected:
 class DeviceDriver : public DeviceInterface
 {
 public:
-				DeviceDriver	(const PlatformInterface& platformInterface, VkInstance instance, VkDevice device);
-				~DeviceDriver	(void);
+						DeviceDriver		(const PlatformInterface&			platformInterface,
+											 VkInstance							instance,
+											 VkDevice							device);
+	virtual				~DeviceDriver		(void);
 
 #include "vkConcreteDeviceInterface.inl"
+
+#ifdef CTS_USES_VULKANSC
+	virtual VkResult	createShaderModule	(VkDevice							device,
+											 const VkShaderModuleCreateInfo*	pCreateInfo,
+											 const VkAllocationCallbacks*		pAllocator,
+											 VkShaderModule*					pShaderModule) const;
+#endif // CTS_USES_VULKANSC
 
 protected:
 	struct Functions
@@ -101,6 +120,116 @@ protected:
 
 	Functions	m_vk;
 };
+
+#ifdef CTS_USES_VULKANSC
+
+#define DDSTAT_HANDLE_CREATE(VAR_NAME,VAR_VALUE) do { m_statCurrent.VAR_NAME += (VAR_VALUE); m_statMax.VAR_NAME = de::max(m_statMax.VAR_NAME, m_statCurrent.VAR_NAME); } while(0)
+#define DDSTAT_HANDLE_DESTROY(VAR_NAME,VAR_VALUE) m_statCurrent.VAR_NAME -= (VAR_VALUE)
+
+class DeviceDriverSC : public DeviceDriver
+{
+public:
+										DeviceDriverSC						(const		PlatformInterface&			platformInterface,
+																			 VkInstance								instance,
+																			 VkDevice								device,
+																			 const tcu::CommandLine&				cmdLine,
+																			 de::SharedPtr<vk::ResourceInterface>	resourceInterface);
+	virtual								~DeviceDriverSC						(void);
+
+#include "vkConcreteDeviceInterface.inl"
+
+	// Functions ending with Handler() and HandlerStat() work only when we gather statistics ( in a main process ).
+	// Functions ending with HandlerNorm() work in normal mode ( in subprocess, when real test is performed )
+	// Method createShaderModule() works in both modes, and ResourceInterface is responsible for distinguishing modes
+	void								createDescriptorSetLayoutHandler	(VkDevice								device,
+																			 const VkDescriptorSetLayoutCreateInfo*	pCreateInfo,
+																			 const VkAllocationCallbacks*			pAllocator,
+																			 VkDescriptorSetLayout*					pSetLayout) const;
+	void								createImageViewHandler				(VkDevice								device,
+																			 const VkImageViewCreateInfo*			pCreateInfo,
+																			 const VkAllocationCallbacks*			pAllocator,
+																			 VkImageView*							pView) const;
+	void								destroyImageViewHandler				(VkDevice								device,
+																			 VkImageView							imageView,
+																			 const VkAllocationCallbacks*			pAllocator) const;
+	void								createQueryPoolHandler				(VkDevice								device,
+																			 const VkQueryPoolCreateInfo*			pCreateInfo,
+																			 const VkAllocationCallbacks*			pAllocator,
+																			 VkQueryPool*							pQueryPool) const ;
+	void								createPipelineLayoutHandler			(VkDevice								device,
+																			 const VkPipelineLayoutCreateInfo*		pCreateInfo,
+																			 const VkAllocationCallbacks*			pAllocator,
+																			 VkPipelineLayout*						pPipelineLayout) const;
+	VkResult							createGraphicsPipelinesHandlerNorm	(VkDevice								device,
+																			 VkPipelineCache						pipelineCache,
+																			 deUint32								createInfoCount,
+																			 const VkGraphicsPipelineCreateInfo*	pCreateInfos,
+																			 const VkAllocationCallbacks*			pAllocator,
+																			 VkPipeline*							pPipelines) const;
+	void								createGraphicsPipelinesHandlerStat	(VkDevice								device,
+																			 VkPipelineCache						pipelineCache,
+																			 deUint32								createInfoCount,
+																			 const VkGraphicsPipelineCreateInfo*	pCreateInfos,
+																			 const VkAllocationCallbacks*			pAllocator,
+																			 VkPipeline*							pPipelines) const;
+	VkResult							createComputePipelinesHandlerNorm	(VkDevice								device,
+																			 VkPipelineCache						pipelineCache,
+																			 deUint32								createInfoCount,
+																			 const VkComputePipelineCreateInfo*		pCreateInfos,
+																			 const VkAllocationCallbacks*			pAllocator,
+																			 VkPipeline*							pPipelines) const;
+	void								createComputePipelinesHandlerStat	(VkDevice								device,
+																			 VkPipelineCache						pipelineCache,
+																			 deUint32								createInfoCount,
+																			 const VkComputePipelineCreateInfo*		pCreateInfos,
+																			 const VkAllocationCallbacks*			pAllocator,
+																			 VkPipeline*							pPipelines) const;
+	void								destroyPipelineHandler				(VkDevice								device,
+																			 VkPipeline								pipeline,
+																			 const VkAllocationCallbacks*			pAllocator) const;
+	void								createRenderPassHandler				(VkDevice								device,
+																			 const VkRenderPassCreateInfo*			pCreateInfo,
+																			 const VkAllocationCallbacks*			pAllocator,
+																			 VkRenderPass*							pRenderPass) const;
+	void								createRenderPass2Handler			(VkDevice								device,
+																			 const VkRenderPassCreateInfo2*			pCreateInfo,
+																			 const VkAllocationCallbacks*			pAllocator,
+																			 VkRenderPass*							pRenderPass) const;
+	void								destroyRenderPassHandler			(VkDevice								device,
+																			 VkRenderPass							renderPass,
+																			 const VkAllocationCallbacks*			pAllocator) const;
+	void								createSamplerHandler				(VkDevice								device,
+																			 const VkSamplerCreateInfo*				pCreateInfo,
+																			 const VkAllocationCallbacks*			pAllocator,
+																			 VkSampler*								pSampler) const;
+	virtual VkResult					createShaderModule					(VkDevice								device,
+																			 const	VkShaderModuleCreateInfo*		pCreateInfo,
+																			 const VkAllocationCallbacks*			pAllocator,
+																			 VkShaderModule*						pShaderModule) const;
+
+	de::SharedPtr<ResourceInterface>	gerResourceInterface				() const;
+	VkDeviceObjectReservationCreateInfo	getStatistics						() const;
+	void								resetStatistics						() const;
+
+protected:
+	mutable std::mutex														functionMutex;
+	bool																	m_normalMode;
+
+	de::SharedPtr<vk::ResourceInterface>									m_resourceInterface;
+
+	mutable deUint64														m_resourceCounter;
+	mutable VkDeviceObjectReservationCreateInfo								m_statCurrent;
+	mutable VkDeviceObjectReservationCreateInfo								m_statMax;
+
+	mutable std::vector<deUint8>											m_falseMemory;
+	mutable std::map<VkImageView, VkImageViewCreateInfo>					m_imageViews;
+	mutable std::map<VkRenderPass, VkRenderPassCreateInfo>					m_renderPasses;
+	mutable std::map<VkRenderPass, VkRenderPassCreateInfo2>					m_renderPasses2;
+	mutable std::map<VkPipeline, VkGraphicsPipelineCreateInfo>				m_graphicsPipelines;
+	mutable std::map<VkPipeline, VkComputePipelineCreateInfo>				m_computePipelines;
+};
+
+#endif // CTS_USES_VULKANSC
 
 // Defined in vkWsiPlatform.hpp
 namespace wsi

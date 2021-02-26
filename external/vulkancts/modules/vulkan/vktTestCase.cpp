@@ -33,6 +33,9 @@
 #include "vkDebugReportUtil.hpp"
 #include "vkDeviceFeatures.hpp"
 #include "vkDeviceProperties.hpp"
+#ifdef CTS_USES_VULKANSC
+#include "vkSafetyCriticalUtil.hpp"
+#endif // CTS_USES_VULKANSC
 
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
@@ -219,16 +222,17 @@ static deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstanc
 	TCU_THROW(NotSupportedError, "No matching queue found");
 }
 
-Move<VkDevice> createDefaultDevice (const PlatformInterface&			vkp,
-									VkInstance							instance,
-									const InstanceInterface&			vki,
-									VkPhysicalDevice					physicalDevice,
-									const deUint32						apiVersion,
-									deUint32							queueIndex,
-									deUint32							sparseQueueIndex,
-									const VkPhysicalDeviceFeatures2&	enabledFeatures,
-									const vector<string>&				enabledExtensions,
-									const tcu::CommandLine&				cmdLine)
+Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
+									VkInstance								instance,
+									const InstanceInterface&				vki,
+									VkPhysicalDevice						physicalDevice,
+									const deUint32							apiVersion,
+									deUint32								queueIndex,
+									deUint32								sparseQueueIndex,
+									const VkPhysicalDeviceFeatures2&		enabledFeatures,
+									const vector<string>&					enabledExtensions,
+									const tcu::CommandLine&					cmdLine,
+									de::SharedPtr<vk::ResourceInterface>	resourceInterface)
 {
 	VkDeviceQueueCreateInfo		queueInfo[2];
 	VkDeviceCreateInfo			deviceInfo;
@@ -286,6 +290,36 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&			vkp,
 	deviceInfo.ppEnabledLayerNames			= (enabledLayers.empty() ? DE_NULL : enabledLayers.data());
 	deviceInfo.pEnabledFeatures				= enabledFeatures.pNext ? DE_NULL : &enabledFeatures.features;
 
+#ifdef CTS_USES_VULKANSC
+	// devices created for Vulkan SC must have VkDeviceObjectReservationCreateInfo structure defined in VkDeviceCreateInfo::pNext chain
+	VkDeviceObjectReservationCreateInfo	dmrCI	= resetDeviceObjectReservationCreateInfo();
+	VkPipelineCacheCreateInfo			pcCI	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,	// VkStructureType				sType;
+		DE_NULL,										// const void*					pNext;
+		(VkPipelineCacheCreateFlags)0u,					// VkPipelineCacheCreateFlags	flags;
+		0U,												// deUintptr					initialDataSize;
+		DE_NULL											// const void*					pInitialData;
+	};
+
+	if (cmdLine.isSubProcess())
+	{
+		// For ResourceInterfaceStandard pipeline cache will be built on the same physical device using vkCreateDevice.
+		// For target solution - below mentioned arguments will not be necessary, because pipelineCache will be built on another machine
+		resourceInterface->importPipelineCacheData(vkp, instance, vki, physicalDevice, queueIndex, enabledFeatures, extensionPtrs);
+		pcCI.initialDataSize				= resourceInterface->getCacheDataSize();
+		pcCI.pInitialData					= resourceInterface->getCacheData();
+		dmrCI								= resourceInterface->getMemoryReservation();
+		dmrCI.pipelineCacheCreateInfoCount	= 1;
+		dmrCI.pPipelineCacheCreateInfos		= &pcCI;
+	}
+
+	dmrCI.pNext = deviceInfo.pNext;
+	deviceInfo.pNext = &dmrCI;
+#else
+	DE_UNREF(resourceInterface);
+#endif // CTS_USES_VULKANSC
+
 	return createDevice(vkp, instance, vki, physicalDevice, &deviceInfo);
 };
 
@@ -294,7 +328,7 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&			vkp,
 class DefaultDevice
 {
 public:
-																	DefaultDevice							(const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine);
+																	DefaultDevice							(const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine, de::SharedPtr<vk::ResourceInterface> resourceInterface);
 																	~DefaultDevice							(void);
 
 	VkInstance														getInstance								(void) const { return *m_instance;											}
@@ -324,7 +358,7 @@ public:
 #include "vkDevicePropertiesForDefaultDeviceDefs.inl"
 
 	VkDevice														getDevice								(void) const { return *m_device;											}
-	const DeviceInterface&											getDeviceInterface						(void) const { return m_deviceInterface;									}
+	const DeviceInterface&											getDeviceInterface						(void) const { return *m_deviceInterface;									}
 	const vector<string>&											getDeviceExtensions						(void) const { return m_deviceExtensions;									}
 	deUint32														getUsedApiVersion						(void) const { return m_usedApiVersion;										}
 	deUint32														getUniversalQueueFamilyIndex			(void) const { return m_universalQueueFamilyIndex;							}
@@ -366,7 +400,7 @@ private:
 	const DeviceProperties				m_deviceProperties;
 
 	const Unique<VkDevice>				m_device;
-	const DeviceDriver					m_deviceInterface;
+	const de::MovePtr<DeviceDriver>		m_deviceInterface;
 };
 
 namespace
@@ -388,7 +422,7 @@ de::MovePtr<vk::DebugReportRecorder> createDebugReportRecorder (const vk::Platfo
 #endif // CTS_USES_VULKANSC
 } // anonymous
 
-DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine)
+DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine, de::SharedPtr<vk::ResourceInterface> resourceInterface)
 	: m_maximumFrameworkVulkanVersion	(VK_API_MAX_FRAMEWORK_VERSION)
 	, m_availableInstanceVersion		(getTargetInstanceVersion(vkPlatform))
 	, m_usedInstanceVersion				(sanitizeApiVersion(deMinu32(m_availableInstanceVersion, m_maximumFrameworkVulkanVersion)))
@@ -415,9 +449,16 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 	, m_universalQueueFamilyIndex		(findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT))
 	, m_sparseQueueFamilyIndex			(m_deviceFeatures.getCoreFeatures2().features.sparseBinding ? findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_SPARSE_BINDING_BIT) : 0)
 	, m_deviceProperties				(m_instanceInterface, m_usedApiVersion, m_physicalDevice, m_instanceExtensions, m_deviceExtensions)
-	, m_device							(createDefaultDevice(vkPlatform, *m_instance, m_instanceInterface, m_physicalDevice, m_usedApiVersion, m_universalQueueFamilyIndex, m_sparseQueueFamilyIndex, m_deviceFeatures.getCoreFeatures2(), m_deviceExtensions, cmdLine))
-	, m_deviceInterface					(vkPlatform, *m_instance, *m_device)
+	, m_device							(createDefaultDevice(vkPlatform, *m_instance, m_instanceInterface, m_physicalDevice, m_usedApiVersion, m_universalQueueFamilyIndex, m_sparseQueueFamilyIndex, m_deviceFeatures.getCoreFeatures2(), m_deviceExtensions, cmdLine, resourceInterface))
+#ifndef CTS_USES_VULKANSC
+	, m_deviceInterface					(de::MovePtr<DeviceDriver>(new DeviceDriver(vkPlatform, *m_instance, *m_device)))
+#else
+	, m_deviceInterface					(de::MovePtr<DeviceDriverSC>(new DeviceDriverSC(vkPlatform, *m_instance, *m_device, cmdLine, resourceInterface)))
+#endif // CTS_USES_VULKANSC
 {
+#ifndef CTS_USES_VULKANSC
+	DE_UNREF(resourceInterface);
+#endif
 	DE_ASSERT(m_deviceVersions.first == m_deviceVersion);
 }
 
@@ -427,7 +468,7 @@ DefaultDevice::~DefaultDevice (void)
 
 VkQueue DefaultDevice::getUniversalQueue (void) const
 {
-	return getDeviceQueue(m_deviceInterface, *m_device, m_universalQueueFamilyIndex, 0);
+	return getDeviceQueue(*m_deviceInterface, *m_device, m_universalQueueFamilyIndex, 0);
 }
 
 VkQueue DefaultDevice::getSparseQueue (void) const
@@ -435,7 +476,7 @@ VkQueue DefaultDevice::getSparseQueue (void) const
 	if (!m_deviceFeatures.getCoreFeatures2().features.sparseBinding)
 		TCU_THROW(NotSupportedError, "Sparse binding not supported.");
 
-	return getDeviceQueue(m_deviceInterface, *m_device, m_sparseQueueFamilyIndex, 0);
+	return getDeviceQueue(*m_deviceInterface, *m_device, m_sparseQueueFamilyIndex, 0);
 }
 
 namespace
@@ -454,13 +495,15 @@ vk::Allocator* createAllocator (DefaultDevice* device)
 
 // Context
 
-Context::Context (tcu::TestContext&				testCtx,
-				  const vk::PlatformInterface&	platformInterface,
-				  vk::BinaryCollection&			progCollection)
+Context::Context (tcu::TestContext&						testCtx,
+				  const vk::PlatformInterface&			platformInterface,
+				  vk::BinaryCollection&					progCollection,
+				  de::SharedPtr<vk::ResourceInterface>	resourceInterface )
 	: m_testCtx					(testCtx)
 	, m_platformInterface		(platformInterface)
 	, m_progCollection			(progCollection)
-	, m_device					(new DefaultDevice(m_platformInterface, testCtx.getCommandLine()))
+	, m_resourceInterface		(resourceInterface)
+	, m_device					(new DefaultDevice(m_platformInterface, testCtx.getCommandLine(), resourceInterface))
 	, m_allocator				(createAllocator(m_device.get()))
 	, m_resultSetOnValidation	(false)
 {
@@ -581,6 +624,7 @@ deUint32								Context::getUniversalQueueFamilyIndex		(void) const { return m_d
 vk::VkQueue								Context::getUniversalQueue					(void) const { return m_device->getUniversalQueue();			}
 deUint32								Context::getSparseQueueFamilyIndex			(void) const { return m_device->getSparseQueueFamilyIndex();	}
 vk::VkQueue								Context::getSparseQueue						(void) const { return m_device->getSparseQueue();				}
+de::SharedPtr<vk::ResourceInterface>	Context::getResourceInterface				(void) const { return m_resourceInterface;						}
 vk::Allocator&							Context::getDefaultAllocator				(void) const { return *m_allocator;								}
 deUint32								Context::getUsedApiVersion					(void) const { return m_device->getUsedApiVersion();			}
 bool									Context::contextSupports					(const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const

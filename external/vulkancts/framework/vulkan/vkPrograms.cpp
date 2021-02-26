@@ -687,7 +687,6 @@ bool validateProgram (const ProgramBinary& program, std::ostream* dst, const Spi
 
 Move<VkShaderModule> createShaderModule (const DeviceInterface& deviceInterface, VkDevice device, const ProgramBinary& binary, VkShaderModuleCreateFlags flags)
 {
-#ifndef CTS_USES_VULKANSC
 	if (binary.getFormat() == PROGRAM_FORMAT_SPIRV)
 	{
 		const struct VkShaderModuleCreateInfo		shaderModuleInfo	=
@@ -705,9 +704,6 @@ Move<VkShaderModule> createShaderModule (const DeviceInterface& deviceInterface,
 	}
 	else
 		TCU_THROW(NotSupportedError, "Unsupported program format");
-#else // CTS_USES_VULKANSC
-	TCU_THROW(NotSupportedError, "Vulkan SC does not have vkCreateShaderModule() defined");
-#endif // CTS_USES_VULKANSC
 }
 
 glu::ShaderType getGluShaderType (VkShaderStageFlagBits shaderStage)

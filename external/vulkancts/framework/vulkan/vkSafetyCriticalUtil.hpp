@@ -23,7 +23,7 @@
  * \brief Vulkan SC utilities
  *//*--------------------------------------------------------------------*/
 
-#include <vkDefs.hpp>
+#include "vkDefs.hpp"
 
 #ifdef CTS_USES_VULKANSC
 
@@ -31,6 +31,7 @@ namespace vk
 {
 
 VkDeviceObjectReservationCreateInfo resetDeviceObjectReservationCreateInfo();
+VkPipelineIdentifierInfo			resetPipelineIdentifierInfo();
 
 } // vk
 

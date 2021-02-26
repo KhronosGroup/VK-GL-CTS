@@ -971,7 +971,7 @@ tcu::TestStatus pipelineLayoutLifetimeTest (Context& context, VkPipelineBindPoin
 		}
 	};
 
-	const auto shaderStage = (isGraphics ? VK_SHADER_STAGE_FRAGMENT_BIT : VK_SHADER_STAGE_COMPUTE_BIT);
+	const VkShaderStageFlags shaderStage = (isGraphics ? VK_SHADER_STAGE_FRAGMENT_BIT : VK_SHADER_STAGE_COMPUTE_BIT);
 
 	const VkDescriptorSetLayoutBinding setLayoutBindingB[] =
 	{
@@ -1160,7 +1160,9 @@ tcu::TestStatus pipelineLayoutLifetimeTest (Context& context, VkPipelineBindPoin
 
 	vk.cmdBindDescriptorSets(commandBuffer.get(), bindPoint, pipelineLayoutAC.get(), 0u, DE_LENGTH_OF_ARRAY(setHandlesAC), setHandlesAC, 0u, DE_NULL);
 
+#ifndef CTS_USES_VULKANSC
 	vk.destroyDescriptorPool(device, descriptorPool, DE_NULL);
+#endif // CTS_USES_VULKANSC
 
 	// Test should always pass
 	return tcu::TestStatus::pass("Pass");
@@ -1422,7 +1424,7 @@ tcu::TestCaseGroup* createPipelineLayoutTests (tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createPipelineTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> pipelineTests(new tcu::TestCaseGroup(testCtx, "pipeline", "Descriptor set tests"));
+	de::MovePtr<tcu::TestCaseGroup> pipelineTests(new tcu::TestCaseGroup(testCtx, "pipeline", "Pipeline tests"));
 
 	pipelineTests->addChild(createrenderpassTests(testCtx));
 	pipelineTests->addChild(createPipelineLayoutTests(testCtx));

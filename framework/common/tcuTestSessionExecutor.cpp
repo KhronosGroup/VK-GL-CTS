@@ -164,6 +164,10 @@ void TestSessionExecutor::enterTestPackage (TestPackage* testPackage)
 void TestSessionExecutor::leaveTestPackage (TestPackage* testPackage)
 {
 	DE_UNREF(testPackage);
+	m_caseExecutor->deinitTestPackage(m_testCtx);
+	// If m_caseExecutor uses local status then it may perform some tests in deinitTestPackage(). We have to update TestSessionExecutor::m_status
+	if (m_caseExecutor->usesLocalStatus())
+		m_caseExecutor->updateGlobalStatus(m_status);
 	m_caseExecutor.clear();
 	m_testCtx.getLog().startTestsCasesTime();
 
@@ -268,15 +272,22 @@ void TestSessionExecutor::leaveTestCase (TestCase* testCase)
 		// Update statistics.
 		print("  %s (%s)\n", qpGetTestResultName(testResult), testResultDesc);
 
-		m_status.numExecuted += 1;
-		switch (testResult)
+		if(!m_caseExecutor->usesLocalStatus())
 		{
-			case QP_TEST_RESULT_PASS:					m_status.numPassed			+= 1;	break;
-			case QP_TEST_RESULT_NOT_SUPPORTED:			m_status.numNotSupported	+= 1;	break;
-			case QP_TEST_RESULT_QUALITY_WARNING:		m_status.numWarnings		+= 1;	break;
-			case QP_TEST_RESULT_COMPATIBILITY_WARNING:	m_status.numWarnings		+= 1;	break;
-			case QP_TEST_RESULT_WAIVER:					m_status.numWaived			+= 1;	break;
-			default:									m_status.numFailed			+= 1;	break;
+			m_status.numExecuted += 1;
+			switch (testResult)
+			{
+				case QP_TEST_RESULT_PASS:					m_status.numPassed			+= 1;	break;
+				case QP_TEST_RESULT_NOT_SUPPORTED:			m_status.numNotSupported	+= 1;	break;
+				case QP_TEST_RESULT_QUALITY_WARNING:		m_status.numWarnings		+= 1;	break;
+				case QP_TEST_RESULT_COMPATIBILITY_WARNING:	m_status.numWarnings		+= 1;	break;
+				case QP_TEST_RESULT_WAIVER:					m_status.numWaived			+= 1;	break;
+				default:									m_status.numFailed			+= 1;	break;
+			}
+		}
+		else
+		{
+			m_caseExecutor->updateGlobalStatus(m_status);
 		}
 
 		// terminateAfter, Resource error or any error in deinit means that execution should end

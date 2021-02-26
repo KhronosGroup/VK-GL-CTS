@@ -205,6 +205,15 @@ Move<VkEvent> createEvent (const DeviceInterface&		vk,
 
 #ifdef CTS_USES_VULKANSC
 
+// add missing function in Vulkan SC, so that we are able to hack into shader module creation
+
+Move<VkShaderModule> createShaderModule(const DeviceInterface& vk, VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkShaderModule object = 0;
+	VK_CHECK(vk.createShaderModule(device, pCreateInfo, pAllocator, &object));
+	return Move<VkShaderModule>(check<VkShaderModule>(object), Deleter<VkShaderModule>(vk, device, pAllocator));
+}
+
 // stubs for functions removed in Vulkan SC
 
 template<>

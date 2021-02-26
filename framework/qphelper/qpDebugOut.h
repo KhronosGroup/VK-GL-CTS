@@ -38,6 +38,8 @@ void	qpPrintErrorv	(const char* fmt, va_list va);
 void	qpDief			(const char* fmt, ...);
 void	qpDiev			(const char* fmt, va_list va);
 
+void	qpSuppressOutput(int value);
+
 DE_END_EXTERN_C
 
 #endif /* _QPDEBUGOUT_H */

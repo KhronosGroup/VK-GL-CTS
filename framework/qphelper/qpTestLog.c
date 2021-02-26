@@ -330,7 +330,8 @@ qpTestLog* qpTestLog_createFileLog (const char* fileName, deUint32 flags)
 	ContainerStack_reset(&log->containerStack);
 #endif
 
-	qpPrintf("Writing test log into %s\n", fileName);
+	if(!(flags & QP_TEST_LOG_NO_INITIAL_OUTPUT))
+		qpPrintf("Writing test log into %s\n", fileName);
 
 	/* Create output file. */
 	log->outputFile = fopen(fileName, "wb");
@@ -1527,6 +1528,17 @@ deBool qpTestLog_endSampleList (qpTestLog* log)
 	DE_ASSERT(ContainerStack_pop(&log->containerStack) == CONTAINERTYPE_SAMPLELIST);
 
 	deMutex_unlock(log->lock);
+	return DE_TRUE;
+}
+
+deBool qpTestLog_writeRaw(qpTestLog* log, const char* rawContents)
+{
+	DE_ASSERT(log);
+
+	fprintf(log->outputFile, "%s", rawContents);
+	if (!(log->flags & QP_TEST_LOG_NO_FLUSH))
+		qpTestLog_flushFile(log);
+
 	return DE_TRUE;
 }
 

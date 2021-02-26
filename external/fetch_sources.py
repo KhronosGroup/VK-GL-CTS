@@ -229,12 +229,13 @@ class SourceFile (Source):
 		writeBinaryFile(dstPath, data)
 
 class GitRepo (Source):
-	def __init__(self, httpsUrl, sshUrl, revision, baseDir, extractDir = "src", removeTags = []):
+	def __init__(self, httpsUrl, sshUrl, revision, baseDir, extractDir = "src", removeTags = [], patch = ""):
 		Source.__init__(self, baseDir, extractDir)
 		self.httpsUrl	= httpsUrl
 		self.sshUrl		= sshUrl
 		self.revision	= revision
 		self.removeTags	= removeTags
+		self.patch		= patch
 
 	def detectProtocol(self, cmdProtocol = None):
 		# reuse parent repo protocol
@@ -290,6 +291,11 @@ class GitRepo (Source):
 			force_arg = ['--force'] if force else []
 			execute(["git", "fetch"] + force_arg + ["--tags", url, "+refs/heads/*:refs/remotes/origin/*"])
 			execute(["git", "checkout"] + force_arg + [self.revision])
+
+			if(self.patch != ""):
+				patchFile = os.path.join(EXTERNAL_DIR, self.patch)
+				execute(["git", "reset", "--hard", "HEAD"])
+				execute(["git", "apply", patchFile])
 		finally:
 			popWorkingDir()
 
@@ -335,6 +341,11 @@ PACKAGES = [
 		None,
 		"8797ee109e7a6ea4d1f58f387f757545fa35325b",
 		"amber"),
+	GitRepo(
+		"https://github.com/open-source-parsers/jsoncpp.git",
+		None,
+		"9059f5cad030ba11d37818847443a53918c327b1",
+		"jsoncpp"),
 ]
 
 def parseArgs ():

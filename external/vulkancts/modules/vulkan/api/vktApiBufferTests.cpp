@@ -365,6 +365,9 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest			(VkDeviceSize				
 	}
 	else if (vk.bindBufferMemory(vkDevice, *buffer, *memory, 0) != VK_SUCCESS)
 		return tcu::TestStatus::fail("Bind buffer memory failed! (requested memory size: " + de::toString(size) + ")");
+#else
+	if (vk.bindBufferMemory(vkDevice, *buffer, *memory, 0) != VK_SUCCESS)
+		return tcu::TestStatus::fail("Bind buffer memory failed! (requested memory size: " + de::toString(size) + ")");
 #endif // CTS_USES_VULKANSC
 
 	return tcu::TestStatus::pass("Pass");
@@ -451,6 +454,9 @@ tcu::TestStatus							DedicatedAllocationBufferTestInstance::bufferCreateAndAllo
 		errorMsg << "Nonexternal objects cannot require dedicated allocation.";
 		return tcu::TestStatus::fail(errorMsg.str());
 	}
+
+	if(memReqs.memoryRequirements.memoryTypeBits == 0)
+		return tcu::TestStatus::fail("memoryTypeBits is 0");
 
 	const deUint32						heapTypeIndex					= static_cast<deUint32>(deCtz32(memReqs.memoryRequirements.memoryTypeBits));
 	const VkMemoryType					memoryType						= memoryProperties.memoryTypes[heapTypeIndex];
@@ -620,10 +626,12 @@ void createBufferUsageCases (tcu::TestCaseGroup& testGroup, const deUint32 first
 		const VkBufferCreateFlags		bufferCreateFlags[]		=
 		{
 			0,
+#ifndef CTS_USES_VULKANSC
 			VK_BUFFER_CREATE_SPARSE_BINDING_BIT,
 			VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,
 			VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,
 			VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT | VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,
+#endif // CTS_USES_VULKANSC
 		};
 
 		// Dedicated allocation does not support sparse feature

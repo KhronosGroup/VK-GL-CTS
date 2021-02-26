@@ -37,6 +37,8 @@ typedef enum MessageType_e
 	MESSAGETYPE_LAST
 } MessageType;
 
+static int		outputSupressed	= 0;
+
 static void		printRaw		(MessageType type, const char* msg);
 static void		printFmt		(MessageType type, const char* fmt, va_list args);
 static void		exitProcess		(void);
@@ -88,6 +90,11 @@ void qpDiev (const char* format, va_list args)
 	exitProcess();
 }
 
+void qpSuppressOutput(int value)
+{
+	outputSupressed = value;
+}
+
 /* print() implementation. */
 #if (DE_OS == DE_OS_ANDROID)
 
@@ -105,11 +112,17 @@ static android_LogPriority getLogPriority (MessageType type)
 
 void printRaw (MessageType type, const char* message)
 {
+	if (outputSupressed != 0)
+		return;
+
 	__android_log_write(getLogPriority(type), "dEQP", message);
 }
 
 void printFmt (MessageType type, const char* format, va_list args)
 {
+	if (outputSupressed != 0)
+		return;
+
 	__android_log_vprint(getLogPriority(type), "dEQP", format, args);
 }
 
@@ -125,6 +138,9 @@ static FILE* getOutFile (MessageType type)
 
 void printRaw (MessageType type, const char* message)
 {
+	if (outputSupressed != 0)
+		return;
+
 	FILE* out = getOutFile(type);
 
 	if (type == MESSAGETYPE_ERROR)
@@ -141,6 +157,9 @@ void printRaw (MessageType type, const char* message)
 
 void printFmt (MessageType type, const char* format, va_list args)
 {
+	if (outputSupressed != 0)
+		return;
+
 	FILE* out = getOutFile(type);
 
 	if (type == MESSAGETYPE_ERROR)

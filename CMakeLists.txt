@@ -101,6 +101,10 @@ include_directories(${SPIRV_INCLUDE_PATH})
 add_subdirectory(external/amber)
 include_directories(external/amber)
 
+# jsoncpp
+add_subdirectory(external/jsoncpp)
+include_directories(external/jsoncpp/src/include)
+
 # RenderDoc API
 include_directories(external/renderdoc/src)
 

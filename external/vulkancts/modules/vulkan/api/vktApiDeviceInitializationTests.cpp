@@ -1805,8 +1805,10 @@ tcu::TestCaseGroup* createDeviceInitializationTests (tcu::TestContext& testCtx)
 	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_features",				"", createDeviceWithUnsupportedFeaturesTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2",							"", createDeviceQueue2Test);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2_unmatched_flags",			"", createDeviceQueue2UnmatchedFlagsTest);
+#ifndef CTS_USES_VULKANSC
+	// Removed because in main process this test does not really create any instance nor device and functions creating it always return VK_SUCCESS
 	addFunctionCase(deviceInitializationTests.get(), "create_instance_device_intentional_alloc_fail",	"", createInstanceDeviceIntentionalAllocFail);
-
+#endif // CTS_USES_VULKANSC
 	return deviceInitializationTests.release();
 }
 

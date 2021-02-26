@@ -2016,6 +2016,8 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 	checkDuplicateExtensions(results, extensions);
 }
 
+#ifndef CTS_USES_VULKANSC
+
 void checkInstanceExtensionDependencies(tcu::ResultCollector&											results,
 										int																dependencyLength,
 										const std::tuple<deUint32, deUint32, const char*, const char*>*	dependencies,
@@ -2063,6 +2065,8 @@ void checkDeviceExtensionDependencies(tcu::ResultCollector&												results,
 		}
 	}
 }
+
+#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus enumerateInstanceLayers (Context& context)
 {

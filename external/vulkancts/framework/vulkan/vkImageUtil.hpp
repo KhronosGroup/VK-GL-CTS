@@ -338,7 +338,6 @@ void	initDepthStencilImageChessboardPattern	(const DeviceInterface&							vk,
 												 vk::VkPipelineStageFlags						dstStageFlags);
 
 #ifndef CTS_USES_VULKANSC
-
 /*--------------------------------------------------------------------*//*!
  * Checks if the physical device supports creation of the specified
  * image format.
@@ -369,9 +368,7 @@ void	allocateAndBindSparseImage				(const vk::DeviceInterface&						vk,
 												 std::vector<de::SharedPtr<vk::Allocation> >&	allocations,
 												 tcu::TextureFormat								format,
 												 vk::VkImage									destImage);
-
 #endif // CTS_USES_VULKANSC
-
 } // vk
 
 #endif // _VKIMAGEUTIL_HPP

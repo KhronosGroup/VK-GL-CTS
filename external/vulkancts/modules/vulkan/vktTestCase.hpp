@@ -31,6 +31,7 @@
 #include "vkApiVersion.hpp"
 #include "vkDebugReportUtil.hpp"
 #include "vkPlatform.hpp"
+#include "vkResourceInterface.hpp"
 #include "vktTestCaseDefs.hpp"
 #include <vector>
 #include <string>
@@ -55,10 +56,11 @@ class DefaultDevice;
 class Context
 {
 public:
-													Context								(tcu::TestContext&				testCtx,
-																						 const vk::PlatformInterface&	platformInterface,
-																						 vk::BinaryCollection&			progCollection);
-													~Context							(void);
+												Context								(tcu::TestContext&						testCtx,
+																					 const vk::PlatformInterface&			platformInterface,
+																					 vk::BinaryCollection&					progCollection,
+																					 de::SharedPtr<vk::ResourceInterface>	resourceInterface);
+												~Context							(void);
 
 	tcu::TestContext&								getTestContext						(void) const { return m_testCtx;			}
 	const vk::PlatformInterface&					getPlatformInterface				(void) const { return m_platformInterface;	}
@@ -91,21 +93,22 @@ public:
 
 #include "vkDevicePropertiesForContextDecl.inl"
 
-	const std::vector<std::string>&					getDeviceExtensions					(void) const;
-	vk::VkDevice									getDevice							(void) const;
-	const vk::DeviceInterface&						getDeviceInterface					(void) const;
-	deUint32										getUniversalQueueFamilyIndex		(void) const;
-	vk::VkQueue										getUniversalQueue					(void) const;
-	deUint32										getUsedApiVersion					(void) const;
-	deUint32										getSparseQueueFamilyIndex			(void) const;
-	vk::VkQueue										getSparseQueue						(void) const;
-	vk::Allocator&									getDefaultAllocator					(void) const;
-	bool											contextSupports						(const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const;
-	bool											contextSupports						(const vk::ApiVersion version) const;
-	bool											contextSupports						(const deUint32 requiredApiVersionBits) const;
-	bool											requireDeviceFunctionality			(const std::string& required) const;
-	bool											requireInstanceFunctionality		(const std::string& required) const;
-	bool											requireDeviceCoreFeature			(const DeviceCoreFeature requiredDeviceCoreFeature);
+	const std::vector<std::string>&				getDeviceExtensions					(void) const;
+	vk::VkDevice								getDevice							(void) const;
+	const vk::DeviceInterface&					getDeviceInterface					(void) const;
+	deUint32									getUniversalQueueFamilyIndex		(void) const;
+	vk::VkQueue									getUniversalQueue					(void) const;
+	deUint32									getUsedApiVersion					(void) const;
+	deUint32									getSparseQueueFamilyIndex			(void) const;
+	vk::VkQueue									getSparseQueue						(void) const;
+	de::SharedPtr<vk::ResourceInterface>		getResourceInterface				(void) const;
+	vk::Allocator&								getDefaultAllocator					(void) const;
+	bool										contextSupports						(const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const;
+	bool										contextSupports						(const vk::ApiVersion version) const;
+	bool										contextSupports						(const deUint32 requiredApiVersionBits) const;
+	bool										requireDeviceFunctionality			(const std::string& required) const;
+	bool										requireInstanceFunctionality		(const std::string& required) const;
+	bool										requireDeviceCoreFeature			(const DeviceCoreFeature requiredDeviceCoreFeature);
 
 	void*											getInstanceProcAddr					();
 
@@ -124,8 +127,9 @@ protected:
 	const vk::PlatformInterface&					m_platformInterface;
 	vk::BinaryCollection&							m_progCollection;
 
-	const de::UniquePtr<DefaultDevice>				m_device;
-	const de::UniquePtr<vk::Allocator>				m_allocator;
+	de::SharedPtr<vk::ResourceInterface>		m_resourceInterface;
+	const de::UniquePtr<DefaultDevice>			m_device;
+	const de::UniquePtr<vk::Allocator>			m_allocator;
 
 	bool											m_resultSetOnValidation;
 

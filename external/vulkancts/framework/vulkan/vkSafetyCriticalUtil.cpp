@@ -78,6 +78,21 @@ VkDeviceObjectReservationCreateInfo resetDeviceObjectReservationCreateInfo ()
 	return result;
 }
 
+VkPipelineIdentifierInfo resetPipelineIdentifierInfo()
+{
+	VkPipelineIdentifierInfo pipelineID =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_IDENTIFIER_INFO,				// VkStructureType			sType;
+		DE_NULL,												// const void*				pNext;
+		{0},													// deUint8					pipelineIdentifier[VK_UUID_SIZE];
+		VK_PIPELINE_MATCH_CONTROL_APPLICATION_UUID_EXACT_MATCH	// VkPipelineMatchControl	matchControl;
+	};
+	for (deUint32 i = 0; i < VK_UUID_SIZE; ++i)
+		pipelineID.pipelineIdentifier[i] = 0U;
+
+	return pipelineID;
+}
+
 } // vk
 
 #else

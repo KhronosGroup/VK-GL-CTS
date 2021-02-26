@@ -76,6 +76,8 @@ set(VKUTILNOSHADER_SRCS
 	vkRayTracingUtil.cpp
 	vkSafetyCriticalUtil.hpp
 	vkSafetyCriticalUtil.cpp
+	vkResourceInterface.hpp
+	vkResourceInterface.cpp
 	)
 
 set(VKUTILNOSHADER_INLS
@@ -86,6 +88,8 @@ set(VKUTILNOSHADER_INLS
 set(VKSCUTILNOSHADER_INLS
 	generated/vulkansc/vkDeviceFeatures.inl
 	generated/vulkansc/vkDeviceProperties.inl
+	generated/vulkansc/vulkan_json_data.hpp
+	generated/vulkansc/vulkan_json_parser.hpp
 	)
 
 set(VKUTIL_SRCS
@@ -133,25 +137,25 @@ target_link_libraries(vkutilnoshader PUBLIC ${VKUTILNOSHADER_LIBS})
 add_library(vkscutilnoshader STATIC ${VKUTILNOSHADER_SRCS} ${VKSCUTILNOSHADER_INLS})
 target_include_directories(vkscutilnoshader BEFORE PUBLIC generated/vulkansc)
 target_compile_definitions(vkscutilnoshader PUBLIC CTS_USES_VULKANSC)
-target_link_libraries(vkscutilnoshader PUBLIC ${VKUTILNOSHADER_LIBS})
+target_link_libraries(vkscutilnoshader PUBLIC ${VKUTILNOSHADER_LIBS} jsoncpp_static)
 
 if (DEQP_USE_X11)
 	find_package(X11 REQUIRED)
 
 	target_compile_definitions(vkutilnoshader PUBLIC DEQP_SUPPORT_X11=1)
-	target_link_libraries(vkutilnoshader ${X11_LIBRARIES})
+	target_link_libraries(vkutilnoshader PUBLIC ${X11_LIBRARIES})
 
 	target_compile_definitions(vkscutilnoshader PUBLIC DEQP_SUPPORT_X11=1)
-	target_link_libraries(vkscutilnoshader ${X11_LIBRARIES})
+	target_link_libraries(vkscutilnoshader PUBLIC ${X11_LIBRARIES})
 
 	if (DEQP_USE_XCB)
 		find_package(XCB REQUIRED)
 
 		target_compile_definitions(vkutilnoshader PUBLIC DEQP_SUPPORT_XCB=1)
-		target_link_libraries(vkutilnoshader ${XCB_LIBRARIES})
+		target_link_libraries(vkutilnoshader PUBLIC ${XCB_LIBRARIES})
 
 		target_compile_definitions(vkscutilnoshader PUBLIC DEQP_SUPPORT_XCB=1)
-		target_link_libraries(vkscutilnoshader ${XCB_LIBRARIES})
+		target_link_libraries(vkscutilnoshader PUBLIC ${XCB_LIBRARIES})
 
 	endif ()
 endif()

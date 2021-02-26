@@ -238,16 +238,19 @@ deUint32 getDefaultTestThreadCount (void)
 
 struct Environment
 {
-	const PlatformInterface&		vkp;
-	deUint32						apiVersion;
-	const InstanceInterface&		instanceInterface;
-	VkInstance						instance;
-	const DeviceInterface&			vkd;
-	VkDevice						device;
-	deUint32						queueFamilyIndex;
-	const BinaryCollection&			programBinaries;
-	const VkAllocationCallbacks*	allocationCallbacks;
-	deUint32						maxResourceConsumers;		// Maximum number of objects using same Object::Resources concurrently
+	const PlatformInterface&			vkp;
+	deUint32							apiVersion;
+	const InstanceInterface&			instanceInterface;
+	VkInstance							instance;
+	const DeviceInterface&				vkd;
+	VkDevice							device;
+	deUint32							queueFamilyIndex;
+	const BinaryCollection&				programBinaries;
+	const VkAllocationCallbacks*		allocationCallbacks;
+	deUint32							maxResourceConsumers;		// Maximum number of objects using same Object::Resources concurrently
+#ifdef CTS_USES_VULKANSC
+	de::SharedPtr<ResourceInterface>	resourceInterface;
+#endif // CTS_USES_VULKANSC
 	const tcu::CommandLine&			commandLine;
 
 	Environment (Context& context, deUint32 maxResourceConsumers_)
@@ -261,6 +264,9 @@ struct Environment
 		, programBinaries		(context.getBinaryCollection())
 		, allocationCallbacks	(DE_NULL)
 		, maxResourceConsumers	(maxResourceConsumers_)
+#ifdef CTS_USES_VULKANSC
+		, resourceInterface		(context.getResourceInterface())
+#endif // CTS_USES_VULKANSC
 		, commandLine			(context.getTestContext().getCommandLine())
 	{
 	}
@@ -1279,7 +1285,6 @@ struct ShaderModule
 
 	static Move<VkShaderModule> create (const Environment& env, const Resources& res, const Parameters&)
 	{
-#ifndef CTS_USES_VULKANSC
 		const VkShaderModuleCreateInfo	shaderModuleInfo	=
 		{
 			VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -1290,11 +1295,6 @@ struct ShaderModule
 		};
 
 		return createShaderModule(env.vkd, env.device, &shaderModuleInfo, env.allocationCallbacks);
-#else // CTS_USES_VULKANSC
-		DE_UNREF(env);
-		DE_UNREF(res);
-		TCU_THROW(NotSupportedError, "Vulkan SC does not have vkCreateShaderModule() defined (vktApiObjectManagementTests.cpp)");
-#endif // CTS_USES_VULKANSC
 	}
 };
 
@@ -2745,13 +2745,22 @@ struct EnvClone
 {
 	Device::Resources	deviceRes;
 	Unique<VkDevice>	device;
+#ifndef CTS_USES_VULKANSC
 	DeviceDriver		vkd;
+#else
+	DeviceDriverSC		vkd;
+#endif // CTS_USES_VULKANSC
+
 	Environment			env;
 
 	EnvClone (const Environment& parent, const Device::Parameters& deviceParams, deUint32 maxResourceConsumers)
 		: deviceRes	(parent, deviceParams)
 		, device	(Device::create(parent, deviceRes, deviceParams))
+#ifndef CTS_USES_VULKANSC
 		, vkd		(parent.vkp, parent.instance, *device)
+#else
+		, vkd		(parent.vkp, parent.instance, *device, parent.commandLine, parent.resourceInterface)
+#endif // CTS_USES_VULKANSC
 		, env		(parent.vkp, parent.apiVersion, parent.instanceInterface, parent.instance, vkd, *device, deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers, parent.commandLine)
 	{
 	}
@@ -3447,6 +3456,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "max_concurrent", "Maximum number of concurrently live objects", s_createMaxConcurrentGroup));
 
+#ifndef CTS_USES_VULKANSC
 	const CaseDescriptions	s_multithreadedCreatePerThreadDeviceGroup	=
 	{
 		EMPTY_CASE_DESC(Instance),		// Does not make sense
@@ -3476,7 +3486,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<CommandBuffer>,			s_commandBufferCases),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_per_thread_device", "Multithreaded object construction with per-thread device ", s_multithreadedCreatePerThreadDeviceGroup));
-
+#endif // CTS_USES_VULKANSC
 	const CaseDescriptions	s_multithreadedCreatePerThreadResourcesGroup	=
 	{
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Instance>,					s_instanceCases),

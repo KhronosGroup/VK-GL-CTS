@@ -276,6 +276,9 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer				(VkDeviceSize				
 	deMemset(&memoryProperties, 0, sizeof(memoryProperties));
 	vkInstance.getPhysicalDeviceMemoryProperties(vkPhysicalDevice, &memoryProperties);
 
+	if (memReqs.memoryRequirements.memoryTypeBits == 0)
+		return tcu::TestStatus::fail("memoryTypeBits is 0");
+
 	const deUint32						heapTypeIndex					= static_cast<deUint32>(deCtz32(memReqs.memoryRequirements.memoryTypeBits));
 
 	vk.getBufferMemoryRequirements2(vkDevice, &info, &memReqs);			// get the proper size requirement

@@ -91,6 +91,13 @@ Move<VkEvent>			createEvent				(const DeviceInterface&			vk,
 												 VkEventCreateFlags				flags = (VkEventCreateFlags)0u,
 												 const VkAllocationCallbacks*	pAllocateInfo = DE_NULL);
 
+#ifdef CTS_USES_VULKANSC
+Move<VkShaderModule>	createShaderModule		(const DeviceInterface&			vk,
+												 VkDevice						device,
+												 const VkShaderModuleCreateInfo*	pCreateInfo,
+												 const VkAllocationCallbacks*	pAllocator = DE_NULL);
+#endif // CTS_USES_VULKANSC
+
 } // vk
 
 #endif // _VKREFUTIL_HPP

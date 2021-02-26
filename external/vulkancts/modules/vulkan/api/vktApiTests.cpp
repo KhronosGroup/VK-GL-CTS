@@ -42,13 +42,13 @@
 #include "vktApiVersionCheck.hpp"
 #include "vktApiMaintenance3Check.hpp"
 #include "vktApiDescriptorSetTests.hpp"
+#include "vktApiPipelineTests.hpp"
 #include "vktApiMemoryRequirementInvarianceTests.hpp"
 
 #ifndef CTS_USES_VULKANSC
 #include "vktApiSmokeTests.hpp"
 #include "vktApiBufferMarkerTests.hpp"
 #include "vktApiExternalMemoryTests.hpp"
-#include "vktApiPipelineTests.hpp"
 #include "vktApiToolingInfoTests.hpp"
 #endif // CTS_USES_VULKANSC
 
@@ -98,9 +98,7 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 #endif // CTS_USES_VULKANSC
 	apiTests->addChild(createMaintenance3Tests					(testCtx));
 	apiTests->addChild(createDescriptorSetTests					(testCtx));
-#ifndef CTS_USES_VULKANSC
 	apiTests->addChild(createPipelineTests						(testCtx));
-#endif // CTS_USES_VULKANSC
 	apiTests->addChild(createMemoryRequirementInvarianceTests	(testCtx));
 #ifndef CTS_USES_VULKANSC
 	apiTests->addChild(createToolingInfoTests					(testCtx));

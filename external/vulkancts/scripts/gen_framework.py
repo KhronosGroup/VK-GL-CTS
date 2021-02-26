@@ -1108,6 +1108,89 @@ def writeFuncPtrInterfaceImpl (api, filename, functionTypes, className):
 
 	writeInlFile(filename, INL_HEADER, makeFuncPtrInterfaceImpl())
 
+def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
+	normFuncs = {
+		"createGraphicsPipelines"		: "createGraphicsPipelinesHandlerNorm(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);",
+		"createComputePipelines"		: "createComputePipelinesHandlerNorm(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);",
+	}
+	statFuncs = {
+		"createDescriptorSetLayout"		: "\t\tcreateDescriptorSetLayoutHandler(device, pCreateInfo, pAllocator, pSetLayout);",
+		"destroyDescriptorSetLayout"	: "\t\tDDSTAT_HANDLE_DESTROY(descriptorSetLayoutRequestCount,1);",
+		"createImageView"				: "\t\tcreateImageViewHandler(device, pCreateInfo, pAllocator, pView);",
+		"destroyImageView"				: "\t\tdestroyImageViewHandler(device, imageView, pAllocator);",
+		"createSemaphore"				: "\t{\n\t\tDDSTAT_HANDLE_CREATE(semaphoreRequestCount,1);\n\t\t*pSemaphore = Handle<HANDLE_TYPE_SEMAPHORE>(++m_resourceCounter);\n\t}",
+		"destroySemaphore"				: "\t\tDDSTAT_HANDLE_DESTROY(semaphoreRequestCount,1);",
+		"allocateCommandBuffers"		: "\t{\n\t\tDDSTAT_HANDLE_CREATE(commandBufferRequestCount,pAllocateInfo->commandBufferCount);\n\t\t*pCommandBuffers = (VkCommandBuffer)++m_resourceCounter;\n\t}",
+		"freeCommandBuffers"			: "\tDDSTAT_HANDLE_DESTROY(commandBufferRequestCount,commandBufferCount);",
+		"createFence"					: "\t{\n\t\tDDSTAT_HANDLE_CREATE(fenceRequestCount,1);\n\t\t*pFence = Handle<HANDLE_TYPE_FENCE>(++m_resourceCounter);\n\t}",
+		"destroyFence"					: "\t\tDDSTAT_HANDLE_DESTROY(fenceRequestCount,1);",
+		"allocateMemory"				: "\t{\n\t\tDDSTAT_HANDLE_CREATE(deviceMemoryRequestCount,1);\n\t\t*pMemory = Handle<HANDLE_TYPE_DEVICE_MEMORY>(++m_resourceCounter);\n\t}",
+		"createBuffer"					: "\t{\n\t\tDDSTAT_HANDLE_CREATE(bufferRequestCount,1);\n\t\t*pBuffer = Handle<HANDLE_TYPE_BUFFER>(++m_resourceCounter);\n\t}",
+		"destroyBuffer"					: "\t\tDDSTAT_HANDLE_DESTROY(bufferRequestCount,1);",
+		"createImage"					: "\t{\n\t\tDDSTAT_HANDLE_CREATE(imageRequestCount,1);\n\t\t*pImage = Handle<HANDLE_TYPE_IMAGE>(++m_resourceCounter);\n\t}",
+		"destroyImage"					: "\t\tDDSTAT_HANDLE_DESTROY(imageRequestCount,1);",
+		"createEvent"					: "\t{\n\t\tDDSTAT_HANDLE_CREATE(eventRequestCount,1);\n\t\t*pEvent = Handle<HANDLE_TYPE_EVENT>(++m_resourceCounter);\n\t}",
+		"destroyEvent"					: "\t\tDDSTAT_HANDLE_DESTROY(eventRequestCount,1);",
+		"createQueryPool"				: "\t\tcreateQueryPoolHandler(device, pCreateInfo, pAllocator, pQueryPool);",
+		"createBufferView"				: "\t{\n\t\tDDSTAT_HANDLE_CREATE(bufferViewRequestCount,1);\n\t\t*pView = Handle<HANDLE_TYPE_BUFFER_VIEW>(++m_resourceCounter);\n\t}",
+		"destroyBufferView"				: "\t\tDDSTAT_HANDLE_DESTROY(bufferViewRequestCount,1);",
+		"createPipelineLayout"			: "\t\tcreatePipelineLayoutHandler(device, pCreateInfo, pAllocator, pPipelineLayout);",
+		"destroyPipelineLayout"			: "\t\tDDSTAT_HANDLE_DESTROY(pipelineLayoutRequestCount,1);",
+		"createRenderPass"				: "\t\tcreateRenderPassHandler(device, pCreateInfo, pAllocator, pRenderPass);",
+		"createRenderPass2"				: "\t\tcreateRenderPass2Handler(device, pCreateInfo, pAllocator, pRenderPass);",
+		"destroyRenderPass"				: "\t\tdestroyRenderPassHandler(device, renderPass, pAllocator);",
+		"createGraphicsPipelines"		: "\t\tcreateGraphicsPipelinesHandlerStat(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);",
+		"createComputePipelines"		: "\t\tcreateComputePipelinesHandlerStat(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);",
+		"destroyPipeline"				: "\t\tdestroyPipelineHandler(device, pipeline, pAllocator);",
+		"createSampler"					: "\t\tcreateSamplerHandler(device, pCreateInfo, pAllocator, pSampler);",
+		"destroySampler"				: "\t\tDDSTAT_HANDLE_DESTROY(samplerRequestCount,1);",
+		"createDescriptorPool"			: "\t{\n\t\tDDSTAT_HANDLE_CREATE(descriptorPoolRequestCount,1);\n\t\t*pDescriptorPool = Handle<HANDLE_TYPE_DESCRIPTOR_POOL>(++m_resourceCounter);\n\t}",
+		"allocateDescriptorSets"		: "\t{\n\t\tDDSTAT_HANDLE_CREATE(descriptorSetRequestCount,pAllocateInfo->descriptorSetCount);\n\t\t*pDescriptorSets = Handle<HANDLE_TYPE_DESCRIPTOR_SET>(++m_resourceCounter);\n\t}",
+		"freeDescriptorSets"			: "\t\tDDSTAT_HANDLE_DESTROY(descriptorSetRequestCount,descriptorSetCount);",
+		"createFramebuffer"				: "\t{\n\t\tDDSTAT_HANDLE_CREATE(framebufferRequestCount,1);\n\t\t*pFramebuffer = Handle<HANDLE_TYPE_FRAMEBUFFER>(++m_resourceCounter);\n\t}",
+		"destroyFramebuffer"			: "\t\tDDSTAT_HANDLE_DESTROY(framebufferRequestCount,1);",
+		"createCommandPool"				: "\t{\n\t\tDDSTAT_HANDLE_CREATE(commandPoolRequestCount,1);\n\t\t*pCommandPool = Handle<HANDLE_TYPE_COMMAND_POOL>(++m_resourceCounter);\n\t}",
+		"createSamplerYcbcrConversion"	: "\t{\n\t\tDDSTAT_HANDLE_CREATE(samplerYcbcrConversionRequestCount,1);\n\t\t*pYcbcrConversion = Handle<HANDLE_TYPE_SAMPLER_YCBCR_CONVERSION>(++m_resourceCounter);\n\t}",
+		"destroySamplerYcbcrConversion"	: "\t\tDDSTAT_HANDLE_DESTROY(samplerYcbcrConversionRequestCount,1);",
+#		"" : "surfaceRequestCount",
+#		"" : "swapchainRequestCount",
+#		"" : "displayModeRequestCount"
+		"mapMemory"						: "\t{\n\t\tif(m_falseMemory.size() < (static_cast<std::size_t>(offset+size)))\n\t\t\tm_falseMemory.resize(static_cast<std::size_t>(offset+size));\n\t\t*ppData = (void*)m_falseMemory.data();\n\t}",
+		"getBufferMemoryRequirements"	: "\t{\n\t\tpMemoryRequirements->size = 1048576;\n\t\tpMemoryRequirements->alignment = 1;\n\t\tpMemoryRequirements->memoryTypeBits = ~0U;\n\t}",
+		"getImageMemoryRequirements"	: "\t{\n\t\tpMemoryRequirements->size = 1048576;\n\t\tpMemoryRequirements->alignment = 1;\n\t\tpMemoryRequirements->memoryTypeBits = ~0U;\n\t}",
+		"getBufferMemoryRequirements2"	: "\t{\n\t\tpMemoryRequirements->memoryRequirements.size = 1048576;\n\t\tpMemoryRequirements->memoryRequirements.alignment = 1;\n\t\tpMemoryRequirements->memoryRequirements.memoryTypeBits = ~0U;\n\t}",
+		"getImageMemoryRequirements2"	: "\t{\n\t\tpMemoryRequirements->memoryRequirements.size = 1048576;\n\t\tpMemoryRequirements->memoryRequirements.alignment = 1;\n\t\tpMemoryRequirements->memoryRequirements.memoryTypeBits = ~0U;\n\t}",
+		"createPipelineCache"			: "\t\t*pPipelineCache = Handle<HANDLE_TYPE_PIPELINE_CACHE>(++m_resourceCounter);"
+	}
+
+	statReturns = {
+		"VkResult"			: "return VK_SUCCESS;",
+		"VkDeviceAddress"	: "return 0u;",
+		"uint64_t"			: "return 0u;",
+	}
+	def makeFuncPtrInterfaceStatisticsImpl ():
+		for function in api.functions:
+			if function.getType() in functionTypes and not function.isAlias:
+				yield ""
+				yield "%s %s::%s (%s) const" % (function.returnType, className, getInterfaceName(function), argListToStr(function.arguments))
+				yield "{"
+				if ( getInterfaceName(function) in normFuncs ) or ( getInterfaceName(function) in statFuncs ):
+					yield "\tstd::lock_guard<std::mutex> lock(functionMutex);"
+				if getInterfaceName(function) != "getDeviceProcAddr" :
+					yield "	if (m_normalMode)"
+				if getInterfaceName(function) in normFuncs :
+					yield "		%s%s" % ( "return " if function.returnType != "void" else "", normFuncs[getInterfaceName(function)] )
+				else:
+					yield "		%sm_vk.%s(%s);" % ("return " if function.returnType != "void" else "", getInterfaceName(function), ", ".join(a.name for a in function.arguments))
+				if getInterfaceName(function) in statFuncs :
+					yield "	else"
+					yield "%s" % ( statFuncs[getInterfaceName(function)] )
+				if function.returnType in statReturns:
+					yield "	%s" % ( statReturns[function.returnType] )
+				yield "}"
+
+	writeInlFile(filename, INL_HEADER, makeFuncPtrInterfaceStatisticsImpl())
+
 def writeStrUtilProto (api, filename):
 	def makeStrUtilProto ():
 		for line in indentLines(["const char*\tget%sName\t(%s value);" % (enum.name[2:], enum.name) for enum in api.enums if not enum.isAlias]):
@@ -2468,20 +2551,22 @@ if __name__ == "__main__":
 	writeCompositeTypes						(api, os.path.join(VULKAN_DIR[args.api], "vkStructTypes.inl"))
 	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR[args.api], "vkVirtualPlatformInterface.inl"),		platformFuncs,	False)
 	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR[args.api], "vkVirtualInstanceInterface.inl"),		instanceFuncs,	False)
-	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR[args.api], "vkVirtualDeviceInterface.inl"),			deviceFuncs,	False)
-	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR[args.api], "vkConcretePlatformInterface.inl"),		platformFuncs,	True)
-	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR[args.api], "vkConcreteInstanceInterface.inl"),		instanceFuncs,	True)
+	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR[args.api], "vkVirtualDeviceInterface.inl"),		deviceFuncs,	False)
+	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR[args.api], "vkConcretePlatformInterface.inl"),	platformFuncs,	True)
+	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR[args.api], "vkConcreteInstanceInterface.inl"),	instanceFuncs,	True)
 	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR[args.api], "vkConcreteDeviceInterface.inl"),		deviceFuncs,	True)
 	writeFunctionPtrTypes					(api, os.path.join(VULKAN_DIR[args.api], "vkFunctionPointerTypes.inl"))
 	writeFunctionPointers					(api, os.path.join(VULKAN_DIR[args.api], "vkPlatformFunctionPointers.inl"),		platformFuncs)
 	writeFunctionPointers					(api, os.path.join(VULKAN_DIR[args.api], "vkInstanceFunctionPointers.inl"),		instanceFuncs)
-	writeFunctionPointers					(api, os.path.join(VULKAN_DIR[args.api], "vkDeviceFunctionPointers.inl"),			deviceFuncs)
+	writeFunctionPointers					(api, os.path.join(VULKAN_DIR[args.api], "vkDeviceFunctionPointers.inl"),		deviceFuncs)
 	writeInitFunctionPointers				(api, os.path.join(VULKAN_DIR[args.api], "vkInitPlatformFunctionPointers.inl"),	platformFuncs,	lambda f: f.name != "vkGetInstanceProcAddr")
 	writeInitFunctionPointers				(api, os.path.join(VULKAN_DIR[args.api], "vkInitInstanceFunctionPointers.inl"),	instanceFuncs)
-	writeInitFunctionPointers				(api, os.path.join(VULKAN_DIR[args.api], "vkInitDeviceFunctionPointers.inl"),		deviceFuncs)
-	writeFuncPtrInterfaceImpl				(api, os.path.join(VULKAN_DIR[args.api], "vkPlatformDriverImpl.inl"),				platformFuncs,	"PlatformDriver")
-	writeFuncPtrInterfaceImpl				(api, os.path.join(VULKAN_DIR[args.api], "vkInstanceDriverImpl.inl"),				instanceFuncs,	"InstanceDriver")
+	writeInitFunctionPointers				(api, os.path.join(VULKAN_DIR[args.api], "vkInitDeviceFunctionPointers.inl"),	deviceFuncs)
+	writeFuncPtrInterfaceImpl				(api, os.path.join(VULKAN_DIR[args.api], "vkPlatformDriverImpl.inl"),			platformFuncs,	"PlatformDriver")
+	writeFuncPtrInterfaceImpl				(api, os.path.join(VULKAN_DIR[args.api], "vkInstanceDriverImpl.inl"),			instanceFuncs,	"InstanceDriver")
 	writeFuncPtrInterfaceImpl				(api, os.path.join(VULKAN_DIR[args.api], "vkDeviceDriverImpl.inl"),				deviceFuncs,	"DeviceDriver")
+	if args.api=='SC':
+		writeFuncPtrInterfaceSCImpl			(api, os.path.join(VULKAN_DIR[args.api], "vkDeviceDriverSCImpl.inl"),			deviceFuncs,	"DeviceDriverSC")
 	writeStrUtilProto						(api, os.path.join(VULKAN_DIR[args.api], "vkStrUtil.inl"))
 	writeStrUtilImpl						(api, os.path.join(VULKAN_DIR[args.api], "vkStrUtilImpl.inl"))
 	writeRefUtilProto						(api, os.path.join(VULKAN_DIR[args.api], "vkRefUtil.inl"))

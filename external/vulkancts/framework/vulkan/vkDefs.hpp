@@ -102,6 +102,12 @@ private:
 	deUint64	m_internal;
 };
 
+template<HandleType Type>
+bool operator<(const Handle<Type>& lhs, const Handle<Type>& rhs)
+{
+	return lhs.getInternal() < rhs.getInternal();
+}
+
 #include "vkBasicTypes.inl"
 
 #define VK_CORE_FORMAT_LAST			((vk::VkFormat)(vk::VK_FORMAT_ASTC_12x12_SRGB_BLOCK+1))
@@ -254,6 +260,10 @@ class DeviceInterface
 {
 public:
 #include "vkVirtualDeviceInterface.inl"
+
+#ifdef CTS_USES_VULKANSC
+	virtual VkResult	createShaderModule	(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule) const = 0;
+#endif // CTS_USES_VULKANSC
 
 protected:
 						DeviceInterface		(void) {}

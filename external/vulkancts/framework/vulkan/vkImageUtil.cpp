@@ -5191,7 +5191,6 @@ bool checkSparseImageFormatSupport (const VkPhysicalDevice		physicalDevice,
 {
 	return checkSparseImageFormatSupport(physicalDevice, instance, imageCreateInfo.format, imageCreateInfo.imageType, imageCreateInfo.samples, imageCreateInfo.usage, imageCreateInfo.tiling);
 }
-
 #endif // CTS_USES_VULKANSC
 
 } // vk
