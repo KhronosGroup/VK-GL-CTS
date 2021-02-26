@@ -1794,8 +1794,8 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 				"    vec3  origin   = vec3(gl_in[i].gl_Position.x + 0.5, gl_in[i].gl_Position.y + 0.5, 0.5);\n"
 				"    uvec4 hitValue = uvec4(0,0,0,0);\n" <<
 				rayQueryTest[m_data.bottomTestType] <<
-				"    imageStore(result, ivec3(gl_PrimitiveIDIn, i, 0), uvec4(hitValue.x, 0, 0, 0));\n"
-				"    imageStore(result, ivec3(gl_PrimitiveIDIn, i, 1), uvec4(hitValue.y, 0, 0, 0));\n"
+				"    imageStore(result, ivec3(gl_PrimitiveIDIn, j, 0), uvec4(hitValue.x, 0, 0, 0));\n"
+				"    imageStore(result, ivec3(gl_PrimitiveIDIn, j, 1), uvec4(hitValue.y, 0, 0, 0));\n"
 				"    gl_Position      = gl_in[i].gl_Position;\n"
 				"    EmitVertex();\n"
 				"  }\n"
