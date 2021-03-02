@@ -202,6 +202,11 @@ public:
 			{
 				TCU_THROW(NotSupportedError, "Handle requires dedicated allocation, but test uses suballocated memory");
 			}
+
+			if (!(formatProperties.imageFormatProperties.sampleCounts & config.resource.imageSamples)) {
+				TCU_THROW(NotSupportedError, "Specified sample count for format not supported");
+			}
+
 		}
 		else
 		{
