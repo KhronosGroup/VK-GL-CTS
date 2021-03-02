@@ -17,6 +17,8 @@ set(DEQP_VK_RAY_QUERY_SRCS
 	vktRayQueryCullRayFlagsTests.hpp
 	vktRayQueryMiscTests.cpp
 	vktRayQueryMiscTests.hpp
+	vktRayQueryDirectionTests.cpp
+	vktRayQueryDirectionTests.hpp
 	)
 
 set(DEQP_VK_RAY_QUERY_LIBS
