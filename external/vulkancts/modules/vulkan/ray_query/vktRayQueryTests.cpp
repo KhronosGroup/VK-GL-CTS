@@ -30,6 +30,7 @@
 #include "vktRayQueryCullRayFlagsTests.hpp"
 #include "vktRayQueryMiscTests.hpp"
 #include "vktRayQueryDirectionTests.hpp"
+#include "vktRayQueryBarycentricCoordinatesTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -53,6 +54,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createCullRayFlagsTests(testCtx));
 	group->addChild(createMiscTests(testCtx));
 	group->addChild(createDirectionTests(testCtx));
+	group->addChild(createBarycentricCoordinatesTests(testCtx));
 
 	return group.release();
 }

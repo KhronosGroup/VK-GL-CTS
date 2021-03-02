@@ -42,6 +42,7 @@
 #include "vktRayTracingBarrierTests.hpp"
 #include "vktRayTracingDataSpillTests.hpp"
 #include "vktRayTracingDirectionTests.hpp"
+#include "vktRayTracingBarycentricCoordinatesTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -77,6 +78,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createBarrierTests(testCtx));
 	group->addChild(createDataSpillTests(testCtx));
 	group->addChild(createDirectionTests(testCtx));
+	group->addChild(createBarycentricCoordinatesTests(testCtx));
 
 	return group.release();
 }

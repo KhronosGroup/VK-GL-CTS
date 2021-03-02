@@ -9,6 +9,8 @@ set(DEQP_VK_RAY_QUERY_SRCS
 	vktRayQueryTraversalControlTests.hpp
 	vktRayQueryAccelerationStructuresTests.cpp
 	vktRayQueryAccelerationStructuresTests.hpp
+	vktRayQueryBarycentricCoordinatesTests.cpp
+	vktRayQueryBarycentricCoordinatesTests.hpp
 	vktRayQueryProceduralGeometryTests.cpp
 	vktRayQueryProceduralGeometryTests.hpp
 	vktRayQueryWatertightnessTests.cpp
