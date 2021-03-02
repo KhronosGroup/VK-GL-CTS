@@ -650,17 +650,13 @@ void StoreTest::initPrograms (SourceCollections& programCollection) const
 	const ImageType usedImageType = (m_singleLayerBind ? getImageTypeForSingleLayer(m_texture.type()) : m_texture.type());
 	const std::string imageTypeStr = getShaderImageType(mapVkFormat(m_format), usedImageType);
 
+	std::string maybeFmtQualStr = m_declareImageFormatInShader ? ", " + getShaderImageFormatQualifier(mapVkFormat(m_format)) : "";
+
 	std::ostringstream src;
 	src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
 		<< "\n"
-		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
-	if (m_declareImageFormatInShader)
-	{
-		const std::string formatQualifierStr = getShaderImageFormatQualifier(mapVkFormat(m_format));
-		src << "layout (binding = 0, " << formatQualifierStr << ") writeonly uniform " << imageTypeStr << " u_image;\n";
-	}
-	else
-		src << "layout (binding = 0) writeonly uniform " << imageTypeStr << " u_image;\n";
+		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+		<< "layout (binding = 0" << maybeFmtQualStr << ") writeonly uniform " << imageTypeStr << " u_image;\n";
 
 	if (m_singleLayerBind)
 		src << "layout (binding = 1) readonly uniform Constants {\n"
@@ -1289,14 +1285,16 @@ void LoadStoreTest::initPrograms (SourceCollections& programCollection) const
 		src << "#extension GL_AMD_shader_image_load_store_lod : require\n";
 	}
 
+	const std::string maybeFmtQualStr = m_declareImageFormatInShader ? ", " + formatQualifierStr : "";
+
 	src << "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
 	if (m_bufferLoadUniform)
 		src << "layout (binding = 0) uniform " << uniformTypeStr << " u_image0;\n";
-	else if (m_declareImageFormatInShader)
-		src << "layout (binding = 0, " << formatQualifierStr << ") " << maybeRestrictStr << "readonly uniform " << imageTypeStr << " u_image0;\n";
 	else
-		src << "layout (binding = 0) " << maybeRestrictStr << "readonly uniform " << imageTypeStr << " u_image0;\n";
+		src << "layout (binding = 0" << maybeFmtQualStr << ") " << maybeRestrictStr << "readonly uniform " << imageTypeStr << " u_image0;\n";
 
+	// For three-component formats, the dst buffer is single-component and the shader expands the store into 3 component-wise stores.
+	// We always use the format qualifier for the dst buffer, except when splitting it up.
 	if (formatHasThreeComponents(m_format))
 		src << "layout (binding = 1) " << maybeRestrictStr << "writeonly uniform " << imageTypeStr << " u_image1;\n";
 	else
@@ -1311,8 +1309,7 @@ void LoadStoreTest::initPrograms (SourceCollections& programCollection) const
 	case 1:
 		if (m_bufferLoadUniform)
 		{
-			// for three-component formats, the dst buffer is single-component and the shader
-			// expands the store into 3 component-wise stores.
+			// Expand the store into 3 component-wise stores.
 			std::string type = getFormatPrefix(texFormat) + "vec4";
 			src << "    int pos = int(gl_GlobalInvocationID.x);\n"
 				   "    " << type << " t = texelFetch(u_image0, " + xMax + "-pos);\n";
@@ -2361,7 +2358,7 @@ ImageExtendOperandTest::ImageExtendOperandTest (tcu::TestContext&				testCtx,
 {
 }
 
-void checkFormatProperties (Context& context, VkFormat format)
+void checkFormatProperties (const Context& context, VkFormat format)
 {
 #ifndef CTS_USES_VULKANSC
 	const VkFormatProperties3 formatProperties (context.getFormatProperties(format));
