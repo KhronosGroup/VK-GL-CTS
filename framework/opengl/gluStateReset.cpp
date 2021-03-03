@@ -1176,7 +1176,7 @@ void resetStateGLCore (const RenderContext& renderCtx, const ContextInfo& ctxInf
 	}
 
 	// Sample shading state.
-	if (contextSupports(type, ApiType::core(2,0)))
+	if (contextSupports(type, ApiType::core(4,0)))
 	{
 		gl.minSampleShading(0.0f);
 		gl.disable(GL_SAMPLE_SHADING);
