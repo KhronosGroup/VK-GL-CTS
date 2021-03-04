@@ -1251,7 +1251,8 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 			samplerCreateInfo.maxAnisotropy = maxAnisotropy;
 		}
 
-		if (samplerCreateInfo.magFilter == VK_FILTER_LINEAR || samplerCreateInfo.minFilter == VK_FILTER_LINEAR || samplerCreateInfo.mipmapMode == VK_SAMPLER_MIPMAP_MODE_LINEAR)
+		bool linFilt = (samplerCreateInfo.magFilter == VK_FILTER_LINEAR || samplerCreateInfo.minFilter == VK_FILTER_LINEAR || samplerCreateInfo.mipmapMode == VK_SAMPLER_MIPMAP_MODE_LINEAR);
+		if (linFilt && samplerCreateInfo.compareEnable == VK_FALSE)
 		{
 			const pipeline::TestTexture&	testTexture			= m_textureBindings[texUnit]->getTestTexture();
 			const VkFormat					textureFormat		= testTexture.isCompressed() ? mapCompressedTextureFormat(testTexture.getCompressedLevel(0, 0).getFormat())
