@@ -21,6 +21,8 @@ set(DEQP_VK_RAY_QUERY_SRCS
 	vktRayQueryMiscTests.hpp
 	vktRayQueryDirectionTests.cpp
 	vktRayQueryDirectionTests.hpp
+	vktRayQueryNonUniformArgsTests.cpp
+	vktRayQueryNonUniformArgsTests.hpp
 	)
 
 set(DEQP_VK_RAY_QUERY_LIBS
