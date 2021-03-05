@@ -537,6 +537,8 @@ void checkSupport (Context& context, TestParameters params)
 
 	if (isYCbCrImage)
 		checkImageSupport(context, params.format, params.flags);
+
+	checkSupportShader(context, params.shaderType);
 }
 
 tcu::TestStatus testImageQueryLod (Context& context, TestParameters params)
