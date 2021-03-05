@@ -173,12 +173,6 @@ the following command line option may be used:
 
 	--deqp-waiver-file=<path>
 
-Some CTS tests use third-party runners. By default all tests are executed
-regardless of runner type (`any`). To exclude all tests using any of the
-external runners (`none`) or to only include tests using a certain runner:
-
-	--deqp-runner-type=(any|none|amber)
-
 No other command line options are allowed.
 
 ### Win32
@@ -496,3 +490,165 @@ RenderDoc UI:
 This causes the framework to interface with the debugger and mark each dEQP
 test case as a separate 'frame', just for the purpose of capturing. The frames
 are added using RenderDoc 'In-Application API', instead of swapchain operations.
+
+
+Third Party Runners
+-------------------
+
+Some CTS tests use third-party runners. By default all tests are executed
+regardless of runner type (`any`). To exclude all tests using any of the
+external runners (`none`) or to only include tests using a certain runner:
+
+	--deqp-runner-type=(any|none|amber)
+
+
+Command Line
+------------
+Full list of parameters for the `deqp-vk` module:
+
+OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
+
+  -h, --help
+    Show this help
+
+  -n, --deqp-case=<value>
+    Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*)
+
+  --deqp-caselist=<value>
+    Case list to run in trie format (e.g. {dEQP-GLES2{info{version,renderer}}})
+
+  --deqp-caselist-file=<value>
+    Read case list (in trie format) from given file
+
+  --deqp-caselist-resource=<value>
+    Read case list (in trie format) from given file located application's assets
+
+  --deqp-stdin-caselist
+    Read case list (in trie format) from stdin
+
+  --deqp-log-filename=<value>
+    Write test results to given file
+    default: 'TestResults.qpa'
+
+  --deqp-runmode=[execute|xml-caselist|txt-caselist|stdout-caselist]
+    Execute tests, or write list of test cases into a file
+    default: 'execute'
+
+  --deqp-caselist-export-file=<value>
+    Set the target file name pattern for caselist export
+    default: '${packageName}-cases.${typeExtension}'
+
+  --deqp-watchdog=[enable|disable]
+    Enable test watchdog
+    default: 'disable'
+
+  --deqp-crashhandler=[enable|disable]
+    Enable crash handling
+    default: 'disable'
+
+  --deqp-base-seed=<value>
+    Base seed for test cases that use randomization
+    default: '0'
+
+  --deqp-test-iteration-count=<value>
+    Iteration count for cases that support variable number of iterations
+    default: '0'
+
+  --deqp-visibility=[windowed|fullscreen|hidden]
+    Default test window visibility
+    default: 'windowed'
+
+  --deqp-surface-width=<value>
+    Use given surface width if possible
+    default: '-1'
+
+  --deqp-surface-height=<value>
+    Use given surface height if possible
+    default: '-1'
+
+  --deqp-surface-type=[window|pixmap|pbuffer|fbo]
+    Use given surface type
+    default: 'window'
+
+  --deqp-screen-rotation=[unspecified|0|90|180|270]
+    Screen rotation for platforms that support it
+    default: '0'
+
+  --deqp-vk-device-id=<value>
+    Vulkan device ID (IDs start from 1)
+    default: '1'
+
+  --deqp-vk-device-group-id=<value>
+    Vulkan device Group ID (IDs start from 1)
+    default: '1'
+
+  --deqp-log-images=[enable|disable]
+    Enable or disable logging of result images
+    default: 'enable'
+
+  --deqp-log-shader-sources=[enable|disable]
+    Enable or disable logging of shader sources
+    default: 'enable'
+
+  --deqp-test-oom=[enable|disable]
+    Run tests that exhaust memory on purpose
+    default: 'enable'
+
+  --deqp-archive-dir=<value>
+    Path to test resource files
+    default: '.'
+
+  --deqp-log-flush=[enable|disable]
+    Enable or disable log file fflush
+    default: 'enable'
+
+  --deqp-validation=[enable|disable]
+    Enable or disable test case validation
+    default: 'disable'
+
+  --deqp-print-validation-errors
+    Print validation errors to standard error
+
+  --deqp-optimization-recipe=<value>
+    Shader optimization recipe (0=disabled, 1=performance, 2=size)
+    default: '0'
+
+  --deqp-optimize-spirv=[enable|disable]
+    Apply optimization to spir-v shaders as well
+    default: 'disable'
+
+  --deqp-shadercache=[enable|disable]
+    Enable or disable shader cache
+    default: 'enable'
+
+  --deqp-shadercache-filename=<value>
+    Write shader cache to given file
+    default: 'shadercache.bin'
+
+  --deqp-shadercache-truncate=[enable|disable]
+    Truncate shader cache before running tests
+    default: 'enable'
+
+  --deqp-renderdoc=[enable|disable]
+    Enable RenderDoc frame markers
+    default: 'disable'
+
+  --deqp-fraction=<value>
+    Run a fraction of the test cases (e.g. N,M means run group%M==N)
+    default: ''
+
+  --deqp-fraction-mandatory-caselist-file=<value>
+    Case list file that must be run for each fraction
+    default: ''
+
+  --deqp-waiver-file=<value>
+    Read waived tests from given file
+    default: ''
+
+  --deqp-runner-type=[any|none|amber]
+    Filter test cases based on runner
+    default: 'any'
+
+  --deqp-terminate-on-fail=[enable|disable]
+    Terminate the run on first failure
+    default: 'disable'

@@ -102,6 +102,7 @@ DE_DECLARE_COMMAND_LINE_OPT(CaseFraction,				std::vector<int>);
 DE_DECLARE_COMMAND_LINE_OPT(CaseFractionMandatoryTests,	std::string);
 DE_DECLARE_COMMAND_LINE_OPT(WaiverFile,					std::string);
 DE_DECLARE_COMMAND_LINE_OPT(RunnerType,					tcu::TestRunnerType);
+DE_DECLARE_COMMAND_LINE_OPT(TerminateOnFail,			bool);
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -208,7 +209,8 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<CaseFraction>					(DE_NULL,	"deqp-fraction",							"Run a fraction of the test cases (e.g. N,M means run group%M==N)",	parseIntList,	"")
 		<< Option<CaseFractionMandatoryTests>	(DE_NULL,	"deqp-fraction-mandatory-caselist-file",	"Case list file that must be run for each fraction",					"")
 		<< Option<WaiverFile>					(DE_NULL,	"deqp-waiver-file",							"Read waived tests from given file",									"")
-		<< Option<RunnerType>					(DE_NULL,	"deqp-runner-type",							"Filter test cases based on runner",				s_runnerTypes,		"any");
+		<< Option<RunnerType>					(DE_NULL,	"deqp-runner-type",							"Filter test cases based on runner",				s_runnerTypes,		"any")
+		<< Option<TerminateOnFail>				(DE_NULL,	"deqp-terminate-on-fail",					"Terminate the run on first failure",				s_enableNames,		"disable");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -871,6 +873,7 @@ const std::vector<int>&	CommandLine::getCaseFraction				(void) const	{ return m_
 const char*				CommandLine::getCaseFractionMandatoryTests	(void) const	{ return m_cmdLine.getOption<opt::CaseFractionMandatoryTests>().c_str();	}
 const char*				CommandLine::getArchiveDir					(void) const	{ return m_cmdLine.getOption<opt::ArchiveDir>().c_str();					}
 tcu::TestRunnerType		CommandLine::getRunnerType					(void) const	{ return m_cmdLine.getOption<opt::RunnerType>();							}
+bool					CommandLine::isTerminateOnFailEnabled		(void) const	{ return m_cmdLine.getOption<opt::TerminateOnFail>();						}
 
 const char* CommandLine::getGLContextType (void) const
 {

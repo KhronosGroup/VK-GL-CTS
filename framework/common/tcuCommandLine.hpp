@@ -266,6 +266,9 @@ public:
 	//! Get runner type (--deqp-runner-type)
 	tcu::TestRunnerType				getRunnerType				(void) const;
 
+	//! Should the run be terminated on first failure (--deqp-terminate-on-fail)
+	bool							isTerminateOnFailEnabled	(void) const;
+
 	/*--------------------------------------------------------------------*//*!
 	 * \brief Creates case list filter
 	 * \param archive Resources

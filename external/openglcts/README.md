@@ -559,6 +559,9 @@ Full list of parameters for the `glcts` binary:
   --deqp-caselist-file=<value>
     Read case list (in trie format) from given file
 
+  --deqp-caselist-resource=<value>
+    Read case list (in trie format) from given file located application's assets
+
   --deqp-stdin-caselist
     Read case list (in trie format) from stdin
 
@@ -648,20 +651,45 @@ Full list of parameters for the `glcts` binary:
     default: 'enable'
 
   --deqp-log-shader-sources=[enable|disable]
-    Enable or disable logging of shaders
+    Enable or disable logging of shader sources
     default: 'enable'
 
   --deqp-test-oom=[enable|disable]
     Run tests that exhaust memory on purpose
-    default: 'disable'
+    default: 'enable'
 
   --deqp-archive-dir=<value>
     Path to test resource files
-    default: current working directory
+    default: '.'
 
-  --deqp-case-fraction=<value>,<value>
+  --deqp-log-flush=[enable|disable]
+    Enable or disable log file fflush
+    default: 'enable'
+
+
+  --deqp-renderdoc=[enable|disable]
+    Enable RenderDoc frame markers
+    default: 'disable'
+
+  --deqp-fraction=<value>
     Run a fraction of the test cases (e.g. N,M means run group%M==N)
     default: ''
+
+  --deqp-fraction-mandatory-caselist-file=<value>
+    Case list file that must be run for each fraction
+    default: ''
+
+  --deqp-waiver-file=<value>
+    Read waived tests from given file
+    default: ''
+
+  --deqp-runner-type=[any|none|amber]
+    Filter test cases based on runner
+    default: 'any'
+
+  --deqp-terminate-on-fail=[enable|disable]
+    Terminate the run on first failure
+    default: 'disable'
 
   --deqp-egl-config-id=<value>
     Legacy name for --deqp-gl-config-id
