@@ -1510,9 +1510,10 @@ void checkSupportFeatureBitInfluence (Context& context)
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
 }
 
-void createDevice (Context& context, void* pNext, const char* const* ppEnabledExtensionNames, deUint32 enabledExtensionCount)
+void createTestDevice (Context& context, void* pNext, const char* const* ppEnabledExtensionNames, deUint32 enabledExtensionCount)
 {
 	const PlatformInterface&				platformInterface		= context.getPlatformInterface();
+	const auto								validationEnabled		= context.getTestContext().getCommandLine().isValidationEnabled();
 	const Unique<VkInstance>				instance				(createDefaultInstance(platformInterface, context.getUsedApiVersion()));
 	const InstanceDriver					instanceDriver			(platformInterface, instance.get());
 	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance.get(), context.getTestContext().getCommandLine());
@@ -1543,7 +1544,7 @@ void createDevice (Context& context, void* pNext, const char* const* ppEnabledEx
 		ppEnabledExtensionNames,					//  const char* const*				ppEnabledExtensionNames;
 		DE_NULL,									//  const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
-	const Unique<VkDevice>					device					(createDevice(platformInterface, *instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+	const Unique<VkDevice>					device					(createCustomDevice(validationEnabled, platformInterface, *instance, instanceDriver, physicalDevice, &deviceCreateInfo));
 	const DeviceDriver						deviceDriver			(platformInterface, instance.get(), device.get());
 	const VkQueue							queue					= getDeviceQueue(deviceDriver, *device,  queueFamilyIndex, queueIndex);
 
@@ -1747,7 +1748,7 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate (Context& context)
 					if (featureDependencyTable[featureDependencyTableNdx].featurePtr == featurePtr)
 						featureDependencyTable[featureDependencyTableNdx].dependOnPtr[0] = DE_TRUE;
 
-				createDevice(context, &features2, DE_NULL, 0u);
+				createTestDevice(context, &features2, DE_NULL, 0u);
 			}
 		}
 
@@ -1782,7 +1783,7 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate (Context& context)
 						if (featureDependencyTable[featureDependencyTableNdx].featurePtr == featurePtr)
 							featureDependencyTable[featureDependencyTableNdx].dependOnPtr[0] = DE_TRUE;
 
-					createDevice(context, &features2, &extStringPtr, (extStringPtr == DE_NULL) ? 0u : 1u );
+					createTestDevice(context, &features2, &extStringPtr, (extStringPtr == DE_NULL) ? 0u : 1u );
 				}
 			}
 		}

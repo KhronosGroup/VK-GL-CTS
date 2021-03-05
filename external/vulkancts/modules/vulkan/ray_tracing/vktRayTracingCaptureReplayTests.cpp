@@ -28,6 +28,7 @@
 
 #include "vktTestCase.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkBuilderUtil.hpp"
@@ -37,6 +38,8 @@
 #include "vkTypeUtil.hpp"
 
 #include "vkRayTracingUtil.hpp"
+
+#include "tcuCommandLine.hpp"
 
 namespace vkt
 {
@@ -929,6 +932,7 @@ std::vector<deUint32> RayTracingCaptureReplayTestInstance::runTest(bool replay)
 	const InstanceInterface&				vki									= m_context.getInstanceInterface();
 	const VkInstance						instance							= m_context.getInstance();
 	const VkPhysicalDevice					physicalDevice						= m_context.getPhysicalDevice();
+	const auto								validationEnabled					= m_context.getTestContext().getCommandLine().isValidationEnabled();
 
 	VkQueue									queue								= DE_NULL;
 	deUint32								queueFamilyIndex					= NO_MATCH_FOUND;
@@ -997,7 +1001,7 @@ std::vector<deUint32> RayTracingCaptureReplayTestInstance::runTest(bool replay)
 	deviceInfo.pEnabledFeatures													= DE_NULL;
 	deviceInfo.queueCreateInfoCount												= 1;
 	deviceInfo.pQueueCreateInfos												= &queueInfo;
-	Move<VkDevice>							testDevice							= createDevice(vkp, m_context.getInstance(), vki, physicalDevice, &deviceInfo);
+	Move<VkDevice>							testDevice							= createCustomDevice(validationEnabled, vkp, m_context.getInstance(), vki, physicalDevice, &deviceInfo);
 	VkDevice								device								= *testDevice;
 	DeviceDriver							vkd									(vkp, instance, device);
 

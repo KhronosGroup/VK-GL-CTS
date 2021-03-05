@@ -27,6 +27,7 @@
 
 #include "vktDrawConcurrentTests.hpp"
 
+#include "vktCustomInstancesDevices.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktDrawTestCaseUtil.hpp"
 #include "../compute/vktComputeTestsUtil.hpp"
@@ -106,6 +107,7 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 	const deUint32							numValues		= 1024;
 	const InstanceInterface&				instance		= m_context.getInstanceInterface();
 	const VkPhysicalDevice					physicalDevice	= m_context.getPhysicalDevice();
+	const auto								validation		= m_context.getTestContext().getCommandLine().isValidationEnabled();
 	tcu::TestLog&							log				= m_context.getTestContext().getLog();
 	Move<VkDevice>							computeDevice;
 	std::vector<VkQueueFamilyProperties>	queueFamilyProperties;
@@ -156,7 +158,7 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 	deviceInfo.queueCreateInfoCount		= 1;
 	deviceInfo.pQueueCreateInfos		= &queueInfos;
 
-	computeDevice = createDevice(m_context.getPlatformInterface(), m_context.getInstance(), instance, physicalDevice, &deviceInfo);
+	computeDevice = createCustomDevice(validation, m_context.getPlatformInterface(), m_context.getInstance(), instance, physicalDevice, &deviceInfo);
 
 	vk.getDeviceQueue(*computeDevice, computeQueue.queueFamilyIndex, 0, &computeQueue.queue);
 

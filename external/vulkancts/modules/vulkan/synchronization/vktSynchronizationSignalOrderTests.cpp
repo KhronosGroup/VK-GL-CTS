@@ -29,6 +29,7 @@
 #include "vktTestCaseUtil.hpp"
 #include "vktSynchronizationUtil.hpp"
 #include "vktExternalMemoryUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 #include "vkBarrierUtil.hpp"
 
 #include "vkDefs.hpp"
@@ -40,6 +41,7 @@
 #include "vkTypeUtil.hpp"
 
 #include "tcuTestLog.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "deRandom.hpp"
 #include "deThread.hpp"
@@ -93,7 +95,7 @@ void hostSignal (const DeviceInterface& vk, const VkDevice& device, VkSemaphore 
 	VK_CHECK(vk.signalSemaphore(device, &ssi));
 }
 
-Move<VkDevice> createDevice (const Context& context)
+Move<VkDevice> createTestDevice (const Context& context)
 {
 	const float									priority				= 0.0f;
 	const std::vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
@@ -170,7 +172,8 @@ Move<VkDevice> createDevice (const Context& context)
 			0u
 		};
 
-		return createDevice(context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &createInfo);
+		const auto validation = context.getTestContext().getCommandLine().isValidationEnabled();
+		return createCustomDevice(validation, context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &createInfo);
 	}
 	catch (const vk::Error& error)
 	{
@@ -185,7 +188,7 @@ Move<VkDevice> createDevice (const Context& context)
 class SingletonDevice
 {
 	SingletonDevice	(const Context& context)
-		: m_logicalDevice	(createDevice(context))
+		: m_logicalDevice	(createTestDevice(context))
 	{
 	}
 

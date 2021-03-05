@@ -29,6 +29,7 @@
 #include "vktTestCaseUtil.hpp"
 #include "vktSynchronizationUtil.hpp"
 #include "vktExternalMemoryUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 #include "vkBarrierUtil.hpp"
 
 #include "vkDefs.hpp"
@@ -41,6 +42,7 @@
 #include "vkBufferWithMemory.hpp"
 
 #include "tcuTestLog.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "deClock.h"
 #include "deRandom.hpp"
@@ -1277,7 +1279,7 @@ std::vector<VkDeviceQueueCreateInfo> getQueueCreateInfo(const std::vector<VkQueu
 	return infos;
 }
 
-Move<VkDevice> createDevice(const Context& context, SynchronizationType type)
+Move<VkDevice> createTestDevice(const Context& context, SynchronizationType type)
 {
 	const std::vector<VkQueueFamilyProperties>		queueFamilyProperties		= getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
 	std::vector<VkDeviceQueueCreateInfo>			queueCreateInfos			= getQueueCreateInfo(queueFamilyProperties);
@@ -1323,8 +1325,10 @@ Move<VkDevice> createDevice(const Context& context, SynchronizationType type)
 		queueCreateInfo.pQueuePriorities = &(*queuePriorities.back().get())[0];
 	}
 
-	return createDevice(context.getPlatformInterface(), context.getInstance(),
-						context.getInstanceInterface(), context.getPhysicalDevice(), &deviceInfo);
+	const auto validation = context.getTestContext().getCommandLine().isValidationEnabled();
+
+	return createCustomDevice(validation, context.getPlatformInterface(), context.getInstance(),
+							  context.getInstanceInterface(), context.getPhysicalDevice(), &deviceInfo);
 }
 
 
@@ -1332,7 +1336,7 @@ Move<VkDevice> createDevice(const Context& context, SynchronizationType type)
 class SingletonDevice
 {
 	SingletonDevice	(const Context& context, SynchronizationType type)
-		: m_logicalDevice	(createDevice(context, type))
+		: m_logicalDevice	(createTestDevice(context, type))
 	{
 	}
 

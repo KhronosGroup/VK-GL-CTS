@@ -27,6 +27,7 @@
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktExternalMemoryUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 #include "vkPlatform.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
@@ -34,6 +35,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkBuilderUtil.hpp"
+#include "tcuCommandLine.hpp"
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
 #include "deRandom.hpp"
@@ -106,6 +108,7 @@ void createDeviceWithExtension (Context& context, WorkingDevice& wd, VkQueueFlag
 	const VkInstance			instance		= context.getInstance();
 	const InstanceInterface&	instanceDriver	= context.getInstanceInterface();
 	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const auto					useValidation	= context.getTestContext().getCommandLine().isValidationEnabled();
 
 	// Create a device with extension enabled and a queue with a family which supports the buffer marker extension
 	const std::vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
@@ -154,7 +157,7 @@ void createDeviceWithExtension (Context& context, WorkingDevice& wd, VkQueueFlag
 		&context.getDeviceFeatures(),						// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
-	wd.logicalDevice	= createDevice(vkp, instance, instanceDriver, physicalDevice, &deviceInfo);
+	wd.logicalDevice	= createCustomDevice(useValidation, vkp, instance, instanceDriver, physicalDevice, &deviceInfo);
 	wd.deviceDriver		= MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, *wd.logicalDevice));
 	wd.allocator		= MovePtr<Allocator>(new SimpleAllocator(*wd.deviceDriver, *wd.logicalDevice, getPhysicalDeviceMemoryProperties(instanceDriver, physicalDevice)));
 	wd.queueFamilyIdx	= queueCreateInfo.queueFamilyIndex;
