@@ -679,17 +679,16 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 
 	// Check the number of viewports needed and the corresponding limits.
 	const auto&	viewportConfig	= m_testConfig.viewportConfig;
-	auto		numViews		= viewportConfig.staticValue.size();
+	auto		numViewports	= viewportConfig.staticValue.size();
 
 	if (viewportConfig.dynamicValue)
-		numViews = std::max(numViews, viewportConfig.dynamicValue.get().size());
+		numViewports = std::max(numViewports, viewportConfig.dynamicValue.get().size());
 
-	if (numViews > 1)
+	if (numViewports > 1)
 	{
-		context.requireDeviceFunctionality("VK_KHR_multiview");
 		const auto properties = vk::getPhysicalDeviceProperties(vki, physicalDevice);
-		if (numViews > static_cast<decltype(numViews)>(properties.limits.maxViewports))
-			TCU_THROW(NotSupportedError, "Number of viewports not supported (" + de::toString(numViews) + ")");
+		if (numViewports > static_cast<decltype(numViewports)>(properties.limits.maxViewports))
+			TCU_THROW(NotSupportedError, "Number of viewports not supported (" + de::toString(numViewports) + ")");
 	}
 
 	const auto&	dbTestEnable	= m_testConfig.depthBoundsTestEnableConfig;
