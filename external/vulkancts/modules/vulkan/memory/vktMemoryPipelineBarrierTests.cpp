@@ -3648,8 +3648,8 @@ void ImageBlitFromImage::prepare (PrepareContext& context)
 	}
 	else if (m_scale == BLIT_SCALE_20)
 	{
-		m_srcImageWidth			= m_imageWidth / 2;
-		m_srcImageHeight		= m_imageHeight / 2;
+		m_srcImageWidth			= m_imageWidth == 1 ? 1 : m_imageWidth / 2;
+		m_srcImageHeight		= m_imageHeight == 1 ? 1 : m_imageHeight / 2;
 	}
 	else
 		DE_FATAL("Unsupported scale");
