@@ -2574,8 +2574,12 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest (TestConfigur
 
 					if (m_data.buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 					{
-						const VkMemoryBarrier	serializeMemoryBarrier = makeMemoryBarrier(VK_ACCESS_MEMORY_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT);
-						cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &serializeMemoryBarrier);
+						endCommandBuffer(vkd, *cmdBuffer);
+
+						submitCommandsAndWait(vkd, device, queue, cmdBuffer.get());
+
+						vkd.resetCommandPool(device, *cmdPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+						beginCommandBuffer(vkd, *cmdBuffer, 0u);
 					}
 
 					de::MovePtr<BottomLevelAccelerationStructure> asCopy = makeBottomLevelAccelerationStructure();
@@ -2677,8 +2681,12 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest (TestConfigur
 
 					if (m_data.buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 					{
-						const VkMemoryBarrier	serializeMemoryBarrier = makeMemoryBarrier(VK_ACCESS_MEMORY_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT);
-						cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &serializeMemoryBarrier);
+						endCommandBuffer(vkd, *cmdBuffer);
+
+						submitCommandsAndWait(vkd, device, queue, cmdBuffer.get());
+
+						vkd.resetCommandPool(device, *cmdPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+						beginCommandBuffer(vkd, *cmdBuffer, 0u);
 					}
 
 					topLevelAccelerationStructureCopy = makeTopLevelAccelerationStructure();

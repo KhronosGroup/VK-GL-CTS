@@ -340,6 +340,9 @@ DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 /** Offset of a struct member. */
 #define DE_OFFSET_OF(STRUCT, MEMBER) ((deUint32)(deUintptr)(deUint8*)&(((STRUCT*)0)->MEMBER))
 
+/** Used in enum to easify declarations for struct serialization. Declares 'NAME'_OFFSET, 'NAME'_SIZE, and offsets counter for next enum value by SIZE. */
+#define DE_SERIALIZED_FIELD(NAME, SIZE) NAME ## _OFFSET, NAME ## _SIZE = (SIZE), _DE_TMP_ ## NAME = NAME ## _OFFSET + (SIZE) - 1
+
 /* Pointer size. */
 #if defined(DE_PTR_SIZE)
 	/* nada */

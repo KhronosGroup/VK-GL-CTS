@@ -458,6 +458,16 @@ VkDeviceAddress getBufferDeviceAddress ( const DeviceInterface&	vkd,
 class SerialStorage
 {
 public:
+	enum
+	{
+		DE_SERIALIZED_FIELD(DRIVER_UUID,		VK_UUID_SIZE),		// VK_UUID_SIZE bytes of data matching VkPhysicalDeviceIDProperties::driverUUID
+		DE_SERIALIZED_FIELD(COMPAT_UUID,		VK_UUID_SIZE),		// VK_UUID_SIZE bytes of data identifying the compatibility for comparison using vkGetDeviceAccelerationStructureCompatibilityKHR
+		DE_SERIALIZED_FIELD(SERIALIZED_SIZE,	sizeof(deUint64)),	// A 64-bit integer of the total size matching the value queried using VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR
+		DE_SERIALIZED_FIELD(DESERIALIZED_SIZE,	sizeof(deUint64)),	// A 64-bit integer of the deserialized size to be passed in to VkAccelerationStructureCreateInfoKHR::size
+		DE_SERIALIZED_FIELD(HANDLES_COUNT,		sizeof(deUint64)),	// A 64-bit integer of the count of the number of acceleration structure handles following. This will be zero for a bottom-level acceleration structure.
+		SERIAL_STORAGE_SIZE_MIN
+	};
+
 											SerialStorage		() = delete;
 											SerialStorage		(const DeviceInterface&						vk,
 																 const VkDevice								device,
@@ -470,6 +480,8 @@ public:
 	VkDeviceOrHostAddressConstKHR			getAddressConst		(const DeviceInterface&	vk,
 																 const VkDevice			device);
 	VkDeviceSize							getStorageSize		();
+	deUint64								getDeserializedSize	();
+
 protected:
 	VkAccelerationStructureBuildTypeKHR		m_buildType;
 	de::MovePtr<BufferWithMemory>			m_buffer;

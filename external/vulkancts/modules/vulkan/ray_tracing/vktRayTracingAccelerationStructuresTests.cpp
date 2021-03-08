@@ -1654,8 +1654,12 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 
 					if (m_data.buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 					{
-						const VkMemoryBarrier	serializeMemoryBarrier = makeMemoryBarrier(VK_ACCESS_MEMORY_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT);
-						cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &serializeMemoryBarrier);
+						endCommandBuffer(vkd, *cmdBuffer);
+
+						submitCommandsAndWait(vkd, device, queue, cmdBuffer.get());
+
+						vkd.resetCommandPool(device, *cmdPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+						beginCommandBuffer(vkd, *cmdBuffer, 0u);
 					}
 
 					de::MovePtr<BottomLevelAccelerationStructure> asCopy = makeBottomLevelAccelerationStructure();
@@ -1749,7 +1753,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 				}
 				case OP_SERIALIZE:
 				{
-					de::SharedPtr<SerialStorage> storage( new SerialStorage(vkd, device, allocator, m_data.buildType, topBlasSerialSize[0]));
+					de::SharedPtr<SerialStorage> storage = de::SharedPtr<SerialStorage>(new SerialStorage(vkd, device, allocator, m_data.buildType, topBlasSerialSize[0]));
 
 					topLevelAccelerationStructure->setDeferredOperation(htSerialize, workerThreadsCount);
 					topLevelAccelerationStructure->serialize(vkd, device, *cmdBuffer, storage.get());
@@ -1757,8 +1761,12 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 
 					if (m_data.buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 					{
-						const VkMemoryBarrier	serializeMemoryBarrier = makeMemoryBarrier(VK_ACCESS_MEMORY_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT);
-						cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &serializeMemoryBarrier);
+						endCommandBuffer(vkd, *cmdBuffer);
+
+						submitCommandsAndWait(vkd, device, queue, cmdBuffer.get());
+
+						vkd.resetCommandPool(device, *cmdPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+						beginCommandBuffer(vkd, *cmdBuffer, 0u);
 					}
 
 					topLevelAccelerationStructureCopy = makeTopLevelAccelerationStructure();
