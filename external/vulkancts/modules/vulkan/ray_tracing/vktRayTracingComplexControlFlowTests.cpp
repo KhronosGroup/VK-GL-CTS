@@ -231,7 +231,6 @@ protected:
 																										 const VkShaderStageFlags	shaderStageFlags,
 																										 deUint32&					shaderGroup,
 																										 deUint32&					shaderGroupCount) const;
-	void														checkSupportInInstance					(void) const;
 	PushConstants												getPushConstants						(void) const;
 	std::vector<deUint32>										getExpectedValues						(void) const;
 	de::MovePtr<BufferWithMemory>								runTest									(void);
@@ -358,6 +357,9 @@ Move<VkPipeline> RayTracingComplexControlFlowInstance::makePipeline (de::MovePtr
 	if (0 != (m_shaders2 & VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR))	rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR	, createShaderModule(vkd, device, collection.get("chit2"), 0), m_hitShaderGroup + 1);
 	if (0 != (m_shaders2 & VK_SHADER_STAGE_MISS_BIT_KHR))			rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR			, createShaderModule(vkd, device, collection.get("miss2"), 0), m_missShaderGroup + 1);
 	if (0 != (m_shaders2 & VK_SHADER_STAGE_INTERSECTION_BIT_KHR))	rayTracingPipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR	, createShaderModule(vkd, device, collection.get("sect2"), 0), m_hitShaderGroup + 1);
+
+	if (m_data.testOp == TEST_OP_TRACE_RAY && m_data.stage != VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+		rayTracingPipeline->setMaxRecursionDepth(2);
 
 	Move<VkPipeline> pipeline = rayTracingPipeline->createPipeline(vkd, device, pipelineLayout);
 
@@ -634,10 +636,6 @@ de::MovePtr<BufferWithMemory> RayTracingComplexControlFlowInstance::runTest (voi
 	invalidateMappedMemoryRange(vkd, device, buffer->getAllocation().getMemory(), buffer->getAllocation().getOffset(), pixelCount * sizeof(deUint32));
 
 	return buffer;
-}
-
-void RayTracingComplexControlFlowInstance::checkSupportInInstance (void) const
-{
 }
 
 std::vector<deUint32> RayTracingComplexControlFlowInstance::getExpectedValues (void) const
@@ -972,8 +970,6 @@ std::vector<deUint32> RayTracingComplexControlFlowInstance::getExpectedValues (v
 
 tcu::TestStatus RayTracingComplexControlFlowInstance::iterate (void)
 {
-	checkSupportInInstance();
-
 	const de::MovePtr<BufferWithMemory>	buffer		= runTest();
 	const deUint32*						bufferPtr	= (deUint32*)buffer->getAllocation().getHostPtr();
 	const vector<deUint32>				expected	= getExpectedValues();
@@ -1041,7 +1037,7 @@ private:
 	static inline const std::string		getMissPassthrough			(void);
 	static inline const std::string		getHitPassthrough			(void);
 
-	CaseDef					m_data;
+	CaseDef								m_data;
 };
 
 ComplexControlFlowTestCase::ComplexControlFlowTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
@@ -1057,15 +1053,26 @@ ComplexControlFlowTestCase::~ComplexControlFlowTestCase	(void)
 void ComplexControlFlowTestCase::checkSupport (Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+
 	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR = context.getAccelerationStructureFeatures();
+
 	if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
 		TCU_THROW(TestError, "VK_KHR_ray_tracing_pipeline requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
 
 	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+
 	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR = context.getRayTracingPipelineFeatures();
+
 	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE)
 		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
 
+	const VkPhysicalDeviceRayTracingPipelinePropertiesKHR&	rayTracingPipelinePropertiesKHR = context.getRayTracingPipelineProperties();
+
+	if (m_data.testOp == TEST_OP_TRACE_RAY && m_data.stage != VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+	{
+		if (rayTracingPipelinePropertiesKHR.maxRayRecursionDepth < 2)
+			TCU_THROW(NotSupportedError, "rayTracingPipelinePropertiesKHR.maxRayRecursionDepth is smaller than required");
+	}
 }
 
 
@@ -1685,6 +1692,15 @@ TestInstance* ComplexControlFlowTestCase::createInstance (Context& context) cons
 
 tcu::TestCaseGroup*	createComplexControlFlowTests (tcu::TestContext& testCtx)
 {
+	const VkShaderStageFlagBits	R	= VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+	const VkShaderStageFlagBits	A	= VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+	const VkShaderStageFlagBits	C	= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+	const VkShaderStageFlagBits	M	= VK_SHADER_STAGE_MISS_BIT_KHR;
+	const VkShaderStageFlagBits	I	= VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
+	const VkShaderStageFlagBits	L	= VK_SHADER_STAGE_CALLABLE_BIT_KHR;
+
+	DE_UNREF(A);
+
 	static const struct
 	{
 		const char*				name;
@@ -1701,14 +1717,15 @@ tcu::TestCaseGroup*	createComplexControlFlowTests (tcu::TestContext& testCtx)
 	};
 	static const struct
 	{
-		const char*	name;
-		TestOp		op;
+		const char*			name;
+		TestOp				op;
+		VkShaderStageFlags	applicableInStages;
 	}
 	testOps[]
 	{
-		{ "execute_callable",		TEST_OP_EXECUTE_CALLABLE	},
-		{ "trace_ray",				TEST_OP_TRACE_RAY			},
-		{ "report_intersection",	TEST_OP_REPORT_INTERSECTION	},
+		{ "execute_callable",		TEST_OP_EXECUTE_CALLABLE,		R |    C | M     | L },
+		{ "trace_ray",				TEST_OP_TRACE_RAY,				R |    C | M         },
+		{ "report_intersection",	TEST_OP_REPORT_INTERSECTION,	               I     },
 	};
 	static const struct
 	{
@@ -1756,35 +1773,8 @@ tcu::TestCaseGroup*	createComplexControlFlowTests (tcu::TestContext& testCtx)
 					height,					//  deUint32				height;
 				};
 
-				if (testOp == TEST_OP_REPORT_INTERSECTION && testStage != VK_SHADER_STAGE_INTERSECTION_BIT_KHR)
+				if ((testOps[testOpNdx].applicableInStages & static_cast<VkShaderStageFlags>(testStage)) == 0)
 					continue;
-
-				if (testOp == TEST_OP_TRACE_RAY)
-				{
-					switch (testStage)
-					{
-						case VK_SHADER_STAGE_RAYGEN_BIT_KHR:
-						case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
-						case VK_SHADER_STAGE_MISS_BIT_KHR:
-							break;
-						default:
-							continue;
-					}
-				}
-
-				if (testOp == TEST_OP_EXECUTE_CALLABLE)
-				{
-					switch (testStage)
-					{
-						case VK_SHADER_STAGE_RAYGEN_BIT_KHR:
-						case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
-						case VK_SHADER_STAGE_MISS_BIT_KHR:
-						case VK_SHADER_STAGE_CALLABLE_BIT_KHR:
-							break;
-						default:
-							continue;
-					}
-				}
 
 				testOpGroup->addChild(new ComplexControlFlowTestCase(testCtx, testName.c_str(), "", caseDef));
 			}
