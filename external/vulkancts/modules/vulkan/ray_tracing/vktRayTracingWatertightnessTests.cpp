@@ -38,6 +38,8 @@
 
 #include "deRandom.hpp"
 
+#include <sstream>
+
 namespace vkt
 {
 	namespace RayTracing
@@ -65,6 +67,27 @@ namespace vkt
 				deUint32	depth;
 				deUint32    useManyBottomASes;
 			};
+
+			VkFormat getImageFormat (void)
+			{
+				return VK_FORMAT_R32_UINT;
+			}
+
+			VkImageType getImageType (deUint32 depth)
+			{
+				DE_ASSERT(depth > 0u);
+				return ((depth == 1u) ? VK_IMAGE_TYPE_2D : VK_IMAGE_TYPE_3D);
+			}
+
+			VkImageTiling getImageTiling (void)
+			{
+				return VK_IMAGE_TILING_OPTIMAL;
+			}
+
+			VkImageUsageFlags getImageUsage (void)
+			{
+				return (VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+			}
 
 			enum ShaderGroups
 			{
@@ -126,23 +149,19 @@ namespace vkt
 
 			VkImageCreateInfo makeImageCreateInfo(deUint32 width, deUint32 height, deUint32 depth, VkFormat format)
 			{
-				const VkImageUsageFlags	usage		= VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-				const auto				imageType	= (depth == 1)	? VK_IMAGE_TYPE_2D
-																	: VK_IMAGE_TYPE_3D;
-
 				const VkImageCreateInfo	imageCreateInfo =
 				{
 					VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType;
 					DE_NULL,								// const void*				pNext;
-					(VkImageCreateFlags)0u,					// VkImageCreateFlags		flags;
-					imageType,
+					0u,										// VkImageCreateFlags		flags;
+					getImageType(depth),
 					format,									// VkFormat					format;
 					makeExtent3D(width, height, depth),		// VkExtent3D				extent;
 					1u,										// deUint32					mipLevels;
 					1u,										// deUint32					arrayLayers;
 					VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits	samples;
-					VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling			tiling;
-					usage,									// VkImageUsageFlags		usage;
+					getImageTiling(),						// VkImageTiling			tiling;
+					getImageUsage(),						// VkImageUsageFlags		usage;
 					VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode			sharingMode;
 					0u,										// deUint32					queueFamilyIndexCount;
 					DE_NULL,								// const deUint32*			pQueueFamilyIndices;
@@ -222,6 +241,19 @@ namespace vkt
 				const VkPhysicalDeviceAccelerationStructureFeaturesKHR& accelerationStructureFeaturesKHR = context.getAccelerationStructureFeatures();
 				if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
 					TCU_THROW(TestError, "VK_KHR_ray_tracing_pipeline requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
+
+				const auto&	vki			= context.getInstanceInterface();
+				const auto	physDev		= context.getPhysicalDevice();
+				const auto	format		= getImageFormat();
+				const auto	formatProps	= getPhysicalDeviceImageFormatProperties(vki, physDev, format, getImageType(m_data.depth), getImageTiling(), getImageUsage(), 0u);
+				const auto&	maxExtent	= formatProps.maxExtent;
+
+				if (m_data.width > maxExtent.width || m_data.height > maxExtent.height || m_data.depth > maxExtent.depth)
+				{
+					std::ostringstream msg;
+					msg << "Result image dimensions not supported (" << getFormatName(format) << " " << m_data.width << "x" << m_data.height << "x" << m_data.depth << ")";
+					TCU_THROW(NotSupportedError, msg.str());
+				}
 			}
 
 			void RayTracingTestCase::initPrograms(SourceCollections& programCollection) const
@@ -572,7 +604,7 @@ namespace vkt
 				const deUint32						queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
 				const VkQueue						queue = m_context.getUniversalQueue();
 				Allocator& allocator = m_context.getDefaultAllocator();
-				const VkFormat						format = VK_FORMAT_R32_UINT;
+				const VkFormat						format = getImageFormat();
 				const deUint32						pixelCount = m_data.width * m_data.height * m_data.depth;
 				const deUint32						shaderGroupHandleSize = getShaderGroupSize(vki, physicalDevice);
 				const deUint32						shaderGroupBaseAlignment = getShaderGroupBaseAlignment(vki, physicalDevice);
@@ -686,7 +718,7 @@ namespace vkt
 
 				submitCommandsAndWait(vkd, device, queue, cmdBuffer.get());
 
-				invalidateMappedMemoryRange(vkd, device, buffer->getAllocation().getMemory(), buffer->getAllocation().getOffset(), pixelCount * sizeof(deUint32));
+				invalidateAlloc(vkd, device, buffer->getAllocation());
 
 				return buffer;
 			}
@@ -720,8 +752,8 @@ namespace vkt
 
 				const de::MovePtr<BufferWithMemory>	bufferGPU				= runTest();
 				const deUint32*						bufferPtrGPU			= (deUint32*)bufferGPU->getAllocation().getHostPtr();
-				deUint32							failures				= 0;
-				deUint32							qualityWarningIssued	= 0;
+				deUint32							failures				= 0u;
+				deUint32							qualityWarningIssued	= 0u;
 				if (!m_useClosedFan)
 				{
 					deUint32	pos = 0;
@@ -742,20 +774,19 @@ namespace vkt
 					// See the miss shader for explanation of the magic number.
 					for (deUint32 pos = 0; pos < m_data.width * m_data.height * m_data.depth; ++pos)
 					{
-						if (bufferPtrGPU[pos] == 10000)
+						if (bufferPtrGPU[pos] == 10000u)
 						{
-							failures++;
+							qualityWarningIssued	= 1u;
 						}
 						else
-						if (bufferPtrGPU[pos] > 1)
+						if (bufferPtrGPU[pos] > 1u)
 						{
 							failures				++;
-							qualityWarningIssued	= 1;
 						}
 					}
 				}
 
-				if (failures == 0)
+				if (failures == 0u)
 				{
 					if (qualityWarningIssued)
 						return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Miss shader invoked for a shared edge/vertex.");
