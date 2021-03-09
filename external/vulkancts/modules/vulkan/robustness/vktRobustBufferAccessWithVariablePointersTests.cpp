@@ -1684,18 +1684,27 @@ bool AccessInstance::verifyResult (void)
 					bool	isOutOfBoundsPartOk  = true;
 					bool	isWithinBoundsPartOk = true;
 
+					deUint32 inBoundPartSize = distanceToOutOfBounds;
+
+					// For cases that partial element is out of bound, the part within the buffer allocated memory can be buffer content per spec.
+					// We need to check it as a whole part.
+					if (offsetInBytes + elementSize > m_inBufferAccess.allocSize)
+					{
+						inBoundPartSize = static_cast<deInt32>(m_inBufferAccess.allocSize) - static_cast<deInt32>(offsetInBytes);
+					}
+
 					if (isReadAccess)
 					{
-						isWithinBoundsPartOk	= isValueWithinBufferOrZero(inDataPtr, m_inBufferAccess.allocSize, outValuePtr, distanceToOutOfBounds);
-						isOutOfBoundsPartOk		= isValueWithinBufferOrZero(inDataPtr, m_inBufferAccess.allocSize, (deUint8*)outValuePtr + distanceToOutOfBounds , outValueSize - distanceToOutOfBounds);
+						isWithinBoundsPartOk	= isValueWithinBufferOrZero(inDataPtr, m_inBufferAccess.allocSize, outValuePtr, inBoundPartSize);
+						isOutOfBoundsPartOk		= isValueWithinBufferOrZero(inDataPtr, m_inBufferAccess.allocSize, (deUint8*)outValuePtr + inBoundPartSize, outValueSize - inBoundPartSize);
 					}
 					else
 					{
-						isWithinBoundsPartOk	= isValueWithinBufferOrZero(inDataPtr, m_inBufferAccess.allocSize, outValuePtr, distanceToOutOfBounds)
-												  || isOutBufferValueUnchanged(offsetInBytes, distanceToOutOfBounds);
+						isWithinBoundsPartOk	= isValueWithinBufferOrZero(inDataPtr, m_inBufferAccess.allocSize, outValuePtr, inBoundPartSize)
+												  || isOutBufferValueUnchanged(offsetInBytes, inBoundPartSize);
 
-						isOutOfBoundsPartOk		= isValueWithinBufferOrZero(inDataPtr, m_inBufferAccess.allocSize, (deUint8*)outValuePtr + distanceToOutOfBounds, outValueSize - distanceToOutOfBounds)
-												  || isOutBufferValueUnchanged(offsetInBytes + distanceToOutOfBounds, outValueSize - distanceToOutOfBounds);
+						isOutOfBoundsPartOk		= isValueWithinBufferOrZero(inDataPtr, m_inBufferAccess.allocSize, (deUint8*)outValuePtr + inBoundPartSize, outValueSize - inBoundPartSize)
+												  || isOutBufferValueUnchanged(offsetInBytes + inBoundPartSize, outValueSize - inBoundPartSize);
 					}
 
 					logMsg << ", first " << distanceToOutOfBounds << " byte(s) " << (isWithinBoundsPartOk ? "OK": "wrong");
