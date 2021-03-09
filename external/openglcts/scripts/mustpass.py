@@ -291,6 +291,8 @@ def getApiType(apiName):
 		return "glu::ApiType::core(3, 0)"
 	if apiName == "EGL":
 		return "glu::ApiType()"
+	if apiName == "GL42-COMPAT":
+		return "glu::ApiType::compatibility(4, 2)"
 
 	raise Exception("Unknown API %s" % apiName)
 	return "Unknown"

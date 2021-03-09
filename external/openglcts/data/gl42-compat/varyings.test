@@ -1,0 +1,101 @@
+group varyings "Varying Tests"
+
+	case core_varyings
+		version 450
+		expect compile_fail
+		vertex ""
+			#version 450
+			${VERTEX_DECLARATIONS}
+			in vec4 in_v;
+			varying vec4 out_v;
+			void main()
+			{
+				${VERTEX_OUTPUT}
+				out_v = in_v;
+			}
+		""
+		fragment ""
+			#version 450
+			varying vec4 out_v;
+			out vec4 color;
+			void main()
+			{
+				color = out_v;
+			}
+		""
+	end
+
+	case core_attributes
+		version 420
+		expect compile_fail
+		vertex ""
+			#version 420
+			${VERTEX_DECLARATIONS}
+			attribute vec4 in_v;
+			out vec4 out_v;
+			void main()
+			{
+				${VERTEX_OUTPUT}
+				out_v = in_v;
+			}
+		""
+		fragment ""
+			#version 420
+			in vec4 out_v;
+			out vec4 color;
+			void main()
+			{
+				color = out_v;
+			}
+		""
+	end
+
+	case compatibility_varyings
+		version 420
+		vertex ""
+			#version 420 compatibility
+			${VERTEX_DECLARATIONS}
+			in vec4 in_v;
+			varying vec4 out_v;
+			void main()
+			{
+				${VERTEX_OUTPUT}
+				out_v = in_v;
+			}
+		""
+		fragment ""
+			#version 420 compatibility
+			varying vec4 out_v;
+			out vec4 color;
+			void main()
+			{
+				color = out_v;
+			}
+		""
+	end
+
+	case compatibility_attributes
+		version 420
+		vertex ""
+			#version 420 compatibility
+			${VERTEX_DECLARATIONS}
+			attribute vec4 in_v;
+			out vec4 out_v;
+			void main()
+			{
+				${VERTEX_OUTPUT}
+				out_v = in_v;
+			}
+		""
+		fragment ""
+			#version 420 compatibility
+			in vec4 out_v;
+			out vec4 color;
+			void main()
+			{
+				color = out_v;
+			}
+		""
+	end
+
+end

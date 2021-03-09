@@ -1079,6 +1079,7 @@ GL_MODULES							= OrderedDict([
 			('KHR-GL44',		['master',		[include('gl44-master.txt'), exclude('gl44-test-issues.txt')]]),
 			('KHR-GL43',		['master',		[include('gl43-master.txt'), exclude('gl43-test-issues.txt')]]),
 			('KHR-GL42',		['master',		[include('gl42-master.txt'), exclude('gl42-test-issues.txt')]]),
+			('KHR-GL42-COMPAT',	['master',		[include('gl42-compat-master.txt')]]),
 			('KHR-GL41',		['master',		[include('gl41-master.txt'), exclude('gl41-test-issues.txt')]]),
 			('KHR-GL40',		['master',		[include('gl40-master.txt'), exclude('gl40-test-issues.txt')]]),
 			('KHR-GL33',		['master',		[include('gl33-master.txt'), exclude('gl33-test-issues.txt')]]),

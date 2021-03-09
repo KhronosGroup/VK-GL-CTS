@@ -1211,7 +1211,10 @@ void resetState (const RenderContext& renderCtx, const ContextInfo& ctxInfo)
 		resetStateES(renderCtx, ctxInfo);
 	else if (isContextTypeGLCore(renderCtx.getType()))
 		resetStateGLCore(renderCtx, ctxInfo);
-	else
+        else if (isContextTypeGLCompatibility(renderCtx.getType())) {
+		// TODO: handle reset state correctly for compatibility profile
+		resetStateGLCore(renderCtx, ctxInfo);
+	} else
 		throw tcu::InternalError("State reset requested for unsupported context type");
 }
 

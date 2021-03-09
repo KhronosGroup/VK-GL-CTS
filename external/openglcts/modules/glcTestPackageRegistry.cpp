@@ -203,6 +203,10 @@ static tcu::TestPackage* createGL42Package(tcu::TestContext& testCtx)
 {
 	return new gl4cts::GL42TestPackage(testCtx, "KHR-GL42");
 }
+static tcu::TestPackage* createGL42CompatPackage(tcu::TestContext& testCtx)
+{
+	return new gl4cts::GL42CompatTestPackage(testCtx, "KHR-GL42-COMPAT");
+}
 static tcu::TestPackage* createGL43Package(tcu::TestContext& testCtx)
 {
 	return new gl4cts::GL43TestPackage(testCtx, "KHR-GL43");
@@ -322,6 +326,7 @@ void registerPackages(void)
 	registry->registerPackage("KHR-GL40", createGL40Package);
 	registry->registerPackage("KHR-GL41", createGL41Package);
 	registry->registerPackage("KHR-GL42", createGL42Package);
+	registry->registerPackage("KHR-COMPAT-GL42", createGL42CompatPackage);
 	registry->registerPackage("KHR-GL43", createGL43Package);
 	registry->registerPackage("KHR-GL44", createGL44Package);
 	registry->registerPackage("KHR-GL45", createGL45Package);

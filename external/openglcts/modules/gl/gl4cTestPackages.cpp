@@ -224,6 +224,55 @@ void GL42TestPackage::init(void)
 	}
 }
 
+// GL42CompatTestPackage
+
+class GL42CompatShaderTests : public deqp::TestCaseGroup
+{
+public:
+	GL42CompatShaderTests(deqp::Context& context) : TestCaseGroup(context, "shaders42", "Shading Language Tests")
+	{
+	}
+
+	void init(void)
+	{
+                addChild(new deqp::ShaderLibraryGroup(m_context, "builtin", "Builtin Tests", "gl42-compat/builtins.test"));
+                addChild(new deqp::ShaderLibraryGroup(m_context, "varying", "Varying Tests", "gl42-compat/varyings.test"));
+	}
+};
+
+GL42CompatTestPackage::GL42CompatTestPackage(tcu::TestContext& testCtx, const char* packageName, const char* description,
+								 glu::ContextType renderContextType)
+	: TestPackage(testCtx, packageName, packageName, renderContextType, "gl_cts/data/")
+{
+	(void)description;
+}
+
+GL42CompatTestPackage::~GL42CompatTestPackage(void)
+{
+}
+
+void GL42CompatTestPackage::init(void)
+{
+	// Call init() in parent - this creates context.
+	TestPackage::init();
+
+	try
+	{
+		addChild(new GL42CompatShaderTests(getContext()));
+	}
+	catch (...)
+	{
+		// Destroy context.
+		TestPackage::deinit();
+		throw;
+	}
+}
+
+tcu::TestCaseExecutor* GL42CompatTestPackage::createExecutor(void) const
+{
+	return new gl3cts::TestCaseWrapper(const_cast<GL42CompatTestPackage&>(*this), m_waiverMechanism);
+}
+
 // GL43TestPackage
 
 GL43TestPackage::GL43TestPackage(tcu::TestContext& testCtx, const char* packageName, const char* description,
