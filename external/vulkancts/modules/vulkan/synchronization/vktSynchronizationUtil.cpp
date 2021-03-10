@@ -25,6 +25,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "deStringUtil.hpp"
+#include <limits>
 
 namespace vkt
 {
