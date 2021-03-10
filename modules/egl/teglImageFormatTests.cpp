@@ -1712,7 +1712,13 @@ void MultiContextRenderTests::init (void)
 
 		spec.name = std::string("gles2_") + createAction.label + "_" + renderAction.label;
 
-		const GLenum createFormat = dynamic_cast<const GLES2ImageApi::Create*>(createAction.action.get())->getEffectiveFormat();
+		const GLES2ImageApi::Create* gles2Create = dynamic_cast<const GLES2ImageApi::Create*>(createAction.action.get());
+
+		if (!gles2Create)
+			DE_FATAL("Dynamic casting to GLES2ImageApi::Create* failed");
+
+		const GLenum createFormat = gles2Create->getEffectiveFormat();
+
 		if (isDepthFormat(createFormat) && isStencilFormat(createFormat))
 		{
 			// Combined depth and stencil format. Add the clear action label to avoid test

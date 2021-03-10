@@ -2357,9 +2357,19 @@ tcu::PixelBufferAccess ReferenceContext::getFboAttachment (const rc::Framebuffer
 			TCU_CHECK(texture);
 
 			if (texture->getType() == Texture::TYPE_2D)
-				return dynamic_cast<Texture2D*>(texture)->getLevel(attachment.level);
+			{
+				if (Texture2D* texture2D = dynamic_cast<Texture2D*>(texture))
+					return texture2D->getLevel(attachment.level);
+				else
+					return nullAccess();
+			}
 			else if (texture->getType() == Texture::TYPE_CUBE_MAP)
-				return dynamic_cast<TextureCube*>(texture)->getFace(attachment.level, texTargetToFace(attachment.texTarget));
+			{
+				if (TextureCube* cubeMap = dynamic_cast<TextureCube*>(texture))
+					return cubeMap->getFace(attachment.level, texTargetToFace(attachment.texTarget));
+				else
+					return nullAccess();
+			}
 			else if (texture->getType() == Texture::TYPE_2D_ARRAY	||
 					 texture->getType() == Texture::TYPE_3D			||
 					 texture->getType() == Texture::TYPE_CUBE_MAP_ARRAY)
@@ -2367,11 +2377,20 @@ tcu::PixelBufferAccess ReferenceContext::getFboAttachment (const rc::Framebuffer
 				tcu::PixelBufferAccess level;
 
 				if (texture->getType() == Texture::TYPE_2D_ARRAY)
-					level = dynamic_cast<Texture2DArray*>(texture)->getLevel(attachment.level);
+				{
+					if (Texture2DArray* texture2DArray = dynamic_cast<Texture2DArray*>(texture))
+						level = texture2DArray->getLevel(attachment.level);
+				}
 				else if (texture->getType() == Texture::TYPE_3D)
-					level = dynamic_cast<Texture3D*>(texture)->getLevel(attachment.level);
+				{
+					if (Texture3D* texture3D = dynamic_cast<Texture3D*>(texture))
+						level = texture3D->getLevel(attachment.level);
+				}
 				else if (texture->getType() == Texture::TYPE_CUBE_MAP_ARRAY)
-					level = dynamic_cast<TextureCubeArray*>(texture)->getLevel(attachment.level);
+				{
+					if (TextureCubeArray* cubeArray = dynamic_cast<TextureCubeArray*>(texture))
+						level = cubeArray->getLevel(attachment.level);
+				}
 
 				void* layerData = static_cast<deUint8*>(level.getDataPtr()) + level.getSlicePitch() * attachment.layer;
 
