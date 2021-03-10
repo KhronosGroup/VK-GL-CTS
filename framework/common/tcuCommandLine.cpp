@@ -799,6 +799,17 @@ bool CommandLine::parse (int argc, const char* const* argv)
 		return false;
 	}
 
+	if (m_cmdLine.getArgs().size() > 0)
+	{
+		debugOut << "ERROR: arguments not starting with '-' or '--' are not supported by this application!\n" << std::endl;
+
+		debugOut << "\n" << de::FilePath(argv[0]).getBaseName() << " [options]\n\n";
+		parser.help(debugOut);
+
+		clear();
+		return false;
+	}
+
 	return true;
 }
 
