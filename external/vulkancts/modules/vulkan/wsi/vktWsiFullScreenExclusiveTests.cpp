@@ -39,6 +39,8 @@
 #include "tcuPlatform.hpp"
 #include "tcuCommandLine.hpp"
 
+#include <limits>
+
 #if ( DE_OS == DE_OS_WIN32 )
 	#define NOMINMAX
 	#define WIN32_LEAN_AND_MEAN
