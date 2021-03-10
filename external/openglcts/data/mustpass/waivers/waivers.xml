@@ -17,6 +17,7 @@
 */-->
 	<!--/*
 	Each <waiver> entry must contain vendor and url string attributes.
+	Vendor string can use wildcard *.
 	Url should be a full path to gitlab issue(s).
 	Waiver tag should contain one <description> child that describes issue.
 	Waiver tag should containing one <renderer_list> child.
@@ -64,8 +65,7 @@
 		<t>KHR-GL45.texture_view.view_classes</t>
 		<t>KHR-GL46.texture_view.view_classes</t>
 	</waiver>
-
-	<waiver vendor="Google Inc." url="https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/2237">
+	<waiver vendor="Google*" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/2237">
 		<description>ANGLE is unable to capture individual array elements in transform feedback using VK_EXT_transform_feedback revision 1.</description>
 		<renderer_list>
 			<r>ANGLE (Vulkan*</r>
@@ -76,7 +76,6 @@
 		<t>dEQP-GLES31.functional.program_interface_query.transform_feedback_varying.type.*.array.*</t>
 		<t>KHR-GLES31.core.program_interface_query.transform-feedback-types</t>
 	</waiver>
-
 	<waiver vendor="Intel" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/2601">
 		<description>Testing of wide-line attribute interpolation is too strict</description>
 		<renderer_list>
@@ -96,18 +95,6 @@
 		<t>dEQP-GLES3.functional.rasterization.interpolation.projected.line_loop_wide</t>
 		<t>dEQP-GLES3.functional.rasterization.interpolation.projected.line_strip_wide</t>
 		<t>dEQP-GLES3.functional.rasterization.interpolation.projected.lines_wide</t>
-	</waiver>
-
-	<waiver vendor="Google Inc." url="https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/2237">
-		<description>ANGLE is unable to capture individual array elements in transform feedback using VK_EXT_transform_feedback revision 1.</description>
-		<renderer_list>
-			<r>ANGLE (Vulkan*</r>
-		</renderer_list>
-		<t>dEQP-GLES3.functional.transform_feedback.array_element.*</t>
-		<t>dEQP-GLES3.functional.transform_feedback.random.*</t>
-		<t>dEQP-GLES31.functional.program_interface_query.transform_feedback_varying.*_array_element</t>
-		<t>dEQP-GLES31.functional.program_interface_query.transform_feedback_varying.type.*.array.*</t>
-		<t>KHR-GLES31.core.program_interface_query.transform-feedback-types</t>
 	</waiver>
 
 </waiver_list>
