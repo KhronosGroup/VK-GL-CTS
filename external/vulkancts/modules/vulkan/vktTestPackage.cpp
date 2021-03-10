@@ -102,6 +102,7 @@
 #include "vktMemoryModelTests.hpp"
 #include "vktAmberGraphicsFuzzTests.hpp"
 #include "vktAmberGlslTests.hpp"
+#include "vktAmberDepthTests.hpp"
 #include "vktImagelessFramebufferTests.hpp"
 #include "vktTransformFeedbackTests.hpp"
 #include "vktDescriptorIndexingTests.hpp"
@@ -1129,6 +1130,8 @@ void TestPackage::init (void)
 	addChild(Reconvergence::createTests			(m_testCtx, false));
 	addChild(MeshShader::createTests			(m_testCtx));
 	addChild(FragmentShadingBarycentric::createTests(m_testCtx));
+	// Amber depth pipeline tests
+	addChild(cts_amber::createAmberDepthGroup	(m_testCtx));
 }
 
 void ExperimentalTestPackage::init (void)

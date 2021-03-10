@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceDepthClampZeroOneFeaturesEXT":
+		[
+			{ "features": ["depthClampZeroOne"],		"requirements": ["VK_EXT_depth_clamp_zero_one"] }
+		]
+	}
+}

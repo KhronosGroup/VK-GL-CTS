@@ -3,6 +3,7 @@ vk-master/binding-model.txt
 vk-master/clipping.txt
 vk-master/compute.txt
 vk-master/conditional-rendering.txt
+vk-master/depth.txt
 vk-master/descriptor-indexing.txt
 vk-master/device-group.txt
 vk-master/draw.txt

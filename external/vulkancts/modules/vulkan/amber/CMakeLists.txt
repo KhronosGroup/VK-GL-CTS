@@ -12,6 +12,8 @@ set(DEQP_VK_AMBER_SRCS
 	vktAmberGraphicsFuzzTests.cpp
 	vktAmberGlslTests.hpp
 	vktAmberGlslTests.cpp
+	vktAmberDepthTests.hpp
+	vktAmberDepthTests.cpp
 	)
 
 set(DEQP_VK_AMBER_LIBS

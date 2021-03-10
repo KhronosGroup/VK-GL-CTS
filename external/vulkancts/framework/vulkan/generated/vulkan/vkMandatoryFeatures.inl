@@ -112,6 +112,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceConditionalRenderingFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceDepthClampZeroOneFeaturesEXT physicalDeviceDepthClampZeroOneFeaturesEXT;
+	deMemset(&physicalDeviceDepthClampZeroOneFeaturesEXT, 0, sizeof(physicalDeviceDepthClampZeroOneFeaturesEXT));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_depth_clamp_zero_one")) )
+	{
+		physicalDeviceDepthClampZeroOneFeaturesEXT.sType = getStructureType<VkPhysicalDeviceDepthClampZeroOneFeaturesEXT>();
+		*nextPtr = &physicalDeviceDepthClampZeroOneFeaturesEXT;
+		nextPtr  = &physicalDeviceDepthClampZeroOneFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceDepthClipControlFeaturesEXT physicalDeviceDepthClipControlFeaturesEXT;
 	deMemset(&physicalDeviceDepthClipControlFeaturesEXT, 0, sizeof(physicalDeviceDepthClipControlFeaturesEXT));
 
@@ -841,6 +851,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceConditionalRenderingFeaturesEXT.conditionalRendering == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature conditionalRendering not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_depth_clamp_zero_one")) )
+	{
+		if ( physicalDeviceDepthClampZeroOneFeaturesEXT.depthClampZeroOne == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature depthClampZeroOne not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
