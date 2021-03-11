@@ -1744,6 +1744,8 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INVOCATION_MASK_FEATURES_HUAWEI = 1000370000,
     VK_STRUCTURE_TYPE_MEMORY_GET_REMOTE_ADDRESS_INFO_NV = 1000371000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV = 1000371001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_FEATURES_EXT = 1000375000,
+    VK_STRUCTURE_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_INFO_EXT = 1000375001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT = 1000377000,
     VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX = 1000378000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT = 1000381000,
@@ -2789,6 +2791,7 @@ typedef enum VkImageCreateFlagBits {
     VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV = 0x00002000,
     VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT = 0x00001000,
     VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT = 0x00004000,
+    VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT = 0x00008000,
     VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR = VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT,
     VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR = VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT,
     VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR = VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT,
@@ -13619,6 +13622,26 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetMemoryRemoteAddressNV(
     const VkMemoryGetRemoteAddressInfoNV*       pMemoryGetRemoteAddressInfo,
     VkRemoteAddressNV*                          pAddress);
 #endif
+
+
+#define VK_EXT_multisampled_render_to_single_sampled 1
+#define VK_EXT_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_SPEC_VERSION 1
+#define VK_EXT_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_EXTENSION_NAME "VK_EXT_multisampled_render_to_single_sampled"
+typedef struct VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           multisampledRenderToSingleSampled;
+} VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT;
+
+typedef struct VkMultisampledRenderToSingleSampledInfoEXT {
+    VkStructureType          sType;
+    const void*              pNext;
+    VkBool32                 multisampledRenderToSingleSampledEnable;
+    VkSampleCountFlagBits    rasterizationSamples;
+    VkResolveModeFlagBits    depthResolveMode;
+    VkResolveModeFlagBits    stencilResolveMode;
+} VkMultisampledRenderToSingleSampledInfoEXT;
+
 
 
 #define VK_EXT_extended_dynamic_state2 1

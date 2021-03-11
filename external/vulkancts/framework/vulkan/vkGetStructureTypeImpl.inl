@@ -2296,6 +2296,16 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceExternalMemoryRDMAFe
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkMultisampledRenderToSingleSampledInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceExtendedDynamicState2FeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT;

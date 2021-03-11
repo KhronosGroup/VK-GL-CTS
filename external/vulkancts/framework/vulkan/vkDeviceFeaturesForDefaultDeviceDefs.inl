@@ -45,6 +45,7 @@ const VkPhysicalDeviceLineRasterizationFeaturesEXT&					getLineRasterizationFeat
 const VkPhysicalDeviceMaintenance4FeaturesKHR&						getMaintenance4Features							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceMaintenance4FeaturesKHR>();						}
 const VkPhysicalDeviceMemoryPriorityFeaturesEXT&					getMemoryPriorityFeaturesEXT					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceMemoryPriorityFeaturesEXT>();						}
 const VkPhysicalDeviceMeshShaderFeaturesNV&							getMeshShaderFeatures							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceMeshShaderFeaturesNV>();							}
+const VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT&	getMultisampledRenderToSingleSampledFeaturesEXT	(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT>();	}
 const VkPhysicalDeviceMultiviewFeatures&							getMultiviewFeatures							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceMultiviewFeatures>();								}
 const VkPhysicalDeviceMultiDrawFeaturesEXT&							getMultiDrawFeaturesEXT							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceMultiDrawFeaturesEXT>();							}
 const VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE&			getMutableDescriptorTypeFeaturesVALVE			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE>();			}

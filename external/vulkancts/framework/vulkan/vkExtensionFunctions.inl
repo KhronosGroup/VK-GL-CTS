@@ -937,6 +937,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_multisampled_render_to_single_sampled")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_extended_dynamic_state2")
 	{
 		return;
@@ -2182,6 +2186,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	if (extName == "VK_NV_external_memory_rdma")
 	{
 		functions.push_back("vkGetMemoryRemoteAddressNV");
+		return;
+	}
+	if (extName == "VK_EXT_multisampled_render_to_single_sampled")
+	{
 		return;
 	}
 	if (extName == "VK_EXT_extended_dynamic_state2")

@@ -28,6 +28,7 @@
 #include "vktPipelineMultisampleSampleLocationsExtTests.hpp"
 #include "vktPipelineMultisampleMixedAttachmentSamplesTests.hpp"
 #include "vktPipelineMultisampleShaderFragmentMaskTests.hpp"
+#include "vktPipelineMultisampledRenderToSingleSampledTests.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
@@ -5485,6 +5486,13 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, bool useF
 
 	// VK_AMD_mixed_attachment
 	multisampleTests->addChild(createMultisampleMixedAttachmentSamplesTests(testCtx, useFragmentShadingRate));
+
+	// VK_EXT_multisampled_render_to_single_sampled
+	{
+		multisampleTests->addChild(createMultisampledRenderToSingleSampledTests(testCtx));
+		// Take advantage of the code for this extension's tests to add some normal multisampling tests
+		multisampleTests->addChild(createMultisampledMiscTests(testCtx));
+	}
 
 	// Sample mask with and without vk_ext_post_depth_coverage
 	{

@@ -5409,6 +5409,23 @@ struct VkPhysicalDeviceExternalMemoryRDMAFeaturesNV
 	VkBool32		externalMemoryRDMA;
 };
 
+struct VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		multisampledRenderToSingleSampled;
+};
+
+struct VkMultisampledRenderToSingleSampledInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkBool32				multisampledRenderToSingleSampledEnable;
+	VkSampleCountFlagBits	rasterizationSamples;
+	VkResolveModeFlagBits	depthResolveMode;
+	VkResolveModeFlagBits	stencilResolveMode;
+};
+
 struct VkPhysicalDeviceExtendedDynamicState2FeaturesEXT
 {
 	VkStructureType	sType;

@@ -1077,6 +1077,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSubpassShadingP
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceInvocationMaskFeaturesHUAWEI& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetRemoteAddressInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalMemoryRDMAFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMultisampledRenderToSingleSampledInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExtendedDynamicState2FeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceColorWriteEnableFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineColorWriteCreateInfoEXT& value);
