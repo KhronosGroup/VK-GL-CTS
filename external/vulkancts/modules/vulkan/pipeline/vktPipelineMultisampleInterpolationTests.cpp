@@ -637,17 +637,21 @@ template<> void MSCase<MSCaseInterpolateAtCentroidConsistency>::initPrograms (vk
 		<< "layout(location = 0) in vec4 vs_in_position_ndc;\n"
 		<< "layout(location = 1) in vec2 vs_in_position_screen;\n"
 		<< "\n"
-		<< "layout(location = 0) out vec2 vs_out_pos_screen_sample;\n"
-		<< "layout(location = 1) out vec2 vs_out_pos_screen_centroid;\n"
+		<< "layout(location = 0) out vec2 vs_out_pos_screen_sample[2];\n"
+		<< "layout(location = 2) out vec2 vs_out_pos_screen_centroid[2];\n"
 		<< "\n"
 		<< "out gl_PerVertex {\n"
 		<< "	vec4  gl_Position;\n"
 		<< "};\n"
 		<< "void main (void)\n"
 		<< "{\n"
-		<< "	gl_Position					= vs_in_position_ndc;\n"
-		<< "	vs_out_pos_screen_sample	= vs_in_position_screen;\n"
-		<< "	vs_out_pos_screen_centroid	= vs_in_position_screen;\n"
+		<< "	gl_Position				      = vs_in_position_ndc;\n"
+		// Index 0 is never read, so we'll populate them with bad values
+		<< "	vs_out_pos_screen_sample[0]	  = vec2(-70.3, 42.1);\n"
+		<< "	vs_out_pos_screen_centroid[0] = vec2(7.7, -3.2);\n"
+		// Actual coordinates in index 1:
+		<< "	vs_out_pos_screen_sample[1]	  = vs_in_position_screen;\n"
+		<< "	vs_out_pos_screen_centroid[1] = vs_in_position_screen;\n"
 		<< "}\n";
 
 	programCollection.glslSources.add("vertex_shader") << glu::VertexSource(vs.str());
@@ -656,8 +660,8 @@ template<> void MSCase<MSCaseInterpolateAtCentroidConsistency>::initPrograms (vk
 	std::ostringstream fs;
 
 	fs	<< "#version 440\n"
-		<< "layout(location = 0) sample   in vec2 fs_in_pos_screen_sample;\n"
-		<< "layout(location = 1) centroid in vec2 fs_in_pos_screen_centroid;\n"
+		<< "layout(location = 0) sample   in vec2 fs_in_pos_screen_sample[2];\n"
+		<< "layout(location = 2) centroid in vec2 fs_in_pos_screen_centroid[2];\n"
 		<< "\n"
 		<< "layout(location = 0) out vec4 fs_out_color;\n"
 		<< "\n";
@@ -677,19 +681,19 @@ template<> void MSCase<MSCaseInterpolateAtCentroidConsistency>::initPrograms (vk
 
 	if (m_imageMSParams.componentData.source == multisample::ComponentSource::NONE)
 	{
-		fs	<< "	const vec2 pos_interpolated_at_centroid = interpolateAtCentroid(fs_in_pos_screen_sample);\n"
-			<< "	const bool valuesEqual                  = all(lessThan(abs(pos_interpolated_at_centroid - fs_in_pos_screen_centroid), vec2(threshold)));\n";
+		fs	<< "	const vec2 pos_interpolated_at_centroid = interpolateAtCentroid(fs_in_pos_screen_sample[1]);\n"
+			<< "	const bool valuesEqual                  = all(lessThan(abs(pos_interpolated_at_centroid - fs_in_pos_screen_centroid[1]), vec2(threshold)));\n";
 	}
 	else if (m_imageMSParams.componentData.source == multisample::ComponentSource::CONSTANT)
 	{
 		const auto& index = m_imageMSParams.componentData.index;
-		fs	<< "	const float pos_interpolated_at_centroid = interpolateAtCentroid(fs_in_pos_screen_sample[" << index << "]);\n"
-			<< "	const bool  valuesEqual                  = (abs(pos_interpolated_at_centroid - fs_in_pos_screen_centroid[" << index << "]) < threshold);\n";
+		fs	<< "	const float pos_interpolated_at_centroid = interpolateAtCentroid(fs_in_pos_screen_sample[1][" << index << "]);\n"
+			<< "	const bool  valuesEqual                  = (abs(pos_interpolated_at_centroid - fs_in_pos_screen_centroid[1][" << index << "]) < threshold);\n";
 	}
 	else // multisample::ComponentSource::PUSH_CONSTANT
 	{
-		fs	<< "	const float pos_interpolated_at_centroid = interpolateAtCentroid(fs_in_pos_screen_sample[component]);\n"
-			<< "	const bool  valuesEqual                  = (abs(pos_interpolated_at_centroid - fs_in_pos_screen_centroid[component]) < threshold);\n";
+		fs	<< "	const float pos_interpolated_at_centroid = interpolateAtCentroid(fs_in_pos_screen_sample[1][component]);\n"
+			<< "	const bool  valuesEqual                  = (abs(pos_interpolated_at_centroid - fs_in_pos_screen_centroid[1][component]) < threshold);\n";
 	}
 
 	fs	<< "\n"
