@@ -627,6 +627,14 @@ void populateFormatGroup (tcu::TestCaseGroup* group)
 
 		group->addChild(createTestGroup<VkFormat>(group->getTestContext(), formatName, "", populatePerFormatGroup, format));
 	}
+
+	for (int formatNdx = VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT; formatNdx <= VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT; formatNdx++)
+	{
+		const VkFormat					format			= (VkFormat)formatNdx;
+		const string					formatName		= de::toLower(de::toString(format).substr(10));
+
+		group->addChild(createTestGroup<VkFormat>(group->getTestContext(), formatName, "", populatePerFormatGroup, format));
+	}
 }
 
 } // namespace

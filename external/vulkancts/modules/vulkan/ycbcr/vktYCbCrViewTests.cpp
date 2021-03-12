@@ -689,13 +689,13 @@ void populateViewTypeGroup (tcu::TestCaseGroup* group, TestParameters::ViewType 
 	const VkImageCreateFlags	baseFlags	= (VkImageCreateFlags)VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT
 											| (viewType == TestParameters::VIEWTYPE_MEMORY_ALIAS ? (VkImageCreateFlags)VK_IMAGE_CREATE_ALIAS_BIT : 0u);
 
-	for (int formatNdx = VK_YCBCR_FORMAT_FIRST; formatNdx < VK_YCBCR_FORMAT_LAST; formatNdx++)
+	auto addTests = [&](int formatNdx)
 	{
 		const VkFormat	format		= (VkFormat)formatNdx;
 		const deUint32	numPlanes	= getPlaneCount(format);
 
 		if (numPlanes == 1)
-			continue; // Plane views not possible
+			return; // Plane views not possible
 
 		for (int isDisjoint = 0; isDisjoint < 2; ++isDisjoint)
 		{
@@ -708,6 +708,16 @@ void populateViewTypeGroup (tcu::TestCaseGroup* group, TestParameters::ViewType 
 			for (deUint32 planeNdx = 0; planeNdx < numPlanes; ++planeNdx)
 				addPlaneViewCase(group, TestParameters(viewType, format, size, flags, planeNdx, shaderType));
 		}
+	};
+
+	for (int formatNdx = VK_YCBCR_FORMAT_FIRST; formatNdx < VK_YCBCR_FORMAT_LAST; formatNdx++)
+	{
+		addTests(formatNdx);
+	}
+
+	for (int formatNdx = VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT; formatNdx < VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT; formatNdx++)
+	{
+		addTests(formatNdx);
 	}
 }
 
