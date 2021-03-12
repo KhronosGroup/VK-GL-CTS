@@ -131,3 +131,4 @@ VkPhysicalDeviceRayTracingPipelineFeaturesKHR				FEATURES ( rayTraversalPrimitiv
 VkPhysicalDeviceRayQueryFeaturesKHR							FEATURES ( rayQuery )											REQUIREMENTS ( VK_KHR_ray_query )
 VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT			FEATURES ( vertexInputDynamicState )							REQUIREMENTS ( VK_EXT_vertex_input_dynamic_state  )
 VkPhysicalDeviceColorWriteEnableFeaturesEXT					FEATURES ( colorWriteEnable )									REQUIREMENTS ( VK_EXT_color_write_enable )
+VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT			FEATURES ( ycbcr2plane444Formats )								REQUIREMENTS ( VK_EXT_ycbcr_2plane_444_formats )

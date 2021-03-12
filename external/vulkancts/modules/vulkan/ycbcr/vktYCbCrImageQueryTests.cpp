@@ -832,6 +832,16 @@ void populateQueryInShaderGroup (tcu::TestCaseGroup* group, QueryGroupParams par
 		if (getPlaneCount(format) > 1)
 			addImageQueryCase(group, TestParameters(params.query, format, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT, params.shaderType));
 	}
+
+	for (int formatNdx = VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT; formatNdx <= VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT; formatNdx++)
+	{
+		const VkFormat	format	= (VkFormat)formatNdx;
+
+		addImageQueryCase(group, TestParameters(params.query, format, 0u, params.shaderType));
+
+		if (getPlaneCount(format) > 1)
+			addImageQueryCase(group, TestParameters(params.query, format, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT, params.shaderType));
+	}
 }
 
 void populateQueryGroup (tcu::TestCaseGroup* group, QueryType query)

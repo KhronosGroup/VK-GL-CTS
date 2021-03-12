@@ -361,6 +361,10 @@ std::string getOpTypeImageSparse (const ImageType		imageType,
 		case VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM:				src <<	"Rgba16";		break;
 		case VK_FORMAT_G16_B16R16_2PLANE_422_UNORM:					src <<	"Rgba16";		break;
 		case VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM:				src <<	"Rgba16";		break;
+		case VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT:				src <<	"Rgba8";		break;
+		case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT:src <<	"Rgba16";		break;
+		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT:src <<	"Rgba16";		break;
+		case VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT:				src <<	"Rgba16";		break;
 
 		default:
 			DE_FATAL("Unexpected texture format");

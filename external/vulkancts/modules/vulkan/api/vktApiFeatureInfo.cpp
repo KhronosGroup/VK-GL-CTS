@@ -3556,10 +3556,13 @@ void createFormatTests (tcu::TestCaseGroup* testGroup)
 	} s_formatRanges[] =
 	{
 		// core formats
-		{ (VkFormat)(VK_FORMAT_UNDEFINED+1),	VK_CORE_FORMAT_LAST										},
+		{ (VkFormat)(VK_FORMAT_UNDEFINED+1),		VK_CORE_FORMAT_LAST										},
 
 		// YCbCr formats
-		{ VK_FORMAT_G8B8G8R8_422_UNORM,			(VkFormat)(VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM+1)	},
+		{ VK_FORMAT_G8B8G8R8_422_UNORM,				(VkFormat)(VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM+1)	},
+
+		// YCbCr extended formats
+		{ VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT,	(VkFormat)(VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT+1)	},
 	};
 
 	for (int rangeNdx = 0; rangeNdx < DE_LENGTH_OF_ARRAY(s_formatRanges); ++rangeNdx)
@@ -5451,10 +5454,13 @@ void createImageFormatTypeTilingTests (tcu::TestCaseGroup* testGroup, ImageForma
 	} s_formatRanges[] =
 	{
 		// core formats
-		{ (VkFormat)(VK_FORMAT_UNDEFINED + 1),	VK_CORE_FORMAT_LAST,										params },
+		{ (VkFormat)(VK_FORMAT_UNDEFINED + 1),		VK_CORE_FORMAT_LAST,										params },
 
 		// YCbCr formats
-		{ VK_FORMAT_G8B8G8R8_422_UNORM_KHR,		(VkFormat)(VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR + 1),	params }
+		{ VK_FORMAT_G8B8G8R8_422_UNORM_KHR,			(VkFormat)(VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR + 1),	params },
+
+		// YCbCr extended formats
+		{ VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT,	(VkFormat)(VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT+1),	params },
 	};
 
 	for (int rangeNdx = 0; rangeNdx < DE_LENGTH_OF_ARRAY(s_formatRanges); ++rangeNdx)

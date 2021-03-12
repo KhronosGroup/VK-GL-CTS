@@ -829,6 +829,12 @@ bool ImageMemoryRequirementsOriginal::isImageSupported (const Context& context, 
 		return false;
 	}
 
+	if (isYCbCrExtensionFormat(info.format)
+		&& !context.isDeviceFunctionalitySupported("VK_EXT_ycbcr_2plane_444_formats"))
+	{
+		return false;
+	}
+
 	if (info.imageType == VK_IMAGE_TYPE_1D)
 	{
 		DE_ASSERT(info.extent.height == 1u && info.extent.depth == 1u);
@@ -1253,6 +1259,10 @@ tcu::TestStatus ImageMemoryRequirementsOriginal::execTest (Context& context, con
 		VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR,
 		VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
 		VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
+		VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT,
+		VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT,
+		VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT,
+		VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT,
 	};
 	const DeviceInterface&		vk				= context.getDeviceInterface();
 	const InstanceInterface&	vki				= context.getInstanceInterface();

@@ -237,10 +237,29 @@ bool isYCbCrFormat (VkFormat format)
 		case VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM:
 		case VK_FORMAT_G16_B16R16_2PLANE_422_UNORM:
 		case VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM:
+		case VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT:
+		case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT:
+		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT:
+		case VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT:
 			return true;
 
 		default:
 			return false;
+	}
+}
+
+bool isYCbCrExtensionFormat (VkFormat format)
+{
+	switch (format)
+	{
+	case VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT:
+	case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT:
+	case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT:
+	case VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT:
+		return true;
+
+	default:
+		return false;
 	}
 }
 
@@ -300,6 +319,95 @@ const PlanarFormatDescription& getYCbCrPlanarFormatDescription (VkFormat format)
 	const deUint32	chanA			= PlanarFormatDescription::CHANNEL_A;
 
 	const deUint8	unorm			= (deUint8)tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT;
+
+	if (format >= VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT && format <= VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT)
+	{
+		static const PlanarFormatDescription s_formatInfo[] =
+		{
+			// VK_FORMAT_G8_B8R8_2PLANE_444_UNORM
+			{
+				2, // planes
+				chanR|chanG|chanB,
+				1,1,
+				{
+				//		Size	WDiv	HDiv	planeCompatibleFormat
+					{	1,		1,		1,		VK_FORMAT_R8_UNORM },
+					{	2,		1,		1,		VK_FORMAT_R8G8_UNORM },
+					{	0,		0,		0,		VK_FORMAT_UNDEFINED },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	1,		unorm,	8,		8,		2 },	// R
+					{	0,		unorm,	0,		8,		1 },	// G
+					{	1,		unorm,	0,		8,		2 },	// B
+					{ 0, 0, 0, 0, 0 }
+				}
+			},
+			// VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT
+			{
+				2, // planes
+				chanR|chanG|chanB,
+				1,1,
+				{
+				//		Size	WDiv	HDiv	planeCompatibleFormat
+					{	2,		1,		1,		VK_FORMAT_R10X6_UNORM_PACK16 },
+					{	4,		1,		1,		VK_FORMAT_R10X6G10X6_UNORM_2PACK16 },
+					{	0,		0,		0,		VK_FORMAT_UNDEFINED },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	1,		unorm,	22,		10,		4 },	// R
+					{	0,		unorm,	6,		10,		2 },	// G
+					{	1,		unorm,	6,		10,		4 },	// B
+					{ 0, 0, 0, 0, 0 }
+				}
+			},
+			// VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT
+			{
+				2, // planes
+				chanR|chanG|chanB,
+				1,1,
+				{
+				//		Size	WDiv	HDiv	planeCompatibleFormat
+					{	2,		1,		1,		VK_FORMAT_R12X4_UNORM_PACK16 },
+					{	4,		1,		1,		VK_FORMAT_R12X4G12X4_UNORM_2PACK16 },
+					{	0,		0,		0,		VK_FORMAT_UNDEFINED },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	1,		unorm,	20,		12,		4 },	// R
+					{	0,		unorm,	4,		12,		2 },	// G
+					{	1,		unorm,	4,		12,		4 },	// B
+					{ 0, 0, 0, 0, 0 }
+				}
+			},
+			// VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT
+			{
+				2, // planes
+				chanR|chanG|chanB,
+				1,1,
+				{
+				//		Size	WDiv	HDiv	planeCompatibleFormat
+					{	2,		1,		1,		VK_FORMAT_R16_UNORM },
+					{	4,		1,		1,		VK_FORMAT_R16G16_UNORM },
+					{	0,		0,		0,		VK_FORMAT_UNDEFINED },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	1,		unorm,	16,		16,		4 },	// R
+					{	0,		unorm,	0,		16,		2 },	// G
+					{	1,		unorm,	0,		16,		4 },	// B
+					{ 0, 0, 0, 0, 0 }
+				}
+			},
+		};
+
+		const size_t	offset	= (size_t)VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT;
+
+		DE_ASSERT(de::inBounds<size_t>((size_t)format, offset, offset+(size_t)DE_LENGTH_OF_ARRAY(s_formatInfo)));
+
+		return s_formatInfo[(size_t)format-offset];
+	}
 
 	static const PlanarFormatDescription s_formatInfo[] =
 	{
@@ -2296,6 +2404,10 @@ int getPlaneCount (VkFormat format)
 		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16:
 		case VK_FORMAT_G16_B16R16_2PLANE_420_UNORM:
 		case VK_FORMAT_G16_B16R16_2PLANE_422_UNORM:
+		case VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT:
+		case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT:
+		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT:
+		case VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT:
 			return 2;
 
 		case VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM:
@@ -3318,6 +3430,16 @@ void imageUtilSelfTest (void)
 	}
 
 	for (int formatNdx = VK_FORMAT_G8B8G8R8_422_UNORM; formatNdx <= VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM; formatNdx++)
+	{
+		const VkFormat					format	= (VkFormat)formatNdx;
+		const PlanarFormatDescription&	info	= getPlanarFormatDescription(format);
+
+		DE_TEST_ASSERT(isYCbCrFormat(format));
+		DE_TEST_ASSERT(de::inRange<deUint8>(info.numPlanes, 1u, 3u));
+		DE_TEST_ASSERT(info.numPlanes == getPlaneCount(format));
+	}
+
+	for (int formatNdx = VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT; formatNdx <= VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT; formatNdx++)
 	{
 		const VkFormat					format	= (VkFormat)formatNdx;
 		const PlanarFormatDescription&	info	= getPlanarFormatDescription(format);

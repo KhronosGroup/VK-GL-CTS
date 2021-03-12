@@ -587,6 +587,10 @@ std::string getShaderImageFormatQualifier (VkFormat format)
 		case VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM:				return "rgba16";
 		case VK_FORMAT_G16_B16R16_2PLANE_422_UNORM:					return "rgba16";
 		case VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM:				return "rgba16";
+		case VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT:				return "rgba8";
+		case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT:return "rgba16";
+		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT:return "rgba16";
+		case VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT:				return "rgba16";
 
 		default:
 			DE_FATAL("Unexpected texture format");
@@ -675,7 +679,7 @@ tcu::TestCaseGroup* populateStorageImageWriteFormatGroup (tcu::TestContext& test
 {
 	const std::vector<tcu::UVec3>	availableSizes{ tcu::UVec3(512u, 512u, 1u), tcu::UVec3(1024u, 128u, 1u), tcu::UVec3(66u, 32u, 1u) };
 
-	for (int formatNdx = VK_YCBCR_FORMAT_FIRST; formatNdx < VK_YCBCR_FORMAT_LAST; formatNdx++)
+	auto addTests = [&](int formatNdx)
 	{
 		const VkFormat					format				= (VkFormat)formatNdx;
 		tcu::UVec3						imageSizeAlignment	= getImageSizeAlignment(format);
@@ -702,7 +706,18 @@ tcu::TestCaseGroup* populateStorageImageWriteFormatGroup (tcu::TestContext& test
 			formatGroup->addChild(sizeGroup.release());
 		}
 		testGroup->addChild(formatGroup.release());
+	};
+
+	for (int formatNdx = VK_YCBCR_FORMAT_FIRST; formatNdx < VK_YCBCR_FORMAT_LAST; formatNdx++)
+	{
+		addTests(formatNdx);
 	}
+
+	for (int formatNdx = VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT; formatNdx <= VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT; formatNdx++)
+	{
+		addTests(formatNdx);
+	}
+
 	return testGroup.release();
 }
 

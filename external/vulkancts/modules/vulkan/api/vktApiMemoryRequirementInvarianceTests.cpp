@@ -256,6 +256,7 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 	bool									success							= true;
 	const deBool							isDedicatedAllocationSupported	= m_context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation");
 	const deBool							isYcbcrSupported				= m_context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion");
+	const deBool							isYcbcrExtensionSupported		= m_context.isDeviceFunctionalitySupported("VK_EXT_ycbcr_2plane_444_formats");
 	std::vector<int>						optimalFormats;
 	std::vector<int>						linearFormats;
 	std::vector<int>						memoryTypes;
@@ -492,16 +493,22 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 		VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG,
 		VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
 		VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
+		VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT,
+		VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT,
+		VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT,
+		VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT,
 	};
 	int										formatCount						= (int)(sizeof(formatlist) / sizeof(unsigned int));
-
-	// If ycbcr is not supported, only use the standard texture formats
-	if (!isYcbcrSupported)
-		formatCount = 184;
 
 	// Find supported image formats
 	for (int i = 0; i < formatCount; i++)
 	{
+		if (isYCbCrFormat((VkFormat)formatlist[i]) && !isYcbcrSupported)
+			continue;
+
+		if (isYCbCrExtensionFormat((VkFormat)formatlist[i]) && !isYcbcrExtensionSupported)
+			continue;
+
 		vk::VkImageFormatProperties imageformatprops;
 
 		// Check for support in linear tiling mode

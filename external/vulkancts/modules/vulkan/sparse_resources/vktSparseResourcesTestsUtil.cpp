@@ -105,7 +105,11 @@ std::vector<TestFormat> getTestFormats (const ImageType& imageType)
 			{ VK_FORMAT_G16_B16R16_2PLANE_420_UNORM },
 			{ VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM },
 			{ VK_FORMAT_G16_B16R16_2PLANE_422_UNORM },
-			{ VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM }
+			{ VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM },
+			{ VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT },
+			{ VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT },
+			{ VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT },
+			{ VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT },
 		};
 		std::copy(begin(ycbcrFormats), end(ycbcrFormats), std::back_inserter(results));
 	}
@@ -696,6 +700,10 @@ std::string getShaderImageFormatQualifier (VkFormat format)
 		case VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM:				return "rgba16";
 		case VK_FORMAT_G16_B16R16_2PLANE_422_UNORM:					return "rgba16";
 		case VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM:				return "rgba16";
+		case VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT:				return "rgba8";
+		case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT:return "rgba16";
+		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT:return "rgba16";
+		case VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT:				return "rgba16";
 
 		default:
 			DE_FATAL("Unexpected texture format");
@@ -776,6 +784,10 @@ std::string getImageFormatID (VkFormat format)
 		case VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM:
 		case VK_FORMAT_G16_B16R16_2PLANE_422_UNORM:
 		case VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM:
+		case VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT:
+		case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT:
+		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT:
+		case VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT:
 			return de::toLower(std::string(getFormatName(format)).substr(10));
 
 		default:
