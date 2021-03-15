@@ -1117,56 +1117,60 @@ tcu::TestStatus queryDevGroupSurfacePresentModesTest (Context& context, Type wsi
 		*presentModeFlags > maxValidFlag)
 		return tcu::TestStatus::fail("queryDevGroupSurfacePresentModesTest flag not valid");
 
-	for (size_t physDevIdx = 0; physDevIdx < deviceGroupProps[devGroupIdx].physicalDeviceCount; physDevIdx++)
+	// getPhysicalDevicePresentRectanglesKHR is supported only when VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHR is set
+	if ((*presentModeFlags & VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHR))
 	{
-		VK_CHECK(instHelper.vki.getPhysicalDevicePresentRectanglesKHR(deviceGroupProps[devGroupIdx].physicalDevices[physDevIdx], *surface, &rectCount, DE_NULL));
-		rectanglesBuffer.resize(sizeof(VkRect2D) * rectCount + GUARD_SIZE);
-		presentRectangles = reinterpret_cast<VkRect2D*>(rectanglesBuffer.data());
-		deMemset(rectanglesBuffer.data(), GUARD_VALUE, rectanglesBuffer.size());
-
-		VK_CHECK(instHelper.vki.getPhysicalDevicePresentRectanglesKHR(deviceGroupProps[devGroupIdx].physicalDevices[physDevIdx], *surface, &rectCount, presentRectangles));
-
-		// Guard check
-		for (deInt32 ndx = 0; ndx < GUARD_SIZE; ndx++)
+		for (size_t physDevIdx = 0; physDevIdx < deviceGroupProps[devGroupIdx].physicalDeviceCount; physDevIdx++)
 		{
-			if (rectanglesBuffer[ndx + sizeof(VkRect2D) * rectCount] != GUARD_VALUE)
-			{
-				log << TestLog::Message << "getPhysicalDevicePresentRectanglesKHR - Guard offset " << ndx << " not valid" << TestLog::EndMessage;
-				return tcu::TestStatus::fail("getPhysicalDevicePresentRectanglesKHR buffer overflow");
-			}
-		}
+			VK_CHECK(instHelper.vki.getPhysicalDevicePresentRectanglesKHR(deviceGroupProps[devGroupIdx].physicalDevices[physDevIdx], *surface, &rectCount, DE_NULL));
+			rectanglesBuffer.resize(sizeof(VkRect2D) * rectCount + GUARD_SIZE);
+			presentRectangles = reinterpret_cast<VkRect2D*>(rectanglesBuffer.data());
+			deMemset(rectanglesBuffer.data(), GUARD_VALUE, rectanglesBuffer.size());
 
-		// Check rectangles do not overlap
-		for (size_t rectIdx1 = 0; rectIdx1 < rectCount; rectIdx1++)
-		{
-			for (size_t rectIdx2 = 0; rectIdx2 < rectCount; rectIdx2++)
+			VK_CHECK(instHelper.vki.getPhysicalDevicePresentRectanglesKHR(deviceGroupProps[devGroupIdx].physicalDevices[physDevIdx], *surface, &rectCount, presentRectangles));
+
+			// Guard check
+			for (deInt32 ndx = 0; ndx < GUARD_SIZE; ndx++)
 			{
-				if (rectIdx1 != rectIdx2)
+				if (rectanglesBuffer[ndx + sizeof(VkRect2D) * rectCount] != GUARD_VALUE)
 				{
-					deUint32 rectATop		= presentRectangles[rectIdx1].offset.y;
-					deUint32 rectALeft		= presentRectangles[rectIdx1].offset.x;
-					deUint32 rectABottom	= presentRectangles[rectIdx1].offset.y + presentRectangles[rectIdx1].extent.height;
-					deUint32 rectARight		= presentRectangles[rectIdx1].offset.x + presentRectangles[rectIdx1].extent.width;
-
-					deUint32 rectBTop		= presentRectangles[rectIdx2].offset.y;
-					deUint32 rectBLeft		= presentRectangles[rectIdx2].offset.x;
-					deUint32 rectBBottom	= presentRectangles[rectIdx2].offset.y + presentRectangles[rectIdx2].extent.height;
-					deUint32 rectBRight		= presentRectangles[rectIdx2].offset.x + presentRectangles[rectIdx2].extent.width;
-
-					if (rectALeft < rectBRight && rectARight > rectBLeft &&
-						rectATop < rectBBottom && rectABottom > rectBTop)
-						return tcu::TestStatus::fail("getPhysicalDevicePresentRectanglesKHR rectangles overlap");
+					log << TestLog::Message << "getPhysicalDevicePresentRectanglesKHR - Guard offset " << ndx << " not valid" << TestLog::EndMessage;
+					return tcu::TestStatus::fail("getPhysicalDevicePresentRectanglesKHR buffer overflow");
 				}
 			}
-		}
 
-		// Check incomplete
-		incompleteRectCount = rectCount / 2;
-		result = instHelper.vki.getPhysicalDevicePresentRectanglesKHR(deviceGroupProps[devGroupIdx].physicalDevices[physDevIdx], *surface, &incompleteRectCount, presentRectangles);
-		results.check(result == VK_INCOMPLETE, "Expected VK_INCOMPLETE");
+			// Check rectangles do not overlap
+			for (size_t rectIdx1 = 0; rectIdx1 < rectCount; rectIdx1++)
+			{
+				for (size_t rectIdx2 = 0; rectIdx2 < rectCount; rectIdx2++)
+				{
+					if (rectIdx1 != rectIdx2)
+					{
+						deUint32 rectATop		= presentRectangles[rectIdx1].offset.y;
+						deUint32 rectALeft		= presentRectangles[rectIdx1].offset.x;
+						deUint32 rectABottom	= presentRectangles[rectIdx1].offset.y + presentRectangles[rectIdx1].extent.height;
+						deUint32 rectARight		= presentRectangles[rectIdx1].offset.x + presentRectangles[rectIdx1].extent.width;
+
+						deUint32 rectBTop		= presentRectangles[rectIdx2].offset.y;
+						deUint32 rectBLeft		= presentRectangles[rectIdx2].offset.x;
+						deUint32 rectBBottom	= presentRectangles[rectIdx2].offset.y + presentRectangles[rectIdx2].extent.height;
+						deUint32 rectBRight		= presentRectangles[rectIdx2].offset.x + presentRectangles[rectIdx2].extent.width;
+
+						if (rectALeft < rectBRight && rectARight > rectBLeft &&
+							rectATop < rectBBottom && rectABottom > rectBTop)
+							return tcu::TestStatus::fail("getPhysicalDevicePresentRectanglesKHR rectangles overlap");
+					}
+				}
+			}
+
+			// Check incomplete
+			incompleteRectCount = rectCount / 2;
+			result = instHelper.vki.getPhysicalDevicePresentRectanglesKHR(deviceGroupProps[devGroupIdx].physicalDevices[physDevIdx], *surface, &incompleteRectCount, presentRectangles);
+			results.check(result == VK_INCOMPLETE, "Expected VK_INCOMPLETE");
+		}
 	}
 
-	return tcu::TestStatus(results.getResult(), results.getMessage());
+		return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
 tcu::TestStatus createSurfaceInitialSizeTest (Context& context, Type wsiType)
