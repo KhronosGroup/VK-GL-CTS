@@ -1918,14 +1918,16 @@ void checkFormatSupport (glu::ContextInfo& info, deUint32 format, deUint32 targe
 
 void CopyImageTest::init (void)
 {
-	de::UniquePtr<glu::ContextInfo> ctxInfo(glu::ContextInfo::create(m_context.getRenderContext()));
-	const bool						isES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	auto&							rc				= m_context.getRenderContext();
+	de::UniquePtr<glu::ContextInfo> ctxInfo			(glu::ContextInfo::create(rc));
+	const bool						isES32orGL45	= glu::contextSupports(rc.getType(), glu::ApiType::es(3, 2)) ||
+													  glu::contextSupports(rc.getType(), glu::ApiType::core(4, 5));
 
-	if (!isES32 && !ctxInfo->isExtensionSupported("GL_EXT_copy_image"))
+	if (!isES32orGL45 && !ctxInfo->isExtensionSupported("GL_EXT_copy_image"))
 		throw tcu::NotSupportedError("Extension GL_EXT_copy_image not supported.", "", __FILE__, __LINE__);
 
-	checkFormatSupport(*ctxInfo, m_srcImageInfo.getFormat(), m_srcImageInfo.getTarget(), m_context.getRenderContext());
-	checkFormatSupport(*ctxInfo, m_dstImageInfo.getFormat(), m_dstImageInfo.getTarget(), m_context.getRenderContext());
+	checkFormatSupport(*ctxInfo, m_srcImageInfo.getFormat(), m_srcImageInfo.getTarget(), rc);
+	checkFormatSupport(*ctxInfo, m_dstImageInfo.getFormat(), m_dstImageInfo.getTarget(), rc);
 
 	{
 		SeedBuilder builder;
@@ -1934,7 +1936,7 @@ void CopyImageTest::init (void)
 				<< m_srcImageInfo
 				<< m_dstImageInfo;
 
-		m_state = new State(builder.get(), m_testCtx.getLog(), m_context.getRenderContext());
+		m_state = new State(builder.get(), m_testCtx.getLog(), rc);
 	}
 }
 
@@ -2286,7 +2288,7 @@ TestCase::IterateResult CopyImageTest::iterate (void)
 class CopyImageTests : public TestCaseGroup
 {
 public:
-						CopyImageTests			(Context& context);
+						CopyImageTests			(Context& context, bool is_GL45);
 						~CopyImageTests			(void);
 
 	void				init					(void);
@@ -2294,10 +2296,12 @@ public:
 private:
 						CopyImageTests			(const CopyImageTests& other);
 	CopyImageTests&		operator=				(const CopyImageTests& other);
+	bool				m_isGL45;
 };
 
-CopyImageTests::CopyImageTests (Context& context)
+CopyImageTests::CopyImageTests (Context& context, bool is_GL45)
 	: TestCaseGroup	(context, "copy_image", "Copy image tests for GL_EXT_copy_image.")
+	, m_isGL45 (is_GL45)
 {
 }
 
@@ -2412,14 +2416,6 @@ void addCopyTests (TestCaseGroup* root, deUint32 srcFormat, deUint32 dstFormat)
 
 void CopyImageTests::init (void)
 {
-	TestCaseGroup* const	nonCompressedGroup	= new TestCaseGroup(m_context, "non_compressed", "Test copying between textures.");
-	TestCaseGroup* const	compressedGroup		= new TestCaseGroup(m_context, "compressed", "Test copying between compressed textures.");
-	TestCaseGroup* const	mixedGroup			= new TestCaseGroup(m_context, "mixed", "Test copying between compressed and non-compressed textures.");
-
-	addChild(nonCompressedGroup);
-	addChild(compressedGroup);
-	addChild(mixedGroup);
-
 	map<ViewClass, vector<deUint32> >							textureFormatViewClasses;
 	map<ViewClass, vector<deUint32> >							compressedTextureFormatViewClasses;
 	map<ViewClass, pair<vector<deUint32>, vector<deUint32> > >	mixedViewClasses;
@@ -2658,79 +2654,98 @@ void CopyImageTests::init (void)
 	mixedViewClasses[VIEWCLASS_64_BITS].second.push_back(GL_COMPRESSED_R11_EAC);
 	mixedViewClasses[VIEWCLASS_64_BITS].second.push_back(GL_COMPRESSED_SIGNED_R11_EAC);
 
-	for (map<ViewClass, vector<deUint32> >::const_iterator viewClassIter = textureFormatViewClasses.begin(); viewClassIter != textureFormatViewClasses.end(); ++viewClassIter)
 	{
-		const vector<deUint32>&	formats		= viewClassIter->second;
-		const ViewClass			viewClass	= viewClassIter->first;
-		TestCaseGroup* const	viewGroup	= new TestCaseGroup(m_context, viewClassToName(viewClass), viewClassToName(viewClass));
-
-		nonCompressedGroup->addChild(viewGroup);
-
-		for (int srcFormatNdx = 0; srcFormatNdx < (int)formats.size(); srcFormatNdx++)
-		for (int dstFormatNdx = 0; dstFormatNdx < (int)formats.size(); dstFormatNdx++)
+		TestCaseGroup* const	nonCompressedGroup	= new TestCaseGroup(m_context, "non_compressed", "Test copying between textures.");
+		addChild(nonCompressedGroup);
+		for (map<ViewClass, vector<deUint32> >::const_iterator viewClassIter = textureFormatViewClasses.begin(); viewClassIter != textureFormatViewClasses.end(); ++viewClassIter)
 		{
-			const deUint32 srcFormat = formats[srcFormatNdx];
-			const deUint32 dstFormat = formats[dstFormatNdx];
+			const vector<deUint32>&	formats		= viewClassIter->second;
+			const ViewClass			viewClass	= viewClassIter->first;
+			TestCaseGroup* const	viewGroup	= new TestCaseGroup(m_context, viewClassToName(viewClass), viewClassToName(viewClass));
 
-			if (srcFormat != dstFormat && isFloatFormat(srcFormat) && isFloatFormat(dstFormat))
-				continue;
+			nonCompressedGroup->addChild(viewGroup);
 
-			addCopyTests(viewGroup, srcFormat, dstFormat);
+			for (int srcFormatNdx = 0; srcFormatNdx < (int)formats.size(); srcFormatNdx++)
+			for (int dstFormatNdx = 0; dstFormatNdx < (int)formats.size(); dstFormatNdx++)
+			{
+				const deUint32 srcFormat = formats[srcFormatNdx];
+				const deUint32 dstFormat = formats[dstFormatNdx];
+
+				if (srcFormat != dstFormat && isFloatFormat(srcFormat) && isFloatFormat(dstFormat))
+					continue;
+
+				addCopyTests(viewGroup, srcFormat, dstFormat);
+			}
 		}
 	}
 
-	for (map<ViewClass, vector<deUint32> >::const_iterator viewClassIter = compressedTextureFormatViewClasses.begin(); viewClassIter != compressedTextureFormatViewClasses.end(); ++viewClassIter)
+	// ES only
+	if (!m_isGL45)
 	{
-		const vector<deUint32>&	formats		= viewClassIter->second;
-		const ViewClass			viewClass	= viewClassIter->first;
-		TestCaseGroup* const	viewGroup	= new TestCaseGroup(m_context, viewClassToName(viewClass), viewClassToName(viewClass));
+		TestCaseGroup* const	compressedGroup		= new TestCaseGroup(m_context, "compressed", "Test copying between compressed textures.");
+		addChild(compressedGroup);
 
-		compressedGroup->addChild(viewGroup);
-
-		for (int srcFormatNdx = 0; srcFormatNdx < (int)formats.size(); srcFormatNdx++)
-		for (int dstFormatNdx = 0; dstFormatNdx < (int)formats.size(); dstFormatNdx++)
+		for (map<ViewClass, vector<deUint32> >::const_iterator viewClassIter = compressedTextureFormatViewClasses.begin(); viewClassIter != compressedTextureFormatViewClasses.end(); ++viewClassIter)
 		{
-			const deUint32 srcFormat = formats[srcFormatNdx];
-			const deUint32 dstFormat = formats[dstFormatNdx];
+			const vector<deUint32>&	formats		= viewClassIter->second;
+			const ViewClass			viewClass	= viewClassIter->first;
+			TestCaseGroup* const	viewGroup	= new TestCaseGroup(m_context, viewClassToName(viewClass), viewClassToName(viewClass));
 
-			if (srcFormat != dstFormat && isFloatFormat(srcFormat) && isFloatFormat(dstFormat))
-				continue;
+			compressedGroup->addChild(viewGroup);
 
-			addCopyTests(viewGroup, srcFormat, dstFormat);
+			for (int srcFormatNdx = 0; srcFormatNdx < (int)formats.size(); srcFormatNdx++)
+			for (int dstFormatNdx = 0; dstFormatNdx < (int)formats.size(); dstFormatNdx++)
+			{
+				const deUint32 srcFormat = formats[srcFormatNdx];
+				const deUint32 dstFormat = formats[dstFormatNdx];
+
+				if (srcFormat != dstFormat && isFloatFormat(srcFormat) && isFloatFormat(dstFormat))
+					continue;
+
+				addCopyTests(viewGroup, srcFormat, dstFormat);
+			}
 		}
 	}
 
-	for (map<ViewClass, pair<vector<deUint32>, vector<deUint32> > >::const_iterator iter = mixedViewClasses.begin(); iter != mixedViewClasses.end(); ++iter)
+	// ES only
+	if (!m_isGL45)
 	{
-		const ViewClass			viewClass				= iter->first;
-		const string			viewClassName			= string(viewClassToName(viewClass)) + "_mixed";
-		TestCaseGroup* const	viewGroup				= new TestCaseGroup(m_context, viewClassName.c_str(), viewClassName.c_str());
+		TestCaseGroup* const	mixedGroup			= new TestCaseGroup(m_context, "mixed", "Test copying between compressed and non-compressed textures.");
+		addChild(mixedGroup);
 
-		const vector<deUint32>	nonCompressedFormats	= iter->second.first;
-		const vector<deUint32>	compressedFormats		= iter->second.second;
 
-		mixedGroup->addChild(viewGroup);
-
-		for (int srcFormatNdx = 0; srcFormatNdx < (int)nonCompressedFormats.size(); srcFormatNdx++)
-		for (int dstFormatNdx = 0; dstFormatNdx < (int)compressedFormats.size(); dstFormatNdx++)
+		for (map<ViewClass, pair<vector<deUint32>, vector<deUint32> > >::const_iterator iter = mixedViewClasses.begin(); iter != mixedViewClasses.end(); ++iter)
 		{
-			const deUint32 srcFormat = nonCompressedFormats[srcFormatNdx];
-			const deUint32 dstFormat = compressedFormats[dstFormatNdx];
+			const ViewClass			viewClass				= iter->first;
+			const string			viewClassName			= string(viewClassToName(viewClass)) + "_mixed";
+			TestCaseGroup* const	viewGroup				= new TestCaseGroup(m_context, viewClassName.c_str(), viewClassName.c_str());
 
-			if (srcFormat != dstFormat && isFloatFormat(srcFormat) && isFloatFormat(dstFormat))
-				continue;
+			const vector<deUint32>	nonCompressedFormats	= iter->second.first;
+			const vector<deUint32>	compressedFormats		= iter->second.second;
 
-			addCopyTests(viewGroup, srcFormat, dstFormat);
-			addCopyTests(viewGroup, dstFormat, srcFormat);
+			mixedGroup->addChild(viewGroup);
+
+			for (int srcFormatNdx = 0; srcFormatNdx < (int)nonCompressedFormats.size(); srcFormatNdx++)
+			for (int dstFormatNdx = 0; dstFormatNdx < (int)compressedFormats.size(); dstFormatNdx++)
+			{
+				const deUint32 srcFormat = nonCompressedFormats[srcFormatNdx];
+				const deUint32 dstFormat = compressedFormats[dstFormatNdx];
+
+				if (srcFormat != dstFormat && isFloatFormat(srcFormat) && isFloatFormat(dstFormat))
+					continue;
+
+				addCopyTests(viewGroup, srcFormat, dstFormat);
+				addCopyTests(viewGroup, dstFormat, srcFormat);
+			}
 		}
 	}
 }
 
 } // anonymous
 
-TestCaseGroup* createCopyImageTests (Context& context)
+TestCaseGroup* createCopyImageTests (Context& context, bool is_GL45)
 {
-	return new CopyImageTests(context);
+	return new CopyImageTests(context, is_GL45);
 }
 
 } // Functional
