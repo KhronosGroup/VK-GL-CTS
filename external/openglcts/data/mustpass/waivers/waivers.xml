@@ -68,7 +68,7 @@
 	<waiver vendor="Google*" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/2237">
 		<description>ANGLE is unable to capture individual array elements in transform feedback using VK_EXT_transform_feedback revision 1.</description>
 		<renderer_list>
-			<r>ANGLE (Vulkan*</r>
+			<r>ANGLE (*Vulkan *</r>
 		</renderer_list>
 		<t>dEQP-GLES3.functional.transform_feedback.array_element.*</t>
 		<t>dEQP-GLES3.functional.transform_feedback.random.*</t>
