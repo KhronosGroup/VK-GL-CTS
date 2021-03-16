@@ -649,13 +649,14 @@ TextureBorderClampTest::~TextureBorderClampTest (void)
 void TextureBorderClampTest::init (void)
 {
 	// requirements
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool supportsGL45			= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
+	const bool supportsES32orGL45	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) || supportsGL45;
 
-	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_border_clamp"))
+	if (!supportsES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_border_clamp"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_texture_border_clamp extension");
 
 	if (glu::isCompressedFormat(m_texFormat)													&&
-		!supportsES32																			&&
+		!supportsES32orGL45																		&&
 		tcu::isAstcFormat(glu::mapGLCompressedTexFormat(m_texFormat))							&&
 		!m_context.getContextInfo().isExtensionSupported("GL_KHR_texture_compression_astc_ldr"))
 	{
@@ -2067,14 +2068,16 @@ TextureBorderClampPerAxisCase3D::TextureBorderClampPerAxisCase3D (Context&		cont
 
 void TextureBorderClampPerAxisCase3D::init (void)
 {
-	const bool				supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	const glu::GLSLVersion	glslVersion		= glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+	auto		ctxType						= m_context.getRenderContext().getType();
+	const bool	isES32orGL45				= glu::contextSupports(ctxType, glu::ApiType::es(3, 2)) ||
+											  glu::contextSupports(ctxType, glu::ApiType::core(4, 5));
+	const glu::GLSLVersion	glslVersion		= glu::getContextTypeGLSLVersion(ctxType);
 
-	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_border_clamp"))
+	if (!isES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_border_clamp"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_texture_border_clamp extension");
 
 	if (glu::isCompressedFormat(m_texFormat)													&&
-		!supportsES32																			&&
+		!isES32orGL45																			&&
 		tcu::isAstcFormat(glu::mapGLCompressedTexFormat(m_texFormat))							&&
 		!m_context.getContextInfo().isExtensionSupported("GL_KHR_texture_compression_astc_ldr"))
 	{
@@ -2275,10 +2278,19 @@ deUint32 TextureBorderClampPerAxisCase3D::getCaseSeed (void) const
 	return builder.get();
 }
 
+static bool isFormatSupported(deUint32 format, bool isGL45)
+{
+	if (isGL45 && (format == GL_LUMINANCE || format == GL_ALPHA || format == GL_LUMINANCE_ALPHA))
+		return false;
+
+	return true;
+}
+
 } // anonymous
 
-TextureBorderClampTests::TextureBorderClampTests (Context& context)
+TextureBorderClampTests::TextureBorderClampTests (Context& context, bool isGL45)
 	: TestCaseGroup(context, "border_clamp", "EXT_texture_border_clamp tests")
+	, m_isGL45(isGL45)
 {
 }
 
@@ -2416,7 +2428,7 @@ void TextureBorderClampTests::init (void)
 					const std::string		caseName		= std::string() + s_filters[filterNdx].name + "_" + sizeName;
 					const deUint32			filter			= s_filters[filterNdx].filter;
 
-					if (coreFilterable || !filterRequiresFilterability(filter))
+					if ((coreFilterable || !filterRequiresFilterability(filter)) && isFormatSupported(format, m_isGL45))
 						formatGroup->addChild(new TextureBorderClampFormatCase(m_context,
 																			   caseName.c_str(),
 																			   "",
@@ -2736,11 +2748,14 @@ void TextureBorderClampTests::init (void)
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); ++formatNdx)
 		{
-			unusedGroup->addChild(new TextureBorderClampUnusedChannelCase(m_context,
-																		  formats[formatNdx].name,
-																		  "",
-																		  formats[formatNdx].format,
-																		  formats[formatNdx].mode));
+			if (isFormatSupported(formats[formatNdx].format, m_isGL45))
+			{
+				unusedGroup->addChild(new TextureBorderClampUnusedChannelCase(m_context,
+																			  formats[formatNdx].name,
+																			  "",
+																			  formats[formatNdx].format,
+																			  formats[formatNdx].mode));
+			}
 		}
 	}
 }

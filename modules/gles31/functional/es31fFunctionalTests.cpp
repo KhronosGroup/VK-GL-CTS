@@ -323,8 +323,9 @@ public:
 class TextureTests : public TestCaseGroup
 {
 public:
-	TextureTests (Context& context)
+	TextureTests (Context& context, bool isGL45)
 		: TestCaseGroup(context, "texture", "Texture tests")
+		, m_isGL45(isGL45)
 	{
 	}
 
@@ -336,8 +337,11 @@ public:
 		addChild(new TextureMultisampleTests	(m_context));
 		addChild(new TextureGatherTests			(m_context));
 		addChild(createTextureBufferTests		(m_context));
-		addChild(new TextureBorderClampTests	(m_context));
+		addChild(new TextureBorderClampTests	(m_context, m_isGL45));
 	}
+
+private:
+	bool m_isGL45;
 };
 
 class StateQueryTests : public TestCaseGroup
@@ -417,7 +421,7 @@ void GLES31FunctionalTests::init (void)
 	addChild(new ShaderImageLoadStoreTests				(m_context));
 	addChild(new AtomicCounterTests						(m_context));
 	addChild(new StencilTexturingTests					(m_context));
-	addChild(new TextureTests							(m_context));
+	addChild(new TextureTests							(m_context, false));
 	addChild(new StateQueryTests						(m_context));
 	addChild(new MultisampleTests						(m_context));
 	addChild(new SynchronizationTests					(m_context));
@@ -462,7 +466,7 @@ void GL45FunctionalTests::init (void)
 	addChild(new ShaderImageLoadStoreTests				(m_context));
 	addChild(new AtomicCounterTests						(m_context));
 	addChild(new StencilTexturingTests					(m_context));
-	addChild(new TextureTests							(m_context));
+	addChild(new TextureTests							(m_context, true));
 	addChild(new StateQueryTests						(m_context));
 	addChild(new MultisampleTests						(m_context));
 	addChild(new SynchronizationTests					(m_context));
