@@ -523,11 +523,30 @@ deUint32 RayTracingBuildTestInstance::validateBuffer (de::MovePtr<BufferWithMemo
 	for (deUint32 y = 0; y < m_data.height; ++y)
 	for (deUint32 x = 0; x < m_data.width; ++x)
 	{
+		const deUint32	anyHitValue		= 1;
+		const deUint32	missValue		= 2;
+
 		const deUint32	n				= m_data.width * y + x;
-		const deUint32	expectedValue	= (n % 7 == 0) ? 2 : 1;
+		const deUint32	expectedValue	= (n % 7 == 0) ? missValue : anyHitValue;
 
 		if (bufferPtr[pos] != expectedValue)
-			failures++;
+		{
+			if (m_data.testType == TEST_TYPE_AABBS)
+			{
+				// In the case of AABB geometries, implementations may increase their size in
+				// an acceleration structure in order to mitigate precision issues. This may
+				// result in false positives being reported to the application."
+
+				if (bufferPtr[pos] != anyHitValue)
+				{
+					failures++;
+				}
+			}
+			else
+			{
+				failures++;
+			}
+		}
 
 		++pos;
 	}
