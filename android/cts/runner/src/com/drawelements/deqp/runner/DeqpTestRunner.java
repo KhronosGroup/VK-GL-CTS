@@ -2125,7 +2125,6 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             final boolean isSupportedApi = (isOpenGlEsPackage() && isSupportedGles())
                                             || (isVulkanPackage() && isSupportedVulkan())
                                             || (!isOpenGlEsPackage() && !isVulkanPackage());
-                                            || (!isOpenGlEsPackage() && !isVulkanPackage());
             if (mCollectTestsOnly
                 || !isSupportedApi
                 || ((isVulkanPackage() || isOpenGlEsPackage()) && !claimedDeqpLevelIsRecentEnough())) {
