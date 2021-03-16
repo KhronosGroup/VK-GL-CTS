@@ -30,6 +30,7 @@
 #include "vktDynamicStateDSTests.hpp"
 #include "vktDynamicStateGeneralTests.hpp"
 #include "vktDynamicStateComputeTests.hpp"
+#include "vktDynamicStateInheritanceTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -50,6 +51,7 @@ void createChildren (tcu::TestCaseGroup* group)
 	group->addChild(new DynamicStateDSTests(testCtx));
 	group->addChild(new DynamicStateGeneralTests(testCtx));
 	group->addChild(createDynamicStateComputeTests(testCtx));
+	group->addChild(new DynamicStateInheritanceTests(testCtx));
 }
 
 } // anonymous

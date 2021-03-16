@@ -15,6 +15,8 @@ set(DEQP_VK_DYNAMIC_STATE_SRCS
 	vktDynamicStateDSTests.hpp
 	vktDynamicStateGeneralTests.cpp
 	vktDynamicStateGeneralTests.hpp
+	vktDynamicStateInheritanceTests.cpp
+	vktDynamicStateInheritanceTests.hpp
 	vktDynamicStateRSTests.cpp
 	vktDynamicStateRSTests.hpp
 	vktDynamicStateTests.cpp
