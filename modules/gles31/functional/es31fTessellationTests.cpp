@@ -1527,29 +1527,52 @@ static bool compareTriangleSets (const vector<Vec3>& coordsA, const vector<Vec3>
 	return compareTriangleSets(coordsA, coordsB, log, ConstantUnaryPredicate<const Vec3*, true>());
 }
 
+static bool supportsES32orGL45(Context& context)
+{
+	glu::ContextType contextType = context.getRenderContext().getType();
+	return glu::contextSupports(contextType, glu::ApiType::es(3, 2)) ||
+		   glu::contextSupports(contextType, glu::ApiType::core(4, 5));
+}
+
 static void checkGPUShader5Support (Context& context)
 {
-	const bool supportsES32 = glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	TCU_CHECK_AND_THROW(NotSupportedError, supportsES32 || context.getContextInfo().isExtensionSupported("GL_EXT_gpu_shader5"), "GL_EXT_gpu_shader5 is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, supportsES32orGL45(context) || context.getContextInfo().isExtensionSupported("GL_EXT_gpu_shader5"), "GL_EXT_gpu_shader5 is not supported");
 }
 
 static void checkTessellationSupport (Context& context)
 {
-	const bool supportsES32 = glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	TCU_CHECK_AND_THROW(NotSupportedError, supportsES32 || context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"), "GL_EXT_tessellation_shader is not supported");
+	TCU_CHECK_AND_THROW(NotSupportedError, supportsES32orGL45(context) || context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"), "GL_EXT_tessellation_shader is not supported");
 }
 
 static std::string specializeShader(Context& context, const char* code)
 {
-	const glu::ContextType				contextType		= context.getRenderContext().getType();
-	const glu::GLSLVersion				glslVersion		= glu::getContextTypeGLSLVersion(contextType);
-	bool								supportsES32	= glu::contextSupports(contextType, glu::ApiType::es(3, 2));
+	const glu::ContextType				contextType			= context.getRenderContext().getType();
+	const glu::GLSLVersion				glslVersion			= glu::getContextTypeGLSLVersion(contextType);
+	const bool							cSupportsES32orGL45	= supportsES32orGL45(context);
 
-	std::map<std::string, std::string>	specializationMap;
+	std::map<std::string, std::string>	specializationMap =
+	{
+		{ "GLSL_VERSION_DECL",					glu::getGLSLVersionDeclaration(glslVersion) },
+		{ "GPU_SHADER5_REQUIRE",				cSupportsES32orGL45 ? "" : "#extension GL_EXT_gpu_shader5 : require" },
+		{ "TESSELLATION_SHADER_REQUIRE",		cSupportsES32orGL45 ? "" : "#extension GL_EXT_tessellation_shader : require" },
+		{ "GLSL_PER_VERTEX_OUT",				"" },		// needed for GL4.5
+		{ "GLSL_PER_VERTEX_IN_ARR",				"" },
+		{ "GLSL_PER_VERTEX_OUT_ARR",			"" },
+		{ "GLSL_PRECISE_PER_VERTEX_OUT",		"" },
+		{ "GLSL_PRECISE_PER_VERTEX_IN_ARR",		"" },
+		{ "GLSL_PRECISE_PER_VERTEX_OUT_ARR",	"" }
+	};
 
-	specializationMap["GLSL_VERSION_DECL"]				= glu::getGLSLVersionDeclaration(glslVersion);
-	specializationMap["GPU_SHADER5_REQUIRE"]			= supportsES32 ? "" : "#extension GL_EXT_gpu_shader5 : require";
-	specializationMap["TESSELLATION_SHADER_REQUIRE"]	= supportsES32 ? "" : "#extension GL_EXT_tessellation_shader : require";
+	// for gl4.5 we need to add per vertex sections
+	if (!glu::isContextTypeES(context.getRenderContext().getType()))
+	{
+		specializationMap["GLSL_PER_VERTEX_OUT"]				= "out gl_PerVertex { vec4 gl_Position; };\n";
+		specializationMap["GLSL_PER_VERTEX_IN_ARR"]				= "in gl_PerVertex { vec4 gl_Position; } gl_in[];\n";
+		specializationMap["GLSL_PER_VERTEX_OUT_ARR"]			= "out gl_PerVertex { vec4 gl_Position; } gl_out[];\n";
+		specializationMap["GLSL_PRECISE_PER_VERTEX_OUT"]		= "out gl_PerVertex { precise vec4 gl_Position; };\n";
+		specializationMap["GLSL_PRECISE_PER_VERTEX_IN_ARR"]		= "in gl_PerVertex { precise vec4 gl_Position; } gl_in[];\n";
+		specializationMap["GLSL_PRECISE_PER_VERTEX_OUT_ARR"]	= "out gl_PerVertex { precise vec4 gl_Position; } gl_out[];\n";
+	}
 
 	return tcu::StringTemplate(code).specialize(specializationMap);
 }
@@ -1591,14 +1614,18 @@ private:
 
 void CommonEdgeCase::init (void)
 {
-	checkTessellationSupport(m_context);
-
-	if (m_caseType == CASETYPE_PRECISE)
-		checkGPUShader5Support(m_context);
+	bool isGL45 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
+	if (!isGL45)
+	{
+		checkTessellationSupport(m_context);
+		if (m_caseType == CASETYPE_PRECISE)
+			checkGPUShader5Support(m_context);
+	}
 
 	checkRenderTargetSize(m_context.getRenderTarget(), RENDER_SIZE);
 
 	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
+													 "${GLSL_PER_VERTEX_OUT}\n"
 													 "\n"
 													 "in highp vec2 in_v_position;\n"
 													 "in highp float in_v_tessParam;\n"
@@ -1615,6 +1642,8 @@ void CommonEdgeCase::init (void)
 	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
 												 + string(m_caseType == CASETYPE_PRECISE ? "${GPU_SHADER5_REQUIRE}\n" : "") +
+													 "${GLSL_PER_VERTEX_IN_ARR}\n"
+													 "${GLSL_PER_VERTEX_OUT_ARR}\n"
 													 "\n"
 													 "layout (vertices = " + string(m_primitiveType == TESSPRIMITIVETYPE_TRIANGLES ? "3" : m_primitiveType == TESSPRIMITIVETYPE_QUADS ? "4" : DE_NULL) + ") out;\n"
 													 "\n"
@@ -1646,6 +1675,8 @@ void CommonEdgeCase::init (void)
 	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
 												 + string(m_caseType == CASETYPE_PRECISE ? "${GPU_SHADER5_REQUIRE}\n" : "") +
+													 "${GLSL_PRECISE_PER_VERTEX_IN_ARR}\n"
+													 "${GLSL_PRECISE_PER_VERTEX_OUT}\n"
 													 "\n"
 													 + getTessellationEvaluationInLayoutString(m_primitiveType, m_spacing) +
 													 "\n"
@@ -1653,7 +1684,7 @@ void CommonEdgeCase::init (void)
 													 "\n"
 													 "out mediump vec4 in_f_color;\n"
 													 "\n"
-													 + (m_caseType == CASETYPE_PRECISE ? "precise gl_Position;\n\n" : "") +
+													 + ((m_caseType == CASETYPE_PRECISE && !isGL45) ? "precise gl_Position;\n\n" : "") +
 													 "void main (void)\n"
 													 "{\n"
 													 + (m_primitiveType == TESSPRIMITIVETYPE_TRIANGLES ?
@@ -1903,6 +1934,7 @@ void TessCoordCase::init (void)
 	checkRenderTargetSize(m_context.getRenderTarget(), RENDER_SIZE);
 
 	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
+													 "${GLSL_PER_VERTEX_OUT}\n"
 													 "\n"
 													 "void main (void)\n"
 													 "{\n"
@@ -1910,6 +1942,8 @@ void TessCoordCase::init (void)
 
 	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+													 "${GLSL_PER_VERTEX_IN_ARR}\n"
+													 "${GLSL_PER_VERTEX_OUT_ARR}\n"
 													 "\n"
 													 "layout (vertices = 1) out;\n"
 													 "\n"
@@ -1934,6 +1968,8 @@ void TessCoordCase::init (void)
 
 	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+													 "${GLSL_PER_VERTEX_IN_ARR}\n"
+													 "${GLSL_PER_VERTEX_OUT}\n"
 													 "\n"
 													 + getTessellationEvaluationInLayoutString(m_primitiveType, m_spacing, true) +
 													 "\n"
@@ -1954,7 +1990,7 @@ void TessCoordCase::init (void)
 													 "	o_color = vec4(1.0);\n"
 												 "}\n");
 
-       m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
 			<< glu::VertexSource					(specializeShader(m_context, vertexShaderTemplate.c_str()))
 			<< glu::TessellationControlSource		(specializeShader(m_context, tessellationControlTemplate.c_str()))
 			<< glu::TessellationEvaluationSource	(specializeShader(m_context, tessellationEvaluationTemplate.c_str()))
@@ -2142,12 +2178,15 @@ void FractionalSpacingModeCase::init (void)
 	checkRenderTargetSize(m_context.getRenderTarget(), RENDER_SIZE);
 
 	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
+													 "${GLSL_PER_VERTEX_OUT}\n"
 													 "\n"
 													 "void main (void)\n"
 													 "{\n"
 												 "}\n");
 	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+													 "${GLSL_PER_VERTEX_IN_ARR}\n"
+													 "${GLSL_PER_VERTEX_OUT_ARR}\n"
 													 "\n"
 													 "layout (vertices = 1) out;\n"
 													 "\n"
@@ -2160,6 +2199,8 @@ void FractionalSpacingModeCase::init (void)
 												 "}\n");
 	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+												 "${GLSL_PER_VERTEX_IN_ARR}\n"
+												 "${GLSL_PER_VERTEX_OUT}\n"
 													 "\n"
 													 + getTessellationEvaluationInLayoutString(TESSPRIMITIVETYPE_ISOLINES, m_spacing, true) +
 													 "\n"
@@ -2320,6 +2361,8 @@ void BasicVariousTessLevelsPosAttrCase::init (void)
 
 		std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
 													 "${TESSELLATION_SHADER_REQUIRE}\n"
+													 "${GLSL_PER_VERTEX_IN_ARR}\n"
+													 "${GLSL_PER_VERTEX_OUT_ARR}\n"
 													"\n"
 													"layout (vertices = " + string(m_primitiveType == TESSPRIMITIVETYPE_TRIANGLES ? "3" : "4") + ") out;\n"
 													"\n"
@@ -2481,7 +2524,9 @@ protected:
 
 	const glu::ProgramSources makeSources (TessPrimitiveType primitiveType, SpacingMode spacing, const char* vtxOutPosAttrName) const
 	{
+		bool isGL45 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
 		std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
+													 "${GLSL_PER_VERTEX_OUT}\n"
 													 "\n"
 													 "in highp vec2 in_v_position;\n"
 													 "\n"
@@ -2494,12 +2539,14 @@ protected:
 		std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
 													 "${TESSELLATION_SHADER_REQUIRE}\n"
 													 "${GPU_SHADER5_REQUIRE}\n"
+													 "${GLSL_PER_VERTEX_IN_ARR}\n"
+													 "${GLSL_PRECISE_PER_VERTEX_OUT}\n"
 													 "\n"
 													 + getTessellationEvaluationInLayoutString(primitiveType, spacing) +
 													 "\n"
 													 "in highp vec2 in_te_position[];\n"
 													 "\n"
-													 "precise gl_Position;\n"
+													 + (isGL45 ? "" : "precise gl_Position;\n") +
 													 "void main (void)\n"
 													 "{\n"
 													 + (primitiveType == TESSPRIMITIVETYPE_TRIANGLES ?
@@ -2559,6 +2606,7 @@ protected:
 	const glu::ProgramSources makeSources (TessPrimitiveType primitiveType, SpacingMode spacing, const char* vtxOutPosAttrName) const
 	{
 		std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
+													 "${GLSL_PER_VERTEX_OUT}\n"
 													 "\n"
 													 "in highp vec2 in_v_position;\n"
 													 "\n"
@@ -2570,6 +2618,8 @@ protected:
 													 "}\n");
 		std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
 													 "${TESSELLATION_SHADER_REQUIRE}\n"
+													 "${GLSL_PER_VERTEX_IN_ARR}\n"
+													 "${GLSL_PER_VERTEX_OUT}\n"
 													 "\n"
 													 + getTessellationEvaluationInLayoutString(primitiveType, spacing) +
 													 "\n"
@@ -2647,6 +2697,7 @@ protected:
 		DE_UNREF(primitiveType);
 
 		std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
+													 "${GLSL_PER_VERTEX_OUT}\n"
 													 "\n"
 													 "in highp vec2 in_v_position;\n"
 													 "\n"
@@ -2658,6 +2709,8 @@ protected:
 													 "}\n");
 		std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
 													 "${TESSELLATION_SHADER_REQUIRE}\n"
+													 "${GLSL_PER_VERTEX_IN_ARR}\n"
+													 "${GLSL_PER_VERTEX_OUT}\n"
 													 "\n"
 													 + getTessellationEvaluationInLayoutString(TESSPRIMITIVETYPE_ISOLINES, spacing) +
 													 "\n"
@@ -2736,41 +2789,46 @@ void WindingCase::init (void)
 	checkRenderTargetSize(m_context.getRenderTarget(), RENDER_SIZE);
 
 	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
-													 "\n"
-													 "void main (void)\n"
-													 "{\n"
+												 "${GLSL_PER_VERTEX_OUT}\n"
+												 "\n"
+												 "void main (void)\n"
+												 "{\n"
 												 "}\n");
 	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
-													 "\n"
-													 "layout (vertices = 1) out;\n"
-													 "\n"
-													 "void main (void)\n"
-													 "{\n"
-													 "	gl_TessLevelInner[0] = 5.0;\n"
-													 "	gl_TessLevelInner[1] = 5.0;\n"
-													 "\n"
-													 "	gl_TessLevelOuter[0] = 5.0;\n"
-													 "	gl_TessLevelOuter[1] = 5.0;\n"
-													 "	gl_TessLevelOuter[2] = 5.0;\n"
-													 "	gl_TessLevelOuter[3] = 5.0;\n"
+												 "${GLSL_PER_VERTEX_IN_ARR}\n"
+												 "${GLSL_PER_VERTEX_OUT_ARR}\n"
+												 "\n"
+												 "layout (vertices = 1) out;\n"
+												 "\n"
+												 "void main (void)\n"
+												 "{\n"
+												 "	gl_TessLevelInner[0] = 5.0;\n"
+												 "	gl_TessLevelInner[1] = 5.0;\n"
+												 "\n"
+												 "	gl_TessLevelOuter[0] = 5.0;\n"
+												 "	gl_TessLevelOuter[1] = 5.0;\n"
+												 "	gl_TessLevelOuter[2] = 5.0;\n"
+												 "	gl_TessLevelOuter[3] = 5.0;\n"
 												 "}\n");
 	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
-													 "\n"
-													 + getTessellationEvaluationInLayoutString(m_primitiveType, m_winding) +
-													 "\n"
-													 "void main (void)\n"
-													 "{\n"
-													 "	gl_Position = vec4(gl_TessCoord.xy*2.0 - 1.0, 0.0, 1.0);\n"
+												 "${GLSL_PER_VERTEX_IN_ARR}\n"
+												 "${GLSL_PER_VERTEX_OUT}\n"
+												 "\n"
+												 + getTessellationEvaluationInLayoutString(m_primitiveType, m_winding) +
+												 "\n"
+												 "void main (void)\n"
+												 "{\n"
+												 "	gl_Position = vec4(gl_TessCoord.xy*2.0 - 1.0, 0.0, 1.0);\n"
 												 "}\n");
 	std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
-													 "\n"
-													 "layout (location = 0) out mediump vec4 o_color;\n"
-													 "\n"
-													 "void main (void)\n"
-													 "{\n"
-													 "	o_color = vec4(1.0);\n"
+												 "\n"
+												 "layout (location = 0) out mediump vec4 o_color;\n"
+												 "\n"
+												 "void main (void)\n"
+												 "{\n"
+												 "	o_color = vec4(1.0);\n"
 												 "}\n");
 
 	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
@@ -2926,61 +2984,66 @@ void PatchVertexCountCase::init (void)
 	const string outSizeStr		= de::toString(m_outputPatchSize);
 
 	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
-													 "\n"
-													 "in highp float in_v_attr;\n"
-													 "\n"
-													 "out highp float in_tc_attr;\n"
-													 "\n"
-													 "void main (void)\n"
-													 "{\n"
-													 "	in_tc_attr = in_v_attr;\n"
+												 "${GLSL_PER_VERTEX_OUT}\n"
+												 "\n"
+												 "in highp float in_v_attr;\n"
+												 "\n"
+												 "out highp float in_tc_attr;\n"
+												 "\n"
+												 "void main (void)\n"
+												 "{\n"
+												 "	in_tc_attr = in_v_attr;\n"
 												 "}\n");
 	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
-													 "\n"
-													 "layout (vertices = " + outSizeStr + ") out;\n"
-													 "\n"
-													 "in highp float in_tc_attr[];\n"
-													 "\n"
-													 "out highp float in_te_attr[];\n"
-													 "\n"
-													 "void main (void)\n"
-													 "{\n"
-													 "	in_te_attr[gl_InvocationID] = in_tc_attr[gl_InvocationID*" + inSizeStr + "/" + outSizeStr + "];\n"
-													 "\n"
-													 "	gl_TessLevelInner[0] = 5.0;\n"
-													 "	gl_TessLevelInner[1] = 5.0;\n"
-													 "\n"
-													"	gl_TessLevelOuter[0] = 5.0;\n"
-													"	gl_TessLevelOuter[1] = 5.0;\n"
-													"	gl_TessLevelOuter[2] = 5.0;\n"
-													"	gl_TessLevelOuter[3] = 5.0;\n"
+												 "${GLSL_PER_VERTEX_IN_ARR}\n"
+												 "${GLSL_PER_VERTEX_OUT_ARR}\n"
+												 "\n"
+												 "layout (vertices = " + outSizeStr + ") out;\n"
+												 "\n"
+												 "in highp float in_tc_attr[];\n"
+												 "\n"
+												 "out highp float in_te_attr[];\n"
+												 "\n"
+												 "void main (void)\n"
+												 "{\n"
+												 "	in_te_attr[gl_InvocationID] = in_tc_attr[gl_InvocationID*" + inSizeStr + "/" + outSizeStr + "];\n"
+												 "\n"
+												 "	gl_TessLevelInner[0] = 5.0;\n"
+												 "	gl_TessLevelInner[1] = 5.0;\n"
+												 "\n"
+												"	gl_TessLevelOuter[0] = 5.0;\n"
+												"	gl_TessLevelOuter[1] = 5.0;\n"
+												"	gl_TessLevelOuter[2] = 5.0;\n"
+												"	gl_TessLevelOuter[3] = 5.0;\n"
 												 "}\n");
 	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
-													 "\n"
-													 + getTessellationEvaluationInLayoutString(TESSPRIMITIVETYPE_QUADS) +
-													 "\n"
-													 "in highp float in_te_attr[];\n"
-													 "\n"
-													 "out mediump vec4 in_f_color;\n"
-													 "\n"
-													 "void main (void)\n"
-													 "{\n"
-													 "	highp float x = gl_TessCoord.x*2.0 - 1.0;\n"
-													 "	highp float y = gl_TessCoord.y - in_te_attr[int(round(gl_TessCoord.x*float(" + outSizeStr + "-1)))];\n"
-													 "	gl_Position = vec4(x, y, 0.0, 1.0);\n"
-													 "	in_f_color = vec4(1.0);\n"
+												 "${GLSL_PER_VERTEX_IN_ARR}\n"
+												 "${GLSL_PER_VERTEX_OUT}\n"
+												 "\n"
+												 + getTessellationEvaluationInLayoutString(TESSPRIMITIVETYPE_QUADS) +
+												 "\n"
+												 "in highp float in_te_attr[];\n"
+												 "\n"
+												 "out mediump vec4 in_f_color;\n"
+												 "\n"
+												 "void main (void)\n"
+												 "{\n"
+												 "	highp float x = gl_TessCoord.x*2.0 - 1.0;\n"
+												 "	highp float y = gl_TessCoord.y - in_te_attr[int(round(gl_TessCoord.x*float(" + outSizeStr + "-1)))];\n"
+												 "	gl_Position = vec4(x, y, 0.0, 1.0);\n"
+												 "	in_f_color = vec4(1.0);\n"
 												 "}\n");
 	std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
-													 "\n"
-													 "layout (location = 0) out mediump vec4 o_color;\n"
-													 "\n"
-													 "in mediump vec4 in_f_color;\n"
-													 "\n"
-													 "void main (void)\n"
-													 "{\n"
-													 "	o_color = in_f_color;\n"
+												 "\n"
+												 "layout (location = 0) out mediump vec4 o_color;\n"
+												 "\n"
+												 "in mediump vec4 in_f_color;\n"
+												 "\n"
+												 "void main (void)\n"
+												 "{\n"
+												 "	o_color = in_f_color;\n"
 												 "}\n");
 
 	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
@@ -3160,6 +3223,7 @@ void PerPatchDataCase::init (void)
 	const string outSizeStr		= de::toString(OUTPUT_PATCH_SIZE);
 
 	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
+													 "${GLSL_PER_VERTEX_OUT}\n"
 													 "\n"
 													 "in highp float in_v_attr;\n"
 													 "\n"
@@ -3168,9 +3232,11 @@ void PerPatchDataCase::init (void)
 													 "void main (void)\n"
 													 "{\n"
 													 "	in_tc_attr = in_v_attr;\n"
-												 "}\n");
+													 "}\n");
 	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+												 "${GLSL_PER_VERTEX_IN_ARR}\n"
+												 "${GLSL_PER_VERTEX_OUT_ARR}\n"
 													 "\n"
 													 "layout (vertices = " + outSizeStr + ") out;\n"
 													 "\n"
@@ -3198,6 +3264,8 @@ void PerPatchDataCase::init (void)
 												 "}\n");
 	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+												 "${GLSL_PER_VERTEX_IN_ARR}\n"
+												 "${GLSL_PER_VERTEX_OUT}\n"
 													 "\n"
 													 + getTessellationEvaluationInLayoutString(TESSPRIMITIVETYPE_QUADS) +
 													 "\n"
@@ -3366,6 +3434,7 @@ void BarrierCase::init (void)
 	const string numVertsStr = de::toString(NUM_VERTICES);
 
 	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
+													 "${GLSL_PER_VERTEX_OUT}\n"
 													 "\n"
 													 "in highp float in_v_attr;\n"
 													 "\n"
@@ -3377,6 +3446,8 @@ void BarrierCase::init (void)
 												 "}\n");
 	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+													 "${GLSL_PER_VERTEX_IN_ARR}\n"
+													 "${GLSL_PER_VERTEX_OUT_ARR}\n"
 													 "\n"
 													 "layout (vertices = " + numVertsStr + ") out;\n"
 													 "\n"
@@ -3414,6 +3485,8 @@ void BarrierCase::init (void)
 												 "}\n");
 	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+													 "${GLSL_PER_VERTEX_IN_ARR}\n"
+													 "${GLSL_PER_VERTEX_OUT}\n"
 													 "\n"
 													 + getTessellationEvaluationInLayoutString(TESSPRIMITIVETYPE_QUADS) +
 													 "\n"
@@ -3637,6 +3710,7 @@ void PrimitiveSetInvarianceCase::init (void)
 			const int		programNdx = (int)m_programs.size();
 
 			std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
+															 "${GLSL_PER_VERTEX_OUT}\n"
 															 "\n"
 															 "in highp float in_v_attr;\n"
 															 "out highp float in_tc_attr;\n"
@@ -3647,6 +3721,8 @@ void PrimitiveSetInvarianceCase::init (void)
 														 "}\n");
 			std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
 														 "${TESSELLATION_SHADER_REQUIRE}\n"
+															 "${GLSL_PER_VERTEX_IN_ARR}\n"
+															 "${GLSL_PER_VERTEX_OUT_ARR}\n"
 															 "\n"
 															 "layout (vertices = " + de::toString(constantExprCaseNdx+1) + ") out;\n"
 															 "\n"
@@ -3668,6 +3744,8 @@ void PrimitiveSetInvarianceCase::init (void)
 														 "}\n");
 			std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
 														 "${TESSELLATION_SHADER_REQUIRE}\n"
+															 "${GLSL_PER_VERTEX_IN_ARR}\n"
+															 "${GLSL_PER_VERTEX_OUT}\n"
 															 "\n"
 															 + getTessellationEvaluationInLayoutString(m_primitiveType, m_spacing, windings[windingCaseNdx], m_usePointMode) +
 															 "\n"
@@ -3935,6 +4013,7 @@ void InvariantOuterEdgeCase::init (void)
 			const string	floatLit01		= de::floatToString(10.0f / (float)(programNdx + 10), 2);
 
 			std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
+														 "${GLSL_PER_VERTEX_OUT}\n"
 														 "\n"
 														 "in highp float in_v_attr;\n"
 														 "out highp float in_tc_attr;\n"
@@ -3945,6 +4024,8 @@ void InvariantOuterEdgeCase::init (void)
 														 "}\n");
 			std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
 														 "${TESSELLATION_SHADER_REQUIRE}\n"
+														 "${GLSL_PER_VERTEX_IN_ARR}\n"
+														 "${GLSL_PER_VERTEX_OUT_ARR}\n"
 														 "\n"
 														 "layout (vertices = " + de::toString(programNdx+1) + ") out;\n"
 														 "\n"
@@ -3962,6 +4043,8 @@ void InvariantOuterEdgeCase::init (void)
 														 "}\n");
 			std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
 														 "${TESSELLATION_SHADER_REQUIRE}\n"
+														 "${GLSL_PER_VERTEX_IN_ARR}\n"
+														 "${GLSL_PER_VERTEX_OUT}\n"
 														 "\n"
 														 + getTessellationEvaluationInLayoutString(m_primitiveType, m_spacing, winding, usePointMode) +
 														 "\n"
@@ -4209,6 +4292,7 @@ void SymmetricOuterEdgeCase::init (void)
 
 	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
 												 "\n"
+												 "${GLSL_PER_VERTEX_OUT}\n"
 												 "in highp float in_v_attr;\n"
 												 "out highp float in_tc_attr;\n"
 												 "\n"
@@ -4218,6 +4302,8 @@ void SymmetricOuterEdgeCase::init (void)
 												 "}\n");
 	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+												 "${GLSL_PER_VERTEX_IN_ARR}\n"
+												 "${GLSL_PER_VERTEX_OUT_ARR}\n"
 												 "\n"
 												 "layout (vertices = 1) out;\n"
 												 "\n"
@@ -4235,6 +4321,8 @@ void SymmetricOuterEdgeCase::init (void)
 												 "}\n");
 	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+												 "${GLSL_PER_VERTEX_IN_ARR}\n"
+												 "${GLSL_PER_VERTEX_OUT}\n"
 												 "\n"
 												 + getTessellationEvaluationInLayoutString(m_primitiveType, m_spacing, m_winding, m_usePointMode) +
 												 "\n"
@@ -4493,6 +4581,7 @@ void OuterEdgeVertexSetIndexIndependenceCase::init (void)
 	checkRenderTargetSize(m_context.getRenderTarget(), RENDER_SIZE);
 
 	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
+												 "${GLSL_PER_VERTEX_OUT}\n"
 												 "\n"
 												 "in highp float in_v_attr;\n"
 												 "out highp float in_tc_attr;\n"
@@ -4503,6 +4592,8 @@ void OuterEdgeVertexSetIndexIndependenceCase::init (void)
 												 "}\n");
 	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+												 "${GLSL_PER_VERTEX_IN_ARR}\n"
+												 "${GLSL_PER_VERTEX_OUT_ARR}\n"
 												 "\n"
 												 "layout (vertices = 1) out;\n"
 												 "\n"
@@ -4520,6 +4611,8 @@ void OuterEdgeVertexSetIndexIndependenceCase::init (void)
 												 "}\n");
 	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+												 "${GLSL_PER_VERTEX_IN_ARR}\n"
+												 "${GLSL_PER_VERTEX_OUT}\n"
 												 "\n"
 												 + getTessellationEvaluationInLayoutString(m_primitiveType, m_spacing, m_winding, m_usePointMode) +
 												 "\n"
@@ -4985,6 +5078,7 @@ void TessCoordComponentInvarianceCase::init (void)
 	checkRenderTargetSize(m_context.getRenderTarget(), RENDER_SIZE);
 
 	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
+												 "${GLSL_PER_VERTEX_OUT}\n"
 												 "\n"
 												 "in highp float in_v_attr;\n"
 												 "out highp float in_tc_attr;\n"
@@ -4995,6 +5089,8 @@ void TessCoordComponentInvarianceCase::init (void)
 												 "}\n");
 	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+												 "${GLSL_PER_VERTEX_IN_ARR}\n"
+												 "${GLSL_PER_VERTEX_OUT_ARR}\n"
 												 "\n"
 												 "layout (vertices = 1) out;\n"
 												 "\n"
@@ -5012,6 +5108,8 @@ void TessCoordComponentInvarianceCase::init (void)
 												 "}\n");
 	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+												 "${GLSL_PER_VERTEX_IN_ARR}\n"
+												 "${GLSL_PER_VERTEX_OUT}\n"
 												 "\n"
 												 + getTessellationEvaluationInLayoutString(m_primitiveType, m_spacing, m_winding, m_usePointMode) +
 												 "\n"
@@ -5237,6 +5335,7 @@ void PrimitiveDiscardCase::init (void)
 	checkRenderTargetSize(m_context.getRenderTarget(), RENDER_SIZE);
 
 	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
+												 "${GLSL_PER_VERTEX_OUT}\n"
 												 "\n"
 												 "in highp float in_v_attr;\n"
 												 "out highp float in_tc_attr;\n"
@@ -5247,6 +5346,8 @@ void PrimitiveDiscardCase::init (void)
 												 "}\n");
 	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+												 "${GLSL_PER_VERTEX_IN_ARR}\n"
+												 "${GLSL_PER_VERTEX_OUT_ARR}\n"
 												 "\n"
 												 "layout (vertices = 1) out;\n"
 												 "\n"
@@ -5270,6 +5371,8 @@ void PrimitiveDiscardCase::init (void)
 												 "}\n");
 	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+												 "${GLSL_PER_VERTEX_IN_ARR}\n"
+												 "${GLSL_PER_VERTEX_OUT}\n"
 												 "\n"
 												 + getTessellationEvaluationInLayoutString(m_primitiveType, m_spacing, m_winding, m_usePointMode) +
 												 "\n"
@@ -6121,6 +6224,7 @@ void UserDefinedIOCase::init (void)
 	}
 
 	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
+												 "${GLSL_PER_VERTEX_OUT}\n"
 												 "\n"
 												 "in highp float in_v_attr;\n"
 												 "out highp float in_tc_attr;\n"
@@ -6131,6 +6235,8 @@ void UserDefinedIOCase::init (void)
 												 "}\n");
 	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+												 "${GLSL_PER_VERTEX_IN_ARR}\n"
+												 "${GLSL_PER_VERTEX_OUT_ARR}\n"
 												 "\n"
 												 "layout (vertices = " + de::toString(int(NUM_OUTPUT_VERTICES)) + ") out;\n"
 												 "\n"
@@ -6156,6 +6262,8 @@ void UserDefinedIOCase::init (void)
 												 "}\n");
 	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+												 "${GLSL_PER_VERTEX_IN_ARR}\n"
+												 "${GLSL_PER_VERTEX_OUT}\n"
 												 "\n"
 												 + getTessellationEvaluationInLayoutString(m_primitiveType) +
 												 "\n"
@@ -6348,6 +6456,7 @@ void GLPositionCase::init (void)
 	const string	tesIn2		= tcsToTES ? "gl_in[2].gl_Position" : "in_te_attr[2]";
 
 	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
+												 "${GLSL_PER_VERTEX_OUT}\n"
 												 "\n"
 												 "in highp vec4 in_v_attr;\n"
 												 + string(!vsToTCS ? "out highp vec4 in_tc_attr;\n" : "") +
@@ -6358,6 +6467,8 @@ void GLPositionCase::init (void)
 												 "}\n");
 	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+												 "${GLSL_PER_VERTEX_IN_ARR}\n"
+												 "${GLSL_PER_VERTEX_OUT_ARR}\n"
 												 "\n"
 												 "layout (vertices = 3) out;\n"
 												 "\n"
@@ -6380,6 +6491,8 @@ void GLPositionCase::init (void)
 												 "}\n");
 	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
 												 "${TESSELLATION_SHADER_REQUIRE}\n"
+												 "${GLSL_PER_VERTEX_IN_ARR}\n"
+												 "${GLSL_PER_VERTEX_OUT}\n"
 												 "\n"
 												 + getTessellationEvaluationInLayoutString(TESSPRIMITIVETYPE_TRIANGLES) +
 												 "\n"
@@ -6679,6 +6792,7 @@ TessProgramQueryCase::TessProgramQueryCase (Context& context, const char* name, 
 std::string TessProgramQueryCase::getVertexSource (void) const
 {
 	return	"${GLSL_VERSION_DECL}\n"
+			"${GLSL_PER_VERTEX_OUT}\n"
 			"void main (void)\n"
 			"{\n"
 			"	gl_Position = vec4(float(gl_VertexID), float(gl_VertexID / 2), 0.0, 1.0);\n"
@@ -6699,6 +6813,8 @@ std::string TessProgramQueryCase::getTessCtrlSource (const char* globalLayouts) 
 {
 	return	"${GLSL_VERSION_DECL}\n"
 			"${TESSELLATION_SHADER_REQUIRE}\n"
+			"${GLSL_PER_VERTEX_IN_ARR}\n"
+			"${GLSL_PER_VERTEX_OUT_ARR}\n"
 			+ std::string(globalLayouts) + ";\n"
 			"void main (void)\n"
 			"{\n"
@@ -6716,6 +6832,8 @@ std::string TessProgramQueryCase::getTessEvalSource (const char* globalLayouts) 
 {
 	return	"${GLSL_VERSION_DECL}\n"
 			"${TESSELLATION_SHADER_REQUIRE}\n"
+			"${GLSL_PER_VERTEX_IN_ARR}\n"
+			"${GLSL_PER_VERTEX_OUT}\n"
 			+ std::string(globalLayouts) + ";\n"
 			"void main (void)\n"
 			"{\n"
@@ -7089,6 +7207,7 @@ ReferencedByTessellationQueryCase::IterateResult ReferencedByTessellationQueryCa
 std::string ReferencedByTessellationQueryCase::getVertexSource (void) const
 {
 	return	"${GLSL_VERSION_DECL}\n"
+			"${GLSL_PER_VERTEX_OUT}\n"
 			"void main (void)\n"
 			"{\n"
 			"	gl_Position = vec4(float(gl_VertexID), float(gl_VertexID / 2), 0.0, 1.0);\n"
@@ -7110,6 +7229,8 @@ std::string ReferencedByTessellationQueryCase::getTessCtrlSource (void) const
 	std::ostringstream buf;
 	buf <<	"${GLSL_VERSION_DECL}\n"
 			"${TESSELLATION_SHADER_REQUIRE}\n"
+			"${GLSL_PER_VERTEX_IN_ARR}\n"
+			"${GLSL_PER_VERTEX_OUT_ARR}\n"
 			"layout(vertices = 3) out;\n"
 			"uniform highp vec4 " << ((m_isCtrlCase) ? ("u_referenced") : ("u_unreferenced")) << ";\n"
 			"void main (void)\n"
@@ -7131,6 +7252,8 @@ std::string ReferencedByTessellationQueryCase::getTessEvalSource (void) const
 	std::ostringstream buf;
 	buf <<	"${GLSL_VERSION_DECL}\n"
 			"${TESSELLATION_SHADER_REQUIRE}\n"
+			"${GLSL_PER_VERTEX_IN_ARR}\n"
+			"${GLSL_PER_VERTEX_OUT}\n"
 			"layout(triangles) in;\n"
 			"uniform highp vec4 " << ((m_isCtrlCase) ? ("u_unreferenced") : ("u_referenced")) << ";\n"
 			"void main (void)\n"
@@ -7168,6 +7291,8 @@ IsPerPatchQueryCase::IterateResult IsPerPatchQueryCase::iterate (void)
 {
 	static const char* const s_controlSource =	"${GLSL_VERSION_DECL}\n"
 												"${TESSELLATION_SHADER_REQUIRE}\n"
+												"${GLSL_PER_VERTEX_IN_ARR}\n"
+												"${GLSL_PER_VERTEX_OUT_ARR}\n"
 												"layout(vertices = 3) out;\n"
 												"patch out highp vec4 v_perPatch;\n"
 												"out highp vec4 v_perVertex[];\n"
@@ -7259,8 +7384,9 @@ IsPerPatchQueryCase::IterateResult IsPerPatchQueryCase::iterate (void)
 
 } // anonymous
 
-TessellationTests::TessellationTests (Context& context)
+TessellationTests::TessellationTests (Context& context, bool isGL45)
 	: TestCaseGroup(context, "tessellation", "Tessellation Tests")
+	, m_isGL45(isGL45)
 {
 }
 
@@ -7648,6 +7774,8 @@ void TessellationTests::init (void)
 			}
 		}
 
+		// ES only
+		if (!m_isGL45)
 		{
 			de::MovePtr<TestCaseGroup>	negativeGroup	(new TestCaseGroup(m_context, "negative", "Negative cases"));
 

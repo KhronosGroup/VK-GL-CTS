@@ -411,7 +411,7 @@ void GLES31FunctionalTests::init (void)
 	addChild(new ShaderTests							(m_context));
 	addChild(new ComputeTests							(m_context));
 	addChild(new DrawTests								(m_context));
-	addChild(new TessellationTests						(m_context));
+	addChild(new TessellationTests						(m_context, false));
 	addChild(new SSBOTests								(m_context));
 	addChild(new UniformBlockTests						(m_context));
 	addChild(new ShaderImageLoadStoreTests				(m_context));
@@ -456,7 +456,7 @@ void GL45FunctionalTests::init (void)
 	addChild(new ShaderTests							(m_context));
 	addChild(new ComputeTests							(m_context));
 	addChild(new DrawTests								(m_context));
-	addChild(new TessellationTests						(m_context));
+	addChild(new TessellationTests						(m_context, true));
 	addChild(new SSBOTests								(m_context));
 	addChild(new UniformBlockTests						(m_context));
 	addChild(new ShaderImageLoadStoreTests				(m_context));
