@@ -97,7 +97,8 @@ static const EnumMapEntry s_statusCodeMap[] =
 	{ 0x42b6efac,	"Timeout",				TESTSTATUSCODE_TIMEOUT					},
 	{ 0x0cfb98f6,	"Crash",				TESTSTATUSCODE_CRASH					},
 	{ 0xe326e01d,	"Disabled",				TESTSTATUSCODE_DISABLED					},
-	{ 0x77061af2,	"Terminated",			TESTSTATUSCODE_TERMINATED				}
+	{ 0x77061af2,	"Terminated",			TESTSTATUSCODE_TERMINATED				},
+	{ 0xd9e6b393,	"Waiver",			    TESTSTATUSCODE_WAIVER				    }
 };
 
 static const EnumMapEntry s_resultItemMap[] =

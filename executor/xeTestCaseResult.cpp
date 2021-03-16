@@ -47,6 +47,7 @@ const char* getTestStatusCodeName (TestStatusCode code)
 		case TESTSTATUSCODE_CRASH:					return "Crash";
 		case TESTSTATUSCODE_DISABLED:				return "Disabled";
 		case TESTSTATUSCODE_TERMINATED:				return "Terminated";
+		case TESTSTATUSCODE_WAIVER:					return "Waived";
 		default:
 			DE_ASSERT(false);
 			return DE_NULL;
