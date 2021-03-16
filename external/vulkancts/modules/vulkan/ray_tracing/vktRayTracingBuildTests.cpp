@@ -615,6 +615,9 @@ tcu::TestCaseGroup*	createBuildTests (tcu::TestContext& testCtx)
 		const string					groupDesc			= !defferedOperation ? "Compare results of run with acceleration structures build on GPU and CPU"
 															: threadsCount > 0 ? "Compare results of run with acceleration structures build on GPU and using host threading"
 															: "Run acceleration structures build using host threading";
+
+		const bool						deviceBuild			= !defferedOperation || threadsCount == 0;
+
 		de::MovePtr<tcu::TestCaseGroup>	groupGpuCpuHt		(new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupDesc.c_str()));
 
 		for (size_t testsNdx = 0; testsNdx < DE_LENGTH_OF_ARRAY(tests); ++testsNdx)
@@ -624,6 +627,9 @@ tcu::TestCaseGroup*	createBuildTests (tcu::TestContext& testCtx)
 			for (size_t factorNdx = 0; factorNdx < DE_LENGTH_OF_ARRAY(factors); ++factorNdx)
 			for (size_t sizesNdx = 0; sizesNdx < DE_LENGTH_OF_ARRAY(sizes); ++sizesNdx)
 			{
+				if (deviceBuild && sizes[sizesNdx] > 256)
+					continue;
+
 				const deUint32	factor					= factors[factorNdx];
 				const deUint32	largestGroup			= sizes[sizesNdx] * sizes[sizesNdx] / factor / factor;
 				const deUint32	squaresGroupCount		= testsNdx == 0 ? largestGroup : factor;
@@ -652,6 +658,9 @@ tcu::TestCaseGroup*	createBuildTests (tcu::TestContext& testCtx)
 			for (size_t factorNdx = 0; factorNdx < DE_LENGTH_OF_ARRAY(factors); ++factorNdx)
 			for (size_t sizesNdx = 0; sizesNdx < DE_LENGTH_OF_ARRAY(sizes); ++sizesNdx)
 			{
+				if (deviceBuild && sizes[sizesNdx] > 256)
+					continue;
+
 				const deUint32	factor					= factors[factorNdx];
 				const deUint32	largestGroup			= sizes[sizesNdx] * sizes[sizesNdx] / factor / factor;
 				const deUint32	squaresGroupCount		= testsNdx == 0 ? largestGroup : factor;
@@ -680,6 +689,9 @@ tcu::TestCaseGroup*	createBuildTests (tcu::TestContext& testCtx)
 			for (size_t factorNdx = 0; factorNdx < DE_LENGTH_OF_ARRAY(factors); ++factorNdx)
 			for (size_t sizesNdx = 0; sizesNdx < DE_LENGTH_OF_ARRAY(sizes); ++sizesNdx)
 			{
+				if (deviceBuild && sizes[sizesNdx] > 256)
+					continue;
+
 				const deUint32	factor					= factors[factorNdx];
 				const deUint32	largestGroup			= sizes[sizesNdx] * sizes[sizesNdx] / factor / factor;
 				const deUint32	squaresGroupCount		= testsNdx == 0 ? largestGroup : factor;
