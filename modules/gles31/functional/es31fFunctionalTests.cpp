@@ -421,7 +421,7 @@ void GLES31FunctionalTests::init (void)
 	addChild(new StateQueryTests						(m_context));
 	addChild(new MultisampleTests						(m_context));
 	addChild(new SynchronizationTests					(m_context));
-	addChild(new GeometryShaderTests					(m_context));
+	addChild(new GeometryShaderTests					(m_context, false));
 	addChild(new SampleShadingTests						(m_context));
 	addChild(new VertexAttributeBindingTests			(m_context));
 	addChild(new ProgramUniformTests					(m_context));
@@ -466,7 +466,7 @@ void GL45FunctionalTests::init (void)
 	addChild(new StateQueryTests						(m_context));
 	addChild(new MultisampleTests						(m_context));
 	addChild(new SynchronizationTests					(m_context));
-	addChild(new GeometryShaderTests					(m_context));
+	addChild(new GeometryShaderTests					(m_context, true));
 	addChild(new SampleShadingTests						(m_context));
 	addChild(new VertexAttributeBindingTests			(m_context));
 	addChild(new ProgramUniformTests					(m_context));
