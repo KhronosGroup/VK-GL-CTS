@@ -20405,6 +20405,42 @@ tcu::TestCaseGroup* createFunctionParamsGroup (tcu::TestContext& testCtx)
 	return testGroup.release();
 }
 
+tcu::TestCaseGroup* createEarlyFragmentTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> earlyFragTests (new tcu::TestCaseGroup(testCtx, "early_fragment", "Early Fragment Tests"));
+
+	static const char dataDir[] = "spirv_assembly/instruction/graphics/early_fragment";
+
+	static const struct Case
+	{
+		const string name;
+		const string desc;
+	}
+	cases[] =
+	{
+		// Overwriting the gl_FragDepth should be ignored, when Early Fragment Test Mode is enabled.
+		{ "depth_less",				"gl_FragDepth > CLEAR_DEPTH. Polygon depth < CLEAR_DEPTH."	},
+		{ "depth_greater",			"gl_FragDepth < CLEAR_DEPTH. Polygon depth > CLEAR_DEPTH."	},
+		{ "depth_less_or_equal",	"gl_FragDepth > CLEAR_DEPTH. Polygon depth == CLEAR_DEPTH."	},
+		{ "depth_greater_or_equal",	"gl_FragDepth < CLEAR_DEPTH. Polygon depth == CLEAR_DEPTH."	},
+		{ "depth_equal",			"gl_FragDepth < CLEAR_DEPTH. Polygon depth == CLEAR_DEPTH."	},
+		{ "depth_not_equal",		"gl_FragDepth == CLEAR_DEPTH. Polygon depth < CLEAR_DEPTH."	}
+	};
+
+	for (const auto& tCase : cases)
+	{
+		cts_amber::AmberTestCase* testCase = cts_amber::createAmberTestCase(testCtx,
+			tCase.name.c_str(),
+			tCase.desc.c_str(),
+			dataDir,
+			tCase.name + ".amber");
+
+		earlyFragTests->addChild(testCase);
+	}
+
+	return earlyFragTests.release();
+}
+
 tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 {
 	const bool testComputePipeline = true;
@@ -20566,6 +20602,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createFloat32Tests(testCtx));
 	graphicsTests->addChild(createSpirvIdsAbuseTests(testCtx));
 	graphicsTests->addChild(create64bitCompareGraphicsGroup(testCtx));
+	graphicsTests->addChild(createEarlyFragmentTests(testCtx));
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());
