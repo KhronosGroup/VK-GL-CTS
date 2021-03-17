@@ -3,8 +3,11 @@ Vulkan CTS README
 
 This document describes how to build and run Vulkan Conformance Test suite.
 
-Vulkan CTS is built on dEQP framework. dEQP documentation is available
-at http://source.android.com/devices/graphics/testing.html
+Vulkan CTS is built on the dEQP framework.
+Up-to-date documentation for dEQP is available at:
+
+* [The VK-GL-CTS wiki for Khronos members](https://gitlab.khronos.org/Tracker/vk-gl-cts/wikis/home)
+* [The VK-GL-CTS wiki for non-Khronos members](https://github.com/KhronosGroup/VK-GL-CTS/wiki)
 
 
 Requirements
