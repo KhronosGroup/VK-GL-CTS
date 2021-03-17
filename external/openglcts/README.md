@@ -697,7 +697,7 @@ The CTS writes test logs in XML encapsulated in a simple plain-text container
 format. Each tested configuration listed in `cts-run-summary.xml`
 
 To analyse and process the log files, run the following scripts
-- `external/openglcts/scripts/verify_submission.py`: Script that verifies logs based on `cts-run-summary.xml` file.
+- `verify_submission.py` located in [VK-GL-CTS-Tools](https://github.com/KhronosGroup/VK-GL-CTS-Tools): Script that verifies logs based on `cts-run-summary.xml` file.
 - `scripts/log/log_to_csv.py`: This utility converts `.qpa` log into CSV format. This is
 useful for importing results into other systems.
 - `scripts/log/log_to_xml.py`: Converts `.qpa` into well-formed XML document. The document
