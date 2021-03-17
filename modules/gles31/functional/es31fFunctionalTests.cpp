@@ -431,7 +431,7 @@ void GLES31FunctionalTests::init (void)
 	addChild(new ProgramUniformTests					(m_context));
 	addChild(new AdvancedBlendTests						(m_context));
 	addChild(createGLESSeparateShaderTests				(m_context));
-	addChild(new UniformLocationTests					(m_context));
+	addChild(new UniformLocationTests					(m_context, false));
 	addChild(new TessellationGeometryInteractionTests	(m_context));
 	addChild(new DebugTests								(m_context));
 	addChild(new FboTests								(m_context));
@@ -476,7 +476,7 @@ void GL45FunctionalTests::init (void)
 	addChild(new ProgramUniformTests					(m_context));
 	addChild(new AdvancedBlendTests						(m_context));
 	addChild(createCommonSeparateShaderTests			(m_context));
-	addChild(new UniformLocationTests					(m_context));
+	addChild(new UniformLocationTests					(m_context, true));
 	addChild(new TessellationGeometryInteractionTests	(m_context));
 	addChild(new DebugTests								(m_context));
 	addChild(new FboTests								(m_context));

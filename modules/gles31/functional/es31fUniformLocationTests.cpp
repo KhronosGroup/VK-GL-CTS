@@ -240,6 +240,7 @@ UniformLocationCase::IterateResult UniformLocationCase::run (const vector<Unifor
 	render(program, uniformList);
 
 	glu::readPixels(m_renderCtx, viewport.x, viewport.y, rendered.getAccess());
+	GLU_EXPECT_NO_ERROR(gl.getError(), "error in readPixels");
 
 	if (!verifyResult(rendered.getAccess()))
 	{
@@ -536,14 +537,40 @@ void UniformLocationCase::render (const glu::ShaderProgram& program, const vecto
 		 1.0f, -1.0f, 0.1f,	1.0f,
 		 1.0f,  1.0f, 0.1f,	1.0f
 	};
+	const void *			positionPtr		= &position[0];
 	const deUint16			indices[]		= { 0, 1, 2, 2, 1, 3 };
+	const void *			indicesPtr		= &indices[0];
 
 	// some buffers to feed to the GPU, only the first element is relevant since the others are never verified
 	float					floatBuf[16]	= {0.0f};
 	deInt32					intBuf[4]		= {0};
 	deUint32				uintBuf[4]		= {0};
+	deUint32				vao				= 0;
+	deUint32				attribVbo		= 0;
+	deUint32				elementVbo		= 0;
 
 	TextureList				texList;
+
+	bool isGL45 = glu::contextSupports(m_renderCtx.getType(), glu::ApiType::core(4, 5));
+	if (isGL45)
+	{
+		gl.genVertexArrays(1, &vao);
+		gl.bindVertexArray(vao);
+
+		gl.genBuffers(1, &attribVbo);
+		gl.genBuffers(1, &elementVbo);
+
+		gl.bindBuffer(GL_ARRAY_BUFFER, attribVbo);
+		gl.bufferData(GL_ARRAY_BUFFER, (glw::GLsizeiptr)(DE_LENGTH_OF_ARRAY(position) * sizeof(float)), position, GL_STATIC_DRAW);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "UniformLocationCase::render");
+
+		gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementVbo);
+		gl.bufferData(GL_ELEMENT_ARRAY_BUFFER, (glw::GLsizeiptr)(DE_LENGTH_OF_ARRAY(indices) * sizeof(deUint16)), indices, GL_STATIC_DRAW);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "UniformLocationCase::render");
+
+		positionPtr = 0;
+		indicesPtr = 0;
+	}
 
 	TCU_CHECK(posLoc >= 0);
 	gl.useProgram(programID);
@@ -624,11 +651,25 @@ void UniformLocationCase::render (const glu::ShaderProgram& program, const vecto
 		}
 
 		gl.enableVertexAttribArray(posLoc);
-		gl.vertexAttribPointer(posLoc, 4, GL_FLOAT, GL_FALSE, 0, &position[0]);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "error in glEnableVertexAttribArray");
+		gl.vertexAttribPointer(posLoc, 4, GL_FLOAT, GL_FALSE, 0, positionPtr);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "error in glVertexAttribPointer");
 
-		gl.drawElements(GL_TRIANGLES, DE_LENGTH_OF_ARRAY(indices), GL_UNSIGNED_SHORT, &indices[0]);
+		gl.drawElements(GL_TRIANGLES, DE_LENGTH_OF_ARRAY(indices), GL_UNSIGNED_SHORT, indicesPtr);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "error in glDrawElements");
 
 		gl.disableVertexAttribArray(posLoc);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "error in glDisableVertexAttribArray");
+
+		if (isGL45)
+		{
+			gl.bindBuffer(GL_ARRAY_BUFFER, 0);
+			gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+			gl.deleteBuffers(1, &attribVbo);
+			gl.deleteBuffers(1, &elementVbo);
+			gl.deleteVertexArrays(1, &vao);
+		}
 	}
 	catch(...)
 	{
@@ -678,8 +719,9 @@ UniformLocationCase::IterateResult MaxUniformLocationCase::iterate (void)
 
 } // Anonymous
 
-UniformLocationTests::UniformLocationTests (Context& context)
+UniformLocationTests::UniformLocationTests (Context& context, bool isGL45)
 	: TestCaseGroup(context, "uniform_location", "Explicit uniform locations")
+	, m_isGL45(isGL45)
 {
 }
 
@@ -1059,6 +1101,8 @@ void UniformLocationTests::init (void)
 			negativeGroup->addChild(es31Group.release());
 		}
 
+		// ES only
+		if (!m_isGL45)
 		{
 			de::MovePtr<tcu::TestCaseGroup>	es32Group		(new tcu::TestCaseGroup(m_testCtx, "es32", "GLSL ES 3.2 Negative tests"));
 			gls::ShaderLibrary				shaderLibrary   (m_testCtx, m_context.getRenderContext(), m_context.getContextInfo());
