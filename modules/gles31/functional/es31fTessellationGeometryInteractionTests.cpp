@@ -56,12 +56,18 @@ namespace
 
 static std::string specializeShader (const std::string& shaderSource, const glu::ContextType& contextType)
 {
-	const bool supportsES32 = glu::contextSupports(contextType, glu::ApiType::es(3, 2));
+	const bool supportsES32orGL45 = glu::contextSupports(contextType, glu::ApiType::es(3, 2)) ||
+									glu::contextSupports(contextType, glu::ApiType::core(4, 5));
+
+	const bool supportsGL45 = glu::contextSupports(contextType, glu::ApiType::core(4, 5));
+
 	std::map<std::string, std::string> shaderArgs;
 
-	shaderArgs["VERSION_DECL"]					= glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(contextType));
-	shaderArgs["EXTENSION_GEOMETRY_SHADER"]		= (supportsES32) ? ("") : ("#extension GL_EXT_geometry_shader : require\n");
-	shaderArgs["EXTENSION_TESSELATION_SHADER"]	= (supportsES32) ? ("") : ("#extension GL_EXT_tessellation_shader : require\n");
+	shaderArgs["VERSION_DECL"]						= glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(contextType));
+	shaderArgs["EXTENSION_GEOMETRY_SHADER"]			= (supportsES32orGL45) ? ("") : ("#extension GL_EXT_geometry_shader : require\n");
+	shaderArgs["EXTENSION_TESSELATION_SHADER"]		= (supportsES32orGL45) ? ("") : ("#extension GL_EXT_tessellation_shader : require\n");
+	shaderArgs["EXTENSION_TESSELATION_POINT_SIZE"]	= (supportsGL45) ? ("") : ("#extension GL_EXT_tessellation_point_size : require\n");
+	shaderArgs["EXTENSION_GEOMETRY_POINT_SIZE"]		= (supportsGL45) ? ("") : ("#extension GL_EXT_geometry_point_size : require\n");
 
 	return tcu::StringTemplate(shaderSource).specialize(shaderArgs);
 }
@@ -172,9 +178,10 @@ IdentityGeometryShaderCase::~IdentityGeometryShaderCase (void)
 void IdentityGeometryShaderCase::init (void)
 {
 	// Requirements
-	const bool supportsES32		= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool supportsES32orGL45	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+									  glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
 
-	if (!supportsES32 &&
+	if (!supportsES32orGL45 &&
 		(!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
 		 !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")))
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader and GL_EXT_geometry_shader extensions");
@@ -478,9 +485,10 @@ IdentityTessellationShaderCase::~IdentityTessellationShaderCase (void)
 void IdentityTessellationShaderCase::init (void)
 {
 	// Requirements
-	const bool supportsES32		= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool supportsES32orGL45	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+									  glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
 
-	if (!supportsES32 &&
+	if (!supportsES32orGL45 &&
 		(!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
 		 !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")))
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader and GL_EXT_geometry_shader extensions");
@@ -871,9 +879,10 @@ void FeedbackPrimitiveTypeCase::init (void)
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	// Requirements
-	const bool supportsES32		= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool supportsES32orGL45	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+									  glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
 
-	if (!supportsES32 &&
+	if (!supportsES32orGL45 &&
 		(!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
 		 !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")))
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader and GL_EXT_geometry_shader extensions");
@@ -1716,6 +1725,11 @@ void PointSizeCase::init (void)
 	checkExtensions();
 	checkPointSizeRequirements();
 
+	if (glu::isContextTypeGLCore(m_context.getRenderContext().getType()))
+	{
+		m_context.getRenderContext().getFunctions().enable(GL_PROGRAM_POINT_SIZE);
+	}
+
 	// log
 
 	if (m_flags & FLAG_VERTEX_SET)
@@ -1759,6 +1773,11 @@ void PointSizeCase::init (void)
 
 void PointSizeCase::deinit (void)
 {
+	if (glu::isContextTypeGLCore(m_context.getRenderContext().getType()))
+	{
+		m_context.getRenderContext().getFunctions().disable(GL_PROGRAM_POINT_SIZE);
+	}
+
 	delete m_program;
 	m_program = DE_NULL;
 }
@@ -1779,9 +1798,13 @@ PointSizeCase::IterateResult PointSizeCase::iterate (void)
 
 void PointSizeCase::checkExtensions (void) const
 {
+	glu::ContextType contextType = m_context.getRenderContext().getType();
+	if (glu::contextSupports(contextType, glu::ApiType::core(4, 5)))
+		return;
+
 	std::vector<std::string>	requiredExtensions;
-	const bool					supportsES32		= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	bool						allOk				= true;
+	const bool					supportsES32	= glu::contextSupports(contextType, glu::ApiType::es(3, 2));
+	bool						allOk			= true;
 
 	if ((m_flags & (FLAG_TESSELLATION_CONTROL_SET | FLAG_TESSELLATION_EVALUATION_SET | FLAG_TESSELLATION_ADD | FLAG_TESSELLATION_DONT_SET)) && !supportsES32)
 		requiredExtensions.push_back("GL_EXT_tessellation_shader");
@@ -2011,7 +2034,7 @@ std::string PointSizeCase::genTessellationControlSource (void) const
 
 	buf	<< "${VERSION_DECL}\n"
 		<< "${EXTENSION_TESSELATION_SHADER}"
-		<< ((m_flags & FLAG_TESSELLATION_DONT_SET) ? ("") : ("#extension GL_EXT_tessellation_point_size : require\n"))
+		<< ((m_flags & FLAG_TESSELLATION_DONT_SET) ? ("") : ("${EXTENSION_TESSELATION_POINT_SIZE}"))
 		<< "layout(vertices = 1) out;\n"
 		<< "void main ()\n"
 		<< "{\n"
@@ -2039,7 +2062,7 @@ std::string PointSizeCase::genTessellationEvaluationSource (void) const
 
 	buf	<< "${VERSION_DECL}\n"
 		<< "${EXTENSION_TESSELATION_SHADER}"
-		<< ((m_flags & FLAG_TESSELLATION_DONT_SET) ? ("") : ("#extension GL_EXT_tessellation_point_size : require\n"))
+		<< ((m_flags & FLAG_TESSELLATION_DONT_SET) ? ("") : ("${EXTENSION_TESSELATION_POINT_SIZE}"))
 		<< "layout(triangles, point_mode) in;\n"
 		<< "void main ()\n"
 		<< "{\n"
@@ -2069,7 +2092,7 @@ std::string PointSizeCase::genGeometrySource (void) const
 
 	buf	<< "${VERSION_DECL}\n"
 		<< "${EXTENSION_GEOMETRY_SHADER}"
-		<< ((m_flags & FLAG_GEOMETRY_DONT_SET) ? ("") : ("#extension GL_EXT_geometry_point_size : require\n"))
+		<< ((m_flags & FLAG_GEOMETRY_DONT_SET) ? ("") : ("${EXTENSION_GEOMETRY_POINT_SIZE}"))
 		<< "layout (points) in;\n"
 		<< "layout (points, max_vertices=1) out;\n"
 		<< "\n"
@@ -2166,12 +2189,14 @@ GridRenderCase::~GridRenderCase (void)
 
 void GridRenderCase::init (void)
 {
-	const glw::Functions&	gl				= m_context.getRenderContext().getFunctions();
-	const bool				supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glw::Functions&	gl					= m_context.getRenderContext().getFunctions();
+	glu::ContextType		contextType			= m_context.getRenderContext().getType();
+	const bool				supportsES32orGL45	= glu::contextSupports(contextType, glu::ApiType::es(3, 2)) ||
+												  glu::contextSupports(contextType, glu::ApiType::core(4, 5));
 
 	// Requirements
 
-	if (!supportsES32 &&
+	if (!supportsES32orGL45 &&
 		(!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
 		 !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")))
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader and GL_EXT_geometry_shader extensions");
@@ -2836,8 +2861,9 @@ FeedbackRecordVariableSelectionCase::~FeedbackRecordVariableSelectionCase (void)
 void FeedbackRecordVariableSelectionCase::init (void)
 {
 	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool supportsCore40 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 0));
 
-	if (!supportsES32 &&
+	if ((!supportsES32 && !supportsCore40) &&
 		(!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
 		 !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")))
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader and GL_EXT_geometry_shader extensions");
@@ -3037,8 +3063,9 @@ std::string FeedbackRecordVariableSelectionCase::getGeometrySource(void)
 
 } // anonymous
 
-TessellationGeometryInteractionTests::TessellationGeometryInteractionTests (Context& context)
+TessellationGeometryInteractionTests::TessellationGeometryInteractionTests (Context& context, bool isGL45)
 	: TestCaseGroup(context, "tessellation_geometry_interaction", "Tessellation and geometry shader interaction tests")
+	, m_isGL45(isGL45)
 {
 }
 
@@ -3225,26 +3252,34 @@ void TessellationGeometryInteractionTests::init (void)
 
 	// .point_size
 	{
-		static const int caseFlags[] =
+		static const struct PointSizeCaseConfig
 		{
-			PointSizeCase::FLAG_VERTEX_SET,
-												PointSizeCase::FLAG_TESSELLATION_EVALUATION_SET,
-																										PointSizeCase::FLAG_GEOMETRY_SET,
-			PointSizeCase::FLAG_VERTEX_SET	|	PointSizeCase::FLAG_TESSELLATION_CONTROL_SET,
-			PointSizeCase::FLAG_VERTEX_SET	|	PointSizeCase::FLAG_TESSELLATION_EVALUATION_SET,
-			PointSizeCase::FLAG_VERTEX_SET	|	PointSizeCase::FLAG_TESSELLATION_DONT_SET,
-			PointSizeCase::FLAG_VERTEX_SET	|															PointSizeCase::FLAG_GEOMETRY_SET,
-			PointSizeCase::FLAG_VERTEX_SET	|	PointSizeCase::FLAG_TESSELLATION_EVALUATION_SET		|	PointSizeCase::FLAG_GEOMETRY_SET,
-			PointSizeCase::FLAG_VERTEX_SET	|	PointSizeCase::FLAG_TESSELLATION_ADD				|	PointSizeCase::FLAG_GEOMETRY_ADD,
-			PointSizeCase::FLAG_VERTEX_SET	|	PointSizeCase::FLAG_TESSELLATION_EVALUATION_SET		|	PointSizeCase::FLAG_GEOMETRY_DONT_SET,
+			const int											caseMask;
+			const bool											isSupportedInGL; // is this case supported in OpenGL
+		} caseConfigs[] =
+		{
+			{PointSizeCase::FLAG_VERTEX_SET,																									true},
+			{									PointSizeCase::FLAG_TESSELLATION_EVALUATION_SET,												true},
+			{																							PointSizeCase::FLAG_GEOMETRY_SET,		true},
+			{PointSizeCase::FLAG_VERTEX_SET	|	PointSizeCase::FLAG_TESSELLATION_CONTROL_SET,													false},
+			{PointSizeCase::FLAG_VERTEX_SET	|	PointSizeCase::FLAG_TESSELLATION_EVALUATION_SET,												true},
+			{PointSizeCase::FLAG_VERTEX_SET	|	PointSizeCase::FLAG_TESSELLATION_DONT_SET,														false},
+			{PointSizeCase::FLAG_VERTEX_SET	|															PointSizeCase::FLAG_GEOMETRY_SET,		true},
+			{PointSizeCase::FLAG_VERTEX_SET	|	PointSizeCase::FLAG_TESSELLATION_EVALUATION_SET		|	PointSizeCase::FLAG_GEOMETRY_SET,		true},
+			{PointSizeCase::FLAG_VERTEX_SET	|	PointSizeCase::FLAG_TESSELLATION_ADD				|	PointSizeCase::FLAG_GEOMETRY_ADD,		true},
+			{PointSizeCase::FLAG_VERTEX_SET	|	PointSizeCase::FLAG_TESSELLATION_EVALUATION_SET		|	PointSizeCase::FLAG_GEOMETRY_DONT_SET,	false},
 		};
 
-		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(caseFlags); ++ndx)
-		{
-			const std::string name = PointSizeCase::genTestCaseName(caseFlags[ndx]);
-			const std::string desc = PointSizeCase::genTestCaseDescription(caseFlags[ndx]);
 
-			pointSizeGroup->addChild(new PointSizeCase(m_context, name.c_str(), desc.c_str(), caseFlags[ndx]));
+		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(caseConfigs); ++ndx)
+		{
+			if (m_isGL45 && !caseConfigs[ndx].isSupportedInGL)
+				continue;
+
+			const std::string name = PointSizeCase::genTestCaseName(caseConfigs[ndx].caseMask);
+			const std::string desc = PointSizeCase::genTestCaseDescription(caseConfigs[ndx].caseMask);
+
+			pointSizeGroup->addChild(new PointSizeCase(m_context, name.c_str(), desc.c_str(), caseConfigs[ndx].caseMask));
 		}
 	}
 }

@@ -36,7 +36,7 @@ namespace Functional
 class TessellationGeometryInteractionTests : public TestCaseGroup
 {
 public:
-											TessellationGeometryInteractionTests	(Context& context);
+											TessellationGeometryInteractionTests	(Context& context, bool isGL45);
 											~TessellationGeometryInteractionTests	(void);
 
 	void									init									(void);
@@ -44,6 +44,8 @@ public:
 private:
 											TessellationGeometryInteractionTests	(const TessellationGeometryInteractionTests& other);
 	TessellationGeometryInteractionTests&	operator=								(const TessellationGeometryInteractionTests& other);
+
+	bool									m_isGL45;
 };
 
 } // Functional
