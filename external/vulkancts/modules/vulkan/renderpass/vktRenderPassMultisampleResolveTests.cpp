@@ -120,6 +120,16 @@ struct TestConfig
 	RenderPassType	renderPassType;
 };
 
+struct TestConfig2 : TestConfig
+{
+	TestConfig2(const TestConfig& src, deUint32 level)
+		: TestConfig	(src)
+		, resolveLevel	(level)
+	{
+	}
+	deUint32		resolveLevel;
+};
+
 // Render pass traits that groups render pass related types together and by that help
 // to reduce number of template parrameters passed to number of functions in those tests
 struct RenderPass1Trait
@@ -149,12 +159,26 @@ protected:
 
 	Move<VkImage>			createImage			(VkSampleCountFlagBits		sampleCountBit,
 												 VkImageUsageFlags			usage) const;
+	Move<VkImage>			createImage			(VkSampleCountFlagBits		sampleCountBit,
+												 VkImageUsageFlags			usage,
+												 deUint32					width,
+												 deUint32					height,
+												 deUint32					mipLevels) const;
 	vector<VkImageSp>		createImages		(VkSampleCountFlagBits		sampleCountBit,
 												 VkImageUsageFlags			usage) const;
+	vector<VkImageSp>		createImages		(VkSampleCountFlagBits		sampleCountBit,
+												 VkImageUsageFlags			usage,
+												 deUint32					width,
+												 deUint32					height,
+												 deUint32					mipLevels) const;
 	vector<AllocationSp>	createImageMemory	(const vector<VkImageSp>&	images) const;
-	vector<VkImageViewSp>	createImageViews	(const vector<VkImageSp>&	images) const;
+	vector<VkImageViewSp>	createImageViews	(const vector<VkImageSp>&	images,
+												 deUint32					mipLevel = 0) const;
 
 	vector<VkBufferSp>		createBuffers		() const;
+	vector<VkBufferSp>		createBuffers		(deUint32					width,
+												 deUint32					height,
+												 deUint32					mipLevels) const;
 	vector<AllocationSp>	createBufferMemory	(const vector<VkBufferSp>& buffers) const;
 
 	Move<VkFramebuffer>		createFramebuffer	(const std::vector<VkImageViewSp>	multisampleImageViews,
@@ -205,6 +229,15 @@ MultisampleRenderPassTestBase::~MultisampleRenderPassTestBase ()
 
 Move<VkImage> MultisampleRenderPassTestBase::createImage (VkSampleCountFlagBits sampleCountBit, VkImageUsageFlags usage) const
 {
+	return createImage(sampleCountBit, usage, m_width, m_height, 1u);
+}
+
+Move<VkImage> MultisampleRenderPassTestBase::createImage (VkSampleCountFlagBits	sampleCountBit,
+														  VkImageUsageFlags		usage,
+														  deUint32				width,
+														  deUint32				height,
+														  deUint32				mipLevels) const
+{
 	const InstanceInterface&		vki						= m_context.getInstanceInterface();
 	const DeviceInterface&			vkd						= m_context.getDeviceInterface();
 	VkDevice						device					= m_context.getDevice();
@@ -215,8 +248,8 @@ Move<VkImage> MultisampleRenderPassTestBase::createImage (VkSampleCountFlagBits 
 	const VkFormatProperties		formatProperties		(getPhysicalDeviceFormatProperties(vki, physicalDevice, m_format));
 	const VkExtent3D				imageExtent =
 	{
-		m_width,
-		m_height,
+		width,
+		height,
 		1u
 	};
 
@@ -248,7 +281,7 @@ Move<VkImage> MultisampleRenderPassTestBase::createImage (VkSampleCountFlagBits 
 			imageType,
 			m_format,
 			imageExtent,
-			1u,
+			mipLevels,
 			m_layerCount,
 			sampleCountBit,
 			imageTiling,
@@ -278,6 +311,18 @@ vector<VkImageSp> MultisampleRenderPassTestBase::createImages (VkSampleCountFlag
 	return images;
 }
 
+vector<VkImageSp> MultisampleRenderPassTestBase::createImages (VkSampleCountFlagBits	sampleCountBit,
+															   VkImageUsageFlags		usage,
+															   deUint32					width,
+															   deUint32					height,
+															   deUint32					mipLevels) const
+{
+	std::vector<VkImageSp> images (m_attachmentsCount);
+	for (size_t imageNdx = 0; imageNdx < m_attachmentsCount; imageNdx++)
+		images[imageNdx] = safeSharedPtr(new Unique<VkImage>(createImage(sampleCountBit, usage, width, height, mipLevels)));
+	return images;
+}
+
 vector<AllocationSp> MultisampleRenderPassTestBase::createImageMemory (const vector<VkImageSp>& images) const
 {
 	const DeviceInterface&		vkd			= m_context.getDeviceInterface();
@@ -297,7 +342,7 @@ vector<AllocationSp> MultisampleRenderPassTestBase::createImageMemory (const vec
 	return memory;
 }
 
-vector<VkImageViewSp> MultisampleRenderPassTestBase::createImageViews (const vector<VkImageSp>& images) const
+vector<VkImageViewSp> MultisampleRenderPassTestBase::createImageViews (const vector<VkImageSp>& images, deUint32 mipLevel) const
 {
 	const DeviceInterface&			vkd		= m_context.getDeviceInterface();
 	VkDevice						device	= m_context.getDevice();
@@ -305,7 +350,7 @@ vector<VkImageViewSp> MultisampleRenderPassTestBase::createImageViews (const vec
 	const VkImageSubresourceRange	range =
 	{
 		VK_IMAGE_ASPECT_COLOR_BIT,
-		0u,
+		mipLevel,
 		1u,
 		0u,
 		m_layerCount
@@ -332,6 +377,23 @@ vector<VkImageViewSp> MultisampleRenderPassTestBase::createImageViews (const vec
 
 vector<VkBufferSp> MultisampleRenderPassTestBase::createBuffers () const
 {
+	return createBuffers(m_width, m_height, 1u);
+}
+
+vector<VkBufferSp> MultisampleRenderPassTestBase::createBuffers (deUint32 width, deUint32 height, deUint32 mipLevels) const
+{
+	DE_ASSERT(mipLevels);
+
+	VkDeviceSize				size		= 0;
+	for (deUint32 level = 0; level < mipLevels; ++level)
+	{
+		DE_ASSERT(width && height);
+
+		size += (width * height);
+		height /= 2;
+		width /=2;
+	}
+
 	const DeviceInterface&		vkd			= m_context.getDeviceInterface();
 	VkDevice					device		= m_context.getDevice();
 	std::vector<VkBufferSp>		buffers		(m_attachmentsCount);
@@ -342,7 +404,7 @@ vector<VkBufferSp> MultisampleRenderPassTestBase::createBuffers () const
 		DE_NULL,
 		0u,
 
-		m_width * m_height * m_layerCount * pixelSize,
+		size * m_layerCount * pixelSize,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 
 		VK_SHARING_MODE_EXCLUSIVE,
@@ -588,18 +650,28 @@ private:
 	tcu::TextureLevel					m_sumSrgb;
 	deUint32							m_sampleMask;
 	tcu::ResultCollector				m_resultCollector;
+
+protected:
+	MultisampleRenderPassTestInstance	(Context& context, TestConfig config, deUint32 renderLevel);
+
+	const deUint32						m_renderLevel;
 };
 
 MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& context, TestConfig config)
+	: MultisampleRenderPassTestInstance (context, config, /*defaulf render level*/0u)
+{
+}
+
+MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& context, TestConfig config, deUint32 renderLevel)
 	: MultisampleRenderPassTestBase(context, config)
 
 	, m_multisampleImages		(createImages(m_sampleCount, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT))
 	, m_multisampleImageMemory	(createImageMemory(m_multisampleImages))
 	, m_multisampleImageViews	(createImageViews(m_multisampleImages))
 
-	, m_singlesampleImages		(createImages(VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT))
+	, m_singlesampleImages		(createImages(VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, (1u << renderLevel)*m_width, (1u << renderLevel)*m_height, renderLevel+1 ))
 	, m_singlesampleImageMemory	(createImageMemory(m_singlesampleImages))
-	, m_singlesampleImageViews	(createImageViews(m_singlesampleImages))
+	, m_singlesampleImageViews	(createImageViews(m_singlesampleImages, renderLevel))
 
 	// The "normal" render pass has an unused resolve attachment when testing compatibility.
 	, m_renderPass				(createRenderPassSwitch(!m_testCompatibility))
@@ -609,13 +681,15 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& c
 	, m_renderPipelineLayout	(createRenderPipelineLayout())
 	, m_renderPipeline			(createRenderPipeline())
 
-	, m_buffers					(createBuffers())
+	, m_buffers					(createBuffers((1u << renderLevel)*m_width, (1u << renderLevel)*m_height, renderLevel+1 ))
 	, m_bufferMemory			(createBufferMemory(m_buffers))
 
 	, m_commandPool				(createCommandPool(context.getDeviceInterface(), context.getDevice(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, context.getUniversalQueueFamilyIndex()))
 	, m_sum						(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), m_width, m_height, m_layerCount)
 	, m_sumSrgb					(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), m_width, m_height, m_layerCount)
 	, m_sampleMask				(0x0u)
+
+	, m_renderLevel				(renderLevel)
 {
 	tcu::clear(m_sum.getAccess(), Vec4(0.0f, 0.0f, 0.0f, 0.0f));
 	tcu::clear(m_sumSrgb.getAccess(), Vec4(0.0f, 0.0f, 0.0f, 0.0f));
@@ -705,7 +779,12 @@ void MultisampleRenderPassTestInstance::submit (void)
 	RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
 
 	for (size_t dstNdx = 0; dstNdx < m_singlesampleImages.size(); dstNdx++)
-		copyImageToBuffer(vkd, *commandBuffer, **m_singlesampleImages[dstNdx], **m_buffers[dstNdx], tcu::IVec2(m_width, m_height), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_layerCount);
+	{
+		// assume that buffer(s) have enough memory to store desired amount of mipmaps
+		copyImageToBuffer(vkd, *commandBuffer, **m_singlesampleImages[dstNdx], **m_buffers[dstNdx],
+						  m_format, tcu::IVec2((1u << m_renderLevel)*m_width, (1u << m_renderLevel)*m_height), m_renderLevel,
+						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_layerCount);
+	}
 
 	endCommandBuffer(vkd, *commandBuffer);
 
@@ -737,10 +816,21 @@ void MultisampleRenderPassTestInstance::verify (void)
 	const tcu::TextureFormat			format			(mapVkFormat(m_format));
 	const tcu::TextureChannelClass		channelClass	(tcu::getTextureChannelClass(format.type));
 
+	deUint32							offset			(0u);
+	deUint32							width			((1u << m_renderLevel) * m_width);
+	deUint32							height			((1u << m_renderLevel) * m_height);
+	deUint32							pixelSize		(static_cast<deUint32>(getPixelSize()));
+	for (deUint32 level = 0; level < m_renderLevel; ++level)
+	{
+		offset += (width * height * pixelSize);
+		height /= 2;
+		width /= 2;
+	}
+
 	std::vector<tcu::ConstPixelBufferAccess> accesses;
 	for (deUint32 attachmentIdx = 0; attachmentIdx < m_attachmentsCount; ++attachmentIdx)
 	{
-		void* const ptr = m_bufferMemory[attachmentIdx]->getHostPtr();
+		void* const ptr = static_cast<deUint8*>(m_bufferMemory[attachmentIdx]->getHostPtr()) + offset;
 		accesses.push_back(tcu::ConstPixelBufferAccess(format, m_width, m_height, m_layerCount, ptr));
 	}
 
@@ -2394,6 +2484,18 @@ Move<VkPipeline> MaxAttachmenstsRenderPassTestInstance::createRenderPipeline(boo
 								&blendState);														// colorBlendStateCreateInfo
 }
 
+class MultisampleRenderPassResolveLevelTestInstance : public MultisampleRenderPassTestInstance
+{
+public:
+	MultisampleRenderPassResolveLevelTestInstance	(Context& context, TestConfig2 config);
+	~MultisampleRenderPassResolveLevelTestInstance	(void) = default;
+};
+
+MultisampleRenderPassResolveLevelTestInstance::MultisampleRenderPassResolveLevelTestInstance (Context& context, TestConfig2 config)
+	: MultisampleRenderPassTestInstance(context, config, config.resolveLevel)
+{
+}
+
 struct Programs
 {
 	void init(vk::SourceCollections& dst, TestConfig config) const
@@ -2576,7 +2678,8 @@ struct Programs
 	}
 };
 
-void checkSupport(Context& context, TestConfig config)
+template<class TestConfigType>
+void checkSupport(Context& context, TestConfigType config)
 {
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().multisampleArrayImage &&
@@ -2657,6 +2760,10 @@ void initTests (tcu::TestCaseGroup* group, RenderPassType renderPassType)
 	{
 		1u, 3u, 6u
 	};
+	const deUint32			resolveLevels[] =
+	{
+		2u, 3u, 4u
+	};
 	tcu::TestContext&		testCtx	(group->getTestContext());
 
 	for (size_t layerCountNdx = 0; layerCountNdx < DE_LENGTH_OF_ARRAY(layerCounts); layerCountNdx++)
@@ -2693,6 +2800,15 @@ void initTests (tcu::TestCaseGroup* group, RenderPassType renderPassType)
 				};
 
 				formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
+
+				for (deUint32 resolveLevel : resolveLevels)
+				{
+					const TestConfig2 testConfig2(testConfig, resolveLevel);
+					std::string resolveLevelTestNameStr(testName + "_resolve_level_" + de::toString(resolveLevel));
+					const char* resolveLevelTestName = resolveLevelTestNameStr.c_str();
+
+					formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassResolveLevelTestInstance, TestConfig2, FunctionSupport1<TestConfig2>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, resolveLevelTestName, resolveLevelTestName, testConfig2, typename FunctionSupport1<TestConfig2>::Args(checkSupport, testConfig2)));
+				}
 
 				// MaxAttachmenstsRenderPassTest is ment to test extreme cases where applications might consume all available on-chip
 				// memory. This is achieved by using maxColorAttachments attachments and two subpasses, but during test creation we

@@ -242,6 +242,19 @@ void	copyImageToBuffer						(const DeviceInterface&							vk,
 												 VkImageAspectFlags								barrierAspect = VK_IMAGE_ASPECT_COLOR_BIT,
 												 VkImageAspectFlags								copyAspect = VK_IMAGE_ASPECT_COLOR_BIT);
 
+void	copyImageToBuffer						(const DeviceInterface&							vk,
+												 vk::VkCommandBuffer							cmdBuffer,
+												 vk::VkImage									image,
+												 vk::VkBuffer									buffer,
+												 vk::VkFormat									format,
+												 tcu::IVec2										size,
+												 deUint32										mipLevel = 0u,
+												 vk::VkAccessFlags								srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+												 vk::VkImageLayout								oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+												 deUint32										numLayers = 1u,
+												 VkImageAspectFlags								barrierAspect = VK_IMAGE_ASPECT_COLOR_BIT,
+												 VkImageAspectFlags								copyAspect = VK_IMAGE_ASPECT_COLOR_BIT);
+
 /*--------------------------------------------------------------------*//*!
  * Clear a color image
 *//*--------------------------------------------------------------------*/
