@@ -448,21 +448,16 @@ static void parseCaseTrie (CaseTreeNode* root, std::istream& in)
 	}
 }
 
-static void parseCaseList (CaseTreeNode* root, std::istream& in, bool reportDuplicates)
+static void parseSimpleCaseList (vector<CaseTreeNode*>& nodeStack, std::istream& in, bool reportDuplicates)
 {
 	// \note Algorithm assumes that cases are sorted by groups, but will
 	//		 function fine, albeit more slowly, if that is not the case.
-	vector<CaseTreeNode*>	nodeStack;
-	int						stackPos	= 0;
-	string					curName;
-
-	nodeStack.resize(8, DE_NULL);
-
-	nodeStack[0] = root;
+	int		stackPos	= 0;
+	string	curName;
 
 	for (;;)
 	{
-		const int	curChr	= in.get();
+		const int curChr = in.get();
 
 		if (curChr == std::char_traits<char>::eof() || curChr == 0 || curChr == '\n' || curChr == '\r')
 		{
@@ -544,7 +539,39 @@ static void parseCaseList (CaseTreeNode* root, std::istream& in, bool reportDupl
 	}
 }
 
-static CaseTreeNode* parseCaseList (std::istream& in)
+static void parseCaseList (CaseTreeNode* root, std::istream& in, bool reportDuplicates)
+{
+	vector<CaseTreeNode*> nodeStack(8, root);
+	parseSimpleCaseList(nodeStack, in, reportDuplicates);
+}
+
+static void parseGroupFile(CaseTreeNode* root, std::istream& inGroupList, const tcu::Archive& archive, bool reportDuplicates)
+{
+	// read whole file and remove all '\r'
+	std::string buffer(std::istreambuf_iterator<char>(inGroupList), {});
+	buffer.erase(std::remove(buffer.begin(), buffer.end(), '\r'), buffer.end());
+
+	vector<CaseTreeNode*>	nodeStack(8, root);
+	std::stringstream		namesStream(buffer);
+	std::string				fileName;
+
+	while (std::getline(namesStream, fileName))
+	{
+		de::FilePath			groupPath		(fileName);
+		de::UniquePtr<Resource>	groupResource	(archive.getResource(groupPath.normalize().getPath()));
+		const int				groupBufferSize	(groupResource->getSize());
+		std::vector<char>		groupBuffer		(static_cast<size_t>(groupBufferSize));
+
+		groupResource->read(reinterpret_cast<deUint8*>(&groupBuffer[0]), groupBufferSize);
+		if (groupBuffer.empty())
+			throw Exception("Empty case list resource");
+
+		std::istringstream groupIn(std::string(groupBuffer.begin(), groupBuffer.end()));
+		parseSimpleCaseList(nodeStack, groupIn, reportDuplicates);
+	}
+}
+
+static CaseTreeNode* parseCaseList (std::istream& in, const tcu::Archive& archive, const char* path = DE_NULL)
 {
 	CaseTreeNode* const root = new CaseTreeNode("");
 	try
@@ -552,7 +579,31 @@ static CaseTreeNode* parseCaseList (std::istream& in)
 		if (in.peek() == '{')
 			parseCaseTrie(root, in);
 		else
-			parseCaseList(root, in, true);
+		{
+			// if we are reading cases from file determine if we are
+			// reading group file or plain list of cases; this is done by
+			// reading single line and checking if it ends with ".txt"
+			bool readGroupFile = false;
+			if (path)
+			{
+				// read the first line and make sure it doesn't contain '\r'
+				std::string line;
+				std::getline(in, line);
+				line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+
+				const std::string ending = ".txt";
+				readGroupFile = (line.length() > ending.length()) &&
+								std::equal(ending.rbegin(), ending.rend(), line.rbegin());
+
+				// move to the beginning of the file to parse first line too
+				in.seekg(0, in.beg);
+			}
+
+			if (readGroupFile)
+				parseGroupFile(root, in, archive, true);
+			else
+				parseCaseList(root, in, true);
+		}
 
 		{
 			const int curChr = in.get();
@@ -1004,16 +1055,17 @@ CaseListFilter::CaseListFilter (const de::cmdline::CommandLine& cmdLine, const t
 	{
 		std::istringstream str(cmdLine.getOption<opt::CaseList>());
 
-		m_caseTree = parseCaseList(str);
+		m_caseTree = parseCaseList(str, archive);
 	}
 	else if (cmdLine.hasOption<opt::CaseListFile>())
 	{
-		std::ifstream in(cmdLine.getOption<opt::CaseListFile>().c_str(), std::ios_base::binary);
+		std::string caseListFile = cmdLine.getOption<opt::CaseListFile>();
+		std::ifstream in(caseListFile.c_str(), std::ios_base::binary);
 
 		if (!in.is_open() || !in.good())
-			throw Exception("Failed to open case list file '" + cmdLine.getOption<opt::CaseListFile>() + "'");
+			throw Exception("Failed to open case list file '" + caseListFile + "'");
 
-		m_caseTree = parseCaseList(in);
+		m_caseTree = parseCaseList(in, archive, caseListFile.c_str());
 	}
 	else if (cmdLine.hasOption<opt::CaseListResource>())
 	{
@@ -1031,12 +1083,12 @@ CaseListFilter::CaseListFilter (const de::cmdline::CommandLine& cmdLine, const t
 		{
 			std::istringstream	in	(std::string(&buffer[0], (size_t)bufferSize));
 
-			m_caseTree = parseCaseList(in);
+			m_caseTree = parseCaseList(in, archive);
 		}
 	}
 	else if (cmdLine.getOption<opt::StdinCaseList>())
 	{
-		m_caseTree = parseCaseList(std::cin);
+		m_caseTree = parseCaseList(std::cin, archive);
 	}
 	else if (cmdLine.hasOption<opt::CasePath>())
 		m_casePaths = de::MovePtr<const CasePaths>(new CasePaths(cmdLine.getOption<opt::CasePath>()));

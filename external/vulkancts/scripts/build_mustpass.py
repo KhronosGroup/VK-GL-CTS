@@ -53,13 +53,14 @@ BUILD_CONFIG		= getBuildConfig(DEFAULT_BUILD_DIR, DEFAULT_TARGET, "Debug")
 
 VULKAN_MASTER_PKG	= Package(module = VULKAN_MODULE, configurations = [
 		  # Master
-		  Configuration(name		= "default",
-						filters		= [include("master.txt"),
-									   exclude("test-issues.txt"),
-									   exclude("excluded-tests.txt"),
-									   exclude("android-tests.txt")]),
-		  Configuration(name		= "fraction-mandatory-tests",
-						filters		= [include("fraction-mandatory-tests.txt")]),
+		  Configuration(name					= "default",
+						filters					= [include("master.txt"),
+												   exclude("test-issues.txt"),
+												   exclude("excluded-tests.txt"),
+												   exclude("android-tests.txt")],
+						splitToMultipleFiles	= True),
+		  Configuration(name					= "fraction-mandatory-tests",
+						filters					= [include("fraction-mandatory-tests.txt")]),
 	 ])
 
 MUSTPASS_LISTS		= [
