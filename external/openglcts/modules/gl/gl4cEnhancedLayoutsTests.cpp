@@ -178,9 +178,11 @@ const Type Type::uvec4   = Type::GetType(Type::Uint, 1, 4);
 std::vector<GLubyte> Type::GenerateData() const
 {
 	const GLuint alignment = GetActualAlignment(0, false);
+	const GLuint padding = alignment - GetTypeSize(m_basic_type) * m_n_rows;
+	const GLuint data_size = alignment * m_n_columns - padding;
 
 	std::vector<GLubyte> data;
-	data.resize(alignment * m_n_columns);
+	data.resize(data_size);
 
 	for (GLuint column = 0; column < m_n_columns; ++column)
 	{
@@ -23263,13 +23265,14 @@ void XFBOverrideQualifiersWithAPITest::getBufferDescriptors(glw::GLuint				  tes
 	const std::vector<GLubyte>& goku_data_pck = type.GenerateDataPacked();
 
 	const GLuint type_size	 = static_cast<GLuint>(vegeta_data.size());
+	const GLuint padded_type_size = type.GetBaseAlignment(false) * type.m_n_columns;
 	const GLuint type_size_pck = static_cast<GLuint>(vegeta_data_pck.size());
 
 	/* Uniform data */
-	uniform.m_initial_data.resize(3 * type_size);
+	uniform.m_initial_data.resize(3 * padded_type_size);
 	memcpy(&uniform.m_initial_data[0] + 0, &vegeta_data[0], type_size);
-	memcpy(&uniform.m_initial_data[0] + type_size, &trunks_data[0], type_size);
-	memcpy(&uniform.m_initial_data[0] + 2 * type_size, &goku_data[0], type_size);
+	memcpy(&uniform.m_initial_data[0] + padded_type_size, &trunks_data[0], type_size);
+	memcpy(&uniform.m_initial_data[0] + 2 * padded_type_size, &goku_data[0], type_size);
 
 	/* XFB data */
 	xfb.m_initial_data.resize(3 * type_size_pck);
@@ -24511,16 +24514,17 @@ void XFBGlobalBufferTest::getBufferDescriptors(glw::GLuint test_case_index, buff
 	const std::vector<GLubyte>& goten_data_pck  = type.GenerateDataPacked();
 
 	const GLuint type_size	 = static_cast<GLuint>(chichi_data.size());
+	const GLuint padded_type_size	= type.GetBaseAlignment(false) * type.m_n_columns;
 	const GLuint type_size_pck = static_cast<GLuint>(chichi_data_pck.size());
 
 	/* Uniform data */
-	uniform.m_initial_data.resize(6 * type_size);
+	uniform.m_initial_data.resize(6 * padded_type_size);
 	memcpy(&uniform.m_initial_data[0] + 0, &chichi_data[0], type_size);
-	memcpy(&uniform.m_initial_data[0] + type_size, &bulma_data[0], type_size);
-	memcpy(&uniform.m_initial_data[0] + 2 * type_size, &trunks_data[0], type_size);
-	memcpy(&uniform.m_initial_data[0] + 3 * type_size, &bra_data[0], type_size);
-	memcpy(&uniform.m_initial_data[0] + 4 * type_size, &gohan_data[0], type_size);
-	memcpy(&uniform.m_initial_data[0] + 5 * type_size, &goten_data[0], type_size);
+	memcpy(&uniform.m_initial_data[0] + padded_type_size, &bulma_data[0], type_size);
+	memcpy(&uniform.m_initial_data[0] + 2 * padded_type_size, &trunks_data[0], type_size);
+	memcpy(&uniform.m_initial_data[0] + 3 * padded_type_size, &bra_data[0], type_size);
+	memcpy(&uniform.m_initial_data[0] + 4 * padded_type_size, &gohan_data[0], type_size);
+	memcpy(&uniform.m_initial_data[0] + 5 * padded_type_size, &goten_data[0], type_size);
 
 	/* XFB data */
 	xfb_1.m_initial_data.resize(3 * type_size_pck);
@@ -27698,6 +27702,843 @@ void XFBCaptureUnsizedArrayTest::testInit()
 		m_test_cases.push_back(test_case);
 	}
 }
+
+/** Constructor
+ *
+ * @param context Test context
+ **/
+XFBExplicitLocationTest::XFBExplicitLocationTest(deqp::Context& context)
+	: BufferTestBase(context, "xfb_explicit_location", "Test verifies that explicit location on matrices and arrays does not impact xfb output")
+{
+	/* Nothing to be done here */
+}
+
+/** Execute drawArrays for single vertex
+ *
+ * @param test_case_index
+ *
+ * @return true
+ **/
+bool XFBExplicitLocationTest::executeDrawCall(bool /* tesEnabled */, GLuint test_case_index)
+{
+	const Functions& gl				= m_context.getRenderContext().getFunctions();
+	GLenum			 primitive_type = GL_PATCHES;
+	const testCase&  test_case		= m_test_cases[test_case_index];
+
+	if (Utils::Shader::VERTEX == test_case.m_stage)
+	{
+		primitive_type = GL_POINTS;
+	}
+
+	gl.disable(GL_RASTERIZER_DISCARD);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "Disable");
+
+	gl.beginTransformFeedback(GL_POINTS);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "BeginTransformFeedback");
+
+	gl.drawArrays(primitive_type, 0 /* first */, 2 /* count */);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "DrawArrays");
+
+	gl.endTransformFeedback();
+	GLU_EXPECT_NO_ERROR(gl.getError(), "EndTransformFeedback");
+
+	return true;
+}
+
+/** Get descriptors of buffers necessary for test
+ *
+ * @param test_case_index Index of test case
+ * @param out_descriptors Descriptors of buffers used by test
+ **/
+void XFBExplicitLocationTest::getBufferDescriptors(GLuint test_case_index, bufferDescriptor::Vector& out_descriptors)
+{
+	const testCase&	test_case = m_test_cases[test_case_index];
+	const Utils::Type& type		 = test_case.m_type;
+
+	/* Test needs single uniform and xfb */
+	out_descriptors.resize(2);
+
+	/* Get references */
+	bufferDescriptor& uniform	= out_descriptors[0];
+	bufferDescriptor& xfb		= out_descriptors[1];
+
+	/* Index */
+	uniform.m_index = 0;
+	xfb.m_index		= 0;
+
+	/* Target */
+	uniform.m_target = Utils::Buffer::Uniform;
+	xfb.m_target	 = Utils::Buffer::Transform_feedback;
+
+	/* Data */
+	const GLuint			rand_start   = Utils::s_rand;
+	std::vector<GLubyte>	uniform_data;
+
+	for (GLuint i = 0; i < std::max(test_case.m_array_size, 1u); i++)
+	{
+		const std::vector<GLubyte>& type_uniform_data = type.GenerateData();
+		/**
+		 * Rule 4 of Section 7.6.2.2:
+		 *
+		 * If the member is an array of scalars or vectors, the base alignment and array stride
+		 * are set to match the base alignment of a single array element, according to rules (1),
+		 * (2), and (3), and rounded up to the base alignment of a vec4.
+		 */
+		uniform_data.resize(Utils::align(uniform_data.size(), 16));
+		uniform_data.insert(uniform_data.end(), type_uniform_data.begin(), type_uniform_data.end());
+	}
+
+	Utils::s_rand = rand_start;
+	std::vector<GLubyte>	xfb_data;
+
+	for (GLuint i = 0; i < std::max(test_case.m_array_size, 1u); i++)
+	{
+		const std::vector<GLubyte>& type_xfb_data = type.GenerateDataPacked();
+		xfb_data.insert(xfb_data.end(), type_xfb_data.begin(), type_xfb_data.end());
+	}
+
+	const GLuint uni_type_size = static_cast<GLuint>(uniform_data.size());
+	const GLuint xfb_type_size = static_cast<GLuint>(xfb_data.size());
+	/*
+	 Note: If xfb varying output from vertex shader, the variable "goku" will only output once to transform feedback buffer,
+	 if xfb varying output from TES or GS, because the input primitive type in TES is defined as "layout(isolines, point_mode) in;",
+	 the primitive type is line which make the variable "goku" will output twice to transform feedback buffer, so for vertex shader
+	 only one valid data should be initialized in xfb.m_expected_data
+	 */
+	const GLuint xfb_data_size = (test_case.m_stage == Utils::Shader::VERTEX) ? xfb_type_size : xfb_type_size * 2;
+	/* Uniform data */
+	uniform.m_initial_data.resize(uni_type_size);
+	memcpy(&uniform.m_initial_data[0] + 0 * uni_type_size, &uniform_data[0], uni_type_size);
+
+	/* XFB data */
+	xfb.m_initial_data.resize(xfb_data_size, 0);
+	xfb.m_expected_data.resize(xfb_data_size);
+
+	if (test_case.m_stage == Utils::Shader::VERTEX)
+	{
+		memcpy(&xfb.m_expected_data[0] + 0 * xfb_type_size, &xfb_data[0], xfb_type_size);
+	}
+	else
+	{
+		memcpy(&xfb.m_expected_data[0] + 0 * xfb_type_size, &xfb_data[0], xfb_type_size);
+		memcpy(&xfb.m_expected_data[0] + 1 * xfb_type_size, &xfb_data[0], xfb_type_size);
+	}
+}
+
+/** Get body of main function for given shader stage
+ *
+ * @param test_case_index  Index of test case
+ * @param stage            Shader stage
+ * @param out_assignments  Set to empty
+ * @param out_calculations Set to empty
+ **/
+void XFBExplicitLocationTest::getShaderBody(GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
+								  std::string& out_calculations)
+{
+	const testCase& test_case = m_test_cases[test_case_index];
+
+	out_calculations = "";
+
+	static const GLchar* vs_tes_gs = "    goku = uni_goku;\n";
+
+	const GLchar* assignments = "";
+
+	if (test_case.m_stage == stage)
+	{
+		switch (stage)
+		{
+		case Utils::Shader::GEOMETRY:
+			assignments = vs_tes_gs;
+			break;
+		case Utils::Shader::TESS_EVAL:
+			assignments = vs_tes_gs;
+			break;
+		case Utils::Shader::VERTEX:
+			assignments = vs_tes_gs;
+			break;
+		default:
+			TCU_FAIL("Invalid enum");
+		}
+	}
+	else
+	{
+		switch (stage)
+		{
+		case Utils::Shader::FRAGMENT:
+			assignments = "";
+			break;
+		case Utils::Shader::GEOMETRY:
+		case Utils::Shader::TESS_CTRL:
+		case Utils::Shader::TESS_EVAL:
+		case Utils::Shader::VERTEX:
+			break;
+		default:
+			TCU_FAIL("Invalid enum");
+		}
+	}
+
+	out_assignments = assignments;
+
+	if (Utils::Shader::FRAGMENT == stage)
+	{
+		Utils::replaceAllTokens("TYPE", test_case.m_type.GetGLSLTypeName(), out_assignments);
+	}
+}
+
+/** Get interface of shader
+ *
+ * @param test_case_index  Index of test case
+ * @param stage            Shader stage
+ * @param out_interface    Set to ""
+ **/
+void XFBExplicitLocationTest::getShaderInterface(GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_interface)
+{
+	static const GLchar* vs_tes_gs = "layout (location = 0, xfb_offset = 0) FLAT out TYPE gokuARRAY;\n"
+									 "\n"
+									 "layout(std140, binding = 0) uniform Goku {\n"
+									 "    TYPE uni_gokuARRAY;\n"
+									 "};\n";
+
+	const testCase& test_case = m_test_cases[test_case_index];
+	const GLchar*   interface = "";
+	const GLchar*   flat	  = "";
+
+	if (test_case.m_stage == stage)
+	{
+		switch (stage)
+		{
+		case Utils::Shader::GEOMETRY:
+			interface = vs_tes_gs;
+			break;
+		case Utils::Shader::TESS_EVAL:
+			interface = vs_tes_gs;
+			break;
+		case Utils::Shader::VERTEX:
+			interface = vs_tes_gs;
+			break;
+		default:
+			TCU_FAIL("Invalid enum");
+		}
+	}
+	else
+	{
+		switch (stage)
+		{
+		case Utils::Shader::FRAGMENT:
+			interface = "";
+			break;
+		case Utils::Shader::GEOMETRY:
+		case Utils::Shader::TESS_CTRL:
+		case Utils::Shader::TESS_EVAL:
+		case Utils::Shader::VERTEX:
+			break;
+		default:
+			TCU_FAIL("Invalid enum");
+		}
+	}
+
+	out_interface = interface;
+
+	if (Utils::Type::Float != test_case.m_type.m_basic_type)
+	{
+		flat = "flat";
+	}
+
+	/* Array size */
+	if (0 == test_case.m_array_size)
+	{
+		Utils::replaceAllTokens("ARRAY", "", out_interface);
+	}
+	else
+	{
+		char buffer[16];
+		sprintf(buffer, "[%d]", test_case.m_array_size);
+
+		Utils::replaceAllTokens("ARRAY", buffer, out_interface);
+	}
+
+	Utils::replaceAllTokens("FLAT", flat, out_interface);
+	Utils::replaceAllTokens("TYPE", test_case.m_type.GetGLSLTypeName(), out_interface);
+}
+
+/** Get source code of shader
+ *
+ * @param test_case_index Index of test case
+ * @param stage           Shader stage
+ *
+ * @return Source
+ **/
+std::string XFBExplicitLocationTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
+{
+	std::string		source;
+	const testCase& test_case = m_test_cases[test_case_index];
+
+	switch (test_case.m_stage)
+	{
+	case Utils::Shader::VERTEX:
+		switch (stage)
+		{
+		case Utils::Shader::FRAGMENT:
+		case Utils::Shader::VERTEX:
+			source = BufferTestBase::getShaderSource(test_case_index, stage);
+			break;
+		default:
+			break;
+		}
+		break;
+
+	case Utils::Shader::TESS_EVAL:
+		switch (stage)
+		{
+		case Utils::Shader::FRAGMENT:
+		case Utils::Shader::TESS_CTRL:
+		case Utils::Shader::TESS_EVAL:
+		case Utils::Shader::VERTEX:
+			source = BufferTestBase::getShaderSource(test_case_index, stage);
+			break;
+		default:
+			break;
+		}
+		break;
+
+	case Utils::Shader::GEOMETRY:
+		source = BufferTestBase::getShaderSource(test_case_index, stage);
+		break;
+
+	default:
+		TCU_FAIL("Invalid enum");
+		break;
+	}
+
+	/* */
+	return source;
+}
+
+/** Get name of test case
+ *
+ * @param test_case_index Index of test case
+ *
+ * @return Name of tested stage
+ **/
+std::string XFBExplicitLocationTest::getTestCaseName(glw::GLuint test_case_index)
+{
+	std::stringstream stream;
+	const testCase&   test_case = m_test_cases[test_case_index];
+
+	stream << "Type: " << test_case.m_type.GetGLSLTypeName()
+		   << ", stage: " << Utils::Shader::GetStageName(test_case.m_stage);
+
+	return stream.str();
+}
+
+/** Returns number of test cases
+ *
+ * @return TEST_MAX
+ **/
+glw::GLuint XFBExplicitLocationTest::getTestCaseNumber()
+{
+	return static_cast<GLuint>(m_test_cases.size());
+}
+
+/** Prepare all test cases
+ *
+ **/
+void XFBExplicitLocationTest::testInit()
+{
+	const Functions& gl = m_context.getRenderContext().getFunctions();
+	GLint			 max_xfb_int;
+
+	gl.getIntegerv(GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS, &max_xfb_int);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+
+	const GLuint n_types = getTypesNumber();
+
+	for (GLuint i = 0; i < n_types; ++i)
+	{
+		const Utils::Type& type = getType(i);
+
+		for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+		{
+			if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::FRAGMENT == stage) ||
+				(Utils::Shader::TESS_CTRL == stage))
+			{
+				continue;
+			}
+
+			if (type.m_n_columns > 1)
+			{
+				testCase test_case = { (Utils::Shader::STAGES)stage, type, 0 };
+
+				m_test_cases.push_back(test_case);
+			}
+
+			for (GLuint array_size = 3; array_size > 1; array_size--)
+			{
+				if (type.GetNumComponents() * array_size <= GLuint(max_xfb_int))
+				{
+					testCase test_case = { (Utils::Shader::STAGES)stage, type, array_size };
+
+					m_test_cases.push_back(test_case);
+
+					break;
+				}
+			}
+		}
+	}
+}
+
+/** Constructor
+ *
+ * @param context Test context
+ **/
+XFBExplicitLocationStructTest::XFBExplicitLocationStructTest(deqp::Context& context)
+	: BufferTestBase(context, "xfb_struct_explicit_location", "Test verifies that explicit location on structs does not impact xfb output")
+{
+	/* Nothing to be done here */
+}
+
+/** Execute drawArrays for single vertex
+ *
+ * @param test_case_index
+ *
+ * @return true
+ **/
+bool XFBExplicitLocationStructTest::executeDrawCall(bool /* tesEnabled */, GLuint test_case_index)
+{
+	const Functions& gl				= m_context.getRenderContext().getFunctions();
+	GLenum			 primitive_type = GL_PATCHES;
+	const testCase&  test_case		= m_test_cases[test_case_index];
+
+	if (Utils::Shader::VERTEX == test_case.m_stage)
+	{
+		primitive_type = GL_POINTS;
+	}
+
+	gl.disable(GL_RASTERIZER_DISCARD);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "Disable");
+
+	gl.beginTransformFeedback(GL_POINTS);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "BeginTransformFeedback");
+
+	gl.drawArrays(primitive_type, 0 /* first */, 2 /* count */);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "DrawArrays");
+
+	gl.endTransformFeedback();
+	GLU_EXPECT_NO_ERROR(gl.getError(), "EndTransformFeedback");
+
+	return true;
+}
+
+/** Get descriptors of buffers necessary for test
+ *
+ * @param test_case_index Index of test case
+ * @param out_descriptors Descriptors of buffers used by test
+ **/
+void XFBExplicitLocationStructTest::getBufferDescriptors(GLuint test_case_index, bufferDescriptor::Vector& out_descriptors)
+{
+	const testCase&	test_case = m_test_cases[test_case_index];
+
+	/* Test needs single uniform and xfb */
+	out_descriptors.resize(2);
+
+	/* Get references */
+	bufferDescriptor& uniform	= out_descriptors[0];
+	bufferDescriptor& xfb		= out_descriptors[1];
+
+	/* Index */
+	uniform.m_index = 0;
+	xfb.m_index		= 0;
+
+	/* Target */
+	uniform.m_target = Utils::Buffer::Uniform;
+	xfb.m_target	 = Utils::Buffer::Transform_feedback;
+
+	/* Data */
+	const GLuint			rand_start   = Utils::s_rand;
+	std::vector<GLubyte>	uniform_data;
+	GLuint max_aligment = 1;
+
+	for (const testType& type : test_case.m_types)
+	{
+		GLuint base_aligment = type.m_type.GetBaseAlignment(false);
+		if (type.m_array_size > 0)
+		{
+			/**
+			 * Rule 4 of Section 7.6.2.2:
+			 *
+			 * If the member is an array of scalars or vectors, the base alignment and array stride
+			 * are set to match the base alignment of a single array element, according to rules (1),
+			 * (2), and (3), and rounded up to the base alignment of a vec4.
+			 */
+			base_aligment = Utils::align(base_aligment, Utils::Type::vec4.GetBaseAlignment(false));
+		}
+
+		max_aligment = std::max(base_aligment, max_aligment);
+
+		uniform_data.resize(Utils::align(uniform_data.size(), base_aligment), 0);
+
+		for (GLuint i = 0; i < std::max(type.m_array_size, 1u); i++)
+		{
+			const std::vector<GLubyte>& type_uniform_data = type.m_type.GenerateData();
+			uniform_data.insert(uniform_data.end(), type_uniform_data.begin(), type_uniform_data.end());
+
+			if (type.m_array_size > 0)
+			{
+				uniform_data.resize(Utils::align(uniform_data.size(), base_aligment), 0);
+			}
+		}
+	}
+
+	const GLuint struct_aligment = Utils::align(max_aligment, Utils::Type::vec4.GetBaseAlignment(false));
+
+	if (test_case.m_nested_struct)
+	{
+		uniform_data.resize(Utils::align(uniform_data.size(), struct_aligment), 0);
+
+		const GLuint old_size = uniform_data.size();
+		uniform_data.resize(2 * old_size);
+		std::copy_n(uniform_data.begin(), old_size, uniform_data.begin() + old_size);
+	}
+
+	uniform_data.resize(Utils::align(uniform_data.size(), struct_aligment), 0);
+
+	Utils::s_rand = rand_start;
+	std::vector<GLubyte>	xfb_data;
+
+	GLuint max_type_size = 1;
+	for (const testType& type : test_case.m_types)
+	{
+		const GLuint basic_type_size = Utils::Type::GetTypeSize(type.m_type.m_basic_type);
+		max_type_size = std::max(max_type_size, basic_type_size);
+
+		/* Align per current type's aligment requirements */
+		xfb_data.resize(Utils::align(xfb_data.size(), basic_type_size), 0);
+
+		for (GLuint i = 0; i < std::max(type.m_array_size, 1u); i++)
+		{
+			const std::vector<GLubyte>& type_xfb_data = type.m_type.GenerateDataPacked();
+			xfb_data.insert(xfb_data.end(), type_xfb_data.begin(), type_xfb_data.end());
+		}
+	}
+
+	if (test_case.m_nested_struct)
+	{
+		/* Struct has aligment requirement equal to largest requirement of its members */
+		xfb_data.resize(Utils::align(xfb_data.size(), max_type_size), 0);
+
+		const GLuint old_size = xfb_data.size();
+		xfb_data.resize(2 * old_size);
+		std::copy_n(xfb_data.begin(), old_size, xfb_data.begin() + old_size);
+	}
+
+	xfb_data.resize(Utils::align(xfb_data.size(), max_type_size), 0);
+
+	const GLuint uni_type_size = static_cast<GLuint>(uniform_data.size());
+	const GLuint xfb_type_size = static_cast<GLuint>(xfb_data.size());
+
+	/* Do not exceed the minimum value of MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS */
+	DE_ASSERT(xfb_type_size <= 64 * sizeof(GLuint));
+
+	/*
+	 Note: If xfb varying output from vertex shader, the variable "goku" will only output once to transform feedback buffer,
+	 if xfb varying output from TES or GS, because the input primitive type in TES is defined as "layout(isolines, point_mode) in;",
+	 the primitive type is line which make the variable "goku" will output twice to transform feedback buffer, so for vertex shader
+	 only one valid data should be initialized in xfb.m_expected_data
+	 */
+	const GLuint xfb_data_size = (test_case.m_stage == Utils::Shader::VERTEX) ? xfb_type_size : xfb_type_size * 2;
+	/* Uniform data */
+	uniform.m_initial_data.resize(uni_type_size);
+	memcpy(&uniform.m_initial_data[0] + 0 * uni_type_size, &uniform_data[0], uni_type_size);
+
+	/* XFB data */
+	xfb.m_initial_data.resize(xfb_data_size, 0);
+	xfb.m_expected_data.resize(xfb_data_size);
+
+	if (test_case.m_stage == Utils::Shader::VERTEX)
+	{
+		memcpy(&xfb.m_expected_data[0] + 0 * xfb_type_size, &xfb_data[0], xfb_type_size);
+	}
+	else
+	{
+		memcpy(&xfb.m_expected_data[0] + 0 * xfb_type_size, &xfb_data[0], xfb_type_size);
+		memcpy(&xfb.m_expected_data[0] + 1 * xfb_type_size, &xfb_data[0], xfb_type_size);
+	}
+}
+
+/** Get body of main function for given shader stage
+ *
+ * @param test_case_index  Index of test case
+ * @param stage            Shader stage
+ * @param out_assignments  Set to empty
+ * @param out_calculations Set to empty
+ **/
+void XFBExplicitLocationStructTest::getShaderBody(GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
+								  std::string& out_calculations)
+{
+	const testCase& test_case = m_test_cases[test_case_index];
+
+	out_calculations = "";
+
+	static const GLchar* vs_tes_gs = "    goku = uni_goku;\n";
+	static const GLchar* vs_tes_gs_nested = "    goku.inner_struct_a = uni_goku;\n"
+											"    goku.inner_struct_b = uni_goku;\n";
+
+	const GLchar* assignments = "";
+
+	if (test_case.m_stage == stage)
+	{
+		switch (stage)
+		{
+		case Utils::Shader::GEOMETRY:
+		case Utils::Shader::TESS_EVAL:
+		case Utils::Shader::VERTEX:
+			if (test_case.m_nested_struct)
+			{
+				assignments = vs_tes_gs_nested;
+			}
+			else
+			{
+				assignments = vs_tes_gs;
+			}
+			break;
+		default:
+			TCU_FAIL("Invalid enum");
+		}
+	}
+	else
+	{
+		switch (stage)
+		{
+		case Utils::Shader::FRAGMENT:
+			assignments = "";
+			break;
+		case Utils::Shader::GEOMETRY:
+		case Utils::Shader::TESS_CTRL:
+		case Utils::Shader::TESS_EVAL:
+		case Utils::Shader::VERTEX:
+			break;
+		default:
+			TCU_FAIL("Invalid enum");
+		}
+	}
+
+	out_assignments = assignments;
+}
+
+/** Get interface of shader
+ *
+ * @param test_case_index  Index of test case
+ * @param stage            Shader stage
+ * @param out_interface    Set to ""
+ **/
+void XFBExplicitLocationStructTest::getShaderInterface(GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_interface)
+{
+	static const GLchar* vs_tes_gs = "struct TestStruct {\n"
+									 "STRUCT_MEMBERS"
+									 "};\n"
+									 "layout (location = 0, xfb_offset = 0) flat out TestStruct goku;\n"
+									 "\n"
+									 "layout(std140, binding = 0) uniform Goku {\n"
+									 "    TestStruct uni_goku;\n"
+									 "};\n";
+
+	static const GLchar* vs_tes_gs_nested = "struct TestStruct {\n"
+											"STRUCT_MEMBERS"
+											"};\n"
+											"struct OuterStruct {\n"
+											"    TestStruct inner_struct_a;\n"
+											"    TestStruct inner_struct_b;\n"
+											"};\n"
+											"layout (location = 0, xfb_offset = 0) flat out OuterStruct goku;\n"
+											"\n"
+											"layout(std140, binding = 0) uniform Goku {\n"
+											"    TestStruct uni_goku;\n"
+											"};\n";
+
+	const testCase& test_case = m_test_cases[test_case_index];
+	const GLchar*   interface = "";
+
+	if (test_case.m_stage == stage)
+	{
+		switch (stage)
+		{
+		case Utils::Shader::GEOMETRY:
+		case Utils::Shader::TESS_EVAL:
+		case Utils::Shader::VERTEX:
+			if (test_case.m_nested_struct)
+			{
+				interface = vs_tes_gs_nested;
+			}
+			else
+			{
+				interface = vs_tes_gs;
+			}
+			break;
+		default:
+			TCU_FAIL("Invalid enum");
+		}
+	}
+	else
+	{
+		switch (stage)
+		{
+		case Utils::Shader::FRAGMENT:
+			interface = "";
+			break;
+		case Utils::Shader::GEOMETRY:
+		case Utils::Shader::TESS_CTRL:
+		case Utils::Shader::TESS_EVAL:
+		case Utils::Shader::VERTEX:
+			break;
+		default:
+			TCU_FAIL("Invalid enum");
+		}
+	}
+
+	out_interface = interface;
+
+	std::stringstream stream;
+
+	char member_name = 'a';
+	for (const testType& type : test_case.m_types)
+	{
+		stream << "   " << type.m_type.GetGLSLTypeName() << " " << member_name++;
+		if (type.m_array_size > 0)
+		{
+			stream << "[" << type.m_array_size << "]";
+		}
+		stream << ";\n";
+	}
+
+	Utils::replaceAllTokens("STRUCT_MEMBERS", stream.str().c_str(), out_interface);
+}
+
+/** Get source code of shader
+ *
+ * @param test_case_index Index of test case
+ * @param stage           Shader stage
+ *
+ * @return Source
+ **/
+std::string XFBExplicitLocationStructTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
+{
+	std::string		source;
+	const testCase& test_case = m_test_cases[test_case_index];
+
+	switch (test_case.m_stage)
+	{
+	case Utils::Shader::VERTEX:
+		switch (stage)
+		{
+		case Utils::Shader::FRAGMENT:
+		case Utils::Shader::VERTEX:
+			source = BufferTestBase::getShaderSource(test_case_index, stage);
+			break;
+		default:
+			break;
+		}
+		break;
+
+	case Utils::Shader::TESS_EVAL:
+		switch (stage)
+		{
+		case Utils::Shader::FRAGMENT:
+		case Utils::Shader::TESS_CTRL:
+		case Utils::Shader::TESS_EVAL:
+		case Utils::Shader::VERTEX:
+			source = BufferTestBase::getShaderSource(test_case_index, stage);
+			break;
+		default:
+			break;
+		}
+		break;
+
+	case Utils::Shader::GEOMETRY:
+		source = BufferTestBase::getShaderSource(test_case_index, stage);
+		break;
+
+	default:
+		TCU_FAIL("Invalid enum");
+		break;
+	}
+
+	/* */
+	return source;
+}
+
+/** Get name of test case
+ *
+ * @param test_case_index Index of test case
+ *
+ * @return Name of tested stage
+ **/
+std::string XFBExplicitLocationStructTest::getTestCaseName(glw::GLuint test_case_index)
+{
+	std::stringstream stream;
+	const testCase&   test_case = m_test_cases[test_case_index];
+
+	stream << "Struct: { ";
+
+	for (const testType& type : test_case.m_types)
+	{
+		stream << type.m_type.GetGLSLTypeName() << "@" << type.m_array_size << ", ";
+	}
+
+	stream << "}, stage: " << Utils::Shader::GetStageName(test_case.m_stage);
+
+	return stream.str();
+}
+
+/** Returns number of test cases
+ *
+ * @return TEST_MAX
+ **/
+glw::GLuint XFBExplicitLocationStructTest::getTestCaseNumber()
+{
+	return static_cast<GLuint>(m_test_cases.size());
+}
+
+/** Prepare all test cases
+ *
+ **/
+void XFBExplicitLocationStructTest::testInit()
+{
+	for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+	{
+		if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::FRAGMENT == stage) ||
+			(Utils::Shader::TESS_CTRL == stage))
+		{
+			continue;
+		}
+
+		const GLuint n_types = getTypesNumber();
+
+		for (GLuint i = 0; i < n_types; ++i)
+		{
+			const Utils::Type& type = getType(i);
+
+			m_test_cases.push_back(testCase{(Utils::Shader::STAGES) stage, { {Utils::Type::_float, 0}, {type, 0} }, false });
+		}
+
+		for (bool is_nested_struct : {false, true})
+		{
+			m_test_cases.push_back(testCase{(Utils::Shader::STAGES) stage, { {Utils::Type::_double, 0}, {Utils::Type::dvec2, 0}, {Utils::Type::dmat3, 0} }, is_nested_struct });
+			m_test_cases.push_back(testCase{(Utils::Shader::STAGES) stage, { {Utils::Type::_double, 0}, {Utils::Type::vec3, 0} }, is_nested_struct });
+			m_test_cases.push_back(testCase{(Utils::Shader::STAGES) stage, { {Utils::Type::dvec3, 0}, {Utils::Type::mat4x3, 0} }, is_nested_struct });
+			m_test_cases.push_back(testCase{(Utils::Shader::STAGES) stage, { {Utils::Type::_float, 0}, {Utils::Type::dvec3, 0}, {Utils::Type::_float, 0}, {Utils::Type::_double, 0} }, is_nested_struct });
+			m_test_cases.push_back(testCase{(Utils::Shader::STAGES) stage, { {Utils::Type::vec2, 0}, {Utils::Type::dvec3, 0}, {Utils::Type::_float, 0}, {Utils::Type::_double, 0} }, is_nested_struct });
+			m_test_cases.push_back(testCase{(Utils::Shader::STAGES) stage, { {Utils::Type::_double, 0}, {Utils::Type::_float, 0}, {Utils::Type::dvec2, 0}, {Utils::Type::vec3, 0} }, is_nested_struct });
+			m_test_cases.push_back(testCase{(Utils::Shader::STAGES) stage, { {Utils::Type::dmat3x4, 0}, {Utils::Type::_double, 0}, {Utils::Type::_float, 0}, {Utils::Type::dvec2, 0} }, is_nested_struct });
+
+			m_test_cases.push_back(testCase{(Utils::Shader::STAGES) stage, { {Utils::Type::_float, 3}, {Utils::Type::dvec3, 0}, {Utils::Type::_double, 2} }, is_nested_struct });
+			m_test_cases.push_back(testCase{(Utils::Shader::STAGES) stage, { {Utils::Type::_int, 1}, {Utils::Type::_double, 1}, {Utils::Type::_float, 1}, {Utils::Type::dmat2x4, 1} }, is_nested_struct });
+			m_test_cases.push_back(testCase{(Utils::Shader::STAGES) stage, { {Utils::Type::_int, 5}, {Utils::Type::dvec3, 2}, {Utils::Type::uvec3, 0}, {Utils::Type::_double, 1} }, is_nested_struct });
+			m_test_cases.push_back(testCase{(Utils::Shader::STAGES) stage, { {Utils::Type::mat2x3, 3}, {Utils::Type::uvec4, 1}, {Utils::Type::dvec4, 0} }, is_nested_struct });
+		}
+
+		m_test_cases.push_back(testCase{(Utils::Shader::STAGES) stage, { {Utils::Type::dmat2x3, 2}, {Utils::Type::mat2x3, 2}, {Utils::Type::dvec2, 0} }, false });
+	}
+}
 } /* EnhancedLayouts namespace */
 
 /** Constructor.
@@ -27776,6 +28617,8 @@ void EnhancedLayoutsTests::init(void)
 	addChild(new EnhancedLayouts::XFBOverrideQualifiersWithAPITest(m_context));
 	addChild(new EnhancedLayouts::XFBVertexStreamsTest(m_context));
 	addChild(new EnhancedLayouts::XFBGlobalBufferTest(m_context));
+	addChild(new EnhancedLayouts::XFBExplicitLocationTest(m_context));
+	addChild(new EnhancedLayouts::XFBExplicitLocationStructTest(m_context));
 	addChild(new EnhancedLayouts::FragmentDataLocationAPITest(m_context));
 	addChild(new EnhancedLayouts::VaryingLocationLimitTest(m_context));
 	addChild(new EnhancedLayouts::VaryingComponentsTest(m_context));
