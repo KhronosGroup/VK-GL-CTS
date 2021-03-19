@@ -8050,6 +8050,8 @@ KHR-GL44.enhanced_layouts.xfb_block_stride
 KHR-GL44.enhanced_layouts.xfb_override_qualifiers_with_api
 KHR-GL44.enhanced_layouts.xfb_vertex_streams
 KHR-GL44.enhanced_layouts.xfb_global_buffer
+KHR-GL44.enhanced_layouts.xfb_explicit_location
+KHR-GL44.enhanced_layouts.xfb_struct_explicit_location
 KHR-GL44.enhanced_layouts.fragment_data_location_api
 KHR-GL44.enhanced_layouts.varying_location_limit
 KHR-GL44.enhanced_layouts.varying_components
