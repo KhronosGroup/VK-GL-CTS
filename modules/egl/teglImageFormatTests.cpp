@@ -130,6 +130,7 @@ struct TestSpec
 	enum ApiContext
 	{
 		API_GLES2 = 0,
+		API_GLES3,
 		//API_VG
 		//API_GLES1
 
@@ -169,56 +170,65 @@ ImageApi::ImageApi (const Library& egl, int contextId, EGLDisplay display, EGLSu
 {
 }
 
-class GLES2ImageApi : public ImageApi, private glu::CallLogWrapper
+class GLESImageApi : public ImageApi, private glu::CallLogWrapper
 {
 public:
-	class GLES2Action : public Action
+	class GLESAction : public Action
 	{
 	public:
 		bool				invoke					(ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const;
-		virtual bool		invokeGLES2				(GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const = 0;
+		virtual bool		invokeGLES				(GLESImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const = 0;
 	};
 
-	class Create : public GLES2Action
+	class Create : public GLESAction
 	{
 	public:
-								Create					(MovePtr<ImageSource> imgSource) : m_imgSource(imgSource) {}
+								Create					(MovePtr<ImageSource> imgSource, deUint32 numLayers = 1u) : m_imgSource(imgSource), m_numLayers(numLayers) {}
 		string					getRequiredExtension	(void) const { return m_imgSource->getRequiredExtension(); }
-		bool					invokeGLES2				(GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const;
+		bool					invokeGLES				(GLESImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const;
+		deUint32				getNumLayers			(void) const { return m_numLayers; }
 		glw::GLenum				getEffectiveFormat		(void) const { return m_imgSource->getEffectiveFormat(); }
 
 	private:
 		UniquePtr<ImageSource>	m_imgSource;
+		deUint32				m_numLayers;
 	};
 
-	class Render : public GLES2Action
+	class Render : public GLESAction
 	{
 	public:
 		virtual string			getRequiredExtension	(void) const { return "GL_OES_EGL_image"; }
 	};
 
-	class RenderTexture2D				: public Render { public: bool invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const; };
-	class RenderTextureCubemap			: public Render { public: bool invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const; };
-	class RenderReadPixelsRenderbuffer	: public Render { public: bool invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const; };
-	class RenderDepthbuffer				: public Render { public: bool invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const; };
-	class RenderStencilbuffer			: public Render { public: bool invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const; };
-	class RenderTryAll					: public Render { public: bool invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const; };
+	class RenderTexture2D				: public Render { public: bool invokeGLES (GLESImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const override; };
+	class RenderTextureCubemap			: public Render { public: bool invokeGLES (GLESImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const override; };
+	class RenderReadPixelsRenderbuffer	: public Render { public: bool invokeGLES (GLESImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const override; };
+	class RenderDepthbuffer				: public Render { public: bool invokeGLES (GLESImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const override; };
+	class RenderStencilbuffer			: public Render { public: bool invokeGLES (GLESImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const override; };
+	class RenderTryAll					: public Render { public: bool invokeGLES (GLESImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const override; };
+
+	class RenderTexture2DArray : public Render
+	{
+		public:
+			bool	invokeGLES				(GLESImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const override;
+			string	getRequiredExtension	(void) const override { return "GL_EXT_EGL_image_array"; }
+	};
 
 	class RenderExternalTexture			: public Render
 	{
 		public:
-			bool	invokeGLES2				(GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const override;
+			bool	invokeGLES				(GLESImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const override;
 			string	getRequiredExtension	(void) const override { return "GL_OES_EGL_image_external"; }
 	};
 
 	class RenderExternalTextureSamplerArray	: public Render
 	{
 		public:
-			bool	invokeGLES2				(GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const override;
+			bool	invokeGLES				(GLESImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const override;
 			string	getRequiredExtension	(void) const override { return "GL_OES_EGL_image_external"; }
 	};
 
-	class Modify : public GLES2Action
+	class Modify : public GLESAction
 	{
 	public:
 		string				getRequiredExtension	(void) const { return "GL_OES_EGL_image"; }
@@ -228,7 +238,7 @@ public:
 	{
 	public:
 							ModifyTexSubImage		(GLenum format, GLenum type) : m_format(format), m_type(type) {}
-		bool				invokeGLES2				(GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const;
+		bool				invokeGLES				(GLESImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const;
 		GLenum				getFormat				(void) const { return m_format; }
 		GLenum				getType					(void) const { return m_type; }
 
@@ -240,10 +250,10 @@ public:
 	class ModifyRenderbuffer : public Modify
 	{
 	public:
-		bool				invokeGLES2				(GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const;
+		bool				invokeGLES				(GLESImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const;
 
 	protected:
-		virtual void		initializeRbo			(GLES2ImageApi& api, GLuint rbo, tcu::Texture2D& ref) const = 0;
+		virtual void		initializeRbo			(GLESImageApi& api, GLuint rbo, tcu::Texture2D& ref) const = 0;
 	};
 
 	class ModifyRenderbufferClearColor : public ModifyRenderbuffer
@@ -252,7 +262,7 @@ public:
 					ModifyRenderbufferClearColor	(tcu::Vec4 color) : m_color(color) {}
 
 	protected:
-		void		initializeRbo					(GLES2ImageApi& api, GLuint rbo, tcu::Texture2D& ref) const;
+		void		initializeRbo					(GLESImageApi& api, GLuint rbo, tcu::Texture2D& ref) const;
 
 		tcu::Vec4	m_color;
 	};
@@ -263,7 +273,7 @@ public:
 					ModifyRenderbufferClearDepth	(GLfloat depth) : m_depth(depth) {}
 
 	protected:
-		void		initializeRbo					(GLES2ImageApi& api, GLuint rbo, tcu::Texture2D& ref) const;
+		void		initializeRbo					(GLESImageApi& api, GLuint rbo, tcu::Texture2D& ref) const;
 
 		GLfloat		m_depth;
 	};
@@ -274,13 +284,13 @@ public:
 					ModifyRenderbufferClearStencil	(GLint stencil) : m_stencil(stencil) {}
 
 	protected:
-		void		initializeRbo					(GLES2ImageApi& api, GLuint rbo, tcu::Texture2D& ref) const;
+		void		initializeRbo					(GLESImageApi& api, GLuint rbo, tcu::Texture2D& ref) const;
 
 		GLint		m_stencil;
 	};
 
-					GLES2ImageApi					(const Library& egl, const glw::Functions& gl, int contextId, tcu::TestLog& log, EGLDisplay display, EGLSurface surface, EGLConfig config);
-					~GLES2ImageApi					(void);
+					GLESImageApi					(const Library& egl, const glw::Functions& gl, int contextId, tcu::TestLog& log, EGLDisplay display, EGLSurface surface, EGLConfig config, EGLint apiVersion);
+					~GLESImageApi					(void);
 
 private:
 	EGLContext					m_context;
@@ -289,7 +299,7 @@ private:
 	MovePtr<UniqueImage>		createImage			(const ImageSource& source, const ClientBuffer& buffer) const;
 };
 
-GLES2ImageApi::GLES2ImageApi (const Library& egl, const glw::Functions& gl, int contextId, tcu::TestLog& log, EGLDisplay display, EGLSurface surface, EGLConfig config)
+GLESImageApi::GLESImageApi (const Library& egl, const glw::Functions& gl, int contextId, tcu::TestLog& log, EGLDisplay display, EGLSurface surface, EGLConfig config, EGLint apiVersion)
 	: ImageApi				(egl, contextId, display, surface)
 	, glu::CallLogWrapper	(gl, log)
 	, m_context				(DE_NULL)
@@ -297,37 +307,36 @@ GLES2ImageApi::GLES2ImageApi (const Library& egl, const glw::Functions& gl, int 
 {
 	const EGLint attriblist[] =
 	{
-		EGL_CONTEXT_CLIENT_VERSION, 2,
+		EGL_CONTEXT_CLIENT_VERSION, apiVersion,
 		EGL_NONE
 	};
 
 	EGLint configId = -1;
 	EGLU_CHECK_CALL(m_egl, getConfigAttrib(m_display, config, EGL_CONFIG_ID, &configId));
-	getLog() << tcu::TestLog::Message << "Creating gles2 context with config id: " << configId << " context: " << m_contextId << tcu::TestLog::EndMessage;
+	getLog() << tcu::TestLog::Message << "Creating gles" << apiVersion << " context with config id: " << configId << " context: " << m_contextId << tcu::TestLog::EndMessage;
 	egl.bindAPI(EGL_OPENGL_ES_API);
 	m_context = m_egl.createContext(m_display, config, EGL_NO_CONTEXT, attriblist);
-	EGLU_CHECK_MSG(m_egl, "Failed to create GLES2 context");
+	EGLU_CHECK_MSG(m_egl, "Failed to create GLES context");
 
 	egl.makeCurrent(display, m_surface, m_surface, m_context);
 	EGLU_CHECK_MSG(m_egl, "Failed to make context current");
 }
 
-GLES2ImageApi::~GLES2ImageApi (void)
+GLESImageApi::~GLESImageApi (void)
 {
 	m_egl.makeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 	m_egl.destroyContext(m_display, m_context);
 }
 
-bool GLES2ImageApi::GLES2Action::invoke (ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const
+bool GLESImageApi::GLESAction::invoke (ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const
 {
-	GLES2ImageApi& gles2Api = dynamic_cast<GLES2ImageApi&>(api);
+	GLESImageApi& glesApi = dynamic_cast<GLESImageApi&>(api);
 
-	gles2Api.m_egl.makeCurrent(gles2Api.m_display, gles2Api.m_surface, gles2Api.m_surface, gles2Api.m_context);
-	return invokeGLES2(gles2Api, image, ref);
+	glesApi.m_egl.makeCurrent(glesApi.m_display, glesApi.m_surface, glesApi.m_surface, glesApi.m_context);
+	return invokeGLES(glesApi, image, ref);
 }
 
-
-bool GLES2ImageApi::Create::invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const
+bool GLESImageApi::Create::invokeGLES (GLESImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const
 {
 	de::UniquePtr<ClientBuffer>	buffer	(m_imgSource->createBuffer(api.m_egl, api.m_gl, &ref));
 
@@ -337,7 +346,7 @@ bool GLES2ImageApi::Create::invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage
 	return true;
 }
 
-MovePtr<UniqueImage> GLES2ImageApi::createImage (const ImageSource& source, const ClientBuffer& buffer) const
+MovePtr<UniqueImage> GLESImageApi::createImage (const ImageSource& source, const ClientBuffer& buffer) const
 {
 	const EGLImageKHR image = source.createImage(m_egl, m_display, m_context, buffer.get());
 	return MovePtr<UniqueImage>(new UniqueImage(m_egl, m_display, image));
@@ -365,6 +374,20 @@ static void imageTargetExternalTexture (const Library& egl, const glw::Functions
 
 		if (error == GL_INVALID_OPERATION)
 			TCU_THROW(NotSupportedError, "Creating external texture from EGLImage type not supported");
+
+		GLU_EXPECT_NO_ERROR(error, "glEGLImageTargetTexture2DOES()");
+		EGLU_CHECK_MSG(egl, "glEGLImageTargetTexture2DOES()");
+	}
+}
+
+static void imageTargetTexture2DArray (const Library& egl, const glw::Functions& gl, GLeglImageOES img)
+{
+	gl.eglImageTargetTexture2DOES(GL_TEXTURE_2D_ARRAY, img);
+	{
+		const GLenum error = gl.getError();
+
+		if (error == GL_INVALID_OPERATION)
+			TCU_THROW(NotSupportedError, "Creating texture2D array from EGLImage type not supported");
 
 		GLU_EXPECT_NO_ERROR(error, "glEGLImageTargetTexture2DOES()");
 		EGLU_CHECK_MSG(egl, "glEGLImageTargetTexture2DOES()");
@@ -404,7 +427,7 @@ static const float squareTriangleCoords[] =
 	-1.0, -1.0
 };
 
-bool GLES2ImageApi::RenderTexture2D::invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
+bool GLESImageApi::RenderTexture2D::invokeGLES (GLESImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
 {
 	const glw::Functions&	gl		= api.m_gl;
 	tcu::TestLog&			log		= api.getLog();
@@ -412,9 +435,9 @@ bool GLES2ImageApi::RenderTexture2D::invokeGLES2 (GLES2ImageApi& api, MovePtr<Un
 
 	// Branch only taken in TryAll case
 	if (reference.getFormat().order == tcu::TextureFormat::DS || reference.getFormat().order == tcu::TextureFormat::D)
-		throw IllegalRendererException(); // Skip, GLES2 does not support sampling depth textures
+		throw IllegalRendererException(); // Skip, GLES does not support sampling depth textures
 	if (reference.getFormat().order == tcu::TextureFormat::S)
-		throw IllegalRendererException(); // Skip, GLES2 does not support sampling stencil textures
+		throw IllegalRendererException(); // Skip, GLES does not support sampling stencil textures
 
 	gl.clearColor(0.0, 0.0, 0.0, 0.0);
 	gl.viewport(0, 0, reference.getWidth(), reference.getHeight());
@@ -481,7 +504,113 @@ bool GLES2ImageApi::RenderTexture2D::invokeGLES2 (GLES2ImageApi& api, MovePtr<Un
 	return match;
 }
 
-bool GLES2ImageApi::RenderExternalTexture::invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
+// Renders using a single layer from a texture array.
+bool GLESImageApi::RenderTexture2DArray::invokeGLES (GLESImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
+{
+	const glw::Functions&	gl		= api.m_gl;
+	tcu::TestLog&			log		= api.getLog();
+	Texture					srcTex	(gl);
+
+	gl.clearColor(0.0, 0.0, 0.0, 0.0);
+	gl.viewport(0, 0, reference.getWidth(), reference.getHeight());
+	gl.clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+	gl.disable(GL_DEPTH_TEST);
+
+	log << tcu::TestLog::Message << "Rendering EGLImage as GL_TEXTURE_2D_ARRAY in context: " << api.m_contextId << tcu::TestLog::EndMessage;
+	TCU_CHECK(**img != EGL_NO_IMAGE_KHR);
+
+	GLU_CHECK_GLW_CALL(gl, bindTexture(GL_TEXTURE_2D_ARRAY, *srcTex));
+	imageTargetTexture2DArray(api.m_egl, gl, **img);
+
+	glu::TransferFormat transferFormat = glu::getTransferFormat(reference.getFormat());
+	// Initializes layer 1.
+	GLU_CHECK_GLW_CALL(gl, texSubImage3D(GL_TEXTURE_2D_ARRAY,
+			0,										// Mipmap level
+            0,										// X offset
+			0,										// Y offset
+			1,										// Z offset (layer)
+			reference.getWidth(),					// Width
+			reference.getHeight(),					// Height
+			1u,										// Depth
+			transferFormat.format,					// Format
+			transferFormat.dataType,				// Type
+			reference.getLevel(0).getDataPtr()));	// Pixel data
+
+
+	GLU_CHECK_GLW_CALL(gl, texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+	GLU_CHECK_GLW_CALL(gl, texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+	GLU_CHECK_GLW_CALL(gl, texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+	GLU_CHECK_GLW_CALL(gl, texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+
+	const char* const vertexShader =
+	"#version 320 es\n"
+	"precision highp int;\n"
+	"precision highp float;\n"
+	"layout(location = 0) in vec2 pos_in;\n"
+	"layout(location = 0) out vec2 texcoord_out;\n"
+	"void main()\n"
+	"{\n"
+	"    gl_Position = vec4(pos_in, -0.1, 1.0);\n"
+	"    texcoord_out = vec2((pos_in.x + 1.0) * 0.5, (pos_in.y + 1.0) * 0.5);\n"
+	"}\n";
+
+	const char* const fragmentShader =
+	"#version 320 es\n"
+	"precision highp int;\n"
+	"precision highp float;\n"
+	"layout(location = 0) in vec2 texcoords_in;\n"
+	"layout(location = 0) out vec4 color_out;\n"
+	"uniform layout(binding=0) highp sampler2DArray tex_sampler;\n"
+	"void main()\n"
+	"{\n"
+	// Samples layer 1.
+	"    color_out = texture(tex_sampler, vec3(texcoords_in, 1));\n"
+	"}\n";
+
+	Program program(gl, vertexShader, fragmentShader);
+
+	if (!program.isOk())
+	{
+		log << tcu::TestLog::Message << "Shader build failed.\n"
+			<< "Vertex: " << program.getShaderInfo(glu::SHADERTYPE_VERTEX).infoLog << "\n"
+			<< vertexShader << "\n"
+			<< "Fragment: " << program.getShaderInfo(glu::SHADERTYPE_FRAGMENT).infoLog << "\n"
+			<< fragmentShader << "\n"
+			<< "Program: " << program.getProgramInfo().infoLog << tcu::TestLog::EndMessage;
+	}
+
+	TCU_CHECK(program.isOk());
+
+	GLuint glProgram = program.getProgram();
+	GLU_CHECK_GLW_CALL(gl, useProgram(glProgram));
+
+	GLuint coordLoc = gl.getAttribLocation(glProgram, "pos_in");
+	TCU_CHECK_MSG((int)coordLoc != -1, "Couldn't find attribute pos_in");
+
+	GLuint samplerLoc = gl.getUniformLocation(glProgram, "tex_sampler");
+	TCU_CHECK_MSG((int)samplerLoc != (int)-1, "Couldn't find uniform tex_sampler");
+
+	GLU_CHECK_GLW_CALL(gl, bindTexture(GL_TEXTURE_2D_ARRAY, *srcTex));
+	GLU_CHECK_GLW_CALL(gl, uniform1i(samplerLoc, 0));
+	GLU_CHECK_GLW_CALL(gl, enableVertexAttribArray(coordLoc));
+	GLU_CHECK_GLW_CALL(gl, vertexAttribPointer(coordLoc, 2, GL_FLOAT, GL_FALSE, 0, squareTriangleCoords));
+
+	GLU_CHECK_GLW_CALL(gl, drawArrays(GL_TRIANGLES, 0, 6));
+	GLU_CHECK_GLW_CALL(gl, disableVertexAttribArray(coordLoc));
+
+	tcu::Surface refSurface	(reference.getWidth(), reference.getHeight());
+	tcu::Surface screen		(reference.getWidth(), reference.getHeight());
+	GLU_CHECK_GLW_CALL(gl, readPixels(0, 0, screen.getWidth(), screen.getHeight(), GL_RGBA, GL_UNSIGNED_BYTE, screen.getAccess().getDataPtr()));
+
+	tcu::copy(refSurface.getAccess(), reference.getLevel(0));
+
+	float	threshold	= 0.05f;
+	bool	match		= tcu::fuzzyCompare(log, "ComparisonResult", "Image comparison result", refSurface, screen, threshold, tcu::COMPARE_LOG_RESULT);
+
+	return match;
+}
+
+bool GLESImageApi::RenderExternalTexture::invokeGLES (GLESImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
 {
 	const glw::Functions&	gl		= api.m_gl;
 	tcu::TestLog&			log		= api.getLog();
@@ -559,7 +688,7 @@ bool GLES2ImageApi::RenderExternalTexture::invokeGLES2 (GLES2ImageApi& api, Move
 	return match;
 }
 
-bool GLES2ImageApi::RenderExternalTextureSamplerArray::invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
+bool GLESImageApi::RenderExternalTextureSamplerArray::invokeGLES (GLESImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
 {
 	const glw::Functions&	gl		= api.m_gl;
 	tcu::TestLog&			log		= api.getLog();
@@ -662,7 +791,7 @@ bool GLES2ImageApi::RenderExternalTextureSamplerArray::invokeGLES2 (GLES2ImageAp
 	return match;
 }
 
-bool GLES2ImageApi::RenderDepthbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
+bool GLESImageApi::RenderDepthbuffer::invokeGLES (GLESImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
 {
 	const glw::Functions&	gl					= api.m_gl;
 	tcu::TestLog&			log					= api.getLog();
@@ -785,7 +914,7 @@ bool GLES2ImageApi::RenderDepthbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<
 	return tcu::pixelThresholdCompare(log, "Depth buffer rendering result", "Result from rendering with depth buffer", referenceScreen, screen, compareThreshold, tcu::COMPARE_LOG_RESULT);
 }
 
-bool GLES2ImageApi::RenderStencilbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
+bool GLESImageApi::RenderStencilbuffer::invokeGLES (GLESImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
 {
 	// Branch only taken in TryAll case
 	if (reference.getFormat().order != tcu::TextureFormat::DS && reference.getFormat().order != tcu::TextureFormat::S)
@@ -903,8 +1032,20 @@ bool GLES2ImageApi::RenderStencilbuffer::invokeGLES2 (GLES2ImageApi& api, MovePt
 	return tcu::pixelThresholdCompare(log, "StencilResult", "Result from rendering with stencil buffer", referenceScreen, screen, compareThreshold, tcu::COMPARE_LOG_RESULT);
 }
 
-bool GLES2ImageApi::RenderReadPixelsRenderbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
+bool GLESImageApi::RenderReadPixelsRenderbuffer::invokeGLES (GLESImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
 {
+	switch (glu::getInternalFormat(reference.getFormat()))
+	{
+		case GL_RGBA4:
+		case GL_RGB5_A1:
+		case GL_RGB565:
+			break;
+		default:
+			// Skip, not in the list of allowed render buffer formats for GLES.
+			throw tcu::NotSupportedError("Image format not allowed for glReadPixels.");
+			break;
+	}
+
 	const glw::Functions&	gl				= api.m_gl;
 	const tcu::IVec4		bitDepth		= tcu::getTextureFormatMantissaBitDepth(reference.getFormat());
 	const tcu::IVec4		threshold		(2 * (tcu::IVec4(1) << (tcu::IVec4(8) - bitDepth)));
@@ -914,18 +1055,6 @@ bool GLES2ImageApi::RenderReadPixelsRenderbuffer::invokeGLES2 (GLES2ImageApi& ap
 	Renderbuffer			renderbuffer	(gl);
 	tcu::Surface			screen			(reference.getWidth(), reference.getHeight());
 	tcu::Surface			refSurface		(reference.getWidth(), reference.getHeight());
-
-	switch (glu::getInternalFormat(reference.getFormat()))
-	{
-		case GL_RGBA4:
-		case GL_RGB5_A1:
-		case GL_RGB565:
-			break;
-		default:
-			// Skip, not in the list of allowed render buffer formats for GLES2.
-			throw tcu::NotSupportedError("Image format not allowed for glReadPixels.");
-			break;
-	}
 
 	log << tcu::TestLog::Message << "Reading with ReadPixels from renderbuffer" << tcu::TestLog::EndMessage;
 
@@ -951,17 +1080,17 @@ bool GLES2ImageApi::RenderReadPixelsRenderbuffer::invokeGLES2 (GLES2ImageApi& ap
 
 }
 
-bool GLES2ImageApi::RenderTryAll::invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
+bool GLESImageApi::RenderTryAll::invokeGLES (GLESImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
 {
-	bool												foundSupported			= false;
-	tcu::TestLog&										log						= api.getLog();
-	GLES2ImageApi::RenderTexture2D						renderTex2D;
-	GLES2ImageApi::RenderExternalTexture				renderExternal;
-	GLES2ImageApi::RenderExternalTextureSamplerArray	renderExternalSamplerArray;
-	GLES2ImageApi::RenderReadPixelsRenderbuffer			renderReadPixels;
-	GLES2ImageApi::RenderDepthbuffer					renderDepth;
-	GLES2ImageApi::RenderStencilbuffer					renderStencil;
-	Action*												actions[]				= { &renderTex2D, &renderExternal, &renderExternalSamplerArray, &renderReadPixels, &renderDepth, &renderStencil };
+	bool											foundSupported			= false;
+	tcu::TestLog&									log						= api.getLog();
+	GLESImageApi::RenderTexture2D					renderTex2D;
+	GLESImageApi::RenderExternalTexture				renderExternal;
+	GLESImageApi::RenderExternalTextureSamplerArray	renderExternalSamplerArray;
+	GLESImageApi::RenderReadPixelsRenderbuffer		renderReadPixels;
+	GLESImageApi::RenderDepthbuffer					renderDepth;
+	GLESImageApi::RenderStencilbuffer				renderStencil;
+	Action*											actions[]				= { &renderTex2D, &renderExternal, &renderExternalSamplerArray, &renderReadPixels, &renderDepth, &renderStencil };
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(actions); ++ndx)
 	{
@@ -988,7 +1117,7 @@ bool GLES2ImageApi::RenderTryAll::invokeGLES2 (GLES2ImageApi& api, MovePtr<Uniqu
 	return true;
 }
 
-bool GLES2ImageApi::ModifyTexSubImage::invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
+bool GLESImageApi::ModifyTexSubImage::invokeGLES (GLESImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
 {
 	const glw::Functions&	gl		= api.m_gl;
 	tcu::TestLog&			log		= api.getLog();
@@ -1015,7 +1144,7 @@ bool GLES2ImageApi::ModifyTexSubImage::invokeGLES2 (GLES2ImageApi& api, MovePtr<
 	return true;
 }
 
-bool GLES2ImageApi::ModifyRenderbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
+bool GLESImageApi::ModifyRenderbuffer::invokeGLES (GLESImageApi& api, MovePtr<UniqueImage>& img, tcu::Texture2D& reference) const
 {
 	const glw::Functions&	gl				= api.m_gl;
 	tcu::TestLog&			log				= api.getLog();
@@ -1039,7 +1168,7 @@ bool GLES2ImageApi::ModifyRenderbuffer::invokeGLES2 (GLES2ImageApi& api, MovePtr
 	return true;
 }
 
-void GLES2ImageApi::ModifyRenderbufferClearColor::initializeRbo (GLES2ImageApi& api, GLuint renderbuffer, tcu::Texture2D& reference) const
+void GLESImageApi::ModifyRenderbufferClearColor::initializeRbo (GLESImageApi& api, GLuint renderbuffer, tcu::Texture2D& reference) const
 {
 	const glw::Functions&	gl		= api.m_gl;
 
@@ -1052,7 +1181,7 @@ void GLES2ImageApi::ModifyRenderbufferClearColor::initializeRbo (GLES2ImageApi& 
 	tcu::clear(reference.getLevel(0), m_color);
 }
 
-void GLES2ImageApi::ModifyRenderbufferClearDepth::initializeRbo (GLES2ImageApi& api, GLuint renderbuffer, tcu::Texture2D& reference) const
+void GLESImageApi::ModifyRenderbufferClearDepth::initializeRbo (GLESImageApi& api, GLuint renderbuffer, tcu::Texture2D& reference) const
 {
 	const glw::Functions&	gl		= api.m_gl;
 
@@ -1065,7 +1194,7 @@ void GLES2ImageApi::ModifyRenderbufferClearDepth::initializeRbo (GLES2ImageApi& 
 	tcu::clearDepth(reference.getLevel(0), m_depth);
 }
 
-void GLES2ImageApi::ModifyRenderbufferClearStencil::initializeRbo (GLES2ImageApi& api, GLuint renderbuffer, tcu::Texture2D& reference) const
+void GLESImageApi::ModifyRenderbufferClearStencil::initializeRbo (GLESImageApi& api, GLuint renderbuffer, tcu::Texture2D& reference) const
 {
 	const glw::Functions&	gl		= api.m_gl;
 
@@ -1081,36 +1210,37 @@ void GLES2ImageApi::ModifyRenderbufferClearStencil::initializeRbo (GLES2ImageApi
 class ImageFormatCase : public TestCase, private glu::CallLogWrapper
 {
 public:
-						ImageFormatCase		(EglTestContext& eglTestCtx, const TestSpec& spec);
-						~ImageFormatCase	(void);
+							ImageFormatCase		(EglTestContext& eglTestCtx, const TestSpec& spec);
+							~ImageFormatCase	(void);
 
-	void				init				(void);
-	void				deinit				(void);
-	IterateResult		iterate				(void);
-	void				checkExtensions		(void);
+	void					init				(void);
+	void					deinit				(void);
+	IterateResult			iterate				(void);
+	void					checkExtensions		(void);
 
 private:
-	EGLConfig			getConfig			(void);
+	EGLConfig				getConfig			(void);
 
-	const TestSpec		m_spec;
+	const TestSpec			m_spec;
 
-	vector<ImageApi*>	m_apiContexts;
+	vector<ImageApi*>		m_apiContexts;
 
-	EGLDisplay			m_display;
-	eglu::NativeWindow*	m_window;
-	EGLSurface			m_surface;
-	EGLConfig			m_config;
-	int					m_curIter;
-	MovePtr<UniqueImage>m_img;
-	tcu::Texture2D		m_refImg;
-	glw::Functions		m_gl;
+	EGLDisplay				m_display;
+	eglu::NativeWindow*		m_window;
+	EGLSurface				m_surface;
+	EGLConfig				m_config;
+	int						m_curIter;
+	MovePtr<UniqueImage>	m_img;
+	tcu::Texture2D			m_refImg;
+	glw::Functions			m_gl;
 };
 
 EGLConfig ImageFormatCase::getConfig (void)
 {
-	const EGLint attribList[] =
+	const GLint		glesApi			= m_spec.contexts[0] == TestSpec::API_GLES3 ? EGL_OPENGL_ES3_BIT : EGL_OPENGL_ES2_BIT;
+	const EGLint	attribList[]	=
 	{
-		EGL_RENDERABLE_TYPE,	EGL_OPENGL_ES2_BIT,
+		EGL_RENDERABLE_TYPE,	glesApi,
 		EGL_SURFACE_TYPE,		EGL_WINDOW_BIT,
 		EGL_RED_SIZE,			8,
 		EGL_BLUE_SIZE,			8,
@@ -1193,8 +1323,16 @@ void ImageFormatCase::init (void)
 		m_surface	= eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_display, m_config, DE_NULL);
 
 		{
-			const char* extensions[] = { "GL_OES_EGL_image" };
-			m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2, 0), DE_LENGTH_OF_ARRAY(extensions), &extensions[0]);
+			const char*	extensions[]	= { "GL_OES_EGL_image" };
+			int			major			= 2;
+			int			minor			= 0;
+
+			if (m_spec.contexts[0] == TestSpec::API_GLES3)
+			{
+				major = 3;
+				minor = 2;
+			}
+			m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(major, minor), DE_LENGTH_OF_ARRAY(extensions), &extensions[0]);
 		}
 
 		for (int contextNdx = 0; contextNdx < (int)m_spec.contexts.size(); contextNdx++)
@@ -1204,7 +1342,13 @@ void ImageFormatCase::init (void)
 			{
 				case TestSpec::API_GLES2:
 				{
-					api = new GLES2ImageApi(egl, m_gl, contextNdx, getLog(), m_display, m_surface, m_config);
+					api = new GLESImageApi(egl, m_gl, contextNdx, getLog(), m_display, m_surface, m_config, 2);
+					break;
+				}
+
+				case TestSpec::API_GLES3:
+				{
+					api = new GLESImageApi(egl, m_gl, contextNdx, getLog(), m_display, m_surface, m_config, 3);
 					break;
 				}
 
@@ -1301,6 +1445,7 @@ protected:
 	void			addCreateTexture				(const string& name, EGLenum source, GLenum internalFormat, GLenum format, GLenum type);
 	void			addCreateRenderbuffer			(const string& name, GLenum format);
 	void			addCreateAndroidNative			(const string& name, GLenum format);
+	void			addCreateAndroidNativeArray		(const string& name, GLenum format, deUint32 numLayers);
 	void			addCreateTexture2DActions		(const string& prefix);
 	void			addCreateTextureCubemapActions	(const string& suffix, GLenum internalFormat, GLenum format, GLenum type);
 	void			addCreateRenderbufferActions	(void);
@@ -1311,17 +1456,22 @@ protected:
 
 void ImageTests::addCreateTexture (const string& name, EGLenum source, GLenum internalFormat, GLenum format, GLenum type)
 {
-	m_createActions.add(name, MovePtr<Action>(new GLES2ImageApi::Create(createTextureImageSource(source, internalFormat, format, type))));
+	m_createActions.add(name, MovePtr<Action>(new GLESImageApi::Create(createTextureImageSource(source, internalFormat, format, type))));
 }
 
 void ImageTests::addCreateRenderbuffer (const string& name, GLenum format)
 {
-	m_createActions.add(name, MovePtr<Action>(new GLES2ImageApi::Create(createRenderbufferImageSource(format))));
+	m_createActions.add(name, MovePtr<Action>(new GLESImageApi::Create(createRenderbufferImageSource(format))));
 }
 
 void ImageTests::addCreateAndroidNative (const string& name, GLenum format)
 {
-	m_createActions.add(name, MovePtr<Action>(new GLES2ImageApi::Create(createAndroidNativeImageSource(format))));
+	m_createActions.add(name, MovePtr<Action>(new GLESImageApi::Create(createAndroidNativeImageSource(format, 1u))));
+}
+
+void ImageTests::addCreateAndroidNativeArray (const string& name, GLenum format, deUint32 numLayers)
+{
+	m_createActions.add(name, MovePtr<Action>(new GLESImageApi::Create(createAndroidNativeImageSource(format, numLayers), numLayers)));
 }
 
 void ImageTests::addCreateTexture2DActions (const string& prefix)
@@ -1367,6 +1517,12 @@ void ImageTests::addCreateAndroidNativeActions (void)
 	addCreateAndroidNative("android_native_rgb10a2",	GL_RGB10_A2);
 	addCreateAndroidNative("android_native_rgba16f",	GL_RGBA16F);
 	addCreateAndroidNative("android_native_s8",			GL_STENCIL_INDEX8);
+
+	addCreateAndroidNativeArray("android_native_array_rgba4",	GL_RGBA4,	4u);
+	addCreateAndroidNativeArray("android_native_array_rgb5_a1",	GL_RGB5_A1,	4u);
+	addCreateAndroidNativeArray("android_native_array_rgb565",	GL_RGB565,	4u);
+	addCreateAndroidNativeArray("android_native_array_rgb8",	GL_RGB8,	4u);
+	addCreateAndroidNativeArray("android_native_array_rgba8",	GL_RGBA8,	4u);
 }
 
 class RenderTests : public ImageTests
@@ -1381,10 +1537,11 @@ protected:
 
 void RenderTests::addRenderActions (void)
 {
-	m_renderActions.add("texture",			MovePtr<Action>(new GLES2ImageApi::RenderTexture2D()));
-	m_renderActions.add("read_pixels",		MovePtr<Action>(new GLES2ImageApi::RenderReadPixelsRenderbuffer()));
-	m_renderActions.add("depth_buffer",		MovePtr<Action>(new GLES2ImageApi::RenderDepthbuffer()));
-	m_renderActions.add("stencil_buffer",	MovePtr<Action>(new GLES2ImageApi::RenderStencilbuffer()));
+	m_renderActions.add("texture",			MovePtr<Action>(new GLESImageApi::RenderTexture2D()));
+	m_renderActions.add("texture_array",	MovePtr<Action>(new GLESImageApi::RenderTexture2DArray()));
+	m_renderActions.add("read_pixels",		MovePtr<Action>(new GLESImageApi::RenderReadPixelsRenderbuffer()));
+	m_renderActions.add("depth_buffer",		MovePtr<Action>(new GLESImageApi::RenderDepthbuffer()));
+	m_renderActions.add("stencil_buffer",	MovePtr<Action>(new GLESImageApi::RenderStencilbuffer()));
 }
 
 class SimpleCreationTests : public RenderTests
@@ -1460,25 +1617,37 @@ bool isStencilFormat (GLenum format)
 
 bool isCompatibleCreateAndRenderActions (const Action& create, const Action& render)
 {
-	if (const GLES2ImageApi::Create* gles2Create = dynamic_cast<const GLES2ImageApi::Create*>(&create))
+	if (const GLESImageApi::Create* glesCreate = dynamic_cast<const GLESImageApi::Create*>(&create))
 	{
-		const GLenum createFormat = gles2Create->getEffectiveFormat();
+		const GLenum createFormat = glesCreate->getEffectiveFormat();
 
-		if (dynamic_cast<const GLES2ImageApi::RenderTexture2D*>(&render))
+		if (dynamic_cast<const GLESImageApi::RenderTexture2DArray*>(&render))
 		{
-			// GLES2 does not have depth or stencil textures
+			// Makes sense only for texture arrays.
+			if (glesCreate->getNumLayers() <= 1u)
+				return false;
+		}
+		else if (glesCreate->getNumLayers() != 1u)
+		{
+			// Skip other render actions for texture arrays.
+			return false;
+		}
+
+		if (dynamic_cast<const GLESImageApi::RenderTexture2D*>(&render))
+		{
+			// GLES does not have depth or stencil textures
 			if (isDepthFormat(createFormat) || isStencilFormat(createFormat))
 				return false;
 		}
 
-		if (dynamic_cast<const GLES2ImageApi::RenderReadPixelsRenderbuffer*>(&render))
+		if (dynamic_cast<const GLESImageApi::RenderReadPixelsRenderbuffer*>(&render))
 		{
-			// GLES2 does not support readPixels for depth or stencil
+			// GLES does not support readPixels for depth or stencil.
 			if (isDepthFormat(createFormat) || isStencilFormat(createFormat))
 				return false;
 		}
 
-		if (dynamic_cast<const GLES2ImageApi::RenderDepthbuffer*>(&render))
+		if (dynamic_cast<const GLESImageApi::RenderDepthbuffer*>(&render))
 		{
 			// Copying non-depth data to depth renderbuffer and expecting meaningful
 			// results just doesn't make any sense.
@@ -1486,7 +1655,7 @@ bool isCompatibleCreateAndRenderActions (const Action& create, const Action& ren
 				return false;
 		}
 
-		if (dynamic_cast<const GLES2ImageApi::RenderStencilbuffer*>(&render))
+		if (dynamic_cast<const GLESImageApi::RenderStencilbuffer*>(&render))
 		{
 			// Copying non-stencil data to stencil renderbuffer and expecting meaningful
 			// results just doesn't make any sense.
@@ -1523,9 +1692,19 @@ void SimpleCreationTests::init (void)
 			if (!isCompatibleCreateAndRenderActions(*createAction.action, *renderAction.action))
 				continue;
 
-			spec.name = std::string("gles2_") + createAction.label + "_" + renderAction.label;
+			if (dynamic_cast<const GLESImageApi::RenderTexture2DArray*>(renderAction.action.get()))
+			{
+				// Texture array tests require GLES3.
+				spec.name = std::string("gles3_") + createAction.label + "_" + renderAction.label;
+				spec.contexts.push_back(TestSpec::API_GLES3);
+			}
+			else
+			{
+				spec.name = std::string("gles2_") + createAction.label + "_" + renderAction.label;
+				spec.contexts.push_back(TestSpec::API_GLES2);
+			}
+
 			spec.desc = spec.name;
-			spec.contexts.push_back(TestSpec::API_GLES2);
 			spec.operations.push_back(TestSpec::Operation(0, *createAction.action));
 			spec.operations.push_back(TestSpec::Operation(0, *renderAction.action));
 
@@ -1623,33 +1802,37 @@ bool isCompatibleFormats (GLenum createFormat, GLenum modifyFormat, GLenum modif
 
 bool isCompatibleCreateAndModifyActions (const Action& create, const Action& modify)
 {
-	if (const GLES2ImageApi::Create* gles2Create = dynamic_cast<const GLES2ImageApi::Create*>(&create))
+	if (const GLESImageApi::Create* glesCreate = dynamic_cast<const GLESImageApi::Create*>(&create))
 	{
-		const GLenum createFormat = gles2Create->getEffectiveFormat();
+		// No modify tests for texture arrays.
+		if (glesCreate->getNumLayers() > 1u)
+			return false;
 
-		if (const GLES2ImageApi::ModifyTexSubImage* gles2TexSubImageModify = dynamic_cast<const GLES2ImageApi::ModifyTexSubImage*>(&modify))
+		const GLenum createFormat = glesCreate->getEffectiveFormat();
+
+		if (const GLESImageApi::ModifyTexSubImage* glesTexSubImageModify = dynamic_cast<const GLESImageApi::ModifyTexSubImage*>(&modify))
 		{
-			const GLenum modifyFormat	= gles2TexSubImageModify->getFormat();
-			const GLenum modifyType		= gles2TexSubImageModify->getType();
+			const GLenum modifyFormat	= glesTexSubImageModify->getFormat();
+			const GLenum modifyType		= glesTexSubImageModify->getType();
 
 			return isCompatibleFormats(createFormat, modifyFormat, modifyType);
 		}
 
-		if (dynamic_cast<const GLES2ImageApi::ModifyRenderbufferClearColor*>(&modify))
+		if (dynamic_cast<const GLESImageApi::ModifyRenderbufferClearColor*>(&modify))
 		{
 			// reintepreting color as non-color is not meaningful
 			if (isDepthFormat(createFormat) || isStencilFormat(createFormat))
 				return false;
 		}
 
-		if (dynamic_cast<const GLES2ImageApi::ModifyRenderbufferClearDepth*>(&modify))
+		if (dynamic_cast<const GLESImageApi::ModifyRenderbufferClearDepth*>(&modify))
 		{
 			// reintepreting depth as non-depth is not meaningful
 			if (!isDepthFormat(createFormat))
 				return false;
 		}
 
-		if (dynamic_cast<const GLES2ImageApi::ModifyRenderbufferClearStencil*>(&modify))
+		if (dynamic_cast<const GLESImageApi::ModifyRenderbufferClearStencil*>(&modify))
 		{
 			// reintepreting stencil as non-stencil is not meaningful
 			if (!isStencilFormat(createFormat))
@@ -1681,9 +1864,9 @@ MultiContextRenderTests::MultiContextRenderTests (EglTestContext& eglTestCtx, co
 
 void MultiContextRenderTests::addClearActions (void)
 {
-	m_clearActions.add("clear_color",	MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearColor(tcu::Vec4(0.8f, 0.2f, 0.9f, 1.0f))));
-	m_clearActions.add("clear_depth",	MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearDepth(0.75f)));
-	m_clearActions.add("clear_stencil",	MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearStencil(97)));
+	m_clearActions.add("clear_color",	MovePtr<Action>(new GLESImageApi::ModifyRenderbufferClearColor(tcu::Vec4(0.8f, 0.2f, 0.9f, 1.0f))));
+	m_clearActions.add("clear_depth",	MovePtr<Action>(new GLESImageApi::ModifyRenderbufferClearDepth(0.75f)));
+	m_clearActions.add("clear_stencil",	MovePtr<Action>(new GLESImageApi::ModifyRenderbufferClearStencil(97)));
 }
 
 void MultiContextRenderTests::init (void)
@@ -1712,12 +1895,12 @@ void MultiContextRenderTests::init (void)
 
 		spec.name = std::string("gles2_") + createAction.label + "_" + renderAction.label;
 
-		const GLES2ImageApi::Create* gles2Create = dynamic_cast<const GLES2ImageApi::Create*>(createAction.action.get());
+		const GLESImageApi::Create* glesCreate = dynamic_cast<const GLESImageApi::Create*>(createAction.action.get());
 
-		if (!gles2Create)
-			DE_FATAL("Dynamic casting to GLES2ImageApi::Create* failed");
+		if (!glesCreate)
+			DE_FATAL("Dynamic casting to GLESImageApi::Create* failed");
 
-		const GLenum createFormat = gles2Create->getEffectiveFormat();
+		const GLenum createFormat = glesCreate->getEffectiveFormat();
 
 		if (isDepthFormat(createFormat) && isStencilFormat(createFormat))
 		{
@@ -1759,20 +1942,20 @@ protected:
 	void						addModifyActions(void);
 
 	LabeledActions				m_modifyActions;
-	GLES2ImageApi::RenderTryAll	m_renderAction;
+	GLESImageApi::RenderTryAll	m_renderAction;
 };
 
 void ModifyTests::addModifyActions (void)
 {
-	m_modifyActions.add("tex_subimage_rgb8",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGB,	GL_UNSIGNED_BYTE)));
-	m_modifyActions.add("tex_subimage_rgb565",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGB,	GL_UNSIGNED_SHORT_5_6_5)));
-	m_modifyActions.add("tex_subimage_rgba8",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_BYTE)));
-	m_modifyActions.add("tex_subimage_rgb5_a1",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_SHORT_5_5_5_1)));
-	m_modifyActions.add("tex_subimage_rgba4",			MovePtr<Action>(new GLES2ImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_SHORT_4_4_4_4)));
+	m_modifyActions.add("tex_subimage_rgb8",			MovePtr<Action>(new GLESImageApi::ModifyTexSubImage(GL_RGB,		GL_UNSIGNED_BYTE)));
+	m_modifyActions.add("tex_subimage_rgb565",			MovePtr<Action>(new GLESImageApi::ModifyTexSubImage(GL_RGB,		GL_UNSIGNED_SHORT_5_6_5)));
+	m_modifyActions.add("tex_subimage_rgba8",			MovePtr<Action>(new GLESImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_BYTE)));
+	m_modifyActions.add("tex_subimage_rgb5_a1",			MovePtr<Action>(new GLESImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_SHORT_5_5_5_1)));
+	m_modifyActions.add("tex_subimage_rgba4",			MovePtr<Action>(new GLESImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_SHORT_4_4_4_4)));
 
-	m_modifyActions.add("renderbuffer_clear_color",		MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearColor(tcu::Vec4(0.3f, 0.5f, 0.3f, 1.0f))));
-	m_modifyActions.add("renderbuffer_clear_depth",		MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearDepth(0.7f)));
-	m_modifyActions.add("renderbuffer_clear_stencil",	MovePtr<Action>(new GLES2ImageApi::ModifyRenderbufferClearStencil(78)));
+	m_modifyActions.add("renderbuffer_clear_color",		MovePtr<Action>(new GLESImageApi::ModifyRenderbufferClearColor(tcu::Vec4(0.3f, 0.5f, 0.3f, 1.0f))));
+	m_modifyActions.add("renderbuffer_clear_depth",		MovePtr<Action>(new GLESImageApi::ModifyRenderbufferClearDepth(0.7f)));
+	m_modifyActions.add("renderbuffer_clear_stencil",	MovePtr<Action>(new GLESImageApi::ModifyRenderbufferClearStencil(78)));
 }
 
 void ModifyTests::init (void)

@@ -169,13 +169,13 @@ class Environment:
 		self.ndk		= ndk
 
 class Configuration:
-	def __init__(self, env, buildPath, abis, nativeApi, minApi, nativeBuildType, gtfTarget, verbose, layers, angle):
+	def __init__(self, env, buildPath, abis, nativeApi, javaApi, minApi, nativeBuildType, gtfTarget, verbose, layers, angle):
 		self.env				= env
 		self.sourcePath			= DEQP_DIR
 		self.buildPath			= buildPath
 		self.abis				= abis
 		self.nativeApi			= nativeApi
-		self.javaApi			= 28
+		self.javaApi			= javaApi
 		self.minApi				= minApi
 		self.nativeBuildType	= nativeBuildType
 		self.gtfTarget			= gtfTarget
@@ -921,6 +921,11 @@ def parseArgs ():
 		dest='nativeApi',
 		default=28,
 		help="Android API level to target in native code")
+	parser.add_argument('--java-api',
+		type=int,
+		dest='javaApi',
+		default=28,
+		help="Android API level to target in Java code")
 	parser.add_argument('--min-api',
 		type=int,
 		dest='minApi',
@@ -993,7 +998,7 @@ if __name__ == "__main__":
 	sdk			= SDKEnv(os.path.realpath(args.sdkPath))
 	buildPath	= os.path.realpath(args.buildRoot)
 	env			= Environment(sdk, ndk)
-	config		= Configuration(env, buildPath, abis=args.abis, nativeApi=args.nativeApi, minApi=args.minApi, nativeBuildType=args.nativeBuildType, gtfTarget=args.gtfTarget,
+	config		= Configuration(env, buildPath, abis=args.abis, nativeApi=args.nativeApi, javaApi=args.javaApi, minApi=args.minApi, nativeBuildType=args.nativeBuildType, gtfTarget=args.gtfTarget,
 						 verbose=args.verbose, layers=args.layers, angle=args.angle)
 
 	try:

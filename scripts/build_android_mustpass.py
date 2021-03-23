@@ -57,7 +57,6 @@ VULKAN_MODULE					= getModuleByName("dEQP-VK")
 
 MASTER_EGL_COMMON_FILTERS		= [include("egl-master.txt"),
 								   exclude("egl-test-issues.txt"),
-								   exclude("egl-internal-api-tests.txt"),
 								   exclude("egl-manual-robustness.txt"),
 								   exclude("egl-driver-issues.txt"),
 								   exclude("egl-temp-excluded.txt")]
