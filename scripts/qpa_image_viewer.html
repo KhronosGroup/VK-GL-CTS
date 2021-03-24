@@ -42,9 +42,9 @@ limitations under the License.
                 margin-right: 1ex;
                 margin-bottom: 1ex;
                 /* Attempt to zoom images using the nearest-neighbor scaling
-                algorithm. Unfortunately, not supported under Firefox at the
-                time this text is being written. */
+                algorithm. */
                 image-rendering: pixelated;
+                image-rendering: crisp-edges;
                 /* Use a black background color for images in case some pixels
                 are transparent to some degree. In the worst case, the image
                 could appear to be missing. */
@@ -62,7 +62,7 @@ limitations under the License.
             button:hover {
                 opacity: .8;
             }
-            #clearimagesbutton {
+            #clearimagesbutton,#cleartextbutton {
                 background-color: seagreen;
             }
             select {
@@ -125,6 +125,7 @@ limitations under the License.
                 <h2>Option 2: Paste QPA text or text extract containing &lt;Image&gt; elements below and click "Load images"</h2>
                 <textarea id="qpatext"></textarea>
                 <button id="loadimagesbutton">&#x1F4C3; Load images</button>
+                <button id="cleartextbutton">&#x267B; Clear text</button>
             </div>
         </div>
 
@@ -170,6 +171,11 @@ limitations under the License.
                 while (imagesNode.hasChildNodes()) {
                     imagesNode.removeChild(imagesNode.lastChild);
                 }
+            }
+
+            // Clears textarea text.
+            var clearText = function() {
+                document.getElementById("qpatext").value = "";
             }
 
             // Returns a properly sized image with the given base64-encoded PNG data.
@@ -281,6 +287,7 @@ limitations under the License.
             document.getElementById("fileselector").addEventListener("change", handleFileSelect, false);
             document.getElementById("fileselectorbutton").onclick = clickFileSelector;
             document.getElementById("loadimagesbutton").onclick = loadImages;
+            document.getElementById("cleartextbutton").onclick = clearText;
             document.getElementById("zoomselect").onchange = rescaleImages;
             document.getElementById("clearimagesbutton").onclick = clearImages;
         </script>
