@@ -583,7 +583,7 @@ VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize				size,
 										 const std::vector<deUint32>&	queueFamilyIndices)
 {
 	const deUint32				queueFamilyIndexCount	= static_cast<deUint32>(queueFamilyIndices.size());
-	const deUint32*				pQueueFamilyIndices		= de::dataSafe(queueFamilyIndices);
+	const deUint32*				pQueueFamilyIndices		= de::dataOrNull(queueFamilyIndices);
 	const VkBufferCreateInfo	bufferCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;

@@ -122,20 +122,6 @@ size_t dataSize (const T& container)
 	return (container.size() * sizeof(typename T::value_type));
 }
 
-// Returns const pointer to data stored in vector or NULL if vector is empty
-template <typename T>
-const T* dataSafe (const std::vector<T>& container)
-{
-	return container.empty() ? static_cast<const T*>(DE_NULL) : container.data();
-}
-
-// Returns pointer to data stored in vector or NULL if vector is empty
-template <typename T>
-T* dataSafe (std::vector<T>& container)
-{
-	return container.empty() ? static_cast<T*>(DE_NULL) : container.data();
-}
-
 // Returns the data pointer or a null pointer if the vector is empty.
 template <typename T>
 T* dataOrNull (std::vector<T>& container)
