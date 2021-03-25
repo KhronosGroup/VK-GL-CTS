@@ -43,7 +43,8 @@ enum Interpolation
 	SMOOTH			= 0,
 	FLAT			= 1,
 	NOPERSPECTIVE	= 2,
-	CENTROID		= 3
+	CENTROID		= 3,
+	SAMPLE			= 4,
 };
 
 struct DrawParams
@@ -74,6 +75,8 @@ const char* interpolationToString (Interpolation interpolation)
 			return "noperspective";
 		case CENTROID:
 			return "centroid";
+		case SAMPLE:
+			return "sample";
 		default:
 			DE_FATAL("Invalid interpolation enum");
 	}
@@ -158,6 +161,7 @@ void DrawTestCase::initPrograms (vk::SourceCollections& programCollection) const
 		"${indent}layout(location = 1) ${outQual}flat vec4 out_color_flat;\n"
 		"${indent}layout(location = 2) ${outQual}noperspective vec4 out_color_noperspective;\n"
 		"${indent}layout(location = 3) ${outQual}centroid vec4 out_color_centroid;\n"
+		"${indent}layout(location = 4) ${outQual}sample vec4 out_color_sample;\n"
 		"${blockClosure}"
 		"\n"
 		"void main()\n"
@@ -166,6 +170,7 @@ void DrawTestCase::initPrograms (vk::SourceCollections& programCollection) const
 		"    ${accessPrefix}out_color_flat = in_color;\n"
 		"    ${accessPrefix}out_color_noperspective = in_color;\n"
 		"    ${accessPrefix}out_color_centroid = in_color;\n"
+		"    ${accessPrefix}out_color_sample = in_color;\n"
 		"    gl_Position = in_position;\n"
 		"}\n"
 	};
@@ -180,12 +185,14 @@ void DrawTestCase::initPrograms (vk::SourceCollections& programCollection) const
 		"${indent}layout(location = 1) ${inQual}flat vec4 in_color_flat;\n"
 		"${indent}layout(location = 2) ${inQual}noperspective vec4 in_color_noperspective;\n"
 		"${indent}layout(location = 3) ${inQual}centroid vec4 in_color_centroid;\n"
+		"${indent}layout(location = 4) ${inQual}sample vec4 in_color_sample;\n"
 		"${blockClosure}"
 		"\n"
 		"layout(location = " + de::toString(SMOOTH) + ") out vec4 out_color_smooth;\n"
 		"layout(location = " + de::toString(FLAT) + ") out vec4 out_color_flat;\n"
 		"layout(location = " + de::toString(NOPERSPECTIVE) + ") out vec4 out_color_noperspective;\n"
 		"layout(location = " + de::toString(CENTROID) + ") out vec4 out_color_centroid;\n"
+		"layout(location = " + de::toString(SAMPLE) + ") out vec4 out_color_sample;\n"
 		"\n"
 		"void main()\n"
 		"{\n"
@@ -193,6 +200,7 @@ void DrawTestCase::initPrograms (vk::SourceCollections& programCollection) const
 		"    out_color_flat = ${accessPrefix}in_color_flat;\n"
 		"    out_color_noperspective = ${accessPrefix}in_color_noperspective;\n"
 		"    out_color_centroid = ${accessPrefix}in_color_centroid;\n"
+		"    out_color_sample = ${accessPrefix}in_color_sample;\n"
 		"}\n"
 	};
 
@@ -236,10 +244,12 @@ void DrawTestCase::initPrograms (vk::SourceCollections& programCollection) const
 	std::map<std::string, std::string>	flat			= replacements;
 	std::map<std::string, std::string>	noperspective	= replacements;
 	std::map<std::string, std::string>	centroid		= replacements;
+	std::map<std::string, std::string>	sample			= replacements;
 
 	flat["qualifier"]			= "flat ";
 	noperspective["qualifier"]	= "noperspective ";
 	centroid["qualifier"]		= "centroid ";
+	sample["qualifier"]			= "sample ";
 
 	programCollection.glslSources.add("vert_multi")			<< glu::VertexSource(vertShaderMulti.specialize(replacements));
 	programCollection.glslSources.add("frag_multi")			<< glu::FragmentSource(fragShaderMulti.specialize(replacements));
@@ -251,6 +261,8 @@ void DrawTestCase::initPrograms (vk::SourceCollections& programCollection) const
 	programCollection.glslSources.add("frag_noperspective")	<< glu::FragmentSource(fragShaderSingle.specialize(noperspective));
 	programCollection.glslSources.add("vert_centroid")		<< glu::VertexSource(vertShaderSingle.specialize(centroid));
 	programCollection.glslSources.add("frag_centroid")		<< glu::FragmentSource(fragShaderSingle.specialize(centroid));
+	programCollection.glslSources.add("vert_sample")		<< glu::VertexSource(vertShaderSingle.specialize(sample));
+	programCollection.glslSources.add("frag_sample")		<< glu::FragmentSource(fragShaderSingle.specialize(sample));
 }
 
 void DrawTestCase::checkSupport (Context& context) const
@@ -537,12 +549,13 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 {
 	tcu::TestLog&						log						= m_context.getTestContext().getLog();
 	const bool							useMultisampling		= (m_params.samples != vk::VK_SAMPLE_COUNT_1_BIT);
-	const deUint32						frameCount				= 4;
+	const deUint32						frameCount				= 5;
 	std::vector<de::SharedPtr<Image> >	resImages				(frameCount);
 	std::vector<de::SharedPtr<Image> >	smoothImage				(1);
 	std::vector<de::SharedPtr<Image> >	flatImage				(1);
 	std::vector<de::SharedPtr<Image> >	noperspectiveImage		(1);
 	std::vector<de::SharedPtr<Image> >	centroidImage			(1);
+	std::vector<de::SharedPtr<Image> >	sampleImage				(1);
 	tcu::ConstPixelBufferAccess			resFrames[frameCount];
 	tcu::ConstPixelBufferAccess			refFrames[frameCount];
 
@@ -551,6 +564,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 	render(flatImage,			&refFrames[FLAT],			"vert_flat",			"frag_flat");
 	render(noperspectiveImage,	&refFrames[NOPERSPECTIVE],	"vert_noperspective",	"frag_noperspective");
 	render(centroidImage,		&refFrames[CENTROID],		"vert_centroid",		"frag_centroid");
+	render(sampleImage,			&refFrames[SAMPLE],			"vert_sample",			"frag_sample");
 
 	for (deUint32 resNdx = 0; resNdx < frameCount; resNdx++)
 	{
@@ -570,15 +584,29 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 				if (!compare(resFrames[resNdx], refFrames[refNdx]))
 					return tcu::TestStatus::fail(resName + " produced different results");
 			}
-			else if (!useMultisampling && ((resNdx == SMOOTH && refNdx == CENTROID) || (resNdx == CENTROID && refNdx == SMOOTH)))
+			else if (!useMultisampling &&
+				((resNdx == SMOOTH && refNdx == CENTROID) ||
+				 (resNdx == CENTROID && refNdx == SMOOTH) ||
+				 (resNdx == SMOOTH && refNdx == SAMPLE)   ||
+				 (resNdx == SAMPLE && refNdx == SMOOTH)   ||
+				 (resNdx == CENTROID && refNdx == SAMPLE) ||
+				 (resNdx == SAMPLE && refNdx == CENTROID)))
 			{
 				if (!compare(resFrames[resNdx], refFrames[refNdx]))
 					return tcu::TestStatus::fail(resName + " and " + refName + " produced different results without multisampling");
 			}
 			else
 			{
-				if (compare(resFrames[resNdx], refFrames[refNdx]))
-					return tcu::TestStatus::fail(resName + " and " + refName + " produced same result");
+				// "smooth" means lack of centroid and sample.
+				// Spec does not specify exactly what "smooth" should be, so it can match centroid or sample.
+				if (!((resNdx == SMOOTH && refNdx == CENTROID) ||
+					(resNdx == CENTROID && refNdx == SMOOTH)   ||
+					(resNdx == SMOOTH && refNdx == SAMPLE)     ||
+					(resNdx == SAMPLE && refNdx == SMOOTH)))
+				{
+					if (compare(resFrames[resNdx], refFrames[refNdx]))
+						return tcu::TestStatus::fail(resName + " and " + refName + " produced same result");
+				}
 			}
 		}
 	}
