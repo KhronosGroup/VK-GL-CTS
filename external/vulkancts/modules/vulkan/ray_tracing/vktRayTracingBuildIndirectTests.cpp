@@ -632,7 +632,7 @@ VkBuffer	RayTracingBuildIndirectTestInstance::initIndirectBottomAccelerationStru
 {
 	VkBuffer result	= DE_NULL;
 
-	m_indirectAccelerationStructureBottom	= prepareBuffer(sizeof(VkAccelerationStructureBuildRangeInfoKHR), "wr-asb");
+	m_indirectAccelerationStructureBottom	= prepareBuffer(sizeof(VkAccelerationStructureBuildRangeInfoKHR) * m_data.geometriesGroupCount, "wr-asb");
 	result									= **m_indirectAccelerationStructureBottom;
 
 	return result;
