@@ -881,6 +881,14 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 		functions.push_back("vkCreateImagePipeSurfaceFUCHSIA");
 		return;
 	}
+	if (extName == "VK_FUCHSIA_external_memory")
+	{
+		return;
+	}
+	if (extName == "VK_FUCHSIA_external_semaphore")
+	{
+		return;
+	}
 	if (extName == "VK_GGP_stream_descriptor_surface")
 	{
 		functions.push_back("vkCreateStreamDescriptorSurfaceGGP");
@@ -1994,6 +2002,18 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_FUCHSIA_external_memory")
+	{
+		functions.push_back("vkGetMemoryZirconHandleFUCHSIA");
+		functions.push_back("vkGetMemoryZirconHandlePropertiesFUCHSIA");
+		return;
+	}
+	if (extName == "VK_FUCHSIA_external_semaphore")
+	{
+		functions.push_back("vkImportSemaphoreZirconHandleFUCHSIA");
+		functions.push_back("vkGetSemaphoreZirconHandleFUCHSIA");
+		return;
+	}
 	if (extName == "VK_GGP_stream_descriptor_surface")
 	{
 		return;
@@ -2175,6 +2195,8 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_ANDROID_external_memory_android_hardware_buffer",
+	"VK_FUCHSIA_external_memory",
+	"VK_FUCHSIA_external_semaphore",
 	"VK_KHR_external_memory_win32",
 	"VK_KHR_external_semaphore_win32",
 	"VK_KHR_external_fence_win32",

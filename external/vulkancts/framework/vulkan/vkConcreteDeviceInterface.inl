@@ -319,6 +319,10 @@ virtual VkDeviceSize		getRayTracingShaderGroupStackSizeKHR			(VkDevice device, V
 virtual void				cmdSetRayTracingPipelineStackSizeKHR			(VkCommandBuffer commandBuffer, deUint32 pipelineStackSize) const;
 virtual VkResult			getAndroidHardwareBufferPropertiesANDROID		(VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties) const;
 virtual VkResult			getMemoryAndroidHardwareBufferANDROID			(VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, struct pt::AndroidHardwareBufferPtr* pBuffer) const;
+virtual VkResult			getMemoryZirconHandleFUCHSIA					(VkDevice device, const VkMemoryGetZirconHandleInfoFUCHSIA* pGetZirconHandleInfo, pt::zx_handle_t* pZirconHandle) const;
+virtual VkResult			getMemoryZirconHandlePropertiesFUCHSIA			(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, pt::zx_handle_t zirconHandle, VkMemoryZirconHandlePropertiesFUCHSIA* pMemoryZirconHandleProperties) const;
+virtual VkResult			importSemaphoreZirconHandleFUCHSIA				(VkDevice device, const VkImportSemaphoreZirconHandleInfoFUCHSIA* pImportSemaphoreZirconHandleInfo) const;
+virtual VkResult			getSemaphoreZirconHandleFUCHSIA					(VkDevice device, const VkSemaphoreGetZirconHandleInfoFUCHSIA* pGetZirconHandleInfo, pt::zx_handle_t* pZirconHandle) const;
 virtual VkResult			getMemoryWin32HandleKHR							(VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const;
 virtual VkResult			getMemoryWin32HandlePropertiesKHR				(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, pt::Win32Handle handle, VkMemoryWin32HandlePropertiesKHR* pMemoryWin32HandleProperties) const;
 virtual VkResult			importSemaphoreWin32HandleKHR					(VkDevice device, const VkImportSemaphoreWin32HandleInfoKHR* pImportSemaphoreWin32HandleInfo) const;

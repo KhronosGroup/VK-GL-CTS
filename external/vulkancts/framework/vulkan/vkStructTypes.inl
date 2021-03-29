@@ -5362,6 +5362,47 @@ struct VkImagePipeSurfaceCreateInfoFUCHSIA
 	pt::zx_handle_t							imagePipeHandle;
 };
 
+struct VkImportMemoryZirconHandleInfoFUCHSIA
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkExternalMemoryHandleTypeFlagBits	handleType;
+	pt::zx_handle_t						handle;
+};
+
+struct VkMemoryZirconHandlePropertiesFUCHSIA
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		memoryTypeBits;
+};
+
+struct VkMemoryGetZirconHandleInfoFUCHSIA
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkDeviceMemory						memory;
+	VkExternalMemoryHandleTypeFlagBits	handleType;
+};
+
+struct VkImportSemaphoreZirconHandleInfoFUCHSIA
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkSemaphore								semaphore;
+	VkSemaphoreImportFlags					flags;
+	VkExternalSemaphoreHandleTypeFlagBits	handleType;
+	pt::zx_handle_t							zirconHandle;
+};
+
+struct VkSemaphoreGetZirconHandleInfoFUCHSIA
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkSemaphore								semaphore;
+	VkExternalSemaphoreHandleTypeFlagBits	handleType;
+};
+
 struct VkStreamDescriptorSurfaceCreateInfoGGP
 {
 	VkStructureType							sType;

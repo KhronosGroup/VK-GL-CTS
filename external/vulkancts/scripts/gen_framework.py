@@ -890,8 +890,8 @@ def genBitfieldSrc (bitfield):
 	yield "typedef deUint32 %s;" % bitfield.name
 
 def genBitfield64Src (bitfield64):
+	yield "typedef deUint64 %s;" % bitfield64.name
 	if len(bitfield64.values) > 0:
-		yield "typedef deUint64 %s;" % bitfield64.name
 		ptrn = "static const " + bitfield64.name + " %s\t= %s;"
 		for line in indentLines([ptrn % v for v in bitfield64.values]):
 			yield line
