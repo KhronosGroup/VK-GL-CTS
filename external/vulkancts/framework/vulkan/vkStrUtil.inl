@@ -992,6 +992,11 @@ std::ostream&	operator<<	(std::ostream& s, const VkExternalFormatANDROID& value)
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePortabilitySubsetFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePortabilitySubsetPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImagePipeSurfaceCreateInfoFUCHSIA& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImportMemoryZirconHandleInfoFUCHSIA& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryZirconHandlePropertiesFUCHSIA& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetZirconHandleInfoFUCHSIA& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImportSemaphoreZirconHandleInfoFUCHSIA& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreGetZirconHandleInfoFUCHSIA& value);
 std::ostream&	operator<<	(std::ostream& s, const VkStreamDescriptorSurfaceCreateInfoGGP& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentFrameTokenGGP& value);
 std::ostream&	operator<<	(std::ostream& s, const VkIOSSurfaceCreateInfoMVK& value);

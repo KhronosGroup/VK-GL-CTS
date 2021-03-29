@@ -2271,6 +2271,31 @@ template<> VkStructureType getStructureType<VkImagePipeSurfaceCreateInfoFUCHSIA>
 	return VK_STRUCTURE_TYPE_IMAGEPIPE_SURFACE_CREATE_INFO_FUCHSIA;
 }
 
+template<> VkStructureType getStructureType<VkImportMemoryZirconHandleInfoFUCHSIA> (void)
+{
+	return VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA;
+}
+
+template<> VkStructureType getStructureType<VkMemoryZirconHandlePropertiesFUCHSIA> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA;
+}
+
+template<> VkStructureType getStructureType<VkMemoryGetZirconHandleInfoFUCHSIA> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA;
+}
+
+template<> VkStructureType getStructureType<VkImportSemaphoreZirconHandleInfoFUCHSIA> (void)
+{
+	return VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_ZIRCON_HANDLE_INFO_FUCHSIA;
+}
+
+template<> VkStructureType getStructureType<VkSemaphoreGetZirconHandleInfoFUCHSIA> (void)
+{
+	return VK_STRUCTURE_TYPE_SEMAPHORE_GET_ZIRCON_HANDLE_INFO_FUCHSIA;
+}
+
 template<> VkStructureType getStructureType<VkStreamDescriptorSurfaceCreateInfoGGP> (void)
 {
 	return VK_STRUCTURE_TYPE_STREAM_DESCRIPTOR_SURFACE_CREATE_INFO_GGP;
