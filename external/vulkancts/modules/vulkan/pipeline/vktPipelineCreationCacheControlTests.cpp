@@ -769,7 +769,7 @@ vector<VkGraphicsPipelineCreateInfo> createPipelineCreateInfos(const TestParams:
  *//*--------------------------------------------------------------------*/
 Move<VkRenderPass> createRenderPass(const DeviceInterface& vk, VkDevice device, const TestParams&)
 {
-	static constexpr auto COLOR_FORMAT = VK_FORMAT_R8G8B8_UNORM;
+	static constexpr auto COLOR_FORMAT = VK_FORMAT_R8G8B8A8_UNORM;
 
 	static constexpr auto COLOR_ATTACHMENT_REF = VkAttachmentReference{
 		deUint32{0u},							 // attachment
