@@ -1024,7 +1024,7 @@ tcu::TestStatus testDisplayPowerControl(Context& context)
 
 			VkResult result = vkd.displayPowerControlEXT(device, display, &displayPowerInfo);
 			if (result != VK_SUCCESS)
-				tcu::TestStatus::fail(std::string("vkDisplayPowerControlEXT returned invalid result for ") + de::toString(psd.state));
+				return tcu::TestStatus::fail(std::string("vkDisplayPowerControlEXT returned invalid result for ") + de::toString(psd.state));
 
 			deSleep(psd.waitMs);
 		}
@@ -1060,7 +1060,7 @@ tcu::TestStatus testDisplayEvent(Context& context)
 		VkDisplayKHR&	display		= availableDisplays[i];
 		VkResult		result		= vkd.registerDisplayEventEXT(device, display, &displayEventInfo, DE_NULL, &fence);
 		if (result != VK_SUCCESS)
-			tcu::TestStatus::fail(std::string("vkRegisterDisplayEventEXT returned invalid result"));
+			return tcu::TestStatus::fail(std::string("vkRegisterDisplayEventEXT returned invalid result"));
 	}
 
 	// deinit fence
@@ -1087,7 +1087,7 @@ tcu::TestStatus testDeviceEvent(Context& context)
 
 	VkResult result = vkd.registerDeviceEventEXT(device, &deviceEventInfo, DE_NULL, &fences[0]);
 	if (result != VK_SUCCESS)
-		tcu::TestStatus::fail(std::string("vkRegisterDeviceEventEXT returned invalid result"));
+		return tcu::TestStatus::fail(std::string("vkRegisterDeviceEventEXT returned invalid result"));
 
 	// deinit fence
 	deinitFences(vkd, device, fences);
