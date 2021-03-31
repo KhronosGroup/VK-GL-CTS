@@ -222,10 +222,14 @@ public:
 class ShaderTests : public TestCaseGroup
 {
 public:
-	ShaderTests (Context& context)
+	ShaderTests (Context& context, bool isGL45)
 		: TestCaseGroup(context, "shaders", "Shading Language Tests")
+		, m_isGL45(isGL45)
 	{
 	}
+
+private:
+	bool m_isGL45;
 
 	void init (void)
 	{
@@ -254,12 +258,20 @@ public:
 		}
 
 		{
-			static const ShaderLibraryGroup::File s_arraysOfArraysFiles[] =
+			static const ShaderLibraryGroup::File s_arraysOfArraysFilesES[] =
 			{
 				{ "shaders/es31/arrays_of_arrays.test",		"es31",		"GLSL ES 3.1 Arrays of Arrays Tests"	},
 				{ "shaders/es32/arrays_of_arrays.test",		"es32",		"GLSL ES 3.2 Arrays of Arrays Tests"	},
 			};
-			addChild(new ShaderLibraryGroup(m_context, "arrays_of_arrays", "Arrays of Arras Tests", DE_LENGTH_OF_ARRAY(s_arraysOfArraysFiles), s_arraysOfArraysFiles));
+
+			static const ShaderLibraryGroup::File s_arraysOfArraysFilesGL[] =
+			{
+				{ "shaders/gl45/arrays_of_arrays.test",		"gl45",		"GLSL 4.5 Arrays of Arrays Tests"		},
+			};
+			if (m_isGL45)
+				addChild(new ShaderLibraryGroup(m_context, "arrays_of_arrays", "Arrays of Arras Tests", DE_LENGTH_OF_ARRAY(s_arraysOfArraysFilesGL), s_arraysOfArraysFilesGL));
+			else
+				addChild(new ShaderLibraryGroup(m_context, "arrays_of_arrays", "Arrays of Arras Tests", DE_LENGTH_OF_ARRAY(s_arraysOfArraysFilesES), s_arraysOfArraysFilesES));
 		}
 
 		addChild(new ShaderLinkageTests					(m_context));
@@ -412,7 +424,7 @@ GLES31FunctionalTests::~GLES31FunctionalTests (void)
 
 void GLES31FunctionalTests::init (void)
 {
-	addChild(new ShaderTests							(m_context));
+	addChild(new ShaderTests							(m_context, false));
 	addChild(new ComputeTests							(m_context));
 	addChild(new DrawTests								(m_context));
 	addChild(new TessellationTests						(m_context, false));
@@ -457,7 +469,7 @@ GL45FunctionalTests::~GL45FunctionalTests (void)
 
 void GL45FunctionalTests::init (void)
 {
-	addChild(new ShaderTests							(m_context));
+	addChild(new ShaderTests							(m_context, true));
 	addChild(new ComputeTests							(m_context));
 	addChild(new DrawTests								(m_context));
 	addChild(new TessellationTests						(m_context, true));
