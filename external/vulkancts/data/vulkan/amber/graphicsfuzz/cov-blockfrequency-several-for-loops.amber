@@ -56,7 +56,7 @@ SHADER vertex variant_vertex_shader PASSTHROUGH
 #     } while(gl_FragCoord.y < -1.0);
 #     _GLF_color = c;
 # }
-SHADER fragment variant_fragment_shader SPIRV-ASM
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 8

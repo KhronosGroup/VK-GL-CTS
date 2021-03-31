@@ -23,7 +23,7 @@
 
 SHADER vertex reference_vertex_shader PASSTHROUGH
 
-SHADER fragment reference_fragment_shader SPIRV-ASM
+SHADER fragment reference_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 7
@@ -340,7 +340,7 @@ RUN reference_pipeline DRAW_RECT POS 0 0 SIZE 256 256
 
 SHADER vertex variant_vertex_shader PASSTHROUGH
 
-SHADER fragment variant_fragment_shader SPIRV-ASM
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 7
