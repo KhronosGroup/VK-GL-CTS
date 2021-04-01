@@ -636,7 +636,9 @@ public:
 										CommandPool		(VkDevice device, const VkCommandPoolCreateInfo*)
 											: m_device(device)
 										{}
+#ifndef CTS_USES_VULKANSC
 										~CommandPool	(void);
+#endif // CTS_USES_VULKANSC
 
 	VkCommandBuffer						allocate		(VkCommandBufferLevel level);
 	void								free			(VkCommandBuffer buffer);
@@ -647,11 +649,15 @@ private:
 	vector<CommandBuffer*>				m_buffers;
 };
 
+#ifndef CTS_USES_VULKANSC
+
 CommandPool::~CommandPool (void)
 {
 	for (size_t ndx = 0; ndx < m_buffers.size(); ++ndx)
 		delete m_buffers[ndx];
 }
+
+#endif // CTS_USES_VULKANSC
 
 VkCommandBuffer CommandPool::allocate (VkCommandBufferLevel level)
 {

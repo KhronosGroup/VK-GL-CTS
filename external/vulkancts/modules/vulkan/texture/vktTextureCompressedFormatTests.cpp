@@ -134,7 +134,9 @@ static const struct {
 } backingModes[] =
 {
 	{ "",			TextureBinding::IMAGE_BACKING_MODE_REGULAR	},
+#ifndef CTS_USES_VULKANSC
 	{ "_sparse",	TextureBinding::IMAGE_BACKING_MODE_SPARSE	}
+#endif // CTS_USES_VULKANSC
 };
 
 struct Compressed3DTestParameters : public Texture3DTestCaseParameters
@@ -241,19 +243,25 @@ tcu::TestStatus Compressed2DTestInstance::iterate (void)
 	tcu::Surface			referenceFrame	(m_renderer.getRenderWidth(), m_renderer.getRenderHeight());
 	sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat), m_texture->getTexture(), &texCoord[0], sampleParams);
 
+#ifdef CTS_USES_VULKANSC
+	if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+	{
 	// Compare and log.
-	tcu::RGBA threshold;
+		tcu::RGBA threshold;
 
-	if (isBcBitExactFormat(m_compressedFormat))
-		threshold = tcu::RGBA(1, 1, 1, 1);
-	else if (isBcFormat(m_compressedFormat))
-		threshold = tcu::RGBA(8, 8, 8, 8);
-	else
-		threshold = pixelFormat.getColorThreshold() + tcu::RGBA(2, 2, 2, 2);
+		if (isBcBitExactFormat(m_compressedFormat))
+			threshold = tcu::RGBA(1, 1, 1, 1);
+		else if (isBcFormat(m_compressedFormat))
+			threshold = tcu::RGBA(8, 8, 8, 8);
+		else
+			threshold = pixelFormat.getColorThreshold() + tcu::RGBA(2, 2, 2, 2);
 
-	const bool isOk = compareImages(log, referenceFrame, rendered, threshold);
+		const bool isOk = compareImages(log, referenceFrame, rendered, threshold);
 
-	return isOk ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Image verification failed");
+		return isOk ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Image verification failed");
+	}
+	return tcu::TestStatus::pass("Pass");
 }
 
 class Compressed3DTestInstance : public TestInstance
@@ -383,12 +391,16 @@ tcu::TestStatus Compressed3DTestInstance::iterate (void)
 		sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat), m_texture3D->getTexture(), &texCoord[0], sampleParams);
 
 		// Compare and log.
-		isOk = compareImages(log, referenceFrame, rendered, threshold);
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+		{
+			isOk = compareImages(log, referenceFrame, rendered, threshold);
 
-		if (!isOk)
-			break;
+			if (!isOk)
+				break;
+		}
 	}
-
 	return isOk ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Image verification failed");
 }
 

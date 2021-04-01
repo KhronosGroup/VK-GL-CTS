@@ -41,11 +41,17 @@
 #include "vktDrawMultipleInterpolationTests.hpp"
 #include "vktDrawDiscardRectanglesTests.hpp"
 #include "vktDrawExplicitVertexParameterTests.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktDrawOutputLocationTests.hpp"
+#endif // CTS_USES_VULKANSC
 #include "vktDrawDepthClampTests.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktDrawAhbTests.hpp"
+#endif // CTS_USES_VULKANSC
 #include "vktDrawMultipleClearsWithinRenderPass.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktDrawMultiExtTests.hpp"
+#endif // CTS_USES_VULKANSC
 
 namespace vkt
 {
@@ -76,11 +82,17 @@ void createChildren (tcu::TestCaseGroup* group)
 	group->addChild(createMultipleInterpolationTests		(testCtx));
 	group->addChild(createDiscardRectanglesTests			(testCtx));
 	group->addChild(createExplicitVertexParameterTests		(testCtx));
+#ifndef CTS_USES_VULKANSC
 	group->addChild(createOutputLocationTests		        (testCtx));
+#endif // CTS_USES_VULKANSC
 	group->addChild(createDepthClampTests					(testCtx));
+#ifndef CTS_USES_VULKANSC
 	group->addChild(createAhbTests							(testCtx));
+#endif // CTS_USES_VULKANSC
 	group->addChild(new MultipleClearsWithinRenderPassTests	(testCtx));
+#ifndef CTS_USES_VULKANSC
 	group->addChild(createDrawMultiExtTests					(testCtx));
+#endif // CTS_USES_VULKANSC
 }
 
 } // anonymous

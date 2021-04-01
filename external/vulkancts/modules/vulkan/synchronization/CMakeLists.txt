@@ -3,7 +3,7 @@ include_directories(
 	../util
 	)
 
-set(DEQP_VK_SYNCHRONIZATION_SRCS
+set(DEQP_VK_VKSC_SYNCHRONIZATION_SRCS
 	vktSynchronizationTests.cpp
 	vktSynchronizationTests.hpp
 	vktSynchronizationUtil.cpp
@@ -25,10 +25,13 @@ set(DEQP_VK_SYNCHRONIZATION_SRCS
 	vktSynchronizationInternallySynchronizedObjectsTests.cpp
 	vktSynchronizationInternallySynchronizedObjectsTests.hpp
 	vktSynchronizationOperationTestData.hpp
-	vktSynchronizationCrossInstanceSharingTests.cpp
-	vktSynchronizationCrossInstanceSharingTests.hpp
 	vktSynchronizationTimelineSemaphoreTests.cpp
 	vktSynchronizationTimelineSemaphoreTests.hpp
+	)
+
+set(DEQP_VK_SYNCHRONIZATION_SRCS
+	vktSynchronizationCrossInstanceSharingTests.cpp
+	vktSynchronizationCrossInstanceSharingTests.hpp
 	vktSynchronizationNoneStageTests.cpp
 	vktSynchronizationNoneStageTests.hpp
 	vktSynchronizationSignalOrderTests.cpp
@@ -37,12 +40,11 @@ set(DEQP_VK_SYNCHRONIZATION_SRCS
 	vktSynchronizationWin32KeyedMutexTests.hpp
 	)
 
-set(DEQP_VK_SYNCHRONIZATION_LIBS
-	tcutil
-	vkutil
-	)
-
 PCH(DEQP_VK_SYNCHRONIZATION_SRCS ../pch.cpp)
 
-add_library(deqp-vk-synchronization STATIC ${DEQP_VK_SYNCHRONIZATION_SRCS})
-target_link_libraries(deqp-vk-synchronization ${DEQP_VK_SYNCHRONIZATION_LIBS})
+add_library(deqp-vk-synchronization STATIC ${DEQP_VK_VKSC_SYNCHRONIZATION_SRCS} ${DEQP_VK_SYNCHRONIZATION_SRCS})
+target_link_libraries(deqp-vk-synchronization tcutil vkutil)
+
+add_library(deqp-vksc-synchronization STATIC ${DEQP_VK_VKSC_SYNCHRONIZATION_SRCS})
+target_include_directories(deqp-vksc-synchronization BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
+target_link_libraries(deqp-vksc-synchronization PUBLIC deqp-vksc-util tcutil vkscutil)

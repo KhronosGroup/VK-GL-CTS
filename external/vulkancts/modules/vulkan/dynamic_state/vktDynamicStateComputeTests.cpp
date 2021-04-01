@@ -255,10 +255,12 @@ void setSampleLocations (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, 
 	vkd->cmdSetSampleLocationsEXT(cmdBuffer, &info);
 }
 
+#ifndef CTS_USES_VULKANSC
 void setRTPipelineStatckSize (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
 	vkd->cmdSetRayTracingPipelineStackSizeKHR(cmdBuffer, 4096u);
 }
+#endif // CTS_USES_VULKANSC
 
 void setFragmentShadingRage (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
@@ -359,6 +361,8 @@ void setStencilOp (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const 
 	vkd->cmdSetStencilOpEXT(cmdBuffer, VK_STENCIL_FRONT_AND_BACK, VK_STENCIL_OP_ZERO, VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_ALWAYS);
 }
 
+#ifndef CTS_USES_VULKANSC
+
 void setViewportWScaling (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
 	const VkViewportWScalingNV viewport =
@@ -408,6 +412,8 @@ void setExclusiveScissor (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer,
 	vkd->cmdSetExclusiveScissorNV(cmdBuffer, 0u, 1u, &scissor);
 }
 
+#endif // CTS_USES_VULKANSC
+
 const VkDynamicState dynamicStateList[] =
 {
 	VK_DYNAMIC_STATE_VIEWPORT,
@@ -421,7 +427,9 @@ const VkDynamicState dynamicStateList[] =
 	VK_DYNAMIC_STATE_STENCIL_REFERENCE,
 	VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT,
 	VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT,
+#ifndef CTS_USES_VULKANSC
 	VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR,
+#endif // CTS_USES_VULKANSC
 	VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR,
 	VK_DYNAMIC_STATE_LINE_STIPPLE_EXT,
 	VK_DYNAMIC_STATE_CULL_MODE_EXT,
@@ -436,10 +444,12 @@ const VkDynamicState dynamicStateList[] =
 	VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE_EXT,
 	VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT,
 	VK_DYNAMIC_STATE_STENCIL_OP_EXT,
+#ifndef CTS_USES_VULKANSC
 	VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV,
 	VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV,
 	VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV,
 	VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV,
+#endif // CTS_USES_VULKANSC
 };
 
 // Information about a dynamic state.
@@ -468,7 +478,9 @@ const StateInfo& getDynamicStateInfo (VkDynamicState state)
 		{	VK_DYNAMIC_STATE_STENCIL_REFERENCE,						{	{},										setStencilReference				}	},
 		{	VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT,					{	{ "VK_EXT_discard_rectangles" },		setDiscardRectangle				}	},
 		{	VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT,					{	{ "VK_EXT_sample_locations" },			setSampleLocations				}	},
+#ifndef CTS_USES_VULKANSC
 		{	VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR,	{	{ "VK_KHR_ray_tracing_pipeline" },		setRTPipelineStatckSize			}	},
+#endif // CTS_USES_VULKANSC
 		{	VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR,				{	{ "VK_KHR_fragment_shading_rate" },		setFragmentShadingRage			}	},
 		{	VK_DYNAMIC_STATE_LINE_STIPPLE_EXT,						{	{ "VK_EXT_line_rasterization" },		setLineStipple					}	},
 		{	VK_DYNAMIC_STATE_CULL_MODE_EXT,							{	{ "VK_EXT_extended_dynamic_state" },	setCullMode						}	},
@@ -483,10 +495,12 @@ const StateInfo& getDynamicStateInfo (VkDynamicState state)
 		{	VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE_EXT,			{	{ "VK_EXT_extended_dynamic_state" },	setDepthBoundsTestEnable		}	},
 		{	VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT,				{	{ "VK_EXT_extended_dynamic_state" },	setStencilTestEnable			}	},
 		{	VK_DYNAMIC_STATE_STENCIL_OP_EXT,						{	{ "VK_EXT_extended_dynamic_state" },	setStencilOp					}	},
+#ifndef CTS_USES_VULKANSC
 		{	VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV,					{	{ "VK_NV_clip_space_w_scaling" },		setViewportWScaling				}	},
 		{	VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV,		{	{ "VK_NV_shading_rate_image"},			setViewportShadingRatePalette	}	},
 		{	VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV,		{	{ "VK_NV_shading_rate_image"},			setCoarseSamplingOrder			}	},
 		{	VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV,					{	{ "VK_NV_scissor_exclusive"},			setExclusiveScissor				}	},
+#endif // CTS_USES_VULKANSC
 	};
 
 	const auto itr = result.find(state);

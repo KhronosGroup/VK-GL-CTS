@@ -47,8 +47,9 @@ VkResult DeviceDriverSC::allocateMemory (VkDevice device, const VkMemoryAllocate
 		return m_vk.allocateMemory(device, pAllocateInfo, pAllocator, pMemory);
 	else
 	{
+		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(deviceMemoryRequestCount,1);
-		*pMemory = Handle<HANDLE_TYPE_DEVICE_MEMORY>(++m_resourceCounter);
+		*pMemory = Handle<HANDLE_TYPE_DEVICE_MEMORY>(m_resourceInterface->incResourceCounter());
 	}
 	return VK_SUCCESS;
 }
@@ -60,6 +61,7 @@ VkResult DeviceDriverSC::mapMemory (VkDevice device, VkDeviceMemory memory, VkDe
 		return m_vk.mapMemory(device, memory, offset, size, flags, ppData);
 	else
 	{
+		DDSTAT_LOCK();
 		if(m_falseMemory.size() < (static_cast<std::size_t>(offset+size)))
 			m_falseMemory.resize(static_cast<std::size_t>(offset+size));
 		*ppData = (void*)m_falseMemory.data();
@@ -114,8 +116,9 @@ void DeviceDriverSC::getBufferMemoryRequirements (VkDevice device, VkBuffer buff
 		m_vk.getBufferMemoryRequirements(device, buffer, pMemoryRequirements);
 	else
 	{
-		pMemoryRequirements->size = 1048576;
-		pMemoryRequirements->alignment = 1;
+		DDSTAT_LOCK();
+		pMemoryRequirements->size = 1048576U;
+		pMemoryRequirements->alignment = 1U;
 		pMemoryRequirements->memoryTypeBits = ~0U;
 	}
 }
@@ -127,8 +130,9 @@ void DeviceDriverSC::getImageMemoryRequirements (VkDevice device, VkImage image,
 		m_vk.getImageMemoryRequirements(device, image, pMemoryRequirements);
 	else
 	{
-		pMemoryRequirements->size = 1048576;
-		pMemoryRequirements->alignment = 1;
+		DDSTAT_LOCK();
+		pMemoryRequirements->size = 1048576U;
+		pMemoryRequirements->alignment = 1U;
 		pMemoryRequirements->memoryTypeBits = ~0U;
 	}
 }
@@ -140,8 +144,9 @@ VkResult DeviceDriverSC::createFence (VkDevice device, const VkFenceCreateInfo* 
 		return m_vk.createFence(device, pCreateInfo, pAllocator, pFence);
 	else
 	{
+		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(fenceRequestCount,1);
-		*pFence = Handle<HANDLE_TYPE_FENCE>(++m_resourceCounter);
+		*pFence = Handle<HANDLE_TYPE_FENCE>(m_resourceInterface->incResourceCounter());
 	}
 	return VK_SUCCESS;
 }
@@ -152,7 +157,10 @@ void DeviceDriverSC::destroyFence (VkDevice device, VkFence fence, const VkAlloc
 	if (m_normalMode)
 		m_vk.destroyFence(device, fence, pAllocator);
 	else
-		DDSTAT_HANDLE_DESTROY(fenceRequestCount,1);
+	{
+		DDSTAT_LOCK();
+		DDSTAT_HANDLE_DESTROY_IF(fence,fenceRequestCount,1);
+	}
 }
 
 VkResult DeviceDriverSC::resetFences (VkDevice device, uint32_t fenceCount, const VkFence* pFences) const
@@ -183,8 +191,9 @@ VkResult DeviceDriverSC::createSemaphore (VkDevice device, const VkSemaphoreCrea
 		return m_vk.createSemaphore(device, pCreateInfo, pAllocator, pSemaphore);
 	else
 	{
+		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(semaphoreRequestCount,1);
-		*pSemaphore = Handle<HANDLE_TYPE_SEMAPHORE>(++m_resourceCounter);
+		*pSemaphore = Handle<HANDLE_TYPE_SEMAPHORE>(m_resourceInterface->incResourceCounter());
 	}
 	return VK_SUCCESS;
 }
@@ -195,7 +204,10 @@ void DeviceDriverSC::destroySemaphore (VkDevice device, VkSemaphore semaphore, c
 	if (m_normalMode)
 		m_vk.destroySemaphore(device, semaphore, pAllocator);
 	else
-		DDSTAT_HANDLE_DESTROY(semaphoreRequestCount,1);
+	{
+		DDSTAT_LOCK();
+		DDSTAT_HANDLE_DESTROY_IF(semaphore,semaphoreRequestCount,1);
+	}
 }
 
 VkResult DeviceDriverSC::createEvent (VkDevice device, const VkEventCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkEvent* pEvent) const
@@ -205,8 +217,9 @@ VkResult DeviceDriverSC::createEvent (VkDevice device, const VkEventCreateInfo* 
 		return m_vk.createEvent(device, pCreateInfo, pAllocator, pEvent);
 	else
 	{
+		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(eventRequestCount,1);
-		*pEvent = Handle<HANDLE_TYPE_EVENT>(++m_resourceCounter);
+		*pEvent = Handle<HANDLE_TYPE_EVENT>(m_resourceInterface->incResourceCounter());
 	}
 	return VK_SUCCESS;
 }
@@ -217,7 +230,10 @@ void DeviceDriverSC::destroyEvent (VkDevice device, VkEvent event, const VkAlloc
 	if (m_normalMode)
 		m_vk.destroyEvent(device, event, pAllocator);
 	else
-		DDSTAT_HANDLE_DESTROY(eventRequestCount,1);
+	{
+		DDSTAT_LOCK();
+		DDSTAT_HANDLE_DESTROY_IF(event,eventRequestCount,1);
+	}
 }
 
 VkResult DeviceDriverSC::getEventStatus (VkDevice device, VkEvent event) const
@@ -265,8 +281,9 @@ VkResult DeviceDriverSC::createBuffer (VkDevice device, const VkBufferCreateInfo
 		return m_vk.createBuffer(device, pCreateInfo, pAllocator, pBuffer);
 	else
 	{
+		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(bufferRequestCount,1);
-		*pBuffer = Handle<HANDLE_TYPE_BUFFER>(++m_resourceCounter);
+		*pBuffer = Handle<HANDLE_TYPE_BUFFER>(m_resourceInterface->incResourceCounter());
 	}
 	return VK_SUCCESS;
 }
@@ -277,7 +294,10 @@ void DeviceDriverSC::destroyBuffer (VkDevice device, VkBuffer buffer, const VkAl
 	if (m_normalMode)
 		m_vk.destroyBuffer(device, buffer, pAllocator);
 	else
-		DDSTAT_HANDLE_DESTROY(bufferRequestCount,1);
+	{
+		DDSTAT_LOCK();
+		DDSTAT_HANDLE_DESTROY_IF(buffer,bufferRequestCount,1);
+	}
 }
 
 VkResult DeviceDriverSC::createBufferView (VkDevice device, const VkBufferViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBufferView* pView) const
@@ -287,8 +307,9 @@ VkResult DeviceDriverSC::createBufferView (VkDevice device, const VkBufferViewCr
 		return m_vk.createBufferView(device, pCreateInfo, pAllocator, pView);
 	else
 	{
+		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(bufferViewRequestCount,1);
-		*pView = Handle<HANDLE_TYPE_BUFFER_VIEW>(++m_resourceCounter);
+		*pView = Handle<HANDLE_TYPE_BUFFER_VIEW>(m_resourceInterface->incResourceCounter());
 	}
 	return VK_SUCCESS;
 }
@@ -299,7 +320,10 @@ void DeviceDriverSC::destroyBufferView (VkDevice device, VkBufferView bufferView
 	if (m_normalMode)
 		m_vk.destroyBufferView(device, bufferView, pAllocator);
 	else
-		DDSTAT_HANDLE_DESTROY(bufferViewRequestCount,1);
+	{
+		DDSTAT_LOCK();
+		DDSTAT_HANDLE_DESTROY_IF(bufferView,bufferViewRequestCount,1);
+	}
 }
 
 VkResult DeviceDriverSC::createImage (VkDevice device, const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImage* pImage) const
@@ -309,8 +333,9 @@ VkResult DeviceDriverSC::createImage (VkDevice device, const VkImageCreateInfo* 
 		return m_vk.createImage(device, pCreateInfo, pAllocator, pImage);
 	else
 	{
+		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(imageRequestCount,1);
-		*pImage = Handle<HANDLE_TYPE_IMAGE>(++m_resourceCounter);
+		*pImage = Handle<HANDLE_TYPE_IMAGE>(m_resourceInterface->incResourceCounter());
 	}
 	return VK_SUCCESS;
 }
@@ -321,13 +346,26 @@ void DeviceDriverSC::destroyImage (VkDevice device, VkImage image, const VkAlloc
 	if (m_normalMode)
 		m_vk.destroyImage(device, image, pAllocator);
 	else
-		DDSTAT_HANDLE_DESTROY(imageRequestCount,1);
+	{
+		DDSTAT_LOCK();
+		DDSTAT_HANDLE_DESTROY_IF(image,imageRequestCount,1);
+	}
 }
 
 void DeviceDriverSC::getImageSubresourceLayout (VkDevice device, VkImage image, const VkImageSubresource* pSubresource, VkSubresourceLayout* pLayout) const
 {
+	std::lock_guard<std::mutex> lock(functionMutex);
 	if (m_normalMode)
 		m_vk.getImageSubresourceLayout(device, image, pSubresource, pLayout);
+	else
+	{
+		DDSTAT_LOCK();
+		pLayout->offset = 0U;
+		pLayout->size = 1048576U;
+		pLayout->rowPitch = 0U;
+		pLayout->arrayPitch = 0U;
+		pLayout->depthPitch = 0U;
+	}
 }
 
 VkResult DeviceDriverSC::createImageView (VkDevice device, const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImageView* pView) const
@@ -355,7 +393,10 @@ VkResult DeviceDriverSC::createPipelineCache (VkDevice device, const VkPipelineC
 	if (m_normalMode)
 		return m_vk.createPipelineCache(device, pCreateInfo, pAllocator, pPipelineCache);
 	else
-		*pPipelineCache = Handle<HANDLE_TYPE_PIPELINE_CACHE>(++m_resourceCounter);
+	{
+		DDSTAT_LOCK();
+		*pPipelineCache = Handle<HANDLE_TYPE_PIPELINE_CACHE>(m_resourceInterface->incResourceCounter());
+	}
 	return VK_SUCCESS;
 }
 
@@ -410,7 +451,10 @@ void DeviceDriverSC::destroyPipelineLayout (VkDevice device, VkPipelineLayout pi
 	if (m_normalMode)
 		m_vk.destroyPipelineLayout(device, pipelineLayout, pAllocator);
 	else
-		DDSTAT_HANDLE_DESTROY(pipelineLayoutRequestCount,1);
+	{
+		DDSTAT_LOCK();
+		DDSTAT_HANDLE_DESTROY_IF(pipelineLayout,pipelineLayoutRequestCount,1);
+	}
 }
 
 VkResult DeviceDriverSC::createSampler (VkDevice device, const VkSamplerCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSampler* pSampler) const
@@ -429,7 +473,10 @@ void DeviceDriverSC::destroySampler (VkDevice device, VkSampler sampler, const V
 	if (m_normalMode)
 		m_vk.destroySampler(device, sampler, pAllocator);
 	else
-		DDSTAT_HANDLE_DESTROY(samplerRequestCount,1);
+	{
+		DDSTAT_LOCK();
+		DDSTAT_HANDLE_DESTROY_IF(sampler,samplerRequestCount,1);
+	}
 }
 
 VkResult DeviceDriverSC::createDescriptorSetLayout (VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorSetLayout* pSetLayout) const
@@ -448,7 +495,10 @@ void DeviceDriverSC::destroyDescriptorSetLayout (VkDevice device, VkDescriptorSe
 	if (m_normalMode)
 		m_vk.destroyDescriptorSetLayout(device, descriptorSetLayout, pAllocator);
 	else
-		DDSTAT_HANDLE_DESTROY(descriptorSetLayoutRequestCount,1);
+	{
+		DDSTAT_LOCK();
+		DDSTAT_HANDLE_DESTROY_IF(descriptorSetLayout,descriptorSetLayoutRequestCount,1);
+	}
 }
 
 VkResult DeviceDriverSC::createDescriptorPool (VkDevice device, const VkDescriptorPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorPool* pDescriptorPool) const
@@ -458,8 +508,9 @@ VkResult DeviceDriverSC::createDescriptorPool (VkDevice device, const VkDescript
 		return m_vk.createDescriptorPool(device, pCreateInfo, pAllocator, pDescriptorPool);
 	else
 	{
+		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(descriptorPoolRequestCount,1);
-		*pDescriptorPool = Handle<HANDLE_TYPE_DESCRIPTOR_POOL>(++m_resourceCounter);
+		*pDescriptorPool = Handle<HANDLE_TYPE_DESCRIPTOR_POOL>(m_resourceInterface->incResourceCounter());
 	}
 	return VK_SUCCESS;
 }
@@ -478,8 +529,9 @@ VkResult DeviceDriverSC::allocateDescriptorSets (VkDevice device, const VkDescri
 		return m_vk.allocateDescriptorSets(device, pAllocateInfo, pDescriptorSets);
 	else
 	{
+		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(descriptorSetRequestCount,pAllocateInfo->descriptorSetCount);
-		*pDescriptorSets = Handle<HANDLE_TYPE_DESCRIPTOR_SET>(++m_resourceCounter);
+		*pDescriptorSets = Handle<HANDLE_TYPE_DESCRIPTOR_SET>(m_resourceInterface->incResourceCounter());
 	}
 	return VK_SUCCESS;
 }
@@ -490,7 +542,11 @@ VkResult DeviceDriverSC::freeDescriptorSets (VkDevice device, VkDescriptorPool d
 	if (m_normalMode)
 		return m_vk.freeDescriptorSets(device, descriptorPool, descriptorSetCount, pDescriptorSets);
 	else
-		DDSTAT_HANDLE_DESTROY(descriptorSetRequestCount,descriptorSetCount);
+	{
+		DDSTAT_LOCK();
+		for(deUint32 i=0; i<descriptorSetCount; ++i)
+			DDSTAT_HANDLE_DESTROY_IF(pDescriptorSets[i],descriptorSetRequestCount,1);
+	}
 	return VK_SUCCESS;
 }
 
@@ -507,8 +563,9 @@ VkResult DeviceDriverSC::createFramebuffer (VkDevice device, const VkFramebuffer
 		return m_vk.createFramebuffer(device, pCreateInfo, pAllocator, pFramebuffer);
 	else
 	{
+		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(framebufferRequestCount,1);
-		*pFramebuffer = Handle<HANDLE_TYPE_FRAMEBUFFER>(++m_resourceCounter);
+		*pFramebuffer = Handle<HANDLE_TYPE_FRAMEBUFFER>(m_resourceInterface->incResourceCounter());
 	}
 	return VK_SUCCESS;
 }
@@ -519,7 +576,10 @@ void DeviceDriverSC::destroyFramebuffer (VkDevice device, VkFramebuffer framebuf
 	if (m_normalMode)
 		m_vk.destroyFramebuffer(device, framebuffer, pAllocator);
 	else
-		DDSTAT_HANDLE_DESTROY(framebufferRequestCount,1);
+	{
+		DDSTAT_LOCK();
+		DDSTAT_HANDLE_DESTROY_IF(framebuffer,framebufferRequestCount,1);
+	}
 }
 
 VkResult DeviceDriverSC::createRenderPass (VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass) const
@@ -554,8 +614,9 @@ VkResult DeviceDriverSC::createCommandPool (VkDevice device, const VkCommandPool
 		return m_vk.createCommandPool(device, pCreateInfo, pAllocator, pCommandPool);
 	else
 	{
+		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(commandPoolRequestCount,1);
-		*pCommandPool = Handle<HANDLE_TYPE_COMMAND_POOL>(++m_resourceCounter);
+		*pCommandPool = Handle<HANDLE_TYPE_COMMAND_POOL>(m_resourceInterface->incResourceCounter());
 	}
 	return VK_SUCCESS;
 }
@@ -574,8 +635,9 @@ VkResult DeviceDriverSC::allocateCommandBuffers (VkDevice device, const VkComman
 		return m_vk.allocateCommandBuffers(device, pAllocateInfo, pCommandBuffers);
 	else
 	{
+		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(commandBufferRequestCount,pAllocateInfo->commandBufferCount);
-		*pCommandBuffers = (VkCommandBuffer)++m_resourceCounter;
+		*pCommandBuffers = (VkCommandBuffer)m_resourceInterface->incResourceCounter();
 	}
 	return VK_SUCCESS;
 }
@@ -586,7 +648,12 @@ void DeviceDriverSC::freeCommandBuffers (VkDevice device, VkCommandPool commandP
 	if (m_normalMode)
 		m_vk.freeCommandBuffers(device, commandPool, commandBufferCount, pCommandBuffers);
 	else
-	DDSTAT_HANDLE_DESTROY(commandBufferRequestCount,commandBufferCount);
+	{
+		DDSTAT_LOCK();
+		for (deUint32 i = 0; i < commandBufferCount; ++i)
+			if (pCommandBuffers[i] != DE_NULL)
+				m_resourceInterface->getStatCurrent().commandBufferRequestCount -= 1;
+	}
 }
 
 VkResult DeviceDriverSC::beginCommandBuffer (VkCommandBuffer commandBuffer, const VkCommandBufferBeginInfo* pBeginInfo) const
@@ -913,8 +980,9 @@ void DeviceDriverSC::getImageMemoryRequirements2 (VkDevice device, const VkImage
 		m_vk.getImageMemoryRequirements2(device, pInfo, pMemoryRequirements);
 	else
 	{
-		pMemoryRequirements->memoryRequirements.size = 1048576;
-		pMemoryRequirements->memoryRequirements.alignment = 1;
+		DDSTAT_LOCK();
+		pMemoryRequirements->memoryRequirements.size = 1048576U;
+		pMemoryRequirements->memoryRequirements.alignment = 1U;
 		pMemoryRequirements->memoryRequirements.memoryTypeBits = ~0U;
 	}
 }
@@ -926,8 +994,9 @@ void DeviceDriverSC::getBufferMemoryRequirements2 (VkDevice device, const VkBuff
 		m_vk.getBufferMemoryRequirements2(device, pInfo, pMemoryRequirements);
 	else
 	{
-		pMemoryRequirements->memoryRequirements.size = 1048576;
-		pMemoryRequirements->memoryRequirements.alignment = 1;
+		DDSTAT_LOCK();
+		pMemoryRequirements->memoryRequirements.size = 1048576U;
+		pMemoryRequirements->memoryRequirements.alignment = 1U;
 		pMemoryRequirements->memoryRequirements.memoryTypeBits = ~0U;
 	}
 }
@@ -944,10 +1013,7 @@ VkResult DeviceDriverSC::createSamplerYcbcrConversion (VkDevice device, const Vk
 	if (m_normalMode)
 		return m_vk.createSamplerYcbcrConversion(device, pCreateInfo, pAllocator, pYcbcrConversion);
 	else
-	{
-		DDSTAT_HANDLE_CREATE(samplerYcbcrConversionRequestCount,1);
-		*pYcbcrConversion = Handle<HANDLE_TYPE_SAMPLER_YCBCR_CONVERSION>(++m_resourceCounter);
-	}
+		createSamplerYcbcrConversionHandler(device, pCreateInfo, pAllocator, pYcbcrConversion);
 	return VK_SUCCESS;
 }
 
@@ -957,13 +1023,19 @@ void DeviceDriverSC::destroySamplerYcbcrConversion (VkDevice device, VkSamplerYc
 	if (m_normalMode)
 		m_vk.destroySamplerYcbcrConversion(device, ycbcrConversion, pAllocator);
 	else
-		DDSTAT_HANDLE_DESTROY(samplerYcbcrConversionRequestCount,1);
+	{
+		DDSTAT_LOCK();
+		DDSTAT_HANDLE_DESTROY_IF(ycbcrConversion,samplerYcbcrConversionRequestCount,1);
+	}
 }
 
 void DeviceDriverSC::getDescriptorSetLayoutSupport (VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, VkDescriptorSetLayoutSupport* pSupport) const
 {
+	std::lock_guard<std::mutex> lock(functionMutex);
 	if (m_normalMode)
 		m_vk.getDescriptorSetLayoutSupport(device, pCreateInfo, pSupport);
+	else
+		getDescriptorSetLayoutSupportHandler(device, pCreateInfo, pSupport);
 }
 
 void DeviceDriverSC::cmdDrawIndirectCount (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) const

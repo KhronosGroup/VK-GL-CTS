@@ -1103,32 +1103,32 @@ def writeFuncPtrInterfaceImpl (api, filename, functionTypes, className):
 
 def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
 	normFuncs = {
-		"createGraphicsPipelines"		: "createGraphicsPipelinesHandlerNorm(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);",
-		"createComputePipelines"		: "createComputePipelinesHandlerNorm(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);",
+		"createGraphicsPipelines"		: "\t\treturn createGraphicsPipelinesHandlerNorm(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);",
+		"createComputePipelines"		: "\t\treturn createComputePipelinesHandlerNorm(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);",
 	}
 	statFuncs = {
 		"createDescriptorSetLayout"		: "\t\tcreateDescriptorSetLayoutHandler(device, pCreateInfo, pAllocator, pSetLayout);",
-		"destroyDescriptorSetLayout"	: "\t\tDDSTAT_HANDLE_DESTROY(descriptorSetLayoutRequestCount,1);",
+		"destroyDescriptorSetLayout"	: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(descriptorSetLayout,descriptorSetLayoutRequestCount,1);\n\t}",
 		"createImageView"				: "\t\tcreateImageViewHandler(device, pCreateInfo, pAllocator, pView);",
 		"destroyImageView"				: "\t\tdestroyImageViewHandler(device, imageView, pAllocator);",
-		"createSemaphore"				: "\t{\n\t\tDDSTAT_HANDLE_CREATE(semaphoreRequestCount,1);\n\t\t*pSemaphore = Handle<HANDLE_TYPE_SEMAPHORE>(++m_resourceCounter);\n\t}",
-		"destroySemaphore"				: "\t\tDDSTAT_HANDLE_DESTROY(semaphoreRequestCount,1);",
-		"allocateCommandBuffers"		: "\t{\n\t\tDDSTAT_HANDLE_CREATE(commandBufferRequestCount,pAllocateInfo->commandBufferCount);\n\t\t*pCommandBuffers = (VkCommandBuffer)++m_resourceCounter;\n\t}",
-		"freeCommandBuffers"			: "\tDDSTAT_HANDLE_DESTROY(commandBufferRequestCount,commandBufferCount);",
-		"createFence"					: "\t{\n\t\tDDSTAT_HANDLE_CREATE(fenceRequestCount,1);\n\t\t*pFence = Handle<HANDLE_TYPE_FENCE>(++m_resourceCounter);\n\t}",
-		"destroyFence"					: "\t\tDDSTAT_HANDLE_DESTROY(fenceRequestCount,1);",
-		"allocateMemory"				: "\t{\n\t\tDDSTAT_HANDLE_CREATE(deviceMemoryRequestCount,1);\n\t\t*pMemory = Handle<HANDLE_TYPE_DEVICE_MEMORY>(++m_resourceCounter);\n\t}",
-		"createBuffer"					: "\t{\n\t\tDDSTAT_HANDLE_CREATE(bufferRequestCount,1);\n\t\t*pBuffer = Handle<HANDLE_TYPE_BUFFER>(++m_resourceCounter);\n\t}",
-		"destroyBuffer"					: "\t\tDDSTAT_HANDLE_DESTROY(bufferRequestCount,1);",
-		"createImage"					: "\t{\n\t\tDDSTAT_HANDLE_CREATE(imageRequestCount,1);\n\t\t*pImage = Handle<HANDLE_TYPE_IMAGE>(++m_resourceCounter);\n\t}",
-		"destroyImage"					: "\t\tDDSTAT_HANDLE_DESTROY(imageRequestCount,1);",
-		"createEvent"					: "\t{\n\t\tDDSTAT_HANDLE_CREATE(eventRequestCount,1);\n\t\t*pEvent = Handle<HANDLE_TYPE_EVENT>(++m_resourceCounter);\n\t}",
-		"destroyEvent"					: "\t\tDDSTAT_HANDLE_DESTROY(eventRequestCount,1);",
+		"createSemaphore"				: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(semaphoreRequestCount,1);\n\t\t*pSemaphore = Handle<HANDLE_TYPE_SEMAPHORE>(m_resourceInterface->incResourceCounter());\n\t}",
+		"destroySemaphore"				: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(semaphore,semaphoreRequestCount,1);\n\t}",
+		"allocateCommandBuffers"		: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(commandBufferRequestCount,pAllocateInfo->commandBufferCount);\n\t\t*pCommandBuffers = (VkCommandBuffer)m_resourceInterface->incResourceCounter();\n\t}",
+		"freeCommandBuffers"			: "\t{\n\t\tDDSTAT_LOCK();\n\t\tfor (deUint32 i = 0; i < commandBufferCount; ++i)\n\t\t\tif (pCommandBuffers[i] != DE_NULL)\n\t\t\t\tm_resourceInterface->getStatCurrent().commandBufferRequestCount -= 1;\n\t}",
+		"createFence"					: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(fenceRequestCount,1);\n\t\t*pFence = Handle<HANDLE_TYPE_FENCE>(m_resourceInterface->incResourceCounter());\n\t}",
+		"destroyFence"					: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(fence,fenceRequestCount,1);\n\t}",
+		"allocateMemory"				: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(deviceMemoryRequestCount,1);\n\t\t*pMemory = Handle<HANDLE_TYPE_DEVICE_MEMORY>(m_resourceInterface->incResourceCounter());\n\t}",
+		"createBuffer"					: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(bufferRequestCount,1);\n\t\t*pBuffer = Handle<HANDLE_TYPE_BUFFER>(m_resourceInterface->incResourceCounter());\n\t}",
+		"destroyBuffer"					: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(buffer,bufferRequestCount,1);\n\t}",
+		"createImage"					: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(imageRequestCount,1);\n\t\t*pImage = Handle<HANDLE_TYPE_IMAGE>(m_resourceInterface->incResourceCounter());\n\t}",
+		"destroyImage"					: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(image,imageRequestCount,1);\n\t}",
+		"createEvent"					: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(eventRequestCount,1);\n\t\t*pEvent = Handle<HANDLE_TYPE_EVENT>(m_resourceInterface->incResourceCounter());\n\t}",
+		"destroyEvent"					: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(event,eventRequestCount,1);\n\t}",
 		"createQueryPool"				: "\t\tcreateQueryPoolHandler(device, pCreateInfo, pAllocator, pQueryPool);",
-		"createBufferView"				: "\t{\n\t\tDDSTAT_HANDLE_CREATE(bufferViewRequestCount,1);\n\t\t*pView = Handle<HANDLE_TYPE_BUFFER_VIEW>(++m_resourceCounter);\n\t}",
-		"destroyBufferView"				: "\t\tDDSTAT_HANDLE_DESTROY(bufferViewRequestCount,1);",
+		"createBufferView"				: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(bufferViewRequestCount,1);\n\t\t*pView = Handle<HANDLE_TYPE_BUFFER_VIEW>(m_resourceInterface->incResourceCounter());\n\t}",
+		"destroyBufferView"				: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(bufferView,bufferViewRequestCount,1);\n\t}",
 		"createPipelineLayout"			: "\t\tcreatePipelineLayoutHandler(device, pCreateInfo, pAllocator, pPipelineLayout);",
-		"destroyPipelineLayout"			: "\t\tDDSTAT_HANDLE_DESTROY(pipelineLayoutRequestCount,1);",
+		"destroyPipelineLayout"			: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(pipelineLayout,pipelineLayoutRequestCount,1);\n\t}",
 		"createRenderPass"				: "\t\tcreateRenderPassHandler(device, pCreateInfo, pAllocator, pRenderPass);",
 		"createRenderPass2"				: "\t\tcreateRenderPass2Handler(device, pCreateInfo, pAllocator, pRenderPass);",
 		"destroyRenderPass"				: "\t\tdestroyRenderPassHandler(device, renderPass, pAllocator);",
@@ -1136,24 +1136,26 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
 		"createComputePipelines"		: "\t\tcreateComputePipelinesHandlerStat(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);",
 		"destroyPipeline"				: "\t\tdestroyPipelineHandler(device, pipeline, pAllocator);",
 		"createSampler"					: "\t\tcreateSamplerHandler(device, pCreateInfo, pAllocator, pSampler);",
-		"destroySampler"				: "\t\tDDSTAT_HANDLE_DESTROY(samplerRequestCount,1);",
-		"createDescriptorPool"			: "\t{\n\t\tDDSTAT_HANDLE_CREATE(descriptorPoolRequestCount,1);\n\t\t*pDescriptorPool = Handle<HANDLE_TYPE_DESCRIPTOR_POOL>(++m_resourceCounter);\n\t}",
-		"allocateDescriptorSets"		: "\t{\n\t\tDDSTAT_HANDLE_CREATE(descriptorSetRequestCount,pAllocateInfo->descriptorSetCount);\n\t\t*pDescriptorSets = Handle<HANDLE_TYPE_DESCRIPTOR_SET>(++m_resourceCounter);\n\t}",
-		"freeDescriptorSets"			: "\t\tDDSTAT_HANDLE_DESTROY(descriptorSetRequestCount,descriptorSetCount);",
-		"createFramebuffer"				: "\t{\n\t\tDDSTAT_HANDLE_CREATE(framebufferRequestCount,1);\n\t\t*pFramebuffer = Handle<HANDLE_TYPE_FRAMEBUFFER>(++m_resourceCounter);\n\t}",
-		"destroyFramebuffer"			: "\t\tDDSTAT_HANDLE_DESTROY(framebufferRequestCount,1);",
-		"createCommandPool"				: "\t{\n\t\tDDSTAT_HANDLE_CREATE(commandPoolRequestCount,1);\n\t\t*pCommandPool = Handle<HANDLE_TYPE_COMMAND_POOL>(++m_resourceCounter);\n\t}",
-		"createSamplerYcbcrConversion"	: "\t{\n\t\tDDSTAT_HANDLE_CREATE(samplerYcbcrConversionRequestCount,1);\n\t\t*pYcbcrConversion = Handle<HANDLE_TYPE_SAMPLER_YCBCR_CONVERSION>(++m_resourceCounter);\n\t}",
-		"destroySamplerYcbcrConversion"	: "\t\tDDSTAT_HANDLE_DESTROY(samplerYcbcrConversionRequestCount,1);",
+		"destroySampler"				: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(sampler,samplerRequestCount,1);\n\t}",
+		"createDescriptorPool"			: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(descriptorPoolRequestCount,1);\n\t\t*pDescriptorPool = Handle<HANDLE_TYPE_DESCRIPTOR_POOL>(m_resourceInterface->incResourceCounter());\n\t}",
+		"allocateDescriptorSets"		: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(descriptorSetRequestCount,pAllocateInfo->descriptorSetCount);\n\t\t*pDescriptorSets = Handle<HANDLE_TYPE_DESCRIPTOR_SET>(m_resourceInterface->incResourceCounter());\n\t}",
+		"freeDescriptorSets"			: "\t{\n\t\tDDSTAT_LOCK();\n\t\tfor(deUint32 i=0; i<descriptorSetCount; ++i)\n\t\t\tDDSTAT_HANDLE_DESTROY_IF(pDescriptorSets[i],descriptorSetRequestCount,1);\n\t}",
+		"createFramebuffer"				: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(framebufferRequestCount,1);\n\t\t*pFramebuffer = Handle<HANDLE_TYPE_FRAMEBUFFER>(m_resourceInterface->incResourceCounter());\n\t}",
+		"destroyFramebuffer"			: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(framebuffer,framebufferRequestCount,1);\n\t}",
+		"createCommandPool"				: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(commandPoolRequestCount,1);\n\t\t*pCommandPool = Handle<HANDLE_TYPE_COMMAND_POOL>(m_resourceInterface->incResourceCounter());\n\t}",
+		"createSamplerYcbcrConversion"	: "\t\tcreateSamplerYcbcrConversionHandler(device, pCreateInfo, pAllocator, pYcbcrConversion);",
+		"destroySamplerYcbcrConversion"	: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(ycbcrConversion,samplerYcbcrConversionRequestCount,1);\n\t}",
+		"getDescriptorSetLayoutSupport"	: "\t\tgetDescriptorSetLayoutSupportHandler(device, pCreateInfo, pSupport);",
 #		"" : "surfaceRequestCount",
 #		"" : "swapchainRequestCount",
 #		"" : "displayModeRequestCount"
-		"mapMemory"						: "\t{\n\t\tif(m_falseMemory.size() < (static_cast<std::size_t>(offset+size)))\n\t\t\tm_falseMemory.resize(static_cast<std::size_t>(offset+size));\n\t\t*ppData = (void*)m_falseMemory.data();\n\t}",
-		"getBufferMemoryRequirements"	: "\t{\n\t\tpMemoryRequirements->size = 1048576;\n\t\tpMemoryRequirements->alignment = 1;\n\t\tpMemoryRequirements->memoryTypeBits = ~0U;\n\t}",
-		"getImageMemoryRequirements"	: "\t{\n\t\tpMemoryRequirements->size = 1048576;\n\t\tpMemoryRequirements->alignment = 1;\n\t\tpMemoryRequirements->memoryTypeBits = ~0U;\n\t}",
-		"getBufferMemoryRequirements2"	: "\t{\n\t\tpMemoryRequirements->memoryRequirements.size = 1048576;\n\t\tpMemoryRequirements->memoryRequirements.alignment = 1;\n\t\tpMemoryRequirements->memoryRequirements.memoryTypeBits = ~0U;\n\t}",
-		"getImageMemoryRequirements2"	: "\t{\n\t\tpMemoryRequirements->memoryRequirements.size = 1048576;\n\t\tpMemoryRequirements->memoryRequirements.alignment = 1;\n\t\tpMemoryRequirements->memoryRequirements.memoryTypeBits = ~0U;\n\t}",
-		"createPipelineCache"			: "\t\t*pPipelineCache = Handle<HANDLE_TYPE_PIPELINE_CACHE>(++m_resourceCounter);"
+		"mapMemory"						: "\t{\n\t\tDDSTAT_LOCK();\n\t\tif(m_falseMemory.size() < (static_cast<std::size_t>(offset+size)))\n\t\t\tm_falseMemory.resize(static_cast<std::size_t>(offset+size));\n\t\t*ppData = (void*)m_falseMemory.data();\n\t}",
+		"getBufferMemoryRequirements"	: "\t{\n\t\tDDSTAT_LOCK();\n\t\tpMemoryRequirements->size = 1048576U;\n\t\tpMemoryRequirements->alignment = 1U;\n\t\tpMemoryRequirements->memoryTypeBits = ~0U;\n\t}",
+		"getImageMemoryRequirements"	: "\t{\n\t\tDDSTAT_LOCK();\n\t\tpMemoryRequirements->size = 1048576U;\n\t\tpMemoryRequirements->alignment = 1U;\n\t\tpMemoryRequirements->memoryTypeBits = ~0U;\n\t}",
+		"getBufferMemoryRequirements2"	: "\t{\n\t\tDDSTAT_LOCK();\n\t\tpMemoryRequirements->memoryRequirements.size = 1048576U;\n\t\tpMemoryRequirements->memoryRequirements.alignment = 1U;\n\t\tpMemoryRequirements->memoryRequirements.memoryTypeBits = ~0U;\n\t}",
+		"getImageMemoryRequirements2"	: "\t{\n\t\tDDSTAT_LOCK();\n\t\tpMemoryRequirements->memoryRequirements.size = 1048576U;\n\t\tpMemoryRequirements->memoryRequirements.alignment = 1U;\n\t\tpMemoryRequirements->memoryRequirements.memoryTypeBits = ~0U;\n\t}",
+		"getImageSubresourceLayout"		: "\t{\n\t\tDDSTAT_LOCK();\n\t\tpLayout->offset = 0U;\n\t\tpLayout->size = 1048576U;\n\t\tpLayout->rowPitch = 0U;\n\t\tpLayout->arrayPitch = 0U;\n\t\tpLayout->depthPitch = 0U;\n\t}",
+		"createPipelineCache"			: "\t{\n\t\tDDSTAT_LOCK();\n\t\t*pPipelineCache = Handle<HANDLE_TYPE_PIPELINE_CACHE>(m_resourceInterface->incResourceCounter());\n\t}",
 	}
 
 	statReturns = {
@@ -1170,16 +1172,16 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
 				if ( getInterfaceName(function) in normFuncs ) or ( getInterfaceName(function) in statFuncs ):
 					yield "\tstd::lock_guard<std::mutex> lock(functionMutex);"
 				if getInterfaceName(function) != "getDeviceProcAddr" :
-					yield "	if (m_normalMode)"
+					yield "\tif (m_normalMode)"
 				if getInterfaceName(function) in normFuncs :
-					yield "		%s%s" % ( "return " if function.returnType != "void" else "", normFuncs[getInterfaceName(function)] )
+					yield "%s" % ( normFuncs[getInterfaceName(function)] )
 				else:
-					yield "		%sm_vk.%s(%s);" % ("return " if function.returnType != "void" else "", getInterfaceName(function), ", ".join(a.name for a in function.arguments))
+					yield "\t\t%sm_vk.%s(%s);" % ("return " if function.returnType != "void" else "", getInterfaceName(function), ", ".join(a.name for a in function.arguments))
 				if getInterfaceName(function) in statFuncs :
-					yield "	else"
+					yield "\telse"
 					yield "%s" % ( statFuncs[getInterfaceName(function)] )
 				if function.returnType in statReturns:
-					yield "	%s" % ( statReturns[function.returnType] )
+					yield "\t%s" % ( statReturns[function.returnType] )
 				yield "}"
 
 	writeInlFile(filename, INL_HEADER, makeFuncPtrInterfaceStatisticsImpl())
@@ -1646,7 +1648,18 @@ def writeDriverIds(apiName, filename):
 	writeInlFile(filename, INL_HEADER, driverIdsString)
 
 
-def writeSupportedExtenions(api, filename):
+def writeSupportedExtensions(apiName, api, filename):
+	def getCoreVersion (extensionName, extensionsData):
+		# returns None when extension was not added to core for any Vulkan version
+		# returns array containing DEVICE or INSTANCE string followed by the vulkan version in which this extension is core
+		# note that this function is also called for vulkan 1.0 source for which extName is None
+		if not extensionName:
+			return None
+		ptrn		= extensionName + r'\s+(DEVICE|INSTANCE)\s+([0-9_]+)'
+		coreVersion = re.search(ptrn, extensionsData, re.I)
+		if coreVersion != None:
+			return [coreVersion.group(1)] + [int(number) for number in coreVersion.group(2).split('_')[:3]]
+		return None
 
 	def writeExtensionsForVersions(map):
 		result = []
@@ -1676,6 +1689,19 @@ def writeSupportedExtenions(api, filename):
 				list = deviceMap.get(Version(apiTuple + ext.versionInCore[1:]))
 				deviceMap[Version(apiTuple + ext.versionInCore[1:])] = list + [ext] if list else [ext]
 			versionSet.add(Version(apiTuple + ext.versionInCore[1:]))
+	# add list of extensions missing in Vulkan SC specification
+	if apiName=='SC':
+		extensionsData			= readFile(os.path.join(VULKAN_H_DIR, "extensions_data.txt"))
+		for extData in re.finditer(r'(\w+)\s+(DEVICE|INSTANCE)\s+([0-9_]+)', extensionsData ):
+			currVersion = Version( apiTuple + [int(number) for number in extData.group(3).split('_')[:3]] )
+			currExt = Extension(extData.group(1), [], [], [], [], [], [], [], [], [])
+			if extData.group(2)=='INSTANCE':
+				list = instanceMap.get(currVersion)
+				instanceMap[currVersion] = list + [currExt] if list else [currExt]
+			else:
+				list = deviceMap.get(currVersion)
+				deviceMap[currVersion] = list + [currExt] if list else [currExt]
+			versionSet.add(currVersion)
 
 	lines = addVersionDefines(versionSet) + [
 	"",
@@ -1970,11 +1996,31 @@ def writeDeviceFeatures2(api, filename):
 	stream.extend(verifyStructures)
 	writeInlFile(filename, INL_HEADER, stream)
 
-def generateDeviceFeaturesDefs(src):
+def generateDeviceFeaturesDefs(apiName, src):
 	# look for definitions
 	ptrnSType	= r'VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_(\w+)_FEATURES(\w*)\s*='
 	matches		= re.findall(ptrnSType, src, re.M)
 	matches		= sorted(matches, key=lambda m: m[0])
+	# hardcoded list of core extensions having features and missing from Vulkan SC
+	missingVulkanSCExt = \
+		'#define VK_KHR_16BIT_STORAGE_EXTENSION_NAME \"VK_KHR_16bit_storage\"\n' \
+		'#define VK_KHR_8BIT_STORAGE_EXTENSION_NAME \"VK_KHR_8bit_storage\"\n' \
+		'#define VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME \"VK_KHR_buffer_device_address\"\n' \
+		'#define VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME \"VK_EXT_descriptor_indexing\"\n' \
+		'#define VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME \"VK_EXT_host_query_reset\"\n' \
+		'#define VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME \"VK_KHR_imageless_framebuffer\"\n' \
+		'#define VK_KHR_MULTIVIEW_EXTENSION_NAME   \"VK_KHR_multiview\"\n' \
+		'#define VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME \"VK_KHR_sampler_ycbcr_conversion\"\n' \
+		'#define VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME \"VK_EXT_scalar_block_layout\"\n' \
+		'#define VK_KHR_SEPARATE_DEPTH_STENCIL_LAYOUTS_EXTENSION_NAME \"VK_KHR_separate_depth_stencil_layouts\"\n' \
+		'#define VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME \"VK_KHR_shader_atomic_int64\"\n' \
+		'#define VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME \"VK_KHR_shader_draw_parameters\"\n' \
+		'#define VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME \"VK_KHR_shader_float16_int8\"\n' \
+		'#define VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES_EXTENSION_NAME \"VK_KHR_shader_subgroup_extended_types\"\n' \
+		'#define VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME \"VK_KHR_timeline_semaphore\"\n' \
+		'#define VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_EXTENSION_NAME \"VK_KHR_uniform_buffer_standard_layout\"\n' \
+		'#define VK_KHR_VARIABLE_POINTERS_EXTENSION_NAME \"VK_KHR_variable_pointers\"\n' \
+		'#define VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME \"VK_KHR_vulkan_memory_model\"\n'
 	# construct final list
 	defs = []
 	for sType, sSuffix in matches:
@@ -1992,6 +2038,8 @@ def generateDeviceFeaturesDefs(src):
 			# end handling special cases
 			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sSuffix + '_' + sType + '_EXTENSION_NAME).+$'
 			matchExtensionName	= re.search(ptrnExtensionName, src, re.M)
+			if matchExtensionName is None and apiName=='SC':
+				matchExtensionName	= re.search(ptrnExtensionName, missingVulkanSCExt, re.M)
 			ptrnSpecVersion		= r'^\s*#define\s+(\w+' + sSuffix + '_' + sType + '_SPEC_VERSION).+$'
 			matchSpecVersion	= re.search(ptrnSpecVersion, src, re.M)
 			defs.append( (sType, '', sSuffix, matchStructName.group(1), \
@@ -2000,11 +2048,21 @@ def generateDeviceFeaturesDefs(src):
 							matchSpecVersion.group(1)	if matchSpecVersion		else '0') )
 	return defs
 
-def generateDevicePropertiesDefs(src):
+def generateDevicePropertiesDefs(apiName, src):
 	# look for definitions
 	ptrnSType	= r'VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_(\w+)_PROPERTIES(\w*)\s*='
 	matches		= re.findall(ptrnSType, src, re.M)
 	matches		= sorted(matches, key=lambda m: m[0])
+	# hardcoded list of core extensions having properties and missing from Vulkan SC
+	missingVulkanSCExt = \
+		'#define VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME \"VK_KHR_depth_stencil_resolve\"\n' \
+		'#define VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME \"VK_EXT_descriptor_indexing\"\n' \
+		'#define VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME \"VK_KHR_driver_properties\"\n' \
+		'#define VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME \"VK_KHR_shader_float_controls\"\n' \
+		'#define VK_KHR_MAINTENANCE3_EXTENSION_NAME \"VK_KHR_maintenance3\"\n' \
+		'#define VK_KHR_MULTIVIEW_EXTENSION_NAME   \"VK_KHR_multiview\"\n' \
+		'#define VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME \"VK_EXT_sampler_filter_minmax\"\n' \
+		'#define VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME \"VK_KHR_timeline_semaphore\"\n'
 	# construct final list
 	defs = []
 	for sType, sSuffix in matches:
@@ -2043,6 +2101,8 @@ def generateDevicePropertiesDefs(src):
 			# end handling special cases
 			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sExtSuffix + '_' + extType + sVerSuffix +'[_0-9]*_EXTENSION_NAME).+$'
 			matchExtensionName	= re.search(ptrnExtensionName, src, re.M)
+			if matchExtensionName is None and apiName=='SC':
+				matchExtensionName	= re.search(ptrnExtensionName, missingVulkanSCExt, re.M)
 			ptrnSpecVersion		= r'^\s*#define\s+(\w+' + sExtSuffix + '_' + extType + sVerSuffix + '[_0-9]*_SPEC_VERSION).+$'
 			matchSpecVersion	= re.search(ptrnSpecVersion, src, re.M)
 			defs.append( (sType, sVerSuffix, sExtSuffix, matchStructName.group(1), \
@@ -2528,13 +2588,13 @@ if __name__ == "__main__":
 	instanceFuncs	= [Function.TYPE_INSTANCE]
 	deviceFuncs		= [Function.TYPE_DEVICE]
 
-	dfd										= generateDeviceFeaturesDefs(src)
+	dfd										= generateDeviceFeaturesDefs(args.api, src)
 	writeDeviceFeatures						(api, dfd, os.path.join(VULKAN_DIR[args.api], "vkDeviceFeatures.inl"))
 	writeDeviceFeaturesDefaultDeviceDefs	(dfd, os.path.join(VULKAN_DIR[args.api], "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
 	writeDeviceFeaturesContextDecl			(dfd, os.path.join(VULKAN_DIR[args.api], "vkDeviceFeaturesForContextDecl.inl"))
 	writeDeviceFeaturesContextDefs			(dfd, os.path.join(VULKAN_DIR[args.api], "vkDeviceFeaturesForContextDefs.inl"))
 
-	dpd										= generateDevicePropertiesDefs(src)
+	dpd										= generateDevicePropertiesDefs(args.api, src)
 	writeDeviceProperties					(api, dpd, os.path.join(VULKAN_DIR[args.api], "vkDeviceProperties.inl"))
 
 	writeDevicePropertiesDefaultDeviceDefs	(dpd, os.path.join(VULKAN_DIR[args.api], "vkDevicePropertiesForDefaultDeviceDefs.inl"))
@@ -2569,7 +2629,7 @@ if __name__ == "__main__":
 	writeStructTraitsImpl					(api, os.path.join(VULKAN_DIR[args.api], "vkGetStructureTypeImpl.inl"))
 	writeNullDriverImpl						(api, os.path.join(VULKAN_DIR[args.api], "vkNullDriverImpl.inl"))
 	writeTypeUtil							(api, os.path.join(VULKAN_DIR[args.api], "vkTypeUtil.inl"))
-	writeSupportedExtenions					(api, os.path.join(VULKAN_DIR[args.api], "vkSupportedExtensions.inl"))
+	writeSupportedExtensions				(args.api, api, os.path.join(VULKAN_DIR[args.api], "vkSupportedExtensions.inl"))
 	writeCoreFunctionalities				(api, os.path.join(VULKAN_DIR[args.api], "vkCoreFunctionalities.inl"))
 	writeExtensionFunctions					(api, os.path.join(VULKAN_DIR[args.api], "vkExtensionFunctions.inl"))
 	writeDeviceFeatures2					(api, os.path.join(VULKAN_DIR[args.api], "vkDeviceFeatures2.inl"))

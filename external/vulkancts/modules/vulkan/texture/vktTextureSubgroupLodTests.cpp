@@ -37,6 +37,7 @@ namespace
 
 void populateSubgroupLodTests (tcu::TestCaseGroup* group)
 {
+#ifndef CTS_USES_VULKANSC
 	tcu::TestContext&			testCtx			= group->getTestContext();
 	cts_amber::AmberTestCase*	testCaseLod		= cts_amber::createAmberTestCase(testCtx, "texturelod", "", "texture/subgroup_lod", "texture_lod.amber");
 	cts_amber::AmberTestCase*	testCaseGrad	= cts_amber::createAmberTestCase(testCtx, "texturegrad", "", "texture/subgroup_lod", "texture_grad.amber");
@@ -45,6 +46,9 @@ void populateSubgroupLodTests (tcu::TestCaseGroup* group)
 	group->addChild(testCaseLod);
 	group->addChild(testCaseGrad);
 	group->addChild(testCaseFetch);
+#else
+	DE_UNREF(group);
+#endif
 }
 
 } // anonymous

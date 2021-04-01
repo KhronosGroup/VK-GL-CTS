@@ -114,6 +114,7 @@
 
 #include <vector>
 #include <sstream>
+#include <thread>
 
 namespace vkt
 {
@@ -355,12 +356,12 @@ void TestCaseExecutor::deinit (tcu::TestCase* testCase)
 
 			// Clean up data after performing tests in subprocess and prepare system for another batch of tests
 			m_testsForSubprocess.clear();
-			m_resourceInterface->resetObjects();
 			const vk::DeviceInterface&				vkd						= m_context->getDeviceInterface();
 			const vk::DeviceDriverSC*				dds						= dynamic_cast<const vk::DeviceDriverSC*>(&vkd);
 			if (dds == DE_NULL)
 				TCU_THROW(InternalError, "Undefined device driver for Vulkan SC");
-			dds->resetStatistics();
+			dds->reset();
+			m_resourceInterface->resetObjects();
 
 			qpSuppressOutput(1);
 			m_context->getTestContext().getLog().supressLogging(true);
@@ -441,13 +442,15 @@ void TestCaseExecutor::deinitTestPackage (tcu::TestContext& testCtx)
 			const vk::DeviceDriverSC*				dds						= dynamic_cast<const vk::DeviceDriverSC*>(&vkd);
 			if (dds == DE_NULL)
 				TCU_THROW(InternalError, "Undefined device driver for Vulkan SC");
-			dds->resetStatistics();
+			dds->reset();
 			m_resourceInterface->resetObjects();
 		}
+
 		// Tests are finished. Next tests ( if any ) will come from other test package and test executor
 		qpSuppressOutput(0);
 		m_context->getTestContext().getLog().supressLogging(false);
 	}
+	m_resourceInterface->resetPipelineCaches();
 #else
 	DE_UNREF(testCtx);
 #endif // CTS_USES_VULKANSC
@@ -497,11 +500,7 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 
 	// export data collected during statistics gathering to JSON file ( VkDeviceObjectReservationCreateInfo, SPIR-V shaders, pipelines )
 	{
-		const vk::DeviceInterface&				vkd						= m_context->getDeviceInterface();
-		const vk::DeviceDriverSC*				dds						= dynamic_cast<const vk::DeviceDriverSC*>(&vkd);
-		if (dds == DE_NULL)
-			TCU_THROW(InternalError, "Undefined device driver for Vulkan SC");
-		vk::VkDeviceObjectReservationCreateInfo	memoryReservation		= dds->getStatistics();
+		vk::VkDeviceObjectReservationCreateInfo	memoryReservation		= m_context->getResourceInterface()->getStatMax();
 		std::string								jsonMemoryReservation	= writeJSON_VkDeviceObjectReservationCreateInfo(memoryReservation);
 
 		m_resourceInterface->removeRedundantObjects();
@@ -551,9 +550,16 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 
 		subprocessTestList += *it;
 		if (nit != end(m_testsForSubprocess))
-			subprocessTestList += ",";
+			subprocessTestList += "\n";
 	}
-	newCmdLine = newCmdLine + " --deqp-case=" + subprocessTestList;
+
+	std::string caseListName	= "subcaselist" + (caseFraction.empty() ? std::string("") : de::toString(caseFraction[0])) + ".txt";
+
+	deFile*		exportFile		= deFile_create(caseListName.c_str(), DE_FILEMODE_CREATE | DE_FILEMODE_OPEN | DE_FILEMODE_WRITE | DE_FILEMODE_TRUNCATE);
+	deInt64		numWritten		= 0;
+	deFile_write(exportFile, subprocessTestList.c_str(), subprocessTestList.size(), &numWritten);
+	deFile_destroy(exportFile);
+	newCmdLine = newCmdLine + " --deqp-caselist-file=" + caseListName;
 
 	// restore cout and cerr
 	qpSuppressOutput(0);
@@ -569,6 +575,18 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 			TCU_THROW(TestError, "Error while running subprocess : " + err);
 		}
 
+		// create a separate thread that captures std::err output
+		de::MovePtr<std::thread> errThread(new std::thread([&process]
+		{
+			deFile*		subErr = deProcess_getStdErr(process);
+			char		errBuffer[128]	= { 0 };
+			deInt64		errNumRead		= 0;
+			while (deFile_read(subErr, errBuffer, sizeof(errBuffer) - 1, &errNumRead) == DE_FILERESULT_SUCCESS)
+			{
+				errBuffer[errNumRead] = 0;
+			}
+		}));
+
 		deFile*		subOutput		= deProcess_getStdOut(process);
 		char		outBuffer[128]	= { 0 };
 		deInt64		numRead			= 0;
@@ -577,6 +595,7 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 			outBuffer[numRead] = 0;
 			qpPrint(outBuffer);
 		}
+		errThread->join();
 		deProcess_waitForFinish(process);
 		deProcess_destroy(process);
 	}
@@ -616,8 +635,8 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 			std::string			subQpaStat		(subQpaText.begin() + beginPos + beginStat.size(), subQpaText.end());
 
 			std::istringstream	str(subQpaStat);
-			int					numExecuted, numPassed, numNotSupported, numWarnings, numWaived, numFailed;
-			str >> numExecuted >> numPassed >> numNotSupported >> numWarnings >> numWaived >> numFailed;
+			int					numExecuted, numPassed, numFailed, numNotSupported, numWarnings, numWaived;
+			str >> numExecuted >> numPassed >> numFailed >> numNotSupported >> numWarnings >> numWaived;
 
 			m_status.numExecuted				+= numExecuted;
 			m_status.numPassed					+= numPassed;
@@ -645,8 +664,6 @@ bool TestCaseExecutor::spirvVersionSupported (vk::SpirvVersion spirvVersion)
 }
 
 // GLSL shader tests
-
-#ifndef CTS_USES_VULKANSC
 
 void createGlslTests (tcu::TestCaseGroup* glslTests)
 {
@@ -718,11 +735,11 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 	glslTests->addChild(shaderexecutor::createAtomicOperationTests		(testCtx));
 	glslTests->addChild(shaderexecutor::createShaderClockTests			(testCtx));
 
+#ifndef CTS_USES_VULKANSC
 	// Amber GLSL tests.
 	glslTests->addChild(cts_amber::createCombinedOperationsGroup		(testCtx));
-}
-
 #endif // CTS_USES_VULKANSC
+}
 
 // TestPackage
 
@@ -839,45 +856,47 @@ void TestPackageSC::init (void)
 {
 	addChild(createTestGroup					(m_testCtx, "info", "Build and Device Info Tests", createInfoTests));
 	addChild(api::createTests					(m_testCtx));
-//	addChild(memory::createTests				(m_testCtx));
-//	addChild(pipeline::createTests				(m_testCtx));
-//	addChild(BindingModel::createTests			(m_testCtx));
-//	addChild(SpirVAssembly::createTests			(m_testCtx));
-//	addChild(createTestGroup					(m_testCtx, "glsl", "GLSL shader execution tests", createGlslTests));
-//	addChild(createRenderPassTests				(m_testCtx));
-//	addChild(createRenderPass2Tests				(m_testCtx));
-//	addChild(ubo::createTests					(m_testCtx));
-//	addChild(DynamicState::createTests			(m_testCtx));
-//	addChild(ssbo::createTests					(m_testCtx));
-//	addChild(QueryPool::createTests				(m_testCtx));
-//	addChild(Draw::createTests					(m_testCtx));
-//	addChild(compute::createTests				(m_testCtx));
-//	addChild(image::createTests					(m_testCtx));
+	addChild(memory::createTests				(m_testCtx));
+	addChild(pipeline::createTests				(m_testCtx));
+	addChild(BindingModel::createTests			(m_testCtx));
+	addChild(SpirVAssembly::createTests			(m_testCtx));
+	addChild(createTestGroup					(m_testCtx, "glsl", "GLSL shader execution tests", createGlslTests));
+	addChild(createRenderPassTests				(m_testCtx));
+	addChild(createRenderPass2Tests				(m_testCtx));
+	addChild(ubo::createTests					(m_testCtx));
+	addChild(DynamicState::createTests			(m_testCtx));
+	addChild(ssbo::createTests					(m_testCtx));
+	addChild(QueryPool::createTests				(m_testCtx));
+	addChild(Draw::createTests					(m_testCtx));
+	addChild(compute::createTests				(m_testCtx));
+	addChild(image::createTests					(m_testCtx));
 //	addChild(wsi::createTests					(m_testCtx));
-//	addChild(synchronization::createTests		(m_testCtx));
+	addChild(createSynchronizationTests			(m_testCtx));
+	addChild(createSynchronization2Tests		(m_testCtx));
 //	addChild(sparse::createTests				(m_testCtx));
-//	addChild(tessellation::createTests			(m_testCtx));
-//	addChild(rasterization::createTests			(m_testCtx));
-//	addChild(clipping::createTests				(m_testCtx));
-//	addChild(FragmentOperations::createTests	(m_testCtx));
-//	addChild(texture::createTests				(m_testCtx));
-//	addChild(geometry::createTests				(m_testCtx));
-//	addChild(robustness::createTests			(m_testCtx));
-//	addChild(MultiView::createTests				(m_testCtx));
-//	addChild(subgroups::createTests				(m_testCtx));
-//	addChild(ycbcr::createTests					(m_testCtx));
-//	addChild(ProtectedMem::createTests			(m_testCtx));
-//	addChild(DeviceGroup::createTests			(m_testCtx));
-//	addChild(MemoryModel::createTests			(m_testCtx));
+	addChild(tessellation::createTests			(m_testCtx));
+	addChild(rasterization::createTests			(m_testCtx));
+	addChild(clipping::createTests				(m_testCtx));
+	addChild(FragmentOperations::createTests	(m_testCtx));
+	addChild(texture::createTests				(m_testCtx));
+	addChild(geometry::createTests				(m_testCtx));
+	addChild(robustness::createTests			(m_testCtx));
+	addChild(MultiView::createTests				(m_testCtx));
+	addChild(subgroups::createTests				(m_testCtx));
+	addChild(ycbcr::createTests					(m_testCtx));
+	addChild(ProtectedMem::createTests			(m_testCtx));
+	addChild(DeviceGroup::createTests			(m_testCtx));
+	addChild(MemoryModel::createTests			(m_testCtx));
 //	addChild(conditional::createTests			(m_testCtx));
 //	addChild(cts_amber::createGraphicsFuzzTests	(m_testCtx));
-//	addChild(imageless::createTests				(m_testCtx));
+	addChild(imageless::createTests				(m_testCtx));
 //	addChild(TransformFeedback::createTests		(m_testCtx));
-//	addChild(DescriptorIndexing::createTests	(m_testCtx));
-//	addChild(FragmentShaderInterlock::createTests(m_testCtx));
+	addChild(DescriptorIndexing::createTests	(m_testCtx));
+	addChild(FragmentShaderInterlock::createTests(m_testCtx));
 //	addChild(modifiers::createTests				(m_testCtx));
 //	addChild(RayTracing::createTests			(m_testCtx));
 //	addChild(RayQuery::createTests				(m_testCtx));
+	addChild(FragmentShadingRate::createTests(m_testCtx));
 }
 
 #endif // CTS_USES_VULKANSC

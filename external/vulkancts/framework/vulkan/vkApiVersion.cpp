@@ -28,14 +28,14 @@ namespace vk
 
 ApiVersion unpackVersion (deUint32 version)
 {
-	return ApiVersion((version & 0xFFC00000) >> 22,
-					  (version & 0x003FF000) >> 12,
-					   version & 0x00000FFF);
+	return ApiVersion(VK_API_VERSION_MAJOR(version),
+					  VK_API_VERSION_MINOR(version),
+					  VK_API_VERSION_PATCH(version));
 }
 
 deUint32 pack (const ApiVersion& version)
 {
-	DE_ASSERT((version.majorNum & ~0x3FF) == 0);
+	DE_ASSERT((version.majorNum & ~0x7F) == 0);
 	DE_ASSERT((version.minorNum & ~0x3FF) == 0);
 	DE_ASSERT((version.patchNum & ~0xFFF) == 0);
 

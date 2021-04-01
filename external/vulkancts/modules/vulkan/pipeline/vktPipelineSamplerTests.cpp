@@ -236,11 +236,13 @@ void SamplerLodTest::checkSupport (Context& context) const
 {
 	SamplerTest::checkSupport(context);
 
+#ifndef CTS_USES_VULKANSC
 	if (m_mipLodBias != 0.0f && context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().samplerMipLodBias)
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Sampler mipmap LOD bias is not supported by this implementation");
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 class SamplerAddressModesTest : public SamplerTest
@@ -921,10 +923,10 @@ MovePtr<tcu::TestCaseGroup> createSamplerMagReduceFilterTests (tcu::TestContext&
 
 		if (isCompressedFormat(imageFormat) || (!isIntFormat(imageFormat) && !isUintFormat(imageFormat)))
 		{
-			componentGroup->addChild(new SamplerMagReduceFilterTest(testCtx, "average", "Magnifies image using VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT", imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT, separateStencilUsage));
+			componentGroup->addChild(new SamplerMagReduceFilterTest(testCtx, "average", "Magnifies image using VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT", imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE, separateStencilUsage));
 		}
-		componentGroup->addChild(new SamplerMagReduceFilterTest(testCtx, "min", "Magnifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MIN_EXT", imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MIN_EXT, separateStencilUsage));
-		componentGroup->addChild(new SamplerMagReduceFilterTest(testCtx, "max", "Magnifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MAX_EXT", imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MAX_EXT, separateStencilUsage));
+		componentGroup->addChild(new SamplerMagReduceFilterTest(testCtx, "min", "Magnifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MIN_EXT", imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MIN, separateStencilUsage));
+		componentGroup->addChild(new SamplerMagReduceFilterTest(testCtx, "max", "Magnifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MAX_EXT", imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MAX, separateStencilUsage));
 		samplerMagReduceFilterTests->addChild(componentGroup.release());
 	}
 	return samplerMagReduceFilterTests;
@@ -942,10 +944,10 @@ MovePtr<tcu::TestCaseGroup> createSamplerMinReduceFilterTests (tcu::TestContext&
 
 		if (isCompressedFormat(imageFormat) || (!isIntFormat(imageFormat) && !isUintFormat(imageFormat)))
 		{
-			componentGroup->addChild(new SamplerMinReduceFilterTest(testCtx, "average", "Minifies image using VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT", imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT, separateStencilUsage));
+			componentGroup->addChild(new SamplerMinReduceFilterTest(testCtx, "average", "Minifies image using VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT", imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE, separateStencilUsage));
 		}
-		componentGroup->addChild(new SamplerMinReduceFilterTest(testCtx, "min", "Minifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MIN_EXT", imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MIN_EXT, separateStencilUsage));
-		componentGroup->addChild(new SamplerMinReduceFilterTest(testCtx, "max", "Minifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MAX_EXT", imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MAX_EXT, separateStencilUsage));
+		componentGroup->addChild(new SamplerMinReduceFilterTest(testCtx, "min", "Minifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MIN_EXT", imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MIN, separateStencilUsage));
+		componentGroup->addChild(new SamplerMinReduceFilterTest(testCtx, "max", "Minifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MAX_EXT", imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MAX, separateStencilUsage));
 		samplerMinReduceFilterTests->addChild(componentGroup.release());
 	}
 	return samplerMinReduceFilterTests;

@@ -242,7 +242,11 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 void initPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
 	const bool					spirv15required	= caseDef.opType == OPTYPE_BROADCAST_NONCONST;
+#ifndef CTS_USES_VULKANSC
 	const bool					spirv14required	= isAllRayTracingStages(caseDef.shaderStage);
+#else
+	const bool					spirv14required	= false;
+#endif // CTS_USES_VULKANSC
 	const SpirvVersion			spirvVersion	= spirv15required ? SPIRV_VERSION_1_5
 												: spirv14required ? SPIRV_VERSION_1_4
 												: SPIRV_VERSION_1_3;
@@ -360,6 +364,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 
 		return subgroups::allStages(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkVertexPipelineStages, stages);
 	}
+#ifndef CTS_USES_VULKANSC
 	else if (isAllRayTracingStages(caseDef.shaderStage))
 	{
 		const VkShaderStageFlags	stages		= subgroups::getPossibleRayTracingSubgroupStages(context, caseDef.shaderStage);
@@ -376,6 +381,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 
 		return subgroups::allRayTracingStages(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkVertexPipelineStages, stages);
 	}
+#endif // CTS_USES_VULKANSC
 	else
 		TCU_THROW(InternalError, "Unknown stage or invalid stage set");
 }
@@ -391,7 +397,9 @@ TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 	de::MovePtr<TestCaseGroup>	graphicGroup		(new TestCaseGroup(testCtx, "graphics", "Subgroup ballot broadcast category tests: graphics"));
 	de::MovePtr<TestCaseGroup>	computeGroup		(new TestCaseGroup(testCtx, "compute", "Subgroup ballot broadcast category tests: compute"));
 	de::MovePtr<TestCaseGroup>	framebufferGroup	(new TestCaseGroup(testCtx, "framebuffer", "Subgroup ballot broadcast category tests: framebuffer"));
+#ifndef CTS_USES_VULKANSC
 	de::MovePtr<TestCaseGroup>	raytracingGroup		(new TestCaseGroup(testCtx, "ray_tracing", "Subgroup ballot broadcast category tests: ray tracing"));
+#endif // CTS_USES_VULKANSC
 
 	de::MovePtr<TestCaseGroup>	groupARB			(new TestCaseGroup(testCtx, "ext_shader_subgroup_ballot", "VK_EXT_shader_subgroup_ballot category tests"));
 	de::MovePtr<TestCaseGroup>	graphicGroupARB		(new TestCaseGroup(testCtx, "graphics", "Subgroup ballot broadcast category tests: graphics"));
@@ -507,6 +515,7 @@ TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 		}
 	}
 
+#ifndef CTS_USES_VULKANSC
 	{
 		const vector<VkFormat>	formats		= subgroups::getAllRayTracingFormats();
 
@@ -534,6 +543,7 @@ TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 			}
 		}
 	}
+#endif // CTS_USES_VULKANSC
 
 	groupARB->addChild(graphicGroupARB.release());
 	groupARB->addChild(computeGroupARB.release());
@@ -542,7 +552,9 @@ TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 	group->addChild(graphicGroup.release());
 	group->addChild(computeGroup.release());
 	group->addChild(framebufferGroup.release());
+#ifndef CTS_USES_VULKANSC
 	group->addChild(raytracingGroup.release());
+#endif // CTS_USES_VULKANSC
 	group->addChild(groupARB.release());
 
 	return group.release();

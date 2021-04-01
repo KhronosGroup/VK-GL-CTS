@@ -34,6 +34,7 @@
 #include "vkDebugReportUtil.hpp"
 #include "vkApiVersion.hpp"
 #include "vkObjUtil.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include "vkPlatform.hpp"
 #include "vktProtectedMemContext.hpp"
@@ -140,7 +141,10 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::PlatformInterface&		vkp
 												 const deUint32						queueFamilyIndex,
 												 const deUint32						apiVersion,
 												 const std::vector<std::string>&	extraExtensions,
-												 bool								validationEnabled)
+#ifdef CTS_USES_VULKANSC
+												 de::SharedPtr<vk::ResourceInterface> resourceInterface,
+#endif // CTS_USES_VULKANSC
+												 const tcu::CommandLine&		cmdLine)
 {
 	const Extensions					supportedExtensions	(vk::enumerateDeviceExtensionProperties(vkd, physicalDevice, DE_NULL));
 	std::vector<std::string>			requiredExtensions;
@@ -218,10 +222,21 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::PlatformInterface&		vkp
 		}
 	};
 
+	void* pNext												= &featuresExt;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= cmdLine.isSubProcess() ? resourceInterface->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
+#endif // CTS_USES_VULKANSC
+
 	const vk::VkDeviceCreateInfo		deviceParams		=
 	{
 		vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,						// sType
-		&featuresExt,													// pNext
+		pNext,															// pNext
 		(vk::VkDeviceCreateFlags)0,										// flags
 		DE_LENGTH_OF_ARRAY(queueInfos),									// queueCreateInfosCount
 		&queueInfos[0],													// pQueueCreateInfos
@@ -232,7 +247,7 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::PlatformInterface&		vkp
 		DE_NULL															// pEnabledFeatures
 	};
 
-	return createCustomDevice(validationEnabled, vkp, instance, vkd, physicalDevice, &deviceParams, DE_NULL);
+	return createCustomDevice(cmdLine.isValidationEnabled(), vkp, instance, vkd, physicalDevice, &deviceParams, DE_NULL);
 }
 
 vk::VkQueue getProtectedQueue	(const vk::DeviceInterface&	vk,

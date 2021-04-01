@@ -285,7 +285,12 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 
 void initPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const SpirvVersion			spirvVersion		= isAllRayTracingStages(caseDef.shaderStage) ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
+#ifndef CTS_USES_VULKANSC
+	const bool					spirv14required		= isAllRayTracingStages(caseDef.shaderStage);
+#else
+	const bool					spirv14required		= false;
+#endif // CTS_USES_VULKANSC
+	const SpirvVersion			spirvVersion		= spirv14required ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
 	const ShaderBuildOptions	buildOptions		(programCollection.usedVulkanVersion, spirvVersion, 0u);
 	const string				extHeader			= getExtHeader(caseDef);
 	const string				testSrc				= getTestString(caseDef);
@@ -373,12 +378,14 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 
 		return subgroups::allStages(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL, checkVertexPipelineStages, stages);
 	}
+#ifndef CTS_USES_VULKANSC
 	else if (isAllRayTracingStages(caseDef.shaderStage))
 	{
 		const VkShaderStageFlags	stages	= subgroups::getPossibleRayTracingSubgroupStages(context, caseDef.shaderStage);
 
 		return subgroups::allRayTracingStages(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL, checkVertexPipelineStages, stages);
 	}
+#endif // CTS_USES_VULKANSC
 	else
 		TCU_THROW(InternalError, "Unknown stage or invalid stage set");
 
@@ -396,7 +403,9 @@ TestCaseGroup* createSubgroupsBallotOtherTests (TestContext& testCtx)
 	de::MovePtr<TestCaseGroup>	graphicGroup		(new TestCaseGroup(testCtx, "graphics", "Subgroup ballot other category tests: graphics"));
 	de::MovePtr<TestCaseGroup>	computeGroup		(new TestCaseGroup(testCtx, "compute", "Subgroup ballot other category tests: compute"));
 	de::MovePtr<TestCaseGroup>	framebufferGroup	(new TestCaseGroup(testCtx, "framebuffer", "Subgroup ballot other category tests: framebuffer"));
+#ifndef CTS_USES_VULKANSC
 	de::MovePtr<TestCaseGroup>	raytracingGroup		(new TestCaseGroup(testCtx, "ray_tracing", "Subgroup ballot other category tests: ray tracing"));
+#endif // CTS_USES_VULKANSC
 	const VkShaderStageFlags	stages[]			=
 	{
 		VK_SHADER_STAGE_VERTEX_BIT,
@@ -442,6 +451,7 @@ TestCaseGroup* createSubgroupsBallotOtherTests (TestContext& testCtx)
 			addFunctionCaseWithPrograms(graphicGroup.get(), op, "", supportedCheck, initPrograms, test, caseDef);
 		}
 
+#ifndef CTS_USES_VULKANSC
 		{
 			const CaseDefinition	caseDef		=
 			{
@@ -453,6 +463,7 @@ TestCaseGroup* createSubgroupsBallotOtherTests (TestContext& testCtx)
 
 			addFunctionCaseWithPrograms(raytracingGroup.get(), op, "", supportedCheck, initPrograms, test, caseDef);
 		}
+#endif // CTS_USES_VULKANSC
 
 		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 		{
@@ -472,7 +483,9 @@ TestCaseGroup* createSubgroupsBallotOtherTests (TestContext& testCtx)
 	group->addChild(graphicGroup.release());
 	group->addChild(computeGroup.release());
 	group->addChild(framebufferGroup.release());
+#ifndef CTS_USES_VULKANSC
 	group->addChild(raytracingGroup.release());
+#endif // CTS_USES_VULKANSC
 
 	return group.release();
 }

@@ -35,6 +35,7 @@
 #include "vkImageUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include "tcuResultCollector.hpp"
 #include "tcuCommandLine.hpp"
@@ -84,7 +85,6 @@ class MultiQueues
 	} Queues;
 
 public:
-
 	inline void		addQueueFamilyIndex		(const deUint32& queueFamilyIndex, const deUint32& count)
 	{
 		Queues temp;
@@ -145,9 +145,14 @@ public:
 		m_mutex.unlock();
 	}
 
-	inline void		setDevice				(Move<VkDevice> device)
+	inline void		setDevice				(Move<VkDevice> device, const Context& context)
 	{
 		m_logicalDevice = device;
+#ifndef CTS_USES_VULKANSC
+		m_deviceDriver = de::MovePtr<DeviceDriver>		(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice));
+#else
+		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
+#endif // CTS_USES_VULKANSC
 	}
 
 	inline VkDevice	getDevice				(void)
@@ -155,11 +160,21 @@ public:
 		return *m_logicalDevice;
 	}
 
-	MovePtr<Allocator>		m_allocator;
+	inline DeviceInterface&	getDeviceInterface(void)
+	{
+		return *m_deviceDriver;
+	}
+
+	MovePtr<Allocator>				m_allocator;
 protected:
-	Move<VkDevice>			m_logicalDevice;
-	map<deUint32,Queues>	m_queues;
-	Mutex					m_mutex;
+	Move<VkDevice>					m_logicalDevice;
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
+#else
+	de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>	m_deviceDriver;
+#endif // CTS_USES_VULKANSC
+	map<deUint32,Queues>			m_queues;
+	Mutex							m_mutex;
 
 };
 
@@ -193,7 +208,6 @@ bool checkQueueFlags (const VkQueueFlags& availableFlag, const VkQueueFlags& nee
 
 MovePtr<MultiQueues> createQueues (const Context& context, const VkQueueFlags& queueFlag)
 {
-	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const InstanceInterface&				instance				= context.getInstanceInterface();
 	const VkPhysicalDevice					physicalDevice			= context.getPhysicalDevice();
 	MovePtr<MultiQueues>					moveQueues				(new MultiQueues());
@@ -250,8 +264,19 @@ MovePtr<MultiQueues> createQueues (const Context& context, const VkQueueFlags& q
 	deMemset(&deviceInfo, 0, sizeof(deviceInfo));
 	instance.getPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
 
+	void* pNext												= DE_NULL;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
+#endif // CTS_USES_VULKANSC
+
 	deviceInfo.sType					= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceInfo.pNext					= DE_NULL;
+	deviceInfo.pNext					= pNext;
 	deviceInfo.enabledExtensionCount	= 0u;
 	deviceInfo.ppEnabledExtensionNames	= DE_NULL;
 	deviceInfo.enabledLayerCount		= 0u;
@@ -260,7 +285,8 @@ MovePtr<MultiQueues> createQueues (const Context& context, const VkQueueFlags& q
 	deviceInfo.queueCreateInfoCount		= static_cast<deUint32>(queues.countQueueFamilyIndex());
 	deviceInfo.pQueueCreateInfos		= &queueInfos[0];
 
-	queues.setDevice(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), instance, physicalDevice, &deviceInfo));
+	queues.setDevice(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), instance, physicalDevice, &deviceInfo), context);
+	vk::DeviceInterface& vk = queues.getDeviceInterface();
 
 	for (deUint32 queueFamilyIndex = 0; queueFamilyIndex < queues.countQueueFamilyIndex(); ++queueFamilyIndex)
 	{
@@ -278,7 +304,8 @@ MovePtr<MultiQueues> createQueues (const Context& context, const VkQueueFlags& q
 TestStatus executeComputePipeline (const Context& context, const VkPipeline& pipeline, const VkPipelineLayout& pipelineLayout,
 									const VkDescriptorSetLayout& descriptorSetLayout, MultiQueues& queues, const deUint32& shadersExecutions)
 {
-	const DeviceInterface&			vk					= context.getDeviceInterface();
+	DE_UNREF(context);
+	const DeviceInterface&			vk					= queues.getDeviceInterface();
 	const VkDevice					device				= queues.getDevice();
 	deUint32						queueFamilyIndex;
 	VkQueue							queue;
@@ -352,7 +379,8 @@ TestStatus executeComputePipeline (const Context& context, const VkPipeline& pip
 TestStatus executeGraphicPipeline (const Context& context, const VkPipeline& pipeline, const VkPipelineLayout& pipelineLayout,
 									const VkDescriptorSetLayout& descriptorSetLayout, MultiQueues& queues, const VkRenderPass& renderPass, const deUint32 shadersExecutions)
 {
-	const DeviceInterface&			vk					= context.getDeviceInterface();
+	DE_UNREF(context);
+	const DeviceInterface&			vk					= queues.getDeviceInterface();
 	const VkDevice					device				= queues.getDevice();
 	deUint32						queueFamilyIndex;
 	VkQueue							queue;
@@ -619,8 +647,8 @@ public:
 
 	TestStatus	iterate								(void)
 	{
-		const DeviceInterface&					vk					= m_context.getDeviceInterface();
 		MovePtr<MultiQueues>					queues				= createQueues(m_context, VK_QUEUE_COMPUTE_BIT);
+		const DeviceInterface&					vk					= queues->getDeviceInterface();
 		const VkDevice							device				= queues->getDevice();
 		ShaderModuleVector						shaderCompModules	= addShaderModules(device);
 		Buffer									resultBuffer		(vk, device, *queues->m_allocator, makeBufferCreateInfo(BUFFER_SIZE, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);

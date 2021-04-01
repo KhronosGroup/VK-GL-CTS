@@ -698,19 +698,19 @@ private:
 
 const VertexGenerator* getVertexWithPaddingGenerator ()
 {
-	static const VertexWithPadding vertexWithPadding;
+	static VertexWithPadding vertexWithPadding;
 	return &vertexWithPadding;
 }
 
 const VertexGenerator* getVertexWithExtraAttributesGenerator ()
 {
-	static const VertexWithExtraAttributes vertexWithExtraAttributes;
+	static VertexWithExtraAttributes vertexWithExtraAttributes;
 	return &vertexWithExtraAttributes;
 }
 
 const VertexGenerator* getVertexWithMultipleBindingsGenerator ()
 {
-	static const MultipleBindingsVertex multipleBindingsVertex;
+	static MultipleBindingsVertex multipleBindingsVertex;
 	return &multipleBindingsVertex;
 }
 

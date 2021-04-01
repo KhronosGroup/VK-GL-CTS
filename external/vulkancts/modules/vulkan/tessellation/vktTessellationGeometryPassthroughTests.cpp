@@ -142,7 +142,11 @@ private:
 
 void IdentityGeometryShaderTestCase::checkSupport (Context& context) const
 {
+#ifndef CTS_USES_VULKANSC
 	checkSupportPrimitive(context, m_primitiveType);
+#else
+	DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
 }
 
 void IdentityGeometryShaderTestCase::initPrograms (vk::SourceCollections& programCollection) const
@@ -237,7 +241,11 @@ private:
 
 void IdentityTessellationShaderTestCase::checkSupport (Context& context) const
 {
+#ifndef CTS_USES_VULKANSC
 	checkSupportPrimitive(context, m_primitiveType);
+#else
+	DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
 }
 
 //! Geometry shader used in passthrough tessellation shader case.

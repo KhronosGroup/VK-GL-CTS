@@ -277,11 +277,16 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest			(VkDeviceSize				
 
 			vk.getBufferMemoryRequirements(vkDevice, *buffer, &memReqs);	// get the proper size requirement
 
-			if (size > memReqs.size)
+#ifdef CTS_USES_VULKANSC
+			if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 			{
-				std::ostringstream		errorMsg;
-				errorMsg << "Requied memory size (" << memReqs.size << " bytes) smaller than the buffer's size (" << size << " bytes)!";
-				return tcu::TestStatus::fail(errorMsg.str());
+				if (size > memReqs.size)
+				{
+					std::ostringstream		errorMsg;
+					errorMsg << "Required memory size (" << memReqs.size << " bytes) smaller than the buffer's size (" << size << " bytes)!";
+					return tcu::TestStatus::fail(errorMsg.str());
+				}
 			}
 
 			// Allocate the memory
@@ -381,7 +386,9 @@ tcu::TestStatus							BufferTestInstance::iterate		(void)
 		1181,
 		15991,
 		16384,
+#ifndef CTS_USES_VULKANSC
 		~0ull,		// try to exercise a very large buffer too (will be clamped to a sensible size later)
+#endif // CTS_USES_VULKANSC
 	};
 
 	for (int i = 0; i < DE_LENGTH_OF_ARRAY(testSizes); ++i)

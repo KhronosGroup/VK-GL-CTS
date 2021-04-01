@@ -5529,7 +5529,7 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVulkanSC10Prope
 	s << "\tcommandPoolResetCommandBuffer = " << value.commandPoolResetCommandBuffer << '\n';
 	s << "\tcommandBufferSimultaneousUse = " << value.commandBufferSimultaneousUse << '\n';
 	s << "\tsecondaryCommandBufferNullFramebuffer = " << value.secondaryCommandBufferNullFramebuffer << '\n';
-	s << "\tdescriptorPoolFreeDescriptorSets = " << value.descriptorPoolFreeDescriptorSets << '\n';
+	s << "\trecycleDescriptorSetMemory = " << value.recycleDescriptorSetMemory << '\n';
 	s << "\trecyclePipelineMemory = " << value.recyclePipelineMemory << '\n';
 	s << "\tmaxRenderPassSubpasses = " << value.maxRenderPassSubpasses << '\n';
 	s << "\tmaxRenderPassDependencies = " << value.maxRenderPassDependencies << '\n';
@@ -5599,6 +5599,7 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceObjectReservationCreate
 	s << "\tmaxOcclusionQueriesPerPool = " << value.maxOcclusionQueriesPerPool << '\n';
 	s << "\tmaxPipelineStatisticsQueriesPerPool = " << value.maxPipelineStatisticsQueriesPerPool << '\n';
 	s << "\tmaxTimestampQueriesPerPool = " << value.maxTimestampQueriesPerPool << '\n';
+	s << "\tmaxImmutableSamplersPerDescriptorSetLayout = " << value.maxImmutableSamplersPerDescriptorSetLayout << '\n';
 	s << '}';
 	return s;
 }

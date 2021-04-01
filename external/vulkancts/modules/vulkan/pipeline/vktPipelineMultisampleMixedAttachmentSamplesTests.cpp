@@ -1371,7 +1371,7 @@ tcu::TestStatus test (Context& context, const TestParams params)
 
 		VkPhysicalDeviceProperties2 properties =
 		{
-			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR,	    // VkStructureType               sType;
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,			// VkStructureType               sType;
 			&wd.sampleLocationsProperties,							// void*                         pNext;
 			VkPhysicalDeviceProperties(),							// VkPhysicalDeviceProperties    properties;
 		};

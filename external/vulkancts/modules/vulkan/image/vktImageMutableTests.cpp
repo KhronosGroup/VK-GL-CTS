@@ -37,6 +37,7 @@
 #include "vkPlatform.hpp"
 #include "vkWsiUtil.hpp"
 #include "vkDeviceUtil.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
@@ -527,7 +528,7 @@ Move<VkImage> makeImage (const DeviceInterface&		vk,
 
 	const VkImageFormatListCreateInfo formatListInfo =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR,	// VkStructureType			sType;
+		VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO,		// VkStructureType			sType;
 		DE_NULL,												// const void*				pNext;
 		2u,														// deUint32					viewFormatCount
 		formatList												// const VkFormat*			pViewFormats
@@ -1054,7 +1055,7 @@ void UploadDownloadExecutor::run(Context& context, VkBuffer buffer)
 	beginCommandBuffer(m_vk, *m_cmdBuffer);
 
 	const VkImageUsageFlags		imageUsage	= getImageUsageForTestCase(m_caseDef);
-	const VkImageCreateFlags	imageFlags	= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | (m_haveMaintenance2 ? VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR : 0);
+	const VkImageCreateFlags	imageFlags	= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | (m_haveMaintenance2 ? VK_IMAGE_CREATE_EXTENDED_USAGE_BIT : 0);
 
 	m_imageHolder							= makeImage(m_vk, m_device, imageFlags, getImageType(m_caseDef.imageType), m_caseDef.imageFormat, m_caseDef.viewFormat,
 														m_caseDef.isFormatListTest, m_caseDef.size, 1u, m_caseDef.numLayers, imageUsage);
@@ -1138,7 +1139,7 @@ void UploadDownloadExecutor::uploadStore(Context& context)
 {
 	const vk::VkImageViewUsageCreateInfo viewUsageCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	// VkStructureType		sType
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,		// VkStructureType		sType
 		DE_NULL,											// const void*			pNext
 		VK_IMAGE_USAGE_STORAGE_BIT,							// VkImageUsageFlags	usage;
 	};
@@ -1321,7 +1322,7 @@ void UploadDownloadExecutor::uploadDraw(Context& context)
 	{
 		const vk::VkImageViewUsageCreateInfo viewUsageCreateInfo =
 		{
-			VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	// VkStructureType		sType
+			VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,		// VkStructureType		sType
 			DE_NULL,											// const void*			pNext
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,				// VkImageUsageFlags	usage;
 		};
@@ -1387,7 +1388,7 @@ void UploadDownloadExecutor::downloadTexture(Context& context, VkBuffer buffer)
 
 	const vk::VkImageViewUsageCreateInfo viewUsageCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	// VkStructureType		sType
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,		// VkStructureType		sType
 		DE_NULL,											// const void*			pNext
 		VK_IMAGE_USAGE_SAMPLED_BIT,							// VkImageUsageFlags	usage;
 	};
@@ -1469,7 +1470,7 @@ void UploadDownloadExecutor::downloadLoad(Context& context, VkBuffer buffer)
 
 	const vk::VkImageViewUsageCreateInfo viewUsageCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	// VkStructureType		sType
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,		// VkStructureType		sType
 		DE_NULL,											// const void*			pNext
 		VK_IMAGE_USAGE_STORAGE_BIT,							// VkImageUsageFlags	usage;
 	};
@@ -1825,7 +1826,10 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface&		vkp,
 								   const Extensions&			supportedExtensions,
 								   const deUint32				queueFamilyIndex,
 								   const VkAllocationCallbacks*	pAllocator,
-								   bool							enableValidation)
+#ifdef CTS_USES_VULKANSC
+								   de::SharedPtr<vk::ResourceInterface> resourceInterface,
+#endif // CTS_USES_VULKANSC
+								   const tcu::CommandLine&		cmdLine)
 {
 	const float						queuePriorities[] = { 1.0f };
 	const VkDeviceQueueCreateInfo	queueInfos[] =
@@ -1844,10 +1848,21 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface&		vkp,
 
 	const char* const				extensions[] = { "VK_KHR_swapchain", "VK_KHR_swapchain_mutable_format" };
 
+	void* pNext												= DE_NULL;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= cmdLine.isSubProcess() ? resourceInterface->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
+#endif // CTS_USES_VULKANSC
+
 	const VkDeviceCreateInfo		deviceParams =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-		DE_NULL,
+		pNext,
 		(VkDeviceCreateFlags)0,
 		DE_LENGTH_OF_ARRAY(queueInfos),
 		&queueInfos[0],
@@ -1864,7 +1879,7 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface&		vkp,
 			TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
 	}
 
-	return createCustomDevice(enableValidation, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+	return createCustomDevice(cmdLine.isValidationEnabled(), vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 struct InstanceHelper
@@ -1907,7 +1922,10 @@ struct DeviceHelper
 			enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL),
 			queueFamilyIndex,
 			pAllocator,
-			context.getTestContext().getCommandLine().isValidationEnabled()))
+#ifdef CTS_USES_VULKANSC
+			context.getResourceInterface(),
+#endif // CTS_USES_VULKANSC
+			context.getTestContext().getCommandLine()))
 		, vkd(context.getPlatformInterface(), context.getInstance(), *device)
 		, queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
 	{
@@ -1985,7 +2003,7 @@ Move<VkSwapchainKHR> makeSwapchain(const DeviceInterface&		vk,
 
 	const VkImageFormatListCreateInfo formatListInfo =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR,	// VkStructureType			sType;
+		VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO,		// VkStructureType			sType;
 		DE_NULL,												// const void*				pNext;
 		2u,														// deUint32					viewFormatCount
 		formatList												// const VkFormat*			pViewFormats

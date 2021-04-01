@@ -347,8 +347,10 @@ void checkSupport(Context& context, TestConfig config)
 	if (config.type == SynchronizationType::SYNCHRONIZATION2)
 		context.requireDeviceFunctionality("VK_KHR_synchronization2");
 
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().events)
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
+#endif // CTS_USES_VULKANSC
 }
 
 } // anonymous

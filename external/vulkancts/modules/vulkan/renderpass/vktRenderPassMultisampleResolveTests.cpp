@@ -2681,12 +2681,17 @@ struct Programs
 template<class TestConfigType>
 void checkSupport(Context& context, TestConfigType config)
 {
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().multisampleArrayImage &&
 		(config.sampleCount != VK_SAMPLE_COUNT_1_BIT) && (config.layerCount != 1))
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support image array with multiple samples per texel");
 	}
+#else
+	DE_UNREF(context);
+	DE_UNREF(config);
+#endif // CTS_USES_VULKANSC
 }
 
 std::string formatToName (VkFormat format)

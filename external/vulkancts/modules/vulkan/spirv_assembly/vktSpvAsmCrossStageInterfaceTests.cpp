@@ -341,23 +341,26 @@ tcu::TestStatus CrossStageTestInstance::iterate (void)
 		if (DECORATION_IN_ALL_SHADERS == m_parameters.testOptions[optionNdx])
 			imageDescription+= "decoration in all shaders | ";
 
+		bool resultComparison = false;
+		if (TEST_TYPE_RELAXEDPRECISION == m_parameters.qualifier)
 		{
-			bool resultComparison = false;
-			if (TEST_TYPE_RELAXEDPRECISION == m_parameters.qualifier)
-			{
+			resultComparison = checkImage(*colorAttachmentImage, *cmdBuffer, imageDescription+" Expected Pass", *referenceImage1);
+		}
+		else
+		{
+			if (DECORATION_IN_VERTEX == m_parameters.testOptions[optionNdx])
 				resultComparison = checkImage(*colorAttachmentImage, *cmdBuffer, imageDescription+" Expected Pass", *referenceImage1);
-			}
+			else if ((VkShaderStageFlagBits)(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT) == (VkShaderStageFlagBits)shadersStagesFlagsBits[stagesNdx])
+				resultComparison = checkImage(*colorAttachmentImage, *cmdBuffer, imageDescription+" Expected Pass", *referenceImage2);
 			else
-			{
-				if (DECORATION_IN_VERTEX == m_parameters.testOptions[optionNdx])
-					resultComparison = checkImage(*colorAttachmentImage, *cmdBuffer, imageDescription+" Expected Pass", *referenceImage1);
-				else if ((VkShaderStageFlagBits)(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT) == (VkShaderStageFlagBits)shadersStagesFlagsBits[stagesNdx])
-					resultComparison = checkImage(*colorAttachmentImage, *cmdBuffer, imageDescription+" Expected Pass", *referenceImage2);
-				else
-					resultComparison = !checkImage(*colorAttachmentImage, *cmdBuffer, imageDescription+" Expected Fail", *referenceImage1);
-			}
+				resultComparison = !checkImage(*colorAttachmentImage, *cmdBuffer, imageDescription+" Expected Fail", *referenceImage1);
+		}
 
-			if(!resultComparison)
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+		{
+			if (!resultComparison)
 				return tcu::TestStatus::fail("Fail");
 		}
 	}

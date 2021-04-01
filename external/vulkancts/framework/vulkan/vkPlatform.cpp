@@ -101,9 +101,6 @@ DeviceDriverSC::DeviceDriverSC (const PlatformInterface&				platformInterface,
 	: DeviceDriver(platformInterface, instance, device)
 	, m_normalMode(cmdLine.isSubProcess())
 	, m_resourceInterface(resourceInterface)
-	, m_resourceCounter(0U)
-	, m_statCurrent(resetDeviceObjectReservationCreateInfo())
-	, m_statMax(resetDeviceObjectReservationCreateInfo())
 {
 	if(!cmdLine.isSubProcess())
 		m_falseMemory.resize(64u * 1024u * 1024u, 0u);
@@ -112,7 +109,6 @@ DeviceDriverSC::DeviceDriverSC (const PlatformInterface&				platformInterface,
 
 DeviceDriverSC::~DeviceDriverSC(void)
 {
-	m_resourceInterface->deinitDevice();
 }
 
 void DeviceDriverSC::createDescriptorSetLayoutHandler (VkDevice									device,
@@ -123,11 +119,21 @@ void DeviceDriverSC::createDescriptorSetLayoutHandler (VkDevice									device,
 	DE_UNREF(device);
 	DE_UNREF(pAllocator);
 
+	DDSTAT_LOCK();
 	DDSTAT_HANDLE_CREATE(descriptorSetLayoutRequestCount,1);
-	m_statMax.descriptorSetLayoutBindingRequestCount = de::max(m_statMax.descriptorSetLayoutBindingRequestCount, pCreateInfo->bindingCount + 1);
-	*pSetLayout = VkDescriptorSetLayout(++m_resourceCounter);
-	m_resourceInterface->createDescriptorSetLayout(device, pCreateInfo, pAllocator, pSetLayout);
+	m_resourceInterface->getStatMax().descriptorSetLayoutBindingRequestCount = de::max(m_resourceInterface->getStatMax().descriptorSetLayoutBindingRequestCount, pCreateInfo->bindingCount + 1);
+	deUint32 immutableSamplersCount = 0u;
+	for (deUint32 i = 0; i < pCreateInfo->bindingCount; ++i)
+	{
+		m_resourceInterface->getStatMax().descriptorSetLayoutBindingLimit = de::max(m_resourceInterface->getStatMax().descriptorSetLayoutBindingLimit, pCreateInfo->pBindings[i].binding + 1);
+		if( ( pCreateInfo->pBindings[i].descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER || pCreateInfo->pBindings[i].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER )
+			&& pCreateInfo->pBindings[i].pImmutableSamplers != DE_NULL )
+			immutableSamplersCount += pCreateInfo->pBindings[i].descriptorCount;
+	}
+	m_resourceInterface->getStatMax().maxImmutableSamplersPerDescriptorSetLayout = de::max(m_resourceInterface->getStatMax().maxImmutableSamplersPerDescriptorSetLayout, immutableSamplersCount);
 
+	*pSetLayout = VkDescriptorSetLayout(m_resourceInterface->incResourceCounter());
+	m_resourceInterface->createDescriptorSetLayout(device, pCreateInfo, pAllocator, pSetLayout);
 }
 
 void DeviceDriverSC::createImageViewHandler (VkDevice						device,
@@ -138,15 +144,16 @@ void DeviceDriverSC::createImageViewHandler (VkDevice						device,
 	DE_UNREF(device);
 	DE_UNREF(pAllocator);
 
+	DDSTAT_LOCK();
 	DDSTAT_HANDLE_CREATE(imageViewRequestCount,1);
 	if (pCreateInfo->subresourceRange.layerCount > 1)
 		DDSTAT_HANDLE_CREATE(layeredImageViewRequestCount,1);
-	m_statMax.maxImageViewMipLevels		= de::max(m_statMax.maxImageViewMipLevels, pCreateInfo->subresourceRange.levelCount);
-	m_statMax.maxImageViewArrayLayers	= de::max(m_statMax.maxImageViewArrayLayers, pCreateInfo->subresourceRange.layerCount);
+	m_resourceInterface->getStatMax().maxImageViewMipLevels		= de::max(m_resourceInterface->getStatMax().maxImageViewMipLevels, pCreateInfo->subresourceRange.levelCount);
+	m_resourceInterface->getStatMax().maxImageViewArrayLayers	= de::max(m_resourceInterface->getStatMax().maxImageViewArrayLayers, pCreateInfo->subresourceRange.layerCount);
 	if(pCreateInfo->subresourceRange.layerCount > 1)
-		m_statMax.maxLayeredImageViewMipLevels = de::max(m_statMax.maxLayeredImageViewMipLevels, pCreateInfo->subresourceRange.levelCount);
+		m_resourceInterface->getStatMax().maxLayeredImageViewMipLevels = de::max(m_resourceInterface->getStatMax().maxLayeredImageViewMipLevels, pCreateInfo->subresourceRange.levelCount);
 
-	*pView = VkImageView(++m_resourceCounter);
+	*pView = VkImageView(m_resourceInterface->incResourceCounter());
 	m_imageViews.insert({ *pView, *pCreateInfo });
 }
 
@@ -157,6 +164,7 @@ void DeviceDriverSC::destroyImageViewHandler (VkDevice						device,
 	DE_UNREF(device);
 	DE_UNREF(pAllocator);
 
+	DDSTAT_LOCK();
 	auto it = m_imageViews.find(imageView);
 	if (it != end(m_imageViews))
 	{
@@ -174,23 +182,25 @@ void DeviceDriverSC::createQueryPoolHandler (VkDevice						device,
 {
 	DE_UNREF(device);
 	DE_UNREF(pAllocator);
+
+	DDSTAT_LOCK();
 	DDSTAT_HANDLE_CREATE(queryPoolRequestCount, 1);
 	switch (pCreateInfo->queryType)
 	{
 		case VK_QUERY_TYPE_OCCLUSION:
-			m_statMax.maxOcclusionQueriesPerPool = de::max(m_statMax.maxOcclusionQueriesPerPool, pCreateInfo->queryCount);
+			m_resourceInterface->getStatMax().maxOcclusionQueriesPerPool = de::max(m_resourceInterface->getStatMax().maxOcclusionQueriesPerPool, pCreateInfo->queryCount);
 			break;
 		case VK_QUERY_TYPE_PIPELINE_STATISTICS:
-			m_statMax.maxPipelineStatisticsQueriesPerPool = de::max(m_statMax.maxPipelineStatisticsQueriesPerPool, pCreateInfo->queryCount);
+			m_resourceInterface->getStatMax().maxPipelineStatisticsQueriesPerPool = de::max(m_resourceInterface->getStatMax().maxPipelineStatisticsQueriesPerPool, pCreateInfo->queryCount);
 			break;
 		case VK_QUERY_TYPE_TIMESTAMP:
-			m_statMax.maxTimestampQueriesPerPool = de::max(m_statMax.maxTimestampQueriesPerPool, pCreateInfo->queryCount);
+			m_resourceInterface->getStatMax().maxTimestampQueriesPerPool = de::max(m_resourceInterface->getStatMax().maxTimestampQueriesPerPool, pCreateInfo->queryCount);
 			break;
 		default:
 			break;
 	}
 	// We don't have to track queryPool resources as we do with image views because they're not removed from memory in Vulkan SC.
-	*pQueryPool = VkQueryPool(++m_resourceCounter);
+	*pQueryPool = VkQueryPool(m_resourceInterface->incResourceCounter());
 }
 
 void DeviceDriverSC::createPipelineLayoutHandler (VkDevice								device,
@@ -198,8 +208,9 @@ void DeviceDriverSC::createPipelineLayoutHandler (VkDevice								device,
 												  const VkAllocationCallbacks*			pAllocator,
 												  VkPipelineLayout*						pPipelineLayout) const
 {
+	DDSTAT_LOCK();
 	DDSTAT_HANDLE_CREATE(pipelineLayoutRequestCount, 1);
-	*pPipelineLayout = VkPipelineLayout(++m_resourceCounter);
+	*pPipelineLayout = VkPipelineLayout(m_resourceInterface->incResourceCounter());
 	m_resourceInterface->createPipelineLayout(device, pCreateInfo, pAllocator, pPipelineLayout);
 }
 
@@ -224,10 +235,11 @@ void DeviceDriverSC::createGraphicsPipelinesHandlerStat (VkDevice									device
 	DE_UNREF(pipelineCache);
 	DE_UNREF(pAllocator);
 
+	DDSTAT_LOCK();
 	DDSTAT_HANDLE_CREATE(graphicsPipelineRequestCount, createInfoCount);
 	for (deUint32 i = 0; i < createInfoCount; ++i)
 	{
-		pPipelines[i] = VkPipeline(++m_resourceCounter);
+		pPipelines[i] = VkPipeline(m_resourceInterface->incResourceCounter());
 		m_graphicsPipelines.insert({ pPipelines[i], pCreateInfos[i] });
 	}
 
@@ -255,10 +267,11 @@ void DeviceDriverSC::createComputePipelinesHandlerStat (VkDevice									device,
 	DE_UNREF(pipelineCache);
 	DE_UNREF(pAllocator);
 
+	DDSTAT_LOCK();
 	DDSTAT_HANDLE_CREATE(computePipelineRequestCount, createInfoCount);
 	for (deUint32 i = 0; i < createInfoCount; ++i)
 	{
-		pPipelines[i] = VkPipeline(++m_resourceCounter);
+		pPipelines[i] = VkPipeline(m_resourceInterface->incResourceCounter());
 		m_computePipelines.insert({ pPipelines[i], pCreateInfos[i] });
 	}
 
@@ -272,6 +285,7 @@ void DeviceDriverSC::destroyPipelineHandler (VkDevice						device,
 	DE_UNREF(device);
 	DE_UNREF(pAllocator);
 
+	DDSTAT_LOCK();
 	auto it = m_graphicsPipelines.find(pipeline);
 	if (it != end(m_graphicsPipelines))
 	{
@@ -296,11 +310,12 @@ void DeviceDriverSC::createRenderPassHandler (VkDevice						device,
 	DE_UNREF(device);
 	DE_UNREF(pAllocator);
 
+	DDSTAT_LOCK();
 	DDSTAT_HANDLE_CREATE(renderPassRequestCount, 1);
 	DDSTAT_HANDLE_CREATE(subpassDescriptionRequestCount,	pCreateInfo->subpassCount);
 	DDSTAT_HANDLE_CREATE(attachmentDescriptionRequestCount,	pCreateInfo->attachmentCount);
 
-	*pRenderPass = VkRenderPass(++m_resourceCounter);
+	*pRenderPass = VkRenderPass(m_resourceInterface->incResourceCounter());
 	m_renderPasses.insert({ *pRenderPass, *pCreateInfo });
 	m_resourceInterface->createRenderPass(device, pCreateInfo, pAllocator, pRenderPass);
 }
@@ -313,11 +328,12 @@ void DeviceDriverSC::createRenderPass2Handler (VkDevice							device,
 	DE_UNREF(device);
 	DE_UNREF(pAllocator);
 
+	DDSTAT_LOCK();
 	DDSTAT_HANDLE_CREATE(renderPassRequestCount, 1);
 	DDSTAT_HANDLE_CREATE(subpassDescriptionRequestCount,	pCreateInfo->subpassCount);
 	DDSTAT_HANDLE_CREATE(attachmentDescriptionRequestCount,	pCreateInfo->attachmentCount);
 
-	*pRenderPass = VkRenderPass(++m_resourceCounter);
+	*pRenderPass = VkRenderPass(m_resourceInterface->incResourceCounter());
 	m_renderPasses2.insert({ *pRenderPass, *pCreateInfo });
 	m_resourceInterface->createRenderPass2(device, pCreateInfo, pAllocator, pRenderPass);
 }
@@ -329,6 +345,7 @@ void DeviceDriverSC::destroyRenderPassHandler (VkDevice						device,
 	DE_UNREF(device);
 	DE_UNREF(pAllocator);
 
+	DDSTAT_LOCK();
 	auto it = m_renderPasses.find(renderPass);
 	if (it != end(m_renderPasses))
 	{
@@ -354,9 +371,33 @@ void DeviceDriverSC::createSamplerHandler (VkDevice							device,
 										   const VkAllocationCallbacks*		pAllocator,
 										   VkSampler*						pSampler) const
 {
+	DDSTAT_LOCK();
 	DDSTAT_HANDLE_CREATE(samplerRequestCount, 1);
-	*pSampler = VkSampler(++m_resourceCounter);
+	*pSampler = VkSampler(m_resourceInterface->incResourceCounter());
 	m_resourceInterface->createSampler(device, pCreateInfo, pAllocator, pSampler);
+}
+
+void DeviceDriverSC::createSamplerYcbcrConversionHandler (VkDevice								device,
+														  const VkSamplerYcbcrConversionCreateInfo*	pCreateInfo,
+														  const VkAllocationCallbacks*			pAllocator,
+														  VkSamplerYcbcrConversion*				pYcbcrConversion) const
+{
+	DDSTAT_LOCK();
+	DDSTAT_HANDLE_CREATE(samplerYcbcrConversionRequestCount, 1);
+	*pYcbcrConversion = VkSamplerYcbcrConversion(m_resourceInterface->incResourceCounter());
+	m_resourceInterface->createSamplerYcbcrConversion(device, pCreateInfo, pAllocator, pYcbcrConversion);
+}
+
+void DeviceDriverSC::getDescriptorSetLayoutSupportHandler (VkDevice									device,
+														   const VkDescriptorSetLayoutCreateInfo*	pCreateInfo,
+														   VkDescriptorSetLayoutSupport*			pSupport) const
+{
+	DE_UNREF(device);
+
+	DDSTAT_LOCK();
+	for (deUint32 i = 0; i < pCreateInfo->bindingCount; ++i)
+		m_resourceInterface->getStatMax().descriptorSetLayoutBindingLimit = de::max(m_resourceInterface->getStatMax().descriptorSetLayoutBindingLimit, pCreateInfo->pBindings[i].binding + 1);
+	pSupport->supported = VK_TRUE;
 }
 
 VkResult DeviceDriverSC::createShaderModule (VkDevice							device,
@@ -364,6 +405,7 @@ VkResult DeviceDriverSC::createShaderModule (VkDevice							device,
 											 const VkAllocationCallbacks*		pAllocator,
 											 VkShaderModule*					pShaderModule) const
 {
+	DDSTAT_LOCK();
 	return m_resourceInterface->createShaderModule(device, pCreateInfo, pAllocator, pShaderModule, m_normalMode);
 }
 
@@ -372,17 +414,8 @@ de::SharedPtr<ResourceInterface> DeviceDriverSC::gerResourceInterface() const
 	return m_resourceInterface;
 }
 
-VkDeviceObjectReservationCreateInfo DeviceDriverSC::getStatistics () const
+void DeviceDriverSC::reset() const
 {
-	return m_statMax;
-}
-
-void DeviceDriverSC::resetStatistics() const
-{
-	m_resourceCounter	= 0u;
-	m_statCurrent		= resetDeviceObjectReservationCreateInfo();
-	m_statMax			= resetDeviceObjectReservationCreateInfo();
-
 	// these objects should be empty when function is invoked, but we will clear it anyway
 	m_imageViews.clear();
 	m_renderPasses.clear();

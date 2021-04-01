@@ -160,51 +160,53 @@ set(DEQP_VK_LIBS
 	deqp-vk-reconvergence
 	)
 
+
 set(DEQP_VKSC_LIBS
 	tcutil
 	vkscutil
 	glutil
 	deqp-vksc-api
-#	deqp-vksc-pipeline
-#	deqp-vksc-binding-model
-#	deqp-vksc-spirv-assembly
-#	deqp-vksc-shaderrender
-#	deqp-vksc-shaderexecutor
-#	deqp-vksc-memory
-#	deqp-vksc-ubo
-#	deqp-vksc-dynamic-state
-#	deqp-vksc-ssbo
-#	deqp-vksc-query-pool
-#	deqp-vksc-conditional-rendering
-#	deqp-vksc-draw
-#	deqp-vksc-device-group
-#	deqp-vksc-compute
-#	deqp-vksc-image
-#	deqp-vksc-wsi
-#	deqp-vksc-sparse-resources
-#	deqp-vksc-tessellation
-#	deqp-vksc-rasterization
-#	deqp-vksc-synchronization
-#	deqp-vksc-clipping
-#	deqp-vksc-fragment-ops
-#	deqp-vksc-texture
-#	deqp-vksc-geometry
-#	deqp-vksc-robustness
-#	deqp-vksc-render-pass
-#	deqp-vksc-multiview
-#	deqp-vksc-subgroups
-#	deqp-vksc-ycbcr
-#	deqp-vksc-protected-memory
-#	deqp-vksc-memory-model
-#	deqp-vksc-amber
-#	deqp-vksc-imageless-framebuffer
-#	deqp-vksc-transform-feedback
-#	deqp-vksc-descriptor-indexing
-#	deqp-vksc-fragment-shader-interlock
-#	deqp-vksc-modifiers
-#	deqp-vksc-ray-tracing
-#	deqp-vksc-ray-query
-#	deqp-vksc-postmortem
+	deqp-vksc-pipeline
+	deqp-vksc-binding-model
+	deqp-vksc-spirv-assembly
+	deqp-vksc-shaderrender
+	deqp-vksc-shaderexecutor
+	deqp-vksc-memory
+	deqp-vksc-ubo
+	deqp-vksc-dynamic-state
+	deqp-vksc-ssbo
+	deqp-vksc-query-pool
+#x	deqp-vksc-conditional-rendering
+	deqp-vksc-draw
+	deqp-vksc-device-group
+	deqp-vksc-compute
+	deqp-vksc-image
+#x	deqp-vksc-wsi
+#x	deqp-vksc-sparse-resources
+	deqp-vksc-tessellation
+	deqp-vksc-rasterization
+	deqp-vksc-synchronization
+	deqp-vksc-clipping
+	deqp-vksc-fragment-ops
+	deqp-vksc-texture
+	deqp-vksc-geometry
+	deqp-vksc-robustness
+	deqp-vksc-render-pass
+	deqp-vksc-multiview
+	deqp-vksc-subgroups
+	deqp-vksc-ycbcr
+	deqp-vksc-protected-memory
+	deqp-vksc-memory-model
+#x	deqp-vksc-amber
+	deqp-vksc-imageless-framebuffer
+#x	deqp-vksc-transform-feedback
+	deqp-vksc-descriptor-indexing
+	deqp-vksc-fragment-shader-interlock
+#x	deqp-vksc-modifiers
+#x	deqp-vksc-ray-tracing
+#x	deqp-vksc-ray-query
+#x	deqp-vksc-postmortem
+	deqp-vksc-fragment-shading-rate
 	)
 
 

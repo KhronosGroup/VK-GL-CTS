@@ -205,7 +205,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDisplayPlaneCapabilities2KHRFunc)
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceFragmentShadingRatesKHRFunc)						(VkPhysicalDevice physicalDevice, uint32_t* pFragmentShadingRateCount, VkPhysicalDeviceFragmentShadingRateKHR* pFragmentShadingRates);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetFragmentShadingRateKHRFunc)									(VkCommandBuffer commandBuffer, const VkExtent2D* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdRefreshObjectsKHRFunc)											(VkCommandBuffer commandBuffer, const VkRefreshObjectListKHR* pRefreshObjects);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceRefreshableObjectTypesKHRFunc)					(VkPhysicalDevice physicalDevice, uint32_t* pRefreshableObjectCount, VkObjectType* pRefreshableObjectTypes);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceRefreshableObjectTypesKHRFunc)					(VkPhysicalDevice physicalDevice, uint32_t* pRefreshableObjectTypeCount, VkObjectType* pRefreshableObjectTypes);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetEvent2KHRFunc)												(VkCommandBuffer commandBuffer, VkEvent event, const VkDependencyInfoKHR* pDependencyInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdResetEvent2KHRFunc)												(VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags2KHR stageMask);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdWaitEvents2KHRFunc)												(VkCommandBuffer commandBuffer, uint32_t eventCount, const VkEvent* pEvents, const VkDependencyInfoKHR* pDependencyInfos);

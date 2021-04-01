@@ -1167,6 +1167,11 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 			std::string							message;
 			float								depthValue;
 
+#ifdef CTS_USES_VULKANSC
+			if (!m_context.getTestContext().getCommandLine().isSubProcess())
+				continue;
+#endif // CTS_USES_VULKANSC
+
 			for (deUint32 y = 0; y < m_params.imageExtent.height; ++y)
 			for (deUint32 x = 0; x < m_params.imageExtent.width; ++x)
 			{
@@ -1196,6 +1201,11 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 			std::string							message;
 			deUint32							stencilValue;
 
+#ifdef CTS_USES_VULKANSC
+			if (!m_context.getTestContext().getCommandLine().isSubProcess())
+				continue;
+#endif // CTS_USES_VULKANSC
+
 			for (deUint32 y = 0; y < m_params.imageExtent.height; ++y)
 			for (deUint32 x = 0; x < m_params.imageExtent.width; ++x)
 			{
@@ -1222,6 +1232,11 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 			de::MovePtr<TextureLevelPyramid>	image			= readImage(VK_IMAGE_ASPECT_COLOR_BIT, arrayLayer);
 			std::string							message;
 			const VkClearColorValue*			pColorValue;
+
+#ifdef CTS_USES_VULKANSC
+			if (!m_context.getTestContext().getCommandLine().isSubProcess())
+				continue;
+#endif // CTS_USES_VULKANSC
 
 			for (deUint32 mipLevel = 0; mipLevel < m_imageMipLevels; ++mipLevel)
 			{

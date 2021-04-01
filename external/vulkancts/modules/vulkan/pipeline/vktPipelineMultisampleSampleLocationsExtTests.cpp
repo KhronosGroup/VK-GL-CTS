@@ -202,7 +202,7 @@ VkPhysicalDeviceSampleLocationsPropertiesEXT getSampleLocationsPropertiesEXT (Co
 
 	VkPhysicalDeviceProperties2 properties =
 	{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR,	    // VkStructureType               sType;
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,			// VkStructureType               sType;
 		&sampleLocationsProperties,								// void*                         pNext;
 		VkPhysicalDeviceProperties(),							// VkPhysicalDeviceProperties    properties;
 	};
@@ -1797,11 +1797,13 @@ void checkSupportDrawTests (Context& context, const TestParams params)
 	if (params.drawIn == TEST_DRAW_IN_SAME_SUBPASS && ((params.options & TEST_OPTION_SAME_PATTERN_BIT) == 0) && !getSampleLocationsPropertiesEXT(context).variableSampleLocations)
 		TCU_THROW(NotSupportedError, "VkPhysicalDeviceSampleLocationsPropertiesEXT: variableSampleLocations not supported");
 
+#ifndef CTS_USES_VULKANSC
 	if (TEST_OPTION_WAIT_EVENTS_BIT & params.options &&
 		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().events)
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 const char* getString (const TestImageAspect aspect)

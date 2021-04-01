@@ -63,6 +63,7 @@ Image::Image (void)
 	, m_image		()
 {}
 
+#ifndef CTS_USES_VULKANSC
 SparseImage::SparseImage (const vk::DeviceInterface&	vkd,
 						  vk::VkDevice					device,
 						  vk::VkPhysicalDevice			physicalDevice,
@@ -78,6 +79,7 @@ SparseImage::SparseImage (const vk::DeviceInterface&	vkd,
 	m_semaphore	= createSemaphore(vkd, device);
 	allocateAndBindSparseImage(vkd, device, physicalDevice, vki, createInfo, m_semaphore.get(), sparseQueue, allocator, m_allocations, format, m_image.get());
 }
+#endif // CTS_USES_VULKANSC
 
 tcu::UVec3 getShaderGridSize (const ImageType imageType, const tcu::UVec3& imageSize)
 {
@@ -438,7 +440,7 @@ VkImageViewUsageCreateInfo makeImageViewUsageCreateInfo (const VkImageUsageFlags
 {
 	VkImageViewUsageCreateInfo imageViewUsageCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	//VkStructureType		sType;
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,		//VkStructureType		sType;
 		DE_NULL,											//const void*			pNext;
 		imageUsageFlags,									//VkImageUsageFlags		usage;
 	};

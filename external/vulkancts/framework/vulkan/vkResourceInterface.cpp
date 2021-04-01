@@ -39,7 +39,12 @@ namespace vk
 {
 
 ResourceInterface::ResourceInterface (tcu::TestContext& testCtx)
-	: m_testCtx(testCtx)
+	: m_testCtx			(testCtx)
+#ifdef CTS_USES_VULKANSC
+	, m_resourceCounter	(0U)
+	, m_statCurrent		(resetDeviceObjectReservationCreateInfo())
+	, m_statMax			(resetDeviceObjectReservationCreateInfo())
+#endif // CTS_USES_VULKANSC
 {
 }
 
@@ -53,10 +58,31 @@ void ResourceInterface::initTestCase (const std::string& casePath)
 }
 
 #ifdef CTS_USES_VULKANSC
+deUint64 ResourceInterface::incResourceCounter()
+{
+	return ++m_resourceCounter;
+}
+
+std::mutex& ResourceInterface::getStatMutex()
+{
+	return m_mutex;
+}
+
+VkDeviceObjectReservationCreateInfo& ResourceInterface::getStatCurrent()
+{
+	return m_statCurrent;
+}
+
+VkDeviceObjectReservationCreateInfo&	ResourceInterface::getStatMax()
+{
+	return m_statMax;
+}
+
 void ResourceInterface::removeRedundantObjects()
 {
 	// At the end of the day we only need to export objects used in pipelines.
 	// Rest of the objects may be removed from m_json* structures as redundant
+	std::set<VkSamplerYcbcrConversion>	samplerYcbcrConversionsInPipeline;
 	std::set<VkSampler>				samplersInPipeline;
 	std::set<VkShaderModule>		shadersInPipeline;
 	std::set<VkRenderPass>			renderPassesInPipeline;
@@ -64,6 +90,7 @@ void ResourceInterface::removeRedundantObjects()
 	std::set<VkDescriptorSetLayout>	descriptorSetLayoutsInPipeline;
 
 	Json::CharReaderBuilder			builder;
+	builder.settings_["allowSpecialFloats"] = 1;
 	de::UniquePtr<Json::CharReader>	jsonReader(builder.newCharReader());
 
 	for (auto it = begin(m_jsonPipelines); it != end(m_jsonPipelines); ++it)
@@ -150,8 +177,28 @@ void ResourceInterface::removeRedundantObjects()
 		if (samplersInPipeline.find(it->first) == end(samplersInPipeline))
 			it = m_jsonSamplers.erase(it);
 		else
+		{
+			VkSamplerCreateInfo	sCI;
+			deMemset(&sCI, 0, sizeof(sCI));
+			readJSON_VkSamplerCreateInfo(jsonReader.get(), it->second, sCI);
+
+			if (sCI.pNext != DE_NULL)
+			{
+				VkSamplerYcbcrConversionInfo* info = (VkSamplerYcbcrConversionInfo*)(sCI.pNext);
+				if (info->sType == VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO)
+					samplerYcbcrConversionsInPipeline.insert(info->conversion);
+			}
+			++it;
+		}
+	}
+	for (auto it = begin(m_jsonSamplerYcbcrConversions); it != end(m_jsonSamplerYcbcrConversions); )
+	{
+		if (samplerYcbcrConversionsInPipeline.find(it->first) == end(samplerYcbcrConversionsInPipeline))
+			it = m_jsonSamplerYcbcrConversions.erase(it);
+		else
 			++it;
 	}
+
 }
 
 void ResourceInterface::exportDataToFile (const std::string&	fileName,
@@ -165,6 +212,21 @@ void ResourceInterface::exportDataToFile (const std::string&	fileName,
 	deFile_write(exportFile, jsonMemoryReservation.c_str(), jsonMemoryReservation.size(), &numWritten);
 	std::string		mrOutro		= "#memoryReservation_end#\n";
 	deFile_write(exportFile, mrOutro.c_str(), mrOutro.size(), &numWritten);
+
+	// write all sampler Ycbcr conversions
+	{
+		std::string		samplersIntro = "#samplerconversions_begin#\n";
+		deFile_write(exportFile, samplersIntro.c_str(), samplersIntro.size(), &numWritten);
+		for (auto it = begin(m_jsonSamplerYcbcrConversions); it != end(m_jsonSamplerYcbcrConversions); ++it)
+		{
+			std::ostringstream str;
+			str << "#samplerconversion " << it->first.getInternal() << std::endl;
+			str << it->second << std::endl;
+			deFile_write(exportFile, str.str().c_str(), str.str().size(), &numWritten);
+		}
+		std::string		samplersOutro = "#samplerconversions_end#\n";
+		deFile_write(exportFile, samplersOutro.c_str(), samplersOutro.size(), &numWritten);
+	}
 
 	// write all samplers
 	{
@@ -269,6 +331,7 @@ void ResourceInterface::importDataFromFile (const std::string&	fileName) const
 	deFile_destroy(importFile);
 
 	Json::CharReaderBuilder			builder;
+	builder.settings_["allowSpecialFloats"] = 1;
 	de::UniquePtr<Json::CharReader>	jsonReader(builder.newCharReader());
 
 	// import VkDeviceObjectReservationCreateInfo
@@ -286,6 +349,36 @@ void ResourceInterface::importDataFromFile (const std::string&	fileName) const
 
 		readJSON_VkDeviceObjectReservationCreateInfo(jsonReader.get(), memoryResText, m_memoryReservation);
 		break;
+	}
+
+	// import VkSamplerYcbcrConversionCreateInfo in JSON format
+	{
+		std::string			beginText		("#samplerconversions_begin#\n");
+		std::string			endText			("#samplerconversions_end#\n");
+		std::size_t			beginPos		= importText.find(beginText);
+		std::size_t			endPos			= importText.find(endText, beginPos + beginText.size());
+		std::string			samplersText	(begin(importText) + beginPos + +beginText.size(), begin(importText) + endPos);
+
+		std::string			shaderTag		("#samplerconversion ");
+		beginPos							= 0;
+		endPos								= 0;
+		while (endPos != std::string::npos)
+		{
+			beginPos							= samplersText.find(shaderTag, endPos);
+			endPos								= samplersText.find("\n", beginPos);
+			if (beginPos == std::string::npos || endPos == std::string::npos)
+				continue;
+			std::string			samplerNumber	(begin(samplersText) + beginPos + shaderTag.size(), begin(samplersText) + endPos);
+			deUint64			samplerInternal;
+			std::istringstream	str				(samplerNumber);
+			str >> samplerInternal;
+
+			beginPos							= endPos + 1;
+			endPos								= samplersText.find	(shaderTag, beginPos);
+			std::string							jsonSamplerModule	(begin(samplersText) + beginPos, begin(samplersText) + ((endPos != std::string::npos) ? endPos : samplersText.size()));
+
+			m_jsonSamplerYcbcrConversions.insert({ VkSamplerYcbcrConversion(samplerInternal), jsonSamplerModule });
+		}
 	}
 
 	// import VkSamplerCreateInfo in JSON format
@@ -492,35 +585,35 @@ void ResourceInterfaceStandard::initDevice(DeviceInterface& deviceInterface, VkD
 	// Moreover - we create additional function pointers for vkCreateGraphicsPipelines, vkCreateComputePipelines, etc.
 	// BTW: although ResourceInterfaceStandard exists in normal Vulkan tests - only initDevice and buildProgram functions are used by Vulkan tests
 	// Other functions are called from within DeviceDriverSC which does not exist in these tests ( DeviceDriver class is used instead )
-	m_shaderCounter				= 0U;
-	m_createShaderModuleFunc		= (CreateShaderModuleFunc)		deviceInterface.getDeviceProcAddr(device, "vkCreateShaderModule");
-	m_createGraphicsPipelinesFunc	= (CreateGraphicsPipelinesFunc)	deviceInterface.getDeviceProcAddr(device, "vkCreateGraphicsPipelines");
-	m_createComputePipelinesFunc	= (CreateComputePipelinesFunc)	deviceInterface.getDeviceProcAddr(device, "vkCreateComputePipelines");
+	m_createShaderModuleFunc[device]		= (CreateShaderModuleFunc)		deviceInterface.getDeviceProcAddr(device, "vkCreateShaderModule");
+	m_createGraphicsPipelinesFunc[device]	= (CreateGraphicsPipelinesFunc)	deviceInterface.getDeviceProcAddr(device, "vkCreateGraphicsPipelines");
+	m_createComputePipelinesFunc[device]	= (CreateComputePipelinesFunc)	deviceInterface.getDeviceProcAddr(device, "vkCreateComputePipelines");
 #ifdef CTS_USES_VULKANSC
 	if (m_testCtx.getCommandLine().isSubProcess())
 	{
 		VkPipelineCacheCreateInfo pCreateInfo =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,	// VkStructureType				sType;
-			DE_NULL,										// const void*					pNext;
-			(VkPipelineCacheCreateFlags)0u,					// VkPipelineCacheCreateFlags	flags;
-			m_cacheData.size(),								// deUintptr					initialDataSize;
-			m_cacheData.data()								// const void*					pInitialData;
+			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,				// VkStructureType				sType;
+			DE_NULL,													// const void*					pNext;
+			VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+				VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+			m_cacheData.size(),											// deUintptr					initialDataSize;
+			m_cacheData.data()											// const void*					pInitialData;
 		};
-		m_pipelineCache = createPipelineCache(deviceInterface, device, &pCreateInfo, DE_NULL);
+		m_pipelineCache[device] = de::SharedPtr<Move<VkPipelineCache>>(new Move<VkPipelineCache>(createPipelineCache(deviceInterface, device, &pCreateInfo, DE_NULL)));
 	}
 #endif // CTS_USES_VULKANSC
 }
 
-void ResourceInterfaceStandard::deinitDevice()
+void ResourceInterfaceStandard::deinitDevice(VkDevice device)
 {
 #ifdef CTS_USES_VULKANSC
-	m_cacheData.clear();
-
 	if (m_testCtx.getCommandLine().isSubProcess())
 	{
-		m_pipelineCache.disown();
+		m_pipelineCache.erase(device);
 	}
+#else
+	DE_UNREF(device);
 #endif // CTS_USES_VULKANSC
 }
 
@@ -532,13 +625,16 @@ VkResult ResourceInterfaceStandard::createShaderModule (VkDevice							device,
 														VkShaderModule*						pShaderModule,
 														bool								normalMode) const
 {
-	std::lock_guard<std::mutex> lock(m_pipelineMutex);
-
-	if(normalMode)
-		return m_createShaderModuleFunc(device, pCreateInfo, pAllocator, pShaderModule);
+	if (normalMode)
+	{
+		const auto it = m_createShaderModuleFunc.find(device);
+		if (it != end(m_createShaderModuleFunc))
+			return it->second(device, pCreateInfo, pAllocator, pShaderModule);
+		TCU_THROW(InternalError, "vkCreateShaderModule not defined");
+	}
 
 	// main process: store VkShaderModuleCreateInfo in JSON format. Shaders will be sent later for m_pipelineCache creation ( and sent through file to another process )
-	*pShaderModule = VkShaderModule(++m_shaderCounter);
+	*pShaderModule = VkShaderModule(++m_resourceCounter);
 	m_jsonShaderModules.insert({ *pShaderModule, writeJSON_VkShaderModuleCreateInfo(*pCreateInfo) });
 	return VK_SUCCESS;
 }
@@ -573,8 +669,6 @@ VkResult ResourceInterfaceStandard::createGraphicsPipelines (VkDevice								dev
 	// - VkPipelinePoolEntrySizeCreateInfo is missing
 	DE_UNREF(pipelineCache);
 
-	std::lock_guard<std::mutex> lock(m_pipelineMutex);
-
 	// build pipeline identifiers, make a copy of pCreateInfos
 	std::vector<VkPipelineIdentifierInfo>		pipelineIDs;
 	std::vector<VkGraphicsPipelineCreateInfo>	pCreateInfoCopies;
@@ -592,8 +686,21 @@ VkResult ResourceInterfaceStandard::createGraphicsPipelines (VkDevice								dev
 	}
 
 	// subprocess: load graphics pipelines from OUR m_pipelineCache cache
-	if(normalMode)
-		return m_createGraphicsPipelinesFunc(device, *m_pipelineCache, createInfoCount, pCreateInfoCopies.data(), pAllocator, pPipelines);
+	if (normalMode)
+	{
+		const auto it = m_createGraphicsPipelinesFunc.find(device);
+		if (it != end(m_createGraphicsPipelinesFunc))
+		{
+			auto pit = m_pipelineCache.find(device);
+			if ( pit != end(m_pipelineCache) )
+			{
+				VkPipelineCache pCache = pit->second->get();
+				return it->second(device, pCache, createInfoCount, pCreateInfoCopies.data(), pAllocator, pPipelines);
+			}
+			TCU_THROW(InternalError, "m_pipelineCache not initialized for this device");
+		}
+		TCU_THROW(InternalError, "vkCreateGraphicsPipelines not defined");
+	}
 
 	// main process: store pipelines in JSON format. Pipelines will be sent later for m_pipelineCache creation ( and sent through file to another process )
 	for (deUint32 i = 0; i < createInfoCount; ++i)
@@ -615,8 +722,6 @@ VkResult ResourceInterfaceStandard::createComputePipelines (VkDevice								devi
 	// TODO:
 	// - VkPipelinePoolEntrySizeCreateInfo is missing
 
-	std::lock_guard<std::mutex> lock(m_pipelineMutex);
-
 	// build pipeline identifiers, make a copy of pCreateInfos
 	std::vector<VkPipelineIdentifierInfo>		pipelineIDs;
 	std::vector<VkComputePipelineCreateInfo>	pCreateInfoCopies;
@@ -635,7 +740,20 @@ VkResult ResourceInterfaceStandard::createComputePipelines (VkDevice								devi
 
 	// subprocess: load graphics pipelines from OUR pipeline cache
 	if (normalMode)
-		return m_createComputePipelinesFunc(device, *m_pipelineCache, createInfoCount, pCreateInfoCopies.data(), pAllocator, pPipelines);
+	{
+		const auto it = m_createComputePipelinesFunc.find(device);
+		if (it != end(m_createComputePipelinesFunc))
+		{
+			auto pit = m_pipelineCache.find(device);
+			if ( pit != end(m_pipelineCache) )
+			{
+				VkPipelineCache pCache = pit->second->get();
+				return it->second(device, pCache, createInfoCount, pCreateInfoCopies.data(), pAllocator, pPipelines);
+			}
+			TCU_THROW(InternalError, "m_pipelineCache not initialized for this device");
+		}
+		TCU_THROW(InternalError, "vkCreateGraphicsPipelines not defined");
+	}
 
 	// main process: store pipelines in JSON format. Pipelines will be sent later for m_pipelineCache creation ( and sent through file to another process )
 	for (deUint32 i = 0; i < createInfoCount; ++i)
@@ -652,7 +770,6 @@ void ResourceInterfaceStandard::createRenderPass (VkDevice								device,
 {
 	DE_UNREF(device);
 	DE_UNREF(pAllocator);
-	std::lock_guard<std::mutex> lock(m_pipelineMutex);
 	m_jsonRenderPasses.insert({ *pRenderPass,  writeJSON_VkRenderPassCreateInfo(*pCreateInfo) });
 }
 
@@ -663,7 +780,6 @@ void ResourceInterfaceStandard::createRenderPass2 (VkDevice								device,
 {
 	DE_UNREF(device);
 	DE_UNREF(pAllocator);
-	std::lock_guard<std::mutex> lock(m_pipelineMutex);
 	m_jsonRenderPasses.insert({ *pRenderPass,  writeJSON_VkRenderPassCreateInfo2(*pCreateInfo) });
 }
 
@@ -674,7 +790,6 @@ void ResourceInterfaceStandard::createPipelineLayout (VkDevice								device,
 {
 	DE_UNREF(device);
 	DE_UNREF(pAllocator);
-	std::lock_guard<std::mutex> lock(m_pipelineMutex);
 	m_jsonPipelineLayouts.insert({*pPipelineLayout, writeJSON_VkPipelineLayoutCreateInfo(*pCreateInfo) });
 }
 
@@ -685,7 +800,6 @@ void ResourceInterfaceStandard::createDescriptorSetLayout (VkDevice									devi
 {
 	DE_UNREF(device);
 	DE_UNREF(pAllocator);
-	std::lock_guard<std::mutex> lock(m_pipelineMutex);
 	m_jsonDescriptorSetLayouts.insert({ *pSetLayout, writeJSON_VkDescriptorSetLayoutCreateInfo(*pCreateInfo) });
 }
 
@@ -696,17 +810,26 @@ void ResourceInterfaceStandard::createSampler (VkDevice							device,
 {
 	DE_UNREF(device);
 	DE_UNREF(pAllocator);
-	std::lock_guard<std::mutex> lock(m_pipelineMutex);
 	m_jsonSamplers.insert({ *pSampler,  writeJSON_VkSamplerCreateInfo(*pCreateInfo) });
 }
 
-void ResourceInterfaceStandard::importPipelineCacheData(const PlatformInterface&			vkp,
-														VkInstance							instance,
-														const InstanceInterface&			vki,
-														VkPhysicalDevice					physicalDevice,
-														deUint32							queueIndex,
-														const VkPhysicalDeviceFeatures2&	enabledFeatures,
-														const std::vector<const char*>		extensionPtrs)
+void ResourceInterfaceStandard::createSamplerYcbcrConversion (VkDevice									device,
+															  const VkSamplerYcbcrConversionCreateInfo*	pCreateInfo,
+															  const VkAllocationCallbacks*				pAllocator,
+															  VkSamplerYcbcrConversion*					pYcbcrConversion) const
+{
+	DE_UNREF(device);
+	DE_UNREF(pAllocator);
+	m_jsonSamplerYcbcrConversions.insert({ *pYcbcrConversion,  writeJSON_VkSamplerYcbcrConversionCreateInfo(*pCreateInfo) });
+}
+
+void ResourceInterfaceStandard::importPipelineCacheData (const PlatformInterface&			vkp,
+														 VkInstance							instance,
+														 const InstanceInterface&			vki,
+														 VkPhysicalDevice					physicalDevice,
+														 deUint32							queueIndex,
+														 const VkPhysicalDeviceFeatures2&	enabledFeatures,
+														 const std::vector<const char*>		extensionPtrs)
 {
 	// to create a cache - we have to have working VkDevice
 	const float						queuePriority			= 1.0f;
@@ -720,11 +843,29 @@ void ResourceInterfaceStandard::importPipelineCacheData(const PlatformInterface&
 		&queuePriority,						//pQueuePriorities;
 	};
 
+	deUint32 gPipelineCount = 0U;
+	deUint32 cPipelineCount = 0U;
+	for (auto it = begin(m_jsonPipelines); it != end(m_jsonPipelines); ++it)
+	{
+		if (it->find("VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO") != std::string::npos)
+			gPipelineCount++;
+		else if (it->find("VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO") != std::string::npos)
+			cPipelineCount++;
+	}
+	VkDeviceObjectReservationCreateInfo	localObjectReservation	= m_memoryReservation;
+	localObjectReservation.pipelineLayoutRequestCount			= de::max(localObjectReservation.pipelineLayoutRequestCount,			deUint32(m_jsonPipelineLayouts.size()));
+	localObjectReservation.renderPassRequestCount				= de::max(localObjectReservation.renderPassRequestCount,				deUint32(m_jsonRenderPasses.size()));
+	localObjectReservation.graphicsPipelineRequestCount			= de::max(localObjectReservation.graphicsPipelineRequestCount,			gPipelineCount);
+	localObjectReservation.computePipelineRequestCount			= de::max(localObjectReservation.computePipelineRequestCount,			cPipelineCount);
+	localObjectReservation.descriptorSetLayoutRequestCount		= de::max(localObjectReservation.descriptorSetLayoutRequestCount,		deUint32(m_jsonDescriptorSetLayouts.size()));
+	localObjectReservation.samplerRequestCount					= de::max(localObjectReservation.samplerRequestCount,					deUint32(m_jsonSamplers.size()));
+	localObjectReservation.samplerYcbcrConversionRequestCount	= de::max(localObjectReservation.samplerYcbcrConversionRequestCount,	deUint32(m_jsonSamplerYcbcrConversions.size()));
+
 	const VkDeviceCreateInfo		deviceCreateInfo		=
 	{
-		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	//sType;
-		&m_memoryReservation,					//pNext;
-		(VkDeviceCreateFlags)0u,
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,						//sType;
+		&localObjectReservation,									//pNext;
+		(VkDeviceCreateFlags)0u,									//flags
 		1,															//queueRecordCount;
 		&deviceQueueCreateInfo,										//pRequestedQueues;
 		0,															//layerCount;
@@ -737,24 +878,26 @@ void ResourceInterfaceStandard::importPipelineCacheData(const PlatformInterface&
 	Move<VkDevice> pcDevice = createDevice(vkp, instance, vki, physicalDevice, &deviceCreateInfo);
 
 	// create local function pointers required to perform pipeline cache creation
-	GetDeviceProcAddrFunc			getDeviceProcAddrFunc			= (GetDeviceProcAddrFunc)			vkp.getInstanceProcAddr	(instance, "vkGetDeviceProcAddr");
-	CreateSamplerFunc				createSamplerFunc				= (CreateSamplerFunc)				getDeviceProcAddrFunc	(*pcDevice, "vkCreateSampler");
-	DestroySamplerFunc				destroySamplerFunc				= (DestroySamplerFunc)				getDeviceProcAddrFunc	(*pcDevice, "vkDestroySampler");
-	CreateShaderModuleFunc			createShaderModuleFunc			= (CreateShaderModuleFunc)			getDeviceProcAddrFunc	(*pcDevice, "vkCreateShaderModule");
-	DestroyShaderModuleFunc			destroyShaderModuleFunc			= (DestroyShaderModuleFunc)			getDeviceProcAddrFunc	(*pcDevice, "vkDestroyShaderModule");
-	CreateRenderPassFunc			createRenderPassFunc			= (CreateRenderPassFunc)			getDeviceProcAddrFunc	(*pcDevice, "vkCreateRenderPass");
-	CreateRenderPass2Func			createRenderPass2Func			= (CreateRenderPass2Func)			getDeviceProcAddrFunc	(*pcDevice, "vkCreateRenderPass2");
-	DestroyRenderPassFunc			destroyRenderPassFunc			= (DestroyRenderPassFunc)			getDeviceProcAddrFunc	(*pcDevice, "vkDestroyRenderPass");
-	CreateDescriptorSetLayoutFunc	createDescriptorSetLayoutFunc	= (CreateDescriptorSetLayoutFunc)	getDeviceProcAddrFunc	(*pcDevice, "vkCreateDescriptorSetLayout");
-	DestroyDescriptorSetLayoutFunc	destroyDescriptorSetLayoutFunc	= (DestroyDescriptorSetLayoutFunc)	getDeviceProcAddrFunc	(*pcDevice, "vkDestroyDescriptorSetLayout");
-	CreatePipelineLayoutFunc		createPipelineLayoutFunc		= (CreatePipelineLayoutFunc)		getDeviceProcAddrFunc	(*pcDevice, "vkCreatePipelineLayout");
-	DestroyPipelineLayoutFunc		destroyPipelineLayoutFunc		= (DestroyPipelineLayoutFunc)		getDeviceProcAddrFunc	(*pcDevice, "vkDestroyPipelineLayout");
-	CreateGraphicsPipelinesFunc		createGraphicsPipelinesFunc		= (CreateGraphicsPipelinesFunc)		getDeviceProcAddrFunc	(*pcDevice, "vkCreateGraphicsPipelines");
-	CreateComputePipelinesFunc		createComputePipelinesFunc		= (CreateComputePipelinesFunc)		getDeviceProcAddrFunc	(*pcDevice, "vkCreateComputePipelines");
-	CreatePipelineCacheFunc			createPipelineCacheFunc			= (CreatePipelineCacheFunc)			getDeviceProcAddrFunc	(*pcDevice, "vkCreatePipelineCache");
-	DestroyPipelineCacheFunc		destroyPipelineCacheFunc		= (DestroyPipelineCacheFunc)		getDeviceProcAddrFunc	(*pcDevice, "vkDestroyPipelineCache");
-	DestroyPipelineFunc				destroyPipelineFunc				= (DestroyPipelineFunc)				getDeviceProcAddrFunc	(*pcDevice, "vkDestroyPipeline");
-	GetPipelineCacheDataFunc		getPipelineCacheDataFunc		= (GetPipelineCacheDataFunc)		getDeviceProcAddrFunc	(*pcDevice, "vkGetPipelineCacheData");
+	GetDeviceProcAddrFunc				getDeviceProcAddrFunc				= (GetDeviceProcAddrFunc)				vkp.getInstanceProcAddr	(instance, "vkGetDeviceProcAddr");
+	CreateSamplerYcbcrConversionFunc	createSamplerYcbcrConversionFunc	= (CreateSamplerYcbcrConversionFunc)	getDeviceProcAddrFunc	(*pcDevice, "vkCreateSamplerYcbcrConversion");
+	DestroySamplerYcbcrConversionFunc	destroySamplerYcbcrConversionFunc	= (DestroySamplerYcbcrConversionFunc)	getDeviceProcAddrFunc	(*pcDevice, "vkDestroySamplerYcbcrConversion");
+	CreateSamplerFunc					createSamplerFunc					= (CreateSamplerFunc)					getDeviceProcAddrFunc	(*pcDevice, "vkCreateSampler");
+	DestroySamplerFunc					destroySamplerFunc					= (DestroySamplerFunc)					getDeviceProcAddrFunc	(*pcDevice, "vkDestroySampler");
+	CreateShaderModuleFunc				createShaderModuleFunc				= (CreateShaderModuleFunc)				getDeviceProcAddrFunc	(*pcDevice, "vkCreateShaderModule");
+	DestroyShaderModuleFunc				destroyShaderModuleFunc				= (DestroyShaderModuleFunc)				getDeviceProcAddrFunc	(*pcDevice, "vkDestroyShaderModule");
+	CreateRenderPassFunc				createRenderPassFunc				= (CreateRenderPassFunc)				getDeviceProcAddrFunc	(*pcDevice, "vkCreateRenderPass");
+	CreateRenderPass2Func				createRenderPass2Func				= (CreateRenderPass2Func)				getDeviceProcAddrFunc	(*pcDevice, "vkCreateRenderPass2");
+	DestroyRenderPassFunc				destroyRenderPassFunc				= (DestroyRenderPassFunc)				getDeviceProcAddrFunc	(*pcDevice, "vkDestroyRenderPass");
+	CreateDescriptorSetLayoutFunc		createDescriptorSetLayoutFunc		= (CreateDescriptorSetLayoutFunc)		getDeviceProcAddrFunc	(*pcDevice, "vkCreateDescriptorSetLayout");
+	DestroyDescriptorSetLayoutFunc		destroyDescriptorSetLayoutFunc		= (DestroyDescriptorSetLayoutFunc)		getDeviceProcAddrFunc	(*pcDevice, "vkDestroyDescriptorSetLayout");
+	CreatePipelineLayoutFunc			createPipelineLayoutFunc			= (CreatePipelineLayoutFunc)			getDeviceProcAddrFunc	(*pcDevice, "vkCreatePipelineLayout");
+	DestroyPipelineLayoutFunc			destroyPipelineLayoutFunc			= (DestroyPipelineLayoutFunc)			getDeviceProcAddrFunc	(*pcDevice, "vkDestroyPipelineLayout");
+	CreateGraphicsPipelinesFunc			createGraphicsPipelinesFunc			= (CreateGraphicsPipelinesFunc)			getDeviceProcAddrFunc	(*pcDevice, "vkCreateGraphicsPipelines");
+	CreateComputePipelinesFunc			createComputePipelinesFunc			= (CreateComputePipelinesFunc)			getDeviceProcAddrFunc	(*pcDevice, "vkCreateComputePipelines");
+	CreatePipelineCacheFunc				createPipelineCacheFunc				= (CreatePipelineCacheFunc)				getDeviceProcAddrFunc	(*pcDevice, "vkCreatePipelineCache");
+	DestroyPipelineCacheFunc			destroyPipelineCacheFunc			= (DestroyPipelineCacheFunc)			getDeviceProcAddrFunc	(*pcDevice, "vkDestroyPipelineCache");
+	DestroyPipelineFunc					destroyPipelineFunc					= (DestroyPipelineFunc)					getDeviceProcAddrFunc	(*pcDevice, "vkDestroyPipeline");
+	GetPipelineCacheDataFunc			getPipelineCacheDataFunc			= (GetPipelineCacheDataFunc)			getDeviceProcAddrFunc	(*pcDevice, "vkGetPipelineCacheData");
 
 	// create pipeline cache
 	VkPipelineCacheCreateInfo		pcCI =
@@ -770,7 +913,20 @@ void ResourceInterfaceStandard::importPipelineCacheData(const PlatformInterface&
 	VK_CHECK(createPipelineCacheFunc(*pcDevice, &pcCI, DE_NULL, &pipelineCache));
 
 	Json::CharReaderBuilder			builder;
+	builder.settings_["allowSpecialFloats"] = 1;
 	de::UniquePtr<Json::CharReader>	jsonReader(builder.newCharReader());
+
+	// decode VkSamplerYcbcrConversionCreateInfo structs and create VkSamplerYcbcrConversions
+	std::map<VkSamplerYcbcrConversion, VkSamplerYcbcrConversion> falseToRealSamplerYcbcrConversions;
+	for (auto it = begin(m_jsonSamplerYcbcrConversions); it != end(m_jsonSamplerYcbcrConversions); ++it)
+	{
+		VkSamplerYcbcrConversionCreateInfo sycCI;
+		deMemset(&sycCI, 0, sizeof(sycCI));
+		readJSON_VkSamplerYcbcrConversionCreateInfo(jsonReader.get(), it->second, sycCI);
+		VkSamplerYcbcrConversion				realConversion;
+		VK_CHECK(createSamplerYcbcrConversionFunc(*pcDevice, &sycCI, DE_NULL, &realConversion));
+		falseToRealSamplerYcbcrConversions.insert({ it->first, realConversion });
+	}
 
 	// decode VkSamplerCreateInfo structs and create VkSamplers
 	std::map<VkSampler, VkSampler> falseToRealSamplers;
@@ -779,6 +935,23 @@ void ResourceInterfaceStandard::importPipelineCacheData(const PlatformInterface&
 		VkSamplerCreateInfo			sCI;
 		deMemset(&sCI, 0, sizeof(sCI));
 		readJSON_VkSamplerCreateInfo(jsonReader.get(), it->second, sCI);
+
+		// replace ycbcr conversions if required
+		if (sCI.pNext != NULL)
+		{
+			if (sCI.pNext != DE_NULL)
+			{
+				VkSamplerYcbcrConversionInfo* info = (VkSamplerYcbcrConversionInfo*)(sCI.pNext);
+				if (info->sType == VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO)
+				{
+					auto jt = falseToRealSamplerYcbcrConversions.find(info->conversion);
+					if (jt == end(falseToRealSamplerYcbcrConversions))
+						TCU_THROW(InternalError, "VkSamplerYcbcrConversion not found");
+					info->conversion = jt->second;
+				}
+			}
+		}
+
 		VkSampler				realSampler;
 		VK_CHECK(createSamplerFunc(*pcDevice, &sCI, DE_NULL, &realSampler));
 		falseToRealSamplers.insert({ it->first, realSampler });
@@ -851,7 +1024,7 @@ void ResourceInterfaceStandard::importPipelineCacheData(const PlatformInterface&
 					continue;
 				}
 
-				realSamplers.push_back(std::vector<VkSampler>{dsCI.pBindings[i].descriptorCount});
+				realSamplers.push_back(std::vector<VkSampler>(dsCI.pBindings[i].descriptorCount));
 				for (deUint32 j = 0; j < dsCI.pBindings[i].descriptorCount; ++j)
 				{
 					if (dsCI.pBindings[i].pImmutableSamplers[j] == DE_NULL)
@@ -909,7 +1082,6 @@ void ResourceInterfaceStandard::importPipelineCacheData(const PlatformInterface&
 	}
 
 	// decode VkGraphicsPipelineCreateInfo and VkComputePipelineCreateInfo structs and create VkPipelines with a given pipeline cache
-	std::vector<VkPipeline>	realPipelines;
 	for (auto it = begin(m_jsonPipelines); it != end(m_jsonPipelines); ++it)
 	{
 		if (it->find("VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO") != std::string::npos)
@@ -949,7 +1121,8 @@ void ResourceInterfaceStandard::importPipelineCacheData(const PlatformInterface&
 
 			VkPipeline						gPipeline;
 			VK_CHECK(createGraphicsPipelinesFunc(*pcDevice, pipelineCache, 1, &gpCI, DE_NULL, &gPipeline));
-			realPipelines.push_back(gPipeline);
+			// pipeline was added to cache. We may remove it immediately
+			destroyPipelineFunc(*pcDevice, gPipeline, DE_NULL);
 		}
 		else if (it->find("VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO") != std::string::npos)
 		{
@@ -974,7 +1147,8 @@ void ResourceInterfaceStandard::importPipelineCacheData(const PlatformInterface&
 
 			VkPipeline						cPipeline;
 			VK_CHECK(createComputePipelinesFunc(*pcDevice, pipelineCache, 1, &cpCI, DE_NULL, &cPipeline));
-			realPipelines.push_back(cPipeline);
+			// pipeline was added to cache. We may remove it immediately
+			destroyPipelineFunc(*pcDevice, cPipeline, DE_NULL);
 		}
 		else
 			TCU_THROW(InternalError, "Could not recognize pipeline type");
@@ -987,8 +1161,6 @@ void ResourceInterfaceStandard::importPipelineCacheData(const PlatformInterface&
 	VK_CHECK(getPipelineCacheDataFunc(*pcDevice, pipelineCache, &cacheSize, m_cacheData.data()));
 
 	// clean up resources - in ResourceInterfaceStandard we just simulate Vulkan SC driver after all...
-	for (auto pipeline : realPipelines)
-		destroyPipelineFunc(*pcDevice, pipeline, DE_NULL);
 	for (auto it : falseToRealPipelineLayouts)
 		destroyPipelineLayoutFunc(*pcDevice, it.second, DE_NULL);
 	for (auto it : falseToRealDescriptorSetLayouts)
@@ -999,12 +1171,14 @@ void ResourceInterfaceStandard::importPipelineCacheData(const PlatformInterface&
 		destroyShaderModuleFunc(*pcDevice, it.second, DE_NULL);
 	for (auto it : falseToRealSamplers)
 		destroySamplerFunc(*pcDevice, it.second, DE_NULL);
+	for (auto it : falseToRealSamplerYcbcrConversions)
+		destroySamplerYcbcrConversionFunc(*pcDevice, it.second, DE_NULL);
 	destroyPipelineCacheFunc(*pcDevice, pipelineCache, DE_NULL);
 }
 
 void ResourceInterfaceStandard::resetObjects()
 {
-	m_shaderCounter = 0u;
+	m_jsonSamplerYcbcrConversions.clear();
 	m_jsonSamplers.clear();
 	m_jsonShaderModules.clear();
 	m_jsonRenderPasses.clear();
@@ -1012,11 +1186,22 @@ void ResourceInterfaceStandard::resetObjects()
 	m_jsonDescriptorSetLayouts.clear();
 	m_jsonPipelines.clear();
 
-	m_memoryReservation = resetDeviceObjectReservationCreateInfo();
-
 	vk_json_parser::s_globalMem.clear();
+
+	m_resourceCounter	= 0;
+	m_statCurrent		= resetDeviceObjectReservationCreateInfo();
+	m_statMax			= resetDeviceObjectReservationCreateInfo();
 }
 
+void ResourceInterfaceStandard::resetPipelineCaches()
+{
+#ifdef CTS_USES_VULKANSC
+	if (m_testCtx.getCommandLine().isSubProcess())
+	{
+		m_pipelineCache.clear();
+	}
+#endif // CTS_USES_VULKANSC
+}
 
 #endif // CTS_USES_VULKANSC
 
@@ -1107,12 +1292,21 @@ std::string writeJSON_VkDescriptorSetLayoutCreateInfo (const VkDescriptorSetLayo
 	return vk_json::_string_stream.str();
 }
 
-std::string writeJSON_VkSamplerCreateInfo(const VkSamplerCreateInfo& pCreateInfo)
+std::string writeJSON_VkSamplerCreateInfo (const VkSamplerCreateInfo& pCreateInfo)
 {
 	std::lock_guard<std::mutex> lock(jsonMutex);
 	vk_json::_string_stream.str("");
 	vk_json::_string_stream.clear();
 	vk_json::print_VkSamplerCreateInfo(&pCreateInfo, "", false);
+	return vk_json::_string_stream.str();
+}
+
+std::string writeJSON_VkSamplerYcbcrConversionCreateInfo (const VkSamplerYcbcrConversionCreateInfo& pCreateInfo)
+{
+	std::lock_guard<std::mutex> lock(jsonMutex);
+	vk_json::_string_stream.str("");
+	vk_json::_string_stream.clear();
+	vk_json::print_VkSamplerYcbcrConversionCreateInfo(&pCreateInfo, "", false);
 	return vk_json::_string_stream.str();
 }
 
@@ -1261,6 +1455,18 @@ void readJSON_VkSamplerCreateInfo(Json::CharReader*		jsonReader,
 	if (!parsingSuccessful)
 		TCU_THROW(InternalError, (std::string("JSON parsing error: ") + errors).c_str());
 	vk_json_parser::parse_VkSamplerCreateInfo("", jsonRoot, sCI);
+}
+
+void readJSON_VkSamplerYcbcrConversionCreateInfo(Json::CharReader*							jsonReader,
+												 const std::string&							samplerYcbcrConversionCreateInfo,
+												 VkSamplerYcbcrConversionCreateInfo&		sycCI)
+{
+	Json::Value						jsonRoot;
+	std::string						errors;
+	bool							parsingSuccessful = jsonReader->parse(samplerYcbcrConversionCreateInfo.c_str(), samplerYcbcrConversionCreateInfo.c_str() + samplerYcbcrConversionCreateInfo.size(), &jsonRoot, &errors);
+	if (!parsingSuccessful)
+		TCU_THROW(InternalError, (std::string("JSON parsing error: ") + errors).c_str());
+	vk_json_parser::parse_VkSamplerYcbcrConversionCreateInfo("", jsonRoot, sycCI);
 }
 
 static void parse_VkShaderModuleCreateInfo(const char* s, Json::Value& obj, VkShaderModuleCreateInfo& o, std::vector<deUint8>& spirvShader)

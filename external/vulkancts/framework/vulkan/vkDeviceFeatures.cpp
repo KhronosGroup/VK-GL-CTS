@@ -59,13 +59,23 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 			addToChainVulkanStructure(&nextPtr, m_vulkan12Features);
 		}
 
+		std::vector<std::string> allDeviceExtensions = deviceExtensions;
+#ifdef CTS_USES_VULKANSC
+		// VulkanSC: add missing core extensions to the list
+		std::vector<const char*> coreExtensions;
+		getCoreDeviceExtensions(apiVersion, coreExtensions);
+		for (const auto& coreExt : coreExtensions)
+			if (!de::contains(allDeviceExtensions.begin(), allDeviceExtensions.end(), std::string(coreExt)))
+				allDeviceExtensions.push_back(coreExt);
+#endif // CTS_USES_VULKANSC
+
 		// iterate over data for all feature that are defined in specification
 		for (const auto& featureStructCreationData : featureStructCreationArray)
 		{
 			const char* featureName = featureStructCreationData.name;
 
 			// check if this feature is available on current device
-			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), featureName) &&
+			if (de::contains(allDeviceExtensions.begin(), allDeviceExtensions.end(), featureName) &&
 				verifyFeatureAddCriteria(featureStructCreationData, deviceExtensionProperties))
 			{
 				FeatureStructWrapperBase* p = (*featureStructCreationData.creatorFunction)();

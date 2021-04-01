@@ -686,3 +686,12 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
   --deqp-terminate-on-fail=[enable|disable]
     Terminate the run on first failure
     default: 'disable'
+
+  --deqp-subprocess=[enable|disable]
+    Inform app that it works as subprocess (Vulkan SC only)
+    default: 'disable'
+
+  --deqp-subprocess-test-count=<value>
+    Define number of tests performed in subprocess (Vulkan SC only)
+    default: 64
+

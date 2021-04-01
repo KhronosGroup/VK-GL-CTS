@@ -34,6 +34,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 #include "deRandom.hpp"
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
@@ -158,10 +159,21 @@ class MultiQueues
 				addToChainVulkanStructure(&nextPtr, synchronization2Features);
 			}
 
+			void* pNext												= &createPhysicalFeature;
+#ifdef CTS_USES_VULKANSC
+			VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+			memReservationInfo.pNext								= pNext;
+			pNext													= &memReservationInfo;
+
+			VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+			sc10Features.pNext										= pNext;
+			pNext													= &sc10Features;
+#endif // CTS_USES_VULKANSC
+
 			const VkDeviceCreateInfo deviceInfo =
 			{
 				VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//VkStructureType					sType;
-				&createPhysicalFeature,											//const void*						pNext;
+				pNext,															//const void*						pNext;
 				0u,																//VkDeviceCreateFlags				flags;
 				static_cast<deUint32>(queueInfos.size()),						//deUint32							queueCreateInfoCount;
 				&queueInfos[0],													//const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
@@ -173,7 +185,11 @@ class MultiQueues
 			};
 
 			m_logicalDevice	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), instance, physicalDevice, &deviceInfo);
-			m_deviceDriver	= MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice));
+#ifndef CTS_USES_VULKANSC
+			m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice));
+#else
+			m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
+#endif // CTS_USES_VULKANSC
 			m_allocator		= MovePtr<Allocator>(new SimpleAllocator(*m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
 
 			for (std::map<deUint32, QueueData>::iterator it = m_queues.begin(); it != m_queues.end(); ++it)
@@ -193,6 +209,10 @@ class MultiQueues
 	}
 
 public:
+	~MultiQueues()
+	{
+	}
+
 	std::vector<QueuePair> getQueuesPairs (const VkQueueFlags flagsWrite, const VkQueueFlags flagsRead) const
 	{
 		std::map<deUint32, QueueData>	queuesWrite;
@@ -313,7 +333,11 @@ public:
 
 private:
 	Move<VkDevice>					m_logicalDevice;
-	MovePtr<DeviceDriver>			m_deviceDriver;
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
+#else
+	de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>	m_deviceDriver;
+#endif // CTS_USES_VULKANSC
 	MovePtr<Allocator>				m_allocator;
 	std::map<deUint32, QueueData>	m_queues;
 	deUint32						m_queueCount;
@@ -595,7 +619,7 @@ public:
 		const DeviceInterface&							vk				= m_opContext->getDeviceInterface();
 		const VkDevice									device			= m_opContext->getDevice();
 		de::Random										rng				(1234);
-		const Unique<VkSemaphore>						semaphore		(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR));
+		const Unique<VkSemaphore>						semaphore		(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE));
 		std::vector<SharedPtr<Move<VkCommandPool> > >	cmdPools;
 		std::vector<SharedPtr<Move<VkCommandBuffer> > >	ptrCmdBuffers;
 		std::vector<VkCommandBufferSubmitInfoKHR>		cmdBufferInfos;

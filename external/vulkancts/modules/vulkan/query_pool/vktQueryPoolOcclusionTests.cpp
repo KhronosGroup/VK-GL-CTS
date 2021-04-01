@@ -337,10 +337,11 @@ BasicOcclusionQueryTestInstance::~BasicOcclusionQueryTestInstance (void)
 
 	if (m_queryPool != DE_NULL)
 	{
+#ifndef CTS_USES_VULKANSC
 		const vk::VkDevice device		= m_context.getDevice();
 		const vk::DeviceInterface& vk	= m_context.getDeviceInterface();
-
 		vk.destroyQueryPool(device, m_queryPool, /*pAllocator*/ DE_NULL);
+#endif
 	}
 }
 
@@ -581,15 +582,17 @@ OcclusionQueryTestInstance::OcclusionQueryTestInstance (vkt::Context &context, c
 
 OcclusionQueryTestInstance::~OcclusionQueryTestInstance (void)
 {
-	const vk::VkDevice device = m_context.getDevice();
 
 	if (m_stateObjects)
 		delete m_stateObjects;
 
 	if (m_queryPool != DE_NULL)
 	{
-		const vk::DeviceInterface& vk = m_context.getDeviceInterface();
+#ifndef CTS_USES_VULKANSC
+		const vk::VkDevice device		= m_context.getDevice();
+		const vk::DeviceInterface& vk	= m_context.getDeviceInterface();
 		vk.destroyQueryPool(device, m_queryPool, /*pAllocator*/ DE_NULL);
+#endif
 	}
 }
 

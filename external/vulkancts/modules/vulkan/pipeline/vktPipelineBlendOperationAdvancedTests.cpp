@@ -36,6 +36,7 @@
 
 #include "tcuTestLog.hpp"
 #include "tcuImageCompare.hpp"
+#include "tcuCommandLine.hpp"
 
 namespace vkt
 {
@@ -1618,8 +1619,13 @@ deBool BlendOperationAdvancedTestInstance::verifyTestResult ()
 											   result->getAccess(),
 											   Vec4(0.01f, 0.01f, 0.01f, 0.01f),
 											   tcu::COMPARE_LOG_RESULT);
-		if (!compareOk)
-			return DE_FALSE;
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+		{
+			if (!compareOk)
+				return DE_FALSE;
+		}
 	}
 	return DE_TRUE;
 }

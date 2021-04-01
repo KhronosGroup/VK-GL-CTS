@@ -32,6 +32,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 #include "tcuCommandLine.hpp"
 #include "deMath.h"
 #include <iomanip>
@@ -84,20 +85,31 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysica
 
 	// \note Extensions in core are not explicitly enabled even though
 	//		 they are in the extension list advertised to tests.
-    std::vector<const char*>	extensionPtrs;
+	std::vector<const char*>	extensionPtrs;
 	std::vector<const char*>	coreExtensions;
 	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-    std::vector<std::string>	nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
+	std::vector<std::string>	nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
 
 	extensionPtrs.resize(nonCoreExtensions.size());
 
 	for (size_t ndx = 0; ndx < nonCoreExtensions.size(); ++ndx)
 		extensionPtrs[ndx] = nonCoreExtensions[ndx].c_str();
 
+	void* pNext												= (void*)enabledFeatures2;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
+#endif // CTS_USES_VULKANSC
+
 	const VkDeviceCreateInfo		deviceParams =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	// VkStructureType					sType;
-		enabledFeatures2,						// const void*						pNext;
+		pNext,									// const void*						pNext;
 		0u,										// VkDeviceCreateFlags				flags;
 		1u,										// deUint32							queueCreateInfoCount;
 		&queueParams,							// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
@@ -105,7 +117,7 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysica
 		DE_NULL,								// const char* const*				ppEnabledLayerNames;
 		(deUint32)extensionPtrs.size(),			// deUint32							enabledExtensionCount;
 		(extensionPtrs.empty() ? DE_NULL : &extensionPtrs[0]),	// const char* const*				ppEnabledExtensionNames;
-        enabledFeatures2 ? NULL : &enabledFeatures	// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+		enabledFeatures2 ? NULL : &enabledFeatures	// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
 	return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(),

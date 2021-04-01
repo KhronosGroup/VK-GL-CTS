@@ -1376,10 +1376,10 @@ VKAPI_ATTR void VKAPI_CALL cmdRefreshObjectsKHR (VkCommandBuffer commandBuffer, 
 	DE_UNREF(pRefreshObjects);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceRefreshableObjectTypesKHR (VkPhysicalDevice physicalDevice, uint32_t* pRefreshableObjectCount, VkObjectType* pRefreshableObjectTypes)
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceRefreshableObjectTypesKHR (VkPhysicalDevice physicalDevice, uint32_t* pRefreshableObjectTypeCount, VkObjectType* pRefreshableObjectTypes)
 {
 	DE_UNREF(physicalDevice);
-	DE_UNREF(pRefreshableObjectCount);
+	DE_UNREF(pRefreshableObjectTypeCount);
 	DE_UNREF(pRefreshableObjectTypes);
 	return VK_SUCCESS;
 }

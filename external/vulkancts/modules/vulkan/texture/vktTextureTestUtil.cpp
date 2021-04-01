@@ -362,7 +362,9 @@ void TextureBinding::updateTextureData (const TestTextureSp& textureData, const 
 	if (sparse)
 	{
 		deUint32 numSparseImageProperties = 0;
+#ifndef CTS_USES_VULKANSC
 		m_context.getInstanceInterface().getPhysicalDeviceSparseImageFormatProperties(m_context.getPhysicalDevice(), format, imageType, VK_SAMPLE_COUNT_1_BIT, imageUsageFlags, imageTiling, &numSparseImageProperties, DE_NULL);
+#endif // CTS_USES_VULKANSC
 		if (numSparseImageProperties == 0)
 			TCU_THROW(NotSupportedError, (std::string("Sparse format not supported: ") + vk::getFormatName(format)).c_str());
 	}
@@ -1325,7 +1327,7 @@ void TextureRenderer::renderQuad (const tcu::PixelBufferAccess&					result,
 												.build(vkd, vkDevice);
 
 		descriptorSetLayout[1] = DescriptorSetLayoutBuilder()
-											.addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, &sampler.get())
+											.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 											.build(vkd, vkDevice);
 
 		descriptorSet[0] = makeDescriptorSet(*m_descriptorPool, *descriptorSetLayout[0]);
@@ -1503,6 +1505,8 @@ void TextureRenderer::renderQuad (const tcu::PixelBufferAccess&					result,
 	invalidateMappedMemoryRange(vkd, vkDevice, m_resultBufferMemory->getMemory(), m_resultBufferMemory->getOffset(), VK_WHOLE_SIZE);
 
 	tcu::copy(result, tcu::ConstPixelBufferAccess(m_textureFormat, tcu::IVec3(m_renderWidth, m_renderHeight, 1u), m_resultBufferMemory->getHostPtr()));
+
+	vkd.resetDescriptorPool(vkDevice, *m_descriptorPool, (VkDescriptorPoolResetFlags)0u);
 }
 
 /*--------------------------------------------------------------------*//*!

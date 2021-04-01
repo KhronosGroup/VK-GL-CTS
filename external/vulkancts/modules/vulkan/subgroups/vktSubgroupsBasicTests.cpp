@@ -1500,7 +1500,11 @@ string getTestString (const CaseDefinition& caseDef)
 {
 	stringstream	body;
 
+#ifndef CTS_USES_VULKANSC
 	if (caseDef.opType != OPTYPE_ELECT && (isAllGraphicsStages(caseDef.shaderStage) || isAllRayTracingStages(caseDef.shaderStage)))
+#else
+	if (caseDef.opType != OPTYPE_ELECT && (isAllGraphicsStages(caseDef.shaderStage)))
+#endif // CTS_USES_VULKANSC
 	{
 		body << "  uint id = 0;\n"
 				"  if (subgroupElect())\n"
@@ -1572,7 +1576,11 @@ string getTestString (const CaseDefinition& caseDef)
 			TCU_THROW(InternalError, "Unhandled op type!");
 	}
 
+#ifndef CTS_USES_VULKANSC
 	if (caseDef.opType != OPTYPE_ELECT && (isAllGraphicsStages(caseDef.shaderStage) || isAllRayTracingStages(caseDef.shaderStage)))
+#else
+	if (caseDef.opType != OPTYPE_ELECT && (isAllGraphicsStages(caseDef.shaderStage)))
+#endif // CTS_USES_VULKANSC
 	{
 		body << "  tempRes = tempResult;\n";
 	}
@@ -1670,7 +1678,12 @@ void initComputePrograms (SourceCollections&			programCollection,
 
 void initPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const SpirvVersion			spirvVersion		= isAllRayTracingStages(caseDef.shaderStage) ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
+#ifndef CTS_USES_VULKANSC
+	const bool					spirv14required		= isAllRayTracingStages(caseDef.shaderStage);
+#else
+	const bool					spirv14required		= false;
+#endif // CTS_USES_VULKANSC
+	const SpirvVersion			spirvVersion		= spirv14required ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
 	const ShaderBuildOptions	buildOptions		(programCollection.usedVulkanVersion, spirvVersion, 0u);
 	const string				extHeader			= getExtHeader(caseDef);
 	const string				testSrc				= getTestString(caseDef);
@@ -1946,6 +1959,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			return subgroups::allStages(context, VK_FORMAT_R32_UINT, inputDatas, inputDatasCount, DE_NULL, checkVertexPipelineStagesSubgroupBarriers, stages);
 		}
 	}
+#ifndef CTS_USES_VULKANSC
 	else if (isAllRayTracingStages(caseDef.shaderStage))
 	{
 		const VkShaderStageFlags	stages			= subgroups::getPossibleRayTracingSubgroupStages(context, caseDef.shaderStage);
@@ -2016,6 +2030,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			return subgroups::allRayTracingStages(context, VK_FORMAT_R32_UINT, inputDatas, inputDatasCount, DE_NULL, checkVertexPipelineStagesSubgroupBarriers, stages);
 		}
 	}
+#endif // CTS_USES_VULKANSC
 	else
 		TCU_THROW(InternalError, "Unknown stage or invalid stage set");
 }
@@ -2085,6 +2100,7 @@ TestCaseGroup* createSubgroupsBasicTests (TestContext& testCtx)
 			addFunctionCaseWithPrograms(graphicGroup.get(), op, "", supportedCheck, initPrograms, test, caseDef);
 		}
 
+#ifndef CTS_USES_VULKANSC
 		{
 			const CaseDefinition caseDef =
 			{
@@ -2096,6 +2112,7 @@ TestCaseGroup* createSubgroupsBasicTests (TestContext& testCtx)
 
 			addFunctionCaseWithPrograms(raytracingGroup.get(), op, "", supportedCheck, initPrograms, test, caseDef);
 		}
+#endif // CTS_USES_VULKANSC
 
 		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 		{

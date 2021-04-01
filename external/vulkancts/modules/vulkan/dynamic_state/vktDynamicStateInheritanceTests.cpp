@@ -651,6 +651,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 	// ************************************************************************
 	if (m_inheritanceMode != kInheritanceDisabled)
 	{
+#ifndef CTS_USES_VULKANSC
 		// Enable viewport/scissor inheritance struct.
 		VkCommandBufferInheritanceViewportScissorInfoNV inheritViewportInfo {
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_VIEWPORT_SCISSOR_INFO_NV,
@@ -660,6 +661,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		inheritanceInfo.pNext = &inheritViewportInfo;
 		VK_CHECK(m_vk.beginCommandBuffer(m_subpassCmdBuffer, &cmdBeginInfo));
 		inheritanceInfo.pNext = NULL;
+#endif // CTS_USES_VULKANSC
 	}
 	else
 	{
@@ -1117,6 +1119,7 @@ void DynamicStateInheritanceTests::init (void)
 {
 	addChild(new InheritanceTestCase(m_testCtx, kInheritanceDisabled, "baseline",
 			 "Baseline, no viewport/scissor inheritance"));
+#ifndef CTS_USES_VULKANSC
 	addChild(new InheritanceTestCase(m_testCtx, kInheritFromPrimary, "primary",
 			 "Inherit viewport/scissor from calling primary command buffer"));
 	addChild(new InheritanceTestCase(m_testCtx, kInheritFromSecondary, "secondary",
@@ -1127,6 +1130,7 @@ void DynamicStateInheritanceTests::init (void)
 			 "Inherit viewport/scissor with count from calling primary command buffer"));
 	addChild(new InheritanceTestCase(m_testCtx, kInheritFromSecondaryWithCount, "secondary_with_count",
 			 "Inherit viewport/scissor with count from another secondary command buffer"));
+#endif // CTS_USES_VULKANSC
 }
 
 } // DynamicState

@@ -33,6 +33,7 @@
 #include <functional>
 #include <sstream>
 #include <cassert>
+#include <cmath>
 #ifndef VULKAN_JSON_CTS
 	#include <vulkan/vulkan.h>
 #else
@@ -100,12 +101,12 @@ static void print_size_t(size_t o, const std::string& s, bool commaNeeded)
     _OUT << "\"" << s << "\"" << " : " <<  static_cast<deUint32>(o) << (commaNeeded ? "," : "") << std::endl;\
 }
 
-static void print_int32_t(deUint32 o, const std::string& s, bool commaNeeded)
+static void print_int32_t(deInt32 o, const std::string& s, bool commaNeeded)
 {
     PRINT_VAL(commaNeeded)
 }
 
-static void print_int32_t(const deUint32 * o, const std::string& s, bool commaNeeded)
+static void print_int32_t(const deInt32 * o, const std::string& s, bool commaNeeded)
 {
     PRINT_VAL(commaNeeded)
 }
@@ -142,12 +143,34 @@ static void print_uint64_t(const deUint64 * o, const std::string& s, bool commaN
 
 static void print_float(float o, const std::string& s, bool commaNeeded)
 {
-    PRINT_VAL(commaNeeded)
+	if (std::isnan(o))
+	{
+		PRINT_SPACE
+		if (s != "")
+			_OUT << "\"" << s << "\"" << " : NaN" << (commaNeeded ? "," : "") << std::endl;
+		else
+			_OUT << "NaN" << (commaNeeded ? "," : "") << std::endl;
+	}
+	else
+	{
+		PRINT_VAL(commaNeeded)
+	}
 }
 
 static void print_float(const float * o, const std::string& s, bool commaNeeded)
 {
-    PRINT_VAL(commaNeeded)
+	if (std::isnan(*o))
+	{
+		PRINT_SPACE
+			if (s != "")
+				_OUT << "\"" << s << "\"" << " : NaN" << (commaNeeded ? "," : "") << std::endl;
+			else
+				_OUT << "NaN" << (commaNeeded ? "," : "") << std::endl;
+	}
+	else
+	{
+		PRINT_VAL(commaNeeded)
+	}
 }
 
 static void print_int(int o, const std::string& s, bool commaNeeded)
@@ -259,7 +282,7 @@ std::ostream& operator<< (std::ostream& str, const Base64Formatter& fmt)
 	return str;
 }
 
-inline Base64Formatter toBase64(const deUint8* bytes, int numBytes) { return Base64Formatter(bytes, numBytes); }
+inline Base64Formatter toBase64(const deUint8* bytes, int numBytes) {return Base64Formatter(bytes, numBytes); }
 
 
 static void print_void_data(const void * o, int oSize, const std::string& s, bool commaNeeded)
@@ -377,10 +400,6 @@ static void print_VkMemoryMapFlags(VkMemoryMapFlags obj, const std::string& str,
 static void print_VkMemoryMapFlags(const VkMemoryMapFlags * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkImageAspectFlags(VkImageAspectFlags obj, const std::string& str, bool commaNeeded=true);
 static void print_VkImageAspectFlags(const VkImageAspectFlags * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseMemoryBindFlags(VkSparseMemoryBindFlags obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseMemoryBindFlags(const VkSparseMemoryBindFlags * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseImageFormatFlags(VkSparseImageFormatFlags obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseImageFormatFlags(const VkSparseImageFormatFlags * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkSubpassDescriptionFlags(VkSubpassDescriptionFlags obj, const std::string& str, bool commaNeeded=true);
 static void print_VkSubpassDescriptionFlags(const VkSubpassDescriptionFlags * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPipelineStageFlags(VkPipelineStageFlags obj, const std::string& str, bool commaNeeded=true);
@@ -401,10 +420,18 @@ static void print_VkDependencyFlags(VkDependencyFlags obj, const std::string& st
 static void print_VkDependencyFlags(const VkDependencyFlags * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkSubgroupFeatureFlags(VkSubgroupFeatureFlags obj, const std::string& str, bool commaNeeded=true);
 static void print_VkSubgroupFeatureFlags(const VkSubgroupFeatureFlags * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPerformanceCounterDescriptionFlagsKHR(VkPerformanceCounterDescriptionFlagsKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPerformanceCounterDescriptionFlagsKHR(const VkPerformanceCounterDescriptionFlagsKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkAcquireProfilingLockFlagsKHR(VkAcquireProfilingLockFlagsKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkAcquireProfilingLockFlagsKHR(const VkAcquireProfilingLockFlagsKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkSemaphoreWaitFlags(VkSemaphoreWaitFlags obj, const std::string& str, bool commaNeeded=true);
 static void print_VkSemaphoreWaitFlags(const VkSemaphoreWaitFlags * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkRefreshObjectFlagsKHR(VkRefreshObjectFlagsKHR obj, const std::string& str, bool commaNeeded=true);
 static void print_VkRefreshObjectFlagsKHR(const VkRefreshObjectFlagsKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkAccessFlags2KHR(VkAccessFlags2KHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkAccessFlags2KHR(const VkAccessFlags2KHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPipelineStageFlags2KHR(VkPipelineStageFlags2KHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPipelineStageFlags2KHR(const VkPipelineStageFlags2KHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkCompositeAlphaFlagsKHR(VkCompositeAlphaFlagsKHR obj, const std::string& str, bool commaNeeded=true);
 static void print_VkCompositeAlphaFlagsKHR(const VkCompositeAlphaFlagsKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkDisplayPlaneAlphaFlagsKHR(VkDisplayPlaneAlphaFlagsKHR obj, const std::string& str, bool commaNeeded=true);
@@ -445,6 +472,14 @@ static void print_VkSurfaceCounterFlagsEXT(VkSurfaceCounterFlagsEXT obj, const s
 static void print_VkSurfaceCounterFlagsEXT(const VkSurfaceCounterFlagsEXT * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPipelineDiscardRectangleStateCreateFlagsEXT(VkPipelineDiscardRectangleStateCreateFlagsEXT obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPipelineDiscardRectangleStateCreateFlagsEXT(const VkPipelineDiscardRectangleStateCreateFlagsEXT * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsMessageSeverityFlagsEXT(VkDebugUtilsMessageSeverityFlagsEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsMessageSeverityFlagsEXT(const VkDebugUtilsMessageSeverityFlagsEXT * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsMessageTypeFlagsEXT(VkDebugUtilsMessageTypeFlagsEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsMessageTypeFlagsEXT(const VkDebugUtilsMessageTypeFlagsEXT * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsMessengerCreateFlagsEXT(VkDebugUtilsMessengerCreateFlagsEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsMessengerCreateFlagsEXT(const VkDebugUtilsMessengerCreateFlagsEXT * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsMessengerCallbackDataFlagsEXT(VkDebugUtilsMessengerCallbackDataFlagsEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsMessengerCallbackDataFlagsEXT(const VkDebugUtilsMessengerCallbackDataFlagsEXT * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPipelineRasterizationConservativeStateCreateFlagsEXT(VkPipelineRasterizationConservativeStateCreateFlagsEXT obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPipelineRasterizationConservativeStateCreateFlagsEXT(const VkPipelineRasterizationConservativeStateCreateFlagsEXT * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkDescriptorBindingFlags(VkDescriptorBindingFlags obj, const std::string& str, bool commaNeeded=true);
@@ -453,6 +488,8 @@ static void print_VkResolveModeFlags(VkResolveModeFlags obj, const std::string& 
 static void print_VkResolveModeFlags(const VkResolveModeFlags * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPipelineRasterizationDepthClipStateCreateFlagsEXT(VkPipelineRasterizationDepthClipStateCreateFlagsEXT obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPipelineRasterizationDepthClipStateCreateFlagsEXT(const VkPipelineRasterizationDepthClipStateCreateFlagsEXT * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkSubmitFlagsKHR(VkSubmitFlagsKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkSubmitFlagsKHR(const VkSubmitFlagsKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkInstance(VkInstance obj, const std::string& str, bool commaNeeded=true);
 static void print_VkInstance(const VkInstance * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDevice(VkPhysicalDevice obj, const std::string& str, bool commaNeeded=true);
@@ -513,6 +550,8 @@ static void print_VkSurfaceKHR(VkSurfaceKHR obj, const std::string& str, bool co
 static void print_VkSurfaceKHR(const VkSurfaceKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkSwapchainKHR(VkSwapchainKHR obj, const std::string& str, bool commaNeeded=true);
 static void print_VkSwapchainKHR(const VkSwapchainKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsMessengerEXT(const VkDebugUtilsMessengerEXT * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkAttachmentLoadOp(VkAttachmentLoadOp obj, const std::string& str, bool commaNeeded=true);
 static void print_VkAttachmentLoadOp(const VkAttachmentLoadOp * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkAttachmentStoreOp(VkAttachmentStoreOp obj, const std::string& str, bool commaNeeded=true);
@@ -627,8 +666,6 @@ static void print_VkResult(VkResult obj, const std::string& str, bool commaNeede
 static void print_VkResult(const VkResult * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkShaderStageFlagBits(VkShaderStageFlagBits obj, const std::string& str, bool commaNeeded=true);
 static void print_VkShaderStageFlagBits(const VkShaderStageFlagBits * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseMemoryBindFlagBits(VkSparseMemoryBindFlagBits obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseMemoryBindFlagBits(const VkSparseMemoryBindFlagBits * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkStencilFaceFlagBits(VkStencilFaceFlagBits obj, const std::string& str, bool commaNeeded=true);
 static void print_VkStencilFaceFlagBits(const VkStencilFaceFlagBits * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkStencilOp(VkStencilOp obj, const std::string& str, bool commaNeeded=true);
@@ -649,8 +686,6 @@ static void print_VkVertexInputRate(VkVertexInputRate obj, const std::string& st
 static void print_VkVertexInputRate(const VkVertexInputRate * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPipelineStageFlagBits(VkPipelineStageFlagBits obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPipelineStageFlagBits(const VkPipelineStageFlagBits * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseImageFormatFlagBits(VkSparseImageFormatFlagBits obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseImageFormatFlagBits(const VkSparseImageFormatFlagBits * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkSampleCountFlagBits(VkSampleCountFlagBits obj, const std::string& str, bool commaNeeded=true);
 static void print_VkSampleCountFlagBits(const VkSampleCountFlagBits * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkAttachmentDescriptionFlagBits(VkAttachmentDescriptionFlagBits obj, const std::string& str, bool commaNeeded=true);
@@ -681,6 +716,16 @@ static void print_VkDescriptorBindingFlagBits(VkDescriptorBindingFlagBits obj, c
 static void print_VkDescriptorBindingFlagBits(const VkDescriptorBindingFlagBits * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkSemaphoreType(VkSemaphoreType obj, const std::string& str, bool commaNeeded=true);
 static void print_VkSemaphoreType(const VkSemaphoreType * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPerformanceCounterScopeKHR(VkPerformanceCounterScopeKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPerformanceCounterScopeKHR(const VkPerformanceCounterScopeKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPerformanceCounterUnitKHR(VkPerformanceCounterUnitKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPerformanceCounterUnitKHR(const VkPerformanceCounterUnitKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPerformanceCounterStorageKHR(VkPerformanceCounterStorageKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPerformanceCounterStorageKHR(const VkPerformanceCounterStorageKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPerformanceCounterDescriptionFlagBitsKHR(VkPerformanceCounterDescriptionFlagBitsKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPerformanceCounterDescriptionFlagBitsKHR(const VkPerformanceCounterDescriptionFlagBitsKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkAcquireProfilingLockFlagBitsKHR(VkAcquireProfilingLockFlagBitsKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkAcquireProfilingLockFlagBitsKHR(const VkAcquireProfilingLockFlagBitsKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkSemaphoreWaitFlagBits(VkSemaphoreWaitFlagBits obj, const std::string& str, bool commaNeeded=true);
 static void print_VkSemaphoreWaitFlagBits(const VkSemaphoreWaitFlagBits * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkLineRasterizationModeEXT(VkLineRasterizationModeEXT obj, const std::string& str, bool commaNeeded=true);
@@ -689,20 +734,16 @@ static void print_VkRefreshObjectFlagBitsKHR(VkRefreshObjectFlagBitsKHR obj, con
 static void print_VkRefreshObjectFlagBitsKHR(const VkRefreshObjectFlagBitsKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkFaultLevel(VkFaultLevel obj, const std::string& str, bool commaNeeded=true);
 static void print_VkFaultLevel(const VkFaultLevel * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkFaultLevelKHR(VkFaultLevelKHR obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkFaultLevelKHR(const VkFaultLevelKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkFaultType(VkFaultType obj, const std::string& str, bool commaNeeded=true);
 static void print_VkFaultType(const VkFaultType * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkFaultTypeKHR(VkFaultTypeKHR obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkFaultTypeKHR(const VkFaultTypeKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkFaultQueryBehavior(VkFaultQueryBehavior obj, const std::string& str, bool commaNeeded=true);
 static void print_VkFaultQueryBehavior(const VkFaultQueryBehavior * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkFaultQueryBehaviorKHR(VkFaultQueryBehaviorKHR obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkFaultQueryBehaviorKHR(const VkFaultQueryBehaviorKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPipelineMatchControl(VkPipelineMatchControl obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPipelineMatchControl(const VkPipelineMatchControl * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkPipelineMatchControlKHR(VkPipelineMatchControlKHR obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkPipelineMatchControlKHR(const VkPipelineMatchControlKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkAccessFlagBits2KHR(VkAccessFlagBits2KHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkAccessFlagBits2KHR(const VkAccessFlagBits2KHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPipelineStageFlagBits2KHR(VkPipelineStageFlagBits2KHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPipelineStageFlagBits2KHR(const VkPipelineStageFlagBits2KHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkColorSpaceKHR(VkColorSpaceKHR obj, const std::string& str, bool commaNeeded=true);
 static void print_VkColorSpaceKHR(const VkColorSpaceKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkCompositeAlphaFlagBitsKHR(VkCompositeAlphaFlagBitsKHR obj, const std::string& str, bool commaNeeded=true);
@@ -713,6 +754,10 @@ static void print_VkPresentModeKHR(VkPresentModeKHR obj, const std::string& str,
 static void print_VkPresentModeKHR(const VkPresentModeKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkSurfaceTransformFlagBitsKHR(VkSurfaceTransformFlagBitsKHR obj, const std::string& str, bool commaNeeded=true);
 static void print_VkSurfaceTransformFlagBitsKHR(const VkSurfaceTransformFlagBitsKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkValidationFeatureEnableEXT(VkValidationFeatureEnableEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkValidationFeatureEnableEXT(const VkValidationFeatureEnableEXT * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkValidationFeatureDisableEXT(VkValidationFeatureDisableEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkValidationFeatureDisableEXT(const VkValidationFeatureDisableEXT * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkExternalMemoryHandleTypeFlagBits(VkExternalMemoryHandleTypeFlagBits obj, const std::string& str, bool commaNeeded=true);
 static void print_VkExternalMemoryHandleTypeFlagBits(const VkExternalMemoryHandleTypeFlagBits * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkExternalMemoryFeatureFlagBits(VkExternalMemoryFeatureFlagBits obj, const std::string& str, bool commaNeeded=true);
@@ -759,10 +804,16 @@ static void print_VkSamplerReductionMode(VkSamplerReductionMode obj, const std::
 static void print_VkSamplerReductionMode(const VkSamplerReductionMode * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkBlendOverlapEXT(VkBlendOverlapEXT obj, const std::string& str, bool commaNeeded=true);
 static void print_VkBlendOverlapEXT(const VkBlendOverlapEXT * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsMessageSeverityFlagBitsEXT(VkDebugUtilsMessageSeverityFlagBitsEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsMessageSeverityFlagBitsEXT(const VkDebugUtilsMessageSeverityFlagBitsEXT * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsMessageTypeFlagBitsEXT(VkDebugUtilsMessageTypeFlagBitsEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsMessageTypeFlagBitsEXT(const VkDebugUtilsMessageTypeFlagBitsEXT * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkShaderFloatControlsIndependence(VkShaderFloatControlsIndependence obj, const std::string& str, bool commaNeeded=true);
 static void print_VkShaderFloatControlsIndependence(const VkShaderFloatControlsIndependence * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkFragmentShadingRateCombinerOpKHR(VkFragmentShadingRateCombinerOpKHR obj, const std::string& str, bool commaNeeded=true);
 static void print_VkFragmentShadingRateCombinerOpKHR(const VkFragmentShadingRateCombinerOpKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkSubmitFlagBitsKHR(VkSubmitFlagBitsKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkSubmitFlagBitsKHR(const VkSubmitFlagBitsKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkVendorId(VkVendorId obj, const std::string& str, bool commaNeeded=true);
 static void print_VkVendorId(const VkVendorId * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkDriverId(VkDriverId obj, const std::string& str, bool commaNeeded=true);
@@ -811,10 +862,6 @@ static void print_VkMemoryAllocateInfo(VkMemoryAllocateInfo obj, const std::stri
 static void print_VkMemoryAllocateInfo(const VkMemoryAllocateInfo * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkMemoryRequirements(VkMemoryRequirements obj, const std::string& str, bool commaNeeded=true);
 static void print_VkMemoryRequirements(const VkMemoryRequirements * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseImageFormatProperties(VkSparseImageFormatProperties obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseImageFormatProperties(const VkSparseImageFormatProperties * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseImageMemoryRequirements(VkSparseImageMemoryRequirements obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseImageMemoryRequirements(const VkSparseImageMemoryRequirements * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkMemoryType(VkMemoryType obj, const std::string& str, bool commaNeeded=true);
 static void print_VkMemoryType(const VkMemoryType * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkMemoryHeap(VkMemoryHeap obj, const std::string& str, bool commaNeeded=true);
@@ -857,18 +904,6 @@ static void print_VkImageViewCreateInfo(VkImageViewCreateInfo obj, const std::st
 static void print_VkImageViewCreateInfo(const VkImageViewCreateInfo * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkBufferCopy(VkBufferCopy obj, const std::string& str, bool commaNeeded=true);
 static void print_VkBufferCopy(const VkBufferCopy * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseMemoryBind(VkSparseMemoryBind obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseMemoryBind(const VkSparseMemoryBind * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseImageMemoryBind(VkSparseImageMemoryBind obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseImageMemoryBind(const VkSparseImageMemoryBind * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseBufferMemoryBindInfo(VkSparseBufferMemoryBindInfo obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseBufferMemoryBindInfo(const VkSparseBufferMemoryBindInfo * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseImageOpaqueMemoryBindInfo(VkSparseImageOpaqueMemoryBindInfo obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseImageOpaqueMemoryBindInfo(const VkSparseImageOpaqueMemoryBindInfo * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseImageMemoryBindInfo(VkSparseImageMemoryBindInfo obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseImageMemoryBindInfo(const VkSparseImageMemoryBindInfo * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkBindSparseInfo(VkBindSparseInfo obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkBindSparseInfo(const VkBindSparseInfo * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkImageCopy(VkImageCopy obj, const std::string& str, bool commaNeeded=true);
 static void print_VkImageCopy(const VkImageCopy * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkImageBlit(VkImageBlit obj, const std::string& str, bool commaNeeded=true);
@@ -1003,6 +1038,8 @@ static void print_VkSwapchainCreateInfoKHR(VkSwapchainCreateInfoKHR obj, const s
 static void print_VkSwapchainCreateInfoKHR(const VkSwapchainCreateInfoKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPresentInfoKHR(VkPresentInfoKHR obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPresentInfoKHR(const VkPresentInfoKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkValidationFeaturesEXT(VkValidationFeaturesEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkValidationFeaturesEXT(const VkValidationFeaturesEXT * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceFeatures2(VkPhysicalDeviceFeatures2 obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceFeatures2(const VkPhysicalDeviceFeatures2 * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceProperties2(VkPhysicalDeviceProperties2 obj, const std::string& str, bool commaNeeded=true);
@@ -1017,11 +1054,7 @@ static void print_VkQueueFamilyProperties2(VkQueueFamilyProperties2 obj, const s
 static void print_VkQueueFamilyProperties2(const VkQueueFamilyProperties2 * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceMemoryProperties2(VkPhysicalDeviceMemoryProperties2 obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceMemoryProperties2(const VkPhysicalDeviceMemoryProperties2 * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseImageFormatProperties2(VkSparseImageFormatProperties2 obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseImageFormatProperties2(const VkSparseImageFormatProperties2 * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkPhysicalDeviceSparseImageFormatInfo2(VkPhysicalDeviceSparseImageFormatInfo2 obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkPhysicalDeviceSparseImageFormatInfo2(const VkPhysicalDeviceSparseImageFormatInfo2 * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkConformanceVersion(VkConformanceVersion obj, const std::string& str, bool commaNeeded=true);
+static void print_VkConformanceVersion(VkConformanceVersion obj, const std::string& str, bool commaNeeded=true);
 static void print_VkConformanceVersion(const VkConformanceVersion * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceDriverProperties(VkPhysicalDeviceDriverProperties obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceDriverProperties(const VkPhysicalDeviceDriverProperties * obj, const std::string& str, bool commaNeeded=true);
@@ -1113,8 +1146,6 @@ static void print_VkDeviceGroupCommandBufferBeginInfo(VkDeviceGroupCommandBuffer
 static void print_VkDeviceGroupCommandBufferBeginInfo(const VkDeviceGroupCommandBufferBeginInfo * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkDeviceGroupSubmitInfo(VkDeviceGroupSubmitInfo obj, const std::string& str, bool commaNeeded=true);
 static void print_VkDeviceGroupSubmitInfo(const VkDeviceGroupSubmitInfo * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkDeviceGroupBindSparseInfo(VkDeviceGroupBindSparseInfo obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkDeviceGroupBindSparseInfo(const VkDeviceGroupBindSparseInfo * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkDeviceGroupPresentCapabilitiesKHR(VkDeviceGroupPresentCapabilitiesKHR obj, const std::string& str, bool commaNeeded=true);
 static void print_VkDeviceGroupPresentCapabilitiesKHR(const VkDeviceGroupPresentCapabilitiesKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkImageSwapchainCreateInfoKHR(VkImageSwapchainCreateInfoKHR obj, const std::string& str, bool commaNeeded=true);
@@ -1169,12 +1200,8 @@ static void print_VkBufferMemoryRequirementsInfo2(VkBufferMemoryRequirementsInfo
 static void print_VkBufferMemoryRequirementsInfo2(const VkBufferMemoryRequirementsInfo2 * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkImageMemoryRequirementsInfo2(VkImageMemoryRequirementsInfo2 obj, const std::string& str, bool commaNeeded=true);
 static void print_VkImageMemoryRequirementsInfo2(const VkImageMemoryRequirementsInfo2 * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkImageSparseMemoryRequirementsInfo2(VkImageSparseMemoryRequirementsInfo2 obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkImageSparseMemoryRequirementsInfo2(const VkImageSparseMemoryRequirementsInfo2 * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkMemoryRequirements2(VkMemoryRequirements2 obj, const std::string& str, bool commaNeeded=true);
 static void print_VkMemoryRequirements2(const VkMemoryRequirements2 * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseImageMemoryRequirements2(VkSparseImageMemoryRequirements2 obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkSparseImageMemoryRequirements2(const VkSparseImageMemoryRequirements2 * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDevicePointClippingProperties(VkPhysicalDevicePointClippingProperties obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDevicePointClippingProperties(const VkPhysicalDevicePointClippingProperties * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkMemoryDedicatedRequirements(VkMemoryDedicatedRequirements obj, const std::string& str, bool commaNeeded=true);
@@ -1249,6 +1276,16 @@ static void print_VkPhysicalDeviceHostQueryResetFeatures(VkPhysicalDeviceHostQue
 static void print_VkPhysicalDeviceHostQueryResetFeatures(const VkPhysicalDeviceHostQueryResetFeatures * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkDeviceQueueGlobalPriorityCreateInfoEXT(VkDeviceQueueGlobalPriorityCreateInfoEXT obj, const std::string& str, bool commaNeeded=true);
 static void print_VkDeviceQueueGlobalPriorityCreateInfoEXT(const VkDeviceQueueGlobalPriorityCreateInfoEXT * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsObjectNameInfoEXT(VkDebugUtilsObjectNameInfoEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsObjectNameInfoEXT(const VkDebugUtilsObjectNameInfoEXT * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsObjectTagInfoEXT(VkDebugUtilsObjectTagInfoEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsObjectTagInfoEXT(const VkDebugUtilsObjectTagInfoEXT * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsLabelEXT(VkDebugUtilsLabelEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsLabelEXT(const VkDebugUtilsLabelEXT * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsMessengerCreateInfoEXT(VkDebugUtilsMessengerCreateInfoEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsMessengerCreateInfoEXT(const VkDebugUtilsMessengerCreateInfoEXT * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsMessengerCallbackDataEXT(VkDebugUtilsMessengerCallbackDataEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDebugUtilsMessengerCallbackDataEXT(const VkDebugUtilsMessengerCallbackDataEXT * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkImportMemoryHostPointerInfoEXT(VkImportMemoryHostPointerInfoEXT obj, const std::string& str, bool commaNeeded=true);
 static void print_VkImportMemoryHostPointerInfoEXT(const VkImportMemoryHostPointerInfoEXT * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkMemoryHostPointerPropertiesEXT(VkMemoryHostPointerPropertiesEXT obj, const std::string& str, bool commaNeeded=true);
@@ -1369,6 +1406,22 @@ static void print_VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT(VkPhysica
 static void print_VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT(const VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceYcbcrImageArraysFeaturesEXT(VkPhysicalDeviceYcbcrImageArraysFeaturesEXT obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceYcbcrImageArraysFeaturesEXT(const VkPhysicalDeviceYcbcrImageArraysFeaturesEXT * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPhysicalDevicePerformanceQueryFeaturesKHR(VkPhysicalDevicePerformanceQueryFeaturesKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPhysicalDevicePerformanceQueryFeaturesKHR(const VkPhysicalDevicePerformanceQueryFeaturesKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPhysicalDevicePerformanceQueryPropertiesKHR(VkPhysicalDevicePerformanceQueryPropertiesKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPhysicalDevicePerformanceQueryPropertiesKHR(const VkPhysicalDevicePerformanceQueryPropertiesKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPerformanceCounterKHR(VkPerformanceCounterKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPerformanceCounterKHR(const VkPerformanceCounterKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPerformanceCounterDescriptionKHR(VkPerformanceCounterDescriptionKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPerformanceCounterDescriptionKHR(const VkPerformanceCounterDescriptionKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkQueryPoolPerformanceCreateInfoKHR(VkQueryPoolPerformanceCreateInfoKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkQueryPoolPerformanceCreateInfoKHR(const VkQueryPoolPerformanceCreateInfoKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkAcquireProfilingLockInfoKHR(VkAcquireProfilingLockInfoKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkAcquireProfilingLockInfoKHR(const VkAcquireProfilingLockInfoKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPerformanceQuerySubmitInfoKHR(VkPerformanceQuerySubmitInfoKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPerformanceQuerySubmitInfoKHR(const VkPerformanceQuerySubmitInfoKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPerformanceQueryReservationInfoKHR(VkPerformanceQueryReservationInfoKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPerformanceQueryReservationInfoKHR(const VkPerformanceQueryReservationInfoKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkHeadlessSurfaceCreateInfoEXT(VkHeadlessSurfaceCreateInfoEXT obj, const std::string& str, bool commaNeeded=true);
 static void print_VkHeadlessSurfaceCreateInfoEXT(const VkHeadlessSurfaceCreateInfoEXT * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceShaderClockFeaturesKHR(VkPhysicalDeviceShaderClockFeaturesKHR obj, const std::string& str, bool commaNeeded=true);
@@ -1415,16 +1468,8 @@ static void print_VkPhysicalDeviceVulkan12Properties(VkPhysicalDeviceVulkan12Pro
 static void print_VkPhysicalDeviceVulkan12Properties(const VkPhysicalDeviceVulkan12Properties * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkFaultData(VkFaultData obj, const std::string& str, bool commaNeeded=true);
 static void print_VkFaultData(const VkFaultData * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkFaultDataKHR(VkFaultDataKHR obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkFaultDataKHR(const VkFaultDataKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkFaultCallbackInfo(VkFaultCallbackInfo obj, const std::string& str, bool commaNeeded=true);
 static void print_VkFaultCallbackInfo(const VkFaultCallbackInfo * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkFaultCallbackInfoKHR(VkFaultCallbackInfoKHR obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkFaultCallbackInfoKHR(const VkFaultCallbackInfoKHR * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkPhysicalDeviceFaultHandlingProperties(VkPhysicalDeviceFaultHandlingProperties obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkPhysicalDeviceFaultHandlingProperties(const VkPhysicalDeviceFaultHandlingProperties * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkPhysicalDeviceFaultHandlingPropertiesKHR(VkPhysicalDeviceFaultHandlingPropertiesKHR obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkPhysicalDeviceFaultHandlingPropertiesKHR(const VkPhysicalDeviceFaultHandlingPropertiesKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkSamplerCustomBorderColorCreateInfoEXT(VkSamplerCustomBorderColorCreateInfoEXT obj, const std::string& str, bool commaNeeded=true);
 static void print_VkSamplerCustomBorderColorCreateInfoEXT(const VkSamplerCustomBorderColorCreateInfoEXT * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceCustomBorderColorPropertiesEXT(VkPhysicalDeviceCustomBorderColorPropertiesEXT obj, const std::string& str, bool commaNeeded=true);
@@ -1437,14 +1482,10 @@ static void print_VkRefreshObjectListKHR(VkRefreshObjectListKHR obj, const std::
 static void print_VkRefreshObjectListKHR(const VkRefreshObjectListKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceExtendedDynamicStateFeaturesEXT(VkPhysicalDeviceExtendedDynamicStateFeaturesEXT obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceExtendedDynamicStateFeaturesEXT(const VkPhysicalDeviceExtendedDynamicStateFeaturesEXT * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkPhysicalDevicePipelineIdentifierFeatures(VkPhysicalDevicePipelineIdentifierFeatures obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkPhysicalDevicePipelineIdentifierFeatures(const VkPhysicalDevicePipelineIdentifierFeatures * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkPhysicalDevicePipelineIdentifierFeaturesKHR(VkPhysicalDevicePipelineIdentifierFeaturesKHR obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkPhysicalDevicePipelineIdentifierFeaturesKHR(const VkPhysicalDevicePipelineIdentifierFeaturesKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPhysicalDeviceExtendedDynamicState2FeaturesEXT(VkPhysicalDeviceExtendedDynamicState2FeaturesEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPhysicalDeviceExtendedDynamicState2FeaturesEXT(const VkPhysicalDeviceExtendedDynamicState2FeaturesEXT * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPipelineIdentifierInfo(VkPipelineIdentifierInfo obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPipelineIdentifierInfo(const VkPipelineIdentifierInfo * obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkPipelineIdentifierInfoKHR(VkPipelineIdentifierInfoKHR obj, const std::string& str, bool commaNeeded=true);
-//static void print_VkPipelineIdentifierInfoKHR(const VkPipelineIdentifierInfoKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceRobustness2FeaturesEXT(VkPhysicalDeviceRobustness2FeaturesEXT obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceRobustness2FeaturesEXT(const VkPhysicalDeviceRobustness2FeaturesEXT * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceRobustness2PropertiesEXT(VkPhysicalDeviceRobustness2PropertiesEXT obj, const std::string& str, bool commaNeeded=true);
@@ -1489,6 +1530,36 @@ static void print_VkPhysicalDeviceFragmentShadingRateKHR(VkPhysicalDeviceFragmen
 static void print_VkPhysicalDeviceFragmentShadingRateKHR(const VkPhysicalDeviceFragmentShadingRateKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR(VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR(const VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT(VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT(const VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkVertexInputBindingDescription2EXT(VkVertexInputBindingDescription2EXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkVertexInputBindingDescription2EXT(const VkVertexInputBindingDescription2EXT * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkVertexInputAttributeDescription2EXT(VkVertexInputAttributeDescription2EXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkVertexInputAttributeDescription2EXT(const VkVertexInputAttributeDescription2EXT * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPhysicalDeviceColorWriteEnableFeaturesEXT(VkPhysicalDeviceColorWriteEnableFeaturesEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPhysicalDeviceColorWriteEnableFeaturesEXT(const VkPhysicalDeviceColorWriteEnableFeaturesEXT * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPipelineColorWriteCreateInfoEXT(VkPipelineColorWriteCreateInfoEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPipelineColorWriteCreateInfoEXT(const VkPipelineColorWriteCreateInfoEXT * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkMemoryBarrier2KHR(VkMemoryBarrier2KHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkMemoryBarrier2KHR(const VkMemoryBarrier2KHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkImageMemoryBarrier2KHR(VkImageMemoryBarrier2KHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkImageMemoryBarrier2KHR(const VkImageMemoryBarrier2KHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkBufferMemoryBarrier2KHR(VkBufferMemoryBarrier2KHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkBufferMemoryBarrier2KHR(const VkBufferMemoryBarrier2KHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDependencyInfoKHR(VkDependencyInfoKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkDependencyInfoKHR(const VkDependencyInfoKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkSemaphoreSubmitInfoKHR(VkSemaphoreSubmitInfoKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkSemaphoreSubmitInfoKHR(const VkSemaphoreSubmitInfoKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkCommandBufferSubmitInfoKHR(VkCommandBufferSubmitInfoKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkCommandBufferSubmitInfoKHR(const VkCommandBufferSubmitInfoKHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkSubmitInfo2KHR(VkSubmitInfo2KHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkSubmitInfo2KHR(const VkSubmitInfo2KHR * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkQueueFamilyCheckpointProperties2NV(VkQueueFamilyCheckpointProperties2NV obj, const std::string& str, bool commaNeeded=true);
+static void print_VkQueueFamilyCheckpointProperties2NV(const VkQueueFamilyCheckpointProperties2NV * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkCheckpointData2NV(VkCheckpointData2NV obj, const std::string& str, bool commaNeeded=true);
+static void print_VkCheckpointData2NV(const VkCheckpointData2NV * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPhysicalDeviceSynchronization2FeaturesKHR(VkPhysicalDeviceSynchronization2FeaturesKHR obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPhysicalDeviceSynchronization2FeaturesKHR(const VkPhysicalDeviceSynchronization2FeaturesKHR * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceVulkanSC10Properties(VkPhysicalDeviceVulkanSC10Properties obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceVulkanSC10Properties(const VkPhysicalDeviceVulkanSC10Properties * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPipelinePoolSize(VkPipelinePoolSize obj, const std::string& str, bool commaNeeded=true);
@@ -1503,6 +1574,8 @@ static void print_VkCommandPoolMemoryConsumption(VkCommandPoolMemoryConsumption 
 static void print_VkCommandPoolMemoryConsumption(const VkCommandPoolMemoryConsumption * obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceVulkanSC10Features(VkPhysicalDeviceVulkanSC10Features obj, const std::string& str, bool commaNeeded=true);
 static void print_VkPhysicalDeviceVulkanSC10Features(const VkPhysicalDeviceVulkanSC10Features * obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT(VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT obj, const std::string& str, bool commaNeeded=true);
+static void print_VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT(const VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT * obj, const std::string& str, bool commaNeeded=true);
 /*************************************** End prototypes ***********************************/
 
 static void dumpPNextChain(const void* pNext) {
@@ -1513,6 +1586,8 @@ static void dumpPNextChain(const void* pNext) {
 
           switch (pBase->sType) {
              case VK_STRUCTURE_TYPE_DISPLAY_PRESENT_INFO_KHR:print_VkDisplayPresentInfoKHR((VkDisplayPresentInfoKHR *) pNext, "VkDisplayPresentInfoKHR", true);
+             break;
+             case VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT:print_VkValidationFeaturesEXT((VkValidationFeaturesEXT *) pNext, "VkValidationFeaturesEXT", true);
              break;
              case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2:print_VkPhysicalDeviceFeatures2((VkPhysicalDeviceFeatures2 *) pNext, "VkPhysicalDeviceFeatures2", true);
              break;
@@ -1560,8 +1635,6 @@ static void dumpPNextChain(const void* pNext) {
              break;
              case VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO:print_VkDeviceGroupSubmitInfo((VkDeviceGroupSubmitInfo *) pNext, "VkDeviceGroupSubmitInfo", true);
              break;
-//             case VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO:print_VkDeviceGroupBindSparseInfo((VkDeviceGroupBindSparseInfo *) pNext, "VkDeviceGroupBindSparseInfo", true);
-//             break;
              case VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR:print_VkImageSwapchainCreateInfoKHR((VkImageSwapchainCreateInfoKHR *) pNext, "VkImageSwapchainCreateInfoKHR", true);
              break;
              case VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_SWAPCHAIN_INFO_KHR:print_VkBindImageMemorySwapchainInfoKHR((VkBindImageMemorySwapchainInfoKHR *) pNext, "VkBindImageMemorySwapchainInfoKHR", true);
@@ -1643,6 +1716,8 @@ static void dumpPNextChain(const void* pNext) {
              case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES:print_VkPhysicalDeviceHostQueryResetFeatures((VkPhysicalDeviceHostQueryResetFeatures *) pNext, "VkPhysicalDeviceHostQueryResetFeatures", true);
              break;
              case VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT:print_VkDeviceQueueGlobalPriorityCreateInfoEXT((VkDeviceQueueGlobalPriorityCreateInfoEXT *) pNext, "VkDeviceQueueGlobalPriorityCreateInfoEXT", true);
+             break;
+             case VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT:print_VkDebugUtilsMessengerCreateInfoEXT((VkDebugUtilsMessengerCreateInfoEXT *) pNext, "VkDebugUtilsMessengerCreateInfoEXT", true);
              break;
              case VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT:print_VkImportMemoryHostPointerInfoEXT((VkImportMemoryHostPointerInfoEXT *) pNext, "VkImportMemoryHostPointerInfoEXT", true);
              break;
@@ -1732,6 +1807,16 @@ static void dumpPNextChain(const void* pNext) {
              break;
              case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_YCBCR_IMAGE_ARRAYS_FEATURES_EXT:print_VkPhysicalDeviceYcbcrImageArraysFeaturesEXT((VkPhysicalDeviceYcbcrImageArraysFeaturesEXT *) pNext, "VkPhysicalDeviceYcbcrImageArraysFeaturesEXT", true);
              break;
+             case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_FEATURES_KHR:print_VkPhysicalDevicePerformanceQueryFeaturesKHR((VkPhysicalDevicePerformanceQueryFeaturesKHR *) pNext, "VkPhysicalDevicePerformanceQueryFeaturesKHR", true);
+             break;
+             case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_PROPERTIES_KHR:print_VkPhysicalDevicePerformanceQueryPropertiesKHR((VkPhysicalDevicePerformanceQueryPropertiesKHR *) pNext, "VkPhysicalDevicePerformanceQueryPropertiesKHR", true);
+             break;
+             case VK_STRUCTURE_TYPE_QUERY_POOL_PERFORMANCE_CREATE_INFO_KHR:print_VkQueryPoolPerformanceCreateInfoKHR((VkQueryPoolPerformanceCreateInfoKHR *) pNext, "VkQueryPoolPerformanceCreateInfoKHR", true);
+             break;
+             case VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR:print_VkPerformanceQuerySubmitInfoKHR((VkPerformanceQuerySubmitInfoKHR *) pNext, "VkPerformanceQuerySubmitInfoKHR", true);
+             break;
+             case VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_RESERVATION_INFO_KHR:print_VkPerformanceQueryReservationInfoKHR((VkPerformanceQueryReservationInfoKHR *) pNext, "VkPerformanceQueryReservationInfoKHR", true);
+             break;
              case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR:print_VkPhysicalDeviceShaderClockFeaturesKHR((VkPhysicalDeviceShaderClockFeaturesKHR *) pNext, "VkPhysicalDeviceShaderClockFeaturesKHR", true);
              break;
              case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT:print_VkPhysicalDeviceIndexTypeUint8FeaturesEXT((VkPhysicalDeviceIndexTypeUint8FeaturesEXT *) pNext, "VkPhysicalDeviceIndexTypeUint8FeaturesEXT", true);
@@ -1774,8 +1859,6 @@ static void dumpPNextChain(const void* pNext) {
              break;
              case VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO:print_VkFaultCallbackInfo((VkFaultCallbackInfo *) pNext, "VkFaultCallbackInfo", true);
              break;
-//             case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_HANDLING_PROPERTIES:print_VkPhysicalDeviceFaultHandlingProperties((VkPhysicalDeviceFaultHandlingProperties *) pNext, "VkPhysicalDeviceFaultHandlingProperties", true);
-//             break;
              case VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT:print_VkSamplerCustomBorderColorCreateInfoEXT((VkSamplerCustomBorderColorCreateInfoEXT *) pNext, "VkSamplerCustomBorderColorCreateInfoEXT", true);
              break;
              case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_PROPERTIES_EXT:print_VkPhysicalDeviceCustomBorderColorPropertiesEXT((VkPhysicalDeviceCustomBorderColorPropertiesEXT *) pNext, "VkPhysicalDeviceCustomBorderColorPropertiesEXT", true);
@@ -1784,8 +1867,8 @@ static void dumpPNextChain(const void* pNext) {
              break;
              case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT:print_VkPhysicalDeviceExtendedDynamicStateFeaturesEXT((VkPhysicalDeviceExtendedDynamicStateFeaturesEXT *) pNext, "VkPhysicalDeviceExtendedDynamicStateFeaturesEXT", true);
              break;
-//             case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_IDENTIFIER_FEATURES:print_VkPhysicalDevicePipelineIdentifierFeatures((VkPhysicalDevicePipelineIdentifierFeatures *) pNext, "VkPhysicalDevicePipelineIdentifierFeatures", true);
-//             break;
+             case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT:print_VkPhysicalDeviceExtendedDynamicState2FeaturesEXT((VkPhysicalDeviceExtendedDynamicState2FeaturesEXT *) pNext, "VkPhysicalDeviceExtendedDynamicState2FeaturesEXT", true);
+             break;
              case VK_STRUCTURE_TYPE_PIPELINE_IDENTIFIER_INFO:print_VkPipelineIdentifierInfo((VkPipelineIdentifierInfo *) pNext, "VkPipelineIdentifierInfo", true);
              break;
              case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT:print_VkPhysicalDeviceRobustness2FeaturesEXT((VkPhysicalDeviceRobustness2FeaturesEXT *) pNext, "VkPhysicalDeviceRobustness2FeaturesEXT", true);
@@ -1808,6 +1891,18 @@ static void dumpPNextChain(const void* pNext) {
              break;
              case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TERMINATE_INVOCATION_FEATURES_KHR:print_VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR((VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR *) pNext, "VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR", true);
              break;
+             case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT:print_VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT((VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT *) pNext, "VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT", true);
+             break;
+             case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT:print_VkPhysicalDeviceColorWriteEnableFeaturesEXT((VkPhysicalDeviceColorWriteEnableFeaturesEXT *) pNext, "VkPhysicalDeviceColorWriteEnableFeaturesEXT", true);
+             break;
+             case VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT:print_VkPipelineColorWriteCreateInfoEXT((VkPipelineColorWriteCreateInfoEXT *) pNext, "VkPipelineColorWriteCreateInfoEXT", true);
+             break;
+             case VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR:print_VkMemoryBarrier2KHR((VkMemoryBarrier2KHR *) pNext, "VkMemoryBarrier2KHR", true);
+             break;
+             case VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_2_NV:print_VkQueueFamilyCheckpointProperties2NV((VkQueueFamilyCheckpointProperties2NV *) pNext, "VkQueueFamilyCheckpointProperties2NV", true);
+             break;
+             case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR:print_VkPhysicalDeviceSynchronization2FeaturesKHR((VkPhysicalDeviceSynchronization2FeaturesKHR *) pNext, "VkPhysicalDeviceSynchronization2FeaturesKHR", true);
+             break;
              case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_PROPERTIES:print_VkPhysicalDeviceVulkanSC10Properties((VkPhysicalDeviceVulkanSC10Properties *) pNext, "VkPhysicalDeviceVulkanSC10Properties", true);
              break;
              case VK_STRUCTURE_TYPE_PIPELINE_POOL_ENTRY_SIZE_CREATE_INFO:print_VkPipelinePoolEntrySizeCreateInfo((VkPipelinePoolEntrySizeCreateInfo *) pNext, "VkPipelinePoolEntrySizeCreateInfo", true);
@@ -1817,6 +1912,8 @@ static void dumpPNextChain(const void* pNext) {
              case VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_RESERVATION_CREATE_INFO:print_VkCommandPoolMemoryReservationCreateInfo((VkCommandPoolMemoryReservationCreateInfo *) pNext, "VkCommandPoolMemoryReservationCreateInfo", true);
              break;
              case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES:print_VkPhysicalDeviceVulkanSC10Features((VkPhysicalDeviceVulkanSC10Features *) pNext, "VkPhysicalDeviceVulkanSC10Features", true);
+             break;
+             case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_YCBCR_2_PLANE_444_FORMATS_FEATURES_EXT:print_VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT((VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT *) pNext, "VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT", true);
              break;
              default: assert(0);
          }
@@ -2699,8 +2796,8 @@ static std::map<int, std::string> VkResult_map = {
     std::make_pair(1000072003, "VK_ERROR_INVALID_EXTERNAL_HANDLE"),
     std::make_pair(1000161000, "VK_ERROR_FRAGMENTATION"),
     std::make_pair(1000257000, "VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS"),
-    std::make_pair(1000349000, "VK_ERROR_INVALID_PIPELINE_CACHE_DATA"),
-    std::make_pair(1000349001, "VK_ERROR_NO_PIPELINE_MATCH"),
+    std::make_pair(1000298000, "VK_ERROR_INVALID_PIPELINE_CACHE_DATA"),
+    std::make_pair(1000298001, "VK_ERROR_NO_PIPELINE_MATCH"),
     std::make_pair(1000000000, "VK_ERROR_SURFACE_LOST_KHR"),
     std::make_pair(1000000001, "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR"),
     std::make_pair(1000001003, "VK_SUBOPTIMAL_KHR"),
@@ -2794,16 +2891,13 @@ static std::map<int, std::string> VkStructureType_map = {
     std::make_pair(1000060003, "VK_STRUCTURE_TYPE_DEVICE_GROUP_RENDER_PASS_BEGIN_INFO"),
     std::make_pair(1000060004, "VK_STRUCTURE_TYPE_DEVICE_GROUP_COMMAND_BUFFER_BEGIN_INFO"),
     std::make_pair(1000060005, "VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO"),
-//    std::make_pair(1000060006, "VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO"),
     std::make_pair(1000060013, "VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_DEVICE_GROUP_INFO"),
     std::make_pair(1000060014, "VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO"),
     std::make_pair(1000070000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GROUP_PROPERTIES"),
     std::make_pair(1000070001, "VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO"),
     std::make_pair(1000146000, "VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2"),
     std::make_pair(1000146001, "VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2"),
-    std::make_pair(1000146002, "VK_STRUCTURE_TYPE_IMAGE_SPARSE_MEMORY_REQUIREMENTS_INFO_2"),
     std::make_pair(1000146003, "VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2"),
-    std::make_pair(1000146004, "VK_STRUCTURE_TYPE_SPARSE_IMAGE_MEMORY_REQUIREMENTS_2"),
     std::make_pair(1000059000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2"),
     std::make_pair(1000059001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2"),
     std::make_pair(1000059002, "VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2"),
@@ -2811,8 +2905,6 @@ static std::map<int, std::string> VkStructureType_map = {
     std::make_pair(1000059004, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2"),
     std::make_pair(1000059005, "VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2"),
     std::make_pair(1000059006, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2"),
-    std::make_pair(1000059007, "VK_STRUCTURE_TYPE_SPARSE_IMAGE_FORMAT_PROPERTIES_2"),
-    std::make_pair(1000059008, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2"),
     std::make_pair(1000117000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES"),
     std::make_pair(1000117001, "VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO"),
     std::make_pair(1000117002, "VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO"),
@@ -2898,17 +2990,16 @@ static std::map<int, std::string> VkStructureType_map = {
     std::make_pair(1000257002, "VK_STRUCTURE_TYPE_BUFFER_OPAQUE_CAPTURE_ADDRESS_CREATE_INFO"),
     std::make_pair(1000257003, "VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO"),
     std::make_pair(1000257004, "VK_STRUCTURE_TYPE_DEVICE_MEMORY_OPAQUE_CAPTURE_ADDRESS_INFO"),
-    std::make_pair(1000357000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_PROPERTIES"),
-    std::make_pair(1000357001, "VK_STRUCTURE_TYPE_DEVICE_OBJECT_RESERVATION_CREATE_INFO"),
-    std::make_pair(1000357002, "VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_RESERVATION_CREATE_INFO"),
-    std::make_pair(1000357003, "VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_CONSUMPTION"),
-    std::make_pair(1000357004, "VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE"),
-    std::make_pair(1000357005, "VK_STRUCTURE_TYPE_PIPELINE_POOL_ENTRY_SIZE_CREATE_INFO"),
-    std::make_pair(1000357006, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES"),
-    std::make_pair(1000298000, "VK_STRUCTURE_TYPE_FAULT_DATA"),
-    std::make_pair(1000298001, "VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO"),
-    std::make_pair(1000298002, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_HANDLING_PROPERTIES"),
-    std::make_pair(1000334000, "VK_STRUCTURE_TYPE_PIPELINE_IDENTIFIER_INFO"),
+    std::make_pair(1000298000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES"),
+    std::make_pair(1000298001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_PROPERTIES"),
+    std::make_pair(1000298002, "VK_STRUCTURE_TYPE_DEVICE_OBJECT_RESERVATION_CREATE_INFO"),
+    std::make_pair(1000298003, "VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_RESERVATION_CREATE_INFO"),
+    std::make_pair(1000298004, "VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_CONSUMPTION"),
+    std::make_pair(1000298005, "VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE"),
+    std::make_pair(1000298006, "VK_STRUCTURE_TYPE_PIPELINE_POOL_ENTRY_SIZE_CREATE_INFO"),
+    std::make_pair(1000298007, "VK_STRUCTURE_TYPE_FAULT_DATA"),
+    std::make_pair(1000298008, "VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO"),
+    std::make_pair(1000298009, "VK_STRUCTURE_TYPE_PIPELINE_IDENTIFIER_INFO"),
     std::make_pair(1000001000, "VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR"),
     std::make_pair(1000001001, "VK_STRUCTURE_TYPE_PRESENT_INFO_KHR"),
     std::make_pair(1000060007, "VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_CAPABILITIES_KHR"),
@@ -3008,6 +3099,7 @@ static std::map<int, std::string> VkStructureType_map = {
     std::make_pair(1000116004, "VK_STRUCTURE_TYPE_ACQUIRE_PROFILING_LOCK_INFO_KHR"),
     std::make_pair(1000116005, "VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_KHR"),
     std::make_pair(1000116006, "VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_KHR"),
+    std::make_pair(1000116007, "VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_RESERVATION_INFO_KHR"),
     std::make_pair(1000119000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR"),
     std::make_pair(1000119001, "VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR"),
     std::make_pair(1000119002, "VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR"),
@@ -3203,9 +3295,9 @@ static std::map<int, std::string> VkStructureType_map = {
     std::make_pair(1000295001, "VK_STRUCTURE_TYPE_DEVICE_PRIVATE_DATA_CREATE_INFO_EXT"),
     std::make_pair(1000295002, "VK_STRUCTURE_TYPE_PRIVATE_DATA_SLOT_CREATE_INFO_EXT"),
     std::make_pair(1000297000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT"),
-    std::make_pair(1000299000, "VK_STRUCTURE_TYPE_REFRESH_OBJECT_LIST_KHR"),
     std::make_pair(1000300000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV"),
     std::make_pair(1000300001, "VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV"),
+    std::make_pair(1000308000, "VK_STRUCTURE_TYPE_REFRESH_OBJECT_LIST_KHR"),
     std::make_pair(1000309000, "VK_STRUCTURE_TYPE_RESERVED_QCOM"),
     std::make_pair(1000314000, "VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR"),
     std::make_pair(1000314001, "VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR"),
@@ -3221,6 +3313,7 @@ static std::map<int, std::string> VkStructureType_map = {
     std::make_pair(1000326000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_PROPERTIES_NV"),
     std::make_pair(1000326001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_FEATURES_NV"),
     std::make_pair(1000326002, "VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_ENUM_STATE_CREATE_INFO_NV"),
+    std::make_pair(1000330000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_YCBCR_2_PLANE_444_FORMATS_FEATURES_EXT"),
     std::make_pair(1000332000, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT"),
     std::make_pair(1000332001, "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT"),
     std::make_pair(1000333000, "VK_STRUCTURE_TYPE_COPY_COMMAND_TRANSFORM_INFO_QCOM"),
@@ -3801,6 +3894,10 @@ static std::map<int, std::string> VkFormat_map = {
     std::make_pair(1000288027, "VK_FORMAT_ASTC_6x6x6_UNORM_BLOCK_EXT"),
     std::make_pair(1000288028, "VK_FORMAT_ASTC_6x6x6_SRGB_BLOCK_EXT"),
     std::make_pair(1000288029, "VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT"),
+    std::make_pair(1000330000, "VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT"),
+    std::make_pair(1000330001, "VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT"),
+    std::make_pair(1000330002, "VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT"),
+    std::make_pair(1000330003, "VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT"),
     std::make_pair(1000340000, "VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT"),
     std::make_pair(1000340001, "VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT"),
 };
@@ -4179,48 +4276,6 @@ static void print_VkPipelineStageFlagBits(const VkPipelineStageFlagBits * obj, c
      else
          _OUT << "\"" << VkPipelineStageFlagBits_map[*obj] << "\"" << std::endl;
 }
-
-static std::map<int, std::string> VkSparseMemoryBindFlagBits_map = {
-    std::make_pair(1 << 0, "VK_SPARSE_MEMORY_BIND_METADATA_BIT"),
-};
-//static void print_VkSparseMemoryBindFlagBits(VkSparseMemoryBindFlagBits obj, const std::string& str, bool commaNeeded) {
-//     PRINT_SPACE
-//     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-//     if (commaNeeded)
-//         _OUT << "\"" <<  VkSparseMemoryBindFlagBits_map[obj] << "\"," << std::endl;
-//     else
-//         _OUT << "\"" << VkSparseMemoryBindFlagBits_map[obj] << "\"" << std::endl;
-//}
-//static void print_VkSparseMemoryBindFlagBits(const VkSparseMemoryBindFlagBits * obj, const std::string& str, bool commaNeeded) {
-//     PRINT_SPACE
-//     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-//     if (commaNeeded)
-//         _OUT << "\"" <<  VkSparseMemoryBindFlagBits_map[*obj] << "\"," << std::endl;
-//     else
-//         _OUT << "\"" << VkSparseMemoryBindFlagBits_map[*obj] << "\"" << std::endl;
-//}
-//
-//static std::map<int, std::string> VkSparseImageFormatFlagBits_map = {
-//    std::make_pair(1 << 0, "VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT"),
-//    std::make_pair(1 << 1, "VK_SPARSE_IMAGE_FORMAT_ALIGNED_MIP_SIZE_BIT"),
-//    std::make_pair(1 << 2, "VK_SPARSE_IMAGE_FORMAT_NONSTANDARD_BLOCK_SIZE_BIT"),
-//};
-//static void print_VkSparseImageFormatFlagBits(VkSparseImageFormatFlagBits obj, const std::string& str, bool commaNeeded) {
-//     PRINT_SPACE
-//     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-//     if (commaNeeded)
-//         _OUT << "\"" <<  VkSparseImageFormatFlagBits_map[obj] << "\"," << std::endl;
-//     else
-//         _OUT << "\"" << VkSparseImageFormatFlagBits_map[obj] << "\"" << std::endl;
-//}
-//static void print_VkSparseImageFormatFlagBits(const VkSparseImageFormatFlagBits * obj, const std::string& str, bool commaNeeded) {
-//     PRINT_SPACE
-//     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-//     if (commaNeeded)
-//         _OUT << "\"" <<  VkSparseImageFormatFlagBits_map[*obj] << "\"," << std::endl;
-//     else
-//         _OUT << "\"" << VkSparseImageFormatFlagBits_map[*obj] << "\"" << std::endl;
-//}
 
 static std::map<int, std::string> VkFenceCreateFlagBits_map = {
     std::make_pair(1 << 0, "VK_FENCE_CREATE_SIGNALED_BIT"),
@@ -4835,6 +4890,13 @@ static std::map<int, std::string> VkDynamicState_map = {
     std::make_pair(1000267009, "VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE_EXT"),
     std::make_pair(1000267010, "VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT"),
     std::make_pair(1000267011, "VK_DYNAMIC_STATE_STENCIL_OP_EXT"),
+    std::make_pair(1000352000, "VK_DYNAMIC_STATE_VERTEX_INPUT_EXT"),
+    std::make_pair(1000377000, "VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT"),
+    std::make_pair(1000377001, "VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE_EXT"),
+    std::make_pair(1000377002, "VK_DYNAMIC_STATE_DEPTH_BIAS_ENABLE_EXT"),
+    std::make_pair(1000377003, "VK_DYNAMIC_STATE_LOGIC_OP_EXT"),
+    std::make_pair(1000377004, "VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE_EXT"),
+    std::make_pair(1000381000, "VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT"),
 };
 static void print_VkDynamicState(VkDynamicState obj, const std::string& str, bool commaNeeded) {
      PRINT_SPACE
@@ -6106,96 +6168,6 @@ static void print_VkMemoryMapFlags(const VkMemoryMapFlags * obj, const std::stri
      else
          _OUT << "\"" << str << "\"" << " : " << obj << std::endl;
 }
-
-//static void print_VkSparseMemoryBindFlags(VkSparseMemoryBindFlags obj, const std::string& str, bool commaNeeded) {
-//     PRINT_SPACE
-// _OUT << "\"" << str << "\"" << " : ";
-//     const int max_bits = 64; // We don't expect the number to be larger.
-//     std::bitset<max_bits> b(obj);
-//     _OUT << "\"";
-//     if (obj == 0) _OUT << "0";
-//     for (unsigned int i = 0, bitCount = 0; i < b.size(); i++) {
-//         if (b[i] == 1) {
-//             bitCount++;
-//             if (bitCount < b.count())
-//                 _OUT << VkSparseMemoryBindFlagBits_map[1<<i] << " | ";
-//             else
-//                 _OUT << VkSparseMemoryBindFlagBits_map[1<<i];
-//         }
-//     }
-//     if (commaNeeded)
-//       _OUT << "\"" << ",";
-//     else
-//       _OUT << "\""<< "";
-//     _OUT << std::endl;
-//}
-//static void print_VkSparseMemoryBindFlags(const VkSparseMemoryBindFlags * obj, const std::string& str, bool commaNeeded) {
-//     PRINT_SPACE
-// _OUT << "\"" << str << "\"" << " : ";
-//     const int max_bits = 64; // We don't expect the number to be larger.
-//     std::bitset<max_bits> b(obj);
-//     _OUT << "\"";
-//     if (obj == 0) _OUT << "0";
-//     for (unsigned int i = 0, bitCount = 0; i < b.size(); i++) {
-//         if (b[i] == 1) {
-//             bitCount++;
-//             if (bitCount < b.count())
-//                 _OUT << VkSparseMemoryBindFlagBits_map[1<<i] << " | ";
-//             else
-//                 _OUT << VkSparseMemoryBindFlagBits_map[1<<i];
-//         }
-//     }
-//     if (commaNeeded)
-//       _OUT << "\"" << ",";
-//     else
-//       _OUT << "\""<< "";
-//     _OUT << std::endl;
-//}
-//
-//static void print_VkSparseImageFormatFlags(VkSparseImageFormatFlags obj, const std::string& str, bool commaNeeded) {
-//     PRINT_SPACE
-// _OUT << "\"" << str << "\"" << " : ";
-//     const int max_bits = 64; // We don't expect the number to be larger.
-//     std::bitset<max_bits> b(obj);
-//     _OUT << "\"";
-//     if (obj == 0) _OUT << "0";
-//     for (unsigned int i = 0, bitCount = 0; i < b.size(); i++) {
-//         if (b[i] == 1) {
-//             bitCount++;
-//             if (bitCount < b.count())
-//                 _OUT << VkSparseImageFormatFlagBits_map[1<<i] << " | ";
-//             else
-//                 _OUT << VkSparseImageFormatFlagBits_map[1<<i];
-//         }
-//     }
-//     if (commaNeeded)
-//       _OUT << "\"" << ",";
-//     else
-//       _OUT << "\""<< "";
-//     _OUT << std::endl;
-//}
-//static void print_VkSparseImageFormatFlags(const VkSparseImageFormatFlags * obj, const std::string& str, bool commaNeeded) {
-//     PRINT_SPACE
-// _OUT << "\"" << str << "\"" << " : ";
-//     const int max_bits = 64; // We don't expect the number to be larger.
-//     std::bitset<max_bits> b(obj);
-//     _OUT << "\"";
-//     if (obj == 0) _OUT << "0";
-//     for (unsigned int i = 0, bitCount = 0; i < b.size(); i++) {
-//         if (b[i] == 1) {
-//             bitCount++;
-//             if (bitCount < b.count())
-//                 _OUT << VkSparseImageFormatFlagBits_map[1<<i] << " | ";
-//             else
-//                 _OUT << VkSparseImageFormatFlagBits_map[1<<i];
-//         }
-//     }
-//     if (commaNeeded)
-//       _OUT << "\"" << ",";
-//     else
-//       _OUT << "\""<< "";
-//     _OUT << std::endl;
-//}
 
 static void print_VkFenceCreateFlags(VkFenceCreateFlags obj, const std::string& str, bool commaNeeded) {
      PRINT_SPACE
@@ -10545,199 +10517,6 @@ static void print_VkMemoryRequirements(const VkMemoryRequirements * obj, const s
          _OUT << "}" << std::endl;
 }
 
-//static void print_VkSparseMemoryBind(VkSparseMemoryBind obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkDeviceSize(obj.resourceOffset, "resourceOffset", 1);
-//
-//     print_VkDeviceSize(obj.size, "size", 1);
-//
-//     /** Note: printing just an empty entry here **/
-//     PRINT_SPACE    _OUT << "\"" << "memory" << "\"" << " : " << "\"" << "\"," << std::endl;
-//
-//     print_VkDeviceSize(obj.memoryOffset, "memoryOffset", 1);
-//
-//     print_VkSparseMemoryBindFlags(obj.flags, "flags", 0);
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//static void print_VkSparseMemoryBind(const VkSparseMemoryBind * obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkDeviceSize(obj->resourceOffset, "resourceOffset", 1);
-//
-//     print_VkDeviceSize(obj->size, "size", 1);
-//
-//     /** Note: printing just an empty entry here **/
-//     PRINT_SPACE    _OUT << "\"" << "memory" << "\"" << " : " << "\"" << "\"," << std::endl;
-//
-//     print_VkDeviceSize(obj->memoryOffset, "memoryOffset", 1);
-//
-//     print_VkSparseMemoryBindFlags(obj->flags, "flags", 0);
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//
-//static void print_VkSparseBufferMemoryBindInfo(VkSparseBufferMemoryBindInfo obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     /** Note: printing just an empty entry here **/
-//     PRINT_SPACE    _OUT << "\"" << "buffer" << "\"" << " : " << "\"" << "\"," << std::endl;
-//
-//     print_uint32_t(obj.bindCount, "bindCount", 1);
-//
-//     PRINT_SPACE
-//     _OUT << "\"pBinds\": " << std::endl;
-//     if (obj.pBinds) {
-//         PRINT_SPACE
-//         _OUT << "[" << std::endl;
-//         for (unsigned int i = 0; i < obj.bindCount; i++) {
-//           if (i+1 == obj.bindCount)
-//               print_VkSparseMemoryBind(obj.pBinds[i], "pBinds", 0);
-//           else
-//               print_VkSparseMemoryBind(obj.pBinds[i], "pBinds", 1);
-//         }
-//         PRINT_SPACE
-//         _OUT << "]" << std::endl;
-//    }
-//     else
-//     {
-//         PRINT_SPACE _OUT << "\"NULL\""<< ""<< std::endl;
-//     }
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//static void print_VkSparseBufferMemoryBindInfo(const VkSparseBufferMemoryBindInfo * obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     /** Note: printing just an empty entry here **/
-//     PRINT_SPACE    _OUT << "\"" << "buffer" << "\"" << " : " << "\"" << "\"," << std::endl;
-//
-//     print_uint32_t(obj->bindCount, "bindCount", 1);
-//
-//     PRINT_SPACE
-//     _OUT << "\"pBinds\": " << std::endl;
-//     if (obj->pBinds) {
-//         PRINT_SPACE
-//         _OUT << "[" << std::endl;
-//         for (unsigned int i = 0; i < obj->bindCount; i++) {
-//           if (i+1 == obj->bindCount)
-//               print_VkSparseMemoryBind(obj->pBinds[i], "pBinds", 0);
-//           else
-//               print_VkSparseMemoryBind(obj->pBinds[i], "pBinds", 1);
-//         }
-//         PRINT_SPACE
-//         _OUT << "]" << std::endl;
-//    }
-//     else
-//     {
-//         PRINT_SPACE _OUT << "\"NULL\""<< ""<< std::endl;
-//     }
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//
-//static void print_VkSparseImageOpaqueMemoryBindInfo(VkSparseImageOpaqueMemoryBindInfo obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     /** Note: printing just an empty entry here **/
-//     PRINT_SPACE    _OUT << "\"" << "image" << "\"" << " : " << "\"" << "\"," << std::endl;
-//
-//     print_uint32_t(obj.bindCount, "bindCount", 1);
-//
-//     PRINT_SPACE
-//     _OUT << "\"pBinds\": " << std::endl;
-//     if (obj.pBinds) {
-//         PRINT_SPACE
-//         _OUT << "[" << std::endl;
-//         for (unsigned int i = 0; i < obj.bindCount; i++) {
-//           if (i+1 == obj.bindCount)
-//               print_VkSparseMemoryBind(obj.pBinds[i], "pBinds", 0);
-//           else
-//               print_VkSparseMemoryBind(obj.pBinds[i], "pBinds", 1);
-//         }
-//         PRINT_SPACE
-//         _OUT << "]" << std::endl;
-//    }
-//     else
-//     {
-//         PRINT_SPACE _OUT << "\"NULL\""<< ""<< std::endl;
-//     }
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//static void print_VkSparseImageOpaqueMemoryBindInfo(const VkSparseImageOpaqueMemoryBindInfo * obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     /** Note: printing just an empty entry here **/
-//     PRINT_SPACE    _OUT << "\"" << "image" << "\"" << " : " << "\"" << "\"," << std::endl;
-//
-//     print_uint32_t(obj->bindCount, "bindCount", 1);
-//
-//     PRINT_SPACE
-//     _OUT << "\"pBinds\": " << std::endl;
-//     if (obj->pBinds) {
-//         PRINT_SPACE
-//         _OUT << "[" << std::endl;
-//         for (unsigned int i = 0; i < obj->bindCount; i++) {
-//           if (i+1 == obj->bindCount)
-//               print_VkSparseMemoryBind(obj->pBinds[i], "pBinds", 0);
-//           else
-//               print_VkSparseMemoryBind(obj->pBinds[i], "pBinds", 1);
-//         }
-//         PRINT_SPACE
-//         _OUT << "]" << std::endl;
-//    }
-//     else
-//     {
-//         PRINT_SPACE _OUT << "\"NULL\""<< ""<< std::endl;
-//     }
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-
 static void print_VkImageSubresource(VkImageSubresource obj, const std::string& s, bool commaNeeded) {
      PRINT_SPACE
      _OUT << "{" << std::endl;
@@ -10774,497 +10553,6 @@ static void print_VkImageSubresource(const VkImageSubresource * obj, const std::
      else
          _OUT << "}" << std::endl;
 }
-
-//static void print_VkSparseImageMemoryBind(VkSparseImageMemoryBind obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     PRINT_SPACE
-//     _OUT << "\"subresource\": " << std::endl;
-//     {
-//           print_VkImageSubresource(obj.subresource, "subresource", 1);
-//     }
-//
-//     PRINT_SPACE
-//     _OUT << "\"offset\": " << std::endl;
-//     {
-//           print_VkOffset3D(obj.offset, "offset", 1);
-//     }
-//
-//     PRINT_SPACE
-//     _OUT << "\"extent\": " << std::endl;
-//     {
-//           print_VkExtent3D(obj.extent, "extent", 1);
-//     }
-//
-//     /** Note: printing just an empty entry here **/
-//     PRINT_SPACE    _OUT << "\"" << "memory" << "\"" << " : " << "\"" << "\"," << std::endl;
-//
-//     print_VkDeviceSize(obj.memoryOffset, "memoryOffset", 1);
-//
-//     print_VkSparseMemoryBindFlags(obj.flags, "flags", 0);
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//static void print_VkSparseImageMemoryBind(const VkSparseImageMemoryBind * obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     PRINT_SPACE
-//     _OUT << "\"subresource\": " << std::endl;
-//     {
-//           print_VkImageSubresource(obj->subresource, "subresource", 1);
-//     }
-//
-//     PRINT_SPACE
-//     _OUT << "\"offset\": " << std::endl;
-//     {
-//           print_VkOffset3D(obj->offset, "offset", 1);
-//     }
-//
-//     PRINT_SPACE
-//     _OUT << "\"extent\": " << std::endl;
-//     {
-//           print_VkExtent3D(obj->extent, "extent", 1);
-//     }
-//
-//     /** Note: printing just an empty entry here **/
-//     PRINT_SPACE    _OUT << "\"" << "memory" << "\"" << " : " << "\"" << "\"," << std::endl;
-//
-//     print_VkDeviceSize(obj->memoryOffset, "memoryOffset", 1);
-//
-//     print_VkSparseMemoryBindFlags(obj->flags, "flags", 0);
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//
-//static void print_VkSparseImageMemoryBindInfo(VkSparseImageMemoryBindInfo obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     /** Note: printing just an empty entry here **/
-//     PRINT_SPACE    _OUT << "\"" << "image" << "\"" << " : " << "\"" << "\"," << std::endl;
-//
-//     print_uint32_t(obj.bindCount, "bindCount", 1);
-//
-//     PRINT_SPACE
-//     _OUT << "\"pBinds\": " << std::endl;
-//     if (obj.pBinds) {
-//         PRINT_SPACE
-//         _OUT << "[" << std::endl;
-//         for (unsigned int i = 0; i < obj.bindCount; i++) {
-//           if (i+1 == obj.bindCount)
-//               print_VkSparseImageMemoryBind(obj.pBinds[i], "pBinds", 0);
-//           else
-//               print_VkSparseImageMemoryBind(obj.pBinds[i], "pBinds", 1);
-//         }
-//         PRINT_SPACE
-//         _OUT << "]" << std::endl;
-//    }
-//     else
-//     {
-//         PRINT_SPACE _OUT << "\"NULL\""<< ""<< std::endl;
-//     }
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//static void print_VkSparseImageMemoryBindInfo(const VkSparseImageMemoryBindInfo * obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     /** Note: printing just an empty entry here **/
-//     PRINT_SPACE    _OUT << "\"" << "image" << "\"" << " : " << "\"" << "\"," << std::endl;
-//
-//     print_uint32_t(obj->bindCount, "bindCount", 1);
-//
-//     PRINT_SPACE
-//     _OUT << "\"pBinds\": " << std::endl;
-//     if (obj->pBinds) {
-//         PRINT_SPACE
-//         _OUT << "[" << std::endl;
-//         for (unsigned int i = 0; i < obj->bindCount; i++) {
-//           if (i+1 == obj->bindCount)
-//               print_VkSparseImageMemoryBind(obj->pBinds[i], "pBinds", 0);
-//           else
-//               print_VkSparseImageMemoryBind(obj->pBinds[i], "pBinds", 1);
-//         }
-//         PRINT_SPACE
-//         _OUT << "]" << std::endl;
-//    }
-//     else
-//     {
-//         PRINT_SPACE _OUT << "\"NULL\""<< ""<< std::endl;
-//     }
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//
-//static void print_VkBindSparseInfo(VkBindSparseInfo obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkStructureType(obj.sType, "sType", 1);
-//
-//      if (obj.pNext) {
-//         dumpPNextChain(obj.pNext);
-//      } else{
-//         PRINT_SPACE
-//         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     print_uint32_t(obj.waitSemaphoreCount, "waitSemaphoreCount", 1);
-//
-//     PRINT_SPACE
-//     _OUT << "\"pWaitSemaphores\":" << std::endl;
-//     PRINT_SPACE
-//     if (obj.pWaitSemaphores) {
-//       _OUT << "[" << std::endl;
-//       for (unsigned int i = 0; i < obj.waitSemaphoreCount; i++) {
-//           std:: stringstream tmp;
-//           tmp << "pWaitSemaphores" << "_" << i;
-//           bool isCommaNeeded = (i+1) != obj.waitSemaphoreCount;
-//           print_VkSemaphore(obj.pWaitSemaphores[i], tmp.str(), isCommaNeeded);
-//       }
-//       PRINT_SPACE
-//       _OUT << "]" << "," << std::endl;
-//     } else{
-//       _OUT << "\"NULL\"" << "," << std::endl;
-//     }
-//
-//     print_uint32_t(obj.bufferBindCount, "bufferBindCount", 1);
-//
-//     PRINT_SPACE
-//     _OUT << "\"pBufferBinds\": " << std::endl;
-//     if (obj.pBufferBinds) {
-//         PRINT_SPACE
-//         _OUT << "[" << std::endl;
-//         for (unsigned int i = 0; i < obj.bufferBindCount; i++) {
-//           if (i+1 == obj.bufferBindCount)
-//               print_VkSparseBufferMemoryBindInfo(obj.pBufferBinds[i], "pBufferBinds", 0);
-//           else
-//               print_VkSparseBufferMemoryBindInfo(obj.pBufferBinds[i], "pBufferBinds", 1);
-//         }
-//         PRINT_SPACE
-//         _OUT << "]," << std::endl;
-//    }
-//     else
-//     {
-//         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     print_uint32_t(obj.imageOpaqueBindCount, "imageOpaqueBindCount", 1);
-//
-//     PRINT_SPACE
-//     _OUT << "\"pImageOpaqueBinds\": " << std::endl;
-//     if (obj.pImageOpaqueBinds) {
-//         PRINT_SPACE
-//         _OUT << "[" << std::endl;
-//         for (unsigned int i = 0; i < obj.imageOpaqueBindCount; i++) {
-//           if (i+1 == obj.imageOpaqueBindCount)
-//               print_VkSparseImageOpaqueMemoryBindInfo(obj.pImageOpaqueBinds[i], "pImageOpaqueBinds", 0);
-//           else
-//               print_VkSparseImageOpaqueMemoryBindInfo(obj.pImageOpaqueBinds[i], "pImageOpaqueBinds", 1);
-//         }
-//         PRINT_SPACE
-//         _OUT << "]," << std::endl;
-//    }
-//     else
-//     {
-//         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     print_uint32_t(obj.imageBindCount, "imageBindCount", 1);
-//
-//     PRINT_SPACE
-//     _OUT << "\"pImageBinds\": " << std::endl;
-//     if (obj.pImageBinds) {
-//         PRINT_SPACE
-//         _OUT << "[" << std::endl;
-//         for (unsigned int i = 0; i < obj.imageBindCount; i++) {
-//           if (i+1 == obj.imageBindCount)
-//               print_VkSparseImageMemoryBindInfo(obj.pImageBinds[i], "pImageBinds", 0);
-//           else
-//               print_VkSparseImageMemoryBindInfo(obj.pImageBinds[i], "pImageBinds", 1);
-//         }
-//         PRINT_SPACE
-//         _OUT << "]," << std::endl;
-//    }
-//     else
-//     {
-//         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     print_uint32_t(obj.signalSemaphoreCount, "signalSemaphoreCount", 1);
-//
-//     PRINT_SPACE
-//     _OUT << "\"pSignalSemaphores\":" << std::endl;
-//     PRINT_SPACE
-//     if (obj.pSignalSemaphores) {
-//       _OUT << "[" << std::endl;
-//       for (unsigned int i = 0; i < obj.signalSemaphoreCount; i++) {
-//           std:: stringstream tmp;
-//           tmp << "pSignalSemaphores" << "_" << i;
-//           bool isCommaNeeded = (i+1) != obj.signalSemaphoreCount;
-//           print_VkSemaphore(obj.pSignalSemaphores[i], tmp.str(), isCommaNeeded);
-//       }
-//       PRINT_SPACE
-//       _OUT << "]" << "" << std::endl;
-//     } else{
-//       _OUT << "\"NULL\"" << "" << std::endl;
-//     }
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//static void print_VkBindSparseInfo(const VkBindSparseInfo * obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkStructureType(obj->sType, "sType", 1);
-//
-//      if (obj->pNext) {
-//         dumpPNextChain(obj->pNext);
-//      } else{
-//         PRINT_SPACE
-//         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     print_uint32_t(obj->waitSemaphoreCount, "waitSemaphoreCount", 1);
-//
-//     PRINT_SPACE
-//     _OUT << "\"pWaitSemaphores\":" << std::endl;
-//     PRINT_SPACE
-//     if (obj->pWaitSemaphores) {
-//       _OUT << "[" << std::endl;
-//       for (unsigned int i = 0; i < obj->waitSemaphoreCount; i++) {
-//           std:: stringstream tmp;
-//           tmp << "pWaitSemaphores" << "_" << i;
-//           bool isCommaNeeded = (i+1) != obj->waitSemaphoreCount;
-//           print_VkSemaphore(obj->pWaitSemaphores[i], tmp.str(), isCommaNeeded);
-//       }
-//       PRINT_SPACE
-//       _OUT << "]" << "," << std::endl;
-//     } else{
-//       _OUT << "\"NULL\"" << "," << std::endl;
-//     }
-//
-//     print_uint32_t(obj->bufferBindCount, "bufferBindCount", 1);
-//
-//     PRINT_SPACE
-//     _OUT << "\"pBufferBinds\": " << std::endl;
-//     if (obj->pBufferBinds) {
-//         PRINT_SPACE
-//         _OUT << "[" << std::endl;
-//         for (unsigned int i = 0; i < obj->bufferBindCount; i++) {
-//           if (i+1 == obj->bufferBindCount)
-//               print_VkSparseBufferMemoryBindInfo(obj->pBufferBinds[i], "pBufferBinds", 0);
-//           else
-//               print_VkSparseBufferMemoryBindInfo(obj->pBufferBinds[i], "pBufferBinds", 1);
-//         }
-//         PRINT_SPACE
-//         _OUT << "]," << std::endl;
-//    }
-//     else
-//     {
-//         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     print_uint32_t(obj->imageOpaqueBindCount, "imageOpaqueBindCount", 1);
-//
-//     PRINT_SPACE
-//     _OUT << "\"pImageOpaqueBinds\": " << std::endl;
-//     if (obj->pImageOpaqueBinds) {
-//         PRINT_SPACE
-//         _OUT << "[" << std::endl;
-//         for (unsigned int i = 0; i < obj->imageOpaqueBindCount; i++) {
-//           if (i+1 == obj->imageOpaqueBindCount)
-//               print_VkSparseImageOpaqueMemoryBindInfo(obj->pImageOpaqueBinds[i], "pImageOpaqueBinds", 0);
-//           else
-//               print_VkSparseImageOpaqueMemoryBindInfo(obj->pImageOpaqueBinds[i], "pImageOpaqueBinds", 1);
-//         }
-//         PRINT_SPACE
-//         _OUT << "]," << std::endl;
-//    }
-//     else
-//     {
-//         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     print_uint32_t(obj->imageBindCount, "imageBindCount", 1);
-//
-//     PRINT_SPACE
-//     _OUT << "\"pImageBinds\": " << std::endl;
-//     if (obj->pImageBinds) {
-//         PRINT_SPACE
-//         _OUT << "[" << std::endl;
-//         for (unsigned int i = 0; i < obj->imageBindCount; i++) {
-//           if (i+1 == obj->imageBindCount)
-//               print_VkSparseImageMemoryBindInfo(obj->pImageBinds[i], "pImageBinds", 0);
-//           else
-//               print_VkSparseImageMemoryBindInfo(obj->pImageBinds[i], "pImageBinds", 1);
-//         }
-//         PRINT_SPACE
-//         _OUT << "]," << std::endl;
-//    }
-//     else
-//     {
-//         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     print_uint32_t(obj->signalSemaphoreCount, "signalSemaphoreCount", 1);
-//
-//     PRINT_SPACE
-//     _OUT << "\"pSignalSemaphores\":" << std::endl;
-//     PRINT_SPACE
-//     if (obj->pSignalSemaphores) {
-//       _OUT << "[" << std::endl;
-//       for (unsigned int i = 0; i < obj->signalSemaphoreCount; i++) {
-//           std:: stringstream tmp;
-//           tmp << "pSignalSemaphores" << "_" << i;
-//           bool isCommaNeeded = (i+1) != obj->signalSemaphoreCount;
-//           print_VkSemaphore(obj->pSignalSemaphores[i], tmp.str(), isCommaNeeded);
-//       }
-//       PRINT_SPACE
-//       _OUT << "]" << "" << std::endl;
-//     } else{
-//       _OUT << "\"NULL\"" << "" << std::endl;
-//     }
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-
-//static void print_VkSparseImageFormatProperties(VkSparseImageFormatProperties obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkImageAspectFlags(obj.aspectMask, "aspectMask", 1);
-//
-//     PRINT_SPACE
-//     _OUT << "\"imageGranularity\": " << std::endl;
-//     {
-//           print_VkExtent3D(obj.imageGranularity, "imageGranularity", 1);
-//     }
-//
-//     print_VkSparseImageFormatFlags(obj.flags, "flags", 0);
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//static void print_VkSparseImageFormatProperties(const VkSparseImageFormatProperties * obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkImageAspectFlags(obj->aspectMask, "aspectMask", 1);
-//
-//     PRINT_SPACE
-//     _OUT << "\"imageGranularity\": " << std::endl;
-//     {
-//           print_VkExtent3D(obj->imageGranularity, "imageGranularity", 1);
-//     }
-//
-//     print_VkSparseImageFormatFlags(obj->flags, "flags", 0);
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//
-//static void print_VkSparseImageMemoryRequirements(VkSparseImageMemoryRequirements obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     PRINT_SPACE
-//     _OUT << "\"formatProperties\": " << std::endl;
-//     {
-//           print_VkSparseImageFormatProperties(obj.formatProperties, "formatProperties", 1);
-//     }
-//
-//     print_uint32_t(obj.imageMipTailFirstLod, "imageMipTailFirstLod", 1);
-//
-//     print_VkDeviceSize(obj.imageMipTailSize, "imageMipTailSize", 1);
-//
-//     print_VkDeviceSize(obj.imageMipTailOffset, "imageMipTailOffset", 1);
-//
-//     print_VkDeviceSize(obj.imageMipTailStride, "imageMipTailStride", 0);
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//static void print_VkSparseImageMemoryRequirements(const VkSparseImageMemoryRequirements * obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     PRINT_SPACE
-//     _OUT << "\"formatProperties\": " << std::endl;
-//     {
-//           print_VkSparseImageFormatProperties(obj->formatProperties, "formatProperties", 1);
-//     }
-//
-//     print_uint32_t(obj->imageMipTailFirstLod, "imageMipTailFirstLod", 1);
-//
-//     print_VkDeviceSize(obj->imageMipTailSize, "imageMipTailSize", 1);
-//
-//     print_VkDeviceSize(obj->imageMipTailOffset, "imageMipTailOffset", 1);
-//
-//     print_VkDeviceSize(obj->imageMipTailStride, "imageMipTailStride", 0);
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
 
 static void print_VkFenceCreateInfo(VkFenceCreateInfo obj, const std::string& s, bool commaNeeded) {
      PRINT_SPACE
@@ -14322,7 +13610,7 @@ static void print_VkDescriptorSetLayoutBinding(VkDescriptorSetLayoutBinding obj,
 //		 PRINT_SPACE
 //			 _OUT << "]" << "," << std::endl;
 //	 }
-//	 else {
+//	 else{
 //		 _OUT << "\"NULL\"" << "," << std::endl;
 //	 }
 
@@ -16376,1029 +15664,6 @@ static void print_VkRenderPassBeginInfo(const VkRenderPassBeginInfo * obj, const
          _OUT << "}" << std::endl;
 }
 
-static std::map<int, std::string> VkFaultLevel_map = {
-    std::make_pair(0, "VK_FAULT_LEVEL_UNASSIGNED"),
-    std::make_pair(1, "VK_FAULT_LEVEL_CRITICAL"),
-    std::make_pair(2, "VK_FAULT_LEVEL_RECOVERABLE"),
-    std::make_pair(3, "VK_FAULT_LEVEL_WARNING"),
-};
-static void print_VkFaultLevel(VkFaultLevel obj, const std::string& str, bool commaNeeded) {
-     PRINT_SPACE
-     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-     if (commaNeeded)
-         _OUT << "\"" <<  VkFaultLevel_map[obj] << "\"," << std::endl;
-     else
-         _OUT << "\"" << VkFaultLevel_map[obj] << "\"" << std::endl;
-}
-static void print_VkFaultLevel(const VkFaultLevel * obj, const std::string& str, bool commaNeeded) {
-     PRINT_SPACE
-     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-     if (commaNeeded)
-         _OUT << "\"" <<  VkFaultLevel_map[*obj] << "\"," << std::endl;
-     else
-         _OUT << "\"" << VkFaultLevel_map[*obj] << "\"" << std::endl;
-}
-
-static std::map<int, std::string> VkFaultType_map = {
-    std::make_pair(0, "VK_FAULT_TYPE_INVALID"),
-    std::make_pair(1, "VK_FAULT_TYPE_UNASSIGNED"),
-    std::make_pair(2, "VK_FAULT_TYPE_IMPLEMENTATION"),
-    std::make_pair(3, "VK_FAULT_TYPE_SYSTEM"),
-    std::make_pair(4, "VK_FAULT_TYPE_PHYSICAL_DEVICE"),
-    std::make_pair(5, "VK_FAULT_TYPE_COMMAND_BUFFER_FULL"),
-    std::make_pair(6, "VK_FAULT_TYPE_INVALID_API_USAGE"),
-};
-static void print_VkFaultType(VkFaultType obj, const std::string& str, bool commaNeeded) {
-     PRINT_SPACE
-     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-     if (commaNeeded)
-         _OUT << "\"" <<  VkFaultType_map[obj] << "\"," << std::endl;
-     else
-         _OUT << "\"" << VkFaultType_map[obj] << "\"" << std::endl;
-}
-static void print_VkFaultType(const VkFaultType * obj, const std::string& str, bool commaNeeded) {
-     PRINT_SPACE
-     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-     if (commaNeeded)
-         _OUT << "\"" <<  VkFaultType_map[*obj] << "\"," << std::endl;
-     else
-         _OUT << "\"" << VkFaultType_map[*obj] << "\"" << std::endl;
-}
-
-static std::map<int, std::string> VkFaultQueryBehavior_map = {
-    std::make_pair(0, "VK_FAULT_QUERY_BEHAVIOR_GET_AND_CLEAR_ALL_FAULTS"),
-};
-static void print_VkFaultQueryBehavior(VkFaultQueryBehavior obj, const std::string& str, bool commaNeeded) {
-     PRINT_SPACE
-     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-     if (commaNeeded)
-         _OUT << "\"" <<  VkFaultQueryBehavior_map[obj] << "\"," << std::endl;
-     else
-         _OUT << "\"" << VkFaultQueryBehavior_map[obj] << "\"" << std::endl;
-}
-static void print_VkFaultQueryBehavior(const VkFaultQueryBehavior * obj, const std::string& str, bool commaNeeded) {
-     PRINT_SPACE
-     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-     if (commaNeeded)
-         _OUT << "\"" <<  VkFaultQueryBehavior_map[*obj] << "\"," << std::endl;
-     else
-         _OUT << "\"" << VkFaultQueryBehavior_map[*obj] << "\"" << std::endl;
-}
-
-static std::map<int, std::string> VkPipelineMatchControl_map = {
-    std::make_pair(0, "VK_PIPELINE_MATCH_CONTROL_APPLICATION_UUID_EXACT_MATCH"),
-};
-static void print_VkPipelineMatchControl(VkPipelineMatchControl obj, const std::string& str, bool commaNeeded) {
-     PRINT_SPACE
-     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-     if (commaNeeded)
-         _OUT << "\"" <<  VkPipelineMatchControl_map[obj] << "\"," << std::endl;
-     else
-         _OUT << "\"" << VkPipelineMatchControl_map[obj] << "\"" << std::endl;
-}
-static void print_VkPipelineMatchControl(const VkPipelineMatchControl * obj, const std::string& str, bool commaNeeded) {
-     PRINT_SPACE
-     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-     if (commaNeeded)
-         _OUT << "\"" <<  VkPipelineMatchControl_map[*obj] << "\"," << std::endl;
-     else
-         _OUT << "\"" << VkPipelineMatchControl_map[*obj] << "\"" << std::endl;
-}
-
-static void print_VkPhysicalDeviceVulkanSC10Features(VkPhysicalDeviceVulkanSC10Features obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj.sType, "sType", 1);
-
-      if (obj.pNext) {
-         dumpPNextChain(obj.pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_VkBool32(obj.pipelineIdentifier, "pipelineIdentifier", 1);
-
-     print_VkBool32(obj.shaderAtomicInstructions, "shaderAtomicInstructions", 0);
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-static void print_VkPhysicalDeviceVulkanSC10Features(const VkPhysicalDeviceVulkanSC10Features * obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj->sType, "sType", 1);
-
-      if (obj->pNext) {
-         dumpPNextChain(obj->pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_VkBool32(obj->pipelineIdentifier, "pipelineIdentifier", 1);
-
-     print_VkBool32(obj->shaderAtomicInstructions, "shaderAtomicInstructions", 0);
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-
-static void print_VkPhysicalDeviceVulkanSC10Properties(VkPhysicalDeviceVulkanSC10Properties obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj.sType, "sType", 1);
-
-      if (obj.pNext) {
-         dumpPNextChain(obj.pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_VkBool32(obj.deviceNoDynamicHostAllocations, "deviceNoDynamicHostAllocations", 1);
-
-     print_VkBool32(obj.deviceDestroyFreesMemory, "deviceDestroyFreesMemory", 1);
-
-     print_VkBool32(obj.commandPoolMultipleCommandBuffersRecording, "commandPoolMultipleCommandBuffersRecording", 1);
-
-     print_VkBool32(obj.commandPoolResetCommandBuffer, "commandPoolResetCommandBuffer", 1);
-
-     print_VkBool32(obj.commandBufferSimultaneousUse, "commandBufferSimultaneousUse", 1);
-
-     print_VkBool32(obj.secondaryCommandBufferNullFramebuffer, "secondaryCommandBufferNullFramebuffer", 1);
-
-     print_VkBool32(obj.descriptorPoolFreeDescriptorSets, "descriptorPoolFreeDescriptorSets", 1);
-
-     print_VkBool32(obj.recyclePipelineMemory, "recyclePipelineMemory", 1);
-
-     print_uint32_t(obj.maxRenderPassSubpasses, "maxRenderPassSubpasses", 1);
-
-     print_uint32_t(obj.maxRenderPassDependencies, "maxRenderPassDependencies", 1);
-
-     print_uint32_t(obj.maxSubpassInputAttachments, "maxSubpassInputAttachments", 1);
-
-     print_uint32_t(obj.maxSubpassPreserveAttachments, "maxSubpassPreserveAttachments", 1);
-
-     print_uint32_t(obj.maxFramebufferAttachments, "maxFramebufferAttachments", 1);
-
-     print_uint32_t(obj.maxDescriptorSetLayoutBindings, "maxDescriptorSetLayoutBindings", 1);
-
-     print_uint32_t(obj.maxQueryFaultCount, "maxQueryFaultCount", 1);
-
-     print_uint32_t(obj.maxCallbackFaultCount, "maxCallbackFaultCount", 0);
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-static void print_VkPhysicalDeviceVulkanSC10Properties(const VkPhysicalDeviceVulkanSC10Properties * obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj->sType, "sType", 1);
-
-      if (obj->pNext) {
-         dumpPNextChain(obj->pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_VkBool32(obj->deviceNoDynamicHostAllocations, "deviceNoDynamicHostAllocations", 1);
-
-     print_VkBool32(obj->deviceDestroyFreesMemory, "deviceDestroyFreesMemory", 1);
-
-     print_VkBool32(obj->commandPoolMultipleCommandBuffersRecording, "commandPoolMultipleCommandBuffersRecording", 1);
-
-     print_VkBool32(obj->commandPoolResetCommandBuffer, "commandPoolResetCommandBuffer", 1);
-
-     print_VkBool32(obj->commandBufferSimultaneousUse, "commandBufferSimultaneousUse", 1);
-
-     print_VkBool32(obj->secondaryCommandBufferNullFramebuffer, "secondaryCommandBufferNullFramebuffer", 1);
-
-     print_VkBool32(obj->descriptorPoolFreeDescriptorSets, "descriptorPoolFreeDescriptorSets", 1);
-
-     print_VkBool32(obj->recyclePipelineMemory, "recyclePipelineMemory", 1);
-
-	 print_uint32_t(obj->maxRenderPassSubpasses, "maxRenderPassSubpasses", 1);
-
-	 print_uint32_t(obj->maxRenderPassDependencies, "maxRenderPassDependencies", 1);
-
-	 print_uint32_t(obj->maxSubpassInputAttachments, "maxSubpassInputAttachments", 1);
-
-	 print_uint32_t(obj->maxSubpassPreserveAttachments, "maxSubpassPreserveAttachments", 1);
-
-	 print_uint32_t(obj->maxFramebufferAttachments, "maxFramebufferAttachments", 1);
-
-	 print_uint32_t(obj->maxDescriptorSetLayoutBindings, "maxDescriptorSetLayoutBindings", 1);
-
-     print_uint32_t(obj->maxQueryFaultCount, "maxQueryFaultCount", 1);
-
-     print_uint32_t(obj->maxCallbackFaultCount, "maxCallbackFaultCount", 0);
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-
-static void print_VkPipelinePoolSize(VkPipelinePoolSize obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj.sType, "sType", 1);
-
-      if (obj.pNext) {
-         dumpPNextChain(obj.pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_VkDeviceSize(obj.poolEntrySize, "poolEntrySize", 1);
-
-     print_uint32_t(obj.poolEntryCount, "poolEntryCount", 0);
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-static void print_VkPipelinePoolSize(const VkPipelinePoolSize * obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj->sType, "sType", 1);
-
-      if (obj->pNext) {
-         dumpPNextChain(obj->pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_VkDeviceSize(obj->poolEntrySize, "poolEntrySize", 1);
-
-     print_uint32_t(obj->poolEntryCount, "poolEntryCount", 0);
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-
-static void print_VkDeviceObjectReservationCreateInfo(VkDeviceObjectReservationCreateInfo obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj.sType, "sType", 1);
-
-      if (obj.pNext) {
-         dumpPNextChain(obj.pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_uint32_t(obj.pipelineCacheCreateInfoCount, "pipelineCacheCreateInfoCount", 1);
-
-     PRINT_SPACE
-     _OUT << "\"pPipelineCacheCreateInfos\": " << std::endl;
-     if (obj.pPipelineCacheCreateInfos) {
-         PRINT_SPACE
-         _OUT << "[" << std::endl;
-         for (unsigned int i = 0; i < obj.pipelineCacheCreateInfoCount; i++) {
-           if (i+1 == obj.pipelineCacheCreateInfoCount)
-               print_VkPipelineCacheCreateInfo(obj.pPipelineCacheCreateInfos[i], "pPipelineCacheCreateInfos", 0);
-           else
-               print_VkPipelineCacheCreateInfo(obj.pPipelineCacheCreateInfos[i], "pPipelineCacheCreateInfos", 1);
-         }
-         PRINT_SPACE
-         _OUT << "]," << std::endl;
-    }
-     else
-     {
-         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_uint32_t(obj.pipelinePoolSizeCount, "pipelinePoolSizeCount", 1);
-
-     PRINT_SPACE
-     _OUT << "\"pPipelinePoolSizes\": " << std::endl;
-     if (obj.pPipelinePoolSizes) {
-         PRINT_SPACE
-         _OUT << "[" << std::endl;
-         for (unsigned int i = 0; i < obj.pipelinePoolSizeCount; i++) {
-           if (i+1 == obj.pipelinePoolSizeCount)
-               print_VkPipelinePoolSize(obj.pPipelinePoolSizes[i], "pPipelinePoolSizes", 0);
-           else
-               print_VkPipelinePoolSize(obj.pPipelinePoolSizes[i], "pPipelinePoolSizes", 1);
-         }
-         PRINT_SPACE
-         _OUT << "]," << std::endl;
-    }
-     else
-     {
-         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_uint32_t(obj.semaphoreRequestCount, "semaphoreRequestCount", 1);
-
-     print_uint32_t(obj.commandBufferRequestCount, "commandBufferRequestCount", 1);
-
-     print_uint32_t(obj.fenceRequestCount, "fenceRequestCount", 1);
-
-     print_uint32_t(obj.deviceMemoryRequestCount, "deviceMemoryRequestCount", 1);
-
-     print_uint32_t(obj.bufferRequestCount, "bufferRequestCount", 1);
-
-     print_uint32_t(obj.imageRequestCount, "imageRequestCount", 1);
-
-     print_uint32_t(obj.eventRequestCount, "eventRequestCount", 1);
-
-     print_uint32_t(obj.queryPoolRequestCount, "queryPoolRequestCount", 1);
-
-     print_uint32_t(obj.bufferViewRequestCount, "bufferViewRequestCount", 1);
-
-     print_uint32_t(obj.imageViewRequestCount, "imageViewRequestCount", 1);
-
-     print_uint32_t(obj.layeredImageViewRequestCount, "layeredImageViewRequestCount", 1);
-
-     print_uint32_t(obj.pipelineLayoutRequestCount, "pipelineLayoutRequestCount", 1);
-
-     print_uint32_t(obj.renderPassRequestCount, "renderPassRequestCount", 1);
-
-     print_uint32_t(obj.graphicsPipelineRequestCount, "graphicsPipelineRequestCount", 1);
-
-     print_uint32_t(obj.computePipelineRequestCount, "computePipelineRequestCount", 1);
-
-     print_uint32_t(obj.descriptorSetLayoutRequestCount, "descriptorSetLayoutRequestCount", 1);
-
-     print_uint32_t(obj.samplerRequestCount, "samplerRequestCount", 1);
-
-     print_uint32_t(obj.descriptorPoolRequestCount, "descriptorPoolRequestCount", 1);
-
-     print_uint32_t(obj.descriptorSetRequestCount, "descriptorSetRequestCount", 1);
-
-     print_uint32_t(obj.framebufferRequestCount, "framebufferRequestCount", 1);
-
-     print_uint32_t(obj.commandPoolRequestCount, "commandPoolRequestCount", 1);
-
-     print_uint32_t(obj.samplerYcbcrConversionRequestCount, "samplerYcbcrConversionRequestCount", 1);
-
-     print_uint32_t(obj.surfaceRequestCount, "surfaceRequestCount", 1);
-
-     print_uint32_t(obj.swapchainRequestCount, "swapchainRequestCount", 1);
-
-     print_uint32_t(obj.displayModeRequestCount, "displayModeRequestCount", 1);
-
-     print_uint32_t(obj.subpassDescriptionRequestCount, "subpassDescriptionRequestCount", 1);
-
-     print_uint32_t(obj.attachmentDescriptionRequestCount, "attachmentDescriptionRequestCount", 1);
-
-     print_uint32_t(obj.descriptorSetLayoutBindingRequestCount, "descriptorSetLayoutBindingRequestCount", 1);
-
-     print_uint32_t(obj.descriptorSetLayoutBindingLimit, "descriptorSetLayoutBindingLimit", 1);
-
-     print_uint32_t(obj.maxImageViewMipLevels, "maxImageViewMipLevels", 1);
-
-     print_uint32_t(obj.maxImageViewArrayLayers, "maxImageViewArrayLayers", 1);
-
-     print_uint32_t(obj.maxLayeredImageViewMipLevels, "maxLayeredImageViewMipLevels", 1);
-
-     print_uint32_t(obj.maxOcclusionQueriesPerPool, "maxOcclusionQueriesPerPool", 1);
-
-     print_uint32_t(obj.maxPipelineStatisticsQueriesPerPool, "maxPipelineStatisticsQueriesPerPool", 1);
-
-     print_uint32_t(obj.maxTimestampQueriesPerPool, "maxTimestampQueriesPerPool", 1);
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-static void print_VkDeviceObjectReservationCreateInfo(const VkDeviceObjectReservationCreateInfo * obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj->sType, "sType", 1);
-
-      if (obj->pNext) {
-         dumpPNextChain(obj->pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_uint32_t(obj->pipelineCacheCreateInfoCount, "pipelineCacheCreateInfoCount", 1);
-
-     PRINT_SPACE
-     _OUT << "\"pPipelineCacheCreateInfos\": " << std::endl;
-     if (obj->pPipelineCacheCreateInfos) {
-         PRINT_SPACE
-         _OUT << "[" << std::endl;
-         for (unsigned int i = 0; i < obj->pipelineCacheCreateInfoCount; i++) {
-           if (i+1 == obj->pipelineCacheCreateInfoCount)
-               print_VkPipelineCacheCreateInfo(obj->pPipelineCacheCreateInfos[i], "pPipelineCacheCreateInfos", 0);
-           else
-               print_VkPipelineCacheCreateInfo(obj->pPipelineCacheCreateInfos[i], "pPipelineCacheCreateInfos", 1);
-         }
-         PRINT_SPACE
-         _OUT << "]," << std::endl;
-    }
-     else
-     {
-         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_uint32_t(obj->pipelinePoolSizeCount, "pipelinePoolSizeCount", 1);
-
-     PRINT_SPACE
-     _OUT << "\"pPipelinePoolSizes\": " << std::endl;
-     if (obj->pPipelinePoolSizes) {
-         PRINT_SPACE
-         _OUT << "[" << std::endl;
-         for (unsigned int i = 0; i < obj->pipelinePoolSizeCount; i++) {
-           if (i+1 == obj->pipelinePoolSizeCount)
-               print_VkPipelinePoolSize(obj->pPipelinePoolSizes[i], "pPipelinePoolSizes", 0);
-           else
-               print_VkPipelinePoolSize(obj->pPipelinePoolSizes[i], "pPipelinePoolSizes", 1);
-         }
-         PRINT_SPACE
-         _OUT << "]," << std::endl;
-    }
-     else
-     {
-         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_uint32_t(obj->semaphoreRequestCount, "semaphoreRequestCount", 1);
-
-     print_uint32_t(obj->commandBufferRequestCount, "commandBufferRequestCount", 1);
-
-     print_uint32_t(obj->fenceRequestCount, "fenceRequestCount", 1);
-
-     print_uint32_t(obj->deviceMemoryRequestCount, "deviceMemoryRequestCount", 1);
-
-     print_uint32_t(obj->bufferRequestCount, "bufferRequestCount", 1);
-
-     print_uint32_t(obj->imageRequestCount, "imageRequestCount", 1);
-
-     print_uint32_t(obj->eventRequestCount, "eventRequestCount", 1);
-
-     print_uint32_t(obj->queryPoolRequestCount, "queryPoolRequestCount", 1);
-
-     print_uint32_t(obj->bufferViewRequestCount, "bufferViewRequestCount", 1);
-
-     print_uint32_t(obj->imageViewRequestCount, "imageViewRequestCount", 1);
-
-     print_uint32_t(obj->layeredImageViewRequestCount, "layeredImageViewRequestCount", 1);
-
-     print_uint32_t(obj->pipelineLayoutRequestCount, "pipelineLayoutRequestCount", 1);
-
-     print_uint32_t(obj->renderPassRequestCount, "renderPassRequestCount", 1);
-
-     print_uint32_t(obj->graphicsPipelineRequestCount, "graphicsPipelineRequestCount", 1);
-
-     print_uint32_t(obj->computePipelineRequestCount, "computePipelineRequestCount", 1);
-
-     print_uint32_t(obj->descriptorSetLayoutRequestCount, "descriptorSetLayoutRequestCount", 1);
-
-     print_uint32_t(obj->samplerRequestCount, "samplerRequestCount", 1);
-
-     print_uint32_t(obj->descriptorPoolRequestCount, "descriptorPoolRequestCount", 1);
-
-     print_uint32_t(obj->descriptorSetRequestCount, "descriptorSetRequestCount", 1);
-
-     print_uint32_t(obj->framebufferRequestCount, "framebufferRequestCount", 1);
-
-     print_uint32_t(obj->commandPoolRequestCount, "commandPoolRequestCount", 1);
-
-     print_uint32_t(obj->samplerYcbcrConversionRequestCount, "samplerYcbcrConversionRequestCount", 1);
-
-     print_uint32_t(obj->surfaceRequestCount, "surfaceRequestCount", 1);
-
-     print_uint32_t(obj->swapchainRequestCount, "swapchainRequestCount", 1);
-
-     print_uint32_t(obj->displayModeRequestCount, "displayModeRequestCount", 1);
-
-     print_uint32_t(obj->subpassDescriptionRequestCount, "subpassDescriptionRequestCount", 1);
-
-     print_uint32_t(obj->attachmentDescriptionRequestCount, "attachmentDescriptionRequestCount", 1);
-
-     print_uint32_t(obj->descriptorSetLayoutBindingRequestCount, "descriptorSetLayoutBindingRequestCount", 1);
-
-     print_uint32_t(obj->descriptorSetLayoutBindingLimit, "descriptorSetLayoutBindingLimit", 1);
-
-     print_uint32_t(obj->maxImageViewMipLevels, "maxImageViewMipLevels", 1);
-
-     print_uint32_t(obj->maxImageViewArrayLayers, "maxImageViewArrayLayers", 1);
-
-     print_uint32_t(obj->maxLayeredImageViewMipLevels, "maxLayeredImageViewMipLevels", 1);
-
-     print_uint32_t(obj->maxOcclusionQueriesPerPool, "maxOcclusionQueriesPerPool", 1);
-
-     print_uint32_t(obj->maxPipelineStatisticsQueriesPerPool, "maxPipelineStatisticsQueriesPerPool", 1);
-
-     print_uint32_t(obj->maxTimestampQueriesPerPool, "maxTimestampQueriesPerPool", 1);
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-
-static void print_VkCommandPoolMemoryReservationCreateInfo(VkCommandPoolMemoryReservationCreateInfo obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj.sType, "sType", 1);
-
-      if (obj.pNext) {
-         dumpPNextChain(obj.pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_VkDeviceSize(obj.commandPoolReservedSize, "commandPoolReservedSize", 1);
-
-     print_uint32_t(obj.commandPoolMaxCommandBuffers, "commandPoolMaxCommandBuffers", 0);
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-static void print_VkCommandPoolMemoryReservationCreateInfo(const VkCommandPoolMemoryReservationCreateInfo * obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj->sType, "sType", 1);
-
-      if (obj->pNext) {
-         dumpPNextChain(obj->pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_VkDeviceSize(obj->commandPoolReservedSize, "commandPoolReservedSize", 1);
-
-     print_uint32_t(obj->commandPoolMaxCommandBuffers, "commandPoolMaxCommandBuffers", 0);
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-
-static void print_VkCommandPoolMemoryConsumption(VkCommandPoolMemoryConsumption obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj.sType, "sType", 1);
-
-      if (obj.pNext) {
-         dumpPNextChain(obj.pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_VkDeviceSize(obj.commandPoolAllocated, "commandPoolAllocated", 1);
-
-     print_VkDeviceSize(obj.commandPoolReservedSize, "commandPoolReservedSize", 1);
-
-     print_VkDeviceSize(obj.commandBufferAllocated, "commandBufferAllocated", 0);
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-static void print_VkCommandPoolMemoryConsumption(const VkCommandPoolMemoryConsumption * obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj->sType, "sType", 1);
-
-      if (obj->pNext) {
-         dumpPNextChain(obj->pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_VkDeviceSize(obj->commandPoolAllocated, "commandPoolAllocated", 1);
-
-     print_VkDeviceSize(obj->commandPoolReservedSize, "commandPoolReservedSize", 1);
-
-     print_VkDeviceSize(obj->commandBufferAllocated, "commandBufferAllocated", 0);
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-
-static void print_VkPipelinePoolEntrySizeCreateInfo(VkPipelinePoolEntrySizeCreateInfo obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj.sType, "sType", 1);
-
-      if (obj.pNext) {
-         dumpPNextChain(obj.pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_VkDeviceSize(obj.poolEntrySize, "poolEntrySize", 0);
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-static void print_VkPipelinePoolEntrySizeCreateInfo(const VkPipelinePoolEntrySizeCreateInfo * obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj->sType, "sType", 1);
-
-      if (obj->pNext) {
-         dumpPNextChain(obj->pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_VkDeviceSize(obj->poolEntrySize, "poolEntrySize", 0);
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-
-static void print_VkFaultData(VkFaultData obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj.sType, "sType", 1);
-
-      if (obj.pNext) {
-         dumpPNextChain(obj.pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_VkFaultLevel(obj.faultLevel, "faultLevel", 1);
-
-     print_VkFaultType(obj.faultType, "faultType", 0);
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-static void print_VkFaultData(const VkFaultData * obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj->sType, "sType", 1);
-
-      if (obj->pNext) {
-         dumpPNextChain(obj->pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     print_VkFaultLevel(obj->faultLevel, "faultLevel", 1);
-
-     print_VkFaultType(obj->faultType, "faultType", 0);
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-
-static void print_VkFaultCallbackInfo(VkFaultCallbackInfo obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj.sType, "sType", 1);
-
-      if (obj.pNext) {
-         dumpPNextChain(obj.pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     PRINT_SPACE
-     _OUT << "\"pFaults\": " << std::endl;
-     if (obj.pFaults) {
-         PRINT_SPACE
-         _OUT << "[" << std::endl;
-         for (unsigned int i = 0; i < 1; i++) {
-               print_VkFaultData(obj.pFaults[i], "pFaults", 0);
-         }
-         PRINT_SPACE
-         _OUT << "]," << std::endl;
-    }
-     else
-     {
-         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
-     }
-
-     /** Note: Ignoring function pointer (PFN_vkFaultCallbackFunction). **/
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-static void print_VkFaultCallbackInfo(const VkFaultCallbackInfo * obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj->sType, "sType", 1);
-
-      if (obj->pNext) {
-         dumpPNextChain(obj->pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     PRINT_SPACE
-     _OUT << "\"pFaults\": " << std::endl;
-     if (obj->pFaults) {
-         PRINT_SPACE
-         _OUT << "[" << std::endl;
-         for (unsigned int i = 0; i < 1; i++) {
-               print_VkFaultData(obj->pFaults[i], "pFaults", 0);
-         }
-         PRINT_SPACE
-         _OUT << "]," << std::endl;
-    }
-     else
-     {
-         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
-     }
-
-     /** Note: Ignoring function pointer (PFN_vkFaultCallbackFunction). **/
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-
-//static void print_VkPhysicalDeviceFaultHandlingProperties(VkPhysicalDeviceFaultHandlingProperties obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkStructureType(obj.sType, "sType", 1);
-//
-//      if (obj.pNext) {
-//         dumpPNextChain(obj.pNext);
-//      } else{
-//         PRINT_SPACE
-//         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     print_uint32_t(obj.maxQueryFaultCount, "maxQueryFaultCount", 1);
-//
-//     print_uint32_t(obj.maxCallbackFaultCount, "maxCallbackFaultCount", 0);
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//static void print_VkPhysicalDeviceFaultHandlingProperties(const VkPhysicalDeviceFaultHandlingProperties * obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkStructureType(obj->sType, "sType", 1);
-//
-//      if (obj->pNext) {
-//         dumpPNextChain(obj->pNext);
-//      } else{
-//         PRINT_SPACE
-//         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     print_uint32_t(obj->maxQueryFaultCount, "maxQueryFaultCount", 1);
-//
-//     print_uint32_t(obj->maxCallbackFaultCount, "maxCallbackFaultCount", 0);
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-
-//static void print_VkPhysicalDevicePipelineIdentifierFeatures(VkPhysicalDevicePipelineIdentifierFeatures obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkStructureType(obj.sType, "sType", 1);
-//
-//      if (obj.pNext) {
-//         dumpPNextChain(obj.pNext);
-//      } else{
-//         PRINT_SPACE
-//         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     print_VkBool32(obj.pipelineIdentifier, "pipelineIdentifier", 0);
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//static void print_VkPhysicalDevicePipelineIdentifierFeatures(const VkPhysicalDevicePipelineIdentifierFeatures * obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkStructureType(obj->sType, "sType", 1);
-//
-//      if (obj->pNext) {
-//         dumpPNextChain(obj->pNext);
-//      } else{
-//         PRINT_SPACE
-//         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     print_VkBool32(obj->pipelineIdentifier, "pipelineIdentifier", 0);
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-
-static void print_VkPipelineIdentifierInfo(VkPipelineIdentifierInfo obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj.sType, "sType", 1);
-
-      if (obj.pNext) {
-         dumpPNextChain(obj.pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     PRINT_SPACE
-     _OUT << "\"pipelineIdentifier\":" << std::endl;
-     PRINT_SPACE
-     if (obj.pipelineIdentifier) {
-       _OUT << "[" << std::endl;
-       for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
-           bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
-		   print_uint32_t((deUint32)obj.pipelineIdentifier[i], "", isCommaNeeded);
-       }
-       PRINT_SPACE
-       _OUT << "]" << "," << std::endl;
-     } else{
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
-
-     print_VkPipelineMatchControl(obj.matchControl, "matchControl", 0);
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-static void print_VkPipelineIdentifierInfo(const VkPipelineIdentifierInfo * obj, const std::string& s, bool commaNeeded) {
-     PRINT_SPACE
-     _OUT << "{" << std::endl;
-     INDENT(4);
-
-     print_VkStructureType(obj->sType, "sType", 1);
-
-      if (obj->pNext) {
-         dumpPNextChain(obj->pNext);
-      } else{
-         PRINT_SPACE
-         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-     }
-
-     PRINT_SPACE
-     _OUT << "\"pipelineIdentifier\":" << std::endl;
-     PRINT_SPACE
-     if (obj->pipelineIdentifier) {
-       _OUT << "[" << std::endl;
-       for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
-           bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
-           print_uint32_t((deUint32)obj->pipelineIdentifier[i], "", isCommaNeeded);
-       }
-       PRINT_SPACE
-       _OUT << "]" << "," << std::endl;
-     } else{
-       _OUT << "\"NULL\"" << "," << std::endl;
-     }
-
-     print_VkPipelineMatchControl(obj->matchControl, "matchControl", 0);
-
-     INDENT(-4);
-     PRINT_SPACE
-     if (commaNeeded)
-         _OUT << "}," << std::endl;
-     else
-         _OUT << "}" << std::endl;
-}
-
 static void print_VkSamplerYcbcrConversion(VkSamplerYcbcrConversion obj, const std::string& str, bool commaNeeded) {
      PRINT_SPACE
      if (commaNeeded)
@@ -18961,57 +17226,6 @@ static void print_VkDeviceGroupSubmitInfo(const VkDeviceGroupSubmitInfo * obj, c
          _OUT << "}" << std::endl;
 }
 
-//static void print_VkDeviceGroupBindSparseInfo(VkDeviceGroupBindSparseInfo obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkStructureType(obj.sType, "sType", 1);
-//
-//      if (obj.pNext) {
-//         dumpPNextChain(obj.pNext);
-//      } else{
-//         PRINT_SPACE
-//         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     print_uint32_t(obj.resourceDeviceIndex, "resourceDeviceIndex", 1);
-//
-//     print_uint32_t(obj.memoryDeviceIndex, "memoryDeviceIndex", 0);
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//static void print_VkDeviceGroupBindSparseInfo(const VkDeviceGroupBindSparseInfo * obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkStructureType(obj->sType, "sType", 1);
-//
-//      if (obj->pNext) {
-//         dumpPNextChain(obj->pNext);
-//      } else{
-//         PRINT_SPACE
-//         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     print_uint32_t(obj->resourceDeviceIndex, "resourceDeviceIndex", 1);
-//
-//     print_uint32_t(obj->memoryDeviceIndex, "memoryDeviceIndex", 0);
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-
 static void print_VkBindBufferMemoryDeviceGroupInfo(VkBindBufferMemoryDeviceGroupInfo obj, const std::string& s, bool commaNeeded) {
      PRINT_SPACE
      _OUT << "{" << std::endl;
@@ -19480,55 +17694,6 @@ static void print_VkImageMemoryRequirementsInfo2(const VkImageMemoryRequirements
          _OUT << "}" << std::endl;
 }
 
-//static void print_VkImageSparseMemoryRequirementsInfo2(VkImageSparseMemoryRequirementsInfo2 obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkStructureType(obj.sType, "sType", 1);
-//
-//      if (obj.pNext) {
-//         dumpPNextChain(obj.pNext);
-//      } else{
-//         PRINT_SPACE
-//         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     /** Note: printing just an empty entry here **/
-//     PRINT_SPACE    _OUT << "\"" << "image" << "\"" << " : " << "\"" << "\"" << std::endl;
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//static void print_VkImageSparseMemoryRequirementsInfo2(const VkImageSparseMemoryRequirementsInfo2 * obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkStructureType(obj->sType, "sType", 1);
-//
-//      if (obj->pNext) {
-//         dumpPNextChain(obj->pNext);
-//      } else{
-//         PRINT_SPACE
-//         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     /** Note: printing just an empty entry here **/
-//     PRINT_SPACE    _OUT << "\"" << "image" << "\"" << " : " << "\"" << "\"" << std::endl;
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-
 static void print_VkMemoryRequirements2(VkMemoryRequirements2 obj, const std::string& s, bool commaNeeded) {
      PRINT_SPACE
      _OUT << "{" << std::endl;
@@ -19583,61 +17748,6 @@ static void print_VkMemoryRequirements2(const VkMemoryRequirements2 * obj, const
      else
          _OUT << "}" << std::endl;
 }
-
-//static void print_VkSparseImageMemoryRequirements2(VkSparseImageMemoryRequirements2 obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkStructureType(obj.sType, "sType", 1);
-//
-//      if (obj.pNext) {
-//         dumpPNextChain(obj.pNext);
-//      } else{
-//         PRINT_SPACE
-//         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     PRINT_SPACE
-//     _OUT << "\"memoryRequirements\": " << std::endl;
-//     {
-//           print_VkSparseImageMemoryRequirements(obj.memoryRequirements, "memoryRequirements", 0);
-//     }
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//static void print_VkSparseImageMemoryRequirements2(const VkSparseImageMemoryRequirements2 * obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkStructureType(obj->sType, "sType", 1);
-//
-//      if (obj->pNext) {
-//         dumpPNextChain(obj->pNext);
-//      } else{
-//         PRINT_SPACE
-//         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     PRINT_SPACE
-//     _OUT << "\"memoryRequirements\": " << std::endl;
-//     {
-//           print_VkSparseImageMemoryRequirements(obj->memoryRequirements, "memoryRequirements", 0);
-//     }
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
 
 static void print_VkPhysicalDeviceFeatures2(VkPhysicalDeviceFeatures2 obj, const std::string& s, bool commaNeeded) {
      PRINT_SPACE
@@ -20031,124 +18141,6 @@ static void print_VkPhysicalDeviceMemoryProperties2(const VkPhysicalDeviceMemory
      else
          _OUT << "}" << std::endl;
 }
-
-//static void print_VkSparseImageFormatProperties2(VkSparseImageFormatProperties2 obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkStructureType(obj.sType, "sType", 1);
-//
-//      if (obj.pNext) {
-//         dumpPNextChain(obj.pNext);
-//      } else{
-//         PRINT_SPACE
-//         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     PRINT_SPACE
-//     _OUT << "\"properties\": " << std::endl;
-//     {
-//           print_VkSparseImageFormatProperties(obj.properties, "properties", 0);
-//     }
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//static void print_VkSparseImageFormatProperties2(const VkSparseImageFormatProperties2 * obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkStructureType(obj->sType, "sType", 1);
-//
-//      if (obj->pNext) {
-//         dumpPNextChain(obj->pNext);
-//      } else{
-//         PRINT_SPACE
-//         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     PRINT_SPACE
-//     _OUT << "\"properties\": " << std::endl;
-//     {
-//           print_VkSparseImageFormatProperties(obj->properties, "properties", 0);
-//     }
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//
-//static void print_VkPhysicalDeviceSparseImageFormatInfo2(VkPhysicalDeviceSparseImageFormatInfo2 obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkStructureType(obj.sType, "sType", 1);
-//
-//      if (obj.pNext) {
-//         dumpPNextChain(obj.pNext);
-//      } else{
-//         PRINT_SPACE
-//         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     print_VkFormat(obj.format, "format", 1);
-//
-//     print_VkImageType(obj.type, "type", 1);
-//
-//     print_VkSampleCountFlagBits(obj.samples, "samples", 1);
-//
-//     print_VkImageUsageFlags(obj.usage, "usage", 1);
-//
-//     print_VkImageTiling(obj.tiling, "tiling", 0);
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
-//static void print_VkPhysicalDeviceSparseImageFormatInfo2(const VkPhysicalDeviceSparseImageFormatInfo2 * obj, const std::string& s, bool commaNeeded) {
-//     PRINT_SPACE
-//     _OUT << "{" << std::endl;
-//     INDENT(4);
-//
-//     print_VkStructureType(obj->sType, "sType", 1);
-//
-//      if (obj->pNext) {
-//         dumpPNextChain(obj->pNext);
-//      } else{
-//         PRINT_SPACE
-//         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
-//     }
-//
-//     print_VkFormat(obj->format, "format", 1);
-//
-//     print_VkImageType(obj->type, "type", 1);
-//
-//     print_VkSampleCountFlagBits(obj->samples, "samples", 1);
-//
-//     print_VkImageUsageFlags(obj->usage, "usage", 1);
-//
-//     print_VkImageTiling(obj->tiling, "tiling", 0);
-//
-//     INDENT(-4);
-//     PRINT_SPACE
-//     if (commaNeeded)
-//         _OUT << "}," << std::endl;
-//     else
-//         _OUT << "}" << std::endl;
-//}
 
 static void print_VkPhysicalDevicePointClippingProperties(VkPhysicalDevicePointClippingProperties obj, const std::string& s, bool commaNeeded) {
      PRINT_SPACE
@@ -21022,8 +19014,7 @@ static void print_VkSamplerYcbcrConversionInfo(VkSamplerYcbcrConversionInfo obj,
          _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
      }
 
-     /** Note: printing just an empty entry here **/
-     PRINT_SPACE    _OUT << "\"" << "conversion" << "\"" << " : " << "\"" << "\"" << std::endl;
+     PRINT_SPACE    _OUT << "\"" << "conversion" << "\"" << " : " << obj.conversion.getInternal() << std::endl;
 
      INDENT(-4);
      PRINT_SPACE
@@ -21046,8 +19037,7 @@ static void print_VkSamplerYcbcrConversionInfo(const VkSamplerYcbcrConversionInf
          _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
      }
 
-     /** Note: printing just an empty entry here **/
-     PRINT_SPACE    _OUT << "\"" << "conversion" << "\"" << " : " << "\"" << "\"" << std::endl;
+	  PRINT_SPACE    _OUT << "\"" << "conversion" << "\"" << " : " << obj->conversion.getInternal() << std::endl;
 
      INDENT(-4);
      PRINT_SPACE
@@ -22248,6 +20238,7 @@ static std::map<int, std::string> VkDriverId_map = {
     std::make_pair(12, "VK_DRIVER_ID_BROADCOM_PROPRIETARY"),
     std::make_pair(13, "VK_DRIVER_ID_MESA_LLVMPIPE"),
     std::make_pair(14, "VK_DRIVER_ID_MOLTENVK"),
+    std::make_pair(15, "VK_DRIVER_ID_COREAVI_PROPRIETARY"),
 };
 static void print_VkDriverId(VkDriverId obj, const std::string& str, bool commaNeeded) {
      PRINT_SPACE
@@ -22446,7 +20437,7 @@ static void print_VkResolveModeFlags(const VkResolveModeFlags * obj, const std::
 
 static void print_VkDescriptorBindingFlags(VkDescriptorBindingFlags obj, const std::string& str, bool commaNeeded) {
      PRINT_SPACE
- _OUT << "\"" << str << "\"" << " : ";
+ //_OUT << "\"" << str << "\"" << " : ";
      const int max_bits = 64; // We don't expect the number to be larger.
      std::bitset<max_bits> b(obj);
      _OUT << "\"";
@@ -22468,7 +20459,7 @@ static void print_VkDescriptorBindingFlags(VkDescriptorBindingFlags obj, const s
 }
 static void print_VkDescriptorBindingFlags(const VkDescriptorBindingFlags * obj, const std::string& str, bool commaNeeded) {
      PRINT_SPACE
- _OUT << "\"" << str << "\"" << " : ";
+ //_OUT << "\"" << str << "\"" << " : ";
      const int max_bits = 64; // We don't expect the number to be larger.
      std::bitset<max_bits> b(obj);
      _OUT << "\"";
@@ -26757,6 +24748,945 @@ static void print_VkDeviceMemoryOpaqueCaptureAddressInfo(const VkDeviceMemoryOpa
          _OUT << "}" << std::endl;
 }
 
+static std::map<int, std::string> VkFaultLevel_map = {
+    std::make_pair(0, "VK_FAULT_LEVEL_UNASSIGNED"),
+    std::make_pair(1, "VK_FAULT_LEVEL_CRITICAL"),
+    std::make_pair(2, "VK_FAULT_LEVEL_RECOVERABLE"),
+    std::make_pair(3, "VK_FAULT_LEVEL_WARNING"),
+};
+static void print_VkFaultLevel(VkFaultLevel obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkFaultLevel_map[obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkFaultLevel_map[obj] << "\"" << std::endl;
+}
+static void print_VkFaultLevel(const VkFaultLevel * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkFaultLevel_map[*obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkFaultLevel_map[*obj] << "\"" << std::endl;
+}
+
+static std::map<int, std::string> VkFaultType_map = {
+    std::make_pair(0, "VK_FAULT_TYPE_INVALID"),
+    std::make_pair(1, "VK_FAULT_TYPE_UNASSIGNED"),
+    std::make_pair(2, "VK_FAULT_TYPE_IMPLEMENTATION"),
+    std::make_pair(3, "VK_FAULT_TYPE_SYSTEM"),
+    std::make_pair(4, "VK_FAULT_TYPE_PHYSICAL_DEVICE"),
+    std::make_pair(5, "VK_FAULT_TYPE_COMMAND_BUFFER_FULL"),
+    std::make_pair(6, "VK_FAULT_TYPE_INVALID_API_USAGE"),
+};
+static void print_VkFaultType(VkFaultType obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkFaultType_map[obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkFaultType_map[obj] << "\"" << std::endl;
+}
+static void print_VkFaultType(const VkFaultType * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkFaultType_map[*obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkFaultType_map[*obj] << "\"" << std::endl;
+}
+
+static std::map<int, std::string> VkFaultQueryBehavior_map = {
+    std::make_pair(0, "VK_FAULT_QUERY_BEHAVIOR_GET_AND_CLEAR_ALL_FAULTS"),
+};
+static void print_VkFaultQueryBehavior(VkFaultQueryBehavior obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkFaultQueryBehavior_map[obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkFaultQueryBehavior_map[obj] << "\"" << std::endl;
+}
+static void print_VkFaultQueryBehavior(const VkFaultQueryBehavior * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkFaultQueryBehavior_map[*obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkFaultQueryBehavior_map[*obj] << "\"" << std::endl;
+}
+
+static std::map<int, std::string> VkPipelineMatchControl_map = {
+    std::make_pair(0, "VK_PIPELINE_MATCH_CONTROL_APPLICATION_UUID_EXACT_MATCH"),
+};
+static void print_VkPipelineMatchControl(VkPipelineMatchControl obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkPipelineMatchControl_map[obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkPipelineMatchControl_map[obj] << "\"" << std::endl;
+}
+static void print_VkPipelineMatchControl(const VkPipelineMatchControl * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkPipelineMatchControl_map[*obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkPipelineMatchControl_map[*obj] << "\"" << std::endl;
+}
+
+static void print_VkPhysicalDeviceVulkanSC10Features(VkPhysicalDeviceVulkanSC10Features obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkBool32(obj.pipelineIdentifier, "pipelineIdentifier", 1);
+
+     print_VkBool32(obj.shaderAtomicInstructions, "shaderAtomicInstructions", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkPhysicalDeviceVulkanSC10Features(const VkPhysicalDeviceVulkanSC10Features * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkBool32(obj->pipelineIdentifier, "pipelineIdentifier", 1);
+
+     print_VkBool32(obj->shaderAtomicInstructions, "shaderAtomicInstructions", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkPhysicalDeviceVulkanSC10Properties(VkPhysicalDeviceVulkanSC10Properties obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkBool32(obj.deviceNoDynamicHostAllocations, "deviceNoDynamicHostAllocations", 1);
+
+     print_VkBool32(obj.deviceDestroyFreesMemory, "deviceDestroyFreesMemory", 1);
+
+     print_VkBool32(obj.commandPoolMultipleCommandBuffersRecording, "commandPoolMultipleCommandBuffersRecording", 1);
+
+     print_VkBool32(obj.commandPoolResetCommandBuffer, "commandPoolResetCommandBuffer", 1);
+
+     print_VkBool32(obj.commandBufferSimultaneousUse, "commandBufferSimultaneousUse", 1);
+
+     print_VkBool32(obj.secondaryCommandBufferNullFramebuffer, "secondaryCommandBufferNullFramebuffer", 1);
+
+     print_VkBool32(obj.recycleDescriptorSetMemory, "recycleDescriptorSetMemory", 1);
+
+     print_VkBool32(obj.recyclePipelineMemory, "recyclePipelineMemory", 1);
+
+     print_uint32_t(obj.maxRenderPassSubpasses, "maxRenderPassSubpasses", 1);
+
+     print_uint32_t(obj.maxRenderPassDependencies, "maxRenderPassDependencies", 1);
+
+     print_uint32_t(obj.maxSubpassInputAttachments, "maxSubpassInputAttachments", 1);
+
+     print_uint32_t(obj.maxSubpassPreserveAttachments, "maxSubpassPreserveAttachments", 1);
+
+     print_uint32_t(obj.maxFramebufferAttachments, "maxFramebufferAttachments", 1);
+
+     print_uint32_t(obj.maxDescriptorSetLayoutBindings, "maxDescriptorSetLayoutBindings", 1);
+
+     print_uint32_t(obj.maxQueryFaultCount, "maxQueryFaultCount", 1);
+
+     print_uint32_t(obj.maxCallbackFaultCount, "maxCallbackFaultCount", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkPhysicalDeviceVulkanSC10Properties(const VkPhysicalDeviceVulkanSC10Properties * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkBool32(obj->deviceNoDynamicHostAllocations, "deviceNoDynamicHostAllocations", 1);
+
+     print_VkBool32(obj->deviceDestroyFreesMemory, "deviceDestroyFreesMemory", 1);
+
+     print_VkBool32(obj->commandPoolMultipleCommandBuffersRecording, "commandPoolMultipleCommandBuffersRecording", 1);
+
+     print_VkBool32(obj->commandPoolResetCommandBuffer, "commandPoolResetCommandBuffer", 1);
+
+     print_VkBool32(obj->commandBufferSimultaneousUse, "commandBufferSimultaneousUse", 1);
+
+     print_VkBool32(obj->secondaryCommandBufferNullFramebuffer, "secondaryCommandBufferNullFramebuffer", 1);
+
+     print_VkBool32(obj->recycleDescriptorSetMemory, "recycleDescriptorSetMemory", 1);
+
+     print_VkBool32(obj->recyclePipelineMemory, "recyclePipelineMemory", 1);
+
+     print_uint32_t(obj->maxRenderPassSubpasses, "maxRenderPassSubpasses", 1);
+
+     print_uint32_t(obj->maxRenderPassDependencies, "maxRenderPassDependencies", 1);
+
+     print_uint32_t(obj->maxSubpassInputAttachments, "maxSubpassInputAttachments", 1);
+
+     print_uint32_t(obj->maxSubpassPreserveAttachments, "maxSubpassPreserveAttachments", 1);
+
+     print_uint32_t(obj->maxFramebufferAttachments, "maxFramebufferAttachments", 1);
+
+     print_uint32_t(obj->maxDescriptorSetLayoutBindings, "maxDescriptorSetLayoutBindings", 1);
+
+     print_uint32_t(obj->maxQueryFaultCount, "maxQueryFaultCount", 1);
+
+     print_uint32_t(obj->maxCallbackFaultCount, "maxCallbackFaultCount", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkPipelinePoolSize(VkPipelinePoolSize obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkDeviceSize(obj.poolEntrySize, "poolEntrySize", 1);
+
+     print_uint32_t(obj.poolEntryCount, "poolEntryCount", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkPipelinePoolSize(const VkPipelinePoolSize * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkDeviceSize(obj->poolEntrySize, "poolEntrySize", 1);
+
+     print_uint32_t(obj->poolEntryCount, "poolEntryCount", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkDeviceObjectReservationCreateInfo(VkDeviceObjectReservationCreateInfo obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj.pipelineCacheCreateInfoCount, "pipelineCacheCreateInfoCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pPipelineCacheCreateInfos\": " << std::endl;
+     if (obj.pPipelineCacheCreateInfos) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj.pipelineCacheCreateInfoCount; i++) {
+           if (i+1 == obj.pipelineCacheCreateInfoCount)
+               print_VkPipelineCacheCreateInfo(obj.pPipelineCacheCreateInfos[i], "pPipelineCacheCreateInfos", 0);
+           else
+               print_VkPipelineCacheCreateInfo(obj.pPipelineCacheCreateInfos[i], "pPipelineCacheCreateInfos", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]," << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj.pipelinePoolSizeCount, "pipelinePoolSizeCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pPipelinePoolSizes\": " << std::endl;
+     if (obj.pPipelinePoolSizes) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj.pipelinePoolSizeCount; i++) {
+           if (i+1 == obj.pipelinePoolSizeCount)
+               print_VkPipelinePoolSize(obj.pPipelinePoolSizes[i], "pPipelinePoolSizes", 0);
+           else
+               print_VkPipelinePoolSize(obj.pPipelinePoolSizes[i], "pPipelinePoolSizes", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]," << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj.semaphoreRequestCount, "semaphoreRequestCount", 1);
+
+     print_uint32_t(obj.commandBufferRequestCount, "commandBufferRequestCount", 1);
+
+     print_uint32_t(obj.fenceRequestCount, "fenceRequestCount", 1);
+
+     print_uint32_t(obj.deviceMemoryRequestCount, "deviceMemoryRequestCount", 1);
+
+     print_uint32_t(obj.bufferRequestCount, "bufferRequestCount", 1);
+
+     print_uint32_t(obj.imageRequestCount, "imageRequestCount", 1);
+
+     print_uint32_t(obj.eventRequestCount, "eventRequestCount", 1);
+
+     print_uint32_t(obj.queryPoolRequestCount, "queryPoolRequestCount", 1);
+
+     print_uint32_t(obj.bufferViewRequestCount, "bufferViewRequestCount", 1);
+
+     print_uint32_t(obj.imageViewRequestCount, "imageViewRequestCount", 1);
+
+     print_uint32_t(obj.layeredImageViewRequestCount, "layeredImageViewRequestCount", 1);
+
+     print_uint32_t(obj.pipelineCacheRequestCount, "pipelineCacheRequestCount", 1);
+
+     print_uint32_t(obj.pipelineLayoutRequestCount, "pipelineLayoutRequestCount", 1);
+
+     print_uint32_t(obj.renderPassRequestCount, "renderPassRequestCount", 1);
+
+     print_uint32_t(obj.graphicsPipelineRequestCount, "graphicsPipelineRequestCount", 1);
+
+     print_uint32_t(obj.computePipelineRequestCount, "computePipelineRequestCount", 1);
+
+     print_uint32_t(obj.descriptorSetLayoutRequestCount, "descriptorSetLayoutRequestCount", 1);
+
+     print_uint32_t(obj.samplerRequestCount, "samplerRequestCount", 1);
+
+     print_uint32_t(obj.descriptorPoolRequestCount, "descriptorPoolRequestCount", 1);
+
+     print_uint32_t(obj.descriptorSetRequestCount, "descriptorSetRequestCount", 1);
+
+     print_uint32_t(obj.framebufferRequestCount, "framebufferRequestCount", 1);
+
+     print_uint32_t(obj.commandPoolRequestCount, "commandPoolRequestCount", 1);
+
+     print_uint32_t(obj.samplerYcbcrConversionRequestCount, "samplerYcbcrConversionRequestCount", 1);
+
+     print_uint32_t(obj.surfaceRequestCount, "surfaceRequestCount", 1);
+
+     print_uint32_t(obj.swapchainRequestCount, "swapchainRequestCount", 1);
+
+     print_uint32_t(obj.displayModeRequestCount, "displayModeRequestCount", 1);
+
+     print_uint32_t(obj.subpassDescriptionRequestCount, "subpassDescriptionRequestCount", 1);
+
+     print_uint32_t(obj.attachmentDescriptionRequestCount, "attachmentDescriptionRequestCount", 1);
+
+     print_uint32_t(obj.descriptorSetLayoutBindingRequestCount, "descriptorSetLayoutBindingRequestCount", 1);
+
+     print_uint32_t(obj.descriptorSetLayoutBindingLimit, "descriptorSetLayoutBindingLimit", 1);
+
+     print_uint32_t(obj.maxImageViewMipLevels, "maxImageViewMipLevels", 1);
+
+     print_uint32_t(obj.maxImageViewArrayLayers, "maxImageViewArrayLayers", 1);
+
+     print_uint32_t(obj.maxLayeredImageViewMipLevels, "maxLayeredImageViewMipLevels", 1);
+
+     print_uint32_t(obj.maxOcclusionQueriesPerPool, "maxOcclusionQueriesPerPool", 1);
+
+     print_uint32_t(obj.maxPipelineStatisticsQueriesPerPool, "maxPipelineStatisticsQueriesPerPool", 1);
+
+     print_uint32_t(obj.maxTimestampQueriesPerPool, "maxTimestampQueriesPerPool", 1);
+
+     print_uint32_t(obj.maxImmutableSamplersPerDescriptorSetLayout, "maxImmutableSamplersPerDescriptorSetLayout", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkDeviceObjectReservationCreateInfo(const VkDeviceObjectReservationCreateInfo * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj->pipelineCacheCreateInfoCount, "pipelineCacheCreateInfoCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pPipelineCacheCreateInfos\": " << std::endl;
+     if (obj->pPipelineCacheCreateInfos) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj->pipelineCacheCreateInfoCount; i++) {
+           if (i+1 == obj->pipelineCacheCreateInfoCount)
+               print_VkPipelineCacheCreateInfo(obj->pPipelineCacheCreateInfos[i], "pPipelineCacheCreateInfos", 0);
+           else
+               print_VkPipelineCacheCreateInfo(obj->pPipelineCacheCreateInfos[i], "pPipelineCacheCreateInfos", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]," << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj->pipelinePoolSizeCount, "pipelinePoolSizeCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pPipelinePoolSizes\": " << std::endl;
+     if (obj->pPipelinePoolSizes) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj->pipelinePoolSizeCount; i++) {
+           if (i+1 == obj->pipelinePoolSizeCount)
+               print_VkPipelinePoolSize(obj->pPipelinePoolSizes[i], "pPipelinePoolSizes", 0);
+           else
+               print_VkPipelinePoolSize(obj->pPipelinePoolSizes[i], "pPipelinePoolSizes", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]," << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj->semaphoreRequestCount, "semaphoreRequestCount", 1);
+
+     print_uint32_t(obj->commandBufferRequestCount, "commandBufferRequestCount", 1);
+
+     print_uint32_t(obj->fenceRequestCount, "fenceRequestCount", 1);
+
+     print_uint32_t(obj->deviceMemoryRequestCount, "deviceMemoryRequestCount", 1);
+
+     print_uint32_t(obj->bufferRequestCount, "bufferRequestCount", 1);
+
+     print_uint32_t(obj->imageRequestCount, "imageRequestCount", 1);
+
+     print_uint32_t(obj->eventRequestCount, "eventRequestCount", 1);
+
+     print_uint32_t(obj->queryPoolRequestCount, "queryPoolRequestCount", 1);
+
+     print_uint32_t(obj->bufferViewRequestCount, "bufferViewRequestCount", 1);
+
+     print_uint32_t(obj->imageViewRequestCount, "imageViewRequestCount", 1);
+
+     print_uint32_t(obj->layeredImageViewRequestCount, "layeredImageViewRequestCount", 1);
+
+     print_uint32_t(obj->pipelineCacheRequestCount, "pipelineCacheRequestCount", 1);
+
+     print_uint32_t(obj->pipelineLayoutRequestCount, "pipelineLayoutRequestCount", 1);
+
+     print_uint32_t(obj->renderPassRequestCount, "renderPassRequestCount", 1);
+
+     print_uint32_t(obj->graphicsPipelineRequestCount, "graphicsPipelineRequestCount", 1);
+
+     print_uint32_t(obj->computePipelineRequestCount, "computePipelineRequestCount", 1);
+
+     print_uint32_t(obj->descriptorSetLayoutRequestCount, "descriptorSetLayoutRequestCount", 1);
+
+     print_uint32_t(obj->samplerRequestCount, "samplerRequestCount", 1);
+
+     print_uint32_t(obj->descriptorPoolRequestCount, "descriptorPoolRequestCount", 1);
+
+     print_uint32_t(obj->descriptorSetRequestCount, "descriptorSetRequestCount", 1);
+
+     print_uint32_t(obj->framebufferRequestCount, "framebufferRequestCount", 1);
+
+     print_uint32_t(obj->commandPoolRequestCount, "commandPoolRequestCount", 1);
+
+     print_uint32_t(obj->samplerYcbcrConversionRequestCount, "samplerYcbcrConversionRequestCount", 1);
+
+     print_uint32_t(obj->surfaceRequestCount, "surfaceRequestCount", 1);
+
+     print_uint32_t(obj->swapchainRequestCount, "swapchainRequestCount", 1);
+
+     print_uint32_t(obj->displayModeRequestCount, "displayModeRequestCount", 1);
+
+     print_uint32_t(obj->subpassDescriptionRequestCount, "subpassDescriptionRequestCount", 1);
+
+     print_uint32_t(obj->attachmentDescriptionRequestCount, "attachmentDescriptionRequestCount", 1);
+
+     print_uint32_t(obj->descriptorSetLayoutBindingRequestCount, "descriptorSetLayoutBindingRequestCount", 1);
+
+     print_uint32_t(obj->descriptorSetLayoutBindingLimit, "descriptorSetLayoutBindingLimit", 1);
+
+     print_uint32_t(obj->maxImageViewMipLevels, "maxImageViewMipLevels", 1);
+
+     print_uint32_t(obj->maxImageViewArrayLayers, "maxImageViewArrayLayers", 1);
+
+     print_uint32_t(obj->maxLayeredImageViewMipLevels, "maxLayeredImageViewMipLevels", 1);
+
+     print_uint32_t(obj->maxOcclusionQueriesPerPool, "maxOcclusionQueriesPerPool", 1);
+
+     print_uint32_t(obj->maxPipelineStatisticsQueriesPerPool, "maxPipelineStatisticsQueriesPerPool", 1);
+
+     print_uint32_t(obj->maxTimestampQueriesPerPool, "maxTimestampQueriesPerPool", 1);
+
+     print_uint32_t(obj->maxImmutableSamplersPerDescriptorSetLayout, "maxImmutableSamplersPerDescriptorSetLayout", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkCommandPoolMemoryReservationCreateInfo(VkCommandPoolMemoryReservationCreateInfo obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkDeviceSize(obj.commandPoolReservedSize, "commandPoolReservedSize", 1);
+
+     print_uint32_t(obj.commandPoolMaxCommandBuffers, "commandPoolMaxCommandBuffers", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkCommandPoolMemoryReservationCreateInfo(const VkCommandPoolMemoryReservationCreateInfo * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkDeviceSize(obj->commandPoolReservedSize, "commandPoolReservedSize", 1);
+
+     print_uint32_t(obj->commandPoolMaxCommandBuffers, "commandPoolMaxCommandBuffers", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkCommandPoolMemoryConsumption(VkCommandPoolMemoryConsumption obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkDeviceSize(obj.commandPoolAllocated, "commandPoolAllocated", 1);
+
+     print_VkDeviceSize(obj.commandPoolReservedSize, "commandPoolReservedSize", 1);
+
+     print_VkDeviceSize(obj.commandBufferAllocated, "commandBufferAllocated", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkCommandPoolMemoryConsumption(const VkCommandPoolMemoryConsumption * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkDeviceSize(obj->commandPoolAllocated, "commandPoolAllocated", 1);
+
+     print_VkDeviceSize(obj->commandPoolReservedSize, "commandPoolReservedSize", 1);
+
+     print_VkDeviceSize(obj->commandBufferAllocated, "commandBufferAllocated", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkPipelinePoolEntrySizeCreateInfo(VkPipelinePoolEntrySizeCreateInfo obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkDeviceSize(obj.poolEntrySize, "poolEntrySize", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkPipelinePoolEntrySizeCreateInfo(const VkPipelinePoolEntrySizeCreateInfo * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkDeviceSize(obj->poolEntrySize, "poolEntrySize", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkFaultData(VkFaultData obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkFaultLevel(obj.faultLevel, "faultLevel", 1);
+
+     print_VkFaultType(obj.faultType, "faultType", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkFaultData(const VkFaultData * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkFaultLevel(obj->faultLevel, "faultLevel", 1);
+
+     print_VkFaultType(obj->faultType, "faultType", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkFaultCallbackInfo(VkFaultCallbackInfo obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     PRINT_SPACE
+     _OUT << "\"pFaults\": " << std::endl;
+     if (obj.pFaults) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < 1; i++) {
+           print_VkFaultData(obj.pFaults[i], "pFaults", 0);
+         }
+         PRINT_SPACE
+         _OUT << "]," << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
+     }
+
+     /** Note: Ignoring function pointer (PFN_vkFaultCallbackFunction). **/
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkFaultCallbackInfo(const VkFaultCallbackInfo * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     PRINT_SPACE
+     _OUT << "\"pFaults\": " << std::endl;
+     if (obj->pFaults) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < 1; i++) {
+           print_VkFaultData(obj->pFaults[i], "pFaults", 0);
+         }
+         PRINT_SPACE
+         _OUT << "]," << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
+     }
+
+     /** Note: Ignoring function pointer (PFN_vkFaultCallbackFunction). **/
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkPipelineIdentifierInfo(VkPipelineIdentifierInfo obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     PRINT_SPACE
+     _OUT << "\"pipelineIdentifier\":" << std::endl;
+     PRINT_SPACE
+     if (obj.pipelineIdentifier) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
+           std:: stringstream tmp;
+           tmp << "pipelineIdentifier" << "_" << i;
+           bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
+		   print_uint32_t((deUint32)obj.pipelineIdentifier[i], "", isCommaNeeded);
+
+       }
+       PRINT_SPACE
+       _OUT << "]" << "," << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "," << std::endl;
+     }
+
+     print_VkPipelineMatchControl(obj.matchControl, "matchControl", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkPipelineIdentifierInfo(const VkPipelineIdentifierInfo * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     PRINT_SPACE
+     _OUT << "\"pipelineIdentifier\":" << std::endl;
+     PRINT_SPACE
+     if (obj->pipelineIdentifier) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
+           std:: stringstream tmp;
+           tmp << "pipelineIdentifier" << "_" << i;
+           bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
+		   print_uint32_t((deUint32)obj->pipelineIdentifier[i], "", isCommaNeeded);
+
+       }
+       PRINT_SPACE
+       _OUT << "]" << "," << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "," << std::endl;
+     }
+
+     print_VkPipelineMatchControl(obj->matchControl, "matchControl", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
 static void print_VkSurfaceKHR(VkSurfaceKHR obj, const std::string& str, bool commaNeeded) {
      PRINT_SPACE
      if (commaNeeded)
@@ -29255,6 +28185,828 @@ static void print_VkFenceGetFdInfoKHR(const VkFenceGetFdInfoKHR * obj, const std
          _OUT << "}" << std::endl;
 }
 
+static std::map<int, std::string> VkPerformanceCounterUnitKHR_map = {
+    std::make_pair(0, "VK_PERFORMANCE_COUNTER_UNIT_GENERIC_KHR"),
+    std::make_pair(1, "VK_PERFORMANCE_COUNTER_UNIT_PERCENTAGE_KHR"),
+    std::make_pair(2, "VK_PERFORMANCE_COUNTER_UNIT_NANOSECONDS_KHR"),
+    std::make_pair(3, "VK_PERFORMANCE_COUNTER_UNIT_BYTES_KHR"),
+    std::make_pair(4, "VK_PERFORMANCE_COUNTER_UNIT_BYTES_PER_SECOND_KHR"),
+    std::make_pair(5, "VK_PERFORMANCE_COUNTER_UNIT_KELVIN_KHR"),
+    std::make_pair(6, "VK_PERFORMANCE_COUNTER_UNIT_WATTS_KHR"),
+    std::make_pair(7, "VK_PERFORMANCE_COUNTER_UNIT_VOLTS_KHR"),
+    std::make_pair(8, "VK_PERFORMANCE_COUNTER_UNIT_AMPS_KHR"),
+    std::make_pair(9, "VK_PERFORMANCE_COUNTER_UNIT_HERTZ_KHR"),
+    std::make_pair(10, "VK_PERFORMANCE_COUNTER_UNIT_CYCLES_KHR"),
+};
+static void print_VkPerformanceCounterUnitKHR(VkPerformanceCounterUnitKHR obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkPerformanceCounterUnitKHR_map[obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkPerformanceCounterUnitKHR_map[obj] << "\"" << std::endl;
+}
+static void print_VkPerformanceCounterUnitKHR(const VkPerformanceCounterUnitKHR * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkPerformanceCounterUnitKHR_map[*obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkPerformanceCounterUnitKHR_map[*obj] << "\"" << std::endl;
+}
+
+static std::map<int, std::string> VkPerformanceCounterScopeKHR_map = {
+    std::make_pair(0, "VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_BUFFER_KHR"),
+    std::make_pair(1, "VK_PERFORMANCE_COUNTER_SCOPE_RENDER_PASS_KHR"),
+    std::make_pair(2, "VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_KHR"),
+};
+static void print_VkPerformanceCounterScopeKHR(VkPerformanceCounterScopeKHR obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkPerformanceCounterScopeKHR_map[obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkPerformanceCounterScopeKHR_map[obj] << "\"" << std::endl;
+}
+static void print_VkPerformanceCounterScopeKHR(const VkPerformanceCounterScopeKHR * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkPerformanceCounterScopeKHR_map[*obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkPerformanceCounterScopeKHR_map[*obj] << "\"" << std::endl;
+}
+
+static std::map<int, std::string> VkPerformanceCounterStorageKHR_map = {
+    std::make_pair(0, "VK_PERFORMANCE_COUNTER_STORAGE_INT32_KHR"),
+    std::make_pair(1, "VK_PERFORMANCE_COUNTER_STORAGE_INT64_KHR"),
+    std::make_pair(2, "VK_PERFORMANCE_COUNTER_STORAGE_UINT32_KHR"),
+    std::make_pair(3, "VK_PERFORMANCE_COUNTER_STORAGE_UINT64_KHR"),
+    std::make_pair(4, "VK_PERFORMANCE_COUNTER_STORAGE_FLOAT32_KHR"),
+    std::make_pair(5, "VK_PERFORMANCE_COUNTER_STORAGE_FLOAT64_KHR"),
+};
+static void print_VkPerformanceCounterStorageKHR(VkPerformanceCounterStorageKHR obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkPerformanceCounterStorageKHR_map[obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkPerformanceCounterStorageKHR_map[obj] << "\"" << std::endl;
+}
+static void print_VkPerformanceCounterStorageKHR(const VkPerformanceCounterStorageKHR * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkPerformanceCounterStorageKHR_map[*obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkPerformanceCounterStorageKHR_map[*obj] << "\"" << std::endl;
+}
+
+static std::map<int, std::string> VkPerformanceCounterDescriptionFlagBitsKHR_map = {
+    std::make_pair(1 << 0, "VK_PERFORMANCE_COUNTER_DESCRIPTION_PERFORMANCE_IMPACTING_BIT_KHR"),
+    std::make_pair(1 << 1, "VK_PERFORMANCE_COUNTER_DESCRIPTION_CONCURRENTLY_IMPACTED_BIT_KHR"),
+};
+static void print_VkPerformanceCounterDescriptionFlagBitsKHR(VkPerformanceCounterDescriptionFlagBitsKHR obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkPerformanceCounterDescriptionFlagBitsKHR_map[obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkPerformanceCounterDescriptionFlagBitsKHR_map[obj] << "\"" << std::endl;
+}
+static void print_VkPerformanceCounterDescriptionFlagBitsKHR(const VkPerformanceCounterDescriptionFlagBitsKHR * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkPerformanceCounterDescriptionFlagBitsKHR_map[*obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkPerformanceCounterDescriptionFlagBitsKHR_map[*obj] << "\"" << std::endl;
+}
+
+static std::map<int, std::string> VkAcquireProfilingLockFlagBitsKHR_map = {
+};
+static void print_VkAcquireProfilingLockFlagBitsKHR(VkAcquireProfilingLockFlagBitsKHR obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkAcquireProfilingLockFlagBitsKHR_map[obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkAcquireProfilingLockFlagBitsKHR_map[obj] << "\"" << std::endl;
+}
+static void print_VkAcquireProfilingLockFlagBitsKHR(const VkAcquireProfilingLockFlagBitsKHR * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkAcquireProfilingLockFlagBitsKHR_map[*obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkAcquireProfilingLockFlagBitsKHR_map[*obj] << "\"" << std::endl;
+}
+
+static void print_VkPerformanceCounterDescriptionFlagsKHR(VkPerformanceCounterDescriptionFlagsKHR obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+ _OUT << "\"" << str << "\"" << " : ";
+     const int max_bits = 64; // We don't expect the number to be larger.
+     std::bitset<max_bits> b(obj);
+     _OUT << "\"";
+     if (obj == 0) _OUT << "0";
+     for (unsigned int i = 0, bitCount = 0; i < b.size(); i++) {
+         if (b[i] == 1) {
+             bitCount++;
+             if (bitCount < b.count())
+                 _OUT << VkPerformanceCounterDescriptionFlagBitsKHR_map[1<<i] << " | ";
+             else
+                 _OUT << VkPerformanceCounterDescriptionFlagBitsKHR_map[1<<i];
+         }
+     }
+     if (commaNeeded)
+       _OUT << "\"" << ",";
+     else
+       _OUT << "\""<< "";
+     _OUT << std::endl;
+}
+static void print_VkPerformanceCounterDescriptionFlagsKHR(const VkPerformanceCounterDescriptionFlagsKHR * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+ _OUT << "\"" << str << "\"" << " : ";
+     const int max_bits = 64; // We don't expect the number to be larger.
+     std::bitset<max_bits> b(obj);
+     _OUT << "\"";
+     if (obj == 0) _OUT << "0";
+     for (unsigned int i = 0, bitCount = 0; i < b.size(); i++) {
+         if (b[i] == 1) {
+             bitCount++;
+             if (bitCount < b.count())
+                 _OUT << VkPerformanceCounterDescriptionFlagBitsKHR_map[1<<i] << " | ";
+             else
+                 _OUT << VkPerformanceCounterDescriptionFlagBitsKHR_map[1<<i];
+         }
+     }
+     if (commaNeeded)
+       _OUT << "\"" << ",";
+     else
+       _OUT << "\""<< "";
+     _OUT << std::endl;
+}
+
+static void print_VkAcquireProfilingLockFlagsKHR(VkAcquireProfilingLockFlagsKHR obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+ _OUT << "\"" << str << "\"" << " : ";
+     const int max_bits = 64; // We don't expect the number to be larger.
+     std::bitset<max_bits> b(obj);
+     _OUT << "\"";
+     if (obj == 0) _OUT << "0";
+     for (unsigned int i = 0, bitCount = 0; i < b.size(); i++) {
+         if (b[i] == 1) {
+             bitCount++;
+             if (bitCount < b.count())
+                 _OUT << VkAcquireProfilingLockFlagBitsKHR_map[1<<i] << " | ";
+             else
+                 _OUT << VkAcquireProfilingLockFlagBitsKHR_map[1<<i];
+         }
+     }
+     if (commaNeeded)
+       _OUT << "\"" << ",";
+     else
+       _OUT << "\""<< "";
+     _OUT << std::endl;
+}
+static void print_VkAcquireProfilingLockFlagsKHR(const VkAcquireProfilingLockFlagsKHR * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+ _OUT << "\"" << str << "\"" << " : ";
+     const int max_bits = 64; // We don't expect the number to be larger.
+     std::bitset<max_bits> b(obj);
+     _OUT << "\"";
+     if (obj == 0) _OUT << "0";
+     for (unsigned int i = 0, bitCount = 0; i < b.size(); i++) {
+         if (b[i] == 1) {
+             bitCount++;
+             if (bitCount < b.count())
+                 _OUT << VkAcquireProfilingLockFlagBitsKHR_map[1<<i] << " | ";
+             else
+                 _OUT << VkAcquireProfilingLockFlagBitsKHR_map[1<<i];
+         }
+     }
+     if (commaNeeded)
+       _OUT << "\"" << ",";
+     else
+       _OUT << "\""<< "";
+     _OUT << std::endl;
+}
+
+static void print_VkPhysicalDevicePerformanceQueryFeaturesKHR(VkPhysicalDevicePerformanceQueryFeaturesKHR obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkBool32(obj.performanceCounterQueryPools, "performanceCounterQueryPools", 1);
+
+     print_VkBool32(obj.performanceCounterMultipleQueryPools, "performanceCounterMultipleQueryPools", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkPhysicalDevicePerformanceQueryFeaturesKHR(const VkPhysicalDevicePerformanceQueryFeaturesKHR * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkBool32(obj->performanceCounterQueryPools, "performanceCounterQueryPools", 1);
+
+     print_VkBool32(obj->performanceCounterMultipleQueryPools, "performanceCounterMultipleQueryPools", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkPhysicalDevicePerformanceQueryPropertiesKHR(VkPhysicalDevicePerformanceQueryPropertiesKHR obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkBool32(obj.allowCommandBufferQueryCopies, "allowCommandBufferQueryCopies", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkPhysicalDevicePerformanceQueryPropertiesKHR(const VkPhysicalDevicePerformanceQueryPropertiesKHR * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkBool32(obj->allowCommandBufferQueryCopies, "allowCommandBufferQueryCopies", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkPerformanceCounterKHR(VkPerformanceCounterKHR obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkPerformanceCounterUnitKHR(obj.unit, "unit", 1);
+
+     print_VkPerformanceCounterScopeKHR(obj.scope, "scope", 1);
+
+     print_VkPerformanceCounterStorageKHR(obj.storage, "storage", 1);
+
+     PRINT_SPACE
+     _OUT << "\"uuid\":" << std::endl;
+     PRINT_SPACE
+     if (obj.uuid) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
+           std:: stringstream tmp;
+           tmp << "uuid" << "_" << i;
+           bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
+           print_uint8_t(obj.uuid[i], "", isCommaNeeded);
+       }
+       PRINT_SPACE
+       _OUT << "]" << "" << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "" << std::endl;
+     }
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkPerformanceCounterKHR(const VkPerformanceCounterKHR * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkPerformanceCounterUnitKHR(obj->unit, "unit", 1);
+
+     print_VkPerformanceCounterScopeKHR(obj->scope, "scope", 1);
+
+     print_VkPerformanceCounterStorageKHR(obj->storage, "storage", 1);
+
+     PRINT_SPACE
+     _OUT << "\"uuid\":" << std::endl;
+     PRINT_SPACE
+     if (obj->uuid) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < VK_UUID_SIZE; i++) {
+           std:: stringstream tmp;
+           tmp << "uuid" << "_" << i;
+           bool isCommaNeeded = (i+1) != VK_UUID_SIZE;
+           print_uint8_t(obj->uuid[i], "", isCommaNeeded);
+       }
+       PRINT_SPACE
+       _OUT << "]" << "" << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "" << std::endl;
+     }
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkPerformanceCounterDescriptionKHR(VkPerformanceCounterDescriptionKHR obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkPerformanceCounterDescriptionFlagsKHR(obj.flags, "flags", 1);
+
+     PRINT_SPACE
+     _OUT << "\"name\":" << std::endl;
+     PRINT_SPACE
+     if (obj.name) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < VK_MAX_DESCRIPTION_SIZE; i++) {
+           std:: stringstream tmp;
+           tmp << "name" << "_" << i;
+           bool isCommaNeeded = (i+1) != VK_MAX_DESCRIPTION_SIZE;
+           print_char(obj.name[i], "", isCommaNeeded);
+       }
+       PRINT_SPACE
+       _OUT << "]" << "," << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "," << std::endl;
+     }
+
+     PRINT_SPACE
+     _OUT << "\"category\":" << std::endl;
+     PRINT_SPACE
+     if (obj.category) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < VK_MAX_DESCRIPTION_SIZE; i++) {
+           std:: stringstream tmp;
+           tmp << "category" << "_" << i;
+           bool isCommaNeeded = (i+1) != VK_MAX_DESCRIPTION_SIZE;
+           print_char(obj.category[i], "", isCommaNeeded);
+       }
+       PRINT_SPACE
+       _OUT << "]" << "," << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "," << std::endl;
+     }
+
+     PRINT_SPACE
+     _OUT << "\"description\":" << std::endl;
+     PRINT_SPACE
+     if (obj.description) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < VK_MAX_DESCRIPTION_SIZE; i++) {
+           std:: stringstream tmp;
+           tmp << "description" << "_" << i;
+           bool isCommaNeeded = (i+1) != VK_MAX_DESCRIPTION_SIZE;
+           print_char(obj.description[i], "", isCommaNeeded);
+       }
+       PRINT_SPACE
+       _OUT << "]" << "" << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "" << std::endl;
+     }
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkPerformanceCounterDescriptionKHR(const VkPerformanceCounterDescriptionKHR * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkPerformanceCounterDescriptionFlagsKHR(obj->flags, "flags", 1);
+
+     PRINT_SPACE
+     _OUT << "\"name\":" << std::endl;
+     PRINT_SPACE
+     if (obj->name) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < VK_MAX_DESCRIPTION_SIZE; i++) {
+           std:: stringstream tmp;
+           tmp << "name" << "_" << i;
+           bool isCommaNeeded = (i+1) != VK_MAX_DESCRIPTION_SIZE;
+           print_char(obj->name[i], "", isCommaNeeded);
+       }
+       PRINT_SPACE
+       _OUT << "]" << "," << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "," << std::endl;
+     }
+
+     PRINT_SPACE
+     _OUT << "\"category\":" << std::endl;
+     PRINT_SPACE
+     if (obj->category) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < VK_MAX_DESCRIPTION_SIZE; i++) {
+           std:: stringstream tmp;
+           tmp << "category" << "_" << i;
+           bool isCommaNeeded = (i+1) != VK_MAX_DESCRIPTION_SIZE;
+           print_char(obj->category[i], "", isCommaNeeded);
+       }
+       PRINT_SPACE
+       _OUT << "]" << "," << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "," << std::endl;
+     }
+
+     PRINT_SPACE
+     _OUT << "\"description\":" << std::endl;
+     PRINT_SPACE
+     if (obj->description) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < VK_MAX_DESCRIPTION_SIZE; i++) {
+           std:: stringstream tmp;
+           tmp << "description" << "_" << i;
+           bool isCommaNeeded = (i+1) != VK_MAX_DESCRIPTION_SIZE;
+           print_char(obj->description[i], "", isCommaNeeded);
+       }
+       PRINT_SPACE
+       _OUT << "]" << "" << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "" << std::endl;
+     }
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkQueryPoolPerformanceCreateInfoKHR(VkQueryPoolPerformanceCreateInfoKHR obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj.queueFamilyIndex, "queueFamilyIndex", 1);
+
+     print_uint32_t(obj.counterIndexCount, "counterIndexCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pCounterIndices\":" << std::endl;
+     PRINT_SPACE
+     if (obj.pCounterIndices) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < obj.counterIndexCount; i++) {
+           std:: stringstream tmp;
+           tmp << "pCounterIndices" << "_" << i;
+           bool isCommaNeeded = (i+1) != obj.counterIndexCount;
+           print_uint32_t(obj.pCounterIndices[i], "", isCommaNeeded);
+       }
+       PRINT_SPACE
+       _OUT << "]" << "" << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "" << std::endl;
+     }
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkQueryPoolPerformanceCreateInfoKHR(const VkQueryPoolPerformanceCreateInfoKHR * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj->queueFamilyIndex, "queueFamilyIndex", 1);
+
+     print_uint32_t(obj->counterIndexCount, "counterIndexCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pCounterIndices\":" << std::endl;
+     PRINT_SPACE
+     if (obj->pCounterIndices) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < obj->counterIndexCount; i++) {
+           std:: stringstream tmp;
+           tmp << "pCounterIndices" << "_" << i;
+           bool isCommaNeeded = (i+1) != obj->counterIndexCount;
+           print_uint32_t(obj->pCounterIndices[i], "", isCommaNeeded);
+       }
+       PRINT_SPACE
+       _OUT << "]" << "" << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "" << std::endl;
+     }
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkPerformanceCounterResultKHR(VkPerformanceCounterResultKHR obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_int32_t(obj.int32, "int32", 1);
+
+     print_int64_t(obj.int64, "int64", 1);
+
+     print_uint32_t(obj.uint32, "uint32", 1);
+
+     print_uint64_t(obj.uint64, "uint64", 1);
+
+     print_float(obj.float32, "float32", 1);
+
+     print_double(obj.float64, "float64", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkPerformanceCounterResultKHR(const VkPerformanceCounterResultKHR * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_int32_t(obj->int32, "int32", 1);
+
+     print_int64_t(obj->int64, "int64", 1);
+
+     print_uint32_t(obj->uint32, "uint32", 1);
+
+     print_uint64_t(obj->uint64, "uint64", 1);
+
+     print_float(obj->float32, "float32", 1);
+
+     print_double(obj->float64, "float64", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkAcquireProfilingLockInfoKHR(VkAcquireProfilingLockInfoKHR obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkAcquireProfilingLockFlagsKHR(obj.flags, "flags", 1);
+
+     print_uint64_t(obj.timeout, "timeout", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkAcquireProfilingLockInfoKHR(const VkAcquireProfilingLockInfoKHR * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkAcquireProfilingLockFlagsKHR(obj->flags, "flags", 1);
+
+     print_uint64_t(obj->timeout, "timeout", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkPerformanceQuerySubmitInfoKHR(VkPerformanceQuerySubmitInfoKHR obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj.counterPassIndex, "counterPassIndex", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkPerformanceQuerySubmitInfoKHR(const VkPerformanceQuerySubmitInfoKHR * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj->counterPassIndex, "counterPassIndex", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkPerformanceQueryReservationInfoKHR(VkPerformanceQueryReservationInfoKHR obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj.maxPerformanceQueriesPerPool, "maxPerformanceQueriesPerPool", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkPerformanceQueryReservationInfoKHR(const VkPerformanceQueryReservationInfoKHR * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj->maxPerformanceQueriesPerPool, "maxPerformanceQueriesPerPool", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
 static void print_VkPhysicalDeviceSurfaceInfo2KHR(VkPhysicalDeviceSurfaceInfo2KHR obj, const std::string& s, bool commaNeeded) {
      PRINT_SPACE
      _OUT << "{" << std::endl;
@@ -30222,81 +29974,6 @@ static void print_VkPhysicalDeviceFragmentShadingRateKHR(const VkPhysicalDeviceF
          _OUT << "}" << std::endl;
 }
 
-//static std::map<int, std::string> VkFaultLevelKHR_map = {
-//    std::make_pair(0, "VK_FAULT_LEVEL_UNASSIGNED"),
-//    std::make_pair(1, "VK_FAULT_LEVEL_CRITICAL"),
-//    std::make_pair(2, "VK_FAULT_LEVEL_RECOVERABLE"),
-//    std::make_pair(3, "VK_FAULT_LEVEL_WARNING"),
-//};
-//static void print_VkFaultLevelKHR(VkFaultLevelKHR obj, const std::string& str, bool commaNeeded) {
-//     PRINT_SPACE
-//     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-//     if (commaNeeded)
-//         _OUT << "\"" <<  VkFaultLevelKHR_map[obj] << "\"," << std::endl;
-//     else
-//         _OUT << "\"" << VkFaultLevelKHR_map[obj] << "\"" << std::endl;
-//}
-//static void print_VkFaultLevelKHR(const VkFaultLevelKHR * obj, const std::string& str, bool commaNeeded) {
-//     PRINT_SPACE
-//     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-//     if (commaNeeded)
-//         _OUT << "\"" <<  VkFaultLevelKHR_map[*obj] << "\"," << std::endl;
-//     else
-//         _OUT << "\"" << VkFaultLevelKHR_map[*obj] << "\"" << std::endl;
-//}
-
-//static std::map<int, std::string> VkFaultTypeKHR_map = {
-//    std::make_pair(0, "VK_FAULT_TYPE_INVALID"),
-//    std::make_pair(1, "VK_FAULT_TYPE_UNASSIGNED"),
-//    std::make_pair(2, "VK_FAULT_TYPE_IMPLEMENTATION"),
-//    std::make_pair(3, "VK_FAULT_TYPE_SYSTEM"),
-//    std::make_pair(4, "VK_FAULT_TYPE_PHYSICAL_DEVICE"),
-//    std::make_pair(5, "VK_FAULT_TYPE_COMMAND_BUFFER_FULL"),
-//    std::make_pair(6, "VK_FAULT_TYPE_INVALID_API_USAGE"),
-//};
-//static void print_VkFaultTypeKHR(VkFaultTypeKHR obj, const std::string& str, bool commaNeeded) {
-//     PRINT_SPACE
-//     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-//     if (commaNeeded)
-//         _OUT << "\"" <<  VkFaultTypeKHR_map[obj] << "\"," << std::endl;
-//     else
-//         _OUT << "\"" << VkFaultTypeKHR_map[obj] << "\"" << std::endl;
-//}
-//static void print_VkFaultTypeKHR(const VkFaultTypeKHR * obj, const std::string& str, bool commaNeeded) {
-//     PRINT_SPACE
-//     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-//     if (commaNeeded)
-//         _OUT << "\"" <<  VkFaultTypeKHR_map[*obj] << "\"," << std::endl;
-//     else
-//         _OUT << "\"" << VkFaultTypeKHR_map[*obj] << "\"" << std::endl;
-//}
-
-//static std::map<int, std::string> VkFaultQueryBehaviorKHR_map = {
-//    std::make_pair(0, "VK_FAULT_QUERY_BEHAVIOR_GET_AND_CLEAR_ALL_FAULTS"),
-//};
-//static void print_VkFaultQueryBehaviorKHR(VkFaultQueryBehaviorKHR obj, const std::string& str, bool commaNeeded) {
-//     PRINT_SPACE
-//     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-//     if (commaNeeded)
-//         _OUT << "\"" <<  VkFaultQueryBehaviorKHR_map[obj] << "\"," << std::endl;
-//     else
-//         _OUT << "\"" << VkFaultQueryBehaviorKHR_map[obj] << "\"" << std::endl;
-//}
-//static void print_VkFaultQueryBehaviorKHR(const VkFaultQueryBehaviorKHR * obj, const std::string& str, bool commaNeeded) {
-//     PRINT_SPACE
-//     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-//     if (commaNeeded)
-//         _OUT << "\"" <<  VkFaultQueryBehaviorKHR_map[*obj] << "\"," << std::endl;
-//     else
-//         _OUT << "\"" << VkFaultQueryBehaviorKHR_map[*obj] << "\"" << std::endl;
-//}
-
-//typedef VkFaultData VkFaultDataKHR;
-
-typedef VkFaultCallbackInfo VkFaultCallbackInfoKHR;
-
-//typedef VkPhysicalDeviceFaultHandlingProperties VkPhysicalDeviceFaultHandlingPropertiesKHR;
-
 static std::map<int, std::string> VkRefreshObjectFlagBitsKHR_map = {
 };
 static void print_VkRefreshObjectFlagBitsKHR(VkRefreshObjectFlagBitsKHR obj, const std::string& str, bool commaNeeded) {
@@ -30471,6 +30148,617 @@ static void print_VkRefreshObjectListKHR(const VkRefreshObjectListKHR * obj, con
          _OUT << "]" << std::endl;
     }
      else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkFlags64(VkFlags64 obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "\"" << str << "\"" << " : " << "\"" << obj << "\"" << (commaNeeded ? "," : "") << std::endl;
+}
+static void print_VkFlags64(const VkFlags64 * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "\"" << str << "\"" << " : " << "\"" << obj << "\"" << (commaNeeded ? "," : "") << std::endl;
+}
+
+static std::map<deUint64, std::string> VkPipelineStageFlagBits2KHR_map = {
+    std::make_pair(0, "VK_PIPELINE_STAGE_2_NONE_KHR"),
+    std::make_pair(1ULL << 0, "VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR"),
+    std::make_pair(1ULL << 1, "VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT_KHR"),
+    std::make_pair(1ULL << 2, "VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT_KHR"),
+    std::make_pair(1ULL << 3, "VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT_KHR"),
+    std::make_pair(1ULL << 4, "VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT_KHR"),
+    std::make_pair(1ULL << 5, "VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT_KHR"),
+    std::make_pair(1ULL << 6, "VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT_KHR"),
+    std::make_pair(1ULL << 7, "VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT_KHR"),
+    std::make_pair(1ULL << 8, "VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT_KHR"),
+    std::make_pair(1ULL << 9, "VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT_KHR"),
+    std::make_pair(1ULL << 10, "VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR"),
+    std::make_pair(1ULL << 11, "VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR"),
+    std::make_pair(1ULL << 12, "VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT_KHR"),
+    std::make_pair(1ULL << 13, "VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR"),
+    std::make_pair(1ULL << 14, "VK_PIPELINE_STAGE_2_HOST_BIT_KHR"),
+    std::make_pair(1ULL << 15, "VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT_KHR"),
+    std::make_pair(1ULL << 16, "VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR"),
+    std::make_pair(1ULL << 32, "VK_PIPELINE_STAGE_2_COPY_BIT_KHR"),
+    std::make_pair(1ULL << 33, "VK_PIPELINE_STAGE_2_RESOLVE_BIT_KHR"),
+    std::make_pair(1ULL << 34, "VK_PIPELINE_STAGE_2_BLIT_BIT_KHR"),
+    std::make_pair(1ULL << 35, "VK_PIPELINE_STAGE_2_CLEAR_BIT_KHR"),
+    std::make_pair(1ULL << 36, "VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT_KHR"),
+    std::make_pair(1ULL << 37, "VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT_KHR"),
+    std::make_pair(1ULL << 38, "VK_PIPELINE_STAGE_2_PRE_RASTERIZATION_SHADERS_BIT_KHR"),
+    std::make_pair(1ULL << 26, "VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR"),
+    std::make_pair(1ULL << 27, "VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR"),
+    std::make_pair(1ULL << 24, "VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT"),
+    std::make_pair(1ULL << 18, "VK_PIPELINE_STAGE_2_CONDITIONAL_RENDERING_BIT_EXT"),
+    std::make_pair(1ULL << 17, "VK_PIPELINE_STAGE_2_COMMAND_PREPROCESS_BIT_NV"),
+    std::make_pair(1ULL << 22, "VK_PIPELINE_STAGE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
+    std::make_pair(1ULL << 25, "VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR"),
+    std::make_pair(1ULL << 21, "VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR"),
+    std::make_pair(1ULL << 23, "VK_PIPELINE_STAGE_2_FRAGMENT_DENSITY_PROCESS_BIT_EXT"),
+    std::make_pair(1ULL << 19, "VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_NV"),
+    std::make_pair(1ULL << 20, "VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_NV"),
+};
+static void print_VkPipelineStageFlagBits2KHR(VkPipelineStageFlagBits2KHR obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkPipelineStageFlagBits2KHR_map[obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkPipelineStageFlagBits2KHR_map[obj] << "\"" << std::endl;
+}
+static void print_VkPipelineStageFlagBits2KHR(const VkPipelineStageFlagBits2KHR * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkPipelineStageFlagBits2KHR_map[*obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkPipelineStageFlagBits2KHR_map[*obj] << "\"" << std::endl;
+}
+
+static std::map<deUint64, std::string> VkAccessFlagBits2KHR_map = {
+    std::make_pair(0, "VK_ACCESS_2_NONE_KHR"),
+    std::make_pair(1ULL << 0, "VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT_KHR"),
+    std::make_pair(1ULL << 1, "VK_ACCESS_2_INDEX_READ_BIT_KHR"),
+    std::make_pair(1ULL << 2, "VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT_KHR"),
+    std::make_pair(1ULL << 3, "VK_ACCESS_2_UNIFORM_READ_BIT_KHR"),
+    std::make_pair(1ULL << 4, "VK_ACCESS_2_INPUT_ATTACHMENT_READ_BIT_KHR"),
+    std::make_pair(1ULL << 5, "VK_ACCESS_2_SHADER_READ_BIT_KHR"),
+    std::make_pair(1ULL << 6, "VK_ACCESS_2_SHADER_WRITE_BIT_KHR"),
+    std::make_pair(1ULL << 7, "VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT_KHR"),
+    std::make_pair(1ULL << 8, "VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR"),
+    std::make_pair(1ULL << 9, "VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT_KHR"),
+    std::make_pair(1ULL << 10, "VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT_KHR"),
+    std::make_pair(1ULL << 11, "VK_ACCESS_2_TRANSFER_READ_BIT_KHR"),
+    std::make_pair(1ULL << 12, "VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR"),
+    std::make_pair(1ULL << 13, "VK_ACCESS_2_HOST_READ_BIT_KHR"),
+    std::make_pair(1ULL << 14, "VK_ACCESS_2_HOST_WRITE_BIT_KHR"),
+    std::make_pair(1ULL << 15, "VK_ACCESS_2_MEMORY_READ_BIT_KHR"),
+    std::make_pair(1ULL << 16, "VK_ACCESS_2_MEMORY_WRITE_BIT_KHR"),
+    std::make_pair(1ULL << 32, "VK_ACCESS_2_SHADER_SAMPLED_READ_BIT_KHR"),
+    std::make_pair(1ULL << 33, "VK_ACCESS_2_SHADER_STORAGE_READ_BIT_KHR"),
+    std::make_pair(1ULL << 34, "VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT_KHR"),
+    std::make_pair(1ULL << 35, "VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR"),
+    std::make_pair(1ULL << 36, "VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR"),
+    std::make_pair(1ULL << 37, "VK_ACCESS_2_VIDEO_ENCODE_READ_BIT_KHR"),
+    std::make_pair(1ULL << 38, "VK_ACCESS_2_VIDEO_ENCODE_WRITE_BIT_KHR"),
+    std::make_pair(1ULL << 25, "VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT"),
+    std::make_pair(1ULL << 26, "VK_ACCESS_2_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT"),
+    std::make_pair(1ULL << 27, "VK_ACCESS_2_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT"),
+    std::make_pair(1ULL << 20, "VK_ACCESS_2_CONDITIONAL_RENDERING_READ_BIT_EXT"),
+    std::make_pair(1ULL << 17, "VK_ACCESS_2_COMMAND_PREPROCESS_READ_BIT_NV"),
+    std::make_pair(1ULL << 18, "VK_ACCESS_2_COMMAND_PREPROCESS_WRITE_BIT_NV"),
+    std::make_pair(1ULL << 23, "VK_ACCESS_2_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR"),
+    std::make_pair(1ULL << 21, "VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR"),
+    std::make_pair(1ULL << 22, "VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR"),
+    std::make_pair(1ULL << 24, "VK_ACCESS_2_FRAGMENT_DENSITY_MAP_READ_BIT_EXT"),
+    std::make_pair(1ULL << 19, "VK_ACCESS_2_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT"),
+};
+static void print_VkAccessFlagBits2KHR(VkAccessFlagBits2KHR obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkAccessFlagBits2KHR_map[obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkAccessFlagBits2KHR_map[obj] << "\"" << std::endl;
+}
+static void print_VkAccessFlagBits2KHR(const VkAccessFlagBits2KHR * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkAccessFlagBits2KHR_map[*obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkAccessFlagBits2KHR_map[*obj] << "\"" << std::endl;
+}
+
+static std::map<int, std::string> VkSubmitFlagBitsKHR_map = {
+    std::make_pair(1 << 0, "VK_SUBMIT_PROTECTED_BIT_KHR"),
+};
+static void print_VkSubmitFlagBitsKHR(VkSubmitFlagBitsKHR obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkSubmitFlagBitsKHR_map[obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkSubmitFlagBitsKHR_map[obj] << "\"" << std::endl;
+}
+static void print_VkSubmitFlagBitsKHR(const VkSubmitFlagBitsKHR * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkSubmitFlagBitsKHR_map[*obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkSubmitFlagBitsKHR_map[*obj] << "\"" << std::endl;
+}
+
+static void print_VkPipelineStageFlags2KHR(VkPipelineStageFlags2KHR obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "\"" << str << "\"" << " : " << obj << "," << std::endl;
+     else
+         _OUT << "\"" << str << "\"" << " : " << obj << std::endl;
+}
+static void print_VkPipelineStageFlags2KHR(const VkPipelineStageFlags2KHR * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "\"" << str << "\"" << " : " << obj << "," << std::endl;
+     else
+         _OUT << "\"" << str << "\"" << " : " << obj << std::endl;
+}
+
+static void print_VkAccessFlags2KHR(VkAccessFlags2KHR obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "\"" << str << "\"" << " : " << obj << "," << std::endl;
+     else
+         _OUT << "\"" << str << "\"" << " : " << obj << std::endl;
+}
+static void print_VkAccessFlags2KHR(const VkAccessFlags2KHR * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "\"" << str << "\"" << " : " << obj << "," << std::endl;
+     else
+         _OUT << "\"" << str << "\"" << " : " << obj << std::endl;
+}
+
+static void print_VkSubmitFlagsKHR(VkSubmitFlagsKHR obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+ _OUT << "\"" << str << "\"" << " : ";
+     const int max_bits = 64; // We don't expect the number to be larger.
+     std::bitset<max_bits> b(obj);
+     _OUT << "\"";
+     if (obj == 0) _OUT << "0";
+     for (unsigned int i = 0, bitCount = 0; i < b.size(); i++) {
+         if (b[i] == 1) {
+             bitCount++;
+             if (bitCount < b.count())
+                 _OUT << VkSubmitFlagBitsKHR_map[1<<i] << " | ";
+             else
+                 _OUT << VkSubmitFlagBitsKHR_map[1<<i];
+         }
+     }
+     if (commaNeeded)
+       _OUT << "\"" << ",";
+     else
+       _OUT << "\""<< "";
+     _OUT << std::endl;
+}
+static void print_VkSubmitFlagsKHR(const VkSubmitFlagsKHR * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+ _OUT << "\"" << str << "\"" << " : ";
+     const int max_bits = 64; // We don't expect the number to be larger.
+     std::bitset<max_bits> b(obj);
+     _OUT << "\"";
+     if (obj == 0) _OUT << "0";
+     for (unsigned int i = 0, bitCount = 0; i < b.size(); i++) {
+         if (b[i] == 1) {
+             bitCount++;
+             if (bitCount < b.count())
+                 _OUT << VkSubmitFlagBitsKHR_map[1<<i] << " | ";
+             else
+                 _OUT << VkSubmitFlagBitsKHR_map[1<<i];
+         }
+     }
+     if (commaNeeded)
+       _OUT << "\"" << ",";
+     else
+       _OUT << "\""<< "";
+     _OUT << std::endl;
+}
+
+static void print_VkMemoryBarrier2KHR(VkMemoryBarrier2KHR obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkPipelineStageFlags2KHR(obj.srcStageMask, "srcStageMask", 1);
+
+     print_VkAccessFlags2KHR(obj.srcAccessMask, "srcAccessMask", 1);
+
+     print_VkPipelineStageFlags2KHR(obj.dstStageMask, "dstStageMask", 1);
+
+     print_VkAccessFlags2KHR(obj.dstAccessMask, "dstAccessMask", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkMemoryBarrier2KHR(const VkMemoryBarrier2KHR * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkPipelineStageFlags2KHR(obj->srcStageMask, "srcStageMask", 1);
+
+     print_VkAccessFlags2KHR(obj->srcAccessMask, "srcAccessMask", 1);
+
+     print_VkPipelineStageFlags2KHR(obj->dstStageMask, "dstStageMask", 1);
+
+     print_VkAccessFlags2KHR(obj->dstAccessMask, "dstAccessMask", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkBufferMemoryBarrier2KHR(VkBufferMemoryBarrier2KHR obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkPipelineStageFlags2KHR(obj.srcStageMask, "srcStageMask", 1);
+
+     print_VkAccessFlags2KHR(obj.srcAccessMask, "srcAccessMask", 1);
+
+     print_VkPipelineStageFlags2KHR(obj.dstStageMask, "dstStageMask", 1);
+
+     print_VkAccessFlags2KHR(obj.dstAccessMask, "dstAccessMask", 1);
+
+     print_uint32_t(obj.srcQueueFamilyIndex, "srcQueueFamilyIndex", 1);
+
+     print_uint32_t(obj.dstQueueFamilyIndex, "dstQueueFamilyIndex", 1);
+
+     /** Note: printing just an empty entry here **/
+     PRINT_SPACE    _OUT << "\"" << "buffer" << "\"" << " : " << "\"" << "\"," << std::endl;
+
+     print_VkDeviceSize(obj.offset, "offset", 1);
+
+     print_VkDeviceSize(obj.size, "size", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkBufferMemoryBarrier2KHR(const VkBufferMemoryBarrier2KHR * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkPipelineStageFlags2KHR(obj->srcStageMask, "srcStageMask", 1);
+
+     print_VkAccessFlags2KHR(obj->srcAccessMask, "srcAccessMask", 1);
+
+     print_VkPipelineStageFlags2KHR(obj->dstStageMask, "dstStageMask", 1);
+
+     print_VkAccessFlags2KHR(obj->dstAccessMask, "dstAccessMask", 1);
+
+     print_uint32_t(obj->srcQueueFamilyIndex, "srcQueueFamilyIndex", 1);
+
+     print_uint32_t(obj->dstQueueFamilyIndex, "dstQueueFamilyIndex", 1);
+
+     /** Note: printing just an empty entry here **/
+     PRINT_SPACE    _OUT << "\"" << "buffer" << "\"" << " : " << "\"" << "\"," << std::endl;
+
+     print_VkDeviceSize(obj->offset, "offset", 1);
+
+     print_VkDeviceSize(obj->size, "size", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkImageMemoryBarrier2KHR(VkImageMemoryBarrier2KHR obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkPipelineStageFlags2KHR(obj.srcStageMask, "srcStageMask", 1);
+
+     print_VkAccessFlags2KHR(obj.srcAccessMask, "srcAccessMask", 1);
+
+     print_VkPipelineStageFlags2KHR(obj.dstStageMask, "dstStageMask", 1);
+
+     print_VkAccessFlags2KHR(obj.dstAccessMask, "dstAccessMask", 1);
+
+     print_VkImageLayout(obj.oldLayout, "oldLayout", 1);
+
+     print_VkImageLayout(obj.newLayout, "newLayout", 1);
+
+     print_uint32_t(obj.srcQueueFamilyIndex, "srcQueueFamilyIndex", 1);
+
+     print_uint32_t(obj.dstQueueFamilyIndex, "dstQueueFamilyIndex", 1);
+
+     /** Note: printing just an empty entry here **/
+     PRINT_SPACE    _OUT << "\"" << "image" << "\"" << " : " << "\"" << "\"," << std::endl;
+
+     PRINT_SPACE
+     _OUT << "\"subresourceRange\": " << std::endl;
+     {
+           print_VkImageSubresourceRange(obj.subresourceRange, "subresourceRange", 0);
+     }
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkImageMemoryBarrier2KHR(const VkImageMemoryBarrier2KHR * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkPipelineStageFlags2KHR(obj->srcStageMask, "srcStageMask", 1);
+
+     print_VkAccessFlags2KHR(obj->srcAccessMask, "srcAccessMask", 1);
+
+     print_VkPipelineStageFlags2KHR(obj->dstStageMask, "dstStageMask", 1);
+
+     print_VkAccessFlags2KHR(obj->dstAccessMask, "dstAccessMask", 1);
+
+     print_VkImageLayout(obj->oldLayout, "oldLayout", 1);
+
+     print_VkImageLayout(obj->newLayout, "newLayout", 1);
+
+     print_uint32_t(obj->srcQueueFamilyIndex, "srcQueueFamilyIndex", 1);
+
+     print_uint32_t(obj->dstQueueFamilyIndex, "dstQueueFamilyIndex", 1);
+
+     /** Note: printing just an empty entry here **/
+     PRINT_SPACE    _OUT << "\"" << "image" << "\"" << " : " << "\"" << "\"," << std::endl;
+
+     PRINT_SPACE
+     _OUT << "\"subresourceRange\": " << std::endl;
+     {
+           print_VkImageSubresourceRange(obj->subresourceRange, "subresourceRange", 0);
+     }
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkDependencyInfoKHR(VkDependencyInfoKHR obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkDependencyFlags(obj.dependencyFlags, "dependencyFlags", 1);
+
+     print_uint32_t(obj.memoryBarrierCount, "memoryBarrierCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pMemoryBarriers\": " << std::endl;
+     if (obj.pMemoryBarriers) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj.memoryBarrierCount; i++) {
+           if (i+1 == obj.memoryBarrierCount)
+               print_VkMemoryBarrier2KHR(obj.pMemoryBarriers[i], "pMemoryBarriers", 0);
+           else
+               print_VkMemoryBarrier2KHR(obj.pMemoryBarriers[i], "pMemoryBarriers", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]," << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj.bufferMemoryBarrierCount, "bufferMemoryBarrierCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pBufferMemoryBarriers\": " << std::endl;
+     if (obj.pBufferMemoryBarriers) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj.bufferMemoryBarrierCount; i++) {
+           if (i+1 == obj.bufferMemoryBarrierCount)
+               print_VkBufferMemoryBarrier2KHR(obj.pBufferMemoryBarriers[i], "pBufferMemoryBarriers", 0);
+           else
+               print_VkBufferMemoryBarrier2KHR(obj.pBufferMemoryBarriers[i], "pBufferMemoryBarriers", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]," << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj.imageMemoryBarrierCount, "imageMemoryBarrierCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pImageMemoryBarriers\": " << std::endl;
+     if (obj.pImageMemoryBarriers) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj.imageMemoryBarrierCount; i++) {
+           if (i+1 == obj.imageMemoryBarrierCount)
+               print_VkImageMemoryBarrier2KHR(obj.pImageMemoryBarriers[i], "pImageMemoryBarriers", 0);
+           else
+               print_VkImageMemoryBarrier2KHR(obj.pImageMemoryBarriers[i], "pImageMemoryBarriers", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]" << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ""<< std::endl;
+     }
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkDependencyInfoKHR(const VkDependencyInfoKHR * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkDependencyFlags(obj->dependencyFlags, "dependencyFlags", 1);
+
+     print_uint32_t(obj->memoryBarrierCount, "memoryBarrierCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pMemoryBarriers\": " << std::endl;
+     if (obj->pMemoryBarriers) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj->memoryBarrierCount; i++) {
+           if (i+1 == obj->memoryBarrierCount)
+               print_VkMemoryBarrier2KHR(obj->pMemoryBarriers[i], "pMemoryBarriers", 0);
+           else
+               print_VkMemoryBarrier2KHR(obj->pMemoryBarriers[i], "pMemoryBarriers", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]," << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj->bufferMemoryBarrierCount, "bufferMemoryBarrierCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pBufferMemoryBarriers\": " << std::endl;
+     if (obj->pBufferMemoryBarriers) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj->bufferMemoryBarrierCount; i++) {
+           if (i+1 == obj->bufferMemoryBarrierCount)
+               print_VkBufferMemoryBarrier2KHR(obj->pBufferMemoryBarriers[i], "pBufferMemoryBarriers", 0);
+           else
+               print_VkBufferMemoryBarrier2KHR(obj->pBufferMemoryBarriers[i], "pBufferMemoryBarriers", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]," << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj->imageMemoryBarrierCount, "imageMemoryBarrierCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pImageMemoryBarriers\": " << std::endl;
+     if (obj->pImageMemoryBarriers) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj->imageMemoryBarrierCount; i++) {
+           if (i+1 == obj->imageMemoryBarrierCount)
+               print_VkImageMemoryBarrier2KHR(obj->pImageMemoryBarriers[i], "pImageMemoryBarriers", 0);
+           else
+               print_VkImageMemoryBarrier2KHR(obj->pImageMemoryBarriers[i], "pImageMemoryBarriers", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]" << std::endl;
+    }
+     else
      {
          PRINT_SPACE _OUT << "\"NULL\""<< ""<< std::endl;
      }
@@ -30483,29 +30771,437 @@ static void print_VkRefreshObjectListKHR(const VkRefreshObjectListKHR * obj, con
          _OUT << "}" << std::endl;
 }
 
-//static std::map<int, std::string> VkPipelineMatchControlKHR_map = {
-//    std::make_pair(0, "VK_PIPELINE_MATCH_CONTROL_APPLICATION_UUID_EXACT_MATCH"),
-//};
-//static void print_VkPipelineMatchControlKHR(VkPipelineMatchControlKHR obj, const std::string& str, bool commaNeeded) {
-//     PRINT_SPACE
-//     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-//     if (commaNeeded)
-//         _OUT << "\"" <<  VkPipelineMatchControlKHR_map[obj] << "\"," << std::endl;
-//     else
-//         _OUT << "\"" << VkPipelineMatchControlKHR_map[obj] << "\"" << std::endl;
-//}
-//static void print_VkPipelineMatchControlKHR(const VkPipelineMatchControlKHR * obj, const std::string& str, bool commaNeeded) {
-//     PRINT_SPACE
-//     if (str != "") _OUT << "\"" << str << "\"" << " : ";
-//     if (commaNeeded)
-//         _OUT << "\"" <<  VkPipelineMatchControlKHR_map[*obj] << "\"," << std::endl;
-//     else
-//         _OUT << "\"" << VkPipelineMatchControlKHR_map[*obj] << "\"" << std::endl;
-//}
+static void print_VkSemaphoreSubmitInfoKHR(VkSemaphoreSubmitInfoKHR obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
 
-//typedef VkPhysicalDevicePipelineIdentifierFeatures VkPhysicalDevicePipelineIdentifierFeaturesKHR;
+     print_VkStructureType(obj.sType, "sType", 1);
 
-//typedef VkPipelineIdentifierInfo VkPipelineIdentifierInfoKHR;
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     /** Note: printing just an empty entry here **/
+     PRINT_SPACE    _OUT << "\"" << "semaphore" << "\"" << " : " << "\"" << "\"," << std::endl;
+
+     print_uint64_t(obj.value, "value", 1);
+
+     print_VkPipelineStageFlags2KHR(obj.stageMask, "stageMask", 1);
+
+     print_uint32_t(obj.deviceIndex, "deviceIndex", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkSemaphoreSubmitInfoKHR(const VkSemaphoreSubmitInfoKHR * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     /** Note: printing just an empty entry here **/
+     PRINT_SPACE    _OUT << "\"" << "semaphore" << "\"" << " : " << "\"" << "\"," << std::endl;
+
+     print_uint64_t(obj->value, "value", 1);
+
+     print_VkPipelineStageFlags2KHR(obj->stageMask, "stageMask", 1);
+
+     print_uint32_t(obj->deviceIndex, "deviceIndex", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkCommandBufferSubmitInfoKHR(VkCommandBufferSubmitInfoKHR obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     /** Note: printing just an empty entry here **/
+     PRINT_SPACE    _OUT << "\"" << "commandBuffer" << "\"" << " : " << "\"" << "\"," << std::endl;
+
+     print_uint32_t(obj.deviceMask, "deviceMask", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkCommandBufferSubmitInfoKHR(const VkCommandBufferSubmitInfoKHR * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     /** Note: printing just an empty entry here **/
+     PRINT_SPACE    _OUT << "\"" << "commandBuffer" << "\"" << " : " << "\"" << "\"," << std::endl;
+
+     print_uint32_t(obj->deviceMask, "deviceMask", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkSubmitInfo2KHR(VkSubmitInfo2KHR obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkSubmitFlagsKHR(obj.flags, "flags", 1);
+
+     print_uint32_t(obj.waitSemaphoreInfoCount, "waitSemaphoreInfoCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pWaitSemaphoreInfos\": " << std::endl;
+     if (obj.pWaitSemaphoreInfos) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj.waitSemaphoreInfoCount; i++) {
+           if (i+1 == obj.waitSemaphoreInfoCount)
+               print_VkSemaphoreSubmitInfoKHR(obj.pWaitSemaphoreInfos[i], "pWaitSemaphoreInfos", 0);
+           else
+               print_VkSemaphoreSubmitInfoKHR(obj.pWaitSemaphoreInfos[i], "pWaitSemaphoreInfos", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]," << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj.commandBufferInfoCount, "commandBufferInfoCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pCommandBufferInfos\": " << std::endl;
+     if (obj.pCommandBufferInfos) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj.commandBufferInfoCount; i++) {
+           if (i+1 == obj.commandBufferInfoCount)
+               print_VkCommandBufferSubmitInfoKHR(obj.pCommandBufferInfos[i], "pCommandBufferInfos", 0);
+           else
+               print_VkCommandBufferSubmitInfoKHR(obj.pCommandBufferInfos[i], "pCommandBufferInfos", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]," << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj.signalSemaphoreInfoCount, "signalSemaphoreInfoCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pSignalSemaphoreInfos\": " << std::endl;
+     if (obj.pSignalSemaphoreInfos) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj.signalSemaphoreInfoCount; i++) {
+           if (i+1 == obj.signalSemaphoreInfoCount)
+               print_VkSemaphoreSubmitInfoKHR(obj.pSignalSemaphoreInfos[i], "pSignalSemaphoreInfos", 0);
+           else
+               print_VkSemaphoreSubmitInfoKHR(obj.pSignalSemaphoreInfos[i], "pSignalSemaphoreInfos", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]" << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ""<< std::endl;
+     }
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkSubmitInfo2KHR(const VkSubmitInfo2KHR * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkSubmitFlagsKHR(obj->flags, "flags", 1);
+
+     print_uint32_t(obj->waitSemaphoreInfoCount, "waitSemaphoreInfoCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pWaitSemaphoreInfos\": " << std::endl;
+     if (obj->pWaitSemaphoreInfos) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj->waitSemaphoreInfoCount; i++) {
+           if (i+1 == obj->waitSemaphoreInfoCount)
+               print_VkSemaphoreSubmitInfoKHR(obj->pWaitSemaphoreInfos[i], "pWaitSemaphoreInfos", 0);
+           else
+               print_VkSemaphoreSubmitInfoKHR(obj->pWaitSemaphoreInfos[i], "pWaitSemaphoreInfos", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]," << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj->commandBufferInfoCount, "commandBufferInfoCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pCommandBufferInfos\": " << std::endl;
+     if (obj->pCommandBufferInfos) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj->commandBufferInfoCount; i++) {
+           if (i+1 == obj->commandBufferInfoCount)
+               print_VkCommandBufferSubmitInfoKHR(obj->pCommandBufferInfos[i], "pCommandBufferInfos", 0);
+           else
+               print_VkCommandBufferSubmitInfoKHR(obj->pCommandBufferInfos[i], "pCommandBufferInfos", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]," << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj->signalSemaphoreInfoCount, "signalSemaphoreInfoCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pSignalSemaphoreInfos\": " << std::endl;
+     if (obj->pSignalSemaphoreInfos) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj->signalSemaphoreInfoCount; i++) {
+           if (i+1 == obj->signalSemaphoreInfoCount)
+               print_VkSemaphoreSubmitInfoKHR(obj->pSignalSemaphoreInfos[i], "pSignalSemaphoreInfos", 0);
+           else
+               print_VkSemaphoreSubmitInfoKHR(obj->pSignalSemaphoreInfos[i], "pSignalSemaphoreInfos", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]" << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ""<< std::endl;
+     }
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkPhysicalDeviceSynchronization2FeaturesKHR(VkPhysicalDeviceSynchronization2FeaturesKHR obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkBool32(obj.synchronization2, "synchronization2", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkPhysicalDeviceSynchronization2FeaturesKHR(const VkPhysicalDeviceSynchronization2FeaturesKHR * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkBool32(obj->synchronization2, "synchronization2", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkQueueFamilyCheckpointProperties2NV(VkQueueFamilyCheckpointProperties2NV obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkPipelineStageFlags2KHR(obj.checkpointExecutionStageMask, "checkpointExecutionStageMask", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkQueueFamilyCheckpointProperties2NV(const VkQueueFamilyCheckpointProperties2NV * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkPipelineStageFlags2KHR(obj->checkpointExecutionStageMask, "checkpointExecutionStageMask", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkCheckpointData2NV(VkCheckpointData2NV obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkPipelineStageFlags2KHR(obj.stage, "stage", 1);
+
+     /** Note: Ignoring void* data. **/
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkCheckpointData2NV(const VkCheckpointData2NV * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkPipelineStageFlags2KHR(obj->stage, "stage", 1);
+
+     /** Note: Ignoring void* data. **/
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
 
 static void print_VkBufferCopy2KHR(VkBufferCopy2KHR obj, const std::string& s, bool commaNeeded) {
      PRINT_SPACE
@@ -32779,6 +33475,633 @@ static void print_VkHdrMetadataEXT(const VkHdrMetadataEXT * obj, const std::stri
          _OUT << "}" << std::endl;
 }
 
+static void print_VkDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "\"" << str << "\"" << "," << std::endl;
+     else
+         _OUT << "\"" << str << "\"" << std::endl;
+}
+static void print_VkDebugUtilsMessengerEXT(const VkDebugUtilsMessengerEXT * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "\"" << str << "\"" << "," << std::endl;
+     else
+         _OUT << "\"" << str << "\"" << std::endl;
+}
+
+static std::map<int, std::string> VkDebugUtilsMessageSeverityFlagBitsEXT_map = {
+    std::make_pair(1 << 0, "VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT"),
+    std::make_pair(1 << 4, "VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT"),
+    std::make_pair(1 << 8, "VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT"),
+    std::make_pair(1 << 12, "VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT"),
+};
+static void print_VkDebugUtilsMessageSeverityFlagBitsEXT(VkDebugUtilsMessageSeverityFlagBitsEXT obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkDebugUtilsMessageSeverityFlagBitsEXT_map[obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkDebugUtilsMessageSeverityFlagBitsEXT_map[obj] << "\"" << std::endl;
+}
+static void print_VkDebugUtilsMessageSeverityFlagBitsEXT(const VkDebugUtilsMessageSeverityFlagBitsEXT * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkDebugUtilsMessageSeverityFlagBitsEXT_map[*obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkDebugUtilsMessageSeverityFlagBitsEXT_map[*obj] << "\"" << std::endl;
+}
+
+static std::map<int, std::string> VkDebugUtilsMessageTypeFlagBitsEXT_map = {
+    std::make_pair(1 << 0, "VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT"),
+    std::make_pair(1 << 1, "VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT"),
+    std::make_pair(1 << 2, "VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT"),
+};
+static void print_VkDebugUtilsMessageTypeFlagBitsEXT(VkDebugUtilsMessageTypeFlagBitsEXT obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkDebugUtilsMessageTypeFlagBitsEXT_map[obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkDebugUtilsMessageTypeFlagBitsEXT_map[obj] << "\"" << std::endl;
+}
+static void print_VkDebugUtilsMessageTypeFlagBitsEXT(const VkDebugUtilsMessageTypeFlagBitsEXT * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkDebugUtilsMessageTypeFlagBitsEXT_map[*obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkDebugUtilsMessageTypeFlagBitsEXT_map[*obj] << "\"" << std::endl;
+}
+
+static void print_VkDebugUtilsMessengerCallbackDataFlagsEXT(VkDebugUtilsMessengerCallbackDataFlagsEXT obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "\"" << str << "\"" << " : " << obj << "," << std::endl;
+     else
+         _OUT << "\"" << str << "\"" << " : " << obj << std::endl;
+}
+static void print_VkDebugUtilsMessengerCallbackDataFlagsEXT(const VkDebugUtilsMessengerCallbackDataFlagsEXT * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "\"" << str << "\"" << " : " << obj << "," << std::endl;
+     else
+         _OUT << "\"" << str << "\"" << " : " << obj << std::endl;
+}
+
+static void print_VkDebugUtilsMessageTypeFlagsEXT(VkDebugUtilsMessageTypeFlagsEXT obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+ _OUT << "\"" << str << "\"" << " : ";
+     const int max_bits = 64; // We don't expect the number to be larger.
+     std::bitset<max_bits> b(obj);
+     _OUT << "\"";
+     if (obj == 0) _OUT << "0";
+     for (unsigned int i = 0, bitCount = 0; i < b.size(); i++) {
+         if (b[i] == 1) {
+             bitCount++;
+             if (bitCount < b.count())
+                 _OUT << VkDebugUtilsMessageTypeFlagBitsEXT_map[1<<i] << " | ";
+             else
+                 _OUT << VkDebugUtilsMessageTypeFlagBitsEXT_map[1<<i];
+         }
+     }
+     if (commaNeeded)
+       _OUT << "\"" << ",";
+     else
+       _OUT << "\""<< "";
+     _OUT << std::endl;
+}
+static void print_VkDebugUtilsMessageTypeFlagsEXT(const VkDebugUtilsMessageTypeFlagsEXT * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+ _OUT << "\"" << str << "\"" << " : ";
+     const int max_bits = 64; // We don't expect the number to be larger.
+     std::bitset<max_bits> b(obj);
+     _OUT << "\"";
+     if (obj == 0) _OUT << "0";
+     for (unsigned int i = 0, bitCount = 0; i < b.size(); i++) {
+         if (b[i] == 1) {
+             bitCount++;
+             if (bitCount < b.count())
+                 _OUT << VkDebugUtilsMessageTypeFlagBitsEXT_map[1<<i] << " | ";
+             else
+                 _OUT << VkDebugUtilsMessageTypeFlagBitsEXT_map[1<<i];
+         }
+     }
+     if (commaNeeded)
+       _OUT << "\"" << ",";
+     else
+       _OUT << "\""<< "";
+     _OUT << std::endl;
+}
+
+static void print_VkDebugUtilsMessageSeverityFlagsEXT(VkDebugUtilsMessageSeverityFlagsEXT obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+ _OUT << "\"" << str << "\"" << " : ";
+     const int max_bits = 64; // We don't expect the number to be larger.
+     std::bitset<max_bits> b(obj);
+     _OUT << "\"";
+     if (obj == 0) _OUT << "0";
+     for (unsigned int i = 0, bitCount = 0; i < b.size(); i++) {
+         if (b[i] == 1) {
+             bitCount++;
+             if (bitCount < b.count())
+                 _OUT << VkDebugUtilsMessageSeverityFlagBitsEXT_map[1<<i] << " | ";
+             else
+                 _OUT << VkDebugUtilsMessageSeverityFlagBitsEXT_map[1<<i];
+         }
+     }
+     if (commaNeeded)
+       _OUT << "\"" << ",";
+     else
+       _OUT << "\""<< "";
+     _OUT << std::endl;
+}
+static void print_VkDebugUtilsMessageSeverityFlagsEXT(const VkDebugUtilsMessageSeverityFlagsEXT * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+ _OUT << "\"" << str << "\"" << " : ";
+     const int max_bits = 64; // We don't expect the number to be larger.
+     std::bitset<max_bits> b(obj);
+     _OUT << "\"";
+     if (obj == 0) _OUT << "0";
+     for (unsigned int i = 0, bitCount = 0; i < b.size(); i++) {
+         if (b[i] == 1) {
+             bitCount++;
+             if (bitCount < b.count())
+                 _OUT << VkDebugUtilsMessageSeverityFlagBitsEXT_map[1<<i] << " | ";
+             else
+                 _OUT << VkDebugUtilsMessageSeverityFlagBitsEXT_map[1<<i];
+         }
+     }
+     if (commaNeeded)
+       _OUT << "\"" << ",";
+     else
+       _OUT << "\""<< "";
+     _OUT << std::endl;
+}
+
+static void print_VkDebugUtilsMessengerCreateFlagsEXT(VkDebugUtilsMessengerCreateFlagsEXT obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "\"" << str << "\"" << " : " << obj << "," << std::endl;
+     else
+         _OUT << "\"" << str << "\"" << " : " << obj << std::endl;
+}
+static void print_VkDebugUtilsMessengerCreateFlagsEXT(const VkDebugUtilsMessengerCreateFlagsEXT * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "\"" << str << "\"" << " : " << obj << "," << std::endl;
+     else
+         _OUT << "\"" << str << "\"" << " : " << obj << std::endl;
+}
+
+static void print_VkDebugUtilsLabelEXT(VkDebugUtilsLabelEXT obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_char(obj.pLabelName, "pLabelName", 1);
+
+     PRINT_SPACE
+     _OUT << "\"color\":" << std::endl;
+     PRINT_SPACE
+     if (obj.color) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < 4; i++) {
+           std:: stringstream tmp;
+           tmp << "color" << "_" << i;
+           bool isCommaNeeded = (i+1) != 4;
+           print_float(obj.color[i], "", isCommaNeeded);
+       }
+       PRINT_SPACE
+       _OUT << "]" << "" << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "" << std::endl;
+     }
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkDebugUtilsLabelEXT(const VkDebugUtilsLabelEXT * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_char(obj->pLabelName, "pLabelName", 1);
+
+     PRINT_SPACE
+     _OUT << "\"color\":" << std::endl;
+     PRINT_SPACE
+     if (obj->color) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < 4; i++) {
+           std:: stringstream tmp;
+           tmp << "color" << "_" << i;
+           bool isCommaNeeded = (i+1) != 4;
+           print_float(obj->color[i], "", isCommaNeeded);
+       }
+       PRINT_SPACE
+       _OUT << "]" << "" << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "" << std::endl;
+     }
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkDebugUtilsObjectNameInfoEXT(VkDebugUtilsObjectNameInfoEXT obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkObjectType(obj.objectType, "objectType", 1);
+
+     print_uint64_t(obj.objectHandle, "objectHandle", 1);
+
+     print_char(obj.pObjectName, "pObjectName", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkDebugUtilsObjectNameInfoEXT(const VkDebugUtilsObjectNameInfoEXT * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkObjectType(obj->objectType, "objectType", 1);
+
+     print_uint64_t(obj->objectHandle, "objectHandle", 1);
+
+     print_char(obj->pObjectName, "pObjectName", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkDebugUtilsMessengerCallbackDataEXT(VkDebugUtilsMessengerCallbackDataEXT obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkDebugUtilsMessengerCallbackDataFlagsEXT(obj.flags, "flags", 1);
+
+     print_char(obj.pMessageIdName, "pMessageIdName", 1);
+
+     print_int32_t(obj.messageIdNumber, "messageIdNumber", 1);
+
+     print_char(obj.pMessage, "pMessage", 1);
+
+     print_uint32_t(obj.queueLabelCount, "queueLabelCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pQueueLabels\": " << std::endl;
+     if (obj.pQueueLabels) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj.queueLabelCount; i++) {
+           if (i+1 == obj.queueLabelCount)
+               print_VkDebugUtilsLabelEXT(obj.pQueueLabels[i], "pQueueLabels", 0);
+           else
+               print_VkDebugUtilsLabelEXT(obj.pQueueLabels[i], "pQueueLabels", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]," << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj.cmdBufLabelCount, "cmdBufLabelCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pCmdBufLabels\": " << std::endl;
+     if (obj.pCmdBufLabels) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj.cmdBufLabelCount; i++) {
+           if (i+1 == obj.cmdBufLabelCount)
+               print_VkDebugUtilsLabelEXT(obj.pCmdBufLabels[i], "pCmdBufLabels", 0);
+           else
+               print_VkDebugUtilsLabelEXT(obj.pCmdBufLabels[i], "pCmdBufLabels", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]," << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj.objectCount, "objectCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pObjects\": " << std::endl;
+     if (obj.pObjects) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj.objectCount; i++) {
+           if (i+1 == obj.objectCount)
+               print_VkDebugUtilsObjectNameInfoEXT(obj.pObjects[i], "pObjects", 0);
+           else
+               print_VkDebugUtilsObjectNameInfoEXT(obj.pObjects[i], "pObjects", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]" << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ""<< std::endl;
+     }
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkDebugUtilsMessengerCallbackDataEXT(const VkDebugUtilsMessengerCallbackDataEXT * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkDebugUtilsMessengerCallbackDataFlagsEXT(obj->flags, "flags", 1);
+
+     print_char(obj->pMessageIdName, "pMessageIdName", 1);
+
+     print_int32_t(obj->messageIdNumber, "messageIdNumber", 1);
+
+     print_char(obj->pMessage, "pMessage", 1);
+
+     print_uint32_t(obj->queueLabelCount, "queueLabelCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pQueueLabels\": " << std::endl;
+     if (obj->pQueueLabels) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj->queueLabelCount; i++) {
+           if (i+1 == obj->queueLabelCount)
+               print_VkDebugUtilsLabelEXT(obj->pQueueLabels[i], "pQueueLabels", 0);
+           else
+               print_VkDebugUtilsLabelEXT(obj->pQueueLabels[i], "pQueueLabels", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]," << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj->cmdBufLabelCount, "cmdBufLabelCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pCmdBufLabels\": " << std::endl;
+     if (obj->pCmdBufLabels) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj->cmdBufLabelCount; i++) {
+           if (i+1 == obj->cmdBufLabelCount)
+               print_VkDebugUtilsLabelEXT(obj->pCmdBufLabels[i], "pCmdBufLabels", 0);
+           else
+               print_VkDebugUtilsLabelEXT(obj->pCmdBufLabels[i], "pCmdBufLabels", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]," << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj->objectCount, "objectCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pObjects\": " << std::endl;
+     if (obj->pObjects) {
+         PRINT_SPACE
+         _OUT << "[" << std::endl;
+         for (unsigned int i = 0; i < obj->objectCount; i++) {
+           if (i+1 == obj->objectCount)
+               print_VkDebugUtilsObjectNameInfoEXT(obj->pObjects[i], "pObjects", 0);
+           else
+               print_VkDebugUtilsObjectNameInfoEXT(obj->pObjects[i], "pObjects", 1);
+         }
+         PRINT_SPACE
+         _OUT << "]" << std::endl;
+    }
+     else
+     {
+         PRINT_SPACE _OUT << "\"NULL\""<< ""<< std::endl;
+     }
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkDebugUtilsMessengerCreateInfoEXT(VkDebugUtilsMessengerCreateInfoEXT obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkDebugUtilsMessengerCreateFlagsEXT(obj.flags, "flags", 1);
+
+     print_VkDebugUtilsMessageSeverityFlagsEXT(obj.messageSeverity, "messageSeverity", 1);
+
+     print_VkDebugUtilsMessageTypeFlagsEXT(obj.messageType, "messageType", 1);
+
+     /** Note: Ignoring function pointer (PFN_vkDebugUtilsMessengerCallbackEXT). **/
+
+     /** Note: Ignoring void* data. **/
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkDebugUtilsMessengerCreateInfoEXT(const VkDebugUtilsMessengerCreateInfoEXT * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkDebugUtilsMessengerCreateFlagsEXT(obj->flags, "flags", 1);
+
+     print_VkDebugUtilsMessageSeverityFlagsEXT(obj->messageSeverity, "messageSeverity", 1);
+
+     print_VkDebugUtilsMessageTypeFlagsEXT(obj->messageType, "messageType", 1);
+
+     /** Note: Ignoring function pointer (PFN_vkDebugUtilsMessengerCallbackEXT). **/
+
+     /** Note: Ignoring void* data. **/
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkDebugUtilsObjectTagInfoEXT(VkDebugUtilsObjectTagInfoEXT obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkObjectType(obj.objectType, "objectType", 1);
+
+     print_uint64_t(obj.objectHandle, "objectHandle", 1);
+
+     print_uint64_t(obj.tagName, "tagName", 1);
+
+     print_size_t(obj.tagSize, "tagSize", 1);
+
+     /** Note: Ignoring void* data. **/
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkDebugUtilsObjectTagInfoEXT(const VkDebugUtilsObjectTagInfoEXT * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkObjectType(obj->objectType, "objectType", 1);
+
+     print_uint64_t(obj->objectHandle, "objectHandle", 1);
+
+     print_uint64_t(obj->tagName, "tagName", 1);
+
+     print_size_t(obj->tagSize, "tagSize", 1);
+
+     /** Note: Ignoring void* data. **/
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
 static void print_VkSampleLocationEXT(VkSampleLocationEXT obj, const std::string& s, bool commaNeeded) {
      PRINT_SPACE
      _OUT << "{" << std::endl;
@@ -34933,6 +36256,175 @@ static void print_VkPhysicalDeviceMemoryBudgetPropertiesEXT(const VkPhysicalDevi
          _OUT << "}" << std::endl;
 }
 
+static std::map<int, std::string> VkValidationFeatureEnableEXT_map = {
+    std::make_pair(0, "VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT"),
+    std::make_pair(1, "VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_RESERVE_BINDING_SLOT_EXT"),
+    std::make_pair(2, "VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT"),
+    std::make_pair(3, "VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT"),
+    std::make_pair(4, "VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT"),
+};
+static void print_VkValidationFeatureEnableEXT(VkValidationFeatureEnableEXT obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkValidationFeatureEnableEXT_map[obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkValidationFeatureEnableEXT_map[obj] << "\"" << std::endl;
+}
+static void print_VkValidationFeatureEnableEXT(const VkValidationFeatureEnableEXT * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkValidationFeatureEnableEXT_map[*obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkValidationFeatureEnableEXT_map[*obj] << "\"" << std::endl;
+}
+
+static std::map<int, std::string> VkValidationFeatureDisableEXT_map = {
+    std::make_pair(0, "VK_VALIDATION_FEATURE_DISABLE_ALL_EXT"),
+    std::make_pair(1, "VK_VALIDATION_FEATURE_DISABLE_SHADERS_EXT"),
+    std::make_pair(2, "VK_VALIDATION_FEATURE_DISABLE_THREAD_SAFETY_EXT"),
+    std::make_pair(3, "VK_VALIDATION_FEATURE_DISABLE_API_PARAMETERS_EXT"),
+    std::make_pair(4, "VK_VALIDATION_FEATURE_DISABLE_OBJECT_LIFETIMES_EXT"),
+    std::make_pair(5, "VK_VALIDATION_FEATURE_DISABLE_CORE_CHECKS_EXT"),
+    std::make_pair(6, "VK_VALIDATION_FEATURE_DISABLE_UNIQUE_HANDLES_EXT"),
+};
+static void print_VkValidationFeatureDisableEXT(VkValidationFeatureDisableEXT obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkValidationFeatureDisableEXT_map[obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkValidationFeatureDisableEXT_map[obj] << "\"" << std::endl;
+}
+static void print_VkValidationFeatureDisableEXT(const VkValidationFeatureDisableEXT * obj, const std::string& str, bool commaNeeded) {
+     PRINT_SPACE
+     if (str != "") _OUT << "\"" << str << "\"" << " : ";
+     if (commaNeeded)
+         _OUT << "\"" <<  VkValidationFeatureDisableEXT_map[*obj] << "\"," << std::endl;
+     else
+         _OUT << "\"" << VkValidationFeatureDisableEXT_map[*obj] << "\"" << std::endl;
+}
+
+static void print_VkValidationFeaturesEXT(VkValidationFeaturesEXT obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj.enabledValidationFeatureCount, "enabledValidationFeatureCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pEnabledValidationFeatures\":" << std::endl;
+     PRINT_SPACE
+     if (obj.pEnabledValidationFeatures) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < obj.enabledValidationFeatureCount; i++) {
+           std:: stringstream tmp;
+           tmp << "pEnabledValidationFeatures" << "_" << i;
+           bool isCommaNeeded = (i+1) != obj.enabledValidationFeatureCount;
+           print_VkValidationFeatureEnableEXT(obj.pEnabledValidationFeatures[i], "", isCommaNeeded);
+       }
+       PRINT_SPACE
+       _OUT << "]" << "," << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "," << std::endl;
+     }
+
+     print_uint32_t(obj.disabledValidationFeatureCount, "disabledValidationFeatureCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pDisabledValidationFeatures\":" << std::endl;
+     PRINT_SPACE
+     if (obj.pDisabledValidationFeatures) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < obj.disabledValidationFeatureCount; i++) {
+           std:: stringstream tmp;
+           tmp << "pDisabledValidationFeatures" << "_" << i;
+           bool isCommaNeeded = (i+1) != obj.disabledValidationFeatureCount;
+           print_VkValidationFeatureDisableEXT(obj.pDisabledValidationFeatures[i], "", isCommaNeeded);
+       }
+       PRINT_SPACE
+       _OUT << "]" << "" << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "" << std::endl;
+     }
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkValidationFeaturesEXT(const VkValidationFeaturesEXT * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj->enabledValidationFeatureCount, "enabledValidationFeatureCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pEnabledValidationFeatures\":" << std::endl;
+     PRINT_SPACE
+     if (obj->pEnabledValidationFeatures) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < obj->enabledValidationFeatureCount; i++) {
+           std:: stringstream tmp;
+           tmp << "pEnabledValidationFeatures" << "_" << i;
+           bool isCommaNeeded = (i+1) != obj->enabledValidationFeatureCount;
+           print_VkValidationFeatureEnableEXT(obj->pEnabledValidationFeatures[i], "", isCommaNeeded);
+       }
+       PRINT_SPACE
+       _OUT << "]" << "," << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "," << std::endl;
+     }
+
+     print_uint32_t(obj->disabledValidationFeatureCount, "disabledValidationFeatureCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pDisabledValidationFeatures\":" << std::endl;
+     PRINT_SPACE
+     if (obj->pDisabledValidationFeatures) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < obj->disabledValidationFeatureCount; i++) {
+           std:: stringstream tmp;
+           tmp << "pDisabledValidationFeatures" << "_" << i;
+           bool isCommaNeeded = (i+1) != obj->disabledValidationFeatureCount;
+           print_VkValidationFeatureDisableEXT(obj->pDisabledValidationFeatures[i], "", isCommaNeeded);
+       }
+       PRINT_SPACE
+       _OUT << "]" << "" << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "" << std::endl;
+     }
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
 static void print_VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT(VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT obj, const std::string& s, bool commaNeeded) {
      PRINT_SPACE
      _OUT << "{" << std::endl;
@@ -35886,6 +37378,53 @@ static void print_VkPhysicalDeviceCustomBorderColorFeaturesEXT(const VkPhysicalD
          _OUT << "}" << std::endl;
 }
 
+static void print_VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT(VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkBool32(obj.ycbcr2plane444Formats, "ycbcr2plane444Formats", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT(const VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkBool32(obj->ycbcr2plane444Formats, "ycbcr2plane444Formats", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
 static void print_VkPhysicalDeviceImageRobustnessFeaturesEXT(VkPhysicalDeviceImageRobustnessFeaturesEXT obj, const std::string& s, bool commaNeeded) {
      PRINT_SPACE
      _OUT << "{" << std::endl;
@@ -35975,6 +37514,354 @@ static void print_VkPhysicalDevice4444FormatsFeaturesEXT(const VkPhysicalDevice4
      print_VkBool32(obj->formatA4R4G4B4, "formatA4R4G4B4", 1);
 
      print_VkBool32(obj->formatA4B4G4R4, "formatA4B4G4R4", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT(VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkBool32(obj.vertexInputDynamicState, "vertexInputDynamicState", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT(const VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkBool32(obj->vertexInputDynamicState, "vertexInputDynamicState", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkVertexInputBindingDescription2EXT(VkVertexInputBindingDescription2EXT obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj.binding, "binding", 1);
+
+     print_uint32_t(obj.stride, "stride", 1);
+
+     print_VkVertexInputRate(obj.inputRate, "inputRate", 1);
+
+     print_uint32_t(obj.divisor, "divisor", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkVertexInputBindingDescription2EXT(const VkVertexInputBindingDescription2EXT * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj->binding, "binding", 1);
+
+     print_uint32_t(obj->stride, "stride", 1);
+
+     print_VkVertexInputRate(obj->inputRate, "inputRate", 1);
+
+     print_uint32_t(obj->divisor, "divisor", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkVertexInputAttributeDescription2EXT(VkVertexInputAttributeDescription2EXT obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj.location, "location", 1);
+
+     print_uint32_t(obj.binding, "binding", 1);
+
+     print_VkFormat(obj.format, "format", 1);
+
+     print_uint32_t(obj.offset, "offset", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkVertexInputAttributeDescription2EXT(const VkVertexInputAttributeDescription2EXT * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj->location, "location", 1);
+
+     print_uint32_t(obj->binding, "binding", 1);
+
+     print_VkFormat(obj->format, "format", 1);
+
+     print_uint32_t(obj->offset, "offset", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkPhysicalDeviceExtendedDynamicState2FeaturesEXT(VkPhysicalDeviceExtendedDynamicState2FeaturesEXT obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkBool32(obj.extendedDynamicState2, "extendedDynamicState2", 1);
+
+     print_VkBool32(obj.extendedDynamicState2LogicOp, "extendedDynamicState2LogicOp", 1);
+
+     print_VkBool32(obj.extendedDynamicState2PatchControlPoints, "extendedDynamicState2PatchControlPoints", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkPhysicalDeviceExtendedDynamicState2FeaturesEXT(const VkPhysicalDeviceExtendedDynamicState2FeaturesEXT * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkBool32(obj->extendedDynamicState2, "extendedDynamicState2", 1);
+
+     print_VkBool32(obj->extendedDynamicState2LogicOp, "extendedDynamicState2LogicOp", 1);
+
+     print_VkBool32(obj->extendedDynamicState2PatchControlPoints, "extendedDynamicState2PatchControlPoints", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkPhysicalDeviceColorWriteEnableFeaturesEXT(VkPhysicalDeviceColorWriteEnableFeaturesEXT obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkBool32(obj.colorWriteEnable, "colorWriteEnable", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkPhysicalDeviceColorWriteEnableFeaturesEXT(const VkPhysicalDeviceColorWriteEnableFeaturesEXT * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_VkBool32(obj->colorWriteEnable, "colorWriteEnable", 0);
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+
+static void print_VkPipelineColorWriteCreateInfoEXT(VkPipelineColorWriteCreateInfoEXT obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj.sType, "sType", 1);
+
+      if (obj.pNext) {
+         dumpPNextChain(obj.pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj.attachmentCount, "attachmentCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pColorWriteEnables\":" << std::endl;
+     PRINT_SPACE
+     if (obj.pColorWriteEnables) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < obj.attachmentCount; i++) {
+           std:: stringstream tmp;
+           tmp << "pColorWriteEnables" << "_" << i;
+           bool isCommaNeeded = (i+1) != obj.attachmentCount;
+           print_VkBool32(obj.pColorWriteEnables[i], "", isCommaNeeded);
+       }
+       PRINT_SPACE
+       _OUT << "]" << "" << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "" << std::endl;
+     }
+
+     INDENT(-4);
+     PRINT_SPACE
+     if (commaNeeded)
+         _OUT << "}," << std::endl;
+     else
+         _OUT << "}" << std::endl;
+}
+static void print_VkPipelineColorWriteCreateInfoEXT(const VkPipelineColorWriteCreateInfoEXT * obj, const std::string& s, bool commaNeeded) {
+     PRINT_SPACE
+     _OUT << "{" << std::endl;
+     INDENT(4);
+
+     print_VkStructureType(obj->sType, "sType", 1);
+
+      if (obj->pNext) {
+         dumpPNextChain(obj->pNext);
+      } else{
+         PRINT_SPACE
+         _OUT << "\"pNext\":" << "\"NULL\""<< ","<< std::endl;
+     }
+
+     print_uint32_t(obj->attachmentCount, "attachmentCount", 1);
+
+     PRINT_SPACE
+     _OUT << "\"pColorWriteEnables\":" << std::endl;
+     PRINT_SPACE
+     if (obj->pColorWriteEnables) {
+       _OUT << "[" << std::endl;
+       for (unsigned int i = 0; i < obj->attachmentCount; i++) {
+           std:: stringstream tmp;
+           tmp << "pColorWriteEnables" << "_" << i;
+           bool isCommaNeeded = (i+1) != obj->attachmentCount;
+           print_VkBool32(obj->pColorWriteEnables[i], "", isCommaNeeded);
+       }
+       PRINT_SPACE
+       _OUT << "]" << "" << std::endl;
+     } else{
+       _OUT << "\"NULL\"" << "" << std::endl;
+     }
 
      INDENT(-4);
      PRINT_SPACE

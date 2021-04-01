@@ -66,6 +66,8 @@ constexpr deUint32 maxMemoryAllocationSize			= 1073741824u;
 constexpr deUint32 maxDescriptorsInSet				= 1024u;
 #ifndef CTS_USES_VULKANSC
 constexpr deUint32 maxReasonableInlineUniformBlocks	= 64u;
+#else
+constexpr deUint32 maxReasonableBindingCounts		= 1024u;
 #endif // CTS_USES_VULKANSC
 using TypeSet		= set<vk::VkDescriptorType>;
 
@@ -378,12 +380,19 @@ vector<vk::VkDescriptorSetLayoutBinding> calculateBindings( const DevProp1&					
 		iubProp,
 #endif // CTS_USES_VULKANSC
 		maintProp3);
+
 	TypeCounts typeCounts;
 
 	for (const auto& type : types)
 		typeCounts.emplace(make_pair(type, TypeState(type)));
 
 	distributeCounts(limits, typeCounts);
+
+#ifdef CTS_USES_VULKANSC
+	// limit the number of binding counts, so that descriptorSetLayoutBindingRequestCount and descriptorSetLayoutBindingLimit won't be too big
+	for (auto& tc : typeCounts)
+		tc.second.count = de::min(tc.second.count, maxReasonableBindingCounts);
+#endif // CTS_USES_VULKANSC
 
 	deUint32 bindingNumber = 0u;
 	vector<vk::VkDescriptorSetLayoutBinding> bindings;

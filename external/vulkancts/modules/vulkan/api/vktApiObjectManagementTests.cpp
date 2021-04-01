@@ -107,6 +107,8 @@ class ThreadGroupThread;
  * certain API operations by poking API simultaneously from multiple
  * threads.
  *//*--------------------------------------------------------------------*/
+
+#ifndef CTS_USES_VULKANSC
 class ThreadGroup
 {
 public:
@@ -233,6 +235,7 @@ deUint32 getDefaultTestThreadCount (void)
 {
 	return de::clamp(deGetNumAvailableLogicalCores(), 2u, 8u);
 }
+#endif // CTS_USES_VULKANSC
 
 // Utilities
 
@@ -281,6 +284,9 @@ struct Environment
 				 const BinaryCollection&		programBinaries_,
 				 const VkAllocationCallbacks*	allocationCallbacks_,
 				 deUint32						maxResourceConsumers_,
+#ifdef CTS_USES_VULKANSC
+				 de::SharedPtr<ResourceInterface>	resourceInterface_,
+#endif // CTS_USES_VULKANSC
 				 const tcu::CommandLine&		commandLine_)
 		: vkp					(vkp_)
 		, apiVersion			(apiVersion_)
@@ -290,10 +296,20 @@ struct Environment
 		, device				(device_)
 		, queueFamilyIndex		(queueFamilyIndex_)
 		, programBinaries		(programBinaries_)
-		, allocationCallbacks	(allocationCallbacks_)
+#ifdef CTS_USES_VULKANSC
+		, allocationCallbacks(DE_NULL)
+#else
+		, allocationCallbacks(allocationCallbacks_)
+#endif // CTS_USES_VULKANSC
 		, maxResourceConsumers	(maxResourceConsumers_)
+#ifdef CTS_USES_VULKANSC
+		, resourceInterface		(resourceInterface_)
+#endif // CTS_USES_VULKANSC
 		, commandLine			(commandLine_)
 	{
+#ifdef CTS_USES_VULKANSC
+		DE_UNREF(allocationCallbacks_);
+#endif // CTS_USES_VULKANSC
 	}
 };
 
@@ -380,6 +396,9 @@ size_t computeSystemMemoryUsage (Context& context, const typename Object::Parame
 															 context.getBinaryCollection(),
 															 allocRecorder.getCallbacks(),
 															 1u,
+#ifdef CTS_USES_VULKANSC
+															context.getResourceInterface(),
+#endif // CTS_USES_VULKANSC
 															 context.getTestContext().getCommandLine());
 	const typename Object::Resources	res					(env, params);
 	const size_t						resourceMemoryUsage	= getCurrentSystemMemoryUsage(allocRecorder);
@@ -605,9 +624,13 @@ struct Device
 
 		void* pNext									= DE_NULL;
 #ifdef CTS_USES_VULKANSC
-		VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= env.commandLine.isSubProcess() ? env.resourceInterface->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
 		memReservationInfo.pNext								= pNext;
 		pNext													= &memReservationInfo;
+
+		VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+		sc10Features.pNext										= pNext;
+		pNext													= &sc10Features;
 #endif // CTS_USES_VULKANSC
 
 		const VkDeviceCreateInfo		deviceInfo	=
@@ -725,9 +748,13 @@ struct DeviceGroup
 
 		void* pNext									= &deviceGroupInfo;
 #ifdef CTS_USES_VULKANSC
-		VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= env.commandLine.isSubProcess() ? env.resourceInterface->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
 		memReservationInfo.pNext								= pNext;
 		pNext													= &memReservationInfo;
+
+		VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+		sc10Features.pNext										= pNext;
+		pNext													= &sc10Features;
 #endif // CTS_USES_VULKANSC
 
 		const VkDeviceCreateInfo			deviceGroupCreateInfo =
@@ -2630,8 +2657,6 @@ tcu::TestStatus createPrivateDataTest (Context& context, typename Object::Parame
 	return tcu::TestStatus::pass("Ok");
 }
 
-#endif // CTS_USES_VULKANSC
-
 template<typename Object>
 tcu::TestStatus createMaxConcurrentTest (Context& context, typename Object::Parameters params)
 {
@@ -2742,6 +2767,7 @@ tcu::TestStatus multithreadedCreatePerThreadResourcesTest (Context& context, typ
 
 	return threads.run();
 }
+#endif // CTS_USES_VULKANSC
 
 struct EnvClone
 {
@@ -2760,10 +2786,11 @@ struct EnvClone
 		, device	(Device::create(parent, deviceRes, deviceParams))
 #ifndef CTS_USES_VULKANSC
 		, vkd		(parent.vkp, parent.instance, *device)
+		, env(parent.vkp, parent.apiVersion, parent.instanceInterface, parent.instance, vkd, *device, deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers, parent.commandLine)
 #else
 		, vkd		(parent.vkp, parent.instance, *device, parent.commandLine, parent.resourceInterface)
+		, env(parent.vkp, parent.apiVersion, parent.instanceInterface, parent.instance, vkd, *device, deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers, parent.resourceInterface, parent.commandLine)
 #endif // CTS_USES_VULKANSC
-		, env		(parent.vkp, parent.apiVersion, parent.instanceInterface, parent.instance, vkd, *device, deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers, parent.commandLine)
 	{
 	}
 };
@@ -2775,6 +2802,8 @@ Device::Parameters getDefaulDeviceParameters (Context& context)
 	return Device::Parameters(context.getTestContext().getCommandLine().getVKDeviceId()-1u,
 							  VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT);
 }
+
+#ifndef CTS_USES_VULKANSC
 
 template<typename Object>
 tcu::TestStatus multithreadedCreatePerThreadDeviceTest (Context& context, typename Object::Parameters params)
@@ -2803,6 +2832,8 @@ tcu::TestStatus multithreadedCreatePerThreadDeviceTest (Context& context, typena
 	return threads.run();
 }
 
+#endif // CTS_USES_VULKANSC
+
 template<typename Object>
 tcu::TestStatus createSingleAllocCallbacksTest (Context& context, typename Object::Parameters params)
 {
@@ -2825,6 +2856,9 @@ tcu::TestStatus createSingleAllocCallbacksTest (Context& context, typename Objec
 														 context.getBinaryCollection(),
 														 resCallbacks.getCallbacks(),
 														 1u,
+#ifdef CTS_USES_VULKANSC
+														 context.getResourceInterface(),
+#endif // CTS_USES_VULKANSC
 														 context.getTestContext().getCommandLine());
 
 	{
@@ -2844,6 +2878,9 @@ tcu::TestStatus createSingleAllocCallbacksTest (Context& context, typename Objec
 														 resEnv.env.programBinaries,
 														 objCallbacks.getCallbacks(),
 														 resEnv.env.maxResourceConsumers,
+#ifdef CTS_USES_VULKANSC
+														 resEnv.env.resourceInterface,
+#endif // CTS_USES_VULKANSC
 														 resEnv.env.commandLine);
 
 		{
@@ -2889,6 +2926,9 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 															 context.getBinaryCollection(),
 															 resCallbacks.getCallbacks(),
 															 1u,
+#ifdef CTS_USES_VULKANSC
+															 context.getResourceInterface(),
+#endif // CTS_USES_VULKANSC
 															 context.getTestContext().getCommandLine());
 	deUint32							numPassingAllocs	= 0;
 	const deUint32						cmdLineIterCount	= (deUint32)context.getTestContext().getCommandLine().getTestIterationCount();
@@ -2917,6 +2957,9 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 															 resEnv.env.programBinaries,
 															 recorder.getCallbacks(),
 															 resEnv.env.maxResourceConsumers,
+#ifdef CTS_USES_VULKANSC
+															 resEnv.env.resourceInterface,
+#endif // CTS_USES_VULKANSC
 															 resEnv.env.commandLine);
 
 			context.getTestContext().getLog()
@@ -3031,6 +3074,9 @@ tcu::TestStatus allocCallbackFailMultipleObjectsTest (Context& context, typename
 															 context.getBinaryCollection(),
 															 recorder.getCallbacks(),
 															 numObjects,
+#ifdef CTS_USES_VULKANSC
+															 context.getResourceInterface(),
+#endif // CTS_USES_VULKANSC
 															 context.getTestContext().getCommandLine());
 
 			context.getTestContext().getLog()
@@ -3201,9 +3247,7 @@ static void cleanupGroup (tcu::TestCaseGroup* group, CaseDescriptions cases)
 	DE_UNREF(cases);
 	// Destroy singleton object
 
-#ifndef CTS_USES_VULKANSC
 	SingletonDevice::destroy();
-#endif // CTS_USES_VULKANSC
 }
 #endif // CTS_USES_VULKANSC
 
@@ -3445,6 +3489,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multiple_shared_resources", "Multiple objects with shared resources", s_createMultipleSharedResourcesGroup));
 
+#ifndef CTS_USES_VULKANSC
+// Removed from Vulkan SC test set: VkAllocationCallbacks is not supported and pointers to this type must be NULL
 	const CaseDescriptions	s_createMaxConcurrentGroup	=
 	{
 		CASE_DESC(createMaxConcurrentTest	<Instance>,					s_instanceCases),
@@ -3475,7 +3521,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "max_concurrent", "Maximum number of concurrently live objects", s_createMaxConcurrentGroup));
 
-#ifndef CTS_USES_VULKANSC
+// Temporarily removed from Vulkan SC test set
 	const CaseDescriptions	s_multithreadedCreatePerThreadDeviceGroup	=
 	{
 		EMPTY_CASE_DESC(Instance),		// Does not make sense
@@ -3505,7 +3551,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<CommandBuffer>,			s_commandBufferCases),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_per_thread_device", "Multithreaded object construction with per-thread device ", s_multithreadedCreatePerThreadDeviceGroup));
-#endif // CTS_USES_VULKANSC
+
+// Temporarily removed from Vulkan SC test set
 	const CaseDescriptions	s_multithreadedCreatePerThreadResourcesGroup	=
 	{
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Instance>,					s_instanceCases),
@@ -3536,6 +3583,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_per_thread_resources", "Multithreaded object construction with per-thread resources", s_multithreadedCreatePerThreadResourcesGroup));
 
+// Temporarily removed from Vulkan SC test set
 	const CaseDescriptions	s_multithreadedCreateSharedResourcesGroup	=
 	{
 		EMPTY_CASE_DESC(Instance),
@@ -3566,7 +3614,6 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_shared_resources", "Multithreaded object construction with shared resources", s_multithreadedCreateSharedResourcesGroup));
 
-#ifndef CTS_USES_VULKANSC
 // Removed from Vulkan SC test set: VkAllocationCallbacks is not supported and pointers to this type must be NULL
 	const CaseDescriptions	s_createSingleAllocCallbacksGroup	=
 	{

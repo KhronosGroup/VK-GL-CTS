@@ -67,6 +67,7 @@ struct CaseGroup
 	std::vector<Case> cases;
 };
 
+#ifndef CTS_USES_VULKANSC
 
 void addTestsForAmberFiles (tcu::TestCaseGroup* tests, CaseGroup group)
 {
@@ -99,6 +100,8 @@ void addTestsForAmberFiles (tcu::TestCaseGroup* tests, CaseGroup group)
 		tests->addChild(testCase);
 	}
 }
+
+#endif // CTS_USES_VULKANSC
 
 } // anonymous
 
@@ -139,7 +142,9 @@ tcu::TestCaseGroup* createTerminateInvocationGroup(tcu::TestContext& testCtx)
 	group.add("terminate_loop", "\"inifinite\" loop that calls terminate invocation", false);
 	group.add("subgroup_ballot", "checks that terminated invocations don't participate in the ballot", true, Ballot);
 	group.add("subgroup_vote", "checks that a subgroup all does not include any terminated invocations", true, Vote);
+#ifndef CTS_USES_VULKANSC
 	terminateTests->addChild(createTestGroup(testCtx, "terminate", "Terminate Invocation", addTestsForAmberFiles, group));
+#endif // CTS_USES_VULKANSC
 
 	return terminateTests.release();
 }

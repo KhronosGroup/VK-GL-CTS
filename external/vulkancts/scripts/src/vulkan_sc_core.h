@@ -65,7 +65,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 1
+#define VK_HEADER_VERSION 2
 
 // Vulkan SC variant number
 #define VKSC_API_VARIANT 1
@@ -4932,7 +4932,7 @@ typedef struct VkPhysicalDeviceVulkanSC10Properties {
     VkBool32           commandPoolResetCommandBuffer;
     VkBool32           commandBufferSimultaneousUse;
     VkBool32           secondaryCommandBufferNullFramebuffer;
-    VkBool32           descriptorPoolFreeDescriptorSets;
+    VkBool32           recycleDescriptorSetMemory;
     VkBool32           recyclePipelineMemory;
     uint32_t           maxRenderPassSubpasses;
     uint32_t           maxRenderPassDependencies;
@@ -4994,6 +4994,7 @@ typedef struct VkDeviceObjectReservationCreateInfo {
     uint32_t                            maxOcclusionQueriesPerPool;
     uint32_t                            maxPipelineStatisticsQueriesPerPool;
     uint32_t                            maxTimestampQueriesPerPool;
+    uint32_t                            maxImmutableSamplersPerDescriptorSetLayout;
 } VkDeviceObjectReservationCreateInfo;
 
 typedef struct VkCommandPoolMemoryReservationCreateInfo {
@@ -6001,7 +6002,7 @@ typedef struct VkRefreshObjectListKHR {
 } VkRefreshObjectListKHR;
 
 typedef void (VKAPI_PTR *PFN_vkCmdRefreshObjectsKHR)(VkCommandBuffer commandBuffer, const VkRefreshObjectListKHR* pRefreshObjects);
-typedef VkResult (VKAPI_PTR *PFN_vkGetPhysicalDeviceRefreshableObjectTypesKHR)(VkPhysicalDevice physicalDevice, uint32_t* pRefreshableObjectCount, VkObjectType* pRefreshableObjectTypes);
+typedef VkResult (VKAPI_PTR *PFN_vkGetPhysicalDeviceRefreshableObjectTypesKHR)(VkPhysicalDevice physicalDevice, uint32_t* pRefreshableObjectTypeCount, VkObjectType* pRefreshableObjectTypes);
 
 #ifndef VK_NO_PROTOTYPES
 VKAPI_ATTR void VKAPI_CALL vkCmdRefreshObjectsKHR(
@@ -6010,7 +6011,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdRefreshObjectsKHR(
 
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceRefreshableObjectTypesKHR(
     VkPhysicalDevice                            physicalDevice,
-    uint32_t*                                   pRefreshableObjectCount,
+    uint32_t*                                   pRefreshableObjectTypeCount,
     VkObjectType*                               pRefreshableObjectTypes);
 #endif
 

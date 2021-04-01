@@ -887,26 +887,31 @@ tcu::TestStatus	UnusedClearAttachmentTestInstance::iterate (void)
 		const tcu::ConstPixelBufferAccess&	imageAccess		= imagePixels[i]->getAccess();
 		const float*						refColor		= (m_testParams.colorUsed[i] ? m_clearColor.color.float32 : m_initialColor.color.float32);
 
-		for (int y = 0; y < imageAccess.getHeight(); ++y)
-		for (int x = 0; x < imageAccess.getWidth(); ++x)
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 		{
-			const tcu::Vec4	color = imageAccess.getPixel(x, y);
+			for (int y = 0; y < imageAccess.getHeight(); ++y)
+			for (int x = 0; x < imageAccess.getWidth(); ++x)
+			{
+				const tcu::Vec4	color = imageAccess.getPixel(x, y);
 
-			for (deUint32 cpnt = 0; cpnt < 4; ++cpnt)
-				if (de::abs(color[cpnt] - refColor[cpnt]) > 0.01f)
-				{
-					std::ostringstream msg;
+				for (deUint32 cpnt = 0; cpnt < 4; ++cpnt)
+					if (de::abs(color[cpnt] - refColor[cpnt]) > 0.01f)
+					{
+						std::ostringstream msg;
 
-					msg << "Attachment " << i << " with mismatched pixel (" << x << ", " << y << "): expecting pixel value [";
-					for (deUint32 j = 0; j < 4; ++j)
-						msg << ((j == 0) ? "" : ", ") << refColor[j];
-					msg << "] and found [";
-					for (deUint32 j = 0; j < 4; ++j)
-						msg << ((j == 0) ? "" : ", ") << color[j];
-					msg << "]";
+						msg << "Attachment " << i << " with mismatched pixel (" << x << ", " << y << "): expecting pixel value [";
+						for (deUint32 j = 0; j < 4; ++j)
+							msg << ((j == 0) ? "" : ", ") << refColor[j];
+						msg << "] and found [";
+						for (deUint32 j = 0; j < 4; ++j)
+							msg << ((j == 0) ? "" : ", ") << color[j];
+						msg << "]";
 
-					return tcu::TestStatus::fail(msg.str());
-				}
+						return tcu::TestStatus::fail(msg.str());
+					}
+			}
 		}
 	}
 
@@ -921,17 +926,22 @@ tcu::TestStatus	UnusedClearAttachmentTestInstance::iterate (void)
 			const tcu::ConstPixelBufferAccess&	depthAccess	= depthPixels->getAccess();
 			const float							refDepth	= (m_testParams.depthStencilUsed ? m_clearColorDepth.depthStencil.depth : m_initialColorDepth.depthStencil.depth);
 
-			for (int y = 0; y < depthAccess.getHeight(); ++y)
-			for (int x = 0; x < depthAccess.getWidth(); ++x)
+#ifdef CTS_USES_VULKANSC
+			if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 			{
-				const float value = depthAccess.getPixDepth(x, y);
-				if (de::abs(value - refDepth) > 0.001f)
+				for (int y = 0; y < depthAccess.getHeight(); ++y)
+				for (int x = 0; x < depthAccess.getWidth(); ++x)
 				{
-					std::ostringstream msg;
+					const float value = depthAccess.getPixDepth(x, y);
+					if (de::abs(value - refDepth) > 0.001f)
+					{
+						std::ostringstream msg;
 
-					msg << "Depth/stencil attachment with mismatched depth value at pixel ("
-						<< x << ", " << y << "): expected value " << refDepth << " and found " << value;
-					return tcu::TestStatus::fail(msg.str());
+						msg << "Depth/stencil attachment with mismatched depth value at pixel ("
+							<< x << ", " << y << "): expected value " << refDepth << " and found " << value;
+						return tcu::TestStatus::fail(msg.str());
+					}
 				}
 			}
 		}
@@ -945,17 +955,22 @@ tcu::TestStatus	UnusedClearAttachmentTestInstance::iterate (void)
 			const tcu::ConstPixelBufferAccess&	stencilAccess	= stencilPixels->getAccess();
 			const deUint32						refStencil		= (m_testParams.depthStencilUsed ? m_clearColorDepth.depthStencil.stencil : m_initialColorDepth.depthStencil.stencil);
 
-			for (int y = 0; y < stencilAccess.getHeight(); ++y)
-			for (int x = 0; x < stencilAccess.getWidth(); ++x)
+#ifdef CTS_USES_VULKANSC
+			if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 			{
-				const int value = stencilAccess.getPixStencil(x, y);
-				if (value < 0 || static_cast<deUint32>(value) != refStencil)
+				for (int y = 0; y < stencilAccess.getHeight(); ++y)
+				for (int x = 0; x < stencilAccess.getWidth(); ++x)
 				{
-					std::ostringstream msg;
+					const int value = stencilAccess.getPixStencil(x, y);
+					if (value < 0 || static_cast<deUint32>(value) != refStencil)
+					{
+						std::ostringstream msg;
 
-					msg << "Depth/stencil attachment with mismatched stencil value at pixel ("
-						<< x << ", " << y << "): expected value " << refStencil << " and found " << value;
-					return tcu::TestStatus::fail(msg.str());
+						msg << "Depth/stencil attachment with mismatched stencil value at pixel ("
+							<< x << ", " << y << "): expected value " << refStencil << " and found " << value;
+						return tcu::TestStatus::fail(msg.str());
+					}
 				}
 			}
 		}

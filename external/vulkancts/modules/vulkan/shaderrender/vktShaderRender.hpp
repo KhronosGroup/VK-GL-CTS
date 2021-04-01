@@ -568,7 +568,7 @@ private:
 																					 vk::VkImage					destImage);
 
 	void												checkSparseSupport			(const vk::VkImageCreateInfo&	imageInfo) const;
-
+#ifndef CTS_USES_VULKANSC
 	void												uploadSparseImage			(const tcu::TextureFormat&		texFormat,
 																					 const TextureData&				textureData,
 																					 const tcu::Sampler&			refSampler,
@@ -577,7 +577,7 @@ private:
 																					 const vk::VkImage				sparseImage,
 																					 const vk::VkImageCreateInfo&	imageCreateInfo,
 																					 const tcu::UVec3				texSize);
-
+#endif // CTS_USES_VULKANSC
 	void												createSamplerUniform		(deUint32						bindingLocation,
 																					 TextureBinding::Type			textureType,
 																					 TextureBinding::Init			textureInit,

@@ -89,7 +89,12 @@ static const VkExtent3D RESOLUTION = { RESOLUTION_width, RESOLUTION_height, 1 };
 
 static const VkExtent3D			smallImageExtent				= { 4, 4, 1 };
 static const VkExtent3D			bigImageExtent					= { 32, 32, 1 };
-static const VkDescriptorType	VK_DESCRIPTOR_TYPE_UNDEFINED = VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT;
+
+#ifndef CTS_USES_VULKANSC
+static const VkDescriptorType	VK_DESCRIPTOR_TYPE_UNDEFINED	= VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT;
+#else
+static const VkDescriptorType	VK_DESCRIPTOR_TYPE_UNDEFINED	= VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+#endif
 
 template<deUint32 BindingNumber>
 struct Binding
@@ -4091,7 +4096,7 @@ public:
 	{
 		context.requireDeviceFunctionality("VK_EXT_descriptor_indexing");
 
-		const vk::VkPhysicalDeviceDescriptorIndexingFeaturesEXT& feats = context.getDescriptorIndexingFeatures();
+		const vk::VkPhysicalDeviceDescriptorIndexingFeatures& feats = context.getDescriptorIndexingFeatures();
 
 		switch (m_testCaseParams.descriptorType)
 		{

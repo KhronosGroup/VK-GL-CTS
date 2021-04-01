@@ -1554,9 +1554,13 @@ void createTestDevice (Context& context, void* pNext, const char* const* ppEnabl
 		&queuePriority,								//  const float*				pQueuePriorities;
 	};
 #ifdef CTS_USES_VULKANSC
-	VkDeviceObjectReservationCreateInfo memReservationInfo			= resetDeviceObjectReservationCreateInfo();
+	VkDeviceObjectReservationCreateInfo memReservationInfo			= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
 	memReservationInfo.pNext										= pNext;
 	pNext															= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features					= createDefaultSC10Features();
+	sc10Features.pNext												= pNext;
+	pNext															= &sc10Features;
 #endif // CTS_USES_VULKANSC
 
 	const VkDeviceCreateInfo				deviceCreateInfo		=
@@ -2376,10 +2380,6 @@ tcu::TestStatus deviceFeatures (Context& context)
 	{
 		if (!features->robustBufferAccess)
 			return tcu::TestStatus::fail("robustBufferAccess is not supported");
-
-		// multiViewport requires MultiViewport (SPIR-V capability) support, which depends on Geometry
-		if (features->multiViewport && !features->geometryShader)
-			return tcu::TestStatus::fail("multiViewport is supported but geometryShader is not");
 	}
 
 	for (int ndx = 0; ndx < GUARD_SIZE; ndx++)
@@ -2769,9 +2769,13 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 
 	void* pNext												= &deviceGroupInfo;
 #ifdef CTS_USES_VULKANSC
-	VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
 	memReservationInfo.pNext								= pNext;
 	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
 #endif // CTS_USES_VULKANSC
 
 	const VkDeviceCreateInfo								deviceCreateInfo =

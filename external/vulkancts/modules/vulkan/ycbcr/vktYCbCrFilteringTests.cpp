@@ -595,6 +595,10 @@ void LinearFilteringTestCase::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_sampler_ycbcr_conversion");
 
+	const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures	features = context.getSamplerYcbcrConversionFeatures();
+	if (features.samplerYcbcrConversion == VK_FALSE)
+		TCU_THROW(NotSupportedError, "samplerYcbcrConversion feature is not supported");
+
 	const auto&					instInt				= context.getInstanceInterface();
 	auto						physicalDevice		= context.getPhysicalDevice();
 	const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(instInt, physicalDevice, m_format);

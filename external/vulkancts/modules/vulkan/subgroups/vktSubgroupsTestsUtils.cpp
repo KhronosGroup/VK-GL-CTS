@@ -860,9 +860,11 @@ private:
 
 deUint32 vkt::subgroups::getStagesCount (const VkShaderStageFlags shaderStages)
 {
-	const deUint32	stageCount	= isAllRayTracingStages(shaderStages) ? 6
-								: isAllGraphicsStages(shaderStages)   ? 4
+	const deUint32	stageCount	= isAllGraphicsStages(shaderStages)   ? 4
 								: isAllComputeStages(shaderStages)    ? 1
+#ifndef CTS_USES_VULKANSC
+								: isAllRayTracingStages(shaderStages) ? 6
+#endif // CTS_USES_VULKANSC
 								: 0;
 
 	DE_ASSERT(stageCount != 0);
@@ -948,12 +950,14 @@ std::string vkt::subgroups::getShaderStageName (VkShaderStageFlags stage)
 		case VK_SHADER_STAGE_GEOMETRY_BIT:					return "geometry";
 		case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:		return "tess_control";
 		case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:	return "tess_eval";
+#ifndef CTS_USES_VULKANSC
 		case VK_SHADER_STAGE_RAYGEN_BIT_KHR:				return "rgen";
 		case VK_SHADER_STAGE_ANY_HIT_BIT_KHR:				return "ahit";
 		case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:			return "chit";
 		case VK_SHADER_STAGE_MISS_BIT_KHR:					return "miss";
 		case VK_SHADER_STAGE_INTERSECTION_BIT_KHR:			return "sect";
 		case VK_SHADER_STAGE_CALLABLE_BIT_KHR:				return "call";
+#endif // CTS_USES_VULKANSC
 		default:											TCU_THROW(InternalError, "Unhandled stage");
 	}
 }
@@ -1531,6 +1535,7 @@ void vkt::subgroups::initStdPrograms (vk::SourceCollections&			programCollection
 		subgroups::addGeometryShadersFromTemplate(geometry, buildOptions, programCollection.glslSources);
 		programCollection.glslSources.add("fragment") << glu::FragmentSource(fragment)<< buildOptions;
 	}
+#ifndef CTS_USES_VULKANSC
 	else if (isAllRayTracingStages(shaderStage))
 	{
 		const std::string	rgenShader	=
@@ -1643,6 +1648,7 @@ void vkt::subgroups::initStdPrograms (vk::SourceCollections&			programCollection
 
 		subgroups::addRayTracingNoSubgroupShader(programCollection);
 	}
+#endif // CTS_USES_VULKANSC
 	else
 		TCU_THROW(InternalError, "Unknown stage or invalid stage set");
 
@@ -4062,9 +4068,11 @@ static inline void checkShaderStageSetValidity (const VkShaderStageFlags shaderS
 		TCU_THROW(InternalError, "Shader stage is not specified");
 
 	// It can actually be only 1 or 0.
-	const deUint32 exclusivePipelinesCount	= (isAllComputeStages(shaderStages) ? 1 :0)
-											+ (isAllGraphicsStages(shaderStages) ? 1 :0)
-											+ (isAllRayTracingStages(shaderStages) ? 1 :0);
+	const deUint32 exclusivePipelinesCount	= (isAllComputeStages(shaderStages) ? 1 : 0)
+#ifndef CTS_USES_VULKANSC
+											+ (isAllRayTracingStages(shaderStages) ? 1 : 0)
+#endif // CTS_USES_VULKANSC
+											+ (isAllGraphicsStages(shaderStages) ? 1 : 0);
 
 	if (exclusivePipelinesCount != 1)
 		TCU_THROW(InternalError, "Mix of shaders from different pipelines is detected");
@@ -4082,12 +4090,14 @@ void vkt::subgroups::supportedCheckShader (Context& context, const VkShaderStage
 			TCU_THROW(NotSupportedError, "Subgroup support is not available for test shader stage(s)");
 	}
 
+#ifndef CTS_USES_VULKANSC
 	if ((VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) & shaderStages &&
 		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().tessellationIsolines)
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Tessellation iso lines are not supported by this implementation");
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 
@@ -4204,6 +4214,8 @@ void addRayTracingNoSubgroupShader (SourceCollections& programCollection)
 	programCollection.glslSources.add("sect_noSubgroup") << glu::IntersectionSource	(sectShaderNoSubgroups) << buildOptions;
 	programCollection.glslSources.add("call_noSubgroup") << glu::CallableSource		(callShaderNoSubgroups) << buildOptions;
 }
+
+#ifndef CTS_USES_VULKANSC
 
 static vector<VkShaderStageFlagBits> enumerateRayTracingShaderStages (const VkShaderStageFlags	shaderStage)
 {
@@ -4703,5 +4715,7 @@ tcu::TestStatus allRayTracingStagesRequiredSubgroupSize (Context&					context,
 	else
 		return tcu::TestStatus::pass("OK");
 }
+#endif // CTS_USES_VULKANSC
+
 } // namespace subgroups
 } // nsamespace vkt

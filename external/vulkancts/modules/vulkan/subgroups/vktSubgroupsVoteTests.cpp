@@ -175,7 +175,12 @@ const string getStageTestSource (const CaseDefinition& caseDef)
 
 void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const SpirvVersion			spirvVersion	= isAllRayTracingStages(caseDef.shaderStage) ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
+#ifndef CTS_USES_VULKANSC
+	const bool					spirv14required	= isAllRayTracingStages(caseDef.shaderStage);
+#else
+	const bool					spirv14required	= false;
+#endif // CTS_USES_VULKANSC
+	const SpirvVersion			spirvVersion	= spirv14required ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
 	const ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, spirvVersion, 0u);
 	const bool					arbFunctions	= caseDef.opType > OPTYPE_LAST_NON_ARB;
 	const string				extensions		= getExtensions(arbFunctions) + subgroups::getAdditionalExtensionForFormat(caseDef.format);
@@ -216,7 +221,12 @@ const string getStageTestSourceFrag (const CaseDefinition& caseDef)
 
 void initFrameBufferProgramsFrag (SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const SpirvVersion			spirvVersion	= isAllRayTracingStages(caseDef.shaderStage) ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
+#ifndef CTS_USES_VULKANSC
+	const bool					spirv14required	= isAllRayTracingStages(caseDef.shaderStage);
+#else
+	const bool					spirv14required	= false;
+#endif // CTS_USES_VULKANSC
+	const SpirvVersion			spirvVersion	= spirv14required ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
 	const ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, spirvVersion, 0u);
 	const bool					arbFunctions	= caseDef.opType > OPTYPE_LAST_NON_ARB;
 	const string				extensions		= getExtensions(arbFunctions) + subgroups::getAdditionalExtensionForFormat(caseDef.format);
@@ -271,7 +281,12 @@ void initFrameBufferProgramsFrag (SourceCollections& programCollection, CaseDefi
 
 void initPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const SpirvVersion			spirvVersion	= isAllRayTracingStages(caseDef.shaderStage) ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
+#ifndef CTS_USES_VULKANSC
+	const bool					spirv14required	= isAllRayTracingStages(caseDef.shaderStage);
+#else
+	const bool					spirv14required	= false;
+#endif // CTS_USES_VULKANSC
+	const SpirvVersion			spirvVersion	= spirv14required ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
 	const ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, spirvVersion, 0u);
 	const bool					arbFunctions	= caseDef.opType > OPTYPE_LAST_NON_ARB;
 	const string				extensions		= getExtensions(arbFunctions) + subgroups::getAdditionalExtensionForFormat(caseDef.format);
@@ -419,6 +434,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 
 		return subgroups::allStages(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkVertexPipelineStages, stages);
 	}
+#ifndef CTS_USES_VULKANSC
 	else if (isAllRayTracingStages(caseDef.shaderStage))
 	{
 		const VkShaderStageFlags	stages		= subgroups::getPossibleRayTracingSubgroupStages(context, caseDef.shaderStage);
@@ -435,6 +451,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 
 		return subgroups::allRayTracingStages(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkVertexPipelineStages, stages);
 	}
+#endif // CTS_USES_VULKANSC
 	else
 		TCU_THROW(InternalError, "Unknown stage or invalid stage set");
 }
@@ -451,7 +468,9 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 	de::MovePtr<TestCaseGroup>	computeGroup		(new TestCaseGroup(testCtx, "compute", "Subgroup vote category tests: compute"));
 	de::MovePtr<TestCaseGroup>	framebufferGroup	(new TestCaseGroup(testCtx, "framebuffer", "Subgroup vote category tests: framebuffer"));
 	de::MovePtr<TestCaseGroup>	fragHelperGroup		(new TestCaseGroup(testCtx, "frag_helper", "Subgroup vote category tests: fragment helper invocation"));
+#ifndef CTS_USES_VULKANSC
 	de::MovePtr<TestCaseGroup>	raytracingGroup		(new TestCaseGroup(testCtx, "ray_tracing", "Subgroup vote category tests: raytracing"));
+#endif // CTS_USES_VULKANSC
 
 	de::MovePtr<TestCaseGroup>	groupARB			(new TestCaseGroup(testCtx, "ext_shader_subgroup_vote", "VK_EXT_shader_subgroup_vote category tests"));
 	de::MovePtr<TestCaseGroup>	graphicGroupARB		(new TestCaseGroup(testCtx, "graphics", "Subgroup vote category tests: graphics"));
@@ -585,6 +604,7 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 		}
 	}
 
+#ifndef CTS_USES_VULKANSC
 	{
 		const vector<VkFormat>	formats		= subgroups::getAllRayTracingFormats();
 
@@ -619,6 +639,7 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 			}
 		}
 	}
+#endif // CTS_USES_VULKANSC
 
 	groupARB->addChild(graphicGroupARB.release());
 	groupARB->addChild(computeGroupARB.release());
@@ -629,7 +650,9 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 	group->addChild(computeGroup.release());
 	group->addChild(framebufferGroup.release());
 	group->addChild(fragHelperGroup.release());
+#ifndef CTS_USES_VULKANSC
 	group->addChild(raytracingGroup.release());
+#endif // CTS_USES_VULKANSC
 
 	group->addChild(groupARB.release());
 

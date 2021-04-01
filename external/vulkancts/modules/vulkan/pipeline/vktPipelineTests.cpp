@@ -54,9 +54,11 @@
 #include "vktPipelineMaxVaryingsTests.hpp"
 #include "vktPipelineBlendOperationAdvancedTests.hpp"
 #include "vktPipelineExtendedDynamicStateTests.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktPipelineCreationCacheControlTests.hpp"
-#include "vktPipelineNoPositionTests.hpp"
 #include "vktPipelineBindPointTests.hpp"
+#endif // CTS_USES_VULKANSC
+#include "vktPipelineNoPositionTests.hpp"
 #include "vktPipelineColorWriteEnableTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
@@ -82,7 +84,9 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createImageViewTests				(testCtx));
 	pipelineTests->addChild(createLogicOpTests					(testCtx));
 	pipelineTests->addChild(createPushConstantTests				(testCtx));
+#ifndef CTS_USES_VULKANSC
 	pipelineTests->addChild(createPushDescriptorTests			(testCtx));
+#endif // CTS_USES_VULKANSC
 	pipelineTests->addChild(createSpecConstantTests				(testCtx));
 	pipelineTests->addChild(createMatchedAttachmentsTests		(testCtx));
 	pipelineTests->addChild(createMultisampleTests				(testCtx));
@@ -91,21 +95,31 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createTestGroup						(testCtx,	"vertex_input", "", createVertexInputTests));
 	pipelineTests->addChild(createInputAssemblyTests			(testCtx));
 	pipelineTests->addChild(createTimestampTests				(testCtx));
+#ifndef CTS_USES_VULKANSC
 	pipelineTests->addChild(createCacheTests					(testCtx));
+#endif // CTS_USES_VULKANSC
 	pipelineTests->addChild(createRenderToImageTests			(testCtx));
 	pipelineTests->addChild(createFramebufferAttachmentTests	(testCtx));
 	pipelineTests->addChild(createStencilExportTests			(testCtx));
 	pipelineTests->addChild(createDerivativeTests				(testCtx));
+#ifndef CTS_USES_VULKANSC
 	pipelineTests->addChild(createCreationFeedbackTests			(testCtx));
+#endif // CTS_USES_VULKANSC
 	pipelineTests->addChild(createDepthRangeUnrestrictedTests	(testCtx));
+#ifndef CTS_USES_VULKANSC
 	pipelineTests->addChild(createExecutablePropertiesTests		(testCtx));
 	pipelineTests->addChild(createMiscTests						(testCtx));
+#endif // CTS_USES_VULKANSC
 	pipelineTests->addChild(createMaxVaryingsTests				(testCtx));
 	pipelineTests->addChild(createBlendOperationAdvancedTests	(testCtx));
 	pipelineTests->addChild(createExtendedDynamicStateTests		(testCtx));
+#ifndef CTS_USES_VULKANSC
 	pipelineTests->addChild(createCacheControlTests				(testCtx));
+#endif // CTS_USES_VULKANSC
 	pipelineTests->addChild(createNoPositionTests				(testCtx));
+#ifndef CTS_USES_VULKANSC
 	pipelineTests->addChild(createBindPointTests				(testCtx));
+#endif // CTS_USES_VULKANSC
 	pipelineTests->addChild(createColorWriteEnableTests			(testCtx));
 }
 

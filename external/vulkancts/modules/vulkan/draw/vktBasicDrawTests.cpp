@@ -579,12 +579,14 @@ void DrawTestCase<T>::checkSupport (Context& context) const
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 	}
 
+#ifndef CTS_USES_VULKANSC
 	if (m_data.topology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
 		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().triangleFans)
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 template<typename T>

@@ -559,7 +559,7 @@ TestStatus BasicComputeTestInstance::iterate (void)
 			{
 				const VkImageViewUsageCreateInfo	imageViewUsageKHR	=
 				{
-					VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,				//VkStructureType		sType;
+					VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,					//VkStructureType		sType;
 					DE_NULL,														//const void*			pNext;
 					m_parameters.compressedImageUsage,								//VkImageUsageFlags		usage;
 				};
@@ -947,8 +947,8 @@ void BasicComputeTestInstance::createImageInfos (ImageData& imageData, const vec
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,					// VkStructureType			sType;
 			DE_NULL,												// const void*				pNext;
 			VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT |
-			VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR |
-			VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR,					// VkImageCreateFlags		flags;
+			VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT |
+			VK_IMAGE_CREATE_EXTENDED_USAGE_BIT,						// VkImageCreateFlags		flags;
 			imageType,												// VkImageType				imageType;
 			m_parameters.formatCompressed,							// VkFormat					format;
 			extentCompressed,										// VkExtent3D				extent;
@@ -1080,7 +1080,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 		const VkImageUsageFlags				compressedViewUsageFlags	= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		const VkImageViewUsageCreateInfo	compressedViewUsageCI		=
 		{
-			VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,					//VkStructureType		sType;
+			VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,						//VkStructureType		sType;
 			DE_NULL,															//const void*			pNext;
 			compressedViewUsageFlags,											//VkImageUsageFlags		usage;
 		};
@@ -1935,7 +1935,7 @@ VkImageCreateInfo GraphicsAttachmentsTestInstance::makeCreateImageInfo (const Vk
 {
 	const VkImageType			imageType				= mapImageType(type);
 	const VkImageCreateFlags	imageCreateFlagsBase	= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
-	const VkImageCreateFlags	imageCreateFlagsAddOn	= isCompressedFormat(format) ? VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR : 0;
+	const VkImageCreateFlags	imageCreateFlagsAddOn	= isCompressedFormat(format) ? VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT : 0;
 	const VkImageCreateFlags	imageCreateFlags		= (createFlags != DE_NULL) ? *createFlags : (imageCreateFlagsBase | imageCreateFlagsAddOn);
 
 	VkFormatProperties properties;
@@ -2862,7 +2862,7 @@ void TexelViewCompatibleCase::checkSupport (Context& context) const
 		if (VK_ERROR_FORMAT_NOT_SUPPORTED == vk.getPhysicalDeviceImageFormatProperties(physicalDevice, m_parameters.formatCompressed,
 												mapImageType(m_parameters.imageType), VK_IMAGE_TILING_OPTIMAL,
 												m_parameters.compressedImageUsage,
-												VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR | VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR,
+												VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT | VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT,
 												&imageFormatProperties))
 			TCU_THROW(NotSupportedError, "Operation not supported with this image format");
 	}

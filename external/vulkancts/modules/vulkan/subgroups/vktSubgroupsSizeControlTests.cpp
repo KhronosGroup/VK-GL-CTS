@@ -431,7 +431,12 @@ string getTestSource (const CaseDefinition&)
 
 void initPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const SpirvVersion			spirvVersion		= isAllRayTracingStages(caseDef.shaderStage) ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
+#ifndef CTS_USES_VULKANSC
+	const bool					spirv14required		= isAllRayTracingStages(caseDef.shaderStage);
+#else
+	const bool					spirv14required		= false;
+#endif // CTS_USES_VULKANSC
+	const SpirvVersion			spirvVersion		= spirv14required ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
 	const ShaderBuildOptions	buildOptions		(programCollection.usedVulkanVersion, spirvVersion, 0u);
 	const string				extHeader			= getExtHeader(caseDef);
 	const string				testSrc				= getTestSource(caseDef);
@@ -632,6 +637,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 														caseDef.pipelineShaderStageCreateFlags,
 														DE_NULL);
 	}
+#ifndef CTS_USES_VULKANSC
 	else if (isAllRayTracingStages(caseDef.shaderStage))
 	{
 		const VkShaderStageFlags		stages			= subgroups::getPossibleRayTracingSubgroupStages(context, caseDef.shaderStage);
@@ -653,6 +659,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 																  flags.data(),
 																  DE_NULL);
 	}
+#endif // CTS_USES_VULKANSC
 	else
 		TCU_THROW(InternalError, "Unknown stage or invalid stage set");
 }
@@ -770,6 +777,7 @@ TestStatus testRequireSubgroupSize (Context& context, const CaseDefinition caseD
 														caseDef.pipelineShaderStageCreateFlags,
 														requiredSubgroupSizes);
 	}
+#ifndef CTS_USES_VULKANSC
 	else if (isAllRayTracingStages(caseDef.shaderStage))
 	{
 		const VkShaderStageFlags								stages							= subgroups::getPossibleRayTracingSubgroupStages(context, caseDef.shaderStage);
@@ -794,6 +802,7 @@ TestStatus testRequireSubgroupSize (Context& context, const CaseDefinition caseD
 																  flags.data(),
 																  requiredSubgroupSizes.data());
 	}
+#endif // CTS_USES_VULKANSC
 	else
 		TCU_THROW(InternalError, "Unknown stage or invalid stage set");
 }
@@ -864,7 +873,9 @@ TestCaseGroup* createSubgroupsSizeControlTests (TestContext& testCtx)
 	de::MovePtr<TestCaseGroup>	framebufferGroup	(new TestCaseGroup(testCtx, "framebuffer", "Subgroup size control category tests: framebuffer"));
 	de::MovePtr<TestCaseGroup>	computeGroup		(new TestCaseGroup(testCtx, "compute", "Subgroup size control category tests: compute"));
 	de::MovePtr<TestCaseGroup>	graphicsGroup		(new TestCaseGroup(testCtx, "graphics", "Subgroup size control category tests: graphics"));
+#ifndef CTS_USES_VULKANSC
 	de::MovePtr<TestCaseGroup>	raytracingGroup		(new TestCaseGroup(testCtx, "ray_tracing", "Subgroup size control category tests: ray tracing"));
+#endif // CTS_USES_VULKANSC
 	de::MovePtr<TestCaseGroup>	genericGroup		(new TestCaseGroup(testCtx, "generic", "Subgroup size control category tests: generic"));
 	const VkShaderStageFlags	stages[]			=
 	{
@@ -886,8 +897,10 @@ TestCaseGroup* createSubgroupsSizeControlTests (TestContext& testCtx)
 		addFunctionCaseWithPrograms(computeGroup.get(), "allow_varying_subgroup_size", "", supportedCheckFeatures, initPrograms, test, caseDefCompute);
 		const CaseDefinition caseDefAllGraphics = {VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT, VK_SHADER_STAGE_ALL_GRAPHICS, DE_FALSE, REQUIRED_SUBGROUP_SIZE_NONE, de::SharedPtr<bool>(new bool)};
 		addFunctionCaseWithPrograms(graphicsGroup.get(), "allow_varying_subgroup_size", "", supportedCheckFeaturesShader, initPrograms, test, caseDefAllGraphics);
+#ifndef CTS_USES_VULKANSC
 		const CaseDefinition caseDefAllRaytracing = {VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT, SHADER_STAGE_ALL_RAY_TRACING, DE_FALSE, REQUIRED_SUBGROUP_SIZE_NONE, de::SharedPtr<bool>(new bool)};
 		addFunctionCaseWithPrograms(raytracingGroup.get(), "allow_varying_subgroup_size", "", supportedCheckFeaturesShader, initPrograms, test, caseDefAllRaytracing);
+#endif // CTS_USES_VULKANSC
 
 		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 		{
@@ -915,15 +928,19 @@ TestCaseGroup* createSubgroupsSizeControlTests (TestContext& testCtx)
 		addFunctionCaseWithPrograms(graphicsGroup.get(), "required_subgroup_size_max", "", supportedCheckFeaturesShader, initPrograms, testRequireSubgroupSize, caseDefAllGraphicsMax);
 		const CaseDefinition caseDefComputeMax = {0u, VK_SHADER_STAGE_COMPUTE_BIT, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MAX, de::SharedPtr<bool>(new bool)};
 		addFunctionCaseWithPrograms(computeGroup.get(), "required_subgroup_size_max", "", supportedCheckFeatures, initPrograms, testRequireSubgroupSize, caseDefComputeMax);
+#ifndef CTS_USES_VULKANSC
 		const CaseDefinition caseDefAllRaytracingMax = {0u, SHADER_STAGE_ALL_RAY_TRACING, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MAX, de::SharedPtr<bool>(new bool)};
 		addFunctionCaseWithPrograms(raytracingGroup.get(), "required_subgroup_size_max", "", supportedCheckFeaturesShader, initPrograms, testRequireSubgroupSize, caseDefAllRaytracingMax);
+#endif // CTS_USES_VULKANSC
 
 		const CaseDefinition caseDefAllGraphicsMin = {0u, VK_SHADER_STAGE_ALL_GRAPHICS, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MIN, de::SharedPtr<bool>(new bool)};
 		addFunctionCaseWithPrograms(graphicsGroup.get(), "required_subgroup_size_min", "", supportedCheckFeaturesShader, initPrograms, testRequireSubgroupSize, caseDefAllGraphicsMin);
 		const CaseDefinition caseDefComputeMin = {0u, VK_SHADER_STAGE_COMPUTE_BIT, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MIN, de::SharedPtr<bool>(new bool)};
 		addFunctionCaseWithPrograms(computeGroup.get(), "required_subgroup_size_min", "", supportedCheckFeatures, initPrograms, testRequireSubgroupSize, caseDefComputeMin);
+#ifndef CTS_USES_VULKANSC
 		const CaseDefinition caseDefAllRaytracingMin = {0u, SHADER_STAGE_ALL_RAY_TRACING, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MIN, de::SharedPtr<bool>(new bool)};
 		addFunctionCaseWithPrograms(raytracingGroup.get(), "required_subgroup_size_min", "", supportedCheckFeaturesShader, initPrograms, testRequireSubgroupSize, caseDefAllRaytracingMin);
+#endif // CTS_USES_VULKANSC
 		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 		{
 			const CaseDefinition caseDefStageMax = {0u, stages[stageIndex], DE_FALSE, REQUIRED_SUBGROUP_SIZE_MAX, de::SharedPtr<bool>(new bool)};
@@ -946,7 +963,9 @@ TestCaseGroup* createSubgroupsSizeControlTests (TestContext& testCtx)
 	group->addChild(graphicsGroup.release());
 	group->addChild(computeGroup.release());
 	group->addChild(framebufferGroup.release());
+#ifndef CTS_USES_VULKANSC
 	group->addChild(raytracingGroup.release());
+#endif // CTS_USES_VULKANSC
 
 	return group.release();
 }

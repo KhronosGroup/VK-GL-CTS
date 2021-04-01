@@ -452,7 +452,7 @@ VkImageCreateInfo GraphicsAttachmentsTestInstance::makeCreateImageInfo (const Vk
 {
 	const VkImageType			imageType				= mapImageType(type);
 	const VkImageCreateFlags	imageCreateFlagsBase	= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
-	const VkImageCreateFlags	imageCreateFlagsAddOn	= extendedImageCreateFlag ? VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR : 0;
+	const VkImageCreateFlags	imageCreateFlagsAddOn	= extendedImageCreateFlag ? VK_IMAGE_CREATE_EXTENDED_USAGE_BIT : 0;
 	const VkImageCreateFlags	imageCreateFlags		= imageCreateFlagsBase | imageCreateFlagsAddOn;
 
 	const VkImageCreateInfo createImageInfo =
@@ -481,7 +481,7 @@ VkImageViewUsageCreateInfo GraphicsAttachmentsTestInstance::makeImageViewUsageCr
 {
 	VkImageViewUsageCreateInfo imageViewUsageCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	//VkStructureType		sType;
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,		//VkStructureType		sType;
 		DE_NULL,											//const void*			pNext;
 		imageUsageFlags,									//VkImageUsageFlags		usage;
 	};
@@ -821,7 +821,7 @@ bool ImageTranscodingCase::isFormatUsageFlagSupported (Context& context, const V
 															mapImageType(m_parameters.imageType),
 															VK_IMAGE_TILING_OPTIMAL,
 															formatUsageFlags,
-															VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR,
+															VK_IMAGE_CREATE_EXTENDED_USAGE_BIT,
 															&imageFormatProperties);
 
 	return (queryResult == VK_SUCCESS);
@@ -862,6 +862,7 @@ TestInstance* ImageTranscodingCase::createInstance (Context& context) const
 
 	if (differenceFound)
 	{
+#ifndef CTS_USES_VULKANSC
 		if ((context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 			!context.getPortabilitySubsetFeatures().imageViewFormatReinterpretation))
 		{
@@ -871,6 +872,7 @@ TestInstance* ImageTranscodingCase::createInstance (Context& context) const
 			if (tcu::getTextureFormatBitDepth(textureImageFormat) != tcu::getTextureFormatBitDepth(textureViewFormat))
 				TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Format must not contain a different number of bits in each component, than the format of the VkImage");
 		}
+#endif // CTS_USES_VULKANSC
 
 		TestParameters	calculatedParameters	=
 		{

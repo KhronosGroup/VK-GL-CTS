@@ -644,7 +644,7 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 		if (m_separateDepthStencilLayouts)
 		{
 			depthBarrierSubresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-			newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR;
+			newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
 		}
 
 		const VkImageMemoryBarrier			depthBarrier					=

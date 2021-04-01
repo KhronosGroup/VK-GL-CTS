@@ -777,11 +777,13 @@ void ShaderRenderCaseInstance::addAttribute (deUint32		bindingLocation,
 	// Portability requires stride to be multiply of minVertexInputBindingStrideAlignment
 	// this value is usually 4 and current tests meet this requirement but
 	// if this changes in future then this limit should be verified in checkSupport
+#ifndef CTS_USES_VULKANSC
 	if (m_context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		((sizePerElement % m_context.getPortabilitySubsetProperties().minVertexInputBindingStrideAlignment) != 0))
 	{
 		DE_FATAL("stride is not multiply of minVertexInputBindingStrideAlignment");
 	}
+#endif // CTS_USES_VULKANSC
 
 	// Add binding specification
 	const deUint32							binding					= (deUint32)m_vertexBindingDescription.size();
@@ -1216,12 +1218,16 @@ bool isImageSizeSupported (const VkImageType imageType, const tcu::UVec3& imageS
 
 void ShaderRenderCaseInstance::checkSparseSupport (const VkImageCreateInfo& imageInfo) const
 {
+#ifdef CTS_USES_VULKANSC
+	TCU_THROW(NotSupportedError, "Vulkan SC does not support sparse operations");
+#endif // CTS_USES_VULKANSC
 	const InstanceInterface&		instance		= getInstanceInterface();
 	const VkPhysicalDevice			physicalDevice	= getPhysicalDevice();
 	const VkPhysicalDeviceFeatures	deviceFeatures	= getPhysicalDeviceFeatures(instance, physicalDevice);
-
+#ifndef CTS_USES_VULKANSC
 	const std::vector<VkSparseImageFormatProperties> sparseImageFormatPropVec = getPhysicalDeviceSparseImageFormatProperties(
 		instance, physicalDevice, imageInfo.format, imageInfo.imageType, imageInfo.samples, imageInfo.usage, imageInfo.tiling);
+#endif // CTS_USES_VULKANSC
 
 	if (!deviceFeatures.shaderResourceResidency)
 		TCU_THROW(NotSupportedError, "Required feature: shaderResourceResidency.");
@@ -1234,11 +1240,13 @@ void ShaderRenderCaseInstance::checkSparseSupport (const VkImageCreateInfo& imag
 
 	if (imageInfo.imageType == VK_IMAGE_TYPE_3D && !deviceFeatures.sparseResidencyImage3D)
 		TCU_THROW(NotSupportedError, "Required feature: sparseResidencyImage3D.");
-
+#ifndef CTS_USES_VULKANSC
 	if (sparseImageFormatPropVec.size() == 0)
 		TCU_THROW(NotSupportedError, "The image format does not support sparse operations");
+#endif // CTS_USES_VULKANSC
 }
 
+#ifndef CTS_USES_VULKANSC
 void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		texFormat,
 												  const TextureData&			textureData,
 												  const tcu::Sampler&			refSampler,
@@ -1349,6 +1357,7 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 	}
 	copyBufferToImage(vk, vkDevice, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, &(*imageMemoryBindSemaphore), aspectMask, mipLevels, arrayLayers, sparseImage);
 }
+#endif // CTS_USES_VULKANSC
 
 void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 textureId)
 {
@@ -1579,12 +1588,14 @@ void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocati
 	// VkSamplerCreateInfo to true and in portability this functionality is under
 	// feature flag - note that this is safety check as this is known at the
 	// TestCase level and NotSupportedError should be thrown from checkSupport
+#ifndef CTS_USES_VULKANSC
 	if (isShadowSampler &&
 		m_context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!m_context.getPortabilitySubsetFeatures().mutableComparisonSamplers)
 	{
 		DE_FATAL("mutableComparisonSamplers support should be checked in checkSupport");
 	}
+#endif // CTS_USES_VULKANSC
 
 	const VkImageAspectFlags		aspectMask			= isShadowSampler ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 	const VkImageViewType			imageViewType		= textureTypeToImageViewType(textureType);
@@ -1650,7 +1661,9 @@ void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocati
 
 			if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
 			{
+#ifndef CTS_USES_VULKANSC
 				uploadSparseImage(texFormat, textureData, refSampler, mipLevels, arrayLayers, *vkTexture, imageParams, texSize);
+#endif // CTS_USES_VULKANSC
 			}
 			else
 			{

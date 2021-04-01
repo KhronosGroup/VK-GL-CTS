@@ -355,6 +355,9 @@ void NoPositionCase::checkSupport (Context& context) const
 
 		if (hasGeom && !multiviewFeatures.multiviewGeometryShader)
 			TCU_THROW(NotSupportedError, "Multiview not supported with geometry shaders");
+
+		if (m_params.numViews > context.getMultiviewProperties().maxMultiviewViewCount)
+			TCU_THROW(NotSupportedError, "Not enough views supported");
 	}
 
 	if (m_params.useSSBO)

@@ -433,14 +433,14 @@ tcu::TestStatus testPlaneView (Context& context, TestParameters params)
 		{
 			VkBindImagePlaneMemoryInfo	planeInfo	=
 			{
-				VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO_KHR,
+				VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO,
 				DE_NULL,
-				VK_IMAGE_ASPECT_PLANE_0_BIT_KHR
+				VK_IMAGE_ASPECT_PLANE_0_BIT
 			};
 
 			VkBindImageMemoryInfo coreInfo	=
 			{
-				VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHR,
+				VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO,
 				&planeInfo,
 				*imageAlias,
 				allocations[params.planeNdx]->getMemory(),
@@ -788,5 +788,6 @@ tcu::TestCaseGroup* createViewTests (tcu::TestContext& testCtx)
 }
 
 } // ycbcr
+
 } // vkt
 

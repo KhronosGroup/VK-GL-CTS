@@ -353,9 +353,13 @@ private:
 
 		void* pNext									= DE_NULL;
 #ifdef CTS_USES_VULKANSC
-		VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
 		memReservationInfo.pNext								= pNext;
 		pNext													= &memReservationInfo;
+
+		VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+		sc10Features.pNext										= pNext;
+		pNext													= &sc10Features;
 #endif // CTS_USES_VULKANSC
 
 		const VkDeviceCreateInfo	deviceInfo		= {

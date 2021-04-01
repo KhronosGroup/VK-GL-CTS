@@ -558,6 +558,7 @@ SerialStorage::SerialStorage (const DeviceInterface&									vk,
 							  const VkDeviceSize										storageSize)
 	: m_buildType		(buildType)
 	, m_storageSize		(storageSize)
+	, m_serialInfo		()
 {
 	const VkBufferCreateInfo	bufferCreateInfo	= makeBufferCreateInfo(storageSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 	try

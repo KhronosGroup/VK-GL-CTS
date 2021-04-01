@@ -1108,7 +1108,8 @@ CaseListFilter::CaseListFilter (const de::cmdline::CommandLine& cmdLine, const t
 	else if (cmdLine.hasOption<opt::CasePath>())
 		m_casePaths = de::MovePtr<const CasePaths>(new CasePaths(cmdLine.getOption<opt::CasePath>()));
 
-	m_caseFraction = cmdLine.getOption<opt::CaseFraction>();
+	if (!cmdLine.getOption<opt::SubProcess>())
+		m_caseFraction = cmdLine.getOption<opt::CaseFraction>();
 
 	if (m_caseFraction.size() == 2 &&
 		(m_caseFraction[0] < 0 || m_caseFraction[1] <= 0 || m_caseFraction[0] >= m_caseFraction[1] ))

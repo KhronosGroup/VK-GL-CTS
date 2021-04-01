@@ -50,7 +50,7 @@ std::string VariableLocation::toDescription() const
 
 bool is8BitStorageFeaturesSupported (const Context& context, Extension8BitStorageFeatures toCheck)
 {
-	VkPhysicalDevice8BitStorageFeaturesKHR extensionFeatures = context.get8BitStorageFeatures();
+	VkPhysicalDevice8BitStorageFeatures extensionFeatures = context.get8BitStorageFeatures();
 
 	if ((toCheck & EXT8BITSTORAGEFEATURES_STORAGE_BUFFER) != 0 && extensionFeatures.storageBuffer8BitAccess == VK_FALSE)
 		return false;
@@ -179,7 +179,7 @@ bool isFloat16Int8FeaturesSupported (const Context& context, ExtensionFloat16Int
 
 bool isVulkanMemoryModelFeaturesSupported (const Context& context, ExtensionVulkanMemoryModelFeatures toCheck)
 {
-	const VkPhysicalDeviceVulkanMemoryModelFeaturesKHR& extensionFeatures = context.getVulkanMemoryModelFeatures();
+	const VkPhysicalDeviceVulkanMemoryModelFeatures& extensionFeatures = context.getVulkanMemoryModelFeatures();
 
 	if ((toCheck & EXTVULKANMEMORYMODELFEATURES_ENABLE) != 0 && extensionFeatures.vulkanMemoryModel == VK_FALSE)
 		return false;
@@ -220,7 +220,7 @@ bool isFloatControlsFeaturesSupported (const Context& context, const ExtensionFl
 	// perform query to get supported float control properties
 	ExtensionFloatControlsFeatures refControls;
 	{
-		refControls.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR;
+		refControls.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES;
 		refControls.pNext = DE_NULL;
 
 		VkPhysicalDeviceProperties2 deviceProperties;
@@ -234,9 +234,9 @@ bool isFloatControlsFeaturesSupported (const Context& context, const ExtensionFl
 	}
 
 	using FCIndependence = VkShaderFloatControlsIndependence;
-	FCIndependence fcInd32		= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY_KHR;
-	FCIndependence fcIndAll		= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL_KHR;
-	FCIndependence fcIndNone	= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR;
+	FCIndependence fcInd32		= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY;
+	FCIndependence fcIndAll		= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL;
+	FCIndependence fcIndNone	= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE;
 
 	bool requiredDenormBehaviorNotSupported =
 		((toCheck.denormBehaviorIndependence == fcIndAll) && (refControls.denormBehaviorIndependence != fcIndAll)) ||

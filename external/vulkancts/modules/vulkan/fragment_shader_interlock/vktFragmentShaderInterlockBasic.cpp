@@ -92,6 +92,7 @@ de::SharedPtr<Move<vk::VkDevice>>	g_singletonDevice;
 
 VkDevice getDevice(Context& context, Interlock interlock)
 {
+#ifndef CTS_USES_VULKANSC
 	if (interlock == INT_SHADING_RATE_ORDERED || interlock == INT_SHADING_RATE_UNORDERED)
 	{
 		if (!g_singletonDevice)
@@ -141,7 +142,9 @@ VkDevice getDevice(Context& context, Interlock interlock)
 
 		return g_singletonDevice->get();
 	}
-
+#else
+	DE_UNREF(interlock);
+#endif
 	return context.getDevice();
 }
 
@@ -224,6 +227,7 @@ void FSITestCase::checkSupport(Context& context) const
 		TCU_THROW(NotSupportedError, "Fragment shader pixel interlock not supported");
 	}
 
+#ifndef CTS_USES_VULKANSC
 	if ((m_data.interlock == INT_SHADING_RATE_ORDERED || m_data.interlock == INT_SHADING_RATE_UNORDERED))
 	{
 		if (!context.getFragmentShaderInterlockFeaturesEXT().fragmentShaderShadingRateInterlock)
@@ -234,13 +238,14 @@ void FSITestCase::checkSupport(Context& context) const
 		// We need to query the VK_NV_shading_rate_image features because they might be disabled
 		// in the default context due to a conflict with VK_KHR_fragment_shading_rate.
 		VkPhysicalDeviceShadingRateImageFeaturesNV	shadingRateImageFeatures	= initVulkanStructure();
-		VkPhysicalDeviceFeatures2KHR				features2					= initVulkanStructure(&shadingRateImageFeatures);
+		VkPhysicalDeviceFeatures2					features2					= initVulkanStructure(&shadingRateImageFeatures);
 
 		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 
 		if (!shadingRateImageFeatures.shadingRateImage)
 			TCU_THROW(NotSupportedError, "Shading rate image not supported");
 	}
+#endif
 }
 
 static int bitsPerQuad(const CaseDef &c)
@@ -901,8 +906,10 @@ tcu::TestCaseGroup*	createBasicTests (tcu::TestContext& testCtx)
 		{ INT_PIXEL_UNORDERED,	"pixel_unordered",	"pixel_unordered"		},
 		{ INT_SAMPLE_ORDERED,	"sample_ordered",	"sample_ordered"		},
 		{ INT_SAMPLE_UNORDERED,	"sample_unordered",	"sample_unordered"		},
+#ifndef CTS_USES_VULKANSC
 		{ INT_SHADING_RATE_ORDERED,		"shading_rate_ordered",	"shading_rate_ordered"		},
 		{ INT_SHADING_RATE_UNORDERED,	"shading_rate_unordered",	"shading_rate_unordered"		},
+#endif
 	};
 
 	for (int killNdx = 0; killNdx < DE_LENGTH_OF_ARRAY(killCases); killNdx++)

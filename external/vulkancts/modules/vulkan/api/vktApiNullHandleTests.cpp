@@ -52,24 +52,12 @@ inline void release (Context& context, VkBufferView bufferView, const VkAllocati
 #ifndef CTS_USES_VULKANSC
 inline void release (Context& context, VkCommandPool commandPool, const VkAllocationCallbacks* pAllocator)
 {
-#ifndef CTS_USES_VULKANSC
 	context.getDeviceInterface().destroyCommandPool(context.getDevice(), commandPool, pAllocator);
-#else
-	DE_UNREF(context);
-	DE_UNREF(commandPool);
-	DE_UNREF(pAllocator);
-#endif // CTS_USES_VULKANSC
 }
 
 inline void release (Context& context, VkDescriptorPool descriptorPool, const VkAllocationCallbacks* pAllocator)
 {
-#ifndef CTS_USES_VULKANSC
 	context.getDeviceInterface().destroyDescriptorPool(context.getDevice(), descriptorPool, pAllocator);
-#else
-	DE_UNREF(context);
-	DE_UNREF(descriptorPool);
-	DE_UNREF(pAllocator);
-#endif // CTS_USES_VULKANSC
 }
 #endif // CTS_USES_VULKANSC
 
@@ -131,13 +119,7 @@ inline void release (Context& context, VkPipelineLayout pipelineLayout, const Vk
 #ifndef CTS_USES_VULKANSC
 inline void release (Context& context, VkQueryPool queryPool, const VkAllocationCallbacks* pAllocator)
 {
-#ifndef CTS_USES_VULKANSC
 	context.getDeviceInterface().destroyQueryPool(context.getDevice(), queryPool, pAllocator);
-#else
-	DE_UNREF(context);
-	DE_UNREF(queryPool);
-	DE_UNREF(pAllocator);
-#endif // CTS_USES_VULKANSC
 }
 #endif // CTS_USES_VULKANSC
 
@@ -186,13 +168,7 @@ inline void release (Context& context, VkDevice device, VkDescriptorPool descrip
 #ifndef CTS_USES_VULKANSC
 inline void release (Context& context, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator)
 {
-#ifndef CTS_USES_VULKANSC
 	context.getDeviceInterface().freeMemory(context.getDevice(), memory, pAllocator);
-#else
-	DE_UNREF(context);
-	DE_UNREF(memory);
-	DE_UNREF(pAllocator);
-#endif // CTS_USES_VULKANSC
 }
 #endif // CTS_USES_VULKANSC
 
@@ -209,14 +185,21 @@ tcu::TestStatus test (Context& context)
 {
 	const Object					nullHandle			= DE_NULL;
 	const VkAllocationCallbacks*	pNullAllocator		= DE_NULL;
+
+#ifndef CTS_USES_VULKANSC
 	AllocationCallbackRecorder		recordingAllocator	(getSystemAllocator(), 1u);
+#endif // CTS_USES_VULKANSC
 
 	// Implementation should silently ignore a delete/free of a NULL handle.
 
 	release(context, nullHandle, pNullAllocator);
+#ifndef CTS_USES_VULKANSC
+	// In Vulkan SC VkAllocationCallbacks must be NULL
 	release(context, nullHandle, recordingAllocator.getCallbacks());
-
 	return reportStatus(recordingAllocator.getNumRecords() == 0);
+#else
+	return reportStatus(true);
+#endif // CTS_USES_VULKANSC
 }
 
 template<>
@@ -245,6 +228,7 @@ tcu::TestStatus test<VkCommandBuffer> (Context& context)
 	}
 
 	// Custom allocator
+#ifndef CTS_USES_VULKANSC
 	{
 		AllocationCallbackRecorder		recordingAllocator	(getSystemAllocator(), 1u);
 		const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, &cmdPoolCreateInfo, recordingAllocator.getCallbacks()));
@@ -254,6 +238,9 @@ tcu::TestStatus test<VkCommandBuffer> (Context& context)
 
 		return reportStatus(numInitialRecords == recordingAllocator.getNumRecords());
 	}
+#else
+	return reportStatus(true);
+#endif // CTS_USES_VULKANSC
 }
 
 template<>
@@ -290,6 +277,7 @@ tcu::TestStatus test<VkDescriptorSet> (Context& context)
 	}
 
 	// Custom allocator
+#ifndef CTS_USES_VULKANSC
 	{
 		AllocationCallbackRecorder		recordingAllocator	(getSystemAllocator(), 1u);
 		const Unique<VkDescriptorPool>	descriptorPool		(createDescriptorPool(vk, device, &descriptorPoolCreateInfo, recordingAllocator.getCallbacks()));
@@ -299,6 +287,9 @@ tcu::TestStatus test<VkDescriptorSet> (Context& context)
 
 		return reportStatus(numInitialRecords == recordingAllocator.getNumRecords());
 	}
+#else
+	return reportStatus(true);
+#endif // CTS_USES_VULKANSC
 }
 
 void checkEventSupport (Context& context)

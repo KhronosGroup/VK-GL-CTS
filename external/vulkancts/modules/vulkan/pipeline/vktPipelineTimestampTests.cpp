@@ -820,7 +820,7 @@ tcu::TestStatus TimestampTestInstance::iterate (void)
 	const VkQueue			queue				= m_context.getUniversalQueue();
 	const bool				availabilityBit		= m_queryResultFlags & VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
 	const deUint32			stageSize			= (deUint32)m_stages.size();
-	const deUint32			queryDataSize		= sizeof(deUint64) * (availabilityBit ? 2u : 1u);
+	const deUint32			queryDataSize		= deUint32(sizeof(deUint64) * (availabilityBit ? 2u : 1u));
 
 	configCommandBuffer();
 	if (m_hostQueryReset)

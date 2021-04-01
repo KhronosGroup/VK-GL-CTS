@@ -71,7 +71,11 @@ vk::Move<vk::VkDevice>				makeProtectedMemDevice				(const vk::PlatformInterface
 																		 const deUint32						queueFamilyIndex,
 																		 const deUint32						apiVersion,
 																		 const std::vector<std::string>&	extraExtensions,
-																		 bool								validationEnabled);
+#ifdef CTS_USES_VULKANSC
+																		 de::SharedPtr<vk::ResourceInterface> resourceInterface,
+#endif // CTS_USES_VULKANSC
+																		 const tcu::CommandLine&			cmdLine);
+
 vk::VkQueue							getProtectedQueue					(const vk::DeviceInterface&			vk,
 																		 vk::VkDevice						device,
 																		 const deUint32						queueFamilyIndex,

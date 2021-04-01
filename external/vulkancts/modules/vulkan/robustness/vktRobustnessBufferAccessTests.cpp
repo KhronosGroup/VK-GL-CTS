@@ -157,6 +157,11 @@ class BufferAccessInstance : public vkt::TestInstance
 public:
 									BufferAccessInstance			(Context&			context,
 																	 Move<VkDevice>		device,
+#ifndef CTS_USES_VULKANSC
+																	de::MovePtr<vk::DeviceDriver>	deviceDriver,
+#else
+																	de::MovePtr<vk::DeviceDriverSC,vk::DeinitDeviceDeleter>	deviceDriver,
+#endif // CTS_USES_VULKANSC
 																	 ShaderType			shaderType,
 																	 VkShaderStageFlags	shaderStage,
 																	 VkFormat			bufferFormat,
@@ -165,7 +170,7 @@ public:
 																	 VkDeviceSize		outBufferAccessRange,
 																	 bool				accessOutOfBackingMemory);
 
-	virtual							~BufferAccessInstance			(void) {}
+	virtual							~BufferAccessInstance			(void);
 
 	virtual tcu::TestStatus			iterate							(void);
 
@@ -177,6 +182,11 @@ private:
 
 protected:
 	Move<VkDevice>					m_device;
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
+#else
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	m_deviceDriver;
+#endif // CTS_USES_VULKANSC
 	de::MovePtr<TestEnvironment>	m_testEnvironment;
 
 	const ShaderType				m_shaderType;
@@ -223,6 +233,11 @@ class BufferReadInstance: public BufferAccessInstance
 public:
 									BufferReadInstance			(Context&				context,
 																 Move<VkDevice>			device,
+#ifndef CTS_USES_VULKANSC
+																 de::MovePtr<vk::DeviceDriver>		deviceDriver,
+#else
+																 de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
+#endif // CTS_USES_VULKANSC
 																 ShaderType				shaderType,
 																 VkShaderStageFlags		shaderStage,
 																 VkFormat				bufferFormat,
@@ -240,6 +255,11 @@ class BufferWriteInstance: public BufferAccessInstance
 public:
 									BufferWriteInstance			(Context&				context,
 																 Move<VkDevice>			device,
+#ifndef CTS_USES_VULKANSC
+																 de::MovePtr<vk::DeviceDriver>		deviceDriver,
+#else
+																 de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
+#endif // CTS_USES_VULKANSC
 																 ShaderType				shaderType,
 																 VkShaderStageFlags		shaderStage,
 																 VkFormat				bufferFormat,
@@ -622,7 +642,13 @@ TestInstance* RobustBufferReadTest::createInstance (Context& context) const
 {
 	Move<VkDevice>	device			= createRobustBufferAccessDevice(context);
 
-	return new BufferReadInstance(context, device, m_shaderType, m_shaderStage, m_bufferFormat, m_readFromStorage, m_readAccessRange, m_accessOutOfBackingMemory);
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device));
+#else
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *device, context.getTestContext().getCommandLine(), context.getResourceInterface()), vk::DeinitDeviceDeleter( context.getResourceInterface().get(), *device ));
+#endif // CTS_USES_VULKANSC
+
+	return new BufferReadInstance(context, device, deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_readFromStorage, m_readAccessRange, m_accessOutOfBackingMemory);
 }
 
 // RobustBufferWriteTest
@@ -651,13 +677,24 @@ TestInstance* RobustBufferWriteTest::createInstance (Context& context) const
 {
 	Move<VkDevice>	device			= createRobustBufferAccessDevice(context);
 
-	return new BufferWriteInstance(context, device, m_shaderType, m_shaderStage, m_bufferFormat, m_writeAccessRange, m_accessOutOfBackingMemory);
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device));
+#else
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC,DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *device, context.getTestContext().getCommandLine(), context.getResourceInterface()), DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
+#endif // CTS_USES_VULKANSC
+
+	return new BufferWriteInstance(context, device, deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_writeAccessRange, m_accessOutOfBackingMemory);
 }
 
 // BufferAccessInstance
 
 BufferAccessInstance::BufferAccessInstance (Context&			context,
 											Move<VkDevice>		device,
+#ifndef CTS_USES_VULKANSC
+											de::MovePtr<vk::DeviceDriver>	deviceDriver,
+#else
+											de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
+#endif // CTS_USES_VULKANSC
 											ShaderType			shaderType,
 											VkShaderStageFlags	shaderStage,
 											VkFormat			bufferFormat,
@@ -667,6 +704,7 @@ BufferAccessInstance::BufferAccessInstance (Context&			context,
 											bool				accessOutOfBackingMemory)
 	: vkt::TestInstance				(context)
 	, m_device						(device)
+	, m_deviceDriver				(deviceDriver)
 	, m_shaderType					(shaderType)
 	, m_shaderStage					(shaderStage)
 	, m_bufferFormat				(bufferFormat)
@@ -675,7 +713,7 @@ BufferAccessInstance::BufferAccessInstance (Context&			context,
 	, m_outBufferAccessRange		(outBufferAccessRange)
 	, m_accessOutOfBackingMemory	(accessOutOfBackingMemory)
 {
-	const DeviceInterface&		vk						= context.getDeviceInterface();
+	const DeviceInterface&		vk						= *m_deviceDriver;
 	const deUint32				queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	const bool					isTexelAccess			= !!(m_shaderType == SHADER_TYPE_TEXEL_COPY);
 	const bool					readFromStorage			= !!(m_bufferAccessType == BUFFER_ACCESS_TYPE_READ_FROM_STORAGE);
@@ -791,12 +829,17 @@ BufferAccessInstance::BufferAccessInstance (Context&			context,
 		m_outBufferAllocSize		= outBufferMemoryReqs.size;
 		m_outBufferAlloc			= memAlloc.allocate(outBufferMemoryReqs, MemoryRequirement::HostVisible);
 
-		// If we are requesting access out of the memory that backs the buffer, make sure the test is able to do so.
-		if (m_accessOutOfBackingMemory)
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 		{
-			if (m_outBufferAllocSize >= ((RobustBufferAccessTest::s_testArraySize + 1) * RobustBufferAccessTest::s_numberOfBytesAccessed))
+			// If we are requesting access out of the memory that backs the buffer, make sure the test is able to do so.
+			if (m_accessOutOfBackingMemory)
 			{
-				TCU_THROW(NotSupportedError, "Cannot access beyond the end of the memory that backs the buffer");
+				if (m_outBufferAllocSize >= ((RobustBufferAccessTest::s_testArraySize + 1) * RobustBufferAccessTest::s_numberOfBytesAccessed))
+				{
+					TCU_THROW(NotSupportedError, "Cannot access beyond the end of the memory that backs the buffer");
+				}
 			}
 		}
 
@@ -1034,6 +1077,10 @@ BufferAccessInstance::BufferAccessInstance (Context&			context,
 	}
 }
 
+BufferAccessInstance::~BufferAccessInstance(void)
+{
+}
+
 // Verifies if the buffer has the value initialized by BufferAccessInstance::populateReadBuffer at a given offset.
 bool BufferAccessInstance::isExpectedValueFromInBuffer (VkDeviceSize offsetInBytes, const void* valuePtr, VkDeviceSize valueSize)
 {
@@ -1083,7 +1130,7 @@ bool BufferAccessInstance::isOutBufferValueUnchanged (VkDeviceSize offsetInBytes
 
 tcu::TestStatus BufferAccessInstance::iterate (void)
 {
-	const DeviceInterface&		vk			= m_context.getDeviceInterface();
+	const DeviceInterface&		vk			= *m_deviceDriver;
 	const vk::VkCommandBuffer	cmdBuffer	= m_testEnvironment->getCommandBuffer();
 
 	// Submit command buffer
@@ -1324,6 +1371,11 @@ bool BufferAccessInstance::verifyResult (void)
 
 BufferReadInstance::BufferReadInstance (Context&			context,
 										Move<VkDevice>		device,
+#ifndef CTS_USES_VULKANSC
+										de::MovePtr<vk::DeviceDriver>	deviceDriver,
+#else
+										de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
+#endif // CTS_USES_VULKANSC
 										ShaderType			shaderType,
 										VkShaderStageFlags	shaderStage,
 										VkFormat			bufferFormat,
@@ -1331,7 +1383,7 @@ BufferReadInstance::BufferReadInstance (Context&			context,
 										VkDeviceSize		inBufferAccessRange,
 										bool				accessOutOfBackingMemory)
 
-	: BufferAccessInstance	(context, device, shaderType, shaderStage, bufferFormat,
+	: BufferAccessInstance	(context, device, deviceDriver, shaderType, shaderStage, bufferFormat,
 							 readFromStorage ? BUFFER_ACCESS_TYPE_READ_FROM_STORAGE : BUFFER_ACCESS_TYPE_READ,
 							 inBufferAccessRange,
 							 RobustBufferAccessTest::s_numberOfBytesAccessed,	// outBufferAccessRange
@@ -1343,13 +1395,18 @@ BufferReadInstance::BufferReadInstance (Context&			context,
 
 BufferWriteInstance::BufferWriteInstance (Context&				context,
 										  Move<VkDevice>		device,
+#ifndef CTS_USES_VULKANSC
+										  de::MovePtr<vk::DeviceDriver>		deviceDriver,
+#else
+										  de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
+#endif // CTS_USES_VULKANSC
 										  ShaderType			shaderType,
 										  VkShaderStageFlags	shaderStage,
 										  VkFormat				bufferFormat,
 										  VkDeviceSize			writeBufferAccessRange,
 										  bool					accessOutOfBackingMemory)
 
-	: BufferAccessInstance	(context, device, shaderType, shaderStage, bufferFormat,
+	: BufferAccessInstance	(context, device, deviceDriver, shaderType, shaderStage, bufferFormat,
 							 BUFFER_ACCESS_TYPE_WRITE,
 							 RobustBufferAccessTest::s_numberOfBytesAccessed,	// inBufferAccessRange
 							 writeBufferAccessRange,

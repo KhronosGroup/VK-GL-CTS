@@ -123,8 +123,12 @@ protected:
 
 #ifdef CTS_USES_VULKANSC
 
-#define DDSTAT_HANDLE_CREATE(VAR_NAME,VAR_VALUE) do { m_statCurrent.VAR_NAME += (VAR_VALUE); m_statMax.VAR_NAME = de::max(m_statMax.VAR_NAME, m_statCurrent.VAR_NAME); } while(0)
-#define DDSTAT_HANDLE_DESTROY(VAR_NAME,VAR_VALUE) m_statCurrent.VAR_NAME -= (VAR_VALUE)
+
+
+#define DDSTAT_LOCK() std::lock_guard<std::mutex> statLock(m_resourceInterface->getStatMutex())
+#define DDSTAT_HANDLE_CREATE(VAR_NAME,VAR_VALUE) do { m_resourceInterface->getStatCurrent().VAR_NAME += (VAR_VALUE); m_resourceInterface->getStatMax().VAR_NAME = de::max(m_resourceInterface->getStatMax().VAR_NAME, m_resourceInterface->getStatCurrent().VAR_NAME); } while(0)
+#define DDSTAT_HANDLE_DESTROY_IF(VAR_VARIABLE,VAR_NAME,VAR_VALUE) if(VAR_VARIABLE.getInternal()!=DE_NULL) m_resourceInterface->getStatCurrent().VAR_NAME -= (VAR_VALUE)
+#define DDSTAT_HANDLE_DESTROY(VAR_NAME,VAR_VALUE) m_resourceInterface->getStatCurrent().VAR_NAME -= (VAR_VALUE)
 
 class DeviceDriverSC : public DeviceDriver
 {
@@ -202,24 +206,26 @@ public:
 																			 const VkSamplerCreateInfo*				pCreateInfo,
 																			 const VkAllocationCallbacks*			pAllocator,
 																			 VkSampler*								pSampler) const;
+	void								createSamplerYcbcrConversionHandler	(VkDevice								device,
+																			 const VkSamplerYcbcrConversionCreateInfo*	pCreateInfo,
+																			 const VkAllocationCallbacks*			pAllocator,
+																			 VkSamplerYcbcrConversion*				pYcbcrConversion) const;
+	void								getDescriptorSetLayoutSupportHandler(VkDevice								device,
+																			 const VkDescriptorSetLayoutCreateInfo*	pCreateInfo,
+																			 VkDescriptorSetLayoutSupport*			pSupport) const;
 	virtual VkResult					createShaderModule					(VkDevice								device,
 																			 const	VkShaderModuleCreateInfo*		pCreateInfo,
 																			 const VkAllocationCallbacks*			pAllocator,
 																			 VkShaderModule*						pShaderModule) const;
 
 	de::SharedPtr<ResourceInterface>	gerResourceInterface				() const;
-	VkDeviceObjectReservationCreateInfo	getStatistics						() const;
-	void								resetStatistics						() const;
+	void								reset								() const;
 
 protected:
 	mutable std::mutex														functionMutex;
 	bool																	m_normalMode;
 
 	de::SharedPtr<vk::ResourceInterface>									m_resourceInterface;
-
-	mutable deUint64														m_resourceCounter;
-	mutable VkDeviceObjectReservationCreateInfo								m_statCurrent;
-	mutable VkDeviceObjectReservationCreateInfo								m_statMax;
 
 	mutable std::vector<deUint8>											m_falseMemory;
 	mutable std::map<VkImageView, VkImageViewCreateInfo>					m_imageViews;
@@ -228,6 +234,31 @@ protected:
 	mutable std::map<VkPipeline, VkGraphicsPipelineCreateInfo>				m_graphicsPipelines;
 	mutable std::map<VkPipeline, VkComputePipelineCreateInfo>				m_computePipelines;
 };
+
+class DeinitDeviceDeleter : public Deleter<DeviceDriverSC>
+{
+public:
+										DeinitDeviceDeleter					(ResourceInterface* resourceInterface, const VkDevice& device)
+		: m_resourceInterface(resourceInterface)
+		, m_device(device)
+	{
+	}
+										DeinitDeviceDeleter					(void)
+		: m_resourceInterface(DE_NULL)
+		, m_device(DE_NULL)
+	{}
+
+	void								operator()							(DeviceDriverSC* obj) const
+	{
+		if (m_resourceInterface != DE_NULL)
+			m_resourceInterface->deinitDevice(m_device);
+		delete obj;
+	}
+private:
+	ResourceInterface*	m_resourceInterface;
+	VkDevice			m_device;
+};
+
 
 #endif // CTS_USES_VULKANSC
 

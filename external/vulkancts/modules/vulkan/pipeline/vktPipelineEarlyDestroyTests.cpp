@@ -305,15 +305,20 @@ tcu::TestStatus testEarlyDestroy (Context& context, bool usePipelineCache, bool 
 			const auto									imageBufferPtr					= reinterpret_cast<const char*>(imageBufferAlloc.getHostPtr()) + imageBufferAlloc.getOffset();
 			const tcu::ConstPixelBufferAccess			imagePixels						(textureFormat, framebufferWidth, framebufferHeight, 1u, imageBufferPtr);
 
-			for (int z = 0; z < imagePixels.getDepth(); ++z)
-			for (int y = 0; y < imagePixels.getHeight(); ++y)
-			for (int x = 0; x < imagePixels.getWidth(); ++x)
+#ifdef CTS_USES_VULKANSC
+			if (context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 			{
-				const auto pixel = imagePixels.getPixel(x, y, z);
-				if (pixel != clearColor) {
-									std::ostringstream msg; msg << "Pixel value mismatch after framebuffer clear." << " diff: " << pixel << " vs " << clearColor;
+				for (int z = 0; z < imagePixels.getDepth(); ++z)
+				for (int y = 0; y < imagePixels.getHeight(); ++y)
+				for (int x = 0; x < imagePixels.getWidth(); ++x)
+				{
+					const auto pixel = imagePixels.getPixel(x, y, z);
+					if (pixel != clearColor) {
+										std::ostringstream msg; msg << "Pixel value mismatch after framebuffer clear." << " diff: " << pixel << " vs " << clearColor;
 
-					return tcu::TestStatus::fail(msg.str()/*"Pixel value mismatch after framebuffer clear."*/);
+						return tcu::TestStatus::fail(msg.str()/*"Pixel value mismatch after framebuffer clear."*/);
+					}
 				}
 			}
 		}

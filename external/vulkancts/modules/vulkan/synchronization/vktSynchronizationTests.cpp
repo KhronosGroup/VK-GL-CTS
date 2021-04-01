@@ -101,21 +101,27 @@ tcu::TestCaseGroup* createTestsInternal (tcu::TestContext& testCtx, Synchronizat
 	{
 		testGroup->addChild(createSynchronization2SmokeTests(testCtx));
 		testGroup->addChild(createSynchronization2TimelineSemaphoreTests(testCtx));
+#ifndef CTS_USES_VULKANSC
 		testGroup->addChild(createNoneStageTests(testCtx));
+#endif // CTS_USES_VULKANSC
 	}
 	else // legacy synchronization
 	{
 		testGroup->addChild(createSmokeTests(testCtx));
 		testGroup->addChild(createTimelineSemaphoreTests(testCtx));
 
+#ifndef CTS_USES_VULKANSC
 		testGroup->addChild(createInternallySynchronizedObjects(testCtx));
 		testGroup->addChild(createWin32KeyedMutexTest(testCtx));
+#endif // CTS_USES_VULKANSC
 	}
 
 	testGroup->addChild(createBasicTests(testCtx, type));
 	testGroup->addChild(new OperationTests(testCtx, type));
+#ifndef CTS_USES_VULKANSC
 	testGroup->addChild(createCrossInstanceSharingTest(testCtx, type));
 	testGroup->addChild(createSignalOrderTests(testCtx, type));
+#endif // CTS_USES_VULKANSC
 
 	return testGroup.release();
 }

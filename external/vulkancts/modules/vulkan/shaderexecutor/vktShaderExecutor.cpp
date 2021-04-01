@@ -742,11 +742,13 @@ void FragmentOutExecutor::addAttribute (deUint32 bindingLocation, VkFormat forma
 	// Portability requires stride to be multiply of minVertexInputBindingStrideAlignment
 	// this value is usually 4 and current tests meet this requirement but
 	// if this changes in future then this limit should be verified in checkSupport
+#ifndef CTS_USES_VULKANSC
 	if (m_context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		((sizePerElement % m_context.getPortabilitySubsetProperties().minVertexInputBindingStrideAlignment) != 0))
 	{
 		DE_FATAL("stride is not multiply of minVertexInputBindingStrideAlignment");
 	}
+#endif // CTS_USES_VULKANSC
 
 	// Add binding specification
 	const deUint32							binding = (deUint32)m_vertexBindingDescriptions.size();
@@ -3522,12 +3524,17 @@ bool  executorSupported(glu::ShaderType shaderType)
 
 void checkSupportShader(Context& context, const glu::ShaderType shaderType)
 {
+#ifndef CTS_USES_VULKANSC
 	if (shaderType == glu::SHADERTYPE_TESSELLATION_EVALUATION &&
 		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().tessellationIsolines)
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Tessellation iso lines are not supported by this implementation");
 	}
+#else
+	DE_UNREF(context);
+	DE_UNREF(shaderType);
+#endif // CTS_USES_VULKANSC
 }
 
 

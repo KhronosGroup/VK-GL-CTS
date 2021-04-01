@@ -32,7 +32,7 @@ namespace vk
 
 VkDeviceObjectReservationCreateInfo resetDeviceObjectReservationCreateInfo();
 VkPipelineIdentifierInfo			resetPipelineIdentifierInfo();
-
+VkPhysicalDeviceVulkanSC10Features	createDefaultSC10Features();
 } // vk
 
 #endif // CTS_USES_VULKANSC

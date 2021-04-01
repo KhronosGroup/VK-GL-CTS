@@ -557,6 +557,7 @@ tcu::TestStatus createInstanceWithLayerNameAbuseTest (Context& context)
 	return tcu::TestStatus::pass("Pass, creating instances with unsupported layers were rejected.");
 }
 
+#ifndef CTS_USES_VULKANSC
 tcu::TestStatus enumerateDevicesAllocLeakTest(Context& context)
 {
 	// enumeratePhysicalDevices uses instance-provided allocator
@@ -606,6 +607,7 @@ tcu::TestStatus enumerateDevicesAllocLeakTest(Context& context)
 		return tcu::TestStatus::fail("enumeratePhysicalDevices leaked memory");
 	return tcu::TestStatus::pass("Ok");
 }
+#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus createDeviceTest (Context& context)
 {
@@ -632,9 +634,13 @@ tcu::TestStatus createDeviceTest (Context& context)
 
 	void* pNext												= DE_NULL;
 #ifdef CTS_USES_VULKANSC
-	VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
 	memReservationInfo.pNext								= pNext;
 	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
 #endif // CTS_USES_VULKANSC
 
 	const VkDeviceCreateInfo		deviceCreateInfo	=
@@ -686,9 +692,13 @@ tcu::TestStatus createMultipleDevicesTest (Context& context)
 
 	void* pNext												= DE_NULL;
 #ifdef CTS_USES_VULKANSC
-	VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
 	memReservationInfo.pNext								= pNext;
 	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
 #endif // CTS_USES_VULKANSC
 
 	const VkDeviceCreateInfo							deviceCreateInfo		=
@@ -778,11 +788,14 @@ tcu::TestStatus createDeviceWithUnsupportedExtensionsTest (Context& context)
 
 	void* pNext												= DE_NULL;
 #ifdef CTS_USES_VULKANSC
-	VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
 	memReservationInfo.pNext								= pNext;
 	pNext													= &memReservationInfo;
-#endif // CTS_USES_VULKANSC
 
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
+#endif // CTS_USES_VULKANSC
 
 	const VkDeviceCreateInfo		deviceCreateInfo		=
 	{
@@ -873,10 +886,15 @@ tcu::TestStatus createDeviceWithVariousQueueCountsTest (Context& context)
 		const VkDeviceQueueCreateInfo&	queueCreateInfo			= deviceQueueCreateInfos[testNdx];
 		void* pNext												= DE_NULL;
 #ifdef CTS_USES_VULKANSC
-		VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
 		memReservationInfo.pNext								= pNext;
 		pNext													= &memReservationInfo;
+
+		VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+		sc10Features.pNext										= pNext;
+		pNext													= &sc10Features;
 #endif // CTS_USES_VULKANSC
+
 		const VkDeviceCreateInfo		deviceCreateInfo		=
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	//sType;
@@ -955,9 +973,13 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context)
 
 		void* pNext												= DE_NULL;
 #ifdef CTS_USES_VULKANSC
-		VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
 		memReservationInfo.pNext								= pNext;
 		pNext													= &memReservationInfo;
+
+		VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+		sc10Features.pNext										= pNext;
+		pNext													= &sc10Features;
 #endif // CTS_USES_VULKANSC
 
 		const VkDeviceCreateInfo		deviceCreateInfo		=
@@ -1203,9 +1225,13 @@ tcu::TestStatus createDeviceFeatures2Test (Context& context)
 
 	void* pNext												= &enabledFeatures;
 #ifdef CTS_USES_VULKANSC
-	VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
 	memReservationInfo.pNext								= pNext;
 	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
 #endif // CTS_USES_VULKANSC
 
 	const VkDeviceCreateInfo		deviceCreateInfo		=
@@ -1347,9 +1373,13 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest (Context& context)
 		};
 		void* pNext												= DE_NULL;
 #ifdef CTS_USES_VULKANSC
-		VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
 		memReservationInfo.pNext								= pNext;
 		pNext													= &memReservationInfo;
+
+		VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+		sc10Features.pNext										= pNext;
+		pNext													= &sc10Features;
 #endif // CTS_USES_VULKANSC
 
 		const VkDeviceCreateInfo		deviceCreateInfo		=
@@ -1425,9 +1455,13 @@ tcu::TestStatus createDeviceQueue2Test (Context& context)
 
 	void* pNext												= &features2;
 #ifdef CTS_USES_VULKANSC
-	VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
 	memReservationInfo.pNext								= pNext;
 	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
 #endif // CTS_USES_VULKANSC
 
 	const VkDeviceCreateInfo				deviceCreateInfo		=
@@ -1523,11 +1557,14 @@ tcu::TestStatus createDeviceQueue2UnmatchedFlagsTest (Context& context)
 
 	void* pNext														= &deviceFeatures;
 #ifdef CTS_USES_VULKANSC
-	VkDeviceObjectReservationCreateInfo memReservationInfo			= resetDeviceObjectReservationCreateInfo();
+	VkDeviceObjectReservationCreateInfo memReservationInfo			= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
 	memReservationInfo.pNext										= pNext;
 	pNext															= &memReservationInfo;
-#endif // CTS_USES_VULKANSC
 
+	VkPhysicalDeviceVulkanSC10Features sc10Features					= createDefaultSC10Features();
+	sc10Features.pNext												= pNext;
+	pNext															= &sc10Features;
+#endif // CTS_USES_VULKANSC
 
 	const VkDeviceCreateInfo				deviceCreateInfo		=
 	{
@@ -1601,7 +1638,7 @@ deUint32				g_intenionalFailIndex		= 0;
 deUint32				g_intenionalFailCount		= 0;
 size_t					g_allocationsCount			= 0;
 
-void freeAllocTracker (void)
+void freeAllocTracker(void)
 {
 	g_allocatedVector.clear();
 	g_allocationsCount = 0;
@@ -1887,11 +1924,14 @@ tcu::TestStatus createInstanceDeviceIntentionalAllocFail (Context& context)
 
 		void* pNext												= DE_NULL;
 #ifdef CTS_USES_VULKANSC
-		VkDeviceObjectReservationCreateInfo memReservationInfo	= resetDeviceObjectReservationCreateInfo();
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
 		memReservationInfo.pNext								= pNext;
 		pNext													= &memReservationInfo;
-#endif // CTS_USES_VULKANSC
 
+		VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+		sc10Features.pNext										= pNext;
+		pNext													= &sc10Features;
+#endif // CTS_USES_VULKANSC
 
 		const VkDeviceCreateInfo		deviceCreateInfo		=
 		{
@@ -1950,7 +1990,9 @@ tcu::TestCaseGroup* createDeviceInitializationTests (tcu::TestContext& testCtx)
 	addFunctionCase(deviceInitializationTests.get(), "create_instance_unsupported_extensions",			"", createInstanceWithUnsupportedExtensionsTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_instance_extension_name_abuse",			"", createInstanceWithExtensionNameAbuseTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_instance_layer_name_abuse",				"", createInstanceWithLayerNameAbuseTest);
+#ifndef CTS_USES_VULKANSC
 	addFunctionCase(deviceInitializationTests.get(), "enumerate_devices_alloc_leak",					"", enumerateDevicesAllocLeakTest);
+#endif // CTS_USES_VULKANSC
 	addFunctionCase(deviceInitializationTests.get(), "create_device",									"", createDeviceTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_multiple_devices",							"", createMultipleDevicesTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_extensions",			"", createDeviceWithUnsupportedExtensionsTest);

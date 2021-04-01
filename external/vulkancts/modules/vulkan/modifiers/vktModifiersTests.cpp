@@ -223,9 +223,9 @@ deBool isModifierCompatibleWithImageProperties (const InstanceInterface&	vki,
 		0,
 		DE_NULL,
 	};
-	const VkImageFormatListCreateInfoKHR				imageFormatListInfo		=
+	const VkImageFormatListCreateInfo				imageFormatListInfo		=
 	{
-		VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR,
+		VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO,
 		&imageFormatModifierInfo,
 		nFormats,
 		formats,
@@ -336,9 +336,9 @@ Move<VkImage> createImageWithDrmFormatModifiers (const DeviceInterface&			vkd,
 		pNext = &modifierListCreateInfo;
 	}
 
-	const VkImageFormatListCreateInfoKHR			imageFormatListInfo			=
+	const VkImageFormatListCreateInfo			imageFormatListInfo			=
 	{
-		VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR,
+		VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO,
 		pNext,
 		static_cast<deUint32>(formats.size()),
 		formats.data(),

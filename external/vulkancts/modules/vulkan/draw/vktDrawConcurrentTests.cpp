@@ -45,6 +45,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkBarrierUtil.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include "deRandom.hpp"
 
@@ -103,7 +104,6 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 		deUint32	queueFamilyIndex;
 	};
 
-	const DeviceInterface&					vk				= m_context.getDeviceInterface();
 	const deUint32							numValues		= 1024;
 	const InstanceInterface&				instance		= m_context.getInstanceInterface();
 	const VkPhysicalDevice					physicalDevice	= m_context.getPhysicalDevice();
@@ -148,8 +148,19 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 	deMemset(&deviceInfo, 0, sizeof(deviceInfo));
 	instance.getPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
 
+	void* pNext												= DE_NULL;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= m_context.getTestContext().getCommandLine().isSubProcess() ? m_context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
+#endif // CTS_USES_VULKANSC
+
 	deviceInfo.sType					= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceInfo.pNext					= DE_NULL;
+	deviceInfo.pNext					= pNext;
 	deviceInfo.enabledExtensionCount	= 0u;
 	deviceInfo.ppEnabledExtensionNames	= DE_NULL;
 	deviceInfo.enabledLayerCount		= 0u;
@@ -159,6 +170,13 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 	deviceInfo.pQueueCreateInfos		= &queueInfos;
 
 	computeDevice = createCustomDevice(validation, m_context.getPlatformInterface(), m_context.getInstance(), instance, physicalDevice, &deviceInfo);
+
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *computeDevice));
+#else
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), *computeDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *computeDevice));
+#endif // CTS_USES_VULKANSC
+	vk::DeviceInterface& vk = *deviceDriver;
 
 	vk.getDeviceQueue(*computeDevice, computeQueue.queueFamilyIndex, 0, &computeQueue.queue);
 
@@ -267,7 +285,7 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 
 	VkDeviceGroupSubmitInfo	deviceGroupSubmitInfo =
 	{
-		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO_KHR,	//	VkStructureType		sType;
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO,		//	VkStructureType		sType;
 		DE_NULL,										//	const void*			pNext;
 		0u,												//	deUint32			waitSemaphoreCount;
 		DE_NULL,										//	const deUint32*		pWaitSemaphoreDeviceIndices;
@@ -307,10 +325,14 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 	// Have to wait for all fences before calling fail, or some fence may be left hanging.
 
 	if (err == ERROR_WAIT_COMPUTE)
+	{
 		return tcu::TestStatus::fail("Failed waiting for compute queue fence.");
+	}
 
 	if (err == ERROR_WAIT_DRAW)
+	{
 		return tcu::TestStatus::fail("Failed waiting for draw queue fence.");
+	}
 
 	// Validation - compute
 
@@ -373,7 +395,6 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 	{
 		res = QP_TEST_RESULT_FAIL;
 	}
-
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 

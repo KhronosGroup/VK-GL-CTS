@@ -31,6 +31,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkRef.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include <thread>
 
@@ -56,7 +57,7 @@ static const int basicChainLength	= 32768;
 
 Move<VkSemaphore> createTestSemaphore(Context& context, const DeviceInterface& vk, const VkDevice device, const TestConfig& config)
 {
-	if (config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE_KHR && !context.getTimelineSemaphoreFeatures().timelineSemaphore)
+	if (config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE && !context.getTimelineSemaphoreFeatures().timelineSemaphore)
 		TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 
 	return Move<VkSemaphore>(config.useTypeCreate ? createSemaphoreType(vk, device, config.semaphoreType) : createSemaphore(vk, device));
@@ -81,7 +82,7 @@ tcu::TestStatus basicOneQueueCase (Context& context, const TestConfig config)
 																};
 	const deUint64					timelineValue				= 1u;
 	const Unique<VkFence>			fence						(createFence(vk, device));
-	bool							usingTimelineSemaphores		= config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE_KHR;
+	bool							usingTimelineSemaphores		= config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE;
 	VkCommandBufferSubmitInfoKHR	commandBufferInfo			= makeCommonCommandBufferSubmitInfo(*cmdBuffer);
 	SynchronizationWrapperPtr		synchronizationWrapper		= getSynchronizationWrapper(config.type, vk, usingTimelineSemaphores, 2u);
 	VkSemaphoreSubmitInfoKHR		signalSemaphoreSubmitInfo	= makeCommonSemaphoreSubmitInfo(semaphore.get(), timelineValue, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR);
@@ -181,7 +182,7 @@ tcu::TestStatus basicChainTimelineCase (Context& context, TestConfig config)
 	const DeviceInterface&		vk			= context.getDeviceInterface();
 	const VkDevice&				device		= context.getDevice();
 	const VkQueue				queue		= context.getUniversalQueue();
-	VkSemaphoreTypeCreateInfo	scti		= { VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR, DE_NULL, VK_SEMAPHORE_TYPE_TIMELINE_KHR, 0 };
+	VkSemaphoreTypeCreateInfo	scti		= { VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO, DE_NULL, VK_SEMAPHORE_TYPE_TIMELINE, 0 };
 	VkSemaphoreCreateInfo		sci			= { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &scti, 0 };
 	VkFenceCreateInfo			fci			= { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, DE_NULL, 0 };
 	VkSemaphore					semaphore;
@@ -246,7 +247,7 @@ tcu::TestStatus basicThreadTimelineCase(Context& context, TestConfig)
 {
 	const DeviceInterface&				vk				= context.getDeviceInterface();
 	const VkDevice&						device			= context.getDevice();
-	const VkSemaphoreTypeCreateInfo		scti			= { VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR, DE_NULL, VK_SEMAPHORE_TYPE_TIMELINE_KHR, 0 };
+	const VkSemaphoreTypeCreateInfo		scti			= { VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO, DE_NULL, VK_SEMAPHORE_TYPE_TIMELINE, 0 };
 	const VkSemaphoreCreateInfo			sci				= { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &scti, 0 };
 	const VkFenceCreateInfo				fci				= { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, DE_NULL, 0 };
 	const vk::Unique<vk::VkSemaphore>	semaphore		(createSemaphore(vk, device, &sci));
@@ -356,7 +357,7 @@ tcu::TestStatus basicMultiQueueCase(Context& context, TestConfig config)
 	Move<VkCommandBuffer>					cmdBuffer[COUNT];
 	deUint64								timelineValues[COUNT] = { 1ull, 2ull };
 	Move<VkFence>							fence[COUNT];
-	bool									isTimelineSemaphore = config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE_KHR;
+	bool									isTimelineSemaphore = config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE;
 
 	queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
 
@@ -413,15 +414,26 @@ tcu::TestStatus basicMultiQueueCase(Context& context, TestConfig config)
 		addToChainVulkanStructure(&nextPtr, synchronization2Features);
 	}
 
-	deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceInfo.pNext = &createPhysicalFeature;
-	deviceInfo.enabledExtensionCount = static_cast<deUint32>(deviceExtensions.size());
-	deviceInfo.ppEnabledExtensionNames = deviceExtensions.empty() ? DE_NULL : deviceExtensions.data();
-	deviceInfo.enabledLayerCount = 0u;
-	deviceInfo.ppEnabledLayerNames = DE_NULL;
-	deviceInfo.pEnabledFeatures = 0u;
-	deviceInfo.queueCreateInfoCount = (queues[FIRST].queueFamilyIndex == queues[SECOND].queueFamilyIndex) ? 1 : COUNT;
-	deviceInfo.pQueueCreateInfos = queueInfos;
+	void* pNext												= &createPhysicalFeature;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
+#endif // CTS_USES_VULKANSC
+
+	deviceInfo.sType					= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	deviceInfo.pNext					= pNext;
+	deviceInfo.enabledExtensionCount	= static_cast<deUint32>(deviceExtensions.size());
+	deviceInfo.ppEnabledExtensionNames	= deviceExtensions.empty() ? DE_NULL : deviceExtensions.data();
+	deviceInfo.enabledLayerCount		= 0u;
+	deviceInfo.ppEnabledLayerNames		= DE_NULL;
+	deviceInfo.pEnabledFeatures			= 0u;
+	deviceInfo.queueCreateInfoCount		= (queues[FIRST].queueFamilyIndex == queues[SECOND].queueFamilyIndex) ? 1 : COUNT;
+	deviceInfo.pQueueCreateInfos		= queueInfos;
 
 	logicalDevice = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), instance, physicalDevice, &deviceInfo);
 
@@ -549,7 +561,7 @@ tcu::TestStatus basicMultiQueueCase(Context& context, TestConfig config)
 
 void checkSupport(Context& context, TestConfig config)
 {
-	if (config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE_KHR)
+	if (config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE)
 		context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
 
 	if (config.type == SynchronizationType::SYNCHRONIZATION2)
@@ -565,7 +577,7 @@ tcu::TestCaseGroup* createBasicBinarySemaphoreTests (tcu::TestContext& testCtx, 
 	TestConfig config =
 	{
 		0,
-		VK_SEMAPHORE_TYPE_BINARY_KHR,
+		VK_SEMAPHORE_TYPE_BINARY,
 		type,
 	};
 	for (deUint32 typedCreate = 0; typedCreate < 2; typedCreate++)
@@ -588,7 +600,7 @@ tcu::TestCaseGroup* createBasicTimelineSemaphoreTests (tcu::TestContext& testCtx
 	const TestConfig				config =
 	{
 		true,
-		VK_SEMAPHORE_TYPE_TIMELINE_KHR,
+		VK_SEMAPHORE_TYPE_TIMELINE,
 		type,
 	};
 

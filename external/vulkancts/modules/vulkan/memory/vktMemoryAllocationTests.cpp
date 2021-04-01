@@ -132,7 +132,7 @@ public:
 		else
 			createTestDevice();
 
-		m_allocFlagsInfo.sType		= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
+		m_allocFlagsInfo.sType		= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
 		m_allocFlagsInfo.pNext		= DE_NULL;
 		m_allocFlagsInfo.flags		= VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT;
 		m_allocFlagsInfo.deviceMask	= 0;
@@ -236,7 +236,7 @@ void BaseAllocateTestInstance::createDeviceGroup (void)
 
 	VkDeviceGroupDeviceCreateInfo					deviceGroupInfo =
 	{
-		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,								//stype
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO,									//stype
 		DE_NULL,																			//pNext
 		devGroupProperties[devGroupIdx].physicalDeviceCount,								//physicalDeviceCount
 		devGroupProperties[devGroupIdx].physicalDevices										//physicalDevices
@@ -423,9 +423,10 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 							{
 								for (size_t ndx = 0; ndx < m_config.memoryAllocationCount; ndx++)
 								{
+#ifndef CTS_USES_VULKANSC
 									const VkDeviceMemory mem = memoryObjects[memoryObjects.size() - 1 - ndx];
-
 									vkd.freeMemory(device, mem, (const VkAllocationCallbacks*)DE_NULL);
+#endif // CTS_USES_VULKANSC
 									memoryObjects[memoryObjects.size() - 1 - ndx] = (VkDeviceMemory)0;
 								}
 							}
@@ -433,9 +434,10 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 							{
 								for (size_t ndx = 0; ndx < m_config.memoryAllocationCount; ndx++)
 								{
+#ifndef CTS_USES_VULKANSC
 									const VkDeviceMemory mem = memoryObjects[ndx];
-
 									vkd.freeMemory(device, mem, (const VkAllocationCallbacks*)DE_NULL);
+#endif // CTS_USES_VULKANSC
 									memoryObjects[ndx] = (VkDeviceMemory)0;
 								}
 							}
@@ -455,7 +457,9 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 								VK_CHECK(vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks*)DE_NULL, &memoryObjects[ndx]));
 								TCU_CHECK(!!memoryObjects[ndx]);
 
+#ifndef CTS_USES_VULKANSC
 								vkd.freeMemory(device, memoryObjects[ndx], (const VkAllocationCallbacks*)DE_NULL);
+#endif
 								memoryObjects[ndx] = (VkDeviceMemory)0;
 							}
 						}
@@ -469,7 +473,9 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 
 						if (!!mem)
 						{
+#ifndef CTS_USES_VULKANSC
 							vkd.freeMemory(device, mem, (const VkAllocationCallbacks*)DE_NULL);
+#endif
 							memoryObjects[ndx] = (VkDeviceMemory)0;
 						}
 					}
@@ -538,6 +544,8 @@ struct Heap
 	vector<MemoryObject>	objects;
 };
 
+#ifndef CTS_USES_VULKANSC
+
 class RandomAllocFreeTestInstance : public BaseAllocateTestInstance
 {
 public:
@@ -605,6 +613,7 @@ RandomAllocFreeTestInstance::RandomAllocFreeTestInstance (Context& context, Test
 
 RandomAllocFreeTestInstance::~RandomAllocFreeTestInstance (void)
 {
+#ifndef CTS_USES_VULKANSC
 	const VkDevice							device				= getDevice();
 	const DeviceInterface&					vkd					= getDeviceInterface();
 
@@ -615,9 +624,12 @@ RandomAllocFreeTestInstance::~RandomAllocFreeTestInstance (void)
 		for (size_t objectNdx = 0; objectNdx < heap.objects.size(); objectNdx++)
 		{
 			if (!!heap.objects[objectNdx].memory)
+			{
 				vkd.freeMemory(device, heap.objects[objectNdx].memory, (const VkAllocationCallbacks*)DE_NULL);
+			}
 		}
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
@@ -738,7 +750,9 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 		MemoryObject&		memoryObject	= heap.objects[memoryObjectNdx];
 		const bool			isDeviceLocal	= (heap.heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != 0;
 
+#ifndef CTS_USES_VULKANSC
 		vkd.freeMemory(device, memoryObject.memory, (const VkAllocationCallbacks*)DE_NULL);
+#endif
 		memoryObject.memory = (VkDeviceMemory)0;
 		m_memoryObjectCount--;
 
@@ -755,6 +769,7 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 	m_opNdx++;
 	return tcu::TestStatus::incomplete();
 }
+#endif // CTS_USES_VULKANSC
 
 
 } // anonymous
@@ -909,6 +924,8 @@ tcu::TestCaseGroup* createAllocationTestsCommon (tcu::TestContext& testCtx, bool
 		group->addChild(basicGroup.release());
 	}
 
+#ifndef CTS_USES_VULKANSC
+// RandomAllocFreeTestInstance test uses VkAllocationCallbacks and in Vulkan SC VkAllocationCallbacks must be NULL
 	{
 		const deUint32					caseCount	= 100;
 		de::MovePtr<tcu::TestCaseGroup>	randomGroup	(new tcu::TestCaseGroup(testCtx, "random", "Random memory allocation tests."));
@@ -922,6 +939,7 @@ tcu::TestCaseGroup* createAllocationTestsCommon (tcu::TestContext& testCtx, bool
 
 		group->addChild(randomGroup.release());
 	}
+#endif // CTS_USES_VULKANSC
 
 	return group.release();
 }

@@ -76,6 +76,7 @@ message(STATUS "JsonCpp Version: ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINO
 set(PROJECT_SOVERSION 24)
 
 configure_file( ${jsoncpp_SOURCE_DIR}/config.h.cts ${jsoncpp_SOURCE_DIR}/src/include/json/config.h COPYONLY )
+configure_file( ${jsoncpp_SOURCE_DIR}/json_valueiterator.inl.cts ${jsoncpp_SOURCE_DIR}/src/src/lib_json/json_valueiterator.inl COPYONLY )
 
 option(JSONCPP_WITH_TESTS "Compile and (for jsoncpp_check) run JsonCpp test executables" OFF)
 option(JSONCPP_WITH_POST_BUILD_UNITTEST "Automatically run unit-tests as a post build step" OFF)

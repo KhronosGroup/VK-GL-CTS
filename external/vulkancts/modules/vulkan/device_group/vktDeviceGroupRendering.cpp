@@ -38,6 +38,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -150,15 +151,20 @@ class DeviceGroupTestInstance : public TestInstance
 {
 public:
 	DeviceGroupTestInstance(Context& context, deUint32 mode);
-	~DeviceGroupTestInstance(void) {}
+	~DeviceGroupTestInstance(void);
 private:
 			void						init						(void);
 			deUint32					getMemoryIndex				(deUint32 memoryTypeBits, deUint32 memoryPropertyFlag);
 			bool						isPeerFetchAllowed			(deUint32 memoryTypeIndex, deUint32 firstdeviceID, deUint32 seconddeviceID);
-			void						SubmitBufferAndWaitForIdle	(const DeviceDriver& vk, VkCommandBuffer cmdBuf, deUint32 deviceMask);
+			void						submitBufferAndWaitForIdle	(const vk::DeviceInterface& vk, VkCommandBuffer cmdBuf, deUint32 deviceMask);
 	virtual	tcu::TestStatus				iterate						(void);
 
 			Move<VkDevice>				m_deviceGroup;
+#ifndef CTS_USES_VULKANSC
+			de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
+#else
+			de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	m_deviceDriver;
+#endif // CTS_USES_VULKANSC
 			deUint32					m_physicalDeviceCount;
 			VkQueue						m_deviceGroupQueue;
 			vector<VkPhysicalDevice>	m_physicalDevices;
@@ -185,6 +191,11 @@ DeviceGroupTestInstance::DeviceGroupTestInstance (Context& context, const deUint
 	, m_drawTessellatedSphere	(m_testMode & TEST_MODE_TESSELLATION)
 {
 	init();
+}
+
+DeviceGroupTestInstance::~DeviceGroupTestInstance()
+{
+	m_context.getResourceInterface()->deinitDevice(*m_deviceGroup);
 }
 
 deUint32 DeviceGroupTestInstance::getMemoryIndex (const deUint32 memoryTypeBits, const deUint32 memoryPropertyFlag)
@@ -221,7 +232,6 @@ void DeviceGroupTestInstance::init (void)
 	const deUint32					queueIndex			= 0;
 	const float						queuePriority		= 1.0f;
 	vector<const char*>				extensionPtrs;
-	de::MovePtr<vk::DeviceDriver>	deviceDriver;
 	vector<const char*>				layerPtrs;
 	vector<string>					deviceExtensions;
 	vector<string>					enabledLayers;
@@ -281,7 +291,7 @@ void DeviceGroupTestInstance::init (void)
 			1u,											//queueCount;
 			&queuePriority,								//pQueuePriorities;
 		};
-		const VkDeviceGroupDeviceCreateInfo		deviceGroupInfo =
+		VkDeviceGroupDeviceCreateInfo				deviceGroupInfo =
 		{
 			VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO,					//stype
 			DE_NULL,															//pNext
@@ -310,10 +320,21 @@ void DeviceGroupTestInstance::init (void)
 		for (size_t ndx = 0; ndx < deviceExtensions.size(); ++ndx)
 			extensionPtrs[ndx] = deviceExtensions[ndx].c_str();
 
+		void* pNext												= &deviceGroupInfo;
+#ifdef CTS_USES_VULKANSC
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= cmdLine.isSubProcess() ? m_context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+		memReservationInfo.pNext								= pNext;
+		pNext													= &memReservationInfo;
+
+		VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+		sc10Features.pNext										= pNext;
+		pNext													= &sc10Features;
+#endif // CTS_USES_VULKANSC
+
 		const VkDeviceCreateInfo	deviceCreateInfo =
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,					//sType;
-			&deviceGroupInfo,										//pNext;
+			pNext,													//pNext;
 			(VkDeviceCreateFlags)0u,								//flags
 			1,														//queueRecordCount;
 			&deviceQueueCreateInfo,									//pRequestedQueues;
@@ -324,13 +345,17 @@ void DeviceGroupTestInstance::init (void)
 			&enabledDeviceFeatures,									//pEnabledFeatures;
 		};
 		m_deviceGroup = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_context.getInstance(), instanceInterface, physicalDevice, &deviceCreateInfo);
+#ifndef CTS_USES_VULKANSC
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *m_deviceGroup));
+#else
+		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), *m_deviceGroup, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_deviceGroup));
+#endif // CTS_USES_VULKANSC
 	}
 
-	deviceDriver = de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *m_deviceGroup));
-	m_deviceGroupQueue = getDeviceQueue(*deviceDriver, *m_deviceGroup, queueFamilyIndex, queueIndex);
+	m_deviceGroupQueue = getDeviceQueue(*m_deviceDriver, *m_deviceGroup, queueFamilyIndex, queueIndex);
 }
 
-void DeviceGroupTestInstance::SubmitBufferAndWaitForIdle(const DeviceDriver& vk, VkCommandBuffer cmdBuf, deUint32 deviceMask)
+void DeviceGroupTestInstance::submitBufferAndWaitForIdle(const vk::DeviceInterface& vk, VkCommandBuffer cmdBuf, deUint32 deviceMask)
 {
 	submitCommandsAndWait(vk, *m_deviceGroup, m_deviceGroupQueue, cmdBuf, true, deviceMask);
 	VK_CHECK(vk.deviceWaitIdle(*m_deviceGroup));
@@ -339,7 +364,7 @@ void DeviceGroupTestInstance::SubmitBufferAndWaitForIdle(const DeviceDriver& vk,
 tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 {
 	const InstanceInterface&	vki						(m_context.getInstanceInterface());
-	const DeviceDriver			vk						(m_context.getPlatformInterface(), m_context.getInstance(), *m_deviceGroup);
+	const vk::DeviceInterface&	vk						= m_context.getDeviceInterface();
 	const deUint32				queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	const tcu::UVec2			renderSize				(256, 256);
 	const VkFormat				colorFormat				= VK_FORMAT_R8G8B8A8_UNORM;
@@ -1126,7 +1151,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 
 			endCommandBuffer(vk, *cmdBuffer);
 			const deUint32 deviceMask = (1 << firstDeviceID) | (1 << secondDeviceID);
-			SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
+			submitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
 		}
 
 		// Bind renderImage across devices for SFR
@@ -1430,7 +1455,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 		// Submit & wait for completion
 		{
 			const deUint32 deviceMask = (1 << firstDeviceID) | (1 << secondDeviceID);
-			SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
+			submitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
 		}
 
 		// Copy image from secondDeviceID in case of AFR and SFR(only if Peer memory as copy source is not allowed)
@@ -1511,7 +1536,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 					endCommandBuffer(vk, *cmdBuffer);
 
 					const deUint32 deviceMask = 1 << firstDeviceID;
-					SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
+					submitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
 				}
 
 				// Copy Image from secondDeviceID to firstDeviceID
@@ -1551,7 +1576,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 					endCommandBuffer(vk, *cmdBuffer);
 
 					const deUint32 deviceMask = 1 << secondDeviceID;
-					SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
+					submitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
 				}
 
 				// Change layout back on firstDeviceID
@@ -1582,7 +1607,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 					endCommandBuffer(vk, *cmdBuffer);
 
 					const deUint32 deviceMask = 1 << firstDeviceID;
-					SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
+					submitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
 				}
 			}
 		}
@@ -1650,7 +1675,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			// Submit & wait for completion
 			{
 				const deUint32 deviceMask = 1 << firstDeviceID;
-				SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
+				submitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
 			}
 
 			// Read results and check against reference image

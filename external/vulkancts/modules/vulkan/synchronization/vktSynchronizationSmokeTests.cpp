@@ -32,7 +32,7 @@
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkDeviceUtil.hpp"
-#include "vkCmdUtil.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
@@ -159,9 +159,20 @@ Move<VkDevice> createTestDevice (Context& context, SemaphoreTestConfig& config, 
 		addToChainVulkanStructure(&nextPtr, synchronization2Features);
 	}
 
+	void* pNext												= deviceExtensions.empty() ? DE_NULL : &physicalDeviceFeatures2;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
+#endif // CTS_USES_VULKANSC
+
 	deMemset(&deviceInfo, 0xcd, sizeof(deviceInfo));
 	deviceInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceInfo.pNext						= deviceExtensions.empty() ? DE_NULL : &physicalDeviceFeatures2;
+	deviceInfo.pNext						= pNext;
 	deviceInfo.flags						= (VkDeviceCreateFlags)0u;
 	deviceInfo.queueCreateInfoCount			= 1u;
 	deviceInfo.pQueueCreateInfos			= &queueInfo;
@@ -1096,7 +1107,7 @@ tcu::TestStatus testFences (Context& context)
 
 tcu::TestStatus testSemaphores (Context& context, SemaphoreTestConfig config)
 {
-	if (config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE_KHR && !context.getTimelineSemaphoreFeatures().timelineSemaphore)
+	if (config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE && !context.getTimelineSemaphoreFeatures().timelineSemaphore)
 		TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 
 	TestLog&					log					= context.getTestContext().getLog();
@@ -1106,7 +1117,13 @@ tcu::TestStatus testSemaphores (Context& context, SemaphoreTestConfig config)
 	deUint32					queueFamilyIdx;
 	bool						isTimelineSemaphore	(config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE);
 	vk::Move<VkDevice>			device				(createTestDevice(context, config, &queueFamilyIdx));
-	const DeviceDriver			deviceInterface		(platformInterface, context.getInstance(), *device);
+
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>	deviceInterfacePtr = de::MovePtr<DeviceDriver>(new DeviceDriver(platformInterface, context.getInstance(), *device));
+#else
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceInterfacePtr = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(platformInterface, context.getInstance(), *device, context.getTestContext().getCommandLine(), context.getResourceInterface()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
+#endif // CTS_USES_VULKANSC
+	const DeviceDriver&			deviceInterface		= *deviceInterfacePtr;
 	SimpleAllocator				allocator			(deviceInterface,
 													 *device,
 													 getPhysicalDeviceMemoryProperties(instanceInterface, physicalDevice));

@@ -72,15 +72,23 @@ DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 			addToChainVulkanStructure(&nextPtr, m_vulkan12Properties);
 		}
 
+		std::vector<std::string> allDeviceExtensions = deviceExtensions;
+#ifdef CTS_USES_VULKANSC
+		// VulkanSC: add missing core extensions to the list
+		std::vector<const char*> coreExtensions;
+		getCoreDeviceExtensions(apiVersion, coreExtensions);
+		for (const auto& coreExt : coreExtensions)
+			if (!de::contains(allDeviceExtensions.begin(), allDeviceExtensions.end(), std::string(coreExt)))
+				allDeviceExtensions.push_back(coreExt);
+#endif // CTS_USES_VULKANSC
+
 		// iterate over data for all property that are defined in specification
 		for (const auto& propertyStructCreationData : propertyStructCreationArray)
 		{
 			const char* propertyName = propertyStructCreationData.name;
 
 			// check if this property is available on current device.
-			// For Vulkan SC extensions have been removed, so we have to check if extension associated with specific property
-			// has "core_property" name - all these property structs are available in core ( works for multiview, descriptor indexing and maintenance3 extensions )
-			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), propertyName) || deStringEqual("core_property", propertyName))
+			if (de::contains(allDeviceExtensions.begin(), allDeviceExtensions.end(), propertyName))
 			{
 				PropertyStructWrapperBase* p = (*propertyStructCreationData.creatorFunction)();
 				if (p == DE_NULL)

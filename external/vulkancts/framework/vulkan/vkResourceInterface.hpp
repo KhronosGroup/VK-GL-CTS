@@ -28,6 +28,8 @@
 #include "tcuTestContext.hpp"
 #include "vkPrograms.hpp"
 #include "vkBinaryRegistry.hpp"
+#include "deSharedPtr.hpp"
+#include <map>
 #ifdef CTS_USES_VULKANSC
 	#include <set>
 	#include <mutex>
@@ -48,7 +50,8 @@ public:
 
 	virtual void				initDevice					(DeviceInterface&					deviceInterface,
 															 VkDevice							device) = 0;
-	virtual void				deinitDevice				() = 0;
+	// use deinitDevice when your DeviceDriverSC is created and removed inside TestInstance
+	virtual void				deinitDevice				(VkDevice							device) = 0;
 
 	virtual void				initTestCase				(const std::string&					casePath);
 
@@ -60,6 +63,11 @@ public:
 															 vk::BinaryCollection*					progCollection);
 
 #ifdef CTS_USES_VULKANSC
+	deUint64					incResourceCounter			();
+	std::mutex&					getStatMutex				();
+	VkDeviceObjectReservationCreateInfo&	getStatCurrent	();
+	VkDeviceObjectReservationCreateInfo&	getStatMax		();
+
 	virtual VkResult			createShaderModule			(VkDevice								device,
 															 const VkShaderModuleCreateInfo*		pCreateInfo,
 															 const VkAllocationCallbacks*			pAllocator,
@@ -99,7 +107,10 @@ public:
 															 const VkSamplerCreateInfo*				pCreateInfo,
 															 const VkAllocationCallbacks*			pAllocator,
 															 VkSampler*								pSampler) const = 0;
-
+	virtual void				createSamplerYcbcrConversion(VkDevice								device,
+															 const VkSamplerYcbcrConversionCreateInfo*	pCreateInfo,
+															 const VkAllocationCallbacks*			pAllocator,
+															 VkSamplerYcbcrConversion*				pYcbcrConversion) const = 0;
 	void						removeRedundantObjects		();
 	void						exportDataToFile			(const std::string&						fileName,
 															 const std::string&						jsonMemoryReservation) const;
@@ -116,6 +127,7 @@ public:
 	std::size_t					getCacheDataSize			() const;
 	const deUint8*				getCacheData				() const;
 	virtual void				resetObjects				() = 0;
+	virtual void				resetPipelineCaches			() = 0;
 #endif // CTS_USES_VULKANSC
 
 protected:
@@ -136,7 +148,7 @@ protected:
 	std::string					m_currentTestPath;
 
 #ifdef CTS_USES_VULKANSC
-	mutable std::mutex										m_pipelineMutex;
+	mutable std::map<VkSamplerYcbcrConversion, std::string>	m_jsonSamplerYcbcrConversions;
 	mutable std::map<VkSampler, std::string>				m_jsonSamplers;
 	mutable std::map<VkShaderModule, std::string>			m_jsonShaderModules;
 	mutable std::map<VkRenderPass, std::string>				m_jsonRenderPasses;
@@ -144,12 +156,19 @@ protected:
 	mutable	std::map<VkDescriptorSetLayout, std::string>	m_jsonDescriptorSetLayouts;
 	mutable std::set<std::string>							m_jsonPipelines;
 
+	mutable std::mutex										m_mutex;
+	mutable deUint64										m_resourceCounter;
+	mutable VkDeviceObjectReservationCreateInfo				m_statCurrent;
+	mutable VkDeviceObjectReservationCreateInfo				m_statMax;
+
 	mutable VkDeviceObjectReservationCreateInfo				m_memoryReservation;
-	Move<VkPipelineCache>									m_pipelineCache;
+	std::map<VkDevice,de::SharedPtr<Move<VkPipelineCache>>>	m_pipelineCache;
 	std::vector<deUint8>									m_cacheData;
 #endif // CTS_USES_VULKANSC
 };
 
+typedef VKAPI_ATTR VkResult	(VKAPI_CALL* CreateSamplerYcbcrConversionFunc)	(VkDevice device, const VkSamplerYcbcrConversionCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSamplerYcbcrConversion* pYcbcrConversion);
+typedef VKAPI_ATTR void		(VKAPI_CALL* DestroySamplerYcbcrConversionFunc)	(VkDevice device, VkSamplerYcbcrConversion ycbcrConversion, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR VkResult	(VKAPI_CALL* CreateSamplerFunc)					(VkDevice device, const VkSamplerCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSampler* pSampler);
 typedef VKAPI_ATTR void		(VKAPI_CALL* DestroySamplerFunc)				(VkDevice device, VkSampler sampler, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR VkResult	(VKAPI_CALL* CreateShaderModuleFunc)			(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule);
@@ -175,7 +194,8 @@ public:
 
 	void						initDevice					(DeviceInterface&						deviceInterface,
 															 VkDevice								device) override;
-	void						deinitDevice				() override;
+	void						deinitDevice				(VkDevice								device) override;
+
 #ifdef CTS_USES_VULKANSC
 	VkResult					createShaderModule			(VkDevice								device,
 															 const VkShaderModuleCreateInfo*		pCreateInfo,
@@ -216,7 +236,10 @@ public:
 															 const VkSamplerCreateInfo*				pCreateInfo,
 															 const VkAllocationCallbacks*			pAllocator,
 															 VkSampler*								pSampler) const override;
-
+	void						createSamplerYcbcrConversion(VkDevice								device,
+															 const VkSamplerYcbcrConversionCreateInfo*	pCreateInfo,
+															 const VkAllocationCallbacks*			pAllocator,
+															 VkSamplerYcbcrConversion*				pYcbcrConversion) const override;
 	void						importPipelineCacheData		(const PlatformInterface&				vkp,
 															 VkInstance								instance,
 															 const InstanceInterface&				vki,
@@ -225,6 +248,7 @@ public:
 															 const VkPhysicalDeviceFeatures2&		enabledFeatures,
 															 const std::vector<const char*>			extensionPtrs ) override;
 	void						resetObjects				() override;
+	void						resetPipelineCaches			() override;
 
 #endif // CTS_USES_VULKANSC
 
@@ -242,10 +266,9 @@ protected:
 															 vk::SpirVProgramInfo*					buildInfo,
 															 const tcu::CommandLine&				commandLine) override;
 
-	CreateShaderModuleFunc									m_createShaderModuleFunc;
-	CreateGraphicsPipelinesFunc								m_createGraphicsPipelinesFunc;
-	CreateComputePipelinesFunc								m_createComputePipelinesFunc;
-	mutable deUint64										m_shaderCounter;
+	std::map<VkDevice,CreateShaderModuleFunc>				m_createShaderModuleFunc;
+	std::map<VkDevice,CreateGraphicsPipelinesFunc>			m_createGraphicsPipelinesFunc;
+	std::map<VkDevice,CreateComputePipelinesFunc>			m_createComputePipelinesFunc;
 };
 
 // JSON functions
@@ -258,6 +281,7 @@ std::string						writeJSON_VkRenderPassCreateInfo2				(const VkRenderPassCreateI
 std::string						writeJSON_VkPipelineLayoutCreateInfo			(const VkPipelineLayoutCreateInfo&			pCreateInfo);
 std::string						writeJSON_VkDescriptorSetLayoutCreateInfo		(const VkDescriptorSetLayoutCreateInfo&		pCreateInfo);
 std::string						writeJSON_VkSamplerCreateInfo					(const VkSamplerCreateInfo&					pCreateInfo);
+std::string						writeJSON_VkSamplerYcbcrConversionCreateInfo	(const VkSamplerYcbcrConversionCreateInfo&	pCreateInfo);
 std::string						writeJSON_VkShaderModuleCreateInfo				(const VkShaderModuleCreateInfo&			smCI);
 std::string						writeJSON_VkDeviceObjectReservationCreateInfo	(const VkDeviceObjectReservationCreateInfo&	dmrCI);
 
@@ -289,6 +313,9 @@ void							readJSON_VkDeviceObjectReservationCreateInfo	(Json::CharReader*						
 void							readJSON_VkSamplerCreateInfo					(Json::CharReader*							jsonReader,
 																				 const std::string&							samplerCreateInfo,
 																				 VkSamplerCreateInfo&						sCI);
+void							readJSON_VkSamplerYcbcrConversionCreateInfo		(Json::CharReader*							jsonReader,
+																				 const std::string&							samplerYcbcrConversionCreateInfo,
+																				 VkSamplerYcbcrConversionCreateInfo&		sycCI);
 
 #endif // CTS_USES_VULKANSC
 

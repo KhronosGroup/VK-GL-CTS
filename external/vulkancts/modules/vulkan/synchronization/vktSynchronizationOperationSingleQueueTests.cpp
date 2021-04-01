@@ -400,13 +400,13 @@ public:
 
 	tcu::TestStatus	iterate (void)
 	{
-		const DeviceInterface&									vk							= m_context.getDeviceInterface();
-		const VkDevice											device						= m_context.getDevice();
-		const VkQueue											queue						= m_context.getUniversalQueue();
-		const deUint32											queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
-		de::Random												rng							(1234);
-		const Unique<VkSemaphore>								semaphore					(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR));
-		const Unique<VkCommandPool>								cmdPool						(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+		const DeviceInterface&									vk						= m_context.getDeviceInterface();
+		const VkDevice											device					= m_context.getDevice();
+		const VkQueue											queue					= m_context.getUniversalQueue();
+		const deUint32											queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
+		de::Random												rng						(1234);
+		const Unique<VkSemaphore>								semaphore				(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE));
+		const Unique<VkCommandPool>								cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 		std::vector<de::SharedPtr<Move<VkCommandBuffer> > >		ptrCmdBuffers;
 		std::vector<VkCommandBufferSubmitInfoKHR>				cmdBuffersInfo				(m_ops.size(), makeCommonCommandBufferSubmitInfo(0u));
 		std::vector<VkSemaphoreSubmitInfoKHR>					waitSemaphoreSubmitInfos	(m_ops.size(), makeCommonSemaphoreSubmitInfo(*semaphore, 0u, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR));
@@ -641,12 +641,14 @@ public:
 		if (m_type == SynchronizationType::SYNCHRONIZATION2)
 			context.requireDeviceFunctionality("VK_KHR_synchronization2");
 
+#ifndef CTS_USES_VULKANSC
 		if (SYNC_PRIMITIVE_EVENT == m_syncPrimitive &&
 			context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 			!context.getPortabilitySubsetFeatures().events)
 		{
 			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
 		}
+#endif // CTS_USES_VULKANSC
 	}
 
 	TestInstance* createInstance (Context& context) const

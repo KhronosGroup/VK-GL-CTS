@@ -327,7 +327,10 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 	}
 
 	dmrCI.pNext = deviceInfo.pNext;
-	deviceInfo.pNext = &dmrCI;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features	= createDefaultSC10Features();
+	sc10Features.pNext								= &dmrCI;
+	deviceInfo.pNext								= &sc10Features;
 #else
 	DE_UNREF(resourceInterface);
 #endif // CTS_USES_VULKANSC

@@ -280,6 +280,7 @@ private:
 
 void populateUfloatNegativeValuesTests (tcu::TestCaseGroup* group)
 {
+#ifndef CTS_USES_VULKANSC
 	tcu::TestContext&	testCtx = group->getTestContext();
 	VkImageUsageFlags	usage	= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
 
@@ -304,10 +305,14 @@ void populateUfloatNegativeValuesTests (tcu::TestCaseGroup* group)
 
 	group->addChild(cts_amber::createAmberTestCase(testCtx, "b10g11r11", "", "texture/conversion/ufloat_negative_values", "b10g11r11-ufloat-pack32.amber",
 					std::vector<std::string>(), std::vector<VkImageCreateInfo>(1, info)));
+#else
+	DE_UNREF(group);
+#endif
 }
 
 void populateSnormClampTests (tcu::TestCaseGroup* group)
 {
+#ifndef CTS_USES_VULKANSC
 	tcu::TestContext&	testCtx	= group->getTestContext();
 	VkImageUsageFlags	usage	= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
@@ -358,6 +363,9 @@ void populateSnormClampTests (tcu::TestCaseGroup* group)
 		group->addChild(cts_amber::createAmberTestCase(testCtx, param.testName.c_str(), "", "texture/conversion/snorm_clamp", param.amberFile.c_str(),
 						std::vector<std::string>(), std::vector<VkImageCreateInfo>(1, info)));
 	}
+#else
+	DE_UNREF(group);
+#endif
 }
 
 void populateSnormLinearClampTests (tcu::TestCaseGroup* group)

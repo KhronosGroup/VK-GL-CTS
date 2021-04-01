@@ -30,7 +30,6 @@
 #include "vkDeviceUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
-#include "tcuTextureUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkTypeUtil.hpp"
@@ -39,6 +38,8 @@
 #include "vkBarrierUtil.hpp"
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
+#include "tcuTextureUtil.hpp"
+#include "tcuCommandLine.hpp"
 #include "vktApiCommandBuffersTests.hpp"
 #include "vktApiBufferComputeInstance.hpp"
 #include "vktApiComputeInstanceResultBuffer.hpp"
@@ -352,6 +353,7 @@ tcu::TestStatus createPoolNullParamsTest(Context& context)
 	return tcu::TestStatus::pass("Command Pool allocated correctly.");
 }
 
+#ifndef CTS_USES_VULKANSC
 tcu::TestStatus createPoolNonNullAllocatorTest(Context& context)
 {
 	const VkDevice							vkDevice				= context.getDevice();
@@ -371,6 +373,7 @@ tcu::TestStatus createPoolNonNullAllocatorTest(Context& context)
 
 	return tcu::TestStatus::pass("Command Pool allocated correctly.");
 }
+#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus createPoolTransientBitTest(Context& context)
 {
@@ -504,21 +507,27 @@ tcu::TestStatus resetPoolReuseTest (Context& context)
 		allocateCommandBuffer(vk, vkDevice, &cmdBufParams)
 	};
 
-	if (!executeCommandBuffer(vkDevice, vk, queue, *(commandBuffers[0])))
+#ifdef CTS_USES_VULKANSC
+	bool canFinishEarlier = context.getTestContext().getCommandLine().isSubProcess();
+#else
+	bool canFinishEarlier = true;
+#endif
+
+	if (!executeCommandBuffer(vkDevice, vk, queue, *(commandBuffers[0])) && canFinishEarlier)
 		return tcu::TestStatus::fail("Failed");
-	if (!executeCommandBuffer(vkDevice, vk, queue, *(commandBuffers[1]), true))
+	if (!executeCommandBuffer(vkDevice, vk, queue, *(commandBuffers[1]), true) && canFinishEarlier)
 		return tcu::TestStatus::fail("Failed");
 
 	VK_CHECK(vk.resetCommandPool(vkDevice, *cmdPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT));
 
-	if (!executeCommandBuffer(vkDevice, vk, queue, *(commandBuffers[0])))
+	if (!executeCommandBuffer(vkDevice, vk, queue, *(commandBuffers[0])) && canFinishEarlier)
 		return tcu::TestStatus::fail("Failed");
-	if (!executeCommandBuffer(vkDevice, vk, queue, *(commandBuffers[1])))
+	if (!executeCommandBuffer(vkDevice, vk, queue, *(commandBuffers[1])) && canFinishEarlier)
 		return tcu::TestStatus::fail("Failed");
 
 	{
 		const Unique<VkCommandBuffer> afterResetCommandBuffers(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
-		if (!executeCommandBuffer(vkDevice, vk, queue, *afterResetCommandBuffers))
+		if (!executeCommandBuffer(vkDevice, vk, queue, *afterResetCommandBuffers) && canFinishEarlier)
 			return tcu::TestStatus::fail("Failed");
 	}
 
@@ -1227,7 +1236,7 @@ tcu::TestStatus recordLargeSecondaryBufferTest(Context &context)
 		queueFamilyIndex,											//	deUint32					queueFamilyIndex;
 	};
 	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, vkDevice, &cmdPoolParams));
-
+	const Unique<VkCommandPool>				secCmdPool				(createCommandPool(vk, vkDevice, &cmdPoolParams));
 	// Command buffer
 	const VkCommandBufferAllocateInfo		cmdBufParams			=
 	{
@@ -1243,7 +1252,7 @@ tcu::TestStatus recordLargeSecondaryBufferTest(Context &context)
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				//	VkStructureType				sType;
 		DE_NULL,													//	const void*					pNext;
-		*cmdPool,													//	VkCommandPool				pool;
+		*secCmdPool,												//	VkCommandPool				pool;
 		VK_COMMAND_BUFFER_LEVEL_SECONDARY,							//	VkCommandBufferLevel		level;
 		1u,															//	uint32_t					bufferCount;
 	};
@@ -1389,6 +1398,7 @@ tcu::TestStatus submitSecondaryBufferTwiceTest(Context& context)
 	};
 
 	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, vkDevice, &cmdPoolParams));
+	const Unique<VkCommandPool>				secCmdPool				(createCommandPool(vk, vkDevice, &cmdPoolParams));
 
 	// Command buffer
 	const VkCommandBufferAllocateInfo		cmdBufParams			=
@@ -1408,7 +1418,7 @@ tcu::TestStatus submitSecondaryBufferTwiceTest(Context& context)
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				//	VkStructureType			sType;
 		DE_NULL,													//	const void*				pNext;
-		*cmdPool,													//	VkCommandPool				pool;
+		*secCmdPool,												//	VkCommandPool				pool;
 		VK_COMMAND_BUFFER_LEVEL_SECONDARY,							//	VkCommandBufferLevel		level;
 		1u,															//	uint32_t					bufferCount;
 	};
@@ -1580,6 +1590,7 @@ tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context& context)
 	};
 
 	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, vkDevice, &cmdPoolParams));
+	const Unique<VkCommandPool>				secCmdPool				(createCommandPool(vk, vkDevice, &cmdPoolParams));
 
 	// Command buffer
 	const VkCommandBufferAllocateInfo		cmdBufParams			=
@@ -1599,7 +1610,7 @@ tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context& context)
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				//	VkStructureType			sType;
 		DE_NULL,													//	const void*				pNext;
-		*cmdPool,													//	VkCommandPool				pool;
+		*secCmdPool,												//	VkCommandPool				pool;
 		VK_COMMAND_BUFFER_LEVEL_SECONDARY,							//	VkCommandBufferLevel		level;
 		1u,															//	uint32_t					bufferCount;
 	};
@@ -4586,6 +4597,7 @@ tcu::TestStatus ManyDrawsInstance::iterate (void)
 	// Command pool and buffers.
 	using CmdBufferPtr = Move<VkCommandBuffer>;
 	const auto cmdPool = makeCommandPool(vkd, device, qIndex);
+	const auto secCmdPool = makeCommandPool(vkd, device, qIndex);
 
 	CmdBufferPtr	primaryCmdBufferPtr;
 	CmdBufferPtr	secondaryCmdBufferPtr;
@@ -4622,7 +4634,7 @@ tcu::TestStatus ManyDrawsInstance::iterate (void)
 
 	if (useSecondary)
 	{
-		secondaryCmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+		secondaryCmdBufferPtr	= allocateCommandBuffer(vkd, device, secCmdPool.get(), VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 		secondaryCmdBuffer		= secondaryCmdBufferPtr.get();
 		drawsCmdBuffer			= secondaryCmdBuffer;
 
@@ -4767,7 +4779,10 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 
 	/* 19.1. Command Pools (5.1 in VK 1.0 Spec) */
 	addFunctionCase				(commandBuffersTests.get(), "pool_create_null_params",			"",	createPoolNullParamsTest);
+#ifndef CTS_USES_VULKANSC
+	// VkAllocationCallbacks must be NULL in Vulkan SC
 	addFunctionCase				(commandBuffersTests.get(), "pool_create_non_null_allocator",	"",	createPoolNonNullAllocatorTest);
+#endif // CTS_USES_VULKANSC
 	addFunctionCase				(commandBuffersTests.get(), "pool_create_transient_bit",		"",	createPoolTransientBitTest);
 	addFunctionCase				(commandBuffersTests.get(), "pool_create_reset_bit",			"",	createPoolResetBitTest);
 	addFunctionCase				(commandBuffersTests.get(), "pool_reset_release_res",			"",	resetPoolReleaseResourcesBitTest);

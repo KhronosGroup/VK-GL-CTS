@@ -294,7 +294,7 @@ ConstDedicatedInfo						makeDedicatedAllocationInfo			(VkBuffer				buffer)
 {
 	ConstDedicatedInfo					dedicatedAllocationInfo				=
 	{
-		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,				// VkStructureType		sType
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,					// VkStructureType		sType
 		DE_NULL,															// const void*			pNext
 		DE_NULL,															// VkImage				image
 		buffer																// VkBuffer				buffer
@@ -306,7 +306,7 @@ ConstDedicatedInfo						makeDedicatedAllocationInfo			(VkImage				image)
 {
 	ConstDedicatedInfo					dedicatedAllocationInfo				=
 	{
-		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,				// VkStructureType		sType
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,					// VkStructureType		sType
 		DE_NULL,															// const void*			pNext
 		image,																// VkImage				image
 		DE_NULL																// VkBuffer				buffer
@@ -319,7 +319,7 @@ const VkBindBufferMemoryInfo			makeBufferMemoryBindingInfo			(VkBuffer				buffer
 {
 	const VkBindBufferMemoryInfo		bufferMemoryBinding					=
 	{
-		VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO_KHR,						// VkStructureType		sType;
+		VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO,							// VkStructureType		sType;
 		DE_NULL,															// const void*			pNext;
 		buffer,																// VkBuffer				buffer;
 		memory,																// VkDeviceMemory		memory;
@@ -333,7 +333,7 @@ const VkBindImageMemoryInfo				makeImageMemoryBindingInfo			(VkImage				image,
 {
 	const VkBindImageMemoryInfo		imageMemoryBinding					=
 	{
-		VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHR,						// VkStructureType		sType;
+		VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO,							// VkStructureType		sType;
 		DE_NULL,															// const void*			pNext;
 		image,																// VkImage				image;
 		memory,																// VkDeviceMemory		memory;
@@ -342,6 +342,7 @@ const VkBindImageMemoryInfo				makeImageMemoryBindingInfo			(VkImage				image,
 	return imageMemoryBinding;
 }
 
+#ifndef CTS_USES_VULKANSC
 const VkMemoryPriorityAllocateInfoEXT	makeMemoryPriorityAllocateInfo		(const void *	pNext,
 																			 float			priority)
 {
@@ -353,6 +354,7 @@ const VkMemoryPriorityAllocateInfoEXT	makeMemoryPriorityAllocateInfo		(const voi
 	};
 	return info;
 }
+#endif
 
 enum TransferDirection
 {
@@ -492,8 +494,12 @@ void									createMemory<VkBuffer, DE_FALSE>	(BuffersList&			targets,
 
 		vk.getBufferMemoryRequirements(vkDevice, **targets[i], &memReqs);
 
+#ifdef CTS_USES_VULKANSC
+		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, DE_NULL);
+#else
 		VkMemoryPriorityAllocateInfoEXT	priority							= makeMemoryPriorityAllocateInfo(DE_NULL, ((float)i)/((float)count));
 		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, params.usePriority ? &priority : DE_NULL);
+#endif
 		VkDeviceMemory					rawMemory							= DE_NULL;
 
 		vk.allocateMemory(vkDevice, &memAlloc, (VkAllocationCallbacks*)DE_NULL, &rawMemory);
@@ -518,8 +524,13 @@ void									createMemory<VkImage, DE_FALSE>		(ImagesList&			targets,
 		VkMemoryRequirements			memReqs;
 		vk.getImageMemoryRequirements(vkDevice, **targets[i], &memReqs);
 
+#ifdef CTS_USES_VULKANSC
+		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, DE_NULL);
+#else
 		VkMemoryPriorityAllocateInfoEXT	priority							= makeMemoryPriorityAllocateInfo(DE_NULL, ((float)i)/((float)count));
 		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, params.usePriority ? &priority : DE_NULL);
+#endif
+
 		VkDeviceMemory					rawMemory							= DE_NULL;
 
 		vk.allocateMemory(vkDevice, &memAlloc, (VkAllocationCallbacks*)DE_NULL, &rawMemory);
@@ -545,9 +556,14 @@ void									createMemory<VkBuffer, DE_TRUE>		(BuffersList&			targets,
 
 		vk.getBufferMemoryRequirements(vkDevice, **targets[i], &memReqs);
 
-		ConstDedicatedInfo				dedicatedAllocationInfo				= makeDedicatedAllocationInfo(**targets[i]);;
+		ConstDedicatedInfo				dedicatedAllocationInfo				= makeDedicatedAllocationInfo(**targets[i]);
+#ifdef CTS_USES_VULKANSC
+		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, (const void *)&dedicatedAllocationInfo);
+#else
 		VkMemoryPriorityAllocateInfoEXT	priority							= makeMemoryPriorityAllocateInfo(&dedicatedAllocationInfo, ((float)i)/((float)count));
 		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, params.usePriority ? &priority : (const void *)&dedicatedAllocationInfo);
+#endif
+
 		VkDeviceMemory					rawMemory							= DE_NULL;
 
 		vk.allocateMemory(vkDevice, &memAlloc, static_cast<VkAllocationCallbacks*>(DE_NULL), &rawMemory);
@@ -572,10 +588,16 @@ void									createMemory<VkImage, DE_TRUE>		(ImagesList&			targets,
 		VkMemoryRequirements			memReqs;
 		vk.getImageMemoryRequirements(vkDevice, **targets[i], &memReqs);
 
-		ConstDedicatedInfo				dedicatedAllocationInfo				= makeDedicatedAllocationInfo(**targets[i]);
-		VkMemoryPriorityAllocateInfoEXT	priority							= makeMemoryPriorityAllocateInfo(&dedicatedAllocationInfo, ((float)i)/((float)count));
-		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, params.usePriority ? &priority : (const void *)&dedicatedAllocationInfo);
-		VkDeviceMemory					rawMemory							= DE_NULL;
+		ConstDedicatedInfo				dedicatedAllocationInfo			= makeDedicatedAllocationInfo(**targets[i]);
+
+#ifdef CTS_USES_VULKANSC
+		const VkMemoryAllocateInfo		memAlloc						= makeMemoryAllocateInfo(memReqs, (const void *)&dedicatedAllocationInfo);
+#else
+		VkMemoryPriorityAllocateInfoEXT	priority						= makeMemoryPriorityAllocateInfo(&dedicatedAllocationInfo, ((float)i)/((float)count));
+		const VkMemoryAllocateInfo		memAlloc						= makeMemoryAllocateInfo(memReqs, params.usePriority ? &priority : (const void *)&dedicatedAllocationInfo);
+#endif
+
+		VkDeviceMemory					rawMemory						= DE_NULL;
 
 		vk.allocateMemory(vkDevice, &memAlloc, static_cast<VkAllocationCallbacks*>(DE_NULL), &rawMemory);
 		memory.push_back(MemoryRegionPtr(new Move<VkDeviceMemory>(check<VkDeviceMemory>(rawMemory), Deleter<VkDeviceMemory>(vk, vkDevice, DE_NULL))));
@@ -953,8 +975,10 @@ public:
 	{
 		ctx.requireDeviceFunctionality("VK_KHR_bind_memory2");
 
+#ifndef CTS_USES_VULKANSC
 		if (m_params.usePriority && !ctx.getMemoryPriorityFeaturesEXT().memoryPriority)
 			TCU_THROW(NotSupportedError, "VK_EXT_memory_priority Not supported");
+#endif
 	}
 
 private:
@@ -967,9 +991,16 @@ tcu::TestCaseGroup* createMemoryBindingTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>		group								(new tcu::TestCaseGroup(testCtx, "binding", "Memory binding tests."));
 
-	for (int i = 0; i < 2; ++i)
+#ifdef CTS_USES_VULKANSC
+	const int iterations = 1;
+#else
+	const int iterations = 2;
+#endif
+
+	for (int i = 0; i < iterations; ++i)
 	{
 		bool usePriority = i != 0;
+
 		de::MovePtr<tcu::TestCaseGroup>		regular								(new tcu::TestCaseGroup(testCtx, "regular", "Basic memory binding tests."));
 		de::MovePtr<tcu::TestCaseGroup>		aliasing							(new tcu::TestCaseGroup(testCtx, "aliasing", "Memory binding tests with aliasing of two resources."));
 

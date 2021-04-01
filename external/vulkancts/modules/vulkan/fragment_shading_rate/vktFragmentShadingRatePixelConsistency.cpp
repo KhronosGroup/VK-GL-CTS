@@ -481,12 +481,16 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate (void)
 {
 	const VkPhysicalDeviceMemoryProperties memoryProperties = vk::getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
 
-	Move<VkDevice>				vkd			 = createImageRobustnessDevice(m_context);
-	const VkDevice				device		 = *vkd;
-	de::MovePtr<DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), device));
-	const DeviceInterface&		vk			 = *deviceDriver.get();
-	const VkQueue				queue		 = getDeviceQueue(vk, device, m_context.getUniversalQueueFamilyIndex(), 0);
-	de::MovePtr<Allocator>		allocator	 = de::MovePtr<Allocator>(new SimpleAllocator(vk, device, memoryProperties));
+	Move<VkDevice>				vkd					= createImageRobustnessDevice(m_context);
+	const VkDevice				device				= *vkd;
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>	deviceDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), device));
+#else
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), device, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), device));
+#endif // CTS_USES_VULKANSC
+	const DeviceInterface&		vk					= *deviceDriver;
+	const VkQueue				queue				= getDeviceQueue(vk, device, m_context.getUniversalQueueFamilyIndex(), 0);
+	de::MovePtr<Allocator>		allocator			= de::MovePtr<Allocator>(new SimpleAllocator(vk, device, memoryProperties));
 
 	// Create vertex buffer
 	const VkDeviceSize vertexBufferSize = sizeof(basicTriangles);

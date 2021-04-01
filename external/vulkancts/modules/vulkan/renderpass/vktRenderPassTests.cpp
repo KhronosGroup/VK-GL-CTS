@@ -27,7 +27,9 @@
 #include "vktRenderPassMultisampleTests.hpp"
 #include "vktRenderPassMultisampleResolveTests.hpp"
 #include "vktRenderPassSampleReadTests.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktRenderPassSparseRenderTargetTests.hpp"
+#endif // CTS_USES_VULKANSC
 #include "vktRenderPassSubpassDependencyTests.hpp"
 #include "vktRenderPassUnusedAttachmentTests.hpp"
 #include "vktRenderPassUnusedClearAttachmentTests.hpp"
@@ -4803,7 +4805,10 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 				waitForFences(vk, device, 1, &fence.get(), VK_TRUE, ~0ull);
 			}
 		}
-
+#ifdef CTS_USES_VULKANSC
+		if (!context.getTestContext().getCommandLine().isSubProcess())
+			return tcu::TestStatus::pass("Pass");
+#endif
 		if (logAndVerifyImages(log, vk, device, attachmentResources, attachmentIsLazy, renderPassInfo, renderPassClearValues, imageClearValues, subpassRenderInfo, targetSize, config))
 			return tcu::TestStatus::pass("Pass");
 		else
@@ -7171,7 +7176,9 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 	suballocationTestGroup->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassMultisampleResolveTests(testCtx)	: createRenderPass2MultisampleResolveTests(testCtx));
 	suballocationTestGroup->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassSubpassDependencyTests(testCtx)	: createRenderPass2SubpassDependencyTests(testCtx));
 	suballocationTestGroup->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassSampleReadTests(testCtx)			: createRenderPass2SampleReadTests(testCtx));
+#ifndef CTS_USES_VULKANSC
 	suballocationTestGroup->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassSparseRenderTargetTests(testCtx)	: createRenderPass2SparseRenderTargetTests(testCtx));
+#endif // CTS_USES_VULKANSC
 	suballocationTestGroup->addChild(createRenderPassUnusedAttachmentTests(testCtx, renderPassType));
 	suballocationTestGroup->addChild(createRenderPassUnusedClearAttachmentTests(testCtx, renderPassType));
 	suballocationTestGroup->addChild(createRenderPassUnusedAttachmentSparseFillingTests(testCtx, renderPassType));
@@ -7183,7 +7190,9 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 	if (renderPassType != RENDERPASS_TYPE_LEGACY)
 	{
 		renderpassTests->addChild(createRenderPass2DepthStencilResolveTests(testCtx));
+#ifndef CTS_USES_VULKANSC
 		renderpassTests->addChild(createFragmentDensityMapTests(testCtx));
+#endif
 	}
 
 	return renderpassTests.release();

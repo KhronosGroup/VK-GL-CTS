@@ -257,7 +257,7 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 
 			const VkDeviceGroupBindSparseInfo devGroupBindSparseInfo =
 			{
-				VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO_KHR,	//VkStructureType							sType;
+				VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO,		//VkStructureType							sType;
 				DE_NULL,												//const void*								pNext;
 				firstDeviceID,											//deUint32									resourceDeviceIndex;
 				secondDeviceID,											//deUint32									memoryDeviceIndex;

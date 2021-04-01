@@ -1659,25 +1659,33 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 
 		if (m_data.payloadSC == SC_PHYSBUFFER)
 		{
-			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 			addrInfo.buffer = **buffers[0];
 			VkDeviceAddress addr;
+#ifndef CTS_USES_VULKANSC
+			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 			if (useKHR)
 				addr = vk.getBufferDeviceAddress(device, &addrInfo);
 			else
 				addr = vk.getBufferDeviceAddressEXT(device, &addrInfo);
+#else
+			addr = vk.getBufferDeviceAddress(device, &addrInfo);
+#endif
 			vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages,
 								0, sizeof(VkDeviceSize), &addr);
 		}
 		if (m_data.guardSC == SC_PHYSBUFFER)
 		{
-			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 			addrInfo.buffer = **buffers[1];
 			VkDeviceAddress addr;
+#ifndef CTS_USES_VULKANSC
+			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 			if (useKHR)
 				addr = vk.getBufferDeviceAddress(device, &addrInfo);
 			else
 				addr = vk.getBufferDeviceAddressEXT(device, &addrInfo);
+#else
+			addr = vk.getBufferDeviceAddress(device, &addrInfo);
+#endif
 			vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages,
 								8, sizeof(VkDeviceSize), &addr);
 		}

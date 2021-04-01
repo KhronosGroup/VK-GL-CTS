@@ -1012,12 +1012,14 @@ void checkSupport (Context& context, const CaseDef caseDef)
 
 	checkImageFormatRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.numSamples, caseDef.colorFormat, colorImageUsage);
 
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().multisampleArrayImage &&
 		(caseDef.numSamples != VK_SAMPLE_COUNT_1_BIT) && (caseDef.numLayers != 1))
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support image array with multiple samples per texel");
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 tcu::TestStatus test (Context& context, const CaseDef caseDef)

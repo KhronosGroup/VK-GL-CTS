@@ -216,6 +216,9 @@ Move<VkShaderModule> createShaderModule(const DeviceInterface& vk, VkDevice devi
 
 // stubs for functions removed in Vulkan SC
 
+namespace refdetails
+{
+
 template<>
 void Deleter<VkDeviceMemory>::operator() (VkDeviceMemory obj) const
 {
@@ -252,7 +255,8 @@ void Deleter<VkSwapchainKHR>::operator() (VkSwapchainKHR obj) const
 	DE_UNREF(obj);
 }
 
-#endif // CTS_USES_VULKANSC
+} // refdetails
 
+#endif // CTS_USES_VULKANSC
 
 } // vk

@@ -2228,7 +2228,7 @@ struct VkPhysicalDeviceVulkanSC10Properties
 	VkBool32		commandPoolResetCommandBuffer;
 	VkBool32		commandBufferSimultaneousUse;
 	VkBool32		secondaryCommandBufferNullFramebuffer;
-	VkBool32		descriptorPoolFreeDescriptorSets;
+	VkBool32		recycleDescriptorSetMemory;
 	VkBool32		recyclePipelineMemory;
 	uint32_t		maxRenderPassSubpasses;
 	uint32_t		maxRenderPassDependencies;
@@ -2292,6 +2292,7 @@ struct VkDeviceObjectReservationCreateInfo
 	uint32_t							maxOcclusionQueriesPerPool;
 	uint32_t							maxPipelineStatisticsQueriesPerPool;
 	uint32_t							maxTimestampQueriesPerPool;
+	uint32_t							maxImmutableSamplersPerDescriptorSetLayout;
 };
 
 struct VkCommandPoolMemoryReservationCreateInfo

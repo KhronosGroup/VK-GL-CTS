@@ -48,6 +48,9 @@
 #include "deRandom.hpp"
 #include "deMath.h"
 #include "deSharedPtr.hpp"
+#ifdef CTS_USES_VULKANSC
+#include "vkSafetyCriticalUtil.hpp"
+#endif
 
 namespace vkt
 {
@@ -257,6 +260,7 @@ class MultiViewRenderTestInstance : public TestInstance
 {
 public:
 									MultiViewRenderTestInstance	(Context& context, const TestParameters& parameters);
+									~MultiViewRenderTestInstance();
 protected:
 	typedef de::SharedPtr<Unique<VkPipeline> >		PipelineSp;
 	typedef de::SharedPtr<Unique<VkShaderModule> >	ShaderModuleSP;
@@ -297,7 +301,11 @@ protected:
 	const int						m_seed;
 	const deUint32					m_squareCount;
 	Move<VkDevice>					m_logicalDevice;
-	MovePtr<DeviceInterface>		m_device;
+#ifndef CTS_USES_VULKANSC
+	DeviceInterface*				m_device;
+#else
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> m_device;
+#endif // CTS_USES_VULKANSC
 	MovePtr<Allocator>				m_allocator;
 	deUint32						m_queueFamilyIndex;
 	VkQueue							m_queue;
@@ -341,6 +349,10 @@ MultiViewRenderTestInstance::MultiViewRenderTestInstance (Context& context, cons
 
 	// Color attachment
 	m_colorAttachment = de::SharedPtr<ImageAttachment>(new ImageAttachment(*m_logicalDevice, *m_device, *m_allocator, m_parameters.extent, m_parameters.colorFormat, m_parameters.samples));
+}
+
+MultiViewRenderTestInstance::~MultiViewRenderTestInstance()
+{
 }
 
 tcu::TestStatus MultiViewRenderTestInstance::iterate (void)
@@ -540,7 +552,7 @@ TestParameters MultiViewRenderTestInstance::fillMissingParameters (const TestPar
 
 		VkPhysicalDeviceMultiviewProperties multiviewProperties =
 		{
-			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHR,	// VkStructureType	sType;
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES,		// VkStructureType	sType;
 			DE_NULL,													// void*			pNext;
 			0u,															// deUint32			maxMultiviewViewCount;
 			0u															// deUint32			maxMultiviewInstanceIndex;
@@ -645,7 +657,7 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 
 	VkPhysicalDeviceMultiviewFeatures		multiviewFeatures		=
 	{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES_KHR,	// VkStructureType			sType;
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES,		// VkStructureType			sType;
 		DE_NULL,													// void*					pNext;
 		DE_FALSE,													// VkBool32					multiview;
 		DE_FALSE,													// VkBool32					multiviewGeometryShader;
@@ -673,7 +685,7 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 
 	VkPhysicalDeviceMultiviewProperties	multiviewProperties			=
 	{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHR,	//VkStructureType	sType;
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES,		//VkStructureType	sType;
 		DE_NULL,													//void*				pNext;
 		0u,															//deUint32			maxMultiviewViewCount;
 		0u															//deUint32			maxMultiviewInstanceIndex;
@@ -685,8 +697,10 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 
 	instance.getPhysicalDeviceProperties2(physicalDevice, &propertiesDeviceProperties2);
 
+#ifndef CTS_USES_VULKANSC
 	if (multiviewProperties.maxMultiviewViewCount < 6u)
 		TCU_FAIL("maxMultiviewViewCount below min value");
+#endif // CTS_USES_VULKANSC
 
 	if (multiviewProperties.maxMultiviewInstanceIndex < 134217727u) //134217727u = 2^27 -1
 		TCU_FAIL("maxMultiviewInstanceIndex below min value");
@@ -706,10 +720,21 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 			if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_create_renderpass2"))
 				deviceExtensions.push_back("VK_KHR_create_renderpass2");
 
+		void* pNext												= &enabledFeatures;
+#ifdef CTS_USES_VULKANSC
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= m_context.getTestContext().getCommandLine().isSubProcess() ? m_context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+		memReservationInfo.pNext								= pNext;
+		pNext													= &memReservationInfo;
+
+		VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+		sc10Features.pNext										= pNext;
+		pNext													= &sc10Features;
+#endif // CTS_USES_VULKANSC
+
 		const VkDeviceCreateInfo		deviceInfo			=
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//VkStructureType					sType;
-			&enabledFeatures,												//const void*						pNext;
+			pNext,															//const void*						pNext;
 			0u,																//VkDeviceCreateFlags				flags;
 			1u,																//deUint32							queueCreateInfoCount;
 			&queueInfo,														//const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
@@ -721,7 +746,11 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 		};
 
 		m_logicalDevice					= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_context.getInstance(), instance, physicalDevice, &deviceInfo);
-		m_device						= MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *m_logicalDevice));
+#ifndef CTS_USES_VULKANSC
+		m_device						= const_cast<DeviceInterface*>(&(m_context.getDeviceInterface()));
+#else
+		m_device						= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
+#endif // CTS_USES_VULKANSC
 		m_allocator						= MovePtr<Allocator>(new SimpleAllocator(*m_device, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
 		m_device->getDeviceQueue		(*m_logicalDevice, m_queueFamilyIndex, 0u, &m_queue);
 	}
@@ -3380,6 +3409,26 @@ private:
 	virtual void		checkSupport		(Context& context) const
 	{
 		context.requireDeviceFunctionality("VK_KHR_multiview");
+#ifdef CTS_USES_VULKANSC
+		const InstanceInterface&			instance			= context.getInstanceInterface();
+		const VkPhysicalDevice				physicalDevice		= context.getPhysicalDevice();
+		VkPhysicalDeviceMultiviewProperties	multiviewProperties =
+		{
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES,		//VkStructureType	sType;
+			DE_NULL,													//void*				pNext;
+			0u,															//deUint32			maxMultiviewViewCount;
+			0u															//deUint32			maxMultiviewInstanceIndex;
+		};
+
+		VkPhysicalDeviceProperties2			propertiesDeviceProperties2;
+		propertiesDeviceProperties2.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+		propertiesDeviceProperties2.pNext						= &multiviewProperties;
+
+		instance.getPhysicalDeviceProperties2(physicalDevice, &propertiesDeviceProperties2);
+
+		if (multiviewProperties.maxMultiviewViewCount < m_parameters.viewMasks.size())
+			TCU_THROW(NotSupportedError, "maxMultiviewViewCount is less than required by test");
+#endif // CTS_USES_VULKANSC
 	}
 
 	void				initPrograms		(SourceCollections& programCollection) const

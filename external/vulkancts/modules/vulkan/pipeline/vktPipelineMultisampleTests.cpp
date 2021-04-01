@@ -2525,15 +2525,19 @@ void MultisampleRenderer::initialize (Context&									context,
 			VK_IMAGE_LAYOUT_UNDEFINED,													// VkImageLayout			initialLayout;
 		};
 
+#ifndef CTS_USES_VULKANSC
 		if (sparse && !checkSparseImageFormatSupport(context.getPhysicalDevice(), context.getInstanceInterface(), colorImageParams))
 			TCU_THROW(NotSupportedError, "The image format does not support sparse operations.");
+#endif // CTS_USES_VULKANSC
 
 		m_colorImage = createImage(vk, vkDevice, &colorImageParams);
 
 		// Allocate and bind color image memory
 		if (sparse)
 		{
+#ifndef CTS_USES_VULKANSC
 			allocateAndBindSparseImage(vk, vkDevice, context.getPhysicalDevice(), context.getInstanceInterface(), colorImageParams, *m_bindSemaphore, context.getSparseQueue(), memAlloc, m_allocations, mapVkFormat(m_colorFormat), *m_colorImage);
+#endif // CTS_USES_VULKANSC
 		}
 		else
 		{
@@ -4309,7 +4313,7 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "depth", "",			samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_REGULAR, TEST_MODE_DEPTH_BIT));
 			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "stencil", "",			samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_REGULAR, TEST_MODE_STENCIL_BIT));
 			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "depth_stencil", "",	samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_REGULAR, TEST_MODE_DEPTH_BIT | TEST_MODE_STENCIL_BIT));
-
+#ifndef CTS_USES_VULKANSC
 			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_triangle_sparse", "",	samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_SPARSE));
 			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_line_sparse", "",		samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_LINE, 1.0f, IMAGE_BACKING_MODE_SPARSE));
 			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_point_1px_sparse", "",	samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_POINT, 1.0f, IMAGE_BACKING_MODE_SPARSE));
@@ -4318,7 +4322,7 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "depth_sparse", "",			samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_SPARSE, TEST_MODE_DEPTH_BIT));
 			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "stencil_sparse", "",			samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_SPARSE, TEST_MODE_STENCIL_BIT));
 			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "depth_stencil_sparse", "",	samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_SPARSE, TEST_MODE_DEPTH_BIT | TEST_MODE_STENCIL_BIT));
-
+#endif // CTS_USES_VULKANSC
 			rasterizationSamplesTests->addChild(samplesTests.release());
 		}
 
@@ -4329,7 +4333,9 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> rasterSamplesConsistencyTests	(new tcu::TestCaseGroup(testCtx, "raster_samples_consistency", ""));
 		MultisampleTestParams			paramsRegular					= {GEOMETRY_TYPE_OPAQUE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_REGULAR};
+#ifndef CTS_USES_VULKANSC
 		MultisampleTestParams			paramsSparse					= {GEOMETRY_TYPE_OPAQUE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_SPARSE};
+#endif // CTS_USES_VULKANSC
 
 		addFunctionCaseWithPrograms(rasterSamplesConsistencyTests.get(),
 									"unique_colors_check",
@@ -4337,14 +4343,14 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 									initMultisamplePrograms,
 									testRasterSamplesConsistency,
 									paramsRegular);
-
+#ifndef CTS_USES_VULKANSC
 		addFunctionCaseWithPrograms(rasterSamplesConsistencyTests.get(),
 									"unique_colors_check_sparse",
 									"",
 									initMultisamplePrograms,
 									testRasterSamplesConsistency,
 									paramsSparse);
-
+#endif // CTS_USES_VULKANSC
 		multisampleTests->addChild(rasterSamplesConsistencyTests.release());
 	}
 
@@ -4384,11 +4390,12 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_line",		"", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_LINE, 1.0f, IMAGE_BACKING_MODE_REGULAR));
 					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point_1px",	"", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 1.0f, IMAGE_BACKING_MODE_REGULAR));
 					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point",		"", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 3.0f, IMAGE_BACKING_MODE_REGULAR));
-
+#ifndef CTS_USES_VULKANSC
 					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_triangle_sparse",	"", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_SPARSE));
 					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_line_sparse",		"", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_LINE, 1.0f, IMAGE_BACKING_MODE_SPARSE));
 					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point_1px_sparse",	"", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 1.0f, IMAGE_BACKING_MODE_SPARSE));
 					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point_sparse",		"", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 3.0f, IMAGE_BACKING_MODE_SPARSE));
+#endif // CTS_USES_VULKANSC
 
 					minShadingValueTests->addChild(samplesTests.release());
 				}
@@ -4492,12 +4499,12 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 				samplesTests->addChild(new SampleMaskTest(testCtx, "primitive_line", "", samples[samplesNdx], mask, GEOMETRY_TYPE_OPAQUE_LINE, 1.0f, IMAGE_BACKING_MODE_REGULAR));
 				samplesTests->addChild(new SampleMaskTest(testCtx, "primitive_point_1px", "", samples[samplesNdx], mask, GEOMETRY_TYPE_OPAQUE_POINT, 1.0f, IMAGE_BACKING_MODE_REGULAR));
 				samplesTests->addChild(new SampleMaskTest(testCtx, "primitive_point", "", samples[samplesNdx], mask, GEOMETRY_TYPE_OPAQUE_POINT, 3.0f, IMAGE_BACKING_MODE_REGULAR));
-
+#ifndef CTS_USES_VULKANSC
 				samplesTests->addChild(new SampleMaskTest(testCtx, "primitive_triangle_sparse", "", samples[samplesNdx], mask, GEOMETRY_TYPE_OPAQUE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_SPARSE));
 				samplesTests->addChild(new SampleMaskTest(testCtx, "primitive_line_sparse", "", samples[samplesNdx], mask, GEOMETRY_TYPE_OPAQUE_LINE, 1.0f, IMAGE_BACKING_MODE_SPARSE));
 				samplesTests->addChild(new SampleMaskTest(testCtx, "primitive_point_1px_sparse", "", samples[samplesNdx], mask, GEOMETRY_TYPE_OPAQUE_POINT, 1.0f, IMAGE_BACKING_MODE_SPARSE));
 				samplesTests->addChild(new SampleMaskTest(testCtx, "primitive_point_sparse", "", samples[samplesNdx], mask, GEOMETRY_TYPE_OPAQUE_POINT, 3.0f, IMAGE_BACKING_MODE_SPARSE));
-
+#endif // CTS_USES_VULKANSC
 				sampleMaskValueTests->addChild(samplesTests.release());
 			}
 
@@ -4518,9 +4525,10 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 			caseName << "samples_" << samples[samplesNdx];
 
 			alphaToOneTests->addChild(new AlphaToOneTest(testCtx, caseName.str(), "", samples[samplesNdx], IMAGE_BACKING_MODE_REGULAR));
-
+#ifndef CTS_USES_VULKANSC
 			caseName << "_sparse";
 			alphaToOneTests->addChild(new AlphaToOneTest(testCtx, caseName.str(), "", samples[samplesNdx], IMAGE_BACKING_MODE_SPARSE));
+#endif // CTS_USES_VULKANSC
 		}
 
 		multisampleTests->addChild(alphaToOneTests.release());
@@ -4540,11 +4548,11 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_opaque", "", samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_QUAD, IMAGE_BACKING_MODE_REGULAR));
 			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_translucent", "", samples[samplesNdx], GEOMETRY_TYPE_TRANSLUCENT_QUAD, IMAGE_BACKING_MODE_REGULAR));
 			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_invisible", "", samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_REGULAR));
-
+#ifndef CTS_USES_VULKANSC
 			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_opaque_sparse", "", samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_QUAD, IMAGE_BACKING_MODE_SPARSE));
 			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_translucent_sparse", "", samples[samplesNdx], GEOMETRY_TYPE_TRANSLUCENT_QUAD, IMAGE_BACKING_MODE_SPARSE));
 			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_invisible_sparse", "", samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_SPARSE));
-
+#endif // CTS_USES_VULKANSC
 			alphaToCoverageTests->addChild(samplesTests.release());
 		}
 		multisampleTests->addChild(alphaToCoverageTests.release());
@@ -4562,7 +4570,9 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 			de::MovePtr<tcu::TestCaseGroup> samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
 
 			samplesTests->addChild(new AlphaToCoverageNoColorAttachmentTest(testCtx, "alpha_opaque", "", samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_QUAD, IMAGE_BACKING_MODE_REGULAR));
+#ifndef CTS_USES_VULKANSC
 			samplesTests->addChild(new AlphaToCoverageNoColorAttachmentTest(testCtx, "alpha_opaque_sparse", "", samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_QUAD, IMAGE_BACKING_MODE_SPARSE));
+#endif // CTS_USES_VULKANSC
 
 			alphaToCoverageNoColorAttachmentTests->addChild(samplesTests.release());
 		}
@@ -4582,15 +4592,20 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 			de::MovePtr<tcu::TestCaseGroup> samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
 
 			samplesTests->addChild(new AlphaToCoverageColorUnusedAttachmentTest(testCtx, "alpha_opaque", "", samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_QUAD, IMAGE_BACKING_MODE_REGULAR));
+#ifndef CTS_USES_VULKANSC
 			samplesTests->addChild(new AlphaToCoverageColorUnusedAttachmentTest(testCtx, "alpha_opaque_sparse", "", samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_QUAD, IMAGE_BACKING_MODE_SPARSE));
+#endif // CTS_USES_VULKANSC
 			samplesTests->addChild(new AlphaToCoverageColorUnusedAttachmentTest(testCtx, "alpha_invisible", "", samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_REGULAR));
+#ifndef CTS_USES_VULKANSC
 			samplesTests->addChild(new AlphaToCoverageColorUnusedAttachmentTest(testCtx, "alpha_invisible_sparse", "", samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_SPARSE));
+#endif // CTS_USES_VULKANSC
 
 			alphaToCoverageColorUnusedAttachmentTests->addChild(samplesTests.release());
 		}
 		multisampleTests->addChild(alphaToCoverageColorUnusedAttachmentTests.release());
 	}
 
+#ifndef CTS_USES_VULKANSC
 	// Sampling from a multisampled image texture (texelFetch)
 	{
 		multisampleTests->addChild(createMultisampleSampledImageTests(testCtx));
@@ -4610,6 +4625,7 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 	{
 		multisampleTests->addChild(createMultisampleSampleLocationsExtTests(testCtx));
 	}
+#endif // CTS_USES_VULKANSC
 
 	// VK_AMD_mixed_attachment samples and VK_AMD_shader_fragment_mask
 	{

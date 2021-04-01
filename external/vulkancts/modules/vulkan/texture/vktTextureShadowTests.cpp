@@ -380,24 +380,29 @@ tcu::TestStatus Texture2DShadowTestInstance::iterate (void)
 		texComparePrecision.referenceBits	= 16;
 		texComparePrecision.resultBits		= pixelFormat.redBits-1;
 
-		const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-														  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-		if (!isHighQuality)
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 		{
-			m_context.getTestContext().getLog() << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+			const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+															  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-			lodPrecision.lodBits			= 4;
-			texComparePrecision.uvwBits		= tcu::IVec3(4,4,0);
-			texComparePrecision.pcfBits		= 0;
-
-			const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-													 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-			if (!isOk)
+			if (!isHighQuality)
 			{
-				m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
-				return tcu::TestStatus::fail("Image verification failed");
+				m_context.getTestContext().getLog() << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+
+				lodPrecision.lodBits			= 4;
+				texComparePrecision.uvwBits		= tcu::IVec3(4,4,0);
+				texComparePrecision.pcfBits		= 0;
+
+				const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+														 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+
+				if (!isOk)
+				{
+					m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
+					return tcu::TestStatus::fail("Image verification failed");
+				}
 			}
 		}
 	}
@@ -597,24 +602,29 @@ tcu::TestStatus TextureCubeShadowTestInstance::iterate (void)
 			texComparePrecision.referenceBits	= 16;
 			texComparePrecision.resultBits		= pixelFormat.redBits-1;
 
-			const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
-															  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-			if (!isHighQuality)
+#ifdef CTS_USES_VULKANSC
+			if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 			{
-				log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+				const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
+																  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-				lodPrecision.lodBits			= 4;
-				texComparePrecision.uvwBits		= tcu::IVec3(4,4,0);
-				texComparePrecision.pcfBits		= 0;
-
-				const bool isOk = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
-														 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-				if (!isOk)
+				if (!isHighQuality)
 				{
-					log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
-					return tcu::TestStatus::fail("Image verification failed");
+					log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+
+					lodPrecision.lodBits			= 4;
+					texComparePrecision.uvwBits		= tcu::IVec3(4,4,0);
+					texComparePrecision.pcfBits		= 0;
+
+					const bool isOk = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
+															 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+
+					if (!isOk)
+					{
+						log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
+						return tcu::TestStatus::fail("Image verification failed");
+					}
 				}
 			}
 		}
@@ -809,24 +819,29 @@ tcu::TestStatus Texture2DArrayShadowTestInstance::iterate (void)
 		texComparePrecision.referenceBits	= 16;
 		texComparePrecision.resultBits		= pixelFormat.redBits-1;
 
-		const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-														  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-		if (!isHighQuality)
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 		{
-			log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+			const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+															  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-			lodPrecision.lodBits			= 4;
-			texComparePrecision.uvwBits		= tcu::IVec3(4,4,4);
-			texComparePrecision.pcfBits		= 0;
-
-			const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-													 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-			if (!isOk)
+			if (!isHighQuality)
 			{
-				log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
-				return tcu::TestStatus::fail("Image verification failed");
+				log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+
+				lodPrecision.lodBits			= 4;
+				texComparePrecision.uvwBits		= tcu::IVec3(4,4,4);
+				texComparePrecision.pcfBits		= 0;
+
+				const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+														 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+
+				if (!isOk)
+				{
+					log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
+					return tcu::TestStatus::fail("Image verification failed");
+				}
 			}
 		}
 	}
@@ -1013,24 +1028,29 @@ tcu::TestStatus Texture1DShadowTestInstance::iterate (void)
 		texComparePrecision.referenceBits	= 16;
 		texComparePrecision.resultBits		= pixelFormat.redBits-1;
 
-		const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-														  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-		if (!isHighQuality)
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 		{
-			m_context.getTestContext().getLog() << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+			const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+															  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-			lodPrecision.lodBits			= 4;
-			texComparePrecision.uvwBits		= tcu::IVec3(4,0,0);
-			texComparePrecision.pcfBits		= 0;
-
-			const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-													 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-			if (!isOk)
+			if (!isHighQuality)
 			{
-				m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
-				return tcu::TestStatus::fail("Image verification failed");
+				m_context.getTestContext().getLog() << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+
+				lodPrecision.lodBits			= 4;
+				texComparePrecision.uvwBits		= tcu::IVec3(4,0,0);
+				texComparePrecision.pcfBits		= 0;
+
+				const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+														 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+
+				if (!isOk)
+				{
+					m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
+					return tcu::TestStatus::fail("Image verification failed");
+				}
 			}
 		}
 	}
@@ -1221,24 +1241,29 @@ tcu::TestStatus Texture1DArrayShadowTestInstance::iterate (void)
 		texComparePrecision.referenceBits	= 16;
 		texComparePrecision.resultBits		= pixelFormat.redBits-1;
 
-		const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-														  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-		if (!isHighQuality)
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 		{
-			log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+			const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+															  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-			lodPrecision.lodBits			= 4;
-			texComparePrecision.uvwBits		= tcu::IVec3(4,4,4);
-			texComparePrecision.pcfBits		= 0;
-
-			const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-													 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-			if (!isOk)
+			if (!isHighQuality)
 			{
-				log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
-				return tcu::TestStatus::fail("Image verification failed");
+				log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+
+				lodPrecision.lodBits			= 4;
+				texComparePrecision.uvwBits		= tcu::IVec3(4,4,4);
+				texComparePrecision.pcfBits		= 0;
+
+				const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+														 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+
+				if (!isOk)
+				{
+					log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
+					return tcu::TestStatus::fail("Image verification failed");
+				}
 			}
 		}
 	}
@@ -1435,24 +1460,29 @@ tcu::TestStatus TextureCubeArrayShadowTestInstance::iterate (void)
 			texComparePrecision.referenceBits	= 16;
 			texComparePrecision.resultBits		= pixelFormat.redBits-1;
 
-			const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
+#ifdef CTS_USES_VULKANSC
+			if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+			{
+				const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
 															  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-			if (!isHighQuality)
-			{
-				log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
-
-				lodPrecision.lodBits			= 4;
-				texComparePrecision.uvwBits		= tcu::IVec3(4,4,0);
-				texComparePrecision.pcfBits		= 0;
-
-				const bool isOk = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
-														 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
-
-				if (!isOk)
+				if (!isHighQuality)
 				{
-					log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
-					return tcu::TestStatus::fail("Image verification failed");
+					log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+
+					lodPrecision.lodBits			= 4;
+					texComparePrecision.uvwBits		= tcu::IVec3(4,4,0);
+					texComparePrecision.pcfBits		= 0;
+
+					const bool isOk = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
+															 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+
+					if (!isOk)
+					{
+						log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
+						return tcu::TestStatus::fail("Image verification failed");
+					}
 				}
 			}
 		}
@@ -1474,7 +1504,9 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 	} backingModes[] =
 	{
 		{ "",			TextureBinding::IMAGE_BACKING_MODE_REGULAR	},
+#ifndef CTS_USES_VULKANSC
 		{ "sparse_",	TextureBinding::IMAGE_BACKING_MODE_SPARSE	}
+#endif // CTS_USES_VULKANSC
 	};
 
 	static const struct

@@ -75,12 +75,14 @@ using namespace std;
 
 static const deUint32 DIM = 8;
 
+#ifndef CTS_USES_VULKANSC
 static const VkFlags	ALL_RAY_TRACING_STAGES	= VK_SHADER_STAGE_RAYGEN_BIT_KHR
 												| VK_SHADER_STAGE_ANY_HIT_BIT_KHR
 												| VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
 												| VK_SHADER_STAGE_MISS_BIT_KHR
 												| VK_SHADER_STAGE_INTERSECTION_BIT_KHR
 												| VK_SHADER_STAGE_CALLABLE_BIT_KHR;
+#endif
 
 typedef enum
 {
@@ -158,6 +160,7 @@ bool isRayTracingStageKHR (const Stage stage)
 	}
 }
 
+#ifndef CTS_USES_VULKANSC
 VkShaderStageFlagBits getShaderStageFlag (const Stage stage)
 {
 	switch (stage)
@@ -171,6 +174,7 @@ VkShaderStageFlagBits getShaderStageFlag (const Stage stage)
 		default: TCU_THROW(InternalError, "Unknown stage specified");
 	}
 }
+#endif
 
 bool usesAccelerationStructure (const Stage stage)
 {
@@ -276,15 +280,16 @@ DescriptorSetRandomTestCase::~DescriptorSetRandomTestCase	(void)
 
 void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 {
+	VkPhysicalDeviceProperties2 properties;
+	deMemset(&properties, 0, sizeof(properties));
+	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+
+#ifndef CTS_USES_VULKANSC
+	void** pNextTail = &properties.pNext;
 	// Get needed properties.
 	VkPhysicalDeviceInlineUniformBlockPropertiesEXT inlineUniformProperties;
 	deMemset(&inlineUniformProperties, 0, sizeof(inlineUniformProperties));
 	inlineUniformProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES_EXT;
-
-	VkPhysicalDeviceProperties2 properties;
-	deMemset(&properties, 0, sizeof(properties));
-	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-	void** pNextTail = &properties.pNext;
 
 	if (context.isDeviceFunctionalitySupported("VK_EXT_inline_uniform_block"))
 	{
@@ -292,19 +297,23 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 		pNextTail = &inlineUniformProperties.pNext;
 	}
 	*pNextTail = NULL;
+#endif
 
 	context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
 
 	// Get needed features.
 	auto features				= context.getDeviceFeatures2();
 	auto indexingFeatures		= context.getDescriptorIndexingFeatures();
+#ifndef CTS_USES_VULKANSC
 	auto inlineUniformFeatures	= context.getInlineUniformBlockFeaturesEXT();
+#endif
 
 	// Check needed properties and features
 	if (m_data.stage == STAGE_VERTEX && !features.features.vertexPipelineStoresAndAtomics)
 	{
 		TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
 	}
+#ifndef CTS_USES_VULKANSC
 	else if (m_data.stage == STAGE_RAYGEN_NV)
 	{
 		context.requireDeviceFunctionality("VK_NV_ray_tracing");
@@ -322,6 +331,7 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 		if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
 			TCU_THROW(TestError, "VK_KHR_ray_tracing_pipeline requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
 	}
+#endif
 
 	// Note binding 0 in set 0 is the output storage image, always present and not subject to dynamic indexing.
 	if ((m_data.indexType == INDEX_TYPE_PUSHCONSTANT ||
@@ -362,6 +372,7 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 		TCU_THROW(NotSupportedError, "Number of descriptors not supported");
 	}
 
+#ifndef CTS_USES_VULKANSC
 	if (m_data.maxInlineUniformBlocks != 0 &&
 		!inlineUniformFeatures.inlineUniformBlock)
 	{
@@ -378,6 +389,7 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 	{
 		TCU_THROW(NotSupportedError, "Inline uniform block size not supported");
 	}
+#endif
 
 	if (m_data.indexType == INDEX_TYPE_RUNTIME_SIZE &&
 		!indexingFeatures.runtimeDescriptorArray)
@@ -428,7 +440,9 @@ void generateRandomLayout(RandomLayout& randomLayout, const CaseDef &caseDef, de
 	deUint32 numImage = 0;
 	deUint32 numStorageTex = 0;
 	deUint32 numTexBuffer = 0;
+#ifndef CTS_USES_VULKANSC
 	deUint32 numInlineUniformBlocks = 0;
+#endif
 	deUint32 numInputAttachments = 0;
 
 	// TODO: Consider varying these
@@ -497,6 +511,7 @@ void generateRandomLayout(RandomLayout& randomLayout, const CaseDef &caseDef, de
 				continue;
 			}
 
+#ifndef CTS_USES_VULKANSC
 			// Raytracing acceleration structure
 			if (s == 0 && b == 1 && usesAccelerationStructure(caseDef.stage))
 			{
@@ -506,6 +521,7 @@ void generateRandomLayout(RandomLayout& randomLayout, const CaseDef &caseDef, de
 				arraySizes[b] = 0;
 				continue;
 			}
+#endif
 
 			binding.descriptorCount = 0;
 
@@ -518,7 +534,9 @@ void generateRandomLayout(RandomLayout& randomLayout, const CaseDef &caseDef, de
 				intToType[index++] = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
 				intToType[index++] = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 				intToType[index++] = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+#ifndef CTS_USES_VULKANSC
 				intToType[index++] = VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT;
+#endif
 				if (caseDef.stage == STAGE_FRAGMENT)
 				{
 					intToType[index++] = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
@@ -584,6 +602,7 @@ void generateRandomLayout(RandomLayout& randomLayout, const CaseDef &caseDef, de
 					numTexBuffer += binding.descriptorCount;
 				}
 				break;
+#ifndef CTS_USES_VULKANSC
 			case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:
 				if (caseDef.maxInlineUniformBlocks > 0)
 				{
@@ -602,6 +621,7 @@ void generateRandomLayout(RandomLayout& randomLayout, const CaseDef &caseDef, de
 					binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 				}
 				break;
+#endif
 			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
 				if (numUBODyn < caseDef.maxUniformBuffersDynamic &&
 					numUBO < caseDef.maxPerStageUniformBuffers)
@@ -652,7 +672,9 @@ void generateRandomLayout(RandomLayout& randomLayout, const CaseDef &caseDef, de
 			bindings[bindings.size()-1].descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC &&
 			bindings[bindings.size()-1].descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC &&
 			bindings[bindings.size()-1].descriptorType != VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT &&
+#ifndef CTS_USES_VULKANSC
 			bindings[bindings.size()-1].descriptorType != VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR &&
+#endif
 			bindings[bindings.size()-1].descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE &&
 			!(s == 0 && bindings.size() == 1) && // Don't cut out the output image binding
 			randRange(&rnd, 1,4) == 1) // 1 in 4 chance
@@ -660,11 +682,13 @@ void generateRandomLayout(RandomLayout& randomLayout, const CaseDef &caseDef, de
 
 			bindingsFlags[bindings.size()-1] |= VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
 			variableDescriptorSizes[s] = randRange(&rnd, 0,bindings[bindings.size()-1].descriptorCount);
+#ifndef CTS_USES_VULKANSC
 			if (bindings[bindings.size()-1].descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
 			{
 				// keep a multiple of 16B
 				variableDescriptorSizes[s] &= ~0xF;
 			}
+#endif
 		}
 	}
 }
@@ -736,14 +760,21 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 		for (size_t b = 0; b < bindings.size(); ++b)
 		{
 			VkDescriptorSetLayoutBinding &binding = bindings[b];
-			deUint32 descriptorIncrement = (binding.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT) ? 16 : 1;
+			deUint32 descriptorIncrement = 1;
+#ifndef CTS_USES_VULKANSC
+			if (binding.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
+				descriptorIncrement = 16;
+#endif
 
 			// Construct the declaration for the binding
 			if (binding.descriptorCount > 0)
 			{
 				std::stringstream array;
-				if (m_data.indexType == INDEX_TYPE_RUNTIME_SIZE &&
-					binding.descriptorType != VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
+				if (m_data.indexType == INDEX_TYPE_RUNTIME_SIZE
+#ifndef CTS_USES_VULKANSC
+					&& binding.descriptorType != VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT
+#endif
+					)
 				{
 					if (arraySizes[b])
 					{
@@ -760,9 +791,11 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 
 				switch (binding.descriptorType)
 				{
+#ifndef CTS_USES_VULKANSC
 				case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:
 					decls << "layout(set = " << s << ", binding = " << b << ") uniform inlineubodef" << s << "_" << b << " { ivec4 dummy; int val" << array.str() << "; } inlineubo" << s << "_" << b << ";\n";
 					break;
+#endif
 				case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
 				case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
 					decls << "layout(set = " << s << ", binding = " << b << ") uniform ubodef" << s << "_" << b << " { int val; } ubo" << s << "_" << b << array.str()  << ";\n";
@@ -784,11 +817,13 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 					decls << "layout(input_attachment_index = " << inputAttachments << ", set = " << s << ", binding = " << b << ") uniform isubpassInput attachment" << s << "_" << b << array.str()  << ";\n";
 					inputAttachments += binding.descriptorCount;
 					break;
+#ifndef CTS_USES_VULKANSC
 				case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
 					DE_ASSERT(s == 0 && b == 1);
 					DE_ASSERT(bindings.size() >= 2);
 					decls << "layout(set = " << s << ", binding = " << b << ") uniform accelerationStructureEXT as" << s << "_" << b << ";\n";
 					break;
+#endif
 				default: DE_ASSERT(0);
 				}
 
@@ -802,6 +837,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 					if (b == bindings.size() - 1 &&
 						(bindingsFlags[b] & VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT))
 					{
+#ifndef CTS_USES_VULKANSC
 						if (binding.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
 						{
 							// Convert to bytes and add 16 for "ivec4 dummy" in case of inline uniform block
@@ -810,6 +846,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 								continue;
 						}
 						else
+#endif
 						{
 							if (ai >= variableDescriptorSizes[s])
 								continue;
@@ -873,9 +910,11 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 							// Fetch from the descriptor.
 							switch (binding.descriptorType)
 							{
+#ifndef CTS_USES_VULKANSC
 							case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:
 								checks << "  temp = inlineubo" << s << "_" << b << ".val" << ind.str() << ";\n";
 								break;
+#endif
 							case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
 							case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
 								checks << "  temp = ubo" << s << "_" << b << ind.str() << ".val;\n";
@@ -971,6 +1010,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 			programCollection.glslSources.add("test") << glu::ComputeSource(css.str());
 			break;
 		}
+#ifndef CTS_USES_VULKANSC
 	case STAGE_RAYGEN_NV:
 	{
 		std::stringstream css;
@@ -1174,6 +1214,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 		}
 		break;
 	}
+#endif
 	case STAGE_VERTEX:
 		{
 			std::stringstream vss;
@@ -1247,12 +1288,15 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 	deRandom					rnd;
 	VkPhysicalDeviceProperties2	properties					= getPhysicalDeviceExtensionProperties(vki, physicalDevice);
+#ifndef CTS_USES_VULKANSC
 	deUint32					shaderGroupHandleSize		= 0;
 	deUint32					shaderGroupBaseAlignment	= 1;
+#endif
 
 	deRandom_init(&rnd, m_data.seed);
 	RandomLayout& randomLayout = *m_data.randomLayout.get();
 
+#ifndef CTS_USES_VULKANSC
 	if (m_data.stage == STAGE_RAYGEN_NV)
 	{
 		const VkPhysicalDeviceRayTracingPropertiesNV rayTracingProperties = getPhysicalDeviceExtensionProperties(vki, physicalDevice);
@@ -1268,11 +1312,14 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		shaderGroupHandleSize		= rayTracingPropertiesKHR->getShaderGroupHandleSize();
 		shaderGroupBaseAlignment	= rayTracingPropertiesKHR->getShaderGroupBaseAlignment();
 	}
+#endif
 
 	// Get needed features.
 	auto descriptorIndexingSupported	= m_context.isDeviceFunctionalitySupported("VK_EXT_descriptor_indexing");
 	auto indexingFeatures				= m_context.getDescriptorIndexingFeatures();
+#ifndef CTS_USES_VULKANSC
 	auto inlineUniformFeatures			= m_context.getInlineUniformBlockFeaturesEXT();
+#endif
 
 	VkPipelineBindPoint bindPoint;
 
@@ -1281,11 +1328,17 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	case STAGE_COMPUTE:
 		bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
 		break;
+#ifndef CTS_USES_VULKANSC
 	case STAGE_RAYGEN_NV:
 		bindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_NV;
 		break;
+#endif
 	default:
-		bindPoint = (isRayTracingStageKHR(m_data.stage) ? VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR : VK_PIPELINE_BIND_POINT_GRAPHICS);
+		bindPoint =
+#ifndef CTS_USES_VULKANSC
+			isRayTracingStageKHR(m_data.stage) ? VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR :
+#endif
+			VK_PIPELINE_BIND_POINT_GRAPHICS;
 		break;
 	}
 
@@ -1318,15 +1371,20 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 				(binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER			|| indexingFeatures.descriptorBindingStorageBufferUpdateAfterBind) &&
 				(binding.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER		|| indexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind) &&
 				(binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER		|| indexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind) &&
+#ifndef CTS_USES_VULKANSC
 				(binding.descriptorType != VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT	|| inlineUniformFeatures.descriptorBindingInlineUniformBlockUpdateAfterBind) &&
+#endif
 				(binding.descriptorType != VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT) &&
 				(binding.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) &&
-				(binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC) &&
-				(binding.descriptorType != VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR))
+				(binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
+#ifndef CTS_USES_VULKANSC
+				&& (binding.descriptorType != VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+#endif
+				)
 			{
 				bindingsFlags[b] |= VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
-				layoutCreateFlags |= VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT;
-				poolCreateFlags |= VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT;
+				layoutCreateFlags |= VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+				poolCreateFlags |= VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
 			}
 
 			if (!indexingFeatures.descriptorBindingVariableDescriptorCount)
@@ -1339,7 +1397,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 		const VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo =
 		{
-			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT,	// VkStructureType						sType;
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,		// VkStructureType						sType;
 			DE_NULL,																// const void*							pNext;
 			(deUint32)bindings.size(),												// uint32_t								bindingCount;
 			bindings.empty() ? DE_NULL : bindingsFlags.data(),						// const VkDescriptorBindingFlags*	pBindingFlags;
@@ -1368,6 +1426,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		{
 			poolBuilder.addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, m_data.maxPerStageInputAttachments);
 		}
+#ifndef CTS_USES_VULKANSC
 		if (m_data.maxInlineUniformBlocks > 0u)
 		{
 			poolBuilder.addType(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT, m_data.maxInlineUniformBlocks * m_data.maxInlineUniformBlockSize);
@@ -1383,9 +1442,12 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 			DE_NULL,																// const void*		pNext;
 			m_data.maxInlineUniformBlocks,											// uint32_t			maxInlineUniformBlockBindings;
 		};
-
+#endif
 		descriptorPools[s] = poolBuilder.build(vk, device, poolCreateFlags, 1u,
-											   m_data.maxInlineUniformBlocks ? &inlineUniformBlockPoolCreateInfo : DE_NULL);
+#ifndef CTS_USES_VULKANSC
+											   m_data.maxInlineUniformBlocks ? &inlineUniformBlockPoolCreateInfo :
+#endif
+											   DE_NULL);
 
 		VkDescriptorSetVariableDescriptorCountAllocateInfo variableCountInfo =
 		{
@@ -1704,12 +1766,16 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 			{
 				continue;
 			}
+#ifndef CTS_USES_VULKANSC
 			if (binding.descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
 			{
 				descriptor++;
 			}
-			else if (binding.descriptorType != VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT &&
-					 binding.descriptorType != VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT &&
+#endif
+			else if (binding.descriptorType != VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT &&
+#ifndef CTS_USES_VULKANSC
+					 binding.descriptorType != VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT &&
+#endif
 					 binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 			{
 				for (deUint32 d = descriptor; d < descriptor + binding.descriptorCount; ++d)
@@ -1744,12 +1810,14 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 				}
 				descriptor += binding.descriptorCount;
 			}
+#ifndef CTS_USES_VULKANSC
 			else if (binding.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
 			{
 				// subtract 16 for "ivec4 dummy"
 				DE_ASSERT(binding.descriptorCount >= 16);
 				descriptor += binding.descriptorCount - 16;
 			}
+#endif
 			else if (binding.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 			{
 				// Storage image.
@@ -1903,6 +1971,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	imageViewCreateInfo.image = **image;
 	imageView = createImageView(vk, device, &imageViewCreateInfo, NULL);
 
+#ifndef CTS_USES_VULKANSC
 	// Create ray tracing structures
 	de::MovePtr<vk::BottomLevelAccelerationStructure>	bottomLevelAccelerationStructure;
 	de::MovePtr<vk::TopLevelAccelerationStructure>		topLevelAccelerationStructure;
@@ -1932,6 +2001,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 			topLevelAccelerationStructure->createAndBuild(vk, device, *cmdBuffer, allocator);
 		}
 	}
+#endif
 
 	descriptor		= 0;
 	attachmentIndex	= 0;
@@ -1947,23 +2017,30 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		vector<VkDescriptorBufferInfo> bufferInfoVec(numDescriptors);
 		vector<VkDescriptorImageInfo> imageInfoVec(numDescriptors);
 		vector<VkBufferView> bufferViewVec(numDescriptors);
+#ifndef CTS_USES_VULKANSC
 		vector<VkWriteDescriptorSetInlineUniformBlockEXT> inlineInfoVec(numDescriptors);
 		vector<VkWriteDescriptorSetAccelerationStructureKHR> accelerationInfoVec(numDescriptors);
+#endif
 		vector<deUint32> descriptorNumber(numDescriptors);
 		vector<VkWriteDescriptorSet> writesBeforeBindVec(0);
 		vector<VkWriteDescriptorSet> writesAfterBindVec(0);
 		int vecIndex = 0;
 		int numDynamic = 0;
 
+#ifndef CTS_USES_VULKANSC
 		vector<VkDescriptorUpdateTemplateEntry> imgTemplateEntriesBefore,		imgTemplateEntriesAfter,
 												bufTemplateEntriesBefore,		bufTemplateEntriesAfter,
 												texelBufTemplateEntriesBefore,	texelBufTemplateEntriesAfter,
 												inlineTemplateEntriesBefore,	inlineTemplateEntriesAfter;
-
+#endif
 		for (size_t b = 0; b < bindings.size(); ++b)
 		{
 			VkDescriptorSetLayoutBinding &binding = bindings[b];
-			deUint32 descriptorIncrement = (binding.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT) ? 16 : 1;
+			deUint32 descriptorIncrement = 1;
+#ifndef CTS_USES_VULKANSC
+			if (binding.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
+				descriptorIncrement = 16;
+#endif
 
 			// Construct the declaration for the binding
 			if (binding.descriptorCount > 0)
@@ -1976,6 +2053,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 					if (b == bindings.size() - 1 &&
 						(bindingsFlags[b] & VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT))
 					{
+#ifndef CTS_USES_VULKANSC
 						if (binding.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
 						{
 							// Convert to bytes and add 16 for "ivec4 dummy" in case of inline uniform block
@@ -1984,6 +2062,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 								continue;
 						}
 						else
+#endif
 						{
 							if (ai >= variableDescriptorSizes[s])
 								continue;
@@ -2009,12 +2088,14 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 						imageInfoVec[vecIndex] = makeDescriptorImageInfo(DE_NULL, inputAttachmentViews[attachmentIndex].get(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 						++attachmentIndex;
 						break;
+#ifndef CTS_USES_VULKANSC
 					case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:
 						// Handled below.
 						break;
 					case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
 						// Handled below.
 						break;
+#endif
 					default:
 						// Other descriptor types.
 						bufferInfoVec[vecIndex] = makeDescriptorBufferInfo(**buffer, descriptor*align, sizeof(deUint32));
@@ -2038,6 +2119,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 						&bufferViewVec[vecIndex],					//  const VkBufferView*				pTexelBufferView;
 					};
 
+#ifndef CTS_USES_VULKANSC
 					if (binding.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
 					{
 						VkWriteDescriptorSetInlineUniformBlockEXT iuBlock =
@@ -2113,6 +2195,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 							DE_ASSERT(usesAccelerationStructure(m_data.stage));
 							break;
 					}
+#endif
 
 					vecIndex++;
 
@@ -2132,6 +2215,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		vector<deUint32> zeros(de::max(1,numDynamic));
 		deMemset(&zeros[0], 0, numDynamic * sizeof(deUint32));
 
+#ifndef CTS_USES_VULKANSC
 		// Randomly select between vkUpdateDescriptorSets and vkUpdateDescriptorSetWithTemplate
 		if (randRange(&rnd, 1, 2) == 1 &&
 			m_context.contextSupports(vk::ApiVersion(1, 1, 0)) &&
@@ -2203,6 +2287,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 		}
 		else
+#endif
 		{
 			if (writesBeforeBindVec.size())
 			{
@@ -2222,12 +2307,14 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	Move<VkRenderPass> renderPass;
 	Move<VkFramebuffer> framebuffer;
 
+#ifndef CTS_USES_VULKANSC
 	de::MovePtr<BufferWithMemory>	sbtBuffer;
 	de::MovePtr<BufferWithMemory>	raygenShaderBindingTable;
 	de::MovePtr<BufferWithMemory>	missShaderBindingTable;
 	de::MovePtr<BufferWithMemory>	hitShaderBindingTable;
 	de::MovePtr<BufferWithMemory>	callableShaderBindingTable;
 	de::MovePtr<RayTracingPipeline>	rayTracingPipeline;
+#endif
 
 	if (m_data.stage == STAGE_COMPUTE)
 	{
@@ -2256,6 +2343,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		};
 		pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
 	}
+#ifndef CTS_USES_VULKANSC
 	else if (m_data.stage == STAGE_RAYGEN_NV)
 	{
 		const Unique<VkShaderModule>	shader(createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0));
@@ -2396,6 +2484,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		callableShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
 		callableShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, callableShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
 	}
+#endif
 	else
 	{
 		const VkAttachmentDescription	attachmentDescription	=
@@ -2666,6 +2755,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	{
 		vk.cmdDispatch(*cmdBuffer, DIM, DIM, 1);
 	}
+#ifndef CTS_USES_VULKANSC
 	else if (m_data.stage == STAGE_RAYGEN_NV)
 	{
 		vk.cmdTraceRaysNV(*cmdBuffer,
@@ -2685,6 +2775,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 			&callableShaderBindingTableRegion,
 			DIM, DIM, 1);
 	}
+#endif
 	else
 	{
 		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer,
@@ -2730,12 +2821,12 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	// Copy all storage images to the storage image buffer.
 	VkBufferImageCopy storageImgCopyRegion =
 	{
-		0u,																	// VkDeviceSize                bufferOffset;
-		0u,																	// uint32_t                    bufferRowLength;
-		0u,																	// uint32_t                    bufferImageHeight;
-		makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u),	// VkImageSubresourceLayers    imageSubresource;
-		makeOffset3D(0, 0, 0),												// VkOffset3D                  imageOffset;
-		makeExtent3D(1u, 1u, 1u),											// VkExtent3D                  imageExtent;
+		0u,																	// VkDeviceSize					bufferOffset;
+		0u,																	// uint32_t						bufferRowLength;
+		0u,																	// uint32_t						bufferImageHeight;
+		makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u),	// VkImageSubresourceLayers		imageSubresource;
+		makeOffset3D(0, 0, 0),												// VkOffset3D					imageOffset;
+		makeExtent3D(1u, 1u, 1u),											// VkExtent3D					imageExtent;
 	};
 
 	for (deUint32 i = 0; i < storageImageCount; ++i)
@@ -2909,6 +3000,7 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 		{ STAGE_COMPUTE,	"comp",		"compute"		},
 		{ STAGE_FRAGMENT,	"frag",		"fragment"		},
 		{ STAGE_VERTEX,		"vert",		"vertex"		},
+#ifndef CTS_USES_VULKANSC
 		{ STAGE_RAYGEN_NV,	"rgnv",		"raygen_nv"		},
 		{ STAGE_RAYGEN,		"rgen",		"raygen"		},
 		{ STAGE_INTERSECT,	"sect",		"intersect"		},
@@ -2916,6 +3008,7 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 		{ STAGE_CLOSEST_HIT,"chit",		"closest_hit"	},
 		{ STAGE_MISS,		"miss",		"miss"			},
 		{ STAGE_CALLABLE,	"call",		"callable"		},
+#endif
 	};
 
 	TestGroupCase uabCases[] =
@@ -2951,13 +3044,17 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 									for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
 									{
 										const Stage		currentStage			= static_cast<Stage>(stageCases[stageNdx].count);
+#ifndef CTS_USES_VULKANSC
 										const VkFlags	rtShaderStagesNV		= currentStage == STAGE_RAYGEN_NV ? VK_SHADER_STAGE_RAYGEN_BIT_NV : 0;
 										const VkFlags	rtPipelineStagesNV		= currentStage == STAGE_RAYGEN_NV ? VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV : 0;
 										const VkFlags	rtShaderStagesKHR		= isRayTracingStageKHR(currentStage) ? ALL_RAY_TRACING_STAGES : 0;
 										const VkFlags	rtPipelineStagesKHR		= isRayTracingStageKHR(currentStage) ? VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR : 0;
 										const VkFlags	rtShaderStages			= rtShaderStagesNV | rtShaderStagesKHR;
 										const VkFlags	rtPipelineStages		= rtPipelineStagesNV | rtPipelineStagesKHR;
-
+#else
+										const VkFlags	rtShaderStages			= 0;
+										const VkFlags	rtPipelineStages		= 0;
+#endif
 										de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stageCases[stageNdx].name, stageCases[stageNdx].description));
 										for (int iaNdx = 0; iaNdx < DE_LENGTH_OF_ARRAY(iaCases); ++iaNdx)
 										{

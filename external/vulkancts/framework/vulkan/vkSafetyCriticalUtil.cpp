@@ -74,11 +74,12 @@ VkDeviceObjectReservationCreateInfo resetDeviceObjectReservationCreateInfo ()
 		0u,															// deUint32							maxOcclusionQueriesPerPool;
 		0u,															// deUint32							maxPipelineStatisticsQueriesPerPool;
 		0u,															// deUint32							maxTimestampQueriesPerPool;
+		0u,															// deUint32							maxImmutableSamplersPerDescriptorSetLayout;
 	};
 	return result;
 }
 
-VkPipelineIdentifierInfo resetPipelineIdentifierInfo()
+VkPipelineIdentifierInfo resetPipelineIdentifierInfo ()
 {
 	VkPipelineIdentifierInfo pipelineID =
 	{
@@ -91,6 +92,18 @@ VkPipelineIdentifierInfo resetPipelineIdentifierInfo()
 		pipelineID.pipelineIdentifier[i] = 0U;
 
 	return pipelineID;
+}
+
+VkPhysicalDeviceVulkanSC10Features createDefaultSC10Features ()
+{
+	VkPhysicalDeviceVulkanSC10Features result =
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES,	// VkStructureType	sType;
+		DE_NULL,													// void*			pNext;
+		VK_TRUE,													// VkBool32			pipelineIdentifier;
+		VK_FALSE													// VkBool32			shaderAtomicInstructions;
+	};
+	return result;
 }
 
 } // vk

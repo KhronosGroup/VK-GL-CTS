@@ -97,11 +97,13 @@ public:
 template <typename CaseClassName>
 void MSCase<CaseClassName>::checkSupport (Context& context) const
 {
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().shaderSampleRateInterpolationFunctions)
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Shader sample rate interpolation functions are not supported by this implementation");
 	}
+#endif // CTS_USES_VULKANSC
 
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
