@@ -2925,11 +2925,22 @@ bool ConservativeTraingleTestInstance::compareAndVerifyOverestimatedDegenerate (
 	{
 		if (getIteration() != 0)
 		{
-			log << tcu::TestLog::Message << "Triangles expected to be rasterized with one pixel of white color each" << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Triangles expected to be rasterized with at least one pixel of white color each" << tcu::TestLog::EndMessage;
 
 			for (int rowNdx = 0; rowNdx < 3; ++rowNdx)
 			for (int colNdx = 0; colNdx < 4; ++colNdx)
+			{
 				referenceImage.setPixel(4 * (colNdx + 1), 4 * (rowNdx + 1), foregroundColor);
+
+				// Allow implementations that need to be extra conservative with degenerate triangles,
+				// which may cause extra coverage.
+				if (resultImage.getPixel(4 * (colNdx + 1) - 1, 4 * (rowNdx + 1) - 1) == foregroundColor)
+					referenceImage.setPixel(4 * (colNdx + 1) - 1, 4 * (rowNdx + 1) - 1, foregroundColor);
+				if (resultImage.getPixel(4 * (colNdx + 1) - 1, 4 * (rowNdx + 1)) == foregroundColor)
+					referenceImage.setPixel(4 * (colNdx + 1) - 1, 4 * (rowNdx + 1), foregroundColor);
+				if (resultImage.getPixel(4 * (colNdx + 1), 4 * (rowNdx + 1) - 1) == foregroundColor)
+					referenceImage.setPixel(4 * (colNdx + 1), 4 * (rowNdx + 1) - 1, foregroundColor);
+			}
 		}
 		else
 			log << tcu::TestLog::Message << "Triangles expected to be culled due to backfacing culling and all degenerate triangles assumed to be backfacing" << tcu::TestLog::EndMessage;
