@@ -335,10 +335,13 @@ void FSRTestCase::initPrograms (SourceCollections& programCollection) const
 		// Verify that we can read from the output variable
 		vss << "  if (gl_PrimitiveShadingRateEXT != pc.shadingRate) readbackok = 0;\n";
 
-		if (m_data.multiViewport)
-			vss << "  gl_ViewportIndex = instanceIndex & 1;\n";
-		if (m_data.colorLayered)
-			vss << "  gl_Layer = (instanceIndex & 2) >> 1;\n";
+		if (!m_data.geometryShader)
+		{
+			if (m_data.multiViewport)
+				vss << "  gl_ViewportIndex = instanceIndex & 1;\n";
+			if (m_data.colorLayered)
+				vss << "  gl_Layer = (instanceIndex & 2) >> 1;\n";
+		}
 	}
 
 	vss << "}\n";
