@@ -45,6 +45,7 @@
 #include "tcuMatrix.hpp"
 #include "tcuMatrixUtil.hpp"
 #include "deStringUtil.hpp"
+#include "deFloat16.h"
 
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
@@ -1652,10 +1653,10 @@ void ShaderMatrixCase::init (void)
 	for (int attribNdx = 0; attribNdx < 4; attribNdx++)
 	{
 		m_userAttribTransforms[attribNdx] = Mat4(0.0f);
-		m_userAttribTransforms[attribNdx](                  0, 3) = 0.1f + 0.15f * float(attribNdx);	// !< prevent matrix*vec from going into zero (assuming vec.w != 0)
-		m_userAttribTransforms[attribNdx](                  1, 3) = 0.2f + 0.15f * float(attribNdx);	// !<
-		m_userAttribTransforms[attribNdx](                  2, 3) = 0.3f + 0.15f * float(attribNdx);	// !<
-		m_userAttribTransforms[attribNdx](                  3, 3) = 0.4f + 0.15f * float(attribNdx);	// !<
+		m_userAttribTransforms[attribNdx](                  0, 3) = 0.1f + 0.1f * float(attribNdx);	// !< prevent matrix*vec from going into zero (assuming vec.w != 0)
+		m_userAttribTransforms[attribNdx](                  1, 3) = 0.2f + 0.1f * float(attribNdx);	// !<
+		m_userAttribTransforms[attribNdx](                  2, 3) = 0.3f + 0.1f * float(attribNdx);	// !<
+		m_userAttribTransforms[attribNdx](                  3, 3) = 0.4f + 0.1f * float(attribNdx);	// !<
 		m_userAttribTransforms[attribNdx]((0 + attribNdx) % 4, 0) = 1.0f;
 		m_userAttribTransforms[attribNdx]((1 + attribNdx) % 4, 1) = 1.0f;
 		m_userAttribTransforms[attribNdx]((2 + attribNdx) % 4, 2) = 1.0f;
@@ -1692,6 +1693,20 @@ void ShaderMatrixCase::init (void)
 						DE_ASSERT(DE_FALSE);
 						break;
 				}
+			}
+		}
+	}
+	// The verification code doesn't deal with reduced precision, so we must quantize the data
+	// here to try to avoid verification errors. No implementation seems to use lowp, so reduce
+	// to mediump.
+	if(resultPrec != PRECISION_HIGHP)
+	{
+		for (int attribNdx = 0; attribNdx < 4; attribNdx++)
+		{
+			for (int row = 0; row < 4; row++)
+			for (int col = 0; col < 4; col++)
+			{
+				m_userAttribTransforms[attribNdx](row, col) = deFloat16To32(deFloat32To16(m_userAttribTransforms[attribNdx](row, col)));
 			}
 		}
 	}
