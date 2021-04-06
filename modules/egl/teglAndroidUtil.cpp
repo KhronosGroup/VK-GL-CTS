@@ -58,8 +58,9 @@ MovePtr<ImageSource> createAndroidNativeImageSource	(GLenum format)
 namespace
 {
 
+#include <sys/system_properties.h>
+
 #if defined(__ANDROID_API_O__) && (DE_ANDROID_API >= __ANDROID_API_O__)
-#	include <sys/system_properties.h>
 #	include <android/hardware_buffer.h>
 #	include "deDynamicLibrary.hpp"
 #	define BUILT_WITH_ANDROID_HARDWARE_BUFFER 1
