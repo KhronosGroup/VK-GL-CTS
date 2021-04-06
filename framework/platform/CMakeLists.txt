@@ -137,6 +137,7 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 			osx/tcuOSXMetalView.mm
 			osx/tcuOSXMetalView.hpp
 			)
+		list(APPEND TCUTIL_PLATFORM_LIBS ${QUARTZCORE_LIBRARY} ${COCOA_LIBRARY})
 
 	else ()
 		set(TCUTIL_PLATFORM_SRCS

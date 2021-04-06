@@ -29,6 +29,13 @@ The following tools must be installed and present in the PATH variable:
    file.
     * You can get this from the `mesa-common-dev` Ubuntu package.
 
+### MacOS
+
+ * Xcode
+
+Vulkan SDK for macOS includes a MoltenVK runtime library which is recommended method for
+developing a Vulkan application.
+
 ### Android
 
  * Android NDK r17c or later.
@@ -83,6 +90,12 @@ If building for 32-bit x86 with GCC, you probably also want to add `-msse2
 ### Linux 64-bit Debug
 
 	cmake <path to vulkancts> -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=-m64 -DCMAKE_CXX_FLAGS=-m64
+	make -j
+
+
+### MacOS 64-bit Debug
+
+	cmake <path to vulkancts> -DCMAKE_BUILD_TYPE=Debug -DDEQP_TARGET=osx -DCMAKE_C_FLAGS=-m64 -DCMAKE_CXX_FLAGS=-m64
 	make -j
 
 ### Android
@@ -196,6 +209,11 @@ No other command line options are allowed.
 Test log will be written into TestResults.qpa
 
 ### Linux
+
+	cd <builddir>/external/vulkancts/modules/vulkan
+	./deqp-vk --deqp-caselist-file=...
+
+### MacOS
 
 	cd <builddir>/external/vulkancts/modules/vulkan
 	./deqp-vk --deqp-caselist-file=...
