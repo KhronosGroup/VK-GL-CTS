@@ -55,10 +55,12 @@ public:
 						Exception			(const std::string& message);
 	virtual				~Exception			(void) throw() {}
 
-	const char*			getMessage			(void) const { return m_message.c_str(); }
+	const char*			getMessage			(void) const { return m_message.what(); }
 
 private:
-	const std::string	m_message;
+	// std::runtime_error is used here as an immutable ref-counted string.
+	// This allows the copy constructor in the class to be noexcept.
+	const std::runtime_error m_message;
 };
 
 //! Base exception class for test exceptions that affect test result
