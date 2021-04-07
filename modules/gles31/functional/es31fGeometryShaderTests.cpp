@@ -1060,7 +1060,10 @@ std::string BuiltinVariableShader::genGeometrySource (const glu::ContextType& co
 	buf <<	"${GLSL_VERSION_DECL}\n"
 			"${GLSL_EXT_GEOMETRY_SHADER}";
 
-	if (test == TEST_POINT_SIZE)
+	const bool supportsGL45 = glu::contextSupports(contextType, glu::ApiType::core(4, 5));
+
+	/* GL_EXT_geometry_point_size not available on desktop GLSL. */
+	if (!supportsGL45 && test == TEST_POINT_SIZE)
 		buf << "#extension GL_EXT_geometry_point_size : require\n";
 
 	buf << "layout(points) in;\n";
