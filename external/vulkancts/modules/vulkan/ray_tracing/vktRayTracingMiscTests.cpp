@@ -4175,18 +4175,27 @@ public:
 		const auto tested_var_types = getVarsToTest(testType);
 		const bool has_f64			= std::find	(	tested_var_types.begin	(),
 													tested_var_types.end	(),
-													VariableType::FLOAT) != tested_var_types.end();
+													VariableType::DOUBLE) != tested_var_types.end();
 		const bool has_f64vec2		= std::find	(	tested_var_types.begin	(),
 													tested_var_types.end	(),
-													VariableType::VEC2) != tested_var_types.end();
+													VariableType::DVEC2) != tested_var_types.end();
 		const bool has_f64vec3		= std::find	(	tested_var_types.begin	(),
 													tested_var_types.end	(),
-													VariableType::VEC3) != tested_var_types.end();
+													VariableType::DVEC3) != tested_var_types.end();
 		const bool has_f64vec4		= std::find	(	tested_var_types.begin	(),
 													tested_var_types.end	(),
-													VariableType::VEC4) != tested_var_types.end();
+													VariableType::DVEC4) != tested_var_types.end();
+		const bool has_f64mat2		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::DMAT2) != tested_var_types.end();
+		const bool has_f64mat3		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::DMAT3) != tested_var_types.end();
+		const bool has_f64mat4		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::DMAT4) != tested_var_types.end();
 
-		return (has_f64 || has_f64vec2 || has_f64vec3 || has_f64vec4);
+		return (has_f64 || has_f64vec2 || has_f64vec3 || has_f64vec4 || has_f64mat2 || has_f64mat3 || has_f64mat4);
 	}
 
 	static bool usesI8(const TestType& testType)
