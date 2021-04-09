@@ -2868,9 +2868,16 @@ LayeredRenderCase::IterateResult LayeredRenderCase::iterate (void)
 			bool ok = false;
 			if (contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(3,2)))
 			{
-				ok =	state == GL_PROVOKING_VERTEX;
-				gl.getIntegerv(GL_PROVOKING_VERTEX, reinterpret_cast<glw::GLint*>(&m_provokingVertex));
-				GLU_EXPECT_NO_ERROR(gl.getError(), "getInteger(GL_PROVOKING_VERTEX)");
+				ok =	state == GL_FIRST_VERTEX_CONVENTION	||
+						state == GL_LAST_VERTEX_CONVENTION	||
+						state == GL_PROVOKING_VERTEX ||
+						state == GL_UNDEFINED_VERTEX;
+				m_provokingVertex = (glw::GLenum)state;
+
+				if (state == GL_PROVOKING_VERTEX) {
+					gl.getIntegerv(GL_PROVOKING_VERTEX, reinterpret_cast<glw::GLint*>(&m_provokingVertex));
+					GLU_EXPECT_NO_ERROR(gl.getError(), "getInteger(GL_PROVOKING_VERTEX)");
+				}
 			}
 			else
 			{
@@ -4291,8 +4298,16 @@ LayerProvokingVertexQueryCase::IterateResult LayerProvokingVertexQueryCase::iter
 
 		if (contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(3,2)))
 		{
-			ok = state.getIntAccess() == GL_PROVOKING_VERTEX;
-			expectedValue = "GL_PROVOKING_VERTEX";
+			if (
+				state.getIntAccess() != GL_FIRST_VERTEX_CONVENTION &&
+				state.getIntAccess() != GL_LAST_VERTEX_CONVENTION &&
+				state.getIntAccess() != GL_PROVOKING_VERTEX &&
+				state.getIntAccess() != GL_UNDEFINED_VERTEX
+			)
+			{
+				ok = false;
+				expectedValue = "any of {FIRST_VERTEX_CONVENTION, LAST_VERTEX_CONVENTION, GL_PROVOKING_VERTEX, UNDEFINED_VERTEX}";
+			}
 		}
 		else if (
 				state.getIntAccess() != GL_FIRST_VERTEX_CONVENTION &&
