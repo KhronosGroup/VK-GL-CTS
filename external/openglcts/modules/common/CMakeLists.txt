@@ -96,6 +96,8 @@ set(GLCTS_COMMON_SRCS
 	glcTestCaseWrapper.hpp
 	glcTestPackage.cpp
 	glcTestPackage.hpp
+	glcTextureCompatibilityTests.cpp
+	glcTextureCompatibilityTests.hpp
 	glcTextureFilterAnisotropicTests.cpp
 	glcTextureFilterAnisotropicTests.hpp
 	glcTextureRepeatModeTests.cpp
