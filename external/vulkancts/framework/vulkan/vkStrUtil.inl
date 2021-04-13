@@ -926,6 +926,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkIndirectCommandsLayoutTokenNV
 std::ostream&	operator<<	(std::ostream& s, const VkIndirectCommandsLayoutCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkGeneratedCommandsInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkGeneratedCommandsMemoryRequirementsInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceInheritedViewportScissorFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCommandBufferInheritanceViewportScissorInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassTransformBeginInfoQCOM& value);
@@ -947,6 +949,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkDeviceDiagnosticsConfigCreate
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineFragmentShadingRateEnumStateCreateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2FeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2PropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCopyCommandTransformInfoQCOM& value);
@@ -955,6 +958,11 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice4444FormatsFeat
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeListVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeCreateInfoVALVE& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVertexInputBindingDescription2EXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVertexInputAttributeDescription2EXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceColorWriteEnableFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineColorWriteCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressConstKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildRangeInfoKHR& value);

@@ -295,6 +295,8 @@ DestroyPrivateDataSlotEXTFunc						destroyPrivateDataSlotEXT;
 SetPrivateDataEXTFunc								setPrivateDataEXT;
 GetPrivateDataEXTFunc								getPrivateDataEXT;
 CmdSetFragmentShadingRateEnumNVFunc					cmdSetFragmentShadingRateEnumNV;
+CmdSetVertexInputEXTFunc							cmdSetVertexInputEXT;
+CmdSetColorWriteEnableEXTFunc						cmdSetColorWriteEnableEXT;
 CreateAccelerationStructureKHRFunc					createAccelerationStructureKHR;
 DestroyAccelerationStructureKHRFunc					destroyAccelerationStructureKHR;
 CmdBuildAccelerationStructuresKHRFunc				cmdBuildAccelerationStructuresKHR;

@@ -207,7 +207,7 @@ void writeTxtCaselistsToFiles (TestPackageRoot& root, TestContext& testCtx, cons
 		{
 			iter.next();
 		}
-		catch (const tcu::NotSupportedError& e)
+		catch (const tcu::NotSupportedError&)
 		{
 			return;
 		}

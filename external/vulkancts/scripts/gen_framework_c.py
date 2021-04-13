@@ -59,6 +59,10 @@ def writeVulkanCHeader (src, filename):
 	def gen ():
 		dst = src.replace('#include "vk_platform.h"','')
 
+		# Amber is compiled using C++11 but under MSVC __cplusplus macro
+		# is incorrectly recognized and this triggers invalid definition
+		dst = dst.replace('VK_NULL_HANDLE ((void*)0)','VK_NULL_HANDLE 0')
+
 		for old_type, new_type in TYPE_SUBSTITUTIONS:
 			dst = dst.replace(old_type, new_type)
 		yield dst

@@ -49,12 +49,15 @@ struct NAME {											\
 };														\
 } // pt
 
-#define VK_MAKE_VERSION(MAJOR, MINOR, PATCH)	(((deUint32)(MAJOR) << 22u) | ((deUint32)(MINOR) << 12u) | (deUint32)(PATCH))
+#define VK_MAKE_API_VERSION(VARIANT, MAJOR, MINOR, PATCH)	\
+												((((deUint32)(VARIANT)) << 29) | (((deUint32)(MAJOR)) << 22) | (((deUint32)(MINOR)) << 12) | ((deUint32)(PATCH)))
+#define VK_MAKE_VERSION(MAJOR, MINOR, PATCH)	VK_MAKE_API_VERSION(0, MAJOR, MINOR, PATCH)
 #define VK_BIT(NUM)								(1u<<(deUint32)(NUM))
 
-#define VK_VERSION_MAJOR(version)				((deUint32)(version) >> 22)
-#define VK_VERSION_MINOR(version)				(((deUint32)(version) >> 12) & 0x3ff)
-#define VK_VERSION_PATCH(version)				((deUint32)(version) & 0xfff)
+#define VK_API_VERSION_VARIANT(version)			((deUint32)(version) >> 29)
+#define VK_API_VERSION_MAJOR(version)			(((deUint32)(version) >> 22) & 0x7FU)
+#define VK_API_VERSION_MINOR(version)			(((deUint32)(version) >> 12) & 0x3FFU)
+#define VK_API_VERSION_PATCH(version)			((deUint32)(version) & 0xFFFU)
 
 #define VK_CHECK(EXPR)							vk::checkResult((EXPR), #EXPR, __FILE__, __LINE__)
 #define VK_CHECK_MSG(EXPR, MSG)					vk::checkResult((EXPR), MSG, __FILE__, __LINE__)
