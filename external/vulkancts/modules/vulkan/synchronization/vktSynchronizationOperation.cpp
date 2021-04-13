@@ -2652,9 +2652,7 @@ public:
 			const DeviceInterface&		vk						= m_context.getDeviceInterface();
 			SynchronizationWrapperPtr	synchronizationWrapper	= getSynchronizationWrapper(m_context.getSynchronizationType(), vk, DE_FALSE);
 
-			const VkImageMemoryBarrier2KHR imageMemoryBarriers2[]
-			{
-				makeImageMemoryBarrier2(
+			const VkImageMemoryBarrier2KHR imageMemoryBarriers2 = makeImageMemoryBarrier2(
 					VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,				// VkPipelineStageFlags2KHR			srcStageMask
 					(VkAccessFlags)0,								// VkAccessFlags2KHR				srcAccessMask
 					m_pipelineStage,								// VkPipelineStageFlags2KHR			dstStageMask
@@ -2663,18 +2661,7 @@ public:
 					VK_IMAGE_LAYOUT_GENERAL,						// VkImageLayout					newLayout
 					m_outResource.getImage().handle,				// VkImage							image
 					m_outResource.getImage().subresourceRange		// VkImageSubresourceRange			subresourceRange
-				),
-				makeImageMemoryBarrier2(
-					VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,				// VkPipelineStageFlags2KHR			srcStageMask
-					(VkAccessFlags)0,								// VkAccessFlags2KHR				srcAccessMask
-					m_pipelineStage,								// VkPipelineStageFlags2KHR			dstStageMask
-					VK_ACCESS_2_SHADER_READ_BIT_KHR,				// VkAccessFlags2KHR				dstAccessMask
-					VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout					oldLayout
-					VK_IMAGE_LAYOUT_GENERAL,						// VkImageLayout					newLayout
-					m_inResource.getImage().handle,					// VkImage							image
-					m_inResource.getImage().subresourceRange		// VkImageSubresourceRange			subresourceRange
-				)
-			};
+			);
 			VkDependencyInfoKHR dependencyInfo
 			{
 				VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,				// VkStructureType					sType
@@ -2684,8 +2671,8 @@ public:
 				DE_NULL,											// const VkMemoryBarrier2KHR*		pMemoryBarriers
 				0u,													// deUint32							bufferMemoryBarrierCount
 				DE_NULL,											// const VkBufferMemoryBarrier2KHR* pBufferMemoryBarriers
-				2,													// deUint32							imageMemoryBarrierCount
-				imageMemoryBarriers2								// const VkImageMemoryBarrier2KHR*	pImageMemoryBarriers
+				1,													// deUint32							imageMemoryBarrierCount
+				&imageMemoryBarriers2								// const VkImageMemoryBarrier2KHR*	pImageMemoryBarriers
 			};
 			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 		}
