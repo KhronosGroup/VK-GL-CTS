@@ -10,6 +10,7 @@ const vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&			Context::getBlend
 const vk::VkPhysicalDeviceBufferDeviceAddressFeatures&					Context::getBufferDeviceAddressFeatures					(void) const { return m_device->getBufferDeviceAddressFeatures();				}
 const vk::VkPhysicalDeviceBufferDeviceAddressFeaturesEXT&				Context::getBufferDeviceAddressFeaturesEXT				(void) const { return m_device->getBufferDeviceAddressFeaturesEXT();			}
 const vk::VkPhysicalDeviceCoherentMemoryFeaturesAMD&					Context::getCoherentMemoryFeaturesAMD					(void) const { return m_device->getCoherentMemoryFeaturesAMD();					}
+const vk::VkPhysicalDeviceColorWriteEnableFeaturesEXT&					Context::getColorWriteEnableFeaturesEXT					(void) const { return m_device->getColorWriteEnableFeaturesEXT();				}
 const vk::VkPhysicalDeviceComputeShaderDerivativesFeaturesNV&			Context::getComputeShaderDerivativesFeatures			(void) const { return m_device->getComputeShaderDerivativesFeatures();			}
 const vk::VkPhysicalDeviceConditionalRenderingFeaturesEXT&				Context::getConditionalRenderingFeaturesEXT				(void) const { return m_device->getConditionalRenderingFeaturesEXT();			}
 const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&					Context::getCooperativeMatrixFeatures					(void) const { return m_device->getCooperativeMatrixFeatures();					}
@@ -34,6 +35,7 @@ const vk::VkPhysicalDeviceHostQueryResetFeatures&						Context::getHostQueryRese
 const vk::VkPhysicalDeviceImagelessFramebufferFeatures&					Context::getImagelessFramebufferFeatures				(void) const { return m_device->getImagelessFramebufferFeatures();				}
 const vk::VkPhysicalDeviceImageRobustnessFeaturesEXT&					Context::getImageRobustnessFeaturesEXT					(void) const { return m_device->getImageRobustnessFeaturesEXT();				}
 const vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT&					Context::getIndexTypeUint8FeaturesEXT					(void) const { return m_device->getIndexTypeUint8FeaturesEXT();					}
+const vk::VkPhysicalDeviceInheritedViewportScissorFeaturesNV&			Context::getInheritedViewportScissorFeatures			(void) const { return m_device->getInheritedViewportScissorFeatures();			}
 const vk::VkPhysicalDeviceInlineUniformBlockFeaturesEXT&				Context::getInlineUniformBlockFeaturesEXT				(void) const { return m_device->getInlineUniformBlockFeaturesEXT();				}
 const vk::VkPhysicalDeviceLineRasterizationFeaturesEXT&					Context::getLineRasterizationFeaturesEXT				(void) const { return m_device->getLineRasterizationFeaturesEXT();				}
 const vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT&					Context::getMemoryPriorityFeaturesEXT					(void) const { return m_device->getMemoryPriorityFeaturesEXT();					}
@@ -75,7 +77,9 @@ const vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT&					Context::getTransfor
 const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures&			Context::getUniformBufferStandardLayoutFeatures			(void) const { return m_device->getUniformBufferStandardLayoutFeatures();		}
 const vk::VkPhysicalDeviceVariablePointersFeatures&						Context::getVariablePointersFeatures					(void) const { return m_device->getVariablePointersFeatures();					}
 const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&			Context::getVertexAttributeDivisorFeaturesEXT			(void) const { return m_device->getVertexAttributeDivisorFeaturesEXT();			}
+const vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&			Context::getVertexInputDynamicStateFeaturesEXT			(void) const { return m_device->getVertexInputDynamicStateFeaturesEXT();		}
 const vk::VkPhysicalDeviceVulkanMemoryModelFeatures&					Context::getVulkanMemoryModelFeatures					(void) const { return m_device->getVulkanMemoryModelFeatures();					}
 const vk::VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR&		Context::getWorkgroupMemoryExplicitLayoutFeatures		(void) const { return m_device->getWorkgroupMemoryExplicitLayoutFeatures();		}
+const vk::VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT&				Context::getYcbcr2Plane444FormatsFeaturesEXT			(void) const { return m_device->getYcbcr2Plane444FormatsFeaturesEXT();			}
 const vk::VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&					Context::getYcbcrImageArraysFeaturesEXT					(void) const { return m_device->getYcbcrImageArraysFeaturesEXT();				}
 const vk::VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR&		Context::getZeroInitializeWorkgroupMemoryFeatures		(void) const { return m_device->getZeroInitializeWorkgroupMemoryFeatures();		}

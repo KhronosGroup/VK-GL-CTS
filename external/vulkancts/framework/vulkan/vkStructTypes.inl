@@ -4781,6 +4781,22 @@ struct VkGeneratedCommandsMemoryRequirementsInfoNV
 	deUint32					maxSequencesCount;
 };
 
+struct VkPhysicalDeviceInheritedViewportScissorFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		inheritedViewportScissor2D;
+};
+
+struct VkCommandBufferInheritanceViewportScissorInfoNV
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkBool32			viewportScissor2D;
+	deUint32			viewportDepthCount;
+	const VkViewport*	pViewportDepths;
+};
+
 struct VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT
 {
 	VkStructureType	sType;
@@ -4949,6 +4965,13 @@ struct VkPipelineFragmentShadingRateEnumStateCreateInfoNV
 	VkFragmentShadingRateCombinerOpKHR	combinerOps[2];
 };
 
+struct VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		ycbcr2plane444Formats;
+};
+
 struct VkPhysicalDeviceFragmentDensityMap2FeaturesEXT
 {
 	VkStructureType	sType;
@@ -5007,6 +5030,48 @@ struct VkMutableDescriptorTypeCreateInfoVALVE
 	const void*								pNext;
 	deUint32								mutableDescriptorTypeListCount;
 	const VkMutableDescriptorTypeListVALVE*	pMutableDescriptorTypeLists;
+};
+
+struct VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		vertexInputDynamicState;
+};
+
+struct VkVertexInputBindingDescription2EXT
+{
+	VkStructureType		sType;
+	void*				pNext;
+	deUint32			binding;
+	deUint32			stride;
+	VkVertexInputRate	inputRate;
+	deUint32			divisor;
+};
+
+struct VkVertexInputAttributeDescription2EXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		location;
+	deUint32		binding;
+	VkFormat		format;
+	deUint32		offset;
+};
+
+struct VkPhysicalDeviceColorWriteEnableFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		colorWriteEnable;
+};
+
+struct VkPipelineColorWriteCreateInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		attachmentCount;
+	const VkBool32*	pColorWriteEnables;
 };
 
 union VkDeviceOrHostAddressKHR

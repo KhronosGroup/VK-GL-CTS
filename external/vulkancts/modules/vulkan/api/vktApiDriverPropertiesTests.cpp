@@ -135,8 +135,8 @@ void testInfoZeroTerminated (const VkPhysicalDeviceDriverPropertiesKHR& deviceDr
 
 void testVersion (const VkPhysicalDeviceDriverPropertiesKHR& deviceDriverProperties, deUint32 usedApiVersion)
 {
-	const deUint32 apiMajorVersion = VK_VERSION_MAJOR(usedApiVersion);
-	const deUint32 apiMinorVersion = VK_VERSION_MINOR(usedApiVersion);
+	const deUint32 apiMajorVersion = VK_API_VERSION_MAJOR(usedApiVersion);
+	const deUint32 apiMinorVersion = VK_API_VERSION_MINOR(usedApiVersion);
 
 	if (deviceDriverProperties.conformanceVersion.major < apiMajorVersion ||
 		(deviceDriverProperties.conformanceVersion.major == apiMajorVersion &&
