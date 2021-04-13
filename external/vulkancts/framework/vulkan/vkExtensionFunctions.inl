@@ -888,7 +888,33 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_video_queue")
+	{
+		functions.push_back("vkGetPhysicalDeviceVideoCapabilitiesKHR");
+		functions.push_back("vkGetPhysicalDeviceVideoFormatPropertiesKHR");
+		return;
+	}
+	if (extName == "VK_KHR_video_decode_queue")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_portability_subset")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_video_encode_queue")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_video_encode_h264")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_video_decode_h264")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_video_decode_h265")
 	{
 		return;
 	}
@@ -2028,7 +2054,43 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetMemoryAndroidHardwareBufferANDROID");
 		return;
 	}
+	if (extName == "VK_KHR_video_queue")
+	{
+		functions.push_back("vkCreateVideoSessionKHR");
+		functions.push_back("vkDestroyVideoSessionKHR");
+		functions.push_back("vkGetVideoSessionMemoryRequirementsKHR");
+		functions.push_back("vkBindVideoSessionMemoryKHR");
+		functions.push_back("vkCreateVideoSessionParametersKHR");
+		functions.push_back("vkUpdateVideoSessionParametersKHR");
+		functions.push_back("vkDestroyVideoSessionParametersKHR");
+		functions.push_back("vkCmdBeginVideoCodingKHR");
+		functions.push_back("vkCmdEndVideoCodingKHR");
+		functions.push_back("vkCmdControlVideoCodingKHR");
+		return;
+	}
+	if (extName == "VK_KHR_video_decode_queue")
+	{
+		functions.push_back("vkCmdDecodeVideoKHR");
+		return;
+	}
 	if (extName == "VK_KHR_portability_subset")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_video_encode_queue")
+	{
+		functions.push_back("vkCmdEncodeVideoKHR");
+		return;
+	}
+	if (extName == "VK_EXT_video_encode_h264")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_video_decode_h264")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_video_decode_h265")
 	{
 		return;
 	}
@@ -2157,6 +2219,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_EXT_headless_surface",
 	"VK_NV_acquire_winrt_display",
 	"VK_KHR_android_surface",
+	"VK_KHR_video_queue",
 	"VK_FUCHSIA_imagepipe_surface",
 	"VK_GGP_stream_descriptor_surface",
 	"VK_MVK_ios_surface",
@@ -2231,6 +2294,8 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_ANDROID_external_memory_android_hardware_buffer",
+	"VK_KHR_video_decode_queue",
+	"VK_KHR_video_encode_queue",
 	"VK_FUCHSIA_external_memory",
 	"VK_FUCHSIA_external_semaphore",
 	"VK_KHR_external_memory_win32",

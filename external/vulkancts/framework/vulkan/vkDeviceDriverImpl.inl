@@ -1602,6 +1602,66 @@ VkResult DeviceDriver::getMemoryAndroidHardwareBufferANDROID (VkDevice device, c
 	return m_vk.getMemoryAndroidHardwareBufferANDROID(device, pInfo, pBuffer);
 }
 
+VkResult DeviceDriver::createVideoSessionKHR (VkDevice device, const VkVideoSessionCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionKHR* pVideoSession) const
+{
+	return m_vk.createVideoSessionKHR(device, pCreateInfo, pAllocator, pVideoSession);
+}
+
+void DeviceDriver::destroyVideoSessionKHR (VkDevice device, VkVideoSessionKHR videoSession, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroyVideoSessionKHR(device, videoSession, pAllocator);
+}
+
+VkResult DeviceDriver::getVideoSessionMemoryRequirementsKHR (VkDevice device, VkVideoSessionKHR videoSession, deUint32* pVideoSessionMemoryRequirementsCount, VkVideoGetMemoryPropertiesKHR* pVideoSessionMemoryRequirements) const
+{
+	return m_vk.getVideoSessionMemoryRequirementsKHR(device, videoSession, pVideoSessionMemoryRequirementsCount, pVideoSessionMemoryRequirements);
+}
+
+VkResult DeviceDriver::bindVideoSessionMemoryKHR (VkDevice device, VkVideoSessionKHR videoSession, deUint32 videoSessionBindMemoryCount, const VkVideoBindMemoryKHR* pVideoSessionBindMemories) const
+{
+	return m_vk.bindVideoSessionMemoryKHR(device, videoSession, videoSessionBindMemoryCount, pVideoSessionBindMemories);
+}
+
+VkResult DeviceDriver::createVideoSessionParametersKHR (VkDevice device, const VkVideoSessionParametersCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionParametersKHR* pVideoSessionParameters) const
+{
+	return m_vk.createVideoSessionParametersKHR(device, pCreateInfo, pAllocator, pVideoSessionParameters);
+}
+
+VkResult DeviceDriver::updateVideoSessionParametersKHR (VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkVideoSessionParametersUpdateInfoKHR* pUpdateInfo) const
+{
+	return m_vk.updateVideoSessionParametersKHR(device, videoSessionParameters, pUpdateInfo);
+}
+
+void DeviceDriver::destroyVideoSessionParametersKHR (VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroyVideoSessionParametersKHR(device, videoSessionParameters, pAllocator);
+}
+
+void DeviceDriver::cmdBeginVideoCodingKHR (VkCommandBuffer commandBuffer, const VkVideoBeginCodingInfoKHR* pBeginInfo) const
+{
+	m_vk.cmdBeginVideoCodingKHR(commandBuffer, pBeginInfo);
+}
+
+void DeviceDriver::cmdEndVideoCodingKHR (VkCommandBuffer commandBuffer, const VkVideoEndCodingInfoKHR* pEndCodingInfo) const
+{
+	m_vk.cmdEndVideoCodingKHR(commandBuffer, pEndCodingInfo);
+}
+
+void DeviceDriver::cmdControlVideoCodingKHR (VkCommandBuffer commandBuffer, const VkVideoCodingControlInfoKHR* pCodingControlInfo) const
+{
+	m_vk.cmdControlVideoCodingKHR(commandBuffer, pCodingControlInfo);
+}
+
+void DeviceDriver::cmdDecodeVideoKHR (VkCommandBuffer commandBuffer, const VkVideoDecodeInfoKHR* pFrameInfo) const
+{
+	m_vk.cmdDecodeVideoKHR(commandBuffer, pFrameInfo);
+}
+
+void DeviceDriver::cmdEncodeVideoKHR (VkCommandBuffer commandBuffer, const VkVideoEncodeInfoKHR* pEncodeInfo) const
+{
+	m_vk.cmdEncodeVideoKHR(commandBuffer, pEncodeInfo);
+}
+
 VkResult DeviceDriver::getMemoryZirconHandleFUCHSIA (VkDevice device, const VkMemoryGetZirconHandleInfoFUCHSIA* pGetZirconHandleInfo, pt::zx_handle_t* pZirconHandle) const
 {
 	return m_vk.getMemoryZirconHandleFUCHSIA(device, pGetZirconHandleInfo, pZirconHandle);

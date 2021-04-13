@@ -545,6 +545,20 @@ public:
 						{}
 };
 
+class VideoSessionKHR
+{
+public:
+						VideoSessionKHR				(VkDevice, const VkVideoSessionCreateInfoKHR*)
+						{}
+};
+
+class VideoSessionParametersKHR
+{
+public:
+						VideoSessionParametersKHR	(VkDevice, const VkVideoSessionParametersCreateInfoKHR*)
+						{}
+};
+
 class ValidationCacheEXT
 {
 public:

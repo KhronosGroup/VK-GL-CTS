@@ -172,6 +172,18 @@ void Deleter<VkAccelerationStructureKHR>::operator() (VkAccelerationStructureKHR
 	m_deviceIface->destroyAccelerationStructureKHR(m_device, obj, m_allocator);
 }
 
+template<>
+void Deleter<VkVideoSessionKHR>::operator() (VkVideoSessionKHR obj) const
+{
+	m_deviceIface->destroyVideoSessionKHR(m_device, obj, m_allocator);
+}
+
+template<>
+void Deleter<VkVideoSessionParametersKHR>::operator() (VkVideoSessionParametersKHR obj) const
+{
+	m_deviceIface->destroyVideoSessionParametersKHR(m_device, obj, m_allocator);
+}
+
 } // refdetails
 
 Move<VkInstance> createInstance (const PlatformInterface& vk, const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
@@ -424,6 +436,20 @@ Move<VkSurfaceKHR> createAndroidSurfaceKHR (const InstanceInterface& vk, VkInsta
 	VkSurfaceKHR object = 0;
 	VK_CHECK(vk.createAndroidSurfaceKHR(instance, pCreateInfo, pAllocator, &object));
 	return Move<VkSurfaceKHR>(check<VkSurfaceKHR>(object), Deleter<VkSurfaceKHR>(vk, instance, pAllocator));
+}
+
+Move<VkVideoSessionKHR> createVideoSessionKHR (const DeviceInterface& vk, VkDevice device, const VkVideoSessionCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkVideoSessionKHR object = 0;
+	VK_CHECK(vk.createVideoSessionKHR(device, pCreateInfo, pAllocator, &object));
+	return Move<VkVideoSessionKHR>(check<VkVideoSessionKHR>(object), Deleter<VkVideoSessionKHR>(vk, device, pAllocator));
+}
+
+Move<VkVideoSessionParametersKHR> createVideoSessionParametersKHR (const DeviceInterface& vk, VkDevice device, const VkVideoSessionParametersCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkVideoSessionParametersKHR object = 0;
+	VK_CHECK(vk.createVideoSessionParametersKHR(device, pCreateInfo, pAllocator, &object));
+	return Move<VkVideoSessionParametersKHR>(check<VkVideoSessionParametersKHR>(object), Deleter<VkVideoSessionParametersKHR>(vk, device, pAllocator));
 }
 
 Move<VkSurfaceKHR> createImagePipeSurfaceFUCHSIA (const InstanceInterface& vk, VkInstance instance, const VkImagePipeSurfaceCreateInfoFUCHSIA* pCreateInfo, const VkAllocationCallbacks* pAllocator)
