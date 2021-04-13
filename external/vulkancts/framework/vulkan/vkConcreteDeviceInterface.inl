@@ -321,6 +321,18 @@ virtual VkDeviceSize		getRayTracingShaderGroupStackSizeKHR			(VkDevice device, V
 virtual void				cmdSetRayTracingPipelineStackSizeKHR			(VkCommandBuffer commandBuffer, deUint32 pipelineStackSize) const;
 virtual VkResult			getAndroidHardwareBufferPropertiesANDROID		(VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties) const;
 virtual VkResult			getMemoryAndroidHardwareBufferANDROID			(VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, struct pt::AndroidHardwareBufferPtr* pBuffer) const;
+virtual VkResult			createVideoSessionKHR							(VkDevice device, const VkVideoSessionCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionKHR* pVideoSession) const;
+virtual void				destroyVideoSessionKHR							(VkDevice device, VkVideoSessionKHR videoSession, const VkAllocationCallbacks* pAllocator) const;
+virtual VkResult			getVideoSessionMemoryRequirementsKHR			(VkDevice device, VkVideoSessionKHR videoSession, deUint32* pVideoSessionMemoryRequirementsCount, VkVideoGetMemoryPropertiesKHR* pVideoSessionMemoryRequirements) const;
+virtual VkResult			bindVideoSessionMemoryKHR						(VkDevice device, VkVideoSessionKHR videoSession, deUint32 videoSessionBindMemoryCount, const VkVideoBindMemoryKHR* pVideoSessionBindMemories) const;
+virtual VkResult			createVideoSessionParametersKHR					(VkDevice device, const VkVideoSessionParametersCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionParametersKHR* pVideoSessionParameters) const;
+virtual VkResult			updateVideoSessionParametersKHR					(VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkVideoSessionParametersUpdateInfoKHR* pUpdateInfo) const;
+virtual void				destroyVideoSessionParametersKHR				(VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkAllocationCallbacks* pAllocator) const;
+virtual void				cmdBeginVideoCodingKHR							(VkCommandBuffer commandBuffer, const VkVideoBeginCodingInfoKHR* pBeginInfo) const;
+virtual void				cmdEndVideoCodingKHR							(VkCommandBuffer commandBuffer, const VkVideoEndCodingInfoKHR* pEndCodingInfo) const;
+virtual void				cmdControlVideoCodingKHR						(VkCommandBuffer commandBuffer, const VkVideoCodingControlInfoKHR* pCodingControlInfo) const;
+virtual void				cmdDecodeVideoKHR								(VkCommandBuffer commandBuffer, const VkVideoDecodeInfoKHR* pFrameInfo) const;
+virtual void				cmdEncodeVideoKHR								(VkCommandBuffer commandBuffer, const VkVideoEncodeInfoKHR* pEncodeInfo) const;
 virtual VkResult			getMemoryZirconHandleFUCHSIA					(VkDevice device, const VkMemoryGetZirconHandleInfoFUCHSIA* pGetZirconHandleInfo, pt::zx_handle_t* pZirconHandle) const;
 virtual VkResult			getMemoryZirconHandlePropertiesFUCHSIA			(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, pt::zx_handle_t zirconHandle, VkMemoryZirconHandlePropertiesFUCHSIA* pMemoryZirconHandleProperties) const;
 virtual VkResult			importSemaphoreZirconHandleFUCHSIA				(VkDevice device, const VkImportSemaphoreZirconHandleInfoFUCHSIA* pImportSemaphoreZirconHandleInfo) const;

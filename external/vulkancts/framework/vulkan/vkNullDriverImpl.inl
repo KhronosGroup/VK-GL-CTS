@@ -205,6 +205,18 @@ VKAPI_ATTR VkResult VKAPI_CALL createAndroidSurfaceKHR (VkInstance instance, con
 	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createVideoSessionKHR (VkDevice device, const VkVideoSessionCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionKHR* pVideoSession)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pVideoSession = allocateNonDispHandle<VideoSessionKHR, VkVideoSessionKHR>(device, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createVideoSessionParametersKHR (VkDevice device, const VkVideoSessionParametersCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionParametersKHR* pVideoSessionParameters)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pVideoSessionParameters = allocateNonDispHandle<VideoSessionParametersKHR, VkVideoSessionParametersKHR>(device, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL createImagePipeSurfaceFUCHSIA (VkInstance instance, const VkImagePipeSurfaceCreateInfoFUCHSIA* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 {
 	DE_UNREF(pAllocator);
@@ -459,6 +471,18 @@ VKAPI_ATTR void VKAPI_CALL destroyAccelerationStructureKHR (VkDevice device, VkA
 {
 	DE_UNREF(device);
 	freeNonDispHandle<AccelerationStructureKHR, VkAccelerationStructureKHR>(accelerationStructure, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyVideoSessionKHR (VkDevice device, VkVideoSessionKHR videoSession, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<VideoSessionKHR, VkVideoSessionKHR>(videoSession, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyVideoSessionParametersKHR (VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<VideoSessionParametersKHR, VkVideoSessionParametersKHR>(videoSessionParameters, pAllocator);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceLayerProperties (deUint32* pPropertyCount, VkLayerProperties* pProperties)
@@ -2814,6 +2838,79 @@ VKAPI_ATTR VkResult VKAPI_CALL getAndroidHardwareBufferPropertiesANDROID (VkDevi
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceVideoCapabilitiesKHR (VkPhysicalDevice physicalDevice, const VkVideoProfileKHR* pVideoProfile, VkVideoCapabilitiesKHR* pCapabilities)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pVideoProfile);
+	DE_UNREF(pCapabilities);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceVideoFormatPropertiesKHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceVideoFormatInfoKHR* pVideoFormatInfo, deUint32* pVideoFormatPropertyCount, VkVideoFormatPropertiesKHR* pVideoFormatProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pVideoFormatInfo);
+	DE_UNREF(pVideoFormatPropertyCount);
+	DE_UNREF(pVideoFormatProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getVideoSessionMemoryRequirementsKHR (VkDevice device, VkVideoSessionKHR videoSession, deUint32* pVideoSessionMemoryRequirementsCount, VkVideoGetMemoryPropertiesKHR* pVideoSessionMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(videoSession);
+	DE_UNREF(pVideoSessionMemoryRequirementsCount);
+	DE_UNREF(pVideoSessionMemoryRequirements);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL bindVideoSessionMemoryKHR (VkDevice device, VkVideoSessionKHR videoSession, deUint32 videoSessionBindMemoryCount, const VkVideoBindMemoryKHR* pVideoSessionBindMemories)
+{
+	DE_UNREF(device);
+	DE_UNREF(videoSession);
+	DE_UNREF(videoSessionBindMemoryCount);
+	DE_UNREF(pVideoSessionBindMemories);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL updateVideoSessionParametersKHR (VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkVideoSessionParametersUpdateInfoKHR* pUpdateInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(videoSessionParameters);
+	DE_UNREF(pUpdateInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdBeginVideoCodingKHR (VkCommandBuffer commandBuffer, const VkVideoBeginCodingInfoKHR* pBeginInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pBeginInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdEndVideoCodingKHR (VkCommandBuffer commandBuffer, const VkVideoEndCodingInfoKHR* pEndCodingInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pEndCodingInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdControlVideoCodingKHR (VkCommandBuffer commandBuffer, const VkVideoCodingControlInfoKHR* pCodingControlInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pCodingControlInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDecodeVideoKHR (VkCommandBuffer commandBuffer, const VkVideoDecodeInfoKHR* pFrameInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pFrameInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdEncodeVideoKHR (VkCommandBuffer commandBuffer, const VkVideoEncodeInfoKHR* pEncodeInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pEncodeInfo);
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getMemoryZirconHandleFUCHSIA (VkDevice device, const VkMemoryGetZirconHandleInfoFUCHSIA* pGetZirconHandleInfo, pt::zx_handle_t* pZirconHandle)
 {
 	DE_UNREF(device);
@@ -3068,6 +3165,8 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkAcquireWinrtDisplayNV,												acquireWinrtDisplayNV),
 	VK_NULL_FUNC_ENTRY(vkGetWinrtDisplayNV,													getWinrtDisplayNV),
 	VK_NULL_FUNC_ENTRY(vkCreateAndroidSurfaceKHR,											createAndroidSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceVideoCapabilitiesKHR,								getPhysicalDeviceVideoCapabilitiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceVideoFormatPropertiesKHR,							getPhysicalDeviceVideoFormatPropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateImagePipeSurfaceFUCHSIA,										createImagePipeSurfaceFUCHSIA),
 	VK_NULL_FUNC_ENTRY(vkCreateStreamDescriptorSurfaceGGP,									createStreamDescriptorSurfaceGGP),
 	VK_NULL_FUNC_ENTRY(vkCreateIOSSurfaceMVK,												createIOSSurfaceMVK),
@@ -3437,6 +3536,18 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdSetRayTracingPipelineStackSizeKHR,				cmdSetRayTracingPipelineStackSizeKHR),
 	VK_NULL_FUNC_ENTRY(vkGetAndroidHardwareBufferPropertiesANDROID,			getAndroidHardwareBufferPropertiesANDROID),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryAndroidHardwareBufferANDROID,				getMemoryAndroidHardwareBufferANDROID),
+	VK_NULL_FUNC_ENTRY(vkCreateVideoSessionKHR,								createVideoSessionKHR),
+	VK_NULL_FUNC_ENTRY(vkDestroyVideoSessionKHR,							destroyVideoSessionKHR),
+	VK_NULL_FUNC_ENTRY(vkGetVideoSessionMemoryRequirementsKHR,				getVideoSessionMemoryRequirementsKHR),
+	VK_NULL_FUNC_ENTRY(vkBindVideoSessionMemoryKHR,							bindVideoSessionMemoryKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateVideoSessionParametersKHR,					createVideoSessionParametersKHR),
+	VK_NULL_FUNC_ENTRY(vkUpdateVideoSessionParametersKHR,					updateVideoSessionParametersKHR),
+	VK_NULL_FUNC_ENTRY(vkDestroyVideoSessionParametersKHR,					destroyVideoSessionParametersKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginVideoCodingKHR,							cmdBeginVideoCodingKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdEndVideoCodingKHR,								cmdEndVideoCodingKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdControlVideoCodingKHR,							cmdControlVideoCodingKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdDecodeVideoKHR,									cmdDecodeVideoKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdEncodeVideoKHR,									cmdEncodeVideoKHR),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryZirconHandleFUCHSIA,						getMemoryZirconHandleFUCHSIA),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryZirconHandlePropertiesFUCHSIA,			getMemoryZirconHandlePropertiesFUCHSIA),
 	VK_NULL_FUNC_ENTRY(vkImportSemaphoreZirconHandleFUCHSIA,				importSemaphoreZirconHandleFUCHSIA),

@@ -41,6 +41,8 @@ template<> const char*	getTypeName<VkPerformanceConfigurationINTEL>	(void) { ret
 template<> const char*	getTypeName<VkIndirectCommandsLayoutNV>			(void) { return "VkIndirectCommandsLayoutNV";		}
 template<> const char*	getTypeName<VkPrivateDataSlotEXT>				(void) { return "VkPrivateDataSlotEXT";				}
 template<> const char*	getTypeName<VkAccelerationStructureKHR>			(void) { return "VkAccelerationStructureKHR";		}
+template<> const char*	getTypeName<VkVideoSessionKHR>					(void) { return "VkVideoSessionKHR";				}
+template<> const char*	getTypeName<VkVideoSessionParametersKHR>		(void) { return "VkVideoSessionParametersKHR";		}
 
 namespace pt
 {
@@ -2367,6 +2369,263 @@ const char* getShaderGroupShaderKHRName (VkShaderGroupShaderKHR value)
 	}
 }
 
+const char* getQueryResultStatusKHRName (VkQueryResultStatusKHR value)
+{
+	switch (value)
+	{
+		case VK_QUERY_RESULT_STATUS_ERROR_KHR:		return "VK_QUERY_RESULT_STATUS_ERROR_KHR";
+		case VK_QUERY_RESULT_STATUS_NOT_READY_KHR:	return "VK_QUERY_RESULT_STATUS_NOT_READY_KHR";
+		case VK_QUERY_RESULT_STATUS_COMPLETE_KHR:	return "VK_QUERY_RESULT_STATUS_COMPLETE_KHR";
+		case VK_QUERY_RESULT_STATUS_MAX_ENUM_KHR:	return "VK_QUERY_RESULT_STATUS_MAX_ENUM_KHR";
+		default:									return DE_NULL;
+	}
+}
+
+const char* getdVideoH264ChromaFormatIdcName (StdVideoH264ChromaFormatIdc value)
+{
+	switch (value)
+	{
+		case std_video_h264_chroma_format_idc_monochrome:	return "std_video_h264_chroma_format_idc_monochrome";
+		case std_video_h264_chroma_format_idc_420:			return "std_video_h264_chroma_format_idc_420";
+		case std_video_h264_chroma_format_idc_422:			return "std_video_h264_chroma_format_idc_422";
+		case std_video_h264_chroma_format_idc_444:			return "std_video_h264_chroma_format_idc_444";
+		default:											return DE_NULL;
+	}
+}
+
+const char* getdVideoH264ProfileIdcName (StdVideoH264ProfileIdc value)
+{
+	switch (value)
+	{
+		case std_video_h264_profile_idc_baseline:				return "std_video_h264_profile_idc_baseline";
+		case std_video_h264_profile_idc_main:					return "std_video_h264_profile_idc_main";
+		case std_video_h264_profile_idc_high:					return "std_video_h264_profile_idc_high";
+		case std_video_h264_profile_idc_high_444_predictive:	return "std_video_h264_profile_idc_high_444_predictive";
+		case std_video_h264_profile_idc_invalid:				return "std_video_h264_profile_idc_invalid";
+		default:												return DE_NULL;
+	}
+}
+
+const char* getdVideoH264LevelName (StdVideoH264Level value)
+{
+	switch (value)
+	{
+		case std_video_h264_level_1_0:		return "std_video_h264_level_1_0";
+		case std_video_h264_level_1_1:		return "std_video_h264_level_1_1";
+		case std_video_h264_level_1_2:		return "std_video_h264_level_1_2";
+		case std_video_h264_level_1_3:		return "std_video_h264_level_1_3";
+		case std_video_h264_level_2_0:		return "std_video_h264_level_2_0";
+		case std_video_h264_level_2_1:		return "std_video_h264_level_2_1";
+		case std_video_h264_level_2_2:		return "std_video_h264_level_2_2";
+		case std_video_h264_level_3_0:		return "std_video_h264_level_3_0";
+		case std_video_h264_level_3_1:		return "std_video_h264_level_3_1";
+		case std_video_h264_level_3_2:		return "std_video_h264_level_3_2";
+		case std_video_h264_level_4_0:		return "std_video_h264_level_4_0";
+		case std_video_h264_level_4_1:		return "std_video_h264_level_4_1";
+		case std_video_h264_level_4_2:		return "std_video_h264_level_4_2";
+		case std_video_h264_level_5_0:		return "std_video_h264_level_5_0";
+		case std_video_h264_level_5_1:		return "std_video_h264_level_5_1";
+		case std_video_h264_level_5_2:		return "std_video_h264_level_5_2";
+		case std_video_h264_level_6_0:		return "std_video_h264_level_6_0";
+		case std_video_h264_level_6_1:		return "std_video_h264_level_6_1";
+		case std_video_h264_level_6_2:		return "std_video_h264_level_6_2";
+		case std_video_h264_level_invalid:	return "std_video_h264_level_invalid";
+		default:							return DE_NULL;
+	}
+}
+
+const char* getdVideoH264PocTypeName (StdVideoH264PocType value)
+{
+	switch (value)
+	{
+		case std_video_h264_poc_type_0:			return "std_video_h264_poc_type_0";
+		case std_video_h264_poc_type_1:			return "std_video_h264_poc_type_1";
+		case std_video_h264_poc_type_2:			return "std_video_h264_poc_type_2";
+		case std_video_h264_poc_type_invalid:	return "std_video_h264_poc_type_invalid";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getdVideoH264AspectRatioIdcName (StdVideoH264AspectRatioIdc value)
+{
+	switch (value)
+	{
+		case std_video_h264_aspect_ratio_idc_unspecified:	return "std_video_h264_aspect_ratio_idc_unspecified";
+		case std_video_h264_aspect_ratio_idc_square:		return "std_video_h264_aspect_ratio_idc_square";
+		case std_video_h264_aspect_ratio_idc_12_11:			return "std_video_h264_aspect_ratio_idc_12_11";
+		case std_video_h264_aspect_ratio_idc_10_11:			return "std_video_h264_aspect_ratio_idc_10_11";
+		case std_video_h264_aspect_ratio_idc_16_11:			return "std_video_h264_aspect_ratio_idc_16_11";
+		case std_video_h264_aspect_ratio_idc_40_33:			return "std_video_h264_aspect_ratio_idc_40_33";
+		case std_video_h264_aspect_ratio_idc_24_11:			return "std_video_h264_aspect_ratio_idc_24_11";
+		case std_video_h264_aspect_ratio_idc_20_11:			return "std_video_h264_aspect_ratio_idc_20_11";
+		case std_video_h264_aspect_ratio_idc_32_11:			return "std_video_h264_aspect_ratio_idc_32_11";
+		case std_video_h264_aspect_ratio_idc_80_33:			return "std_video_h264_aspect_ratio_idc_80_33";
+		case std_video_h264_aspect_ratio_idc_18_11:			return "std_video_h264_aspect_ratio_idc_18_11";
+		case std_video_h264_aspect_ratio_idc_15_11:			return "std_video_h264_aspect_ratio_idc_15_11";
+		case std_video_h264_aspect_ratio_idc_64_33:			return "std_video_h264_aspect_ratio_idc_64_33";
+		case std_video_h264_aspect_ratio_idc_160_99:		return "std_video_h264_aspect_ratio_idc_160_99";
+		case std_video_h264_aspect_ratio_idc_4_3:			return "std_video_h264_aspect_ratio_idc_4_3";
+		case std_video_h264_aspect_ratio_idc_3_2:			return "std_video_h264_aspect_ratio_idc_3_2";
+		case std_video_h264_aspect_ratio_idc_2_1:			return "std_video_h264_aspect_ratio_idc_2_1";
+		case std_video_h264_aspect_ratio_idc_extended_sar:	return "std_video_h264_aspect_ratio_idc_extended_sar";
+		case std_video_h264_aspect_ratio_idc_invalid:		return "std_video_h264_aspect_ratio_idc_invalid";
+		default:											return DE_NULL;
+	}
+}
+
+const char* getdVideoH264WeightedBiPredIdcName (StdVideoH264WeightedBiPredIdc value)
+{
+	switch (value)
+	{
+		case std_video_h264_default_weighted_b_slices_prediction_idc:	return "std_video_h264_default_weighted_b_slices_prediction_idc";
+		case std_video_h264_explicit_weighted_b_slices_prediction_idc:	return "std_video_h264_explicit_weighted_b_slices_prediction_idc";
+		case std_video_h264_implicit_weighted_b_slices_prediction_idc:	return "std_video_h264_implicit_weighted_b_slices_prediction_idc";
+		case std_video_h264_invalid_weighted_b_slices_prediction_idc:	return "std_video_h264_invalid_weighted_b_slices_prediction_idc";
+		default:														return DE_NULL;
+	}
+}
+
+const char* getdVideoH264ModificationOfPicNumsIdcName (StdVideoH264ModificationOfPicNumsIdc value)
+{
+	switch (value)
+	{
+		case std_video_h264_modification_of_pic_nums_idc_short_term_subtract:	return "std_video_h264_modification_of_pic_nums_idc_short_term_subtract";
+		case std_video_h264_modification_of_pic_nums_idc_short_term_add:		return "std_video_h264_modification_of_pic_nums_idc_short_term_add";
+		case std_video_h264_modification_of_pic_nums_idc_long_term:				return "std_video_h264_modification_of_pic_nums_idc_long_term";
+		case std_video_h264_modification_of_pic_nums_idc_end:					return "std_video_h264_modification_of_pic_nums_idc_end";
+		case std_video_h264_modification_of_pic_nums_idc_invalid:				return "std_video_h264_modification_of_pic_nums_idc_invalid";
+		default:																return DE_NULL;
+	}
+}
+
+const char* getdVideoH264MemMgmtControlOpName (StdVideoH264MemMgmtControlOp value)
+{
+	switch (value)
+	{
+		case std_video_h264_mem_mgmt_control_op_end:						return "std_video_h264_mem_mgmt_control_op_end";
+		case std_video_h264_mem_mgmt_control_op_unmark_short_term:			return "std_video_h264_mem_mgmt_control_op_unmark_short_term";
+		case std_video_h264_mem_mgmt_control_op_unmark_long_term:			return "std_video_h264_mem_mgmt_control_op_unmark_long_term";
+		case std_video_h264_mem_mgmt_control_op_mark_long_term:				return "std_video_h264_mem_mgmt_control_op_mark_long_term";
+		case std_video_h264_mem_mgmt_control_op_set_max_long_term_index:	return "std_video_h264_mem_mgmt_control_op_set_max_long_term_index";
+		case std_video_h264_mem_mgmt_control_op_unmark_all:					return "std_video_h264_mem_mgmt_control_op_unmark_all";
+		case std_video_h264_mem_mgmt_control_op_mark_current_as_long_term:	return "std_video_h264_mem_mgmt_control_op_mark_current_as_long_term";
+		case std_video_h264_mem_mgmt_control_op_invalid:					return "std_video_h264_mem_mgmt_control_op_invalid";
+		default:															return DE_NULL;
+	}
+}
+
+const char* getdVideoH264CabacInitIdcName (StdVideoH264CabacInitIdc value)
+{
+	switch (value)
+	{
+		case std_video_h264_cabac_init_idc_0:		return "std_video_h264_cabac_init_idc_0";
+		case std_video_h264_cabac_init_idc_1:		return "std_video_h264_cabac_init_idc_1";
+		case std_video_h264_cabac_init_idc_2:		return "std_video_h264_cabac_init_idc_2";
+		case std_video_h264_cabac_init_idc_invalid:	return "std_video_h264_cabac_init_idc_invalid";
+		default:									return DE_NULL;
+	}
+}
+
+const char* getdVideoH264DisableDeblockingFilterIdcName (StdVideoH264DisableDeblockingFilterIdc value)
+{
+	switch (value)
+	{
+		case std_video_h264_disable_deblocking_filter_idc_disabled:	return "std_video_h264_disable_deblocking_filter_idc_disabled";
+		case std_video_h264_disable_deblocking_filter_idc_enabled:	return "std_video_h264_disable_deblocking_filter_idc_enabled";
+		case std_video_h264_disable_deblocking_filter_idc_partial:	return "std_video_h264_disable_deblocking_filter_idc_partial";
+		case std_video_h264_disable_deblocking_filter_idc_invalid:	return "std_video_h264_disable_deblocking_filter_idc_invalid";
+		default:													return DE_NULL;
+	}
+}
+
+const char* getdVideoH264PictureTypeName (StdVideoH264PictureType value)
+{
+	switch (value)
+	{
+		case std_video_h264_picture_type_i:			return "std_video_h264_picture_type_i";
+		case std_video_h264_picture_type_p:			return "std_video_h264_picture_type_p";
+		case std_video_h264_picture_type_b:			return "std_video_h264_picture_type_b";
+		case std_video_h264_picture_type_invalid:	return "std_video_h264_picture_type_invalid";
+		default:									return DE_NULL;
+	}
+}
+
+const char* getdVideoH264SliceTypeName (StdVideoH264SliceType value)
+{
+	switch (value)
+	{
+		case std_video_h264_slice_type_i:		return "std_video_h264_slice_type_i";
+		case std_video_h264_slice_type_p:		return "std_video_h264_slice_type_p";
+		case std_video_h264_slice_type_b:		return "std_video_h264_slice_type_b";
+		case std_video_h264_slice_type_invalid:	return "std_video_h264_slice_type_invalid";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getdVideoH264NonVclNaluTypeName (StdVideoH264NonVclNaluType value)
+{
+	switch (value)
+	{
+		case std_video_h264_non_vcl_nalu_type_sps:				return "std_video_h264_non_vcl_nalu_type_sps";
+		case std_video_h264_non_vcl_nalu_type_pps:				return "std_video_h264_non_vcl_nalu_type_pps";
+		case std_video_h264_non_vcl_nalu_type_aud:				return "std_video_h264_non_vcl_nalu_type_aud";
+		case std_video_h264_non_vcl_nalu_type_prefix:			return "std_video_h264_non_vcl_nalu_type_prefix";
+		case std_video_h264_non_vcl_nalu_type_end_of_sequence:	return "std_video_h264_non_vcl_nalu_type_end_of_sequence";
+		case std_video_h264_non_vcl_nalu_type_end_of_stream:	return "std_video_h264_non_vcl_nalu_type_end_of_stream";
+		case std_video_h264_non_vcl_nalu_type_precoded:			return "std_video_h264_non_vcl_nalu_type_precoded";
+		case std_video_h264_non_vcl_nalu_type_invalid:			return "std_video_h264_non_vcl_nalu_type_invalid";
+		default:												return DE_NULL;
+	}
+}
+
+const char* getdVideoH265ChromaFormatIdcName (StdVideoH265ChromaFormatIdc value)
+{
+	switch (value)
+	{
+		case std_video_h265_chroma_format_idc_monochrome:	return "std_video_h265_chroma_format_idc_monochrome";
+		case std_video_h265_chroma_format_idc_420:			return "std_video_h265_chroma_format_idc_420";
+		case std_video_h265_chroma_format_idc_422:			return "std_video_h265_chroma_format_idc_422";
+		case std_video_h265_chroma_format_idc_444:			return "std_video_h265_chroma_format_idc_444";
+		default:											return DE_NULL;
+	}
+}
+
+const char* getdVideoH265ProfileIdcName (StdVideoH265ProfileIdc value)
+{
+	switch (value)
+	{
+		case std_video_h265_profile_idc_main:						return "std_video_h265_profile_idc_main";
+		case std_video_h265_profile_idc_main_10:					return "std_video_h265_profile_idc_main_10";
+		case std_video_h265_profile_idc_main_still_picture:			return "std_video_h265_profile_idc_main_still_picture";
+		case std_video_h265_profile_idc_format_range_extensions:	return "std_video_h265_profile_idc_format_range_extensions";
+		case std_video_h265_profile_idc_scc_extensions:				return "std_video_h265_profile_idc_scc_extensions";
+		case std_video_h265_profile_idc_invalid:					return "std_video_h265_profile_idc_invalid";
+		default:													return DE_NULL;
+	}
+}
+
+const char* getdVideoH265LevelName (StdVideoH265Level value)
+{
+	switch (value)
+	{
+		case std_video_h265_level_1_0:		return "std_video_h265_level_1_0";
+		case std_video_h265_level_2_0:		return "std_video_h265_level_2_0";
+		case std_video_h265_level_2_1:		return "std_video_h265_level_2_1";
+		case std_video_h265_level_3_0:		return "std_video_h265_level_3_0";
+		case std_video_h265_level_3_1:		return "std_video_h265_level_3_1";
+		case std_video_h265_level_4_0:		return "std_video_h265_level_4_0";
+		case std_video_h265_level_4_1:		return "std_video_h265_level_4_1";
+		case std_video_h265_level_5_0:		return "std_video_h265_level_5_0";
+		case std_video_h265_level_5_1:		return "std_video_h265_level_5_1";
+		case std_video_h265_level_5_2:		return "std_video_h265_level_5_2";
+		case std_video_h265_level_6_0:		return "std_video_h265_level_6_0";
+		case std_video_h265_level_6_1:		return "std_video_h265_level_6_1";
+		case std_video_h265_level_6_2:		return "std_video_h265_level_6_2";
+		case std_video_h265_level_invalid:	return "std_video_h265_level_invalid";
+		default:							return DE_NULL;
+	}
+}
+
 const char* getFullScreenExclusiveEXTName (VkFullScreenExclusiveEXT value)
 {
 	switch (value)
@@ -3636,6 +3895,204 @@ tcu::Format::Bitfield<32> getAccelerationStructureCreateFlagsKHRStr (VkAccelerat
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+tcu::Format::Bitfield<32> getVideoCodecOperationFlagsKHRStr (VkVideoCodecOperationFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_INVALID_BIT_KHR,			"VK_VIDEO_CODEC_OPERATION_INVALID_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT,		"VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT,		"VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_EXT,		"VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_FLAG_BITS_MAX_ENUM_KHR,	"VK_VIDEO_CODEC_OPERATION_FLAG_BITS_MAX_ENUM_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoChromaSubsamplingFlagsKHRStr (VkVideoChromaSubsamplingFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_CHROMA_SUBSAMPLING_INVALID_BIT_KHR,			"VK_VIDEO_CHROMA_SUBSAMPLING_INVALID_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR,		"VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,				"VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CHROMA_SUBSAMPLING_422_BIT_KHR,				"VK_VIDEO_CHROMA_SUBSAMPLING_422_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CHROMA_SUBSAMPLING_444_BIT_KHR,				"VK_VIDEO_CHROMA_SUBSAMPLING_444_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CHROMA_SUBSAMPLING_FLAG_BITS_MAX_ENUM_KHR,	"VK_VIDEO_CHROMA_SUBSAMPLING_FLAG_BITS_MAX_ENUM_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoComponentBitDepthFlagsKHRStr (VkVideoComponentBitDepthFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_COMPONENT_BIT_DEPTH_INVALID_KHR,				"VK_VIDEO_COMPONENT_BIT_DEPTH_INVALID_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,				"VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_COMPONENT_BIT_DEPTH_10_BIT_KHR,				"VK_VIDEO_COMPONENT_BIT_DEPTH_10_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_COMPONENT_BIT_DEPTH_12_BIT_KHR,				"VK_VIDEO_COMPONENT_BIT_DEPTH_12_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_COMPONENT_BIT_DEPTH_FLAG_BITS_MAX_ENUM_KHR,	"VK_VIDEO_COMPONENT_BIT_DEPTH_FLAG_BITS_MAX_ENUM_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoCapabilitiesFlagsKHRStr (VkVideoCapabilitiesFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_CAPABILITIES_PROTECTED_CONTENT_BIT_KHR,			"VK_VIDEO_CAPABILITIES_PROTECTED_CONTENT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CAPABILITIES_SEPARATE_REFERENCE_IMAGES_BIT_KHR,	"VK_VIDEO_CAPABILITIES_SEPARATE_REFERENCE_IMAGES_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CAPABILITIES_FLAG_BITS_MAX_ENUM_KHR,				"VK_VIDEO_CAPABILITIES_FLAG_BITS_MAX_ENUM_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoSessionCreateFlagsKHRStr (VkVideoSessionCreateFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_SESSION_CREATE_DEFAULT_KHR,				"VK_VIDEO_SESSION_CREATE_DEFAULT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_SESSION_CREATE_PROTECTED_CONTENT_BIT_KHR,	"VK_VIDEO_SESSION_CREATE_PROTECTED_CONTENT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_SESSION_CREATE_FLAG_BITS_MAX_ENUM_KHR,	"VK_VIDEO_SESSION_CREATE_FLAG_BITS_MAX_ENUM_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoCodingControlFlagsKHRStr (VkVideoCodingControlFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_CODING_CONTROL_DEFAULT_KHR,				"VK_VIDEO_CODING_CONTROL_DEFAULT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR,				"VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CODING_CONTROL_FLAG_BITS_MAX_ENUM_KHR,	"VK_VIDEO_CODING_CONTROL_FLAG_BITS_MAX_ENUM_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoCodingQualityPresetFlagsKHRStr (VkVideoCodingQualityPresetFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_CODING_QUALITY_PRESET_DEFAULT_BIT_KHR,		"VK_VIDEO_CODING_QUALITY_PRESET_DEFAULT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CODING_QUALITY_PRESET_NORMAL_BIT_KHR,			"VK_VIDEO_CODING_QUALITY_PRESET_NORMAL_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CODING_QUALITY_PRESET_POWER_BIT_KHR,			"VK_VIDEO_CODING_QUALITY_PRESET_POWER_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CODING_QUALITY_PRESET_QUALITY_BIT_KHR,		"VK_VIDEO_CODING_QUALITY_PRESET_QUALITY_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CODING_QUALITY_PRESET_FLAG_BITS_MAX_ENUM_KHR,	"VK_VIDEO_CODING_QUALITY_PRESET_FLAG_BITS_MAX_ENUM_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoDecodeFlagsKHRStr (VkVideoDecodeFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_DECODE_DEFAULT_KHR,				"VK_VIDEO_DECODE_DEFAULT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_DECODE_RESERVED_0_BIT_KHR,		"VK_VIDEO_DECODE_RESERVED_0_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_DECODE_FLAG_BITS_MAX_ENUM_KHR,	"VK_VIDEO_DECODE_FLAG_BITS_MAX_ENUM_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeFlagsKHRStr (VkVideoEncodeFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_DEFAULT_KHR,				"VK_VIDEO_ENCODE_DEFAULT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RESERVED_0_BIT_KHR,		"VK_VIDEO_ENCODE_RESERVED_0_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_FLAG_BITS_MAX_ENUM_KHR,	"VK_VIDEO_ENCODE_FLAG_BITS_MAX_ENUM_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeRateControlFlagsKHRStr (VkVideoEncodeRateControlFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RATE_CONTROL_DEFAULT_KHR,				"VK_VIDEO_ENCODE_RATE_CONTROL_DEFAULT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RATE_CONTROL_RESET_BIT_KHR,			"VK_VIDEO_ENCODE_RATE_CONTROL_RESET_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RATE_CONTROL_FLAG_BITS_MAX_ENUM_KHR,	"VK_VIDEO_ENCODE_RATE_CONTROL_FLAG_BITS_MAX_ENUM_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeRateControlModeFlagsKHRStr (VkVideoEncodeRateControlModeFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RATE_CONTROL_MODE_NONE_BIT_KHR,			"VK_VIDEO_ENCODE_RATE_CONTROL_MODE_NONE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR,				"VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RATE_CONTROL_MODE_VBR_BIT_KHR,				"VK_VIDEO_ENCODE_RATE_CONTROL_MODE_VBR_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RATE_CONTROL_MODE_FLAG_BITS_MAX_ENUM_KHR,	"VK_VIDEO_ENCODE_RATE_CONTROL_MODE_FLAG_BITS_MAX_ENUM_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeH264CapabilitiesFlagsEXTStr (VkVideoEncodeH264CapabilitiesFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_CABAC_BIT_EXT,							"VK_VIDEO_ENCODE_H264_CAPABILITY_CABAC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_CAVLC_BIT_EXT,							"VK_VIDEO_ENCODE_H264_CAPABILITY_CAVLC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_WEIGHTED_BI_PRED_IMPLICIT_BIT_EXT,		"VK_VIDEO_ENCODE_H264_CAPABILITY_WEIGHTED_BI_PRED_IMPLICIT_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_TRANSFORM_8X8_BIT_EXT,					"VK_VIDEO_ENCODE_H264_CAPABILITY_TRANSFORM_8X8_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_CHROMA_QP_OFFSET_BIT_EXT,				"VK_VIDEO_ENCODE_H264_CAPABILITY_CHROMA_QP_OFFSET_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_SECOND_CHROMA_QP_OFFSET_BIT_EXT,		"VK_VIDEO_ENCODE_H264_CAPABILITY_SECOND_CHROMA_QP_OFFSET_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_DEBLOCKING_FILTER_DISABLED_BIT_EXT,	"VK_VIDEO_ENCODE_H264_CAPABILITY_DEBLOCKING_FILTER_DISABLED_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_DEBLOCKING_FILTER_ENABLED_BIT_EXT,		"VK_VIDEO_ENCODE_H264_CAPABILITY_DEBLOCKING_FILTER_ENABLED_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_DEBLOCKING_FILTER_PARTIAL_BIT_EXT,		"VK_VIDEO_ENCODE_H264_CAPABILITY_DEBLOCKING_FILTER_PARTIAL_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_MULTIPLE_SLICE_PER_FRAME_BIT_EXT,		"VK_VIDEO_ENCODE_H264_CAPABILITY_MULTIPLE_SLICE_PER_FRAME_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_EVENLY_DISTRIBUTED_SLICE_SIZE_BIT_EXT,	"VK_VIDEO_ENCODE_H264_CAPABILITY_EVENLY_DISTRIBUTED_SLICE_SIZE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITIES_FLAG_BITS_MAX_ENUM_EXT,				"VK_VIDEO_ENCODE_H264_CAPABILITIES_FLAG_BITS_MAX_ENUM_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeH264InputModeFlagsEXTStr (VkVideoEncodeH264InputModeFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_INPUT_MODE_FRAME_BIT_EXT,				"VK_VIDEO_ENCODE_H264_INPUT_MODE_FRAME_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_INPUT_MODE_SLICE_BIT_EXT,				"VK_VIDEO_ENCODE_H264_INPUT_MODE_SLICE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_INPUT_MODE_NON_VCL_BIT_EXT,			"VK_VIDEO_ENCODE_H264_INPUT_MODE_NON_VCL_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_INPUT_MODE_FLAG_BITS_MAX_ENUM_EXT,	"VK_VIDEO_ENCODE_H264_INPUT_MODE_FLAG_BITS_MAX_ENUM_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeH264OutputModeFlagsEXTStr (VkVideoEncodeH264OutputModeFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_OUTPUT_MODE_FRAME_BIT_EXT,			"VK_VIDEO_ENCODE_H264_OUTPUT_MODE_FRAME_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_OUTPUT_MODE_SLICE_BIT_EXT,			"VK_VIDEO_ENCODE_H264_OUTPUT_MODE_SLICE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_OUTPUT_MODE_NON_VCL_BIT_EXT,			"VK_VIDEO_ENCODE_H264_OUTPUT_MODE_NON_VCL_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_OUTPUT_MODE_FLAG_BITS_MAX_ENUM_EXT,	"VK_VIDEO_ENCODE_H264_OUTPUT_MODE_FLAG_BITS_MAX_ENUM_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeH264CreateFlagsEXTStr (VkVideoEncodeH264CreateFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CREATE_DEFAULT_EXT,				"VK_VIDEO_ENCODE_H264_CREATE_DEFAULT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CREATE_RESERVED_0_BIT_EXT,		"VK_VIDEO_ENCODE_H264_CREATE_RESERVED_0_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CREATE_FLAG_BITS_MAX_ENUM_EXT,	"VK_VIDEO_ENCODE_H264_CREATE_FLAG_BITS_MAX_ENUM_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoDecodeH264FieldLayoutFlagsEXTStr (VkVideoDecodeH264FieldLayoutFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_DECODE_H264_PROGRESSIVE_PICTURES_ONLY_EXT,					"VK_VIDEO_DECODE_H264_PROGRESSIVE_PICTURES_ONLY_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_DECODE_H264_FIELD_LAYOUT_LINE_INTERLACED_PLANE_BIT_EXT,		"VK_VIDEO_DECODE_H264_FIELD_LAYOUT_LINE_INTERLACED_PLANE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_DECODE_H264_FIELD_LAYOUT_SEPARATE_INTERLACED_PLANE_BIT_EXT,	"VK_VIDEO_DECODE_H264_FIELD_LAYOUT_SEPARATE_INTERLACED_PLANE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_DECODE_H264_FIELD_LAYOUT_FLAG_BITS_MAX_ENUM_EXT,				"VK_VIDEO_DECODE_H264_FIELD_LAYOUT_FLAG_BITS_MAX_ENUM_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getInstanceCreateFlagsStr (VkInstanceCreateFlags value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
@@ -3807,6 +4264,26 @@ tcu::Format::Bitfield<32> getDeviceMemoryReportFlagsEXTStr (VkDeviceMemoryReport
 }
 
 tcu::Format::Bitfield<32> getAndroidSurfaceCreateFlagsKHRStr (VkAndroidSurfaceCreateFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getVideoBeginCodingFlagsKHRStr (VkVideoBeginCodingFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getVideoEndCodingFlagsKHRStr (VkVideoEndCodingFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getVideoDecodeH264CreateFlagsEXTStr (VkVideoDecodeH264CreateFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getVideoDecodeH265CreateFlagsEXTStr (VkVideoDecodeH265CreateFlagsEXT value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -10989,6 +11466,218 @@ std::ostream& operator<< (std::ostream& s, const VkExternalFormatANDROID& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkVideoQueueFamilyProperties2KHR& value)
+{
+	s << "VkVideoQueueFamilyProperties2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvideoCodecOperations = " << getVideoCodecOperationFlagsKHRStr(value.videoCodecOperations) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoProfileKHR& value)
+{
+	s << "VkVideoProfileKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvideoCodecOperation = " << value.videoCodecOperation << '\n';
+	s << "\tchromaSubsampling = " << getVideoChromaSubsamplingFlagsKHRStr(value.chromaSubsampling) << '\n';
+	s << "\tlumaBitDepth = " << getVideoComponentBitDepthFlagsKHRStr(value.lumaBitDepth) << '\n';
+	s << "\tchromaBitDepth = " << getVideoComponentBitDepthFlagsKHRStr(value.chromaBitDepth) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoProfilesKHR& value)
+{
+	s << "VkVideoProfilesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tprofileCount = " << value.profileCount << '\n';
+	s << "\tpProfiles = " << value.pProfiles << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoCapabilitiesKHR& value)
+{
+	s << "VkVideoCapabilitiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcapabilityFlags = " << getVideoCapabilitiesFlagsKHRStr(value.capabilityFlags) << '\n';
+	s << "\tminBitstreamBufferOffsetAlignment = " << value.minBitstreamBufferOffsetAlignment << '\n';
+	s << "\tminBitstreamBufferSizeAlignment = " << value.minBitstreamBufferSizeAlignment << '\n';
+	s << "\tvideoPictureExtentGranularity = " << value.videoPictureExtentGranularity << '\n';
+	s << "\tminExtent = " << value.minExtent << '\n';
+	s << "\tmaxExtent = " << value.maxExtent << '\n';
+	s << "\tmaxReferencePicturesSlotsCount = " << value.maxReferencePicturesSlotsCount << '\n';
+	s << "\tmaxReferencePicturesActiveCount = " << value.maxReferencePicturesActiveCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVideoFormatInfoKHR& value)
+{
+	s << "VkPhysicalDeviceVideoFormatInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageUsage = " << getImageUsageFlagsStr(value.imageUsage) << '\n';
+	s << "\tpVideoProfiles = " << value.pVideoProfiles << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoFormatPropertiesKHR& value)
+{
+	s << "VkVideoFormatPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tformat = " << value.format << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoPictureResourceKHR& value)
+{
+	s << "VkVideoPictureResourceKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcodedOffset = " << value.codedOffset << '\n';
+	s << "\tcodedExtent = " << value.codedExtent << '\n';
+	s << "\tbaseArrayLayer = " << value.baseArrayLayer << '\n';
+	s << "\timageViewBinding = " << value.imageViewBinding << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoReferenceSlotKHR& value)
+{
+	s << "VkVideoReferenceSlotKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tslotIndex = " << value.slotIndex << '\n';
+	s << "\tpPictureResource = " << value.pPictureResource << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoGetMemoryPropertiesKHR& value)
+{
+	s << "VkVideoGetMemoryPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemoryBindIndex = " << value.memoryBindIndex << '\n';
+	s << "\tpMemoryRequirements = " << value.pMemoryRequirements << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoBindMemoryKHR& value)
+{
+	s << "VkVideoBindMemoryKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemoryBindIndex = " << value.memoryBindIndex << '\n';
+	s << "\tmemory = " << value.memory << '\n';
+	s << "\tmemoryOffset = " << value.memoryOffset << '\n';
+	s << "\tmemorySize = " << value.memorySize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoSessionCreateInfoKHR& value)
+{
+	s << "VkVideoSessionCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tqueueFamilyIndex = " << value.queueFamilyIndex << '\n';
+	s << "\tflags = " << getVideoSessionCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\tpVideoProfile = " << value.pVideoProfile << '\n';
+	s << "\tpictureFormat = " << value.pictureFormat << '\n';
+	s << "\tmaxCodedExtent = " << value.maxCodedExtent << '\n';
+	s << "\treferencePicturesFormat = " << value.referencePicturesFormat << '\n';
+	s << "\tmaxReferencePicturesSlotsCount = " << value.maxReferencePicturesSlotsCount << '\n';
+	s << "\tmaxReferencePicturesActiveCount = " << value.maxReferencePicturesActiveCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoSessionParametersCreateInfoKHR& value)
+{
+	s << "VkVideoSessionParametersCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvideoSessionParametersTemplate = " << value.videoSessionParametersTemplate << '\n';
+	s << "\tvideoSession = " << value.videoSession << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoSessionParametersUpdateInfoKHR& value)
+{
+	s << "VkVideoSessionParametersUpdateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tupdateSequenceCount = " << value.updateSequenceCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoBeginCodingInfoKHR& value)
+{
+	s << "VkVideoBeginCodingInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getVideoBeginCodingFlagsKHRStr(value.flags) << '\n';
+	s << "\tcodecQualityPreset = " << getVideoCodingQualityPresetFlagsKHRStr(value.codecQualityPreset) << '\n';
+	s << "\tvideoSession = " << value.videoSession << '\n';
+	s << "\tvideoSessionParameters = " << value.videoSessionParameters << '\n';
+	s << "\treferenceSlotCount = " << value.referenceSlotCount << '\n';
+	s << "\tpReferenceSlots = " << value.pReferenceSlots << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEndCodingInfoKHR& value)
+{
+	s << "VkVideoEndCodingInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getVideoEndCodingFlagsKHRStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoCodingControlInfoKHR& value)
+{
+	s << "VkVideoCodingControlInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getVideoCodingControlFlagsKHRStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeInfoKHR& value)
+{
+	s << "VkVideoDecodeInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getVideoDecodeFlagsKHRStr(value.flags) << '\n';
+	s << "\tcodedOffset = " << value.codedOffset << '\n';
+	s << "\tcodedExtent = " << value.codedExtent << '\n';
+	s << "\tsrcBuffer = " << value.srcBuffer << '\n';
+	s << "\tsrcBufferOffset = " << value.srcBufferOffset << '\n';
+	s << "\tsrcBufferRange = " << value.srcBufferRange << '\n';
+	s << "\tdstPictureResource = " << value.dstPictureResource << '\n';
+	s << "\tpSetupReferenceSlot = " << value.pSetupReferenceSlot << '\n';
+	s << "\treferenceSlotCount = " << value.referenceSlotCount << '\n';
+	s << "\tpReferenceSlots = " << value.pReferenceSlots << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePortabilitySubsetFeaturesKHR& value)
 {
 	s << "VkPhysicalDevicePortabilitySubsetFeaturesKHR = {\n";
@@ -11019,6 +11708,1041 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePortabilitySubs
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tminVertexInputBindingStrideAlignment = " << value.minVertexInputBindingStrideAlignment << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeInfoKHR& value)
+{
+	s << "VkVideoEncodeInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getVideoEncodeFlagsKHRStr(value.flags) << '\n';
+	s << "\tqualityLevel = " << value.qualityLevel << '\n';
+	s << "\tcodedExtent = " << value.codedExtent << '\n';
+	s << "\tdstBitstreamBuffer = " << value.dstBitstreamBuffer << '\n';
+	s << "\tdstBitstreamBufferOffset = " << value.dstBitstreamBufferOffset << '\n';
+	s << "\tdstBitstreamBufferMaxRange = " << value.dstBitstreamBufferMaxRange << '\n';
+	s << "\tsrcPictureResource = " << value.srcPictureResource << '\n';
+	s << "\tpSetupReferenceSlot = " << value.pSetupReferenceSlot << '\n';
+	s << "\treferenceSlotCount = " << value.referenceSlotCount << '\n';
+	s << "\tpReferenceSlots = " << value.pReferenceSlots << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeRateControlInfoKHR& value)
+{
+	s << "VkVideoEncodeRateControlInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getVideoEncodeRateControlFlagsKHRStr(value.flags) << '\n';
+	s << "\trateControlMode = " << value.rateControlMode << '\n';
+	s << "\taverageBitrate = " << value.averageBitrate << '\n';
+	s << "\tpeakToAverageBitrateRatio = " << value.peakToAverageBitrateRatio << '\n';
+	s << "\tframeRateNumerator = " << value.frameRateNumerator << '\n';
+	s << "\tframeRateDenominator = " << value.frameRateDenominator << '\n';
+	s << "\tvirtualBufferSizeInMs = " << value.virtualBufferSizeInMs << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH264SpsVuiFlags& value)
+{
+	s << "StdVideoH264SpsVuiFlags = {\n";
+	s << "\taspect_ratio_info_present_flag = " << value.aspect_ratio_info_present_flag << '\n';
+	s << "\toverscan_info_present_flag = " << value.overscan_info_present_flag << '\n';
+	s << "\toverscan_appropriate_flag = " << value.overscan_appropriate_flag << '\n';
+	s << "\tvideo_signal_type_present_flag = " << value.video_signal_type_present_flag << '\n';
+	s << "\tvideo_full_range_flag = " << value.video_full_range_flag << '\n';
+	s << "\tcolor_description_present_flag = " << value.color_description_present_flag << '\n';
+	s << "\tchroma_loc_info_present_flag = " << value.chroma_loc_info_present_flag << '\n';
+	s << "\ttiming_info_present_flag = " << value.timing_info_present_flag << '\n';
+	s << "\tfixed_frame_rate_flag = " << value.fixed_frame_rate_flag << '\n';
+	s << "\tbitstream_restriction_flag = " << value.bitstream_restriction_flag << '\n';
+	s << "\tnal_hrd_parameters_present_flag = " << value.nal_hrd_parameters_present_flag << '\n';
+	s << "\tvcl_hrd_parameters_present_flag = " << value.vcl_hrd_parameters_present_flag << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH264HrdParameters& value)
+{
+	s << "StdVideoH264HrdParameters = {\n";
+	s << "\tcpb_cnt_minus1 = " << value.cpb_cnt_minus1 << '\n';
+	s << "\tbit_rate_scale = " << value.bit_rate_scale << '\n';
+	s << "\tcpb_size_scale = " << value.cpb_size_scale << '\n';
+	s << "\tbit_rate_value_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.bit_rate_value_minus1), DE_ARRAY_END(value.bit_rate_value_minus1)) << '\n';
+	s << "\tcpb_size_value_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.cpb_size_value_minus1), DE_ARRAY_END(value.cpb_size_value_minus1)) << '\n';
+	s << "\tcbr_flag = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.cbr_flag)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.cbr_flag))) << '\n';
+	s << "\tinitial_cpb_removal_delay_length_minus1 = " << value.initial_cpb_removal_delay_length_minus1 << '\n';
+	s << "\tcpb_removal_delay_length_minus1 = " << value.cpb_removal_delay_length_minus1 << '\n';
+	s << "\tdpb_output_delay_length_minus1 = " << value.dpb_output_delay_length_minus1 << '\n';
+	s << "\ttime_offset_length = " << value.time_offset_length << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH264SequenceParameterSetVui& value)
+{
+	s << "StdVideoH264SequenceParameterSetVui = {\n";
+	s << "\taspect_ratio_idc = " << value.aspect_ratio_idc << '\n';
+	s << "\tsar_width = " << value.sar_width << '\n';
+	s << "\tsar_height = " << value.sar_height << '\n';
+	s << "\tvideo_format = " << value.video_format << '\n';
+	s << "\tcolor_primaries = " << value.color_primaries << '\n';
+	s << "\ttransfer_characteristics = " << value.transfer_characteristics << '\n';
+	s << "\tmatrix_coefficients = " << value.matrix_coefficients << '\n';
+	s << "\tnum_units_in_tick = " << value.num_units_in_tick << '\n';
+	s << "\ttime_scale = " << value.time_scale << '\n';
+	s << "\thrd_parameters = " << value.hrd_parameters << '\n';
+	s << "\tnum_reorder_frames = " << value.num_reorder_frames << '\n';
+	s << "\tmax_dec_frame_buffering = " << value.max_dec_frame_buffering << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH264SpsFlags& value)
+{
+	s << "StdVideoH264SpsFlags = {\n";
+	s << "\tconstraint_set0_flag = " << value.constraint_set0_flag << '\n';
+	s << "\tconstraint_set1_flag = " << value.constraint_set1_flag << '\n';
+	s << "\tconstraint_set2_flag = " << value.constraint_set2_flag << '\n';
+	s << "\tconstraint_set3_flag = " << value.constraint_set3_flag << '\n';
+	s << "\tconstraint_set4_flag = " << value.constraint_set4_flag << '\n';
+	s << "\tconstraint_set5_flag = " << value.constraint_set5_flag << '\n';
+	s << "\tdirect_8x8_inference_flag = " << value.direct_8x8_inference_flag << '\n';
+	s << "\tmb_adaptive_frame_field_flag = " << value.mb_adaptive_frame_field_flag << '\n';
+	s << "\tframe_mbs_only_flag = " << value.frame_mbs_only_flag << '\n';
+	s << "\tdelta_pic_order_always_zero_flag = " << value.delta_pic_order_always_zero_flag << '\n';
+	s << "\tresidual_colour_transform_flag = " << value.residual_colour_transform_flag << '\n';
+	s << "\tgaps_in_frame_num_value_allowed_flag = " << value.gaps_in_frame_num_value_allowed_flag << '\n';
+	s << "\tfirst_picture_after_seek_flag = " << value.first_picture_after_seek_flag << '\n';
+	s << "\tqpprime_y_zero_transform_bypass_flag = " << value.qpprime_y_zero_transform_bypass_flag << '\n';
+	s << "\tframe_cropping_flag = " << value.frame_cropping_flag << '\n';
+	s << "\tscaling_matrix_present_flag = " << value.scaling_matrix_present_flag << '\n';
+	s << "\tvui_parameters_present_flag = " << value.vui_parameters_present_flag << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH264ScalingLists& value)
+{
+	s << "StdVideoH264ScalingLists = {\n";
+	s << "\tscaling_list_present_mask = " << value.scaling_list_present_mask << '\n';
+	s << "\tuse_default_scaling_matrix_mask = " << value.use_default_scaling_matrix_mask << '\n';
+	s << "\tScalingList4x4 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList4x4), DE_ARRAY_END(value.ScalingList4x4)) << '\n';
+	s << "\tScalingList8x8 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList8x8), DE_ARRAY_END(value.ScalingList8x8)) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH264SequenceParameterSet& value)
+{
+	s << "StdVideoH264SequenceParameterSet = {\n";
+	s << "\tprofile_idc = " << value.profile_idc << '\n';
+	s << "\tlevel_idc = " << value.level_idc << '\n';
+	s << "\tseq_parameter_set_id = " << value.seq_parameter_set_id << '\n';
+	s << "\tchroma_format_idc = " << value.chroma_format_idc << '\n';
+	s << "\tbit_depth_luma_minus8 = " << value.bit_depth_luma_minus8 << '\n';
+	s << "\tbit_depth_chroma_minus8 = " << value.bit_depth_chroma_minus8 << '\n';
+	s << "\tlog2_max_frame_num_minus4 = " << value.log2_max_frame_num_minus4 << '\n';
+	s << "\tpic_order_cnt_type = " << value.pic_order_cnt_type << '\n';
+	s << "\tlog2_max_pic_order_cnt_lsb_minus4 = " << value.log2_max_pic_order_cnt_lsb_minus4 << '\n';
+	s << "\toffset_for_non_ref_pic = " << value.offset_for_non_ref_pic << '\n';
+	s << "\toffset_for_top_to_bottom_field = " << value.offset_for_top_to_bottom_field << '\n';
+	s << "\tnum_ref_frames_in_pic_order_cnt_cycle = " << value.num_ref_frames_in_pic_order_cnt_cycle << '\n';
+	s << "\tmax_num_ref_frames = " << value.max_num_ref_frames << '\n';
+	s << "\tpic_width_in_mbs_minus1 = " << value.pic_width_in_mbs_minus1 << '\n';
+	s << "\tpic_height_in_map_units_minus1 = " << value.pic_height_in_map_units_minus1 << '\n';
+	s << "\tframe_crop_left_offset = " << value.frame_crop_left_offset << '\n';
+	s << "\tframe_crop_right_offset = " << value.frame_crop_right_offset << '\n';
+	s << "\tframe_crop_top_offset = " << value.frame_crop_top_offset << '\n';
+	s << "\tframe_crop_bottom_offset = " << value.frame_crop_bottom_offset << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << "\toffset_for_ref_frame = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.offset_for_ref_frame), DE_ARRAY_END(value.offset_for_ref_frame)) << '\n';
+	s << "\tpScalingLists = " << value.pScalingLists << '\n';
+	s << "\tpSequenceParameterSetVui = " << value.pSequenceParameterSetVui << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH264PpsFlags& value)
+{
+	s << "StdVideoH264PpsFlags = {\n";
+	s << "\ttransform_8x8_mode_flag = " << value.transform_8x8_mode_flag << '\n';
+	s << "\tredundant_pic_cnt_present_flag = " << value.redundant_pic_cnt_present_flag << '\n';
+	s << "\tconstrained_intra_pred_flag = " << value.constrained_intra_pred_flag << '\n';
+	s << "\tdeblocking_filter_control_present_flag = " << value.deblocking_filter_control_present_flag << '\n';
+	s << "\tweighted_bipred_idc_flag = " << value.weighted_bipred_idc_flag << '\n';
+	s << "\tweighted_pred_flag = " << value.weighted_pred_flag << '\n';
+	s << "\tpic_order_present_flag = " << value.pic_order_present_flag << '\n';
+	s << "\tentropy_coding_mode_flag = " << value.entropy_coding_mode_flag << '\n';
+	s << "\tscaling_matrix_present_flag = " << value.scaling_matrix_present_flag << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH264PictureParameterSet& value)
+{
+	s << "StdVideoH264PictureParameterSet = {\n";
+	s << "\tseq_parameter_set_id = " << value.seq_parameter_set_id << '\n';
+	s << "\tpic_parameter_set_id = " << value.pic_parameter_set_id << '\n';
+	s << "\tnum_ref_idx_l0_default_active_minus1 = " << value.num_ref_idx_l0_default_active_minus1 << '\n';
+	s << "\tnum_ref_idx_l1_default_active_minus1 = " << value.num_ref_idx_l1_default_active_minus1 << '\n';
+	s << "\tweighted_bipred_idc = " << value.weighted_bipred_idc << '\n';
+	s << "\tpic_init_qp_minus26 = " << value.pic_init_qp_minus26 << '\n';
+	s << "\tpic_init_qs_minus26 = " << value.pic_init_qs_minus26 << '\n';
+	s << "\tchroma_qp_index_offset = " << value.chroma_qp_index_offset << '\n';
+	s << "\tsecond_chroma_qp_index_offset = " << value.second_chroma_qp_index_offset << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << "\tpScalingLists = " << value.pScalingLists << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264SliceHeaderFlags& value)
+{
+	s << "StdVideoEncodeH264SliceHeaderFlags = {\n";
+	s << "\tidr_flag = " << value.idr_flag << '\n';
+	s << "\tis_reference_flag = " << value.is_reference_flag << '\n';
+	s << "\tnum_ref_idx_active_override_flag = " << value.num_ref_idx_active_override_flag << '\n';
+	s << "\tno_output_of_prior_pics_flag = " << value.no_output_of_prior_pics_flag << '\n';
+	s << "\tlong_term_reference_flag = " << value.long_term_reference_flag << '\n';
+	s << "\tadaptive_ref_pic_marking_mode_flag = " << value.adaptive_ref_pic_marking_mode_flag << '\n';
+	s << "\tno_prior_references_available_flag = " << value.no_prior_references_available_flag << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264PictureInfoFlags& value)
+{
+	s << "StdVideoEncodeH264PictureInfoFlags = {\n";
+	s << "\tidr_flag = " << value.idr_flag << '\n';
+	s << "\tis_reference_flag = " << value.is_reference_flag << '\n';
+	s << "\tlong_term_reference_flag = " << value.long_term_reference_flag << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264RefMgmtFlags& value)
+{
+	s << "StdVideoEncodeH264RefMgmtFlags = {\n";
+	s << "\tref_pic_list_modification_l0_flag = " << value.ref_pic_list_modification_l0_flag << '\n';
+	s << "\tref_pic_list_modification_l1_flag = " << value.ref_pic_list_modification_l1_flag << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264RefListModEntry& value)
+{
+	s << "StdVideoEncodeH264RefListModEntry = {\n";
+	s << "\tmodification_of_pic_nums_idc = " << value.modification_of_pic_nums_idc << '\n';
+	s << "\tabs_diff_pic_num_minus1 = " << value.abs_diff_pic_num_minus1 << '\n';
+	s << "\tlong_term_pic_num = " << value.long_term_pic_num << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264RefPicMarkingEntry& value)
+{
+	s << "StdVideoEncodeH264RefPicMarkingEntry = {\n";
+	s << "\toperation = " << value.operation << '\n';
+	s << "\tdifference_of_pic_nums_minus1 = " << value.difference_of_pic_nums_minus1 << '\n';
+	s << "\tlong_term_pic_num = " << value.long_term_pic_num << '\n';
+	s << "\tlong_term_frame_idx = " << value.long_term_frame_idx << '\n';
+	s << "\tmax_long_term_frame_idx_plus1 = " << value.max_long_term_frame_idx_plus1 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264RefMemMgmtCtrlOperations& value)
+{
+	s << "StdVideoEncodeH264RefMemMgmtCtrlOperations = {\n";
+	s << "\tflags = " << value.flags << '\n';
+	s << "\trefList0ModOpCount = " << value.refList0ModOpCount << '\n';
+	s << "\tpRefList0ModOperations = " << value.pRefList0ModOperations << '\n';
+	s << "\trefList1ModOpCount = " << value.refList1ModOpCount << '\n';
+	s << "\tpRefList1ModOperations = " << value.pRefList1ModOperations << '\n';
+	s << "\trefPicMarkingOpCount = " << value.refPicMarkingOpCount << '\n';
+	s << "\tpRefPicMarkingOperations = " << value.pRefPicMarkingOperations << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264PictureInfo& value)
+{
+	s << "StdVideoEncodeH264PictureInfo = {\n";
+	s << "\tflags = " << value.flags << '\n';
+	s << "\tpictureType = " << value.pictureType << '\n';
+	s << "\tframeNum = " << value.frameNum << '\n';
+	s << "\tpictureOrderCount = " << value.pictureOrderCount << '\n';
+	s << "\tlong_term_pic_num = " << value.long_term_pic_num << '\n';
+	s << "\tlong_term_frame_idx = " << value.long_term_frame_idx << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264SliceHeader& value)
+{
+	s << "StdVideoEncodeH264SliceHeader = {\n";
+	s << "\tflags = " << value.flags << '\n';
+	s << "\tslice_type = " << value.slice_type << '\n';
+	s << "\tseq_parameter_set_id = " << value.seq_parameter_set_id << '\n';
+	s << "\tpic_parameter_set_id = " << value.pic_parameter_set_id << '\n';
+	s << "\tidr_pic_id = " << value.idr_pic_id << '\n';
+	s << "\tnum_ref_idx_l0_active_minus1 = " << value.num_ref_idx_l0_active_minus1 << '\n';
+	s << "\tnum_ref_idx_l1_active_minus1 = " << value.num_ref_idx_l1_active_minus1 << '\n';
+	s << "\tcabac_init_idc = " << value.cabac_init_idc << '\n';
+	s << "\tdisable_deblocking_filter_idc = " << value.disable_deblocking_filter_idc << '\n';
+	s << "\tslice_alpha_c0_offset_div2 = " << value.slice_alpha_c0_offset_div2 << '\n';
+	s << "\tslice_beta_offset_div2 = " << value.slice_beta_offset_div2 << '\n';
+	s << "\tpMemMgmtCtrlOperations = " << value.pMemMgmtCtrlOperations << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264CapabilitiesEXT& value)
+{
+	s << "VkVideoEncodeH264CapabilitiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getVideoEncodeH264CapabilitiesFlagsEXTStr(value.flags) << '\n';
+	s << "\tinputModeFlags = " << getVideoEncodeH264InputModeFlagsEXTStr(value.inputModeFlags) << '\n';
+	s << "\toutputModeFlags = " << getVideoEncodeH264OutputModeFlagsEXTStr(value.outputModeFlags) << '\n';
+	s << "\tminPictureSizeInMbs = " << value.minPictureSizeInMbs << '\n';
+	s << "\tmaxPictureSizeInMbs = " << value.maxPictureSizeInMbs << '\n';
+	s << "\tinputImageDataAlignment = " << value.inputImageDataAlignment << '\n';
+	s << "\tmaxNumL0ReferenceForP = " << value.maxNumL0ReferenceForP << '\n';
+	s << "\tmaxNumL0ReferenceForB = " << value.maxNumL0ReferenceForB << '\n';
+	s << "\tmaxNumL1Reference = " << value.maxNumL1Reference << '\n';
+	s << "\tqualityLevelCount = " << value.qualityLevelCount << '\n';
+	s << "\tstdExtensionVersion = " << value.stdExtensionVersion << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264SessionCreateInfoEXT& value)
+{
+	s << "VkVideoEncodeH264SessionCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getVideoEncodeH264CreateFlagsEXTStr(value.flags) << '\n';
+	s << "\tmaxPictureSizeInMbs = " << value.maxPictureSizeInMbs << '\n';
+	s << "\tpStdExtensionVersion = " << value.pStdExtensionVersion << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264SessionParametersAddInfoEXT& value)
+{
+	s << "VkVideoEncodeH264SessionParametersAddInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tspsStdCount = " << value.spsStdCount << '\n';
+	s << "\tpSpsStd = " << value.pSpsStd << '\n';
+	s << "\tppsStdCount = " << value.ppsStdCount << '\n';
+	s << "\tpPpsStd = " << value.pPpsStd << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264SessionParametersCreateInfoEXT& value)
+{
+	s << "VkVideoEncodeH264SessionParametersCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxSpsStdCount = " << value.maxSpsStdCount << '\n';
+	s << "\tmaxPpsStdCount = " << value.maxPpsStdCount << '\n';
+	s << "\tpParametersAddInfo = " << value.pParametersAddInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264DpbSlotInfoEXT& value)
+{
+	s << "VkVideoEncodeH264DpbSlotInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tslotIndex = " << value.slotIndex << '\n';
+	s << "\tpStdPictureInfo = " << value.pStdPictureInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264NaluSliceEXT& value)
+{
+	s << "VkVideoEncodeH264NaluSliceEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpSliceHeaderStd = " << value.pSliceHeaderStd << '\n';
+	s << "\tmbCount = " << value.mbCount << '\n';
+	s << "\trefFinalList0EntryCount = " << value.refFinalList0EntryCount << '\n';
+	s << "\tpRefFinalList0Entries = " << value.pRefFinalList0Entries << '\n';
+	s << "\trefFinalList1EntryCount = " << value.refFinalList1EntryCount << '\n';
+	s << "\tpRefFinalList1Entries = " << value.pRefFinalList1Entries << '\n';
+	s << "\tprecedingNaluBytes = " << value.precedingNaluBytes << '\n';
+	s << "\tminQp = " << value.minQp << '\n';
+	s << "\tmaxQp = " << value.maxQp << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264VclFrameInfoEXT& value)
+{
+	s << "VkVideoEncodeH264VclFrameInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trefDefaultFinalList0EntryCount = " << value.refDefaultFinalList0EntryCount << '\n';
+	s << "\tpRefDefaultFinalList0Entries = " << value.pRefDefaultFinalList0Entries << '\n';
+	s << "\trefDefaultFinalList1EntryCount = " << value.refDefaultFinalList1EntryCount << '\n';
+	s << "\tpRefDefaultFinalList1Entries = " << value.pRefDefaultFinalList1Entries << '\n';
+	s << "\tnaluSliceEntryCount = " << value.naluSliceEntryCount << '\n';
+	s << "\tpNaluSliceEntries = " << value.pNaluSliceEntries << '\n';
+	s << "\tpCurrentPictureInfo = " << value.pCurrentPictureInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264EmitPictureParametersEXT& value)
+{
+	s << "VkVideoEncodeH264EmitPictureParametersEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tspsId = " << value.spsId << '\n';
+	s << "\temitSpsEnable = " << value.emitSpsEnable << '\n';
+	s << "\tppsIdEntryCount = " << value.ppsIdEntryCount << '\n';
+	s << "\tppsIdEntries = " << value.ppsIdEntries << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264ProfileEXT& value)
+{
+	s << "VkVideoEncodeH264ProfileEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstdProfileIdc = " << value.stdProfileIdc << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH264PictureInfoFlags& value)
+{
+	s << "StdVideoDecodeH264PictureInfoFlags = {\n";
+	s << "\tfield_pic_flag = " << value.field_pic_flag << '\n';
+	s << "\tis_intra = " << value.is_intra << '\n';
+	s << "\tbottom_field_flag = " << value.bottom_field_flag << '\n';
+	s << "\tis_reference = " << value.is_reference << '\n';
+	s << "\tcomplementary_field_pair = " << value.complementary_field_pair << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH264PictureInfo& value)
+{
+	s << "StdVideoDecodeH264PictureInfo = {\n";
+	s << "\tseq_parameter_set_id = " << value.seq_parameter_set_id << '\n';
+	s << "\tpic_parameter_set_id = " << value.pic_parameter_set_id << '\n';
+	s << "\treserved = " << value.reserved << '\n';
+	s << "\tframe_num = " << value.frame_num << '\n';
+	s << "\tidr_pic_id = " << value.idr_pic_id << '\n';
+	s << "\tPicOrderCnt = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.PicOrderCnt), DE_ARRAY_END(value.PicOrderCnt)) << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH264ReferenceInfoFlags& value)
+{
+	s << "StdVideoDecodeH264ReferenceInfoFlags = {\n";
+	s << "\ttop_field_flag = " << value.top_field_flag << '\n';
+	s << "\tbottom_field_flag = " << value.bottom_field_flag << '\n';
+	s << "\tis_long_term = " << value.is_long_term << '\n';
+	s << "\tis_non_existing = " << value.is_non_existing << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH264ReferenceInfo& value)
+{
+	s << "StdVideoDecodeH264ReferenceInfo = {\n";
+	s << "\tFrameNum = " << value.FrameNum << '\n';
+	s << "\treserved = " << value.reserved << '\n';
+	s << "\tPicOrderCnt = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.PicOrderCnt), DE_ARRAY_END(value.PicOrderCnt)) << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH264MvcElementFlags& value)
+{
+	s << "StdVideoDecodeH264MvcElementFlags = {\n";
+	s << "\tnon_idr = " << value.non_idr << '\n';
+	s << "\tanchor_pic = " << value.anchor_pic << '\n';
+	s << "\tinter_view = " << value.inter_view << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH264MvcElement& value)
+{
+	s << "StdVideoDecodeH264MvcElement = {\n";
+	s << "\tflags = " << value.flags << '\n';
+	s << "\tviewOrderIndex = " << value.viewOrderIndex << '\n';
+	s << "\tviewId = " << value.viewId << '\n';
+	s << "\ttemporalId = " << value.temporalId << '\n';
+	s << "\tpriorityId = " << value.priorityId << '\n';
+	s << "\tnumOfAnchorRefsInL0 = " << value.numOfAnchorRefsInL0 << '\n';
+	s << "\tviewIdOfAnchorRefsInL0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.viewIdOfAnchorRefsInL0), DE_ARRAY_END(value.viewIdOfAnchorRefsInL0)) << '\n';
+	s << "\tnumOfAnchorRefsInL1 = " << value.numOfAnchorRefsInL1 << '\n';
+	s << "\tviewIdOfAnchorRefsInL1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.viewIdOfAnchorRefsInL1), DE_ARRAY_END(value.viewIdOfAnchorRefsInL1)) << '\n';
+	s << "\tnumOfNonAnchorRefsInL0 = " << value.numOfNonAnchorRefsInL0 << '\n';
+	s << "\tviewIdOfNonAnchorRefsInL0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.viewIdOfNonAnchorRefsInL0), DE_ARRAY_END(value.viewIdOfNonAnchorRefsInL0)) << '\n';
+	s << "\tnumOfNonAnchorRefsInL1 = " << value.numOfNonAnchorRefsInL1 << '\n';
+	s << "\tviewIdOfNonAnchorRefsInL1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.viewIdOfNonAnchorRefsInL1), DE_ARRAY_END(value.viewIdOfNonAnchorRefsInL1)) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH264Mvc& value)
+{
+	s << "StdVideoDecodeH264Mvc = {\n";
+	s << "\tviewId0 = " << value.viewId0 << '\n';
+	s << "\tmvcElementCount = " << value.mvcElementCount << '\n';
+	s << "\tpMvcElements = " << value.pMvcElements << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264ProfileEXT& value)
+{
+	s << "VkVideoDecodeH264ProfileEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstdProfileIdc = " << value.stdProfileIdc << '\n';
+	s << "\tfieldLayout = " << getVideoDecodeH264FieldLayoutFlagsEXTStr(value.fieldLayout) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264CapabilitiesEXT& value)
+{
+	s << "VkVideoDecodeH264CapabilitiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxLevel = " << value.maxLevel << '\n';
+	s << "\tfieldOffsetGranularity = " << value.fieldOffsetGranularity << '\n';
+	s << "\tstdExtensionVersion = " << value.stdExtensionVersion << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264SessionCreateInfoEXT& value)
+{
+	s << "VkVideoDecodeH264SessionCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getVideoDecodeH264CreateFlagsEXTStr(value.flags) << '\n';
+	s << "\tpStdExtensionVersion = " << value.pStdExtensionVersion << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264SessionParametersAddInfoEXT& value)
+{
+	s << "VkVideoDecodeH264SessionParametersAddInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tspsStdCount = " << value.spsStdCount << '\n';
+	s << "\tpSpsStd = " << value.pSpsStd << '\n';
+	s << "\tppsStdCount = " << value.ppsStdCount << '\n';
+	s << "\tpPpsStd = " << value.pPpsStd << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264SessionParametersCreateInfoEXT& value)
+{
+	s << "VkVideoDecodeH264SessionParametersCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxSpsStdCount = " << value.maxSpsStdCount << '\n';
+	s << "\tmaxPpsStdCount = " << value.maxPpsStdCount << '\n';
+	s << "\tpParametersAddInfo = " << value.pParametersAddInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264PictureInfoEXT& value)
+{
+	s << "VkVideoDecodeH264PictureInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpStdPictureInfo = " << value.pStdPictureInfo << '\n';
+	s << "\tslicesCount = " << value.slicesCount << '\n';
+	s << "\tpSlicesDataOffsets = " << value.pSlicesDataOffsets << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264MvcEXT& value)
+{
+	s << "VkVideoDecodeH264MvcEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpStdMvc = " << value.pStdMvc << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264DpbSlotInfoEXT& value)
+{
+	s << "VkVideoDecodeH264DpbSlotInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpStdReferenceInfo = " << value.pStdReferenceInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH265DecPicBufMgr& value)
+{
+	s << "StdVideoH265DecPicBufMgr = {\n";
+	s << "\tmax_latency_increase_plus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.max_latency_increase_plus1), DE_ARRAY_END(value.max_latency_increase_plus1)) << '\n';
+	s << "\tmax_dec_pic_buffering_minus1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.max_dec_pic_buffering_minus1)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.max_dec_pic_buffering_minus1))) << '\n';
+	s << "\tmax_num_reorder_pics = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.max_num_reorder_pics)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.max_num_reorder_pics))) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH265SubLayerHrdParameters& value)
+{
+	s << "StdVideoH265SubLayerHrdParameters = {\n";
+	s << "\tbit_rate_value_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.bit_rate_value_minus1), DE_ARRAY_END(value.bit_rate_value_minus1)) << '\n';
+	s << "\tcpb_size_value_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.cpb_size_value_minus1), DE_ARRAY_END(value.cpb_size_value_minus1)) << '\n';
+	s << "\tcpb_size_du_value_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.cpb_size_du_value_minus1), DE_ARRAY_END(value.cpb_size_du_value_minus1)) << '\n';
+	s << "\tbit_rate_du_value_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.bit_rate_du_value_minus1), DE_ARRAY_END(value.bit_rate_du_value_minus1)) << '\n';
+	s << "\tcbr_flag = " << value.cbr_flag << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH265HrdFlags& value)
+{
+	s << "StdVideoH265HrdFlags = {\n";
+	s << "\tnal_hrd_parameters_present_flag = " << value.nal_hrd_parameters_present_flag << '\n';
+	s << "\tvcl_hrd_parameters_present_flag = " << value.vcl_hrd_parameters_present_flag << '\n';
+	s << "\tsub_pic_hrd_params_present_flag = " << value.sub_pic_hrd_params_present_flag << '\n';
+	s << "\tsub_pic_cpb_params_in_pic_timing_sei_flag = " << value.sub_pic_cpb_params_in_pic_timing_sei_flag << '\n';
+	s << "\tfixed_pic_rate_general_flag = " << value.fixed_pic_rate_general_flag << '\n';
+	s << "\tfixed_pic_rate_within_cvs_flag = " << value.fixed_pic_rate_within_cvs_flag << '\n';
+	s << "\tlow_delay_hrd_flag = " << value.low_delay_hrd_flag << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH265HrdParameters& value)
+{
+	s << "StdVideoH265HrdParameters = {\n";
+	s << "\ttick_divisor_minus2 = " << value.tick_divisor_minus2 << '\n';
+	s << "\tdu_cpb_removal_delay_increment_length_minus1 = " << value.du_cpb_removal_delay_increment_length_minus1 << '\n';
+	s << "\tdpb_output_delay_du_length_minus1 = " << value.dpb_output_delay_du_length_minus1 << '\n';
+	s << "\tbit_rate_scale = " << value.bit_rate_scale << '\n';
+	s << "\tcpb_size_scale = " << value.cpb_size_scale << '\n';
+	s << "\tcpb_size_du_scale = " << value.cpb_size_du_scale << '\n';
+	s << "\tinitial_cpb_removal_delay_length_minus1 = " << value.initial_cpb_removal_delay_length_minus1 << '\n';
+	s << "\tau_cpb_removal_delay_length_minus1 = " << value.au_cpb_removal_delay_length_minus1 << '\n';
+	s << "\tdpb_output_delay_length_minus1 = " << value.dpb_output_delay_length_minus1 << '\n';
+	s << "\tcpb_cnt_minus1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.cpb_cnt_minus1)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.cpb_cnt_minus1))) << '\n';
+	s << "\telemental_duration_in_tc_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.elemental_duration_in_tc_minus1), DE_ARRAY_END(value.elemental_duration_in_tc_minus1)) << '\n';
+	s << "\tSubLayerHrdParametersNal = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.SubLayerHrdParametersNal), DE_ARRAY_END(value.SubLayerHrdParametersNal)) << '\n';
+	s << "\tSubLayerHrdParametersVcl = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.SubLayerHrdParametersVcl), DE_ARRAY_END(value.SubLayerHrdParametersVcl)) << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH265VpsFlags& value)
+{
+	s << "StdVideoH265VpsFlags = {\n";
+	s << "\tvps_temporal_id_nesting_flag = " << value.vps_temporal_id_nesting_flag << '\n';
+	s << "\tvps_sub_layer_ordering_info_present_flag = " << value.vps_sub_layer_ordering_info_present_flag << '\n';
+	s << "\tvps_timing_info_present_flag = " << value.vps_timing_info_present_flag << '\n';
+	s << "\tvps_poc_proportional_to_timing_flag = " << value.vps_poc_proportional_to_timing_flag << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH265VideoParameterSet& value)
+{
+	s << "StdVideoH265VideoParameterSet = {\n";
+	s << "\tvps_video_parameter_set_id = " << value.vps_video_parameter_set_id << '\n';
+	s << "\tvps_max_sub_layers_minus1 = " << value.vps_max_sub_layers_minus1 << '\n';
+	s << "\tvps_num_units_in_tick = " << value.vps_num_units_in_tick << '\n';
+	s << "\tvps_time_scale = " << value.vps_time_scale << '\n';
+	s << "\tvps_num_ticks_poc_diff_one_minus1 = " << value.vps_num_ticks_poc_diff_one_minus1 << '\n';
+	s << "\tpDecPicBufMgr = " << value.pDecPicBufMgr << '\n';
+	s << "\thrd_parameters = " << value.hrd_parameters << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH265ScalingLists& value)
+{
+	s << "StdVideoH265ScalingLists = {\n";
+	s << "\tScalingList4x4 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList4x4), DE_ARRAY_END(value.ScalingList4x4)) << '\n';
+	s << "\tScalingList8x8 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList8x8), DE_ARRAY_END(value.ScalingList8x8)) << '\n';
+	s << "\tScalingList16x16 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList16x16), DE_ARRAY_END(value.ScalingList16x16)) << '\n';
+	s << "\tScalingList32x32 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList32x32), DE_ARRAY_END(value.ScalingList32x32)) << '\n';
+	s << "\tScalingListDCCoef16x16 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.ScalingListDCCoef16x16)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.ScalingListDCCoef16x16))) << '\n';
+	s << "\tScalingListDCCoef32x32 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.ScalingListDCCoef32x32)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.ScalingListDCCoef32x32))) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH265SpsVuiFlags& value)
+{
+	s << "StdVideoH265SpsVuiFlags = {\n";
+	s << "\taspect_ratio_info_present_flag = " << value.aspect_ratio_info_present_flag << '\n';
+	s << "\toverscan_info_present_flag = " << value.overscan_info_present_flag << '\n';
+	s << "\toverscan_appropriate_flag = " << value.overscan_appropriate_flag << '\n';
+	s << "\tvideo_signal_type_present_flag = " << value.video_signal_type_present_flag << '\n';
+	s << "\tvideo_full_range_flag = " << value.video_full_range_flag << '\n';
+	s << "\tcolour_description_present_flag = " << value.colour_description_present_flag << '\n';
+	s << "\tchroma_loc_info_present_flag = " << value.chroma_loc_info_present_flag << '\n';
+	s << "\tneutral_chroma_indication_flag = " << value.neutral_chroma_indication_flag << '\n';
+	s << "\tfield_seq_flag = " << value.field_seq_flag << '\n';
+	s << "\tframe_field_info_present_flag = " << value.frame_field_info_present_flag << '\n';
+	s << "\tdefault_display_window_flag = " << value.default_display_window_flag << '\n';
+	s << "\tvui_timing_info_present_flag = " << value.vui_timing_info_present_flag << '\n';
+	s << "\tvui_poc_proportional_to_timing_flag = " << value.vui_poc_proportional_to_timing_flag << '\n';
+	s << "\tvui_hrd_parameters_present_flag = " << value.vui_hrd_parameters_present_flag << '\n';
+	s << "\tbitstream_restriction_flag = " << value.bitstream_restriction_flag << '\n';
+	s << "\ttiles_fixed_structure_flag = " << value.tiles_fixed_structure_flag << '\n';
+	s << "\tmotion_vectors_over_pic_boundaries_flag = " << value.motion_vectors_over_pic_boundaries_flag << '\n';
+	s << "\trestricted_ref_pic_lists_flag = " << value.restricted_ref_pic_lists_flag << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH265SequenceParameterSetVui& value)
+{
+	s << "StdVideoH265SequenceParameterSetVui = {\n";
+	s << "\taspect_ratio_idc = " << value.aspect_ratio_idc << '\n';
+	s << "\tsar_width = " << value.sar_width << '\n';
+	s << "\tsar_height = " << value.sar_height << '\n';
+	s << "\tvideo_format = " << value.video_format << '\n';
+	s << "\tcolour_primaries = " << value.colour_primaries << '\n';
+	s << "\ttransfer_characteristics = " << value.transfer_characteristics << '\n';
+	s << "\tmatrix_coeffs = " << value.matrix_coeffs << '\n';
+	s << "\tchroma_sample_loc_type_top_field = " << value.chroma_sample_loc_type_top_field << '\n';
+	s << "\tchroma_sample_loc_type_bottom_field = " << value.chroma_sample_loc_type_bottom_field << '\n';
+	s << "\tdef_disp_win_left_offset = " << value.def_disp_win_left_offset << '\n';
+	s << "\tdef_disp_win_right_offset = " << value.def_disp_win_right_offset << '\n';
+	s << "\tdef_disp_win_top_offset = " << value.def_disp_win_top_offset << '\n';
+	s << "\tdef_disp_win_bottom_offset = " << value.def_disp_win_bottom_offset << '\n';
+	s << "\tvui_num_units_in_tick = " << value.vui_num_units_in_tick << '\n';
+	s << "\tvui_time_scale = " << value.vui_time_scale << '\n';
+	s << "\tvui_num_ticks_poc_diff_one_minus1 = " << value.vui_num_ticks_poc_diff_one_minus1 << '\n';
+	s << "\thrd_parameters = " << value.hrd_parameters << '\n';
+	s << "\tmin_spatial_segmentation_idc = " << value.min_spatial_segmentation_idc << '\n';
+	s << "\tmax_bytes_per_pic_denom = " << value.max_bytes_per_pic_denom << '\n';
+	s << "\tmax_bits_per_min_cu_denom = " << value.max_bits_per_min_cu_denom << '\n';
+	s << "\tlog2_max_mv_length_horizontal = " << value.log2_max_mv_length_horizontal << '\n';
+	s << "\tlog2_max_mv_length_vertical = " << value.log2_max_mv_length_vertical << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH265PredictorPaletteEntries& value)
+{
+	s << "StdVideoH265PredictorPaletteEntries = {\n";
+	s << "\tPredictorPaletteEntries = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.PredictorPaletteEntries), DE_ARRAY_END(value.PredictorPaletteEntries)) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH265SpsFlags& value)
+{
+	s << "StdVideoH265SpsFlags = {\n";
+	s << "\tsps_temporal_id_nesting_flag = " << value.sps_temporal_id_nesting_flag << '\n';
+	s << "\tseparate_colour_plane_flag = " << value.separate_colour_plane_flag << '\n';
+	s << "\tscaling_list_enabled_flag = " << value.scaling_list_enabled_flag << '\n';
+	s << "\tsps_scaling_list_data_present_flag = " << value.sps_scaling_list_data_present_flag << '\n';
+	s << "\tamp_enabled_flag = " << value.amp_enabled_flag << '\n';
+	s << "\tsample_adaptive_offset_enabled_flag = " << value.sample_adaptive_offset_enabled_flag << '\n';
+	s << "\tpcm_enabled_flag = " << value.pcm_enabled_flag << '\n';
+	s << "\tpcm_loop_filter_disabled_flag = " << value.pcm_loop_filter_disabled_flag << '\n';
+	s << "\tlong_term_ref_pics_present_flag = " << value.long_term_ref_pics_present_flag << '\n';
+	s << "\tsps_temporal_mvp_enabled_flag = " << value.sps_temporal_mvp_enabled_flag << '\n';
+	s << "\tstrong_intra_smoothing_enabled_flag = " << value.strong_intra_smoothing_enabled_flag << '\n';
+	s << "\tvui_parameters_present_flag = " << value.vui_parameters_present_flag << '\n';
+	s << "\tsps_extension_present_flag = " << value.sps_extension_present_flag << '\n';
+	s << "\tsps_range_extension_flag = " << value.sps_range_extension_flag << '\n';
+	s << "\ttransform_skip_rotation_enabled_flag = " << value.transform_skip_rotation_enabled_flag << '\n';
+	s << "\ttransform_skip_context_enabled_flag = " << value.transform_skip_context_enabled_flag << '\n';
+	s << "\timplicit_rdpcm_enabled_flag = " << value.implicit_rdpcm_enabled_flag << '\n';
+	s << "\texplicit_rdpcm_enabled_flag = " << value.explicit_rdpcm_enabled_flag << '\n';
+	s << "\textended_precision_processing_flag = " << value.extended_precision_processing_flag << '\n';
+	s << "\tintra_smoothing_disabled_flag = " << value.intra_smoothing_disabled_flag << '\n';
+	s << "\thigh_precision_offsets_enabled_flag = " << value.high_precision_offsets_enabled_flag << '\n';
+	s << "\tpersistent_rice_adaptation_enabled_flag = " << value.persistent_rice_adaptation_enabled_flag << '\n';
+	s << "\tcabac_bypass_alignment_enabled_flag = " << value.cabac_bypass_alignment_enabled_flag << '\n';
+	s << "\tsps_curr_pic_ref_enabled_flag = " << value.sps_curr_pic_ref_enabled_flag << '\n';
+	s << "\tpalette_mode_enabled_flag = " << value.palette_mode_enabled_flag << '\n';
+	s << "\tsps_palette_predictor_initializer_present_flag = " << value.sps_palette_predictor_initializer_present_flag << '\n';
+	s << "\tintra_boundary_filtering_disabled_flag = " << value.intra_boundary_filtering_disabled_flag << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH265SequenceParameterSet& value)
+{
+	s << "StdVideoH265SequenceParameterSet = {\n";
+	s << "\tprofile_idc = " << value.profile_idc << '\n';
+	s << "\tlevel_idc = " << value.level_idc << '\n';
+	s << "\tpic_width_in_luma_samples = " << value.pic_width_in_luma_samples << '\n';
+	s << "\tpic_height_in_luma_samples = " << value.pic_height_in_luma_samples << '\n';
+	s << "\tsps_video_parameter_set_id = " << value.sps_video_parameter_set_id << '\n';
+	s << "\tsps_max_sub_layers_minus1 = " << value.sps_max_sub_layers_minus1 << '\n';
+	s << "\tsps_seq_parameter_set_id = " << value.sps_seq_parameter_set_id << '\n';
+	s << "\tchroma_format_idc = " << value.chroma_format_idc << '\n';
+	s << "\tbit_depth_luma_minus8 = " << value.bit_depth_luma_minus8 << '\n';
+	s << "\tbit_depth_chroma_minus8 = " << value.bit_depth_chroma_minus8 << '\n';
+	s << "\tlog2_max_pic_order_cnt_lsb_minus4 = " << value.log2_max_pic_order_cnt_lsb_minus4 << '\n';
+	s << "\tsps_max_dec_pic_buffering_minus1 = " << value.sps_max_dec_pic_buffering_minus1 << '\n';
+	s << "\tlog2_min_luma_coding_block_size_minus3 = " << value.log2_min_luma_coding_block_size_minus3 << '\n';
+	s << "\tlog2_diff_max_min_luma_coding_block_size = " << value.log2_diff_max_min_luma_coding_block_size << '\n';
+	s << "\tlog2_min_luma_transform_block_size_minus2 = " << value.log2_min_luma_transform_block_size_minus2 << '\n';
+	s << "\tlog2_diff_max_min_luma_transform_block_size = " << value.log2_diff_max_min_luma_transform_block_size << '\n';
+	s << "\tmax_transform_hierarchy_depth_inter = " << value.max_transform_hierarchy_depth_inter << '\n';
+	s << "\tmax_transform_hierarchy_depth_intra = " << value.max_transform_hierarchy_depth_intra << '\n';
+	s << "\tnum_short_term_ref_pic_sets = " << value.num_short_term_ref_pic_sets << '\n';
+	s << "\tnum_long_term_ref_pics_sps = " << value.num_long_term_ref_pics_sps << '\n';
+	s << "\tpcm_sample_bit_depth_luma_minus1 = " << value.pcm_sample_bit_depth_luma_minus1 << '\n';
+	s << "\tpcm_sample_bit_depth_chroma_minus1 = " << value.pcm_sample_bit_depth_chroma_minus1 << '\n';
+	s << "\tlog2_min_pcm_luma_coding_block_size_minus3 = " << value.log2_min_pcm_luma_coding_block_size_minus3 << '\n';
+	s << "\tlog2_diff_max_min_pcm_luma_coding_block_size = " << value.log2_diff_max_min_pcm_luma_coding_block_size << '\n';
+	s << "\tconf_win_left_offset = " << value.conf_win_left_offset << '\n';
+	s << "\tconf_win_right_offset = " << value.conf_win_right_offset << '\n';
+	s << "\tconf_win_top_offset = " << value.conf_win_top_offset << '\n';
+	s << "\tconf_win_bottom_offset = " << value.conf_win_bottom_offset << '\n';
+	s << "\tpDecPicBufMgr = " << value.pDecPicBufMgr << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << "\tpScalingLists = " << value.pScalingLists << '\n';
+	s << "\tpSequenceParameterSetVui = " << value.pSequenceParameterSetVui << '\n';
+	s << "\tpalette_max_size = " << value.palette_max_size << '\n';
+	s << "\tdelta_palette_max_predictor_size = " << value.delta_palette_max_predictor_size << '\n';
+	s << "\tmotion_vector_resolution_control_idc = " << value.motion_vector_resolution_control_idc << '\n';
+	s << "\tsps_num_palette_predictor_initializer_minus1 = " << value.sps_num_palette_predictor_initializer_minus1 << '\n';
+	s << "\tpPredictorPaletteEntries = " << value.pPredictorPaletteEntries << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH265PpsFlags& value)
+{
+	s << "StdVideoH265PpsFlags = {\n";
+	s << "\tdependent_slice_segments_enabled_flag = " << value.dependent_slice_segments_enabled_flag << '\n';
+	s << "\toutput_flag_present_flag = " << value.output_flag_present_flag << '\n';
+	s << "\tsign_data_hiding_enabled_flag = " << value.sign_data_hiding_enabled_flag << '\n';
+	s << "\tcabac_init_present_flag = " << value.cabac_init_present_flag << '\n';
+	s << "\tconstrained_intra_pred_flag = " << value.constrained_intra_pred_flag << '\n';
+	s << "\ttransform_skip_enabled_flag = " << value.transform_skip_enabled_flag << '\n';
+	s << "\tcu_qp_delta_enabled_flag = " << value.cu_qp_delta_enabled_flag << '\n';
+	s << "\tpps_slice_chroma_qp_offsets_present_flag = " << value.pps_slice_chroma_qp_offsets_present_flag << '\n';
+	s << "\tweighted_pred_flag = " << value.weighted_pred_flag << '\n';
+	s << "\tweighted_bipred_flag = " << value.weighted_bipred_flag << '\n';
+	s << "\ttransquant_bypass_enabled_flag = " << value.transquant_bypass_enabled_flag << '\n';
+	s << "\ttiles_enabled_flag = " << value.tiles_enabled_flag << '\n';
+	s << "\tentropy_coding_sync_enabled_flag = " << value.entropy_coding_sync_enabled_flag << '\n';
+	s << "\tuniform_spacing_flag = " << value.uniform_spacing_flag << '\n';
+	s << "\tloop_filter_across_tiles_enabled_flag = " << value.loop_filter_across_tiles_enabled_flag << '\n';
+	s << "\tpps_loop_filter_across_slices_enabled_flag = " << value.pps_loop_filter_across_slices_enabled_flag << '\n';
+	s << "\tdeblocking_filter_control_present_flag = " << value.deblocking_filter_control_present_flag << '\n';
+	s << "\tdeblocking_filter_override_enabled_flag = " << value.deblocking_filter_override_enabled_flag << '\n';
+	s << "\tpps_deblocking_filter_disabled_flag = " << value.pps_deblocking_filter_disabled_flag << '\n';
+	s << "\tpps_scaling_list_data_present_flag = " << value.pps_scaling_list_data_present_flag << '\n';
+	s << "\tlists_modification_present_flag = " << value.lists_modification_present_flag << '\n';
+	s << "\tslice_segment_header_extension_present_flag = " << value.slice_segment_header_extension_present_flag << '\n';
+	s << "\tpps_extension_present_flag = " << value.pps_extension_present_flag << '\n';
+	s << "\tcross_component_prediction_enabled_flag = " << value.cross_component_prediction_enabled_flag << '\n';
+	s << "\tchroma_qp_offset_list_enabled_flag = " << value.chroma_qp_offset_list_enabled_flag << '\n';
+	s << "\tpps_curr_pic_ref_enabled_flag = " << value.pps_curr_pic_ref_enabled_flag << '\n';
+	s << "\tresidual_adaptive_colour_transform_enabled_flag = " << value.residual_adaptive_colour_transform_enabled_flag << '\n';
+	s << "\tpps_slice_act_qp_offsets_present_flag = " << value.pps_slice_act_qp_offsets_present_flag << '\n';
+	s << "\tpps_palette_predictor_initializer_present_flag = " << value.pps_palette_predictor_initializer_present_flag << '\n';
+	s << "\tmonochrome_palette_flag = " << value.monochrome_palette_flag << '\n';
+	s << "\tpps_range_extension_flag = " << value.pps_range_extension_flag << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoH265PictureParameterSet& value)
+{
+	s << "StdVideoH265PictureParameterSet = {\n";
+	s << "\tpps_pic_parameter_set_id = " << value.pps_pic_parameter_set_id << '\n';
+	s << "\tpps_seq_parameter_set_id = " << value.pps_seq_parameter_set_id << '\n';
+	s << "\tnum_extra_slice_header_bits = " << value.num_extra_slice_header_bits << '\n';
+	s << "\tnum_ref_idx_l0_default_active_minus1 = " << value.num_ref_idx_l0_default_active_minus1 << '\n';
+	s << "\tnum_ref_idx_l1_default_active_minus1 = " << value.num_ref_idx_l1_default_active_minus1 << '\n';
+	s << "\tinit_qp_minus26 = " << value.init_qp_minus26 << '\n';
+	s << "\tdiff_cu_qp_delta_depth = " << value.diff_cu_qp_delta_depth << '\n';
+	s << "\tpps_cb_qp_offset = " << value.pps_cb_qp_offset << '\n';
+	s << "\tpps_cr_qp_offset = " << value.pps_cr_qp_offset << '\n';
+	s << "\tnum_tile_columns_minus1 = " << value.num_tile_columns_minus1 << '\n';
+	s << "\tnum_tile_rows_minus1 = " << value.num_tile_rows_minus1 << '\n';
+	s << "\tcolumn_width_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.column_width_minus1), DE_ARRAY_END(value.column_width_minus1)) << '\n';
+	s << "\trow_height_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.row_height_minus1), DE_ARRAY_END(value.row_height_minus1)) << '\n';
+	s << "\tpps_beta_offset_div2 = " << value.pps_beta_offset_div2 << '\n';
+	s << "\tpps_tc_offset_div2 = " << value.pps_tc_offset_div2 << '\n';
+	s << "\tlog2_parallel_merge_level_minus2 = " << value.log2_parallel_merge_level_minus2 << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << "\tpScalingLists = " << value.pScalingLists << '\n';
+	s << "\tlog2_max_transform_skip_block_size_minus2 = " << value.log2_max_transform_skip_block_size_minus2 << '\n';
+	s << "\tdiff_cu_chroma_qp_offset_depth = " << value.diff_cu_chroma_qp_offset_depth << '\n';
+	s << "\tchroma_qp_offset_list_len_minus1 = " << value.chroma_qp_offset_list_len_minus1 << '\n';
+	s << "\tcb_qp_offset_list = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.cb_qp_offset_list), DE_ARRAY_END(value.cb_qp_offset_list)) << '\n';
+	s << "\tcr_qp_offset_list = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.cr_qp_offset_list), DE_ARRAY_END(value.cr_qp_offset_list)) << '\n';
+	s << "\tlog2_sao_offset_scale_luma = " << value.log2_sao_offset_scale_luma << '\n';
+	s << "\tlog2_sao_offset_scale_chroma = " << value.log2_sao_offset_scale_chroma << '\n';
+	s << "\tpps_act_y_qp_offset_plus5 = " << value.pps_act_y_qp_offset_plus5 << '\n';
+	s << "\tpps_act_cb_qp_offset_plus5 = " << value.pps_act_cb_qp_offset_plus5 << '\n';
+	s << "\tpps_act_cr_qp_offset_plus5 = " << value.pps_act_cr_qp_offset_plus5 << '\n';
+	s << "\tpps_num_palette_predictor_initializer = " << value.pps_num_palette_predictor_initializer << '\n';
+	s << "\tluma_bit_depth_entry_minus8 = " << value.luma_bit_depth_entry_minus8 << '\n';
+	s << "\tchroma_bit_depth_entry_minus8 = " << value.chroma_bit_depth_entry_minus8 << '\n';
+	s << "\tpPredictorPaletteEntries = " << value.pPredictorPaletteEntries << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH265PictureInfoFlags& value)
+{
+	s << "StdVideoDecodeH265PictureInfoFlags = {\n";
+	s << "\tIrapPicFlag = " << value.IrapPicFlag << '\n';
+	s << "\tIdrPicFlag = " << value.IdrPicFlag << '\n';
+	s << "\tIsReference = " << value.IsReference << '\n';
+	s << "\tshort_term_ref_pic_set_sps_flag = " << value.short_term_ref_pic_set_sps_flag << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH265PictureInfo& value)
+{
+	s << "StdVideoDecodeH265PictureInfo = {\n";
+	s << "\tvps_video_parameter_set_id = " << value.vps_video_parameter_set_id << '\n';
+	s << "\tsps_seq_parameter_set_id = " << value.sps_seq_parameter_set_id << '\n';
+	s << "\tpps_pic_parameter_set_id = " << value.pps_pic_parameter_set_id << '\n';
+	s << "\tnum_short_term_ref_pic_sets = " << value.num_short_term_ref_pic_sets << '\n';
+	s << "\tPicOrderCntVal = " << value.PicOrderCntVal << '\n';
+	s << "\tNumBitsForSTRefPicSetInSlice = " << value.NumBitsForSTRefPicSetInSlice << '\n';
+	s << "\tNumDeltaPocsOfRefRpsIdx = " << value.NumDeltaPocsOfRefRpsIdx << '\n';
+	s << "\tRefPicSetStCurrBefore = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.RefPicSetStCurrBefore)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.RefPicSetStCurrBefore))) << '\n';
+	s << "\tRefPicSetStCurrAfter = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.RefPicSetStCurrAfter)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.RefPicSetStCurrAfter))) << '\n';
+	s << "\tRefPicSetLtCurr = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.RefPicSetLtCurr)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.RefPicSetLtCurr))) << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH265ReferenceInfoFlags& value)
+{
+	s << "StdVideoDecodeH265ReferenceInfoFlags = {\n";
+	s << "\tis_long_term = " << value.is_long_term << '\n';
+	s << "\tis_non_existing = " << value.is_non_existing << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH265ReferenceInfo& value)
+{
+	s << "StdVideoDecodeH265ReferenceInfo = {\n";
+	s << "\tPicOrderCntVal = " << value.PicOrderCntVal << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265ProfileEXT& value)
+{
+	s << "VkVideoDecodeH265ProfileEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstdProfileIdc = " << value.stdProfileIdc << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265CapabilitiesEXT& value)
+{
+	s << "VkVideoDecodeH265CapabilitiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxLevel = " << value.maxLevel << '\n';
+	s << "\tstdExtensionVersion = " << value.stdExtensionVersion << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265SessionCreateInfoEXT& value)
+{
+	s << "VkVideoDecodeH265SessionCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getVideoDecodeH265CreateFlagsEXTStr(value.flags) << '\n';
+	s << "\tpStdExtensionVersion = " << value.pStdExtensionVersion << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265SessionParametersAddInfoEXT& value)
+{
+	s << "VkVideoDecodeH265SessionParametersAddInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tspsStdCount = " << value.spsStdCount << '\n';
+	s << "\tpSpsStd = " << value.pSpsStd << '\n';
+	s << "\tppsStdCount = " << value.ppsStdCount << '\n';
+	s << "\tpPpsStd = " << value.pPpsStd << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265SessionParametersCreateInfoEXT& value)
+{
+	s << "VkVideoDecodeH265SessionParametersCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxSpsStdCount = " << value.maxSpsStdCount << '\n';
+	s << "\tmaxPpsStdCount = " << value.maxPpsStdCount << '\n';
+	s << "\tpParametersAddInfo = " << value.pParametersAddInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265PictureInfoEXT& value)
+{
+	s << "VkVideoDecodeH265PictureInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpStdPictureInfo = " << value.pStdPictureInfo << '\n';
+	s << "\tslicesCount = " << value.slicesCount << '\n';
+	s << "\tpSlicesDataOffsets = " << value.pSlicesDataOffsets << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265DpbSlotInfoEXT& value)
+{
+	s << "VkVideoDecodeH265DpbSlotInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpStdReferenceInfo = " << value.pStdReferenceInfo << '\n';
 	s << '}';
 	return s;
 }

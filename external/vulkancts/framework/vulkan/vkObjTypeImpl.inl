@@ -44,4 +44,6 @@ template<> inline VkObjectType	getObjectType<VkPerformanceConfigurationINTEL>	(v
 template<> inline VkObjectType	getObjectType<VkIndirectCommandsLayoutNV>		(void) { return VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV;		}
 template<> inline VkObjectType	getObjectType<VkPrivateDataSlotEXT>				(void) { return VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT;			}
 template<> inline VkObjectType	getObjectType<VkAccelerationStructureKHR>		(void) { return VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR;		}
+template<> inline VkObjectType	getObjectType<VkVideoSessionKHR>				(void) { return VK_OBJECT_TYPE_VIDEO_SESSION_KHR;				}
+template<> inline VkObjectType	getObjectType<VkVideoSessionParametersKHR>		(void) { return VK_OBJECT_TYPE_VIDEO_SESSION_PARAMETERS_KHR;	}
 }

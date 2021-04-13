@@ -2296,6 +2296,91 @@ template<> VkStructureType getStructureType<VkExternalFormatANDROID> (void)
 	return VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID;
 }
 
+template<> VkStructureType getStructureType<VkVideoQueueFamilyProperties2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_QUEUE_FAMILY_PROPERTIES_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoProfileKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_PROFILE_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoProfilesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_PROFILES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoCapabilitiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceVideoFormatInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_FORMAT_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoFormatPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_FORMAT_PROPERTIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoPictureResourceKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoReferenceSlotKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoGetMemoryPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_GET_MEMORY_PROPERTIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoBindMemoryKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_BIND_MEMORY_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoSessionCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_SESSION_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoSessionParametersCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoSessionParametersUpdateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_UPDATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoBeginCodingInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoEndCodingInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoCodingControlInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_CODING_CONTROL_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDevicePortabilitySubsetFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR;
@@ -2304,6 +2389,136 @@ template<> VkStructureType getStructureType<VkPhysicalDevicePortabilitySubsetFea
 template<> VkStructureType getStructureType<VkPhysicalDevicePortabilitySubsetPropertiesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_PROPERTIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeRateControlInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeH264CapabilitiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeH264SessionCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeH264SessionParametersAddInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_ADD_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeH264SessionParametersCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeH264DpbSlotInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_DPB_SLOT_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeH264NaluSliceEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_NALU_SLICE_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeH264VclFrameInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_VCL_FRAME_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeH264EmitPictureParametersEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_EMIT_PICTURE_PARAMETERS_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeH264ProfileEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeH264ProfileEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeH264CapabilitiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeH264SessionCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeH264SessionParametersAddInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_ADD_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeH264SessionParametersCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeH264PictureInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PICTURE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeH264MvcEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_MVC_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeH264DpbSlotInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_DPB_SLOT_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeH265ProfileEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeH265CapabilitiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_CAPABILITIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeH265SessionCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeH265SessionParametersAddInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_ADD_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeH265SessionParametersCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeH265PictureInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PICTURE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeH265DpbSlotInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_DPB_SLOT_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkImagePipeSurfaceCreateInfoFUCHSIA> (void)

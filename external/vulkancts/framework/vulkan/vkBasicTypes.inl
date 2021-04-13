@@ -65,6 +65,8 @@ VK_DEFINE_NON_DISPATCHABLE_HANDLE	(VkPerformanceConfigurationINTEL,	HANDLE_TYPE_
 VK_DEFINE_NON_DISPATCHABLE_HANDLE	(VkIndirectCommandsLayoutNV,		HANDLE_TYPE_INDIRECT_COMMANDS_LAYOUT_NV);
 VK_DEFINE_NON_DISPATCHABLE_HANDLE	(VkPrivateDataSlotEXT,				HANDLE_TYPE_PRIVATE_DATA_SLOT_EXT);
 VK_DEFINE_NON_DISPATCHABLE_HANDLE	(VkAccelerationStructureKHR,		HANDLE_TYPE_ACCELERATION_STRUCTURE_KHR);
+VK_DEFINE_NON_DISPATCHABLE_HANDLE	(VkVideoSessionKHR,					HANDLE_TYPE_VIDEO_SESSION_KHR);
+VK_DEFINE_NON_DISPATCHABLE_HANDLE	(VkVideoSessionParametersKHR,		HANDLE_TYPE_VIDEO_SESSION_PARAMETERS_KHR);
 VK_DEFINE_NON_DISPATCHABLE_HANDLE	(VkSamplerYcbcrConversionKHR,		HANDLE_TYPE_SAMPLER_YCBCR_CONVERSION);
 VK_DEFINE_NON_DISPATCHABLE_HANDLE	(VkDescriptorUpdateTemplateKHR,		HANDLE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE);
 
@@ -2271,6 +2273,208 @@ enum VkShaderGroupShaderKHR
 	VK_SHADER_GROUP_SHADER_MAX_ENUM_KHR		= 0x7FFFFFFF,
 };
 
+enum VkQueryResultStatusKHR
+{
+	VK_QUERY_RESULT_STATUS_ERROR_KHR		= -1,
+	VK_QUERY_RESULT_STATUS_NOT_READY_KHR	= 0,
+	VK_QUERY_RESULT_STATUS_COMPLETE_KHR		= 1,
+	VK_QUERY_RESULT_STATUS_MAX_ENUM_KHR		= 0x7FFFFFFF,
+};
+
+enum StdVideoH264ChromaFormatIdc
+{
+	std_video_h264_chroma_format_idc_monochrome	= 0,
+	std_video_h264_chroma_format_idc_420		= 1,
+	std_video_h264_chroma_format_idc_422		= 2,
+	std_video_h264_chroma_format_idc_444		= 3,
+	STD_VIDEO_H264_CHROMA_FORMAT_IDC_LAST,
+};
+
+enum StdVideoH264ProfileIdc
+{
+	std_video_h264_profile_idc_baseline				= 66,
+	std_video_h264_profile_idc_main					= 77,
+	std_video_h264_profile_idc_high					= 100,
+	std_video_h264_profile_idc_high_444_predictive	= 244,
+	std_video_h264_profile_idc_invalid				= 0x7FFFFFFF,
+};
+
+enum StdVideoH264Level
+{
+	std_video_h264_level_1_0		= 0,
+	std_video_h264_level_1_1		= 1,
+	std_video_h264_level_1_2		= 2,
+	std_video_h264_level_1_3		= 3,
+	std_video_h264_level_2_0		= 4,
+	std_video_h264_level_2_1		= 5,
+	std_video_h264_level_2_2		= 6,
+	std_video_h264_level_3_0		= 7,
+	std_video_h264_level_3_1		= 8,
+	std_video_h264_level_3_2		= 9,
+	std_video_h264_level_4_0		= 10,
+	std_video_h264_level_4_1		= 11,
+	std_video_h264_level_4_2		= 12,
+	std_video_h264_level_5_0		= 13,
+	std_video_h264_level_5_1		= 14,
+	std_video_h264_level_5_2		= 15,
+	std_video_h264_level_6_0		= 16,
+	std_video_h264_level_6_1		= 17,
+	std_video_h264_level_6_2		= 18,
+	STD_VIDEO_H264_LEVEL_LAST,
+	std_video_h264_level_invalid	= 0x7FFFFFFF,
+};
+
+enum StdVideoH264PocType
+{
+	std_video_h264_poc_type_0		= 0,
+	std_video_h264_poc_type_1		= 1,
+	std_video_h264_poc_type_2		= 2,
+	STD_VIDEO_H264_POC_TYPE_LAST,
+	std_video_h264_poc_type_invalid	= 0x7FFFFFFF,
+};
+
+enum StdVideoH264AspectRatioIdc
+{
+	std_video_h264_aspect_ratio_idc_unspecified		= 0,
+	std_video_h264_aspect_ratio_idc_square			= 1,
+	std_video_h264_aspect_ratio_idc_12_11			= 2,
+	std_video_h264_aspect_ratio_idc_10_11			= 3,
+	std_video_h264_aspect_ratio_idc_16_11			= 4,
+	std_video_h264_aspect_ratio_idc_40_33			= 5,
+	std_video_h264_aspect_ratio_idc_24_11			= 6,
+	std_video_h264_aspect_ratio_idc_20_11			= 7,
+	std_video_h264_aspect_ratio_idc_32_11			= 8,
+	std_video_h264_aspect_ratio_idc_80_33			= 9,
+	std_video_h264_aspect_ratio_idc_18_11			= 10,
+	std_video_h264_aspect_ratio_idc_15_11			= 11,
+	std_video_h264_aspect_ratio_idc_64_33			= 12,
+	std_video_h264_aspect_ratio_idc_160_99			= 13,
+	std_video_h264_aspect_ratio_idc_4_3				= 14,
+	std_video_h264_aspect_ratio_idc_3_2				= 15,
+	std_video_h264_aspect_ratio_idc_2_1				= 16,
+	std_video_h264_aspect_ratio_idc_extended_sar	= 255,
+	std_video_h264_aspect_ratio_idc_invalid			= 0x7FFFFFFF,
+};
+
+enum StdVideoH264WeightedBiPredIdc
+{
+	std_video_h264_default_weighted_b_slices_prediction_idc		= 0,
+	std_video_h264_explicit_weighted_b_slices_prediction_idc	= 1,
+	std_video_h264_implicit_weighted_b_slices_prediction_idc	= 2,
+	STD_VIDEO_H264_WEIGHTED_BI_PRED_IDC_LAST,
+	std_video_h264_invalid_weighted_b_slices_prediction_idc		= 0x7FFFFFFF,
+};
+
+enum StdVideoH264ModificationOfPicNumsIdc
+{
+	std_video_h264_modification_of_pic_nums_idc_short_term_subtract	= 0,
+	std_video_h264_modification_of_pic_nums_idc_short_term_add		= 1,
+	std_video_h264_modification_of_pic_nums_idc_long_term			= 2,
+	std_video_h264_modification_of_pic_nums_idc_end					= 3,
+	STD_VIDEO_H264_MODIFICATION_OF_PIC_NUMS_IDC_LAST,
+	std_video_h264_modification_of_pic_nums_idc_invalid				= 0x7FFFFFFF,
+};
+
+enum StdVideoH264MemMgmtControlOp
+{
+	std_video_h264_mem_mgmt_control_op_end							= 0,
+	std_video_h264_mem_mgmt_control_op_unmark_short_term			= 1,
+	std_video_h264_mem_mgmt_control_op_unmark_long_term				= 2,
+	std_video_h264_mem_mgmt_control_op_mark_long_term				= 3,
+	std_video_h264_mem_mgmt_control_op_set_max_long_term_index		= 4,
+	std_video_h264_mem_mgmt_control_op_unmark_all					= 5,
+	std_video_h264_mem_mgmt_control_op_mark_current_as_long_term	= 6,
+	STD_VIDEO_H264_MEM_MGMT_CONTROL_OP_LAST,
+	std_video_h264_mem_mgmt_control_op_invalid						= 0x7FFFFFFF,
+};
+
+enum StdVideoH264CabacInitIdc
+{
+	std_video_h264_cabac_init_idc_0			= 0,
+	std_video_h264_cabac_init_idc_1			= 1,
+	std_video_h264_cabac_init_idc_2			= 2,
+	STD_VIDEO_H264_CABAC_INIT_IDC_LAST,
+	std_video_h264_cabac_init_idc_invalid	= 0x7FFFFFFF,
+};
+
+enum StdVideoH264DisableDeblockingFilterIdc
+{
+	std_video_h264_disable_deblocking_filter_idc_disabled	= 0,
+	std_video_h264_disable_deblocking_filter_idc_enabled	= 1,
+	std_video_h264_disable_deblocking_filter_idc_partial	= 2,
+	STD_VIDEO_H264_DISABLE_DEBLOCKING_FILTER_IDC_LAST,
+	std_video_h264_disable_deblocking_filter_idc_invalid	= 0x7FFFFFFF,
+};
+
+enum StdVideoH264PictureType
+{
+	std_video_h264_picture_type_i		= 0,
+	std_video_h264_picture_type_p		= 1,
+	std_video_h264_picture_type_b		= 2,
+	STD_VIDEO_H264_PICTURE_TYPE_LAST,
+	std_video_h264_picture_type_invalid	= 0x7FFFFFFF,
+};
+
+enum StdVideoH264SliceType
+{
+	std_video_h264_slice_type_i			= 0,
+	std_video_h264_slice_type_p			= 1,
+	std_video_h264_slice_type_b			= 2,
+	STD_VIDEO_H264_SLICE_TYPE_LAST,
+	std_video_h264_slice_type_invalid	= 0x7FFFFFFF,
+};
+
+enum StdVideoH264NonVclNaluType
+{
+	std_video_h264_non_vcl_nalu_type_sps				= 0,
+	std_video_h264_non_vcl_nalu_type_pps				= 1,
+	std_video_h264_non_vcl_nalu_type_aud				= 2,
+	std_video_h264_non_vcl_nalu_type_prefix				= 3,
+	std_video_h264_non_vcl_nalu_type_end_of_sequence	= 4,
+	std_video_h264_non_vcl_nalu_type_end_of_stream		= 5,
+	std_video_h264_non_vcl_nalu_type_precoded			= 6,
+	STD_VIDEO_H264_NON_VCL_NALU_TYPE_LAST,
+	std_video_h264_non_vcl_nalu_type_invalid			= 0x7FFFFFFF,
+};
+
+enum StdVideoH265ChromaFormatIdc
+{
+	std_video_h265_chroma_format_idc_monochrome	= 0,
+	std_video_h265_chroma_format_idc_420		= 1,
+	std_video_h265_chroma_format_idc_422		= 2,
+	std_video_h265_chroma_format_idc_444		= 3,
+	STD_VIDEO_H265_CHROMA_FORMAT_IDC_LAST,
+};
+
+enum StdVideoH265ProfileIdc
+{
+	std_video_h265_profile_idc_main						= 1,
+	std_video_h265_profile_idc_main_10					= 2,
+	std_video_h265_profile_idc_main_still_picture		= 3,
+	std_video_h265_profile_idc_format_range_extensions	= 4,
+	std_video_h265_profile_idc_scc_extensions			= 9,
+	std_video_h265_profile_idc_invalid					= 0x7FFFFFFF,
+};
+
+enum StdVideoH265Level
+{
+	std_video_h265_level_1_0		= 0,
+	std_video_h265_level_2_0		= 1,
+	std_video_h265_level_2_1		= 2,
+	std_video_h265_level_3_0		= 3,
+	std_video_h265_level_3_1		= 4,
+	std_video_h265_level_4_0		= 5,
+	std_video_h265_level_4_1		= 6,
+	std_video_h265_level_5_0		= 7,
+	std_video_h265_level_5_1		= 8,
+	std_video_h265_level_5_2		= 9,
+	std_video_h265_level_6_0		= 10,
+	std_video_h265_level_6_1		= 11,
+	std_video_h265_level_6_2		= 12,
+	STD_VIDEO_H265_LEVEL_LAST,
+	std_video_h265_level_invalid	= 0x7FFFFFFF,
+};
+
 enum VkFullScreenExclusiveEXT
 {
 	VK_FULL_SCREEN_EXCLUSIVE_DEFAULT_EXT				= 0,
@@ -3319,6 +3523,156 @@ enum VkAccelerationStructureCreateFlagBitsKHR
 };
 typedef deUint32 VkAccelerationStructureCreateFlagsKHR;
 
+enum VkVideoCodecOperationFlagBitsKHR
+{
+	VK_VIDEO_CODEC_OPERATION_INVALID_BIT_KHR		= 0,
+	VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT	= 0x00010000,
+	VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT	= 0x00000001,
+	VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_EXT	= 0x00000002,
+	VK_VIDEO_CODEC_OPERATION_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
+};
+typedef deUint32 VkVideoCodecOperationFlagsKHR;
+
+enum VkVideoChromaSubsamplingFlagBitsKHR
+{
+	VK_VIDEO_CHROMA_SUBSAMPLING_INVALID_BIT_KHR			= 0,
+	VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR		= 0x00000001,
+	VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR				= 0x00000002,
+	VK_VIDEO_CHROMA_SUBSAMPLING_422_BIT_KHR				= 0x00000004,
+	VK_VIDEO_CHROMA_SUBSAMPLING_444_BIT_KHR				= 0x00000008,
+	VK_VIDEO_CHROMA_SUBSAMPLING_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
+};
+typedef deUint32 VkVideoChromaSubsamplingFlagsKHR;
+
+enum VkVideoComponentBitDepthFlagBitsKHR
+{
+	VK_VIDEO_COMPONENT_BIT_DEPTH_INVALID_KHR			= 0,
+	VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR				= 0x00000001,
+	VK_VIDEO_COMPONENT_BIT_DEPTH_10_BIT_KHR				= 0x00000004,
+	VK_VIDEO_COMPONENT_BIT_DEPTH_12_BIT_KHR				= 0x00000010,
+	VK_VIDEO_COMPONENT_BIT_DEPTH_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
+};
+typedef deUint32 VkVideoComponentBitDepthFlagsKHR;
+
+enum VkVideoCapabilitiesFlagBitsKHR
+{
+	VK_VIDEO_CAPABILITIES_PROTECTED_CONTENT_BIT_KHR			= 0x00000001,
+	VK_VIDEO_CAPABILITIES_SEPARATE_REFERENCE_IMAGES_BIT_KHR	= 0x00000002,
+	VK_VIDEO_CAPABILITIES_FLAG_BITS_MAX_ENUM_KHR			= 0x7FFFFFFF,
+};
+typedef deUint32 VkVideoCapabilitiesFlagsKHR;
+
+enum VkVideoSessionCreateFlagBitsKHR
+{
+	VK_VIDEO_SESSION_CREATE_DEFAULT_KHR					= 0,
+	VK_VIDEO_SESSION_CREATE_PROTECTED_CONTENT_BIT_KHR	= 0x00000001,
+	VK_VIDEO_SESSION_CREATE_FLAG_BITS_MAX_ENUM_KHR		= 0x7FFFFFFF,
+};
+typedef deUint32 VkVideoSessionCreateFlagsKHR;
+
+enum VkVideoCodingControlFlagBitsKHR
+{
+	VK_VIDEO_CODING_CONTROL_DEFAULT_KHR				= 0,
+	VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR			= 0x00000001,
+	VK_VIDEO_CODING_CONTROL_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
+};
+typedef deUint32 VkVideoCodingControlFlagsKHR;
+
+enum VkVideoCodingQualityPresetFlagBitsKHR
+{
+	VK_VIDEO_CODING_QUALITY_PRESET_DEFAULT_BIT_KHR			= 0,
+	VK_VIDEO_CODING_QUALITY_PRESET_NORMAL_BIT_KHR			= 0x00000001,
+	VK_VIDEO_CODING_QUALITY_PRESET_POWER_BIT_KHR			= 0x00000002,
+	VK_VIDEO_CODING_QUALITY_PRESET_QUALITY_BIT_KHR			= 0x00000004,
+	VK_VIDEO_CODING_QUALITY_PRESET_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
+};
+typedef deUint32 VkVideoCodingQualityPresetFlagsKHR;
+
+enum VkVideoDecodeFlagBitsKHR
+{
+	VK_VIDEO_DECODE_DEFAULT_KHR				= 0,
+	VK_VIDEO_DECODE_RESERVED_0_BIT_KHR		= 0x00000001,
+	VK_VIDEO_DECODE_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
+};
+typedef deUint32 VkVideoDecodeFlagsKHR;
+
+enum VkVideoEncodeFlagBitsKHR
+{
+	VK_VIDEO_ENCODE_DEFAULT_KHR				= 0,
+	VK_VIDEO_ENCODE_RESERVED_0_BIT_KHR		= 0x00000001,
+	VK_VIDEO_ENCODE_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
+};
+typedef deUint32 VkVideoEncodeFlagsKHR;
+
+enum VkVideoEncodeRateControlFlagBitsKHR
+{
+	VK_VIDEO_ENCODE_RATE_CONTROL_DEFAULT_KHR			= 0,
+	VK_VIDEO_ENCODE_RATE_CONTROL_RESET_BIT_KHR			= 0x00000001,
+	VK_VIDEO_ENCODE_RATE_CONTROL_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
+};
+typedef deUint32 VkVideoEncodeRateControlFlagsKHR;
+
+enum VkVideoEncodeRateControlModeFlagBitsKHR
+{
+	VK_VIDEO_ENCODE_RATE_CONTROL_MODE_NONE_BIT_KHR				= 0,
+	VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR				= 1,
+	VK_VIDEO_ENCODE_RATE_CONTROL_MODE_VBR_BIT_KHR				= 2,
+	VK_VIDEO_ENCODE_RATE_CONTROL_MODE_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
+};
+typedef deUint32 VkVideoEncodeRateControlModeFlagsKHR;
+
+enum VkVideoEncodeH264CapabilitiesFlagBitsEXT
+{
+	VK_VIDEO_ENCODE_H264_CAPABILITY_CABAC_BIT_EXT							= 0x00000001,
+	VK_VIDEO_ENCODE_H264_CAPABILITY_CAVLC_BIT_EXT							= 0x00000002,
+	VK_VIDEO_ENCODE_H264_CAPABILITY_WEIGHTED_BI_PRED_IMPLICIT_BIT_EXT		= 0x00000004,
+	VK_VIDEO_ENCODE_H264_CAPABILITY_TRANSFORM_8X8_BIT_EXT					= 0x00000008,
+	VK_VIDEO_ENCODE_H264_CAPABILITY_CHROMA_QP_OFFSET_BIT_EXT				= 0x00000010,
+	VK_VIDEO_ENCODE_H264_CAPABILITY_SECOND_CHROMA_QP_OFFSET_BIT_EXT			= 0x00000020,
+	VK_VIDEO_ENCODE_H264_CAPABILITY_DEBLOCKING_FILTER_DISABLED_BIT_EXT		= 0x00000040,
+	VK_VIDEO_ENCODE_H264_CAPABILITY_DEBLOCKING_FILTER_ENABLED_BIT_EXT		= 0x00000080,
+	VK_VIDEO_ENCODE_H264_CAPABILITY_DEBLOCKING_FILTER_PARTIAL_BIT_EXT		= 0x00000100,
+	VK_VIDEO_ENCODE_H264_CAPABILITY_MULTIPLE_SLICE_PER_FRAME_BIT_EXT		= 0x00000200,
+	VK_VIDEO_ENCODE_H264_CAPABILITY_EVENLY_DISTRIBUTED_SLICE_SIZE_BIT_EXT	= 0x00000400,
+	VK_VIDEO_ENCODE_H264_CAPABILITIES_FLAG_BITS_MAX_ENUM_EXT				= 0x7FFFFFFF,
+};
+typedef deUint32 VkVideoEncodeH264CapabilitiesFlagsEXT;
+
+enum VkVideoEncodeH264InputModeFlagBitsEXT
+{
+	VK_VIDEO_ENCODE_H264_INPUT_MODE_FRAME_BIT_EXT			= 0x00000001,
+	VK_VIDEO_ENCODE_H264_INPUT_MODE_SLICE_BIT_EXT			= 0x00000002,
+	VK_VIDEO_ENCODE_H264_INPUT_MODE_NON_VCL_BIT_EXT			= 0x00000004,
+	VK_VIDEO_ENCODE_H264_INPUT_MODE_FLAG_BITS_MAX_ENUM_EXT	= 0x7FFFFFFF,
+};
+typedef deUint32 VkVideoEncodeH264InputModeFlagsEXT;
+
+enum VkVideoEncodeH264OutputModeFlagBitsEXT
+{
+	VK_VIDEO_ENCODE_H264_OUTPUT_MODE_FRAME_BIT_EXT			= 0x00000001,
+	VK_VIDEO_ENCODE_H264_OUTPUT_MODE_SLICE_BIT_EXT			= 0x00000002,
+	VK_VIDEO_ENCODE_H264_OUTPUT_MODE_NON_VCL_BIT_EXT		= 0x00000004,
+	VK_VIDEO_ENCODE_H264_OUTPUT_MODE_FLAG_BITS_MAX_ENUM_EXT	= 0x7FFFFFFF,
+};
+typedef deUint32 VkVideoEncodeH264OutputModeFlagsEXT;
+
+enum VkVideoEncodeH264CreateFlagBitsEXT
+{
+	VK_VIDEO_ENCODE_H264_CREATE_DEFAULT_EXT				= 0,
+	VK_VIDEO_ENCODE_H264_CREATE_RESERVED_0_BIT_EXT		= 0x00000001,
+	VK_VIDEO_ENCODE_H264_CREATE_FLAG_BITS_MAX_ENUM_EXT	= 0x7FFFFFFF,
+};
+typedef deUint32 VkVideoEncodeH264CreateFlagsEXT;
+
+enum VkVideoDecodeH264FieldLayoutFlagBitsEXT
+{
+	VK_VIDEO_DECODE_H264_PROGRESSIVE_PICTURES_ONLY_EXT					= 0,
+	VK_VIDEO_DECODE_H264_FIELD_LAYOUT_LINE_INTERLACED_PLANE_BIT_EXT		= 0x00000001,
+	VK_VIDEO_DECODE_H264_FIELD_LAYOUT_SEPARATE_INTERLACED_PLANE_BIT_EXT	= 0x00000002,
+	VK_VIDEO_DECODE_H264_FIELD_LAYOUT_FLAG_BITS_MAX_ENUM_EXT			= 0x7FFFFFFF,
+};
+typedef deUint32 VkVideoDecodeH264FieldLayoutFlagsEXT;
+
 typedef deUint32 VkInstanceCreateFlags;
 
 typedef deUint32 VkDeviceCreateFlags;
@@ -3388,6 +3742,14 @@ typedef deUint32 VkHeadlessSurfaceCreateFlagsEXT;
 typedef deUint32 VkDeviceMemoryReportFlagsEXT;
 
 typedef deUint32 VkAndroidSurfaceCreateFlagsKHR;
+
+typedef deUint32 VkVideoBeginCodingFlagsKHR;
+
+typedef deUint32 VkVideoEndCodingFlagsKHR;
+
+typedef deUint32 VkVideoDecodeH264CreateFlagsEXT;
+
+typedef deUint32 VkVideoDecodeH265CreateFlagsEXT;
 
 typedef deUint32 VkImagePipeSurfaceCreateFlagsFUCHSIA;
 
@@ -3772,7 +4134,19 @@ VK_DEFINE_PLATFORM_TYPE(CAMetalLayer,				void*);
 #define VK_KHR_RAY_QUERY_SPEC_VERSION 1
 #define VK_KHR_ANDROID_SURFACE_SPEC_VERSION 6
 #define VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_SPEC_VERSION 3
+#define VK_KHR_VIDEO_QUEUE_SPEC_VERSION 1
+#define VK_KHR_VIDEO_DECODE_QUEUE_SPEC_VERSION 1
 #define VK_KHR_PORTABILITY_SUBSET_SPEC_VERSION 1
+#define VK_KHR_VIDEO_ENCODE_QUEUE_SPEC_VERSION 1
+#define VK_STD_VULKAN_VIDEO_CODEC_H264_API_VERSION_0_9 VK_MAKE_VIDEO_STD_VERSION(0, 9, 0)
+#define VK_STD_VULKAN_VIDEO_CODEC_H264_SPEC_VERSION VK_STD_VULKAN_VIDEO_CODEC_H264_API_VERSION_0_9
+#define VK_STD_VULKAN_VIDEO_CODEC_H264_EXTENSION_NAME "VK_STD_vulkan_video_codec_h264"
+#define VK_EXT_VIDEO_ENCODE_H264_SPEC_VERSION 1
+#define VK_EXT_VIDEO_DECODE_H264_SPEC_VERSION 1
+#define VK_STD_VULKAN_VIDEO_CODEC_H265_API_VERSION_0_5 VK_MAKE_VIDEO_STD_VERSION(0, 5, 0)
+#define VK_STD_VULKAN_VIDEO_CODEC_H265_SPEC_VERSION VK_STD_VULKAN_VIDEO_CODEC_H265_API_VERSION_0_5
+#define VK_STD_VULKAN_VIDEO_CODEC_H265_EXTENSION_NAME "VK_STD_vulkan_video_codec_h265"
+#define VK_EXT_VIDEO_DECODE_H265_SPEC_VERSION 1
 #define VK_FUCHSIA_IMAGEPIPE_SURFACE_SPEC_VERSION 1
 #define VK_FUCHSIA_EXTERNAL_MEMORY_SPEC_VERSION 1
 #define VK_FUCHSIA_EXTERNAL_SEMAPHORE_SPEC_VERSION 1

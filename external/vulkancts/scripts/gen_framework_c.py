@@ -22,14 +22,23 @@
 
 import os
 import sys
-
+import re
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
 
 from build.common import DEQP_DIR
 from khr_util.format import writeInlFile
 
-VULKAN_H	= os.path.join(os.path.dirname(__file__), "src", "vulkan_core.h")
+VULKAN_H	= [
+	os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codecs_common.h"),
+	os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h264std.h"),
+	os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h264std_encode.h"),
+	os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h265std.h"),
+	os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h264std_decode.h"),
+	os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h265std_decode.h"),
+	os.path.join(os.path.dirname(__file__), "src", "vulkan_core.h"),
+	]
+#VULKAN_H	= os.path.join(os.path.dirname(__file__), "src", "vulkan_core.h")
 VULKAN_DIR	= os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan")
 
 INL_HEADER = """\
@@ -57,7 +66,7 @@ def readFile (filename):
 
 def writeVulkanCHeader (src, filename):
 	def gen ():
-		dst = src.replace('#include "vk_platform.h"','')
+		dst = re.sub(r'(#include "[^\s,\n}]+")', '', src)
 
 		# Amber is compiled using C++11 but under MSVC __cplusplus macro
 		# is incorrectly recognized and this triggers invalid definition
@@ -69,5 +78,8 @@ def writeVulkanCHeader (src, filename):
 	writeInlFile(filename, INL_HEADER, gen())
 
 if __name__ == "__main__":
-	src				= readFile(VULKAN_H)
+	src = ""
+	for file in VULKAN_H:
+		src += readFile(file)
+
 	writeVulkanCHeader				(src, os.path.join(VULKAN_DIR, "vkVulkan_c.inl"))

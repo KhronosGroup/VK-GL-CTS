@@ -155,6 +155,8 @@ def prefixName (prefix, name):
 	name = name.replace("VULKAN_12_PROPERTIES", "VULKAN_1_2_PROPERTIES")
 	name = name.replace("INT_8_", "INT8_")
 	name = name.replace("AABBNV", "AABB_NV")
+	name = name.replace("_H_264_", "_H264_")
+	name = name.replace("_H_265_", "_H265_")
 
 	return prefix + name
 
@@ -295,6 +297,9 @@ class Variable:
 
 	def getAsString (self, separator):
 		return '%s%s%s%s%s' % (self.getType(), separator, self.name, self.arraySize, self.fieldWidth)
+
+	def getAsStringForArgumentList (self, separator):
+		return '%s%s%s%s' % (self.getType(), separator, self.name, self.arraySize)
 
 	def __repr__ (self):
 		return '<%s> <%s> <%s>' % (self.type, self.name, self.arraySize)
@@ -474,9 +479,9 @@ def parseEnums (src):
 	return enums
 
 def parseCompositeType (type, name, src):
-	typeNamePtrn	= r'(' + TYPE_PTRN + r')(\s+' + IDENT_PTRN + r')((\[[^\]]+\]|:[0-9]+)*)\s*;'
+	typeNamePtrn	= r'(' + TYPE_PTRN + r')(\s+' + IDENT_PTRN + r')((\[[^\]]+\]|\s*:\s*[0-9]+)*)\s*;'
 	matches			= re.findall(typeNamePtrn, src)
-	members			= [Variable(t.strip(), n.strip(), a.strip()) for t, n, a, _ in matches]
+	members			= [Variable(t.strip(), n.strip(), a.replace(' ', '')) for t, n, a, _ in matches]
 	return CompositeType(type, name, members)
 
 def parseCompositeTypes (src):
@@ -1018,7 +1023,7 @@ def writeCompositeTypes (api, filename):
 	writeInlFile(filename, INL_HEADER, gen())
 
 def argListToStr (args):
-	return ", ".join(v.getAsString(' ') for v in args)
+	return ", ".join(v.getAsStringForArgumentList(' ') for v in args)
 
 def writeInterfaceDecl (api, filename, functionTypes, concrete):
 	def genProtos ():
@@ -1176,9 +1181,10 @@ def writeStrUtilImpl (api, filename):
 					elif member.getType() == PLATFORM_TYPE_NAMESPACE + "::Win32LPCWSTR":
 						valFmt = "getWStr(value.%s)" % member.name
 					elif member.arraySize != '':
+						singleDimensional = not '][' in member.arraySize
 						if member.name in ["extensionName", "deviceName", "layerName", "description"]:
 							valFmt = "(const char*)value.%s" % member.name
-						elif member.getType() == 'char' or member.getType() == 'deUint8':
+						elif singleDimensional and (member.getType() == 'char' or member.getType() == 'deUint8'):
 							newLine = "'\\n' << "
 							valFmt	= "tcu::formatArray(tcu::Format::HexIterator<%s>(DE_ARRAY_BEGIN(value.%s)), tcu::Format::HexIterator<%s>(DE_ARRAY_END(value.%s)))" % (member.getType(), member.name, member.getType(), member.name)
 						else:
@@ -1455,6 +1461,23 @@ def writeTypeUtil (api, filename):
 			"VkQueueFamilyProperties",
 			"VkMemoryType",
 			"VkMemoryHeap",
+			"StdVideoH264SpsVuiFlags",
+			"StdVideoH264SpsFlags",
+			"StdVideoH264PpsFlags",
+			"StdVideoDecodeH264PictureInfoFlags",
+			"StdVideoDecodeH264ReferenceInfoFlags",
+			"StdVideoDecodeH264MvcElementFlags",
+			"StdVideoEncodeH264SliceHeaderFlags",
+			"StdVideoEncodeH264PictureInfoFlags",
+			"StdVideoEncodeH264RefMgmtFlags",
+			"StdVideoH265HrdFlags",
+			"StdVideoH265VpsFlags",
+			"StdVideoH265SpsVuiFlags",
+			"StdVideoH265SpsFlags",
+			"StdVideoH265PpsFlags",
+			"StdVideoDecodeH265PictureInfoFlags",
+			"StdVideoDecodeH265ReferenceInfoFlags",
+			"StdVideoEncodeH265PictureInfoFlags"
 		])
 	COMPOSITE_TYPES = set([t.name for t in api.compositeTypes if not t.isAlias])
 
@@ -1482,8 +1505,10 @@ def writeTypeUtil (api, filename):
 			if not isSimpleStruct(type) or type.isAlias:
 				continue
 
+			name = type.name[2:] if type.name[:2].lower() == "vk" else type.name
+
 			yield ""
-			yield "inline %s make%s (%s)" % (type.name, type.name[2:], argListToStr(type.members))
+			yield "inline %s make%s (%s)" % (type.name, name, argListToStr(type.members))
 			yield "{"
 			yield "\t%s res;" % type.name
 			for line in indentLines(["\tres.%s\t= %s;" % (m.name, m.name) for m in type.members]):
@@ -2338,16 +2363,36 @@ def writeExtensionList(filename, patternPart):
 	stream.append('};\n')
 	writeInlFile(filename, INL_HEADER, stream)
 
+def preprocessTopInclude(src, dir):
+	pattern = r'#include\s+"([^\n]+)"'
+	while True:
+		inc = re.search(pattern, src)
+		if inc is None:
+			return src
+		incFileName = inc.string[inc.start(1):inc.end(1)]
+		patternIncNamed = r'#include\s+"' + incFileName + '"'
+		incBody = readFile(os.path.join(dir, incFileName)) if incFileName != 'vk_platform.h' else ''
+		incBodySanitized = re.sub(pattern, '', incBody)
+		bodyEndSanitized = re.sub(patternIncNamed, '', src[inc.end(0):])
+		src = src[0:inc.start(0)] + incBodySanitized + bodyEndSanitized
+	return src
+
 if __name__ == "__main__":
 	# Read all .h files, with vulkan_core.h first
 	files			= os.listdir(VULKAN_H_DIR)
 	files			= [f for f in files if f.endswith(".h")]
 	files.sort()
 	files.remove("vulkan_core.h")
-	files.insert(0, "vulkan_core.h")
+	first = ["vk_video/vulkan_video_codecs_common.h", "vulkan_core.h"]
+	files = first + files
+
 	src				= ""
 	for file in files:
-		src += readFile(os.path.join(VULKAN_H_DIR,file))
+		src += preprocessTopInclude(readFile(os.path.join(VULKAN_H_DIR,file)), VULKAN_H_DIR)
+
+	src = re.sub('\s*//[^\n]*', '', src)
+	src = re.sub('\n\n', '\n', src)
+
 	api				= parseAPI(src)
 
 	platformFuncs	= [Function.TYPE_PLATFORM]
