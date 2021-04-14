@@ -5360,6 +5360,120 @@ void ResolveImageToImageTestCase::initPrograms (SourceCollections& programCollec
 	}
 }
 
+struct BufferOffsetParams
+{
+	static constexpr deUint32 kMaxOffset = 8u;
+
+	deUint32 srcOffset;
+	deUint32 dstOffset;
+};
+
+void checkZerosAt(const std::vector<deUint8>& bufferData, deUint32 from, deUint32 count)
+{
+	constexpr deUint8 zero{0};
+	for (deUint32 i = 0; i < count; ++i)
+	{
+		const auto& val = bufferData[from + i];
+		if (val != zero)
+		{
+			std::ostringstream msg;
+			msg << "Unexpected non-zero byte found at position " << (from + i) << ": " << static_cast<int>(val);
+			TCU_FAIL(msg.str());
+		}
+	}
+}
+
+tcu::TestStatus bufferOffsetTest (Context& ctx, BufferOffsetParams params)
+{
+	// Try to copy blocks of sizes 1 to kMaxOffset. Each copy region will use a block of kMaxOffset*2 bytes to take into account srcOffset and dstOffset.
+	constexpr auto kMaxOffset	= BufferOffsetParams::kMaxOffset;
+	constexpr auto kBlockSize	= kMaxOffset * 2u;
+	constexpr auto kBufferSize	= kMaxOffset * kBlockSize;
+
+	DE_ASSERT(params.srcOffset < kMaxOffset);
+	DE_ASSERT(params.dstOffset < kMaxOffset);
+
+	const auto&	vkd		= ctx.getDeviceInterface();
+	const auto	device	= ctx.getDevice();
+	auto&		alloc	= ctx.getDefaultAllocator();
+	const auto	qIndex	= ctx.getUniversalQueueFamilyIndex();
+	const auto	queue	= ctx.getUniversalQueue();
+
+	const auto srcBufferInfo = makeBufferCreateInfo(kBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+	const auto dstBufferInfo = makeBufferCreateInfo(kBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+	BufferWithMemory	srcBuffer	(vkd, device, alloc, srcBufferInfo, MemoryRequirement::HostVisible);
+	BufferWithMemory	dstBuffer	(vkd, device, alloc, dstBufferInfo, MemoryRequirement::HostVisible);
+	auto&				srcAlloc	= srcBuffer.getAllocation();
+	auto&				dstAlloc	= dstBuffer.getAllocation();
+
+	// Zero-out destination buffer.
+	deMemset(dstAlloc.getHostPtr(), 0, kBufferSize);
+	flushAlloc(vkd, device, dstAlloc);
+
+	// Fill source buffer with nonzero bytes.
+	std::vector<deUint8> srcData;
+	srcData.reserve(kBufferSize);
+	for (deUint32 i = 0; i < kBufferSize; ++i)
+		srcData.push_back(static_cast<deUint8>(100u + i));
+	deMemcpy(srcAlloc.getHostPtr(), srcData.data(), de::dataSize(srcData));
+	flushAlloc(vkd, device, srcAlloc);
+
+	// Copy regions.
+	std::vector<VkBufferCopy> copies;
+	copies.reserve(kMaxOffset);
+	for (deUint32 i = 0; i < kMaxOffset; ++i)
+	{
+		const auto blockStart	= kBlockSize * i;
+		const auto copySize		= i + 1u;
+		const auto bufferCopy	= makeBufferCopy(params.srcOffset + blockStart, params.dstOffset + blockStart, copySize);
+		copies.push_back(bufferCopy);
+	}
+
+	const auto cmdPool		= makeCommandPool(vkd, device, qIndex);
+	const auto cmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto cmdBuffer	= cmdBufferPtr.get();
+
+	beginCommandBuffer(vkd, cmdBuffer);
+	vkd.cmdCopyBuffer(cmdBuffer, srcBuffer.get(), dstBuffer.get(), static_cast<deUint32>(copies.size()), copies.data());
+	const auto barrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &barrier, 0u, nullptr, 0u, nullptr);
+	endCommandBuffer(vkd, cmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+	invalidateAlloc(vkd, device, dstAlloc);
+
+	// Verify destination buffer data.
+	std::vector<deUint8> dstData(kBufferSize);
+	deMemcpy(dstData.data(), dstAlloc.getHostPtr(), de::dataSize(dstData));
+
+	for (deUint32 blockIdx = 0; blockIdx < kMaxOffset; ++blockIdx)
+	{
+		const auto blockStart	= kBlockSize * blockIdx;
+		const auto copySize		= blockIdx + 1u;
+
+		// Verify no data has been written before dstOffset.
+		checkZerosAt(dstData, blockStart, params.dstOffset);
+
+		// Verify copied block.
+		for (deUint32 i = 0; i < copySize; ++i)
+		{
+			const auto& dstVal = dstData[blockStart + params.dstOffset + i];
+			const auto& srcVal = srcData[blockStart + params.srcOffset + i];
+			if (dstVal != srcVal)
+			{
+				std::ostringstream msg;
+				msg << "Unexpected value found at position " << (blockStart + params.dstOffset + i) << ": expected " << static_cast<int>(srcVal) << " but found " << static_cast<int>(dstVal);
+				TCU_FAIL(msg.str());
+			}
+		}
+
+		// Verify no data has been written after copy block.
+		checkZerosAt(dstData, blockStart + params.dstOffset + copySize, kBlockSize - (params.dstOffset + copySize));
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 std::string getSampleCountCaseName (VkSampleCountFlagBits sampleFlag)
 {
 	return de::toLower(de::toString(getSampleCountFlagsStr(sampleFlag)).substr(16));
@@ -10543,6 +10657,20 @@ void addResolveImageDiffImageSizeTests (tcu::TestCaseGroup* group, AllocationKin
 	}
 }
 
+void addBufferCopyOffsetTests (tcu::TestCaseGroup* group)
+{
+	de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "buffer_to_buffer_with_offset", "Copy from buffer to buffer using different offsets in the source and destination buffers"));
+
+	for (deUint32 srcOffset = 0u; srcOffset < BufferOffsetParams::kMaxOffset; ++srcOffset)
+	for (deUint32 dstOffset = 0u; dstOffset < BufferOffsetParams::kMaxOffset; ++dstOffset)
+	{
+		BufferOffsetParams params{srcOffset, dstOffset};
+		addFunctionCase(subGroup.get(), de::toString(srcOffset) + "_" + de::toString(dstOffset), "", bufferOffsetTest, params);
+	}
+
+	group->addChild(subGroup.release());
+}
+
 void addResolveImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	addTestGroup(group, "whole", "Resolve from image to image (whole)", addResolveImageWholeTests, allocationKind, extensionUse);
@@ -10568,6 +10696,7 @@ void addCopiesAndBlittingTests (tcu::TestCaseGroup* group, AllocationKind alloca
 void addCoreCopiesAndBlittingTests(tcu::TestCaseGroup* group)
 {
 	addCopiesAndBlittingTests(group, ALLOCATION_KIND_SUBALLOCATED, EXTENSION_USE_NONE);
+	addBufferCopyOffsetTests(group);
 }
 
 
