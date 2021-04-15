@@ -1,0 +1,9 @@
+dEQP-VK.dynamic_rendering.single_cmdbuffer
+dEQP-VK.dynamic_rendering.single_cmdbuffer_resuming
+dEQP-VK.dynamic_rendering.2_cmdbuffers_resuming
+dEQP-VK.dynamic_rendering.2_secondary_cmdbuffers_resuming
+dEQP-VK.dynamic_rendering.2_secondary_2_primary_cmdbuffers_resuming
+dEQP-VK.dynamic_rendering.contents_secondary_cmdbuffers
+dEQP-VK.dynamic_rendering.contents_2_secondary_cmdbuffers
+dEQP-VK.dynamic_rendering.contents_2_secondary_cmdbuffers_resuming
+dEQP-VK.dynamic_rendering.contents_2_secondary_2_primary_cmdbuffers_resuming

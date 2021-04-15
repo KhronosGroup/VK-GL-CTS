@@ -100,3 +100,4 @@ VK_KHR_present_id							DEVICE
 VK_KHR_present_wait							DEVICE
 VK_KHR_format_feature_flags2			    DEVICE
 VK_KHR_maintenance4							DEVICE
+VK_KHR_dynamic_rendering					DEVICE
