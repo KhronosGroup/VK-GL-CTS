@@ -55,20 +55,29 @@ MovePtr<ImageSource> createAndroidNativeImageSource	(GLenum format)
 
 #else // DE_OS == DE_OS_ANDROID
 
-namespace
-{
-
-#include <sys/system_properties.h>
-
 #if defined(__ANDROID_API_O__) && (DE_ANDROID_API >= __ANDROID_API_O__)
-#	include <android/hardware_buffer.h>
-#	include "deDynamicLibrary.hpp"
 #	define BUILT_WITH_ANDROID_HARDWARE_BUFFER 1
 #endif
 
 #if defined(__ANDROID_API_P__) && (DE_ANDROID_API >= __ANDROID_API_P__)
 #	define BUILT_WITH_ANDROID_P_HARDWARE_BUFFER 1
 #endif
+
+#if !defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
+
+MovePtr<ImageSource> createAndroidNativeImageSource	(GLenum format)
+{
+	return createUnsupportedImageSource("AHB API not supported", format);
+}
+
+#else // defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
+
+namespace
+{
+
+#include <sys/system_properties.h>
+#include <android/hardware_buffer.h>
+#include "deDynamicLibrary.hpp"
 
 deInt32 androidGetSdkVersion (void)
 {
@@ -312,6 +321,8 @@ MovePtr<ImageSource> createAndroidNativeImageSource	(GLenum format)
 		return createUnsupportedImageSource(string("Android native buffers unsupported: ") + exc.what(), format);
 	}
 }
+
+#endif // defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
 
 #endif // DE_OS == DE_OS_ANDROID
 
