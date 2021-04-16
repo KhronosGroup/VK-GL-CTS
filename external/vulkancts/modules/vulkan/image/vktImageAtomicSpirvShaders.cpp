@@ -1592,7 +1592,7 @@ const std::string kShader_3d_r32ui_end_result = R"(
 ;     int gx = int(gl_GlobalInvocationID.x);
 ;     int gy = int(gl_GlobalInvocationID.y);
 ;     int gz = int(gl_GlobalInvocationID.z);
-;     imageAtomicAdd(u_resultImage, ivec3(gx % 64,gy,gz), uint(gx*gx + gy*gy + gz*gz));
+;     imageAtomicAdd(u_resultImage, ivec3(gx % 48,gy,gz), uint(gx*gx + gy*gy + gz*gz));
 ; }
 ;
 ; SPIR-V
@@ -1625,7 +1625,7 @@ OpDecorate %53 BuiltIn WorkgroupSize
 %28 = OpTypeImage %9 3D 0 0 0 2 R32ui
 %29 = OpTypePointer UniformConstant %28
 %30 = OpVariable %29 UniformConstant
-%32 = OpConstant %6 64
+%32 = OpConstant %6 48
 %36 = OpTypeVector %6 3
 %50 = OpTypePointer Image %9
 %53 = OpConstantComposite %10 %19 %19 %19
@@ -1685,7 +1685,7 @@ const std::string kShader_3d_r32ui_intermediate_values = R"(
 ;     int gx = int(gl_GlobalInvocationID.x);
 ;     int gy = int(gl_GlobalInvocationID.y);
 ;     int gz = int(gl_GlobalInvocationID.z);
-;     imageStore(u_intermValuesImage, ivec3(gx,gy,gz), uvec4(imageAtomicAdd(u_resultImage, ivec3(gx % 64,gy,gz), uint(gx*gx + gy*gy + gz*gz))));
+;     imageStore(u_intermValuesImage, ivec3(gx,gy,gz), uvec4(imageAtomicAdd(u_resultImage, ivec3(gx % 48,gy,gz), uint(gx*gx + gy*gy + gz*gz))));
 ; }
 ;
 ; SPIR-V
@@ -1723,7 +1723,7 @@ OpDecorate %61 BuiltIn WorkgroupSize
 %30 = OpVariable %29 UniformConstant
 %35 = OpTypeVector %6 3
 %37 = OpVariable %29 UniformConstant
-%39 = OpConstant %6 64
+%39 = OpConstant %6 48
 %56 = OpTypePointer Image %9
 %59 = OpTypeVector %9 4
 %61 = OpConstantComposite %10 %19 %19 %19
@@ -1789,7 +1789,7 @@ const std::string kShader_3d_r32i_end_result = R"(
 ;     int gx = int(gl_GlobalInvocationID.x);
 ;     int gy = int(gl_GlobalInvocationID.y);
 ;     int gz = int(gl_GlobalInvocationID.z);
-;     imageAtomicAdd(u_resultImage, ivec3(gx % 64,gy,gz), int(gx*gx + gy*gy + gz*gz));
+;     imageAtomicAdd(u_resultImage, ivec3(gx % 48,gy,gz), int(gx*gx + gy*gy + gz*gz));
 ; }
 ;
 ; SPIR-V
@@ -1822,7 +1822,7 @@ OpDecorate %52 BuiltIn WorkgroupSize
 %28 = OpTypeImage %6 3D 0 0 0 2 R32i
 %29 = OpTypePointer UniformConstant %28
 %30 = OpVariable %29 UniformConstant
-%32 = OpConstant %6 64
+%32 = OpConstant %6 48
 %36 = OpTypeVector %6 3
 %49 = OpTypePointer Image %6
 %52 = OpConstantComposite %10 %19 %19 %19
@@ -1881,7 +1881,7 @@ const std::string kShader_3d_r32i_intermediate_values = R"(
 ;     int gx = int(gl_GlobalInvocationID.x);
 ;     int gy = int(gl_GlobalInvocationID.y);
 ;     int gz = int(gl_GlobalInvocationID.z);
-;     imageStore(u_intermValuesImage, ivec3(gx,gy,gz), ivec4(imageAtomicAdd(u_resultImage, ivec3(gx % 64,gy,gz), int(gx*gx + gy*gy + gz*gz))));
+;     imageStore(u_intermValuesImage, ivec3(gx,gy,gz), ivec4(imageAtomicAdd(u_resultImage, ivec3(gx % 48,gy,gz), int(gx*gx + gy*gy + gz*gz))));
 ; }
 ;
 ; SPIR-V
@@ -1919,7 +1919,7 @@ OpDecorate %60 BuiltIn WorkgroupSize
 %30 = OpVariable %29 UniformConstant
 %35 = OpTypeVector %6 3
 %37 = OpVariable %29 UniformConstant
-%39 = OpConstant %6 64
+%39 = OpConstant %6 48
 %55 = OpTypePointer Image %6
 %58 = OpTypeVector %6 4
 %60 = OpConstantComposite %10 %19 %19 %19
@@ -4826,7 +4826,7 @@ const std::string kShader_3d_r64ui_end_result = R"(
 ;    int gx = int(gl_GlobalInvocationID.x);
 ;    int gy = int(gl_GlobalInvocationID.y);
 ;    int gz = int(gl_GlobalInvocationID.z);
-;    imageAtomicAdd(u_resultImage, ivec3(gx%64, gy, gz), uint(gx*gx + gy*gy + gz*gz));
+;    imageAtomicAdd(u_resultImage, ivec3(gx%48, gy, gz), uint(gx*gx + gy*gy + gz*gz));
 ; }
 ;
 ; SPIR-V
@@ -4864,7 +4864,7 @@ OpDecorate %56 BuiltIn WorkgroupSize
 %29 = OpTypeImage %28 3D 0 0 0 2 R64ui
 %30 = OpTypePointer UniformConstant %29
 %31 = OpVariable %30 UniformConstant
-%33 = OpConstant %6 64
+%33 = OpConstant %6 48
 %37 = OpTypeVector %6 3
 %50 = OpTypeInt 64 1
 %53 = OpTypePointer Image %28
@@ -4928,7 +4928,7 @@ const std::string kShader_3d_r64ui_intermediate_values = R"(
 ;    int gx = int(gl_GlobalInvocationID.x);
 ;    int gy = int(gl_GlobalInvocationID.y);
 ;    int gz = int(gl_GlobalInvocationID.z);
-;    imageStore(u_intermValuesImage, ivec3(gx, gy, gz), u64vec4(imageAtomicAdd(u_resultImage, ivec3(gx%64, gy, gz), uint(gx*gx + gy*gy + gz*gz))));
+;    imageStore(u_intermValuesImage, ivec3(gx, gy, gz), u64vec4(imageAtomicAdd(u_resultImage, ivec3(gx%48, gy, gz), uint(gx*gx + gy*gy + gz*gz))));
 ; }
 ;
 ; SPIR-V
@@ -4971,7 +4971,7 @@ OpDecorate %64 BuiltIn WorkgroupSize
 %31 = OpVariable %30 UniformConstant
 %36 = OpTypeVector %6 3
 %38 = OpVariable %30 UniformConstant
-%40 = OpConstant %6 64
+%40 = OpConstant %6 48
 %56 = OpTypeInt 64 1
 %59 = OpTypePointer Image %28
 %62 = OpTypeVector %28 4
@@ -5041,7 +5041,7 @@ const std::string kShader_3d_r64i_end_result = R"(
 ;    int gx = int(gl_GlobalInvocationID.x);
 ;    int gy = int(gl_GlobalInvocationID.y);
 ;    int gz = int(gl_GlobalInvocationID.z);
-;    imageAtomicAdd(u_resultImage, ivec3(gx%64, gy, gz), int(gx*gx + gy*gy + gz*gz));
+;    imageAtomicAdd(u_resultImage, ivec3(gx%48, gy, gz), int(gx*gx + gy*gy + gz*gz));
 ; }
 ;
 ; SPIR-V
@@ -5079,7 +5079,7 @@ OpDecorate %54 BuiltIn WorkgroupSize
 %29 = OpTypeImage %28 3D 0 0 0 2 R64i
 %30 = OpTypePointer UniformConstant %29
 %31 = OpVariable %30 UniformConstant
-%33 = OpConstant %6 64
+%33 = OpConstant %6 48
 %37 = OpTypeVector %6 3
 %51 = OpTypePointer Image %28
 %54 = OpConstantComposite %10 %19 %19 %19
@@ -5141,7 +5141,7 @@ const std::string kShader_3d_r64i_intermediate_values = R"(
 ;    int gx = int(gl_GlobalInvocationID.x);
 ;    int gy = int(gl_GlobalInvocationID.y);
 ;    int gz = int(gl_GlobalInvocationID.z);
-;    imageStore(u_intermValuesImage, ivec3(gx, gy, gz), i64vec4(imageAtomicAdd(u_resultImage, ivec3(gx%64, gy, gz), int(gx*gx + gy*gy + gz*gz))));
+;    imageStore(u_intermValuesImage, ivec3(gx, gy, gz), i64vec4(imageAtomicAdd(u_resultImage, ivec3(gx%48, gy, gz), int(gx*gx + gy*gy + gz*gz))));
 ; }
 ;
 ; SPIR-V
@@ -5184,7 +5184,7 @@ OpDecorate %62 BuiltIn WorkgroupSize
 %31 = OpVariable %30 UniformConstant
 %36 = OpTypeVector %6 3
 %38 = OpVariable %30 UniformConstant
-%40 = OpConstant %6 64
+%40 = OpConstant %6 48
 %57 = OpTypePointer Image %28
 %60 = OpTypeVector %28 4
 %62 = OpConstantComposite %10 %19 %19 %19

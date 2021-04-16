@@ -1892,7 +1892,7 @@ tcu::TestCaseGroup* createImageAtomicOperationTests (tcu::TestContext& testCtx)
 		ImageParams(IMAGE_TYPE_1D_ARRAY,	tcu::UVec3(64u, 1u, 8u)),
 		ImageParams(IMAGE_TYPE_2D,			tcu::UVec3(64u, 64u, 1u)),
 		ImageParams(IMAGE_TYPE_2D_ARRAY,	tcu::UVec3(64u, 64u, 8u)),
-		ImageParams(IMAGE_TYPE_3D,			tcu::UVec3(64u, 64u, 8u)),
+		ImageParams(IMAGE_TYPE_3D,			tcu::UVec3(48u, 48u, 8u)),
 		ImageParams(IMAGE_TYPE_CUBE,		tcu::UVec3(64u, 64u, 1u)),
 		ImageParams(IMAGE_TYPE_CUBE_ARRAY,	tcu::UVec3(64u, 64u, 2u)),
 		ImageParams(IMAGE_TYPE_BUFFER,		tcu::UVec3(64u, 1u, 1u))
