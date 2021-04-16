@@ -560,13 +560,18 @@ VkDeviceOrHostAddressKHR SerialStorage::getAddress (const DeviceInterface&				vk
 		return makeDeviceOrHostAddressKHR(m_buffer->getAllocation().getHostPtr());
 }
 
+VkDeviceOrHostAddressConstKHR SerialStorage::getHostAddressConst()
+{
+	return makeDeviceOrHostAddressConstKHR(m_buffer->getAllocation().getHostPtr());
+}
+
 VkDeviceOrHostAddressConstKHR SerialStorage::getAddressConst (const DeviceInterface&	vk,
 															  const VkDevice			device)
 {
 	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 		return makeDeviceOrHostAddressConstKHR(vk, device, m_buffer->get(), 0);
 	else
-		return makeDeviceOrHostAddressConstKHR(m_buffer->getAllocation().getHostPtr());
+		return getHostAddressConst();
 }
 
 VkDeviceSize SerialStorage::getStorageSize ()

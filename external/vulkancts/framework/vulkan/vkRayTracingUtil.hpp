@@ -483,8 +483,11 @@ public:
 																 const VkAccelerationStructureBuildTypeKHR	buildType,
 																 const VkDeviceSize							storageSize);
 
+	// this method will return host addres if acc was build on cpu and device addres when it was build on gpu
 	VkDeviceOrHostAddressKHR				getAddress			(const DeviceInterface&	vk,
 																 const VkDevice			device);
+	// this method retuns host addres regardles of where acc was build
+	VkDeviceOrHostAddressConstKHR			getHostAddressConst	();
 	VkDeviceOrHostAddressConstKHR			getAddressConst		(const DeviceInterface&	vk,
 																 const VkDevice			device);
 	VkDeviceSize							getStorageSize		();
@@ -696,6 +699,10 @@ protected:
 };
 
 de::MovePtr<TopLevelAccelerationStructure> makeTopLevelAccelerationStructure ();
+
+template<class ASType> de::MovePtr<ASType> makeAccelerationStructure ();
+template<> inline de::MovePtr<BottomLevelAccelerationStructure>	makeAccelerationStructure () { return makeBottomLevelAccelerationStructure(); }
+template<> inline de::MovePtr<TopLevelAccelerationStructure>	makeAccelerationStructure () { return makeTopLevelAccelerationStructure(); }
 
 bool queryAccelerationStructureSize (const DeviceInterface&							vk,
 									 const VkDevice									device,
