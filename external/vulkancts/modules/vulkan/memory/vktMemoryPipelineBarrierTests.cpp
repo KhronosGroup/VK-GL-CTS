@@ -1327,6 +1327,7 @@ HostMemoryAccess::HostMemoryAccess (bool read, bool write, deUint32 seed)
 	: m_read	(read)
 	, m_write	(write)
 	, m_seed	(seed)
+	, m_size	(0)
 {
 }
 
@@ -1586,8 +1587,10 @@ private:
 
 CreateImage::CreateImage (vk::VkImageUsageFlags	usage,
 						  vk::VkSharingMode		sharing)
-	: m_usage	(usage)
-	, m_sharing	(sharing)
+	: m_usage		(usage)
+	, m_sharing		(sharing)
+	, m_imageWidth	(0)
+	, m_imageHeight	(0)
 {
 }
 
@@ -2089,6 +2092,7 @@ ImageTransition::ImageTransition (vk::VkPipelineStageFlags	srcStages,
 	, m_dstAccesses		(dstAccesses)
 	, m_srcLayout		(srcLayout)
 	, m_dstLayout		(dstLayout)
+	, m_imageMemorySize	(0)
 {
 }
 
@@ -2146,7 +2150,7 @@ void ImageTransition::verify (VerifyContext& context, size_t)
 class FillBuffer : public CmdCommand
 {
 public:
-						FillBuffer	(deUint32 value) : m_value(value) {}
+						FillBuffer	(deUint32 value) : m_value(value), m_bufferSize(0) {}
 						~FillBuffer	(void) {}
 	const char*			getName		(void) const { return "FillBuffer"; }
 
@@ -2192,7 +2196,7 @@ void FillBuffer::verify (VerifyContext& context, size_t)
 class UpdateBuffer : public CmdCommand
 {
 public:
-						UpdateBuffer	(deUint32 seed) : m_seed(seed) {}
+						UpdateBuffer	(deUint32 seed) : m_seed(seed), m_bufferSize(0) {}
 						~UpdateBuffer	(void) {}
 	const char*			getName			(void) const { return "UpdateBuffer"; }
 
@@ -2376,7 +2380,7 @@ void BufferCopyToBuffer::verify (VerifyContext& context, size_t commandIndex)
 class BufferCopyFromBuffer : public CmdCommand
 {
 public:
-									BufferCopyFromBuffer	(deUint32 seed) : m_seed(seed) {}
+									BufferCopyFromBuffer	(deUint32 seed) : m_seed(seed), m_bufferSize(0) {}
 									~BufferCopyFromBuffer	(void) {}
 	const char*						getName					(void) const { return "BufferCopyFromBuffer"; }
 
@@ -4799,6 +4803,7 @@ public:
 				RenderVertexBuffer	(deUint32 stride)
 					: m_stride(stride)
 					, m_name("RenderVertexBuffer" + de::toString(stride))
+					, m_bufferSize(0)
 					{}
 				~RenderVertexBuffer	(void) {}
 
@@ -7429,10 +7434,11 @@ CacheState::CacheState (vk::VkPipelineStageFlags allowedStages, vk::VkAccessFlag
 {
 	for (vk::VkPipelineStageFlags dstStage_ = 1; dstStage_ <= m_allowedStages; dstStage_ <<= 1)
 	{
-		const PipelineStage dstStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)dstStage_);
-
 		if ((dstStage_ & m_allowedStages) == 0)
 			continue;
+
+		const PipelineStage dstStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)dstStage_);
+
 
 		// All operations are initially visible
 		m_invisibleOperations[dstStage] = 0;
@@ -7445,19 +7451,19 @@ CacheState::CacheState (vk::VkPipelineStageFlags allowedStages, vk::VkAccessFlag
 
 		for (vk::VkPipelineStageFlags srcStage_ = 1; srcStage_ <= m_allowedStages; srcStage_ <<= 1)
 		{
-			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
-
 			if ((srcStage_ & m_allowedStages) == 0)
 				continue;
+
+			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
 
 			// There are no write operations that are not yet available
 			// initially.
 			for (vk::VkAccessFlags dstAccess_ = 1; dstAccess_ <= m_allowedAccesses; dstAccess_ <<= 1)
 			{
-				const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
-
 				if ((dstAccess_ & m_allowedAccesses) == 0)
 					continue;
+
+				const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
 
 				m_unavailableWriteOperations[dstStage][srcStage][dstAccess] = 0;
 			}
@@ -7498,10 +7504,10 @@ void CacheState::perform (vk::VkPipelineStageFlagBits	stage,
 
 	for (vk::VkPipelineStageFlags dstStage_ = 1; dstStage_ <= m_allowedStages; dstStage_ <<= 1)
 	{
-		const PipelineStage dstStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)dstStage_);
-
 		if ((dstStage_ & m_allowedStages) == 0)
 			continue;
+
+		const PipelineStage dstStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)dstStage_);
 
 		// Mark stage as incomplete for all stages
 		m_incompleteOperations[dstStage] |= stage;
@@ -7514,10 +7520,10 @@ void CacheState::perform (vk::VkPipelineStageFlagBits	stage,
 			// Mark write access from srcStage unavailable to all stages for all accesses
 			for (vk::VkAccessFlags dstAccess_ = 1; dstAccess_ <= m_allowedAccesses; dstAccess_ <<= 1)
 			{
-				const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
-
 				if ((dstAccess_ & m_allowedAccesses) == 0)
 					continue;
+
+				const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
 
 				m_unavailableWriteOperations[dstStage][srcStage][dstAccess] |= access;
 			}
@@ -7561,10 +7567,10 @@ void CacheState::getFullBarrier (vk::VkPipelineStageFlags&	srcStages,
 
 	for (vk::VkPipelineStageFlags dstStage_ = 1; dstStage_ <= m_allowedStages; dstStage_ <<= 1)
 	{
-		const PipelineStage dstStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)dstStage_);
-
 		if ((dstStage_ & m_allowedStages) == 0)
 			continue;
+
+		const PipelineStage dstStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)dstStage_);
 
 		// Make sure all previous operation are complete in all stages
 		if (m_incompleteOperations[dstStage])
@@ -7583,17 +7589,17 @@ void CacheState::getFullBarrier (vk::VkPipelineStageFlags&	srcStages,
 		// Make sure all write operations from all stages are available
 		for (vk::VkPipelineStageFlags srcStage_ = 1; srcStage_ <= m_allowedStages; srcStage_ <<= 1)
 		{
-			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
-
 			if ((srcStage_ & m_allowedStages) == 0)
 				continue;
 
+			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
+
 			for (vk::VkAccessFlags dstAccess_ = 1; dstAccess_ <= m_allowedAccesses; dstAccess_ <<= 1)
 			{
-				const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
-
 				if ((dstAccess_ & m_allowedAccesses) == 0)
 					continue;
+
+				const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
 
 				if (m_unavailableWriteOperations[dstStage][srcStage][dstAccess])
 				{
@@ -7642,10 +7648,10 @@ void CacheState::checkImageLayoutBarrier (vk::VkPipelineStageFlags	srcStages,
 
 		for (vk::VkPipelineStageFlags srcStage_ = 1; srcStage_ <= srcStages; srcStage_ <<= 1)
 		{
-			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
-
 			if ((srcStage_ & srcStages) == 0)
 				continue;
+
+			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
 
 			completedStages |= (~m_incompleteOperations[srcStage]);
 		}
@@ -7660,24 +7666,24 @@ void CacheState::checkImageLayoutBarrier (vk::VkPipelineStageFlags	srcStages,
 
 		for (vk::VkPipelineStageFlags dstStage_ = 1; dstStage_ <= m_allowedStages; dstStage_ <<= 1)
 		{
-			const PipelineStage dstStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)dstStage_);
-
 			if ((dstStage_ & m_allowedStages) == 0)
 				continue;
 
+			const PipelineStage dstStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)dstStage_);
+
 			for (vk::VkPipelineStageFlags srcStage_ = 1; srcStage_ <= m_allowedStages; srcStage_ <<= 1)
 			{
-				const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
-
 				if ((srcStage_ & m_allowedStages) == 0)
 					continue;
 
+				const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
+
 				for (vk::VkAccessFlags dstAccess_ = 1; dstAccess_ <= m_allowedAccesses; dstAccess_ <<= 1)
 				{
-					const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
-
 					if ((dstAccess_ & m_allowedAccesses) == 0)
 						continue;
+
+					const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
 
 					if (m_unavailableWriteOperations[dstStage][srcStage][dstAccess] != (getWriteAccessFlags() & m_allowedAccesses))
 					{
@@ -7702,10 +7708,10 @@ void CacheState::imageLayoutBarrier (vk::VkPipelineStageFlags	srcStages,
 
 	for (vk::VkPipelineStageFlags dstStage_ = 1; dstStage_ <= m_allowedStages; dstStage_ <<= 1)
 	{
-		const PipelineStage dstStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)dstStage_);
-
 		if ((dstStage_ & m_allowedStages) == 0)
 			continue;
+
+		const PipelineStage dstStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)dstStage_);
 
 		// All stages are incomplete after the barrier except each dstStage in it self.
 		m_incompleteOperations[dstStage] = m_allowedStages & (~dstStage_);
@@ -7718,18 +7724,18 @@ void CacheState::imageLayoutBarrier (vk::VkPipelineStageFlags	srcStages,
 
 		for (vk::VkPipelineStageFlags srcStage_ = 1; srcStage_ <= m_allowedStages; srcStage_ <<= 1)
 		{
-			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
-
 			if ((srcStage_ & m_allowedStages) == 0)
 				continue;
+
+			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
 
 			// All write operations are available after layout transition
 			for (vk::VkAccessFlags dstAccess_ = 1; dstAccess_ <= m_allowedAccesses; dstAccess_ <<= 1)
 			{
-				const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
-
 				if ((dstAccess_ & m_allowedAccesses) == 0)
 					continue;
+
+				const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
 
 				m_unavailableWriteOperations[dstStage][srcStage][dstAccess] = 0;
 			}
@@ -7759,17 +7765,17 @@ void CacheState::barrier (vk::VkPipelineStageFlags	srcStages,
 
 		for (vk::VkPipelineStageFlags srcStage_ = 1; srcStage_ <= srcStages; srcStage_ <<= 1)
 		{
-			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
-
 			if ((srcStage_ & srcStages) == 0)
 				continue;
 
+			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
+
 			for (vk::VkPipelineStageFlags dstStage_ = 1; dstStage_ <= dstStages; dstStage_ <<= 1)
 			{
-				const PipelineStage	dstStage			= pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)dstStage_);
-
 				if ((dstStage_ & dstStages) == 0)
 					continue;
+
+				const PipelineStage	dstStage			= pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)dstStage_);
 
 				// Stages that have completed before srcStage have also completed before dstStage
 				m_incompleteOperations[dstStage] &= oldIncompleteOperations[srcStage];
@@ -7779,18 +7785,18 @@ void CacheState::barrier (vk::VkPipelineStageFlags	srcStages,
 
 				for (vk::VkPipelineStageFlags sharedStage_ = 1; sharedStage_ <= m_allowedStages; sharedStage_ <<= 1)
 				{
-					const PipelineStage	sharedStage			= pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)sharedStage_);
-
 					if ((sharedStage_ & m_allowedStages) == 0)
 						continue;
+
+					const PipelineStage	sharedStage			= pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)sharedStage_);
 
 					// Writes that are available in srcStage are also available in dstStage
 					for (vk::VkAccessFlags sharedAccess_ = 1; sharedAccess_ <= m_allowedAccesses; sharedAccess_ <<= 1)
 					{
-						const Access sharedAccess = accessFlagToAccess((vk::VkAccessFlagBits)sharedAccess_);
-
 						if ((sharedAccess_ & m_allowedAccesses) == 0)
 							continue;
+
+						const Access sharedAccess = accessFlagToAccess((vk::VkAccessFlagBits)sharedAccess_);
 
 						m_unavailableWriteOperations[dstStage][sharedStage][sharedAccess] &= oldUnavailableWriteOperations[srcStage][sharedStage][sharedAccess];
 					}
@@ -7813,18 +7819,18 @@ void CacheState::barrier (vk::VkPipelineStageFlags	srcStages,
 
 		for (vk::VkPipelineStageFlags srcStage_ = 1; srcStage_ <= m_allowedStages; srcStage_ <<= 1)
 		{
-			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
-
 			if ((srcStage_ & m_allowedStages) == 0)
 				continue;
+
+			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
 
 			// Make srcAccesses from srcStage available in dstStage for dstAccess
 			for (vk::VkAccessFlags dstAccess_ = 1; dstAccess_ <= m_allowedAccesses; dstAccess_ <<= 1)
 			{
-				const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
-
 				if ((dstAccess_ & m_allowedAccesses) == 0)
 					continue;
+
+				const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
 
 				if (((srcStage_ & srcStages) != 0) && ((dstAccess_ & dstAccesses) != 0))
 					m_unavailableWriteOperations[dstStage][srcStage][dstAccess] &= ~srcAccesses;
@@ -7844,10 +7850,10 @@ bool CacheState::isClean (void) const
 {
 	for (vk::VkPipelineStageFlags dstStage_ = 1; dstStage_ <= m_allowedStages; dstStage_ <<= 1)
 	{
-		const PipelineStage dstStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)dstStage_);
-
 		if ((dstStage_ & m_allowedStages) == 0)
 			continue;
+
+		const PipelineStage dstStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)dstStage_);
 
 		// Some operations are not visible to some stages
 		if (m_invisibleOperations[dstStage] != 0)
@@ -7863,17 +7869,17 @@ bool CacheState::isClean (void) const
 
 		for (vk::VkPipelineStageFlags srcStage_ = 1; srcStage_ <= m_allowedStages; srcStage_ <<= 1)
 		{
-			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
-
 			if ((srcStage_ & m_allowedStages) == 0)
 				continue;
 
+			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
+
 			for (vk::VkAccessFlags dstAccess_ = 1; dstAccess_ <= m_allowedAccesses; dstAccess_ <<= 1)
 			{
-				const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
-
 				if ((dstAccess_ & m_allowedAccesses) == 0)
 					continue;
+
+				const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
 
 				// Some write operations are not available yet
 				if (m_unavailableWriteOperations[dstStage][srcStage][dstAccess] != 0)
@@ -8667,7 +8673,7 @@ void applyOp (State& state, const Memory& memory, Op op, Usage usage)
 			break;
 
 		case OP_SECONDARY_COMMAND_BUFFER_END:
-			DE_ASSERT(state.stage == STAGE_SECONDARY_COMMAND_BUFFER || state.stage == STAGE_SECONDARY_COMMAND_BUFFER);
+			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER || state.stage == STAGE_SECONDARY_COMMAND_BUFFER);
 			state.stage = STAGE_COMMAND_BUFFER;
 			state.commandBufferIsEmpty = state.primaryCommandBufferIsEmpty;
 			break;
@@ -9005,15 +9011,18 @@ de::MovePtr<CmdCommand> createCmdCommand (de::Random&	rng,
 			removeIllegalAccessFlags(srcAccesses, srcStages);
 
 			PipelineBarrier::Type type;
-
-			if (op == OP_PIPELINE_BARRIER_IMAGE)
-				type = PipelineBarrier::TYPE_IMAGE;
-			else if (op == OP_PIPELINE_BARRIER_BUFFER)
-				type = PipelineBarrier::TYPE_BUFFER;
-			else if (op == OP_PIPELINE_BARRIER_GLOBAL)
-				type = PipelineBarrier::TYPE_GLOBAL;
-			else
+			switch (op)
 			{
+			case OP_PIPELINE_BARRIER_IMAGE:
+				type = PipelineBarrier::TYPE_IMAGE;
+				break;
+			case OP_PIPELINE_BARRIER_BUFFER:
+				type = PipelineBarrier::TYPE_BUFFER;
+				break;
+			case OP_PIPELINE_BARRIER_GLOBAL:
+				type = PipelineBarrier::TYPE_GLOBAL;
+				break;
+			default:
 				type = PipelineBarrier::TYPE_LAST;
 				DE_FATAL("Unknown op");
 			}

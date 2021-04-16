@@ -287,7 +287,7 @@ bool comparePixelToDepthClearValue (const ConstPixelBufferAccess&	access,
 		{
 			const float	depth			= access.getPixDepth(x, y);
 			const int	mantissaBits	= getTextureFormatMantissaBitDepth(format).x();
-			const int	threshold		= 10 * 1 << (23 - mantissaBits);
+			const int	threshold		= (10 * 1) << (23 - mantissaBits);
 
 			DE_ASSERT(mantissaBits <= 23);
 

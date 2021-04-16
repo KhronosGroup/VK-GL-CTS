@@ -624,6 +624,7 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 	, m_uniformSetup		(uniformSetup)
 	, m_attribFunc			(attribFunc)
 	, m_sampleCount			(VK_SAMPLE_COUNT_1_BIT)
+	, m_fuzzyCompare		(false)
 {
 }
 

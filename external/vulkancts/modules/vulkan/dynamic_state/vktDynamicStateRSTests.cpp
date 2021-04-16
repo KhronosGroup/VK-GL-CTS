@@ -53,6 +53,7 @@ public:
 	DepthBiasBaseCase (Context& context, const char* vertexShaderName, const char* fragmentShaderName)
 		: TestInstance						(context)
 		, m_colorAttachmentFormat			(vk::VK_FORMAT_R8G8B8A8_UNORM)
+		, m_depthStencilAttachmentFormat	(vk::VK_FORMAT_UNDEFINED)
 		, m_topology						(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 		, m_vk								(context.getDeviceInterface())
 		, m_vertexShaderName				(vertexShaderName)

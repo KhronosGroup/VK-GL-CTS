@@ -4189,7 +4189,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		{
 			// If deviceLUIDValid is VK_FALSE, the contents of deviceLUID and deviceNodeMask are undefined
 			// so thay can only be compared when deviceLUIDValid is VK_TRUE.
-			if ((deMemCmp(idProperties[0].deviceLUID, idProperties[1].deviceLUID, VK_UUID_SIZE) != 0) ||
+			if ((deMemCmp(idProperties[0].deviceLUID, idProperties[1].deviceLUID, VK_LUID_SIZE) != 0) ||
 				(idProperties[0].deviceNodeMask		!= idProperties[1].deviceNodeMask))
 			{
 				TCU_FAIL("Mismatch between VkPhysicalDeviceIDProperties");
@@ -4358,6 +4358,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 
 		log << TestLog::Message << performanceQueryProperties[0] << TestLog::EndMessage;
 
+		// TODO: this is a NOP. Should the second index be [1] ?
 		if (performanceQueryProperties[0].allowCommandBufferQueryCopies != performanceQueryProperties[0].allowCommandBufferQueryCopies)
 		{
 			TCU_FAIL("Mismatch between VkPhysicalDevicePerformanceQueryPropertiesKHR");
@@ -5142,7 +5143,7 @@ tcu::TestStatus devicePropertyExtensionsConsistencyVulkan12(Context& context)
 		{
 			// If deviceLUIDValid is VK_FALSE, the contents of deviceLUID and deviceNodeMask are undefined
 			// so thay can only be compared when deviceLUIDValid is VK_TRUE.
-			if ((deMemCmp(idProperties.deviceLUID, vulkan11Properties.deviceLUID, VK_UUID_SIZE) != 0) ||
+			if ((deMemCmp(idProperties.deviceLUID, vulkan11Properties.deviceLUID, VK_LUID_SIZE) != 0) ||
 				(idProperties.deviceNodeMask != vulkan11Properties.deviceNodeMask))
 			{
 				TCU_FAIL("Mismatch between VkPhysicalDeviceIDProperties and VkPhysicalDeviceVulkan11Properties");

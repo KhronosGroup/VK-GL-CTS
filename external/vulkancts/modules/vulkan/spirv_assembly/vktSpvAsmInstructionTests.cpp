@@ -15961,6 +15961,9 @@ struct fp16Normalize : public fp16AllComponents
 		flavorNames.push_back("EmulatingFP16");
 		flavorNames.push_back("DoubleCalc");
 
+		permutationsFlavorStart = 0;
+		permutationsFlavorEnd = flavorNames.size();
+
 		// flavorNames will be extended later
 	}
 
@@ -16479,6 +16482,9 @@ struct fp16Dot : public fp16AllComponents
 		flavorNames.push_back("EmulatingFP16");
 		flavorNames.push_back("FloatCalc");
 		flavorNames.push_back("DoubleCalc");
+
+		permutationsFlavorStart = 0;
+		permutationsFlavorEnd = flavorNames.size();
 
 		// flavorNames will be extended later
 	}

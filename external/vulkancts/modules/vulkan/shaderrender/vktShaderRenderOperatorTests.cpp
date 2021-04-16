@@ -1710,11 +1710,23 @@ void ShaderOperatorTests::init (void)
 												: TYPE_LAST;
 
 				ShaderEvalFunc evalFunc = DE_NULL;
-				if      (inScalarSize == 1)	evalFunc = funcInfo.evalFuncScalar;
-				else if (inScalarSize == 2)	evalFunc = funcInfo.evalFuncVec2;
-				else if (inScalarSize == 3)	evalFunc = funcInfo.evalFuncVec3;
-				else if (inScalarSize == 4)	evalFunc = funcInfo.evalFuncVec4;
-				else DE_ASSERT(false);
+				switch (inScalarSize)
+				{
+				case 1:
+					evalFunc = funcInfo.evalFuncScalar;
+					break;
+				case 2:
+					evalFunc = funcInfo.evalFuncVec2;
+					break;
+				case 3:
+					evalFunc = funcInfo.evalFuncVec3;
+					break;
+				case 4:
+					evalFunc = funcInfo.evalFuncVec4;
+					break;
+				default:
+					DE_ASSERT(false);
+				}
 
 				// Skip if no valid eval func.
 				if (evalFunc == DE_NULL)

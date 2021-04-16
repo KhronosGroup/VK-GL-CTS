@@ -128,7 +128,7 @@ Move<VkDevice> createDeviceWithWsi (const vk::PlatformInterface&	vkp,
 	std::vector<const char*>		extensions;
 
 	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_swapchain")))
-		TCU_THROW(NotSupportedError, (std::string(extensions[0]) + " is not supported").c_str());
+		TCU_THROW(NotSupportedError, "VK_KHR_swapchain is not supported");
 	extensions.push_back("VK_KHR_swapchain");
 
 	if (isExtensionSupported(supportedExtensions, RequiredExtension("VK_EXT_full_screen_exclusive")))

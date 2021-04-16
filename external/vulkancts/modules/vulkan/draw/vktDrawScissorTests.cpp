@@ -120,7 +120,8 @@ class QuadDrawTestCommand : public TestCommand
 };
 
 QuadDrawTestCommand::QuadDrawTestCommand (deUint32 x, deUint32 y, deUint32 width, deUint32 height, Vec4 color)
-: m_quad(x, y, width, height, color)
+: m_offset(0)
+, m_quad(x, y, width, height, color)
 {
 }
 

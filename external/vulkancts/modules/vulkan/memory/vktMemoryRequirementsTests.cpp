@@ -394,7 +394,7 @@ void BufferMemoryRequirementsOriginal::verifyMemoryRequirements (tcu::ResultColl
 		result.check(deIsPowerOfTwo64(static_cast<deUint64>(m_currentTestRequirements.alignment)) == DE_TRUE,
 			"VkMemoryRequirements alignment isn't power of two");
 
-		if (usage & (VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT))
+		if (usage & (VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT))
 		{
 			result.check(m_currentTestRequirements.alignment >= limits.minTexelBufferOffsetAlignment,
 				"VkMemoryRequirements alignment doesn't respect minTexelBufferOffsetAlignment");
@@ -1590,7 +1590,6 @@ tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
 	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
 	tcu::TestLog&							log					= context.getTestContext().getLog();
 	tcu::ResultCollector					result				(log, "ERROR: ");
-	deUint32								errorCount			= 0;
 
 	log << TestLog::Message << "Memory properties: " << memoryProperties << TestLog::EndMessage;
 
@@ -1685,10 +1684,7 @@ tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
 		}
 	}
 
-	if (errorCount > 1)
-		return tcu::TestStatus(result.getResult(), "Failed " + de::toString(errorCount) + " cases.");
-	else
-		return tcu::TestStatus(result.getResult(), result.getMessage());
+	return tcu::TestStatus(result.getResult(), result.getMessage());
 }
 
 void checkSupportMultiplane (Context& context, ImageTestParams params)

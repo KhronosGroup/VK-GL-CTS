@@ -441,7 +441,7 @@ void PushConstantGraphicsTestInstance::init (void)
 		VkPhysicalDeviceFeatures features = m_context.getDeviceFeatures();
 
 		createShaderModule(vk, vkDevice, m_context.getBinaryCollection(), "color_vert", &m_vertexShaderModule);
-		if (m_shaderFlags & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT || m_shaderFlags & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
+		if (m_shaderFlags & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT || m_shaderFlags & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
 		{
 			if (features.tessellationShader == VK_FALSE)
 			{

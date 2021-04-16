@@ -1689,6 +1689,7 @@ TextureCommonTestCaseParameters::TextureCommonTestCaseParameters (void)
 	, wrapS					(tcu::Sampler::REPEAT_GL)
 	, format				(VK_FORMAT_R8G8B8A8_UNORM)
 	, unnormal				(false)
+	, aspectMask			(VK_IMAGE_ASPECT_FLAG_BITS_MAX_ENUM)
 {
 }
 
@@ -1696,6 +1697,7 @@ Texture2DTestCaseParameters::Texture2DTestCaseParameters (void)
 	: wrapT					(tcu::Sampler::REPEAT_GL)
 	, width					(64)
 	, height				(64)
+	, mipmaps				(false)
 {
 }
 

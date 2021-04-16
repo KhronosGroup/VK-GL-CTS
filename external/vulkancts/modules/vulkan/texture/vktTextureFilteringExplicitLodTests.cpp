@@ -558,6 +558,7 @@ TextureFilteringTestInstance::TextureFilteringTestInstance (Context&					ctx,
 	, m_imParams				(testCaseData.imParams)
 	, m_samplerParams			(testCaseData.samplerParams)
 	, m_sampleLookupSettings	(testCaseData.sampleLookupSettings)
+	, m_numSamples				(0)
 	, m_levels					(testCaseData.pba)
 	, m_gen						(gen.release())
 {

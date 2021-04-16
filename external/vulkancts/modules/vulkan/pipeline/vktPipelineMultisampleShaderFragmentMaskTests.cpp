@@ -395,6 +395,7 @@ struct TestParams
 
 	TestParams (void)
 		: numLayers			()
+		, sampleSource		(SAMPLE_SOURCE_IMAGE)
 		, numColorSamples	()
 		, colorFormat		()
 	{

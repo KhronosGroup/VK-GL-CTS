@@ -4201,7 +4201,7 @@ bool ConservativePointTestInstance::compareAndVerifyOverestimated (std::vector<P
 		for (int x = 0; x < resultImage.getWidth(); ++x)
 			referenceImage.setPixel(x, y, backgroundColor);
 
-		for (size_t renderAreaNdx = 0; result && renderAreaNdx < m_renderStart.size(); ++renderAreaNdx)
+		for (size_t renderAreaNdx = 0; renderAreaNdx < m_renderStart.size(); ++renderAreaNdx)
 		{
 			const int renderStart	= m_renderStart[renderAreaNdx];
 			const int renderEnd		= m_renderEnd[renderAreaNdx];
@@ -4221,7 +4221,7 @@ bool ConservativePointTestInstance::compareAndVerifyOverestimated (std::vector<P
 		}
 
 		css << std::endl;
-		for (size_t renderAreaNdx = 0; result && renderAreaNdx < m_renderStart.size(); ++renderAreaNdx)
+		for (size_t renderAreaNdx = 0; renderAreaNdx < m_renderStart.size(); ++renderAreaNdx)
 		{
 			const int renderStart	= m_renderStart[renderAreaNdx];
 			const int renderEnd		= m_renderEnd[renderAreaNdx];
@@ -4311,7 +4311,7 @@ bool ConservativePointTestInstance::compareAndVerifyUnderestimated (std::vector<
 		}
 
 		css << std::endl;
-		for (size_t renderAreaNdx = 0; result && renderAreaNdx < m_renderStart.size(); ++renderAreaNdx)
+		for (size_t renderAreaNdx = 0; renderAreaNdx < m_renderStart.size(); ++renderAreaNdx)
 		{
 			const int renderStart	= m_renderStart[renderAreaNdx];
 			const int renderEnd		= m_renderEnd[renderAreaNdx];

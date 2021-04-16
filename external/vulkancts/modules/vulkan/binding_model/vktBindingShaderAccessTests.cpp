@@ -5248,25 +5248,28 @@ tcu::Vec4 ImageSampleInstanceImages::getSamplePos (vk::VkImageViewType viewType,
 				2u % arraySize,
 			};
 
-			if (viewType == vk::VK_IMAGE_VIEW_TYPE_1D || viewType == vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY)
-				return tcu::Vec4(coords[samplePosNdx].x() / (float)imageSize,
-								 (float)slices[samplePosNdx],
-								 0.0f,
-								 0.0f);
-			else if (viewType == vk::VK_IMAGE_VIEW_TYPE_2D || viewType == vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY)
-				return tcu::Vec4(coords[samplePosNdx].x() / (float)imageSize,
-								 coords[samplePosNdx].y() / (float)imageSize,
-								 (float)slices[samplePosNdx],
-								 0.0f);
-			else if (viewType == vk::VK_IMAGE_VIEW_TYPE_3D)
-				return tcu::Vec4(coords[samplePosNdx].x() / (float)imageSize,
-								 coords[samplePosNdx].y() / (float)imageSize,
-								 coords[samplePosNdx].z() / (float)imageSize,
-								 0.0f);
-			else
+			switch (viewType)
 			{
-				DE_FATAL("Impossible");
-				return tcu::Vec4();
+			case vk::VK_IMAGE_VIEW_TYPE_1D:
+			case vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY:
+					return tcu::Vec4(coords[samplePosNdx].x() / (float)imageSize,
+						(float)slices[samplePosNdx],
+						0.0f,
+						0.0f);
+			case vk::VK_IMAGE_VIEW_TYPE_2D:
+			case vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY:
+					return tcu::Vec4(coords[samplePosNdx].x() / (float)imageSize,
+						coords[samplePosNdx].y() / (float)imageSize,
+						(float)slices[samplePosNdx],
+						0.0f);
+			case vk::VK_IMAGE_VIEW_TYPE_3D:
+					return tcu::Vec4(coords[samplePosNdx].x() / (float)imageSize,
+						coords[samplePosNdx].y() / (float)imageSize,
+						coords[samplePosNdx].z() / (float)imageSize,
+						0.0f);
+			default:
+					DE_FATAL("Impossible");
+					return tcu::Vec4();
 			}
 		}
 

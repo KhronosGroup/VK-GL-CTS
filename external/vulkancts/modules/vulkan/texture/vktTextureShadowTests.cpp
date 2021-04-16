@@ -862,6 +862,8 @@ private:
 
 		FilterCase	(void)
 			: textureIndex(-1)
+			, minCoord	(0)
+			, maxCoord	(0)
 			, ref		(0.0f)
 		{
 		}

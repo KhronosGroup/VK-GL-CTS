@@ -2463,6 +2463,7 @@ MultiViewQueriesTestInstance::MultiViewQueriesTestInstance (Context& context, co
 	: MultiViewRenderTestInstance	(context, parameters)
 	, m_verticesPerPrimitive		(4u)
 	, m_occlusionQueryFlags			((parameters.viewIndex == TEST_TYPE_QUERIES) * VK_QUERY_CONTROL_PRECISE_BIT)
+	, m_occlusionObjectsOffset		(0)
 {
 	// Generate the timestamp mask
 	const std::vector<VkQueueFamilyProperties>	queueProperties = vk::getPhysicalDeviceQueueFamilyProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());

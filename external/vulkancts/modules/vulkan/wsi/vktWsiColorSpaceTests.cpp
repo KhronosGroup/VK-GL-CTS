@@ -153,7 +153,7 @@ Move<VkDevice> createDeviceWithWsi (const vk::PlatformInterface&	vkp,
 	vector<const char*>		extensions;
 
 	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_swapchain")))
-		TCU_THROW(NotSupportedError, (string(extensions[0]) + " is not supported").c_str());
+		TCU_THROW(NotSupportedError, "VK_KHR_swapchain is not supported");
 	extensions.push_back("VK_KHR_swapchain");
 
 	if (isExtensionSupported(supportedExtensions, RequiredExtension("VK_EXT_hdr_metadata")))
@@ -649,8 +649,10 @@ tcu::TestStatus colorspaceCompareTest (Context& context, TestParams params)
 													 &swapchainImages[imageNdx]))
 				continue;
 			else
+			{
+				VK_CHECK(vkd.deviceWaitIdle(device));
 				return tcu::TestStatus::fail("Colorspace comparison test failed");
-			VK_CHECK(vkd.deviceWaitIdle(device));
+			}
 		}
 		catch (...)
 		{
@@ -660,6 +662,7 @@ tcu::TestStatus colorspaceCompareTest (Context& context, TestParams params)
 		}
 	}
 
+	VK_CHECK(vkd.deviceWaitIdle(device));
 	return tcu::TestStatus::pass("Colorspace comparison test succeeded");
 }
 

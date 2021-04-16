@@ -3743,6 +3743,7 @@ static VkBorderColor mapBorderColor (tcu::TextureChannelClass channelClass, cons
 		else												  return VK_BORDER_COLOR_FLOAT_CUSTOM_EXT;
 	}
 
+	// note: never reached
 	DE_FATAL("Unsupported border color");
 	return VK_BORDER_COLOR_MAX_ENUM;
 }

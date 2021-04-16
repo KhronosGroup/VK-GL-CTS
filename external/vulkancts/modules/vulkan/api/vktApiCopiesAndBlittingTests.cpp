@@ -300,6 +300,8 @@ struct TestParams
 
 	TestParams (void)
 	{
+		allocationKind				= ALLOCATION_KIND_DEDICATED;
+		extensionUse				= EXTENSION_USE_NONE;
 		mipLevels					= 1u;
 		singleCommand				= DE_TRUE;
 		barrierCount				= 1u;

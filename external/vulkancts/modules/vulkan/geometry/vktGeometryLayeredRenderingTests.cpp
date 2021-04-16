@@ -535,6 +535,7 @@ bool verifyImageSingleColoredRow (tcu::TestLog& log, const tcu::ConstPixelBuffer
 		return false;
 	}
 
+	// Note: this is never reached
 	log << tcu::TestLog::Image("LayerContent", "Layer content", image);
 
 	return allPixelsOk;
