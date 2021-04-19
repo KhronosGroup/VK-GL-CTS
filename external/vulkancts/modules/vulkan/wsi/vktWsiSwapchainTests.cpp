@@ -26,6 +26,7 @@
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
+#include "vktNativeObjectsUtil.hpp"
 
 #include "vkDefs.hpp"
 #include "vkPlatform.hpp"
@@ -330,80 +331,6 @@ struct MultiQueueDeviceHelper
 							const VkAllocationCallbacks*	pAllocator = DE_NULL)
 		: MultiQueueDeviceHelper(context, vki, instance, vector<VkSurfaceKHR>(1u, surface), additionalExtensions, pAllocator)
 	{
-	}
-};
-
-MovePtr<Display> createDisplay (const vk::Platform&	platform,
-								const Extensions&	supportedExtensions,
-								Type				wsiType)
-{
-	try
-	{
-		return MovePtr<Display>(platform.createWsiDisplay(wsiType));
-	}
-	catch (const tcu::NotSupportedError& e)
-	{
-		if (isExtensionSupported(supportedExtensions, RequiredExtension(getExtensionName(wsiType))) &&
-			platform.hasDisplay(wsiType))
-		{
-			// If VK_KHR_{platform}_surface was supported, vk::Platform implementation
-			// must support creating native display & window for that WSI type.
-			throw tcu::TestError(e.getMessage());
-		}
-		else
-			throw;
-	}
-}
-
-MovePtr<Window> createWindow (const Display& display, const Maybe<UVec2>& initialSize)
-{
-	try
-	{
-		return MovePtr<Window>(display.createWindow(initialSize));
-	}
-	catch (const tcu::NotSupportedError& e)
-	{
-		// See createDisplay - assuming that wsi::Display was supported platform port
-		// should also support creating a window.
-		throw tcu::TestError(e.getMessage());
-	}
-}
-
-class NativeObjects
-{
-private:
-	UniquePtr<Display>		display;
-	vector<MovePtr<Window>>	windows;
-
-public:
-	NativeObjects (Context&				context,
-				   const Extensions&	supportedExtensions,
-				   Type					wsiType,
-				   size_t				windowCount = 1u,
-				   const Maybe<UVec2>&	initialWindowSize = tcu::nothing<UVec2>())
-		: display	(createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), supportedExtensions, wsiType))
-	{
-		DE_ASSERT(windowCount > 0u);
-		for (size_t i = 0; i < windowCount; ++i)
-			windows.emplace_back(createWindow(*display, initialWindowSize));
-	}
-
-	NativeObjects (NativeObjects&& other)
-		: display	(other.display.move())
-		, windows	()
-	{
-		windows.swap(other.windows);
-	}
-
-	Display&	getDisplay	() const
-	{
-		return *display;
-	}
-
-	Window&		getWindow	(size_t index = 0u) const
-	{
-		DE_ASSERT(index < windows.size());
-		return *windows[index];
 	}
 };
 

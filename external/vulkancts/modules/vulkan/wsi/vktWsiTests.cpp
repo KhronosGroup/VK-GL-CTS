@@ -34,6 +34,7 @@
 #include "vktWsiSharedPresentableImageTests.hpp"
 #include "vktWsiColorSpaceTests.hpp"
 #include "vktWsiFullScreenExclusiveTests.hpp"
+#include "vktWsiPresentIdWaitTests.hpp"
 
 namespace vkt
 {
@@ -53,6 +54,7 @@ void createTypeSpecificTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiTy
 	addTestGroup(testGroup, "colorspace",				"ColorSpace tests",							createColorSpaceTests,				wsiType);
 	addTestGroup(testGroup, "colorspace_compare",		"ColorSpace compare tests",					createColorspaceCompareTests,		wsiType);
 	addTestGroup(testGroup, "full_screen_exclusive",	"VK_EXT_full_screen_exclusive tests",		createFullScreenExclusiveTests,		wsiType);
+	addTestGroup(testGroup, "present_id_wait",			"VK_KHR_present_(id|wait) tests",			createPresentIdWaitTests,			wsiType);
 }
 
 void createWsiTests (tcu::TestCaseGroup* apiTests)
