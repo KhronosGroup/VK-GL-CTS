@@ -77,5 +77,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_VALVE_mutable_descriptor_type",
 	"VK_EXT_multi_draw",
 	"VK_KHR_shader_subgroup_uniform_control_flow",
+	"VK_KHR_present_id",
+	"VK_KHR_present_wait",
 };
 

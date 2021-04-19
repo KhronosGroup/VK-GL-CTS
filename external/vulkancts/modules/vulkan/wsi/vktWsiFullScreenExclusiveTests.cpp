@@ -238,15 +238,15 @@ de::MovePtr<Window> createWindow (const Display& display,
 	}
 }
 
-struct NativeObjects
+struct NativeObjectsFS
 {
 	const de::UniquePtr<Display>	display;
 	tcu::UVec2						windowSize;
 	const de::UniquePtr<Window>		window;
 
-	NativeObjects (Context&				context,
-				   const Extensions&	supportedExtensions,
-				   Type					wsiType)
+	NativeObjectsFS	(Context&				context,
+					 const Extensions&		supportedExtensions,
+					 Type					wsiType)
 		: display		(createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), supportedExtensions, wsiType))
 		, windowSize	(getFullScreenSize(wsiType, *display.get(), tcu::UVec2(256U, 256U)))
 		, window		(createWindow(*display, windowSize))
@@ -341,7 +341,7 @@ tcu::TestStatus fullScreenExclusiveTest(Context& context,
 		TCU_THROW(NotSupportedError, "Extension VK_EXT_full_screen_exclusive not supported");
 
 	const InstanceHelper						instHelper(context, testParams.wsiType);
-	const NativeObjects							native(context, instHelper.supportedExtensions, testParams.wsiType);
+	const NativeObjectsFS						native(context, instHelper.supportedExtensions, testParams.wsiType);
 	const Unique<VkSurfaceKHR>					surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display, *native.window));
 	const DeviceHelper							devHelper(context, instHelper.vki, instHelper.instance, *surface);
 	const std::vector<VkExtensionProperties>	deviceExtensions(enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, DE_NULL));

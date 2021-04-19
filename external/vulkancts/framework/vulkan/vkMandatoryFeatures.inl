@@ -266,6 +266,26 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDevicePipelineExecutablePropertiesFeaturesKHR.pNext;
 	}
 
+	vk::VkPhysicalDevicePresentIdFeaturesKHR physicalDevicePresentIdFeaturesKHR;
+	deMemset(&physicalDevicePresentIdFeaturesKHR, 0, sizeof(physicalDevicePresentIdFeaturesKHR));
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_present_id")) )
+	{
+		physicalDevicePresentIdFeaturesKHR.sType = getStructureType<VkPhysicalDevicePresentIdFeaturesKHR>();
+		*nextPtr = &physicalDevicePresentIdFeaturesKHR;
+		nextPtr  = &physicalDevicePresentIdFeaturesKHR.pNext;
+	}
+
+	vk::VkPhysicalDevicePresentWaitFeaturesKHR physicalDevicePresentWaitFeaturesKHR;
+	deMemset(&physicalDevicePresentWaitFeaturesKHR, 0, sizeof(physicalDevicePresentWaitFeaturesKHR));
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_present_wait")) )
+	{
+		physicalDevicePresentWaitFeaturesKHR.sType = getStructureType<VkPhysicalDevicePresentWaitFeaturesKHR>();
+		*nextPtr = &physicalDevicePresentWaitFeaturesKHR;
+		nextPtr  = &physicalDevicePresentWaitFeaturesKHR.pNext;
+	}
+
 	vk::VkPhysicalDeviceRayQueryFeaturesKHR physicalDeviceRayQueryFeaturesKHR;
 	deMemset(&physicalDeviceRayQueryFeaturesKHR, 0, sizeof(physicalDeviceRayQueryFeaturesKHR));
 
@@ -1834,6 +1854,24 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR.shaderSubgroupUniformControlFlow == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderSubgroupUniformControlFlow not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_present_id")) )
+	{
+		if ( physicalDevicePresentIdFeaturesKHR.presentId == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature presentId not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_present_wait")) )
+	{
+		if ( physicalDevicePresentWaitFeaturesKHR.presentWait == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature presentWait not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
