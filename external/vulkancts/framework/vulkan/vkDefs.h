@@ -31,7 +31,7 @@
 #	define VKAPI_ATTR
 #endif
 
-#if (DE_OS == DE_OS_WIN32) && ((_MSC_VER >= 800) || defined(_STDCALL_SUPPORTED))
+#if (DE_OS == DE_OS_WIN32) && ((defined(_MSC_VER) && _MSC_VER >= 800) || defined(__MINGW32__) || defined(_STDCALL_SUPPORTED))
 #	define VKAPI_CALL __stdcall
 #   define VKAPI_PTR  VKAPI_CALL
 #else

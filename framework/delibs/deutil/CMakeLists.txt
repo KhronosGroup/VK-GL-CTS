@@ -36,7 +36,7 @@ if (DE_OS_IS_ANDROID)
 endif ()
 
 if (DE_OS_IS_WIN32)
-	set(DEUTIL_LIBS WS2_32)
+	set(DEUTIL_LIBS ${DEUTIL_LIBS} ws2_32)
 endif ()
 
 if (DE_OS_IS_UNIX OR DE_OS_IS_QNX)

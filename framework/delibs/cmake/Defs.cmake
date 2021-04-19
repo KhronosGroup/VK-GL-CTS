@@ -149,6 +149,14 @@ if (DE_OS_IS_ANDROID AND NOT DEFINED DE_ANDROID_API)
 	set(DE_ANDROID_API 5)
 endif ()
 
+# MinGW
+if (CMAKE_CXX_COMPILER MATCHES ".*-mingw32-.*")
+	set(DE_MINGW 1)
+	set(BUILD_SHARED_LIBS OFF)
+else()
+	set(DE_MINGW 0)
+endif()
+
 message(STATUS "DE_OS          = ${DE_OS}")
 message(STATUS "DE_COMPILER    = ${DE_COMPILER}")
 message(STATUS "DE_CPU         = ${DE_CPU}")
@@ -157,6 +165,7 @@ message(STATUS "DE_DEBUG       = ${DE_DEBUG}")
 if (DE_OS_IS_ANDROID)
 	message(STATUS "DE_ANDROID_API = ${DE_ANDROID_API}")
 endif ()
+message(STATUS "DE_MINGW       = ${DE_MINGW}")
 
 # Expose definitions
 if (DE_DEBUG)
@@ -167,6 +176,7 @@ add_definitions("-DDE_OS=${DE_OS}")
 add_definitions("-DDE_COMPILER=${DE_COMPILER}")
 add_definitions("-DDE_CPU=${DE_CPU}")
 add_definitions("-DDE_PTR_SIZE=${DE_PTR_SIZE}")
+add_definitions("-DDE_MINGW=${DE_MINGW}")
 
 if (DE_OS_IS_ANDROID)
 	add_definitions("-DDE_ANDROID_API=${DE_ANDROID_API}")
