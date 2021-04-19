@@ -863,6 +863,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_extended_dynamic_state2")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_color_write_enable")
 	{
 		return;
@@ -2005,6 +2009,15 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdSetVertexInputEXT");
 		return;
 	}
+	if (extName == "VK_EXT_extended_dynamic_state2")
+	{
+		functions.push_back("vkCmdSetPatchControlPointsEXT");
+		functions.push_back("vkCmdSetRasterizerDiscardEnableEXT");
+		functions.push_back("vkCmdSetDepthBiasEnableEXT");
+		functions.push_back("vkCmdSetLogicOpEXT");
+		functions.push_back("vkCmdSetPrimitiveRestartEnableEXT");
+		return;
+	}
 	if (extName == "VK_EXT_color_write_enable")
 	{
 		functions.push_back("vkCmdSetColorWriteEnableEXT");
@@ -2290,6 +2303,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_EXT_private_data",
 	"VK_NV_fragment_shading_rate_enums",
 	"VK_EXT_vertex_input_dynamic_state",
+	"VK_EXT_extended_dynamic_state2",
 	"VK_EXT_color_write_enable",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",

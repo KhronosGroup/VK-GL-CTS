@@ -1032,6 +1032,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeCreateIn
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVertexInputBindingDescription2EXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVertexInputAttributeDescription2EXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExtendedDynamicState2FeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceColorWriteEnableFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineColorWriteCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressKHR& value);

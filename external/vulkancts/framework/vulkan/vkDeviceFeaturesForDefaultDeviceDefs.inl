@@ -25,6 +25,7 @@ const VkPhysicalDeviceDeviceMemoryReportFeaturesEXT&				getDeviceMemoryReportFea
 const VkPhysicalDeviceDiagnosticsConfigFeaturesNV&					getDiagnosticsConfigFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceDiagnosticsConfigFeaturesNV>();					}
 const VkPhysicalDeviceExclusiveScissorFeaturesNV&					getExclusiveScissorFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceExclusiveScissorFeaturesNV>();					}
 const VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&				getExtendedDynamicStateFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceExtendedDynamicStateFeaturesEXT>();				}
+const VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&				getExtendedDynamicState2FeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceExtendedDynamicState2FeaturesEXT>();				}
 const VkPhysicalDeviceFragmentDensityMapFeaturesEXT&				getFragmentDensityMapFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceFragmentDensityMapFeaturesEXT>();					}
 const VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&				getFragmentDensityMap2FeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceFragmentDensityMap2FeaturesEXT>();				}
 const VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV&			getFragmentShaderBarycentricFeatures			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV>();			}

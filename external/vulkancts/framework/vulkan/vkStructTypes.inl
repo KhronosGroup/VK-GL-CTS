@@ -5059,6 +5059,15 @@ struct VkVertexInputAttributeDescription2EXT
 	deUint32		offset;
 };
 
+struct VkPhysicalDeviceExtendedDynamicState2FeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		extendedDynamicState2;
+	VkBool32		extendedDynamicState2LogicOp;
+	VkBool32		extendedDynamicState2PatchControlPoints;
+};
+
 struct VkPhysicalDeviceColorWriteEnableFeaturesEXT
 {
 	VkStructureType	sType;

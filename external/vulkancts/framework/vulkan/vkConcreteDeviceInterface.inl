@@ -296,6 +296,11 @@ virtual VkResult			setPrivateDataEXT								(VkDevice device, VkObjectType objec
 virtual void				getPrivateDataEXT								(VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64* pData) const;
 virtual void				cmdSetFragmentShadingRateEnumNV					(VkCommandBuffer commandBuffer, VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]) const;
 virtual void				cmdSetVertexInputEXT							(VkCommandBuffer commandBuffer, deUint32 vertexBindingDescriptionCount, const VkVertexInputBindingDescription2EXT* pVertexBindingDescriptions, deUint32 vertexAttributeDescriptionCount, const VkVertexInputAttributeDescription2EXT* pVertexAttributeDescriptions) const;
+virtual void				cmdSetPatchControlPointsEXT						(VkCommandBuffer commandBuffer, deUint32 patchControlPoints) const;
+virtual void				cmdSetRasterizerDiscardEnableEXT				(VkCommandBuffer commandBuffer, VkBool32 rasterizerDiscardEnable) const;
+virtual void				cmdSetDepthBiasEnableEXT						(VkCommandBuffer commandBuffer, VkBool32 depthBiasEnable) const;
+virtual void				cmdSetLogicOpEXT								(VkCommandBuffer commandBuffer, VkLogicOp logicOp) const;
+virtual void				cmdSetPrimitiveRestartEnableEXT					(VkCommandBuffer commandBuffer, VkBool32 primitiveRestartEnable) const;
 virtual void				cmdSetColorWriteEnableEXT						(VkCommandBuffer commandBuffer, deUint32 attachmentCount, const VkBool32* pColorWriteEnables) const;
 virtual VkResult			createAccelerationStructureKHR					(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const;
 virtual void				destroyAccelerationStructureKHR					(VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator) const;
