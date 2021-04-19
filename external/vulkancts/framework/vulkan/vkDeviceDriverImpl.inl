@@ -1477,6 +1477,31 @@ void DeviceDriver::cmdSetVertexInputEXT (VkCommandBuffer commandBuffer, deUint32
 	m_vk.cmdSetVertexInputEXT(commandBuffer, vertexBindingDescriptionCount, pVertexBindingDescriptions, vertexAttributeDescriptionCount, pVertexAttributeDescriptions);
 }
 
+void DeviceDriver::cmdSetPatchControlPointsEXT (VkCommandBuffer commandBuffer, deUint32 patchControlPoints) const
+{
+	m_vk.cmdSetPatchControlPointsEXT(commandBuffer, patchControlPoints);
+}
+
+void DeviceDriver::cmdSetRasterizerDiscardEnableEXT (VkCommandBuffer commandBuffer, VkBool32 rasterizerDiscardEnable) const
+{
+	m_vk.cmdSetRasterizerDiscardEnableEXT(commandBuffer, rasterizerDiscardEnable);
+}
+
+void DeviceDriver::cmdSetDepthBiasEnableEXT (VkCommandBuffer commandBuffer, VkBool32 depthBiasEnable) const
+{
+	m_vk.cmdSetDepthBiasEnableEXT(commandBuffer, depthBiasEnable);
+}
+
+void DeviceDriver::cmdSetLogicOpEXT (VkCommandBuffer commandBuffer, VkLogicOp logicOp) const
+{
+	m_vk.cmdSetLogicOpEXT(commandBuffer, logicOp);
+}
+
+void DeviceDriver::cmdSetPrimitiveRestartEnableEXT (VkCommandBuffer commandBuffer, VkBool32 primitiveRestartEnable) const
+{
+	m_vk.cmdSetPrimitiveRestartEnableEXT(commandBuffer, primitiveRestartEnable);
+}
+
 void DeviceDriver::cmdSetColorWriteEnableEXT (VkCommandBuffer commandBuffer, deUint32 attachmentCount, const VkBool32* pColorWriteEnables) const
 {
 	m_vk.cmdSetColorWriteEnableEXT(commandBuffer, attachmentCount, pColorWriteEnables);

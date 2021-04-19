@@ -402,6 +402,11 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetFragmentShadingRateEnumNVFunc)			
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquireWinrtDisplayNVFunc)												(VkPhysicalDevice physicalDevice, VkDisplayKHR display);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetWinrtDisplayNVFunc)													(VkPhysicalDevice physicalDevice, deUint32 deviceRelativeId, VkDisplayKHR* pDisplay);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetVertexInputEXTFunc)												(VkCommandBuffer commandBuffer, deUint32 vertexBindingDescriptionCount, const VkVertexInputBindingDescription2EXT* pVertexBindingDescriptions, deUint32 vertexAttributeDescriptionCount, const VkVertexInputAttributeDescription2EXT* pVertexAttributeDescriptions);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetPatchControlPointsEXTFunc)										(VkCommandBuffer commandBuffer, deUint32 patchControlPoints);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRasterizerDiscardEnableEXTFunc)									(VkCommandBuffer commandBuffer, VkBool32 rasterizerDiscardEnable);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDepthBiasEnableEXTFunc)											(VkCommandBuffer commandBuffer, VkBool32 depthBiasEnable);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetLogicOpEXTFunc)													(VkCommandBuffer commandBuffer, VkLogicOp logicOp);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetPrimitiveRestartEnableEXTFunc)									(VkCommandBuffer commandBuffer, VkBool32 primitiveRestartEnable);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetColorWriteEnableEXTFunc)											(VkCommandBuffer commandBuffer, deUint32 attachmentCount, const VkBool32* pColorWriteEnables);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateAccelerationStructureKHRFunc)									(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyAccelerationStructureKHRFunc)									(VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator);

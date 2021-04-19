@@ -25,6 +25,7 @@ const vk::VkPhysicalDeviceDeviceMemoryReportFeaturesEXT&				getDeviceMemoryRepor
 const vk::VkPhysicalDeviceDiagnosticsConfigFeaturesNV&					getDiagnosticsConfigFeatures					(void) const;
 const vk::VkPhysicalDeviceExclusiveScissorFeaturesNV&					getExclusiveScissorFeatures						(void) const;
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&				getExtendedDynamicStateFeaturesEXT				(void) const;
+const vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&				getExtendedDynamicState2FeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT&				getFragmentDensityMapFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&				getFragmentDensityMap2FeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV&			getFragmentShaderBarycentricFeatures			(void) const;

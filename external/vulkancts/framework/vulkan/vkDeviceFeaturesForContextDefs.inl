@@ -25,6 +25,7 @@ const vk::VkPhysicalDeviceDeviceMemoryReportFeaturesEXT&				Context::getDeviceMe
 const vk::VkPhysicalDeviceDiagnosticsConfigFeaturesNV&					Context::getDiagnosticsConfigFeatures					(void) const { return m_device->getDiagnosticsConfigFeatures();					}
 const vk::VkPhysicalDeviceExclusiveScissorFeaturesNV&					Context::getExclusiveScissorFeatures					(void) const { return m_device->getExclusiveScissorFeatures();					}
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&				Context::getExtendedDynamicStateFeaturesEXT				(void) const { return m_device->getExtendedDynamicStateFeaturesEXT();			}
+const vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&				Context::getExtendedDynamicState2FeaturesEXT			(void) const { return m_device->getExtendedDynamicState2FeaturesEXT();			}
 const vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT&				Context::getFragmentDensityMapFeaturesEXT				(void) const { return m_device->getFragmentDensityMapFeaturesEXT();				}
 const vk::VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&				Context::getFragmentDensityMap2FeaturesEXT				(void) const { return m_device->getFragmentDensityMap2FeaturesEXT();			}
 const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV&			Context::getFragmentShaderBarycentricFeatures			(void) const { return m_device->getFragmentShaderBarycentricFeatures();			}

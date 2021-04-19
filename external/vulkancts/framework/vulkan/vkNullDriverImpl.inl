@@ -2660,6 +2660,36 @@ VKAPI_ATTR void VKAPI_CALL cmdSetVertexInputEXT (VkCommandBuffer commandBuffer, 
 	DE_UNREF(pVertexAttributeDescriptions);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdSetPatchControlPointsEXT (VkCommandBuffer commandBuffer, deUint32 patchControlPoints)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(patchControlPoints);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetRasterizerDiscardEnableEXT (VkCommandBuffer commandBuffer, VkBool32 rasterizerDiscardEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(rasterizerDiscardEnable);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetDepthBiasEnableEXT (VkCommandBuffer commandBuffer, VkBool32 depthBiasEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(depthBiasEnable);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetLogicOpEXT (VkCommandBuffer commandBuffer, VkLogicOp logicOp)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(logicOp);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetPrimitiveRestartEnableEXT (VkCommandBuffer commandBuffer, VkBool32 primitiveRestartEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(primitiveRestartEnable);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdSetColorWriteEnableEXT (VkCommandBuffer commandBuffer, deUint32 attachmentCount, const VkBool32* pColorWriteEnables)
 {
 	DE_UNREF(commandBuffer);
@@ -3511,6 +3541,11 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPrivateDataEXT,									getPrivateDataEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetFragmentShadingRateEnumNV,					cmdSetFragmentShadingRateEnumNV),
 	VK_NULL_FUNC_ENTRY(vkCmdSetVertexInputEXT,								cmdSetVertexInputEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetPatchControlPointsEXT,						cmdSetPatchControlPointsEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetRasterizerDiscardEnableEXT,					cmdSetRasterizerDiscardEnableEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDepthBiasEnableEXT,							cmdSetDepthBiasEnableEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetLogicOpEXT,									cmdSetLogicOpEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetPrimitiveRestartEnableEXT,					cmdSetPrimitiveRestartEnableEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetColorWriteEnableEXT,							cmdSetColorWriteEnableEXT),
 	VK_NULL_FUNC_ENTRY(vkCreateAccelerationStructureKHR,					createAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkDestroyAccelerationStructureKHR,					destroyAccelerationStructureKHR),

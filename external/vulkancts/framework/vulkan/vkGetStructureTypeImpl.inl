@@ -2146,6 +2146,11 @@ template<> VkStructureType getStructureType<VkVertexInputAttributeDescription2EX
 	return VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceExtendedDynamicState2FeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceColorWriteEnableFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT;

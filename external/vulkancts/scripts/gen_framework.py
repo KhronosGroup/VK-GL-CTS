@@ -646,6 +646,8 @@ def parseDefinitions (extensionName, src):
 		extNameUpper = extNameUpper.replace("VK_EXT_ROBUSTNESS2", "VK_EXT_ROBUSTNESS_2")
 		extNameUpper = extNameUpper.replace("VK_EXT_FRAGMENT_DENSITY_MAP2", "VK_EXT_FRAGMENT_DENSITY_MAP_2")
 		extNameUpper = extNameUpper.replace("VK_AMD_SHADER_CORE_PROPERTIES2", "VK_AMD_SHADER_CORE_PROPERTIES_2")
+		extNameUpper = extNameUpper.replace("VK_EXT_EXTENDED_DYNAMIC_STATE2", "VK_EXT_EXTENDED_DYNAMIC_STATE_2")
+
 		# SPEC_VERSION enums
 		if definition[0].startswith(extNameUpper) and definition[1].isdigit():
 			return False

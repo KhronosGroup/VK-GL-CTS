@@ -661,6 +661,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA:							return "VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA";
 		case VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_ZIRCON_HANDLE_INFO_FUCHSIA:						return "VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_ZIRCON_HANDLE_INFO_FUCHSIA";
 		case VK_STRUCTURE_TYPE_SEMAPHORE_GET_ZIRCON_HANDLE_INFO_FUCHSIA:						return "VK_STRUCTURE_TYPE_SEMAPHORE_GET_ZIRCON_HANDLE_INFO_FUCHSIA";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX:									return "VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT";
@@ -1303,6 +1304,11 @@ const char* getDynamicStateName (VkDynamicState value)
 		case VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT:				return "VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT";
 		case VK_DYNAMIC_STATE_STENCIL_OP_EXT:						return "VK_DYNAMIC_STATE_STENCIL_OP_EXT";
 		case VK_DYNAMIC_STATE_VERTEX_INPUT_EXT:						return "VK_DYNAMIC_STATE_VERTEX_INPUT_EXT";
+		case VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT:				return "VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT";
+		case VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE_EXT:		return "VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE_EXT";
+		case VK_DYNAMIC_STATE_DEPTH_BIAS_ENABLE_EXT:				return "VK_DYNAMIC_STATE_DEPTH_BIAS_ENABLE_EXT";
+		case VK_DYNAMIC_STATE_LOGIC_OP_EXT:							return "VK_DYNAMIC_STATE_LOGIC_OP_EXT";
+		case VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE_EXT:			return "VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE_EXT";
 		case VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT:				return "VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT";
 		case VK_DYNAMIC_STATE_MAX_ENUM:								return "VK_DYNAMIC_STATE_MAX_ENUM";
 		default:													return DE_NULL;
@@ -11022,6 +11028,18 @@ std::ostream& operator<< (std::ostream& s, const VkVertexInputAttributeDescripti
 	s << "\tbinding = " << value.binding << '\n';
 	s << "\tformat = " << value.format << '\n';
 	s << "\toffset = " << value.offset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExtendedDynamicState2FeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceExtendedDynamicState2FeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\textendedDynamicState2 = " << value.extendedDynamicState2 << '\n';
+	s << "\textendedDynamicState2LogicOp = " << value.extendedDynamicState2LogicOp << '\n';
+	s << "\textendedDynamicState2PatchControlPoints = " << value.extendedDynamicState2PatchControlPoints << '\n';
 	s << '}';
 	return s;
 }
