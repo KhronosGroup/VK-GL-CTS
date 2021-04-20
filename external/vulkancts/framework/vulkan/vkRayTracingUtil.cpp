@@ -1565,6 +1565,7 @@ public:
 	void													setIndirectBuildParameters							(const VkBuffer									indirectBuffer,
 																												 const VkDeviceSize								indirectBufferOffset,
 																												 const deUint32									indirectBufferStride) override;
+	void													setUsePPGeometries									(const bool										usePPGeometries) override;
 	VkBuildAccelerationStructureFlagsKHR					getBuildFlags										() const override;
 
 	void													create												(const DeviceInterface&							vk,
@@ -1609,6 +1610,7 @@ protected:
 	VkBuffer												m_indirectBuffer;
 	VkDeviceSize											m_indirectBufferOffset;
 	deUint32												m_indirectBufferStride;
+	bool													m_usePPGeometries;
 
 	void													prepareInstances									(const DeviceInterface&							vk,
 																												 const VkDevice									device,
@@ -1645,6 +1647,7 @@ TopLevelAccelerationStructureKHR::TopLevelAccelerationStructureKHR ()
 	, m_indirectBuffer				(DE_NULL)
 	, m_indirectBufferOffset		(0)
 	, m_indirectBufferStride		(0)
+	, m_usePPGeometries				(false)
 {
 }
 
@@ -1694,6 +1697,11 @@ void TopLevelAccelerationStructureKHR::setUseArrayOfPointers (const bool	useArra
 	m_useArrayOfPointers = useArrayOfPointers;
 }
 
+void TopLevelAccelerationStructureKHR::setUsePPGeometries (const bool usePPGeometries)
+{
+	m_usePPGeometries = usePPGeometries;
+}
+
 void TopLevelAccelerationStructureKHR::setIndirectBuildParameters (const VkBuffer		indirectBuffer,
 																   const VkDeviceSize	indirectBufferOffset,
 																   const deUint32		indirectBufferStride)
@@ -1721,6 +1729,7 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 	if (structureSize == 0)
 	{
 		VkAccelerationStructureGeometryKHR		accelerationStructureGeometryKHR;
+		const auto								accelerationStructureGeometryKHRPtr = &accelerationStructureGeometryKHR;
 		std::vector<deUint32>					maxPrimitiveCounts;
 		prepareInstances(vk, device, accelerationStructureGeometryKHR, maxPrimitiveCounts);
 
@@ -1734,8 +1743,8 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 			DE_NULL,																				//  VkAccelerationStructureKHR							srcAccelerationStructure;
 			DE_NULL,																				//  VkAccelerationStructureKHR							dstAccelerationStructure;
 			1u,																						//  deUint32											geometryCount;
-			&accelerationStructureGeometryKHR,														//  const VkAccelerationStructureGeometryKHR*			pGeometries;
-			DE_NULL,																				//  const VkAccelerationStructureGeometryKHR* const*	ppGeometries;
+			(m_usePPGeometries ? nullptr : &accelerationStructureGeometryKHR),						//  const VkAccelerationStructureGeometryKHR*			pGeometries;
+			(m_usePPGeometries ? &accelerationStructureGeometryKHRPtr : nullptr),					//  const VkAccelerationStructureGeometryKHR* const*	ppGeometries;
 			makeDeviceOrHostAddressKHR(DE_NULL)														//  VkDeviceOrHostAddressKHR							scratchData;
 		};
 
@@ -1812,6 +1821,7 @@ void TopLevelAccelerationStructureKHR::build (const DeviceInterface&	vk,
 	updateInstanceBuffer(vk, device, m_bottomLevelInstances, m_instanceData, m_instanceBuffer.get(), m_buildType, m_inactiveInstances);
 
 	VkAccelerationStructureGeometryKHR		accelerationStructureGeometryKHR;
+	const auto								accelerationStructureGeometryKHRPtr = &accelerationStructureGeometryKHR;
 	std::vector<deUint32>					maxPrimitiveCounts;
 	prepareInstances(vk, device, accelerationStructureGeometryKHR, maxPrimitiveCounts);
 
@@ -1829,8 +1839,8 @@ void TopLevelAccelerationStructureKHR::build (const DeviceInterface&	vk,
 		DE_NULL,																				//  VkAccelerationStructureKHR							srcAccelerationStructure;
 		m_accelerationStructureKHR.get(),														//  VkAccelerationStructureKHR							dstAccelerationStructure;
 		1u,																						//  deUint32											geometryCount;
-		&accelerationStructureGeometryKHR,														//  const VkAccelerationStructureGeometryKHR*			pGeometries;
-		DE_NULL,																				//  const VkAccelerationStructureGeometryKHR* const*	ppGeometries;
+		(m_usePPGeometries ? nullptr : &accelerationStructureGeometryKHR),						//  const VkAccelerationStructureGeometryKHR*			pGeometries;
+		(m_usePPGeometries ? &accelerationStructureGeometryKHRPtr : nullptr),					//  const VkAccelerationStructureGeometryKHR* const*	ppGeometries;
 		scratchData																				//  VkDeviceOrHostAddressKHR							scratchData;
 	};
 

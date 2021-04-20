@@ -632,6 +632,7 @@ public:
 	virtual void													setIndirectBuildParameters			(const VkBuffer										indirectBuffer,
 																										 const VkDeviceSize									indirectBufferOffset,
 																										 const deUint32										indirectBufferStride) = DE_NULL;
+	virtual void													setUsePPGeometries					(const bool											usePPGeometries) = 0;
 	virtual VkBuildAccelerationStructureFlagsKHR					getBuildFlags						() const = DE_NULL;
 	VkDeviceSize													getStructureSize					() const;
 

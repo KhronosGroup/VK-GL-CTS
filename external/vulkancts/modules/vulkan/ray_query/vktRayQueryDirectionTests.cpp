@@ -171,6 +171,7 @@ struct TestParams
 	float					rotationX;
 	float					rotationY;
 	VkGeometryTypeKHR		geometryType;
+	bool					useArraysOfPointers;
 };
 
 class DirectionTestCase : public vkt::TestCase
@@ -311,6 +312,8 @@ tcu::TestStatus DirectionTestInstance::iterate (void)
 	bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
 
 	de::SharedPtr<BottomLevelAccelerationStructure> blasSharedPtr (bottomLevelAS.release());
+	topLevelAS->setUseArrayOfPointers(m_params.useArraysOfPointers);
+	topLevelAS->setUsePPGeometries(m_params.useArraysOfPointers);
 	topLevelAS->setInstanceCount(1);
 	topLevelAS->addInstance(blasSharedPtr, transformMatrix, 0, 0xFFu, 0u, instanceFlags);
 	topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
@@ -450,7 +453,8 @@ tcu::TestCaseGroup*	createDirectionTests(tcu::TestContext& testCtx)
 	const int kNumRandomScalingFactors	= 5;
 	const int kNumRandomRotations		= 4;
 
-	de::Random rnd(1614686501u);
+	de::Random	rnd(1614686501u);
+	deUint32	caseCounter = 0u;
 
 	// Scaling factors: 1.0 and some randomly-generated ones.
 	std::vector<float> scalingFactors;
@@ -492,11 +496,13 @@ tcu::TestCaseGroup*	createDirectionTests(tcu::TestContext& testCtx)
 
 				TestParams params =
 				{
-					spaceObjects,			//		SpaceObjects			spaceObjects;
-					scale,					//		float					directionScale;
-					angles.first,			//		float					rotationX;
-					angles.second,			//		float					rotationY;
-					geometryType,			//		VkGeometryTypeKHR		geometryType;
+					spaceObjects,				//		SpaceObjects			spaceObjects;
+					scale,						//		float					directionScale;
+					angles.first,				//		float					rotationX;
+					angles.second,				//		float					rotationY;
+					geometryType,				//		VkGeometryTypeKHR		geometryType;
+					// Use arrays of pointers when building the TLAS in every other test.
+					(caseCounter++ % 2u == 0u),	//		bool					useArraysOfPointers;
 				};
 
 				factorGroup->addChild(new DirectionTestCase(testCtx, angleName, "", params));
