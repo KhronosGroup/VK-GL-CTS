@@ -4824,6 +4824,9 @@ dEQP-VK.spirv_assembly.instruction.compute.empty_struct.copying.copy_memory_ubo
 dEQP-VK.spirv_assembly.instruction.compute.empty_struct.copying.copy_object_ssbo
 dEQP-VK.spirv_assembly.instruction.compute.empty_struct.copying.copy_memory_ssbo
 dEQP-VK.spirv_assembly.instruction.compute.empty_struct.pointer_comparison.ssbo
+dEQP-VK.spirv_assembly.instruction.compute.empty_struct.function.global_variable_private
+dEQP-VK.spirv_assembly.instruction.compute.empty_struct.function.global_variable_shared
+dEQP-VK.spirv_assembly.instruction.compute.empty_struct.function.local_variable
 dEQP-VK.spirv_assembly.instruction.compute.64bit_compare.double.comp_opfordequal_nonan_single
 dEQP-VK.spirv_assembly.instruction.compute.64bit_compare.double.comp_opfordnotequal_nonan_single
 dEQP-VK.spirv_assembly.instruction.compute.64bit_compare.double.comp_opfordlessthan_nonan_single
