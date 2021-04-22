@@ -12952,7 +12952,9 @@ dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_1.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_1.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_1.extent_33x35
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_1.extent_151x431
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_1.extent_151x431_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_1.extent_256x256
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_1.extent_256x256_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_2.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_2.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_2.extent_33x35
@@ -12962,7 +12964,9 @@ dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_4.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_4.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_4.extent_33x35
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_4.extent_151x431
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_4.extent_151x431_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_4.extent_256x256
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_4.extent_256x256_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_8.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_8.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_8.extent_33x35
@@ -12977,7 +12981,9 @@ dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_1.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_1.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_1.extent_33x35
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_1.extent_151x431
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_1.extent_151x431_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_1.extent_256x256
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_1.extent_256x256_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_2.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_2.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_2.extent_33x35
@@ -12987,7 +12993,9 @@ dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_4.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_4.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_4.extent_33x35
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_4.extent_151x431
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_4.extent_151x431_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_4.extent_256x256
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_4.extent_256x256_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_8.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_8.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x2.samples_8.extent_33x35
@@ -13002,7 +13010,9 @@ dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_1.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_1.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_1.extent_33x35
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_1.extent_151x431
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_1.extent_151x431_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_1.extent_256x256
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_1.extent_256x256_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_2.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_2.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_2.extent_33x35
@@ -13012,7 +13022,9 @@ dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_4.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_4.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_4.extent_33x35
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_4.extent_151x431
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_4.extent_151x431_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_4.extent_256x256
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_4.extent_256x256_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_8.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_8.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x4.samples_8.extent_33x35
@@ -13027,7 +13039,9 @@ dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_1.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_1.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_1.extent_33x35
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_1.extent_151x431
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_1.extent_151x431_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_1.extent_256x256
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_1.extent_256x256_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_2.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_2.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_2.extent_33x35
@@ -13037,7 +13051,9 @@ dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_4.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_4.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_4.extent_33x35
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_4.extent_151x431
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_4.extent_151x431_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_4.extent_256x256
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_4.extent_256x256_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_8.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_8.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x1.samples_8.extent_33x35
@@ -13052,7 +13068,9 @@ dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_1.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_1.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_1.extent_33x35
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_1.extent_151x431
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_1.extent_151x431_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_1.extent_256x256
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_1.extent_256x256_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_2.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_2.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_2.extent_33x35
@@ -13062,7 +13080,9 @@ dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_4.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_4.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_4.extent_33x35
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_4.extent_151x431
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_4.extent_151x431_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_4.extent_256x256
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_4.extent_256x256_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_8.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_8.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x2.samples_8.extent_33x35
@@ -13077,7 +13097,9 @@ dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_1.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_1.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_1.extent_33x35
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_1.extent_151x431
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_1.extent_151x431_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_1.extent_256x256
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_1.extent_256x256_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_2.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_2.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_2.extent_33x35
@@ -13087,7 +13109,9 @@ dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_4.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_4.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_4.extent_33x35
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_4.extent_151x431
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_4.extent_151x431_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_4.extent_256x256
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_4.extent_256x256_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_8.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_8.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_2x4.samples_8.extent_33x35
@@ -13102,7 +13126,9 @@ dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_1.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_1.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_1.extent_33x35
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_1.extent_151x431
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_1.extent_151x431_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_1.extent_256x256
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_1.extent_256x256_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_2.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_2.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_2.extent_33x35
@@ -13112,7 +13138,9 @@ dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_4.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_4.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_4.extent_33x35
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_4.extent_151x431
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_4.extent_151x431_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_4.extent_256x256
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_4.extent_256x256_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_8.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_8.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x1.samples_8.extent_33x35
@@ -13127,7 +13155,9 @@ dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_1.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_1.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_1.extent_33x35
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_1.extent_151x431
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_1.extent_151x431_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_1.extent_256x256
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_1.extent_256x256_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_2.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_2.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_2.extent_33x35
@@ -13137,7 +13167,9 @@ dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_4.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_4.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_4.extent_33x35
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_4.extent_151x431
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_4.extent_151x431_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_4.extent_256x256
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_4.extent_256x256_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_8.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_8.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x2.samples_8.extent_33x35
@@ -13152,7 +13184,9 @@ dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_1.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_1.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_1.extent_33x35
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_1.extent_151x431
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_1.extent_151x431_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_1.extent_256x256
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_1.extent_256x256_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_2.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_2.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_2.extent_33x35
@@ -13162,7 +13196,9 @@ dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_4.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_4.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_4.extent_33x35
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_4.extent_151x431
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_4.extent_151x431_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_4.extent_256x256
+dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_4.extent_256x256_zw_coord
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_8.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_8.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_4x4.samples_8.extent_33x35
