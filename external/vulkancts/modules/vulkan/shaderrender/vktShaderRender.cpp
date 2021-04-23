@@ -1565,6 +1565,18 @@ void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocati
 	const deUint32					sparseFamilyIndex	= (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE) ? getSparseQueueFamilyIndex() : queueFamilyIndex;
 
 	const bool						isShadowSampler		= refSampler.compare != tcu::Sampler::COMPAREMODE_NONE;
+
+	// when isShadowSampler is true mapSampler utill will set compareEnabled in
+	// VkSamplerCreateInfo to true and in portability this functionality is under
+	// feature flag - note that this is safety check as this is known at the
+	// TestCase level and NotSupportedError should be thrown from checkSupport
+	if (isShadowSampler &&
+		m_context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!m_context.getPortabilitySubsetFeatures().mutableComparisonSamplers)
+	{
+		DE_FATAL("mutableComparisonSamplers support should be checked in checkSupport");
+	}
+
 	const VkImageAspectFlags		aspectMask			= isShadowSampler ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 	const VkImageViewType			imageViewType		= textureTypeToImageViewType(textureType);
 	const VkImageType				imageType			= viewTypeToImageType(imageViewType);

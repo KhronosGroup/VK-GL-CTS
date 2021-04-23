@@ -1063,6 +1063,19 @@ struct GatherCaseBaseParams
 	{}
 };
 
+static void checkMutableComparisonSamplersSupport(Context& context, const GatherCaseBaseParams& m_baseParams)
+{
+	// when compare mode is not none then ShaderRenderCaseInstance::createSamplerUniform
+	// uses mapSampler utill from vkImageUtil that sets compareEnable to true
+	// for portability this needs to be under feature flag
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!context.getPortabilitySubsetFeatures().mutableComparisonSamplers &&
+		(m_baseParams.shadowCompareMode != tcu::Sampler::COMPAREMODE_NONE))
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: mutableComparisonSamplers are not supported by this implementation");
+	}
+}
+
 IVec2 getOffsetRange (const OffsetSize offsetSize, const vk::VkPhysicalDeviceLimits& deviceLimits)
 {
 	switch (offsetSize)
@@ -1950,6 +1963,7 @@ public:
 
 	virtual void					initPrograms						(vk::SourceCollections& dst) const;
 	virtual	TestInstance*			createInstance						(Context& context) const;
+	virtual void					checkSupport						(Context& context) const;
 
 private:
 	const GatherCaseBaseParams		m_baseParams;
@@ -2001,6 +2015,11 @@ TestInstance* TextureGather2DCase::createInstance (Context& context) const
 																			getOffsetRange(m_baseParams.offsetSize, context.getDeviceProperties().limits));
 
 	return new TextureGather2DInstance(context, m_baseParams, m_textureSize, iterations);
+}
+
+void TextureGather2DCase::checkSupport(Context& context) const
+{
+	checkMutableComparisonSamplersSupport(context, m_baseParams);
 }
 
 // 2D array
@@ -2170,6 +2189,7 @@ public:
 
 	virtual void					initPrograms						(vk::SourceCollections& dst) const;
 	virtual	TestInstance*			createInstance						(Context& context) const;
+	virtual void					checkSupport						(Context& context) const;
 
 private:
 	const GatherCaseBaseParams		m_baseParams;
@@ -2223,6 +2243,11 @@ TestInstance* TextureGather2DArrayCase::createInstance (Context& context) const
 																					m_textureSize);
 
 	return new TextureGather2DArrayInstance(context, m_baseParams, m_textureSize, iterations);
+}
+
+void TextureGather2DArrayCase::checkSupport(Context& context) const
+{
+	checkMutableComparisonSamplersSupport(context, m_baseParams);
 }
 
 // Cube
@@ -2393,6 +2418,7 @@ public:
 
 	virtual void					initPrograms						(vk::SourceCollections& dst) const;
 	virtual	TestInstance*			createInstance						(Context& context) const;
+	virtual void					checkSupport						(Context& context) const;
 
 private:
 	const GatherCaseBaseParams		m_baseParams;
@@ -2442,6 +2468,11 @@ TestInstance* TextureGatherCubeCase::createInstance (Context& context) const
 																			 getOffsetRange(m_baseParams.offsetSize, context.getDeviceProperties().limits));
 
 	return new TextureGatherCubeInstance(context, m_baseParams, m_textureSize, iterations);
+}
+
+void TextureGatherCubeCase::checkSupport(Context& context) const
+{
+	checkMutableComparisonSamplersSupport(context, m_baseParams);
 }
 
 class TextureGatherTests : public tcu::TestCaseGroup

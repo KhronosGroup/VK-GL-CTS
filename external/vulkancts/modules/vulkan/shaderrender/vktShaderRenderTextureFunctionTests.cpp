@@ -715,6 +715,19 @@ static void checkDeviceFeatures (Context& context, TextureType textureType)
 	}
 }
 
+static void checkMutableComparisonSamplersSupport(Context& context, const TextureSpec& textureSpec)
+{
+	// when compare mode is not none then ShaderRenderCaseInstance::createSamplerUniform
+	// uses mapSampler utill from vkImageUtil that sets compareEnable to true
+	// for portability this needs to be under feature flag
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+	   !context.getPortabilitySubsetFeatures().mutableComparisonSamplers &&
+	   (textureSpec.sampler.compare != tcu::Sampler::COMPAREMODE_NONE))
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: mutableComparisonSamplers are not supported by this implementation");
+	}
+}
+
 class ShaderTextureFunctionInstance : public ShaderRenderCaseInstance
 {
 public:
@@ -1184,6 +1197,7 @@ public:
 	virtual						~ShaderTextureFunctionCase		(void);
 
 	virtual TestInstance*		createInstance					(Context& context) const;
+	virtual void				checkSupport					(Context& context) const;
 
 protected:
 	const TextureLookupSpec		m_lookupSpec;
@@ -1216,6 +1230,11 @@ TestInstance* ShaderTextureFunctionCase::createInstance (Context& context) const
 	DE_ASSERT(m_evaluator != DE_NULL);
 	DE_ASSERT(m_uniformSetup != DE_NULL);
 	return new ShaderTextureFunctionInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_lookupSpec, m_textureSpec, m_lookupParams);
+}
+
+void ShaderTextureFunctionCase::checkSupport(Context& context) const
+{
+	checkMutableComparisonSamplersSupport(context, m_textureSpec);
 }
 
 void ShaderTextureFunctionCase::initShaderSources (void)
@@ -2865,6 +2884,7 @@ public:
 	virtual						~TextureQueryCase				(void);
 
 	virtual TestInstance*		createInstance					(Context& context) const;
+	virtual void				checkSupport					(Context& context) const;
 
 protected:
 	void						initShaderSources				(void);
@@ -2906,6 +2926,11 @@ TestInstance* TextureQueryCase::createInstance (Context& context) const
 			DE_ASSERT(false);
 			return DE_NULL;
 	}
+}
+
+void TextureQueryCase::checkSupport(Context& context) const
+{
+	checkMutableComparisonSamplersSupport(context, m_textureSpec);
 }
 
 void TextureQueryCase::initShaderSources (void)
@@ -3116,6 +3141,7 @@ public:
 	virtual					~SparseShaderTextureFunctionCase	(void);
 
 	virtual	TestInstance*	createInstance						(Context& context) const;
+	virtual	void			checkSupport						(Context& context) const;
 protected:
 	void					initShaderSources					(void);
 };
@@ -3357,6 +3383,11 @@ TestInstance* SparseShaderTextureFunctionCase::createInstance (Context& context)
 	DE_ASSERT(m_evaluator != DE_NULL);
 	DE_ASSERT(m_uniformSetup != DE_NULL);
 	return new SparseShaderTextureFunctionInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_lookupSpec, m_textureSpec, m_lookupParams);
+}
+
+void SparseShaderTextureFunctionCase::checkSupport(Context& context) const
+{
+	checkMutableComparisonSamplersSupport(context, m_textureSpec);
 }
 
 static void createCaseGroup (tcu::TestCaseGroup* parent, const char* groupName, const char* groupDesc, const TexFuncCaseSpec* cases, int numCases)
