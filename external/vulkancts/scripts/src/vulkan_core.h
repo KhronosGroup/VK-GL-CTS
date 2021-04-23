@@ -45,6 +45,10 @@ extern "C" {
         #define VK_NULL_HANDLE 0ULL
     #endif
 #endif
+#ifndef VK_NULL_HANDLE
+    #define VK_NULL_HANDLE 0
+#endif
+
 
 #ifndef VK_DEFINE_NON_DISPATCHABLE_HANDLE
     #if (VK_USE_64_BIT_PTR_DEFINES==1)
