@@ -71,6 +71,9 @@ KHR-GLES31.core.shader_atomic_counters.basic-glsl-built-in
 KHR-GLES31.core.shader_atomic_counters.advanced-usage-multi-stage
 KHR-GLES31.core.shader_atomic_counters.advanced-usage-draw-update-draw
 KHR-GLES31.core.shader_atomic_counters.advanced-usage-many-counters
+KHR-GLES31.core.shader_atomic_counters.advanced-usage-multidim-array-small
+KHR-GLES31.core.shader_atomic_counters.advanced-usage-multidim-array-medium
+KHR-GLES31.core.shader_atomic_counters.advanced-usage-multidim-array-large
 KHR-GLES31.core.shader_atomic_counters.advanced-usage-switch-programs
 KHR-GLES31.core.shader_atomic_counters.advanced-usage-ubo
 KHR-GLES31.core.shader_atomic_counters.advanced-usage-many-draw-calls
