@@ -33,6 +33,7 @@ dEQP-VK.graphicsfuzz.cov-apfloat-determinant-for-if
 dEQP-VK.graphicsfuzz.cov-apfloat-reflect-denorm
 dEQP-VK.graphicsfuzz.cov-apfloat-unpackunorm-loop
 dEQP-VK.graphicsfuzz.cov-array-accesses-clamp
+dEQP-VK.graphicsfuzz.cov-array-copies-loops-with-limiters
 dEQP-VK.graphicsfuzz.cov-asin-undefined-smoothstep
 dEQP-VK.graphicsfuzz.cov-atan-trunc-vec4
 dEQP-VK.graphicsfuzz.cov-basic-block-discard-in-function
@@ -40,6 +41,7 @@ dEQP-VK.graphicsfuzz.cov-bitcount
 dEQP-VK.graphicsfuzz.cov-bitfieldExtract-undefined
 dEQP-VK.graphicsfuzz.cov-bitfieldinsert-undefined
 dEQP-VK.graphicsfuzz.cov-bitfieldreverse-left-shift-findmsb
+dEQP-VK.graphicsfuzz.cov-bitfieldreverse-loop-limit-underflow
 dEQP-VK.graphicsfuzz.cov-bitwise-inverse-uniform-condition
 dEQP-VK.graphicsfuzz.cov-blockfrequency-several-for-loops
 dEQP-VK.graphicsfuzz.cov-branch-probability-identity-matrix
@@ -50,6 +52,7 @@ dEQP-VK.graphicsfuzz.cov-clamp-vector-element-ceil-negative
 dEQP-VK.graphicsfuzz.cov-clamp-vector-variable-negative-offset
 dEQP-VK.graphicsfuzz.cov-clear-yz-inside-condition
 dEQP-VK.graphicsfuzz.cov-combine-and-or-xor-gt-lt
+dEQP-VK.graphicsfuzz.cov-condition-loop-index-bitwise-not
 dEQP-VK.graphicsfuzz.cov-conditional-discard-inside-loop
 dEQP-VK.graphicsfuzz.cov-const-folding-bitfieldinsert-div-one
 dEQP-VK.graphicsfuzz.cov-color-overwrite-identity-matrix-multiply
@@ -89,6 +92,7 @@ dEQP-VK.graphicsfuzz.cov-dag-combiner-same-cond-nested
 dEQP-VK.graphicsfuzz.cov-dead-branch-func-return-arg
 dEQP-VK.graphicsfuzz.cov-dead-code-unreachable-merge
 dEQP-VK.graphicsfuzz.cov-derivative-uniform-vector-global-loop-count
+dEQP-VK.graphicsfuzz.cov-descending-loop-min-max-always-zero
 dEQP-VK.graphicsfuzz.cov-double-if-true-in-loop
 dEQP-VK.graphicsfuzz.cov-exp2-two
 dEQP-VK.graphicsfuzz.cov-findlsb-division-by-zero
@@ -131,8 +135,10 @@ dEQP-VK.graphicsfuzz.cov-fract-smoothstep-undefined
 dEQP-VK.graphicsfuzz.cov-fragcoord-clamp-array-access
 dEQP-VK.graphicsfuzz.cov-fragcoord-multiply
 dEQP-VK.graphicsfuzz.cov-function-vec2-never-discard
+dEQP-VK.graphicsfuzz.cov-global-loop-bound-true-logical-or
 dEQP-VK.graphicsfuzz.cov-global-loop-counter-float-accumulate-matrix
 dEQP-VK.graphicsfuzz.cov-global-loop-counter-main-function-call
+dEQP-VK.graphicsfuzz.cov-global-loop-counter-multiply-one-minus
 dEQP-VK.graphicsfuzz.cov-if-conversion-identical-branches
 dEQP-VK.graphicsfuzz.cov-if-switch-fallthrough
 dEQP-VK.graphicsfuzz.cov-if-true-continue
@@ -201,8 +207,11 @@ dEQP-VK.graphicsfuzz.cov-left-shift-right-shift-compare
 dEQP-VK.graphicsfuzz.cov-liveinterval-different-dest
 dEQP-VK.graphicsfuzz.cov-loop-abs-multiply-offset
 dEQP-VK.graphicsfuzz.cov-loop-clamp-to-one-empty-condition
+dEQP-VK.graphicsfuzz.cov-loop-condition-double-negate
 dEQP-VK.graphicsfuzz.cov-loop-findmsb-findlsb
+dEQP-VK.graphicsfuzz.cov-loop-increment-matrix-element-break-after-first-iteration
 dEQP-VK.graphicsfuzz.cov-loop-increment-or-divide-by-loop-index
+dEQP-VK.graphicsfuzz.cov-loop-logical-xor
 dEQP-VK.graphicsfuzz.cov-loop-returns-behind-true-and-false
 dEQP-VK.graphicsfuzz.cov-loop-with-two-integers
 dEQP-VK.graphicsfuzz.cov-machine-scheduler-for-if-pow
@@ -223,10 +232,13 @@ dEQP-VK.graphicsfuzz.cov-mod-uint-bits-float
 dEQP-VK.graphicsfuzz.cov-modf-clamp-for
 dEQP-VK.graphicsfuzz.cov-modf-integer-to-private
 dEQP-VK.graphicsfuzz.cov-multiple-one-iteration-loops-global-counter-write-matrices
+dEQP-VK.graphicsfuzz.cov-nested-functions-accumulate-global-matrix
+dEQP-VK.graphicsfuzz.cov-nested-loop-undefined-smoothstep-never-executed
 dEQP-VK.graphicsfuzz.cov-nested-loops-global-loop-counter-do-while-accumulate-float
 dEQP-VK.graphicsfuzz.cov-nir-array-access
 dEQP-VK.graphicsfuzz.cov-nir-opt-large-constants-for-clamp-vector-access
 dEQP-VK.graphicsfuzz.cov-nir-opt-loop-unroll-if-if-if-if-do-while
+dEQP-VK.graphicsfuzz.cov-one-minus-clamp-always-one-cast-to-int
 dEQP-VK.graphicsfuzz.cov-optimize-phis-for
 dEQP-VK.graphicsfuzz.cov-optimize-phis-for-for-do-while-if-if
 dEQP-VK.graphicsfuzz.cov-not-clamp-matrix-access
