@@ -63,8 +63,8 @@ public:
 	virtual TestInstance*	createInstance			(Context& context) const override;
 
 	// Constants and data types.
-	static constexpr deUint32	kLocalSizeX	= 128u;
-	static constexpr deUint32	kNumQueries	= 128u;
+	static constexpr deUint32	kLocalSizeX	= 48u;
+	static constexpr deUint32	kNumQueries	= 48u;
 
 	// This must match the shader.
 	struct InputData

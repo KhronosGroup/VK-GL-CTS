@@ -16521,6 +16521,11 @@ dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.front_face_cw
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.front_face_ccw
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.front_face_cw_reversed
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.front_face_ccw_reversed
+dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.disable_raster
+dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.enable_raster
+dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.logic_op_or
+dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.prim_restart_enable
+dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.patch_control_points
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.topology_triangle
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.topology_line
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.topology_triangle_geom
@@ -16543,6 +16548,8 @@ dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.depth_test_enable
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.depth_test_disable
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.depth_write_enable
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.depth_write_disable
+dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.depth_bias_enable
+dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.depth_bias_disable
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.depth_compare_never
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.depth_compare_less
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.depth_compare_greater
@@ -17898,6 +17905,11 @@ dEQP-VK.pipeline.extended_dynamic_state.before_draw.front_face_cw
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.front_face_ccw
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.front_face_cw_reversed
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.front_face_ccw_reversed
+dEQP-VK.pipeline.extended_dynamic_state.before_draw.disable_raster
+dEQP-VK.pipeline.extended_dynamic_state.before_draw.enable_raster
+dEQP-VK.pipeline.extended_dynamic_state.before_draw.logic_op_or
+dEQP-VK.pipeline.extended_dynamic_state.before_draw.prim_restart_enable
+dEQP-VK.pipeline.extended_dynamic_state.before_draw.patch_control_points
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.topology_triangle
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.topology_line
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.topology_triangle_geom
@@ -17920,6 +17932,8 @@ dEQP-VK.pipeline.extended_dynamic_state.before_draw.depth_test_enable
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.depth_test_disable
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.depth_write_enable
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.depth_write_disable
+dEQP-VK.pipeline.extended_dynamic_state.before_draw.depth_bias_enable
+dEQP-VK.pipeline.extended_dynamic_state.before_draw.depth_bias_disable
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.depth_compare_never
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.depth_compare_less
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.depth_compare_greater
@@ -19275,6 +19289,11 @@ dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.front_face_cw
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.front_face_ccw
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.front_face_cw_reversed
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.front_face_ccw_reversed
+dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.disable_raster
+dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.enable_raster
+dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.logic_op_or
+dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.prim_restart_enable
+dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.patch_control_points
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.topology_triangle
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.topology_line
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.topology_triangle_geom
@@ -19297,6 +19316,8 @@ dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.depth_test_enable
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.depth_test_disable
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.depth_write_enable
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.depth_write_disable
+dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.depth_bias_enable
+dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.depth_bias_disable
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.depth_compare_never
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.depth_compare_less
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.depth_compare_greater
@@ -20652,6 +20673,11 @@ dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.front_face_cw
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.front_face_ccw
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.front_face_cw_reversed
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.front_face_ccw_reversed
+dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.disable_raster
+dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.enable_raster
+dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.logic_op_or
+dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.prim_restart_enable
+dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.patch_control_points
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.topology_triangle
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.topology_line
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.topology_triangle_geom
@@ -20674,6 +20700,8 @@ dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.depth_test_enable
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.depth_test_disable
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.depth_write_enable
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.depth_write_disable
+dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.depth_bias_enable
+dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.depth_bias_disable
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.depth_compare_never
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.depth_compare_less
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.depth_compare_greater
@@ -22029,6 +22057,11 @@ dEQP-VK.pipeline.extended_dynamic_state.before_good_static.front_face_cw
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.front_face_ccw
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.front_face_cw_reversed
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.front_face_ccw_reversed
+dEQP-VK.pipeline.extended_dynamic_state.before_good_static.disable_raster
+dEQP-VK.pipeline.extended_dynamic_state.before_good_static.enable_raster
+dEQP-VK.pipeline.extended_dynamic_state.before_good_static.logic_op_or
+dEQP-VK.pipeline.extended_dynamic_state.before_good_static.prim_restart_enable
+dEQP-VK.pipeline.extended_dynamic_state.before_good_static.patch_control_points
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.topology_triangle
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.topology_line
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.topology_triangle_geom
@@ -22051,6 +22084,8 @@ dEQP-VK.pipeline.extended_dynamic_state.before_good_static.depth_test_enable
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.depth_test_disable
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.depth_write_enable
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.depth_write_disable
+dEQP-VK.pipeline.extended_dynamic_state.before_good_static.depth_bias_enable
+dEQP-VK.pipeline.extended_dynamic_state.before_good_static.depth_bias_disable
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.depth_compare_never
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.depth_compare_less
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.depth_compare_greater
@@ -23406,6 +23441,11 @@ dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.front_face_cw
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.front_face_ccw
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.front_face_cw_reversed
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.front_face_ccw_reversed
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.disable_raster
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.enable_raster
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.logic_op_or
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.prim_restart_enable
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.patch_control_points
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.topology_triangle
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.topology_line
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.topology_triangle_geom
@@ -23428,6 +23468,8 @@ dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.depth_test_enable
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.depth_test_disable
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.depth_write_enable
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.depth_write_disable
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.depth_bias_enable
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.depth_bias_disable
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.depth_compare_never
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.depth_compare_less
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.depth_compare_greater
@@ -24783,6 +24825,11 @@ dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.front_face_cw
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.front_face_ccw
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.front_face_cw_reversed
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.front_face_ccw_reversed
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.disable_raster
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.enable_raster
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.logic_op_or
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.prim_restart_enable
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.patch_control_points
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.topology_triangle
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.topology_line
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.topology_triangle_geom
@@ -24802,6 +24849,8 @@ dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.depth_test_enable
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.depth_test_disable
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.depth_write_enable
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.depth_write_disable
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.depth_bias_enable
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.depth_bias_disable
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.depth_compare_never
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.depth_compare_less
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.depth_compare_greater

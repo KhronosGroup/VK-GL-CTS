@@ -14586,10 +14586,6 @@ dEQP-VK.glsl.builtin.precision.asin.mediump.scalar
 dEQP-VK.glsl.builtin.precision.asin.mediump.vec2
 dEQP-VK.glsl.builtin.precision.asin.mediump.vec3
 dEQP-VK.glsl.builtin.precision.asin.mediump.vec4
-dEQP-VK.glsl.builtin.precision.asin.highp.scalar
-dEQP-VK.glsl.builtin.precision.asin.highp.vec2
-dEQP-VK.glsl.builtin.precision.asin.highp.vec3
-dEQP-VK.glsl.builtin.precision.asin.highp.vec4
 dEQP-VK.glsl.builtin.precision.acos.highp.scalar
 dEQP-VK.glsl.builtin.precision.acos.highp.vec2
 dEQP-VK.glsl.builtin.precision.acos.highp.vec3

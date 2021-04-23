@@ -106,6 +106,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceDescriptorIndexingFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT physicalDeviceExtendedDynamicState2FeaturesEXT;
+	deMemset(&physicalDeviceExtendedDynamicState2FeaturesEXT, 0, sizeof(physicalDeviceExtendedDynamicState2FeaturesEXT));
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_extended_dynamic_state2")) )
+	{
+		physicalDeviceExtendedDynamicState2FeaturesEXT.sType = getStructureType<VkPhysicalDeviceExtendedDynamicState2FeaturesEXT>();
+		*nextPtr = &physicalDeviceExtendedDynamicState2FeaturesEXT;
+		nextPtr  = &physicalDeviceExtendedDynamicState2FeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT physicalDeviceFragmentDensityMapFeaturesEXT;
 	deMemset(&physicalDeviceFragmentDensityMapFeaturesEXT, 0, sizeof(physicalDeviceFragmentDensityMapFeaturesEXT));
 
@@ -1648,6 +1658,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceYcbcr2Plane444FormatsFeaturesEXT.ycbcr2plane444Formats == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature ycbcr2plane444Formats not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_extended_dynamic_state2")) )
+	{
+		if ( physicalDeviceExtendedDynamicState2FeaturesEXT.extendedDynamicState2 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature extendedDynamicState2 not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
