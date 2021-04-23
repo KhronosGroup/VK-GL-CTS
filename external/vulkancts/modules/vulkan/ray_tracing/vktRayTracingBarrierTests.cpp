@@ -1583,12 +1583,13 @@ tcu::TestStatus BarrierTestInstance::iterate (void)
 		const auto readerVerificationFlags	= getWriterAccessFlag(m_params.readerStage);
 		const auto barrier					= makeBufferMemoryBarrier(readerVerificationFlags, VK_ACCESS_HOST_READ_BIT, verificationBuffer->get(), 0ull, VK_WHOLE_SIZE);
 		vkd.cmdPipelineBarrier(cmdBuffer, readerPipelineStage, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u, &barrier, 0u, nullptr);
-		invalidateAlloc(vkd, device, verificationBuffer->getAllocation());
 	}
 
 	// Submit all recorded commands.
 	endCommandBuffer(vkd, cmdBuffer);
 	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	invalidateAlloc(vkd, device, verificationBuffer->getAllocation());
 
 	// If the reader stage is the host, we have to wait until the commands have been submitted and the work has been done.
 	if (m_params.readerStage == Stage::HOST)

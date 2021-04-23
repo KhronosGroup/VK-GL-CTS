@@ -576,7 +576,7 @@ de::MovePtr<BufferWithMemory> RayTracingComplexControlFlowInstance::runTest (voi
 																					**image, imageSubresourceRange);
 	const VkMemoryBarrier					preTraceMemoryBarrier				= makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
 	const VkMemoryBarrier					postTraceMemoryBarrier				= makeMemoryBarrier(VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
-	const VkMemoryBarrier					postCopyMemoryBarrier				= makeMemoryBarrier(VK_ACCESS_TRANSFER_READ_BIT, 0);
+	const VkMemoryBarrier					postCopyMemoryBarrier				= makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
 	const VkClearValue						clearValue							= makeClearValueColorU32(DEFAULT_CLEAR_VALUE, 0u, 0u, 255u);
 
 	vector<de::SharedPtr<BottomLevelAccelerationStructure> >	bottomLevelAccelerationStructures;
