@@ -546,17 +546,6 @@ public:
 						{}
 };
 
-#endif // CTS_USES_VULKANSC
-
-class DebugUtilsMessengerEXT
-{
-public:
-						DebugUtilsMessengerEXT		(VkInstance, const VkDebugUtilsMessengerCreateInfoEXT*)
-						{}
-};
-
-#ifndef CTS_USES_VULKANSC
-
 class AccelerationStructureNV
 {
 public:
@@ -572,6 +561,13 @@ public:
 };
 
 #endif // CTS_USES_VULKANSC
+
+class DebugUtilsMessengerEXT
+{
+public:
+	DebugUtilsMessengerEXT(VkInstance, const VkDebugUtilsMessengerCreateInfoEXT*)
+	{}
+};
 
 class DeferredOperationKHR
 {

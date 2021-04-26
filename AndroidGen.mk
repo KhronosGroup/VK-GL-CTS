@@ -351,6 +351,14 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessUtil.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessVertexAccessTests.cpp \
+	external/vulkancts/modules/vulkan/sc/vktCommandPoolMemoryReservationTests.cpp \
+	external/vulkancts/modules/vulkan/sc/vktDeviceObjectReservationTests.cpp \
+	external/vulkancts/modules/vulkan/sc/vktFaultHandlingTests.cpp \
+	external/vulkancts/modules/vulkan/sc/vktObjectRefreshTests.cpp \
+	external/vulkancts/modules/vulkan/sc/vktPipelineCacheSCTests.cpp \
+	external/vulkancts/modules/vulkan/sc/vktPipelineIdentifierTests.cpp \
+	external/vulkancts/modules/vulkan/sc/vktSafetyCriticalApiTests.cpp \
+	external/vulkancts/modules/vulkan/sc/vktSafetyCriticalTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktAtomicOperationTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktOpaqueTypeIndexingTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderBuiltinPrecisionTests.cpp \
@@ -1263,6 +1271,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/reconvergence \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/renderpass \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/robustness \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/sc \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/shaderexecutor \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/shaderrender \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/sparse_resources \

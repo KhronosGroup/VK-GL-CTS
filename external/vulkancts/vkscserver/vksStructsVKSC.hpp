@@ -47,10 +47,12 @@ struct SourceVariant
 struct VulkanJsonPipelineDescription
 {
 	VulkanJsonPipelineDescription	()
-		: count	(0u)
+		: currentCount	(0u)
+		, maxCount		(0u)
+		, allCount		(0u)
 	{
 	}
-	VulkanJsonPipelineDescription	(const vk::VkPipelineIdentifierInfo&	id_,
+	VulkanJsonPipelineDescription	(const vk::VkPipelineOfflineCreateInfo&	id_,
 									 const string&							pipelineContents_,
 									 const string&							deviceFeatures_,
 									 const vector<string>&					deviceExtensions_,
@@ -59,7 +61,9 @@ struct VulkanJsonPipelineDescription
 		, pipelineContents	(pipelineContents_)
 		, deviceFeatures	(deviceFeatures_)
 		, deviceExtensions	(deviceExtensions_)
-		, count				(1u)
+		, currentCount	(1u)
+		, maxCount		(1u)
+		, allCount		(1u)
 	{
 		tests.insert(test);
 	}
@@ -67,30 +71,56 @@ struct VulkanJsonPipelineDescription
 	void add	(const std::string& test)
 	{
 		tests.insert(test);
-		count++;
+		allCount++;
+		currentCount++;
+		maxCount = de::max(maxCount, currentCount);
 	}
 
-	vk::VkPipelineIdentifierInfo						id;
+	void remove	()
+	{
+		currentCount--;
+	}
+
+	vk::VkPipelineOfflineCreateInfo						id;
 	string												pipelineContents;
 	string												deviceFeatures;
 	vector<string>										deviceExtensions;
-	deUint32											count;
+	deUint32											currentCount;
+	deUint32											maxCount;
+	deUint32											allCount;
 	std::set<string>									tests;
 };
 
 inline void SerializeItem(Serializer<ToRead>& serializer, VulkanJsonPipelineDescription& v)
 {
-	serializer.Serialize(v.id, v.pipelineContents, v.deviceFeatures, v.deviceExtensions, v.count, v.tests);
+	serializer.Serialize(v.id, v.pipelineContents, v.deviceFeatures, v.deviceExtensions, v.currentCount, v.maxCount, v.allCount, v.tests);
 }
 
 inline void SerializeItem(Serializer<ToWrite>& serializer, VulkanJsonPipelineDescription& v)
 {
-	serializer.Serialize(v.id, v.pipelineContents, v.deviceFeatures, v.deviceExtensions, v.count, v.tests);
+	serializer.Serialize(v.id, v.pipelineContents, v.deviceFeatures, v.deviceExtensions, v.currentCount, v.maxCount, v.allCount, v.tests);
+}
+
+struct VulkanPipelineSize
+{
+	vk::VkPipelineOfflineCreateInfo						id;
+	deUint32											count;
+	deUint32											size;
+};
+
+inline void SerializeItem(Serializer<ToRead>& serializer, VulkanPipelineSize& v)
+{
+	serializer.Serialize(v.id, v.count, v.size);
+}
+
+inline void SerializeItem(Serializer<ToWrite>& serializer, VulkanPipelineSize& v)
+{
+	serializer.Serialize(v.id, v.count, v.size);
 }
 
 struct PipelineIdentifierEqual
 {
-	PipelineIdentifierEqual(const vk::VkPipelineIdentifierInfo& p)
+	PipelineIdentifierEqual(const vk::VkPipelineOfflineCreateInfo& p)
 		: searched(p)
 	{
 	}
@@ -101,8 +131,15 @@ struct PipelineIdentifierEqual
 				return false;
 		return true;
 	}
+	bool operator() (const vksc_server::VulkanPipelineSize& item) const
+	{
+		for (deUint32 i = 0; i < VK_UUID_SIZE; ++i)
+			if (searched.pipelineIdentifier[i] != item.id.pipelineIdentifier[i])
+				return false;
+		return true;
+	}
 
-	const vk::VkPipelineIdentifierInfo& searched;
+	const vk::VkPipelineOfflineCreateInfo& searched;
 };
 
 struct VulkanPipelineCacheInput
@@ -132,64 +169,62 @@ inline void SerializeItem(Serializer<ToWrite>& serializer, VulkanPipelineCacheIn
 	serializer.Serialize(v.samplerYcbcrConversions, v.samplers, v.shaderModules, v.renderPasses, v.pipelineLayouts, v.descriptorSetLayouts, v.pipelines);
 }
 
-
 struct VulkanCommandMemoryConsumption
 {
 	VulkanCommandMemoryConsumption()
-		: commandPool				(0u)
-		, commandBufferCount		(0u)
-		, commandPoolAllocated		(0u)
-		, commandPoolReservedSize	(0u)
-		, commandBufferAllocated	(0u)
+		: commandPool						(0u)
+		, commandBufferCount				(0u)
+		, currentCommandPoolAllocated		(0u)
+		, maxCommandPoolAllocated			(0u)
+		, currentCommandPoolReservedSize	(0u)
+		, maxCommandPoolReservedSize		(0u)
+		, currentCommandBufferAllocated		(0u)
+		, maxCommandBufferAllocated			(0u)
 	{
 	}
 
 	VulkanCommandMemoryConsumption (deUint64 commandPool_)
-		: commandPool				(commandPool_)
-		, commandBufferCount		(0u)
-		, commandPoolAllocated		(0u)
-		, commandPoolReservedSize	(0u)
-		, commandBufferAllocated	(0u)
+		: commandPool						(commandPool_)
+		, commandBufferCount				(0u)
+		, currentCommandPoolAllocated		(0u)
+		, maxCommandPoolAllocated			(0u)
+		, currentCommandPoolReservedSize	(0u)
+		, maxCommandPoolReservedSize		(0u)
+		, currentCommandBufferAllocated		(0u)
+		, maxCommandBufferAllocated			(0u)
 	{
 	}
 	void updateValues(vk::VkDeviceSize cpAlloc, vk::VkDeviceSize cpReserved, vk::VkDeviceSize cbAlloc)
 	{
-		commandPoolAllocated	+= cpAlloc;
-		commandPoolReservedSize	+= cpReserved;
-		commandBufferAllocated	+= cbAlloc;
+		currentCommandPoolAllocated		+= cpAlloc;		maxCommandPoolAllocated		= de::max(currentCommandPoolAllocated, maxCommandPoolAllocated);
+		currentCommandPoolReservedSize	+= cpReserved;	maxCommandPoolReservedSize	= de::max(currentCommandPoolReservedSize, maxCommandPoolReservedSize);
+		currentCommandBufferAllocated	+= cbAlloc;		maxCommandBufferAllocated	= de::max(currentCommandBufferAllocated, maxCommandBufferAllocated);
 	}
+	void resetValues()
+	{
+		currentCommandPoolAllocated		= 0u;
+		currentCommandPoolReservedSize	= 0u;
+		currentCommandBufferAllocated	= 0u;
+	}
+
 	deUint64			commandPool;
 	deUint32			commandBufferCount;
-	vk::VkDeviceSize	commandPoolAllocated;
-	vk::VkDeviceSize	commandPoolReservedSize;
-	vk::VkDeviceSize	commandBufferAllocated;
+	vk::VkDeviceSize	currentCommandPoolAllocated;
+	vk::VkDeviceSize	maxCommandPoolAllocated;
+	vk::VkDeviceSize	currentCommandPoolReservedSize;
+	vk::VkDeviceSize	maxCommandPoolReservedSize;
+	vk::VkDeviceSize	currentCommandBufferAllocated;
+	vk::VkDeviceSize	maxCommandBufferAllocated;
 };
 
 inline void SerializeItem(Serializer<ToRead>& serializer, VulkanCommandMemoryConsumption& v)
 {
-	serializer.Serialize(v.commandPool, v.commandBufferCount, v.commandPoolAllocated, v.commandPoolReservedSize, v.commandBufferAllocated);
+	serializer.Serialize(v.commandPool, v.commandBufferCount, v.currentCommandPoolAllocated, v.maxCommandPoolAllocated, v.currentCommandPoolReservedSize, v.maxCommandPoolReservedSize, v.currentCommandBufferAllocated, v.maxCommandBufferAllocated);
 }
 
 inline void SerializeItem(Serializer<ToWrite>& serializer, VulkanCommandMemoryConsumption& v)
 {
-	serializer.Serialize(v.commandPool, v.commandBufferCount, v.commandPoolAllocated, v.commandPoolReservedSize, v.commandBufferAllocated);
-}
-
-struct VulkanPipelineSize
-{
-	vk::VkPipelineIdentifierInfo						id;
-	deUint32											count;
-	deUint32											size;
-};
-
-inline void SerializeItem(Serializer<ToRead>& serializer, VulkanPipelineSize& v)
-{
-	serializer.Serialize(v.id, v.count, v.size);
-}
-
-inline void SerializeItem(Serializer<ToWrite>& serializer, VulkanPipelineSize& v)
-{
-	serializer.Serialize(v.id, v.count, v.size);
+	serializer.Serialize(v.commandPool, v.commandBufferCount, v.currentCommandPoolAllocated, v.maxCommandPoolAllocated, v.currentCommandPoolReservedSize, v.maxCommandPoolReservedSize, v.currentCommandBufferAllocated, v.maxCommandBufferAllocated);
 }
 
 struct VulkanDataTransmittedFromMainToSubprocess

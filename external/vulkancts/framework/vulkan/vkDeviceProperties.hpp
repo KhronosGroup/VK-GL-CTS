@@ -105,6 +105,9 @@ public:
 	const VkPhysicalDeviceProperties2&			getCoreProperties2			(void) const { return m_coreProperties2; }
 	const VkPhysicalDeviceVulkan11Properties&	getVulkan11Properties		(void) const { return m_vulkan11Properties; }
 	const VkPhysicalDeviceVulkan12Properties&	getVulkan12Properties		(void) const { return m_vulkan12Properties; }
+#ifdef CTS_USES_VULKANSC
+	const VkPhysicalDeviceVulkanSC10Properties&	getVulkanSC10Properties		(void) const { return m_vulkanSC10Properties; }
+#endif // CTS_USES_VULKANSC
 
 	bool										contains					(const std::string& property, bool throwIfNotExists = false) const;
 
@@ -120,6 +123,9 @@ private:
 	mutable std::vector<PropertyStructWrapperBase*>	m_properties;
 	VkPhysicalDeviceVulkan11Properties				m_vulkan11Properties;
 	VkPhysicalDeviceVulkan12Properties				m_vulkan12Properties;
+#ifdef CTS_USES_VULKANSC
+	VkPhysicalDeviceVulkanSC10Properties			m_vulkanSC10Properties;
+#endif // CTS_USES_VULKANSC
 };
 
 template<class PropertyType>

@@ -30,6 +30,7 @@
 #include "vkImageUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
@@ -156,6 +157,7 @@ class BufferAccessInstance : public vkt::TestInstance
 {
 public:
 									BufferAccessInstance			(Context&			context,
+																	 std::shared_ptr<CustomInstanceWrapper>	instanceWrapper,
 																	 Move<VkDevice>		device,
 #ifndef CTS_USES_VULKANSC
 																	de::MovePtr<vk::DeviceDriver>	deviceDriver,
@@ -181,6 +183,7 @@ private:
 	bool							isOutBufferValueUnchanged		(VkDeviceSize offsetInBytes, VkDeviceSize valueSize);
 
 protected:
+	std::shared_ptr<CustomInstanceWrapper>	m_instanceWrapper;
 	Move<VkDevice>					m_device;
 #ifndef CTS_USES_VULKANSC
 	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
@@ -232,6 +235,7 @@ class BufferReadInstance: public BufferAccessInstance
 {
 public:
 									BufferReadInstance			(Context&				context,
+																 std::shared_ptr<CustomInstanceWrapper>	instanceWrapper,
 																 Move<VkDevice>			device,
 #ifndef CTS_USES_VULKANSC
 																 de::MovePtr<vk::DeviceDriver>		deviceDriver,
@@ -254,6 +258,7 @@ class BufferWriteInstance: public BufferAccessInstance
 {
 public:
 									BufferWriteInstance			(Context&				context,
+																 std::shared_ptr<CustomInstanceWrapper>	instanceWrapper,
 																 Move<VkDevice>			device,
 #ifndef CTS_USES_VULKANSC
 																 de::MovePtr<vk::DeviceDriver>		deviceDriver,
@@ -640,15 +645,15 @@ void RobustBufferReadTest::initPrograms (SourceCollections& programCollection) c
 
 TestInstance* RobustBufferReadTest::createInstance (Context& context) const
 {
-	Move<VkDevice>	device			= createRobustBufferAccessDevice(context);
-
+	std::shared_ptr<CustomInstanceWrapper> instanceWrapper(new CustomInstanceWrapper(context));
+	Move<VkDevice>	device = createRobustBufferAccessDevice(context, instanceWrapper->instance, instanceWrapper->instance.getDriver());
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device));
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instanceWrapper->instance, *device));
 #else
-	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *device, context.getTestContext().getCommandLine(), context.getResourceInterface()), vk::DeinitDeviceDeleter( context.getResourceInterface().get(), *device ));
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), instanceWrapper->instance, *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter( context.getResourceInterface().get(), *device ));
 #endif // CTS_USES_VULKANSC
 
-	return new BufferReadInstance(context, device, deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_readFromStorage, m_readAccessRange, m_accessOutOfBackingMemory);
+	return new BufferReadInstance(context, instanceWrapper, device, deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_readFromStorage, m_readAccessRange, m_accessOutOfBackingMemory);
 }
 
 // RobustBufferWriteTest
@@ -675,20 +680,21 @@ void RobustBufferWriteTest::initPrograms (SourceCollections& programCollection) 
 
 TestInstance* RobustBufferWriteTest::createInstance (Context& context) const
 {
-	Move<VkDevice>	device			= createRobustBufferAccessDevice(context);
-
+	std::shared_ptr<CustomInstanceWrapper> instanceWrapper(new CustomInstanceWrapper(context));
+	Move<VkDevice>	device = createRobustBufferAccessDevice(context, instanceWrapper->instance, instanceWrapper->instance.getDriver());
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device));
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instanceWrapper->instance, *device));
 #else
-	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC,DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *device, context.getTestContext().getCommandLine(), context.getResourceInterface()), DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC,DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), instanceWrapper->instance, *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties()), DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
 #endif // CTS_USES_VULKANSC
 
-	return new BufferWriteInstance(context, device, deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_writeAccessRange, m_accessOutOfBackingMemory);
+	return new BufferWriteInstance(context, instanceWrapper, device, deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_writeAccessRange, m_accessOutOfBackingMemory);
 }
 
 // BufferAccessInstance
 
 BufferAccessInstance::BufferAccessInstance (Context&			context,
+											std::shared_ptr<CustomInstanceWrapper>	instanceWrapper,
 											Move<VkDevice>		device,
 #ifndef CTS_USES_VULKANSC
 											de::MovePtr<vk::DeviceDriver>	deviceDriver,
@@ -703,6 +709,7 @@ BufferAccessInstance::BufferAccessInstance (Context&			context,
 											VkDeviceSize		outBufferAccessRange,
 											bool				accessOutOfBackingMemory)
 	: vkt::TestInstance				(context)
+	, m_instanceWrapper				(instanceWrapper)
 	, m_device						(device)
 	, m_deviceDriver				(deviceDriver)
 	, m_shaderType					(shaderType)
@@ -717,7 +724,8 @@ BufferAccessInstance::BufferAccessInstance (Context&			context,
 	const deUint32				queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	const bool					isTexelAccess			= !!(m_shaderType == SHADER_TYPE_TEXEL_COPY);
 	const bool					readFromStorage			= !!(m_bufferAccessType == BUFFER_ACCESS_TYPE_READ_FROM_STORAGE);
-	SimpleAllocator				memAlloc				(vk, *m_device, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
+	const VkPhysicalDevice		physicalDevice			= chooseDevice(instanceWrapper->instance.getDriver(), instanceWrapper->instance, context.getTestContext().getCommandLine());
+	SimpleAllocator				memAlloc				(vk, *m_device, getPhysicalDeviceMemoryProperties(instanceWrapper->instance.getDriver(), physicalDevice));
 	tcu::TestLog&				log						= m_context.getTestContext().getLog();
 
 	DE_ASSERT(RobustBufferAccessTest::s_numberOfBytesAccessed % sizeof(deUint32) == 0);
@@ -748,7 +756,7 @@ BufferAccessInstance::BufferAccessInstance (Context&			context,
 	// Check format support
 	{
 		VkFormatFeatureFlags		requiredFormatFeatures	= 0;
-		const VkFormatProperties	formatProperties		= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), m_bufferFormat);
+		const VkFormatProperties	formatProperties		= getPhysicalDeviceFormatProperties(instanceWrapper->instance.getDriver(), physicalDevice, m_bufferFormat);
 
 		if (isTexelAccess)
 		{
@@ -1003,7 +1011,7 @@ BufferAccessInstance::BufferAccessInstance (Context&			context,
 
 	if (m_shaderStage == VK_SHADER_STAGE_COMPUTE_BIT)
 	{
-		m_testEnvironment = de::MovePtr<TestEnvironment>(new ComputeEnvironment(m_context, *m_device, *m_descriptorSetLayout, *m_descriptorSet));
+		m_testEnvironment = de::MovePtr<TestEnvironment>(new ComputeEnvironment(m_context, m_instanceWrapper->instance, m_instanceWrapper->instance.getDriver(), *m_device, *m_descriptorSetLayout, *m_descriptorSet));
 	}
 	else
 	{
@@ -1068,6 +1076,8 @@ BufferAccessInstance::BufferAccessInstance (Context&			context,
 		};
 
 		m_testEnvironment = de::MovePtr<TestEnvironment>(new GraphicsEnvironment(m_context,
+																				 m_instanceWrapper->instance,
+																				 m_instanceWrapper->instance.getDriver(),
 																				 *m_device,
 																				 *m_descriptorSetLayout,
 																				 *m_descriptorSet,
@@ -1370,6 +1380,7 @@ bool BufferAccessInstance::verifyResult (void)
 // BufferReadInstance
 
 BufferReadInstance::BufferReadInstance (Context&			context,
+										std::shared_ptr<CustomInstanceWrapper>	instanceWrapper,
 										Move<VkDevice>		device,
 #ifndef CTS_USES_VULKANSC
 										de::MovePtr<vk::DeviceDriver>	deviceDriver,
@@ -1383,7 +1394,7 @@ BufferReadInstance::BufferReadInstance (Context&			context,
 										VkDeviceSize		inBufferAccessRange,
 										bool				accessOutOfBackingMemory)
 
-	: BufferAccessInstance	(context, device, deviceDriver, shaderType, shaderStage, bufferFormat,
+	: BufferAccessInstance	(context, instanceWrapper, device, deviceDriver, shaderType, shaderStage, bufferFormat,
 							 readFromStorage ? BUFFER_ACCESS_TYPE_READ_FROM_STORAGE : BUFFER_ACCESS_TYPE_READ,
 							 inBufferAccessRange,
 							 RobustBufferAccessTest::s_numberOfBytesAccessed,	// outBufferAccessRange
@@ -1394,6 +1405,7 @@ BufferReadInstance::BufferReadInstance (Context&			context,
 // BufferWriteInstance
 
 BufferWriteInstance::BufferWriteInstance (Context&				context,
+										  std::shared_ptr<CustomInstanceWrapper>	instanceWrapper,
 										  Move<VkDevice>		device,
 #ifndef CTS_USES_VULKANSC
 										  de::MovePtr<vk::DeviceDriver>		deviceDriver,
@@ -1406,7 +1418,7 @@ BufferWriteInstance::BufferWriteInstance (Context&				context,
 										  VkDeviceSize			writeBufferAccessRange,
 										  bool					accessOutOfBackingMemory)
 
-	: BufferAccessInstance	(context, device, deviceDriver, shaderType, shaderStage, bufferFormat,
+	: BufferAccessInstance	(context, instanceWrapper, device, deviceDriver, shaderType, shaderStage, bufferFormat,
 							 BUFFER_ACCESS_TYPE_WRITE,
 							 RobustBufferAccessTest::s_numberOfBytesAccessed,	// inBufferAccessRange
 							 writeBufferAccessRange,

@@ -32,6 +32,7 @@
 #include "tcuVector.hpp"
 #include "deMutex.hpp"
 #include <memory>
+#include "vkResourceInterface.hpp"
 
 namespace vkt
 {
@@ -117,7 +118,7 @@ public:
 									PipelineCacheData		(void);
 									~PipelineCacheData		(void);
 
-	vk::Move<vk::VkPipelineCache>	createPipelineCache		(const vk::DeviceInterface& vk, const vk::VkDevice device) const;
+	vk::Move<vk::VkPipelineCache>	createPipelineCache		(const vk::DeviceInterface& vk, const vk::VkDevice device, de::SharedPtr<vk::ResourceInterface> resourceInterface) const;
 	void							setFromPipelineCache	(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineCache pipelineCache);
 
 private:
@@ -152,7 +153,7 @@ public:
 	//! Basic vertex input configuration (uses biding 0, location 0, etc.)
 	GraphicsPipelineBuilder&	setVertexInputSingleAttribute	(const vk::VkFormat vertexFormat, const deUint32 stride);
 
-	vk::Move<vk::VkPipeline>	build							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkRenderPass renderPass, PipelineCacheData& pipelineCacheData);
+	vk::Move<vk::VkPipeline>	build(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkRenderPass renderPass, PipelineCacheData& pipelineCacheData, de::SharedPtr<vk::ResourceInterface> resourceInterface);
 
 private:
 	tcu::IVec2											m_renderSize;
@@ -291,7 +292,7 @@ vk::VkImageCreateInfo				makeImageCreateInfo							(const vk::VkImageType				ima
 																				 const vk::VkImageUsageFlags		usage,
 																				 const vk::VkSampleCountFlagBits	samples = vk::VK_SAMPLE_COUNT_1_BIT);
 vk::Move<vk::VkCommandBuffer>		makeCommandBuffer							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkCommandPool commandPool);
-vk::Move<vk::VkPipeline>			makeComputePipeline							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkShaderModule shaderModule, const vk::VkSpecializationInfo* specInfo, PipelineCacheData& pipelineCacheData);
+vk::Move<vk::VkPipeline>			makeComputePipeline							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkShaderModule shaderModule, const vk::VkSpecializationInfo* specInfo, PipelineCacheData& pipelineCacheData, de::SharedPtr<vk::ResourceInterface> resourceInterface);
 void								beginRenderPassWithRasterizationDisabled	(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const vk::VkFramebuffer framebuffer);
 void								requireFeatures								(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const FeatureFlags flags);
 void								requireStorageImageSupport					(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const vk::VkFormat fmt);

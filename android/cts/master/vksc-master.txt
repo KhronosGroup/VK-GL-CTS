@@ -24,6 +24,7 @@ vksc-master/rasterization.txt
 vksc-master/renderpass.txt
 vksc-master/renderpass2.txt
 vksc-master/robustness.txt
+vksc-master/sc.txt
 vksc-master/spirv-assembly.txt
 vksc-master/ssbo.txt
 vksc-master/subgroups.txt

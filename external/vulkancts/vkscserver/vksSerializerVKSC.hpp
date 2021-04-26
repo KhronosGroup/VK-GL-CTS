@@ -124,17 +124,17 @@ inline void SerializeItem (Serializer<ToWrite>& serializer, vk::VkDeviceObjectRe
 	serializer.Serialize(output);
 }
 
-inline void SerializeItem(Serializer<ToRead>& serializer, vk::VkPipelineIdentifierInfo& v)
+inline void SerializeItem(Serializer<ToRead>& serializer, vk::VkPipelineOfflineCreateInfo& v)
 {
 	string input;
 	serializer.Serialize(input);
 	json::Context ctx;
-	json::readJSON_VkPipelineIdentifierInfo(ctx, input, v);
+	json::readJSON_VkPipelineOfflineCreateInfo(ctx, input, v);
 }
 
-inline void SerializeItem(Serializer<ToWrite>& serializer, vk::VkPipelineIdentifierInfo& v)
+inline void SerializeItem(Serializer<ToWrite>& serializer, vk::VkPipelineOfflineCreateInfo& v)
 {
-	string output = json::writeJSON_VkPipelineIdentifierInfo(v);
+	string output = json::writeJSON_VkPipelineOfflineCreateInfo(v);
 	serializer.Serialize(output);
 }
 

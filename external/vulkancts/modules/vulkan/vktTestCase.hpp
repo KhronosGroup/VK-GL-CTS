@@ -79,6 +79,9 @@ public:
 	const vk::VkPhysicalDeviceFeatures2&			getDeviceFeatures2					(void) const;
 	const vk::VkPhysicalDeviceVulkan11Features&		getDeviceVulkan11Features			(void) const;
 	const vk::VkPhysicalDeviceVulkan12Features&		getDeviceVulkan12Features			(void) const;
+#ifdef CTS_USES_VULKANSC
+	const vk::VkPhysicalDeviceVulkanSC10Features&	getDeviceVulkanSC10Features			(void) const;
+#endif // CTS_USES_VULKANSC
 
 	bool											isInstanceFunctionalitySupported	(const std::string& extension) const;
 	bool											isDeviceFunctionalitySupported		(const std::string& extension) const;
@@ -90,6 +93,9 @@ public:
 	const vk::VkPhysicalDeviceProperties2&			getDeviceProperties2				(void) const;
 	const vk::VkPhysicalDeviceVulkan11Properties&	getDeviceVulkan11Properties			(void) const;
 	const vk::VkPhysicalDeviceVulkan12Properties&	getDeviceVulkan12Properties			(void) const;
+#ifdef CTS_USES_VULKANSC
+	const vk::VkPhysicalDeviceVulkanSC10Properties&	getDeviceVulkanSC10Properties		(void) const;
+#endif // CTS_USES_VULKANSC
 
 #include "vkDevicePropertiesForContextDecl.inl"
 
@@ -103,7 +109,7 @@ public:
 	vk::VkQueue									getSparseQueue						(void) const;
 	de::SharedPtr<vk::ResourceInterface>		getResourceInterface				(void) const;
 	vk::Allocator&								getDefaultAllocator					(void) const;
-	bool										contextSupports						(const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const;
+	bool										contextSupports						(const deUint32 variantNum, const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const;
 	bool										contextSupports						(const vk::ApiVersion version) const;
 	bool										contextSupports						(const deUint32 requiredApiVersionBits) const;
 	bool										requireDeviceFunctionality			(const std::string& required) const;

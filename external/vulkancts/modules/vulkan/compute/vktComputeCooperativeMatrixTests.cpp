@@ -146,7 +146,7 @@ CooperativeMatrixTestCase::~CooperativeMatrixTestCase	(void)
 
 void CooperativeMatrixTestCase::checkSupport(Context& context) const
 {
-	if (!context.contextSupports(vk::ApiVersion(1, 1, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
 	{
 		TCU_THROW(NotSupportedError, "Vulkan 1.1 not supported");
 	}

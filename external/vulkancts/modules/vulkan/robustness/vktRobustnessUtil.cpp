@@ -34,6 +34,7 @@
 #include "vkObjUtil.hpp"
 #include "vkSafetyCriticalUtil.hpp"
 #include "tcuCommandLine.hpp"
+#include "vkDeviceUtil.hpp"
 #include "deMath.h"
 #include <iomanip>
 #include <limits>
@@ -65,7 +66,7 @@ vector<string> removeExtensions (const vector<string>& a, const vector<const cha
 	return res;
 }
 
-Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysicalDeviceFeatures2* enabledFeatures2)
+Move<VkDevice> createRobustBufferAccessDevice (Context& context, VkInstance instance, const InstanceInterface& vki, const VkPhysicalDeviceFeatures2* enabledFeatures2)
 {
 	const float queuePriority = 1.0f;
 
@@ -109,22 +110,26 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysica
 	std::vector<VkPipelinePoolSize>		poolSizes;
 	if (context.getTestContext().getCommandLine().isSubProcess())
 	{
-		pcCI =
+		if (context.getResourceInterface()->getCacheDataSize() > 0)
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
-			DE_NULL,											// const void*					pNext;
-			(VkPipelineCacheCreateFlags)0u,						// VkPipelineCacheCreateFlags	flags;
-			context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
-			context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
-		};
-		memReservationInfo.pipelineCacheCreateInfoCount		= 1;
-		memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
+				DE_NULL,											// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
 
 		poolSizes							= context.getResourceInterface()->getPipelinePoolSizes();
 		if (!poolSizes.empty())
 		{
-			memReservationInfo.pipelinePoolSizeCount		= deUint32(poolSizes.size());
-			memReservationInfo.pPipelinePoolSizes			= poolSizes.data();
+			memReservationInfo.pipelinePoolSizeCount			= deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes				= poolSizes.data();
 		}
 	}
 #endif // CTS_USES_VULKANSC
@@ -143,8 +148,10 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysica
 		enabledFeatures2 ? NULL : &enabledFeatures	// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
+	const VkPhysicalDevice			physicalDevice = chooseDevice(vki, instance, context.getTestContext().getCommandLine());
+
 	return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(),
-							  context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceParams);
+							  instance, vki, physicalDevice, &deviceParams);
 }
 
 bool areEqual (float a, float b)
@@ -296,11 +303,15 @@ void logValue (std::ostringstream& logMsg, const void* valuePtr, VkFormat valueF
 
 // TestEnvironment
 
-TestEnvironment::TestEnvironment (Context&				context,
-								  VkDevice				device,
-								  VkDescriptorSetLayout	descriptorSetLayout,
-								  VkDescriptorSet		descriptorSet)
+TestEnvironment::TestEnvironment (Context&					context,
+								  VkInstance				instance,
+								  const InstanceInterface&	instanceInterface,
+								  VkDevice					device,
+								  VkDescriptorSetLayout		descriptorSetLayout,
+								  VkDescriptorSet			descriptorSet)
 	: m_context				(context)
+	, m_instance			(instance)
+	, m_instanceInterface	(instanceInterface)
 	, m_device				(device)
 	, m_descriptorSetLayout	(descriptorSetLayout)
 	, m_descriptorSet		(descriptorSet)
@@ -343,6 +354,8 @@ VkCommandBuffer TestEnvironment::getCommandBuffer (void)
 // GraphicsEnvironment
 
 GraphicsEnvironment::GraphicsEnvironment (Context&					context,
+										  VkInstance				instance,
+										  const InstanceInterface&	instanceInterface,
 										  VkDevice					device,
 										  VkDescriptorSetLayout		descriptorSetLayout,
 										  VkDescriptorSet			descriptorSet,
@@ -350,14 +363,15 @@ GraphicsEnvironment::GraphicsEnvironment (Context&					context,
 										  const VertexAttributes&	vertexAttributes,
 										  const DrawConfig&			drawConfig)
 
-	: TestEnvironment		(context, device, descriptorSetLayout, descriptorSet)
+	: TestEnvironment		(context, instance, instanceInterface, device, descriptorSetLayout, descriptorSet)
 	, m_renderSize			(16, 16)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
 {
 	const DeviceInterface&		vk						= context.getDeviceInterface();
 	const deUint32				queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	const VkComponentMapping	componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-	SimpleAllocator				memAlloc				(vk, m_device, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
+	const VkPhysicalDevice		physicalDevice			= chooseDevice(m_instanceInterface, instance, context.getTestContext().getCommandLine());
+	SimpleAllocator				memAlloc				(vk, m_device, getPhysicalDeviceMemoryProperties(m_instanceInterface, physicalDevice));
 
 	// Create color image and view
 	{
@@ -524,12 +538,14 @@ GraphicsEnvironment::GraphicsEnvironment (Context&					context,
 
 // ComputeEnvironment
 
-ComputeEnvironment::ComputeEnvironment (Context&				context,
-										VkDevice				device,
-										VkDescriptorSetLayout	descriptorSetLayout,
-										VkDescriptorSet			descriptorSet)
+ComputeEnvironment::ComputeEnvironment (Context&					context,
+										VkInstance					instance,
+										const InstanceInterface&	instanceInterface,
+										VkDevice					device,
+										VkDescriptorSetLayout		descriptorSetLayout,
+										VkDescriptorSet				descriptorSet)
 
-	: TestEnvironment	(context, device, descriptorSetLayout, descriptorSet)
+	: TestEnvironment	(context, instance, instanceInterface, device, descriptorSetLayout, descriptorSet)
 {
 	const DeviceInterface& vk = context.getDeviceInterface();
 

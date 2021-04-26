@@ -115,7 +115,7 @@ int main (int argc, char** argv)
 		vector<std::future<void>> clients;
 
 		listener.listen(addr);
-		Log("Listeing on port", addr.getPort());
+		Log("Listening on port", addr.getPort());
 
 		while (appActive)
 		{

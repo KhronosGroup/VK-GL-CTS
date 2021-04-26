@@ -217,12 +217,13 @@ tcu::TestStatus createInstanceWithInvalidApiVersionTest (Context& context)
 
 	const ApiVersion			apiVersion				= unpackVersion(instanceApiVersion);
 
-	const deUint32				invalidMajorVersion		= (1 << 10) - 1;
+	const deUint32				invalidApiVariant		= (1 << 3) - 1;
+	const deUint32				invalidMajorVersion		= (1 << 7) - 1;
 	const deUint32				invalidMinorVersion		= (1 << 10) - 1;
 	vector<ApiVersion>			invalidApiVersions;
 
-	invalidApiVersions.push_back(ApiVersion(invalidMajorVersion, apiVersion.minorNum, apiVersion.patchNum));
-	invalidApiVersions.push_back(ApiVersion(apiVersion.majorNum, invalidMinorVersion, apiVersion.patchNum));
+	invalidApiVersions.push_back(ApiVersion(invalidApiVariant, invalidMajorVersion, apiVersion.minorNum, apiVersion.patchNum));
+	invalidApiVersions.push_back(ApiVersion(apiVersion.variantNum, apiVersion.majorNum, invalidMinorVersion, apiVersion.patchNum));
 
 	for (size_t apiVersionNdx = 0; apiVersionNdx < invalidApiVersions.size(); apiVersionNdx++)
 	{
@@ -1110,7 +1111,7 @@ tcu::TestStatus createDeviceWithQueriedGlobalPriorityTest (Context& context)
 	instanceDriver.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyPropertyCount, queueFamilyProperties2.data());
 	TCU_CHECK((size_t)queueFamilyPropertyCount == queueFamilyProperties2.size());
 
-	if (!context.contextSupports(vk::ApiVersion(1, 1, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
 	{
 		enabledExtensions.emplace_back("VK_KHR_get_physical_device_properties2");
 	}
@@ -1415,13 +1416,13 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest (Context& context)
 
 tcu::TestStatus createDeviceQueue2Test (Context& context)
 {
-	if (!context.contextSupports(vk::ApiVersion(1, 1, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
 		TCU_THROW(NotSupportedError, "Vulkan 1.1 is not supported");
 
 	const PlatformInterface&				platformInterface		= context.getPlatformInterface();
-	const VkInstance						instance				= context.getInstance();
-	const InstanceInterface&				instanceDriver			= context.getInstanceInterface();
-	const VkPhysicalDevice					physicalDevice			= context.getPhysicalDevice();
+	const CustomInstance					instance				(createCustomInstanceFromContext(context));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
 	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	const deUint32							queueCount				= 1;
 	const deUint32							queueIndex				= 0;
@@ -1500,13 +1501,13 @@ tcu::TestStatus createDeviceQueue2Test (Context& context)
 
 tcu::TestStatus createDeviceQueue2UnmatchedFlagsTest (Context& context)
 {
-	if (!context.contextSupports(vk::ApiVersion(1, 1, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
 		TCU_THROW(NotSupportedError, "Vulkan 1.1 is not supported");
 
 	const PlatformInterface&		platformInterface		= context.getPlatformInterface();
-	const VkInstance				instance				= context.getInstance();
-	const InstanceInterface&		instanceDriver			= context.getInstanceInterface();
-	const VkPhysicalDevice			physicalDevice			= context.getPhysicalDevice();
+	const CustomInstance			instance				(createCustomInstanceFromContext(context));
+	const InstanceDriver&			instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice			physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
 
 	// Check if VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT flag can be used.
 	{

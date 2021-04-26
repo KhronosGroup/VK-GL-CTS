@@ -145,21 +145,20 @@ protected:
 
 #ifdef CTS_USES_VULKANSC
 
-
-
 #define DDSTAT_LOCK() std::lock_guard<std::mutex> statLock(m_resourceInterface->getStatMutex())
 #define DDSTAT_HANDLE_CREATE(VAR_NAME,VAR_VALUE) do { m_resourceInterface->getStatCurrent().VAR_NAME += (VAR_VALUE); m_resourceInterface->getStatMax().VAR_NAME = de::max(m_resourceInterface->getStatMax().VAR_NAME, m_resourceInterface->getStatCurrent().VAR_NAME); } while(0)
-#define DDSTAT_HANDLE_DESTROY_IF(VAR_VARIABLE,VAR_NAME,VAR_VALUE) if(VAR_VARIABLE.getInternal()!=DE_NULL) m_resourceInterface->getStatCurrent().VAR_NAME -= (VAR_VALUE)
-#define DDSTAT_HANDLE_DESTROY(VAR_NAME,VAR_VALUE) m_resourceInterface->getStatCurrent().VAR_NAME -= (VAR_VALUE)
+#define DDSTAT_HANDLE_DESTROY_IF(VAR_VARIABLE,VAR_NAME,VAR_VALUE) if(VAR_VARIABLE.getInternal()!=DE_NULL && m_resourceInterface->isEnabledHandleDestroy()) m_resourceInterface->getStatCurrent().VAR_NAME -= (VAR_VALUE)
+#define DDSTAT_HANDLE_DESTROY(VAR_NAME,VAR_VALUE) if( m_resourceInterface->isEnabledHandleDestroy() ) m_resourceInterface->getStatCurrent().VAR_NAME -= (VAR_VALUE)
 
 class DeviceDriverSC : public DeviceDriver
 {
 public:
-										DeviceDriverSC						(const		PlatformInterface&			platformInterface,
-																			 VkInstance								instance,
-																			 VkDevice								device,
-																			 const tcu::CommandLine&				cmdLine,
-																			 de::SharedPtr<vk::ResourceInterface>	resourceInterface);
+										DeviceDriverSC						(const		PlatformInterface&					platformInterface,
+																			 VkInstance										instance,
+																			 VkDevice										device,
+																			 const tcu::CommandLine&						cmdLine,
+																			 de::SharedPtr<vk::ResourceInterface>			resourceInterface,
+																			 const VkPhysicalDeviceVulkanSC10Properties&	physicalDeviceVulkanSC10Properties);
 	virtual								~DeviceDriverSC						(void);
 
 #include "vkConcreteDeviceInterface.inl"
@@ -180,6 +179,16 @@ public:
 	void								destroyDescriptorSetLayoutHandler		(VkDevice								device,
 																				 VkDescriptorSetLayout					descriptorSetLayout,
 																				 const VkAllocationCallbacks*			pAllocator) const;
+	void								allocateDescriptorSetsHandlerStat		(VkDevice								device,
+																				 const VkDescriptorSetAllocateInfo*		pAllocateInfo,
+																				 VkDescriptorSet*						pDescriptorSets) const;
+	void								freeDescriptorSetsHandlerStat			(VkDevice								device,
+																				 VkDescriptorPool						descriptorPool,
+																				 uint32_t								descriptorSetCount,
+																				 const VkDescriptorSet*					pDescriptorSets) const;
+	void								resetDescriptorPoolHandlerStat			(VkDevice								device,
+																				 VkDescriptorPool						descriptorPool,
+																				 VkDescriptorPoolResetFlags				flags) const;
 	void								createImageViewHandler					(VkDevice								device,
 																				 const VkImageViewCreateInfo*			pCreateInfo,
 																				 const VkAllocationCallbacks*			pAllocator,
@@ -226,6 +235,14 @@ public:
 	void								destroyPipelineHandler					(VkDevice								device,
 																				 VkPipeline								pipeline,
 																				 const VkAllocationCallbacks*			pAllocator) const;
+	VkResult							createFramebufferHandlerNorm			(VkDevice								device,
+																				 const VkFramebufferCreateInfo*			pCreateInfo,
+																				 const VkAllocationCallbacks*			pAllocator,
+																				 VkFramebuffer*							pFramebuffer) const;
+	void								createFramebufferHandlerStat			(VkDevice								device,
+																				 const VkFramebufferCreateInfo*			pCreateInfo,
+																				 const VkAllocationCallbacks*			pAllocator,
+																				 VkFramebuffer*							pFramebuffer) const;
 	VkResult							createRenderPassHandlerNorm				(VkDevice								device,
 																				 const VkRenderPassCreateInfo*			pCreateInfo,
 																				 const VkAllocationCallbacks*			pAllocator,
@@ -291,7 +308,14 @@ public:
 																				 deUint32								commandBufferCount,
 																				 const VkCommandBuffer*					pCommandBuffers) const;
 	void								increaseCommandBufferSize				(VkCommandBuffer						commandBuffer,
-																				 const char*							functionName) const;
+																				 VkDeviceSize							commandSize) const;
+	void								checkFramebufferSupport					(const VkFramebufferCreateInfo*			pCreateInfo) const;
+	void								checkRenderPassSupport					(deUint32								attachmentCount,
+																				 deUint32								subpassCount,
+																				 deUint32								dependencyCount) const;
+	void								checkSubpassSupport						(deUint32								inputAttachmentCount,
+																				 deUint32								preserveAttachmentCount) const;
+
 
 	de::SharedPtr<ResourceInterface>	gerResourceInterface					() const;
 	void								reset									() const;
@@ -309,6 +333,11 @@ protected:
 	mutable std::map<VkRenderPass, VkRenderPassCreateInfo2>						m_renderPasses2;
 	mutable std::map<VkPipeline, VkGraphicsPipelineCreateInfo>					m_graphicsPipelines;
 	mutable std::map<VkPipeline, VkComputePipelineCreateInfo>					m_computePipelines;
+	mutable std::map<VkDescriptorSet, VkDescriptorPool>							m_descriptorSetsInPool;
+	VkPhysicalDeviceVulkanSC10Properties										m_physicalDeviceVulkanSC10Properties;
+
+	VkDeviceSize																m_commandDefaultSize;
+	VkDeviceSize																m_commandBufferMinimumSize;
 };
 
 class DeinitDeviceDeleter : public Deleter<DeviceDriverSC>
@@ -334,7 +363,6 @@ private:
 	ResourceInterface*	m_resourceInterface;
 	VkDevice			m_device;
 };
-
 
 #endif // CTS_USES_VULKANSC
 

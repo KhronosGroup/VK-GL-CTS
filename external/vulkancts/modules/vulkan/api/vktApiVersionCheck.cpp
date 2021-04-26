@@ -365,16 +365,20 @@ private:
 		std::vector<VkPipelinePoolSize>		poolSizes;
 		if (context.getTestContext().getCommandLine().isSubProcess())
 		{
-			pcCI =
+			if (context.getResourceInterface()->getCacheDataSize() > 0)
 			{
-				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
-				DE_NULL,											// const void*					pNext;
-				(VkPipelineCacheCreateFlags)0u,						// VkPipelineCacheCreateFlags	flags;
-				context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
-				context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
-			};
-			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
-			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+				pcCI =
+				{
+					VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
+					DE_NULL,											// const void*					pNext;
+					VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+						VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+					context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+					context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+				};
+				memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+				memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+			}
 
 			poolSizes							= context.getResourceInterface()->getPipelinePoolSizes();
 			if (!poolSizes.empty())

@@ -342,7 +342,7 @@ tcu::TestStatus secondaryCommandBufferCase (Context& context, TestConfig config)
 	return tcu::TestStatus::pass("Wait and set even on device using secondary command buffers tests pass");
 }
 
-void checkSupport(Context& context, TestConfig config)
+void checkSupport (Context& context, TestConfig config)
 {
 	if (config.type == SynchronizationType::SYNCHRONIZATION2)
 		context.requireDeviceFunctionality("VK_KHR_synchronization2");
@@ -351,6 +351,16 @@ void checkSupport(Context& context, TestConfig config)
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().events)
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
 #endif // CTS_USES_VULKANSC
+}
+
+void checkSecondaryBufferSupport (Context& context, TestConfig config)
+{
+	checkSupport(context, config);
+#ifdef CTS_USES_VULKANSC
+	if (context.getDeviceVulkanSC10Properties().secondaryCommandBufferNullOrImagelessFramebuffer == VK_FALSE)
+		TCU_THROW(NotSupportedError, "secondaryCommandBufferNullFramebuffer is not supported");
+#endif // CTS_USES_VULKANSC
+
 }
 
 } // anonymous
@@ -369,7 +379,7 @@ tcu::TestCaseGroup* createBasicEventTests (tcu::TestContext& testCtx)
 	addFunctionCase(basicTests.get(), "device_set_reset", "Basic event tests set and reset on device", checkSupport, deviceResetSetEventCase, config);
 	addFunctionCase(basicTests.get(), "single_submit_multi_command_buffer", "Wait and set event single submission on device", checkSupport, singleSubmissionCase, config);
 	addFunctionCase(basicTests.get(), "multi_submit_multi_command_buffer", "Wait and set event mutli submission on device", checkSupport, multiSubmissionCase, config);
-	addFunctionCase(basicTests.get(), "multi_secondary_command_buffer", "Event used on secondary command buffer ", checkSupport, secondaryCommandBufferCase, config);
+	addFunctionCase(basicTests.get(), "multi_secondary_command_buffer", "Event used on secondary command buffer ", checkSecondaryBufferSupport, secondaryCommandBufferCase, config);
 
 	return basicTests.release();
 }
@@ -387,12 +397,12 @@ tcu::TestCaseGroup* createSynchronization2BasicEventTests (tcu::TestContext& tes
 	addFunctionCase(basicTests.get(), "device_set_reset", "Basic event tests set and reset on device", checkSupport, deviceResetSetEventCase, config);
 	addFunctionCase(basicTests.get(), "single_submit_multi_command_buffer", "Wait and set event single submission on device", checkSupport, singleSubmissionCase, config);
 	addFunctionCase(basicTests.get(), "multi_submit_multi_command_buffer", "Wait and set event mutli submission on device", checkSupport, multiSubmissionCase, config);
-	addFunctionCase(basicTests.get(), "multi_secondary_command_buffer", "Event used on secondary command buffer ", checkSupport, secondaryCommandBufferCase, config);
+	addFunctionCase(basicTests.get(), "multi_secondary_command_buffer", "Event used on secondary command buffer ", checkSecondaryBufferSupport, secondaryCommandBufferCase, config);
 
 	config.flags = VK_EVENT_CREATE_DEVICE_ONLY_BIT_KHR;
 	addFunctionCase(basicTests.get(), "single_submit_multi_command_buffer_device_only", "Wait and set GPU-only event single submission", checkSupport, singleSubmissionCase, config);
 	addFunctionCase(basicTests.get(), "multi_submit_multi_command_buffer_device_only", "Wait and set GPU-only event mutli submission", checkSupport, multiSubmissionCase, config);
-	addFunctionCase(basicTests.get(), "multi_secondary_command_buffer_device_only", "GPU-only event used on secondary command buffer ", checkSupport, secondaryCommandBufferCase, config);
+	addFunctionCase(basicTests.get(), "multi_secondary_command_buffer_device_only", "GPU-only event used on secondary command buffer ", checkSecondaryBufferSupport, secondaryCommandBufferCase, config);
 
 	return basicTests.release();
 

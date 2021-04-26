@@ -4232,10 +4232,24 @@ void copyBufferToImage (const DeviceInterface&					vk,
 						deUint32								arrayLayers,
 						VkImage									destImage,
 						VkImageLayout							destImageLayout,
-						VkPipelineStageFlags					destImageDstStageFlags)
+						VkPipelineStageFlags					destImageDstStageFlags,
+						const VkCommandPool*					externalCommandPool)
 {
-	Move<VkCommandPool>		cmdPool		= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
-	Move<VkCommandBuffer>	cmdBuffer	= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	Move<VkCommandPool>		cmdPool;
+	VkCommandPool			activeCmdPool;
+	if (externalCommandPool == DE_NULL)
+	{
+		// Create local command pool
+		cmdPool = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+		activeCmdPool = *cmdPool;
+	}
+	else
+	{
+		// Use external command pool if available
+		activeCmdPool = *externalCommandPool;
+	}
+
+	Move<VkCommandBuffer>	cmdBuffer	= allocateCommandBuffer(vk, device, activeCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	Move<VkFence>			fence		= createFence(vk, device);
 
 	const VkCommandBufferBeginInfo cmdBufferBeginInfo =

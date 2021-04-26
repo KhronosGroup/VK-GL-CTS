@@ -294,6 +294,9 @@ protected:
 	vk::Move<vk::VkFramebuffer>				m_frameBuffer;
 
 	vk::Move<vk::VkDescriptorPool>			m_descriptorPool;
+	vk::Move<vk::VkDescriptorSet>			m_descriptorSet[2];
+	vk::Move<vk::VkDescriptorSetLayout>		m_descriptorSetLayout[2];
+	vk::Move<vk::VkPipelineLayout>			m_pipelineLayout;
 
 	vk::Move<vk::VkBuffer>					m_uniformBuffer;
 	de::MovePtr<vk::Allocation>				m_uniformBufferMemory;

@@ -136,6 +136,13 @@ vk::Move<vk::VkDevice> createCustomDevice (bool validationEnabled, const vk::Pla
 
 vk::VkResult createUncheckedDevice (bool validationEnabled, const vk::InstanceInterface& vki, vk::VkPhysicalDevice physicalDevice, const vk::VkDeviceCreateInfo* pCreateInfo, const vk::VkAllocationCallbacks* pAllocator, vk::VkDevice* pDevice);
 
+class CustomInstanceWrapper
+{
+public:
+	CustomInstanceWrapper(Context& context);
+	vkt::CustomInstance instance;
+};
+
 }
 
 #endif // _VKTCUSTOMINSTANCESDEVICES_HPP

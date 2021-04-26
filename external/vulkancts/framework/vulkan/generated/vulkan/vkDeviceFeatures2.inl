@@ -20,20 +20,20 @@ VkPhysicalDeviceFragmentDensityMapFeaturesEXT		deviceFragmentDensityMapFeaturesE
 VkPhysicalDeviceFragmentDensityMap2FeaturesEXT		deviceFragmentDensityMap2FeaturesEXT[count];
 
 const bool isConditionalRenderingFeaturesEXT	= checkExtension(properties, "VK_EXT_conditional_rendering");
-const bool isScalarBlockLayoutFeatures			= checkExtension(properties, "VK_EXT_scalar_block_layout")			|| context.contextSupports(vk::ApiVersion(1, 2, 0));
+const bool isScalarBlockLayoutFeatures			= checkExtension(properties, "VK_EXT_scalar_block_layout")			|| context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
 const bool isPerformanceQueryFeaturesKHR		= checkExtension(properties, "VK_KHR_performance_query");
-const bool is16BitStorageFeatures				= checkExtension(properties, "VK_KHR_16bit_storage")				|| context.contextSupports(vk::ApiVersion(1, 1, 0));
-const bool isMultiviewFeatures					= checkExtension(properties, "VK_KHR_multiview")					|| context.contextSupports(vk::ApiVersion(1, 1, 0));
-const bool isProtectedMemoryFeatures			=																	   context.contextSupports(vk::ApiVersion(1, 1, 0));
-const bool isSamplerYcbcrConversionFeatures		= checkExtension(properties, "VK_KHR_sampler_ycbcr_conversion")		|| context.contextSupports(vk::ApiVersion(1, 1, 0));
-const bool isVariablePointersFeatures			= checkExtension(properties, "VK_KHR_variable_pointers")			|| context.contextSupports(vk::ApiVersion(1, 1, 0));
-const bool is8BitStorageFeatures				= checkExtension(properties, "VK_KHR_8bit_storage")					|| context.contextSupports(vk::ApiVersion(1, 2, 0));
-const bool isShaderAtomicInt64Features			= checkExtension(properties, "VK_KHR_shader_atomic_int64")			|| context.contextSupports(vk::ApiVersion(1, 2, 0));
-const bool isShaderFloat16Int8Features			= checkExtension(properties, "VK_KHR_shader_float16_int8")			|| context.contextSupports(vk::ApiVersion(1, 2, 0));
+const bool is16BitStorageFeatures				= checkExtension(properties, "VK_KHR_16bit_storage")				|| context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+const bool isMultiviewFeatures					= checkExtension(properties, "VK_KHR_multiview")					|| context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+const bool isProtectedMemoryFeatures			=																	   context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+const bool isSamplerYcbcrConversionFeatures		= checkExtension(properties, "VK_KHR_sampler_ycbcr_conversion")		|| context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+const bool isVariablePointersFeatures			= checkExtension(properties, "VK_KHR_variable_pointers")			|| context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+const bool is8BitStorageFeatures				= checkExtension(properties, "VK_KHR_8bit_storage")					|| context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
+const bool isShaderAtomicInt64Features			= checkExtension(properties, "VK_KHR_shader_atomic_int64")			|| context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
+const bool isShaderFloat16Int8Features			= checkExtension(properties, "VK_KHR_shader_float16_int8")			|| context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
 const bool isBufferDeviceAddressFeaturesEXT		= checkExtension(properties, "VK_EXT_buffer_device_address");
-const bool isBufferDeviceAddressFeatures		= checkExtension(properties, "VK_KHR_buffer_device_address")		|| context.contextSupports(vk::ApiVersion(1, 2, 0));
-const bool isDescriptorIndexingFeatures			= checkExtension(properties, "VK_EXT_descriptor_indexing")			|| context.contextSupports(vk::ApiVersion(1, 2, 0));
-const bool isTimelineSemaphoreFeatures			= checkExtension(properties, "VK_KHR_timeline_semaphore")			|| context.contextSupports(vk::ApiVersion(1, 2, 0));
+const bool isBufferDeviceAddressFeatures		= checkExtension(properties, "VK_KHR_buffer_device_address")		|| context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
+const bool isDescriptorIndexingFeatures			= checkExtension(properties, "VK_EXT_descriptor_indexing")			|| context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
+const bool isTimelineSemaphoreFeatures			= checkExtension(properties, "VK_KHR_timeline_semaphore")			|| context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
 const bool isFragmentDensityMapFeaturesEXT		= checkExtension(properties, "VK_EXT_fragment_density_map");
 const bool isFragmentDensityMap2FeaturesEXT		= checkExtension(properties, "VK_EXT_fragment_density_map2");
 

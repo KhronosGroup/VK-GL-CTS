@@ -176,11 +176,18 @@ tcu::TestStatus testMatchedAttachments (Context& context, const MatchedAttachmen
 
 	const VkPipelineCacheCreateInfo					pipelineCacheCreateInfo			=
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,	// VkStructureType               sType;
-		DE_NULL,										// const void*                   pNext;
-		0u,												// VkPipelineCacheCreateFlags    flags;
-		0u,												// size_t                        initialDataSize;
-		DE_NULL											// const void*                   pInitialData;
+		VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,					// VkStructureType               sType;
+		DE_NULL,														// const void*                   pNext;
+#ifndef CTS_USES_VULKANSC
+		(VkPipelineCacheCreateFlags)0u,									// VkPipelineCacheCreateFlags    flags;
+		0u,																// size_t                        initialDataSize;
+		DE_NULL															// const void*                   pInitialData;
+#else
+		VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+			VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags        flags;
+		context.getResourceInterface()->getCacheDataSize(),			// deUintptr                         initialDataSize;
+		context.getResourceInterface()->getCacheData()				// const void*                       pInitialData;
+#endif // CTS_USES_VULKANSC
 	};
 
 	const Unique<VkPipelineCache>					pipelineCache					(createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo));

@@ -106,6 +106,9 @@ public:
 	const VkPhysicalDeviceFeatures2&			getCoreFeatures2			(void) const { return m_coreFeatures2; }
 	const VkPhysicalDeviceVulkan11Features&		getVulkan11Features			(void) const { return m_vulkan11Features; }
 	const VkPhysicalDeviceVulkan12Features&		getVulkan12Features			(void) const { return m_vulkan12Features; }
+#ifdef CTS_USES_VULKANSC
+	const VkPhysicalDeviceVulkanSC10Features&	getVulkanSC10Features		(void) const { return m_vulkanSC10Features; }
+#endif // CTS_USES_VULKANSC
 
 	bool										contains					(const std::string& feature, bool throwIfNotExists = false) const;
 
@@ -121,6 +124,9 @@ private:
 	mutable std::vector<FeatureStructWrapperBase*>	m_features;
 	VkPhysicalDeviceVulkan11Features				m_vulkan11Features;
 	VkPhysicalDeviceVulkan12Features				m_vulkan12Features;
+#ifdef CTS_USES_VULKANSC
+	VkPhysicalDeviceVulkanSC10Features				m_vulkanSC10Features;
+#endif // CTS_USES_VULKANSC
 };
 
 template<class FeatureType>

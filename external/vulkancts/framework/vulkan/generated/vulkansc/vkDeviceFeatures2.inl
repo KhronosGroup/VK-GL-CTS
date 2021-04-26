@@ -15,19 +15,19 @@ VkPhysicalDeviceBufferDeviceAddressFeatures			deviceBufferDeviceAddressFeatures[
 VkPhysicalDeviceDescriptorIndexingFeatures			deviceDescriptorIndexingFeatures[count];
 VkPhysicalDeviceTimelineSemaphoreFeatures			deviceTimelineSemaphoreFeatures[count];
 
-const bool isScalarBlockLayoutFeatures			=																	   context.contextSupports(vk::ApiVersion(1, 2, 0));
+const bool isScalarBlockLayoutFeatures			=																	   context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
 const bool isPerformanceQueryFeaturesKHR		= checkExtension(properties, "VK_KHR_performance_query");
-const bool is16BitStorageFeatures				=																	   context.contextSupports(vk::ApiVersion(1, 1, 0));
-const bool isMultiviewFeatures					=																	   context.contextSupports(vk::ApiVersion(1, 1, 0));
-const bool isProtectedMemoryFeatures			=																	   context.contextSupports(vk::ApiVersion(1, 1, 0));
-const bool isSamplerYcbcrConversionFeatures		=																	   context.contextSupports(vk::ApiVersion(1, 1, 0));
-const bool isVariablePointersFeatures			=																	   context.contextSupports(vk::ApiVersion(1, 1, 0));
-const bool is8BitStorageFeatures				=																	   context.contextSupports(vk::ApiVersion(1, 2, 0));
-const bool isShaderAtomicInt64Features			=																	   context.contextSupports(vk::ApiVersion(1, 2, 0));
-const bool isShaderFloat16Int8Features			=																	   context.contextSupports(vk::ApiVersion(1, 2, 0));
-const bool isBufferDeviceAddressFeatures		=																	   context.contextSupports(vk::ApiVersion(1, 2, 0));
-const bool isDescriptorIndexingFeatures			=																	   context.contextSupports(vk::ApiVersion(1, 2, 0));
-const bool isTimelineSemaphoreFeatures			=																	   context.contextSupports(vk::ApiVersion(1, 2, 0));
+const bool is16BitStorageFeatures				=																	   context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+const bool isMultiviewFeatures					=																	   context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+const bool isProtectedMemoryFeatures			=																	   context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+const bool isSamplerYcbcrConversionFeatures		=																	   context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+const bool isVariablePointersFeatures			=																	   context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+const bool is8BitStorageFeatures				=																	   context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
+const bool isShaderAtomicInt64Features			=																	   context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
+const bool isShaderFloat16Int8Features			=																	   context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
+const bool isBufferDeviceAddressFeatures		=																	   context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
+const bool isDescriptorIndexingFeatures			=																	   context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
+const bool isTimelineSemaphoreFeatures			=																	   context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
 
 for (int ndx = 0; ndx < count; ++ndx)
 {

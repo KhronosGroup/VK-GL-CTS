@@ -108,6 +108,9 @@ DE_DECLARE_COMMAND_LINE_OPT(TerminateOnFail,			bool);
 DE_DECLARE_COMMAND_LINE_OPT(SubProcess,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(SubprocessTestCount,		int);
 DE_DECLARE_COMMAND_LINE_OPT(ServerAddress,				std::string);
+DE_DECLARE_COMMAND_LINE_OPT(CommandPoolMinSize,			int);
+DE_DECLARE_COMMAND_LINE_OPT(CommandDefaultSize,			int);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineDefaultSize,		int);
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -220,7 +223,10 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<TerminateOnFail>				(DE_NULL,	"deqp-terminate-on-fail",					"Terminate the run on first failure",				s_enableNames,		"disable")
 		<< Option<SubProcess>					(DE_NULL,	"deqp-subprocess",							"Inform app that it works as subprocess (Vulkan SC only, do not use)", s_enableNames, "disable")
 		<< Option<SubprocessTestCount>			(DE_NULL,	"deqp-subprocess-test-count",				"Define number of tests performed in subprocess (Vulkan SC only)",		"64")
-		<< Option<ServerAddress>				(DE_NULL,	"deqp-server-address",						"Server address (host:port) responsible for shader compilation (Vulkan SC only)");
+		<< Option<ServerAddress>				(DE_NULL,	"deqp-server-address",						"Server address (host:port) responsible for shader compilation (Vulkan SC only)", "")
+		<< Option<CommandPoolMinSize>			(DE_NULL,	"deqp-command-pool-min-size",				"Define minimum size of the command pool (in bytes) to use (Vulkan SC only)","0")
+		<< Option<CommandDefaultSize>			(DE_NULL,	"deqp-command-default-size",				"Define default command size (in bytes) to use (Vulkan SC only)",		"128")
+		<< Option<PipelineDefaultSize>			(DE_NULL,	"deqp-pipeline-default-size",				"Define default pipeline size (in bytes) to use (Vulkan SC only)",		"16384");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -949,6 +955,9 @@ tcu::TestRunnerType		CommandLine::getRunnerType					(void) const	{ return m_cmdL
 bool					CommandLine::isTerminateOnFailEnabled		(void) const	{ return m_cmdLine.getOption<opt::TerminateOnFail>();						}
 bool					CommandLine::isSubProcess					(void) const	{ return m_cmdLine.getOption<opt::SubProcess>();							}
 int						CommandLine::getSubprocessTestCount			(void) const	{ return m_cmdLine.getOption<opt::SubprocessTestCount>();					}
+int						CommandLine::getCommandPoolMinSize			(void) const	{ return m_cmdLine.getOption<opt::CommandPoolMinSize>();					}
+int						CommandLine::getCommandDefaultSize			(void) const	{ return m_cmdLine.getOption<opt::CommandDefaultSize>();					}
+int						CommandLine::getPipelineDefaultSize			(void) const	{ return m_cmdLine.getOption<opt::PipelineDefaultSize>();					}
 
 const char* CommandLine::getGLContextType (void) const
 {

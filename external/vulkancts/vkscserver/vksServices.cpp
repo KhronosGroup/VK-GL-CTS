@@ -52,7 +52,7 @@ struct VkscServer
 };
 
 VkscServer* createServerVKSC();
-VkscServer* vkscServer = createServerVKSC();
+std::unique_ptr<VkscServer> vkscServer;
 
 namespace vksc_server
 {
@@ -96,6 +96,9 @@ bool AppendFile (const string& path, const vector<u8>& content, bool clear)
 
 void CreateVulkanSCCache (const VulkanPipelineCacheInput& input, vector<u8>& binary, vector<VulkanPipelineSize>& outPipelineSizes, const CmdLineParams& cmdLineParams)
 {
+	if(vkscServer.get() == DE_NULL)
+		vkscServer.reset( createServerVKSC() );
+
 	binary = CreatePipelineCache(	input,
 									outPipelineSizes,
 									cmdLineParams,

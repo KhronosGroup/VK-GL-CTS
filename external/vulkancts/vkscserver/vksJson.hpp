@@ -25,6 +25,9 @@
 
 #include "vkPrograms.hpp"
 
+#include "vkDefs.hpp"
+using namespace vk;
+
 namespace Json
 {
 	class CharReader;
@@ -57,9 +60,9 @@ string	writeJSON_VkSamplerCreateInfo						(const vk::VkSamplerCreateInfo&					pC
 string	writeJSON_VkSamplerYcbcrConversionCreateInfo		(const vk::VkSamplerYcbcrConversionCreateInfo&	pCreateInfo);
 string	writeJSON_VkShaderModuleCreateInfo					(const vk::VkShaderModuleCreateInfo&			smCI);
 string	writeJSON_VkDeviceObjectReservationCreateInfo		(const vk::VkDeviceObjectReservationCreateInfo&	dmrCI);
-string	writeJSON_VkPipelineIdentifierInfo					(const vk::VkPipelineIdentifierInfo&			piInfo);
+string	writeJSON_VkPipelineOfflineCreateInfo				(const vk::VkPipelineOfflineCreateInfo&			piInfo);
 string	writeJSON_GraphicsPipeline_vkpccjson				(deUint32																				pipelineIndex,
-															 const vk::VkPipelineIdentifierInfo														id,
+															 const vk::VkPipelineOfflineCreateInfo													id,
 															 const vk::VkGraphicsPipelineCreateInfo&												gpCI,
 															 const vk::VkPhysicalDeviceFeatures2&													deviceFeatures2,
 															 const std::vector<std::string>&														deviceExtensions,
@@ -70,7 +73,7 @@ string	writeJSON_GraphicsPipeline_vkpccjson				(deUint32																				pipe
 															 const std::map<vk::VkRenderPass, vk::VkRenderPassCreateInfo2>&							renderPasses2,
 															 const std::map<vk::VkPipelineLayout, vk::VkPipelineLayoutCreateInfo>&					pipelineLayouts);
 string	writeJSON_ComputePipeline_vkpccjson					(deUint32																				pipelineIndex,
-															 const vk::VkPipelineIdentifierInfo														id,
+															 const vk::VkPipelineOfflineCreateInfo													id,
 															 const vk::VkComputePipelineCreateInfo&													cpCI,
 															 const vk::VkPhysicalDeviceFeatures2&													deviceFeatures2,
 															 const std::vector<std::string>&														deviceExtensions,
@@ -106,9 +109,9 @@ void	readJSON_VkShaderModuleCreateInfo					(Context&									context,
 void	readJSON_VkDeviceObjectReservationCreateInfo		(Context&									context,
 															 const string&								deviceMemoryReservation,
 															 vk::VkDeviceObjectReservationCreateInfo&	dmrCI);
-void	readJSON_VkPipelineIdentifierInfo					(Context&									context,
+void	readJSON_VkPipelineOfflineCreateInfo				(Context&									context,
 															 const string&								pipelineIdentifierInfo,
-															 vk::VkPipelineIdentifierInfo&				piInfo);
+															 vk::VkPipelineOfflineCreateInfo&			piInfo);
 void	readJSON_VkSamplerCreateInfo						(Context&									context,
 															 const string&								samplerCreateInfo,
 															 vk::VkSamplerCreateInfo&					sCI);

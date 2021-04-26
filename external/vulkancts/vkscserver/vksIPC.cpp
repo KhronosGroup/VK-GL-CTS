@@ -104,6 +104,7 @@ struct PacketsLoop
 struct ParentImpl
 {
 	Store				fileStore;
+	int					m_portOffset;
 	std::thread			listenerLoop;
 	std::atomic<bool>	appActive{true};
 
@@ -116,7 +117,7 @@ struct ParentImpl
 		{
 			de::SocketAddress addr;
 			addr.setHost("localhost");
-			addr.setPort(DefaultPortIPC);
+			addr.setPort(DefaultPortIPC+m_portOffset);
 			de::Socket listener;
 			listener.listen(addr);
 
@@ -130,8 +131,9 @@ struct ParentImpl
 		catch (const std::exception&) { appActive = false; }
 	}
 
-	ParentImpl ()
-		: listenerLoop{[this](){ParentLoop();}}
+	ParentImpl (const int portOffset)
+		: m_portOffset { portOffset }
+		, listenerLoop {[this](){ParentLoop();}}
 	{
 	}
 
@@ -142,10 +144,24 @@ struct ParentImpl
 		// Dummy connection to trigger accept()
 		de::SocketAddress addr;
 		addr.setHost("localhost");
-		addr.setPort(DefaultPortIPC);
+		addr.setPort(DefaultPortIPC + m_portOffset);
 		de::Socket socket;
-		socket.connect(addr);
-		socket.close();
+
+		try
+		{
+			socket.connect(addr);
+		}
+		catch (const de::SocketError&)
+		{
+		}
+
+		try
+		{
+			socket.close();
+		}
+		catch (const de::SocketError&)
+		{
+		}
 
 		listenerLoop.join();
 	}
@@ -156,9 +172,9 @@ struct ParentImpl
 	}
 };
 
-Parent::Parent ()
+Parent::Parent (const int portOffset)
 {
-	impl.reset( new ParentImpl );
+	impl.reset( new ParentImpl(portOffset) );
 }
 
 Parent::~Parent ()
@@ -181,12 +197,19 @@ vector<u8> Parent::GetFile (const string& name)
 
 struct ChildImpl
 {
-	Server connection{"localhost:"+std::to_string(DefaultPortIPC)};
+	ChildImpl(const int portOffset)
+		: m_portOffset(portOffset)
+	{
+		connection.reset(new Server{ "localhost:" + std::to_string(DefaultPortIPC + m_portOffset) });
+	}
+
+	int m_portOffset;
+	std::unique_ptr<Server> connection;
 };
 
-Child::Child ()
+Child::Child (const int portOffset)
 {
-	impl.reset( new ChildImpl );
+	impl.reset( new ChildImpl(portOffset) );
 }
 
 Child::~Child ()
@@ -199,7 +222,7 @@ bool Child::SetFile (const string& name, const std::vector<u8>& content)
 	request.name = name;
 	request.data = content;
 	StoreContentResponse response;
-	impl->connection.SendRequest(request, response);
+	impl->connection->SendRequest(request, response);
 	return response.status;
 }
 
@@ -210,7 +233,7 @@ std::vector<u8> Child::GetFile (const string& name)
 	request.physicalFile = false;
 	request.removeAfter = false;
 	GetContentResponse response;
-	impl->connection.SendRequest(request, response);
+	impl->connection->SendRequest(request, response);
 	if (response.status == true) return response.data;
 	else return {};
 }

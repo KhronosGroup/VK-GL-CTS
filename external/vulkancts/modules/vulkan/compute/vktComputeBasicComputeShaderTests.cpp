@@ -2422,16 +2422,20 @@ void ComputeTestInstance::createDeviceGroup (void)
 	std::vector<VkPipelinePoolSize>		poolSizes;
 	if (cmdLine.isSubProcess())
 	{
-		pcCI =
+		if (m_context.getResourceInterface()->getCacheDataSize() > 0)
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,			// VkStructureType				sType;
-			DE_NULL,												// const void*					pNext;
-			(VkPipelineCacheCreateFlags)0u,							// VkPipelineCacheCreateFlags	flags;
-			m_context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
-			m_context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
-		};
-		memReservationInfo.pipelineCacheCreateInfoCount		= 1;
-		memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,			// VkStructureType				sType;
+				DE_NULL,												// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				m_context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				m_context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
 
 		poolSizes							= m_context.getResourceInterface()->getPipelinePoolSizes();
 		if (!poolSizes.empty())
@@ -2461,7 +2465,7 @@ void ComputeTestInstance::createDeviceGroup (void)
 #ifndef CTS_USES_VULKANSC
 	m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_deviceGroupInstance, *m_logicalDevice));
 #else
-	m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
+	m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
 #endif // CTS_USES_VULKANSC
 }
 
@@ -3083,8 +3087,9 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 
 //	const DeviceInterface&					vk							= m_context.getDeviceInterface();
 	const deUint32							numValues					= 1024;
-	const InstanceInterface&				instance					= m_context.getInstanceInterface();
-	const VkPhysicalDevice					physicalDevice				= m_context.getPhysicalDevice();
+	const CustomInstance					instance					(createCustomInstanceFromContext(m_context));
+	const InstanceDriver&					instanceDriver				(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice				= chooseDevice(instanceDriver, instance, m_context.getTestContext().getCommandLine());
 	tcu::TestLog&							log							= m_context.getTestContext().getLog();
 	vk::Move<vk::VkDevice>					logicalDevice;
 	std::vector<VkQueueFamilyProperties>	queueFamilyProperties;
@@ -3098,7 +3103,7 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 																			{DE_NULL, (deUint32)NO_MATCH_FOUND}
 																		};
 
-	queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
+	queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
 	for (deUint32 queueNdx = 0; queueNdx < queueFamilyProperties.size(); ++queueNdx)
 	{
@@ -3150,28 +3155,32 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 	std::vector<VkPipelinePoolSize>		poolSizes;
 	if (m_context.getTestContext().getCommandLine().isSubProcess())
 	{
-		pcCI =
+		if (m_context.getResourceInterface()->getCacheDataSize() > 0)
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,			// VkStructureType				sType;
-			DE_NULL,												// const void*					pNext;
-			(VkPipelineCacheCreateFlags)0u,							// VkPipelineCacheCreateFlags	flags;
-			m_context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
-			m_context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
-		};
-		memReservationInfo.pipelineCacheCreateInfoCount		= 1;
-		memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,			// VkStructureType				sType;
+				DE_NULL,												// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				m_context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				m_context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
 
 		poolSizes							= m_context.getResourceInterface()->getPipelinePoolSizes();
 		if (!poolSizes.empty())
 		{
-			memReservationInfo.pipelinePoolSizeCount		= deUint32(poolSizes.size());
-			memReservationInfo.pPipelinePoolSizes			= poolSizes.data();
+			memReservationInfo.pipelinePoolSizeCount			= deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes				= poolSizes.data();
 		}
 	}
 #endif // CTS_USES_VULKANSC
 
 	deMemset(&deviceInfo, 0, sizeof(deviceInfo));
-	instance.getPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
+	instanceDriver.getPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
 
 	deviceInfo.sType					= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceInfo.pNext					= pNext;
@@ -3183,12 +3192,12 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 	deviceInfo.queueCreateInfoCount		= (queues[0].queueFamilyIndex == queues[1].queueFamilyIndex) ? 1 : 2;
 	deviceInfo.pQueueCreateInfos		= queueInfos;
 
-	logicalDevice = createCustomDevice	(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_context.getInstance(), instance, physicalDevice, &deviceInfo);
+	logicalDevice = createCustomDevice	(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
 
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *logicalDevice));
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance, *logicalDevice));
 #else
-	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), *logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *logicalDevice));
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), instance, *logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *logicalDevice));
 #endif // CTS_USES_VULKANSC
 	vk::DeviceInterface& vk = *deviceDriver;
 
@@ -3201,7 +3210,7 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 	}
 
 	// Create an input/output buffers
-	const VkPhysicalDeviceMemoryProperties memoryProperties	= vk::getPhysicalDeviceMemoryProperties(instance, physicalDevice);
+	const VkPhysicalDeviceMemoryProperties memoryProperties	= vk::getPhysicalDeviceMemoryProperties(instanceDriver, physicalDevice);
 
 	SimpleAllocator *allocator								= new SimpleAllocator(vk, *logicalDevice, memoryProperties);
 	const VkDeviceSize bufferSizeBytes						= sizeof(deUint32) * numValues;

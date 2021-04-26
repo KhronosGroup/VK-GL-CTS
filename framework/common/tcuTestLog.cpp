@@ -574,9 +574,14 @@ bool TestLog::isShaderLoggingEnabled (void)
 	return (qpTestLog_getLogFlags(m_log) & QP_TEST_LOG_EXCLUDE_SHADER_SOURCES) == 0;
 }
 
-void TestLog::supressLogging(bool value)
+void TestLog::supressLogging (bool value)
 {
 	m_logSupressed = value;
+}
+
+bool TestLog::isSupressLogging (void)
+{
+	return m_logSupressed;
 }
 
 const TestLog::BeginMessageToken		TestLog::Message			= TestLog::BeginMessageToken();

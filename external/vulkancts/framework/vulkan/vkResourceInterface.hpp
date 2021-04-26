@@ -33,6 +33,7 @@
 #include <map>
 #ifdef CTS_USES_VULKANSC
 	#include "vksClient.hpp"
+	#include "tcuMaybe.hpp"
 //	#include "vksStructsVKSC.hpp"
 #endif // CTS_USES_VULKANSC
 
@@ -42,15 +43,15 @@ namespace vk
 class ResourceInterface
 {
 public:
-																ResourceInterface			(tcu::TestContext&					testCtx);
+																ResourceInterface			(tcu::TestContext&						testCtx);
 	virtual														~ResourceInterface			();
 
-	virtual void												initDevice					(DeviceInterface&					deviceInterface,
-																							 VkDevice							device) = 0;
+	virtual void												initDevice					(DeviceInterface&						deviceInterface,
+																							 VkDevice								device) = 0;
 	// use deinitDevice when your DeviceDriverSC is created and removed inside TestInstance
-	virtual void												deinitDevice				(VkDevice							device) = 0;
+	virtual void												deinitDevice				(VkDevice								device) = 0;
 
-	virtual void												initTestCase				(const std::string&					casePath);
+	virtual void												initTestCase				(const std::string&						casePath);
 
 	// buildProgram
 	template <typename InfoType, typename IteratorType>
@@ -60,11 +61,16 @@ public:
 																							 vk::BinaryCollection*					progCollection);
 
 #ifdef CTS_USES_VULKANSC
+	void														initApiVersion				(const deUint32							version);
+	bool														isVulkanSC					(void) const;
+
 	deUint64													incResourceCounter			();
 	std::mutex&													getStatMutex				();
 	VkDeviceObjectReservationCreateInfo&						getStatCurrent				();
 	VkDeviceObjectReservationCreateInfo&						getStatMax					();
 	const VkDeviceObjectReservationCreateInfo&					getStatMax					() const;
+	void														setHandleDestroy			(bool									value);
+	bool														isEnabledHandleDestroy		() const;
 
 	virtual void												registerDeviceFeatures		(VkDevice								device,
 																							 const VkDeviceCreateInfo*				pCreateInfo) const = 0;
@@ -88,6 +94,9 @@ public:
 																							 const VkAllocationCallbacks*			pAllocator,
 																							 VkPipeline*							pPipelines,
 																							 bool									normalMode) const = 0;
+	virtual void												destroyPipeline				(VkDevice								device,
+																							 VkPipeline								pipeline,
+																							 const VkAllocationCallbacks*			pAllocator) const = 0;
 	virtual void												createRenderPass			(VkDevice								device,
 																							 const VkRenderPassCreateInfo*			pCreateInfo,
 																							 const VkAllocationCallbacks*			pAllocator,
@@ -120,23 +129,31 @@ public:
 																							 const VkCommandBufferAllocateInfo*		pAllocateInfo,
 																							 VkCommandBuffer*						pCommandBuffers) const = 0;
 	virtual void												increaseCommandBufferSize	(VkCommandBuffer						commandBuffer,
-																							 const char*							functionName) const = 0;
+																							 VkDeviceSize							commandSize) const = 0;
+	virtual void												resetCommandPool			(VkDevice								device,
+																							 VkCommandPool							commandPool,
+																							 VkCommandPoolResetFlags				flags) const = 0;
+
 	void														removeRedundantObjects		();
 	void														finalizeCommandBuffers		();
 	std::vector<deUint8>										exportData					() const;
-	void														importData					(std::vector<deUint8>& importText) const;
+	void														importData					(std::vector<deUint8>&					importText) const;
 	virtual void												importPipelineCacheData		(const PlatformInterface&				vkp,
 																							 VkInstance								instance,
 																							 const InstanceInterface&				vki,
 																							 VkPhysicalDevice						physicalDevice,
 																							 deUint32								queueIndex) = 0;
-	void														registerObjectHash			(deUint64 handle, std::size_t hashValue) const;
+	void														registerObjectHash			(deUint64								handle,
+																							 std::size_t							hashValue) const;
 	const std::map<deUint64, std::size_t>&						getObjectHashes				() const;
 
+	void														preparePipelinePoolSizes	();
 	std::vector<VkPipelinePoolSize>								getPipelinePoolSizes		() const;
+	void														fillPoolEntrySize			(vk::VkPipelineOfflineCreateInfo&		pipelineIdentifier) const;
 	vksc_server::VulkanCommandMemoryConsumption					getNextCommandPoolSize		();
 	std::size_t													getCacheDataSize			() const;
 	const deUint8*												getCacheData				() const;
+	VkPipelineCache												getPipelineCache			(VkDevice								device) const;
 	virtual void												resetObjects				() = 0;
 	virtual void												resetPipelineCaches			() = 0;
 #endif // CTS_USES_VULKANSC
@@ -177,7 +194,12 @@ protected:
 	mutable VkDeviceObjectReservationCreateInfo						m_statMax;
 
 	std::vector<deUint8>											m_cacheData;
+	mutable std::map<VkPipeline, VkPipelineOfflineCreateInfo>		m_pipelineIdentifiers;
 	mutable std::vector<vksc_server::VulkanPipelineSize>			m_pipelineSizes;
+	std::vector<VkPipelinePoolSize>									m_pipelinePoolSizes;
+	tcu::Maybe<deUint32>											m_version;
+	tcu::Maybe<bool>												m_vulkanSC;
+	bool															m_enabledHandleDestroy;
 #endif // CTS_USES_VULKANSC
 };
 
@@ -202,7 +224,7 @@ typedef VKAPI_ATTR void		(VKAPI_CALL* DestroyPipelineCacheFunc)				(VkDevice dev
 typedef VKAPI_ATTR VkResult	(VKAPI_CALL* GetPipelineCacheDataFunc)				(VkDevice device, VkPipelineCache pipelineCache, deUintptr* pDataSize, void* pData);
 #ifdef CTS_USES_VULKANSC
 typedef VKAPI_ATTR void		(VKAPI_CALL* GetCommandPoolMemoryConsumptionFunc)	(VkDevice device, VkCommandPool commandPool, VkCommandBuffer commandBuffer, VkCommandPoolMemoryConsumption* pConsumption);
-#endif
+#endif // CTS_USES_VULKANSC
 
 class ResourceInterfaceStandard : public ResourceInterface
 {
@@ -236,6 +258,9 @@ public:
 															 const VkAllocationCallbacks*			pAllocator,
 															 VkPipeline*							pPipelines,
 															 bool									normalMode) const override;
+	void						destroyPipeline				(VkDevice								device,
+															 VkPipeline								pipeline,
+															 const VkAllocationCallbacks*			pAllocator) const override;
 	void						createRenderPass			(VkDevice								device,
 															 const VkRenderPassCreateInfo*			pCreateInfo,
 															 const VkAllocationCallbacks*			pAllocator,
@@ -268,7 +293,10 @@ public:
 															 const VkCommandBufferAllocateInfo*		pAllocateInfo,
 															 VkCommandBuffer*						pCommandBuffers) const override;
 	void						increaseCommandBufferSize	(VkCommandBuffer						commandBuffer,
-															const char*							functionName) const override;
+															 VkDeviceSize							commandSize) const override;
+	void						resetCommandPool			(VkDevice								device,
+															 VkCommandPool							commandPool,
+															 VkCommandPoolResetFlags				flags) const override;
 	void						importPipelineCacheData		(const PlatformInterface&				vkp,
 															 VkInstance								instance,
 															 const InstanceInterface&				vki,
@@ -337,7 +365,17 @@ private:
 	std::string								m_address;
 	std::shared_ptr<vksc_server::Server>	m_server;
 };
-#endif
+
+class MultithreadedDestroyGuard
+{
+public:
+	MultithreadedDestroyGuard	(de::SharedPtr<vk::ResourceInterface> resourceInterface);
+	~MultithreadedDestroyGuard	();
+private:
+	de::SharedPtr<vk::ResourceInterface> m_resourceInterface;
+};
+
+#endif // CTS_USES_VULKANSC
 
 template <typename InfoType, typename IteratorType>
 vk::ProgramBinary* ResourceInterface::buildProgram			(const std::string&					casePath,

@@ -22,7 +22,7 @@ extern "C" {
 #define VK_VERSION_1_0 1
 #include "vk_platform.h"
 
-#define VK_DEFINE_HANDLE(object) typedef struct object##_T* object;
+#define VK_DEFINE_HANDLE(object) typedef struct object##_T* (object);
 
 
 #ifndef VK_USE_64_BIT_PTR_DEFINES
@@ -52,9 +52,9 @@ extern "C" {
 
 #ifndef VK_DEFINE_NON_DISPATCHABLE_HANDLE
     #if (VK_USE_64_BIT_PTR_DEFINES==1)
-        #define VK_DEFINE_NON_DISPATCHABLE_HANDLE(object) typedef struct object##_T *object;
+        #define VK_DEFINE_NON_DISPATCHABLE_HANDLE(object) typedef struct object##_T *(object);
     #else
-        #define VK_DEFINE_NON_DISPATCHABLE_HANDLE(object) typedef uint64_t object;
+        #define VK_DEFINE_NON_DISPATCHABLE_HANDLE(object) typedef uint64_t (object);
     #endif
 #endif
 
@@ -65,7 +65,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 2
+#define VK_HEADER_VERSION 6
 
 // Vulkan SC variant number
 #define VKSC_API_VARIANT 1
@@ -107,6 +107,7 @@ VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDescriptorSet)
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDescriptorPool)
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkFramebuffer)
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkCommandPool)
+#define VK_UUID_SIZE                      16U
 #define VK_ATTACHMENT_UNUSED              (~0U)
 #define VK_FALSE                          0U
 #define VK_LOD_CLAMP_NONE                 1000.0F
@@ -119,7 +120,6 @@ VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkCommandPool)
 #define VK_MAX_MEMORY_TYPES               32U
 #define VK_MAX_MEMORY_HEAPS               16U
 #define VK_MAX_PHYSICAL_DEVICE_NAME_SIZE  256U
-#define VK_UUID_SIZE                      16U
 #define VK_MAX_EXTENSION_NAME_SIZE        256U
 #define VK_MAX_DESCRIPTION_SIZE           256U
 
@@ -324,10 +324,9 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_RESERVATION_CREATE_INFO = 1000298003,
     VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_CONSUMPTION = 1000298004,
     VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE = 1000298005,
-    VK_STRUCTURE_TYPE_PIPELINE_POOL_ENTRY_SIZE_CREATE_INFO = 1000298006,
     VK_STRUCTURE_TYPE_FAULT_DATA = 1000298007,
     VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO = 1000298008,
-    VK_STRUCTURE_TYPE_PIPELINE_IDENTIFIER_INFO = 1000298009,
+    VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO = 1000298010,
     VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR = 1000001000,
     VK_STRUCTURE_TYPE_PRESENT_INFO_KHR = 1000001001,
     VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_CAPABILITIES_KHR = 1000060007,
@@ -469,9 +468,6 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT = 1000377000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT = 1000381000,
     VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT = 1000381001,
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
-    VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES2_EXT = VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_EXT,
     VK_STRUCTURE_TYPE_MAX_ENUM = 0x7FFFFFFF
 } VkStructureType;
 
@@ -493,10 +489,9 @@ typedef enum VkImageLayout {
     VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL = 1000241003,
     VK_IMAGE_LAYOUT_PRESENT_SRC_KHR = 1000001002,
     VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR = 1000111000,
-    VK_IMAGE_LAYOUT_SHADING_RATE_OPTIMAL_NV = 1000164003,
+    VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR = 1000164003,
     VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL_KHR = 1000314000,
     VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR = 1000314001,
-    VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR = VK_IMAGE_LAYOUT_SHADING_RATE_OPTIMAL_NV,
     VK_IMAGE_LAYOUT_MAX_ENUM = 0x7FFFFFFF
 } VkImageLayout;
 
@@ -536,6 +531,12 @@ typedef enum VkObjectType {
     VK_OBJECT_TYPE_MAX_ENUM = 0x7FFFFFFF
 } VkObjectType;
 
+typedef enum VkPipelineCacheHeaderVersion {
+    VK_PIPELINE_CACHE_HEADER_VERSION_ONE = 1,
+    VK_PIPELINE_CACHE_HEADER_VERSION_SAFETY_CRITICAL_ONE = 1000298001,
+    VK_PIPELINE_CACHE_HEADER_VERSION_MAX_ENUM = 0x7FFFFFFF
+} VkPipelineCacheHeaderVersion;
+
 typedef enum VkVendorId {
     VK_VENDOR_ID_VIV = 0x10001,
     VK_VENDOR_ID_VSI = 0x10002,
@@ -545,11 +546,6 @@ typedef enum VkVendorId {
     VK_VENDOR_ID_POCL = 0x10006,
     VK_VENDOR_ID_MAX_ENUM = 0x7FFFFFFF
 } VkVendorId;
-
-typedef enum VkPipelineCacheHeaderVersion {
-    VK_PIPELINE_CACHE_HEADER_VERSION_ONE = 1,
-    VK_PIPELINE_CACHE_HEADER_VERSION_MAX_ENUM = 0x7FFFFFFF
-} VkPipelineCacheHeaderVersion;
 
 typedef enum VkSystemAllocationScope {
     VK_SYSTEM_ALLOCATION_SCOPE_COMMAND = 0,
@@ -1166,9 +1162,8 @@ typedef enum VkAccessFlagBits {
     VK_ACCESS_MEMORY_READ_BIT = 0x00008000,
     VK_ACCESS_MEMORY_WRITE_BIT = 0x00010000,
     VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT = 0x00080000,
-    VK_ACCESS_SHADING_RATE_IMAGE_READ_BIT_NV = 0x00800000,
+    VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR = 0x00800000,
     VK_ACCESS_NONE_KHR = 0,
-    VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR = VK_ACCESS_SHADING_RATE_IMAGE_READ_BIT_NV,
     VK_ACCESS_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkAccessFlagBits;
 typedef VkFlags VkAccessFlags;
@@ -1259,8 +1254,7 @@ typedef enum VkImageUsageFlagBits {
     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT = 0x00000020,
     VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT = 0x00000040,
     VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT = 0x00000080,
-    VK_IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV = 0x00000100,
-    VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR = VK_IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV,
+    VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR = 0x00000100,
     VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkImageUsageFlagBits;
 typedef VkFlags VkImageUsageFlags;
@@ -1320,9 +1314,8 @@ typedef enum VkPipelineStageFlagBits {
     VK_PIPELINE_STAGE_HOST_BIT = 0x00004000,
     VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT = 0x00008000,
     VK_PIPELINE_STAGE_ALL_COMMANDS_BIT = 0x00010000,
-    VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV = 0x00400000,
+    VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR = 0x00400000,
     VK_PIPELINE_STAGE_NONE_KHR = 0,
-    VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR = VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV,
     VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkPipelineStageFlagBits;
 typedef VkFlags VkPipelineStageFlags;
@@ -1552,7 +1545,6 @@ typedef enum VkStencilFaceFlagBits {
     VK_STENCIL_FACE_FRONT_BIT = 0x00000001,
     VK_STENCIL_FACE_BACK_BIT = 0x00000002,
     VK_STENCIL_FACE_FRONT_AND_BACK = 0x00000003,
-    VK_STENCIL_FRONT_AND_BACK = VK_STENCIL_FACE_FRONT_AND_BACK,
     VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkStencilFaceFlagBits;
 typedef VkFlags VkStencilFaceFlags;
@@ -1653,6 +1645,14 @@ typedef struct VkMemoryBarrier {
     VkAccessFlags      srcAccessMask;
     VkAccessFlags      dstAccessMask;
 } VkMemoryBarrier;
+
+typedef struct VkPipelineCacheHeaderVersionOne {
+    uint32_t                        headerSize;
+    VkPipelineCacheHeaderVersion    headerVersion;
+    uint32_t                        vendorID;
+    uint32_t                        deviceID;
+    uint8_t                         pipelineCacheUUID[VK_UUID_SIZE];
+} VkPipelineCacheHeaderVersionOne;
 
 typedef void* (VKAPI_PTR *PFN_vkAllocationFunction)(
     void*                                       pUserData,
@@ -4192,6 +4192,8 @@ typedef enum VkDriverId {
     VK_DRIVER_ID_MESA_LLVMPIPE = 13,
     VK_DRIVER_ID_MOLTENVK = 14,
     VK_DRIVER_ID_COREAVI_PROPRIETARY = 15,
+    VK_DRIVER_ID_JUICE_PROPRIETARY = 16,
+    VK_DRIVER_ID_VERISILICON_PROPRIETARY = 17,
     VK_DRIVER_ID_MAX_ENUM = 0x7FFFFFFF
 } VkDriverId;
 
@@ -4916,10 +4918,14 @@ typedef enum VkPipelineMatchControl {
     VK_PIPELINE_MATCH_CONTROL_APPLICATION_UUID_EXACT_MATCH = 0,
     VK_PIPELINE_MATCH_CONTROL_MAX_ENUM = 0x7FFFFFFF
 } VkPipelineMatchControl;
+
+typedef enum VkPipelineCacheValidationVersion {
+    VK_PIPELINE_CACHE_VALIDATION_VERSION_SAFETY_CRITICAL_ONE = 1,
+    VK_PIPELINE_CACHE_VALIDATION_VERSION_MAX_ENUM = 0x7FFFFFFF
+} VkPipelineCacheValidationVersion;
 typedef struct VkPhysicalDeviceVulkanSC10Features {
     VkStructureType    sType;
     void*              pNext;
-    VkBool32           pipelineIdentifier;
     VkBool32           shaderAtomicInstructions;
 } VkPhysicalDeviceVulkanSC10Features;
 
@@ -4931,7 +4937,7 @@ typedef struct VkPhysicalDeviceVulkanSC10Properties {
     VkBool32           commandPoolMultipleCommandBuffersRecording;
     VkBool32           commandPoolResetCommandBuffer;
     VkBool32           commandBufferSimultaneousUse;
-    VkBool32           secondaryCommandBufferNullFramebuffer;
+    VkBool32           secondaryCommandBufferNullOrImagelessFramebuffer;
     VkBool32           recycleDescriptorSetMemory;
     VkBool32           recyclePipelineMemory;
     uint32_t           maxRenderPassSubpasses;
@@ -5012,12 +5018,6 @@ typedef struct VkCommandPoolMemoryConsumption {
     VkDeviceSize       commandBufferAllocated;
 } VkCommandPoolMemoryConsumption;
 
-typedef struct VkPipelinePoolEntrySizeCreateInfo {
-    VkStructureType    sType;
-    const void*        pNext;
-    VkDeviceSize       poolEntrySize;
-} VkPipelinePoolEntrySizeCreateInfo;
-
 typedef struct VkFaultData {
     VkStructureType    sType;
     void*              pNext;
@@ -5033,16 +5033,42 @@ typedef void (VKAPI_PTR *PFN_vkFaultCallbackFunction)(
 typedef struct VkFaultCallbackInfo {
     VkStructureType                sType;
     void*                          pNext;
+    uint32_t                       faultCount;
     VkFaultData*                   pFaults;
     PFN_vkFaultCallbackFunction    pfnFaultCallback;
 } VkFaultCallbackInfo;
 
-typedef struct VkPipelineIdentifierInfo {
+typedef struct VkPipelineOfflineCreateInfo {
     VkStructureType           sType;
     const void*               pNext;
     uint8_t                   pipelineIdentifier[VK_UUID_SIZE];
     VkPipelineMatchControl    matchControl;
-} VkPipelineIdentifierInfo;
+    VkDeviceSize              poolEntrySize;
+} VkPipelineOfflineCreateInfo;
+
+typedef struct VkPipelineCacheStageValidationIndexEntry {
+    uint64_t    codeSize;
+    uint64_t    codeOffset;
+} VkPipelineCacheStageValidationIndexEntry;
+
+typedef struct VkPipelineCacheSafetyCriticalIndexEntry {
+    uint8_t     pipelineIdentifier[VK_UUID_SIZE];
+    uint64_t    pipelineMemorySize;
+    uint64_t    jsonSize;
+    uint64_t    jsonOffset;
+    uint32_t    stageIndexCount;
+    uint32_t    stageIndexStride;
+    uint64_t    stageIndexOffset;
+} VkPipelineCacheSafetyCriticalIndexEntry;
+
+typedef struct VkPipelineCacheHeaderVersionSafetyCriticalOne {
+    VkPipelineCacheHeaderVersionOne     headerVersionOne;
+    VkPipelineCacheValidationVersion    validationVersion;
+    uint32_t                            implementationData;
+    uint32_t                            pipelineIndexCount;
+    uint32_t                            pipelineIndexStride;
+    uint64_t                            pipelineIndexOffset;
+} VkPipelineCacheHeaderVersionSafetyCriticalOne;
 
 typedef void (VKAPI_PTR *PFN_vkGetCommandPoolMemoryConsumption)(VkDevice device, VkCommandPool commandPool, VkCommandBuffer commandBuffer, VkCommandPoolMemoryConsumption* pConsumption);
 typedef VkResult (VKAPI_PTR *PFN_vkGetFaultData)(VkDevice device, VkFaultQueryBehavior faultQueryBehavior, VkBool32* pUnrecordedFaults, uint32_t* pFaultCount, VkFaultData* pFaults);
@@ -5094,8 +5120,6 @@ typedef enum VkColorSpaceKHR {
     VK_COLOR_SPACE_ADOBERGB_NONLINEAR_EXT = 1000104012,
     VK_COLOR_SPACE_PASS_THROUGH_EXT = 1000104013,
     VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT = 1000104014,
-    VK_COLORSPACE_SRGB_NONLINEAR_KHR = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
-    VK_COLOR_SPACE_DCI_P3_LINEAR_EXT = VK_COLOR_SPACE_DISPLAY_P3_LINEAR_EXT,
     VK_COLOR_SPACE_MAX_ENUM_KHR = 0x7FFFFFFF
 } VkColorSpaceKHR;
 
@@ -5254,7 +5278,7 @@ typedef struct VkAcquireNextImageInfoKHR {
 
 typedef struct VkDeviceGroupPresentCapabilitiesKHR {
     VkStructureType                     sType;
-    const void*                         pNext;
+    void*                               pNext;
     uint32_t                            presentMask[VK_MAX_DEVICE_GROUP_SIZE];
     VkDeviceGroupPresentModeFlagsKHR    modes;
 } VkDeviceGroupPresentCapabilitiesKHR;
@@ -5693,7 +5717,7 @@ typedef struct VkPhysicalDevicePerformanceQueryPropertiesKHR {
 
 typedef struct VkPerformanceCounterKHR {
     VkStructureType                   sType;
-    const void*                       pNext;
+    void*                             pNext;
     VkPerformanceCounterUnitKHR       unit;
     VkPerformanceCounterScopeKHR      scope;
     VkPerformanceCounterStorageKHR    storage;
@@ -5702,7 +5726,7 @@ typedef struct VkPerformanceCounterKHR {
 
 typedef struct VkPerformanceCounterDescriptionKHR {
     VkStructureType                            sType;
-    const void*                                pNext;
+    void*                                      pNext;
     VkPerformanceCounterDescriptionFlagsKHR    flags;
     char                                       name[VK_MAX_DESCRIPTION_SIZE];
     char                                       category[VK_MAX_DESCRIPTION_SIZE];
@@ -6038,7 +6062,7 @@ static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR = 0x00000400ULL;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR = 0x00000800ULL;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT_KHR = 0x00001000ULL;
-static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR = 0x00001000;
+static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR = 0x00001000ULL;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR = 0x00002000ULL;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_HOST_BIT_KHR = 0x00004000ULL;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT_KHR = 0x00008000ULL;
@@ -6054,11 +6078,11 @@ static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_CONDITIONAL_RENDERING_BIT_EXT = 0x00040000ULL;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_COMMAND_PREPROCESS_BIT_NV = 0x00020000ULL;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR = 0x00400000ULL;
-static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_SHADING_RATE_IMAGE_BIT_NV = 0x00400000;
+static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_SHADING_RATE_IMAGE_BIT_NV = 0x00400000ULL;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR = 0x02000000ULL;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR = 0x00200000ULL;
-static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_NV = 0x00200000;
-static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_NV = 0x02000000;
+static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_NV = 0x00200000ULL;
+static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_NV = 0x02000000ULL;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_FRAGMENT_DENSITY_PROCESS_BIT_EXT = 0x00800000ULL;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_NV = 0x00080000ULL;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_NV = 0x00100000ULL;
@@ -6095,11 +6119,11 @@ static const VkAccessFlagBits2KHR VK_ACCESS_2_CONDITIONAL_RENDERING_READ_BIT_EXT
 static const VkAccessFlagBits2KHR VK_ACCESS_2_COMMAND_PREPROCESS_READ_BIT_NV = 0x00020000ULL;
 static const VkAccessFlagBits2KHR VK_ACCESS_2_COMMAND_PREPROCESS_WRITE_BIT_NV = 0x00040000ULL;
 static const VkAccessFlagBits2KHR VK_ACCESS_2_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR = 0x00800000ULL;
-static const VkAccessFlagBits2KHR VK_ACCESS_2_SHADING_RATE_IMAGE_READ_BIT_NV = 0x00800000;
+static const VkAccessFlagBits2KHR VK_ACCESS_2_SHADING_RATE_IMAGE_READ_BIT_NV = 0x00800000ULL;
 static const VkAccessFlagBits2KHR VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR = 0x00200000ULL;
 static const VkAccessFlagBits2KHR VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR = 0x00400000ULL;
-static const VkAccessFlagBits2KHR VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_NV = 0x00200000;
-static const VkAccessFlagBits2KHR VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_NV = 0x00400000;
+static const VkAccessFlagBits2KHR VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_NV = 0x00200000ULL;
+static const VkAccessFlagBits2KHR VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_NV = 0x00400000ULL;
 static const VkAccessFlagBits2KHR VK_ACCESS_2_FRAGMENT_DENSITY_MAP_READ_BIT_EXT = 0x01000000ULL;
 static const VkAccessFlagBits2KHR VK_ACCESS_2_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT = 0x00080000ULL;
 
@@ -7224,7 +7248,7 @@ typedef struct VkPhysicalDeviceMemoryBudgetPropertiesEXT {
 
 
 #define VK_EXT_validation_features 1
-#define VK_EXT_VALIDATION_FEATURES_SPEC_VERSION 4
+#define VK_EXT_VALIDATION_FEATURES_SPEC_VERSION 5
 #define VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME "VK_EXT_validation_features"
 
 typedef enum VkValidationFeatureEnableEXT {
@@ -7244,6 +7268,7 @@ typedef enum VkValidationFeatureDisableEXT {
     VK_VALIDATION_FEATURE_DISABLE_OBJECT_LIFETIMES_EXT = 4,
     VK_VALIDATION_FEATURE_DISABLE_CORE_CHECKS_EXT = 5,
     VK_VALIDATION_FEATURE_DISABLE_UNIQUE_HANDLES_EXT = 6,
+    VK_VALIDATION_FEATURE_DISABLE_SHADER_VALIDATION_CACHE_EXT = 7,
     VK_VALIDATION_FEATURE_DISABLE_MAX_ENUM_EXT = 0x7FFFFFFF
 } VkValidationFeatureDisableEXT;
 typedef struct VkValidationFeaturesEXT {

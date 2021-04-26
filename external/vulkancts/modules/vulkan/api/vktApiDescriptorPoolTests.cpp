@@ -64,6 +64,17 @@ struct ResetDescriptorPoolTestParams
 	bool		m_freeDescriptorSets;
 };
 
+void checkSupportFreeDescriptorSets (Context& context, const ResetDescriptorPoolTestParams params)
+{
+#ifdef CTS_USES_VULKANSC
+	if(params.m_freeDescriptorSets && context.getDeviceVulkanSC10Properties().recycleDescriptorSetMemory == VK_FALSE )
+		TCU_THROW(NotSupportedError, "vkFreeDescriptorSets not supported");
+#else
+	DE_UNREF(context);
+	DE_UNREF(params);
+#endif // CTS_USES_VULKANSC
+}
+
 tcu::TestStatus resetDescriptorPoolTest (Context& context, const ResetDescriptorPoolTestParams params)
 {
 	const deUint32				numDescriptorSetsPerIter = 2048;
@@ -289,18 +300,22 @@ tcu::TestCaseGroup* createDescriptorPoolTests (tcu::TestContext& testCtx)
 	addFunctionCase(descriptorPoolTests.get(),
 					"repeated_reset_short",
 					"Test 2 cycles of vkAllocateDescriptorSets and vkResetDescriptorPool (should pass)",
+					checkSupportFreeDescriptorSets,
 					resetDescriptorPoolTest, ResetDescriptorPoolTestParams(2U));
 	addFunctionCase(descriptorPoolTests.get(),
 					"repeated_reset_long",
 					"Test many cycles of vkAllocateDescriptorSets and vkResetDescriptorPool",
+					checkSupportFreeDescriptorSets,
 					resetDescriptorPoolTest, ResetDescriptorPoolTestParams(numIterationsHigh));
 	addFunctionCase(descriptorPoolTests.get(),
 					"repeated_free_reset_short",
 					"Test 2 cycles of vkAllocateDescriptorSets, vkFreeDescriptorSets and vkResetDescriptorPool (should pass)",
+					checkSupportFreeDescriptorSets,
 					resetDescriptorPoolTest, ResetDescriptorPoolTestParams(2U, true));
 	addFunctionCase(descriptorPoolTests.get(),
 					"repeated_free_reset_long",
 					"Test many cycles of vkAllocateDescriptorSets, vkFreeDescriptorSets and vkResetDescriptorPool",
+					checkSupportFreeDescriptorSets,
 					resetDescriptorPoolTest, ResetDescriptorPoolTestParams(numIterationsHigh, true));
 	addFunctionCase(descriptorPoolTests.get(),
 					"out_of_pool_memory",

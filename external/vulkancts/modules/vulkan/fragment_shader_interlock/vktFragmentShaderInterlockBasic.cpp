@@ -41,6 +41,7 @@
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
@@ -88,6 +89,7 @@ typedef enum
 	INT_SHADING_RATE_UNORDERED,
 } Interlock;
 
+std::shared_ptr<CustomInstanceWrapper> g_instanceWrapper;
 de::SharedPtr<Move<vk::VkDevice>>	g_singletonDevice;
 
 VkDevice getDevice(Context& context, Interlock interlock)
@@ -97,6 +99,8 @@ VkDevice getDevice(Context& context, Interlock interlock)
 	{
 		if (!g_singletonDevice)
 		{
+			g_instanceWrapper.reset(new CustomInstanceWrapper(context));
+
 			const float queuePriority = 1.0f;
 
 			// Create a universal queue that supports graphics and compute
@@ -120,7 +124,8 @@ VkDevice getDevice(Context& context, Interlock interlock)
 			VkPhysicalDeviceShadingRateImageFeaturesNV			shadingRateImageFeatures		= initVulkanStructure(&fragmentShaderInterlockFeatures);
 			VkPhysicalDeviceFeatures2							features2						= initVulkanStructure(&shadingRateImageFeatures);
 
-			context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+			const VkPhysicalDevice								physicalDevice					= chooseDevice(g_instanceWrapper->instance.getDriver(), g_instanceWrapper->instance, context.getTestContext().getCommandLine());
+			g_instanceWrapper->instance.getDriver().getPhysicalDeviceFeatures2(physicalDevice, &features2);
 
 			const VkDeviceCreateInfo					deviceCreateInfo =
 			{
@@ -136,8 +141,8 @@ VkDevice getDevice(Context& context, Interlock interlock)
 				DE_NULL,														//pEnabledFeatures;
 			};
 
-			Move<VkDevice> device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceCreateInfo);
-			g_singletonDevice = de::SharedPtr<Move<VkDevice>>(new Move<VkDevice>(device));
+			Move<VkDevice>			device			= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), g_instanceWrapper->instance, g_instanceWrapper->instance.getDriver(), physicalDevice, &deviceCreateInfo);
+			g_singletonDevice						= de::SharedPtr<Move<VkDevice>>(new Move<VkDevice>(device));
 		}
 
 		return g_singletonDevice->get();
@@ -240,7 +245,8 @@ void FSITestCase::checkSupport(Context& context) const
 		VkPhysicalDeviceShadingRateImageFeaturesNV	shadingRateImageFeatures	= initVulkanStructure();
 		VkPhysicalDeviceFeatures2					features2					= initVulkanStructure(&shadingRateImageFeatures);
 
-		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+		const VkPhysicalDevice						physicalDevice				= chooseDevice(g_instanceWrapper->instance.getDriver(), g_instanceWrapper->instance, context.getTestContext().getCommandLine());
+		g_instanceWrapper->instance.getDriver().getPhysicalDeviceFeatures2(physicalDevice, &features2);
 
 		if (!shadingRateImageFeatures.shadingRateImage)
 			TCU_THROW(NotSupportedError, "Shading rate image not supported");
@@ -400,7 +406,8 @@ tcu::TestStatus FSITestInstance::iterate (void)
 	deMemset(&properties, 0, sizeof(properties));
 	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 
-	m_context.getInstanceInterface().getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &properties);
+	const VkPhysicalDevice	physicalDevice			= chooseDevice(g_instanceWrapper->instance.getDriver(), g_instanceWrapper->instance, m_context.getTestContext().getCommandLine());
+	g_instanceWrapper->instance.getDriver().getPhysicalDeviceProperties2(physicalDevice, &properties);
 
 	VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 

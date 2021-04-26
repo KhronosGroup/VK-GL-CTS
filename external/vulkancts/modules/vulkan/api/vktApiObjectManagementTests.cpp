@@ -108,7 +108,6 @@ class ThreadGroupThread;
  * threads.
  *//*--------------------------------------------------------------------*/
 
-#ifndef CTS_USES_VULKANSC
 class ThreadGroup
 {
 public:
@@ -235,7 +234,6 @@ deUint32 getDefaultTestThreadCount (void)
 {
 	return de::clamp(deGetNumAvailableLogicalCores(), 2u, 8u);
 }
-#endif // CTS_USES_VULKANSC
 
 // Utilities
 
@@ -253,6 +251,7 @@ struct Environment
 	deUint32							maxResourceConsumers;		// Maximum number of objects using same Object::Resources concurrently
 #ifdef CTS_USES_VULKANSC
 	de::SharedPtr<ResourceInterface>	resourceInterface;
+	VkPhysicalDeviceVulkanSC10Properties	vulkanSC10Properties;
 #endif // CTS_USES_VULKANSC
 	const tcu::CommandLine&			commandLine;
 
@@ -269,6 +268,7 @@ struct Environment
 		, maxResourceConsumers	(maxResourceConsumers_)
 #ifdef CTS_USES_VULKANSC
 		, resourceInterface		(context.getResourceInterface())
+		, vulkanSC10Properties	(context.getDeviceVulkanSC10Properties())
 #endif // CTS_USES_VULKANSC
 		, commandLine			(context.getTestContext().getCommandLine())
 	{
@@ -286,6 +286,7 @@ struct Environment
 				 deUint32						maxResourceConsumers_,
 #ifdef CTS_USES_VULKANSC
 				 de::SharedPtr<ResourceInterface>	resourceInterface_,
+				 const VkPhysicalDeviceVulkanSC10Properties& vulkanSC10Properties_,
 #endif // CTS_USES_VULKANSC
 				 const tcu::CommandLine&		commandLine_)
 		: vkp					(vkp_)
@@ -304,6 +305,7 @@ struct Environment
 		, maxResourceConsumers	(maxResourceConsumers_)
 #ifdef CTS_USES_VULKANSC
 		, resourceInterface		(resourceInterface_)
+		, vulkanSC10Properties	(vulkanSC10Properties_)
 #endif // CTS_USES_VULKANSC
 		, commandLine			(commandLine_)
 	{
@@ -348,13 +350,12 @@ T alignToPowerOfTwo (T value, T align)
 	DE_ASSERT(isPowerOfTwo(align));
 	return (value + align - T(1)) & ~(align - T(1));
 }
-
 #ifndef CTS_USES_VULKANSC
 inline bool hasDeviceExtension (Context& context, const string name)
 {
 	return context.isDeviceFunctionalitySupported(name);
 }
-#endif // CTS_USES_VULKANSC
+#endif
 
 VkDeviceSize getPageTableSize (const PlatformMemoryLimits& limits, VkDeviceSize allocationSize)
 {
@@ -398,6 +399,7 @@ size_t computeSystemMemoryUsage (Context& context, const typename Object::Parame
 															 1u,
 #ifdef CTS_USES_VULKANSC
 															context.getResourceInterface(),
+															context.getDeviceVulkanSC10Properties(),
 #endif // CTS_USES_VULKANSC
 															 context.getTestContext().getCommandLine());
 	const typename Object::Resources	res					(env, params);
@@ -563,13 +565,22 @@ struct Device
 	struct Resources
 	{
 		Dependency<Instance>	instance;
+#ifndef CTS_USES_VULKANSC
 		InstanceDriver			vki;
+#else
+		InstanceDriverSC		vki;
+#endif // CTS_USES_VULKANSC
+
 		VkPhysicalDevice		physicalDevice;
 		deUint32				queueFamilyIndex;
 
 		Resources (const Environment& env, const Parameters& params)
 			: instance			(env, Instance::Parameters())
-			, vki				(env.vkp, *instance.object)
+#ifndef CTS_USES_VULKANSC
+			, vki(env.vkp, *instance.object)
+#else
+			, vki(env.vkp, *instance.object, env.commandLine, env.resourceInterface)
+#endif // CTS_USES_VULKANSC
 			, physicalDevice	(0)
 			, queueFamilyIndex	(~0u)
 		{
@@ -636,22 +647,26 @@ struct Device
 		std::vector<VkPipelinePoolSize>		poolSizes;
 		if (env.commandLine.isSubProcess())
 		{
-			pcCI =
+			if (env.resourceInterface->getCacheDataSize() > 0)
 			{
-				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
-				DE_NULL,											// const void*					pNext;
-				(VkPipelineCacheCreateFlags)0u,						// VkPipelineCacheCreateFlags	flags;
-				env.resourceInterface->getCacheDataSize(),			// deUintptr					initialDataSize;
-				env.resourceInterface->getCacheData()				// const void*					pInitialData;
-			};
-			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
-			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+				pcCI =
+				{
+					VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
+					DE_NULL,											// const void*					pNext;
+					VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+						VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+					env.resourceInterface->getCacheDataSize(),			// deUintptr					initialDataSize;
+					env.resourceInterface->getCacheData()				// const void*					pInitialData;
+				};
+				memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+				memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+			}
 
 			poolSizes							= env.resourceInterface->getPipelinePoolSizes();
 			if (!poolSizes.empty())
 			{
-				memReservationInfo.pipelinePoolSizeCount		= deUint32(poolSizes.size());
-				memReservationInfo.pPipelinePoolSizes			= poolSizes.data();
+				memReservationInfo.pipelinePoolSizeCount			= deUint32(poolSizes.size());
+				memReservationInfo.pPipelinePoolSizes				= poolSizes.data();
 			}
 		}
 #endif // CTS_USES_VULKANSC
@@ -696,7 +711,11 @@ struct DeviceGroup
 	{
 		vector<string>				extensions;
 		Dependency<Instance>		instance;
+#ifndef CTS_USES_VULKANSC
 		InstanceDriver				vki;
+#else
+		InstanceDriverSC			vki;
+#endif
 		vector<VkPhysicalDevice>	physicalDevices;
 		deUint32					physicalDeviceCount;
 		deUint32					queueFamilyIndex;
@@ -704,7 +723,11 @@ struct DeviceGroup
 		Resources (const Environment& env, const Parameters& params)
 			: extensions			(1, "VK_KHR_device_group_creation")
 			, instance				(env, Instance::Parameters(extensions))
+#ifndef CTS_USES_VULKANSC
 			, vki					(env.vkp, *instance.object)
+#else
+			, vki					(env.vkp, *instance.object, env.commandLine, env.resourceInterface)
+#endif
 			, physicalDeviceCount	(0)
 			, queueFamilyIndex		(~0u)
 		{
@@ -783,22 +806,26 @@ struct DeviceGroup
 		std::vector<VkPipelinePoolSize>		poolSizes;
 		if (env.commandLine.isSubProcess())
 		{
-			pcCI =
+			if (env.resourceInterface->getCacheDataSize() > 0)
 			{
-				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
-				DE_NULL,											// const void*					pNext;
-				(VkPipelineCacheCreateFlags)0u,						// VkPipelineCacheCreateFlags	flags;
-				env.resourceInterface->getCacheDataSize(),			// deUintptr					initialDataSize;
-				env.resourceInterface->getCacheData()				// const void*					pInitialData;
-			};
-			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
-			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+				pcCI =
+				{
+					VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
+					DE_NULL,											// const void*					pNext;
+					VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+						VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+					env.resourceInterface->getCacheDataSize(),			// deUintptr					initialDataSize;
+					env.resourceInterface->getCacheData()				// const void*					pInitialData;
+				};
+				memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+				memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+			}
 
 			poolSizes							= env.resourceInterface->getPipelinePoolSizes();
 			if (!poolSizes.empty())
 			{
-				memReservationInfo.pipelinePoolSizeCount		= deUint32(poolSizes.size());
-				memReservationInfo.pPipelinePoolSizes			= poolSizes.data();
+				memReservationInfo.pipelinePoolSizeCount			= deUint32(poolSizes.size());
+				memReservationInfo.pPipelinePoolSizes				= poolSizes.data();
 			}
 		}
 #endif // CTS_USES_VULKANSC
@@ -1396,11 +1423,18 @@ struct PipelineCache
 	{
 		const VkPipelineCacheCreateInfo	pipelineCacheInfo	=
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
-			DE_NULL,
-			(VkPipelineCacheCreateFlags)0u,
-			0u,								// initialDataSize
-			DE_NULL,						// pInitialData
+			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,				// VkStructureType				sType;
+			DE_NULL,													// const void*					pNext;
+#ifndef CTS_USES_VULKANSC
+			(VkPipelineCacheCreateFlags)0u,								// VkPipelineCacheCreateFlags	flags;
+			0u,															// size_t						initialDataSize;
+			DE_NULL,													// const void*					pInitialData;
+#else
+			VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+				VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+			env.resourceInterface->getCacheDataSize(),					// deUintptr					initialDataSize;
+			env.resourceInterface->getCacheData()						// const void*					pInitialData;
+#endif // CTS_USES_VULKANSC
 		};
 
 		return createPipelineCache(env.vkd, env.device, &pipelineCacheInfo, env.allocationCallbacks);
@@ -2732,6 +2766,8 @@ tcu::TestStatus createMaxConcurrentTest (Context& context, typename Object::Para
 	return tcu::TestStatus::pass("Ok");
 }
 
+#endif // CTS_USES_VULKANSC
+
 // How many objects to create per thread
 template<typename Object>	int getCreateCount				(void) { return 100;	}
 
@@ -2778,6 +2814,9 @@ private:
 template<typename Object>
 tcu::TestStatus multithreadedCreateSharedResourcesTest (Context& context, typename Object::Parameters params)
 {
+#ifdef CTS_USES_VULKANSC
+	MultithreadedDestroyGuard			mdGuard		(context.getResourceInterface());
+#endif // CTS_USES_VULKANSC
 	TestLog&							log			= context.getTestContext().getLog();
 	const deUint32						numThreads	= getDefaultTestThreadCount();
 	const Environment					env			(context, numThreads);
@@ -2796,12 +2835,14 @@ template<typename Object>
 tcu::TestStatus multithreadedCreatePerThreadResourcesTest (Context& context, typename Object::Parameters params)
 {
 	typedef SharedPtr<typename Object::Resources>	ResPtr;
-
-	TestLog&			log			= context.getTestContext().getLog();
-	const deUint32		numThreads	= getDefaultTestThreadCount();
-	const Environment	env			(context, 1u);
-	vector<ResPtr>		resources	(numThreads);
-	ThreadGroup			threads;
+#ifdef CTS_USES_VULKANSC
+	MultithreadedDestroyGuard	mdGuard	(context.getResourceInterface());
+#endif // CTS_USES_VULKANSC
+	TestLog&					log			= context.getTestContext().getLog();
+	const deUint32				numThreads	= getDefaultTestThreadCount();
+	const Environment			env			(context, 1u);
+	vector<ResPtr>				resources	(numThreads);
+	ThreadGroup					threads;
 
 	log << TestLog::Message << "numThreads = " << numThreads << TestLog::EndMessage;
 
@@ -2813,35 +2854,31 @@ tcu::TestStatus multithreadedCreatePerThreadResourcesTest (Context& context, typ
 
 	return threads.run();
 }
-#endif // CTS_USES_VULKANSC
 
 struct EnvClone
 {
-	Device::Resources	deviceRes;
-	Unique<VkDevice>	device;
+	Device::Resources											deviceRes;
+	Unique<VkDevice>											device;
 #ifndef CTS_USES_VULKANSC
-	DeviceDriver		vkd;
+	de::MovePtr<vk::DeviceDriver>								vkd;
 #else
-	DeviceDriverSC		vkd;
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	vkd;
 #endif // CTS_USES_VULKANSC
-
-	Environment			env;
+	Environment													env;
 
 	EnvClone (const Environment& parent, const Device::Parameters& deviceParams, deUint32 maxResourceConsumers)
 		: deviceRes	(parent, deviceParams)
 		, device	(Device::create(parent, deviceRes, deviceParams))
 #ifndef CTS_USES_VULKANSC
-		, vkd		(parent.vkp, parent.instance, *device)
-		, env(parent.vkp, parent.apiVersion, parent.instanceInterface, parent.instance, vkd, *device, deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers, parent.commandLine)
+		, vkd(de::MovePtr<DeviceDriver>(new DeviceDriver(parent.vkp, parent.instance, *device)))
+		, env(parent.vkp, parent.apiVersion, parent.instanceInterface, parent.instance, *vkd, *device, deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers, parent.commandLine)
 #else
-		, vkd		(parent.vkp, parent.instance, *device, parent.commandLine, parent.resourceInterface)
-		, env(parent.vkp, parent.apiVersion, parent.instanceInterface, parent.instance, vkd, *device, deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers, parent.resourceInterface, parent.commandLine)
+		, vkd(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(parent.vkp, parent.instance, *device, parent.commandLine, parent.resourceInterface, parent.vulkanSC10Properties), vk::DeinitDeviceDeleter(parent.resourceInterface.get(), *device)))
+		, env(parent.vkp, parent.apiVersion, parent.instanceInterface, parent.instance, *vkd, *device, deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers, parent.resourceInterface, parent.vulkanSC10Properties, parent.commandLine)
 #endif // CTS_USES_VULKANSC
 	{
 	}
 };
-
-#ifndef CTS_USES_VULKANSC
 
 Device::Parameters getDefaulDeviceParameters (Context& context)
 {
@@ -2849,11 +2886,12 @@ Device::Parameters getDefaulDeviceParameters (Context& context)
 							  VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT);
 }
 
-#ifndef CTS_USES_VULKANSC
-
 template<typename Object>
 tcu::TestStatus multithreadedCreatePerThreadDeviceTest (Context& context, typename Object::Parameters params)
 {
+#ifdef CTS_USES_VULKANSC
+	MultithreadedDestroyGuard						mdGuard(context.getResourceInterface());
+#endif // CTS_USES_VULKANSC
 	typedef SharedPtr<EnvClone>						EnvPtr;
 	typedef SharedPtr<typename Object::Resources>	ResPtr;
 
@@ -2878,7 +2916,7 @@ tcu::TestStatus multithreadedCreatePerThreadDeviceTest (Context& context, typena
 	return threads.run();
 }
 
-#endif // CTS_USES_VULKANSC
+#ifndef CTS_USES_VULKANSC
 
 template<typename Object>
 tcu::TestStatus createSingleAllocCallbacksTest (Context& context, typename Object::Parameters params)
@@ -2904,6 +2942,7 @@ tcu::TestStatus createSingleAllocCallbacksTest (Context& context, typename Objec
 														 1u,
 #ifdef CTS_USES_VULKANSC
 														 context.getResourceInterface(),
+														 context.getDeviceVulkanSC10Properties(),
 #endif // CTS_USES_VULKANSC
 														 context.getTestContext().getCommandLine());
 
@@ -2926,6 +2965,7 @@ tcu::TestStatus createSingleAllocCallbacksTest (Context& context, typename Objec
 														 resEnv.env.maxResourceConsumers,
 #ifdef CTS_USES_VULKANSC
 														 resEnv.env.resourceInterface,
+														 resEnv.env.vulkanSC10Properties,
 #endif // CTS_USES_VULKANSC
 														 resEnv.env.commandLine);
 
@@ -2974,6 +3014,7 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 															 1u,
 #ifdef CTS_USES_VULKANSC
 															 context.getResourceInterface(),
+															 context.getDeviceVulkanSC10Properties(),
 #endif // CTS_USES_VULKANSC
 															 context.getTestContext().getCommandLine());
 	deUint32							numPassingAllocs	= 0;
@@ -3005,6 +3046,7 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 															 resEnv.env.maxResourceConsumers,
 #ifdef CTS_USES_VULKANSC
 															 resEnv.env.resourceInterface,
+															 resEnv.env.vulkanSC10Properties,
 #endif // CTS_USES_VULKANSC
 															 resEnv.env.commandLine);
 
@@ -3122,6 +3164,7 @@ tcu::TestStatus allocCallbackFailMultipleObjectsTest (Context& context, typename
 															 numObjects,
 #ifdef CTS_USES_VULKANSC
 															 context.getResourceInterface(),
+															 context.getDeviceVulkanSC10Properties(),
 #endif // CTS_USES_VULKANSC
 															 context.getTestContext().getCommandLine());
 
@@ -3188,13 +3231,14 @@ struct CaseDescription
 	typename FunctionInstance1<typename Object::Parameters>::Function	function;
 	const NamedParameters<Object>*										paramsBegin;
 	const NamedParameters<Object>*										paramsEnd;
+	typename FunctionSupport1<typename Object::Parameters>::Function	supportFunction;
 };
 
 #define EMPTY_CASE_DESC(OBJECT)	\
-	{ (FunctionInstance1<OBJECT::Parameters>::Function)DE_NULL, DE_NULL, DE_NULL }
+	{ (FunctionInstance1<OBJECT::Parameters>::Function)DE_NULL, DE_NULL, DE_NULL, DE_NULL }
 
-#define CASE_DESC(FUNCTION, CASES)	\
-	{ FUNCTION, DE_ARRAY_BEGIN(CASES), DE_ARRAY_END(CASES)	}
+#define CASE_DESC(FUNCTION, CASES, SUPPORT)	\
+	{ FUNCTION, DE_ARRAY_BEGIN(CASES), DE_ARRAY_END(CASES), SUPPORT	}
 
 struct CaseDescriptions
 {
@@ -3229,7 +3273,12 @@ template<typename Object>
 void addCases (tcu::TestCaseGroup *group, const CaseDescription<Object>& cases)
 {
 	for (const NamedParameters<Object>* cur = cases.paramsBegin; cur != cases.paramsEnd; ++cur)
-		addFunctionCase(group, cur->name, "", cases.function, cur->parameters);
+	{
+		if(cases.supportFunction == DE_NULL)
+			addFunctionCase(group, cur->name, "", cases.function, cur->parameters);
+		else
+			addFunctionCase(group, cur->name, "", cases.supportFunction, cases.function, cur->parameters);
+	}
 }
 
 void checkEventSupport (Context& context, const Event::Parameters)
@@ -3242,19 +3291,26 @@ void checkEventSupport (Context& context, const Event::Parameters)
 #endif // CTS_USES_VULKANSC
 }
 
-// specialization for Event
-template<>
-void addCases (tcu::TestCaseGroup* group, const CaseDescription<Event>& cases)
+void checkRecycleDescriptorSetMemorySupport (Context& context, const DescriptorSet::Parameters)
 {
-	for (const NamedParameters<Event>* cur = cases.paramsBegin; cur != cases.paramsEnd; ++cur)
-		addFunctionCase(group, cur->name, "", checkEventSupport, cases.function, cur->parameters);
+#ifdef CTS_USES_VULKANSC
+	if (!context.getDeviceVulkanSC10Properties().recycleDescriptorSetMemory)
+		TCU_THROW(NotSupportedError, "VkPhysicalDeviceVulkanSC10Properties::recycleDescriptorSetMemory not supported by this implementation");
+#else
+	DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
 }
 
 template<typename Object>
 void addCasesWithProgs (tcu::TestCaseGroup *group, const CaseDescription<Object>& cases)
 {
 	for (const NamedParameters<Object>* cur = cases.paramsBegin; cur != cases.paramsEnd; ++cur)
-		addFunctionCaseWithPrograms(group, cur->name, "", Object::initPrograms, cases.function, cur->parameters);
+	{
+		if (cases.supportFunction == DE_NULL)
+			addFunctionCaseWithPrograms(group, cur->name, "", Object::initPrograms, cases.function, cur->parameters);
+		else
+			addFunctionCaseWithPrograms(group, cur->name, "", cases.supportFunction, Object::initPrograms, cases.function, cur->parameters);
+	}
 }
 
 static void createTests (tcu::TestCaseGroup* group, CaseDescriptions cases)
@@ -3447,91 +3503,95 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 
 	const CaseDescriptions	s_createSingleGroup	=
 	{
-		CASE_DESC(createSingleTest	<Instance>,					s_instanceCases),
-		CASE_DESC(createSingleTest	<Device>,					s_deviceCases),
-		CASE_DESC(createSingleTest	<DeviceGroup>,				s_deviceGroupCases),
-		CASE_DESC(createSingleTest	<DeviceMemory>,				s_deviceMemCases),
-		CASE_DESC(createSingleTest	<Buffer>,					s_bufferCases),
-		CASE_DESC(createSingleTest	<BufferView>,				s_bufferViewCases),
-		CASE_DESC(createSingleTest	<Image>,					s_imageCases),
-		CASE_DESC(createSingleTest	<ImageView>,				s_imageViewCases),
-		CASE_DESC(createSingleTest	<Semaphore>,				s_semaphoreCases),
-		CASE_DESC(createSingleTest	<Event>,					s_eventCases),
-		CASE_DESC(createSingleTest	<Fence>,					s_fenceCases),
-		CASE_DESC(createSingleTest	<QueryPool>,				s_queryPoolCases),
-		CASE_DESC(createSingleTest	<ShaderModule>,				s_shaderModuleCases),
-		CASE_DESC(createSingleTest	<PipelineCache>,			s_pipelineCacheCases),
-		CASE_DESC(createSingleTest	<PipelineLayout>,			s_pipelineLayoutCases),
-		CASE_DESC(createSingleTest	<RenderPass>,				s_renderPassCases),
-		CASE_DESC(createSingleTest	<GraphicsPipeline>,			s_graphicsPipelineCases),
-		CASE_DESC(createSingleTest	<ComputePipeline>,			s_computePipelineCases),
-		CASE_DESC(createSingleTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases),
-		CASE_DESC(createSingleTest	<Sampler>,					s_samplerCases),
-		CASE_DESC(createSingleTest	<DescriptorPool>,			s_descriptorPoolCases),
-		CASE_DESC(createSingleTest	<DescriptorSet>,			s_descriptorSetCases),
-		CASE_DESC(createSingleTest	<Framebuffer>,				s_framebufferCases),
-		CASE_DESC(createSingleTest	<CommandPool>,				s_commandPoolCases),
-		CASE_DESC(createSingleTest	<CommandBuffer>,			s_commandBufferCases),
+		CASE_DESC(createSingleTest	<Instance>,					s_instanceCases,			DE_NULL),
+		CASE_DESC(createSingleTest	<Device>,					s_deviceCases,				DE_NULL),
+		CASE_DESC(createSingleTest	<DeviceGroup>,				s_deviceGroupCases,			DE_NULL),
+		CASE_DESC(createSingleTest	<DeviceMemory>,				s_deviceMemCases,			DE_NULL),
+		CASE_DESC(createSingleTest	<Buffer>,					s_bufferCases,				DE_NULL),
+		CASE_DESC(createSingleTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
+		CASE_DESC(createSingleTest	<Image>,					s_imageCases,				DE_NULL),
+		CASE_DESC(createSingleTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(createSingleTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
+		CASE_DESC(createSingleTest	<Event>,					s_eventCases,				checkEventSupport),
+		CASE_DESC(createSingleTest	<Fence>,					s_fenceCases,				DE_NULL),
+		CASE_DESC(createSingleTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
+		CASE_DESC(createSingleTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
+		CASE_DESC(createSingleTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		CASE_DESC(createSingleTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
+		CASE_DESC(createSingleTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
+		CASE_DESC(createSingleTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),
+		CASE_DESC(createSingleTest	<ComputePipeline>,			s_computePipelineCases,		DE_NULL),
+		CASE_DESC(createSingleTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases,	DE_NULL),
+		CASE_DESC(createSingleTest	<Sampler>,					s_samplerCases,				DE_NULL),
+		CASE_DESC(createSingleTest	<DescriptorPool>,			s_descriptorPoolCases,		DE_NULL),
+		CASE_DESC(createSingleTest	<DescriptorSet>,			s_descriptorSetCases,		DE_NULL),
+		CASE_DESC(createSingleTest	<Framebuffer>,				s_framebufferCases,			DE_NULL),
+		CASE_DESC(createSingleTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
+		CASE_DESC(createSingleTest	<CommandBuffer>,			s_commandBufferCases,		DE_NULL),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "single", "Create single object", s_createSingleGroup));
 
 	const CaseDescriptions	s_createMultipleUniqueResourcesGroup	=
 	{
-		CASE_DESC(createMultipleUniqueResourcesTest	<Instance>,					s_instanceCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<Device>,					s_deviceCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<DeviceGroup>,				s_deviceGroupCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<DeviceMemory>,				s_deviceMemCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<Buffer>,					s_bufferCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<BufferView>,				s_bufferViewCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<Image>,					s_imageCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<ImageView>,				s_imageViewCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<Semaphore>,				s_semaphoreCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<Event>,					s_eventCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<Fence>,					s_fenceCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<QueryPool>,				s_queryPoolCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<ShaderModule>,				s_shaderModuleCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<PipelineCache>,			s_pipelineCacheCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<PipelineLayout>,			s_pipelineLayoutCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<RenderPass>,				s_renderPassCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<GraphicsPipeline>,			s_graphicsPipelineCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<ComputePipeline>,			s_computePipelineCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<Sampler>,					s_samplerCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<DescriptorPool>,			s_descriptorPoolCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<DescriptorSet>,			s_descriptorSetCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<Framebuffer>,				s_framebufferCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<CommandPool>,				s_commandPoolCases),
-		CASE_DESC(createMultipleUniqueResourcesTest	<CommandBuffer>,			s_commandBufferCases),
+		CASE_DESC(createMultipleUniqueResourcesTest	<Instance>,					s_instanceCases,			DE_NULL),
+#ifndef CTS_USES_VULKANSC
+		CASE_DESC(createMultipleUniqueResourcesTest	<Device>,					s_deviceCases,				DE_NULL),
+#else
+		EMPTY_CASE_DESC(Device),
+#endif
+		CASE_DESC(createMultipleUniqueResourcesTest	<DeviceGroup>,				s_deviceGroupCases,			DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<DeviceMemory>,				s_deviceMemCases,			DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<Buffer>,					s_bufferCases,				DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<Image>,					s_imageCases,				DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<Event>,					s_eventCases,				checkEventSupport),
+		CASE_DESC(createMultipleUniqueResourcesTest	<Fence>,					s_fenceCases,				DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<ComputePipeline>,			s_computePipelineCases,		DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases,	DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<Sampler>,					s_samplerCases,				DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<DescriptorPool>,			s_descriptorPoolCases,		DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<DescriptorSet>,			s_descriptorSetCases,		DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<Framebuffer>,				s_framebufferCases,			DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<CommandBuffer>,			s_commandBufferCases,		DE_NULL),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multiple_unique_resources", "Multiple objects with per-object unique resources", s_createMultipleUniqueResourcesGroup));
 
 	const CaseDescriptions	s_createMultipleSharedResourcesGroup	=
 	{
 		EMPTY_CASE_DESC(Instance), // No resources used
-		CASE_DESC(createMultipleSharedResourcesTest	<Device>,					s_deviceCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<DeviceGroup>,				s_deviceGroupCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<DeviceMemory>,				s_deviceMemCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<Buffer>,					s_bufferCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<BufferView>,				s_bufferViewCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<Image>,					s_imageCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<ImageView>,				s_imageViewCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<Semaphore>,				s_semaphoreCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<Event>,					s_eventCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<Fence>,					s_fenceCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<QueryPool>,				s_queryPoolCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<ShaderModule>,				s_shaderModuleCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<PipelineCache>,			s_pipelineCacheCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<PipelineLayout>,			s_pipelineLayoutCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<RenderPass>,				s_renderPassCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<GraphicsPipeline>,			s_graphicsPipelineCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<ComputePipeline>,			s_computePipelineCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<Sampler>,					s_samplerCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<DescriptorPool>,			s_descriptorPoolCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<DescriptorSet>,			s_descriptorSetCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<Framebuffer>,				s_framebufferCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<CommandPool>,				s_commandPoolCases),
-		CASE_DESC(createMultipleSharedResourcesTest	<CommandBuffer>,			s_commandBufferCases),
+		CASE_DESC(createMultipleSharedResourcesTest	<Device>,					s_deviceCases,				DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<DeviceGroup>,				s_deviceGroupCases,			DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<DeviceMemory>,				s_deviceMemCases,			DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<Buffer>,					s_bufferCases,				DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<Image>,					s_imageCases,				DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<Event>,					s_eventCases,				checkEventSupport),
+		CASE_DESC(createMultipleSharedResourcesTest	<Fence>,					s_fenceCases,				DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<ComputePipeline>,			s_computePipelineCases,		DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases,	DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<Sampler>,					s_samplerCases,				DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<DescriptorPool>,			s_descriptorPoolCases,		DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<DescriptorSet>,			s_descriptorSetCases,		DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<Framebuffer>,				s_framebufferCases,			DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<CommandBuffer>,			s_commandBufferCases,		DE_NULL),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multiple_shared_resources", "Multiple objects with shared resources", s_createMultipleSharedResourcesGroup));
 
@@ -3539,155 +3599,155 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 // Removed from Vulkan SC test set: VkAllocationCallbacks is not supported and pointers to this type must be NULL
 	const CaseDescriptions	s_createMaxConcurrentGroup	=
 	{
-		CASE_DESC(createMaxConcurrentTest	<Instance>,					s_instanceCases),
-		CASE_DESC(createMaxConcurrentTest	<Device>,					s_deviceCases),
-		CASE_DESC(createMaxConcurrentTest	<DeviceGroup>,				s_deviceGroupCases),
-		CASE_DESC(createMaxConcurrentTest	<DeviceMemory>,				s_deviceMemCases),
-		CASE_DESC(createMaxConcurrentTest	<Buffer>,					s_bufferCases),
-		CASE_DESC(createMaxConcurrentTest	<BufferView>,				s_bufferViewCases),
-		CASE_DESC(createMaxConcurrentTest	<Image>,					s_imageCases),
-		CASE_DESC(createMaxConcurrentTest	<ImageView>,				s_imageViewCases),
-		CASE_DESC(createMaxConcurrentTest	<Semaphore>,				s_semaphoreCases),
-		CASE_DESC(createMaxConcurrentTest	<Event>,					s_eventCases),
-		CASE_DESC(createMaxConcurrentTest	<Fence>,					s_fenceCases),
-		CASE_DESC(createMaxConcurrentTest	<QueryPool>,				s_queryPoolCases),
-		CASE_DESC(createMaxConcurrentTest	<ShaderModule>,				s_shaderModuleCases),
-		CASE_DESC(createMaxConcurrentTest	<PipelineCache>,			s_pipelineCacheCases),
-		CASE_DESC(createMaxConcurrentTest	<PipelineLayout>,			s_pipelineLayoutCases),
-		CASE_DESC(createMaxConcurrentTest	<RenderPass>,				s_renderPassCases),
-		CASE_DESC(createMaxConcurrentTest	<GraphicsPipeline>,			s_graphicsPipelineCases),
-		CASE_DESC(createMaxConcurrentTest	<ComputePipeline>,			s_computePipelineCases),
-		CASE_DESC(createMaxConcurrentTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases),
-		CASE_DESC(createMaxConcurrentTest	<Sampler>,					s_samplerCases),
-		CASE_DESC(createMaxConcurrentTest	<DescriptorPool>,			s_descriptorPoolCases),
-		CASE_DESC(createMaxConcurrentTest	<DescriptorSet>,			s_descriptorSetCases),
-		CASE_DESC(createMaxConcurrentTest	<Framebuffer>,				s_framebufferCases),
-		CASE_DESC(createMaxConcurrentTest	<CommandPool>,				s_commandPoolCases),
-		CASE_DESC(createMaxConcurrentTest	<CommandBuffer>,			s_commandBufferCases),
+		CASE_DESC(createMaxConcurrentTest	<Instance>,					s_instanceCases,			DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<Device>,					s_deviceCases,				DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<DeviceGroup>,				s_deviceGroupCases,			DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<DeviceMemory>,				s_deviceMemCases,			DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<Buffer>,					s_bufferCases,				DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<Image>,					s_imageCases,				DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<Event>,					s_eventCases,				checkEventSupport),
+		CASE_DESC(createMaxConcurrentTest	<Fence>,					s_fenceCases,				DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<ComputePipeline>,			s_computePipelineCases,		DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases,	DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<Sampler>,					s_samplerCases,				DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<DescriptorPool>,			s_descriptorPoolCases,		DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<DescriptorSet>,			s_descriptorSetCases,		DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<Framebuffer>,				s_framebufferCases,			DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<CommandBuffer>,			s_commandBufferCases,		DE_NULL),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "max_concurrent", "Maximum number of concurrently live objects", s_createMaxConcurrentGroup));
+#endif // CTS_USES_VULKANSC
 
-// Temporarily removed from Vulkan SC test set
 	const CaseDescriptions	s_multithreadedCreatePerThreadDeviceGroup	=
 	{
 		EMPTY_CASE_DESC(Instance),		// Does not make sense
 		EMPTY_CASE_DESC(Device),		// Does not make sense
 		EMPTY_CASE_DESC(DeviceGroup),	// Does not make sense
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<DeviceMemory>,				s_deviceMemCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Buffer>,					s_bufferCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<BufferView>,				s_bufferViewCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Image>,					s_imageCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<ImageView>,				s_imageViewCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Semaphore>,				s_semaphoreCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Event>,					s_eventCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Fence>,					s_fenceCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<QueryPool>,				s_queryPoolCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<ShaderModule>,				s_shaderModuleCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<PipelineCache>,			s_pipelineCacheCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<PipelineLayout>,			s_pipelineLayoutCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<RenderPass>,				s_renderPassCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<GraphicsPipeline>,			s_graphicsPipelineCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<ComputePipeline>,			s_computePipelineCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Sampler>,					s_samplerCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<DescriptorPool>,			s_descriptorPoolCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<DescriptorSet>,			s_descriptorSetCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Framebuffer>,				s_framebufferCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<CommandPool>,				s_commandPoolCases),
-		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<CommandBuffer>,			s_commandBufferCases),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<DeviceMemory>,				s_deviceMemCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Buffer>,					s_bufferCases,				DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Image>,					s_imageCases,				DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Event>,					s_eventCases,				checkEventSupport),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Fence>,					s_fenceCases,				DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<ComputePipeline>,			s_computePipelineCases,		DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases,	DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Sampler>,					s_samplerCases,				DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<DescriptorPool>,			s_descriptorPoolCases,		DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<DescriptorSet>,			s_descriptorSetCases,		checkRecycleDescriptorSetMemorySupport),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Framebuffer>,				s_framebufferCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<CommandBuffer>,			s_commandBufferCases,		DE_NULL),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_per_thread_device", "Multithreaded object construction with per-thread device ", s_multithreadedCreatePerThreadDeviceGroup));
 
-// Temporarily removed from Vulkan SC test set
 	const CaseDescriptions	s_multithreadedCreatePerThreadResourcesGroup	=
 	{
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Instance>,					s_instanceCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Device>,					s_deviceCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<DeviceGroup>,				s_deviceGroupCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<DeviceMemory>,				s_deviceMemCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Buffer>,					s_bufferCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<BufferView>,				s_bufferViewCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Image>,					s_imageCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<ImageView>,				s_imageViewCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Semaphore>,				s_semaphoreCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Event>,					s_eventCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Fence>,					s_fenceCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<QueryPool>,				s_queryPoolCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<ShaderModule>,				s_shaderModuleCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<PipelineCache>,			s_pipelineCacheCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<PipelineLayout>,			s_pipelineLayoutCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<RenderPass>,				s_renderPassCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<GraphicsPipeline>,			s_graphicsPipelineCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<ComputePipeline>,			s_computePipelineCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Sampler>,					s_samplerCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<DescriptorPool>,			s_descriptorPoolCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<DescriptorSet>,			s_descriptorSetCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Framebuffer>,				s_framebufferCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<CommandPool>,				s_commandPoolCases),
-		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<CommandBuffer>,			s_commandBufferCases),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Instance>,					s_instanceCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Device>,					s_deviceCases,				DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<DeviceGroup>,				s_deviceGroupCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<DeviceMemory>,				s_deviceMemCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Buffer>,					s_bufferCases,				DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Image>,					s_imageCases,				DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Event>,					s_eventCases,				checkEventSupport),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Fence>,					s_fenceCases,				DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<ComputePipeline>,			s_computePipelineCases,		DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases,	DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Sampler>,					s_samplerCases,				DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<DescriptorPool>,			s_descriptorPoolCases,		DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<DescriptorSet>,			s_descriptorSetCases,		checkRecycleDescriptorSetMemorySupport),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Framebuffer>,				s_framebufferCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<CommandBuffer>,			s_commandBufferCases,		DE_NULL),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_per_thread_resources", "Multithreaded object construction with per-thread resources", s_multithreadedCreatePerThreadResourcesGroup));
 
-// Temporarily removed from Vulkan SC test set
 	const CaseDescriptions	s_multithreadedCreateSharedResourcesGroup	=
 	{
 		EMPTY_CASE_DESC(Instance),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<Device>,					s_deviceCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<DeviceGroup>,				s_deviceGroupCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<DeviceMemory>,				s_deviceMemCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<Buffer>,					s_bufferCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<BufferView>,				s_bufferViewCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<Image>,					s_imageCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<ImageView>,				s_imageViewCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<Semaphore>,				s_semaphoreCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<Event>,					s_eventCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<Fence>,					s_fenceCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<QueryPool>,				s_queryPoolCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<ShaderModule>,				s_shaderModuleCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<PipelineCache>,			s_pipelineCacheCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<PipelineLayout>,			s_pipelineLayoutCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<RenderPass>,				s_renderPassCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<GraphicsPipeline>,			s_graphicsPipelineCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<ComputePipeline>,			s_computePipelineCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<Sampler>,					s_samplerCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<DescriptorPool>,			s_descriptorPoolCases),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<Device>,					s_deviceCases,				DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<DeviceGroup>,				s_deviceGroupCases,			DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<DeviceMemory>,				s_deviceMemCases,			DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<Buffer>,					s_bufferCases,				DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<Image>,					s_imageCases,				DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<Event>,					s_eventCases,				checkEventSupport),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<Fence>,					s_fenceCases,				DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<ComputePipeline>,			s_computePipelineCases,		DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases,	DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<Sampler>,					s_samplerCases,				DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<DescriptorPool>,			s_descriptorPoolCases,		DE_NULL),
 		EMPTY_CASE_DESC(DescriptorSet),		// \note Needs per-thread DescriptorPool
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<Framebuffer>,				s_framebufferCases),
-		CASE_DESC(multithreadedCreateSharedResourcesTest	<CommandPool>,				s_commandPoolCases),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<Framebuffer>,				s_framebufferCases,			DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
 		EMPTY_CASE_DESC(CommandBuffer),			// \note Needs per-thread CommandPool
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_shared_resources", "Multithreaded object construction with shared resources", s_multithreadedCreateSharedResourcesGroup));
 
+#ifndef CTS_USES_VULKANSC
+
 // Removed from Vulkan SC test set: VkAllocationCallbacks is not supported and pointers to this type must be NULL
 	const CaseDescriptions	s_createSingleAllocCallbacksGroup	=
 	{
-		CASE_DESC(createSingleAllocCallbacksTest	<Instance>,					s_instanceCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<Device>,					s_deviceCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<DeviceGroup>,				s_deviceGroupCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<DeviceMemory>,				s_deviceMemCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<Buffer>,					s_bufferCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<BufferView>,				s_bufferViewCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<Image>,					s_imageCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<ImageView>,				s_imageViewCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<Semaphore>,				s_semaphoreCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<Event>,					s_eventCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<Fence>,					s_fenceCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<QueryPool>,				s_queryPoolCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<ShaderModule>,				s_shaderModuleCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<PipelineCache>,			s_pipelineCacheCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<PipelineLayout>,			s_pipelineLayoutCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<RenderPass>,				s_renderPassCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<GraphicsPipeline>,			s_graphicsPipelineCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<ComputePipeline>,			s_computePipelineCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<Sampler>,					s_samplerCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<DescriptorPool>,			s_descriptorPoolCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<DescriptorSet>,			s_descriptorSetCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<Framebuffer>,				s_framebufferCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<CommandPool>,				s_commandPoolCases),
-		CASE_DESC(createSingleAllocCallbacksTest	<CommandBuffer>,			s_commandBufferCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<Instance>,					s_instanceCases,			DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<Device>,					s_deviceCases,				DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<DeviceGroup>,				s_deviceGroupCases,			DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<DeviceMemory>,				s_deviceMemCases,			DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<Buffer>,					s_bufferCases,				DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<Image>,					s_imageCases,				DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<Event>,					s_eventCases,				checkEventSupport),
+		CASE_DESC(createSingleAllocCallbacksTest	<Fence>,					s_fenceCases,				DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<ComputePipeline>,			s_computePipelineCases,		DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases,	DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<Sampler>,					s_samplerCases,				DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<DescriptorPool>,			s_descriptorPoolCases,		DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<DescriptorSet>,			s_descriptorSetCases,		DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<Framebuffer>,				s_framebufferCases,			DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<CommandBuffer>,			s_commandBufferCases,		DE_NULL),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "single_alloc_callbacks", "Create single object", s_createSingleAllocCallbacksGroup));
 #endif // CTS_USES_VULKANSC
@@ -3698,30 +3758,30 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	// \note Skip pooled objects in this test group. They are properly handled by the "multiple" group farther down below.
 	const CaseDescriptions	s_allocCallbackFailGroup	=
 	{
-		CASE_DESC(allocCallbackFailTest	<Instance>,					s_instanceCases),
-		CASE_DESC(allocCallbackFailTest	<Device>,					s_deviceCases),
-		CASE_DESC(allocCallbackFailTest	<DeviceGroup>,				s_deviceGroupCases),
-		CASE_DESC(allocCallbackFailTest	<DeviceMemory>,				s_deviceMemCases),
-		CASE_DESC(allocCallbackFailTest	<Buffer>,					s_bufferCases),
-		CASE_DESC(allocCallbackFailTest	<BufferView>,				s_bufferViewCases),
-		CASE_DESC(allocCallbackFailTest	<Image>,					s_imageCases),
-		CASE_DESC(allocCallbackFailTest	<ImageView>,				s_imageViewCases),
-		CASE_DESC(allocCallbackFailTest	<Semaphore>,				s_semaphoreCases),
-		CASE_DESC(allocCallbackFailTest	<Event>,					s_eventCases),
-		CASE_DESC(allocCallbackFailTest	<Fence>,					s_fenceCases),
-		CASE_DESC(allocCallbackFailTest	<QueryPool>,				s_queryPoolCases),
-		CASE_DESC(allocCallbackFailTest	<ShaderModule>,				s_shaderModuleCases),
-		CASE_DESC(allocCallbackFailTest	<PipelineCache>,			s_pipelineCacheCases),
-		CASE_DESC(allocCallbackFailTest	<PipelineLayout>,			s_pipelineLayoutCases),
-		CASE_DESC(allocCallbackFailTest	<RenderPass>,				s_renderPassCases),
-		CASE_DESC(allocCallbackFailTest	<GraphicsPipeline>,			s_graphicsPipelineCases),
-		CASE_DESC(allocCallbackFailTest	<ComputePipeline>,			s_computePipelineCases),
-		CASE_DESC(allocCallbackFailTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases),
-		CASE_DESC(allocCallbackFailTest	<Sampler>,					s_samplerCases),
-		CASE_DESC(allocCallbackFailTest	<DescriptorPool>,			s_descriptorPoolCases),
+		CASE_DESC(allocCallbackFailTest	<Instance>,					s_instanceCases,			DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<Device>,					s_deviceCases,				DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<DeviceGroup>,				s_deviceGroupCases,			DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<DeviceMemory>,				s_deviceMemCases,			DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<Buffer>,					s_bufferCases,				DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<Image>,					s_imageCases,				DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<Event>,					s_eventCases,				checkEventSupport),
+		CASE_DESC(allocCallbackFailTest	<Fence>,					s_fenceCases,				DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<ComputePipeline>,			s_computePipelineCases,		DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases,	DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<Sampler>,					s_samplerCases,				DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<DescriptorPool>,			s_descriptorPoolCases,		DE_NULL),
 		EMPTY_CASE_DESC(DescriptorSet),
-		CASE_DESC(allocCallbackFailTest	<Framebuffer>,				s_framebufferCases),
-		CASE_DESC(allocCallbackFailTest	<CommandPool>,				s_commandPoolCases),
+		CASE_DESC(allocCallbackFailTest	<Framebuffer>,				s_framebufferCases,			DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
 		EMPTY_CASE_DESC(CommandBuffer),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "alloc_callback_fail", "Allocation callback failure", s_allocCallbackFailGroup));
@@ -3748,15 +3808,15 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		EMPTY_CASE_DESC(PipelineCache),
 		EMPTY_CASE_DESC(PipelineLayout),
 		EMPTY_CASE_DESC(RenderPass),
-		CASE_DESC(allocCallbackFailMultipleObjectsTest <GraphicsPipeline>,		s_graphicsPipelineCases),
-		CASE_DESC(allocCallbackFailMultipleObjectsTest <ComputePipeline>,		s_computePipelineCases),
+		CASE_DESC(allocCallbackFailMultipleObjectsTest <GraphicsPipeline>,		s_graphicsPipelineCases,	DE_NULL),
+		CASE_DESC(allocCallbackFailMultipleObjectsTest <ComputePipeline>,		s_computePipelineCases,		DE_NULL),
 		EMPTY_CASE_DESC(DescriptorSetLayout),
 		EMPTY_CASE_DESC(Sampler),
 		EMPTY_CASE_DESC(DescriptorPool),
-		CASE_DESC(allocCallbackFailMultipleObjectsTest <DescriptorSet>,			s_descriptorSetCases),
+		CASE_DESC(allocCallbackFailMultipleObjectsTest <DescriptorSet>,			s_descriptorSetCases,		DE_NULL),
 		EMPTY_CASE_DESC(Framebuffer),
 		EMPTY_CASE_DESC(CommandPool),
-		CASE_DESC(allocCallbackFailMultipleObjectsTest <CommandBuffer>,			s_commandBufferCases),
+		CASE_DESC(allocCallbackFailMultipleObjectsTest <CommandBuffer>,			s_commandBufferCases,		DE_NULL),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "alloc_callback_fail_multiple", "Allocation callback failure creating multiple objects with one call", s_allocCallbackFailMultipleObjectsGroup));
 #endif // CTS_USES_VULKANSC
@@ -3768,28 +3828,28 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		EMPTY_CASE_DESC(Instance),		// Does not make sense
 		EMPTY_CASE_DESC(Device),		// Device is tested in each object test
 		EMPTY_CASE_DESC(DeviceGroup),	// Device is tested in each object test
-		CASE_DESC(createPrivateDataTest	<DeviceMemory>,				s_deviceMemCases),
-		CASE_DESC(createPrivateDataTest	<Buffer>,					s_bufferCases),
-		CASE_DESC(createPrivateDataTest	<BufferView>,				s_bufferViewCases),
-		CASE_DESC(createPrivateDataTest	<Image>,					s_imageCases),
-		CASE_DESC(createPrivateDataTest	<ImageView>,				s_imageViewCases),
-		CASE_DESC(createPrivateDataTest	<Semaphore>,				s_semaphoreCases),
-		CASE_DESC(createPrivateDataTest	<Event>,					s_eventCases),
-		CASE_DESC(createPrivateDataTest	<Fence>,					s_fenceCases),
-		CASE_DESC(createPrivateDataTest	<QueryPool>,				s_queryPoolCases),
-		CASE_DESC(createPrivateDataTest	<ShaderModule>,				s_shaderModuleCases),
-		CASE_DESC(createPrivateDataTest	<PipelineCache>,			s_pipelineCacheCases),
-		CASE_DESC(createPrivateDataTest	<PipelineLayout>,			s_pipelineLayoutCases),
-		CASE_DESC(createPrivateDataTest	<RenderPass>,				s_renderPassCases),
-		CASE_DESC(createPrivateDataTest	<GraphicsPipeline>,			s_graphicsPipelineCases),
-		CASE_DESC(createPrivateDataTest	<ComputePipeline>,			s_computePipelineCases),
-		CASE_DESC(createPrivateDataTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases),
-		CASE_DESC(createPrivateDataTest	<Sampler>,					s_samplerCases),
-		CASE_DESC(createPrivateDataTest	<DescriptorPool>,			s_descriptorPoolCases),
-		CASE_DESC(createPrivateDataTest	<DescriptorSet>,			s_descriptorSetCases),
-		CASE_DESC(createPrivateDataTest	<Framebuffer>,				s_framebufferCases),
-		CASE_DESC(createPrivateDataTest	<CommandPool>,				s_commandPoolCases),
-		CASE_DESC(createPrivateDataTest	<CommandBuffer>,			s_commandBufferCases),
+		CASE_DESC(createPrivateDataTest	<DeviceMemory>,				s_deviceMemCases,			DE_NULL),
+		CASE_DESC(createPrivateDataTest	<Buffer>,					s_bufferCases,				DE_NULL),
+		CASE_DESC(createPrivateDataTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
+		CASE_DESC(createPrivateDataTest	<Image>,					s_imageCases,				DE_NULL),
+		CASE_DESC(createPrivateDataTest	<ImageView>,				s_imageViewCases,			DE_NULL),
+		CASE_DESC(createPrivateDataTest	<Semaphore>,				s_semaphoreCases,			DE_NULL),
+		CASE_DESC(createPrivateDataTest	<Event>,					s_eventCases,				checkEventSupport),
+		CASE_DESC(createPrivateDataTest	<Fence>,					s_fenceCases,				DE_NULL),
+		CASE_DESC(createPrivateDataTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
+		CASE_DESC(createPrivateDataTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
+		CASE_DESC(createPrivateDataTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		CASE_DESC(createPrivateDataTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
+		CASE_DESC(createPrivateDataTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
+		CASE_DESC(createPrivateDataTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),
+		CASE_DESC(createPrivateDataTest	<ComputePipeline>,			s_computePipelineCases,		DE_NULL),
+		CASE_DESC(createPrivateDataTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases,	DE_NULL),
+		CASE_DESC(createPrivateDataTest	<Sampler>,					s_samplerCases,				DE_NULL),
+		CASE_DESC(createPrivateDataTest	<DescriptorPool>,			s_descriptorPoolCases,		DE_NULL),
+		CASE_DESC(createPrivateDataTest	<DescriptorSet>,			s_descriptorSetCases,		DE_NULL),
+		CASE_DESC(createPrivateDataTest	<Framebuffer>,				s_framebufferCases,			DE_NULL),
+		CASE_DESC(createPrivateDataTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
+		CASE_DESC(createPrivateDataTest	<CommandBuffer>,			s_commandBufferCases,		DE_NULL),
 	};
 	objectMgmtTests->addChild(createTestGroup(testCtx, "private_data", "Multiple objects with private data", createTests, s_privateDataResourcesGroup, cleanupGroup));
 #endif // CTS_USES_VULKANSC

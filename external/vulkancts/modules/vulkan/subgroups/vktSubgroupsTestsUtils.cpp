@@ -1656,7 +1656,7 @@ void vkt::subgroups::initStdPrograms (vk::SourceCollections&			programCollection
 
 bool vkt::subgroups::isSubgroupSupported (Context& context)
 {
-	return context.contextSupports(vk::ApiVersion(1, 1, 0));
+	return context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
 }
 
 bool vkt::subgroups::areSubgroupOperationsSupportedForStage (Context& context, const VkShaderStageFlags stage)
@@ -1775,7 +1775,8 @@ bool vkt::subgroups::isFormatSupportedForDevice (Context& context, vk::VkFormat 
 
 bool vkt::subgroups::isSubgroupBroadcastDynamicIdSupported (Context& context)
 {
-	return context.contextSupports(vk::ApiVersion(1, 2, 0)) && context.getDeviceVulkan12Features().subgroupBroadcastDynamicId;
+	return context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) &&
+		vk::getPhysicalDeviceVulkan12Features(context.getInstanceInterface(), context.getPhysicalDevice()).subgroupBroadcastDynamicId;
 }
 
 std::string vkt::subgroups::getFormatNameForGLSL (VkFormat format)

@@ -159,6 +159,7 @@ private:
 			void						submitBufferAndWaitForIdle	(const vk::DeviceInterface& vk, VkCommandBuffer cmdBuf, deUint32 deviceMask);
 	virtual	tcu::TestStatus				iterate						(void);
 
+			std::shared_ptr<CustomInstanceWrapper>	m_instanceWrapper;
 			Move<VkDevice>				m_deviceGroup;
 #ifndef CTS_USES_VULKANSC
 			de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
@@ -180,6 +181,7 @@ private:
 
 DeviceGroupTestInstance::DeviceGroupTestInstance (Context& context, const deUint32 mode)
 	: TestInstance				(context)
+	, m_instanceWrapper			(new CustomInstanceWrapper(context))
 	, m_physicalDeviceCount		(0)
 	, m_deviceGroupQueue		(DE_NULL)
 	, m_testMode				(mode)
@@ -195,12 +197,11 @@ DeviceGroupTestInstance::DeviceGroupTestInstance (Context& context, const deUint
 
 DeviceGroupTestInstance::~DeviceGroupTestInstance()
 {
-	m_context.getResourceInterface()->deinitDevice(*m_deviceGroup);
 }
 
 deUint32 DeviceGroupTestInstance::getMemoryIndex (const deUint32 memoryTypeBits, const deUint32 memoryPropertyFlag)
 {
-	const VkPhysicalDeviceMemoryProperties deviceMemProps = getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
+	const VkPhysicalDeviceMemoryProperties deviceMemProps = getPhysicalDeviceMemoryProperties(m_instanceWrapper->instance.getDriver(), m_context.getPhysicalDevice());
 	for (deUint32 memoryTypeNdx = 0; memoryTypeNdx < deviceMemProps.memoryTypeCount; memoryTypeNdx++)
 	{
 		if ((memoryTypeBits & (1u << memoryTypeNdx)) != 0 &&
@@ -214,9 +215,9 @@ bool DeviceGroupTestInstance::isPeerFetchAllowed (deUint32 memoryTypeIndex, deUi
 {
 	VkPeerMemoryFeatureFlags				peerMemFeatures1;
 	VkPeerMemoryFeatureFlags				peerMemFeatures2;
-	const DeviceDriver						vk						(m_context.getPlatformInterface(), m_context.getInstance(), *m_deviceGroup);
-	const VkPhysicalDeviceMemoryProperties	deviceMemProps1			= getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_physicalDevices[firstdeviceID]);
-	const VkPhysicalDeviceMemoryProperties	deviceMemProps2			= getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_physicalDevices[seconddeviceID]);
+	const DeviceDriver						vk						(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup);
+	const VkPhysicalDeviceMemoryProperties	deviceMemProps1			= getPhysicalDeviceMemoryProperties(m_instanceWrapper->instance.getDriver(), m_physicalDevices[firstdeviceID]);
+	const VkPhysicalDeviceMemoryProperties	deviceMemProps2			= getPhysicalDeviceMemoryProperties(m_instanceWrapper->instance.getDriver(), m_physicalDevices[seconddeviceID]);
 	vk.getDeviceGroupPeerMemoryFeatures(*m_deviceGroup, deviceMemProps2.memoryTypes[memoryTypeIndex].heapIndex, firstdeviceID, seconddeviceID, &peerMemFeatures1);
 	vk.getDeviceGroupPeerMemoryFeatures(*m_deviceGroup, deviceMemProps1.memoryTypes[memoryTypeIndex].heapIndex, seconddeviceID, firstdeviceID, &peerMemFeatures2);
 	return (peerMemFeatures1 & VK_PEER_MEMORY_FEATURE_GENERIC_SRC_BIT) && (peerMemFeatures2 & VK_PEER_MEMORY_FEATURE_GENERIC_SRC_BIT);
@@ -227,17 +228,10 @@ void DeviceGroupTestInstance::init (void)
 	if (!m_context.isInstanceFunctionalitySupported("VK_KHR_device_group_creation"))
 		TCU_THROW(NotSupportedError, "Device Group tests are not supported, no device group extension present.");
 
-	const InstanceInterface&		instanceInterface	= m_context.getInstanceInterface();
-	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	const deUint32					queueIndex			= 0;
-	const float						queuePriority		= 1.0f;
-	vector<const char*>				extensionPtrs;
-	vector<const char*>				layerPtrs;
-	vector<string>					deviceExtensions;
-	vector<string>					enabledLayers;
-
 	if (!m_context.isDeviceFunctionalitySupported("VK_KHR_device_group"))
 		TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_device_group");
+
+	vector<string>					deviceExtensions;
 
 	if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_device_group"))
 		deviceExtensions.push_back("VK_KHR_device_group");
@@ -251,9 +245,17 @@ void DeviceGroupTestInstance::init (void)
 			deviceExtensions.push_back("VK_KHR_dedicated_allocation");
 	}
 
+	const InstanceInterface&		instanceDriver		= m_instanceWrapper->instance.getDriver();
+	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const deUint32					queueIndex			= 0;
+	const float						queuePriority		= 1.0f;
+	vector<const char*>				extensionPtrs;
+	vector<const char*>				layerPtrs;
+	vector<string>					enabledLayers;
+
 	{
 		const tcu::CommandLine&								cmdLine		= m_context.getTestContext().getCommandLine();
-		const vector<vk::VkPhysicalDeviceGroupProperties>	properties	= enumeratePhysicalDeviceGroups(instanceInterface, m_context.getInstance());
+		const vector<vk::VkPhysicalDeviceGroupProperties>	properties	= enumeratePhysicalDeviceGroups(instanceDriver, m_instanceWrapper->instance);
 		const int											kGroupId	= cmdLine.getVKDeviceGroupId();
 		const int											kGroupIndex	= kGroupId - 1;
 		const int											kDevId		= cmdLine.getVKDeviceId();
@@ -279,7 +281,8 @@ void DeviceGroupTestInstance::init (void)
 		{
 			if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), std::string("VK_KHR_bind_memory2")))
 				TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_bind_memory2");
-			deviceExtensions.push_back("VK_KHR_bind_memory2");
+			if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_bind_memory2"))
+				deviceExtensions.push_back("VK_KHR_bind_memory2");
 		}
 
 		const VkDeviceQueueCreateInfo						deviceQueueCreateInfo =
@@ -307,7 +310,7 @@ void DeviceGroupTestInstance::init (void)
 		}
 
 		VkPhysicalDevice			physicalDevice			= properties[kGroupIndex].physicalDevices[kDevIndex];
-		VkPhysicalDeviceFeatures	enabledDeviceFeatures	= getPhysicalDeviceFeatures(instanceInterface, physicalDevice);
+		VkPhysicalDeviceFeatures	enabledDeviceFeatures	= getPhysicalDeviceFeatures(instanceDriver, physicalDevice);
 		m_subsetAllocation									= properties[kGroupIndex].subsetAllocation;
 
 		if (m_drawTessellatedSphere & static_cast<bool>(!enabledDeviceFeatures.tessellationShader))
@@ -333,16 +336,20 @@ void DeviceGroupTestInstance::init (void)
 		std::vector<VkPipelinePoolSize>		poolSizes;
 		if (m_context.getTestContext().getCommandLine().isSubProcess())
 		{
-			pcCI =
+			if (m_context.getResourceInterface()->getCacheDataSize() > 0)
 			{
-				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
-				DE_NULL,											// const void*					pNext;
-				(VkPipelineCacheCreateFlags)0u,						// VkPipelineCacheCreateFlags	flags;
-				m_context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
-				m_context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
-			};
-			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
-			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+				pcCI =
+				{
+					VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
+					DE_NULL,											// const void*					pNext;
+					VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+						VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+					m_context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+					m_context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+				};
+				memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+				memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+			}
 
 			poolSizes							= m_context.getResourceInterface()->getPipelinePoolSizes();
 			if (!poolSizes.empty())
@@ -366,11 +373,11 @@ void DeviceGroupTestInstance::init (void)
 			(extensionPtrs.empty() ? DE_NULL : &extensionPtrs[0]),	//ppEnabledExtensionNames;
 			&enabledDeviceFeatures,									//pEnabledFeatures;
 		};
-		m_deviceGroup = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_context.getInstance(), instanceInterface, physicalDevice, &deviceCreateInfo);
+		m_deviceGroup = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_instanceWrapper->instance, instanceDriver, physicalDevice, &deviceCreateInfo);
 #ifndef CTS_USES_VULKANSC
-		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *m_deviceGroup));
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup));
 #else
-		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), *m_deviceGroup, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_deviceGroup));
+		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_deviceGroup));
 #endif // CTS_USES_VULKANSC
 	}
 
@@ -385,7 +392,7 @@ void DeviceGroupTestInstance::submitBufferAndWaitForIdle(const vk::DeviceInterfa
 
 tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 {
-	const InstanceInterface&	vki						(m_context.getInstanceInterface());
+	const InstanceInterface&	vki						= m_instanceWrapper->instance.getDriver();
 	const vk::DeviceInterface&	vk						= m_context.getDeviceInterface();
 	const deUint32				queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	const tcu::UVec2			renderSize				(256, 256);
@@ -393,7 +400,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 	const tcu::Vec4				clearColor				(0.125f, 0.25f, 0.75f, 1.0f);
 	const tcu::Vec4				drawColor				(1.0f, 1.0f, 0.0f, 1.0f);
 	const float					tessLevel				= 16.0f;
-	SimpleAllocator				memAlloc				(vk, *m_deviceGroup, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
+	SimpleAllocator				memAlloc				(vk, *m_deviceGroup, getPhysicalDeviceMemoryProperties(vki, m_context.getPhysicalDevice()));
 	bool						iterateResultSuccess	= false;
 	const tcu::Vec4				sphereVertices[]		=
 	{
@@ -1184,7 +1191,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 
 			// Check if peer memory can be used as source of a copy command in case of SFR bindings, always allowed in case of 1 device
 			VkPeerMemoryFeatureFlags				peerMemFeatures;
-			const VkPhysicalDeviceMemoryProperties	deviceMemProps = getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_physicalDevices[secondDeviceID]);
+			const VkPhysicalDeviceMemoryProperties	deviceMemProps = getPhysicalDeviceMemoryProperties(vki, m_physicalDevices[secondDeviceID]);
 			vk.getDeviceGroupPeerMemoryFeatures(*m_deviceGroup, deviceMemProps.memoryTypes[memoryTypeNdx].heapIndex, firstDeviceID, secondDeviceID, &peerMemFeatures);
 			isPeerMemAsCopySrcAllowed = (peerMemFeatures & VK_PEER_MEMORY_FEATURE_COPY_SRC_BIT);
 

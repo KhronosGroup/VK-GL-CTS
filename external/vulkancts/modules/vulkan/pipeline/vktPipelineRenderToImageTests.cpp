@@ -402,8 +402,12 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		}
 	};
 
+#ifndef CTS_USES_VULKANSC
 	const VkPipelineCreateFlags			flags = (basePipeline == DE_NULL ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT
 																		 : VK_PIPELINE_CREATE_DERIVATIVE_BIT);
+#else
+	const VkPipelineCreateFlags			flags = VkPipelineCreateFlags(0u);
+#endif // CTS_USES_VULKANSC
 
 	const VkGraphicsPipelineCreateInfo	graphicsPipelineInfo =
 	{
@@ -425,7 +429,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		renderPass,											// VkRenderPass										renderPass;
 		subpass,											// deUint32											subpass;
 		basePipeline,										// VkPipeline										basePipelineHandle;
-		-1,													// deInt32											basePipelineIndex;
+		0,													// deInt32											basePipelineIndex;
 	};
 
 	return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
@@ -683,17 +687,6 @@ void generateExpectedImage (const tcu::PixelBufferAccess& outputImage, const IVe
 				outputImage.setPixel(setColor, x, y, z);
 		}
 	}
-}
-
-deUint32 selectMatchingMemoryType (const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 allowedMemTypeBits, MemoryRequirement requirement)
-{
-	const deUint32	compatibleTypes	= getCompatibleMemoryTypes(deviceMemProps, requirement);
-	const deUint32	candidates		= allowedMemTypeBits & compatibleTypes;
-
-	if (candidates == 0)
-		TCU_THROW(NotSupportedError, "No compatible memory type found");
-
-	return (deUint32)deCtz32(candidates);
 }
 
 IVec4 getMaxImageSize (const VkImageViewType viewType, const IVec4& sizeHint)
@@ -1084,8 +1077,9 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 			pipelines.push_back(makeSharedPtr(makeGraphicsPipeline(
 				vk, device, basePipeline, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule, imageSize.swizzle(0, 1), VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
 				static_cast<deUint32>(subpassNdx), useDepth, useStencil)));
-
+#ifndef CTS_USES_VULKANSC  // Pipeline derivatives are forbidden in Vulkan SC
 			basePipeline = **pipelines.front();
+#endif // CTS_USES_VULKANSC
 		}
 
 		// Then D/S attachments, if any
@@ -1328,7 +1322,9 @@ void drawToMipLevel (const Context&				context,
 				vk, device, basePipeline, pipelineLayout, *renderPass, vertexModule, fragmentModule, mipSize.swizzle(0, 1), VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
 				static_cast<deUint32>(subpassNdx), useDepth, useStencil)));
 
+#ifndef CTS_USES_VULKANSC // Pipeline derivatives are forbidden in Vulkan SC
 			basePipeline = **pipelines.front();
+#endif // CTS_USES_VULKANSC
 		}
 
 		// Then D/S attachments, if any

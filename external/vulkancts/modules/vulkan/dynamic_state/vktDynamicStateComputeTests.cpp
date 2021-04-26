@@ -358,7 +358,7 @@ void setStencilTestEnable (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer
 
 void setStencilOp (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
-	vkd->cmdSetStencilOpEXT(cmdBuffer, VK_STENCIL_FRONT_AND_BACK, VK_STENCIL_OP_ZERO, VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_ALWAYS);
+	vkd->cmdSetStencilOpEXT(cmdBuffer, VK_STENCIL_FACE_FRONT_AND_BACK, VK_STENCIL_OP_ZERO, VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_ALWAYS);
 }
 
 #ifndef CTS_USES_VULKANSC

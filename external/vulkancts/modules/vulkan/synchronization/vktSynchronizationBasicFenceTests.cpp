@@ -101,6 +101,16 @@ tcu::TestStatus basicOneFenceCase (Context& context)
 	return tcu::TestStatus::pass("Basic one fence tests passed");
 }
 
+void checkCommandBufferSimultaneousUseSupport(Context& context)
+{
+#ifdef CTS_USES_VULKANSC
+	if (context.getDeviceVulkanSC10Properties().commandBufferSimultaneousUse == VK_FALSE)
+		TCU_THROW(NotSupportedError, "commandBufferSimultaneousUse is not supported");
+#else
+	DE_UNREF(context);
+#endif
+}
+
 tcu::TestStatus basicMultiFenceCase (Context& context)
 {
 	enum
@@ -292,10 +302,10 @@ tcu::TestStatus basicMultiFenceWaitAllFalseCase (Context& context)
 tcu::TestCaseGroup* createBasicFenceTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> basicFenceTests(new tcu::TestCaseGroup(testCtx, "fence", "Basic fence tests"));
-	addFunctionCase(basicFenceTests.get(),	"one",					"Basic one fence tests",							basicOneFenceCase);
-	addFunctionCase(basicFenceTests.get(),	"multi",				"Basic multi fence tests",							basicMultiFenceCase);
-	addFunctionCase(basicFenceTests.get(),	"empty_submit",			"Signal a fence after an empty queue submission",	emptySubmitCase);
-	addFunctionCase(basicFenceTests.get(),	"multi_waitall_false",	"Basic multi fence test without waitAll",			basicMultiFenceWaitAllFalseCase);
+	addFunctionCase(basicFenceTests.get(),	"one",					"Basic one fence tests",																		basicOneFenceCase);
+	addFunctionCase(basicFenceTests.get(),	"multi",				"Basic multi fence tests",							checkCommandBufferSimultaneousUseSupport,	basicMultiFenceCase);
+	addFunctionCase(basicFenceTests.get(),	"empty_submit",			"Signal a fence after an empty queue submission",												emptySubmitCase);
+	addFunctionCase(basicFenceTests.get(),	"multi_waitall_false",	"Basic multi fence test without waitAll",			checkCommandBufferSimultaneousUseSupport,	basicMultiFenceWaitAllFalseCase);
 
 	return basicFenceTests.release();
 }

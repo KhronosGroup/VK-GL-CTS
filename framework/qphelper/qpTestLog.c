@@ -1535,6 +1535,7 @@ deBool qpTestLog_writeRaw(qpTestLog* log, const char* rawContents)
 {
 	DE_ASSERT(log);
 
+	fseek(log->outputFile, 0, SEEK_END);
 	fprintf(log->outputFile, "%s", rawContents);
 	if (!(log->flags & QP_TEST_LOG_NO_FLUSH))
 		qpTestLog_flushFile(log);

@@ -551,6 +551,7 @@ protected:
 	tcu::UVec2											m_renderSize;
 	vk::VkFormat										m_colorFormat;
 
+	de::SharedPtr<vk::Unique<vk::VkCommandPool>	>		m_externalCommandPool;
 private:
 	typedef std::vector<tcu::ConstPixelBufferAccess>	TextureLayerData;
 	typedef std::vector<TextureLayerData>				TextureData;
@@ -670,7 +671,7 @@ private:
 	std::vector<vk::VkPushConstantRange>				m_pushConstantRanges;
 
 	bool												m_fuzzyCompare;
-
+protected:
 	vk::VkDevice										getDevice						(void) const;
 	deUint32											getUniversalQueueFamilyIndex	(void) const;
 	deUint32											getSparseQueueFamilyIndex		(void) const;

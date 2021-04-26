@@ -110,8 +110,8 @@ tcu::TestCaseGroup* createTestsInternal (tcu::TestContext& testCtx, Synchronizat
 		testGroup->addChild(createSmokeTests(testCtx));
 		testGroup->addChild(createTimelineSemaphoreTests(testCtx));
 
-#ifndef CTS_USES_VULKANSC
 		testGroup->addChild(createInternallySynchronizedObjects(testCtx));
+#ifndef CTS_USES_VULKANSC
 		testGroup->addChild(createWin32KeyedMutexTest(testCtx));
 #endif // CTS_USES_VULKANSC
 	}

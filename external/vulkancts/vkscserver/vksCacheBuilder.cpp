@@ -427,21 +427,21 @@ vector<u8>	CreatePipelineCache(const VulkanPipelineCacheInput&		input,
 	pipelineSizes.clear();
 	for (const auto& pipeline : input.pipelines)
 	{
-		pipelineSizes.push_back(VulkanPipelineSize{ pipeline.id, pipeline.count, 16u * 1024u });
+		pipelineSizes.push_back(VulkanPipelineSize{ pipeline.id, pipeline.count, VKSC_DEFAULT_PIPELINE_POOL_SIZE });
 	}
 	return result;
 }
 
 #else
 
-vector<u8>	CreatePipelineCache(const VulkanPipelineCacheInput&		input,
-								std::vector<VulkanPipelineSize>&	pipelineSizes,
-								const CmdLineParams&				cmdLineParams,
-								const vk::PlatformInterface&		vkp,
-								vk::VkInstance						instance,
-								const vk::InstanceInterface&		vki,
-								vk::VkPhysicalDevice				physicalDevice,
-								deUint32							queueIndex)
+vector<u8>	CreatePipelineCache (const VulkanPipelineCacheInput&		input,
+								 std::vector<VulkanPipelineSize>&	pipelineSizes,
+								 const CmdLineParams&				cmdLineParams,
+								 const vk::PlatformInterface&		vkp,
+								 vk::VkInstance						instance,
+								 const vk::InstanceInterface&		vki,
+								 vk::VkPhysicalDevice				physicalDevice,
+								 deUint32							queueIndex)
 {
 	DE_UNREF(cmdLineParams);
 	using namespace vk;
@@ -457,10 +457,14 @@ vector<u8>	CreatePipelineCache(const VulkanPipelineCacheInput&		input,
 	std::vector<std::string>			deviceExtensions		= { "<empty>" };
 
 	Move<VkDevice>						pcDevice;
+	VkPhysicalDeviceProperties2
+										deviceProperties2;
+	VkPhysicalDeviceVulkanSC10Properties	vulkanSC10Properties;
 	VkPipelineCache						pipelineCache;
 	vector<u8>							resultCacheData;
 
 	GetDeviceProcAddrFunc				getDeviceProcAddrFunc				= DE_NULL;
+	GetPhysicalDeviceProperties2Func	getPhysicalDeviceProperties2Func	= DE_NULL;
 	CreateSamplerYcbcrConversionFunc	createSamplerYcbcrConversionFunc	= DE_NULL;
 	DestroySamplerYcbcrConversionFunc	destroySamplerYcbcrConversionFunc	= DE_NULL;
 	CreateSamplerFunc					createSamplerFunc					= DE_NULL;
@@ -487,16 +491,6 @@ vector<u8>	CreatePipelineCache(const VulkanPipelineCacheInput&		input,
 	std::map<VkRenderPass, VkRenderPass>							falseToRealRenderPasses;
 	std::map<VkDescriptorSetLayout, VkDescriptorSetLayout>			falseToRealDescriptorSetLayouts;
 	std::map<VkPipelineLayout, VkPipelineLayout>					falseToRealPipelineLayouts;
-
-	deUint32							gPipelineCount						= 0U;
-	deUint32							cPipelineCount						= 0U;
-	for (auto&& pipeline : pipelines)
-	{
-		if (pipeline.pipelineContents.find("VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO") != std::string::npos)
-			gPipelineCount++;
-		else if (pipeline.pipelineContents.find("VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO") != std::string::npos)
-			cPipelineCount++;
-	}
 
 	// decode VkGraphicsPipelineCreateInfo and VkComputePipelineCreateInfo structs and create VkPipelines with a given pipeline cache
 	for (auto&& pipeline : pipelines)
@@ -546,7 +540,7 @@ vector<u8>	CreatePipelineCache(const VulkanPipelineCacheInput&		input,
 				&queuePriority,						//pQueuePriorities;
 			};
 
-			// recreate pNext chain. Add required objects if they're missing
+			// recreate pNext chain. Add required Vulkan SC objects if they're missing
 			void*									pNextChain				= readJSON_pNextChain(jsonReader, pipeline.deviceFeatures);
 			VkPhysicalDeviceFeatures2*				chainedFeatures			= (VkPhysicalDeviceFeatures2*)findStructureInChain(pNextChain, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
 			VkPhysicalDeviceFeatures2				localFeatures			= initVulkanStructure();
@@ -575,12 +569,24 @@ vector<u8>	CreatePipelineCache(const VulkanPipelineCacheInput&		input,
 				pNext						= &localSC10Features;
 			}
 
+			deUint32								gPipelineCount			= 0U;
+			deUint32								cPipelineCount			= 0U;
+			for (auto&& pipeline2 : pipelines)
+			{
+				if (pipeline2.deviceFeatures != pipeline.deviceFeatures || pipeline2.deviceExtensions != pipeline.deviceExtensions)
+					continue;
+				if (pipeline2.pipelineContents.find("VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO") != std::string::npos)
+					gPipelineCount++;
+				else if (pipeline2.pipelineContents.find("VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO") != std::string::npos)
+					cPipelineCount++;
+			}
+
 			// declare pipeline pool size
 			VkPipelinePoolSize poolSize =
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE,						// VkStructureType	sType;
 				DE_NULL,													// const void*		pNext;
-				16u * 1024u,												// VkDeviceSize		poolEntrySize;
+				VKSC_DEFAULT_PIPELINE_POOL_SIZE,							// VkDeviceSize		poolEntrySize;
 				gPipelineCount + cPipelineCount								// deUint32			poolEntryCount;
 			};
 			chainedObjReservation->pipelinePoolSizeCount				= 1u;
@@ -597,6 +603,7 @@ vector<u8>	CreatePipelineCache(const VulkanPipelineCacheInput&		input,
 			};
 			chainedObjReservation->pipelineCacheCreateInfoCount			= 1u;
 			chainedObjReservation->pPipelineCacheCreateInfos			= &pcCI;
+			chainedObjReservation->pipelineCacheRequestCount			= 1u;
 
 			chainedObjReservation->pipelineLayoutRequestCount			= de::max(chainedObjReservation->pipelineLayoutRequestCount,			deUint32(input.pipelineLayouts.size()));
 			chainedObjReservation->renderPassRequestCount				= de::max(chainedObjReservation->renderPassRequestCount,				deUint32(input.renderPasses.size()));
@@ -606,6 +613,20 @@ vector<u8>	CreatePipelineCache(const VulkanPipelineCacheInput&		input,
 			chainedObjReservation->samplerRequestCount					= de::max(chainedObjReservation->samplerRequestCount,					deUint32(input.samplers.size()));
 			chainedObjReservation->samplerYcbcrConversionRequestCount	= de::max(chainedObjReservation->samplerYcbcrConversionRequestCount,	deUint32(input.samplerYcbcrConversions.size()));
 			chainedObjReservation->pipelineCacheRequestCount			= de::max(chainedObjReservation->pipelineCacheRequestCount,				1u);
+
+			// decode all VkDescriptorSetLayoutCreateInfo
+			std::map<VkDescriptorSetLayout, VkDescriptorSetLayoutCreateInfo>	descriptorSetLayoutCreateInfos;
+			for (auto&& descriptorSetLayout : input.descriptorSetLayouts)
+			{
+				VkDescriptorSetLayoutCreateInfo	dsCI{};
+				readJSON_VkDescriptorSetLayoutCreateInfo(jsonReader, descriptorSetLayout.second, dsCI);
+				descriptorSetLayoutCreateInfos.insert({ descriptorSetLayout.first, dsCI });
+			}
+
+			chainedObjReservation->descriptorSetLayoutBindingLimit = 1u;
+			for (auto&& dsCI : descriptorSetLayoutCreateInfos)
+				for (deUint32 i = 0; i < dsCI.second.bindingCount; ++i)
+					chainedObjReservation->descriptorSetLayoutBindingLimit = de::max(chainedObjReservation->descriptorSetLayoutBindingLimit, dsCI.second.pBindings[i].binding + 1u);
 
 			// recreate device extensions
 			vector<const char*>	deviceExts;
@@ -633,6 +654,7 @@ vector<u8>	CreatePipelineCache(const VulkanPipelineCacheInput&		input,
 
 			// create local function pointers required to perform pipeline cache creation
 			getDeviceProcAddrFunc				= (GetDeviceProcAddrFunc)				vkp.getInstanceProcAddr	(instance, "vkGetDeviceProcAddr");
+			getPhysicalDeviceProperties2Func	= (GetPhysicalDeviceProperties2Func)	vkp.getInstanceProcAddr	(instance, "vkGetPhysicalDeviceProperties2");
 			createSamplerYcbcrConversionFunc	= (CreateSamplerYcbcrConversionFunc)	getDeviceProcAddrFunc	(*pcDevice, "vkCreateSamplerYcbcrConversion");
 			destroySamplerYcbcrConversionFunc	= (DestroySamplerYcbcrConversionFunc)	getDeviceProcAddrFunc	(*pcDevice, "vkDestroySamplerYcbcrConversion");
 			createSamplerFunc					= (CreateSamplerFunc)					getDeviceProcAddrFunc	(*pcDevice, "vkCreateSampler");
@@ -652,6 +674,10 @@ vector<u8>	CreatePipelineCache(const VulkanPipelineCacheInput&		input,
 			destroyPipelineCacheFunc			= (DestroyPipelineCacheFunc)			getDeviceProcAddrFunc	(*pcDevice, "vkDestroyPipelineCache");
 			destroyPipelineFunc					= (DestroyPipelineFunc)					getDeviceProcAddrFunc	(*pcDevice, "vkDestroyPipeline");
 			getPipelineCacheDataFunc			= (GetPipelineCacheDataFunc)			getDeviceProcAddrFunc	(*pcDevice, "vkGetPipelineCacheData");
+
+			vulkanSC10Properties				= initVulkanStructure();
+			deviceProperties2					= initVulkanStructure(&vulkanSC10Properties);
+			getPhysicalDeviceProperties2Func(physicalDevice, &deviceProperties2);
 
 			VK_CHECK(createPipelineCacheFunc(*pcDevice, &pcCI, DE_NULL, &pipelineCache));
 
@@ -726,43 +752,41 @@ vector<u8>	CreatePipelineCache(const VulkanPipelineCacheInput&		input,
 					TCU_THROW(InternalError, "Could not recognize render pass type");
 			}
 
-			// decode descriptor set layout structs and create VkDescriptorSetLayouts
-			for (auto&& descriptorSetLayout : input.descriptorSetLayouts)
+			// create VkDescriptorSetLayouts
+			for (auto&& dsCI : descriptorSetLayoutCreateInfos)
 			{
-				VkDescriptorSetLayoutCreateInfo	dsCI{};
-				readJSON_VkDescriptorSetLayoutCreateInfo(jsonReader, descriptorSetLayout.second, dsCI);
 				std::vector<VkDescriptorSetLayoutBinding> newDescriptorBindings;
 				std::vector<std::vector<VkSampler>> realSamplers;
 
 				// we have to replace all bindings if there is any immutable sampler defined
 				bool needReplaceSamplers = false;
-				for (deUint32 i = 0; i < dsCI.bindingCount; ++i)
+				for (deUint32 i = 0; i < dsCI.second.bindingCount; ++i)
 				{
-					if (dsCI.pBindings[i].pImmutableSamplers != DE_NULL)
+					if (dsCI.second.pBindings[i].pImmutableSamplers != DE_NULL)
 						needReplaceSamplers = true;
 				}
 
 				if (needReplaceSamplers)
 				{
-					for (deUint32 i = 0; i < dsCI.bindingCount; ++i)
+					for (deUint32 i = 0; i < dsCI.second.bindingCount; ++i)
 					{
-						if (dsCI.pBindings[i].pImmutableSamplers == DE_NULL)
+						if (dsCI.second.pBindings[i].pImmutableSamplers == DE_NULL)
 						{
-							newDescriptorBindings.push_back(dsCI.pBindings[i]);
+							newDescriptorBindings.push_back(dsCI.second.pBindings[i]);
 							continue;
 						}
 
-						realSamplers.push_back(std::vector<VkSampler>(dsCI.pBindings[i].descriptorCount));
-						for (deUint32 j = 0; j < dsCI.pBindings[i].descriptorCount; ++j)
+						realSamplers.push_back(std::vector<VkSampler>(dsCI.second.pBindings[i].descriptorCount));
+						for (deUint32 j = 0; j < dsCI.second.pBindings[i].descriptorCount; ++j)
 						{
-							if (dsCI.pBindings[i].pImmutableSamplers[j] == DE_NULL)
+							if (dsCI.second.pBindings[i].pImmutableSamplers[j] == DE_NULL)
 							{
 								realSamplers.back()[j] = DE_NULL;
 								continue;
 							}
 							else
 							{
-								auto jt = falseToRealSamplers.find(dsCI.pBindings[i].pImmutableSamplers[j]);
+								auto jt = falseToRealSamplers.find(dsCI.second.pBindings[i].pImmutableSamplers[j]);
 								if (jt == end(falseToRealSamplers))
 									TCU_THROW(InternalError, "VkSampler not found");
 								realSamplers.back()[j] = jt->second;
@@ -770,20 +794,20 @@ vector<u8>	CreatePipelineCache(const VulkanPipelineCacheInput&		input,
 						}
 						VkDescriptorSetLayoutBinding bCopy =
 						{
-							dsCI.pBindings[i].binding,			// deUint32				binding;
-							dsCI.pBindings[i].descriptorType,	// VkDescriptorType		descriptorType;
-							dsCI.pBindings[i].descriptorCount,	// deUint32				descriptorCount;
-							dsCI.pBindings[i].stageFlags,		// VkShaderStageFlags	stageFlags;
+							dsCI.second.pBindings[i].binding,			// deUint32				binding;
+							dsCI.second.pBindings[i].descriptorType,	// VkDescriptorType		descriptorType;
+							dsCI.second.pBindings[i].descriptorCount,	// deUint32				descriptorCount;
+							dsCI.second.pBindings[i].stageFlags,		// VkShaderStageFlags	stageFlags;
 							realSamplers.back().data()			// const VkSampler*		pImmutableSamplers;
 						};
 						newDescriptorBindings.push_back(bCopy);
 					}
-					dsCI.pBindings = newDescriptorBindings.data();
+					dsCI.second.pBindings = newDescriptorBindings.data();
 				}
 
 				VkDescriptorSetLayout				realDescriptorSetLayout;
-				VK_CHECK(createDescriptorSetLayoutFunc(*pcDevice, &dsCI, DE_NULL, &realDescriptorSetLayout));
-				falseToRealDescriptorSetLayouts.insert({ descriptorSetLayout.first, realDescriptorSetLayout });
+				VK_CHECK(createDescriptorSetLayoutFunc(*pcDevice, &dsCI.second, DE_NULL, &realDescriptorSetLayout));
+				falseToRealDescriptorSetLayouts.insert({ dsCI.first, realDescriptorSetLayout });
 			}
 
 			// decode pipeline layout structs and create VkPipelineLayouts. Requires creation of new pSetLayouts to bypass constness
@@ -814,9 +838,17 @@ vector<u8>	CreatePipelineCache(const VulkanPipelineCacheInput&		input,
 			VkGraphicsPipelineCreateInfo	gpCI{};
 			readJSON_VkGraphicsPipelineCreateInfo(jsonReader, pipeline.pipelineContents, gpCI);
 
-			// There is no Vulkan function, that delivers pipeline size, so we just guesstimate that 16k should be enough
+			// There is no Vulkan function, that delivers pipeline size, so we just guesstimate that VKSC_DEFAULT_PIPELINE_POOL_SIZE should be enough
 			// BTW: this is main difference between this function ( which really is just placeholder for debugging on normal Vulkan driver ) and offline pipeline compiler
-			pipelineSizes.push_back(VulkanPipelineSize{ pipeline.id, pipeline.count, 16u * 1024u });
+			if(vulkanSC10Properties.recyclePipelineMemory == VK_TRUE)
+				pipelineSizes.push_back(VulkanPipelineSize{ pipeline.id, pipeline.maxCount, VKSC_DEFAULT_PIPELINE_POOL_SIZE });
+			else // you'd better have enough memory...
+				pipelineSizes.push_back(VulkanPipelineSize{ pipeline.id, pipeline.allCount, VKSC_DEFAULT_PIPELINE_POOL_SIZE });
+
+			// set poolEntrySize for pipeline
+			VkPipelineOfflineCreateInfo*				offlineCreateInfo = (VkPipelineOfflineCreateInfo*)findStructureInChain(gpCI.pNext, VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO);
+			if (offlineCreateInfo != DE_NULL)
+				offlineCreateInfo->poolEntrySize = VKSC_DEFAULT_PIPELINE_POOL_SIZE;
 
 			// replace VkShaderModules with real ones. Requires creation of new pStages to bypass constness
 			std::vector<VkPipelineShaderStageCreateInfo> newStages;
@@ -847,7 +879,7 @@ vector<u8>	CreatePipelineCache(const VulkanPipelineCacheInput&		input,
 				gpCI.layout = jt->second;
 			}
 
-			VkPipeline						gPipeline;
+			VkPipeline						gPipeline(0u);
 			VK_CHECK(createGraphicsPipelinesFunc(*pcDevice, pipelineCache, 1, &gpCI, DE_NULL, &gPipeline));
 			// pipeline was added to cache. We may remove it immediately
 			destroyPipelineFunc(*pcDevice, gPipeline, DE_NULL);
@@ -857,9 +889,17 @@ vector<u8>	CreatePipelineCache(const VulkanPipelineCacheInput&		input,
 			VkComputePipelineCreateInfo	cpCI{};
 			readJSON_VkComputePipelineCreateInfo(jsonReader, pipeline.pipelineContents, cpCI);
 
-			// There is no Vulkan function, that delivers pipeline size, so we just guesstimate that 16k should be enough
+			// There is no Vulkan function, that delivers pipeline size, so we just guesstimate that VKSC_DEFAULT_PIPELINE_POOL_SIZE should be enough
 			// BTW: this is main difference between this function ( which really is just placeholder for debugging on normal Vulkan driver ) and offline pipeline compiler
-			pipelineSizes.push_back(VulkanPipelineSize{ pipeline.id, pipeline.count, 16u * 1024u });
+			if (vulkanSC10Properties.recyclePipelineMemory == VK_TRUE)
+				pipelineSizes.push_back(VulkanPipelineSize{ pipeline.id, pipeline.maxCount, VKSC_DEFAULT_PIPELINE_POOL_SIZE });
+			else // you'd better have enough memory...
+				pipelineSizes.push_back(VulkanPipelineSize{ pipeline.id, pipeline.allCount, VKSC_DEFAULT_PIPELINE_POOL_SIZE });
+
+			// set poolEntrySize for pipeline
+			VkPipelineOfflineCreateInfo*				offlineCreateInfo = (VkPipelineOfflineCreateInfo*)findStructureInChain(cpCI.pNext, VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO);
+			if (offlineCreateInfo != DE_NULL)
+				offlineCreateInfo->poolEntrySize = VKSC_DEFAULT_PIPELINE_POOL_SIZE;
 
 			// replace VkShaderModule with real one
 			{
@@ -877,7 +917,7 @@ vector<u8>	CreatePipelineCache(const VulkanPipelineCacheInput&		input,
 				cpCI.layout = jt->second;
 			}
 
-			VkPipeline						cPipeline;
+			VkPipeline						cPipeline(0u);
 			VK_CHECK(createComputePipelinesFunc(*pcDevice, pipelineCache, 1, &cpCI, DE_NULL, &cPipeline));
 			// pipeline was added to cache. We may remove it immediately
 			destroyPipelineFunc(*pcDevice, cPipeline, DE_NULL);

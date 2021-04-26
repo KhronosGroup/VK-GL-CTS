@@ -140,7 +140,7 @@ public:
 
 	void						createTestDevice	(void);
 	void						createDeviceGroup	(void);
-	const vk::DeviceInterface&	getDeviceInterface	(void) { return m_useDeviceGroups ? *m_deviceDriver : m_context.getDeviceInterface(); }
+	const vk::DeviceInterface&	getDeviceInterface	(void) { return *m_deviceDriver; }
 	vk::VkDevice				getDevice			(void) { return m_logicalDevice.get();}
 
 protected:
@@ -153,14 +153,20 @@ protected:
 private:
 	CustomInstance					m_deviceGroupInstance;
 	vk::Move<vk::VkDevice>			m_logicalDevice;
+#ifndef CTS_USES_VULKANSC
 	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
+#else
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	m_deviceDriver;
+#endif // CTS_USES_VULKANSC
+
 };
 
 void BaseAllocateTestInstance::createTestDevice (void)
 {
-	VkInstance										instance				(m_context.getInstance());
-	InstanceDriver									instanceDriver			(m_context.getPlatformInterface(), instance);
-	const VkPhysicalDeviceFeatures					deviceFeatures			= getPhysicalDeviceFeatures(instanceDriver, m_context.getPhysicalDevice());
+	m_deviceGroupInstance													= createCustomInstanceFromContext(m_context);
+	const InstanceDriver&							instanceDriver			= m_deviceGroupInstance.getDriver();
+	const VkPhysicalDevice							physicalDevice			= chooseDevice(instanceDriver, m_deviceGroupInstance, m_context.getTestContext().getCommandLine());
+	const VkPhysicalDeviceFeatures					deviceFeatures			= getPhysicalDeviceFeatures(instanceDriver, physicalDevice);
 	const float										queuePriority			= 1.0f;
 	deUint32										queueFamilyIndex		= 0;
 	bool											protMemSupported		= false;
@@ -183,7 +189,7 @@ void BaseAllocateTestInstance::createTestDevice (void)
 	};
 
 	// Check if the physical device supports the protected memory feature
-	instanceDriver.getPhysicalDeviceFeatures2(m_context.getPhysicalDevice(), &features2);
+	instanceDriver.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 	protMemSupported = ((VkPhysicalDeviceProtectedMemoryFeatures*)(features2.pNext))->protectedMemory;
 
 	VkDeviceQueueCreateFlags queueCreateFlags = protMemSupported ? (vk::VkDeviceQueueCreateFlags)vk::VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT : 0u;
@@ -212,7 +218,12 @@ void BaseAllocateTestInstance::createTestDevice (void)
 		protMemSupported ? DE_NULL : &deviceFeatures				// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
-	m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, m_context.getPhysicalDevice(), &deviceInfo);
+	m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_deviceGroupInstance, instanceDriver, physicalDevice, &deviceInfo);
+#ifndef CTS_USES_VULKANSC
+	m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_deviceGroupInstance, *m_logicalDevice));
+#else
+	m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_deviceGroupInstance, *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
+#endif // CTS_USES_VULKANSC
 }
 
 void BaseAllocateTestInstance::createDeviceGroup (void)
@@ -224,7 +235,7 @@ void BaseAllocateTestInstance::createDeviceGroup (void)
 	deUint32										queueFamilyIndex		= 0;
 	const std::vector<std::string>					requiredExtensions		(1, "VK_KHR_device_group_creation");
 	m_deviceGroupInstance													= createCustomInstanceWithExtensions(m_context, requiredExtensions);
-	std::vector<VkPhysicalDeviceGroupProperties>	devGroupProperties		= enumeratePhysicalDeviceGroups(m_context.getInstanceInterface(), m_deviceGroupInstance);
+	std::vector<VkPhysicalDeviceGroupProperties>	devGroupProperties		= enumeratePhysicalDeviceGroups(m_deviceGroupInstance.getDriver(), m_deviceGroupInstance);
 	m_numPhysDevices														= devGroupProperties[devGroupIdx].physicalDeviceCount;
 	m_subsetAllocationAllowed												= devGroupProperties[devGroupIdx].subsetAllocation;
 	if (m_numPhysDevices < 2)
@@ -241,11 +252,11 @@ void BaseAllocateTestInstance::createDeviceGroup (void)
 		devGroupProperties[devGroupIdx].physicalDeviceCount,								//physicalDeviceCount
 		devGroupProperties[devGroupIdx].physicalDevices										//physicalDevices
 	};
-	VkInstance										instance				(m_useDeviceGroups ? m_deviceGroupInstance : m_context.getInstance());
-	InstanceDriver									instanceDriver			(m_context.getPlatformInterface(), instance);
-	const VkPhysicalDeviceFeatures					deviceFeatures	=		getPhysicalDeviceFeatures(instanceDriver, deviceGroupInfo.pPhysicalDevices[physDeviceIdx]);
 
-	const std::vector<VkQueueFamilyProperties>		queueProps		=		getPhysicalDeviceQueueFamilyProperties(instanceDriver, devGroupProperties[devGroupIdx].physicalDevices[physDeviceIdx]);
+	const InstanceDriver&							instanceDriver	= m_deviceGroupInstance.getDriver();
+	const VkPhysicalDeviceFeatures					deviceFeatures	= getPhysicalDeviceFeatures(instanceDriver, deviceGroupInfo.pPhysicalDevices[physDeviceIdx]);
+
+	const std::vector<VkQueueFamilyProperties>		queueProps		= getPhysicalDeviceQueueFamilyProperties(instanceDriver, devGroupProperties[devGroupIdx].physicalDevices[physDeviceIdx]);
 	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
 	{
 		if (queueProps[queueNdx].queueFlags & VK_QUEUE_COMPUTE_BIT)
@@ -276,8 +287,13 @@ void BaseAllocateTestInstance::createDeviceGroup (void)
 		&deviceFeatures,											// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
-	m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
-	m_deviceDriver		= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance, *m_logicalDevice));
+	m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_deviceGroupInstance, instanceDriver, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
+#ifndef CTS_USES_VULKANSC
+	m_deviceDriver		= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_deviceGroupInstance, *m_logicalDevice));
+#else
+	m_deviceDriver		= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_deviceGroupInstance, *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
+#endif // CTS_USES_VULKANSC
+
 	m_memoryProperties	= getPhysicalDeviceMemoryProperties(instanceDriver, deviceGroupInfo.pPhysicalDevices[physDeviceIdx]);
 }
 

@@ -493,5 +493,11 @@ vk::VkResult createUncheckedDevice (bool validationEnabled, const vk::InstanceIn
 	return vki.createDevice(physicalDevice, &createInfo, pAllocator, pDevice);
 }
 
+CustomInstanceWrapper::CustomInstanceWrapper (Context& context)
+	: instance(vkt::createCustomInstanceFromContext(context))
+{
+}
+
+
 
 }

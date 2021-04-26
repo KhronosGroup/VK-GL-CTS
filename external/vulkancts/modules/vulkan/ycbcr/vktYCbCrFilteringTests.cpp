@@ -562,10 +562,10 @@ tcu::TestStatus LinearFilteringTestInstance::iterate(void)
 		}
 	}
 
-	if (!isOk)
-		return tcu::TestStatus::fail("Result comparison failed");
 	if (++m_caseIndex < (int)m_cases.size())
 		return tcu::TestStatus::incomplete();
+	if (!isOk)
+		return tcu::TestStatus::fail("Result comparison failed");
 	return tcu::TestStatus::pass("Pass");
 }
 

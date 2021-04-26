@@ -1823,7 +1823,13 @@ void checkSupport (Context& context, const TestParams params)
 	}
 
 	if (params.testType == TEST_TYPE_SECONDARY_CMD_BUFFER)
+	{
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
+#ifdef CTS_USES_VULKANSC
+		if (!params.inheritFramebuffer && context.getDeviceVulkanSC10Properties().secondaryCommandBufferNullOrImagelessFramebuffer == VK_FALSE)
+			TCU_THROW(NotSupportedError, "secondaryCommandBufferNullFramebuffer is not supported");
+#endif
+	}
 }
 
 } // anonymous

@@ -1157,11 +1157,14 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 {
 	DE_ASSERT((clearCoords == UVec4()) || m_params.imageExtent.depth == 1u);
 
+	tcu::TestStatus result	= tcu::TestStatus::pass(successMessage);
+	bool errorsPresent		= false;
+
 	if (getIsDepthFormat(m_params.imageFormat) && m_params.separateDepthStencilLayoutMode != SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_STENCIL)
 	{
 		DE_ASSERT(m_imageMipLevels == 1u);
 
-		for (deUint32 arrayLayer = 0; arrayLayer < m_params.imageLayerCount; ++arrayLayer)
+		for (deUint32 arrayLayer = 0; arrayLayer < m_params.imageLayerCount && !errorsPresent; ++arrayLayer)
 		{
 			de::MovePtr<TextureLevelPyramid>	image			= readImage(VK_IMAGE_ASPECT_DEPTH_BIT, arrayLayer);
 			std::string							message;
@@ -1172,8 +1175,8 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 				continue;
 #endif // CTS_USES_VULKANSC
 
-			for (deUint32 y = 0; y < m_params.imageExtent.height; ++y)
-			for (deUint32 x = 0; x < m_params.imageExtent.width; ++x)
+			for (deUint32 y = 0; y < m_params.imageExtent.height && !errorsPresent; ++y)
+			for (deUint32 x = 0; x < m_params.imageExtent.width && !errorsPresent; ++x)
 			{
 				if (isInClearRange(clearCoords, x, y, arrayLayer, m_params.imageViewLayerRange, m_params.clearLayerRange))
 					depthValue = m_params.clearValue[0].depthStencil.depth;
@@ -1186,7 +1189,10 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 					continue;
 
 				if (!comparePixelToDepthClearValue(image->getLevel(0), x, y, depthValue, message))
-					return TestStatus::fail("Depth value mismatch! " + message);
+				{
+					result			= TestStatus::fail("Depth value mismatch! " + message);
+					errorsPresent	= true;
+				}
 			}
 		}
 	}
@@ -1195,7 +1201,7 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 	{
 		DE_ASSERT(m_imageMipLevels == 1u);
 
-		for (deUint32 arrayLayer = 0; arrayLayer < m_params.imageLayerCount; ++arrayLayer)
+		for (deUint32 arrayLayer = 0; arrayLayer < m_params.imageLayerCount && !errorsPresent; ++arrayLayer)
 		{
 			de::MovePtr<TextureLevelPyramid>	image			= readImage(VK_IMAGE_ASPECT_STENCIL_BIT, arrayLayer);
 			std::string							message;
@@ -1206,8 +1212,8 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 				continue;
 #endif // CTS_USES_VULKANSC
 
-			for (deUint32 y = 0; y < m_params.imageExtent.height; ++y)
-			for (deUint32 x = 0; x < m_params.imageExtent.width; ++x)
+			for (deUint32 y = 0; y < m_params.imageExtent.height && !errorsPresent; ++y)
+			for (deUint32 x = 0; x < m_params.imageExtent.width && !errorsPresent; ++x)
 			{
 				if (isInClearRange(clearCoords, x, y, arrayLayer, m_params.imageViewLayerRange, m_params.clearLayerRange))
 					stencilValue = m_params.clearValue[0].depthStencil.stencil;
@@ -1220,14 +1226,17 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 					continue;
 
 				if (!comparePixelToStencilClearValue(image->getLevel(0), x, y, stencilValue, message))
-					return TestStatus::fail("Stencil value mismatch! " + message);
+				{
+					result			= TestStatus::fail("Stencil value mismatch! " + message);
+					errorsPresent	= true;
+				}
 			}
 		}
 	}
 
 	if (!isDepthStencilFormat(m_params.imageFormat))
 	{
-		for (deUint32 arrayLayer = 0; arrayLayer < m_params.imageLayerCount; ++arrayLayer)
+		for (deUint32 arrayLayer = 0; arrayLayer < m_params.imageLayerCount && !errorsPresent; ++arrayLayer)
 		{
 			de::MovePtr<TextureLevelPyramid>	image			= readImage(VK_IMAGE_ASPECT_COLOR_BIT, arrayLayer);
 			std::string							message;
@@ -1238,15 +1247,15 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 				continue;
 #endif // CTS_USES_VULKANSC
 
-			for (deUint32 mipLevel = 0; mipLevel < m_imageMipLevels; ++mipLevel)
+			for (deUint32 mipLevel = 0; mipLevel < m_imageMipLevels && !errorsPresent; ++mipLevel)
 			{
 				const int					clearColorNdx	= ((mipLevel < m_thresholdMipLevel || m_params.isColorMultipleSubresourceRangeTest) ? 0 : 1);
 				const VkExtent3D			extent			= getMipLevelExtent(m_params.imageExtent, mipLevel);
 				const VkClearColorValue*	pExpectedColorValue = &(m_params.useSeparateExpectedClearValue ? m_params.expectedClearValue : m_params.clearValue)[clearColorNdx].color;
 
-				for (deUint32 z = 0; z < extent.depth;  ++z)
-				for (deUint32 y = 0; y < extent.height; ++y)
-				for (deUint32 x = 0; x < extent.width;  ++x)
+				for (deUint32 z = 0; z < extent.depth && !errorsPresent;  ++z)
+				for (deUint32 y = 0; y < extent.height && !errorsPresent; ++y)
+				for (deUint32 x = 0; x < extent.width && !errorsPresent;  ++x)
 				{
 					if (isInClearRange(clearCoords, x, y, arrayLayer, m_params.imageViewLayerRange, m_params.clearLayerRange))
 					{
@@ -1264,13 +1273,16 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 						}
 					}
 					if (!comparePixelToColorClearValue(image->getLevel(mipLevel), x, y, z, *pColorValue, message))
-						return TestStatus::fail("Color value mismatch! " + message);
+					{
+						errorsPresent	= true;
+						result			= TestStatus::fail("Color value mismatch! " + message);
+					}
 				}
 			}
 		}
 	}
 
-	return TestStatus::pass(successMessage);
+	return result;
 }
 
 void ImageClearingTestInstance::beginRenderPass (VkSubpassContents content, VkClearValue clearValue) const

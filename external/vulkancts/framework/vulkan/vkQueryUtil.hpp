@@ -59,7 +59,10 @@ VkImageFormatProperties							getPhysicalDeviceImageFormatProperties			(const In
 #ifndef CTS_USES_VULKANSC
 std::vector<VkSparseImageFormatProperties>		getPhysicalDeviceSparseImageFormatProperties	(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling);
 #endif // CTS_USES_VULKANSC
-
+#ifdef CTS_USES_VULKANSC
+VkPhysicalDeviceVulkanSC10Features				getPhysicalDeviceVulkanSC10Features				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
+VkPhysicalDeviceVulkanSC10Properties			getPhysicalDeviceVulkanSC10Properties			(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
+#endif // CTS_USES_VULKANSC
 VkMemoryRequirements							getBufferMemoryRequirements						(const DeviceInterface& vk, VkDevice device, VkBuffer buffer);
 VkMemoryRequirements							getImageMemoryRequirements						(const DeviceInterface& vk, VkDevice device, VkImage image);
 VkMemoryRequirements							getImagePlaneMemoryRequirements					(const DeviceInterface& vk, VkDevice device, VkImage image, VkImageAspectFlagBits planeAspect);

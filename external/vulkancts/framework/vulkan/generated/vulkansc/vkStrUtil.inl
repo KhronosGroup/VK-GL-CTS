@@ -5,8 +5,8 @@ const char*	getResultName							(VkResult value);
 const char*	getStructureTypeName					(VkStructureType value);
 const char*	getImageLayoutName						(VkImageLayout value);
 const char*	getObjectTypeName						(VkObjectType value);
-const char*	getVendorIdName							(VkVendorId value);
 const char*	getPipelineCacheHeaderVersionName		(VkPipelineCacheHeaderVersion value);
+const char*	getVendorIdName							(VkVendorId value);
 const char*	getSystemAllocationScopeName			(VkSystemAllocationScope value);
 const char*	getInternalAllocationTypeName			(VkInternalAllocationType value);
 const char*	getFormatName							(VkFormat value);
@@ -51,6 +51,7 @@ const char*	getFaultLevelName						(VkFaultLevel value);
 const char*	getFaultTypeName						(VkFaultType value);
 const char*	getFaultQueryBehaviorName				(VkFaultQueryBehavior value);
 const char*	getPipelineMatchControlName				(VkPipelineMatchControl value);
+const char*	getPipelineCacheValidationVersionName	(VkPipelineCacheValidationVersion value);
 const char*	getPresentModeKHRName					(VkPresentModeKHR value);
 const char*	getColorSpaceKHRName					(VkColorSpaceKHR value);
 const char*	getPerformanceCounterUnitKHRName		(VkPerformanceCounterUnitKHR value);
@@ -73,8 +74,8 @@ inline tcu::Format::Enum<VkResult>								getResultStr							(VkResult value)			
 inline tcu::Format::Enum<VkStructureType>						getStructureTypeStr						(VkStructureType value)						{ return tcu::Format::Enum<VkStructureType>(getStructureTypeName, value);										}
 inline tcu::Format::Enum<VkImageLayout>							getImageLayoutStr						(VkImageLayout value)						{ return tcu::Format::Enum<VkImageLayout>(getImageLayoutName, value);											}
 inline tcu::Format::Enum<VkObjectType>							getObjectTypeStr						(VkObjectType value)						{ return tcu::Format::Enum<VkObjectType>(getObjectTypeName, value);												}
-inline tcu::Format::Enum<VkVendorId>							getVendorIdStr							(VkVendorId value)							{ return tcu::Format::Enum<VkVendorId>(getVendorIdName, value);													}
 inline tcu::Format::Enum<VkPipelineCacheHeaderVersion>			getPipelineCacheHeaderVersionStr		(VkPipelineCacheHeaderVersion value)		{ return tcu::Format::Enum<VkPipelineCacheHeaderVersion>(getPipelineCacheHeaderVersionName, value);				}
+inline tcu::Format::Enum<VkVendorId>							getVendorIdStr							(VkVendorId value)							{ return tcu::Format::Enum<VkVendorId>(getVendorIdName, value);													}
 inline tcu::Format::Enum<VkSystemAllocationScope>				getSystemAllocationScopeStr				(VkSystemAllocationScope value)				{ return tcu::Format::Enum<VkSystemAllocationScope>(getSystemAllocationScopeName, value);						}
 inline tcu::Format::Enum<VkInternalAllocationType>				getInternalAllocationTypeStr			(VkInternalAllocationType value)			{ return tcu::Format::Enum<VkInternalAllocationType>(getInternalAllocationTypeName, value);						}
 inline tcu::Format::Enum<VkFormat>								getFormatStr							(VkFormat value)							{ return tcu::Format::Enum<VkFormat>(getFormatName, value);														}
@@ -119,6 +120,7 @@ inline tcu::Format::Enum<VkFaultLevel>							getFaultLevelStr						(VkFaultLevel
 inline tcu::Format::Enum<VkFaultType>							getFaultTypeStr							(VkFaultType value)							{ return tcu::Format::Enum<VkFaultType>(getFaultTypeName, value);												}
 inline tcu::Format::Enum<VkFaultQueryBehavior>					getFaultQueryBehaviorStr				(VkFaultQueryBehavior value)				{ return tcu::Format::Enum<VkFaultQueryBehavior>(getFaultQueryBehaviorName, value);								}
 inline tcu::Format::Enum<VkPipelineMatchControl>				getPipelineMatchControlStr				(VkPipelineMatchControl value)				{ return tcu::Format::Enum<VkPipelineMatchControl>(getPipelineMatchControlName, value);							}
+inline tcu::Format::Enum<VkPipelineCacheValidationVersion>		getPipelineCacheValidationVersionStr	(VkPipelineCacheValidationVersion value)	{ return tcu::Format::Enum<VkPipelineCacheValidationVersion>(getPipelineCacheValidationVersionName, value);		}
 inline tcu::Format::Enum<VkPresentModeKHR>						getPresentModeKHRStr					(VkPresentModeKHR value)					{ return tcu::Format::Enum<VkPresentModeKHR>(getPresentModeKHRName, value);										}
 inline tcu::Format::Enum<VkColorSpaceKHR>						getColorSpaceKHRStr						(VkColorSpaceKHR value)						{ return tcu::Format::Enum<VkColorSpaceKHR>(getColorSpaceKHRName, value);										}
 inline tcu::Format::Enum<VkPerformanceCounterUnitKHR>			getPerformanceCounterUnitKHRStr			(VkPerformanceCounterUnitKHR value)			{ return tcu::Format::Enum<VkPerformanceCounterUnitKHR>(getPerformanceCounterUnitKHRName, value);				}
@@ -141,8 +143,8 @@ inline std::ostream&	operator<<	(std::ostream& s, VkResult value)							{ return
 inline std::ostream&	operator<<	(std::ostream& s, VkStructureType value)					{ return s << getStructureTypeStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkImageLayout value)						{ return s << getImageLayoutStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkObjectType value)						{ return s << getObjectTypeStr(value);							}
-inline std::ostream&	operator<<	(std::ostream& s, VkVendorId value)							{ return s << getVendorIdStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkPipelineCacheHeaderVersion value)		{ return s << getPipelineCacheHeaderVersionStr(value);			}
+inline std::ostream&	operator<<	(std::ostream& s, VkVendorId value)							{ return s << getVendorIdStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkSystemAllocationScope value)			{ return s << getSystemAllocationScopeStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkInternalAllocationType value)			{ return s << getInternalAllocationTypeStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkFormat value)							{ return s << getFormatStr(value);								}
@@ -187,6 +189,7 @@ inline std::ostream&	operator<<	(std::ostream& s, VkFaultLevel value)						{ ret
 inline std::ostream&	operator<<	(std::ostream& s, VkFaultType value)						{ return s << getFaultTypeStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkFaultQueryBehavior value)				{ return s << getFaultQueryBehaviorStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkPipelineMatchControl value)				{ return s << getPipelineMatchControlStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkPipelineCacheValidationVersion value)	{ return s << getPipelineCacheValidationVersionStr(value);		}
 inline std::ostream&	operator<<	(std::ostream& s, VkPresentModeKHR value)					{ return s << getPresentModeKHRStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkColorSpaceKHR value)					{ return s << getColorSpaceKHRStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceCounterUnitKHR value)		{ return s << getPerformanceCounterUnitKHRStr(value);			}
@@ -309,6 +312,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkDrawIndirectCommand& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageSubresourceRange& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageMemoryBarrier& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryBarrier& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineCacheHeaderVersionOne& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAllocationCallbacks& value);
 std::ostream&	operator<<	(std::ostream& s, const VkApplicationInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkFormatProperties& value);
@@ -513,10 +517,12 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelinePoolSize& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceObjectReservationCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCommandPoolMemoryReservationCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCommandPoolMemoryConsumption& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPipelinePoolEntrySizeCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkFaultData& value);
 std::ostream&	operator<<	(std::ostream& s, const VkFaultCallbackInfo& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPipelineIdentifierInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineOfflineCreateInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineCacheStageValidationIndexEntry& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineCacheSafetyCriticalIndexEntry& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineCacheHeaderVersionSafetyCriticalOne& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceFormatKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSwapchainCreateInfoKHR& value);

@@ -35,7 +35,7 @@ struct ParentImpl;
 
 struct Parent
 {
-				Parent	();
+				Parent	(const int portOffset);
 				~Parent	();
 
 	bool		SetFile	(const string& name, const std::vector<u8>& content);
@@ -49,7 +49,7 @@ struct ChildImpl;
 
 struct Child
 {
-				Child	();
+				Child	(const int portOffset);
 				~Child	();
 
 	bool		SetFile	(const string& name, const std::vector<u8>& content);

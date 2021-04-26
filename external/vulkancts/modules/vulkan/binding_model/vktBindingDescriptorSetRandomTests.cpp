@@ -2218,7 +2218,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 #ifndef CTS_USES_VULKANSC
 		// Randomly select between vkUpdateDescriptorSets and vkUpdateDescriptorSetWithTemplate
 		if (randRange(&rnd, 1, 2) == 1 &&
-			m_context.contextSupports(vk::ApiVersion(1, 1, 0)) &&
+			m_context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) &&
 			!usesAccelerationStructure(m_data.stage))
 		{
 			DE_ASSERT(!usesAccelerationStructure(m_data.stage));

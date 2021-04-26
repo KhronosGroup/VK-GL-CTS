@@ -358,6 +358,14 @@ inline VkConformanceVersion makeConformanceVersion (uint8_t major, uint8_t minor
 	return res;
 }
 
+inline VkPipelineCacheStageValidationIndexEntry makePipelineCacheStageValidationIndexEntry (uint64_t codeSize, uint64_t codeOffset)
+{
+	VkPipelineCacheStageValidationIndexEntry res;
+	res.codeSize	= codeSize;
+	res.codeOffset	= codeOffset;
+	return res;
+}
+
 inline VkSurfaceFormatKHR makeSurfaceFormatKHR (VkFormat format, VkColorSpaceKHR colorSpace)
 {
 	VkSurfaceFormatKHR res;

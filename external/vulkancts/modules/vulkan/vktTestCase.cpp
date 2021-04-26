@@ -157,10 +157,14 @@ vector<string> addCoreDeviceExtensions(const vector<string>& extensions, deUint3
 
 deUint32 getTargetInstanceVersion (const PlatformInterface& vkp)
 {
-	deUint32 version = pack(ApiVersion(1, 0, 0));
+	deUint32 version = pack(ApiVersion(0, 1, 0, 0));
 
 	if (vkp.enumerateInstanceVersion(&version) != VK_SUCCESS)
 		TCU_THROW(InternalError, "Enumerate instance version error");
+#ifdef CTS_USES_VULKANSC
+	// Temporary workaround for Vulkan loader problem - currently Vulkan loader always returs API variant == 0
+	version = pack(ApiVersion(1, 1, 0, 0));
+#endif
 	return version;
 }
 
@@ -307,28 +311,34 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 	VkDeviceObjectReservationCreateInfo	dmrCI	= resetDeviceObjectReservationCreateInfo();
 	VkPipelineCacheCreateInfo			pcCI	=
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,	// VkStructureType				sType;
-		DE_NULL,										// const void*					pNext;
-		(VkPipelineCacheCreateFlags)0u,					// VkPipelineCacheCreateFlags	flags;
-		0U,												// deUintptr					initialDataSize;
-		DE_NULL											// const void*					pInitialData;
+		VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,				// VkStructureType				sType;
+		DE_NULL,													// const void*					pNext;
+		VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+			VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+		0U,															// deUintptr					initialDataSize;
+		DE_NULL														// const void*					pInitialData;
 	};
 
 	std::vector<VkPipelinePoolSize> poolSizes;
 	if (cmdLine.isSubProcess())
 	{
 		resourceInterface->importPipelineCacheData(vkp, instance, vki, physicalDevice, queueIndex);
-		pcCI.initialDataSize				= resourceInterface->getCacheDataSize();
-		pcCI.pInitialData					= resourceInterface->getCacheData();
-		dmrCI								= resourceInterface->getStatMax();
-		dmrCI.pipelineCacheCreateInfoCount	= 1;
-		dmrCI.pPipelineCacheCreateInfos		= &pcCI;
 
-		poolSizes							= resourceInterface->getPipelinePoolSizes();
+		dmrCI									= resourceInterface->getStatMax();
+
+		if(resourceInterface->getCacheDataSize() > 0)
+		{
+			pcCI.initialDataSize				= resourceInterface->getCacheDataSize();
+			pcCI.pInitialData					= resourceInterface->getCacheData();
+			dmrCI.pipelineCacheCreateInfoCount	= 1;
+			dmrCI.pPipelineCacheCreateInfos		= &pcCI;
+		}
+
+		poolSizes								= resourceInterface->getPipelinePoolSizes();
 		if (!poolSizes.empty())
 		{
-			dmrCI.pipelinePoolSizeCount		= deUint32(poolSizes.size());
-			dmrCI.pPipelinePoolSizes		= poolSizes.data();
+			dmrCI.pipelinePoolSizeCount			= deUint32(poolSizes.size());
+			dmrCI.pPipelinePoolSizes			= poolSizes.data();
 		}
 	}
 
@@ -375,6 +385,9 @@ public:
 	const VkPhysicalDeviceProperties2&								getDeviceProperties2					(void) const { return m_deviceProperties.getCoreProperties2();				}
 	const VkPhysicalDeviceVulkan11Properties&						getDeviceVulkan11Properties				(void) const { return m_deviceProperties.getVulkan11Properties();			}
 	const VkPhysicalDeviceVulkan12Properties&						getDeviceVulkan12Properties				(void) const { return m_deviceProperties.getVulkan12Properties();			}
+#ifdef CTS_USES_VULKANSC
+	const VkPhysicalDeviceVulkanSC10Properties&						getDeviceVulkanSC10Properties			(void) const { return m_deviceProperties.getVulkanSC10Properties(); }
+#endif // CTS_USES_VULKANSC
 
 #include "vkDevicePropertiesForDefaultDeviceDefs.inl"
 
@@ -435,7 +448,7 @@ namespace
 
 deUint32 sanitizeApiVersion(deUint32 v)
 {
-	return VK_MAKE_VERSION(VK_API_VERSION_MAJOR(v), VK_API_VERSION_MINOR(v), 0 );
+	return VK_MAKE_API_VERSION(VK_API_VERSION_VARIANT(v), VK_API_VERSION_MAJOR(v), VK_API_VERSION_MINOR(v), 0 );
 }
 
 #ifndef CTS_USES_VULKANSC
@@ -450,11 +463,15 @@ de::MovePtr<vk::DebugReportRecorder> createDebugReportRecorder (const vk::Platfo
 } // anonymous
 
 DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine, de::SharedPtr<vk::ResourceInterface> resourceInterface)
+#ifndef CTS_USES_VULKANSC
 	: m_maximumFrameworkVulkanVersion	(VK_API_MAX_FRAMEWORK_VERSION)
+#else
+	: m_maximumFrameworkVulkanVersion	(VKSC_API_MAX_FRAMEWORK_VERSION)
+#endif // CTS_USES_VULKANSC
 	, m_availableInstanceVersion		(getTargetInstanceVersion(vkPlatform))
-	, m_usedInstanceVersion				(sanitizeApiVersion(deMinu32(m_availableInstanceVersion, m_maximumFrameworkVulkanVersion)))
+	, m_usedInstanceVersion				(sanitizeApiVersion(minVulkanAPIVersion(m_availableInstanceVersion, m_maximumFrameworkVulkanVersion)))
 	, m_deviceVersions					(determineDeviceVersions(vkPlatform, m_usedInstanceVersion, cmdLine))
-	, m_usedApiVersion					(sanitizeApiVersion(deMinu32(m_usedInstanceVersion, m_deviceVersions.first)))
+	, m_usedApiVersion					(sanitizeApiVersion(minVulkanAPIVersion(m_usedInstanceVersion, m_deviceVersions.first)))
 
 #ifndef CTS_USES_VULKANSC
 	, m_debugReportRecorder				(cmdLine.isValidationEnabled()
@@ -489,7 +506,7 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 #ifndef CTS_USES_VULKANSC
 	, m_deviceInterface					(de::MovePtr<DeviceDriver>(new DeviceDriver(vkPlatform, *m_instance, *m_device)))
 #else
-	, m_deviceInterface					(de::MovePtr<DeviceDriverSC>(new DeviceDriverSC(vkPlatform, *m_instance, *m_device, cmdLine, resourceInterface)))
+	, m_deviceInterface					(de::MovePtr<DeviceDriverSC>(new DeviceDriverSC(vkPlatform, *m_instance, *m_device, cmdLine, resourceInterface, getDeviceVulkanSC10Properties())))
 #endif // CTS_USES_VULKANSC
 {
 #ifndef CTS_USES_VULKANSC
@@ -560,6 +577,9 @@ const vk::VkPhysicalDeviceFeatures&				Context::getDeviceFeatures						(void) co
 const vk::VkPhysicalDeviceFeatures2&			Context::getDeviceFeatures2						(void) const { return m_device->getDeviceFeatures2();						}
 const vk::VkPhysicalDeviceVulkan11Features&		Context::getDeviceVulkan11Features				(void) const { return m_device->getVulkan11Features();						}
 const vk::VkPhysicalDeviceVulkan12Features&		Context::getDeviceVulkan12Features				(void) const { return m_device->getVulkan12Features();						}
+#ifdef CTS_USES_VULKANSC
+const vk::VkPhysicalDeviceVulkanSC10Features&	Context::getDeviceVulkanSC10Features			(void) const { return m_device->getVulkanSC10Features();					}
+#endif // CTS_USES_VULKANSC
 
 bool Context::isDeviceFunctionalitySupported (const std::string& extension) const
 {
@@ -650,6 +670,9 @@ const vk::VkPhysicalDeviceProperties&			Context::getDeviceProperties				(void) c
 const vk::VkPhysicalDeviceProperties2&			Context::getDeviceProperties2				(void) const { return m_device->getDeviceProperties2();			}
 const vk::VkPhysicalDeviceVulkan11Properties&	Context::getDeviceVulkan11Properties		(void) const { return m_device->getDeviceVulkan11Properties();	}
 const vk::VkPhysicalDeviceVulkan12Properties&	Context::getDeviceVulkan12Properties		(void) const { return m_device->getDeviceVulkan12Properties();	}
+#ifdef CTS_USES_VULKANSC
+const vk::VkPhysicalDeviceVulkanSC10Properties&	Context::getDeviceVulkanSC10Properties		(void) const { return m_device->getDeviceVulkanSC10Properties(); }
+#endif // CTS_USES_VULKANSC
 
 #include "vkDevicePropertiesForContextDefs.inl"
 
@@ -663,12 +686,12 @@ vk::VkQueue								Context::getSparseQueue						(void) const { return m_device->
 de::SharedPtr<vk::ResourceInterface>	Context::getResourceInterface				(void) const { return m_resourceInterface;						}
 vk::Allocator&							Context::getDefaultAllocator				(void) const { return *m_allocator;								}
 deUint32								Context::getUsedApiVersion					(void) const { return m_device->getUsedApiVersion();			}
-bool									Context::contextSupports					(const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const
-																							{ return m_device->getUsedApiVersion() >= VK_MAKE_VERSION(majorNum, minorNum, patchNum); }
+bool									Context::contextSupports					(const deUint32 variantNum, const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const
+																							{ return isApiVersionSupported(m_device->getUsedApiVersion(), VK_MAKE_API_VERSION(variantNum, majorNum, minorNum, patchNum)); }
 bool									Context::contextSupports					(const ApiVersion version) const
-																							{ return m_device->getUsedApiVersion() >= pack(version); }
+																							{ return isApiVersionSupported(m_device->getUsedApiVersion(), pack(version)); }
 bool									Context::contextSupports					(const deUint32 requiredApiVersionBits) const
-																							{ return m_device->getUsedApiVersion() >= requiredApiVersionBits; }
+																							{ return isApiVersionSupported(m_device->getUsedApiVersion(), requiredApiVersionBits); }
 bool									Context::isDeviceFeatureInitialized			(vk::VkStructureType sType) const
 																							{ return m_device->isDeviceFeatureInitialized(sType);	}
 bool									Context::isDevicePropertyInitialized		(vk::VkStructureType sType) const

@@ -30,6 +30,7 @@
 #include "vktSynchronizationUtil.hpp"
 #include "tcuVector.hpp"
 #include "deUniquePtr.hpp"
+#include "vkResourceInterface.hpp"
 #include <string>
 
 namespace vkt
@@ -167,7 +168,7 @@ public:
 	{
 		return m_context.isDeviceFunctionalitySupported(extension);
 	}
-
+	de::SharedPtr<vk::ResourceInterface>	getResourceInterface	(void) const { return m_context.getResourceInterface(); }
 private:
 	const vkt::Context&				m_context;
 	const SynchronizationType		m_syncType;

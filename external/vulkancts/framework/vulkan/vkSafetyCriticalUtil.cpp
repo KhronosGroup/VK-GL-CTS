@@ -113,19 +113,27 @@ VkDeviceObjectReservationCreateInfo resetDeviceObjectReservationCreateInfo ()
 	return result;
 }
 
-VkPipelineIdentifierInfo resetPipelineIdentifierInfo ()
+VkPipelineOfflineCreateInfo resetPipelineOfflineCreateInfo()
 {
-	VkPipelineIdentifierInfo pipelineID =
+	VkPipelineOfflineCreateInfo pipelineID =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_IDENTIFIER_INFO,				// VkStructureType			sType;
+		VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO,			// VkStructureType			sType;
 		DE_NULL,												// const void*				pNext;
 		{0},													// deUint8					pipelineIdentifier[VK_UUID_SIZE];
-		VK_PIPELINE_MATCH_CONTROL_APPLICATION_UUID_EXACT_MATCH	// VkPipelineMatchControl	matchControl;
+		VK_PIPELINE_MATCH_CONTROL_APPLICATION_UUID_EXACT_MATCH,	// VkPipelineMatchControl	matchControl;
+		0u														// VkDeviceSize				poolEntrySize;
+
 	};
 	for (deUint32 i = 0; i < VK_UUID_SIZE; ++i)
 		pipelineID.pipelineIdentifier[i] = 0U;
 
 	return pipelineID;
+}
+
+void applyPipelineIdentifier (VkPipelineOfflineCreateInfo& pipelineID, const std::string& value)
+{
+	for (deUint32 i = 0; i < VK_UUID_SIZE && i < value.size(); ++i)
+		pipelineID.pipelineIdentifier[i] = deUint8(value[i]);
 }
 
 VkPhysicalDeviceVulkanSC10Features createDefaultSC10Features ()
@@ -134,7 +142,6 @@ VkPhysicalDeviceVulkanSC10Features createDefaultSC10Features ()
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES,	// VkStructureType	sType;
 		DE_NULL,													// void*			pNext;
-		VK_TRUE,													// VkBool32			pipelineIdentifier;
 		VK_FALSE													// VkBool32			shaderAtomicInstructions;
 	};
 	return result;
@@ -190,20 +197,6 @@ void hashPNextChain (std::size_t& seed, const void* pNext, const std::map<deUint
 				hash_combine(seed, ptr->fragmentSize.width, ptr->fragmentSize.height, deUint32(ptr->combinerOps[0]), deUint32(ptr->combinerOps[1]));
 				break;
 			}
-// Should it be skipped ?
-//			case VK_STRUCTURE_TYPE_PIPELINE_IDENTIFIER_INFO:
-//			{
-//				VkPipelineIdentifierInfo* ptr = (VkPipelineIdentifierInfo *)pNext;
-//				deUint8					pipelineIdentifier[VK_UUID_SIZE];
-//				VkPipelineMatchControl	matchControl;
-//				break;
-//			}
-//			case VK_STRUCTURE_TYPE_PIPELINE_POOL_ENTRY_SIZE_CREATE_INFO:
-//			{
-//				VkPipelinePoolEntrySizeCreateInfo* ptr = (VkPipelinePoolEntrySizeCreateInfo *)pNext;
-//				VkDeviceSize	poolEntrySize;
-//				break;
-//			}
 			case VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT:
 			{
 				VkPipelineRasterizationConservativeStateCreateInfoEXT* ptr = (VkPipelineRasterizationConservativeStateCreateInfoEXT *)pNext;
@@ -267,10 +260,10 @@ void hashPNextChain (std::size_t& seed, const void* pNext, const std::map<deUint
 						hash_combine(seed, ptr->pViewMasks[i]);
 				if (ptr->pViewOffsets != DE_NULL)
 					for (deUint32 i = 0; i < ptr->dependencyCount; ++i)
-						hash_combine(seed, ptr->pViewOffsets);
+						hash_combine(seed, ptr->pViewOffsets[i]);
 				if (ptr->pCorrelationMasks != DE_NULL)
 					for (deUint32 i = 0; i < ptr->correlationMaskCount; ++i)
-						hash_combine(seed, ptr->pCorrelationMasks);
+						hash_combine(seed, ptr->pCorrelationMasks[i]);
 				break;
 			}
 			case VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT:
@@ -312,6 +305,16 @@ std::size_t calculateGraphicsPipelineHash (const VkGraphicsPipelineCreateInfo& g
 
 	hash_combine(seed, gpCI.flags);
 
+	bool vertexInputStateRequired		= false;
+	bool inputAssemblyStateRequired		= false;
+	bool tessellationStateRequired		= false;
+	bool viewportStateRequired			= false;
+	bool viewportStateViewportsRequired	= false;
+	bool viewportStateScissorsRequired	= false;
+	bool multiSampleStateRequired		= false;
+	bool depthStencilStateRequired		= false;
+	bool colorBlendStateRequired		= false;
+
 	if (gpCI.pStages != DE_NULL)
 	{
 		for (deUint32 i = 0; i < gpCI.stageCount; ++i)
@@ -335,10 +338,50 @@ std::size_t calculateGraphicsPipelineHash (const VkGraphicsPipelineCreateInfo& g
 					hash_combine(seed, MemoryArea(gpCI.pStages[i].pSpecializationInfo->pData, gpCI.pStages[i].pSpecializationInfo->dataSize));
 				}
 			}
+			if (gpCI.pStages[i].stage == VK_SHADER_STAGE_VERTEX_BIT)
+			{
+				vertexInputStateRequired	= true;
+				inputAssemblyStateRequired	= true;
+			}
+			if (gpCI.pStages[i].stage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
+			{
+				tessellationStateRequired	= true;
+			}
+		}
+	}
+	if (gpCI.pDynamicState != DE_NULL)
+	{
+		if (gpCI.pDynamicState->pDynamicStates != DE_NULL)
+			for (deUint32 i = 0; i < gpCI.pDynamicState->dynamicStateCount; ++i)
+			{
+				if (gpCI.pDynamicState->pDynamicStates[i] == VK_DYNAMIC_STATE_VIEWPORT || gpCI.pDynamicState->pDynamicStates[i] == VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT_EXT)
+				{
+					viewportStateRequired			= true;
+					viewportStateViewportsRequired	= true;
+				}
+				if (gpCI.pDynamicState->pDynamicStates[i] == VK_DYNAMIC_STATE_SCISSOR || gpCI.pDynamicState->pDynamicStates[i] == VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT_EXT)
+				{
+					viewportStateRequired			= true;
+					viewportStateScissorsRequired	= true;
+				}
+				if (gpCI.pDynamicState->pDynamicStates[i] == VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE_EXT)
+					viewportStateRequired = true;
+			}
+	}
+	if (gpCI.pRasterizationState != DE_NULL)
+	{
+		if (gpCI.pRasterizationState->rasterizerDiscardEnable == VK_FALSE)
+		{
+			viewportStateRequired			= true;
+			viewportStateViewportsRequired	= true;
+			viewportStateScissorsRequired	= true;
+			multiSampleStateRequired		= true;
+			depthStencilStateRequired		= true;
+			colorBlendStateRequired			= true;
 		}
 	}
 
-	if (gpCI.pVertexInputState != DE_NULL)
+	if (vertexInputStateRequired && gpCI.pVertexInputState != DE_NULL)
 	{
 		hashPNextChain(seed, gpCI.pVertexInputState->pNext, objectHashes);
 		hash_combine(seed, gpCI.pVertexInputState->flags);
@@ -350,26 +393,26 @@ std::size_t calculateGraphicsPipelineHash (const VkGraphicsPipelineCreateInfo& g
 				hash_combine(seed, gpCI.pVertexInputState->pVertexAttributeDescriptions[i].location, gpCI.pVertexInputState->pVertexAttributeDescriptions[i].binding, deUint32(gpCI.pVertexInputState->pVertexAttributeDescriptions[i].format), gpCI.pVertexInputState->pVertexAttributeDescriptions[i].offset);
 	}
 
-	if (gpCI.pInputAssemblyState != DE_NULL)
+	if (inputAssemblyStateRequired && gpCI.pInputAssemblyState != DE_NULL)
 	{
 		hashPNextChain(seed, gpCI.pInputAssemblyState->pNext, objectHashes);
 		hash_combine(seed, deUint32(gpCI.pInputAssemblyState->flags), deUint32(gpCI.pInputAssemblyState->topology), gpCI.pInputAssemblyState->primitiveRestartEnable);
 	}
-	if (gpCI.pTessellationState != DE_NULL)
+	if (tessellationStateRequired && gpCI.pTessellationState != DE_NULL)
 	{
 		hashPNextChain(seed, gpCI.pTessellationState->pNext, objectHashes);
 		hash_combine(seed, gpCI.pTessellationState->flags, gpCI.pTessellationState->patchControlPoints);
 	}
-	if (gpCI.pViewportState != DE_NULL)
+	if (viewportStateRequired && gpCI.pViewportState != DE_NULL)
 	{
 		hashPNextChain(seed, gpCI.pViewportState->pNext, objectHashes);
 		hash_combine(seed, gpCI.pViewportState->flags);
 
-		if (gpCI.pViewportState->pViewports != DE_NULL)
+		if (viewportStateViewportsRequired && gpCI.pViewportState->pViewports != DE_NULL)
 			for (deUint32 i = 0; i < gpCI.pViewportState->viewportCount; ++i)
 				hash_combine(seed, gpCI.pViewportState->pViewports[i].x, gpCI.pViewportState->pViewports[i].y, gpCI.pViewportState->pViewports[i].width, gpCI.pViewportState->pViewports[i].height, gpCI.pViewportState->pViewports[i].minDepth, gpCI.pViewportState->pViewports[i].maxDepth);
 
-		if (gpCI.pViewportState->pScissors != DE_NULL)
+		if (viewportStateScissorsRequired && gpCI.pViewportState->pScissors != DE_NULL)
 			for (deUint32 i = 0; i < gpCI.pViewportState->scissorCount; ++i)
 				hash_combine(seed, gpCI.pViewportState->pScissors[i].offset.x, gpCI.pViewportState->pScissors[i].offset.y, gpCI.pViewportState->pScissors[i].extent.width, gpCI.pViewportState->pScissors[i].extent.height);
 	}
@@ -378,7 +421,7 @@ std::size_t calculateGraphicsPipelineHash (const VkGraphicsPipelineCreateInfo& g
 		hashPNextChain(seed, gpCI.pRasterizationState->pNext, objectHashes);
 		hash_combine(seed, deUint32(gpCI.pRasterizationState->flags), gpCI.pRasterizationState->depthClampEnable, gpCI.pRasterizationState->rasterizerDiscardEnable, deUint32(gpCI.pRasterizationState->polygonMode), deUint32(gpCI.pRasterizationState->cullMode), deUint32(gpCI.pRasterizationState->frontFace), gpCI.pRasterizationState->depthBiasEnable, gpCI.pRasterizationState->depthBiasConstantFactor, gpCI.pRasterizationState->depthBiasClamp, gpCI.pRasterizationState->depthBiasSlopeFactor, gpCI.pRasterizationState->lineWidth);
 	}
-	if (gpCI.pMultisampleState != DE_NULL)
+	if (multiSampleStateRequired && gpCI.pMultisampleState != DE_NULL)
 	{
 		hashPNextChain(seed, gpCI.pMultisampleState->pNext, objectHashes);
 		hash_combine(seed, deUint32(gpCI.pMultisampleState->flags), deUint32(gpCI.pMultisampleState->rasterizationSamples), gpCI.pMultisampleState->sampleShadingEnable, gpCI.pMultisampleState->minSampleShading);
@@ -387,7 +430,7 @@ std::size_t calculateGraphicsPipelineHash (const VkGraphicsPipelineCreateInfo& g
 				hash_combine(seed, gpCI.pMultisampleState->pSampleMask[i]);
 		hash_combine(seed, gpCI.pMultisampleState->alphaToCoverageEnable, gpCI.pMultisampleState->alphaToOneEnable);
 	}
-	if (gpCI.pDepthStencilState != DE_NULL)
+	if (depthStencilStateRequired && gpCI.pDepthStencilState != DE_NULL)
 	{
 		hashPNextChain(seed, gpCI.pDepthStencilState->pNext, objectHashes);
 		hash_combine(seed, deUint32(gpCI.pDepthStencilState->flags), gpCI.pDepthStencilState->depthTestEnable, gpCI.pDepthStencilState->depthWriteEnable, deUint32(gpCI.pDepthStencilState->depthCompareOp), gpCI.pDepthStencilState->depthBoundsTestEnable, gpCI.pDepthStencilState->stencilTestEnable);
@@ -398,7 +441,7 @@ std::size_t calculateGraphicsPipelineHash (const VkGraphicsPipelineCreateInfo& g
 		}
 		hash_combine(seed, gpCI.pDepthStencilState->minDepthBounds, gpCI.pDepthStencilState->maxDepthBounds);
 	}
-	if (gpCI.pColorBlendState != DE_NULL)
+	if (colorBlendStateRequired && gpCI.pColorBlendState != DE_NULL)
 	{
 		hashPNextChain(seed, gpCI.pColorBlendState->pNext, objectHashes);
 		hash_combine(seed, deUint32(gpCI.pColorBlendState->flags), gpCI.pColorBlendState->logicOpEnable, deUint32(gpCI.pColorBlendState->logicOp));
@@ -670,6 +713,223 @@ std::size_t calculateRenderPass2Hash (const VkRenderPassCreateInfo2& rCI, const 
 			hash_combine(seed, rCI.pCorrelatedViewMasks[i]);
 
 	return seed;
+}
+
+VkGraphicsPipelineCreateInfo prepareSimpleGraphicsPipelineCI (VkPipelineVertexInputStateCreateInfo&			vertexInputStateCreateInfo,
+															  std::vector<VkPipelineShaderStageCreateInfo>&	shaderStageCreateInfos,
+															  VkPipelineInputAssemblyStateCreateInfo&		inputAssemblyStateCreateInfo,
+															  VkPipelineViewportStateCreateInfo&			viewPortStateCreateInfo,
+															  VkPipelineRasterizationStateCreateInfo&		rasterizationStateCreateInfo,
+															  VkPipelineMultisampleStateCreateInfo&			multisampleStateCreateInfo,
+															  VkPipelineColorBlendAttachmentState&			colorBlendAttachmentState,
+															  VkPipelineColorBlendStateCreateInfo&			colorBlendStateCreateInfo,
+															  VkPipelineDynamicStateCreateInfo&				dynamicStateCreateInfo,
+															  std::vector<VkDynamicState>&					dynamicStates,
+															  VkPipelineLayout								pipelineLayout,
+															  VkRenderPass									renderPass)
+{
+	vertexInputStateCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,				// VkStructureType                             sType;
+		DE_NULL,																// const void*                                 pNext;
+		(VkPipelineVertexInputStateCreateFlags)0,								// VkPipelineVertexInputStateCreateFlags       flags;
+		0u,																		// deUint32                                    vertexBindingDescriptionCount;
+		DE_NULL,																// const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
+		0u,																		// deUint32                                    vertexAttributeDescriptionCount;
+		DE_NULL																	// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
+	};
+
+	inputAssemblyStateCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,			// VkStructureType                            sType;
+		DE_NULL,																// const void*                                pNext;
+		(VkPipelineInputAssemblyStateCreateFlags)0,								// VkPipelineInputAssemblyStateCreateFlags    flags;
+		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,									// VkPrimitiveTopology                        topology;
+		VK_FALSE																// VkBool32                                   primitiveRestartEnable;
+	};
+
+	viewPortStateCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,					// VkStructureType                       sType;
+		DE_NULL,																// const void*                           pNext;
+		(VkPipelineViewportStateCreateFlags)0,									// VkPipelineViewportStateCreateFlags    flags;
+		1,																		// deUint32                              viewportCount;
+		DE_NULL,																// const VkViewport*                     pViewports;
+		1,																		// deUint32                              scissorCount;
+		DE_NULL																	// const VkRect2D*                       pScissors;
+	};
+
+	rasterizationStateCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,				// VkStructureType                            sType;
+		DE_NULL,																// const void*                                pNext;
+		(VkPipelineRasterizationStateCreateFlags)0,								// VkPipelineRasterizationStateCreateFlags    flags;
+		VK_FALSE,																// VkBool32                                   depthClampEnable;
+		VK_FALSE,																// VkBool32                                   rasterizerDiscardEnable;
+		VK_POLYGON_MODE_FILL,													// VkPolygonMode                              polygonMode;
+		VK_CULL_MODE_BACK_BIT,													// VkCullModeFlags                            cullMode;
+		VK_FRONT_FACE_CLOCKWISE,												// VkFrontFace                                frontFace;
+		VK_FALSE,																// VkBool32                                   depthBiasEnable;
+		0.0f,																	// float                                      depthBiasConstantFactor;
+		0.0f,																	// float                                      depthBiasClamp;
+		0.0f,																	// float                                      depthBiasSlopeFactor;
+		1.0f																	// float                                      lineWidth;
+	};
+
+	multisampleStateCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,				// VkStructureType                          sType;
+		DE_NULL,																// const void*                              pNext;
+		(VkPipelineMultisampleStateCreateFlags)0,								// VkPipelineMultisampleStateCreateFlags    flags;
+		VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits                    rasterizationSamples;
+		VK_FALSE,																// VkBool32                                 sampleShadingEnable;
+		0.0f,																	// float                                    minSampleShading;
+		DE_NULL,																// const VkSampleMask*                      pSampleMask;
+		VK_FALSE,																// VkBool32                                 alphaToCoverageEnable;
+		VK_FALSE																// VkBool32                                 alphaToOneEnable;
+	};
+
+	colorBlendAttachmentState =
+	{
+		VK_FALSE,																// VkBool32                 blendEnable;
+		VK_BLEND_FACTOR_ZERO,													// VkBlendFactor            srcColorBlendFactor;
+		VK_BLEND_FACTOR_ZERO,													// VkBlendFactor            dstColorBlendFactor;
+		VK_BLEND_OP_ADD,														// VkBlendOp                colorBlendOp;
+		VK_BLEND_FACTOR_ZERO,													// VkBlendFactor            srcAlphaBlendFactor;
+		VK_BLEND_FACTOR_ZERO,													// VkBlendFactor            dstAlphaBlendFactor;
+		VK_BLEND_OP_ADD,														// VkBlendOp                alphaBlendOp;
+		(VkColorComponentFlags)0xFu												// VkColorComponentFlags    colorWriteMask;
+	};
+
+	colorBlendStateCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,				// VkStructureType                               sType;
+		DE_NULL,																// const void*                                   pNext;
+		(VkPipelineColorBlendStateCreateFlags)0,								// VkPipelineColorBlendStateCreateFlags          flags;
+		DE_FALSE,																// VkBool32                                      logicOpEnable;
+		VK_LOGIC_OP_CLEAR,														// VkLogicOp                                     logicOp;
+		1,																		// deUint32                                      attachmentCount;
+		&colorBlendAttachmentState,												// const VkPipelineColorBlendAttachmentState*    pAttachments;
+		{ 1.0f, 1.0f, 1.0f, 1.0f }												// float                                         blendConstants[4];
+	};
+
+	dynamicStateCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,					// VkStructureType                      sType;
+		DE_NULL,																// const void*                          pNext;
+		(VkPipelineDynamicStateCreateFlags)0u,									// VkPipelineDynamicStateCreateFlags    flags;
+		deUint32(dynamicStates.size()),											// deUint32                             dynamicStateCount;
+		dynamicStates.data()													// const VkDynamicState*                pDynamicStates;
+	};
+
+	VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,						// VkStructureType                                  sType;
+		DE_NULL,																// const void*                                      pNext;
+		(VkPipelineCreateFlags)0,												// VkPipelineCreateFlags                            flags;
+		deUint32(shaderStageCreateInfos.size()),								// deUint32                                         stageCount;
+		shaderStageCreateInfos.data(),											// const VkPipelineShaderStageCreateInfo*           pStages;
+		&vertexInputStateCreateInfo,											// const VkPipelineVertexInputStateCreateInfo*      pVertexInputState;
+		&inputAssemblyStateCreateInfo,											// const VkPipelineInputAssemblyStateCreateInfo*    pInputAssemblyState;
+		DE_NULL,																// const VkPipelineTessellationStateCreateInfo*     pTessellationState;
+		&viewPortStateCreateInfo,												// const VkPipelineViewportStateCreateInfo*         pViewportState;
+		&rasterizationStateCreateInfo,											// const VkPipelineRasterizationStateCreateInfo*    pRasterizationState;
+		&multisampleStateCreateInfo,											// const VkPipelineMultisampleStateCreateInfo*      pMultisampleState;
+		DE_NULL,																// const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState;
+		&colorBlendStateCreateInfo,												// const VkPipelineColorBlendStateCreateInfo*       pColorBlendState;
+		&dynamicStateCreateInfo,												// const VkPipelineDynamicStateCreateInfo*          pDynamicState;
+		pipelineLayout,															// VkPipelineLayout                                 layout;
+		renderPass,																// VkRenderPass                                     renderPass;
+		0u,																		// deUint32                                         subpass;
+		DE_NULL,																// VkPipeline                                       basePipelineHandle;
+		0																		// int                                              basePipelineIndex;
+	};
+
+	return graphicsPipelineCreateInfo;
+}
+
+VkComputePipelineCreateInfo prepareSimpleComputePipelineCI (const VkPipelineShaderStageCreateInfo&	shaderStageCreateInfo,
+															VkPipelineLayout						pipelineLayout)
+{
+	const VkComputePipelineCreateInfo				pipelineCreateInfo			=
+	{
+		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,							// VkStructureType					sType
+		DE_NULL,																// const void*						pNext
+		0u,																		// VkPipelineCreateFlags			flags
+		shaderStageCreateInfo,													// VkPipelineShaderStageCreateInfo	stage
+		pipelineLayout,															// VkPipelineLayout					layout
+		(vk::VkPipeline)0,														// VkPipeline						basePipelineHandle
+		0u,																		// deInt32							basePipelineIndex
+	};
+	return pipelineCreateInfo;
+}
+
+VkRenderPassCreateInfo prepareSimpleRenderPassCI (VkFormat						format,
+												  VkAttachmentDescription&		attachmentDescription,
+												  VkAttachmentReference&		attachmentReference,
+												  VkSubpassDescription&			subpassDescription)
+{
+	attachmentDescription =
+	{
+		(VkAttachmentDescriptionFlags)0u,										// VkAttachmentDescriptionFlags    flags;
+		format,																	// VkFormat                        format;
+		VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits           samples;
+		VK_ATTACHMENT_LOAD_OP_CLEAR,											// VkAttachmentLoadOp              loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,											// VkAttachmentStoreOp             storeOp;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,										// VkAttachmentLoadOp              stencilLoadOp;
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,										// VkAttachmentStoreOp             stencilStoreOp;
+		VK_IMAGE_LAYOUT_UNDEFINED,												// VkImageLayout                   initialLayout;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL								// VkImageLayout                   finalLayout;
+	};
+
+	attachmentReference =
+	{
+		0u,		// deUint32			attachment;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout	layout;
+	};
+
+	subpassDescription =
+	{
+		(VkSubpassDescriptionFlags)0u,											// VkSubpassDescriptionFlags       flags;
+		VK_PIPELINE_BIND_POINT_GRAPHICS,										// VkPipelineBindPoint             pipelineBindPoint
+		0u,																		// deUint32                        inputAttachmentCount
+		DE_NULL,																// const VkAttachmentReference*    pInputAttachments
+		1u,																		// deUint32                        colorAttachmentCount
+		&attachmentReference,													// const VkAttachmentReference*    pColorAttachments
+		DE_NULL,																// const VkAttachmentReference*    pResolveAttachments
+		DE_NULL,																// const VkAttachmentReference*    pDepthStencilAttachment
+		0u,																		// deUint32                        preserveAttachmentCount
+		DE_NULL																	// const deUint32*                 pPreserveAttachments
+	};
+
+	const VkRenderPassCreateInfo					renderPassCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,								// VkStructureType                   sType;
+		DE_NULL,																// const void*                       pNext;
+		(VkRenderPassCreateFlags)0u,											// VkRenderPassCreateFlags           flags;
+		1u,																		// deUint32                          attachmentCount
+		&attachmentDescription,													// const VkAttachmentDescription*    pAttachments
+		1u,																		// deUint32                          subpassCount
+		&subpassDescription,													// const VkSubpassDescription*       pSubpasses
+		0u,																		// deUint32                          dependencyCount
+		DE_NULL																	// const VkSubpassDependency*        pDependencies
+	};
+
+	return renderPassCreateInfo;
+}
+
+VkFormat getRenderTargetFormat (const InstanceInterface& vk, const VkPhysicalDevice& device)
+{
+	const VkFormatFeatureFlags	featureFlags = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT;
+	VkFormatProperties			formatProperties;
+	vk.getPhysicalDeviceFormatProperties(device, VK_FORMAT_B8G8R8A8_UNORM, &formatProperties);
+	if ((formatProperties.linearTilingFeatures & featureFlags) || (formatProperties.optimalTilingFeatures & featureFlags))
+		return VK_FORMAT_B8G8R8A8_UNORM;
+	vk.getPhysicalDeviceFormatProperties(device, VK_FORMAT_R8G8B8A8_UNORM, &formatProperties);
+	if ((formatProperties.linearTilingFeatures & featureFlags) || formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)
+		return VK_FORMAT_R8G8B8A8_UNORM;
+	TCU_THROW(NotSupportedError, "Device does not support VK_FORMAT_B8G8R8A8_UNORM nor VK_FORMAT_R8G8B8A8_UNORM");
+	return VK_FORMAT_UNDEFINED;
 }
 
 } // vk

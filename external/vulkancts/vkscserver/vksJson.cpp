@@ -21,8 +21,27 @@
 #include "vksJson.hpp"
 
 #define VULKAN_JSON_CTS
+#ifdef __GNUC__
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wunused-parameter"
+	#pragma GCC diagnostic ignored "-Wunused-function"
+	#pragma GCC diagnostic ignored "-Wunused-variable"
+#endif // __GNUC__
+#ifdef __clang__
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Wpointer-bool-conversion"
+#endif
+
 #include "vulkan_json_data.hpp"
 #include "vulkan_json_parser.hpp"
+
+#ifdef __GNUC__
+	#pragma GCC diagnostic pop
+#endif // __GNUC__
+#ifdef __clang__
+	#pragma clang diagnostic pop
+#endif
+
 #include "vksStructsVKSC.hpp"
 
 namespace vksc_server
@@ -135,16 +154,16 @@ string writeJSON_VkDeviceObjectReservationCreateInfo (const VkDeviceObjectReserv
 	return vk_json::_string_stream.str();
 }
 
-string	writeJSON_VkPipelineIdentifierInfo(const vk::VkPipelineIdentifierInfo& piInfo)
+string	writeJSON_VkPipelineOfflineCreateInfo(const vk::VkPipelineOfflineCreateInfo& piInfo)
 {
 	vk_json::_string_stream.str({});
 	vk_json::_string_stream.clear();
-	vk_json::print_VkPipelineIdentifierInfo(&piInfo, "", false);
+	vk_json::print_VkPipelineOfflineCreateInfo(&piInfo, "", false);
 	return vk_json::_string_stream.str();
 }
 
 string	writeJSON_GraphicsPipeline_vkpccjson (deUint32																		pipelineIndex,
-											  const vk::VkPipelineIdentifierInfo											id,
+											  const vk::VkPipelineOfflineCreateInfo											id,
 											  const VkGraphicsPipelineCreateInfo&											gpCI,
 											  const vk::VkPhysicalDeviceFeatures2&											deviceFeatures2,
 											  const std::vector<std::string>&												deviceExtensions,
@@ -382,7 +401,7 @@ string	writeJSON_GraphicsPipeline_vkpccjson (deUint32																		pipelineI
 }
 
 string	writeJSON_ComputePipeline_vkpccjson (deUint32																		pipelineIndex,
-											 const vk::VkPipelineIdentifierInfo												id,
+											 const vk::VkPipelineOfflineCreateInfo											id,
 											 const VkComputePipelineCreateInfo&												cpCI,
 											 const vk::VkPhysicalDeviceFeatures2&											deviceFeatures2,
 											 const std::vector<std::string>&												deviceExtensions,
@@ -748,16 +767,16 @@ void readJSON_VkDeviceObjectReservationCreateInfo (Context& context,
 	vk_json_parser::parse_VkDeviceObjectReservationCreateInfo("", jsonRoot, dmrCI);
 }
 
-void readJSON_VkPipelineIdentifierInfo (Context& context,
-										const string& pipelineIdentifierInfo,
-										vk::VkPipelineIdentifierInfo& piInfo)
+void readJSON_VkPipelineOfflineCreateInfo (Context& context,
+										   const string& pipelineIdentifierInfo,
+										   vk::VkPipelineOfflineCreateInfo& piInfo)
 {
 	Json::Value						jsonRoot;
 	string							errors;
 	bool							parsingSuccessful	= context.reader->parse(pipelineIdentifierInfo.c_str(), pipelineIdentifierInfo.c_str() + pipelineIdentifierInfo.size(), &jsonRoot, &errors);
 	if (!parsingSuccessful)
 		TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-	vk_json_parser::parse_VkPipelineIdentifierInfo("", jsonRoot, piInfo);
+	vk_json_parser::parse_VkPipelineOfflineCreateInfo("", jsonRoot, piInfo);
 }
 
 void readJSON_VkSamplerCreateInfo (Context& context,
@@ -825,6 +844,9 @@ static void parse_VkShaderModuleCreateInfo (const char*					s,
 
 	// pCode is encoded using Base64.
 	spirvShader = vk_json_parser::base64decode(obj["pCode"].asString());
+	// Base64 always decodes a multiple of 3 bytes, so the size could mismatch the module
+	// size by one or two bytes. resize spirvShader to match.
+	spirvShader.resize(o.codeSize);
 	o.pCode = (deUint32*)spirvShader.data();
 }
 

@@ -13,11 +13,11 @@ VK_KHR_wayland_surface						INSTANCE
 VK_KHR_mir_surface							INSTANCE
 VK_KHR_android_surface						INSTANCE
 VK_KHR_win32_surface						INSTANCE
-VK_KHR_get_physical_device_properties2		INSTANCE 1_1_0
-VK_KHR_device_group_creation				INSTANCE 1_1_0
-VK_KHR_external_memory_capabilities			INSTANCE 1_1_0
-VK_KHR_external_semaphore_capabilities		INSTANCE 1_1_0
-VK_KHR_external_fence_capabilities			INSTANCE 1_1_0
+VK_KHR_get_physical_device_properties2		INSTANCE 0_1_1_0
+VK_KHR_device_group_creation				INSTANCE 0_1_1_0
+VK_KHR_external_memory_capabilities			INSTANCE 0_1_1_0
+VK_KHR_external_semaphore_capabilities		INSTANCE 0_1_1_0
+VK_KHR_external_fence_capabilities			INSTANCE 0_1_1_0
 VK_KHR_get_surface_capabilities2			INSTANCE
 VK_KHR_get_display_properties2				INSTANCE
 VK_KHR_surface_protected_capabilities		INSTANCE
@@ -25,58 +25,58 @@ VK_KHR_surface_protected_capabilities		INSTANCE
 VK_KHR_swapchain							DEVICE
 VK_KHR_swapchain_mutable_format				DEVICE
 VK_KHR_display_swapchain					DEVICE
-VK_KHR_sampler_mirror_clamp_to_edge			DEVICE 1_2_0
-VK_KHR_multiview							DEVICE 1_1_0
-VK_KHR_device_group							DEVICE 1_1_0
-VK_KHR_shader_draw_parameters				DEVICE 1_1_0
-VK_KHR_maintenance1							DEVICE 1_1_0
-VK_KHR_external_memory						DEVICE 1_1_0
+VK_KHR_sampler_mirror_clamp_to_edge			DEVICE 0_1_2_0
+VK_KHR_multiview							DEVICE 0_1_1_0
+VK_KHR_device_group							DEVICE 0_1_1_0
+VK_KHR_shader_draw_parameters				DEVICE 0_1_1_0
+VK_KHR_maintenance1							DEVICE 0_1_1_0
+VK_KHR_external_memory						DEVICE 0_1_1_0
 VK_KHR_external_memory_win32				DEVICE
 VK_KHR_external_memory_fd					DEVICE
 VK_KHR_win32_keyed_mutex					DEVICE
-VK_KHR_external_semaphore					DEVICE 1_1_0
+VK_KHR_external_semaphore					DEVICE 0_1_1_0
 VK_KHR_external_semaphore_win32				DEVICE
 VK_KHR_external_semaphore_fd				DEVICE
 VK_KHR_push_descriptor						DEVICE
-VK_KHR_shader_float16_int8					DEVICE 1_2_0
-VK_KHR_16bit_storage						DEVICE 1_1_0
+VK_KHR_shader_float16_int8					DEVICE 0_1_2_0
+VK_KHR_16bit_storage						DEVICE 0_1_1_0
 VK_KHR_incremental_present					DEVICE
-VK_KHR_8bit_storage							DEVICE 1_2_0
-VK_KHR_descriptor_update_template			DEVICE 1_1_0
-VK_KHR_create_renderpass2					DEVICE 1_2_0
+VK_KHR_8bit_storage							DEVICE 0_1_2_0
+VK_KHR_descriptor_update_template			DEVICE 0_1_1_0
+VK_KHR_create_renderpass2					DEVICE 0_1_2_0
 VK_KHR_shared_presentable_image				DEVICE
-VK_KHR_external_fence						DEVICE 1_1_0
+VK_KHR_external_fence						DEVICE 0_1_1_0
 VK_KHR_external_fence_win32					DEVICE
 VK_KHR_external_fence_fd					DEVICE
-VK_KHR_maintenance2							DEVICE 1_1_0
-VK_KHR_variable_pointers					DEVICE 1_1_0
-VK_KHR_dedicated_allocation					DEVICE 1_1_0
-VK_KHR_storage_buffer_storage_class			DEVICE 1_1_0
-VK_KHR_relaxed_block_layout					DEVICE 1_1_0
-VK_KHR_get_memory_requirements2				DEVICE 1_1_0
-VK_KHR_image_format_list					DEVICE 1_2_0
-VK_KHR_sampler_ycbcr_conversion				DEVICE 1_1_0
-VK_KHR_bind_memory2							DEVICE 1_1_0
-VK_KHR_maintenance3							DEVICE 1_1_0
-VK_KHR_driver_properties					DEVICE 1_2_0
-VK_KHR_shader_float_controls				DEVICE 1_2_0
-VK_KHR_depth_stencil_resolve				DEVICE 1_2_0
-VK_KHR_draw_indirect_count					DEVICE 1_2_0
-VK_KHR_shader_atomic_int64					DEVICE 1_2_0
-VK_KHR_vulkan_memory_model					DEVICE 1_2_0
-VK_KHR_uniform_buffer_standard_layout		DEVICE 1_2_0
-VK_KHR_imageless_framebuffer				DEVICE 1_2_0
-VK_KHR_shader_subgroup_extended_types		DEVICE 1_2_0
-VK_EXT_sampler_filter_minmax				DEVICE 1_2_0
-VK_EXT_shader_viewport_index_layer			DEVICE 1_2_0
-VK_EXT_descriptor_indexing					DEVICE 1_2_0
-VK_EXT_scalar_block_layout					DEVICE 1_2_0
-VK_KHR_buffer_device_address				DEVICE 1_2_0
-VK_EXT_host_query_reset						DEVICE 1_2_0
-VK_KHR_separate_depth_stencil_layouts		DEVICE 1_2_0
-VK_KHR_timeline_semaphore 		 		 	DEVICE 1_2_0
-VK_KHR_spirv_1_4 		 		 	 		DEVICE 1_2_0
-VK_EXT_separate_stencil_usage 		 		DEVICE 1_2_0
+VK_KHR_maintenance2							DEVICE 0_1_1_0
+VK_KHR_variable_pointers					DEVICE 0_1_1_0
+VK_KHR_dedicated_allocation					DEVICE 0_1_1_0
+VK_KHR_storage_buffer_storage_class			DEVICE 0_1_1_0
+VK_KHR_relaxed_block_layout					DEVICE 0_1_1_0
+VK_KHR_get_memory_requirements2				DEVICE 0_1_1_0
+VK_KHR_image_format_list					DEVICE 0_1_2_0
+VK_KHR_sampler_ycbcr_conversion				DEVICE 0_1_1_0
+VK_KHR_bind_memory2							DEVICE 0_1_1_0
+VK_KHR_maintenance3							DEVICE 0_1_1_0
+VK_KHR_driver_properties					DEVICE 0_1_2_0
+VK_KHR_shader_float_controls				DEVICE 0_1_2_0
+VK_KHR_depth_stencil_resolve				DEVICE 0_1_2_0
+VK_KHR_draw_indirect_count					DEVICE 0_1_2_0
+VK_KHR_shader_atomic_int64					DEVICE 0_1_2_0
+VK_KHR_vulkan_memory_model					DEVICE 0_1_2_0
+VK_KHR_uniform_buffer_standard_layout		DEVICE 0_1_2_0
+VK_KHR_imageless_framebuffer				DEVICE 0_1_2_0
+VK_KHR_shader_subgroup_extended_types		DEVICE 0_1_2_0
+VK_EXT_sampler_filter_minmax				DEVICE 0_1_2_0
+VK_EXT_shader_viewport_index_layer			DEVICE 0_1_2_0
+VK_EXT_descriptor_indexing					DEVICE 0_1_2_0
+VK_EXT_scalar_block_layout					DEVICE 0_1_2_0
+VK_KHR_buffer_device_address				DEVICE 0_1_2_0
+VK_EXT_host_query_reset						DEVICE 0_1_2_0
+VK_KHR_separate_depth_stencil_layouts		DEVICE 0_1_2_0
+VK_KHR_timeline_semaphore 		 		 	DEVICE 0_1_2_0
+VK_KHR_spirv_1_4 		 		 	 		DEVICE 0_1_2_0
+VK_EXT_separate_stencil_usage 		 		DEVICE 0_1_2_0
 VK_KHR_pipeline_executable_properties 		DEVICE
 VK_KHR_shader_clock							DEVICE
 VK_KHR_performance_query					DEVICE

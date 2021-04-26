@@ -996,8 +996,6 @@ void ShaderRenderCaseInstance::uploadImage (const tcu::TextureFormat&			texForma
 	deUint32						bufferSize				= 0u;
 	Move<VkBuffer>					buffer;
 	de::MovePtr<Allocation>			bufferAlloc;
-	Move<VkCommandPool>				cmdPool;
-	Move<VkCommandBuffer>			cmdBuffer;
 	std::vector<VkBufferImageCopy>	copyRegions;
 	std::vector<deUint32>			offsetMultiples;
 
@@ -1080,7 +1078,10 @@ void ShaderRenderCaseInstance::uploadImage (const tcu::TextureFormat&			texForma
 
 	flushAlloc(vk, vkDevice, *bufferAlloc);
 
-	copyBufferToImage(vk, vkDevice, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, DE_NULL, aspectMask, mipLevels, arrayLayers, destImage);
+	if(m_externalCommandPool.get() != DE_NULL)
+		copyBufferToImage(vk, vkDevice, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, DE_NULL, aspectMask, mipLevels, arrayLayers, destImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, &(m_externalCommandPool.get()->get()));
+	else
+		copyBufferToImage(vk, vkDevice, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, DE_NULL, aspectMask, mipLevels, arrayLayers, destImage);
 }
 
 void ShaderRenderCaseInstance::clearImage (const tcu::Sampler&					refSampler,
@@ -1102,9 +1103,21 @@ void ShaderRenderCaseInstance::clearImage (const tcu::Sampler&					refSampler,
 	deMemset(&clearValue, 0, sizeof(clearValue));
 
 
-	// Create command pool and buffer
-	cmdPool		= createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
-	cmdBuffer	= allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	// Create command pool
+	VkCommandPool activeCmdPool;
+	if (m_externalCommandPool.get() == DE_NULL)
+	{
+		// Create local command pool
+		cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+		activeCmdPool = *cmdPool;
+	}
+	else
+	{
+		// Use external command pool if available
+		activeCmdPool = m_externalCommandPool.get()->get();
+	}
+	// Create command buffer
+	cmdBuffer	= allocateCommandBuffer(vk, vkDevice, activeCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	const VkImageMemoryBarrier preImageBarrier =
 	{
@@ -2231,12 +2244,22 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 		flushAlloc(vk, vkDevice, *indexBufferAlloc);
 	}
 
-	// Create command pool
-	cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+	VkCommandPool activeCmdPool;
+	if (m_externalCommandPool.get() == DE_NULL)
+	{
+		// Create local command pool
+		cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+		activeCmdPool = *cmdPool;
+	}
+	else
+	{
+		// Use external command pool if available
+		activeCmdPool = m_externalCommandPool.get()->get();
+	}
 
 	// Create command buffer
 	{
-		cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		cmdBuffer = allocateCommandBuffer(vk, vkDevice, activeCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		beginCommandBuffer(vk, *cmdBuffer);
 
@@ -2342,7 +2365,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
 
 		// Copy image to buffer
-		const Move<VkCommandBuffer>						resultCmdBuffer				= allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		const Move<VkCommandBuffer>						resultCmdBuffer				= allocateCommandBuffer(vk, vkDevice, activeCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		beginCommandBuffer(vk, *resultCmdBuffer);
 

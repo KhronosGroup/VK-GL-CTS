@@ -113,6 +113,15 @@ struct VkMemoryBarrier
 	VkAccessFlags	dstAccessMask;
 };
 
+struct VkPipelineCacheHeaderVersionOne
+{
+	uint32_t						headerSize;
+	VkPipelineCacheHeaderVersion	headerVersion;
+	uint32_t						vendorID;
+	uint32_t						deviceID;
+	uint8_t							pipelineCacheUUID[VK_UUID_SIZE];
+};
+
 struct VkAllocationCallbacks
 {
 	void*									pUserData;
@@ -2214,7 +2223,6 @@ struct VkPhysicalDeviceVulkanSC10Features
 {
 	VkStructureType	sType;
 	void*			pNext;
-	VkBool32		pipelineIdentifier;
 	VkBool32		shaderAtomicInstructions;
 };
 
@@ -2227,7 +2235,7 @@ struct VkPhysicalDeviceVulkanSC10Properties
 	VkBool32		commandPoolMultipleCommandBuffersRecording;
 	VkBool32		commandPoolResetCommandBuffer;
 	VkBool32		commandBufferSimultaneousUse;
-	VkBool32		secondaryCommandBufferNullFramebuffer;
+	VkBool32		secondaryCommandBufferNullOrImagelessFramebuffer;
 	VkBool32		recycleDescriptorSetMemory;
 	VkBool32		recyclePipelineMemory;
 	uint32_t		maxRenderPassSubpasses;
@@ -2312,13 +2320,6 @@ struct VkCommandPoolMemoryConsumption
 	VkDeviceSize	commandBufferAllocated;
 };
 
-struct VkPipelinePoolEntrySizeCreateInfo
-{
-	VkStructureType	sType;
-	const void*		pNext;
-	VkDeviceSize	poolEntrySize;
-};
-
 struct VkFaultData
 {
 	VkStructureType	sType;
@@ -2331,16 +2332,45 @@ struct VkFaultCallbackInfo
 {
 	VkStructureType				sType;
 	void*						pNext;
+	uint32_t					faultCount;
 	VkFaultData*				pFaults;
 	PFN_vkFaultCallbackFunction	pfnFaultCallback;
 };
 
-struct VkPipelineIdentifierInfo
+struct VkPipelineOfflineCreateInfo
 {
 	VkStructureType			sType;
 	const void*				pNext;
 	uint8_t					pipelineIdentifier[VK_UUID_SIZE];
 	VkPipelineMatchControl	matchControl;
+	VkDeviceSize			poolEntrySize;
+};
+
+struct VkPipelineCacheStageValidationIndexEntry
+{
+	uint64_t	codeSize;
+	uint64_t	codeOffset;
+};
+
+struct VkPipelineCacheSafetyCriticalIndexEntry
+{
+	uint8_t		pipelineIdentifier[VK_UUID_SIZE];
+	uint64_t	pipelineMemorySize;
+	uint64_t	jsonSize;
+	uint64_t	jsonOffset;
+	uint32_t	stageIndexCount;
+	uint32_t	stageIndexStride;
+	uint64_t	stageIndexOffset;
+};
+
+struct VkPipelineCacheHeaderVersionSafetyCriticalOne
+{
+	VkPipelineCacheHeaderVersionOne		headerVersionOne;
+	VkPipelineCacheValidationVersion	validationVersion;
+	uint32_t							implementationData;
+	uint32_t							pipelineIndexCount;
+	uint32_t							pipelineIndexStride;
+	uint64_t							pipelineIndexOffset;
 };
 
 struct VkSurfaceCapabilitiesKHR
@@ -2426,7 +2456,7 @@ struct VkAcquireNextImageInfoKHR
 struct VkDeviceGroupPresentCapabilitiesKHR
 {
 	VkStructureType						sType;
-	const void*							pNext;
+	void*								pNext;
 	uint32_t							presentMask[VK_MAX_DEVICE_GROUP_SIZE];
 	VkDeviceGroupPresentModeFlagsKHR	modes;
 };
@@ -2625,7 +2655,7 @@ struct VkPhysicalDevicePerformanceQueryPropertiesKHR
 struct VkPerformanceCounterKHR
 {
 	VkStructureType					sType;
-	const void*						pNext;
+	void*							pNext;
 	VkPerformanceCounterUnitKHR		unit;
 	VkPerformanceCounterScopeKHR	scope;
 	VkPerformanceCounterStorageKHR	storage;
@@ -2635,7 +2665,7 @@ struct VkPerformanceCounterKHR
 struct VkPerformanceCounterDescriptionKHR
 {
 	VkStructureType							sType;
-	const void*								pNext;
+	void*									pNext;
 	VkPerformanceCounterDescriptionFlagsKHR	flags;
 	char									name[VK_MAX_DESCRIPTION_SIZE];
 	char									category[VK_MAX_DESCRIPTION_SIZE];

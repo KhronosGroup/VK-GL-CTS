@@ -181,6 +181,7 @@ public:
 	bool				isShaderLoggingEnabled	(void);
 
 	void				supressLogging			(bool value);
+	bool				isSupressLogging		(void);
 private:
 						TestLog					(const TestLog& other); // Not allowed!
 	TestLog&			operator=				(const TestLog& other); // Not allowed!

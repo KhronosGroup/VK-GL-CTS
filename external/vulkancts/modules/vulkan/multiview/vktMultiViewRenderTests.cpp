@@ -30,6 +30,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkPlatform.hpp"
@@ -277,6 +278,8 @@ protected:
 	void							createVertexBuffer		(void);
 	void							createMultiViewDevices	(void);
 	void							createCommandBuffer		(void);
+	void							createSecondaryCommandPool	(void);
+
 	void							madeShaderModule		(map<VkShaderStageFlagBits,ShaderModuleSP>& shaderModule, vector<VkPipelineShaderStageCreateInfo>& shaderStageParams);
 	Move<VkPipeline>				makeGraphicsPipeline	(const VkRenderPass							renderPass,
 															 const VkPipelineLayout						pipelineLayout,
@@ -297,12 +300,14 @@ protected:
 	void							fillQuarter				(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx, const deUint32 quarter, const deUint32 subpassNdx);
 
 	const bool						m_extensionSupported;
+	std::shared_ptr<CustomInstanceWrapper>	m_instanceWrapper;
 	const TestParameters			m_parameters;
 	const int						m_seed;
 	const deUint32					m_squareCount;
+
 	Move<VkDevice>					m_logicalDevice;
 #ifndef CTS_USES_VULKANSC
-	DeviceInterface*				m_device;
+	de::MovePtr<vk::DeviceDriver>	m_device;
 #else
 	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> m_device;
 #endif // CTS_USES_VULKANSC
@@ -320,6 +325,7 @@ protected:
 	MovePtr<Allocation>				m_vertexIndicesAllocation;
 	Move<VkCommandPool>				m_cmdPool;
 	Move<VkCommandBuffer>			m_cmdBuffer;
+	Move<VkCommandPool>				m_cmdPoolSecondary;
 	de::SharedPtr<ImageAttachment>	m_colorAttachment;
 	VkBool32						m_hasMultiDrawIndirect;
 	vector<tcu::Vec4>				m_colorTable;
@@ -328,6 +334,7 @@ protected:
 MultiViewRenderTestInstance::MultiViewRenderTestInstance (Context& context, const TestParameters& parameters)
 	: TestInstance			(context)
 	, m_extensionSupported	((parameters.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
+	, m_instanceWrapper		(new CustomInstanceWrapper(context))
 	, m_parameters			(fillMissingParameters(parameters))
 	, m_seed				(context.getTestContext().getCommandLine().getBaseSeed())
 	, m_squareCount			(4u)
@@ -547,8 +554,8 @@ TestParameters MultiViewRenderTestInstance::fillMissingParameters (const TestPar
 		return parameters;
 	else
 	{
-		const InstanceInterface&			instance			= m_context.getInstanceInterface();
-		const VkPhysicalDevice				physicalDevice		= m_context.getPhysicalDevice();
+		const InstanceInterface&			instanceDriver		= m_instanceWrapper->instance.getDriver();
+		const VkPhysicalDevice				physicalDevice		= chooseDevice(instanceDriver, m_instanceWrapper->instance, m_context.getTestContext().getCommandLine());
 
 		VkPhysicalDeviceMultiviewProperties multiviewProperties =
 		{
@@ -562,7 +569,7 @@ TestParameters MultiViewRenderTestInstance::fillMissingParameters (const TestPar
 		deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 		deviceProperties2.pNext = &multiviewProperties;
 
-		instance.getPhysicalDeviceProperties2(physicalDevice, &deviceProperties2);
+		instanceDriver.getPhysicalDeviceProperties2(physicalDevice, &deviceProperties2);
 
 		TestParameters newParameters = parameters;
 		newParameters.extent.depth = multiviewProperties.maxMultiviewViewCount;
@@ -634,9 +641,9 @@ void MultiViewRenderTestInstance::createVertexBuffer (void)
 
 void MultiViewRenderTestInstance::createMultiViewDevices (void)
 {
-	const InstanceInterface&				instance				= m_context.getInstanceInterface();
-	const VkPhysicalDevice					physicalDevice			= m_context.getPhysicalDevice();
-	const vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
+	const InstanceDriver&					instanceDriver			( m_instanceWrapper->instance.getDriver() );
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, m_instanceWrapper->instance, m_context.getTestContext().getCommandLine());
+	const vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
 	for (; m_queueFamilyIndex < queueFamilyProperties.size(); ++m_queueFamilyIndex)
 	{
@@ -668,7 +675,7 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 	enabledFeatures.sType					= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	enabledFeatures.pNext					= &multiviewFeatures;
 
-	instance.getPhysicalDeviceFeatures2(physicalDevice, &enabledFeatures);
+	instanceDriver.getPhysicalDeviceFeatures2(physicalDevice, &enabledFeatures);
 
 	if (!multiviewFeatures.multiview)
 		TCU_THROW(NotSupportedError, "MultiView not supported");
@@ -695,7 +702,7 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 	propertiesDeviceProperties2.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 	propertiesDeviceProperties2.pNext	= &multiviewProperties;
 
-	instance.getPhysicalDeviceProperties2(physicalDevice, &propertiesDeviceProperties2);
+	instanceDriver.getPhysicalDeviceProperties2(physicalDevice, &propertiesDeviceProperties2);
 
 #ifndef CTS_USES_VULKANSC
 	if (multiviewProperties.maxMultiviewViewCount < 6u)
@@ -734,16 +741,20 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 		std::vector<VkPipelinePoolSize>		poolSizes;
 		if (m_context.getTestContext().getCommandLine().isSubProcess())
 		{
-			pcCI =
+			if (m_context.getResourceInterface()->getCacheDataSize() > 0)
 			{
-				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,			// VkStructureType				sType;
-				DE_NULL,												// const void*					pNext;
-				(VkPipelineCacheCreateFlags)0u,							// VkPipelineCacheCreateFlags	flags;
-				m_context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
-				m_context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
-			};
-			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
-			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+				pcCI =
+				{
+					VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,			// VkStructureType				sType;
+					DE_NULL,												// const void*					pNext;
+					VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+						VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+					m_context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+					m_context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+				};
+				memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+				memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+			}
 
 			poolSizes							= m_context.getResourceInterface()->getPipelinePoolSizes();
 			if (!poolSizes.empty())
@@ -768,13 +779,13 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 			DE_NULL															//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 		};
 
-		m_logicalDevice					= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_context.getInstance(), instance, physicalDevice, &deviceInfo);
+		m_logicalDevice					= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_instanceWrapper->instance, instanceDriver, physicalDevice, &deviceInfo);
 #ifndef CTS_USES_VULKANSC
-		m_device						= const_cast<DeviceInterface*>(&(m_context.getDeviceInterface()));
+		m_device						= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_logicalDevice));
 #else
-		m_device						= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
+		m_device						= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
 #endif // CTS_USES_VULKANSC
-		m_allocator						= MovePtr<Allocator>(new SimpleAllocator(*m_device, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
+		m_allocator						= MovePtr<Allocator>(new SimpleAllocator(*m_device, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instanceDriver, physicalDevice)));
 		m_device->getDeviceQueue		(*m_logicalDevice, m_queueFamilyIndex, 0u, &m_queue);
 	}
 }
@@ -804,6 +815,21 @@ void MultiViewRenderTestInstance::createCommandBuffer (void)
 			1u,													// deUint32				bufferCount;
 		};
 		m_cmdBuffer	= allocateCommandBuffer(*m_device, *m_logicalDevice, &cmdBufferAllocateInfo);
+	}
+}
+
+void MultiViewRenderTestInstance::createSecondaryCommandPool(void)
+{
+	// cmdPool
+	{
+		const VkCommandPoolCreateInfo cmdPoolParams =
+		{
+			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,			// VkStructureType		sType;
+			DE_NULL,											// const void*			pNext;
+			VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,	// VkCmdPoolCreateFlags	flags;
+			m_queueFamilyIndex,									// deUint32				queueFamilyIndex;
+		};
+		m_cmdPoolSecondary = createCommandPool(*m_device, *m_logicalDevice, &cmdPoolParams);
 	}
 }
 
@@ -2147,6 +2173,8 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 {
 	typedef de::SharedPtr<Unique<VkCommandBuffer> >	VkCommandBufferSp;
 
+	createSecondaryCommandPool();
+
 	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
 	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
 	const VkBuffer					vertexBuffers[]			= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
@@ -2163,18 +2191,12 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 		&renderPassClearValue,						// const VkClearValue*	pClearValues;
 	};
 
-	beginCommandBuffer(*m_device, *m_cmdBuffer);
-
-	beforeDraw();
-
-	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS, m_parameters.renderPassType);
-
-	//Create secondary buffer
+	//Create secondary buffers
 	const VkCommandBufferAllocateInfo	cmdBufferAllocateInfo	=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
 		DE_NULL,										// const void*				pNext;
-		*m_cmdPool,										// VkCommandPool			commandPool;
+		*m_cmdPoolSecondary,							// VkCommandPool			commandPool;
 		VK_COMMAND_BUFFER_LEVEL_SECONDARY,				// VkCommandBufferLevel		level;
 		1u,												// deUint32					bufferCount;
 	};
@@ -2192,8 +2214,18 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 			m_device->cmdDraw(cmdBufferSecondary.back().get()->get(), 4u, 1u, (drawNdx + subpassNdx % m_squareCount) * 4u, 0u);
 
 		VK_CHECK(m_device->endCommandBuffer(cmdBufferSecondary.back().get()->get()));
+	}
 
-		m_device->cmdExecuteCommands(*m_cmdBuffer, 1u, &cmdBufferSecondary.back().get()->get());
+	// Create primary buffer
+	beginCommandBuffer(*m_device, *m_cmdBuffer);
+
+	beforeDraw();
+
+	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS, m_parameters.renderPassType);
+
+	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
+	{
+		m_device->cmdExecuteCommands(*m_cmdBuffer, 1u, &cmdBufferSecondary[subpassNdx].get()->get());
 		if (subpassNdx < subpassCount - 1u)
 			cmdNextSubpass(*m_device, *m_cmdBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS, m_parameters.renderPassType);
 	}
@@ -2222,8 +2254,8 @@ protected:
 MultiViewPointSizeTestInstance::MultiViewPointSizeTestInstance (Context& context, const TestParameters& parameters)
 	: MultiViewRenderTestInstance	(context, parameters)
 {
-	const InstanceInterface&		vki					= m_context.getInstanceInterface();
-	const VkPhysicalDevice			physDevice			= m_context.getPhysicalDevice();
+	const InstanceInterface&		vki					= m_instanceWrapper->instance.getDriver();
+	const VkPhysicalDevice			physDevice			= chooseDevice(vki, m_instanceWrapper->instance, context.getTestContext().getCommandLine());
 	const VkPhysicalDeviceLimits	limits				= getPhysicalDeviceProperties(vki, physDevice).limits;
 
 	validatePointSize(limits, static_cast<deUint32>(TEST_POINT_SIZE_WIDE));
@@ -2518,7 +2550,8 @@ MultiViewQueriesTestInstance::MultiViewQueriesTestInstance (Context& context, co
 	, m_occlusionObjectsOffset		(0)
 {
 	// Generate the timestamp mask
-	const std::vector<VkQueueFamilyProperties>	queueProperties = vk::getPhysicalDeviceQueueFamilyProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
+	const VkPhysicalDevice						physicalDevice	= chooseDevice(m_instanceWrapper->instance.getDriver(), m_instanceWrapper->instance, context.getTestContext().getCommandLine());
+	const std::vector<VkQueueFamilyProperties>	queueProperties	= vk::getPhysicalDeviceQueueFamilyProperties(m_instanceWrapper->instance.getDriver(), physicalDevice);
 
 	if(queueProperties[0].timestampValidBits == 0)
 		TCU_THROW(NotSupportedError, "Device does not support timestamp.");
@@ -2986,7 +3019,8 @@ MultiViewDepthStencilTestInstance::MultiViewDepthStencilTestInstance (Context& c
 	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(formats); ++ndx)
 	{
 		const VkFormat				format				= formats[ndx];
-		const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+		const VkPhysicalDevice		physicalDevice		= chooseDevice(m_instanceWrapper->instance.getDriver(), m_instanceWrapper->instance, context.getTestContext().getCommandLine());
+		const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(m_instanceWrapper->instance.getDriver(), physicalDevice, format);
 
 		if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0)
 		{

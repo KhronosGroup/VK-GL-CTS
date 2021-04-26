@@ -801,11 +801,6 @@ template<> VkStructureType getStructureType<VkCommandPoolMemoryConsumption> (voi
 	return VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_CONSUMPTION;
 }
 
-template<> VkStructureType getStructureType<VkPipelinePoolEntrySizeCreateInfo> (void)
-{
-	return VK_STRUCTURE_TYPE_PIPELINE_POOL_ENTRY_SIZE_CREATE_INFO;
-}
-
 template<> VkStructureType getStructureType<VkFaultData> (void)
 {
 	return VK_STRUCTURE_TYPE_FAULT_DATA;
@@ -816,9 +811,9 @@ template<> VkStructureType getStructureType<VkFaultCallbackInfo> (void)
 	return VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO;
 }
 
-template<> VkStructureType getStructureType<VkPipelineIdentifierInfo> (void)
+template<> VkStructureType getStructureType<VkPipelineOfflineCreateInfo> (void)
 {
-	return VK_STRUCTURE_TYPE_PIPELINE_IDENTIFIER_INFO;
+	return VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO;
 }
 
 template<> VkStructureType getStructureType<VkSwapchainCreateInfoKHR> (void)

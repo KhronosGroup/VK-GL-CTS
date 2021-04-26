@@ -32,6 +32,7 @@
 	#include "tcuCommandLine.hpp"
 	#include "vksCacheBuilder.hpp"
 	#include "vksSerializer.hpp"
+	#include "vkApiVersion.hpp"
 	using namespace vksc_server::json;
 #endif // CTS_USES_VULKANSC
 
@@ -41,12 +42,18 @@ namespace vk
 ResourceInterface::ResourceInterface (tcu::TestContext& testCtx)
 	: m_testCtx			(testCtx)
 #ifdef CTS_USES_VULKANSC
-	, m_commandPoolIndex(0u)
-	, m_resourceCounter	(0u)
-	, m_statCurrent		(resetDeviceObjectReservationCreateInfo())
-	, m_statMax			(resetDeviceObjectReservationCreateInfo())
+	, m_commandPoolIndex		(0u)
+	, m_resourceCounter			(0u)
+	, m_statCurrent				(resetDeviceObjectReservationCreateInfo())
+	, m_statMax					(resetDeviceObjectReservationCreateInfo())
+	, m_enabledHandleDestroy	(true)
 #endif // CTS_USES_VULKANSC
 {
+#ifdef CTS_USES_VULKANSC
+	// pipelineCacheRequestCount does not contain one instance of createPipelineCache call that happens only in subprocess
+	m_statCurrent.pipelineCacheRequestCount		= 1u;
+	m_statMax.pipelineCacheRequestCount			= 1u;
+#endif // CTS_USES_VULKANSC
 }
 
 ResourceInterface::~ResourceInterface ()
@@ -59,6 +66,20 @@ void ResourceInterface::initTestCase (const std::string& casePath)
 }
 
 #ifdef CTS_USES_VULKANSC
+void ResourceInterface::initApiVersion (const deUint32 version)
+{
+	const ApiVersion	apiVersion	= unpackVersion(version);
+	const bool			vulkanSC	= (apiVersion.variantNum == 1);
+
+	m_version	= tcu::Maybe<deUint32>(version);
+	m_vulkanSC	= vulkanSC;
+}
+
+bool ResourceInterface::isVulkanSC (void) const
+{
+	return m_vulkanSC.get();
+}
+
 deUint64 ResourceInterface::incResourceCounter ()
 {
 	return ++m_resourceCounter;
@@ -84,6 +105,15 @@ const VkDeviceObjectReservationCreateInfo&	ResourceInterface::getStatMax () cons
 	return m_statMax;
 }
 
+void ResourceInterface::setHandleDestroy(bool value)
+{
+	m_enabledHandleDestroy = value;
+}
+
+bool ResourceInterface::isEnabledHandleDestroy() const
+{
+	return m_enabledHandleDestroy;
+}
 
 void ResourceInterface::removeRedundantObjects ()
 {
@@ -218,12 +248,15 @@ void ResourceInterface::finalizeCommandBuffers ()
 		std::size_t j = cpToIndex[memC.second.commandPool];
 		m_commandPoolMemoryConsumption[j].updateValues
 		(
-			memC.second.commandPoolAllocated,
-			memC.second.commandPoolReservedSize,
-			memC.second.commandBufferAllocated
+			memC.second.maxCommandPoolAllocated,
+			memC.second.maxCommandPoolReservedSize,
+			memC.second.maxCommandBufferAllocated
 		);
 		m_commandPoolMemoryConsumption[j].commandBufferCount++;
 	}
+	// Each m_commandPoolMemoryConsumption element must have at least one command buffer ( see DeviceDriverSC::createCommandPoolHandlerNorm() )
+	// As a result we have to ensure that commandBufferRequestCount is not less than the number of command pools
+	m_statMax.commandBufferRequestCount = de::max(deUint32(m_commandPoolMemoryConsumption.size()), m_statMax.commandBufferRequestCount);
 }
 
 std::vector<deUint8> ResourceInterface::exportData () const
@@ -253,21 +286,90 @@ const std::map<deUint64,std::size_t>& ResourceInterface::getObjectHashes () cons
 	return m_objectHashes;
 }
 
-std::vector<VkPipelinePoolSize> ResourceInterface::getPipelinePoolSizes() const
+struct PipelinePoolSizeInfo
 {
-	std::vector<VkPipelinePoolSize> result;
-	for (const auto& pipDesc : m_pipelineSizes)
+	deUint32					maxTestCount;
+	deUint32					size;
+};
+
+void ResourceInterface::preparePipelinePoolSizes()
+{
+	std::map<std::string, std::vector<PipelinePoolSizeInfo>> pipelineInfoPerTest;
+
+	// Step 1: collect information about all pipelines in each test, group by size
+	for (const auto& pipeline : m_pipelineInput.pipelines)
+	{
+		auto it = std::find_if(begin(m_pipelineSizes), end(m_pipelineSizes), vksc_server::PipelineIdentifierEqual(pipeline.id));
+		if (it == end(m_pipelineSizes))
+			TCU_THROW(InternalError, "VkPipelinePoolEntrySizeCreateInfo not created for pipelineIdentifier");
+
+		PipelinePoolSizeInfo ppsi
+		{
+			it->count,
+			it->size
+		};
+
+		for (const auto& test : pipeline.tests)
+		{
+			auto pit = pipelineInfoPerTest.find(test);
+			if (pit == end(pipelineInfoPerTest))
+				pit = pipelineInfoPerTest.insert({ test, std::vector<PipelinePoolSizeInfo>() }).first;
+			// group by the same sizes in a test
+			bool found = false;
+			for (size_t i = 0; i<pit->second.size(); ++i)
+			{
+				if (pit->second[i].size == ppsi.size)
+				{
+					pit->second[i].maxTestCount += ppsi.maxTestCount;
+					found = true;
+					break;
+				}
+			}
+			if(!found)
+				pit->second.push_back(ppsi);
+		}
+	}
+
+	// Step 2: choose pipeline pool sizes
+	std::vector<PipelinePoolSizeInfo> finalPoolSizes;
+	for (const auto& pInfo : pipelineInfoPerTest)
+	{
+		for (const auto& ppsi1 : pInfo.second)
+		{
+			auto it = std::find_if(begin(finalPoolSizes), end(finalPoolSizes), [&ppsi1](const PipelinePoolSizeInfo& x) { return (x.size == ppsi1.size); });
+			if (it != end(finalPoolSizes))
+				it->maxTestCount = de::max(it->maxTestCount, ppsi1.maxTestCount);
+			else
+				finalPoolSizes.push_back(ppsi1);
+		}
+	}
+
+	// Step 3: convert results to VkPipelinePoolSize
+	m_pipelinePoolSizes.clear();
+	for (const auto& ppsi : finalPoolSizes)
 	{
 		VkPipelinePoolSize poolSize =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE,	// VkStructureType	sType;
 			DE_NULL,								// const void*		pNext;
-			pipDesc.size,							// VkDeviceSize		poolEntrySize;
-			pipDesc.count							// deUint32			poolEntryCount;
+			ppsi.size,								// VkDeviceSize		poolEntrySize;
+			ppsi.maxTestCount						// deUint32			poolEntryCount;
 		};
-		result.emplace_back(poolSize);
+		m_pipelinePoolSizes.emplace_back(poolSize);
 	}
-	return result;
+}
+
+std::vector<VkPipelinePoolSize> ResourceInterface::getPipelinePoolSizes () const
+{
+	return m_pipelinePoolSizes;
+}
+
+void ResourceInterface::fillPoolEntrySize (vk::VkPipelineOfflineCreateInfo&	pipelineIdentifier) const
+{
+	auto it = std::find_if(begin(m_pipelineSizes), end(m_pipelineSizes), vksc_server::PipelineIdentifierEqual(pipelineIdentifier));
+	if( it == end(m_pipelineSizes) )
+		TCU_THROW(InternalError, "VkPipelinePoolEntrySizeCreateInfo not created for pipelineIdentifier");
+	pipelineIdentifier.poolEntrySize = it->size;
 }
 
 vksc_server::VulkanCommandMemoryConsumption ResourceInterface::getNextCommandPoolSize ()
@@ -291,6 +393,14 @@ const deUint8* ResourceInterface::getCacheData () const
 	return m_cacheData.data();
 }
 
+VkPipelineCache ResourceInterface::getPipelineCache(VkDevice device) const
+{
+	auto pit = m_pipelineCache.find(device);
+	if (pit == end(m_pipelineCache))
+		TCU_THROW(InternalError, "m_pipelineCache not found for this device");
+	return pit->second.get()->get();
+}
+
 #endif // CTS_USES_VULKANSC
 
 ResourceInterfaceStandard::ResourceInterfaceStandard (tcu::TestContext& testCtx)
@@ -312,16 +422,19 @@ void ResourceInterfaceStandard::initDevice (DeviceInterface& deviceInterface, Vk
 #ifdef CTS_USES_VULKANSC
 	if (m_testCtx.getCommandLine().isSubProcess())
 	{
-		VkPipelineCacheCreateInfo pCreateInfo =
+		if (m_cacheData.size() > 0)
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,				// VkStructureType				sType;
-			DE_NULL,													// const void*					pNext;
-			VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-				VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
-			m_cacheData.size(),											// deUintptr					initialDataSize;
-			m_cacheData.data()											// const void*					pInitialData;
-		};
-		m_pipelineCache[device] = de::SharedPtr<Move<VkPipelineCache>>(new Move<VkPipelineCache>(createPipelineCache(deviceInterface, device, &pCreateInfo, DE_NULL)));
+			VkPipelineCacheCreateInfo pCreateInfo =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,				// VkStructureType				sType;
+				DE_NULL,													// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				m_cacheData.size(),											// deUintptr					initialDataSize;
+				m_cacheData.data()											// const void*					pInitialData;
+			};
+			m_pipelineCache[device] = de::SharedPtr<Move<VkPipelineCache>>(new Move<VkPipelineCache>(createPipelineCache(deviceInterface, device, &pCreateInfo, DE_NULL)));
+		}
 	}
 #endif // CTS_USES_VULKANSC
 }
@@ -395,22 +508,20 @@ VkResult ResourceInterfaceStandard::createShaderModule (VkDevice							device,
 	return VK_SUCCESS;
 }
 
-VkPipelineIdentifierInfo makeGraphicsPipelineIdentifier (const std::string& testPath, const VkGraphicsPipelineCreateInfo& gpCI, const std::map<deUint64, std::size_t>& objectHashes)
+VkPipelineOfflineCreateInfo makeGraphicsPipelineIdentifier (const std::string& testPath, const VkGraphicsPipelineCreateInfo& gpCI, const std::map<deUint64, std::size_t>& objectHashes)
 {
 	DE_UNREF(testPath);
-	VkPipelineIdentifierInfo	pipelineID		= resetPipelineIdentifierInfo();
+	VkPipelineOfflineCreateInfo	pipelineID		= resetPipelineOfflineCreateInfo();
 	std::size_t					hashValue		= calculateGraphicsPipelineHash(gpCI, objectHashes);
-//	hash_combine(hashValue, testPath);
 	memcpy(pipelineID.pipelineIdentifier, &hashValue, sizeof(std::size_t));
 	return pipelineID;
 }
 
-VkPipelineIdentifierInfo makeComputePipelineIdentifier (const std::string& testPath, const VkComputePipelineCreateInfo& cpCI, const std::map<deUint64, std::size_t>& objectHashes)
+VkPipelineOfflineCreateInfo makeComputePipelineIdentifier (const std::string& testPath, const VkComputePipelineCreateInfo& cpCI, const std::map<deUint64, std::size_t>& objectHashes)
 {
 	DE_UNREF(testPath);
-	VkPipelineIdentifierInfo	pipelineID		= resetPipelineIdentifierInfo();
+	VkPipelineOfflineCreateInfo	pipelineID		= resetPipelineOfflineCreateInfo();
 	std::size_t					hashValue		= calculateComputePipelineHash(cpCI, objectHashes);
-//	hash_combine(hashValue, testPath);
 	memcpy(pipelineID.pipelineIdentifier, &hashValue, sizeof(std::size_t));
 	return pipelineID;
 }
@@ -425,20 +536,141 @@ VkResult ResourceInterfaceStandard::createGraphicsPipelines (VkDevice								dev
 {
 	DE_UNREF(pipelineCache);
 
-	// build pipeline identifiers, make a copy of pCreateInfos
-	std::vector<VkPipelineIdentifierInfo>		pipelineIDs;
-	std::vector<VkGraphicsPipelineCreateInfo>	pCreateInfoCopies;
+	// build pipeline identifiers (if required), make a copy of pCreateInfos
+	std::vector<VkPipelineOfflineCreateInfo>		pipelineIDs;
+	std::vector<deUint8>							idInPNextChain;
+	std::vector<VkGraphicsPipelineCreateInfo>		pCreateInfoCopies;
+
 	for (deUint32 i = 0; i < createInfoCount; ++i)
 	{
-		pipelineIDs.push_back(makeGraphicsPipelineIdentifier(m_currentTestPath, pCreateInfos[i], getObjectHashes()));
 		pCreateInfoCopies.push_back(pCreateInfos[i]);
+
+		// Check if test added pipeline identifier on its own
+		VkPipelineOfflineCreateInfo* idInfo = (VkPipelineOfflineCreateInfo*)findStructureInChain(pCreateInfos[i].pNext, VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO);
+		if (idInfo == DE_NULL)
+		{
+			pipelineIDs.push_back(makeGraphicsPipelineIdentifier(m_currentTestPath, pCreateInfos[i], getObjectHashes()));
+			idInPNextChain.push_back(0);
+		}
+		else
+		{
+			pipelineIDs.push_back(*idInfo);
+			idInPNextChain.push_back(1);
+		}
+
+		if (normalMode)
+			fillPoolEntrySize(pipelineIDs.back());
 	}
 
-	// include pipelineIdentifiers into pNext chain of pCreateInfoCopies
+	// reset not used pointers, so that JSON generation does not crash
+	std::vector<VkPipelineViewportStateCreateInfo>	viewportStateCopies	(createInfoCount);
+	if (!normalMode)
+	{
+		for (deUint32 i = 0; i < createInfoCount; ++i)
+		{
+			bool vertexInputStateRequired		= false;
+			bool inputAssemblyStateRequired		= false;
+			bool tessellationStateRequired		= false;
+			bool viewportStateRequired			= false;
+			bool viewportStateViewportsRequired	= false;
+			bool viewportStateScissorsRequired	= false;
+			bool multiSampleStateRequired		= false;
+			bool depthStencilStateRequired		= false;
+			bool colorBlendStateRequired		= false;
+
+			if (pCreateInfoCopies[i].pStages != DE_NULL)
+			{
+				for (deUint32 j = 0; j < pCreateInfoCopies[i].stageCount; ++j)
+				{
+					if (pCreateInfoCopies[i].pStages[j].stage == VK_SHADER_STAGE_VERTEX_BIT)
+					{
+						vertexInputStateRequired	= true;
+						inputAssemblyStateRequired	= true;
+					}
+					if (pCreateInfoCopies[i].pStages[j].stage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
+					{
+						tessellationStateRequired	= true;
+					}
+				}
+			}
+			if (pCreateInfoCopies[i].pDynamicState != DE_NULL)
+			{
+				if (pCreateInfoCopies[i].pDynamicState->pDynamicStates != DE_NULL)
+					for (deUint32 j = 0; j < pCreateInfoCopies[i].pDynamicState->dynamicStateCount; ++j)
+					{
+						if (pCreateInfoCopies[i].pDynamicState->pDynamicStates[j] == VK_DYNAMIC_STATE_VIEWPORT || pCreateInfoCopies[i].pDynamicState->pDynamicStates[j] == VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT_EXT)
+						{
+							viewportStateRequired			= true;
+							viewportStateViewportsRequired	= true;
+						}
+						if (pCreateInfoCopies[i].pDynamicState->pDynamicStates[j] == VK_DYNAMIC_STATE_SCISSOR || pCreateInfoCopies[i].pDynamicState->pDynamicStates[j] == VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT_EXT)
+						{
+							viewportStateRequired			= true;
+							viewportStateScissorsRequired	= true;
+						}
+						if (pCreateInfoCopies[i].pDynamicState->pDynamicStates[j] == VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE_EXT)
+							viewportStateRequired = true;
+					}
+			}
+			if (pCreateInfoCopies[i].pRasterizationState != DE_NULL)
+			{
+				if (pCreateInfoCopies[i].pRasterizationState->rasterizerDiscardEnable == VK_FALSE)
+				{
+					viewportStateRequired			= true;
+					viewportStateViewportsRequired	= true;
+					viewportStateScissorsRequired	= true;
+					multiSampleStateRequired		= true;
+					depthStencilStateRequired		= true;
+					colorBlendStateRequired			= true;
+				}
+			}
+			if (pCreateInfoCopies[i].pVertexInputState != DE_NULL && !vertexInputStateRequired)
+				pCreateInfoCopies[i].pVertexInputState = DE_NULL;
+			if (pCreateInfoCopies[i].pInputAssemblyState != DE_NULL && !inputAssemblyStateRequired)
+				pCreateInfoCopies[i].pInputAssemblyState = DE_NULL;
+			if (pCreateInfoCopies[i].pTessellationState != DE_NULL && !tessellationStateRequired)
+				pCreateInfoCopies[i].pTessellationState = DE_NULL;
+			if (pCreateInfoCopies[i].pViewportState != DE_NULL)
+			{
+				if (viewportStateRequired)
+				{
+					viewportStateCopies[i]		= *(pCreateInfoCopies[i].pViewportState);
+					bool exchangeVP				= false;
+					if (pCreateInfoCopies[i].pViewportState->pViewports != DE_NULL && !viewportStateViewportsRequired)
+					{
+						viewportStateCopies[i].pViewports		= DE_NULL;
+						viewportStateCopies[i].viewportCount	= 0u;
+						exchangeVP = true;
+					}
+					if (pCreateInfoCopies[i].pViewportState->pScissors != DE_NULL && !viewportStateScissorsRequired)
+					{
+						viewportStateCopies[i].pScissors	= DE_NULL;
+						viewportStateCopies[i].scissorCount	= 0u;
+						exchangeVP = true;
+					}
+					if (exchangeVP)
+						pCreateInfoCopies[i].pViewportState = &(viewportStateCopies[i]);
+				}
+				else
+					pCreateInfoCopies[i].pViewportState = DE_NULL;
+			}
+			if (pCreateInfoCopies[i].pMultisampleState != DE_NULL && !multiSampleStateRequired)
+				pCreateInfoCopies[i].pMultisampleState = DE_NULL;
+			if (pCreateInfoCopies[i].pDepthStencilState != DE_NULL && !depthStencilStateRequired)
+				pCreateInfoCopies[i].pDepthStencilState = DE_NULL;
+			if (pCreateInfoCopies[i].pColorBlendState != DE_NULL && !colorBlendStateRequired)
+				pCreateInfoCopies[i].pColorBlendState = DE_NULL;
+		}
+	}
+
+	// Include pipelineIdentifiers into pNext chain of pCreateInfoCopies - skip this operation if pipeline identifier was created inside test
 	for (deUint32 i = 0; i < createInfoCount; ++i)
 	{
-		pipelineIDs[i].pNext		= pCreateInfoCopies[i].pNext;
-		pCreateInfoCopies[i].pNext	= &pipelineIDs[i];
+		if (idInPNextChain[i] == 0)
+		{
+			pipelineIDs[i].pNext				= pCreateInfoCopies[i].pNext;
+			pCreateInfoCopies[i].pNext			= &pipelineIDs[i];
+		}
 	}
 
 	// subprocess: load graphics pipelines from OUR m_pipelineCache cache
@@ -461,6 +693,8 @@ VkResult ResourceInterfaceStandard::createGraphicsPipelines (VkDevice								dev
 	// main process: store pipelines in JSON format. Pipelines will be sent later for m_pipelineCache creation ( and sent through file to another process )
 	for (deUint32 i = 0; i < createInfoCount; ++i)
 	{
+		m_pipelineIdentifiers.insert({ pPipelines[i], pipelineIDs[i] });
+
 		auto it = std::find_if(begin(m_pipelineInput.pipelines), end(m_pipelineInput.pipelines), vksc_server::PipelineIdentifierEqual(pipelineIDs[i]));
 		pipelineIDs[i].pNext = DE_NULL;
 		if (it == end(m_pipelineInput.pipelines))
@@ -495,23 +729,43 @@ VkResult ResourceInterfaceStandard::createComputePipelines (VkDevice								devi
 {
 	DE_UNREF(pipelineCache);
 
-	// build pipeline identifiers, make a copy of pCreateInfos
-	std::vector<VkPipelineIdentifierInfo>		pipelineIDs;
-	std::vector<VkComputePipelineCreateInfo>	pCreateInfoCopies;
+	// build pipeline identifiers (if required), make a copy of pCreateInfos
+	std::vector<VkPipelineOfflineCreateInfo>		pipelineIDs;
+	std::vector<deUint8>							idInPNextChain;
+	std::vector<VkComputePipelineCreateInfo>		pCreateInfoCopies;
+
 	for (deUint32 i = 0; i < createInfoCount; ++i)
 	{
-		pipelineIDs.push_back(makeComputePipelineIdentifier(m_currentTestPath, pCreateInfos[i], getObjectHashes()));
 		pCreateInfoCopies.push_back(pCreateInfos[i]);
+
+		// Check if test added pipeline identifier on its own
+		VkPipelineOfflineCreateInfo* idInfo = (VkPipelineOfflineCreateInfo*)findStructureInChain(pCreateInfos[i].pNext, VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO);
+		if (idInfo == DE_NULL)
+		{
+			pipelineIDs.push_back(makeComputePipelineIdentifier(m_currentTestPath, pCreateInfos[i], getObjectHashes()));
+			idInPNextChain.push_back(0);
+		}
+		else
+		{
+			pipelineIDs.push_back(*idInfo);
+			idInPNextChain.push_back(1);
+		}
+
+		if (normalMode)
+			fillPoolEntrySize(pipelineIDs.back());
 	}
 
-	// include pipelineIdentifiers into pNext chain of pCreateInfoCopies
+	// Include pipelineIdentifiers into pNext chain of pCreateInfoCopies - skip this operation if pipeline identifier was created inside test
 	for (deUint32 i = 0; i < createInfoCount; ++i)
 	{
-		pipelineIDs[i].pNext = pCreateInfoCopies[i].pNext;
-		pCreateInfoCopies[i].pNext = &pipelineIDs[i];
+		if (idInPNextChain[i] == 0)
+		{
+			pipelineIDs[i].pNext				= pCreateInfoCopies[i].pNext;
+			pCreateInfoCopies[i].pNext			= &pipelineIDs[i];
+		}
 	}
 
-	// subprocess: load graphics pipelines from OUR pipeline cache
+	// subprocess: load compute pipelines from OUR pipeline cache
 	if (normalMode)
 	{
 		const auto it = m_createComputePipelinesFunc.find(device);
@@ -531,6 +785,8 @@ VkResult ResourceInterfaceStandard::createComputePipelines (VkDevice								devi
 	// main process: store pipelines in JSON format. Pipelines will be sent later for m_pipelineCache creation ( and sent through file to another process )
 	for (deUint32 i = 0; i < createInfoCount; ++i)
 	{
+		m_pipelineIdentifiers.insert({ pPipelines[i], pipelineIDs[i] });
+
 		auto it = std::find_if(begin(m_pipelineInput.pipelines), end(m_pipelineInput.pipelines), vksc_server::PipelineIdentifierEqual(pipelineIDs[i]));
 		pipelineIDs[i].pNext = DE_NULL;
 		if (it == end(m_pipelineInput.pipelines))
@@ -553,6 +809,23 @@ VkResult ResourceInterfaceStandard::createComputePipelines (VkDevice								devi
 			it->add(m_currentTestPath);
 	}
 	return VK_SUCCESS;
+}
+
+void ResourceInterfaceStandard::destroyPipeline (VkDevice								device,
+												 VkPipeline								pipeline,
+												 const VkAllocationCallbacks*			pAllocator) const
+{
+	DE_UNREF(device);
+	DE_UNREF(pAllocator);
+
+	auto it = m_pipelineIdentifiers.find(pipeline);
+	if(it==end(m_pipelineIdentifiers))
+		TCU_THROW(InternalError, "Can't find pipeline");
+
+	auto pit = std::find_if(begin(m_pipelineInput.pipelines), end(m_pipelineInput.pipelines), vksc_server::PipelineIdentifierEqual(it->second));
+	if (pit == end(m_pipelineInput.pipelines))
+		TCU_THROW(InternalError, "Can't find pipeline identifier");
+	pit->remove();
 }
 
 void ResourceInterfaceStandard::createRenderPass (VkDevice								device,
@@ -638,15 +911,27 @@ void ResourceInterfaceStandard::allocateCommandBuffers (VkDevice								device,
 }
 
 void ResourceInterfaceStandard::increaseCommandBufferSize (VkCommandBuffer						commandBuffer,
-														   const char*							functionName) const
+														   VkDeviceSize							commandSize) const
 {
-	DE_UNREF(functionName);
 	auto it = m_commandBufferMemoryConsumption.find(commandBuffer);
 	if (it == end(m_commandBufferMemoryConsumption))
 		TCU_THROW(InternalError, "Unregistered command buffer");
 
-	// We could use functionName parameter to differentiate between different sizes
-	it->second.updateValues(128u, 128u, 128u);
+	it->second.updateValues(commandSize, commandSize, commandSize);
+}
+
+void ResourceInterfaceStandard::resetCommandPool (VkDevice								device,
+												  VkCommandPool							commandPool,
+												  VkCommandPoolResetFlags				flags) const
+{
+	DE_UNREF(device);
+	DE_UNREF(flags);
+
+	for (auto& memC : m_commandBufferMemoryConsumption)
+	{
+		if (memC.second.commandPool == commandPool.getInternal())
+			memC.second.resetValues();
+	}
 }
 
 void ResourceInterfaceStandard::importPipelineCacheData (const PlatformInterface&			vkp,
@@ -665,20 +950,26 @@ void ResourceInterfaceStandard::importPipelineCacheData (const PlatformInterface
 													physicalDevice,
 													queueIndex);
 	m_pipelineSizes = outPipelineSizes;
+	preparePipelinePoolSizes();
 }
 
 void ResourceInterfaceStandard::resetObjects ()
 {
-	m_pipelineInput						= {};
+	m_pipelineInput							= {};
 	m_objectHashes.clear();
 	m_commandPoolMemoryConsumption.clear();
-	m_commandPoolIndex					= 0u;
+	m_commandPoolIndex						= 0u;
 	m_commandBufferMemoryConsumption.clear();
-	m_resourceCounter					= 0u;
-	m_statCurrent						= resetDeviceObjectReservationCreateInfo();
-	m_statMax							= resetDeviceObjectReservationCreateInfo();
+	m_resourceCounter						= 0u;
+	m_statCurrent							= resetDeviceObjectReservationCreateInfo();
+	m_statMax								= resetDeviceObjectReservationCreateInfo();
+	// pipelineCacheRequestCount does not contain one instance of createPipelineCache call that happens only in subprocess
+	m_statCurrent.pipelineCacheRequestCount	= 1u;
+	m_statMax.pipelineCacheRequestCount		= 1u;
 	m_cacheData.clear();
+	m_pipelineIdentifiers.clear();
 	m_pipelineSizes.clear();
+	m_pipelinePoolSizes.clear();
 	runGarbageCollection();
 }
 
@@ -724,8 +1015,7 @@ vk::ProgramBinary* ResourceInterfaceStandard::compileProgram (const vk::ProgramI
 ResourceInterfaceVKSC::ResourceInterfaceVKSC (tcu::TestContext& testCtx)
 	: ResourceInterfaceStandard(testCtx)
 {
-		auto address = testCtx.getCommandLine().getServerAddress();
-		m_address = address ? address : std::string{};
+		m_address = std::string(testCtx.getCommandLine().getServerAddress());
 }
 
 vksc_server::Server* ResourceInterfaceVKSC::getServer ()
@@ -808,7 +1098,8 @@ VkResult ResourceInterfaceVKSC::createShaderModule (VkDevice							device,
 													VkShaderModule*						pShaderModule,
 													bool								normalMode) const
 {
-	if (noServer() || !normalMode) return ResourceInterfaceStandard::createShaderModule(device, pCreateInfo, pAllocator, pShaderModule, normalMode);
+	if (noServer() || !normalMode || !isVulkanSC())
+		return ResourceInterfaceStandard::createShaderModule(device, pCreateInfo, pAllocator, pShaderModule, normalMode);
 
 	// We will reach this place only in one case:
 	// - server exists
@@ -826,7 +1117,11 @@ void ResourceInterfaceVKSC::importPipelineCacheData (const PlatformInterface&			
 													 VkPhysicalDevice					physicalDevice,
 													 deUint32							queueIndex)
 {
-	if (noServer()) return ResourceInterfaceStandard::importPipelineCacheData(vkp, instance, vki, physicalDevice, queueIndex);
+	if (noServer())
+	{
+		ResourceInterfaceStandard::importPipelineCacheData(vkp, instance, vki, physicalDevice, queueIndex);
+		return;
+	}
 
 	vksc_server::CreateCacheRequest request;
 	request.input = m_pipelineInput;
@@ -839,11 +1134,25 @@ void ResourceInterfaceVKSC::importPipelineCacheData (const PlatformInterface&			
 		m_cacheData = std::move(response.binary);
 
 		m_pipelineSizes = response.pipelineSizes;
+		preparePipelinePoolSizes();
 	}
 	else { TCU_THROW(InternalError, "Server did not return pipeline cache data when requested (check server log for details)"); }
 }
 
-#endif
+MultithreadedDestroyGuard::MultithreadedDestroyGuard (de::SharedPtr<vk::ResourceInterface> resourceInterface)
+	: m_resourceInterface{ resourceInterface }
+{
+	if (m_resourceInterface.get() != DE_NULL)
+		m_resourceInterface->setHandleDestroy(false);
+}
+
+MultithreadedDestroyGuard::~MultithreadedDestroyGuard ()
+{
+	if (m_resourceInterface.get() != DE_NULL)
+		m_resourceInterface->setHandleDestroy(true);
+}
+
+#endif // CTS_USES_VULKANSC
 
 
 } // namespace vk

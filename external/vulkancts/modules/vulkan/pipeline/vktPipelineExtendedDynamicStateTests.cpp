@@ -3094,7 +3094,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			{
 				{ vk::VK_STENCIL_FACE_FRONT_BIT,			"face_front"		},
 				{ vk::VK_STENCIL_FACE_BACK_BIT,				"face_back"			},
-				{ vk::VK_STENCIL_FRONT_AND_BACK,			"face_both_single"	},
+				{ vk::VK_STENCIL_FACE_FRONT_AND_BACK,		"face_both_single"	},
 				{ vk::VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM,	"face_both_dual"	},	// MAX_ENUM is a placeholder.
 			};
 

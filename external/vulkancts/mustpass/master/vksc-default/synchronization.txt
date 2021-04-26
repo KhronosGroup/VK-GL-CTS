@@ -2875,6 +2875,8 @@ dEQP-VKSC.synchronization.timeline_semaphore.wait.one_signal_from_host
 dEQP-VKSC.synchronization.timeline_semaphore.wait.host_wait_before_signal
 dEQP-VKSC.synchronization.timeline_semaphore.wait.poll_signal_from_device
 dEQP-VKSC.synchronization.timeline_semaphore.wait.poll_signal_from_host
+dEQP-VKSC.synchronization.internally_synchronized_objects.pipeline_cache_compute
+dEQP-VKSC.synchronization.internally_synchronized_objects.pipeline_cache_graphics
 dEQP-VKSC.synchronization.basic.event.host_set_reset
 dEQP-VKSC.synchronization.basic.event.device_set_reset
 dEQP-VKSC.synchronization.basic.event.single_submit_multi_command_buffer

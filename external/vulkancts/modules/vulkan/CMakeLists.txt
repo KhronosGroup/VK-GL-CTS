@@ -44,6 +44,7 @@ add_subdirectory(ray_query)
 add_subdirectory(postmortem)
 add_subdirectory(fragment_shading_rate)
 add_subdirectory(reconvergence)
+add_subdirectory(sc)
 
 
 include_directories(
@@ -91,6 +92,7 @@ include_directories(
 	ray_query
 	postmortem
 	reconvergence
+	sc
 	)
 
 set(DEQP_VK_SRCS
@@ -207,6 +209,7 @@ set(DEQP_VKSC_LIBS
 #x	deqp-vksc-ray-query
 #x	deqp-vksc-postmortem
 	deqp-vksc-fragment-shading-rate
+	deqp-vksc-sc
 	)
 
 

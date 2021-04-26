@@ -901,7 +901,7 @@ void DepthStencilResolveTest::submit (void)
 			deUint32 stencilReference = 1 + 254 * (renderPass >= halfOfSamples);
 			vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
 			vkd.cmdPushConstants(*commandBuffer, *m_renderPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(renderPass), &renderPass);
-			vkd.cmdSetStencilReference(*commandBuffer, VK_STENCIL_FRONT_AND_BACK, stencilReference);
+			vkd.cmdSetStencilReference(*commandBuffer, VK_STENCIL_FACE_FRONT_AND_BACK, stencilReference);
 			vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
 		}
 	}
@@ -1284,7 +1284,7 @@ tcu::TestStatus PropertiesTestInstance::iterate (void)
 
 	if ((dsrProperties.supportedStencilResolveModes & vk::VK_RESOLVE_MODE_SAMPLE_ZERO_BIT) == 0)
 		TCU_FAIL("supportedStencilResolveModes does not include VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR");
-#endif
+#endif // CTS_USES_VULKANCTS
 
 	if ((dsrProperties.supportedStencilResolveModes & vk::VK_RESOLVE_MODE_AVERAGE_BIT) != 0)
 		TCU_FAIL("supportedStencilResolveModes includes forbidden VK_RESOLVE_MODE_AVERAGE_BIT_KHR");
@@ -1343,7 +1343,7 @@ void initTests (tcu::TestCaseGroup* group)
 	};
 
 	// NOTE: tests cant be executed for 1D and 3D images:
-	// 1D images are not tested because acording to specyfication sampleCounts
+	// 1D images are not tested because acording to specification sampleCounts
 	// will be set to VK_SAMPLE_COUNT_1_BIT when type is not VK_IMAGE_TYPE_2D
 	// 3D images are not tested because VkFramebufferCreateInfo specification
 	// states that: each element of pAttachments that is a 2D or 2D array image

@@ -2800,7 +2800,7 @@ public:
 : TimestampTest (testContext, name, description, param), m_cmdBufferLevel(param->getCmdBufferLevel()) { }
 	virtual					~TwoCmdBuffersTest	(void) { }
 	virtual TestInstance*	createInstance		(Context&						context) const;
-
+	virtual void			checkSupport		(Context& context) const;
 protected:
 	VkCommandBufferLevel	m_cmdBufferLevel;
 };
@@ -2829,6 +2829,15 @@ protected:
 TestInstance* TwoCmdBuffersTest::createInstance (Context& context) const
 {
 	return new TwoCmdBuffersTestInstance(context, m_stages, m_inRenderPass, m_hostQueryReset, m_cmdBufferLevel, m_queryResultFlags);
+}
+
+void TwoCmdBuffersTest::checkSupport(Context& context) const
+{
+	TimestampTest::checkSupport(context);
+#ifdef CTS_USES_VULKANSC
+	if (m_cmdBufferLevel == VK_COMMAND_BUFFER_LEVEL_SECONDARY && context.getDeviceVulkanSC10Properties().secondaryCommandBufferNullOrImagelessFramebuffer == VK_FALSE)
+		TCU_THROW(NotSupportedError, "secondaryCommandBufferNullFramebuffer is not supported");
+#endif
 }
 
 TwoCmdBuffersTestInstance::TwoCmdBuffersTestInstance (Context&					context,

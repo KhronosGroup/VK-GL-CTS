@@ -25,6 +25,7 @@
 
 #include "vkDefs.hpp"
 #include <map>
+#include <vector>
 #include <functional>
 
 #ifdef CTS_USES_VULKANSC
@@ -32,9 +33,34 @@
 namespace vk
 {
 
+const VkDeviceSize VKSC_DEFAULT_PIPELINE_POOL_SIZE	= 16u * 1024u;
+
 VkDeviceObjectReservationCreateInfo resetDeviceObjectReservationCreateInfo	();
-VkPipelineIdentifierInfo			resetPipelineIdentifierInfo				();
+VkPipelineOfflineCreateInfo			resetPipelineOfflineCreateInfo			();
 VkPhysicalDeviceVulkanSC10Features	createDefaultSC10Features				();
+void								applyPipelineIdentifier					(VkPipelineOfflineCreateInfo&					pipelineIdentifier,
+																			 const std::string&								value);
+
+VkGraphicsPipelineCreateInfo		prepareSimpleGraphicsPipelineCI			(VkPipelineVertexInputStateCreateInfo&			vertexInputStateCreateInfo,
+																			 std::vector<VkPipelineShaderStageCreateInfo>&	shaderStageCreateInfos,
+																			 VkPipelineInputAssemblyStateCreateInfo&		inputAssemblyStateCreateInfo,
+																			 VkPipelineViewportStateCreateInfo&				viewPortStateCreateInfo,
+																			 VkPipelineRasterizationStateCreateInfo&		rasterizationStateCreateInfo,
+																			 VkPipelineMultisampleStateCreateInfo&			multisampleStateCreateInfo,
+																			 VkPipelineColorBlendAttachmentState&			colorBlendAttachmentState,
+																			 VkPipelineColorBlendStateCreateInfo&			colorBlendStateCreateInfo,
+																			 VkPipelineDynamicStateCreateInfo&				dynamicStateCreateInfo,
+																			 std::vector<VkDynamicState>&					dynamicStates,
+																			 VkPipelineLayout								pipelineLayout,
+																			 VkRenderPass									renderPass);
+VkComputePipelineCreateInfo			prepareSimpleComputePipelineCI			(const VkPipelineShaderStageCreateInfo&			shaderStageCreateInfo,
+																			 VkPipelineLayout								pipelineLayout);
+VkRenderPassCreateInfo				prepareSimpleRenderPassCI				(VkFormat										format,
+																			 VkAttachmentDescription&						attachmentDescription,
+																			 VkAttachmentReference&							attachmentReference,
+																			 VkSubpassDescription&							subpassDescription);
+VkFormat							getRenderTargetFormat					(const InstanceInterface&						vk,
+																			 const VkPhysicalDevice&						device);
 
 std::size_t							calculateGraphicsPipelineHash			(const VkGraphicsPipelineCreateInfo&		gpCI,
 																			 const std::map<deUint64,std::size_t>&		objectHashes);

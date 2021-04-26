@@ -40,9 +40,13 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 	VkPhysicalDeviceFragmentDensityMapFeaturesEXT*	fragmentDensityMapFeatures	= nullptr;
 #endif // CTS_USES_VULKANSC
 
-	m_coreFeatures2		= initVulkanStructure();
-	m_vulkan11Features	= initVulkanStructure();
-	m_vulkan12Features	= initVulkanStructure();
+	m_coreFeatures2			= initVulkanStructure();
+	m_vulkan11Features		= initVulkanStructure();
+	m_vulkan12Features		= initVulkanStructure();
+#ifdef CTS_USES_VULKANSC
+	m_vulkanSC10Features	= initVulkanStructure();
+#endif // CTS_USES_VULKANSC
+
 
 	if (isInstanceExtensionSupported(apiVersion, instanceExtensions, "VK_KHR_get_physical_device_properties2"))
 	{
@@ -50,6 +54,9 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 		void**										nextPtr						= &m_coreFeatures2.pNext;
 		std::vector<FeatureStructWrapperBase*>		featuresToFillFromBlob;
 		bool										vk12Supported				= (apiVersion >= VK_MAKE_VERSION(1, 2, 0));
+#ifdef CTS_USES_VULKANSC
+		bool										vksc10Supported				= (apiVersion >= VK_MAKE_API_VERSION(1, 1, 0, 0));
+#endif // CTS_USES_VULKANSC
 
 		// in vk12 we have blob structures combining features of couple previously
 		// available feature structures, that now in vk12 must be removed from chain
@@ -58,6 +65,12 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 			addToChainVulkanStructure(&nextPtr, m_vulkan11Features);
 			addToChainVulkanStructure(&nextPtr, m_vulkan12Features);
 		}
+#ifdef CTS_USES_VULKANSC
+		if (vksc10Supported)
+		{
+			addToChainVulkanStructure(&nextPtr, m_vulkanSC10Features);
+		}
+#endif // CTS_USES_VULKANSC
 
 		std::vector<std::string> allDeviceExtensions = deviceExtensions;
 #ifdef CTS_USES_VULKANSC

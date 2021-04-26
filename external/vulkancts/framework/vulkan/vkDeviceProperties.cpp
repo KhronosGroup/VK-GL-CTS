@@ -35,6 +35,9 @@ DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 	m_coreProperties2		= initVulkanStructure();
 	m_vulkan11Properties	= initVulkanStructure();
 	m_vulkan12Properties	= initVulkanStructure();
+#ifdef CTS_USES_VULKANSC
+	m_vulkanSC10Properties	= initVulkanStructure();
+#endif // CTS_USES_VULKANSC
 
 	if (isInstanceExtensionSupported(apiVersion, instanceExtensions, "VK_KHR_get_physical_device_properties2"))
 	{
@@ -44,6 +47,9 @@ DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 		std::vector<PropertyStructWrapperBase*>		propertiesAddedWithVK;
 		bool										vk11Supported				= (apiVersion >= VK_MAKE_VERSION(1, 1, 0));
 		bool										vk12Supported				= (apiVersion >= VK_MAKE_VERSION(1, 2, 0));
+#ifdef CTS_USES_VULKANSC
+		bool										vksc10Supported				= (apiVersion >= VK_MAKE_API_VERSION(1, 1, 0, 0));
+#endif // CTS_USES_VULKANSC
 
 		// there are 3 properies structures that were added with vk11 (without being first part of extension)
 		if (vk11Supported)
@@ -80,6 +86,8 @@ DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 		for (const auto& coreExt : coreExtensions)
 			if (!de::contains(allDeviceExtensions.begin(), allDeviceExtensions.end(), std::string(coreExt)))
 				allDeviceExtensions.push_back(coreExt);
+		if (vksc10Supported)
+			addToChainVulkanStructure(&nextPtr, m_vulkanSC10Properties);
 #endif // CTS_USES_VULKANSC
 
 		// iterate over data for all property that are defined in specification

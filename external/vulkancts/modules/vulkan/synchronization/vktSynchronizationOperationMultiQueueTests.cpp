@@ -31,6 +31,7 @@
 #include "vkMemUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vkCmdUtil.hpp"
@@ -110,12 +111,13 @@ class MultiQueues
 		std::vector<VkQueue>	queue;
 	};
 
-	MultiQueues	(const Context& context, SynchronizationType type, bool timelineSemaphore)
-		: m_queueCount	(0)
+	MultiQueues	(Context& context, SynchronizationType type, bool timelineSemaphore)
+		: m_instance	(createCustomInstanceFromContext(context))
+		, m_queueCount	(0)
 	{
-		const InstanceInterface&					instance				= context.getInstanceInterface();
-		const VkPhysicalDevice						physicalDevice			= context.getPhysicalDevice();
-		const std::vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
+		const InstanceInterface&					instanceDriver			= m_instance.getDriver();
+		const VkPhysicalDevice						physicalDevice			= chooseDevice(instanceDriver, m_instance, context.getTestContext().getCommandLine());
+		const std::vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
 		for (deUint32 queuePropertiesNdx = 0; queuePropertiesNdx < queueFamilyProperties.size(); ++queuePropertiesNdx)
 		{
@@ -173,22 +175,26 @@ class MultiQueues
 			std::vector<VkPipelinePoolSize>		poolSizes;
 			if (context.getTestContext().getCommandLine().isSubProcess())
 			{
-				pcCI =
+				if (context.getResourceInterface()->getCacheDataSize() > 0)
 				{
-					VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
-					DE_NULL,											// const void*					pNext;
-					(VkPipelineCacheCreateFlags)0u,						// VkPipelineCacheCreateFlags	flags;
-					context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
-					context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
-				};
-				memReservationInfo.pipelineCacheCreateInfoCount		= 1;
-				memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+					pcCI =
+					{
+						VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
+						DE_NULL,											// const void*					pNext;
+						VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+							VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+						context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+						context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+					};
+					memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+					memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+				}
 
 				poolSizes							= context.getResourceInterface()->getPipelinePoolSizes();
 				if (!poolSizes.empty())
 				{
-					memReservationInfo.pipelinePoolSizeCount		= deUint32(poolSizes.size());
-					memReservationInfo.pPipelinePoolSizes			= poolSizes.data();
+					memReservationInfo.pipelinePoolSizeCount			= deUint32(poolSizes.size());
+					memReservationInfo.pPipelinePoolSizes				= poolSizes.data();
 				}
 			}
 #endif // CTS_USES_VULKANSC
@@ -207,13 +213,13 @@ class MultiQueues
 				DE_NULL															//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 			};
 
-			m_logicalDevice	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), instance, physicalDevice, &deviceInfo);
+			m_logicalDevice	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), m_instance, instanceDriver, physicalDevice, &deviceInfo);
 #ifndef CTS_USES_VULKANSC
-			m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice));
+			m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), m_instance, *m_logicalDevice));
 #else
-			m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
+			m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), m_instance, *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
 #endif // CTS_USES_VULKANSC
-			m_allocator		= MovePtr<Allocator>(new SimpleAllocator(*m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
+			m_allocator		= MovePtr<Allocator>(new SimpleAllocator(*m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instanceDriver, physicalDevice)));
 
 			for (std::map<deUint32, QueueData>::iterator it = m_queues.begin(); it != m_queues.end(); ++it)
 			for (int queueNdx = 0; queueNdx < static_cast<int>(it->second.queue.size()); ++queueNdx)
@@ -342,7 +348,7 @@ public:
 		return *m_allocator;
 	}
 
-	static SharedPtr<MultiQueues> getInstance(const Context& context, SynchronizationType type, bool timelineSemaphore)
+	static SharedPtr<MultiQueues> getInstance(Context& context, SynchronizationType type, bool timelineSemaphore)
 	{
 		if (!m_multiQueues)
 			m_multiQueues = SharedPtr<MultiQueues>(new MultiQueues(context, type, timelineSemaphore));
@@ -355,6 +361,7 @@ public:
 	}
 
 private:
+	CustomInstance					m_instance;
 	Move<VkDevice>					m_logicalDevice;
 #ifndef CTS_USES_VULKANSC
 	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;

@@ -763,12 +763,12 @@ vk::SpirvVersion getMaxSpirvVersionForVulkan (const deUint32 vulkanVersion)
 {
 	vk::SpirvVersion	result			= vk::SPIRV_VERSION_LAST;
 
-	deUint32 vulkanVersionMajorMinor = VK_MAKE_VERSION(VK_API_VERSION_MAJOR(vulkanVersion), VK_API_VERSION_MINOR(vulkanVersion), 0);
-	if (vulkanVersionMajorMinor == VK_API_VERSION_1_0)
+	deUint32 vulkanVersionVariantMajorMinor = VK_MAKE_API_VERSION(VK_API_VERSION_VARIANT(vulkanVersion), VK_API_VERSION_MAJOR(vulkanVersion), VK_API_VERSION_MINOR(vulkanVersion), 0);
+	if (vulkanVersionVariantMajorMinor == VK_API_VERSION_1_0)
 		result = vk::SPIRV_VERSION_1_0;
-	else if (vulkanVersionMajorMinor == VK_API_VERSION_1_1)
+	else if (vulkanVersionVariantMajorMinor == VK_API_VERSION_1_1)
 		result = vk::SPIRV_VERSION_1_3;
-	else if (vulkanVersionMajorMinor >= VK_API_VERSION_1_2)
+	else if (vulkanVersionVariantMajorMinor >= VK_API_VERSION_1_2)
 		result = vk::SPIRV_VERSION_1_5;
 
 	DE_ASSERT(result < vk::SPIRV_VERSION_LAST);

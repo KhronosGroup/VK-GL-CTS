@@ -25,6 +25,7 @@
 
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
+#include <map>
 
 namespace tcu
 {
@@ -88,6 +89,7 @@ public:
 	virtual void						deinitTestPackage	(TestContext& testCtx) { DE_UNREF(testCtx); };
 	virtual bool						usesLocalStatus		()	{ return false; }
 	virtual void						updateGlobalStatus	(tcu::TestRunStatus& status) { DE_UNREF(status); }
+	virtual void						reportDurations		(tcu::TestContext& testCtx, const std::string& packageName, const deInt64& duration, const std::map<std::string, deUint64>& groupsDurationTime) { DE_UNREF(testCtx); DE_UNREF(packageName); DE_UNREF(duration); DE_UNREF(groupsDurationTime); }
 };
 
 /*--------------------------------------------------------------------*//*!

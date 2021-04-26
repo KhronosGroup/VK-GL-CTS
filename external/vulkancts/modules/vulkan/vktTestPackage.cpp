@@ -24,6 +24,7 @@
 #include "vktTestPackage.hpp"
 
 #include "qpDebugOut.h"
+#include "qpInfo.h"
 
 #include "tcuPlatform.hpp"
 #include "tcuTestCase.hpp"
@@ -113,6 +114,9 @@
 #include "vktPostmortemTests.hpp"
 #include "vktFragmentShadingRateTests.hpp"
 #include "vktReconvergenceTests.hpp"
+#ifdef CTS_USES_VULKANSC
+#include "vktSafetyCriticalTests.hpp"
+#endif // CTS_USES_VULKANSC
 
 #include <vector>
 #include <sstream>
@@ -144,6 +148,7 @@ public:
 	void										deinitTestPackage	(tcu::TestContext& testCtx) override;
 	bool										usesLocalStatus		() override;
 	void										updateGlobalStatus	(tcu::TestRunStatus& status) override;
+	void										reportDurations		(tcu::TestContext& testCtx, const std::string& packageName, const deInt64& duration, const std::map<std::string, deUint64>& groupsDurationTime) override;
 
 private:
 	void										logUnusedShaders	(tcu::TestCase* testCase);
@@ -210,23 +215,32 @@ TestCaseExecutor::TestCaseExecutor (tcu::TestContext& testCtx)
 	, m_instance			(DE_NULL)
 {
 #ifdef CTS_USES_VULKANSC
+	std::vector<int> caseFraction = testCtx.getCommandLine().getCaseFraction();
+	std::string jsonFileName;
+	int portOffset;
+	if (caseFraction.empty())
+	{
+		jsonFileName	= "pipeline_data.txt";
+		portOffset		= 0;
+	}
+	else
+	{
+		jsonFileName	= "pipeline_data_" + std::to_string(caseFraction[0]) + ".txt";
+		portOffset		= caseFraction[0];
+	}
+
 	if (testCtx.getCommandLine().isSubProcess())
 	{
-		std::vector<int> caseFraction = testCtx.getCommandLine().getCaseFraction();
-		std::string jsonFileName;
-		if (caseFraction.empty()) jsonFileName = "pipeline_data.txt";
-		else jsonFileName = "pipeline_data_" + std::to_string(caseFraction[0]) + ".txt";
-
-		std::vector<deUint8> input = vksc_server::ipc::Child{}.GetFile(jsonFileName);
+		std::vector<deUint8> input = vksc_server::ipc::Child{portOffset}.GetFile(jsonFileName);
 		m_resourceInterface->importData(input);
 	}
 	else
 	{
-		m_parentIPC.reset( new vksc_server::ipc::Parent{} );
+		m_parentIPC.reset( new vksc_server::ipc::Parent{portOffset} );
 	}
 
 	// If we are provided with remote location
-	if (testCtx.getCommandLine().getServerAddress())
+	if (!std::string(testCtx.getCommandLine().getServerAddress()).empty())
 	{
 		// Open connection with the server dedicated for standard output
 		vksc_server::OpenRemoteStandardOutput(testCtx.getCommandLine().getServerAddress());
@@ -245,9 +259,35 @@ TestCaseExecutor::TestCaseExecutor (tcu::TestContext& testCtx)
 							m_deviceProperties.vendorID,
 							m_deviceProperties.deviceID,
 							sessionInfo);
-	testCtx.getLog().writeSessionInfo(sessionInfo.get());
 
 #ifdef CTS_USES_VULKANSC
+	if (!std::string(testCtx.getCommandLine().getServerAddress()).empty())
+	{
+		vksc_server::Server server(testCtx.getCommandLine().getServerAddress());
+		vksc_server::AppendRequest request;
+		request.fileName = testCtx.getCommandLine().getLogFileName();
+
+		std::ostringstream str;
+		str << "#sessionInfo releaseName " << qpGetReleaseName() << std::endl;
+		str << "#sessionInfo releaseId 0x" << std::hex << qpGetReleaseId() << std::endl;
+		str << "#sessionInfo targetName \"" << qpGetTargetName() << "\"" << std::endl;
+		str << sessionInfo.get() << std::endl;
+		str << "#beginSession" << std::endl;
+
+		std::string output = str.str();
+		request.data.assign(output.begin(), output.end());
+		request.clear = true;
+		server.SendRequest(request);
+	}
+	else
+#endif // CTS_USES_VULKANSC
+	{
+		testCtx.getLog().writeSessionInfo(sessionInfo.get());
+	}
+
+#ifdef CTS_USES_VULKANSC
+	m_resourceInterface->initApiVersion(m_context->getUsedApiVersion());
+
 	// Real Vulkan SC tests are performed in subprocess.
 	// Tests run in main process are only used to collect data required by Vulkan SC.
 	// That's why we turn off any output in main process and copy output from subprocess when subprocess tests are performed
@@ -492,7 +532,7 @@ bool TestCaseExecutor::usesLocalStatus ()
 #endif
 }
 
-void TestCaseExecutor::updateGlobalStatus(tcu::TestRunStatus& status)
+void TestCaseExecutor::updateGlobalStatus (tcu::TestRunStatus& status)
 {
 	status.numExecuted					+= m_status.numExecuted;
 	status.numPassed					+= m_status.numPassed;
@@ -503,11 +543,48 @@ void TestCaseExecutor::updateGlobalStatus(tcu::TestRunStatus& status)
 	m_status.clear();
 }
 
+void TestCaseExecutor::reportDurations(tcu::TestContext& testCtx, const std::string& packageName, const deInt64& duration, const std::map<std::string, deUint64>& groupsDurationTime)
+{
+#ifdef CTS_USES_VULKANSC
+	// Send it to server to append to its log
+	vksc_server::Server server(testCtx.getCommandLine().getServerAddress());
+	vksc_server::AppendRequest request;
+	request.fileName = testCtx.getCommandLine().getLogFileName();
+
+	std::ostringstream str;
+
+	str << std::endl;
+	str << "#beginTestsCasesTime" << std::endl;
+
+	str << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
+	str << "<TestsCasesTime>" << std::endl;
+
+	str << " <Number Name=\"" << packageName << "\" Description=\"Total tests case duration in microseconds\" Tag=\"Time\" Unit=\"us\">" << duration << "</Number>" << std::endl;
+	for (std::map<std::string, deUint64>::const_iterator it = groupsDurationTime.begin(); it != groupsDurationTime.end(); ++it)
+		str << " <Number Name=\"" << it->first << "\" Description=\"The test group case duration in microseconds\" Tag=\"Time\" Unit=\"us\">" << it->second << "</Number>" << std::endl;
+	str << "</TestsCasesTime>" << std::endl;
+	str << std::endl;
+	str << "#endTestsCasesTime" << std::endl;
+	str << std::endl;
+	str << "#endSession" << std::endl;
+
+	std::string output = str.str();
+	request.data.assign(output.begin(), output.end());
+	server.SendRequest(request);
+#else
+	DE_UNREF(testCtx);
+	DE_UNREF(packageName);
+	DE_UNREF(duration);
+	DE_UNREF(groupsDurationTime);
+#endif // CTS_USES_VULKANSC
+
+}
+
 void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 {
 #ifdef CTS_USES_VULKANSC
 	if (testCtx.getCommandLine().isSubProcess())
-		TCU_THROW(TestError, "Cannot run subprocess inside subprocess : ");
+		TCU_THROW(InternalError, "Cannot run subprocess inside subprocess : ");
 
 	if (m_testsForSubprocess.empty())
 		return;
@@ -538,7 +615,7 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 	{
 		std::string appName = testCtx.getCommandLine().getApplicationName();
 		if (appName.empty())
-			TCU_THROW(TestError, "Application name is not defined");
+			TCU_THROW(InternalError, "Application name is not defined");
 		// add --deqp-subprocess option to inform deqp-vksc process that it works as slave process
 		newCmdLine = appName + " --deqp-subprocess=enable --deqp-log-filename=" + qpaFileName.str();
 	}
@@ -591,6 +668,7 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 	restoreStandardOutput();
 
 	// create subprocess which will perform real tests
+	std::string subProcessExitCodeInfo;
 	{
 		deProcess*	process			= deProcess_create();
 		if (deProcess_start(process, newCmdLine.c_str(), ".") != DE_TRUE)
@@ -598,7 +676,7 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 			std::string err = deProcess_getLastError(process);
 			deProcess_destroy(process);
 			process = DE_NULL;
-			TCU_THROW(TestError, "Error while running subprocess : " + err);
+			TCU_THROW(InternalError, "Error while running subprocess : " + err);
 		}
 		std::string whole;
 		whole.reserve(1024 * 4);
@@ -625,14 +703,19 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 			whole += outBuffer;
 		}
 		errThread->join();
-		deProcess_waitForFinish(process);
+		if (deProcess_waitForFinish(process))
+		{
+			const int			exitCode = deProcess_getExitCode(process);
+			std::stringstream	s;
+
+			s << " Subprocess failed with exit code " << exitCode << "(" << std::hex << exitCode << ")";
+
+			subProcessExitCodeInfo = s.str();
+		}
 		deProcess_destroy(process);
 
 		vksc_server::RemoteWrite(0, whole.c_str());
 	}
-
-	// restore logging
-	testCtx.getLog().supressLogging(false);
 
 	// copy test information from sub.qpa to main log
 	{
@@ -645,11 +728,11 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 			std::size_t			beginPos		= subQpaText.find(beginText);
 			std::size_t			endPos			= subQpaText.rfind(endText);
 			if (beginPos == std::string::npos || endPos == std::string::npos)
-				TCU_THROW(TestError, "Couldn't match tags from " + qpaFileName.str());
+				TCU_THROW(InternalError, "Couldn't match tags from " + qpaFileName.str() + subProcessExitCodeInfo);
 
 			std::string		subQpaCopy = "\n" + std::string(subQpaText.begin() + beginPos, subQpaText.begin() + endPos + endText.size()) + "\n";
 
-			if (testCtx.getCommandLine().getServerAddress())
+			if (!std::string(testCtx.getCommandLine().getServerAddress()).empty())
 			{
 				// Send it to server to append to its log
 				vksc_server::Server server(testCtx.getCommandLine().getServerAddress());
@@ -661,7 +744,17 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 			else
 			{
 				// Write it to parent's log
-				testCtx.getLog().writeRaw(subQpaCopy.c_str());
+				try
+				{
+					testCtx.getLog().supressLogging(false);
+					testCtx.getLog().writeRaw(subQpaCopy.c_str());
+				}
+				catch(...)
+				{
+					testCtx.getLog().supressLogging(true);
+					throw;
+				}
+				testCtx.getLog().supressLogging(true);
 			}
 		}
 
@@ -669,7 +762,7 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 			std::string			beginStat		("#SubProcessStatus");
 			std::size_t			beginPos		= subQpaText.find(beginStat);
 			if (beginPos == std::string::npos)
-				TCU_THROW(TestError, "Couldn't match #SubProcessStatus tag from " + qpaFileName.str());
+				TCU_THROW(InternalError, "Couldn't match #SubProcessStatus tag from " + qpaFileName.str() + subProcessExitCodeInfo);
 
 			std::string			subQpaStat		(subQpaText.begin() + beginPos + beginStat.size(), subQpaText.end());
 
@@ -937,6 +1030,7 @@ void TestPackageSC::init (void)
 //	addChild(RayTracing::createTests			(m_testCtx));
 //	addChild(RayQuery::createTests				(m_testCtx));
 	addChild(FragmentShadingRate::createTests(m_testCtx));
+	addChild(sc::createTests(m_testCtx));
 }
 
 #endif // CTS_USES_VULKANSC

@@ -269,10 +269,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_RESERVATION_CREATE_INFO:						return "VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_RESERVATION_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_CONSUMPTION:									return "VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_CONSUMPTION";
 		case VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE:												return "VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE";
-		case VK_STRUCTURE_TYPE_PIPELINE_POOL_ENTRY_SIZE_CREATE_INFO:							return "VK_STRUCTURE_TYPE_PIPELINE_POOL_ENTRY_SIZE_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_FAULT_DATA:														return "VK_STRUCTURE_TYPE_FAULT_DATA";
 		case VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO:												return "VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO";
-		case VK_STRUCTURE_TYPE_PIPELINE_IDENTIFIER_INFO:										return "VK_STRUCTURE_TYPE_PIPELINE_IDENTIFIER_INFO";
+		case VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO:									return "VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR:										return "VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PRESENT_INFO_KHR:												return "VK_STRUCTURE_TYPE_PRESENT_INFO_KHR";
 		case VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_CAPABILITIES_KHR:							return "VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_CAPABILITIES_KHR";
@@ -440,7 +439,7 @@ const char* getImageLayoutName (VkImageLayout value)
 		case VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL:						return "VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL";
 		case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:								return "VK_IMAGE_LAYOUT_PRESENT_SRC_KHR";
 		case VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR:							return "VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR";
-		case VK_IMAGE_LAYOUT_SHADING_RATE_OPTIMAL_NV:						return "VK_IMAGE_LAYOUT_SHADING_RATE_OPTIMAL_NV";
+		case VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR:	return "VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR";
 		case VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL_KHR:							return "VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL_KHR";
 		case VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR:						return "VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR";
 		case VK_IMAGE_LAYOUT_MAX_ENUM:										return "VK_IMAGE_LAYOUT_MAX_ENUM";
@@ -489,6 +488,17 @@ const char* getObjectTypeName (VkObjectType value)
 	}
 }
 
+const char* getPipelineCacheHeaderVersionName (VkPipelineCacheHeaderVersion value)
+{
+	switch (value)
+	{
+		case VK_PIPELINE_CACHE_HEADER_VERSION_ONE:					return "VK_PIPELINE_CACHE_HEADER_VERSION_ONE";
+		case VK_PIPELINE_CACHE_HEADER_VERSION_SAFETY_CRITICAL_ONE:	return "VK_PIPELINE_CACHE_HEADER_VERSION_SAFETY_CRITICAL_ONE";
+		case VK_PIPELINE_CACHE_HEADER_VERSION_MAX_ENUM:				return "VK_PIPELINE_CACHE_HEADER_VERSION_MAX_ENUM";
+		default:													return DE_NULL;
+	}
+}
+
 const char* getVendorIdName (VkVendorId value)
 {
 	switch (value)
@@ -501,16 +511,6 @@ const char* getVendorIdName (VkVendorId value)
 		case VK_VENDOR_ID_POCL:		return "VK_VENDOR_ID_POCL";
 		case VK_VENDOR_ID_MAX_ENUM:	return "VK_VENDOR_ID_MAX_ENUM";
 		default:					return DE_NULL;
-	}
-}
-
-const char* getPipelineCacheHeaderVersionName (VkPipelineCacheHeaderVersion value)
-{
-	switch (value)
-	{
-		case VK_PIPELINE_CACHE_HEADER_VERSION_ONE:		return "VK_PIPELINE_CACHE_HEADER_VERSION_ONE";
-		case VK_PIPELINE_CACHE_HEADER_VERSION_MAX_ENUM:	return "VK_PIPELINE_CACHE_HEADER_VERSION_MAX_ENUM";
-		default:										return DE_NULL;
 	}
 }
 
@@ -1341,6 +1341,8 @@ const char* getDriverIdName (VkDriverId value)
 		case VK_DRIVER_ID_MESA_LLVMPIPE:				return "VK_DRIVER_ID_MESA_LLVMPIPE";
 		case VK_DRIVER_ID_MOLTENVK:						return "VK_DRIVER_ID_MOLTENVK";
 		case VK_DRIVER_ID_COREAVI_PROPRIETARY:			return "VK_DRIVER_ID_COREAVI_PROPRIETARY";
+		case VK_DRIVER_ID_JUICE_PROPRIETARY:			return "VK_DRIVER_ID_JUICE_PROPRIETARY";
+		case VK_DRIVER_ID_VERISILICON_PROPRIETARY:		return "VK_DRIVER_ID_VERISILICON_PROPRIETARY";
 		case VK_DRIVER_ID_MAX_ENUM:						return "VK_DRIVER_ID_MAX_ENUM";
 		default:										return DE_NULL;
 	}
@@ -1426,6 +1428,16 @@ const char* getPipelineMatchControlName (VkPipelineMatchControl value)
 	{
 		case VK_PIPELINE_MATCH_CONTROL_APPLICATION_UUID_EXACT_MATCH:	return "VK_PIPELINE_MATCH_CONTROL_APPLICATION_UUID_EXACT_MATCH";
 		case VK_PIPELINE_MATCH_CONTROL_MAX_ENUM:						return "VK_PIPELINE_MATCH_CONTROL_MAX_ENUM";
+		default:														return DE_NULL;
+	}
+}
+
+const char* getPipelineCacheValidationVersionName (VkPipelineCacheValidationVersion value)
+{
+	switch (value)
+	{
+		case VK_PIPELINE_CACHE_VALIDATION_VERSION_SAFETY_CRITICAL_ONE:	return "VK_PIPELINE_CACHE_VALIDATION_VERSION_SAFETY_CRITICAL_ONE";
+		case VK_PIPELINE_CACHE_VALIDATION_VERSION_MAX_ENUM:				return "VK_PIPELINE_CACHE_VALIDATION_VERSION_MAX_ENUM";
 		default:														return DE_NULL;
 	}
 }
@@ -1641,15 +1653,16 @@ const char* getValidationFeatureDisableEXTName (VkValidationFeatureDisableEXT va
 {
 	switch (value)
 	{
-		case VK_VALIDATION_FEATURE_DISABLE_ALL_EXT:					return "VK_VALIDATION_FEATURE_DISABLE_ALL_EXT";
-		case VK_VALIDATION_FEATURE_DISABLE_SHADERS_EXT:				return "VK_VALIDATION_FEATURE_DISABLE_SHADERS_EXT";
-		case VK_VALIDATION_FEATURE_DISABLE_THREAD_SAFETY_EXT:		return "VK_VALIDATION_FEATURE_DISABLE_THREAD_SAFETY_EXT";
-		case VK_VALIDATION_FEATURE_DISABLE_API_PARAMETERS_EXT:		return "VK_VALIDATION_FEATURE_DISABLE_API_PARAMETERS_EXT";
-		case VK_VALIDATION_FEATURE_DISABLE_OBJECT_LIFETIMES_EXT:	return "VK_VALIDATION_FEATURE_DISABLE_OBJECT_LIFETIMES_EXT";
-		case VK_VALIDATION_FEATURE_DISABLE_CORE_CHECKS_EXT:			return "VK_VALIDATION_FEATURE_DISABLE_CORE_CHECKS_EXT";
-		case VK_VALIDATION_FEATURE_DISABLE_UNIQUE_HANDLES_EXT:		return "VK_VALIDATION_FEATURE_DISABLE_UNIQUE_HANDLES_EXT";
-		case VK_VALIDATION_FEATURE_DISABLE_MAX_ENUM_EXT:			return "VK_VALIDATION_FEATURE_DISABLE_MAX_ENUM_EXT";
-		default:													return DE_NULL;
+		case VK_VALIDATION_FEATURE_DISABLE_ALL_EXT:						return "VK_VALIDATION_FEATURE_DISABLE_ALL_EXT";
+		case VK_VALIDATION_FEATURE_DISABLE_SHADERS_EXT:					return "VK_VALIDATION_FEATURE_DISABLE_SHADERS_EXT";
+		case VK_VALIDATION_FEATURE_DISABLE_THREAD_SAFETY_EXT:			return "VK_VALIDATION_FEATURE_DISABLE_THREAD_SAFETY_EXT";
+		case VK_VALIDATION_FEATURE_DISABLE_API_PARAMETERS_EXT:			return "VK_VALIDATION_FEATURE_DISABLE_API_PARAMETERS_EXT";
+		case VK_VALIDATION_FEATURE_DISABLE_OBJECT_LIFETIMES_EXT:		return "VK_VALIDATION_FEATURE_DISABLE_OBJECT_LIFETIMES_EXT";
+		case VK_VALIDATION_FEATURE_DISABLE_CORE_CHECKS_EXT:				return "VK_VALIDATION_FEATURE_DISABLE_CORE_CHECKS_EXT";
+		case VK_VALIDATION_FEATURE_DISABLE_UNIQUE_HANDLES_EXT:			return "VK_VALIDATION_FEATURE_DISABLE_UNIQUE_HANDLES_EXT";
+		case VK_VALIDATION_FEATURE_DISABLE_SHADER_VALIDATION_CACHE_EXT:	return "VK_VALIDATION_FEATURE_DISABLE_SHADER_VALIDATION_CACHE_EXT";
+		case VK_VALIDATION_FEATURE_DISABLE_MAX_ENUM_EXT:				return "VK_VALIDATION_FEATURE_DISABLE_MAX_ENUM_EXT";
+		default:														return DE_NULL;
 	}
 }
 
@@ -1688,9 +1701,8 @@ tcu::Format::Bitfield<32> getAccessFlagsStr (VkAccessFlags value)
 		tcu::Format::BitDesc(VK_ACCESS_MEMORY_READ_BIT,									"VK_ACCESS_MEMORY_READ_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_MEMORY_WRITE_BIT,								"VK_ACCESS_MEMORY_WRITE_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT,		"VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT"),
-		tcu::Format::BitDesc(VK_ACCESS_SHADING_RATE_IMAGE_READ_BIT_NV,					"VK_ACCESS_SHADING_RATE_IMAGE_READ_BIT_NV"),
-		tcu::Format::BitDesc(VK_ACCESS_NONE_KHR,										"VK_ACCESS_NONE_KHR"),
 		tcu::Format::BitDesc(VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR,	"VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR"),
+		tcu::Format::BitDesc(VK_ACCESS_NONE_KHR,										"VK_ACCESS_NONE_KHR"),
 		tcu::Format::BitDesc(VK_ACCESS_FLAG_BITS_MAX_ENUM,								"VK_ACCESS_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
@@ -1801,7 +1813,6 @@ tcu::Format::Bitfield<32> getImageUsageFlagsStr (VkImageUsageFlags value)
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,				"VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT"),
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,					"VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT"),
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,						"VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV,					"VK_IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV"),
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,	"VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM,							"VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM"),
 	};
@@ -1880,9 +1891,8 @@ tcu::Format::Bitfield<32> getPipelineStageFlagsStr (VkPipelineStageFlags value)
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_HOST_BIT,									"VK_PIPELINE_STAGE_HOST_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,							"VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,							"VK_PIPELINE_STAGE_ALL_COMMANDS_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV,					"VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_NONE_KHR,									"VK_PIPELINE_STAGE_NONE_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,	"VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_NONE_KHR,									"VK_PIPELINE_STAGE_NONE_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM,							"VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
@@ -2205,7 +2215,6 @@ tcu::Format::Bitfield<32> getStencilFaceFlagsStr (VkStencilFaceFlags value)
 		tcu::Format::BitDesc(VK_STENCIL_FACE_FRONT_BIT,				"VK_STENCIL_FACE_FRONT_BIT"),
 		tcu::Format::BitDesc(VK_STENCIL_FACE_BACK_BIT,				"VK_STENCIL_FACE_BACK_BIT"),
 		tcu::Format::BitDesc(VK_STENCIL_FACE_FRONT_AND_BACK,		"VK_STENCIL_FACE_FRONT_AND_BACK"),
-		tcu::Format::BitDesc(VK_STENCIL_FRONT_AND_BACK,				"VK_STENCIL_FRONT_AND_BACK"),
 		tcu::Format::BitDesc(VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM,	"VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
@@ -2812,6 +2821,18 @@ std::ostream& operator<< (std::ostream& s, const VkMemoryBarrier& value)
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tsrcAccessMask = " << getAccessFlagsStr(value.srcAccessMask) << '\n';
 	s << "\tdstAccessMask = " << getAccessFlagsStr(value.dstAccessMask) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineCacheHeaderVersionOne& value)
+{
+	s << "VkPipelineCacheHeaderVersionOne = {\n";
+	s << "\theaderSize = " << value.headerSize << '\n';
+	s << "\theaderVersion = " << value.headerVersion << '\n';
+	s << "\tvendorID = " << value.vendorID << '\n';
+	s << "\tdeviceID = " << value.deviceID << '\n';
+	s << "\tpipelineCacheUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.pipelineCacheUUID)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.pipelineCacheUUID))) << '\n';
 	s << '}';
 	return s;
 }
@@ -5512,7 +5533,6 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVulkanSC10Featu
 	s << "VkPhysicalDeviceVulkanSC10Features = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tpipelineIdentifier = " << value.pipelineIdentifier << '\n';
 	s << "\tshaderAtomicInstructions = " << value.shaderAtomicInstructions << '\n';
 	s << '}';
 	return s;
@@ -5528,7 +5548,7 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVulkanSC10Prope
 	s << "\tcommandPoolMultipleCommandBuffersRecording = " << value.commandPoolMultipleCommandBuffersRecording << '\n';
 	s << "\tcommandPoolResetCommandBuffer = " << value.commandPoolResetCommandBuffer << '\n';
 	s << "\tcommandBufferSimultaneousUse = " << value.commandBufferSimultaneousUse << '\n';
-	s << "\tsecondaryCommandBufferNullFramebuffer = " << value.secondaryCommandBufferNullFramebuffer << '\n';
+	s << "\tsecondaryCommandBufferNullOrImagelessFramebuffer = " << value.secondaryCommandBufferNullOrImagelessFramebuffer << '\n';
 	s << "\trecycleDescriptorSetMemory = " << value.recycleDescriptorSetMemory << '\n';
 	s << "\trecyclePipelineMemory = " << value.recyclePipelineMemory << '\n';
 	s << "\tmaxRenderPassSubpasses = " << value.maxRenderPassSubpasses << '\n';
@@ -5627,16 +5647,6 @@ std::ostream& operator<< (std::ostream& s, const VkCommandPoolMemoryConsumption&
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPipelinePoolEntrySizeCreateInfo& value)
-{
-	s << "VkPipelinePoolEntrySizeCreateInfo = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tpoolEntrySize = " << value.poolEntrySize << '\n';
-	s << '}';
-	return s;
-}
-
 std::ostream& operator<< (std::ostream& s, const VkFaultData& value)
 {
 	s << "VkFaultData = {\n";
@@ -5653,19 +5663,57 @@ std::ostream& operator<< (std::ostream& s, const VkFaultCallbackInfo& value)
 	s << "VkFaultCallbackInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfaultCount = " << value.faultCount << '\n';
 	s << "\tpFaults = " << value.pFaults << '\n';
 	s << "\tpfnFaultCallback = " << value.pfnFaultCallback << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPipelineIdentifierInfo& value)
+std::ostream& operator<< (std::ostream& s, const VkPipelineOfflineCreateInfo& value)
 {
-	s << "VkPipelineIdentifierInfo = {\n";
+	s << "VkPipelineOfflineCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpipelineIdentifier = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.pipelineIdentifier)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.pipelineIdentifier))) << '\n';
 	s << "\tmatchControl = " << value.matchControl << '\n';
+	s << "\tpoolEntrySize = " << value.poolEntrySize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineCacheStageValidationIndexEntry& value)
+{
+	s << "VkPipelineCacheStageValidationIndexEntry = {\n";
+	s << "\tcodeSize = " << value.codeSize << '\n';
+	s << "\tcodeOffset = " << value.codeOffset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineCacheSafetyCriticalIndexEntry& value)
+{
+	s << "VkPipelineCacheSafetyCriticalIndexEntry = {\n";
+	s << "\tpipelineIdentifier = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.pipelineIdentifier)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.pipelineIdentifier))) << '\n';
+	s << "\tpipelineMemorySize = " << value.pipelineMemorySize << '\n';
+	s << "\tjsonSize = " << value.jsonSize << '\n';
+	s << "\tjsonOffset = " << value.jsonOffset << '\n';
+	s << "\tstageIndexCount = " << value.stageIndexCount << '\n';
+	s << "\tstageIndexStride = " << value.stageIndexStride << '\n';
+	s << "\tstageIndexOffset = " << value.stageIndexOffset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineCacheHeaderVersionSafetyCriticalOne& value)
+{
+	s << "VkPipelineCacheHeaderVersionSafetyCriticalOne = {\n";
+	s << "\theaderVersionOne = " << value.headerVersionOne << '\n';
+	s << "\tvalidationVersion = " << value.validationVersion << '\n';
+	s << "\timplementationData = " << value.implementationData << '\n';
+	s << "\tpipelineIndexCount = " << value.pipelineIndexCount << '\n';
+	s << "\tpipelineIndexStride = " << value.pipelineIndexStride << '\n';
+	s << "\tpipelineIndexOffset = " << value.pipelineIndexOffset << '\n';
 	s << '}';
 	return s;
 }

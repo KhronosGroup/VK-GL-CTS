@@ -273,14 +273,23 @@ public:
 	//! Should the run be terminated on first failure (--deqp-terminate-on-fail)
 	bool							isTerminateOnFailEnabled	(void) const;
 
-	//! Start as subprocess
+	//! Start as subprocess ( Vulkan SC )
 	bool							isSubProcess				(void) const;
 
 	//! Define number of tests performed in main process ( Vulkan SC )
 	int								getSubprocessTestCount		(void) const;
 
-	//! Optional server address that will be responsible for (among other things) compiling shaders
+	//! Optional server address that will be responsible for (among other things) compiling shaders ( Vulkan SC )
 	const char*						getServerAddress			(void) const;
+
+	//! Define minimum size of a single command buffer ( Vulkan SC )
+	int								getCommandPoolMinSize(void) const;
+
+	//! Define default size for single command in command buffer ( Vulkan SC )
+	int								getCommandDefaultSize(void) const;
+
+	//! Define default size for single pipeline ( Vulkan SC )
+	int								getPipelineDefaultSize(void) const;
 
 	/*--------------------------------------------------------------------*//*!
 	 * \brief Creates case list filter

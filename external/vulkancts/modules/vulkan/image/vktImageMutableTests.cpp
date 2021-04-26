@@ -1862,22 +1862,26 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface&		vkp,
 	std::vector<VkPipelinePoolSize>		poolSizes;
 	if (cmdLine.isSubProcess())
 	{
-		pcCI =
+		if (resourceInterface->getCacheDataSize() > 0)
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
-			DE_NULL,											// const void*					pNext;
-			(VkPipelineCacheCreateFlags)0u,						// VkPipelineCacheCreateFlags	flags;
-			resourceInterface->getCacheDataSize(),				// deUintptr					initialDataSize;
-			resourceInterface->getCacheData()					// const void*					pInitialData;
-		};
-		memReservationInfo.pipelineCacheCreateInfoCount		= 1;
-		memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
+				DE_NULL,											// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				resourceInterface->getCacheDataSize(),				// deUintptr					initialDataSize;
+				resourceInterface->getCacheData()					// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
 
 		poolSizes							= resourceInterface->getPipelinePoolSizes();
 		if (!poolSizes.empty())
 		{
-			memReservationInfo.pipelinePoolSizeCount		= deUint32(poolSizes.size());
-			memReservationInfo.pPipelinePoolSizes			= poolSizes.data();
+			memReservationInfo.pipelinePoolSizeCount			= deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes				= poolSizes.data();
 		}
 	}
 #endif // CTS_USES_VULKANSC

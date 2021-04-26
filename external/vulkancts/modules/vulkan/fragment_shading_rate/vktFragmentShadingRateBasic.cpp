@@ -772,7 +772,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 													  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
 													  VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
 													  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-													  VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV;
+													  VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
 
 	if (m_data.geometryShader)
 	{

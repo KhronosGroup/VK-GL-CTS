@@ -513,7 +513,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 
 void validateLimitsCheckSupport (Context& context)
 {
-	if (!context.contextSupports(vk::ApiVersion(1, 2, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 2, 0)))
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
 }
 
@@ -691,10 +691,16 @@ tcu::TestStatus validateLimits12 (Context& context)
 	const VkPhysicalDeviceProperties2&			properties2				= context.getDeviceProperties2();
 	const VkPhysicalDeviceVulkan12Properties	vulkan12Properties		= getPhysicalDeviceVulkan12Properties(vki, physicalDevice);
 	const VkPhysicalDeviceVulkan11Properties	vulkan11Properties		= getPhysicalDeviceVulkan11Properties(vki, physicalDevice);
+#ifdef CTS_USES_VULKANSC
+	const VkPhysicalDeviceVulkanSC10Properties	vulkanSC10Properties	= getPhysicalDeviceVulkanSC10Properties(vki, physicalDevice);
+#endif // CTS_USES_VULKANSC
 	const VkPhysicalDeviceLimits&				limits					= properties2.properties.limits;
 
 	const VkBool32								checkAlways				= VK_TRUE;
 	const VkBool32								checkVulkan12Limit		= VK_TRUE;
+#ifdef CTS_USES_VULKANSC
+	const VkBool32								checkVulkanSC10Limit	= VK_TRUE;
+#endif // CTS_USES_VULKANSC
 
 	deUint32									shaderStages			= 3;
 	deUint32									maxPerStageResourcesMin	= deMin32(128,	limits.maxPerStageDescriptorUniformBuffers		+
@@ -888,6 +894,18 @@ tcu::TestStatus validateLimits12 (Context& context)
 
 		// timelineSemaphore
 		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxTimelineSemaphoreValueDifference),										LIM_MIN_DEVSIZE((1ull<<31) - 1) },
+
+		// Vulkan SC
+#ifdef CTS_USES_VULKANSC
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxRenderPassSubpasses),												LIM_MIN_UINT32(1) },
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxRenderPassDependencies),												LIM_MIN_UINT32(18) },
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxSubpassInputAttachments),											LIM_MIN_UINT32(0) },
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxSubpassPreserveAttachments),											LIM_MIN_UINT32(0) },
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxFramebufferAttachments),												LIM_MIN_UINT32(9) },
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxDescriptorSetLayoutBindings),										LIM_MIN_UINT32(64) },
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxQueryFaultCount),													LIM_MIN_UINT32(16) },
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxCallbackFaultCount),													LIM_MIN_UINT32(1) },
+#endif // CTS_USES_VULKANSC
 	};
 
 	log << TestLog::Message << limits << TestLog::EndMessage;
@@ -1528,7 +1546,7 @@ tcu::TestStatus validateLimitsExtLineRasterization (Context& context)
 
 void checkSupportFeatureBitInfluence (Context& context)
 {
-	if (!context.contextSupports(vk::ApiVersion(1, 2, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 2, 0)))
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
 }
 
@@ -1566,22 +1584,26 @@ void createTestDevice (Context& context, void* pNext, const char* const* ppEnabl
 	std::vector<VkPipelinePoolSize>		poolSizes;
 	if (context.getTestContext().getCommandLine().isSubProcess())
 	{
-		pcCI =
+		if (context.getResourceInterface()->getCacheDataSize() > 0)
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
-			DE_NULL,											// const void*					pNext;
-			(VkPipelineCacheCreateFlags)0u,						// VkPipelineCacheCreateFlags	flags;
-			context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
-			context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
-		};
-		memReservationInfo.pipelineCacheCreateInfoCount		= 1;
-		memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
+				DE_NULL,											// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
 
 		poolSizes							= context.getResourceInterface()->getPipelinePoolSizes();
 		if (!poolSizes.empty())
 		{
-			memReservationInfo.pipelinePoolSizeCount		= deUint32(poolSizes.size());
-			memReservationInfo.pPipelinePoolSizes			= poolSizes.data();
+			memReservationInfo.pipelinePoolSizeCount			= deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes				= poolSizes.data();
 		}
 	}
 #endif // CTS_USES_VULKANSC
@@ -2026,20 +2048,21 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 
 #ifndef CTS_USES_VULKANSC
 
-void checkInstanceExtensionDependencies(tcu::ResultCollector&											results,
-										int																dependencyLength,
-										const std::tuple<deUint32, deUint32, const char*, const char*>*	dependencies,
-										deUint32														versionMajor,
-										deUint32														versionMinor,
-										const vector<VkExtensionProperties>&							extensionProperties)
+void checkInstanceExtensionDependencies(tcu::ResultCollector&														results,
+										int																			dependencyLength,
+										const std::tuple<deUint32, deUint32, deUint32, const char*, const char*>*	dependencies,
+										deUint32																	apiVariant,
+										deUint32																	versionMajor,
+										deUint32																	versionMinor,
+										const vector<VkExtensionProperties>&										extensionProperties)
 {
 	for (int ndx = 0; ndx < dependencyLength; ndx++)
 	{
-		deUint32 currentVersionMajor, currentVersionMinor;
+		deUint32 currentApiVariant, currentVersionMajor, currentVersionMinor;
 		const char* extensionFirst;
 		const char* extensionSecond;
-		std::tie(currentVersionMajor, currentVersionMinor, extensionFirst, extensionSecond) = dependencies[ndx];
-		if (currentVersionMajor != versionMajor || currentVersionMinor != versionMinor)
+		std::tie(currentApiVariant, currentVersionMajor, currentVersionMinor, extensionFirst, extensionSecond) = dependencies[ndx];
+		if (currentApiVariant != apiVariant || currentVersionMajor != versionMajor || currentVersionMinor != versionMinor)
 			continue;
 		if (isExtensionSupported(extensionProperties, RequiredExtension(extensionFirst)) &&
 			!isExtensionSupported(extensionProperties, RequiredExtension(extensionSecond)))
@@ -2049,21 +2072,22 @@ void checkInstanceExtensionDependencies(tcu::ResultCollector&											results,
 	}
 }
 
-void checkDeviceExtensionDependencies(tcu::ResultCollector&												results,
-									  int																dependencyLength,
-									  const std::tuple<deUint32, deUint32, const char*, const char*>*	dependencies,
-									  deUint32															versionMajor,
-									  deUint32															versionMinor,
-									  const vector<VkExtensionProperties>&								instanceExtensionProperties,
-									  const vector<VkExtensionProperties>&								deviceExtensionProperties)
+void checkDeviceExtensionDependencies(tcu::ResultCollector&														results,
+									  int																		dependencyLength,
+									  const std::tuple<deUint32, deUint32, deUint32, const char*, const char*>*	dependencies,
+									  deUint32																	apiVariant,
+									  deUint32																	versionMajor,
+									  deUint32																	versionMinor,
+									  const vector<VkExtensionProperties>&										instanceExtensionProperties,
+									  const vector<VkExtensionProperties>&										deviceExtensionProperties)
 {
 	for (int ndx = 0; ndx < dependencyLength; ndx++)
 	{
-		deUint32 currentVersionMajor, currentVersionMinor;
+		deUint32 currentApiVariant, currentVersionMajor, currentVersionMinor;
 		const char* extensionFirst;
 		const char* extensionSecond;
-		std::tie(currentVersionMajor, currentVersionMinor, extensionFirst, extensionSecond) = dependencies[ndx];
-		if (currentVersionMajor != versionMajor || currentVersionMinor != versionMinor)
+		std::tie(currentApiVariant, currentVersionMajor, currentVersionMinor, extensionFirst, extensionSecond) = dependencies[ndx];
+		if (currentApiVariant != apiVariant || currentVersionMajor != versionMajor || currentVersionMinor != versionMinor)
 			continue;
 		if (isExtensionSupported(deviceExtensionProperties, RequiredExtension(extensionFirst)) &&
 			!isExtensionSupported(deviceExtensionProperties, RequiredExtension(extensionSecond)) &&
@@ -2120,13 +2144,14 @@ tcu::TestStatus enumerateInstanceExtensions (Context& context)
 
 		for (const auto& version : releasedApiVersions)
 		{
-			deUint32 versionMajor, versionMinor;
-			std::tie(std::ignore, versionMajor, versionMinor) = version;
-			if (context.contextSupports(vk::ApiVersion(versionMajor, versionMinor, 0)))
+			deUint32 apiVariant, versionMajor, versionMinor;
+			std::tie(std::ignore, apiVariant, versionMajor, versionMinor) = version;
+			if (context.contextSupports(vk::ApiVersion(apiVariant, versionMajor, versionMinor, 0)))
 			{
 				checkInstanceExtensionDependencies(results,
 					DE_LENGTH_OF_ARRAY(instanceExtensionDependencies),
 					instanceExtensionDependencies,
+					apiVariant,
 					versionMajor,
 					versionMinor,
 					properties);
@@ -2249,13 +2274,14 @@ tcu::TestStatus enumerateDeviceExtensions (Context& context)
 
 		for (const auto& version : releasedApiVersions)
 		{
-			deUint32 versionMajor, versionMinor;
-			std::tie(std::ignore, versionMajor, versionMinor) = version;
-			if (context.contextSupports(vk::ApiVersion(versionMajor, versionMinor, 0)))
+			deUint32 apiVariant, versionMajor, versionMinor;
+			std::tie(std::ignore, apiVariant, versionMajor, versionMinor) = version;
+			if (context.contextSupports(vk::ApiVersion(apiVariant, versionMajor, versionMinor, 0)))
 			{
 				checkDeviceExtensionDependencies(results,
 					DE_LENGTH_OF_ARRAY(deviceExtensionDependencies),
 					deviceExtensionDependencies,
+					apiVariant,
 					versionMajor,
 					versionMinor,
 					instanceExtensionProperties,
@@ -2311,7 +2337,7 @@ tcu::TestStatus extensionCoreVersions (Context& context)
 		const RequiredExtension reqExt (extName);
 
 		if ((isExtensionSupported(instanceExtensionProperties, reqExt) || isExtensionSupported(deviceExtensionProperties, reqExt)) &&
-		    !context.contextSupports(vk::ApiVersion(major, minor, 0u)))
+		    !context.contextSupports(vk::ApiVersion(0u, major, minor, 0u)))
 		{
 			results.fail("Required core version for " + std::string(extName) + " not met (" + de::toString(major) + "." + de::toString(minor) + ")");
 		}
@@ -2804,22 +2830,26 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 	std::vector<VkPipelinePoolSize>		poolSizes;
 	if (context.getTestContext().getCommandLine().isSubProcess())
 	{
-		pcCI =
+		if (context.getResourceInterface()->getCacheDataSize() > 0)
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
-			DE_NULL,											// const void*					pNext;
-			(VkPipelineCacheCreateFlags)0u,						// VkPipelineCacheCreateFlags	flags;
-			context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
-			context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
-		};
-		memReservationInfo.pipelineCacheCreateInfoCount		= 1;
-		memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
+				DE_NULL,											// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+		}
 
 		poolSizes							= context.getResourceInterface()->getPipelinePoolSizes();
 		if (!poolSizes.empty())
 		{
-			memReservationInfo.pipelinePoolSizeCount		= deUint32(poolSizes.size());
-			memReservationInfo.pPipelinePoolSizes			= poolSizes.data();
+			memReservationInfo.pipelinePoolSizeCount			= deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes				= poolSizes.data();
 		}
 	}
 #endif // CTS_USES_VULKANSC
@@ -4183,19 +4213,19 @@ tcu::TestStatus deviceProperties2 (Context& context)
 	const int count = 2u;
 
 	vector<VkExtensionProperties> properties		= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
-	const bool khr_external_fence_capabilities		= checkExtension(properties, "VK_KHR_external_fence_capabilities")		||	context.contextSupports(vk::ApiVersion(1, 1, 0));
-	const bool khr_external_memory_capabilities		= checkExtension(properties, "VK_KHR_external_memory_capabilities")		||	context.contextSupports(vk::ApiVersion(1, 1, 0));
-	const bool khr_external_semaphore_capabilities	= checkExtension(properties, "VK_KHR_external_semaphore_capabilities")	||	context.contextSupports(vk::ApiVersion(1, 1, 0));
-	const bool khr_multiview						= checkExtension(properties, "VK_KHR_multiview")						||	context.contextSupports(vk::ApiVersion(1, 1, 0));
-	const bool khr_device_protected_memory			=																			context.contextSupports(vk::ApiVersion(1, 1, 0));
-	const bool khr_device_subgroup					=																			context.contextSupports(vk::ApiVersion(1, 1, 0));
-	const bool khr_maintenance2						= checkExtension(properties, "VK_KHR_maintenance2")						||	context.contextSupports(vk::ApiVersion(1, 1, 0));
-	const bool khr_maintenance3						= checkExtension(properties, "VK_KHR_maintenance3")						||	context.contextSupports(vk::ApiVersion(1, 1, 0));
-	const bool khr_depth_stencil_resolve			= checkExtension(properties, "VK_KHR_depth_stencil_resolve")			||	context.contextSupports(vk::ApiVersion(1, 2, 0));
-	const bool khr_driver_properties				= checkExtension(properties, "VK_KHR_driver_properties")				||	context.contextSupports(vk::ApiVersion(1, 2, 0));
-	const bool khr_shader_float_controls			= checkExtension(properties, "VK_KHR_shader_float_controls")			||	context.contextSupports(vk::ApiVersion(1, 2, 0));
-	const bool khr_descriptor_indexing				= checkExtension(properties, "VK_EXT_descriptor_indexing")				||	context.contextSupports(vk::ApiVersion(1, 2, 0));
-	const bool khr_sampler_filter_minmax			= checkExtension(properties, "VK_EXT_sampler_filter_minmax")			||	context.contextSupports(vk::ApiVersion(1, 2, 0));
+	const bool khr_external_fence_capabilities		= checkExtension(properties, "VK_KHR_external_fence_capabilities")		||	context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+	const bool khr_external_memory_capabilities		= checkExtension(properties, "VK_KHR_external_memory_capabilities")		||	context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+	const bool khr_external_semaphore_capabilities	= checkExtension(properties, "VK_KHR_external_semaphore_capabilities")	||	context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+	const bool khr_multiview						= checkExtension(properties, "VK_KHR_multiview")						||	context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+	const bool khr_device_protected_memory			=																			context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+	const bool khr_device_subgroup					=																			context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+	const bool khr_maintenance2						= checkExtension(properties, "VK_KHR_maintenance2")						||	context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+	const bool khr_maintenance3						= checkExtension(properties, "VK_KHR_maintenance3")						||	context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
+	const bool khr_depth_stencil_resolve			= checkExtension(properties, "VK_KHR_depth_stencil_resolve")			||	context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
+	const bool khr_driver_properties				= checkExtension(properties, "VK_KHR_driver_properties")				||	context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
+	const bool khr_shader_float_controls			= checkExtension(properties, "VK_KHR_shader_float_controls")			||	context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
+	const bool khr_descriptor_indexing				= checkExtension(properties, "VK_EXT_descriptor_indexing")				||	context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
+	const bool khr_sampler_filter_minmax			= checkExtension(properties, "VK_EXT_sampler_filter_minmax")			||	context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
 
 	VkPhysicalDeviceIDProperties					idProperties[count];
 	VkPhysicalDeviceMultiviewProperties				multiviewProperties[count];
@@ -4809,7 +4839,7 @@ tcu::TestStatus deviceFeaturesVulkan12 (Context& context)
 	VkPhysicalDeviceVulkan11Features*					vulkan11Features[count]					= { (VkPhysicalDeviceVulkan11Features*)(buffer11a), (VkPhysicalDeviceVulkan11Features*)(buffer11b)};
 	VkPhysicalDeviceVulkan12Features*					vulkan12Features[count]					= { (VkPhysicalDeviceVulkan12Features*)(buffer12a), (VkPhysicalDeviceVulkan12Features*)(buffer12b)};
 
-	if (!context.contextSupports(vk::ApiVersion(1, 2, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 2, 0)))
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
 
 	deMemset(buffer11b, GUARD_VALUE, sizeof(buffer11b));
@@ -4971,7 +5001,7 @@ tcu::TestStatus devicePropertiesVulkan12 (Context& context)
 	VkPhysicalDeviceVulkan11Properties*				vulkan11Properties[count]					= { (VkPhysicalDeviceVulkan11Properties*)(buffer11a), (VkPhysicalDeviceVulkan11Properties*)(buffer11b)};
 	VkPhysicalDeviceVulkan12Properties*				vulkan12Properties[count]					= { (VkPhysicalDeviceVulkan12Properties*)(buffer12a), (VkPhysicalDeviceVulkan12Properties*)(buffer12b)};
 
-	if (!context.contextSupports(vk::ApiVersion(1, 2, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 2, 0)))
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
 
 	deMemset(buffer11a, GUARD_VALUE, sizeof(buffer11a));
@@ -5025,7 +5055,7 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan12(Context& context)
 	const CustomInstance								instance								(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
 	const InstanceDriver&								vki										= instance.getDriver();
 
-	if (!context.contextSupports(vk::ApiVersion(1, 2, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 2, 0)))
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
 
 	VkPhysicalDeviceVulkan12Features					vulkan12Features						= initVulkanStructure();
@@ -5238,7 +5268,7 @@ tcu::TestStatus devicePropertyExtensionsConsistencyVulkan12(Context& context)
 	const CustomInstance							instance									(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
 	const InstanceDriver&							vki											= instance.getDriver();
 
-	if (!context.contextSupports(vk::ApiVersion(1, 2, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 2, 0)))
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
 
 	VkPhysicalDeviceVulkan12Properties				vulkan12Properties							= initVulkanStructure();

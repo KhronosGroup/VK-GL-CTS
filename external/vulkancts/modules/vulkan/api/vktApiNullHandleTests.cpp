@@ -243,6 +243,16 @@ tcu::TestStatus test<VkCommandBuffer> (Context& context)
 #endif // CTS_USES_VULKANSC
 }
 
+void checkSupportFreeDescriptorSets (Context& context)
+{
+#ifdef CTS_USES_VULKANSC
+	if(context.getDeviceVulkanSC10Properties().recycleDescriptorSetMemory == VK_FALSE )
+		TCU_THROW(NotSupportedError, "vkFreeDescriptorSets not supported");
+#else
+	DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
+}
+
 template<>
 tcu::TestStatus test<VkDescriptorSet> (Context& context)
 {
@@ -331,7 +341,7 @@ void addTestsToGroup (tcu::TestCaseGroup* group)
 	addFunctionCase(group,	"destroy_semaphore",				"",		test<VkSemaphore>);
 	addFunctionCase(group,	"destroy_shader_module",			"",		test<VkShaderModule>);
 	addFunctionCase(group,	"free_command_buffers",				"",		test<VkCommandBuffer>);
-	addFunctionCase(group,	"free_descriptor_sets",				"",		test<VkDescriptorSet>);
+	addFunctionCase(group,	"free_descriptor_sets",				"",		checkSupportFreeDescriptorSets, test<VkDescriptorSet>);
 #ifndef CTS_USES_VULKANSC
 	// Removed from Vulkan SC test set: vkFreeMemory command does not exist in Vulkan SC
 	addFunctionCase(group,	"free_memory",						"",		test<VkDeviceMemory>);

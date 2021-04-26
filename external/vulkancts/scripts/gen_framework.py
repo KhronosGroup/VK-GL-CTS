@@ -157,6 +157,22 @@ def prefixName (prefix, name):
 
 	return prefix + name
 
+def getApiVariantIndexByName(variantName):
+	apiVariant = {
+		None : 0,
+		''   : 0,
+		'SC' : 1
+	}
+	return apiVariant[variantName]
+
+def getApiVariantNameByIndex(variantIndex):
+	apiVariant = {
+		None : '',
+		0    : '',
+		1    : 'SC'
+	}
+	return apiVariant[variantIndex]
+
 class Version:
 	def __init__ (self, versionTuple):
 		self.api   = versionTuple[0]
@@ -166,9 +182,7 @@ class Version:
 
 	def getInHex (self):
 		if self.patch == 0:
-			if self.api == None:
-				return "VK_API_VERSION_%d_%d" % (self.major, self.minor)
-			return "VK%s_API_VERSION_%d_%d" % (self.api, self.major, self.minor)
+			return "VK%s_API_VERSION_%d_%d" % (getApiVariantNameByIndex(self.api), self.major, self.minor)
 		return '0x%Xu' % (hash(self))
 
 	def isStandardVersion (self):
@@ -187,17 +201,13 @@ class Version:
 		return 'VERSION_%d_%d_%d' % (self.major, self.minor, self.patch)
 
 	def __hash__ (self):
-		apiNumber = 0;
-		if self.api == 'SC':
-			apiNumber = 1 << 25;
-		return (apiNumber) | (self.major << 22) | (self.minor << 12) | self.patch
+		return (self.api << 29) | (self.major << 22) | (self.minor << 12) | self.patch
 
 	def __eq__ (self, other):
 		return self.api == other.api and self.major == other.major and self.minor == other.minor and self.patch == other.patch
 
 	def __str__ (self):
 		return self.getBestRepresentation()
-
 
 class Handle:
 	TYPE_DISP		= 0
@@ -530,7 +540,7 @@ def parseVersions (src):
 	# 2. starting point off version specific definitions in vulkan.h.in
 	# 3. major version number
 	# 4. minor version number
-	return [(m.group()[:-2], m.start(), m.group(1), int(m.group(2)), int(m.group(3))) for m in re.finditer('VK(SC)?_VERSION_([1-9])_([0-9]) 1', src)]
+	return [(m.group()[:-2], m.start(), getApiVariantIndexByName(m.group(1)), int(m.group(2)), int(m.group(3))) for m in re.finditer('VK(SC)?_VERSION_([1-9])_([0-9]) 1', src)]
 
 def parseHandles (src):
 	matches	= re.findall(r'VK_DEFINE(_NON_DISPATCHABLE|)_HANDLE\((' + IDENT_PTRN + r')\)[ \t]*[\n\r]', src)
@@ -682,7 +692,7 @@ def parseExtensions (src, versions, allFunctions, allCompositeTypes, allEnums, a
 		ptrn		= extensionName + r'\s+(DEVICE|INSTANCE)\s+([0-9_]+)'
 		coreVersion = re.search(ptrn, extensionsData, re.I)
 		if coreVersion != None:
-			return [coreVersion.group(1)] + [int(number) for number in coreVersion.group(2).split('_')[:3]]
+			return [coreVersion.group(1)] + [int(number) for number in coreVersion.group(2).split('_')[:4]]
 		return None
 
 	extensionsData			= readFile(os.path.join(VULKAN_H_DIR, "extensions_data.txt"))
@@ -963,14 +973,34 @@ def genMaxFrameworkVersion (definitions):
 				maxApiVersionMinor = apiVersionMinor
 	yield "#define VK_API_MAX_FRAMEWORK_VERSION\tVK_API_VERSION_%d_%d" % (maxApiVersionMajor, maxApiVersionMinor)
 
-def writeBasicTypes (api, filename):
+def genMaxFrameworkVersionSC (definitions):
+	maxApiVersionMajor = 1
+	maxApiVersionMinor = 0
+	for definition in definitions:
+		match = re.match("VKSC_API_VERSION_(\d+)_(\d+)", definition.name)
+		if match:
+			apiVersionMajor = int(match.group(1))
+			apiVersionMinor = int(match.group(2))
+			if apiVersionMajor > maxApiVersionMajor:
+				maxApiVersionMajor = apiVersionMajor
+				maxApiVersionMinor = apiVersionMinor
+			elif apiVersionMajor == maxApiVersionMajor and apiVersionMinor > maxApiVersionMinor:
+				maxApiVersionMinor = apiVersionMinor
+	yield "#define VKSC_API_MAX_FRAMEWORK_VERSION\tVKSC_API_VERSION_%d_%d" % (maxApiVersionMajor, maxApiVersionMinor)
+
+def writeBasicTypes (apiName, api, filename):
 
 	def gen ():
 		definitionsCore, definitionDuplicates = splitUniqueAndDuplicatedEntries(api.definitions)
 
-		for line in indentLines(chain(genDefinitionsSrc(definitionsCore), genMaxFrameworkVersion(definitionsCore), genDefinitionsAliasSrc(definitionDuplicates))):
-			yield line
-		yield ""
+		if apiName == '':
+			for line in indentLines(chain(genDefinitionsSrc(definitionsCore), genMaxFrameworkVersion(definitionsCore), genDefinitionsAliasSrc(definitionDuplicates))):
+				yield line
+			yield ""
+		elif apiName == 'SC':
+			for line in indentLines(chain(genDefinitionsSrc(definitionsCore), genMaxFrameworkVersion(definitionsCore), genMaxFrameworkVersionSC(definitionsCore), genDefinitionsAliasSrc(definitionDuplicates))):
+				yield line
+			yield ""
 
 		for line in genHandlesSrc(api.handles):
 			yield line
@@ -1113,6 +1143,7 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
 		"createRenderPass2"				: "\t\treturn createRenderPass2HandlerNorm(device, pCreateInfo, pAllocator, pRenderPass);",
 		"createCommandPool"				: "\t\treturn createCommandPoolHandlerNorm(device, pCreateInfo, pAllocator, pCommandPool);",
 		"resetCommandPool"				: "\t\treturn resetCommandPoolHandlerNorm(device, commandPool, flags);",
+		"createFramebuffer"				: "\t\treturn createFramebufferHandlerNorm(device, pCreateInfo, pAllocator, pFramebuffer);",
 	}
 	statFuncs = {
 		"destroyDevice"					: "\t\tdestroyDeviceHandler(device, pAllocator);",
@@ -1145,9 +1176,10 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
 		"createSampler"					: "\t\tcreateSamplerHandlerStat(device, pCreateInfo, pAllocator, pSampler);",
 		"destroySampler"				: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(sampler,samplerRequestCount,1);\n\t}",
 		"createDescriptorPool"			: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(descriptorPoolRequestCount,1);\n\t\t*pDescriptorPool = Handle<HANDLE_TYPE_DESCRIPTOR_POOL>(m_resourceInterface->incResourceCounter());\n\t}",
-		"allocateDescriptorSets"		: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(descriptorSetRequestCount,pAllocateInfo->descriptorSetCount);\n\t\t*pDescriptorSets = Handle<HANDLE_TYPE_DESCRIPTOR_SET>(m_resourceInterface->incResourceCounter());\n\t}",
-		"freeDescriptorSets"			: "\t{\n\t\tDDSTAT_LOCK();\n\t\tfor(deUint32 i=0; i<descriptorSetCount; ++i)\n\t\t\tDDSTAT_HANDLE_DESTROY_IF(pDescriptorSets[i],descriptorSetRequestCount,1);\n\t}",
-		"createFramebuffer"				: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(framebufferRequestCount,1);\n\t\t*pFramebuffer = Handle<HANDLE_TYPE_FRAMEBUFFER>(m_resourceInterface->incResourceCounter());\n\t}",
+		"resetDescriptorPool"			: "\t\tresetDescriptorPoolHandlerStat(device, descriptorPool, flags);",
+		"allocateDescriptorSets"		: "\t\tallocateDescriptorSetsHandlerStat(device, pAllocateInfo, pDescriptorSets);",
+		"freeDescriptorSets"			: "\t\tfreeDescriptorSetsHandlerStat(device, descriptorPool, descriptorSetCount, pDescriptorSets);",
+		"createFramebuffer"				: "\t\tcreateFramebufferHandlerStat(device, pCreateInfo, pAllocator, pFramebuffer);",
 		"destroyFramebuffer"			: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(framebuffer,framebufferRequestCount,1);\n\t}",
 		"createCommandPool"				: "\t\tcreateCommandPoolHandlerStat(device, pCreateInfo, pAllocator, pCommandPool);",
 		"resetCommandPool"				: "\t\tresetCommandPoolHandlerStat(device, commandPool, flags);",
@@ -1165,7 +1197,10 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
 		"getBufferMemoryRequirements2"	: "\t{\n\t\tDDSTAT_LOCK();\n\t\tpMemoryRequirements->memoryRequirements.size = 1048576U;\n\t\tpMemoryRequirements->memoryRequirements.alignment = 1U;\n\t\tpMemoryRequirements->memoryRequirements.memoryTypeBits = ~0U;\n\t}",
 		"getImageMemoryRequirements2"	: "\t{\n\t\tDDSTAT_LOCK();\n\t\tpMemoryRequirements->memoryRequirements.size = 1048576U;\n\t\tpMemoryRequirements->memoryRequirements.alignment = 1U;\n\t\tpMemoryRequirements->memoryRequirements.memoryTypeBits = ~0U;\n\t}",
 		"getImageSubresourceLayout"		: "\t{\n\t\tDDSTAT_LOCK();\n\t\tpLayout->offset = 0U;\n\t\tpLayout->size = 1048576U;\n\t\tpLayout->rowPitch = 0U;\n\t\tpLayout->arrayPitch = 0U;\n\t\tpLayout->depthPitch = 0U;\n\t}",
-		"createPipelineCache"			: "\t{\n\t\tDDSTAT_LOCK();\n\t\t*pPipelineCache = Handle<HANDLE_TYPE_PIPELINE_CACHE>(m_resourceInterface->incResourceCounter());\n\t}",
+		"createPipelineCache"			: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(pipelineCacheRequestCount,1);\n\t\t*pPipelineCache = Handle<HANDLE_TYPE_PIPELINE_CACHE>(m_resourceInterface->incResourceCounter());\n\t}",
+		"destroyPipelineCache"			: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(pipelineCache,pipelineCacheRequestCount,1);\n\t}",
+		"cmdUpdateBuffer"				: "\t\tincreaseCommandBufferSize(commandBuffer, dataSize);",
+		"getDeviceQueue"				: "\t\tm_vk.getDeviceQueue(device, queueFamilyIndex, queueIndex, pQueue);",
 	}
 
 	statReturns = {
@@ -1192,7 +1227,7 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
 					yield "%s" % ( statFuncs[getInterfaceName(function)] )
 				elif getInterfaceName(function)[:3] == "cmd" :
 					yield "\telse"
-					yield "\t\tincreaseCommandBufferSize(commandBuffer, \"%s\");" % getInterfaceName(function)
+					yield "\t\tincreaseCommandBufferSize(commandBuffer, 0u);"
 				if function.returnType in statReturns:
 					yield "\t%s" % ( statReturns[function.returnType] )
 				yield "}"
@@ -1671,7 +1706,7 @@ def writeSupportedExtensions(apiName, api, filename):
 		ptrn		= extensionName + r'\s+(DEVICE|INSTANCE)\s+([0-9_]+)'
 		coreVersion = re.search(ptrn, extensionsData, re.I)
 		if coreVersion != None:
-			return [coreVersion.group(1)] + [int(number) for number in coreVersion.group(2).split('_')[:3]]
+			return [coreVersion.group(1)] + [int(number) for number in coreVersion.group(2).split('_')[:4]]
 		return None
 
 	def writeExtensionsForVersions(map):
@@ -1691,22 +1726,21 @@ def writeSupportedExtensions(apiName, api, filename):
 	instanceMap		= {}
 	deviceMap		= {}
 	versionSet		= set()
-	apiTuple		= [None]
 
 	for ext in api.extensions:
 		if ext.versionInCore != None:
 			if ext.versionInCore[0] == 'INSTANCE':
-				list = instanceMap.get(Version(apiTuple + ext.versionInCore[1:]))
-				instanceMap[Version(apiTuple + ext.versionInCore[1:])] = list + [ext] if list else [ext]
+				list = instanceMap.get(Version(ext.versionInCore[1:]))
+				instanceMap[Version(ext.versionInCore[1:])] = list + [ext] if list else [ext]
 			else:
-				list = deviceMap.get(Version(apiTuple + ext.versionInCore[1:]))
-				deviceMap[Version(apiTuple + ext.versionInCore[1:])] = list + [ext] if list else [ext]
-			versionSet.add(Version(apiTuple + ext.versionInCore[1:]))
+				list = deviceMap.get(Version(ext.versionInCore[1:]))
+				deviceMap[Version(ext.versionInCore[1:])] = list + [ext] if list else [ext]
+			versionSet.add(Version(ext.versionInCore[1:]))
 	# add list of extensions missing in Vulkan SC specification
 	if apiName=='SC':
 		extensionsData			= readFile(os.path.join(VULKAN_H_DIR, "extensions_data.txt"))
 		for extData in re.finditer(r'(\w+)\s+(DEVICE|INSTANCE)\s+([0-9_]+)', extensionsData ):
-			currVersion = Version( apiTuple + [int(number) for number in extData.group(3).split('_')[:3]] )
+			currVersion = Version( [int(number) for number in extData.group(3).split('_')[:4]] )
 			currExt = Extension(extData.group(1), [], [], [], [], [], [], [], [], [])
 			if extData.group(2)=='INSTANCE':
 				list = instanceMap.get(currVersion)
@@ -1904,6 +1938,7 @@ def writeDeviceFeatures2(api, filename):
 			self.instanceName	= 'd' + name[11:]
 			self.flagName		= 'is' + name[16:]
 			self.extension		= None
+			self.api			= None
 			self.major			= None
 			self.minor			= None
 			self.members		= []
@@ -1925,8 +1960,9 @@ def writeDeviceFeatures2(api, filename):
 						if structureDetail.name == extensionStructure.name:
 							structureDetail.extension = extension.name
 							if extension.versionInCore is not None:
-								structureDetail.major = extension.versionInCore[1]
-								structureDetail.minor = extension.versionInCore[2]
+								structureDetail.api   = extension.versionInCore[1]
+								structureDetail.major = extension.versionInCore[2]
+								structureDetail.minor = extension.versionInCore[3]
 							raise StructureFoundContinueToNextOne
 		except StructureFoundContinueToNextOne:
 			continue
@@ -1943,6 +1979,7 @@ def writeDeviceFeatures2(api, filename):
 			apiVersion = compositeType.apiVersion
 			if apiVersion is None:
 				continue
+			structureDetail.api   = apiVersion.api
 			structureDetail.major = apiVersion.major
 			structureDetail.minor = apiVersion.minor
 			break
@@ -1968,7 +2005,7 @@ def writeDeviceFeatures2(api, filename):
 				condition += '\t' * int((39 - len(extension)) / 4) + '|| '
 			else:
 				condition += '\t' * 17 + '   '
-			condition += 'context.contextSupports(vk::ApiVersion(' + str(major) + ', ' + str(structureDetail.minor) + ', 0))'
+			condition += 'context.contextSupports(vk::ApiVersion(' + str(structureDetail.api) + ', ' + str(major) + ', ' + str(structureDetail.minor) + ', 0))'
 		condition += ';'
 		nameSpacing = '\t' * int((40 - len(structureDetail.flagName)) / 4)
 		featureEnabledFlags.append('const bool ' + structureDetail.flagName + nameSpacing + '=' + condition)
@@ -2080,7 +2117,7 @@ def generateDevicePropertiesDefs(apiName, src):
 	defs = []
 	for sType, sSuffix in matches:
 		# handle special cases
-		if sType in {'VULKAN_1_1', 'VULKAN_1_2', 'GROUP', 'MEMORY_BUDGET', 'MEMORY', 'TOOL'}:
+		if sType in {'VULKAN_1_1', 'VULKAN_1_2', 'VULKAN_SC_1_0', 'GROUP', 'MEMORY_BUDGET', 'MEMORY', 'TOOL'}:
 			continue
 		# there are cases like VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD
 		# where 2 is after PROPERTIES - to handle this we need to split suffix to two parts
@@ -2431,19 +2468,19 @@ def writeMandatoryFeatures(api, filename):
 				return True
 		return False
 	stream = []
-	pattern = r'\s*([\w]+)\s+FEATURES\s+\((.*)\)\s+REQUIREMENTS\s+\((.*)\)'
+	pattern = r'\s*([\w]+)\s+FEATURES\s+\((.*)\)\s+REQUIREMENTS\s+\((.*)\)(\s+MANDATORY_VARIANT:(.*))?'
 	mandatoryFeatures = readFile(os.path.join(VULKAN_H_DIR, "mandatory_features.txt"))
 	matches = re.findall(pattern, mandatoryFeatures)
 	dictStructs = {}
 	dictData = []
 	for m in matches:
 		allRequirements = splitWithQuotation(m[2])
-		dictData.append( [ m[0], m[1].strip(), allRequirements ] )
+		dictData.append( [ m[0], m[1].strip(), allRequirements, m[4].strip() ] )
 		if m[0] != 'VkPhysicalDeviceFeatures' :
 			if (m[0] not in dictStructs):
-				dictStructs[m[0]] = [m[0][2:3].lower() + m[0][3:]]
+				dictStructs[m[0]] = [m[0][2:3].lower() + m[0][3:], m[4].strip()]
 			if (allRequirements[0]):
-				if (allRequirements[0] not in dictStructs[m[0]][1:]):
+				if (allRequirements[0] not in dictStructs[m[0]][2:]):
 					dictStructs[m[0]].append(allRequirements[0])
 
 	stream.extend(['bool checkMandatoryFeatures(const vkt::Context& context)\n{',
@@ -2464,14 +2501,19 @@ def writeMandatoryFeatures(api, filename):
 	listStruct	= sorted(dictStructs.items(), key=lambda tup: tup[0]) # sort to have same results for py2 and py3
 	apiStruct	= list( filter(lambda x : structInAPI(x[0]), listStruct)) # remove items not defined in current API ( important for Vulkan SC )
 	for k, v in apiStruct:
-		if (v[1].startswith("ApiVersion")):
-			cond = '\tif (context.contextSupports(vk::' + v[1] + '))'
+		metaCondition = ''
+		if v[1] != '':
+			for x in v[1].split('_'):
+				metaCondition = metaCondition + ' || defined(CTS_USES_' + x + ')'
+			stream.extend(['#if ' + metaCondition[4:]])
+		if (v[2].startswith("ApiVersion")):
+			cond = '\tif (context.contextSupports(vk::' + v[2] + '))'
 		else:
-			cond = '\tif (vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "' + v[1] + '"))'
+			cond = '\tif (vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "' + v[2] + '"))'
 		stream.extend(['\tvk::' + k + ' ' + v[0]+ ';',
 					'\tdeMemset(&' + v[0] + ', 0, sizeof(' + v[0] + '));',
 					''])
-		reqs = v[1:]
+		reqs = v[2:]
 		if len(reqs) > 0 :
 			cond = 'if ( '
 			for i, req in enumerate(reqs) :
@@ -2487,8 +2529,12 @@ def writeMandatoryFeatures(api, filename):
 					   '\t\t' + v[0] + '.sType = getStructureType<' + k + '>();',
 					   '\t\t*nextPtr = &' + v[0] + ';',
 					   '\t\tnextPtr  = &' + v[0] + '.pNext;',
-					   '\t}',
-					   ''])
+					   '\t}'])
+		if metaCondition != '':
+			stream.extend(['#endif // ' + metaCondition[4:],
+						  ''])
+		else:
+			stream.extend([''])
 	stream.extend(['\tcontext.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);',
 				   '\tbool result = true;',
 				   ''])
@@ -2498,6 +2544,11 @@ def writeMandatoryFeatures(api, filename):
 			continue
 		structType = v[0];
 		structName = 'coreFeatures.features';
+		metaCondition = ''
+		if v[3] != '':
+			for x in v[3].split('_'):
+				metaCondition = metaCondition + ' || defined(CTS_USES_' + x + ')'
+			stream.extend(['#if ' + metaCondition[4:]])
 		if v[0] != 'VkPhysicalDeviceFeatures' :
 			structName = dictStructs[v[0]][0]
 		if len(v[2]) > 0 :
@@ -2530,8 +2581,13 @@ def writeMandatoryFeatures(api, filename):
 					   '\t\t\tlog << tcu::TestLog::Message << "Mandatory feature ' + featureSet + ' not supported" << tcu::TestLog::EndMessage;',
 					   '\t\t\tresult = false;',
 					   '\t\t}',
-					   '\t}',
-					   ''])
+					   '\t}'])
+		if metaCondition != '':
+			stream.extend(['#endif // ' + metaCondition[4:],
+						  ''])
+		else:
+			stream.extend([''])
+
 	stream.append('\treturn result;')
 	stream.append('}\n')
 	writeInlFile(filename, INL_HEADER, stream)
@@ -2615,7 +2671,7 @@ if __name__ == "__main__":
 	writeDevicePropertiesContextDefs		(dpd, os.path.join(VULKAN_DIR[args.api], "vkDevicePropertiesForContextDefs.inl"))
 
 	writeHandleType							(api, os.path.join(VULKAN_DIR[args.api], "vkHandleType.inl"))
-	writeBasicTypes							(api, os.path.join(VULKAN_DIR[args.api], "vkBasicTypes.inl"))
+	writeBasicTypes							(args.api, api, os.path.join(VULKAN_DIR[args.api], "vkBasicTypes.inl"))
 	writeCompositeTypes						(api, os.path.join(VULKAN_DIR[args.api], "vkStructTypes.inl"))
 	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR[args.api], "vkVirtualPlatformInterface.inl"),		platformFuncs,	False)
 	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR[args.api], "vkVirtualInstanceInterface.inl"),		instanceFuncs,	False)
