@@ -219,6 +219,9 @@ VkDeviceSize ExternalMemoryHostBaseTestInstance::getMinImportedHostPointerAlignm
 	if (externalMemoryHostProperties.minImportedHostPointerAlignment > 65536)
 		TCU_FAIL("minImportedHostPointerAlignment is exceeding the supported limit");
 
+	if (!deIntIsPow2((int)externalMemoryHostProperties.minImportedHostPointerAlignment))
+		TCU_FAIL("minImportedHostPointerAlignment is not a power of two");
+
 	return externalMemoryHostProperties.minImportedHostPointerAlignment;
 }
 
