@@ -54,7 +54,7 @@ struct ShaderInfo
 	bool					compileOk;		//!< Did compilation succeed?
 	deUint64				compileTimeUs;	//!< Compile time in microseconds (us).
 
-	ShaderInfo (void) : compileOk(false), compileTimeUs(0) {}
+	ShaderInfo (void) : type(SHADERTYPE_LAST), compileOk(false), compileTimeUs(0) {}
 };
 
 /*--------------------------------------------------------------------*//*!

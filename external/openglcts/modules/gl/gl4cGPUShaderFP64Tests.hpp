@@ -484,7 +484,7 @@ private:
 
 	void inspectProgram(glw::GLuint program_id, glw::GLint n_uniforms, const uniformTypeDetails& uniform_type,
 						glw::GLint& out_buffer_size, uniformDetails& out_offsets,
-						glw::GLuint uniform_block_index) const;
+						glw::GLuint& uniform_block_index) const;
 
 	void prepareBoilerplateShader(const glw::GLchar* stage_specific_layout, const glw::GLchar* stage_specific_main_body,
 								  std::string& out_source_code) const;

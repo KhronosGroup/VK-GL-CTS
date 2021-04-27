@@ -4849,7 +4849,7 @@ bool ViewportCallOrderCase::verifyImage (const tcu::PixelBufferAccess& result)
 	for (int x = 0; x < result.getWidth(); ++x)
 	{
 		const tcu::IVec4	pixel			= result.getPixelInt(x, y);
-		const bool			insideMeshArea	= x >= insideBorder.x() && x <= insideBorder.x();
+		const bool			insideMeshArea = x >= insideBorder.x() && x <= insideBorder.x();
 		const bool			outsideMeshArea = x <= outsideBorder.x() && x >= outsideBorder.x();
 
 		// inside mesh, allow green, yellow and any shade between

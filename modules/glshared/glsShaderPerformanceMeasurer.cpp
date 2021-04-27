@@ -119,15 +119,17 @@ static void generateIndices (std::vector<deUint16>& dst, int gridSizeX, int grid
 }
 
 ShaderPerformanceMeasurer::ShaderPerformanceMeasurer (const glu::RenderContext& renderCtx, PerfCaseType measureType)
-	: m_renderCtx		(renderCtx)
-	, m_gridSizeX		(measureType == CASETYPE_FRAGMENT	? 1		: 255)
-	, m_gridSizeY		(measureType == CASETYPE_FRAGMENT	? 1		: 255)
-	, m_viewportWidth	(measureType == CASETYPE_VERTEX		? 32	: renderCtx.getRenderTarget().getWidth())
-	, m_viewportHeight	(measureType == CASETYPE_VERTEX		? 32	: renderCtx.getRenderTarget().getHeight())
-	, m_state			(STATE_UNINITIALIZED)
-	, m_result			(-1.0f, -1.0f)
-	, m_indexBuffer		(0)
-	, m_vao				(0)
+	: m_renderCtx			(renderCtx)
+	, m_gridSizeX			(measureType == CASETYPE_FRAGMENT	? 1		: 255)
+	, m_gridSizeY			(measureType == CASETYPE_FRAGMENT	? 1		: 255)
+	, m_viewportWidth		(measureType == CASETYPE_VERTEX		? 32	: renderCtx.getRenderTarget().getWidth())
+	, m_viewportHeight		(measureType == CASETYPE_VERTEX		? 32	: renderCtx.getRenderTarget().getHeight())
+	, m_state(STATE_UNINITIALIZED)
+	, m_isFirstIteration	(false)
+	, m_prevRenderStartTime	(0)
+	, m_result				(-1.0f, -1.0f)
+	, m_indexBuffer			(0)
+	, m_vao					(0)
 {
 }
 

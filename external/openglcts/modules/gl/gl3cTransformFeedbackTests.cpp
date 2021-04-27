@@ -2556,7 +2556,7 @@ bool gl3cts::TransformFeedback::CaptureVertexInterleaved::checkFramebuffer(glw::
 	/* Fetch framebuffer. */
 	std::vector<glw::GLfloat> pixels(s_framebuffer_size * s_framebuffer_size);
 
-	if ((s_framebuffer_size > 0) && (s_framebuffer_size > 0))
+	if (s_framebuffer_size > 0)
 	{
 		gl.readPixels(0, 0, s_framebuffer_size, s_framebuffer_size, GL_RED, GL_FLOAT, pixels.data());
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels call failed.");
@@ -4089,7 +4089,7 @@ bool gl3cts::TransformFeedback::DiscardVertex::checkFramebuffer(glw::GLuint prim
 	/* Fetch framebuffer. */
 	std::vector<glw::GLfloat> pixels(s_framebuffer_size * s_framebuffer_size);
 
-	if ((s_framebuffer_size > 0) && (s_framebuffer_size > 0))
+	if (s_framebuffer_size > 0)
 	{
 		gl.readPixels(0, 0, s_framebuffer_size, s_framebuffer_size, GL_RED, GL_FLOAT, pixels.data());
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels call failed.");
@@ -4143,7 +4143,7 @@ bool gl3cts::TransformFeedback::DiscardGeometry::checkFramebuffer(glw::GLuint pr
 	/* Fetch framebuffer. */
 	std::vector<glw::GLfloat> pixels(s_framebuffer_size * s_framebuffer_size);
 
-	if ((s_framebuffer_size > 0) && (s_framebuffer_size > 0))
+	if (s_framebuffer_size > 0)
 	{
 		gl.readPixels(0, 0, s_framebuffer_size, s_framebuffer_size, GL_RED, GL_FLOAT, pixels.data());
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels call failed.");
@@ -4593,7 +4593,7 @@ bool gl3cts::TransformFeedback::DrawXFB::checkFramebuffer(glw::GLfloat r, glw::G
 	/* Fetch framebuffer. */
 	std::vector<glw::GLubyte> pixels(number_of_pixels * 4 /* components */);
 
-	if ((s_view_size > 0) && (s_view_size > 0))
+	if (s_view_size > 0)
 	{
 		gl.readPixels(0, 0, s_view_size, s_view_size, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels call failed.");

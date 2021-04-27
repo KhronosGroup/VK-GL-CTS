@@ -77,8 +77,10 @@ public:
 		deUint32				gradShaderID	= getCurrentContext()->createProgram(&gradShader);
 		deUint32				texShaderID		= getCurrentContext()->createProgram(&texShader);
 
-		deUint32				srcFbo, dstFbo;
-		deUint32				srcRbo, dstRbo;
+		deUint32				srcFbo = 0;
+		deUint32				dstFbo = 0;
+		deUint32				srcRbo = 0;
+		deUint32				dstRbo = 0;
 
 		// Setup shaders
 		gradShader.setGradient(*getCurrentContext(), gradShaderID, Vec4(0.0f), Vec4(1.0f));

@@ -276,7 +276,7 @@ public:
 	{
 		if (getStage() != ComputeShader)
 			return m_program->getShaderInfo(glu::SHADERTYPE_FRAGMENT).compileOk &&
-				   m_program->getShaderInfo(glu::SHADERTYPE_FRAGMENT).compileOk && m_program->getProgramInfo().linkOk;
+				   m_program->getShaderInfo(glu::SHADERTYPE_VERTEX).compileOk && m_program->getProgramInfo().linkOk;
 
 		return m_program->getShaderInfo(glu::SHADERTYPE_COMPUTE).compileOk && m_program->getProgramInfo().linkOk;
 	}

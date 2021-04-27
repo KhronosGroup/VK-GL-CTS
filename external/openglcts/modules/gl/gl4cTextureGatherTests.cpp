@@ -1058,8 +1058,7 @@ public:
 				return ERROR;
 		}
 
-		if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_compute_shader") ||
-			!m_context.getContextInfo().isExtensionSupported("GL_ARB_compute_shader"))
+		if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_compute_shader"))
 		{
 			m_context.getTestContext().getLog()
 				<< tcu::TestLog::Message << "Expected "

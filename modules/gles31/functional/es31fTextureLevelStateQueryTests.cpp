@@ -153,7 +153,9 @@ struct TextureGenerationSpec
 	std::string						description;
 
 	TextureGenerationSpec (void)
-		: immutable				(true)
+		: bindTarget			(0)
+		, queryTarget			(0)
+		, immutable				(true)
 		, fixedSamplePos		(true)
 		, sampleCount			(0)
 		, texBufferDataOffset	(0)

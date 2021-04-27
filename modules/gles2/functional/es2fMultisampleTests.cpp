@@ -1100,6 +1100,7 @@ private:
 MaskProportionalityCase::MaskProportionalityCase (Context& context, const char* name, const char* description, CaseType type)
 	: MultisampleCase				(context, name, description)
 	, m_type						(type)
+	, m_numIterations				(0)
 	, m_currentIteration			(0)
 	, m_previousIterationColorSum	(-1)
 {

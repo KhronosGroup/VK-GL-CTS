@@ -276,6 +276,7 @@ FragmentShaderParameters::FragmentShaderParameters	(const ShaderOutputs	paramsOu
 													 Toggling				paramsToggleRequired)
 	: outputTotal									(paramsOutputTotal)
 	, uniformTotal									(paramsUniformTotal)
+	, samplingType									(TEXTURESAMPLING_TEXTURE)
 	, blendRequired									(paramsBlendRequired)
 	, toggleRequired								(paramsToggleRequired)
 {
@@ -931,10 +932,13 @@ private:
 SRGBTestCase::SRGBTestCase	(Context& context, const char* name, const char* description, const tcu::TextureFormat internalFormat)
 	: TestCase				(context, name, description)
 	, m_epsilonError		(EpsilonError::CPU)
+	, m_resultOutputTotal	(0)
 	, m_resultTextureFormat	(tcu::TextureFormat(tcu::TextureFormat::sRGBA, tcu::TextureFormat::UNORM_INT8))
 	, m_vaoID				(0)
 	, m_vertexDataID		(0)
 	, m_samplingGroup		(SHADERSAMPLINGGROUP_TEXTURE)
+	, m_px					(0)
+	, m_py					(0)
 	, m_internalFormat		(internalFormat)
 {
 }
@@ -1357,9 +1361,9 @@ void SRGBTestCase::initVertexData (void)
 	gl.bindBuffer(GL_ARRAY_BUFFER, m_vertexDataID);
 	gl.bufferData(GL_ARRAY_BUFFER, (glw::GLsizei)sizeof(squareVertexData), squareVertexData, GL_STATIC_DRAW);
 
-	gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * (glw::GLsizei)sizeof(GL_FLOAT), (glw::GLvoid *)0);
+	gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * (glw::GLsizei)sizeof(float), (glw::GLvoid *)0);
 	gl.enableVertexAttribArray(0);
-	gl.vertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * (glw::GLsizei)sizeof(GL_FLOAT), (glw::GLvoid *)(3 * sizeof(GL_FLOAT)));
+	gl.vertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * (glw::GLsizei)sizeof(float), (glw::GLvoid *)(3 * sizeof(float)));
 	gl.enableVertexAttribArray(1);
 
 	gl.bindVertexArray(0);

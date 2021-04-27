@@ -4411,7 +4411,6 @@ const char* GetInputUBO2(std::vector<GLubyte> in_data[2])
 		fp[4]	 = 5.0f;
 		fp[5]	 = 6.0f;
 		fp[6]	 = 7.0f;
-		fp[8]	 = 8.0f;
 		fp[8]	 = 9.0f;
 		fp[12]	= 10.0f;
 		fp[16]	= 11.0f;

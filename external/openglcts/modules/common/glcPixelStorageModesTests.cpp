@@ -213,7 +213,10 @@ TexImageUtils::TexImageUtils (deUint32 internalFormat,
 							  int subcuboid_h,
 							  int subcuboid_d,
 							  glu::GLSLVersion glsl_version)
-	: m_internalFormat(internalFormat)
+	: m_src_data(0)
+	, tex(0)
+	, prog(0)
+	, m_internalFormat(internalFormat)
 	, m_format(glu::getTransferFormat(glu::mapGLInternalFormat(internalFormat)).format)
 	, m_type(glu::getTransferFormat(glu::mapGLInternalFormat(internalFormat)).dataType)
 	, m_pixelsize(tcu::getPixelSize(glu::mapGLInternalFormat(internalFormat)))

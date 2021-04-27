@@ -1006,7 +1006,7 @@ void initPixels(std::vector<TYPE>& pixels, GLuint n_pixels, GLuint n_channels)
 
 RobustnessBase::RobustnessBase(tcu::TestContext& testCtx, const char* name, const char* description,
 							   glu::ApiType apiType)
-	: tcu::TestCase(testCtx, name, description), m_api_type(apiType), m_has_khr_robust_buffer_access(false)
+	: tcu::TestCase(testCtx, name, description), m_api_type(apiType), m_context_is_es(false), m_has_khr_robust_buffer_access(false)
 {
 }
 

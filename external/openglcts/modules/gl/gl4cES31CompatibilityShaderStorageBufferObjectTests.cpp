@@ -4226,7 +4226,6 @@ const char* GetInputUBO2(std::vector<GLubyte> in_data[2])
 		fp[4]	 = 5.0f;
 		fp[5]	 = 6.0f;
 		fp[6]	 = 7.0f;
-		fp[8]	 = 8.0f;
 		fp[8]	 = 9.0f;
 		fp[12]	= 10.0f;
 		fp[16]	= 11.0f;
@@ -7670,13 +7669,19 @@ public:
 	bool length_as_index;
 
 	AdvancedUnsizedArrayLength2()
-		: stage(compute)
+		: m_program(0)
+		, m_vertex_array(0)
+		, stage(compute)
 		, etype(vector)
 		, layout(std430)
 		, other_members(false)
 		, bind_seq(bindbasebefore)
 		, length_as_index(false)
 	{
+		for (int i = 0; i < 8; i++)
+		{
+			m_storage_buffer[i] = 0;
+		}
 	}
 };
 

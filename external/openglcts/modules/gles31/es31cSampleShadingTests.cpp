@@ -104,7 +104,7 @@ private:
 };
 
 SampleShadingApiCaseGroup::SampleShadingApiCase::SampleShadingApiCase(Context& context, glu::GLSLVersion glslVersion)
-	: TestCase(context, "verify", ""), m_glslVersion(glslVersion)
+	: TestCase(context, "verify", ""), m_glslVersion(glslVersion), m_pGLMinSampleShading(0)
 {
 	DE_ASSERT(glslVersion == glu::GLSL_VERSION_310_ES || glslVersion >= glu::GLSL_VERSION_400);
 }
@@ -204,6 +204,7 @@ SampleShadingRenderCase::SampleShadingRenderCase(Context& context, const char* n
 												 GLfloat sampleShading)
 	: TestCase(context, name, description)
 	, m_glslVersion(glslVersion)
+	, m_pGLMinSampleShading(0)
 	, m_internalFormat(internalFormat)
 	, m_texFormat(texFormat)
 	, m_sampler(sampler)

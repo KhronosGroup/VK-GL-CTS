@@ -2787,7 +2787,7 @@ void RectangleTest::getBits(const PixelType& type, const PixelFormat& format, st
 
 	if (type.special == true)
 	{
-		std::memcpy(&resultTable[0], &type.bits, sizeof(int) * NUM_FLOAT_PIXEL_COUNT);
+		std::memcpy(&resultTable[0], &type.bits, sizeof(type.bits));
 		if (type.type == GL_UNSIGNED_INT_5_9_9_9_REV)
 		{
 			//this type is another special case: it is always converted to 3-channel color (no A).
