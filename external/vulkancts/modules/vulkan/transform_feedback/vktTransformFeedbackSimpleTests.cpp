@@ -447,7 +447,7 @@ TransformFeedbackTestInstance::TransformFeedbackTestInstance (Context& context, 
 
 	validateLimits();
 
-	if (m_parameters.streamId > 0 && m_transformFeedbackProperties.transformFeedbackRasterizationStreamSelect)
+	if (m_parameters.streamId > 0 && (m_transformFeedbackProperties.transformFeedbackRasterizationStreamSelect == VK_FALSE))
 		TCU_THROW(NotSupportedError, "Implementation doesn't support streamId > 0");
 }
 
