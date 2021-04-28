@@ -64,6 +64,32 @@ using de::UniquePtr;
 using std::vector;
 using std::string;
 
+// List of some formats compatible with formats listed in "Plane Format Compatibility Table".
+const VkFormat s_compatible_formats[] =
+{
+	// 8-bit compatibility class
+	// Compatible format for VK_FORMAT_R8_UNORM
+	VK_FORMAT_R4G4_UNORM_PACK8,
+	// 16-bit compatibility class
+	// Compatible formats with VK_FORMAT_R8G8_UNORM, VK_FORMAT_R10X6_UNORM_PACK16, VK_FORMAT_R12X4_UNORM_PACK16 and VK_FORMAT_R16_UNORM
+	VK_FORMAT_R8G8_UNORM,
+	VK_FORMAT_R10X6_UNORM_PACK16,
+	VK_FORMAT_R12X4_UNORM_PACK16,
+	VK_FORMAT_R16_UNORM,
+	VK_FORMAT_R4G4B4A4_UNORM_PACK16,
+	// 32-bit compatibility class
+	// Compatible formats for VK_FORMAT_R10X6G10X6_UNORM_2PACK16, VK_FORMAT_R12X4G12X4_UNORM_2PACK16 and VK_FORMAT_R16G16_UNORM
+	VK_FORMAT_R10X6G10X6_UNORM_2PACK16,
+	VK_FORMAT_R12X4G12X4_UNORM_2PACK16,
+	VK_FORMAT_R16G16_UNORM,
+	VK_FORMAT_R8G8B8A8_UNORM,
+};
+
+inline bool formatsAreCompatible (const VkFormat format0, const VkFormat format1)
+{
+	return format0 == format1 || mapVkFormat(format0).getPixelSize() == mapVkFormat(format1).getPixelSize();
+}
+
 Move<VkImage> createTestImage (const DeviceInterface&	vkd,
 							   VkDevice					device,
 							   VkFormat					format,
@@ -289,24 +315,30 @@ struct TestParameters
 	UVec2				size;
 	VkImageCreateFlags	createFlags;
 	deUint32			planeNdx;
+	VkFormat			planeCompatibleFormat;
 	glu::ShaderType		shaderType;
+	deBool				isCompatibilityFormat;
 
-	TestParameters (ViewType viewType_, VkFormat format_, const UVec2& size_, VkImageCreateFlags createFlags_, deUint32 planeNdx_, glu::ShaderType shaderType_)
-		: viewType		(viewType_)
-		, format		(format_)
-		, size			(size_)
-		, createFlags	(createFlags_)
-		, planeNdx		(planeNdx_)
-		, shaderType	(shaderType_)
+	TestParameters (ViewType viewType_, VkFormat format_, const UVec2& size_, VkImageCreateFlags createFlags_, deUint32 planeNdx_, VkFormat planeCompatibleFormat_, glu::ShaderType shaderType_, deBool isCompatibilityFormat_)
+		: viewType				(viewType_)
+		, format				(format_)
+		, size					(size_)
+		, createFlags			(createFlags_)
+		, planeNdx				(planeNdx_)
+		, planeCompatibleFormat	(planeCompatibleFormat_)
+		, shaderType			(shaderType_)
+		, isCompatibilityFormat	(isCompatibilityFormat_)
 	{
 	}
 
 	TestParameters (void)
-		: viewType		(VIEWTYPE_LAST)
-		, format		(VK_FORMAT_UNDEFINED)
-		, createFlags	(0u)
-		, planeNdx		(0u)
-		, shaderType	(glu::SHADERTYPE_LAST)
+		: viewType				(VIEWTYPE_LAST)
+		, format				(VK_FORMAT_UNDEFINED)
+		, createFlags			(0u)
+		, planeNdx				(0u)
+		, planeCompatibleFormat	(VK_FORMAT_UNDEFINED)
+		, shaderType			(glu::SHADERTYPE_LAST)
+		, isCompatibilityFormat	(false)
 	{
 	}
 };
@@ -350,31 +382,28 @@ void checkImageUsageSupport (Context&			context,
 							 VkFormat			format,
 							 VkImageUsageFlags	usage)
 {
+	const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+																						context.getPhysicalDevice(),
+																						format);
+	const VkFormatFeatureFlags	featureFlags		= formatProperties.optimalTilingFeatures;
+
+	if ((usage & VK_IMAGE_USAGE_SAMPLED_BIT) != 0
+		&& (featureFlags & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) == 0)
 	{
-		const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
-																							context.getPhysicalDevice(),
-																							format);
-		const VkFormatFeatureFlags	featureFlags		= formatProperties.optimalTilingFeatures;
-
-		if ((usage & VK_IMAGE_USAGE_SAMPLED_BIT) != 0
-			&& (featureFlags & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) == 0)
-		{
-			TCU_THROW(NotSupportedError, "Format doesn't support sampling");
-		}
-
-		// Other image usages are not handled currently
-		DE_ASSERT((usage & ~(VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_SAMPLED_BIT)) == 0);
+		TCU_THROW(NotSupportedError, "Format doesn't support sampling");
 	}
+
+	// Other image usages are not handled currently
+	DE_ASSERT((usage & ~(VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_SAMPLED_BIT)) == 0);
 }
 
 void checkSupport(Context& context, TestParameters params)
 {
-	const VkFormat					planeViewFormat	= getPlaneCompatibleFormat(params.format, params.planeNdx);
-	const VkImageUsageFlags			usage			= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	const VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 	checkImageSupport(context, params.format, params.createFlags);
 	checkImageUsageSupport(context, params.format, usage);
-	checkImageUsageSupport(context, planeViewFormat, usage);
+	checkImageUsageSupport(context, params.planeCompatibleFormat, usage);
 }
 
 tcu::TestStatus testPlaneView (Context& context, TestParameters params)
@@ -389,13 +418,12 @@ tcu::TestStatus testPlaneView (Context& context, TestParameters params)
 
 	const VkFormat					format			= params.format;
 	const VkImageCreateFlags		createFlags		= params.createFlags;
-	const VkFormat					planeViewFormat	= getPlaneCompatibleFormat(format, params.planeNdx);
 	const PlanarFormatDescription	formatInfo		= getPlanarFormatDescription(format);
 	const UVec2						size			= params.size;
 	const UVec2						planeExtent		= getPlaneExtent(formatInfo, size, params.planeNdx, 0);
 	const Unique<VkImage>			image			(createTestImage(vkd, device, format, size, createFlags));
 	const Unique<VkImage>			imageAlias		((params.viewType == TestParameters::VIEWTYPE_MEMORY_ALIAS)
-													 ? createTestImage(vkd, device, planeViewFormat, planeExtent, createFlags)
+													 ? createTestImage(vkd, device, params.planeCompatibleFormat, planeExtent, createFlags)
 													 : Move<VkImage>());
 	const vector<AllocationSp>		allocations		(allocateAndBindImageMemory(vkd, device, context.getDefaultAllocator(), *image, format, createFlags));
 
@@ -456,7 +484,7 @@ tcu::TestStatus testPlaneView (Context& context, TestParameters params)
 	const Unique<VkImageView>					planeView	(createImageView(vkd,
 																			 device,
 																			 !imageAlias ? *image : *imageAlias,
-																			 planeViewFormat,
+																			 params.planeCompatibleFormat,
 																			 !imageAlias ? getPlaneAspect(params.planeNdx) : VK_IMAGE_ASPECT_COLOR_BIT,
 																			 DE_NULL));
 
@@ -525,7 +553,10 @@ tcu::TestStatus testPlaneView (Context& context, TestParameters params)
 		imageFormatProperties.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
 		imageFormatProperties.pNext = &samplerYcbcrConversionImage;
 
-		VK_CHECK(vk.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo, &imageFormatProperties));
+		VkResult result = vk.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo, &imageFormatProperties);
+		if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Format not supported.");
+		VK_CHECK(result);
 		combinedSamplerDescriptorCount = samplerYcbcrConversionImage.combinedImageSamplerDescriptorCount;
 	}
 
@@ -620,7 +651,7 @@ tcu::TestStatus testPlaneView (Context& context, TestParameters params)
 
 		// Plane view sampling reference
 		{
-			const tcu::ConstPixelBufferAccess	planeAccess		(mapVkFormat(planeViewFormat),
+			const tcu::ConstPixelBufferAccess	planeAccess		(mapVkFormat(params.planeCompatibleFormat),
 																 tcu::IVec3((int)planeExtent.x(), (int)planeExtent.y(), 1),
 																 imageData.getPlanePtr(params.planeNdx));
 			const tcu::Sampler					refSampler		= mapVkSampler(planeSamplerInfo);
@@ -679,6 +710,11 @@ void addPlaneViewCase (tcu::TestCaseGroup* group, const TestParameters& params)
 
 	name << "_plane_" << params.planeNdx;
 
+	if (params.isCompatibilityFormat)
+	{
+		name << "_compatible_format_" << de::toLower(de::toString(params.planeCompatibleFormat).substr(10));
+	}
+
 	addFunctionCaseWithPrograms(group, name.str(), "", checkSupport, initPrograms, testPlaneView, params);
 }
 
@@ -706,7 +742,24 @@ void populateViewTypeGroup (tcu::TestCaseGroup* group, TestParameters::ViewType 
 				continue; // Memory alias cases require disjoint planes
 
 			for (deUint32 planeNdx = 0; planeNdx < numPlanes; ++planeNdx)
-				addPlaneViewCase(group, TestParameters(viewType, format, size, flags, planeNdx, shaderType));
+			{
+				const VkFormat planeFormat = getPlaneCompatibleFormat(format, planeNdx);
+				// Add test case using image view with a format taken from the "Plane Format Compatibility Table"
+				addPlaneViewCase(group, TestParameters(viewType, format, size, flags, planeNdx, planeFormat, shaderType, DE_FALSE));
+
+				// Add test cases using image view with a format that is compatible with the plane's format.
+				// For example: VK_FORMAT_R4G4_UNORM_PACK8 is compatible with VK_FORMAT_R8_UNORM.
+				for (const auto& compatibleFormat : s_compatible_formats)
+				{
+					if (compatibleFormat == planeFormat)
+						continue;
+
+					if (!formatsAreCompatible(planeFormat, compatibleFormat))
+						continue;
+
+					addPlaneViewCase(group, TestParameters(viewType, format, size, flags, planeNdx, compatibleFormat, shaderType, DE_TRUE));
+				}
+			}
 		}
 	};
 
