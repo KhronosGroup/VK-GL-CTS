@@ -315,6 +315,8 @@ tcu::TestStatus AhbTestInstance::iterate (void)
 	if (!ahbApi)
 		TCU_THROW(NotSupportedError, "Android Hardware Buffer not supported");
 
+	m_context.requireDeviceFunctionality("VK_ANDROID_external_memory_android_hardware_buffer");
+
 	deUint64									requiredAhbUsage		= ahbApi->vkUsageToAhbUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
 	pt::AndroidHardwareBufferPtr ahb = ahbApi->allocate(WIDTH, HEIGHT, targetImageCreateInfo.arrayLayers, ahbApi->vkFormatToAhbFormat(colorAttachmentFormat), requiredAhbUsage);
