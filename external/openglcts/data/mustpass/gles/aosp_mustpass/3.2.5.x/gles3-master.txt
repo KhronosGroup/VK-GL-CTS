@@ -26243,6 +26243,7 @@ dEQP-GLES3.functional.texture.specification.texsubimage2d_pbo.rgb8_skip_rows_2d
 dEQP-GLES3.functional.texture.specification.texsubimage2d_pbo.rgb8_skip_rows_cube
 dEQP-GLES3.functional.texture.specification.texsubimage2d_pbo.rgb8_skip_pixels_2d
 dEQP-GLES3.functional.texture.specification.texsubimage2d_pbo.rgb8_skip_pixels_cube
+dEQP-GLES3.functional.texture.specification.texsubimage2d_pbo.pbo_bounds_2d
 dEQP-GLES3.functional.texture.specification.texsubimage2d_depth.depth_component32f
 dEQP-GLES3.functional.texture.specification.texsubimage2d_depth.depth_component24
 dEQP-GLES3.functional.texture.specification.texsubimage2d_depth.depth_component16
