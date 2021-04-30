@@ -1435,6 +1435,7 @@ KHR-GL33.shaders.indexing.tmp_array.vec4_static_loop_write_static_read_vertex
 KHR-GL33.shaders.indexing.tmp_array.vec4_static_loop_write_static_read_fragment
 KHR-GL33.shaders.indexing.tmp_array.vec4_dynamic_loop_write_static_read_vertex
 KHR-GL33.shaders.indexing.tmp_array.vec4_dynamic_loop_write_static_read_fragment
+KHR-GL33.shaders.indexing.tmp_array.vertexid
 KHR-GL33.shaders.indexing.vector_subscript.vec2_direct_write_static_subscript_read_vertex
 KHR-GL33.shaders.indexing.vector_subscript.vec2_direct_write_static_subscript_read_fragment
 KHR-GL33.shaders.indexing.vector_subscript.vec2_direct_write_dynamic_subscript_read_vertex

@@ -624,6 +624,49 @@ static ShaderIndexingCase* createTmpArrayCase(Context& context, const char* case
 								  vertexShaderSource.c_str(), fragmentShaderSource.c_str());
 }
 
+void evalGreenColor (ShaderEvalContext& c)
+{
+    c.color = Vec4(0.0f, 1.0f, 0.0f, 1.0f);
+}
+
+static ShaderIndexingCase* createTmpArrayVertexIdCase (Context& context, const char* caseName, const char* description,
+													   glu::GLSLVersion glslVersion)
+{
+	DE_ASSERT(glslVersion == glu::GLSL_VERSION_300_ES || glslVersion == glu::GLSL_VERSION_310_ES ||
+			  glslVersion >= glu::GLSL_VERSION_330);
+
+	std::string vtx = glu::getGLSLVersionDeclaration(glslVersion) + std::string("\n"
+		"precision highp float;\n"
+		"in vec4 a_position;\n"
+		"out float color[4];\n"
+		"void main()\n"
+		"{\n"
+		"    for(int i = 0; i < 4; i++)\n"
+		"    {\n"
+		"        int j = (gl_VertexID + i) % 4;\n"
+		"        color[j] = (j % 2 == 0) ? 0.0 : 1.0;\n"
+		"    }\n"
+		"    gl_Position = vec4(a_position.xy, 0.0, 1.0);\n"
+		"}\n");
+
+	std::string frag = glu::getGLSLVersionDeclaration(glslVersion) + std::string("\n"
+		"precision highp float;\n"
+		"in float color[4];\n"
+		"layout(location = 0) out vec4 o_color;\n"
+		"void main()\n"
+		"{\n"
+		"    float temp[4];\n"
+		"    for(int i = 0; i < 4; i++)\n"
+		"    {\n"
+		"        temp[i] = color[i];\n"
+		"        o_color = vec4(temp[0], temp[1], temp[2], temp[3]);\n"
+		"    }\n"
+		"}\n");
+
+	return new ShaderIndexingCase(context, caseName, description, false, TYPE_FLOAT, evalGreenColor,
+								  vtx.c_str(), frag.c_str());
+}
+
 // VECTOR SUBSCRIPT.
 
 void evalSubscriptVec2(ShaderEvalContext& c)
@@ -1195,6 +1238,8 @@ void ShaderIndexingTests::init(void)
 				}
 			}
 		}
+
+		tmpGroup->addChild(createTmpArrayVertexIdCase(m_context, "vertexid", "", m_glslVersion));
 	}
 
 	// Vector indexing with subscripts.
