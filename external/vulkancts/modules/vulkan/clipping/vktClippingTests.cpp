@@ -651,21 +651,25 @@ tcu::TestStatus testPrimitivesDepthClip (Context& context, const VkPrimitiveTopo
 			caseMinPixels[1] = caseMinPixels[3] = 2;
 			break;
 
-		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
-		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
 		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
 		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+			requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_GEOMETRY_SHADER);
+			// Fallthrough
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
 			caseMinPixels[0] = regionPixels;
 			caseMinPixels[1] = RENDER_SIZE - 2;
 			caseMinPixels[2] = regionPixels;
 			caseMinPixels[3] = 2 * (RENDER_SIZE - 2);
 			break;
 
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+			requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_GEOMETRY_SHADER);
+			// Fallthrough
 		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
 		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
 		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
-		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
-		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
 			caseMinPixels[0] = caseMinPixels[1] = caseMinPixels[2] = caseMinPixels[3] = regionPixels;
 			break;
 
