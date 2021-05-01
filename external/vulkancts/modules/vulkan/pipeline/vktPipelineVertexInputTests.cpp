@@ -597,6 +597,17 @@ TestInstance* VertexInputTest::createInstance (Context& context) const
 		}
 	}
 
+	// Portability requires stride to be multiply of minVertexInputBindingStrideAlignment
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
+	{
+		deUint32 minStrideAlignment = context.getPortabilitySubsetProperties().minVertexInputBindingStrideAlignment;
+		for (size_t bindingNdx = 0; bindingNdx < bindingDescriptions.size(); ++bindingNdx)
+		{
+			if ((bindingDescriptions[bindingNdx].stride % minStrideAlignment) != 0)
+				TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: stride is not multiply of minVertexInputBindingStrideAlignment");
+		}
+	}
+
 	return new VertexInputInstance(context, attributeDescriptions, bindingDescriptions, bindingOffsets);
 }
 

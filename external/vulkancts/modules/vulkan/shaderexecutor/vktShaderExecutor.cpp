@@ -739,6 +739,15 @@ static VkFormat getAttributeFormat (const glu::DataType dataType)
 
 void FragmentOutExecutor::addAttribute (deUint32 bindingLocation, VkFormat format, deUint32 sizePerElement, deUint32 count, const void* dataPtr)
 {
+	// Portability requires stride to be multiply of minVertexInputBindingStrideAlignment
+	// this value is usually 4 and current tests meet this requirement but
+	// if this changes in future then this limit should be verified in checkSupport
+	if (m_context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		((sizePerElement % m_context.getPortabilitySubsetProperties().minVertexInputBindingStrideAlignment) != 0))
+	{
+		DE_FATAL("stride is not multiply of minVertexInputBindingStrideAlignment");
+	}
+
 	// Add binding specification
 	const deUint32							binding = (deUint32)m_vertexBindingDescriptions.size();
 	const VkVertexInputBindingDescription	bindingDescription =

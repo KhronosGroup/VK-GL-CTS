@@ -4358,8 +4358,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 
 		log << TestLog::Message << performanceQueryProperties[0] << TestLog::EndMessage;
 
-		// TODO: this is a NOP. Should the second index be [1] ?
-		if (performanceQueryProperties[0].allowCommandBufferQueryCopies != performanceQueryProperties[0].allowCommandBufferQueryCopies)
+		if (performanceQueryProperties[0].allowCommandBufferQueryCopies != performanceQueryProperties[1].allowCommandBufferQueryCopies)
 		{
 			TCU_FAIL("Mismatch between VkPhysicalDevicePerformanceQueryPropertiesKHR");
 		}
@@ -4412,6 +4411,29 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		    pciBusInfoProperties[0].pciFunction == DEUINT32_MAX)
 		{
 			TCU_FAIL("Invalid information in VkPhysicalDevicePCIBusInfoPropertiesEXT");
+		}
+	}
+
+	if (isExtensionSupported(properties, RequiredExtension("VK_KHR_portability_subset")))
+	{
+		VkPhysicalDevicePortabilitySubsetPropertiesKHR portabilitySubsetProperties[count];
+
+		for (int ndx = 0; ndx < count; ++ndx)
+		{
+			deMemset(&portabilitySubsetProperties[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePortabilitySubsetPropertiesKHR));
+			portabilitySubsetProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_PROPERTIES_KHR;
+			portabilitySubsetProperties[ndx].pNext = DE_NULL;
+
+			extProperties.pNext = &portabilitySubsetProperties[ndx];
+
+			vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+		}
+
+		log << TestLog::Message << portabilitySubsetProperties[0] << TestLog::EndMessage;
+
+		if (portabilitySubsetProperties[0].minVertexInputBindingStrideAlignment != portabilitySubsetProperties[1].minVertexInputBindingStrideAlignment)
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDevicePortabilitySubsetPropertiesKHR");
 		}
 	}
 

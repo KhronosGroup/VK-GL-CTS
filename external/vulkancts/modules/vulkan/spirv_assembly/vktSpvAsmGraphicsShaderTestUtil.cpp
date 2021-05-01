@@ -4041,10 +4041,20 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	// with location #2.
 	if (needInterface)
 	{
+		// Portability requires stride to be multiply of minVertexInputBindingStrideAlignment
+		// this value is usually 4 and current tests meet this requirement but
+		// if this changes in future then this limit should be verified in checkSupport
+		const deUint32 stride = instance.interfaces.getInputType().getNumBytes();
+		if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+			((stride % context.getPortabilitySubsetProperties().minVertexInputBindingStrideAlignment) != 0))
+		{
+			DE_FATAL("stride is not multiply of minVertexInputBindingStrideAlignment");
+		}
+
 		const VkVertexInputBindingDescription	vertexBinding1			=
 		{
 			1u,													// deUint32					binding;
-			instance.interfaces.getInputType().getNumBytes(),	// deUint32					strideInBytes;
+			stride,												// deUint32					strideInBytes;
 			VK_VERTEX_INPUT_RATE_VERTEX							// VkVertexInputStepRate	stepRate;
 		};
 		vertexBindings.push_back(vertexBinding1);

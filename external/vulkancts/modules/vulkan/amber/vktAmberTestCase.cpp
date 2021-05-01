@@ -186,11 +186,31 @@ void AmberTestCase::checkSupport(Context& ctx) const
 		}
 	}
 
-	if (m_name == "triangle_fan" &&
-		ctx.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
-		!ctx.getPortabilitySubsetFeatures().triangleFans)
+	// when checkSupport is called script is not yet parsed so we need to determine
+	// unsupported tests by name ; in AmberTestCase we do not have access to actual
+	// m_recipe implementation - we can't scan it to see if test can be executed;
+	// alternatively portability extension and its features could be checked in amber.cc
+	if (ctx.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
 	{
-		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
+		if (m_name == "triangle_fan" && !ctx.getPortabilitySubsetFeatures().triangleFans)
+			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
+
+		if (ctx.getPortabilitySubsetProperties().minVertexInputBindingStrideAlignment == 4)
+		{
+			const std::set<std::string> casesToSkip
+			{
+				"line-strip",
+				"polygon-mode-lines",
+				"r8g8-uint-highp",
+				"r8g8-uint-highp-output-uint",
+				"r8g8-uint-mediump",
+				"r8g8-uint-mediump-output-uint",
+				"inputs-outputs-mod",
+			};
+
+			if (casesToSkip.count(m_name))
+				TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Stride is not multiply of minVertexInputBindingStrideAlignment");
+		}
 	}
 }
 
