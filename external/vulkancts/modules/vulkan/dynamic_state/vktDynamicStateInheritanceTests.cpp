@@ -758,9 +758,8 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		{
 			m_vk.cmdSetViewport(m_primaryCmdBuffer, 1, deUint32(geometry.viewports.size() - 1), &geometry.viewports[1]);
 			m_vk.cmdSetScissor(m_primaryCmdBuffer, 1, deUint32(geometry.scissors.size() - 1), &geometry.scissors[1]);
-			/* fallthrough */
 		}
-		/* FALLTHRU FALL-THROUGH */
+		/* FALLTHROUGH */
 	case kInheritanceDisabled:
 	case kInheritFromSecondary:
 	case kInheritFromSecondaryWithCount:
