@@ -86,7 +86,7 @@ VK_KHR_shader_terminate_invocation			DEVICE
 VK_KHR_ray_tracing_pipeline					DEVICE
 VK_KHR_ray_query							DEVICE
 VK_KHR_acceleration_structure				DEVICE
-VK_KHR_pipeline_library						DEVICE
+VK_KHR_pipeline_library                     DEVICE
 VK_KHR_deferred_host_operations				DEVICE
 VK_KHR_fragment_shading_rate				DEVICE
 VK_KHR_zero_initialize_workgroup_memory		DEVICE
@@ -99,3 +99,4 @@ VK_KHR_shader_subgroup_uniform_control_flow	DEVICE
 VK_KHR_present_id							DEVICE
 VK_KHR_present_wait							DEVICE
 VK_KHR_shader_integer_dot_product			DEVICE
+VK_KHR_format_feature_flags2			    DEVICE

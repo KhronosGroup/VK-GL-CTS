@@ -479,10 +479,10 @@ StoreTest::StoreTest (tcu::TestContext&		testCtx,
 
 void StoreTest::checkSupport (Context& context) const
 {
-	const VkFormatProperties formatProperties (getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), m_format));
+	const VkFormatPropertiesExtendedKHR formatProperties (context.getFormatProperties(m_format));
 
-	if (!m_declareImageFormatInShader)
-		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_STORAGE_IMAGE_WRITE_WITHOUT_FORMAT);
+	if (!m_declareImageFormatInShader && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
+		TCU_THROW(NotSupportedError, "Format not supported for unformatted stores via storage images");
 
 	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
@@ -1079,17 +1079,14 @@ LoadStoreTest::LoadStoreTest (tcu::TestContext&		testCtx,
 
 void LoadStoreTest::checkSupport (Context& context) const
 {
-	const vk::VkFormatProperties	formatProperties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
-																							   context.getPhysicalDevice(),
-																							   m_format));
-	const vk::VkFormatProperties imageFormatProperties  (vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
-																							   context.getPhysicalDevice(),
-																							   m_imageFormat));
+	const VkFormatPropertiesExtendedKHR formatProperties (context.getFormatProperties(m_format));
+	const VkFormatPropertiesExtendedKHR imageFormatProperties (context.getFormatProperties(m_imageFormat));
+
 	if (m_imageLoadStoreLodAMD)
 		context.requireDeviceFunctionality("VK_AMD_shader_image_load_store_lod");
 
-	if (!m_bufferLoadUniform && !m_declareImageFormatInShader)
-		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_STORAGE_IMAGE_READ_WITHOUT_FORMAT);
+	if (!m_bufferLoadUniform && !m_declareImageFormatInShader && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
+		TCU_THROW(NotSupportedError, "Format not supported for unformatted loads via storage images");
 
 	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
@@ -1106,13 +1103,11 @@ void LoadStoreTest::checkSupport (Context& context) const
 	if ((m_texture.type() == IMAGE_TYPE_BUFFER) && !(imageFormatProperties.bufferFeatures))
 		TCU_THROW(NotSupportedError, "Underlying format not supported at all for buffers");
 
-    if (formatHasThreeComponents(m_format))
+	if (formatHasThreeComponents(m_format))
 	{
 		// When the source buffer is three-component, the destination buffer is single-component.
 		VkFormat dstFormat = getSingleComponentFormat(m_format);
-		const vk::VkFormatProperties	dstFormatProperties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
-																								   context.getPhysicalDevice(),
-																								   dstFormat));
+		const VkFormatPropertiesExtendedKHR dstFormatProperties (context.getFormatProperties(dstFormat));
 
 		if (m_texture.type() == IMAGE_TYPE_BUFFER && !(dstFormatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
 			TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
@@ -2219,9 +2214,9 @@ ImageExtendOperandTest::ImageExtendOperandTest (tcu::TestContext&				testCtx,
 {
 }
 
-void checkFormatProperties (const InstanceInterface& vki, VkPhysicalDevice physDev, VkFormat format)
+void checkFormatProperties (Context& context, VkFormat format)
 {
-	const auto formatProperties = getPhysicalDeviceFormatProperties(vki, physDev, format);
+	const VkFormatPropertiesExtendedKHR formatProperties (context.getFormatProperties(format));
 
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for storage images");
@@ -2239,18 +2234,13 @@ void check64BitSupportIfNeeded (Context& context, VkFormat readFormat, VkFormat 
 
 void ImageExtendOperandTest::checkSupport (Context& context) const
 {
-	DE_ASSERT(m_texture.type() != IMAGE_TYPE_BUFFER);
-
 	if (!context.requireDeviceFunctionality("VK_KHR_spirv_1_4"))
 		TCU_THROW(NotSupportedError, "VK_KHR_spirv_1_4 not supported");
 
 	check64BitSupportIfNeeded(context, m_readFormat, m_writeFormat);
 
-	const auto& vki     = context.getInstanceInterface();
-	const auto  physDev = context.getPhysicalDevice();
-
-	checkFormatProperties(vki, physDev, m_readFormat);
-	checkFormatProperties(vki, physDev, m_writeFormat);
+	checkFormatProperties(context, m_readFormat);
+	checkFormatProperties(context, m_writeFormat);
 }
 
 void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection) const

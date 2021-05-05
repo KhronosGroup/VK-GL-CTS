@@ -1211,6 +1211,11 @@ template<> VkStructureType getStructureType<VkResolveImageInfo2KHR> (void)
 	return VK_STRUCTURE_TYPE_RESOLVE_IMAGE_INFO_2_KHR;
 }
 
+template<> VkStructureType getStructureType<VkFormatPropertiesExtendedKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_EXTENDED_KHR;
+}
+
 template<> VkStructureType getStructureType<VkDebugReportCallbackCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;

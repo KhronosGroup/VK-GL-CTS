@@ -3226,6 +3226,15 @@ struct VkResolveImageInfo2KHR
 	const VkImageResolve2KHR*	pRegions;
 };
 
+struct VkFormatPropertiesExtendedKHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkFormatFeatureFlags2KHR	linearTilingFeatures;
+	VkFormatFeatureFlags2KHR	optimalTilingFeatures;
+	VkFormatFeatureFlags2KHR	bufferFeatures;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;
