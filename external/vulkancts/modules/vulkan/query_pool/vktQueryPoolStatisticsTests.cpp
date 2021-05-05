@@ -2824,6 +2824,590 @@ private:
 	const GraphicBasicTestInstance::ParametersGraphic	m_parametersGraphic;
 	std::vector<deUint64>								m_drawRepeats;
 };
+
+#define NUM_QUERY_STATISTICS 4
+
+class StatisticMultipleQueryTestInstance : public TestInstance
+{
+public:
+					StatisticMultipleQueryTestInstance	(Context& context, const deUint32 queryCount);
+protected:
+	de::SharedPtr<Buffer> m_queryBuffer;
+
+	virtual void			checkExtensions		();
+};
+
+StatisticMultipleQueryTestInstance::StatisticMultipleQueryTestInstance (Context& context, const deUint32 queryCount)
+	: TestInstance	(context)
+	, m_queryBuffer (Buffer::createAndAlloc(context.getDeviceInterface(),
+											context.getDevice(),
+											BufferCreateInfo(NUM_QUERY_STATISTICS * sizeof(deUint64) * queryCount, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+											context.getDefaultAllocator(),
+											vk::MemoryRequirement::HostVisible))
+{
+	const vk::Allocation& allocation = m_queryBuffer->getBoundMemory();
+	void* allocationData = allocation.getHostPtr();
+	deMemset(allocationData, 0xff, NUM_QUERY_STATISTICS * sizeof(deUint64) * queryCount);
+}
+
+void StatisticMultipleQueryTestInstance::checkExtensions ()
+{
+	if (!m_context.getDeviceFeatures().pipelineStatisticsQuery)
+		throw tcu::NotSupportedError("Pipeline statistics queries are not supported");
+}
+
+class GraphicBasicMultipleQueryTestInstance : public StatisticMultipleQueryTestInstance
+{
+public:
+	struct VertexData
+	{
+		VertexData (const tcu::Vec4 position_, const tcu::Vec4 color_)
+			: position	(position_)
+			, color		(color_)
+		{}
+		tcu::Vec4	position;
+		tcu::Vec4	color;
+	};
+
+	struct ParametersGraphic : public GenericParameters
+	{
+		ParametersGraphic (const VkQueryPipelineStatisticFlags queryStatisticFlags_, const VkQueryResultFlags queryFlags_, const deUint32 queryCount_, const deBool vertexOnlyPipe_, const deBool useCmdCopy_, const deUint32 dstOffset_)
+			: GenericParameters		{ RESET_TYPE_NORMAL, (queryFlags_ & VK_QUERY_RESULT_64_BIT) != 0u, dstOffset_ != 0u}
+			, queryStatisticFlags	(queryStatisticFlags_)
+			, vertexOnlyPipe		(vertexOnlyPipe_)
+			, queryFlags			(queryFlags_)
+			, queryCount			(queryCount_)
+			, useCmdCopy			(useCmdCopy_)
+			, dstOffset				(dstOffset_)
+			{}
+
+		VkQueryPipelineStatisticFlags	queryStatisticFlags;
+		VkPrimitiveTopology				primitiveTopology;
+		deBool							vertexOnlyPipe;
+		VkQueryResultFlags				queryFlags;
+		deUint32						queryCount;
+		deBool							useCmdCopy;
+		deUint32						dstOffset;
+	};
+											GraphicBasicMultipleQueryTestInstance			(vkt::Context&					context,
+																							 const std::vector<VertexData>&	data,
+																							 const ParametersGraphic&		parametersGraphic);
+	tcu::TestStatus							iterate								(void);
+protected:
+	de::SharedPtr<Buffer>					creatAndFillVertexBuffer			(void);
+	virtual void							createPipeline						(void) = 0;
+	void									creatColorAttachmentAndRenderPass	(void);
+	virtual tcu::TestStatus					executeTest							(void) = 0;
+	virtual tcu::TestStatus					checkResult							(VkQueryPool queryPool) = 0;
+	virtual void							draw								(VkCommandBuffer cmdBuffer) = 0;
+
+	const VkFormat						m_colorAttachmentFormat;
+	de::SharedPtr<Image>				m_colorAttachmentImage;
+	de::SharedPtr<Image>				m_depthImage;
+	Move<VkImageView>					m_attachmentView;
+	Move<VkImageView>					m_depthiew;
+	Move<VkRenderPass>					m_renderPass;
+	Move<VkFramebuffer>					m_framebuffer;
+	Move<VkPipeline>					m_pipeline;
+	Move<VkPipelineLayout>				m_pipelineLayout;
+	const std::vector<VertexData>&		m_data;
+	const ParametersGraphic&			m_parametersGraphic;
+};
+
+GraphicBasicMultipleQueryTestInstance::GraphicBasicMultipleQueryTestInstance (vkt::Context&					context,
+																			  const std::vector<VertexData>&	data,
+																			  const ParametersGraphic&		parametersGraphic)
+	: StatisticMultipleQueryTestInstance	(context, (parametersGraphic.queryCount + (parametersGraphic.dstOffset != 0u ? 1u : 0u)))
+	, m_colorAttachmentFormat		(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_data						(data)
+	, m_parametersGraphic			(parametersGraphic)
+{
+}
+
+tcu::TestStatus GraphicBasicMultipleQueryTestInstance::iterate (void)
+{
+	checkExtensions();
+	creatColorAttachmentAndRenderPass();
+	createPipeline();
+	return executeTest();
+}
+
+de::SharedPtr<Buffer> GraphicBasicMultipleQueryTestInstance::creatAndFillVertexBuffer (void)
+{
+	const DeviceInterface&		vk				= m_context.getDeviceInterface();
+	const VkDevice				device			= m_context.getDevice();
+
+	const VkDeviceSize			dataSize		= static_cast<VkDeviceSize>(deAlignSize(static_cast<size_t>( m_data.size() * sizeof(VertexData)),
+		static_cast<size_t>(m_context.getDeviceProperties().limits.nonCoherentAtomSize)));
+
+	de::SharedPtr<Buffer>		vertexBuffer	= Buffer::createAndAlloc(vk, device, BufferCreateInfo(dataSize,
+		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), m_context.getDefaultAllocator(), MemoryRequirement::HostVisible);
+
+	deUint8*					ptr				= reinterpret_cast<deUint8*>(vertexBuffer->getBoundMemory().getHostPtr());
+	deMemcpy(ptr, &m_data[0], static_cast<size_t>( m_data.size() * sizeof(VertexData)));
+
+	flushMappedMemoryRange(vk, device, vertexBuffer->getBoundMemory().getMemory(), vertexBuffer->getBoundMemory().getOffset(), dataSize);
+	return vertexBuffer;
+}
+
+void GraphicBasicMultipleQueryTestInstance::creatColorAttachmentAndRenderPass (void)
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkDevice			device	= m_context.getDevice();
+
+	{
+		VkExtent3D					imageExtent				=
+		{
+			WIDTH,	// width;
+			HEIGHT,	// height;
+			1u		// depth;
+		};
+
+		const ImageCreateInfo		colorImageCreateInfo	(VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, imageExtent, 1, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
+															VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
+		m_colorAttachmentImage	= Image::createAndAlloc(vk, device, colorImageCreateInfo, m_context.getDefaultAllocator(), m_context.getUniversalQueueFamilyIndex());
+
+		const ImageViewCreateInfo	attachmentViewInfo		(m_colorAttachmentImage->object(), VK_IMAGE_VIEW_TYPE_2D, m_colorAttachmentFormat);
+		m_attachmentView			= createImageView(vk, device, &attachmentViewInfo);
+
+		ImageCreateInfo				depthImageCreateInfo	(vk::VK_IMAGE_TYPE_2D, VK_FORMAT_D16_UNORM, imageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT, vk::VK_IMAGE_TILING_OPTIMAL,
+															 vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+		m_depthImage				= Image::createAndAlloc(vk, device, depthImageCreateInfo, m_context.getDefaultAllocator(), m_context.getUniversalQueueFamilyIndex());
+
+		// Construct a depth  view from depth image
+		const ImageViewCreateInfo	depthViewInfo			(m_depthImage->object(), vk::VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_D16_UNORM);
+		m_depthiew				= vk::createImageView(vk, device, &depthViewInfo);
+	}
+
+	{
+		// Renderpass and Framebuffer
+		RenderPassCreateInfo		renderPassCreateInfo;
+		renderPassCreateInfo.addAttachment(AttachmentDescription(m_colorAttachmentFormat,						// format
+																	VK_SAMPLE_COUNT_1_BIT,						// samples
+																	VK_ATTACHMENT_LOAD_OP_CLEAR,				// loadOp
+																	VK_ATTACHMENT_STORE_OP_STORE ,				// storeOp
+																	VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// stencilLoadOp
+																	VK_ATTACHMENT_STORE_OP_STORE ,				// stencilLoadOp
+																	VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// initialLauout
+																	VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));	// finalLayout
+
+		renderPassCreateInfo.addAttachment(AttachmentDescription(VK_FORMAT_D16_UNORM,										// format
+																 vk::VK_SAMPLE_COUNT_1_BIT,									// samples
+																 vk::VK_ATTACHMENT_LOAD_OP_CLEAR,							// loadOp
+																 vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,						// storeOp
+																 vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,						// stencilLoadOp
+																 vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,						// stencilLoadOp
+																 vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,		// initialLauout
+																 vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));	// finalLayout
+
+		const VkAttachmentReference	colorAttachmentReference =
+		{
+			0u,											// attachment
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// layout
+		};
+
+		const VkAttachmentReference depthAttachmentReference =
+		{
+			1u,															// attachment
+			vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL		// layout
+		};
+
+		const VkSubpassDescription	subpass =
+		{
+			(VkSubpassDescriptionFlags) 0,		//VkSubpassDescriptionFlags		flags;
+			VK_PIPELINE_BIND_POINT_GRAPHICS,	//VkPipelineBindPoint			pipelineBindPoint;
+			0u,									//deUint32						inputAttachmentCount;
+			DE_NULL,							//const VkAttachmentReference*	pInputAttachments;
+			1u,									//deUint32						colorAttachmentCount;
+			&colorAttachmentReference,			//const VkAttachmentReference*	pColorAttachments;
+			DE_NULL,							//const VkAttachmentReference*	pResolveAttachments;
+			&depthAttachmentReference,			//const VkAttachmentReference*	pDepthStencilAttachment;
+			0u,									//deUint32						preserveAttachmentCount;
+			DE_NULL,							//const deUint32*				pPreserveAttachments;
+		};
+
+		renderPassCreateInfo.addSubpass(subpass);
+		m_renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
+
+		std::vector<vk::VkImageView> attachments(2);
+		attachments[0] = *m_attachmentView;
+		attachments[1] = *m_depthiew;
+
+		FramebufferCreateInfo		framebufferCreateInfo(*m_renderPass, attachments, WIDTH, HEIGHT, 1);
+		m_framebuffer = createFramebuffer(vk, device, &framebufferCreateInfo);
+	}
+}
+
+class VertexShaderMultipleQueryTestInstance : public GraphicBasicMultipleQueryTestInstance
+{
+public:
+							VertexShaderMultipleQueryTestInstance	(vkt::Context& context, const std::vector<VertexData>& data, const ParametersGraphic& parametersGraphic);
+protected:
+	virtual void			createPipeline				(void);
+	virtual tcu::TestStatus	executeTest					(void);
+	virtual tcu::TestStatus	checkResult					(VkQueryPool queryPool);
+	void					draw						(VkCommandBuffer cmdBuffer);
+	deUint64				calculateExpectedMin		(VkQueryResultFlags flag);
+	deUint64				calculateExpectedMax		(VkQueryResultFlags flag);
+};
+
+VertexShaderMultipleQueryTestInstance::VertexShaderMultipleQueryTestInstance (vkt::Context& context, const std::vector<VertexData>& data, const ParametersGraphic& parametersGraphic)
+	: GraphicBasicMultipleQueryTestInstance	(context, data, parametersGraphic)
+{
+}
+
+void VertexShaderMultipleQueryTestInstance::createPipeline (void)
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkDevice			device	= m_context.getDevice();
+
+	// Pipeline
+	Unique<VkShaderModule>	vs(createShaderModule(vk, device, m_context.getBinaryCollection().get("vertex"), 0));
+	Move<VkShaderModule>	fs;
+
+	if (!m_parametersGraphic.vertexOnlyPipe)
+		fs = createShaderModule(vk, device, m_context.getBinaryCollection().get("fragment"), 0);
+
+	const PipelineCreateInfo::ColorBlendState::Attachment attachmentState;
+
+	const PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
+	m_pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
+
+	const VkVertexInputBindingDescription vertexInputBindingDescription		=
+	{
+		0,											// binding;
+		static_cast<deUint32>(sizeof(VertexData)),	// stride;
+		VK_VERTEX_INPUT_RATE_VERTEX				// inputRate
+	};
+
+	const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[] =
+	{
+		{
+			0u,
+			0u,
+			VK_FORMAT_R32G32B32A32_SFLOAT,
+			0u
+		},	// VertexElementData::position
+		{
+			1u,
+			0u,
+			VK_FORMAT_R32G32B32A32_SFLOAT,
+			static_cast<deUint32>(sizeof(tcu::Vec4))
+		},	// VertexElementData::color
+	};
+
+	const VkPipelineVertexInputStateCreateInfo vf_info			=
+	{																	// sType;
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// pNext;
+		NULL,															// flags;
+		0u,																// vertexBindingDescriptionCount;
+		1u,																// pVertexBindingDescriptions;
+		&vertexInputBindingDescription,									// vertexAttributeDescriptionCount;
+		2u,																// pVertexAttributeDescriptions;
+		vertexInputAttributeDescriptions
+	};
+
+	PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, (VkPipelineCreateFlags)0);
+	pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", VK_SHADER_STAGE_VERTEX_BIT));
+	if (!m_parametersGraphic.vertexOnlyPipe)
+		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", VK_SHADER_STAGE_FRAGMENT_BIT));
+	pipelineCreateInfo.addState(PipelineCreateInfo::DepthStencilState());
+	pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
+	pipelineCreateInfo.addState(PipelineCreateInfo::ColorBlendState(1, &attachmentState));
+
+	const VkViewport	viewport	= makeViewport(WIDTH, HEIGHT);
+	const VkRect2D		scissor		= makeRect2D(WIDTH, HEIGHT);
+	pipelineCreateInfo.addState(PipelineCreateInfo::ViewportState(1u, std::vector<VkViewport>(1, viewport), std::vector<VkRect2D>(1, scissor)));
+	pipelineCreateInfo.addState(PipelineCreateInfo::DepthStencilState());
+	pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
+	pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
+	pipelineCreateInfo.addState(vf_info);
+	m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+}
+
+tcu::TestStatus VertexShaderMultipleQueryTestInstance::executeTest (void)
+{
+	const DeviceInterface&					vk						= m_context.getDeviceInterface();
+	const VkDevice							device					= m_context.getDevice();
+	const VkQueue							queue					= m_context.getUniversalQueue();
+	const deUint32							queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
+
+	const CmdPoolCreateInfo					cmdPoolCreateInfo		(queueFamilyIndex);
+	const Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, &cmdPoolCreateInfo);
+	const Unique<VkQueryPool>				queryPool				(makeQueryPool(vk, device, m_parametersGraphic.queryCount, m_parametersGraphic.queryStatisticFlags));
+
+	const VkDeviceSize						vertexBufferOffset		= 0u;
+	const de::SharedPtr<Buffer>				vertexBufferSp			= creatAndFillVertexBuffer();
+	const VkBuffer							vertexBuffer			= vertexBufferSp->object();
+
+	const Unique<VkCommandBuffer>			cmdBuffer				(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+	beginCommandBuffer(vk, *cmdBuffer);
+	{
+		std::vector<VkClearValue>	renderPassClearValues	(2);
+		deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(VkClearValue));
+
+		initialTransitionColor2DImage(vk, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+									  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+		initialTransitionDepth2DImage(vk, *cmdBuffer, m_depthImage->object(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+									  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+
+		vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, m_parametersGraphic.queryCount);
+
+		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0]);
+
+		vk.cmdBeginQuery(*cmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
+		vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+
+		draw(*cmdBuffer);
+
+		vk.cmdEndQuery(*cmdBuffer, *queryPool, 0u);
+
+		endRenderPass(vk, *cmdBuffer);
+
+		if (m_parametersGraphic.useCmdCopy)
+		{
+			vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPool, 0, m_parametersGraphic.queryCount, m_queryBuffer->object(), m_parametersGraphic.dstOffset, NUM_QUERY_STATISTICS * sizeof(deUint64), m_parametersGraphic.queryFlags);
+
+			const VkDeviceSize bufferSize = NUM_QUERY_STATISTICS * sizeof(deUint64) * m_parametersGraphic.queryCount;
+			const VkBufferMemoryBarrier barrier =
+			{
+				VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	//  VkStructureType	sType;
+				DE_NULL,									//  const void*		pNext;
+				VK_ACCESS_TRANSFER_WRITE_BIT,				//  VkAccessFlags	srcAccessMask;
+			    VK_ACCESS_HOST_READ_BIT,					//  VkAccessFlags	dstAccessMask;
+				VK_QUEUE_FAMILY_IGNORED,					//  deUint32		srcQueueFamilyIndex;
+				VK_QUEUE_FAMILY_IGNORED,					//  deUint32		destQueueFamilyIndex;
+				m_queryBuffer->object(),					//  VkBuffer		buffer;
+				0u,											//  VkDeviceSize	offset;
+				bufferSize,									//  VkDeviceSize	size;
+			};
+
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1u, &barrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+		}
+
+		transition2DImage(vk, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+	}
+	endCommandBuffer(vk, *cmdBuffer);
+
+	// Wait for completion
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+	return checkResult (*queryPool);
+}
+
+deUint64 VertexShaderMultipleQueryTestInstance::calculateExpectedMin(VkQueryResultFlags flag)
+{
+	deUint64	expectedMin	= 0u;
+	switch (flag)
+	{
+	case VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT:
+		expectedMin = 15u;
+		break;
+
+	case VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT:
+		expectedMin = 5u;
+		break;
+
+	case VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT:
+		expectedMin = 15u;
+		break;
+
+	case VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT:
+		expectedMin = 2016u;
+		break;
+	default:
+		DE_FATAL("Unexpected type of statistics query");
+		break;
+	}
+	return expectedMin;
+}
+
+/* This is just to check that driver doesn't return garbage for the partial, no wait case.
+ * TODO: adjust the values accordingly, in case some driver returns higher values.
+ */
+deUint64 VertexShaderMultipleQueryTestInstance::calculateExpectedMax(VkQueryResultFlags flag)
+{
+	deUint64	expectedMax	= 0u;
+	switch (flag)
+	{
+	case VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT:
+		expectedMax = 16u;
+		break;
+
+	case VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT:
+		expectedMax = 5u;
+		break;
+
+	case VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT:
+		expectedMax = 15u;
+		break;
+
+	case VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT:
+		expectedMax = 2304u;
+		break;
+	default:
+		DE_FATAL("Unexpected type of statistics query");
+		break;
+	}
+	return expectedMax;
+}
+
+tcu::TestStatus VertexShaderMultipleQueryTestInstance::checkResult (VkQueryPool queryPool)
+{
+	const DeviceInterface&	vk					= m_context.getDeviceInterface();
+	const VkDevice			device				= m_context.getDevice();
+	deUint32				queryCount			= (m_parametersGraphic.queryCount + (m_parametersGraphic.dstOffset ? 1u : 0u));
+	deUint32				size				= NUM_QUERY_STATISTICS * queryCount;
+	std::vector<deUint64>   results;
+    results.resize(size);
+
+	deBool					hasPartialFlag		= (deBool)(m_parametersGraphic.queryFlags & VK_QUERY_RESULT_PARTIAL_BIT);
+	deBool					hasWaitFlag			= (deBool)(m_parametersGraphic.queryFlags & VK_QUERY_RESULT_WAIT_BIT);
+	// Use the last value of each query to store the availability bit for the vertexOnlyPipe case.
+	VkQueryResultFlags		queryFlags			= m_parametersGraphic.queryFlags;
+
+	if (m_parametersGraphic.useCmdCopy)
+	{
+		const vk::Allocation& allocation = m_queryBuffer->getBoundMemory();
+		const void* allocationData = allocation.getHostPtr();
+
+		vk::invalidateAlloc(m_context.getDeviceInterface(), m_context.getDevice(), allocation);
+		deMemcpy(results.data(), allocationData, size * sizeof(deUint64));
+	}
+	else
+	{
+		VkResult result = vk.getQueryPoolResults(device, queryPool, 0u, m_parametersGraphic.queryCount, size * sizeof(deUint64), results.data(), NUM_QUERY_STATISTICS * sizeof(deUint64), queryFlags);
+
+		if (!(result == VK_SUCCESS || (!hasWaitFlag && result == VK_NOT_READY)))
+			return tcu::TestStatus::fail("Unexpected getQueryPoolResults() returned value: " + de::toString(getResultStr(result)));
+	}
+
+	for (deUint32 queryIdx = 0; queryIdx < queryCount; queryIdx++)
+	{
+		deInt32					queryMask			= m_parametersGraphic.queryStatisticFlags;
+		deUint32				index				= queryIdx * NUM_QUERY_STATISTICS;
+		// Last element of each query is the availability value for the vertexOnlyPipe case.
+		deBool availableQuery = results[index + (NUM_QUERY_STATISTICS - 1)] != 0u;
+
+		// Check dstOffset values were not overwritten.
+		if (m_parametersGraphic.dstOffset != 0u && queryIdx == 0u)
+		{
+			const deUint64 refVal = 0xfffffffffffffffful;
+			for (; index < NUM_QUERY_STATISTICS; index++)
+			{
+				if (results[index] != refVal)
+					return tcu::TestStatus::fail("dstOffset values were overwritten");
+			}
+			continue;
+        }
+
+		if (hasWaitFlag && !hasPartialFlag && !availableQuery)
+			return tcu::TestStatus::fail("Results should be available");
+
+		while(queryMask)
+		{
+			deInt32		statisticBit = deInt32BitScan(&queryMask);
+			deUint64	expectedMin	= calculateExpectedMin((1u << statisticBit));
+			deUint64	expectedMax	= calculateExpectedMax((1u << statisticBit));
+
+			if (availableQuery && (results[index] < expectedMin))
+				return tcu::TestStatus::fail("QueryPoolResults incorrect: wrong value (" + de::toString(results[index]) + ") is lower than expected (" + de::toString(expectedMin) + ")");
+
+			/* From the spec:
+			 *
+			 *    If VK_QUERY_RESULT_PARTIAL_BIT is set, VK_QUERY_RESULT_WAIT_BIT is not set,
+			 *    and the query's status is unavailable, an intermediate result value between zero
+			 *    and the final result value is written to pData for that query.
+			 */
+			if (hasPartialFlag && !hasWaitFlag && !availableQuery && results[index] > expectedMax)
+				return tcu::TestStatus::fail("QueryPoolResults incorrect: wrong partial value (" + de::toString(results[index]) + ") is greater than expected (" + de::toString(expectedMax) + ")");
+
+			index++;
+		}
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+void VertexShaderMultipleQueryTestInstance::draw (VkCommandBuffer cmdBuffer)
+{
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+	vk.cmdDraw(cmdBuffer, 16u, 1u, 0u, 0u);
+}
+
+template<class Instance>
+class QueryPoolGraphicMultipleQueryStatisticsTest : public TestCase
+{
+public:
+	QueryPoolGraphicMultipleQueryStatisticsTest (tcu::TestContext &context, const std::string& name, const std::string& description, const GraphicBasicMultipleQueryTestInstance::ParametersGraphic parametersGraphic)
+		: TestCase				(context, name.c_str(), description.c_str())
+		, m_parametersGraphic	(parametersGraphic)
+	{
+		m_data.push_back(GraphicBasicMultipleQueryTestInstance::VertexData(tcu::Vec4(-1.0f,-1.0f, 1.0f, 1.0f), tcu::RGBA::red().toVec()));
+		m_data.push_back(GraphicBasicMultipleQueryTestInstance::VertexData(tcu::Vec4(-1.0f, 0.0f, 1.0f, 1.0f), tcu::RGBA::red().toVec()));
+		m_data.push_back(GraphicBasicMultipleQueryTestInstance::VertexData(tcu::Vec4( 0.0f,-1.0f, 1.0f, 1.0f), tcu::RGBA::red().toVec()));
+		m_data.push_back(GraphicBasicMultipleQueryTestInstance::VertexData(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), tcu::RGBA::red().toVec()));
+
+		m_data.push_back(GraphicBasicMultipleQueryTestInstance::VertexData(tcu::Vec4(-1.0f, 0.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(GraphicBasicMultipleQueryTestInstance::VertexData(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(GraphicBasicMultipleQueryTestInstance::VertexData(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+		m_data.push_back(GraphicBasicMultipleQueryTestInstance::VertexData(tcu::Vec4( 0.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+
+		m_data.push_back(GraphicBasicMultipleQueryTestInstance::VertexData(tcu::Vec4( 0.0f,-1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
+		m_data.push_back(GraphicBasicMultipleQueryTestInstance::VertexData(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
+		m_data.push_back(GraphicBasicMultipleQueryTestInstance::VertexData(tcu::Vec4( 1.0f,-1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
+		m_data.push_back(GraphicBasicMultipleQueryTestInstance::VertexData(tcu::Vec4( 1.0f, 0.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec()));
+
+		m_data.push_back(GraphicBasicMultipleQueryTestInstance::VertexData(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), tcu::RGBA::gray().toVec()));
+		m_data.push_back(GraphicBasicMultipleQueryTestInstance::VertexData(tcu::Vec4( 0.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::gray().toVec()));
+		m_data.push_back(GraphicBasicMultipleQueryTestInstance::VertexData(tcu::Vec4( 1.0f, 0.0f, 1.0f, 1.0f), tcu::RGBA::gray().toVec()));
+		m_data.push_back(GraphicBasicMultipleQueryTestInstance::VertexData(tcu::Vec4( 1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::gray().toVec()));
+	}
+
+	vkt::TestInstance* createInstance (vkt::Context& context) const
+	{
+		return new Instance(context, m_data, m_parametersGraphic);
+	}
+
+	void initPrograms(SourceCollections& sourceCollections) const
+	{
+		{ // Vertex Shader
+			std::ostringstream	source;
+			source	<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+					<< "layout(location = 0) in highp vec4 in_position;\n"
+					<< "layout(location = 1) in vec4 in_color;\n"
+					<< "layout(location = 0) out vec4 out_color;\n"
+					<< "void main (void)\n"
+					<< "{\n"
+					<< "	gl_PointSize = 1.0;\n"
+					<< "	gl_Position = in_position;\n"
+					<< "	out_color = in_color;\n"
+					<< "}\n";
+			sourceCollections.glslSources.add("vertex") << glu::VertexSource(source.str());
+		}
+
+		if (!m_parametersGraphic.vertexOnlyPipe)
+		{ // Fragment Shader
+			std::ostringstream	source;
+			source	<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+					<< "layout(location = 0) in vec4 in_color;\n"
+					<< "layout(location = 0) out vec4 out_color;\n"
+					<< "void main()\n"
+					<<"{\n"
+					<< "	out_color = in_color;\n"
+					<< "}\n";
+			sourceCollections.glslSources.add("fragment") << glu::FragmentSource(source.str());
+		}
+	}
+private:
+	std::vector<GraphicBasicMultipleQueryTestInstance::VertexData>	m_data;
+	const GraphicBasicMultipleQueryTestInstance::ParametersGraphic	m_parametersGraphic;
+};
+
 } //anonymous
 
 QueryPoolStatisticsTests::QueryPoolStatisticsTests (tcu::TestContext &testCtx)
@@ -2899,6 +3483,8 @@ void QueryPoolStatisticsTests::init (void)
 	de::MovePtr<TestCaseGroup>	clippingPrimitivesResetBeforeCopy				(new TestCaseGroup(m_testCtx, "clipping_primitives",				"Query pipeline statistic clipping primitives"));
 	de::MovePtr<TestCaseGroup>	tesControlPatchesResetBeforeCopy				(new TestCaseGroup(m_testCtx, "tes_control_patches",				"Query pipeline statistic tessellation control shader patches"));
 	de::MovePtr<TestCaseGroup>	tesEvaluationShaderInvocationsResetBeforeCopy	(new TestCaseGroup(m_testCtx, "tes_evaluation_shader_invocations",	"Query pipeline statistic tessellation evaluation shader invocations"));
+
+	de::MovePtr<TestCaseGroup>	vertexShaderMultipleQueries				(new TestCaseGroup(m_testCtx, "multiple_queries",				"Query pipeline statistics related to vertex and fragment shaders"));
 
 	for (deUint32 i = 0; i < 2; ++i)
 	{
@@ -3384,6 +3970,61 @@ void QueryPoolStatisticsTests::init (void)
 		}
 	}
 
+	// Multiple statistics query flags enabled
+    {
+		VkQueryResultFlags	partialFlags[]		=	{ 0u, VK_QUERY_RESULT_PARTIAL_BIT };
+		const char* const	partialFlagsStr[]	=	{ "", "_partial" };
+		VkQueryResultFlags	waitFlags[]		=	{ 0u, VK_QUERY_RESULT_WAIT_BIT };
+		const char* const	waitFlagsStr[]	=	{ "", "_wait" };
+
+		deBool	useCmdCopy[]		=	{ DE_FALSE, DE_TRUE, DE_TRUE };
+		const char* const	useCmdCopyStr[]	=	{ "", "_cmdcopy", "_cmdcopy_dstoffset" };
+
+		const VkQueryPipelineStatisticFlags statisticsFlags =
+			VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT |
+			VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT;
+
+		for (deUint32 partialFlagsIdx = 0u; partialFlagsIdx < DE_LENGTH_OF_ARRAY(partialFlags); partialFlagsIdx++)
+		{
+			for (deUint32 waitFlagsIdx = 0u; waitFlagsIdx < DE_LENGTH_OF_ARRAY(waitFlags); waitFlagsIdx++)
+			{
+				for (deUint32 useCmdCopyIdx = 0u; useCmdCopyIdx < DE_LENGTH_OF_ARRAY(useCmdCopy); useCmdCopyIdx++)
+				{
+					deUint32 dstOffset = useCmdCopyIdx == 2u ? NUM_QUERY_STATISTICS * sizeof(deUint64) : 0u;
+					/* Avoid waiting infinite time for the queries, when one of them is not going to be issued in
+					 * the partial case.
+					 */
+					if ((deBool)(partialFlags[partialFlagsIdx] & VK_QUERY_RESULT_PARTIAL_BIT) &&
+						(deBool)(waitFlags[waitFlagsIdx] & VK_QUERY_RESULT_WAIT_BIT))
+						continue;
+
+					VkQueryResultFlags	queryFlags	= VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT | partialFlags[partialFlagsIdx] | waitFlags[waitFlagsIdx];
+					deUint32			queryCount	= partialFlagsIdx ? 2u : 1u;
+					{
+						std::ostringstream testName;
+						testName	<< "input_assembly_vertex_fragment"
+									<< partialFlagsStr[partialFlagsIdx]
+									<< waitFlagsStr[waitFlagsIdx]
+									<< useCmdCopyStr[useCmdCopyIdx];
+						GraphicBasicMultipleQueryTestInstance::ParametersGraphic param(statisticsFlags | VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT, queryFlags, queryCount, DE_FALSE, useCmdCopy[useCmdCopyIdx], dstOffset);
+						vertexShaderMultipleQueries->addChild(new QueryPoolGraphicMultipleQueryStatisticsTest<VertexShaderMultipleQueryTestInstance>(m_testCtx, testName.str().c_str(), "", param));
+					}
+
+					{
+						// No fragment shader case
+						std::ostringstream testName;
+						testName	<< "input_assembly_vertex"
+									<< partialFlagsStr[partialFlagsIdx]
+									<< waitFlagsStr[waitFlagsIdx]
+									<< useCmdCopyStr[useCmdCopyIdx];
+						GraphicBasicMultipleQueryTestInstance::ParametersGraphic param(statisticsFlags | VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT, queryFlags, queryCount, DE_TRUE, useCmdCopy[useCmdCopyIdx], dstOffset);
+						vertexShaderMultipleQueries->addChild(new QueryPoolGraphicMultipleQueryStatisticsTest<VertexShaderMultipleQueryTestInstance>(m_testCtx, testName.str().c_str(), "", param));
+					}
+				}
+			}
+		}
+	}
+
 	addChild(computeShaderInvocationsGroup.release());
 	addChild(inputAssemblyVertices.release());
 	addChild(inputAssemblyPrimitives.release());
@@ -3426,6 +4067,7 @@ void QueryPoolStatisticsTests::init (void)
 	resetBeforeCopyGroup->addChild(tesControlPatchesResetBeforeCopy.release());
 	resetBeforeCopyGroup->addChild(tesEvaluationShaderInvocationsResetBeforeCopy.release());
 	addChild(resetBeforeCopyGroup.release());
+	addChild(vertexShaderMultipleQueries.release());
 }
 
 } //QueryPool

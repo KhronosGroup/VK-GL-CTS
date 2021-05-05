@@ -25,6 +25,7 @@
 
 #include "deDefs.h"
 
+
 #if (DE_COMPILER == DE_COMPILER_MSC)
 #	include <intrin.h>
 #endif
@@ -740,6 +741,25 @@ DE_INLINE int deIntRoundToPow2(int number, int powerOf2)
 	return (number + (int)powerOf2 - (int)1) & (int)(~(powerOf2 - 1));
 }
 
+/*--------------------------------------------------------------------*//*!
+ * \brief Destructively loop over all of the bits in a mask as in:
+ *
+ *   while (mymask) {
+ *     int i = bitScan(&mymask);
+ *     ... process element i
+ *   }
+ * \param mask		mask value, it will remove LSB that is enabled.
+ * \return LSB position that was enabled before overwriting the mask.
+ *//*--------------------------------------------------------------------*/
+DE_INLINE deInt32
+deInt32BitScan(deInt32 *mask)
+{
+	const deInt32 i = deCtz32(*mask);
+	if (i == 32)
+		return i;
+	*mask ^= (1u << i);
+	return i;
+}
 
 DE_END_EXTERN_C
 
