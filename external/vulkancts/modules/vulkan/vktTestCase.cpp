@@ -77,6 +77,7 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_AMD_shader_trinary_minmax",
 		"VK_AMD_texture_gather_bias_lod",
 		"VK_ANDROID_external_memory_android_hardware_buffer",
+		"VK_VALVE_mutable_descriptor_type",
 	};
 
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
@@ -526,7 +527,7 @@ bool Context::isDeviceFunctionalitySupported (const std::string& extension) cons
 		return true;
 	}
 
-	// check if extension is on the lits of extensions for current device
+	// check if extension is on the list of extensions for current device
 	const auto& extensions = getDeviceExtensions();
 	if (de::contains(extensions.begin(), extensions.end(), extension))
 	{

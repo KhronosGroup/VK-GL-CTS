@@ -22,6 +22,8 @@ set(DEQP_VK_BINDING_MODEL_SRCS
 	vktBindingDynamicOffsetTests.hpp
 	vktBindingBufferDeviceAddressTests.cpp
 	vktBindingBufferDeviceAddressTests.hpp
+	vktBindingValveMutableTests.cpp
+	vktBindingValveMutableTests.hpp
 	)
 
 set(DEQP_VK_BINDING_MODEL_LIBS

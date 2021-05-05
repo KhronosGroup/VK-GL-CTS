@@ -719,6 +719,12 @@ public:
 																							 const VkSpecializationInfo*							specializationInfoPtr = nullptr,
 																							 const VkPipelineShaderStageCreateFlags					pipelineShaderStageCreateFlags = static_cast<VkPipelineShaderStageCreateFlags>(0),
 																							 const void*											pipelineShaderStageCreateInfopNext = nullptr);
+	void														addShader					(VkShaderStageFlagBits									shaderStage,
+																							 VkShaderModule									        shaderModule,
+																							 deUint32												group,
+																							 const VkSpecializationInfo*							specializationInfo = nullptr,
+																							 const VkPipelineShaderStageCreateFlags					pipelineShaderStageCreateFlags = static_cast<VkPipelineShaderStageCreateFlags>(0),
+																							 const void*											pipelineShaderStageCreateInfopNext = nullptr);
 	void														addLibrary					(de::SharedPtr<de::MovePtr<RayTracingPipeline>>			pipelineLibrary);
 	Move<VkPipeline>											createPipeline				(const DeviceInterface&									vk,
 																							 const VkDevice											device,
