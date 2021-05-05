@@ -318,6 +318,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_format_feature_flags2")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_debug_report")
 	{
 		functions.push_back("vkCreateDebugReportCallbackEXT");
@@ -1444,6 +1448,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdCopyImageToBuffer2KHR");
 		functions.push_back("vkCmdBlitImage2KHR");
 		functions.push_back("vkCmdResolveImage2KHR");
+		return;
+	}
+	if (extName == "VK_KHR_format_feature_flags2")
+	{
 		return;
 	}
 	if (extName == "VK_EXT_debug_report")

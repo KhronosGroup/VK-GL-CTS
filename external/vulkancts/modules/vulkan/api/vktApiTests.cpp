@@ -49,6 +49,7 @@
 #include "vktApiPipelineTests.hpp"
 #include "vktApiMemoryRequirementInvarianceTests.hpp"
 #include "vktApiToolingInfoTests.hpp"
+#include "vktApiFormatPropertiesExtendedKHRtests.hpp"
 
 namespace vkt
 {
@@ -94,6 +95,7 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 	apiTests->addChild(createPipelineTests						(testCtx));
 	apiTests->addChild(createMemoryRequirementInvarianceTests	(testCtx));
 	apiTests->addChild(createToolingInfoTests					(testCtx));
+	apiTests->addChild(createFormatPropertiesExtendedKHRTests	(testCtx));
 }
 
 } // anonymous

@@ -673,6 +673,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT:								return "VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT";
 		case VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT:							return "VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT:									return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_EXTENDED_KHR:										return "VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_EXTENDED_KHR";
 		case VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA:							return "VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA";
 		case VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA:								return "VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA";
 		case VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA:								return "VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA";
@@ -8573,6 +8574,18 @@ std::ostream& operator<< (std::ostream& s, const VkResolveImageInfo2KHR& value)
 	s << "\tdstImageLayout = " << value.dstImageLayout << '\n';
 	s << "\tregionCount = " << value.regionCount << '\n';
 	s << "\tpRegions = " << value.pRegions << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkFormatPropertiesExtendedKHR& value)
+{
+	s << "VkFormatPropertiesExtendedKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tlinearTilingFeatures = " << value.linearTilingFeatures << '\n';
+	s << "\toptimalTilingFeatures = " << value.optimalTilingFeatures << '\n';
+	s << "\tbufferFeatures = " << value.bufferFeatures << '\n';
 	s << '}';
 	return s;
 }

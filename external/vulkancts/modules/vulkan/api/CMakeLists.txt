@@ -64,6 +64,8 @@ set(DEQP_VK_API_SRCS
 	vktApiMemoryRequirementInvarianceTests.hpp
     vktApiToolingInfoTests.cpp
     vktApiToolingInfoTests.hpp
+    vktApiFormatPropertiesExtendedKHRtests.cpp
+    vktApiFormatPropertiesExtendedKHRtests.hpp
 	)
 
 set(DEQP_VK_API_LIBS

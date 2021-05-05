@@ -131,20 +131,26 @@ static inline bool coordsInBounds (const ConstPixelBufferAccess& access, int x, 
 	return de::inBounds(x, 0, access.getWidth()) && de::inBounds(y, 0, access.getHeight()) && de::inBounds(z, 0, access.getDepth());
 }
 
-static float lookupDepth (const tcu::ConstPixelBufferAccess& access, const Sampler& sampler, int i, int j, int k)
-{
-	if (coordsInBounds(access, i, j, k))
-		return access.getPixDepth(i, j, k);
-	else
-		return sampleTextureBorder<float>(access.getFormat(), sampler).x();
-}
-
 // lookup depth value at a point that is guaranteed to not sample border such as cube map faces.
 static float lookupDepthNoBorder (const tcu::ConstPixelBufferAccess& access, const Sampler& sampler, int i, int j, int k = 0)
 {
 	DE_UNREF(sampler);
 	DE_ASSERT(coordsInBounds(access, i, j, k));
-	return access.getPixDepth(i, j, k);
+	DE_ASSERT(	access.getFormat().order == TextureFormat::D || access.getFormat().order == TextureFormat::DS ||
+				access.getFormat().order == TextureFormat::R);
+
+	if (access.getFormat().order == TextureFormat::R)
+		return access.getPixel(i,j,k).x();
+	else
+		return access.getPixDepth(i, j, k);
+}
+
+static float lookupDepth (const tcu::ConstPixelBufferAccess& access, const Sampler& sampler, int i, int j, int k)
+{
+	if (coordsInBounds(access, i, j, k))
+		return lookupDepthNoBorder(access, sampler, i, j, k);
+	else
+		return sampleTextureBorder<float>(access.getFormat(), sampler).x();
 }
 
 // Values are in order (0,0), (1,0), (0,1), (1,1)
@@ -162,7 +168,7 @@ static bool isFixedPointDepthTextureFormat (const tcu::TextureFormat& format)
 {
 	const tcu::TextureChannelClass channelClass = tcu::getTextureChannelClass(format.type);
 
-	if (format.order == TextureFormat::D)
+	if (format.order == TextureFormat::D || format.order == TextureFormat::R)
 	{
 		// depth internal formats cannot be non-normalized integers
 		return channelClass != tcu::TEXTURECHANNELCLASS_FLOATING_POINT;
