@@ -233,6 +233,11 @@ void MismatchedFormatTest::checkSupport (Context& context) const
 		{
 			TCU_THROW(NotSupportedError, "Sparse partially resident buffers not supported");
 		}
+
+		if (!getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice()).shaderResourceResidency)
+		{
+			TCU_THROW(NotSupportedError, "Shader resource residency not supported");
+		}
 	}
 
 	VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), m_format);
