@@ -26,6 +26,10 @@
 #include "tcuWin32EGLNativeDisplayFactory.hpp"
 #include "egluGLContextFactory.hpp"
 
+// MinGW doesn't define this in its headers, but
+// still has the export in the libs.
+extern "C" WINUSERAPI WINBOOL WINAPI SetProcessDPIAware(VOID);
+
 namespace tcu
 {
 namespace win32

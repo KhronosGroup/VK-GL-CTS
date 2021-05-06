@@ -79,3 +79,13 @@ elseif (DE_COMPILER_IS_MSC)
 else ()
 	message(FATAL_ERROR "DE_COMPILER is not valid")
 endif ()
+
+if (DE_MINGW AND DE_PTR_SIZE EQUAL 8)
+	# Pass -mbig-obj to mingw gas on Win64. COFF has a 2**16 section limit, and
+	# on Win64, every COMDAT function creates at least 3 sections: .text, .pdata,
+	# and .xdata.
+	# Enable static libgcc and libstdc++ also to avoid needing to have
+	# Windows builds of the standard libraries distributed.
+	set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Wa,-mbig-obj -static -static-libgcc")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj -static -static-libgcc -static-libstdc++")
+endif()

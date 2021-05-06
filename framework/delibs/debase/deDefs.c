@@ -120,7 +120,7 @@ void deAssertFail (const char* reason, const char* file, int line)
 		assert(wreason);
 #	endif
 	}
-#elif ((DE_OS == DE_OS_WIN32) && (DE_COMPILER == DE_COMPILER_CLANG))
+#elif ((DE_OS == DE_OS_WIN32) && (DE_COMPILER == DE_COMPILER_CLANG || DE_COMPILER == DE_COMPILER_GCC))
 	_assert(reason, file, line);
 #elif (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS) || defined(__FreeBSD__)
 	fprintf(stderr, "Assertion '%s' failed at %s:%d\n", reason, file, line);

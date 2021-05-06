@@ -33,8 +33,6 @@
 #include "deUniquePtr.hpp"
 #include "deMemory.h"
 
-#pragma comment(lib, "version.lib")
-
 namespace tcu
 {
 namespace win32
