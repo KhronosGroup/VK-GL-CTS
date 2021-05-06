@@ -179,3 +179,7 @@ if (DEQP_USE_X11)
 		add_definitions(-DDEQP_SUPPORT_WAYLAND=1)
 	endif ()
 endif ()
+
+if (DE_OS_IS_WIN32)
+	target_link_libraries(tcutil-platform "version")
+endif()

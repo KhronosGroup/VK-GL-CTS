@@ -159,9 +159,9 @@ deSocketProtocol deSocketAddress_getProtocol (const deSocketAddress* address)
 #if defined(DE_USE_WINSOCK)
 
 	/* WinSock spesific. */
-#	include <WinSock2.h>
-#	include <WS2tcpip.h>
-#	include <WinDef.h>
+#	include <winsock2.h>
+#	include <ws2tcpip.h>
+#	include <windef.h>
 
 static deBool initWinsock (void)
 {

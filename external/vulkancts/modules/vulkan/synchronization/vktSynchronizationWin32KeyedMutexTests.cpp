@@ -45,9 +45,9 @@
 #	define NOMINMAX
 #	include <windows.h>
 #	include <aclapi.h>
-#	include "VersionHelpers.h"
-#	include "d3d11_2.h"
-#	include "d3dcompiler.h"
+#	include <versionhelpers.h>
+#	include <d3d11_2.h>
+#	include <d3dcompiler.h>
 
 typedef HRESULT				(WINAPI * LPD3DX11COMPILEFROMMEMORY)(LPCSTR,
 																 SIZE_T,

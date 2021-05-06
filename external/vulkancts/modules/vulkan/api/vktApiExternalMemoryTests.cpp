@@ -53,7 +53,7 @@
 #if (DE_OS == DE_OS_WIN32)
 #	define WIN32_LEAN_AND_MEAN
 #	include <windows.h>
-#	include <Dxgi1_2.h>
+#	include <dxgi1_2.h>
 #endif
 
 using tcu::TestLog;
