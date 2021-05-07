@@ -1009,5 +1009,43 @@ vk::VkFormat getPlaneCompatibleFormatForWriting(const vk::PlanarFormatDescriptio
 	return result;
 }
 
+bool areLsb6BitsDontCare(vk::VkFormat format)
+{
+	if ((format == vk::VK_FORMAT_R10X6_UNORM_PACK16)                         ||
+		(format == vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16)                   ||
+		(format == vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16)         ||
+		(format == vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16)     ||
+		(format == vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16)     ||
+		(format == vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16)  ||
+		(format == vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16) ||
+		(format == vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16) ||
+		(format == vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16)  ||
+		(format == vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool areLsb4BitsDontCare(vk::VkFormat format)
+{
+	if ((format == vk::VK_FORMAT_R12X4_UNORM_PACK16)                         ||
+		(format == vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16)                   ||
+		(format == vk::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16)         ||
+		(format == vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16)     ||
+		(format == vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16)     ||
+		(format == vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16) ||
+		(format == vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16)  ||
+		(format == vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16) ||
+		(format == vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16)  ||
+		(format == vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16))
+	{
+		return true;
+	}
+
+	return false;
+}
+
 } // sparse
 } // vkt

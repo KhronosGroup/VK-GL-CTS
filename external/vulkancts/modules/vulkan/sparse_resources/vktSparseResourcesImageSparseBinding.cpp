@@ -413,7 +413,9 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 		// Wait for sparse queue to become idle
 		deviceInterface.queueWaitIdle(sparseQueue.queueHandle);
 
-		const deUint8* outputData = static_cast<const deUint8*>(outputBufferAlloc->getHostPtr());
+		const deUint8*	outputData		= static_cast<const deUint8*>(outputBufferAlloc->getHostPtr());
+		bool			ignoreLsb6Bits	= areLsb6BitsDontCare(imageSparseInfo.format);
+		bool			ignoreLsb4Bits	= areLsb4BitsDontCare(imageSparseInfo.format);
 
 		for (deUint32 planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
 		{
@@ -437,20 +439,21 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 					}
 				}
 
-				if (!is8bitSnormComponent)
+				for (size_t byteNdx = 0; byteNdx < mipLevelSizeInBytes; byteNdx++)
 				{
-					if (deMemCmp(outputData + bufferOffset, &referenceData[bufferOffset], mipLevelSizeInBytes) != 0)
-						return tcu::TestStatus::fail("Failed");
-				}
-				else
-				{
-					for (deUint32 byte = 0; byte < mipLevelSizeInBytes; byte++)
-					{
-						deUint32 entryOffset = bufferOffset + byte;
+					const deUint8	res	= *(outputData + bufferOffset + byteNdx);
+					const deUint8	ref	= referenceData[bufferOffset + byteNdx];
 
-						// Ignore 0x80 which is undefined data for a 8 bit snorm component
-						if ((referenceData[entryOffset] != 0x80) && (deMemCmp(outputData + entryOffset, &referenceData[entryOffset], 1) != 0))
-							return tcu::TestStatus::fail("Failed");
+					deUint8 mask = 0xFF;
+
+					if (!(byteNdx & 0x01) && (ignoreLsb6Bits))
+						mask = 0xC0;
+					else if (!(byteNdx & 0x01) && (ignoreLsb4Bits))
+						mask = 0xF0;
+
+					if (((!is8bitSnormComponent) || (ref != 0x80)) &&  ((res & mask) != (ref & mask)))
+					{
+						return tcu::TestStatus::fail("Failed");
 					}
 				}
 			}
