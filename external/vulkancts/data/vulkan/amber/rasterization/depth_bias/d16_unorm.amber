@@ -89,8 +89,8 @@ BUFFER data_buf2 DATA_TYPE float DATA  0.0 1.0  0.0 1.0 0.5 END
 BUFFER position DATA_TYPE vec2<float> DATA
 -1.0 -1.0
  1.0 -1.0
- 1.0  1.0
 -1.0  1.0
+ 1.0  1.0
 END
 BUFFER texcoords DATA_TYPE vec2<float> DATA
 0.0 0.0
@@ -179,7 +179,7 @@ CLEAR_COLOR pipeline1 255 255 255 255
 CLEAR pipeline1
 RUN pipeline1 DRAW_RECT POS   0   0 SIZE 200 200
 RUN pipeline2 DRAW_RECT POS   56 56 SIZE 200 200
-RUN depthdump DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
+RUN depthdump DRAW_ARRAY AS TRIANGLE_STRIP START_IDX 0 COUNT 4
 RUN verification_pipeline 1 1 1
 
 EXPECT results IDX 0 EQ 1.0
