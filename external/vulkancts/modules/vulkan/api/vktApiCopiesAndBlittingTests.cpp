@@ -5621,41 +5621,83 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 		group->addChild(new CopyImageToImageTestCase(testCtx, "partial_image", "Partial image", params));
 	}
 
+	static const struct
 	{
-		VkExtent3D	extent					= { 65u, 63u, 1u };
+		std::string		name;
+		vk::VkFormat	format1;
+		vk::VkFormat	format2;
+	} formats [] =
+	{
+		{ "diff_format",	vk::VK_FORMAT_R32_UINT,			vk::VK_FORMAT_R8G8B8A8_UNORM	},
+		{ "same_format",	vk::VK_FORMAT_R8G8B8A8_UNORM,	vk::VK_FORMAT_R8G8B8A8_UNORM	}
+	};
+	static const struct
+	{
+		std::string		name;
+		vk::VkBool32	clear;
+	} clears [] =
+	{
+		{ "clear",		VK_TRUE		},
+		{ "noclear",	VK_FALSE	}
+	};
+	static const struct
+	{
+		std::string		name;
+		VkExtent3D		extent;
+	} extents [] =
+	{
+		{ "npot",	{65u, 63u, 1u}	},
+		{ "pot",	{64u, 64u, 1u}	}
+	};
 
-		TestParams	params;
-		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
-		params.src.image.format				= VK_FORMAT_R32_UINT;
-		params.src.image.extent				= extent;
-		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
-		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
-		params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
-		params.dst.image.extent				= extent;
-		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
-		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
-		params.clearDestination				= VK_TRUE;
-
+	for (const auto& format : formats)
+	{
+		for (const auto& clear : clears)
 		{
-			const VkImageCopy	testCopy	=
+			for (const auto& extent : extents)
 			{
-				defaultSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
-				{34, 34, 0},		// VkOffset3D				srcOffset;
-				defaultSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
-				{0, 0, 0},			// VkOffset3D				dstOffset;
-				{31, 29, 1}			// VkExtent3D				extent;
-			};
+				TestParams	params;
+				params.src.image.imageType			= VK_IMAGE_TYPE_2D;
+				params.src.image.format				= format.format1;
+				params.src.image.extent				= extent.extent;
+				params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+				params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+				params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
+				params.dst.image.format				= format.format2;
+				params.dst.image.extent				= extent.extent;
+				params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+				params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+				params.allocationKind				= allocationKind;
+				params.extensionUse					= extensionUse;
+				params.clearDestination				= clear.clear;
 
-			CopyRegion			imageCopy;
+				{
+					VkImageCopy	testCopy	=
+					{
+						defaultSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+						{34, 34, 0},		// VkOffset3D				srcOffset;
+						defaultSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+						{0, 0, 0},			// VkOffset3D				dstOffset;
+						{31, 29, 1}			// VkExtent3D				extent;
+					};
 
-			imageCopy.imageCopy = testCopy;
-			params.regions.push_back(imageCopy);
+					if (extent.name == "pot")
+					{
+						testCopy.srcOffset	= { 16, 16, 0 };
+						testCopy.extent		= { 32, 32, 1 };
+					}
+
+					CopyRegion	imageCopy;
+					imageCopy.imageCopy = testCopy;
+					params.regions.push_back(imageCopy);
+				}
+
+				// Example test case name: "partial_image_npot_diff_format_clear"
+				const std::string testCaseName = "partial_image_" + extent.name + "_" + format.name + "_" + clear.name;
+
+				group->addChild(new CopyImageToImageTestCase(testCtx, testCaseName, "", params));
+			}
 		}
-
-		group->addChild(new CopyImageToImageTestCase(testCtx, "partial_image_npot_diff_format_clear", "Partial image with npot dimensions, different format, and clearing of the destination image", params));
 	}
 
 	{
