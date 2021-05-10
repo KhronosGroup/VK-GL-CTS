@@ -45,6 +45,8 @@
 #include "deSharedPtr.hpp"
 #ifdef CTS_USES_VULKANSC
 	#include "deProcess.h"
+	#include "vksClient.hpp"
+	#include "vksIPC.hpp"
 #endif // CTS_USES_VULKANSC
 
 #include "vktTestGroupUtil.hpp"
@@ -114,6 +116,7 @@
 
 #include <vector>
 #include <sstream>
+#include <fstream>
 #include <thread>
 
 namespace vkt
@@ -163,7 +166,20 @@ private:
 	TestInstance*								m_instance;			//!< Current test case instance
 	std::vector<std::string>					m_testsForSubprocess;
 	tcu::TestRunStatus							m_status;
+
+#ifdef CTS_USES_VULKANSC
+	std::unique_ptr<vksc_server::ipc::Parent>	m_parentIPC;
+#endif
 };
+
+#ifdef CTS_USES_VULKANSC
+static deBool	supressedWrite			(int, const char*)								{ return false; }
+static deBool	supressedWriteFtm		(int, const char*, va_list)						{ return false; }
+static deBool	openWrite				(int type, const char* message)					{ DE_UNREF(type); DE_UNREF(message); return true; }
+static deBool	openWriteFtm			(int type, const char* format, va_list args)	{ DE_UNREF(type); DE_UNREF(format); DE_UNREF(args); return true; }
+static void		suppressStandardOutput	()												{ qpRedirectOut(supressedWrite, supressedWriteFtm); }
+static void		restoreStandardOutput	()												{ qpRedirectOut(openWrite, openWriteFtm); }
+#endif
 
 static MovePtr<vk::Library> createLibrary (tcu::TestContext& testCtx)
 {
@@ -186,23 +202,35 @@ TestCaseExecutor::TestCaseExecutor (tcu::TestContext& testCtx)
 	, m_renderDoc			(testCtx.getCommandLine().isRenderDocEnabled()
 							 ? MovePtr<vk::RenderDocUtil>(new vk::RenderDocUtil())
 							 : MovePtr<vk::RenderDocUtil>(DE_NULL))
-#ifndef CTS_USES_VULKAN
+#if defined CTS_USES_VULKANSC
+	, m_resourceInterface	(new vk::ResourceInterfaceVKSC(testCtx))
+#else
 	, m_resourceInterface	(new vk::ResourceInterfaceStandard(testCtx))
-#else // TODO: for now Vulkan SC uses the same method to access resources. In M3 we will create new subclass for Vulkan SC
-	, m_resourceInterface	(new vk::ResourceInterfaceStandard(testCtx))
-#endif // CTS_USES_VULKAN
+#endif // CTS_USES_VULKANSC
 	, m_instance			(DE_NULL)
 {
 #ifdef CTS_USES_VULKANSC
 	if (testCtx.getCommandLine().isSubProcess())
 	{
 		std::vector<int> caseFraction = testCtx.getCommandLine().getCaseFraction();
-		std::ostringstream jsonFileName;
-		if (caseFraction.empty())
-			jsonFileName << "pipeline_data.json";
-		else
-			jsonFileName << "pipeline_data_" << caseFraction[0] << ".json";
-		m_resourceInterface->importDataFromFile(jsonFileName.str());
+		std::string jsonFileName;
+		if (caseFraction.empty()) jsonFileName = "pipeline_data.txt";
+		else jsonFileName = "pipeline_data_" + std::to_string(caseFraction[0]) + ".txt";
+
+		std::vector<deUint8> input = vksc_server::ipc::Child{}.GetFile(jsonFileName);
+		m_resourceInterface->importData(input);
+	}
+	else
+	{
+		m_parentIPC.reset( new vksc_server::ipc::Parent{} );
+	}
+
+	// If we are provided with remote location
+	if (testCtx.getCommandLine().getServerAddress())
+	{
+		// Open connection with the server dedicated for standard output
+		vksc_server::OpenRemoteStandardOutput(testCtx.getCommandLine().getServerAddress());
+		restoreStandardOutput();
 	}
 #endif // CTS_USES_VULKANSC
 
@@ -225,7 +253,7 @@ TestCaseExecutor::TestCaseExecutor (tcu::TestContext& testCtx)
 	// That's why we turn off any output in main process and copy output from subprocess when subprocess tests are performed
 	if (!testCtx.getCommandLine().isSubProcess())
 	{
-		qpSuppressOutput(1);
+		suppressStandardOutput();
 		m_context->getTestContext().getLog().supressLogging(true);
 	}
 #endif // CTS_USES_VULKANSC
@@ -253,10 +281,9 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 		TCU_THROW(InternalError, "Test node not an instance of vkt::TestCase");
 
 	if (!m_context->getTestContext().getCommandLine().isSubProcess())
-	{
 		m_testsForSubprocess.push_back(casePath);
-		m_resourceInterface->initTestCase(casePath);
-	}
+
+	m_resourceInterface->initTestCase(casePath);
 
 	if (m_waiverMechanism.isOnWaiverList(casePath))
 		throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
@@ -363,7 +390,7 @@ void TestCaseExecutor::deinit (tcu::TestCase* testCase)
 			dds->reset();
 			m_resourceInterface->resetObjects();
 
-			qpSuppressOutput(1);
+			suppressStandardOutput();
 			m_context->getTestContext().getLog().supressLogging(true);
 		}
 	}
@@ -447,7 +474,7 @@ void TestCaseExecutor::deinitTestPackage (tcu::TestContext& testCtx)
 		}
 
 		// Tests are finished. Next tests ( if any ) will come from other test package and test executor
-		qpSuppressOutput(0);
+		restoreStandardOutput();
 		m_context->getTestContext().getLog().supressLogging(false);
 	}
 	m_resourceInterface->resetPipelineCaches();
@@ -489,22 +516,21 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 	std::ostringstream	jsonFileName, qpaFileName;
 	if (caseFraction.empty())
 	{
-		jsonFileName	<< "pipeline_data.json";
+		jsonFileName	<< "pipeline_data.txt";
 		qpaFileName		<< "sub.qpa";
 	}
 	else
 	{
-		jsonFileName	<< "pipeline_data_" << caseFraction[0] << ".json";
+		jsonFileName	<< "pipeline_data_" << caseFraction[0] << ".txt";
 		qpaFileName		<< "sub_" << caseFraction[0] << ".qpa";
 	}
 
 	// export data collected during statistics gathering to JSON file ( VkDeviceObjectReservationCreateInfo, SPIR-V shaders, pipelines )
 	{
-		vk::VkDeviceObjectReservationCreateInfo	memoryReservation		= m_context->getResourceInterface()->getStatMax();
-		std::string								jsonMemoryReservation	= writeJSON_VkDeviceObjectReservationCreateInfo(memoryReservation);
-
 		m_resourceInterface->removeRedundantObjects();
-		m_resourceInterface->exportDataToFile(jsonFileName.str(), jsonMemoryReservation);
+		m_resourceInterface->finalizeCommandBuffers();
+		std::vector<deUint8>					data					= m_resourceInterface->exportData();
+		m_parentIPC->SetFile(jsonFileName.str(), data);
 	}
 
 	// collect current application name, add it to new commandline with subprocess parameters
@@ -562,7 +588,7 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 	newCmdLine = newCmdLine + " --deqp-caselist-file=" + caseListName;
 
 	// restore cout and cerr
-	qpSuppressOutput(0);
+	restoreStandardOutput();
 
 	// create subprocess which will perform real tests
 	{
@@ -574,6 +600,8 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 			process = DE_NULL;
 			TCU_THROW(TestError, "Error while running subprocess : " + err);
 		}
+		std::string whole;
+		whole.reserve(1024 * 4);
 
 		// create a separate thread that captures std::err output
 		de::MovePtr<std::thread> errThread(new std::thread([&process]
@@ -594,10 +622,13 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 		{
 			outBuffer[numRead] = 0;
 			qpPrint(outBuffer);
+			whole += outBuffer;
 		}
 		errThread->join();
 		deProcess_waitForFinish(process);
 		deProcess_destroy(process);
+
+		vksc_server::RemoteWrite(0, whole.c_str());
 	}
 
 	// restore logging
@@ -605,15 +636,9 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 
 	// copy test information from sub.qpa to main log
 	{
-		deFile*				subQpa			= deFile_create(qpaFileName.str().c_str(), DE_FILEMODE_OPEN | DE_FILEMODE_READ);
-		deInt64				subQpaSize		= deFile_getSize(subQpa);
-		std::vector<char>	subQpaContents	(static_cast<std::size_t>(subQpaSize));
-		deInt64				numRead			= 0;
-
-		deFile_read(subQpa, subQpaContents.data(), subQpaSize, &numRead);
-		std::string			subQpaText		(subQpaContents.data(), std::size_t(subQpaSize));
-		deFile_destroy(subQpa);
-
+		std::ifstream	subQpa(qpaFileName.str(), std::ios::binary);
+		std::string		subQpaText{std::istreambuf_iterator<char>(subQpa),
+								   std::istreambuf_iterator<char>()};
 		{
 			std::string			beginText		("#beginTestCaseResult");
 			std::string			endText			("#endTestCaseResult");
@@ -623,7 +648,21 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 				TCU_THROW(TestError, "Couldn't match tags from " + qpaFileName.str());
 
 			std::string		subQpaCopy = "\n" + std::string(subQpaText.begin() + beginPos, subQpaText.begin() + endPos + endText.size()) + "\n";
-			testCtx.getLog().writeRaw(subQpaCopy.c_str());
+
+			if (testCtx.getCommandLine().getServerAddress())
+			{
+				// Send it to server to append to its log
+				vksc_server::Server server(testCtx.getCommandLine().getServerAddress());
+				vksc_server::AppendRequest request;
+				request.fileName = testCtx.getCommandLine().getLogFileName();
+				request.data.assign(subQpaCopy.begin(), subQpaCopy.end());
+				server.SendRequest(request);
+			}
+			else
+			{
+				// Write it to parent's log
+				testCtx.getLog().writeRaw(subQpaCopy.c_str());
+			}
 		}
 
 		{
@@ -645,6 +684,7 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 			m_status.numWaived					+= numWaived;
 			m_status.numFailed					+= numFailed;
 		}
+
 		deDeleteFile(qpaFileName.str().c_str());
 	}
 #else

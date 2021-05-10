@@ -38,7 +38,10 @@ void	qpPrintErrorv	(const char* fmt, va_list va);
 void	qpDief			(const char* fmt, ...);
 void	qpDiev			(const char* fmt, va_list va);
 
-void	qpSuppressOutput(int value);
+typedef deBool (*writePtr)		(int, const char*);
+typedef deBool (*writeFtmPtr)	(int, const char*, va_list);
+
+void	qpRedirectOut	(writePtr w, writeFtmPtr wftm);
 
 DE_END_EXTERN_C
 

@@ -24,15 +24,52 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
+#include <map>
+#include <functional>
 
 #ifdef CTS_USES_VULKANSC
 
 namespace vk
 {
 
-VkDeviceObjectReservationCreateInfo resetDeviceObjectReservationCreateInfo();
-VkPipelineIdentifierInfo			resetPipelineIdentifierInfo();
-VkPhysicalDeviceVulkanSC10Features	createDefaultSC10Features();
+VkDeviceObjectReservationCreateInfo resetDeviceObjectReservationCreateInfo	();
+VkPipelineIdentifierInfo			resetPipelineIdentifierInfo				();
+VkPhysicalDeviceVulkanSC10Features	createDefaultSC10Features				();
+
+std::size_t							calculateGraphicsPipelineHash			(const VkGraphicsPipelineCreateInfo&		gpCI,
+																			 const std::map<deUint64,std::size_t>&		objectHashes);
+std::size_t							calculateComputePipelineHash			(const VkComputePipelineCreateInfo&			cpCI,
+																			 const std::map<deUint64,std::size_t>&		objectHashes);
+std::size_t							calculateSamplerYcbcrConversionHash		(const VkSamplerYcbcrConversionCreateInfo&	scCI,
+																			 const std::map<deUint64, std::size_t>&		objectHashes);
+std::size_t							calculateSamplerHash					(const VkSamplerCreateInfo&					sCI,
+																			 const std::map<deUint64, std::size_t>&		objectHashes);
+std::size_t							calculateDescriptorSetLayoutHash		(const VkDescriptorSetLayoutCreateInfo&		sCI,
+																			 const std::map<deUint64, std::size_t>&		objectHashes);
+std::size_t							calculatePipelineLayoutHash				(const VkPipelineLayoutCreateInfo&			pCI,
+																			 const std::map<deUint64, std::size_t>&		objectHashes);
+std::size_t							calculateShaderModuleHash				(const VkShaderModuleCreateInfo&			sCI,
+																			 const std::map<deUint64, std::size_t>&		objectHashes);
+std::size_t							calculateRenderPassHash					(const VkRenderPassCreateInfo&				pCI,
+																			 const std::map<deUint64, std::size_t>&		objectHashes);
+std::size_t							calculateRenderPass2Hash				(const VkRenderPassCreateInfo2&				pCI,
+																			 const std::map<deUint64, std::size_t>&		objectHashes);
+
+template <typename T, typename... Rest>
+inline void hash_combine(std::size_t &seed, T const &v)
+{
+	std::hash<T> hasher;
+	seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+template <typename T, typename... Rest>
+inline void hash_combine(std::size_t &seed, T const &v, Rest &&... rest)
+{
+	std::hash<T> hasher;
+	seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+	hash_combine(seed, rest...);
+}
+
 } // vk
 
 #endif // CTS_USES_VULKANSC

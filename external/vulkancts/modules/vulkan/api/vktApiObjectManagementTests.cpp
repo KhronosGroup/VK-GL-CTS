@@ -624,13 +624,36 @@ struct Device
 
 		void* pNext									= DE_NULL;
 #ifdef CTS_USES_VULKANSC
-		VkDeviceObjectReservationCreateInfo memReservationInfo	= env.commandLine.isSubProcess() ? env.resourceInterface->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= env.commandLine.isSubProcess() ? env.resourceInterface->getStatMax() : resetDeviceObjectReservationCreateInfo();
 		memReservationInfo.pNext								= pNext;
 		pNext													= &memReservationInfo;
 
 		VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
 		sc10Features.pNext										= pNext;
 		pNext													= &sc10Features;
+
+		VkPipelineCacheCreateInfo			pcCI;
+		std::vector<VkPipelinePoolSize>		poolSizes;
+		if (env.commandLine.isSubProcess())
+		{
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
+				DE_NULL,											// const void*					pNext;
+				(VkPipelineCacheCreateFlags)0u,						// VkPipelineCacheCreateFlags	flags;
+				env.resourceInterface->getCacheDataSize(),			// deUintptr					initialDataSize;
+				env.resourceInterface->getCacheData()				// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+
+			poolSizes							= env.resourceInterface->getPipelinePoolSizes();
+			if (!poolSizes.empty())
+			{
+				memReservationInfo.pipelinePoolSizeCount		= deUint32(poolSizes.size());
+				memReservationInfo.pPipelinePoolSizes			= poolSizes.data();
+			}
+		}
 #endif // CTS_USES_VULKANSC
 
 		const VkDeviceCreateInfo		deviceInfo	=
@@ -748,13 +771,36 @@ struct DeviceGroup
 
 		void* pNext									= &deviceGroupInfo;
 #ifdef CTS_USES_VULKANSC
-		VkDeviceObjectReservationCreateInfo memReservationInfo	= env.commandLine.isSubProcess() ? env.resourceInterface->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= env.commandLine.isSubProcess() ? env.resourceInterface->getStatMax() : resetDeviceObjectReservationCreateInfo();
 		memReservationInfo.pNext								= pNext;
 		pNext													= &memReservationInfo;
 
 		VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
 		sc10Features.pNext										= pNext;
 		pNext													= &sc10Features;
+
+		VkPipelineCacheCreateInfo			pcCI;
+		std::vector<VkPipelinePoolSize>		poolSizes;
+		if (env.commandLine.isSubProcess())
+		{
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
+				DE_NULL,											// const void*					pNext;
+				(VkPipelineCacheCreateFlags)0u,						// VkPipelineCacheCreateFlags	flags;
+				env.resourceInterface->getCacheDataSize(),			// deUintptr					initialDataSize;
+				env.resourceInterface->getCacheData()				// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+
+			poolSizes							= env.resourceInterface->getPipelinePoolSizes();
+			if (!poolSizes.empty())
+			{
+				memReservationInfo.pipelinePoolSizeCount		= deUint32(poolSizes.size());
+				memReservationInfo.pPipelinePoolSizes			= poolSizes.data();
+			}
+		}
 #endif // CTS_USES_VULKANSC
 
 		const VkDeviceCreateInfo			deviceGroupCreateInfo =

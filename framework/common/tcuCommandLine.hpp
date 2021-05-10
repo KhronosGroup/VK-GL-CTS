@@ -279,6 +279,8 @@ public:
 	//! Define number of tests performed in main process ( Vulkan SC )
 	int								getSubprocessTestCount		(void) const;
 
+	//! Optional server address that will be responsible for (among other things) compiling shaders
+	const char*						getServerAddress			(void) const;
 
 	/*--------------------------------------------------------------------*//*!
 	 * \brief Creates case list filter

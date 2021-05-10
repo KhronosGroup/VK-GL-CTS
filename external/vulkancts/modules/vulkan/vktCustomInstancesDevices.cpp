@@ -37,11 +37,13 @@ using std::vector;
 using std::string;
 using vk::Move;
 using vk::VkInstance;
-using vk::InstanceDriver;
 #ifndef CTS_USES_VULKANSC
+using vk::InstanceDriver;
 using vk::DebugReportRecorder;
 using vk::VkDebugReportCallbackCreateInfoEXT;
 using vk::VkDebugReportCallbackEXT;
+#else
+using vk::InstanceDriverSC;
 #endif // CTS_USES_VULKANSC
 
 namespace vkt
@@ -105,9 +107,11 @@ CustomInstance::CustomInstance(Context& context, Move<VkInstance> instance)
 	, m_recorder	(recorder.release())
 #endif // CTS_USES_VULKANSC
 	, m_instance	(instance)
-	, m_driver		(new InstanceDriver(context.getPlatformInterface(), *m_instance))
 #ifndef CTS_USES_VULKANSC
+	, m_driver		(new InstanceDriver(context.getPlatformInterface(), *m_instance))
 	, m_callback	(m_recorder ? m_recorder->createCallback(*m_driver, *m_instance) : Move<VkDebugReportCallbackEXT>())
+#else
+	, m_driver		(new InstanceDriverSC(context.getPlatformInterface(), *m_instance, context.getTestContext().getCommandLine(), context.getResourceInterface()))
 #endif // CTS_USES_VULKANSC
 {
 }
@@ -201,9 +205,11 @@ UncheckedInstance::UncheckedInstance(Context& context, vk::VkInstance instance, 
 #endif // CTS_USES_VULKANSC
 	, m_allocator	(pAllocator)
 	, m_instance	(instance)
-	, m_driver		((m_instance != DE_NULL) ? new InstanceDriver(context.getPlatformInterface(), m_instance) : nullptr)
 #ifndef CTS_USES_VULKANSC
+	, m_driver((m_instance != DE_NULL) ? new InstanceDriver(context.getPlatformInterface(), m_instance) : nullptr)
 	, m_callback	(m_recorder ? m_recorder->createCallback(*m_driver, m_instance) : Move<VkDebugReportCallbackEXT>())
+#else
+	, m_driver((m_instance != DE_NULL) ? new InstanceDriverSC(context.getPlatformInterface(), m_instance, context.getTestContext().getCommandLine(), context.getResourceInterface()) : nullptr)
 #endif // CTS_USES_VULKANSC
 {
 }

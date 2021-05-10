@@ -634,7 +634,7 @@ tcu::TestStatus createDeviceTest (Context& context)
 
 	void* pNext												= DE_NULL;
 #ifdef CTS_USES_VULKANSC
-	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
 	memReservationInfo.pNext								= pNext;
 	pNext													= &memReservationInfo;
 
@@ -692,7 +692,7 @@ tcu::TestStatus createMultipleDevicesTest (Context& context)
 
 	void* pNext												= DE_NULL;
 #ifdef CTS_USES_VULKANSC
-	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
 	memReservationInfo.pNext								= pNext;
 	pNext													= &memReservationInfo;
 
@@ -788,7 +788,7 @@ tcu::TestStatus createDeviceWithUnsupportedExtensionsTest (Context& context)
 
 	void* pNext												= DE_NULL;
 #ifdef CTS_USES_VULKANSC
-	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
 	memReservationInfo.pNext								= pNext;
 	pNext													= &memReservationInfo;
 
@@ -886,7 +886,7 @@ tcu::TestStatus createDeviceWithVariousQueueCountsTest (Context& context)
 		const VkDeviceQueueCreateInfo&	queueCreateInfo			= deviceQueueCreateInfos[testNdx];
 		void* pNext												= DE_NULL;
 #ifdef CTS_USES_VULKANSC
-		VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
 		memReservationInfo.pNext								= pNext;
 		pNext													= &memReservationInfo;
 
@@ -973,7 +973,7 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context)
 
 		void* pNext												= DE_NULL;
 #ifdef CTS_USES_VULKANSC
-		VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
 		memReservationInfo.pNext								= pNext;
 		pNext													= &memReservationInfo;
 
@@ -1225,7 +1225,7 @@ tcu::TestStatus createDeviceFeatures2Test (Context& context)
 
 	void* pNext												= &enabledFeatures;
 #ifdef CTS_USES_VULKANSC
-	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
 	memReservationInfo.pNext								= pNext;
 	pNext													= &memReservationInfo;
 
@@ -1373,7 +1373,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest (Context& context)
 		};
 		void* pNext												= DE_NULL;
 #ifdef CTS_USES_VULKANSC
-		VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
 		memReservationInfo.pNext								= pNext;
 		pNext													= &memReservationInfo;
 
@@ -1455,7 +1455,7 @@ tcu::TestStatus createDeviceQueue2Test (Context& context)
 
 	void* pNext												= &features2;
 #ifdef CTS_USES_VULKANSC
-	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
 	memReservationInfo.pNext								= pNext;
 	pNext													= &memReservationInfo;
 
@@ -1557,7 +1557,7 @@ tcu::TestStatus createDeviceQueue2UnmatchedFlagsTest (Context& context)
 
 	void* pNext														= &deviceFeatures;
 #ifdef CTS_USES_VULKANSC
-	VkDeviceObjectReservationCreateInfo memReservationInfo			= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+	VkDeviceObjectReservationCreateInfo memReservationInfo			= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
 	memReservationInfo.pNext										= pNext;
 	pNext															= &memReservationInfo;
 
@@ -1924,7 +1924,7 @@ tcu::TestStatus createInstanceDeviceIntentionalAllocFail (Context& context)
 
 		void* pNext												= DE_NULL;
 #ifdef CTS_USES_VULKANSC
-		VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getMemoryReservation() : resetDeviceObjectReservationCreateInfo();
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
 		memReservationInfo.pNext								= pNext;
 		pNext													= &memReservationInfo;
 

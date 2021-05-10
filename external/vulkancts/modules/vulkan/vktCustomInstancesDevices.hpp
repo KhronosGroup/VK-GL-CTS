@@ -73,9 +73,11 @@ private:
 	std::unique_ptr<vk::DebugReportRecorder>	m_recorder;
 #endif // CTS_USES_VULKANSC
 	vk::Move<vk::VkInstance>					m_instance;
-	std::unique_ptr<vk::InstanceDriver>			m_driver;
 #ifndef CTS_USES_VULKANSC
+	std::unique_ptr<vk::InstanceDriver>			m_driver;
 	vk::Move<vk::VkDebugReportCallbackEXT>		m_callback;
+#else
+	std::unique_ptr<vk::InstanceDriverSC>		m_driver;
 #endif // CTS_USES_VULKANSC
 };
 
@@ -104,9 +106,11 @@ private:
 #endif // CTS_USES_VULKANSC
 	const vk::VkAllocationCallbacks*			m_allocator;
 	vk::VkInstance								m_instance;
-	std::unique_ptr<vk::InstanceDriver>			m_driver;
 #ifndef CTS_USES_VULKANSC
+	std::unique_ptr<vk::InstanceDriver>			m_driver;
 	vk::Move<vk::VkDebugReportCallbackEXT>		m_callback;
+#else
+	std::unique_ptr<vk::InstanceDriverSC>		m_driver;
 #endif // CTS_USES_VULKANSC
 };
 

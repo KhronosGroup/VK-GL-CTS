@@ -136,8 +136,9 @@ target_link_libraries(vkutilnoshader PUBLIC ${VKUTILNOSHADER_LIBS})
 
 add_library(vkscutilnoshader STATIC ${VKUTILNOSHADER_SRCS} ${VKSCUTILNOSHADER_INLS})
 target_include_directories(vkscutilnoshader BEFORE PUBLIC generated/vulkansc)
+target_include_directories(vkscutilnoshader BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/vkscserver)
 target_compile_definitions(vkscutilnoshader PUBLIC CTS_USES_VULKANSC)
-target_link_libraries(vkscutilnoshader PUBLIC ${VKUTILNOSHADER_LIBS} jsoncpp_static)
+target_link_libraries(vkscutilnoshader PUBLIC ${VKUTILNOSHADER_LIBS} jsoncpp_static vksc-server-util)
 
 if (DEQP_USE_X11)
 	find_package(X11 REQUIRED)

@@ -61,8 +61,8 @@
 
 namespace vk_json {
 
-static int s_num_spaces    = 0;
-static std::stringstream _string_stream;
+static thread_local int s_num_spaces    = 0;
+static thread_local std::stringstream _string_stream;
 
 // By default, redirect to std::cout. Can stream it to a stringstream if needed.
 //#define   _OUT std::cout
@@ -11238,7 +11238,7 @@ static void print_VkPipelineCacheCreateInfo(VkPipelineCacheCreateInfo obj, const
 
      print_size_t(obj.initialDataSize, "initialDataSize", 1);
 
-     /** Note: Ignoring void* data. **/
+     print_void_data(obj.pInitialData, int(obj.initialDataSize), "pInitialData", 0);
 
      INDENT(-4);
      PRINT_SPACE
@@ -11265,7 +11265,7 @@ static void print_VkPipelineCacheCreateInfo(const VkPipelineCacheCreateInfo * ob
 
      print_size_t(obj->initialDataSize, "initialDataSize", 1);
 
-     /** Note: Ignoring void* data. **/
+	 print_void_data(obj->pInitialData, int(obj->initialDataSize), "pInitialData", 0);
 
      INDENT(-4);
      PRINT_SPACE

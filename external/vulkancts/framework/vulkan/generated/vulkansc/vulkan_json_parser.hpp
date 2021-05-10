@@ -89,7 +89,7 @@ public:
 private:
     std::vector<void*> m_ptrVec;
 };
-static GlobalMem s_globalMem;
+static thread_local GlobalMem s_globalMem;
 
 // To make sure the generated data is consistent across platforms,
 // we typecast to 32-bit.
@@ -6358,8 +6358,15 @@ static void parse_VkPipelineCacheCreateInfo(const char* s, Json::Value& obj, VkP
 
      parse_size_t("initialDataSize", obj["initialDataSize"], (o.initialDataSize));
 
-     /** Note: Ignoring void* data. **/
-
+	 if (o.initialDataSize > 0U)
+	 {
+		 void* data = (char*)malloc(o.initialDataSize);
+		 s_globalMem.addPtr(data);
+		 parse_void_data("pInitialData", obj["pInitialData"], data, int(o.initialDataSize));
+		 o.pInitialData = data;
+	 }
+	 else
+		 o.pInitialData = NULL;
 }
 
 static void parse_VkSpecializationMapEntry(const char* s, Json::Value& obj, VkSpecializationMapEntry& o) {

@@ -1105,16 +1105,23 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
 	normFuncs = {
 		"createGraphicsPipelines"		: "\t\treturn createGraphicsPipelinesHandlerNorm(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);",
 		"createComputePipelines"		: "\t\treturn createComputePipelinesHandlerNorm(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);",
+		"createSampler"					: "\t\treturn createSamplerHandlerNorm(device, pCreateInfo, pAllocator, pSampler);",
+		"createSamplerYcbcrConversion"	: "\t\treturn createSamplerYcbcrConversionHandlerNorm(device, pCreateInfo, pAllocator, pYcbcrConversion);",
+		"createDescriptorSetLayout"		: "\t\treturn createDescriptorSetLayoutHandlerNorm(device, pCreateInfo, pAllocator, pSetLayout);",
+		"createPipelineLayout"			: "\t\treturn createPipelineLayoutHandlerNorm(device, pCreateInfo, pAllocator, pPipelineLayout);",
+		"createRenderPass"				: "\t\treturn createRenderPassHandlerNorm(device, pCreateInfo, pAllocator, pRenderPass);",
+		"createRenderPass2"				: "\t\treturn createRenderPass2HandlerNorm(device, pCreateInfo, pAllocator, pRenderPass);",
+		"createCommandPool"				: "\t\treturn createCommandPoolHandlerNorm(device, pCreateInfo, pAllocator, pCommandPool);",
+		"resetCommandPool"				: "\t\treturn resetCommandPoolHandlerNorm(device, commandPool, flags);",
 	}
 	statFuncs = {
-		"createDescriptorSetLayout"		: "\t\tcreateDescriptorSetLayoutHandler(device, pCreateInfo, pAllocator, pSetLayout);",
-		"destroyDescriptorSetLayout"	: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(descriptorSetLayout,descriptorSetLayoutRequestCount,1);\n\t}",
+		"destroyDevice"					: "\t\tdestroyDeviceHandler(device, pAllocator);",
+		"createDescriptorSetLayout"		: "\t\tcreateDescriptorSetLayoutHandlerStat(device, pCreateInfo, pAllocator, pSetLayout);",
+		"destroyDescriptorSetLayout"	: "\t\tdestroyDescriptorSetLayoutHandler(device, descriptorSetLayout, pAllocator);",
 		"createImageView"				: "\t\tcreateImageViewHandler(device, pCreateInfo, pAllocator, pView);",
 		"destroyImageView"				: "\t\tdestroyImageViewHandler(device, imageView, pAllocator);",
 		"createSemaphore"				: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(semaphoreRequestCount,1);\n\t\t*pSemaphore = Handle<HANDLE_TYPE_SEMAPHORE>(m_resourceInterface->incResourceCounter());\n\t}",
 		"destroySemaphore"				: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(semaphore,semaphoreRequestCount,1);\n\t}",
-		"allocateCommandBuffers"		: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(commandBufferRequestCount,pAllocateInfo->commandBufferCount);\n\t\t*pCommandBuffers = (VkCommandBuffer)m_resourceInterface->incResourceCounter();\n\t}",
-		"freeCommandBuffers"			: "\t{\n\t\tDDSTAT_LOCK();\n\t\tfor (deUint32 i = 0; i < commandBufferCount; ++i)\n\t\t\tif (pCommandBuffers[i] != DE_NULL)\n\t\t\t\tm_resourceInterface->getStatCurrent().commandBufferRequestCount -= 1;\n\t}",
 		"createFence"					: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(fenceRequestCount,1);\n\t\t*pFence = Handle<HANDLE_TYPE_FENCE>(m_resourceInterface->incResourceCounter());\n\t}",
 		"destroyFence"					: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(fence,fenceRequestCount,1);\n\t}",
 		"allocateMemory"				: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(deviceMemoryRequestCount,1);\n\t\t*pMemory = Handle<HANDLE_TYPE_DEVICE_MEMORY>(m_resourceInterface->incResourceCounter());\n\t}",
@@ -1127,23 +1134,26 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
 		"createQueryPool"				: "\t\tcreateQueryPoolHandler(device, pCreateInfo, pAllocator, pQueryPool);",
 		"createBufferView"				: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(bufferViewRequestCount,1);\n\t\t*pView = Handle<HANDLE_TYPE_BUFFER_VIEW>(m_resourceInterface->incResourceCounter());\n\t}",
 		"destroyBufferView"				: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(bufferView,bufferViewRequestCount,1);\n\t}",
-		"createPipelineLayout"			: "\t\tcreatePipelineLayoutHandler(device, pCreateInfo, pAllocator, pPipelineLayout);",
+		"createPipelineLayout"			: "\t\tcreatePipelineLayoutHandlerStat(device, pCreateInfo, pAllocator, pPipelineLayout);",
 		"destroyPipelineLayout"			: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(pipelineLayout,pipelineLayoutRequestCount,1);\n\t}",
-		"createRenderPass"				: "\t\tcreateRenderPassHandler(device, pCreateInfo, pAllocator, pRenderPass);",
-		"createRenderPass2"				: "\t\tcreateRenderPass2Handler(device, pCreateInfo, pAllocator, pRenderPass);",
+		"createRenderPass"				: "\t\tcreateRenderPassHandlerStat(device, pCreateInfo, pAllocator, pRenderPass);",
+		"createRenderPass2"				: "\t\tcreateRenderPass2HandlerStat(device, pCreateInfo, pAllocator, pRenderPass);",
 		"destroyRenderPass"				: "\t\tdestroyRenderPassHandler(device, renderPass, pAllocator);",
 		"createGraphicsPipelines"		: "\t\tcreateGraphicsPipelinesHandlerStat(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);",
 		"createComputePipelines"		: "\t\tcreateComputePipelinesHandlerStat(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);",
 		"destroyPipeline"				: "\t\tdestroyPipelineHandler(device, pipeline, pAllocator);",
-		"createSampler"					: "\t\tcreateSamplerHandler(device, pCreateInfo, pAllocator, pSampler);",
+		"createSampler"					: "\t\tcreateSamplerHandlerStat(device, pCreateInfo, pAllocator, pSampler);",
 		"destroySampler"				: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(sampler,samplerRequestCount,1);\n\t}",
 		"createDescriptorPool"			: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(descriptorPoolRequestCount,1);\n\t\t*pDescriptorPool = Handle<HANDLE_TYPE_DESCRIPTOR_POOL>(m_resourceInterface->incResourceCounter());\n\t}",
 		"allocateDescriptorSets"		: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(descriptorSetRequestCount,pAllocateInfo->descriptorSetCount);\n\t\t*pDescriptorSets = Handle<HANDLE_TYPE_DESCRIPTOR_SET>(m_resourceInterface->incResourceCounter());\n\t}",
 		"freeDescriptorSets"			: "\t{\n\t\tDDSTAT_LOCK();\n\t\tfor(deUint32 i=0; i<descriptorSetCount; ++i)\n\t\t\tDDSTAT_HANDLE_DESTROY_IF(pDescriptorSets[i],descriptorSetRequestCount,1);\n\t}",
 		"createFramebuffer"				: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(framebufferRequestCount,1);\n\t\t*pFramebuffer = Handle<HANDLE_TYPE_FRAMEBUFFER>(m_resourceInterface->incResourceCounter());\n\t}",
 		"destroyFramebuffer"			: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(framebuffer,framebufferRequestCount,1);\n\t}",
-		"createCommandPool"				: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(commandPoolRequestCount,1);\n\t\t*pCommandPool = Handle<HANDLE_TYPE_COMMAND_POOL>(m_resourceInterface->incResourceCounter());\n\t}",
-		"createSamplerYcbcrConversion"	: "\t\tcreateSamplerYcbcrConversionHandler(device, pCreateInfo, pAllocator, pYcbcrConversion);",
+		"createCommandPool"				: "\t\tcreateCommandPoolHandlerStat(device, pCreateInfo, pAllocator, pCommandPool);",
+		"resetCommandPool"				: "\t\tresetCommandPoolHandlerStat(device, commandPool, flags);",
+		"allocateCommandBuffers"		: "\t\tallocateCommandBuffersHandler(device, pAllocateInfo, pCommandBuffers);",
+		"freeCommandBuffers"			: "\t\tfreeCommandBuffersHandler(device, commandPool, commandBufferCount, pCommandBuffers);",
+		"createSamplerYcbcrConversion"	: "\t\tcreateSamplerYcbcrConversionHandlerStat(device, pCreateInfo, pAllocator, pYcbcrConversion);",
 		"destroySamplerYcbcrConversion"	: "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(ycbcrConversion,samplerYcbcrConversionRequestCount,1);\n\t}",
 		"getDescriptorSetLayoutSupport"	: "\t\tgetDescriptorSetLayoutSupportHandler(device, pCreateInfo, pSupport);",
 #		"" : "surfaceRequestCount",
@@ -1180,6 +1190,9 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
 				if getInterfaceName(function) in statFuncs :
 					yield "\telse"
 					yield "%s" % ( statFuncs[getInterfaceName(function)] )
+				elif getInterfaceName(function)[:3] == "cmd" :
+					yield "\telse"
+					yield "\t\tincreaseCommandBufferSize(commandBuffer, \"%s\");" % getInterfaceName(function)
 				if function.returnType in statReturns:
 					yield "\t%s" % ( statReturns[function.returnType] )
 				yield "}"

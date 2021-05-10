@@ -346,6 +346,7 @@ endif ()
 
 add_subdirectory(modules)
 add_subdirectory(external/vulkancts/modules/vulkan)
+add_subdirectory(external/vulkancts/vkscserver)
 add_subdirectory(external/openglcts)
 
 # Single-binary targets

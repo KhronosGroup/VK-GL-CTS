@@ -107,6 +107,7 @@ DE_DECLARE_COMMAND_LINE_OPT(RunnerType,					tcu::TestRunnerType);
 DE_DECLARE_COMMAND_LINE_OPT(TerminateOnFail,			bool);
 DE_DECLARE_COMMAND_LINE_OPT(SubProcess,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(SubprocessTestCount,		int);
+DE_DECLARE_COMMAND_LINE_OPT(ServerAddress,				std::string);
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -218,7 +219,8 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<RunnerType>					(DE_NULL,	"deqp-runner-type",							"Filter test cases based on runner",				s_runnerTypes,		"any")
 		<< Option<TerminateOnFail>				(DE_NULL,	"deqp-terminate-on-fail",					"Terminate the run on first failure",				s_enableNames,		"disable")
 		<< Option<SubProcess>					(DE_NULL,	"deqp-subprocess",							"Inform app that it works as subprocess (Vulkan SC only, do not use)", s_enableNames, "disable")
-		<< Option<SubprocessTestCount>			(DE_NULL,	"deqp-subprocess-test-count",				"Define number of tests performed in subprocess (Vulkan SC only)",		"64");
+		<< Option<SubprocessTestCount>			(DE_NULL,	"deqp-subprocess-test-count",				"Define number of tests performed in subprocess (Vulkan SC only)",		"64")
+		<< Option<ServerAddress>				(DE_NULL,	"deqp-server-address",						"Server address (host:port) responsible for shader compilation (Vulkan SC only)");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -946,8 +948,7 @@ const char*				CommandLine::getArchiveDir					(void) const	{ return m_cmdLine.ge
 tcu::TestRunnerType		CommandLine::getRunnerType					(void) const	{ return m_cmdLine.getOption<opt::RunnerType>();							}
 bool					CommandLine::isTerminateOnFailEnabled		(void) const	{ return m_cmdLine.getOption<opt::TerminateOnFail>();						}
 bool					CommandLine::isSubProcess					(void) const	{ return m_cmdLine.getOption<opt::SubProcess>();							}
-int						CommandLine::getSubprocessTestCount			(void) const	{ return m_cmdLine.getOption<opt::SubprocessTestCount>();					};
-
+int						CommandLine::getSubprocessTestCount			(void) const	{ return m_cmdLine.getOption<opt::SubprocessTestCount>();					}
 
 const char* CommandLine::getGLContextType (void) const
 {
@@ -1000,6 +1001,14 @@ const char* CommandLine::getEGLPixmapType (void) const
 {
 	if (m_cmdLine.hasOption<opt::EGLPixmapType>())
 		return m_cmdLine.getOption<opt::EGLPixmapType>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getServerAddress (void) const
+{
+	if (m_cmdLine.hasOption<opt::ServerAddress>())
+		return m_cmdLine.getOption<opt::ServerAddress>().c_str();
 	else
 		return DE_NULL;
 }

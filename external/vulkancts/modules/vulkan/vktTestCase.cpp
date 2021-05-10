@@ -314,16 +314,22 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 		DE_NULL											// const void*					pInitialData;
 	};
 
+	std::vector<VkPipelinePoolSize> poolSizes;
 	if (cmdLine.isSubProcess())
 	{
-		// For ResourceInterfaceStandard pipeline cache will be built on the same physical device using vkCreateDevice.
-		// For target solution - below mentioned arguments will not be necessary, because pipelineCache will be built on another machine
-		resourceInterface->importPipelineCacheData(vkp, instance, vki, physicalDevice, queueIndex, enabledFeatures, extensionPtrs);
+		resourceInterface->importPipelineCacheData(vkp, instance, vki, physicalDevice, queueIndex);
 		pcCI.initialDataSize				= resourceInterface->getCacheDataSize();
 		pcCI.pInitialData					= resourceInterface->getCacheData();
-		dmrCI								= resourceInterface->getMemoryReservation();
+		dmrCI								= resourceInterface->getStatMax();
 		dmrCI.pipelineCacheCreateInfoCount	= 1;
 		dmrCI.pPipelineCacheCreateInfos		= &pcCI;
+
+		poolSizes							= resourceInterface->getPipelinePoolSizes();
+		if (!poolSizes.empty())
+		{
+			dmrCI.pipelinePoolSizeCount		= deUint32(poolSizes.size());
+			dmrCI.pPipelinePoolSizes		= poolSizes.data();
+		}
 	}
 
 	dmrCI.pNext = deviceInfo.pNext;
@@ -404,9 +410,11 @@ private:
 #endif // CTS_USES_VULKANSC
 	const vector<string>				m_instanceExtensions;
 	const Unique<VkInstance>			m_instance;
-	const InstanceDriver				m_instanceInterface;
 #ifndef CTS_USES_VULKANSC
+	const InstanceDriver				m_instanceInterface;
 	const DebugReportCallbackPtr		m_debugReportCallback;
+#else
+	const InstanceDriverSC				m_instanceInterface;
 #endif // CTS_USES_VULKANSC
 	const VkPhysicalDevice				m_physicalDevice;
 	const deUint32						m_deviceVersion;
@@ -460,12 +468,14 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 	, m_instance						(createInstance(vkPlatform, m_usedApiVersion, m_instanceExtensions))
 #endif // CTS_USES_VULKANSC
 
-	, m_instanceInterface				(vkPlatform, *m_instance)
 #ifndef CTS_USES_VULKANSC
+	, m_instanceInterface				(vkPlatform, *m_instance)
 
 	, m_debugReportCallback				(cmdLine.isValidationEnabled()
 										 ? m_debugReportRecorder->createCallback(m_instanceInterface, m_instance.get())
 										 : DebugReportCallbackPtr())
+#else
+	, m_instanceInterface				(vkPlatform, *m_instance, cmdLine, resourceInterface)
 #endif // CTS_USES_VULKANSC
 	, m_physicalDevice					(chooseDevice(m_instanceInterface, *m_instance, cmdLine))
 	, m_deviceVersion					(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice).apiVersion)
