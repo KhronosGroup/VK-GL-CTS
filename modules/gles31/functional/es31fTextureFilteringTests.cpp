@@ -207,6 +207,9 @@ void TextureCubeArrayFilteringCase::init (void)
 	if (m_internalFormat == GL_SR8_EXT && !(m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_sRGB_R8")))
 		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_R8 not supported");
 
+	if (m_internalFormat == GL_SRG8_EXT && !(m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_sRGB_RG8")))
+		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_RG8 not supported");
+
 	try
 	{
 		const glw::Functions&			gl			= m_context.getRenderContext().getFunctions();
@@ -503,6 +506,7 @@ void TextureFilteringTests::init (void)
 		{ "rgba4",			GL_RGBA4			},
 		{ "rgb5_a1",		GL_RGB5_A1			},
 		{ "sr8",			GL_SR8_EXT			},
+		{ "srg8",			GL_SRG8_EXT			},
 		{ "srgb8_alpha8",	GL_SRGB8_ALPHA8		},
 		{ "rgb10_a2",		GL_RGB10_A2			}
 	};

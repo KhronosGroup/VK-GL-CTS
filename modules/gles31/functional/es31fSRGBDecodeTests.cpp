@@ -958,6 +958,11 @@ void SRGBTestCase::init (void)
 		throw tcu::NotSupportedError("Test requires GL_EXT_texture_sRGB_decode extension");
 	}
 
+	if ( (glu::getInternalFormat(m_internalFormat) == GL_SRG8_EXT) && !(m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_sRGB_RG8")) )
+	{
+		throw tcu::NotSupportedError("Test requires GL_EXT_texture_sRGB_RG8 extension");
+	}
+
 	if ( (glu::getInternalFormat(m_internalFormat) == GL_SR8_EXT) && !(m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_sRGB_R8")) )
 	{
 		throw tcu::NotSupportedError("Test requires GL_EXT_texture_sRGB_R8 extension");
@@ -1232,6 +1237,12 @@ tcu::Vec4 SRGBTestCase::formatReferenceColor (tcu::Vec4 referenceColor)
 	{
 		case GL_SRGB8_ALPHA8:
 		{
+			return referenceColor;
+		}
+		case GL_SRG8_EXT:
+		{
+			// zero unwanted color channels
+			referenceColor.z() = 0;
 			return referenceColor;
 		}
 		case GL_SR8_EXT:
@@ -1978,6 +1989,7 @@ void SRGBDecodeTests::init (void)
 	const TestGroupConfig testGroupConfigList[] =
 	{
 		TestGroupConfig("srgba8",	"srgb decode tests using srgba internal format",	tcu::TextureFormat(tcu::TextureFormat::sRGBA, tcu::TextureFormat::UNORM_INT8)),
+		TestGroupConfig("srg8",		"srgb decode tests using srg8 internal format",		tcu::TextureFormat(tcu::TextureFormat::sRG, tcu::TextureFormat::UNORM_INT8)),
 		TestGroupConfig("sr8",		"srgb decode tests using sr8 internal format",		tcu::TextureFormat(tcu::TextureFormat::sR, tcu::TextureFormat::UNORM_INT8))
 	};
 
