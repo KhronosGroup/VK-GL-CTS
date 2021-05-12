@@ -463,6 +463,27 @@ VkDeviceAddress getBufferDeviceAddress ( const DeviceInterface&	vkd,
 										 const VkBuffer			buffer,
 										 VkDeviceSize			offset );
 
+// type used for creating a deep serialization/deserialization of top-level acceleration structures
+class SerialInfo
+{
+	std::vector<deUint64>		m_addresses;
+	std::vector<VkDeviceSize>	m_sizes;
+public:
+
+	SerialInfo() = default;
+
+	// addresses: { (owner-top-level AS address) [, (first bottom_level AS address), (second bottom_level AS address), ...] }
+	// sizes:     { (owner-top-level AS serial size) [, (first bottom_level AS serial size), (second bottom_level AS serial size), ...] }
+	SerialInfo(const std::vector<deUint64>& addresses, const std::vector<VkDeviceSize>& sizes)
+		: m_addresses(addresses), m_sizes(sizes)
+	{
+		DE_ASSERT(!addresses.empty() && addresses.size() == sizes.size());
+	}
+
+	const std::vector<deUint64>&		addresses			() const	{ return m_addresses; }
+	const std::vector<VkDeviceSize>&	sizes				() const	{ return m_sizes; }
+};
+
 class SerialStorage
 {
 public:
@@ -476,28 +497,60 @@ public:
 		SERIAL_STORAGE_SIZE_MIN
 	};
 
+	// An old fashion C-style structure that simplifies an access to the AS header
+	struct alignas(16) AccelerationStructureHeader
+	{
+		union {
+			struct {
+				deUint8	driverUUID[VK_UUID_SIZE];
+				deUint8	compactUUID[VK_UUID_SIZE];
+			};
+			deUint8		uuids[VK_UUID_SIZE * 2];
+		};
+		deUint64		serializedSize;
+		deUint64		deserializedSize;
+		deUint64		handleCount;
+		VkDeviceAddress	handleArray[1];
+	};
+
 											SerialStorage		() = delete;
 											SerialStorage		(const DeviceInterface&						vk,
 																 const VkDevice								device,
 																 Allocator&									allocator,
 																 const VkAccelerationStructureBuildTypeKHR	buildType,
 																 const VkDeviceSize							storageSize);
+	// An additional constructor for creating a deep copy of top-level AS's.
+											SerialStorage		(const DeviceInterface&						vk,
+																 const VkDevice								device,
+																 Allocator&									allocator,
+																 const VkAccelerationStructureBuildTypeKHR	buildType,
+																 const SerialInfo&							SerialInfo);
 
-	// this method will return host addres if acc was build on cpu and device addres when it was build on gpu
+	// below methods will return host addres if AS was build on cpu and device addres when it was build on gpu
 	VkDeviceOrHostAddressKHR				getAddress			(const DeviceInterface&	vk,
 																 const VkDevice			device);
-	// this method retuns host addres regardles of where acc was build
-	VkDeviceOrHostAddressConstKHR			getHostAddressConst	();
 	VkDeviceOrHostAddressConstKHR			getAddressConst		(const DeviceInterface&	vk,
 																 const VkDevice			device);
-	VkDeviceSize							getStorageSize		();
+
+	// this methods retun host address regardless of where AS was built
+	VkDeviceOrHostAddressKHR				getHostAddress		(VkDeviceSize			offset = 0);
+	VkDeviceOrHostAddressConstKHR			getHostAddressConst	(VkDeviceSize			offset = 0);
+
+	// works the similar way as getHostAddressConst() but returns more readable/intuitive object
+	AccelerationStructureHeader*			getASHeader			();
+	bool									hasDeepFormat		() const;
+	de::SharedPtr<SerialStorage>			getBottomStorage	(deUint32			index) const;
+
+	VkDeviceSize							getStorageSize		() const;
+	const SerialInfo&						getSerialInfo		() const;
 	deUint64								getDeserializedSize	();
 
 protected:
-	VkAccelerationStructureBuildTypeKHR		m_buildType;
-	de::MovePtr<BufferWithMemory>			m_buffer;
-	VkDeviceSize							m_storageSize;
-
+	const VkAccelerationStructureBuildTypeKHR	m_buildType;
+	const VkDeviceSize							m_storageSize;
+	const SerialInfo							m_serialInfo;
+	de::MovePtr<BufferWithMemory>				m_buffer;
+	std::vector<de::SharedPtr<SerialStorage>>	m_bottoms;
 };
 
 class BottomLevelAccelerationStructure
@@ -663,6 +716,14 @@ public:
 																										 const VkCommandBuffer						cmdBuffer,
 																										 SerialStorage*								storage) = DE_NULL;
 
+	virtual std::vector<VkDeviceSize>								getSerializingSizes					(const DeviceInterface&						vk,
+																										 const VkDevice								device,
+																										 const VkQueue								queue,
+																										 const deUint32								queueFamilyIndex) = DE_NULL;
+
+	virtual std::vector<deUint64>									getSerializingAddresses				(const DeviceInterface&						vk,
+																										 const VkDevice								device) const = DE_NULL;
+
 	// helper methods for typical acceleration structure creation tasks
 	void															createAndBuild						(const DeviceInterface&						vk,
 																										 const VkDevice								device,
@@ -696,6 +757,12 @@ protected:
 	VkDeviceSize													m_structureSize;
 	VkDeviceSize													m_updateScratchSize;
 	VkDeviceSize													m_buildScratchSize;
+
+	virtual void													createAndDeserializeBottoms			(const DeviceInterface&						vk,
+																										 const VkDevice								device,
+																										 const VkCommandBuffer						cmdBuffer,
+																										 Allocator&									allocator,
+																										 SerialStorage*								storage) = DE_NULL;
 };
 
 de::MovePtr<TopLevelAccelerationStructure> makeTopLevelAccelerationStructure ();

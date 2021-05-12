@@ -27,6 +27,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkBarrierUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "deStringUtil.hpp"
 
@@ -350,6 +351,23 @@ static inline VkDeviceOrHostAddressKHR makeDeviceOrHostAddressKHR (const DeviceI
 	return result;
 }
 
+static inline Move<VkQueryPool> makeQueryPool (const DeviceInterface&		vk,
+											   const VkDevice				device,
+											   const VkQueryType			queryType,
+											   deUint32					queryCount)
+{
+	const VkQueryPoolCreateInfo				queryPoolCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,		// sType
+		DE_NULL,										// pNext
+		(VkQueryPoolCreateFlags)0,						// flags
+		queryType,										// queryType
+		queryCount,										// queryCount
+		0u,												// pipelineStatistics
+	};
+	return createQueryPool(vk, device, &queryPoolCreateInfo);
+}
+
 static inline VkAccelerationStructureGeometryDataKHR makeVkAccelerationStructureGeometryDataKHR (const VkAccelerationStructureGeometryTrianglesDataKHR& triangles)
 {
 	VkAccelerationStructureGeometryDataKHR result;
@@ -536,8 +554,8 @@ SerialStorage::SerialStorage (const DeviceInterface&									vk,
 							  Allocator&												allocator,
 							  const VkAccelerationStructureBuildTypeKHR					buildType,
 							  const VkDeviceSize										storageSize)
-	: m_buildType (buildType)
-	, m_storageSize(storageSize)
+	: m_buildType		(buildType)
+	, m_storageSize		(storageSize)
 {
 	const VkBufferCreateInfo	bufferCreateInfo	= makeBufferCreateInfo(storageSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 	try
@@ -551,6 +569,41 @@ SerialStorage::SerialStorage (const DeviceInterface&									vk,
 	}
 }
 
+SerialStorage::SerialStorage (const DeviceInterface&						vk,
+							  const VkDevice								device,
+							  Allocator&									allocator,
+							  const VkAccelerationStructureBuildTypeKHR		buildType,
+							  const SerialInfo&								serialInfo)
+	: m_buildType		(buildType)
+	, m_storageSize		(serialInfo.sizes()[0])	// raise assertion if serialInfo is empty
+	, m_serialInfo		(serialInfo)
+{
+	DE_ASSERT(serialInfo.sizes().size() >= 2u);
+
+	// create buffer for top-level acceleration structure
+	{
+		const VkBufferCreateInfo	bufferCreateInfo	= makeBufferCreateInfo(m_storageSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+		m_buffer										= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+	}
+
+	// create buffers for bottom-level acceleration structures
+	{
+		std::vector<deUint64>	addrs;
+
+		for (std::size_t i = 1; i < serialInfo.addresses().size(); ++i)
+		{
+			const deUint64& lookAddr = serialInfo.addresses()[i];
+			auto end = addrs.end();
+			auto match = std::find_if(addrs.begin(), end, [&](const deUint64& item){ return item == lookAddr; });
+			if (match == end)
+			{
+				addrs.emplace_back(lookAddr);
+				m_bottoms.emplace_back(de::SharedPtr<SerialStorage>(new SerialStorage(vk, device, allocator, buildType, serialInfo.sizes()[i])));
+			}
+		}
+	}
+}
+
 VkDeviceOrHostAddressKHR SerialStorage::getAddress (const DeviceInterface&				vk,
 													const VkDevice						device)
 {
@@ -560,9 +613,30 @@ VkDeviceOrHostAddressKHR SerialStorage::getAddress (const DeviceInterface&				vk
 		return makeDeviceOrHostAddressKHR(m_buffer->getAllocation().getHostPtr());
 }
 
-VkDeviceOrHostAddressConstKHR SerialStorage::getHostAddressConst()
+SerialStorage::AccelerationStructureHeader* SerialStorage::getASHeader ()
 {
-	return makeDeviceOrHostAddressConstKHR(m_buffer->getAllocation().getHostPtr());
+	return reinterpret_cast<AccelerationStructureHeader*>(getHostAddress().hostAddress);
+}
+
+bool SerialStorage::hasDeepFormat () const
+{
+	return (m_serialInfo.sizes().size() >= 2u);
+}
+
+de::SharedPtr<SerialStorage> SerialStorage::getBottomStorage (deUint32 index) const
+{
+	return m_bottoms[index];
+}
+
+VkDeviceOrHostAddressKHR SerialStorage::getHostAddress (VkDeviceSize offset)
+{
+	DE_ASSERT(offset < m_storageSize);
+	return makeDeviceOrHostAddressKHR(static_cast<deUint8*>(m_buffer->getAllocation().getHostPtr()) + offset);
+}
+
+VkDeviceOrHostAddressConstKHR SerialStorage::getHostAddressConst (VkDeviceSize offset)
+{
+	return makeDeviceOrHostAddressConstKHR(static_cast<deUint8*>(m_buffer->getAllocation().getHostPtr()) + offset);
 }
 
 VkDeviceOrHostAddressConstKHR SerialStorage::getAddressConst (const DeviceInterface&	vk,
@@ -574,9 +648,14 @@ VkDeviceOrHostAddressConstKHR SerialStorage::getAddressConst (const DeviceInterf
 		return getHostAddressConst();
 }
 
-VkDeviceSize SerialStorage::getStorageSize ()
+inline VkDeviceSize SerialStorage::getStorageSize () const
 {
 	return m_storageSize;
+}
+
+inline const SerialInfo& SerialStorage::getSerialInfo () const
+{
+	return m_serialInfo;
 }
 
 deUint64 SerialStorage::getDeserializedSize ()
@@ -1480,7 +1559,7 @@ void TopLevelAccelerationStructure::createAndCopyFrom (const DeviceInterface&			
 	copyFrom(vk, device, cmdBuffer, accelerationStructure, compactCopySize > 0u);
 }
 
-void TopLevelAccelerationStructure::createAndDeserializeFrom (const DeviceInterface& vk,
+void TopLevelAccelerationStructure::createAndDeserializeFrom (const DeviceInterface&					vk,
 															  const VkDevice							device,
 															  const VkCommandBuffer						cmdBuffer,
 															  Allocator&								allocator,
@@ -1490,6 +1569,7 @@ void TopLevelAccelerationStructure::createAndDeserializeFrom (const DeviceInterf
 	DE_ASSERT(storage != NULL);
 	DE_ASSERT(storage->getStorageSize() >= SerialStorage::SERIAL_STORAGE_SIZE_MIN);
 	create(vk, device, allocator, storage->getDeserializedSize(), deviceAddress);
+	if (storage->hasDeepFormat()) createAndDeserializeBottoms(vk, device, cmdBuffer, allocator, storage);
 	deserialize(vk, device, cmdBuffer, storage);
 }
 
@@ -1636,6 +1716,15 @@ public:
 																												 const VkCommandBuffer							cmdBuffer,
 																												 SerialStorage*									storage) override;
 
+	std::vector<VkDeviceSize>								getSerializingSizes									(const DeviceInterface&							vk,
+																												 const VkDevice									device,
+																												 const VkQueue									queue,
+																												 const deUint32									queueFamilyIndex) override;
+
+	std::vector<deUint64>									getSerializingAddresses								(const DeviceInterface&							vk,
+																												 const VkDevice									device) const override;
+
+
 	const VkAccelerationStructureKHR*						getPtr												(void) const override;
 
 	void													updateInstanceMatrix								(const DeviceInterface&							vk,
@@ -1664,10 +1753,23 @@ protected:
 	deUint32												m_indirectBufferStride;
 	bool													m_usePPGeometries;
 
+
 	void													prepareInstances									(const DeviceInterface&							vk,
 																												 const VkDevice									device,
 																												 VkAccelerationStructureGeometryKHR&			accelerationStructureGeometryKHR,
 																												 std::vector<deUint32>&							maxPrimitiveCounts);
+
+	void													serializeBottoms									(const DeviceInterface&							vk,
+																												 const VkDevice									device,
+																												 const VkCommandBuffer							cmdBuffer,
+																												 SerialStorage*									storage,
+																												 VkDeferredOperationKHR							deferredOperation);
+
+	void													createAndDeserializeBottoms							(const DeviceInterface&							vk,
+																												 const VkDevice									device,
+																												 const VkCommandBuffer							cmdBuffer,
+																												 Allocator&										allocator,
+																												 SerialStorage*									storage) override;
 };
 
 deUint32 TopLevelAccelerationStructureKHR::getRequiredAllocationCount (void)
@@ -2038,17 +2140,19 @@ void TopLevelAccelerationStructureKHR::serialize (const DeviceInterface&	vk,
 		VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_TO_MEMORY_INFO_KHR,	// VkStructureType						sType;
 		DE_NULL,															// const void*							pNext;
 		*(getPtr()),														// VkAccelerationStructureKHR			src;
-		storage->getAddress(vk,device),										// VkDeviceOrHostAddressKHR				dst;
+		storage->getAddress(vk, device),									// VkDeviceOrHostAddressKHR				dst;
 		VK_COPY_ACCELERATION_STRUCTURE_MODE_SERIALIZE_KHR					// VkCopyAccelerationStructureModeKHR	mode;
 	};
 
 	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 	{
 		vk.cmdCopyAccelerationStructureToMemoryKHR(cmdBuffer, &copyAccelerationStructureInfo);
+		if (storage->hasDeepFormat()) serializeBottoms(vk, device, cmdBuffer, storage, DE_NULL);
 	}
 	else if (!m_deferredOperation)
 	{
 		VK_CHECK(vk.copyAccelerationStructureToMemoryKHR(device, DE_NULL, &copyAccelerationStructureInfo));
+		if (storage->hasDeepFormat()) serializeBottoms(vk, device, cmdBuffer, storage, DE_NULL);
 	}
 	else
 	{
@@ -2058,6 +2162,7 @@ void TopLevelAccelerationStructureKHR::serialize (const DeviceInterface&	vk,
 		const VkResult result = vk.copyAccelerationStructureToMemoryKHR(device, deferredOperation, &copyAccelerationStructureInfo);
 
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
+		if (storage->hasDeepFormat()) serializeBottoms(vk, device, cmdBuffer, storage, deferredOperation);
 
 		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 	}
@@ -2107,6 +2212,154 @@ void TopLevelAccelerationStructureKHR::deserialize (const DeviceInterface&	vk,
 
 		cmdPipelineMemoryBarrier(vk, cmdBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, &memBarrier);
 	}
+}
+
+void TopLevelAccelerationStructureKHR::serializeBottoms (const DeviceInterface&	vk,
+														 const VkDevice			device,
+														 const VkCommandBuffer	cmdBuffer,
+														 SerialStorage*			storage,
+														 VkDeferredOperationKHR	deferredOperation)
+{
+	DE_UNREF(deferredOperation);
+	DE_ASSERT(storage->hasDeepFormat());
+
+	const std::vector<deUint64>&	addresses		= storage->getSerialInfo().addresses();
+	const std::size_t				cbottoms		= m_bottomLevelInstances.size();
+
+	deUint32						storageIndex	= 0;
+	std::vector<deUint64>			matches;
+
+	for (std::size_t i = 0; i < cbottoms; ++i)
+	{
+		const deUint64& lookAddr	= addresses[i+1];
+		auto			end			= matches.end();
+		auto			match		= std::find_if(matches.begin(), end, [&](const deUint64& item){ return item == lookAddr; });
+		if (match == end)
+		{
+			matches.emplace_back(lookAddr);
+			m_bottomLevelInstances[i].get()->serialize(vk, device, cmdBuffer, storage->getBottomStorage(storageIndex).get());
+			storageIndex += 1;
+		}
+	}
+}
+
+void TopLevelAccelerationStructureKHR::createAndDeserializeBottoms (const DeviceInterface&	vk,
+																	const VkDevice			device,
+																	const VkCommandBuffer	cmdBuffer,
+																	Allocator&				allocator,
+																	SerialStorage*			storage)
+{
+	DE_ASSERT(storage->hasDeepFormat());
+	DE_ASSERT(m_bottomLevelInstances.size() == 0);
+
+	const std::vector<deUint64>&					addresses		= storage->getSerialInfo().addresses();
+	const std::size_t								cbottoms		= addresses.size() - 1;
+	deUint32										storageIndex	= 0;
+	std::vector<std::pair<deUint64, std::size_t>>	matches;
+
+	for (std::size_t i = 0; i < cbottoms; ++i)
+	{
+		const deUint64& lookAddr	= addresses[i+1];
+		auto			end			= matches.end();
+		auto			match		= std::find_if(matches.begin(), end, [&](const std::pair<deUint64, deUint32>& item){ return item.first == lookAddr; });
+		if (match != end)
+		{
+			m_bottomLevelInstances .emplace_back(m_bottomLevelInstances[match->second]);
+		}
+		else
+		{
+			de::MovePtr<BottomLevelAccelerationStructure> blas = makeBottomLevelAccelerationStructure();
+			blas->createAndDeserializeFrom(vk, device, cmdBuffer, allocator, storage->getBottomStorage(storageIndex).get());
+			m_bottomLevelInstances.emplace_back(de::SharedPtr<BottomLevelAccelerationStructure>(blas.release()));
+			matches.emplace_back(lookAddr, i);
+			storageIndex += 1;
+		}
+	}
+
+	std::vector<deUint64>						newAddresses	= getSerializingAddresses(vk, device);
+	DE_ASSERT(addresses.size() == newAddresses.size());
+
+	SerialStorage::AccelerationStructureHeader* header			= storage->getASHeader();
+	DE_ASSERT(cbottoms ==header->handleCount);
+
+	// finally update bottom-level AS addresses before top-level AS deserialization
+	for (std::size_t i = 0; i < cbottoms; ++i)
+	{
+		header->handleArray[i] = newAddresses[i+1];
+	}
+}
+
+std::vector<VkDeviceSize> TopLevelAccelerationStructureKHR::getSerializingSizes (const DeviceInterface&	vk,
+																				 const VkDevice			device,
+																				 const VkQueue			queue,
+																				 const deUint32			queueFamilyIndex)
+{
+	const deUint32							queryCount(deUint32(m_bottomLevelInstances.size()) + 1);
+	std::vector<VkAccelerationStructureKHR>	handles(queryCount);
+	std::vector<VkDeviceSize>				sizes(queryCount);
+
+	handles[0] = m_accelerationStructureKHR.get();
+
+	for (deUint32 h = 1; h < queryCount; ++h)
+		handles[h] = *m_bottomLevelInstances[h-1].get()->getPtr();
+
+	if (VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR == m_buildType)
+		queryAccelerationStructureSize(vk, device, DE_NULL, handles, m_buildType, DE_NULL, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR, 0u, sizes);
+	else
+	{
+		const Move<VkCommandPool>	cmdPool		= createCommandPool(vk, device, 0, queueFamilyIndex);
+		const Move<VkCommandBuffer>	cmdBuffer	= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		const Move<VkQueryPool>		queryPool	= makeQueryPool(vk, device, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR, queryCount);
+
+		beginCommandBuffer(vk, *cmdBuffer);
+		queryAccelerationStructureSize(vk, device, *cmdBuffer, handles, m_buildType, *queryPool, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR, 0u, sizes);
+		endCommandBuffer(vk, *cmdBuffer);
+		submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+
+		VK_CHECK(vk.getQueryPoolResults(device, *queryPool, 0u, queryCount, queryCount * sizeof(VkDeviceSize), sizes.data(), sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+	}
+
+	return sizes;
+}
+
+std::vector<deUint64> TopLevelAccelerationStructureKHR::getSerializingAddresses (const DeviceInterface& vk, const VkDevice device) const
+{
+	std::vector<deUint64> result(m_bottomLevelInstances.size() + 1);
+
+	VkAccelerationStructureDeviceAddressInfoKHR asDeviceAddressInfo =
+	{
+		VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR,	// VkStructureType				sType;
+		DE_NULL,															// const void*					pNext;
+		DE_NULL																// VkAccelerationStructureKHR	accelerationStructure;
+	};
+
+	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+	{
+		asDeviceAddressInfo.accelerationStructure = m_accelerationStructureKHR.get();
+		result[0] = vk.getAccelerationStructureDeviceAddressKHR(device, &asDeviceAddressInfo);
+	}
+	else
+	{
+		result[0] = deUint64(getPtr()->getInternal());
+	}
+
+	for (size_t instanceNdx = 0; instanceNdx < m_bottomLevelInstances.size(); ++instanceNdx)
+	{
+		const BottomLevelAccelerationStructure&		bottomLevelAccelerationStructure	= *m_bottomLevelInstances[instanceNdx];
+		const VkAccelerationStructureKHR			accelerationStructureKHR			= *bottomLevelAccelerationStructure.getPtr();
+
+		if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+		{
+			asDeviceAddressInfo.accelerationStructure = accelerationStructureKHR;
+			result[instanceNdx+1] = vk.getAccelerationStructureDeviceAddressKHR(device, &asDeviceAddressInfo);
+		}
+		else
+		{
+			result[instanceNdx+1] = deUint64(accelerationStructureKHR.getInternal());
+		}
+	}
+
+	return result;
 }
 
 const VkAccelerationStructureKHR* TopLevelAccelerationStructureKHR::getPtr (void) const
