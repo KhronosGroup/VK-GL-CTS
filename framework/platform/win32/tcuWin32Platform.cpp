@@ -28,7 +28,9 @@
 
 // MinGW doesn't define this in its headers, but
 // still has the export in the libs.
+#if defined(__MINGW32__)
 extern "C" WINUSERAPI WINBOOL WINAPI SetProcessDPIAware(VOID);
+#endif
 
 namespace tcu
 {
