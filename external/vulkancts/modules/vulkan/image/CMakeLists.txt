@@ -33,6 +33,8 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageTranscodingSupportTests.hpp
 	vktImageMisalignedCubeTests.cpp
 	vktImageMisalignedCubeTests.hpp
+	vktImageSampleDrawnCubeFaceTests.cpp
+	vktImageSampleDrawnCubeFaceTests.hpp
 	vktImageSubresourceLayoutTests.cpp
 	vktImageSubresourceLayoutTests.hpp
 	vktImageMismatchedWriteOpTests.cpp

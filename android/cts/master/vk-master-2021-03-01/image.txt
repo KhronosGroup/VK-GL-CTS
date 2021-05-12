@@ -6636,3 +6636,4 @@ dEQP-VK.image.mismatched_write_op.mismatched_signedness_and_type.rgb10a2ui_from_
 dEQP-VK.image.mismatched_write_op.mismatched_signedness_and_type.rgba8ui_from_r8ui
 dEQP-VK.image.mismatched_write_op.mismatched_signedness_and_type.rg8ui_from_r8ui
 dEQP-VK.image.mismatched_write_op.mismatched_signedness_and_type.r8ui_from_r8ui
+dEQP-VK.image.sample_cubemap.write_face_0

@@ -272,7 +272,9 @@ void	clearColorImage							(const DeviceInterface&							vk,
 												 tcu::Vec4										clearColor,
 												 vk::VkImageLayout								oldLayout,
 												 vk::VkImageLayout								newLayout,
-												 vk::VkPipelineStageFlags						dstStageFlags);
+												 vk::VkPipelineStageFlags						dstStageFlags,
+												 deUint32										baseArrayLayer = 0u,
+												 deUint32										layerCount = 1u);
 
 /*--------------------------------------------------------------------*//*!
  * Initialize color image with a chessboard pattern

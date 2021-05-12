@@ -186,6 +186,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/image/vktImageMultisampleLoadStoreTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageMutableTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageQualifiersTests.cpp \
+	external/vulkancts/modules/vulkan/image/vktImageSampleDrawnCubeFaceTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageSizeTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageSubresourceLayoutTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageTests.cpp \
