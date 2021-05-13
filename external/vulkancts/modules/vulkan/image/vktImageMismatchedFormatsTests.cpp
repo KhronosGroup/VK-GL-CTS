@@ -265,7 +265,14 @@ void MismatchedFormatTest::checkSupport (Context& context) const
 		fillImageCreateInfo(imageCreateInfo, m_type, m_format);
 
 		if (!checkSparseImageFormatSupport(physicalDevice, vki, imageCreateInfo))
+		{
 			TCU_THROW(NotSupportedError, "The image format does not support sparse operations.");
+		}
+
+		if (!getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice()).shaderResourceResidency)
+		{
+			TCU_THROW(NotSupportedError, "Shader resource residency not supported");
+		}
 	}
 
 	VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(vki, physicalDevice, m_format);
