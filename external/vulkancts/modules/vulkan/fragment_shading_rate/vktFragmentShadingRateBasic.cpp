@@ -69,13 +69,20 @@ using namespace std;
 
 #define NUM_TRIANGLES (9*9)
 
+enum class AttachmentUsage
+{
+	NO_ATTACHMENT = 0,
+	NO_ATTACHMENT_PTR,
+	WITH_ATTACHMENT,
+};
+
 struct CaseDef
 {
 	deInt32 seed;
 	VkExtent2D framebufferDim;
 	VkSampleCountFlagBits samples;
 	VkFragmentShadingRateCombinerOpKHR combinerOp[2];
-	bool useAttachment;
+	AttachmentUsage attachmentUsage;
 	bool shaderWritesRate;
 	bool geometryShader;
 	bool useDynamicState;
@@ -95,6 +102,11 @@ struct CaseDef
 	bool sampleLocations;
 	bool sampleShadingEnable;
 	bool sampleShadingInput;
+
+	bool useAttachment () const
+	{
+		return (attachmentUsage == AttachmentUsage::WITH_ATTACHMENT);
+	}
 };
 
 class FSRTestInstance : public TestInstance
@@ -245,7 +257,7 @@ void FSRTestCase::checkSupport(Context& context) const
 	if (m_data.numColorLayers > imageProperties.maxArrayLayers)
 		TCU_THROW(NotSupportedError, "color buffer layers not supported");
 
-	if (m_data.useAttachment && !context.getFragmentShadingRateFeatures().attachmentFragmentShadingRate)
+	if (m_data.useAttachment() && !context.getFragmentShadingRateFeatures().attachmentFragmentShadingRate)
 		TCU_THROW(NotSupportedError, "attachmentFragmentShadingRate not supported");
 
 	if (!context.getFragmentShadingRateProperties().fragmentShadingRateNonTrivialCombinerOps &&
@@ -843,7 +855,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 	VkDeviceSize srFillBufferSize = numSRLayers * maxSRWidth * maxSRHeight * 32/*4 component 64-bit*/;
 	de::MovePtr<BufferWithMemory> srFillBuffer;
 	deUint8 *fillPtr = DE_NULL;
-	if (m_data.useAttachment)
+	if (m_data.useAttachment())
 	{
 		srFillBuffer = CreateCachedBuffer(vk, device, allocator, makeBufferCreateInfo(srFillBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
 		fillPtr = (deUint8 *)srFillBuffer->getAllocation().getHostPtr();
@@ -1172,7 +1184,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 	for (deUint32 modeIdx = 0; modeIdx < ATTACHMENT_MODE_COUNT; ++modeIdx)
 	{
 		// If we're not using an attachment, don't test all the different attachment modes
-		if (modeIdx != ATTACHMENT_MODE_DEFAULT && !m_data.useAttachment)
+		if (modeIdx != ATTACHMENT_MODE_DEFAULT && !m_data.useAttachment())
 			continue;
 
 		// Consider all uint formats possible
@@ -1213,7 +1225,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				continue;
 
 			// Go through the loop only once when not using an attachment
-			if (!m_data.useAttachment &&
+			if (!m_data.useAttachment() &&
 				(srTexelWidth != minFragmentShadingRateAttachmentTexelSize.width ||
 				 srTexelHeight != minFragmentShadingRateAttachmentTexelSize.height ||
 				 formatIdx != 0))
@@ -1263,7 +1275,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 										VK_IMAGE_USAGE_TRANSFER_DST_BIT |
 										VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
-			if (m_data.useAttachment)
+			if (m_data.useAttachment())
 			{
 				const VkImageCreateInfo			imageCreateInfo			=
 				{
@@ -1384,7 +1396,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			std::vector<VkImageView> attachments;
 			attachments.push_back(*cbImageView);
 			deUint32 dsAttachmentIdx = 0, srAttachmentIdx = 0;
-			if (m_data.useAttachment)
+			if (m_data.useAttachment())
 			{
 				srAttachmentIdx = (deUint32)attachments.size();
 				attachments.push_back(*srImageView);
@@ -1422,29 +1434,31 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				0,															// aspectMask
 			};
 
-			const VkFragmentShadingRateAttachmentInfoKHR shadingRateAttachmentInfo =
+			const bool										noAttachmentPtr				= (m_data.attachmentUsage == AttachmentUsage::NO_ATTACHMENT_PTR);
+			const VkFragmentShadingRateAttachmentInfoKHR	shadingRateAttachmentInfo	=
 			{
 				VK_STRUCTURE_TYPE_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR,							// VkStructureType				  sType;
 				DE_NULL,																				// const void*					  pNext;
-				&fragmentShadingRateAttachment,															// const VkAttachmentReference2*	pFragmentShadingRateAttachment;
+				(noAttachmentPtr ? nullptr : &fragmentShadingRateAttachment),							// const VkAttachmentReference2*	pFragmentShadingRateAttachment;
 				{ srTexelWidth, srTexelHeight },														// VkExtent2D					   shadingRateAttachmentTexelSize;
 			};
 
+			const bool						useAttachmentInfo	= (m_data.attachmentUsage != AttachmentUsage::NO_ATTACHMENT);
 			const VkSubpassDescription2		subpassDesc			=
 			{
-				VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,				// sType
-				m_data.useAttachment ? &shadingRateAttachmentInfo : DE_NULL,	// pNext;
-				(vk::VkSubpassDescriptionFlags)0,						// flags
-				vk::VK_PIPELINE_BIND_POINT_GRAPHICS,					// pipelineBindPoint
-				m_data.multiView ? 0x3 : 0u,							// viewMask
-				0u,														// inputCount
-				DE_NULL,												// pInputAttachments
-				1,														// colorCount
-				&colorAttachmentReference,								// pColorAttachments
-				DE_NULL,												// pResolveAttachments
+				VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,						// sType
+				(useAttachmentInfo ? &shadingRateAttachmentInfo : nullptr),		// pNext;
+				(vk::VkSubpassDescriptionFlags)0,								// flags
+				vk::VK_PIPELINE_BIND_POINT_GRAPHICS,							// pipelineBindPoint
+				m_data.multiView ? 0x3 : 0u,									// viewMask
+				0u,																// inputCount
+				DE_NULL,														// pInputAttachments
+				1,																// colorCount
+				&colorAttachmentReference,										// pColorAttachments
+				DE_NULL,														// pResolveAttachments
 				m_data.useDepthStencil ? &depthAttachmentReference : DE_NULL,	// depthStencilAttachment
-				0u,														// preserveCount
-				DE_NULL,												// pPreserveAttachments
+				0u,																// preserveCount
+				DE_NULL,														// pPreserveAttachments
 			};
 
 			std::vector<VkAttachmentDescription2> attachmentDescriptions;
@@ -1463,7 +1477,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 					VK_IMAGE_LAYOUT_GENERAL						// VkImageLayout					finalLayout;
 				}
 			);
-			if (m_data.useAttachment)
+			if (m_data.useAttachment())
 				attachmentDescriptions.push_back(
 				{
 					VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,	// VkStructureType sType;
@@ -1528,7 +1542,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 					DE_NULL														//  const VkFormat*		pViewFormats;
 				}
 			);
-			if (m_data.useAttachment)
+			if (m_data.useAttachment())
 				framebufferAttachmentImageInfo.push_back(
 				{
 					VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO,		//  VkStructureType		sType;
@@ -1924,7 +1938,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			}
 
 			// Initialize shading rate image with varying values
-			if (m_data.useAttachment)
+			if (m_data.useAttachment())
 			{
 				imageBarrier.image = **srImage;
 				imageBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
@@ -2179,7 +2193,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 							deInt32 primitiveRate = m_data.shaderWritesRate ? PrimIDToPrimitiveShadingRate(primID) : 0;
 
 							deInt32 attachmentLayer = m_data.srLayered ? layer : 0;
-							deInt32 attachmentRate = m_data.useAttachment ? fillPtr[srFillBpp*((attachmentLayer * srHeight + (y / srTexelHeight)) * srWidth + (x / srTexelWidth))] : 0;
+							deInt32 attachmentRate = m_data.useAttachment() ? fillPtr[srFillBpp*((attachmentLayer * srHeight + (y / srTexelHeight)) * srWidth + (x / srTexelWidth))] : 0;
 
 							// Get mask of allowed shading rates
 							deInt32 expectedMasks = Simulate(pipelineRate, primitiveRate, attachmentRate);
@@ -2366,6 +2380,13 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 		const char*				description;
 	} TestGroupCase2D;
 
+	typedef struct
+	{
+		AttachmentUsage			usage;
+		const char*				name;
+		const char*				description;
+	} TestGroupUsageCase;
+
 	TestGroupCase groupCases[] =
 	{
 		{ 0,	"basic",				"basic tests"					},
@@ -2392,10 +2413,11 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 		{ 0,	"static",	"uses static shading rate state"	},
 	};
 
-	TestGroupCase attCases[] =
+	TestGroupUsageCase attCases[] =
 	{
-		{ 0,	"noattachment",	"no shading rate attachment"	},
-		{ 1,	"attachment",	"has shading rate attachment"	},
+		{ AttachmentUsage::NO_ATTACHMENT,		"noattachment",		"no shading rate attachment"			},
+		{ AttachmentUsage::WITH_ATTACHMENT,		"attachment",		"has shading rate attachment"			},
+		{ AttachmentUsage::NO_ATTACHMENT_PTR,	"noattachmentptr",	"no shading rate attachment pointer"	},
 	};
 
 	TestGroupCase shdCases[] =
@@ -2505,7 +2527,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 											continue;
 
 										// Can't test layered shading rate attachment without an attachment
-										if (srLayered && !attCases[attNdx].count)
+										if (srLayered && attCases[attNdx].usage != AttachmentUsage::WITH_ATTACHMENT)
 											continue;
 
 										CaseDef c =
@@ -2517,7 +2539,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 												(VkFragmentShadingRateCombinerOpKHR)combCases[cmb0Ndx].count,
 												(VkFragmentShadingRateCombinerOpKHR)combCases[cmb1Ndx].count
 											},														// VkFragmentShadingRateCombinerOpKHR combinerOp[2];
-											(bool)attCases[attNdx].count,							// bool useAttachment;
+											attCases[attNdx].usage,									// AttachmentUsage attachmentUsage;
 											(bool)shdCases[shdNdx].count,							// bool shaderWritesRate;
 											(bool)geomCases[geomNdx].count,							// bool geometryShader;
 											(bool)dynCases[dynNdx].count,							// bool useDynamicState;
