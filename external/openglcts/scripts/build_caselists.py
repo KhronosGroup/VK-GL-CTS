@@ -44,6 +44,7 @@ MODULES = [
 	Module("dEQP-GLES2",	"GLES2"),
 	Module("dEQP-GLES3",	"GLES3"),
 	Module("dEQP-GLES31",	"GLES31"),
+	Module("dEQP-GL45",		"GL45"),
 	Module("KHR-GLES3",		"GLES3"),
 	Module("KHR-GLES2",		"GLES2"),
 	Module("KHR-GLES31",	"GLES31"),
