@@ -35,6 +35,7 @@ const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&			getFragmentShade
 const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&				getFragmentShadingRateFeatures					(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV&			getFragmentShadingRateEnumsFeatures				(void) const;
 const vk::VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT&				getGlobalPriorityQueryFeaturesEXT				(void) const;
+const vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesKHR&			getGraphicsPipelineLibraryFeatures				(void) const;
 const vk::VkPhysicalDeviceHostQueryResetFeatures&						getHostQueryResetFeatures						(void) const;
 const vk::VkPhysicalDeviceImagelessFramebufferFeatures&					getImagelessFramebufferFeatures					(void) const;
 const vk::VkPhysicalDeviceImageRobustnessFeaturesEXT&					getImageRobustnessFeaturesEXT					(void) const;

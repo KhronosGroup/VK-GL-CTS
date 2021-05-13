@@ -59,6 +59,7 @@
 #include "vktPipelineNoPositionTests.hpp"
 #include "vktPipelineBindPointTests.hpp"
 #include "vktPipelineColorWriteEnableTests.hpp"
+#include "vktPipelineLibraryTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -110,6 +111,7 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createNoPositionTests				(testCtx));
 	pipelineTests->addChild(createBindPointTests				(testCtx));
 	pipelineTests->addChild(createColorWriteEnableTests			(testCtx));
+	pipelineTests->addChild(createPipelineLibraryTests			(testCtx));
 }
 
 } // anonymous

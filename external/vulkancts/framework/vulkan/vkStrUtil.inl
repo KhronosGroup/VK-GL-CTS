@@ -414,6 +414,7 @@ tcu::Format::Bitfield<32>	getDisplayPlaneAlphaFlagsKHRStr								(VkDisplayPlane
 tcu::Format::Bitfield<32>	getPerformanceCounterDescriptionFlagsKHRStr					(VkPerformanceCounterDescriptionFlagsKHR value);
 tcu::Format::Bitfield<32>	getAcquireProfilingLockFlagsKHRStr							(VkAcquireProfilingLockFlagsKHR value);
 tcu::Format::Bitfield<32>	getSubmitFlagsKHRStr										(VkSubmitFlagsKHR value);
+tcu::Format::Bitfield<32>	getGraphicsPipelineLibraryFlagsKHRStr						(VkGraphicsPipelineLibraryFlagsKHR value);
 tcu::Format::Bitfield<32>	getDebugReportFlagsEXTStr									(VkDebugReportFlagsEXT value);
 tcu::Format::Bitfield<32>	getExternalMemoryHandleTypeFlagsNVStr						(VkExternalMemoryHandleTypeFlagsNV value);
 tcu::Format::Bitfield<32>	getExternalMemoryFeatureFlagsNVStr							(VkExternalMemoryFeatureFlagsNV value);
@@ -809,6 +810,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkSubmitInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSynchronization2FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyCheckpointProperties2NV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCheckpointData2NV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGraphicsPipelineLibraryFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGraphicsPipelineLibraryPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkGraphicsPipelineLibraryCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR& value);

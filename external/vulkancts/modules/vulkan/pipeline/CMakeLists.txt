@@ -110,6 +110,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineCreationCacheControlTests.hpp
 	vktPipelineNoPositionTests.cpp
 	vktPipelineNoPositionTests.hpp
+	vktPipelineLibraryTests.cpp
+	vktPipelineLibraryTests.hpp
 	)
 
 set(DEQP_VK_PIPELINE_LIBS

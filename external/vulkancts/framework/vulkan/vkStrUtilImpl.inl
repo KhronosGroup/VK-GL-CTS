@@ -642,6 +642,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_2_NV:								return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_2_NV";
 		case VK_STRUCTURE_TYPE_CHECKPOINT_DATA_2_NV:												return "VK_STRUCTURE_TYPE_CHECKPOINT_DATA_2_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_KHR:							return "VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES_KHR:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_PROPERTIES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_PROPERTIES_NV";
@@ -3184,6 +3187,8 @@ tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT_EXT,				"VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_EARLY_RETURN_ON_FAILURE_BIT_EXT,						"VK_PIPELINE_CREATE_EARLY_RETURN_ON_FAILURE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_ALLOW_MOTION_BIT_NV,						"VK_PIPELINE_CREATE_RAY_TRACING_ALLOW_MOTION_BIT_NV"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_KHR,				"VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_KHR,							"VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE,											"VK_PIPELINE_CREATE_DISPATCH_BASE"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR,					"VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE_KHR,										"VK_PIPELINE_CREATE_DISPATCH_BASE_KHR"),
@@ -3734,6 +3739,19 @@ tcu::Format::Bitfield<32> getSubmitFlagsKHRStr (VkSubmitFlagsKHR value)
 	{
 		tcu::Format::BitDesc(VK_SUBMIT_PROTECTED_BIT_KHR,		"VK_SUBMIT_PROTECTED_BIT_KHR"),
 		tcu::Format::BitDesc(VK_SUBMIT_FLAG_BITS_MAX_ENUM_KHR,	"VK_SUBMIT_FLAG_BITS_MAX_ENUM_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getGraphicsPipelineLibraryFlagsKHRStr (VkGraphicsPipelineLibraryFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_KHR,		"VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_KHR,	"VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_KHR,				"VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_KHR"),
+		tcu::Format::BitDesc(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_KHR,	"VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_GRAPHICS_PIPELINE_LIBRARY_FLAG_BITS_MAX_ENUM_KHR,				"VK_GRAPHICS_PIPELINE_LIBRARY_FLAG_BITS_MAX_ENUM_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -8445,6 +8463,37 @@ std::ostream& operator<< (std::ostream& s, const VkCheckpointData2NV& value)
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tstage = " << value.stage << '\n';
 	s << "\tpCheckpointMarker = " << value.pCheckpointMarker << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceGraphicsPipelineLibraryFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceGraphicsPipelineLibraryFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tgraphicsPipelineLibrary = " << value.graphicsPipelineLibrary << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceGraphicsPipelineLibraryPropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceGraphicsPipelineLibraryPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tgraphicsPipelineLibraryFastLinking = " << value.graphicsPipelineLibraryFastLinking << '\n';
+	s << "\tgraphicsPipelineLibraryIndependentInterpolationDecoration = " << value.graphicsPipelineLibraryIndependentInterpolationDecoration << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkGraphicsPipelineLibraryCreateInfoKHR& value)
+{
+	s << "VkGraphicsPipelineLibraryCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getGraphicsPipelineLibraryFlagsKHRStr(value.flags) << '\n';
 	s << '}';
 	return s;
 }

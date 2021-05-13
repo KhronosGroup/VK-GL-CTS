@@ -239,6 +239,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineImageViewTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineInputAssemblyTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineInterfaceMatchingTests.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineLibraryTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineLogicOpTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMakeUtil.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMatchedAttachmentsTests.cpp \

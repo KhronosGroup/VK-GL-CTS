@@ -306,6 +306,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_graphics_pipeline_library")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_shader_subgroup_uniform_control_flow")
 	{
 		return;
@@ -1454,6 +1458,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdPipelineBarrier2KHR");
 		functions.push_back("vkCmdWriteTimestamp2KHR");
 		functions.push_back("vkQueueSubmit2KHR");
+		return;
+	}
+	if (extName == "VK_KHR_graphics_pipeline_library")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_shader_subgroup_uniform_control_flow")

@@ -1141,6 +1141,21 @@ template<> VkStructureType getStructureType<VkCheckpointData2NV> (void)
 	return VK_STRUCTURE_TYPE_CHECKPOINT_DATA_2_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceGraphicsPipelineLibraryFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceGraphicsPipelineLibraryPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkGraphicsPipelineLibraryCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR;
