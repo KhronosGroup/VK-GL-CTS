@@ -1479,6 +1479,9 @@ tcu::TestStatus	DisplayCoverageTestInstance::testGetDisplayPlaneCapabilitiesKHR 
 				results.check(	(planeCapabilities.supportedAlpha & unrecognizedAlphaFlags) == 0,
 								"supportedAlpha contains unrecognized value");
 
+				results.check(	(planeCapabilities.supportedAlpha & RECOGNIZED_DISPLAY_PLANE_ALPHA_FLAGS) != 0u,
+								"supportedAlpha contains no known flags");
+
 				results.check(	planeCapabilities.minSrcPosition.x >= 0,
 								"minSrcPosition.x >= 0");
 
