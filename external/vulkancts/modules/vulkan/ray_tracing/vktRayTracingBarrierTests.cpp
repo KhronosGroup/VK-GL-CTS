@@ -489,7 +489,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 		ahit
 			<< "#version 460 core\n"
 			<< "#extension GL_EXT_ray_tracing : require\n"
-			<< "layout(location = 0) rayPayloadInEXT vec3 hitValue;\n"
+			<< "layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"
 			<< "hitAttributeEXT vec3 attribs;\n"
 			<< writerResourceDecl.str()
 			<< "void main()\n"
@@ -508,7 +508,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 		chit
 			<< "#version 460 core\n"
 			<< "#extension GL_EXT_ray_tracing : require\n"
-			<< "layout(location = 0) rayPayloadInEXT vec3 hitValue;\n"
+			<< "layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"
 			<< "hitAttributeEXT vec3 attribs;\n"
 			<< writerResourceDecl.str()
 			<< "void main()\n"
@@ -527,7 +527,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 		miss
 			<< "#version 460 core\n"
 			<< "#extension GL_EXT_ray_tracing : require\n"
-			<< "layout(location = 0) rayPayloadInEXT dummyPayload { vec4 dummy; };\n"
+			<< "layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"
 			<< writerResourceDecl.str()
 			<< "void main()\n"
 			<< "{\n"
@@ -544,7 +544,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 			rgen
 				<< "#version 460 core\n"
 				<< "#extension GL_EXT_ray_tracing : require\n"
-				<< "layout(location = 0) callableDataEXT float dummy;"
+				<< "layout(location = 0) callableDataEXT float unusedCallableData;"
 				<< "layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;\n"
 				<< "\n"
 				<< "void main()\n"
@@ -559,7 +559,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 		callable
 			<< "#version 460 core\n"
 			<< "#extension GL_EXT_ray_tracing : require\n"
-			<< "layout(location = 0) callableDataInEXT float dummy;\n"
+			<< "layout(location = 0) callableDataInEXT float unusedCallableData;\n"
 			<< writerResourceDecl.str()
 			<< "void main()\n"
 			<< "{\n"
@@ -665,7 +665,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 		ahit
 			<< "#version 460 core\n"
 			<< "#extension GL_EXT_ray_tracing : require\n"
-			<< "layout(location = 0) rayPayloadInEXT vec3 hitValue;\n"
+			<< "layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"
 			<< "hitAttributeEXT vec3 attribs;\n"
 			<< readerAllDecls
 			<< "void main()\n"
@@ -684,7 +684,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 		chit
 			<< "#version 460 core\n"
 			<< "#extension GL_EXT_ray_tracing : require\n"
-			<< "layout(location = 0) rayPayloadInEXT vec3 hitValue;\n"
+			<< "layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"
 			<< "hitAttributeEXT vec3 attribs;\n"
 			<< readerAllDecls
 			<< "void main()\n"
@@ -703,7 +703,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 		miss
 			<< "#version 460 core\n"
 			<< "#extension GL_EXT_ray_tracing : require\n"
-			<< "layout(location = 0) rayPayloadInEXT dummyPayload { vec4 dummy; };\n"
+			<< "layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"
 			<< readerAllDecls
 			<< "void main()\n"
 			<< "{\n"
@@ -720,7 +720,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 			rgen
 				<< "#version 460 core\n"
 				<< "#extension GL_EXT_ray_tracing : require\n"
-				<< "layout(location = 0) callableDataEXT float dummy;"
+				<< "layout(location = 0) callableDataEXT float unusedCallableData;"
 				<< "layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;\n"
 				<< "\n"
 				<< "void main()\n"
@@ -735,7 +735,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 		callable
 			<< "#version 460 core\n"
 			<< "#extension GL_EXT_ray_tracing : require\n"
-			<< "layout(location = 0) callableDataInEXT float dummy;\n"
+			<< "layout(location = 0) callableDataInEXT float unusedCallableData;\n"
 			<< readerAllDecls
 			<< "void main()\n"
 			<< "{\n"
