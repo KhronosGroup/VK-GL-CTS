@@ -353,6 +353,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_NVX_binary_import")
+	{
+		return;
+	}
 	if (extName == "VK_NVX_image_view_handle")
 	{
 		return;
@@ -752,6 +756,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_provoking_vertex")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_headless_surface")
 	{
 		functions.push_back("vkCreateHeadlessSurfaceEXT");
@@ -822,6 +830,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_NV_device_diagnostics_config")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_render_pass_store_ops")
 	{
 		return;
 	}
@@ -1422,6 +1434,15 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdDrawIndirectByteCountEXT");
 		return;
 	}
+	if (extName == "VK_NVX_binary_import")
+	{
+		functions.push_back("vkCreateCuModuleNVX");
+		functions.push_back("vkCreateCuFunctionNVX");
+		functions.push_back("vkDestroyCuModuleNVX");
+		functions.push_back("vkDestroyCuFunctionNVX");
+		functions.push_back("vkCmdCuLaunchKernelNVX");
+		return;
+	}
 	if (extName == "VK_NVX_image_view_handle")
 	{
 		functions.push_back("vkGetImageViewHandleNVX");
@@ -1875,6 +1896,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_provoking_vertex")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_headless_surface")
 	{
 		return;
@@ -1968,6 +1993,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_NV_device_diagnostics_config")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_render_pass_store_ops")
 	{
 		return;
 	}
@@ -2273,6 +2302,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_KHR_copy_commands2",
 	"VK_EXT_debug_marker",
 	"VK_EXT_transform_feedback",
+	"VK_NVX_binary_import",
 	"VK_NVX_image_view_handle",
 	"VK_AMD_draw_indirect_count",
 	"VK_AMD_shader_info",

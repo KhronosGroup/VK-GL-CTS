@@ -1236,6 +1236,21 @@ template<> VkStructureType getStructureType<VkPipelineRasterizationStateStreamCr
 	return VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_STREAM_CREATE_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkCuModuleCreateInfoNVX> (void)
+{
+	return VK_STRUCTURE_TYPE_CU_MODULE_CREATE_INFO_NVX;
+}
+
+template<> VkStructureType getStructureType<VkCuFunctionCreateInfoNVX> (void)
+{
+	return VK_STRUCTURE_TYPE_CU_FUNCTION_CREATE_INFO_NVX;
+}
+
+template<> VkStructureType getStructureType<VkCuLaunchInfoNVX> (void)
+{
+	return VK_STRUCTURE_TYPE_CU_LAUNCH_INFO_NVX;
+}
+
 template<> VkStructureType getStructureType<VkImageViewHandleInfoNVX> (void)
 {
 	return VK_STRUCTURE_TYPE_IMAGE_VIEW_HANDLE_INFO_NVX;
@@ -1894,6 +1909,21 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentShaderInterl
 template<> VkStructureType getStructureType<VkPhysicalDeviceYcbcrImageArraysFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_YCBCR_IMAGE_ARRAYS_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceProvokingVertexFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROVOKING_VERTEX_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceProvokingVertexPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROVOKING_VERTEX_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPipelineRasterizationProvokingVertexStateCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_PROVOKING_VERTEX_STATE_CREATE_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkHeadlessSurfaceCreateInfoEXT> (void)

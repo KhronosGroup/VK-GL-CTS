@@ -28,6 +28,7 @@ const vk::VkPhysicalDevicePerformanceQueryPropertiesKHR&			getPerformanceQueryPr
 const vk::VkPhysicalDevicePointClippingProperties&					getPointClippingProperties					(void) const;
 const vk::VkPhysicalDevicePortabilitySubsetPropertiesKHR&			getPortabilitySubsetProperties				(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				getProtectedMemoryProperties				(void) const;
+const vk::VkPhysicalDeviceProvokingVertexPropertiesEXT&				getProvokingVertexPropertiesEXT				(void) const;
 const vk::VkPhysicalDevicePushDescriptorPropertiesKHR&				getPushDescriptorProperties					(void) const;
 const vk::VkPhysicalDeviceRayTracingPropertiesNV&					getRayTracingPropertiesNV					(void) const;
 const vk::VkPhysicalDeviceRayTracingPipelinePropertiesKHR&			getRayTracingPipelineProperties				(void) const;

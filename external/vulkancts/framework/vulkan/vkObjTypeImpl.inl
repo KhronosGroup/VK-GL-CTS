@@ -37,6 +37,8 @@ template<> inline VkObjectType	getObjectType<VkDisplayKHR>						(void) { return 
 template<> inline VkObjectType	getObjectType<VkDisplayModeKHR>					(void) { return VK_OBJECT_TYPE_DISPLAY_MODE_KHR;				}
 template<> inline VkObjectType	getObjectType<VkDeferredOperationKHR>			(void) { return VK_OBJECT_TYPE_DEFERRED_OPERATION_KHR;			}
 template<> inline VkObjectType	getObjectType<VkDebugReportCallbackEXT>			(void) { return VK_OBJECT_TYPE_DEBUG_REPORT_CALLBACK_EXT;		}
+template<> inline VkObjectType	getObjectType<VkCuModuleNVX>					(void) { return VK_OBJECT_TYPE_CU_MODULE_NVX;					}
+template<> inline VkObjectType	getObjectType<VkCuFunctionNVX>					(void) { return VK_OBJECT_TYPE_CU_FUNCTION_NVX;					}
 template<> inline VkObjectType	getObjectType<VkDebugUtilsMessengerEXT>			(void) { return VK_OBJECT_TYPE_DEBUG_UTILS_MESSENGER_EXT;		}
 template<> inline VkObjectType	getObjectType<VkValidationCacheEXT>				(void) { return VK_OBJECT_TYPE_VALIDATION_CACHE_EXT;			}
 template<> inline VkObjectType	getObjectType<VkAccelerationStructureNV>		(void) { return VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_NV;		}

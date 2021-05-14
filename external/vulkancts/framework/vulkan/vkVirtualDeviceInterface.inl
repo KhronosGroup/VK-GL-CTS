@@ -205,6 +205,11 @@ virtual void				cmdEndTransformFeedbackEXT						(VkCommandBuffer commandBuffer, 
 virtual void				cmdBeginQueryIndexedEXT							(VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query, VkQueryControlFlags flags, deUint32 index) const = 0;
 virtual void				cmdEndQueryIndexedEXT							(VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query, deUint32 index) const = 0;
 virtual void				cmdDrawIndirectByteCountEXT						(VkCommandBuffer commandBuffer, deUint32 instanceCount, deUint32 firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, deUint32 counterOffset, deUint32 vertexStride) const = 0;
+virtual VkResult			createCuModuleNVX								(VkDevice device, const VkCuModuleCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCuModuleNVX* pModule) const = 0;
+virtual VkResult			createCuFunctionNVX								(VkDevice device, const VkCuFunctionCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCuFunctionNVX* pFunction) const = 0;
+virtual void				destroyCuModuleNVX								(VkDevice device, VkCuModuleNVX module, const VkAllocationCallbacks* pAllocator) const = 0;
+virtual void				destroyCuFunctionNVX							(VkDevice device, VkCuFunctionNVX function, const VkAllocationCallbacks* pAllocator) const = 0;
+virtual void				cmdCuLaunchKernelNVX							(VkCommandBuffer commandBuffer, const VkCuLaunchInfoNVX* pLaunchInfo) const = 0;
 virtual uint32_t			getImageViewHandleNVX							(VkDevice device, const VkImageViewHandleInfoNVX* pInfo) const = 0;
 virtual VkResult			getImageViewAddressNVX							(VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties) const = 0;
 virtual void				cmdDrawIndirectCountAMD							(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const = 0;

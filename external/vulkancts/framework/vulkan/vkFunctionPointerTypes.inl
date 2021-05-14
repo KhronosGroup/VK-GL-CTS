@@ -296,6 +296,11 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndTransformFeedbackEXTFunc)								
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginQueryIndexedEXTFunc)											(VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query, VkQueryControlFlags flags, deUint32 index);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndQueryIndexedEXTFunc)												(VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query, deUint32 index);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndirectByteCountEXTFunc)										(VkCommandBuffer commandBuffer, deUint32 instanceCount, deUint32 firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, deUint32 counterOffset, deUint32 vertexStride);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateCuModuleNVXFunc)													(VkDevice device, const VkCuModuleCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCuModuleNVX* pModule);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateCuFunctionNVXFunc)												(VkDevice device, const VkCuFunctionCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCuFunctionNVX* pFunction);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyCuModuleNVXFunc)												(VkDevice device, VkCuModuleNVX module, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyCuFunctionNVXFunc)												(VkDevice device, VkCuFunctionNVX function, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCuLaunchKernelNVXFunc)												(VkCommandBuffer commandBuffer, const VkCuLaunchInfoNVX* pLaunchInfo);
 typedef VKAPI_ATTR uint32_t				(VKAPI_CALL* GetImageViewHandleNVXFunc)												(VkDevice device, const VkImageViewHandleInfoNVX* pInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetImageViewAddressNVXFunc)											(VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndirectCountAMDFunc)											(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride);

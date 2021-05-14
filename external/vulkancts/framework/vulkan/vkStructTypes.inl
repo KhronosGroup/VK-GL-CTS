@@ -3243,6 +3243,40 @@ struct VkPipelineRasterizationStateStreamCreateInfoEXT
 	deUint32											rasterizationStream;
 };
 
+struct VkCuModuleCreateInfoNVX
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUintptr		dataSize;
+	const void*		pData;
+};
+
+struct VkCuFunctionCreateInfoNVX
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkCuModuleNVX	module;
+	const char*		pName;
+};
+
+struct VkCuLaunchInfoNVX
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkCuFunctionNVX		function;
+	deUint32			gridDimX;
+	deUint32			gridDimY;
+	deUint32			gridDimZ;
+	deUint32			blockDimX;
+	deUint32			blockDimY;
+	deUint32			blockDimZ;
+	deUint32			sharedMemBytes;
+	deUintptr			paramCount;
+	const void* const *	pParams;
+	deUintptr			extraCount;
+	const void* const *	pExtras;
+};
+
 struct VkImageViewHandleInfoNVX
 {
 	VkStructureType		sType;
@@ -4572,6 +4606,29 @@ struct VkPhysicalDeviceYcbcrImageArraysFeaturesEXT
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		ycbcrImageArrays;
+};
+
+struct VkPhysicalDeviceProvokingVertexFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		provokingVertexLast;
+	VkBool32		transformFeedbackPreservesProvokingVertex;
+};
+
+struct VkPhysicalDeviceProvokingVertexPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		provokingVertexModePerPipeline;
+	VkBool32		transformFeedbackPreservesTriangleFanProvokingVertex;
+};
+
+struct VkPipelineRasterizationProvokingVertexStateCreateInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkProvokingVertexModeEXT	provokingVertexMode;
 };
 
 struct VkHeadlessSurfaceCreateInfoEXT

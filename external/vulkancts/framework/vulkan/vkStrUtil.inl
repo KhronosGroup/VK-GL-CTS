@@ -88,6 +88,7 @@ const char*	getValidationFeatureDisableEXTName						(VkValidationFeatureDisableE
 const char*	getComponentTypeNVName									(VkComponentTypeNV value);
 const char*	getScopeNVName											(VkScopeNV value);
 const char*	getCoverageReductionModeNVName							(VkCoverageReductionModeNV value);
+const char*	getProvokingVertexModeEXTName							(VkProvokingVertexModeEXT value);
 const char*	getLineRasterizationModeEXTName							(VkLineRasterizationModeEXT value);
 const char*	getIndirectCommandsTokenTypeNVName						(VkIndirectCommandsTokenTypeNV value);
 const char*	getDeviceMemoryReportEventTypeEXTName					(VkDeviceMemoryReportEventTypeEXT value);
@@ -203,6 +204,7 @@ inline tcu::Format::Enum<VkValidationFeatureDisableEXT>						getValidationFeatur
 inline tcu::Format::Enum<VkComponentTypeNV>									getComponentTypeNVStr								(VkComponentTypeNV value)								{ return tcu::Format::Enum<VkComponentTypeNV>(getComponentTypeNVName, value);																}
 inline tcu::Format::Enum<VkScopeNV>											getScopeNVStr										(VkScopeNV value)										{ return tcu::Format::Enum<VkScopeNV>(getScopeNVName, value);																				}
 inline tcu::Format::Enum<VkCoverageReductionModeNV>							getCoverageReductionModeNVStr						(VkCoverageReductionModeNV value)						{ return tcu::Format::Enum<VkCoverageReductionModeNV>(getCoverageReductionModeNVName, value);												}
+inline tcu::Format::Enum<VkProvokingVertexModeEXT>							getProvokingVertexModeEXTStr						(VkProvokingVertexModeEXT value)						{ return tcu::Format::Enum<VkProvokingVertexModeEXT>(getProvokingVertexModeEXTName, value);													}
 inline tcu::Format::Enum<VkLineRasterizationModeEXT>						getLineRasterizationModeEXTStr						(VkLineRasterizationModeEXT value)						{ return tcu::Format::Enum<VkLineRasterizationModeEXT>(getLineRasterizationModeEXTName, value);												}
 inline tcu::Format::Enum<VkIndirectCommandsTokenTypeNV>						getIndirectCommandsTokenTypeNVStr					(VkIndirectCommandsTokenTypeNV value)					{ return tcu::Format::Enum<VkIndirectCommandsTokenTypeNV>(getIndirectCommandsTokenTypeNVName, value);										}
 inline tcu::Format::Enum<VkDeviceMemoryReportEventTypeEXT>					getDeviceMemoryReportEventTypeEXTStr				(VkDeviceMemoryReportEventTypeEXT value)				{ return tcu::Format::Enum<VkDeviceMemoryReportEventTypeEXT>(getDeviceMemoryReportEventTypeEXTName, value);									}
@@ -318,6 +320,7 @@ inline std::ostream&	operator<<	(std::ostream& s, VkValidationFeatureDisableEXT 
 inline std::ostream&	operator<<	(std::ostream& s, VkComponentTypeNV value)									{ return s << getComponentTypeNVStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, VkScopeNV value)											{ return s << getScopeNVStr(value);											}
 inline std::ostream&	operator<<	(std::ostream& s, VkCoverageReductionModeNV value)							{ return s << getCoverageReductionModeNVStr(value);							}
+inline std::ostream&	operator<<	(std::ostream& s, VkProvokingVertexModeEXT value)							{ return s << getProvokingVertexModeEXTStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkLineRasterizationModeEXT value)							{ return s << getLineRasterizationModeEXTStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkIndirectCommandsTokenTypeNV value)						{ return s << getIndirectCommandsTokenTypeNVStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkDeviceMemoryReportEventTypeEXT value)					{ return s << getDeviceMemoryReportEventTypeEXTStr(value);					}
@@ -819,6 +822,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkDedicatedAllocationMemoryAllo
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceTransformFeedbackFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceTransformFeedbackPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationStateStreamCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCuModuleCreateInfoNVX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCuFunctionCreateInfoNVX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCuLaunchInfoNVX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageViewHandleInfoNVX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageViewAddressPropertiesNVX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkTextureLODGatherFormatPropertiesAMD& value);
@@ -976,6 +982,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineCoverageReductionStat
 std::ostream&	operator<<	(std::ostream& s, const VkFramebufferMixedSamplesCombinationNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceYcbcrImageArraysFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProvokingVertexFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProvokingVertexPropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationProvokingVertexStateCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkHeadlessSurfaceCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLineRasterizationFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLineRasterizationPropertiesEXT& value);

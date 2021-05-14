@@ -1022,6 +1022,31 @@ void DeviceDriver::cmdDrawIndirectByteCountEXT (VkCommandBuffer commandBuffer, d
 	m_vk.cmdDrawIndirectByteCountEXT(commandBuffer, instanceCount, firstInstance, counterBuffer, counterBufferOffset, counterOffset, vertexStride);
 }
 
+VkResult DeviceDriver::createCuModuleNVX (VkDevice device, const VkCuModuleCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCuModuleNVX* pModule) const
+{
+	return m_vk.createCuModuleNVX(device, pCreateInfo, pAllocator, pModule);
+}
+
+VkResult DeviceDriver::createCuFunctionNVX (VkDevice device, const VkCuFunctionCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCuFunctionNVX* pFunction) const
+{
+	return m_vk.createCuFunctionNVX(device, pCreateInfo, pAllocator, pFunction);
+}
+
+void DeviceDriver::destroyCuModuleNVX (VkDevice device, VkCuModuleNVX module, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroyCuModuleNVX(device, module, pAllocator);
+}
+
+void DeviceDriver::destroyCuFunctionNVX (VkDevice device, VkCuFunctionNVX function, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroyCuFunctionNVX(device, function, pAllocator);
+}
+
+void DeviceDriver::cmdCuLaunchKernelNVX (VkCommandBuffer commandBuffer, const VkCuLaunchInfoNVX* pLaunchInfo) const
+{
+	m_vk.cmdCuLaunchKernelNVX(commandBuffer, pLaunchInfo);
+}
+
 uint32_t DeviceDriver::getImageViewHandleNVX (VkDevice device, const VkImageViewHandleInfoNVX* pInfo) const
 {
 	return m_vk.getImageViewHandleNVX(device, pInfo);

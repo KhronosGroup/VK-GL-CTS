@@ -29,6 +29,8 @@ Move<VkSurfaceKHR>					createDisplayPlaneSurfaceKHR		(const InstanceInterface& v
 Move<VkSwapchainKHR>				createSharedSwapchainsKHR			(const DeviceInterface& vk, VkDevice device, deUint32 swapchainCount, const VkSwapchainCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkDeferredOperationKHR>		createDeferredOperationKHR			(const DeviceInterface& vk, VkDevice device, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkDebugReportCallbackEXT>		createDebugReportCallbackEXT		(const InstanceInterface& vk, VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
+Move<VkCuModuleNVX>					createCuModuleNVX					(const DeviceInterface& vk, VkDevice device, const VkCuModuleCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
+Move<VkCuFunctionNVX>				createCuFunctionNVX					(const DeviceInterface& vk, VkDevice device, const VkCuFunctionCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkDebugUtilsMessengerEXT>		createDebugUtilsMessengerEXT		(const InstanceInterface& vk, VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkValidationCacheEXT>			createValidationCacheEXT			(const DeviceInterface& vk, VkDevice device, const VkValidationCacheCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkAccelerationStructureNV>		createAccelerationStructureNV		(const DeviceInterface& vk, VkDevice device, const VkAccelerationStructureCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);

@@ -49,6 +49,7 @@ const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&		getPipelineE
 const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR&					getPortabilitySubsetFeatures					(void) const;
 const vk::VkPhysicalDevicePrivateDataFeaturesEXT&						getPrivateDataFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&						getProtectedMemoryFeatures						(void) const;
+const vk::VkPhysicalDeviceProvokingVertexFeaturesEXT&					getProvokingVertexFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceRayQueryFeaturesKHR&							getRayQueryFeatures								(void) const;
 const vk::VkPhysicalDeviceRayTracingPipelineFeaturesKHR&				getRayTracingPipelineFeatures					(void) const;
 const vk::VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV&			getRepresentativeFragmentTestFeatures			(void) const;

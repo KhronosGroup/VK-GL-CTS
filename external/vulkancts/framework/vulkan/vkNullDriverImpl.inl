@@ -157,6 +157,18 @@ VKAPI_ATTR VkResult VKAPI_CALL createDebugReportCallbackEXT (VkInstance instance
 	VK_NULL_RETURN((*pCallback = allocateNonDispHandle<DebugReportCallbackEXT, VkDebugReportCallbackEXT>(instance, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createCuModuleNVX (VkDevice device, const VkCuModuleCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCuModuleNVX* pModule)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pModule = allocateNonDispHandle<CuModuleNVX, VkCuModuleNVX>(device, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createCuFunctionNVX (VkDevice device, const VkCuFunctionCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCuFunctionNVX* pFunction)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pFunction = allocateNonDispHandle<CuFunctionNVX, VkCuFunctionNVX>(device, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL createDebugUtilsMessengerEXT (VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pMessenger)
 {
 	DE_UNREF(pAllocator);
@@ -435,6 +447,18 @@ VKAPI_ATTR void VKAPI_CALL destroyDebugReportCallbackEXT (VkInstance instance, V
 {
 	DE_UNREF(instance);
 	freeNonDispHandle<DebugReportCallbackEXT, VkDebugReportCallbackEXT>(callback, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyCuModuleNVX (VkDevice device, VkCuModuleNVX module, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<CuModuleNVX, VkCuModuleNVX>(module, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyCuFunctionNVX (VkDevice device, VkCuFunctionNVX function, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<CuFunctionNVX, VkCuFunctionNVX>(function, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyDebugUtilsMessengerEXT (VkInstance instance, VkDebugUtilsMessengerEXT messenger, const VkAllocationCallbacks* pAllocator)
@@ -1919,6 +1943,12 @@ VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectByteCountEXT (VkCommandBuffer commandB
 	DE_UNREF(counterBufferOffset);
 	DE_UNREF(counterOffset);
 	DE_UNREF(vertexStride);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCuLaunchKernelNVX (VkCommandBuffer commandBuffer, const VkCuLaunchInfoNVX* pLaunchInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pLaunchInfo);
 }
 
 VKAPI_ATTR uint32_t VKAPI_CALL getImageViewHandleNVX (VkDevice device, const VkImageViewHandleInfoNVX* pInfo)
@@ -3449,6 +3479,11 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdBeginQueryIndexedEXT,							cmdBeginQueryIndexedEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdEndQueryIndexedEXT,								cmdEndQueryIndexedEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectByteCountEXT,						cmdDrawIndirectByteCountEXT),
+	VK_NULL_FUNC_ENTRY(vkCreateCuModuleNVX,									createCuModuleNVX),
+	VK_NULL_FUNC_ENTRY(vkCreateCuFunctionNVX,								createCuFunctionNVX),
+	VK_NULL_FUNC_ENTRY(vkDestroyCuModuleNVX,								destroyCuModuleNVX),
+	VK_NULL_FUNC_ENTRY(vkDestroyCuFunctionNVX,								destroyCuFunctionNVX),
+	VK_NULL_FUNC_ENTRY(vkCmdCuLaunchKernelNVX,								cmdCuLaunchKernelNVX),
 	VK_NULL_FUNC_ENTRY(vkGetImageViewHandleNVX,								getImageViewHandleNVX),
 	VK_NULL_FUNC_ENTRY(vkGetImageViewAddressNVX,							getImageViewAddressNVX),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectCountAMD,							cmdDrawIndirectCountAMD),

@@ -143,6 +143,18 @@ void Deleter<VkDeferredOperationKHR>::operator() (VkDeferredOperationKHR obj) co
 }
 
 template<>
+void Deleter<VkCuModuleNVX>::operator() (VkCuModuleNVX obj) const
+{
+	m_deviceIface->destroyCuModuleNVX(m_device, obj, m_allocator);
+}
+
+template<>
+void Deleter<VkCuFunctionNVX>::operator() (VkCuFunctionNVX obj) const
+{
+	m_deviceIface->destroyCuFunctionNVX(m_device, obj, m_allocator);
+}
+
+template<>
 void Deleter<VkValidationCacheEXT>::operator() (VkValidationCacheEXT obj) const
 {
 	m_deviceIface->destroyValidationCacheEXT(m_device, obj, m_allocator);
@@ -380,6 +392,20 @@ Move<VkDebugReportCallbackEXT> createDebugReportCallbackEXT (const InstanceInter
 	VkDebugReportCallbackEXT object = 0;
 	VK_CHECK(vk.createDebugReportCallbackEXT(instance, pCreateInfo, pAllocator, &object));
 	return Move<VkDebugReportCallbackEXT>(check<VkDebugReportCallbackEXT>(object), Deleter<VkDebugReportCallbackEXT>(vk, instance, pAllocator));
+}
+
+Move<VkCuModuleNVX> createCuModuleNVX (const DeviceInterface& vk, VkDevice device, const VkCuModuleCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkCuModuleNVX object = 0;
+	VK_CHECK(vk.createCuModuleNVX(device, pCreateInfo, pAllocator, &object));
+	return Move<VkCuModuleNVX>(check<VkCuModuleNVX>(object), Deleter<VkCuModuleNVX>(vk, device, pAllocator));
+}
+
+Move<VkCuFunctionNVX> createCuFunctionNVX (const DeviceInterface& vk, VkDevice device, const VkCuFunctionCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkCuFunctionNVX object = 0;
+	VK_CHECK(vk.createCuFunctionNVX(device, pCreateInfo, pAllocator, &object));
+	return Move<VkCuFunctionNVX>(check<VkCuFunctionNVX>(object), Deleter<VkCuFunctionNVX>(vk, device, pAllocator));
 }
 
 Move<VkDebugUtilsMessengerEXT> createDebugUtilsMessengerEXT (const InstanceInterface& vk, VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)

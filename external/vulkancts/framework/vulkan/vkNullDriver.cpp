@@ -258,6 +258,20 @@ public:
 										~DebugReportCallbackEXT	(void) {}
 };
 
+class CuModuleNVX
+{
+public:
+										CuModuleNVX	(VkDevice, const VkCuModuleCreateInfoNVX*) {}
+										~CuModuleNVX(void) {}
+};
+
+class CuFunctionNVX
+{
+public:
+										CuFunctionNVX(VkDevice, const VkCuFunctionCreateInfoNVX*) {}
+										~CuFunctionNVX(void) {}
+};
+
 class Device
 {
 public:
