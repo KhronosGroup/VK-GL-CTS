@@ -66,7 +66,7 @@ public:
 };
 
 ConcurrentDraw::ConcurrentDraw (Context &context, TestSpec testSpec)
-	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.topology)
+	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.useDynamicRendering, testSpec.topology)
 {
 	m_data.push_back(VertexElementData(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), -1));
 	m_data.push_back(VertexElementData(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), -1));
@@ -247,7 +247,7 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 	const VkQueue		drawQueue			= m_context.getUniversalQueue();
 	const VkDevice		drawDevice			= m_context.getDevice();
 
-	beginRenderPass();
+	beginRender();
 
 	const VkDeviceSize	vertexBufferOffset	= 0;
 	const VkBuffer		vertexBuffer		= m_vertexBuffer->object();
@@ -257,7 +257,7 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 
 	m_vk.cmdDraw(*m_cmdBuffer, 6, 1, 2, 0);
 
-	endRenderPass(m_vk, *m_cmdBuffer);
+	endRender();
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	const VkCommandBuffer	drawCommandBuffer	= m_cmdBuffer.get();
@@ -377,27 +377,35 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
+void checkSupport(Context& context, ConcurrentDraw::TestSpec testSpec)
+{
+	if (testSpec.useDynamicRendering)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+}
+
 }	// anonymous
 
-ConcurrentDrawTests::ConcurrentDrawTests (tcu::TestContext &testCtx)
-: TestCaseGroup	(testCtx, "concurrent", "concurrent drawing")
+ConcurrentDrawTests::ConcurrentDrawTests (tcu::TestContext &testCtx, bool useDynamicRendering)
+	: TestCaseGroup			(testCtx, "concurrent", "concurrent drawing")
+	, m_useDynamicRendering	(useDynamicRendering)
 {
 	/* Left blank on purpose */
 }
 
-ConcurrentDrawTests::~ConcurrentDrawTests (void) {}
-
 void ConcurrentDrawTests::init (void)
 {
+	ConcurrentDraw::TestSpec testSpec
 	{
-		ConcurrentDraw::TestSpec testSpec;
-		testSpec.shaders[glu::SHADERTYPE_VERTEX]	= "vulkan/draw/VertexFetch.vert";
-		testSpec.shaders[glu::SHADERTYPE_FRAGMENT]	= "vulkan/draw/VertexFetch.frag";
-		testSpec.shaders[glu::SHADERTYPE_COMPUTE]	= "vulkan/draw/ConcurrentPayload.comp";
+		{
+			{ glu::SHADERTYPE_VERTEX,	"vulkan/draw/VertexFetch.vert" },
+			{ glu::SHADERTYPE_FRAGMENT,	"vulkan/draw/VertexFetch.frag" },
+			{ glu::SHADERTYPE_COMPUTE,	"vulkan/draw/ConcurrentPayload.comp" }
+		},
+		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+		m_useDynamicRendering
+	};
 
-		testSpec.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		addChild(new InstanceFactory<ConcurrentDraw>(m_testCtx, "compute_and_triangle_list", "Draws triangle list while running a compute shader", testSpec));
-	}
+	addChild(new InstanceFactory<ConcurrentDraw, FunctionSupport1<ConcurrentDraw::TestSpec>>(m_testCtx, "compute_and_triangle_list", "Draws triangle list while running a compute shader", testSpec, FunctionSupport1<ConcurrentDraw::TestSpec>::Args(checkSupport, testSpec)));
 }
 
 }	// DrawTests

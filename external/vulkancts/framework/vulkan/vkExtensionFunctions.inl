@@ -37,6 +37,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_dynamic_rendering")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_multiview")
 	{
 		return;
@@ -1145,6 +1149,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_sampler_mirror_clamp_to_edge")
 	{
+		return;
+	}
+	if (extName == "VK_KHR_dynamic_rendering")
+	{
+		functions.push_back("vkCmdBeginRenderingKHR");
+		functions.push_back("vkCmdEndRenderingKHR");
 		return;
 	}
 	if (extName == "VK_KHR_multiview")
@@ -2446,6 +2456,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 {
 	"VK_KHR_swapchain",
 	"VK_KHR_display_swapchain",
+	"VK_KHR_dynamic_rendering",
 	"VK_KHR_device_group",
 	"VK_KHR_maintenance1",
 	"VK_KHR_external_memory_fd",

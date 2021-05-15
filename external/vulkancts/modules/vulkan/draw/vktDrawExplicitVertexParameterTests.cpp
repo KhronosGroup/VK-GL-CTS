@@ -94,6 +94,7 @@ struct DrawParams
 	Interpolation				interpolation;
 	vk::VkSampleCountFlagBits	samples;
 	AuxiliaryQualifier			auxiliaryStorage;
+	bool						useDynamicRendering;
 };
 
 const char* interpolationToString (Interpolation interpolation)
@@ -203,7 +204,7 @@ class DrawTestCase : public TestCase
 								~DrawTestCase		(void);
 	virtual	void				initPrograms		(SourceCollections& programCollection) const;
 	virtual TestInstance*		createInstance		(Context& context) const;
-	virtual void				checkSupport	(Context& context) const;
+	virtual void				checkSupport		(Context& context) const;
 
 private:
 	DrawParams					m_data;
@@ -225,6 +226,9 @@ void DrawTestCase::checkSupport(Context &context) const
 
 	if ((context.getDeviceProperties().limits.framebufferColorSampleCounts & m_data.samples) == 0)
 		TCU_THROW(NotSupportedError, "framebufferColorSampleCounts: sample count not supported");
+
+	if (m_data.useDynamicRendering)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 }
 
 void DrawTestCase::initPrograms (SourceCollections& programCollection) const
@@ -352,11 +356,18 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 		}
 	}
 
-	// Create render pass and frame buffer.
-	{
-		const ImageViewCreateInfo		colorTargetViewInfo		(colorTargetImage->object(), VK_IMAGE_VIEW_TYPE_2D, imageFormat);
-		colorTargetView	= createImageView(vk, device, &colorTargetViewInfo);
+	const ImageViewCreateInfo colorTargetViewInfo(colorTargetImage->object(), VK_IMAGE_VIEW_TYPE_2D, imageFormat);
+	colorTargetView = createImageView(vk, device, &colorTargetViewInfo);
 
+	if (useMultisampling)
+	{
+		const ImageViewCreateInfo multisamplingTargetViewInfo(multisampleTargetImage->object(), vk::VK_IMAGE_VIEW_TYPE_2D, imageFormat);
+		multisampleTargetView = createImageView(vk, device, &multisamplingTargetViewInfo);
+	}
+
+	// Create render pass
+	if (!m_data.useDynamicRendering)
+	{
 		RenderPassCreateInfo			renderPassCreateInfo;
 		renderPassCreateInfo.addAttachment(AttachmentDescription(imageFormat,
 																 VK_SAMPLE_COUNT_1_BIT,
@@ -369,19 +380,9 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 
 		const VkAttachmentReference		colorAttachmentRef			= { 0u, VK_IMAGE_LAYOUT_GENERAL };
 		const VkAttachmentReference		multisampleAttachmentRef	= { 1u, VK_IMAGE_LAYOUT_GENERAL };
-		vector<VkImageView>				colorAttachments;
-		colorAttachments.push_back(*colorTargetView);
 
 		if (useMultisampling)
 		{
-			const ImageViewCreateInfo		multisamplingTargetViewInfo		(multisampleTargetImage->object(),
-																			 vk::VK_IMAGE_VIEW_TYPE_2D,
-																			 imageFormat);
-
-
-			multisampleTargetView = createImageView(vk, device, &multisamplingTargetViewInfo);
-			colorAttachments.push_back(*multisampleTargetView);
-
 			renderPassCreateInfo.addAttachment(AttachmentDescription(imageFormat,
 																	 m_data.samples,
 																	 vk::VK_ATTACHMENT_LOAD_OP_CLEAR,
@@ -403,10 +404,15 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 														   0,
 														   DE_NULL));
 
-		renderPass			= createRenderPass(vk, device, &renderPassCreateInfo);
+		renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
 
-		const FramebufferCreateInfo		framebufferCreateInfo	(*renderPass, colorAttachments, WIDTH, HEIGHT, 1);
-		framebuffer	= createFramebuffer(vk, device, &framebufferCreateInfo);
+		// Create framebuffer
+		vector<VkImageView> colorAttachments { *colorTargetView };
+		if (useMultisampling)
+			colorAttachments.push_back(*multisampleTargetView);
+
+		const FramebufferCreateInfo framebufferCreateInfo(*renderPass, colorAttachments, WIDTH, HEIGHT, 1);
+		framebuffer = createFramebuffer(vk, device, &framebufferCreateInfo);
 	}
 
 	// Create vertex buffer.
@@ -459,7 +465,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 			.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 			.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
-	    descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+		descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
 
 		const VkDescriptorBufferInfo	bufferInfo =
 		{
@@ -503,6 +509,19 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 		pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
 		pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState(m_data.samples));
 
+		vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+			DE_NULL,
+			0u,
+			1u,
+			&imageFormat,
+			VK_FORMAT_UNDEFINED
+		};
+
+		if (m_data.useDynamicRendering)
+			pipelineCreateInfo.pNext = &renderingCreateInfo;
+
 		pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 	}
 
@@ -517,28 +536,69 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 
 		vector<VkClearValue>		clearColors;
 		clearColors.push_back(makeClearValueColor(clearColor));
-
 		if (useMultisampling)
 			clearColors.push_back(makeClearValueColor(clearColor));
 
 		beginCommandBuffer(vk, *cmdBuffer, 0u);
-		const VkRenderPassBeginInfo renderPassBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType         sType;
-			DE_NULL,									// const void*             pNext;
-			*renderPass,								// VkRenderPass            renderPass;
-			*framebuffer,								// VkFramebuffer           framebuffer;
-			renderArea,									// VkRect2D                renderArea;
-			(deUint32)clearColors.size(),				// deUint32                clearValueCount;
-			clearColors.data(),							// const VkClearValue*     pClearValues;
-		};
 
-		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		if (m_data.useDynamicRendering)
+		{
+			VkRenderingAttachmentInfoKHR colorAttachment
+			{
+				VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,								// VkStructureType						sType;
+				DE_NULL,																		// const void*							pNext;
+				useMultisampling ? *multisampleTargetView : *colorTargetView,					// VkImageView							imageView;
+				VK_IMAGE_LAYOUT_GENERAL,														// VkImageLayout						imageLayout;
+				useMultisampling ? VK_RESOLVE_MODE_AVERAGE_BIT : VK_RESOLVE_MODE_NONE,			// VkResolveModeFlagBits				resolveMode;
+				useMultisampling ? *colorTargetView : DE_NULL,									// VkImageView							resolveImageView;
+				VK_IMAGE_LAYOUT_GENERAL,														// VkImageLayout						resolveImageLayout;
+				useMultisampling ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,	// VkAttachmentLoadOp					loadOp;
+				VK_ATTACHMENT_STORE_OP_STORE,													// VkAttachmentStoreOp					storeOp;
+				clearColors[0]																	// VkClearValue							clearValue;
+			};
+
+			VkRenderingInfoKHR renderingInfo
+			{
+				VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+				DE_NULL,
+				0u,																				// VkRenderingFlagsKHR					flags;
+				renderArea,																		// VkRect2D								renderArea;
+				1u,																				// deUint32								layerCount;
+				0u,																				// deUint32								viewMask;
+				1u,																				// deUint32								colorAttachmentCount;
+				&colorAttachment,																// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+				DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+				DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+			};
+
+			vk.cmdBeginRenderingKHR(*cmdBuffer, &renderingInfo);
+		}
+		else
+		{
+			const VkRenderPassBeginInfo renderPassBeginInfo =
+			{
+				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType         sType;
+				DE_NULL,									// const void*             pNext;
+				*renderPass,								// VkRenderPass            renderPass;
+				*framebuffer,								// VkFramebuffer           framebuffer;
+				renderArea,									// VkRect2D                renderArea;
+				(deUint32)clearColors.size(),				// deUint32                clearValueCount;
+				clearColors.data(),							// const VkClearValue*     pClearValues;
+			};
+
+			vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		}
+
 		vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &buffer, &vertexBufferOffset);
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 		vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
-		endRenderPass(vk, *cmdBuffer);
+
+		if (m_data.useDynamicRendering)
+			endRendering(vk, *cmdBuffer);
+		else
+			endRenderPass(vk, *cmdBuffer);
+
 		endCommandBuffer(vk, *cmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
@@ -565,7 +625,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
-void createTests (tcu::TestCaseGroup* testGroup)
+void createTests (tcu::TestCaseGroup* testGroup, bool useDynamicRendering)
 {
 	tcu::TestContext&	testCtx		= testGroup->getTestContext();
 
@@ -595,7 +655,7 @@ void createTests (tcu::TestCaseGroup* testGroup)
 
 	for (deUint32 sampleNdx	= 0;	sampleNdx	< DE_LENGTH_OF_ARRAY(samples);			sampleNdx++)
 	for (deUint32 auxNdx	= 0;	auxNdx		< DE_LENGTH_OF_ARRAY(auxQualifiers);	auxNdx++)
-    for (deUint32 interNdx	= 0;	interNdx	< DE_LENGTH_OF_ARRAY(interTypes);		interNdx++)
+	for (deUint32 interNdx	= 0;	interNdx	< DE_LENGTH_OF_ARRAY(interTypes);		interNdx++)
 	{
 		if (samples[sampleNdx] == VK_SAMPLE_COUNT_1_BIT && auxQualifiers[auxNdx] != AUX_NONE)
 			continue;
@@ -605,6 +665,7 @@ void createTests (tcu::TestCaseGroup* testGroup)
 			interTypes[interNdx],
 			samples[sampleNdx],
 			auxQualifiers[auxNdx],
+			useDynamicRendering
 		};
 		testGroup->addChild(new DrawTestCase(testCtx, getTestName(params).c_str(), "", params));
 	}
@@ -612,9 +673,9 @@ void createTests (tcu::TestCaseGroup* testGroup)
 
 }	// anonymous
 
-tcu::TestCaseGroup*	createExplicitVertexParameterTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createExplicitVertexParameterTests (tcu::TestContext& testCtx, bool useDynamicRendering)
 {
-	return createTestGroup(testCtx, "explicit_vertex_parameter", "Tests for VK_AMD_shader_explicit_vertex_parameter.", createTests);
+	return createTestGroup(testCtx, "explicit_vertex_parameter", "Tests for VK_AMD_shader_explicit_vertex_parameter.", createTests, useDynamicRendering);
 }
 
 }	// Draw
