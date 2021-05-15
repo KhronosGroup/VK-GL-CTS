@@ -48,6 +48,7 @@ struct TestSpecBase
 {
 	ShaderMap				shaders;
 	vk::VkPrimitiveTopology	topology;
+	bool					useDynamicRendering;
 };
 
 template<typename Instance, typename Support = NoSupport0>

@@ -56,7 +56,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo = DE_NULL,
 									   const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo = DE_NULL,
 									   const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo = DE_NULL,
-									   const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo = DE_NULL);
+									   const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo = DE_NULL,
+									   const void*										pNext = DE_NULL);
 
 Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkDevice									device,

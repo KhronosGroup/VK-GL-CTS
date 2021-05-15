@@ -5,6 +5,7 @@ vk-default/compute.txt
 vk-default/conditional-rendering.txt
 vk-default/descriptor-indexing.txt
 vk-default/device-group.txt
+vk-default/draw-with-dynamic-rendering.txt
 vk-default/draw.txt
 vk-default/drm-format-modifiers.txt
 vk-default/dynamic-state.txt

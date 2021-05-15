@@ -1534,6 +1534,17 @@ VKAPI_ATTR VkResult VKAPI_CALL getDisplayPlaneCapabilitiesKHR (VkPhysicalDevice 
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdBeginRenderingKHR (VkCommandBuffer commandBuffer, const VkRenderingInfoKHR* pRenderingInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pRenderingInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdEndRenderingKHR (VkCommandBuffer commandBuffer)
+{
+	DE_UNREF(commandBuffer);
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getMemoryFdKHR (VkDevice device, const VkMemoryGetFdInfoKHR* pGetFdInfo, int* pFd)
 {
 	DE_UNREF(device);
@@ -3506,6 +3517,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupSurfacePresentModesKHR,				getDeviceGroupSurfacePresentModesKHR),
 	VK_NULL_FUNC_ENTRY(vkAcquireNextImage2KHR,								acquireNextImage2KHR),
 	VK_NULL_FUNC_ENTRY(vkCreateSharedSwapchainsKHR,							createSharedSwapchainsKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginRenderingKHR,								cmdBeginRenderingKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdEndRenderingKHR,								cmdEndRenderingKHR),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupPeerMemoryFeaturesKHR,				getDeviceGroupPeerMemoryFeatures),
 	VK_NULL_FUNC_ENTRY(vkCmdSetDeviceMaskKHR,								cmdSetDeviceMask),
 	VK_NULL_FUNC_ENTRY(vkCmdDispatchBaseKHR,								cmdDispatchBase),

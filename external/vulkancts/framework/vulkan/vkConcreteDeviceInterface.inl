@@ -160,6 +160,8 @@ virtual VkResult			getDeviceGroupPresentCapabilitiesKHR			(VkDevice device, VkDe
 virtual VkResult			getDeviceGroupSurfacePresentModesKHR			(VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHR* pModes) const;
 virtual VkResult			acquireNextImage2KHR							(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex) const;
 virtual VkResult			createSharedSwapchainsKHR						(VkDevice device, uint32_t swapchainCount, const VkSwapchainCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchains) const;
+virtual void				cmdBeginRenderingKHR							(VkCommandBuffer commandBuffer, const VkRenderingInfoKHR* pRenderingInfo) const;
+virtual void				cmdEndRenderingKHR								(VkCommandBuffer commandBuffer) const;
 virtual VkResult			getMemoryFdKHR									(VkDevice device, const VkMemoryGetFdInfoKHR* pGetFdInfo, int* pFd) const;
 virtual VkResult			getMemoryFdPropertiesKHR						(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, int fd, VkMemoryFdPropertiesKHR* pMemoryFdProperties) const;
 virtual VkResult			importSemaphoreFdKHR							(VkDevice device, const VkImportSemaphoreFdInfoKHR* pImportSemaphoreFdInfo) const;

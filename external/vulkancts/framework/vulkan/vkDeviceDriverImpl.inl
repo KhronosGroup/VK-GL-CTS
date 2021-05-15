@@ -797,6 +797,16 @@ VkResult DeviceDriver::createSharedSwapchainsKHR (VkDevice device, uint32_t swap
 	return m_vk.createSharedSwapchainsKHR(device, swapchainCount, pCreateInfos, pAllocator, pSwapchains);
 }
 
+void DeviceDriver::cmdBeginRenderingKHR (VkCommandBuffer commandBuffer, const VkRenderingInfoKHR* pRenderingInfo) const
+{
+	m_vk.cmdBeginRenderingKHR(commandBuffer, pRenderingInfo);
+}
+
+void DeviceDriver::cmdEndRenderingKHR (VkCommandBuffer commandBuffer) const
+{
+	m_vk.cmdEndRenderingKHR(commandBuffer);
+}
+
 VkResult DeviceDriver::getMemoryFdKHR (VkDevice device, const VkMemoryGetFdInfoKHR* pGetFdInfo, int* pFd) const
 {
 	return m_vk.getMemoryFdKHR(device, pGetFdInfo, pFd);

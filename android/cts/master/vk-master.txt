@@ -5,6 +5,7 @@ vk-master/compute.txt
 vk-master/conditional-rendering.txt
 vk-master/descriptor-indexing.txt
 vk-master/device-group.txt
+vk-master/draw-with-dynamic-rendering.txt
 vk-master/draw.txt
 vk-master/drm-format-modifiers.txt
 vk-master/dynamic-state.txt
