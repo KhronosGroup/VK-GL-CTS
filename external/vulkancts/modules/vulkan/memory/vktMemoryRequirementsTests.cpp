@@ -585,9 +585,6 @@ void BufferMemoryRequirementsDedicatedAllocation::verifyMemoryRequirements (tcu:
 
 	result.check(m_currentTestRequiresDedicatedAllocation == VK_FALSE,
 		"Regular (non-shared) objects must not require dedicated allocations");
-
-	result.check(m_currentTestPrefersDedicatedAllocation == VK_FALSE || m_currentTestPrefersDedicatedAllocation == VK_FALSE,
-		"Preferred and required flags for dedicated memory cannot be set to true at the same time");
 }
 
 
@@ -1478,9 +1475,6 @@ void ImageMemoryRequirementsDedicatedAllocation::verifyMemoryRequirements (tcu::
 
 	result.check(m_currentTestRequiresDedicatedAllocation == VK_FALSE,
 		"Test design expects m_currentTestRequiresDedicatedAllocation to be false");
-
-	result.check(m_currentTestPrefersDedicatedAllocation == VK_FALSE || m_currentTestPrefersDedicatedAllocation == VK_FALSE,
-		"Preferred and required flags for dedicated memory cannot be set to true at the same time");
 }
 
 void populateCoreTestGroup (tcu::TestCaseGroup* group)
