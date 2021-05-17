@@ -428,24 +428,10 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 		{
 			for (deUint32 mipmapNdx = 0; mipmapNdx < imageSparseInfo.mipLevels; ++mipmapNdx)
 			{
-				const deUint32	mipLevelSizeInBytes		= getImageMipLevelSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, formatDescription, planeNdx, mipmapNdx);
-				const deUint32	bufferOffset			= static_cast<deUint32>(bufferImageCopy[ planeNdx * imageSparseInfo.mipLevels + mipmapNdx].bufferOffset);
-				bool			is8bitSnormComponent	= false;
+				const deUint32 mipLevelSizeInBytes	= getImageMipLevelSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, formatDescription, planeNdx, mipmapNdx);
+				const deUint32 bufferOffset			= static_cast<deUint32>(bufferImageCopy[ planeNdx * imageSparseInfo.mipLevels + mipmapNdx].bufferOffset);
 
 				// Validate results
-				for (deUint32 channelNdx = 0; channelNdx < 4; ++channelNdx)
-				{
-					if (!formatDescription.hasChannelNdx(channelNdx))
-						continue;
-
-					if ((formatDescription.channels[channelNdx].type == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT) &&
-						(formatDescription.channels[channelNdx].sizeBits == 8))
-					{
-						is8bitSnormComponent = true;
-						break;
-					}
-				}
-
 				for (size_t byteNdx = 0; byteNdx < mipLevelSizeInBytes; byteNdx++)
 				{
 					const deUint8	res	= *(outputData + bufferOffset + byteNdx);
@@ -458,7 +444,7 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 					else if (!(byteNdx & 0x01) && (ignoreLsb4Bits))
 						mask = 0xF0;
 
-					if (((!is8bitSnormComponent) || (ref != 0x80)) &&  ((res & mask) != (ref & mask)))
+					if ((res & mask) != (ref & mask))
 					{
 						return tcu::TestStatus::fail("Failed");
 					}
