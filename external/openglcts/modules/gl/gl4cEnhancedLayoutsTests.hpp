@@ -4771,6 +4771,133 @@ private:
 	std::vector<testCase> m_test_cases;
 };
 
+/** Implementation of test XFBExplicitLocationTest. Description follows:
+ *
+ * Test verifies that explicit location on matrices and arrays does not impact xfb output.
+ *
+ * Test following code snippet:
+ *
+ *     layout (location = 0, xfb_offset = 0) out vec2 goku[3];
+ *
+ * Is expected to have the same output as:
+ *
+ *     layout (xfb_offset = 0) out vec2 goku[3];
+ *
+ * While explicit location does impact varyings layout of matrices and arrays, see
+ * Ref. GLSL 4.60, Section 4.4.2. "Output Layout Qualifiers" - it shall not impact
+ * xfb output.
+ *
+ * Test all shader stages.
+ **/
+class XFBExplicitLocationTest : public BufferTestBase
+{
+public:
+	XFBExplicitLocationTest(deqp::Context& context);
+	~XFBExplicitLocationTest()
+	{
+	}
+
+protected:
+	/* Protected methods */
+	using BufferTestBase::executeDrawCall;
+
+	virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
+	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
+
+	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
+							   std::string& out_calculations);
+
+	virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
+									std::string& out_interface);
+
+	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+
+	virtual std::string getTestCaseName(glw::GLuint test_case_index);
+	virtual glw::GLuint getTestCaseNumber();
+	virtual void		testInit();
+
+private:
+	/* Private types */
+	struct testCase
+	{
+		Utils::Shader::STAGES	m_stage;
+		Utils::Type				m_type;
+		glw::GLuint				m_array_size;
+	};
+
+	/* Private fields */
+	std::vector<testCase> m_test_cases;
+};
+
+/** Implementation of test XFBExplicitLocationStructTest. Description follows:
+ *
+ * Test verifies that explicit location on struct does not impact xfb output.
+ *
+ * Test following code snippet:
+ *     struct TestStruct {
+ *        float a;
+ *        double b;
+ *      };
+ *
+ *     layout (location = 0, xfb_offset = 0) flat out TestStruct goku;
+ *
+ * Is expected to have the same output as:
+ *
+ *     layout (xfb_offset = 0) flat out TestStruct goku;
+ *
+ * While explicit location does impact varyings layout of structs, see
+ * Ref. GLSL 4.60, Section 4.4.2. "Output Layout Qualifiers" - it shall not impact
+ * xfb output.
+ *
+ * Test all shader stages.
+ **/
+class XFBExplicitLocationStructTest : public BufferTestBase
+{
+public:
+	XFBExplicitLocationStructTest(deqp::Context& context);
+	~XFBExplicitLocationStructTest()
+	{
+	}
+
+protected:
+	/* Protected methods */
+	using BufferTestBase::executeDrawCall;
+
+	virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
+	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
+
+	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
+							   std::string& out_calculations);
+
+	virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
+									std::string& out_interface);
+
+	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+
+	virtual std::string getTestCaseName(glw::GLuint test_case_index);
+	virtual glw::GLuint getTestCaseNumber();
+	virtual void		testInit();
+
+private:
+	/* Private types */
+
+	struct testType
+	{
+		Utils::Type	m_type;
+		glw::GLuint	m_array_size;
+	};
+
+	struct testCase
+	{
+		Utils::Shader::STAGES		m_stage;
+		std::vector<testType>		m_types;
+		bool						m_nested_struct;
+	};
+
+	/* Private fields */
+	std::vector<testCase> m_test_cases;
+};
+
 } /* EnhancedLayouts namespace */
 
 /** Group class for Shader Language 420Pack conformance tests */

@@ -217,7 +217,19 @@ add_deqp_module(deqp-vksc "${DEQP_VK_SRCS}" "${DEQP_VKSC_LIBS}" "tcutil-sc-platf
 target_include_directories(deqp-vksc-package BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_include_directories(deqp-vksc BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 
-add_data_dir(deqp-vk ../../data/vulkan	vulkan)
+
+add_data_dir(deqp-vk ../../data/vulkan vulkan)
+add_data_dir(deqp-vk ../../mustpass/master/vk-default vk-default)
+
+# add all directories containing android mustpass
+file(GLOB PATHS_MATCHING_PATTERN ${CMAKE_SOURCE_DIR}/android/cts/master/vk-*/)
+FOREACH(FOUND_PATH ${PATHS_MATCHING_PATTERN})
+	IF(IS_DIRECTORY ${FOUND_PATH})
+		SET(LAST_DIRECTORY "")
+		file(RELATIVE_PATH LAST_DIRECTORY ${CMAKE_SOURCE_DIR}/android/cts/master ${FOUND_PATH})
+		add_data_dir(deqp-vk ../../../../android/cts/master/${LAST_DIRECTORY} ${LAST_DIRECTORY})
+	ENDIF()
+ENDFOREACH()
 
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)
 	add_executable(vk-build-programs vktBuildPrograms.cpp)

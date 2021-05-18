@@ -143,7 +143,16 @@ void TextureWrapCase::init (void)
 
 		// Fill level 0.
 		m_texture->getRefTexture().allocLevel(0);
-		tcu::fillWithComponentGradients(m_texture->getRefTexture().getLevel(0), tcu::Vec4(-0.5f, -0.5f, -0.5f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f));
+		if (m_wrapS == GL_REPEAT ||
+			m_wrapT == GL_REPEAT)
+		{
+			// If run in repeat mode, use conical style texture to avoid edge sample result have a huge difference when coordinate offset in allow range.
+			tcu::fillWithComponentGradients3(m_texture->getRefTexture().getLevel(0), tcu::Vec4(-0.5f, -0.5f, -0.5f, 1.5f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f));
+		}
+		else
+		{
+			tcu::fillWithComponentGradients(m_texture->getRefTexture().getLevel(0), tcu::Vec4(-0.5f, -0.5f, -0.5f, 1.5f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f));
+		}
 
 		m_texture->upload();
 	}
@@ -169,8 +178,18 @@ TextureWrapCase::IterateResult TextureWrapCase::iterate (void)
 	int						leftWidth			= viewport.width / 2;
 	int						rightWidth			= viewport.width - leftWidth;
 	vector<float>			texCoord;
-	tcu::RGBA				threshold			= m_renderCtx.getRenderTarget().getPixelFormat().getColorThreshold()
-												+ (isCompressedTex ? tcu::RGBA(7,7,7,7) : tcu::RGBA(3,3,3,3));
+
+	tcu::RGBA				threshold;
+	if (m_texture->getRefTexture().getFormat().type == tcu::TextureFormat::UNORM_SHORT_4444 ||
+		m_texture->getRefTexture().getFormat().type == tcu::TextureFormat::UNSIGNED_SHORT_4444)
+	{
+		threshold = tcu::PixelFormat(4, 4, 4, 4).getColorThreshold() + tcu::RGBA(1, 1, 1, 1);
+	}
+	else
+	{
+		threshold = m_renderCtx.getRenderTarget().getPixelFormat().getColorThreshold() +
+					(isCompressedTex ? tcu::RGBA(7, 7, 7, 7) : tcu::RGBA(3, 3, 3, 3));
+	}
 
 	// Bind to unit 0.
 	gl.activeTexture(GL_TEXTURE0);

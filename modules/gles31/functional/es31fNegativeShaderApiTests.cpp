@@ -86,6 +86,11 @@ static const char* uniformBlockVertSource	=	"#version 300 es\n"
 												"	gl_Position = vec4(var);\n"
 												"}\n\0";
 
+static bool supportsES32orGL45(NegativeTestContext& ctx)
+{
+	return contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+		   contextSupports(ctx.getRenderContext().getType(), glu::ApiType::core(4, 5));
+}
 
 // Shader control commands
 void create_shader (NegativeTestContext& ctx)
@@ -269,10 +274,13 @@ void attach_shader (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.endSection();
 
-	ctx.beginSection("GL_INVALID_OPERATION is generated if a shader of the same type as shader is already attached to program.");
-	ctx.glAttachShader(program, shader2);
-	ctx.expectError(GL_INVALID_OPERATION);
-	ctx.endSection();
+	if (glu::isContextTypeES(ctx.getRenderContext().getType()))
+	{
+		ctx.beginSection("GL_INVALID_OPERATION is generated if a shader of the same type as shader is already attached to program.");
+		ctx.glAttachShader(program, shader2);
+		ctx.expectError(GL_INVALID_OPERATION);
+		ctx.endSection();
+	}
 
 	ctx.glDeleteProgram(program);
 	ctx.glDeleteShader(shader1);
@@ -497,9 +505,17 @@ void get_program_binary (NegativeTestContext& ctx)
 	ctx.getLog() << TestLog::Message << "// GL_LINK_STATUS = " << linkStatus << TestLog::EndMessage;
 	ctx.expectError		(GL_NO_ERROR);
 
-	ctx.glGetProgramBinary	(programInvalid.getProgram(), bufSize, &binaryLength, &binaryFormat, &binaryPtr);
-	ctx.expectError		(GL_INVALID_OPERATION);
-	ctx.endSection();
+	if (!linkStatus)
+	{
+		ctx.glGetProgramBinary	(programInvalid.getProgram(), bufSize, &binaryLength, &binaryFormat, &binaryPtr);
+		ctx.expectError		(GL_INVALID_OPERATION);
+		ctx.endSection();
+	}
+	else
+	{
+		if (isContextTypeES(ctx.getRenderContext().getType()))
+			ctx.fail("Program should not have linked");
+	}
 }
 
 void program_binary (NegativeTestContext& ctx)
@@ -653,7 +669,7 @@ void get_sampler_parameterfv (NegativeTestContext& ctx)
 
 void get_sampler_parameterIiv (NegativeTestContext& ctx)
 {
-	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!supportsES32orGL45(ctx))
 		throw tcu::NotSupportedError("glGetSamplerParameterIiv is not supported.", DE_NULL, __FILE__, __LINE__);
 
 	GLuint	sampler		= 0x1234;
@@ -676,7 +692,7 @@ void get_sampler_parameterIiv (NegativeTestContext& ctx)
 
 void get_sampler_parameterIuiv (NegativeTestContext& ctx)
 {
-	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!supportsES32orGL45(ctx))
 		throw tcu::NotSupportedError("glGetSamplerParameterIuiv is not supported.", DE_NULL, __FILE__, __LINE__);
 
 	GLuint	sampler		= 0x1234;
@@ -713,7 +729,7 @@ void sampler_parameteri (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (supportsES32orGL45(ctx))
 	{
 		ctx.beginSection("GL_INVALID_ENUM is generated if glSamplerParameteri is called for a non-scalar parameter.");
 		ctx.glSamplerParameteri(sampler, GL_TEXTURE_BORDER_COLOR, 0);
@@ -761,7 +777,7 @@ void sampler_parameterf (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (supportsES32orGL45(ctx))
 	{
 		ctx.beginSection("GL_INVALID_ENUM is generated if glSamplerParameterf is called for a non-scalar parameter.");
 		ctx.glSamplerParameteri(sampler, GL_TEXTURE_BORDER_COLOR, 0);
@@ -795,7 +811,7 @@ void sampler_parameterfv (NegativeTestContext& ctx)
 
 void sampler_parameterIiv (NegativeTestContext& ctx)
 {
-	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!supportsES32orGL45(ctx))
 		throw tcu::NotSupportedError("glSamplerParameterIiv is not supported.", DE_NULL, __FILE__, __LINE__);
 
 	GLuint	sampler;
@@ -816,7 +832,7 @@ void sampler_parameterIiv (NegativeTestContext& ctx)
 
 void sampler_parameterIuiv (NegativeTestContext& ctx)
 {
-	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!supportsES32orGL45(ctx))
 		throw tcu::NotSupportedError("glSamplerParameterIuiv is not supported.", DE_NULL, __FILE__, __LINE__);
 
 	GLuint	sampler;
@@ -2579,7 +2595,7 @@ void srgb_decode_samplerparameterfv (NegativeTestContext& ctx)
 
 void srgb_decode_samplerparameterIiv (NegativeTestContext& ctx)
 {
-	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!supportsES32orGL45(ctx))
 		TCU_THROW(NotSupportedError, "glSamplerParameterIiv is not supported.");
 
 	if (!ctx.isExtensionSupported("GL_EXT_texture_sRGB_decode"))
@@ -2602,7 +2618,7 @@ void srgb_decode_samplerparameterIiv (NegativeTestContext& ctx)
 
 void srgb_decode_samplerparameterIuiv (NegativeTestContext& ctx)
 {
-	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!supportsES32orGL45(ctx))
 		TCU_THROW(NotSupportedError, "glSamplerParameterIuiv is not supported.");
 
 	if (!ctx.isExtensionSupported("GL_EXT_texture_sRGB_decode"))

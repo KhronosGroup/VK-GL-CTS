@@ -574,7 +574,6 @@ tcu::TestNode::IterateResult GeometryShaderLayeredFramebufferClear::iterate(void
 	for (int current_test = static_cast<int>(CLEAR_FIRST); current_test < static_cast<int>(CLEAR_COUNT); current_test++)
 	{
 		void*				buffer				= NULL;
-		const unsigned char clear_color_byte[]  = { 64, 128, 255, 32 };
 		const float			clear_color_float[] = { 0.25f, 0.5f, 1.0f, 32.0f / 255.0f };
 		const int			clear_color_int[]   = { 64, 128, 255, 32 };
 		glw::GLuint			fbo_id				= 0;
@@ -725,19 +724,18 @@ tcu::TestNode::IterateResult GeometryShaderLayeredFramebufferClear::iterate(void
 					if (current_test == CLEAR_BUFFERIV || current_test == CLEAR_BUFFERUIV)
 					{
 						unsigned int* pixel = (unsigned int*)(row + x * pixel_size);
-
 						if (memcmp(pixel, clear_color_int, sizeof(clear_color_int)) != 0)
 						{
 							/* Test fails at this point */
 							m_testCtx.getLog()
 								<< tcu::TestLog::Message << "(x=" << x << " y=" << y << ") Reference pixel ["
-								<< clear_color_byte[0] << ", " << clear_color_byte[1] << ", " << clear_color_byte[2]
-								<< ", " << clear_color_byte[3] << "] is different from the one retrieved ["
+								<< clear_color_int[0] << ", " << clear_color_int[1] << ", " << clear_color_int[2]
+								<< ", " << clear_color_int[3] << "] is different from the one retrieved ["
 								<< (int)pixel[0] << ", " << (int)pixel[1] << ", " << (int)pixel[2] << ", "
 								<< (int)pixel[3] << "]" << tcu::TestLog::EndMessage;
 
 							TCU_FAIL("Data comparison failure");
-						} /* if (memcmp(pixel, clear_color_byte, sizeof(clear_color_byte) ) != 0) */
+						} /* if (memcmp(pixel, clear_color_int, sizeof(clear_color_int) ) != 0) */
 					}	 /* if (current_test == CLEAR_BUFFERIV || current_test == CLEAR_BUFFERUIV) */
 					else
 					{
@@ -753,8 +751,8 @@ tcu::TestNode::IterateResult GeometryShaderLayeredFramebufferClear::iterate(void
 							/* Test fails at this point */
 							m_testCtx.getLog()
 								<< tcu::TestLog::Message << "(x=" << x << " y=" << y << ") Reference pixel ["
-								<< clear_color_byte[0] << ", " << clear_color_byte[1] << ", " << clear_color_byte[2]
-								<< ", " << clear_color_byte[3] << "] is different from the one retrieved ["
+								<< clear_color_int[0] << ", " << clear_color_int[1] << ", " << clear_color_int[2]
+								<< ", " << clear_color_int[3] << "] is different from the one retrieved ["
 								<< (int)pixel[0] << ", " << (int)pixel[1] << ", " << (int)pixel[2] << ", "
 								<< (int)pixel[3] << "]" << tcu::TestLog::EndMessage;
 

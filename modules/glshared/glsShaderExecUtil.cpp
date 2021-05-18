@@ -746,7 +746,8 @@ private:
 
 GeometryShaderExecutor* GeometryShaderExecutor::create (const glu::RenderContext& renderCtx, const ShaderSpec& shaderSpec)
 {
-	if (glu::glslVersionIsES(shaderSpec.version) && shaderSpec.version <= glu::GLSL_VERSION_310_ES)
+	if (glu::glslVersionIsES(shaderSpec.version) && shaderSpec.version <= glu::GLSL_VERSION_310_ES
+		&& !contextSupports(renderCtx.getType(), glu::ApiType::core(4, 5)))
 		checkExtension(renderCtx, "GL_EXT_geometry_shader");
 
 	return new GeometryShaderExecutor(renderCtx, shaderSpec);
@@ -1257,7 +1258,8 @@ void checkTessSupport (const glu::RenderContext& renderCtx, const ShaderSpec& sh
 {
 	const int numBlockRequired = 2; // highest binding is always 1 (output) i.e. count == 2
 
-	if (glu::glslVersionIsES(shaderSpec.version) && shaderSpec.version <= glu::GLSL_VERSION_310_ES)
+	if (glu::glslVersionIsES(shaderSpec.version) && shaderSpec.version <= glu::GLSL_VERSION_310_ES
+		&& !contextSupports(renderCtx.getType(), glu::ApiType::core(4, 5)))
 		checkExtension(renderCtx, "GL_EXT_tessellation_shader");
 
 	if (stage == glu::SHADERTYPE_TESSELLATION_CONTROL)

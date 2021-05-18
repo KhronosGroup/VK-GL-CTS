@@ -862,6 +862,16 @@ TestInstance* ImageTranscodingCase::createInstance (Context& context) const
 
 	if (differenceFound)
 	{
+		if ((context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+			!context.getPortabilitySubsetFeatures().imageViewFormatReinterpretation))
+		{
+			tcu::TextureFormat	textureImageFormat	= vk::mapVkFormat(m_parameters.featuredFormat);
+			tcu::TextureFormat	textureViewFormat	= vk::mapVkFormat(featurelessFormat);
+
+			if (tcu::getTextureFormatBitDepth(textureImageFormat) != tcu::getTextureFormatBitDepth(textureViewFormat))
+				TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Format must not contain a different number of bits in each component, than the format of the VkImage");
+		}
+
 		TestParameters	calculatedParameters	=
 		{
 			m_parameters.operation,					// Operation				operation
@@ -932,6 +942,8 @@ static const VkFormat	compatibleFormatList16Bit[]		=
 	VK_FORMAT_R16_UINT,
 	VK_FORMAT_R16_SINT,
 	VK_FORMAT_R16_SFLOAT,
+	VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
+	VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
 
 	VK_FORMAT_UNDEFINED
 };

@@ -85,6 +85,8 @@ DE_DECLARE_COMMAND_LINE_OPT(EGLWindowType,				std::string);
 DE_DECLARE_COMMAND_LINE_OPT(EGLPixmapType,				std::string);
 DE_DECLARE_COMMAND_LINE_OPT(LogImages,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(LogShaderSources,			bool);
+DE_DECLARE_COMMAND_LINE_OPT(LogDecompiledSpirv,			bool);
+DE_DECLARE_COMMAND_LINE_OPT(LogEmptyLoginfo,			bool);
 DE_DECLARE_COMMAND_LINE_OPT(TestOOM,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(ArchiveDir,					std::string);
 DE_DECLARE_COMMAND_LINE_OPT(VKDeviceID,					int);
@@ -101,6 +103,8 @@ DE_DECLARE_COMMAND_LINE_OPT(RenderDoc,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(CaseFraction,				std::vector<int>);
 DE_DECLARE_COMMAND_LINE_OPT(CaseFractionMandatoryTests,	std::string);
 DE_DECLARE_COMMAND_LINE_OPT(WaiverFile,					std::string);
+DE_DECLARE_COMMAND_LINE_OPT(RunnerType,					tcu::TestRunnerType);
+DE_DECLARE_COMMAND_LINE_OPT(TerminateOnFail,			bool);
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -153,6 +157,12 @@ void registerOptions (de::cmdline::Parser& parser)
 		{ "180",			SCREENROTATION_180			},
 		{ "270",			SCREENROTATION_270			}
 	};
+	static const NamedValue<tcu::TestRunnerType> s_runnerTypes[] =
+	{
+		{ "any",	tcu::RUNNERTYPE_ANY		},
+		{ "none",	tcu::RUNNERTYPE_NONE	},
+		{ "amber",	tcu::RUNNERTYPE_AMBER	},
+	};
 
 	parser
 		<< Option<CasePath>						("n",		"deqp-case",								"Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*)")
@@ -187,6 +197,8 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<VKDeviceGroupID>				(DE_NULL,	"deqp-vk-device-group-id",					"Vulkan device Group ID (IDs start from 1)",							"1")
 		<< Option<LogImages>					(DE_NULL,	"deqp-log-images",							"Enable or disable logging of result images",		s_enableNames,		"enable")
 		<< Option<LogShaderSources>				(DE_NULL,	"deqp-log-shader-sources",					"Enable or disable logging of shader sources",		s_enableNames,		"enable")
+		<< Option<LogDecompiledSpirv>			(DE_NULL,	"deqp-log-decompiled-spirv",				"Enable or disable logging of decompiled spir-v",	s_enableNames,		"enable")
+		<< Option<LogEmptyLoginfo>				(DE_NULL,	"deqp-log-empty-loginfo",					"Logging of empty shader compile/link log info",	s_enableNames,		"enable")
 		<< Option<TestOOM>						(DE_NULL,	"deqp-test-oom",							"Run tests that exhaust memory on purpose",			s_enableNames,		TEST_OOM_DEFAULT)
 		<< Option<ArchiveDir>					(DE_NULL,	"deqp-archive-dir",							"Path to test resource files",											".")
 		<< Option<LogFlush>						(DE_NULL,	"deqp-log-flush",							"Enable or disable log file fflush",				s_enableNames,		"enable")
@@ -200,7 +212,9 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<RenderDoc>					(DE_NULL,	"deqp-renderdoc",							"Enable RenderDoc frame markers",					s_enableNames,		"disable")
 		<< Option<CaseFraction>					(DE_NULL,	"deqp-fraction",							"Run a fraction of the test cases (e.g. N,M means run group%M==N)",	parseIntList,	"")
 		<< Option<CaseFractionMandatoryTests>	(DE_NULL,	"deqp-fraction-mandatory-caselist-file",	"Case list file that must be run for each fraction",					"")
-		<< Option<WaiverFile>					(DE_NULL,	"deqp-waiver-file",							"Read waived tests from given file",									"");
+		<< Option<WaiverFile>					(DE_NULL,	"deqp-waiver-file",							"Read waived tests from given file",									"")
+		<< Option<RunnerType>					(DE_NULL,	"deqp-runner-type",							"Filter test cases based on runner",				s_runnerTypes,		"any")
+		<< Option<TerminateOnFail>				(DE_NULL,	"deqp-terminate-on-fail",					"Terminate the run on first failure",				s_enableNames,		"disable");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -434,21 +448,16 @@ static void parseCaseTrie (CaseTreeNode* root, std::istream& in)
 	}
 }
 
-static void parseCaseList (CaseTreeNode* root, std::istream& in, bool reportDuplicates)
+static void parseSimpleCaseList (vector<CaseTreeNode*>& nodeStack, std::istream& in, bool reportDuplicates)
 {
 	// \note Algorithm assumes that cases are sorted by groups, but will
 	//		 function fine, albeit more slowly, if that is not the case.
-	vector<CaseTreeNode*>	nodeStack;
-	int						stackPos	= 0;
-	string					curName;
-
-	nodeStack.resize(8, DE_NULL);
-
-	nodeStack[0] = root;
+	int		stackPos	= 0;
+	string	curName;
 
 	for (;;)
 	{
-		const int	curChr	= in.get();
+		const int curChr = in.get();
 
 		if (curChr == std::char_traits<char>::eof() || curChr == 0 || curChr == '\n' || curChr == '\r')
 		{
@@ -530,7 +539,39 @@ static void parseCaseList (CaseTreeNode* root, std::istream& in, bool reportDupl
 	}
 }
 
-static CaseTreeNode* parseCaseList (std::istream& in)
+static void parseCaseList (CaseTreeNode* root, std::istream& in, bool reportDuplicates)
+{
+	vector<CaseTreeNode*> nodeStack(8, root);
+	parseSimpleCaseList(nodeStack, in, reportDuplicates);
+}
+
+static void parseGroupFile(CaseTreeNode* root, std::istream& inGroupList, const tcu::Archive& archive, bool reportDuplicates)
+{
+	// read whole file and remove all '\r'
+	std::string buffer(std::istreambuf_iterator<char>(inGroupList), {});
+	buffer.erase(std::remove(buffer.begin(), buffer.end(), '\r'), buffer.end());
+
+	vector<CaseTreeNode*>	nodeStack(8, root);
+	std::stringstream		namesStream(buffer);
+	std::string				fileName;
+
+	while (std::getline(namesStream, fileName))
+	{
+		de::FilePath			groupPath		(fileName);
+		de::UniquePtr<Resource>	groupResource	(archive.getResource(groupPath.normalize().getPath()));
+		const int				groupBufferSize	(groupResource->getSize());
+		std::vector<char>		groupBuffer		(static_cast<size_t>(groupBufferSize));
+
+		groupResource->read(reinterpret_cast<deUint8*>(&groupBuffer[0]), groupBufferSize);
+		if (groupBuffer.empty())
+			throw Exception("Empty case list resource");
+
+		std::istringstream groupIn(std::string(groupBuffer.begin(), groupBuffer.end()));
+		parseSimpleCaseList(nodeStack, groupIn, reportDuplicates);
+	}
+}
+
+static CaseTreeNode* parseCaseList (std::istream& in, const tcu::Archive& archive, const char* path = DE_NULL)
 {
 	CaseTreeNode* const root = new CaseTreeNode("");
 	try
@@ -538,7 +579,31 @@ static CaseTreeNode* parseCaseList (std::istream& in)
 		if (in.peek() == '{')
 			parseCaseTrie(root, in);
 		else
-			parseCaseList(root, in, true);
+		{
+			// if we are reading cases from file determine if we are
+			// reading group file or plain list of cases; this is done by
+			// reading single line and checking if it ends with ".txt"
+			bool readGroupFile = false;
+			if (path)
+			{
+				// read the first line and make sure it doesn't contain '\r'
+				std::string line;
+				std::getline(in, line);
+				line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+
+				const std::string ending = ".txt";
+				readGroupFile = (line.length() > ending.length()) &&
+								std::equal(ending.rbegin(), ending.rend(), line.rbegin());
+
+				// move to the beginning of the file to parse first line too
+				in.seekg(0, in.beg);
+			}
+
+			if (readGroupFile)
+				parseGroupFile(root, in, archive, true);
+			else
+				parseCaseList(root, in, true);
+		}
 
 		{
 			const int curChr = in.get();
@@ -780,6 +845,9 @@ bool CommandLine::parse (int argc, const char* const* argv)
 	if (!m_cmdLine.getOption<opt::LogFlush>())
 		m_logFlags |= QP_TEST_LOG_NO_FLUSH;
 
+	if (!m_cmdLine.getOption<opt::LogEmptyLoginfo>())
+		m_logFlags |= QP_TEST_LOG_EXCLUDE_EMPTY_LOGINFO;
+
 	if ((m_cmdLine.hasOption<opt::CasePath>()?1:0) +
 		(m_cmdLine.hasOption<opt::CaseList>()?1:0) +
 		(m_cmdLine.hasOption<opt::CaseListFile>()?1:0) +
@@ -787,6 +855,17 @@ bool CommandLine::parse (int argc, const char* const* argv)
 		(m_cmdLine.getOption<opt::StdinCaseList>()?1:0) > 1)
 	{
 		debugOut << "ERROR: multiple test case list options given!\n" << std::endl;
+		clear();
+		return false;
+	}
+
+	if (m_cmdLine.getArgs().size() > 0)
+	{
+		debugOut << "ERROR: arguments not starting with '-' or '--' are not supported by this application!\n" << std::endl;
+
+		debugOut << "\n" << de::FilePath(argv[0]).getBaseName() << " [options]\n\n";
+		parser.help(debugOut);
+
 		clear();
 		return false;
 	}
@@ -840,6 +919,7 @@ int						CommandLine::getVKDeviceId					(void) const	{ return m_cmdLine.getOptio
 int						CommandLine::getVKDeviceGroupId				(void) const	{ return m_cmdLine.getOption<opt::VKDeviceGroupID>();						}
 bool					CommandLine::isValidationEnabled			(void) const	{ return m_cmdLine.getOption<opt::Validation>();							}
 bool					CommandLine::printValidationErrors			(void) const	{ return m_cmdLine.getOption<opt::PrintValidationErrors>();					}
+bool					CommandLine::isLogDecompiledSpirvEnabled	(void) const	{ return m_cmdLine.getOption<opt::LogDecompiledSpirv>();					}
 bool					CommandLine::isOutOfMemoryTestEnabled		(void) const	{ return m_cmdLine.getOption<opt::TestOOM>();								}
 bool					CommandLine::isShadercacheEnabled			(void) const	{ return m_cmdLine.getOption<opt::ShaderCache>();							}
 const char*				CommandLine::getShaderCacheFilename			(void) const	{ return m_cmdLine.getOption<opt::ShaderCacheFilename>().c_str();			}
@@ -851,6 +931,8 @@ const char*				CommandLine::getWaiverFileName				(void) const	{ return m_cmdLine
 const std::vector<int>&	CommandLine::getCaseFraction				(void) const	{ return m_cmdLine.getOption<opt::CaseFraction>();							}
 const char*				CommandLine::getCaseFractionMandatoryTests	(void) const	{ return m_cmdLine.getOption<opt::CaseFractionMandatoryTests>().c_str();	}
 const char*				CommandLine::getArchiveDir					(void) const	{ return m_cmdLine.getOption<opt::ArchiveDir>().c_str();					}
+tcu::TestRunnerType		CommandLine::getRunnerType					(void) const	{ return m_cmdLine.getOption<opt::RunnerType>();							}
+bool					CommandLine::isTerminateOnFailEnabled		(void) const	{ return m_cmdLine.getOption<opt::TerminateOnFail>();						}
 
 const char* CommandLine::getGLContextType (void) const
 {
@@ -960,27 +1042,30 @@ bool CaseListFilter::checkCaseFraction (int i, const std::string& testCaseName) 
 }
 
 CaseListFilter::CaseListFilter (void)
-	: m_caseTree(DE_NULL)
+	: m_caseTree	(DE_NULL)
+	, m_runnerType	(tcu::RUNNERTYPE_ANY)
 {
 }
 
 CaseListFilter::CaseListFilter (const de::cmdline::CommandLine& cmdLine, const tcu::Archive& archive)
-	: m_caseTree(DE_NULL)
+	: m_caseTree	(DE_NULL)
+	, m_runnerType	(cmdLine.getOption<opt::RunnerType>())
 {
 	if (cmdLine.hasOption<opt::CaseList>())
 	{
 		std::istringstream str(cmdLine.getOption<opt::CaseList>());
 
-		m_caseTree = parseCaseList(str);
+		m_caseTree = parseCaseList(str, archive);
 	}
 	else if (cmdLine.hasOption<opt::CaseListFile>())
 	{
-		std::ifstream in(cmdLine.getOption<opt::CaseListFile>().c_str(), std::ios_base::binary);
+		std::string caseListFile = cmdLine.getOption<opt::CaseListFile>();
+		std::ifstream in(caseListFile.c_str(), std::ios_base::binary);
 
 		if (!in.is_open() || !in.good())
-			throw Exception("Failed to open case list file '" + cmdLine.getOption<opt::CaseListFile>() + "'");
+			throw Exception("Failed to open case list file '" + caseListFile + "'");
 
-		m_caseTree = parseCaseList(in);
+		m_caseTree = parseCaseList(in, archive, caseListFile.c_str());
 	}
 	else if (cmdLine.hasOption<opt::CaseListResource>())
 	{
@@ -998,12 +1083,12 @@ CaseListFilter::CaseListFilter (const de::cmdline::CommandLine& cmdLine, const t
 		{
 			std::istringstream	in	(std::string(&buffer[0], (size_t)bufferSize));
 
-			m_caseTree = parseCaseList(in);
+			m_caseTree = parseCaseList(in, archive);
 		}
 	}
 	else if (cmdLine.getOption<opt::StdinCaseList>())
 	{
-		m_caseTree = parseCaseList(std::cin);
+		m_caseTree = parseCaseList(std::cin, archive);
 	}
 	else if (cmdLine.hasOption<opt::CasePath>())
 		m_casePaths = de::MovePtr<const CasePaths>(new CasePaths(cmdLine.getOption<opt::CasePath>()));

@@ -23,18 +23,22 @@
 import os
 import sys
 import argparse
+import re
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
 
 from build.common import DEQP_DIR
 from khr_util.format import writeInlFile
 
-VK_API_NAMES					= { "" :	"Vulkan API",
-									"SC" :	"Vulkan SC API"}
-
-
-VULKAN_H	= { "" :	os.path.join(os.path.dirname(__file__), "src", "vulkan_core.h"),
-				"SC" :	os.path.join(os.path.dirname(__file__), "src", "vulkan_sc_core.h") }
+VULKAN_H	= { "" : [
+						os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codecs_common.h"),
+						os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h264std.h"),
+						os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h264std_encode.h"),
+						os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h265std.h"),
+						os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h264std_decode.h"),
+						os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h265std_decode.h"),
+						os.path.join(os.path.dirname(__file__), "src", "vulkan_core.h") ],
+				"SC" : [ os.path.join(os.path.dirname(__file__), "src", "vulkan_sc_core.h") ] }
 VULKAN_DIR	= { "" :	os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan"),
 				"SC" :	os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkansc") }
 
@@ -63,7 +67,7 @@ def readFile (filename):
 
 def writeVulkanCHeader (src, filename):
 	def gen ():
-		dst = src.replace('#include "vk_platform.h"','')
+		dst = re.sub(r'(#include "[^\s,\n}]+")', '', src)
 
 		for old_type, new_type in TYPE_SUBSTITUTIONS:
 			dst = dst.replace(old_type, new_type)
@@ -87,5 +91,8 @@ def getApiName (args):
 
 if __name__ == "__main__":
 	args					= parseCmdLineArgs()
-	src						= readFile(VULKAN_H[args.api])
-	writeVulkanCHeader		(src, os.path.join(VULKAN_DIR[args.api], "vkVulkan_c.inl"))
+	src = ""
+	for file in VULKAN_H[args.api]:
+		src += readFile(file)
+
+	writeVulkanCHeader				(src, os.path.join(VULKAN_DIR[args.api], "vkVulkan_c.inl"))

@@ -935,6 +935,7 @@ tcu::TestStatus createSwapchainSimulateOOMTest (Context& context, TestParameters
 																			failingAllocator.getCallbacks()));
 		const DeviceHelper						devHelper	(context, instHelper.vki, instHelper.instance, *surface, failingAllocator.getCallbacks());
 		const vector<VkSwapchainCreateInfoKHR>	allCases	(generateSwapchainParameterCases(params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
+		const VkSurfaceCapabilitiesKHR			capabilities(getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface));
 
 		if (maxCases < allCases.size())
 			log << TestLog::Message << "Note: Will only test first " << maxCases << " cases out of total of " << allCases.size() << " parameter combinations" << TestLog::EndMessage;
@@ -945,7 +946,11 @@ tcu::TestStatus createSwapchainSimulateOOMTest (Context& context, TestParameters
 
 			for (deUint32 numPassingAllocs = 0; numPassingAllocs <= maxAllocs; ++numPassingAllocs)
 			{
-				bool	gotOOM	= false;
+				bool						gotOOM		= false;
+				VkSwapchainCreateInfoKHR	curParams	= allCases[caseNdx];
+				curParams.surface				= *surface;
+				curParams.queueFamilyIndexCount	= 1u;
+				curParams.pQueueFamilyIndices	= &devHelper.queueFamilyIndex;
 
 				failingAllocator.reset(DeterministicFailAllocator::MODE_COUNT_AND_FAIL, numPassingAllocs);
 
@@ -953,15 +958,7 @@ tcu::TestStatus createSwapchainSimulateOOMTest (Context& context, TestParameters
 
 				try
 				{
-					VkSwapchainCreateInfoKHR	curParams	= allCases[caseNdx];
-
-					curParams.surface				= *surface;
-					curParams.queueFamilyIndexCount	= 1u;
-					curParams.pQueueFamilyIndices	= &devHelper.queueFamilyIndex;
-
-					{
-						const Unique<VkSwapchainKHR>	swapchain	(createSwapchainKHR(devHelper.vkd, *devHelper.device, &curParams, failingAllocator.getCallbacks()));
-					}
+					const Unique<VkSwapchainKHR>	swapchain	(createSwapchainKHR(devHelper.vkd, *devHelper.device, &curParams, failingAllocator.getCallbacks()));
 				}
 				catch (const OutOfMemoryError& e)
 				{
@@ -979,7 +976,16 @@ tcu::TestStatus createSwapchainSimulateOOMTest (Context& context, TestParameters
 					break;
 				}
 				else if (numPassingAllocs == maxAllocs)
+				{
+					// The maxExtents case might not be able to create the requested surface due to insufficient
+					// memory, so in this case *only* we allow the OOM exception upto maxAllocs.
+					if (params.dimension == TEST_DIMENSION_IMAGE_EXTENT &&
+						capabilities.maxImageExtent.width == curParams.imageExtent.width &&
+						capabilities.maxImageExtent.height == curParams.imageExtent.height)
+						break;
+
 					results.addResult(QP_TEST_RESULT_QUALITY_WARNING, "Creating swapchain did not succeed, callback limit exceeded");
+				}
 			}
 
 			context.getTestContext().touchWatchdog();

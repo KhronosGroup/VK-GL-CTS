@@ -142,7 +142,7 @@ glu::ShaderProgram* ProgramLibrary::getProgram (Program program)
 		params["FRAG_IN"]		= "varying";
 		params["FRAG_COLOR"]	= "gl_FragColor";
 	}
-	else if (m_glslVersion == glu::GLSL_VERSION_300_ES || m_glslVersion == glu::GLSL_VERSION_310_ES || m_glslVersion == glu::GLSL_VERSION_320_ES || m_glslVersion == glu::GLSL_VERSION_330)
+	else if (m_glslVersion == glu::GLSL_VERSION_300_ES || m_glslVersion == glu::GLSL_VERSION_310_ES || m_glslVersion == glu::GLSL_VERSION_320_ES || m_glslVersion > glu::GLSL_VERSION_330)
 	{
 		const string	version	= glu::getGLSLVersionDeclaration(m_glslVersion);
 		const char*		ext		= DE_NULL;
@@ -180,7 +180,7 @@ glu::ShaderProgram* ProgramLibrary::getProgram (Program program)
 	const char*	sampler	= DE_NULL;
 	const char*	lookup	= DE_NULL;
 
-	if (m_glslVersion == glu::GLSL_VERSION_300_ES || m_glslVersion == glu::GLSL_VERSION_310_ES || m_glslVersion == glu::GLSL_VERSION_320_ES || m_glslVersion == glu::GLSL_VERSION_330)
+	if (m_glslVersion == glu::GLSL_VERSION_300_ES || m_glslVersion == glu::GLSL_VERSION_310_ES || m_glslVersion == glu::GLSL_VERSION_320_ES || m_glslVersion > glu::GLSL_VERSION_330)
 	{
 		switch (program)
 		{

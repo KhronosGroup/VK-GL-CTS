@@ -91,6 +91,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     public static final String FEATURE_PORTRAIT = "android.hardware.screen.portrait";
     public static final String FEATURE_VULKAN_LEVEL = "android.hardware.vulkan.level";
     public static final String FEATURE_VULKAN_DEQP_LEVEL = "android.software.vulkan.deqp.level";
+    public static final String FEATURE_OPENGLES_DEQP_LEVEL = "android.software.opengles.deqp.level";
 
     private static final int TESTCASE_BATCH_LIMIT = 1000;
     private static final int UNRESPONSIVE_CMD_TIMEOUT_MS = 10 * 60 * 1000; // 10min
@@ -1647,51 +1648,76 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     }
 
     /**
-     * Check whether the device's claimed Vulkan dEQP level is high enough that it should pass the
-     * tests in the caselist.
+     * Check whether the device's claimed Vulkan/OpenGL ES dEQP level is high enough that it should
+     * pass the tests in the caselist.
      *
-     * Precondition: the package must be a Vulkan package.
+     * Precondition: the package must be a Vulkan or OpenGL ES package.
      */
-    private boolean claimedVuklanDeqpLevelIsRecentEnough()
-        throws CapabilityQueryFailureException, DeviceNotAvailableException {
-
-        if (!isVulkanPackage()) {
-            throw new AssertionError("Claims about Vulkan dEQP support should only be checked for "
-                + "Vulkan packages");
+    private boolean claimedDeqpLevelIsRecentEnough() throws CapabilityQueryFailureException,
+            DeviceNotAvailableException {
+        // Determine whether we need to check the dEQP feature flag for Vulkan or OpenGL ES.
+        final String featureName;
+        if (isVulkanPackage()) {
+            featureName = FEATURE_VULKAN_DEQP_LEVEL;
+        } else if (isOpenGlEsPackage()) {
+            featureName = FEATURE_OPENGLES_DEQP_LEVEL;
+        } else {
+            throw new AssertionError(
+                "Claims about dEQP support should only be checked for Vulkan or OpenGL ES "
+                    + "packages");
         }
+
+        CLog.d("For caselist \"%s\", the dEQP level feature flag is \"%s\".", mCaselistFile,
+            featureName);
+
+        // A Vulkan/OpenGL ES caselist filename has the form:
+        //     {gles2,gles3,gles31,vk}-master-YYYY-MM-DD.txt
+        final Pattern caseListFilenamePattern = Pattern
+            .compile("-master-(\\d\\d\\d\\d)-(\\d\\d)-(\\d\\d)\\.txt$");
+        final Matcher matcher = caseListFilenamePattern.matcher(mCaselistFile);
+        if (!matcher.find()) {
+            CLog.d("No dEQP level date found in caselist. Running unconditionally.");
+            return true;
+        }
+        final int year = Integer.parseInt(matcher.group(1));
+        final int month = Integer.parseInt(matcher.group(2));
+        final int day = Integer.parseInt(matcher.group(3));
+        CLog.d("Caselist date is %04d-%02d-%02d", year, month, day);
+
+        // As per the documentation for FEATURE_VULKAN_DEQP_LEVEL and
+        // FEATURE_OPENGLES_DEQP_LEVEL in android.content.pm.PackageManager, a year is
+        // encoded as an integer by devoting bits 31-16 to year, 15-8 to month and 7-0
+        // to day.
+        final int minimumLevel = (year << 16) + (month << 8) + day;
+
+        CLog.d("For reference, date -> level mappings are:");
+        CLog.d("    2019-03-01 -> 132317953");
+        CLog.d("    2020-03-01 -> 132383489");
+        CLog.d("    2021-03-01 -> 132449025");
+
+        CLog.d("Minimum level required to run this caselist is %d", minimumLevel);
+
+        // Now look for the feature flag.
         final Map<String, Optional<Integer>> features = getDeviceFeatures(mDevice);
+
         for (String feature : features.keySet()) {
-            if (feature.startsWith(FEATURE_VULKAN_DEQP_LEVEL)) {
-                final Optional<Integer> claimedVulkanDeqpLevel = features.get(feature);
-                if (!claimedVulkanDeqpLevel.isPresent()) {
-                    throw new IllegalStateException("Feature " + FEATURE_VULKAN_DEQP_LEVEL
+            if (feature.startsWith(featureName)) {
+                final Optional<Integer> claimedDeqpLevel = features.get(feature);
+                if (!claimedDeqpLevel.isPresent()) {
+                    throw new IllegalStateException("Feature " + featureName
                         + " has no associated version");
                 }
-                // A Vulkan case list filename has the form 'vk-master-YYYY-MM-DD.txt'
-                final Pattern caseListFilenamePattern = Pattern
-                    .compile("vk-master-(\\d\\d\\d\\d)-(\\d\\d)-(\\d\\d)\\.txt");
-                final Matcher matcher = caseListFilenamePattern.matcher(mCaselistFile);
-                if (matcher.find()) {
-                    final int year = Integer.parseInt(matcher.group(1));
-                    final int month = Integer.parseInt(matcher.group(2));
-                    final int day = Integer.parseInt(matcher.group(3));
-                    CLog.d("Case list date is %s-%s-%s", String.format("04d", year),
-                        String.format("02d", month), String.format("02d", day));
-                    // As per the documentation for FEATURE_VULKAN_DEQP_LEVEL in
-                    // android.content.pm.PackageManager, a year is encoded as an integer by
-                    // devoting bits 31-16 to year, 15-8 to month and 7-0 to day
-                    final int minimumLevel = (year << 16) + (month << 8) + day;
-                    CLog.d("Minimum level required to run this case list is %d", minimumLevel);
-                    CLog.d("Claimed level for this device is %d", claimedVulkanDeqpLevel.get());
-                    return claimedVulkanDeqpLevel.get() >= minimumLevel;
-                } else {
-                    throw new IllegalStateException("Case list filename " + mCaselistFile
-                        + " is malformed");
-                }
+                CLog.d("Device level is %d", claimedDeqpLevel.get());
+
+                final boolean shouldRunCaselist = claimedDeqpLevel.get() >= minimumLevel;
+                CLog.d("Running caselist? %b", shouldRunCaselist);
+                return shouldRunCaselist;
             }
         }
-        throw new IllegalStateException("Device supports Vulkan, so must have feature "
-            + FEATURE_VULKAN_DEQP_LEVEL);
+
+        CLog.d("Could not find dEQP level feature flag \"%s\". Running caselist unconditionally.",
+            featureName);
+        return true;
     }
 
     /**
@@ -2099,13 +2125,13 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             final boolean isSupportedApi = (isOpenGlEsPackage() && isSupportedGles())
                                             || (isVulkanPackage() && isSupportedVulkan())
                                             || (!isOpenGlEsPackage() && !isVulkanPackage());
-            final boolean deviceClaimsToSupportTests = !isVulkanPackage()
-                || claimedVuklanDeqpLevelIsRecentEnough();
-            if (!isSupportedApi || !deviceClaimsToSupportTests || mCollectTestsOnly) {
+            if (mCollectTestsOnly
+                || !isSupportedApi
+                || ((isVulkanPackage() || isOpenGlEsPackage()) && !claimedDeqpLevelIsRecentEnough())) {
                 // Pass all tests trivially if:
-                // - the OpenGL ES or Vulkan is not supported, or
-                // - the device's feature flags do not claim to pass the tests, or
-                // - we are collecting the names of the tests only
+                // - we are collecting the names of the tests only, or
+                // - the relevant API is not supported, or
+                // - the device's feature flags do not claim to pass the tests
                 fakePassTests(listener);
             } else if (!mRemainingTests.isEmpty()) {
                 mInstanceListerner.setSink(listener);

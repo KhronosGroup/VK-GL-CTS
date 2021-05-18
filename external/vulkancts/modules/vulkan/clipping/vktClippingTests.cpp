@@ -656,21 +656,25 @@ tcu::TestStatus testPrimitivesDepthClip (Context& context, const VkPrimitiveTopo
 			caseMinPixels[1] = caseMinPixels[3] = 2;
 			break;
 
-		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
-		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
 		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
 		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+			requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_GEOMETRY_SHADER);
+			// Fallthrough
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
 			caseMinPixels[0] = regionPixels;
 			caseMinPixels[1] = RENDER_SIZE - 2;
 			caseMinPixels[2] = regionPixels;
 			caseMinPixels[3] = 2 * (RENDER_SIZE - 2);
 			break;
 
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+			requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_GEOMETRY_SHADER);
+			// Fallthrough
 		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
 		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
 		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
-		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
-		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
 			caseMinPixels[0] = caseMinPixels[1] = caseMinPixels[2] = caseMinPixels[3] = regionPixels;
 			break;
 
@@ -1473,6 +1477,16 @@ tcu::TestStatus testComplementarity (Context& context, const int numClipDistance
 
 } // ClipDistanceComplementarity ns
 
+void checkTopologySupport(Context& context, const VkPrimitiveTopology topology)
+{
+	if (topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
+		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!context.getPortabilitySubsetFeatures().triangleFans)
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
+	}
+}
+
 void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 {
 	tcu::TestContext& testCtx = clippingTestsGroup->getTestContext();
@@ -1503,7 +1517,7 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 
 			for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
 				addFunctionCaseWithPrograms<VkPrimitiveTopology>(
-					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), "", initPrograms, testPrimitivesInside, cases[caseNdx]);
+					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), "", checkTopologySupport, initPrograms, testPrimitivesInside, cases[caseNdx]);
 
 			clipVolumeGroup->addChild(group.release());
 		}
@@ -1514,7 +1528,7 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 
 			for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
 				addFunctionCaseWithPrograms<VkPrimitiveTopology>(
-					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), "", initPrograms, testPrimitivesOutside, cases[caseNdx]);
+					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), "", checkTopologySupport, initPrograms, testPrimitivesOutside, cases[caseNdx]);
 
 			clipVolumeGroup->addChild(group.release());
 		}
@@ -1525,7 +1539,7 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 
 			for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
 				addFunctionCaseWithPrograms<VkPrimitiveTopology>(
-					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), "", initPrograms, testPrimitivesDepthClamp, cases[caseNdx]);
+					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), "", checkTopologySupport, initPrograms, testPrimitivesDepthClamp, cases[caseNdx]);
 
 			clipVolumeGroup->addChild(group.release());
 		}
@@ -1536,7 +1550,7 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 
 			for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
 				addFunctionCaseWithPrograms<VkPrimitiveTopology>(
-					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), "", initPrograms, testPrimitivesDepthClip, cases[caseNdx]);
+					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), "", checkTopologySupport, initPrograms, testPrimitivesDepthClip, cases[caseNdx]);
 
 			clipVolumeGroup->addChild(group.release());
 		}

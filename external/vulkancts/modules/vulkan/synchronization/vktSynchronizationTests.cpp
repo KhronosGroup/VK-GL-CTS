@@ -34,6 +34,7 @@
 #include "vktSynchronizationSignalOrderTests.hpp"
 #include "vktSynchronizationTimelineSemaphoreTests.hpp"
 #include "vktSynchronizationWin32KeyedMutexTests.hpp"
+#include "vktSynchronizationNoneStageTests.hpp"
 #include "vktSynchronizationUtil.hpp"
 
 #include "deUniquePtr.hpp"
@@ -46,54 +47,93 @@ namespace synchronization
 namespace
 {
 
-void createBasicTests (tcu::TestCaseGroup* group)
+tcu::TestCaseGroup* createBasicTests (tcu::TestContext& testCtx, SynchronizationType type)
 {
-	group->addChild(createBasicFenceTests				(group->getTestContext()));
-	group->addChild(createBasicBinarySemaphoreTests		(group->getTestContext()));
-	group->addChild(createBasicTimelineSemaphoreTests	(group->getTestContext()));
-	group->addChild(createBasicEventTests				(group->getTestContext()));
+	de::MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "basic", ""));
+
+	if (type == SynchronizationType::LEGACY)
+	{
+		group->addChild(createBasicEventTests(testCtx));
+		group->addChild(createBasicFenceTests(testCtx));
+	}
+	else
+	{
+		group->addChild(createSynchronization2BasicEventTests(testCtx));
+	}
+
+	group->addChild(createBasicBinarySemaphoreTests		(testCtx, type));
+	group->addChild(createBasicTimelineSemaphoreTests	(testCtx, type));
+
+	return group.release();
 }
 
 class OperationTests : public tcu::TestCaseGroup
 {
 public:
-	OperationTests (tcu::TestContext& testCtx)
+	OperationTests (tcu::TestContext& testCtx, SynchronizationType type)
 		: tcu::TestCaseGroup(testCtx, "op", "Synchronization of a memory-modifying operation")
+		, m_type(type)
 	{
 	}
 
 	void init (void)
 	{
-		addChild(createSynchronizedOperationSingleQueueTests(m_testCtx, m_pipelineCacheData));
-		addChild(createSynchronizedOperationMultiQueueTests (m_testCtx, m_pipelineCacheData));
+		addChild(createSynchronizedOperationSingleQueueTests(m_testCtx, m_type, m_pipelineCacheData));
+		addChild(createSynchronizedOperationMultiQueueTests (m_testCtx, m_type, m_pipelineCacheData));
 	}
 
 private:
-	// synchronization.op tests share pipeline cache data to speed up test
-	// execution.
+	SynchronizationType	m_type;
+
+	// synchronization.op tests share pipeline cache data to speed up test execution.
 	PipelineCacheData	m_pipelineCacheData;
 };
 
-void createChildren (tcu::TestCaseGroup* group)
+tcu::TestCaseGroup* createTestsInternal (tcu::TestContext& testCtx, SynchronizationType type)
 {
-	tcu::TestContext& testCtx = group->getTestContext();
+	const bool		isSynchronization2	(type == SynchronizationType::SYNCHRONIZATION2);
+	const char*		groupName[]			{ "synchronization",		"synchronization2" };
+	const char*		groupDescription[]	{ "Synchronization tests",	"VK_KHR_synchronization2 tests" };
 
-	group->addChild(createSmokeTests(testCtx));
-	group->addChild(createTestGroup	(testCtx, "basic", "Basic synchronization tests", createBasicTests));
-	group->addChild(createTimelineSemaphoreTests(testCtx));
-	group->addChild(new OperationTests(testCtx));
-	group->addChild(createInternallySynchronizedObjects(testCtx));
-	group->addChild(synchronization::createCrossInstanceSharingTest(testCtx));
-	group->addChild(synchronization::createWin32KeyedMutexTest(testCtx));
-	group->addChild(synchronization::createSignalOrderTests(testCtx));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, groupName[isSynchronization2], groupDescription[isSynchronization2]));
+
+	if (isSynchronization2)
+	{
+		testGroup->addChild(createSynchronization2SmokeTests(testCtx));
+		testGroup->addChild(createSynchronization2TimelineSemaphoreTests(testCtx));
+		testGroup->addChild(createNoneStageTests(testCtx));
+	}
+	else // legacy synchronization
+	{
+		testGroup->addChild(createSmokeTests(testCtx));
+		testGroup->addChild(createTimelineSemaphoreTests(testCtx));
+
+		testGroup->addChild(createInternallySynchronizedObjects(testCtx));
+		testGroup->addChild(createWin32KeyedMutexTest(testCtx));
+	}
+
+	testGroup->addChild(createBasicTests(testCtx, type));
+	testGroup->addChild(new OperationTests(testCtx, type));
+	testGroup->addChild(createCrossInstanceSharingTest(testCtx, type));
+	testGroup->addChild(createSignalOrderTests(testCtx, type));
+
+	return testGroup.release();
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+} // synchronization
+
+tcu::TestCaseGroup* createSynchronizationTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "synchronization", "Synchronization tests", createChildren);
+	using namespace synchronization;
+	return createTestsInternal(testCtx, SynchronizationType::LEGACY);
 }
 
-} // synchronization
+tcu::TestCaseGroup* createSynchronization2Tests(tcu::TestContext& testCtx)
+{
+	using namespace synchronization;
+	return createTestsInternal(testCtx, SynchronizationType::SYNCHRONIZATION2);
+}
+
 } // vkt

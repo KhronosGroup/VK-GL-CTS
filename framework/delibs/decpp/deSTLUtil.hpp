@@ -29,6 +29,7 @@
 #include <stdexcept>
 #include <utility>
 #include <iterator>
+#include <vector>
 
 namespace de
 {
@@ -112,6 +113,27 @@ bool insert (M& map, const typename M::key_type& key, const typename M::mapped_t
 	typename M::value_type entry(key, value);
 	std::pair<typename M::iterator,bool> ret = map.insert(entry);
 	return ret.second;
+}
+
+// Returns the total size in bytes for contiguous-storage containers.
+template <typename T>
+size_t dataSize (const T& container)
+{
+	return (container.size() * sizeof(typename T::value_type));
+}
+
+// Returns the data pointer or a null pointer if the vector is empty.
+template <typename T>
+T* dataOrNull (std::vector<T>& container)
+{
+	return (container.empty() ? nullptr : container.data());
+}
+
+// Returns the data pointer or a null pointer if the vector is empty.
+template <typename T>
+const T* dataOrNull (const std::vector<T>& container)
+{
+	return (container.empty() ? nullptr : container.data());
 }
 
 } // de

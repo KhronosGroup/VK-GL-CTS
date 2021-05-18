@@ -1,0 +1,1233 @@
+#!amber
+
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by the GraphicsFuzz project.
+
+# Short description: A fragment shader with for loop and always false if
+
+# The test passes because both shaders render the same image.
+
+# Optimized using spirv-opt with the following arguments:
+# '-O'
+# spirv-opt commit hash: 717e7877cac15d393fd3bb1bd872679de8b59add
+
+
+
+SHADER vertex reference_vertex_shader PASSTHROUGH
+
+# reference_fragment_shader is derived from the following GLSL:
+# #version 320 es
+# precision highp float;
+#
+# precision highp int;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# layout(set = 0, binding = 0) uniform buf0
+# {
+#   vec2 injectionSwitch;
+# };
+# const int N = 10;
+#
+# int data[10], temp[10];
+#
+# void merge(int from, int mid, int to)
+# {
+#   int k = from, i = from, j = mid + 1;
+#   while (i <= mid && j <= to)
+#   {
+#     if (data[i] < data[j])
+#     {
+#       temp[k++] = data[i++];
+#     }
+#     else
+#     {
+#       temp[k++] = data[j++];
+#     }
+#   }
+#   while (i < N && i <= mid)
+#   {
+#     temp[k++] = data[i++];
+#   }
+#   for (int i = from; i <= to; i++)
+#   {
+#     data[i] = temp[i];
+#   }
+# }
+# void mergeSort()
+# {
+#   int low = 0;
+#   int high = N - 1;
+#   for (int m = 1; m <= high; m = 2 * m)
+#   {
+#     for (int i = low; i < high; i += 2 * m)
+#     {
+#       int from = i;
+#       int mid = i + m - 1;
+#       int to = min(i + 2 * m - 1, high);
+#       merge(from, mid, to);
+#     }
+#   }
+# }
+# void main()
+# {
+#   int i = int(injectionSwitch.x);
+#   do
+#   {
+#     switch (i)
+#     {
+#     case 0:
+#       data[i] = 4;
+#       break;
+#     case 1:
+#       data[i] = 3;
+#       break;
+#     case 2:
+#       data[i] = 2;
+#       break;
+#     case 3:
+#       data[i] = 1;
+#       break;
+#     case 4:
+#       data[i] = 0;
+#       break;
+#     case 5:
+#       data[i] = -1;
+#       break;
+#     case 6:
+#       data[i] = -2;
+#       break;
+#     case 7:
+#       data[i] = -3;
+#       break;
+#     case 8:
+#       data[i] = -4;
+#       break;
+#     case 9:
+#       data[i] = -5;
+#       break;
+#     }
+#     i++;
+#   } while (i < 10);
+#   for (int j = 0; j < 10; j++)
+#   {
+#     temp[j] = data[j];
+#   }
+#   mergeSort();
+#   float grey;
+#   if (int(gl_FragCoord[1]) < 30)
+#   {
+#     grey = 0.5 + float(data[0]) / 10.0;
+#   }
+#   else
+#   {
+#     if (int(gl_FragCoord[1]) < 60)
+#     {
+#       grey = 0.5 + float(data[1]) / 10.0;
+#     }
+#     else
+#     {
+#       if (int(gl_FragCoord[1]) < 90)
+#       {
+#         grey = 0.5 + float(data[2]) / 10.0;
+#       }
+#       else
+#       {
+#         if (int(gl_FragCoord[1]) < 120)
+#         {
+#           grey = 0.5 + float(data[3]) / 10.0;
+#         }
+#         else
+#         {
+#           if (int(gl_FragCoord[1]) < 150)
+#           {
+#             discard;
+#           }
+#           else
+#           {
+#             if (int(gl_FragCoord[1]) < 180)
+#             {
+#               grey = 0.5 + float(data[5]) / 10.0;
+#             }
+#             else
+#             {
+#               if (int(gl_FragCoord[1]) < 210)
+#               {
+#                 grey = 0.5 + float(data[6]) / 10.0;
+#               }
+#               else
+#               {
+#                 if (int(gl_FragCoord[1]) < 240)
+#                 {
+#                   grey = 0.5 + float(data[7]) / 10.0;
+#                 }
+#                 else
+#                 {
+#                   if (int(gl_FragCoord[1]) < 270)
+#                   {
+#                     grey = 0.5 + float(data[8]) / 10.0;
+#                   }
+#                   else
+#                   {
+#                     discard;
+#                   }
+#                 }
+#               }
+#             }
+#           }
+#         }
+#       }
+#     }
+#   }
+#   _GLF_color = vec4(vec3(grey), 1.0);
+# }
+SHADER fragment reference_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 10
+; Bound: 540
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %243 %369
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %41 "data"
+               OpName %52 "temp"
+               OpName %159 "buf0"
+               OpMemberName %159 0 "injectionSwitch"
+               OpName %161 ""
+               OpName %243 "gl_FragCoord"
+               OpName %369 "_GLF_color"
+               OpMemberDecorate %159 0 Offset 0
+               OpDecorate %159 Block
+               OpDecorate %161 DescriptorSet 0
+               OpDecorate %161 Binding 0
+               OpDecorate %243 BuiltIn FragCoord
+               OpDecorate %369 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+         %22 = OpConstant %6 1
+         %31 = OpTypeBool
+         %37 = OpTypeInt 32 0
+         %38 = OpConstant %37 10
+         %39 = OpTypeArray %6 %38
+         %74 = OpConstant %6 10
+        %105 = OpConstant %6 0
+        %107 = OpConstant %6 9
+        %136 = OpConstant %6 2
+        %157 = OpTypeFloat 32
+        %158 = OpTypeVector %157 2
+        %159 = OpTypeStruct %158
+        %160 = OpTypePointer Uniform %159
+        %161 = OpVariable %160 Uniform
+        %162 = OpConstant %37 0
+        %163 = OpTypePointer Uniform %157
+        %184 = OpConstant %6 4
+        %188 = OpConstant %6 3
+        %201 = OpConstant %6 -1
+        %205 = OpConstant %6 -2
+        %209 = OpConstant %6 -3
+        %213 = OpConstant %6 -4
+        %217 = OpConstant %6 -5
+        %241 = OpTypeVector %157 4
+        %242 = OpTypePointer Input %241
+        %243 = OpVariable %242 Input
+        %244 = OpConstant %37 1
+        %245 = OpTypePointer Input %157
+        %249 = OpConstant %6 30
+        %255 = OpConstant %157 0.5
+        %266 = OpConstant %6 60
+        %279 = OpConstant %6 90
+        %292 = OpConstant %6 120
+        %305 = OpConstant %6 150
+        %314 = OpConstant %6 180
+        %318 = OpConstant %6 5
+        %328 = OpConstant %6 210
+        %332 = OpConstant %6 6
+        %342 = OpConstant %6 240
+        %346 = OpConstant %6 7
+        %356 = OpConstant %6 270
+        %360 = OpConstant %6 8
+        %368 = OpTypePointer Output %241
+        %369 = OpVariable %368 Output
+        %373 = OpConstant %157 1
+        %507 = OpTypePointer Function %39
+        %539 = OpConstant %157 0.100000001
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %52 = OpVariable %507 Function
+         %41 = OpVariable %507 Function
+        %164 = OpAccessChain %163 %161 %105 %162
+        %165 = OpLoad %157 %164
+        %166 = OpConvertFToS %6 %165
+               OpBranch %167
+        %167 = OpLabel
+        %508 = OpPhi %6 %166 %5 %222 %170
+               OpLoopMerge %169 %170 None
+               OpBranch %168
+        %168 = OpLabel
+               OpSelectionMerge %182 None
+               OpSwitch %508 %182 0 %172 1 %173 2 %174 3 %175 4 %176 5 %177 6 %178 7 %179 8 %180 9 %181
+        %172 = OpLabel
+        %185 = OpAccessChain %7 %41 %508
+               OpStore %185 %184
+               OpBranch %182
+        %173 = OpLabel
+        %189 = OpAccessChain %7 %41 %508
+               OpStore %189 %188
+               OpBranch %182
+        %174 = OpLabel
+        %192 = OpAccessChain %7 %41 %508
+               OpStore %192 %136
+               OpBranch %182
+        %175 = OpLabel
+        %195 = OpAccessChain %7 %41 %508
+               OpStore %195 %22
+               OpBranch %182
+        %176 = OpLabel
+        %198 = OpAccessChain %7 %41 %508
+               OpStore %198 %105
+               OpBranch %182
+        %177 = OpLabel
+        %202 = OpAccessChain %7 %41 %508
+               OpStore %202 %201
+               OpBranch %182
+        %178 = OpLabel
+        %206 = OpAccessChain %7 %41 %508
+               OpStore %206 %205
+               OpBranch %182
+        %179 = OpLabel
+        %210 = OpAccessChain %7 %41 %508
+               OpStore %210 %209
+               OpBranch %182
+        %180 = OpLabel
+        %214 = OpAccessChain %7 %41 %508
+               OpStore %214 %213
+               OpBranch %182
+        %181 = OpLabel
+        %218 = OpAccessChain %7 %41 %508
+               OpStore %218 %217
+               OpBranch %182
+        %182 = OpLabel
+        %222 = OpIAdd %6 %508 %22
+               OpBranch %170
+        %170 = OpLabel
+        %224 = OpSLessThan %31 %222 %74
+               OpBranchConditional %224 %167 %169
+        %169 = OpLabel
+               OpBranch %226
+        %226 = OpLabel
+        %510 = OpPhi %6 %105 %169 %239 %227
+        %232 = OpSLessThan %31 %510 %74
+               OpLoopMerge %228 %227 None
+               OpBranchConditional %232 %227 %228
+        %227 = OpLabel
+        %235 = OpAccessChain %7 %41 %510
+        %236 = OpLoad %6 %235
+        %237 = OpAccessChain %7 %52 %510
+               OpStore %237 %236
+        %239 = OpIAdd %6 %510 %22
+               OpBranch %226
+        %228 = OpLabel
+               OpBranch %389
+        %389 = OpLabel
+        %511 = OpPhi %6 %22 %228 %426 %424
+        %393 = OpSLessThanEqual %31 %511 %107
+               OpLoopMerge %427 %424 None
+               OpBranchConditional %393 %394 %427
+        %394 = OpLabel
+               OpBranch %396
+        %396 = OpLabel
+        %519 = OpPhi %6 %105 %394 %410 %418
+        %400 = OpSLessThan %31 %519 %107
+               OpLoopMerge %423 %418 None
+               OpBranchConditional %400 %401 %423
+        %401 = OpLabel
+        %405 = OpIAdd %6 %519 %511
+        %406 = OpISub %6 %405 %22
+        %409 = OpIMul %6 %136 %511
+        %410 = OpIAdd %6 %519 %409
+        %411 = OpISub %6 %410 %22
+        %413 = OpExtInst %6 %1 SMin %411 %107
+               OpBranch %437
+        %437 = OpLabel
+        %532 = OpPhi %6 %519 %401 %456 %471
+        %522 = OpPhi %6 %405 %401 %534 %471
+        %521 = OpPhi %6 %519 %401 %533 %471
+        %441 = OpSLessThanEqual %31 %521 %406
+        %444 = OpSLessThanEqual %31 %522 %413
+        %445 = OpLogicalAnd %31 %441 %444
+               OpLoopMerge %472 %471 None
+               OpBranchConditional %445 %446 %472
+        %446 = OpLabel
+        %448 = OpAccessChain %7 %41 %521
+        %449 = OpLoad %6 %448
+        %451 = OpAccessChain %7 %41 %522
+        %452 = OpLoad %6 %451
+        %453 = OpSLessThan %31 %449 %452
+        %456 = OpIAdd %6 %532 %22
+               OpSelectionMerge %470 None
+               OpBranchConditional %453 %454 %462
+        %454 = OpLabel
+        %458 = OpIAdd %6 %521 %22
+        %460 = OpLoad %6 %448
+        %461 = OpAccessChain %7 %52 %532
+               OpStore %461 %460
+               OpBranch %470
+        %462 = OpLabel
+        %466 = OpIAdd %6 %522 %22
+        %468 = OpLoad %6 %451
+        %469 = OpAccessChain %7 %52 %532
+               OpStore %469 %468
+               OpBranch %470
+        %470 = OpLabel
+        %534 = OpPhi %6 %522 %454 %466 %462
+        %533 = OpPhi %6 %458 %454 %521 %462
+               OpBranch %471
+        %471 = OpLabel
+               OpBranch %437
+        %472 = OpLabel
+               OpBranch %473
+        %473 = OpLabel
+        %531 = OpPhi %6 %532 %472 %483 %481
+        %523 = OpPhi %6 %521 %472 %485 %481
+        %476 = OpSLessThan %31 %523 %74
+        %479 = OpSLessThanEqual %31 %523 %406
+        %480 = OpLogicalAnd %31 %476 %479
+               OpLoopMerge %490 %481 None
+               OpBranchConditional %480 %481 %490
+        %481 = OpLabel
+        %483 = OpIAdd %6 %531 %22
+        %485 = OpIAdd %6 %523 %22
+        %486 = OpAccessChain %7 %41 %523
+        %487 = OpLoad %6 %486
+        %488 = OpAccessChain %7 %52 %531
+               OpStore %488 %487
+               OpBranch %473
+        %490 = OpLabel
+               OpBranch %492
+        %492 = OpLabel
+        %524 = OpPhi %6 %519 %490 %505 %497
+        %496 = OpSLessThanEqual %31 %524 %413
+               OpLoopMerge %506 %497 None
+               OpBranchConditional %496 %497 %506
+        %497 = OpLabel
+        %500 = OpAccessChain %7 %52 %524
+        %501 = OpLoad %6 %500
+        %502 = OpAccessChain %7 %41 %524
+               OpStore %502 %501
+        %505 = OpIAdd %6 %524 %22
+               OpBranch %492
+        %506 = OpLabel
+               OpBranch %418
+        %418 = OpLabel
+               OpBranch %396
+        %423 = OpLabel
+               OpBranch %424
+        %424 = OpLabel
+        %426 = OpIMul %6 %136 %511
+               OpBranch %389
+        %427 = OpLabel
+        %246 = OpAccessChain %245 %243 %244
+        %247 = OpLoad %157 %246
+        %248 = OpConvertFToS %6 %247
+        %250 = OpSLessThan %31 %248 %249
+               OpSelectionMerge %252 None
+               OpBranchConditional %250 %251 %262
+        %251 = OpLabel
+        %256 = OpAccessChain %7 %41 %105
+        %257 = OpLoad %6 %256
+        %258 = OpConvertSToF %157 %257
+        %260 = OpFMul %157 %258 %539
+        %261 = OpFAdd %157 %255 %260
+               OpBranch %252
+        %262 = OpLabel
+        %267 = OpSLessThan %31 %248 %266
+               OpSelectionMerge %269 None
+               OpBranchConditional %267 %268 %275
+        %268 = OpLabel
+        %270 = OpAccessChain %7 %41 %22
+        %271 = OpLoad %6 %270
+        %272 = OpConvertSToF %157 %271
+        %273 = OpFMul %157 %272 %539
+        %274 = OpFAdd %157 %255 %273
+               OpBranch %269
+        %275 = OpLabel
+        %280 = OpSLessThan %31 %248 %279
+               OpSelectionMerge %282 None
+               OpBranchConditional %280 %281 %288
+        %281 = OpLabel
+        %283 = OpAccessChain %7 %41 %136
+        %284 = OpLoad %6 %283
+        %285 = OpConvertSToF %157 %284
+        %286 = OpFMul %157 %285 %539
+        %287 = OpFAdd %157 %255 %286
+               OpBranch %282
+        %288 = OpLabel
+        %293 = OpSLessThan %31 %248 %292
+               OpSelectionMerge %295 None
+               OpBranchConditional %293 %294 %301
+        %294 = OpLabel
+        %296 = OpAccessChain %7 %41 %188
+        %297 = OpLoad %6 %296
+        %298 = OpConvertSToF %157 %297
+        %299 = OpFMul %157 %298 %539
+        %300 = OpFAdd %157 %255 %299
+               OpBranch %295
+        %301 = OpLabel
+        %306 = OpSLessThan %31 %248 %305
+               OpSelectionMerge %308 None
+               OpBranchConditional %306 %307 %310
+        %307 = OpLabel
+               OpKill
+        %310 = OpLabel
+        %315 = OpSLessThan %31 %248 %314
+               OpSelectionMerge %317 None
+               OpBranchConditional %315 %316 %324
+        %316 = OpLabel
+        %319 = OpAccessChain %7 %41 %318
+        %320 = OpLoad %6 %319
+        %321 = OpConvertSToF %157 %320
+        %322 = OpFMul %157 %321 %539
+        %323 = OpFAdd %157 %255 %322
+               OpBranch %317
+        %324 = OpLabel
+        %329 = OpSLessThan %31 %248 %328
+               OpSelectionMerge %331 None
+               OpBranchConditional %329 %330 %338
+        %330 = OpLabel
+        %333 = OpAccessChain %7 %41 %332
+        %334 = OpLoad %6 %333
+        %335 = OpConvertSToF %157 %334
+        %336 = OpFMul %157 %335 %539
+        %337 = OpFAdd %157 %255 %336
+               OpBranch %331
+        %338 = OpLabel
+        %343 = OpSLessThan %31 %248 %342
+               OpSelectionMerge %345 None
+               OpBranchConditional %343 %344 %352
+        %344 = OpLabel
+        %347 = OpAccessChain %7 %41 %346
+        %348 = OpLoad %6 %347
+        %349 = OpConvertSToF %157 %348
+        %350 = OpFMul %157 %349 %539
+        %351 = OpFAdd %157 %255 %350
+               OpBranch %345
+        %352 = OpLabel
+        %357 = OpSLessThan %31 %248 %356
+               OpSelectionMerge %358 None
+               OpBranchConditional %357 %358 %366
+        %358 = OpLabel
+        %361 = OpAccessChain %7 %41 %360
+        %362 = OpLoad %6 %361
+        %363 = OpConvertSToF %157 %362
+        %364 = OpFMul %157 %363 %539
+        %365 = OpFAdd %157 %255 %364
+               OpBranch %345
+        %366 = OpLabel
+               OpKill
+        %345 = OpLabel
+        %518 = OpPhi %157 %351 %344 %365 %358
+               OpBranch %331
+        %331 = OpLabel
+        %517 = OpPhi %157 %337 %330 %518 %345
+               OpBranch %317
+        %317 = OpLabel
+        %516 = OpPhi %157 %323 %316 %517 %331
+               OpBranch %308
+        %308 = OpLabel
+               OpBranch %295
+        %295 = OpLabel
+        %515 = OpPhi %157 %300 %294 %516 %308
+               OpBranch %282
+        %282 = OpLabel
+        %514 = OpPhi %157 %287 %281 %515 %295
+               OpBranch %269
+        %269 = OpLabel
+        %513 = OpPhi %157 %274 %268 %514 %282
+               OpBranch %252
+        %252 = OpLabel
+        %512 = OpPhi %157 %261 %251 %513 %269
+        %377 = OpCompositeConstruct %241 %512 %512 %512 %373
+               OpStore %369 %377
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for reference
+
+# injectionSwitch
+BUFFER reference_injectionSwitch DATA_TYPE vec2<float> STD140 DATA
+ 0.0 1.0
+END
+
+BUFFER reference_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics reference_pipeline
+  ATTACH reference_vertex_shader
+  ATTACH reference_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER reference_framebuffer AS color LOCATION 0
+  BIND BUFFER reference_injectionSwitch AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR reference_pipeline 0 0 0 255
+
+CLEAR reference_pipeline
+RUN reference_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 320 es
+# precision highp float;
+#
+# precision highp int;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# layout(set = 0, binding = 0) uniform buf0
+# {
+#   vec2 injectionSwitch; // x == 0.0, y == 1.0
+# };
+# const int N = 10;
+#
+# int data[10], temp[10];
+#
+# void merge(int from, int mid, int to)
+# {
+#   int k = from, i = from, j = mid + 1;
+#   while (i <= mid && j <= to)
+#   {
+#     if (data[i] < data[j])
+#     {
+#       temp[k++] = data[i++];
+#     }
+#     else
+#     {
+#       temp[k++] = data[j++];
+#     }
+#   }
+#   while (i < N && i <= mid)
+#   {
+#     temp[k++] = data[i++];
+#   }
+#   for (int i = from; i <= to; i++)
+#   {
+#     data[i] = temp[i];
+#   }
+# }
+# void mergeSort()
+# {
+#   int low = 0;
+#   int high = N - 1;
+#   for (int m = 1; m <= high; m = 2 * m)
+#   {
+#     for (int i = low; i < high; i += 2 * m)
+#     {
+#       int from = i;
+#       int mid = i + m - 1;
+#       int to = min(i + 2 * m - 1, high);
+#       merge(from, mid, to);
+#     }
+#   }
+# }
+# void main()
+# {
+#   int i = int(injectionSwitch.x);
+#   do
+#   {
+#     switch (i)
+#     {
+#     case 0:
+#       data[i] = 4;
+#       break;
+#     case 1:
+#       data[i] = 3;
+#       break;
+#     case 2:
+#       data[i] = 2;
+#       break;
+#     case 3:
+#       data[i] = 1;
+#       break;
+#     case 4:
+#       data[i] = 0;
+#       break;
+#     case 5:
+#       data[i] = -1;
+#       break;
+#     case 6:
+#       data[i] = -2;
+#       break;
+#     case 7:
+#       data[i] = -3;
+#       break;
+#     case 8:
+#       data[i] = -4;
+#       break;
+#     case 9:
+#       data[i] = -5;
+#       break;
+#     }
+#     i++;
+#   } while (i < 10);
+#   for (int j = 0; j < 10; j++)
+#   {
+#     temp[j] = data[j];
+#   }
+#   mergeSort();
+#   float grey;
+#   if (int(gl_FragCoord[1]) < 30)
+#   {
+#     grey = 0.5 + float(data[0]) / 10.0;
+#   }
+#   else
+#   {
+#     if (int(gl_FragCoord[1]) < 60)
+#     {
+#       grey = 0.5 + float(data[1]) / 10.0;
+#     }
+#     else
+#     {
+#       if (int(gl_FragCoord[1]) < 90)
+#       {
+#         grey = 0.5 + float(data[2]) / 10.0;
+#       }
+#       else
+#       {
+#         if (int(gl_FragCoord[1]) < 120)
+#         {
+#           grey = 0.5 + float(data[3]) / 10.0;
+#         }
+#         else
+#         {
+#           if (int(gl_FragCoord[1]) < 150)
+#           {
+#             discard;
+#           }
+#           else
+#           {
+#             if (int(gl_FragCoord[1]) < 180)
+#             {
+#               grey = 0.5 + float(data[5]) / 10.0;
+#             }
+#             else
+#             {
+#               if (int(gl_FragCoord[1]) < 210)
+#               {
+#                 grey = 0.5 + float(data[6]) / 10.0;
+#               }
+#               else
+#               {
+#                 if (int(gl_FragCoord[1]) < 240)
+#                 {
+#                   grey = 0.5 + float(data[7]) / 10.0;
+#                 }
+#                 else
+#                 {
+#                   if (int(gl_FragCoord[1]) < 270)
+#                   {
+#                     grey = 0.5 + float(data[8]) / 10.0;
+#                   }
+#                   else
+#                   {
+#                     discard;
+#                   }
+#                 }
+#               }
+#             }
+#             // Code block bellow should not affect output image.
+#             // Always false.
+#             if (injectionSwitch.x > injectionSwitch.y)
+#             {
+#               _GLF_color = vec4(1.0);
+#             }
+#             vec2 a = vec2(1.0, 1.0);
+#             for (int i = 0; i <= 32; i++)
+#             {
+#               // Always false.
+#               if (a.x < 0.0)
+#               {
+#                 // Always false.
+#                 if (injectionSwitch.x > injectionSwitch.y)
+#                 {
+#                   discard;
+#                 }
+#                 a.y++;
+#               }
+#               a.x += a.y;
+#             }
+#             // End of block.
+#           }
+#         }
+#       }
+#     }
+#   }
+#   _GLF_color = vec4(vec3(grey), 1.0);
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 10
+; Bound: 602
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %243 %376
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %41 "data"
+               OpName %52 "temp"
+               OpName %159 "buf0"
+               OpMemberName %159 0 "injectionSwitch"
+               OpName %161 ""
+               OpName %243 "gl_FragCoord"
+               OpName %376 "_GLF_color"
+               OpMemberDecorate %159 0 Offset 0
+               OpDecorate %159 Block
+               OpDecorate %161 DescriptorSet 0
+               OpDecorate %161 Binding 0
+               OpDecorate %243 BuiltIn FragCoord
+               OpDecorate %376 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+         %22 = OpConstant %6 1
+         %31 = OpTypeBool
+         %37 = OpTypeInt 32 0
+         %38 = OpConstant %37 10
+         %39 = OpTypeArray %6 %38
+         %74 = OpConstant %6 10
+        %105 = OpConstant %6 0
+        %107 = OpConstant %6 9
+        %136 = OpConstant %6 2
+        %157 = OpTypeFloat 32
+        %158 = OpTypeVector %157 2
+        %159 = OpTypeStruct %158
+        %160 = OpTypePointer Uniform %159
+        %161 = OpVariable %160 Uniform
+        %162 = OpConstant %37 0
+        %163 = OpTypePointer Uniform %157
+        %184 = OpConstant %6 4
+        %188 = OpConstant %6 3
+        %201 = OpConstant %6 -1
+        %205 = OpConstant %6 -2
+        %209 = OpConstant %6 -3
+        %213 = OpConstant %6 -4
+        %217 = OpConstant %6 -5
+        %241 = OpTypeVector %157 4
+        %242 = OpTypePointer Input %241
+        %243 = OpVariable %242 Input
+        %244 = OpConstant %37 1
+        %245 = OpTypePointer Input %157
+        %249 = OpConstant %6 30
+        %255 = OpConstant %157 0.5
+        %266 = OpConstant %6 60
+        %279 = OpConstant %6 90
+        %292 = OpConstant %6 120
+        %305 = OpConstant %6 150
+        %314 = OpConstant %6 180
+        %318 = OpConstant %6 5
+        %328 = OpConstant %6 210
+        %332 = OpConstant %6 6
+        %342 = OpConstant %6 240
+        %346 = OpConstant %6 7
+        %356 = OpConstant %6 270
+        %360 = OpConstant %6 8
+        %375 = OpTypePointer Output %241
+        %376 = OpVariable %375 Output
+        %377 = OpConstant %157 1
+        %378 = OpConstantComposite %241 %377 %377 %377 %377
+        %381 = OpConstantComposite %158 %377 %377
+        %389 = OpConstant %6 32
+        %393 = OpConstant %157 0
+        %552 = OpTypePointer Function %39
+        %601 = OpConstant %157 0.100000001
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %52 = OpVariable %552 Function
+         %41 = OpVariable %552 Function
+        %164 = OpAccessChain %163 %161 %105 %162
+        %165 = OpLoad %157 %164
+        %166 = OpConvertFToS %6 %165
+               OpBranch %167
+        %167 = OpLabel
+        %561 = OpPhi %6 %166 %5 %222 %170
+               OpLoopMerge %169 %170 None
+               OpBranch %168
+        %168 = OpLabel
+               OpSelectionMerge %182 None
+               OpSwitch %561 %182 0 %172 1 %173 2 %174 3 %175 4 %176 5 %177 6 %178 7 %179 8 %180 9 %181
+        %172 = OpLabel
+        %185 = OpAccessChain %7 %41 %561
+               OpStore %185 %184
+               OpBranch %182
+        %173 = OpLabel
+        %189 = OpAccessChain %7 %41 %561
+               OpStore %189 %188
+               OpBranch %182
+        %174 = OpLabel
+        %192 = OpAccessChain %7 %41 %561
+               OpStore %192 %136
+               OpBranch %182
+        %175 = OpLabel
+        %195 = OpAccessChain %7 %41 %561
+               OpStore %195 %22
+               OpBranch %182
+        %176 = OpLabel
+        %198 = OpAccessChain %7 %41 %561
+               OpStore %198 %105
+               OpBranch %182
+        %177 = OpLabel
+        %202 = OpAccessChain %7 %41 %561
+               OpStore %202 %201
+               OpBranch %182
+        %178 = OpLabel
+        %206 = OpAccessChain %7 %41 %561
+               OpStore %206 %205
+               OpBranch %182
+        %179 = OpLabel
+        %210 = OpAccessChain %7 %41 %561
+               OpStore %210 %209
+               OpBranch %182
+        %180 = OpLabel
+        %214 = OpAccessChain %7 %41 %561
+               OpStore %214 %213
+               OpBranch %182
+        %181 = OpLabel
+        %218 = OpAccessChain %7 %41 %561
+               OpStore %218 %217
+               OpBranch %182
+        %182 = OpLabel
+        %222 = OpIAdd %6 %561 %22
+               OpBranch %170
+        %170 = OpLabel
+        %224 = OpSLessThan %31 %222 %74
+               OpBranchConditional %224 %167 %169
+        %169 = OpLabel
+               OpBranch %226
+        %226 = OpLabel
+        %563 = OpPhi %6 %105 %169 %239 %227
+        %232 = OpSLessThan %31 %563 %74
+               OpLoopMerge %228 %227 None
+               OpBranchConditional %232 %227 %228
+        %227 = OpLabel
+        %235 = OpAccessChain %7 %41 %563
+        %236 = OpLoad %6 %235
+        %237 = OpAccessChain %7 %52 %563
+               OpStore %237 %236
+        %239 = OpIAdd %6 %563 %22
+               OpBranch %226
+        %228 = OpLabel
+               OpBranch %434
+        %434 = OpLabel
+        %564 = OpPhi %6 %22 %228 %471 %469
+        %438 = OpSLessThanEqual %31 %564 %107
+               OpLoopMerge %472 %469 None
+               OpBranchConditional %438 %439 %472
+        %439 = OpLabel
+               OpBranch %441
+        %441 = OpLabel
+        %579 = OpPhi %6 %105 %439 %455 %463
+        %445 = OpSLessThan %31 %579 %107
+               OpLoopMerge %468 %463 None
+               OpBranchConditional %445 %446 %468
+        %446 = OpLabel
+        %450 = OpIAdd %6 %579 %564
+        %451 = OpISub %6 %450 %22
+        %454 = OpIMul %6 %136 %564
+        %455 = OpIAdd %6 %579 %454
+        %456 = OpISub %6 %455 %22
+        %458 = OpExtInst %6 %1 SMin %456 %107
+               OpBranch %482
+        %482 = OpLabel
+        %592 = OpPhi %6 %579 %446 %501 %516
+        %582 = OpPhi %6 %450 %446 %594 %516
+        %581 = OpPhi %6 %579 %446 %593 %516
+        %486 = OpSLessThanEqual %31 %581 %451
+        %489 = OpSLessThanEqual %31 %582 %458
+        %490 = OpLogicalAnd %31 %486 %489
+               OpLoopMerge %517 %516 None
+               OpBranchConditional %490 %491 %517
+        %491 = OpLabel
+        %493 = OpAccessChain %7 %41 %581
+        %494 = OpLoad %6 %493
+        %496 = OpAccessChain %7 %41 %582
+        %497 = OpLoad %6 %496
+        %498 = OpSLessThan %31 %494 %497
+        %501 = OpIAdd %6 %592 %22
+               OpSelectionMerge %515 None
+               OpBranchConditional %498 %499 %507
+        %499 = OpLabel
+        %503 = OpIAdd %6 %581 %22
+        %505 = OpLoad %6 %493
+        %506 = OpAccessChain %7 %52 %592
+               OpStore %506 %505
+               OpBranch %515
+        %507 = OpLabel
+        %511 = OpIAdd %6 %582 %22
+        %513 = OpLoad %6 %496
+        %514 = OpAccessChain %7 %52 %592
+               OpStore %514 %513
+               OpBranch %515
+        %515 = OpLabel
+        %594 = OpPhi %6 %582 %499 %511 %507
+        %593 = OpPhi %6 %503 %499 %581 %507
+               OpBranch %516
+        %516 = OpLabel
+               OpBranch %482
+        %517 = OpLabel
+               OpBranch %518
+        %518 = OpLabel
+        %591 = OpPhi %6 %592 %517 %528 %526
+        %583 = OpPhi %6 %581 %517 %530 %526
+        %521 = OpSLessThan %31 %583 %74
+        %524 = OpSLessThanEqual %31 %583 %451
+        %525 = OpLogicalAnd %31 %521 %524
+               OpLoopMerge %535 %526 None
+               OpBranchConditional %525 %526 %535
+        %526 = OpLabel
+        %528 = OpIAdd %6 %591 %22
+        %530 = OpIAdd %6 %583 %22
+        %531 = OpAccessChain %7 %41 %583
+        %532 = OpLoad %6 %531
+        %533 = OpAccessChain %7 %52 %591
+               OpStore %533 %532
+               OpBranch %518
+        %535 = OpLabel
+               OpBranch %537
+        %537 = OpLabel
+        %584 = OpPhi %6 %579 %535 %550 %542
+        %541 = OpSLessThanEqual %31 %584 %458
+               OpLoopMerge %551 %542 None
+               OpBranchConditional %541 %542 %551
+        %542 = OpLabel
+        %545 = OpAccessChain %7 %52 %584
+        %546 = OpLoad %6 %545
+        %547 = OpAccessChain %7 %41 %584
+               OpStore %547 %546
+        %550 = OpIAdd %6 %584 %22
+               OpBranch %537
+        %551 = OpLabel
+               OpBranch %463
+        %463 = OpLabel
+               OpBranch %441
+        %468 = OpLabel
+               OpBranch %469
+        %469 = OpLabel
+        %471 = OpIMul %6 %136 %564
+               OpBranch %434
+        %472 = OpLabel
+        %246 = OpAccessChain %245 %243 %244
+        %247 = OpLoad %157 %246
+        %248 = OpConvertFToS %6 %247
+        %250 = OpSLessThan %31 %248 %249
+               OpSelectionMerge %252 None
+               OpBranchConditional %250 %251 %262
+        %251 = OpLabel
+        %256 = OpAccessChain %7 %41 %105
+        %257 = OpLoad %6 %256
+        %258 = OpConvertSToF %157 %257
+        %260 = OpFMul %157 %258 %601
+        %261 = OpFAdd %157 %255 %260
+               OpBranch %252
+        %262 = OpLabel
+        %267 = OpSLessThan %31 %248 %266
+               OpSelectionMerge %269 None
+               OpBranchConditional %267 %268 %275
+        %268 = OpLabel
+        %270 = OpAccessChain %7 %41 %22
+        %271 = OpLoad %6 %270
+        %272 = OpConvertSToF %157 %271
+        %273 = OpFMul %157 %272 %601
+        %274 = OpFAdd %157 %255 %273
+               OpBranch %269
+        %275 = OpLabel
+        %280 = OpSLessThan %31 %248 %279
+               OpSelectionMerge %282 None
+               OpBranchConditional %280 %281 %288
+        %281 = OpLabel
+        %283 = OpAccessChain %7 %41 %136
+        %284 = OpLoad %6 %283
+        %285 = OpConvertSToF %157 %284
+        %286 = OpFMul %157 %285 %601
+        %287 = OpFAdd %157 %255 %286
+               OpBranch %282
+        %288 = OpLabel
+        %293 = OpSLessThan %31 %248 %292
+               OpSelectionMerge %295 None
+               OpBranchConditional %293 %294 %301
+        %294 = OpLabel
+        %296 = OpAccessChain %7 %41 %188
+        %297 = OpLoad %6 %296
+        %298 = OpConvertSToF %157 %297
+        %299 = OpFMul %157 %298 %601
+        %300 = OpFAdd %157 %255 %299
+               OpBranch %295
+        %301 = OpLabel
+        %306 = OpSLessThan %31 %248 %305
+               OpSelectionMerge %308 None
+               OpBranchConditional %306 %307 %310
+        %307 = OpLabel
+               OpKill
+        %310 = OpLabel
+        %315 = OpSLessThan %31 %248 %314
+               OpSelectionMerge %317 None
+               OpBranchConditional %315 %316 %324
+        %316 = OpLabel
+        %319 = OpAccessChain %7 %41 %318
+        %320 = OpLoad %6 %319
+        %321 = OpConvertSToF %157 %320
+        %322 = OpFMul %157 %321 %601
+        %323 = OpFAdd %157 %255 %322
+               OpBranch %317
+        %324 = OpLabel
+        %329 = OpSLessThan %31 %248 %328
+               OpSelectionMerge %331 None
+               OpBranchConditional %329 %330 %338
+        %330 = OpLabel
+        %333 = OpAccessChain %7 %41 %332
+        %334 = OpLoad %6 %333
+        %335 = OpConvertSToF %157 %334
+        %336 = OpFMul %157 %335 %601
+        %337 = OpFAdd %157 %255 %336
+               OpBranch %331
+        %338 = OpLabel
+        %343 = OpSLessThan %31 %248 %342
+               OpSelectionMerge %345 None
+               OpBranchConditional %343 %344 %352
+        %344 = OpLabel
+        %347 = OpAccessChain %7 %41 %346
+        %348 = OpLoad %6 %347
+        %349 = OpConvertSToF %157 %348
+        %350 = OpFMul %157 %349 %601
+        %351 = OpFAdd %157 %255 %350
+               OpBranch %345
+        %352 = OpLabel
+        %357 = OpSLessThan %31 %248 %356
+               OpSelectionMerge %358 None
+               OpBranchConditional %357 %358 %366
+        %358 = OpLabel
+        %361 = OpAccessChain %7 %41 %360
+        %362 = OpLoad %6 %361
+        %363 = OpConvertSToF %157 %362
+        %364 = OpFMul %157 %363 %601
+        %365 = OpFAdd %157 %255 %364
+               OpBranch %345
+        %366 = OpLabel
+               OpKill
+        %345 = OpLabel
+        %577 = OpPhi %157 %351 %344 %365 %358
+               OpBranch %331
+        %331 = OpLabel
+        %576 = OpPhi %157 %337 %330 %577 %345
+               OpBranch %317
+        %317 = OpLabel
+        %575 = OpPhi %157 %323 %316 %576 %331
+        %370 = OpAccessChain %163 %161 %105 %244
+        %371 = OpLoad %157 %370
+        %372 = OpFOrdGreaterThan %31 %165 %371
+               OpSelectionMerge %374 None
+               OpBranchConditional %372 %373 %374
+        %373 = OpLabel
+               OpStore %376 %378
+               OpBranch %374
+        %374 = OpLabel
+               OpBranch %383
+        %383 = OpLabel
+        %566 = OpPhi %158 %381 %374 %560 %386
+        %565 = OpPhi %6 %105 %374 %415 %386
+        %390 = OpSLessThanEqual %31 %565 %389
+               OpLoopMerge %385 %386 None
+               OpBranchConditional %390 %384 %385
+        %384 = OpLabel
+        %392 = OpCompositeExtract %157 %566 0
+        %394 = OpFOrdLessThan %31 %392 %393
+               OpSelectionMerge %396 None
+               OpBranchConditional %394 %395 %396
+        %395 = OpLabel
+               OpSelectionMerge %403 None
+               OpBranchConditional %372 %402 %403
+        %402 = OpLabel
+               OpKill
+        %403 = OpLabel
+        %406 = OpCompositeExtract %157 %566 1
+        %407 = OpFAdd %157 %406 %377
+        %556 = OpCompositeInsert %158 %407 %566 1
+               OpBranch %396
+        %396 = OpLabel
+        %567 = OpPhi %158 %566 %384 %556 %403
+        %409 = OpCompositeExtract %157 %567 1
+        %411 = OpCompositeExtract %157 %567 0
+        %412 = OpFAdd %157 %411 %409
+        %560 = OpCompositeInsert %158 %412 %567 0
+               OpBranch %386
+        %386 = OpLabel
+        %415 = OpIAdd %6 %565 %22
+               OpBranch %383
+        %385 = OpLabel
+               OpBranch %308
+        %308 = OpLabel
+               OpBranch %295
+        %295 = OpLabel
+        %572 = OpPhi %157 %300 %294 %575 %308
+               OpBranch %282
+        %282 = OpLabel
+        %571 = OpPhi %157 %287 %281 %572 %295
+               OpBranch %269
+        %269 = OpLabel
+        %570 = OpPhi %157 %274 %268 %571 %282
+               OpBranch %252
+        %252 = OpLabel
+        %569 = OpPhi %157 %261 %251 %570 %269
+        %422 = OpCompositeConstruct %241 %569 %569 %569 %377
+               OpStore %376 %422
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+# injectionSwitch
+BUFFER variant_injectionSwitch DATA_TYPE vec2<float> STD140 DATA
+ 0.0 1.0
+END
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+  BIND BUFFER variant_injectionSwitch AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT reference_framebuffer EQ_HISTOGRAM_EMD_BUFFER variant_framebuffer TOLERANCE 0.005

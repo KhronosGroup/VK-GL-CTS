@@ -194,6 +194,8 @@ public:
 	virtual tcu::TestNode::IterateResult		iterate				(tcu::TestCase* testCase);
 
 private:
+	void										logUnusedShaders	(tcu::TestCase* testCase);
+
 	bool										spirvVersionSupported(vk::SpirvVersion);
 	vk::BinaryCollection						m_progCollection;
 	vk::BinaryRegistryReader					m_prebuiltBinRegistry;
@@ -259,10 +261,8 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 	vk::ShaderBuildOptions		defaultHlslBuildOptions		(usedVulkanVersion, baselineSpirvVersion, 0u);
 	vk::SpirVAsmBuildOptions	defaultSpirvAsmBuildOptions	(usedVulkanVersion, baselineSpirvVersion);
 	vk::SourceCollections		sourceProgs					(usedVulkanVersion, defaultGlslBuildOptions, defaultHlslBuildOptions, defaultSpirvAsmBuildOptions);
-	const bool					doShaderLog					= log.isShaderLoggingEnabled();
 	const tcu::CommandLine&		commandLine					= m_context.getTestContext().getCommandLine();
-
-	DE_UNREF(casePath); // \todo [2015-03-13 pyry] Use this to identify ProgramCollection storage path
+	const bool					doShaderLog					= commandLine.isLogDecompiledSpirvEnabled() && log.isShaderLoggingEnabled();
 
 	if (!vktCase)
 		TCU_THROW(InternalError, "Test node not an instance of vkt::TestCase");
@@ -340,7 +340,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 	m_context.resultSetOnValidation(false);
 }
 
-void TestCaseExecutor::deinit (tcu::TestCase*)
+void TestCaseExecutor::deinit (tcu::TestCase* testCase)
 {
 	delete m_instance;
 	m_instance = DE_NULL;
@@ -352,6 +352,46 @@ void TestCaseExecutor::deinit (tcu::TestCase*)
 	if (m_context.hasDebugReportRecorder())
 		collectAndReportDebugMessages(m_context.getDebugReportRecorder(), m_context);
 #endif // CTS_USES_VULKANSC
+
+	if (testCase != DE_NULL)
+		logUnusedShaders(testCase);
+}
+
+void TestCaseExecutor::logUnusedShaders (tcu::TestCase* testCase)
+{
+	const qpTestResult	testResult	= testCase->getTestContext().getTestResult();
+
+	if (testResult == QP_TEST_RESULT_PASS || testResult == QP_TEST_RESULT_QUALITY_WARNING || testResult == QP_TEST_RESULT_COMPATIBILITY_WARNING)
+	{
+		bool	unusedShaders	= false;
+
+		for (vk::BinaryCollection::Iterator it = m_progCollection.begin(); it != m_progCollection.end(); ++it)
+		{
+			if (!it.getProgram().getUsed())
+			{
+				unusedShaders = true;
+
+				break;
+			}
+		}
+
+		if (unusedShaders)
+		{
+			std::string message;
+
+			for (vk::BinaryCollection::Iterator it = m_progCollection.begin(); it != m_progCollection.end(); ++it)
+			{
+				if (!it.getProgram().getUsed())
+					message += it.getName() + ",";
+			}
+
+			message.resize(message.size() - 1);
+
+			message = std::string("Unused shaders: ") + message;
+
+			m_context.getTestContext().getLog() << TestLog::Message << message << TestLog::EndMessage;
+		}
+	}
 }
 
 tcu::TestNode::IterateResult TestCaseExecutor::iterate (tcu::TestCase*)
@@ -537,7 +577,8 @@ void TestPackage::init (void)
 	addChild(compute::createTests				(m_testCtx));
 	addChild(image::createTests					(m_testCtx));
 	addChild(wsi::createTests					(m_testCtx));
-	addChild(synchronization::createTests		(m_testCtx));
+	addChild(createSynchronizationTests			(m_testCtx));
+	addChild(createSynchronization2Tests		(m_testCtx));
 	addChild(sparse::createTests				(m_testCtx));
 	addChild(tessellation::createTests			(m_testCtx));
 	addChild(rasterization::createTests			(m_testCtx));

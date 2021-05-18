@@ -19,7 +19,7 @@
  * be lost! Modify the generating script instead.
  */
 
-const char* mustpassDir = "gl_cts/data/mustpass/gles/aosp_mustpass/3.2.6.x/";
+const char* mustpassDir = "gl_cts/data/mustpass/gles/aosp_mustpass/master/";
 
 static const RunParams aosp_mustpass_es_first_cfg[] = {
 	{ glu::ApiType::es(2, 0), "master", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },

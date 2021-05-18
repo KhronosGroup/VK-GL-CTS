@@ -209,7 +209,10 @@ public:
 protected:
 	void preCheck (void)
 	{
-		if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_cube_map_array"))
+		auto ctxType = m_context.getRenderContext().getType();
+		if (!glu::contextSupports(ctxType, glu::ApiType::core(4, 5)) &&
+			!glu::contextSupports(ctxType, glu::ApiType::es(3, 2)) &&
+			!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_cube_map_array"))
 			TCU_THROW(NotSupportedError, "Test requires extension GL_EXT_texture_cube_map_array or a context version equal or higher than 3.2");
 
 		checkFormatSupport(m_format);

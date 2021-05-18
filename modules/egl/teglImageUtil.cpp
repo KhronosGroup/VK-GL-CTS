@@ -179,7 +179,7 @@ class TextureImageSource : public GLImageSource
 {
 public:
 							TextureImageSource	(GLenum internalFormat, GLenum format, GLenum type, bool useTexLevel0) : m_internalFormat(internalFormat), m_format(format), m_type(type), m_useTexLevel0(useTexLevel0) {}
-	MovePtr<ClientBuffer>	createBuffer		(const glw::Functions& gl, Texture2D* reference) const;
+	MovePtr<ClientBuffer>	createBuffer		(const eglw::Library& egl, const glw::Functions& gl, Texture2D* reference) const;
 	GLenum					getEffectiveFormat	(void) const;
 	GLenum					getInternalFormat	(void) const { return m_internalFormat; }
 
@@ -229,8 +229,10 @@ AttribMap TextureImageSource::getCreateAttribs (void) const
 	return ret;
 }
 
-MovePtr<ClientBuffer> TextureImageSource::createBuffer (const glw::Functions& gl, Texture2D* ref) const
+MovePtr<ClientBuffer> TextureImageSource::createBuffer (const eglw::Library& egl, const glw::Functions& gl, Texture2D* ref) const
 {
+	DE_UNREF(egl);
+
 	MovePtr<TextureClientBuffer>	clientBuffer	(new TextureClientBuffer(gl));
 	const GLuint					texture			= clientBuffer->getName();
 	const GLenum					target			= getGLTarget();
@@ -332,7 +334,7 @@ public:
 							RenderbufferImageSource	(GLenum format) : m_format(format) {}
 
 	string					getRequiredExtension	(void) const	{ return "EGL_KHR_gl_renderbuffer_image"; }
-	MovePtr<ClientBuffer>	createBuffer			(const glw::Functions& gl, Texture2D* reference) const;
+	MovePtr<ClientBuffer>	createBuffer			(const eglw::Library& egl, const glw::Functions& gl, Texture2D* reference) const;
 	GLenum					getEffectiveFormat		(void) const { return m_format; }
 
 protected:
@@ -465,8 +467,10 @@ void initializeColorRbo(const glw::Functions& gl, GLuint rbo, Texture2D& ref)
 												   GL_RENDERBUFFER, 0));
 }
 
-MovePtr<ClientBuffer> RenderbufferImageSource::createBuffer (const glw::Functions& gl, Texture2D* ref) const
+MovePtr<ClientBuffer> RenderbufferImageSource::createBuffer (const eglw::Library& egl, const glw::Functions& gl, Texture2D* ref) const
 {
+	DE_UNREF(egl);
+
 	MovePtr<RenderbufferClientBuffer>	buffer	(new RenderbufferClientBuffer(gl));
 	const GLuint						rbo		= buffer->getName();
 
@@ -516,7 +520,7 @@ class UnsupportedImageSource : public ImageSource
 public:
 							UnsupportedImageSource	(const string& message, GLenum format) : m_message(message), m_format(format) {}
 	string					getRequiredExtension	(void) const { fail(); return ""; }
-	MovePtr<ClientBuffer>	createBuffer			(const glw::Functions&, tcu::Texture2D*) const { fail(); return de::MovePtr<ClientBuffer>(); }
+	MovePtr<ClientBuffer>	createBuffer			(const eglw::Library& egl, const glw::Functions&, tcu::Texture2D*) const { DE_UNREF(egl); fail(); return de::MovePtr<ClientBuffer>(); }
 	EGLImageKHR				createImage				(const Library& egl, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const;
 	GLenum					getEffectiveFormat		(void) const { return m_format; }
 

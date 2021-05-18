@@ -66,6 +66,22 @@ public:
 	void init(void);
 };
 
+class GL42CompatTestPackage  : public deqp::TestPackage
+{
+public:
+	GL42CompatTestPackage(tcu::TestContext& testCtx, const char* packageName,
+					const char*		 description	   = "OpenGL 4.2 Compatibility Conformance Tests",
+					glu::ContextType renderContextType = glu::ContextType(4, 2, glu::PROFILE_COMPATIBILITY));
+
+	~GL42CompatTestPackage(void);
+
+	tcu::TestCaseExecutor* createExecutor(void) const;
+
+	void init(void);
+
+	using deqp::TestPackage::getContext;
+};
+
 class GL43TestPackage : public GL42TestPackage
 {
 public:

@@ -21,12 +21,15 @@
  * \brief Descriptor set tests
  *//*--------------------------------------------------------------------*/
 
+#include "amber/vktAmberTestCase.hpp"
 #include "vktApiDescriptorSetTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vktApiBufferComputeInstance.hpp"
 #include "vktApiComputeInstanceResultBuffer.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkObjUtil.hpp"
 
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
@@ -353,6 +356,246 @@ tcu::TestStatus emptyDescriptorSetLayoutTest (Context& context, VkDescriptorSetL
 	return tcu::TestStatus::pass("Pass");
 }
 
+tcu::TestStatus descriptorSetLayoutBindingOrderingTest (Context& context)
+{
+	/*
+		This test tests that if dstBinding has fewer than
+		descriptorCount array elements remaining starting from dstArrayElement,
+		then the remainder will be used to update the subsequent binding.
+	*/
+
+	const DeviceInterface&		vk					= context.getDeviceInterface();
+	const VkDevice				device				= context.getDevice();
+	deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const VkQueue				queue				= context.getUniversalQueue();
+
+	const Unique<VkShaderModule> computeShaderModule (createShaderModule(vk, device, context.getBinaryCollection().get("compute"), 0));
+
+	de::MovePtr<BufferWithMemory> buffer;
+	buffer			= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk,
+																		device,
+																		context.getDefaultAllocator(),
+																		makeBufferCreateInfo(4u, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT),
+																		MemoryRequirement::HostVisible));
+	deUint32 *bufferPtr = (deUint32 *)buffer->getAllocation().getHostPtr();
+	*bufferPtr = 5;
+
+	de::MovePtr<BufferWithMemory> resultBuffer;
+	resultBuffer	= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk,
+																		device,
+																		context.getDefaultAllocator(),
+																		makeBufferCreateInfo(4u * 3, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+																		MemoryRequirement::HostVisible));
+
+	const VkDescriptorBufferInfo	descriptorBufferInfos[]		=
+	{
+		{
+			buffer->get(),		// VkBuffer			buffer
+			0u,					// VkDeviceSize		offset
+			VK_WHOLE_SIZE		// VkDeviceSize		range
+		},
+		{
+			buffer->get(),		// VkBuffer			buffer
+			0u,					// VkDeviceSize		offset
+			VK_WHOLE_SIZE		// VkDeviceSize		range
+		},
+		{
+			buffer->get(),		// VkBuffer			buffer
+			0u,					// VkDeviceSize		offset
+			VK_WHOLE_SIZE		// VkDeviceSize		range
+		},
+	};
+
+	const VkDescriptorBufferInfo	descriptorBufferInfoResult	=
+	{
+		resultBuffer->get(),	// VkBuffer			buffer
+		0u,						// VkDeviceSize		offset
+		VK_WHOLE_SIZE			// VkDeviceSize		range
+	};
+
+	const VkDescriptorSetLayoutBinding layoutBindings[] =
+	{
+		{
+			0u,										// deUint32				binding;
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,		// VkDescriptorType		descriptorType;
+			2u,										// deUint32				descriptorCount;
+			VK_SHADER_STAGE_ALL,					// VkShaderStageFlags	stageFlags;
+			DE_NULL									// const VkSampler*		pImmutableSamplers;
+		},
+		{
+			1u,										// deUint32				binding;
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,		// VkDescriptorType		descriptorType;
+			1u,										// deUint32				descriptorCount;
+			VK_SHADER_STAGE_ALL,					// VkShaderStageFlags	stageFlags;
+			DE_NULL									// const VkSampler*		pImmutableSamplers;
+		},
+		{
+			2u,										// deUint32				binding;
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,		// VkDescriptorType		descriptorType;
+			1u,										// deUint32				descriptorCount;
+			VK_SHADER_STAGE_ALL,					// VkShaderStageFlags	stageFlags;
+			DE_NULL									// const VkSampler*		pImmutableSamplers;
+		}
+	};
+
+	const VkDescriptorSetLayoutCreateInfo	descriptorSetLayoutCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType							sType;
+		DE_NULL,												// const void*								pNext;
+		0u,														// VkDescriptorSetLayoutCreateFlags			flags;
+		DE_LENGTH_OF_ARRAY(layoutBindings),						// deUint32									bindingCount;
+		layoutBindings											// const VkDescriptorSetLayoutBinding*		pBindings;
+	};
+
+	Move<VkDescriptorSetLayout> descriptorSetLayout(createDescriptorSetLayout(vk, device, &descriptorSetLayoutCreateInfo));
+
+	const VkDescriptorPoolSize				poolSize[]						=
+	{
+		{
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			// VkDescriptorType				type
+			3u											// uint32_t						descriptorCount
+		},
+		{
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,			// VkDescriptorType				type
+			1u											// uint32_t						descriptorCount
+		}
+	};
+
+	const VkDescriptorPoolCreateInfo		descriptorPoolCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,	// VkStructureType				sType
+		DE_NULL,										// const void*					pNext
+		0u,												// VkDescriptorPoolCreateFlags	flags
+		1u,												// uint32_t						maxSets
+		2u,												// uint32_t						poolSizeCount
+		poolSize										// const VkDescriptorPoolSize*	pPoolSizes
+	};
+
+	Move<VkDescriptorPool> descriptorPool(createDescriptorPool(vk, device, &descriptorPoolCreateInfo));
+
+	VkDescriptorSet descriptorSet;
+	{
+		const VkDescriptorSetAllocateInfo allocInfo =
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,		// VkStructure						sType
+			DE_NULL,											// const void*						pNext
+			*descriptorPool,									// VkDescriptorPool					descriptorPool
+			1u,													// uint32_t							descriptorSetCount
+			&*descriptorSetLayout								// const VkDescriptorSetLayout*		pSetLayouts
+		};
+
+		VK_CHECK(vk.allocateDescriptorSets(device, &allocInfo, &descriptorSet));
+	}
+
+	const VkWriteDescriptorSet				descriptorWrite			=
+	{
+		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,					// VkStructureType					sType
+		DE_NULL,												// const void*						pNext
+		descriptorSet,											// VkDescriptorSet					dstSet
+		0u,														// deUint32							dstBinding
+		0u,														// deUint32							dstArrayElement
+		3u,														// deUint32							descriptorCount
+		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,						// VkDescriptorType					descriptorType
+		DE_NULL,												// const VkDescriptorImageInfo		pImageInfo
+		descriptorBufferInfos,									// const VkDescriptorBufferInfo*	pBufferInfo
+		DE_NULL													// const VkBufferView*				pTexelBufferView
+	};
+
+	const VkWriteDescriptorSet				descriptorWriteResult	=
+	{
+		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,					// VkStructureType					sType
+		DE_NULL,												// const void*						pNext
+		descriptorSet,											// VkDescriptorSet					dstSet
+		2u,														// deUint32							dstBinding
+		0u,														// deUint32							dstArrayElement
+		1u,														// deUint32							descriptorCount
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,						// VkDescriptorType					descriptorType
+		DE_NULL,												// const VkDescriptorImageInfo		pImageInfo
+		&descriptorBufferInfoResult,							// const VkDescriptorBufferInfo*	pBufferInfo
+		DE_NULL													// const VkBufferView*				pTexelBufferView
+	};
+
+	const VkCommandPoolCreateInfo			cmdPoolInfo				=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,				// VkStructureType					Stype
+		DE_NULL,												// const void*						PNext
+		DE_NULL,												// VkCommandPoolCreateFlags			flags
+		queueFamilyIndex,										// uint32_t							queuefamilyindex
+	};
+
+	const Unique<VkCommandPool>				cmdPool(createCommandPool(vk, device, &cmdPoolInfo));
+
+	const VkCommandBufferAllocateInfo		cmdBufParams			=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,			// VkStructureType					sType;
+		DE_NULL,												// const void*						pNext;
+		*cmdPool,												// VkCommandPool					pool;
+		VK_COMMAND_BUFFER_LEVEL_PRIMARY,						// VkCommandBufferLevel				level;
+		1u,														// uint32_t							bufferCount;
+	};
+
+	const Unique<VkCommandBuffer>			cmdBuf(allocateCommandBuffer(vk, device, &cmdBufParams));
+
+	const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,			// VkStructureType					sType
+		DE_NULL,												// const void*						pNext
+		0,														// VkPipelineLayoutCreateFlags		flags
+		1u,														// uint32_t							setLayoutCount
+		&*descriptorSetLayout,									// const VkDescriptorSetLayout*		pSetLayouts
+		0u,														// uint32_t							pushConstantRangeCount
+		nullptr													// const VkPushConstantRange*		pPushConstantRanges
+	};
+
+	Move<VkPipelineLayout> pipelineLayout(createPipelineLayout(vk, device, &pipelineLayoutCreateInfo));
+
+	const VkPipelineShaderStageCreateInfo	shaderStageCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType					sType;
+		DE_NULL,												// const void*						pNext;
+		(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags	flags;
+		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits			stage;
+		computeShaderModule.get(),								// VkShaderModule					shader;
+		"main",													// const char*						pName;
+		DE_NULL													// const VkSpecializationInfo*		pSpecializationInfo;
+	};
+
+	const VkComputePipelineCreateInfo		computePipelineCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,			// VkStructureType					sType
+		DE_NULL,												// const void*						pNext
+		(VkPipelineCreateFlags)0,								// VkPipelineCreateFlags			flags
+		shaderStageCreateInfo,									// VkPipelineShaderStageCreateInfo	stage
+		*pipelineLayout,										// VkPipelineLayout					layout
+		DE_NULL,												// VkPipeline						basePipelineHandle
+		0														// int								basePipelineIndex
+	};
+
+	Unique<VkPipeline> computePipeline(createComputePipeline(vk, device, DE_NULL, &computePipelineCreateInfo));
+
+	beginCommandBuffer(vk, *cmdBuf, 0u);
+	{
+		vk.cmdBindPipeline(*cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
+		vk.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, DE_NULL);
+		vk.updateDescriptorSets(device, 1u, &descriptorWriteResult, 0u, DE_NULL);
+		vk.cmdBindDescriptorSets(*cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1u, &descriptorSet, 0, nullptr);
+		flushAlloc(vk, device, buffer->getAllocation());
+		vk.cmdDispatch(*cmdBuf, 1u, 1u, 1u);
+	}
+
+	endCommandBuffer(vk, *cmdBuf);
+	submitCommandsAndWait(vk, device, queue, *cmdBuf);
+
+	const Allocation& bufferAllocationResult = resultBuffer->getAllocation();
+	invalidateAlloc(vk, device, bufferAllocationResult);
+
+	const deUint32* resultPtr = static_cast<deUint32*>(bufferAllocationResult.getHostPtr());
+
+	if (resultPtr[0] == 5 && resultPtr[1] == 5 && resultPtr[2] == 5)
+		return tcu::TestStatus::pass("Pass");
+	else
+		return tcu::TestStatus::fail("Fail");
+}
 } // anonymous
 
 void createDescriptorSetLayoutLifetimeGraphicsSource (SourceCollections& dst)
@@ -372,6 +615,31 @@ void createDescriptorSetLayoutLifetimeComputeSource (SourceCollections& dst)
 		"layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 		"void main (void)\n"
 		"{\n"
+		"}\n");
+}
+
+void createDescriptorSetLayoutBindingOrderingSource (SourceCollections& dst)
+{
+	dst.glslSources.add("compute") << glu::ComputeSource(
+		"#version 310 es\n"
+		"layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+		"layout (set = 0, binding = 0) uniform UniformBuffer0 {\n"
+		"	int data;\n"
+		"} uniformbufferarray[2];\n"
+		"layout (set = 0, binding = 1) uniform UniformBuffer2 {\n"
+		"	int data;\n"
+		"} uniformbuffer2;\n"
+		"layout (set = 0, binding = 2) buffer StorageBuffer {\n"
+		"	int result0;\n"
+		"	int result1;\n"
+		"	int result2;\n"
+		"} results;\n"
+		"\n"
+		"void main (void)\n"
+		"{\n"
+		"	results.result0 = uniformbufferarray[0].data;\n"
+		"	results.result1 = uniformbufferarray[1].data;\n"
+		"	results.result2 = uniformbuffer2.data;\n"
 		"}\n");
 }
 
@@ -395,6 +663,17 @@ tcu::TestCaseGroup* createEmptyDescriptorSetLayoutTests (tcu::TestContext& testC
 	return emptyDescriptorSetLayoutTests.release();
 }
 
+tcu::TestCaseGroup* createDescriptorSetLayoutBindingOrderingTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> descriptorSetLayoutBindingOrderingTests(new tcu::TestCaseGroup(testCtx, "descriptor_set_layout_binding", "Create descriptor set layout ordering tests"));
+	addFunctionCaseWithPrograms(descriptorSetLayoutBindingOrderingTests.get(), "update_subsequent_binding", "Test subsequent binding update with remaining elements", createDescriptorSetLayoutBindingOrderingSource, descriptorSetLayoutBindingOrderingTest);
+
+	static const char dataDir[] = "api/descriptor_set/descriptor_set_layout_binding";
+	descriptorSetLayoutBindingOrderingTests->addChild(cts_amber::createAmberTestCase(testCtx, "layout_binding_order", "Test descriptor set layout binding order", dataDir, "layout_binding_order.amber"));
+
+	return descriptorSetLayoutBindingOrderingTests.release();
+}
+
 tcu::TestCaseGroup* createDescriptorSetLayoutTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> descriptorSetLayoutTests(new tcu::TestCaseGroup(testCtx, "descriptor_set_layout", "Descriptor set layout tests"));
@@ -410,6 +689,7 @@ tcu::TestCaseGroup* createDescriptorSetTests (tcu::TestContext& testCtx)
 
 	descriptorSetTests->addChild(createDescriptorSetLayoutLifetimeTests(testCtx));
 	descriptorSetTests->addChild(createDescriptorSetLayoutTests(testCtx));
+	descriptorSetTests->addChild(createDescriptorSetLayoutBindingOrderingTests(testCtx));
 
 	return descriptorSetTests.release();
 }

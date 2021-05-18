@@ -306,7 +306,7 @@ public:
 		, m_commandLine	(0)
 	{}
 
-	BuildSpirVAsmTask (void) : m_program(DE_NULL) {}
+	BuildSpirVAsmTask (void) : m_program(DE_NULL), m_commandLine(0) {}
 
 	void setCommandline (const tcu::CommandLine &commandLine)
 	{

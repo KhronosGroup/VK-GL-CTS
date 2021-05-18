@@ -187,10 +187,14 @@ public:
 class ShaderLinkageTests : public TestCaseGroup
 {
 public:
-	ShaderLinkageTests (Context& context)
+	ShaderLinkageTests (Context& context, bool isGL45)
 		: TestCaseGroup(context,  "linkage", "Linkage Tests")
+		, m_isGL45(isGL45)
 	{
 	}
+
+private:
+	bool m_isGL45;
 
 	void init (void)
 	{
@@ -213,19 +217,37 @@ public:
 			{ "shaders/es32/linkage_io_block.test",					"io_block",					"Shader io blocks"					},
 			{ "shaders/es32/linkage_uniform.test",					"uniform",					"Uniform linkage"					},
 		};
+		static const ShaderLibraryGroup::File	s_filesGL45[]	=
+		{
+			{ "shaders/gl45/linkage_geometry.test",					"geometry",					"Geometry shader"					},
+			{ "shaders/gl45/linkage_tessellation.test",				"tessellation",				"Tessellation shader"				},
+			{ "shaders/gl45/linkage_tessellation_geometry.test",	"tessellation_geometry",	"Tessellation and geometry shader"	},
+			{ "shaders/gl45/linkage_shader_storage_block.test",		"shader_storage_block",		"Shader storage blocks"				},
+			{ "shaders/gl45/linkage_io_block.test",					"io_block",					"Shader io blocks"					},
+			{ "shaders/gl45/linkage_uniform.test",					"uniform",					"Uniform linkage"					},
+		};
 
-		addChild(new ShaderLibraryGroup(m_context,	"es31",		"GLSL ES 3.1 Linkage",	DE_LENGTH_OF_ARRAY(s_filesES31), s_filesES31));
-		addChild(new ShaderLibraryGroup(m_context,	"es32",		"GLSL ES 3.2 Linkage",	DE_LENGTH_OF_ARRAY(s_filesES32), s_filesES32));
+		if (m_isGL45)
+			addChild(new ShaderLibraryGroup(m_context,	"gl45",		"GL 4.5 Linkage",		DE_LENGTH_OF_ARRAY(s_filesGL45), s_filesGL45));
+		else
+		{
+			addChild(new ShaderLibraryGroup(m_context,	"es31",		"GLSL ES 3.1 Linkage",	DE_LENGTH_OF_ARRAY(s_filesES31), s_filesES31));
+			addChild(new ShaderLibraryGroup(m_context,	"es32",		"GLSL ES 3.2 Linkage",	DE_LENGTH_OF_ARRAY(s_filesES32), s_filesES32));
+		}
 	}
 };
 
 class ShaderTests : public TestCaseGroup
 {
 public:
-	ShaderTests (Context& context)
+	ShaderTests (Context& context, bool isGL45)
 		: TestCaseGroup(context, "shaders", "Shading Language Tests")
+		, m_isGL45(isGL45)
 	{
 	}
+
+private:
+	bool m_isGL45;
 
 	void init (void)
 	{
@@ -254,15 +276,23 @@ public:
 		}
 
 		{
-			static const ShaderLibraryGroup::File s_arraysOfArraysFiles[] =
+			static const ShaderLibraryGroup::File s_arraysOfArraysFilesES[] =
 			{
 				{ "shaders/es31/arrays_of_arrays.test",		"es31",		"GLSL ES 3.1 Arrays of Arrays Tests"	},
 				{ "shaders/es32/arrays_of_arrays.test",		"es32",		"GLSL ES 3.2 Arrays of Arrays Tests"	},
 			};
-			addChild(new ShaderLibraryGroup(m_context, "arrays_of_arrays", "Arrays of Arras Tests", DE_LENGTH_OF_ARRAY(s_arraysOfArraysFiles), s_arraysOfArraysFiles));
+
+			static const ShaderLibraryGroup::File s_arraysOfArraysFilesGL[] =
+			{
+				{ "shaders/gl45/arrays_of_arrays.test",		"gl45",		"GLSL 4.5 Arrays of Arrays Tests"		},
+			};
+			if (m_isGL45)
+				addChild(new ShaderLibraryGroup(m_context, "arrays_of_arrays", "Arrays of Arras Tests", DE_LENGTH_OF_ARRAY(s_arraysOfArraysFilesGL), s_arraysOfArraysFilesGL));
+			else
+				addChild(new ShaderLibraryGroup(m_context, "arrays_of_arrays", "Arrays of Arras Tests", DE_LENGTH_OF_ARRAY(s_arraysOfArraysFilesES), s_arraysOfArraysFilesES));
 		}
 
-		addChild(new ShaderLinkageTests					(m_context));
+		addChild(new ShaderLinkageTests					(m_context, m_isGL45));
 		addChild(new ShaderBuiltinConstantTests			(m_context));
 		addChild(new ShaderHelperInvocationTests		(m_context));
 
@@ -323,8 +353,9 @@ public:
 class TextureTests : public TestCaseGroup
 {
 public:
-	TextureTests (Context& context)
+	TextureTests (Context& context, bool isGL45)
 		: TestCaseGroup(context, "texture", "Texture tests")
+		, m_isGL45(isGL45)
 	{
 	}
 
@@ -336,8 +367,11 @@ public:
 		addChild(new TextureMultisampleTests	(m_context));
 		addChild(new TextureGatherTests			(m_context));
 		addChild(createTextureBufferTests		(m_context));
-		addChild(new TextureBorderClampTests	(m_context));
+		addChild(new TextureBorderClampTests	(m_context, m_isGL45));
 	}
+
+private:
+	bool m_isGL45;
 };
 
 class StateQueryTests : public TestCaseGroup
@@ -397,47 +431,90 @@ public:
 	}
 };
 
-FunctionalTests::FunctionalTests (Context& context)
+GLES31FunctionalTests::GLES31FunctionalTests (Context& context)
 	: TestCaseGroup(context, "functional", "Functionality Tests")
 {
 }
 
-FunctionalTests::~FunctionalTests (void)
+GLES31FunctionalTests::~GLES31FunctionalTests (void)
 {
 }
 
-void FunctionalTests::init (void)
+void GLES31FunctionalTests::init (void)
 {
-	addChild(new ShaderTests							(m_context));
+	addChild(new ShaderTests							(m_context, false));
 	addChild(new ComputeTests							(m_context));
 	addChild(new DrawTests								(m_context));
-	addChild(new TessellationTests						(m_context));
+	addChild(new TessellationTests						(m_context, false));
 	addChild(new SSBOTests								(m_context));
 	addChild(new UniformBlockTests						(m_context));
 	addChild(new ShaderImageLoadStoreTests				(m_context));
 	addChild(new AtomicCounterTests						(m_context));
 	addChild(new StencilTexturingTests					(m_context));
-	addChild(new TextureTests							(m_context));
+	addChild(new TextureTests							(m_context, false));
 	addChild(new StateQueryTests						(m_context));
 	addChild(new MultisampleTests						(m_context));
 	addChild(new SynchronizationTests					(m_context));
-	addChild(new GeometryShaderTests					(m_context));
+	addChild(new GeometryShaderTests					(m_context, false));
 	addChild(new SampleShadingTests						(m_context));
 	addChild(new VertexAttributeBindingTests			(m_context));
 	addChild(new ProgramUniformTests					(m_context));
 	addChild(new AdvancedBlendTests						(m_context));
-	addChild(createSeparateShaderTests					(m_context));
-	addChild(new UniformLocationTests					(m_context));
-	addChild(new TessellationGeometryInteractionTests	(m_context));
+	addChild(createGLESSeparateShaderTests				(m_context));
+	addChild(new UniformLocationTests					(m_context, false));
+	addChild(new TessellationGeometryInteractionTests	(m_context, false));
 	addChild(new DebugTests								(m_context));
 	addChild(new FboTests								(m_context));
-	addChild(new ProgramInterfaceQueryTests				(m_context));
+	addChild(new ProgramInterfaceQueryTests				(m_context, false));
 	addChild(new LayoutBindingTests						(m_context));
 	addChild(new PrimitiveBoundingBoxTests				(m_context));
 	addChild(new AndroidExtensionPackES31ATests			(m_context));
-	addChild(createCopyImageTests						(m_context));
+	addChild(createCopyImageTests						(m_context, false));
 	addChild(createDrawBuffersIndexedTests				(m_context));
 	addChild(new DefaultVertexArrayObjectTests			(m_context));
+	addChild(new SRGBTextureDecodeTests					(m_context));
+	addChild(new DrawElementsBaseVertexTests			(m_context));
+}
+
+GL45FunctionalTests::GL45FunctionalTests (Context& context)
+	: TestCaseGroup(context, "functional", "Functionality Tests")
+{
+}
+
+GL45FunctionalTests::~GL45FunctionalTests (void)
+{
+}
+
+void GL45FunctionalTests::init (void)
+{
+	addChild(new ShaderTests							(m_context, true));
+	addChild(new ComputeTests							(m_context));
+	addChild(new DrawTests								(m_context));
+	addChild(new TessellationTests						(m_context, true));
+	addChild(new SSBOTests								(m_context));
+	addChild(new UniformBlockTests						(m_context));
+	addChild(new ShaderImageLoadStoreTests				(m_context));
+	addChild(new AtomicCounterTests						(m_context));
+	addChild(new StencilTexturingTests					(m_context));
+	addChild(new TextureTests							(m_context, true));
+	addChild(new StateQueryTests						(m_context));
+	addChild(new MultisampleTests						(m_context));
+	addChild(new SynchronizationTests					(m_context));
+	addChild(new GeometryShaderTests					(m_context, true));
+	addChild(new SampleShadingTests						(m_context));
+	addChild(new VertexAttributeBindingTests			(m_context));
+	addChild(new ProgramUniformTests					(m_context));
+	addChild(new AdvancedBlendTests						(m_context));
+	addChild(createCommonSeparateShaderTests			(m_context));
+	addChild(new UniformLocationTests					(m_context, true));
+	addChild(new TessellationGeometryInteractionTests	(m_context, true));
+	addChild(new DebugTests								(m_context));
+	addChild(new FboTests								(m_context));
+	addChild(new ProgramInterfaceQueryTests				(m_context, true));
+	addChild(new LayoutBindingTests						(m_context));
+	addChild(new PrimitiveBoundingBoxTests				(m_context));
+	addChild(createCopyImageTests						(m_context, true));
+	addChild(createDrawBuffersIndexedTests				(m_context));
 	addChild(new SRGBTextureDecodeTests					(m_context));
 	addChild(new DrawElementsBaseVertexTests			(m_context));
 }

@@ -98,14 +98,40 @@ public:
 
 	const vk::VkImage&				get				(void) const { return *m_image; }
 	const vk::VkImage&				operator*		(void) const { return get(); }
-	vk::Allocation&					getAllocation	(void) const { return *m_allocation; }
 
-private:
-	de::MovePtr<vk::Allocation>		m_allocation;
+	virtual vk::VkSemaphore			getSemaphore	(void) const { return DE_NULL; }
+
+									Image			(const Image&) = delete;
+	Image&							operator=		(const Image&) = delete;
+
+protected:
+	using AllocationsVec = std::vector<de::SharedPtr<vk::Allocation>>;
+
+									Image			(void);
+
+	AllocationsVec					m_allocations;
 	vk::Move<vk::VkImage>			m_image;
+};
 
-									Image			(const Image&);  // "deleted"
-	Image&							operator=		(const Image&);
+class SparseImage : public Image
+{
+public:
+									SparseImage		(const vk::DeviceInterface&		vkd,
+													 vk::VkDevice					device,
+													 vk::VkPhysicalDevice			physicalDevice,
+													 const vk::InstanceInterface&	vki,
+													 const vk::VkImageCreateInfo&	createInfo,
+													 const vk::VkQueue				sparseQueue,
+													 vk::Allocator&					allocator,
+													 const tcu::TextureFormat&		format);
+
+	virtual vk::VkSemaphore			getSemaphore	(void) const { return m_semaphore.get(); }
+
+									SparseImage		(const SparseImage&) = delete;
+	SparseImage&					operator=		(const SparseImage&) = delete;
+
+protected:
+	vk::Move<vk::VkSemaphore>		m_semaphore;
 };
 
 tcu::UVec3				getShaderGridSize	(const ImageType imageType, const tcu::UVec3& imageSize);	//!< Size used for addresing image in a shader

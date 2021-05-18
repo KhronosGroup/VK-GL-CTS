@@ -143,6 +143,18 @@ void Deleter<VkDeferredOperationKHR>::operator() (VkDeferredOperationKHR obj) co
 }
 
 template<>
+void Deleter<VkCuModuleNVX>::operator() (VkCuModuleNVX obj) const
+{
+	m_deviceIface->destroyCuModuleNVX(m_device, obj, m_allocator);
+}
+
+template<>
+void Deleter<VkCuFunctionNVX>::operator() (VkCuFunctionNVX obj) const
+{
+	m_deviceIface->destroyCuFunctionNVX(m_device, obj, m_allocator);
+}
+
+template<>
 void Deleter<VkValidationCacheEXT>::operator() (VkValidationCacheEXT obj) const
 {
 	m_deviceIface->destroyValidationCacheEXT(m_device, obj, m_allocator);
@@ -170,6 +182,18 @@ template<>
 void Deleter<VkAccelerationStructureKHR>::operator() (VkAccelerationStructureKHR obj) const
 {
 	m_deviceIface->destroyAccelerationStructureKHR(m_device, obj, m_allocator);
+}
+
+template<>
+void Deleter<VkVideoSessionKHR>::operator() (VkVideoSessionKHR obj) const
+{
+	m_deviceIface->destroyVideoSessionKHR(m_device, obj, m_allocator);
+}
+
+template<>
+void Deleter<VkVideoSessionParametersKHR>::operator() (VkVideoSessionParametersKHR obj) const
+{
+	m_deviceIface->destroyVideoSessionParametersKHR(m_device, obj, m_allocator);
 }
 
 } // refdetails
@@ -370,6 +394,20 @@ Move<VkDebugReportCallbackEXT> createDebugReportCallbackEXT (const InstanceInter
 	return Move<VkDebugReportCallbackEXT>(check<VkDebugReportCallbackEXT>(object), Deleter<VkDebugReportCallbackEXT>(vk, instance, pAllocator));
 }
 
+Move<VkCuModuleNVX> createCuModuleNVX (const DeviceInterface& vk, VkDevice device, const VkCuModuleCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkCuModuleNVX object = 0;
+	VK_CHECK(vk.createCuModuleNVX(device, pCreateInfo, pAllocator, &object));
+	return Move<VkCuModuleNVX>(check<VkCuModuleNVX>(object), Deleter<VkCuModuleNVX>(vk, device, pAllocator));
+}
+
+Move<VkCuFunctionNVX> createCuFunctionNVX (const DeviceInterface& vk, VkDevice device, const VkCuFunctionCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkCuFunctionNVX object = 0;
+	VK_CHECK(vk.createCuFunctionNVX(device, pCreateInfo, pAllocator, &object));
+	return Move<VkCuFunctionNVX>(check<VkCuFunctionNVX>(object), Deleter<VkCuFunctionNVX>(vk, device, pAllocator));
+}
+
 Move<VkDebugUtilsMessengerEXT> createDebugUtilsMessengerEXT (const InstanceInterface& vk, VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)
 {
 	VkDebugUtilsMessengerEXT object = 0;
@@ -424,6 +462,20 @@ Move<VkSurfaceKHR> createAndroidSurfaceKHR (const InstanceInterface& vk, VkInsta
 	VkSurfaceKHR object = 0;
 	VK_CHECK(vk.createAndroidSurfaceKHR(instance, pCreateInfo, pAllocator, &object));
 	return Move<VkSurfaceKHR>(check<VkSurfaceKHR>(object), Deleter<VkSurfaceKHR>(vk, instance, pAllocator));
+}
+
+Move<VkVideoSessionKHR> createVideoSessionKHR (const DeviceInterface& vk, VkDevice device, const VkVideoSessionCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkVideoSessionKHR object = 0;
+	VK_CHECK(vk.createVideoSessionKHR(device, pCreateInfo, pAllocator, &object));
+	return Move<VkVideoSessionKHR>(check<VkVideoSessionKHR>(object), Deleter<VkVideoSessionKHR>(vk, device, pAllocator));
+}
+
+Move<VkVideoSessionParametersKHR> createVideoSessionParametersKHR (const DeviceInterface& vk, VkDevice device, const VkVideoSessionParametersCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkVideoSessionParametersKHR object = 0;
+	VK_CHECK(vk.createVideoSessionParametersKHR(device, pCreateInfo, pAllocator, &object));
+	return Move<VkVideoSessionParametersKHR>(check<VkVideoSessionParametersKHR>(object), Deleter<VkVideoSessionParametersKHR>(vk, device, pAllocator));
 }
 
 Move<VkSurfaceKHR> createImagePipeSurfaceFUCHSIA (const InstanceInterface& vk, VkInstance instance, const VkImagePipeSurfaceCreateInfoFUCHSIA* pCreateInfo, const VkAllocationCallbacks* pAllocator)

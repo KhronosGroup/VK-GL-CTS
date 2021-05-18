@@ -624,6 +624,7 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 	, m_uniformSetup		(uniformSetup)
 	, m_attribFunc			(attribFunc)
 	, m_sampleCount			(VK_SAMPLE_COUNT_1_BIT)
+	, m_fuzzyCompare		(false)
 {
 }
 
@@ -773,6 +774,15 @@ void ShaderRenderCaseInstance::addAttribute (deUint32		bindingLocation,
 											 deUint32		count,
 											 const void*	dataPtr)
 {
+	// Portability requires stride to be multiply of minVertexInputBindingStrideAlignment
+	// this value is usually 4 and current tests meet this requirement but
+	// if this changes in future then this limit should be verified in checkSupport
+	if (m_context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		((sizePerElement % m_context.getPortabilitySubsetProperties().minVertexInputBindingStrideAlignment) != 0))
+	{
+		DE_FATAL("stride is not multiply of minVertexInputBindingStrideAlignment");
+	}
+
 	// Add binding specification
 	const deUint32							binding					= (deUint32)m_vertexBindingDescription.size();
 	const VkVertexInputBindingDescription	bindingDescription		=
@@ -1564,6 +1574,18 @@ void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocati
 	const deUint32					sparseFamilyIndex	= (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE) ? getSparseQueueFamilyIndex() : queueFamilyIndex;
 
 	const bool						isShadowSampler		= refSampler.compare != tcu::Sampler::COMPAREMODE_NONE;
+
+	// when isShadowSampler is true mapSampler utill will set compareEnabled in
+	// VkSamplerCreateInfo to true and in portability this functionality is under
+	// feature flag - note that this is safety check as this is known at the
+	// TestCase level and NotSupportedError should be thrown from checkSupport
+	if (isShadowSampler &&
+		m_context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!m_context.getPortabilitySubsetFeatures().mutableComparisonSamplers)
+	{
+		DE_FATAL("mutableComparisonSamplers support should be checked in checkSupport");
+	}
+
 	const VkImageAspectFlags		aspectMask			= isShadowSampler ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 	const VkImageViewType			imageViewType		= textureTypeToImageViewType(textureType);
 	const VkImageType				imageType			= viewTypeToImageType(imageViewType);

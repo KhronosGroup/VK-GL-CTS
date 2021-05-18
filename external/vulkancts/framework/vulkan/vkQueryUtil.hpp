@@ -55,12 +55,17 @@ VkPhysicalDeviceProperties						getPhysicalDeviceProperties						(const Instance
 VkPhysicalDeviceMemoryProperties				getPhysicalDeviceMemoryProperties				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkFormatProperties								getPhysicalDeviceFormatProperties				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format);
 VkImageFormatProperties							getPhysicalDeviceImageFormatProperties			(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags);
+
+#ifndef CTS_USES_VULKANSC
 std::vector<VkSparseImageFormatProperties>		getPhysicalDeviceSparseImageFormatProperties	(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling);
+#endif // CTS_USES_VULKANSC
 
 VkMemoryRequirements							getBufferMemoryRequirements						(const DeviceInterface& vk, VkDevice device, VkBuffer buffer);
 VkMemoryRequirements							getImageMemoryRequirements						(const DeviceInterface& vk, VkDevice device, VkImage image);
 VkMemoryRequirements							getImagePlaneMemoryRequirements					(const DeviceInterface& vk, VkDevice device, VkImage image, VkImageAspectFlagBits planeAspect);
+#ifndef CTS_USES_VULKANSC
 std::vector<VkSparseImageMemoryRequirements>	getImageSparseMemoryRequirements				(const DeviceInterface& vk, VkDevice device, VkImage image);
+#endif // CTS_USES_VULKANSC
 
 std::vector<VkLayerProperties>					enumerateInstanceLayerProperties				(const PlatformInterface& vkp);
 std::vector<VkExtensionProperties>				enumerateInstanceExtensionProperties			(const PlatformInterface& vkp, const char* layerName);
@@ -231,6 +236,9 @@ private:
 	const InstanceInterface&	m_vki;
 	const VkPhysicalDevice		m_physicalDevice;
 };
+
+// Walks through chain to find empty pNext and assigns what to found pNext
+void appendStructurePtrToVulkanChain (const void**	chainHead, const void*	structurePtr);
 
 namespace ValidateQueryBits
 {

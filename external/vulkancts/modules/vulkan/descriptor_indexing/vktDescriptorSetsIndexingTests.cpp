@@ -122,6 +122,7 @@ struct TestCaseParams
 	bool				updateAfterBind;	// whether a test will use update after bind feature
 	bool				calculateInLoop;	// perform calculation in a loop
 	bool				usesMipMaps;		// this makes a sense and affects in image test cases only
+	bool				minNonUniform;		// whether a test will use the minimum nonUniform decorations
 	deBool				fuzzyComparison;	// if true then a test will use fuzzy comparison, otherwise float threshold
 	float				thresholdValue;		// a threshold that will be used for both, float and fuzzy comparisons
 };
@@ -139,6 +140,7 @@ struct TestParams
 	bool				updateAfterBind;
 	bool				calculateInLoop;
 	bool				usesMipMaps;
+	bool				minNonUniform;
 	deBool				fuzzyComparison;
 	float				thresholdValue;
 
@@ -161,6 +163,7 @@ struct TestParams
 		, updateAfterBind						(caseParams.updateAfterBind)
 		, calculateInLoop						(caseParams.calculateInLoop)
 		, usesMipMaps							(caseParams.usesMipMaps)
+		, minNonUniform							(caseParams.minNonUniform)
 		, fuzzyComparison						(caseParams.fuzzyComparison ? true : false)
 		, thresholdValue						(caseParams.thresholdValue)
 	{
@@ -266,10 +269,15 @@ public:
 	static bool					performWritesInVertex			(VkDescriptorType							descriptorType);
 
 	static bool					performWritesInVertex			(VkDescriptorType							descriptorType,
-																 const Context&						context);
-	static std::string			getShaderSource					(VkShaderStageFlagBits						shaderType,
+																 const Context&						        context);
+
+	static std::string			getShaderAsm					(VkShaderStageFlagBits						shaderType,
 																 const TestCaseParams&						testCaseParams,
 																 bool										allowVertexStoring);
+
+	static std::string			getShaderSource                 (VkShaderStageFlagBits						shaderType,
+		                                                         const TestCaseParams&						testCaseParams,
+		                                                         bool										allowVertexStoring);
 
 	static std::string			getColorAccess					(VkDescriptorType							descriptorType,
 																 const char*								indexVariableName,
@@ -736,20 +744,20 @@ int	CommonDescriptorInstance::constructShaderModules				(void)
 	if (m_testParams.stageFlags & VK_SHADER_STAGE_COMPUTE_BIT)
 	{
 		++result;
-		const std::string name = ut::buildShaderName(VK_SHADER_STAGE_COMPUTE_BIT, m_testParams.descriptorType, m_testParams.updateAfterBind, m_testParams.calculateInLoop, false);
+		const std::string name = ut::buildShaderName(VK_SHADER_STAGE_COMPUTE_BIT, m_testParams.descriptorType, m_testParams.updateAfterBind, m_testParams.calculateInLoop, m_testParams.minNonUniform, false);
 		m_computeModule = vk::createShaderModule(m_vki, m_vkd, m_context.getBinaryCollection().get(name), (VkShaderModuleCreateFlags)0);
 	}
 	if (m_testParams.stageFlags & VK_SHADER_STAGE_FRAGMENT_BIT)
 	{
 		++result;
-		const std::string name = ut::buildShaderName(VK_SHADER_STAGE_FRAGMENT_BIT, m_testParams.descriptorType, m_testParams.updateAfterBind, m_testParams.calculateInLoop, m_testParams.allowVertexStoring);
+		const std::string name = ut::buildShaderName(VK_SHADER_STAGE_FRAGMENT_BIT, m_testParams.descriptorType, m_testParams.updateAfterBind, m_testParams.calculateInLoop, m_testParams.minNonUniform, m_testParams.allowVertexStoring);
 		m_fragmentModule = vk::createShaderModule(m_vki, m_vkd, m_context.getBinaryCollection().get(name), (VkShaderModuleCreateFlags)0);
 		log << tcu::TestLog::Message << "Finally used fragment shader: " << name << '\n' << tcu::TestLog::EndMessage;
 	}
 	if (m_testParams.stageFlags & VK_SHADER_STAGE_VERTEX_BIT)
 	{
 		++result;
-		const std::string name = ut::buildShaderName(VK_SHADER_STAGE_VERTEX_BIT, m_testParams.descriptorType, m_testParams.updateAfterBind, m_testParams.calculateInLoop, m_testParams.allowVertexStoring);
+		const std::string name = ut::buildShaderName(VK_SHADER_STAGE_VERTEX_BIT, m_testParams.descriptorType, m_testParams.updateAfterBind, m_testParams.calculateInLoop, m_testParams.minNonUniform, m_testParams.allowVertexStoring);
 		m_vertexModule = vk::createShaderModule(m_vki, m_vkd, m_context.getBinaryCollection().get(name), (VkShaderModuleCreateFlags)0);
 		log << tcu::TestLog::Message << "Finally used vertex shader: " << name << '\n' << tcu::TestLog::EndMessage;
 	}
@@ -1275,7 +1283,7 @@ void CommonDescriptorInstance::iterateCommandBegin					(IterateCommonVariables&	
 				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType		sType
 				DE_NULL,											// const void*			pNext
 				VK_ACCESS_TRANSFER_WRITE_BIT,						// VkAccessFlags		srcAccessMask
-				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,				// VkAccessFlags		dstAccessMask
+				VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // VkAccessFlags		dstAccessMask
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				// VkImageLayout		oldLayout
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout		newLayout
 				VK_QUEUE_FAMILY_IGNORED,							// uint32_t				srcQueueFamilyIndex
@@ -1757,6 +1765,984 @@ bool CommonDescriptorInstance::performWritesInVertex				(VkDescriptorType							
 	}
 
 	return result;
+}
+
+std::string CommonDescriptorInstance::getShaderAsm					(VkShaderStageFlagBits						shaderType,
+																	 const TestCaseParams&						testCaseParams,
+																	 bool										allowVertexStoring)
+{
+	std::stringstream	s;
+	switch (shaderType)
+	{
+		case VK_SHADER_STAGE_VERTEX_BIT:
+			switch (testCaseParams.descriptorType)
+			{
+				case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+				case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+				case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+					s << "               OpCapability Shader\n";
+					s << "               OpCapability SampledBuffer\n";
+					s << "          %1 = OpExtInstImport \"GLSL.std.450\"\n";
+					s << "               OpMemoryModel Logical GLSL450\n";
+					s << "               OpEntryPoint Vertex %main \"main\" %_ %position %in_position %normalpos %in_normalpos %vIndex %gl_VertexIndex %rIndex %index %gIndex %bIndex %aIndex\n";
+					s << "               OpSource GLSL 450\n";
+					s << "               OpSourceExtension \"GL_EXT_nonuniform_qualifier\"\n";
+					s << "               OpSourceExtension \"GL_EXT_texture_buffer\"\n";
+					s << "               OpName %main \"main\"\n";
+					s << "               OpName %gl_PerVertex \"gl_PerVertex\"\n";
+					s << "               OpMemberName %gl_PerVertex 0 \"gl_Position\"\n";
+					s << "               OpMemberName %gl_PerVertex 1 \"gl_PointSize\"\n";
+					s << "               OpMemberName %gl_PerVertex 2 \"gl_ClipDistance\"\n";
+					s << "               OpMemberName %gl_PerVertex 3 \"gl_CullDistance\"\n";
+					s << "               OpName %_ \"\"\n";
+					s << "               OpName %position \"position\"\n";
+					s << "               OpName %in_position \"in_position\"\n";
+					s << "               OpName %normalpos \"normalpos\"\n";
+					s << "               OpName %in_normalpos \"in_normalpos\"\n";
+					s << "               OpName %vIndex \"vIndex\"\n";
+					s << "               OpName %gl_VertexIndex \"gl_VertexIndex\"\n";
+					s << "               OpName %rIndex \"rIndex\"\n";
+					s << "               OpName %index \"index\"\n";
+					s << "               OpName %gIndex \"gIndex\"\n";
+					s << "               OpName %bIndex \"bIndex\"\n";
+					s << "               OpName %aIndex \"aIndex\"\n";
+					s << "               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position\n";
+					s << "               OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize\n";
+					s << "               OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance\n";
+					s << "               OpMemberDecorate %gl_PerVertex 3 BuiltIn CullDistance\n";
+					s << "               OpDecorate %gl_PerVertex Block\n";
+					s << "               OpDecorate %position Location 0\n";
+					s << "               OpDecorate %in_position Location 0\n";
+					s << "               OpDecorate %normalpos Location 1\n";
+					s << "               OpDecorate %in_normalpos Location 1\n";
+					s << "               OpDecorate %vIndex Location 2\n";
+					s << "               OpDecorate %gl_VertexIndex BuiltIn VertexIndex\n";
+					s << "               OpDecorate %rIndex Location 3\n";
+					s << "               OpDecorate %index Location 2\n";
+					s << "               OpDecorate %gIndex Location 4\n";
+					s << "               OpDecorate %bIndex Location 5\n";
+					s << "               OpDecorate %aIndex Location 6\n";
+					s << "       %void = OpTypeVoid\n";
+					s << "          %3 = OpTypeFunction %void\n";
+					s << "      %float = OpTypeFloat 32\n";
+					s << "    %v4float = OpTypeVector %float 4\n";
+					s << "       %uint = OpTypeInt 32 0\n";
+					s << "     %uint_1 = OpConstant %uint 1\n";
+					s << "%_arr_float_uint_1 = OpTypeArray %float %uint_1\n";
+					s << "%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1\n";
+					s << "%_ptr_Output_gl_PerVertex = OpTypePointer Output %gl_PerVertex\n";
+					s << "          %_ = OpVariable %_ptr_Output_gl_PerVertex Output\n";
+					s << "        %int = OpTypeInt 32 1\n";
+					s << "      %int_1 = OpConstant %int 1\n";
+					s << "%float_0_200000003 = OpConstant %float 0.200000003\n";
+					s << "%_ptr_Output_float = OpTypePointer Output %float\n";
+					s << "%_ptr_Output_v4float = OpTypePointer Output %v4float\n";
+					s << "   %position = OpVariable %_ptr_Output_v4float Output\n";
+					s << "%_ptr_Input_v4float = OpTypePointer Input %v4float\n";
+					s << "%in_position = OpVariable %_ptr_Input_v4float Input\n";
+					s << "    %v2float = OpTypeVector %float 2\n";
+					s << "%_ptr_Output_v2float = OpTypePointer Output %v2float\n";
+					s << "  %normalpos = OpVariable %_ptr_Output_v2float Output\n";
+					s << "%_ptr_Input_v2float = OpTypePointer Input %v2float\n";
+					s << "%in_normalpos = OpVariable %_ptr_Input_v2float Input\n";
+					s << "      %int_0 = OpConstant %int 0\n";
+					s << "%_ptr_Output_int = OpTypePointer Output %int\n";
+					s << "     %vIndex = OpVariable %_ptr_Output_int Output\n";
+					s << "%_ptr_Input_int = OpTypePointer Input %int\n";
+					s << "%gl_VertexIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "     %rIndex = OpVariable %_ptr_Output_int Output\n";
+					s << "      %v4int = OpTypeVector %int 4\n";
+					s << "%_ptr_Input_v4int = OpTypePointer Input %v4int\n";
+					s << "      %index = OpVariable %_ptr_Input_v4int Input\n";
+					s << "     %uint_0 = OpConstant %uint 0\n";
+					s << "     %gIndex = OpVariable %_ptr_Output_int Output\n";
+					s << "     %bIndex = OpVariable %_ptr_Output_int Output\n";
+					s << "     %uint_2 = OpConstant %uint 2\n";
+					s << "     %aIndex = OpVariable %_ptr_Output_int Output\n";
+					s << "     %uint_3 = OpConstant %uint 3\n";
+					s << "       %main = OpFunction %void None %3\n";
+					s << "          %5 = OpLabel\n";
+					s << "         %18 = OpAccessChain %_ptr_Output_float %_ %int_1\n";
+					s << "               OpStore %18 %float_0_200000003\n";
+					s << "         %23 = OpLoad %v4float %in_position\n";
+					s << "               OpStore %position %23\n";
+					s << "         %29 = OpLoad %v2float %in_normalpos\n";
+					s << "               OpStore %normalpos %29\n";
+					s << "         %31 = OpLoad %v4float %position\n";
+					s << "         %32 = OpAccessChain %_ptr_Output_v4float %_ %int_0\n";
+					s << "               OpStore %32 %31\n";
+					s << "         %37 = OpLoad %int %gl_VertexIndex\n";
+					s << "               OpStore %vIndex %37\n";
+					s << "         %43 = OpAccessChain %_ptr_Input_int %index %uint_0\n";
+					s << "         %44 = OpLoad %int %43\n";
+					s << "               OpStore %rIndex %44\n";
+					s << "         %46 = OpAccessChain %_ptr_Input_int %index %uint_1\n";
+					s << "         %47 = OpLoad %int %46\n";
+					s << "               OpStore %gIndex %47\n";
+					s << "         %50 = OpAccessChain %_ptr_Input_int %index %uint_2\n";
+					s << "         %51 = OpLoad %int %50\n";
+					s << "               OpStore %bIndex %51\n";
+					s << "         %54 = OpAccessChain %_ptr_Input_int %index %uint_3\n";
+					s << "         %55 = OpLoad %int %54\n";
+					s << "               OpStore %aIndex %55\n";
+					s << "               OpReturn\n";
+					s << "               OpFunctionEnd\n";
+					break;
+				case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+					s << "               OpCapability Shader\n";
+					s << "               OpCapability ImageBuffer\n";
+					if (allowVertexStoring)
+					{
+						s << "               OpCapability ShaderNonUniform\n";
+						s << "               OpCapability RuntimeDescriptorArray\n";
+						s << "               OpCapability StorageTexelBufferArrayNonUniformIndexing\n";
+						s << "               OpExtension \"SPV_EXT_descriptor_indexing\"\n";
+					}
+					s << "          %1 = OpExtInstImport \"GLSL.std.450\"\n";
+					s << "               OpMemoryModel Logical GLSL450\n";
+					s << "               OpEntryPoint Vertex %main \"main\" %_ %position %in_position %normalpos %in_normalpos %vIndex %gl_VertexIndex %rIndex %index %gIndex %bIndex %aIndex %data\n";
+					s << "               OpSource GLSL 450\n";
+					s << "               OpSourceExtension \"GL_EXT_nonuniform_qualifier\"\n";
+					s << "               OpName %main \"main\"\n";
+					s << "               OpName %gl_PerVertex \"gl_PerVertex\"\n";
+					s << "               OpMemberName %gl_PerVertex 0 \"gl_Position\"\n";
+					s << "               OpMemberName %gl_PerVertex 1 \"gl_PointSize\"\n";
+					s << "               OpMemberName %gl_PerVertex 2 \"gl_ClipDistance\"\n";
+					s << "               OpMemberName %gl_PerVertex 3 \"gl_CullDistance\"\n";
+					s << "               OpName %_ \"\"\n";
+					s << "               OpName %position \"position\"\n";
+					s << "               OpName %in_position \"in_position\"\n";
+					s << "               OpName %normalpos \"normalpos\"\n";
+					s << "               OpName %in_normalpos \"in_normalpos\"\n";
+					s << "               OpName %vIndex \"vIndex\"\n";
+					s << "               OpName %gl_VertexIndex \"gl_VertexIndex\"\n";
+					s << "               OpName %rIndex \"rIndex\"\n";
+					s << "               OpName %index \"index\"\n";
+					s << "               OpName %gIndex \"gIndex\"\n";
+					s << "               OpName %bIndex \"bIndex\"\n";
+					s << "               OpName %aIndex \"aIndex\"\n";
+					s << "               OpName %data \"data\"\n";
+					s << "               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position\n";
+					s << "               OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize\n";
+					s << "               OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance\n";
+					s << "               OpMemberDecorate %gl_PerVertex 3 BuiltIn CullDistance\n";
+					s << "               OpDecorate %gl_PerVertex Block\n";
+					s << "               OpDecorate %position Location 0\n";
+					s << "               OpDecorate %in_position Location 0\n";
+					s << "               OpDecorate %normalpos Location 1\n";
+					s << "               OpDecorate %in_normalpos Location 1\n";
+					s << "               OpDecorate %vIndex Location 2\n";
+					s << "               OpDecorate %gl_VertexIndex BuiltIn VertexIndex\n";
+					s << "               OpDecorate %rIndex Location 3\n";
+					s << "               OpDecorate %index Location 2\n";
+					s << "               OpDecorate %gIndex Location 4\n";
+					s << "               OpDecorate %bIndex Location 5\n";
+					s << "               OpDecorate %aIndex Location 6\n";
+					s << "               OpDecorate %data DescriptorSet 0\n";
+					s << "               OpDecorate %data Binding 4\n";
+					if (allowVertexStoring)
+					{
+						// s << "               OpDecorate %66 NonUniform\n";
+						// s << "               OpDecorate %68 NonUniform\n";
+						s << "               OpDecorate %69 NonUniform\n";
+						// s << "               OpDecorate %71 NonUniform\n";
+						// s << "               OpDecorate %72 NonUniform\n";
+						s << "               OpDecorate %73 NonUniform\n";
+					}
+					s << "       %void = OpTypeVoid\n";
+					s << "          %3 = OpTypeFunction %void\n";
+					s << "      %float = OpTypeFloat 32\n";
+					s << "    %v4float = OpTypeVector %float 4\n";
+					s << "       %uint = OpTypeInt 32 0\n";
+					s << "     %uint_1 = OpConstant %uint 1\n";
+					s << "%_arr_float_uint_1 = OpTypeArray %float %uint_1\n";
+					s << "%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1\n";
+					s << "%_ptr_Output_gl_PerVertex = OpTypePointer Output %gl_PerVertex\n";
+					s << "          %_ = OpVariable %_ptr_Output_gl_PerVertex Output\n";
+					s << "        %int = OpTypeInt 32 1\n";
+					s << "      %int_1 = OpConstant %int 1\n";
+					s << "%float_0_200000003 = OpConstant %float 0.200000003\n";
+					s << "%_ptr_Output_float = OpTypePointer Output %float\n";
+					s << "%_ptr_Output_v4float = OpTypePointer Output %v4float\n";
+					s << "   %position = OpVariable %_ptr_Output_v4float Output\n";
+					s << "%_ptr_Input_v4float = OpTypePointer Input %v4float\n";
+					s << "%in_position = OpVariable %_ptr_Input_v4float Input\n";
+					s << "    %v2float = OpTypeVector %float 2\n";
+					s << "%_ptr_Output_v2float = OpTypePointer Output %v2float\n";
+					s << "  %normalpos = OpVariable %_ptr_Output_v2float Output\n";
+					s << "%_ptr_Input_v2float = OpTypePointer Input %v2float\n";
+					s << "%in_normalpos = OpVariable %_ptr_Input_v2float Input\n";
+					s << "      %int_0 = OpConstant %int 0\n";
+					s << "%_ptr_Output_int = OpTypePointer Output %int\n";
+					s << "     %vIndex = OpVariable %_ptr_Output_int Output\n";
+					s << "%_ptr_Input_int = OpTypePointer Input %int\n";
+					s << "%gl_VertexIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "     %rIndex = OpVariable %_ptr_Output_int Output\n";
+					s << "      %v4int = OpTypeVector %int 4\n";
+					s << "%_ptr_Input_v4int = OpTypePointer Input %v4int\n";
+					s << "      %index = OpVariable %_ptr_Input_v4int Input\n";
+					s << "     %uint_0 = OpConstant %uint 0\n";
+					s << "     %gIndex = OpVariable %_ptr_Output_int Output\n";
+					s << "     %bIndex = OpVariable %_ptr_Output_int Output\n";
+					s << "     %uint_2 = OpConstant %uint 2\n";
+					s << "     %aIndex = OpVariable %_ptr_Output_int Output\n";
+					s << "     %uint_3 = OpConstant %uint 3\n";
+					if (allowVertexStoring)
+					{
+						s << "        %bool = OpTypeBool\n";
+						s << "          %61 = OpTypeImage %float Buffer 0 0 0 2 Rgba32f\n";
+						s << " %_runtimearr_61 = OpTypeRuntimeArray %61\n";
+						s << " %_ptr_UniformConstant__runtimearr_61 = OpTypePointer UniformConstant %_runtimearr_61\n";
+						s << "        %data = OpVariable %_ptr_UniformConstant__runtimearr_61 UniformConstant\n";
+						s << " %_ptr_UniformConstant_61 = OpTypePointer UniformConstant %61\n";
+					}
+					else
+					{
+						s << "         %56 = OpTypeImage %float Buffer 0 0 0 2 Rgba32f\n";
+						s << "%_arr_56_uint_1 = OpTypeArray %56 %uint_1\n";
+						s << "%_ptr_UniformConstant__arr_56_uint_1 = OpTypePointer UniformConstant %_arr_56_uint_1\n";
+						s << "       %data = OpVariable %_ptr_UniformConstant__arr_56_uint_1 UniformConstant\n";
+					}
+					s << "       %main = OpFunction %void None %3\n";
+					s << "          %5 = OpLabel\n";
+					s << "         %18 = OpAccessChain %_ptr_Output_float %_ %int_1\n";
+					s << "               OpStore %18 %float_0_200000003\n";
+					s << "         %23 = OpLoad %v4float %in_position\n";
+					s << "               OpStore %position %23\n";
+					s << "         %29 = OpLoad %v2float %in_normalpos\n";
+					s << "               OpStore %normalpos %29\n";
+					s << "         %31 = OpLoad %v4float %position\n";
+					s << "         %32 = OpAccessChain %_ptr_Output_v4float %_ %int_0\n";
+					s << "               OpStore %32 %31\n";
+					s << "         %37 = OpLoad %int %gl_VertexIndex\n";
+					s << "               OpStore %vIndex %37\n";
+					s << "         %43 = OpAccessChain %_ptr_Input_int %index %uint_0\n";
+					s << "         %44 = OpLoad %int %43\n";
+					s << "               OpStore %rIndex %44\n";
+					s << "         %46 = OpAccessChain %_ptr_Input_int %index %uint_1\n";
+					s << "         %47 = OpLoad %int %46\n";
+					s << "               OpStore %gIndex %47\n";
+					s << "         %50 = OpAccessChain %_ptr_Input_int %index %uint_2\n";
+					s << "         %51 = OpLoad %int %50\n";
+					s << "               OpStore %bIndex %51\n";
+					s << "         %54 = OpAccessChain %_ptr_Input_int %index %uint_3\n";
+					s << "         %55 = OpLoad %int %54\n";
+					s << "               OpStore %aIndex %55\n";
+					if (allowVertexStoring)
+					{
+						s << "          %56 = OpLoad %int %gIndex\n";
+						s << "          %58 = OpINotEqual %bool %56 %int_0\n";
+						s << "                OpSelectionMerge %60 None\n";
+						s << "                OpBranchConditional %58 %59 %60\n";
+						s << "          %59 = OpLabel\n";
+						s << "          %65 = OpLoad %int %gIndex\n";
+						s << "          %66 = OpCopyObject %int %65\n";
+						s << "          %68 = OpAccessChain %_ptr_UniformConstant_61 %data %66\n";
+						s << "          %69 = OpLoad %61 %68\n";
+						s << "          %70 = OpLoad %int %rIndex\n";
+						s << "          %71 = OpCopyObject %int %70\n";
+						s << "          %72 = OpAccessChain %_ptr_UniformConstant_61 %data %71\n";
+						s << "          %73 = OpLoad %61 %72\n";
+						s << "          %74 = OpImageRead %v4float %73 %int_0\n";
+						s << "                OpImageWrite %69 %int_1 %74\n";
+						s << "                OpBranch %60\n";
+						s << "          %60 = OpLabel\n";
+					}
+					s << "               OpReturn\n";
+					s << "               OpFunctionEnd\n";
+					break;
+				case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+					s << "               OpCapability Shader\n";
+					if (allowVertexStoring)
+					{
+						s << "               OpCapability ShaderNonUniform\n";
+						s << "               OpCapability RuntimeDescriptorArray\n";
+						s << "               OpCapability StorageBufferArrayNonUniformIndexing\n";
+						s << "               OpExtension \"SPV_EXT_descriptor_indexing\"\n";
+					}
+					s << "          %1 = OpExtInstImport \"GLSL.std.450\"\n";
+					s << "               OpMemoryModel Logical GLSL450\n";
+					s << "               OpEntryPoint Vertex %main \"main\" %_ %position %in_position %normalpos %in_normalpos %vIndex %gl_VertexIndex %rIndex %index %gIndex %bIndex %aIndex %data\n";
+					s << "               OpSource GLSL 450\n";
+					s << "               OpSourceExtension \"GL_EXT_nonuniform_qualifier\"\n";
+					s << "               OpName %main \"main\"\n";
+					s << "               OpName %gl_PerVertex \"gl_PerVertex\"\n";
+					s << "               OpMemberName %gl_PerVertex 0 \"gl_Position\"\n";
+					s << "               OpMemberName %gl_PerVertex 1 \"gl_PointSize\"\n";
+					s << "               OpMemberName %gl_PerVertex 2 \"gl_ClipDistance\"\n";
+					s << "               OpMemberName %gl_PerVertex 3 \"gl_CullDistance\"\n";
+					s << "               OpName %_ \"\"\n";
+					s << "               OpName %position \"position\"\n";
+					s << "               OpName %in_position \"in_position\"\n";
+					s << "               OpName %normalpos \"normalpos\"\n";
+					s << "               OpName %in_normalpos \"in_normalpos\"\n";
+					s << "               OpName %vIndex \"vIndex\"\n";
+					s << "               OpName %gl_VertexIndex \"gl_VertexIndex\"\n";
+					s << "               OpName %rIndex \"rIndex\"\n";
+					s << "               OpName %index \"index\"\n";
+					s << "               OpName %gIndex \"gIndex\"\n";
+					s << "               OpName %bIndex \"bIndex\"\n";
+					s << "               OpName %aIndex \"aIndex\"\n";
+					s << "               OpName %Data \"Data\"\n";
+					s << "               OpMemberName %Data 0 \"cnew\"\n";
+					s << "               OpMemberName %Data 1 \"cold\"\n";
+					s << "               OpName %data \"data\"\n";
+					s << "               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position\n";
+					s << "               OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize\n";
+					s << "               OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance\n";
+					s << "               OpMemberDecorate %gl_PerVertex 3 BuiltIn CullDistance\n";
+					s << "               OpDecorate %gl_PerVertex Block\n";
+					s << "               OpDecorate %position Location 0\n";
+					s << "               OpDecorate %in_position Location 0\n";
+					s << "               OpDecorate %normalpos Location 1\n";
+					s << "               OpDecorate %in_normalpos Location 1\n";
+					s << "               OpDecorate %vIndex Location 2\n";
+					s << "               OpDecorate %gl_VertexIndex BuiltIn VertexIndex\n";
+					s << "               OpDecorate %rIndex Location 3\n";
+					s << "               OpDecorate %index Location 2\n";
+					s << "               OpDecorate %gIndex Location 4\n";
+					s << "               OpDecorate %bIndex Location 5\n";
+					s << "               OpDecorate %aIndex Location 6\n";
+					s << "               OpMemberDecorate %Data 0 Offset 0\n";
+					s << "               OpMemberDecorate %Data 1 Offset 16\n";
+					s << "               OpDecorate %Data Block\n";
+					s << "               OpDecorate %data DescriptorSet 0\n";
+					s << "               OpDecorate %data Binding 2\n";
+					if (allowVertexStoring)
+					{
+						// s << "               OpDecorate %66 NonUniform\n";
+						// s << "               OpDecorate %68 NonUniform\n";
+						s << "               OpDecorate %70 NonUniform\n";
+						// s << "               OpDecorate %71 NonUniform\n";
+						s << "               OpDecorate %72 NonUniform\n";
+					}
+					s << "       %void = OpTypeVoid\n";
+					s << "          %3 = OpTypeFunction %void\n";
+					s << "      %float = OpTypeFloat 32\n";
+					s << "    %v4float = OpTypeVector %float 4\n";
+					s << "       %uint = OpTypeInt 32 0\n";
+					s << "     %uint_1 = OpConstant %uint 1\n";
+					s << "%_arr_float_uint_1 = OpTypeArray %float %uint_1\n";
+					s << "%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1\n";
+					s << "%_ptr_Output_gl_PerVertex = OpTypePointer Output %gl_PerVertex\n";
+					s << "          %_ = OpVariable %_ptr_Output_gl_PerVertex Output\n";
+					s << "        %int = OpTypeInt 32 1\n";
+					s << "      %int_1 = OpConstant %int 1\n";
+					s << "%float_0_200000003 = OpConstant %float 0.200000003\n";
+					s << "%_ptr_Output_float = OpTypePointer Output %float\n";
+					s << "%_ptr_Output_v4float = OpTypePointer Output %v4float\n";
+					s << "   %position = OpVariable %_ptr_Output_v4float Output\n";
+					s << "%_ptr_Input_v4float = OpTypePointer Input %v4float\n";
+					s << "%in_position = OpVariable %_ptr_Input_v4float Input\n";
+					s << "    %v2float = OpTypeVector %float 2\n";
+					s << "%_ptr_Output_v2float = OpTypePointer Output %v2float\n";
+					s << "  %normalpos = OpVariable %_ptr_Output_v2float Output\n";
+					s << "%_ptr_Input_v2float = OpTypePointer Input %v2float\n";
+					s << "%in_normalpos = OpVariable %_ptr_Input_v2float Input\n";
+					s << "      %int_0 = OpConstant %int 0\n";
+					s << "%_ptr_Output_int = OpTypePointer Output %int\n";
+					s << "     %vIndex = OpVariable %_ptr_Output_int Output\n";
+					s << "%_ptr_Input_int = OpTypePointer Input %int\n";
+					s << "%gl_VertexIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "     %rIndex = OpVariable %_ptr_Output_int Output\n";
+					s << "      %v4int = OpTypeVector %int 4\n";
+					s << "%_ptr_Input_v4int = OpTypePointer Input %v4int\n";
+					s << "      %index = OpVariable %_ptr_Input_v4int Input\n";
+					s << "     %uint_0 = OpConstant %uint 0\n";
+					s << "     %gIndex = OpVariable %_ptr_Output_int Output\n";
+					s << "     %bIndex = OpVariable %_ptr_Output_int Output\n";
+					s << "     %uint_2 = OpConstant %uint 2\n";
+					s << "     %aIndex = OpVariable %_ptr_Output_int Output\n";
+					s << "     %uint_3 = OpConstant %uint 3\n";
+					s << "       %Data = OpTypeStruct %v4float %v4float\n";
+					if (allowVertexStoring)
+					{
+						s << "       %bool = OpTypeBool\n";
+						s << "%_runtimearr_Data = OpTypeRuntimeArray %Data\n";
+						s << "%_ptr_StorageBuffer__runtimearr_Data = OpTypePointer StorageBuffer %_runtimearr_Data\n";
+						s << "       %data = OpVariable  %_ptr_StorageBuffer__runtimearr_Data StorageBuffer\n";
+						s << "%_ptr_StorageBuffer_v4float = OpTypePointer StorageBuffer %v4float\n";
+					}
+					else
+					{
+						s << "%_arr_Data_uint_1 = OpTypeArray %Data %uint_1\n";
+						s << "%_ptr_StorageBuffer__arr_Data_uint_1 = OpTypePointer StorageBuffer %_arr_Data_uint_1\n";
+						s << "       %data = OpVariable %_ptr_StorageBuffer__arr_Data_uint_1 StorageBuffer\n";
+					}
+					s << "       %main = OpFunction %void None %3\n";
+					s << "          %5 = OpLabel\n";
+					s << "         %18 = OpAccessChain %_ptr_Output_float %_ %int_1\n";
+					s << "               OpStore %18 %float_0_200000003\n";
+					s << "         %23 = OpLoad %v4float %in_position\n";
+					s << "               OpStore %position %23\n";
+					s << "         %29 = OpLoad %v2float %in_normalpos\n";
+					s << "               OpStore %normalpos %29\n";
+					s << "         %31 = OpLoad %v4float %position\n";
+					s << "         %32 = OpAccessChain %_ptr_Output_v4float %_ %int_0\n";
+					s << "               OpStore %32 %31\n";
+					s << "         %37 = OpLoad %int %gl_VertexIndex\n";
+					s << "               OpStore %vIndex %37\n";
+					s << "         %43 = OpAccessChain %_ptr_Input_int %index %uint_0\n";
+					s << "         %44 = OpLoad %int %43\n";
+					s << "               OpStore %rIndex %44\n";
+					s << "         %46 = OpAccessChain %_ptr_Input_int %index %uint_1\n";
+					s << "         %47 = OpLoad %int %46\n";
+					s << "               OpStore %gIndex %47\n";
+					s << "         %50 = OpAccessChain %_ptr_Input_int %index %uint_2\n";
+					s << "         %51 = OpLoad %int %50\n";
+					s << "               OpStore %bIndex %51\n";
+					s << "         %54 = OpAccessChain %_ptr_Input_int %index %uint_3\n";
+					s << "         %55 = OpLoad %int %54\n";
+					s << "               OpStore %aIndex %55\n";
+					if (allowVertexStoring)
+					{
+						s << "          %56 = OpLoad %int %gIndex\n";
+						s << "          %58 = OpINotEqual %bool %56 %int_0\n";
+						s << "                OpSelectionMerge %60 None\n";
+						s << "                OpBranchConditional %58 %59 %60\n";
+						s << "          %59 = OpLabel\n";
+						s << "          %65 = OpLoad %int %gIndex\n";
+						s << "          %66 = OpCopyObject %int %65\n";
+						s << "          %67 = OpLoad %int %rIndex\n";
+						s << "          %68 = OpCopyObject %int %67\n";
+						s << "          %70 = OpAccessChain %_ptr_StorageBuffer_v4float %data %68 %int_1\n";
+						s << "          %71 = OpLoad %v4float %70\n";
+						s << "          %72 = OpAccessChain %_ptr_StorageBuffer_v4float %data %66 %int_0\n";
+						s << "                OpStore %72 %71\n";
+						s << "                OpBranch %60\n";
+						s << "          %60 = OpLabel\n";
+					}
+					s << "               OpReturn\n";
+					s << "               OpFunctionEnd\n";
+					break;
+				default:
+					TCU_THROW(InternalError, "Unexpected descriptor type");
+					break;
+			}
+			break;
+		case VK_SHADER_STAGE_FRAGMENT_BIT:
+			switch (testCaseParams.descriptorType)
+			{
+				case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+					s << "               OpCapability Shader\n";
+					if (testCaseParams.usesMipMaps)
+					{
+						s << "               OpCapability ImageQuery\n";
+					}
+					s << "               OpCapability ShaderNonUniform\n";
+					s << "               OpCapability RuntimeDescriptorArray\n";
+					s << "               OpCapability SampledImageArrayNonUniformIndexing\n";
+					s << "               OpExtension \"SPV_EXT_descriptor_indexing\"\n";
+					s << "          %1 = OpExtInstImport \"GLSL.std.450\"\n";
+					s << "               OpMemoryModel Logical GLSL450\n";
+					s << "               OpEntryPoint Fragment %main \"main\" %FragColor %data %rIndex %position %normalpos %vIndex %gIndex %bIndex %aIndex\n";
+					s << "               OpExecutionMode %main OriginUpperLeft\n";
+					s << "               OpSource GLSL 450\n";
+					s << "               OpSourceExtension \"GL_EXT_nonuniform_qualifier\"\n";
+					s << "               OpSourceExtension \"GL_EXT_texture_buffer\"\n";
+					s << "               OpName %main \"main\"\n";
+					s << "               OpName %FragColor \"FragColor\"\n";
+					s << "               OpName %data \"data\"\n";
+					s << "               OpName %rIndex \"rIndex\"\n";
+					s << "               OpName %position \"position\"\n";
+					s << "               OpName %normalpos \"normalpos\"\n";
+					s << "               OpName %vIndex \"vIndex\"\n";
+					s << "               OpName %gIndex \"gIndex\"\n";
+					s << "               OpName %bIndex \"bIndex\"\n";
+					s << "               OpName %aIndex \"aIndex\"\n";
+					s << "               OpDecorate %FragColor Location 0\n";
+					s << "               OpDecorate %data DescriptorSet 0\n";
+					s << "               OpDecorate %data Binding 7\n";
+					s << "               OpDecorate %rIndex Flat\n";
+					s << "               OpDecorate %rIndex Location 3\n";
+					// s << "               OpDecorate %19 NonUniform\n";
+					// s << "               OpDecorate %21 NonUniform\n";
+					s << "               OpDecorate %22 NonUniform\n";
+					if (testCaseParams.usesMipMaps)
+					{
+						// s << "               OpDecorate %27 NonUniform\n";
+						// s << "               OpDecorate %28 NonUniform\n";
+						// s << "               OpDecorate %29 NonUniform\n";
+						s << "               OpDecorate %30 NonUniform\n";
+					}
+					s << "               OpDecorate %position Flat\n";
+					s << "               OpDecorate %position Location 0\n";
+					s << "               OpDecorate %normalpos Flat\n";
+					s << "               OpDecorate %normalpos Location 1\n";
+					s << "               OpDecorate %vIndex Flat\n";
+					s << "               OpDecorate %vIndex Location 2\n";
+					s << "               OpDecorate %gIndex Flat\n";
+					s << "               OpDecorate %gIndex Location 4\n";
+					s << "               OpDecorate %bIndex Flat\n";
+					s << "               OpDecorate %bIndex Location 5\n";
+					s << "               OpDecorate %aIndex Flat\n";
+					s << "               OpDecorate %aIndex Location 6\n";
+					s << "       %void = OpTypeVoid\n";
+					s << "          %3 = OpTypeFunction %void\n";
+					s << "      %float = OpTypeFloat 32\n";
+					s << "    %v4float = OpTypeVector %float 4\n";
+					s << "%_ptr_Output_v4float = OpTypePointer Output %v4float\n";
+					s << "  %FragColor = OpVariable %_ptr_Output_v4float Output\n";
+					s << "         %10 = OpTypeImage %float 2D 0 0 0 1 Unknown\n";
+					s << "         %11 = OpTypeSampledImage %10\n";
+					s << "%_runtimearr_11 = OpTypeRuntimeArray %11\n";
+					s << "%_ptr_UniformConstant__runtimearr_11 = OpTypePointer UniformConstant %_runtimearr_11\n";
+					s << "       %data = OpVariable %_ptr_UniformConstant__runtimearr_11 UniformConstant\n";
+					s << "        %int = OpTypeInt 32 1\n";
+					s << "%_ptr_Input_int = OpTypePointer Input %int\n";
+					s << "     %rIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "%_ptr_UniformConstant_11 = OpTypePointer UniformConstant %11\n";
+					s << "    %v2float = OpTypeVector %float 2\n";
+					s << "    %float_0 = OpConstant %float 0\n";
+					s << "      %int_1 = OpConstant %int 1\n";
+					s << "         %25 = OpConstantComposite %v2float %float_0 %float_0\n";
+					s << "%_ptr_Input_v4float = OpTypePointer Input %v4float\n";
+					s << "   %position = OpVariable %_ptr_Input_v4float Input\n";
+					s << "%_ptr_Input_v2float = OpTypePointer Input %v2float\n";
+					s << "  %normalpos = OpVariable %_ptr_Input_v2float Input\n";
+					s << "     %vIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "     %gIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "     %bIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "     %aIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "       %main = OpFunction %void None %3\n";
+					s << "          %5 = OpLabel\n";
+					s << "         %18 = OpLoad %int %rIndex\n";
+					s << "         %19 = OpCopyObject %int %18\n";
+					s << "         %21 = OpAccessChain %_ptr_UniformConstant_11 %data %19\n";
+					s << "         %22 = OpLoad %11 %21\n";
+					if (testCaseParams.usesMipMaps)
+					{
+						s << "          %26 = OpLoad %int %rIndex\n";
+						s << "          %27 = OpCopyObject %int %26\n";
+						s << "          %28 = OpAccessChain %_ptr_UniformConstant_11 %data %27\n";
+						s << "          %29 = OpLoad %11 %28\n";
+						s << "          %30 = OpImage %10 %29\n";
+						s << "          %31 = OpImageQueryLevels %int %30\n";
+						s << "          %33 = OpISub %int %31 %int_1\n";
+						s << "          %34 = OpConvertSToF %float %33\n";
+						s << "          %35 = OpImageSampleExplicitLod %v4float %22 %25 Lod %34\n";
+						s << "                OpStore %FragColor %35\n";
+					}
+					else
+					{
+						s << "         %26 = OpImageSampleImplicitLod %v4float %22 %25\n";
+						s << "               OpStore %FragColor %26\n";
+					}
+					s << "               OpReturn\n";
+					s << "               OpFunctionEnd\n";
+					break;
+				case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+					s << "               OpCapability Shader\n";
+					s << "               OpCapability SampledBuffer\n";
+					s << "               OpCapability ShaderNonUniform\n";
+					s << "               OpCapability RuntimeDescriptorArray\n";
+					s << "               OpCapability UniformTexelBufferArrayNonUniformIndexing\n";
+					s << "               OpExtension \"SPV_EXT_descriptor_indexing\"\n";
+					s << "          %1 = OpExtInstImport \"GLSL.std.450\"\n";
+					s << "               OpMemoryModel Logical GLSL450\n";
+					s << "               OpEntryPoint Fragment %main \"main\" %FragColor %data %rIndex %position %normalpos %vIndex %gIndex %bIndex %aIndex\n";
+					s << "               OpExecutionMode %main OriginUpperLeft\n";
+					s << "               OpSource GLSL 450\n";
+					s << "               OpSourceExtension \"GL_EXT_nonuniform_qualifier\"\n";
+					s << "               OpSourceExtension \"GL_EXT_texture_buffer\"\n";
+					s << "               OpName %main \"main\"\n";
+					s << "               OpName %FragColor \"FragColor\"\n";
+					s << "               OpName %data \"data\"\n";
+					s << "               OpName %rIndex \"rIndex\"\n";
+					s << "               OpName %position \"position\"\n";
+					s << "               OpName %normalpos \"normalpos\"\n";
+					s << "               OpName %vIndex \"vIndex\"\n";
+					s << "               OpName %gIndex \"gIndex\"\n";
+					s << "               OpName %bIndex \"bIndex\"\n";
+					s << "               OpName %aIndex \"aIndex\"\n";
+					s << "               OpDecorate %FragColor Location 0\n";
+					s << "               OpDecorate %data DescriptorSet 0\n";
+					s << "               OpDecorate %data Binding 3\n";
+					s << "               OpDecorate %rIndex Flat\n";
+					s << "               OpDecorate %rIndex Location 3\n";
+					// s << "               OpDecorate %19 NonUniform\n";
+					// s << "               OpDecorate %21 NonUniform\n";
+					// s << "               OpDecorate %22 NonUniform\n";
+					s << "               OpDecorate %24 NonUniform\n";
+					s << "               OpDecorate %position Flat\n";
+					s << "               OpDecorate %position Location 0\n";
+					s << "               OpDecorate %normalpos Flat\n";
+					s << "               OpDecorate %normalpos Location 1\n";
+					s << "               OpDecorate %vIndex Flat\n";
+					s << "               OpDecorate %vIndex Location 2\n";
+					s << "               OpDecorate %gIndex Flat\n";
+					s << "               OpDecorate %gIndex Location 4\n";
+					s << "               OpDecorate %bIndex Flat\n";
+					s << "               OpDecorate %bIndex Location 5\n";
+					s << "               OpDecorate %aIndex Flat\n";
+					s << "               OpDecorate %aIndex Location 6\n";
+					s << "       %void = OpTypeVoid\n";
+					s << "          %3 = OpTypeFunction %void\n";
+					s << "      %float = OpTypeFloat 32\n";
+					s << "    %v4float = OpTypeVector %float 4\n";
+					s << "%_ptr_Output_v4float = OpTypePointer Output %v4float\n";
+					s << "  %FragColor = OpVariable %_ptr_Output_v4float Output\n";
+					s << "         %10 = OpTypeImage %float Buffer 0 0 0 1 Unknown\n";
+					s << "         %11 = OpTypeSampledImage %10\n";
+					s << "%_runtimearr_11 = OpTypeRuntimeArray %11\n";
+					s << "%_ptr_UniformConstant__runtimearr_11 = OpTypePointer UniformConstant %_runtimearr_11\n";
+					s << "       %data = OpVariable %_ptr_UniformConstant__runtimearr_11 UniformConstant\n";
+					s << "        %int = OpTypeInt 32 1\n";
+					s << "%_ptr_Input_int = OpTypePointer Input %int\n";
+					s << "     %rIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "%_ptr_UniformConstant_11 = OpTypePointer UniformConstant %11\n";
+					s << "      %int_0 = OpConstant %int 0\n";
+					s << "%_ptr_Input_v4float = OpTypePointer Input %v4float\n";
+					s << "   %position = OpVariable %_ptr_Input_v4float Input\n";
+					s << "    %v2float = OpTypeVector %float 2\n";
+					s << "%_ptr_Input_v2float = OpTypePointer Input %v2float\n";
+					s << "  %normalpos = OpVariable %_ptr_Input_v2float Input\n";
+					s << "     %vIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "     %gIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "     %bIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "     %aIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "       %main = OpFunction %void None %3\n";
+					s << "          %5 = OpLabel\n";
+					s << "         %18 = OpLoad %int %rIndex\n";
+					s << "         %19 = OpCopyObject %int %18\n";
+					s << "         %21 = OpAccessChain %_ptr_UniformConstant_11 %data %19\n";
+					s << "         %22 = OpLoad %11 %21\n";
+					s << "         %24 = OpImage %10 %22\n";
+					s << "         %25 = OpImageFetch %v4float %24 %int_0\n";
+					s << "               OpStore %FragColor %25\n";
+					s << "               OpReturn\n";
+					s << "               OpFunctionEnd\n";
+					break;
+				case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+					s << "               OpCapability Shader\n";
+					s << "               OpCapability ImageBuffer\n";
+					s << "               OpCapability ShaderNonUniform\n";
+					s << "               OpCapability RuntimeDescriptorArray\n";
+					s << "               OpCapability StorageTexelBufferArrayNonUniformIndexing\n";
+					s << "               OpExtension \"SPV_EXT_descriptor_indexing\"\n";
+					s << "          %1 = OpExtInstImport \"GLSL.std.450\"\n";
+					s << "               OpMemoryModel Logical GLSL450\n";
+					s << "               OpEntryPoint Fragment %main \"main\" %FragColor %data %rIndex %position %normalpos %vIndex %gIndex %bIndex %aIndex\n";
+					s << "               OpExecutionMode %main OriginUpperLeft\n";
+					s << "               OpSource GLSL 450\n";
+					s << "               OpSourceExtension \"GL_EXT_nonuniform_qualifier\"\n";
+					s << "               OpName %main \"main\"\n";
+					s << "               OpName %FragColor \"FragColor\"\n";
+					s << "               OpName %data \"data\"\n";
+					s << "               OpName %rIndex \"rIndex\"\n";
+					s << "               OpName %position \"position\"\n";
+					s << "               OpName %normalpos \"normalpos\"\n";
+					s << "               OpName %vIndex \"vIndex\"\n";
+					s << "               OpName %gIndex \"gIndex\"\n";
+					s << "               OpName %bIndex \"bIndex\"\n";
+					s << "               OpName %aIndex \"aIndex\"\n";
+					s << "               OpDecorate %FragColor Location 0\n";
+					s << "               OpDecorate %data DescriptorSet 0\n";
+					s << "               OpDecorate %data Binding 4\n";
+					s << "               OpDecorate %rIndex Flat\n";
+					s << "               OpDecorate %rIndex Location 3\n";
+					// s << "               OpDecorate %18 NonUniform\n";
+					// s << "               OpDecorate %20 NonUniform\n";
+					s << "               OpDecorate %21 NonUniform\n";
+					s << "               OpDecorate %position Flat\n";
+					s << "               OpDecorate %position Location 0\n";
+					s << "               OpDecorate %normalpos Flat\n";
+					s << "               OpDecorate %normalpos Location 1\n";
+					s << "               OpDecorate %vIndex Flat\n";
+					s << "               OpDecorate %vIndex Location 2\n";
+					s << "               OpDecorate %gIndex Flat\n";
+					s << "               OpDecorate %gIndex Location 4\n";
+					s << "               OpDecorate %bIndex Flat\n";
+					s << "               OpDecorate %bIndex Location 5\n";
+					s << "               OpDecorate %aIndex Flat\n";
+					s << "               OpDecorate %aIndex Location 6\n";
+					s << "       %void = OpTypeVoid\n";
+					s << "          %3 = OpTypeFunction %void\n";
+					s << "      %float = OpTypeFloat 32\n";
+					s << "    %v4float = OpTypeVector %float 4\n";
+					s << "%_ptr_Output_v4float = OpTypePointer Output %v4float\n";
+					s << "  %FragColor = OpVariable %_ptr_Output_v4float Output\n";
+					s << "         %10 = OpTypeImage %float Buffer 0 0 0 2 Rgba32f\n";
+					s << "%_runtimearr_10 = OpTypeRuntimeArray %10\n";
+					s << "%_ptr_UniformConstant__runtimearr_10 = OpTypePointer UniformConstant %_runtimearr_10\n";
+					s << "       %data = OpVariable %_ptr_UniformConstant__runtimearr_10 UniformConstant\n";
+					s << "        %int = OpTypeInt 32 1\n";
+					s << "%_ptr_Input_int = OpTypePointer Input %int\n";
+					s << "     %rIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "%_ptr_UniformConstant_10 = OpTypePointer UniformConstant %10\n";
+					s << "      %int_0 = OpConstant %int 0\n";
+					s << "%_ptr_Input_v4float = OpTypePointer Input %v4float\n";
+					s << "   %position = OpVariable %_ptr_Input_v4float Input\n";
+					s << "    %v2float = OpTypeVector %float 2\n";
+					s << "%_ptr_Input_v2float = OpTypePointer Input %v2float\n";
+					s << "  %normalpos = OpVariable %_ptr_Input_v2float Input\n";
+					s << "     %vIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "     %gIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "     %bIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "     %aIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "       %main = OpFunction %void None %3\n";
+					s << "          %5 = OpLabel\n";
+					s << "         %17 = OpLoad %int %rIndex\n";
+					s << "         %18 = OpCopyObject %int %17\n";
+					s << "         %20 = OpAccessChain %_ptr_UniformConstant_10 %data %18\n";
+					s << "         %21 = OpLoad %10 %20\n";
+					s << "         %23 = OpImageRead %v4float %21 %int_0\n";
+					s << "               OpStore %FragColor %23\n";
+					s << "               OpReturn\n";
+					s << "               OpFunctionEnd\n";
+					break;
+				case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+					s << "               OpCapability Shader\n";
+					s << "               OpCapability ShaderNonUniform\n";
+					s << "               OpCapability RuntimeDescriptorArray\n";
+					s << "               OpCapability StorageBufferArrayNonUniformIndexing\n";
+					s << "               OpExtension \"SPV_EXT_descriptor_indexing\"\n";
+					s << "          %1 = OpExtInstImport \"GLSL.std.450\"\n";
+					s << "               OpMemoryModel Logical GLSL450\n";
+					s << "               OpEntryPoint Fragment %main \"main\" %FragColor %data %rIndex %position %normalpos %vIndex %gIndex %bIndex %aIndex\n";
+					s << "               OpExecutionMode %main OriginUpperLeft\n";
+					s << "               OpSource GLSL 450\n";
+					s << "               OpSourceExtension \"GL_EXT_nonuniform_qualifier\"\n";
+					s << "               OpName %main \"main\"\n";
+					s << "               OpName %FragColor \"FragColor\"\n";
+					s << "               OpName %Data \"Data\"\n";
+					s << "               OpMemberName %Data 0 \"cnew\"\n";
+					s << "               OpMemberName %Data 1 \"cold\"\n";
+					s << "               OpName %data \"data\"\n";
+					s << "               OpName %rIndex \"rIndex\"\n";
+					s << "               OpName %position \"position\"\n";
+					s << "               OpName %normalpos \"normalpos\"\n";
+					s << "               OpName %vIndex \"vIndex\"\n";
+					s << "               OpName %gIndex \"gIndex\"\n";
+					s << "               OpName %bIndex \"bIndex\"\n";
+					s << "               OpName %aIndex \"aIndex\"\n";
+					s << "               OpDecorate %FragColor Location 0\n";
+					s << "               OpMemberDecorate %Data 0 Offset 0\n";
+					s << "               OpMemberDecorate %Data 1 Offset 16\n";
+					s << "               OpDecorate %Data Block\n";
+					s << "               OpDecorate %data DescriptorSet 0\n";
+					s << "               OpDecorate %data Binding 2\n";
+					s << "               OpDecorate %rIndex Flat\n";
+					s << "               OpDecorate %rIndex Location 3\n";
+					// s << "               OpDecorate %18 NonUniform\n";
+					s << "               OpDecorate %21 NonUniform\n";
+					// s << "               OpDecorate %22 NonUniform\n";
+					s << "               OpDecorate %position Flat\n";
+					s << "               OpDecorate %position Location 0\n";
+					s << "               OpDecorate %normalpos Flat               OpDecorate %normalpos Location 1\n";
+					s << "               OpDecorate %vIndex Flat\n";
+					s << "               OpDecorate %vIndex Location 2\n";
+					s << "               OpDecorate %gIndex Flat\n";
+					s << "               OpDecorate %gIndex Location 4\n";
+					s << "               OpDecorate %bIndex Flat\n";
+					s << "               OpDecorate %bIndex Location 5\n";
+					s << "               OpDecorate %aIndex Flat\n";
+					s << "               OpDecorate %aIndex Location 6\n";
+					s << "       %void = OpTypeVoid\n";
+					s << "          %3 = OpTypeFunction %void\n";
+					s << "      %float = OpTypeFloat 32\n";
+					s << "    %v4float = OpTypeVector %float 4\n";
+					s << "%_ptr_Output_v4float = OpTypePointer Output %v4float\n";
+					s << "  %FragColor = OpVariable %_ptr_Output_v4float Output\n";
+					s << "       %Data = OpTypeStruct %v4float %v4float\n";
+					s << "%_runtimearr_Data = OpTypeRuntimeArray %Data\n";
+					s << "%_ptr_StorageBuffer__runtimearr_Data = OpTypePointer StorageBuffer %_runtimearr_Data\n";
+					s << "       %data = OpVariable %_ptr_StorageBuffer__runtimearr_Data StorageBuffer\n";
+					s << "        %int = OpTypeInt 32 1\n";
+					s << "%_ptr_Input_int = OpTypePointer Input %int\n";
+					s << "     %rIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "      %int_1 = OpConstant %int 1\n";
+					s << "%_ptr_StorageBuffer_v4float = OpTypePointer StorageBuffer %v4float\n";
+					s << "%_ptr_Input_v4float = OpTypePointer Input %v4float\n";
+					s << "   %position = OpVariable %_ptr_Input_v4float Input\n";
+					s << "    %v2float = OpTypeVector %float 2\n";
+					s << "%_ptr_Input_v2float = OpTypePointer Input %v2float\n";
+					s << "  %normalpos = OpVariable %_ptr_Input_v2float Input\n";
+					s << "     %vIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "     %gIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "     %bIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "     %aIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "       %main = OpFunction %void None %3\n";
+					s << "          %5 = OpLabel\n";
+					s << "         %17 = OpLoad %int %rIndex\n";
+					s << "         %18 = OpCopyObject %int %17\n";
+					s << "         %21 = OpAccessChain %_ptr_StorageBuffer_v4float %data %18 %int_1\n";
+					s << "         %22 = OpLoad %v4float %21\n";
+					s << "               OpStore %FragColor %22\n";
+					s << "               OpReturn\n";
+					s << "               OpFunctionEnd\n";
+					break;
+				case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+					s << "               OpCapability Shader\n";
+					s << "               OpCapability ShaderNonUniform\n";
+					s << "               OpCapability RuntimeDescriptorArray\n";
+					s << "               OpCapability UniformBufferArrayNonUniformIndexing\n";
+					s << "               OpExtension \"SPV_EXT_descriptor_indexing\"\n";
+					s << "          %1 = OpExtInstImport \"GLSL.std.450\"\n";
+					s << "               OpMemoryModel Logical GLSL450\n";
+					s << "               OpEntryPoint Fragment %main \"main\" %FragColor %data %rIndex %position %normalpos %vIndex %gIndex %bIndex %aIndex\n";
+					s << "               OpExecutionMode %main OriginUpperLeft\n";
+					s << "               OpSource GLSL 450\n";
+					s << "               OpSourceExtension \"GL_EXT_nonuniform_qualifier\"\n";
+					s << "               OpName %main \"main\"\n";
+					s << "               OpName %FragColor \"FragColor\"\n";
+					s << "               OpName %Data \"Data\"\n";
+					s << "               OpMemberName %Data 0 \"c\"\n";
+					s << "               OpName %data \"data\"\n";
+					s << "               OpName %rIndex \"rIndex\"\n";
+					s << "               OpName %position \"position\"\n";
+					s << "               OpName %normalpos \"normalpos\"\n";
+					s << "               OpName %vIndex \"vIndex\"\n";
+					s << "               OpName %gIndex \"gIndex\"\n";
+					s << "               OpName %bIndex \"bIndex\"\n";
+					s << "               OpName %aIndex \"aIndex\"\n";
+					s << "               OpDecorate %FragColor Location 0\n";
+					s << "               OpMemberDecorate %Data 0 Offset 0\n";
+					s << "               OpDecorate %Data Block\n";
+					s << "               OpDecorate %data DescriptorSet 0\n";
+					s << "               OpDecorate %data Binding 1\n";
+					s << "               OpDecorate %rIndex Flat\n";
+					s << "               OpDecorate %rIndex Location 3\n";
+					// s << "               OpDecorate %18 NonUniform\n";
+					s << "               OpDecorate %21 NonUniform\n";
+					// s << "               OpDecorate %22 NonUniform\n";
+					s << "               OpDecorate %position Flat\n";
+					s << "               OpDecorate %position Location 0\n";
+					s << "               OpDecorate %normalpos Flat\n";
+					s << "               OpDecorate %normalpos Location 1\n";
+					s << "               OpDecorate %vIndex Flat\n";
+					s << "               OpDecorate %vIndex Location 2\n";
+					s << "               OpDecorate %gIndex Flat\n";
+					s << "               OpDecorate %gIndex Location 4\n";
+					s << "               OpDecorate %bIndex Flat\n";
+					s << "               OpDecorate %bIndex Location 5\n";
+					s << "               OpDecorate %aIndex Flat\n";
+					s << "               OpDecorate %aIndex Location 6\n";
+					s << "       %void = OpTypeVoid\n";
+					s << "          %3 = OpTypeFunction %void\n";
+					s << "      %float = OpTypeFloat 32\n";
+					s << "    %v4float = OpTypeVector %float 4\n";
+					s << "%_ptr_Output_v4float = OpTypePointer Output %v4float\n";
+					s << "  %FragColor = OpVariable %_ptr_Output_v4float Output\n";
+					s << "       %Data = OpTypeStruct %v4float\n";
+					s << "%_runtimearr_Data = OpTypeRuntimeArray %Data\n";
+					s << "%_ptr_Uniform__runtimearr_Data = OpTypePointer Uniform %_runtimearr_Data\n";
+					s << "       %data = OpVariable %_ptr_Uniform__runtimearr_Data Uniform\n";
+					s << "        %int = OpTypeInt 32 1\n";
+					s << "%_ptr_Input_int = OpTypePointer Input %int\n";
+					s << "     %rIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "      %int_0 = OpConstant %int 0\n";
+					s << "%_ptr_Uniform_v4float = OpTypePointer Uniform %v4float\n";
+					s << "%_ptr_Input_v4float = OpTypePointer Input %v4float\n";
+					s << "   %position = OpVariable %_ptr_Input_v4float Input\n";
+					s << "    %v2float = OpTypeVector %float 2\n";
+					s << "%_ptr_Input_v2float = OpTypePointer Input %v2float\n";
+					s << "  %normalpos = OpVariable %_ptr_Input_v2float Input\n";
+					s << "     %vIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "     %gIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "     %bIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "     %aIndex = OpVariable %_ptr_Input_int Input\n";
+					s << "       %main = OpFunction %void None %3\n";
+					s << "          %5 = OpLabel\n";
+					s << "         %17 = OpLoad %int %rIndex\n";
+					s << "         %18 = OpCopyObject %int %17\n";
+					s << "         %21 = OpAccessChain %_ptr_Uniform_v4float %data %18 %int_0\n";
+					s << "         %22 = OpLoad %v4float %21\n";
+					s << "               OpStore %FragColor %22\n";
+					s << "               OpReturn\n";
+					s << "               OpFunctionEnd\n";
+					break;
+				default:
+					TCU_THROW(InternalError, "Unexpected descriptor type");
+					break;
+			}
+		    break;
+		case VK_SHADER_STAGE_COMPUTE_BIT:
+			switch (testCaseParams.descriptorType)
+			{
+				case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+					s << "               OpCapability Shader\n";
+					s << "               OpCapability ShaderNonUniform\n";
+					s << "               OpCapability RuntimeDescriptorArray\n";
+					s << "               OpCapability StorageImageArrayNonUniformIndexing\n";
+					s << "               OpExtension \"SPV_EXT_descriptor_indexing\"\n";
+					s << "          %1 = OpExtInstImport \"GLSL.std.450\"\n";
+					s << "               OpMemoryModel Logical GLSL450\n";
+					s << "               OpEntryPoint GLCompute %main \"main\" %idxs %gl_WorkGroupID %data\n";
+					s << "               OpExecutionMode %main LocalSize 1 1 1\n";
+					s << "               OpSource GLSL 450\n";
+					s << "               OpSourceExtension \"GL_EXT_nonuniform_qualifier\"\n";
+					s << "               OpName %main \"main\"\n";
+					s << "               OpName %c \"c\"\n";
+					s << "               OpName %idxs \"idxs\"\n";
+					s << "               OpName %gl_WorkGroupID \"gl_WorkGroupID\"\n";
+					s << "               OpName %data \"data\"\n";
+					s << "               OpDecorate %idxs DescriptorSet 0\n";
+					s << "               OpDecorate %idxs Binding 12\n";
+					s << "               OpDecorate %gl_WorkGroupID BuiltIn WorkgroupId\n";
+					s << "               OpDecorate %data DescriptorSet 0\n";
+					s << "               OpDecorate %data Binding 11\n";
+					// s << "               OpDecorate %36 NonUniform\n";
+					// s << "               OpDecorate %37 NonUniform\n";
+					s << "               OpDecorate %41 NonUniform\n";
+					s << "               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize\n";
+					s << "       %void = OpTypeVoid\n";
+					s << "          %3 = OpTypeFunction %void\n";
+					s << "       %uint = OpTypeInt 32 0\n";
+					s << "     %v4uint = OpTypeVector %uint 4\n";
+					s << "%_ptr_Function_v4uint = OpTypePointer Function %v4uint\n";
+					s << "         %10 = OpTypeImage %uint 2D 0 0 0 2 R32ui\n";
+					s << "%_ptr_UniformConstant_10 = OpTypePointer UniformConstant %10\n";
+					s << "       %idxs = OpVariable %_ptr_UniformConstant_10 UniformConstant\n";
+					s << "     %v3uint = OpTypeVector %uint 3\n";
+					s << "%_ptr_Input_v3uint = OpTypePointer Input %v3uint\n";
+					s << "%gl_WorkGroupID = OpVariable %_ptr_Input_v3uint Input\n";
+					s << "     %uint_0 = OpConstant %uint 0\n";
+					s << "%_ptr_Input_uint = OpTypePointer Input %uint\n";
+					s << "        %int = OpTypeInt 32 1\n";
+					s << "     %uint_1 = OpConstant %uint 1\n";
+					s << "      %v2int = OpTypeVector %int 2\n";
+					s << "%_runtimearr_10 = OpTypeRuntimeArray %10\n";
+					s << "%_ptr_UniformConstant__runtimearr_10 = OpTypePointer UniformConstant %_runtimearr_10\n";
+					s << "       %data = OpVariable %_ptr_UniformConstant__runtimearr_10 UniformConstant\n";
+					s << "%_ptr_Function_uint = OpTypePointer Function %uint\n";
+					s << "      %int_0 = OpConstant %int 0\n";
+					s << "         %39 = OpConstantComposite %v2int %int_0 %int_0\n";
+					s << "%_ptr_Image_uint = OpTypePointer Image %uint\n";
+					s << "%gl_WorkGroupSize = OpConstantComposite %v3uint %uint_1 %uint_1 %uint_1\n";
+					s << "       %main = OpFunction %void None %3\n";
+					s << "          %5 = OpLabel\n";
+					s << "          %c = OpVariable %_ptr_Function_v4uint Function\n";
+					s << "         %13 = OpLoad %10 %idxs\n";
+					s << "         %19 = OpAccessChain %_ptr_Input_uint %gl_WorkGroupID %uint_0\n";
+					s << "         %20 = OpLoad %uint %19\n";
+					s << "         %22 = OpBitcast %int %20\n";
+					s << "         %24 = OpAccessChain %_ptr_Input_uint %gl_WorkGroupID %uint_1\n";
+					s << "         %25 = OpLoad %uint %24\n";
+					s << "         %26 = OpBitcast %int %25\n";
+					s << "         %28 = OpCompositeConstruct %v2int %22 %26\n";
+					s << "         %29 = OpImageRead %v4uint %13 %28 ZeroExtend\n";
+					s << "               OpStore %c %29\n";
+					s << "         %34 = OpAccessChain %_ptr_Function_uint %c %uint_0\n";
+					s << "         %35 = OpLoad %uint %34\n";
+					s << "         %36 = OpCopyObject %uint %35\n";
+					s << "         %37 = OpAccessChain %_ptr_UniformConstant_10 %data %36\n";
+					s << "         %41 = OpImageTexelPointer %_ptr_Image_uint %37 %39 %uint_0\n";
+					s << "         %42 = OpAtomicIAdd %uint %41 %uint_1 %uint_0 %uint_1\n";
+					s << "               OpReturn\n";
+					s << "               OpFunctionEnd\n";
+					break;
+				default:
+					TCU_THROW(InternalError, "Unexpected descriptor type");
+					break;
+			}
+			break;
+		default:
+			TCU_THROW(InternalError, "Unexpected stage");
+			break;
+	}
+
+	return s.str();
 }
 
 std::string CommonDescriptorInstance::getShaderSource				(VkShaderStageFlagBits						shaderType,
@@ -3192,40 +4178,88 @@ public:
 		}
 	}
 
+	void initAsmPrograms(SourceCollections&	programCollection) const
+	{
+
+		std::string(*genShaderSource)(VkShaderStageFlagBits, const TestCaseParams&, bool) = &CommonDescriptorInstance::getShaderAsm;
+
+		deUint32 vulkan_version = VK_MAKE_VERSION(1, 2, 0);
+		vk::SpirvVersion spirv_version = vk::SPIRV_VERSION_1_4;
+		vk::SpirVAsmBuildOptions asm_options(vulkan_version, spirv_version);
+
+		if (VK_SHADER_STAGE_VERTEX_BIT & m_testCaseParams.stageFlags)
+		{
+			programCollection.spirvAsmSources.add(
+				ut::buildShaderName(VK_SHADER_STAGE_VERTEX_BIT, m_testCaseParams.descriptorType, m_testCaseParams.updateAfterBind, m_testCaseParams.calculateInLoop, m_testCaseParams.minNonUniform, false), &asm_options)
+				<< (*genShaderSource)(VK_SHADER_STAGE_VERTEX_BIT, m_testCaseParams, false);
+
+			if (CommonDescriptorInstance::performWritesInVertex(m_testCaseParams.descriptorType))
+			{
+				programCollection.spirvAsmSources.add(
+					ut::buildShaderName(VK_SHADER_STAGE_VERTEX_BIT, m_testCaseParams.descriptorType, m_testCaseParams.updateAfterBind, m_testCaseParams.calculateInLoop, m_testCaseParams.minNonUniform, true), &asm_options)
+					<< (*genShaderSource)(VK_SHADER_STAGE_VERTEX_BIT, m_testCaseParams, true);
+			}
+		}
+		if (VK_SHADER_STAGE_FRAGMENT_BIT & m_testCaseParams.stageFlags)
+		{
+			programCollection.spirvAsmSources.add(
+				ut::buildShaderName(VK_SHADER_STAGE_FRAGMENT_BIT, m_testCaseParams.descriptorType, m_testCaseParams.updateAfterBind, m_testCaseParams.calculateInLoop, m_testCaseParams.minNonUniform, false), &asm_options)
+				<< (*genShaderSource)(VK_SHADER_STAGE_FRAGMENT_BIT, m_testCaseParams, false);
+
+			if (CommonDescriptorInstance::performWritesInVertex(m_testCaseParams.descriptorType))
+			{
+				programCollection.spirvAsmSources.add(
+					ut::buildShaderName(VK_SHADER_STAGE_FRAGMENT_BIT, m_testCaseParams.descriptorType, m_testCaseParams.updateAfterBind, m_testCaseParams.calculateInLoop, m_testCaseParams.minNonUniform, true), &asm_options)
+					<< (*genShaderSource)(VK_SHADER_STAGE_FRAGMENT_BIT, m_testCaseParams, true);
+			}
+		}
+		if (VK_SHADER_STAGE_COMPUTE_BIT & m_testCaseParams.stageFlags)
+		{
+			programCollection.spirvAsmSources.add(
+				ut::buildShaderName(VK_SHADER_STAGE_COMPUTE_BIT, m_testCaseParams.descriptorType, m_testCaseParams.updateAfterBind, m_testCaseParams.calculateInLoop, m_testCaseParams.minNonUniform, false), &asm_options)
+				<< (*genShaderSource)(VK_SHADER_STAGE_COMPUTE_BIT, m_testCaseParams, false);
+		}
+	}
+
 	virtual void initPrograms (SourceCollections& programCollection) const
 	{
+		if (m_testCaseParams.minNonUniform) {
+			initAsmPrograms(programCollection);
+			return;
+		}
+
 		std::string(*genShaderSource)(VkShaderStageFlagBits, const TestCaseParams&, bool) = &CommonDescriptorInstance::getShaderSource;
 
 		if (VK_SHADER_STAGE_VERTEX_BIT & m_testCaseParams.stageFlags)
 		{
 			programCollection.glslSources.add(
-				ut::buildShaderName(VK_SHADER_STAGE_VERTEX_BIT, m_testCaseParams.descriptorType, m_testCaseParams.updateAfterBind, m_testCaseParams.calculateInLoop, false))
+				ut::buildShaderName(VK_SHADER_STAGE_VERTEX_BIT, m_testCaseParams.descriptorType, m_testCaseParams.updateAfterBind, m_testCaseParams.calculateInLoop, m_testCaseParams.minNonUniform, false))
 				<< glu::VertexSource((*genShaderSource)(VK_SHADER_STAGE_VERTEX_BIT, m_testCaseParams, false));
 
 			if (CommonDescriptorInstance::performWritesInVertex(m_testCaseParams.descriptorType))
 			{
 				programCollection.glslSources.add(
-					ut::buildShaderName(VK_SHADER_STAGE_VERTEX_BIT, m_testCaseParams.descriptorType, m_testCaseParams.updateAfterBind, m_testCaseParams.calculateInLoop, true))
+					ut::buildShaderName(VK_SHADER_STAGE_VERTEX_BIT, m_testCaseParams.descriptorType, m_testCaseParams.updateAfterBind, m_testCaseParams.calculateInLoop, m_testCaseParams.minNonUniform, true))
 					<< glu::VertexSource((*genShaderSource)(VK_SHADER_STAGE_VERTEX_BIT, m_testCaseParams, true));
 			}
 		}
 		if (VK_SHADER_STAGE_FRAGMENT_BIT & m_testCaseParams.stageFlags)
 		{
 			programCollection.glslSources.add(
-				ut::buildShaderName(VK_SHADER_STAGE_FRAGMENT_BIT, m_testCaseParams.descriptorType, m_testCaseParams.updateAfterBind, m_testCaseParams.calculateInLoop, false))
+				ut::buildShaderName(VK_SHADER_STAGE_FRAGMENT_BIT, m_testCaseParams.descriptorType, m_testCaseParams.updateAfterBind, m_testCaseParams.calculateInLoop, m_testCaseParams.minNonUniform, false))
 				<< glu::FragmentSource((*genShaderSource)(VK_SHADER_STAGE_FRAGMENT_BIT, m_testCaseParams, false));
 
 			if (CommonDescriptorInstance::performWritesInVertex(m_testCaseParams.descriptorType))
 			{
 				programCollection.glslSources.add(
-					ut::buildShaderName(VK_SHADER_STAGE_FRAGMENT_BIT, m_testCaseParams.descriptorType, m_testCaseParams.updateAfterBind, m_testCaseParams.calculateInLoop, true))
+					ut::buildShaderName(VK_SHADER_STAGE_FRAGMENT_BIT, m_testCaseParams.descriptorType, m_testCaseParams.updateAfterBind, m_testCaseParams.calculateInLoop, m_testCaseParams.minNonUniform, true))
 					<< glu::FragmentSource((*genShaderSource)(VK_SHADER_STAGE_FRAGMENT_BIT, m_testCaseParams, true));
 			}
 		}
 		if (VK_SHADER_STAGE_COMPUTE_BIT & m_testCaseParams.stageFlags)
 		{
 			programCollection.glslSources.add(
-				ut::buildShaderName(VK_SHADER_STAGE_COMPUTE_BIT, m_testCaseParams.descriptorType, m_testCaseParams.updateAfterBind, m_testCaseParams.calculateInLoop, false))
+				ut::buildShaderName(VK_SHADER_STAGE_COMPUTE_BIT, m_testCaseParams.descriptorType, m_testCaseParams.updateAfterBind, m_testCaseParams.calculateInLoop, m_testCaseParams.minNonUniform, false))
 				<< glu::ComputeSource((*genShaderSource)(VK_SHADER_STAGE_COMPUTE_BIT, m_testCaseParams, false));
 		}
 	}
@@ -3255,6 +4289,7 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 				false,	// updateAfterBind
 				false,	// calculateInLoop
 				false,	// useMipMaps
+				false,	// minNonUniform
 				FUZZY_COMPARE, CMP_THRESHOLD
 			}
 		},
@@ -3267,6 +4302,7 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 				false,	// updateAfterBind
 				false,	// calculateInLoop
 				false,	// useMipMaps
+				false,	// minNonUniform
 				FUZZY_COMPARE, CMP_THRESHOLD
 			}
 		},
@@ -3279,6 +4315,7 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 				false,	// updateAfterBind,
 				false,	// calculateInLoop
 				false,	// usesMipMaps
+				false,	// minNonUniform
 				FUZZY_COMPARE, CMP_THRESHOLD
 			}
 		},
@@ -3291,6 +4328,7 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 				false,	// updateAfterBind
 				false,	// calculateInLoop
 				false,	// useMipMaps
+				false,	// minNonUniform
 				FUZZY_COMPARE, CMP_THRESHOLD
 			}
 		},
@@ -3332,6 +4370,7 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 				false,	// updateAfterBind
 				false,	// calculateInLoop
 				false,	// usesMipMaps
+				false,	// minNonUniform
 				FUZZY_COMPARE, CMP_THRESHOLD
 			}
 		},
@@ -3344,6 +4383,7 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 				false,	// updateAfterBind
 				false,	// calculateInLoop
 				false,	// usesMipMaps
+				false,	// minNonUniform
 				FUZZY_COMPARE, CMP_THRESHOLD
 			}
 		},
@@ -3356,6 +4396,7 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 				false,	// updateAfterBind
 				false,	// calculateInLoop
 				false,	// usesMipMaps
+				false,	// minNonUniform
 				FUZZY_COMPARE, CMP_THRESHOLD
 			}
 		},
@@ -3403,6 +4444,7 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 				false,	// updateAfterBind
 				false,	// calculateInLoop
 				false,	// usesMipMaps
+				false,	// minNonUniform
 				FUZZY_COMPARE, CMP_THRESHOLD
 			}
 		},
@@ -3415,6 +4457,7 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 				false,	// updateAfterBind
 				false,	// calculateInLoop
 				false,	// useMipMaps
+				false,	// minNonUniform
 				FUZZY_COMPARE, CMP_THRESHOLD
 			}
 		},
@@ -3427,6 +4470,7 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 				false,	// updateAfterBind
 				false,	// calculateInLoop
 				false,	// useMipMaps
+				false,	// minNonUniform
 				FUZZY_COMPARE, CMP_THRESHOLD
 			}
 		},
@@ -3439,6 +4483,7 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 				false,	// updateAfterBind
 				false,	// calculateInLoop
 				false,	// useMipMaps
+				false,	// minNonUniform
 				FUZZY_COMPARE, CMP_THRESHOLD
 			}
 		},
@@ -3461,6 +4506,124 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 
 			group->addChild(new DescriptorIndexingTestCase(context, caseName.c_str(), caseDescription.c_str(), params));
 		}
+	}
+
+	// SPIR-V Asm Tests
+	// Tests that have the minimum necessary NonUniform decorations.
+	// sampler and sampled_image GLSL already have minimum NonUniform decorations.
+
+	TestCaseInfo casesMinNonUniform[] =
+	{
+		{
+			"storage_buffer", "Regular Storage Buffer Descriptors",
+			{
+				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
+				RESOLUTION,
+				false,	// updateAfterBind
+				false,	// calculateInLoop
+				false,	// useMipMaps
+				true,	// minNonUniform
+				FUZZY_COMPARE, CMP_THRESHOLD
+			}
+		},
+		{
+			"storage_texel_buffer", "Storage Texel Buffer Descriptors",
+			{
+				VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
+				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
+				RESOLUTION,
+				false,	// updateAfterBind
+				false,	// calculateInLoop
+				false,	// useMipMaps
+				true,	// minNonUniform
+				FUZZY_COMPARE, CMP_THRESHOLD
+			}
+		},
+		{
+			"uniform_texel_buffer", "Uniform Texel Buffer Descriptors",
+			{
+				VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
+				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
+				RESOLUTION,
+				false,	// updateAfterBind,
+				false,	// calculateInLoop
+				false,	// usesMipMaps
+				true,	// minNonUniform
+				FUZZY_COMPARE, CMP_THRESHOLD
+			}
+		},
+		{
+			"uniform_buffer", "Regular Uniform Buffer Descriptors",
+			{
+				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
+				RESOLUTION,
+				false,	// updateAfterBind
+				false,	// calculateInLoop
+				false,	// usesMipMaps
+				true,	// minNonUniform
+				FUZZY_COMPARE, CMP_THRESHOLD
+			}
+		},
+		{
+			"combined_image_sampler", "Combined Image Sampler Descriptors",
+			{
+				VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
+				RESOLUTION,
+				false,	// updateAfterBind
+				false,	// calculateInLoop
+				false,	// usesMipMaps
+				true,	// minNonUniform
+				FUZZY_COMPARE, CMP_THRESHOLD
+			}
+		},
+		{
+			"combined_image_sampler", "Combined Image Sampler Descriptors",
+			{
+				VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
+				RESOLUTION,
+				false,	// updateAfterBind
+				false,	// calculateInLoop
+				true,	// usesMipMaps
+				true,	// minNonUniform
+				FUZZY_COMPARE, CMP_THRESHOLD
+			}
+		},
+		{
+			"storage_image", "Storage Image Descriptors",
+			{
+				VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+				VK_SHADER_STAGE_COMPUTE_BIT,
+				RESOLUTION,
+				false,	// updateAfterBind
+				false,	// calculateInLoop
+				false,	// useMipMaps
+				true,	// minNonUniform
+				FUZZY_COMPARE, CMP_THRESHOLD
+			}
+		},
+	};
+
+	for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(casesMinNonUniform); ++caseIdx)
+	{
+		TestCaseInfo&	info(casesMinNonUniform[caseIdx]);
+		std::string		caseName(info.name);
+		std::string		caseDescription(info.description);
+		TestCaseParams	params(info.params);
+
+		if (params.usesMipMaps) {
+			caseName += "_with_lod";
+		}
+		caseName += "_minNonUniform";
+
+		caseDescription += " With Minimum NonUniform Decorations";
+
+		TestCase* tc = new DescriptorIndexingTestCase(context, caseName.c_str(), caseDescription.c_str(), params);
+		group->addChild(tc);
+		// group->addChild(new DescriptorIndexingTestCase(context, caseName.c_str(), caseDescription.c_str(), params));
 	}
 }
 

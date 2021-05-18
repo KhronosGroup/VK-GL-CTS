@@ -394,7 +394,7 @@ void BufferMemoryRequirementsOriginal::verifyMemoryRequirements (tcu::ResultColl
 		result.check(deIsPowerOfTwo64(static_cast<deUint64>(m_currentTestRequirements.alignment)) == DE_TRUE,
 			"VkMemoryRequirements alignment isn't power of two");
 
-		if (usage & (VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT))
+		if (usage & (VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT))
 		{
 			result.check(m_currentTestRequirements.alignment >= limits.minTexelBufferOffsetAlignment,
 				"VkMemoryRequirements alignment doesn't respect minTexelBufferOffsetAlignment");
@@ -829,6 +829,12 @@ bool ImageMemoryRequirementsOriginal::isImageSupported (const Context& context, 
 		return false;
 	}
 
+	if (isYCbCrExtensionFormat(info.format)
+		&& !context.isDeviceFunctionalitySupported("VK_EXT_ycbcr_2plane_444_formats"))
+	{
+		return false;
+	}
+
 	if (info.imageType == VK_IMAGE_TYPE_1D)
 	{
 		DE_ASSERT(info.extent.height == 1u && info.extent.depth == 1u);
@@ -1250,7 +1256,13 @@ tcu::TestStatus ImageMemoryRequirementsOriginal::execTest (Context& context, con
 		VK_FORMAT_G16_B16R16_2PLANE_420_UNORM_KHR,
 		VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM_KHR,
 		VK_FORMAT_G16_B16R16_2PLANE_422_UNORM_KHR,
-		VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR
+		VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR,
+		VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
+		VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
+		VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT,
+		VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT,
+		VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT,
+		VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT,
 	};
 	const DeviceInterface&		vk				= context.getDeviceInterface();
 	const InstanceInterface&	vki				= context.getInstanceInterface();
@@ -1578,7 +1590,6 @@ tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
 	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
 	tcu::TestLog&							log					= context.getTestContext().getLog();
 	tcu::ResultCollector					result				(log, "ERROR: ");
-	deUint32								errorCount			= 0;
 
 	log << TestLog::Message << "Memory properties: " << memoryProperties << TestLog::EndMessage;
 
@@ -1673,10 +1684,7 @@ tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
 		}
 	}
 
-	if (errorCount > 1)
-		return tcu::TestStatus(result.getResult(), "Failed " + de::toString(errorCount) + " cases.");
-	else
-		return tcu::TestStatus(result.getResult(), result.getMessage());
+	return tcu::TestStatus(result.getResult(), result.getMessage());
 }
 
 void checkSupportMultiplane (Context& context, ImageTestParams params)

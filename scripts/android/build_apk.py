@@ -640,6 +640,9 @@ def addFilesToAPK (config, apkPath, baseDir, relFilePaths):
 	pushWorkingDir(baseDir)
 	try:
 		workQueue = list(relFilePaths)
+		# Workaround for Windows.
+		if os.path.sep == "\\":
+			workQueue = [i.replace("\\", "/") for i in workQueue]
 
 		while len(workQueue) > 0:
 			batchSize	= min(len(workQueue), maxBatchSize)

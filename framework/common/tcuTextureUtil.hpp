@@ -117,6 +117,7 @@ void	clearDepth						(const PixelBufferAccess& access, float depth);
 void	clearStencil					(const PixelBufferAccess& access, int stencil);
 void	fillWithComponentGradients		(const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal);
 void	fillWithComponentGradients2		(const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal);
+void	fillWithComponentGradients3		(const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal);
 void	fillWithGrid					(const PixelBufferAccess& access, int cellSize, const Vec4& colorA, const Vec4& colorB);
 void	fillWithRepeatableGradient		(const PixelBufferAccess& access, const Vec4& colorA, const Vec4& colorB);
 void	fillWithMetaballs				(const PixelBufferAccess& access, int numMetaballs, deUint32 seed);

@@ -335,10 +335,13 @@ void FSRTestCase::initPrograms (SourceCollections& programCollection) const
 		// Verify that we can read from the output variable
 		vss << "  if (gl_PrimitiveShadingRateEXT != pc.shadingRate) readbackok = 0;\n";
 
-		if (m_data.multiViewport)
-			vss << "  gl_ViewportIndex = instanceIndex & 1;\n";
-		if (m_data.colorLayered)
-			vss << "  gl_Layer = (instanceIndex & 2) >> 1;\n";
+		if (!m_data.geometryShader)
+		{
+			if (m_data.multiViewport)
+				vss << "  gl_ViewportIndex = instanceIndex & 1;\n";
+			if (m_data.colorLayered)
+				vss << "  gl_Layer = (instanceIndex & 2) >> 1;\n";
+		}
 	}
 
 	vss << "}\n";
@@ -903,7 +906,8 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 	Move<VkImageView> dsImageView, dImageView, sImageView;
 	VkImageUsageFlags dsUsage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
 								VK_IMAGE_USAGE_SAMPLED_BIT |
-								VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+								VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+								VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	if (m_data.useDepthStencil)
 	{
 		const VkImageCreateInfo			imageCreateInfo			=
@@ -1907,6 +1911,15 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			{
 				VkImageSubresourceRange range = makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 1u, 0u, VK_REMAINING_ARRAY_LAYERS);
 				VkClearValue clearColor = makeClearValueDepthStencil(0.0, 0);
+				VkImageMemoryBarrier dsBarrier = imageBarrier;
+				dsBarrier.image = **dsImage;
+				dsBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+				dsBarrier.subresourceRange = range;
+				vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+										0u, // dependencyFlags
+										0u, nullptr,
+										0u, nullptr,
+										1u, &dsBarrier);
 				vk.cmdClearDepthStencilImage(*cmdBuffer, **dsImage, VK_IMAGE_LAYOUT_GENERAL, &clearColor.depthStencil, 1, &range);
 			}
 

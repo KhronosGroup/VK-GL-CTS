@@ -35,6 +35,7 @@ namespace TexVerifierUtil
 
 float		computeFloatingPointError			(const float value, const int numAccurateBits);
 float		computeFixedPointError				(const int numAccurateBits);
+float		computeColorBitsError				(const int bits, const int numAccurateBits);
 
 template<int Size>
 inline Vector<float, Size> computeFloatingPointError (const Vector<float, Size>& value, const Vector<deInt32, Size>& numAccurateBits)
@@ -51,6 +52,15 @@ inline Vector<float, Size> computeFixedPointError (const Vector<deInt32, Size>& 
 	Vector<float, Size> res;
 	for (int ndx = 0; ndx < Size; ndx++)
 		res[ndx] = computeFixedPointError(numAccurateBits[ndx]);
+	return res;
+}
+
+template<int Size>
+inline Vector<float, Size> computeColorBitsError(const Vector<deInt32, Size>& bits, const Vector<deInt32, Size>& numAccurateBits)
+{
+	Vector<float, Size> res;
+	for (int ndx = 0; ndx < Size; ndx++)
+		res[ndx] = computeColorBitsError(bits[ndx], numAccurateBits[ndx]);
 	return res;
 }
 

@@ -30,6 +30,7 @@
 #include "tcuVectorUtil.hpp"
 #include "gluDefs.hpp"
 #include "gluTextureUtil.hpp"
+#include "gluContextInfo.hpp"
 #include "glwFunctions.hpp"
 #include "glwEnums.hpp"
 #include "deMemory.h"
@@ -248,6 +249,17 @@ ReferenceContextLimits::ReferenceContextLimits (const glu::RenderContext& render
 {
 	const glw::Functions& gl = renderCtx.getFunctions();
 
+	// When the OpenGL ES's major version bigger than 3, and the expect context version is 3,
+	// we need query the real GL context version and update the real version to reference context.
+	if (glu::IsES3Compatible(gl) && isES2Context(contextType))
+	{
+		int majorVersion = contextType.getMajorVersion();
+		int minorVersion = contextType.getMinorVersion();
+		gl.getIntegerv(GL_MAJOR_VERSION, &majorVersion);
+		gl.getIntegerv(GL_MINOR_VERSION, &minorVersion);
+		contextType.setAPI(glu::ApiType::es(majorVersion, minorVersion));
+	}
+
 	gl.getIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS,		&maxTextureImageUnits);
 	gl.getIntegerv(GL_MAX_TEXTURE_SIZE,				&maxTexture2DSize);
 	gl.getIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE,	&maxTextureCubeSize);
@@ -325,7 +337,7 @@ ReferenceContext::ReferenceContext (const ReferenceContextLimits& limits, const 
 	, m_textureUnits					(m_limits.maxTextureImageUnits)
 	, m_emptyTex1D						()
 	, m_emptyTex2D						(isES2Context(limits.contextType))
-	, m_emptyTexCube					()
+	, m_emptyTexCube					(!isES2Context(limits.contextType))
 	, m_emptyTex2DArray					()
 	, m_emptyTex3D						()
 	, m_emptyTexCubeArray				()
@@ -440,6 +452,9 @@ ReferenceContext::ReferenceContext (const ReferenceContextLimits& limits, const 
 	for (int faceNdx = 0; faceNdx < 6; faceNdx++)
 		m_emptyTexCubeArray.getLevel(0).setPixel(Vec4(0.0f, 0.0f, 0.0f, 1.0f), 0, 0, faceNdx);
 	m_emptyTexCubeArray.updateView(tcu::Sampler::MODE_LAST);
+
+	for (int unitNdx = 0; unitNdx < m_limits.maxTextureImageUnits; unitNdx++)
+		m_textureUnits[unitNdx].defaultCubeTex.getSampler().seamlessCubeMap = !isES2Context(limits.contextType);
 
 	if (glu::isContextTypeGLCore(getType()))
 		m_sRGBUpdateEnabled = false;
@@ -644,14 +659,15 @@ void ReferenceContext::bindTexture (deUint32 target, deUint32 texture)
 		else
 		{
 			// New texture object.
+			bool seamlessCubeMap = !isES2Context(m_limits.contextType);
 			switch (target)
 			{
-				case GL_TEXTURE_1D:				texObj = new Texture1D			(texture);	break;
-				case GL_TEXTURE_2D:				texObj = new Texture2D			(texture);	break;
-				case GL_TEXTURE_CUBE_MAP:		texObj = new TextureCube		(texture);	break;
-				case GL_TEXTURE_2D_ARRAY:		texObj = new Texture2DArray		(texture);	break;
-				case GL_TEXTURE_3D:				texObj = new Texture3D			(texture);	break;
-				case GL_TEXTURE_CUBE_MAP_ARRAY:	texObj = new TextureCubeArray	(texture);	break;
+				case GL_TEXTURE_1D:				texObj = new Texture1D			(texture);					break;
+				case GL_TEXTURE_2D:				texObj = new Texture2D			(texture);					break;
+				case GL_TEXTURE_CUBE_MAP:		texObj = new TextureCube		(texture, seamlessCubeMap);	break;
+				case GL_TEXTURE_2D_ARRAY:		texObj = new Texture2DArray		(texture);					break;
+				case GL_TEXTURE_3D:				texObj = new Texture3D			(texture);					break;
+				case GL_TEXTURE_CUBE_MAP_ARRAY:	texObj = new TextureCubeArray	(texture);					break;
 				default:
 					DE_ASSERT(false);
 			}
@@ -2341,9 +2357,19 @@ tcu::PixelBufferAccess ReferenceContext::getFboAttachment (const rc::Framebuffer
 			TCU_CHECK(texture);
 
 			if (texture->getType() == Texture::TYPE_2D)
-				return dynamic_cast<Texture2D*>(texture)->getLevel(attachment.level);
+			{
+				if (Texture2D* texture2D = dynamic_cast<Texture2D*>(texture))
+					return texture2D->getLevel(attachment.level);
+				else
+					return nullAccess();
+			}
 			else if (texture->getType() == Texture::TYPE_CUBE_MAP)
-				return dynamic_cast<TextureCube*>(texture)->getFace(attachment.level, texTargetToFace(attachment.texTarget));
+			{
+				if (TextureCube* cubeMap = dynamic_cast<TextureCube*>(texture))
+					return cubeMap->getFace(attachment.level, texTargetToFace(attachment.texTarget));
+				else
+					return nullAccess();
+			}
 			else if (texture->getType() == Texture::TYPE_2D_ARRAY	||
 					 texture->getType() == Texture::TYPE_3D			||
 					 texture->getType() == Texture::TYPE_CUBE_MAP_ARRAY)
@@ -2351,11 +2377,20 @@ tcu::PixelBufferAccess ReferenceContext::getFboAttachment (const rc::Framebuffer
 				tcu::PixelBufferAccess level;
 
 				if (texture->getType() == Texture::TYPE_2D_ARRAY)
-					level = dynamic_cast<Texture2DArray*>(texture)->getLevel(attachment.level);
+				{
+					if (Texture2DArray* texture2DArray = dynamic_cast<Texture2DArray*>(texture))
+						level = texture2DArray->getLevel(attachment.level);
+				}
 				else if (texture->getType() == Texture::TYPE_3D)
-					level = dynamic_cast<Texture3D*>(texture)->getLevel(attachment.level);
+				{
+					if (Texture3D* texture3D = dynamic_cast<Texture3D*>(texture))
+						level = texture3D->getLevel(attachment.level);
+				}
 				else if (texture->getType() == Texture::TYPE_CUBE_MAP_ARRAY)
-					level = dynamic_cast<TextureCubeArray*>(texture)->getLevel(attachment.level);
+				{
+					if (TextureCubeArray* cubeArray = dynamic_cast<TextureCubeArray*>(texture))
+						level = cubeArray->getLevel(attachment.level);
+				}
 
 				void* layerData = static_cast<deUint8*>(level.getDataPtr()) + level.getSlicePitch() * attachment.layer;
 
@@ -4707,7 +4742,7 @@ void TextureLevelArray::updateSamplerMode (tcu::Sampler::DepthStencilMode mode)
 		m_effectiveAccess[levelNdx] = tcu::getEffectiveDepthStencilAccess(m_access[levelNdx], mode);
 }
 
-Texture::Texture (deUint32 name, Type type)
+Texture::Texture (deUint32 name, Type type, deBool seamless)
 	: NamedObject	(name)
 	, m_type		(type)
 	, m_immutable	(false)
@@ -4721,7 +4756,7 @@ Texture::Texture (deUint32 name, Type type)
 					 tcu::Sampler::COMPAREMODE_NONE,
 					 0,					// cmp channel ndx
 					 tcu::Vec4(0.0f),	// border color
-					 true				// seamless cube map \todo [2014-02-19 pyry] Default value ok?
+					 seamless			// seamless cube map, Default value is True.
 					 )
 	, m_baseLevel	(0)
 	, m_maxLevel	(1000)
@@ -4929,8 +4964,8 @@ void Texture2D::sample4 (tcu::Vec4 output[4], const tcu::Vec2 packetTexcoords[4]
 	}
 }
 
-TextureCube::TextureCube (deUint32 name)
-	: Texture(name, TYPE_CUBE_MAP)
+TextureCube::TextureCube (deUint32 name, deBool seamless)
+	: Texture(name, TYPE_CUBE_MAP, seamless)
 {
 }
 

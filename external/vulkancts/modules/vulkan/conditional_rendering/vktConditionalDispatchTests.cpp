@@ -73,13 +73,14 @@ struct ConditionalTestSpec
 class ConditionalDispatchTest : public vkt::TestCase
 {
 public:
-						ConditionalDispatchTest	(tcu::TestContext&	testCtx,
-												 const std::string& name,
-												 const std::string&	description,
-												 const ConditionalTestSpec& testSpec);
+						ConditionalDispatchTest	(tcu::TestContext&			testCtx,
+												 const std::string&			name,
+												 const std::string&			description,
+												 const ConditionalTestSpec&	testSpec);
 
-	void				initPrograms			(vk::SourceCollections& sourceCollections) const;
-	TestInstance*		createInstance			(Context&			    context) const;
+	void				initPrograms			(vk::SourceCollections&	sourceCollections) const;
+	void				checkSupport			(Context&				context) const;
+	TestInstance*		createInstance			(Context&				context) const;
 
 private:
 	const ConditionalTestSpec m_testSpec;
@@ -90,7 +91,7 @@ class ConditionalDispatchTestInstance : public TestInstance
 public:
 								ConditionalDispatchTestInstance	(Context &context, ConditionalTestSpec testSpec);
 
-	virtual		tcu::TestStatus iterate					        (void);
+	virtual		tcu::TestStatus iterate							(void);
 	void						recordDispatch					(const vk::DeviceInterface&	vk,
 																 vk::VkCommandBuffer cmdBuffer,
 																 compute::Buffer& indirectBuffer);
@@ -101,10 +102,10 @@ protected:
 	const ConditionalData			m_conditionalData;
 };
 
-ConditionalDispatchTest::ConditionalDispatchTest(tcu::TestContext&	testCtx,
-												 const std::string&	name,
-												 const std::string&	description,
-												 const ConditionalTestSpec& testSpec)
+ConditionalDispatchTest::ConditionalDispatchTest(tcu::TestContext&			testCtx,
+												 const std::string&			name,
+												 const std::string&			description,
+												 const ConditionalTestSpec&	testSpec)
 	: TestCase		(testCtx, name, description)
 	, m_testSpec	(testSpec)
 {
@@ -127,6 +128,14 @@ void ConditionalDispatchTest::initPrograms (vk::SourceCollections& sourceCollect
 	sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
 }
 
+void ConditionalDispatchTest::checkSupport(Context& context) const
+{
+	checkConditionalRenderingCapabilities(context, m_testSpec.conditionalData);
+
+	if (m_testSpec.command == DISPATCH_COMMAND_TYPE_DISPATCH_BASE)
+		context.requireDeviceFunctionality("VK_KHR_device_group");
+}
+
 TestInstance* ConditionalDispatchTest::createInstance (Context& context) const
 {
 	return new ConditionalDispatchTestInstance(context, m_testSpec);
@@ -138,7 +147,6 @@ ConditionalDispatchTestInstance::ConditionalDispatchTestInstance (Context &conte
 	, m_numCalls(testSpec.numCalls)
 	, m_conditionalData(testSpec.conditionalData)
 {
-	checkConditionalRenderingCapabilities(context, m_conditionalData);
 };
 
 void ConditionalDispatchTestInstance::recordDispatch (const vk::DeviceInterface& vk,
@@ -364,7 +372,7 @@ void ConditionalDispatchTests::init (void)
 	{
 		const ConditionalData& conditionData = conditional::s_testsData[conditionNdx];
 
-		tcu::TestCaseGroup* conditionalDrawRootGroup = new tcu::TestCaseGroup(m_testCtx, de::toString(conditionData).c_str(), "Conditionaly execute dispatch calls");
+		de::MovePtr<tcu::TestCaseGroup> conditionalDrawRootGroup(new tcu::TestCaseGroup(m_testCtx, de::toString(conditionData).c_str(), "Conditionaly execute dispatch calls"));
 
 		for (deUint32 commandTypeIdx = 0; commandTypeIdx < DISPATCH_COMMAND_TYPE_DISPATCH_LAST; ++commandTypeIdx)
 		{
@@ -378,7 +386,112 @@ void ConditionalDispatchTests::init (void)
 			conditionalDrawRootGroup->addChild(new ConditionalDispatchTest(m_testCtx, getDispatchCommandTypeName(command), "", testSpec));
 		}
 
-		addChild(conditionalDrawRootGroup);
+		addChild(conditionalDrawRootGroup.release());
+	}
+
+	// Tests verifying the condition is interpreted as a 32-bit value.
+	{
+		de::MovePtr<tcu::TestCaseGroup> conditionSizeGroup(new tcu::TestCaseGroup(m_testCtx, "condition_size", "Tests verifying the condition is being read as a 32-bit value"));
+
+		struct ValuePaddingExecution
+		{
+			deUint32	value;
+			bool		padding;
+			bool		execution;
+			const char*	name;
+		};
+
+		const ValuePaddingExecution kConditionValueResults[] =
+		{
+			{	0x00000001u,	false,	true,	"first_byte"	},
+			{	0x00000100u,	false,	true,	"second_byte"	},
+			{	0x00010000u,	false,	true,	"third_byte"	},
+			{	0x01000000u,	false,	true,	"fourth_byte"	},
+			{	0u,				true,	false,	"padded_zero"	},
+		};
+
+		enum class ConditionSizeSubcaseType
+		{
+			PRIMARY_FLAT = 0,
+			PRIMARY_WITH_SECONDARY,
+			SECONDARY_NORMAL,
+			SECONDARY_INHERITED,
+		};
+
+		struct ConditionSizeSubcase
+		{
+			ConditionSizeSubcaseType	type;
+			const char*					name;
+		};
+
+		const ConditionSizeSubcase kConditionSizeSubcase[] =
+		{
+			{ ConditionSizeSubcaseType::PRIMARY_FLAT,				"primary"				},
+			{ ConditionSizeSubcaseType::PRIMARY_WITH_SECONDARY,		"inherited"				},
+			{ ConditionSizeSubcaseType::SECONDARY_NORMAL,			"secondary"				},
+			{ ConditionSizeSubcaseType::SECONDARY_INHERITED,		"secondary_inherited"	},
+		};
+
+		for (int subcaseNdx = 0; subcaseNdx < DE_LENGTH_OF_ARRAY(kConditionSizeSubcase); ++subcaseNdx)
+		{
+			const auto& subcase = kConditionSizeSubcase[subcaseNdx];
+
+			de::MovePtr<tcu::TestCaseGroup> subcaseGroup(new tcu::TestCaseGroup(m_testCtx, subcase.name, ""));
+
+			ConditionalData conditionalData		= {};
+			conditionalData.conditionInverted	= false;
+
+			switch (subcase.type)
+			{
+				case ConditionSizeSubcaseType::PRIMARY_FLAT:
+					conditionalData.conditionInPrimaryCommandBuffer		= true;
+					conditionalData.conditionInSecondaryCommandBuffer	= false;
+					conditionalData.conditionInherited					= false;
+					break;
+
+				case ConditionSizeSubcaseType::PRIMARY_WITH_SECONDARY:
+					conditionalData.conditionInPrimaryCommandBuffer		= true;
+					conditionalData.conditionInSecondaryCommandBuffer	= false;
+					conditionalData.conditionInherited					= true;
+					break;
+
+				case ConditionSizeSubcaseType::SECONDARY_NORMAL:
+					conditionalData.conditionInPrimaryCommandBuffer		= false;
+					conditionalData.conditionInSecondaryCommandBuffer	= true;
+					conditionalData.conditionInherited					= false;
+					break;
+
+				case ConditionSizeSubcaseType::SECONDARY_INHERITED:
+					conditionalData.conditionInPrimaryCommandBuffer		= false;
+					conditionalData.conditionInSecondaryCommandBuffer	= true;
+					conditionalData.conditionInherited					= true;
+					break;
+
+				default:
+					DE_ASSERT(false);
+					break;
+			}
+
+			for (int valueNdx = 0; valueNdx < DE_LENGTH_OF_ARRAY(kConditionValueResults); ++valueNdx)
+			{
+				const auto& valueResults = kConditionValueResults[valueNdx];
+
+				conditionalData.conditionValue			= valueResults.value;
+				conditionalData.padConditionValue		= valueResults.padding;
+				conditionalData.expectCommandExecution	= valueResults.execution;
+
+				ConditionalTestSpec spec;
+				spec.command			= DISPATCH_COMMAND_TYPE_DISPATCH;
+				spec.numCalls			= 1;
+				spec.conditionalData	= conditionalData;
+
+				subcaseGroup->addChild(new ConditionalDispatchTest(m_testCtx, valueResults.name, "", spec));
+			}
+
+			conditionSizeGroup->addChild(subcaseGroup.release());
+		}
+
+		addChild(conditionSizeGroup.release());
 	}
 }
 

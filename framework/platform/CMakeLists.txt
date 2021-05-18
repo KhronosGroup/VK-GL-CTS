@@ -19,7 +19,7 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 			win32/tcuWin32VulkanPlatform.cpp
 			)
 
-	elseif ((DE_OS_IS_UNIX OR DE_OS_IS_OSX) AND (DEQP_USE_X11 OR DEQP_USE_WAYLAND))
+	elseif ((DE_OS_IS_UNIX OR DE_OS_IS_OSX) AND (DEQP_USE_X11 OR DEQP_USE_WAYLAND OR DEQP_USE_HEADLESS))
 
 		set(TCUTIL_PLATFORM_SRCS
 			lnx/tcuLnx.cpp
@@ -83,6 +83,10 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 			include_directories(wayland)
 		endif()
 
+		if (DEQP_USE_HEADLESS)
+			add_definitions(-DDEQP_SUPPORT_HEADLESS=1)
+		endif()
+
 	elseif (DE_OS_IS_UNIX AND DEQP_USE_SURFACELESS)
 		set(TCUTIL_PLATFORM_SRCS
 			surfaceless/tcuSurfacelessPlatform.hpp
@@ -101,8 +105,6 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 				${TCUTIL_PLATFORM_SRCS}
 				android/tcuAndroidAssets.cpp
 				android/tcuAndroidAssets.hpp
-				android/tcuAndroidInternals.cpp
-				android/tcuAndroidInternals.hpp
 				android/tcuAndroidNativeActivity.cpp
 				android/tcuAndroidNativeActivity.hpp
 				android/tcuAndroidPlatform.cpp
@@ -135,6 +137,7 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 			osx/tcuOSXMetalView.mm
 			osx/tcuOSXMetalView.hpp
 			)
+		list(APPEND TCUTIL_PLATFORM_LIBS ${QUARTZCORE_LIBRARY} ${COCOA_LIBRARY})
 
 	else ()
 		set(TCUTIL_PLATFORM_SRCS
@@ -177,6 +180,10 @@ if (DEQP_USE_X11)
 	endif ()
 endif ()
 
+if (DE_OS_IS_WIN32)
+	target_link_libraries(tcutil-platform "version")
+endif()
+
 # Add similar library for Vulkan SC ( uses same code as vkutil, but with different INL files )
 add_library(tcutil-sc-platform STATIC ${TCUTIL_PLATFORM_SRCS})
 target_include_directories(tcutil-sc-platform BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
@@ -211,4 +218,8 @@ if (DEQP_USE_X11)
 		target_compile_definitions(tcutil-sc-platform PUBLIC DEQP_SUPPORT_WAYLAND=1)
 	endif ()
 endif ()
+
+if (DE_OS_IS_WIN32)
+	target_link_libraries(tcutil-sc-platform "version")
+endif()
 

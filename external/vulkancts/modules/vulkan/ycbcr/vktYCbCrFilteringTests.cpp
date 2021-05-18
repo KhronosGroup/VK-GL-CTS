@@ -63,8 +63,7 @@ public:
 
 protected:
 
-	VkSamplerCreateInfo				getSamplerInfo				(VkFilter								minMagFilter,
-																 const VkSamplerYcbcrConversionInfo*	samplerConversionInfo = DE_NULL);
+	VkSamplerCreateInfo				getSamplerInfo				(const VkSamplerYcbcrConversionInfo*	samplerConversionInfo);
 	Move<VkDescriptorSetLayout>		createDescriptorSetLayout	(VkSampler sampler);
 	Move<VkDescriptorPool>			createDescriptorPool		(const deUint32 combinedSamplerDescriptorCount);
 	Move<VkDescriptorSet>			createDescriptorSet			(VkDescriptorPool		descPool,
@@ -107,15 +106,15 @@ LinearFilteringTestInstance::LinearFilteringTestInstance(Context& context, VkFor
 {
 }
 
-VkSamplerCreateInfo LinearFilteringTestInstance::getSamplerInfo(VkFilter minMagFilter, const VkSamplerYcbcrConversionInfo* samplerConversionInfo)
+VkSamplerCreateInfo LinearFilteringTestInstance::getSamplerInfo(const VkSamplerYcbcrConversionInfo* samplerConversionInfo)
 {
 	return
 	{
 		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
 		samplerConversionInfo,
 		0u,
-		minMagFilter,								// magFilter
-		minMagFilter,								// minFilter
+		VK_FILTER_LINEAR,							// magFilter
+		VK_FILTER_LINEAR,							// minFilter
 		VK_SAMPLER_MIPMAP_MODE_NEAREST,				// mipmapMode
 		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// addressModeU
 		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// addressModeV
@@ -294,7 +293,7 @@ tcu::TestStatus LinearFilteringTestInstance::iterate(void)
 	auto									physicalDevice		(m_context.getPhysicalDevice());
 	const Unique<VkSamplerYcbcrConversion>	conversion			(createYCbCrConversion());
 	const VkSamplerYcbcrConversionInfo		samplerConvInfo		{ VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO, DE_NULL, *conversion };
-	const VkSamplerCreateInfo				samplerCreateInfo	(getSamplerInfo(VK_FILTER_LINEAR, &samplerConvInfo));
+	const VkSamplerCreateInfo				samplerCreateInfo	(getSamplerInfo(&samplerConvInfo));
 	const Unique<VkSampler>					sampler				(createSampler(m_vkd, m_device, &samplerCreateInfo));
 
 	deUint32								combinedSamplerDescriptorCount = 1;
@@ -607,7 +606,8 @@ void LinearFilteringTestCase::checkSupport(Context& context) const
 	if ((featureFlags & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT) == 0)
 		TCU_THROW(NotSupportedError, "Linear filtering not supported for format");
 
-	if ((featureFlags & VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT) == 0)
+	if (m_chromaFiltering != VK_FILTER_LINEAR &&
+		(featureFlags & VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT) == 0)
 		TCU_THROW(NotSupportedError, "Different chroma, min, and mag filters not supported for format");
 }
 

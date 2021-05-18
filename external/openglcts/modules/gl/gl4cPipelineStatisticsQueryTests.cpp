@@ -85,6 +85,19 @@ const char* PipelineStatisticsQueryUtilities::dummy_cs_code =
 	"{\n"
 	"    atomicCounterIncrement(test_counter);\n"
 	"}\n";
+const char* PipelineStatisticsQueryUtilities::dummy_cs_code_arb =
+	"#version 330\n"
+	"#extension GL_ARB_compute_shader : require\n"
+	"#extension GL_ARB_shader_atomic_counters : require\n"
+	"\n"
+	"layout(local_size_x=1, local_size_y = 1, local_size_z = 1) in;\n"
+	"\n"
+	"layout(binding = 0) uniform atomic_uint test_counter;\n"
+	"\n"
+	"void main()\n"
+	"{\n"
+	"    atomicCounterIncrement(test_counter);\n"
+	"}\n";
 const char* PipelineStatisticsQueryUtilities::dummy_fs_code = "#version 130\n"
 															  "\n"
 															  "out vec4 result;\n"
@@ -4322,15 +4335,25 @@ bool PipelineStatisticsQueryTestFunctional8::executeTest(glw::GLenum current_que
 void PipelineStatisticsQueryTestFunctional8::initObjects()
 {
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	const char*			  cs_code = NULL;
 
 	/* This test should not execute if we don't have compute shaders */
-	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 3)) &&
-	    !m_context.getContextInfo().isExtensionSupported("GL_ARB_compute_shader"))
+	if (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 3)))
 	{
-		throw tcu::NotSupportedError("OpenGL 4.3+ / compute shaders required to run this test.");
+		cs_code = PipelineStatisticsQueryUtilities::dummy_cs_code;
+	}
+	else if (m_context.getContextInfo().isExtensionSupported("GL_ARB_compute_shader") &&
+	m_context.getContextInfo().isExtensionSupported("GL_ARB_shader_atomic_counters"))
+	{
+		cs_code = PipelineStatisticsQueryUtilities::dummy_cs_code_arb;
+	}
+	else
+	{
+		throw tcu::NotSupportedError("OpenGL 4.3+ / compute shaders and atomic counters required to run this test.");
 	}
 
-	buildProgram(PipelineStatisticsQueryUtilities::dummy_cs_code, DE_NULL, /* fs_body */
+	buildProgram(cs_code,
+				 DE_NULL,												   /* fs_body */
 				 DE_NULL,												   /* gs_body */
 				 DE_NULL,												   /* tc_body */
 				 DE_NULL,												   /* te_body */

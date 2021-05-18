@@ -151,25 +151,32 @@ bool isValueWithinBufferOrZero (const void* buffer, VkDeviceSize bufferSize, con
 	return isValueWithinBuffer(buffer, bufferSize, valuePtr, valueSizeInBytes) || isValueZero(valuePtr, valueSizeInBytes);
 }
 
+template<typename T>
+bool verifyVec4IntegerValues (const void* vecPtr)
+{
+	const T Tzero	= T{0};
+	const T Tone	= T{1};
+	const T	Tmax	= std::numeric_limits<T>::max();
+
+	T values[4];
+	deMemcpy(values, vecPtr, 4*sizeof(T));
+	return (values[0] == Tzero && values[1] == Tzero && values[2] == Tzero &&
+		    (values[3] == Tzero || values[3] == Tone || values[3] == Tmax));
+}
+
 bool verifyOutOfBoundsVec4 (const void* vecPtr, VkFormat bufferFormat)
 {
 	if (isUintFormat(bufferFormat))
 	{
-		const deUint32* data = (deUint32*)vecPtr;
-
-		return data[0] == 0u
-			&& data[1] == 0u
-			&& data[2] == 0u
-			&& (data[3] == 0u || data[3] == 1u || data[3] == std::numeric_limits<deUint32>::max());
+		if (bufferFormat == VK_FORMAT_R64_UINT)
+			return verifyVec4IntegerValues<deUint64>(vecPtr);
+		return verifyVec4IntegerValues<deUint32>(vecPtr);
 	}
 	else if (isIntFormat(bufferFormat))
 	{
-		const deInt32* data = (deInt32*)vecPtr;
-
-		return data[0] == 0
-			&& data[1] == 0
-			&& data[2] == 0
-			&& (data[3] == 0 || data[3] == 1 || data[3] == std::numeric_limits<deInt32>::max());
+		if (bufferFormat == VK_FORMAT_R64_SINT)
+			return verifyVec4IntegerValues<deInt64>(vecPtr);
+		return verifyVec4IntegerValues<deInt32>(vecPtr);
 	}
 	else if (isFloatFormat(bufferFormat))
 	{

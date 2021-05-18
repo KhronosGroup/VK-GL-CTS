@@ -1004,6 +1004,12 @@ bool BaseTest::verifyColorGradient(GLvoid* data, unsigned int texIndex, int func
 			GLuint color	= ((GLuint*)data)[index];
 			GLuint colorref = 0;
 
+// When data back from glReadPixels with arguments GL_RGBA + GL_UNSIGNED_BYTE,
+// we should reverse byte order in big-endian platform for (GLuint*) pointer.
+#if (DE_ENDIANNESS == DE_BIG_ENDIAN)
+            color = deReverseBytes32(color);
+#endif
+
 			switch (texIndex)
 			{
 			case packedTexImage:

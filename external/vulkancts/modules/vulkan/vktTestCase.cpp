@@ -66,7 +66,9 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_EXT_",
 		"VK_KHX_",
 		"VK_NV_cooperative_matrix",
+		"VK_EXT_extended_dynamic_state2",
 		"VK_NV_ray_tracing",
+        "VK_NV_inherited_viewport_scissor",
 		"VK_AMD_mixed_attachment_samples",
 		"VK_AMD_shader_fragment_mask",
 		"VK_AMD_buffer_marker",
@@ -316,8 +318,8 @@ public:
 	bool															isDevicePropertyInitialized				(VkStructureType sType) const { return m_deviceProperties.isDevicePropertyInitialized(sType);	}
 	const VkPhysicalDeviceProperties&								getDeviceProperties						(void) const { return m_deviceProperties.getCoreProperties2().properties;	}
 	const VkPhysicalDeviceProperties2&								getDeviceProperties2					(void) const { return m_deviceProperties.getCoreProperties2();				}
-	const VkPhysicalDeviceVulkan11Properties&						getVulkan11Properties					(void) const { return m_deviceProperties.getVulkan11Properties();			}
-	const VkPhysicalDeviceVulkan12Properties&						getVulkan12Properties					(void) const { return m_deviceProperties.getVulkan12Properties();			}
+	const VkPhysicalDeviceVulkan11Properties&						getDeviceVulkan11Properties				(void) const { return m_deviceProperties.getVulkan11Properties();			}
+	const VkPhysicalDeviceVulkan12Properties&						getDeviceVulkan12Properties				(void) const { return m_deviceProperties.getVulkan12Properties();			}
 
 #include "vkDevicePropertiesForDefaultDeviceDefs.inl"
 
@@ -372,7 +374,7 @@ namespace
 
 deUint32 sanitizeApiVersion(deUint32 v)
 {
-	return VK_MAKE_VERSION( VK_VERSION_MAJOR(v), VK_VERSION_MINOR(v), 0 );
+	return VK_MAKE_VERSION(VK_API_VERSION_MAJOR(v), VK_API_VERSION_MINOR(v), 0 );
 }
 
 #ifndef CTS_USES_VULKANSC
@@ -468,15 +470,17 @@ Context::~Context (void)
 {
 }
 
-deUint32								Context::getMaximumFrameworkVulkanVersion	(void) const { return m_device->getMaximumFrameworkVulkanVersion();		}
-deUint32								Context::getAvailableInstanceVersion		(void) const { return m_device->getAvailableInstanceVersion();	}
-const vector<string>&					Context::getInstanceExtensions				(void) const { return m_device->getInstanceExtensions();		}
-vk::VkInstance							Context::getInstance						(void) const { return m_device->getInstance();					}
-const vk::InstanceInterface&			Context::getInstanceInterface				(void) const { return m_device->getInstanceInterface();			}
-vk::VkPhysicalDevice					Context::getPhysicalDevice					(void) const { return m_device->getPhysicalDevice();			}
-deUint32								Context::getDeviceVersion					(void) const { return m_device->getDeviceVersion();				}
-const vk::VkPhysicalDeviceFeatures&		Context::getDeviceFeatures					(void) const { return m_device->getDeviceFeatures();			}
-const vk::VkPhysicalDeviceFeatures2&	Context::getDeviceFeatures2					(void) const { return m_device->getDeviceFeatures2();			}
+deUint32										Context::getMaximumFrameworkVulkanVersion		(void) const { return m_device->getMaximumFrameworkVulkanVersion();			}
+deUint32										Context::getAvailableInstanceVersion			(void) const { return m_device->getAvailableInstanceVersion();				}
+const vector<string>&							Context::getInstanceExtensions					(void) const { return m_device->getInstanceExtensions();					}
+vk::VkInstance									Context::getInstance							(void) const { return m_device->getInstance();								}
+const vk::InstanceInterface&					Context::getInstanceInterface					(void) const { return m_device->getInstanceInterface();						}
+vk::VkPhysicalDevice							Context::getPhysicalDevice						(void) const { return m_device->getPhysicalDevice();						}
+deUint32										Context::getDeviceVersion						(void) const { return m_device->getDeviceVersion();							}
+const vk::VkPhysicalDeviceFeatures&				Context::getDeviceFeatures						(void) const { return m_device->getDeviceFeatures();						}
+const vk::VkPhysicalDeviceFeatures2&			Context::getDeviceFeatures2						(void) const { return m_device->getDeviceFeatures2();						}
+const vk::VkPhysicalDeviceVulkan11Features&		Context::getDeviceVulkan11Features				(void) const { return m_device->getVulkan11Features();						}
+const vk::VkPhysicalDeviceVulkan12Features&		Context::getDeviceVulkan12Features				(void) const { return m_device->getVulkan12Features();						}
 
 bool Context::isDeviceFunctionalitySupported (const std::string& extension) const
 {
@@ -536,10 +540,16 @@ bool Context::isDeviceFunctionalitySupported (const std::string& extension) cons
 	{
 		if (extension == "VK_KHR_timeline_semaphore")
 			return !!getTimelineSemaphoreFeatures().timelineSemaphore;
+		if (extension == "VK_KHR_synchronization2")
+			return !!getSynchronization2Features().synchronization2;
 		if (extension == "VK_EXT_extended_dynamic_state")
 			return !!getExtendedDynamicStateFeaturesEXT().extendedDynamicState;
 		if (extension == "VK_EXT_shader_demote_to_helper_invocation")
 			return !!getShaderDemoteToHelperInvocationFeaturesEXT().shaderDemoteToHelperInvocation;
+#ifndef CTS_USES_VULKANSC
+		if (extension == "VK_KHR_workgroup_memory_explicit_layout")
+			return !!getWorkgroupMemoryExplicitLayoutFeatures().workgroupMemoryExplicitLayout;
+#endif // CTS_USES_VULKANSC
 
 		return true;
 	}
@@ -557,8 +567,10 @@ bool Context::isInstanceFunctionalitySupported(const std::string& extension) con
 
 #include "vkDeviceFeaturesForContextDefs.inl"
 
-const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties				(void) const { return m_device->getDeviceProperties();			}
-const vk::VkPhysicalDeviceProperties2&	Context::getDeviceProperties2				(void) const { return m_device->getDeviceProperties2();			}
+const vk::VkPhysicalDeviceProperties&			Context::getDeviceProperties				(void) const { return m_device->getDeviceProperties();			}
+const vk::VkPhysicalDeviceProperties2&			Context::getDeviceProperties2				(void) const { return m_device->getDeviceProperties2();			}
+const vk::VkPhysicalDeviceVulkan11Properties&	Context::getDeviceVulkan11Properties		(void) const { return m_device->getDeviceVulkan11Properties();	}
+const vk::VkPhysicalDeviceVulkan12Properties&	Context::getDeviceVulkan12Properties		(void) const { return m_device->getDeviceVulkan12Properties();	}
 
 #include "vkDevicePropertiesForContextDefs.inl"
 

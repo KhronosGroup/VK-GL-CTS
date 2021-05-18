@@ -438,7 +438,11 @@ GLWaiverTreeBuilder::GLWaiverTreeBuilder(const std::string&				waiverFile,
 
 bool GLWaiverTreeBuilder::matchVendor(const std::string& vendor) const
 {
-	return m_currentVendor == vendor;
+	return tcu::matchWildcards(vendor.cbegin(),
+							   vendor.cend(),
+							   m_currentVendor.cbegin(),
+							   m_currentVendor.cend(),
+							   false);
 }
 
 bool GLWaiverTreeBuilder::matchDevice(const std::string& device) const

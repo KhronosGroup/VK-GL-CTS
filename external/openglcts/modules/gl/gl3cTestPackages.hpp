@@ -32,6 +32,21 @@
 namespace gl3cts
 {
 
+class TestCaseWrapper : public tcu::TestCaseExecutor
+{
+public:
+	TestCaseWrapper(deqp::TestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism);
+	~TestCaseWrapper(void);
+
+	void init(tcu::TestCase* testCase, const std::string& path);
+	void deinit(tcu::TestCase* testCase);
+	tcu::TestNode::IterateResult iterate(tcu::TestCase* testCase);
+
+private:
+	deqp::TestPackage&				m_testPackage;
+	de::SharedPtr<tcu::WaiverUtil>	m_waiverMechanism;
+};
+
 class GL30TestPackage : public deqp::TestPackage
 {
 public:

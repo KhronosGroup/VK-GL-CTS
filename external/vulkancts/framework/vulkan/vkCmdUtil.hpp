@@ -110,12 +110,15 @@ void beginRenderPass (const DeviceInterface&	vk,
 void endRenderPass (const DeviceInterface&	vk,
 					const VkCommandBuffer	commandBuffer);
 
-void submitCommandsAndWait	(const DeviceInterface&	vk,
-							 const VkDevice			device,
-							 const VkQueue			queue,
-							 const VkCommandBuffer	commandBuffer,
-							 const bool				useDeviceGroups = false,
-							 const deUint32			deviceMask = 1u);
+void submitCommandsAndWait	(const DeviceInterface&			vk,
+							 const VkDevice					device,
+							 const VkQueue					queue,
+							 const VkCommandBuffer			commandBuffer,
+							 const bool						useDeviceGroups = false,
+							 const deUint32					deviceMask = 1u,
+							 const deUint32					waitSemaphoreCount = 0u,
+							 const VkSemaphore*				waitSemaphores = nullptr,
+							 const VkPipelineStageFlags*	waitStages = nullptr);
 
 } // vk
 

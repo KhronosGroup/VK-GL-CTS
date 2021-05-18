@@ -33,6 +33,7 @@
 #include <vector>
 #include <string>
 #include <thread>
+#include <limits>
 
 namespace vk
 {
@@ -475,8 +476,22 @@ void finishDeferredOperationThreaded (DeferredThreadParams* deferredThreadParams
 void finishDeferredOperation (const DeviceInterface&	vk,
 							  VkDevice					device,
 							  VkDeferredOperationKHR	deferredOperation,
-							  const deUint32			workerThreadCount)
+							  const deUint32			workerThreadCount,
+							  const bool				operationNotDeferred)
 {
+
+	if (operationNotDeferred)
+	{
+		// when the operation deferral returns VK_OPERATION_NOT_DEFERRED_KHR,
+		// the deferred operation should act as if no command was deferred
+		VK_CHECK(vk.getDeferredOperationResultKHR(device, deferredOperation));
+
+
+		// there is not need to join any threads to the deferred operation,
+		// so below can be skipped.
+		return;
+	}
+
 	if (workerThreadCount == 0)
 	{
 		VK_CHECK(finishDeferredOperation(vk, device, deferredOperation));
@@ -553,6 +568,18 @@ VkDeviceSize SerialStorage::getStorageSize ()
 	return m_storageSize;
 }
 
+deUint64 SerialStorage::getDeserializedSize ()
+{
+	deUint64		result		= 0;
+	const deUint8*	startPtr	= static_cast<deUint8*>(m_buffer->getAllocation().getHostPtr());
+
+	DE_ASSERT(sizeof(result) == DESERIALIZED_SIZE_SIZE);
+
+	deMemcpy(&result, startPtr + DESERIALIZED_SIZE_OFFSET, sizeof(result));
+
+	return result;
+}
+
 BottomLevelAccelerationStructure::~BottomLevelAccelerationStructure ()
 {
 }
@@ -578,7 +605,8 @@ void BottomLevelAccelerationStructure::setGeometryData (const std::vector<tcu::V
 	addGeometry(geometryData, triangles, geometryFlags);
 }
 
-void BottomLevelAccelerationStructure::setDefaultGeometryData (const VkShaderStageFlagBits	testStage)
+void BottomLevelAccelerationStructure::setDefaultGeometryData (const VkShaderStageFlagBits	testStage,
+															   const VkGeometryFlagsKHR		geometryFlags)
 {
 	bool					trianglesData	= false;
 	float					z				= 0.0f;
@@ -616,7 +644,7 @@ void BottomLevelAccelerationStructure::setDefaultGeometryData (const VkShaderSta
 
 	setGeometryCount(1u);
 
-	addGeometry(geometryData, trianglesData);
+	addGeometry(geometryData, trianglesData, geometryFlags);
 }
 
 void BottomLevelAccelerationStructure::setGeometryCount (const size_t geometryCount)
@@ -1073,9 +1101,8 @@ void BottomLevelAccelerationStructureKHR::build (const DeviceInterface&						vk,
 			VkResult result = vk.buildAccelerationStructuresKHR(device, deferredOperation, 1u, &accelerationStructureBuildGeometryInfoKHR, (const VkAccelerationStructureBuildRangeInfoKHR**)&accelerationStructureBuildRangeInfoKHRPtr);
 
 			DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-			DE_UNREF(result);
 
-			finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
+			finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 		}
 	}
 
@@ -1122,9 +1149,8 @@ void BottomLevelAccelerationStructureKHR::copyFrom (const DeviceInterface&						
 		VkResult result = vk.copyAccelerationStructureKHR(device, deferredOperation, &copyAccelerationStructureInfo);
 
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-		DE_UNREF(result);
 
-		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
+		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 	}
 
 	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
@@ -1169,9 +1195,8 @@ void BottomLevelAccelerationStructureKHR::serialize (const DeviceInterface&		vk,
 		const VkResult result = vk.copyAccelerationStructureToMemoryKHR(device, deferredOperation, &copyAccelerationStructureInfo);
 
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-		DE_UNREF(result);
 
-		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
+		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 	}
 }
 
@@ -1208,9 +1233,8 @@ void BottomLevelAccelerationStructureKHR::deserialize (const DeviceInterface&	vk
 		const VkResult result = vk.copyMemoryToAccelerationStructureKHR(device, deferredOperation, &copyAccelerationStructureInfo);
 
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-		DE_UNREF(result);
 
-		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
+		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 	}
 
 	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
@@ -1360,8 +1384,8 @@ void BottomLevelAccelerationStructure::createAndDeserializeFrom (const DeviceInt
 																 VkDeviceAddress							deviceAddress )
 {
 	DE_ASSERT(storage != NULL);
-	DE_ASSERT(storage->getStorageSize() != 0u);
-	create(vk, device, allocator, storage->getStorageSize(), deviceAddress);
+	DE_ASSERT(storage->getStorageSize() >= SerialStorage::SERIAL_STORAGE_SIZE_MIN);
+	create(vk, device, allocator, storage->getDeserializedSize(), deviceAddress);
 	deserialize(vk, device, cmdBuffer, storage);
 }
 
@@ -1437,8 +1461,8 @@ void TopLevelAccelerationStructure::createAndDeserializeFrom (const DeviceInterf
 															  VkDeviceAddress							deviceAddress)
 {
 	DE_ASSERT(storage != NULL);
-	DE_ASSERT(storage->getStorageSize() != 0u);
-	create(vk, device, allocator, storage->getStorageSize(), deviceAddress);
+	DE_ASSERT(storage->getStorageSize() >= SerialStorage::SERIAL_STORAGE_SIZE_MIN);
+	create(vk, device, allocator, storage->getDeserializedSize(), deviceAddress);
 	deserialize(vk, device, cmdBuffer, storage);
 }
 
@@ -1846,9 +1870,8 @@ void TopLevelAccelerationStructureKHR::build (const DeviceInterface&	vk,
 		VkResult result = vk.buildAccelerationStructuresKHR(device, deferredOperation, 1u, &accelerationStructureBuildGeometryInfoKHR, (const VkAccelerationStructureBuildRangeInfoKHR**)&accelerationStructureBuildRangeInfoKHRPtr);
 
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-		DE_UNREF(result);
 
-		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
+		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 
 		accelerationStructureBuildGeometryInfoKHR.pNext = DE_NULL;
 	}
@@ -1896,9 +1919,8 @@ void TopLevelAccelerationStructureKHR::copyFrom (const DeviceInterface&				vk,
 		VkResult result = vk.copyAccelerationStructureKHR(device, deferredOperation, &copyAccelerationStructureInfo);
 
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-		DE_UNREF(result);
 
-		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
+		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 	}
 
 	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
@@ -1944,9 +1966,8 @@ void TopLevelAccelerationStructureKHR::serialize (const DeviceInterface&	vk,
 		const VkResult result = vk.copyAccelerationStructureToMemoryKHR(device, deferredOperation, &copyAccelerationStructureInfo);
 
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-		DE_UNREF(result);
 
-		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
+		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 	}
 }
 
@@ -1983,9 +2004,8 @@ void TopLevelAccelerationStructureKHR::deserialize (const DeviceInterface&	vk,
 		const VkResult result = vk.copyMemoryToAccelerationStructureKHR(device, deferredOperation, &copyAccelerationStructureInfo);
 
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-		DE_UNREF(result);
 
-		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
+		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 	}
 
 	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
@@ -2157,12 +2177,22 @@ RayTracingPipeline::~RayTracingPipeline ()
 	else															\
 		TCU_THROW(InternalError, "Attempt to reassign shader")
 
-void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, Move<VkShaderModule> shaderModule, deUint32 group, const VkSpecializationInfo* specializationInfo)
+void RayTracingPipeline::addShader (VkShaderStageFlagBits					shaderStage,
+									Move<VkShaderModule>					shaderModule,
+									deUint32								group,
+									const VkSpecializationInfo*				specializationInfo,
+									const VkPipelineShaderStageCreateFlags	pipelineShaderStageCreateFlags,
+									const void*								pipelineShaderStageCreateInfopNext)
 {
-	addShader(shaderStage, makeVkSharedPtr(shaderModule), group, specializationInfo);
+	addShader(shaderStage, makeVkSharedPtr(shaderModule), group, specializationInfo, pipelineShaderStageCreateFlags, pipelineShaderStageCreateInfopNext);
 }
 
-void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, de::SharedPtr<Move<VkShaderModule>> shaderModule, deUint32 group, const VkSpecializationInfo* specializationInfoPtr)
+void RayTracingPipeline::addShader (VkShaderStageFlagBits					shaderStage,
+									de::SharedPtr<Move<VkShaderModule>>		shaderModule,
+									deUint32								group,
+									const VkSpecializationInfo*				specializationInfoPtr,
+									const VkPipelineShaderStageCreateFlags	pipelineShaderStageCreateFlags,
+									const void*								pipelineShaderStageCreateInfopNext)
 {
 	if (group >= m_shadersGroupCreateInfos.size())
 	{
@@ -2229,8 +2259,8 @@ void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, de::Share
 		const VkPipelineShaderStageCreateInfo	shaderCreateInfo	=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	//  VkStructureType						sType;
-			DE_NULL,												//  const void*							pNext;
-			(VkPipelineShaderStageCreateFlags)0,					//  VkPipelineShaderStageCreateFlags	flags;
+			pipelineShaderStageCreateInfopNext,						//  const void*							pNext;
+			pipelineShaderStageCreateFlags,							//  VkPipelineShaderStageCreateFlags	flags;
 			shaderStage,											//  VkShaderStageFlagBits				stage;
 			**shaderModule,											//  VkShaderModule						module;
 			"main",													//  const char*							pName;
@@ -2317,9 +2347,8 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 	if (m_deferredOperation)
 	{
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
-		DE_UNREF(result);
 
-		finishDeferredOperation(vk, device, deferredOperation.get(), m_workerThreadCount);
+		finishDeferredOperation(vk, device, deferredOperation.get(), m_workerThreadCount, result == VK_OPERATION_NOT_DEFERRED_KHR);
 	}
 
 	return pipeline;

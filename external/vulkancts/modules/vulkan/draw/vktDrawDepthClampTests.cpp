@@ -39,6 +39,7 @@
 #include "tcuTextureUtil.hpp"
 
 #include <cmath>
+#include <limits>
 
 namespace vkt
 {
@@ -462,7 +463,7 @@ public:
 		VkImageFormatProperties imageFormatProperties;
 		const auto&	vki		= context.getInstanceInterface();
 		const auto&	vkd		= context.getPhysicalDevice();
-		const auto	usage	= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		const auto	usage	= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		if (vki.getPhysicalDeviceImageFormatProperties(vkd, m_format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, usage, 0u, &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
 		{
 			TCU_THROW(NotSupportedError, "Format not supported");

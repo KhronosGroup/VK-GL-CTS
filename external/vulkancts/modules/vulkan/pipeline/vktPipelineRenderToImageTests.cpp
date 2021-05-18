@@ -1219,7 +1219,15 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 void checkImageViewTypeRequirements (Context& context, const VkImageViewType viewType)
 {
 	if (viewType == VK_IMAGE_VIEW_TYPE_3D)
+	{
+		if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		   !context.getPortabilitySubsetFeatures().imageView2DOn3DImage)
+		{
+			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support 2D or 2D array image view to be created on a 3D VkImage");
+		}
+
 		context.requireDeviceFunctionality("VK_KHR_maintenance1");
+	}
 
 	if (viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);

@@ -221,6 +221,7 @@ public:
 	 * GL_COMPUTE_SHADER_INVOCATIONS_ARB query works correctly.
 	 */
 	static const char* dummy_cs_code;
+	static const char* dummy_cs_code_arb;
 	/* Code of a fragment shader used by a number of functional tests */
 	static const char* dummy_fs_code;
 	/* Code of a tessellation control shader used by a functional test that verifies

@@ -1510,9 +1510,10 @@ void checkSupportFeatureBitInfluence (Context& context)
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
 }
 
-void createDevice (Context& context, void* pNext, const char* const* ppEnabledExtensionNames, deUint32 enabledExtensionCount)
+void createTestDevice (Context& context, void* pNext, const char* const* ppEnabledExtensionNames, deUint32 enabledExtensionCount)
 {
 	const PlatformInterface&				platformInterface		= context.getPlatformInterface();
+	const auto								validationEnabled		= context.getTestContext().getCommandLine().isValidationEnabled();
 	const Unique<VkInstance>				instance				(createDefaultInstance(platformInterface, context.getUsedApiVersion()));
 	const InstanceDriver					instanceDriver			(platformInterface, instance.get());
 	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance.get(), context.getTestContext().getCommandLine());
@@ -1543,7 +1544,7 @@ void createDevice (Context& context, void* pNext, const char* const* ppEnabledEx
 		ppEnabledExtensionNames,					//  const char* const*				ppEnabledExtensionNames;
 		DE_NULL,									//  const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
-	const Unique<VkDevice>					device					(createDevice(platformInterface, *instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+	const Unique<VkDevice>					device					(createCustomDevice(validationEnabled, platformInterface, *instance, instanceDriver, physicalDevice, &deviceCreateInfo));
 	const DeviceDriver						deviceDriver			(platformInterface, instance.get(), device.get());
 	const VkQueue							queue					= getDeviceQueue(deviceDriver, *device,  queueFamilyIndex, queueIndex);
 
@@ -1747,7 +1748,7 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate (Context& context)
 					if (featureDependencyTable[featureDependencyTableNdx].featurePtr == featurePtr)
 						featureDependencyTable[featureDependencyTableNdx].dependOnPtr[0] = DE_TRUE;
 
-				createDevice(context, &features2, DE_NULL, 0u);
+				createTestDevice(context, &features2, DE_NULL, 0u);
 			}
 		}
 
@@ -1782,7 +1783,7 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate (Context& context)
 						if (featureDependencyTable[featureDependencyTableNdx].featurePtr == featurePtr)
 							featureDependencyTable[featureDependencyTableNdx].dependOnPtr[0] = DE_TRUE;
 
-					createDevice(context, &features2, &extStringPtr, (extStringPtr == DE_NULL) ? 0u : 1u );
+					createTestDevice(context, &features2, &extStringPtr, (extStringPtr == DE_NULL) ? 0u : 1u );
 				}
 			}
 		}
@@ -3565,10 +3566,13 @@ void createFormatTests (tcu::TestCaseGroup* testGroup)
 	} s_formatRanges[] =
 	{
 		// core formats
-		{ (VkFormat)(VK_FORMAT_UNDEFINED+1),	VK_CORE_FORMAT_LAST										},
+		{ (VkFormat)(VK_FORMAT_UNDEFINED+1),		VK_CORE_FORMAT_LAST										},
 
 		// YCbCr formats
-		{ VK_FORMAT_G8B8G8R8_422_UNORM,			(VkFormat)(VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM+1)	},
+		{ VK_FORMAT_G8B8G8R8_422_UNORM,				(VkFormat)(VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM+1)	},
+
+		// YCbCr extended formats
+		{ VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT,	(VkFormat)(VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT+1)	},
 	};
 
 	for (int rangeNdx = 0; rangeNdx < DE_LENGTH_OF_ARRAY(s_formatRanges); ++rangeNdx)
@@ -4195,7 +4199,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		{
 			// If deviceLUIDValid is VK_FALSE, the contents of deviceLUID and deviceNodeMask are undefined
 			// so thay can only be compared when deviceLUIDValid is VK_TRUE.
-			if ((deMemCmp(idProperties[0].deviceLUID, idProperties[1].deviceLUID, VK_UUID_SIZE) != 0) ||
+			if ((deMemCmp(idProperties[0].deviceLUID, idProperties[1].deviceLUID, VK_LUID_SIZE) != 0) ||
 				(idProperties[0].deviceNodeMask		!= idProperties[1].deviceNodeMask))
 			{
 				TCU_FAIL("Mismatch between VkPhysicalDeviceIDProperties");
@@ -4364,7 +4368,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 
 		log << TestLog::Message << performanceQueryProperties[0] << TestLog::EndMessage;
 
-		if (performanceQueryProperties[0].allowCommandBufferQueryCopies != performanceQueryProperties[0].allowCommandBufferQueryCopies)
+		if (performanceQueryProperties[0].allowCommandBufferQueryCopies != performanceQueryProperties[1].allowCommandBufferQueryCopies)
 		{
 			TCU_FAIL("Mismatch between VkPhysicalDevicePerformanceQueryPropertiesKHR");
 		}
@@ -4417,6 +4421,29 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		    pciBusInfoProperties[0].pciFunction == DEUINT32_MAX)
 		{
 			TCU_FAIL("Invalid information in VkPhysicalDevicePCIBusInfoPropertiesEXT");
+		}
+	}
+
+	if (isExtensionSupported(properties, RequiredExtension("VK_KHR_portability_subset")))
+	{
+		VkPhysicalDevicePortabilitySubsetPropertiesKHR portabilitySubsetProperties[count];
+
+		for (int ndx = 0; ndx < count; ++ndx)
+		{
+			deMemset(&portabilitySubsetProperties[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePortabilitySubsetPropertiesKHR));
+			portabilitySubsetProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_PROPERTIES_KHR;
+			portabilitySubsetProperties[ndx].pNext = DE_NULL;
+
+			extProperties.pNext = &portabilitySubsetProperties[ndx];
+
+			vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+		}
+
+		log << TestLog::Message << portabilitySubsetProperties[0] << TestLog::EndMessage;
+
+		if (portabilitySubsetProperties[0].minVertexInputBindingStrideAlignment != portabilitySubsetProperties[1].minVertexInputBindingStrideAlignment)
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDevicePortabilitySubsetPropertiesKHR");
 		}
 	}
 
@@ -5148,7 +5175,7 @@ tcu::TestStatus devicePropertyExtensionsConsistencyVulkan12(Context& context)
 		{
 			// If deviceLUIDValid is VK_FALSE, the contents of deviceLUID and deviceNodeMask are undefined
 			// so thay can only be compared when deviceLUIDValid is VK_TRUE.
-			if ((deMemCmp(idProperties.deviceLUID, vulkan11Properties.deviceLUID, VK_UUID_SIZE) != 0) ||
+			if ((deMemCmp(idProperties.deviceLUID, vulkan11Properties.deviceLUID, VK_LUID_SIZE) != 0) ||
 				(idProperties.deviceNodeMask != vulkan11Properties.deviceNodeMask))
 			{
 				TCU_FAIL("Mismatch between VkPhysicalDeviceIDProperties and VkPhysicalDeviceVulkan11Properties");
@@ -5460,10 +5487,13 @@ void createImageFormatTypeTilingTests (tcu::TestCaseGroup* testGroup, ImageForma
 	} s_formatRanges[] =
 	{
 		// core formats
-		{ (VkFormat)(VK_FORMAT_UNDEFINED + 1),	VK_CORE_FORMAT_LAST,										params },
+		{ (VkFormat)(VK_FORMAT_UNDEFINED + 1),		VK_CORE_FORMAT_LAST,										params },
 
 		// YCbCr formats
-		{ VK_FORMAT_G8B8G8R8_422_UNORM_KHR,		(VkFormat)(VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR + 1),	params }
+		{ VK_FORMAT_G8B8G8R8_422_UNORM_KHR,			(VkFormat)(VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR + 1),	params },
+
+		// YCbCr extended formats
+		{ VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT,	(VkFormat)(VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT+1),	params },
 	};
 
 	for (int rangeNdx = 0; rangeNdx < DE_LENGTH_OF_ARRAY(s_formatRanges); ++rangeNdx)

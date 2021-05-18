@@ -716,7 +716,6 @@ void addComputeIndexingNon16BaseAlignmentTests (tcu::TestCaseGroup* group)
 		switch(chainOp)
 		{
 			case CHAIN_OP_ACCESS_CHAIN:
-				specs["chainop"] = "OpAccessChain %_ptr_float_sb %dataInput %uint_0 %uint_0";
 				specs["chainop"] = "OpAccessChain %_ptr_float_sb %dataInput %uint_0";
 				break;
 			case CHAIN_OP_PTR_ACCESS_CHAIN:

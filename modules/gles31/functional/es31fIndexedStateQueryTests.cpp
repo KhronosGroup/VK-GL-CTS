@@ -65,6 +65,9 @@ static const char* getVerifierSuffix (QueryType type)
 
 void isExtensionSupported (Context& context, std::string extensionName)
 {
+	if (contextSupports(context.getRenderContext().getType(), glu::ApiType::core(4, 5)))
+		return;
+
 	if (extensionName == "GL_EXT_draw_buffers_indexed" || extensionName == "GL_KHR_blend_equation_advanced")
 	{
 		if (!contextSupports(context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !context.getContextInfo().isExtensionSupported(extensionName.c_str()))

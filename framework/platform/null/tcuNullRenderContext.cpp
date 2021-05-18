@@ -193,6 +193,11 @@ Context::Context (ContextType ctxType_)
 		version					= "4.6.0";
 		shadingLanguageVersion	= "4.60";
 	}
+	else if (glu::isContextTypeGLCompatibility(ctxType) && ctxType.getMajorVersion() == 4 && ctxType.getMinorVersion() <= 2)
+	{
+		version					= "4.2.0";
+		shadingLanguageVersion	= "4.20";
+	}
 	else
 		throw tcu::NotSupportedError("Unsupported GL version", "", __FILE__, __LINE__);
 

@@ -1240,19 +1240,23 @@ public:
 
 	void init (void)
 	{
-		if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
-			if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic"))
-				throw tcu::NotSupportedError("Test requires OES_shader_image_atomic extension");
+		auto contextType = m_context.getRenderContext().getType();
+		if (!glu::contextSupports(contextType, glu::ApiType::es(3, 2)) &&
+			!glu::contextSupports(contextType, glu::ApiType::core(4, 5)) &&
+			!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic"))
+			TCU_THROW(NotSupportedError, "Test requires OES_shader_image_atomic extension");
 	}
 
 	IterateResult iterate (void)
 	{
-		const GLSLVersion			glslVersion		= glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
-		const bool					supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+		glu::ContextType			contextType			= m_context.getRenderContext().getType();
+		const GLSLVersion			glslVersion			= glu::getContextTypeGLSLVersion(contextType);
+		const bool					supportsES32orGL45	= glu::contextSupports(contextType, glu::ApiType::es(3, 2)) ||
+														  glu::contextSupports(contextType, glu::ApiType::core(4, 5));
 		std::ostringstream			src;
 
 		src << getGLSLVersionDeclaration(glslVersion) << "\n"
-			<< (supportsES32 ? "\n" : "#extension GL_OES_shader_image_atomic : require\n")
+			<< (supportsES32orGL45 ? "\n" : "#extension GL_OES_shader_image_atomic : require\n")
 			<< "layout (local_size_x = " << m_localSize << ") in;\n"
 			<< "layout(r32ui, binding = 1) uniform highp uimage2D u_dstImg;\n"
 			<< "buffer Input {\n"

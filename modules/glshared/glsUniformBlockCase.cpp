@@ -141,9 +141,9 @@ VarType::VarType (const VarType& elementType, int arraySize)
 	m_data.array.elementType	= new VarType(elementType);
 }
 
-VarType::VarType (const StructType* structPtr)
+VarType::VarType (const StructType* structPtr, deUint32 flags)
 	: m_type	(TYPE_STRUCT)
-	, m_flags	(0)
+	, m_flags	(flags)
 {
 	m_data.structPtr = structPtr;
 }
@@ -479,7 +479,8 @@ void computeStd140Layout (UniformLayout& layout, int& curOffset, int curBlockNdx
 		if (glu::isDataTypeMatrix(basicType))
 		{
 			// Array of vectors as specified in rules 5 & 7.
-			bool	isRowMajor	= !!(layoutFlags & LAYOUT_ROW_MAJOR);
+			bool	isRowMajor	= !!(((type.getFlags() & (LAYOUT_ROW_MAJOR | LAYOUT_COLUMN_MAJOR) ? type.getFlags() : layoutFlags) & LAYOUT_ROW_MAJOR));
+
 			int		vecSize		= isRowMajor ? glu::getDataTypeMatrixNumColumns(basicType)
 											 : glu::getDataTypeMatrixNumRows(basicType);
 			int		numVecs		= isRowMajor ? glu::getDataTypeMatrixNumRows(basicType)
@@ -529,7 +530,7 @@ void computeStd140Layout (UniformLayout& layout, int& curOffset, int curBlockNdx
 		{
 			// Array of matrices.
 			glu::DataType		elemBasicType	= elemType.getBasicType();
-			bool				isRowMajor		= !!(layoutFlags & LAYOUT_ROW_MAJOR);
+			bool				isRowMajor		= !!(((elemType.getFlags() & (LAYOUT_ROW_MAJOR | LAYOUT_COLUMN_MAJOR) ? elemType.getFlags() : layoutFlags) & LAYOUT_ROW_MAJOR));
 			int					vecSize			= isRowMajor ? glu::getDataTypeMatrixNumColumns(elemBasicType)
 															 : glu::getDataTypeMatrixNumRows(elemBasicType);
 			int					numVecs			= isRowMajor ? glu::getDataTypeMatrixNumRows(elemBasicType)
@@ -561,6 +562,11 @@ void computeStd140Layout (UniformLayout& layout, int& curOffset, int curBlockNdx
 	else
 	{
 		DE_ASSERT(type.isStructType());
+
+		// Override matrix packing layout flags in case the structure has them defined.
+		const deUint32 matrixLayoutMask = LAYOUT_ROW_MAJOR  | LAYOUT_COLUMN_MAJOR;
+		if (type.getFlags() & matrixLayoutMask)
+			layoutFlags = (layoutFlags & (~matrixLayoutMask)) | (type.getFlags() & matrixLayoutMask);
 
 		for (StructType::ConstIterator memberIter = type.getStruct().begin(); memberIter != type.getStruct().end(); memberIter++)
 			computeStd140Layout(layout, curOffset, curBlockNdx, curPrefix + "." + memberIter->getName(), memberIter->getType(), layoutFlags);
@@ -866,6 +872,8 @@ void generateDeclaration (std::ostringstream& src, const VarType& type, const ch
 
 		if (curType->isBasicType())
 		{
+			if ((curType->getFlags() & LAYOUT_MASK) != 0)
+				src << "layout(" << LayoutFlagsFmt(curType->getFlags() & LAYOUT_MASK) << ") ";
 			if ((curType->getFlags() & PRECISION_MASK) != 0)
 				src << PrecisionFlagsFmt(curType->getFlags() & PRECISION_MASK) << " ";
 			src << glu::getDataTypeName(curType->getBasicType());

@@ -1669,6 +1669,13 @@ std::string genShaderSourceTextureSize_sampler (NegativeTestContext& ctx, glu::S
 	return source.str();
 }
 
+static bool checkSupport(NegativeTestContext& ctx)
+{
+	auto ctxType = ctx.getRenderContext().getType();
+	return contextSupports(ctxType, glu::ApiType::es(3, 2)) ||
+		   contextSupports(ctxType, glu::ApiType::core(4, 5));
+}
+
 void texture_size_invalid_sampler (NegativeTestContext& ctx)
 {
 	ctx.beginSection("textureSize: Invalid sampler type - some overloads take two arguments while others take only one.");
@@ -1679,7 +1686,7 @@ void texture_size_invalid_sampler (NegativeTestContext& ctx)
 			ctx.beginSection("Verify shader: " + std::string(getShaderTypeName(s_shaders[shaderNdx])));
 			for (int dataTypeNdx = 0; dataTypeNdx < DE_LENGTH_OF_ARRAY(s_samplerTypes); ++dataTypeNdx)
 			{
-				if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.isExtensionSupported(getDataTypeExtension(s_samplerTypes[dataTypeNdx])))
+				if (checkSupport(ctx) || ctx.isExtensionSupported(getDataTypeExtension(s_samplerTypes[dataTypeNdx])))
 				{
 					ctx.beginSection("Verify sampler data type: " + std::string(getDataTypeName(s_samplerTypes[dataTypeNdx])));
 					const std::string shaderSource(genShaderSourceTextureSize_sampler(ctx, s_shaders[shaderNdx], s_samplerTypes[dataTypeNdx], glu::TYPE_INT));
@@ -1719,7 +1726,7 @@ void texture_size_invalid_lod (NegativeTestContext& ctx)
 			ctx.beginSection("Verify shader: " + std::string(getShaderTypeName(s_shaders[shaderNdx])));
 			for (int dataTypeNdx = 0; dataTypeNdx < DE_LENGTH_OF_ARRAY(s_samplerTypes); ++dataTypeNdx)
 			{
-				if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.isExtensionSupported(getDataTypeExtension(s_samplerTypes[dataTypeNdx])))
+				if (checkSupport(ctx) || ctx.isExtensionSupported(getDataTypeExtension(s_samplerTypes[dataTypeNdx])))
 				{
 					ctx.beginSection("Verify sampler/lod data type" + std::string(getDataTypeName(s_samplerTypes[dataTypeNdx])));
 					for (int dataTypeNdx2 = 0; dataTypeNdx2 < DE_LENGTH_OF_ARRAY(s_nonScalarIntTypes); ++dataTypeNdx2)
@@ -2194,7 +2201,7 @@ void texture_invalid_p (NegativeTestContext& ctx)
 				}
 
 				// SAMPLER_CUBE_ARRAY
-				if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.isExtensionSupported(getDataTypeExtension(glu::TYPE_SAMPLER_CUBE_ARRAY)))
+				if (checkSupport(ctx) || ctx.isExtensionSupported(getDataTypeExtension(glu::TYPE_SAMPLER_CUBE_ARRAY)))
 				{
 					if (s_floatTypes[dataTypeNdx] != glu::TYPE_FLOAT_VEC4)
 					{
@@ -2274,7 +2281,7 @@ void texture_invalid_p (NegativeTestContext& ctx)
 				}
 
 				// SAMPLER_CUBE_ARRAY_SHADOW
-				if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.isExtensionSupported(getDataTypeExtension(glu::TYPE_SAMPLER_CUBE_ARRAY_SHADOW)))
+				if (checkSupport(ctx) || ctx.isExtensionSupported(getDataTypeExtension(glu::TYPE_SAMPLER_CUBE_ARRAY_SHADOW)))
 				{
 					if (s_floatTypes[dataTypeNdx] != glu::TYPE_FLOAT_VEC4)
 					{
@@ -2499,7 +2506,7 @@ void texture_invalid_bias_or_compare (NegativeTestContext& ctx)
 				}
 
 				// SAMPLER_CUBE_ARRAY
-				if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.isExtensionSupported(getDataTypeExtension(glu::TYPE_SAMPLER_CUBE_ARRAY)))
+				if (checkSupport(ctx) || ctx.isExtensionSupported(getDataTypeExtension(glu::TYPE_SAMPLER_CUBE_ARRAY)))
 				{
 					if (s_floatTypes[dataTypeNdx] != glu::TYPE_FLOAT)
 					{
@@ -2543,7 +2550,7 @@ void texture_invalid_bias_or_compare (NegativeTestContext& ctx)
 				}
 
 				// SAMPLER_CUBE_ARRAY_SHADOW
-				if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.isExtensionSupported(getDataTypeExtension(glu::TYPE_SAMPLER_CUBE_ARRAY_SHADOW)))
+				if (checkSupport(ctx) || ctx.isExtensionSupported(getDataTypeExtension(glu::TYPE_SAMPLER_CUBE_ARRAY_SHADOW)))
 				{
 					if (s_floatTypes[dataTypeNdx] != glu::TYPE_FLOAT)
 					{
@@ -2591,7 +2598,7 @@ void texture_lod_invalid_p (NegativeTestContext& ctx)
 	DE_ASSERT(DE_LENGTH_OF_ARRAY(s_floatTypes) == DE_LENGTH_OF_ARRAY(s_intTypes));
 	DE_ASSERT(DE_LENGTH_OF_ARRAY(s_floatTypes) == DE_LENGTH_OF_ARRAY(s_uintTypes));
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.isExtensionSupported(getDataTypeExtension(glu::TYPE_SAMPLER_CUBE_ARRAY)))
+	if (checkSupport(ctx) || ctx.isExtensionSupported(getDataTypeExtension(glu::TYPE_SAMPLER_CUBE_ARRAY)))
 	{
 		ctx.beginSection("textureLod: Invalid P type.");
 		for (int shaderNdx = 0; shaderNdx < DE_LENGTH_OF_ARRAY(s_shaders); ++shaderNdx)
@@ -2653,7 +2660,7 @@ void texture_lod_invalid_lod (NegativeTestContext& ctx)
 	DE_ASSERT(DE_LENGTH_OF_ARRAY(s_floatTypes) == DE_LENGTH_OF_ARRAY(s_intTypes));
 	DE_ASSERT(DE_LENGTH_OF_ARRAY(s_floatTypes) == DE_LENGTH_OF_ARRAY(s_uintTypes));
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.isExtensionSupported(getDataTypeExtension(glu::TYPE_SAMPLER_CUBE_ARRAY)))
+	if (checkSupport(ctx) || ctx.isExtensionSupported(getDataTypeExtension(glu::TYPE_SAMPLER_CUBE_ARRAY)))
 	{
 		ctx.beginSection("textureLod: Invalid lod type.");
 		for (int shaderNdx = 0; shaderNdx < DE_LENGTH_OF_ARRAY(s_shaders); ++shaderNdx)
@@ -2759,7 +2766,7 @@ void texel_fetch_invalid_p (NegativeTestContext& ctx)
 	DE_ASSERT(DE_LENGTH_OF_ARRAY(s_floatTypes) == DE_LENGTH_OF_ARRAY(s_intTypes));
 	DE_ASSERT(DE_LENGTH_OF_ARRAY(s_floatTypes) == DE_LENGTH_OF_ARRAY(s_uintTypes));
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.isExtensionSupported(getDataTypeExtension(glu::TYPE_SAMPLER_CUBE_ARRAY)))
+	if (checkSupport(ctx) || ctx.isExtensionSupported(getDataTypeExtension(glu::TYPE_SAMPLER_CUBE_ARRAY)))
 	{
 		ctx.beginSection("texelFetch: Invalid P type.");
 		for (int shaderNdx = 0; shaderNdx < DE_LENGTH_OF_ARRAY(s_shaders); ++shaderNdx)
@@ -2908,7 +2915,7 @@ void texel_fetch_invalid_sample (NegativeTestContext& ctx)
 	DE_ASSERT(DE_LENGTH_OF_ARRAY(s_floatTypes) == DE_LENGTH_OF_ARRAY(s_intTypes));
 	DE_ASSERT(DE_LENGTH_OF_ARRAY(s_floatTypes) == DE_LENGTH_OF_ARRAY(s_uintTypes));
 
-	if (contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.isExtensionSupported(getDataTypeExtension(glu::TYPE_SAMPLER_CUBE_ARRAY)))
+	if (checkSupport(ctx) || ctx.isExtensionSupported(getDataTypeExtension(glu::TYPE_SAMPLER_CUBE_ARRAY)))
 	{
 		ctx.beginSection("texelFetch: Invalid sample type.");
 		for (int shaderNdx = 0; shaderNdx < DE_LENGTH_OF_ARRAY(s_shaders); ++shaderNdx)
@@ -3102,7 +3109,8 @@ std::string genShaderSourceTextureGrad (NegativeTestContext& ctx, glu::ShaderTyp
 
 void texture_grad (NegativeTestContext& ctx)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, ctx.isExtensionSupported("GL_EXT_texture_cube_map_array") || contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "Test requires support for GL_EXT_texture_cube_map_array or version 3.2.");
+	TCU_CHECK_AND_THROW(NotSupportedError, ctx.isExtensionSupported("GL_EXT_texture_cube_map_array") || checkSupport(ctx),
+		"Test requires support for GL_EXT_texture_cube_map_array or version 3.2.");
 
 	ctx.beginSection("textureGrad.");
 	for (int shaderNdx = 0; shaderNdx < DE_LENGTH_OF_ARRAY(s_shaders); ++shaderNdx)
@@ -3449,7 +3457,7 @@ void texture_gather_sampler_cube_array (NegativeTestContext& ctx)
 {
 	TCU_CHECK_AND_THROW(
 		NotSupportedError,
-		contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.isExtensionSupported("GL_EXT_texture_cube_map_array"),
+		checkSupport(ctx) || ctx.isExtensionSupported("GL_EXT_texture_cube_map_array"),
 		"Test requires extension GL_EXT_texture_cube_map_array or context version 3.2 or higher.");
 
 	ctx.beginSection("textureGrad - samplerCubeArray");
@@ -3508,7 +3516,7 @@ void texture_gather_sampler_cube_array_shadow (NegativeTestContext& ctx)
 {
 	TCU_CHECK_AND_THROW(
 		NotSupportedError,
-		contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.isExtensionSupported("GL_EXT_texture_cube_map_array"),
+		checkSupport(ctx) || ctx.isExtensionSupported("GL_EXT_texture_cube_map_array"),
 		"Test requires extension GL_EXT_texture_cube_map_array or context version 3.2 or higher.");
 
 	ctx.beginSection("textureGrad - samplerCubeArrayShadow");
@@ -4038,12 +4046,14 @@ std::string genShaderSourceInterpolateAt (NegativeTestContext& ctx, glu::ShaderT
 {
 	DE_ASSERT(function >= SHADER_FUNCTION_INTERPOLATED_AT_CENTROID && function <= SHADER_FUNCTION_INTERPOLATED_AT_OFFSET);
 
-	const bool			supportsES32 = contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	std::ostringstream	source;
+	auto		ctxType			= ctx.getRenderContext().getType();
+	const bool	isES32orGL45	= glu::contextSupports(ctxType, glu::ApiType::es(3, 2)) ||
+								  glu::contextSupports(ctxType, glu::ApiType::core(4, 5));
 
-	source	<< (supportsES32 ? glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES)) << "\n"
+	std::ostringstream	source;
+	source	<< (isES32orGL45 ? glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES)) << "\n"
 			<< getShaderInitialization(ctx, shaderType)
-			<< (supportsES32 ? "" : getShaderExtensionDeclaration("GL_OES_shader_multisample_interpolation"))
+			<< (isES32orGL45 ? "" : getShaderExtensionDeclaration("GL_OES_shader_multisample_interpolation"))
 			<< declareShaderInput(interpolantDataType, "interpolant")
 			<< "void main()\n"
 			<< "{\n";
@@ -4083,7 +4093,7 @@ std::string genShaderSourceInterpolateAt (NegativeTestContext& ctx, glu::ShaderT
 void interpolate_at_centroid (NegativeTestContext& ctx)
 {
 	TCU_CHECK_AND_THROW(NotSupportedError,
-		contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.isExtensionSupported("GL_OES_shader_multisample_interpolation"),
+		checkSupport(ctx) || ctx.isExtensionSupported("GL_OES_shader_multisample_interpolation"),
 		"This test requires a context version 3.2 or higher.");
 
 	ctx.beginSection("interpolateAtCentroid");
@@ -4125,7 +4135,7 @@ void interpolate_at_centroid (NegativeTestContext& ctx)
 void interpolate_at_sample (NegativeTestContext& ctx)
 {
 	TCU_CHECK_AND_THROW(NotSupportedError,
-		contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.isExtensionSupported("GL_OES_shader_multisample_interpolation"),
+		checkSupport(ctx) || ctx.isExtensionSupported("GL_OES_shader_multisample_interpolation"),
 		"This test requires a context version 3.2 or higher.");
 
 	ctx.beginSection("interpolateAtSample");
@@ -4185,7 +4195,7 @@ void interpolate_at_sample (NegativeTestContext& ctx)
 void interpolate_at_offset (NegativeTestContext& ctx)
 {
 	TCU_CHECK_AND_THROW(NotSupportedError,
-		contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.isExtensionSupported("GL_OES_shader_multisample_interpolation"),
+		checkSupport(ctx) || ctx.isExtensionSupported("GL_OES_shader_multisample_interpolation"),
 		"This test requires a context version 3.2 or higher.");
 
 	ctx.beginSection("interpolateAtOffset");
@@ -4287,7 +4297,7 @@ std::string genShaderSourceTextureGatherOffsets (NegativeTestContext& ctx, glu::
 void texture_gather_offsets (NegativeTestContext& ctx)
 {
 	TCU_CHECK_AND_THROW(NotSupportedError,
-		contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.isExtensionSupported("GL_EXT_gpu_shader5"),
+		checkSupport(ctx) || ctx.isExtensionSupported("GL_EXT_gpu_shader5"),
 		"This test requires a context version 3.2 or higher.");
 
 	const struct TextureGatherOffsetsTestSpec testSpecs[] =
@@ -4363,7 +4373,7 @@ std::string genShaderSourceFma (NegativeTestContext& ctx, glu::ShaderType shader
 void fma (NegativeTestContext& ctx)
 {
 	TCU_CHECK_AND_THROW(NotSupportedError,
-		contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) || ctx.isExtensionSupported("GL_EXT_gpu_shader5"),
+		checkSupport(ctx) || ctx.isExtensionSupported("GL_EXT_gpu_shader5"),
 		"This test requires a context version 3.2 or higher.");
 
 	ctx.beginSection("fma");

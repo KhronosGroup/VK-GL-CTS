@@ -28,6 +28,7 @@
 #include "vktSampleVerifier.hpp"
 #include "vktShaderExecutor.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktTextureTestUtil.hpp"
 
 #include "vkDeviceUtil.hpp"
 #include "vkImageUtil.hpp"
@@ -557,6 +558,7 @@ TextureFilteringTestInstance::TextureFilteringTestInstance (Context&					ctx,
 	, m_imParams				(testCaseData.imParams)
 	, m_samplerParams			(testCaseData.samplerParams)
 	, m_sampleLookupSettings	(testCaseData.sampleLookupSettings)
+	, m_numSamples				(0)
 	, m_levels					(testCaseData.pba)
 	, m_gen						(gen.release())
 {
@@ -951,6 +953,11 @@ public:
 	}
 
 	void initSpec (void);
+
+	void checkSupport (Context& context) const
+	{
+		util::checkTextureSupport(context, m_testCaseData.imParams.format);
+	}
 
 	virtual void initPrograms (vk::SourceCollections& programCollection) const
 	{

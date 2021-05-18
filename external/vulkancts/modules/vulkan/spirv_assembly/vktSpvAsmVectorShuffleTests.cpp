@@ -38,18 +38,19 @@ void createTests (tcu::TestCaseGroup* tests, const char* data_dir)
 
 	// Shader test files are saved in <path>/external/vulkancts/data/vulkan/amber/<data_dir>/<basename>.amber
 	struct Case {
-		const char* basename;
-		const char* description;
+		const char*                    basename;
+		const char*                    description;
+		std::vector<std::string>       requirements;
 	};
 	const Case cases[] =
 	{
-		{ "vector_shuffle", "OpVectorShuffle with indices including -1" },
+		{ "vector_shuffle", "OpVectorShuffle with indices including -1" , { "VariablePointerFeatures.variablePointers" } },
 	};
 
 	for (unsigned i = 0; i < sizeof(cases)/sizeof(cases[0]) ; ++i)
 	{
 		std::string					file		= std::string(cases[i].basename) + ".amber";
-		cts_amber::AmberTestCase	*testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].basename, cases[i].description, data_dir, file);
+		cts_amber::AmberTestCase	*testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].basename, cases[i].description, data_dir, file, cases[i].requirements);
 
 		tests->addChild(testCase);
 	}

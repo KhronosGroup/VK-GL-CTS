@@ -1,0 +1,10 @@
+dEQP-VK.clipping.clip_volume.depth_clip.point_list
+dEQP-VK.clipping.clip_volume.depth_clip.line_list
+dEQP-VK.clipping.clip_volume.depth_clip.line_list_with_adjacency
+dEQP-VK.clipping.clip_volume.depth_clip.line_strip
+dEQP-VK.clipping.clip_volume.depth_clip.line_strip_with_adjacency
+dEQP-VK.clipping.clip_volume.depth_clip.triangle_list
+dEQP-VK.clipping.clip_volume.depth_clip.triangle_list_with_adjacency
+dEQP-VK.clipping.clip_volume.depth_clip.triangle_strip
+dEQP-VK.clipping.clip_volume.depth_clip.triangle_strip_with_adjacency
+dEQP-VK.clipping.clip_volume.depth_clip.triangle_fan

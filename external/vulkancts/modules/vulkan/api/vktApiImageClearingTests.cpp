@@ -287,7 +287,7 @@ bool comparePixelToDepthClearValue (const ConstPixelBufferAccess&	access,
 		{
 			const float	depth			= access.getPixDepth(x, y);
 			const int	mantissaBits	= getTextureFormatMantissaBitDepth(format).x();
-			const int	threshold		= 10 * 1 << (23 - mantissaBits);
+			const int	threshold		= (10 * 1) << (23 - mantissaBits);
 
 			DE_ASSERT(mantissaBits <= 23);
 
@@ -1548,8 +1548,16 @@ TestStatus ClearDepthStencilImageTestInstance::iterate (void)
 
 	m_vkd.cmdClearDepthStencilImage(*m_commandBuffer, *m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_params.clearValue[0].depthStencil, 1, &subresourceRange);
 
-	if (m_twoStep)
+	if (m_twoStep) {
+		pipelineImageBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,				// VkPipelineStageFlags		srcStageMask
+							 VK_PIPELINE_STAGE_TRANSFER_BIT,				// VkPipelineStageFlags		dstStageMask
+							 VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			srcAccessMask
+							 VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			dstAccessMask
+							 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			oldLayout;
+							 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);			// VkImageLayout			newLayout;
+
 		m_vkd.cmdClearDepthStencilImage(*m_commandBuffer, *m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_params.clearValue[0].depthStencil, 1, &steptwoRange);
+    }
 
 	pipelineImageBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,					// VkPipelineStageFlags		srcStageMask
 						 VK_PIPELINE_STAGE_TRANSFER_BIT,					// VkPipelineStageFlags		dstStageMask
@@ -1948,7 +1956,10 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 //		VK_FORMAT_ASTC_12x10_UNORM_BLOCK,
 //		VK_FORMAT_ASTC_12x10_SRGB_BLOCK,
 //		VK_FORMAT_ASTC_12x12_UNORM_BLOCK,
-//		VK_FORMAT_ASTC_12x12_SRGB_BLOCK
+//		VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
+
+		VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
+		VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
 	};
 	const size_t	numOfColorImageFormatsToTest			= DE_LENGTH_OF_ARRAY(colorImageFormatsToTest);
 

@@ -183,6 +183,8 @@ private:
 	const VkAllocationCallbacks*	m_allocator;
 };
 
+#endif // CTS_USES_VULKANSC
+
 template<>
 class Deleter<VkDebugUtilsMessengerEXT>
 {
@@ -205,8 +207,6 @@ private:
 	VkInstance						m_instance;
 	const VkAllocationCallbacks*	m_allocator;
 };
-
-#endif // CTS_USES_VULKANSC
 
 template<>
 class Deleter<VkDescriptorSet>

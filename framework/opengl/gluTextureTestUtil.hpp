@@ -158,6 +158,8 @@ SamplerType		getFetchSamplerType	(tcu::TextureFormat format);
 // Similar to sampleTexture() except uses texelFetch.
 void			fetchTexture				(const tcu::SurfaceAccess& dst, const tcu::ConstPixelBufferAccess& src, const float* texCoord, const tcu::Vec4& colorScale, const tcu::Vec4& colorBias);
 
+void			sampleTexture				(const tcu::PixelBufferAccess& dst, const tcu::Texture2DView&	src, const float* texCoord, const ReferenceParams& params);
+
 void			sampleTexture				(const tcu::SurfaceAccess& dst, const tcu::Texture2DView&		src, const float* texCoord, const ReferenceParams& params);
 void			sampleTexture				(const tcu::SurfaceAccess& dst, const tcu::TextureCubeView&		src, const float* texCoord, const ReferenceParams& params);
 void			sampleTexture				(const tcu::SurfaceAccess& dst, const tcu::Texture2DArrayView&	src, const float* texCoord, const ReferenceParams& params);
@@ -355,6 +357,35 @@ int				computeTextureCompareDiff	(const tcu::ConstPixelBufferAccess&	result,
 											 const tcu::LodPrecision&			lodPrec,
 											 const tcu::Vec3&					nonShadowThreshold);
 
+int				computeTextureCompareDiff	(const tcu::ConstPixelBufferAccess&	result,
+											 const tcu::ConstPixelBufferAccess&	reference,
+											 const tcu::PixelBufferAccess&		errorMask,
+											 const tcu::Texture1DView&			src,
+											 const float*						texCoord,
+											 const ReferenceParams&				sampleParams,
+											 const tcu::TexComparePrecision&	comparePrec,
+											 const tcu::LodPrecision&			lodPrec,
+											 const tcu::Vec3&					nonShadowThreshold);
+
+int				computeTextureCompareDiff	(const tcu::ConstPixelBufferAccess&	result,
+											 const tcu::ConstPixelBufferAccess&	reference,
+											 const tcu::PixelBufferAccess&		errorMask,
+											 const tcu::Texture1DArrayView&		src,
+											 const float*						texCoord,
+											 const ReferenceParams&				sampleParams,
+											 const tcu::TexComparePrecision&	comparePrec,
+											 const tcu::LodPrecision&			lodPrec,
+											 const tcu::Vec3&					nonShadowThreshold);
+
+int				computeTextureCompareDiff	(const tcu::ConstPixelBufferAccess&	result,
+											 const tcu::ConstPixelBufferAccess&	reference,
+											 const tcu::PixelBufferAccess&		errorMask,
+											 const tcu::TextureCubeArrayView&	src,
+											 const float*						texCoord,
+											 const ReferenceParams&				sampleParams,
+											 const tcu::TexComparePrecision&	comparePrec,
+											 const tcu::LodPrecision&			lodPrec,
+											 const tcu::Vec3&					nonShadowThreshold);
 
 inline tcu::IVec4 getBitsVec (const tcu::PixelFormat& format)
 {

@@ -25,6 +25,7 @@
 
 #include "tcuDefs.hpp"
 #include "deCommandLine.hpp"
+#include "tcuTestCase.hpp"
 #include "deUniquePtr.hpp"
 
 #include <string>
@@ -114,6 +115,9 @@ public:
 	//! Check if test group passes the case fraction filter.
 	bool							checkCaseFraction			(int i, const std::string& testCaseName) const;
 
+	//! Check if test case runner is of supplied type
+	bool							checkRunnerType				(tcu::TestRunnerType type) const { return ((m_runnerType & type) == m_runnerType); }
+
 private:
 	CaseListFilter												(const CaseListFilter&);	// not allowed!
 	CaseListFilter&					operator=					(const CaseListFilter&);	// not allowed!
@@ -122,6 +126,7 @@ private:
 	de::MovePtr<const CasePaths>	m_casePaths;
 	std::vector<int>				m_caseFraction;
 	de::MovePtr<const CasePaths>	m_caseFractionMandatoryTests;
+	const tcu::TestRunnerType		m_runnerType;
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -225,6 +230,9 @@ public:
 	//! Print validation errors to standard error or keep them in the log only.
 	bool							printValidationErrors			(void) const;
 
+	//! Log of decompiled SPIR-V shader source (--deqp-log-decompiled-spirv)
+	bool							isLogDecompiledSpirvEnabled		(void) const;
+
 	//! Should we run tests that exhaust memory (--deqp-test-oom)
 	bool							isOutOfMemoryTestEnabled		(void) const;
 
@@ -257,6 +265,12 @@ public:
 
 	//! Get archive directory path
 	const char*						getArchiveDir				(void) const;
+
+	//! Get runner type (--deqp-runner-type)
+	tcu::TestRunnerType				getRunnerType				(void) const;
+
+	//! Should the run be terminated on first failure (--deqp-terminate-on-fail)
+	bool							isTerminateOnFailEnabled	(void) const;
 
 	/*--------------------------------------------------------------------*//*!
 	 * \brief Creates case list filter

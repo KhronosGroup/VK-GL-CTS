@@ -542,6 +542,10 @@ void FramebufferFetchTestCase::render (void)
 		0, 1, 2, 2, 3, 0,
 	};
 
+	GLuint vaoID;
+	m_gl.genVertexArrays(1, &vaoID);
+	m_gl.bindVertexArray(vaoID);
+
 	const GLuint	coordLocation	= m_gl.getAttribLocation(m_program->getProgram(), "a_position");
 
 	m_gl.viewport(0, 0, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
@@ -559,6 +563,8 @@ void FramebufferFetchTestCase::render (void)
 
 	m_gl.drawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, DE_NULL);
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "render()");
+
+	m_gl.deleteVertexArrays(1, &vaoID);
 }
 
 // Test description:

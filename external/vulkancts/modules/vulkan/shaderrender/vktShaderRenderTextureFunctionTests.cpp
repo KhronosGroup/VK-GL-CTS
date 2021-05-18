@@ -715,6 +715,19 @@ static void checkDeviceFeatures (Context& context, TextureType textureType)
 	}
 }
 
+static void checkMutableComparisonSamplersSupport(Context& context, const TextureSpec& textureSpec)
+{
+	// when compare mode is not none then ShaderRenderCaseInstance::createSamplerUniform
+	// uses mapSampler utill from vkImageUtil that sets compareEnable to true
+	// for portability this needs to be under feature flag
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+	   !context.getPortabilitySubsetFeatures().mutableComparisonSamplers &&
+	   (textureSpec.sampler.compare != tcu::Sampler::COMPAREMODE_NONE))
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: mutableComparisonSamplers are not supported by this implementation");
+	}
+}
+
 class ShaderTextureFunctionInstance : public ShaderRenderCaseInstance
 {
 public:
@@ -1184,6 +1197,7 @@ public:
 	virtual						~ShaderTextureFunctionCase		(void);
 
 	virtual TestInstance*		createInstance					(Context& context) const;
+	virtual void				checkSupport					(Context& context) const;
 
 protected:
 	const TextureLookupSpec		m_lookupSpec;
@@ -1216,6 +1230,11 @@ TestInstance* ShaderTextureFunctionCase::createInstance (Context& context) const
 	DE_ASSERT(m_evaluator != DE_NULL);
 	DE_ASSERT(m_uniformSetup != DE_NULL);
 	return new ShaderTextureFunctionInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_lookupSpec, m_textureSpec, m_lookupParams);
+}
+
+void ShaderTextureFunctionCase::checkSupport(Context& context) const
+{
+	checkMutableComparisonSamplersSupport(context, m_textureSpec);
 }
 
 void ShaderTextureFunctionCase::initShaderSources (void)
@@ -1438,6 +1457,7 @@ void ShaderTextureFunctionCase::initShaderSources (void)
 enum QueryFunction
 {
 	QUERYFUNCTION_TEXTURESIZE = 0,
+	QUERYFUNCTION_TEXTURESIZEMS,
 	QUERYFUNCTION_TEXTUREQUERYLOD,
 	QUERYFUNCTION_TEXTUREQUERYLEVELS,
 	QUERYFUNCTION_TEXTURESAMPLES,
@@ -1573,14 +1593,14 @@ static std::string getTextureSizeString (TextureType type, const tcu::IVec3& tex
 	return str.str();
 }
 
-static bool isValidCase (TextureType type, const tcu::IVec3& textureSize, int lod, int lodBase)
+static bool isValidCase (TextureType type, const tcu::IVec3& textureSize, int lodBase)
 {
-	const bool		isSquare		= textureSize.x() == textureSize.y();
-	const bool		isCubeArray		= isSquare && (textureSize.z() % 6) == 0;
-	const int		maxSize			= getMaxTextureSize(type, textureSize);
-	const bool		isLodValid		= (maxSize >> (lod + lodBase)) != 0;
+	const bool	isSquare	= textureSize.x() == textureSize.y();
+	const bool	isCubeArray	= isSquare && (textureSize.z() % 6) == 0;
+	const int	maxSize		= getMaxTextureSize(type, textureSize);
+	const bool	isBaseValid	= (maxSize >> lodBase) != 0;
 
-	if (!isLodValid)
+	if (!isBaseValid)
 		return false;
 	if (type == TEXTURETYPE_CUBE_MAP && !isSquare)
 		return false;
@@ -1770,7 +1790,7 @@ void TextureSizeInstance::setupUniforms (const tcu::Vec4& constCoords)
 void TextureSizeInstance::initTexture (void)
 {
 	tcu::TestLog&			log					= m_context.getTestContext().getLog();
-	const int				numLevels			= m_testSize.lod + m_testSize.lodBase + 1;
+	const int				numLevels			= deLog2Floor32(getMaxTextureSize(m_textureSpec.type, m_testSize.textureSize)) + 1;
 	TextureBindingSp		textureBinding;
 
 	log << tcu::TestLog::Message << "Testing image size " << getTextureSizeString(m_textureSpec.type, m_testSize.textureSize) << tcu::TestLog::EndMessage;
@@ -1867,6 +1887,18 @@ tcu::TestStatus TextureSizeInstance::iterate (void)
 		{ tcu::IVec3(128, 64, 32),		3,		1,	tcu::IVec3(8, 4, 2)			},
 		{ tcu::IVec3(64, 64, 64),		1,		1,	tcu::IVec3(16, 16, 16)		},
 
+		{ tcu::IVec3(100, 31, 18),		1,		2,	tcu::IVec3(12, 3, 2)		},
+		{ tcu::IVec3(100, 31, 18),		2,		2,	tcu::IVec3(6, 1, 1)			},
+		{ tcu::IVec3(100, 31, 18),		1,		4,	tcu::IVec3(3, 1, 1)			},
+
+		// out-of-range mip levels
+		{ tcu::IVec3(1, 3, 2),			-7,		0,	tcu::IVec3(0, 0, 0)			},
+		{ tcu::IVec3(1, 3, 2),			106,	0,	tcu::IVec3(0, 0, 0)			},
+		{ tcu::IVec3(100, 31, 18),		7,		0,	tcu::IVec3(0, 0, 0)			},
+		{ tcu::IVec3(32, 32, 12),		6,		0,	tcu::IVec3(0, 0, 0)			},
+		{ tcu::IVec3(32, 32, 12),		-9,		0,	tcu::IVec3(0, 0, 0)			},
+		{ tcu::IVec3(32, 32, 12),		4396,	0,	tcu::IVec3(0, 0, 0)			},
+
 		// w == h and d % 6 == 0 (for cube array)
 		{ tcu::IVec3(1, 1, 6),			0,		0,	tcu::IVec3(1, 1, 6)			},
 		{ tcu::IVec3(32, 32, 12),		0,		0,	tcu::IVec3(32, 32, 12)		},
@@ -1901,7 +1933,7 @@ bool TextureSizeInstance::testTextureSize (void)
 	bool					success			= true;
 
 	// skip incompatible cases
-	if (!isValidCase(m_textureSpec.type, m_testSize.textureSize, m_testSize.lod, m_testSize.lodBase))
+	if (!isValidCase(m_textureSpec.type, m_testSize.textureSize, m_testSize.lodBase))
 		return true;
 
 	// setup texture
@@ -1945,7 +1977,11 @@ bool TextureSizeInstance::testTextureSize (void)
 
 		for (int ndx = 0; ndx < resultComponents; ndx++)
 		{
-			if (output[ndx] != m_expectedSize[ndx])
+			// We test all levels, but only compare results for valid LoDs. The others give
+			// undefined values.
+			const int	maxSize		= getMaxTextureSize(m_textureSpec.type, m_testSize.textureSize);
+			const bool	isLodValid	= (maxSize >> (m_testSize.lod + m_testSize.lodBase)) != 0;
+			if (isLodValid && output[ndx] != m_expectedSize[ndx])
 			{
 				success = false;
 				break;
@@ -2006,6 +2042,202 @@ static vk::VkImageType getVkImageType (TextureType type)
 		default:
 			DE_ASSERT(false);
 			return (vk::VkImageType)0;
+	}
+}
+
+class TextureSizeMSInstance : public TextureQueryInstance
+{
+public:
+								TextureSizeMSInstance			(Context&					context,
+																 const bool					isVertexCase,
+																 const TextureSpec&			textureSpec);
+	virtual						~TextureSizeMSInstance			(void);
+
+	virtual tcu::TestStatus		iterate							(void);
+
+private:
+	void						initTexture						(vk::VkSampleCountFlagBits samples, const tcu::IVec3 &dim);
+	bool						testSize						(vk::VkSampleCountFlagBits samples, const tcu::IVec3 &dim);
+
+	unsigned								m_iterationCounter;
+	vector<vk::VkSampleCountFlagBits>		m_iterations;
+};
+
+TextureSizeMSInstance::TextureSizeMSInstance	(Context&				context,
+												const bool				isVertexCase,
+												const TextureSpec&		textureSpec)
+	: TextureQueryInstance		(context, isVertexCase, textureSpec)
+	, m_iterationCounter		(0)
+{
+	m_renderSize = tcu::UVec2(1, 1);
+
+	// determine available sample counts
+	{
+		const vk::VkFormat						format			= vk::mapTextureFormat(glu::mapGLInternalFormat(m_textureSpec.format));
+		const vk::VkImageType					imageType		= getVkImageType(m_textureSpec.type);
+		vk::VkImageFormatProperties				properties;
+
+		if (m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(m_context.getPhysicalDevice(),
+																					format,
+																					imageType,
+																					vk::VK_IMAGE_TILING_OPTIMAL,
+																					vk::VK_IMAGE_USAGE_SAMPLED_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+																					(vk::VkImageCreateFlags)0,
+																					&properties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Format not supported");
+
+		// NOTE: The test case initializes MS images (for all supported N of samples), runs a program
+		//       which invokes OpImageQuerySize against the image and checks the result.
+		//
+		//       Multisample images do not support a sample count of 1, so start from 2 samples.
+		static const vk::VkSampleCountFlagBits	sampleFlags[]	=
+		{
+			vk::VK_SAMPLE_COUNT_2_BIT,
+			vk::VK_SAMPLE_COUNT_4_BIT,
+			vk::VK_SAMPLE_COUNT_8_BIT,
+			vk::VK_SAMPLE_COUNT_16_BIT,
+			vk::VK_SAMPLE_COUNT_32_BIT,
+			vk::VK_SAMPLE_COUNT_64_BIT
+		};
+
+		for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(sampleFlags); samplesNdx++)
+		{
+			const vk::VkSampleCountFlagBits&	flag			= sampleFlags[samplesNdx];
+
+			if ((properties.sampleCounts & flag) != 0)
+				m_iterations.push_back(flag);
+		}
+
+		if (m_iterations.empty())
+		{
+			// Sampled images of integer formats may support only 1 sample. Exit the test with "Not supported" in these cases.
+			if (tcu::getTextureChannelClass(mapVkFormat(format).type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER ||
+				tcu::getTextureChannelClass(mapVkFormat(format).type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)
+			{
+				TCU_THROW(NotSupportedError, "Skipping validation of integer formats as only VK_SAMPLE_COUNT_1_BIT is supported.");
+			}
+
+			DE_ASSERT(false);
+		}
+	}
+}
+
+TextureSizeMSInstance::~TextureSizeMSInstance (void)
+{
+}
+
+tcu::TestStatus TextureSizeMSInstance::iterate (void)
+{
+	const tcu::IVec3 testSizes[] =
+	{
+		tcu::IVec3(1, 1, 1),
+		tcu::IVec3(1, 2, 1),
+		tcu::IVec3(1, 3, 2),
+		tcu::IVec3(1, 1, 6),
+		tcu::IVec3(32, 32, 12),
+		tcu::IVec3(64, 64, 64),
+		tcu::IVec3(100, 31, 18),
+		tcu::IVec3(100, 128, 32),
+		tcu::IVec3(128, 64, 32),
+	};
+
+	unsigned sampleIdx	= m_iterationCounter / DE_LENGTH_OF_ARRAY(testSizes);
+	unsigned dimIdx		= m_iterationCounter % DE_LENGTH_OF_ARRAY(testSizes);
+
+	if (m_iterationCounter++ <  m_iterations.size() * DE_LENGTH_OF_ARRAY(testSizes))
+	{
+		if (!testSize(m_iterations[sampleIdx], testSizes[dimIdx]))
+			return tcu::TestStatus::fail("Got unexpected result");
+
+		return tcu::TestStatus::incomplete();
+	}
+	else
+		return tcu::TestStatus::pass("Pass");
+}
+
+bool TextureSizeMSInstance::testSize (vk::VkSampleCountFlagBits samples, const tcu::IVec3 &dim)
+{
+	tcu::TestLog&		log		= m_context.getTestContext().getLog();
+
+	// setup texture
+	initTexture(samples, dim);
+
+	// render
+	TextureQueryInstance::render();
+
+	// test
+	{
+		const tcu::TextureLevel&	result				= getResultImage();
+		tcu::IVec4					output				= result.getAccess().getPixelInt(0, 0);
+		const int					resultComponents	= glu::getDataTypeScalarSize(getTextureSizeFuncResultType(m_textureSpec.type));
+
+		bool success = true;
+
+		for (int ndx = 0; ndx < resultComponents; ndx++)
+		{
+			if (output[ndx] != dim[ndx])
+			{
+				success = false;
+				break;
+			}
+		}
+
+		if (success)
+		{
+			// success
+			log << tcu::TestLog::Message << "Passed" << tcu::TestLog::EndMessage;
+			return true;
+		}
+		else
+		{
+			// failure
+			std::stringstream	resultSizeStr;
+			switch (resultComponents)
+			{
+				case 1:
+					resultSizeStr << output[0];
+					break;
+				case 2:
+					resultSizeStr << output.toWidth<2>();
+					break;
+				case 3:
+					resultSizeStr << output.toWidth<3>();
+					break;
+				default:
+					DE_ASSERT(false);
+					break;
+			}
+			log << tcu::TestLog::Message << "Result: " << resultSizeStr.str() << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Failed" << tcu::TestLog::EndMessage;
+			return false;
+		}
+	}
+}
+
+void TextureSizeMSInstance::initTexture (vk::VkSampleCountFlagBits samples, const tcu::IVec3 &dim)
+{
+	tcu::TestLog&			log					= m_context.getTestContext().getLog();
+	TextureBindingSp		textureBinding;
+
+	DE_ASSERT(m_textureSpec.type == TEXTURETYPE_2D || m_textureSpec.type == TEXTURETYPE_2D_ARRAY);
+
+	log << tcu::TestLog::Message << "Image size: " << getTextureSizeString(m_textureSpec.type, dim) << ", samples: " << samples << tcu::TestLog::EndMessage;
+
+	textureBinding = createEmptyTexture(m_textureSpec.format, m_textureSpec.type, dim, m_textureSpec.numLevels, 0 /* lodBase */, m_textureSpec.sampler);
+
+	m_textures.clear();
+	m_textures.push_back(textureBinding);
+
+	// update samples count
+	{
+		DE_ASSERT(m_textures.size() == 1);
+
+		TextureBinding::Parameters	params	= m_textures[0]->getParameters();
+
+		params.initialization	= TextureBinding::INIT_CLEAR;
+		params.samples			= samples;
+
+		m_textures[0]->setParameters(params);
 	}
 }
 
@@ -2286,7 +2518,7 @@ bool TextureQueryLevelsInstance::testTextureLevels (void)
 	bool					success			= true;
 
 	// skip incompatible cases
-	if (!isValidCase(m_textureSpec.type, m_testSize.textureSize, 0, m_testSize.lodBase))
+	if (!isValidCase(m_textureSpec.type, m_testSize.textureSize, m_testSize.lodBase))
 		return true;
 
 	// setup texture
@@ -2652,6 +2884,7 @@ public:
 	virtual						~TextureQueryCase				(void);
 
 	virtual TestInstance*		createInstance					(Context& context) const;
+	virtual void				checkSupport					(Context& context) const;
 
 protected:
 	void						initShaderSources				(void);
@@ -2685,6 +2918,7 @@ TestInstance* TextureQueryCase::createInstance (Context& context) const
 	switch (m_function)
 	{
 		case QUERYFUNCTION_TEXTURESIZE:				return new TextureSizeInstance(context, m_isVertexCase, m_textureSpec);
+		case QUERYFUNCTION_TEXTURESIZEMS:			return new TextureSizeMSInstance(context, m_isVertexCase, m_textureSpec);
 		case QUERYFUNCTION_TEXTUREQUERYLOD:			return new TextureQueryLodInstance(context, m_isVertexCase, m_textureSpec);
 		case QUERYFUNCTION_TEXTUREQUERYLEVELS:		return new TextureQueryLevelsInstance(context, m_isVertexCase, m_textureSpec);
 		case QUERYFUNCTION_TEXTURESAMPLES:			return new TextureSamplesInstance(context, m_isVertexCase, m_textureSpec);
@@ -2692,6 +2926,11 @@ TestInstance* TextureQueryCase::createInstance (Context& context) const
 			DE_ASSERT(false);
 			return DE_NULL;
 	}
+}
+
+void TextureQueryCase::checkSupport(Context& context) const
+{
+	checkMutableComparisonSamplersSupport(context, m_textureSpec);
 }
 
 void TextureQueryCase::initShaderSources (void)
@@ -2753,6 +2992,18 @@ void TextureQueryCase::initShaderSources (void)
 				const int		resultComponents	= glu::getDataTypeScalarSize(getTextureSizeFuncResultType(m_textureSpec.type));
 
 				op << "textureSize(u_sampler, u_lod)";
+				for (int ndx = 0; ndx < 3 - resultComponents; ndx++)
+					op << ", 0.0";
+				op << ", 1.0";
+
+				break;
+			}
+
+			case QUERYFUNCTION_TEXTURESIZEMS:
+			{
+				const int		resultComponents	= glu::getDataTypeScalarSize(getTextureSizeFuncResultType(m_textureSpec.type));
+
+				op << "textureSize(u_sampler)";
 				for (int ndx = 0; ndx < 3 - resultComponents; ndx++)
 					op << ", 0.0";
 				op << ", 1.0";
@@ -2890,6 +3141,7 @@ public:
 	virtual					~SparseShaderTextureFunctionCase	(void);
 
 	virtual	TestInstance*	createInstance						(Context& context) const;
+	virtual	void			checkSupport						(Context& context) const;
 protected:
 	void					initShaderSources					(void);
 };
@@ -3131,6 +3383,11 @@ TestInstance* SparseShaderTextureFunctionCase::createInstance (Context& context)
 	DE_ASSERT(m_evaluator != DE_NULL);
 	DE_ASSERT(m_uniformSetup != DE_NULL);
 	return new SparseShaderTextureFunctionInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_lookupSpec, m_textureSpec, m_lookupParams);
+}
+
+void SparseShaderTextureFunctionCase::checkSupport(Context& context) const
+{
+	checkMutableComparisonSamplersSupport(context, m_textureSpec);
 }
 
 static void createCaseGroup (tcu::TestCaseGroup* parent, const char* groupName, const char* groupDesc, const TexFuncCaseSpec* cases, int numCases)
@@ -4294,6 +4551,33 @@ void ShaderTextureFunctionTests::init (void)
 
 				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_vertex"),   "", caseSpec.samplerName, caseSpec.textureSpec, true,  QUERYFUNCTION_TEXTURESIZE));
 				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"), "", caseSpec.samplerName, caseSpec.textureSpec, false, QUERYFUNCTION_TEXTURESIZE));
+			}
+
+			queryGroup->addChild(group.release());
+		}
+
+		// textureSize() cases for multisample textures
+		{
+			const TexQueryFuncCaseSpec textureSizeMSCases[] =
+			{
+				{ "sampler2dms_fixed",			"sampler2DMS",				tex2DFixed			},
+				{ "sampler2dms_float",			"sampler2DMS",				tex2DFloat			},
+				{ "isampler2dms",				"isampler2DMS",				tex2DInt			},
+				{ "usampler2dms",				"usampler2DMS",				tex2DUint			},
+				{ "sampler2dmsarray_fixed",		"sampler2DMSArray",			tex2DArrayFixed		},
+				{ "sampler2dmsarray_float",		"sampler2DMSArray",			tex2DArrayFloat		},
+				{ "isampler2dmsarray",			"isampler2DMSArray",		tex2DArrayInt		},
+				{ "usampler2dmsarray",			"usampler2DMSArray",		tex2DArrayUint		},
+			};
+
+			de::MovePtr<tcu::TestCaseGroup>		group		(new tcu::TestCaseGroup(m_testCtx, "texturesizems", "textureSize() Tests for Multisample Textures"));
+
+			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(textureSizeMSCases); ++ndx)
+			{
+				const TexQueryFuncCaseSpec&		caseSpec	= textureSizeMSCases[ndx];
+
+				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_vertex"),   "", caseSpec.samplerName, caseSpec.textureSpec, true,  QUERYFUNCTION_TEXTURESIZEMS));
+				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"), "", caseSpec.samplerName, caseSpec.textureSpec, false, QUERYFUNCTION_TEXTURESIZEMS));
 			}
 
 			queryGroup->addChild(group.release());

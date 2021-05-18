@@ -72,7 +72,7 @@ class ImageSource
 public:
 	virtual								~ImageSource		(void) {}
 	virtual std::string					getRequiredExtension(void) const = 0;
-	virtual de::MovePtr<ClientBuffer>	createBuffer		(const glw::Functions& gl, tcu::Texture2D* reference = DE_NULL) const = 0;
+	virtual de::MovePtr<ClientBuffer>	createBuffer		(const eglw::Library& egl, const glw::Functions& gl, tcu::Texture2D* reference = DE_NULL) const = 0;
 	virtual eglw::EGLImageKHR			createImage			(const eglw::Library& egl, eglw::EGLDisplay dpy, eglw::EGLContext ctx, eglw::EGLClientBuffer clientBuffer) const = 0;
 	virtual glw::GLenum					getEffectiveFormat	(void) const = 0;
 };

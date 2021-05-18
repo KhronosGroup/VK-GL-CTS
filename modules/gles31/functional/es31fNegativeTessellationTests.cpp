@@ -45,7 +45,7 @@ using tcu::TestLog;
 using namespace glw;
 
 static const char* vertexShaderSource		=	"${GLSL_VERSION_STRING}\n"
-												"\n"
+												"${GLSL_PER_VERTEX_OUT}\n"
 												"void main (void)\n"
 												"{\n"
 												"	gl_Position = vec4(0.0);\n"
@@ -62,6 +62,8 @@ static const char* fragmentShaderSource		=	"${GLSL_VERSION_STRING}\n"
 
 static const char* tessControlShaderSource	=	"${GLSL_VERSION_STRING}\n"
 												"${GLSL_TESS_EXTENSION_STRING}\n"
+												"${GLSL_PER_VERTEX_IN_ARR}\n"
+												"${GLSL_PER_VERTEX_OUT_ARR}\n"
 												"layout (vertices=3) out;\n"
 												"\n"
 												"void main()\n"
@@ -71,6 +73,8 @@ static const char* tessControlShaderSource	=	"${GLSL_VERSION_STRING}\n"
 
 static const char* tessEvalShaderSource		=	"${GLSL_VERSION_STRING}\n"
 												"${GLSL_TESS_EXTENSION_STRING}\n"
+												"${GLSL_PER_VERTEX_IN_ARR}\n"
+												"${GLSL_PER_VERTEX_OUT}\n"
 												"layout(triangles) in;\n"
 												"\n"
 												"void main()\n"
@@ -86,7 +90,8 @@ static void checkExtensionSupport (NegativeTestContext& ctx, const char* extName
 
 static void checkTessellationSupport (NegativeTestContext& ctx)
 {
-	checkExtensionSupport(ctx, "GL_EXT_tessellation_shader");
+	if (glu::isContextTypeES(ctx.getRenderContext().getType()))
+		checkExtensionSupport(ctx, "GL_EXT_tessellation_shader");
 }
 
 // Helper for constructing tessellation pipeline sources.
@@ -105,14 +110,30 @@ static glu::ProgramSources makeTessPipelineSources (const std::string& vertexSrc
 	return sources;
 }
 
+map<string, string> constructSpecializationMap(NegativeTestContext& ctx)
+{
+	glu::GLSLVersion	glslVersion = glu::getContextTypeGLSLVersion(ctx.getRenderContext().getType());
+	bool				isES31		= (glslVersion == glu::GLSL_VERSION_310_ES);
+	string				ext			= isES31 ? "#extension GL_EXT_tessellation_shader : require" : "";
+	return
+	{
+		{ "GLSL_VERSION_STRING",		getGLSLVersionDeclaration(glslVersion) },
+		{ "GLSL_TESS_EXTENSION_STRING", ext },
+		{ "GLSL_PER_VERTEX_OUT",		"" },		// needed for GL4.5
+		{ "GLSL_PER_VERTEX_IN_ARR",		"" },
+		{ "GLSL_PER_VERTEX_OUT_ARR",	"" }
+	};
+}
+
 // Incomplete active tess shaders
 void single_tessellation_stage (NegativeTestContext& ctx)
 {
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	const bool					requireTES = !ctx.getContextInfo().isExtensionSupported("GL_NV_gpu_shader5");
-	map<string, string>			args;
-	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	args["GLSL_TESS_EXTENSION_STRING"]	= isES32 ? "" : "#extension GL_EXT_tessellation_shader : require";
+	// this case does not apply to GL4.5
+	if (!glu::isContextTypeES(ctx.getRenderContext().getType()))
+		return;
+
+	const bool			requireTES	= !ctx.getContextInfo().isExtensionSupported("GL_NV_gpu_shader5");
+	map<string, string>	args		= constructSpecializationMap(ctx);
 
 	checkTessellationSupport(ctx);
 
@@ -206,11 +227,7 @@ void invalid_primitive_mode (NegativeTestContext& ctx)
 {
 	checkTessellationSupport(ctx);
 
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	map<string, string>			args;
-	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	args["GLSL_TESS_EXTENSION_STRING"]	= isES32 ? "" : "#extension GL_EXT_tessellation_shader : require";
-
+	map<string, string> args = constructSpecializationMap(ctx);
 	glu::ShaderProgram program(ctx.getRenderContext(),
 							   makeTessPipelineSources(tcu::StringTemplate(vertexShaderSource).specialize(args),
 													   tcu::StringTemplate(fragmentShaderSource).specialize(args),
@@ -234,12 +251,8 @@ void tessellation_not_active (NegativeTestContext& ctx)
 {
 	checkTessellationSupport(ctx);
 
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	const glw::GLenum			tessErr = ctx.getContextInfo().isExtensionSupported("GL_NV_gpu_shader5") ? GL_NO_ERROR : GL_INVALID_OPERATION;
-	map<string, string>			args;
-	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	args["GLSL_TESS_EXTENSION_STRING"]	= isES32 ? "" : "#extension GL_EXT_tessellation_shader : require";
-
+	const glw::GLenum tessErr = ctx.getContextInfo().isExtensionSupported("GL_NV_gpu_shader5") ? GL_NO_ERROR : GL_INVALID_OPERATION;
+	map<string, string> args = constructSpecializationMap(ctx);
 	glu::ShaderProgram program(ctx.getRenderContext(),
 							   makeTessPipelineSources(tcu::StringTemplate(vertexShaderSource).specialize(args),
 													   tcu::StringTemplate(fragmentShaderSource).specialize(args),
@@ -247,6 +260,13 @@ void tessellation_not_active (NegativeTestContext& ctx)
 													   ""));	// missing tessEvalShaderSource
 	tcu::TestLog& log = ctx.getLog();
 	log << program;
+
+	GLuint vao = 0;
+	if (!glu::isContextTypeES(ctx.getRenderContext().getType()))
+	{
+		ctx.glGenVertexArrays(1, &vao);
+		ctx.glBindVertexArray(vao);
+	}
 
 	ctx.glUseProgram(program.getProgram());
 	ctx.expectError(GL_NO_ERROR);
@@ -257,26 +277,35 @@ void tessellation_not_active (NegativeTestContext& ctx)
 	ctx.endSection();
 
 	ctx.glUseProgram(0);
+
+	if (vao)
+		ctx.glDeleteVertexArrays(1, &vao);
 }
 
 void invalid_program_state (NegativeTestContext& ctx)
 {
 	checkTessellationSupport(ctx);
 
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	map<string, string>			args;
-	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	args["GLSL_TESS_EXTENSION_STRING"]	= isES32 ? "" : "#extension GL_EXT_tessellation_shader : require";
+	const glu::RenderContext&	rc		= ctx.getRenderContext();
+	map<string, string>			args	= constructSpecializationMap(ctx);
+
+	// for gl4.5 we need to add per vertex sections
+	if (!glu::isContextTypeES(rc.getType()))
+	{
+		args["GLSL_PER_VERTEX_OUT"]		= "out gl_PerVertex { vec4 gl_Position; };\n";
+		args["GLSL_PER_VERTEX_IN_ARR"]	= "in gl_PerVertex { vec4 gl_Position; } gl_in[];\n";
+		args["GLSL_PER_VERTEX_OUT_ARR"] = "out gl_PerVertex { vec4 gl_Position; } gl_out[];\n";
+	}
 
 	glu::FragmentSource frgSource(tcu::StringTemplate(fragmentShaderSource).specialize(args));
 	glu::TessellationControlSource tessCtrlSource(tcu::StringTemplate(tessControlShaderSource).specialize(args));
 	glu::TessellationEvaluationSource tessEvalSource(tcu::StringTemplate(tessEvalShaderSource).specialize(args));
 
-	glu::ProgramPipeline pipeline(ctx.getRenderContext());
+	glu::ProgramPipeline pipeline(rc);
 
-	glu::ShaderProgram	fragProgram	(ctx.getRenderContext(), glu::ProgramSources() << glu::ProgramSeparable(true) << frgSource);
-	glu::ShaderProgram	tessCtrlProgram	(ctx.getRenderContext(), glu::ProgramSources() << glu::ProgramSeparable(true) << tessCtrlSource);
-	glu::ShaderProgram	tessEvalProgram	(ctx.getRenderContext(), glu::ProgramSources() << glu::ProgramSeparable(true) << tessEvalSource);
+	glu::ShaderProgram	fragProgram	(rc, glu::ProgramSources() << glu::ProgramSeparable(true) << frgSource);
+	glu::ShaderProgram	tessCtrlProgram	(rc, glu::ProgramSources() << glu::ProgramSeparable(true) << tessCtrlSource);
+	glu::ShaderProgram	tessEvalProgram	(rc, glu::ProgramSources() << glu::ProgramSeparable(true) << tessEvalSource);
 
 	tcu::TestLog& log = ctx.getLog();
 	log << fragProgram << tessCtrlProgram << tessEvalProgram;
@@ -313,11 +342,7 @@ void tessellation_control_invalid_vertex_count (NegativeTestContext& ctx)
 														"	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
 														"}\n";
 
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	map<string, string>			args;
-	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	args["GLSL_TESS_EXTENSION_STRING"]	= isES32 ? "" : "#extension GL_EXT_tessellation_shader : require";
-
+	map<string, string> args = constructSpecializationMap(ctx);
 	int maxPatchVertices= 0;
 
 	ctx.beginSection("Output vertex count exceeds GL_MAX_PATCH_VERTICES.");

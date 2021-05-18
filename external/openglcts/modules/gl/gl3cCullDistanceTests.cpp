@@ -746,9 +746,10 @@ tcu::TestNode::IterateResult CullDistance::APICoverageTest::iterate()
 			std::string gs_body = gs_body_template;
 
 			static const glw::GLchar* tc_body_template =
-				"#version 400\n"
+				"#version 150\n"
 				"\n"
 				"#extension GL_ARB_cull_distance : require\n"
+				"#extension GL_ARB_tessellation_shader : require\n"
 				"\n"
 				"layout(vertices = 1) out;\n"
 				"\n"
@@ -771,9 +772,10 @@ tcu::TestNode::IterateResult CullDistance::APICoverageTest::iterate()
 			std::string tc_body = tc_body_template;
 
 			static const glw::GLchar* te_body_template =
-				"#version 400\n"
+				"#version 150\n"
 				"\n"
 				"#extension GL_ARB_cull_distance : require\n"
+				"#extension GL_ARB_tessellation_shader : require\n"
 				"\n"
 				"flat in  int INPUT_TE_NAME[];\n"
 				"flat out int out_te;\n"

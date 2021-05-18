@@ -310,6 +310,13 @@ public:
 					TCU_THROW(NotSupportedError, "Implementation does not support multiview feature");
 			}
 		}
+
+		if (m_params.topology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
+			context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+			!context.getPortabilitySubsetFeatures().triangleFans)
+		{
+			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
+		}
 	}
 
 	TestInstance*	createInstance	(Context& context) const
@@ -512,11 +519,13 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 	qpTestResult			res						= QP_TEST_RESULT_PASS;
 
 	const vk::VkClearColorValue clearColor = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-	int firstInstanceIndicesCount = 1;
+	int firstInstanceIndicesCount = DE_LENGTH_OF_ARRAY(firstInstanceIndices);
 
 	// Require 'drawIndirectFirstInstance' feature to run non-zero firstInstance indirect draw tests.
-	if (m_context.getDeviceFeatures().drawIndirectFirstInstance)
-		firstInstanceIndicesCount = DE_LENGTH_OF_ARRAY(firstInstanceIndices);
+	if (m_params.function == TestParams::FUNCTION_DRAW_INDIRECT && !m_context.getDeviceFeatures().drawIndirectFirstInstance)
+	{
+		firstInstanceIndicesCount = 1;
+	}
 
 	for (int instanceCountNdx = 0; instanceCountNdx < DE_LENGTH_OF_ARRAY(instanceCounts); instanceCountNdx++)
 	{

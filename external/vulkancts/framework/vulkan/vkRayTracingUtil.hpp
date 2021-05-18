@@ -34,11 +34,19 @@
 #include "tcuVectorType.hpp"
 
 #include <vector>
+#include <limits>
 
 namespace vk
 {
 
 #ifndef CTS_USES_VULKANSC
+
+constexpr VkShaderStageFlags	SHADER_STAGE_ALL_RAY_TRACING	= VK_SHADER_STAGE_RAYGEN_BIT_KHR
+																| VK_SHADER_STAGE_ANY_HIT_BIT_KHR
+																| VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
+																| VK_SHADER_STAGE_MISS_BIT_KHR
+																| VK_SHADER_STAGE_INTERSECTION_BIT_KHR
+																| VK_SHADER_STAGE_CALLABLE_BIT_KHR;
 
 const VkTransformMatrixKHR identityMatrix3x4 = { { { 1.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f, 0.0f } } };
 
@@ -461,6 +469,16 @@ VkDeviceAddress getBufferDeviceAddress ( const DeviceInterface&	vkd,
 class SerialStorage
 {
 public:
+	enum
+	{
+		DE_SERIALIZED_FIELD(DRIVER_UUID,		VK_UUID_SIZE),		// VK_UUID_SIZE bytes of data matching VkPhysicalDeviceIDProperties::driverUUID
+		DE_SERIALIZED_FIELD(COMPAT_UUID,		VK_UUID_SIZE),		// VK_UUID_SIZE bytes of data identifying the compatibility for comparison using vkGetDeviceAccelerationStructureCompatibilityKHR
+		DE_SERIALIZED_FIELD(SERIALIZED_SIZE,	sizeof(deUint64)),	// A 64-bit integer of the total size matching the value queried using VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR
+		DE_SERIALIZED_FIELD(DESERIALIZED_SIZE,	sizeof(deUint64)),	// A 64-bit integer of the deserialized size to be passed in to VkAccelerationStructureCreateInfoKHR::size
+		DE_SERIALIZED_FIELD(HANDLES_COUNT,		sizeof(deUint64)),	// A 64-bit integer of the count of the number of acceleration structure handles following. This will be zero for a bottom-level acceleration structure.
+		SERIAL_STORAGE_SIZE_MIN
+	};
+
 											SerialStorage		() = delete;
 											SerialStorage		(const DeviceInterface&						vk,
 																 const VkDevice								device,
@@ -473,6 +491,8 @@ public:
 	VkDeviceOrHostAddressConstKHR			getAddressConst		(const DeviceInterface&	vk,
 																 const VkDevice			device);
 	VkDeviceSize							getStorageSize		();
+	deUint64								getDeserializedSize	();
+
 protected:
 	VkAccelerationStructureBuildTypeKHR		m_buildType;
 	de::MovePtr<BufferWithMemory>			m_buffer;
@@ -492,7 +512,8 @@ public:
 	virtual void										setGeometryData							(const std::vector<tcu::Vec3>&					geometryData,
 																								 const bool										triangles,
 																								 const VkGeometryFlagsKHR						geometryFlags			= 0u );
-	virtual void										setDefaultGeometryData					(const VkShaderStageFlagBits					testStage);
+	virtual void										setDefaultGeometryData					(const VkShaderStageFlagBits					testStage,
+																								 const VkGeometryFlagsKHR						geometryFlags			= 0u );
 	virtual void										setGeometryCount						(const size_t									geometryCount);
 	virtual void										addGeometry								(de::SharedPtr<RaytracedGeometryBase>&			raytracedGeometry);
 	virtual void										addGeometry								(const std::vector<tcu::Vec3>&					geometryData,
@@ -692,11 +713,15 @@ public:
 	void														addShader					(VkShaderStageFlagBits									shaderStage,
 																							 Move<VkShaderModule>									shaderModule,
 																							 deUint32												group,
-																							 const VkSpecializationInfo*							specializationInfo = nullptr);
+																							 const VkSpecializationInfo*							specializationInfo = nullptr,
+																							 const VkPipelineShaderStageCreateFlags					pipelineShaderStageCreateFlags = static_cast<VkPipelineShaderStageCreateFlags>(0),
+																							 const void*											pipelineShaderStageCreateInfopNext = nullptr);
 	void														addShader					(VkShaderStageFlagBits									shaderStage,
 																							 de::SharedPtr<Move<VkShaderModule>>					shaderModule,
 																							 deUint32												group,
-																							 const VkSpecializationInfo*							specializationInfoPtr = nullptr);
+																							 const VkSpecializationInfo*							specializationInfoPtr = nullptr,
+																							 const VkPipelineShaderStageCreateFlags					pipelineShaderStageCreateFlags = static_cast<VkPipelineShaderStageCreateFlags>(0),
+																							 const void*											pipelineShaderStageCreateInfopNext = nullptr);
 	void														addLibrary					(de::SharedPtr<de::MovePtr<RayTracingPipeline>>			pipelineLibrary);
 	Move<VkPipeline>											createPipeline				(const DeviceInterface&									vk,
 																							 const VkDevice											device,

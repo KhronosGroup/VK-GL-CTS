@@ -266,6 +266,7 @@ VkImageFormatProperties getPhysicalDeviceImageFormatProperties (const InstanceIn
 	return properties;
 }
 
+#ifndef CTS_USES_VULKANSC
 std::vector<VkSparseImageFormatProperties> getPhysicalDeviceSparseImageFormatProperties(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling)
 {
 	deUint32								numProp = 0;
@@ -303,6 +304,7 @@ std::vector<VkSparseImageMemoryRequirements> getImageSparseMemoryRequirements(co
 
 	return requirements;
 }
+#endif // CTS_USES_VULKANSC
 
 VkMemoryRequirements getBufferMemoryRequirements (const DeviceInterface& vk, VkDevice device, VkBuffer buffer)
 {
@@ -523,6 +525,24 @@ const void* findStructureInChain (const void* first, VkStructureType type)
 void* findStructureInChain (void* first, VkStructureType type)
 {
 	return const_cast<void*>(findStructureInChain(const_cast<const void*>(first), type));
+}
+
+void appendStructurePtrToVulkanChain (const void**	chainHead, const void*	structurePtr)
+{
+	struct StructureBase
+	{
+		VkStructureType		sType;
+		const void*			pNext;
+	};
+
+	while (*chainHead != DE_NULL)
+	{
+		StructureBase* ptr = (StructureBase*)(*chainHead);
+
+		chainHead = &(ptr->pNext);
+	}
+
+	(*chainHead) = structurePtr;
 }
 
 // getStructureType<T> implementations

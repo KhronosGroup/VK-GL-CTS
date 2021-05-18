@@ -102,6 +102,7 @@ enum TexLookupScaleMode
 
 Vec4		computeFixedPointThreshold			(const IVec4& bits);
 Vec4		computeFloatingPointThreshold		(const IVec4& bits, const Vec4& value);
+Vec4		computeColorBitsThreshold			(const IVec4& bits, const IVec4& numAccurateBits);
 
 Vec2		computeLodBoundsFromDerivates		(const float dudx, const float dudy, const LodPrecision& prec);
 Vec2		computeLodBoundsFromDerivates		(const float dudx, const float dvdx, const float dudy, const float dvdy, const LodPrecision& prec);

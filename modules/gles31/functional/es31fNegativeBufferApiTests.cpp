@@ -169,7 +169,7 @@ void read_pixels (NegativeTestContext& ctx)
 	std::vector<GLubyte>	ubyteData	(4);
 	GLuint					fbo			= 0x1234;
 
-	ctx.beginSection("GL_INVALID_OPERATION is generated if the combination of format and type is unsupported.");
+	ctx.beginSection("Unsupported combinations of format and type will generate an GL_INVALID_OPERATION error.");
 	ctx.glReadPixels(0, 0, 1, 1, GL_LUMINANCE_ALPHA, GL_UNSIGNED_SHORT_4_4_4_4, &ubyteData[0]);
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.endSection();
@@ -201,14 +201,15 @@ void readn_pixels (NegativeTestContext& ctx)
 	GLuint					fbo			= 0x1234;
 
 	if (!contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2))
+		&& !contextSupports(ctx.getRenderContext().getType(), glu::ApiType::core(4, 5))
 		&& !ctx.isExtensionSupported("GL_KHR_robustness")
 		&& !ctx.isExtensionSupported("GL_EXT_robustness"))
 	{
 		TCU_THROW(NotSupportedError, "GLES 3.2 or robustness extension not supported");
 	}
 
-	ctx.beginSection("GL_INVALID_OPERATION is generated if the combination of format and type is unsupported.");
-	ctx.glReadnPixels(0, 0, 1, 1, GL_LUMINANCE_ALPHA, GL_UNSIGNED_SHORT_4_4_4_4, (int) ubyteData.size(), &ubyteData[0]);
+	ctx.beginSection("Unsupported combinations of format and type will generate an GL_INVALID_OPERATION error.");
+	ctx.glReadnPixels(0, 0, 1, 1, GL_LUMINANCE_ALPHA, GL_UNSIGNED_SHORT_4_4_4_4, (int)ubyteData.size(), &ubyteData[0]);
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.endSection();
 
@@ -246,18 +247,22 @@ void read_pixels_format_mismatch (NegativeTestContext& ctx)
 	GLint					readFormat	= 0x1234;
 	GLint					readType	= 0x1234;
 
+
 	ctx.beginSection("Unsupported combinations of format and type will generate an GL_INVALID_OPERATION error.");
-	ctx.glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_SHORT_5_6_5, &ushortData[0]);
-	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.glReadPixels(0, 0, 1, 1, GL_ALPHA, GL_UNSIGNED_SHORT_5_6_5, &ushortData[0]);
-	ctx.expectError(GL_INVALID_OPERATION);
-	ctx.glReadPixels(0, 0, 1, 1, GL_RGB, GL_UNSIGNED_SHORT_4_4_4_4, &ushortData[0]);
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.glReadPixels(0, 0, 1, 1, GL_ALPHA, GL_UNSIGNED_SHORT_4_4_4_4, &ushortData[0]);
 	ctx.expectError(GL_INVALID_OPERATION);
-	ctx.glReadPixels(0, 0, 1, 1, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, &ushortData[0]);
-	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.glReadPixels(0, 0, 1, 1, GL_ALPHA, GL_UNSIGNED_SHORT_5_5_5_1, &ushortData[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.endSection();
+
+	ctx.beginSection("Unsupported combinations of format and type will generate an GL_INVALID_OPERATION error.");
+	ctx.glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_SHORT_5_6_5, &ushortData[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.glReadPixels(0, 0, 1, 1, GL_RGB, GL_UNSIGNED_SHORT_4_4_4_4, &ushortData[0]);
+	ctx.expectError(GL_INVALID_OPERATION);
+	ctx.glReadPixels(0, 0, 1, 1, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, &ushortData[0]);
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.endSection();
 
@@ -277,6 +282,7 @@ void read_pixels_fbo_format_mismatch (NegativeTestContext& ctx)
 	std::vector<float>		floatData(4);
 	deUint32				fbo = 0x1234;
 	deUint32				texture = 0x1234;
+	bool					isES = glu::isContextTypeES(ctx.getRenderContext().getType());
 
 	ctx.glGenTextures			(1, &texture);
 	ctx.glBindTexture			(GL_TEXTURE_2D, texture);
@@ -293,7 +299,7 @@ void read_pixels_fbo_format_mismatch (NegativeTestContext& ctx)
 	ctx.glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	ctx.expectError				(GL_NO_ERROR);
 	ctx.glReadPixels			(0, 0, 1, 1, GL_RGBA, GL_FLOAT, &floatData[0]);
-	ctx.expectError				(GL_INVALID_OPERATION);
+	ctx.expectError				(isES ? GL_INVALID_OPERATION : GL_NO_ERROR);
 
 	ctx.glTexImage2D			(GL_TEXTURE_2D, 0, GL_RGBA32I, 32, 32, 0, GL_RGBA_INTEGER, GL_INT, NULL);
 	ctx.glFramebufferTexture2D	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
@@ -759,6 +765,7 @@ void draw_buffers (NegativeTestContext& ctx)
 	std::vector<deUint32>	values					(maxDrawBuffers+1);
 	std::vector<deUint32>	attachments				(4);
 	std::vector<GLfloat>	data					(32*32);
+	bool					isES					= glu::isContextTypeES(ctx.getRenderContext().getType());
 	values[0]				= GL_NONE;
 	values[1]				= GL_BACK;
 	values[2]				= GL_COLOR_ATTACHMENT0;
@@ -785,7 +792,7 @@ void draw_buffers (NegativeTestContext& ctx)
 	ctx.beginSection("GL_INVALID_OPERATION is generated if the GL is bound to a draw framebuffer and DrawBuffers is supplied with BACK or COLOR_ATTACHMENTm where m is greater than or equal to the value of MAX_COLOR_ATTACHMENTS.");
 	ctx.glBindFramebuffer		(GL_FRAMEBUFFER, fbo);
 	ctx.glDrawBuffers			(1, &values[1]);
-	ctx.expectError				(GL_INVALID_OPERATION);
+	ctx.expectError				(isES ? GL_INVALID_OPERATION : GL_INVALID_ENUM);
 	ctx.glDrawBuffers			(4, &attachments[0]);
 	ctx.expectError				(GL_INVALID_OPERATION);
 	ctx.endSection();
@@ -805,7 +812,7 @@ void draw_buffers (NegativeTestContext& ctx)
 	ctx.beginSection("GL_INVALID_OPERATION is generated if the GL is bound to a framebuffer object and the ith buffer listed in bufs is anything other than GL_NONE or GL_COLOR_ATTACHMENTSi.");
 	ctx.glBindFramebuffer		(GL_FRAMEBUFFER, fbo);
 	ctx.glDrawBuffers			(1, &values[1]);
-	ctx.expectError				(GL_INVALID_OPERATION);
+	ctx.expectError				(isES ? GL_INVALID_OPERATION : GL_INVALID_ENUM);
 	ctx.glDrawBuffers			(4, &attachments[0]);
 	ctx.expectError				(GL_INVALID_OPERATION);
 
@@ -950,6 +957,7 @@ void read_buffer (NegativeTestContext& ctx)
 	deUint32	fbo					= 0x1234;
 	deUint32	texture				= 0x1234;
 	int			maxColorAttachments	= 0x1234;
+	bool		isES				= glu::isContextTypeES(ctx.getRenderContext().getType());
 
 	ctx.glGetIntegerv			(GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachments);
 	ctx.glGenTextures			(1, &texture);
@@ -971,7 +979,7 @@ void read_buffer (NegativeTestContext& ctx)
 	ctx.glReadBuffer			(GL_COLOR_ATTACHMENT0 - 1);
 	ctx.expectError				(GL_INVALID_ENUM);
 	ctx.glReadBuffer			(GL_FRONT);
-	ctx.expectError				(GL_INVALID_ENUM);
+	ctx.expectError				(isES ? GL_INVALID_ENUM : GL_INVALID_OPERATION);
 
 	// \ note Spec isn't actually clear here, but it is safe to assume that
 	//		  GL_DEPTH_ATTACHMENT can't be interpreted as GL_COLOR_ATTACHMENTm
@@ -1289,6 +1297,7 @@ void renderbuffer_storage (NegativeTestContext& ctx)
 {
 	deUint32	rbo		= 0x1234;
 	GLint		maxSize	= 0x1234;
+	bool		isES	= glu::isContextTypeES(ctx.getRenderContext().getType());
 
 	ctx.glGenRenderbuffers		(1, &rbo);
 	ctx.glBindRenderbuffer		(GL_RENDERBUFFER, rbo);
@@ -1307,13 +1316,13 @@ void renderbuffer_storage (NegativeTestContext& ctx)
 	if (!ctx.isExtensionSupported("GL_EXT_color_buffer_half_float")) // GL_EXT_color_buffer_half_float disables error
 	{
 		ctx.glRenderbufferStorage	(GL_RENDERBUFFER, GL_RGB16F, 1, 1);
-		ctx.expectError				(GL_INVALID_ENUM);
+		ctx.expectError				(isES ? GL_INVALID_ENUM : GL_NO_ERROR);
 	}
 
 	if (!ctx.isExtensionSupported("GL_EXT_render_snorm")) // GL_EXT_render_snorm disables error
 	{
 		ctx.glRenderbufferStorage	(GL_RENDERBUFFER, GL_RGBA8_SNORM, 1, 1);
-		ctx.expectError				(GL_INVALID_ENUM);
+		ctx.expectError				(isES ? GL_INVALID_ENUM : GL_NO_ERROR);
 	}
 
 	ctx.endSection();
@@ -1471,11 +1480,12 @@ void blit_framebuffer (NegativeTestContext& ctx)
 	ctx.glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
 	ctx.endSection();
 
+	bool isES = glu::isContextTypeES(ctx.getRenderContext().getType());
 	ctx.beginSection("GL_INVALID_OPERATION is generated if the source and destination buffers are identical.");
 	ctx.glBindFramebuffer		(GL_DRAW_FRAMEBUFFER, fbo[0]);
 	ctx.expectError				(GL_NO_ERROR);
 	ctx.glBlitFramebuffer		(0, 0, 16, 16, 0, 0, 16, 16, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-	ctx.expectError				(GL_INVALID_OPERATION);
+	ctx.expectError				(isES ? GL_INVALID_OPERATION : GL_NO_ERROR);
 	// restore
 	ctx.glBindFramebuffer		(GL_DRAW_FRAMEBUFFER, fbo[1]);
 	ctx.endSection();
@@ -1509,25 +1519,27 @@ void blit_framebuffer_multisample (NegativeTestContext& ctx)
 
 	if (!ctx.isExtensionSupported("GL_NV_framebuffer_multisample"))
 	{
+		bool isES = glu::isContextTypeES(ctx.getRenderContext().getType());
+
 		ctx.beginSection("GL_INVALID_OPERATION is generated if the value of GL_SAMPLE_BUFFERS for the draw buffer is greater than zero.");
 		ctx.glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_RGBA8, 32, 32);
 		ctx.glFramebufferRenderbuffer		(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo[1]);
 		ctx.glBlitFramebuffer				(0, 0, 16, 16, 0, 0, 16, 16, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-		ctx.expectError						(GL_INVALID_OPERATION);
+		ctx.expectError						(isES ? GL_INVALID_OPERATION : GL_NO_ERROR);
 		ctx.endSection();
 
 		ctx.beginSection("GL_INVALID_OPERATION is generated if GL_SAMPLE_BUFFERS for the read buffer is greater than zero and the formats of draw and read buffers are not identical.");
 		ctx.glRenderbufferStorage			(GL_RENDERBUFFER, GL_RGBA4, 32, 32);
 		ctx.glFramebufferRenderbuffer		(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo[1]);
 		ctx.glBlitFramebuffer				(0, 0, 16, 16, 0, 0, 16, 16, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-		ctx.expectError						(GL_INVALID_OPERATION);
+		ctx.expectError						(isES ? GL_INVALID_OPERATION : GL_NO_ERROR);
 		ctx.endSection();
 
 		ctx.beginSection("GL_INVALID_OPERATION is generated if GL_SAMPLE_BUFFERS for the read buffer is greater than zero and the source and destination rectangles are not defined with the same (X0, Y0) and (X1, Y1) bounds.");
 		ctx.glRenderbufferStorage			(GL_RENDERBUFFER, GL_RGBA8, 32, 32);
 		ctx.glFramebufferRenderbuffer		(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo[1]);
 		ctx.glBlitFramebuffer				(0, 0, 16, 16, 2, 2, 18, 18, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-		ctx.expectError						(GL_INVALID_OPERATION);
+		ctx.expectError						(isES ? GL_INVALID_OPERATION : GL_NO_ERROR);
 		ctx.endSection();
 	}
 
@@ -1784,6 +1796,7 @@ void renderbuffer_storage_multisample (NegativeTestContext& ctx)
 	int			maxSamplesSupportedRGBA4	= -1;
 	int			maxSamplesSupportedRGBA8UI	= -1;
 	GLint		maxSize						= 0x1234;
+	bool		isES						= glu::isContextTypeES(ctx.getRenderContext().getType());
 
 	ctx.glGetInternalformativ				(GL_RENDERBUFFER, GL_RGBA4, GL_SAMPLES, 1, &maxSamplesSupportedRGBA4);
 	ctx.glGetInternalformativ				(GL_RENDERBUFFER, GL_RGBA8UI, GL_SAMPLES, 1, &maxSamplesSupportedRGBA8UI);
@@ -1810,13 +1823,13 @@ void renderbuffer_storage_multisample (NegativeTestContext& ctx)
 	if (!ctx.isExtensionSupported("GL_EXT_color_buffer_half_float")) // GL_EXT_color_buffer_half_float disables error
 	{
 		ctx.glRenderbufferStorageMultisample	(GL_RENDERBUFFER, 2, GL_RGB16F, 1, 1);
-		ctx.expectError							(GL_INVALID_ENUM);
+		ctx.expectError							(isES ? GL_INVALID_ENUM : GL_NO_ERROR);
 	}
 
 	if (!ctx.isExtensionSupported("GL_EXT_render_snorm")) // GL_EXT_render_snorm disables error
 	{
 		ctx.glRenderbufferStorageMultisample	(GL_RENDERBUFFER, 2, GL_RGBA8_SNORM, 1, 1);
-		ctx.expectError							(GL_INVALID_ENUM);
+		ctx.expectError							(isES ? GL_INVALID_ENUM : GL_NO_ERROR);
 	}
 
 	ctx.endSection();

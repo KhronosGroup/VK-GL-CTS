@@ -102,7 +102,7 @@ Vec4 linearToSRGB (const Vec4& cl)
 bool isSRGB (TextureFormat format)
 {
 	// make sure to update this if type table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 21);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 22);
 
 	return	format.order == TextureFormat::sR		||
 			format.order == TextureFormat::sRG		||
@@ -130,7 +130,7 @@ bool isCombinedDepthStencilType (TextureFormat::ChannelType type)
 
 bool hasStencilComponent (TextureFormat::ChannelOrder order)
 {
-	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 21);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 22);
 
 	switch (order)
 	{
@@ -145,7 +145,7 @@ bool hasStencilComponent (TextureFormat::ChannelOrder order)
 
 bool hasDepthComponent (TextureFormat::ChannelOrder order)
 {
-	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 21);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 22);
 
 	switch (order)
 	{
@@ -398,7 +398,7 @@ static Vec2 getFloatChannelValueRange (TextureFormat::ChannelType channelType)
 		case TextureFormat::FLOAT:							cMin = -1e5f;			cMax = 1e5f;			break;
 		case TextureFormat::FLOAT64:						cMin = -1e5f;			cMax = 1e5f;			break;
 		case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:	cMin = 0.0f;			cMax = 1e4f;			break;
-		case TextureFormat::UNSIGNED_INT_999_E5_REV:		cMin = 0.0f;			cMax = 1e5f;			break;
+		case TextureFormat::UNSIGNED_INT_999_E5_REV:		cMin = 0.0f;			cMax = 0.5e5f;			break;
 		case TextureFormat::UNSIGNED_BYTE_44:				cMin = 0.0f;			cMax = 15.f;			break;
 		case TextureFormat::UNSIGNED_SHORT_4444:			cMin = 0.0f;			cMax = 15.f;			break;
 		case TextureFormat::USCALED_INT8:					cMin = 0.0f;			cMax = 255.0f;			break;
@@ -569,10 +569,12 @@ static IVec4 getChannelBitDepth (TextureFormat::ChannelType channelType)
 		case TextureFormat::SIGNED_INT8:					return IVec4(8);
 		case TextureFormat::SIGNED_INT16:					return IVec4(16);
 		case TextureFormat::SIGNED_INT32:					return IVec4(32);
+		case TextureFormat::SIGNED_INT64:					return IVec4(64);
 		case TextureFormat::UNSIGNED_INT8:					return IVec4(8);
 		case TextureFormat::UNSIGNED_INT16:					return IVec4(16);
 		case TextureFormat::UNSIGNED_INT24:					return IVec4(24);
 		case TextureFormat::UNSIGNED_INT32:					return IVec4(32);
+		case TextureFormat::UNSIGNED_INT64:					return IVec4(64);
 		case TextureFormat::SIGNED_INT_1010102_REV:			return IVec4(10,10,10,2);
 		case TextureFormat::UNSIGNED_INT_1010102_REV:		return IVec4(10,10,10,2);
 		case TextureFormat::UNSIGNED_INT_16_8_8:			return IVec4(16,8,0,0);
@@ -831,7 +833,8 @@ void clearStencil (const PixelBufferAccess& access, int stencil)
 enum GradientStyle
 {
 	GRADIENT_STYLE_OLD = 0,
-	GRADIENT_STYLE_NEW = 1
+	GRADIENT_STYLE_NEW = 1,
+	GRADIENT_STYLE_PYRAMID = 2
 };
 
 static void fillWithComponentGradients1D (const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal, GradientStyle)
@@ -850,21 +853,59 @@ static void fillWithComponentGradients1D (const PixelBufferAccess& access, const
 	}
 }
 
-static void fillWithComponentGradients2D (const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal, GradientStyle)
+static void fillWithComponentGradients2D (const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal, GradientStyle style)
 {
-	for (int y = 0; y < access.getHeight(); y++)
+	if (style == GRADIENT_STYLE_PYRAMID)
 	{
-		for (int x = 0; x < access.getWidth(); x++)
+		int xedge = deFloorFloatToInt32(float(access.getWidth()) * 0.6f);
+		int yedge = deFloorFloatToInt32(float(access.getHeight()) * 0.6f);
+
+		for (int y = 0; y < access.getHeight(); y++)
 		{
-			float s = ((float)x + 0.5f) / (float)access.getWidth();
-			float t = ((float)y + 0.5f) / (float)access.getHeight();
+			for (int x = 0; x < access.getWidth(); x++)
+			{
+				float s = ((float)x + 0.5f) / (float)access.getWidth();
+				float t = ((float)y + 0.5f) / (float)access.getHeight();
+				float coefR = 0.0f;
+				float coefG = 0.0f;
+				float coefB = 0.0f;
+				float coefA = 0.0f;
 
-			float r = linearInterpolate((      s  +       t) *0.5f, minVal.x(), maxVal.x());
-			float g = linearInterpolate((      s  + (1.0f-t))*0.5f, minVal.y(), maxVal.y());
-			float b = linearInterpolate(((1.0f-s) +       t) *0.5f, minVal.z(), maxVal.z());
-			float a = linearInterpolate(((1.0f-s) + (1.0f-t))*0.5f, minVal.w(), maxVal.w());
+				coefR = (x < xedge) ? s * 0.4f : (1 - s) * 0.6f;
+				coefG = (x < xedge) ? s * 0.4f : (1 - s) * 0.6f;
+				coefB = (x < xedge) ? (1.0f - s) * 0.4f : s * 0.6f - 0.2f;
+				coefA = (x < xedge) ? (1.0f - s) * 0.4f : s * 0.6f - 0.2f;
 
-			access.setPixel(tcu::Vec4(r, g, b, a), x, y);
+				coefR += (y < yedge) ? t * 0.4f : (1 - t) * 0.6f;
+				coefG += (y < yedge) ? (1.0f - t) * 0.4f : t * 0.6f - 0.2f;
+				coefB += (y < yedge) ? t * 0.4f : (1 - t) * 0.6f;
+				coefA += (y < yedge) ? (1.0f - t) * 0.4f : t * 0.6f - 0.2f;
+
+				float r = linearInterpolate(coefR, minVal.x(), maxVal.x());
+				float g = linearInterpolate(coefG, minVal.y(), maxVal.y());
+				float b = linearInterpolate(coefB, minVal.z(), maxVal.z());
+				float a = linearInterpolate(coefA, minVal.w(), maxVal.w());
+
+				access.setPixel(tcu::Vec4(r, g, b, a), x, y);
+			}
+		}
+	}
+	else
+	{
+		for (int y = 0; y < access.getHeight(); y++)
+		{
+			for (int x = 0; x < access.getWidth(); x++)
+			{
+				float s = ((float)x + 0.5f) / (float)access.getWidth();
+				float t = ((float)y + 0.5f) / (float)access.getHeight();
+
+				float r = linearInterpolate((s + t) *0.5f, minVal.x(), maxVal.x());
+				float g = linearInterpolate((s + (1.0f - t))*0.5f, minVal.y(), maxVal.y());
+				float b = linearInterpolate(((1.0f - s) + t) *0.5f, minVal.z(), maxVal.z());
+				float a = linearInterpolate(((1.0f - s) + (1.0f - t))*0.5f, minVal.w(), maxVal.w());
+
+				access.setPixel(tcu::Vec4(r, g, b, a), x, y);
+			}
 		}
 	}
 }
@@ -940,6 +981,11 @@ void fillWithComponentGradients (const PixelBufferAccess& access, const Vec4& mi
 void fillWithComponentGradients2 (const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal)
 {
 	fillWithComponentGradientsStyled(access, minVal, maxVal, GRADIENT_STYLE_NEW);
+}
+
+void fillWithComponentGradients3(const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal)
+{
+	fillWithComponentGradientsStyled(access, minVal, maxVal, GRADIENT_STYLE_PYRAMID);
 }
 
 static void fillWithGrid1D (const PixelBufferAccess& access, int cellSize, const Vec4& colorA, const Vec4& colorB)
@@ -1569,7 +1615,7 @@ tcu::TextureCubeArrayView getEffectiveTextureView (const tcu::TextureCubeArrayVi
 static const TextureSwizzle& getBorderColorReadSwizzle (TextureFormat::ChannelOrder order)
 {
 	// make sure to update these tables when channel orders are updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 21);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 22);
 
 	static const TextureSwizzle INV		= {{ TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
 	static const TextureSwizzle R		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
@@ -1598,6 +1644,7 @@ static const TextureSwizzle& getBorderColorReadSwizzle (TextureFormat::ChannelOr
 		case TextureFormat::RGB:		swizzle = &RGB;		break;
 		case TextureFormat::RGBA:		swizzle = &RGBA;	break;
 		case TextureFormat::ARGB:		swizzle = &RGBA;	break;
+		case TextureFormat::ABGR:		swizzle = &RGBA;	break;
 		case TextureFormat::BGR:		swizzle = &RGB;		break;
 		case TextureFormat::BGRA:		swizzle = &RGBA;	break;
 		case TextureFormat::sR:			swizzle = &R;		break;

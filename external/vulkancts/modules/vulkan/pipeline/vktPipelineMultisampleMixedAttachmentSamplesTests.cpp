@@ -1477,6 +1477,7 @@ struct WorkingData
 
 	WorkingData (void)
 		: numVertices		()
+		, colorBufferSize	(0)
 	{
 	}
 };

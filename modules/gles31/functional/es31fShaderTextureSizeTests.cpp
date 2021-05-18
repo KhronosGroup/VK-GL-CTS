@@ -100,6 +100,7 @@ private:
 
 	glw::GLuint				m_texture;
 	glw::GLuint				m_vbo;
+	glw::GLuint				m_vao;
 	glu::ShaderProgram*		m_shader;
 	std::vector<tcu::IVec3>	m_iterations;
 	int						m_iteration;
@@ -115,6 +116,7 @@ TextureSizeCase::TextureSizeCase (Context& context, const char* name, const char
 	, m_isArrayType			(m_type == TEXTURE_FLOAT_2D_ARRAY || m_type == TEXTURE_INT_2D_ARRAY || m_type == TEXTURE_UINT_2D_ARRAY)
 	, m_texture				(0)
 	, m_vbo					(0)
+	, m_vao					(0)
 	, m_shader				(DE_NULL)
 	, m_iteration			(0)
 	, m_allIterationsPassed	(true)
@@ -159,11 +161,13 @@ void TextureSizeCase::init (void)
 		tcu::Vec4( 1.0f, -1.0f, 0.0f, 1.0f)
 	};
 
-	const glw::Functions&	gl					= m_context.getRenderContext().getFunctions();
-	const bool				supportsES32		= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	glu::RenderContext&		rc					= m_context.getRenderContext();
+	const glw::Functions&	gl					= rc.getFunctions();
+	const bool				supportsES32orGL45	= glu::contextSupports(rc.getType(), glu::ApiType::es(3, 2)) ||
+												  glu::contextSupports(rc.getType(), glu::ApiType::core(4, 5));
 
 	// requirements
-	if (m_isArrayType && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	if (m_isArrayType && !supportsES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 		TCU_THROW(NotSupportedError, "Test requires OES_texture_storage_multisample_2d_array extension");
 
 	if (m_context.getRenderTarget().getWidth() < 1 || m_context.getRenderTarget().getHeight() < 1)
@@ -192,6 +196,9 @@ void TextureSizeCase::init (void)
 	gl.genBuffers(1, &m_vbo);
 	gl.bindBuffer(GL_ARRAY_BUFFER, m_vbo);
 	gl.bufferData(GL_ARRAY_BUFFER, sizeof(fullscreenQuad), fullscreenQuad, GL_STATIC_DRAW);
+
+	if (!glu::isContextTypeES(m_context.getRenderContext().getType()))
+		gl.genVertexArrays(1, &m_vao);
 
 	// gen iterations
 
@@ -242,6 +249,12 @@ void TextureSizeCase::deinit (void)
 	{
 		m_context.getRenderContext().getFunctions().deleteBuffers(1, &m_vbo);
 		m_vbo = 0;
+	}
+
+	if (m_vao)
+	{
+		m_context.getRenderContext().getFunctions().deleteVertexArrays(1, &m_vao);
+		m_vao = 0;
 	}
 
 	if (m_shader)
@@ -346,10 +359,11 @@ std::string TextureSizeCase::genFragmentSource (void)
 	else
 		args["SIZETYPE"] = "ivec3";
 
-	const glu::ContextType	contextType	= m_context.getRenderContext().getType();
-	const bool				supportsES32	= glu::contextSupports(contextType, glu::ApiType::es(3, 2));
+	const glu::ContextType	contextType			= m_context.getRenderContext().getType();
+	const bool				supportsES32orGL45	= glu::contextSupports(contextType, glu::ApiType::es(3, 2)) ||
+												  glu::contextSupports(contextType, glu::ApiType::core(4, 5));
 
-	if (m_isArrayType && !supportsES32)
+	if (m_isArrayType && !supportsES32orGL45)
 		args["EXTENSION_STATEMENT"] = "#extension GL_OES_texture_storage_multisample_2d_array : require\n";
 	else
 		args["EXTENSION_STATEMENT"] = "";
@@ -439,6 +453,9 @@ void TextureSizeCase::runShader (tcu::Surface& dst, const tcu::IVec3& size)
 	gl.clear(GL_COLOR_BUFFER_BIT);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "clear");
 
+	if (m_vao)
+		gl.bindVertexArray(m_vao);
+
 	gl.bindBuffer(GL_ARRAY_BUFFER, m_vbo);
 	gl.vertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
 	gl.enableVertexAttribArray(positionLoc);
@@ -460,6 +477,8 @@ void TextureSizeCase::runShader (tcu::Surface& dst, const tcu::IVec3& size)
 
 	gl.disableVertexAttribArray(positionLoc);
 	gl.useProgram(0);
+	if (m_vao)
+		gl.bindVertexArray(0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "cleanup");
 
 	gl.finish();

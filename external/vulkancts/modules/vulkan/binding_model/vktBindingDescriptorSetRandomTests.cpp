@@ -397,12 +397,16 @@ deInt32 randRange(deRandom *rnd, deInt32 min, deInt32 max)
 
 void chooseWritesRandomly(vk::VkDescriptorType type, RandomLayout& randomLayout, deRandom& rnd, deUint32 set, deUint32 binding, deUint32 count)
 {
+	// Make sure the type supports writes.
 	switch (type)
 	{
+	case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+	case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
 	case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-		// Disable writes for these descriptor types.
-		return;
+	case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+		break;
 	default:
+		DE_ASSERT(false);
 		break;
 	}
 
@@ -894,16 +898,9 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 								break;
 							default: DE_ASSERT(0);
 							}
-							if (m_data.indexType == INDEX_TYPE_DEPENDENT || m_data.indexType == INDEX_TYPE_RUNTIME_SIZE)
-							{
-								// Set accum to zero, it is added to the next index.
-								checks << "  accum = temp - " << descriptor << ";\n";
-							}
-							else
-							{
-								// Accumulate any incorrect values.
-								checks << "  accum |= temp - " << descriptor << ";\n";
-							}
+
+							// Accumulate any incorrect values.
+							checks << "  accum |= temp - " << descriptor << ";\n";
 						}
 						else
 						{
@@ -1777,7 +1774,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &preStorageImageBarrier);
 					vk.cmdClearColorImage(*cmdBuffer, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue, 1, &clearRange);
-					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, m_data.allShaderStages, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postStorageImageBarrier);
+					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, m_data.allPipelineStages, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postStorageImageBarrier);
 
 					++storageImgIndex;
 				}
@@ -2449,9 +2446,9 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 			VK_SUBPASS_EXTERNAL,							// deUint32				srcSubpass
 			0,												// deUint32				dstSubpass
 			VK_PIPELINE_STAGE_TRANSFER_BIT,					// VkPipelineStageFlags	srcStageMask
-			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags	dstStageMask
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // dstStageMask
 			VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags		srcAccessMask
-			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT | VK_ACCESS_SHADER_READ_BIT,	//	dstAccessMask
+			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT  | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,	//	dstAccessMask
 			VK_DEPENDENCY_BY_REGION_BIT						// VkDependencyFlags	dependencyFlags
 		};
 

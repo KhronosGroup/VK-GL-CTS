@@ -1,0 +1,153 @@
+#!amber
+# Copyright 2020 Google LLC.
+# Copyright 2020 The Khronos Group Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This test draws two quads with depth values 0.3 and 0.5. Based on the equation in
+# Vulkan spec 26.12.3 the effective constant bias o is calculated as follows:
+
+# Both quads have a constant depth value, thus the maximum depth slope m is zero.
+# The maximum exponent e is taken from the constant depth value.
+# For depth value 0.3 e is -2, and for value 0.5 it's -1.
+
+# 32bit float format has a mantissa size of 23 making n = 23.
+# The minimum resolvable difference r is calculated as r = 2^(e-n).
+
+# Thus the constant bias o values are:
+# 4194304 * r = 4194304 * 2^(-2-23) = 4194304 * 2^-25 = 0.125
+# and
+# 4194304 * r = 4194304 * 2^(-1-23) = 4194304 * 2^-24 = 0.25
+
+# Adding this to the existing quad depth values should result as
+# 0.3 + 0.125 = 0.425 and 0.5 + 0.25 = 0.75.
+
+# The depth buffer is dumped as a RGBA8 image making the expected results
+# roughly 0.425 * 255 = 108 and 0.75 * 255 = 191.
+
+SHADER vertex vert_shader GLSL
+#version 430
+
+layout(location = 0) in vec4 position;
+layout(location = 0) out vec4 frag_color;
+
+layout(set = 0, binding = 0) readonly buffer block1 {
+  vec4 in_color;
+  float depth;
+};
+
+void main() {
+  gl_Position = vec4(position.xy, depth, 1.0);
+  frag_color = in_color;
+}
+END
+
+SHADER fragment frag_shader GLSL
+#version 430
+
+layout(location = 0) in vec4 frag_color;
+layout(location = 0) out vec4 final_color;
+
+void main() {
+  final_color = frag_color;
+}
+END
+
+SHADER vertex vert_shader_tex GLSL
+#version 430
+layout(location = 0) in vec4 position;
+layout(location = 1) in vec2 texcoords_in;
+layout(location = 0) out vec2 texcoords_out;
+void main() {
+  gl_Position = position;
+  texcoords_out = texcoords_in;
+}
+END
+
+SHADER fragment frag_shader_tex GLSL
+#version 430
+layout(location = 0) in vec2 texcoords_in;
+layout(location = 0) out vec4 color_out;
+uniform layout(set=0, binding=0) sampler2D tex_sampler;
+void main() {
+  float f = texture(tex_sampler, texcoords_in).r;
+  color_out = vec4(f, f, f, 1);
+}
+END
+
+BUFFER data_buf1 DATA_TYPE float DATA  1.0 0.0  0.0 1.0 0.3 END
+BUFFER data_buf2 DATA_TYPE float DATA  0.0 1.0  0.0 1.0 0.5 END
+
+BUFFER position DATA_TYPE vec2<float> DATA
+-1.0 -1.0
+ 1.0 -1.0
+-1.0  1.0
+ 1.0  1.0
+END
+BUFFER texcoords DATA_TYPE vec2<float> DATA
+0.0 0.0
+1.0 0.0
+0.0 1.0
+1.0 1.0
+END
+
+BUFFER framebuffer FORMAT B8G8R8A8_UNORM
+BUFFER ddump FORMAT B8G8R8A8_UNORM
+BUFFER depthstencil FORMAT D32_SFLOAT
+
+SAMPLER sampler
+
+PIPELINE graphics pipeline1
+  ATTACH vert_shader
+  ATTACH frag_shader
+
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER framebuffer AS color LOCATION 0
+  BIND BUFFER depthstencil AS depth_stencil
+  BIND BUFFER data_buf1 AS storage DESCRIPTOR_SET 0 BINDING 0
+
+  DEPTH
+    TEST on
+    WRITE on
+    COMPARE_OP less
+    CLAMP off
+    BOUNDS min 0.0 max 1.0
+    BIAS constant 4194304.0 clamp 0.0 slope 2.0
+  END
+END
+
+DERIVE_PIPELINE pipeline2 FROM pipeline1
+  BIND BUFFER data_buf2 AS storage DESCRIPTOR_SET 0 BINDING 0
+END
+
+PIPELINE graphics depthdump
+  ATTACH vert_shader_tex
+  ATTACH frag_shader_tex
+  BIND BUFFER depthstencil AS combined_image_sampler SAMPLER sampler DESCRIPTOR_SET 0 BINDING 0
+  VERTEX_DATA position LOCATION 0
+  VERTEX_DATA texcoords LOCATION 1
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER ddump AS color LOCATION 0
+END
+
+CLEAR_DEPTH pipeline1 1.0
+CLEAR_COLOR pipeline1 255 255 255 255
+CLEAR pipeline1
+RUN pipeline1 DRAW_RECT POS   0   0 SIZE 200 200
+RUN pipeline2 DRAW_RECT POS   56 56 SIZE 200 200
+RUN depthdump DRAW_ARRAY AS TRIANGLE_STRIP START_IDX 0 COUNT 4
+
+EXPECT ddump IDX 0 0 SIZE 1 1 EQ_RGBA 108 108 108 255 TOLERANCE 5% 5% 5% 0
+EXPECT ddump IDX 255 0 SIZE 1 1 EQ_RGBA 255 255 255 255 TOLERANCE 5% 5% 5% 0
+EXPECT ddump IDX 0 255 SIZE 1 1 EQ_RGBA 255 255 255 255 TOLERANCE 5% 5% 5% 0
+EXPECT ddump IDX 255 255 SIZE 1 1 EQ_RGBA 191 191 191 255 TOLERANCE 5% 5% 5% 0

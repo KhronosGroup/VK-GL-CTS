@@ -30,6 +30,7 @@
 #include "vktRayTracingShaderBindingTableTests.hpp"
 #include "vktRayTracingTraversalControlTests.hpp"
 #include "vktRayTracingAccelerationStructuresTests.hpp"
+#include "vktRayTracingProceduralGeometryTests.hpp"
 #include "vktRayTracingBuildIndirectTests.hpp"
 #include "vktRayTracingWatertightnessTests.hpp"
 #include "vktRayTracingPipelineLibraryTests.hpp"
@@ -39,6 +40,10 @@
 #include "vktRayTracingMiscTests.hpp"
 #include "vktRayTracingComplexControlFlowTests.hpp"
 #include "vktRayTracingBarrierTests.hpp"
+#include "vktRayTracingDataSpillTests.hpp"
+#include "vktRayTracingDirectionTests.hpp"
+#include "vktRayTracingBarycentricCoordinatesTests.hpp"
+#include "vktRayTracingNonUniformArgsTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -62,6 +67,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createShaderBindingTableTests(testCtx));
 	group->addChild(createTraversalControlTests(testCtx));
 	group->addChild(createAccelerationStructuresTests(testCtx));
+	group->addChild(createProceduralGeometryTests(testCtx));
 	group->addChild(createBuildIndirectTests(testCtx));
 	group->addChild(createWatertightnessTests(testCtx));
 	group->addChild(createPipelineLibraryTests(testCtx));
@@ -71,6 +77,10 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createMiscTests(testCtx));
 	group->addChild(createComplexControlFlowTests(testCtx));
 	group->addChild(createBarrierTests(testCtx));
+	group->addChild(createDataSpillTests(testCtx));
+	group->addChild(createDirectionTests(testCtx));
+	group->addChild(createBarycentricCoordinatesTests(testCtx));
+	group->addChild(createNonUniformArgsTests(testCtx));
 
 	return group.release();
 }

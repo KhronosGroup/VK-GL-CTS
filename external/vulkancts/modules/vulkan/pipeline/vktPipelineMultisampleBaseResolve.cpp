@@ -44,6 +44,17 @@ using namespace vk;
 
 tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 {
+	// cases creating this tests are defined using templates and we do not have easy access
+	// to image type - to do this check in checkSupport bigger reffactoring would be needed
+	if (m_context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!m_context.getPortabilitySubsetFeatures().multisampleArrayImage &&
+		(m_imageType == IMAGE_TYPE_2D_ARRAY) &&
+		(m_imageMSParams.numSamples != VK_SAMPLE_COUNT_1_BIT) &&
+		(m_imageMSParams.imageSize.z() != 1))
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support image array with multiple samples per texel");
+	}
+
 	const InstanceInterface&		instance			= m_context.getInstanceInterface();
 	const DeviceInterface&			deviceInterface		= m_context.getDeviceInterface();
 	const VkDevice					device				= m_context.getDevice();

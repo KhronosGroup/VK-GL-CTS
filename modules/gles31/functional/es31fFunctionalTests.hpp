@@ -33,17 +33,30 @@ namespace gles31
 namespace Functional
 {
 
-class FunctionalTests : public TestCaseGroup
+class GLES31FunctionalTests : public TestCaseGroup
 {
 public:
-						FunctionalTests		(Context& context);
-						~FunctionalTests	(void);
+							GLES31FunctionalTests	(Context& context);
+							~GLES31FunctionalTests	(void);
 
-	void				init				(void);
+	void					init					(void);
 
 private:
-						FunctionalTests		(const FunctionalTests& other);
-	FunctionalTests&	operator=			(const FunctionalTests& other);
+							GLES31FunctionalTests	(const GLES31FunctionalTests& other);
+	GLES31FunctionalTests&	operator=				(const GLES31FunctionalTests& other);
+};
+
+class GL45FunctionalTests : public TestCaseGroup
+{
+public:
+							GL45FunctionalTests		(Context& context);
+							~GL45FunctionalTests	(void);
+
+	void					init					(void);
+
+private:
+							GL45FunctionalTests		(const GL45FunctionalTests& other);
+	GL45FunctionalTests&	operator=				(const GL45FunctionalTests& other);
 };
 
 } // Functional

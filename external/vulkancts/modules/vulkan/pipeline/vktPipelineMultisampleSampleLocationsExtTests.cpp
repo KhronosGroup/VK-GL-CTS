@@ -814,6 +814,17 @@ public:
 				subpassDependencies.push_back(dependency);
 			}
 		}
+		// add a final dependency to synchronize results for the copy commands that will follow the renderpass
+		const VkSubpassDependency finalDependency = {
+			numSubpasses - 1,																			// uint32_t                srcSubpass;
+			VK_SUBPASS_EXTERNAL,																		// uint32_t                dstSubpass;
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,	// VkPipelineStageFlags    srcStageMask;
+			VK_PIPELINE_STAGE_TRANSFER_BIT,																// VkPipelineStageFlags    dstStageMask;
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,		// VkAccessFlags           srcAccessMask;
+			VK_ACCESS_TRANSFER_READ_BIT,																// VkAccessFlags           dstAccessMask;
+			(VkDependencyFlags)0,																		// VkDependencyFlags       dependencyFlags;
+		};
+		subpassDependencies.push_back(finalDependency);
 
 		const VkRenderPassCreateInfo renderPassInfo =
 		{
@@ -1535,16 +1546,6 @@ protected:
 		vk.cmdDraw(*cmdBuffer, m_numVertices, 1u, 0u, 0u);
 		endRenderPass(vk, *cmdBuffer);
 
-		// Resolve image -> host buffer
-		recordImageBarrier(vk, *cmdBuffer, *m_resolveImage,
-						VK_IMAGE_ASPECT_COLOR_BIT,								// VkImageAspectFlags	aspect,
-						VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,			// VkPipelineStageFlags srcStageMask,
-						VK_PIPELINE_STAGE_TRANSFER_BIT,							// VkPipelineStageFlags dstStageMask,
-						VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,					// VkAccessFlags		srcAccessMask,
-						VK_ACCESS_TRANSFER_READ_BIT,							// VkAccessFlags		dstAccessMask,
-						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,					// VkImageLayout		oldLayout,
-						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);					// VkImageLayout		newLayout)
-
 		recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, *m_resolveImage, *m_colorBuffer);
 
 		endCommandBuffer(vk, *cmdBuffer);
@@ -1795,6 +1796,12 @@ void checkSupportDrawTests (Context& context, const TestParams params)
 	// Are we allowed to modify the sample pattern within the same subpass?
 	if (params.drawIn == TEST_DRAW_IN_SAME_SUBPASS && ((params.options & TEST_OPTION_SAME_PATTERN_BIT) == 0) && !getSampleLocationsPropertiesEXT(context).variableSampleLocations)
 		TCU_THROW(NotSupportedError, "VkPhysicalDeviceSampleLocationsPropertiesEXT: variableSampleLocations not supported");
+
+	if (TEST_OPTION_WAIT_EVENTS_BIT & params.options &&
+		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().events)
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
+	}
 }
 
 const char* getString (const TestImageAspect aspect)
@@ -2216,16 +2223,6 @@ protected:
 
 		endRenderPass(vk, *cmdBuffer);
 
-		// Resolve image -> host buffer
-		recordImageBarrier(vk, *cmdBuffer, *m_resolveImage,
-						VK_IMAGE_ASPECT_COLOR_BIT,								// VkImageAspectFlags	aspect,
-						VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,			// VkPipelineStageFlags srcStageMask,
-						VK_PIPELINE_STAGE_TRANSFER_BIT,							// VkPipelineStageFlags dstStageMask,
-						VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,					// VkAccessFlags		srcAccessMask,
-						VK_ACCESS_TRANSFER_READ_BIT,							// VkAccessFlags		dstAccessMask,
-						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,					// VkImageLayout		oldLayout,
-						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);					// VkImageLayout		newLayout)
-
 		recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, *m_resolveImage, *m_colorBuffer);
 
 		endCommandBuffer(vk, *cmdBuffer);
@@ -2561,15 +2558,6 @@ protected:
 		}
 
 		// Resolve image -> host buffer
-		recordImageBarrier(vk, currentCmdBuffer, *m_resolveImage,
-						VK_IMAGE_ASPECT_COLOR_BIT,								// VkImageAspectFlags	aspect,
-						VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,			// VkPipelineStageFlags srcStageMask,
-						VK_PIPELINE_STAGE_TRANSFER_BIT,							// VkPipelineStageFlags dstStageMask,
-						VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,					// VkAccessFlags		srcAccessMask,
-						VK_ACCESS_TRANSFER_READ_BIT,							// VkAccessFlags		dstAccessMask,
-						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,					// VkImageLayout		oldLayout,
-						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);					// VkImageLayout		newLayout)
-
 		recordCopyImageToBuffer(vk, currentCmdBuffer, m_renderSize, *m_resolveImage, *m_colorBuffer);
 
 		endCommandBuffer(vk, currentCmdBuffer);
@@ -2802,15 +2790,6 @@ protected:
 		endRenderPass(vk, *cmdBuffer);
 
 		// Resolve image -> host buffer
-		recordImageBarrier(vk, *cmdBuffer, *m_resolveImage,
-						VK_IMAGE_ASPECT_COLOR_BIT,								// VkImageAspectFlags	aspect,
-						VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,			// VkPipelineStageFlags srcStageMask,
-						VK_PIPELINE_STAGE_TRANSFER_BIT,							// VkPipelineStageFlags dstStageMask,
-						VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,					// VkAccessFlags		srcAccessMask,
-						VK_ACCESS_TRANSFER_READ_BIT,							// VkAccessFlags		dstAccessMask,
-						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,					// VkImageLayout		oldLayout,
-						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);					// VkImageLayout		newLayout)
-
 		recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, *m_resolveImage, *m_colorBuffer);
 
 		endCommandBuffer(vk, *cmdBuffer);
@@ -2957,15 +2936,6 @@ protected:
 		endRenderPass(vk, *cmdBuffer);
 
 		// Resolve image -> host buffer
-		recordImageBarrier(vk, *cmdBuffer, *m_resolveImage,
-						VK_IMAGE_ASPECT_COLOR_BIT,								// VkImageAspectFlags	aspect,
-						VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,			// VkPipelineStageFlags srcStageMask,
-						VK_PIPELINE_STAGE_TRANSFER_BIT,							// VkPipelineStageFlags dstStageMask,
-						VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,					// VkAccessFlags		srcAccessMask,
-						VK_ACCESS_TRANSFER_READ_BIT,							// VkAccessFlags		dstAccessMask,
-						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,					// VkImageLayout		oldLayout,
-						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);					// VkImageLayout		newLayout)
-
 		recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, *m_resolveImage, *m_colorBuffer);
 
 		endCommandBuffer(vk, *cmdBuffer);

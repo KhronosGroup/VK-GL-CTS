@@ -183,115 +183,115 @@ enum ValueId
 enum OperationId
 {
 	// spir-v unary operations
-	O_NEGATE = 0,
-	O_COMPOSITE,
-	O_COMPOSITE_INS,
-	O_COPY,
-	O_D_EXTRACT,
-	O_D_INSERT,
-	O_SHUFFLE,
-	O_TRANSPOSE,
-	O_CONV_FROM_FP16,
-	O_CONV_FROM_FP32,
-	O_CONV_FROM_FP64,
-	O_SCONST_CONV_FROM_FP32_TO_FP16,
-	O_SCONST_CONV_FROM_FP64_TO_FP32,
-	O_SCONST_CONV_FROM_FP64_TO_FP16,
-	O_RETURN_VAL,
+	OID_NEGATE = 0,
+	OID_COMPOSITE,
+	OID_COMPOSITE_INS,
+	OID_COPY,
+	OID_D_EXTRACT,
+	OID_D_INSERT,
+	OID_SHUFFLE,
+	OID_TRANSPOSE,
+	OID_CONV_FROM_FP16,
+	OID_CONV_FROM_FP32,
+	OID_CONV_FROM_FP64,
+	OID_SCONST_CONV_FROM_FP32_TO_FP16,
+	OID_SCONST_CONV_FROM_FP64_TO_FP32,
+	OID_SCONST_CONV_FROM_FP64_TO_FP16,
+	OID_RETURN_VAL,
 
 	// spir-v binary operations
-	O_ADD,
-	O_SUB,
-	O_MUL,
-	O_DIV,
-	O_REM,
-	O_MOD,
-	O_PHI,
-	O_SELECT,
-	O_DOT,
-	O_VEC_MUL_S,
-	O_VEC_MUL_M,
-	O_MAT_MUL_S,
-	O_MAT_MUL_V,
-	O_MAT_MUL_M,
-	O_OUT_PROD,
-	O_ORD_EQ,
-	O_UORD_EQ,
-	O_ORD_NEQ,
-	O_UORD_NEQ,
-	O_ORD_LS,
-	O_UORD_LS,
-	O_ORD_GT,
-	O_UORD_GT,
-	O_ORD_LE,
-	O_UORD_LE,
-	O_ORD_GE,
-	O_UORD_GE,
+	OID_ADD,
+	OID_SUB,
+	OID_MUL,
+	OID_DIV,
+	OID_REM,
+	OID_MOD,
+	OID_PHI,
+	OID_SELECT,
+	OID_DOT,
+	OID_VEC_MUL_S,
+	OID_VEC_MUL_M,
+	OID_MAT_MUL_S,
+	OID_MAT_MUL_V,
+	OID_MAT_MUL_M,
+	OID_OUT_PROD,
+	OID_ORD_EQ,
+	OID_UORD_EQ,
+	OID_ORD_NEQ,
+	OID_UORD_NEQ,
+	OID_ORD_LS,
+	OID_UORD_LS,
+	OID_ORD_GT,
+	OID_UORD_GT,
+	OID_ORD_LE,
+	OID_UORD_LE,
+	OID_ORD_GE,
+	OID_UORD_GE,
 
 	// glsl unary operations
-	O_ROUND,
-	O_ROUND_EV,
-	O_TRUNC,
-	O_ABS,
-	O_SIGN,
-	O_FLOOR,
-	O_CEIL,
-	O_FRACT,
-	O_RADIANS,
-	O_DEGREES,
-	O_SIN,
-	O_COS,
-	O_TAN,
-	O_ASIN,
-	O_ACOS,
-	O_ATAN,
-	O_SINH,
-	O_COSH,
-	O_TANH,
-	O_ASINH,
-	O_ACOSH,
-	O_ATANH,
-	O_EXP,
-	O_LOG,
-	O_EXP2,
-	O_LOG2,
-	O_SQRT,
-	O_INV_SQRT,
-	O_MODF,
-	O_MODF_ST,
-	O_FREXP,
-	O_FREXP_ST,
-	O_LENGHT,
-	O_NORMALIZE,
-	O_REFLECT,
-	O_REFRACT,
-	O_MAT_DET,
-	O_MAT_INV,
-	O_PH_DENORM,	// PackHalf2x16
-	O_UPH_DENORM,
-	O_PD_DENORM,	// PackDouble2x32
-	O_UPD_DENORM_FLUSH,
-	O_UPD_DENORM_PRESERVE,
+	OID_ROUND,
+	OID_ROUND_EV,
+	OID_TRUNC,
+	OID_ABS,
+	OID_SIGN,
+	OID_FLOOR,
+	OID_CEIL,
+	OID_FRACT,
+	OID_RADIANS,
+	OID_DEGREES,
+	OID_SIN,
+	OID_COS,
+	OID_TAN,
+	OID_ASIN,
+	OID_ACOS,
+	OID_ATAN,
+	OID_SINH,
+	OID_COSH,
+	OID_TANH,
+	OID_ASINH,
+	OID_ACOSH,
+	OID_ATANH,
+	OID_EXP,
+	OID_LOG,
+	OID_EXP2,
+	OID_LOG2,
+	OID_SQRT,
+	OID_INV_SQRT,
+	OID_MODF,
+	OID_MODF_ST,
+	OID_FREXP,
+	OID_FREXP_ST,
+	OID_LENGHT,
+	OID_NORMALIZE,
+	OID_REFLECT,
+	OID_REFRACT,
+	OID_MAT_DET,
+	OID_MAT_INV,
+	OID_PH_DENORM,	// PackHalf2x16
+	OID_UPH_DENORM,
+	OID_PD_DENORM,	// PackDouble2x32
+	OID_UPD_DENORM_FLUSH,
+	OID_UPD_DENORM_PRESERVE,
 
 	// glsl binary operations
-	O_ATAN2,
-	O_POW,
-	O_MIX,
-	O_FMA,
-	O_MIN,
-	O_MAX,
-	O_CLAMP,
-	O_STEP,
-	O_SSTEP,
-	O_DIST,
-	O_CROSS,
-	O_FACE_FWD,
-	O_NMIN,
-	O_NMAX,
-	O_NCLAMP,
+	OID_ATAN2,
+	OID_POW,
+	OID_MIX,
+	OID_FMA,
+	OID_MIN,
+	OID_MAX,
+	OID_CLAMP,
+	OID_STEP,
+	OID_SSTEP,
+	OID_DIST,
+	OID_CROSS,
+	OID_FACE_FWD,
+	OID_NMIN,
+	OID_NMAX,
+	OID_NCLAMP,
 
-	O_ORTE_ROUND,
-	O_ORTZ_ROUND
+	OID_ORTE_ROUND,
+	OID_ORTZ_ROUND
 };
 
 // Structures storing data required to test DenormPreserve and DenormFlushToZero modes.
@@ -1064,119 +1064,119 @@ TypeTestResults<deFloat16>::TypeTestResults()
 	// on input denorm being flushed or not; because of that FTZ tests can be limited
 	// to those that return denorm as those are the ones affected by tested extension
 	const BinaryCase binaryOpFTZArr[] = {
-		//operation		den op one		den op den		den op inf		den op nan
-		{ O_ADD,		V_ONE,			V_ZERO_OR_DENORM_TIMES_TWO,
+		//operation			den op one		den op den		den op inf		den op nan
+		{ OID_ADD,			V_ONE,			V_ZERO_OR_DENORM_TIMES_TWO,
 														V_INF,			V_UNUSED },
-		{ O_SUB,		V_MINUS_ONE,	V_ZERO,			V_MINUS_INF,	V_UNUSED },
-		{ O_MUL,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_DIV,		V_ZERO,			V_UNUSED,		V_ZERO,			V_UNUSED },
-		{ O_REM,		V_ZERO,			V_UNUSED,		V_UNUSED,		V_UNUSED },
-		{ O_MOD,		V_ZERO,			V_UNUSED,		V_UNUSED,		V_UNUSED },
-		{ O_VEC_MUL_S,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_VEC_MUL_M,	V_ZERO_OR_DENORM_TIMES_TWO,
-										V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_MAT_MUL_S,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_MAT_MUL_V,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_MAT_MUL_M,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_OUT_PROD,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_DOT,		V_ZERO_OR_DENORM_TIMES_TWO,
-										V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_ATAN2,		V_ZERO,			V_UNUSED,		V_ZERO,			V_UNUSED },
-		{ O_POW,		V_ZERO,			V_UNUSED,		V_ZERO,			V_UNUSED },
-		{ O_MIX,		V_HALF,			V_ZERO,			V_INF,			V_UNUSED },
-		{ O_MIN,		V_ZERO,			V_ZERO,			V_ZERO,			V_UNUSED },
-		{ O_MAX,		V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
-		{ O_CLAMP,		V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
-		{ O_STEP,		V_ONE,			V_ONE,			V_ONE,			V_UNUSED },
-		{ O_SSTEP,		V_HALF,			V_ONE,			V_ZERO,			V_UNUSED },
-		{ O_FMA,		V_HALF,			V_HALF,			V_UNUSED,		V_UNUSED },
-		{ O_FACE_FWD,	V_MINUS_ONE,	V_MINUS_ONE,	V_MINUS_ONE,	V_MINUS_ONE },
-		{ O_NMIN,		V_ZERO,			V_ZERO,			V_ZERO,			V_ZERO },
-		{ O_NMAX,		V_ONE,			V_ZERO,			V_INF,			V_ZERO },
-		{ O_NCLAMP,		V_ONE,			V_ZERO,			V_INF,			V_ZERO },
-		{ O_DIST,		V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
-		{ O_CROSS,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_SUB,			V_MINUS_ONE,	V_ZERO,			V_MINUS_INF,	V_UNUSED },
+		{ OID_MUL,			V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_DIV,			V_ZERO,			V_UNUSED,		V_ZERO,			V_UNUSED },
+		{ OID_REM,			V_ZERO,			V_UNUSED,		V_UNUSED,		V_UNUSED },
+		{ OID_MOD,			V_ZERO,			V_UNUSED,		V_UNUSED,		V_UNUSED },
+		{ OID_VEC_MUL_S,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_VEC_MUL_M,	V_ZERO_OR_DENORM_TIMES_TWO,
+											V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_MAT_MUL_S,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_MAT_MUL_V,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_MAT_MUL_M,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_OUT_PROD,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_DOT,			V_ZERO_OR_DENORM_TIMES_TWO,
+											V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_ATAN2,		V_ZERO,			V_UNUSED,		V_ZERO,			V_UNUSED },
+		{ OID_POW,			V_ZERO,			V_UNUSED,		V_ZERO,			V_UNUSED },
+		{ OID_MIX,			V_HALF,			V_ZERO,			V_INF,			V_UNUSED },
+		{ OID_MIN,			V_ZERO,			V_ZERO,			V_ZERO,			V_UNUSED },
+		{ OID_MAX,			V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
+		{ OID_CLAMP,		V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
+		{ OID_STEP,			V_ONE,			V_ONE,			V_ONE,			V_UNUSED },
+		{ OID_SSTEP,		V_HALF,			V_ONE,			V_ZERO,			V_UNUSED },
+		{ OID_FMA,			V_HALF,			V_HALF,			V_UNUSED,		V_UNUSED },
+		{ OID_FACE_FWD,		V_MINUS_ONE,	V_MINUS_ONE,	V_MINUS_ONE,	V_MINUS_ONE },
+		{ OID_NMIN,			V_ZERO,			V_ZERO,			V_ZERO,			V_ZERO },
+		{ OID_NMAX,			V_ONE,			V_ZERO,			V_INF,			V_ZERO },
+		{ OID_NCLAMP,		V_ONE,			V_ZERO,			V_INF,			V_ZERO },
+		{ OID_DIST,			V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
+		{ OID_CROSS,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
 	};
 
 	const UnaryCase unaryOpFTZArr[] = {
 		//operation			op den
-		{ O_NEGATE,			V_MINUS_ZERO },
-		{ O_ROUND,			V_ZERO },
-		{ O_ROUND_EV,		V_ZERO },
-		{ O_TRUNC,			V_ZERO },
-		{ O_ABS,			V_ZERO },
-		{ O_FLOOR,			V_ZERO },
-		{ O_CEIL,			V_ZERO_OR_ONE },
-		{ O_FRACT,			V_ZERO },
-		{ O_RADIANS,		V_ZERO },
-		{ O_DEGREES,		V_ZERO },
-		{ O_SIN,			V_ZERO },
-		{ O_COS,			V_TRIG_ONE },
-		{ O_TAN,			V_ZERO },
-		{ O_ASIN,			V_ZERO },
-		{ O_ACOS,			V_PI_DIV_2 },
-		{ O_ATAN,			V_ZERO },
-		{ O_SINH,			V_ZERO },
-		{ O_COSH,			V_ONE },
-		{ O_TANH,			V_ZERO },
-		{ O_ASINH,			V_ZERO },
-		{ O_ACOSH,			V_UNUSED },
-		{ O_ATANH,			V_ZERO },
-		{ O_EXP,			V_ONE },
-		{ O_LOG,			V_MINUS_INF_OR_LOG_DENORM },
-		{ O_EXP2,			V_ONE },
-		{ O_LOG2,			V_MINUS_INF_OR_LOG2_DENORM },
-		{ O_SQRT,			V_ZERO_OR_SQRT_DENORM },
-		{ O_INV_SQRT,		V_INF_OR_INV_SQRT_DENORM },
-		{ O_MAT_DET,		V_ZERO },
-		{ O_MAT_INV,		V_ZERO_OR_MINUS_ZERO },
-		{ O_MODF,			V_ZERO },
-		{ O_MODF_ST,		V_ZERO },
-		{ O_NORMALIZE,		V_ZERO },
-		{ O_REFLECT,		V_ZERO },
-		{ O_REFRACT,		V_ZERO },
-		{ O_LENGHT,			V_ZERO },
+		{ OID_NEGATE,		V_MINUS_ZERO },
+		{ OID_ROUND,		V_ZERO },
+		{ OID_ROUND_EV,		V_ZERO },
+		{ OID_TRUNC,		V_ZERO },
+		{ OID_ABS,			V_ZERO },
+		{ OID_FLOOR,		V_ZERO },
+		{ OID_CEIL,			V_ZERO_OR_ONE },
+		{ OID_FRACT,		V_ZERO },
+		{ OID_RADIANS,		V_ZERO },
+		{ OID_DEGREES,		V_ZERO },
+		{ OID_SIN,			V_ZERO },
+		{ OID_COS,			V_TRIG_ONE },
+		{ OID_TAN,			V_ZERO },
+		{ OID_ASIN,			V_ZERO },
+		{ OID_ACOS,			V_PI_DIV_2 },
+		{ OID_ATAN,			V_ZERO },
+		{ OID_SINH,			V_ZERO },
+		{ OID_COSH,			V_ONE },
+		{ OID_TANH,			V_ZERO },
+		{ OID_ASINH,		V_ZERO },
+		{ OID_ACOSH,		V_UNUSED },
+		{ OID_ATANH,		V_ZERO },
+		{ OID_EXP,			V_ONE },
+		{ OID_LOG,			V_MINUS_INF_OR_LOG_DENORM },
+		{ OID_EXP2,			V_ONE },
+		{ OID_LOG2,			V_MINUS_INF_OR_LOG2_DENORM },
+		{ OID_SQRT,			V_ZERO_OR_SQRT_DENORM },
+		{ OID_INV_SQRT,		V_INF_OR_INV_SQRT_DENORM },
+		{ OID_MAT_DET,		V_ZERO },
+		{ OID_MAT_INV,		V_ZERO_OR_MINUS_ZERO },
+		{ OID_MODF,			V_ZERO },
+		{ OID_MODF_ST,		V_ZERO },
+		{ OID_NORMALIZE,	V_ZERO },
+		{ OID_REFLECT,		V_ZERO },
+		{ OID_REFRACT,		V_ZERO },
+		{ OID_LENGHT,		V_ZERO },
 	};
 
 	const BinaryCase binaryOpDenormPreserveArr[] = {
 		//operation			den op one				den op den				den op inf		den op nan
-		{ O_PHI,			V_DENORM,				V_DENORM,				V_DENORM,		V_DENORM },
-		{ O_SELECT,			V_DENORM,				V_DENORM,				V_DENORM,		V_DENORM },
-		{ O_ADD,			V_ONE,					V_DENORM_TIMES_TWO,		V_INF,			V_NAN },
-		{ O_SUB,			V_MINUS_ONE_OR_CLOSE,	V_ZERO,					V_MINUS_INF,	V_NAN },
-		{ O_MUL,			V_DENORM,				V_ZERO,					V_INF,			V_NAN },
-		{ O_VEC_MUL_S,		V_DENORM,				V_ZERO,					V_INF,			V_NAN },
-		{ O_VEC_MUL_M,		V_DENORM_TIMES_TWO,		V_ZERO,					V_INF,			V_NAN },
-		{ O_MAT_MUL_S,		V_DENORM,				V_ZERO,					V_INF,			V_NAN },
-		{ O_MAT_MUL_V,		V_DENORM_TIMES_TWO,		V_ZERO,					V_INF,			V_NAN },
-		{ O_MAT_MUL_M,		V_DENORM_TIMES_TWO,		V_ZERO,					V_INF,			V_NAN },
-		{ O_OUT_PROD,		V_DENORM,				V_ZERO,					V_INF,			V_NAN },
-		{ O_DOT,			V_DENORM_TIMES_TWO,		V_ZERO,					V_INF,			V_NAN },
-		{ O_MIX,			V_HALF,					V_DENORM,				V_INF,			V_NAN },
-		{ O_FMA,			V_HALF,					V_HALF,					V_INF,			V_NAN },
-		{ O_MIN,			V_DENORM,				V_DENORM,				V_DENORM,		V_UNUSED },
-		{ O_MAX,			V_ONE,					V_DENORM,				V_INF,			V_UNUSED },
-		{ O_CLAMP,			V_ONE,					V_DENORM,				V_INF,			V_UNUSED },
-		{ O_NMIN,			V_DENORM,				V_DENORM,				V_DENORM,		V_DENORM },
-		{ O_NMAX,			V_ONE,					V_DENORM,				V_INF,			V_DENORM },
-		{ O_NCLAMP,			V_ONE,					V_DENORM,				V_INF,			V_DENORM },
+		{ OID_PHI,			V_DENORM,				V_DENORM,				V_DENORM,		V_DENORM },
+		{ OID_SELECT,		V_DENORM,				V_DENORM,				V_DENORM,		V_DENORM },
+		{ OID_ADD,			V_ONE,					V_DENORM_TIMES_TWO,		V_INF,			V_NAN },
+		{ OID_SUB,			V_MINUS_ONE_OR_CLOSE,	V_ZERO,					V_MINUS_INF,	V_NAN },
+		{ OID_MUL,			V_DENORM,				V_ZERO,					V_INF,			V_NAN },
+		{ OID_VEC_MUL_S,	V_DENORM,				V_ZERO,					V_INF,			V_NAN },
+		{ OID_VEC_MUL_M,	V_DENORM_TIMES_TWO,		V_ZERO,					V_INF,			V_NAN },
+		{ OID_MAT_MUL_S,	V_DENORM,				V_ZERO,					V_INF,			V_NAN },
+		{ OID_MAT_MUL_V,	V_DENORM_TIMES_TWO,		V_ZERO,					V_INF,			V_NAN },
+		{ OID_MAT_MUL_M,	V_DENORM_TIMES_TWO,		V_ZERO,					V_INF,			V_NAN },
+		{ OID_OUT_PROD,		V_DENORM,				V_ZERO,					V_INF,			V_NAN },
+		{ OID_DOT,			V_DENORM_TIMES_TWO,		V_ZERO,					V_INF,			V_NAN },
+		{ OID_MIX,			V_HALF,					V_DENORM,				V_INF,			V_NAN },
+		{ OID_FMA,			V_HALF,					V_HALF,					V_INF,			V_NAN },
+		{ OID_MIN,			V_DENORM,				V_DENORM,				V_DENORM,		V_UNUSED },
+		{ OID_MAX,			V_ONE,					V_DENORM,				V_INF,			V_UNUSED },
+		{ OID_CLAMP,		V_ONE,					V_DENORM,				V_INF,			V_UNUSED },
+		{ OID_NMIN,			V_DENORM,				V_DENORM,				V_DENORM,		V_DENORM },
+		{ OID_NMAX,			V_ONE,					V_DENORM,				V_INF,			V_DENORM },
+		{ OID_NCLAMP,		V_ONE,					V_DENORM,				V_INF,			V_DENORM },
 	};
 
 	const UnaryCase unaryOpDenormPreserveArr[] = {
-		//operation			op den
-		{ O_RETURN_VAL,		V_DENORM },
-		{ O_D_EXTRACT,		V_DENORM },
-		{ O_D_INSERT,		V_DENORM },
-		{ O_SHUFFLE,		V_DENORM },
-		{ O_COMPOSITE,		V_DENORM },
-		{ O_COMPOSITE_INS,	V_DENORM },
-		{ O_COPY,			V_DENORM },
-		{ O_TRANSPOSE,		V_DENORM },
-		{ O_NEGATE,			V_DENORM },
-		{ O_ABS,			V_DENORM },
-		{ O_SIGN,			V_ONE },
-		{ O_RADIANS,		V_DENORM },
-		{ O_DEGREES,		V_DEGREES_DENORM },
+		//operation				op den
+		{ OID_RETURN_VAL,		V_DENORM },
+		{ OID_D_EXTRACT,		V_DENORM },
+		{ OID_D_INSERT,			V_DENORM },
+		{ OID_SHUFFLE,			V_DENORM },
+		{ OID_COMPOSITE,		V_DENORM },
+		{ OID_COMPOSITE_INS,	V_DENORM },
+		{ OID_COPY,				V_DENORM },
+		{ OID_TRANSPOSE,		V_DENORM },
+		{ OID_NEGATE,			V_DENORM },
+		{ OID_ABS,				V_DENORM },
+		{ OID_SIGN,				V_ONE },
+		{ OID_RADIANS,			V_DENORM },
+		{ OID_DEGREES,			V_DEGREES_DENORM },
 	};
 
 	binaryOpFTZ.insert(binaryOpFTZ.begin(), binaryOpFTZArr,
@@ -1195,116 +1195,116 @@ TypeTestResults<float>::TypeTestResults()
 	m_floatType = FP32;
 
 	const BinaryCase binaryOpFTZArr[] = {
-		//operation		den op one		den op den		den op inf		den op nan
-		{ O_ADD,		V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
-		{ O_SUB,		V_MINUS_ONE,	V_ZERO,			V_MINUS_INF,	V_UNUSED },
-		{ O_MUL,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_DIV,		V_ZERO,			V_UNUSED,		V_ZERO,			V_UNUSED },
-		{ O_REM,		V_ZERO,			V_UNUSED,		V_UNUSED,		V_UNUSED },
-		{ O_MOD,		V_ZERO,			V_UNUSED,		V_UNUSED,		V_UNUSED },
-		{ O_VEC_MUL_S,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_VEC_MUL_M,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_MAT_MUL_S,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_MAT_MUL_V,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_MAT_MUL_M,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_OUT_PROD,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_DOT,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_ATAN2,		V_ZERO,			V_UNUSED,		V_ZERO,			V_UNUSED },
-		{ O_POW,		V_ZERO,			V_UNUSED,		V_ZERO,			V_UNUSED },
-		{ O_MIX,		V_HALF,			V_ZERO,			V_INF,			V_UNUSED },
-		{ O_MIN,		V_ZERO,			V_ZERO,			V_ZERO,			V_UNUSED },
-		{ O_MAX,		V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
-		{ O_CLAMP,		V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
-		{ O_STEP,		V_ONE,			V_ONE,			V_ONE,			V_UNUSED },
-		{ O_SSTEP,		V_HALF,			V_ONE,			V_ZERO,			V_UNUSED },
-		{ O_FMA,		V_HALF,			V_HALF,			V_UNUSED,		V_UNUSED },
-		{ O_FACE_FWD,	V_MINUS_ONE,	V_MINUS_ONE,	V_MINUS_ONE,	V_MINUS_ONE },
-		{ O_NMIN,		V_ZERO,			V_ZERO,			V_ZERO,			V_ZERO },
-		{ O_NMAX,		V_ONE,			V_ZERO,			V_INF,			V_ZERO },
-		{ O_NCLAMP,		V_ONE,			V_ZERO,			V_INF,			V_ZERO },
-		{ O_DIST,		V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
-		{ O_CROSS,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		//operation			den op one		den op den		den op inf		den op nan
+		{ OID_ADD,			V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
+		{ OID_SUB,			V_MINUS_ONE,	V_ZERO,			V_MINUS_INF,	V_UNUSED },
+		{ OID_MUL,			V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_DIV,			V_ZERO,			V_UNUSED,		V_ZERO,			V_UNUSED },
+		{ OID_REM,			V_ZERO,			V_UNUSED,		V_UNUSED,		V_UNUSED },
+		{ OID_MOD,			V_ZERO,			V_UNUSED,		V_UNUSED,		V_UNUSED },
+		{ OID_VEC_MUL_S,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_VEC_MUL_M,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_MAT_MUL_S,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_MAT_MUL_V,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_MAT_MUL_M,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_OUT_PROD,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_DOT,			V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_ATAN2,		V_ZERO,			V_UNUSED,		V_ZERO,			V_UNUSED },
+		{ OID_POW,			V_ZERO,			V_UNUSED,		V_ZERO,			V_UNUSED },
+		{ OID_MIX,			V_HALF,			V_ZERO,			V_INF,			V_UNUSED },
+		{ OID_MIN,			V_ZERO,			V_ZERO,			V_ZERO,			V_UNUSED },
+		{ OID_MAX,			V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
+		{ OID_CLAMP,		V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
+		{ OID_STEP,			V_ONE,			V_ONE,			V_ONE,			V_UNUSED },
+		{ OID_SSTEP,		V_HALF,			V_ONE,			V_ZERO,			V_UNUSED },
+		{ OID_FMA,			V_HALF,			V_HALF,			V_UNUSED,		V_UNUSED },
+		{ OID_FACE_FWD,		V_MINUS_ONE,	V_MINUS_ONE,	V_MINUS_ONE,	V_MINUS_ONE },
+		{ OID_NMIN,			V_ZERO,			V_ZERO,			V_ZERO,			V_ZERO },
+		{ OID_NMAX,			V_ONE,			V_ZERO,			V_INF,			V_ZERO },
+		{ OID_NCLAMP,		V_ONE,			V_ZERO,			V_INF,			V_ZERO },
+		{ OID_DIST,			V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
+		{ OID_CROSS,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
 	};
 
 	const UnaryCase unaryOpFTZArr[] = {
 		//operation			op den
-		{ O_NEGATE,			V_MINUS_ZERO },
-		{ O_ROUND,			V_ZERO },
-		{ O_ROUND_EV,		V_ZERO },
-		{ O_TRUNC,			V_ZERO },
-		{ O_ABS,			V_ZERO },
-		{ O_FLOOR,			V_ZERO },
-		{ O_CEIL,			V_ZERO_OR_ONE },
-		{ O_FRACT,			V_ZERO },
-		{ O_RADIANS,		V_ZERO },
-		{ O_DEGREES,		V_ZERO },
-		{ O_SIN,			V_ZERO },
-		{ O_COS,			V_TRIG_ONE },
-		{ O_TAN,			V_ZERO },
-		{ O_ASIN,			V_ZERO },
-		{ O_ACOS,			V_PI_DIV_2 },
-		{ O_ATAN,			V_ZERO },
-		{ O_SINH,			V_ZERO },
-		{ O_COSH,			V_ONE },
-		{ O_TANH,			V_ZERO },
-		{ O_ASINH,			V_ZERO },
-		{ O_ACOSH,			V_UNUSED },
-		{ O_ATANH,			V_ZERO },
-		{ O_EXP,			V_ONE },
-		{ O_LOG,			V_MINUS_INF_OR_LOG_DENORM },
-		{ O_EXP2,			V_ONE },
-		{ O_LOG2,			V_MINUS_INF_OR_LOG2_DENORM },
-		{ O_SQRT,			V_ZERO_OR_SQRT_DENORM },
-		{ O_INV_SQRT,		V_INF_OR_INV_SQRT_DENORM },
-		{ O_MAT_DET,		V_ZERO },
-		{ O_MAT_INV,		V_ZERO_OR_MINUS_ZERO },
-		{ O_MODF,			V_ZERO },
-		{ O_MODF_ST,		V_ZERO },
-		{ O_NORMALIZE,		V_ZERO },
-		{ O_REFLECT,		V_ZERO },
-		{ O_REFRACT,		V_ZERO },
-		{ O_LENGHT,			V_ZERO },
+		{ OID_NEGATE,		V_MINUS_ZERO },
+		{ OID_ROUND,		V_ZERO },
+		{ OID_ROUND_EV,		V_ZERO },
+		{ OID_TRUNC,		V_ZERO },
+		{ OID_ABS,			V_ZERO },
+		{ OID_FLOOR,		V_ZERO },
+		{ OID_CEIL,			V_ZERO_OR_ONE },
+		{ OID_FRACT,		V_ZERO },
+		{ OID_RADIANS,		V_ZERO },
+		{ OID_DEGREES,		V_ZERO },
+		{ OID_SIN,			V_ZERO },
+		{ OID_COS,			V_TRIG_ONE },
+		{ OID_TAN,			V_ZERO },
+		{ OID_ASIN,			V_ZERO },
+		{ OID_ACOS,			V_PI_DIV_2 },
+		{ OID_ATAN,			V_ZERO },
+		{ OID_SINH,			V_ZERO },
+		{ OID_COSH,			V_ONE },
+		{ OID_TANH,			V_ZERO },
+		{ OID_ASINH,		V_ZERO },
+		{ OID_ACOSH,		V_UNUSED },
+		{ OID_ATANH,		V_ZERO },
+		{ OID_EXP,			V_ONE },
+		{ OID_LOG,			V_MINUS_INF_OR_LOG_DENORM },
+		{ OID_EXP2,			V_ONE },
+		{ OID_LOG2,			V_MINUS_INF_OR_LOG2_DENORM },
+		{ OID_SQRT,			V_ZERO_OR_SQRT_DENORM },
+		{ OID_INV_SQRT,		V_INF_OR_INV_SQRT_DENORM },
+		{ OID_MAT_DET,		V_ZERO },
+		{ OID_MAT_INV,		V_ZERO_OR_MINUS_ZERO },
+		{ OID_MODF,			V_ZERO },
+		{ OID_MODF_ST,		V_ZERO },
+		{ OID_NORMALIZE,	V_ZERO },
+		{ OID_REFLECT,		V_ZERO },
+		{ OID_REFRACT,		V_ZERO },
+		{ OID_LENGHT,		V_ZERO },
 	};
 
 	const BinaryCase binaryOpDenormPreserveArr[] = {
 		//operation			den op one			den op den				den op inf		den op nan
-		{ O_PHI,			V_DENORM,			V_DENORM,				V_DENORM,		V_DENORM },
-		{ O_SELECT,			V_DENORM,			V_DENORM,				V_DENORM,		V_DENORM },
-		{ O_ADD,			V_ONE,				V_DENORM_TIMES_TWO,		V_INF,			V_NAN },
-		{ O_SUB,			V_MINUS_ONE,		V_ZERO,					V_MINUS_INF,	V_NAN },
-		{ O_MUL,			V_DENORM,			V_ZERO,					V_INF,			V_NAN },
-		{ O_VEC_MUL_S,		V_DENORM,			V_ZERO,					V_INF,			V_NAN },
-		{ O_VEC_MUL_M,		V_DENORM,			V_ZERO,					V_INF,			V_NAN },
-		{ O_MAT_MUL_S,		V_DENORM,			V_ZERO,					V_INF,			V_NAN },
-		{ O_MAT_MUL_V,		V_DENORM,			V_ZERO,					V_INF,			V_NAN },
-		{ O_MAT_MUL_M,		V_DENORM,			V_ZERO,					V_INF,			V_NAN },
-		{ O_OUT_PROD,		V_DENORM,			V_ZERO,					V_INF,			V_NAN },
-		{ O_DOT,			V_DENORM_TIMES_TWO,	V_ZERO,					V_INF,			V_NAN },
-		{ O_MIX,			V_HALF,				V_DENORM,				V_INF,			V_NAN },
-		{ O_FMA,			V_HALF,				V_HALF,					V_INF,			V_NAN },
-		{ O_MIN,			V_DENORM,			V_DENORM,				V_DENORM,		V_UNUSED },
-		{ O_MAX,			V_ONE,				V_DENORM,				V_INF,			V_UNUSED },
-		{ O_CLAMP,			V_ONE,				V_DENORM,				V_INF,			V_UNUSED },
-		{ O_NMIN,			V_DENORM,			V_DENORM,				V_DENORM,		V_DENORM },
-		{ O_NMAX,			V_ONE,				V_DENORM,				V_INF,			V_DENORM },
-		{ O_NCLAMP,			V_ONE,				V_DENORM,				V_INF,			V_DENORM },
+		{ OID_PHI,			V_DENORM,			V_DENORM,				V_DENORM,		V_DENORM },
+		{ OID_SELECT,		V_DENORM,			V_DENORM,				V_DENORM,		V_DENORM },
+		{ OID_ADD,			V_ONE,				V_DENORM_TIMES_TWO,		V_INF,			V_NAN },
+		{ OID_SUB,			V_MINUS_ONE,		V_ZERO,					V_MINUS_INF,	V_NAN },
+		{ OID_MUL,			V_DENORM,			V_ZERO,					V_INF,			V_NAN },
+		{ OID_VEC_MUL_S,	V_DENORM,			V_ZERO,					V_INF,			V_NAN },
+		{ OID_VEC_MUL_M,	V_DENORM,			V_ZERO,					V_INF,			V_NAN },
+		{ OID_MAT_MUL_S,	V_DENORM,			V_ZERO,					V_INF,			V_NAN },
+		{ OID_MAT_MUL_V,	V_DENORM,			V_ZERO,					V_INF,			V_NAN },
+		{ OID_MAT_MUL_M,	V_DENORM,			V_ZERO,					V_INF,			V_NAN },
+		{ OID_OUT_PROD,		V_DENORM,			V_ZERO,					V_INF,			V_NAN },
+		{ OID_DOT,			V_DENORM_TIMES_TWO,	V_ZERO,					V_INF,			V_NAN },
+		{ OID_MIX,			V_HALF,				V_DENORM,				V_INF,			V_NAN },
+		{ OID_FMA,			V_HALF,				V_HALF,					V_INF,			V_NAN },
+		{ OID_MIN,			V_DENORM,			V_DENORM,				V_DENORM,		V_UNUSED },
+		{ OID_MAX,			V_ONE,				V_DENORM,				V_INF,			V_UNUSED },
+		{ OID_CLAMP,		V_ONE,				V_DENORM,				V_INF,			V_UNUSED },
+		{ OID_NMIN,			V_DENORM,			V_DENORM,				V_DENORM,		V_DENORM },
+		{ OID_NMAX,			V_ONE,				V_DENORM,				V_INF,			V_DENORM },
+		{ OID_NCLAMP,		V_ONE,				V_DENORM,				V_INF,			V_DENORM },
 	};
 
 	const UnaryCase unaryOpDenormPreserveArr[] = {
-		//operation			op den
-		{ O_RETURN_VAL,		V_DENORM },
-		{ O_D_EXTRACT,		V_DENORM },
-		{ O_D_INSERT,		V_DENORM },
-		{ O_SHUFFLE,		V_DENORM },
-		{ O_COMPOSITE,		V_DENORM },
-		{ O_COMPOSITE_INS,	V_DENORM },
-		{ O_COPY,			V_DENORM },
-		{ O_TRANSPOSE,		V_DENORM },
-		{ O_NEGATE,			V_DENORM },
-		{ O_ABS,			V_DENORM },
-		{ O_SIGN,			V_ONE },
-		{ O_RADIANS,		V_DENORM },
-		{ O_DEGREES,		V_DEGREES_DENORM },
+		//operation				op den
+		{ OID_RETURN_VAL,		V_DENORM },
+		{ OID_D_EXTRACT,		V_DENORM },
+		{ OID_D_INSERT,			V_DENORM },
+		{ OID_SHUFFLE,			V_DENORM },
+		{ OID_COMPOSITE,		V_DENORM },
+		{ OID_COMPOSITE_INS,	V_DENORM },
+		{ OID_COPY,				V_DENORM },
+		{ OID_TRANSPOSE,		V_DENORM },
+		{ OID_NEGATE,			V_DENORM },
+		{ OID_ABS,				V_DENORM },
+		{ OID_SIGN,				V_ONE },
+		{ OID_RADIANS,			V_DENORM },
+		{ OID_DEGREES,			V_DEGREES_DENORM },
 	};
 
 	binaryOpFTZ.insert(binaryOpFTZ.begin(), binaryOpFTZArr,
@@ -1325,93 +1325,93 @@ TypeTestResults<double>::TypeTestResults()
 	// fp64 is supported by fewer operations then fp16 and fp32
 	// e.g. Radians and Degrees functions are not supported
 	const BinaryCase binaryOpFTZArr[] = {
-		//operation		den op one		den op den		den op inf		den op nan
-		{ O_ADD,		V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
-		{ O_SUB,		V_MINUS_ONE,	V_ZERO,			V_MINUS_INF,	V_UNUSED },
-		{ O_MUL,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_DIV,		V_ZERO,			V_UNUSED,		V_ZERO,			V_UNUSED },
-		{ O_REM,		V_ZERO,			V_UNUSED,		V_UNUSED,		V_UNUSED },
-		{ O_MOD,		V_ZERO,			V_UNUSED,		V_UNUSED,		V_UNUSED },
-		{ O_VEC_MUL_S,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_VEC_MUL_M,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_MAT_MUL_S,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_MAT_MUL_V,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_MAT_MUL_M,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_OUT_PROD,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_DOT,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
-		{ O_MIX,		V_HALF,			V_ZERO,			V_INF,			V_UNUSED },
-		{ O_MIN,		V_ZERO,			V_ZERO,			V_ZERO,			V_UNUSED },
-		{ O_MAX,		V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
-		{ O_CLAMP,		V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
-		{ O_STEP,		V_ONE,			V_ONE,			V_ONE,			V_UNUSED },
-		{ O_SSTEP,		V_HALF,			V_ONE,			V_ZERO,			V_UNUSED },
-		{ O_FMA,		V_HALF,			V_HALF,			V_UNUSED,		V_UNUSED },
-		{ O_FACE_FWD,	V_MINUS_ONE,	V_MINUS_ONE,	V_MINUS_ONE,	V_MINUS_ONE },
-		{ O_NMIN,		V_ZERO,			V_ZERO,			V_ZERO,			V_ZERO },
-		{ O_NMAX,		V_ONE,			V_ZERO,			V_INF,			V_ZERO },
-		{ O_NCLAMP,		V_ONE,			V_ZERO,			V_INF,			V_ZERO },
-		{ O_DIST,		V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
-		{ O_CROSS,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		//operation			den op one		den op den		den op inf		den op nan
+		{ OID_ADD,			V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
+		{ OID_SUB,			V_MINUS_ONE,	V_ZERO,			V_MINUS_INF,	V_UNUSED },
+		{ OID_MUL,			V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_DIV,			V_ZERO,			V_UNUSED,		V_ZERO,			V_UNUSED },
+		{ OID_REM,			V_ZERO,			V_UNUSED,		V_UNUSED,		V_UNUSED },
+		{ OID_MOD,			V_ZERO,			V_UNUSED,		V_UNUSED,		V_UNUSED },
+		{ OID_VEC_MUL_S,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_VEC_MUL_M,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_MAT_MUL_S,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_MAT_MUL_V,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_MAT_MUL_M,	V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_OUT_PROD,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_DOT,			V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
+		{ OID_MIX,			V_HALF,			V_ZERO,			V_INF,			V_UNUSED },
+		{ OID_MIN,			V_ZERO,			V_ZERO,			V_ZERO,			V_UNUSED },
+		{ OID_MAX,			V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
+		{ OID_CLAMP,		V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
+		{ OID_STEP,			V_ONE,			V_ONE,			V_ONE,			V_UNUSED },
+		{ OID_SSTEP,		V_HALF,			V_ONE,			V_ZERO,			V_UNUSED },
+		{ OID_FMA,			V_HALF,			V_HALF,			V_UNUSED,		V_UNUSED },
+		{ OID_FACE_FWD,		V_MINUS_ONE,	V_MINUS_ONE,	V_MINUS_ONE,	V_MINUS_ONE },
+		{ OID_NMIN,			V_ZERO,			V_ZERO,			V_ZERO,			V_ZERO },
+		{ OID_NMAX,			V_ONE,			V_ZERO,			V_INF,			V_ZERO },
+		{ OID_NCLAMP,		V_ONE,			V_ZERO,			V_INF,			V_ZERO },
+		{ OID_DIST,			V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
+		{ OID_CROSS,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
 	};
 
 	const UnaryCase unaryOpFTZArr[] = {
 		//operation			op den
-		{ O_NEGATE,			V_MINUS_ZERO },
-		{ O_ROUND,			V_ZERO },
-		{ O_ROUND_EV,		V_ZERO },
-		{ O_TRUNC,			V_ZERO },
-		{ O_ABS,			V_ZERO },
-		{ O_FLOOR,			V_ZERO },
-		{ O_CEIL,			V_ZERO_OR_ONE },
-		{ O_FRACT,			V_ZERO },
-		{ O_SQRT,			V_ZERO_OR_SQRT_DENORM },
-		{ O_INV_SQRT,		V_INF_OR_INV_SQRT_DENORM },
-		{ O_MAT_DET,		V_ZERO },
-		{ O_MAT_INV,		V_ZERO_OR_MINUS_ZERO },
-		{ O_MODF,			V_ZERO },
-		{ O_MODF_ST,		V_ZERO },
-		{ O_NORMALIZE,		V_ZERO },
-		{ O_REFLECT,		V_ZERO },
-		{ O_LENGHT,			V_ZERO },
+		{ OID_NEGATE,		V_MINUS_ZERO },
+		{ OID_ROUND,		V_ZERO },
+		{ OID_ROUND_EV,		V_ZERO },
+		{ OID_TRUNC,		V_ZERO },
+		{ OID_ABS,			V_ZERO },
+		{ OID_FLOOR,		V_ZERO },
+		{ OID_CEIL,			V_ZERO_OR_ONE },
+		{ OID_FRACT,		V_ZERO },
+		{ OID_SQRT,			V_ZERO_OR_SQRT_DENORM },
+		{ OID_INV_SQRT,		V_INF_OR_INV_SQRT_DENORM },
+		{ OID_MAT_DET,		V_ZERO },
+		{ OID_MAT_INV,		V_ZERO_OR_MINUS_ZERO },
+		{ OID_MODF,			V_ZERO },
+		{ OID_MODF_ST,		V_ZERO },
+		{ OID_NORMALIZE,	V_ZERO },
+		{ OID_REFLECT,		V_ZERO },
+		{ OID_LENGHT,		V_ZERO },
 	};
 
 	const BinaryCase binaryOpDenormPreserveArr[] = {
 		//operation			den op one			den op den				den op inf		den op nan
-		{ O_PHI,			V_DENORM,			V_DENORM,				V_DENORM,		V_DENORM },
-		{ O_SELECT,			V_DENORM,			V_DENORM,				V_DENORM,		V_DENORM },
-		{ O_ADD,			V_ONE,				V_DENORM_TIMES_TWO,		V_INF,			V_NAN },
-		{ O_SUB,			V_MINUS_ONE,		V_ZERO,					V_MINUS_INF,	V_NAN },
-		{ O_MUL,			V_DENORM,			V_ZERO,					V_INF,			V_NAN },
-		{ O_VEC_MUL_S,		V_DENORM,			V_ZERO,					V_INF,			V_NAN },
-		{ O_VEC_MUL_M,		V_DENORM_TIMES_TWO,	V_ZERO,					V_INF,			V_NAN },
-		{ O_MAT_MUL_S,		V_DENORM,			V_ZERO,					V_INF,			V_NAN },
-		{ O_MAT_MUL_V,		V_DENORM_TIMES_TWO,	V_ZERO,					V_INF,			V_NAN },
-		{ O_MAT_MUL_M,		V_DENORM_TIMES_TWO,	V_ZERO,					V_INF,			V_NAN },
-		{ O_OUT_PROD,		V_DENORM,			V_ZERO,					V_INF,			V_NAN },
-		{ O_DOT,			V_DENORM_TIMES_TWO,	V_ZERO,					V_INF,			V_NAN },
-		{ O_MIX,			V_HALF,				V_DENORM,				V_INF,			V_NAN },
-		{ O_FMA,			V_HALF,				V_HALF,					V_INF,			V_NAN },
-		{ O_MIN,			V_DENORM,			V_DENORM,				V_DENORM,		V_UNUSED },
-		{ O_MAX,			V_ONE,				V_DENORM,				V_INF,			V_UNUSED },
-		{ O_CLAMP,			V_ONE,				V_DENORM,				V_INF,			V_UNUSED },
-		{ O_NMIN,			V_DENORM,			V_DENORM,				V_DENORM,		V_DENORM },
-		{ O_NMAX,			V_ONE,				V_DENORM,				V_INF,			V_DENORM },
-		{ O_NCLAMP,			V_ONE,				V_DENORM,				V_INF,			V_DENORM },
+		{ OID_PHI,			V_DENORM,			V_DENORM,				V_DENORM,		V_DENORM },
+		{ OID_SELECT,		V_DENORM,			V_DENORM,				V_DENORM,		V_DENORM },
+		{ OID_ADD,			V_ONE,				V_DENORM_TIMES_TWO,		V_INF,			V_NAN },
+		{ OID_SUB,			V_MINUS_ONE,		V_ZERO,					V_MINUS_INF,	V_NAN },
+		{ OID_MUL,			V_DENORM,			V_ZERO,					V_INF,			V_NAN },
+		{ OID_VEC_MUL_S,	V_DENORM,			V_ZERO,					V_INF,			V_NAN },
+		{ OID_VEC_MUL_M,	V_DENORM_TIMES_TWO,	V_ZERO,					V_INF,			V_NAN },
+		{ OID_MAT_MUL_S,	V_DENORM,			V_ZERO,					V_INF,			V_NAN },
+		{ OID_MAT_MUL_V,	V_DENORM_TIMES_TWO,	V_ZERO,					V_INF,			V_NAN },
+		{ OID_MAT_MUL_M,	V_DENORM_TIMES_TWO,	V_ZERO,					V_INF,			V_NAN },
+		{ OID_OUT_PROD,		V_DENORM,			V_ZERO,					V_INF,			V_NAN },
+		{ OID_DOT,			V_DENORM_TIMES_TWO,	V_ZERO,					V_INF,			V_NAN },
+		{ OID_MIX,			V_HALF,				V_DENORM,				V_INF,			V_NAN },
+		{ OID_FMA,			V_HALF,				V_HALF,					V_INF,			V_NAN },
+		{ OID_MIN,			V_DENORM,			V_DENORM,				V_DENORM,		V_UNUSED },
+		{ OID_MAX,			V_ONE,				V_DENORM,				V_INF,			V_UNUSED },
+		{ OID_CLAMP,		V_ONE,				V_DENORM,				V_INF,			V_UNUSED },
+		{ OID_NMIN,			V_DENORM,			V_DENORM,				V_DENORM,		V_DENORM },
+		{ OID_NMAX,			V_ONE,				V_DENORM,				V_INF,			V_DENORM },
+		{ OID_NCLAMP,		V_ONE,				V_DENORM,				V_INF,			V_DENORM },
 	};
 
 	const UnaryCase unaryOpDenormPreserveArr[] = {
-		//operation			op den
-		{ O_RETURN_VAL,		V_DENORM },
-		{ O_D_EXTRACT,		V_DENORM },
-		{ O_D_INSERT,		V_DENORM },
-		{ O_SHUFFLE,		V_DENORM },
-		{ O_COMPOSITE,		V_DENORM },
-		{ O_COMPOSITE_INS,	V_DENORM },
-		{ O_COPY,			V_DENORM },
-		{ O_TRANSPOSE,		V_DENORM },
-		{ O_NEGATE,			V_DENORM },
-		{ O_ABS,			V_DENORM },
-		{ O_SIGN,			V_ONE },
+		//operation				op den
+		{ OID_RETURN_VAL,		V_DENORM },
+		{ OID_D_EXTRACT,		V_DENORM },
+		{ OID_D_INSERT,			V_DENORM },
+		{ OID_SHUFFLE,			V_DENORM },
+		{ OID_COMPOSITE,		V_DENORM },
+		{ OID_COMPOSITE_INS,	V_DENORM },
+		{ OID_COPY,				V_DENORM },
+		{ OID_TRANSPOSE,		V_DENORM },
+		{ OID_NEGATE,			V_DENORM },
+		{ OID_ABS,				V_DENORM },
+		{ OID_SIGN,				V_ONE },
 	};
 
 	binaryOpFTZ.insert(binaryOpFTZ.begin(), binaryOpFTZArr,
@@ -1642,91 +1642,91 @@ void TestCasesBuilder::init()
 	// m_operations contains generic operation definitions that can be
 	// used for all float types
 
-	mo[O_NEGATE]		= Op("negate",		FLOAT_ARITHMETIC,
-											"%result             = OpFNegate %type_float %arg1\n",
-											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_COMPOSITE]		= Op("composite",	FLOAT_ARITHMETIC,
-											"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-											"%result             = OpCompositeExtract %type_float %vec1 0\n",
-											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_COMPOSITE_INS]	= Op("comp_ins",	FLOAT_ARITHMETIC,
-											"%vec1               = OpCompositeConstruct %type_float_vec2 %c_float_0 %c_float_0\n"
-											"%vec2               = OpCompositeInsert %type_float_vec2 %arg1 %vec1 0\n"
-											"%result             = OpCompositeExtract %type_float %vec2 0\n",
-											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_COPY]			= Op("copy",		FLOAT_STORAGE_ONLY,
-											"%result             = OpCopyObject %type_float %arg1\n",
-											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_D_EXTRACT]		= Op("extract",		FLOAT_ARITHMETIC,
-											"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-											"%result             = OpVectorExtractDynamic %type_float %vec1 %c_i32_0\n",
-											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_D_INSERT]		= Op("insert",		FLOAT_ARITHMETIC,
-											"%tmpVec             = OpCompositeConstruct %type_float_vec2 %c_float_2 %c_float_2\n"
-											"%vec1               = OpVectorInsertDynamic %type_float_vec2 %tmpVec %arg1 %c_i32_0\n"
-											"%result             = OpCompositeExtract %type_float %vec1 0\n",
-											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_SHUFFLE]		= Op("shuffle",		FLOAT_ARITHMETIC,
-											"%tmpVec1            = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-											"%tmpVec2            = OpCompositeConstruct %type_float_vec2 %c_float_2 %c_float_2\n"	// NOTE: its impossible to test shuffle with denorms flushed
-											"%vec1               = OpVectorShuffle %type_float_vec2 %tmpVec1 %tmpVec2 0 2\n"		//       to zero as this will be done by earlier operation
-											"%result             = OpCompositeExtract %type_float %vec1 0\n",						//       (this also applies to few other operations)
-											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_TRANSPOSE]		= Op("transpose",	FLOAT_ARITHMETIC,
-											"%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-											"%mat                = OpCompositeConstruct %type_float_mat2x2 %col %col\n"
-											"%tmat               = OpTranspose %type_float_mat2x2 %mat\n"
-											"%tcol               = OpCompositeExtract %type_float_vec2 %tmat 0\n"
-											"%result             = OpCompositeExtract %type_float %tcol 0\n",
-											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_RETURN_VAL]	= Op("ret_val",		FLOAT_ARITHMETIC,
-											"",
-											"%type_test_fun      = OpTypeFunction %type_float %type_float\n",
-											"",
-											"",
-											"%test_fun = OpFunction %type_float None %type_test_fun\n"
-											"%param = OpFunctionParameter %type_float\n"
-											"%entry = OpLabel\n"
-											"OpReturnValue %param\n"
-											"OpFunctionEnd\n",
-											"%result             = OpFunctionCall %type_float %test_fun %arg1\n",
-											B_STATEMENT_USAGE_TYPES_TYPE_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_NEGATE]			= Op("negate",		FLOAT_ARITHMETIC,
+												"%result             = OpFNegate %type_float %arg1\n",
+												B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_COMPOSITE]		= Op("composite",	FLOAT_ARITHMETIC,
+												"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
+												"%result             = OpCompositeExtract %type_float %vec1 0\n",
+												B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_COMPOSITE_INS]	= Op("comp_ins",	FLOAT_ARITHMETIC,
+												"%vec1               = OpCompositeConstruct %type_float_vec2 %c_float_0 %c_float_0\n"
+												"%vec2               = OpCompositeInsert %type_float_vec2 %arg1 %vec1 0\n"
+												"%result             = OpCompositeExtract %type_float %vec2 0\n",
+												B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_COPY]			= Op("copy",		FLOAT_STORAGE_ONLY,
+												"%result             = OpCopyObject %type_float %arg1\n",
+												B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_D_EXTRACT]		= Op("extract",		FLOAT_ARITHMETIC,
+												"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
+												"%result             = OpVectorExtractDynamic %type_float %vec1 %c_i32_0\n",
+												B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_D_INSERT]		= Op("insert",		FLOAT_ARITHMETIC,
+												"%tmpVec             = OpCompositeConstruct %type_float_vec2 %c_float_2 %c_float_2\n"
+												"%vec1               = OpVectorInsertDynamic %type_float_vec2 %tmpVec %arg1 %c_i32_0\n"
+												"%result             = OpCompositeExtract %type_float %vec1 0\n",
+												B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_SHUFFLE]			= Op("shuffle",		FLOAT_ARITHMETIC,
+												"%tmpVec1            = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
+												"%tmpVec2            = OpCompositeConstruct %type_float_vec2 %c_float_2 %c_float_2\n"	// NOTE: its impossible to test shuffle with denorms flushed
+												"%vec1               = OpVectorShuffle %type_float_vec2 %tmpVec1 %tmpVec2 0 2\n"		//       to zero as this will be done by earlier operation
+												"%result             = OpCompositeExtract %type_float %vec1 0\n",						//       (this also applies to few other operations)
+												B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_TRANSPOSE]		= Op("transpose",	FLOAT_ARITHMETIC,
+												"%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
+												"%mat                = OpCompositeConstruct %type_float_mat2x2 %col %col\n"
+												"%tmat               = OpTranspose %type_float_mat2x2 %mat\n"
+												"%tcol               = OpCompositeExtract %type_float_vec2 %tmat 0\n"
+												"%result             = OpCompositeExtract %type_float %tcol 0\n",
+												B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_RETURN_VAL]		= Op("ret_val",		FLOAT_ARITHMETIC,
+												"",
+												"%type_test_fun      = OpTypeFunction %type_float %type_float\n",
+												"",
+												"",
+												"%test_fun = OpFunction %type_float None %type_test_fun\n"
+												"%param = OpFunctionParameter %type_float\n"
+												"%entry = OpLabel\n"
+												"OpReturnValue %param\n"
+												"OpFunctionEnd\n",
+												"%result             = OpFunctionCall %type_float %test_fun %arg1\n",
+												B_STATEMENT_USAGE_TYPES_TYPE_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 
 	// conversion operations that are meant to be used only for single output type (defined by the second number in name)
-	const char* convertSource =				"%result             = OpFConvert %type_float %arg1\n";
-	mo[O_CONV_FROM_FP16]	= Op("conv_from_fp16", FLOAT_STORAGE_ONLY, false, FP16, "", convertSource, B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_CONV_FROM_FP32]	= Op("conv_from_fp32", FLOAT_STORAGE_ONLY, false, FP32, "", convertSource, B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_CONV_FROM_FP64]	= Op("conv_from_fp64", FLOAT_STORAGE_ONLY, false, FP64, "", convertSource, B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	const char* convertSource =					"%result             = OpFConvert %type_float %arg1\n";
+	mo[OID_CONV_FROM_FP16]	= Op("conv_from_fp16", FLOAT_STORAGE_ONLY, false, FP16, "", convertSource, B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_CONV_FROM_FP32]	= Op("conv_from_fp32", FLOAT_STORAGE_ONLY, false, FP32, "", convertSource, B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_CONV_FROM_FP64]	= Op("conv_from_fp64", FLOAT_STORAGE_ONLY, false, FP64, "", convertSource, B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 
 	// from all operands supported by OpSpecConstantOp we can only test FConvert opcode with literals as everything
 	// else requires Karnel capability (OpenCL); values of literals used in SPIR-V code must be equiwalent to
 	// V_CONV_FROM_FP32_ARG and V_CONV_FROM_FP64_ARG so we can use same expected rounded values as for regular OpFConvert
-	mo[O_SCONST_CONV_FROM_FP32_TO_FP16]
+	mo[OID_SCONST_CONV_FROM_FP32_TO_FP16]
 						= Op("sconst_conv_from_fp32", FLOAT_ARITHMETIC, true, FP32,
 											"%c_arg              = OpConstant %type_f32 1.22334445\n"
 											"%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n",
 											"",
 											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP32);
-	mo[O_SCONST_CONV_FROM_FP64_TO_FP32]
+	mo[OID_SCONST_CONV_FROM_FP64_TO_FP32]
 						= Op("sconst_conv_from_fp64", FLOAT_ARITHMETIC, true, FP64,
 											"%c_arg              = OpConstant %type_f64 1.22334455\n"
 											"%result             = OpSpecConstantOp %type_f32 FConvert %c_arg\n",
 											"",
 											B_STATEMENT_USAGE_CONSTS_TYPE_FP32 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
-	mo[O_SCONST_CONV_FROM_FP64_TO_FP16]
+	mo[OID_SCONST_CONV_FROM_FP64_TO_FP16]
 						= Op("sconst_conv_from_fp64", FLOAT_ARITHMETIC, true, FP64,
 											"%c_arg              = OpConstant %type_f64 1.22334445\n"
 											"%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n",
 											"",
 											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
 
-	mo[O_ADD]			= Op("add",			FLOAT_ARITHMETIC, "%result             = OpFAdd %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_SUB]			= Op("sub",			FLOAT_ARITHMETIC, "%result             = OpFSub %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_MUL]			= Op("mul",			FLOAT_ARITHMETIC, "%result             = OpFMul %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_DIV]			= Op("div",			FLOAT_ARITHMETIC, "%result             = OpFDiv %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_REM]			= Op("rem",			FLOAT_ARITHMETIC, "%result             = OpFRem %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_MOD]			= Op("mod",			FLOAT_ARITHMETIC, "%result             = OpFMod %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_PHI]			= Op("phi",			FLOAT_ARITHMETIC,
+	mo[OID_ADD]			= Op("add",			FLOAT_ARITHMETIC, "%result             = OpFAdd %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_SUB]			= Op("sub",			FLOAT_ARITHMETIC, "%result             = OpFSub %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_MUL]			= Op("mul",			FLOAT_ARITHMETIC, "%result             = OpFMul %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_DIV]			= Op("div",			FLOAT_ARITHMETIC, "%result             = OpFDiv %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_REM]			= Op("rem",			FLOAT_ARITHMETIC, "%result             = OpFRem %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_MOD]			= Op("mod",			FLOAT_ARITHMETIC, "%result             = OpFMod %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_PHI]			= Op("phi",			FLOAT_ARITHMETIC,
 											"%comp               = OpFOrdGreaterThan %type_bool %arg1 %arg2\n"
 											"                      OpSelectionMerge %comp_merge None\n"
 											"                      OpBranchConditional %comp %true_branch %false_branch\n"
@@ -1737,42 +1737,42 @@ void TestCasesBuilder::init()
 											"%comp_merge         = OpLabel\n"
 											"%result             = OpPhi %type_float %arg2 %true_branch %arg1 %false_branch\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_SELECT]		= Op("select",		FLOAT_ARITHMETIC,
+	mo[OID_SELECT]		= Op("select",		FLOAT_ARITHMETIC,
 											"%always_true        = OpFOrdGreaterThan %type_bool %c_float_1 %c_float_0\n"
 											"%result             = OpSelect %type_float %always_true %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_DOT]			= Op("dot",			FLOAT_ARITHMETIC,
+	mo[OID_DOT]			= Op("dot",			FLOAT_ARITHMETIC,
 											"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%vec2               = OpCompositeConstruct %type_float_vec2 %arg2 %arg2\n"
 											"%result             = OpDot %type_float %vec1 %vec2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_VEC_MUL_S]		= Op("vmuls",		FLOAT_ARITHMETIC,
+	mo[OID_VEC_MUL_S]	= Op("vmuls",		FLOAT_ARITHMETIC,
 											"%vec                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%tmpVec             = OpVectorTimesScalar %type_float_vec2 %vec %arg2\n"
 											"%result             = OpCompositeExtract %type_float %tmpVec 0\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_VEC_MUL_M]		= Op("vmulm",		FLOAT_ARITHMETIC,
+	mo[OID_VEC_MUL_M]	= Op("vmulm",		FLOAT_ARITHMETIC,
 											"%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%mat                = OpCompositeConstruct %type_float_mat2x2 %col %col\n"
 											"%vec                = OpCompositeConstruct %type_float_vec2 %arg2 %arg2\n"
 											"%tmpVec             = OpVectorTimesMatrix %type_float_vec2 %vec %mat\n"
 											"%result             = OpCompositeExtract %type_float %tmpVec 0\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_MAT_MUL_S]		= Op("mmuls",		FLOAT_ARITHMETIC,
+	mo[OID_MAT_MUL_S]	= Op("mmuls",		FLOAT_ARITHMETIC,
 											"%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%mat                = OpCompositeConstruct %type_float_mat2x2 %col %col\n"
 											"%mulMat             = OpMatrixTimesScalar %type_float_mat2x2 %mat %arg2\n"
 											"%extCol             = OpCompositeExtract %type_float_vec2 %mulMat 0\n"
 											"%result             = OpCompositeExtract %type_float %extCol 0\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_MAT_MUL_V]		= Op("mmulv",		FLOAT_ARITHMETIC,
+	mo[OID_MAT_MUL_V]	= Op("mmulv",		FLOAT_ARITHMETIC,
 											"%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%mat                = OpCompositeConstruct %type_float_mat2x2 %col %col\n"
 											"%vec                = OpCompositeConstruct %type_float_vec2 %arg2 %arg2\n"
 											"%mulVec             = OpMatrixTimesVector %type_float_vec2 %mat %vec\n"
 											"%result             = OpCompositeExtract %type_float %mulVec 0\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_MAT_MUL_M]		= Op("mmulm",		FLOAT_ARITHMETIC,
+	mo[OID_MAT_MUL_M]	= Op("mmulm",		FLOAT_ARITHMETIC,
 											"%col1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%mat1               = OpCompositeConstruct %type_float_mat2x2 %col1 %col1\n"
 											"%col2               = OpCompositeConstruct %type_float_vec2 %arg2 %arg2\n"
@@ -1781,7 +1781,7 @@ void TestCasesBuilder::init()
 											"%extCol             = OpCompositeExtract %type_float_vec2 %mulMat 0\n"
 											"%result             = OpCompositeExtract %type_float %extCol 0\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_OUT_PROD]		= Op("out_prod",	FLOAT_ARITHMETIC,
+	mo[OID_OUT_PROD]	= Op("out_prod",	FLOAT_ARITHMETIC,
 											"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%vec2               = OpCompositeConstruct %type_float_vec2 %arg2 %arg2\n"
 											"%mulMat             = OpOuterProduct %type_float_mat2x2 %vec1 %vec2\n"
@@ -1790,189 +1790,189 @@ void TestCasesBuilder::init()
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 
 	// comparison operations
-	mo[O_ORD_EQ]		= Op("ord_eq",		FLOAT_ARITHMETIC,
+	mo[OID_ORD_EQ]		= Op("ord_eq",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFOrdEqual %type_bool %arg1 %arg2\n"
 											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_UORD_EQ]		= Op("uord_eq",		FLOAT_ARITHMETIC,
+	mo[OID_UORD_EQ]		= Op("uord_eq",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFUnordEqual %type_bool %arg1 %arg2\n"
 											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_ORD_NEQ]		= Op("ord_neq",		FLOAT_ARITHMETIC,
+	mo[OID_ORD_NEQ]		= Op("ord_neq",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFOrdNotEqual %type_bool %arg1 %arg2\n"
 											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_UORD_NEQ]		= Op("uord_neq",	FLOAT_ARITHMETIC,
+	mo[OID_UORD_NEQ]	= Op("uord_neq",	FLOAT_ARITHMETIC,
 											"%boolVal           = OpFUnordNotEqual %type_bool %arg1 %arg2\n"
 											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_ORD_LS]		= Op("ord_ls",		FLOAT_ARITHMETIC,
+	mo[OID_ORD_LS]		= Op("ord_ls",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFOrdLessThan %type_bool %arg1 %arg2\n"
 											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_UORD_LS]		= Op("uord_ls",		FLOAT_ARITHMETIC,
+	mo[OID_UORD_LS]		= Op("uord_ls",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFUnordLessThan %type_bool %arg1 %arg2\n"
 											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_ORD_GT]		= Op("ord_gt",		FLOAT_ARITHMETIC,
+	mo[OID_ORD_GT]		= Op("ord_gt",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFOrdGreaterThan %type_bool %arg1 %arg2\n"
 											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_UORD_GT]		= Op("uord_gt",		FLOAT_ARITHMETIC,
+	mo[OID_UORD_GT]		= Op("uord_gt",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFUnordGreaterThan %type_bool %arg1 %arg2\n"
 											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_ORD_LE]		= Op("ord_le",		FLOAT_ARITHMETIC,
+	mo[OID_ORD_LE]		= Op("ord_le",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFOrdLessThanEqual %type_bool %arg1 %arg2\n"
 											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_UORD_LE]		= Op("uord_le",		FLOAT_ARITHMETIC,
+	mo[OID_UORD_LE]		= Op("uord_le",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFUnordLessThanEqual %type_bool %arg1 %arg2\n"
 											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_ORD_GE]		= Op("ord_ge",		FLOAT_ARITHMETIC,
+	mo[OID_ORD_GE]		= Op("ord_ge",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFOrdGreaterThanEqual %type_bool %arg1 %arg2\n"
 											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_UORD_GE]		= Op("uord_ge",		FLOAT_ARITHMETIC,
+	mo[OID_UORD_GE]		= Op("uord_ge",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFUnordGreaterThanEqual %type_bool %arg1 %arg2\n"
 											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 
-	mo[O_ATAN2]			= Op("atan2",		FLOAT_ARITHMETIC,
+	mo[OID_ATAN2]		= Op("atan2",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Atan2 %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_POW]			= Op("pow",			FLOAT_ARITHMETIC,
+	mo[OID_POW]			= Op("pow",			FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Pow %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_MIX]			= Op("mix",			FLOAT_ARITHMETIC,
+	mo[OID_MIX]			= Op("mix",			FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 FMix %arg1 %arg2 %c_float_0_5\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_FMA]			= Op("fma",			FLOAT_ARITHMETIC,
+	mo[OID_FMA]			= Op("fma",			FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Fma %arg1 %arg2 %c_float_0_5\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_MIN]			= Op("min",			FLOAT_ARITHMETIC,
+	mo[OID_MIN]			= Op("min",			FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 FMin %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_MAX]			= Op("max",			FLOAT_ARITHMETIC,
+	mo[OID_MAX]			= Op("max",			FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 FMax %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_CLAMP]			= Op("clamp",		FLOAT_ARITHMETIC,
+	mo[OID_CLAMP]		= Op("clamp",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 FClamp %arg1 %arg2 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_STEP]			= Op("step",		FLOAT_ARITHMETIC,
+	mo[OID_STEP]		= Op("step",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Step %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_SSTEP]			= Op("sstep",		FLOAT_ARITHMETIC,
+	mo[OID_SSTEP]		= Op("sstep",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 SmoothStep %arg1 %arg2 %c_float_0_5\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_DIST]			= Op("distance",	FLOAT_ARITHMETIC,
+	mo[OID_DIST]		= Op("distance",	FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Distance %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_CROSS]			= Op("cross",		FLOAT_ARITHMETIC,
+	mo[OID_CROSS]		= Op("cross",		FLOAT_ARITHMETIC,
 											"%vec1               = OpCompositeConstruct %type_float_vec3 %arg1 %arg1 %arg1\n"
 											"%vec2               = OpCompositeConstruct %type_float_vec3 %arg2 %arg2 %arg2\n"
 											"%tmpVec             = OpExtInst %type_float_vec3 %std450 Cross %vec1 %vec2\n"
 											"%result             = OpCompositeExtract %type_float %tmpVec 0\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_FACE_FWD]		= Op("face_fwd",	FLOAT_ARITHMETIC,
+	mo[OID_FACE_FWD]	= Op("face_fwd",	FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 FaceForward %c_float_1 %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_NMIN]			= Op("nmin",		FLOAT_ARITHMETIC,
+	mo[OID_NMIN]		= Op("nmin",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 NMin %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_NMAX]			= Op("nmax",		FLOAT_ARITHMETIC,
+	mo[OID_NMAX]		= Op("nmax",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 NMax %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_NCLAMP]		= Op("nclamp",		FLOAT_ARITHMETIC,
+	mo[OID_NCLAMP]		= Op("nclamp",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 NClamp %arg2 %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 
-	mo[O_ROUND]			= Op("round",		FLOAT_ARITHMETIC,
+	mo[OID_ROUND]		= Op("round",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Round %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_ROUND_EV]		= Op("round_ev",	FLOAT_ARITHMETIC,
+	mo[OID_ROUND_EV]	= Op("round_ev",	FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 RoundEven %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_TRUNC]			= Op("trunc",		FLOAT_ARITHMETIC,
+	mo[OID_TRUNC]		= Op("trunc",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Trunc %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_ABS]			= Op("abs",			FLOAT_ARITHMETIC,
+	mo[OID_ABS]			= Op("abs",			FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 FAbs %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_SIGN]			= Op("sign",		FLOAT_ARITHMETIC,
+	mo[OID_SIGN]		= Op("sign",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 FSign %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_FLOOR]			= Op("floor",		FLOAT_ARITHMETIC,
+	mo[OID_FLOOR]		= Op("floor",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Floor %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_CEIL]			= Op("ceil",		FLOAT_ARITHMETIC,
+	mo[OID_CEIL]		= Op("ceil",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Ceil %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_FRACT]			= Op("fract",		FLOAT_ARITHMETIC,
+	mo[OID_FRACT]		= Op("fract",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Fract %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_RADIANS]		= Op("radians",		FLOAT_ARITHMETIC,
+	mo[OID_RADIANS]		= Op("radians",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Radians %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_DEGREES]		= Op("degrees",		FLOAT_ARITHMETIC,
+	mo[OID_DEGREES]		= Op("degrees",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Degrees %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_SIN]			= Op("sin",			FLOAT_ARITHMETIC,
+	mo[OID_SIN]			= Op("sin",			FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Sin %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_COS]			= Op("cos",			FLOAT_ARITHMETIC,
+	mo[OID_COS]			= Op("cos",			FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Cos %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_TAN]			= Op("tan",			FLOAT_ARITHMETIC,
+	mo[OID_TAN]			= Op("tan",			FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Tan %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_ASIN]			= Op("asin",		FLOAT_ARITHMETIC,
+	mo[OID_ASIN]		= Op("asin",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Asin %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_ACOS]			= Op("acos",		FLOAT_ARITHMETIC,
+	mo[OID_ACOS]		= Op("acos",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Acos %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_ATAN]			= Op("atan",		FLOAT_ARITHMETIC,
+	mo[OID_ATAN]		= Op("atan",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Atan %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_SINH]			= Op("sinh",		FLOAT_ARITHMETIC,
+	mo[OID_SINH]		= Op("sinh",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Sinh %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_COSH]			= Op("cosh",		FLOAT_ARITHMETIC,
+	mo[OID_COSH]		= Op("cosh",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Cosh %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_TANH]			= Op("tanh",		FLOAT_ARITHMETIC,
+	mo[OID_TANH]		= Op("tanh",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Tanh %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_ASINH]			= Op("asinh",		FLOAT_ARITHMETIC,
+	mo[OID_ASINH]		= Op("asinh",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Asinh %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_ACOSH]			= Op("acosh",		FLOAT_ARITHMETIC,
+	mo[OID_ACOSH]		= Op("acosh",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Acosh %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_ATANH]			= Op("atanh",		FLOAT_ARITHMETIC,
+	mo[OID_ATANH]		= Op("atanh",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Atanh %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_EXP]			= Op("exp",			FLOAT_ARITHMETIC,
+	mo[OID_EXP]			= Op("exp",			FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Exp %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_LOG]			= Op("log",			FLOAT_ARITHMETIC,
+	mo[OID_LOG]			= Op("log",			FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Log %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_EXP2]			= Op("exp2",		FLOAT_ARITHMETIC,
+	mo[OID_EXP2]		= Op("exp2",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Exp2 %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_LOG2]			= Op("log2",		FLOAT_ARITHMETIC,
+	mo[OID_LOG2]		= Op("log2",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Log2 %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_SQRT]			= Op("sqrt",		FLOAT_ARITHMETIC,
+	mo[OID_SQRT]		= Op("sqrt",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Sqrt %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_INV_SQRT]		= Op("inv_sqrt",	FLOAT_ARITHMETIC,
+	mo[OID_INV_SQRT]	= Op("inv_sqrt",	FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 InverseSqrt %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_MODF]			= Op("modf",		FLOAT_ARITHMETIC,
+	mo[OID_MODF]		= Op("modf",		FLOAT_ARITHMETIC,
 											"",
 											"",
 											"",
@@ -1980,7 +1980,7 @@ void TestCasesBuilder::init()
 											"",
 											"%result             = OpExtInst %type_float %std450 Modf %arg1 %tmpVarPtr\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_MODF_ST]		= Op("modf_st",		FLOAT_ARITHMETIC,
+	mo[OID_MODF_ST]		= Op("modf_st",		FLOAT_ARITHMETIC,
 											"OpMemberDecorate %struct_ff 0 Offset ${float_width}\n"
 											"OpMemberDecorate %struct_ff 1 Offset ${float_width}\n",
 											"%struct_ff          = OpTypeStruct %type_float %type_float\n"
@@ -1993,7 +1993,7 @@ void TestCasesBuilder::init()
 											"%tmpLoc             = OpAccessChain %type_float_fptr %tmpStructPtr %c_i32_0\n"
 											"%result             = OpLoad %type_float %tmpLoc\n",
 											B_STATEMENT_USAGE_TYPES_TYPE_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_FREXP]			= Op("frexp",		FLOAT_ARITHMETIC,
+	mo[OID_FREXP]		= Op("frexp",		FLOAT_ARITHMETIC,
 											"",
 											"",
 											"",
@@ -2001,7 +2001,7 @@ void TestCasesBuilder::init()
 											"",
 											"%result             = OpExtInst %type_float %std450 Frexp %arg1 %tmpVarPtr\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_FREXP_ST]		= Op("frexp_st",	FLOAT_ARITHMETIC,
+	mo[OID_FREXP_ST]	= Op("frexp_st",	FLOAT_ARITHMETIC,
 											"OpMemberDecorate %struct_fi 0 Offset ${float_width}\n"
 											"OpMemberDecorate %struct_fi 1 Offset 32\n",
 											"%struct_fi          = OpTypeStruct %type_float %type_i32\n"
@@ -2014,32 +2014,32 @@ void TestCasesBuilder::init()
 											"%tmpLoc             = OpAccessChain %type_float_fptr %tmpStructPtr %c_i32_0\n"
 											"%result             = OpLoad %type_float %tmpLoc\n",
 											B_STATEMENT_USAGE_TYPES_TYPE_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_LENGHT]		= Op("length",		FLOAT_ARITHMETIC,
+	mo[OID_LENGHT]		= Op("length",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Length %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_NORMALIZE]		= Op("normalize",	FLOAT_ARITHMETIC,
+	mo[OID_NORMALIZE]	= Op("normalize",	FLOAT_ARITHMETIC,
 											"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %c_float_2\n"
 											"%tmpVec             = OpExtInst %type_float_vec2 %std450 Normalize %vec1\n"
 											"%result             = OpCompositeExtract %type_float %tmpVec 0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_REFLECT]		= Op("reflect",		FLOAT_ARITHMETIC,
+	mo[OID_REFLECT]		= Op("reflect",		FLOAT_ARITHMETIC,
 											"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%vecN               = OpCompositeConstruct %type_float_vec2 %c_float_0 %c_float_n1\n"
 											"%tmpVec             = OpExtInst %type_float_vec2 %std450 Reflect %vec1 %vecN\n"
 											"%result             = OpCompositeExtract %type_float %tmpVec 0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_REFRACT]		= Op("refract",		FLOAT_ARITHMETIC,
+	mo[OID_REFRACT]		= Op("refract",		FLOAT_ARITHMETIC,
 											"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%vecN               = OpCompositeConstruct %type_float_vec2 %c_float_0 %c_float_n1\n"
 											"%tmpVec             = OpExtInst %type_float_vec2 %std450 Refract %vec1 %vecN %c_float_0_5\n"
 											"%result             = OpCompositeExtract %type_float %tmpVec 0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_MAT_DET]		= Op("mat_det",		FLOAT_ARITHMETIC,
+	mo[OID_MAT_DET]		= Op("mat_det",		FLOAT_ARITHMETIC,
 											"%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%mat                = OpCompositeConstruct %type_float_mat2x2 %col %col\n"
 											"%result             = OpExtInst %type_float %std450 Determinant %mat\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[O_MAT_INV]		= Op("mat_inv",		FLOAT_ARITHMETIC,
+	mo[OID_MAT_INV]		= Op("mat_inv",		FLOAT_ARITHMETIC,
 											"%col1               = OpCompositeConstruct %type_float_vec2 %arg1 %c_float_1\n"
 											"%col2               = OpCompositeConstruct %type_float_vec2 %c_float_1 %c_float_1\n"
 											"%mat                = OpCompositeConstruct %type_float_mat2x2 %col1 %col2\n"
@@ -2050,7 +2050,7 @@ void TestCasesBuilder::init()
 
 	// PackHalf2x16 is a special case as it operates on fp32 vec2 and returns unsigned int,
 	// the verification is done in SPIR-V code (if result is correct 1.0 will be written to SSBO)
-	mo[O_PH_DENORM]		= Op("ph_denorm",	FLOAT_STORAGE_ONLY,
+	mo[OID_PH_DENORM]	= Op("ph_denorm",	FLOAT_STORAGE_ONLY,
 											"",
 											"",
 											"%c_fp32_denorm_fp16 = OpConstant %type_f32 6.01e-5\n"		// fp32 representation of fp16 denorm value
@@ -2065,7 +2065,7 @@ void TestCasesBuilder::init()
 
 	// UnpackHalf2x16 is a special case that operates on uint32 and returns two 32-bit floats,
 	// this function is tested using constants
-	mo[O_UPH_DENORM]	= Op("uph_denorm",	FLOAT_STORAGE_ONLY,
+	mo[OID_UPH_DENORM]	= Op("uph_denorm",	FLOAT_STORAGE_ONLY,
 											"",
 											"",
 											"%c_u32_2_16_pack    = OpConstant %type_u32 66061296\n", // == packHalf2x16(vec2(denorm))
@@ -2077,7 +2077,7 @@ void TestCasesBuilder::init()
 
 	// PackDouble2x32 is a special case that operates on two uint32 and returns
 	// double, this function is tested using constants
-	mo[O_PD_DENORM]		= Op("pd_denorm",	FLOAT_STORAGE_ONLY,
+	mo[OID_PD_DENORM]	= Op("pd_denorm",	FLOAT_STORAGE_ONLY,
 											"",
 											"",
 											"%c_p1               = OpConstant %type_u32 0\n"
@@ -2096,7 +2096,7 @@ void TestCasesBuilder::init()
 											"%boolVec2           = OpIEqual %type_bool_vec2 %refVec2 %resVec2\n"
 											"%boolVal            = OpAll %type_bool %boolVec2\n"
 											"%result             = OpSelect %type_f64 %boolVal %c_f64_1 %c_f64_0\n";
-	mo[O_UPD_DENORM_FLUSH]		= Op("upd_denorm",	FLOAT_STORAGE_ONLY, "",
+	mo[OID_UPD_DENORM_FLUSH]	= Op("upd_denorm",	FLOAT_STORAGE_ONLY, "",
 											unpackDouble2x32Types,
 											"%c_p1               = OpConstant %type_u32 0\n"
 											"%c_p2               = OpConstant %type_u32 0\n",
@@ -2104,7 +2104,7 @@ void TestCasesBuilder::init()
 											"",
 											unpackDouble2x32Source,
 											B_STATEMENT_USAGE_COMMANDS_CONST_FP64 | B_STATEMENT_USAGE_COMMANDS_TYPE_FP64);
-	mo[O_UPD_DENORM_PRESERVE]	= Op("upd_denorm",	FLOAT_STORAGE_ONLY, "",
+	mo[OID_UPD_DENORM_PRESERVE]	= Op("upd_denorm",	FLOAT_STORAGE_ONLY, "",
 											unpackDouble2x32Types,
 											"%c_p1               = OpConstant %type_u32 1008\n"
 											"%c_p2               = OpConstant %type_u32 0\n",
@@ -2113,13 +2113,13 @@ void TestCasesBuilder::init()
 											unpackDouble2x32Source,
 											B_STATEMENT_USAGE_COMMANDS_CONST_FP64 | B_STATEMENT_USAGE_COMMANDS_TYPE_FP64);
 
-	mo[O_ORTE_ROUND]	= Op("orte_round",	FLOAT_STORAGE_ONLY, FP32,
+	mo[OID_ORTE_ROUND]	= Op("orte_round",	FLOAT_STORAGE_ONLY, FP32,
 											"OpDecorate %result FPRoundingMode RTE\n",
 											"",
 											"",
 											"%result             = OpFConvert %type_f16 %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FP16);
-	mo[O_ORTZ_ROUND]	= Op("ortz_round",	FLOAT_STORAGE_ONLY, FP32,
+	mo[OID_ORTZ_ROUND]	= Op("ortz_round",	FLOAT_STORAGE_ONLY, FP32,
 											"OpDecorate %result FPRoundingMode RTZ\n",
 											"",
 											"",
@@ -2149,7 +2149,7 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		if (isFP16)
 		{
 			testCases.push_back(OTC("denorm_op_var_flush_to_zero_nostorage",		B_DENORM_FLUSH,					 operation, V_DENORM, V_ONE,		binaryCase.opVarResult, DE_TRUE));
-			testCases.push_back(OTC("denorm_op_denorm_flush_to_zero_nostorage",	B_DENORM_FLUSH,					 operation, V_DENORM, V_DENORM,		binaryCase.opDenormResult, DE_TRUE));
+			testCases.push_back(OTC("denorm_op_denorm_flush_to_zero_nostorage",		B_DENORM_FLUSH,					 operation, V_DENORM, V_DENORM,		binaryCase.opDenormResult, DE_TRUE));
 			testCases.push_back(OTC("denorm_op_inf_flush_to_zero_nostorage",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_INF,		binaryCase.opInfResult, DE_TRUE));
 			testCases.push_back(OTC("denorm_op_nan_flush_to_zero_nostorage",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_NAN,		binaryCase.opNanResult, DE_TRUE));
 		}
@@ -2209,24 +2209,24 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 
 	const ZINCase binaryOpZINPreserve[] = {
 		// operation		fp64	second arg		preserve zero	preserve szero		preserve inf	preserve sinf		preserve nan
-		{ O_PHI,			true,	V_INF,			V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_SELECT,			true,	V_ONE,			V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_ADD,			true,	V_ZERO,			V_ZERO,			V_ZERO,				V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_SUB,			true,	V_ZERO,			V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_MUL,			true,	V_ONE,			V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ OID_PHI,			true,	V_INF,			V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ OID_SELECT,		true,	V_ONE,			V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ OID_ADD,			true,	V_ZERO,			V_ZERO,			V_ZERO,				V_INF,			V_MINUS_INF,		V_NAN },
+		{ OID_SUB,			true,	V_ZERO,			V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ OID_MUL,			true,	V_ONE,			V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
 	};
 
 	const ZINCase unaryOpZINPreserve[] = {
 		// operation				fp64	second arg		preserve zero	preserve szero		preserve inf	preserve sinf		preserve nan
-		{ O_RETURN_VAL,				true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_D_EXTRACT,				true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_D_INSERT,				true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_SHUFFLE,				true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_COMPOSITE,				true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_COMPOSITE_INS,			true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_COPY,					true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_TRANSPOSE,				true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_NEGATE,					true,	V_UNUSED,		V_MINUS_ZERO,	V_ZERO,				V_MINUS_INF,	V_INF,				V_NAN },
+		{ OID_RETURN_VAL,			true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ OID_D_EXTRACT,			true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ OID_D_INSERT,				true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ OID_SHUFFLE,				true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ OID_COMPOSITE,			true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ OID_COMPOSITE_INS,		true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ OID_COPY,					true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ OID_TRANSPOSE,			true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ OID_NEGATE,				true,	V_UNUSED,		V_MINUS_ZERO,	V_ZERO,				V_MINUS_INF,	V_INF,				V_NAN },
 	};
 
 	bool isFP64 = typeTestResults->floatType() == FP64;
@@ -2286,18 +2286,18 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 	const ComparisonCase comparisonCases[] =
 	{
 		// operation	denorm
-		{ O_ORD_EQ,		V_ZERO },
-		{ O_UORD_EQ,	V_ZERO },
-		{ O_ORD_NEQ,	V_ONE  },
-		{ O_UORD_NEQ,	V_ONE  },
-		{ O_ORD_LS,		V_ONE  },
-		{ O_UORD_LS,	V_ONE  },
-		{ O_ORD_GT,		V_ZERO },
-		{ O_UORD_GT,	V_ZERO },
-		{ O_ORD_LE,		V_ONE  },
-		{ O_UORD_LE,	V_ONE  },
-		{ O_ORD_GE,		V_ZERO },
-		{ O_UORD_GE,	V_ZERO }
+		{ OID_ORD_EQ,	V_ZERO },
+		{ OID_UORD_EQ,	V_ZERO },
+		{ OID_ORD_NEQ,	V_ONE  },
+		{ OID_UORD_NEQ,	V_ONE  },
+		{ OID_ORD_LS,	V_ONE  },
+		{ OID_UORD_LS,	V_ONE  },
+		{ OID_ORD_GT,	V_ZERO },
+		{ OID_UORD_GT,	V_ZERO },
+		{ OID_ORD_LE,	V_ONE  },
+		{ OID_UORD_LE,	V_ONE  },
+		{ OID_ORD_GE,	V_ZERO },
+		{ OID_UORD_GE,	V_ZERO }
 	};
 	for (int op = 0 ; op < DE_LENGTH_OF_ARRAY(comparisonCases) ; ++op)
 	{
@@ -2320,22 +2320,22 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 
 		const RoundingModeCase roundingCases[] =
 		{
-			{ O_ADD,			V_ADD_ARG_A,	V_ADD_ARG_B,	V_ADD_RTE_RESULT,	V_ADD_RTZ_RESULT },
-			{ O_SUB,			V_SUB_ARG_A,	V_SUB_ARG_B,	V_SUB_RTE_RESULT,	V_SUB_RTZ_RESULT },
-			{ O_MUL,			V_MUL_ARG_A,	V_MUL_ARG_B,	V_MUL_RTE_RESULT,	V_MUL_RTZ_RESULT },
-			{ O_DOT,			V_DOT_ARG_A,	V_DOT_ARG_B,	V_DOT_RTE_RESULT,	V_DOT_RTZ_RESULT },
+			{ OID_ADD,			V_ADD_ARG_A,	V_ADD_ARG_B,	V_ADD_RTE_RESULT,	V_ADD_RTZ_RESULT },
+			{ OID_SUB,			V_SUB_ARG_A,	V_SUB_ARG_B,	V_SUB_RTE_RESULT,	V_SUB_RTZ_RESULT },
+			{ OID_MUL,			V_MUL_ARG_A,	V_MUL_ARG_B,	V_MUL_RTE_RESULT,	V_MUL_RTZ_RESULT },
+			{ OID_DOT,			V_DOT_ARG_A,	V_DOT_ARG_B,	V_DOT_RTE_RESULT,	V_DOT_RTZ_RESULT },
 
 			// in vect/mat multiplication by scalar operations only first element of result is checked
 			// so argument and result values prepared for multiplication can be reused for those cases
-			{ O_VEC_MUL_S,		V_MUL_ARG_A,	V_MUL_ARG_B,	V_MUL_RTE_RESULT,	V_MUL_RTZ_RESULT },
-			{ O_MAT_MUL_S,		V_MUL_ARG_A,	V_MUL_ARG_B,	V_MUL_RTE_RESULT,	V_MUL_RTZ_RESULT },
-			{ O_OUT_PROD,		V_MUL_ARG_A,	V_MUL_ARG_B,	V_MUL_RTE_RESULT,	V_MUL_RTZ_RESULT },
+			{ OID_VEC_MUL_S,	V_MUL_ARG_A,	V_MUL_ARG_B,	V_MUL_RTE_RESULT,	V_MUL_RTZ_RESULT },
+			{ OID_MAT_MUL_S,	V_MUL_ARG_A,	V_MUL_ARG_B,	V_MUL_RTE_RESULT,	V_MUL_RTZ_RESULT },
+			{ OID_OUT_PROD,		V_MUL_ARG_A,	V_MUL_ARG_B,	V_MUL_RTE_RESULT,	V_MUL_RTZ_RESULT },
 
 			// in SPIR-V code we return first element of operation result so for following
 			// cases argument and result values prepared for dot product can be reused
-			{ O_VEC_MUL_M,		V_DOT_ARG_A,	V_DOT_ARG_B,	V_DOT_RTE_RESULT,	V_DOT_RTZ_RESULT },
-			{ O_MAT_MUL_V,		V_DOT_ARG_A,	V_DOT_ARG_B,	V_DOT_RTE_RESULT,	V_DOT_RTZ_RESULT },
-			{ O_MAT_MUL_M,		V_DOT_ARG_A,	V_DOT_ARG_B,	V_DOT_RTE_RESULT,	V_DOT_RTZ_RESULT },
+			{ OID_VEC_MUL_M,	V_DOT_ARG_A,	V_DOT_ARG_B,	V_DOT_RTE_RESULT,	V_DOT_RTZ_RESULT },
+			{ OID_MAT_MUL_V,	V_DOT_ARG_A,	V_DOT_ARG_B,	V_DOT_RTE_RESULT,	V_DOT_RTZ_RESULT },
+			{ OID_MAT_MUL_M,	V_DOT_ARG_A,	V_DOT_ARG_B,	V_DOT_RTE_RESULT,	V_DOT_RTZ_RESULT },
 
 			// conversion operations are added separately - depending on float type width
 		};
@@ -2358,36 +2358,36 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 	{
 		if (argumentsFromInput)
 		{
-			testCases.push_back(OTC("rounding_rte_conv_from_fp32", B_RTE_ROUNDING, O_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp32", B_RTZ_ROUNDING, O_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rte_conv_from_fp64", B_RTE_ROUNDING, O_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp64", B_RTZ_ROUNDING, O_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp32", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp32", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
 
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32", B_RTE_ROUNDING, O_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32", B_RTZ_ROUNDING, O_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64", B_RTE_ROUNDING, O_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64", B_RTZ_ROUNDING, O_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
 
-			testCases.push_back(OTC("rounding_rte_conv_from_fp32_nostorage", B_RTE_ROUNDING, O_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, DE_TRUE));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_nostorage", B_RTZ_ROUNDING, O_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, DE_TRUE));
-			testCases.push_back(OTC("rounding_rte_conv_from_fp64_nostorage", B_RTE_ROUNDING, O_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, DE_TRUE));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_nostorage", B_RTZ_ROUNDING, O_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, DE_TRUE));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp32_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, DE_TRUE));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, DE_TRUE));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, DE_TRUE));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, DE_TRUE));
 
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_nostorage", B_RTE_ROUNDING, O_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, DE_TRUE));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_nostorage", B_RTZ_ROUNDING, O_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, DE_TRUE));
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_nostorage", B_RTE_ROUNDING, O_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, DE_TRUE));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_nostorage", B_RTZ_ROUNDING, O_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, DE_TRUE));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, DE_TRUE));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, DE_TRUE));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, DE_TRUE));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, DE_TRUE));
 
 			// verify that VkShaderFloatingPointRoundingModeKHR can be overridden for a given instruction by the FPRoundingMode decoration.
 			// FPRoundingMode decoration requires VK_KHR_16bit_storage.
-			testCases.push_back(OTC("rounding_rte_override", B_RTE_ROUNDING, O_ORTZ_ROUND, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rtz_override", B_RTZ_ROUNDING, O_ORTE_ROUND, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_override", B_RTE_ROUNDING, OID_ORTZ_ROUND, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_override", B_RTZ_ROUNDING, OID_ORTE_ROUND, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
 		}
 
-		createUnaryTestCases(testCases, O_CONV_FROM_FP32, V_CONV_DENORM_SMALLER, V_ZERO);
-		createUnaryTestCases(testCases, O_CONV_FROM_FP64, V_CONV_DENORM_BIGGER, V_ZERO);
-		createUnaryTestCases(testCases, O_CONV_FROM_FP32, V_CONV_DENORM_SMALLER, V_ZERO, DE_TRUE);
-		createUnaryTestCases(testCases, O_CONV_FROM_FP64, V_CONV_DENORM_BIGGER, V_ZERO, DE_TRUE);
+		createUnaryTestCases(testCases, OID_CONV_FROM_FP32, V_CONV_DENORM_SMALLER, V_ZERO);
+		createUnaryTestCases(testCases, OID_CONV_FROM_FP64, V_CONV_DENORM_BIGGER, V_ZERO);
+		createUnaryTestCases(testCases, OID_CONV_FROM_FP32, V_CONV_DENORM_SMALLER, V_ZERO, DE_TRUE);
+		createUnaryTestCases(testCases, OID_CONV_FROM_FP64, V_CONV_DENORM_BIGGER, V_ZERO, DE_TRUE);
 
 	}
 	else if (typeTestResults->floatType() == FP32)
@@ -2395,41 +2395,41 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		if (argumentsFromInput)
 		{
 			// convert from fp64 to fp32
-			testCases.push_back(OTC("rounding_rte_conv_from_fp64", B_RTE_ROUNDING, O_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP32_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp64", B_RTZ_ROUNDING, O_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP32_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP32_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP32_RTZ_RESULT));
 
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64", B_RTE_ROUNDING, O_SCONST_CONV_FROM_FP64_TO_FP32, V_UNUSED, V_UNUSED, V_CONV_TO_FP32_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64", B_RTZ_ROUNDING, O_SCONST_CONV_FROM_FP64_TO_FP32, V_UNUSED, V_UNUSED, V_CONV_TO_FP32_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32, V_UNUSED, V_UNUSED, V_CONV_TO_FP32_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32, V_UNUSED, V_UNUSED, V_CONV_TO_FP32_RTZ_RESULT));
 		}
 		else
 		{
 			// PackHalf2x16 - verification done in SPIR-V
-			testCases.push_back(OTC("pack_half_denorm_preserve",		B_DENORM_PRESERVE,	O_PH_DENORM,	V_UNUSED, V_UNUSED, V_ONE));
+			testCases.push_back(OTC("pack_half_denorm_preserve",		B_DENORM_PRESERVE,	OID_PH_DENORM,	V_UNUSED, V_UNUSED, V_ONE));
 
 			// UnpackHalf2x16 - custom arguments defined as constants
-			testCases.push_back(OTC("upack_half_denorm_flush_to_zero",	B_DENORM_FLUSH,		O_UPH_DENORM,	V_UNUSED, V_UNUSED, V_ZERO));
-			testCases.push_back(OTC("upack_half_denorm_preserve",		B_DENORM_PRESERVE,	O_UPH_DENORM,	V_UNUSED, V_UNUSED, V_CONV_DENORM_SMALLER));
+			testCases.push_back(OTC("upack_half_denorm_flush_to_zero",	B_DENORM_FLUSH,		OID_UPH_DENORM,	V_UNUSED, V_UNUSED, V_ZERO));
+			testCases.push_back(OTC("upack_half_denorm_preserve",		B_DENORM_PRESERVE,	OID_UPH_DENORM,	V_UNUSED, V_UNUSED, V_CONV_DENORM_SMALLER));
 		}
 
-		createUnaryTestCases(testCases, O_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP32);
-		createUnaryTestCases(testCases, O_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP32, DE_TRUE);
-		createUnaryTestCases(testCases, O_CONV_FROM_FP64, V_CONV_DENORM_BIGGER, V_ZERO);
+		createUnaryTestCases(testCases, OID_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP32);
+		createUnaryTestCases(testCases, OID_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP32, DE_TRUE);
+		createUnaryTestCases(testCases, OID_CONV_FROM_FP64, V_CONV_DENORM_BIGGER, V_ZERO);
 	}
 	else // FP64
 	{
 		if (!argumentsFromInput)
 		{
 			// PackDouble2x32 - custom arguments defined as constants
-			testCases.push_back(OTC("pack_double_denorm_preserve",			B_DENORM_PRESERVE,	O_PD_DENORM,			V_UNUSED, V_UNUSED, V_DENORM));
+			testCases.push_back(OTC("pack_double_denorm_preserve",			B_DENORM_PRESERVE,	OID_PD_DENORM,			V_UNUSED, V_UNUSED, V_DENORM));
 
 			// UnpackDouble2x32 - verification done in SPIR-V
-			testCases.push_back(OTC("upack_double_denorm_flush_to_zero",	B_DENORM_FLUSH,		O_UPD_DENORM_FLUSH,		V_DENORM, V_UNUSED, V_ONE));
-			testCases.push_back(OTC("upack_double_denorm_preserve",			B_DENORM_PRESERVE,	O_UPD_DENORM_PRESERVE,	V_DENORM, V_UNUSED, V_ONE));
+			testCases.push_back(OTC("upack_double_denorm_flush_to_zero",	B_DENORM_FLUSH,		OID_UPD_DENORM_FLUSH,		V_DENORM, V_UNUSED, V_ONE));
+			testCases.push_back(OTC("upack_double_denorm_preserve",			B_DENORM_PRESERVE,	OID_UPD_DENORM_PRESERVE,	V_DENORM, V_UNUSED, V_ONE));
 		}
 
-		createUnaryTestCases(testCases, O_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP64);
-		createUnaryTestCases(testCases, O_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP64, DE_TRUE);
-		createUnaryTestCases(testCases, O_CONV_FROM_FP32, V_CONV_DENORM_BIGGER, V_ZERO_OR_FP32_DENORM_TO_FP64);
+		createUnaryTestCases(testCases, OID_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP64);
+		createUnaryTestCases(testCases, OID_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP64, DE_TRUE);
+		createUnaryTestCases(testCases, OID_CONV_FROM_FP32, V_CONV_DENORM_BIGGER, V_ZERO_OR_FP32_DENORM_TO_FP64);
 	}
 }
 
@@ -3479,7 +3479,7 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	// internaly operates on fp16 and this type should be used by float controls
 	FloatType		inFloatTypeForCaps		= inFloatType;
 	string			inFloatWidthForCaps		= inTypeSnippets->bitWidth;
-	if (testCase.operationId == O_UPH_DENORM)
+	if (testCase.operationId == OID_UPH_DENORM)
 	{
 		inFloatTypeForCaps	= FP16;
 		inFloatWidthForCaps	= "16";
@@ -4127,7 +4127,7 @@ void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, 
 		// argument of an OpStore storing through a pointer to a 16-bit floating-point object in Uniform, or
 		// PushConstant, or Input, or Output Storage Classes. SSBO writes are not commonly supported
 		// in VS so this test case needs to be skiped for vertex stage.
-		if ((testCase.operationId == O_ORTZ_ROUND) || (testCase.operationId == O_ORTE_ROUND))
+		if ((testCase.operationId == OID_ORTZ_ROUND) || (testCase.operationId == OID_ORTE_ROUND))
 			continue;
 
 		OperationTestCaseInfo testCaseInfo =
@@ -4231,7 +4231,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 	// internaly operates on fp16 and this type should be used by float controls
 	FloatType		inFloatTypeForCaps		= inFloatType;
 	string			inFloatWidthForCaps		= inTypeSnippets->bitWidth;
-	if (testCase.operationId == O_UPH_DENORM)
+	if (testCase.operationId == OID_UPH_DENORM)
 	{
 		inFloatTypeForCaps	= FP16;
 		inFloatWidthForCaps	= "16";
@@ -4446,8 +4446,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 		{
 			switch(testCaseInfo.testCase.operationId)
 			{
-				case O_CONV_FROM_FP32:
-				case O_CONV_FROM_FP64:
+				case OID_CONV_FROM_FP32:
+				case OID_CONV_FROM_FP64:
 					needsSpecialConstants = true;
 					break;
 				default:

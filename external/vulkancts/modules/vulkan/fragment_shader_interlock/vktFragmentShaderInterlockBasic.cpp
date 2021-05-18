@@ -238,12 +238,8 @@ void FSITestCase::checkSupport(Context& context) const
 
 		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 
-
-		if (!context.getFragmentShadingRateFeatures().pipelineFragmentShadingRate ||
-		    !context.getFragmentShadingRateProperties().fragmentShadingRateWithFragmentShaderInterlock)
-		{
-			TCU_THROW(NotSupportedError, "fragment shading rate not supported");
-		}
+		if (!shadingRateImageFeatures.shadingRateImage)
+			TCU_THROW(NotSupportedError, "Shading rate image not supported");
 	}
 }
 
@@ -393,7 +389,7 @@ tcu::TestStatus FSITestInstance::iterate (void)
 	const VkDevice			device					= getDevice(m_context, m_data.interlock);
 	Allocator&				allocator				= m_context.getDefaultAllocator();
 	VkFlags					allShaderStages			= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-	VkFlags					allPipelineStages		= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	VkFlags					allPipelineStages		= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
 	VkPhysicalDeviceProperties2 properties;
 	deMemset(&properties, 0, sizeof(properties));
@@ -778,7 +774,7 @@ tcu::TestStatus FSITestInstance::iterate (void)
 	vk.cmdFillBuffer(*cmdBuffer, **buffer, 0, bufferSize, 0);
 
 	memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-	memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+	memBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, allPipelineStages,
 		0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 

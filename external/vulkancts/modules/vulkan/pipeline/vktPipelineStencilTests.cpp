@@ -291,6 +291,9 @@ void StencilTest::checkSupport (Context& context) const
 
 	if (m_separateDepthStencilLayouts && !context.isDeviceFunctionalitySupported("VK_KHR_separate_depth_stencil_layouts"))
 		TCU_THROW(NotSupportedError, "VK_KHR_separate_depth_stencil_layouts is not supported");
+
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().separateStencilMaskRef)
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Separate stencil mask references are not supported by this implementation");
 }
 
 TestInstance* StencilTest::createInstance (Context& context) const

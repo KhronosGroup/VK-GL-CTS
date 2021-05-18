@@ -1,0 +1,241 @@
+#!amber
+
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a coverage-gap found by the GraphicsFuzz project.
+
+# Short description: A fragment shader that covers a specific inst combine compares code path
+
+# The test passes because the shader always writes red.
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# #define _int_1 _GLF_uniform_int_values[0]
+# #define _int_0 _GLF_uniform_int_values[1]
+# #define _float_2_3503 _GLF_uniform_float_values[0]
+# #define _float_2_3505 _GLF_uniform_float_values[1]
+# #define _float_1_0 _GLF_uniform_float_values[2]
+# #define _float_800_0 _GLF_uniform_float_values[3]
+#
+# precision highp int;
+#
+# precision highp float;
+#
+# // Contents of _GLF_uniform_int_values: [1, 0]
+# layout(set = 0, binding = 0) uniform buf0
+# {
+#     int _GLF_uniform_int_values[2];
+# };
+#
+# // Contents of _GLF_uniform_float_values: [2.3503, 2.3505, 1.0, 800.0]
+# layout(set = 0, binding = 1) uniform buf1
+# {
+#     float _GLF_uniform_float_values[4];
+# };
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# void main()
+# {
+#     // This results in an undefined value, but not in undefined behavior.
+#     // v1.x becomes approximately 1.1752 and v1.y becomes undefined.
+#     vec2 v1 = sinh(vec2(_float_1_0, _float_800_0));
+#
+#     ivec2 v2 = ivec2(_int_1, -3000);
+#
+#     // This results in an undefined value, but not in undefined behavior.
+#     // v3.x becomes approximately 2.3504 and v3.y becomes undefined.
+#     vec2 v3 = ldexp(v1, v2);
+#
+#     // Assigning an undefined value doesn't matter since the variable will be
+#     // reassigned later with a sensible value.
+#     _GLF_color = vec4(v3.y);
+#
+#     if (v3.x > _float_2_3503 && v3.x < _float_2_3505)
+#     {
+#         _GLF_color = vec4(_int_1, _int_0, _int_0, _int_1);
+#     }
+#     else
+#     {
+#         _GLF_color = vec4(_int_0);
+#     }
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 10
+; Bound: 88
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %46
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %9 "v1"
+               OpName %13 "buf1"
+               OpMemberName %13 0 "_GLF_uniform_float_values"
+               OpName %15 ""
+               OpName %29 "v2"
+               OpName %32 "buf0"
+               OpMemberName %32 0 "_GLF_uniform_int_values"
+               OpName %34 ""
+               OpName %40 "v3"
+               OpName %46 "_GLF_color"
+               OpDecorate %12 ArrayStride 16
+               OpMemberDecorate %13 0 Offset 0
+               OpDecorate %13 Block
+               OpDecorate %15 DescriptorSet 0
+               OpDecorate %15 Binding 1
+               OpDecorate %31 ArrayStride 16
+               OpMemberDecorate %32 0 Offset 0
+               OpDecorate %32 Block
+               OpDecorate %34 DescriptorSet 0
+               OpDecorate %34 Binding 0
+               OpDecorate %46 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 2
+          %8 = OpTypePointer Function %7
+         %10 = OpTypeInt 32 0
+         %11 = OpConstant %10 4
+         %12 = OpTypeArray %6 %11
+         %13 = OpTypeStruct %12
+         %14 = OpTypePointer Uniform %13
+         %15 = OpVariable %14 Uniform
+         %16 = OpTypeInt 32 1
+         %17 = OpConstant %16 0
+         %18 = OpConstant %16 2
+         %19 = OpTypePointer Uniform %6
+         %22 = OpConstant %16 3
+         %27 = OpTypeVector %16 2
+         %28 = OpTypePointer Function %27
+         %30 = OpConstant %10 2
+         %31 = OpTypeArray %16 %30
+         %32 = OpTypeStruct %31
+         %33 = OpTypePointer Uniform %32
+         %34 = OpVariable %33 Uniform
+         %35 = OpTypePointer Uniform %16
+         %38 = OpConstant %16 -3000
+         %44 = OpTypeVector %6 4
+         %45 = OpTypePointer Output %44
+         %46 = OpVariable %45 Output
+         %47 = OpConstant %10 1
+         %48 = OpTypePointer Function %6
+         %52 = OpTypeBool
+         %53 = OpConstant %10 0
+         %63 = OpConstant %16 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %9 = OpVariable %8 Function
+         %29 = OpVariable %28 Function
+         %40 = OpVariable %8 Function
+         %20 = OpAccessChain %19 %15 %17 %18
+         %21 = OpLoad %6 %20
+         %23 = OpAccessChain %19 %15 %17 %22
+         %24 = OpLoad %6 %23
+         %25 = OpCompositeConstruct %7 %21 %24
+         %26 = OpExtInst %7 %1 Sinh %25
+               OpStore %9 %26
+         %36 = OpAccessChain %35 %34 %17 %17
+         %37 = OpLoad %16 %36
+         %39 = OpCompositeConstruct %27 %37 %38
+               OpStore %29 %39
+         %41 = OpLoad %7 %9
+         %42 = OpLoad %27 %29
+         %43 = OpExtInst %7 %1 Ldexp %41 %42
+               OpStore %40 %43
+         %49 = OpAccessChain %48 %40 %47
+         %50 = OpLoad %6 %49
+         %51 = OpCompositeConstruct %44 %50 %50 %50 %50
+               OpStore %46 %51
+         %54 = OpAccessChain %48 %40 %53
+         %55 = OpLoad %6 %54
+         %56 = OpAccessChain %19 %15 %17 %17
+         %57 = OpLoad %6 %56
+         %58 = OpFOrdGreaterThan %52 %55 %57
+               OpSelectionMerge %60 None
+               OpBranchConditional %58 %59 %60
+         %59 = OpLabel
+         %61 = OpAccessChain %48 %40 %53
+         %62 = OpLoad %6 %61
+         %64 = OpAccessChain %19 %15 %17 %63
+         %65 = OpLoad %6 %64
+         %66 = OpFOrdLessThan %52 %62 %65
+               OpBranch %60
+         %60 = OpLabel
+         %67 = OpPhi %52 %58 %5 %66 %59
+               OpSelectionMerge %69 None
+               OpBranchConditional %67 %68 %83
+         %68 = OpLabel
+         %70 = OpAccessChain %35 %34 %17 %17
+         %71 = OpLoad %16 %70
+         %72 = OpConvertSToF %6 %71
+         %73 = OpAccessChain %35 %34 %17 %63
+         %74 = OpLoad %16 %73
+         %75 = OpConvertSToF %6 %74
+         %76 = OpAccessChain %35 %34 %17 %63
+         %77 = OpLoad %16 %76
+         %78 = OpConvertSToF %6 %77
+         %79 = OpAccessChain %35 %34 %17 %17
+         %80 = OpLoad %16 %79
+         %81 = OpConvertSToF %6 %80
+         %82 = OpCompositeConstruct %44 %72 %75 %78 %81
+               OpStore %46 %82
+               OpBranch %69
+         %83 = OpLabel
+         %84 = OpAccessChain %35 %34 %17 %63
+         %85 = OpLoad %16 %84
+         %86 = OpConvertSToF %6 %85
+         %87 = OpCompositeConstruct %44 %86 %86 %86 %86
+               OpStore %46 %87
+               OpBranch %69
+         %69 = OpLabel
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+# _GLF_uniform_float_values
+BUFFER variant__GLF_uniform_float_values DATA_TYPE float[] STD140 DATA
+ 2.3503 2.3505 1.0 800.0
+END
+# _GLF_uniform_int_values
+BUFFER variant__GLF_uniform_int_values DATA_TYPE int32[] STD140 DATA
+ 1 0
+END
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+  BIND BUFFER variant__GLF_uniform_float_values AS uniform DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER variant__GLF_uniform_int_values AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255

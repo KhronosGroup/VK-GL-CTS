@@ -34,7 +34,7 @@ namespace gles31
 namespace Functional
 {
 
-TestCaseGroup* createCopyImageTests (Context& context);
+TestCaseGroup* createCopyImageTests (Context& context, bool is_GL45);
 
 } // Functional
 } // gles31

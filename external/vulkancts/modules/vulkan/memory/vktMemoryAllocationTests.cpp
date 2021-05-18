@@ -120,7 +120,7 @@ T roundUpToNextMultiple (T value, T multiple)
 class BaseAllocateTestInstance : public TestInstance
 {
 public:
-						BaseAllocateTestInstance		(Context& context, bool useDeviceGroups)
+	BaseAllocateTestInstance		(Context& context, bool useDeviceGroups)
 		: TestInstance				(context)
 		, m_useDeviceGroups			(useDeviceGroups)
 		, m_subsetAllocationAllowed	(false)
@@ -130,7 +130,7 @@ public:
 		if (m_useDeviceGroups)
 			createDeviceGroup();
 		else
-			createDevice();
+			createTestDevice();
 
 		m_allocFlagsInfo.sType		= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
 		m_allocFlagsInfo.pNext		= DE_NULL;
@@ -138,7 +138,7 @@ public:
 		m_allocFlagsInfo.deviceMask	= 0;
 	}
 
-	void						createDevice		(void);
+	void						createTestDevice	(void);
 	void						createDeviceGroup	(void);
 	const vk::DeviceInterface&	getDeviceInterface	(void) { return m_useDeviceGroups ? *m_deviceDriver : m_context.getDeviceInterface(); }
 	vk::VkDevice				getDevice			(void) { return m_logicalDevice.get();}
@@ -156,7 +156,7 @@ private:
 	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
 };
 
-void BaseAllocateTestInstance::createDevice (void)
+void BaseAllocateTestInstance::createTestDevice (void)
 {
 	VkInstance										instance				(m_context.getInstance());
 	InstanceDriver									instanceDriver			(m_context.getPlatformInterface(), instance);

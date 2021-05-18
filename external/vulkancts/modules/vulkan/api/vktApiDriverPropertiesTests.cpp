@@ -49,6 +49,9 @@ enum TestType
 
 static const VkConformanceVersionKHR knownConformanceVersions[] =
 {
+	makeConformanceVersion(1, 2, 6, 1),
+	makeConformanceVersion(1, 2, 6, 0),
+	makeConformanceVersion(1, 2, 5, 2),
 	makeConformanceVersion(1, 2, 5, 1),
 	makeConformanceVersion(1, 2, 5, 0),
 	makeConformanceVersion(1, 2, 4, 1),
@@ -133,8 +136,8 @@ void testInfoZeroTerminated (const VkPhysicalDeviceDriverPropertiesKHR& deviceDr
 
 void testVersion (const VkPhysicalDeviceDriverPropertiesKHR& deviceDriverProperties, deUint32 usedApiVersion)
 {
-	const deUint32 apiMajorVersion = VK_VERSION_MAJOR(usedApiVersion);
-	const deUint32 apiMinorVersion = VK_VERSION_MINOR(usedApiVersion);
+	const deUint32 apiMajorVersion = VK_API_VERSION_MAJOR(usedApiVersion);
+	const deUint32 apiMinorVersion = VK_API_VERSION_MINOR(usedApiVersion);
 
 	if (deviceDriverProperties.conformanceVersion.major < apiMajorVersion ||
 		(deviceDriverProperties.conformanceVersion.major == apiMajorVersion &&

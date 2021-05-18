@@ -36,12 +36,16 @@
 #include "vkTypeUtil.hpp"
 #include "vkAllocationCallbackUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkBarrierUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
 #include "vktApiCommandBuffersTests.hpp"
 #include "vktApiBufferComputeInstance.hpp"
 #include "vktApiComputeInstanceResultBuffer.hpp"
 #include "deSharedPtr.hpp"
 #include "deRandom.hpp"
 #include <sstream>
+#include <limits>
 
 namespace vkt
 {
@@ -4139,10 +4143,610 @@ void genComputeIncrementSource (SourceCollections& programCollection)
 	programCollection.glslSources.add("compute_increment") << glu::ComputeSource(bufIncrement.str());
 }
 
-void genComputeIncrementSourceBadInheritance (SourceCollections& programCollection, BadInheritanceInfoCase testCase)
+void genComputeIncrementSourceBadInheritance(SourceCollections& programCollection, BadInheritanceInfoCase testCase)
 {
 	DE_UNREF(testCase);
 	return genComputeIncrementSource(programCollection);
+}
+
+void checkEventSupport (Context& context)
+{
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().events)
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
+}
+
+void checkEventSupport (Context& context, const VkCommandBufferLevel)
+{
+	checkEventSupport(context);
+}
+
+struct ManyDrawsParams
+{
+	VkCommandBufferLevel	level;
+	VkExtent3D				imageExtent;
+	deUint32				seed;
+
+	ManyDrawsParams(VkCommandBufferLevel level_, const VkExtent3D& extent_, deUint32 seed_)
+		: level			(level_)
+		, imageExtent	(extent_)
+		, seed			(seed_)
+	{}
+};
+
+struct ManyDrawsVertex
+{
+	using Color = tcu::Vector<deUint8, 4>;
+
+	tcu::Vec2	coords;
+	Color		color;
+
+	ManyDrawsVertex (const tcu::Vec2& coords_, const Color& color_) : coords(coords_), color(color_) {}
+};
+
+VkFormat getSupportedDepthStencilFormat (const InstanceInterface& vki, VkPhysicalDevice physDev)
+{
+	const VkFormat				formatList[]	= { VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT };
+	const VkFormatFeatureFlags	requirements	= (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT);
+
+	for (int i = 0; i < DE_LENGTH_OF_ARRAY(formatList); ++i)
+	{
+		const auto properties = getPhysicalDeviceFormatProperties(vki, physDev, formatList[i]);
+		if ((properties.optimalTilingFeatures & requirements) == requirements)
+			return formatList[i];
+	}
+
+	TCU_THROW(NotSupportedError, "No suitable depth/stencil format support");
+	return VK_FORMAT_UNDEFINED;
+}
+
+class ManyDrawsCase : public TestCase
+{
+public:
+							ManyDrawsCase			(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const ManyDrawsParams& params);
+	virtual					~ManyDrawsCase			(void) {}
+
+	virtual void			checkSupport			(Context& context) const;
+	virtual void			initPrograms			(vk::SourceCollections& programCollection) const;
+	virtual TestInstance*	createInstance			(Context& context) const;
+
+	static VkFormat			getColorFormat			(void) { return VK_FORMAT_R8G8B8A8_UINT; }
+
+protected:
+	ManyDrawsParams			m_params;
+};
+
+class ManyDrawsInstance : public TestInstance
+{
+public:
+								ManyDrawsInstance	(Context& context, const ManyDrawsParams& params);
+	virtual						~ManyDrawsInstance	(void) {}
+
+	virtual tcu::TestStatus		iterate				(void);
+
+protected:
+	ManyDrawsParams				m_params;
+};
+
+using BufferPtr = de::MovePtr<BufferWithMemory>;
+using ImagePtr = de::MovePtr<ImageWithMemory>;
+
+struct ManyDrawsVertexBuffers
+{
+	BufferPtr stagingBuffer;
+	BufferPtr vertexBuffer;
+};
+
+struct ManyDrawsAllocatedData
+{
+	ManyDrawsVertexBuffers	frontBuffers;
+	ManyDrawsVertexBuffers	backBuffers;
+	ImagePtr				colorAttachment;
+	ImagePtr				dsAttachment;
+	BufferPtr				colorCheckBuffer;
+	BufferPtr				stencilCheckBuffer;
+
+	static deUint32 calcNumPixels (const VkExtent3D& extent)
+	{
+		DE_ASSERT(extent.depth == 1u);
+		return (extent.width * extent.height);
+	}
+	static deUint32 calcNumVertices (const VkExtent3D& extent)
+	{
+		// One triangle (3 vertices) per output image pixel.
+		return (calcNumPixels(extent) * 3u);
+	}
+
+	static VkDeviceSize calcVertexBufferSize (const VkExtent3D& extent)
+	{
+		return calcNumVertices(extent) * sizeof(ManyDrawsVertex);
+	}
+
+	static void makeVertexBuffers (const DeviceInterface& vkd, VkDevice device, Allocator& alloc, VkDeviceSize size, ManyDrawsVertexBuffers& buffers)
+	{
+		const auto stagingBufferInfo	= makeBufferCreateInfo(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+		const auto vertexBufferInfo		= makeBufferCreateInfo(size, (VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+
+		buffers.stagingBuffer	= BufferPtr(new BufferWithMemory(vkd, device, alloc, stagingBufferInfo, MemoryRequirement::HostVisible));
+		buffers.vertexBuffer	= BufferPtr(new BufferWithMemory(vkd, device, alloc, vertexBufferInfo, MemoryRequirement::Any));
+	}
+
+	ManyDrawsAllocatedData (const DeviceInterface &vkd, VkDevice device, Allocator &alloc, const VkExtent3D& imageExtent, VkFormat colorFormat, VkFormat dsFormat)
+	{
+		const auto numPixels		= calcNumPixels(imageExtent);
+		const auto vertexBufferSize	= calcVertexBufferSize(imageExtent);
+
+		makeVertexBuffers(vkd, device, alloc, vertexBufferSize, frontBuffers);
+		makeVertexBuffers(vkd, device, alloc, vertexBufferSize, backBuffers);
+
+		const auto colorUsage	= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+		const auto dsUsage		= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+
+		const VkImageCreateInfo colorAttachmentInfo =
+		{
+			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+			nullptr,								//	const void*				pNext;
+			0u,										//	VkImageCreateFlags		flags;
+			VK_IMAGE_TYPE_2D,						//	VkImageType				imageType;
+			colorFormat,							//	VkFormat				format;
+			imageExtent,							//	VkExtent3D				extent;
+			1u,										//	deUint32				mipLevels;
+			1u,										//	deUint32				arrayLayers;
+			VK_SAMPLE_COUNT_1_BIT,					//	VkSampleCountFlagBits	samples;
+			VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
+			colorUsage,								//	VkImageUsageFlags		usage;
+			VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode			sharingMode;
+			0u,										//	deUint32				queueFamilyIndexCount;
+			nullptr,								//	const deUint32*			pQueueFamilyIndices;
+			VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+		};
+		colorAttachment = ImagePtr(new ImageWithMemory(vkd, device, alloc, colorAttachmentInfo, MemoryRequirement::Any));
+
+		const VkImageCreateInfo dsAttachmentInfo =
+		{
+			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+			nullptr,								//	const void*				pNext;
+			0u,										//	VkImageCreateFlags		flags;
+			VK_IMAGE_TYPE_2D,						//	VkImageType				imageType;
+			dsFormat,								//	VkFormat				format;
+			imageExtent,							//	VkExtent3D				extent;
+			1u,										//	deUint32				mipLevels;
+			1u,										//	deUint32				arrayLayers;
+			VK_SAMPLE_COUNT_1_BIT,					//	VkSampleCountFlagBits	samples;
+			VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
+			dsUsage,								//	VkImageUsageFlags		usage;
+			VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode			sharingMode;
+			0u,										//	deUint32				queueFamilyIndexCount;
+			nullptr,								//	const deUint32*			pQueueFamilyIndices;
+			VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+		};
+		dsAttachment = ImagePtr(new ImageWithMemory(vkd, device, alloc, dsAttachmentInfo, MemoryRequirement::Any));
+
+		const auto colorCheckBufferSize		= static_cast<VkDeviceSize>(numPixels * tcu::getPixelSize(mapVkFormat(colorFormat)));
+		const auto colorCheckBufferInfo		= makeBufferCreateInfo(colorCheckBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+		colorCheckBuffer = BufferPtr(new BufferWithMemory(vkd, device, alloc, colorCheckBufferInfo, MemoryRequirement::HostVisible));
+
+		const auto stencilFormat			= tcu::TextureFormat(tcu::TextureFormat::S, tcu::TextureFormat::UNSIGNED_INT8);
+		const auto stencilCheckBufferSize	= static_cast<VkDeviceSize>(numPixels * tcu::getPixelSize(stencilFormat));
+		const auto stencilCheckBufferInfo	= makeBufferCreateInfo(stencilCheckBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+		stencilCheckBuffer = BufferPtr(new BufferWithMemory(vkd, device, alloc, stencilCheckBufferInfo, MemoryRequirement::HostVisible));
+	}
+};
+
+ManyDrawsCase::ManyDrawsCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const ManyDrawsParams& params)
+	: TestCase	(testCtx, name, description)
+	, m_params	(params)
+{}
+
+void ManyDrawsCase::checkSupport (Context& context) const
+{
+	const auto& vki			= context.getInstanceInterface();
+	const auto	physDev		= context.getPhysicalDevice();
+	const auto&	vkd			= context.getDeviceInterface();
+	const auto	device		= context.getDevice();
+	auto&		alloc		= context.getDefaultAllocator();
+	const auto	dsFormat	= getSupportedDepthStencilFormat(vki, physDev);
+
+	try
+	{
+		ManyDrawsAllocatedData allocatedData(vkd, device, alloc, m_params.imageExtent, getColorFormat(), dsFormat);
+	}
+	catch (const vk::Error& err)
+	{
+		const auto result = err.getError();
+		if (result == VK_ERROR_OUT_OF_HOST_MEMORY || result == VK_ERROR_OUT_OF_DEVICE_MEMORY)
+			TCU_THROW(NotSupportedError, "Not enough memory to run this test");
+		throw;
+	}
+}
+
+void ManyDrawsCase::initPrograms (vk::SourceCollections& programCollection) const
+{
+	std::ostringstream vert;
+	vert
+		<< "#version 450\n"
+		<< "\n"
+		<< "layout(location=0) in vec2 inCoords;\n"
+		<< "layout(location=1) in uvec4 inColor;\n"
+		<< "\n"
+		<< "layout(location=0) out flat uvec4 outColor;\n"
+		<< "\n"
+		<< "void main()\n"
+		<< "{\n"
+		<< "    gl_Position = vec4(inCoords, 0.0, 1.0);\n"
+		<< "    outColor = inColor;\n"
+		<< "}\n"
+		;
+
+	std::ostringstream frag;
+	frag
+		<< "#version 450\n"
+		<< "\n"
+		<< "layout(location=0) in flat uvec4 inColor;\n"
+		<< "layout(location=0) out uvec4 outColor;\n"
+		<< "\n"
+		<< "void main()\n"
+		<< "{\n"
+		<< "	outColor = inColor;\n"
+		<< "}\n"
+		;
+
+	programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+	programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+TestInstance* ManyDrawsCase::createInstance (Context& context) const
+{
+	return new ManyDrawsInstance(context, m_params);
+}
+
+ManyDrawsInstance::ManyDrawsInstance (Context& context, const ManyDrawsParams& params)
+	: TestInstance	(context)
+	, m_params		(params)
+{}
+
+void copyAndFlush (const DeviceInterface& vkd, VkDevice device, BufferWithMemory& buffer, const std::vector<ManyDrawsVertex>& vertices)
+{
+	auto& alloc		= buffer.getAllocation();
+	void* hostPtr	= alloc.getHostPtr();
+
+	deMemcpy(hostPtr, vertices.data(), de::dataSize(vertices));
+	flushAlloc(vkd, device, alloc);
+}
+
+tcu::TestStatus ManyDrawsInstance::iterate (void)
+{
+	const auto&	vki					= m_context.getInstanceInterface();
+	const auto	physDev				= m_context.getPhysicalDevice();
+	const auto&	vkd					= m_context.getDeviceInterface();
+	const auto	device				= m_context.getDevice();
+	auto&		alloc				= m_context.getDefaultAllocator();
+	const auto	qIndex				= m_context.getUniversalQueueFamilyIndex();
+	const auto	queue				= m_context.getUniversalQueue();
+
+	const auto	colorFormat			= ManyDrawsCase::getColorFormat();
+	const auto	dsFormat			= getSupportedDepthStencilFormat(vki, physDev);
+	const auto	vertexBufferSize	= ManyDrawsAllocatedData::calcVertexBufferSize(m_params.imageExtent);
+	const auto	vertexBufferOffset	= static_cast<VkDeviceSize>(0);
+	const auto	numPixels			= ManyDrawsAllocatedData::calcNumPixels(m_params.imageExtent);
+	const auto	numVertices			= ManyDrawsAllocatedData::calcNumVertices(m_params.imageExtent);
+	const auto	alphaValue			= std::numeric_limits<deUint8>::max();
+	const auto	pixelWidth			= 2.0f / static_cast<float>(m_params.imageExtent.width);	// Normalized size.
+	const auto	pixelWidthHalf		= pixelWidth / 2.0f;										// Normalized size.
+	const auto	pixelHeight			= 2.0f / static_cast<float>(m_params.imageExtent.height);	// Normalized size.
+	const auto	useSecondary		= (m_params.level == VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+
+	// Allocate all needed data up front.
+	ManyDrawsAllocatedData testData(vkd, device, alloc, m_params.imageExtent, colorFormat, dsFormat);
+
+	// Generate random colors.
+	de::Random							rnd(m_params.seed);
+	std::vector<ManyDrawsVertex::Color>	colors;
+
+	colors.reserve(numPixels);
+	for (deUint32 i = 0; i < numPixels; ++i)
+	{
+#if 0
+		const deUint8 red	= ((i      ) & 0xFFu);
+		const deUint8 green	= ((i >>  8) & 0xFFu);
+		const deUint8 blue	= ((i >> 16) & 0xFFu);
+		colors.push_back(ManyDrawsVertex::Color(red, green, blue, alphaValue));
+#else
+		colors.push_back(ManyDrawsVertex::Color(rnd.getUint8(), rnd.getUint8(), rnd.getUint8(), alphaValue));
+#endif
+	}
+
+	// Fill vertex data. One triangle per pixel, front and back.
+	std::vector<ManyDrawsVertex> frontVector;
+	std::vector<ManyDrawsVertex> backVector;
+	frontVector.reserve(numVertices);
+	backVector.reserve(numVertices);
+
+	for (deUint32 y = 0; y < m_params.imageExtent.height; ++y)
+	for (deUint32 x = 0; x < m_params.imageExtent.width; ++x)
+	{
+		float x_left	= static_cast<float>(x) * pixelWidth - 1.0f;
+		float x_mid		= x_left + pixelWidthHalf;
+		float x_right	= x_left + pixelWidth;
+		float y_top		= static_cast<float>(y) * pixelHeight - 1.0f;
+		float y_bottom	= y_top + pixelHeight;
+
+		// Triangles in the "back" mesh will have different colors.
+		const auto		colorIdx		= y * m_params.imageExtent.width + x;
+		const auto&		frontColor		= colors[colorIdx];
+		const auto&		backColor		= colors[colors.size() - 1u - colorIdx];
+
+		const tcu::Vec2	triangle[3u]	=
+		{
+			tcu::Vec2(x_left, y_top),
+			tcu::Vec2(x_right, y_top),
+			tcu::Vec2(x_mid, y_bottom),
+		};
+
+		frontVector.emplace_back(triangle[0], frontColor);
+		frontVector.emplace_back(triangle[1], frontColor);
+		frontVector.emplace_back(triangle[2], frontColor);
+
+		backVector.emplace_back(triangle[0], backColor);
+		backVector.emplace_back(triangle[1], backColor);
+		backVector.emplace_back(triangle[2], backColor);
+	}
+
+	// Copy vertex data to staging buffers.
+	copyAndFlush(vkd, device, *testData.frontBuffers.stagingBuffer, frontVector);
+	copyAndFlush(vkd, device, *testData.backBuffers.stagingBuffer, backVector);
+
+	// Color attachment view.
+	const auto		colorResourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const auto		colorAttachmentView	= makeImageView(vkd, device, testData.colorAttachment->get(), VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorResourceRange);
+
+	// Depth/stencil attachment view.
+	const auto		dsResourceRange		= makeImageSubresourceRange((VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT), 0u, 1u, 0u, 1u);
+	const auto		dsAttachmentView	= makeImageView(vkd, device, testData.dsAttachment->get(), VK_IMAGE_VIEW_TYPE_2D, dsFormat, dsResourceRange);
+
+	const VkImageView	attachmentArray[]	= { colorAttachmentView.get(), dsAttachmentView.get() };
+	const auto			numAttachments		= static_cast<deUint32>(DE_LENGTH_OF_ARRAY(attachmentArray));
+
+	const auto renderPass	= makeRenderPass(vkd, device, colorFormat, dsFormat);
+	const auto framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), numAttachments, attachmentArray, m_params.imageExtent.width, m_params.imageExtent.height);
+
+	const auto vertModule	= createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+	const auto fragModule	= createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(m_params.imageExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(m_params.imageExtent));
+
+	const auto descriptorSetLayout	= DescriptorSetLayoutBuilder().build(vkd, device);
+	const auto pipelineLayout		= makePipelineLayout(vkd, device, descriptorSetLayout.get());
+
+	const VkVertexInputBindingDescription bindings[] =
+	{
+		makeVertexInputBindingDescription(0u, static_cast<deUint32>(sizeof(ManyDrawsVertex)), VK_VERTEX_INPUT_RATE_VERTEX),
+	};
+
+	const VkVertexInputAttributeDescription attributes[] =
+	{
+		makeVertexInputAttributeDescription(0u, 0u, VK_FORMAT_R32G32_SFLOAT, static_cast<deUint32>(offsetof(ManyDrawsVertex, coords))),
+		makeVertexInputAttributeDescription(1u, 0u, VK_FORMAT_R8G8B8A8_UINT, static_cast<deUint32>(offsetof(ManyDrawsVertex, color))),
+	};
+
+	const VkPipelineVertexInputStateCreateInfo inputState =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	//	VkStructureType								sType;
+		nullptr,													//	const void*									pNext;
+		0u,															//	VkPipelineVertexInputStateCreateFlags		flags;
+		static_cast<deUint32>(DE_LENGTH_OF_ARRAY(bindings)),		//	deUint32									vertexBindingDescriptionCount;
+		bindings,													//	const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
+		static_cast<deUint32>(DE_LENGTH_OF_ARRAY(attributes)),		//	deUint32									vertexAttributeDescriptionCount;
+		attributes,													//	const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+	};
+
+	// Stencil state: this is key for checking and obtaining the right results. The stencil buffer will be cleared to 0. The first
+	// set of draws ("front" set of triangles) will pass the test and increment the stencil value to 1. The second set of draws
+	// ("back" set of triangles, not really in the back because all of them have depth 0.0) will not pass the stencil test then, but
+	// still increment the stencil value to 2.
+	//
+	// At the end of the test, if every draw command was executed correctly in the expected order, the color buffer will have the
+	// colors of the front set, and the stencil buffer will be full of 2s.
+	const auto stencilOpState = makeStencilOpState(VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_KEEP,
+		VK_COMPARE_OP_EQUAL, 0xFFu, 0xFFu, 0u);
+
+	const VkPipelineDepthStencilStateCreateInfo dsState =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType                          sType
+		nullptr,													// const void*                              pNext
+		0u,															// VkPipelineDepthStencilStateCreateFlags   flags
+		VK_FALSE,													// VkBool32                                 depthTestEnable
+		VK_FALSE,													// VkBool32                                 depthWriteEnable
+		VK_COMPARE_OP_NEVER,										// VkCompareOp                              depthCompareOp
+		VK_FALSE,													// VkBool32                                 depthBoundsTestEnable
+		VK_TRUE,													// VkBool32                                 stencilTestEnable
+		stencilOpState,												// VkStencilOpState                         front
+		stencilOpState,												// VkStencilOpState                         back
+		0.0f,														// float                                    minDepthBounds
+		1.0f,														// float                                    maxDepthBounds
+	};
+
+	const auto pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
+			vertModule.get(), DE_NULL, DE_NULL, DE_NULL, fragModule.get(),
+			renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
+			&inputState, nullptr, nullptr, &dsState);
+
+	// Command pool and buffers.
+	using CmdBufferPtr = Move<VkCommandBuffer>;
+	const auto cmdPool = makeCommandPool(vkd, device, qIndex);
+
+	CmdBufferPtr	primaryCmdBufferPtr;
+	CmdBufferPtr	secondaryCmdBufferPtr;
+	VkCommandBuffer	primaryCmdBuffer;
+	VkCommandBuffer	secondaryCmdBuffer;
+	VkCommandBuffer	drawsCmdBuffer;
+
+	primaryCmdBufferPtr		= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	primaryCmdBuffer		= primaryCmdBufferPtr.get();
+	drawsCmdBuffer			= primaryCmdBuffer;
+	beginCommandBuffer(vkd, primaryCmdBuffer);
+
+	// Clear values.
+	std::vector<VkClearValue> clearValues(2u);
+	clearValues[0] = makeClearValueColorU32(0u, 0u, 0u, 0u);
+	clearValues[1] = makeClearValueDepthStencil(1.0f, 0u);
+
+	// Copy staging buffers to vertex buffers.
+	const auto copyRegion = makeBufferCopy(0ull, 0ull, vertexBufferSize);
+	vkd.cmdCopyBuffer(primaryCmdBuffer, testData.frontBuffers.stagingBuffer->get(), testData.frontBuffers.vertexBuffer->get(), 1u, &copyRegion);
+	vkd.cmdCopyBuffer(primaryCmdBuffer, testData.backBuffers.stagingBuffer->get(), testData.backBuffers.vertexBuffer->get(), 1u, &copyRegion);
+
+	// Use barrier for vertex reads.
+	const auto vertexBarier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
+	vkd.cmdPipelineBarrier(primaryCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0u, 1u, &vertexBarier, 0u, nullptr, 0u, nullptr);
+
+	// Change depth/stencil attachment layout.
+	const auto dsBarrier = makeImageMemoryBarrier(0, (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, testData.dsAttachment->get(), dsResourceRange);
+	vkd.cmdPipelineBarrier(primaryCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT), 0u, 0u, nullptr, 0u, nullptr, 1u, &dsBarrier);
+
+	beginRenderPass(vkd, primaryCmdBuffer, renderPass.get(), framebuffer.get(),
+		scissors[0], static_cast<deUint32>(clearValues.size()), clearValues.data(),
+		(useSecondary ? VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS : VK_SUBPASS_CONTENTS_INLINE));
+
+	if (useSecondary)
+	{
+		secondaryCmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+		secondaryCmdBuffer		= secondaryCmdBufferPtr.get();
+		drawsCmdBuffer			= secondaryCmdBuffer;
+
+		const VkCommandBufferInheritanceInfo inheritanceInfo =
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,	//	VkStructureType					sType;
+			nullptr,											//	const void*						pNext;
+			renderPass.get(),									//	VkRenderPass					renderPass;
+			0u,													//	deUint32						subpass;
+			framebuffer.get(),									//	VkFramebuffer					framebuffer;
+			0u,													//	VkBool32						occlusionQueryEnable;
+			0u,													//	VkQueryControlFlags				queryFlags;
+			0u,													//	VkQueryPipelineStatisticFlags	pipelineStatistics;
+		};
+
+		const VkCommandBufferUsageFlags	usageFlags	= (VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+		const VkCommandBufferBeginInfo	beginInfo	=
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+			nullptr,
+			usageFlags,										//	VkCommandBufferUsageFlags				flags;
+			&inheritanceInfo,								//	const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
+		};
+
+		VK_CHECK(vkd.beginCommandBuffer(secondaryCmdBuffer, &beginInfo));
+	}
+
+	// Bind pipeline.
+	vkd.cmdBindPipeline(drawsCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+
+	// Draw triangles in front.
+	vkd.cmdBindVertexBuffers(drawsCmdBuffer, 0u, 1u, &testData.frontBuffers.vertexBuffer->get(), &vertexBufferOffset);
+	for (deUint32 i = 0; i < numPixels; ++i)
+		vkd.cmdDraw(drawsCmdBuffer, 3u, 1u, i*3u, 0u);
+
+	// Draw triangles in the "back". This should have no effect due to the stencil test.
+	vkd.cmdBindVertexBuffers(drawsCmdBuffer, 0u, 1u, &testData.backBuffers.vertexBuffer->get(), &vertexBufferOffset);
+	for (deUint32 i = 0; i < numPixels; ++i)
+		vkd.cmdDraw(drawsCmdBuffer, 3u, 1u, i*3u, 0u);
+
+	if (useSecondary)
+	{
+		endCommandBuffer(vkd, secondaryCmdBuffer);
+		vkd.cmdExecuteCommands(primaryCmdBuffer, 1u, &secondaryCmdBuffer);
+	}
+
+	endRenderPass(vkd, primaryCmdBuffer);
+
+	// Copy color and depth/stencil attachments to verification buffers.
+	const auto colorAttachmentBarrier = makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, testData.colorAttachment->get(), colorResourceRange);
+	vkd.cmdPipelineBarrier(primaryCmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &colorAttachmentBarrier);
+
+	const auto colorResourceLayers	= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+	const auto colorCopyRegion		= makeBufferImageCopy(m_params.imageExtent, colorResourceLayers);
+	vkd.cmdCopyImageToBuffer(primaryCmdBuffer, testData.colorAttachment->get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, testData.colorCheckBuffer->get(), 1u, &colorCopyRegion);
+
+	const auto stencilAttachmentBarrier = makeImageMemoryBarrier(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, testData.dsAttachment->get(), dsResourceRange);
+	vkd.cmdPipelineBarrier(primaryCmdBuffer, (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT), VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &stencilAttachmentBarrier);
+
+	const auto stencilResourceLayers	= makeImageSubresourceLayers(VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, 1u);
+	const auto stencilCopyRegion		= makeBufferImageCopy(m_params.imageExtent, stencilResourceLayers);
+	vkd.cmdCopyImageToBuffer(primaryCmdBuffer, testData.dsAttachment->get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, testData.stencilCheckBuffer->get(), 1u, &stencilCopyRegion);
+
+	const auto verificationBuffersBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+	vkd.cmdPipelineBarrier(primaryCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &verificationBuffersBarrier, 0u, nullptr, 0u, nullptr);
+
+	endCommandBuffer(vkd, primaryCmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, primaryCmdBuffer);
+
+	// Check buffer contents.
+	auto& colorCheckBufferAlloc	= testData.colorCheckBuffer->getAllocation();
+	void* colorCheckBufferData	= colorCheckBufferAlloc.getHostPtr();
+	invalidateAlloc(vkd, device, colorCheckBufferAlloc);
+
+	auto& stencilCheckBufferAlloc	= testData.stencilCheckBuffer->getAllocation();
+	void* stencilCheckBufferData	= stencilCheckBufferAlloc.getHostPtr();
+	invalidateAlloc(vkd, device, stencilCheckBufferAlloc);
+
+	const auto iWidth			= static_cast<int>(m_params.imageExtent.width);
+	const auto iHeight			= static_cast<int>(m_params.imageExtent.height);
+	const auto colorTcuFormat	= mapVkFormat(colorFormat);
+	const auto stencilTcuFormat	= tcu::TextureFormat(tcu::TextureFormat::S, tcu::TextureFormat::UNSIGNED_INT8);
+
+	tcu::TextureLevel			referenceLevel		(colorTcuFormat, iWidth, iHeight);
+	tcu::PixelBufferAccess		referenceAccess		= referenceLevel.getAccess();
+	tcu::TextureLevel			colorErrorLevel		(mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM), iWidth, iHeight);
+	tcu::PixelBufferAccess		colorErrorAccess	= colorErrorLevel.getAccess();
+	tcu::TextureLevel			stencilErrorLevel	(mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM), iWidth, iHeight);
+	tcu::PixelBufferAccess		stencilErrorAccess	= stencilErrorLevel.getAccess();
+	tcu::ConstPixelBufferAccess	colorAccess			(colorTcuFormat, iWidth, iHeight, 1, colorCheckBufferData);
+	tcu::ConstPixelBufferAccess	stencilAccess		(stencilTcuFormat, iWidth, iHeight, 1, stencilCheckBufferData);
+	const tcu::Vec4				green				(0.0f, 1.0f, 0.0f, 1.0f);
+	const tcu::Vec4				red					(1.0f, 0.0f, 0.0f, 1.0f);
+	const int					expectedStencil		= 2;
+	bool						colorFail			= false;
+	bool						stencilFail			= false;
+
+	for (int y = 0; y < iHeight; ++y)
+	for (int x = 0; x < iWidth; ++x)
+	{
+		const tcu::UVec4	colorValue		= colorAccess.getPixelUint(x, y);
+		const auto			expectedPixel	= colors[y * iWidth + x];
+		const tcu::UVec4	expectedValue	(expectedPixel.x(), expectedPixel.y(), expectedPixel.z(), expectedPixel.w());
+		const bool			colorMismatch	= (colorValue != expectedValue);
+
+		const auto			stencilValue	= stencilAccess.getPixStencil(x, y);
+		const bool			stencilMismatch	= (stencilValue != expectedStencil);
+
+		referenceAccess.setPixel(expectedValue, x, y);
+		colorErrorAccess.setPixel((colorMismatch ? red : green), x, y);
+		stencilErrorAccess.setPixel((stencilMismatch ? red : green), x, y);
+
+		if (stencilMismatch)
+			stencilFail = true;
+
+		if (colorMismatch)
+			colorFail = true;
+	}
+
+	if (colorFail || stencilFail)
+	{
+		auto& log = m_context.getTestContext().getLog();
+		log
+			<< tcu::TestLog::ImageSet("Result", "")
+			<< tcu::TestLog::Image("ColorOutput", "", colorAccess)
+			<< tcu::TestLog::Image("ColorReference", "", referenceAccess)
+			<< tcu::TestLog::Image("ColorError", "", colorErrorAccess)
+			<< tcu::TestLog::Image("StencilError", "", stencilErrorAccess)
+			<< tcu::TestLog::EndImageSet
+			;
+		TCU_FAIL("Mismatched output and reference color or stencil; please check test log --");
+	}
+
+	return tcu::TestStatus::pass("Pass");
 }
 
 } // anonymous
@@ -4158,30 +4762,40 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 	addFunctionCase				(commandBuffersTests.get(), "pool_create_reset_bit",			"",	createPoolResetBitTest);
 	addFunctionCase				(commandBuffersTests.get(), "pool_reset_release_res",			"",	resetPoolReleaseResourcesBitTest);
 	addFunctionCase				(commandBuffersTests.get(), "pool_reset_no_flags_res",			"",	resetPoolNoFlagsTest);
-	addFunctionCase				(commandBuffersTests.get(), "pool_reset_reuse",					"",	resetPoolReuseTest);
+	addFunctionCase				(commandBuffersTests.get(), "pool_reset_reuse",					"",	checkEventSupport, resetPoolReuseTest);
 	/* 19.2. Command Buffer Lifetime (5.2 in VK 1.0 Spec) */
 	addFunctionCase				(commandBuffersTests.get(), "allocate_single_primary",			"", allocatePrimaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "allocate_many_primary",			"",	allocateManyPrimaryBuffersTest);
 	addFunctionCase				(commandBuffersTests.get(), "allocate_single_secondary",		"", allocateSecondaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "allocate_many_secondary",			"", allocateManySecondaryBuffersTest);
-	addFunctionCase				(commandBuffersTests.get(), "execute_small_primary",			"",	executePrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "execute_large_primary",			"",	executeLargePrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "reset_implicit",					"", resetBufferImplicitlyTest);
-	addFunctionCase				(commandBuffersTests.get(), "trim_command_pool",				"", trimCommandPoolTest, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-	addFunctionCase				(commandBuffersTests.get(), "trim_command_pool_secondary",		"", trimCommandPoolTest, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+	addFunctionCase				(commandBuffersTests.get(), "execute_small_primary",			"",	checkEventSupport, executePrimaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "execute_large_primary",			"",	checkEventSupport, executeLargePrimaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "reset_implicit",					"", checkEventSupport, resetBufferImplicitlyTest);
+	addFunctionCase				(commandBuffersTests.get(), "trim_command_pool",				"", checkEventSupport, trimCommandPoolTest, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	addFunctionCase				(commandBuffersTests.get(), "trim_command_pool_secondary",		"", checkEventSupport, trimCommandPoolTest, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 	/* 19.3. Command Buffer Recording (5.3 in VK 1.0 Spec) */
-	addFunctionCase				(commandBuffersTests.get(), "record_single_primary",			"",	recordSinglePrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_many_primary",				"", recordLargePrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_single_secondary",			"",	recordSingleSecondaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_many_secondary",			"", recordLargeSecondaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "submit_twice_primary",				"",	submitPrimaryBufferTwiceTest);
-	addFunctionCase				(commandBuffersTests.get(), "submit_twice_secondary",			"",	submitSecondaryBufferTwiceTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_one_time_submit_primary",	"",	oneTimeSubmitFlagPrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_one_time_submit_secondary",	"",	oneTimeSubmitFlagSecondaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_single_primary",			"",	checkEventSupport, recordSinglePrimaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_many_primary",				"", checkEventSupport, recordLargePrimaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_single_secondary",			"",	checkEventSupport, recordSingleSecondaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_many_secondary",			"", checkEventSupport, recordLargeSecondaryBufferTest);
+	{
+		deUint32	seed		= 1614182419u;
+		const auto	smallExtent	= makeExtent3D(128u, 128u, 1u);
+		const auto	largeExtent	= makeExtent3D(512u, 512u, 1u);
+
+		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_primary_1",		"", ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_PRIMARY,	smallExtent,	seed++)));
+		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_primary_2",		"", ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_PRIMARY,	largeExtent,	seed++)));
+		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_secondary_1",	"", ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_SECONDARY,	smallExtent,	seed++)));
+		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_secondary_2",	"", ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_SECONDARY,	largeExtent,	seed++)));
+	}
+	addFunctionCase				(commandBuffersTests.get(), "submit_twice_primary",				"",	checkEventSupport, submitPrimaryBufferTwiceTest);
+	addFunctionCase				(commandBuffersTests.get(), "submit_twice_secondary",			"",	checkEventSupport, submitSecondaryBufferTwiceTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_one_time_submit_primary",	"",	checkEventSupport, oneTimeSubmitFlagPrimaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_one_time_submit_secondary",	"",	checkEventSupport, oneTimeSubmitFlagSecondaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "render_pass_continue",				"",	renderPassContinueTest, true);
 	addFunctionCase				(commandBuffersTests.get(), "render_pass_continue_no_fb",		"",	renderPassContinueTest, false);
-	addFunctionCase				(commandBuffersTests.get(), "record_simul_use_primary",			"",	simultaneousUsePrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_simul_use_secondary",		"",	simultaneousUseSecondaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_simul_use_primary",			"",	checkEventSupport, simultaneousUsePrimaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_simul_use_secondary",		"",	checkEventSupport, simultaneousUseSecondaryBufferTest);
 	addFunctionCaseWithPrograms (commandBuffersTests.get(), "record_simul_use_secondary_one_primary", "", genComputeIncrementSource, simultaneousUseSecondaryBufferOnePrimaryBufferTest);
 	addFunctionCaseWithPrograms (commandBuffersTests.get(), "record_simul_use_secondary_two_primary", "", genComputeIncrementSource, simultaneousUseSecondaryBufferTwoPrimaryBuffersTest);
 	addFunctionCase				(commandBuffersTests.get(), "record_query_precise_w_flag",		"",	recordBufferQueryPreciseWithFlagTest);
@@ -4193,15 +4807,15 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_invalid_type", "", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::INVALID_STRUCTURE_TYPE);
 	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_valid_nonsense_type", "", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::VALID_NONSENSE_TYPE);
 	/* 19.4. Command Buffer Submission (5.4 in VK 1.0 Spec) */
-	addFunctionCase				(commandBuffersTests.get(), "submit_count_non_zero",			"", submitBufferCountNonZero);
-	addFunctionCase				(commandBuffersTests.get(), "submit_count_equal_zero",			"", submitBufferCountEqualZero);
-	addFunctionCase				(commandBuffersTests.get(), "submit_wait_single_semaphore",		"", submitBufferWaitSingleSemaphore);
-	addFunctionCase				(commandBuffersTests.get(), "submit_wait_many_semaphores",		"", submitBufferWaitManySemaphores);
-	addFunctionCase				(commandBuffersTests.get(), "submit_null_fence",				"", submitBufferNullFence);
-	addFunctionCase				(commandBuffersTests.get(), "submit_two_buffers_one_buffer_null_with_fence", "", submitTwoBuffersOneBufferNullWithFence);
+	addFunctionCase				(commandBuffersTests.get(), "submit_count_non_zero",			"", checkEventSupport, submitBufferCountNonZero);
+	addFunctionCase				(commandBuffersTests.get(), "submit_count_equal_zero",			"", checkEventSupport, submitBufferCountEqualZero);
+	addFunctionCase				(commandBuffersTests.get(), "submit_wait_single_semaphore",		"", checkEventSupport, submitBufferWaitSingleSemaphore);
+	addFunctionCase				(commandBuffersTests.get(), "submit_wait_many_semaphores",		"", checkEventSupport, submitBufferWaitManySemaphores);
+	addFunctionCase				(commandBuffersTests.get(), "submit_null_fence",				"", checkEventSupport, submitBufferNullFence);
+	addFunctionCase				(commandBuffersTests.get(), "submit_two_buffers_one_buffer_null_with_fence", "", checkEventSupport, submitTwoBuffersOneBufferNullWithFence);
 	/* 19.5. Secondary Command Buffer Execution (5.6 in VK 1.0 Spec) */
-	addFunctionCase				(commandBuffersTests.get(), "secondary_execute",				"",	executeSecondaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "secondary_execute_twice",			"",	executeSecondaryBufferTwiceTest);
+	addFunctionCase				(commandBuffersTests.get(), "secondary_execute",				"",	checkEventSupport, executeSecondaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "secondary_execute_twice",			"",	checkEventSupport, executeSecondaryBufferTwiceTest);
 	/* 19.6. Commands Allowed Inside Command Buffers (? in VK 1.0 Spec) */
 	addFunctionCaseWithPrograms (commandBuffersTests.get(), "order_bind_pipeline",				"", genComputeSource, orderBindPipelineTest);
 	/* Verify untested transitions between command buffer states */

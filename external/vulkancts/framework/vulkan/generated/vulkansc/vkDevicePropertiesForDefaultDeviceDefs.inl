@@ -9,13 +9,13 @@ const VkPhysicalDeviceDescriptorIndexingProperties&				getDescriptorIndexingProp
 const VkPhysicalDeviceDiscardRectanglePropertiesEXT&			getDiscardRectanglePropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDiscardRectanglePropertiesEXT>();			}
 const VkPhysicalDeviceDriverProperties&							getDriverProperties							(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDriverProperties>();						}
 const VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			getExternalMemoryHostPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceExternalMemoryHostPropertiesEXT>();		}
-const VkPhysicalDeviceFaultHandlingProperties&					getFaultHandlingProperties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFaultHandlingProperties>();				}
 const VkPhysicalDeviceFloatControlsProperties&					getFloatControlsProperties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFloatControlsProperties>();				}
 const VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			getFragmentShadingRateProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentShadingRatePropertiesKHR>();		}
 const VkPhysicalDeviceIDProperties&								getIDProperties								(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceIDProperties>();							}
 const VkPhysicalDeviceLineRasterizationPropertiesEXT&			getLineRasterizationPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceLineRasterizationPropertiesEXT>();			}
 const VkPhysicalDeviceMaintenance3Properties&					getMaintenance3Properties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMaintenance3Properties>();					}
 const VkPhysicalDeviceMultiviewProperties&						getMultiviewProperties						(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMultiviewProperties>();					}
+const VkPhysicalDevicePerformanceQueryPropertiesKHR&			getPerformanceQueryProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDevicePerformanceQueryPropertiesKHR>();			}
 const VkPhysicalDevicePointClippingProperties&					getPointClippingProperties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDevicePointClippingProperties>();				}
 const VkPhysicalDeviceProtectedMemoryProperties&				getProtectedMemoryProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceProtectedMemoryProperties>();				}
 const VkPhysicalDeviceRobustness2PropertiesEXT&					getRobustness2PropertiesEXT					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceRobustness2PropertiesEXT>();				}

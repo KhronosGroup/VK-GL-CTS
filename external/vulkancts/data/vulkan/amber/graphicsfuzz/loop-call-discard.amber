@@ -109,7 +109,7 @@ SHADER vertex variant_vertex_shader PASSTHROUGH
 #   sum += data[1].xxyz; // sum is unchanged
 #   _GLF_color = sum; // red
 # }
-SHADER fragment variant_fragment_shader SPIRV-ASM
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 7

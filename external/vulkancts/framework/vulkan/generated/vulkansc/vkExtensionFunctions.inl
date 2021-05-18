@@ -53,6 +53,12 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_performance_query")
+	{
+		functions.push_back("vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR");
+		functions.push_back("vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR");
+		return;
+	}
 	if (extName == "VK_KHR_get_surface_capabilities2")
 	{
 		functions.push_back("vkGetPhysicalDeviceSurfaceCapabilities2KHR");
@@ -84,28 +90,16 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 		functions.push_back("vkGetPhysicalDeviceFragmentShadingRatesKHR");
 		return;
 	}
-	if (extName == "VK_KHR_fault_handling")
-	{
-		return;
-	}
 	if (extName == "VK_KHR_object_refresh")
 	{
 		functions.push_back("vkGetPhysicalDeviceRefreshableObjectTypesKHR");
 		return;
 	}
-	if (extName == "VK_KHR_seu_safe_memory")
-	{
-		return;
-	}
-	if (extName == "VK_KHR_pipeline_identifier")
+	if (extName == "VK_KHR_synchronization2")
 	{
 		return;
 	}
 	if (extName == "VK_KHR_copy_commands2")
-	{
-		return;
-	}
-	if (extName == "VK_KHR_sc_pipeline_cache_functionality")
 	{
 		return;
 	}
@@ -161,6 +155,13 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	}
 	if (extName == "VK_EXT_queue_family_foreign")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_debug_utils")
+	{
+		functions.push_back("vkCreateDebugUtilsMessengerEXT");
+		functions.push_back("vkDestroyDebugUtilsMessengerEXT");
+		functions.push_back("vkSubmitDebugUtilsMessageEXT");
 		return;
 	}
 	if (extName == "VK_EXT_shader_stencil_export")
@@ -221,6 +222,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_validation_features")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_fragment_shader_interlock")
 	{
 		return;
@@ -266,11 +271,27 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_ycbcr_2plane_444_formats")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_image_robustness")
 	{
 		return;
 	}
 	if (extName == "VK_EXT_4444_formats")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_vertex_input_dynamic_state")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_extended_dynamic_state2")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_color_write_enable")
 	{
 		return;
 	}
@@ -330,6 +351,12 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetFenceFdKHR");
 		return;
 	}
+	if (extName == "VK_KHR_performance_query")
+	{
+		functions.push_back("vkAcquireProfilingLockKHR");
+		functions.push_back("vkReleaseProfilingLockKHR");
+		return;
+	}
 	if (extName == "VK_KHR_get_surface_capabilities2")
 	{
 		return;
@@ -355,22 +382,19 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdSetFragmentShadingRateKHR");
 		return;
 	}
-	if (extName == "VK_KHR_fault_handling")
-	{
-		functions.push_back("vkGetFaultDataKHR");
-		return;
-	}
 	if (extName == "VK_KHR_object_refresh")
 	{
 		functions.push_back("vkCmdRefreshObjectsKHR");
 		return;
 	}
-	if (extName == "VK_KHR_seu_safe_memory")
+	if (extName == "VK_KHR_synchronization2")
 	{
-		return;
-	}
-	if (extName == "VK_KHR_pipeline_identifier")
-	{
+		functions.push_back("vkCmdSetEvent2KHR");
+		functions.push_back("vkCmdResetEvent2KHR");
+		functions.push_back("vkCmdWaitEvents2KHR");
+		functions.push_back("vkCmdPipelineBarrier2KHR");
+		functions.push_back("vkCmdWriteTimestamp2KHR");
+		functions.push_back("vkQueueSubmit2KHR");
 		return;
 	}
 	if (extName == "VK_KHR_copy_commands2")
@@ -381,10 +405,6 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdCopyImageToBuffer2KHR");
 		functions.push_back("vkCmdBlitImage2KHR");
 		functions.push_back("vkCmdResolveImage2KHR");
-		return;
-	}
-	if (extName == "VK_KHR_sc_pipeline_cache_functionality")
-	{
 		return;
 	}
 	if (extName == "VK_EXT_depth_range_unrestricted")
@@ -443,6 +463,18 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_EXT_queue_family_foreign")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_debug_utils")
+	{
+		functions.push_back("vkSetDebugUtilsObjectNameEXT");
+		functions.push_back("vkSetDebugUtilsObjectTagEXT");
+		functions.push_back("vkQueueBeginDebugUtilsLabelEXT");
+		functions.push_back("vkQueueEndDebugUtilsLabelEXT");
+		functions.push_back("vkQueueInsertDebugUtilsLabelEXT");
+		functions.push_back("vkCmdBeginDebugUtilsLabelEXT");
+		functions.push_back("vkCmdEndDebugUtilsLabelEXT");
+		functions.push_back("vkCmdInsertDebugUtilsLabelEXT");
 		return;
 	}
 	if (extName == "VK_EXT_shader_stencil_export")
@@ -505,6 +537,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_validation_features")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_fragment_shader_interlock")
 	{
 		return;
@@ -562,12 +598,35 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_ycbcr_2plane_444_formats")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_image_robustness")
 	{
 		return;
 	}
 	if (extName == "VK_EXT_4444_formats")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_vertex_input_dynamic_state")
+	{
+		functions.push_back("vkCmdSetVertexInputEXT");
+		return;
+	}
+	if (extName == "VK_EXT_extended_dynamic_state2")
+	{
+		functions.push_back("vkCmdSetPatchControlPointsEXT");
+		functions.push_back("vkCmdSetRasterizerDiscardEnableEXT");
+		functions.push_back("vkCmdSetDepthBiasEnableEXT");
+		functions.push_back("vkCmdSetLogicOpEXT");
+		functions.push_back("vkCmdSetPrimitiveRestartEnableEXT");
+		return;
+	}
+	if (extName == "VK_EXT_color_write_enable")
+	{
+		functions.push_back("vkCmdSetColorWriteEnableEXT");
 		return;
 	}
 	DE_FATAL("Extension name not found");
@@ -577,6 +636,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 {
 	"VK_KHR_surface",
 	"VK_KHR_display",
+	"VK_KHR_performance_query",
 	"VK_KHR_get_surface_capabilities2",
 	"VK_KHR_get_display_properties2",
 	"VK_KHR_fragment_shading_rate",
@@ -594,15 +654,19 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_KHR_external_semaphore_fd",
 	"VK_KHR_shared_presentable_image",
 	"VK_KHR_external_fence_fd",
-	"VK_KHR_fault_handling",
 	"VK_KHR_object_refresh",
+	"VK_KHR_synchronization2",
 	"VK_KHR_copy_commands2",
 	"VK_EXT_display_control",
 	"VK_EXT_discard_rectangles",
 	"VK_EXT_hdr_metadata",
+	"VK_EXT_debug_utils",
 	"VK_EXT_sample_locations",
 	"VK_EXT_image_drm_format_modifier",
 	"VK_EXT_external_memory_host",
 	"VK_EXT_line_rasterization",
-	"VK_EXT_extended_dynamic_state"
+	"VK_EXT_extended_dynamic_state",
+	"VK_EXT_vertex_input_dynamic_state",
+	"VK_EXT_extended_dynamic_state2",
+	"VK_EXT_color_write_enable"
 };

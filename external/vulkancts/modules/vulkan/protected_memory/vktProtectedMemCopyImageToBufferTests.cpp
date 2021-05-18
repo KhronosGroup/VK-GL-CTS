@@ -137,8 +137,7 @@ tcu::TestStatus CopyImageToBufferTestInstance<T>::iterate()
 																			RENDER_WIDTH, RENDER_HEIGHT,
 																			m_imageFormat,
 																			vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT
-																			| vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT
-																			| vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+																			| vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 	de::MovePtr<vk::BufferWithMemory>	dstBuffer			(makeBuffer(ctx,
 																		PROTECTION_ENABLED,
 																		queueFamilyIndex,

@@ -40,7 +40,10 @@
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
 
+#include "glcMisc.hpp"
+
 #include <algorithm>
+#include <functional>
 #include <map>
 
 using namespace glw;
@@ -161,7 +164,7 @@ protected:
 
 private:
 	void generateTextureData(GLuint width, GLuint height, GLenum type, unsigned int pixelSize, unsigned int components,
-							 std::vector<unsigned char>& result) const;
+							 bool isSRGB, std::vector<unsigned char>& result) const;
 
 	// color converting methods
 	static void convertByte(tcu::Vec4 inColor, unsigned char* dst, int components);
@@ -173,10 +176,13 @@ private:
 	static void convertInt(tcu::Vec4 inColor, unsigned char* dst, int components);
 	static void convertUInt(tcu::Vec4 inColor, unsigned char* dst, int components);
 	static void convertUInt_24_8(tcu::Vec4 inColor, unsigned char* dst, int components);
+	static void convertFloat_32_Uint_24_8(tcu::Vec4 inColor, unsigned char* dst, int);
 	static void convertUShort_4_4_4_4(tcu::Vec4 inColor, unsigned char* dst, int);
 	static void convertUShort_5_5_5_1(tcu::Vec4 inColor, unsigned char* dst, int);
 	static void convertUShort_5_6_5(tcu::Vec4 inColor, unsigned char* dst, int);
 	static void convertUInt_2_10_10_10_rev(tcu::Vec4 inColor, unsigned char* dst, int);
+	static void convertUInt_10f_11f_11f_rev(tcu::Vec4 inColor, unsigned char* dst, int);
+	static void convertUint_5_9_9_9_rev(tcu::Vec4 inColor, unsigned char* dst, int);
 
 	static GLhalf floatToHalf(float f);
 
@@ -225,12 +231,14 @@ GLuint InternalformatCaseBase::createTexture(GLint internalFormat, GLenum format
 		tcu::TextureFormat tcuTextureFormat = glu::mapGLTransferFormat(format, type);
 		unsigned int	   components		= tcu::getNumUsedChannels(tcuTextureFormat.order);
 		unsigned int	   pixelSize		= 4;
+		bool			   isSRGB			= internalFormat == GL_SRGB8 || internalFormat == GL_SRGB8_ALPHA8;
 
 		// note: getPixelSize hits assertion for GL_UNSIGNED_INT_2_10_10_10_REV when format is RGB
 		if (type != GL_UNSIGNED_INT_2_10_10_10_REV)
 			pixelSize = tcu::getPixelSize(tcuTextureFormat);
 
-		generateTextureData(m_renderWidth, m_renderHeight, type, pixelSize, components, textureData);
+		generateTextureData(m_renderWidth, m_renderHeight, type, pixelSize, components, isSRGB, textureData);
+
 		textureDataPtr = &textureData[0];
 	}
 
@@ -278,7 +286,8 @@ glu::ProgramSources InternalformatCaseBase::prepareTexturingProgramSources(GLint
 			 "}\n";
 		fs = "${VERSION}\n"
 			 "precision highp float;\n"
-			 "uniform ${SAMPLER} sampler;\n"
+			 "precision highp int;\n"
+			 "uniform highp ${SAMPLER} sampler;\n"
 			 "in vec2 texcoord;\n"
 			 "out highp vec4 color;\n"
 			 "void main()\n"
@@ -289,7 +298,8 @@ glu::ProgramSources InternalformatCaseBase::prepareTexturingProgramSources(GLint
 			 "}\n";
 
 		specializationMap["PROCESS_COLOR"] = "";
-		if ((format == GL_RGB_INTEGER) || (format == GL_RGBA_INTEGER))
+		if ((format == GL_RED_INTEGER) || (format == GL_RG_INTEGER) || (format == GL_RGB_INTEGER) ||
+			(format == GL_RGBA_INTEGER))
 		{
 			specializationMap["SAMPLED_TYPE"] = "uvec4";
 			specializationMap["SAMPLER"]	  = "usampler2D";
@@ -311,13 +321,13 @@ glu::ProgramSources InternalformatCaseBase::prepareTexturingProgramSources(GLint
 			}
 			else if (type == GL_UNSIGNED_SHORT)
 			{
-				specializationMap["CALCULATE_COLOR"] = "vec4(v / 256) / 256.0";
+				specializationMap["CALCULATE_COLOR"] = "vec4(v / 256u) / 256.0";
 			}
 			else if (type == GL_INT)
 			{
 				specializationMap["SAMPLED_TYPE"]	= "ivec4";
 				specializationMap["SAMPLER"]		 = "isampler2D";
-				specializationMap["CALCULATE_COLOR"] = "vec4(v / 2097152u) / 1024.0";
+				specializationMap["CALCULATE_COLOR"] = "vec4(uvec4(v) / 2097152u) / 1024.0";
 			}
 			else // GL_UNSIGNED_INT
 			{
@@ -327,14 +337,18 @@ glu::ProgramSources InternalformatCaseBase::prepareTexturingProgramSources(GLint
 					specializationMap["CALCULATE_COLOR"] = "vec4(v / 4194304u) / 1024.0";
 			}
 
-			if (format == GL_RGB_INTEGER)
+			if (format == GL_RED_INTEGER)
+				specializationMap["PROCESS_COLOR"] = "color = vec4(color.r, 0.0, 0.0, 1.0);\n";
+			else if (format == GL_RG_INTEGER)
+				specializationMap["PROCESS_COLOR"] = "color = vec4(color.r, color.g, 0.0, 1.0);\n";
+			else if (format == GL_RGB_INTEGER)
 				specializationMap["PROCESS_COLOR"] = "color.a = 1.0;\n";
 		}
 		else
 		{
 			specializationMap["SAMPLED_TYPE"]	= "vec4";
 			specializationMap["SAMPLER"]		 = "sampler2D";
-			if (format == GL_DEPTH_STENCIL)
+			if (format == GL_DEPTH_STENCIL || format == GL_DEPTH_COMPONENT)
 				specializationMap["CALCULATE_COLOR"] = "vec4(v.r, 0.0, 0.0, 1.0)";
 			else
 				specializationMap["CALCULATE_COLOR"] = "v";
@@ -362,6 +376,8 @@ glu::ProgramSources InternalformatCaseBase::prepareTexturingProgramSources(GLint
 
 		if ((internalFormat == GL_DEPTH_COMPONENT) || (internalFormat == GL_DEPTH_STENCIL))
 			specializationMap["CALCULATE_COLOR"] = "vec4(color.r, 0.0, 0.0, 1.0)";
+		else if (internalFormat == GL_DEPTH_COMPONENT32F)
+			specializationMap["CALCULATE_COLOR"] = "vec4(color.r, color.r, color.r, 1.0)";
 		else
 			specializationMap["CALCULATE_COLOR"] = "color";
 	}
@@ -393,6 +409,8 @@ GLenum InternalformatCaseBase::getUnsizedFormatFromInternalFormat(GLint internal
 	case GL_RGB5_A1:
 	case GL_RGBA8:
 	case GL_RGB10_A2:
+	case GL_RGBA8_SNORM:
+	case GL_SRGB8_ALPHA8:
 		return GL_RGBA;
 	case GL_RGB10_A2UI:
 	case GL_RGBA8UI: //remove this
@@ -402,6 +420,8 @@ GLenum InternalformatCaseBase::getUnsizedFormatFromInternalFormat(GLint internal
 	case GL_RGB8:
 	case GL_RGB10:
 	case GL_RGB9_E5:
+	case GL_R11F_G11F_B10F:
+	case GL_SRGB8:
 		return GL_RGB;
 	case GL_LUMINANCE_ALPHA:
 	case GL_LUMINANCE4_ALPHA4_OES:
@@ -416,8 +436,10 @@ GLenum InternalformatCaseBase::getUnsizedFormatFromInternalFormat(GLint internal
 	case GL_DEPTH_COMPONENT16:
 	case GL_DEPTH_COMPONENT24:
 	case GL_DEPTH_COMPONENT32:
+	case GL_DEPTH_COMPONENT32F:
 		return GL_DEPTH_COMPONENT;
 	case GL_DEPTH24_STENCIL8:
+	case GL_DEPTH32F_STENCIL8:
 		return GL_DEPTH_STENCIL;
 	case GL_STENCIL_INDEX8:
 		return GL_STENCIL_INDEX;
@@ -435,45 +457,59 @@ GLenum InternalformatCaseBase::getTypeFromInternalFormat(GLint internalFormat) c
 	case GL_RGB10_A2:
 	case GL_RGB10_A2UI:
 		return GL_UNSIGNED_INT_2_10_10_10_REV;
+	case GL_R11F_G11F_B10F:
+		return GL_UNSIGNED_INT_10F_11F_11F_REV;
 	case GL_DEPTH_COMPONENT16:
 	case GL_DEPTH_COMPONENT24:
 		return GL_UNSIGNED_SHORT;
 	case GL_DEPTH_COMPONENT32:
 		return GL_UNSIGNED_INT;
+	case GL_DEPTH_COMPONENT32F:
+		return GL_FLOAT;
+	case GL_DEPTH32F_STENCIL8:
+		return GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
 	}
 
 	return GL_UNSIGNED_BYTE;
 }
 
 void InternalformatCaseBase::generateTextureData(GLuint width, GLuint height, GLenum type, unsigned int pixelSize,
-												 unsigned int components, std::vector<unsigned char>& result) const
+												 unsigned int components, bool isSRGB,
+												 std::vector<unsigned char>& result) const
 {
 	// colors are the 4 corner colors specified ( lower left, lower right, upper left, upper right )
 	static tcu::Vec4 colors[4] = { tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f), tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f),
 								   tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), tcu::Vec4(0.0f, 1.0f, 1.0f, 1.0f) };
 
-	typedef void (*ColorConversionFunc)(tcu::Vec4, unsigned char*, int);
+	typedef std::function<void(tcu::Vec4, unsigned char*, int)> ColorConversionFunc;
 	typedef std::map<GLenum, ColorConversionFunc> ColorConversionMap;
+	using namespace std::placeholders;
+
 	static ColorConversionMap colorConversionMap;
 	if (colorConversionMap.empty())
 	{
-		colorConversionMap[GL_BYTE]						   = &convertByte;
-		colorConversionMap[GL_UNSIGNED_BYTE]			   = &convertUByte;
-		colorConversionMap[GL_HALF_FLOAT]				   = &convertHFloat;
-		colorConversionMap[GL_HALF_FLOAT_OES]			   = &convertHFloat;
-		colorConversionMap[GL_FLOAT]					   = &convertFloat;
-		colorConversionMap[GL_SHORT]					   = &convertShort;
-		colorConversionMap[GL_UNSIGNED_SHORT]			   = &convertUShort;
-		colorConversionMap[GL_INT]						   = &convertInt;
-		colorConversionMap[GL_UNSIGNED_INT]				   = &convertUInt;
-		colorConversionMap[GL_UNSIGNED_INT_24_8]		   = &convertUInt_24_8;
-		colorConversionMap[GL_UNSIGNED_SHORT_4_4_4_4]	  = &convertUShort_4_4_4_4;
-		colorConversionMap[GL_UNSIGNED_SHORT_5_5_5_1]	  = &convertUShort_5_5_5_1;
-		colorConversionMap[GL_UNSIGNED_SHORT_5_6_5]		   = &convertUShort_5_6_5;
-		colorConversionMap[GL_UNSIGNED_INT_2_10_10_10_REV] = &convertUInt_2_10_10_10_rev;
+		colorConversionMap[GL_BYTE]							  = &convertByte;
+		colorConversionMap[GL_UNSIGNED_BYTE]				  = &convertUByte;
+		colorConversionMap[GL_HALF_FLOAT]					  = &convertHFloat;
+		colorConversionMap[GL_HALF_FLOAT_OES]				  = &convertHFloat;
+		colorConversionMap[GL_FLOAT]						  = &convertFloat;
+		colorConversionMap[GL_SHORT]						  = &convertShort;
+		colorConversionMap[GL_UNSIGNED_SHORT]				  = &convertUShort;
+		colorConversionMap[GL_INT]							  = &convertInt;
+		colorConversionMap[GL_UNSIGNED_INT]					  = &convertUInt;
+		colorConversionMap[GL_UNSIGNED_INT_24_8]			  = &convertUInt_24_8;
+		colorConversionMap[GL_FLOAT_32_UNSIGNED_INT_24_8_REV] = &convertFloat_32_Uint_24_8;
+		colorConversionMap[GL_UNSIGNED_SHORT_4_4_4_4]		  = &convertUShort_4_4_4_4;
+		colorConversionMap[GL_UNSIGNED_SHORT_5_5_5_1]		  = &convertUShort_5_5_5_1;
+		colorConversionMap[GL_UNSIGNED_SHORT_5_6_5]			  = &convertUShort_5_6_5;
+		colorConversionMap[GL_UNSIGNED_INT_2_10_10_10_REV]	  = &convertUInt_2_10_10_10_rev;
+		colorConversionMap[GL_UNSIGNED_INT_10F_11F_11F_REV]	  = &convertUInt_10f_11f_11f_rev;
+		colorConversionMap[GL_UNSIGNED_INT_5_9_9_9_REV]		  = &convertUint_5_9_9_9_rev;
 	}
 
 	ColorConversionFunc convertColor = colorConversionMap.at(type);
+	if (isSRGB)
+		convertColor = std::bind(convertColor, std::bind(tcu::linearToSRGB, _1), _2, _3);
 
 	float lwidth  = static_cast<float>(width - 1);
 	float lheight = static_cast<float>(height - 1);
@@ -573,6 +609,15 @@ void InternalformatCaseBase::convertUInt_24_8(tcu::Vec4 inColor, unsigned char* 
 	dstUint[0] = (d & 0xFFFFFF00) | (s & 0xFF);
 }
 
+void InternalformatCaseBase::convertFloat_32_Uint_24_8(tcu::Vec4 inColor, unsigned char* dst, int)
+{
+	float*		  dstFloat = reinterpret_cast<float*>(dst);
+	unsigned int* dstUint  = reinterpret_cast<unsigned int*>(dst);
+
+	dstFloat[0] = inColor[0];
+	dstUint[1]	= static_cast<unsigned int>(inColor[1] * 255u) & 0xFF;
+}
+
 void InternalformatCaseBase::convertUShort_4_4_4_4(tcu::Vec4 inColor, unsigned char* dst, int)
 {
 	unsigned short* dstUShort = reinterpret_cast<unsigned short*>(dst);
@@ -620,6 +665,61 @@ void InternalformatCaseBase::convertUInt_2_10_10_10_rev(tcu::Vec4 inColor, unsig
 	unsigned int r = static_cast<unsigned int>(inColor[0] * 1023) << 0;
 
 	dstUint[0] = (a & 0xC0000000) | (b & 0x3FF00000) | (g & 0x000FFC00) | (r & 0x000003FF);
+}
+
+void InternalformatCaseBase::convertUInt_10f_11f_11f_rev(tcu::Vec4 inColor, unsigned char* dst, int)
+{
+	unsigned int* dstUint = reinterpret_cast<unsigned int*>(dst);
+
+	unsigned int b = floatToUnisgnedF10(inColor[2]);
+	unsigned int g = floatToUnisgnedF11(inColor[1]);
+	unsigned int r = floatToUnisgnedF11(inColor[0]);
+
+	dstUint[0] = (b << 22) | (g << 11) | r;
+}
+
+void InternalformatCaseBase::convertUint_5_9_9_9_rev(tcu::Vec4 inColor, unsigned char* dst, int)
+{
+	unsigned int* dstUint = reinterpret_cast<unsigned int*>(dst);
+
+	const int N		= 9;
+	const int B		= 15;
+	const int E_max = 31;
+
+	GLfloat red	  = inColor[0];
+	GLfloat green = inColor[1];
+	GLfloat blue  = inColor[2];
+
+	GLfloat sharedExpMax =
+		(deFloatPow(2.0f, (float)N) - 1.0f) / deFloatPow(2.0f, (float)N) * deFloatPow(2.0f, (float)(E_max - B));
+
+	GLfloat red_c	= deFloatMax(0, deFloatMin(sharedExpMax, red));
+	GLfloat green_c = deFloatMax(0, deFloatMin(sharedExpMax, green));
+	GLfloat blue_c	= deFloatMax(0, deFloatMin(sharedExpMax, blue));
+
+	GLfloat max_c = deFloatMax(deFloatMax(red_c, green_c), blue_c);
+
+	GLfloat exp_p = deFloatMax(-B - 1, deFloatFloor(deFloatLog2(max_c))) + 1 + B;
+
+	GLfloat max_s = deFloatFloor(max_c / deFloatPow(2.0f, exp_p - (float)B - (float)N) + 0.5f);
+
+	GLfloat exp_s;
+
+	if (0 <= max_s && max_s < deFloatPow(2.0f, (float)N))
+		exp_s = exp_p;
+	else
+		exp_s = exp_p + 1;
+
+	GLfloat red_s	= deFloatFloor(red_c / deFloatPow(2.0f, exp_s - (float)B - (float)N) + 0.5f);
+	GLfloat green_s = deFloatFloor(green_c / deFloatPow(2.0f, exp_s - (float)B - (float)N) + 0.5f);
+	GLfloat blue_s	= deFloatFloor(blue_c / deFloatPow(2.0f, exp_s - (float)B - (float)N) + 0.5f);
+
+	GLuint c1 = (static_cast<GLuint>(red_s)) & 511;
+	GLuint c2 = (static_cast<GLuint>(green_s)) & 511;
+	GLuint c3 = (static_cast<GLuint>(blue_s)) & 511;
+	GLuint c4 = (static_cast<GLuint>(exp_s)) & 31;
+
+	dstUint[0] = (c1) | (c2 << 9) | (c3 << 18) | (c4 << 27);
 }
 
 GLhalf InternalformatCaseBase::floatToHalf(float f)
@@ -705,17 +805,26 @@ tcu::TestNode::IterateResult Texture2DCase::iterate(void)
 		formatMap[GL_RG]			  = TextureFormat(GL_RG, GL_UNSIGNED_BYTE, GL_RG);
 		formatMap[GL_RGB]			  = TextureFormat(GL_RGB, GL_UNSIGNED_BYTE, GL_RGB);
 		formatMap[GL_RGBA]			  = TextureFormat(GL_RGB, GL_UNSIGNED_BYTE, GL_RGB);
-		formatMap[GL_RGBA_INTEGER]	= TextureFormat(GL_RGB, GL_UNSIGNED_BYTE, GL_RGB);
-		formatMap[GL_RGB_INTEGER]	 = TextureFormat(GL_RGB, GL_UNSIGNED_BYTE, GL_RGB);
+		formatMap[GL_RGBA_INTEGER]	  = TextureFormat(GL_RGB, GL_UNSIGNED_BYTE, GL_RGB);
+		formatMap[GL_RGB_INTEGER]	  = TextureFormat(GL_RGB, GL_UNSIGNED_BYTE, GL_RGB);
 		formatMap[GL_ALPHA]			  = TextureFormat(GL_ALPHA, GL_UNSIGNED_BYTE, GL_ALPHA);
 		formatMap[GL_LUMINANCE]		  = TextureFormat(GL_LUMINANCE, GL_UNSIGNED_BYTE, GL_LUMINANCE);
 		formatMap[GL_LUMINANCE_ALPHA] = TextureFormat(GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, GL_LUMINANCE_ALPHA);
 		formatMap[GL_DEPTH_COMPONENT] = TextureFormat(GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, GL_DEPTH_COMPONENT);
-		formatMap[GL_DEPTH_STENCIL] = TextureFormat(GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH_STENCIL);
+		formatMap[GL_DEPTH_STENCIL]	  = TextureFormat(GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH_STENCIL);
 
 		if (glu::IsES3Compatible(gl))
 		{
-			formatMap[GL_DEPTH_STENCIL] = TextureFormat(GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH24_STENCIL8_OES);
+			formatMap[GL_RED]			= TextureFormat(GL_RED, GL_UNSIGNED_BYTE, GL_R8);
+			formatMap[GL_RG]			= TextureFormat(GL_RG, GL_UNSIGNED_BYTE, GL_RG8);
+			formatMap[GL_DEPTH_COMPONENT] =
+				TextureFormat(GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, GL_DEPTH_COMPONENT16);
+			formatMap[GL_DEPTH_STENCIL] =
+				TextureFormat(GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH24_STENCIL8_OES);
+			formatMap[GL_RED_INTEGER] = TextureFormat(GL_RED_INTEGER, GL_UNSIGNED_BYTE, GL_R8UI);
+			formatMap[GL_RG_INTEGER]  = TextureFormat(GL_RG_INTEGER, GL_UNSIGNED_BYTE, GL_RG8UI);
+			formatMap[GL_SRGB]		  = TextureFormat(GL_RGB, GL_UNSIGNED_BYTE, GL_RGB);
+			formatMap[GL_SRGB_ALPHA]  = TextureFormat(GL_RGB, GL_UNSIGNED_BYTE, GL_RGB);
 		}
 	}
 
@@ -730,6 +839,16 @@ tcu::TestNode::IterateResult Texture2DCase::iterate(void)
 
 	const TextureFormat& referenceFormat = formatIterator->second;
 
+	auto referenceInternalFormat = referenceFormat.internalFormat;
+	auto referenceType			 = referenceFormat.type;
+
+	// Above lookup only considers m_testFormat.format
+	if (m_testFormat.internalFormat == GL_DEPTH_COMPONENT32F)
+	{
+		referenceInternalFormat = GL_DEPTH_COMPONENT24;
+		referenceType			= GL_UNSIGNED_INT;
+	}
+
 	if (m_renderWidth > m_context.getRenderTarget().getWidth())
 		m_renderWidth = m_context.getRenderTarget().getWidth();
 	if (m_renderHeight > m_context.getRenderTarget().getHeight())
@@ -742,8 +861,8 @@ tcu::TestNode::IterateResult Texture2DCase::iterate(void)
 	// Create test and reference texture
 	GLuint testTextureName = createTexture(m_testFormat.internalFormat, m_testFormat.format, m_testFormat.type,
 										   m_testFormat.minFilter, m_testFormat.magFilter);
-	GLuint referenceTextureName = createTexture(referenceFormat.internalFormat, referenceFormat.format,
-												referenceFormat.type, m_testFormat.minFilter, m_testFormat.magFilter);
+	GLuint referenceTextureName = createTexture(referenceInternalFormat, referenceFormat.format, referenceType,
+												m_testFormat.minFilter, m_testFormat.magFilter);
 
 	// Create program that will render tested texture to screen
 	glu::ShaderProgram testProgram(
@@ -765,7 +884,7 @@ tcu::TestNode::IterateResult Texture2DCase::iterate(void)
 
 	// Create program that will render reference texture to screen
 	glu::ProgramSources referenceSources =
-		prepareTexturingProgramSources(referenceFormat.internalFormat, referenceFormat.format, referenceFormat.type);
+		prepareTexturingProgramSources(referenceInternalFormat, referenceFormat.format, referenceType);
 	glu::ShaderProgram referenceProgram(renderContext, referenceSources);
 	if (!referenceProgram.isOk())
 	{
@@ -823,9 +942,10 @@ tcu::TestNode::IterateResult CopyTexImageCase::iterate(void)
 	const Functions&	gl			  = renderContext.getFunctions();
 
 	// Determine texture format and type
-	GLint  textureInternalFormat = m_testFormat.internalFormat;
-	GLuint textureType			 = getTypeFromInternalFormat(textureInternalFormat);
-	GLuint textureFormat		 = getUnsizedFormatFromInternalFormat(textureInternalFormat);
+	GLint	   textureInternalFormat = m_testFormat.internalFormat;
+	GLuint	   textureType			 = getTypeFromInternalFormat(textureInternalFormat);
+	GLuint	   textureFormat		 = getUnsizedFormatFromInternalFormat(textureInternalFormat);
+	const bool isSRGB				 = textureInternalFormat == GL_SRGB8 || textureInternalFormat == GL_SRGB8_ALPHA8;
 
 	// Create program that will render texture to screen
 	glu::ShaderProgram program(renderContext,
@@ -849,7 +969,8 @@ tcu::TestNode::IterateResult CopyTexImageCase::iterate(void)
 	GLuint mainFboId = 0;
 	gl.genFramebuffers(1, &mainFboId);
 	gl.bindFramebuffer(GL_FRAMEBUFFER, mainFboId);
-	GLuint mainFboColorTextureId = createTexture(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST, false);
+	GLuint mainFboColorTextureId =
+		createTexture(isSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST, false);
 	gl.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mainFboColorTextureId, 0);
 
 	// Render reference texture to main FBO and grab it
@@ -957,6 +1078,8 @@ private:
 	void renderColoredQuad(GLuint programId, const float* positions) const;
 	glu::ProgramSources prepareColoringProgramSources(GLenum format, GLenum type) const;
 	void convertUInt(const tcu::PixelBufferAccess &src, const tcu::PixelBufferAccess &dst);
+	void convertsRGB(const tcu::PixelBufferAccess& src, const tcu::PixelBufferAccess& dst);
+	void convertsRGBA(const tcu::PixelBufferAccess& src, const tcu::PixelBufferAccess& dst);
 	void convertUInt_2_10_10_10_rev(const tcu::PixelBufferAccess &src, const tcu::PixelBufferAccess &dst);
 
 private:
@@ -1008,6 +1131,7 @@ tcu::TestNode::IterateResult RenderbufferCase::iterate(void)
 
 	GLenum	testFormat = getUnsizedFormatFromInternalFormat(m_testFormat.format);
 	GLenum	testType = getTypeFromInternalFormat(m_testFormat.format);
+	const bool isSRGB	= m_testFormat.format == GL_SRGB8 || m_testFormat.format == GL_SRGB8_ALPHA8;
 
 	// We need surfaces for depth testing and stencil testing, and also for
 	// storing the reference and the values for the format under testing
@@ -1045,7 +1169,8 @@ tcu::TestNode::IterateResult RenderbufferCase::iterate(void)
 	// Create two programs for rendering, one for rendering into default FB, and
 	// a second one to render in our created FB
 
-	glu::ShaderProgram program0(renderContext, prepareColoringProgramSources(GL_RGBA, GL_UNSIGNED_BYTE));
+	glu::ShaderProgram program0(renderContext,
+								prepareColoringProgramSources(GL_RGBA, GL_UNSIGNED_BYTE));
 	glu::ShaderProgram program1(renderContext, prepareColoringProgramSources(testFormat, testType));
 
 	std::vector<glu::ShaderProgram*> programs;
@@ -1087,6 +1212,7 @@ tcu::TestNode::IterateResult RenderbufferCase::iterate(void)
 			}
 
 			gl.bindFramebuffer(GL_FRAMEBUFFER, loop ? m_fbo : m_context.getRenderContext().getDefaultFramebuffer());
+
 			gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 			if (defaultFramebufferDepthBits)
@@ -1102,7 +1228,20 @@ tcu::TestNode::IterateResult RenderbufferCase::iterate(void)
 			// Draws large quad
 			renderColoredQuad(programs[loop]->getProgram(), bigQuadPositionsSet);
 
-			if (loop && testFormat == GL_RGBA_INTEGER)
+			if (loop && isSRGB)
+			{
+				de::ArrayBuffer<deUint32> pixels;
+				pixels.setStorage(4 * m_renderWidth * m_renderHeight);
+				tcu::PixelBufferAccess pixelBuffer(tcu::TextureFormat(tcu::TextureFormat::sRGBA, tcu::TextureFormat::UNSIGNED_INT8),
+												   m_renderWidth, m_renderHeight, 1, pixels.getPtr());
+				glu::readPixels(renderContext, 0, 0, pixelBuffer);
+				if (m_testFormat.format == GL_SRGB8_ALPHA8)
+					convertsRGBA(pixelBuffer, testSurface[0][loop].getAccess());
+				else
+					convertsRGB(pixelBuffer, testSurface[0][loop].getAccess());
+		}
+			else if (loop &&
+					 (testFormat == GL_RGBA_INTEGER || testFormat == GL_RG_INTEGER || testFormat == GL_RED_INTEGER))
 			{
 				de::ArrayBuffer<deUint32> pixels;
 				pixels.setStorage(4 * m_renderWidth * m_renderHeight);
@@ -1382,7 +1521,7 @@ glu::ProgramSources RenderbufferCase::prepareColoringProgramSources(GLenum forma
 	return glu::makeVtxFragSources(vs.c_str(), fs.c_str());
 }
 
-typedef TextureFormat	  TF;
+typedef TextureFormat	   TF;
 typedef CopyTexImageFormat CF;
 typedef RenderbufferFormat RF;
 
@@ -1454,31 +1593,80 @@ void InternalformatTests::getESTestData(TestData& testData, glu::ContextType& co
 	if (glu::contextSupports(contextType, glu::ApiType::es(3, 0)))
 	{
 		TextureFormat es3Texture2DFormats[] = {
-			TF(GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA4),
-			TF(GL_RGBA, GL_UNSIGNED_BYTE, GL_RGB5_A1),
-			TF(GL_RGB, GL_UNSIGNED_BYTE, GL_RGB565),
-			TF(GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, GL_RGBA4),
-			TF(GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, GL_RGBA),
-			TF(GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, GL_RGB5_A1),
-			TF(GL_RGB, GL_UNSIGNED_SHORT_5_6_5, GL_RGB),
-			TF(GL_RGB, GL_UNSIGNED_SHORT_5_6_5, GL_RGB565),
-			TF(GL_RGB, GL_UNSIGNED_BYTE, GL_RGB8),
 			TF(GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8),
-			TF(GL_RGB, GL_HALF_FLOAT, GL_RGB16F),
+			TF(GL_RGBA, GL_UNSIGNED_BYTE, GL_RGB5_A1),
+			TF(GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA4),
+			TF(GL_RGBA, GL_UNSIGNED_BYTE, GL_SRGB8_ALPHA8),
+			TF(GL_RGBA, GL_BYTE, GL_RGBA8_SNORM),
+			TF(GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, GL_RGBA4),
+			TF(GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, GL_RGB5_A1),
 			TF(GL_RGBA, GL_HALF_FLOAT, GL_RGBA16F),
+			TF(GL_RGBA, GL_FLOAT, GL_RGBA16F),
+			TF(GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, GL_RGBA8UI),
+			TF(GL_RGBA_INTEGER, GL_BYTE, GL_RGBA8I),
+			TF(GL_RGBA_INTEGER, GL_UNSIGNED_SHORT, GL_RGBA16UI),
+			TF(GL_RGBA_INTEGER, GL_SHORT, GL_RGBA16I),
+			TF(GL_RGBA_INTEGER, GL_UNSIGNED_INT, GL_RGBA32UI),
+			TF(GL_RGBA_INTEGER, GL_INT, GL_RGBA32I),
+			TF(GL_RGBA_INTEGER, GL_UNSIGNED_INT_2_10_10_10_REV, GL_RGB10_A2UI),
+			TF(GL_RGB, GL_UNSIGNED_BYTE, GL_RGB8),
+			TF(GL_RGB, GL_UNSIGNED_BYTE, GL_RGB565),
+			TF(GL_RGB, GL_UNSIGNED_BYTE, GL_SRGB8),
+			TF(GL_RGB, GL_UNSIGNED_SHORT_5_6_5, GL_RGB565),
+			TF(GL_RGB, GL_UNSIGNED_INT_10F_11F_11F_REV, GL_R11F_G11F_B10F),
+			TF(GL_RGB, GL_UNSIGNED_INT_5_9_9_9_REV, GL_RGB9_E5),
+			TF(GL_RGB, GL_HALF_FLOAT, GL_RGB16F),
+			TF(GL_RGB, GL_HALF_FLOAT, GL_R11F_G11F_B10F),
+			TF(GL_RGB, GL_HALF_FLOAT, GL_RGB9_E5),
+			TF(GL_RGB, GL_FLOAT, GL_RGB16F),
+			TF(GL_RGB, GL_FLOAT, GL_R11F_G11F_B10F),
+			TF(GL_RGB, GL_FLOAT, GL_RGB9_E5),
+			TF(GL_RGB_INTEGER, GL_UNSIGNED_BYTE, GL_RGB8UI),
+			TF(GL_RGB_INTEGER, GL_BYTE, GL_RGB8I),
+			TF(GL_RGB_INTEGER, GL_UNSIGNED_SHORT, GL_RGB16UI),
+			TF(GL_RGB_INTEGER, GL_SHORT, GL_RGB16I),
+			TF(GL_RGB_INTEGER, GL_UNSIGNED_INT, GL_RGB32UI),
+			TF(GL_RGB_INTEGER, GL_INT, GL_RGB32I),
+			TF(GL_RG, GL_UNSIGNED_BYTE, GL_RG8),
+			TF(GL_RG, GL_HALF_FLOAT, GL_RG16F),
+			TF(GL_RG, GL_FLOAT, GL_RG32F),
+			TF(GL_RG, GL_FLOAT, GL_RG16F),
+			TF(GL_RG_INTEGER, GL_UNSIGNED_BYTE, GL_RG8UI),
+			TF(GL_RG_INTEGER, GL_BYTE, GL_RG8I),
+			TF(GL_RG_INTEGER, GL_UNSIGNED_SHORT, GL_RG16UI),
+			TF(GL_RG_INTEGER, GL_SHORT, GL_RG16I),
+			TF(GL_RG_INTEGER, GL_UNSIGNED_INT, GL_RG32UI),
+			TF(GL_RG_INTEGER, GL_INT, GL_RG32I),
+			TF(GL_RED, GL_UNSIGNED_BYTE, GL_R8),
+			TF(GL_RED, GL_HALF_FLOAT, GL_R16F),
+			TF(GL_RED, GL_FLOAT, GL_R32F),
+			TF(GL_RED, GL_FLOAT, GL_R16F),
+			TF(GL_RED_INTEGER, GL_UNSIGNED_BYTE, GL_R8UI),
+			TF(GL_RED_INTEGER, GL_BYTE, GL_R8I),
+			TF(GL_RED_INTEGER, GL_UNSIGNED_SHORT, GL_R16UI),
+			TF(GL_RED_INTEGER, GL_SHORT, GL_R16I),
+			TF(GL_RED_INTEGER, GL_UNSIGNED_INT, GL_R32UI),
+			TF(GL_RED_INTEGER, GL_INT, GL_R32I),
+			TF(GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, GL_DEPTH_COMPONENT16),
+			TF(GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, GL_DEPTH_COMPONENT24),
+			TF(GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, GL_DEPTH_COMPONENT16),
+			TF(GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT32F),
 			TF(GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH24_STENCIL8),
+			TF(GL_DEPTH_STENCIL, GL_FLOAT_32_UNSIGNED_INT_24_8_REV, GL_DEPTH32F_STENCIL8),
+			TF(GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, GL_RGBA),
+			TF(GL_RGB, GL_UNSIGNED_SHORT_5_6_5, GL_RGB),
 		};
 
 		CopyTexImageFormat es3CopyTexImageFormats[] = {
-			CF(GL_RGBA4),
-			CF(GL_RGB5_A1),
-			CF(GL_RGB565),
-			CF(GL_RGBA8),
-			CF(GL_RGB8),
+			CF(GL_RGBA4), CF(GL_RGB5_A1),	   CF(GL_RGB565), CF(GL_RGBA8),
+			CF(GL_RGB8),  CF(GL_SRGB8_ALPHA8), CF(GL_SRGB8),  CF(GL_R11F_G11F_B10F),
 		};
 
 		RenderbufferFormat es3RenderbufferFormats[] = {
 			RF(GL_RGB5_A1, RENDERBUFFER_COLOR),
+			RF(GL_SRGB8_ALPHA8, RENDERBUFFER_COLOR),
+			RF(GL_DEPTH_COMPONENT32F, RENDERBUFFER_DEPTH),
+			RF(GL_DEPTH32F_STENCIL8, RENDERBUFFER_DEPTH_STENCIL),
 		};
 
 		append(testData.texture2DFormats, es3Texture2DFormats);
@@ -1582,12 +1770,9 @@ void InternalformatTests::getGLTestData(TestData& testData, glu::ContextType&)
 	};
 
 	CopyTexImageFormat commonCopyTexImageFormats[] = {
-		CF(GL_DEPTH_COMPONENT16, ARB_depth_texture),
-		CF(GL_DEPTH_COMPONENT24, ARB_depth_texture),
-		CF(GL_DEPTH_COMPONENT32, ARB_depth_texture),
-		CF(GL_RGB9_E5, EXT_texture_shared_exponent),
-		CF(GL_RGB10_A2UI, ARB_texture_rgb10_a2ui),
-		CF(GL_RGB10_A2),
+		CF(GL_DEPTH_COMPONENT16, ARB_depth_texture), CF(GL_DEPTH_COMPONENT24, ARB_depth_texture),
+		CF(GL_DEPTH_COMPONENT32, ARB_depth_texture), CF(GL_RGB9_E5, EXT_texture_shared_exponent),
+		CF(GL_RGB10_A2UI, ARB_texture_rgb10_a2ui),	 CF(GL_RGB10_A2),
 	};
 
 	RenderbufferFormat commonRenderbufferFormats[] = {
@@ -1700,6 +1885,30 @@ void RenderbufferCase::convertUInt(const tcu::PixelBufferAccess &src, const tcu:
 	{
 		tcu::UVec4 srcPixel = src.getPixelUint(x, y, z);
 		tcu::Vec4 dstPixel(srcPixel.x() / 255.0f, srcPixel.y() / 255.0f, srcPixel.z() / 255.0f, srcPixel.w() / 255.0f);
+		dst.setPixel(dstPixel, x, y, z);
+	}
+}
+
+void RenderbufferCase::convertsRGB(const tcu::PixelBufferAccess& src, const tcu::PixelBufferAccess& dst)
+{
+	for (int z = 0; z < dst.getDepth(); ++z)
+	for (int y = 0; y < dst.getHeight(); ++y)
+	for (int x = 0; x < dst.getWidth(); ++x)
+	{
+		tcu::UVec4 srcPixel = src.getPixelUint(x, y, z);
+		tcu::Vec4  dstPixel = sRGB8ToLinear(srcPixel);
+		dst.setPixel(dstPixel, x, y, z);
+	}
+}
+
+void RenderbufferCase::convertsRGBA(const tcu::PixelBufferAccess& src, const tcu::PixelBufferAccess& dst)
+{
+	for (int z = 0; z < dst.getDepth(); ++z)
+	for (int y = 0; y < dst.getHeight(); ++y)
+	for (int x = 0; x < dst.getWidth(); ++x)
+	{
+		tcu::UVec4 srcPixel = src.getPixelUint(x, y, z);
+		tcu::Vec4  dstPixel = sRGBA8ToLinear(srcPixel);
 		dst.setPixel(dstPixel, x, y, z);
 	}
 }

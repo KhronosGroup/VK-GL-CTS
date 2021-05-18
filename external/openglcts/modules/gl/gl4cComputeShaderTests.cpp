@@ -4774,6 +4774,8 @@ class AdvancedPipelinePostXFB : public ComputeShaderBase
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 		glEndTransformFeedback();
 
+		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_xfb_buffer);
 		glUseProgram(m_program[1]);
 		glDispatchCompute(1, 1, 1);

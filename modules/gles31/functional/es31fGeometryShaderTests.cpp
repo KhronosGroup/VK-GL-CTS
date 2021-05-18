@@ -117,13 +117,22 @@ static const char* const s_expandShaderSourceGeometryBody =	"in highp vec4 v_geo
 
 static std::string specializeShader (const std::string& shaderSource, const glu::ContextType& contextType)
 {
-	const bool							supportsES32	= glu::contextSupports(contextType, glu::ApiType::es(3, 2));
+	const bool							supportsES32orGL45	= glu::contextSupports(contextType, glu::ApiType::es(3, 2)) ||
+															  glu::contextSupports(contextType, glu::ApiType::core(4, 5));
 	std::map<std::string, std::string>	args;
 	args["GLSL_VERSION_DECL"]					= glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(contextType));
-	args["GLSL_EXT_GEOMETRY_SHADER"]			= supportsES32 ? "" : "#extension GL_EXT_geometry_shader : require\n";
-	args["GLSL_OES_TEXTURE_STORAGE_MULTISAMPLE"]= supportsES32 ? "" : "#extension GL_OES_texture_storage_multisample_2d_array : require\n";
+	args["GLSL_EXT_GEOMETRY_SHADER"]			= supportsES32orGL45 ? "" : "#extension GL_EXT_geometry_shader : require\n";
+	args["GLSL_OES_TEXTURE_STORAGE_MULTISAMPLE"]= supportsES32orGL45 ? "" : "#extension GL_OES_texture_storage_multisample_2d_array : require\n";
 
 	return tcu::StringTemplate(shaderSource).specialize(args);
+}
+
+static bool checkSupport(Context& ctx)
+{
+	auto contextType = ctx.getRenderContext().getType();
+	return contextSupports(contextType, glu::ApiType::es(3, 2)) ||
+		   contextSupports(contextType, glu::ApiType::core(4, 5)) ||
+		   ctx.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader");
 }
 
 std::string inputTypeToGLString (rr::GeometryShaderInputType inputType)
@@ -1051,7 +1060,10 @@ std::string BuiltinVariableShader::genGeometrySource (const glu::ContextType& co
 	buf <<	"${GLSL_VERSION_DECL}\n"
 			"${GLSL_EXT_GEOMETRY_SHADER}";
 
-	if (test == TEST_POINT_SIZE)
+	const bool supportsGL45 = glu::contextSupports(contextType, glu::ApiType::core(4, 5));
+
+	/* GL_EXT_geometry_point_size not available on desktop GLSL. */
+	if (!supportsGL45 && test == TEST_POINT_SIZE)
 		buf << "#extension GL_EXT_geometry_point_size : require\n";
 
 	buf << "layout(points) in;\n";
@@ -1871,7 +1883,7 @@ GeometryShaderRenderTest::~GeometryShaderRenderTest (void)
 void GeometryShaderRenderTest::init (void)
 {
 	// requirements
-	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (!checkSupport(m_context))
 		TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_shader extension or higher context version.");
 
 	// gen resources
@@ -2390,7 +2402,7 @@ NegativeDrawCase::~NegativeDrawCase (void)
 
 void NegativeDrawCase::init (void)
 {
-	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (!checkSupport(m_context))
 		TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_shader extension or higher context version.");
 
 	m_ctx		= new sglr::GLContext(m_context.getRenderContext(), m_testCtx.getLog(), sglr::GLCONTEXT_LOG_CALLS | sglr::GLCONTEXT_LOG_PROGRAMS, tcu::IVec4(0, 0, 1, 1));
@@ -2492,7 +2504,7 @@ void OutputCountCase::init (void)
 		glw::GLint	maxComponents		= 0;
 
 		// check the extension before querying anything
-		if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+		if (!checkSupport(m_context))
 			TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_shader extension or higher context version.");
 
 		m_context.getRenderContext().getFunctions().getIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES, &maxVertices);
@@ -2596,6 +2608,8 @@ void BuiltinVariableRenderTest::init (void)
 	// Requirements
 	if (m_test == BuiltinVariableShader::TEST_POINT_SIZE)
 	{
+		const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+
 		const float requiredPointSize = 5.0f;
 
 		tcu::Vec2 range = tcu::Vec2(1.0f, 1.0f);
@@ -2603,9 +2617,12 @@ void BuiltinVariableRenderTest::init (void)
 		if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 4)) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_point_size"))
 			TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_point_size extension.");
 
-		m_context.getRenderContext().getFunctions().getFloatv(GL_ALIASED_POINT_SIZE_RANGE, range.getPtr());
+		gl.getFloatv(GL_ALIASED_POINT_SIZE_RANGE, range.getPtr());
 		if (range.y() < requiredPointSize)
 			throw tcu::NotSupportedError("Test case requires point size " + de::toString(requiredPointSize));
+
+		if (glu::isContextTypeGLCore(m_context.getRenderContext().getType()))
+			gl.enable(GL_PROGRAM_POINT_SIZE);
 	}
 
 	m_program = new BuiltinVariableShader(m_context.getRenderContext().getType(), m_test);
@@ -2616,6 +2633,11 @@ void BuiltinVariableRenderTest::init (void)
 
 void BuiltinVariableRenderTest::deinit(void)
 {
+	if (BuiltinVariableShader::TEST_POINT_SIZE == m_test && glu::isContextTypeGLCore(m_context.getRenderContext().getType()))
+	{
+		m_context.getRenderContext().getFunctions().disable(GL_PROGRAM_POINT_SIZE);
+	}
+
 	if (m_program)
 	{
 		delete m_program;
@@ -2758,10 +2780,14 @@ void LayeredRenderCase::init (void)
 {
 	// Requirements
 
-	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	const bool supportES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool supportGL45 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
+
+	if (!checkSupport(m_context))
 		TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_shader extension or higher context version.");
 
-	if (m_target == TARGET_2D_MS_ARRAY && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	if (m_target == TARGET_2D_MS_ARRAY &&
+		!(supportGL45 || (supportES32 && m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))))
 		TCU_THROW(NotSupportedError, "Test requires OES_texture_storage_multisample_2d_array extension or higher context version.");
 
 	if (m_context.getRenderTarget().getWidth() < m_resolveDimensions.x() || m_context.getRenderTarget().getHeight() < m_resolveDimensions.y())
@@ -2829,24 +2855,43 @@ LayeredRenderCase::IterateResult LayeredRenderCase::iterate (void)
 
 			gls::StateQueryUtil::StateQueryMemoryWriteGuard<glw::GLint> state;
 
-			m_context.getRenderContext().getFunctions().getIntegerv(GL_LAYER_PROVOKING_VERTEX, &state);
-			GLU_EXPECT_NO_ERROR(m_context.getRenderContext().getFunctions().getError(), "getInteger(GL_LAYER_PROVOKING_VERTEX)");
+			const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+
+			gl.getIntegerv(GL_LAYER_PROVOKING_VERTEX, &state);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "getInteger(GL_LAYER_PROVOKING_VERTEX)");
 
 			if (!state.verifyValidity(m_testCtx))
 				return STOP;
 
 			m_testCtx.getLog() << tcu::TestLog::Message << "GL_LAYER_PROVOKING_VERTEX = " << glu::getProvokingVertexStr(state) << tcu::TestLog::EndMessage;
 
-			if (state != GL_FIRST_VERTEX_CONVENTION &&
-				state != GL_LAST_VERTEX_CONVENTION &&
-				state != GL_UNDEFINED_VERTEX)
+			bool ok = false;
+			if (contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(3,2)))
+			{
+				ok =	state == GL_FIRST_VERTEX_CONVENTION	||
+						state == GL_LAST_VERTEX_CONVENTION	||
+						state == GL_PROVOKING_VERTEX ||
+						state == GL_UNDEFINED_VERTEX;
+				m_provokingVertex = (glw::GLenum)state;
+
+				if (state == GL_PROVOKING_VERTEX) {
+					gl.getIntegerv(GL_PROVOKING_VERTEX, reinterpret_cast<glw::GLint*>(&m_provokingVertex));
+					GLU_EXPECT_NO_ERROR(gl.getError(), "getInteger(GL_PROVOKING_VERTEX)");
+				}
+			}
+			else
+			{
+				ok =	state == GL_FIRST_VERTEX_CONVENTION	||
+						state == GL_LAST_VERTEX_CONVENTION	||
+						state == GL_UNDEFINED_VERTEX;
+				m_provokingVertex = (glw::GLenum)state;
+			}
+			if (!ok)
 			{
 				m_testCtx.getLog() << tcu::TestLog::Message << "getInteger(GL_LAYER_PROVOKING_VERTEX) returned illegal value. Got " << state << tcu::TestLog::EndMessage;
 				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "got unexpected provoking vertex value");
 				return STOP;
 			}
-
-			m_provokingVertex = (glw::GLenum)state;
 		}
 
 		// render to texture
@@ -3734,7 +3779,7 @@ void VaryingOutputCountCase::init (void)
 {
 	// Check requirements
 
-	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (!checkSupport(m_context))
 		TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_shader extension or higher context version.");
 
 	if (m_test == VaryingOutputCountShader::READ_TEXTURE)
@@ -3947,7 +3992,7 @@ GeometryProgramQueryCase::GeometryProgramQueryCase (Context& context, const char
 
 void GeometryProgramQueryCase::init (void)
 {
-	if (!(m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader") || glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2))))
+	if (!checkSupport(m_context))
 		TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_shader extension or higher context version.");
 }
 
@@ -4192,7 +4237,7 @@ ImplementationLimitCase::ImplementationLimitCase (Context& context, const char* 
 
 void ImplementationLimitCase::init (void)
 {
-	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (!checkSupport(m_context))
 		TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_shader extension or higher context version.");
 }
 
@@ -4231,7 +4276,7 @@ LayerProvokingVertexQueryCase::LayerProvokingVertexQueryCase (Context& context, 
 
 void LayerProvokingVertexQueryCase::init (void)
 {
-	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (!checkSupport(m_context))
 		TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_shader extension or higher context version.");
 }
 
@@ -4248,15 +4293,39 @@ LayerProvokingVertexQueryCase::IterateResult LayerProvokingVertexQueryCase::iter
 	{
 		m_testCtx.getLog() << tcu::TestLog::Message << "LAYER_PROVOKING_VERTEX = " << glu::getProvokingVertexStr(state.getIntAccess()) << tcu::TestLog::EndMessage;
 
-		if (state.getIntAccess() != GL_FIRST_VERTEX_CONVENTION &&
-			state.getIntAccess() != GL_LAST_VERTEX_CONVENTION &&
-			state.getIntAccess() != GL_UNDEFINED_VERTEX)
+		bool ok = true;
+		std::string expectedValue;
+
+		if (contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(3,2)))
+		{
+			if (
+				state.getIntAccess() != GL_FIRST_VERTEX_CONVENTION &&
+				state.getIntAccess() != GL_LAST_VERTEX_CONVENTION &&
+				state.getIntAccess() != GL_PROVOKING_VERTEX &&
+				state.getIntAccess() != GL_UNDEFINED_VERTEX
+			)
+			{
+				ok = false;
+				expectedValue = "any of {FIRST_VERTEX_CONVENTION, LAST_VERTEX_CONVENTION, GL_PROVOKING_VERTEX, UNDEFINED_VERTEX}";
+			}
+		}
+		else if (
+				state.getIntAccess() != GL_FIRST_VERTEX_CONVENTION &&
+				state.getIntAccess() != GL_LAST_VERTEX_CONVENTION &&
+				state.getIntAccess() != GL_UNDEFINED_VERTEX
+				)
+		{
+			ok = false;
+			expectedValue = "any of {FIRST_VERTEX_CONVENTION, LAST_VERTEX_CONVENTION, UNDEFINED_VERTEX}";
+		}
+
+		if (!ok)
 		{
 			m_testCtx.getLog()
 				<< tcu::TestLog::Message
 				<< "getInteger(GL_LAYER_PROVOKING_VERTEX) returned illegal value. Got "
 				<< state.getIntAccess() << "\n"
-				<< "Expected any of {FIRST_VERTEX_CONVENTION, LAST_VERTEX_CONVENTION, UNDEFINED_VERTEX}."
+				<< "Expected " << expectedValue << "."
 				<< tcu::TestLog::EndMessage;
 
 			result.fail("got unexpected provoking vertex value");
@@ -4324,7 +4393,7 @@ void GeometryInvocationCase::init (void)
 
 	// requirements
 
-	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (!checkSupport(m_context))
 		TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_shader extension or higher context version.");
 
 	gl.getIntegerv(GL_MAX_GEOMETRY_SHADER_INVOCATIONS, &maxGeometryShaderInvocations);
@@ -4523,7 +4592,7 @@ GeometryProgramLimitCase::GeometryProgramLimitCase (Context& context, const char
 
 void GeometryProgramLimitCase::init (void)
 {
-	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (!checkSupport(m_context))
 		TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_shader extension or higher context version.");
 }
 
@@ -4663,7 +4732,7 @@ void PrimitivesGeneratedQueryCase::init (void)
 {
 	// requirements
 
-	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (!checkSupport(m_context))
 		TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_shader extension or higher context version.");
 
 	// log what test tries to do
@@ -4895,7 +4964,7 @@ PrimitivesGeneratedQueryObjectQueryCase::PrimitivesGeneratedQueryObjectQueryCase
 
 void PrimitivesGeneratedQueryObjectQueryCase::init (void)
 {
-	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (!checkSupport(m_context))
 		TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_shader extension or higher context version.");
 }
 
@@ -4942,7 +5011,7 @@ GeometryShaderFeartureTestCase::GeometryShaderFeartureTestCase (Context& context
 
 void GeometryShaderFeartureTestCase::init (void)
 {
-	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (!checkSupport(m_context))
 		TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_shader extension or higher context version.");
 }
 
@@ -5095,8 +5164,11 @@ FramebufferAttachmentLayeredCase::IterateResult FramebufferAttachmentLayeredCase
 		}
 		else if (textureTypes[ndx].type == TEXTURE_2D_MS_ARRAY)
 		{
+			const bool supportES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+			const bool supportGL45 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
+
 			// check extension
-			if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+			if (!(supportGL45 || (supportES32 && m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))))
 			{
 				m_testCtx.getLog() << tcu::TestLog::Message << "Context is not equal or greather than 3.2 and GL_OES_texture_storage_multisample_2d_array not supported, skipping." << tcu::TestLog::EndMessage;
 				continue;
@@ -5445,7 +5517,7 @@ void VertexFeedbackCase::init (void)
 {
 	// requirements
 
-	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (!checkSupport(m_context))
 		TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_shader extension or higher context version.");
 
 	// log what test tries to do
@@ -5808,7 +5880,7 @@ void VertexFeedbackOverflowCase::init (void)
 {
 	// requirements
 
-	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (!checkSupport(m_context))
 		TCU_THROW(NotSupportedError, "Tests require GL_EXT_geometry_shader extension or higher context version.");
 
 	// log what test tries to do
@@ -6022,8 +6094,9 @@ glu::ShaderProgram* VertexFeedbackOverflowCase::genProgram (void)
 
 } // anonymous
 
-GeometryShaderTests::GeometryShaderTests (Context& context)
+GeometryShaderTests::GeometryShaderTests (Context& context, bool isGL45)
 	: TestCaseGroup(context, "geometry_shading", "Geometry shader tests")
+	, m_isGL45(isGL45)
 {
 }
 
@@ -6099,10 +6172,14 @@ void GeometryShaderTests::init (void)
 		queryGroup->addChild(new GeometryProgramLimitCase(m_context, "max_geometry_atomic_counter_buffers",			"", GL_MAX_GEOMETRY_ATOMIC_COUNTER_BUFFERS,			"MaxGeometryAtomicCounterBuffers",	0));
 
 		// program queries
-		queryGroup->addChild(new GeometryShaderVerticesQueryCase	(m_context, "geometry_linked_vertices_out",	"GL_GEOMETRY_LINKED_VERTICES_OUT"));
-		queryGroup->addChild(new GeometryShaderInputQueryCase		(m_context, "geometry_linked_input_type",	"GL_GEOMETRY_LINKED_INPUT_TYPE"));
-		queryGroup->addChild(new GeometryShaderOutputQueryCase		(m_context, "geometry_linked_output_type",	"GL_GEOMETRY_LINKED_OUTPUT_TYPE"));
-		queryGroup->addChild(new GeometryShaderInvocationsQueryCase	(m_context, "geometry_shader_invocations",	"GL_GEOMETRY_SHADER_INVOCATIONS"));
+		// ES only
+		if (!m_isGL45)
+		{
+			queryGroup->addChild(new GeometryShaderVerticesQueryCase	(m_context, "geometry_linked_vertices_out",	"GL_GEOMETRY_LINKED_VERTICES_OUT"));
+			queryGroup->addChild(new GeometryShaderInputQueryCase		(m_context, "geometry_linked_input_type",	"GL_GEOMETRY_LINKED_INPUT_TYPE"));
+			queryGroup->addChild(new GeometryShaderOutputQueryCase		(m_context, "geometry_linked_output_type",	"GL_GEOMETRY_LINKED_OUTPUT_TYPE"));
+			queryGroup->addChild(new GeometryShaderInvocationsQueryCase	(m_context, "geometry_shader_invocations",	"GL_GEOMETRY_SHADER_INVOCATIONS"));
+		}
 
 		// limits
 		queryGroup->addChild(new ImplementationLimitCase(m_context, "max_geometry_shader_invocations",		"", GL_MAX_GEOMETRY_SHADER_INVOCATIONS,		32));

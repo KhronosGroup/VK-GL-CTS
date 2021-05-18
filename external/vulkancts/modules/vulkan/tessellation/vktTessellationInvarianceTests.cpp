@@ -1027,6 +1027,12 @@ public:
 		return new OuterEdgeDivisionTestInstance(context, m_caseDef);
 	};
 
+	void checkSupport (Context& context) const
+	{
+		if (const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR* const features = getPortability(context))
+			checkPointMode(*features);
+	}
+
 private:
 	const CaseDefinition m_caseDef;
 };
@@ -1051,6 +1057,11 @@ public:
 		return new OuterEdgeIndexIndependenceTestInstance(context, m_caseDef);
 	};
 
+	void checkSupport (Context& context) const
+	{
+		checkSupportCase(context, m_caseDef);
+	}
+
 private:
 	const CaseDefinition m_caseDef;
 };
@@ -1074,6 +1085,11 @@ public:
 	{
 		return new SymmetricOuterEdgeTestInstance(context, m_caseDef);
 	};
+
+	void checkSupport (Context& context) const
+	{
+		checkSupportCase(context, m_caseDef);
+	}
 
 private:
 	const CaseDefinition m_caseDef;
@@ -1266,6 +1282,7 @@ public:
 	virtual							~InvarianceTestCase			(void) {}
 
 	void							initPrograms				(SourceCollections& programCollection) const;
+	void							checkSupport				(Context& context) const;
 	TestInstance*					createInstance				(Context& context) const;
 
 private:
@@ -1275,6 +1292,11 @@ private:
 void InvarianceTestCase::initPrograms (SourceCollections& programCollection) const
 {
 	addDefaultPrograms(programCollection, m_caseDef.primitiveType, m_caseDef.spacingMode, m_caseDef.windingUsage, getPointModeUsage(m_caseDef.usePointMode));
+}
+
+void InvarianceTestCase::checkSupport (Context& context) const
+{
+	checkSupportCase(context, m_caseDef);
 }
 
 class InvarianceTestInstance : public TestInstance
@@ -2137,13 +2159,13 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 tcu::TestCase* makeTessCoordRangeTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
 {
 	const CaseDefinition caseDef = { CASETYPE_TESS_COORD_RANGE, primitiveType, spacingMode, winding, usePointMode };
-	return createFunctionCaseWithPrograms(testCtx, tcu::NODETYPE_SELF_VALIDATE, name, description, initPrograms, test, caseDef);
+	return createFunctionCaseWithPrograms(testCtx, tcu::NODETYPE_SELF_VALIDATE, name, description, checkSupportCase, initPrograms, test, caseDef);
 }
 
 tcu::TestCase* makeOneMinusTessCoordTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
 {
 	const CaseDefinition caseDef = { CASETYPE_ONE_MINUS_TESS_COORD, primitiveType, spacingMode, winding, usePointMode };
-	return createFunctionCaseWithPrograms(testCtx, tcu::NODETYPE_SELF_VALIDATE, name, description, initPrograms, test, caseDef);
+	return createFunctionCaseWithPrograms(testCtx, tcu::NODETYPE_SELF_VALIDATE, name, description, checkSupportCase, initPrograms, test, caseDef);
 }
 
 } // TessCoordComponent ns

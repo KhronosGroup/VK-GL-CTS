@@ -7,10 +7,12 @@ const vk::VkPhysicalDevice8BitStorageFeatures&							get8BitStorageFeatures					
 const vk::VkPhysicalDeviceASTCDecodeFeaturesEXT&						getASTCDecodeFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&			getBlendOperationAdvancedFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceBufferDeviceAddressFeatures&					getBufferDeviceAddressFeatures					(void) const;
+const vk::VkPhysicalDeviceColorWriteEnableFeaturesEXT&					getColorWriteEnableFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceCustomBorderColorFeaturesEXT&					getCustomBorderColorFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&					getDepthClipEnableFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceDescriptorIndexingFeatures&					getDescriptorIndexingFeatures					(void) const;
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&				getExtendedDynamicStateFeaturesEXT				(void) const;
+const vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&				getExtendedDynamicState2FeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&			getFragmentShaderInterlockFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&				getFragmentShadingRateFeatures					(void) const;
 const vk::VkPhysicalDeviceHostQueryResetFeatures&						getHostQueryResetFeatures						(void) const;
@@ -19,7 +21,7 @@ const vk::VkPhysicalDeviceImageRobustnessFeaturesEXT&					getImageRobustnessFeat
 const vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT&					getIndexTypeUint8FeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceLineRasterizationFeaturesEXT&					getLineRasterizationFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceMultiviewFeatures&							getMultiviewFeatures							(void) const;
-const vk::VkPhysicalDevicePipelineIdentifierFeatures&					getPipelineIdentifierFeatures					(void) const;
+const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&					getPerformanceQueryFeatures						(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&						getProtectedMemoryFeatures						(void) const;
 const vk::VkPhysicalDeviceRobustness2FeaturesEXT&						getRobustness2FeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures&				getSamplerYcbcrConversionFeatures				(void) const;
@@ -35,12 +37,15 @@ const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&			getShaderImageAto
 const vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures&			getShaderSubgroupExtendedTypesFeatures			(void) const;
 const vk::VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR&			getShaderTerminateInvocationFeatures			(void) const;
 const vk::VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&				getSubgroupSizeControlFeaturesEXT				(void) const;
+const vk::VkPhysicalDeviceSynchronization2FeaturesKHR&					getSynchronization2Features						(void) const;
 const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&				getTexelBufferAlignmentFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT&			getTextureCompressionASTCHDRFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceTimelineSemaphoreFeatures&					getTimelineSemaphoreFeatures					(void) const;
 const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures&			getUniformBufferStandardLayoutFeatures			(void) const;
 const vk::VkPhysicalDeviceVariablePointersFeatures&						getVariablePointersFeatures						(void) const;
 const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&			getVertexAttributeDivisorFeaturesEXT			(void) const;
+const vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&			getVertexInputDynamicStateFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceVulkanMemoryModelFeatures&					getVulkanMemoryModelFeatures					(void) const;
 const vk::VkPhysicalDeviceVulkanSC10Features&							getVulkanSC10Features							(void) const;
+const vk::VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT&				getYcbcr2Plane444FormatsFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&					getYcbcrImageArraysFeaturesEXT					(void) const;

@@ -363,7 +363,10 @@ SamplerIndexingCase::~SamplerIndexingCase (void)
 
 void SamplerIndexingCase::init (void)
 {
-	if (!contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	const bool			supportsES32	= contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+											hasExtension(m_context.getRenderContext().getFunctions(), glu::ApiType::core(4, 5), "GL_ARB_ES3_2_compatibility");
+
+	if (!supportsES32)
 	{
 		if (m_shaderType == SHADERTYPE_GEOMETRY)
 			TCU_CHECK_AND_THROW(NotSupportedError,
@@ -400,7 +403,8 @@ void SamplerIndexingCase::getShaderSpec (ShaderSpec* spec, int numSamplers, int 
 	const char*			resultPrefix	= "result";
 	const DataType		coordType		= getSamplerCoordType(m_samplerType);
 	const DataType		outType			= getSamplerOutputType(m_samplerType);
-	const bool			supportsES32	= contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+	const bool			supportsES32	= contextSupports(renderContext.getType(), glu::ApiType::es(3, 2)) ||
+											hasExtension(renderContext.getFunctions(), glu::ApiType::core(4, 5), "GL_ARB_ES3_2_compatibility");
 	std::ostringstream	global;
 	std::ostringstream	code;
 
@@ -736,7 +740,10 @@ BlockArrayIndexingCase::~BlockArrayIndexingCase (void)
 
 void BlockArrayIndexingCase::init (void)
 {
-	if (!contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	const bool			supportsES32	= contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+											hasExtension(m_context.getRenderContext().getFunctions(), glu::ApiType::core(4, 5), "GL_ARB_ES3_2_compatibility");
+
+	if (!supportsES32)
 	{
 		if (m_shaderType == SHADERTYPE_GEOMETRY)
 			TCU_CHECK_AND_THROW(NotSupportedError,
@@ -786,7 +793,8 @@ void BlockArrayIndexingCase::getShaderSpec (ShaderSpec* spec, int numInstances, 
 	const char*			resultPrefix	= "result";
 	const char*			interfaceName	= m_blockType == BLOCKTYPE_UNIFORM ? "uniform" : "buffer";
 	const char*			layout			= m_blockType == BLOCKTYPE_UNIFORM ? "std140" : "std430";
-	const bool			supportsES32	= contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+	const bool			supportsES32	= contextSupports(renderContext.getType(), glu::ApiType::es(3, 2)) ||
+							hasExtension(renderContext.getFunctions(), glu::ApiType::core(4, 5), "GL_ARB_ES3_2_compatibility");
 	std::ostringstream	global;
 	std::ostringstream	code;
 
@@ -982,7 +990,10 @@ deUint32 getMaxAtomicCounterEnum (glu::ShaderType type)
 
 void AtomicCounterIndexingCase::init (void)
 {
-	if (!contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	const bool			supportsES32	= contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+											hasExtension(m_context.getRenderContext().getFunctions(), glu::ApiType::core(4, 5), "GL_ARB_ES3_2_compatibility");
+
+	if (!supportsES32)
 	{
 		if (m_shaderType == SHADERTYPE_GEOMETRY)
 			TCU_CHECK_AND_THROW(NotSupportedError,
@@ -1016,7 +1027,8 @@ void AtomicCounterIndexingCase::getShaderSpec (ShaderSpec* spec, int numCounters
 {
 	const char*			indicesPrefix	= "index";
 	const char*			resultPrefix	= "result";
-	const bool			supportsES32	= contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+	const bool			supportsES32	= contextSupports(renderContext.getType(), glu::ApiType::es(3, 2)) ||
+											hasExtension(renderContext.getFunctions(), glu::ApiType::core(4, 5), "GL_ARB_ES3_2_compatibility");
 	std::ostringstream	global;
 	std::ostringstream	code;
 

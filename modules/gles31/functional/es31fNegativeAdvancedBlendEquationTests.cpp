@@ -175,6 +175,14 @@ void blend_qualifier_mismatch (NegativeTestContext& ctx)
 		ctx.isExtensionSupported("GL_KHR_blend_equation_advanced") || contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)),
 		"This test requires support for the extension GL_KHR_blend_equation_advanced or context version 3.2 or higher.");
 
+	glw::GLuint vao = 0;
+	bool isES = glu::isContextTypeES(ctx.getRenderContext().getType());
+	if (!isES)
+	{
+		ctx.glGenVertexArrays(1, &vao);
+		ctx.glBindVertexArray(vao);
+	}
+
 	ctx.beginSection("GL_INVALID_OPERATION is generated if blending is enabled, and the blend qualifier is different from blend_support_all_equations and does not match the blend equation.");
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_equations); ++ndx)
 	{
@@ -203,6 +211,9 @@ void blend_qualifier_mismatch (NegativeTestContext& ctx)
 		}
 	}
 	ctx.endSection();
+
+	if (!isES)
+		ctx.glDeleteVertexArrays(1, &vao);
 }
 
 void attachment_advanced_equation (NegativeTestContext& ctx)
@@ -211,9 +222,17 @@ void attachment_advanced_equation (NegativeTestContext& ctx)
 		ctx.isExtensionSupported("GL_KHR_blend_equation_advanced") || contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)),
 		"This test requires support for the extension GL_KHR_blend_equation_advanced or context version 3.2 or higher.");
 
+	glw::GLuint			vao				= 0;
 	glw::GLuint			fbo				= 0x1234;
 	glw::GLuint			texture			= 0x1234;
 	const glw::GLenum	attachments[]	= { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+	const bool			isES			= glu::isContextTypeES(ctx.getRenderContext().getType());
+
+	if (!isES)
+	{
+		ctx.glGenVertexArrays(1, &vao);
+		ctx.glBindVertexArray(vao);
+	}
 
 	ctx.glGenTextures(1, &texture);
 	ctx.glBindTexture(GL_TEXTURE_2D, texture);
@@ -259,6 +278,9 @@ void attachment_advanced_equation (NegativeTestContext& ctx)
 		ctx.expectError(GL_NO_ERROR);
 	}
 	ctx.endSection();
+
+	if (!isES)
+		ctx.glDeleteVertexArrays(1, &vao);
 
 	ctx.glDeleteFramebuffers(1, &fbo);
 	ctx.glDeleteTextures(1, &texture);

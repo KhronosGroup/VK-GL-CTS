@@ -189,6 +189,50 @@ private:
 	int			m_numInstances;
 };
 
+class BlockSingleNestedStructMixedMatrixPackingCase : public UniformBlockCase
+{
+public:
+	BlockSingleNestedStructMixedMatrixPackingCase (Context& context, const char* name, const char* description, deUint32 blockLayoutFlags, deUint32 matrixLayoutFlags, deUint32 matrixArrayLayoutFlags, BufferMode bufferMode, int numInstances)
+			: UniformBlockCase			(context.getTestContext(), context.getRenderContext(), name, description, glu::GLSL_VERSION_300_ES, bufferMode)
+			, m_blockLayoutFlags		(blockLayoutFlags)
+			, m_matrixLayoutFlags		(matrixLayoutFlags)
+			, m_matrixArrayLayoutFlags	(matrixArrayLayoutFlags)
+			, m_numInstances			(numInstances)
+	{
+	}
+
+	void init (void)
+	{
+		StructType& typeS = m_interface.allocStruct("S");
+		typeS.addMember("a", VarType(glu::TYPE_INT_VEC3, PRECISION_HIGH));
+		typeS.addMember("b", VarType(VarType(glu::TYPE_FLOAT_MAT3, PRECISION_MEDIUM), 4));
+		typeS.addMember("c", VarType(glu::TYPE_FLOAT_VEC4, PRECISION_HIGH), UNUSED_BOTH);
+
+		StructType& typeT = m_interface.allocStruct("T");
+		typeT.addMember("a", VarType(glu::TYPE_FLOAT_MAT3, PRECISION_MEDIUM));
+		typeT.addMember("b", VarType(&typeS));
+
+		UniformBlock& block = m_interface.allocBlock("Block");
+		block.addUniform(Uniform("s", VarType(&typeS, m_matrixArrayLayoutFlags), 0));
+		block.addUniform(Uniform("v", VarType(glu::TYPE_FLOAT_VEC2, PRECISION_LOW), UNUSED_BOTH));
+		block.addUniform(Uniform("t", VarType(&typeT, m_matrixLayoutFlags), 0));
+		block.addUniform(Uniform("u", VarType(glu::TYPE_UINT, PRECISION_HIGH), 0));
+		block.setFlags(m_blockLayoutFlags);
+
+		if (m_numInstances > 0)
+		{
+			block.setInstanceName("block");
+			block.setArraySize(m_numInstances);
+		}
+	}
+
+private:
+	deUint32	m_blockLayoutFlags;
+	deUint32	m_matrixLayoutFlags;
+	deUint32	m_matrixArrayLayoutFlags;
+	int			m_numInstances;
+};
+
 class BlockSingleNestedStructArrayCase : public UniformBlockCase
 {
 public:
@@ -566,6 +610,45 @@ void UniformBlockTests::init (void)
 					if (!(baseFlags & LAYOUT_PACKED))
 						modeGroup->addChild(new BlockSingleNestedStructCase(m_context, (baseName + "_both").c_str(),		"", baseFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	bufferModes[modeNdx].mode, isArray ? 3 : 0));
 				}
+			}
+		}
+	}
+
+	// ubo.single_nested_struct_mixed_matrix_packing
+	{
+		tcu::TestCaseGroup* singleNestedStructMixedMatrixPackingGroup = new tcu::TestCaseGroup(m_testCtx, "single_nested_struct_mixed_matrix_packing", "Nested struct in one uniform block with a mixed matrix packing");
+		addChild(singleNestedStructMixedMatrixPackingGroup);
+
+		for (const auto& bufferMode : bufferModes)
+		{
+			tcu::TestCaseGroup* modeGroup = new tcu::TestCaseGroup(m_testCtx, bufferMode.name, "");
+			singleNestedStructMixedMatrixPackingGroup->addChild(modeGroup);
+
+			for (const auto& layoutFlag : layoutFlags)
+			for (const auto& blockMatrixFlag : matrixFlags)
+			for (const auto& singleMatrixFlag : matrixFlags)
+			for (const auto& arrayMatrixFlag : matrixFlags)
+			for (int isArray = 0; isArray < 2; isArray++)
+			{
+				std::string	baseName	= layoutFlag.name;
+				deUint32	baseFlags	= layoutFlag.flags;
+				deUint32	blockFlags	= baseFlags | blockMatrixFlag.flags;
+
+				baseName += std::string("_block_") + blockMatrixFlag.name;
+				baseName += std::string("_matrix_") + singleMatrixFlag.name;
+				baseName += std::string("_matrixarray_") + arrayMatrixFlag.name;
+
+				if (bufferMode.mode == UniformBlockCase::BUFFERMODE_SINGLE && isArray == 0)
+					continue; // Doesn't make sense to add this variant.
+
+				if (isArray)
+					baseName += "_instance_array";
+
+				modeGroup->addChild(new BlockSingleNestedStructMixedMatrixPackingCase(m_context, (baseName + "_vertex").c_str(), "", blockFlags | DECLARE_VERTEX, singleMatrixFlag.flags, arrayMatrixFlag.flags, bufferMode.mode, isArray ? 3 : 0));
+				modeGroup->addChild(new BlockSingleNestedStructMixedMatrixPackingCase(m_context, (baseName + "_fragment").c_str(), "", blockFlags | DECLARE_FRAGMENT, singleMatrixFlag.flags, arrayMatrixFlag.flags, bufferMode.mode, isArray ? 3 : 0));
+
+				if (!(baseFlags & LAYOUT_PACKED))
+					modeGroup->addChild(new BlockSingleNestedStructMixedMatrixPackingCase(m_context, (baseName + "_both").c_str(), "", blockFlags | DECLARE_VERTEX | DECLARE_FRAGMENT, singleMatrixFlag.flags, arrayMatrixFlag.flags, bufferMode.mode, isArray ? 3 : 0));
 			}
 		}
 	}

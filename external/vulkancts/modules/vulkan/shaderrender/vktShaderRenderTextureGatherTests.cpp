@@ -26,6 +26,7 @@
 #include "vktShaderRenderTextureGatherTests.hpp"
 #include "vktShaderRender.hpp"
 #include "vkImageUtil.hpp"
+#include "vkQueryUtil.hpp"
 #include "gluTextureUtil.hpp"
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
@@ -1062,6 +1063,19 @@ struct GatherCaseBaseParams
 	{}
 };
 
+static void checkMutableComparisonSamplersSupport(Context& context, const GatherCaseBaseParams& m_baseParams)
+{
+	// when compare mode is not none then ShaderRenderCaseInstance::createSamplerUniform
+	// uses mapSampler utill from vkImageUtil that sets compareEnable to true
+	// for portability this needs to be under feature flag
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!context.getPortabilitySubsetFeatures().mutableComparisonSamplers &&
+		(m_baseParams.shadowCompareMode != tcu::Sampler::COMPAREMODE_NONE))
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: mutableComparisonSamplers are not supported by this implementation");
+	}
+}
+
 IVec2 getOffsetRange (const OffsetSize offsetSize, const vk::VkPhysicalDeviceLimits& deviceLimits)
 {
 	switch (offsetSize)
@@ -1234,12 +1248,16 @@ void TextureGatherInstance::init (void)
 			VK_FALSE,														//	VkBool32		supportsTextureGatherLODBiasAMD;
 		};
 
-		vk::VkImageFormatProperties2 properties2;
-		deMemset(&properties2, 0, sizeof(properties2));
-		properties2.sType = vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
+		vk::VkImageFormatProperties2 properties2 = vk::initVulkanStructure();
 		properties2.pNext = &lodGatherProperties;
 
-		VK_CHECK(m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(m_context.getPhysicalDevice(), &formatInfo, &properties2));
+		const auto retCode = m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(m_context.getPhysicalDevice(), &formatInfo, &properties2);
+
+		if (retCode != vk::VK_SUCCESS && retCode != vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties2 returned " + de::toString(retCode));
+
+		if (retCode == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Format does not support the required parameters");
 
 		if (!lodGatherProperties.supportsTextureGatherLODBiasAMD)
 			TCU_THROW(NotSupportedError, "Format does not support texture gather LOD/Bias operations");
@@ -1945,6 +1963,7 @@ public:
 
 	virtual void					initPrograms						(vk::SourceCollections& dst) const;
 	virtual	TestInstance*			createInstance						(Context& context) const;
+	virtual void					checkSupport						(Context& context) const;
 
 private:
 	const GatherCaseBaseParams		m_baseParams;
@@ -1996,6 +2015,11 @@ TestInstance* TextureGather2DCase::createInstance (Context& context) const
 																			getOffsetRange(m_baseParams.offsetSize, context.getDeviceProperties().limits));
 
 	return new TextureGather2DInstance(context, m_baseParams, m_textureSize, iterations);
+}
+
+void TextureGather2DCase::checkSupport(Context& context) const
+{
+	checkMutableComparisonSamplersSupport(context, m_baseParams);
 }
 
 // 2D array
@@ -2165,6 +2189,7 @@ public:
 
 	virtual void					initPrograms						(vk::SourceCollections& dst) const;
 	virtual	TestInstance*			createInstance						(Context& context) const;
+	virtual void					checkSupport						(Context& context) const;
 
 private:
 	const GatherCaseBaseParams		m_baseParams;
@@ -2218,6 +2243,11 @@ TestInstance* TextureGather2DArrayCase::createInstance (Context& context) const
 																					m_textureSize);
 
 	return new TextureGather2DArrayInstance(context, m_baseParams, m_textureSize, iterations);
+}
+
+void TextureGather2DArrayCase::checkSupport(Context& context) const
+{
+	checkMutableComparisonSamplersSupport(context, m_baseParams);
 }
 
 // Cube
@@ -2388,6 +2418,7 @@ public:
 
 	virtual void					initPrograms						(vk::SourceCollections& dst) const;
 	virtual	TestInstance*			createInstance						(Context& context) const;
+	virtual void					checkSupport						(Context& context) const;
 
 private:
 	const GatherCaseBaseParams		m_baseParams;
@@ -2437,6 +2468,11 @@ TestInstance* TextureGatherCubeCase::createInstance (Context& context) const
 																			 getOffsetRange(m_baseParams.offsetSize, context.getDeviceProperties().limits));
 
 	return new TextureGatherCubeInstance(context, m_baseParams, m_textureSize, iterations);
+}
+
+void TextureGatherCubeCase::checkSupport(Context& context) const
+{
+	checkMutableComparisonSamplersSupport(context, m_baseParams);
 }
 
 class TextureGatherTests : public tcu::TestCaseGroup

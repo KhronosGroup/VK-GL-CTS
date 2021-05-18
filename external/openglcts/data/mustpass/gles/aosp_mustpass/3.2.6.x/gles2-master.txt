@@ -129,6 +129,7 @@ dEQP-GLES2.functional.light_amount.10omni
 dEQP-GLES2.functional.light_amount.12omni
 dEQP-GLES2.functional.light_amount.14omni
 dEQP-GLES2.functional.light_amount.16omni
+dEQP-GLES2.functional.multisampled_render_to_texture.readpixels
 dEQP-GLES2.functional.shaders.preprocessor.basic.correct_phases_vertex
 dEQP-GLES2.functional.shaders.preprocessor.basic.correct_phases_fragment
 dEQP-GLES2.functional.shaders.preprocessor.basic.invalid_identifier_vertex

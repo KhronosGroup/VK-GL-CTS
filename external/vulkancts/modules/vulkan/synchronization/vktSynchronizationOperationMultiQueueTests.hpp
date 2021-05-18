@@ -23,8 +23,8 @@
  * \brief Synchronization primitive tests with multi queue
  *//*--------------------------------------------------------------------*/
 
-#include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
+#include "vktSynchronizationUtil.hpp"
 
 namespace vkt
 {
@@ -33,7 +33,7 @@ namespace synchronization
 
 class PipelineCacheData;
 
-tcu::TestCaseGroup* createSynchronizedOperationMultiQueueTests (tcu::TestContext& testCtx, PipelineCacheData& pipelineCacheData);
+tcu::TestCaseGroup* createSynchronizedOperationMultiQueueTests (tcu::TestContext& testCtx, SynchronizationType type, PipelineCacheData& pipelineCacheData);
 
 } // synchronization
 } // vkt

@@ -417,6 +417,8 @@ tcu::TestStatus testImageQuery (Context& context, TestParameters params)
 	};
 
 	deUint32										combinedSamplerDescriptorCount	= 1;
+
+	if (isYCbCrImage)
 	{
 		const VkPhysicalDeviceImageFormatInfo2			imageFormatInfo				=
 		{
@@ -535,6 +537,8 @@ void checkSupport (Context& context, TestParameters params)
 
 	if (isYCbCrImage)
 		checkImageSupport(context, params.format, params.flags);
+
+	checkSupportShader(context, params.shaderType);
 }
 
 tcu::TestStatus testImageQueryLod (Context& context, TestParameters params)
@@ -596,6 +600,8 @@ tcu::TestStatus testImageQueryLod (Context& context, TestParameters params)
 	};
 
 	deUint32										combinedSamplerDescriptorCount	= 1;
+
+	if (isYCbCrImage)
 	{
 		const VkPhysicalDeviceImageFormatInfo2		imageFormatInfo					=
 		{
@@ -820,6 +826,16 @@ void populateQueryInShaderGroup (tcu::TestCaseGroup* group, QueryGroupParams par
 	addImageQueryCase(group, TestParameters(params.query, VK_FORMAT_R8G8B8A8_UNORM, 0u, params.shaderType));
 
 	for (int formatNdx = VK_YCBCR_FORMAT_FIRST; formatNdx < VK_YCBCR_FORMAT_LAST; formatNdx++)
+	{
+		const VkFormat	format	= (VkFormat)formatNdx;
+
+		addImageQueryCase(group, TestParameters(params.query, format, 0u, params.shaderType));
+
+		if (getPlaneCount(format) > 1)
+			addImageQueryCase(group, TestParameters(params.query, format, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT, params.shaderType));
+	}
+
+	for (int formatNdx = VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT; formatNdx <= VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT; formatNdx++)
 	{
 		const VkFormat	format	= (VkFormat)formatNdx;
 

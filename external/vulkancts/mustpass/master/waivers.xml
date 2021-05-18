@@ -204,11 +204,22 @@
 	<waiver vendorName="Broadcom" vendorId="0x14E4" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/757">
 		<description>On affected devices depth clipping is incorrectly disabled when the viewport minDepth is equal to maxDepth.</description>
 		<device_list>
-			<d>0x8E002214</d>
 			<d>0x001E43CB</d>
 			<d>0xBE485FD3</d>
 		</device_list>
 		<t>dEQP-VK.draw.inverted_depth_ranges.nodepthclamp_deltazero</t>
+	</waiver>
+
+	<waiver vendorName="Broadcom" vendorId="0x14E4" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/2804">
+		<description>On affected devices depth exponent is incorrectly ignored when calculating floating-point depth bias.</description>
+		<device_list>
+			<d>0x001E43CB</d>
+			<d>0xBE485FD3</d>
+			<d>0xC8D064C2</d>
+			<d>0x7BECF276</d>
+			<d>0x1AB5C29F</d>
+		</device_list>
+		<t>dEQP-VK.rasterization.depth_bias.d32_sfloat</t>
 	</waiver>
 
 	<waiver vendorName="NVIDIA" vendorId="0x10DE" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/1356">

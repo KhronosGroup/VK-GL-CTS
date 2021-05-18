@@ -3018,7 +3018,9 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	bool										hasGeometry				= false;
 	bool										hasTessellation			= false;
 	const bool									hasPushConstants		= !instance.pushConstants.empty();
-	const deUint32								numResources			= static_cast<deUint32>(instance.resources.inputs.size() + instance.resources.outputs.size());
+	const deUint32								numInResources			= static_cast<deUint32>(instance.resources.inputs.size());
+	const deUint32								numOutResources			= static_cast<deUint32>(instance.resources.outputs.size());
+	const deUint32								numResources			= numInResources + numOutResources;
 	const bool									needInterface			= !instance.interfaces.empty();
 	const VkPhysicalDeviceFeatures&				features				= context.getDeviceFeatures();
 	const Vec4									defaulClearColor		(0.125f, 0.25f, 0.75f, 1.0f);
@@ -3048,6 +3050,25 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	{
 		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), *i))
 			TCU_THROW(NotSupportedError, (std::string("Extension not supported: ") + *i).c_str());
+	}
+
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!context.getPortabilitySubsetFeatures().mutableComparisonSamplers)
+	{
+		// In portability when mutableComparisonSamplers is false then
+		// VkSamplerCreateInfo can't have compareEnable set to true
+		for (deUint32 inputNdx = 0; inputNdx < numInResources; ++inputNdx)
+		{
+			const Resource&	resource	= instance.resources.inputs[inputNdx];
+			const bool		hasSampler	= (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ||
+										  (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLER) ||
+										  (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+			if (hasSampler &&
+				tcu::hasDepthComponent(vk::mapVkFormat(instance.resources.inputFormat).order))
+			{
+				TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: mutableComparisonSamplers are not supported by this implementation");
+			}
+		}
 	}
 
 	// Core features
@@ -3429,8 +3450,6 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	attViews.push_back(*colorAttView);
 
 	// Handle resources requested by the test instantiation.
-	const deUint32							numInResources			= static_cast<deUint32>(instance.resources.inputs.size());
-	const deUint32							numOutResources			= static_cast<deUint32>(instance.resources.outputs.size());
 	// These variables should be placed out of the following if block to avoid deallocation after out of scope.
 	vector<AllocationSp>					inResourceMemories;
 	vector<AllocationSp>					outResourceMemories;
@@ -3669,7 +3688,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				if (hasSampler)
 				{
 					const bool					hasDepthComponent	= tcu::hasDepthComponent(vk::mapVkFormat(instance.resources.inputFormat).order);
-					const VkSamplerCreateInfo	samplerParams		=
+					const VkSamplerCreateInfo	samplerParams
 					{
 						VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,		// VkStructureType			sType;
 						DE_NULL,									// const void*				pNext;
@@ -4022,10 +4041,20 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	// with location #2.
 	if (needInterface)
 	{
+		// Portability requires stride to be multiply of minVertexInputBindingStrideAlignment
+		// this value is usually 4 and current tests meet this requirement but
+		// if this changes in future then this limit should be verified in checkSupport
+		const deUint32 stride = instance.interfaces.getInputType().getNumBytes();
+		if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+			((stride % context.getPortabilitySubsetProperties().minVertexInputBindingStrideAlignment) != 0))
+		{
+			DE_FATAL("stride is not multiply of minVertexInputBindingStrideAlignment");
+		}
+
 		const VkVertexInputBindingDescription	vertexBinding1			=
 		{
 			1u,													// deUint32					binding;
-			instance.interfaces.getInputType().getNumBytes(),	// deUint32					strideInBytes;
+			stride,												// deUint32					strideInBytes;
 			VK_VERTEX_INPUT_RATE_VERTEX							// VkVertexInputStepRate	stepRate;
 		};
 		vertexBindings.push_back(vertexBinding1);

@@ -48,6 +48,7 @@
 #include "glcTextureRepeatModeTests.hpp"
 #include "glcUniformBlockTests.hpp"
 #include "glcNearestEdgeTests.hpp"
+#include "glcGLSLVectorConstructorTests.hpp"
 #include "gluStateReset.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuWaiverUtil.hpp"
@@ -57,22 +58,7 @@
 namespace gl3cts
 {
 
-class TestCaseWrapper : public tcu::TestCaseExecutor
-{
-public:
-	TestCaseWrapper(GL30TestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism);
-	~TestCaseWrapper(void);
-
-	void init(tcu::TestCase* testCase, const std::string& path);
-	void deinit(tcu::TestCase* testCase);
-	tcu::TestNode::IterateResult iterate(tcu::TestCase* testCase);
-
-private:
-	GL30TestPackage&				m_testPackage;
-	de::SharedPtr<tcu::WaiverUtil>	m_waiverMechanism;
-};
-
-TestCaseWrapper::TestCaseWrapper(GL30TestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism)
+TestCaseWrapper::TestCaseWrapper(deqp::TestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism)
 	: m_testPackage			(package)
 	, m_waiverMechanism		(waiverMechanism)
 {
@@ -144,6 +130,7 @@ public:
 	void init(void)
 	{
 		addChild(new deqp::ShaderLibraryGroup(m_context, "declarations", "Declaration Tests", "gl30/declarations.test"));
+		addChild(new deqp::GLSLVectorConstructorTests(m_context, glu::GLSL_VERSION_330));
 	}
 };
 

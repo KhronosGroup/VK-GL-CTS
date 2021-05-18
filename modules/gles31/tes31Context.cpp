@@ -22,7 +22,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tes31Context.hpp"
-#include "gluRenderContext.hpp"
 #include "gluRenderConfig.hpp"
 #include "gluFboRenderContext.hpp"
 #include "gluContextInfo.hpp"
@@ -34,10 +33,11 @@ namespace deqp
 namespace gles31
 {
 
-Context::Context (tcu::TestContext& testCtx)
+Context::Context (tcu::TestContext& testCtx, glu::ApiType apiType)
 	: m_testCtx		(testCtx)
 	, m_renderCtx	(DE_NULL)
 	, m_contextInfo	(DE_NULL)
+	, m_apiType		(apiType)
 {
 	if (m_testCtx.getCommandLine().getRunMode() == tcu::RUNMODE_EXECUTE)
 		createRenderContext();
@@ -61,14 +61,7 @@ void Context::createRenderContext (void)
 
 	try
 	{
-		try
-		{
-			m_renderCtx		= glu::createDefaultRenderContext(m_testCtx.getPlatform(), m_testCtx.getCommandLine(), glu::ApiType::es(3, 2));
-		}
-		catch (...)
-		{
-			m_renderCtx		= glu::createDefaultRenderContext(m_testCtx.getPlatform(), m_testCtx.getCommandLine(), glu::ApiType::es(3, 1));
-		}
+		m_renderCtx		= glu::createDefaultRenderContext(m_testCtx.getPlatform(), m_testCtx.getCommandLine(), m_apiType);
 		m_contextInfo	= glu::ContextInfo::create(*m_renderCtx);
 	}
 	catch (...)

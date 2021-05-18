@@ -312,6 +312,9 @@ void AdvancedBlendCase::init (void)
 
 			gl.bindFramebuffer(GL_FRAMEBUFFER, m_fbo);
 		}
+
+		if (glu::isContextTypeGLCore(m_context.getRenderContext().getType()) && useSRGB)
+			gl.enable(GL_FRAMEBUFFER_SRGB);
 	}
 	else
 		DE_ASSERT(m_rtType == RENDERTARGETTYPE_DEFAULT);
@@ -364,6 +367,9 @@ void AdvancedBlendCase::deinit (void)
 			gl.deleteRenderbuffers(1, &m_resolveFbo);
 			m_resolveFbo = 0;
 		}
+
+		if (glu::isContextTypeGLCore(m_context.getRenderContext().getType()) && RENDERTARGETTYPE_SRGB_FBO == m_rtType)
+			gl.disable(GL_FRAMEBUFFER_SRGB);
 	}
 }
 
@@ -411,6 +417,7 @@ AdvancedBlendCase::IterateResult AdvancedBlendCase::iterate (void)
 		const deUint32		program				= m_program->getProgram();
 		const int			posLoc				= gl.getAttribLocation(program, "a_position");
 		const int			colorLoc			= gl.getAttribLocation(program, "a_color");
+		deUint32			vao					= 0;
 		const glu::Buffer	indexBuffer			(renderCtx);
 		const glu::Buffer	positionBuffer		(renderCtx);
 		const glu::Buffer	colorBuffer			(renderCtx);
@@ -432,6 +439,12 @@ AdvancedBlendCase::IterateResult AdvancedBlendCase::iterate (void)
 			std::copy(DE_ARRAY_BEGIN(singleQuadPos), DE_ARRAY_END(singleQuadPos), &positions[quadNdx*4]);
 			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(singleQuadIndices); ndx++)
 				indices[quadNdx*6 + ndx] = (deUint16)(quadNdx*4 + singleQuadIndices[ndx]);
+		}
+
+		if (!glu::isContextTypeES(renderCtx.getType()))
+		{
+			gl.genVertexArrays(1, &vao);
+			gl.bindVertexArray(vao);
 		}
 
 		gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, *indexBuffer);
@@ -481,6 +494,9 @@ AdvancedBlendCase::IterateResult AdvancedBlendCase::iterate (void)
 				gl.blendBarrier();
 			}
 		}
+
+		if (vao)
+			gl.deleteVertexArrays(1, &vao);
 
 		gl.flush();
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Render failed");
@@ -715,13 +731,15 @@ BlendEquationIndexedStateCase::BlendEquationIndexedStateCase	(Context&						cont
 
 BlendEquationIndexedStateCase::IterateResult BlendEquationIndexedStateCase::iterate (void)
 {
-	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	const auto& renderContext = m_context.getRenderContext();
+	if (!glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2)) &&
+		!glu::contextSupports(renderContext.getType(), glu::ApiType::core(4, 5)))
 	{
 		TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_KHR_blend_equation_advanced"), "GL_KHR_blend_equation_advanced is not supported");
 		TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_EXT_draw_buffers_indexed"), "GL_EXT_draw_buffers_indexed is not supported");
 	}
 
-	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+	glu::CallLogWrapper		gl		(renderContext.getFunctions(), m_testCtx.getLog());
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 
 	gl.enableLogging(true);
@@ -770,6 +788,7 @@ void AdvancedBlendTests::init (void)
 		GL_HSL_SATURATION,
 		GL_HSL_COLOR,
 		GL_HSL_LUMINOSITY,
+
 	};
 
 	tcu::TestCaseGroup* const	stateQueryGroup		= new tcu::TestCaseGroup(m_testCtx, "state_query",		"State query tests");

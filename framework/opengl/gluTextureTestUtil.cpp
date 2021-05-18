@@ -424,7 +424,8 @@ static void sampleTextureNonProjected (const tcu::SurfaceAccess& dst, const tcu:
 	}
 }
 
-static void sampleTextureNonProjected (const tcu::SurfaceAccess& dst, const tcu::Texture2DView& rawSrc, const tcu::Vec4& sq, const tcu::Vec4& tq, const ReferenceParams& params)
+template<class PixelAccess>
+static void sampleTextureNonProjected (const PixelAccess& dst, const tcu::Texture2DView& rawSrc, const tcu::Vec4& sq, const tcu::Vec4& tq, const ReferenceParams& params)
 {
 	// Separate combined DS formats
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
@@ -501,7 +502,8 @@ static void sampleTextureProjected (const tcu::SurfaceAccess& dst, const tcu::Te
 	}
 }
 
-static void sampleTextureProjected (const tcu::SurfaceAccess& dst, const tcu::Texture2DView& rawSrc, const tcu::Vec4& sq, const tcu::Vec4& tq, const ReferenceParams& params)
+template<class PixelAccess>
+static void sampleTextureProjected (const PixelAccess& dst, const tcu::Texture2DView& rawSrc, const tcu::Vec4& sq, const tcu::Vec4& tq, const ReferenceParams& params)
 {
 	// Separate combined DS formats
 	std::vector<tcu::ConstPixelBufferAccess>	srcLevelStorage;
@@ -543,6 +545,18 @@ static void sampleTextureProjected (const tcu::SurfaceAccess& dst, const tcu::Te
 			dst.setPixel(execSample(src, params, s, t, lod) * params.colorScale + params.colorBias, px, py);
 		}
 	}
+}
+
+void sampleTexture (const tcu::PixelBufferAccess& dst, const tcu::Texture2DView& src, const float* texCoord, const ReferenceParams& params)
+{
+	const tcu::Texture2DView	view	= getSubView(src, params.baseLevel, params.maxLevel);
+	const tcu::Vec4				sq		= tcu::Vec4(texCoord[0+0], texCoord[2+0], texCoord[4+0], texCoord[6+0]);
+	const tcu::Vec4				tq		= tcu::Vec4(texCoord[0+1], texCoord[2+1], texCoord[4+1], texCoord[6+1]);
+
+	if (params.flags & ReferenceParams::PROJECTED)
+		sampleTextureProjected(dst, view, sq, tq, params);
+	else
+		sampleTextureNonProjected(dst, view, sq, tq, params);
 }
 
 void sampleTexture (const tcu::SurfaceAccess& dst, const tcu::Texture2DView& src, const float* texCoord, const ReferenceParams& params)
@@ -2683,6 +2697,344 @@ int computeTextureCompareDiff (const tcu::ConstPixelBufferAccess&	result,
 					const tcu::Vec2	coordDyo	= tcu::Vec2(triDerivateY(triS[triNdx], triW[triNdx], wyo, dstH, nxo),
 															triDerivateY(triT[triNdx], triW[triNdx], wyo, dstH, nxo)) * srcSize.asFloat();
 					const tcu::Vec2	lodO		= tcu::computeLodBoundsFromDerivates(coordDxo.x(), coordDxo.y(), coordDyo.x(), coordDyo.y(), lodPrec);
+
+					lodBounds.x() = de::min(lodBounds.x(), lodO.x());
+					lodBounds.y() = de::max(lodBounds.y(), lodO.y());
+				}
+
+				const tcu::Vec2	clampedLod	= tcu::clampLodBounds(lodBounds + lodBias, tcu::Vec2(sampleParams.minLod, sampleParams.maxLod), lodPrec);
+				const bool		isOk		= tcu::isTexCompareResultValid(src, sampleParams.sampler, comparePrec, coord, clampedLod, sampleParams.ref, resPix.x());
+
+				if (!isOk)
+				{
+					errorMask.setPixel(tcu::RGBA::red().toVec(), px, py);
+					numFailed += 1;
+				}
+			}
+		}
+	}
+
+	return numFailed;
+}
+
+int computeTextureCompareDiff (const tcu::ConstPixelBufferAccess&	result,
+							   const tcu::ConstPixelBufferAccess&	reference,
+							   const tcu::PixelBufferAccess&		errorMask,
+							   const tcu::Texture1DView&			src,
+							   const float*							texCoord,
+							   const ReferenceParams&				sampleParams,
+							   const tcu::TexComparePrecision&		comparePrec,
+							   const tcu::LodPrecision&				lodPrec,
+							   const tcu::Vec3&						nonShadowThreshold)
+{
+	DE_ASSERT(result.getWidth() == reference.getWidth() && result.getHeight() == reference.getHeight());
+	DE_ASSERT(result.getWidth() == errorMask.getWidth() && result.getHeight() == errorMask.getHeight());
+	DE_ASSERT(result.getHeight() == 1);
+
+	const tcu::Vec4		sq				= tcu::Vec4(texCoord[0], texCoord[1], texCoord[2], texCoord[3]);
+
+	const tcu::IVec2	dstSize			= tcu::IVec2(result.getWidth(), 1);
+	const float			dstW			= float(dstSize.x());
+	const float			dstH			= float(dstSize.y());
+	const float			srcSize			= float(src.getWidth());
+
+	// Coordinates and lod per triangle.
+	const tcu::Vec3		triS[2]			= { sq.swizzle(0, 1, 2), sq.swizzle(3, 2, 1) };
+	const tcu::Vec3		triW[2]			= { sampleParams.w.swizzle(0, 1, 2), sampleParams.w.swizzle(3, 2, 1) };
+
+	const tcu::Vec2		lodBias			((sampleParams.flags & ReferenceParams::USE_BIAS) ? sampleParams.bias : 0.0f);
+
+	int					numFailed		= 0;
+
+	const tcu::Vec2		lodOffsets[]	=
+	{
+		tcu::Vec2(-1,  0),
+		tcu::Vec2(+1,  0),
+		tcu::Vec2( 0, -1),
+		tcu::Vec2( 0, +1),
+	};
+
+	tcu::clear(errorMask, tcu::RGBA::green().toVec());
+
+	const int py = 0;
+	{
+		for (int px = 0; px < result.getWidth(); px++)
+		{
+			const tcu::Vec4	resPix	= result.getPixel(px, py);
+			const tcu::Vec4	refPix	= reference.getPixel(px, py);
+
+			// Other channels should trivially match to reference.
+			if (!tcu::boolAll(tcu::lessThanEqual(tcu::abs(refPix.swizzle(1,2,3) - resPix.swizzle(1,2,3)), nonShadowThreshold)))
+			{
+				errorMask.setPixel(tcu::RGBA::red().toVec(), px, py);
+				numFailed += 1;
+				continue;
+			}
+
+			// Reference result is known to be a valid result, we can
+			// skip verification if thes results are equal
+			if (resPix.x() != refPix.x())
+			{
+				const float		wx		= (float)px + 0.5f;
+				const float		wy		= (float)py + 0.5f;
+				const float		nx		= wx / dstW;
+				const float		ny		= wy / dstH;
+
+				const int		triNdx	= nx + ny >= 1.0f ? 1 : 0;
+				const float		triWx	= triNdx ? dstW - wx : wx;
+				const float		triWy	= triNdx ? dstH - wy : wy;
+				const float		triNx	= triNdx ? 1.0f - nx : nx;
+				const float		triNy	= triNdx ? 1.0f - ny : ny;
+
+				const float		coord		(projectedTriInterpolate(triS[triNdx], triW[triNdx], triNx, triNy));
+				const float		coordDx		= triDerivateX(triS[triNdx], triW[triNdx], wx, dstW, triNy) * srcSize;
+
+				tcu::Vec2		lodBounds	= tcu::computeLodBoundsFromDerivates(coordDx, coordDx, lodPrec);
+
+				// Compute lod bounds across lodOffsets range.
+				for (int lodOffsNdx = 0; lodOffsNdx < DE_LENGTH_OF_ARRAY(lodOffsets); lodOffsNdx++)
+				{
+					const float		wxo		= triWx + lodOffsets[lodOffsNdx].x();
+					const float		wyo		= triWy + lodOffsets[lodOffsNdx].y();
+					const float		nxo		= wxo/dstW;
+					const float		nyo		= wyo/dstH;
+
+					const float		coordDxo	= triDerivateX(triS[triNdx], triW[triNdx], wxo, dstW, nyo) * srcSize;
+					const float		coordDyo	= triDerivateY(triS[triNdx], triW[triNdx], wyo, dstH, nxo) * srcSize;
+					const tcu::Vec2	lodO		= tcu::computeLodBoundsFromDerivates(coordDxo, coordDyo, lodPrec);
+
+					lodBounds.x() = de::min(lodBounds.x(), lodO.x());
+					lodBounds.y() = de::max(lodBounds.y(), lodO.y());
+				}
+
+				const tcu::Vec2	clampedLod	= tcu::clampLodBounds(lodBounds + lodBias, tcu::Vec2(sampleParams.minLod, sampleParams.maxLod), lodPrec);
+				const bool		isOk		= tcu::isTexCompareResultValid(src, sampleParams.sampler, comparePrec, tcu::Vec1(coord), clampedLod, sampleParams.ref, resPix.x());
+
+				if (!isOk)
+				{
+					errorMask.setPixel(tcu::RGBA::red().toVec(), px, py);
+					numFailed += 1;
+				}
+			}
+		}
+	}
+
+	return numFailed;
+}
+
+int computeTextureCompareDiff (const tcu::ConstPixelBufferAccess&	result,
+							   const tcu::ConstPixelBufferAccess&	reference,
+							   const tcu::PixelBufferAccess&		errorMask,
+							   const tcu::Texture1DArrayView&		src,
+							   const float*							texCoord,
+							   const ReferenceParams&				sampleParams,
+							   const tcu::TexComparePrecision&		comparePrec,
+							   const tcu::LodPrecision&				lodPrec,
+							   const tcu::Vec3&						nonShadowThreshold)
+{
+	DE_ASSERT(result.getWidth() == reference.getWidth() && result.getHeight() == reference.getHeight());
+	DE_ASSERT(result.getWidth() == errorMask.getWidth() && result.getHeight() == errorMask.getHeight());
+	DE_ASSERT(result.getHeight() == 1);
+
+	const tcu::Vec4		sq				= tcu::Vec4(texCoord[0+0], texCoord[2+0], texCoord[4+0], texCoord[6+0]);
+	const tcu::Vec4		tq				= tcu::Vec4(texCoord[0+1], texCoord[2+1], texCoord[4+1], texCoord[6+1]);
+
+	const tcu::IVec2	dstSize			= tcu::IVec2(result.getWidth(), 1);
+	const float			dstW			= float(dstSize.x());
+	const float			dstH			= float(dstSize.y());
+	const float			srcSize			= float(src.getWidth());
+
+	// Coordinates and lod per triangle.
+	const tcu::Vec3		triS[2]			= { sq.swizzle(0, 1, 2), sq.swizzle(3, 2, 1) };
+	const tcu::Vec3		triT[2]			= { tq.swizzle(0, 1, 2), tq.swizzle(3, 2, 1) };
+	const tcu::Vec3		triW[2]			= { sampleParams.w.swizzle(0, 1, 2), sampleParams.w.swizzle(3, 2, 1) };
+
+	const tcu::Vec2		lodBias			((sampleParams.flags & ReferenceParams::USE_BIAS) ? sampleParams.bias : 0.0f);
+
+	int					numFailed		= 0;
+
+	const tcu::Vec2		lodOffsets[]	=
+	{
+		tcu::Vec2(-1,  0),
+		tcu::Vec2(+1,  0),
+		tcu::Vec2( 0, -1),
+		tcu::Vec2( 0, +1),
+	};
+
+	tcu::clear(errorMask, tcu::RGBA::green().toVec());
+
+	const int py = 0;
+	{
+		for (int px = 0; px < result.getWidth(); px++)
+		{
+			const tcu::Vec4	resPix	= result.getPixel(px, py);
+			const tcu::Vec4	refPix	= reference.getPixel(px, py);
+
+			// Other channels should trivially match to reference.
+			if (!tcu::boolAll(tcu::lessThanEqual(tcu::abs(refPix.swizzle(1,2,3) - resPix.swizzle(1,2,3)), nonShadowThreshold)))
+			{
+				errorMask.setPixel(tcu::RGBA::red().toVec(), px, py);
+				numFailed += 1;
+				continue;
+			}
+
+			// Reference result is known to be a valid result, we can
+			// skip verification if these results are equal
+			if (resPix.x() != refPix.x())
+			{
+				const float		wx		= (float)px + 0.5f;
+				const float		wy		= (float)py + 0.5f;
+				const float		nx		= wx / dstW;
+				const float		ny		= wy / dstH;
+
+				const int		triNdx	= nx + ny >= 1.0f ? 1 : 0;
+				const float		triWx	= triNdx ? dstW - wx : wx;
+				const float		triWy	= triNdx ? dstH - wy : wy;
+				const float		triNx	= triNdx ? 1.0f - nx : nx;
+				const float		triNy	= triNdx ? 1.0f - ny : ny;
+
+				const tcu::Vec2	coord		(projectedTriInterpolate(triS[triNdx], triW[triNdx], triNx, triNy),
+											 projectedTriInterpolate(triT[triNdx], triW[triNdx], triNx, triNy));
+				const float		coordDx		= triDerivateX(triS[triNdx], triW[triNdx], wx, dstW, triNy) * srcSize;
+
+				tcu::Vec2		lodBounds	= tcu::computeLodBoundsFromDerivates(coordDx, coordDx, lodPrec);
+
+				// Compute lod bounds across lodOffsets range.
+				for (int lodOffsNdx = 0; lodOffsNdx < DE_LENGTH_OF_ARRAY(lodOffsets); lodOffsNdx++)
+				{
+					const float		wxo		= triWx + lodOffsets[lodOffsNdx].x();
+					const float		wyo		= triWy + lodOffsets[lodOffsNdx].y();
+					const float		nxo		= wxo/dstW;
+					const float		nyo		= wyo/dstH;
+
+					const float		coordDxo	= triDerivateX(triS[triNdx], triW[triNdx], wxo, dstW, nyo) * srcSize;
+					const float		coordDyo	= triDerivateY(triS[triNdx], triW[triNdx], wyo, dstH, nxo) * srcSize;
+					const tcu::Vec2	lodO		= tcu::computeLodBoundsFromDerivates(coordDxo, coordDyo, lodPrec);
+
+					lodBounds.x() = de::min(lodBounds.x(), lodO.x());
+					lodBounds.y() = de::max(lodBounds.y(), lodO.y());
+				}
+
+				const tcu::Vec2	clampedLod	= tcu::clampLodBounds(lodBounds + lodBias, tcu::Vec2(sampleParams.minLod, sampleParams.maxLod), lodPrec);
+				const bool		isOk		= tcu::isTexCompareResultValid(src, sampleParams.sampler, comparePrec, coord, clampedLod, sampleParams.ref, resPix.x());
+
+				if (!isOk)
+				{
+					errorMask.setPixel(tcu::RGBA::red().toVec(), px, py);
+					numFailed += 1;
+				}
+			}
+		}
+	}
+
+	return numFailed;
+}
+
+int computeTextureCompareDiff (const tcu::ConstPixelBufferAccess&	result,
+							   const tcu::ConstPixelBufferAccess&	reference,
+							   const tcu::PixelBufferAccess&		errorMask,
+							   const tcu::TextureCubeArrayView&		src,
+							   const float*							texCoord,
+							   const ReferenceParams&				sampleParams,
+							   const tcu::TexComparePrecision&		comparePrec,
+							   const tcu::LodPrecision&				lodPrec,
+							   const tcu::Vec3&						nonShadowThreshold)
+{
+	DE_ASSERT(result.getWidth() == reference.getWidth() && result.getHeight() == reference.getHeight());
+	DE_ASSERT(result.getWidth() == errorMask.getWidth() && result.getHeight() == errorMask.getHeight());
+
+	const tcu::Vec4		sq				= tcu::Vec4(texCoord[0+0], texCoord[4+0], texCoord[8+0], texCoord[12+0]);
+	const tcu::Vec4		tq				= tcu::Vec4(texCoord[0+1], texCoord[4+1], texCoord[8+1], texCoord[12+1]);
+	const tcu::Vec4		rq				= tcu::Vec4(texCoord[0+2], texCoord[4+2], texCoord[8+2], texCoord[12+2]);
+	const tcu::Vec4		qq				= tcu::Vec4(texCoord[0+3], texCoord[4+3], texCoord[8+3], texCoord[12+3]);
+
+	const tcu::IVec2	dstSize			= tcu::IVec2(result.getWidth(), result.getHeight());
+	const float			dstW			= float(dstSize.x());
+	const float			dstH			= float(dstSize.y());
+	const int			srcSize			= src.getSize();
+
+	// Coordinates per triangle.
+	const tcu::Vec3		triS[2]			= { sq.swizzle(0, 1, 2), sq.swizzle(3, 2, 1) };
+	const tcu::Vec3		triT[2]			= { tq.swizzle(0, 1, 2), tq.swizzle(3, 2, 1) };
+	const tcu::Vec3		triR[2]			= { rq.swizzle(0, 1, 2), rq.swizzle(3, 2, 1) };
+	const tcu::Vec3		triQ[2]			= { qq.swizzle(0, 1, 2), qq.swizzle(3, 2, 1) };
+	const tcu::Vec3		triW[2]			= { sampleParams.w.swizzle(0, 1, 2), sampleParams.w.swizzle(3, 2, 1) };
+
+	const tcu::Vec2		lodBias			((sampleParams.flags & ReferenceParams::USE_BIAS) ? sampleParams.bias : 0.0f);
+
+	int					numFailed		= 0;
+
+	const tcu::Vec2		lodOffsets[]	=
+	{
+		tcu::Vec2(-1,  0),
+		tcu::Vec2(+1,  0),
+		tcu::Vec2( 0, -1),
+		tcu::Vec2( 0, +1),
+	};
+
+	tcu::clear(errorMask, tcu::RGBA::green().toVec());
+
+	for (int py = 0; py < result.getHeight(); py++)
+	{
+		for (int px = 0; px < result.getWidth(); px++)
+		{
+			const tcu::Vec4	resPix	= result.getPixel(px, py);
+			const tcu::Vec4	refPix	= reference.getPixel(px, py);
+
+			// Other channels should trivially match to reference.
+			if (!tcu::boolAll(tcu::lessThanEqual(tcu::abs(refPix.swizzle(1,2,3) - resPix.swizzle(1,2,3)), nonShadowThreshold)))
+			{
+				errorMask.setPixel(tcu::RGBA::red().toVec(), px, py);
+				numFailed += 1;
+				continue;
+			}
+
+			// Reference result is known to be a valid result, we can
+			// skip verification if thes results are equal
+			if (resPix.x() != refPix.x())
+			{
+				const float		wx		= (float)px + 0.5f;
+				const float		wy		= (float)py + 0.5f;
+				const float		nx		= wx / dstW;
+				const float		ny		= wy / dstH;
+
+				const int		triNdx	= nx + ny >= 1.0f ? 1 : 0;
+				const float		triWx	= triNdx ? dstW - wx : wx;
+				const float		triWy	= triNdx ? dstH - wy : wy;
+				const float		triNx	= triNdx ? 1.0f - nx : nx;
+				const float		triNy	= triNdx ? 1.0f - ny : ny;
+
+				const tcu::Vec4	coord		(projectedTriInterpolate(triS[triNdx], triW[triNdx], triNx, triNy),
+											 projectedTriInterpolate(triT[triNdx], triW[triNdx], triNx, triNy),
+											 projectedTriInterpolate(triR[triNdx], triW[triNdx], triNx, triNy),
+											 projectedTriInterpolate(triQ[triNdx], triW[triNdx], triNx, triNy));
+				const tcu::Vec3	coordDx		(triDerivateX(triS[triNdx], triW[triNdx], wx, dstW, triNy),
+											 triDerivateX(triT[triNdx], triW[triNdx], wx, dstW, triNy),
+											 triDerivateX(triR[triNdx], triW[triNdx], wx, dstW, triNy));
+				const tcu::Vec3	coordDy		(triDerivateY(triS[triNdx], triW[triNdx], wy, dstH, triNx),
+											 triDerivateY(triT[triNdx], triW[triNdx], wy, dstH, triNx),
+											 triDerivateY(triR[triNdx], triW[triNdx], wy, dstH, triNx));
+
+				tcu::Vec2		lodBounds	= tcu::computeCubeLodBoundsFromDerivates(coord.swizzle(0,1,2), coordDx, coordDy, srcSize, lodPrec);
+
+				// Compute lod bounds across lodOffsets range.
+				for (int lodOffsNdx = 0; lodOffsNdx < DE_LENGTH_OF_ARRAY(lodOffsets); lodOffsNdx++)
+				{
+					const float		wxo		= triWx + lodOffsets[lodOffsNdx].x();
+					const float		wyo		= triWy + lodOffsets[lodOffsNdx].y();
+					const float		nxo		= wxo/dstW;
+					const float		nyo		= wyo/dstH;
+
+					const tcu::Vec3	coordO		(projectedTriInterpolate(triS[triNdx], triW[triNdx], nxo, nyo),
+												 projectedTriInterpolate(triT[triNdx], triW[triNdx], nxo, nyo),
+												 projectedTriInterpolate(triR[triNdx], triW[triNdx], nxo, nyo));
+					const tcu::Vec3	coordDxo	(triDerivateX(triS[triNdx], triW[triNdx], wxo, dstW, nyo),
+												 triDerivateX(triT[triNdx], triW[triNdx], wxo, dstW, nyo),
+												 triDerivateX(triR[triNdx], triW[triNdx], wxo, dstW, nyo));
+					const tcu::Vec3	coordDyo	(triDerivateY(triS[triNdx], triW[triNdx], wyo, dstH, nxo),
+												 triDerivateY(triT[triNdx], triW[triNdx], wyo, dstH, nxo),
+												 triDerivateY(triR[triNdx], triW[triNdx], wyo, dstH, nxo));
+					const tcu::Vec2	lodO		= tcu::computeCubeLodBoundsFromDerivates(coordO, coordDxo, coordDyo, srcSize, lodPrec);
 
 					lodBounds.x() = de::min(lodBounds.x(), lodO.x());
 					lodBounds.y() = de::max(lodBounds.y(), lodO.y());

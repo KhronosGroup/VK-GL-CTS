@@ -2603,6 +2603,16 @@ public:
 		m_data.push_back(GraphicBasicTestInstance::VertexData(tcu::Vec4( 1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::gray().toVec()));
 	}
 
+	void checkSupport (vkt::Context& context) const
+	{
+		if (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
+			context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+			!context.getPortabilitySubsetFeatures().triangleFans)
+		{
+			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
+		}
+	}
+
 	vkt::TestInstance* createInstance (vkt::Context& context) const
 	{
 		return new Instance(context, m_data, m_parametersGraphic, m_drawRepeats);

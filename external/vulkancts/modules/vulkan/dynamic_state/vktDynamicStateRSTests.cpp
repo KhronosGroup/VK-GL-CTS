@@ -53,6 +53,7 @@ public:
 	DepthBiasBaseCase (Context& context, const char* vertexShaderName, const char* fragmentShaderName)
 		: TestInstance						(context)
 		, m_colorAttachmentFormat			(vk::VK_FORMAT_R8G8B8A8_UNORM)
+		, m_depthStencilAttachmentFormat	(vk::VK_FORMAT_UNDEFINED)
 		, m_topology						(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 		, m_vk								(context.getDeviceInterface())
 		, m_vertexShaderName				(vertexShaderName)
@@ -306,7 +307,7 @@ protected:
 
 		transition2DImage(m_vk, *m_cmdBuffer, m_depthStencilImage->object(), vk::VK_IMAGE_ASPECT_DEPTH_BIT | vk::VK_IMAGE_ASPECT_STENCIL_BIT,
 						  vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-						  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+						  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
 						  vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
 
 		vk::beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, vk::makeRect2D(0, 0, WIDTH, HEIGHT));

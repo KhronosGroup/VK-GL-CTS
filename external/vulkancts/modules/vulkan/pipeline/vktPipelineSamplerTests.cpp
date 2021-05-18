@@ -223,6 +223,7 @@ public:
 															 bool					separateStencilUsage);
 	virtual							~SamplerLodTest			(void) {}
 	virtual VkSamplerCreateInfo		getSamplerCreateInfo	(void) const;
+	virtual void					checkSupport			(Context& context) const;
 
 private:
 	VkSamplerMipmapMode				m_mipmapMode;
@@ -230,6 +231,17 @@ private:
 	float							m_maxLod;
 	float							m_mipLodBias;
 };
+
+void SamplerLodTest::checkSupport (Context& context) const
+{
+	SamplerTest::checkSupport(context);
+
+	if (m_mipLodBias != 0.0f && context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!context.getPortabilitySubsetFeatures().samplerMipLodBias)
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Sampler mipmap LOD bias is not supported by this implementation");
+	}
+}
 
 class SamplerAddressModesTest : public SamplerTest
 {
@@ -1792,6 +1804,8 @@ tcu::TestCaseGroup* createAllFormatsSamplerTests (tcu::TestContext& testCtx, boo
 		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
 		VK_FORMAT_B4G4R4A4_UNORM_PACK16,
 		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
+		VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
+		VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
 
 		// Pairwise combinations of 8-bit channel formats, UNORM/SNORM/SINT/UINT/SRGB type x 1-to-4 channels x RGBA/BGRA order
 		VK_FORMAT_R8_SRGB,

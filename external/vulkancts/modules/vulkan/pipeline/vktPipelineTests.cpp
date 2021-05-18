@@ -28,6 +28,7 @@
 #include "vktPipelineDepthTests.hpp"
 #include "vktPipelineDynamicOffsetTests.hpp"
 #include "vktPipelineEarlyDestroyTests.hpp"
+#include "vktPipelineLogicOpTests.hpp"
 #include "vktPipelineImageTests.hpp"
 #include "vktPipelineInputAssemblyTests.hpp"
 #include "vktPipelineSamplerTests.hpp"
@@ -49,10 +50,14 @@
 #include "vktPipelineCreationFeedbackTests.hpp"
 #include "vktPipelineDepthRangeUnrestrictedTests.hpp"
 #include "vktPipelineExecutablePropertiesTests.hpp"
-#include "vktPipelineVertexOnlyTests.hpp"
+#include "vktPipelineMiscTests.hpp"
 #include "vktPipelineMaxVaryingsTests.hpp"
 #include "vktPipelineBlendOperationAdvancedTests.hpp"
 #include "vktPipelineExtendedDynamicStateTests.hpp"
+#include "vktPipelineCreationCacheControlTests.hpp"
+#include "vktPipelineNoPositionTests.hpp"
+#include "vktPipelineBindPointTests.hpp"
+#include "vktPipelineColorWriteEnableTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -75,6 +80,7 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createImageTests					(testCtx));
 	pipelineTests->addChild(createSamplerTests					(testCtx));
 	pipelineTests->addChild(createImageViewTests				(testCtx));
+	pipelineTests->addChild(createLogicOpTests					(testCtx));
 	pipelineTests->addChild(createPushConstantTests				(testCtx));
 	pipelineTests->addChild(createPushDescriptorTests			(testCtx));
 	pipelineTests->addChild(createSpecConstantTests				(testCtx));
@@ -93,10 +99,14 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createCreationFeedbackTests			(testCtx));
 	pipelineTests->addChild(createDepthRangeUnrestrictedTests	(testCtx));
 	pipelineTests->addChild(createExecutablePropertiesTests		(testCtx));
-	pipelineTests->addChild(createVertexOnlyTests				(testCtx));
+	pipelineTests->addChild(createMiscTests						(testCtx));
 	pipelineTests->addChild(createMaxVaryingsTests				(testCtx));
 	pipelineTests->addChild(createBlendOperationAdvancedTests	(testCtx));
 	pipelineTests->addChild(createExtendedDynamicStateTests		(testCtx));
+	pipelineTests->addChild(createCacheControlTests				(testCtx));
+	pipelineTests->addChild(createNoPositionTests				(testCtx));
+	pipelineTests->addChild(createBindPointTests				(testCtx));
+	pipelineTests->addChild(createColorWriteEnableTests			(testCtx));
 }
 
 } // anonymous

@@ -1,0 +1,292 @@
+group builtins "Builtin Tests"
+
+	case core_gl_FragColor
+		version 420
+		expect compile_fail
+		vertex ""
+			#version 420
+			${VERTEX_DECLARATIONS}
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 420
+			void main()
+			{
+				gl_FragColor = vec4(1.0);
+			}
+		""
+	end
+
+	case core_gl_FragData
+		version 420
+		expect compile_fail
+		vertex ""
+			#version 420
+			${VERTEX_DECLARATIONS}
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 420
+			void main()
+			{
+				gl_FragData[0] = vec4(1.0, 1.0, 1.0, 1.0);
+			}
+		""
+	end
+
+	case core_gl_MaxVaryingFloats
+		version 420
+		expect compile_fail
+		vertex ""
+			#version 420
+			${VERTEX_DECLARATIONS}
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 420
+			out vec4 color;
+			void main()
+			{
+				color = vec4(float(gl_MaxVaryingFloats));
+			}
+		""
+	end
+
+	case core_texture_builtins
+		version 420
+		expect compile_fail
+		vertex ""
+			#version 420
+			${VERTEX_DECLARATIONS}
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 420
+			uniform sampler1D tex1d;
+			uniform sampler2D tex2d;
+			uniform sampler3D tex3d;
+			uniform samplerCube texCube;
+
+			uniform float i;
+			uniform float dummy_f_coord;
+			uniform vec2 dummy_v2_coord;
+			uniform vec3 dummy_v3_coord;
+			uniform vec4 dummy_v4_coord;
+			out vec4 color;
+			void main()
+			{
+				color = texture1D(tex1d, dummy_f_coord, i);
+				color =+ texture1DProj(tex1d, dummy_v2_coord, i);
+				color =+ texture1DProj(tex1d, dummy_v4_coord, i);
+				color =+ texture1DLod(tex1d, dummy_f_coord, i);
+				color =+ texture1DProjLod(tex1d, dummy_v2_coord, i);
+				color =+ texture1DProjLod(tex1d, dummy_v4_coord, i);
+
+				color =+ texture2D(tex2d, dummy_v2_coord, i);
+				color =+ texture2DProj(tex2d, dummy_v3_coord, i);
+				color =+ texture2DProj(tex2d, dummy_v4_coord, i);
+				color =+ texture2DLod(tex2d, dummy_v2_coord, i);
+				color =+ texture2DProjLod(tex2d, dummy_v3_coord, i);
+				color =+ texture2DProjLod(tex2d, dummy_v4_coord, i);
+
+				color =+ texture3D(tex3d, dummy_v3_coord, i);
+				color =+ texture3DProj(tex3d, dummy_v4_coord, i);
+				color =+ texture3DLod(tex3d, dummy_v3_coord, i);
+				color =+ texture3DProjLod(tex3d, dummy_v4_coord, i);
+
+				color =+ textureCube(texCube, dummy_v3_coord, i);
+				color =+ textureCubeLod(texCube, dummy_v3_coord, i);
+			}
+		""
+	end
+
+	case core_shadow_builtins
+		version 420
+		expect compile_fail
+		vertex ""
+			#version 420
+			${VERTEX_DECLARATIONS}
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 420
+			uniform sampler1DShadow tex1dshadow;
+			uniform sampler2DShadow tex2dshadow;
+
+			uniform float i;
+			uniform vec3 dummy_v3_coord;
+			uniform vec4 dummy_v4_coord;
+			out vec4 color;
+			void main()
+			{
+				color = shadow1D(tex1dshadow, dummy_v3_coord, i);
+				color =+ shadow1DProj(tex1dshadow, dummy_v4_coord, i);
+				color =+ shadow1DLod(tex1dshadow, dummy_v3_coord, i);
+				color =+ shadow1DProjLod(tex1dshadow, dummy_v4_coord, i);
+
+				color =+ shadow2D(tex2dshadow, dummy_v3_coord, i);
+				color =+ shadow2DProj(tex2dshadow, dummy_v4_coord, i);
+				color =+ shadow2DLod(tex2dshadow, dummy_v3_coord, i);
+				color =+ shadow2DProjLod(tex2dshadow, dummy_v4_coord, i);
+			}
+		""
+	end
+
+	case compatibility_gl_FragColor
+		version 420
+		vertex ""
+			#version 420 compatibility
+			${VERTEX_DECLARATIONS}
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 420 compatibility
+			void main()
+			{
+				gl_FragColor = vec4(1.0);
+			}
+		""
+	end
+
+	case compatibility_gl_FragData
+		version 420
+		vertex ""
+			#version 420 compatibility
+			${VERTEX_DECLARATIONS}
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 420 compatibility
+			void main()
+			{
+				gl_FragData[0] = vec4(1.0, 1.0, 1.0, 1.0);
+			}
+		""
+	end
+
+	case compatibility_gl_MaxVaryingFloats
+		version 420
+		vertex ""
+			#version 420 compatibility
+			${VERTEX_DECLARATIONS}
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 420 compatibility
+			out vec4 color;
+			void main()
+			{
+				color = vec4(float(gl_MaxVaryingFloats));
+			}
+		""
+	end
+
+	case compatibility_texture_builtins
+		version 420
+		vertex ""
+			#version 420 compatibility
+			${VERTEX_DECLARATIONS}
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 420 compatibility
+			uniform sampler1D tex1d;
+			uniform sampler2D tex2d;
+			uniform sampler3D tex3d;
+			uniform samplerCube texCube;
+
+			uniform float i;
+			uniform float dummy_f_coord;
+			uniform vec2 dummy_v2_coord;
+			uniform vec3 dummy_v3_coord;
+			uniform vec4 dummy_v4_coord;
+			out vec4 color;
+			void main()
+			{
+				color = texture1D(tex1d, dummy_f_coord, i);
+				color =+ texture1DProj(tex1d, dummy_v2_coord, i);
+				color =+ texture1DProj(tex1d, dummy_v4_coord, i);
+				color =+ texture1DLod(tex1d, dummy_f_coord, i);
+				color =+ texture1DProjLod(tex1d, dummy_v2_coord, i);
+				color =+ texture1DProjLod(tex1d, dummy_v4_coord, i);
+
+				color =+ texture2D(tex2d, dummy_v2_coord, i);
+				color =+ texture2DProj(tex2d, dummy_v3_coord, i);
+				color =+ texture2DProj(tex2d, dummy_v4_coord, i);
+				color =+ texture2DLod(tex2d, dummy_v2_coord, i);
+				color =+ texture2DProjLod(tex2d, dummy_v3_coord, i);
+				color =+ texture2DProjLod(tex2d, dummy_v4_coord, i);
+
+				color =+ texture3D(tex3d, dummy_v3_coord, i);
+				color =+ texture3DProj(tex3d, dummy_v4_coord, i);
+				color =+ texture3DLod(tex3d, dummy_v3_coord, i);
+				color =+ texture3DProjLod(tex3d, dummy_v4_coord, i);
+
+				color =+ textureCube(texCube, dummy_v3_coord, i);
+				color =+ textureCubeLod(texCube, dummy_v3_coord, i);
+			}
+		""
+	end
+
+	case compatibility_shadow_builtins
+		version 420
+		vertex ""
+			#version 420 compatibility
+			${VERTEX_DECLARATIONS}
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 420 compatibility
+			uniform sampler1DShadow tex1dshadow;
+			uniform sampler2DShadow tex2dshadow;
+
+			uniform float i;
+			uniform vec3 dummy_v3_coord;
+			uniform vec4 dummy_v4_coord;
+			out vec4 color;
+			void main()
+			{
+				color = shadow1D(tex1dshadow, dummy_v3_coord, i);
+				color =+ shadow1DProj(tex1dshadow, dummy_v4_coord, i);
+				color =+ shadow1DLod(tex1dshadow, dummy_v3_coord, i);
+				color =+ shadow1DProjLod(tex1dshadow, dummy_v4_coord, i);
+
+				color =+ shadow2D(tex2dshadow, dummy_v3_coord, i);
+				color =+ shadow2DProj(tex2dshadow, dummy_v4_coord, i);
+				color =+ shadow2DLod(tex2dshadow, dummy_v3_coord, i);
+				color =+ shadow2DProjLod(tex2dshadow, dummy_v4_coord, i);
+			}
+		""
+	end
+
+end

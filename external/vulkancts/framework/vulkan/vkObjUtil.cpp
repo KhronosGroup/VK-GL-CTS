@@ -29,8 +29,41 @@
 
 #include "tcuVector.hpp"
 
+#include "deSTLUtil.hpp"
+
 namespace vk
 {
+
+Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
+									  const VkDevice							device,
+									  const VkPipelineLayout					pipelineLayout,
+									  const VkPipelineCreateFlags				pipelineFlags,
+									  const VkShaderModule						shaderModule,
+									  const VkPipelineShaderStageCreateFlags	shaderFlags,
+									  const VkSpecializationInfo*				specializationInfo)
+{
+	const VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
+		nullptr,												// const void*							pNext;
+		shaderFlags,											// VkPipelineShaderStageCreateFlags		flags;
+		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
+		shaderModule,											// VkShaderModule						module;
+		"main",													// const char*							pName;
+		specializationInfo,										// const VkSpecializationInfo*			pSpecializationInfo;
+	};
+	const VkComputePipelineCreateInfo pipelineCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType					sType;
+		nullptr,											// const void*						pNext;
+		pipelineFlags,										// VkPipelineCreateFlags			flags;
+		pipelineShaderStageParams,							// VkPipelineShaderStageCreateInfo	stage;
+		pipelineLayout,										// VkPipelineLayout					layout;
+		DE_NULL,											// VkPipeline						basePipelineHandle;
+		0,													// deInt32							basePipelineIndex;
+	};
+	return createComputePipeline(vk, device, DE_NULL , &pipelineCreateInfo);
+}
 
 Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface&						vk,
 									  const VkDevice								device,
@@ -545,11 +578,46 @@ VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			size,
 	return bufferCreateInfo;
 }
 
+VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize				size,
+										 const VkBufferUsageFlags		usage,
+										 const std::vector<deUint32>&	queueFamilyIndices)
+{
+	const deUint32				queueFamilyIndexCount	= static_cast<deUint32>(queueFamilyIndices.size());
+	const deUint32*				pQueueFamilyIndices		= de::dataOrNull(queueFamilyIndices);
+	const VkBufferCreateInfo	bufferCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
+		DE_NULL,								// const void*			pNext;
+		(VkBufferCreateFlags)0,					// VkBufferCreateFlags	flags;
+		size,									// VkDeviceSize			size;
+		usage,									// VkBufferUsageFlags	usage;
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
+		queueFamilyIndexCount,					// deUint32				queueFamilyIndexCount;
+		pQueueFamilyIndices,					// const deUint32*		pQueueFamilyIndices;
+	};
+
+	return bufferCreateInfo;
+}
+
+
 Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 										   const VkDevice				device,
 										   const VkDescriptorSetLayout	descriptorSetLayout)
 {
 	return makePipelineLayout(vk, device, (descriptorSetLayout == DE_NULL) ? 0u : 1u, &descriptorSetLayout);
+}
+
+Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&								vk,
+										   const VkDevice										device,
+										   const std::vector<vk::Move<VkDescriptorSetLayout>>	&descriptorSetLayouts)
+{
+	// Create a list of descriptor sets without move pointers.
+	std::vector<vk::VkDescriptorSetLayout> descriptorSetLayoutsUnWrapped;
+	for (const auto& descriptorSetLayout : descriptorSetLayouts)
+	{
+		descriptorSetLayoutsUnWrapped.push_back(descriptorSetLayout.get());
+	}
+	return vk::makePipelineLayout(vk, device, static_cast<deUint32>(descriptorSetLayoutsUnWrapped.size()), descriptorSetLayoutsUnWrapped.data());
 }
 
 Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,

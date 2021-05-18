@@ -42,32 +42,35 @@ struct ConditionalData
 	bool		conditionInverted;
 	bool		conditionInherited;
 	deUint32	conditionValue;
+	bool		padConditionValue;
 
 	bool		expectCommandExecution;
 };
 
 static const ConditionalData s_testsData[] =
 {
-//  Primary	Secondary Inverted Inherited Val  Result
-	{ true,		false,	false,	false,	1,	true },
-	{ true,		false,	false,	false,	0,	false },
-	{ true,		false,	true,	false,	0,	true},
-	{ true,		false,	true,	false,	1,	false },
-	{ true,		false,	false,	true,	1,	true },
-	{ true,		false,	false,	true,	0,	false },
-	{ true,		false,	true,	true,	0,	true },
-	{ true,		false,	true,	true,	1,	false },
+	//	CONDPRI	CONDSEC	INV		INH		V	PAD		RES
+	{	true,	false,	false,	false,	1,	false,	true	},
+	{	true,	false,	false,	false,	0,	false,	false	},
+	{	true,	false,	true,	false,	0,	false,	true	},
+	{	true,	false,	true,	false,	1,	false,	false	},
+	{	true,	false,	false,	true,	1,	false,	true	},
+	{	true,	false,	false,	true,	0,	false,	false	},
+	{	true,	false,	true,	true,	0,	false,	true	},
+	{	true,	false,	true,	true,	1,	false,	false	},
 
-	{ false,	true,	false,	false,	1,	true },
-	{ false,	true,	false,	false,	0,	false },
-	{ false,	true,	true,	false,	0,	true},
-	{ false,	true,	true,	false,	1,	false },
+	{	false,	true,	false,	false,	1,	false,	true	},
+	{	false,	true,	false,	false,	0,	false,	false	},
+	{	false,	true,	true,	false,	0,	false,	true	},
+	{	false,	true,	true,	false,	1,	false,	false	},
 
-	/* Test that commands are executed correctly when secondary command buffer is constructed
-	 * with conditional rendering enabled but conditional rendering is not enabled when
-	 * executing it in the primary command buffer.
-	 */
-	{ false,	false,	false,	true,	1,	true },
+	// Test that inheritance does not affect outcome of secondary command buffer with conditional rendering or not.
+	{	false,	false,	false,	true,	0,	false,	true	},
+
+	{	false,	true,	false,	true,	1,	false,	true	},
+	{	false,	true,	false,	true,	0,	false,	false	},
+	{	false,	true,	true,	true,	1,	false,	false	},
+	{	false,	true,	true,	true,	0,	false,	true	},
 };
 
 std::ostream&				operator<< (std::ostream& str, ConditionalData const& c);

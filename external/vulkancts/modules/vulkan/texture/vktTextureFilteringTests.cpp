@@ -1045,6 +1045,9 @@ bool verifierCanBeUsed(const VkFormat format, const Sampler::FilterMode minFilte
 		(tcu::TexVerifierUtil::isLinearFilter(minFilter) || tcu::TexVerifierUtil::isLinearFilter(magFilter) ||
 		 tcu::TexVerifierUtil::isCubicFilter(minFilter)  || tcu::TexVerifierUtil::isCubicFilter(magFilter)));
 }
+
+} // anonymous
+
 void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 {
 	tcu::TestContext&	testCtx		= textureFilteringTests->getTestContext();
@@ -1176,6 +1179,8 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 		{ "r8g8b8a8_snorm",					VK_FORMAT_R8G8B8A8_SNORM,			VK_IMAGE_ASPECT_COLOR_BIT,		PROGRAM_2D_FLOAT,	PROGRAM_CUBE_FLOAT,	PROGRAM_2D_ARRAY_FLOAT,	PROGRAM_3D_FLOAT	},
 		{ "r5g6b5_unorm",					VK_FORMAT_R5G6B5_UNORM_PACK16,		VK_IMAGE_ASPECT_COLOR_BIT,		PROGRAM_2D_FLOAT,	PROGRAM_CUBE_FLOAT,	PROGRAM_2D_ARRAY_FLOAT,	PROGRAM_3D_FLOAT	},
 		{ "r4g4b4a4_unorm",					VK_FORMAT_R4G4B4A4_UNORM_PACK16,	VK_IMAGE_ASPECT_COLOR_BIT,		PROGRAM_2D_FLOAT,	PROGRAM_CUBE_FLOAT,	PROGRAM_2D_ARRAY_FLOAT,	PROGRAM_3D_FLOAT	},
+		{ "a4r4g4b4_unorm",					VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,VK_IMAGE_ASPECT_COLOR_BIT,		PROGRAM_2D_FLOAT,	PROGRAM_CUBE_FLOAT,	PROGRAM_2D_ARRAY_FLOAT,	PROGRAM_3D_FLOAT	},
+		{ "a4b4g4r4_unorm",					VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,VK_IMAGE_ASPECT_COLOR_BIT,		PROGRAM_2D_FLOAT,	PROGRAM_CUBE_FLOAT,	PROGRAM_2D_ARRAY_FLOAT,	PROGRAM_3D_FLOAT	},
 		{ "r5g5b5a1_unorm",					VK_FORMAT_R5G5B5A1_UNORM_PACK16,	VK_IMAGE_ASPECT_COLOR_BIT,		PROGRAM_2D_FLOAT,	PROGRAM_CUBE_FLOAT,	PROGRAM_2D_ARRAY_FLOAT,	PROGRAM_3D_FLOAT	},
 		{ "a8b8g8r8_srgb",					VK_FORMAT_A8B8G8R8_SRGB_PACK32,		VK_IMAGE_ASPECT_COLOR_BIT,		PROGRAM_2D_FLOAT,	PROGRAM_CUBE_FLOAT,	PROGRAM_2D_ARRAY_FLOAT,	PROGRAM_3D_FLOAT	},
 		{ "a1r5g5b5_unorm",					VK_FORMAT_A1R5G5B5_UNORM_PACK16,	VK_IMAGE_ASPECT_COLOR_BIT,		PROGRAM_2D_FLOAT,	PROGRAM_CUBE_FLOAT,	PROGRAM_2D_ARRAY_FLOAT,	PROGRAM_3D_FLOAT	},
@@ -1778,8 +1783,6 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 		textureFilteringTests->addChild(group3D.release());
 	}
 }
-
-} // anonymous
 
 tcu::TestCaseGroup*	createTextureFilteringTests	(tcu::TestContext& testCtx)
 {

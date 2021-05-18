@@ -34,7 +34,7 @@ using namespace std;
 using namespace vk;
 using namespace vkt;
 
-string getScanOpName(string prefix, string suffix, Operator op, ScanType scanType)
+string getScanOpName (string prefix, string suffix, Operator op, ScanType scanType)
 {
 	string n;
 	switch (scanType)
@@ -56,7 +56,7 @@ string getScanOpName(string prefix, string suffix, Operator op, ScanType scanTyp
 	return prefix + n + suffix;
 }
 
-string getOpOperation(Operator op, VkFormat format, string lhs, string rhs)
+string getOpOperation (Operator op, VkFormat format, string lhs, string rhs)
 {
 	switch (op)
 	{
@@ -152,11 +152,11 @@ string getOpOperation(Operator op, VkFormat format, string lhs, string rhs)
 	}
 }
 
-string getIdentity(Operator op, VkFormat format)
+string getIdentity (Operator op, VkFormat format)
 {
-	const bool isFloat = subgroups::isFormatFloat(format);
-	const bool isInt = subgroups::isFormatSigned(format);
-	const bool isUnsigned = subgroups::isFormatUnsigned(format);
+	const bool isFloat		= subgroups::isFormatFloat(format);
+	const bool isInt		= subgroups::isFormatSigned(format);
+	const bool isUnsigned	= subgroups::isFormatUnsigned(format);
 
 	switch (op)
 	{
@@ -274,10 +274,10 @@ string getIdentity(Operator op, VkFormat format)
 	}
 }
 
-string getCompare(Operator op, VkFormat format, string lhs, string rhs)
+string getCompare (Operator op, VkFormat format, string lhs, string rhs)
 {
-	string formatName = subgroups::getFormatNameForGLSL(format);
-	bool isMinMax = (op == OPERATOR_MIN || op == OPERATOR_MAX);
+	const string	formatName	= subgroups::getFormatNameForGLSL(format);
+	const bool		isMinMax	= (op == OPERATOR_MIN || op == OPERATOR_MAX);
 
 	switch (format)
 	{

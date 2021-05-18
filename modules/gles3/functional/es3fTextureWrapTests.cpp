@@ -267,7 +267,16 @@ void TextureWrapCase::init (void)
 
 		// Fill level 0.
 		m_texture->getRefTexture().allocLevel(0);
-		tcu::fillWithComponentGradients(m_texture->getRefTexture().getLevel(0), tcu::Vec4(-0.5f, -0.5f, -0.5f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f));
+		if (m_wrapS == GL_REPEAT ||
+			m_wrapT == GL_REPEAT)
+		{
+			// If run in repeat mode, use conical style texture to avoid edge sample result have a huge difference when coordinate offset in allow range.
+			tcu::fillWithComponentGradients3(m_texture->getRefTexture().getLevel(0), tcu::Vec4(-0.5f, -0.5f, -0.5f, 1.5f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f));
+		}
+		else
+		{
+			tcu::fillWithComponentGradients(m_texture->getRefTexture().getLevel(0), tcu::Vec4(-0.5f, -0.5f, -0.5f, 1.5f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f));
+		}
 
 		m_texture->upload();
 	}
@@ -339,7 +348,7 @@ TextureWrapCase::IterateResult TextureWrapCase::iterate (void)
 
 		lodPrecision.derivateBits		= 18;
 		lodPrecision.lodBits			= 5;
-		lookupPrecision.colorThreshold	= tcu::computeFixedPointThreshold(colorBits) / refParams.colorScale;
+		lookupPrecision.colorThreshold	= tcu::computeColorBitsThreshold(getBitsVec(pixelFormat), colorBits) / refParams.colorScale;
 		lookupPrecision.coordBits		= tcu::IVec3(20,20,0);
 		lookupPrecision.uvwBits			= tcu::IVec3(5,5,0);
 		lookupPrecision.colorMask		= getCompareMask(pixelFormat);

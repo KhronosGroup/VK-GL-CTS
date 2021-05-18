@@ -7,6 +7,7 @@ set(DEQP_VK_UTIL_SRCS
 	vktDrawUtil.hpp
 	vktExternalMemoryUtil.cpp
 	vktExternalMemoryUtil.hpp
+	vktConstexprVectorUtil.hpp
 )
 
 add_library(deqp-vk-util STATIC ${DEQP_VK_UTIL_SRCS})

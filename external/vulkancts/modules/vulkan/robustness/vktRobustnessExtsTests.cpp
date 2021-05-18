@@ -51,6 +51,7 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <limits>
 
 namespace vkt
 {
@@ -176,6 +177,7 @@ struct CaseDef
 	bool pushDescriptor;
 	bool testRobustness2;
 	deUint32 imageDim[3]; // width, height, depth or layers
+	bool readOnly;
 };
 
 static bool formatIsR64(const VkFormat& f)
@@ -759,9 +761,10 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 
 	std::stringstream decls, checks;
 
-	const string	r64		= formatIsR64(format) ? "64" : "";
-	const string	i64Type	= formatIsR64(format) ? "64_t" : "";
-	const string	vecType	= formatIsFloat(format) ? "vec4" : (formatIsSignedInt(format) ? ("i" + r64 + "vec4") : ("u" + r64 + "vec4"));
+	const string	r64			= formatIsR64(format) ? "64" : "";
+	const string	i64Type		= formatIsR64(format) ? "64_t" : "";
+	const string	vecType		= formatIsFloat(format) ? "vec4" : (formatIsSignedInt(format) ? ("i" + r64 + "vec4") : ("u" + r64 + "vec4"));
+	const string	qLevelType	= vecType == "vec4" ? "float" : ((vecType == "ivec4") | (vecType == "i64vec4")) ? ("int" + i64Type) : ("uint" + i64Type);
 
 	decls << "uvec4 abs(uvec4 x) { return x; }\n";
 	if (formatIsR64(format))
@@ -885,12 +888,33 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 	else
 		bufType = imgprefix + "vec" + std::to_string(numComponents);
 
+	// For UBO's, which have a declared size in the shader, don't access outside that size.
+	bool declaredSize = false;
+	switch (m_data.descriptorType) {
+	case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+	case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+		declaredSize = true;
+		break;
+	default:
+		break;
+	}
+
 	checks << "  int inboundcoords, clampedLayer;\n";
 	checks << "  " << vecType << " expectedIB2;\n";
 	if (m_data.unroll)
-		checks << "  [[unroll]] for (int c = -10; c <= 10; ++c) {\n";
+	{
+		if (declaredSize)
+			checks << "  [[unroll]] for (int c = 0; c <= 10; ++c) {\n";
+		else
+			checks << "  [[unroll]] for (int c = -10; c <= 10; ++c) {\n";
+	}
 	else
-		checks << "  [[dont_unroll]] for (int c = 1050; c >= -1050; --c) {\n";
+	{
+		if (declaredSize)
+			checks << "  [[dont_unroll]] for (int c = 1023; c >= 0; --c) {\n";
+		else
+			checks << "  [[dont_unroll]] for (int c = 1050; c >= -1050; --c) {\n";
+	}
 
 	if (m_data.descriptorType == VERTEX_ATTRIBUTE_FETCH)
 		checks << "    int idx = smod(gl_VertexIndex * " << numComponents << ", " << refDataNumElements << ");\n";
@@ -900,6 +924,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 	decls << "layout(" << outputimgqualif << ", set = 0, binding = 0) uniform " << imgprefix << "image2D image0_0;\n";
 
 	const char *vol = m_data.vol ? "volatile " : "";
+	const char *ro = m_data.readOnly ? "readonly " : "";
 
 	// Construct the declaration for the binding
 	switch (m_data.descriptorType)
@@ -910,9 +935,8 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 		break;
 	case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
 	case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-		decls << "layout(scalar, set = 0, binding = 1) " << vol << "buffer sbodef0_1 { " << bufType << " val[1024]; } ssbo0_1;\n";
-		decls << "layout(scalar, set = 0, binding = 1) " << vol << "buffer sbodef0_1_unsized { " << bufType << " val[]; } ssbo0_1_unsized;\n";
-		decls << "layout(scalar, set = 0, binding = 1) " << vol << "buffer sbodef0_1_unsized_pad { vec4 pad; " << bufType << " val[]; } ssbo0_1_unsized_pad;\n";
+		decls << "layout(scalar, set = 0, binding = 1) " << vol << ro << "buffer sbodef0_1 { " << bufType << " val[]; } ssbo0_1;\n";
+		decls << "layout(scalar, set = 0, binding = 1) " << vol << ro << "buffer sbodef0_1_pad { vec4 pad; " << bufType << " val[]; } ssbo0_1_pad;\n";
 		break;
 	case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
 		switch(format)
@@ -1067,10 +1091,11 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 		}
 	}
 
-	if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ||
-		m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER ||
-		m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
-		m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
+	if ((m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ||
+		 m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER ||
+		 m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+		 m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC) &&
+		 !m_data.readOnly)
 	{
 		for (int i = 0; i < numCoords; ++i)
 		{
@@ -1302,6 +1327,12 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				{
 					checks << "    temp = textureSize(texture0_1, 0)" << sizeswiz <<";\n";
 					checks << "    accum += abs(temp);\n";
+
+					// checking textureSize with clearly out of range LOD values
+					checks << "    temp = textureSize(texture0_1, " << -i << ")" << sizeswiz <<";\n";
+					checks << "    accum += abs(temp);\n";
+					checks << "    temp = textureSize(texture0_1, " << (std::numeric_limits<deInt32>::max() - i) << ")" << sizeswiz <<";\n";
+					checks << "    accum += abs(temp);\n";
 				}
 				else
 				{
@@ -1330,14 +1361,24 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
 			{
 				// expect zero for runtime-sized array .length()
-				checks << "    temp = " << vecType << "(ssbo0_1_unsized.val.length());\n";
+				checks << "    temp = " << vecType << "(ssbo0_1.val.length());\n";
 				checks << "    accum += abs(temp);\n";
-				checks << "    temp = " << vecType << "(ssbo0_1_unsized_pad.val.length());\n";
+				checks << "    temp = " << vecType << "(ssbo0_1_pad.val.length());\n";
 				checks << "    accum += abs(temp);\n";
 			}
 		}
 	}
 	checks << "  }\n";
+
+	// outside the coordinates loop because we only need to call it once
+	if (m_data.nullDescriptor &&
+		m_data.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER &&
+		m_data.samples == VK_SAMPLE_COUNT_1_BIT)
+	{
+		checks << "  temp_ql = " << qLevelType << "(textureQueryLevels(texture0_1));\n";
+		checks << "  temp = " << vecType << "(temp_ql);\n";
+		checks << "  accum += abs(temp);\n";
+	}
 
 	const bool is64BitFormat = formatIsR64(m_data.format);
 	std::string SupportR64 = (is64BitFormat ?
@@ -1365,6 +1406,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				"{\n"
 				"  " << vecType << " accum = " << vecType << "(0);\n"
 				"  " << vecType << " temp;\n"
+				"  " << qLevelType << " temp_ql;\n"
 				<< checks.str() <<
 				"  " << vecType << " color = (accum != " << vecType << "(0)) ? " << vecType << "(0,0,0,0) : " << vecType << "(1,0,0,1);\n"
 				"  imageStore(image0_0, ivec2(gl_GlobalInvocationID.xy), color);\n"
@@ -1391,6 +1433,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 			"{\n"
 			"  " << vecType << " accum = " << vecType << "(0);\n"
 			"  " << vecType << " temp;\n"
+			"  " << qLevelType << " temp_ql;\n"
 			<< checks.str() <<
 			"  " << vecType << " color = (accum != " << vecType << "(0)) ? " << vecType << "(0,0,0,0) : " << vecType << "(1,0,0,1);\n"
 			"  imageStore(image0_0, ivec2(gl_LaunchIDNV.xy), color);\n"
@@ -1416,6 +1459,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				"{\n"
 				"  " << vecType << " accum = " << vecType << "(0);\n"
 				"  " << vecType << " temp;\n"
+				"  " << qLevelType << " temp_ql;\n"
 				<< checks.str() <<
 				"  " << vecType << " color = (accum != " << vecType << "(0)) ? " << vecType << "(0,0,0,0) : " << vecType << "(1,0,0,1);\n"
 				"  imageStore(image0_0, ivec2(gl_VertexIndex % " << DIM << ", gl_VertexIndex / " << DIM << "), color);\n"
@@ -1429,6 +1473,22 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 		}
 	case STAGE_FRAGMENT:
 		{
+			if (m_data.nullDescriptor &&
+				m_data.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER &&
+				m_data.samples == VK_SAMPLE_COUNT_1_BIT)
+			{
+				// as here we only want to check that textureQueryLod returns 0 when
+				// texture0_1 is null, we don't need to use the actual texture coordinates
+				// (and modify the vertex shader below to do so). Any coordinates are fine.
+				// gl_FragCoord has been selected "randomly", instead of selecting 0 for example.
+				std::string lod_str = (numNormalizedCoords == 1) ? ");" : (numNormalizedCoords == 2) ? "y);" : "yz);";
+				checks << "  vec2 lod = textureQueryLod(texture0_1, gl_FragCoord.x" << lod_str << "\n";
+				checks << "  temp_ql = " << qLevelType <<
+"(ceil(abs(lod.x) + abs(lod.y)));\n";
+				checks << "  temp = " << vecType << "(temp_ql);\n";
+				checks << "  accum += abs(temp);\n";
+			}
+
 			std::stringstream vss;
 			vss <<
 				"#version 450 core\n"
@@ -1455,6 +1515,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				"{\n"
 				"  " << vecType << " accum = " << vecType << "(0);\n"
 				"  " << vecType << " temp;\n"
+				"  " << qLevelType << " temp_ql;\n"
 				<< checks.str() <<
 				"  " << vecType << " color = (accum != " << vecType << "(0)) ? " << vecType << "(0,0,0,0) : " << vecType << "(1,0,0,1);\n"
 				"  imageStore(image0_0, ivec2(gl_FragCoord.x, gl_FragCoord.y), color);\n"
@@ -1652,15 +1713,15 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 		{
 			size = deIntRoundToPow2((int)size, (int)robustness2Properties.robustUniformBufferAccessSizeAlignment);
 		}
-
-		if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
-			m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
+		else if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+				 m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
 		{
 			size = deIntRoundToPow2((int)size, (int)robustness2Properties.robustStorageBufferAccessSizeAlignment);
 		}
-
-		if (m_data.descriptorType == VERTEX_ATTRIBUTE_FETCH)
+		else if (m_data.descriptorType == VERTEX_ATTRIBUTE_FETCH)
+		{
 			size = m_data.bufferLen;
+		}
 
 		buffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 			vk, device, allocator, makeBufferCreateInfo(size,
@@ -1680,8 +1741,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 		{
 			deMemset(bufferPtr, 0, deIntRoundToPow2(m_data.bufferLen, (int)robustness2Properties.robustUniformBufferAccessSizeAlignment));
 		}
-		if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
-			m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
+		else if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+				 m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
 		{
 			deMemset(bufferPtr, 0, deIntRoundToPow2(m_data.bufferLen, (int)robustness2Properties.robustStorageBufferAccessSizeAlignment));
 		}
@@ -2906,6 +2967,12 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 		{ 1,			"fmt_qual",		""		},
 	};
 
+	TestGroupCase readOnlyCases[] =
+	{
+		{ 0,			"readwrite",	""		},
+		{ 1,			"readonly",		""		},
+	};
+
 	for (int pushNdx = 0; pushNdx < DE_LENGTH_OF_ARRAY(pushCases); pushNdx++)
 	{
 		de::MovePtr<tcu::TestCaseGroup> pushGroup(new tcu::TestCaseGroup(testCtx, pushCases[pushNdx].name, pushCases[pushNdx].name));
@@ -2931,118 +2998,142 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 						for (int descNdx = 0; descNdx < numDescCases; descNdx++)
 						{
 							de::MovePtr<tcu::TestCaseGroup> descGroup(new tcu::TestCaseGroup(testCtx, descCases[descNdx].name, descCases[descNdx].name));
-							for (int fmtQualNdx = 0; fmtQualNdx < DE_LENGTH_OF_ARRAY(fmtQualCases); fmtQualNdx++)
+
+							for (int roNdx = 0; roNdx < DE_LENGTH_OF_ARRAY(readOnlyCases); roNdx++)
 							{
-								de::MovePtr<tcu::TestCaseGroup> fmtQualGroup(new tcu::TestCaseGroup(testCtx, fmtQualCases[fmtQualNdx].name, fmtQualCases[fmtQualNdx].name));
+								de::MovePtr<tcu::TestCaseGroup> rwGroup(new tcu::TestCaseGroup(testCtx, readOnlyCases[roNdx].name, readOnlyCases[roNdx].name));
 
-								// format qualifier is only used for storage image and storage texel buffers
-								if (fmtQualCases[fmtQualNdx].count &&
-									!(descCases[descNdx].count == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER || descCases[descNdx].count == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE))
+								// readonly cases are just for storage_buffer
+								if (readOnlyCases[roNdx].count != 0 &&
+									descCases[descNdx].count != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER &&
+									descCases[descNdx].count != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
 									continue;
 
-								if (pushCases[pushNdx].count &&
-									(descCases[descNdx].count == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC || descCases[descNdx].count == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC || descCases[descNdx].count == VERTEX_ATTRIBUTE_FETCH))
-									continue;
-
-								const bool isR64 = formatIsR64((VkFormat)fmtCases[fmtNdx].count);
-								int numLenCases = robustness2 ? DE_LENGTH_OF_ARRAY((isR64 ? fullLenCases64Bit : fullLenCases32Bit)) : DE_LENGTH_OF_ARRAY(imgLenCases);
-								TestGroupCase *lenCases = robustness2 ? (isR64 ? fullLenCases64Bit : fullLenCases32Bit) : imgLenCases;
-
-								for (int lenNdx = 0; lenNdx < numLenCases; lenNdx++)
+								for (int fmtQualNdx = 0; fmtQualNdx < DE_LENGTH_OF_ARRAY(fmtQualCases); fmtQualNdx++)
 								{
-									if (lenCases[lenNdx].count != ~0U)
-									{
-										bool bufferLen = lenCases[lenNdx].count != 0;
-										bool bufferDesc = descCases[descNdx].count != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE && descCases[descNdx].count != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-										if (bufferLen != bufferDesc)
-											continue;
+									de::MovePtr<tcu::TestCaseGroup> fmtQualGroup(new tcu::TestCaseGroup(testCtx, fmtQualCases[fmtQualNdx].name, fmtQualCases[fmtQualNdx].name));
 
-										// Add template tests cases only for null_descriptor cases
-										if (tempCases[tempNdx].count)
-											continue;
-									}
-
-									if ((descCases[descNdx].count == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER || descCases[descNdx].count == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER) &&
-										((lenCases[lenNdx].count % fmtSize) != 0) &&
-										lenCases[lenNdx].count != ~0U)
-									{
-										continue;
-									}
-
-									// "volatile" only applies to storage images/buffers
-									if (volCases[volNdx].count && !supportsStores(descCases[descNdx].count))
+									// format qualifier is only used for storage image and storage texel buffers
+									if (fmtQualCases[fmtQualNdx].count &&
+										!(descCases[descNdx].count == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER || descCases[descNdx].count == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE))
 										continue;
 
-									de::MovePtr<tcu::TestCaseGroup> lenGroup(new tcu::TestCaseGroup(testCtx, lenCases[lenNdx].name, lenCases[lenNdx].name));
-									for (int sampNdx = 0; sampNdx < DE_LENGTH_OF_ARRAY(sampCases); sampNdx++)
+									if (pushCases[pushNdx].count &&
+										(descCases[descNdx].count == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC || descCases[descNdx].count == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC || descCases[descNdx].count == VERTEX_ATTRIBUTE_FETCH))
+										continue;
+
+									const bool isR64 = formatIsR64((VkFormat)fmtCases[fmtNdx].count);
+									int numLenCases = robustness2 ? DE_LENGTH_OF_ARRAY((isR64 ? fullLenCases64Bit : fullLenCases32Bit)) : DE_LENGTH_OF_ARRAY(imgLenCases);
+									TestGroupCase *lenCases = robustness2 ? (isR64 ? fullLenCases64Bit : fullLenCases32Bit) : imgLenCases;
+
+									for (int lenNdx = 0; lenNdx < numLenCases; lenNdx++)
 									{
-										de::MovePtr<tcu::TestCaseGroup> sampGroup(new tcu::TestCaseGroup(testCtx, sampCases[sampNdx].name, sampCases[sampNdx].name));
-										for (int viewNdx = 0; viewNdx < DE_LENGTH_OF_ARRAY(viewCases); viewNdx++)
+										if (lenCases[lenNdx].count != ~0U)
 										{
-											if (viewCases[viewNdx].count != VK_IMAGE_VIEW_TYPE_1D &&
-												descCases[descNdx].count != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE &&
-												descCases[descNdx].count != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-											{
-												// buffer descriptors don't have different dimensionalities. Only test "1D"
+											bool bufferLen = lenCases[lenNdx].count != 0;
+											bool bufferDesc = descCases[descNdx].count != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE && descCases[descNdx].count != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+											if (bufferLen != bufferDesc)
 												continue;
-											}
 
-											if (viewCases[viewNdx].count != VK_IMAGE_VIEW_TYPE_2D && viewCases[viewNdx].count != VK_IMAGE_VIEW_TYPE_2D_ARRAY &&
-												sampCases[sampNdx].count != VK_SAMPLE_COUNT_1_BIT)
-											{
+											// Add template tests cases only for null_descriptor cases
+											if (tempCases[tempNdx].count)
 												continue;
-											}
+										}
 
-											de::MovePtr<tcu::TestCaseGroup> viewGroup(new tcu::TestCaseGroup(testCtx, viewCases[viewNdx].name, viewCases[viewNdx].name));
-											for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
+										if ((descCases[descNdx].count == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER || descCases[descNdx].count == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER) &&
+											((lenCases[lenNdx].count % fmtSize) != 0) &&
+											lenCases[lenNdx].count != ~0U)
+										{
+											continue;
+										}
+
+										// "volatile" only applies to storage images/buffers
+										if (volCases[volNdx].count && !supportsStores(descCases[descNdx].count))
+											continue;
+
+										de::MovePtr<tcu::TestCaseGroup> lenGroup(new tcu::TestCaseGroup(testCtx, lenCases[lenNdx].name, lenCases[lenNdx].name));
+										for (int sampNdx = 0; sampNdx < DE_LENGTH_OF_ARRAY(sampCases); sampNdx++)
+										{
+											de::MovePtr<tcu::TestCaseGroup> sampGroup(new tcu::TestCaseGroup(testCtx, sampCases[sampNdx].name, sampCases[sampNdx].name));
+											for (int viewNdx = 0; viewNdx < DE_LENGTH_OF_ARRAY(viewCases); viewNdx++)
 											{
-												Stage currentStage = static_cast<Stage>(stageCases[stageNdx].count);
-												VkFlags allShaderStages = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-												VkFlags allPipelineStages = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-												if ((Stage)stageCases[stageNdx].count == STAGE_RAYGEN)
+												if (viewCases[viewNdx].count != VK_IMAGE_VIEW_TYPE_1D &&
+													descCases[descNdx].count != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE &&
+													descCases[descNdx].count != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 												{
-													allShaderStages |= VK_SHADER_STAGE_RAYGEN_BIT_NV;
-													allPipelineStages |= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV;
+													// buffer descriptors don't have different dimensionalities. Only test "1D"
+													continue;
 												}
 
-												if (descCases[descNdx].count == VERTEX_ATTRIBUTE_FETCH &&
-													currentStage != STAGE_VERTEX)
-													continue;
-
-												deUint32 imageDim[3] = {5, 11, 6};
-												if (viewCases[viewNdx].count == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY ||
-													viewCases[viewNdx].count == VK_IMAGE_VIEW_TYPE_CUBE)
-													imageDim[1] = imageDim[0];
-
-												CaseDef c =
+												if (viewCases[viewNdx].count != VK_IMAGE_VIEW_TYPE_2D && viewCases[viewNdx].count != VK_IMAGE_VIEW_TYPE_2D_ARRAY &&
+													sampCases[sampNdx].count != VK_SAMPLE_COUNT_1_BIT)
 												{
-													(VkFormat)fmtCases[fmtNdx].count,								// VkFormat format;
-													currentStage,													// Stage stage;
-													allShaderStages,												// VkFlags allShaderStages;
-													allPipelineStages,												// VkFlags allPipelineStages;
-													(int)descCases[descNdx].count,									// VkDescriptorType descriptorType;
-													(VkImageViewType)viewCases[viewNdx].count,						// VkImageViewType viewType;
-													(VkSampleCountFlagBits)sampCases[sampNdx].count,				// VkSampleCountFlagBits samples;
-													(int)lenCases[lenNdx].count,									// int bufferLen;
-													(bool)unrollCases[unrollNdx].count,								// bool unroll;
-													(bool)volCases[volNdx].count,									// bool vol;
-													(bool)(lenCases[lenNdx].count == ~0U),							// bool nullDescriptor
-													(bool)tempCases[tempNdx].count,									// bool useTemplate
-													(bool)fmtQualCases[fmtQualNdx].count,							// bool formatQualifier
-													(bool)pushCases[pushNdx].count,									// bool pushDescriptor;
-													(bool)robustness2,												// bool testRobustness2;
-													{ imageDim[0], imageDim[1], imageDim[2] },						// deUint32 imageDim[3];
-												};
+													continue;
+												}
 
-												viewGroup->addChild(new RobustnessExtsTestCase(testCtx, stageCases[stageNdx].name, stageCases[stageNdx].name, c));
+												de::MovePtr<tcu::TestCaseGroup> viewGroup(new tcu::TestCaseGroup(testCtx, viewCases[viewNdx].name, viewCases[viewNdx].name));
+												for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
+												{
+													Stage currentStage = static_cast<Stage>(stageCases[stageNdx].count);
+													VkFlags allShaderStages = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+													VkFlags allPipelineStages = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+													if ((Stage)stageCases[stageNdx].count == STAGE_RAYGEN)
+													{
+														allShaderStages |= VK_SHADER_STAGE_RAYGEN_BIT_NV;
+														allPipelineStages |= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV;
+													}
+
+													if (descCases[descNdx].count == VERTEX_ATTRIBUTE_FETCH &&
+														currentStage != STAGE_VERTEX)
+														continue;
+
+													deUint32 imageDim[3] = {5, 11, 6};
+													if (viewCases[viewNdx].count == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY ||
+														viewCases[viewNdx].count == VK_IMAGE_VIEW_TYPE_CUBE)
+														imageDim[1] = imageDim[0];
+
+													CaseDef c =
+													{
+														(VkFormat)fmtCases[fmtNdx].count,								// VkFormat format;
+														currentStage,													// Stage stage;
+														allShaderStages,												// VkFlags allShaderStages;
+														allPipelineStages,												// VkFlags allPipelineStages;
+														(int)descCases[descNdx].count,									// VkDescriptorType descriptorType;
+														(VkImageViewType)viewCases[viewNdx].count,						// VkImageViewType viewType;
+														(VkSampleCountFlagBits)sampCases[sampNdx].count,				// VkSampleCountFlagBits samples;
+														(int)lenCases[lenNdx].count,									// int bufferLen;
+														(bool)unrollCases[unrollNdx].count,								// bool unroll;
+														(bool)volCases[volNdx].count,									// bool vol;
+														(bool)(lenCases[lenNdx].count == ~0U),							// bool nullDescriptor
+														(bool)tempCases[tempNdx].count,									// bool useTemplate
+														(bool)fmtQualCases[fmtQualNdx].count,							// bool formatQualifier
+														(bool)pushCases[pushNdx].count,									// bool pushDescriptor;
+														(bool)robustness2,												// bool testRobustness2;
+														{ imageDim[0], imageDim[1], imageDim[2] },						// deUint32 imageDim[3];
+														(bool)(readOnlyCases[roNdx].count == 1),						// bool readOnly;
+													};
+
+													viewGroup->addChild(new RobustnessExtsTestCase(testCtx, stageCases[stageNdx].name, stageCases[stageNdx].name, c));
+												}
+												sampGroup->addChild(viewGroup.release());
 											}
-											sampGroup->addChild(viewGroup.release());
+											lenGroup->addChild(sampGroup.release());
 										}
-										lenGroup->addChild(sampGroup.release());
+										fmtQualGroup->addChild(lenGroup.release());
 									}
-									fmtQualGroup->addChild(lenGroup.release());
+									// Put storage_buffer tests in separate readonly vs readwrite groups. Other types
+									// go directly into descGroup
+									if (descCases[descNdx].count == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+										descCases[descNdx].count == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC) {
+										rwGroup->addChild(fmtQualGroup.release());
+									} else {
+										descGroup->addChild(fmtQualGroup.release());
+									}
 								}
-								descGroup->addChild(fmtQualGroup.release());
+								if (descCases[descNdx].count == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+									descCases[descNdx].count == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC) {
+									descGroup->addChild(rwGroup.release());
+								}
 							}
 							volGroup->addChild(descGroup.release());
 						}

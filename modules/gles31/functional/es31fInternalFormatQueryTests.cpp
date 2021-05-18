@@ -71,15 +71,17 @@ FormatSamplesCase::FormatSamplesCase (Context& ctx, const char* name, const char
 
 void FormatSamplesCase::init (void)
 {
-	const bool isTextureTarget	=	(m_target == GL_TEXTURE_2D_MULTISAMPLE) ||
+	const bool	isTextureTarget	=	(m_target == GL_TEXTURE_2D_MULTISAMPLE) ||
 									(m_target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
-	const bool supportsES32		=	contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	auto		ctxType			= m_context.getRenderContext().getType();
+	const bool	isES32orGL45	= glu::contextSupports(ctxType, glu::ApiType::es(3, 2)) ||
+								  glu::contextSupports(ctxType, glu::ApiType::core(4, 5));
 
-	if (!supportsES32 && m_target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	if (!isES32orGL45 && m_target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 		TCU_THROW(NotSupportedError, "Test requires OES_texture_storage_multisample_2d_array extension or a context version equal or higher than 3.2");
 
 	// stencil8 textures are not supported without GL_OES_texture_stencil8 extension
-	if (!supportsES32 && isTextureTarget && m_internalFormat == GL_STENCIL_INDEX8 && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_stencil8"))
+	if (!isES32orGL45 && isTextureTarget && m_internalFormat == GL_STENCIL_INDEX8 && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_stencil8"))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_texture_stencil8 extension or a context version equal or higher than 3.2");
 }
 
@@ -90,9 +92,11 @@ FormatSamplesCase::IterateResult FormatSamplesCase::iterate (void)
 	bool					error			= false;
 	glw::GLint				maxSamples		= 0;
 	glw::GLint				numSampleCounts	= 0;
-	const bool				supportsES32			= contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	auto					ctxType			= m_context.getRenderContext().getType();
+	const bool				isES32orGL45	= glu::contextSupports(ctxType, glu::ApiType::es(3, 2)) ||
+											  glu::contextSupports(ctxType, glu::ApiType::core(4, 5));
 
-	if (!supportsES32)
+	if (!isES32orGL45)
 	{
 		if (m_internalFormat == GL_RGBA16F || m_internalFormat == GL_R32F || m_internalFormat == GL_RG32F || m_internalFormat == GL_RGBA32F || m_internalFormat == GL_R16F || m_internalFormat == GL_RG16F || m_internalFormat == GL_R11F_G11F_B10F)
 		{

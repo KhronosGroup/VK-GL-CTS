@@ -34,4 +34,5 @@ template<> inline VkObjectType	getObjectType<VkSurfaceKHR>				(void) { return VK
 template<> inline VkObjectType	getObjectType<VkSwapchainKHR>			(void) { return VK_OBJECT_TYPE_SWAPCHAIN_KHR;				}
 template<> inline VkObjectType	getObjectType<VkDisplayKHR>				(void) { return VK_OBJECT_TYPE_DISPLAY_KHR;					}
 template<> inline VkObjectType	getObjectType<VkDisplayModeKHR>			(void) { return VK_OBJECT_TYPE_DISPLAY_MODE_KHR;			}
+template<> inline VkObjectType	getObjectType<VkDebugUtilsMessengerEXT>	(void) { return VK_OBJECT_TYPE_DEBUG_UTILS_MESSENGER_EXT;	}
 }

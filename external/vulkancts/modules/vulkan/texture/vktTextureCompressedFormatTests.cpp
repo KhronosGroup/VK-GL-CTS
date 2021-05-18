@@ -392,6 +392,8 @@ tcu::TestStatus Compressed3DTestInstance::iterate (void)
 	return isOk ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Image verification failed");
 }
 
+} // anonymous
+
 void populateTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTextureTests)
 {
 	tcu::TestContext&	testCtx	= compressedTextureTests->getTestContext();
@@ -442,8 +444,6 @@ void populate3DTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTextu
 		compressedTextureTests->addChild(new TextureTestCase<Compressed3DTestInstance>(testCtx, (nameBase + "_3d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(), (formatStr + ", TEXTURETYPE_3D").c_str(), testParameters));
 	}
 }
-
-} // anonymous
 
 tcu::TestCaseGroup* createTextureCompressedFormatTests (tcu::TestContext& testCtx)
 {

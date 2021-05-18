@@ -668,7 +668,7 @@ bool exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat f
 
 	copyImageToBuffer(vkd, *cmdBuffer2, *outImage,
 										outputBuffer->get(), tcu::IVec2(imageSize.x(), imageSize.y()),
-										0, VK_IMAGE_LAYOUT_UNDEFINED, 1);
+										VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, 1);
 
 	VK_CHECK(vkd.endCommandBuffer(*cmdBuffer2));
 
@@ -828,6 +828,8 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 		VK_FORMAT_R64G64B64A64_SFLOAT,
 		VK_FORMAT_B10G11R11_UFLOAT_PACK32,
 		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
+		VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
+		VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
 	};
 
 	{

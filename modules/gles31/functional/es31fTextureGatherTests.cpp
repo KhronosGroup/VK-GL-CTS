@@ -85,7 +85,8 @@ static std::string specializeShader(Context& context, const char* code)
 
 	specializationMap["GLSL_VERSION_DECL"] = glu::getGLSLVersionDeclaration(glslVersion);
 
-	if (glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+		glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::core(4, 5)))
 		specializationMap["GPU_SHADER5_REQUIRE"] = "";
 	else
 		specializationMap["GPU_SHADER5_REQUIRE"] = "#extension GL_EXT_gpu_shader5 : require";
@@ -1249,14 +1250,15 @@ glu::ProgramSources TextureGatherCase::genProgramSources (GatherType					gatherT
 
 void TextureGatherCase::init (void)
 {
-	TestLog&					log				= m_testCtx.getLog();
-	const glu::RenderContext&	renderCtx		= m_context.getRenderContext();
-	const glw::Functions&		gl				= renderCtx.getFunctions();
-	const deUint32				texTypeGL		= getGLTextureType(m_textureType);
-	const bool					supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	TestLog&					log					= m_testCtx.getLog();
+	const glu::RenderContext&	renderCtx			= m_context.getRenderContext();
+	const glw::Functions&		gl					= renderCtx.getFunctions();
+	const deUint32				texTypeGL			= getGLTextureType(m_textureType);
+	const bool					supportsES32orGL45	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+													  glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
 
 	// Check prerequisites.
-	if (requireGpuShader5(m_gatherType) && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_gpu_shader5"))
+	if (requireGpuShader5(m_gatherType) && !supportsES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_gpu_shader5"))
 		throw tcu::NotSupportedError("GL_EXT_gpu_shader5 required");
 
 	// Log and check implementation offset limits, if appropriate.
@@ -1268,6 +1270,9 @@ void TextureGatherCase::init (void)
 		TCU_CHECK_MSG(offsetRange[0] <= SPEC_MAX_MIN_OFFSET, ("GL_MIN_PROGRAM_TEXTURE_GATHER_OFFSET must be at most " + de::toString((int)SPEC_MAX_MIN_OFFSET)).c_str());
 		TCU_CHECK_MSG(offsetRange[1] >= SPEC_MIN_MAX_OFFSET, ("GL_MAX_PROGRAM_TEXTURE_GATHER_OFFSET must be at least " + de::toString((int)SPEC_MIN_MAX_OFFSET)).c_str());
 	}
+
+	if (!isContextTypeES(m_context.getRenderContext().getType()))
+		gl.enable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
 	// Create rbo and fbo.
 
@@ -1345,6 +1350,9 @@ void TextureGatherCase::init (void)
 
 void TextureGatherCase::deinit (void)
 {
+	if (!isContextTypeES(m_context.getRenderContext().getType()))
+		m_context.getRenderContext().getFunctions().disable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
 	m_program		= MovePtr<ShaderProgram>(DE_NULL);
 	m_fbo			= MovePtr<glu::Framebuffer>(DE_NULL);
 	m_colorBuffer	= MovePtr<glu::Renderbuffer>(DE_NULL);

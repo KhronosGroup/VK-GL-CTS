@@ -98,50 +98,12 @@ inline VkMemoryRequirements makeMemoryRequirements (VkDeviceSize size, VkDeviceS
 	return res;
 }
 
-inline VkSparseMemoryBind makeSparseMemoryBind (VkDeviceSize resourceOffset, VkDeviceSize size, VkDeviceMemory memory, VkDeviceSize memoryOffset, VkSparseMemoryBindFlags flags)
-{
-	VkSparseMemoryBind res;
-	res.resourceOffset	= resourceOffset;
-	res.size			= size;
-	res.memory			= memory;
-	res.memoryOffset	= memoryOffset;
-	res.flags			= flags;
-	return res;
-}
-
-inline VkSparseBufferMemoryBindInfo makeSparseBufferMemoryBindInfo (VkBuffer buffer, deUint32 bindCount, const VkSparseMemoryBind* pBinds)
-{
-	VkSparseBufferMemoryBindInfo res;
-	res.buffer		= buffer;
-	res.bindCount	= bindCount;
-	res.pBinds		= pBinds;
-	return res;
-}
-
-inline VkSparseImageOpaqueMemoryBindInfo makeSparseImageOpaqueMemoryBindInfo (VkImage image, deUint32 bindCount, const VkSparseMemoryBind* pBinds)
-{
-	VkSparseImageOpaqueMemoryBindInfo res;
-	res.image		= image;
-	res.bindCount	= bindCount;
-	res.pBinds		= pBinds;
-	return res;
-}
-
 inline VkImageSubresource makeImageSubresource (VkImageAspectFlags aspectMask, deUint32 mipLevel, deUint32 arrayLayer)
 {
 	VkImageSubresource res;
 	res.aspectMask	= aspectMask;
 	res.mipLevel	= mipLevel;
 	res.arrayLayer	= arrayLayer;
-	return res;
-}
-
-inline VkSparseImageMemoryBindInfo makeSparseImageMemoryBindInfo (VkImage image, deUint32 bindCount, const VkSparseImageMemoryBind* pBinds)
-{
-	VkSparseImageMemoryBindInfo res;
-	res.image		= image;
-	res.bindCount	= bindCount;
-	res.pBinds		= pBinds;
 	return res;
 }
 

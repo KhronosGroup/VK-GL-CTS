@@ -2,6 +2,7 @@
  * be lost! Modify the generating script instead.
  */
 VkPhysicalDeviceScalarBlockLayoutFeatures			deviceScalarBlockLayoutFeatures[count];
+VkPhysicalDevicePerformanceQueryFeaturesKHR			devicePerformanceQueryFeaturesKHR[count];
 VkPhysicalDevice16BitStorageFeatures				device16BitStorageFeatures[count];
 VkPhysicalDeviceMultiviewFeatures					deviceMultiviewFeatures[count];
 VkPhysicalDeviceProtectedMemoryFeatures				deviceProtectedMemoryFeatures[count];
@@ -15,6 +16,7 @@ VkPhysicalDeviceDescriptorIndexingFeatures			deviceDescriptorIndexingFeatures[co
 VkPhysicalDeviceTimelineSemaphoreFeatures			deviceTimelineSemaphoreFeatures[count];
 
 const bool isScalarBlockLayoutFeatures			=																	   context.contextSupports(vk::ApiVersion(1, 2, 0));
+const bool isPerformanceQueryFeaturesKHR		= checkExtension(properties, "VK_KHR_performance_query");
 const bool is16BitStorageFeatures				=																	   context.contextSupports(vk::ApiVersion(1, 1, 0));
 const bool isMultiviewFeatures					=																	   context.contextSupports(vk::ApiVersion(1, 1, 0));
 const bool isProtectedMemoryFeatures			=																	   context.contextSupports(vk::ApiVersion(1, 1, 0));
@@ -30,6 +32,7 @@ const bool isTimelineSemaphoreFeatures			=																	   context.contextSup
 for (int ndx = 0; ndx < count; ++ndx)
 {
 	deMemset(&deviceScalarBlockLayoutFeatures[ndx],			0xFF * ndx, sizeof(VkPhysicalDeviceScalarBlockLayoutFeatures));
+	deMemset(&devicePerformanceQueryFeaturesKHR[ndx],		0xFF * ndx, sizeof(VkPhysicalDevicePerformanceQueryFeaturesKHR));
 	deMemset(&device16BitStorageFeatures[ndx],				0xFF * ndx, sizeof(VkPhysicalDevice16BitStorageFeatures));
 	deMemset(&deviceMultiviewFeatures[ndx],					0xFF * ndx, sizeof(VkPhysicalDeviceMultiviewFeatures));
 	deMemset(&deviceProtectedMemoryFeatures[ndx],			0xFF * ndx, sizeof(VkPhysicalDeviceProtectedMemoryFeatures));
@@ -43,7 +46,10 @@ for (int ndx = 0; ndx < count; ++ndx)
 	deMemset(&deviceTimelineSemaphoreFeatures[ndx],			0xFF * ndx, sizeof(VkPhysicalDeviceTimelineSemaphoreFeatures));
 
 	deviceScalarBlockLayoutFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES;
-	deviceScalarBlockLayoutFeatures[ndx].pNext = &device16BitStorageFeatures[ndx];
+	deviceScalarBlockLayoutFeatures[ndx].pNext = &devicePerformanceQueryFeaturesKHR[ndx];
+
+	devicePerformanceQueryFeaturesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_FEATURES_KHR;
+	devicePerformanceQueryFeaturesKHR[ndx].pNext = &device16BitStorageFeatures[ndx];
 
 	device16BitStorageFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
 	device16BitStorageFeatures[ndx].pNext = &deviceMultiviewFeatures[ndx];
@@ -86,6 +92,8 @@ for (int ndx = 0; ndx < count; ++ndx)
 
 if (isScalarBlockLayoutFeatures)
 	log << TestLog::Message << deviceScalarBlockLayoutFeatures[0] << TestLog::EndMessage;
+if (isPerformanceQueryFeaturesKHR)
+	log << TestLog::Message << devicePerformanceQueryFeaturesKHR[0] << TestLog::EndMessage;
 if (is16BitStorageFeatures)
 	log << TestLog::Message << device16BitStorageFeatures[0] << TestLog::EndMessage;
 if (isMultiviewFeatures)
@@ -113,6 +121,12 @@ if (isScalarBlockLayoutFeatures &&
 	(deviceScalarBlockLayoutFeatures[0].scalarBlockLayout != deviceScalarBlockLayoutFeatures[1].scalarBlockLayout))
 {
 		TCU_FAIL("Mismatch between VkPhysicalDeviceScalarBlockLayoutFeatures");
+}
+if (isPerformanceQueryFeaturesKHR &&
+	(devicePerformanceQueryFeaturesKHR[0].performanceCounterQueryPools != devicePerformanceQueryFeaturesKHR[1].performanceCounterQueryPools ||
+	 devicePerformanceQueryFeaturesKHR[0].performanceCounterMultipleQueryPools != devicePerformanceQueryFeaturesKHR[1].performanceCounterMultipleQueryPools))
+{
+		TCU_FAIL("Mismatch between VkPhysicalDevicePerformanceQueryFeaturesKHR");
 }
 if (is16BitStorageFeatures &&
 	(device16BitStorageFeatures[0].storageBuffer16BitAccess != device16BitStorageFeatures[1].storageBuffer16BitAccess ||

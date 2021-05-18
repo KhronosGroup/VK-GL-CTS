@@ -244,6 +244,13 @@ void InputAssemblyTest::checkSupport (Context& context) const
 		default:
 			break;
 	}
+
+	if (m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
+		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!context.getPortabilitySubsetFeatures().triangleFans)
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
+	}
 }
 
 TestInstance* InputAssemblyTest::createInstance (Context& context) const

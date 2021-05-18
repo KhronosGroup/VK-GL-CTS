@@ -2407,6 +2407,16 @@ void TransferTestInstance::configCommandBuffer (void)
 	vk.cmdClearColorImage(*m_cmdBuffer, *m_srcImage, VK_IMAGE_LAYOUT_GENERAL, &srcClearValue, 1u, &subRangeColor);
 	vk.cmdClearColorImage(*m_cmdBuffer, *m_dstImage, VK_IMAGE_LAYOUT_GENERAL, &dstClearValue, 1u, &subRangeColor);
 
+	// synchronize the Clear commands before starting any copy
+	const vk::VkMemoryBarrier barrier =
+	{
+		vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER,							// VkStructureType	sType;
+		DE_NULL,														// const void*		pNext;
+		vk::VK_ACCESS_TRANSFER_WRITE_BIT,								// VkAccessFlags	srcAccessMask;
+		vk::VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT, // VkAccessFlags	dstAccessMask;
+	};
+	vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 1u, &barrier, 0u, DE_NULL, 0u, DE_NULL);
+
 	if (!m_hostQueryReset)
 		vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 
@@ -2427,21 +2437,6 @@ void TransferTestInstance::configCommandBuffer (void)
 	{
 		case TRANSFER_METHOD_COPY_BUFFER:
 			{
-				const vk::VkBufferMemoryBarrier bufferBarrier =
-					{
-						vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
-						DE_NULL,										// const void*		pNext;
-						vk::VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
-						vk::VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	dstAccessMask;
-						VK_QUEUE_FAMILY_IGNORED,						// deUint32			srcQueueFamilyIndex;
-						VK_QUEUE_FAMILY_IGNORED,						// deUint32			dstQueueFamilyIndex;
-						*m_dstBuffer,									// VkBuffer			buffer;
-						0ull,											// VkDeviceSize		offset;
-						VK_WHOLE_SIZE									// VkDeviceSize		size;
-					};
-
-				vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
-
 				const VkBufferCopy  copyBufRegion =
 					{
 						0u,			// VkDeviceSize    srcOffset;
@@ -2586,6 +2581,7 @@ void TransferTestInstance::configCommandBuffer (void)
 
 				initialImageTransition(*m_cmdBuffer, *m_msImage, subRangeColor, VK_IMAGE_LAYOUT_GENERAL);
 				vk.cmdClearColorImage(*m_cmdBuffer, *m_msImage, VK_IMAGE_LAYOUT_GENERAL, &srcClearValue, 1u, &subRangeColor);
+				vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 1u, &barrier, 0u, DE_NULL, 0u, DE_NULL);
 				vk.cmdResolveImage(*m_cmdBuffer, *m_msImage, VK_IMAGE_LAYOUT_GENERAL, *m_dstImage, VK_IMAGE_LAYOUT_GENERAL, 1u, &imageResolve);
 				break;
 			}

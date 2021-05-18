@@ -94,15 +94,15 @@ deUint32 chooseQueueFamilyIndex (const InstanceInterface& vki, VkPhysicalDevice 
 	return 0;
 }
 
-Move<VkDevice> createDevice (const vk::Platform&		platform,
-							 const PlatformInterface&		vkp,
-							 const VkInstance				instance,
-							 const InstanceInterface&		vki,
-							 VkPhysicalDevice				physicalDevice,
-							 const Extensions&				supportedExtensions,
-							 const deUint32					queueFamilyIndex,
-							 bool							validationEnabled,
-							 const VkAllocationCallbacks*	pAllocator = DE_NULL)
+Move<VkDevice> createTestDevice (const vk::Platform&			platform,
+								 const PlatformInterface&		vkp,
+								 const VkInstance				instance,
+								 const InstanceInterface&		vki,
+								 VkPhysicalDevice				physicalDevice,
+								 const Extensions&				supportedExtensions,
+								 const deUint32					queueFamilyIndex,
+								 bool							validationEnabled,
+								 const VkAllocationCallbacks*	pAllocator = DE_NULL)
 {
 	const float queuePriorities[] = { 1.0f };
 	bool displayAvailable = true;
@@ -715,7 +715,7 @@ SwapchainCounterTestInstance::SwapchainCounterTestInstance (Context& context)
 
 	, m_queueFamilyIndex		(chooseQueueFamilyIndex(m_vki, m_physicalDevice, m_surface))
 	, m_deviceExtensions		(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device					(createDevice(context.getTestContext().getPlatform().getVulkanPlatform(), m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, context.getTestContext().getCommandLine().isValidationEnabled()))
+	, m_device					(createTestDevice(context.getTestContext().getPlatform().getVulkanPlatform(), m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, context.getTestContext().getCommandLine().isValidationEnabled()))
 	, m_vkd						(m_vkp, m_instance, *m_device)
 	, m_queue					(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 
@@ -1024,7 +1024,7 @@ tcu::TestStatus testDisplayPowerControl(Context& context)
 
 			VkResult result = vkd.displayPowerControlEXT(device, display, &displayPowerInfo);
 			if (result != VK_SUCCESS)
-				tcu::TestStatus::fail(std::string("vkDisplayPowerControlEXT returned invalid result for ") + de::toString(psd.state));
+				return tcu::TestStatus::fail(std::string("vkDisplayPowerControlEXT returned invalid result for ") + de::toString(psd.state));
 
 			deSleep(psd.waitMs);
 		}
@@ -1060,7 +1060,7 @@ tcu::TestStatus testDisplayEvent(Context& context)
 		VkDisplayKHR&	display		= availableDisplays[i];
 		VkResult		result		= vkd.registerDisplayEventEXT(device, display, &displayEventInfo, DE_NULL, &fence);
 		if (result != VK_SUCCESS)
-			tcu::TestStatus::fail(std::string("vkRegisterDisplayEventEXT returned invalid result"));
+			return tcu::TestStatus::fail(std::string("vkRegisterDisplayEventEXT returned invalid result"));
 	}
 
 	// deinit fence
@@ -1087,7 +1087,7 @@ tcu::TestStatus testDeviceEvent(Context& context)
 
 	VkResult result = vkd.registerDeviceEventEXT(device, &deviceEventInfo, DE_NULL, &fences[0]);
 	if (result != VK_SUCCESS)
-		tcu::TestStatus::fail(std::string("vkRegisterDeviceEventEXT returned invalid result"));
+		return tcu::TestStatus::fail(std::string("vkRegisterDeviceEventEXT returned invalid result"));
 
 	// deinit fence
 	deinitFences(vkd, device, fences);

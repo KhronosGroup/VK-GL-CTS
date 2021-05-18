@@ -59,6 +59,7 @@ enum class CaseType
 {
 	KILL,
 	DEMOTE,
+	TERMINATE_INVOCATION,
 	SAMPLE_MASK_BEFORE,
 	SAMPLE_MASK_AFTER,
 	ALPHA_COVERAGE_BEFORE,
@@ -166,6 +167,10 @@ void FragSideEffectsTestCase::checkSupport (Context& context) const
 	{
 		context.requireDeviceFunctionality("VK_EXT_shader_demote_to_helper_invocation");
 	}
+	else if (m_params.caseType == CaseType::TERMINATE_INVOCATION)
+	{
+		context.requireDeviceFunctionality("VK_KHR_shader_terminate_invocation");
+	}
 
 	const auto colorFormatProperties = vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, kColorFormat);
 	if ((colorFormatProperties.optimalTilingFeatures & kNeededColorFeatures) != kNeededColorFeatures)
@@ -218,6 +223,10 @@ void FragSideEffectsTestCase::initPrograms (vk::SourceCollections& programCollec
 	case CaseType::DEMOTE:
 		headers	<< "#extension GL_EXT_demote_to_helper_invocation : enable\n";
 		after	<< "    demote;\n";
+		break;
+	case CaseType::TERMINATE_INVOCATION:
+		headers	<< "#extension GL_EXT_terminate_invocation : enable\n";
+		after	<< "    terminateInvocation;\n";
 		break;
 	case CaseType::SAMPLE_MASK_BEFORE:
 		before	<< "    gl_SampleMask[0] = 0;\n";
@@ -695,6 +704,10 @@ tcu::TestCaseGroup* createFragSideEffectsTests (tcu::TestContext& testCtx)
 		{
 			TestParams params(CaseType::DEMOTE, kDefaultClearColor, kDefaultDrawColor, colorAtEnd, kDefaultDepthBoundsParams);
 			colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "demote", "OpDemoteToHelperInvocation after SSBO write", params));
+		}
+		{
+			TestParams params(CaseType::TERMINATE_INVOCATION, kDefaultClearColor, kDefaultDrawColor, colorAtEnd, kDefaultDepthBoundsParams);
+			colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "terminate_invocation", "OpTerminateInvocation after SSBO write", params));
 		}
 		{
 			TestParams params(CaseType::SAMPLE_MASK_BEFORE, kDefaultClearColor, kDefaultDrawColor, colorAtEnd, kDefaultDepthBoundsParams);

@@ -70,7 +70,8 @@ public:
 
 	IterateResult iterate (void)
 	{
-		TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(m_context.getRenderContext().getType(), m_minimumVersion), "This test requires a higher context version.");
+		if (!contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)))
+			TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(m_context.getRenderContext().getType(), m_minimumVersion), "This test requires a higher context version.");
 
 		tcu::ResultCollector result(m_testCtx.getLog(), " // ERROR: ");
 		enableLogging(true);

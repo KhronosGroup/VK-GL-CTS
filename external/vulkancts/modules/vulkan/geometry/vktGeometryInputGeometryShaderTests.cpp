@@ -143,6 +143,13 @@ GeometryExpanderRenderTest::GeometryExpanderRenderTest (TestContext& testCtx, co
 void GeometryExpanderRenderTest::checkSupport (Context& context) const
 {
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
+	if (m_primitiveType == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
+		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!context.getPortabilitySubsetFeatures().triangleFans)
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
+	}
 }
 
 void GeometryExpanderRenderTest::initPrograms (SourceCollections& sourceCollections) const

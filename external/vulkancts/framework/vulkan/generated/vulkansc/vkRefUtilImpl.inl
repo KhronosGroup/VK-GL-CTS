@@ -264,6 +264,13 @@ Move<VkSwapchainKHR> createSharedSwapchainsKHR (const DeviceInterface& vk, VkDev
 	return Move<VkSwapchainKHR>(check<VkSwapchainKHR>(object), Deleter<VkSwapchainKHR>(vk, device, pAllocator));
 }
 
+Move<VkDebugUtilsMessengerEXT> createDebugUtilsMessengerEXT (const InstanceInterface& vk, VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkDebugUtilsMessengerEXT object = 0;
+	VK_CHECK(vk.createDebugUtilsMessengerEXT(instance, pCreateInfo, pAllocator, &object));
+	return Move<VkDebugUtilsMessengerEXT>(check<VkDebugUtilsMessengerEXT>(object), Deleter<VkDebugUtilsMessengerEXT>(vk, instance, pAllocator));
+}
+
 Move<VkSurfaceKHR> createHeadlessSurfaceEXT (const InstanceInterface& vk, VkInstance instance, const VkHeadlessSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)
 {
 	VkSurfaceKHR object = 0;

@@ -51,6 +51,7 @@ void createTypeSpecificTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiTy
 	addTestGroup(testGroup, "display_timing",			"Display Timing Tests",						createDisplayTimingTests,			wsiType);
 	addTestGroup(testGroup, "shared_presentable_image",	"VK_KHR_shared_presentable_image tests",	createSharedPresentableImageTests,	wsiType);
 	addTestGroup(testGroup, "colorspace",				"ColorSpace tests",							createColorSpaceTests,				wsiType);
+	addTestGroup(testGroup, "colorspace_compare",		"ColorSpace compare tests",					createColorspaceCompareTests,		wsiType);
 	addTestGroup(testGroup, "full_screen_exclusive",	"VK_EXT_full_screen_exclusive tests",		createFullScreenExclusiveTests,		wsiType);
 }
 

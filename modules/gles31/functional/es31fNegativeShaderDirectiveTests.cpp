@@ -203,7 +203,9 @@ void blend_equation_advanced (NegativeTestContext& ctx)
 
 void sample_variables (NegativeTestContext& ctx)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType() , glu::ApiType::es(3, 2)), "Test requires a context version 3.2 or higher.");
+	TCU_CHECK_AND_THROW(NotSupportedError,
+		contextSupports(ctx.getRenderContext().getType() , glu::ApiType::es(3, 2)) || contextSupports(ctx.getRenderContext().getType() , glu::ApiType::core(4, 5)),
+		"Test requires a context version 3.2 or higher.");
 
 	static const char* const s_tests[] =
 	{

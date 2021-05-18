@@ -1175,13 +1175,28 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 			vk, device, allocator, makeBufferCreateInfo(bufferSizes[2], VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible));
 	}
 
+	VkFormat imageFormat;
+	switch (m_data.dataType)
+	{
+	case DATA_TYPE_UINT:
+	case DATA_TYPE_UINT64:
+		imageFormat = VK_FORMAT_R32_UINT;
+		break;
+	case DATA_TYPE_FLOAT32:
+	case DATA_TYPE_FLOAT64:
+		imageFormat = VK_FORMAT_R32_SFLOAT;
+		break;
+	default:
+		TCU_FAIL("Invalid data type.");
+	}
+
 	const VkImageCreateInfo			imageCreateInfo			=
 	{
-		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType		  sType;
-		DE_NULL,								// const void*			  pNext;
-		(VkImageCreateFlags)0u,					// VkImageCreateFlags	   flags;
-		VK_IMAGE_TYPE_2D,						// VkImageType			  imageType;
-		VK_FORMAT_R32_UINT,						// VkFormat				 format;
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType		sType;
+		DE_NULL,								// const void*			pNext;
+		(VkImageCreateFlags)0u,					// VkImageCreateFlags	flags;
+		VK_IMAGE_TYPE_2D,						// VkImageType			imageType;
+		imageFormat,							// VkFormat				format;
 		{
 			DIM*NUM_WORKGROUP_EACH_DIM,	// deUint32	width;
 			DIM*NUM_WORKGROUP_EACH_DIM,	// deUint32	height;
@@ -1206,7 +1221,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 		(VkImageViewCreateFlags)0u,					// VkImageViewCreateFlags	 flags;
 		DE_NULL,									// VkImage					image;
 		VK_IMAGE_VIEW_TYPE_2D,						// VkImageViewType			viewType;
-		VK_FORMAT_R32_UINT,										// VkFormat				   format;
+		imageFormat,								// VkFormat					format;
 		{
 			VK_COMPONENT_SWIZZLE_R,	// VkComponentSwizzle	r;
 			VK_COMPONENT_SWIZZLE_G,	// VkComponentSwizzle	g;

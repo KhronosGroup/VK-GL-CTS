@@ -59,9 +59,12 @@ using de::MovePtr;
 
 struct TestParams
 {
-	VkBool32	depthClampEnable;
 	float		minDepth;
 	float		maxDepth;
+	VkBool32	depthClampEnable;
+	VkBool32	depthBiasEnable;
+	float		depthBiasClamp;
+
 };
 
 constexpr deUint32			kImageDim		= 256u;
@@ -75,6 +78,10 @@ constexpr float				kDepthThreshold	= 0.0025f;	// Used when checking depth buffer
 constexpr float				kMargin			= 0.2f;		// Space between triangle and image border. See kVertices.
 constexpr float				kDiagonalMargin	= 0.00125f; // Makes sure the image diagonal falls inside the triangle. See kVertices.
 const Vec4					kVertexColor	(0.0f, 0.5f, 0.5f, 1.0f); // Note: the first component will vary.
+
+// Maximum depth slope is constant for triangle and the value here is true only for triangle used it this tests.
+constexpr float				kMaxDepthSlope = 1.4f / 205;
+
 const std::array<Vec4, 3u>	kVertices		=
 {{
 	Vec4(-1.0f + kMargin,                   -1.0f + kMargin,                    -0.2f, 1.0f),	//  0-----2
@@ -272,16 +279,16 @@ InvertedDepthRangesTestInstance::InvertedDepthRangesTestInstance (Context& conte
 	pipelineCreateInfo.addState (PipelineCreateInfo::ViewportState		(1, std::vector<VkViewport>(), std::vector<VkRect2D>(1, scissor)));
 	pipelineCreateInfo.addState (PipelineCreateInfo::DepthStencilState	(true, true));
 	pipelineCreateInfo.addState (PipelineCreateInfo::RasterizerState	(
-		m_params.depthClampEnable,	// depthClampEnable
-		VK_FALSE,					// rasterizerDiscardEnable
-		VK_POLYGON_MODE_FILL,		// polygonMode
-		VK_CULL_MODE_NONE,			// cullMode
-		VK_FRONT_FACE_CLOCKWISE,	// frontFace
-		VK_FALSE,					// depthBiasEnable
-		0.0f,						// depthBiasConstantFactor
-		0.0f,						// depthBiasClamp
-		0.0f,						// depthBiasSlopeFactor
-		1.0f));						// lineWidth
+		m_params.depthClampEnable,										// depthClampEnable
+		VK_FALSE,														// rasterizerDiscardEnable
+		VK_POLYGON_MODE_FILL,											// polygonMode
+		VK_CULL_MODE_NONE,												// cullMode
+		VK_FRONT_FACE_CLOCKWISE,										// frontFace
+		m_params.depthBiasEnable,										// depthBiasEnable
+		0.0f,															// depthBiasConstantFactor
+		m_params.depthBiasEnable ? m_params.depthBiasClamp : 0.0f,		// depthBiasClamp
+		m_params.depthBiasEnable ? 1.0f : 0.0f,							// depthBiasSlopeFactor
+		1.0f));															// lineWidth
 	pipelineCreateInfo.addState (PipelineCreateInfo::MultiSampleState	());
 	pipelineCreateInfo.addState (PipelineCreateInfo::DynamicState		(dynamicStates));
 
@@ -385,6 +392,7 @@ MovePtr<tcu::TextureLevel> InvertedDepthRangesTestInstance::generateReferenceIma
 	const float						clampMin		= de::min(m_params.minDepth, m_params.maxDepth);
 	const float						clampMax		= de::max(m_params.minDepth, m_params.maxDepth);
 	std::array<float, 3>			depthValues;
+	float							depthBias		= 0.0f;
 
 	// Depth value of each vertex in kVertices.
 	DE_ASSERT(depthValues.size() == kVertices.size());
@@ -396,6 +404,25 @@ MovePtr<tcu::TextureLevel> InvertedDepthRangesTestInstance::generateReferenceIma
 	{
 		tcu::clearDepth(access, kClearDepth);
 		tcu::clearStencil(access, kClearStencil);
+
+		if (m_params.depthBiasEnable)
+		{
+			const float	depthBiasSlopeFactor	= 1.0f;
+			const float	r						= 0.000030518f;		// minimum resolvable difference is an implementation-dependent parameter
+			const float	depthBiasConstantFactor	= 0.0f;				// so we use factor 0.0 to not include it; same as in PipelineCreateInfo
+
+			// Equations taken from vkCmdSetDepthBias manual page
+			depthBias = kMaxDepthSlope * depthBiasSlopeFactor + r * depthBiasConstantFactor;
+
+			// dbclamp(x) function depends on the sign of the depthBiasClamp
+			if (m_params.depthBiasClamp < 0.0f)
+				depthBias = de::max(depthBias, m_params.depthBiasClamp);
+			else if (m_params.depthBiasClamp > 0.0f)
+				depthBias = de::min(depthBias, m_params.depthBiasClamp);
+
+			if (m_params.maxDepth < m_params.minDepth)
+				depthBias *= -1.0f;
+		}
 	}
 
 	for (int y = 0; y < iHeight; ++y)
@@ -417,11 +444,12 @@ MovePtr<tcu::TextureLevel> InvertedDepthRangesTestInstance::generateReferenceIma
 		const float b				= (ycoord - p1f) / triangleSide;
 		const float c				= (xcoord - p1f) / triangleSide;
 		const float a				= 1.0f - b - c;
-		const float	depth			= a * depthValues[0] + b * depthValues[1] + c * depthValues[2];
+		const float depth			= a * depthValues[0] + b * depthValues[1] + c * depthValues[2];
 
-		const float	depthClamped	= de::clamp(depth, 0.0f, 1.0f);
-		const float	depthFinal		= depthClamped * m_params.maxDepth + (1.0f - depthClamped) * m_params.minDepth;
-		const float	storedDepth		= (m_params.depthClampEnable ? de::clamp(depthFinal, clampMin, clampMax) : depthFinal);
+		// Depth values are always limited to the range [0,1] by clamping after depth bias addition is performed
+		const float depthClamped	= de::clamp(depth + depthBias, 0.0f, 1.0f);
+		const float depthFinal		= depthClamped * m_params.maxDepth + (1.0f - depthClamped) * m_params.minDepth;
+		const float storedDepth		= (m_params.depthClampEnable ? de::clamp(depthFinal, clampMin, clampMax) : depthFinal);
 
 		if (m_params.depthClampEnable || de::inRange(depth, -kDepthEpsilon, 1.0f + kDepthEpsilon))
 		{
@@ -587,8 +615,8 @@ void populateTestGroup (tcu::TestCaseGroup* testGroup)
 {
 	const struct
 	{
-		const char* const	name;
-		VkBool32			depthClamp;
+		std::string		name;
+		VkBool32		depthClamp;
 	} depthClamp[] =
 	{
 		{ "depthclamp",		VK_TRUE		},
@@ -597,35 +625,44 @@ void populateTestGroup (tcu::TestCaseGroup* testGroup)
 
 	const struct
 	{
-		const char* const	name;
-		float				delta;
-	} delta[] =
+		std::string		name;
+		float			delta;
+		VkBool32		depthBiasEnable;
+		float			depthBiasClamp;
+	} depthParams[] =
 	{
-		{ "deltazero",					0.0f	},
-		{ "deltasmall",					0.3f	},
-		{ "deltaone",					1.0f	},
+		{ "deltazero",					0.0f,		DE_FALSE,	 0.0f },
+		{ "deltasmall",					0.3f,		DE_FALSE,	 0.0f },
+		{ "deltaone",					1.0f,		DE_FALSE,	 0.0f },
+
+		// depthBiasClamp must be smaller then maximum depth slope to make a difference
+		{ "deltaone_bias_clamp_neg",	1.0f,		DE_TRUE,	-0.003f },
+		{ "deltasmall_bias_clamp_pos",	0.3f,		DE_TRUE,	 0.003f },
 
 		// Range > 1.0 requires VK_EXT_depth_range_unrestricted extension
-		{ "depth_range_unrestricted",	2.7f	},
+		{ "depth_range_unrestricted",	2.7f,		DE_FALSE,	 0.0f },
 	};
 
 	for (int ndxDepthClamp = 0; ndxDepthClamp < DE_LENGTH_OF_ARRAY(depthClamp); ++ndxDepthClamp)
-	for (int ndxDelta = 0; ndxDelta < DE_LENGTH_OF_ARRAY(delta); ++ndxDelta)
+	for (int ndxParams = 0; ndxParams < DE_LENGTH_OF_ARRAY(depthParams); ++ndxParams)
 	{
-		const float minDepth = 0.5f + delta[ndxDelta].delta / 2.0f;
-		const float maxDepth = minDepth - delta[ndxDelta].delta;
+		const auto& cDepthClamp		= depthClamp[ndxDepthClamp];
+		const auto& cDepthParams	= depthParams[ndxParams];
+		const float minDepth		= 0.5f + cDepthParams.delta / 2.0f;
+		const float maxDepth		 = minDepth - cDepthParams.delta;
 		DE_ASSERT(minDepth >= maxDepth);
 
 		const TestParams params =
 		{
-			depthClamp[ndxDepthClamp].depthClamp,
 			minDepth,
-			maxDepth
+			maxDepth,
+			cDepthClamp.depthClamp,
+			cDepthParams.depthBiasEnable,
+			cDepthParams.depthBiasClamp,
 		};
-		std::ostringstream	name;
-		name << depthClamp[ndxDepthClamp].name << "_" << delta[ndxDelta].name;
 
-		testGroup->addChild(new InvertedDepthRangesTest(testGroup->getTestContext(), name.str(), "", params));
+		std::string name = cDepthClamp.name + "_" + cDepthParams.name;
+		testGroup->addChild(new InvertedDepthRangesTest(testGroup->getTestContext(), name, "", params));
 	}
 }
 

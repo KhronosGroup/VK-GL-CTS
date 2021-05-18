@@ -9,13 +9,13 @@ const vk::VkPhysicalDeviceDescriptorIndexingProperties&				Context::getDescripto
 const vk::VkPhysicalDeviceDiscardRectanglePropertiesEXT&			Context::getDiscardRectanglePropertiesEXT			(void) const { return m_device->getDiscardRectanglePropertiesEXT();				}
 const vk::VkPhysicalDeviceDriverProperties&							Context::getDriverProperties						(void) const { return m_device->getDriverProperties();							}
 const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			Context::getExternalMemoryHostPropertiesEXT			(void) const { return m_device->getExternalMemoryHostPropertiesEXT();			}
-const vk::VkPhysicalDeviceFaultHandlingProperties&					Context::getFaultHandlingProperties					(void) const { return m_device->getFaultHandlingProperties();					}
 const vk::VkPhysicalDeviceFloatControlsProperties&					Context::getFloatControlsProperties					(void) const { return m_device->getFloatControlsProperties();					}
 const vk::VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			Context::getFragmentShadingRateProperties			(void) const { return m_device->getFragmentShadingRateProperties();				}
 const vk::VkPhysicalDeviceIDProperties&								Context::getIDProperties							(void) const { return m_device->getIDProperties();								}
 const vk::VkPhysicalDeviceLineRasterizationPropertiesEXT&			Context::getLineRasterizationPropertiesEXT			(void) const { return m_device->getLineRasterizationPropertiesEXT();			}
 const vk::VkPhysicalDeviceMaintenance3Properties&					Context::getMaintenance3Properties					(void) const { return m_device->getMaintenance3Properties();					}
 const vk::VkPhysicalDeviceMultiviewProperties&						Context::getMultiviewProperties						(void) const { return m_device->getMultiviewProperties();						}
+const vk::VkPhysicalDevicePerformanceQueryPropertiesKHR&			Context::getPerformanceQueryProperties				(void) const { return m_device->getPerformanceQueryProperties();				}
 const vk::VkPhysicalDevicePointClippingProperties&					Context::getPointClippingProperties					(void) const { return m_device->getPointClippingProperties();					}
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				Context::getProtectedMemoryProperties				(void) const { return m_device->getProtectedMemoryProperties();					}
 const vk::VkPhysicalDeviceRobustness2PropertiesEXT&					Context::getRobustness2PropertiesEXT				(void) const { return m_device->getRobustness2PropertiesEXT();					}

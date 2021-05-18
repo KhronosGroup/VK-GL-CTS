@@ -7979,7 +7979,7 @@ tcu::TestCaseGroup* createDecorationGroupTests(tcu::TestContext& testCtx)
 
 		"OpDecorate %group1 RelaxedPrecision\n"
 		"OpDecorate %group3 RelaxedPrecision\n"
-		"OpDecorate %group3 Invariant\n"
+		"OpDecorate %group3 Flat\n"
 		"OpDecorate %group3 Restrict\n"
 		"%group0 = OpDecorationGroup\n"
 		"%group1 = OpDecorationGroup\n"
@@ -9754,12 +9754,13 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 	// A barrier inside a function body.
 	fragments["pre_main"] =
 		"%Workgroup = OpConstant %i32 2\n"
-		"%WorkgroupAcquireRelease = OpConstant %i32 0x108\n";
+		"%Invocation = OpConstant %i32 4\n"
+		"%MemorySemanticsNone = OpConstant %i32 0\n";
 	fragments["testfun"] =
 		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
-		"OpControlBarrier %Workgroup %Workgroup %WorkgroupAcquireRelease\n"
+		"OpControlBarrier %Workgroup %Invocation %MemorySemanticsNone\n"
 		"OpReturnValue %param1\n"
 		"OpFunctionEnd\n";
 	addTessCtrlTest(testGroup.get(), "in_function", fragments);
@@ -9767,7 +9768,8 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 	// Common setup code for the following tests.
 	fragments["pre_main"] =
 		"%Workgroup = OpConstant %i32 2\n"
-		"%WorkgroupAcquireRelease = OpConstant %i32 0x108\n"
+		"%Invocation = OpConstant %i32 4\n"
+		"%MemorySemanticsNone = OpConstant %i32 0\n"
 		"%c_f32_5 = OpConstant %f32 5.\n";
 	const string setupPercentZero =	 // Begins %test_code function with code that sets %zero to 0u but cannot be optimized away.
 		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
@@ -9786,18 +9788,18 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 
 		"%case1 = OpLabel\n"
 		";This barrier should never be executed, but its presence makes test failure more likely when there's a bug.\n"
-		"OpControlBarrier %Workgroup %Workgroup %WorkgroupAcquireRelease\n"
+		"OpControlBarrier %Workgroup %Invocation %MemorySemanticsNone\n"
 		"%wrong_branch_alert1 = OpVectorInsertDynamic %v4f32 %param1 %c_f32_0_5 %c_i32_0\n"
 		"OpBranch %switch_exit\n"
 
 		"%switch_default = OpLabel\n"
 		"%wrong_branch_alert2 = OpVectorInsertDynamic %v4f32 %param1 %c_f32_0_5 %c_i32_0\n"
 		";This barrier should never be executed, but its presence makes test failure more likely when there's a bug.\n"
-		"OpControlBarrier %Workgroup %Workgroup %WorkgroupAcquireRelease\n"
+		"OpControlBarrier %Workgroup %Invocation %MemorySemanticsNone\n"
 		"OpBranch %switch_exit\n"
 
 		"%case0 = OpLabel\n"
-		"OpControlBarrier %Workgroup %Workgroup %WorkgroupAcquireRelease\n"
+		"OpControlBarrier %Workgroup %Invocation %MemorySemanticsNone\n"
 		"OpBranch %switch_exit\n"
 
 		"%switch_exit = OpLabel\n"
@@ -9815,12 +9817,12 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 
 		"%else = OpLabel\n"
 		";This barrier should never be executed, but its presence makes test failure more likely when there's a bug.\n"
-		"OpControlBarrier %Workgroup %Workgroup %WorkgroupAcquireRelease\n"
+		"OpControlBarrier %Workgroup %Invocation %MemorySemanticsNone\n"
 		"%wrong_branch_alert = OpVectorInsertDynamic %v4f32 %param1 %c_f32_0_5 %c_i32_0\n"
 		"OpBranch %exit\n"
 
 		"%then = OpLabel\n"
-		"OpControlBarrier %Workgroup %Workgroup %WorkgroupAcquireRelease\n"
+		"OpControlBarrier %Workgroup %Invocation %MemorySemanticsNone\n"
 		"OpBranch %exit\n"
 		"%exit = OpLabel\n"
 		"%ret = OpPhi %v4f32 %param1 %then %wrong_branch_alert %else\n"
@@ -9847,7 +9849,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 
 		"%exit = OpLabel\n"
 		"%val = OpPhi %f32 %val0 %else %val1 %then\n"
-		"OpControlBarrier %Workgroup %Workgroup %WorkgroupAcquireRelease\n"
+		"OpControlBarrier %Workgroup %Invocation %MemorySemanticsNone\n"
 		"%ret = OpVectorInsertDynamic %v4f32 %param1 %val %zero\n"
 		"OpReturnValue %ret\n"
 		"OpFunctionEnd\n";
@@ -9856,7 +9858,8 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 	// A barrier inside a loop.
 	fragments["pre_main"] =
 		"%Workgroup = OpConstant %i32 2\n"
-		"%WorkgroupAcquireRelease = OpConstant %i32 0x108\n"
+		"%Invocation = OpConstant %i32 4\n"
+		"%MemorySemanticsNone = OpConstant %i32 0\n"
 		"%c_f32_10 = OpConstant %f32 10.\n";
 	fragments["testfun"] =
 		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
@@ -9869,7 +9872,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 		"%loop = OpLabel\n"
 		"%count = OpPhi %i32 %c_i32_4 %entry %count__ %loop\n"
 		"%val1 = OpPhi %f32 %val0 %entry %val %loop\n"
-		"OpControlBarrier %Workgroup %Workgroup %WorkgroupAcquireRelease\n"
+		"OpControlBarrier %Workgroup %Invocation %MemorySemanticsNone\n"
 		"%fcount = OpConvertSToF %f32 %count\n"
 		"%val = OpFAdd %f32 %val1 %fcount\n"
 		"%count__ = OpISub %i32 %count %c_i32_1\n"
@@ -10829,6 +10832,11 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_32,		DATA_TYPE_FLOAT_16,			65504,								true,	0x7BFF,								"max",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_64,		DATA_TYPE_FLOAT_16,			65504,								true,	0x7BFF,								"max",	false));
 
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_64,		DATA_TYPE_FLOAT_32,			4294967296ll,						true,	0x4f800000,							"4294967296",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_64,		DATA_TYPE_FLOAT_64,			4294967296ll,						true,	0x41f0000000000000,					"4294967296",	false));
+
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_64,		DATA_TYPE_FLOAT_32,			0xffffff0000000000,					true,	0x5f7fffff,							"max",	false));
+
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_16,		DATA_TYPE_FLOAT_32,			1234,								true,	0x449a4000));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_16,		DATA_TYPE_FLOAT_64,			1234,								true,	0x4093480000000000));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_32,		DATA_TYPE_FLOAT_32,			1234,								true,	0x449a4000));
@@ -10869,14 +10877,16 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_64,		0xE4D2,								true,	-1234,								"m1234",	false));
 
 		// 0xF800 = 1111 1000 0000 0000 = 1 11110 0000000000 = -32768
+		// 0xFBFF = 1111 1011 1111 1111 = 1 11110 1111111111 = -65504
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_16,		0xF800,								true,	-32768,								"min",	false));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_32,		0xF800,								true,	-32768,								"min",	false));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_64,		0xF800,								true,	-32768,								"min",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_32,		0xFBFF,								true,	-65504,								"min",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_64,		0xFBFF,								true,	-65504,								"min",	false));
 
 		// 0x77FF = 0111 0111 1111 1111 = 0 11101 1111111111 = 32752
+		// 0x7BFF = 0111 1011 1111 1111 = 0 11110 1111111111 = 65504
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_16,		0x77FF,								true,	32752,								"max",	false));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_32,		0x77FF,								true,	32752,								"max",	false));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_64,		0x77FF,								true,	32752,								"max",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_32,		0x7BFF,								true,	65504,								"max",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_64,		0x7BFF,								true,	65504,								"max",	false));
 
 		// +0
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_16,		0x0000,								true,	0,									"p0",	false));
@@ -10919,15 +10929,32 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_FLOAT_16,			-1234,								true,	0xE4D2,								"m1234",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_16,			-1234,								true,	0xE4D2,								"m1234",	false));
 
+		// 0x7800 = 0111 1000 0000 0000 = 0 11110 0000000000 = 32768
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_FLOAT_16,			32768,								true,	0x7800,								"p32768",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_16,			32768,								true,	0x7800,								"p32768",	false));
+
 		// 0xF800 = 1111 1000 0000 0000 = 1 11110 0000000000 = -32768
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_FLOAT_16,			-32768,								true,	0xF800,								"m32768",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_16,			-32768,								true,	0xF800,								"m32768",	false));
+
+		// 0xFBFF = 1111 1000 0000 0000 = 1 11110 1111111111 = -65504
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_FLOAT_16,			-32768,								true,	0xF800,								"min",	false));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_FLOAT_16,			-32768,								true,	0xF800,								"min",	false));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_16,			-32768,								true,	0xF800,								"min",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_FLOAT_16,			-65504,								true,	0xFBFF,								"min",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_16,			-65504,								true,	0xFBFF,								"min",	false));
 
 		// 0x77FF = 0111 0111 1111 1111 = 0 11101 1111111111 = 32752
+		// 0x7BFF = 0111 1011 1111 1111 = 0 11110 1111111111 = 65504
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_FLOAT_16,			32752,								true,	0x77FF,								"max",	false));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_FLOAT_16,			32752,								true,	0x77FF,								"max",	false));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_16,			32752,								true,	0x77FF,								"max",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_FLOAT_16,			65504,								true,	0x7BFF,								"max",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_16,			65504,								true,	0x7BFF,								"max",	false));
+
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_32,			4294967296ll,						true,	0x4f800000,							"p4294967296",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_64,			4294967296ll,						true,	0x41f0000000000000,					"p4294967296",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_32,			-4294967296ll,						true,	0xcf800000,							"m4294967296",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_64,			-4294967296ll,						true,	0xc1f0000000000000,					"m4294967296",	false));
+
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_32,			0x7fffff8000000000,					true,	0x5effffff,							"max",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_32,			-0x7fffff8000000000,				true,	0xdeffffff,							"min",	false));
 
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_FLOAT_32,			-1234,								true,	0xc49a4000));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_FLOAT_64,			-1234,								true,	0xc093480000000000));
@@ -15934,6 +15961,9 @@ struct fp16Normalize : public fp16AllComponents
 		flavorNames.push_back("EmulatingFP16");
 		flavorNames.push_back("DoubleCalc");
 
+		permutationsFlavorStart = 0;
+		permutationsFlavorEnd = flavorNames.size();
+
 		// flavorNames will be extended later
 	}
 
@@ -16452,6 +16482,9 @@ struct fp16Dot : public fp16AllComponents
 		flavorNames.push_back("EmulatingFP16");
 		flavorNames.push_back("FloatCalc");
 		flavorNames.push_back("DoubleCalc");
+
+		permutationsFlavorStart = 0;
+		permutationsFlavorEnd = flavorNames.size();
 
 		// flavorNames will be extended later
 	}
@@ -18801,7 +18834,8 @@ tcu::TestCaseGroup* createFloat32ComparisonComputeSet (tcu::TestContext& testCtx
 
 	const ComparisonCase			amberTests[]	=
 	{
-		{ "modfstruct",	"modf and modfStruct" }
+		{ "modfstruct",		"modf and modfStruct"	},
+		{ "frexpstruct",	"frexp and frexpStruct"	}
 	};
 
 	for (ComparisonCase test : amberTests)
@@ -18843,7 +18877,8 @@ tcu::TestCaseGroup* createFloat32ComparisonGraphicsSet (tcu::TestContext& testCt
 
 	const ComparisonCase			amberTests[]	=
 	{
-		{ "modfstruct",	"modf and modfStruct" }
+		{ "modfstruct",		"modf and modfStruct"	},
+		{ "frexpstruct",	"frexp and frexpStruct"	}
 	};
 
 	for (ComparisonCase test : amberTests)
@@ -20400,6 +20435,73 @@ tcu::TestCaseGroup* createFunctionParamsGroup (tcu::TestContext& testCtx)
 	return testGroup.release();
 }
 
+tcu::TestCaseGroup* createEarlyFragmentTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> earlyFragTests (new tcu::TestCaseGroup(testCtx, "early_fragment", "Early Fragment Tests"));
+
+	static const char dataDir[] = "spirv_assembly/instruction/graphics/early_fragment";
+
+	static const struct Case
+	{
+		const string name;
+		const string desc;
+	}
+	cases[] =
+	{
+		// Overwriting the gl_FragDepth should be ignored, when Early Fragment Test Mode is enabled.
+		{ "depth_less",				"gl_FragDepth > CLEAR_DEPTH. Polygon depth < CLEAR_DEPTH."	},
+		{ "depth_greater",			"gl_FragDepth < CLEAR_DEPTH. Polygon depth > CLEAR_DEPTH."	},
+		{ "depth_less_or_equal",	"gl_FragDepth > CLEAR_DEPTH. Polygon depth == CLEAR_DEPTH."	},
+		{ "depth_greater_or_equal",	"gl_FragDepth < CLEAR_DEPTH. Polygon depth == CLEAR_DEPTH."	},
+		{ "depth_equal",			"gl_FragDepth < CLEAR_DEPTH. Polygon depth == CLEAR_DEPTH."	},
+		{ "depth_not_equal",		"gl_FragDepth == CLEAR_DEPTH. Polygon depth < CLEAR_DEPTH."	}
+	};
+
+	for (const auto& tCase : cases)
+	{
+		cts_amber::AmberTestCase* testCase = cts_amber::createAmberTestCase(testCtx,
+			tCase.name.c_str(),
+			tCase.desc.c_str(),
+			dataDir,
+			tCase.name + ".amber");
+
+		earlyFragTests->addChild(testCase);
+	}
+
+	return earlyFragTests.release();
+}
+
+tcu::TestCaseGroup* createQueryGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "image_query", "image query tests"));
+
+	static const char data_dir[] = "spirv_assembly/instruction/image_query";
+
+	static const struct
+	{
+		const std::string name;
+		const std::string desc;
+	} cases[] =
+	{
+		{ "samples_storage", "Test samples query can be used on storage images" },
+	};
+
+	vector<string> requirements(1, "Features.shaderStorageImageMultisample");
+
+	for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
+	{
+		cts_amber::AmberTestCase *testCase = cts_amber::createAmberTestCase(testCtx,
+																			cases[i].name.c_str(),
+																			cases[i].desc.c_str(),
+																			data_dir,
+																			cases[i].name + ".amber",
+																			requirements);
+		testGroup->addChild(testCase);
+	}
+
+	return testGroup.release();
+}
+
 tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 {
 	const bool testComputePipeline = true;
@@ -20561,11 +20663,13 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createFloat32Tests(testCtx));
 	graphicsTests->addChild(createSpirvIdsAbuseTests(testCtx));
 	graphicsTests->addChild(create64bitCompareGraphicsGroup(testCtx));
+	graphicsTests->addChild(createEarlyFragmentTests(testCtx));
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());
 	instructionTests->addChild(createSpirvVersion1p4Group(testCtx));
 	instructionTests->addChild(createFunctionParamsGroup(testCtx));
+	instructionTests->addChild(createQueryGroup(testCtx));
 	instructionTests->addChild(createTrinaryMinMaxGroup(testCtx));
 	instructionTests->addChild(createTerminateInvocationGroup(testCtx));
 

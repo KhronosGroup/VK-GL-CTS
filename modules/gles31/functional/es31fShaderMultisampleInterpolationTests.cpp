@@ -50,14 +50,22 @@ namespace
 
 static std::string specializeShader(const std::string& shaderSource, const glu::ContextType& contextType)
 {
-	const bool supportsES32 = glu::contextSupports(contextType, glu::ApiType::es(3, 2));
+	const bool	isES32orGL45	= glu::contextSupports(contextType, glu::ApiType::es(3, 2)) ||
+								  glu::contextSupports(contextType, glu::ApiType::core(4, 5));
 
 	std::map<std::string, std::string> args;
 	args["GLSL_VERSION_DECL"]							= glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(contextType));
-	args["GLSL_EXT_SHADER_MULTISAMPLE_INTERPOLATION"]	= supportsES32 ? "" : "#extension GL_OES_shader_multisample_interpolation : require\n";
-	args["GLSL_EXT_SAMPLE_VARIABLES"]					= supportsES32 ? "" : "#extension GL_OES_sample_variables : require\n";
+	args["GLSL_EXT_SHADER_MULTISAMPLE_INTERPOLATION"]	= isES32orGL45 ? "" : "#extension GL_OES_shader_multisample_interpolation : require\n";
+	args["GLSL_EXT_SAMPLE_VARIABLES"]					= isES32orGL45 ? "" : "#extension GL_OES_sample_variables : require\n";
 
 	return tcu::StringTemplate(shaderSource).specialize(args);
+}
+
+static bool checkSupport(Context& ctx)
+{
+	auto ctxType = ctx.getRenderContext().getType();
+	return glu::contextSupports(ctxType, glu::ApiType::es(3, 2)) ||
+		   glu::contextSupports(ctxType, glu::ApiType::core(4, 5));
 }
 
 static bool verifyGreenImage (const tcu::Surface& image, tcu::TestLog& log)
@@ -123,7 +131,7 @@ MultisampleShadeCountRenderCase::~MultisampleShadeCountRenderCase (void)
 void MultisampleShadeCountRenderCase::init (void)
 {
 	// requirements
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!checkSupport(m_context) && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
 
 	MultisampleShaderRenderUtil::MultisampleRenderCase::init();
@@ -664,7 +672,7 @@ SingleSampleInterpolateAtSampleCase::~SingleSampleInterpolateAtSampleCase (void)
 void SingleSampleInterpolateAtSampleCase::init (void)
 {
 	// requirements
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!checkSupport(m_context) && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
 	if (m_renderTarget == TARGET_DEFAULT && m_context.getRenderTarget().getNumSamples() > 1)
 		TCU_THROW(NotSupportedError, "Non-multisample framebuffer required");
@@ -775,7 +783,7 @@ CentroidRenderCase::~CentroidRenderCase (void)
 void CentroidRenderCase::init (void)
 {
 	// requirements
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!checkSupport(m_context) && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
 
 	MultisampleShaderRenderUtil::MultisampleRenderCase::init();
@@ -954,9 +962,9 @@ InterpolateAtSampleIDCase::~InterpolateAtSampleIDCase (void)
 void InterpolateAtSampleIDCase::init (void)
 {
 	// requirements
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!checkSupport(m_context) && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!checkSupport(m_context) && !m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables"))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_sample_variables extension");
 
 	// test purpose and expectations
@@ -1227,7 +1235,7 @@ InterpolateAtOffsetCase::~InterpolateAtOffsetCase (void)
 void InterpolateAtOffsetCase::init (void)
 {
 	// requirements
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!checkSupport(m_context) && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
 
 	// test purpose and expectations
@@ -1358,9 +1366,9 @@ InterpolateAtSamplePositionCase::~InterpolateAtSamplePositionCase (void)
 void InterpolateAtSamplePositionCase::init (void)
 {
 	// requirements
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!checkSupport(m_context) && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!checkSupport(m_context) && !m_context.getContextInfo().isExtensionSupported("GL_OES_sample_variables"))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_sample_variables extension");
 
 	// test purpose and expectations
@@ -1478,8 +1486,19 @@ NegativeCompileInterpolationCase::NegativeCompileInterpolationCase (Context& con
 
 void NegativeCompileInterpolationCase::init (void)
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation") && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (!checkSupport(m_context) && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
+
+	if(!glu::isContextTypeES(m_context.getRenderContext().getType()))
+	{
+		if(m_caseType == CASE_VEC4_IDENTITY_SWIZZLE
+		   || m_caseType == CASE_VEC4_CROP_SWIZZLE
+		   || m_caseType == CASE_VEC4_MIXED_SWIZZLE
+		   || m_caseType == CASE_INTERPOLATE_IVEC4
+		   || m_caseType == CASE_INTERPOLATE_UVEC4
+		   || m_caseType == CASE_INTERPOLATE_STRUCT_MEMBER)
+			TCU_THROW(NotSupportedError, "Test requires a GLES context");
+	}
 
 	m_testCtx.getLog() << tcu::TestLog::Message << "Trying to compile illegal shader, expecting compile to fail." << tcu::TestLog::EndMessage;
 }

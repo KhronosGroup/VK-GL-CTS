@@ -1,0 +1,129 @@
+#!amber
+
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by the GraphicsFuzz project.
+
+# Short description: A fragment shader with vec2 in modulus fraction function
+
+# The test passes because the shader always writes the color red.
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 320 es
+# precision highp float;
+#
+# precision highp int;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# void main()
+# {
+#     vec2 uv = vec2(1.0, 1.0);
+#     uv.x = (modf(1.0, uv.y));
+#     // uv.y == 1.0, uv.x == 0.0
+#     if (uv.y > 0.0 && uv.x < 1.0)
+#     {
+#         _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);
+#     }
+#     else
+#     {
+#         _GLF_color = vec4(1.0);
+#     }
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 10
+; Bound: 38
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %34
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %9 "uv"
+               OpName %34 "_GLF_color"
+               OpDecorate %34 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 2
+          %8 = OpTypePointer Function %7
+         %10 = OpConstant %6 1
+         %11 = OpConstantComposite %7 %10 %10
+         %12 = OpTypeInt 32 0
+         %13 = OpConstant %12 1
+         %14 = OpTypePointer Function %6
+         %17 = OpConstant %12 0
+         %19 = OpTypeBool
+         %22 = OpConstant %6 0
+         %32 = OpTypeVector %6 4
+         %33 = OpTypePointer Output %32
+         %34 = OpVariable %33 Output
+         %35 = OpConstantComposite %32 %10 %22 %22 %10
+         %37 = OpConstantComposite %32 %10 %10 %10 %10
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %9 = OpVariable %8 Function
+               OpStore %9 %11
+         %15 = OpAccessChain %14 %9 %13
+         %16 = OpExtInst %6 %1 Modf %10 %15
+         %18 = OpAccessChain %14 %9 %17
+               OpStore %18 %16
+         %20 = OpAccessChain %14 %9 %13
+         %21 = OpLoad %6 %20
+         %23 = OpFOrdGreaterThan %19 %21 %22
+               OpSelectionMerge %25 None
+               OpBranchConditional %23 %24 %25
+         %24 = OpLabel
+         %26 = OpAccessChain %14 %9 %17
+         %27 = OpLoad %6 %26
+         %28 = OpFOrdLessThan %19 %27 %10
+               OpBranch %25
+         %25 = OpLabel
+         %29 = OpPhi %19 %23 %5 %28 %24
+               OpSelectionMerge %31 None
+               OpBranchConditional %29 %30 %36
+         %30 = OpLabel
+               OpStore %34 %35
+               OpBranch %31
+         %36 = OpLabel
+               OpStore %34 %37
+               OpBranch %31
+         %31 = OpLabel
+               OpReturn
+               OpFunctionEnd
+END
+
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255

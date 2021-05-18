@@ -266,6 +266,21 @@ public:
 										DebugReportCallbackEXT	(VkInstance, const VkDebugReportCallbackCreateInfoEXT*) {}
 										~DebugReportCallbackEXT	(void) {}
 };
+
+class CuModuleNVX
+{
+public:
+										CuModuleNVX	(VkDevice, const VkCuModuleCreateInfoNVX*) {}
+										~CuModuleNVX(void) {}
+};
+
+class CuFunctionNVX
+{
+public:
+										CuFunctionNVX(VkDevice, const VkCuFunctionCreateInfoNVX*) {}
+										~CuFunctionNVX(void) {}
+};
+
 #endif // CTS_USES_VULKANSC
 
 class Device
@@ -531,12 +546,16 @@ public:
 						{}
 };
 
+#endif // CTS_USES_VULKANSC
+
 class DebugUtilsMessengerEXT
 {
 public:
 						DebugUtilsMessengerEXT		(VkInstance, const VkDebugUtilsMessengerCreateInfoEXT*)
 						{}
 };
+
+#ifndef CTS_USES_VULKANSC
 
 class AccelerationStructureNV
 {
@@ -562,6 +581,20 @@ public:
 };
 
 #ifndef CTS_USES_VULKANSC
+
+class VideoSessionKHR
+{
+public:
+						VideoSessionKHR				(VkDevice, const VkVideoSessionCreateInfoKHR*)
+						{}
+};
+
+class VideoSessionParametersKHR
+{
+public:
+						VideoSessionParametersKHR	(VkDevice, const VkVideoSessionParametersCreateInfoKHR*)
+						{}
+};
 
 class ValidationCacheEXT
 {

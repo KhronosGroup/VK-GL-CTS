@@ -68,6 +68,35 @@ static const char* uniformTestFragSource	=	"${GLSL_VERSION_DECL}\n"
 												"	fragColor = vec4(vec4(fUnif_ivec4) + vec4(fUnif_uvec4));\n"
 												"}\n\0";
 
+// Helper class that enables tests to be executed on GL4.5 context
+// and removes code redundancy in each test that requires it.
+class VAOHelper
+{
+public:
+	VAOHelper(NegativeTestContext& ctx)
+		: m_vao(0)
+		, m_ctx(ctx)
+	{
+		// tests need vao only for GL4.5 context
+		if (glu::isContextTypeES(ctx.getRenderContext().getType()))
+			return;
+
+		m_ctx.glGenVertexArrays(1, &m_vao);
+		m_ctx.glBindVertexArray(m_vao);
+	}
+
+	~VAOHelper()
+	{
+		if (m_vao)
+			m_ctx.glDeleteVertexArrays(1, &m_vao);
+	}
+
+private:
+	GLuint					m_vao;
+	NegativeTestContext&	m_ctx;
+};
+
+
 static std::string getVtxFragVersionSources (const std::string source, NegativeTestContext& ctx)
 {
 	const bool supportsES32 = glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
@@ -88,10 +117,16 @@ void enable (NegativeTestContext& ctx)
 	ctx.endSection();
 }
 
+static bool checkSupport(NegativeTestContext& ctx)
+{
+	return contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+		   contextSupports(ctx.getRenderContext().getType(), glu::ApiType::core(4, 5));
+}
+
 // Enabling & disabling states
 void enablei (NegativeTestContext& ctx)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a higher context version.");
+	TCU_CHECK_AND_THROW(NotSupportedError, checkSupport(ctx), "This test requires a higher context version.");
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if cap is not one of the allowed values.");
 	ctx.glEnablei(-1, -1);
@@ -114,7 +149,7 @@ void disable (NegativeTestContext& ctx)
 
 void disablei (NegativeTestContext& ctx)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a higher context version.");
+	TCU_CHECK_AND_THROW(NotSupportedError, checkSupport(ctx), "This test requires a higher context version.");
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if cap is not one of the allowed values.");
 	ctx.glDisablei(-1,-1);
@@ -476,7 +511,7 @@ void get_tex_parameteriv (NegativeTestContext& ctx)
 
 void get_tex_parameteriiv (NegativeTestContext& ctx)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a higher context version.");
+	TCU_CHECK_AND_THROW(NotSupportedError, checkSupport(ctx), "This test requires a higher context version.");
 
 	GLint params[1] = { 0 };
 
@@ -492,7 +527,7 @@ void get_tex_parameteriiv (NegativeTestContext& ctx)
 
 void get_tex_parameteriuiv (NegativeTestContext& ctx)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a higher context version.");
+	TCU_CHECK_AND_THROW(NotSupportedError, checkSupport(ctx), "This test requires a higher context version.");
 
 	GLuint params[1] = { 0 };
 
@@ -549,7 +584,7 @@ void get_uniformfv (NegativeTestContext& ctx)
 
 void get_nuniformfv (NegativeTestContext& ctx)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a higher context version.");
+	TCU_CHECK_AND_THROW(NotSupportedError, checkSupport(ctx), "This test requires a higher context version.");
 
 	glu::ShaderProgram	program			(ctx.getRenderContext(), glu::makeVtxFragSources(getVtxFragVersionSources(uniformTestVertSource, ctx), getVtxFragVersionSources(uniformTestFragSource, ctx)));
 	GLint				unif			= ctx.glGetUniformLocation(program.getProgram(), "vUnif_vec4");
@@ -639,7 +674,7 @@ void get_uniformiv (NegativeTestContext& ctx)
 
 void get_nuniformiv (NegativeTestContext& ctx)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a higher context version.");
+	TCU_CHECK_AND_THROW(NotSupportedError, checkSupport(ctx), "This test requires a higher context version.");
 
 	glu::ShaderProgram	program			(ctx.getRenderContext(), glu::makeVtxFragSources(getVtxFragVersionSources(uniformTestVertSource, ctx), getVtxFragVersionSources(uniformTestFragSource, ctx)));
 	GLint				unif			= ctx.glGetUniformLocation(program.getProgram(), "fUnif_ivec4");
@@ -729,7 +764,7 @@ void get_uniformuiv (NegativeTestContext& ctx)
 
 void get_nuniformuiv (NegativeTestContext& ctx)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a higher context version.");
+	TCU_CHECK_AND_THROW(NotSupportedError, checkSupport(ctx), "This test requires a higher context version.");
 
 	glu::ShaderProgram	program			(ctx.getRenderContext(), glu::makeVtxFragSources(getVtxFragVersionSources(uniformTestVertSource, ctx), getVtxFragVersionSources(uniformTestFragSource, ctx)));
 	GLint				unif			= ctx.glGetUniformLocation(program.getProgram(), "fUnif_ivec4");
@@ -997,8 +1032,9 @@ void get_uniform_indices (NegativeTestContext& ctx)
 
 void get_vertex_attribfv (NegativeTestContext& ctx)
 {
-	GLfloat	params				= 0.0f;
-	GLint	maxVertexAttribs;
+	GLfloat		params				= 0.0f;
+	GLint		maxVertexAttribs;
+	VAOHelper	vao(ctx);
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not an accepted value.");
 	ctx.glGetVertexAttribfv(0, -1, &params);
@@ -1014,8 +1050,9 @@ void get_vertex_attribfv (NegativeTestContext& ctx)
 
 void get_vertex_attribiv (NegativeTestContext& ctx)
 {
-	GLint	params				= -1;
-	GLint	maxVertexAttribs;
+	GLint		params				= -1;
+	GLint		maxVertexAttribs;
+	VAOHelper	vao(ctx);
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not an accepted value.");
 	ctx.glGetVertexAttribiv(0, -1, &params);
@@ -1031,8 +1068,9 @@ void get_vertex_attribiv (NegativeTestContext& ctx)
 
 void get_vertex_attribi_iv (NegativeTestContext& ctx)
 {
-	GLint	params				= -1;
-	GLint	maxVertexAttribs;
+	GLint		params				= -1;
+	GLint		maxVertexAttribs;
+	VAOHelper	vao(ctx);
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not an accepted value.");
 	ctx.glGetVertexAttribIiv(0, -1, &params);
@@ -1048,8 +1086,10 @@ void get_vertex_attribi_iv (NegativeTestContext& ctx)
 
 void get_vertex_attribi_uiv (NegativeTestContext& ctx)
 {
-	GLuint	params				= (GLuint)-1;
-	GLint	maxVertexAttribs;
+	GLuint		params				= (GLuint)-1;
+	GLint		maxVertexAttribs;
+	VAOHelper	vao(ctx);
+
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not an accepted value.");
 	ctx.glGetVertexAttribIuiv(0, -1, &params);
@@ -1202,6 +1242,7 @@ void get_framebuffer_attachment_parameteriv (NegativeTestContext& ctx)
 	ctx.glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL, &params[0]);	// TYPE is GL_RENDERBUFFER
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 	ctx.glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_BACK, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &params[0]);					// TYPE is GL_FRAMEBUFFER_DEFAULT
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -1260,7 +1301,8 @@ void get_renderbuffer_parameteriv (NegativeTestContext& ctx)
 
 void get_internalformativ (NegativeTestContext& ctx)
 {
-	GLint params[16];
+	const bool	isES = glu::isContextTypeES(ctx.getRenderContext().getType());
+	GLint		params[16];
 
 	deMemset(&params[0], 0xcd, sizeof(params));
 
@@ -1276,15 +1318,18 @@ void get_internalformativ (NegativeTestContext& ctx)
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if internalformat is not color-, depth-, or stencil-renderable.");
 
-	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_render_snorm"))
+	if (isES)
 	{
-		ctx.glGetInternalformativ	(GL_RENDERBUFFER, GL_RG8_SNORM, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
-		ctx.expectError				(GL_INVALID_ENUM);
-	}
+		if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_render_snorm"))
+		{
+			ctx.glGetInternalformativ	(GL_RENDERBUFFER, GL_RG8_SNORM, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
+			ctx.expectError				(GL_INVALID_ENUM);
+		}
 
-	ctx.glGetInternalformativ	(GL_RENDERBUFFER, GL_COMPRESSED_RGB8_ETC2, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
-	ctx.expectError				(GL_INVALID_ENUM);
-	ctx.endSection();
+		ctx.glGetInternalformativ	(GL_RENDERBUFFER, GL_COMPRESSED_RGB8_ETC2, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
+		ctx.expectError				(GL_INVALID_ENUM);
+		ctx.endSection();
+	}
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if target is not GL_RENDERBUFFER.");
 	ctx.glGetInternalformativ	(-1, GL_RGBA8, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
@@ -1292,7 +1337,7 @@ void get_internalformativ (NegativeTestContext& ctx)
 	ctx.glGetInternalformativ	(GL_FRAMEBUFFER, GL_RGBA8, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
 	ctx.expectError				(GL_INVALID_ENUM);
 
-	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_sparse_texture"))
+	if (isES && !ctx.getContextInfo().isExtensionSupported("GL_EXT_sparse_texture"))
 	{
 		ctx.glGetInternalformativ	(GL_TEXTURE_2D, GL_RGBA8, GL_NUM_SAMPLE_COUNTS, 16, &params[0]);
 		ctx.expectError				(GL_INVALID_ENUM);
@@ -1399,7 +1444,7 @@ void is_enabled (NegativeTestContext& ctx)
 
 void is_enabledi (NegativeTestContext& ctx)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a higher context version.");
+	TCU_CHECK_AND_THROW(NotSupportedError, checkSupport(ctx), "This test requires a higher context version.");
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if cap is not an accepted value.");
 	ctx.glIsEnabledi(-1, 1);

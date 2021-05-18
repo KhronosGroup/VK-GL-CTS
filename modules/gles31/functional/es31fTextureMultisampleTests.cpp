@@ -565,6 +565,8 @@ private:
 	bool						verifyTexture				(int sample);
 	void						drawSample					(tcu::Surface& dst, int sample);
 
+	glw::GLint					getMaxConformantSampleCount	(glw::GLenum target, glw::GLenum internalFormat);
+
 	const int					m_samples;
 	const int					m_canvasSize;
 	const int					m_gridsize;
@@ -630,11 +632,11 @@ void SampleMaskCase::init (void)
 	if (m_effectiveSampleMaskWordCount > maxSampleMaskWords)
 		throw tcu::NotSupportedError("Test requires larger GL_MAX_SAMPLE_MASK_WORDS");
 
-	gl.getIntegerv(GL_MAX_COLOR_TEXTURE_SAMPLES, &maxSamples);
+	maxSamples = getMaxConformantSampleCount(GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA8);
 	if (m_samples > maxSamples)
-		throw tcu::NotSupportedError("Requested sample count is greater than GL_MAX_COLOR_TEXTURE_SAMPLES");
+		throw tcu::NotSupportedError("Requested sample count is greater than glGetInternalformativ(GL_SAMPLES) for this target/format");
 
-	m_testCtx.getLog() << tcu::TestLog::Message << "GL_MAX_COLOR_TEXTURE_SAMPLES = " << maxSamples << tcu::TestLog::EndMessage;
+	m_testCtx.getLog() << tcu::TestLog::Message << "glGetInternalformativ(GL_SAMPLES) = " << maxSamples << tcu::TestLog::EndMessage;
 
 	// Don't even try to test high bits if there are none
 
@@ -1042,6 +1044,42 @@ void SampleMaskCase::drawSample (tcu::Surface& dst, int sample)
 	GLU_EXPECT_NO_ERROR			(gl.getError(), "readPixels");
 }
 
+glw::GLint SampleMaskCase::getMaxConformantSampleCount(glw::GLenum target, glw::GLenum internalFormat)
+{
+	deInt32					maxTextureSamples	= 0;
+	const glw::Functions&	gl					= m_context.getRenderContext().getFunctions();
+	if (m_context.getContextInfo().isExtensionSupported("GL_NV_internalformat_sample_query"))
+	{
+		glw::GLint gl_sample_counts = 0;
+		gl.getInternalformativ(target, internalFormat, GL_NUM_SAMPLE_COUNTS, 1, &gl_sample_counts);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetInternalformativ() failed for GL_NUM_SAMPLE_COUNTS pname");
+		/* Check and return the first conformant sample count */
+		glw::GLint* gl_supported_samples = new glw::GLint[gl_sample_counts];
+		if (gl_supported_samples)
+		{
+			gl.getInternalformativ(target, internalFormat, GL_SAMPLES, gl_sample_counts, gl_supported_samples);
+			for (glw::GLint i = 0; i < gl_sample_counts; i++)
+			{
+				glw::GLint isConformant = 0;
+				gl.getInternalformatSampleivNV(target, internalFormat, gl_supported_samples[i], GL_CONFORMANT_NV, 1,
+					&isConformant);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "glGetInternalformatSampleivNV() call(s) failed");
+				if (isConformant && gl_supported_samples[i] > maxTextureSamples)
+				{
+					maxTextureSamples = gl_supported_samples[i];
+				}
+			}
+			delete[] gl_supported_samples;
+		}
+	}
+	else
+	{
+		gl.getInternalformativ(target, internalFormat, GL_SAMPLES, 1, &maxTextureSamples);
+	}
+	return maxTextureSamples;
+}
+
+
 class MultisampleTextureUsageCase : public TestCase
 {
 public:
@@ -1083,6 +1121,7 @@ private:
 	const int			m_numSamples;
 
 	glw::GLuint			m_fboID;
+	glw::GLuint			m_vaoID;
 	glw::GLuint			m_textureID;
 
 	glu::ShaderProgram*	m_drawShader;
@@ -1100,6 +1139,7 @@ MultisampleTextureUsageCase::MultisampleTextureUsageCase (Context& ctx, const ch
 	, m_type			(type)
 	, m_numSamples		(samples)
 	, m_fboID			(0)
+	, m_vaoID			(0)
 	, m_textureID		(0)
 	, m_drawShader		(DE_NULL)
 	, m_samplerShader	(DE_NULL)
@@ -1119,17 +1159,18 @@ MultisampleTextureUsageCase::~MultisampleTextureUsageCase (void)
 
 void MultisampleTextureUsageCase::init (void)
 {
-	const glw::Functions&	gl				= m_context.getRenderContext().getFunctions();
-	const glw::GLenum		internalFormat	= (m_isColorFormat) ? (GL_R8) : (m_isSignedFormat) ? (GL_R8I) : (m_isUnsignedFormat) ? (GL_R8UI) : (m_isDepthFormat) ? (GL_DEPTH_COMPONENT32F) : (0);
-	const glw::GLenum		textureTarget	= (m_isArrayType) ? (GL_TEXTURE_2D_MULTISAMPLE_ARRAY) : (GL_TEXTURE_2D_MULTISAMPLE);
-	const glw::GLenum		fboAttachment	= (m_isDepthFormat) ? (GL_DEPTH_ATTACHMENT) : (GL_COLOR_ATTACHMENT0);
-	const bool				supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glw::Functions&	gl					= m_context.getRenderContext().getFunctions();
+	const glw::GLenum		internalFormat		= (m_isColorFormat) ? (GL_R8) : (m_isSignedFormat) ? (GL_R8I) : (m_isUnsignedFormat) ? (GL_R8UI) : (m_isDepthFormat) ? (GL_DEPTH_COMPONENT32F) : (0);
+	const glw::GLenum		textureTarget		= (m_isArrayType) ? (GL_TEXTURE_2D_MULTISAMPLE_ARRAY) : (GL_TEXTURE_2D_MULTISAMPLE);
+	const glw::GLenum		fboAttachment		= (m_isDepthFormat) ? (GL_DEPTH_ATTACHMENT) : (GL_COLOR_ATTACHMENT0);
+	const bool				supportsES32orGL45	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+												  glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
 
 	DE_ASSERT(internalFormat);
 
 	// requirements
 
-	if (m_isArrayType && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	if (m_isArrayType && !supportsES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 		throw tcu::NotSupportedError("Test requires OES_texture_storage_multisample_2d_array extension");
 	if (m_context.getRenderTarget().getWidth() < s_textureSize || m_context.getRenderTarget().getHeight() < s_textureSize)
 		throw tcu::NotSupportedError("render target size must be at least " + de::toString(static_cast<int>(s_textureSize)) + "x" + de::toString(static_cast<int>(s_textureSize)));
@@ -1192,6 +1233,10 @@ void MultisampleTextureUsageCase::init (void)
 	}
 	GLU_EXPECT_NO_ERROR(gl.getError(), "gen fbo");
 
+	// create vao if context is GL4.5
+	if (!glu::isContextTypeES(m_context.getRenderContext().getType()))
+		gl.genVertexArrays(1, &m_vaoID);
+
 	// create shader for rendering to fbo
 	genDrawShader();
 
@@ -1211,6 +1256,12 @@ void MultisampleTextureUsageCase::deinit (void)
 	{
 		m_context.getRenderContext().getFunctions().deleteFramebuffers(1, &m_fboID);
 		m_fboID = 0;
+	}
+
+	if (m_vaoID)
+	{
+		m_context.getRenderContext().getFunctions().deleteVertexArrays(1, &m_vaoID);
+		m_vaoID = 0;
 	}
 
 	if (m_drawShader)
@@ -1427,6 +1478,8 @@ void MultisampleTextureUsageCase::renderToTexture (float value)
 	GLU_EXPECT_NO_ERROR(gl.getError(), "clear buffer");
 
 	// setup shader and draw
+	if (m_vaoID)
+		gl.bindVertexArray(m_vaoID);
 
 	gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
 	gl.enableVertexAttribArray(posLocation);

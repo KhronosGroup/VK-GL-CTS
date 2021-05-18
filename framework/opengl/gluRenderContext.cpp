@@ -262,6 +262,16 @@ void initCoreFunctions (glw::Functions* dst, const glw::FunctionLoader* loader, 
 		{ ApiType::core(4,4),	glw::initGL44Core	},
 		{ ApiType::core(4,5),	glw::initGL45Core	},
 		{ ApiType::core(4,6),	glw::initGL46Core	},
+		// TODO: initialise actual compat functions rather than using core as a dummy
+		{ ApiType::compatibility(3,2),	glw::initGL32Core	},
+		{ ApiType::compatibility(3,3),	glw::initGL33Core	},
+		{ ApiType::compatibility(4,0),	glw::initGL40Core	},
+		{ ApiType::compatibility(4,1),	glw::initGL41Core	},
+		{ ApiType::compatibility(4,2),	glw::initGL42Core	},
+		{ ApiType::compatibility(4,3),	glw::initGL43Core	},
+		{ ApiType::compatibility(4,4),	glw::initGL44Core	},
+		{ ApiType::compatibility(4,5),	glw::initGL45Core	},
+		{ ApiType::compatibility(4,6),	glw::initGL46Core	},
 	};
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_initFuncs); ndx++)
@@ -322,6 +332,15 @@ const char* getApiTypeDescription (ApiType type)
 	else if (type == glu::ApiType::core(4, 4))	return "OpenGL 4.4 core";
 	else if (type == glu::ApiType::core(4, 5))	return "OpenGL 4.5 core";
 	else if (type == glu::ApiType::core(4, 6))	return "OpenGL 4.6 core";
+	else if (type == glu::ApiType::compatibility(3, 2))	return "OpenGL 3.2 compatibility";
+	else if (type == glu::ApiType::compatibility(3, 3))	return "OpenGL 3.3 compatibility";
+	else if (type == glu::ApiType::compatibility(4, 0))	return "OpenGL 4.0 compatibility";
+	else if (type == glu::ApiType::compatibility(4, 1))	return "OpenGL 4.1 compatibility";
+	else if (type == glu::ApiType::compatibility(4, 2))	return "OpenGL 4.2 compatibility";
+	else if (type == glu::ApiType::compatibility(4, 3))	return "OpenGL 4.3 compatibility";
+	else if (type == glu::ApiType::compatibility(4, 4))	return "OpenGL 4.4 compatibility";
+	else if (type == glu::ApiType::compatibility(4, 5))	return "OpenGL 4.5 compatibility";
+	else if (type == glu::ApiType::compatibility(4, 6))	return "OpenGL 4.6 compatibility";
 	else										return DE_NULL;
 }
 

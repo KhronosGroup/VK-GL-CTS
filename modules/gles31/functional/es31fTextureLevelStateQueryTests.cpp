@@ -111,7 +111,8 @@ static bool isCoreTextureTarget (glw::GLenum target, const glu::ContextType& con
 		case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
 		case GL_TEXTURE_BUFFER:
 		case GL_TEXTURE_CUBE_MAP_ARRAY:
-			return glu::contextSupports(contextType, glu::ApiType::es(3, 2));
+			return glu::contextSupports(contextType, glu::ApiType::es(3, 2)) ||
+				   glu::contextSupports(contextType, glu::ApiType::core(4, 5));
 
 		default:
 			return false;
@@ -1491,6 +1492,14 @@ private:
 	}
 };
 
+static bool checkSupport(Context& ctx)
+{
+	auto ctxType = ctx.getRenderContext().getType();
+	return contextSupports(ctxType, glu::ApiType::es(3, 2)) ||
+		   contextSupports(ctxType, glu::ApiType::core(4, 5)) ||
+		   ctx.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer");
+}
+
 class TextureLevelBufferDataStoreCase : public TextureLevelCase
 {
 public:
@@ -1502,8 +1511,7 @@ public:
 private:
 	void init (void)
 	{
-		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer") &&
-			!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+		if (!checkSupport(m_context))
 			throw tcu::NotSupportedError("Test requires GL_EXT_texture_buffer extension");
 		TextureLevelCase::init();
 	}
@@ -1541,8 +1549,7 @@ public:
 private:
 	void init (void)
 	{
-		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer") &&
-			!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+		if (!checkSupport(m_context))
 			throw tcu::NotSupportedError("Test requires GL_EXT_texture_buffer extension");
 		TextureLevelCase::init();
 	}
@@ -1582,8 +1589,7 @@ public:
 private:
 	void init (void)
 	{
-		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer") &&
-			!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+		if (!checkSupport(m_context))
 			throw tcu::NotSupportedError("Test requires GL_EXT_texture_buffer extension");
 		TextureLevelCase::init();
 	}

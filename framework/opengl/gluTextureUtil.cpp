@@ -452,6 +452,8 @@ tcu::TextureFormat mapGLTransferFormat (deUint32 format, deUint32 dataType)
 		case GL_RGB_INTEGER:		return TextureFormat(TextureFormat::RGB,	mapGLChannelType(dataType, false));
 		case GL_RG_INTEGER:			return TextureFormat(TextureFormat::RG,		mapGLChannelType(dataType, false));
 		case GL_RED_INTEGER:		return TextureFormat(TextureFormat::R,		mapGLChannelType(dataType, false));
+		case GL_SRGB:				return TextureFormat(TextureFormat::sRGB,	mapGLChannelType(dataType, false));
+		case GL_SRGB_ALPHA:			return TextureFormat(TextureFormat::sRGBA,	mapGLChannelType(dataType, false));
 
 		case GL_DEPTH_COMPONENT:	return TextureFormat(TextureFormat::D,		mapGLChannelType(dataType, true));
 		case GL_DEPTH_STENCIL:		return TextureFormat(TextureFormat::DS,		mapGLChannelType(dataType, true));

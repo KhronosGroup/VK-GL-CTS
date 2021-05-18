@@ -47,6 +47,14 @@ namespace Functional
 namespace
 {
 
+static bool checkSupport(Context& ctx)
+{
+	auto contextType = ctx.getRenderContext().getType();
+	return contextSupports(contextType, glu::ApiType::es(3, 2)) ||
+		   contextSupports(contextType, glu::ApiType::core(4, 5)) ||
+		   ctx.getContextInfo().isExtensionSupported("GL_OES_sample_shading");
+}
+
 using namespace gls::StateQueryUtil;
 
 class SampleShadingStateCase : public TestCase
@@ -69,7 +77,7 @@ SampleShadingStateCase::SampleShadingStateCase (Context& ctx, const char* name, 
 
 void SampleShadingStateCase::init (void)
 {
-	if (!contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_OES_sample_shading"))
+	if (!checkSupport(m_context))
 		throw tcu::NotSupportedError("Test requires GL_OES_sample_shading extension or a context version 3.2 or higher.");
 }
 
@@ -120,7 +128,7 @@ MinSampleShadingValueCase::MinSampleShadingValueCase (Context& ctx, const char* 
 
 void MinSampleShadingValueCase::init (void)
 {
-	if (!contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_OES_sample_shading"))
+	if (!checkSupport(m_context))
 		throw tcu::NotSupportedError("Test requires GL_OES_sample_shading extension or a context version 3.2 or higher.");
 }
 
@@ -187,7 +195,7 @@ MinSampleShadingValueClampingCase::MinSampleShadingValueClampingCase (Context& c
 
 void MinSampleShadingValueClampingCase::init (void)
 {
-	if (!contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_OES_sample_shading"))
+	if (!checkSupport(m_context))
 		throw tcu::NotSupportedError("Test requires GL_OES_sample_shading extension or a context version 3.2 or higher.");
 }
 
@@ -274,8 +282,7 @@ SampleShadingRenderingCase::~SampleShadingRenderingCase (void)
 void SampleShadingRenderingCase::init (void)
 {
 	// requirements
-
-	if (!contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) && !m_context.getContextInfo().isExtensionSupported("GL_OES_sample_shading"))
+	if (!checkSupport(m_context))
 		throw tcu::NotSupportedError("Test requires GL_OES_sample_shading extension or a context version 3.2 or higher.");
 	if (m_renderTarget == TARGET_DEFAULT && m_context.getRenderTarget().getNumSamples() <= 1)
 		throw tcu::NotSupportedError("Multisampled default framebuffer required");

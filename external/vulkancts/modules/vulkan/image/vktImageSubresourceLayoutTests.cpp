@@ -158,7 +158,7 @@ const BufferLevels::Level& BufferLevels::getLevel (deUint32 level) const
 VkExtent3D getDefaultDimensions (VkImageType type, bool array)
 {
 	DE_ASSERT(type == VK_IMAGE_TYPE_2D || type == VK_IMAGE_TYPE_3D);
-	DE_ASSERT(!array || VK_IMAGE_TYPE_2D);
+	DE_ASSERT(!array || type == VK_IMAGE_TYPE_2D);
 
 	constexpr VkExtent3D kDefault3D			= { 32u, 48u, 56u };
 	constexpr VkExtent3D kDefault2DArray	= kDefault3D;

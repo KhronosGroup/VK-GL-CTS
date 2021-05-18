@@ -49,6 +49,7 @@
 #include "vktSpvAsmVariablePointersTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktAmberTestCase.hpp"
 
 #include <limits>
 #include <map>
@@ -218,7 +219,7 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 
 	stringTemplate +=
 		physPtrs ?
-		"OpExtension \"SPV_EXT_physical_storage_buffer\"\n"
+		"OpExtension \"SPV_KHR_physical_storage_buffer\"\n"
 		:
 		"OpExtension \"SPV_KHR_variable_pointers\"\n";
 
@@ -877,7 +878,7 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* 
 
 	stringTemplate +=
 		physPtrs ?
-		"OpExtension \"SPV_EXT_physical_storage_buffer\"\n"
+		"OpExtension \"SPV_KHR_physical_storage_buffer\"\n"
 		:
 		"OpExtension \"SPV_KHR_variable_pointers\"\n";
 
@@ -1395,6 +1396,31 @@ void addNullptrVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
 		spec.extensions.push_back("VK_KHR_variable_pointers");
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
+	}
+}
+
+void addDynamicOffsetComputeGroup (tcu::TestCaseGroup* group)
+{
+	tcu::TestContext &testCtx = group->getTestContext();
+
+	static const char dataDir[] = "spirv_assembly/instruction/compute/variable_pointer/dynamic_offset";
+
+	struct Case
+	{
+		string			name;
+		string			desc;
+	};
+
+	static const Case cases[] =
+	{
+		{ "select_descriptor_array",	"Test accessing a descriptor array using a variable pointer from OpSelect"			},
+	};
+
+	for (const auto& testCase : cases)
+	{
+		const string fileName = testCase.name + ".amber";
+
+		group->addChild(cts_amber::createAmberTestCase(testCtx, testCase.name.c_str(), testCase.desc.c_str(), dataDir, fileName, {"VK_KHR_variable_pointers", "VK_KHR_storage_buffer_storage_class", "VariablePointerFeatures.variablePointers", "VariablePointerFeatures.variablePointersStorageBuffer"}));
 	}
 }
 
@@ -2725,13 +2751,16 @@ tcu::TestCaseGroup* createVariablePointersComputeGroup (tcu::TestContext& testCt
 				 "nullptr_compute",
 				 "Test the usage of nullptr using the variable pointers extension in a compute shader",
 				 addNullptrVariablePointersComputeGroup);
+	addTestGroup(group.get(), "dynamic_offset",
+				 "Testing variable pointers referring to descriptors using dynamic offset",
+				 addDynamicOffsetComputeGroup);
 
 	return group.release();
 }
 
 tcu::TestCaseGroup* createPhysicalPointersComputeGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, "physical_pointers", "Compute tests for SPV_EXT_physical_storage_buffer extension"));
+	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, "physical_pointers", "Compute tests for SPV_KHR_physical_storage_buffer extension"));
 	addTestGroup(group.get(), "compute", "Test the physical storage buffer extension using a compute shader", addPhysicalPointersComputeGroup);
 	addTestGroup(group.get(),
 				 "complex_types_compute",

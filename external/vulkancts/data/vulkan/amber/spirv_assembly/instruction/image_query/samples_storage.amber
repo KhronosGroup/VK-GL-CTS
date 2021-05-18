@@ -1,0 +1,89 @@
+#!amber
+
+# SPIR-V Spec: OpImageQuerySamples must have a MS of 1
+DEVICE_FEATURE shaderStorageImageMultisample
+
+SHADER compute compute_shader SPIRV-ASM
+; Test OpImageQuerySamples can be used with
+; an OpTypeImage with Sampled set to 2 (storage image)
+;
+;#version 450
+;layout(local_size_x = 1, local_size_y = 1) in;
+;
+;layout(set = 0, binding = 0, rgba8) uniform image2DMS storageImageMS;
+;layout(set = 0, binding = 1) buffer dataBuffer {
+;   int outValue;
+;};
+;
+;void main()
+;{
+;    outValue = imageSamples(storageImageMS);
+;}
+;
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 10
+; Bound: 24
+; Schema: 0
+               OpCapability Shader
+               OpCapability StorageImageMultisample
+               OpCapability ImageQuery
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 450
+               OpName %main "main"
+               OpName %dataBuffer "dataBuffer"
+               OpMemberName %dataBuffer 0 "outValue"
+               OpName %_ ""
+               OpName %storageImageMS "storageImageMS"
+               OpMemberDecorate %dataBuffer 0 Offset 0
+               OpDecorate %dataBuffer BufferBlock
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 1
+               OpDecorate %storageImageMS DescriptorSet 0
+               OpDecorate %storageImageMS Binding 0
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+ %dataBuffer = OpTypeStruct %int
+%_ptr_Uniform_dataBuffer = OpTypePointer Uniform %dataBuffer
+          %_ = OpVariable %_ptr_Uniform_dataBuffer Uniform
+      %int_0 = OpConstant %int 0
+      %float = OpTypeFloat 32
+         %12 = OpTypeImage %float 2D 0 0 1 2 Rgba8
+%_ptr_UniformConstant_12 = OpTypePointer UniformConstant %12
+%storageImageMS = OpVariable %_ptr_UniformConstant_12 UniformConstant
+%_ptr_Uniform_int = OpTypePointer Uniform %int
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+    %uint_16 = OpConstant %uint 16
+     %uint_1 = OpConstant %uint 1
+%gl_WorkGroupSize = OpConstantComposite %v3uint %uint_16 %uint_16 %uint_1
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %15 = OpLoad %12 %storageImageMS
+         %16 = OpImageQuerySamples %int %15
+         %18 = OpAccessChain %_ptr_Uniform_int %_ %int_0
+               OpStore %18 %16
+               OpReturn
+               OpFunctionEnd
+END
+
+IMAGE texture FORMAT R8G8B8A8_UNORM DIM_2D WIDTH 256 HEIGHT 256 SAMPLES 4
+BUFFER dataBuffer DATA_TYPE int32 SIZE 1 FILL 0
+
+PIPELINE compute pipeline
+  ATTACH compute_shader
+  BIND BUFFER texture AS storage_image DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER dataBuffer AS storage DESCRIPTOR_SET 0 BINDING 1
+END
+
+RUN pipeline 1 1 1
+
+BUFFER result DATA_TYPE int32 DATA
+ 4
+END
+EXPECT dataBuffer EQ_BUFFER result

@@ -82,7 +82,8 @@ enum class IndirectCountType
 struct DrawTypedTestSpec : public TestSpecBase
 {
 	DrawTypedTestSpec()
-		: testFirstInstanceNdx(false)
+		: drawType(DRAWTYPE_LAST)
+		, testFirstInstanceNdx(false)
 		, testIndirectCountExt(IndirectCountType::NONE)
 	{};
 

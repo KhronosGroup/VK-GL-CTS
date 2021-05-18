@@ -69,6 +69,7 @@ struct CaseDef
 	int						numLayers;
 	VkFormat				colorFormat;
 	VkSampleCountFlagBits	numSamples;
+	bool					colorSamples;
 };
 
 template<typename T>
@@ -616,6 +617,117 @@ std::vector<Vertex4RGBA> genTriangleVertices (void)
 	return std::vector<Vertex4RGBA>(data, data + DE_LENGTH_OF_ARRAY(data));
 }
 
+Vec4 sampleIndexToColor (deUint32 index)
+{
+	Vec4 res = Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+	if (index & 0x01) res += Vec4(0.5f, 0.0f, 0.0f, 0.0f);
+	if (index & 0x02) res += Vec4(0.0f, 0.5f, 0.0f, 0.0f);
+	if (index & 0x04) res += Vec4(0.0f, 0.0f, 0.5f, 0.0f);
+
+	if (index & 0x08) res += Vec4(0.5f, 0.0f, 0.0f, 0.0f);
+	if (index & 0x10) res += Vec4(0.0f, 0.5f, 0.0f, 0.0f);
+	if (index & 0x20) res += Vec4(0.0f, 0.0f, 0.5f, 0.0f);
+
+	return res;
+}
+
+float* getStandardSampleLocations (VkSampleCountFlagBits samples)
+{
+	static float standardSampleLocations_1[1 * 2] = {
+		0.5f, 0.5f,
+	};
+
+	static float standardSampleLocations_2[2 * 2] = {
+		0.75f, 0.75f,
+		0.25f, 0.25f,
+	};
+
+	static float standardSampleLocations_4[4 * 2] = {
+		0.375f, 0.125f,
+		0.875f, 0.375f,
+		0.125f, 0.625f,
+		0.625f, 0.875f,
+	};
+
+	static float standardSampleLocations_8[8 * 2] = {
+		0.5625f, 0.3125f,
+		0.4375f, 0.6875f,
+		0.8125f, 0.5625f,
+		0.3125f, 0.1875f,
+		0.1875f, 0.8125f,
+		0.0625f, 0.4375f,
+		0.6875f, 0.9375f,
+		0.9375f, 0.0625f,
+	};
+
+	static float standardSampleLocations_16[16 * 2] = {
+		0.5625f, 0.5625f,
+		0.4375f, 0.3125f,
+		0.3125f, 0.625f,
+		0.75f, 0.4375f,
+		0.1875f, 0.375f,
+		0.625f, 0.8125f,
+		0.8125f, 0.6875f,
+		0.6875f, 0.1875f,
+		0.375f, 0.875f,
+		0.5f, 0.0625f,
+		0.25f, 0.125f,
+		0.125f, 0.75f,
+		0.0f, 0.5f,
+		0.9375f, 0.25f,
+		0.875f, 0.9375f,
+		0.0625f, 0.0f,
+	};
+
+	switch (samples)
+	{
+	case VK_SAMPLE_COUNT_1_BIT:
+		return standardSampleLocations_1;
+	case VK_SAMPLE_COUNT_2_BIT:
+		return standardSampleLocations_2;
+	case VK_SAMPLE_COUNT_4_BIT:
+		return standardSampleLocations_4;
+	case VK_SAMPLE_COUNT_8_BIT:
+		return standardSampleLocations_8;
+	case VK_SAMPLE_COUNT_16_BIT:
+		return standardSampleLocations_16;
+	default:
+		TCU_THROW(InternalError, "Unknown multisample bit configuration requested");
+	}
+}
+
+//! A flat-colored shapes plotted at standard sample points.
+std::vector<Vertex4RGBA> genPerSampleTriangleVertices (VkSampleCountFlagBits samples)
+{
+	float*						coordinates		= getStandardSampleLocations(samples);
+	const float					triangleSize	= 1.0f / (static_cast<float>(samples) * 2.0f);
+	std::vector<Vertex4RGBA>	res;
+
+	for (deUint32 i = 0; i < static_cast<deUint32>(samples); i++)
+	{
+		Vertex4RGBA data[] =
+		{
+			{
+				Vec4(0 + coordinates[i * 2 + 0] * 2 - 1, -triangleSize + coordinates[i * 2 + 1] * 2 - 1, 0.0f, 1.0f),
+				sampleIndexToColor(i),
+			},
+			{
+				Vec4(-triangleSize + coordinates[i * 2 + 0] * 2 - 1, triangleSize + coordinates[i * 2 + 1] * 2 - 1, 0.0f, 1.0f),
+				sampleIndexToColor(i),
+			},
+			{
+				Vec4(triangleSize + coordinates[i * 2 + 0] * 2 - 1, triangleSize + coordinates[i * 2 + 1] * 2 - 1, 0.0f, 1.0f),
+				sampleIndexToColor(i),
+			},
+		};
+		res.push_back(data[0]);
+		res.push_back(data[1]);
+		res.push_back(data[2]);
+	}
+	return res;
+}
+
 //! A full-viewport quad. Use with TRIANGLE_STRIP topology.
 std::vector<Vertex4RGBA> genFullQuadVertices (void)
 {
@@ -770,7 +882,7 @@ void renderMultisampledImage (Context& context, const CaseDef& caseDef, const Vk
 		}
 
 		// Vertex buffer
-		const std::vector<Vertex4RGBA>	vertices			= genTriangleVertices();
+		const std::vector<Vertex4RGBA>	vertices			= caseDef.colorSamples ? genPerSampleTriangleVertices(caseDef.numSamples) : genTriangleVertices();
 		const VkDeviceSize				vertexBufferSize	= sizeInBytes(vertices);
 		const Unique<VkBuffer>			vertexBuffer		(makeBuffer(vk, device, vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
 		const UniquePtr<Allocation>		vertexBufferAlloc	(bindBuffer(vk, device, allocator, *vertexBuffer, MemoryRequirement::HostVisible));
@@ -805,7 +917,6 @@ void renderMultisampledImage (Context& context, const CaseDef& caseDef, const Vk
 				vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
 			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[layerNdx]);
-
 			vk.cmdDraw(*cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);
 		}
 
@@ -900,6 +1011,13 @@ void checkSupport (Context& context, const CaseDef caseDef)
 	const VkImageUsageFlags colorImageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 	checkImageFormatRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.numSamples, caseDef.colorFormat, colorImageUsage);
+
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!context.getPortabilitySubsetFeatures().multisampleArrayImage &&
+		(caseDef.numSamples != VK_SAMPLE_COUNT_1_BIT) && (caseDef.numLayers != 1))
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support image array with multiple samples per texel");
+	}
 }
 
 tcu::TestStatus test (Context& context, const CaseDef caseDef)
@@ -1380,6 +1498,237 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 
 } // StorageImage ns
 
+
+namespace StandardSamplePosition
+{
+
+void initPrograms (SourceCollections& programCollection, const CaseDef caseDef)
+{
+	// Pass 1: Render to texture
+
+	addSimpleVertexAndFragmentPrograms(programCollection, caseDef);
+
+	// Pass 2: Sample texture
+
+	// Vertex shader
+	{
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(location = 0) in  vec4  in_position;\n"
+			<< "\n"
+			<< "out gl_PerVertex {\n"
+			<< "    vec4 gl_Position;\n"
+			<< "};\n"
+			<< "\n"
+			<< "void main(void)\n"
+			<< "{\n"
+			<< "    gl_Position = in_position;\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("sample_vert") << glu::VertexSource(src.str());
+	}
+
+	// Fragment shader
+	{
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(location = 0) out uint o_status;\n"
+			<< "\n"
+			<< "layout(set = 0, binding = 0) uniform sampler2DMS colorTexture;\n"
+			<< "\n"
+			<< "void main(void)\n"
+			<< "{\n"
+			<< "    uint result = 0;\n"
+			<< "    vec4 a, b;\n\n"
+			<< "\n";
+
+		for (deUint32 sampleNdx = 0; sampleNdx < (deUint32)caseDef.numSamples; sampleNdx++)
+		{
+			Vec4 expectedColor = sampleIndexToColor(sampleNdx);
+
+			src << "    a = texelFetch(colorTexture, ivec2(0,0), " << sampleNdx << ");\n"
+				   "    b = vec4(" << expectedColor.x() << ", " << expectedColor.y() << ", " << expectedColor.z() << ", 1.0);\n"
+				   "    if (abs(a.x - b.x) > 0.1 || abs(a.y - b.y) > 0.1 || abs(a.z - b.z) > 0.1) result++;\n";
+		}
+
+		src << "\n"
+			<< "    o_status = result;\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("sample_frag") << glu::FragmentSource(src.str());
+	}
+}
+
+void checkSupport (Context& context, const CaseDef caseDef)
+{
+	const VkImageUsageFlags colorImageUsage		= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	const VkPhysicalDeviceProperties props		= getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+
+	checkImageFormatRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.numSamples, caseDef.colorFormat, colorImageUsage);
+
+	if (!props.limits.standardSampleLocations)
+		TCU_THROW(NotSupportedError, "Device does not support standard sample locations.");
+
+	if (caseDef.numSamples == VK_SAMPLE_COUNT_32_BIT ||
+		caseDef.numSamples == VK_SAMPLE_COUNT_64_BIT)
+	{
+		TCU_THROW(InternalError, "Standard does not define sample positions for 32x or 64x multisample modes");
+	}
+
+}
+
+tcu::TestStatus test (Context& context, const CaseDef caseDef)
+{
+	const DeviceInterface&	vk					= context.getDeviceInterface();
+	const VkDevice			device				= context.getDevice();
+	const VkQueue			queue				= context.getUniversalQueue();
+	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	Allocator&				allocator			= context.getDefaultAllocator();
+
+	const VkImageUsageFlags		colorImageUsage		= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+	{
+		tcu::TestLog& log = context.getTestContext().getLog();
+		log << tcu::LogSection("Description", "")
+			<< tcu::TestLog::Message << "Rendering to a multisampled image. Expecting samples to have specified colors." << tcu::TestLog::EndMessage
+			<< tcu::TestLog::Message << "Sampling from the texture with texelFetch (OpImageFetch)." << tcu::TestLog::EndMessage
+			<< tcu::TestLog::EndSection;
+	}
+
+	// Multisampled color image
+	const Unique<VkImage>			colorImage		(makeImage(vk, device, caseDef.colorFormat, caseDef.renderSize, caseDef.numLayers, caseDef.numSamples, colorImageUsage));
+	const UniquePtr<Allocation>		colorImageAlloc	(bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any));
+
+	const Unique<VkCommandPool>		cmdPool			(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer		(makeCommandBuffer(vk, device, *cmdPool));
+
+	// Step 1: Render to texture
+	{
+		renderMultisampledImage(context, caseDef, *colorImage);
+	}
+
+	// Step 2: Sample texture
+	{
+		// Color image view
+		const VkImageViewType			colorImageViewType	= (caseDef.numLayers == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY);
+		const Unique<VkImageView>		colorImageView		(makeImageView(vk, device, *colorImage, colorImageViewType, caseDef.colorFormat, makeColorSubresourceRange(0, caseDef.numLayers)));
+		const Unique<VkSampler>			colorSampler		(makeSampler(vk, device));
+
+		// Checksum image
+		const VkFormat					checksumFormat		= VK_FORMAT_R8_UINT;
+		const Unique<VkImage>			checksumImage		(makeImage(vk, device, checksumFormat, caseDef.renderSize, 1u, VK_SAMPLE_COUNT_1_BIT,
+																	   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT));
+		const UniquePtr<Allocation>		checksumImageAlloc	(bindImage(vk, device, allocator, *checksumImage, MemoryRequirement::Any));
+		const Unique<VkImageView>		checksumImageView	(makeImageView(vk, device, *checksumImage, VK_IMAGE_VIEW_TYPE_2D, checksumFormat, makeColorSubresourceRange(0, 1)));
+
+		// Checksum buffer (for host reading)
+		const VkDeviceSize				checksumBufferSize	= caseDef.renderSize.x() * caseDef.renderSize.y() * tcu::getPixelSize(mapVkFormat(checksumFormat));
+		const Unique<VkBuffer>			checksumBuffer		(makeBuffer(vk, device, checksumBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+		const UniquePtr<Allocation>		checksumBufferAlloc	(bindBuffer(vk, device, allocator, *checksumBuffer, MemoryRequirement::HostVisible));
+
+		zeroBuffer(vk, device, *checksumBufferAlloc, checksumBufferSize);
+
+		// Vertex buffer
+		const std::vector<Vertex4RGBA>	vertices			= genFullQuadVertices();
+		const VkDeviceSize				vertexBufferSize	= sizeInBytes(vertices);
+		const Unique<VkBuffer>			vertexBuffer		(makeBuffer(vk, device, vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+		const UniquePtr<Allocation>		vertexBufferAlloc	(bindBuffer(vk, device, allocator, *vertexBuffer, MemoryRequirement::HostVisible));
+
+		{
+			deMemcpy(vertexBufferAlloc->getHostPtr(), &vertices[0], static_cast<std::size_t>(vertexBufferSize));
+			flushAlloc(vk, device, *vertexBufferAlloc);
+		}
+
+		// Descriptors
+		// \note OpImageFetch doesn't use a sampler, but in GLSL texelFetch needs a sampler2D which translates to a combined image sampler in Vulkan.
+
+		const Unique<VkDescriptorSetLayout> descriptorSetLayout(DescriptorSetLayoutBuilder()
+			.addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, &colorSampler.get())
+			.build(vk, device));
+
+		const Unique<VkDescriptorPool> descriptorPool(DescriptorPoolBuilder()
+			.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+			.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+		const Unique<VkDescriptorSet>	descriptorSet		(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+		const VkDescriptorImageInfo		imageDescriptorInfo	= makeDescriptorImageInfo(DE_NULL, *colorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+		DescriptorSetUpdateBuilder()
+			.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageDescriptorInfo)
+			.update(vk, device);
+
+		const Unique<VkShaderModule>	vertexModule	(createShaderModule		(vk, device, context.getBinaryCollection().get("sample_vert"), 0u));
+		const Unique<VkShaderModule>	fragmentModule	(createShaderModule		(vk, device, context.getBinaryCollection().get("sample_frag"), 0u));
+		const Unique<VkRenderPass>		renderPass		(makeSimpleRenderPass	(vk, device, checksumFormat));
+		const Unique<VkFramebuffer>		framebuffer		(makeFramebuffer		(vk, device, *renderPass, 1u, &checksumImageView.get(),
+																				 static_cast<deUint32>(caseDef.renderSize.x()),  static_cast<deUint32>(caseDef.renderSize.y())));
+		const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout		(vk, device, *descriptorSetLayout));
+		const std::vector<PipelineSp>	pipelines		(makeGraphicsPipelines	(vk, device, 1u, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+																				 caseDef.renderSize, VK_SAMPLE_COUNT_1_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
+
+		beginCommandBuffer(vk, *cmdBuffer);
+
+		// Prepare for sampling in the fragment shader
+		{
+			const VkImageMemoryBarrier barriers[] =
+			{
+				{
+					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,						// VkStructureType			sType;
+					DE_NULL,													// const void*				pNext;
+					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,						// VkAccessFlags			outputMask;
+					VK_ACCESS_SHADER_READ_BIT,									// VkAccessFlags			inputMask;
+					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,					// VkImageLayout			oldLayout;
+					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,					// VkImageLayout			newLayout;
+					VK_QUEUE_FAMILY_IGNORED,									// deUint32					srcQueueFamilyIndex;
+					VK_QUEUE_FAMILY_IGNORED,									// deUint32					destQueueFamilyIndex;
+					*colorImage,												// VkImage					image;
+					makeColorSubresourceRange(0, caseDef.numLayers),			// VkImageSubresourceRange	subresourceRange;
+				},
+			};
+
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u,
+				0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers);
+		}
+
+		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, caseDef.renderSize.x(), caseDef.renderSize.y()), tcu::UVec4(0u));
+
+		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines.back());
+		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+		{
+			const VkDeviceSize vertexBufferOffset = 0ull;
+			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+		}
+
+		vk.cmdDraw(*cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);
+		endRenderPass(vk, *cmdBuffer);
+
+		copyImageToBuffer(vk, *cmdBuffer, *checksumImage, *checksumBuffer, caseDef.renderSize);
+
+		endCommandBuffer(vk, *cmdBuffer);
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+		// Verify result
+
+		{
+			invalidateAlloc(vk, device, *checksumBufferAlloc);
+
+			const tcu::ConstPixelBufferAccess	access						(mapVkFormat(checksumFormat), caseDef.renderSize.x(), caseDef.renderSize.y(), 1, checksumBufferAlloc->getHostPtr());
+
+			deUint32 result		= access.getPixelUint(0, 0).x();
+
+			if (result)
+				return tcu::TestStatus::fail(std::to_string(result) + " multisamples have unexpected color.");
+		}
+	}
+
+	return tcu::TestStatus::pass("OK");
+}
+
+} // StandardSamplePosition ns
+
+
 std::string getSizeLayerString (const IVec2& size, const int numLayers)
 {
 	std::ostringstream str;
@@ -1442,6 +1791,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup*						group,
 					numLayers[layerNdx],	// int						numLayers;
 					format[formatNdx],		// VkFormat					colorFormat;
 					samples[samplesNdx],	// VkSampleCountFlagBits	numSamples;
+					false,					// bool						colorQuad;
 				};
 
 				addFunctionCaseWithPrograms(formatGroup.get(), caseName.str(), "", checkSupport, initPrograms, testFunc, caseDef);
@@ -1449,6 +1799,49 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup*						group,
 			sizeLayerGroup->addChild(formatGroup.release());
 		}
 		group->addChild(sizeLayerGroup.release());
+	}
+}
+
+void addStandardSamplePositionTestCasesWithFunctions (tcu::TestCaseGroup*					group,
+													  FunctionSupport1<CaseDef>::Function	checkSupport,
+													  FunctionPrograms1<CaseDef>::Function	initPrograms,
+													  FunctionInstance1<CaseDef>::Function	testFunc)
+{
+	const VkSampleCountFlagBits samples[] =
+	{
+		VK_SAMPLE_COUNT_2_BIT,
+		VK_SAMPLE_COUNT_4_BIT,
+		VK_SAMPLE_COUNT_8_BIT,
+		VK_SAMPLE_COUNT_16_BIT,
+		VK_SAMPLE_COUNT_32_BIT,
+		VK_SAMPLE_COUNT_64_BIT,
+	};
+	const VkFormat format[] =
+	{
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_FORMAT_R32G32B32A32_SFLOAT,
+	};
+
+	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(format); ++formatNdx)
+	{
+		MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(group->getTestContext(), getFormatString(format[formatNdx]).c_str(), ""));
+		for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); ++samplesNdx)
+		{
+			std::ostringstream caseName;
+			caseName << "samples_" << getNumSamples(samples[samplesNdx]);
+
+			const CaseDef caseDef =
+			{
+				IVec2(1,1),				// IVec2					renderSize;
+				1,						// int						numLayers;
+				format[formatNdx],		// VkFormat					colorFormat;
+				samples[samplesNdx],	// VkSampleCountFlagBits	numSamples;
+				true,					// bool						colorQuad;
+			};
+
+			addFunctionCaseWithPrograms(formatGroup.get(), caseName.str(), "", checkSupport, initPrograms, testFunc, caseDef);
+		}
+		group->addChild(formatGroup.release());
 	}
 }
 
@@ -1460,6 +1853,11 @@ void createSampledImageTestsInGroup (tcu::TestCaseGroup* group)
 void createStorageImageTestsInGroup (tcu::TestCaseGroup* group)
 {
 	addTestCasesWithFunctions(group, StorageImage::checkSupport, StorageImage::initPrograms, StorageImage::test);
+}
+
+void createStandardSamplePositionTestsInGroup (tcu::TestCaseGroup* group)
+{
+	addStandardSamplePositionTestCasesWithFunctions(group, StandardSamplePosition::checkSupport, StandardSamplePosition::initPrograms, StandardSamplePosition::test);
 }
 
 } // anonymous ns
@@ -1474,6 +1872,12 @@ tcu::TestCaseGroup* createMultisampleSampledImageTests (tcu::TestContext& testCt
 tcu::TestCaseGroup* createMultisampleStorageImageTests (tcu::TestContext& testCtx)
 {
 	return createTestGroup(testCtx, "storage_image", "Multisampled image draw and read/write in compute shader", createStorageImageTestsInGroup);
+}
+
+//! Render to a multisampled image and verify standard multisample positions.
+tcu::TestCaseGroup* createMultisampleStandardSamplePositionTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "standardsampleposition", "Multisampled image standard sample position tests", createStandardSamplePositionTestsInGroup);
 }
 
 } // pipeline

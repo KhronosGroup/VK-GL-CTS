@@ -456,83 +456,11 @@ struct VkMemoryRequirements
 	deUint32		memoryTypeBits;
 };
 
-struct VkSparseMemoryBind
-{
-	VkDeviceSize			resourceOffset;
-	VkDeviceSize			size;
-	VkDeviceMemory			memory;
-	VkDeviceSize			memoryOffset;
-	VkSparseMemoryBindFlags	flags;
-};
-
-struct VkSparseBufferMemoryBindInfo
-{
-	VkBuffer					buffer;
-	deUint32					bindCount;
-	const VkSparseMemoryBind*	pBinds;
-};
-
-struct VkSparseImageOpaqueMemoryBindInfo
-{
-	VkImage						image;
-	deUint32					bindCount;
-	const VkSparseMemoryBind*	pBinds;
-};
-
 struct VkImageSubresource
 {
 	VkImageAspectFlags	aspectMask;
 	deUint32			mipLevel;
 	deUint32			arrayLayer;
-};
-
-struct VkSparseImageMemoryBind
-{
-	VkImageSubresource		subresource;
-	VkOffset3D				offset;
-	VkExtent3D				extent;
-	VkDeviceMemory			memory;
-	VkDeviceSize			memoryOffset;
-	VkSparseMemoryBindFlags	flags;
-};
-
-struct VkSparseImageMemoryBindInfo
-{
-	VkImage							image;
-	deUint32						bindCount;
-	const VkSparseImageMemoryBind*	pBinds;
-};
-
-struct VkBindSparseInfo
-{
-	VkStructureType								sType;
-	const void*									pNext;
-	deUint32									waitSemaphoreCount;
-	const VkSemaphore*							pWaitSemaphores;
-	deUint32									bufferBindCount;
-	const VkSparseBufferMemoryBindInfo*			pBufferBinds;
-	deUint32									imageOpaqueBindCount;
-	const VkSparseImageOpaqueMemoryBindInfo*	pImageOpaqueBinds;
-	deUint32									imageBindCount;
-	const VkSparseImageMemoryBindInfo*			pImageBinds;
-	deUint32									signalSemaphoreCount;
-	const VkSemaphore*							pSignalSemaphores;
-};
-
-struct VkSparseImageFormatProperties
-{
-	VkImageAspectFlags			aspectMask;
-	VkExtent3D					imageGranularity;
-	VkSparseImageFormatFlags	flags;
-};
-
-struct VkSparseImageMemoryRequirements
-{
-	VkSparseImageFormatProperties	formatProperties;
-	deUint32						imageMipTailFirstLod;
-	VkDeviceSize					imageMipTailSize;
-	VkDeviceSize					imageMipTailOffset;
-	VkDeviceSize					imageMipTailStride;
 };
 
 struct VkFenceCreateInfo
@@ -1186,144 +1114,6 @@ struct VkRenderPassBeginInfo
 	const VkClearValue*	pClearValues;
 };
 
-struct VkPhysicalDeviceVulkanSC10Features
-{
-	VkStructureType	sType;
-	void*			pNext;
-	VkBool32		pipelineIdentifier;
-	VkBool32		shaderAtomicInstructions;
-};
-
-struct VkPhysicalDeviceVulkanSC10Properties
-{
-	VkStructureType	sType;
-	void*			pNext;
-	VkBool32		deviceDestroyFreesMemory;
-	VkBool32		commandPoolMultipleCommandBuffersRecording;
-	VkBool32		commandPoolResetCommandBuffer;
-	VkBool32		descriptorPoolFreeDescriptorSets;
-	VkBool32		externalSubpassDependencies;
-	VkBool32		recyclePipelineMemory;
-	deUint32		maxSubpasses;
-	deUint32		maxInputAttachments;
-	deUint32		maxPreserveAttachments;
-	deUint32		maxFramebufferAttachments;
-	deUint32		maxQueryFaultCount;
-	deUint32		maxCallbackFaultCount;
-	VkBool32		commandBufferSimultaneousUse;
-	VkBool32		secondaryCommandBufferNullFramebuffer;
-};
-
-struct VkPipelinePoolSize
-{
-	VkStructureType	sType;
-	const void*		pNext;
-	VkDeviceSize	poolEntrySize;
-	deUint32		poolEntryCount;
-};
-
-struct VkDeviceMemoryReservationCreateInfo
-{
-	VkStructureType						sType;
-	const void*							pNext;
-	deUint32							pipelineCacheCreateInfoCount;
-	const VkPipelineCacheCreateInfo*	pPipelineCacheCreateInfos;
-	deUint32							pipelinePoolSizeCount;
-	const VkPipelinePoolSize*			pPipelinePoolSizes;
-	deUint32							descriptorSetLayoutBindingCount;
-	deUint32							imageViewMaxMipLevels;
-	deUint32							imageViewMaxArrayLayers;
-	deUint32							layeredImageViewMaxMipLevels;
-	deUint32							semaphoreRequestCount;
-	deUint32							commandBufferRequestCount;
-	deUint32							fenceRequestCount;
-	deUint32							deviceMemoryRequestCount;
-	deUint32							bufferRequestCount;
-	deUint32							imageRequestCount;
-	deUint32							eventRequestCount;
-	deUint32							queryPoolRequestCount;
-	deUint32							bufferViewRequestCount;
-	deUint32							imageViewRequestCount;
-	deUint32							layeredImageViewRequestCount;
-	deUint32							pipelineLayoutRequestCount;
-	deUint32							renderPassRequestCount;
-	deUint32							graphicsPipelineRequestCount;
-	deUint32							computePipelineRequestCount;
-	deUint32							descriptorSetLayoutRequestCount;
-	deUint32							samplerRequestCount;
-	deUint32							descriptorPoolRequestCount;
-	deUint32							descriptorSetRequestCount;
-	deUint32							framebufferRequestCount;
-	deUint32							commandPoolRequestCount;
-	deUint32							samplerYcbcrConversionRequestCount;
-	deUint32							surfaceRequestCount;
-	deUint32							swapchainRequestCount;
-	deUint32							displayModeRequestCount;
-};
-
-struct VkCommandPoolMemoryReservationCreateInfo
-{
-	VkStructureType	sType;
-	const void*		pNext;
-	VkDeviceSize	commandPoolReservedSize;
-	deUint32		commandPoolMaxCommandBuffers;
-};
-
-struct VkCommandPoolMemoryConsumption
-{
-	VkStructureType	sType;
-	void*			pNext;
-	VkDeviceSize	commandPoolAllocated;
-	VkDeviceSize	commandPoolReservedSize;
-	VkDeviceSize	commandBufferAllocated;
-};
-
-struct VkPipelinePoolEntrySizeCreateInfo
-{
-	VkStructureType	sType;
-	const void*		pNext;
-	VkDeviceSize	poolEntrySize;
-};
-
-struct VkFaultData
-{
-	VkStructureType	sType;
-	void*			pNext;
-	VkFaultLevel	faultLevel;
-	VkFaultType		faultType;
-};
-
-struct VkFaultCallbackInfo
-{
-	VkStructureType				sType;
-	void*						pNext;
-	VkFaultData*				pFaults;
-	PFN_vkFaultCallbackFunction	pfnFaultCallback;
-};
-
-struct VkPhysicalDeviceFaultHandlingProperties
-{
-	VkStructureType	sType;
-	void*			pNext;
-	deUint32		maxQueryFaultCount;
-	deUint32		maxCallbackFaultCount;
-};
-
-struct VkPhysicalDevicePipelineIdentifierFeatures
-{
-	VkStructureType	sType;
-	void*			pNext;
-	VkBool32		pipelineIdentifier;
-};
-
-struct VkPipelineIdentifierInfo
-{
-	VkStructureType			sType;
-	const void*				pNext;
-	deUint8					pipelineIdentifier[VK_UUID_SIZE];
-	VkPipelineMatchControl	matchControl;
-};
-
 struct VkPhysicalDeviceSubgroupProperties
 {
 	VkStructureType			sType;
@@ -1414,14 +1204,6 @@ struct VkDeviceGroupSubmitInfo
 	const deUint32*	pSignalSemaphoreDeviceIndices;
 };
 
-struct VkDeviceGroupBindSparseInfo
-{
-	VkStructureType	sType;
-	const void*		pNext;
-	deUint32		resourceDeviceIndex;
-	deUint32		memoryDeviceIndex;
-};
-
 struct VkBindBufferMemoryDeviceGroupInfo
 {
 	VkStructureType	sType;
@@ -1471,25 +1253,11 @@ struct VkImageMemoryRequirementsInfo2
 	VkImage			image;
 };
 
-struct VkImageSparseMemoryRequirementsInfo2
-{
-	VkStructureType	sType;
-	const void*		pNext;
-	VkImage			image;
-};
-
 struct VkMemoryRequirements2
 {
 	VkStructureType			sType;
 	void*					pNext;
 	VkMemoryRequirements	memoryRequirements;
-};
-
-struct VkSparseImageMemoryRequirements2
-{
-	VkStructureType					sType;
-	void*							pNext;
-	VkSparseImageMemoryRequirements	memoryRequirements;
 };
 
 struct VkPhysicalDeviceFeatures2
@@ -1543,24 +1311,6 @@ struct VkPhysicalDeviceMemoryProperties2
 	VkStructureType						sType;
 	void*								pNext;
 	VkPhysicalDeviceMemoryProperties	memoryProperties;
-};
-
-struct VkSparseImageFormatProperties2
-{
-	VkStructureType					sType;
-	void*							pNext;
-	VkSparseImageFormatProperties	properties;
-};
-
-struct VkPhysicalDeviceSparseImageFormatInfo2
-{
-	VkStructureType			sType;
-	const void*				pNext;
-	VkFormat				format;
-	VkImageType				type;
-	VkSampleCountFlagBits	samples;
-	VkImageUsageFlags		usage;
-	VkImageTiling			tiling;
 };
 
 struct VkPhysicalDevicePointClippingProperties
@@ -2460,6 +2210,138 @@ struct VkDeviceMemoryOpaqueCaptureAddressInfo
 	VkDeviceMemory	memory;
 };
 
+struct VkPhysicalDeviceVulkanSC10Features
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		pipelineIdentifier;
+	VkBool32		shaderAtomicInstructions;
+};
+
+struct VkPhysicalDeviceVulkanSC10Properties
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		deviceNoDynamicHostAllocations;
+	VkBool32		deviceDestroyFreesMemory;
+	VkBool32		commandPoolMultipleCommandBuffersRecording;
+	VkBool32		commandPoolResetCommandBuffer;
+	VkBool32		commandBufferSimultaneousUse;
+	VkBool32		secondaryCommandBufferNullFramebuffer;
+	VkBool32		descriptorPoolFreeDescriptorSets;
+	VkBool32		recyclePipelineMemory;
+	deUint32		maxRenderPassSubpasses;
+	deUint32		maxRenderPassDependencies;
+	deUint32		maxSubpassInputAttachments;
+	deUint32		maxSubpassPreserveAttachments;
+	deUint32		maxFramebufferAttachments;
+	deUint32		maxDescriptorSetLayoutBindings;
+	deUint32		maxQueryFaultCount;
+	deUint32		maxCallbackFaultCount;
+};
+
+struct VkPipelinePoolSize
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkDeviceSize	poolEntrySize;
+	deUint32		poolEntryCount;
+};
+
+struct VkDeviceObjectReservationCreateInfo
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	deUint32							pipelineCacheCreateInfoCount;
+	const VkPipelineCacheCreateInfo*	pPipelineCacheCreateInfos;
+	deUint32							pipelinePoolSizeCount;
+	const VkPipelinePoolSize*			pPipelinePoolSizes;
+	deUint32							semaphoreRequestCount;
+	deUint32							commandBufferRequestCount;
+	deUint32							fenceRequestCount;
+	deUint32							deviceMemoryRequestCount;
+	deUint32							bufferRequestCount;
+	deUint32							imageRequestCount;
+	deUint32							eventRequestCount;
+	deUint32							queryPoolRequestCount;
+	deUint32							bufferViewRequestCount;
+	deUint32							imageViewRequestCount;
+	deUint32							layeredImageViewRequestCount;
+	deUint32							pipelineCacheRequestCount;
+	deUint32							pipelineLayoutRequestCount;
+	deUint32							renderPassRequestCount;
+	deUint32							graphicsPipelineRequestCount;
+	deUint32							computePipelineRequestCount;
+	deUint32							descriptorSetLayoutRequestCount;
+	deUint32							samplerRequestCount;
+	deUint32							descriptorPoolRequestCount;
+	deUint32							descriptorSetRequestCount;
+	deUint32							framebufferRequestCount;
+	deUint32							commandPoolRequestCount;
+	deUint32							samplerYcbcrConversionRequestCount;
+	deUint32							surfaceRequestCount;
+	deUint32							swapchainRequestCount;
+	deUint32							displayModeRequestCount;
+	deUint32							subpassDescriptionRequestCount;
+	deUint32							attachmentDescriptionRequestCount;
+	deUint32							descriptorSetLayoutBindingRequestCount;
+	deUint32							descriptorSetLayoutBindingLimit;
+	deUint32							maxImageViewMipLevels;
+	deUint32							maxImageViewArrayLayers;
+	deUint32							maxLayeredImageViewMipLevels;
+	deUint32							maxOcclusionQueriesPerPool;
+	deUint32							maxPipelineStatisticsQueriesPerPool;
+	deUint32							maxTimestampQueriesPerPool;
+};
+
+struct VkCommandPoolMemoryReservationCreateInfo
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkDeviceSize	commandPoolReservedSize;
+	deUint32		commandPoolMaxCommandBuffers;
+};
+
+struct VkCommandPoolMemoryConsumption
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	commandPoolAllocated;
+	VkDeviceSize	commandPoolReservedSize;
+	VkDeviceSize	commandBufferAllocated;
+};
+
+struct VkPipelinePoolEntrySizeCreateInfo
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkDeviceSize	poolEntrySize;
+};
+
+struct VkFaultData
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkFaultLevel	faultLevel;
+	VkFaultType		faultType;
+};
+
+struct VkFaultCallbackInfo
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkFaultData*				pFaults;
+	PFN_vkFaultCallbackFunction	pfnFaultCallback;
+};
+
+struct VkPipelineIdentifierInfo
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	deUint8					pipelineIdentifier[VK_UUID_SIZE];
+	VkPipelineMatchControl	matchControl;
+};
+
 struct VkSurfaceCapabilitiesKHR
 {
 	deUint32						minImageCount;
@@ -2724,6 +2606,82 @@ struct VkFenceGetFdInfoKHR
 	VkExternalFenceHandleTypeFlagBits	handleType;
 };
 
+struct VkPhysicalDevicePerformanceQueryFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		performanceCounterQueryPools;
+	VkBool32		performanceCounterMultipleQueryPools;
+};
+
+struct VkPhysicalDevicePerformanceQueryPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		allowCommandBufferQueryCopies;
+};
+
+struct VkPerformanceCounterKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkPerformanceCounterUnitKHR		unit;
+	VkPerformanceCounterScopeKHR	scope;
+	VkPerformanceCounterStorageKHR	storage;
+	deUint8							uuid[VK_UUID_SIZE];
+};
+
+struct VkPerformanceCounterDescriptionKHR
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkPerformanceCounterDescriptionFlagsKHR	flags;
+	char									name[VK_MAX_DESCRIPTION_SIZE];
+	char									category[VK_MAX_DESCRIPTION_SIZE];
+	char									description[VK_MAX_DESCRIPTION_SIZE];
+};
+
+struct VkQueryPoolPerformanceCreateInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		queueFamilyIndex;
+	deUint32		counterIndexCount;
+	const deUint32*	pCounterIndices;
+};
+
+union VkPerformanceCounterResultKHR
+{
+	deInt32		int32;
+	deInt64		int64;
+	deUint32	uint32;
+	deUint64	uint64;
+	float		float32;
+	double		float64;
+};
+
+struct VkAcquireProfilingLockInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkAcquireProfilingLockFlagsKHR	flags;
+	deUint64						timeout;
+};
+
+struct VkPerformanceQuerySubmitInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		counterPassIndex;
+};
+
+struct VkPerformanceQueryReservationInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		maxPerformanceQueriesPerPool;
+};
+
 struct VkPhysicalDeviceSurfaceInfo2KHR
 {
 	VkStructureType	sType;
@@ -2865,6 +2823,113 @@ struct VkRefreshObjectListKHR
 	const void*					pNext;
 	deUint32					objectCount;
 	const VkRefreshObjectKHR*	pObjects;
+};
+
+struct VkMemoryBarrier2KHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkPipelineStageFlags2KHR	srcStageMask;
+	VkAccessFlags2KHR			srcAccessMask;
+	VkPipelineStageFlags2KHR	dstStageMask;
+	VkAccessFlags2KHR			dstAccessMask;
+};
+
+struct VkBufferMemoryBarrier2KHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkPipelineStageFlags2KHR	srcStageMask;
+	VkAccessFlags2KHR			srcAccessMask;
+	VkPipelineStageFlags2KHR	dstStageMask;
+	VkAccessFlags2KHR			dstAccessMask;
+	deUint32					srcQueueFamilyIndex;
+	deUint32					dstQueueFamilyIndex;
+	VkBuffer					buffer;
+	VkDeviceSize				offset;
+	VkDeviceSize				size;
+};
+
+struct VkImageMemoryBarrier2KHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkPipelineStageFlags2KHR	srcStageMask;
+	VkAccessFlags2KHR			srcAccessMask;
+	VkPipelineStageFlags2KHR	dstStageMask;
+	VkAccessFlags2KHR			dstAccessMask;
+	VkImageLayout				oldLayout;
+	VkImageLayout				newLayout;
+	deUint32					srcQueueFamilyIndex;
+	deUint32					dstQueueFamilyIndex;
+	VkImage						image;
+	VkImageSubresourceRange		subresourceRange;
+};
+
+struct VkDependencyInfoKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkDependencyFlags					dependencyFlags;
+	deUint32							memoryBarrierCount;
+	const VkMemoryBarrier2KHR*			pMemoryBarriers;
+	deUint32							bufferMemoryBarrierCount;
+	const VkBufferMemoryBarrier2KHR*	pBufferMemoryBarriers;
+	deUint32							imageMemoryBarrierCount;
+	const VkImageMemoryBarrier2KHR*		pImageMemoryBarriers;
+};
+
+struct VkSemaphoreSubmitInfoKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkSemaphore					semaphore;
+	deUint64					value;
+	VkPipelineStageFlags2KHR	stageMask;
+	deUint32					deviceIndex;
+};
+
+struct VkCommandBufferSubmitInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkCommandBuffer	commandBuffer;
+	deUint32		deviceMask;
+};
+
+struct VkSubmitInfo2KHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkSubmitFlagsKHR					flags;
+	deUint32							waitSemaphoreInfoCount;
+	const VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos;
+	deUint32							commandBufferInfoCount;
+	const VkCommandBufferSubmitInfoKHR*	pCommandBufferInfos;
+	deUint32							signalSemaphoreInfoCount;
+	const VkSemaphoreSubmitInfoKHR*		pSignalSemaphoreInfos;
+};
+
+struct VkPhysicalDeviceSynchronization2FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		synchronization2;
+};
+
+struct VkQueueFamilyCheckpointProperties2NV
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkPipelineStageFlags2KHR	checkpointExecutionStageMask;
+};
+
+struct VkCheckpointData2NV
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkPipelineStageFlags2KHR	stage;
+	void*						pCheckpointMarker;
 };
 
 struct VkBufferCopy2KHR
@@ -3129,6 +3194,61 @@ struct VkHdrMetadataEXT
 	float			minLuminance;
 	float			maxContentLightLevel;
 	float			maxFrameAverageLightLevel;
+};
+
+struct VkDebugUtilsLabelEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	const char*		pLabelName;
+	float			color[4];
+};
+
+struct VkDebugUtilsObjectNameInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkObjectType	objectType;
+	deUint64		objectHandle;
+	const char*		pObjectName;
+};
+
+struct VkDebugUtilsMessengerCallbackDataEXT
+{
+	VkStructureType								sType;
+	const void*									pNext;
+	VkDebugUtilsMessengerCallbackDataFlagsEXT	flags;
+	const char*									pMessageIdName;
+	deInt32										messageIdNumber;
+	const char*									pMessage;
+	deUint32									queueLabelCount;
+	const VkDebugUtilsLabelEXT*					pQueueLabels;
+	deUint32									cmdBufLabelCount;
+	const VkDebugUtilsLabelEXT*					pCmdBufLabels;
+	deUint32									objectCount;
+	const VkDebugUtilsObjectNameInfoEXT*		pObjects;
+};
+
+struct VkDebugUtilsMessengerCreateInfoEXT
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkDebugUtilsMessengerCreateFlagsEXT		flags;
+	VkDebugUtilsMessageSeverityFlagsEXT		messageSeverity;
+	VkDebugUtilsMessageTypeFlagsEXT			messageType;
+	PFN_vkDebugUtilsMessengerCallbackEXT	pfnUserCallback;
+	void*									pUserData;
+};
+
+struct VkDebugUtilsObjectTagInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkObjectType	objectType;
+	deUint64		objectHandle;
+	deUint64		tagName;
+	deUintptr		tagSize;
+	const void*		pTag;
 };
 
 struct VkSampleLocationEXT
@@ -3403,6 +3523,16 @@ struct VkPhysicalDeviceMemoryBudgetPropertiesEXT
 	VkDeviceSize	heapUsage[VK_MAX_MEMORY_HEAPS];
 };
 
+struct VkValidationFeaturesEXT
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	deUint32								enabledValidationFeatureCount;
+	const VkValidationFeatureEnableEXT*		pEnabledValidationFeatures;
+	deUint32								disabledValidationFeatureCount;
+	const VkValidationFeatureDisableEXT*	pDisabledValidationFeatures;
+};
+
 struct VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT
 {
 	VkStructureType	sType;
@@ -3551,6 +3681,13 @@ struct VkPhysicalDeviceCustomBorderColorFeaturesEXT
 	VkBool32		customBorderColorWithoutFormat;
 };
 
+struct VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		ycbcr2plane444Formats;
+};
+
 struct VkPhysicalDeviceImageRobustnessFeaturesEXT
 {
 	VkStructureType	sType;
@@ -3566,15 +3703,56 @@ struct VkPhysicalDevice4444FormatsFeaturesEXT
 	VkBool32		formatA4B4G4R4;
 };
 
-typedef VkFaultData VkFaultDataKHR;
+struct VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		vertexInputDynamicState;
+};
 
-typedef VkFaultCallbackInfo VkFaultCallbackInfoKHR;
+struct VkVertexInputBindingDescription2EXT
+{
+	VkStructureType		sType;
+	void*				pNext;
+	deUint32			binding;
+	deUint32			stride;
+	VkVertexInputRate	inputRate;
+	deUint32			divisor;
+};
 
-typedef VkPhysicalDeviceFaultHandlingProperties VkPhysicalDeviceFaultHandlingPropertiesKHR;
+struct VkVertexInputAttributeDescription2EXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		location;
+	deUint32		binding;
+	VkFormat		format;
+	deUint32		offset;
+};
 
-typedef VkPhysicalDevicePipelineIdentifierFeatures VkPhysicalDevicePipelineIdentifierFeaturesKHR;
+struct VkPhysicalDeviceExtendedDynamicState2FeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		extendedDynamicState2;
+	VkBool32		extendedDynamicState2LogicOp;
+	VkBool32		extendedDynamicState2PatchControlPoints;
+};
 
-typedef VkPipelineIdentifierInfo VkPipelineIdentifierInfoKHR;
+struct VkPhysicalDeviceColorWriteEnableFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		colorWriteEnable;
+};
+
+struct VkPipelineColorWriteCreateInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		attachmentCount;
+	const VkBool32*	pColorWriteEnables;
+};
 
 typedef VkPhysicalDeviceVariablePointersFeatures VkPhysicalDeviceVariablePointerFeatures;
 

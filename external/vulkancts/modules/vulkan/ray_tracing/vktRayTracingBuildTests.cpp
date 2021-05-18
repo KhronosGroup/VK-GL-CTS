@@ -38,6 +38,8 @@
 
 #include "deClock.h"
 
+#include <limits>
+
 namespace vkt
 {
 namespace RayTracing
@@ -435,7 +437,7 @@ de::MovePtr<BufferWithMemory> RayTracingBuildTestInstance::runTest (bool useGpuB
 																				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 																				**image, imageSubresourceRange);
 	const VkMemoryBarrier				postTraceMemoryBarrier				= makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
-	const VkMemoryBarrier				postCopyMemoryBarrier				= makeMemoryBarrier(VK_ACCESS_TRANSFER_READ_BIT, 0);
+	const VkMemoryBarrier				postCopyMemoryBarrier				= makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
 	const VkClearValue					clearValue							= makeClearValueColorU32(5u, 5u, 5u, 255u);
 
 	vector<de::SharedPtr<BottomLevelAccelerationStructure> >	bottomLevelAccelerationStructures;
@@ -523,11 +525,30 @@ deUint32 RayTracingBuildTestInstance::validateBuffer (de::MovePtr<BufferWithMemo
 	for (deUint32 y = 0; y < m_data.height; ++y)
 	for (deUint32 x = 0; x < m_data.width; ++x)
 	{
+		const deUint32	anyHitValue		= 1;
+		const deUint32	missValue		= 2;
+
 		const deUint32	n				= m_data.width * y + x;
-		const deUint32	expectedValue	= (n % 7 == 0) ? 2 : 1;
+		const deUint32	expectedValue	= (n % 7 == 0) ? missValue : anyHitValue;
 
 		if (bufferPtr[pos] != expectedValue)
-			failures++;
+		{
+			if (m_data.testType == TEST_TYPE_AABBS)
+			{
+				// In the case of AABB geometries, implementations may increase their size in
+				// an acceleration structure in order to mitigate precision issues. This may
+				// result in false positives being reported to the application."
+
+				if (bufferPtr[pos] != anyHitValue)
+				{
+					failures++;
+				}
+			}
+			else
+			{
+				failures++;
+			}
+		}
 
 		++pos;
 	}
@@ -600,7 +621,7 @@ tcu::TestCaseGroup*	createBuildTests (tcu::TestContext& testCtx)
 		"level_geometries",
 		"level_instances"
 	};
-	const deUint32	sizes[]		= { 4, 16, 64, 256, 1024 };
+	const deUint32	sizes[]		= { 4, 16, 64, 256 };
 	const deUint32	factors[]	= { 1, 4 };
 	const deUint32	threads[]	= { 0, 1, 2, 3, 4, 8, std::numeric_limits<deUint32>::max() };
 
@@ -615,6 +636,7 @@ tcu::TestCaseGroup*	createBuildTests (tcu::TestContext& testCtx)
 		const string					groupDesc			= !defferedOperation ? "Compare results of run with acceleration structures build on GPU and CPU"
 															: threadsCount > 0 ? "Compare results of run with acceleration structures build on GPU and using host threading"
 															: "Run acceleration structures build using host threading";
+
 		de::MovePtr<tcu::TestCaseGroup>	groupGpuCpuHt		(new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupDesc.c_str()));
 
 		for (size_t testsNdx = 0; testsNdx < DE_LENGTH_OF_ARRAY(tests); ++testsNdx)

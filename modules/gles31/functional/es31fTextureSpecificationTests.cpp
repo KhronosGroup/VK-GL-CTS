@@ -236,8 +236,10 @@ TextureCubeArraySpecCase::~TextureCubeArraySpecCase (void)
 
 bool TextureCubeArraySpecCase::checkExtensionSupport (void)
 {
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	return supportsES32 || m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_cube_map_array");
+	glu::ContextType		contextType			= m_context.getRenderContext().getType();
+	const bool				supportsES32orGL45	= glu::contextSupports(contextType, glu::ApiType::es(3, 2)) ||
+												  glu::contextSupports(contextType, glu::ApiType::core(4, 5));
+	return supportsES32orGL45 || m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_cube_map_array");
 }
 
 void TextureCubeArraySpecCase::verifyTexture (sglr::GLContext& gles3Context, sglr::ReferenceContext& refContext)

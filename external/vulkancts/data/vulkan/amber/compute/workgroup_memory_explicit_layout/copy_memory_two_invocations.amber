@@ -1,0 +1,180 @@
+#!amber
+# Copyright 2021 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+DEVICE_EXTENSION VK_KHR_spirv_1_4
+DEVICE_EXTENSION VK_KHR_workgroup_memory_explicit_layout
+
+SHADER compute compute_shader SPIRV-ASM
+
+OpCapability Shader
+OpCapability WorkgroupMemoryExplicitLayoutKHR
+OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %index %push_constants %input_buffer_0 %input_buffer_1 %output_buffer %wg %half_wg_0 %half_wg_1
+OpExecutionMode %main LocalSize 128 4 1
+
+OpDecorate %index BuiltIn LocalInvocationIndex
+OpDecorate %buffer_type Block
+OpDecorate %half_buffer_type Block
+OpDecorate %other_half_buffer_type Block
+OpMemberDecorate %buffer_type 0 Offset 0
+OpDecorate %array ArrayStride 4
+OpMemberDecorate %half_buffer_type 0 Offset 0
+OpMemberDecorate %other_half_buffer_type 0 Offset 64
+OpDecorate %half_array ArrayStride 4
+OpDecorate %input_buffer_0 DescriptorSet 0
+OpDecorate %input_buffer_0 Binding 0
+OpDecorate %input_buffer_1 DescriptorSet 0
+OpDecorate %input_buffer_1 Binding 1
+OpDecorate %output_buffer DescriptorSet 0
+OpDecorate %output_buffer Binding 2
+OpDecorate %wg Aliased
+OpDecorate %half_wg_0 Aliased
+OpDecorate %half_wg_1 Aliased
+OpMemberDecorate %push_constants_type 0 Offset 0
+OpMemberDecorate %push_constants_type 1 Offset 4
+OpDecorate %push_constants_type Block
+
+%uint = OpTypeInt 32 0
+%const_uint_0 = OpConstant %uint 0
+%const_uint_1 = OpConstant %uint 1
+%const_uint_2 = OpConstant %uint 2
+%const_uint_16 = OpConstant %uint 16
+%const_uint_32 = OpConstant %uint 32
+%const_uint_64 = OpConstant %uint 64
+%const_uint_128 = OpConstant %uint 128
+%uint_input_ptr = OpTypePointer Input %uint
+%uint_pc_ptr = OpTypePointer PushConstant %uint
+
+%bool = OpTypeBool
+%void = OpTypeVoid
+%main_type = OpTypeFunction %void
+%array = OpTypeArray %uint %const_uint_32
+%half_array = OpTypeArray %uint %const_uint_16
+%half_array_wg_ptr = OpTypePointer Workgroup %half_array
+%half_array_sb_ptr = OpTypePointer StorageBuffer %half_array
+%buffer_type = OpTypeStruct %array
+%half_buffer_type = OpTypeStruct %half_array
+%other_half_buffer_type = OpTypeStruct %half_array
+%input_buffer_0_ptr = OpTypePointer StorageBuffer %half_buffer_type
+%input_buffer_1_ptr = OpTypePointer StorageBuffer %half_buffer_type
+%output_buffer_ptr = OpTypePointer StorageBuffer %buffer_type
+%wg_ptr = OpTypePointer Workgroup %buffer_type
+%half_wg_0_ptr = OpTypePointer Workgroup %half_buffer_type
+%half_wg_1_ptr = OpTypePointer Workgroup %other_half_buffer_type
+%push_constants_type = OpTypeStruct %uint %uint
+%push_constants_type_ptr = OpTypePointer PushConstant %push_constants_type
+
+;;; Workgroup has a block covering the entire memory and another two
+;;; blocks covering each half of the former.
+
+%wg = OpVariable %wg_ptr Workgroup
+%half_wg_0 = OpVariable %half_wg_0_ptr Workgroup
+%half_wg_1 = OpVariable %half_wg_1_ptr Workgroup
+
+%input_buffer_0 = OpVariable %input_buffer_0_ptr StorageBuffer
+%input_buffer_1 = OpVariable %input_buffer_1_ptr StorageBuffer
+%output_buffer = OpVariable %output_buffer_ptr StorageBuffer
+
+%index = OpVariable %uint_input_ptr Input
+%push_constants = OpVariable %push_constants_type_ptr PushConstant
+
+%main = OpFunction %void None %main_type
+%entry = OpLabel
+
+;;; Look up in the push constants values a and b that will be use to select
+;;; which invocation will do the work.
+
+%index_val = OpLoad %uint %index
+%first_ptr = OpAccessChain %uint_pc_ptr %push_constants %const_uint_0
+%second_ptr = OpAccessChain %uint_pc_ptr %push_constants %const_uint_1
+%first = OpLoad %uint %first_ptr
+%second = OpLoad %uint %second_ptr
+%is_first = OpIEqual %bool %index_val %first
+%is_second = OpIEqual %bool %index_val %second
+
+;;; Copy first input into half of the workgroup memory.  Because the
+;;; whole types match here, we can afford to copy the Variables
+;;; directly.  Only the first invocation specified will do that.
+
+OpSelectionMerge %after_first_copy None
+OpBranchConditional %is_first %first_copy %after_first_copy
+%first_copy = OpLabel
+
+OpCopyMemory %half_wg_0 %input_buffer_0
+
+OpBranch %after_first_copy
+%after_first_copy = OpLabel
+
+;;; Then copy the second input into the other half of Workgroup
+;;; memory, use OpAccessChain to extract the array pointers (what we
+;;; are copying), since the whole types don't match (different Offsets
+;;; in the block struct).  Only the second invocation specified will
+;;; do that.
+
+OpSelectionMerge %after_second_copy None
+OpBranchConditional %is_second %second_copy %after_second_copy
+%second_copy = OpLabel
+
+%a = OpAccessChain %half_array_wg_ptr %half_wg_1 %const_uint_0
+%b = OpAccessChain %half_array_sb_ptr %input_buffer_1 %const_uint_0
+OpCopyMemory %a %b
+
+OpBranch %after_second_copy
+%after_second_copy = OpLabel
+
+OpControlBarrier %const_uint_2 %const_uint_2 %const_uint_0
+
+;;; The two halves of Workgroup memory were filled, now copy the large
+;;; Workgroup block that alias the halves into the output.  Only the first
+;;; invocation specified will do that.
+
+OpSelectionMerge %after_third_copy None
+OpBranchConditional %is_first %third_copy %after_third_copy
+%third_copy = OpLabel
+
+OpCopyMemory %output_buffer %wg
+
+OpBranch %after_third_copy
+%after_third_copy = OpLabel
+
+OpReturn
+OpFunctionEnd
+
+END
+
+BUFFER input_buffer_0 DATA_TYPE uint32 SIZE 16 SERIES_FROM 1 INC_BY 1
+BUFFER input_buffer_1 DATA_TYPE uint32 SIZE 16 SERIES_FROM 17 INC_BY 1
+
+BUFFER output_buffer DATA_TYPE uint32 SIZE 32 FILL 99
+
+BUFFER expected_buffer DATA_TYPE uint32 SIZE 32 SERIES_FROM 1 INC_BY 1
+
+BUFFER const_buf DATA_TYPE uint32 DATA
+30 130
+END
+
+PIPELINE compute pipeline
+  ATTACH compute_shader
+
+  BIND BUFFER const_buf AS push_constant
+  BIND BUFFER input_buffer_0 AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER input_buffer_1 AS storage DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER output_buffer AS storage DESCRIPTOR_SET 0 BINDING 2
+END
+
+RUN pipeline 1 1 1
+
+EXPECT output_buffer EQ_BUFFER expected_buffer

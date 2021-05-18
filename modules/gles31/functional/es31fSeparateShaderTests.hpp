@@ -32,7 +32,8 @@ namespace gles31
 namespace Functional
 {
 
-TestCaseGroup*		createSeparateShaderTests	(Context& context);
+TestCaseGroup*		createGLESSeparateShaderTests	(Context& context);
+TestCaseGroup*		createCommonSeparateShaderTests	(Context& context);
 
 } // Functional
 } // gles31

@@ -184,6 +184,11 @@ bool validateSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostre
 				break;
 		}
 
+		if (val_options.flags & SpirvValidatorOptions::FLAG_SPIRV_VALIDATOR_WORKGROUP_SCALAR_BLOCK_LAYOUT)
+		{
+			spvValidatorOptionsSetWorkgroupScalarBlockLayout(options, true);
+		}
+
 		const spv_result_t		valid	= spvValidateWithOptions(context, options, &cbinary, &diagnostic);
 		const bool				passed	= (valid == SPV_SUCCESS);
 

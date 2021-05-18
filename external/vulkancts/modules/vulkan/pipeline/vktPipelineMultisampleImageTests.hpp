@@ -32,6 +32,7 @@ namespace pipeline
 
 tcu::TestCaseGroup* createMultisampleSampledImageTests (tcu::TestContext& testCtx);
 tcu::TestCaseGroup* createMultisampleStorageImageTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createMultisampleStandardSamplePositionTests(tcu::TestContext& testCtx);
 
 } // pipeline
 } // vkt

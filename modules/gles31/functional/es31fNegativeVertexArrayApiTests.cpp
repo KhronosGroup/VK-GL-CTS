@@ -66,6 +66,36 @@ static const char* geometryShaderSource		=	"#version 320 es\n"
 												"{\n"
 												"}\n";
 
+// Helper class that enables tests to be executed on GL4.5 context
+// and removes code redundancy in each test that requires it.
+class VAOHelper
+{
+public:
+	VAOHelper(NegativeTestContext& ctx, bool isES)
+		: m_vao(0)
+		, m_ctx(ctx)
+	{
+		// tests need vao only for GL4.5 context
+		if (isES)
+			return;
+
+		m_ctx.glGenVertexArrays(1, &m_vao);
+		m_ctx.glBindVertexArray(m_vao);
+		m_ctx.glVertexAttribPointer(0, 1, GL_BYTE, GL_TRUE, 0, NULL);
+		m_ctx.glEnableVertexAttribArray(0);
+	}
+
+	~VAOHelper()
+	{
+		if (m_vao)
+			m_ctx.glDeleteVertexArrays(1, &m_vao);
+	}
+
+private:
+	GLuint					m_vao;
+	NegativeTestContext&	m_ctx;
+};
+
 void vertex_attribf (NegativeTestContext& ctx)
 {
 	ctx.beginSection("GL_INVALID_VALUE is generated if index is greater than or equal to GL_MAX_VERTEX_ATTRIBS.");
@@ -127,6 +157,13 @@ void vertex_attribi4v (NegativeTestContext& ctx)
 
 void vertex_attrib_pointer (NegativeTestContext& ctx)
 {
+	GLuint vao = 0;
+	ctx.glGenVertexArrays(1, &vao);
+	if (glu::isContextTypeES(ctx.getRenderContext().getType()))
+		ctx.glBindVertexArray(0);
+	else
+		ctx.glBindVertexArray(vao);
+
 	ctx.beginSection("GL_INVALID_ENUM is generated if type is not an accepted value.");
 	ctx.glVertexAttribPointer(0, 1, 0, GL_TRUE, 0, 0);
 	ctx.expectError(GL_INVALID_ENUM);
@@ -160,9 +197,7 @@ void vertex_attrib_pointer (NegativeTestContext& ctx)
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated a non-zero vertex array object is bound, zero is bound to the GL_ARRAY_BUFFER buffer object binding point and the pointer argument is not NULL.");
-	GLuint vao = 0;
 	GLbyte offset = 1;
-	ctx.glGenVertexArrays(1, &vao);
 	ctx.glBindVertexArray(vao);
 	ctx.glBindBuffer(GL_ARRAY_BUFFER, 0);
 	ctx.expectError(GL_NO_ERROR);
@@ -178,6 +213,13 @@ void vertex_attrib_pointer (NegativeTestContext& ctx)
 
 void vertex_attrib_i_pointer (NegativeTestContext& ctx)
 {
+	GLuint vao = 0;
+	ctx.glGenVertexArrays(1, &vao);
+	if (glu::isContextTypeES(ctx.getRenderContext().getType()))
+		ctx.glBindVertexArray(0);
+	else
+		ctx.glBindVertexArray(vao);
+
 	ctx.beginSection("GL_INVALID_ENUM is generated if type is not an accepted value.");
 	ctx.glVertexAttribIPointer(0, 1, 0, 0, 0);
 	ctx.expectError(GL_INVALID_ENUM);
@@ -204,9 +246,7 @@ void vertex_attrib_i_pointer (NegativeTestContext& ctx)
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated a non-zero vertex array object is bound, zero is bound to the GL_ARRAY_BUFFER buffer object binding point and the pointer argument is not NULL.");
-	GLuint vao = 0;
 	GLbyte offset = 1;
-	ctx.glGenVertexArrays(1, &vao);
 	ctx.glBindVertexArray(vao);
 	ctx.glBindBuffer(GL_ARRAY_BUFFER, 0);
 	ctx.expectError(GL_NO_ERROR);
@@ -388,11 +428,13 @@ void vertex_attrib_divisor (NegativeTestContext& ctx)
 
 void draw_arrays (NegativeTestContext& ctx)
 {
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glu::RenderContext&	rc		= ctx.getRenderContext();
+	const bool					isES32	= glu::contextSupports(rc.getType(), glu::ApiType::es(3, 2));
 	GLuint						fbo		= 0;
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	glu::ShaderProgram			program	(rc, glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	VAOHelper					vao(ctx, glu::isContextTypeES(rc.getType()));
 
 	ctx.glUseProgram(program.getProgram());
 	ctx.expectError(GL_NO_ERROR);
@@ -422,7 +464,9 @@ void draw_arrays (NegativeTestContext& ctx)
 
 void draw_arrays_invalid_program (NegativeTestContext& ctx)
 {
-	GLuint fbo = 0;
+	GLuint	fbo		= 0;
+	VAOHelper vao(ctx, glu::isContextTypeES(ctx.getRenderContext().getType()));
+
 	ctx.glUseProgram(0);
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not an accepted value.");
@@ -448,11 +492,13 @@ void draw_arrays_invalid_program (NegativeTestContext& ctx)
 
 void draw_arrays_incomplete_primitive (NegativeTestContext& ctx)
 {
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glu::RenderContext&	rc		= ctx.getRenderContext();
+	const bool					isES32	= glu::contextSupports(rc.getType(), glu::ApiType::es(3, 2));
 	GLuint						fbo		= 0;
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	glu::ShaderProgram			program	(rc, glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	VAOHelper					vao(ctx, glu::isContextTypeES(rc.getType()));
 
 	ctx.glUseProgram(program.getProgram());
 	ctx.expectError(GL_NO_ERROR);
@@ -482,14 +528,17 @@ void draw_arrays_incomplete_primitive (NegativeTestContext& ctx)
 
 void draw_elements (NegativeTestContext& ctx)
 {
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glu::RenderContext&	rc		= ctx.getRenderContext();
+	const bool					isES	= glu::isContextTypeES(rc.getType());
+	const bool					isES32	= glu::contextSupports(rc.getType(), glu::ApiType::es(3, 2));
 	GLuint						fbo		= 0;
 	GLuint						buf		= 0;
 	GLuint						tfID	= 0;
 	GLbyte						indices[1]	= {0};
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	glu::ShaderProgram			program	(rc, glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	VAOHelper					vao(ctx, isES);
 
 	ctx.glUseProgram(program.getProgram());
 	ctx.expectError(GL_NO_ERROR);
@@ -521,7 +570,7 @@ void draw_elements (NegativeTestContext& ctx)
 	ctx.glDeleteFramebuffers(1, &fbo);
 	ctx.endSection();
 
-	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
+	if (isES && !ctx.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
 	{
 		ctx.beginSection("GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
 		const char* tfVarying = "gl_Position";
@@ -559,8 +608,9 @@ void draw_elements (NegativeTestContext& ctx)
 void draw_elements_invalid_program (NegativeTestContext& ctx)
 {
 	ctx.glUseProgram(0);
-	GLuint	fbo			= 0;
-	GLbyte indices[1]	= {0};
+	GLuint		fbo			= 0;
+	GLbyte		indices[1]	= {0};
+	VAOHelper	vao(ctx, glu::isContextTypeES(ctx.getRenderContext().getType()));
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not an accepted value.");
 	ctx.glDrawElements(-1, 1, GL_UNSIGNED_BYTE, indices);
@@ -592,14 +642,17 @@ void draw_elements_invalid_program (NegativeTestContext& ctx)
 
 void draw_elements_incomplete_primitive (NegativeTestContext& ctx)
 {
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glu::RenderContext&	rc		= ctx.getRenderContext();
+	bool						isES	= glu::isContextTypeES(rc.getType());
+	const bool					isES32	= glu::contextSupports(rc.getType(), glu::ApiType::es(3, 2));
 	GLuint						fbo		= 0;
 	GLuint						buf		= 0;
 	GLuint						tfID	= 0;
 	GLbyte						indices[1] = {0};
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	glu::ShaderProgram			program	(rc, glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	VAOHelper					vao(ctx, isES);
 
 	ctx.glUseProgram(program.getProgram());
 	ctx.expectError(GL_NO_ERROR);
@@ -631,7 +684,7 @@ void draw_elements_incomplete_primitive (NegativeTestContext& ctx)
 	ctx.glDeleteFramebuffers(1, &fbo);
 	ctx.endSection();
 
-	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
+	if (isES && !ctx.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
 	{
 		ctx.beginSection("GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
 		const char* tfVarying= "gl_Position";
@@ -666,12 +719,19 @@ void draw_elements_incomplete_primitive (NegativeTestContext& ctx)
 	ctx.glUseProgram(0);
 }
 
+static bool checkSupport(NegativeTestContext& ctx)
+{
+	return contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+		   contextSupports(ctx.getRenderContext().getType(), glu::ApiType::core(4, 5));
+}
+
 void draw_elements_base_vertex (NegativeTestContext& ctx)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
+	TCU_CHECK_AND_THROW(NotSupportedError, checkSupport(ctx), "This test requires a 3.2 context or higher context version.");
 
 	GLuint				fbo = 0;
 	GLuint				indices[1] = {0};
+	VAOHelper			vao(ctx, glu::isContextTypeES(ctx.getRenderContext().getType()));
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not an accepted value.");
 	ctx.glDrawElementsBaseVertex(-1, 1, GL_UNSIGNED_INT, indices, 1);
@@ -703,7 +763,7 @@ void draw_elements_base_vertex (NegativeTestContext& ctx)
 
 void draw_elements_base_vertex_primitive_mode_mismatch (NegativeTestContext& ctx)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
+	TCU_CHECK_AND_THROW(NotSupportedError, checkSupport(ctx), "This test requires a 3.2 context or higher context version.");
 
 	GLuint						indices[1] = {0};
 	map<string, string>			args;
@@ -722,11 +782,13 @@ void draw_elements_base_vertex_primitive_mode_mismatch (NegativeTestContext& ctx
 
 void draw_arrays_instanced (NegativeTestContext& ctx)
 {
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glu::RenderContext&	rc		= ctx.getRenderContext();
+	const bool					isES32	= glu::contextSupports(rc.getType(), glu::ApiType::es(3, 2));
 	GLuint						fbo		= 0;
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	VAOHelper					vao		(ctx, glu::isContextTypeES(rc.getType()));
 
 	ctx.glUseProgram(program.getProgram());
 	ctx.expectError(GL_NO_ERROR);
@@ -761,7 +823,10 @@ void draw_arrays_instanced (NegativeTestContext& ctx)
 void draw_arrays_instanced_invalid_program (NegativeTestContext& ctx)
 {
 	ctx.glUseProgram(0);
-	GLuint fbo = 0;
+
+	GLuint		fbo		= 0;
+	VAOHelper	vao		(ctx, glu::isContextTypeES(ctx.getRenderContext().getType()));
+
 	ctx.glVertexAttribDivisor(0, 1);
 	ctx.expectError(GL_NO_ERROR);
 
@@ -790,11 +855,13 @@ void draw_arrays_instanced_invalid_program (NegativeTestContext& ctx)
 
 void draw_arrays_instanced_incomplete_primitive (NegativeTestContext& ctx)
 {
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glu::RenderContext&	rc		= ctx.getRenderContext();
+	const bool					isES32	= glu::contextSupports(rc.getType(), glu::ApiType::es(3, 2));
 	GLuint						fbo		= 0;
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	glu::ShaderProgram			program	(rc, glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	VAOHelper					vao(ctx, glu::isContextTypeES(rc.getType()));
 
 	ctx.glVertexAttribDivisor(0, 1);
 	ctx.expectError(GL_NO_ERROR);
@@ -826,14 +893,17 @@ void draw_arrays_instanced_incomplete_primitive (NegativeTestContext& ctx)
 
 void draw_elements_instanced (NegativeTestContext& ctx)
 {
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glu::RenderContext&	rc		= ctx.getRenderContext();
+	const bool					isES	= glu::isContextTypeES(rc.getType());
+	const bool					isES32	= glu::contextSupports(rc.getType(), glu::ApiType::es(3, 2));
 	GLuint						fbo		= 0;
 	GLuint						buf		= 0;
 	GLuint						tfID	= 0;
 	GLbyte						indices[1] = {0};
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	glu::ShaderProgram			program	(rc, glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	VAOHelper					vao(ctx, isES);
 
 	ctx.glUseProgram(program.getProgram());
 	ctx.glVertexAttribDivisor(0, 1);
@@ -868,7 +938,7 @@ void draw_elements_instanced (NegativeTestContext& ctx)
 	ctx.glDeleteFramebuffers(1, &fbo);
 	ctx.endSection();
 
-	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
+	if (isES && !ctx.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
 	{
 		ctx.beginSection("GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
 		const char* tfVarying = "gl_Position";
@@ -906,8 +976,11 @@ void draw_elements_instanced (NegativeTestContext& ctx)
 void draw_elements_instanced_invalid_program (NegativeTestContext& ctx)
 {
 	ctx.glUseProgram(0);
+
 	GLuint fbo = 0;
 	GLbyte indices[1] = {0};
+	VAOHelper vao(ctx, glu::isContextTypeES(ctx.getRenderContext().getType()));
+
 	ctx.glVertexAttribDivisor(0, 1);
 	ctx.expectError(GL_NO_ERROR);
 
@@ -943,14 +1016,17 @@ void draw_elements_instanced_invalid_program (NegativeTestContext& ctx)
 
 void draw_elements_instanced_incomplete_primitive (NegativeTestContext& ctx)
 {
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glu::RenderContext&	rc		= ctx.getRenderContext();
+	const bool					isES	= glu::isContextTypeES(rc.getType());
+	const bool					isES32	= glu::contextSupports(rc.getType(), glu::ApiType::es(3, 2));
 	GLuint						fbo		= 0;
 	GLuint						buf		= 0;
 	GLuint						tfID	= 0;
 	GLbyte						indices[1] = {0};
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	glu::ShaderProgram			program	(rc, glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	VAOHelper					vao(ctx, isES);
 
 	ctx.glUseProgram(program.getProgram());
 	ctx.glVertexAttribDivisor(0, 1);
@@ -985,7 +1061,7 @@ void draw_elements_instanced_incomplete_primitive (NegativeTestContext& ctx)
 	ctx.glDeleteFramebuffers(1, &fbo);
 	ctx.endSection();
 
-	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
+	if (isES && !ctx.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
 	{
 		ctx.beginSection("GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
 		const char* tfVarying= "gl_Position";
@@ -1022,14 +1098,16 @@ void draw_elements_instanced_incomplete_primitive (NegativeTestContext& ctx)
 
 void draw_elements_instanced_base_vertex (NegativeTestContext& ctx)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
+	TCU_CHECK_AND_THROW(NotSupportedError, checkSupport(ctx), "This test requires a 3.2 context or higher context version.");
 
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glu::RenderContext&	rc		= ctx.getRenderContext();
+	const bool					isES32	= glu::contextSupports(rc.getType(), glu::ApiType::es(3, 2));
 	GLuint						fbo		= 0;
 	GLbyte						indices[1] = {0};
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	glu::ShaderProgram			program			(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	glu::ShaderProgram			program			(rc, glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	VAOHelper					vao(ctx, glu::isContextTypeES(rc.getType()));
 
 	ctx.glUseProgram(program.getProgram());
 	ctx.glVertexAttribDivisor(0, 1);
@@ -1069,7 +1147,7 @@ void draw_elements_instanced_base_vertex (NegativeTestContext& ctx)
 
 void draw_elements_instanced_base_vertex_primitive_mode_mismatch (NegativeTestContext& ctx)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
+	TCU_CHECK_AND_THROW(NotSupportedError, checkSupport(ctx), "This test requires a 3.2 context or higher context version.");
 
 	GLuint						indices[1] = {0};
 	map<string, string>			args;
@@ -1087,14 +1165,17 @@ void draw_elements_instanced_base_vertex_primitive_mode_mismatch (NegativeTestCo
 
 void draw_range_elements (NegativeTestContext& ctx)
 {
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glu::RenderContext&	rc		= ctx.getRenderContext();
+	const bool					isES	= glu::isContextTypeES(rc.getType());
+	const bool					isES32	= glu::contextSupports(rc.getType(), glu::ApiType::es(3, 2));
 	GLuint						fbo		= 0;
 	GLuint						buf		= 0;
 	GLuint						tfID	= 0;
 	GLbyte						indices[1]	= {0};
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	glu::ShaderProgram			program	(rc, glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	VAOHelper					vao(ctx, isES);
 
 	ctx.glUseProgram(program.getProgram());
 	ctx.expectError(GL_NO_ERROR);
@@ -1131,7 +1212,7 @@ void draw_range_elements (NegativeTestContext& ctx)
 	ctx.glDeleteFramebuffers(1, &fbo);
 	ctx.endSection();
 
-	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
+	if (isES && !ctx.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
 	{
 		ctx.beginSection("GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
 		const char* tfVarying= "gl_Position";
@@ -1169,8 +1250,10 @@ void draw_range_elements (NegativeTestContext& ctx)
 void draw_range_elements_invalid_program (NegativeTestContext& ctx)
 {
 	ctx.glUseProgram(0);
+
 	GLuint fbo = 0;
 	GLbyte indices[1] = {0};
+	VAOHelper vao(ctx, glu::isContextTypeES(ctx.getRenderContext().getType()));
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not an accepted value.");
 	ctx.glDrawRangeElements(-1, 0, 1, 1, GL_UNSIGNED_BYTE, indices);
@@ -1207,7 +1290,9 @@ void draw_range_elements_invalid_program (NegativeTestContext& ctx)
 
 void draw_range_elements_incomplete_primitive (NegativeTestContext& ctx)
 {
-	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const glu::RenderContext&	rc		= ctx.getRenderContext();
+	const bool					isES	= glu::isContextTypeES(rc.getType());
+	const bool					isES32	= glu::contextSupports(rc.getType(), glu::ApiType::es(3, 2));
 	GLuint						fbo		= 0;
 	GLuint						buf		= 0;
 	GLuint						tfID	= 0;
@@ -1215,6 +1300,7 @@ void draw_range_elements_incomplete_primitive (NegativeTestContext& ctx)
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	VAOHelper					vao(ctx, isES);
 
 	ctx.glUseProgram(program.getProgram());
 	ctx.expectError(GL_NO_ERROR);
@@ -1251,7 +1337,7 @@ void draw_range_elements_incomplete_primitive (NegativeTestContext& ctx)
 	ctx.glDeleteFramebuffers(1, &fbo);
 	ctx.endSection();
 
-	if (!ctx.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
+	if (isES && !ctx.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader")) // GL_EXT_geometry_shader removes error
 	{
 		ctx.beginSection("GL_INVALID_OPERATION is generated if transform feedback is active and not paused.");
 		const char* tfVarying = "gl_Position";
@@ -1288,13 +1374,15 @@ void draw_range_elements_incomplete_primitive (NegativeTestContext& ctx)
 
 void draw_range_elements_base_vertex (NegativeTestContext& ctx)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
+	TCU_CHECK_AND_THROW(NotSupportedError, checkSupport(ctx), "This test requires a 3.2 context or higher context version.");
 
 	GLuint						fbo		= 0;
 	GLbyte						indices[1] = {0};
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES);
-	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	const glu::RenderContext&	rc		= ctx.getRenderContext();
+	glu::ShaderProgram			program	(rc, glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
+	VAOHelper					vao(ctx, glu::isContextTypeES(rc.getType()));
 
 	ctx.glUseProgram(program.getProgram());
 	ctx.expectError(GL_NO_ERROR);
@@ -1336,7 +1424,7 @@ void draw_range_elements_base_vertex (NegativeTestContext& ctx)
 
 void draw_range_elements_base_vertex_primitive_mode_mismatch (NegativeTestContext& ctx)
 {
-	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
+	TCU_CHECK_AND_THROW(NotSupportedError, checkSupport(ctx), "This test requires a 3.2 context or higher context version.");
 
 	GLuint						indices[1] = {0};
 	map<string, string>			args;

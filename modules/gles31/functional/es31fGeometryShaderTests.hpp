@@ -36,7 +36,7 @@ namespace Functional
 class GeometryShaderTests : public TestCaseGroup
 {
 public:
-							GeometryShaderTests		(Context& context);
+							GeometryShaderTests		(Context& context, bool isGL45);
 							~GeometryShaderTests	(void);
 
 	void					init					(void);
@@ -44,6 +44,8 @@ public:
 private:
 							GeometryShaderTests		(const GeometryShaderTests& other);
 	GeometryShaderTests&	operator=				(const GeometryShaderTests& other);
+
+	bool					m_isGL45;
 };
 
 } // Functional

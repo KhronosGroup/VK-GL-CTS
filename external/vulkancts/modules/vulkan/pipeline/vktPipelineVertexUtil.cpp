@@ -419,6 +419,8 @@ deUint32 getPackedVertexFormatComponentWidth(VkFormat format, deUint32 component
 			DE_ASSERT(componentNdx < 3);
 			return componentSizes[componentNdx];
 		}
+		case VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT:
+		case VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT:
 		case VK_FORMAT_R4G4B4A4_UNORM_PACK16:
 		case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
 		{
@@ -546,6 +548,7 @@ bool isVertexFormatComponentOrderABGR(VkFormat format)
 		case VK_FORMAT_A2B10G10R10_SSCALED_PACK32:
 		case VK_FORMAT_A2B10G10R10_UINT_PACK32:
 		case VK_FORMAT_A2B10G10R10_SINT_PACK32:
+		case VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT:
 			return true;
 
 		default:
@@ -565,6 +568,7 @@ bool isVertexFormatComponentOrderARGB(VkFormat format)
 		case VK_FORMAT_A2R10G10B10_SSCALED_PACK32:
 		case VK_FORMAT_A2R10G10B10_UINT_PACK32:
 		case VK_FORMAT_A2R10G10B10_SINT_PACK32:
+		case VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT:
 		return true;
 
 	default:
@@ -702,6 +706,8 @@ bool isVertexFormatUnorm (VkFormat format)
 		case VK_FORMAT_X8_D24_UNORM_PACK32:
 		case VK_FORMAT_R16G16B16_UNORM:
 		case VK_FORMAT_R16G16B16A16_UNORM:
+		case VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT:
+		case VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT:
 			return true;
 
 		default:
@@ -872,6 +878,8 @@ bool isVertexFormatPacked(VkFormat format)
 		case VK_FORMAT_B10G11R11_UFLOAT_PACK32:
 		case VK_FORMAT_E5B9G9R9_UFLOAT_PACK32:
 		case VK_FORMAT_X8_D24_UNORM_PACK32:
+		case VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT:
+		case VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT:
 			return true;
 
 		default:

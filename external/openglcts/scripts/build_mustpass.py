@@ -999,7 +999,7 @@ ES_MUSTPASS_LISTS		= [
 
 	# 3.2.6.x
 
-	Mustpass(project = CTS_KHR_MP_ES_PROJECT,   version = "3.2.6.x", isCurrent=True,
+	Mustpass(project = CTS_KHR_MP_ES_PROJECT,   version = "3.2.6.x", isCurrent=False,
 			packages = [GLCTS_GLES2_KHR_PKG_1CFG,
 						GLCTS_GLES2_KHR_PKG_N1CFG,
 						GLCTS_GLES3_KHR_PKG_1CFG,
@@ -1010,21 +1010,21 @@ ES_MUSTPASS_LISTS		= [
 						GLCTS_GLES32_KHR_PKG_N1CFG,
 						]),
 
-	Mustpass(project = CTS_KHR_MP_NOCTX_ES_PROJECT, version = "3.2.6.x", isCurrent=True,
+	Mustpass(project = CTS_KHR_MP_NOCTX_ES_PROJECT, version = "3.2.6.x", isCurrent=False,
 			packages = [GLCTS_NOCTX_ES2_KHR_PKG, GLCTS_NOCTX_ES32_KHR_PKG]),
 
-	Mustpass(project = CTS_KHR_MP_SINGLE_ES_PROJECT, version = "3.2.6.x", isCurrent=True,
+	Mustpass(project = CTS_KHR_MP_SINGLE_ES_PROJECT, version = "3.2.6.x", isCurrent=False,
 			packages = [GLCTS_SINGLE_ES32_KHR_PKG]),
 
-	Mustpass(project = CTS_AOSP_MP_ES_PROJECT, version = "3.2.6.x", isCurrent=True,
+	Mustpass(project = CTS_AOSP_MP_ES_PROJECT, version = "3.2.6.x", isCurrent=False,
 			packages = [GLCTS_3_2_3_GLES2_PKG, GLCTS_3_2_3_GLES3_PKG, GLCTS_3_2_3_GLES31_PKG]),
 
-	Mustpass(project = CTS_AOSP_MP_EGL_PROJECT, version = "3.2.6.x", isCurrent=True,
+	Mustpass(project = CTS_AOSP_MP_EGL_PROJECT, version = "3.2.6.x", isCurrent=False,
 			packages = [GLCTS_3_2_3_EGL_PKG]),
 
 	# master
 
-	Mustpass(project = CTS_KHR_MP_ES_PROJECT,	version = "master", isCurrent=False,
+	Mustpass(project = CTS_KHR_MP_ES_PROJECT,	version = "master", isCurrent=True,
 			packages = [GLCTS_GLES2_KHR_PKG_1CFG,
 						GLCTS_GLES2_KHR_PKG_N1CFG,
 						GLCTS_GLES3_KHR_PKG_1CFG,
@@ -1035,17 +1035,17 @@ ES_MUSTPASS_LISTS		= [
 						GLCTS_GLES32_KHR_PKG_N1CFG,
 						]),
 
-	Mustpass(project = CTS_KHR_MP_NOCTX_ES_PROJECT, version = "master", isCurrent=False,
+	Mustpass(project = CTS_KHR_MP_NOCTX_ES_PROJECT, version = "master", isCurrent=True,
 			packages = [GLCTS_NOCTX_ES2_KHR_PKG, GLCTS_NOCTX_ES32_KHR_PKG]),
 
-	Mustpass(project = CTS_KHR_MP_SINGLE_ES_PROJECT, version = "master", isCurrent=False,
+	Mustpass(project = CTS_KHR_MP_SINGLE_ES_PROJECT, version = "master", isCurrent=True,
 			packages = [GLCTS_SINGLE_ES32_KHR_PKG]),
 
-	Mustpass(project = CTS_AOSP_MP_ES_PROJECT, version = "master", isCurrent=False,
-			packages = [MASTER_GLES2_PKG, MASTER_GLES3_PKG, MASTER_GLES31_PKG]),
+	Mustpass(project = CTS_AOSP_MP_ES_PROJECT, version = "master", isCurrent=True,
+			packages = [GLCTS_3_2_3_GLES2_PKG, GLCTS_3_2_3_GLES3_PKG, GLCTS_3_2_3_GLES31_PKG]),
 
-	Mustpass(project = CTS_AOSP_MP_EGL_PROJECT, version = "master", isCurrent=False,
-			packages = [MASTER_EGL_PKG])
+	Mustpass(project = CTS_AOSP_MP_EGL_PROJECT, version = "master", isCurrent=True,
+			packages = [GLCTS_3_2_3_EGL_PKG])
 
 	]
 
@@ -1079,6 +1079,7 @@ GL_MODULES							= OrderedDict([
 			('KHR-GL44',		['master',		[include('gl44-master.txt'), exclude('gl44-test-issues.txt')]]),
 			('KHR-GL43',		['master',		[include('gl43-master.txt'), exclude('gl43-test-issues.txt')]]),
 			('KHR-GL42',		['master',		[include('gl42-master.txt'), exclude('gl42-test-issues.txt')]]),
+			('KHR-GL42-COMPAT',	['master',		[include('gl42-compat-master.txt')]]),
 			('KHR-GL41',		['master',		[include('gl41-master.txt'), exclude('gl41-test-issues.txt')]]),
 			('KHR-GL40',		['master',		[include('gl40-master.txt'), exclude('gl40-test-issues.txt')]]),
 			('KHR-GL33',		['master',		[include('gl33-master.txt'), exclude('gl33-test-issues.txt')]]),

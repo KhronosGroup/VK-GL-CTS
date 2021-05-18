@@ -74,7 +74,7 @@ public:
 
 	static std::string				getName			(OffsetDirection direction);
 	static std::string				getDesc			(OffsetDirection direction);
-	static tcu::TextureFormat		toTextureFormat	(const tcu::PixelFormat& pixelFmt);
+	static tcu::TextureFormat		toTextureFormat	(deqp::Context& context, const tcu::PixelFormat& pixelFmt);
 
 private:
 	static const glw::GLenum kTextureType	= GL_TEXTURE_2D;
@@ -124,7 +124,7 @@ std::string NearestEdgeTestCase::getDesc (OffsetDirection direction)
 
 // Translate pixel format in the frame buffer to texture format.
 // Copied from sglrReferenceContext.cpp.
-tcu::TextureFormat NearestEdgeTestCase::toTextureFormat (const tcu::PixelFormat& pixelFmt)
+tcu::TextureFormat NearestEdgeTestCase::toTextureFormat (deqp::Context& context, const tcu::PixelFormat& pixelFmt)
 {
 	static const struct
 	{
@@ -144,7 +144,22 @@ tcu::TextureFormat NearestEdgeTestCase::toTextureFormat (const tcu::PixelFormat&
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(pixelFormatMap); ndx++)
 	{
 		if (pixelFormatMap[ndx].pixelFmt == pixelFmt)
+		{
+			// Some implementations treat GL_RGB8 as GL_RGBA8888,so the test should pass implementation format to ReadPixels.
+			if (pixelFmt == tcu::PixelFormat(8, 8, 8, 0))
+			{
+				const auto& gl = context.getRenderContext().getFunctions();
+
+				glw::GLint implFormat = GL_NONE;
+				glw::GLint implType	  = GL_NONE;
+				gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &implFormat);
+				gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &implType);
+				if (implFormat == GL_RGBA && implType == GL_UNSIGNED_BYTE)
+					return tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
+			}
+
 			return pixelFormatMap[ndx].texFmt;
+		}
 	}
 
 	TCU_FAIL("Unable to map pixel format to texture format");
@@ -156,7 +171,7 @@ NearestEdgeTestCase::NearestEdgeTestCase (deqp::Context& context, OffsetDirectio
 	, m_width			{context.getRenderTarget().getWidth()}
 	, m_height			{context.getRenderTarget().getHeight()}
 	, m_format			{context.getRenderTarget().getPixelFormat()}
-	, m_texFormat		{toTextureFormat(m_format)}
+	, m_texFormat		{toTextureFormat(context, m_format)}
 	, m_texFormatInfo	{tcu::getTextureFormatInfo(m_texFormat)}
 	, m_transFormat		{glu::getTransferFormat(m_texFormat)}
 {
@@ -172,32 +187,36 @@ void NearestEdgeTestCase::init()
 		TCU_THROW(NotSupportedError, "Render target size too small");
 
 	m_vertShaderText =
-		"#version ${VERSION}\n"
-		"\n"
-		"in highp vec2 position;\n"
-		"in highp vec2 inTexCoord;\n"
-		"out highp vec2 commonTexCoord;\n"
-		"\n"
-		"void main()\n"
-		"{\n"
-		"    commonTexCoord = inTexCoord;\n"
-		"    gl_Position = vec4(position, 0.0, 1.0);\n"
-		"}\n"
-		;
-
-	m_fragShaderText =
-		"#version ${VERSION}\n"
-		"\n"
-		"in highp vec2 commonTexCoord;\n"
-		"out highp vec4 fragColor;\n"
-		"\n"
-		"uniform highp sampler2D texSampler;\n"
-		"\n"
-		"void main()\n"
-		"{\n"
-		"    fragColor = texture(texSampler, commonTexCoord);\n"
-		"}\n"
-		"\n";
+        "#version ${VERSION}\n"
+        "\n"
+        "in highp vec2 position;\n"
+        "\n"
+        "void main()\n"
+        "{\n"
+        "    gl_Position = vec4(position, 0.0, 1.0);\n"
+        "}\n"
+        ;
+    m_fragShaderText =
+        "#version ${VERSION}\n"
+        "\n"
+        "precision highp float;\n"
+        "out highp vec4 fragColor;\n"
+        "\n"
+        "uniform highp sampler2D texSampler;\n"
+        "uniform float texOffset;\n"
+        "uniform float texWidth;\n"
+        "uniform float texHeight;\n"
+        "\n"
+        "void main()\n"
+        "{\n"
+        "    float texCoordX;\n"
+        "    float texCoordY;\n"
+        "    texCoordX = (gl_FragCoord.x + texOffset) / texWidth;\n "
+        "    texCoordY = (gl_FragCoord.y + texOffset) / texHeight;\n"
+        "    vec2 sampleCoord = vec2(texCoordX, texCoordY);\n"
+        "    fragColor = texture(texSampler, sampleCoord);\n"
+        "}\n"
+        "\n";
 
 	tcu::StringTemplate vertShaderTemplate{m_vertShaderText};
 	tcu::StringTemplate fragShaderTemplate{m_fragShaderText};
@@ -288,6 +307,7 @@ void NearestEdgeTestCase::renderQuad ()
 
 	// Apply offset of almost half a texel to the texture coordinates.
 	DE_ASSERT(m_offsetSign == 1.0f || m_offsetSign == -1.0f);
+
 	const float offset			= 0.5f - pow(2.0f, -8.0f);
 	const float offsetWidth		= offset / static_cast<float>(m_width);
 	const float offsetHeight	= offset / static_cast<float>(m_height);
@@ -303,8 +323,7 @@ void NearestEdgeTestCase::renderQuad ()
 
 	const std::vector<glu::VertexArrayBinding> vertexArrays =
 	{
-		glu::va::Float("position", 2, 4, 0, positions.data()),
-		glu::va::Float("inTexCoord", 2, 4, 0, texCoords.data())
+		glu::va::Float("position", 2, 4, 0, positions.data())
 	};
 
 	glu::ShaderProgram program(m_context.getRenderContext(), glu::makeVtxFragSources(m_vertShaderText, m_fragShaderText));
@@ -317,6 +336,12 @@ void NearestEdgeTestCase::renderQuad ()
 	gl.uniform1i(gl.getUniformLocation(program.getProgram(), "texSampler"), 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i failed");
 
+	gl.uniform1f(gl.getUniformLocation(program.getProgram(), "texOffset"), m_offsetSign * offset);
+	gl.uniform1f(gl.getUniformLocation(program.getProgram(), "texWidth"), float(m_width));
+	gl.uniform1f(gl.getUniformLocation(program.getProgram(), "texHeight"), float(m_height));
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i failed");
+
+	gl.disable(GL_DITHER);
 	gl.clear(GL_COLOR_BUFFER_BIT);
 
 	glu::draw(renderContext, program.getProgram(),

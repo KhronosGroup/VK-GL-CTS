@@ -62,23 +62,27 @@ static const char* getVerifierSuffix (QueryType type)
 	}
 }
 
+static bool checkSupport(Context& ctx)
+{
+	auto ctxType = ctx.getRenderContext().getType();
+	return contextSupports(ctxType, glu::ApiType::es(3, 2)) ||
+		   contextSupports(ctxType, glu::ApiType::core(4, 5));
+}
+
 static std::string specializeShader(Context& context, const char* code)
 {
-	const glu::GLSLVersion				glslVersion			= glu::getContextTypeGLSLVersion(context.getRenderContext().getType());
-	std::map<std::string, std::string>	specializationMap;
+	auto								ctxType				= context.getRenderContext().getType();
+	const glu::GLSLVersion				glslVersion			= glu::getContextTypeGLSLVersion(ctxType);
+	const bool							isES32orGL45		= checkSupport(context);
+	const bool							isES				= isContextTypeES(ctxType);
 
-	specializationMap["GLSL_VERSION_DECL"] = glu::getGLSLVersionDeclaration(glslVersion);
-
-	if (glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	std::map<std::string, std::string>	specializationMap =
 	{
-		specializationMap["GEOMETRY_SHADER_REQUIRE"] = "";
-		specializationMap["TESSELLATION_SHADER_REQUIRE"] = "";
-	}
-	else
-	{
-		specializationMap["GEOMETRY_SHADER_REQUIRE"] = "#extension GL_EXT_geometry_shader : require";
-		specializationMap["TESSELLATION_SHADER_REQUIRE"] = "#extension GL_EXT_tessellation_shader : require";
-	}
+		{ "GLSL_VERSION_DECL",				glu::getGLSLVersionDeclaration(glslVersion) },
+		{ "GEOMETRY_SHADER_REQUIRE",		(isES32orGL45 ? "" : "#extension GL_EXT_geometry_shader : require") },
+		{ "TESSELLATION_SHADER_REQUIRE",	(isES32orGL45 ? "" : "#extension GL_EXT_tessellation_shader : require") },
+		{ "GL_POSITION_REDECL",				(isES ?			"" : "out gl_PerVertex { vec4 gl_Position;};")}
+	};
 
 	return tcu::StringTemplate(code).specialize(specializationMap);
 }
@@ -102,9 +106,9 @@ GeometryShaderCase::GeometryShaderCase (Context& context, QueryType verifier, co
 
 GeometryShaderCase::IterateResult GeometryShaderCase::iterate (void)
 {
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool isES32orGL45 = checkSupport(m_context);
 
-	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (!isES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
 		TCU_THROW(NotSupportedError, "Geometry shader tests require GL_EXT_geometry_shader extension or an OpenGL ES 3.2 or higher context.");
 
 
@@ -216,9 +220,9 @@ TessellationShaderCase::TessellationShaderCase (Context& context, QueryType veri
 
 TessellationShaderCase::IterateResult TessellationShaderCase::iterate (void)
 {
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool isES32orGL45 = checkSupport(m_context);
 
-	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+	if (!isES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
 		TCU_THROW(NotSupportedError, "Tessellation shader tests require GL_EXT_tessellation_shader extension or an OpenGL ES 3.2 or higher context.");
 
 
@@ -348,6 +352,9 @@ ProgramSeparableCase::IterateResult ProgramSeparableCase::iterate (void)
 {
 	const string				vtxTemplate	=	"${GLSL_VERSION_DECL}\n"
 												"out highp vec4 v_color;\n"
+												// NOTE that core profile requires the gl_PerVertex block to be redeclared
+												// in case a separable program is enabled.
+												"${GL_POSITION_REDECL}\n"
 												"void main()\n"
 												"{\n"
 												"	gl_Position = vec4(float(gl_VertexID) * 0.5, float(gl_VertexID+1) * 0.5, 0.0, 1.0);\n"
@@ -412,6 +419,9 @@ ProgramSeparableCase::IterateResult ProgramSeparableCase::iterate (void)
 		gl.glGetProgramiv(program.getProgram(), GL_LINK_STATUS, &linkStatus);
 		GLU_EXPECT_NO_ERROR(gl.glGetError(), "query link status");
 
+		gl.glDetachShader(program.getProgram(), vtxShader.getShader());
+		gl.glDetachShader(program.getProgram(), frgShader.getShader());
+
 		TCU_CHECK_MSG(linkStatus == GL_TRUE, "failed to link program");
 
 		verifyStateProgramInteger(result, gl, program.getProgram(), GL_PROGRAM_SEPARABLE, 0, m_verifier);
@@ -430,6 +440,9 @@ ProgramSeparableCase::IterateResult ProgramSeparableCase::iterate (void)
 
 		gl.glGetProgramiv(program.getProgram(), GL_LINK_STATUS, &linkStatus);
 		GLU_EXPECT_NO_ERROR(gl.glGetError(), "query link status");
+
+		gl.glDetachShader(program.getProgram(), vtxShader.getShader());
+		gl.glDetachShader(program.getProgram(), frgShader.getShader());
 
 		TCU_CHECK_MSG(linkStatus == GL_TRUE, "failed to link program");
 
@@ -643,7 +656,7 @@ ProgramLogCase::ProgramLogCase (Context& ctx, const char* name, const char* desc
 
 void ProgramLogCase::init (void)
 {
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool supportsES32orGL45 = checkSupport(m_context);
 
 	switch (m_buildErrorType)
 	{
@@ -652,12 +665,12 @@ void ProgramLogCase::init (void)
 			break;
 
 		case BUILDERROR_GEOMETRY:
-			if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+			if (!supportsES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
 				TCU_THROW(NotSupportedError, "Test requires GL_EXT_geometry_shader extension");
 			break;
 
 		case BUILDERROR_TESSELLATION:
-			if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+			if (!supportsES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
 				TCU_THROW(NotSupportedError, "Test requires GL_EXT_tessellation_shader extension");
 			break;
 

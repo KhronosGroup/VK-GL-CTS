@@ -2898,6 +2898,123 @@ protected:
 	int			m_offset;
 };
 
+// TexSubImage2D() test case for PBO bounds.
+class CopyTexFromPBOCase : public Texture2DSpecCase
+{
+public:
+	CopyTexFromPBOCase (Context& context, const char* name,	const char* desc)
+		: Texture2DSpecCase (context, name, desc, glu::mapGLInternalFormat(GL_RGBA8), 4, 4, 1)
+	{
+	}
+
+protected:
+	void createTexture(void)
+	{
+		glu::TransferFormat	transferFmt						= glu::getTransferFormat(m_texFormat);
+
+		const glw::GLuint	red								= 0xff0000ff; // alpha, blue, green, red
+		const glw::GLuint	green							= 0xff00ff00;
+		const glw::GLuint	blue							= 0xffff0000;
+		const glw::GLuint	black							= 0xff000000;
+
+		glw::GLuint			texId							= 0;
+		glw::GLuint			fboId							= 0;
+		glw::GLuint			pboId							= 0;
+
+		const deUint32		texWidth						= 4;
+		const deUint32		texHeight						= 4;
+		const deUint32		texSubWidth						= 2;
+		const deUint32		texSubHeight					= 4;
+		const deUint32		texSubOffsetX					= 2;
+		const deUint32		texSubOffsetY					= 0;
+
+		const deUint32		pboRowLength					= 4;
+		const glw::GLuint	pboOffset						= 2;
+		const glw::GLintptr	pboOffsetPtr					= pboOffset * sizeof(glw::GLuint);
+		const deUint32		halfWidth						= pboRowLength / 2;
+
+		bool				imageOk							= true;
+
+		glw::GLuint			tex_data[texHeight][texWidth];
+		glw::GLuint			pixel_data[texHeight][texWidth];
+		glw::GLuint			color_data[texHeight][texWidth];
+
+		// Fill pixel data.
+		for (deUint32 row = 0; row < texHeight; row++)
+		{
+			for (deUint32 column = 0; column < texWidth; column++)
+			{
+				tex_data				[row][column]	= red;
+
+				if (column < halfWidth)
+					pixel_data			[row][column]	= blue;
+				else
+					pixel_data			[row][column]	= green;
+
+				color_data				[row][column]	= black;
+			}
+		}
+
+		// Create main texture.
+		glGenTextures(1, &texId);
+		GLU_EXPECT_NO_ERROR(glGetError(), "glGenTextures() failed");
+		glBindTexture(GL_TEXTURE_2D, texId);
+		GLU_EXPECT_NO_ERROR(glGetError(), "glBindTexture() failed");
+		glTexImage2D(GL_TEXTURE_2D, 0, transferFmt.format, texWidth, texHeight, 0, transferFmt.format, transferFmt.dataType, (void*)tex_data[0]);
+		GLU_EXPECT_NO_ERROR(glGetError(), "glTexImage2D() failed");
+
+		// Create pixel buffer object.
+		glGenBuffers(1, &pboId);
+		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboId);
+		GLU_EXPECT_NO_ERROR(glGetError(), "glBindBuffer() failed");
+		glPixelStorei(GL_UNPACK_ROW_LENGTH, pboRowLength);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		GLU_EXPECT_NO_ERROR(glGetError(), "glPixelStorei() failed");
+		glBufferData(GL_PIXEL_UNPACK_BUFFER, sizeof(pixel_data), (void*)pixel_data, GL_STREAM_DRAW);
+
+		// The very last pixel of the PBO should be available for TexSubImage.
+		glTexSubImage2D(GL_TEXTURE_2D, 0, texSubOffsetX, texSubOffsetY, texSubWidth, texSubHeight, transferFmt.format, transferFmt.dataType, reinterpret_cast<void*>(pboOffsetPtr));
+		GLU_EXPECT_NO_ERROR(glGetError(), "glTexSubImage2D() failed");
+
+		// Create a framebuffer.
+		glGenFramebuffers(1, &fboId);
+		glBindFramebuffer(GL_FRAMEBUFFER, fboId);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texId, 0);
+		GLU_EXPECT_NO_ERROR(glGetError(), "glFramebufferTexture2D() failed");
+
+		// Read pixels for pixel comparison.
+		glReadPixels(0, 0, texWidth, texHeight, transferFmt.format, transferFmt.dataType, &color_data);
+		GLU_EXPECT_NO_ERROR(glGetError(), "glReadPixels() failed");
+
+		// Run pixel to pixel comparison tests to confirm all the stored data is there and correctly aligned.
+		for (deUint32 row = 0; row < texSubHeight; row++)
+		{
+			for (deUint32 column = 0; column < pboOffset; column++)
+			{
+				if (color_data[row][column] != tex_data[row][column])
+					imageOk = false;
+			}
+		}
+
+		if (!imageOk) TCU_FAIL("Color data versus texture data comparison failed.");
+
+		for (deUint32 row = texSubOffsetY; row < texSubHeight; row++)
+		{
+			for (deUint32 column = 0; column < texSubWidth; column++)
+			{
+				if (color_data[row][column + texSubWidth] != pixel_data[row][column + pboOffset])
+					imageOk = false;
+			}
+		}
+
+		if (!imageOk) TCU_FAIL("Color data versus pixel data comparison failed.");
+
+		// Cleanup
+		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+		glDeleteBuffers(1, &pboId);
+	}
+};
+
 // TexSubImage3D() PBO case.
 class TexSubImage3DBufferCase : public Texture3DSpecCase
 {
@@ -3902,6 +4019,9 @@ void TextureSpecificationTests::init (void)
 														   paramCases[ndx].alignment,
 														   paramCases[ndx].offset));
 		}
+
+		// This test makes sure the last bits from the PBO data can be read without errors.
+		pboGroup->addChild(new CopyTexFromPBOCase(m_context, "pbo_bounds_2d", "Checks the last bits are read from the PBO without errors"));
 	}
 
 	// glTexSubImage2D() depth cases.

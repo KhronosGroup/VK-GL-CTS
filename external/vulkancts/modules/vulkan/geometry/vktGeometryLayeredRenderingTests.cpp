@@ -535,6 +535,7 @@ bool verifyImageSingleColoredRow (tcu::TestLog& log, const tcu::ConstPixelBuffer
 		return false;
 	}
 
+	// Note: this is never reached
 	log << tcu::TestLog::Image("LayerContent", "Layer content", image);
 
 	return allPixelsOk;
@@ -1457,7 +1458,7 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &colorBarrier);
 
 		if (dsUsed)
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &dsBarrier);
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &dsBarrier);
 	}
 
 	{
@@ -1809,7 +1810,15 @@ void checkSupport (Context& context, const TestParams params)
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 
 	if (params.image.viewType == VK_IMAGE_VIEW_TYPE_3D)
+	{
 		context.requireDeviceFunctionality("VK_KHR_maintenance1");
+
+		if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+			!context.getPortabilitySubsetFeatures().imageView2DOn3DImage)
+		{
+			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support 2D or 2D array image view to be created on a 3D VkImage");
+		}
+	}
 
 	if (params.testType == TEST_TYPE_SECONDARY_CMD_BUFFER)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);

@@ -85,7 +85,7 @@ public:
 		TYPE_LAST
 	};
 
-								Texture			(deUint32 name, Type type);
+								Texture			(deUint32 name, Type type, deBool seamless = true);
 	virtual						~Texture		(void) {}
 
 	Type						getType			(void) const	{ return m_type;			}
@@ -193,7 +193,7 @@ private:
 class TextureCube : public Texture
 {
 public:
-										TextureCube		(deUint32 name = 0);
+										TextureCube		(deUint32 name = 0, deBool seamless = true);
 	virtual								~TextureCube	(void);
 
 	void								clearLevels		(void);

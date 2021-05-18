@@ -309,7 +309,7 @@ TextureCubeArrayShader::TextureCubeArrayShader (glu::DataType samplerType, glu::
 	, m_layer		(0)
 	, m_outputType	(outputType)
 {
-	TCU_CHECK_INTERNAL(glslVersion == glu::GLSL_VERSION_310_ES || glslVersion == glu::GLSL_VERSION_320_ES);
+	TCU_CHECK_INTERNAL(glslVersion == glu::GLSL_VERSION_310_ES || glslVersion == glu::GLSL_VERSION_320_ES || glslVersion == glu::GLSL_VERSION_450);
 }
 
 void TextureCubeArrayShader::setLayer (int layer)

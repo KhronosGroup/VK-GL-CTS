@@ -219,6 +219,9 @@ VkDeviceSize ExternalMemoryHostBaseTestInstance::getMinImportedHostPointerAlignm
 	if (externalMemoryHostProperties.minImportedHostPointerAlignment > 65536)
 		TCU_FAIL("minImportedHostPointerAlignment is exceeding the supported limit");
 
+	if (!deIntIsPow2((int)externalMemoryHostProperties.minImportedHostPointerAlignment))
+		TCU_FAIL("minImportedHostPointerAlignment is not a power of two");
+
 	return externalMemoryHostProperties.minImportedHostPointerAlignment;
 }
 
@@ -325,7 +328,7 @@ tcu::TestStatus ExternalMemoryHostRenderImageTestInstance::iterate ()
 	const deUint32						queueFamilyIndex				= m_context.getUniversalQueueFamilyIndex();
 	deUint32							memoryTypeIndexToTest;
 	VkMemoryRequirements				imageMemoryRequirements;
-	const VkImageTiling					tiling							= VK_IMAGE_TILING_OPTIMAL;
+	const VkImageTiling					tiling							= VK_IMAGE_TILING_LINEAR;
 	const VkImageUsageFlags				usageFlags						= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |	VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 	// Verify image format properties before proceeding.
@@ -1055,6 +1058,13 @@ void checkSupport (Context& context)
 	context.requireDeviceFunctionality("VK_EXT_external_memory_host");
 }
 
+void checkEvent (Context& context)
+{
+	checkSupport(context);
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().events)
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
+}
+
 } // unnamed namespace
 
 tcu::TestCaseGroup* createMemoryExternalMemoryHostTests (tcu::TestContext& testCtx)
@@ -1100,7 +1110,7 @@ tcu::TestCaseGroup* createMemoryExternalMemoryHostTests (tcu::TestContext& testC
 
 	synchronization->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostSynchronizationTestInstance, TestParams, FunctionSupport0, AddPrograms>	(testCtx, tcu::NODETYPE_SELF_VALIDATE,
 																																						 "synchronization", "synchronization", AddPrograms(),
-																																						 TestParams(testFormats[0].format, true), checkSupport));
+																																						 TestParams(testFormats[0].format, true), checkEvent));
 	group->addChild(synchronization.release());
 	return group.release();
 }

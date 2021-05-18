@@ -3,6 +3,8 @@ include_directories(..)
 set(DEQP_VK_RAY_TRACING_SRCS
 	vktRayTracingBarrierTests.cpp
 	vktRayTracingBarrierTests.hpp
+	vktRayTracingBarycentricCoordinatesTests.cpp
+	vktRayTracingBarycentricCoordinatesTests.hpp
 	vktRayTracingBuildIndirectTests.cpp
 	vktRayTracingBuildIndirectTests.hpp
 	vktRayTracingBuiltinTests.cpp
@@ -15,12 +17,18 @@ set(DEQP_VK_RAY_TRACING_SRCS
 	vktRayTracingCallableShadersTests.hpp
 	vktRayTracingComplexControlFlowTests.cpp
 	vktRayTracingComplexControlFlowTests.hpp
+	vktRayTracingDataSpillTests.cpp
+	vktRayTracingDataSpillTests.hpp
+	vktRayTracingDirectionTests.cpp
+	vktRayTracingDirectionTests.hpp
 	vktRayTracingTraceRaysTests.cpp
 	vktRayTracingTraceRaysTests.hpp
 	vktRayTracingMemGuaranteeTests.cpp
 	vktRayTracingMemGuaranteeTests.hpp
 	vktRayTracingMiscTests.cpp
 	vktRayTracingMiscTests.hpp
+	vktRayTracingNonUniformArgsTests.cpp
+	vktRayTracingNonUniformArgsTests.hpp
 	vktRayTracingNullASTests.cpp
 	vktRayTracingNullASTests.hpp
 	vktRayTracingShaderBindingTableTests.cpp
@@ -33,6 +41,8 @@ set(DEQP_VK_RAY_TRACING_SRCS
 	vktRayTracingWatertightnessTests.hpp
 	vktRayTracingPipelineLibraryTests.cpp
 	vktRayTracingPipelineLibraryTests.hpp
+	vktRayTracingProceduralGeometryTests.cpp
+	vktRayTracingProceduralGeometryTests.hpp
 	vktRayTracingCaptureReplayTests.cpp
 	vktRayTracingCaptureReplayTests.hpp
 	vktRayTracingTests.cpp

@@ -47,10 +47,10 @@ enum RequiredSubgroupSizeMode
 
 struct CaseDefinition
 {
-	deUint32							pipelineShaderStageCreateFlags;
-	VkShaderStageFlags					shaderStage;
-	deBool								requiresBallot;
-	deUint32							requiredSubgroupSizeMode;
+	deUint32			pipelineShaderStageCreateFlags;
+	VkShaderStageFlags	shaderStage;
+	deBool				requiresBallot;
+	deUint32			requiredSubgroupSizeMode;
 };
 
 struct internalDataStruct
@@ -69,63 +69,62 @@ deUint32 gcd (deUint32 a, deUint32 b)
 	}
 	else
 	{
-		deUint32 greater = std::max(a, b);
-		deUint32 lesser  = std::min(a, b);
+		deUint32 greater = max(a, b);
+		deUint32 lesser  = min(a, b);
 
 		return gcd(lesser, greater % lesser);
 	}
 }
 
-void getLocalSizes (VkPhysicalDeviceProperties physicalDeviceProperties, deUint32 numWorkGroupInvocations,
-				   deUint32& localSizeX, deUint32& localSizeY, deUint32& localSizeZ)
+UVec3	getLocalSizes (const VkPhysicalDeviceProperties&	physicalDeviceProperties,
+					   deUint32								numWorkGroupInvocations)
 {
 	DE_ASSERT(numWorkGroupInvocations <= physicalDeviceProperties.limits.maxComputeWorkGroupInvocations);
-	localSizeX = gcd(numWorkGroupInvocations, physicalDeviceProperties.limits.maxComputeWorkGroupSize[0]);
-	localSizeY = gcd(deMax32(numWorkGroupInvocations / localSizeX, 1u), physicalDeviceProperties.limits.maxComputeWorkGroupSize[1]);
-	localSizeZ = deMax32(numWorkGroupInvocations / (localSizeX * localSizeY), 1u);
+	const deUint32 localSizeX = gcd(numWorkGroupInvocations, physicalDeviceProperties.limits.maxComputeWorkGroupSize[0]);
+	const deUint32 localSizeY = gcd(deMax32(numWorkGroupInvocations / localSizeX, 1u), physicalDeviceProperties.limits.maxComputeWorkGroupSize[1]);
+	const deUint32 localSizeZ = deMax32(numWorkGroupInvocations / (localSizeX * localSizeY), 1u);
+
+	return UVec3(localSizeX, localSizeY, localSizeZ);
 }
 
-deUint32 getRequiredSubgroupSizeFromMode (Context &context, const CaseDefinition caseDef,
-										  VkPhysicalDeviceSubgroupSizeControlPropertiesEXT subgroupSizeControlProperties)
+deUint32 getRequiredSubgroupSizeFromMode (Context&													context,
+										  const CaseDefinition&										caseDef,
+										  const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties)
 {
 	switch (caseDef.requiredSubgroupSizeMode)
 	{
-	case REQUIRED_SUBGROUP_SIZE_MAX:	return subgroupSizeControlProperties.maxSubgroupSize;
-	case REQUIRED_SUBGROUP_SIZE_MIN:	return subgroupSizeControlProperties.minSubgroupSize;
-	case REQUIRED_SUBGROUP_SIZE_NONE:	return vkt::subgroups::getSubgroupSize(context);
-	default:							TCU_THROW(NotSupportedError, "Unsupported Subgroup size");
+		case REQUIRED_SUBGROUP_SIZE_MAX:	return subgroupSizeControlProperties.maxSubgroupSize;
+		case REQUIRED_SUBGROUP_SIZE_MIN:	return subgroupSizeControlProperties.minSubgroupSize;
+		case REQUIRED_SUBGROUP_SIZE_NONE:	return subgroups::getSubgroupSize(context);
+		default:							TCU_THROW(NotSupportedError, "Unsupported Subgroup size");
 	}
 }
 
-static bool checkVertexPipelineStages (const void* internalData, std::vector<const void*> datas,
-									   deUint32 width, deUint32)
+static bool checkVertexPipelineStages (const void*			internalData,
+									   vector<const void*>	datas,
+									   deUint32				width,
+									   deUint32)
 {
-	const struct internalDataStruct *checkInternalData = reinterpret_cast<const struct internalDataStruct *>(internalData);
-	const Context *context = checkInternalData->context;
-	tcu::TestLog& log		= context->getTestContext().getLog();
-
-	VkPhysicalDeviceSubgroupSizeControlPropertiesEXT subgroupSizeControlProperties;
-	subgroupSizeControlProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT;
-	subgroupSizeControlProperties.pNext = DE_NULL;
-	VkPhysicalDeviceProperties2 properties;
-	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-	properties.pNext = &subgroupSizeControlProperties;
-
-	context->getInstanceInterface().getPhysicalDeviceProperties2(context->getPhysicalDevice(), &properties);
-	const deUint32* data = reinterpret_cast<const deUint32*>(datas[0]);
+	const struct internalDataStruct*						checkInternalData				= reinterpret_cast<const struct internalDataStruct *>(internalData);
+	const Context*											context							= checkInternalData->context;
+	const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context->getSubgroupSizeControlPropertiesEXT();
+	TestLog&												log								= context->getTestContext().getLog();
+	const deUint32*											data							= reinterpret_cast<const deUint32*>(datas[0]);
 
 	for (deUint32 i = 0; i < width; i++)
 	{
 		if (data[i] > subgroupSizeControlProperties.maxSubgroupSize ||
 			data[i] < subgroupSizeControlProperties.minSubgroupSize)
 		{
-			log << tcu::TestLog::Message << "gl_SubgroupSize (" << data[i] << ") value is outside limits (" << subgroupSizeControlProperties.minSubgroupSize << ", " << subgroupSizeControlProperties.maxSubgroupSize << ")" << tcu::TestLog::EndMessage;
+			log << TestLog::Message << "gl_SubgroupSize (" << data[i] << ") value is outside limits (" << subgroupSizeControlProperties.minSubgroupSize << ", " << subgroupSizeControlProperties.maxSubgroupSize << ")" << TestLog::EndMessage;
+
 			return DE_FALSE;
 		}
 
 		if (checkInternalData->caseDef.requiredSubgroupSizeMode != REQUIRED_SUBGROUP_SIZE_NONE && data[i] != checkInternalData->requiredSubgroupSize)
 		{
-			log << tcu::TestLog::Message << "gl_SubgroupSize (" << data[i] << ") is not equal to the required subgroup size value (" << checkInternalData->requiredSubgroupSize << ")" << tcu::TestLog::EndMessage;
+			log << TestLog::Message << "gl_SubgroupSize (" << data[i] << ") is not equal to the required subgroup size value (" << checkInternalData->requiredSubgroupSize << ")" << TestLog::EndMessage;
+
 			return DE_FALSE;
 		}
 	}
@@ -133,22 +132,17 @@ static bool checkVertexPipelineStages (const void* internalData, std::vector<con
 	return DE_TRUE;
 }
 
-static bool checkFragmentPipelineStages (const void* internalData, std::vector<const void*> datas,
-										 deUint32 width, deUint32 height, deUint32)
+static bool checkFragmentPipelineStages (const void*			internalData,
+										 vector<const void*>	datas,
+										 deUint32				width,
+										 deUint32				height,
+										 deUint32)
 {
-	const struct internalDataStruct *checkInternalData = reinterpret_cast<const struct internalDataStruct *>(internalData);
-	const Context *context = checkInternalData->context;
-	tcu::TestLog& log		= context->getTestContext().getLog();
-
-	VkPhysicalDeviceSubgroupSizeControlPropertiesEXT subgroupSizeControlProperties;
-	subgroupSizeControlProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT;
-	subgroupSizeControlProperties.pNext = DE_NULL;
-	VkPhysicalDeviceProperties2 properties;
-	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-	properties.pNext = &subgroupSizeControlProperties;
-	context->getInstanceInterface().getPhysicalDeviceProperties2(context->getPhysicalDevice(), &properties);
-
-	const deUint32* data = reinterpret_cast<const deUint32*>(datas[0]);
+	const struct internalDataStruct*						checkInternalData				= reinterpret_cast<const struct internalDataStruct *>(internalData);
+	const Context*											context							= checkInternalData->context;
+	const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context->getSubgroupSizeControlPropertiesEXT();
+	TestLog&												log								= context->getTestContext().getLog();
+	const deUint32*											data							= reinterpret_cast<const deUint32*>(datas[0]);
 
 	for (deUint32 x = 0u; x < width; ++x)
 	{
@@ -159,14 +153,16 @@ static bool checkFragmentPipelineStages (const void* internalData, std::vector<c
 			if (data[ndx] > subgroupSizeControlProperties.maxSubgroupSize ||
 				data[ndx] < subgroupSizeControlProperties.minSubgroupSize)
 			{
-				log << tcu::TestLog::Message << "gl_SubgroupSize (" << data[ndx] << ") value is outside limits (" << subgroupSizeControlProperties.minSubgroupSize << ", " << subgroupSizeControlProperties.maxSubgroupSize << ")" << tcu::TestLog::EndMessage;
+				log << TestLog::Message << "gl_SubgroupSize (" << data[ndx] << ") value is outside limits (" << subgroupSizeControlProperties.minSubgroupSize << ", " << subgroupSizeControlProperties.maxSubgroupSize << ")" << TestLog::EndMessage;
+
 				return DE_FALSE;
 			}
 
 			if (checkInternalData->caseDef.requiredSubgroupSizeMode != REQUIRED_SUBGROUP_SIZE_NONE &&
 				data[ndx] != checkInternalData->requiredSubgroupSize)
 			{
-				log << tcu::TestLog::Message << "gl_SubgroupSize (" << data[ndx] << ") is not equal to the required subgroup size value (" << checkInternalData->requiredSubgroupSize << ")" << tcu::TestLog::EndMessage;
+				log << TestLog::Message << "gl_SubgroupSize (" << data[ndx] << ") is not equal to the required subgroup size value (" << checkInternalData->requiredSubgroupSize << ")" << TestLog::EndMessage;
+
 				return DE_FALSE;
 			}
 		}
@@ -174,43 +170,39 @@ static bool checkFragmentPipelineStages (const void* internalData, std::vector<c
 	return true;
 }
 
-static bool checkCompute (const void* internalData, std::vector<const void*> datas,
-						  const deUint32 numWorkgroups[3], const deUint32 localSize[3],
+static bool checkCompute (const void*			internalData,
+						  vector<const void*>	datas,
+						  const deUint32		numWorkgroups[3],
+						  const deUint32		localSize[3],
 						  deUint32)
 {
-	const struct internalDataStruct *checkInternalData = reinterpret_cast<const struct internalDataStruct *>(internalData);
-	const Context *context = checkInternalData->context;
-	tcu::TestLog& log		= context->getTestContext().getLog();
-
-	VkPhysicalDeviceSubgroupSizeControlPropertiesEXT subgroupSizeControlProperties;
-	subgroupSizeControlProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT;
-	subgroupSizeControlProperties.pNext = DE_NULL;
-	VkPhysicalDeviceProperties2 properties;
-	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-	properties.pNext = &subgroupSizeControlProperties;
-	context->getInstanceInterface().getPhysicalDeviceProperties2(context->getPhysicalDevice(), &properties);
-
-	const deUint32 globalSizeX = numWorkgroups[0] * localSize[0];
-	const deUint32 globalSizeY = numWorkgroups[1] * localSize[1];
-	const deUint32 globalSizeZ = numWorkgroups[2] * localSize[2];
-	const deUint32 width = globalSizeX * globalSizeY * globalSizeZ;
-	const deUint32* data = reinterpret_cast<const deUint32*>(datas[0]);
+	const struct internalDataStruct*						checkInternalData				= reinterpret_cast<const struct internalDataStruct *>(internalData);
+	const Context*											context							= checkInternalData->context;
+	const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context->getSubgroupSizeControlPropertiesEXT();
+	TestLog&												log								= context->getTestContext().getLog();
+	const deUint32											globalSizeX						= numWorkgroups[0] * localSize[0];
+	const deUint32											globalSizeY						= numWorkgroups[1] * localSize[1];
+	const deUint32											globalSizeZ						= numWorkgroups[2] * localSize[2];
+	const deUint32											width							= globalSizeX * globalSizeY * globalSizeZ;
+	const deUint32*											data							= reinterpret_cast<const deUint32*>(datas[0]);
 
 	for (deUint32 i = 0; i < width; i++)
 	{
 		if (data[i] > subgroupSizeControlProperties.maxSubgroupSize ||
 			data[i] < subgroupSizeControlProperties.minSubgroupSize)
 		{
-			log << tcu::TestLog::Message << "[" << localSize[0] << ", " << localSize[1] << ", " << localSize[2] << "] "
-				<< "gl_SubgroupSize (" << data[i] << ") value is outside limits (" << subgroupSizeControlProperties.minSubgroupSize << ", " << subgroupSizeControlProperties.maxSubgroupSize << ")" << tcu::TestLog::EndMessage;
+			log << TestLog::Message << "[" << localSize[0] << ", " << localSize[1] << ", " << localSize[2] << "] "
+				<< "gl_SubgroupSize (" << data[i] << ") value is outside limits (" << subgroupSizeControlProperties.minSubgroupSize << ", " << subgroupSizeControlProperties.maxSubgroupSize << ")" << TestLog::EndMessage;
+
 			return DE_FALSE;
 		}
 
 		if (checkInternalData->caseDef.requiredSubgroupSizeMode != REQUIRED_SUBGROUP_SIZE_NONE &&
 			data[i] != checkInternalData->requiredSubgroupSize)
 		{
-			log << tcu::TestLog::Message << "[" << localSize[0] << ", " << localSize[1] << ", " << localSize[2] << "] "
-				<< "gl_SubgroupSize (" << data[i] << ") is not equal to the required subgroup size value (" << checkInternalData->requiredSubgroupSize << ")" << tcu::TestLog::EndMessage;
+			log << TestLog::Message << "[" << localSize[0] << ", " << localSize[1] << ", " << localSize[2] << "] "
+				<< "gl_SubgroupSize (" << data[i] << ") is not equal to the required subgroup size value (" << checkInternalData->requiredSubgroupSize << ")" << TestLog::EndMessage;
+
 			return DE_FALSE;
 		}
 	}
@@ -218,64 +210,51 @@ static bool checkCompute (const void* internalData, std::vector<const void*> dat
 	return DE_TRUE;
 }
 
-static bool checkComputeRequireFull (const void* internalData, std::vector<const void*> datas,
-									 const deUint32 numWorkgroups[3], const deUint32 localSize[3],
+static bool checkComputeRequireFull (const void*			internalData,
+									 vector<const void*>	datas,
+									 const deUint32			numWorkgroups[3],
+									 const deUint32			localSize[3],
 									 deUint32)
 {
-	const struct internalDataStruct *checkInternalData = reinterpret_cast<const struct internalDataStruct *>(internalData);
-	const Context *context = checkInternalData->context;
-	tcu::TestLog& log		= context->getTestContext().getLog();
-
-	VkPhysicalDeviceSubgroupSizeControlPropertiesEXT subgroupSizeControlProperties;
-	subgroupSizeControlProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT;
-	subgroupSizeControlProperties.pNext = DE_NULL;
-
-	VkPhysicalDeviceSubgroupProperties subgroupProperties;
-	subgroupProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
-	subgroupProperties.pNext = &subgroupSizeControlProperties;
-
-	VkPhysicalDeviceProperties2 properties;
-	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-	properties.pNext = &subgroupProperties;
-
-	context->getInstanceInterface().getPhysicalDeviceProperties2(context->getPhysicalDevice(), &properties);
-
-	const deUint32 globalSizeX = numWorkgroups[0] * localSize[0];
-	const deUint32 globalSizeY = numWorkgroups[1] * localSize[1];
-	const deUint32 globalSizeZ = numWorkgroups[2] * localSize[2];
-	const deUint32 width = globalSizeX * globalSizeY * globalSizeZ;
-	const UVec4* data = reinterpret_cast<const UVec4*>(datas[0]);
-
-	deUint32 numSubgroups = (localSize[0] * localSize[1] * localSize[2]) / checkInternalData->requiredSubgroupSize;
+	const struct internalDataStruct*						checkInternalData				= reinterpret_cast<const struct internalDataStruct *>(internalData);
+	const Context*											context							= checkInternalData->context;
+	const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context->getSubgroupSizeControlPropertiesEXT();
+	TestLog&												log								= context->getTestContext().getLog();
+	const deUint32											globalSizeX						= numWorkgroups[0] * localSize[0];
+	const deUint32											globalSizeY						= numWorkgroups[1] * localSize[1];
+	const deUint32											globalSizeZ						= numWorkgroups[2] * localSize[2];
+	const deUint32											width							= globalSizeX * globalSizeY * globalSizeZ;
+	const UVec4*											data							= reinterpret_cast<const UVec4*>(datas[0]);
+	const deUint32											numSubgroups					= (localSize[0] * localSize[1] * localSize[2]) / checkInternalData->requiredSubgroupSize;
 
 	for (deUint32 i = 0; i < width; i++)
 	{
 		if (data[i].x() > subgroupSizeControlProperties.maxSubgroupSize ||
 			data[i].x() < subgroupSizeControlProperties.minSubgroupSize)
 		{
-			log << tcu::TestLog::Message << "[" << localSize[0] << ", " << localSize[1] << ", " << localSize[2] << "] "
-				<< "gl_SubgroupSize value ( " << data[i].x() << ") is outside limits [" << subgroupSizeControlProperties.minSubgroupSize << ", " << subgroupSizeControlProperties.maxSubgroupSize << "]" << tcu::TestLog::EndMessage;
+			log << TestLog::Message << "[" << localSize[0] << ", " << localSize[1] << ", " << localSize[2] << "] "
+				<< "gl_SubgroupSize value ( " << data[i].x() << ") is outside limits [" << subgroupSizeControlProperties.minSubgroupSize << ", " << subgroupSizeControlProperties.maxSubgroupSize << "]" << TestLog::EndMessage;
 			return DE_FALSE;
 		}
 
 		if (data[i].x() != data[i].y())
 		{
-			log << tcu::TestLog::Message << "[" << localSize[0] << ", " << localSize[1] << ", " << localSize[2] << "] "
-				<< "gl_SubgroupSize ( " << data[i].x() << ") does not match the active number of subgroup invocations (" << data[i].y() << ")" << tcu::TestLog::EndMessage;
+			log << TestLog::Message << "[" << localSize[0] << ", " << localSize[1] << ", " << localSize[2] << "] "
+				<< "gl_SubgroupSize ( " << data[i].x() << ") does not match the active number of subgroup invocations (" << data[i].y() << ")" << TestLog::EndMessage;
 			return DE_FALSE;
 		}
 
 		if (checkInternalData->caseDef.pipelineShaderStageCreateFlags == VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT &&
 			data[i].x() != checkInternalData->requiredSubgroupSize)
 		{
-			log << tcu::TestLog::Message << "[" << localSize[0] << ", " << localSize[1] << ", " << localSize[2] << "] "
-				<< "expected subgroupSize (" << checkInternalData->requiredSubgroupSize << ") doesn't match gl_SubgroupSize ( " << data[i].x() << ")" << tcu::TestLog::EndMessage;
+			log << TestLog::Message << "[" << localSize[0] << ", " << localSize[1] << ", " << localSize[2] << "] "
+				<< "expected subgroupSize (" << checkInternalData->requiredSubgroupSize << ") doesn't match gl_SubgroupSize ( " << data[i].x() << ")" << TestLog::EndMessage;
 			return DE_FALSE;
 		}
 
 		if (checkInternalData->caseDef.pipelineShaderStageCreateFlags == VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT && data[i].z() != numSubgroups)
 		{
-			log << tcu::TestLog::Message << "[" << localSize[0] << ", " << localSize[1] << ", " << localSize[2] << "] "
+			log << TestLog::Message << "[" << localSize[0] << ", " << localSize[1] << ", " << localSize[2] << "] "
 				<< "expected number of subgroups dispatched (" << numSubgroups << ") doesn't match gl_NumSubgroups (" << data[i].z() << ")";
 			return DE_FALSE;
 		}
@@ -286,7 +265,7 @@ static bool checkComputeRequireFull (const void* internalData, std::vector<const
 
 void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+	const ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3, 0u);
 
 	if (VK_SHADER_STAGE_FRAGMENT_BIT != caseDef.shaderStage)
 		subgroups::setFragmentShaderFrameBuffer(programCollection);
@@ -294,11 +273,12 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	if (VK_SHADER_STAGE_VERTEX_BIT != caseDef.shaderStage && VK_SHADER_STAGE_FRAGMENT_BIT != caseDef.shaderStage)
 		subgroups::setVertexShaderFrameBuffer(programCollection);
 
-	std::string bdyStr = "uint tempResult = gl_SubgroupSize;\n";
+	string bdyStr = "uint tempResult = gl_SubgroupSize;\n";
 
 	if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
 	{
-		std::ostringstream				vertex;
+		ostringstream vertex;
+
 		vertex << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
 			<< "layout(location = 0) in highp vec4 in_position;\n"
@@ -311,12 +291,12 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "  gl_Position = in_position;\n"
 			<< "  gl_PointSize = 1.0f;\n"
 			<< "}\n";
-		programCollection.glslSources.add("vert")
-			<< glu::VertexSource(vertex.str()) << buildOptions;
+
+		programCollection.glslSources.add("vert") << glu::VertexSource(vertex.str()) << buildOptions;
 	}
 	else if (VK_SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
 	{
-		std::ostringstream geometry;
+		ostringstream geometry;
 
 		geometry << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
@@ -333,12 +313,11 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "  EndPrimitive();\n"
 			<< "}\n";
 
-		programCollection.glslSources.add("geometry")
-			<< glu::GeometrySource(geometry.str()) << buildOptions;
+		programCollection.glslSources.add("geometry") << glu::GeometrySource(geometry.str()) << buildOptions;
 	}
 	else if (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT == caseDef.shaderStage)
 	{
-		std::ostringstream controlSource;
+		ostringstream controlSource;
 
 		controlSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
@@ -357,13 +336,12 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
 			<< "}\n";
 
-		programCollection.glslSources.add("tesc")
-			<< glu::TessellationControlSource(controlSource.str()) << buildOptions;
+		programCollection.glslSources.add("tesc") << glu::TessellationControlSource(controlSource.str()) << buildOptions;
 		subgroups::setTesEvalShaderFrameBuffer(programCollection);
 	}
 	else if (VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT == caseDef.shaderStage)
 	{
-		std::ostringstream evaluationSource;
+		ostringstream evaluationSource;
 		evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
 			<< "layout(isolines, equal_spacing, ccw ) in;\n"
@@ -376,8 +354,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "}\n";
 
 		subgroups::setTesCtrlShaderFrameBuffer(programCollection);
-		programCollection.glslSources.add("tese")
-			<< glu::TessellationEvaluationSource(evaluationSource.str()) << buildOptions;
+		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(evaluationSource.str()) << buildOptions;
 	}
 	else if (VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
 	{
@@ -390,7 +367,8 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			"}\n";
 		programCollection.glslSources.add("vert") << glu::VertexSource(vertex) << buildOptions;
 
-		std::ostringstream fragmentSource;
+		ostringstream fragmentSource;
+
 		fragmentSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 					   << "precision highp int;\n"
 						<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
@@ -400,8 +378,8 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 					   << bdyStr
 					   << "	 out_color = tempResult;\n"
 					   << "}\n";
-		programCollection.glslSources.add("fragment")
-			<< glu::FragmentSource(fragmentSource.str()) << buildOptions;
+
+		programCollection.glslSources.add("fragment") << glu::FragmentSource(fragmentSource.str()) << buildOptions;
 	}
 	else
 	{
@@ -409,137 +387,56 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	}
 }
 
+string getExtHeader (const CaseDefinition&)
+{
+	return "#extension GL_KHR_shader_subgroup_basic: enable\n";
+}
+
+vector<string> getPerStageHeadDeclarations (const CaseDefinition& caseDef)
+{
+	const deUint32	stageCount	= subgroups::getStagesCount(caseDef.shaderStage);
+	const bool		fragment	= (caseDef.shaderStage & VK_SHADER_STAGE_FRAGMENT_BIT) != 0;
+	vector<string>	result		(stageCount, string());
+
+	if (fragment)
+		result.reserve(result.size() + 1);
+
+	for (size_t i = 0; i < result.size(); ++i)
+	{
+		result[i] =
+			"layout(set = 0, binding = " + de::toString(i) + ", std430) buffer Buffer1\n"
+			"{\n"
+			"  uint result[];\n"
+			"};\n";
+	}
+
+	if (fragment)
+	{
+		const string	fragPart	=
+			"layout(location = 0) out uint result;\n";
+
+		result.push_back(fragPart);
+	}
+
+	return result;
+}
+
+string getTestSource (const CaseDefinition&)
+{
+	return
+		"  uint tempResult = gl_SubgroupSize;\n"
+		"  tempRes = tempResult;\n";
+}
+
 void initPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	std::string bdyStr = "  uint tempResult = gl_SubgroupSize;\n";
+	const SpirvVersion			spirvVersion		= isAllRayTracingStages(caseDef.shaderStage) ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
+	const ShaderBuildOptions	buildOptions		(programCollection.usedVulkanVersion, spirvVersion, 0u);
+	const string				extHeader			= getExtHeader(caseDef);
+	const string				testSrc				= getTestSource(caseDef);
+	const vector<string>		headDeclarations	= getPerStageHeadDeclarations(caseDef);
 
-	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
-	{
-		std::ostringstream src;
-
-		src << "#version 450\n"
-			<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
-			<< "layout (local_size_x_id = 0, local_size_y_id = 1, "
-			"local_size_z_id = 2) in;\n"
-			<< "layout(set = 0, binding = 0, std430) buffer Buffer1\n"
-			<< "{\n"
-			<< "  uint result[];\n"
-			<< "};\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "  uvec3 globalSize = gl_NumWorkGroups * gl_WorkGroupSize;\n"
-			<< "  highp uint offset = globalSize.x * ((globalSize.y * "
-			"gl_GlobalInvocationID.z) + gl_GlobalInvocationID.y) + "
-			"gl_GlobalInvocationID.x;\n"
-			<< bdyStr
-			<< "  result[offset] = tempResult;\n"
-			<< "}\n";
-
-		programCollection.glslSources.add("comp")
-				<< glu::ComputeSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-	}
-	else
-	{
-		const string vertex =
-			"#version 450\n"
-			"#extension GL_KHR_shader_subgroup_basic: enable\n"
-			"layout(set = 0, binding = 0, std430) buffer Buffer1\n"
-			"{\n"
-			"  uint result[];\n"
-			"};\n"
-			"\n"
-			"void main (void)\n"
-			"{\n"
-			+ bdyStr +
-			"  result[gl_VertexIndex] = tempResult;\n"
-			"  float pixelSize = 2.0f/1024.0f;\n"
-			"  float pixelPosition = pixelSize/2.0f - 1.0f;\n"
-			"  gl_Position = vec4(float(gl_VertexIndex) * pixelSize + pixelPosition, 0.0f, 0.0f, 1.0f);\n"
-			"  gl_PointSize = 1.0f;\n"
-			"}\n";
-
-		const string tesc =
-			"#version 450\n"
-			"#extension GL_KHR_shader_subgroup_basic: enable\n"
-			"layout(vertices=1) out;\n"
-			"layout(set = 0, binding = 1, std430) buffer Buffer1\n"
-			"{\n"
-			"  uint result[];\n"
-			"};\n"
-			"\n"
-			"void main (void)\n"
-			"{\n"
-			+ bdyStr +
-			"  result[gl_PrimitiveID] = tempResult;\n"
-			"  if (gl_InvocationID == 0)\n"
-			"  {\n"
-			"    gl_TessLevelOuter[0] = 1.0f;\n"
-			"    gl_TessLevelOuter[1] = 1.0f;\n"
-			"  }\n"
-			"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
-			"}\n";
-
-		const string tese =
-			"#version 450\n"
-			"#extension GL_KHR_shader_subgroup_basic: enable\n"
-			"layout(isolines) in;\n"
-			"layout(set = 0, binding = 2, std430) buffer Buffer1\n"
-			"{\n"
-			"  uint result[];\n"
-			"};\n"
-			"\n"
-			"void main (void)\n"
-			"{\n"
-			+ bdyStr +
-			"  result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = tempResult;\n"
-			"  float pixelSize = 2.0f/1024.0f;\n"
-			"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
-			"}\n";
-
-		const string geometry =
-			"#version 450\n"
-			"#extension GL_KHR_shader_subgroup_basic: enable\n"
-			"layout(${TOPOLOGY}) in;\n"
-			"layout(points, max_vertices = 1) out;\n"
-			"layout(set = 0, binding = 3, std430) buffer Buffer1\n"
-			"{\n"
-			"  uint result[];\n"
-			"};\n"
-			"\n"
-			"void main (void)\n"
-			"{\n"
-			+ bdyStr +
-			"  result[gl_PrimitiveIDIn] = tempResult;\n"
-			"  gl_Position = gl_in[0].gl_Position;\n"
-			"  gl_PointSize = 1.0f;\n"
-			"  EmitVertex();\n"
-			"  EndPrimitive();\n"
-			"}\n";
-
-		const string fragment =
-			"#version 450\n"
-			"#extension GL_KHR_shader_subgroup_basic: enable\n"
-			"layout(location = 0) out uint result;\n"
-			"void main (void)\n"
-			"{\n"
-			+ bdyStr +
-			"  result = tempResult;\n"
-			"}\n";
-
-		subgroups::addNoSubgroupShader(programCollection);
-
-		programCollection.glslSources.add("vert")
-				<< glu::VertexSource(vertex) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-		programCollection.glslSources.add("tesc")
-				<< glu::TessellationControlSource(tesc) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-		programCollection.glslSources.add("tese")
-				<< glu::TessellationEvaluationSource(tese) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-		subgroups::addGeometryShadersFromTemplate(geometry, vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u),
-												  programCollection.glslSources);
-		programCollection.glslSources.add("fragment")
-				<< glu::FragmentSource(fragment)<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-	}
+	subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, VK_FORMAT_R32_UINT, false, extHeader, testSrc, "", headDeclarations);
 }
 
 void initProgramsRequireFull (SourceCollections& programCollection, CaseDefinition caseDef)
@@ -547,9 +444,7 @@ void initProgramsRequireFull (SourceCollections& programCollection, CaseDefiniti
 	if (VK_SHADER_STAGE_COMPUTE_BIT != caseDef.shaderStage)
 		DE_FATAL("Unsupported shader stage");
 
-	std::string bdyStr = "  uint tempResult = gl_SubgroupSize;\n";
-
-	std::ostringstream src;
+	ostringstream src;
 
 	src << "#version 450\n"
 		<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
@@ -573,8 +468,7 @@ void initProgramsRequireFull (SourceCollections& programCollection, CaseDefiniti
 		<< "   result[offset].z = gl_NumSubgroups;" // save the number of subgroups dispatched.
 		<< "}\n";
 
-	programCollection.glslSources.add("comp")
-		<< glu::ComputeSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+	programCollection.glslSources.add("comp") << glu::ComputeSource(src.str()) << ShaderBuildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3, 0u);
 }
 
 void supportedCheck (Context& context)
@@ -582,10 +476,7 @@ void supportedCheck (Context& context)
 	if (!subgroups::isSubgroupSupported(context))
 		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
 
-	if (!context.requireDeviceFunctionality("VK_EXT_subgroup_size_control"))
-	{
-		TCU_THROW(NotSupportedError, "Device does not support VK_EXT_subgroups_size_control extension");
-	}
+	context.requireDeviceFunctionality("VK_EXT_subgroup_size_control");
 }
 
 void supportedCheckFeatures (Context& context, CaseDefinition caseDef)
@@ -599,8 +490,8 @@ void supportedCheckFeatures (Context& context, CaseDefinition caseDef)
 
 	if (caseDef.shaderStage == VK_SHADER_STAGE_ALL_GRAPHICS)
 	{
-		VkPhysicalDeviceFeatures features;
-		context.getInstanceInterface().getPhysicalDeviceFeatures(context.getPhysicalDevice(), &features);
+		const VkPhysicalDeviceFeatures&		features	= context.getDeviceFeatures();
+
 		if (!features.tessellationShader || !features.geometryShader)
 			TCU_THROW(NotSupportedError, "Device does not support tessellation or geometry shaders");
 	}
@@ -613,30 +504,14 @@ void supportedCheckFeatures (Context& context, CaseDefinition caseDef)
 	if (caseDef.requiredSubgroupSizeMode != REQUIRED_SUBGROUP_SIZE_NONE ||
 		caseDef.pipelineShaderStageCreateFlags == VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT)
 	{
-		VkPhysicalDeviceSubgroupSizeControlFeaturesEXT subgroupSizeControlFeatures;
-		subgroupSizeControlFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT;
-		subgroupSizeControlFeatures.pNext = DE_NULL;
-
-		VkPhysicalDeviceFeatures2 features;
-		features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-		features.pNext = &subgroupSizeControlFeatures;
-
-		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features);
+		const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&	subgroupSizeControlFeatures	= context.getSubgroupSizeControlFeaturesEXT();
 
 		if (subgroupSizeControlFeatures.subgroupSizeControl == DE_FALSE)
 			TCU_THROW(NotSupportedError, "Device does not support varying subgroup sizes nor required subgroup size");
 
 		if (caseDef.requiredSubgroupSizeMode != REQUIRED_SUBGROUP_SIZE_NONE)
 		{
-			VkPhysicalDeviceSubgroupSizeControlPropertiesEXT subgroupSizeControlProperties;
-			subgroupSizeControlProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT;
-			subgroupSizeControlProperties.pNext = DE_NULL;
-
-			VkPhysicalDeviceProperties2 properties;
-			properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-			properties.pNext = &subgroupSizeControlProperties;
-
-			context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
+			const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context.getSubgroupSizeControlPropertiesEXT();
 
 			if ((subgroupSizeControlProperties.requiredSubgroupSizeStages & caseDef.shaderStage) != caseDef.shaderStage)
 				TCU_THROW(NotSupportedError, "Device does not support setting required subgroup size for the stages selected");
@@ -645,58 +520,53 @@ void supportedCheckFeatures (Context& context, CaseDefinition caseDef)
 
 	if (caseDef.pipelineShaderStageCreateFlags == VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT)
 	{
-		VkPhysicalDeviceSubgroupSizeControlFeaturesEXT subgroupSizeControlFeatures;
-		subgroupSizeControlFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT;
-		subgroupSizeControlFeatures.pNext = DE_NULL;
-
-		VkPhysicalDeviceFeatures2 features;
-		features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-		features.pNext = &subgroupSizeControlFeatures;
-
-		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features);
+		const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&	subgroupSizeControlFeatures	= context.getSubgroupSizeControlFeaturesEXT();
 
 		if (subgroupSizeControlFeatures.computeFullSubgroups == DE_FALSE)
 			TCU_THROW(NotSupportedError, "Device does not support full subgroups in compute shaders");
 	}
 }
 
-tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
+void supportedCheckFeaturesShader (Context& context, CaseDefinition caseDef)
 {
-	struct internalDataStruct internalData =
+	supportedCheckFeatures(context, caseDef);
+
+	subgroups::supportedCheckShader(context, caseDef.shaderStage);
+}
+
+TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
+{
+	const VkFormat					format			= VK_FORMAT_R32_UINT;
+	const deUint32&					flags			= caseDef.pipelineShaderStageCreateFlags;
+	const struct internalDataStruct	internalData	=
 	{
 		&context,
 		caseDef,
 		0u,
 	};
 
-	if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
-		return subgroups::makeVertexFrameBufferTestRequiredSubgroupSize(context, VK_FORMAT_R32_UINT, DE_NULL, 0, &internalData, checkVertexPipelineStages, caseDef.pipelineShaderStageCreateFlags, 0u);
-	else if (VK_SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
-		return subgroups::makeGeometryFrameBufferTestRequiredSubgroupSize(context, VK_FORMAT_R32_UINT, DE_NULL, 0, &internalData, checkVertexPipelineStages, caseDef.pipelineShaderStageCreateFlags, 0u);
-	else if ((VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) & caseDef.shaderStage)
-		return subgroups::makeTessellationEvaluationFrameBufferTestRequiredSubgroupSize(context, VK_FORMAT_R32_UINT, DE_NULL, 0, &internalData, checkVertexPipelineStages, caseDef.shaderStage, caseDef.pipelineShaderStageCreateFlags, 0u);
-	else if (VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
-		return subgroups::makeFragmentFrameBufferTestRequiredSubgroupSize(context, VK_FORMAT_R32_UINT, DE_NULL, 0, &internalData, checkFragmentPipelineStages, caseDef.pipelineShaderStageCreateFlags, 0u);
-
-	else
-		TCU_THROW(InternalError, "Unhandled shader stage");
+	switch (caseDef.shaderStage)
+	{
+		case VK_SHADER_STAGE_VERTEX_BIT:					return subgroups::makeVertexFrameBufferTestRequiredSubgroupSize(context, format, DE_NULL, 0, &internalData, checkVertexPipelineStages, flags, 0u);
+		case VK_SHADER_STAGE_GEOMETRY_BIT:					return subgroups::makeGeometryFrameBufferTestRequiredSubgroupSize(context, format, DE_NULL, 0, &internalData, checkVertexPipelineStages, flags, 0u);
+		case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:		return subgroups::makeTessellationEvaluationFrameBufferTestRequiredSubgroupSize(context, format, DE_NULL, 0, &internalData, checkVertexPipelineStages, caseDef.shaderStage, flags, 0u);
+		case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:	return subgroups::makeTessellationEvaluationFrameBufferTestRequiredSubgroupSize(context, format, DE_NULL, 0, &internalData, checkVertexPipelineStages, caseDef.shaderStage, flags, 0u);
+		case VK_SHADER_STAGE_FRAGMENT_BIT:					return subgroups::makeFragmentFrameBufferTestRequiredSubgroupSize(context, format, DE_NULL, 0, &internalData, checkFragmentPipelineStages, flags, 0u);
+		default:											TCU_THROW(InternalError, "Unhandled shader stage");
+	}
 }
 
-tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
+TestStatus test (Context& context, const CaseDefinition caseDef)
 {
-	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
+	if (isAllComputeStages(caseDef.shaderStage))
 	{
-		const deUint32 numWorkgroups[3] = {1, 1, 1};
-		deUint32 subgroupSize = vkt::subgroups::getSubgroupSize(context);
-
-		VkPhysicalDeviceProperties physicalDeviceProperties;
-		context.getInstanceInterface().getPhysicalDeviceProperties(context.getPhysicalDevice(), &physicalDeviceProperties);
-		deUint32 localSizeX, localSizeY, localSizeZ;
+		const deUint32						numWorkgroups[3]							= {1, 1, 1};
+		const deUint32						subgroupSize								= subgroups::getSubgroupSize(context);
+		const VkPhysicalDeviceProperties	physicalDeviceProperties					= context.getDeviceProperties();
 		// Calculate the local workgroup sizes to exercise the maximum supported by the driver
-		getLocalSizes(physicalDeviceProperties, physicalDeviceProperties.limits.maxComputeWorkGroupInvocations, localSizeX, localSizeY, localSizeZ);
-
-		const deUint32 localSizesToTestCount = 16;
-		deUint32 localSizesToTest[localSizesToTestCount][3] =
+		const UVec3							localSize									= getLocalSizes(physicalDeviceProperties, physicalDeviceProperties.limits.maxComputeWorkGroupInvocations);
+		const deUint32						localSizesToTestCount						= 16;
+		const deUint32						localSizesToTest[localSizesToTestCount][3]	=
 		{
 			{1, 1, 1},
 			{32, 4, 1},
@@ -712,245 +582,245 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 			{128, 1, 1},
 			{1, 128, 1},
 			{1, 1, 64},
-			{localSizeX, localSizeY, localSizeZ},
+			{localSize.x(), localSize.y(), localSize.z()},
 			{1, 1, 1} // Isn't used, just here to make double buffering checks easier
 		};
-
-		struct internalDataStruct internalData =
+		const struct internalDataStruct		internalData								=
 		{
 			&context,
 			caseDef,
 			subgroupSize,
 		};
 
-		return subgroups::makeComputeTestRequiredSubgroupSize(context, VK_FORMAT_R32_UINT, DE_NULL, 0, &internalData, checkCompute,
-															  caseDef.pipelineShaderStageCreateFlags, numWorkgroups, DE_FALSE, subgroupSize,
-															  localSizesToTest, localSizesToTestCount);
+		return subgroups::makeComputeTestRequiredSubgroupSize(context,
+															  VK_FORMAT_R32_UINT,
+															  DE_NULL,
+															  0,
+															  &internalData,
+															  checkCompute,
+															  caseDef.pipelineShaderStageCreateFlags,
+															  numWorkgroups,
+															  DE_FALSE,
+															  subgroupSize,
+															  localSizesToTest,
+															  localSizesToTestCount);
 	}
-	else
+	else if (isAllGraphicsStages(caseDef.shaderStage))
 	{
-		VkPhysicalDeviceSubgroupProperties subgroupProperties;
-		subgroupProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
-		subgroupProperties.pNext = DE_NULL;
-
-		VkPhysicalDeviceProperties2 properties;
-		properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-		properties.pNext = &subgroupProperties;
-
-		context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
-
-		VkShaderStageFlagBits stages = (VkShaderStageFlagBits)(caseDef.shaderStage  & subgroupProperties.supportedStages);
-
-		if ( VK_SHADER_STAGE_FRAGMENT_BIT != stages && !subgroups::isVertexSSBOSupportedForDevice(context))
-		{
-			if ( (stages & VK_SHADER_STAGE_FRAGMENT_BIT) == 0)
-				TCU_THROW(NotSupportedError, "Device does not support vertex stage SSBO writes");
-			else
-				stages = VK_SHADER_STAGE_FRAGMENT_BIT;
-		}
-
-		if ((VkShaderStageFlagBits)0u == stages)
-			TCU_THROW(NotSupportedError, "Subgroup operations are not supported for any graphic shader");
-
-		struct internalDataStruct internalData =
+		const VkShaderStageFlags	stages			= subgroups::getPossibleGraphicsSubgroupStages(context, caseDef.shaderStage);
+		struct internalDataStruct	internalData	=
 		{
 			&context,
 			caseDef,
 			0u,
 		};
 
-		return subgroups::allStagesRequiredSubgroupSize(context, VK_FORMAT_R32_UINT, DE_NULL, 0, &internalData, checkVertexPipelineStages, stages,
-														caseDef.pipelineShaderStageCreateFlags, caseDef.pipelineShaderStageCreateFlags, caseDef.pipelineShaderStageCreateFlags,
-														caseDef.pipelineShaderStageCreateFlags, caseDef.pipelineShaderStageCreateFlags, DE_NULL);
+		return subgroups::allStagesRequiredSubgroupSize(context,
+														VK_FORMAT_R32_UINT,
+														DE_NULL,
+														0,
+														&internalData,
+														checkVertexPipelineStages,
+														stages,
+														caseDef.pipelineShaderStageCreateFlags,
+														caseDef.pipelineShaderStageCreateFlags,
+														caseDef.pipelineShaderStageCreateFlags,
+														caseDef.pipelineShaderStageCreateFlags,
+														caseDef.pipelineShaderStageCreateFlags,
+														DE_NULL);
 	}
-	return tcu::TestStatus::pass("OK");
+	else if (isAllRayTracingStages(caseDef.shaderStage))
+	{
+		const VkShaderStageFlags		stages			= subgroups::getPossibleRayTracingSubgroupStages(context, caseDef.shaderStage);
+		const vector<deUint32>			flags			(6, caseDef.pipelineShaderStageCreateFlags);
+		const struct internalDataStruct	internalData	=
+		{
+			&context,
+			caseDef,
+			0u,
+		};
+
+		return subgroups::allRayTracingStagesRequiredSubgroupSize(context,
+																  VK_FORMAT_R32_UINT,
+																  DE_NULL,
+																  0,
+																  &internalData,
+																  checkVertexPipelineStages,
+																  stages,
+																  flags.data(),
+																  DE_NULL);
+	}
+	else
+		TCU_THROW(InternalError, "Unknown stage or invalid stage set");
 }
 
-tcu::TestStatus testRequireFullSubgroups (Context& context, const CaseDefinition caseDef)
+TestStatus testRequireFullSubgroups (Context& context, const CaseDefinition caseDef)
 {
 	DE_ASSERT(VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage);
 	DE_ASSERT(caseDef.requiredSubgroupSizeMode == REQUIRED_SUBGROUP_SIZE_NONE);
 
-	const deUint32 numWorkgroups[3] = {1, 1, 1};
-
-	VkPhysicalDeviceSubgroupSizeControlPropertiesEXT subgroupSizeControlProperties;
-	subgroupSizeControlProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT;
-	subgroupSizeControlProperties.pNext = DE_NULL;
-
-	VkPhysicalDeviceProperties2 properties;
-	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-	properties.pNext = &subgroupSizeControlProperties;
-
-	context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
-
-	VkPhysicalDeviceProperties physicalDeviceProperties;
-	context.getInstanceInterface().getPhysicalDeviceProperties(context.getPhysicalDevice(), &physicalDeviceProperties);
-
-	deUint32 localSizeX, localSizeY, localSizeZ;
+	const deUint32												numWorkgroups[3]							= {1, 1, 1};
+	const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&		subgroupSizeControlProperties				= context.getSubgroupSizeControlPropertiesEXT();
+	const VkPhysicalDeviceProperties&							physicalDeviceProperties					= context.getDeviceProperties();
 	// Calculate the local workgroup sizes to exercise the maximum supported by the driver
-	getLocalSizes(physicalDeviceProperties, physicalDeviceProperties.limits.maxComputeWorkGroupInvocations, localSizeX, localSizeY, localSizeZ);
-
-	const deUint32 subgroupSize = vkt::subgroups::getSubgroupSize(context);
-
+	const UVec3													localSize									= getLocalSizes(physicalDeviceProperties, physicalDeviceProperties.limits.maxComputeWorkGroupInvocations);
+	const deUint32												subgroupSize								= subgroups::getSubgroupSize(context);
 	// For full subgroups and allow varying subgroup size, localsize X must be a multiple of maxSubgroupSize.
 	// We set local size X for this test to the maximum, regardless if allow varying subgroup size is enabled or not.
-	const deUint32 localSizesToTestCount = 7;
-	deUint32 localSizesToTest[localSizesToTestCount][3] =
+	const deUint32												localSizesToTestCount						= 7;
+	const deUint32												localSizesToTest[localSizesToTestCount][3]	=
 	{
 		{subgroupSizeControlProperties.maxSubgroupSize, 1, 1},
 		{subgroupSizeControlProperties.maxSubgroupSize, 4, 1},
 		{subgroupSizeControlProperties.maxSubgroupSize, 1, 4},
 		{subgroupSizeControlProperties.maxSubgroupSize * 2, 1, 2},
 		{subgroupSizeControlProperties.maxSubgroupSize * 4, 1, 1},
-		{localSizeX, localSizeY, localSizeZ},
+		{localSize.x(), localSize.y(), localSize.z()},
 		{1, 1, 1} // Isn't used, just here to make double buffering checks easier
 	};
-
-	struct internalDataStruct internalData =
+	const struct internalDataStruct								internalData								=
 	{
 		&context,
 		caseDef,
 		subgroupSize,
 	};
 
-	return subgroups::makeComputeTestRequiredSubgroupSize(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, &internalData, checkComputeRequireFull,
-														  caseDef.pipelineShaderStageCreateFlags, numWorkgroups, DE_FALSE, subgroupSize,
-														  localSizesToTest, localSizesToTestCount);
+	return subgroups::makeComputeTestRequiredSubgroupSize(context,
+														  VK_FORMAT_R32G32B32A32_UINT,
+														  DE_NULL,
+														  0,
+														  &internalData,
+														  checkComputeRequireFull,
+														  caseDef.pipelineShaderStageCreateFlags,
+														  numWorkgroups,
+														  DE_FALSE,
+														  subgroupSize,
+														  localSizesToTest,
+														  localSizesToTestCount);
 }
 
-tcu::TestStatus testRequireSubgroupSize (Context& context, const CaseDefinition caseDef)
+TestStatus testRequireSubgroupSize (Context& context, const CaseDefinition caseDef)
 {
-	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
+	if (isAllComputeStages(caseDef.shaderStage))
 	{
-		const deUint32 numWorkgroups[3] = {1, 1, 1};
-
-		VkPhysicalDeviceSubgroupSizeControlPropertiesEXT subgroupSizeControlProperties;
-		subgroupSizeControlProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT;
-		subgroupSizeControlProperties.pNext = DE_NULL;
-
-		VkPhysicalDeviceProperties2 properties2;
-		properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-		properties2.pNext = &subgroupSizeControlProperties;
-		context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties2);
-
-		VkPhysicalDeviceProperties physicalDeviceProperties;
-		context.getInstanceInterface().getPhysicalDeviceProperties(context.getPhysicalDevice(), &physicalDeviceProperties);
-
-		deUint32 requiredSubgroupSize = getRequiredSubgroupSizeFromMode(context, caseDef, subgroupSizeControlProperties);
-
-		const deUint64 maxSubgroupLimitSize = (deUint64)requiredSubgroupSize * subgroupSizeControlProperties.maxComputeWorkgroupSubgroups;
-		const deUint32 maxTotalLocalSize = (deUint32)std::min<deUint64>(maxSubgroupLimitSize, physicalDeviceProperties.limits.maxComputeWorkGroupInvocations);
-		deUint32 localSizeX, localSizeY, localSizeZ;
-		getLocalSizes(physicalDeviceProperties, maxTotalLocalSize, localSizeX, localSizeY, localSizeZ);
-
-		const deUint32 localSizesToTestCount = 5;
-		deUint32 localSizesToTest[localSizesToTestCount][3] =
+		const deUint32											numWorkgroups[3]							= {1, 1, 1};
+		const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties				= context.getSubgroupSizeControlPropertiesEXT();
+		const VkPhysicalDeviceProperties&						physicalDeviceProperties					= context.getDeviceProperties();
+		const deUint32											requiredSubgroupSize						= getRequiredSubgroupSizeFromMode(context, caseDef, subgroupSizeControlProperties);
+		const deUint64											maxSubgroupLimitSize						= (deUint64)requiredSubgroupSize * subgroupSizeControlProperties.maxComputeWorkgroupSubgroups;
+		const deUint32											maxTotalLocalSize							= (deUint32)min<deUint64>(maxSubgroupLimitSize, physicalDeviceProperties.limits.maxComputeWorkGroupInvocations);
+		const UVec3												localSize									= getLocalSizes(physicalDeviceProperties, maxTotalLocalSize);
+		const deUint32											localSizesToTestCount						= 5;
+		const deUint32											localSizesToTest[localSizesToTestCount][3]	=
 		{
 			{requiredSubgroupSize, 1, 1},
 			{1, requiredSubgroupSize, 1},
 			{1, 1, requiredSubgroupSize},
-			{localSizeX, localSizeY, localSizeZ},
+			{localSize.x(), localSize.y(), localSize.z()},
 			{1, 1, 1} // Isn't used, just here to make double buffering checks easier
 		};
-
-		struct internalDataStruct internalData =
+		struct internalDataStruct								internalData								=
 		{
-			&context,
-			caseDef,
-			requiredSubgroupSize,
+			&context,				//  const Context*			context;
+			caseDef,				//  struct CaseDefinition	caseDef;
+			requiredSubgroupSize,	//  deUint32				requiredSubgroupSize;
 		};
 
 		// Depending on the flag we need to run one verification function or another.
-		return subgroups::makeComputeTestRequiredSubgroupSize(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, &internalData,
+		return subgroups::makeComputeTestRequiredSubgroupSize(context,
+															  VK_FORMAT_R32G32B32A32_UINT,
+															  DE_NULL,
+															  0,
+															  &internalData,
 															  caseDef.pipelineShaderStageCreateFlags == VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT ? checkComputeRequireFull : checkCompute,
-															  caseDef.pipelineShaderStageCreateFlags, numWorkgroups, DE_TRUE, requiredSubgroupSize,
-															  localSizesToTest, localSizesToTestCount);
+															  caseDef.pipelineShaderStageCreateFlags,
+															  numWorkgroups,
+															  DE_TRUE,
+															  requiredSubgroupSize,
+															  localSizesToTest,
+															  localSizesToTestCount);
+	}
+	else if (isAllGraphicsStages(caseDef.shaderStage))
+	{
+		const VkShaderStageFlags								stages							= subgroups::getPossibleGraphicsSubgroupStages(context, caseDef.shaderStage);
+		const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context.getSubgroupSizeControlPropertiesEXT();
+		const deUint32											requiredSubgroupSize			= getRequiredSubgroupSizeFromMode(context, caseDef, subgroupSizeControlProperties);
+		const deUint32											requiredSubgroupSizes[5]		= { requiredSubgroupSize, requiredSubgroupSize, requiredSubgroupSize, requiredSubgroupSize, requiredSubgroupSize};
+		const struct internalDataStruct							internalData					=
+		{
+			&context,				//  const Context*			context;
+			caseDef,				//  struct CaseDefinition	caseDef;
+			requiredSubgroupSize,	//  deUint32				requiredSubgroupSize;
+		};
+
+		return subgroups::allStagesRequiredSubgroupSize(context,
+														VK_FORMAT_R32_UINT,
+														DE_NULL,
+														0,
+														&internalData,
+														checkVertexPipelineStages,
+														stages,
+														caseDef.pipelineShaderStageCreateFlags,
+														caseDef.pipelineShaderStageCreateFlags,
+														caseDef.pipelineShaderStageCreateFlags,
+														caseDef.pipelineShaderStageCreateFlags,
+														caseDef.pipelineShaderStageCreateFlags,
+														requiredSubgroupSizes);
+	}
+	else if (isAllRayTracingStages(caseDef.shaderStage))
+	{
+		const VkShaderStageFlags								stages							= subgroups::getPossibleRayTracingSubgroupStages(context, caseDef.shaderStage);
+		const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context.getSubgroupSizeControlPropertiesEXT();
+		const deUint32											requiredSubgroupSize			= getRequiredSubgroupSizeFromMode(context, caseDef, subgroupSizeControlProperties);
+		const vector<deUint32>									flags							(6, caseDef.pipelineShaderStageCreateFlags);
+		const vector<deUint32>									requiredSubgroupSizes			(6, requiredSubgroupSize);
+		const struct internalDataStruct							internalData					=
+		{
+			&context,				//  const Context*			context;
+			caseDef,				//  struct CaseDefinition	caseDef;
+			requiredSubgroupSize,	//  deUint32				requiredSubgroupSize;
+		};
+
+		return subgroups::allRayTracingStagesRequiredSubgroupSize(context,
+																  VK_FORMAT_R32_UINT,
+																  DE_NULL,
+																  0,
+																  &internalData,
+																  checkVertexPipelineStages,
+																  stages,
+																  flags.data(),
+																  requiredSubgroupSizes.data());
 	}
 	else
-	{
-		VkPhysicalDeviceSubgroupSizeControlPropertiesEXT subgroupSizeControlProperties;
-		subgroupSizeControlProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT;
-		subgroupSizeControlProperties.pNext = DE_NULL;
-
-		VkPhysicalDeviceSubgroupProperties subgroupProperties;
-		subgroupProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
-		subgroupProperties.pNext = &subgroupSizeControlProperties;
-
-		VkPhysicalDeviceProperties2 properties;
-		properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-		properties.pNext = &subgroupProperties;
-
-		context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
-
-		VkShaderStageFlagBits stages = (VkShaderStageFlagBits)(caseDef.shaderStage  & subgroupProperties.supportedStages);
-
-		if ( VK_SHADER_STAGE_FRAGMENT_BIT != stages && !subgroups::isVertexSSBOSupportedForDevice(context))
-		{
-			if ( (stages & VK_SHADER_STAGE_FRAGMENT_BIT) == 0)
-				TCU_THROW(NotSupportedError, "Device does not support vertex stage SSBO writes");
-			else
-				stages = VK_SHADER_STAGE_FRAGMENT_BIT;
-		}
-
-		if ((VkShaderStageFlagBits)0u == stages)
-			TCU_THROW(NotSupportedError, "Subgroup operations are not supported for any graphic shader");
-
-		deUint32 requiredSubgroupSize = getRequiredSubgroupSizeFromMode(context, caseDef, subgroupSizeControlProperties);
-		const deUint32 requiredSubgroupSizes[5] = { requiredSubgroupSize, requiredSubgroupSize, requiredSubgroupSize, requiredSubgroupSize, requiredSubgroupSize};
-		struct internalDataStruct internalData =
-		{
-			&context,
-			caseDef,
-			requiredSubgroupSize,
-		};
-		return subgroups::allStagesRequiredSubgroupSize(context, VK_FORMAT_R32_UINT, DE_NULL, 0, &internalData, checkVertexPipelineStages, stages,
-														caseDef.pipelineShaderStageCreateFlags, caseDef.pipelineShaderStageCreateFlags, caseDef.pipelineShaderStageCreateFlags,
-														caseDef.pipelineShaderStageCreateFlags, caseDef.pipelineShaderStageCreateFlags, requiredSubgroupSizes);
-	}
-	return tcu::TestStatus::pass("OK");
+		TCU_THROW(InternalError, "Unknown stage or invalid stage set");
 }
 
-tcu::TestStatus noSSBOtestRequireSubgroupSize (Context& context, const CaseDefinition caseDef)
+TestStatus noSSBOtestRequireSubgroupSize (Context& context, const CaseDefinition caseDef)
 {
-	VkPhysicalDeviceSubgroupSizeControlPropertiesEXT subgroupSizeControlProperties;
-	subgroupSizeControlProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT;
-	subgroupSizeControlProperties.pNext = DE_NULL;
-
-	VkPhysicalDeviceSubgroupProperties subgroupProperties;
-	subgroupProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
-	subgroupProperties.pNext = &subgroupSizeControlProperties;
-
-	VkPhysicalDeviceProperties2 properties;
-	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-	properties.pNext = &subgroupProperties;
-
-	context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
-
-	VkShaderStageFlagBits stages = (VkShaderStageFlagBits)(caseDef.shaderStage  & subgroupProperties.supportedStages);
-	if ((VkShaderStageFlagBits)0u == stages)
-		TCU_THROW(NotSupportedError, "Subgroup operations are not supported for any graphic shader");
-
-	deUint32 requiredSubgroupSize = getRequiredSubgroupSizeFromMode(context, caseDef, subgroupSizeControlProperties);
-	struct internalDataStruct internalData =
+	const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT& subgroupSizeControlProperties	= context.getSubgroupSizeControlPropertiesEXT();
+	const deUint32											requiredSubgroupSize			= getRequiredSubgroupSizeFromMode(context, caseDef, subgroupSizeControlProperties);
+	const VkFormat											format							= VK_FORMAT_R32_UINT;
+	const deUint32&											flags							= caseDef.pipelineShaderStageCreateFlags;
+	const deUint32&											size							= requiredSubgroupSize;
+	struct internalDataStruct								internalData					=
 	{
 		&context,
 		caseDef,
 		requiredSubgroupSize,
 	};
 
-	if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
-		return subgroups::makeVertexFrameBufferTestRequiredSubgroupSize(context, VK_FORMAT_R32_UINT, DE_NULL, 0, &internalData, checkVertexPipelineStages, caseDef.pipelineShaderStageCreateFlags, requiredSubgroupSize);
-	else if (VK_SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
-		return subgroups::makeGeometryFrameBufferTestRequiredSubgroupSize(context, VK_FORMAT_R32_UINT, DE_NULL, 0, &internalData, checkVertexPipelineStages, caseDef.pipelineShaderStageCreateFlags, requiredSubgroupSize);
-	else if ((VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) & caseDef.shaderStage)
-		return subgroups::makeTessellationEvaluationFrameBufferTestRequiredSubgroupSize(context, VK_FORMAT_R32_UINT, DE_NULL, 0, &internalData, checkVertexPipelineStages, caseDef.shaderStage, caseDef.pipelineShaderStageCreateFlags, requiredSubgroupSize);
-	else if (VK_SHADER_STAGE_FRAGMENT_BIT & caseDef.shaderStage)
-		return subgroups::makeFragmentFrameBufferTestRequiredSubgroupSize(context, VK_FORMAT_R32_UINT, DE_NULL, 0, &internalData, checkFragmentPipelineStages, caseDef.pipelineShaderStageCreateFlags, requiredSubgroupSize);
-	else
-		TCU_THROW(InternalError, "Unhandled shader stage");
+	switch (caseDef.shaderStage)
+	{
+		case VK_SHADER_STAGE_VERTEX_BIT:					return subgroups::makeVertexFrameBufferTestRequiredSubgroupSize(context, format, DE_NULL, 0, &internalData, checkVertexPipelineStages, flags, size);
+		case VK_SHADER_STAGE_GEOMETRY_BIT:					return subgroups::makeGeometryFrameBufferTestRequiredSubgroupSize(context, format, DE_NULL, 0, &internalData, checkVertexPipelineStages, flags, size);
+		case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:		return subgroups::makeTessellationEvaluationFrameBufferTestRequiredSubgroupSize(context, format, DE_NULL, 0, &internalData, checkVertexPipelineStages, caseDef.shaderStage, flags, size);
+		case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:	return subgroups::makeTessellationEvaluationFrameBufferTestRequiredSubgroupSize(context, format, DE_NULL, 0, &internalData, checkVertexPipelineStages, caseDef.shaderStage, flags, size);
+		case VK_SHADER_STAGE_FRAGMENT_BIT:					return subgroups::makeFragmentFrameBufferTestRequiredSubgroupSize(context, format, DE_NULL, 0, &internalData, checkFragmentPipelineStages, flags, size);
+		default:											TCU_THROW(InternalError, "Unhandled shader stage");
+	}
 }
 
-tcu::TestStatus testSanitySubgroupSizeProperties (Context& context)
+TestStatus testSanitySubgroupSizeProperties (Context& context)
 {
 	VkPhysicalDeviceSubgroupSizeControlPropertiesEXT subgroupSizeControlProperties;
 	subgroupSizeControlProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT;
@@ -969,14 +839,15 @@ tcu::TestStatus testSanitySubgroupSizeProperties (Context& context)
 	if (subgroupProperties.subgroupSize > subgroupSizeControlProperties.maxSubgroupSize ||
 		subgroupProperties.subgroupSize < subgroupSizeControlProperties.minSubgroupSize)
 	{
-		std::ostringstream error;
+		ostringstream error;
 		error << "subgroupSize (" << subgroupProperties.subgroupSize << ") is not between maxSubgroupSize (";
 		error << subgroupSizeControlProperties.maxSubgroupSize << ") and minSubgroupSize (";
 		error << subgroupSizeControlProperties.minSubgroupSize << ")";
-		return tcu::TestStatus::fail(error.str().c_str());
+
+		return TestStatus::fail(error.str().c_str());
 	}
 
-	return tcu::TestStatus::pass("OK");
+	return TestStatus::pass("OK");
 }
 }
 
@@ -984,9 +855,15 @@ namespace vkt
 {
 namespace subgroups
 {
-tcu::TestCaseGroup* createSubgroupsSizeControlTests (tcu::TestContext& testCtx)
+TestCaseGroup* createSubgroupsSizeControlTests (TestContext& testCtx)
 {
-	const VkShaderStageFlags stages[] =
+	de::MovePtr<TestCaseGroup>	group				(new TestCaseGroup(testCtx, "size_control", "VK_EXT_subgroup_size_control tests"));
+	de::MovePtr<TestCaseGroup>	framebufferGroup	(new TestCaseGroup(testCtx, "framebuffer", "Subgroup size control category tests: framebuffer"));
+	de::MovePtr<TestCaseGroup>	computeGroup		(new TestCaseGroup(testCtx, "compute", "Subgroup size control category tests: compute"));
+	de::MovePtr<TestCaseGroup>	graphicsGroup		(new TestCaseGroup(testCtx, "graphics", "Subgroup size control category tests: graphics"));
+	de::MovePtr<TestCaseGroup>	raytracingGroup		(new TestCaseGroup(testCtx, "ray_tracing", "Subgroup size control category tests: ray tracing"));
+	de::MovePtr<TestCaseGroup>	genericGroup		(new TestCaseGroup(testCtx, "generic", "Subgroup size control category tests: generic"));
+	const VkShaderStageFlags	stages[]			=
 	{
 		VK_SHADER_STAGE_VERTEX_BIT,
 		VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
@@ -994,21 +871,6 @@ tcu::TestCaseGroup* createSubgroupsSizeControlTests (tcu::TestContext& testCtx)
 		VK_SHADER_STAGE_GEOMETRY_BIT,
 		VK_SHADER_STAGE_FRAGMENT_BIT,
 	};
-
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
-		testCtx, "size_control", "VK_EXT_subgroup_size_control tests"));
-
-	de::MovePtr<tcu::TestCaseGroup> framebufferGroup(new tcu::TestCaseGroup(
-		testCtx, "framebuffer", "Subgroup size control category tests: framebuffer"));
-
-	de::MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(
-		testCtx, "compute", "Subgroup size control category tests: compute"));
-
-	de::MovePtr<tcu::TestCaseGroup> graphicsGroup(new tcu::TestCaseGroup(
-		testCtx, "graphics", "Subgroup size control category tests: graphics"));
-
-	de::MovePtr<tcu::TestCaseGroup> genericGroup(new tcu::TestCaseGroup(
-		testCtx, "generic", "Subgroup size control category tests: generic"));
 
 	// Test sanity of the subgroup size properties.
 	{
@@ -1020,12 +882,14 @@ tcu::TestCaseGroup* createSubgroupsSizeControlTests (tcu::TestContext& testCtx)
 		const CaseDefinition caseDefCompute = {VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT, VK_SHADER_STAGE_COMPUTE_BIT, DE_FALSE, REQUIRED_SUBGROUP_SIZE_NONE};
 		addFunctionCaseWithPrograms(computeGroup.get(), "allow_varying_subgroup_size", "", supportedCheckFeatures, initPrograms, test, caseDefCompute);
 		const CaseDefinition caseDefAllGraphics = {VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT, VK_SHADER_STAGE_ALL_GRAPHICS, DE_FALSE, REQUIRED_SUBGROUP_SIZE_NONE};
-		addFunctionCaseWithPrograms(graphicsGroup.get(), "allow_varying_subgroup_size", "", supportedCheckFeatures, initPrograms, test, caseDefAllGraphics);
+		addFunctionCaseWithPrograms(graphicsGroup.get(), "allow_varying_subgroup_size", "", supportedCheckFeaturesShader, initPrograms, test, caseDefAllGraphics);
+		const CaseDefinition caseDefAllRaytracing = {VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT, SHADER_STAGE_ALL_RAY_TRACING, DE_FALSE, REQUIRED_SUBGROUP_SIZE_NONE};
+		addFunctionCaseWithPrograms(raytracingGroup.get(), "allow_varying_subgroup_size", "", supportedCheckFeaturesShader, initPrograms, test, caseDefAllRaytracing);
 
 		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 		{
 			const CaseDefinition caseDefStage = {VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT, stages[stageIndex], DE_FALSE, REQUIRED_SUBGROUP_SIZE_NONE};
-			addFunctionCaseWithPrograms(framebufferGroup.get(),  getShaderStageName(caseDefStage.shaderStage) + "_allow_varying_subgroup_size", "", supportedCheckFeatures, initFrameBufferPrograms, noSSBOtest, caseDefStage);
+			addFunctionCaseWithPrograms(framebufferGroup.get(),  getShaderStageName(caseDefStage.shaderStage) + "_allow_varying_subgroup_size", "", supportedCheckFeaturesShader, initFrameBufferPrograms, noSSBOtest, caseDefStage);
 		}
 	}
 
@@ -1045,20 +909,24 @@ tcu::TestCaseGroup* createSubgroupsSizeControlTests (tcu::TestContext& testCtx)
 	// Tests to check setting a required subgroup size value.
 	{
 		const CaseDefinition caseDefAllGraphicsMax = {0u, VK_SHADER_STAGE_ALL_GRAPHICS, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MAX};
-		addFunctionCaseWithPrograms(graphicsGroup.get(), "required_subgroup_size_max", "", supportedCheckFeatures, initPrograms, testRequireSubgroupSize, caseDefAllGraphicsMax);
+		addFunctionCaseWithPrograms(graphicsGroup.get(), "required_subgroup_size_max", "", supportedCheckFeaturesShader, initPrograms, testRequireSubgroupSize, caseDefAllGraphicsMax);
 		const CaseDefinition caseDefComputeMax = {0u, VK_SHADER_STAGE_COMPUTE_BIT, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MAX};
 		addFunctionCaseWithPrograms(computeGroup.get(), "required_subgroup_size_max", "", supportedCheckFeatures, initPrograms, testRequireSubgroupSize, caseDefComputeMax);
+		const CaseDefinition caseDefAllRaytracingMax = {0u, SHADER_STAGE_ALL_RAY_TRACING, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MAX};
+		addFunctionCaseWithPrograms(raytracingGroup.get(), "required_subgroup_size_max", "", supportedCheckFeaturesShader, initPrograms, testRequireSubgroupSize, caseDefAllRaytracingMax);
 
 		const CaseDefinition caseDefAllGraphicsMin = {0u, VK_SHADER_STAGE_ALL_GRAPHICS, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MIN};
-		addFunctionCaseWithPrograms(graphicsGroup.get(), "required_subgroup_size_min", "", supportedCheckFeatures, initPrograms, testRequireSubgroupSize, caseDefAllGraphicsMin);
+		addFunctionCaseWithPrograms(graphicsGroup.get(), "required_subgroup_size_min", "", supportedCheckFeaturesShader, initPrograms, testRequireSubgroupSize, caseDefAllGraphicsMin);
 		const CaseDefinition caseDefComputeMin = {0u, VK_SHADER_STAGE_COMPUTE_BIT, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MIN};
 		addFunctionCaseWithPrograms(computeGroup.get(), "required_subgroup_size_min", "", supportedCheckFeatures, initPrograms, testRequireSubgroupSize, caseDefComputeMin);
+		const CaseDefinition caseDefAllRaytracingMin = {0u, SHADER_STAGE_ALL_RAY_TRACING, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MIN};
+		addFunctionCaseWithPrograms(raytracingGroup.get(), "required_subgroup_size_min", "", supportedCheckFeaturesShader, initPrograms, testRequireSubgroupSize, caseDefAllRaytracingMin);
 		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 		{
 			const CaseDefinition caseDefStageMax = {0u, stages[stageIndex], DE_FALSE, REQUIRED_SUBGROUP_SIZE_MAX};
-			addFunctionCaseWithPrograms(framebufferGroup.get(),  getShaderStageName(caseDefStageMax.shaderStage) + "_required_subgroup_size_max", "", supportedCheckFeatures, initFrameBufferPrograms, noSSBOtestRequireSubgroupSize, caseDefStageMax);
+			addFunctionCaseWithPrograms(framebufferGroup.get(),  getShaderStageName(caseDefStageMax.shaderStage) + "_required_subgroup_size_max", "", supportedCheckFeaturesShader, initFrameBufferPrograms, noSSBOtestRequireSubgroupSize, caseDefStageMax);
 			const CaseDefinition caseDefStageMin = {0u, stages[stageIndex], DE_FALSE, REQUIRED_SUBGROUP_SIZE_MIN};
-			addFunctionCaseWithPrograms(framebufferGroup.get(),  getShaderStageName(caseDefStageMin.shaderStage) + "_required_subgroup_size_min", "", supportedCheckFeatures, initFrameBufferPrograms, noSSBOtestRequireSubgroupSize, caseDefStageMin);
+			addFunctionCaseWithPrograms(framebufferGroup.get(),  getShaderStageName(caseDefStageMin.shaderStage) + "_required_subgroup_size_min", "", supportedCheckFeaturesShader, initFrameBufferPrograms, noSSBOtestRequireSubgroupSize, caseDefStageMin);
 		}
 	}
 
@@ -1075,6 +943,7 @@ tcu::TestCaseGroup* createSubgroupsSizeControlTests (tcu::TestContext& testCtx)
 	group->addChild(graphicsGroup.release());
 	group->addChild(computeGroup.release());
 	group->addChild(framebufferGroup.release());
+	group->addChild(raytracingGroup.release());
 
 	return group.release();
 }

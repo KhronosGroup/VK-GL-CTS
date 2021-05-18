@@ -436,6 +436,7 @@ class UserDefinedIOTest : public TestCase
 public:
 							UserDefinedIOTest	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const CaseDefinition caseDef);
 	void					initPrograms		(vk::SourceCollections& programCollection) const;
+	void					checkSupport		(Context& context) const;
 	TestInstance*			createInstance		(Context& context) const;
 
 private:
@@ -448,6 +449,11 @@ private:
 	std::string									m_tesDeclarations;
 	std::string									m_tesStatements;
 };
+
+void UserDefinedIOTest::checkSupport (Context& context) const
+{
+	checkSupportCase(context, m_caseDef);
+}
 
 UserDefinedIOTest::UserDefinedIOTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const CaseDefinition caseDef)
 	: TestCase	(testCtx, name, description)

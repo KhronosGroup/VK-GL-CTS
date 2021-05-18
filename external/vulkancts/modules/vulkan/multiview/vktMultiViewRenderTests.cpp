@@ -2463,6 +2463,7 @@ MultiViewQueriesTestInstance::MultiViewQueriesTestInstance (Context& context, co
 	: MultiViewRenderTestInstance	(context, parameters)
 	, m_verticesPerPrimitive		(4u)
 	, m_occlusionQueryFlags			((parameters.viewIndex == TEST_TYPE_QUERIES) * VK_QUERY_CONTROL_PRECISE_BIT)
+	, m_occlusionObjectsOffset		(0)
 {
 	// Generate the timestamp mask
 	const std::vector<VkQueueFamilyProperties>	queueProperties = vk::getPhysicalDeviceQueueFamilyProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
@@ -3289,8 +3290,8 @@ void MultiViewDepthStencilTestInstance::beforeDraw (void)
 
 	imageBarrier(*m_device, *m_cmdBuffer, m_dsAttachment->getImage(), subresourceRange,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+		VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT);
 }
 
 void MultiViewDepthStencilTestInstance::afterDraw (void)
