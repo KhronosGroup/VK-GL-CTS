@@ -754,14 +754,14 @@ void CopiesAndBlittingTestInstance::uploadImage (const tcu::ConstPixelBufferAcce
 		{
 			tcu::TextureLevel	depthTexture	(mapCombinedToDepthTransferFormat(src.getFormat()), src.getWidth(), src.getHeight(), src.getDepth());
 			tcu::copy(depthTexture.getAccess(), tcu::getEffectiveDepthStencilAccess(src, tcu::Sampler::MODE_DEPTH));
-			uploadImageAspect(depthTexture.getAccess(), dst, parms);
+			uploadImageAspect(depthTexture.getAccess(), dst, parms, mipLevels);
 		}
 
 		if (tcu::hasStencilComponent(src.getFormat().order))
 		{
 			tcu::TextureLevel	stencilTexture	(tcu::getEffectiveDepthStencilTextureFormat(src.getFormat(), tcu::Sampler::MODE_STENCIL), src.getWidth(), src.getHeight(), src.getDepth());
 			tcu::copy(stencilTexture.getAccess(), tcu::getEffectiveDepthStencilAccess(src, tcu::Sampler::MODE_STENCIL));
-			uploadImageAspect(stencilTexture.getAccess(), dst, parms);
+			uploadImageAspect(stencilTexture.getAccess(), dst, parms, mipLevels);
 		}
 	}
 	else
@@ -962,15 +962,15 @@ de::MovePtr<tcu::TextureLevel> CopiesAndBlittingTestInstance::readImage	(vk::VkI
 	{
 		if (tcu::hasDepthComponent(imageFormat.order))
 		{
-			tcu::TextureLevel	depthTexture	(mapCombinedToDepthTransferFormat(imageFormat), parms.extent.width, parms.extent.height, parms.extent.depth);
-			readImageAspect(image, depthTexture.getAccess(), parms);
+			tcu::TextureLevel	depthTexture	(mapCombinedToDepthTransferFormat(imageFormat), parms.extent.width >> mipLevel, parms.extent.height >> mipLevel, parms.extent.depth);
+			readImageAspect(image, depthTexture.getAccess(), parms, mipLevel);
 			tcu::copy(tcu::getEffectiveDepthStencilAccess(resultLevel->getAccess(), tcu::Sampler::MODE_DEPTH), depthTexture.getAccess());
 		}
 
 		if (tcu::hasStencilComponent(imageFormat.order))
 		{
-			tcu::TextureLevel	stencilTexture	(tcu::getEffectiveDepthStencilTextureFormat(imageFormat, tcu::Sampler::MODE_STENCIL), parms.extent.width, parms.extent.height, parms.extent.depth);
-			readImageAspect(image, stencilTexture.getAccess(), parms);
+			tcu::TextureLevel	stencilTexture	(tcu::getEffectiveDepthStencilTextureFormat(imageFormat, tcu::Sampler::MODE_STENCIL), parms.extent.width >> mipLevel, parms.extent.height >> mipLevel, parms.extent.depth);
+			readImageAspect(image, stencilTexture.getAccess(), parms, mipLevel);
 			tcu::copy(tcu::getEffectiveDepthStencilAccess(resultLevel->getAccess(), tcu::Sampler::MODE_STENCIL), stencilTexture.getAccess());
 		}
 	}
@@ -1345,6 +1345,483 @@ public:
 	virtual TestInstance*	createInstance				(Context&						context) const
 	{
 		return new CopyImageToImage(context, m_params);
+	}
+
+	virtual void			checkSupport				(Context&						context) const
+	{
+		if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
+		{
+			if (!context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
+				TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
+		}
+
+		if (m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2)
+		{
+			if (!context.isDeviceFunctionalitySupported("VK_KHR_copy_commands2"))
+				TCU_THROW(NotSupportedError, "VK_KHR_copy_commands2 is not supported");
+		}
+
+		if (m_params.separateDepthStencilLayouts)
+			if (!context.isDeviceFunctionalitySupported("VK_KHR_separate_depth_stencil_layouts"))
+				TCU_THROW(NotSupportedError, "VK_KHR_separate_depth_stencil_layouts is not supported");
+
+		if ((m_params.dst.image.imageType == VK_IMAGE_TYPE_3D && m_params.src.image.imageType == VK_IMAGE_TYPE_2D) ||
+			(m_params.dst.image.imageType == VK_IMAGE_TYPE_2D && m_params.src.image.imageType == VK_IMAGE_TYPE_3D))
+		{
+			if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance1"))
+				TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
+		}
+
+		const VkPhysicalDeviceLimits	limits		= context.getDeviceProperties().limits;
+		VkImageFormatProperties			properties;
+
+		if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																					m_params.src.image.format,
+																					m_params.src.image.imageType,
+																					VK_IMAGE_TILING_OPTIMAL,
+																					VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+																					0,
+																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED) ||
+			(context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																					m_params.dst.image.format,
+																					m_params.dst.image.imageType,
+																					VK_IMAGE_TILING_OPTIMAL,
+																					VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+																					0,
+																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+		{
+			TCU_THROW(NotSupportedError, "Format not supported");
+		}
+
+		// Check maxImageDimension1D
+		{
+			if (m_params.src.image.imageType == VK_IMAGE_TYPE_1D && m_params.src.image.extent.width > limits.maxImageDimension1D)
+				TCU_THROW(NotSupportedError, "Requested 1D src image dimensions not supported");
+
+			if (m_params.dst.image.imageType == VK_IMAGE_TYPE_1D && m_params.dst.image.extent.width > limits.maxImageDimension1D)
+				TCU_THROW(NotSupportedError, "Requested 1D dst image dimensions not supported");
+		}
+
+		// Check maxImageDimension2D
+		{
+			if (m_params.src.image.imageType == VK_IMAGE_TYPE_2D && (m_params.src.image.extent.width > limits.maxImageDimension2D
+				|| m_params.src.image.extent.height > limits.maxImageDimension2D))
+			{
+				TCU_THROW(NotSupportedError, "Requested 2D src image dimensions not supported");
+			}
+
+			if (m_params.dst.image.imageType == VK_IMAGE_TYPE_2D && (m_params.dst.image.extent.width > limits.maxImageDimension2D
+				|| m_params.dst.image.extent.height > limits.maxImageDimension2D))
+			{
+				TCU_THROW(NotSupportedError, "Requested 2D dst image dimensions not supported");
+			}
+		}
+
+		// Check maxImageDimension3D
+		{
+			if (m_params.src.image.imageType == VK_IMAGE_TYPE_3D && (m_params.src.image.extent.width > limits.maxImageDimension3D
+				|| m_params.src.image.extent.height > limits.maxImageDimension3D
+				|| m_params.src.image.extent.depth > limits.maxImageDimension3D))
+			{
+				TCU_THROW(NotSupportedError, "Requested 3D src image dimensions not supported");
+			}
+
+			if (m_params.dst.image.imageType == VK_IMAGE_TYPE_3D && (m_params.dst.image.extent.width > limits.maxImageDimension3D
+				|| m_params.dst.image.extent.height > limits.maxImageDimension3D
+				|| m_params.src.image.extent.depth > limits.maxImageDimension3D))
+			{
+				TCU_THROW(NotSupportedError, "Requested 3D dst image dimensions not supported");
+			}
+		}
+	}
+
+private:
+	TestParams				m_params;
+};
+
+class CopyImageToImageMipmap : public CopiesAndBlittingTestInstance
+{
+public:
+										CopyImageToImageMipmap		(Context&	context,
+																	 TestParams params);
+	virtual tcu::TestStatus				iterate						(void);
+
+protected:
+	tcu::TestStatus						checkResult					(tcu::ConstPixelBufferAccess result, tcu::ConstPixelBufferAccess expected);
+
+private:
+	Move<VkImage>						m_source;
+	de::MovePtr<Allocation>				m_sourceImageAlloc;
+	Move<VkImage>						m_destination;
+	de::MovePtr<Allocation>				m_destinationImageAlloc;
+
+	virtual void						copyRegionToTextureLevel	(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region, deUint32 mipLevel = 0u);
+
+};
+
+CopyImageToImageMipmap::CopyImageToImageMipmap (Context& context, TestParams params)
+	: CopiesAndBlittingTestInstance(context, params)
+{
+	const InstanceInterface&	vki					= context.getInstanceInterface();
+	const DeviceInterface&		vk					= context.getDeviceInterface();
+	const VkPhysicalDevice		vkPhysDevice		= context.getPhysicalDevice();
+	const VkDevice				vkDevice			= context.getDevice();
+	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	Allocator&					memAlloc			= context.getDefaultAllocator();
+
+	// Create source image
+	{
+		const VkImageCreateInfo	sourceImageParams		=
+		{
+			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType		sType;
+			DE_NULL,								// const void*			pNext;
+			getCreateFlags(m_params.src.image),		// VkImageCreateFlags	flags;
+			m_params.src.image.imageType,			// VkImageType			imageType;
+			m_params.src.image.format,				// VkFormat				format;
+			getExtent3D(m_params.src.image),		// VkExtent3D			extent;
+			params.mipLevels,						// deUint32				mipLevels;
+			getArraySize(m_params.src.image),		// deUint32				arraySize;
+			VK_SAMPLE_COUNT_1_BIT,					// deUint32				samples;
+			VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling		tiling;
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+				VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
+			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
+			1u,										// deUint32				queueFamilyCount;
+			&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
+			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
+		};
+
+		m_source				= createImage(vk, vkDevice, &sourceImageParams);
+		m_sourceImageAlloc		= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_source, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
+		VK_CHECK(vk.bindImageMemory(vkDevice, *m_source, m_sourceImageAlloc->getMemory(), m_sourceImageAlloc->getOffset()));
+	}
+
+	// Create destination image
+	{
+		const VkImageCreateInfo	destinationImageParams	=
+		{
+			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType		sType;
+			DE_NULL,								// const void*			pNext;
+			getCreateFlags(m_params.dst.image),		// VkImageCreateFlags	flags;
+			m_params.dst.image.imageType,			// VkImageType			imageType;
+			m_params.dst.image.format,				// VkFormat				format;
+			getExtent3D(m_params.dst.image),		// VkExtent3D			extent;
+			params.mipLevels,						// deUint32				mipLevels;
+			getArraySize(m_params.dst.image),		// deUint32				arraySize;
+			VK_SAMPLE_COUNT_1_BIT,					// deUint32				samples;
+			VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling		tiling;
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+				VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
+			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
+			1u,										// deUint32				queueFamilyCount;
+			&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
+			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
+		};
+
+		m_destination			= createImage(vk, vkDevice, &destinationImageParams);
+		m_destinationImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
+		VK_CHECK(vk.bindImageMemory(vkDevice, *m_destination, m_destinationImageAlloc->getMemory(), m_destinationImageAlloc->getOffset()));
+	}
+}
+
+tcu::TestStatus CopyImageToImageMipmap::iterate (void)
+{
+	const bool					srcCompressed		= isCompressedFormat(m_params.src.image.format);
+	const bool					dstCompressed		= isCompressedFormat(m_params.dst.image.format);
+
+	const tcu::TextureFormat	srcTcuFormat		= getSizeCompatibleTcuTextureFormat(m_params.src.image.format);
+	const tcu::TextureFormat	dstTcuFormat		= getSizeCompatibleTcuTextureFormat(m_params.dst.image.format);
+
+	m_sourceTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(srcTcuFormat,
+																				(int)m_params.src.image.extent.width,
+																				(int)m_params.src.image.extent.height,
+																				(int)m_params.src.image.extent.depth));
+	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height, m_params.src.image.extent.depth, FILL_MODE_GRADIENT);
+	uploadImage(m_sourceTextureLevel->getAccess(), m_source.get(), m_params.src.image, m_params.mipLevels);
+
+	m_destinationTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(dstTcuFormat,
+																					 (int)m_params.dst.image.extent.width,
+																					 (int)m_params.dst.image.extent.height,
+																					 (int)m_params.dst.image.extent.depth));
+	generateBuffer(m_destinationTextureLevel->getAccess(), m_params.dst.image.extent.width, m_params.dst.image.extent.height, m_params.dst.image.extent.depth, FILL_MODE_RED);
+	uploadImage(m_destinationTextureLevel->getAccess(), m_destination.get(), m_params.dst.image, m_params.mipLevels);
+
+	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+	const VkDevice				vkDevice			= m_context.getDevice();
+	const VkQueue				queue				= m_context.getUniversalQueue();
+
+	std::vector<VkImageCopy>		imageCopies;
+	std::vector<VkImageCopy2KHR>	imageCopies2KHR;
+	for (deUint32 i = 0; i < m_params.regions.size(); i++)
+	{
+		VkImageCopy imageCopy = m_params.regions[i].imageCopy;
+
+		// When copying between compressed and uncompressed formats the extent
+		// members represent the texel dimensions of the source image.
+		if (srcCompressed)
+		{
+			const deUint32	blockWidth	= getBlockWidth(m_params.src.image.format);
+			const deUint32	blockHeight	= getBlockHeight(m_params.src.image.format);
+
+			imageCopy.srcOffset.x *= blockWidth;
+			imageCopy.srcOffset.y *= blockHeight;
+			imageCopy.extent.width *= blockWidth;
+			imageCopy.extent.height *= blockHeight;
+		}
+
+		if (dstCompressed)
+		{
+			const deUint32	blockWidth	= getBlockWidth(m_params.dst.image.format);
+			const deUint32	blockHeight	= getBlockHeight(m_params.dst.image.format);
+
+			imageCopy.dstOffset.x *= blockWidth;
+			imageCopy.dstOffset.y *= blockHeight;
+		}
+
+		if (m_params.extensionUse == EXTENSION_USE_NONE)
+		{
+			imageCopies.push_back(imageCopy);
+		}
+		else
+		{
+			DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+			imageCopies2KHR.push_back(convertvkImageCopyTovkImageCopy2KHR(imageCopy));
+		}
+	}
+
+	const VkImageMemoryBarrier	imageBarriers[]		=
+	{
+		// source image
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+			DE_NULL,									// const void*				pNext;
+			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask;
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
+			m_params.src.image.operationLayout,			// VkImageLayout			newLayout;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
+			m_source.get(),								// VkImage					image;
+			{											// VkImageSubresourceRange	subresourceRange;
+				getAspectFlags(srcTcuFormat),	// VkImageAspectFlags	aspectMask;
+				0u,								// deUint32				baseMipLevel;
+				m_params.mipLevels,				// deUint32				mipLevels;
+				0u,								// deUint32				baseArraySlice;
+				getArraySize(m_params.src.image)// deUint32				arraySize;
+			}
+		},
+		// destination image
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+			DE_NULL,									// const void*				pNext;
+			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
+			m_params.dst.image.operationLayout,			// VkImageLayout			newLayout;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
+			m_destination.get(),						// VkImage					image;
+			{											// VkImageSubresourceRange	subresourceRange;
+				getAspectFlags(dstTcuFormat),	// VkImageAspectFlags	aspectMask;
+				0u,								// deUint32				baseMipLevel;
+				m_params.mipLevels,				// deUint32				mipLevels;
+				0u,								// deUint32				baseArraySlice;
+				getArraySize(m_params.dst.image)// deUint32				arraySize;
+			}
+		},
+	};
+
+	beginCommandBuffer(vk, *m_cmdBuffer);
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
+
+	if (m_params.extensionUse == EXTENSION_USE_NONE)
+	{
+		vk.cmdCopyImage(*m_cmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
+	}
+	else
+	{
+		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
+		const VkCopyImageInfo2KHR copyImageInfo2KHR =
+		{
+			VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2_KHR,	// VkStructureType			sType;
+			DE_NULL,									// const void*				pNext;
+			m_source.get(),								// VkImage					srcImage;
+			m_params.src.image.operationLayout,			// VkImageLayout			srcImageLayout;
+			m_destination.get(),						// VkImage					dstImage;
+			m_params.dst.image.operationLayout,			// VkImageLayout			dstImageLayout;
+			(deUint32)imageCopies2KHR.size(),			// uint32_t					regionCount;
+			imageCopies2KHR.data()						// const VkImageCopy2KHR*	pRegions;
+		};
+
+		vk.cmdCopyImage2KHR(*m_cmdBuffer, &copyImageInfo2KHR);
+	}
+
+	endCommandBuffer(vk, *m_cmdBuffer);
+
+	submitCommandsAndWait (vk, vkDevice, queue, *m_cmdBuffer);
+
+	for (deUint32 miplevel = 0; miplevel < m_params.mipLevels; miplevel++)
+	{
+		de::MovePtr<tcu::TextureLevel>	resultTextureLevel		= readImage(*m_destination, m_params.dst.image, miplevel);
+		de::MovePtr<tcu::TextureLevel>	expectedTextureLevel	= readImage(*m_source, m_params.src.image, miplevel);
+
+		tcu::TestStatus result = checkResult(resultTextureLevel->getAccess(), expectedTextureLevel->getAccess());
+		if (result.getCode() != QP_TEST_RESULT_PASS)
+			return result;
+	}
+	return tcu::TestStatus::pass("Pass");
+}
+
+tcu::TestStatus CopyImageToImageMipmap::checkResult (tcu::ConstPixelBufferAccess result, tcu::ConstPixelBufferAccess expected)
+{
+	const tcu::Vec4	fThreshold (0.0f);
+	const tcu::UVec4 uThreshold (0u);
+
+	if (tcu::isCombinedDepthStencilType(result.getFormat().type))
+	{
+		if (tcu::hasDepthComponent(result.getFormat().order))
+		{
+			const tcu::Sampler::DepthStencilMode	mode				= tcu::Sampler::MODE_DEPTH;
+			const tcu::ConstPixelBufferAccess		depthResult			= tcu::getEffectiveDepthStencilAccess(result, mode);
+			const tcu::ConstPixelBufferAccess		expectedResult		= tcu::getEffectiveDepthStencilAccess(expected, mode);
+
+			if (isFloatFormat(result.getFormat()))
+			{
+				if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison", expectedResult, depthResult, fThreshold, tcu::COMPARE_LOG_RESULT))
+					return tcu::TestStatus::fail("CopiesAndBlitting test");
+			}
+			else
+			{
+				if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison", expectedResult, depthResult, uThreshold, tcu::COMPARE_LOG_RESULT))
+					return tcu::TestStatus::fail("CopiesAndBlitting test");
+			}
+		}
+
+		if (tcu::hasStencilComponent(result.getFormat().order))
+		{
+			const tcu::Sampler::DepthStencilMode	mode				= tcu::Sampler::MODE_STENCIL;
+			const tcu::ConstPixelBufferAccess		stencilResult		= tcu::getEffectiveDepthStencilAccess(result, mode);
+			const tcu::ConstPixelBufferAccess		expectedResult		= tcu::getEffectiveDepthStencilAccess(expected, mode);
+
+			if (isFloatFormat(result.getFormat()))
+			{
+				if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison", expectedResult, stencilResult, fThreshold, tcu::COMPARE_LOG_RESULT))
+					return tcu::TestStatus::fail("CopiesAndBlitting test");
+			}
+			else
+			{
+				if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison", expectedResult, stencilResult, uThreshold, tcu::COMPARE_LOG_RESULT))
+					return tcu::TestStatus::fail("CopiesAndBlitting test");
+			}
+		}
+	}
+	else
+	{
+		if (isFloatFormat(result.getFormat()))
+		{
+			if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison", expected, result, fThreshold, tcu::COMPARE_LOG_RESULT))
+				return tcu::TestStatus::fail("CopiesAndBlitting test");
+		}
+		else if (isSnormFormat(mapTextureFormat(result.getFormat())))
+		{
+			// There may be an ambiguity between two possible binary representations of 1.0.
+			// Get rid of that by expanding the data to floats and re-normalizing again.
+
+			tcu::TextureLevel resultSnorm	(result.getFormat(), result.getWidth(), result.getHeight(), result.getDepth());
+			{
+				tcu::TextureLevel resultFloat	(tcu::TextureFormat(resultSnorm.getFormat().order, tcu::TextureFormat::FLOAT), resultSnorm.getWidth(), resultSnorm.getHeight(), resultSnorm.getDepth());
+
+				tcu::copy(resultFloat.getAccess(), result);
+				tcu::copy(resultSnorm, resultFloat.getAccess());
+			}
+
+			tcu::TextureLevel expectedSnorm	(expected.getFormat(), expected.getWidth(), expected.getHeight(), expected.getDepth());
+
+			{
+				tcu::TextureLevel expectedFloat	(tcu::TextureFormat(expectedSnorm.getFormat().order, tcu::TextureFormat::FLOAT), expectedSnorm.getWidth(), expectedSnorm.getHeight(), expectedSnorm.getDepth());
+
+				tcu::copy(expectedFloat.getAccess(), m_expectedTextureLevel[0]->getAccess());
+				tcu::copy(expectedSnorm, expectedFloat.getAccess());
+			}
+
+			if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison", expectedSnorm.getAccess(), resultSnorm.getAccess(), uThreshold, tcu::COMPARE_LOG_RESULT))
+				return tcu::TestStatus::fail("CopiesAndBlitting test");
+		}
+		else
+		{
+			if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison", expected, result, uThreshold, tcu::COMPARE_LOG_RESULT))
+				return tcu::TestStatus::fail("CopiesAndBlitting test");
+		}
+	}
+
+	return tcu::TestStatus::pass("CopiesAndBlitting test");
+}
+
+void CopyImageToImageMipmap::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region, deUint32 mipLevel)
+{
+	DE_UNREF(mipLevel);
+
+	VkOffset3D	srcOffset	= region.imageCopy.srcOffset;
+	VkOffset3D	dstOffset	= region.imageCopy.dstOffset;
+	VkExtent3D	extent		= region.imageCopy.extent;
+
+	if (m_params.src.image.imageType == VK_IMAGE_TYPE_3D && m_params.dst.image.imageType == VK_IMAGE_TYPE_2D)
+	{
+		dstOffset.z = srcOffset.z;
+		extent.depth = std::max(region.imageCopy.extent.depth, region.imageCopy.dstSubresource.layerCount);
+	}
+	if (m_params.src.image.imageType == VK_IMAGE_TYPE_2D && m_params.dst.image.imageType == VK_IMAGE_TYPE_3D)
+	{
+		srcOffset.z = dstOffset.z;
+		extent.depth = std::max(region.imageCopy.extent.depth, region.imageCopy.srcSubresource.layerCount);
+	}
+
+
+	if (tcu::isCombinedDepthStencilType(src.getFormat().type))
+	{
+		DE_ASSERT(src.getFormat() == dst.getFormat());
+
+		// Copy depth.
+		if (tcu::hasDepthComponent(src.getFormat().order))
+		{
+			const tcu::ConstPixelBufferAccess	srcSubRegion	= getEffectiveDepthStencilAccess(tcu::getSubregion(src, srcOffset.x, srcOffset.y, srcOffset.z, extent.width, extent.height, extent.depth), tcu::Sampler::MODE_DEPTH);
+			const tcu::PixelBufferAccess		dstSubRegion	= getEffectiveDepthStencilAccess(tcu::getSubregion(dst, dstOffset.x, dstOffset.y, dstOffset.z, extent.width, extent.height, extent.depth), tcu::Sampler::MODE_DEPTH);
+			tcu::copy(dstSubRegion, srcSubRegion);
+		}
+
+		// Copy stencil.
+		if (tcu::hasStencilComponent(src.getFormat().order))
+		{
+			const tcu::ConstPixelBufferAccess	srcSubRegion	= getEffectiveDepthStencilAccess(tcu::getSubregion(src, srcOffset.x, srcOffset.y, srcOffset.z, extent.width, extent.height, extent.depth), tcu::Sampler::MODE_STENCIL);
+			const tcu::PixelBufferAccess		dstSubRegion	= getEffectiveDepthStencilAccess(tcu::getSubregion(dst, dstOffset.x, dstOffset.y, dstOffset.z, extent.width, extent.height, extent.depth), tcu::Sampler::MODE_STENCIL);
+			tcu::copy(dstSubRegion, srcSubRegion);
+		}
+	}
+	else
+	{
+		const tcu::ConstPixelBufferAccess	srcSubRegion		= tcu::getSubregion(src, srcOffset.x, srcOffset.y, srcOffset.z, extent.width, extent.height, extent.depth);
+		// CopyImage acts like a memcpy. Replace the destination format with the srcformat to use a memcpy.
+		const tcu::PixelBufferAccess		dstWithSrcFormat	(srcSubRegion.getFormat(), dst.getSize(), dst.getDataPtr());
+		const tcu::PixelBufferAccess		dstSubRegion		= tcu::getSubregion(dstWithSrcFormat, dstOffset.x, dstOffset.y, dstOffset.z, extent.width, extent.height, extent.depth);
+
+		tcu::copy(dstSubRegion, srcSubRegion);
+	}
+}
+
+class CopyImageToImageMipmapTestCase : public vkt::TestCase
+{
+public:
+							CopyImageToImageMipmapTestCase	(tcu::TestContext&				testCtx,
+															 const std::string&				name,
+															 const std::string&				description,
+															 const TestParams				params)
+								: vkt::TestCase	(testCtx, name, description)
+								, m_params		(params)
+	{}
+
+	virtual TestInstance*	createInstance				(Context&						context) const
+	{
+		return new CopyImageToImageMipmap(context, m_params);
 	}
 
 	virtual void			checkSupport				(Context&						context) const
@@ -7615,6 +8092,81 @@ void addImageToImageArrayTests (tcu::TestCaseGroup* group, AllocationKind alloca
 		}
 
 		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_array_whole", "copy 2d array image to 2d array image all at once", paramsArrayToArray));
+	}
+
+	{
+		TestParams	paramsArrayToArray;
+		const deUint32	arrayLayers						= 16u;
+		paramsArrayToArray.src.image.imageType			= VK_IMAGE_TYPE_2D;
+		paramsArrayToArray.src.image.extent				= defaultHalfExtent;
+		paramsArrayToArray.src.image.extent.depth		= arrayLayers;
+		paramsArrayToArray.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+		paramsArrayToArray.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		paramsArrayToArray.dst.image.imageType			= VK_IMAGE_TYPE_2D;
+		paramsArrayToArray.dst.image.extent				= defaultHalfExtent;
+		paramsArrayToArray.dst.image.extent.depth		= arrayLayers;
+		paramsArrayToArray.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+		paramsArrayToArray.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		paramsArrayToArray.allocationKind				= allocationKind;
+		paramsArrayToArray.extensionUse					= extensionUse;
+		paramsArrayToArray.mipLevels					= deLog2Floor32(deMinu32(defaultHalfExtent.width, defaultHalfExtent.height)) + 1u;
+
+		for (deUint32 mipLevelNdx = 0u; mipLevelNdx < paramsArrayToArray.mipLevels; mipLevelNdx++)
+		{
+			const VkImageSubresourceLayers sourceLayer =
+			{
+				VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
+				mipLevelNdx,					// deUint32				mipLevel;
+				0u,								// deUint32				baseArrayLayer;
+				arrayLayers						// deUint32				layerCount;
+			};
+
+			const VkImageSubresourceLayers destinationLayer =
+			{
+				VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
+				mipLevelNdx,					// deUint32				mipLevel;
+				0u,								// deUint32				baseArrayLayer;
+				arrayLayers						// deUint32				layerCount;
+			};
+
+			const VkExtent3D extent =
+			{
+				(deUint32)deMax(defaultHalfExtent.width >> mipLevelNdx, 1),		// deUint32    width;
+				(deUint32)deMax(defaultHalfExtent.height >> mipLevelNdx, 1),	// deUint32    height;
+				1u,																// deUint32    depth;
+			};
+
+			const VkImageCopy				testCopy =
+			{
+				sourceLayer,					// VkImageSubresourceLayers	srcSubresource;
+				{0, 0, 0},						// VkOffset3D				srcOffset;
+				destinationLayer,				// VkImageSubresourceLayers	dstSubresource;
+				{0, 0, 0},						// VkOffset3D				dstOffset;
+				extent							// VkExtent3D				extent;
+			};
+
+			CopyRegion imageCopy;
+			imageCopy.imageCopy = testCopy;
+
+			paramsArrayToArray.regions.push_back(imageCopy);
+		}
+
+		VkFormat imageFormats [] = { VK_FORMAT_R8G8B8A8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D16_UNORM, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_S8_UINT};
+
+		for (deUint32 imageFormatsNdx = 0; imageFormatsNdx < DE_LENGTH_OF_ARRAY(imageFormats); imageFormatsNdx++)
+		{
+			paramsArrayToArray.src.image.format = imageFormats[imageFormatsNdx];
+			paramsArrayToArray.dst.image.format = imageFormats[imageFormatsNdx];
+			for (deUint32 regionNdx = 0u; regionNdx < paramsArrayToArray.regions.size(); regionNdx++)
+			{
+				paramsArrayToArray.regions[regionNdx].imageCopy.srcSubresource.aspectMask = getImageAspectFlags(mapVkFormat(imageFormats[imageFormatsNdx]));
+				paramsArrayToArray.regions[regionNdx].imageCopy.dstSubresource.aspectMask = getImageAspectFlags(mapVkFormat(imageFormats[imageFormatsNdx]));
+			}
+			std::ostringstream testName;
+			const std::string formatName = getFormatName(imageFormats[imageFormatsNdx]);
+			testName << "array_to_array_whole_mipmap_" << de::toLower(formatName.substr(10));
+			group->addChild(new CopyImageToImageMipmapTestCase(testCtx, testName.str(), "copy 2d array mipmap image to 2d array mipmap image all at once", paramsArrayToArray));
+		}
 	}
 };
 
