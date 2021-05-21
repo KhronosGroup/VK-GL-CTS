@@ -8336,6 +8336,7 @@ dEQP-VK.ray_tracing_pipeline.misc.OpTerminateRayKHR_AnyHitStatically
 dEQP-VK.ray_tracing_pipeline.misc.OpTerminateRayKHR_AnyHitDynamically
 dEQP-VK.ray_tracing_pipeline.misc.OpTerminateRayKHR_IntersectionStatically
 dEQP-VK.ray_tracing_pipeline.misc.OpTerminateRayKHR_IntersectionDynamically
+dEQP-VK.ray_tracing_pipeline.misc.null_miss
 dEQP-VK.ray_tracing_pipeline.complexcontrolflow.if.execute_callable.rgen
 dEQP-VK.ray_tracing_pipeline.complexcontrolflow.if.execute_callable.chit
 dEQP-VK.ray_tracing_pipeline.complexcontrolflow.if.execute_callable.miss
