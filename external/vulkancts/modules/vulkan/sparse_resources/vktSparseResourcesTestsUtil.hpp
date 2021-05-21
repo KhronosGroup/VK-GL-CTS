@@ -247,6 +247,10 @@ deUint32						getSparseAspectRequirementsIndex	(const std::vector<vk::VkSparseIm
 vk::VkFormat					getPlaneCompatibleFormatForWriting	(const vk::PlanarFormatDescription&	formatInfo,
 																	 deUint32							planeNdx);
 
+bool							areLsb6BitsDontCare(vk::VkFormat format);
+
+bool							areLsb4BitsDontCare(vk::VkFormat format);
+
 template<typename T>
 inline de::SharedPtr<vk::Unique<T> > makeVkSharedPtr (vk::Move<T> vkMove)
 {
