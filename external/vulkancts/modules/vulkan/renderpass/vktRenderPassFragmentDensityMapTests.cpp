@@ -383,28 +383,8 @@ Move<VkRenderPass> createRenderPassProduceDynamicDensityMap(const DeviceInterfac
 		}
 	};
 
-	vk::VkRenderPassMultiviewCreateInfo	renderPassMultiviewCreateInfo;
-	void*								renderPassInfoPNext = DE_NULL;
-	std::vector<deUint32>				viewMasks(subpassDescriptions.size(), viewMask);
-
-	if (testParams.viewCount > 1)
-	{
-		renderPassMultiviewCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO,
-			renderPassInfoPNext,
-			static_cast<deUint32>(viewMasks.size()),
-			viewMasks.data(),
-			0,
-			DE_NULL,
-			0U,
-			DE_NULL
-		};
-		renderPassInfoPNext = (void*)&renderPassMultiviewCreateInfo;
-	}
-
 	const RenderPassCreateInfo renderPassInfo(
-		renderPassInfoPNext,													// const void*						pNext
+		DE_NULL,																// const void*						pNext
 		(VkRenderPassCreateFlags)0,												// VkRenderPassCreateFlags			flags
 		static_cast<deUint32>(attachmentDescriptions.size()),					// deUint32							attachmentCount
 		attachmentDescriptions.data(),											// const VkAttachmentDescription*	pAttachments
@@ -619,26 +599,6 @@ Move<VkRenderPass> createRenderPassProduceSubsampledImage(const DeviceInterface&
 	attachmentDescriptions.pop_back();
 	renderPassInfoPNext = DE_NULL;
 #endif
-
-	vk::VkRenderPassMultiviewCreateInfo	renderPassMultiviewCreateInfo;
-	std::vector<deUint32>				viewMasks		(subpassDescriptions.size(), viewMask);
-	deInt32								pViewOffsets	(0);
-
-	if (testParams.viewCount > 1)
-	{
-		renderPassMultiviewCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO,
-			renderPassInfoPNext,
-			static_cast<deUint32>(viewMasks.size()),								// deUint32				subpassCount
-			viewMasks.data(),														// const deUint32*		pViewMasks
-			makeCopySubpass ? 1u : 0u,												// deUint32				dependencyCount
-			makeCopySubpass ? &pViewOffsets : DE_NULL,								// const deInt32*		pViewOffsets
-			0u,																		// deUint32				correlationMaskCount
-			DE_NULL,																// const deUint32*		pCorrelationMasks
-		};
-		renderPassInfoPNext = (void*)&renderPassMultiviewCreateInfo;
-	}
 
 	const RenderPassCreateInfo	renderPassInfo(
 		renderPassInfoPNext,														// const void*						pNext
