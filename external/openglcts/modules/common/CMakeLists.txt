@@ -84,8 +84,6 @@ set(GLCTS_COMMON_SRCS
 	glcShaderRenderCase.hpp
 	glcShaderStructTests.cpp
 	glcShaderStructTests.hpp
-	glcShaderSwitchTests.cpp
-	glcShaderSwitchTests.hpp
 	glcSampleVariablesTests.cpp
 	glcSampleVariablesTests.hpp
 	glcSpirvUtils.cpp
