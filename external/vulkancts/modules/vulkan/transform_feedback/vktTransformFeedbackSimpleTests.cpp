@@ -115,17 +115,17 @@ struct TopologyInfo
 
 const std::map<VkPrimitiveTopology, TopologyInfo> topologyData =
 {
-	{ VK_PRIMITIVE_TOPOLOGY_POINT_LIST						, { 1, ""								,[](deUint64 vertexCount)	{	return vertexCount;				}	,[](deUint64 primCount)	{	return primCount;				}, } },
-	{ VK_PRIMITIVE_TOPOLOGY_LINE_LIST						, { 2, "line_list_"						,[](deUint64 vertexCount)	{	return vertexCount / 2u;		}	,[](deUint64 primCount) {	return primCount * 2u;			}, } },
-	{ VK_PRIMITIVE_TOPOLOGY_LINE_STRIP						, { 2, "line_strip_"					,[](deUint64 vertexCount)	{	return vertexCount - 1u;		}	,[](deUint64 primCount) {	return primCount + 1u;			}, } },
-	{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST					, { 3, "triangle_list_"					,[](deUint64 vertexCount)	{	return vertexCount / 3u;		}	,[](deUint64 primCount) {	return primCount * 3u;			}, } },
-	{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP					, { 3, "triangle_strip_"				,[](deUint64 vertexCount)	{	return vertexCount - 2u;		}	,[](deUint64 primCount) {	return primCount + 2u;			}, } },
-	{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN					, { 3, "triangle_fan_"					,[](deUint64 vertexCount)	{	return vertexCount - 2u;		}	,[](deUint64 primCount) {	return primCount + 2u;			}, } },
-	{ VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY		, { 2, "line_list_with_adjacency_"		,[](deUint64 vertexCount)	{	return vertexCount / 4u;		}	,[](deUint64 primCount) {	return primCount * 4u;			}, } },
-	{ VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY		, { 2, "line_strip_with_adjacency_"		,[](deUint64 vertexCount)	{	return vertexCount - 3u;		}	,[](deUint64 primCount) {	return primCount + 3u;			}, } },
-	{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY	, { 3, "triangle_list_with_adjacency_"	,[](deUint64 vertexCount)	{	return vertexCount / 6u;		}	,[](deUint64 primCount) {	return primCount * 6u;			}, } },
-	{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY	, { 3, "triangle_strip_with_adjacency_"	,[](deUint64 vertexCount)	{	return (vertexCount - 4u) / 2u;	}	,[](deUint64 primCount) {	return (primCount + 4u) * 2u;	}, } },
-	{ VK_PRIMITIVE_TOPOLOGY_PATCH_LIST						, { 3, "patch_list_"					,[](deUint64 vertexCount)	{	return vertexCount / 3u;		}	,[](deUint64 primCount) {	return primCount * 3u;			}, } },
+	{ VK_PRIMITIVE_TOPOLOGY_POINT_LIST						, { 1, ""								,[](deUint64 vertexCount)	{	return vertexCount;				}	,[](deUint64 primCount)	{	return primCount;			}, } },
+	{ VK_PRIMITIVE_TOPOLOGY_LINE_LIST						, { 2, "line_list_"						,[](deUint64 vertexCount)	{	return vertexCount / 2u;		}	,[](deUint64 primCount) {	return primCount * 2u;		}, } },
+	{ VK_PRIMITIVE_TOPOLOGY_LINE_STRIP						, { 2, "line_strip_"					,[](deUint64 vertexCount)	{	return vertexCount - 1u;		}	,[](deUint64 primCount) {	return primCount + 1u;		}, } },
+	{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST					, { 3, "triangle_list_"					,[](deUint64 vertexCount)	{	return vertexCount / 3u;		}	,[](deUint64 primCount) {	return primCount * 3u;		}, } },
+	{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP					, { 3, "triangle_strip_"				,[](deUint64 vertexCount)	{	return vertexCount - 2u;		}	,[](deUint64 primCount) {	return primCount + 2u;		}, } },
+	{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN					, { 3, "triangle_fan_"					,[](deUint64 vertexCount)	{	return vertexCount - 2u;		}	,[](deUint64 primCount) {	return primCount + 2u;		}, } },
+	{ VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY		, { 2, "line_list_with_adjacency_"		,[](deUint64 vertexCount)	{	return vertexCount / 4u;		}	,[](deUint64 primCount) {	return primCount * 4u;		}, } },
+	{ VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY		, { 2, "line_strip_with_adjacency_"		,[](deUint64 vertexCount)	{	return vertexCount - 3u;		}	,[](deUint64 primCount) {	return primCount + 3u;		}, } },
+	{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY	, { 3, "triangle_list_with_adjacency_"	,[](deUint64 vertexCount)	{	return vertexCount / 6u;		}	,[](deUint64 primCount) {	return primCount * 6u;		}, } },
+	{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY	, { 3, "triangle_strip_with_adjacency_"	,[](deUint64 vertexCount)	{	return (vertexCount - 4u) / 2u;	}	,[](deUint64 primCount) {	return primCount * 2u + 4u;	}, } },
+	{ VK_PRIMITIVE_TOPOLOGY_PATCH_LIST						, { 3, "patch_list_"					,[](deUint64 vertexCount)	{	return vertexCount / 3u;		}	,[](deUint64 primCount) {	return primCount * 3u;		}, } },
 };
 
 struct TransformFeedbackQuery
