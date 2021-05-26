@@ -533,7 +533,7 @@ deUint32 RayTracingBuildTestInstance::validateBuffer (de::MovePtr<BufferWithMemo
 
 		if (bufferPtr[pos] != expectedValue)
 		{
-			if (m_data.testType == TEST_TYPE_AABBS)
+			if (m_data.testType == TEST_TYPE_AABBS || m_data.testType == TEST_TYPE_MIXED)
 			{
 				// In the case of AABB geometries, implementations may increase their size in
 				// an acceleration structure in order to mitigate precision issues. This may

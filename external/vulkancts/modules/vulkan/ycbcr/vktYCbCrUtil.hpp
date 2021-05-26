@@ -84,7 +84,7 @@ private:
 
 void										checkImageSupport			(Context& context, vk::VkFormat format, vk::VkImageCreateFlags createFlags, vk::VkImageTiling tiling = vk::VK_IMAGE_TILING_OPTIMAL);
 
-void										fillRandom					(de::Random* randomGen, MultiPlaneImageData* imageData);
+void										fillRandom					(de::Random* randomGen, MultiPlaneImageData* imageData, const vk::VkFormat format = vk::VK_FORMAT_UNDEFINED, bool noNan = false);
 void										fillGradient				(MultiPlaneImageData* imageData, const tcu::Vec4& minVal, const tcu::Vec4& maxVal);
 void										fillZero					(MultiPlaneImageData* imageData);
 
