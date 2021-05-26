@@ -286,6 +286,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDevicePresentWaitFeaturesKHR.pNext;
 	}
 
+	vk::VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT physicalDevicePrimitiveTopologyListRestartFeaturesEXT;
+	deMemset(&physicalDevicePrimitiveTopologyListRestartFeaturesEXT, 0, sizeof(physicalDevicePrimitiveTopologyListRestartFeaturesEXT));
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_primitive_topology_list_restart")) )
+	{
+		physicalDevicePrimitiveTopologyListRestartFeaturesEXT.sType = getStructureType<VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();
+		*nextPtr = &physicalDevicePrimitiveTopologyListRestartFeaturesEXT;
+		nextPtr  = &physicalDevicePrimitiveTopologyListRestartFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceRayQueryFeaturesKHR physicalDeviceRayQueryFeaturesKHR;
 	deMemset(&physicalDeviceRayQueryFeaturesKHR, 0, sizeof(physicalDeviceRayQueryFeaturesKHR));
 
@@ -1910,6 +1920,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceShaderIntegerDotProductFeaturesKHR.shaderIntegerDotProduct == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderIntegerDotProduct not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_primitive_topology_list_restart")) )
+	{
+		if ( physicalDevicePrimitiveTopologyListRestartFeaturesEXT.primitiveTopologyListRestart == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature primitiveTopologyListRestart not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

@@ -150,3 +150,4 @@ VkPhysicalDevicePresentIdFeaturesKHR						FEATURES ( presentId )											REQUI
 VkPhysicalDevicePresentWaitFeaturesKHR						FEATURES ( presentWait )										REQUIREMENTS ( VK_KHR_present_wait )
 VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT				FEATURES ( shaderImageFloat32AtomicMinMax )							REQUIREMENTS ( VK_EXT_shader_atomic_float2 physicalDeviceShaderAtomicFloat2FeaturesEXT.sparseImageFloat32AtomicMinMax )
 VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR          FEATURES ( shaderIntegerDotProduct )							REQUIREMENTS ( VK_KHR_shader_integer_dot_product )
+VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT		FEATURES ( primitiveTopologyListRestart )						REQUIREMENTS ( VK_EXT_primitive_topology_list_restart )

@@ -86,9 +86,9 @@ protected:
 																 VkIndexType				indexType,
 																 std::vector<deUint32>&		indexData,
 																 std::vector<Vertex4RGBA>&	vertexData) const = 0;
+	VkPrimitiveTopology					m_primitiveTopology;
 
 private:
-	VkPrimitiveTopology					m_primitiveTopology;
 	const int							m_primitiveCount;
 	bool								m_testPrimitiveRestart;
 	VkIndexType							m_indexType;
@@ -123,6 +123,7 @@ public:
 																 VkPrimitiveTopology	primitiveTopology,
 																 VkIndexType			indexType);
 	virtual								~PrimitiveRestartTest	(void) {}
+	virtual void						checkSupport			(Context& context) const;
 
 protected:
 	virtual void						createBufferData		(VkPrimitiveTopology		topology,
@@ -133,6 +134,16 @@ protected:
 
 private:
 	bool								isRestartPrimitive		(int primitiveIndex) const;
+	void								createListPrimitives	(int						primitiveCount,
+																 float						originX,
+																 float						originY,
+																 float						primitiveSizeX,
+																 float						primitiveSizeY,
+																 int						verticesPerPrimitive,
+																 VkIndexType				indexType,
+																 std::vector<deUint32>&		indexData,
+																 std::vector<Vertex4RGBA>&	vertexData,
+																 std::vector<deUint32>		adjacencies) const;
 
 	std::vector<deUint32>				m_restartPrimitives;
 };
@@ -178,6 +189,8 @@ private:
 
 	Move<VkShaderModule>				m_vertexShaderModule;
 	Move<VkShaderModule>				m_fragmentShaderModule;
+	Move<VkShaderModule>				m_tcsShaderModule;
+	Move<VkShaderModule>				m_tesShaderModule;
 
 	Move<VkPipelineLayout>				m_pipelineLayout;
 	Move<VkPipeline>					m_graphicsPipeline;
@@ -289,6 +302,44 @@ void InputAssemblyTest::initPrograms (SourceCollections& sourceCollections) cons
 		"void main (void)\n"
 		"{\n"
 		"	fragColor = vtxColor;\n"
+		"}\n");
+
+	sourceCollections.glslSources.add("color_tcs") << glu::TessellationControlSource(
+		"#version 310 es\n"
+		"#extension GL_EXT_tessellation_shader : require\n"
+		"layout(vertices = 3) out;\n"
+		"layout(location = 0) in highp vec4 vtxColorIn[];\n"
+		"layout(location = 0) out highp vec4 vtxColorOut[];\n"
+		"#define ID gl_InvocationID\n"
+		"void main (void)\n"
+		"{\n"
+		"	vtxColorOut[ID] = vtxColorIn[ID];\n"
+		"	gl_out[ID].gl_Position = gl_in[ID].gl_Position;\n"
+		"	if (ID == 0)\n"
+		"	{\n"
+		"		gl_TessLevelInner[0] = 5.0;\n"
+		"		gl_TessLevelOuter[0] = 4.0;\n"
+		"		gl_TessLevelOuter[1] = 5.0;\n"
+		"		gl_TessLevelOuter[2] = 6.0;\n"
+		"	}\n"
+		"}\n");
+
+	sourceCollections.glslSources.add("color_tes") << glu::TessellationEvaluationSource(
+		"#version 310 es\n"
+		"#extension GL_EXT_tessellation_shader : require\n"
+		"layout(triangles) in;\n"
+		"layout(location = 0) in vec4 vtxColorIn[];\n"
+		"layout(location = 0) out vec4 vtxColorOut;\n"
+		"void main (void)\n"
+		"{\n"
+		"	vec4 p0 = gl_TessCoord.x * gl_in[0].gl_Position;\n"
+		"	vec4 p1 = gl_TessCoord.y * gl_in[1].gl_Position;\n"
+		"	vec4 p2 = gl_TessCoord.z * gl_in[2].gl_Position;\n"
+		"	gl_Position = p0 + p1 + p2;\n"
+		"	vec4 q0 = gl_TessCoord.x * vtxColorIn[0];\n"
+		"	vec4 q1 = gl_TessCoord.y * vtxColorIn[1];\n"
+		"	vec4 q2 = gl_TessCoord.z * vtxColorIn[2];\n"
+		"	vtxColorOut = q0 + q1 + q2;\n"
 		"}\n");
 }
 
@@ -667,15 +718,37 @@ PrimitiveRestartTest::PrimitiveRestartTest (tcu::TestContext&		testContext,
 
 	: InputAssemblyTest	(testContext, name, description, primitiveTopology, 10, true, indexType)
 {
-	DE_ASSERT(primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP ||
-			  primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP ||
-			  primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN ||
-			  primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY ||
-			  primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY);
-
 	deUint32 restartPrimitives[] = { 1, 5 };
 
 	m_restartPrimitives = std::vector<deUint32>(restartPrimitives, restartPrimitives + sizeof(restartPrimitives) / sizeof(deUint32));
+}
+
+void PrimitiveRestartTest::checkSupport (Context& context) const
+{
+	switch (m_primitiveTopology)
+	{
+		case VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
+		case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+		{
+			context.requireDeviceFunctionality("VK_EXT_primitive_topology_list_restart");
+
+			const auto& features = context.getPrimitiveTopologyListRestartFeaturesEXT();
+			if (!features.primitiveTopologyListRestart)
+				TCU_THROW(NotSupportedError, "Primitive topology list restart feature not supported");
+			if (m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_PATCH_LIST && !features.primitiveTopologyPatchListRestart)
+				TCU_THROW(NotSupportedError, "Primitive topology patch list restart feature not supported");
+		}
+		break;
+
+		default:
+		break;
+	}
+
+	InputAssemblyTest::checkSupport(context);
 }
 
 void PrimitiveRestartTest::createBufferData (VkPrimitiveTopology topology, int primitiveCount, VkIndexType indexType, std::vector<deUint32>& indexData, std::vector<Vertex4RGBA>& vertexData) const
@@ -695,17 +768,25 @@ void PrimitiveRestartTest::createBufferData (VkPrimitiveTopology topology, int p
 	std::vector<deUint32>		indices;
 	std::vector<Vertex4RGBA>	vertices;
 
-
 	// Calculate primitive size
 	switch (topology)
 	{
+		case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+			primitiveSizeX = (2.0f - 2.0f * border) / float(primitiveCount / 2 + primitiveCount % 2 - 1);
+			break;
+
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
 		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
 		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
 			primitiveSizeX = (2.0f - 2.0f * border) / float(primitiveCount / 2);
 			break;
 
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
 		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
 		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+		case VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
 			primitiveSizeX = (2.0f - 2.0f * border) / float(primitiveCount / 2 + primitiveCount % 2);
 			break;
 
@@ -927,6 +1008,40 @@ void PrimitiveRestartTest::createBufferData (VkPrimitiveTopology topology, int p
 			}
 			break;
 
+		case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+			createListPrimitives(primitiveCount, originX, originY, primitiveSizeX, primitiveSizeY,
+								 1, indexType, indices, vertices, std::vector<deUint32>());
+			break;
+
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+			createListPrimitives(primitiveCount, originX, originY, primitiveSizeX, primitiveSizeY,
+								 2, indexType, indices, vertices, std::vector<deUint32>());
+			break;
+
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+		{
+			std::vector<deUint32> adjacencies = { 0, 3 };
+
+			createListPrimitives(primitiveCount, originX, originY, primitiveSizeX, primitiveSizeY,
+								 4, indexType, indices, vertices, adjacencies);
+		}
+		break;
+
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+		case VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
+			createListPrimitives(primitiveCount, originX, originY, primitiveSizeX, primitiveSizeY,
+						3, indexType, indices, vertices, std::vector<deUint32>());
+			break;
+
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+		{
+			std::vector<deUint32> adjacencies = { 1, 3, 5 };
+
+			createListPrimitives(primitiveCount, originX, originY, primitiveSizeX, primitiveSizeY,
+								 6, indexType, indices, vertices, adjacencies);
+		}
+		break;
+
 		default:
 			DE_ASSERT(false);
 			break;
@@ -934,6 +1049,66 @@ void PrimitiveRestartTest::createBufferData (VkPrimitiveTopology topology, int p
 
 	vertexData	= vertices;
 	indexData	= indices;
+}
+
+void PrimitiveRestartTest::createListPrimitives (int						primitiveCount,
+												 float						originX,
+												 float						originY,
+												 float						primitiveSizeX,
+												 float						primitiveSizeY,
+												 int						verticesPerPrimitive,
+												 VkIndexType				indexType,
+												 std::vector<deUint32>&		indexData,
+												 std::vector<Vertex4RGBA>&	vertexData,
+												 std::vector<deUint32>		adjacencies) const
+{
+	const tcu::Vec4	red		(1.0f, 0.0f, 0.0f, 1.0f);
+	const tcu::Vec4	green	(0.0f, 1.0f, 0.0f, 1.0f);
+	// Tells which vertex of a primitive is used as a restart index.
+	// This is decreased each time a restart primitive is used.
+	int restartVertexIndex = verticesPerPrimitive - 1;
+
+	for (int primitiveNdx = 0; primitiveNdx < primitiveCount; primitiveNdx++)
+	{
+		deUint32 nonAdjacentVertexNdx = 0;
+
+		for (int vertexNdx = 0; vertexNdx < verticesPerPrimitive; vertexNdx++)
+		{
+			if (isRestartPrimitive(primitiveNdx) && vertexNdx == restartVertexIndex)
+			{
+				indexData.push_back(InputAssemblyTest::getRestartIndex(indexType));
+
+				restartVertexIndex--;
+				if (restartVertexIndex < 0) restartVertexIndex = verticesPerPrimitive - 1;
+
+				break;
+			}
+
+			if (std::find(adjacencies.begin(), adjacencies.end(), vertexNdx) != adjacencies.end())
+			{
+				// This is an adjacency vertex index. Add a green vertex that should never end up to the framebuffer.
+				const Vertex4RGBA vertex =
+				{
+					tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f),
+					green
+				};
+				vertexData.push_back(vertex);
+				indexData.push_back((deUint32) vertexData.size() - 1);
+				continue;
+			}
+
+			const Vertex4RGBA vertex =
+			{
+				tcu::Vec4(originX + float((primitiveNdx + nonAdjacentVertexNdx) / 2) * primitiveSizeX,
+						  originY + float((primitiveNdx + nonAdjacentVertexNdx) % 2) * primitiveSizeY, 0.0f, 1.0f),
+						  red
+			};
+
+			vertexData.push_back(vertex);
+			indexData.push_back((deUint32) vertexData.size() - 1);
+			nonAdjacentVertexNdx++;
+		}
+	}
 }
 
 bool PrimitiveRestartTest::isRestartPrimitive (int primitiveIndex) const
@@ -965,6 +1140,7 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 	const deUint32					queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	SimpleAllocator					memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
 	const VkComponentMapping		componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+	const bool						patchList				= m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
 
 	// Create color image
 	{
@@ -1052,29 +1228,62 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 	m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
 	m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
 
+	if (patchList)
+	{
+		m_tcsShaderModule = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_tcs"), 0);
+		m_tesShaderModule = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_tes"), 0);
+	}
+
 	// Create pipeline
 	{
-		const VkPipelineShaderStageCreateInfo shaderStageParams[2] =
+		std::vector<VkPipelineShaderStageCreateInfo>	shaderStages;
+
+		// Vertex
+		shaderStages.push_back({
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
+			DE_NULL,												// const void*							pNext;
+			0u,														// VkPipelineShaderStageCreateFlags		flags;
+			VK_SHADER_STAGE_VERTEX_BIT,								// VkShaderStageFlagBits				stage;
+			*m_vertexShaderModule,									// VkShaderModule						module;
+			"main",													// const char*							pName;
+			DE_NULL													// const VkSpecializationInfo*			pSpecializationInfo;
+			});
+
+		// Fragment
+		shaderStages.push_back({
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
+			DE_NULL,												// const void*							pNext;
+			0u,														// VkPipelineShaderStageCreateFlags		flags;
+			VK_SHADER_STAGE_FRAGMENT_BIT,							// VkShaderStageFlagBits				stage;
+			*m_fragmentShaderModule,								// VkShaderModule						module;
+			"main",													// const char*							pName;
+			DE_NULL													// const VkSpecializationInfo*			pSpecializationInfo;
+			});
+
+		if (patchList)
 		{
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType						sType;
-				DE_NULL,													// const void*							pNext;
-				0u,															// VkPipelineShaderStageCreateFlags		flags;
-				VK_SHADER_STAGE_VERTEX_BIT,									// VkShaderStageFlagBits				stage;
-				*m_vertexShaderModule,										// VkShaderModule						module;
-				"main",														// const char*							pName;
-				DE_NULL														// const VkSpecializationInfo*			pSpecializationInfo;
-			},
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType						sType;
-				DE_NULL,													// const void*							pNext;
-				0u,															// VkPipelineShaderStageCreateFlags		flags;
-				VK_SHADER_STAGE_FRAGMENT_BIT,								// VkShaderStageFlagBits				stage;
-				*m_fragmentShaderModule,									// VkShaderModule						module;
-				"main",														// const char*							pName;
-				DE_NULL														// const VkSpecializationInfo*			pSpecializationInfo;
-			}
-		};
+			// Tessellation Control Shader
+			shaderStages.push_back({
+				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
+				DE_NULL,												// const void*							pNext;
+				0u,														// VkPipelineShaderStageCreateFlags		flags;
+				VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,				// VkShaderStageFlagBits				stage;
+				*m_tcsShaderModule,										// VkShaderModule						module;
+				"main",													// const char*							pName;
+				DE_NULL													// const VkSpecializationInfo*			pSpecializationInfo;
+				});
+
+			// Tessellation Evaluation Shader
+			shaderStages.push_back({
+				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
+				DE_NULL,												// const void*							pNext;
+				0u,														// VkPipelineShaderStageCreateFlags		flags;
+				VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,			// VkShaderStageFlagBits				stage;
+				*m_tesShaderModule,										// VkShaderModule						module;
+				"main",													// const char*							pName;
+				DE_NULL													// const VkSpecializationInfo*			pSpecializationInfo;
+				});
+		}
 
 		const VkVertexInputBindingDescription vertexInputBindingDescription =
 		{
@@ -1222,16 +1431,24 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 			1.0f														// float			maxDepthBounds;
 		};
 
+		const VkPipelineTessellationStateCreateInfo	tessellationParams	=
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,	// VkStructureType							sType;
+			DE_NULL,													// const void*								pNext;
+			0u,															// VkPipelineTessellationStateCreateFlags	flags;
+			3u,															// uint32_t									patchControlPoints;
+		};
+
 		const VkGraphicsPipelineCreateInfo graphicsPipelineParams =
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
 			DE_NULL,											// const void*										pNext;
 			0u,													// VkPipelineCreateFlags							flags;
-			2u,													// deUint32											stageCount;
-			shaderStageParams,									// const VkPipelineShaderStageCreateInfo*			pStages;
+			(deUint32)shaderStages.size(),						// deUint32											stageCount;
+			shaderStages.data(),								// const VkPipelineShaderStageCreateInfo*			pStages;
 			&vertexInputStateParams,							// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
 			&inputAssemblyStateParams,							// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
-			DE_NULL,											// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
+			patchList ? &tessellationParams : DE_NULL,			// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
 			&viewportStateParams,								// const VkPipelineViewportStateCreateInfo*			pViewportState;
 			&rasterStateParams,									// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
 			&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
@@ -1374,7 +1591,8 @@ tcu::TestStatus InputAssemblyInstance::verifyImage (void)
 
 	// Render reference image
 	{
-		const rr::PrimitiveType		topology	= mapVkPrimitiveTopology(m_primitiveTopology);
+		// The reference for tessellated patches are drawn using ordinary triangles.
+		const rr::PrimitiveType		topology	= m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_PATCH_LIST ? rr::PrimitiveType::PRIMITIVETYPE_TRIANGLES : mapVkPrimitiveTopology(m_primitiveTopology);
 		rr::RenderState				renderState	(refRenderer.getViewportState(), m_context.getDeviceProperties().limits.subPixelPrecisionBits);
 
 		if (m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
@@ -1516,7 +1734,15 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& t
 		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
 		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,
 		VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY,
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY
+		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY,
+
+		// Supported with VK_EXT_primitive_topology_list_restart
+		VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+		VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
+		VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY,
+		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY,
+		VK_PRIMITIVE_TOPOLOGY_PATCH_LIST
 	};
 
 	de::MovePtr<tcu::TestCaseGroup> primitiveRestartTests (new tcu::TestCaseGroup(testCtx, "primitive_restart", "Restarts indices of "));
