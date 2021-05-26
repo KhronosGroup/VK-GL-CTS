@@ -226,9 +226,47 @@ void checkImageSupport (Context& context, VkFormat format, VkImageCreateFlags cr
 	}
 }
 
-void fillRandom (de::Random* randomGen, MultiPlaneImageData* imageData)
+// When noNan is true, fillRandom does not generate NaNs in float formats.
+// But as a side effect, it also takes out infinities as well as almost half of the largest-magnitude values.
+void fillRandom (de::Random* randomGen, MultiPlaneImageData* imageData, const vk::VkFormat format, const bool noNan)
 {
 	// \todo [pyry] Optimize, take into account bits that must be 0
+
+	deUint8 mask, maskStride;
+	const deUint8 noMask = 0xffu;
+
+	switch (format)
+	{
+		case vk::VK_FORMAT_B10G11R11_UFLOAT_PACK32:
+			mask		= 0xbb;
+			maskStride	= 1;
+			break;
+		case vk::VK_FORMAT_R16_SFLOAT:
+		case vk::VK_FORMAT_R16G16_SFLOAT:
+		case vk::VK_FORMAT_R16G16B16_SFLOAT:
+		case vk::VK_FORMAT_R16G16B16A16_SFLOAT:
+			mask		= 0xbf;
+			maskStride	= 2;
+			break;
+		case vk::VK_FORMAT_R32_SFLOAT:
+		case vk::VK_FORMAT_R32G32_SFLOAT:
+		case vk::VK_FORMAT_R32G32B32_SFLOAT:
+		case vk::VK_FORMAT_R32G32B32A32_SFLOAT:
+			mask		= 0xbf;
+			maskStride	= 4;
+			break;
+		case vk::VK_FORMAT_R64_SFLOAT:
+		case vk::VK_FORMAT_R64G64_SFLOAT:
+		case vk::VK_FORMAT_R64G64B64_SFLOAT:
+		case vk::VK_FORMAT_R64G64B64A64_SFLOAT:
+			mask		= 0xbf;
+			maskStride	= 8;
+			break;
+		default:
+			mask		= 0xff;
+			maskStride	= 1;
+			break;
+	}
 
 	for (deUint32 planeNdx = 0; planeNdx < imageData->getDescription().numPlanes; ++planeNdx)
 	{
@@ -236,7 +274,11 @@ void fillRandom (de::Random* randomGen, MultiPlaneImageData* imageData)
 		deUint8* const	planePtr	= (deUint8*)imageData->getPlanePtr(planeNdx);
 
 		for (size_t ndx = 0; ndx < planeSize; ++ndx)
-			planePtr[ndx] = randomGen->getUint8();
+		{
+			const deUint8 finalMask = (noNan && ((ndx % static_cast<size_t>(maskStride)) == 0u)) ? mask : noMask;
+
+			planePtr[ndx] = randomGen->getUint8() & finalMask;
+		}
 	}
 }
 
