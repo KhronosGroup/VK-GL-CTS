@@ -16510,6 +16510,10 @@ dEQP-VK.pipeline.multisample_shader_builtin.write_sample_mask.2_samples
 dEQP-VK.pipeline.multisample_shader_builtin.write_sample_mask.4_samples
 dEQP-VK.pipeline.multisample_shader_builtin.write_sample_mask.8_samples
 dEQP-VK.pipeline.multisample_shader_builtin.write_sample_mask.16_samples
+dEQP-VK.pipeline.vertex_input.single_attribute.vec3.as_b10g11r11_ufloat_pack32_rate_vertex
+dEQP-VK.pipeline.vertex_input.single_attribute.vec3.as_b10g11r11_ufloat_pack32_rate_instance
+dEQP-VK.pipeline.vertex_input.single_attribute.mat3.as_b10g11r11_ufloat_pack32_rate_vertex
+dEQP-VK.pipeline.vertex_input.single_attribute.mat3.as_b10g11r11_ufloat_pack32_rate_instance
 dEQP-VK.pipeline.shader_stencil_export.d24_unorm_s8_uint.op_replace
 dEQP-VK.pipeline.shader_stencil_export.d32_sfloat_s8_uint.op_replace
 dEQP-VK.pipeline.misc.primitive_id_from_tess
