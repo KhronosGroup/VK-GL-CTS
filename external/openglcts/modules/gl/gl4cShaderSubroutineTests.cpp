@@ -5947,7 +5947,7 @@ void FunctionalTest12::fillTexture(Utils::texture& texture, const glw::GLuint co
  **/
 bool FunctionalTest12::testAtomic()
 {
-	static const GLchar* fragment_shader_code = "#version 400 core\n"
+	static const GLchar* fragment_shader_code = "#version 410 core\n"
 												"#extension GL_ARB_shader_atomic_counters : require\n"
 												"#extension GL_ARB_shader_subroutine      : require\n"
 												"\n"
