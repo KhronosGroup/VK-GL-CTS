@@ -942,7 +942,7 @@ public:
 
 	virtual std::string ComputeShader()
 	{
-		return "#version 400 core                                           \n"
+		return "#version 420 core                                           \n"
 			   "#extension GL_ARB_shader_storage_buffer_object : require    \n"
 			   "#extension GL_ARB_compute_shader : require            \n"
 			   "#extension GL_ARB_texture_cube_map_array : enable     \n"

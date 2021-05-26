@@ -674,7 +674,7 @@ tcu::TestNode::IterateResult CullDistance::APICoverageTest::iterate()
 			 * compilation & program linking process.
 			 */
 			static const glw::GLchar* cs_body_template =
-				"#version 150\n"
+				"#version 420 core\n"
 				"\n"
 				"#extension GL_ARB_compute_shader          : require\n"
 				"#extension GL_ARB_cull_distance           : require\n"

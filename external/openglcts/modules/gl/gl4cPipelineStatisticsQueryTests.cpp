@@ -86,7 +86,7 @@ const char* PipelineStatisticsQueryUtilities::dummy_cs_code =
 	"    atomicCounterIncrement(test_counter);\n"
 	"}\n";
 const char* PipelineStatisticsQueryUtilities::dummy_cs_code_arb =
-	"#version 330\n"
+	"#version 420 core\n"
 	"#extension GL_ARB_compute_shader : require\n"
 	"#extension GL_ARB_shader_atomic_counters : require\n"
 	"\n"
