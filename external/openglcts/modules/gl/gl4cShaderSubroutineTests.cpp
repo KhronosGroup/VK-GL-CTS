@@ -6969,6 +6969,7 @@ std::string FunctionalTest13::getVertexShaderBody(unsigned int n_id)
 	result_sstream << "#version 400\n"
 					  "\n"
 					  "#extension GL_ARB_shader_subroutine : require\n"
+					  "#extension GL_ARB_separate_shader_objects: require\n"
 					  "\n"
 					  /* Sub-routine */
 					  "subroutine void SubroutineVSType(inout vec4 result);\n"
