@@ -337,7 +337,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo,
 									   const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo,
 									   const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo,
-									   const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo)
+									   const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo,
+									   const void*										pNext)
 {
 	VkPipelineShaderStageCreateInfo					stageCreateInfo		=
 	{
@@ -389,7 +390,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 	const VkGraphicsPipelineCreateInfo				pipelineCreateInfo	=
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType                                  sType
-		DE_NULL,											// const void*                                      pNext
+		pNext,												// const void*                                      pNext
 		0u,													// VkPipelineCreateFlags                            flags
 		(deUint32)pipelineShaderStageParams.size(),			// deUint32                                         stageCount
 		&pipelineShaderStageParams[0],						// const VkPipelineShaderStageCreateInfo*           pStages

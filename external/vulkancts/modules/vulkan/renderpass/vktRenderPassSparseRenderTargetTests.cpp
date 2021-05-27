@@ -257,14 +257,16 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 									 VkDevice				device,
 									 VkFormat				dstFormat,
-									 const RenderPassType	renderPassType)
+									 const RenderingType	renderingType)
 {
-	switch (renderPassType)
+	switch (renderingType)
 	{
-		case RENDERPASS_TYPE_LEGACY:
+		case RENDERING_TYPE_RENDERPASS_LEGACY:
 			return createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vkd, device, dstFormat);
-		case RENDERPASS_TYPE_RENDERPASS2:
+		case RENDERING_TYPE_RENDERPASS2:
 			return createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vkd, device, dstFormat);
+		case RENDERING_TYPE_DYNAMIC_RENDERING:
+			return Move<VkRenderPass>();
 		default:
 			TCU_THROW(InternalError, "Impossible");
 	}
@@ -277,6 +279,11 @@ Move<VkFramebuffer> createFramebuffer (const DeviceInterface&	vkd,
 									   deUint32					width,
 									   deUint32					height)
 {
+	// when RenderPass was not created then we are testing dynamic rendering
+	// and we can't create framebuffer without valid RenderPass object
+	if (!renderPass)
+		return Move<VkFramebuffer>();
+
 	const VkFramebufferCreateInfo createInfo =
 	{
 		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -317,6 +324,7 @@ Move<VkPipelineLayout> createRenderPipelineLayout (const DeviceInterface&	vkd,
 Move<VkPipeline> createRenderPipeline (const DeviceInterface&							vkd,
 									   VkDevice											device,
 									   VkRenderPass										renderPass,
+									   VkFormat											format,
 									   VkPipelineLayout									pipelineLayout,
 									   const BinaryCollection&							binaryCollection,
 									   deUint32											width,
@@ -341,6 +349,19 @@ Move<VkPipeline> createRenderPipeline (const DeviceInterface&							vkd,
 	const std::vector<VkViewport>					viewports						(1, makeViewport(tcu::UVec2(width, height)));
 	const std::vector<VkRect2D>						scissors						(1, makeRect2D(tcu::UVec2(width, height)));
 
+	VkPipelineRenderingCreateInfoKHR* pNext = DE_NULL;
+	VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+		0u,
+		DE_NULL,
+		1u,
+		&format,
+		VK_FORMAT_UNDEFINED
+	};
+	if (renderPass == DE_NULL)
+		pNext = &renderingCreateInfo;
+
 	return makeGraphicsPipeline(vkd,									// const DeviceInterface&                        vk
 								device,									// const VkDevice                                device
 								pipelineLayout,							// const VkPipelineLayout                        pipelineLayout
@@ -355,20 +376,26 @@ Move<VkPipeline> createRenderPipeline (const DeviceInterface&							vkd,
 								VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
 								0u,										// const deUint32                                subpass
 								0u,										// const deUint32                                patchControlPoints
-								&vertexInputState);						// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+								&vertexInputState,						// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+								DE_NULL,								// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+								DE_NULL,								// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+								DE_NULL,								// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+								DE_NULL,								// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
+								DE_NULL,								// const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
+								pNext);									// const void*                                   pNext
 }
 
 struct TestConfig
 {
 				TestConfig		(VkFormat		format_,
-								 RenderPassType	renderPassType_)
+								 RenderingType	renderingType_)
 		: format			(format_)
-		, renderPassType	(renderPassType_)
+		, renderingType		(renderingType_)
 	{
 	}
 
 	VkFormat		format;
-	RenderPassType	renderPassType;
+	RenderingType	renderingType;
 };
 
 class SparseRenderTargetTestInstance : public TestInstance
@@ -383,8 +410,7 @@ public:
 	tcu::TestStatus							iterateInternal			(void);
 
 private:
-	const bool								m_extensionSupported;
-	const RenderPassType					m_renderPassType;
+	const RenderingType						m_renderingType;
 
 	const deUint32							m_width;
 	const deUint32							m_height;
@@ -412,8 +438,7 @@ private:
 
 SparseRenderTargetTestInstance::SparseRenderTargetTestInstance (Context& context, TestConfig testConfig)
 	: TestInstance				(context)
-	, m_extensionSupported		((testConfig.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
-	, m_renderPassType			(testConfig.renderPassType)
+	, m_renderingType			(testConfig.renderingType)
 	, m_width					(32u)
 	, m_height					(32u)
 	, m_format					(testConfig.format)
@@ -422,10 +447,10 @@ SparseRenderTargetTestInstance::SparseRenderTargetTestInstance (Context& context
 	, m_dstImageView			(createImageView(context.getDeviceInterface(), context.getDevice(), *m_dstImage, m_format, VK_IMAGE_ASPECT_COLOR_BIT))
 	, m_dstBuffer				(createBuffer(context.getDeviceInterface(), context.getDevice(), m_format, m_width, m_height))
 	, m_dstBufferMemory			(createBufferMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), *m_dstBuffer))
-	, m_renderPass				(createRenderPass(context.getDeviceInterface(), context.getDevice(), m_format, testConfig.renderPassType))
+	, m_renderPass				(createRenderPass(context.getDeviceInterface(), context.getDevice(), m_format, testConfig.renderingType))
 	, m_framebuffer				(createFramebuffer(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_dstImageView, m_width, m_height))
 	, m_renderPipelineLayout	(createRenderPipelineLayout(context.getDeviceInterface(), context.getDevice()))
-	, m_renderPipeline			(createRenderPipeline(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_renderPipelineLayout, context.getBinaryCollection(), m_width, m_height))
+	, m_renderPipeline			(createRenderPipeline(context.getDeviceInterface(), context.getDevice(), *m_renderPass, testConfig.format, *m_renderPipelineLayout, context.getBinaryCollection(), m_width, m_height))
 	, m_commandPool				(createCommandPool(context.getDeviceInterface(), context.getDevice(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, context.getUniversalQueueFamilyIndex()))
 {
 }
@@ -436,11 +461,12 @@ SparseRenderTargetTestInstance::~SparseRenderTargetTestInstance (void)
 
 tcu::TestStatus SparseRenderTargetTestInstance::iterate (void)
 {
-	switch (m_renderPassType)
+	switch (m_renderingType)
 	{
-		case RENDERPASS_TYPE_LEGACY:
+		case RENDERING_TYPE_RENDERPASS_LEGACY:
 			return iterateInternal<RenderpassSubpass1>();
-		case RENDERPASS_TYPE_RENDERPASS2:
+		case RENDERING_TYPE_RENDERPASS2:
+		case RENDERING_TYPE_DYNAMIC_RENDERING:
 			return iterateInternal<RenderpassSubpass2>();
 		default:
 			TCU_THROW(InternalError, "Impossible");
@@ -449,29 +475,28 @@ tcu::TestStatus SparseRenderTargetTestInstance::iterate (void)
 
 template<typename RenderpassSubpass>
 tcu::TestStatus SparseRenderTargetTestInstance::iterateInternal (void)
-
 {
-	const DeviceInterface&								vkd					(m_context.getDeviceInterface());
-	const Unique<VkCommandBuffer>						commandBuffer		(allocateCommandBuffer(vkd, m_context.getDevice(), *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	const typename RenderpassSubpass::SubpassBeginInfo	subpassBeginInfo	(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
-	const typename RenderpassSubpass::SubpassEndInfo	subpassEndInfo		(DE_NULL);
+	const DeviceInterface&			vkd				(m_context.getDeviceInterface());
+	const Unique<VkCommandBuffer>	commandBuffer	(allocateCommandBuffer(vkd, m_context.getDevice(), *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	beginCommandBuffer(vkd, *commandBuffer);
 
+	VkRect2D renderArea = makeRect2D(m_width, m_height);
+	if (m_renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 	{
+		const VkClearValue clearValue = makeClearValueColor({ 0.0f, 0.0f, 0.0f, 1.0f });
+		beginRendering(vkd, *commandBuffer, *m_dstImageView, renderArea, clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE);
+	}
+	else
+	{
+		const typename RenderpassSubpass::SubpassBeginInfo subpassBeginInfo(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
 		const VkRenderPassBeginInfo beginInfo =
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 			DE_NULL,
-
 			*m_renderPass,
 			*m_framebuffer,
-
-			{
-				{ 0u, 0u },
-				{ m_width, m_height }
-			},
-
+			renderArea,
 			0u,
 			DE_NULL
 		};
@@ -480,7 +505,14 @@ tcu::TestStatus SparseRenderTargetTestInstance::iterateInternal (void)
 
 	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
 	vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
-	RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
+
+	if (m_renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+		vkd.cmdEndRenderingKHR(*commandBuffer);
+	else
+	{
+		const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(DE_NULL);
+		RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
+	}
 
 	copyImageToBuffer(vkd, *commandBuffer, *m_dstImage, *m_dstBuffer, tcu::IVec2(m_width, m_height));
 
@@ -661,7 +693,17 @@ std::string formatToName (VkFormat format)
 	return de::toLower(formatStr.substr(prefix.length()));
 }
 
-void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
+template<class TestConfigType>
+void checkSupport(Context& context, TestConfigType config)
+{
+	if (config.renderingType == RENDERING_TYPE_RENDERPASS2)
+		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
+
+	if (config.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+}
+
+void initTests (tcu::TestCaseGroup* group, const RenderingType renderingType)
 {
 	static const VkFormat	formats[]	=
 	{
@@ -721,10 +763,10 @@ void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
 	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 	{
 		const VkFormat		format		(formats[formatNdx]);
-		const TestConfig	testConfig	(format, renderPassType);
+		const TestConfig	testConfig	(format, renderingType);
 		string				testName	(formatToName(format));
 
-		group->addChild(new InstanceFactory1<SparseRenderTargetTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
+		group->addChild(new InstanceFactory1WithSupport<SparseRenderTargetTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
 	}
 }
 
@@ -732,11 +774,17 @@ void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
 
 tcu::TestCaseGroup* createRenderPassSparseRenderTargetTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "sparserendertarget", "Sparse render target tests", initTests, RENDERPASS_TYPE_LEGACY);
+	return createTestGroup(testCtx, "sparserendertarget", "Sparse render target tests", initTests, RENDERING_TYPE_RENDERPASS_LEGACY);
 }
 
 tcu::TestCaseGroup* createRenderPass2SparseRenderTargetTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "sparserendertarget", "Sparse render target tests", initTests, RENDERPASS_TYPE_RENDERPASS2);
+	return createTestGroup(testCtx, "sparserendertarget", "Sparse render target tests", initTests, RENDERING_TYPE_RENDERPASS2);
 }
+
+tcu::TestCaseGroup* createDynamicRenderingSparseRenderTargetTests(tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "sparserendertarget", "Sparse render target tests", initTests, RENDERING_TYPE_DYNAMIC_RENDERING);
+}
+
 } // vkt
