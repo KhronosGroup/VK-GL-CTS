@@ -864,6 +864,14 @@ std::string InterfaceMatchingTestCase::genInVerification(const std::string& vari
 
 void InterfaceMatchingTestCase::checkSupport(Context& context) const
 {
+	// when outputs from earlier stage are matched with smaller
+	// inputs in future stage request VK_KHR_maintenance4
+	if ((m_params->testType == TestType::VECTOR_LENGTH) &&
+		(m_params->outVecType != m_params->inVecType))
+	{
+		context.requireDeviceFunctionality("VK_KHR_maintenance4");
+	}
+
 	const InstanceInterface&		vki				= context.getInstanceInterface();
 	const VkPhysicalDevice			physicalDevice	= context.getPhysicalDevice();
 	const VkPhysicalDeviceFeatures	features		= getPhysicalDeviceFeatures(vki, physicalDevice);
@@ -1038,21 +1046,29 @@ tcu::TestCaseGroup* createInterfaceMatchingTests(tcu::TestContext& testCtx)
 			for (deUint32 vecDataFormat = 0; vecDataFormat < 3; ++vecDataFormat)
 			{
 				// iterate over all out/in lenght combinations
-				const VecType* currentVecTypeList = vecTypeList[vecDataFormat];
-				for (deUint32 vecSizeIndex = 0; vecSizeIndex < 3; ++vecSizeIndex)
+				const VecType* vecType = vecTypeList[vecDataFormat];
+				for (deUint32 outVecSizeIndex = 0; outVecSizeIndex < 3; ++outVecSizeIndex)
 				{
-					VecType vecType = currentVecTypeList[vecSizeIndex];
-					auto testParams = new TestParams
+					VecType outVecType = vecType[outVecSizeIndex];
+					for (deUint32 inVecSizeIndex = 0; inVecSizeIndex < 3; ++inVecSizeIndex)
 					{
-						TestType::VECTOR_LENGTH,
-						vecType,
-						vecType,
-						DecorationType::NONE,
-						DecorationType::NONE,
-						pipelineType,
-						defType
-					};
-					vectorMatching->addChild(new InterfaceMatchingTestCase(testCtx, TestParamsSp(testParams)));
+						VecType inVecType = vecType[inVecSizeIndex];
+						if (outVecType < inVecType)
+							continue;
+
+						auto testParams = new TestParams
+						{
+							TestType::VECTOR_LENGTH,
+							outVecType,
+							inVecType,
+							DecorationType::NONE,
+							DecorationType::NONE,
+							pipelineType,
+							defType
+						};
+
+						vectorMatching->addChild(new InterfaceMatchingTestCase(testCtx, TestParamsSp(testParams)));
+					}
 				}
 			}
 		}
