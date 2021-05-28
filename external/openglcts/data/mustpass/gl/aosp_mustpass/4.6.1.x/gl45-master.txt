@@ -11709,6 +11709,12 @@ dEQP-GL45.functional.texture.filtering.cube_array.formats.sr8_nearest_mipmap_nea
 dEQP-GL45.functional.texture.filtering.cube_array.formats.sr8_linear_mipmap_nearest
 dEQP-GL45.functional.texture.filtering.cube_array.formats.sr8_nearest_mipmap_linear
 dEQP-GL45.functional.texture.filtering.cube_array.formats.sr8_linear_mipmap_linear
+dEQP-GL45.functional.texture.filtering.cube_array.formats.srg8_nearest
+dEQP-GL45.functional.texture.filtering.cube_array.formats.srg8_linear
+dEQP-GL45.functional.texture.filtering.cube_array.formats.srg8_nearest_mipmap_nearest
+dEQP-GL45.functional.texture.filtering.cube_array.formats.srg8_linear_mipmap_nearest
+dEQP-GL45.functional.texture.filtering.cube_array.formats.srg8_nearest_mipmap_linear
+dEQP-GL45.functional.texture.filtering.cube_array.formats.srg8_linear_mipmap_linear
 dEQP-GL45.functional.texture.filtering.cube_array.formats.srgb8_alpha8_nearest
 dEQP-GL45.functional.texture.filtering.cube_array.formats.srgb8_alpha8_linear
 dEQP-GL45.functional.texture.filtering.cube_array.formats.srgb8_alpha8_nearest_mipmap_nearest
@@ -11897,6 +11903,8 @@ dEQP-GL45.functional.texture.format.sized.cube_array.rgba8ui_pot
 dEQP-GL45.functional.texture.format.sized.cube_array.rgba8ui_npot
 dEQP-GL45.functional.texture.format.sized.cube_array.srgb_r8_pot
 dEQP-GL45.functional.texture.format.sized.cube_array.srgb_r8_npot
+dEQP-GL45.functional.texture.format.sized.cube_array.srgb_rg8_pot
+dEQP-GL45.functional.texture.format.sized.cube_array.srgb_rg8_npot
 dEQP-GL45.functional.texture.format.sized.cube_array.srgb8_alpha8_pot
 dEQP-GL45.functional.texture.format.sized.cube_array.srgb8_alpha8_npot
 dEQP-GL45.functional.texture.format.sized.cube_array.rgb10_a2_pot
@@ -32195,6 +32203,13 @@ dEQP-GL45.functional.srgb_texture_decode.skip_decode.srgba8.conversion_gpu
 dEQP-GL45.functional.srgb_texture_decode.skip_decode.srgba8.toggled
 dEQP-GL45.functional.srgb_texture_decode.skip_decode.srgba8.multiple_textures
 dEQP-GL45.functional.srgb_texture_decode.skip_decode.srgba8.using_sampler
+dEQP-GL45.functional.srgb_texture_decode.skip_decode.srg8.skipped
+dEQP-GL45.functional.srgb_texture_decode.skip_decode.srg8.enabled
+dEQP-GL45.functional.srgb_texture_decode.skip_decode.srg8.texel_fetch
+dEQP-GL45.functional.srgb_texture_decode.skip_decode.srg8.conversion_gpu
+dEQP-GL45.functional.srgb_texture_decode.skip_decode.srg8.toggled
+dEQP-GL45.functional.srgb_texture_decode.skip_decode.srg8.multiple_textures
+dEQP-GL45.functional.srgb_texture_decode.skip_decode.srg8.using_sampler
 dEQP-GL45.functional.srgb_texture_decode.skip_decode.sr8.skipped
 dEQP-GL45.functional.srgb_texture_decode.skip_decode.sr8.enabled
 dEQP-GL45.functional.srgb_texture_decode.skip_decode.sr8.texel_fetch
