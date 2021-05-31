@@ -5446,6 +5446,8 @@ static void generateProgramInputLocationBlockContents (Context& context, const R
 																	: (parentStructure);
 	const glu::ShaderType						firstStage		= getShaderMaskFirstStage(presentShadersMask);
 
+	const bool									inBlockArray	= DE_TRUE == deStringEqual("block_array", targetGroup->getName());
+
 	if (firstStage == glu::SHADERTYPE_VERTEX)
 	{
 		// .var
@@ -5468,6 +5470,7 @@ static void generateProgramInputLocationBlockContents (Context& context, const R
 			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, PROGRAMRESOURCEPROP_LOCATION), "var"));
 		}
 		// .var_explicit_location
+		if (!inBlockArray)
 		{
 			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(input, glu::Layout(2)));
 			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(layout, glu::TYPE_FLOAT_VEC4));
@@ -5480,6 +5483,7 @@ static void generateProgramInputLocationBlockContents (Context& context, const R
 			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, PROGRAMRESOURCEPROP_LOCATION), "var_struct"));
 		}
 		// .var_struct_explicit_location
+		if (!inBlockArray)
 		{
 			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(input, glu::Layout(2)));
 			const ResourceDefinition::Node::SharedPtr structMbr	(new ResourceDefinition::StructMember(layout));
@@ -5493,6 +5497,7 @@ static void generateProgramInputLocationBlockContents (Context& context, const R
 			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_INPUT, PROGRAMRESOURCEPROP_LOCATION), "var_array"));
 		}
 		// .var_array_explicit_location
+		if (!inBlockArray)
 		{
 			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(input, glu::Layout(2)));
 			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(layout));
@@ -5590,13 +5595,14 @@ static void generateProgramInputLocationBlockContents (Context& context, const R
 
 static void generateProgramOutputLocationBlockContents (Context& context, const ResourceDefinition::Node::SharedPtr& parentStructure, tcu::TestCaseGroup* targetGroup, deUint32 presentShadersMask, bool isGL45)
 {
+	DE_UNREF(isGL45);
 	const bool									inDefaultBlock	= parentStructure->getType() == ResourceDefinition::Node::TYPE_DEFAULT_BLOCK;
 	const ResourceDefinition::Node::SharedPtr	output			= (inDefaultBlock)
 																	? (ResourceDefinition::Node::SharedPtr(new ResourceDefinition::StorageQualifier(parentStructure, glu::STORAGE_OUT)))
 																	: (parentStructure);
 	const glu::ShaderType						lastStage		= getShaderMaskLastStage(presentShadersMask);
 
-	const bool									inBlockArray	= 0 == deStringEqual("block_array", targetGroup->getName());
+	const bool									inBlockArray	= DE_TRUE == deStringEqual("block_array", targetGroup->getName());
 
 	if (lastStage == glu::SHADERTYPE_VERTEX						||
 		lastStage == glu::SHADERTYPE_GEOMETRY					||
@@ -5609,7 +5615,7 @@ static void generateProgramOutputLocationBlockContents (Context& context, const 
 			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "var"));
 		}
 		// .var_explicit_location
-		if (!(isGL45 && inBlockArray))
+		if (!inBlockArray)
 		{
 			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(output, glu::Layout(2)));
 			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(layout, glu::TYPE_FLOAT_VEC4));
@@ -5622,7 +5628,7 @@ static void generateProgramOutputLocationBlockContents (Context& context, const 
 			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "var_struct"));
 		}
 		// .var_struct_explicit_location
-		if (!(isGL45 && inBlockArray))
+		if (!inBlockArray)
 		{
 			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(output, glu::Layout(2)));
 			const ResourceDefinition::Node::SharedPtr structMbr	(new ResourceDefinition::StructMember(layout));
@@ -5636,7 +5642,7 @@ static void generateProgramOutputLocationBlockContents (Context& context, const 
 			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "var_array"));
 		}
 		// .var_array_explicit_location
-		if (!(isGL45 && inBlockArray))
+		if (!inBlockArray)
 		{
 			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(output, glu::Layout(2)));
 			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(layout));
@@ -5652,7 +5658,7 @@ static void generateProgramOutputLocationBlockContents (Context& context, const 
 			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "var"));
 		}
 		// .var_explicit_location
-		if (!(isGL45 && inBlockArray))
+		if (!inBlockArray)
 		{
 			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(output, glu::Layout(2)));
 			const ResourceDefinition::Node::SharedPtr variable	(new ResourceDefinition::Variable(layout, glu::TYPE_FLOAT_VEC4));
@@ -5665,7 +5671,7 @@ static void generateProgramOutputLocationBlockContents (Context& context, const 
 			targetGroup->addChild(new ResourceTestCase(context, variable, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_PROGRAM_OUTPUT, PROGRAMRESOURCEPROP_LOCATION), "var_array"));
 		}
 		// .var_array_explicit_location
-		if (!(isGL45 && inBlockArray))
+		if (!inBlockArray)
 		{
 			const ResourceDefinition::Node::SharedPtr layout	(new ResourceDefinition::LayoutQualifier(output, glu::Layout(1)));
 			const ResourceDefinition::Node::SharedPtr arrayElem	(new ResourceDefinition::ArrayElement(layout));
