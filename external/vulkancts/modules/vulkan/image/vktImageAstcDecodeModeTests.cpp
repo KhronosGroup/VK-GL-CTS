@@ -31,6 +31,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 
+#include "tcuAstcUtil.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuTexture.hpp"
 #include "tcuCompressedTexture.hpp"
@@ -82,14 +83,6 @@ public:
 
 protected:
 
-	void			generateData				(deUint8*		toFill,
-												 const size_t	size,
-												 const VkFormat format,
-												 const deUint32 layer,
-												 const deUint32 level);
-
-protected:
-
 	const TestParameters	m_parameters;
 };
 
@@ -108,6 +101,7 @@ TestStatus BasicComputeTestInstance::iterate (void)
 	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 	const VkImageType				imageType			= mapImageType(m_parameters.imageType);
 	const VkExtent3D				extentCompressed	= makeExtent3D(getCompressedImageResolutionInBlocks(m_parameters.testedFormat, m_parameters.imageSize));
+	const VkExtent3D				extentUnCompressed	= makeExtent3D(m_parameters.imageSize);
 	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 	const Unique<VkShaderModule>	shaderModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0));
@@ -140,7 +134,7 @@ TestStatus BasicComputeTestInstance::iterate (void)
 		0u,														// VkImageCreateFlags		flags;
 		imageType,												// VkImageType				imageType;
 		m_parameters.resultFormat,								// VkFormat					format;
-		extentCompressed,										// VkExtent3D				extent;
+		extentUnCompressed,										// VkExtent3D				extent;
 		1u,														// deUint32					mipLevels;
 		1u,														// deUint32					arrayLayers;
 		VK_SAMPLE_COUNT_1_BIT,									// VkSampleCountFlagBits	samples;
@@ -163,7 +157,6 @@ TestStatus BasicComputeTestInstance::iterate (void)
 	// create image views
 	const VkImageViewType			imageViewType			(mapImageViewType(m_parameters.imageType));
 	VkImageSubresourceRange			subresourceRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-	VkFormat						viewFormat				= m_parameters.testedIsUnorm ? VK_FORMAT_R32G32B32A32_UINT : VK_FORMAT_R32G32B32A32_SINT;
 
 	VkImageViewASTCDecodeModeEXT decodeMode =
 	{
@@ -179,13 +172,13 @@ TestStatus BasicComputeTestInstance::iterate (void)
 		0u,												// VkImageViewCreateFlags	flags;
 		testedImage.get(),								// VkImage					image;
 		imageViewType,									// VkImageViewType			viewType;
-		viewFormat,										// VkFormat					format;
+		m_parameters.testedFormat,						// VkFormat					format;
 		makeComponentMappingRGBA(),						// VkComponentMapping		components;
 		subresourceRange,								// VkImageSubresourceRange	subresourceRange;
 	};
 
 	Move<VkImageView>				testedView				= createImageView(vk, device, &imageViewParams);
-	Move<VkImageView>				referenceView			= makeImageView(vk, device, referenceImage.get(), imageViewType, viewFormat, subresourceRange);
+	Move<VkImageView>				referenceView			= makeImageView(vk, device, referenceImage.get(), imageViewType, m_parameters.testedFormat, subresourceRange);
 	Move<VkImageView>				resultView				= makeImageView(vk, device, resultImage.get(), imageViewType, m_parameters.resultFormat,
 																makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, resultImageInfo.extent.depth, 0u, resultImageInfo.arrayLayers));
 
@@ -205,7 +198,7 @@ TestStatus BasicComputeTestInstance::iterate (void)
 	const Unique<VkPipeline>		pipeline				(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
 
 	const VkDeviceSize				bufferSizeCompresed		= getCompressedImageSizeInBytes(m_parameters.testedFormat, m_parameters.imageSize);
-	const VkDeviceSize				bufferSizeUncompressed	= getImageSizeBytes(IVec3((int)extentCompressed.width, (int)extentCompressed.height, (int)extentCompressed.depth), m_parameters.resultFormat);
+	const VkDeviceSize				bufferSizeUncompressed	= getImageSizeBytes(IVec3((int)extentUnCompressed.width, (int)extentUnCompressed.height, (int)extentUnCompressed.depth), m_parameters.resultFormat);
 	VkBufferCreateInfo				compressedBufferCI		= makeBufferCreateInfo(bufferSizeCompresed, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 	VkBufferCreateInfo				uncompressedBufferCI	= makeBufferCreateInfo(bufferSizeUncompressed, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 	Buffer							inBuffer				(vk, device, allocator, compressedBufferCI, MemoryRequirement::HostVisible);
@@ -216,7 +209,13 @@ TestStatus BasicComputeTestInstance::iterate (void)
 	{
 		vector<deUint8> generatedData;
 		generatedData.resize(static_cast<size_t>(bufferSizeCompresed));
-		generateData(generatedData.data(), generatedData.size(), m_parameters.testedFormat, 0u, 0u);
+
+		auto blocks = getCompressedImageResolutionInBlocks(m_parameters.testedFormat, m_parameters.imageSize);
+		tcu::astc::generateRandomValidBlocks(generatedData.data(),
+										blocks.x() * blocks.y() * blocks.z(),
+										mapVkCompressedFormat(m_parameters.testedFormat),
+										tcu::TexDecompressionParams::ASTCMODE_LDR,
+										1);
 
 		const Allocation& alloc = inBuffer.getAllocation();
 		deMemcpy(alloc.getHostPtr(), generatedData.data(), generatedData.size());
@@ -318,7 +317,7 @@ TestStatus BasicComputeTestInstance::iterate (void)
 				DE_LENGTH_OF_ARRAY(preShaderImageBarriers), preShaderImageBarriers);
 		}
 
-		vk.cmdDispatch(*cmdBuffer, extentCompressed.width, extentCompressed.height, extentCompressed.depth);
+		vk.cmdDispatch(*cmdBuffer, extentUnCompressed.width, extentUnCompressed.height, extentUnCompressed.depth);
 
 		{
 			const VkImageMemoryBarrier postShaderImageBarriers[] =
@@ -373,22 +372,6 @@ TestStatus BasicComputeTestInstance::iterate (void)
 	}
 
 	return TestStatus::pass("Pass");
-}
-
-void BasicComputeTestInstance::generateData (deUint8*		toFill,
-											 const size_t	size,
-											 const VkFormat format,
-											 const deUint32 layer,
-											 const deUint32 level)
-{
-	// Random data
-	deUint32*	start32		= reinterpret_cast<deUint32*>(toFill);
-	size_t		sizeToRnd32	= size / sizeof(deUint32);
-	deUint32	seed		= (layer << 24) ^ (level << 16) ^ static_cast<deUint32>(format);
-	Random		rnd			(seed);
-
-	for (size_t i = 0; i < sizeToRnd32; i++)
-		start32[i] = rnd.getUint32();
 }
 
 class AstcDecodeModeCase : public TestCase
@@ -451,18 +434,14 @@ void AstcDecodeModeCase::initPrograms (vk::SourceCollections& programCollection)
 	DE_ASSERT(m_parameters.imageSize.x() > 0);
 	DE_ASSERT(m_parameters.imageSize.y() > 0);
 
-	VkFormat					compatibileFormat	= m_parameters.testedIsUnorm ? VK_FORMAT_R32G32B32A32_UINT : VK_FORMAT_R32G32B32A32_SINT;
-	tcu::TextureFormat			testedTextureFormat	= mapVkFormat(compatibileFormat);
-	VkImageViewType				imageViewType		= mapImageViewType(m_parameters.imageType);
-	string						samplerType			= getGlslSamplerType(testedTextureFormat, imageViewType);
 	const string				formatQualifierStr	= getShaderImageFormatQualifier(mapVkFormat(m_parameters.resultFormat));
 	const string				imageTypeStr		= getShaderImageType(mapVkFormat(m_parameters.resultFormat), m_parameters.imageType);
 
 	std::ostringstream	src;
 	src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
 		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n\n"
-		<< "layout (binding = 0) uniform " << samplerType << " compressed_tested;\n"
-		<< "layout (binding = 1) uniform " << samplerType << " compressed_reference;\n"
+		<< "layout (binding = 0) uniform sampler2D compressed_tested;\n"
+		<< "layout (binding = 1) uniform sampler2D compressed_reference;\n"
 		<< "layout (binding = 2, " << formatQualifierStr << ") writeonly uniform " << imageTypeStr << " result;\n"
 		<< "void main (void)\n"
 		<< "{\n"
