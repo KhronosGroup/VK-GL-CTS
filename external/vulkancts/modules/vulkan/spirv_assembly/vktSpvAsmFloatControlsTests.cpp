@@ -33,6 +33,7 @@
 #include "deFloat16.h"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
+#include <cstdint>
 #include <cstring>
 #include <vector>
 #include <limits>
