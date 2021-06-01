@@ -455,7 +455,6 @@ namespace vkt
 					context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
 					break;
 				default:
-					TCU_THROW(InternalError, "Unknown stage");
 					break;
 				}
 
