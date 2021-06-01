@@ -281,7 +281,7 @@ public:
 			&signalSemaphoreSubmitInfo
 		);
 		synchronizationWrapper->addSubmitInfo(
-			0u,
+			1u,
 			&waitSemaphoreSubmitInfo,
 			1u,
 			&commandBufferSubmitInfo[READ],
