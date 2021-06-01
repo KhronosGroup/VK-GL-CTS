@@ -77,6 +77,8 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmTrinaryMinMaxTests.hpp
 	vktSpvAsmIntegerDotProductTests.cpp
 	vktSpvAsmIntegerDotProductTests.hpp
+	vktSpvAsmPhysicalStorageBufferPointerTests.cpp
+	vktSpvAsmPhysicalStorageBufferPointerTests.hpp
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_LIBS
