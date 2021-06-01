@@ -423,20 +423,27 @@ void createMiscTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup)
 	parentGroup->addChild(group.release());
 }
 
-void createChildren (tcu::TestCaseGroup* group)
+void createChildren (tcu::TestCaseGroup* group, bool useDynamicRendering)
 {
 	tcu::TestContext&	testCtx		= group->getTestContext();
 
-	createMiscTests			   (testCtx, group);
-	createBasicTests		   (testCtx, group);
-	createPixelConsistencyTests(testCtx, group);
+	if (!useDynamicRendering)
+		createMiscTests(testCtx, group);
+
+	createBasicTests(testCtx, group, useDynamicRendering);
+
+	if (!useDynamicRendering)
+		createPixelConsistencyTests(testCtx, group);
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, bool useDynamicRendering)
 {
-	return createTestGroup(testCtx, "fragment_shading_rate", "Fragment shading rate tests", createChildren);
+	const char*		groupName[]			{ "fragment_shading_rate",			"fragment_shading_rate_with_dynamic_rendering" };
+	const char*		groupDescription[]	{ "Fragment shading rate tests",	"Fragment shading rate tests using VK_KHR_dynamic_rendering" };
+
+	return createTestGroup(testCtx, groupName[useDynamicRendering], groupDescription[useDynamicRendering], createChildren, useDynamicRendering);
 }
 
 } // FragmentShadingRate

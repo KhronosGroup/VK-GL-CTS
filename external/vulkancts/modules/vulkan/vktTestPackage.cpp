@@ -581,7 +581,8 @@ void TestPackage::init (void)
 	addChild(modifiers::createTests				(m_testCtx));
 	addChild(RayTracing::createTests			(m_testCtx));
 	addChild(RayQuery::createTests				(m_testCtx));
-	addChild(FragmentShadingRate::createTests	(m_testCtx));
+	addChild(FragmentShadingRate::createTests	(m_testCtx, false));
+	addChild(FragmentShadingRate::createTests	(m_testCtx, true));
 	addChild(Reconvergence::createTests			(m_testCtx, false));
 	addChild(DynamicRendering::createTests		(m_testCtx));
 }
