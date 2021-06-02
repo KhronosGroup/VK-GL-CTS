@@ -236,27 +236,36 @@ public:
 								TimestampTestParam		(const VkPipelineStageFlagBits*	stages,
 														 const deUint32					stageCount,
 														 const bool						inRenderPass,
-														 const bool						hostQueryReset);
+														 const bool						hostQueryReset,
+														 const VkQueryResultFlags		queryResultFlags);
 								~TimestampTestParam		(void);
 	virtual const std::string	generateTestName		(void) const;
 	virtual const std::string	generateTestDescription	(void) const;
 	StageFlagVector				getStageVector			(void) const	{ return m_stageVec; }
 	bool						getInRenderPass			(void) const	{ return m_inRenderPass; }
 	bool						getHostQueryReset		(void) const	{ return m_hostQueryReset; }
+	VkQueryResultFlags			getQueryResultFlags		(void) const	{ return m_queryResultFlags; }
 	void						toggleInRenderPass		(void)			{ m_inRenderPass = !m_inRenderPass; }
 	void						toggleHostQueryReset	(void)			{ m_hostQueryReset = !m_hostQueryReset; }
+
+	void						setQueryResultFlags		(VkQueryResultFlags flags)	{ m_queryResultFlags = flags; }
+
 protected:
-	StageFlagVector				m_stageVec;
-	bool						m_inRenderPass;
-	bool						m_hostQueryReset;
+	StageFlagVector			m_stageVec;
+	bool					m_inRenderPass;
+	bool					m_hostQueryReset;
+	VkQueryResultFlags	m_queryResultFlags;
+
 };
 
 TimestampTestParam::TimestampTestParam (const VkPipelineStageFlagBits*	stages,
 									    const deUint32					stageCount,
 									    const bool						inRenderPass,
-									    const bool						hostQueryReset)
+									    const bool						hostQueryReset,
+										const VkQueryResultFlags		queryResultFlags)
 	: m_inRenderPass(inRenderPass)
 	, m_hostQueryReset(hostQueryReset)
+	, m_queryResultFlags(queryResultFlags)
 {
 	for (deUint32 ndx = 0; ndx < stageCount; ndx++)
 	{
@@ -286,6 +295,9 @@ const std::string TimestampTestParam::generateTestName (void) const
 
 	if(m_hostQueryReset)
 		result += "_host_query_reset";
+
+	if (m_queryResultFlags & VK_QUERY_RESULT_WITH_AVAILABILITY_BIT)
+		result += "_with_availability_bit";
 
 	return result;
 }
@@ -319,7 +331,8 @@ public:
 													 const deUint32					stageCount,
 													 const bool						inRenderPass,
 													 const bool						hostQueryReset,
-													 const deUint32					methodNdx);
+													 const deUint32					methodNdx,
+													 const VkQueryResultFlags		flags);
 						~TransferTimestampTestParam	(void) { }
 	const std::string	generateTestName			(void) const;
 	const std::string	generateTestDescription		(void) const;
@@ -332,8 +345,9 @@ TransferTimestampTestParam::TransferTimestampTestParam (const VkPipelineStageFla
 													    const deUint32					stageCount,
 													    const bool						inRenderPass,
 													    const bool						hostQueryReset,
-													    const deUint32					methodNdx)
-	: TimestampTestParam(stages, stageCount, inRenderPass, hostQueryReset)
+													    const deUint32					methodNdx,
+														const VkQueryResultFlags		flags)
+	: TimestampTestParam(stages, stageCount, inRenderPass, hostQueryReset, flags)
 {
 	DE_ASSERT(methodNdx < (deUint32)TRANSFER_METHOD_LAST);
 
@@ -356,6 +370,9 @@ const std::string TransferTimestampTestParam::generateTestName (void) const
 
 	if(m_hostQueryReset)
 		result += "_host_query_reset";
+
+	if (m_queryResultFlags & VK_QUERY_RESULT_WITH_AVAILABILITY_BIT)
+		result += "_with_availability_bit";
 
 	return result;
 }
@@ -387,7 +404,8 @@ public:
 													 const deUint32					stageCount,
 													 const bool						inRenderPass,
 													 const bool						hostQueryReset,
-													 const VkCommandBufferLevel		cmdBufferLevel);
+													 const VkCommandBufferLevel		cmdBufferLevel,
+													 const VkQueryResultFlags		queryPoolResultFlags);
 							~TwoCmdBuffersTestParam	(void) { }
 	VkCommandBufferLevel	getCmdBufferLevel		(void) const { return m_cmdBufferLevel; }
 protected:
@@ -398,8 +416,9 @@ TwoCmdBuffersTestParam::TwoCmdBuffersTestParam	(const VkPipelineStageFlagBits*	s
 												 const deUint32					stageCount,
 												 const bool						inRenderPass,
 												 const bool						hostQueryReset,
-												 const VkCommandBufferLevel		cmdBufferLevel)
-: TimestampTestParam(stages, stageCount, inRenderPass, hostQueryReset), m_cmdBufferLevel(cmdBufferLevel)
+												 const VkCommandBufferLevel		cmdBufferLevel,
+												 const VkQueryResultFlags		queryPoolResultFlags)
+: TimestampTestParam(stages, stageCount, inRenderPass, hostQueryReset, queryPoolResultFlags), m_cmdBufferLevel(cmdBufferLevel)
 {
 }
 
@@ -629,28 +648,31 @@ public:
 											 const std::string&			name,
 											 const std::string&			description,
 											 const TimestampTestParam*	param)
-											 : vkt::TestCase	(testContext, name, description)
-											 , m_stages			(param->getStageVector())
-											 , m_inRenderPass	(param->getInRenderPass())
-											 , m_hostQueryReset	(param->getHostQueryReset())
+											 : vkt::TestCase		(testContext, name, description)
+											 , m_stages				(param->getStageVector())
+											 , m_inRenderPass		(param->getInRenderPass())
+											 , m_hostQueryReset		(param->getHostQueryReset())
+											 , m_queryResultFlags	(param->getQueryResultFlags())
 											 { }
 	virtual					~TimestampTest	(void) { }
 	virtual void			initPrograms	(SourceCollections& programCollection) const;
 	virtual TestInstance*	createInstance	(Context& context) const;
 	virtual void			checkSupport	(Context& context) const;
 protected:
-	const StageFlagVector	m_stages;
-	const bool				m_inRenderPass;
-	const bool				m_hostQueryReset;
+	const StageFlagVector			m_stages;
+	const bool						m_inRenderPass;
+	const bool						m_hostQueryReset;
+	const VkQueryResultFlags		m_queryResultFlags;
 };
 
 class TimestampTestInstance : public vkt::TestInstance
 {
 public:
-							TimestampTestInstance		(Context&				context,
-														 const StageFlagVector&	stages,
-														 const bool				inRenderPass,
-														 const bool				hostQueryReset);
+							TimestampTestInstance		(Context&						context,
+														 const StageFlagVector&			stages,
+														 const bool						inRenderPass,
+														 const bool						hostQueryReset,
+														 const VkQueryResultFlags		queryResultFlags);
 
 	virtual					~TimestampTestInstance		(void);
 	virtual tcu::TestStatus	iterate						(void);
@@ -674,6 +696,7 @@ protected:
 	const StageFlagVector	m_stages;
 	bool					m_inRenderPass;
 	bool					m_hostQueryReset;
+	VkQueryResultFlags		m_queryResultFlags;
 
 	Move<VkCommandPool>		m_cmdPool;
 	Move<VkCommandBuffer>	m_cmdBuffer;
@@ -713,17 +736,19 @@ void TimestampTest::checkSupport (Context& context) const
 
 TestInstance* TimestampTest::createInstance (Context& context) const
 {
-	return new TimestampTestInstance(context,m_stages,m_inRenderPass,m_hostQueryReset);
+	return new TimestampTestInstance(context, m_stages, m_inRenderPass, m_hostQueryReset, m_queryResultFlags);
 }
 
-TimestampTestInstance::TimestampTestInstance (Context&					context,
-											  const StageFlagVector&	stages,
-											  const bool				inRenderPass,
-											  const bool				hostQueryReset)
-	: TestInstance		(context)
-	, m_stages			(stages)
-	, m_inRenderPass	(inRenderPass)
-	, m_hostQueryReset	(hostQueryReset)
+TimestampTestInstance::TimestampTestInstance (Context&						context,
+											  const StageFlagVector&		stages,
+											  const bool					inRenderPass,
+											  const bool					hostQueryReset,
+											  const VkQueryResultFlags		queryResultFlags)
+	: TestInstance			(context)
+	, m_stages				(stages)
+	, m_inRenderPass		(inRenderPass)
+	, m_hostQueryReset		(hostQueryReset)
+	, m_queryResultFlags	(queryResultFlags)
 {
 	const DeviceInterface&	vk					= context.getDeviceInterface();
 	const VkDevice			vkDevice			= context.getDevice();
@@ -753,7 +778,7 @@ TimestampTestInstance::TimestampTestInstance (Context&					context,
 	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	// alloc timestamp values
-	m_timestampValues = new deUint64[m_stages.size()];
+	m_timestampValues = new deUint64[m_stages.size() * ((m_queryResultFlags & VK_QUERY_RESULT_WITH_AVAILABILITY_BIT) ? 2u : 1u)];
 
 	if (m_hostQueryReset)
 		m_timestampValuesHostQueryReset = new deUint64[m_stages.size() * 2];
@@ -793,7 +818,9 @@ tcu::TestStatus TimestampTestInstance::iterate (void)
 	const DeviceInterface&	vk					= m_context.getDeviceInterface();
 	const VkDevice			vkDevice			= m_context.getDevice();
 	const VkQueue			queue				= m_context.getUniversalQueue();
+	const bool				availabilityBit		= m_queryResultFlags & VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
 	const deUint32			stageSize			= (deUint32)m_stages.size();
+	const deUint32			queryDataSize		= sizeof(deUint64) * (availabilityBit ? 2u : 1u);
 
 	configCommandBuffer();
 	if (m_hostQueryReset)
@@ -803,11 +830,13 @@ tcu::TestStatus TimestampTestInstance::iterate (void)
 	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
 	// Get timestamp value from query pool
-	vk.getQueryPoolResults(vkDevice, *m_queryPool, 0u, stageSize, sizeof(deUint64) * stageSize, (void*)m_timestampValues, sizeof(deUint64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+	vk.getQueryPoolResults(vkDevice, *m_queryPool, 0u, stageSize, queryDataSize * stageSize, (void*)m_timestampValues, queryDataSize, m_queryResultFlags);
 
 	for (deUint32 ndx = 0; ndx < stageSize; ndx++)
 	{
 		m_timestampValues[ndx] &= m_timestampMask;
+		if (availabilityBit)
+			ndx++;
 	}
 
 	if(m_hostQueryReset)
@@ -817,7 +846,8 @@ tcu::TestStatus TimestampTestInstance::iterate (void)
 
 		for (deUint32 ndx = 0; ndx < stageSize; ndx++)
 		{
-			m_timestampValuesHostQueryReset[2 * ndx] = m_timestampValues[ndx];
+			const deUint32 ndxTimestampValue = ndx * (availabilityBit ? 2u : 1u);
+			m_timestampValuesHostQueryReset[2 * ndx] = m_timestampValues[ndxTimestampValue];
 		}
 
 		// Host resets the query pool
@@ -836,7 +866,8 @@ tcu::TestStatus TimestampTestInstance::iterate (void)
 
 		for (deUint32 ndx = 0; ndx < stageSize; ndx++)
 		{
-			if ((m_timestampValuesHostQueryReset[2 * ndx] & m_timestampMask) != m_timestampValues[ndx])
+			const deUint32 ndxTimestampValue = ndx * (availabilityBit ? 2u : 1u);
+			if ((m_timestampValuesHostQueryReset[2 * ndx] & m_timestampMask) != m_timestampValues[ndxTimestampValue])
 				return tcu::TestStatus::fail("QueryPoolResults returned value was modified");
 			if (m_timestampValuesHostQueryReset[2 * ndx + 1] != 0u)
 				return tcu::TestStatus::fail("QueryPoolResults availability status is not zero");
@@ -848,10 +879,17 @@ tcu::TestStatus TimestampTestInstance::iterate (void)
 
 tcu::TestStatus TimestampTestInstance::verifyTimestamp (void)
 {
-	for (deUint32 first = 0; first < m_stages.size(); first++)
+	bool availabilityBit = m_queryResultFlags & VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
+	deUint32 increment = availabilityBit ? 2u : 1u;
+	for (deUint32 first = 0u; first < m_stages.size(); first += increment)
 	{
-		for (deUint32 second = 0; second < first; second++)
+		for (deUint32 second = 0u; second < first; second += increment)
 		{
+			if (availabilityBit && (m_timestampValues[first + 1u] == 0u || m_timestampValues[second + 1u] == 0u))
+			{
+				return tcu::TestStatus::fail("Timestamp query not available");
+			}
+
 			if(m_timestampValues[first] < m_timestampValues[second])
 			{
 				return tcu::TestStatus::fail("Latter stage timestamp is smaller than the former stage timestamp.");
@@ -1496,10 +1534,11 @@ public:
 	{
 		VK_MAX_SHADER_STAGES = 6,
 	};
-					BasicGraphicsTestInstance	(Context&				context,
-												 const StageFlagVector	stages,
-												 const bool				inRenderPass,
-												 const bool				hostQueryReset);
+					BasicGraphicsTestInstance	(Context&					context,
+												 const StageFlagVector		stages,
+												 const bool					inRenderPass,
+												 const bool					hostQueryReset,
+												 const VkQueryResultFlags	queryResultFlags);
 
 	virtual			~BasicGraphicsTestInstance	(void);
 protected:
@@ -1560,7 +1599,7 @@ void BasicGraphicsTest::initPrograms (SourceCollections& programCollection) cons
 
 TestInstance* BasicGraphicsTest::createInstance (Context& context) const
 {
-	return new BasicGraphicsTestInstance(context,m_stages,m_inRenderPass,m_hostQueryReset);
+	return new BasicGraphicsTestInstance(context, m_stages, m_inRenderPass, m_hostQueryReset, m_queryResultFlags);
 }
 
 void BasicGraphicsTestInstance::buildVertexBuffer (void)
@@ -1707,11 +1746,12 @@ void BasicGraphicsTestInstance::buildFrameBuffer (tcu::UVec2 renderSize, VkForma
 
 }
 
-BasicGraphicsTestInstance::BasicGraphicsTestInstance (Context&				context,
-													  const StageFlagVector	stages,
-													  const bool			inRenderPass,
-													  const bool			hostQueryReset)
-													  : TimestampTestInstance (context,stages,inRenderPass, hostQueryReset)
+BasicGraphicsTestInstance::BasicGraphicsTestInstance (Context&					context,
+													  const StageFlagVector		stages,
+													  const bool				inRenderPass,
+													  const bool				hostQueryReset,
+													  const VkQueryResultFlags	queryResultFlags)
+													  : TimestampTestInstance (context,stages,inRenderPass, hostQueryReset, queryResultFlags)
 													  , m_renderSize		(32, 32)
 													  , m_colorFormat		(VK_FORMAT_R8G8B8A8_UNORM)
 													  , m_depthFormat		(VK_FORMAT_D16_UNORM)
@@ -1802,10 +1842,11 @@ public:
 class AdvGraphicsTestInstance : public BasicGraphicsTestInstance
 {
 public:
-				 AdvGraphicsTestInstance	(Context&				context,
-											 const StageFlagVector	stages,
-											 const bool				inRenderPass,
-											 const bool				hostQueryReset);
+				 AdvGraphicsTestInstance	(Context&					context,
+											 const StageFlagVector		stages,
+											 const bool					inRenderPass,
+											 const bool					hostQueryReset,
+											 const VkQueryResultFlags	queryResultFlags);
 
 	virtual      ~AdvGraphicsTestInstance	(void);
 	virtual void configCommandBuffer		(void);
@@ -1886,7 +1927,7 @@ void AdvGraphicsTest::initPrograms (SourceCollections& programCollection) const
 
 TestInstance* AdvGraphicsTest::createInstance (Context& context) const
 {
-	return new AdvGraphicsTestInstance(context,m_stages,m_inRenderPass,m_hostQueryReset);
+	return new AdvGraphicsTestInstance(context, m_stages, m_inRenderPass, m_hostQueryReset, m_queryResultFlags);
 }
 
 void AdvGraphicsTestInstance::featureSupportCheck (void)
@@ -1915,11 +1956,12 @@ void AdvGraphicsTestInstance::featureSupportCheck (void)
 	}
 }
 
-AdvGraphicsTestInstance::AdvGraphicsTestInstance (Context&				context,
-												  const StageFlagVector	stages,
-												  const bool			inRenderPass,
-												  const bool			hostQueryReset)
-	: BasicGraphicsTestInstance(context, stages, inRenderPass, hostQueryReset)
+AdvGraphicsTestInstance::AdvGraphicsTestInstance (Context&					context,
+												  const StageFlagVector		stages,
+												  const bool				inRenderPass,
+												  const bool				hostQueryReset,
+												  const VkQueryResultFlags	queryResultFlags)
+	: BasicGraphicsTestInstance(context, stages, inRenderPass, hostQueryReset, queryResultFlags)
 {
 	m_features = m_context.getDeviceFeatures();
 
@@ -2052,7 +2094,8 @@ public:
 					BasicComputeTestInstance	(Context&				context,
 												 const StageFlagVector	stages,
 												 const bool				inRenderPass,
-												 const bool				hostQueryReset);
+												 const bool				hostQueryReset,
+												 VkQueryResultFlags		VkQueryResultFlags);
 
 	virtual			~BasicComputeTestInstance	(void);
 	virtual void	configCommandBuffer			(void);
@@ -2096,14 +2139,15 @@ void BasicComputeTest::initPrograms (SourceCollections& programCollection) const
 
 TestInstance* BasicComputeTest::createInstance (Context& context) const
 {
-	return new BasicComputeTestInstance(context,m_stages,m_inRenderPass, m_hostQueryReset);
+	return new BasicComputeTestInstance(context,m_stages,m_inRenderPass, m_hostQueryReset, m_queryResultFlags);
 }
 
 BasicComputeTestInstance::BasicComputeTestInstance (Context&				context,
 												    const StageFlagVector	stages,
 												    const bool				inRenderPass,
-												    const bool				hostQueryReset)
-	: TimestampTestInstance(context, stages, inRenderPass, hostQueryReset)
+												    const bool				hostQueryReset,
+													VkQueryResultFlags		VkQueryResultFlags)
+	: TimestampTestInstance(context, stages, inRenderPass, hostQueryReset, VkQueryResultFlags)
 {
 	const DeviceInterface&	vk			= context.getDeviceInterface();
 	const VkDevice			vkDevice	= context.getDevice();
@@ -2266,7 +2310,8 @@ public:
 											 const StageFlagVector		stages,
 											 const bool					inRenderPass,
 											 const bool					hostQueryReset,
-											 const TransferMethod		method);
+											 const TransferMethod		method,
+											 const VkQueryResultFlags	queryResultFlags);
 
 	virtual         ~TransferTestInstance	(void);
 	virtual void    configCommandBuffer		(void);
@@ -2314,17 +2359,18 @@ void TransferTest::initPrograms (SourceCollections& programCollection) const
 
 TestInstance* TransferTest::createInstance (Context& context) const
 {
-  return new TransferTestInstance(context, m_stages, m_inRenderPass, m_hostQueryReset, m_method);
+  return new TransferTestInstance(context, m_stages, m_inRenderPass, m_hostQueryReset, m_method, m_queryResultFlags);
 }
 
-TransferTestInstance::TransferTestInstance (Context&				context,
-										    const StageFlagVector	stages,
-										    const bool				inRenderPass,
-										    const bool				hostQueryReset,
-										    const TransferMethod	method)
-	: TimestampTestInstance(context, stages, inRenderPass, hostQueryReset)
+TransferTestInstance::TransferTestInstance (Context&					context,
+										    const StageFlagVector		stages,
+										    const bool					inRenderPass,
+										    const bool					hostQueryReset,
+										    const TransferMethod		method,
+											const VkQueryResultFlags	queryResultFlags)
+	: TimestampTestInstance(context, stages, inRenderPass, hostQueryReset, queryResultFlags)
 	, m_method(method)
-	, m_bufSize(256u)
+	, m_bufSize((queryResultFlags & VK_QUERY_RESULT_WITH_AVAILABILITY_BIT) ? 512u : 256u)
 	, m_imageFormat(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_imageWidth(4u)
 	, m_imageHeight(4u)
@@ -2766,7 +2812,8 @@ public:
 														 const StageFlagVector	stages,
 														 const bool				inRenderPass,
 														 const bool				hostQueryReset,
-														 VkCommandBufferLevel	cmdBufferLevel);
+														 VkCommandBufferLevel	cmdBufferLevel,
+														 VkQueryResultFlags		queryResultFlags);
 	virtual					~TwoCmdBuffersTestInstance	(void);
 	virtual tcu::TestStatus	iterate						(void);
 protected:
@@ -2781,15 +2828,16 @@ protected:
 
 TestInstance* TwoCmdBuffersTest::createInstance (Context& context) const
 {
-	return new TwoCmdBuffersTestInstance(context, m_stages, m_inRenderPass, m_hostQueryReset, m_cmdBufferLevel);
+	return new TwoCmdBuffersTestInstance(context, m_stages, m_inRenderPass, m_hostQueryReset, m_cmdBufferLevel, m_queryResultFlags);
 }
 
 TwoCmdBuffersTestInstance::TwoCmdBuffersTestInstance (Context&					context,
 													  const StageFlagVector		stages,
 													  const bool				inRenderPass,
 													  const bool				hostQueryReset,
-													  VkCommandBufferLevel		cmdBufferLevel)
-: TimestampTestInstance (context, stages, inRenderPass, hostQueryReset), m_cmdBufferLevel(cmdBufferLevel)
+													  VkCommandBufferLevel		cmdBufferLevel,
+													  VkQueryResultFlags		queryResultFlags)
+: TimestampTestInstance (context, stages, inRenderPass, hostQueryReset, queryResultFlags), m_cmdBufferLevel(cmdBufferLevel)
 {
 	const DeviceInterface&	vk			= context.getDeviceInterface();
 	const VkDevice			vkDevice	= context.getDevice();
@@ -2835,7 +2883,7 @@ void TwoCmdBuffersTestInstance::configCommandBuffer (void)
 		vk.cmdWriteTimestamp(*m_cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, *m_queryPool, 0);
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 		VK_CHECK(vk.beginCommandBuffer(*m_secondCmdBuffer, &cmdBufferBeginInfo));
-		vk.cmdCopyQueryPoolResults(*m_secondCmdBuffer, *m_queryPool, 0u, 1u, *m_dstBuffer, 0u, 0u, VK_QUERY_RESULT_WAIT_BIT);
+		vk.cmdCopyQueryPoolResults(*m_secondCmdBuffer, *m_queryPool, 0u, 1u, *m_dstBuffer, 0u, 0u, m_queryResultFlags);
 		vk.cmdPipelineBarrier(*m_secondCmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u,
 							  0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
 		VK_CHECK(vk.endCommandBuffer(*m_secondCmdBuffer));
@@ -2868,7 +2916,7 @@ void TwoCmdBuffersTestInstance::configCommandBuffer (void)
 		VK_CHECK(vk.endCommandBuffer(*m_secondCmdBuffer));
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 		vk.cmdExecuteCommands(m_cmdBuffer.get(), 1u, &m_secondCmdBuffer.get());
-		vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_dstBuffer, 0u, 0u, VK_QUERY_RESULT_WAIT_BIT);
+		vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_dstBuffer, 0u, 0u, m_queryResultFlags);
 		vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u,
 							  0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
@@ -3084,6 +3132,11 @@ tcu::TestStatus ConsistentQueryResultsTestInstance::iterate(void)
 tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> timestampTests (new tcu::TestCaseGroup(testCtx, "timestamp", "timestamp tests"));
+	const VkQueryResultFlags queryResultFlagsTimestampTest[] =
+	{
+		VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT,
+		VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT,
+	};
 
 	// Basic Graphics Tests
 	{
@@ -3102,15 +3155,18 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 		};
 		for (deUint32 stageNdx = 0u; stageNdx < DE_LENGTH_OF_ARRAY(basicGraphicsStages0); stageNdx++)
 		{
-			TimestampTestParam param(basicGraphicsStages0[stageNdx], 2u, true, false);
-			basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
-			param.toggleInRenderPass();
-			basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
-			// Host Query reset tests
-			param.toggleHostQueryReset();
-			basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
-			param.toggleInRenderPass();
-			basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
+			for (deUint32 flagsIdx = 0u; flagsIdx < DE_LENGTH_OF_ARRAY(queryResultFlagsTimestampTest); flagsIdx++)
+			{
+				TimestampTestParam param(basicGraphicsStages0[stageNdx], 2u, true, false, queryResultFlagsTimestampTest[flagsIdx]);
+				basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
+				param.toggleInRenderPass();
+				basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
+				// Host Query reset tests
+				param.toggleHostQueryReset();
+				basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
+				param.toggleInRenderPass();
+				basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
+			}
 		}
 
 		const VkPipelineStageFlagBits basicGraphicsStages1[][3] =
@@ -3120,15 +3176,18 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 		};
 		for (deUint32 stageNdx = 0u; stageNdx < DE_LENGTH_OF_ARRAY(basicGraphicsStages1); stageNdx++)
 		{
-			TimestampTestParam param(basicGraphicsStages1[stageNdx], 3u, true, false);
-			basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
-			param.toggleInRenderPass();
-			basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
-			// Host Query reset tests
-			param.toggleHostQueryReset();
-			basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
-			param.toggleInRenderPass();
-			basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
+			for (deUint32 flagsIdx = 0u; flagsIdx < DE_LENGTH_OF_ARRAY(queryResultFlagsTimestampTest); flagsIdx++)
+			{
+				TimestampTestParam param(basicGraphicsStages1[stageNdx], 3u, true, false, queryResultFlagsTimestampTest[flagsIdx]);
+				basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
+				param.toggleInRenderPass();
+				basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
+				// Host Query reset tests
+				param.toggleHostQueryReset();
+				basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
+				param.toggleInRenderPass();
+				basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
+			}
 		}
 
 		timestampTests->addChild(basicGraphicsTests.release());
@@ -3147,15 +3206,18 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 		};
 		for (deUint32 stageNdx = 0u; stageNdx < DE_LENGTH_OF_ARRAY(advGraphicsStages); stageNdx++)
 		{
-			TimestampTestParam param(advGraphicsStages[stageNdx], 2u, true, false);
-			advGraphicsTests->addChild(newTestCase<AdvGraphicsTest>(testCtx, &param));
-			param.toggleInRenderPass();
-			advGraphicsTests->addChild(newTestCase<AdvGraphicsTest>(testCtx, &param));
-			// Host Query reset tests
-			param.toggleHostQueryReset();
-			advGraphicsTests->addChild(newTestCase<AdvGraphicsTest>(testCtx, &param));
-			param.toggleInRenderPass();
-			advGraphicsTests->addChild(newTestCase<AdvGraphicsTest>(testCtx, &param));
+			for (deUint32 flagsIdx = 0u; flagsIdx < DE_LENGTH_OF_ARRAY(queryResultFlagsTimestampTest); flagsIdx++)
+			{
+				TimestampTestParam param(advGraphicsStages[stageNdx], 2u, true, false, queryResultFlagsTimestampTest[flagsIdx]);
+				advGraphicsTests->addChild(newTestCase<AdvGraphicsTest>(testCtx, &param));
+				param.toggleInRenderPass();
+				advGraphicsTests->addChild(newTestCase<AdvGraphicsTest>(testCtx, &param));
+				// Host Query reset tests
+				param.toggleHostQueryReset();
+				advGraphicsTests->addChild(newTestCase<AdvGraphicsTest>(testCtx, &param));
+				param.toggleInRenderPass();
+				advGraphicsTests->addChild(newTestCase<AdvGraphicsTest>(testCtx, &param));
+			}
 		}
 
 		timestampTests->addChild(advGraphicsTests.release());
@@ -3172,11 +3234,14 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 		};
 		for (deUint32 stageNdx = 0u; stageNdx < DE_LENGTH_OF_ARRAY(basicComputeStages); stageNdx++)
 		{
-			TimestampTestParam param(basicComputeStages[stageNdx], 2u, false, false);
-			basicComputeTests->addChild(newTestCase<BasicComputeTest>(testCtx, &param));
-			// Host Query reset test
-			param.toggleHostQueryReset();
-			basicComputeTests->addChild(newTestCase<BasicComputeTest>(testCtx, &param));
+			for (deUint32 flagsIdx = 0u; flagsIdx < DE_LENGTH_OF_ARRAY(queryResultFlagsTimestampTest); flagsIdx++)
+			{
+				TimestampTestParam param(basicComputeStages[stageNdx], 2u, false, false, queryResultFlagsTimestampTest[flagsIdx]);
+				basicComputeTests->addChild(newTestCase<BasicComputeTest>(testCtx, &param));
+				// Host Query reset test
+				param.toggleHostQueryReset();
+				basicComputeTests->addChild(newTestCase<BasicComputeTest>(testCtx, &param));
+			}
 		}
 
 		timestampTests->addChild(basicComputeTests.release());
@@ -3191,15 +3256,19 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 			{VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT},
 			{VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_HOST_BIT},
 		};
+
 		for (deUint32 stageNdx = 0u; stageNdx < DE_LENGTH_OF_ARRAY(transferStages); stageNdx++)
 		{
 			for (deUint32 method = 0u; method < TRANSFER_METHOD_LAST; method++)
 			{
-				TransferTimestampTestParam param(transferStages[stageNdx], 2u, false, false, method);
-				transferTests->addChild(newTestCase<TransferTest>(testCtx, &param));
-				// Host Query reset test
-				param.toggleHostQueryReset();
-				transferTests->addChild(newTestCase<TransferTest>(testCtx, &param));
+				for (deUint32 flagsIdx = 0u; flagsIdx < DE_LENGTH_OF_ARRAY(queryResultFlagsTimestampTest); flagsIdx++)
+				{
+					TransferTimestampTestParam param(transferStages[stageNdx], 2u, false, false, method, queryResultFlagsTimestampTest[flagsIdx]);
+					transferTests->addChild(newTestCase<TransferTest>(testCtx, &param));
+					// Host Query reset test
+					param.toggleHostQueryReset();
+					transferTests->addChild(newTestCase<TransferTest>(testCtx, &param));
+				}
 			}
 		}
 
@@ -3219,53 +3288,65 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 
 	// Misc Tests
 	{
+		const VkQueryResultFlags queryResultFlagsMiscTests[] =
+		{
+			VK_QUERY_RESULT_WAIT_BIT,
+			VK_QUERY_RESULT_WAIT_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT,
+		};
+
+		const std::string queryResultsFlagsMiscTestsStr[] = {"", "_with_availability_bit"};
+
 		de::MovePtr<tcu::TestCaseGroup> miscTests (new tcu::TestCaseGroup(testCtx, "misc_tests", "Misc tests that can not be categorized to other group."));
 
-		const VkPipelineStageFlagBits miscStages[] = {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
-		TimestampTestParam param(miscStages, 1u, false, false);
-		miscTests->addChild(new TimestampTest(testCtx,
-											  "timestamp_only",
-											  "Only write timestamp command in the commmand buffer",
-											  &param));
+		for (deUint32 flagsIdx = 0u; flagsIdx < DE_LENGTH_OF_ARRAY(queryResultFlagsMiscTests); flagsIdx++)
+		{
 
-		TwoCmdBuffersTestParam twoCmdBuffersParamPrimary(miscStages, 1u, false, false, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-		miscTests->addChild(new TwoCmdBuffersTest(testCtx,
-												  "two_cmd_buffers_primary",
-												  "Issue query in a command buffer and copy it on another primary command buffer",
-												  &twoCmdBuffersParamPrimary));
 
-		TwoCmdBuffersTestParam twoCmdBuffersParamSecondary(miscStages, 1u, false, false, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
-		miscTests->addChild(new TwoCmdBuffersTest(testCtx,
-												  "two_cmd_buffers_secondary",
-												  "Issue query in a secondary command buffer and copy it on a primary command buffer",
-												  &twoCmdBuffersParamSecondary));
-		// Misc: Host Query Reset tests
-		param.toggleHostQueryReset();
-		miscTests->addChild(new TimestampTest(testCtx,
-											  "timestamp_only_host_query_reset",
-											  "Only write timestamp command in the commmand buffer",
-											  &param));
-		TwoCmdBuffersTestParam twoCmdBuffersParamPrimaryHostQueryReset(miscStages, 1u, false, true, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-		miscTests->addChild(new TwoCmdBuffersTest(testCtx,
-												  "two_cmd_buffers_primary_host_query_reset",
-												  "Issue query in a command buffer and copy it on another primary command buffer",
-												  &twoCmdBuffersParamPrimaryHostQueryReset));
+			const VkPipelineStageFlagBits miscStages[] = {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
+			TimestampTestParam param(miscStages, 1u, false, false, queryResultFlagsTimestampTest[flagsIdx]);
+			miscTests->addChild(new TimestampTest(testCtx,
+												"timestamp_only" + queryResultsFlagsMiscTestsStr[flagsIdx],
+												"Only write timestamp command in the commmand buffer",
+												&param));
 
-		TwoCmdBuffersTestParam twoCmdBuffersParamSecondaryHostQueryReset(miscStages, 1u, false, true, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
-		miscTests->addChild(new TwoCmdBuffersTest(testCtx,
-												  "two_cmd_buffers_secondary_host_query_reset",
-												  "Issue query in a secondary command buffer and copy it on a primary command buffer",
-												  &twoCmdBuffersParamSecondaryHostQueryReset));
+			TwoCmdBuffersTestParam twoCmdBuffersParamPrimary(miscStages, 1u, false, false, VK_COMMAND_BUFFER_LEVEL_PRIMARY, queryResultFlagsMiscTests[flagsIdx]);
+			miscTests->addChild(new TwoCmdBuffersTest(testCtx,
+													"two_cmd_buffers_primary" + queryResultsFlagsMiscTestsStr[flagsIdx],
+													"Issue query in a command buffer and copy it on another primary command buffer",
+													&twoCmdBuffersParamPrimary));
 
+			TwoCmdBuffersTestParam twoCmdBuffersParamSecondary(miscStages, 1u, false, false, VK_COMMAND_BUFFER_LEVEL_SECONDARY, queryResultFlagsMiscTests[flagsIdx]);
+			miscTests->addChild(new TwoCmdBuffersTest(testCtx,
+													"two_cmd_buffers_secondary" + queryResultsFlagsMiscTestsStr[flagsIdx],
+													"Issue query in a secondary command buffer and copy it on a primary command buffer",
+													&twoCmdBuffersParamSecondary));
+			// Misc: Host Query Reset tests
+			param.toggleHostQueryReset();
+			miscTests->addChild(new TimestampTest(testCtx,
+												"timestamp_only_host_query_reset" + queryResultsFlagsMiscTestsStr[flagsIdx],
+												"Only write timestamp command in the commmand buffer",
+												&param));
+			TwoCmdBuffersTestParam twoCmdBuffersParamPrimaryHostQueryReset(miscStages, 1u, false, true, VK_COMMAND_BUFFER_LEVEL_PRIMARY, queryResultFlagsMiscTests[flagsIdx]);
+			miscTests->addChild(new TwoCmdBuffersTest(testCtx,
+													"two_cmd_buffers_primary_host_query_reset" + queryResultsFlagsMiscTestsStr[flagsIdx],
+													"Issue query in a command buffer and copy it on another primary command buffer",
+													&twoCmdBuffersParamPrimaryHostQueryReset));
+
+			TwoCmdBuffersTestParam twoCmdBuffersParamSecondaryHostQueryReset(miscStages, 1u, false, true, VK_COMMAND_BUFFER_LEVEL_SECONDARY, queryResultFlagsMiscTests[flagsIdx]);
+			miscTests->addChild(new TwoCmdBuffersTest(testCtx,
+													"two_cmd_buffers_secondary_host_query_reset" + queryResultsFlagsMiscTestsStr[flagsIdx],
+													"Issue query in a secondary command buffer and copy it on a primary command buffer",
+													&twoCmdBuffersParamSecondaryHostQueryReset));
+		}
 		// Reset timestamp query before copying results.
 		miscTests->addChild(new ResetTimestampQueryBeforeCopyTest(testCtx,
-																  "reset_query_before_copy",
-																  "Issue a timestamp query and reset it before copying results"));
+																"reset_query_before_copy",
+																"Issue a timestamp query and reset it before copying results"));
 
 		// Check consistency between 32 and 64 bits.
 		miscTests->addChild(new ConsistentQueryResultsTest(testCtx,
-														   "consistent_results",
-														   "Check consistency between 32-bit and 64-bit timestamp"));
+														"consistent_results",
+														"Check consistency between 32-bit and 64-bit timestamp"));
 
 		timestampTests->addChild(miscTests.release());
 	}
