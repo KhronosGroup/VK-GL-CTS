@@ -563,18 +563,16 @@ tcu::TestStatus enumerateDevicesAllocLeakTest(Context& context)
 
 	typedef AllocationCallbackRecorder::RecordIterator RecordIterator;
 
-	const PlatformInterface&	vkp				(context.getPlatformInterface());
-	const deUint32				apiVersion		(context.getUsedApiVersion());
 	DeterministicFailAllocator	objAllocator	(getSystemAllocator(), DeterministicFailAllocator::MODE_DO_NOT_COUNT, 0);
 	AllocationCallbackRecorder	recorder		(objAllocator.getCallbacks(), 128);
-	Move<VkInstance>			instance		(vk::createDefaultInstance(vkp, apiVersion, {}, {}, recorder.getCallbacks()));
-	InstanceDriver				vki				(vkp, *instance);
-	vector<VkPhysicalDevice>	devices			(enumeratePhysicalDevices(vki, *instance));
+	const auto					instance		= createCustomInstanceFromContext(context, recorder.getCallbacks(), true);
+	const auto&					vki				= instance.getDriver();
+	vector<VkPhysicalDevice>	devices			(enumeratePhysicalDevices(vki, instance));
 	RecordIterator				recordToCheck	(recorder.getRecordsEnd());
 
 	try
 	{
-		devices = enumeratePhysicalDevices(vki, *instance);
+		devices = enumeratePhysicalDevices(vki, instance);
 	}
 	catch (const vk::OutOfMemoryError& e)
 	{

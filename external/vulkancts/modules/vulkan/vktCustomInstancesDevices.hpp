@@ -52,7 +52,7 @@ class CustomInstance
 {
 public:
 								CustomInstance			();
-								CustomInstance			(Context& context, vk::Move<vk::VkInstance> instance, bool enableDebugReportRecorder, bool printValidationErrors);
+								CustomInstance			(Context& context, vk::Move<vk::VkInstance> instance, std::unique_ptr<vk::DebugReportRecorder>& recorder);
 								CustomInstance			(CustomInstance&& other);
 								~CustomInstance			();
 	CustomInstance&				operator=				(CustomInstance&& other);
@@ -65,16 +65,17 @@ public:
 	CustomInstance&				operator=				(const CustomInstance& other) = delete;
 private:
 	Context*									m_context;
+	std::unique_ptr<vk::DebugReportRecorder>	m_recorder;
 	vk::Move<vk::VkInstance>					m_instance;
 	std::unique_ptr<vk::InstanceDriver>			m_driver;
-	std::unique_ptr<vk::DebugReportRecorder>	m_recorder;
+	vk::Move<vk::VkDebugReportCallbackEXT>		m_callback;
 };
 
 class UncheckedInstance
 {
 public:
 						UncheckedInstance		();
-						UncheckedInstance		(Context& context, vk::VkInstance instance, const vk::VkAllocationCallbacks* pAllocator, bool enableDebugReportRecorder, bool printValidationErrors);
+						UncheckedInstance		(Context& context, vk::VkInstance instance, const vk::VkAllocationCallbacks* pAllocator, std::unique_ptr<vk::DebugReportRecorder>& recorder);
 						UncheckedInstance		(UncheckedInstance&& other);
 						~UncheckedInstance		();
 	UncheckedInstance&	operator=				(UncheckedInstance&& other);
@@ -86,10 +87,11 @@ public:
 	UncheckedInstance&	operator=				(const UncheckedInstance& other) = delete;
 private:
 	Context*									m_context;
+	std::unique_ptr<vk::DebugReportRecorder>	m_recorder;
 	const vk::VkAllocationCallbacks*			m_allocator;
 	vk::VkInstance								m_instance;
 	std::unique_ptr<vk::InstanceDriver>			m_driver;
-	std::unique_ptr<vk::DebugReportRecorder>	m_recorder;
+	vk::Move<vk::VkDebugReportCallbackEXT>		m_callback;
 };
 
 // Custom instances.

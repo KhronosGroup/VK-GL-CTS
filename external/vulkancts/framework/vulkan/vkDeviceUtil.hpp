@@ -25,6 +25,7 @@
 
 #include "vkDefs.hpp"
 #include "vkRef.hpp"
+#include "vkDebugReportUtil.hpp"
 
 #include <vector>
 #include <string>
@@ -44,7 +45,8 @@ Move<VkInstance>	createDefaultInstance	(const PlatformInterface&			vkPlatform,
 											 deUint32							apiVersion,
 											 const std::vector<std::string>&	enabledLayers,
 											 const std::vector<std::string>&	enabledExtensions,
-											 const VkAllocationCallbacks*		pAllocator	= DE_NULL);
+											 DebugReportRecorder*				recorder = nullptr,
+											 const VkAllocationCallbacks*		pAllocator = nullptr);
 
 deUint32			chooseDeviceIndex		(const InstanceInterface&			vkInstance,
 											 const VkInstance					instance,

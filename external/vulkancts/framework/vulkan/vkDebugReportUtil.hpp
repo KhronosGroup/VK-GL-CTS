@@ -81,27 +81,29 @@ struct DebugReportMessage
 	}
 };
 
-std::ostream&	operator<<	(std::ostream& str, const DebugReportMessage& message);
+std::ostream& operator<< (std::ostream& str, const DebugReportMessage& message);
 
 class DebugReportRecorder
 {
 public:
 	using MessageList = de::AppendList<DebugReportMessage>;
 
-											DebugReportRecorder		(const InstanceInterface& vki, VkInstance instance, bool printValidationErrors);
+											DebugReportRecorder		(bool printValidationErrors);
 											~DebugReportRecorder	(void);
 
 	MessageList&							getMessages				(void) { return m_messages; }
 	void									clearMessages			(void) { m_messages.clear(); }
 	bool									errorPrinting			(void) const { return m_print_errors; }
 
+	VkDebugReportCallbackCreateInfoEXT		makeCreateInfo			(void);
+	Move<VkDebugReportCallbackEXT>			createCallback			(const InstanceInterface& vki, VkInstance instance);
+
 private:
 	MessageList								m_messages;
-	const Unique<VkDebugReportCallbackEXT>	m_callback;
 	const bool								m_print_errors;
 };
 
-bool	isDebugReportSupported		(const PlatformInterface& vkp);
+bool isDebugReportSupported (const PlatformInterface& vkp);
 
 } // vk
 
