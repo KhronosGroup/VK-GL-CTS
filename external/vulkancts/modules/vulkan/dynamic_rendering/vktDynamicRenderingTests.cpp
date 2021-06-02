@@ -96,6 +96,22 @@ enum TestType
 	// Using CONTENTS_SECONDARY_COMMAND_BUFFER_BIT_KHR, draw two triangles in two secondary command buffers,
 	// and execute them inside two render pass instances, with the second RESUMING the first, recorded into two primary command buffers.
 	TEST_TYPE_CONTENTS_2_SECONDARY_2_PRIMARY_COMDBUF_RESUMING,
+	// In one primary command buffer, record two render pass instances, with the second resuming the first.In the first,
+	// draw one triangle directly in the primary command buffer.For the second, use CONTENTS_SECONDARY_COMMAND_BUFFER_BIT_KHR,
+	// draw the second triangle in a secondary command buffer, and execute it in that second render pass instance.
+	TEST_TYPE_CONTENTS_PRIMARY_SECONDARY_COMDBUF_RESUMING,
+	// In one primary command buffer, record two render pass instances, with the second resuming the first.In the first,
+	// use CONTENTS_SECONDARY_COMMAND_BUFFER_BIT_KHR, draw the first triangle in a secondary command buffer,
+	// and execute it in that first render pass instance.In the second, draw one triangle directly in the primary command buffer.
+	TEST_TYPE_CONTENTS_SECONDARY_PRIMARY_COMDBUF_RESUMING,
+	// In two primary command buffers, record two render pass instances(one in each), with the second resuming the first.In the first,
+	// draw one triangle directly in the primary command buffer.For the second, use CONTENTS_SECONDARY_COMMAND_BUFFER_BIT_KHR,
+	// draw the second triangle in a secondary command buffer, and execute it in that second render pass instance.
+	TEST_TYPE_CONTENTS_2_PRIMARY_SECONDARY_COMDBUF_RESUMING,
+	// In two primary command buffers, record two render pass instances(one in each), with the second resuming the first.In the first,
+	// use CONTENTS_SECONDARY_COMMAND_BUFFER_BIT_KHR, draw the first triangle in a secondary command buffer, and execute it in that first
+	// render pass instance.In the second, draw one triangle directly in the primary command buffer.
+	TEST_TYPE_CONTENTS_SECONDARY_2_PRIMARY_COMDBUF_RESUMING,
 	TEST_TYPE_LAST
 };
 
@@ -1974,6 +1990,402 @@ void	ContentsTwoSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipelin
 	}
 }
 
+class ContentsPrimarySecondaryCmdBufferResuming : public DynamicRenderingTestInstance
+{
+public:
+			ContentsPrimarySecondaryCmdBufferResuming	(Context&							context,
+														 const TestParameters&				parameters);
+protected:
+	void	rendering									(const VkPipeline					pipeline,
+														 const std::vector<VkImageView>&	attachmentBindInfos,
+														 const deUint32						colorAtchCount,
+														 ImagesLayout&						imagesLayout,
+														 const ImagesFormat&				imagesFormat) override;
+
+	Move<VkCommandBuffer>	m_secCmdBuffer;
+};
+
+ContentsPrimarySecondaryCmdBufferResuming::ContentsPrimarySecondaryCmdBufferResuming (Context&				context,
+																					  const TestParameters&	parameters)
+	: DynamicRenderingTestInstance(context, parameters)
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkDevice			device	= m_context.getDevice();
+
+	m_secCmdBuffer	= allocateCommandBuffer(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+}
+
+void	ContentsPrimarySecondaryCmdBufferResuming::rendering (const VkPipeline					pipeline,
+															  const std::vector<VkImageView>&	attachmentBindInfos,
+															  const deUint32					colorAtchCount,
+															  ImagesLayout&						imagesLayout,
+															  const ImagesFormat&				imagesFormat)
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkDevice			device	= m_context.getDevice();
+	const VkQueue			queue	= m_context.getUniversalQueue();
+
+	for (deUint32 attachmentLoadOp  = 0; attachmentLoadOp  < TEST_ATTACHMENT_LOAD_OP_LAST;  ++attachmentLoadOp)
+	for (deUint32 attachmentStoreOp = 0; attachmentStoreOp < TEST_ATTACHMENT_STORE_OP_LAST; ++attachmentStoreOp)
+	{
+		const VkBuffer		vertexBuffer		= m_vertexBuffer->object();
+		const VkDeviceSize	vertexBufferOffset	= 0ull;
+
+		// secCmdBuffer
+		beginSecondaryCmdBuffer(vk, *m_secCmdBuffer, VK_RENDERING_RESUMING_BIT_KHR, colorAtchCount, imagesFormat);
+
+		vk.cmdBindPipeline(*m_secCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		vk.cmdBindVertexBuffers(*m_secCmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
+
+		vk.cmdDraw(*m_secCmdBuffer, 4u, 1u, 4u, 0u);
+
+		VK_CHECK(vk.endCommandBuffer(*m_secCmdBuffer));
+
+		// Primary commandBuffer
+		beginCommandBuffer(vk, *m_cmdBuffer);
+		preBarier(colorAtchCount, imagesLayout, imagesFormat);
+
+		beginRenderingKHR(*m_cmdBuffer,
+						  attachmentBindInfos,
+						  VK_RENDERING_SUSPENDING_BIT_KHR,
+						  colorAtchCount,
+						  imagesFormat,
+						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
+
+		vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 8u, 0u);
+		vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 0u);
+
+		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+
+		beginRenderingKHR(*m_cmdBuffer,
+						  attachmentBindInfos,
+						  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+						  VK_RENDERING_RESUMING_BIT_KHR,
+						  colorAtchCount,
+						  imagesFormat,
+						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+		vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
+
+		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+
+		copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
+
+		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+
+		submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+
+		if ((static_cast<VkAttachmentLoadOp>(attachmentLoadOp)   == VK_ATTACHMENT_LOAD_OP_CLEAR) &&
+			(static_cast<VkAttachmentStoreOp>(attachmentStoreOp) == VK_ATTACHMENT_STORE_OP_STORE))
+			verifyResults(colorAtchCount, imagesFormat);
+	}
+}
+
+class ContentsSecondaryPrimaryCmdBufferResuming : public DynamicRenderingTestInstance
+{
+public:
+			ContentsSecondaryPrimaryCmdBufferResuming	(Context&							context,
+														 const TestParameters&				parameters);
+protected:
+	void	rendering									(const VkPipeline					pipeline,
+														 const std::vector<VkImageView>&	attachmentBindInfos,
+														 const deUint32						colorAtchCount,
+														 ImagesLayout&						imagesLayout,
+														 const ImagesFormat&				imagesFormat) override;
+
+	Move<VkCommandBuffer>	m_secCmdBuffer;
+};
+
+ContentsSecondaryPrimaryCmdBufferResuming::ContentsSecondaryPrimaryCmdBufferResuming (Context&				context,
+																					  const TestParameters&	parameters)
+	: DynamicRenderingTestInstance(context, parameters)
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkDevice			device	= m_context.getDevice();
+
+	m_secCmdBuffer	= allocateCommandBuffer(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+}
+
+void	ContentsSecondaryPrimaryCmdBufferResuming::rendering (const VkPipeline					pipeline,
+															  const std::vector<VkImageView>&	attachmentBindInfos,
+															  const deUint32					colorAtchCount,
+															  ImagesLayout&						imagesLayout,
+															  const ImagesFormat&				imagesFormat)
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkDevice			device	= m_context.getDevice();
+	const VkQueue			queue	= m_context.getUniversalQueue();
+
+	for (deUint32 attachmentLoadOp  = 0; attachmentLoadOp  < TEST_ATTACHMENT_LOAD_OP_LAST;  ++attachmentLoadOp)
+	for (deUint32 attachmentStoreOp = 0; attachmentStoreOp < TEST_ATTACHMENT_STORE_OP_LAST; ++attachmentStoreOp)
+	{
+		const VkBuffer		vertexBuffer		= m_vertexBuffer->object();
+		const VkDeviceSize	vertexBufferOffset	= 0ull;
+
+		// secCmdBuffer
+		beginSecondaryCmdBuffer(vk, *m_secCmdBuffer, VK_RENDERING_SUSPENDING_BIT_KHR, colorAtchCount, imagesFormat);
+
+		vk.cmdBindPipeline(*m_secCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		vk.cmdBindVertexBuffers(*m_secCmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
+
+		vk.cmdDraw(*m_secCmdBuffer, 4u, 1u, 8u, 0u);
+		vk.cmdDraw(*m_secCmdBuffer, 4u, 1u, 0u, 0u);
+
+		VK_CHECK(vk.endCommandBuffer(*m_secCmdBuffer));
+
+		// Primary commandBuffer
+		beginCommandBuffer(vk, *m_cmdBuffer);
+		preBarier(colorAtchCount, imagesLayout, imagesFormat);
+
+		beginRenderingKHR(*m_cmdBuffer,
+						  attachmentBindInfos,
+						  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+						  VK_RENDERING_SUSPENDING_BIT_KHR,
+						  colorAtchCount,
+						  imagesFormat,
+						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+		vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
+
+		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+
+		beginRenderingKHR(*m_cmdBuffer,
+						  attachmentBindInfos,
+						  VK_RENDERING_RESUMING_BIT_KHR,
+						  colorAtchCount,
+						  imagesFormat,
+						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
+
+		vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 4u, 0u);
+
+		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+
+		copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
+
+		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+
+		submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+
+		if ((static_cast<VkAttachmentLoadOp>(attachmentLoadOp)   == VK_ATTACHMENT_LOAD_OP_CLEAR) &&
+			(static_cast<VkAttachmentStoreOp>(attachmentStoreOp) == VK_ATTACHMENT_STORE_OP_STORE))
+			verifyResults(colorAtchCount, imagesFormat);
+	}
+}
+
+class ContentsTwoPrimarySecondaryCmdBufferResuming : public DynamicRenderingTestInstance
+{
+public:
+			ContentsTwoPrimarySecondaryCmdBufferResuming	(Context&							context,
+															 const TestParameters&				parameters);
+protected:
+	void	rendering										(const VkPipeline					pipeline,
+															 const std::vector<VkImageView>&	attachmentBindInfos,
+															 const deUint32						colorAtchCount,
+															 ImagesLayout&						imagesLayout,
+															 const ImagesFormat&				imagesFormat) override;
+
+	Move<VkCommandBuffer>	m_cmdBuffer2;
+	Move<VkCommandBuffer>	m_secCmdBuffer;
+};
+
+ContentsTwoPrimarySecondaryCmdBufferResuming::ContentsTwoPrimarySecondaryCmdBufferResuming (Context&				context,
+																							const TestParameters&	parameters)
+	: DynamicRenderingTestInstance(context, parameters)
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkDevice			device	= m_context.getDevice();
+
+	m_cmdBuffer2	= allocateCommandBuffer(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	m_secCmdBuffer	= allocateCommandBuffer(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+}
+
+void	ContentsTwoPrimarySecondaryCmdBufferResuming::rendering (const VkPipeline					pipeline,
+																 const std::vector<VkImageView>&	attachmentBindInfos,
+																 const deUint32						colorAtchCount,
+																 ImagesLayout&						imagesLayout,
+																 const ImagesFormat&				imagesFormat)
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkDevice			device	= m_context.getDevice();
+	const VkQueue			queue	= m_context.getUniversalQueue();
+
+	for (deUint32 attachmentLoadOp  = 0; attachmentLoadOp  < TEST_ATTACHMENT_LOAD_OP_LAST;  ++attachmentLoadOp)
+	for (deUint32 attachmentStoreOp = 0; attachmentStoreOp < TEST_ATTACHMENT_STORE_OP_LAST; ++attachmentStoreOp)
+	{
+		const VkBuffer		vertexBuffer		= m_vertexBuffer->object();
+		const VkDeviceSize	vertexBufferOffset	= 0ull;
+
+		// secCmdBuffer
+		beginSecondaryCmdBuffer(vk, *m_secCmdBuffer, VK_RENDERING_RESUMING_BIT_KHR, colorAtchCount, imagesFormat);
+
+		vk.cmdBindPipeline(*m_secCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		vk.cmdBindVertexBuffers(*m_secCmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
+
+		vk.cmdDraw(*m_secCmdBuffer, 4u, 1u, 4u, 0u);
+
+		VK_CHECK(vk.endCommandBuffer(*m_secCmdBuffer));
+
+		// Primary commandBuffer
+		beginCommandBuffer(vk, *m_cmdBuffer);
+		preBarier(colorAtchCount, imagesLayout, imagesFormat);
+
+		beginRenderingKHR(*m_cmdBuffer,
+						  attachmentBindInfos,
+						  VK_RENDERING_SUSPENDING_BIT_KHR,
+						  colorAtchCount,
+						  imagesFormat,
+						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
+
+		vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 8u, 0u);
+		vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 0u);
+
+		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+
+		// Primary commandBuffer2
+		beginCommandBuffer(vk, *m_cmdBuffer2);
+
+		beginRenderingKHR(*m_cmdBuffer2,
+						  attachmentBindInfos,
+						  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+						  VK_RENDERING_RESUMING_BIT_KHR,
+						  colorAtchCount,
+						  imagesFormat,
+						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+		vk.cmdExecuteCommands(*m_cmdBuffer2, 1u, &(*m_secCmdBuffer));
+
+		vk.cmdEndRenderingKHR(*m_cmdBuffer2);
+
+		copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
+
+		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer2));
+
+		submitCommandsAndWait(vk, device, queue, *m_cmdBuffer, *m_cmdBuffer2);
+
+		if ((static_cast<VkAttachmentLoadOp>(attachmentLoadOp)   == VK_ATTACHMENT_LOAD_OP_CLEAR) &&
+			(static_cast<VkAttachmentStoreOp>(attachmentStoreOp) == VK_ATTACHMENT_STORE_OP_STORE))
+			verifyResults(colorAtchCount, imagesFormat);
+	}
+}
+
+class ContentsSecondaryTwoPrimaryCmdBufferResuming : public DynamicRenderingTestInstance
+{
+public:
+			ContentsSecondaryTwoPrimaryCmdBufferResuming	(Context&							context,
+															 const TestParameters&				parameters);
+protected:
+	void	rendering										(const VkPipeline					pipeline,
+															 const std::vector<VkImageView>&	attachmentBindInfos,
+															 const deUint32						colorAtchCount,
+															 ImagesLayout&						imagesLayout,
+															 const ImagesFormat&				imagesFormat) override;
+
+	Move<VkCommandBuffer>	m_cmdBuffer2;
+	Move<VkCommandBuffer>	m_secCmdBuffer;
+};
+
+ContentsSecondaryTwoPrimaryCmdBufferResuming::ContentsSecondaryTwoPrimaryCmdBufferResuming (Context&				context,
+																							const TestParameters&	parameters)
+	: DynamicRenderingTestInstance(context, parameters)
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkDevice			device	= m_context.getDevice();
+
+	m_cmdBuffer2	= allocateCommandBuffer(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	m_secCmdBuffer	= allocateCommandBuffer(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+}
+
+void	ContentsSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipeline					pipeline,
+																 const std::vector<VkImageView>&	attachmentBindInfos,
+																 const deUint32						colorAtchCount,
+																 ImagesLayout&						imagesLayout,
+																 const ImagesFormat&				imagesFormat)
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkDevice			device	= m_context.getDevice();
+	const VkQueue			queue	= m_context.getUniversalQueue();
+
+	for (deUint32 attachmentLoadOp  = 0; attachmentLoadOp  < TEST_ATTACHMENT_LOAD_OP_LAST;  ++attachmentLoadOp)
+	for (deUint32 attachmentStoreOp = 0; attachmentStoreOp < TEST_ATTACHMENT_STORE_OP_LAST; ++attachmentStoreOp)
+	{
+		const VkBuffer		vertexBuffer		= m_vertexBuffer->object();
+		const VkDeviceSize	vertexBufferOffset	= 0ull;
+
+		// secCmdBuffer
+		beginSecondaryCmdBuffer(vk, *m_secCmdBuffer, VK_RENDERING_SUSPENDING_BIT_KHR, colorAtchCount, imagesFormat);
+
+		vk.cmdBindPipeline(*m_secCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		vk.cmdBindVertexBuffers(*m_secCmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
+
+		vk.cmdDraw(*m_secCmdBuffer, 4u, 1u, 8u, 0u);
+		vk.cmdDraw(*m_secCmdBuffer, 4u, 1u, 0u, 0u);
+
+		VK_CHECK(vk.endCommandBuffer(*m_secCmdBuffer));
+
+		// Primary commandBuffer
+		beginCommandBuffer(vk, *m_cmdBuffer);
+		preBarier(colorAtchCount, imagesLayout, imagesFormat);
+
+		beginRenderingKHR(*m_cmdBuffer,
+						  attachmentBindInfos,
+						  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+						  VK_RENDERING_SUSPENDING_BIT_KHR,
+						  colorAtchCount,
+						  imagesFormat,
+						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+		vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
+
+		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+
+		// Primary commandBuffer2
+		beginCommandBuffer(vk, *m_cmdBuffer2);
+
+		beginRenderingKHR(*m_cmdBuffer2,
+						  attachmentBindInfos,
+						  VK_RENDERING_RESUMING_BIT_KHR,
+						  colorAtchCount,
+						  imagesFormat,
+						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+		vk.cmdBindPipeline(*m_cmdBuffer2, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		vk.cmdBindVertexBuffers(*m_cmdBuffer2, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
+
+		vk.cmdDraw(*m_cmdBuffer2, 4u, 1u, 4u, 0u);
+
+		vk.cmdEndRenderingKHR(*m_cmdBuffer2);
+
+		copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
+
+		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer2));
+
+		submitCommandsAndWait(vk, device, queue, *m_cmdBuffer, *m_cmdBuffer2);
+
+		if ((static_cast<VkAttachmentLoadOp>(attachmentLoadOp)   == VK_ATTACHMENT_LOAD_OP_CLEAR) &&
+			(static_cast<VkAttachmentStoreOp>(attachmentStoreOp) == VK_ATTACHMENT_STORE_OP_STORE))
+			verifyResults(colorAtchCount, imagesFormat);
+	}
+}
+
 class BaseTestCase : public TestCase
 {
 public:
@@ -2096,6 +2508,22 @@ TestInstance*	BaseTestCase::createInstance (Context& context) const
 		{
 			return new ContentsTwoSecondaryTwoPrimaryCmdBufferResuming(context, m_parameters);
 		}
+		case TEST_TYPE_CONTENTS_PRIMARY_SECONDARY_COMDBUF_RESUMING:
+		{
+			return new ContentsPrimarySecondaryCmdBufferResuming(context, m_parameters);
+		}
+		case TEST_TYPE_CONTENTS_SECONDARY_PRIMARY_COMDBUF_RESUMING:
+		{
+			return new ContentsSecondaryPrimaryCmdBufferResuming(context, m_parameters);
+		}
+		case TEST_TYPE_CONTENTS_2_PRIMARY_SECONDARY_COMDBUF_RESUMING:
+		{
+			return new ContentsTwoPrimarySecondaryCmdBufferResuming(context, m_parameters);
+		}
+		case TEST_TYPE_CONTENTS_SECONDARY_2_PRIMARY_COMDBUF_RESUMING:
+		{
+			return new ContentsSecondaryTwoPrimaryCmdBufferResuming(context, m_parameters);
+		}
 		default:
 			DE_FATAL("Impossible");
 	}
@@ -2115,6 +2543,10 @@ tcu::TestNode* dynamicRenderingTests (tcu::TestContext& testCtx, const TestParam
 		"contents_2_secondary_cmdbuffers",
 		"contents_2_secondary_cmdbuffers_resuming",
 		"contents_2_secondary_2_primary_cmdbuffers_resuming",
+		"contents_primary_secondary_cmdbuffers_resuming",
+		"contents_secondary_primary_cmdbuffers_resuming",
+		"contents_2_primary_secondary_cmdbuffers_resuming",
+		"contents_secondary_2_primary_cmdbuffers_resuming",
 	};
 
 	return new BaseTestCase(testCtx, testName[parameters.testType], "Dynamic Rendering tests", parameters);
