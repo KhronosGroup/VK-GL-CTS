@@ -1366,14 +1366,9 @@ public:
 		return m_nASesToUse;
 	}
 
-	std::vector<std::string> getAHitShaderCollectionShaderNames() const final
-	{
-		return {};
-	}
-
 	std::vector<std::string> getCHitShaderCollectionShaderNames() const final
 	{
-		return {"chit"};
+		return {};
 	}
 
 	deUint32 getInstanceCustomIndex(const deUint32& nBL, const deUint32& nInstance) const final
@@ -1524,7 +1519,7 @@ public:
 				"    hits[nHit].nAS                 = nAS;\n"
 				"}\n";
 
-			programCollection.glslSources.add("chit") << glu::ClosestHitSource(css.str()) << buildOptions;
+			programCollection.glslSources.add("ahit") << glu::AnyHitSource(css.str() ) << buildOptions;
 		}
 
 		{
