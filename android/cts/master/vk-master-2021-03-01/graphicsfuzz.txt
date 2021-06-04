@@ -88,6 +88,7 @@ dEQP-VK.graphicsfuzz.cov-derivative-uniform-vector-global-loop-count
 dEQP-VK.graphicsfuzz.cov-descending-loop-index-temporary-array
 dEQP-VK.graphicsfuzz.cov-descending-loop-min-max-always-zero
 dEQP-VK.graphicsfuzz.cov-determinant-uninitialized-matrix-never-chosen
+dEQP-VK.graphicsfuzz.cov-dfdx-dfdy-after-nested-loops
 dEQP-VK.graphicsfuzz.cov-divide-matrix-transpose-by-constant
 dEQP-VK.graphicsfuzz.cov-do-while-switch-case-bitcount-findmsb
 dEQP-VK.graphicsfuzz.cov-double-if-true-in-loop
@@ -259,10 +260,12 @@ dEQP-VK.graphicsfuzz.cov-nested-functions-accumulate-global-matrix
 dEQP-VK.graphicsfuzz.cov-nested-loop-continue-inner-copy-array-element
 dEQP-VK.graphicsfuzz.cov-nested-loop-not-greater-than-increment-array-element
 dEQP-VK.graphicsfuzz.cov-nested-loop-undefined-smoothstep-never-executed
+dEQP-VK.graphicsfuzz.cov-nested-loops-float-array-select-by-fragcoord
 dEQP-VK.graphicsfuzz.cov-nested-loops-float-bits-to-int-increment-array
 dEQP-VK.graphicsfuzz.cov-nested-loops-global-counter-increment-single-element
 dEQP-VK.graphicsfuzz.cov-nested-loops-global-loop-counter-do-while-accumulate-float
 dEQP-VK.graphicsfuzz.cov-nested-loops-sample-opposite-corners
+dEQP-VK.graphicsfuzz.cov-nested-loops-set-struct-data-verify-in-function
 dEQP-VK.graphicsfuzz.cov-nir-array-access
 dEQP-VK.graphicsfuzz.cov-nir-opt-large-constants-for-clamp-vector-access
 dEQP-VK.graphicsfuzz.cov-nir-opt-loop-unroll-if-if-if-if-do-while
