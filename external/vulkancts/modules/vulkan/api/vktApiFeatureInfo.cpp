@@ -1686,6 +1686,7 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate (Context& context)
 	{
 		DEPENDENCY_DUAL_ITEM	(vulkan11Features,	multiviewFeatures,				multiviewGeometryShader,							multiview),
 		DEPENDENCY_DUAL_ITEM	(vulkan11Features,	multiviewFeatures,				multiviewTessellationShader,						multiview),
+		DEPENDENCY_DUAL_ITEM	(vulkan11Features,	variablePointersFeatures,		variablePointers,									variablePointersStorageBuffer),
 		DEPENDENCY_SINGLE_ITEM	(vulkan12Features,									shaderInputAttachmentArrayDynamicIndexing,			descriptorIndexing),
 		DEPENDENCY_SINGLE_ITEM	(vulkan12Features,									shaderUniformTexelBufferArrayDynamicIndexing,		descriptorIndexing),
 		DEPENDENCY_SINGLE_ITEM	(vulkan12Features,									shaderStorageTexelBufferArrayDynamicIndexing,		descriptorIndexing),
