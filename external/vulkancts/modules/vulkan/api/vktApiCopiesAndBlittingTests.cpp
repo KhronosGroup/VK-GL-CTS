@@ -707,11 +707,17 @@ void CopiesAndBlittingTestInstance::uploadImageAspect (const tcu::ConstPixelBuff
 			imageExtent.depth
 		};
 
+		const bool		isCompressed	= isCompressedFormat(parms.format);
+		const deUint32	blockWidth		= (isCompressed) ? getBlockWidth(parms.format) : 1u;
+		const deUint32	blockHeight		= (isCompressed) ? getBlockHeight(parms.format) : 1u;
+		deUint32 rowLength		= ((copyExtent.width + blockWidth-1) / blockWidth) * blockWidth;
+		deUint32 imageHeight	= ((copyExtent.height + blockHeight-1) / blockHeight) * blockHeight;
+
 		const VkBufferImageCopy	copyRegion	=
 		{
 			0u,												// VkDeviceSize				bufferOffset;
-			copyExtent.width,								// deUint32					bufferRowLength;
-			copyExtent.height,								// deUint32					bufferImageHeight;
+			rowLength,										// deUint32					bufferRowLength;
+			imageHeight,									// deUint32					bufferImageHeight;
 			{
 				getAspectFlags(imageAccess.getFormat()),		// VkImageAspectFlags	aspect;
 				mipLevelNdx,									// deUint32				mipLevel;
@@ -910,12 +916,18 @@ void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 	};
 
 	// Copy image to buffer
+	const bool		isCompressed	= isCompressedFormat(imageParms.format);
+	const deUint32	blockWidth		= (isCompressed) ? getBlockWidth(imageParms.format) : 1u;
+	const deUint32	blockHeight		= (isCompressed) ? getBlockHeight(imageParms.format) : 1u;
+	deUint32 rowLength		= ((imageExtent.width + blockWidth-1) / blockWidth) * blockWidth;
+	deUint32 imageHeight	= ((imageExtent.height + blockHeight-1) / blockHeight) * blockHeight;
+
 	const VkImageAspectFlags	aspect			= getAspectFlags(dst.getFormat());
 	const VkBufferImageCopy		copyRegion		=
 	{
 		0u,								// VkDeviceSize				bufferOffset;
-		imageExtent.width,				// deUint32					bufferRowLength;
-		imageExtent.height,				// deUint32					bufferImageHeight;
+		rowLength,						// deUint32					bufferRowLength;
+		imageHeight,					// deUint32					bufferImageHeight;
 		{
 			aspect,							// VkImageAspectFlags		aspect;
 			mipLevel,						// deUint32					mipLevel;
