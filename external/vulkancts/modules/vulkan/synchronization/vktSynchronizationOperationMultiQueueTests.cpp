@@ -831,6 +831,12 @@ public:
 			context.requireDeviceFunctionality("VK_KHR_synchronization2");
 		if (m_syncPrimitive == SYNC_PRIMITIVE_TIMELINE_SEMAPHORE)
 			context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
+
+		const InstanceInterface&					instance				= context.getInstanceInterface();
+		const VkPhysicalDevice						physicalDevice			= context.getPhysicalDevice();
+		const std::vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
+		if (m_sharingMode == VK_SHARING_MODE_CONCURRENT && queueFamilyProperties.size() < 2)
+			TCU_THROW(NotSupportedError, "Concurrent requires more than 1 queue family");
 	}
 
 	TestInstance* createInstance (Context& context) const
