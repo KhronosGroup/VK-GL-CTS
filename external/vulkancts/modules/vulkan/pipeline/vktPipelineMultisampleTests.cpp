@@ -61,6 +61,7 @@
 #include <algorithm>
 #include <set>
 #include <array>
+#include <utility>
 
 namespace vkt
 {
@@ -355,6 +356,37 @@ protected:
 	const ImageBackingMode						m_backingMode;
 };
 
+class SampleMaskWithConservativeTest : public vkt::TestCase
+{
+	public:
+												SampleMaskWithConservativeTest(tcu::TestContext& testContext,
+																				const std::string& name,
+																				const std::string& description,
+																				const VkSampleCountFlagBits					rasterizationSamples,
+																				const VkConservativeRasterizationModeEXT	conservativeRasterizationMode,
+																				const bool									enableMinSampleShading,
+																				const float									minSampleShading,
+																				const bool									enableSampleMask,
+																				const VkSampleMask							sampleMask,
+																				const bool									enablePostDepthCoverage);
+
+												~SampleMaskWithConservativeTest	(void) {}
+
+	void										initPrograms					(SourceCollections&		programCollection)	const;
+	TestInstance*								createInstance					(Context&				context)			const;
+	virtual void								checkSupport					(Context&				context)			const;
+
+private:
+	const VkSampleCountFlagBits					m_rasterizationSamples;
+	const bool									m_enableMinSampleShading;
+	float										m_minSampleShading;
+	const bool									m_enableSampleMask;
+	const VkSampleMask							m_sampleMask;
+	const VkConservativeRasterizationModeEXT	m_conservativeRasterizationMode;
+	const bool									m_enablePostDepthCoverage;
+	const RenderType							m_renderType;
+};
+
 class SampleMaskWithDepthTestTest : public vkt::TestCase
 {
 public:
@@ -379,35 +411,53 @@ typedef de::SharedPtr<Unique<VkPipeline> > VkPipelineSp;
 class MultisampleRenderer
 {
 public:
-												MultisampleRenderer			(Context&										context,
-																			 const VkFormat									colorFormat,
-																			 const tcu::IVec2&								renderSize,
-																			 const VkPrimitiveTopology						topology,
-																			 const std::vector<Vertex4RGBA>&				vertices,
-																			 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
-																			 const VkPipelineColorBlendAttachmentState&		blendState,
-																			 const RenderType								renderType,
-																			 const ImageBackingMode							backingMode);
+												MultisampleRenderer			(Context&														context,
+																			 const VkFormat													colorFormat,
+																			 const tcu::IVec2&												renderSize,
+																			 const VkPrimitiveTopology										topology,
+																			 const std::vector<Vertex4RGBA>&								vertices,
+																			 const VkPipelineMultisampleStateCreateInfo&					multisampleStateParams,
+																			 const VkPipelineColorBlendAttachmentState&						blendState,
+																			 const RenderType												renderType,
+																			 const ImageBackingMode											backingMode);
 
-												MultisampleRenderer			(Context&										context,
-																			 const VkFormat									colorFormat,
-																			 const VkFormat									depthStencilFormat,
-																			 const tcu::IVec2&								renderSize,
-																			 const bool										useDepth,
-																			 const bool										useStencil,
-																			 const deUint32									numTopologies,
-																			 const VkPrimitiveTopology*						pTopology,
-																			 const std::vector<Vertex4RGBA>*				pVertices,
-																			 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
-																			 const VkPipelineColorBlendAttachmentState&		blendState,
-																			 const RenderType								renderType,
-																			 const ImageBackingMode							backingMode,
-																			 const float									depthClearValue			= 1.0f);
+												MultisampleRenderer			(Context&														context,
+																			 const VkFormat													colorFormat,
+																			 const VkFormat													depthStencilFormat,
+																			 const tcu::IVec2&												renderSize,
+																			 const bool														useDepth,
+																			 const bool														useStencil,
+																			 const deUint32													numTopologies,
+																			 const VkPrimitiveTopology*										pTopology,
+																			 const std::vector<Vertex4RGBA>*								pVertices,
+																			 const VkPipelineMultisampleStateCreateInfo&					multisampleStateParams,
+																			 const VkPipelineColorBlendAttachmentState&						blendState,
+																			 const RenderType												renderType,
+																			 const ImageBackingMode											backingMode,
+																			 const float													depthClearValue			= 1.0f);
+
+												MultisampleRenderer			(Context&														context,
+																			 const VkFormat													colorFormat,
+																			 const VkFormat													depthStencilFormat,
+																			 const tcu::IVec2&												renderSize,
+																			 const bool														useDepth,
+																			 const bool														useStencil,
+																			 const bool														useConservative,
+																			 const deUint32													numTopologies,
+																			 const VkPrimitiveTopology*										pTopology,
+																			 const std::vector<Vertex4RGBA>*								pVertices,
+																			 const VkPipelineMultisampleStateCreateInfo&					multisampleStateParams,
+																			 const VkPipelineColorBlendAttachmentState&						blendState,
+																			 const VkPipelineRasterizationConservativeStateCreateInfoEXT&	conservativeStateCreateInfo,
+																			 const RenderType												renderType,
+																			 const ImageBackingMode											backingMode,
+																			 const float													depthClearValue			= 1.0f);
 
 	virtual										~MultisampleRenderer		(void);
 
 	de::MovePtr<tcu::TextureLevel>				render						(void);
 	de::MovePtr<tcu::TextureLevel>				getSingleSampledImage		(deUint32 sampleId);
+
 
 protected:
 	void										initialize					(Context&										context,
@@ -415,28 +465,30 @@ protected:
 																			 const VkPrimitiveTopology*						pTopology,
 																			 const std::vector<Vertex4RGBA>*				pVertices);
 
-	Context&									m_context;
+	Context&													m_context;
 
-	const Unique<VkSemaphore>					m_bindSemaphore;
+	const Unique<VkSemaphore>									m_bindSemaphore;
 
-	const VkFormat								m_colorFormat;
-	const VkFormat								m_depthStencilFormat;
-	tcu::IVec2									m_renderSize;
-	const bool									m_useDepth;
-	const bool									m_useStencil;
+	const VkFormat												m_colorFormat;
+	const VkFormat												m_depthStencilFormat;
+	tcu::IVec2													m_renderSize;
+	const bool													m_useDepth;
+	const bool													m_useStencil;
+	const bool													m_useConservative;
 
-	const VkPipelineMultisampleStateCreateInfo	m_multisampleStateParams;
-	const VkPipelineColorBlendAttachmentState	m_colorBlendState;
+	const VkPipelineMultisampleStateCreateInfo					m_multisampleStateParams;
+	const VkPipelineColorBlendAttachmentState					m_colorBlendState;
+	const VkPipelineRasterizationConservativeStateCreateInfoEXT m_rasterizationConservativeStateCreateInfo;
 
-	const RenderType							m_renderType;
+	const RenderType											m_renderType;
 
-	Move<VkImage>								m_colorImage;
-	de::MovePtr<Allocation>						m_colorImageAlloc;
-	Move<VkImageView>							m_colorAttachmentView;
+	Move<VkImage>												m_colorImage;
+	de::MovePtr<Allocation>										m_colorImageAlloc;
+	Move<VkImageView>											m_colorAttachmentView;
 
-	Move<VkImage>								m_resolveImage;
-	de::MovePtr<Allocation>						m_resolveImageAlloc;
-	Move<VkImageView>							m_resolveAttachmentView;
+	Move<VkImage>												m_resolveImage;
+	de::MovePtr<Allocation>										m_resolveImageAlloc;
+	Move<VkImageView>											m_resolveAttachmentView;
 
 	struct PerSampleImage
 	{
@@ -444,41 +496,41 @@ protected:
 		de::MovePtr<Allocation>						m_imageAlloc;
 		Move<VkImageView>							m_attachmentView;
 	};
-	std::vector<de::SharedPtr<PerSampleImage> >	m_perSampleImages;
+	std::vector<de::SharedPtr<PerSampleImage> >					m_perSampleImages;
 
-	Move<VkImage>								m_depthStencilImage;
-	de::MovePtr<Allocation>						m_depthStencilImageAlloc;
-	Move<VkImageView>							m_depthStencilAttachmentView;
+	Move<VkImage>												m_depthStencilImage;
+	de::MovePtr<Allocation>										m_depthStencilImageAlloc;
+	Move<VkImageView>											m_depthStencilAttachmentView;
 
-	Move<VkRenderPass>							m_renderPass;
-	Move<VkFramebuffer>							m_framebuffer;
+	Move<VkRenderPass>											m_renderPass;
+	Move<VkFramebuffer>											m_framebuffer;
 
-	Move<VkShaderModule>						m_vertexShaderModule;
-	Move<VkShaderModule>						m_fragmentShaderModule;
+	Move<VkShaderModule>										m_vertexShaderModule;
+	Move<VkShaderModule>										m_fragmentShaderModule;
 
-	Move<VkShaderModule>						m_copySampleVertexShaderModule;
-	Move<VkShaderModule>						m_copySampleFragmentShaderModule;
+	Move<VkShaderModule>										m_copySampleVertexShaderModule;
+	Move<VkShaderModule>										m_copySampleFragmentShaderModule;
 
-	Move<VkBuffer>								m_vertexBuffer;
-	de::MovePtr<Allocation>						m_vertexBufferAlloc;
+	Move<VkBuffer>												m_vertexBuffer;
+	de::MovePtr<Allocation>										m_vertexBufferAlloc;
 
-	Move<VkPipelineLayout>						m_pipelineLayout;
-	std::vector<VkPipelineSp>					m_graphicsPipelines;
+	Move<VkPipelineLayout>										m_pipelineLayout;
+	std::vector<VkPipelineSp>									m_graphicsPipelines;
 
-	Move<VkDescriptorSetLayout>					m_copySampleDesciptorLayout;
-	Move<VkDescriptorPool>						m_copySampleDesciptorPool;
-	Move<VkDescriptorSet>						m_copySampleDesciptorSet;
+	Move<VkDescriptorSetLayout>									m_copySampleDesciptorLayout;
+	Move<VkDescriptorPool>										m_copySampleDesciptorPool;
+	Move<VkDescriptorSet>										m_copySampleDesciptorSet;
 
-	Move<VkPipelineLayout>						m_copySamplePipelineLayout;
-	std::vector<VkPipelineSp>					m_copySamplePipelines;
+	Move<VkPipelineLayout>										m_copySamplePipelineLayout;
+	std::vector<VkPipelineSp>									m_copySamplePipelines;
 
-	Move<VkCommandPool>							m_cmdPool;
-	Move<VkCommandBuffer>						m_cmdBuffer;
+	Move<VkCommandPool>											m_cmdPool;
+	Move<VkCommandBuffer>										m_cmdBuffer;
 
-	std::vector<de::SharedPtr<Allocation> >		m_allocations;
+	std::vector<de::SharedPtr<Allocation> >						m_allocations;
 
-	ImageBackingMode							m_backingMode;
-	const float									m_depthClearValue;
+	ImageBackingMode											m_backingMode;
+	const float													m_depthClearValue;
 };
 
 class RasterizationSamplesInstance : public vkt::TestInstance
@@ -683,6 +735,55 @@ protected:
 	const GeometryType							m_geometryType;
 	const ImageBackingMode						m_backingMode;
 };
+
+class SampleMaskWithConservativeInstance : public vkt::TestInstance
+{
+public:
+															SampleMaskWithConservativeInstance			(Context&									context,
+																										 const VkSampleCountFlagBits				rasterizationSamples,
+																										 const bool									enableMinSampleShading,
+																										 const float								minSampleShading,
+																										 const bool									enableSampleMask,
+																										 const VkSampleMask							sampleMask,
+																										 const VkConservativeRasterizationModeEXT	conservativeRasterizationMode,
+																										 const bool									enablePostDepthCoverage,
+																										 const bool									enableFullyCoveredEXT,
+																										 const RenderType							renderType);
+															~SampleMaskWithConservativeInstance			(void) {}
+
+	tcu::TestStatus											iterate										(void);
+
+protected:
+	VkPipelineMultisampleStateCreateInfo					getMultisampleState							(const VkSampleCountFlagBits rasterizationSamples, const bool enableMinSampleShading, const float minSampleShading, const bool enableSampleMask);
+	VkPipelineRasterizationConservativeStateCreateInfoEXT	getRasterizationConservativeStateCreateInfo	(const VkConservativeRasterizationModeEXT	conservativeRasterizationMode);
+	std::vector<Vertex4RGBA>								generateVertices							(void);
+	tcu::TestStatus											verifyImage									(const std::vector<tcu::TextureLevel>& sampleShadedImages,  const tcu::ConstPixelBufferAccess&		result);
+
+	const VkSampleCountFlagBits									m_rasterizationSamples;
+	const bool													m_enablePostDepthCoverage;
+	const bool													m_enableFullyCoveredEXT;
+	const VkFormat												m_colorFormat;
+	const VkFormat												m_depthStencilFormat;
+	const tcu::IVec2											m_renderSize;
+	const bool													m_useDepth;
+	const bool													m_useStencil;
+	const bool													m_useConservative;
+	const VkConservativeRasterizationModeEXT					m_conservativeRasterizationMode;
+	const VkPrimitiveTopology									m_topology;
+	const tcu::Vec4												m_renderColor;
+	const float													m_depthClearValue;
+	const std::vector<Vertex4RGBA>								m_vertices;
+	const bool													m_enableSampleMask;
+	const std::vector<VkSampleMask>								m_sampleMask;
+	const bool													m_enableMinSampleShading;
+	const float													m_minSampleShading;
+	const VkPipelineMultisampleStateCreateInfo					m_multisampleStateParams;
+	const VkPipelineRasterizationConservativeStateCreateInfoEXT m_rasterizationConservativeStateCreateInfo;
+	const VkPipelineColorBlendAttachmentState					m_blendState;
+	const RenderType											m_renderType;
+	const ImageBackingMode										m_imageBackingMode;
+};
+
 
 class SampleMaskWithDepthTestInstance : public vkt::TestInstance
 {
@@ -1483,6 +1584,168 @@ VkPipelineMultisampleStateCreateInfo AlphaToCoverageColorUnusedAttachmentTest::g
 	return multisampleStateParams;
 }
 
+// SampleMaskWithConservativeTest
+SampleMaskWithConservativeTest::SampleMaskWithConservativeTest(tcu::TestContext& testContext,
+	const std::string& name,
+	const std::string& description,
+	const VkSampleCountFlagBits					rasterizationSamples,
+	const VkConservativeRasterizationModeEXT	conservativeRasterizationMode,
+	const bool									enableMinSampleShading,
+	const float									minSampleShading,
+	const bool									enableSampleMask,
+	const VkSampleMask							sampleMask,
+	const bool									enablePostDepthCoverage)
+	: vkt::TestCase(testContext, name, description)
+	, m_rasterizationSamples(rasterizationSamples)
+	, m_enableMinSampleShading(enableMinSampleShading)
+	, m_minSampleShading(minSampleShading)
+	, m_enableSampleMask(enableSampleMask)
+	, m_sampleMask(sampleMask)
+	, m_conservativeRasterizationMode(conservativeRasterizationMode)
+	, m_enablePostDepthCoverage(enablePostDepthCoverage)
+	, m_renderType(RENDER_TYPE_RESOLVE)
+{
+}
+
+void SampleMaskWithConservativeTest::checkSupport(Context& context) const
+{
+	if (!context.getDeviceProperties().limits.standardSampleLocations)
+		TCU_THROW(NotSupportedError, "standardSampleLocations required");
+
+	context.requireDeviceFunctionality("VK_EXT_post_depth_coverage");
+	context.requireDeviceFunctionality("VK_EXT_conservative_rasterization");
+
+	const VkPhysicalDeviceConservativeRasterizationPropertiesEXT	conservativeRasterizationProperties = context.getConservativeRasterizationPropertiesEXT();
+	const deUint32													subPixelPrecisionBits = context.getDeviceProperties().limits.subPixelPrecisionBits;
+	const deUint32													subPixelPrecision = 1 << subPixelPrecisionBits;
+	const float														primitiveOverestimationSizeMult = float(subPixelPrecision) * conservativeRasterizationProperties.primitiveOverestimationSize;
+
+	DE_ASSERT(subPixelPrecisionBits < sizeof(deUint32) * 8);
+
+	context.getTestContext().getLog()
+		<< tcu::TestLog::Message
+		<< "maxExtraPrimitiveOverestimationSize=" << conservativeRasterizationProperties.maxExtraPrimitiveOverestimationSize << '\n'
+		<< "extraPrimitiveOverestimationSizeGranularity=" << conservativeRasterizationProperties.extraPrimitiveOverestimationSizeGranularity << '\n'
+		<< "degenerateTrianglesRasterized=" << conservativeRasterizationProperties.degenerateTrianglesRasterized << '\n'
+		<< "primitiveOverestimationSize=" << conservativeRasterizationProperties.primitiveOverestimationSize << " (==" << primitiveOverestimationSizeMult << '/' << subPixelPrecision << ")\n"
+		<< tcu::TestLog::EndMessage;
+
+
+	if (m_conservativeRasterizationMode == VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT)
+	{
+		if (conservativeRasterizationProperties.extraPrimitiveOverestimationSizeGranularity > conservativeRasterizationProperties.maxExtraPrimitiveOverestimationSize)
+			TCU_FAIL("Granularity cannot be greater than maximum extra size");
+	}
+	else if (m_conservativeRasterizationMode == VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT)
+	{
+		if (conservativeRasterizationProperties.primitiveUnderestimation == DE_FALSE)
+			TCU_THROW(NotSupportedError, "Underestimation is not supported");
+	}
+	else
+		TCU_THROW(InternalError, "Non-conservative mode tests are not supported by this class");
+
+	if (!conservativeRasterizationProperties.fullyCoveredFragmentShaderInputVariable)
+	{
+		TCU_THROW(NotSupportedError, "FullyCoveredEXT input variable is not supported");
+	}
+}
+
+void SampleMaskWithConservativeTest::initPrograms(SourceCollections& programCollection) const
+{
+	{
+		DE_ASSERT((int)m_rasterizationSamples <= 32);
+
+		static const char* vertexSource =
+			"#version 440\n"
+			"layout(location = 0) in vec4 position;\n"
+			"layout(location = 1) in vec4 color;\n"
+			"layout(location = 0) out vec4 vtxColor;\n"
+			"out gl_PerVertex\n"
+			"{\n"
+			"    vec4 gl_Position;\n"
+			"};\n"
+			"\n"
+			"void main (void)\n"
+			"{\n"
+			"    gl_Position = position;\n"
+			"    vtxColor = color;\n"
+			"}\n";
+
+		std::ostringstream fragmentSource;
+		fragmentSource <<
+			"#version 440\n"
+			<< (m_enablePostDepthCoverage ? "#extension GL_ARB_post_depth_coverage : require\n" : "")
+			<< (m_conservativeRasterizationMode == VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT ? "#extension GL_NV_conservative_raster_underestimation : enable\n" : "") <<
+			"layout(early_fragment_tests) in;\n"
+			<< (m_enablePostDepthCoverage ? "layout(post_depth_coverage) in;\n" : "") <<
+			"layout(location = 0) in vec4 vtxColor;\n"
+			"layout(location = 0) out vec4 fragColor;\n"
+			"void main (void)\n"
+			"{\n";
+			if (m_enableMinSampleShading)
+			{
+		fragmentSource <<
+			"    const int coveredSamples = bitCount(gl_SampleMaskIn[0]);\n"
+			"    fragColor = vtxColor * (1.0 / " << (int)m_rasterizationSamples << " * coveredSamples);\n";
+			}
+			else if (m_conservativeRasterizationMode == VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT)
+			{
+		fragmentSource <<
+			"    fragColor = gl_FragFullyCoveredNV ? vtxColor : vec4(0.0f);\n";
+			}
+			else
+			{
+		fragmentSource <<
+			"    fragColor = vtxColor;\n";
+			}
+		fragmentSource <<
+			"}\n";
+
+
+		programCollection.glslSources.add("color_vert") << glu::VertexSource(vertexSource);
+		programCollection.glslSources.add("color_frag") << glu::FragmentSource(fragmentSource.str());
+	}
+
+	{
+		static const char* vertexSource =
+			"#version 440\n"
+			"void main (void)\n"
+			"{\n"
+			"	const vec4 positions[4] = vec4[4](\n"
+			"		vec4(-1.0, -1.0, 0.0, 1.0),\n"
+			"		vec4(-1.0,  1.0, 0.0, 1.0),\n"
+			"		vec4( 1.0, -1.0, 0.0, 1.0),\n"
+			"		vec4( 1.0,  1.0, 0.0, 1.0)\n"
+			"	);\n"
+			"	gl_Position = positions[gl_VertexIndex];\n"
+			"}\n";
+
+
+		static const char* fragmentSource =
+			"#version 440\n"
+			"precision highp float;\n"
+			"layout(location = 0) out highp vec4 fragColor;\n"
+			"layout(set = 0, binding = 0, input_attachment_index = 0) uniform subpassInputMS imageMS;\n"
+			"layout(push_constant) uniform PushConstantsBlock\n"
+			"{\n"
+			"	int sampleId;\n"
+			"} pushConstants;\n"
+			"void main (void)\n"
+			"{\n"
+			"	fragColor = subpassLoad(imageMS, pushConstants.sampleId);\n"
+			"}\n";
+
+		programCollection.glslSources.add("quad_vert") << glu::VertexSource(vertexSource);
+		programCollection.glslSources.add("copy_sample_frag") << glu::FragmentSource(fragmentSource);
+	}
+}
+
+
+TestInstance* SampleMaskWithConservativeTest::createInstance (Context& context) const
+{
+	return new SampleMaskWithConservativeInstance(context, m_rasterizationSamples, m_enableMinSampleShading, m_minSampleShading, m_enableSampleMask, m_sampleMask, m_conservativeRasterizationMode, m_enablePostDepthCoverage, true, m_renderType);
+}
+
 // SampleMaskWithDepthTestTest
 
 SampleMaskWithDepthTestTest::SampleMaskWithDepthTestTest (tcu::TestContext&					testContext,
@@ -2252,6 +2515,315 @@ tcu::TestStatus AlphaToCoverageColorUnusedAttachmentInstance::verifyImage (const
 	return tcu::TestStatus::pass("Pass");
 }
 
+// SampleMaskWithConservativeInstance
+
+SampleMaskWithConservativeInstance::SampleMaskWithConservativeInstance (Context&									context,
+																		const VkSampleCountFlagBits					rasterizationSamples,
+																		const bool									enableMinSampleShading,
+																		const float									minSampleShading,
+																		const bool									enableSampleMask,
+																		const VkSampleMask							sampleMask,
+																		const VkConservativeRasterizationModeEXT	conservativeRasterizationMode,
+																		const bool									enablePostDepthCoverage,
+																		const bool									enableFullyCoveredEXT,
+																		const RenderType							renderType)
+	: vkt::TestInstance								(context)
+	, m_rasterizationSamples						(rasterizationSamples)
+	, m_enablePostDepthCoverage						(enablePostDepthCoverage)
+	, m_enableFullyCoveredEXT						(enableFullyCoveredEXT)
+	, m_colorFormat									(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_depthStencilFormat							(VK_FORMAT_D16_UNORM)
+	, m_renderSize									(tcu::IVec2(10, 10))
+	, m_useDepth									(true)
+	, m_useStencil									(false)
+	, m_useConservative								(true)
+	, m_conservativeRasterizationMode				(conservativeRasterizationMode)
+	, m_topology									(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+	, m_renderColor									(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f))
+	, m_depthClearValue								(0.5f)
+	, m_vertices									(generateVertices())
+	, m_enableSampleMask							(enableSampleMask)
+	, m_sampleMask									(std::vector<VkSampleMask>{sampleMask})
+	, m_enableMinSampleShading						(enableMinSampleShading)
+	, m_minSampleShading							(minSampleShading)
+	, m_multisampleStateParams						(getMultisampleState(rasterizationSamples, enableMinSampleShading, minSampleShading, enableSampleMask))
+	, m_rasterizationConservativeStateCreateInfo	(getRasterizationConservativeStateCreateInfo(conservativeRasterizationMode))
+	, m_blendState									(getDefaultColorBlendAttachmentState())
+	, m_renderType									(renderType)
+	, m_imageBackingMode							(IMAGE_BACKING_MODE_REGULAR)
+{
+}
+
+tcu::TestStatus SampleMaskWithConservativeInstance::iterate (void)
+{
+
+	de::MovePtr<tcu::TextureLevel>	noSampleshadingImage;
+	std::vector<tcu::TextureLevel>	sampleShadedImages;
+
+	{
+		MultisampleRenderer renderer(m_context, m_colorFormat, m_depthStencilFormat, m_renderSize, m_useDepth, m_useStencil, m_useConservative, 1u, &m_topology,
+			&m_vertices, m_multisampleStateParams, m_blendState, m_rasterizationConservativeStateCreateInfo, RENDER_TYPE_RESOLVE, m_imageBackingMode, m_depthClearValue);
+		noSampleshadingImage = renderer.render();
+	}
+
+	{
+		const VkPipelineColorBlendAttachmentState colorBlendState =
+		{
+			false,														// VkBool32					blendEnable;
+			VK_BLEND_FACTOR_ONE,										// VkBlendFactor			srcColorBlendFactor;
+			VK_BLEND_FACTOR_ZERO,										// VkBlendFactor			dstColorBlendFactor;
+			VK_BLEND_OP_ADD,											// VkBlendOp				colorBlendOp;
+			VK_BLEND_FACTOR_ONE,										// VkBlendFactor			srcAlphaBlendFactor;
+			VK_BLEND_FACTOR_ZERO,										// VkBlendFactor			dstAlphaBlendFactor;
+			VK_BLEND_OP_ADD,											// VkBlendOp				alphaBlendOp;
+			VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |		// VkColorComponentFlags	colorWriteMask;
+				VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+		};
+
+		MultisampleRenderer mRenderer (m_context, m_colorFormat, m_renderSize, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, m_vertices, m_multisampleStateParams, colorBlendState, RENDER_TYPE_COPY_SAMPLES, IMAGE_BACKING_MODE_REGULAR);
+		mRenderer.render();
+
+		sampleShadedImages.resize(m_multisampleStateParams.rasterizationSamples);
+		for (deUint32 sampleId = 0; sampleId < sampleShadedImages.size(); sampleId++)
+		{
+			sampleShadedImages[sampleId] = *mRenderer.getSingleSampledImage(sampleId);
+		}
+
+	}
+
+	return verifyImage(sampleShadedImages, noSampleshadingImage->getAccess());
+}
+
+VkPipelineMultisampleStateCreateInfo SampleMaskWithConservativeInstance::getMultisampleState (const VkSampleCountFlagBits rasterizationSamples, const bool enableMinSampleShading, const float minSampleShading, const bool enableSampleMask)
+{
+	const VkPipelineMultisampleStateCreateInfo multisampleStateParams =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType							sType;
+		DE_NULL,													// const void*								pNext;
+		0u,															// VkPipelineMultisampleStateCreateFlags	flags;
+		rasterizationSamples,										// VkSampleCountFlagBits					rasterizationSamples;
+		enableMinSampleShading ? VK_TRUE : VK_FALSE,				// VkBool32									sampleShadingEnable;
+		enableMinSampleShading ? minSampleShading : 0.0f,			// float									minSampleShading;
+		enableSampleMask ? m_sampleMask.data() : DE_NULL,			// const VkSampleMask*						pSampleMask;
+		false,														// VkBool32									alphaToCoverageEnable;
+		false														// VkBool32									alphaToOneEnable;
+	};
+
+	return multisampleStateParams;
+}
+
+VkPipelineRasterizationConservativeStateCreateInfoEXT  SampleMaskWithConservativeInstance::getRasterizationConservativeStateCreateInfo(const VkConservativeRasterizationModeEXT	conservativeRasterizationMode)
+{
+	const VkPipelineRasterizationConservativeStateCreateInfoEXT	rasterizationConservativeStateCreateInfo =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT,	//  VkStructureType											sType;
+			DE_NULL,																		//  const void*												pNext;
+			(VkPipelineRasterizationConservativeStateCreateFlagsEXT)0,						//  VkPipelineRasterizationConservativeStateCreateFlagsEXT	flags;
+			conservativeRasterizationMode,													//  VkConservativeRasterizationModeEXT						conservativeRasterizationMode;
+			0.0f																			//  float													extraPrimitiveOverestimationSize;
+		};
+
+	return rasterizationConservativeStateCreateInfo;
+}
+
+std::vector<Vertex4RGBA> SampleMaskWithConservativeInstance::generateVertices (void)
+{
+	std::vector<Vertex4RGBA> vertices;
+
+	{
+		const Vertex4RGBA vertexInput = { tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f), m_renderColor };
+		vertices.push_back(vertexInput);
+	}
+	{
+		const Vertex4RGBA vertexInput = { tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), m_renderColor };
+		vertices.push_back(vertexInput);
+	}
+	{
+		const Vertex4RGBA vertexInput = { tcu::Vec4(-1.0f,  1.0f, 0.0f, 1.0f), m_renderColor };
+		vertices.push_back(vertexInput);
+	}
+
+	return vertices;
+}
+
+tcu::TestStatus SampleMaskWithConservativeInstance::verifyImage (const std::vector<tcu::TextureLevel>& sampleShadedImages, const tcu::ConstPixelBufferAccess& result)
+{
+	bool			pass	= true;
+	const int		width	= result.getWidth();
+	const int		height	= result.getHeight();
+	tcu::TestLog&	log		= m_context.getTestContext().getLog();
+
+	const deUint32		samplesCount		= (int)sampleShadedImages.size();
+
+	for (size_t i = 0; i < samplesCount; ++i)
+	{
+		const tcu::ConstPixelBufferAccess &s = sampleShadedImages[i].getAccess();
+
+		log << tcu::TestLog::ImageSet("Per sample image", "Per sampe image")
+			<< tcu::TestLog::Image("Layer", "Layer", s)
+			<< tcu::TestLog::EndImageSet;
+	}
+
+	// Leave sample count intact (return 1) if multiplication by minSampleShading won't exceed base 2
+	// otherwise round up to the nearest power of 2
+	auto sampleCountDivider = [](float x) {
+		float power = 1.0;
+		while (power < x)
+		{
+			power *= 2;
+		}
+		return power;
+	};
+
+	DE_ASSERT(width == 10);
+	DE_ASSERT(height == 10);
+
+	const tcu::Vec4 clearColor = tcu::Vec4(0.0f);
+	std::vector<std::pair<int, int>> fullyCoveredPixelsCoordinateSet;
+
+	// Generating set of pixel coordinate values covered by the triangle
+	if (m_conservativeRasterizationMode == VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT)
+	{
+		for (int i = 0; i < width; i++)
+		{
+			for (int j = 0; j < height; j++)
+			{
+				// Rasterization will cover half of the triangle plus 1 pixel edge due to the overeestimation
+				if (i < 5 && i + j < 11)
+					fullyCoveredPixelsCoordinateSet.push_back(std::make_pair(i, j));
+			}
+		}
+	}
+	else
+	{
+		for (int i = 1; i < width; i++)
+		{
+			for (int j = 1; j < height; j++)
+			{
+				// Rasterization will cover half of the triangle minus 1 pixel edge due to the underestimation
+				if (i < 5 && i + j < 8)
+					fullyCoveredPixelsCoordinateSet.push_back(std::make_pair(i, j));
+			}
+		}
+	}
+
+	for (int x = 0; x < width; ++x)
+		for (int y = 0; y < height; ++y)
+		{
+			const tcu::Vec4 resultPixel = result.getPixel(x, y);
+
+			if (std::find(fullyCoveredPixelsCoordinateSet.begin(), fullyCoveredPixelsCoordinateSet.end(), std::make_pair(x, y)) != fullyCoveredPixelsCoordinateSet.end())
+			{
+				if (m_enableMinSampleShading)
+				{
+					tcu::UVec4	sampleShadingValue = tcu::UVec4();
+					for (size_t i = 0; i < samplesCount; ++i)
+					{
+						const tcu::UVec4	sampleShadedValue = sampleShadedImages[i].getAccess().getPixelUint(x, y);
+
+						sampleShadingValue += sampleShadedValue;
+					}
+
+					//Calculate coverage of a single sample Image based on accumulated value from the whole set
+					int sampleCoverageValue = sampleShadingValue.w() / samplesCount;
+					//Calculates an estimated coverage value based on the number of samples and the minimumSampleShading
+					int expectedCovergaveValue = (int)(255.0 / sampleCountDivider((float)m_rasterizationSamples * m_minSampleShading)) + 1;
+
+					//The specification allows for larger sample count than minimum value, however resulted coverage should never be lower than minimum
+					if (sampleCoverageValue > expectedCovergaveValue)
+					{
+						log << tcu::TestLog::Message << "Coverage value " << sampleCoverageValue <<  " greather than expected: " << expectedCovergaveValue << tcu::TestLog::EndMessage;
+
+						pass = false;
+					}
+				}
+
+				else if (m_enableSampleMask)
+				{
+					// Sample mask with all bits on will not affect fragment coverage
+					if (m_sampleMask[0] == 0xFFFFFFFF)
+					{
+						if (resultPixel != m_renderColor)
+						{
+							log << tcu::TestLog::Message << "x: " << x << " y: " << y << " Result: " << resultPixel
+								<< " Reference: " << m_renderColor << tcu::TestLog::EndMessage;
+
+							pass = false;
+						}
+					}
+					// Sample mask with half bits off will reduce sample coverage by half
+					else if (m_sampleMask[0] == 0xAAAAAAAA)
+					{
+
+						const tcu::Vec4 renderColorHalfOpacity(0.0f, 0.5f, 0.0f, 0.5f);
+						const float		threshold = 0.02f;
+
+						for (deUint32 componentNdx = 0u; componentNdx < m_renderColor.SIZE; ++componentNdx)
+						{
+							if ((renderColorHalfOpacity[componentNdx] != 0.0f && resultPixel[componentNdx] <= (renderColorHalfOpacity[componentNdx] - threshold))
+								|| resultPixel[componentNdx] >= (renderColorHalfOpacity[componentNdx] + threshold))
+							{
+								log << tcu::TestLog::Message << "x: " << x << " y: " << y << " Result: " << resultPixel
+									<< " Reference: " << renderColorHalfOpacity << " +/- " << threshold << tcu::TestLog::EndMessage;
+
+								pass = false;
+							}
+						}
+					}
+					// Sample mask with all bits off will cause all fragment to failed opacity test
+					else if (m_sampleMask[0] == 0x00000000)
+					{
+						if (resultPixel != clearColor)
+						{
+							log << tcu::TestLog::Message << "x: " << x << " y: " << y << " Result: " << resultPixel
+								<< " Reference: " << clearColor << tcu::TestLog::EndMessage;
+
+							pass = false;
+						}
+					}
+					else
+					{
+						log << tcu::TestLog::Message << "Unexpected sample mask value" << tcu::TestLog::EndMessage;
+
+						pass = false;
+					}
+				}
+				else
+				{
+					if (resultPixel != m_renderColor)
+					{
+						log << tcu::TestLog::Message << "x: " << x << " y: " << y << " Result: " << resultPixel
+							<< " Reference: " << m_renderColor << tcu::TestLog::EndMessage;
+
+						pass = false;
+					}
+				}
+			}
+			else
+			{
+				if (resultPixel != clearColor)
+				{
+					log << tcu::TestLog::Message << "x: " << x << " y: " << y << " Result: " << resultPixel
+						<< " Reference: " << clearColor << tcu::TestLog::EndMessage;
+
+					pass = false;
+				}
+			}
+		}
+
+	if (pass)
+		return tcu::TestStatus::pass("Passed");
+	else
+	{
+		log << tcu::TestLog::ImageSet("LayerContent", "Layer content")
+			<< tcu::TestLog::Image("Layer", "Layer", result)
+			<< tcu::TestLog::EndImageSet;
+
+		return tcu::TestStatus::fail("Failed");
+	}
+
+}
+
 // SampleMaskWithDepthTestInstance
 
 SampleMaskWithDepthTestInstance::SampleMaskWithDepthTestInstance (Context&						context,
@@ -2415,14 +2987,18 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 	, m_renderSize				(renderSize)
 	, m_useDepth				(false)
 	, m_useStencil				(false)
+	, m_useConservative			(false)
 	, m_multisampleStateParams	(multisampleStateParams)
 	, m_colorBlendState			(blendState)
+	, m_rasterizationConservativeStateCreateInfo ()
 	, m_renderType				(renderType)
 	, m_backingMode				(backingMode)
 	, m_depthClearValue			(1.0f)
 {
 	initialize(context, 1u, &topology, &vertices);
 }
+
+
 
 MultisampleRenderer::MultisampleRenderer (Context&										context,
 										  const VkFormat								colorFormat,
@@ -2445,8 +3021,44 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 	, m_renderSize				(renderSize)
 	, m_useDepth				(useDepth)
 	, m_useStencil				(useStencil)
+	, m_useConservative			(false)
 	, m_multisampleStateParams	(multisampleStateParams)
 	, m_colorBlendState			(blendState)
+	, m_rasterizationConservativeStateCreateInfo ()
+	, m_renderType				(renderType)
+	, m_backingMode				(backingMode)
+	, m_depthClearValue			(depthClearValue)
+{
+	initialize(context, numTopologies, pTopology, pVertices);
+}
+
+MultisampleRenderer::MultisampleRenderer (Context&										context,
+										  const VkFormat								colorFormat,
+										  const VkFormat								depthStencilFormat,
+										  const tcu::IVec2&								renderSize,
+										  const bool									useDepth,
+										  const bool									useStencil,
+										  const bool									useConservative,
+										  const deUint32								numTopologies,
+										  const VkPrimitiveTopology*					pTopology,
+										  const std::vector<Vertex4RGBA>*				pVertices,
+										  const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
+										  const VkPipelineColorBlendAttachmentState&	blendState,
+										  const VkPipelineRasterizationConservativeStateCreateInfoEXT&	conservativeStateCreateInfo,
+										  const RenderType								renderType,
+										  const ImageBackingMode						backingMode,
+										  const float									depthClearValue)
+	: m_context					(context)
+	, m_bindSemaphore			(createSemaphore(context.getDeviceInterface(), context.getDevice()))
+	, m_colorFormat				(colorFormat)
+	, m_depthStencilFormat		(depthStencilFormat)
+	, m_renderSize				(renderSize)
+	, m_useDepth				(useDepth)
+	, m_useStencil				(useStencil)
+	, m_useConservative			(useConservative)
+	, m_multisampleStateParams	(multisampleStateParams)
+	, m_colorBlendState			(blendState)
+	, m_rasterizationConservativeStateCreateInfo (conservativeStateCreateInfo)
 	, m_renderType				(renderType)
 	, m_backingMode				(backingMode)
 	, m_depthClearValue			(depthClearValue)
@@ -3202,30 +3814,47 @@ void MultisampleRenderer::initialize (Context&									context,
 			1.0f,														// float									maxDepthBounds;
 		};
 
+		const VkPipelineRasterizationStateCreateInfo	rasterizationStateCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		//  VkStructureType							sType;
+			&m_rasterizationConservativeStateCreateInfo,					//  const void*								pNext;
+			0,																//  VkPipelineRasterizationStateCreateFlags	flags;
+			false,															//  VkBool32								depthClampEnable;
+			false,															//  VkBool32								rasterizerDiscardEnable;
+			VK_POLYGON_MODE_FILL,											//  VkPolygonMode							polygonMode;
+			VK_CULL_MODE_NONE,												//  VkCullModeFlags							cullMode;
+			VK_FRONT_FACE_COUNTER_CLOCKWISE,								//  VkFrontFace								frontFace;
+			VK_FALSE,														//  VkBool32								depthBiasEnable;
+			0.0f,															//  float									depthBiasConstantFactor;
+			0.0f,															//  float									depthBiasClamp;
+			0.0f,															//  float									depthBiasSlopeFactor;
+			0.0f,															//  float									lineWidth;
+		};
+
 		const deUint32 numSubpasses = m_renderType == RENDER_TYPE_DEPTHSTENCIL_ONLY ? 2u : 1u;
 
 		for (deUint32 subpassIdx = 0; subpassIdx < numSubpasses; subpassIdx++)
 			for (deUint32 i = 0u; i < numTopologies; ++i)
 			{
-				m_graphicsPipelines.push_back(VkPipelineSp(new Unique<VkPipeline>(makeGraphicsPipeline(vk,							// const DeviceInterface&                        vk
-																									   vkDevice,					// const VkDevice                                device
-																									   *m_pipelineLayout,			// const VkPipelineLayout                        pipelineLayout
-																									   *m_vertexShaderModule,		// const VkShaderModule                          vertexShaderModule
-																									   DE_NULL,						// const VkShaderModule                          tessellationControlModule
-																									   DE_NULL,						// const VkShaderModule                          tessellationEvalModule
-																									   DE_NULL,						// const VkShaderModule                          geometryShaderModule
-																									   *m_fragmentShaderModule,		// const VkShaderModule                          fragmentShaderModule
-																									   *m_renderPass,				// const VkRenderPass                            renderPass
-																									   viewports,					// const std::vector<VkViewport>&                viewports
-																									   scissors,					// const std::vector<VkRect2D>&                  scissors
-																									   pTopology[i],				// const VkPrimitiveTopology                     topology
-																									   subpassIdx,					// const deUint32                                subpass
-																									   0u,							// const deUint32                                patchControlPoints
-																									   &vertexInputStateParams,		// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-																									   DE_NULL,						// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-																									   &m_multisampleStateParams,	// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-																									   &depthStencilStateParams,	// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
-																									   &colorBlendStateParams))));	// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
+				m_graphicsPipelines.push_back(VkPipelineSp(new Unique<VkPipeline>(makeGraphicsPipeline(vk,															// const DeviceInterface&                        vk
+																									   vkDevice,													// const VkDevice                                device
+																									   *m_pipelineLayout,											// const VkPipelineLayout                        pipelineLayout
+																									   *m_vertexShaderModule,										// const VkShaderModule                          vertexShaderModule
+																									   DE_NULL,														// const VkShaderModule                          tessellationControlModule
+																									   DE_NULL,														// const VkShaderModule                          tessellationEvalModule
+																									   DE_NULL,														// const VkShaderModule                          geometryShaderModule
+																									   *m_fragmentShaderModule,										// const VkShaderModule                          fragmentShaderModule
+																									   *m_renderPass,												// const VkRenderPass                            renderPass
+																									   viewports,													// const std::vector<VkViewport>&                viewports
+																									   scissors,													// const std::vector<VkRect2D>&                  scissors
+																									   pTopology[i],												// const VkPrimitiveTopology                     topology
+																									   subpassIdx,													// const deUint32                                subpass
+																									   0u,															// const deUint32                                patchControlPoints
+																									   &vertexInputStateParams,										// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+																									   m_useConservative ? &rasterizationStateCreateInfo : DE_NULL,	// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+																									   &m_multisampleStateParams,									// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+																									   &depthStencilStateParams,									// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+																									   &colorBlendStateParams))));									// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
 			}
 	}
 
@@ -3996,6 +4625,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 	};
 
 	const vk::VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo =
+
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	//	VkStructureType							sType;
 		nullptr,														//	const void*								pNext;
@@ -4641,6 +5271,74 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 
 		}
 		multisampleTests->addChild(sampleMaskWithDepthTestGroup.release());
+
+	}
+
+	{
+		//Conservative rasterization test
+		struct TestConfig
+		{
+			const char*		name;
+			const char*		description;
+			bool			enableMinSampleShading;
+			const float		minSampleShading;
+			const bool		enableSampleMask;
+			VkSampleMask	sampleMask;
+			bool			enablePostDepthCoverage;
+		};
+
+		const TestConfig testConfigs[] =
+		{
+			{ "plain_conservative",		"Only conservative rendering applied",	false,		0.0f,		false,		0x0,			false },
+			{ "post_depth_coverage",	"Post depth coverage enabled",			false,		0.0f,		false,		0x0,			true },
+			{ "min_0_25",				"minSampleMask set to 0.25f",			true,		0.25f,		false,		0x0,			false },
+			{ "min_0_5",				"minSampleMask set to 0.5f",			true,		0.5f,		false,		0x0,			false },
+			{ "min_0_75",				"minSampleMask set to 0.75f",			true,		0.75f,		false,		0x0,			false },
+			{ "min_0_1_0",				"minSampleMask set to 1.0f",			true,		1.0f,		false,		0x0,			false },
+			{ "mask_all_off",			"All mask bits are on",					false,		0.0f,		true,		0x0,			false },
+			{ "mask_all_on",			"All mask bits are off",				false,		0.0f,		true,		0xFFFFFFFF,		false },
+			{ "mask_half_on",			"All mask elements are 0xAAAAAAAA",		false,		0.0f,		true,		0xAAAAAAAA,		false },
+		};
+
+		const vk::VkSampleCountFlagBits standardSamplesSet[] =
+		{
+			vk::VK_SAMPLE_COUNT_2_BIT,
+			vk::VK_SAMPLE_COUNT_4_BIT,
+			vk::VK_SAMPLE_COUNT_8_BIT,
+			vk::VK_SAMPLE_COUNT_16_BIT
+		};
+
+		enum vk::VkConservativeRasterizationModeEXT rasterizationMode[] =
+		{
+			vk::VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT,
+			vk::VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT
+		};
+
+		// Conservative rendering
+		de::MovePtr<tcu::TestCaseGroup> conservativeGroup(new tcu::TestCaseGroup(testCtx, "conservative_with_full_coverage", ""));
+
+		for (int modeNdx = 0; modeNdx < DE_LENGTH_OF_ARRAY(rasterizationMode); ++modeNdx)
+		{
+			const char* modeName = (modeNdx == 0 ? "overestimate" : "underestimate");
+			de::MovePtr<tcu::TestCaseGroup> modesGroup(new tcu::TestCaseGroup(testCtx, modeName, ""));
+
+			for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(standardSamplesSet); ++samplesNdx)
+			{
+				std::string caseName = "samples_" + std::to_string(standardSamplesSet[samplesNdx]) + "_";
+
+				for (int configNdx = 0; configNdx < DE_LENGTH_OF_ARRAY(testConfigs); configNdx++)
+				{
+					const TestConfig&				testConfig				= testConfigs[configNdx];
+
+					modesGroup->addChild(new SampleMaskWithConservativeTest(testCtx, caseName + testConfig.name, testConfig.description, standardSamplesSet[samplesNdx], rasterizationMode[modeNdx], testConfig.enableMinSampleShading, testConfig.minSampleShading, testConfig.enableSampleMask, testConfig.sampleMask, testConfig.enablePostDepthCoverage));
+				}
+
+			}
+
+			conservativeGroup->addChild(modesGroup.release());
+		}
+
+		multisampleTests->addChild(conservativeGroup.release());
 	}
 
 	{
@@ -4654,6 +5352,7 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 			vk::VK_SAMPLE_COUNT_32_BIT,
 			vk::VK_SAMPLE_COUNT_64_BIT,
 		};
+
 
 		static const std::array<bool, 2> unusedAttachmentFlag = {{ false, true }};
 
