@@ -499,12 +499,12 @@ void InterfaceMatchingTestCase::initPrograms(SourceCollections& sourceCollection
 	case DefinitionType::MEMBER_OF_BLOCK:
 		outDeclaration		   += "layout(location = 0) out block {\n"
 								  "  vec2 dummy;\n"
-								  "layout(location = 1) " +
+								  "layout(location = 1" + outDecorationData.glslComponent + ") " +
 								  outDecoration + outVecData.glslType + " variableInBlock;\n"
 								  "} testBlock" + outDeclArray + ";\n";
 		inDeclaration		   += "in block {\n"
 								  "layout(location = 0) vec2 dummy;\n"
-								  "layout(location = 1) " +
+								  "layout(location = 1" + inDecorationData.glslComponent + ") " +
 								  inDecoration + inVecData.glslType + " variableInBlock;\n"
 								  "} testBlock" + inDeclArray + ";\n";
 		variableToAssignName	= "testBlock" + variableToAssignArray + ".variableInBlock";
@@ -1088,20 +1088,28 @@ tcu::TestCaseGroup* createInterfaceMatchingTests(tcu::TestContext& testCtx)
 
 	de::MovePtr<tcu::TestCaseGroup> decorationMismatching(new tcu::TestCaseGroup(testCtx, "decoration_mismatch", "Decoration mismatch tests"));
 	for (PipelineType stageType : pipelineTypeList)
-		for (const auto& decoration : decorationPairs)
-		{
-			auto testParams = new TestParams
+		for (DefinitionType defType : definitionsTypeList)
+			for (const auto& decoration : decorationPairs)
 			{
-				TestType::DECORATION_MISMATCH,
-				VecType::VEC4,
-				VecType::VEC4,
-				decoration.first,
-				decoration.second,
-				stageType,
-				DefinitionType::LOOSE_VARIABLE
-			};
-			decorationMismatching->addChild(new InterfaceMatchingTestCase(testCtx, TestParamsSp(testParams)));
-		}
+				// tests component = 0 only for loose variables or member of block
+				if (((decoration.first == DecorationType::COMPONENT0) ||
+					 (decoration.second == DecorationType::COMPONENT0)) &&
+					((defType != DefinitionType::LOOSE_VARIABLE) &&
+					 (defType != DefinitionType::MEMBER_OF_BLOCK)))
+					continue;
+
+				auto testParams = new TestParams
+				{
+					TestType::DECORATION_MISMATCH,
+					VecType::VEC4,
+					VecType::VEC4,
+					decoration.first,
+					decoration.second,
+					stageType,
+					defType
+				};
+				decorationMismatching->addChild(new InterfaceMatchingTestCase(testCtx, TestParamsSp(testParams)));
+			}
 
 	testGroup->addChild(decorationMismatching.release());
 	return testGroup.release();
