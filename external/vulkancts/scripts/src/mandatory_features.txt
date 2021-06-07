@@ -135,3 +135,6 @@ VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT			FEATURES ( ycbcr2plane444Form
 VkPhysicalDeviceExtendedDynamicState2FeaturesEXT			FEATURES ( extendedDynamicState2 )								REQUIREMENTS ( VK_EXT_extended_dynamic_state2 )
 VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE			FEATURES ( mutableDescriptorType )								REQUIREMENTS ( VK_VALVE_mutable_descriptor_type )
 VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT				FEATURES ( globalPriorityQuery )								REQUIREMENTS ( VK_EXT_global_priority_query )
+VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT			FEATURES ( shaderImageInt64Atomics )							REQUIREMENTS ( VK_EXT_shader_image_atomic_int64 physicalDeviceShaderImageAtomicInt64FeaturesEXT.sparseImageInt64Atomics )
+VkPhysicalDeviceShaderAtomicFloatFeaturesEXT				FEATURES ( shaderImageFloat32Atomics )							REQUIREMENTS ( VK_EXT_shader_atomic_float physicalDeviceShaderAtomicFloatFeaturesEXT.sparseImageFloat32Atomics )
+VkPhysicalDeviceShaderAtomicFloatFeaturesEXT				FEATURES ( shaderImageFloat32AtomicAdd )						REQUIREMENTS ( VK_EXT_shader_atomic_float physicalDeviceShaderAtomicFloatFeaturesEXT.sparseImageFloat32AtomicAdd )
