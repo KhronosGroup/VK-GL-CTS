@@ -798,6 +798,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkSubmitInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSynchronization2FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyCheckpointProperties2NV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCheckpointData2NV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferCopy2KHR& value);
@@ -1044,6 +1045,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkVertexInputAttributeDescripti
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExtendedDynamicState2FeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceColorWriteEnableFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineColorWriteCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyGlobalPriorityPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressConstKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildRangeInfoKHR& value);

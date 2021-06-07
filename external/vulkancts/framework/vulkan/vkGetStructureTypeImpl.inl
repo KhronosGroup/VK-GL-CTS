@@ -1116,6 +1116,11 @@ template<> VkStructureType getStructureType<VkCheckpointData2NV> (void)
 	return VK_STRUCTURE_TYPE_CHECKPOINT_DATA_2_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES_KHR;
@@ -2189,6 +2194,16 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceColorWriteEnableFeat
 template<> VkStructureType getStructureType<VkPipelineColorWriteCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkQueueFamilyGlobalPriorityPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkAccelerationStructureGeometryTrianglesDataKHR> (void)

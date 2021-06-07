@@ -3006,6 +3006,13 @@ struct VkCheckpointData2NV
 	void*						pCheckpointMarker;
 };
 
+struct VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderSubgroupUniformControlFlow;
+};
+
 struct VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR
 {
 	VkStructureType	sType;
@@ -5138,6 +5145,21 @@ struct VkPipelineColorWriteCreateInfoEXT
 	const void*		pNext;
 	deUint32		attachmentCount;
 	const VkBool32*	pColorWriteEnables;
+};
+
+struct VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		globalPriorityQuery;
+};
+
+struct VkQueueFamilyGlobalPriorityPropertiesEXT
+{
+	VkStructureType				sType;
+	void*						pNext;
+	deUint32					priorityCount;
+	VkQueueGlobalPriorityEXT	priorities[VK_MAX_GLOBAL_PRIORITY_SIZE_EXT];
 };
 
 union VkDeviceOrHostAddressKHR

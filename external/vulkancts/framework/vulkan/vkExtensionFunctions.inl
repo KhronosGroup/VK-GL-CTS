@@ -294,6 +294,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_subgroup_uniform_control_flow")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_zero_initialize_workgroup_memory")
 	{
 		return;
@@ -883,6 +887,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_global_priority_query")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_acceleration_structure")
 	{
 		return;
@@ -1359,6 +1367,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdPipelineBarrier2KHR");
 		functions.push_back("vkCmdWriteTimestamp2KHR");
 		functions.push_back("vkQueueSubmit2KHR");
+		return;
+	}
+	if (extName == "VK_KHR_shader_subgroup_uniform_control_flow")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_zero_initialize_workgroup_memory")
@@ -2050,6 +2062,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	if (extName == "VK_EXT_color_write_enable")
 	{
 		functions.push_back("vkCmdSetColorWriteEnableEXT");
+		return;
+	}
+	if (extName == "VK_EXT_global_priority_query")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_acceleration_structure")
