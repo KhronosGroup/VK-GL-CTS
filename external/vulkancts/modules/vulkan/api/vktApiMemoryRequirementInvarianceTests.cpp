@@ -253,6 +253,8 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 	de::MovePtr<IObjectAllocator>			objs[testCycles];
 	size_t									refSizes[testCycles];
 	unsigned int							order[testCycles];
+	bool									supported[testCycles];
+	bool									allUnsupported					= true;
 	bool									success							= true;
 	const deBool							isDedicatedAllocationSupported	= m_context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation");
 	const deBool							isYcbcrSupported				= m_context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion");
@@ -586,10 +588,22 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 	// First get reference values for the object sizes
 	for (unsigned int i = 0; i < testCycles; i++)
 	{
-		objs[i]->allocate(m_context);
-		refSizes[i] = objs[i]->getSize(m_context);
-		objs[i]->deallocate(m_context);
+		try
+		{
+			objs[i]->allocate(m_context);
+			refSizes[i] = objs[i]->getSize(m_context);
+			objs[i]->deallocate(m_context);
+			supported[i] = true;
+			allUnsupported = false;
+		}
+		catch (const tcu::NotSupportedError&)
+		{
+			supported[i] = false;
+		}
 	}
+
+	if (allUnsupported)
+		TCU_THROW(NotSupportedError, "All allocations unsupported");
 
 	// Shuffle order by swapping random pairs
 	for (unsigned int i = 0; i < testCycles; i++)
@@ -601,11 +615,17 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 
 	// Allocate objects in shuffled order
 	for (unsigned int i = 0; i < testCycles; i++)
-		objs[order[i]]->allocate(m_context);
+	{
+		if (supported[order[i]])
+			objs[order[i]]->allocate(m_context);
+	}
 
 	// Check for size mismatches
 	for (unsigned int i = 0; i < testCycles; i++)
 	{
+		if (!supported[order[i]])
+			continue;
+
 		size_t val = objs[order[i]]->getSize(m_context);
 
 		if (val != refSizes[order[i]])
@@ -625,7 +645,10 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 
 	// Clean up
 	for (unsigned int i = 0; i < testCycles; i++)
-		objs[order[i]]->deallocate(m_context);
+	{
+		if (supported[order[i]])
+			objs[order[i]]->deallocate(m_context);
+	}
 
 	if (success)
 		return tcu::TestStatus::pass("Pass");
