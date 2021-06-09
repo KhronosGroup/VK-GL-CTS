@@ -682,6 +682,11 @@ public:
 
 	virtual const VkAccelerationStructureKHR*						getPtr								(void) const = DE_NULL;
 
+	virtual void													updateInstanceMatrix				(const DeviceInterface&						vk,
+																										 const VkDevice								device,
+																										 size_t										instanceIndex,
+																										 const VkTransformMatrixKHR&				matrix) = 0;
+
 protected:
 	std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >	m_bottomLevelInstances;
 	std::vector<InstanceData>										m_instanceData;

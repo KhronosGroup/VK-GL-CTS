@@ -213,6 +213,7 @@ struct TestParams
 	float					rotationY;
 	VkGeometryTypeKHR		geometryType;
 	bool					useArraysOfPointers;
+	bool					updateMatrixAfterBuild;
 	RayOriginType			rayOriginType;
 	RayEndType				rayEndtype;
 };
@@ -358,8 +359,13 @@ tcu::TestStatus DirectionTestInstance::iterate (void)
 	topLevelAS->setUseArrayOfPointers(m_params.useArraysOfPointers);
 	topLevelAS->setUsePPGeometries(m_params.useArraysOfPointers);
 	topLevelAS->setInstanceCount(1);
-	topLevelAS->addInstance(blasSharedPtr, transformMatrix, 0, 0xFFu, 0u, instanceFlags);
+	{
+		const auto& initialMatrix = (m_params.updateMatrixAfterBuild ? identityMatrix3x4 : transformMatrix);
+		topLevelAS->addInstance(blasSharedPtr, initialMatrix, 0, 0xFFu, 0u, instanceFlags);
+	}
 	topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+	if (m_params.updateMatrixAfterBuild)
+		topLevelAS->updateInstanceMatrix(vkd, device, 0u, transformMatrix);
 
 	// Create output buffer.
 	const auto			bufferSize			= static_cast<VkDeviceSize>(sizeof(float));
@@ -577,10 +583,14 @@ tcu::TestCaseGroup*	createDirectionLengthTests (tcu::TestContext& testCtx)
 					angles.first,				//		float					rotationX;
 					angles.second,				//		float					rotationY;
 					geometryType,				//		VkGeometryTypeKHR		geometryType;
-					(caseCounter++ % 2u == 0u),	//		bool					useArraysOfPointers;
+					// Use arrays of pointers when building the TLAS in every other test.
+					(caseCounter % 2u == 0u),	//		bool					useArraysOfPointers;
+					// Sometimes, update matrix after building the lop level AS and before submitting the command buffer.
+					(caseCounter % 3u == 0u),	//		bool					updateMatrixAfterBuild;
 					rayOrigType,				//		RayOriginType			rayOriginType;
 					rayEndType,					//		RayEndType				rayEndType;
 				};
+				++caseCounter;
 
 				factorGroup->addChild(new DirectionTestCase(testCtx, angleName, "", params));
 			}
@@ -646,6 +656,7 @@ tcu::TestCaseGroup*	createInsideAABBsTests (tcu::TestContext& testCtx)
 					angles.second,			//		float					rotationY;
 					geometryType,			//		VkGeometryTypeKHR		geometryType;
 					false,					//		bool					useArraysOfPointers;
+					false,					//		bool					updateMatrixAfterBuild;
 					rayOrigType,			//		RayOriginType			rayOriginType;
 					rayEndCase.rayEndType,	//		RayEndType				rayEndType;
 				};
