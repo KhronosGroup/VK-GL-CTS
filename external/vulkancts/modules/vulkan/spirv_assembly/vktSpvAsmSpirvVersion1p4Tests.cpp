@@ -188,7 +188,7 @@ tcu::TestCaseGroup* createSpirvVersion1p4Group (tcu::TestContext& testCtx)
 	group.add("variable_pointers_ssbo_2_not_equal", "ptr not equal SSBO, store pointer in Function var", Varptr_full);
 	group.add("variable_pointers_ssbo_not_equal", "ptr not equal SSBO, pointer from function return", Varptr_ssbo);
 	group.add("variable_pointers_vars_ssbo_not_equal", "ptr not equal SSBO, store pointer in Private var", Varptr_ssbo);
-	group.add("variable_pointers_vars_wg_not_equal", "ptr not equal Workgroup, store pointer in Private var", Varptr_ssbo);
+	group.add("variable_pointers_vars_wg_not_equal", "ptr not equal Workgroup, store pointer in Private var", Varptr_full);
 	group.add("variable_pointers_wg_not_equal", "ptr not equal Workgroup", Varptr_full);
 	group.add("wg_comparisons_not_equal", "ptr not equal Workgroup", Varptr_full);
 	spirv1p4Tests->addChild(createTestGroup(testCtx, "opptrnotequal", "OpPtrNotEqual", addTestsForAmberFiles, group));
