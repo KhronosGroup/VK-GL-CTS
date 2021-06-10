@@ -13,17 +13,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# - GO needs to be installed to use regres. (apt install golang-go)
+# Requirements to run the script:
+# - Python3 (apt-get install -y python3.x)
+# - GO      (apt-get install -y golang-go)
+# - cmake   (version 3.13 or later)
+# - ninja   (apt-get install -y ninja-build)
+# - git     (sudo apt-get install -y git)
+
+# GO dependencies needed:
+# - crypto/openpgp (go get -u golang.org/x/crypto/openpgp...)
 
 import os
 import json
 import tempfile
 import subprocess
+import sys
 
 from argparse import ArgumentParser
-from shutil import which, copyfile, move
+from shutil import which, copyfile
 from pathlib import Path
 from datetime import datetime
+
+# Check for correct python version (python3) before doing anything.
+if sys.version_info.major < 3:
+        raise RuntimeError("Python version needs to be 3 or greater.")
 
 AP = ArgumentParser()
 AP.add_argument(
@@ -130,13 +143,13 @@ ARGS = AP.parse_args()
 # Check that we have everything needed to run the script when using recipe run-deqp.
 if ARGS.recipe == "run-deqp":
     if which("go") is None:
-        raise RuntimeError("go not found.")
+        raise RuntimeError("go not found. (apt-get install -y golang-go)")
     if which("cmake") is None:
-        raise RuntimeError("CMake not found.")
+        raise RuntimeError("CMake not found. (version 3.13 or later needed)")
     if which("ninja") is None:
-        raise RuntimeError("Ninja not found.")
+        raise RuntimeError("Ninja not found. (apt-get install -y ninja-build)")
     if which("git") is None:
-        raise RuntimeError("Git not found.")
+        raise RuntimeError("Git not found. (apt-get install -y git)")
     if ARGS.vk_gl_cts is None:
         raise RuntimeError("vk-gl-cts source directory must be provided. Use --help for more info.")
 
@@ -390,7 +403,7 @@ def buildCts():
     # Build VK-GL-CTS
     buildType = "-DCMAKE_BUILD_TYPE=" + ARGS.vk_gl_cts_build_type
     run([which("cmake"), "-GNinja", str(VK_GL_CTS_ROOT_DIR), buildType], working_dir=VK_GL_CTS_BUILD_DIR)
-    run([which("ninja")], working_dir=VK_GL_CTS_BUILD_DIR)
+    run([which("ninja"), "deqp-vk"], working_dir=VK_GL_CTS_BUILD_DIR)
     print(f"vk-gl-cts built to: {VK_GL_CTS_BUILD_DIR}")
 
 # Clone and build SwiftShader and Vulkan validation layers.
@@ -403,14 +416,18 @@ def cloneSwsAndLayers():
         run([which("git"), "pull", "origin"], working_dir=SWS_SRC_DIR)
 
     # Build SwiftShader.
-    buildType = "-DCMAKE_BUILD_TYPE=" + ARGS.sws_build_type
-    # Set env variables if clang build path is set.
-    if os.getenv("CXX") is None:
-        os.environ["CXX"] = "clang++"
-    if os.getenv("CC") is None:
-        os.environ["CC"] = "clang"
-    run([which("cmake"), "-GNinja", str(SWS_SRC_DIR), buildType], working_dir=SWS_BUILD_DIR)
-    run([which("cmake"), "--build", "."], working_dir=SWS_BUILD_DIR)
+    run([which("cmake"),
+            "-GNinja",
+            str(SWS_SRC_DIR),
+            "-DSWIFTSHADER_BUILD_EGL:BOOL=OFF",
+            "-DSWIFTSHADER_BUILD_GLESv2:BOOL=OFF",
+            "-DSWIFTSHADER_BUILD_TESTS:BOOL=OFF",
+            "-DINSTALL_GTEST=OFF",
+            "-DBUILD_TESTING:BOOL=OFF",
+            "-DENABLE_CTEST:BOOL=OFF",
+            "-DCMAKE_BUILD_TYPE=" + ARGS.sws_build_type],
+            working_dir=SWS_BUILD_DIR)
+    run([which("cmake"), "--build", ".", "--target", "vk_swiftshader"], working_dir=SWS_BUILD_DIR)
 
     # Set Vulkan validation layers if flag is set.
     if ARGS.validation == "true":
