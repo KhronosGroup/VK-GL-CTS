@@ -392,6 +392,9 @@ void TextureBufferOperations::iterateFirstPhase(glw::GLint* result, glw::GLuint 
 	gl.useProgram(m_po_cs_id);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Error setting active program!");
 
+	gl.memoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "Error setting memory barrier!");
+
 	gl.bindImageTexture(0, m_texbuff_id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32I);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Error binding texture to image unit!");
 
