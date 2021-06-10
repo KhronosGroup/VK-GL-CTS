@@ -206,6 +206,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceMemoryPriorityFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceMultiDrawFeaturesEXT physicalDeviceMultiDrawFeaturesEXT;
+	deMemset(&physicalDeviceMultiDrawFeaturesEXT, 0, sizeof(physicalDeviceMultiDrawFeaturesEXT));
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_multi_draw")) )
+	{
+		physicalDeviceMultiDrawFeaturesEXT.sType = getStructureType<VkPhysicalDeviceMultiDrawFeaturesEXT>();
+		*nextPtr = &physicalDeviceMultiDrawFeaturesEXT;
+		nextPtr  = &physicalDeviceMultiDrawFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceMultiviewFeatures physicalDeviceMultiviewFeatures;
 	deMemset(&physicalDeviceMultiviewFeatures, 0, sizeof(physicalDeviceMultiviewFeatures));
 
@@ -1796,6 +1806,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceShaderAtomicFloatFeaturesEXT.shaderImageFloat32AtomicAdd == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderImageFloat32AtomicAdd not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_multi_draw")) )
+	{
+		if ( physicalDeviceMultiDrawFeaturesEXT.multiDraw == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature multiDraw not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

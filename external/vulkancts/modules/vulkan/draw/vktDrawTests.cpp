@@ -45,6 +45,7 @@
 #include "vktDrawDepthClampTests.hpp"
 #include "vktDrawAhbTests.hpp"
 #include "vktDrawMultipleClearsWithinRenderPass.hpp"
+#include "vktDrawMultiExtTests.hpp"
 
 namespace vkt
 {
@@ -79,6 +80,7 @@ void createChildren (tcu::TestCaseGroup* group)
 	group->addChild(createDepthClampTests					(testCtx));
 	group->addChild(createAhbTests							(testCtx));
 	group->addChild(new MultipleClearsWithinRenderPassTests	(testCtx));
+	group->addChild(createDrawMultiExtTests					(testCtx));
 }
 
 } // anonymous

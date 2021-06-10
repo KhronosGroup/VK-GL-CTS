@@ -75,5 +75,6 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_synchronization2",
 	"VK_EXT_color_write_enable",
 	"VK_VALVE_mutable_descriptor_type",
+	"VK_EXT_multi_draw",
 };
 

@@ -94,3 +94,4 @@ VK_KHR_workgroup_memory_explicit_layout		DEVICE
 VK_KHR_synchronization2						DEVICE
 VK_EXT_color_write_enable					DEVICE
 VK_VALVE_mutable_descriptor_type			DEVICE
+VK_EXT_multi_draw							DEVICE
