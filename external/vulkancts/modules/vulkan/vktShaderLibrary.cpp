@@ -1296,7 +1296,7 @@ ShaderCaseInstance::ShaderCaseInstance (Context& context, const ShaderCaseSpecif
 
 	, m_referenceLayout		(computeStd140Layout(spec.values.outputs))
 	, m_referenceBuffer		(m_referenceLayout.size > 0 ? createBuffer(context, (vk::VkDeviceSize)m_referenceLayout.size, vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) : Move<vk::VkBuffer>())
-	, m_referenceMem		(m_inputLayout.size > 0 ? vk::bindBuffer (context.getDeviceInterface(), context.getDevice(),m_context.getDefaultAllocator(), *m_referenceBuffer, vk::MemoryRequirement::HostVisible) : MovePtr<vk::Allocation>())
+	, m_referenceMem		(m_referenceLayout.size > 0 ? vk::bindBuffer (context.getDeviceInterface(), context.getDevice(),m_context.getDefaultAllocator(), *m_referenceBuffer, vk::MemoryRequirement::HostVisible) : MovePtr<vk::Allocation>())
 
 	, m_uniformLayout		(computeStd140Layout(spec.values.uniforms))
 	, m_uniformBuffer		(m_uniformLayout.size > 0 ? createBuffer(context, (vk::VkDeviceSize)m_uniformLayout.size, vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) : Move<vk::VkBuffer>())
