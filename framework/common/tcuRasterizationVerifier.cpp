@@ -2345,7 +2345,7 @@ bool verifySinglesampleWideLineGroupInterpolation (const tcu::Surface& surface, 
 
 CoverageType calculateTriangleCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1, const tcu::Vec4& p2, const tcu::IVec2& pixel, const tcu::IVec2& viewportSize, int subpixelBits, bool multisample)
 {
-	typedef tcu::Vector<deInt64, 2> I64Vec2;
+	using tcu::I64Vec2;
 
 	const deUint64		numSubPixels						= ((deUint64)1) << subpixelBits;
 	const deUint64		pixelHitBoxSize						= (multisample) ? (numSubPixels) : 5;		//!< 5 = ceil(6 * sqrt(2) / 2) to account for a 3 subpixel fuzz around pixel center
@@ -2537,7 +2537,7 @@ CoverageType calculateUnderestimateLineCoverage (const tcu::Vec4& p0, const tcu:
 
 CoverageType calculateUnderestimateTriangleCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1, const tcu::Vec4& p2, const tcu::IVec2& pixel, int subpixelBits, const tcu::IVec2& viewportSize)
 {
-	typedef tcu::Vector<deInt64, 2> I64Vec2;
+	using tcu::I64Vec2;
 
 	const deUint64		numSubPixels						= ((deUint64)1) << subpixelBits;
 	const bool			order								= isTriangleClockwise(p0, p1, p2);			//!< clockwise / counter-clockwise

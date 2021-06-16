@@ -1920,7 +1920,9 @@ class ImageExtendOperandTestInstance : public BaseTestInstance
 public:
 									ImageExtendOperandTestInstance			(Context&				context,
 																			 const Texture&			texture,
-																			 const VkFormat			format);
+																			 const VkFormat			readFormat,
+																			 const VkFormat			writeFormat,
+																			 bool					relaxedPrecision);
 
 	virtual							~ImageExtendOperandTestInstance			(void) {};
 
@@ -1956,12 +1958,18 @@ protected:
 	Move<VkDescriptorSetLayout>		m_descriptorSetLayout;
 	Move<VkDescriptorPool>			m_descriptorPool;
 	SharedVkDescriptorSet			m_descriptorSet;
+
+	bool							m_relaxedPrecision;
 };
 
 ImageExtendOperandTestInstance::ImageExtendOperandTestInstance (Context& context,
 																const Texture& texture,
-																const VkFormat format)
-	: BaseTestInstance		(context, texture, format, true, true, false, false)
+																const VkFormat readFormat,
+																const VkFormat writeFormat,
+																bool relaxedPrecision)
+	: BaseTestInstance		(context, texture, readFormat, true, true, false, false)
+	, m_imageDstFormat		(writeFormat)
+	, m_relaxedPrecision	(relaxedPrecision)
 {
 	const DeviceInterface&		vk				= m_context.getDeviceInterface();
 	const VkDevice				device			= m_context.getDevice();
@@ -1973,8 +1981,10 @@ ImageExtendOperandTestInstance::ImageExtendOperandTestInstance (Context& context
 	// Generate reference image
 	m_isSigned = (getTextureChannelClass(textureFormat.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER);
 	m_inputImageData.setStorage(textureFormat, width, height, 1);
-	const tcu::PixelBufferAccess access = m_inputImageData.getAccess();
-	int valueStart = m_isSigned ? -width / 2 : 0;
+
+	const tcu::PixelBufferAccess	access		= m_inputImageData.getAccess();
+	const int						valueStart	= (m_isSigned ? (-width / 2) : 0);
+
 	for (int x = 0; x < width; ++x)
 	for (int y = 0; y < height; ++y)
 	{
@@ -1989,7 +1999,6 @@ ImageExtendOperandTestInstance::ImageExtendOperandTestInstance (Context& context
 		MemoryRequirement::Any));
 
 	// Create destination image
-	m_imageDstFormat	= m_isSigned ? VK_FORMAT_R32G32B32A32_SINT : VK_FORMAT_R32G32B32A32_UINT;
 	m_imageDst = de::MovePtr<Image>(new Image(
 		vk, device, allocator,
 		makeImageCreateInfo(m_texture, m_imageDstFormat, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u),
@@ -2103,6 +2112,19 @@ void ImageExtendOperandTestInstance::commandAfterCompute (const VkCommandBuffer 
 	commandCopyImageToBuffer(m_context, cmdBuffer, m_imageDst->get(), m_buffer->get(), m_imageDstSize, m_texture);
 }
 
+// Clears the high bits of every pixel in the pixel buffer, leaving only the lowest 16 bits of each component.
+void clearHighBits (const tcu::PixelBufferAccess& pixels, int width, int height)
+{
+	for (int y = 0; y < height; ++y)
+	for (int x = 0; x < width; ++x)
+	{
+		auto color = pixels.getPixelUint(x, y);
+		for (int c = 0; c < decltype(color)::SIZE; ++c)
+			color[c] &= 0xFFFFull;
+		pixels.setPixel(color, x, y);
+	}
+}
+
 tcu::TestStatus ImageExtendOperandTestInstance::verifyResult (void)
 {
 	const DeviceInterface&			vk			= m_context.getDeviceInterface();
@@ -2123,13 +2145,32 @@ tcu::TestStatus ImageExtendOperandTestInstance::verifyResult (void)
 
 	const Allocation& alloc = m_buffer->getAllocation();
 	invalidateAlloc(vk, device, alloc);
-	const tcu::ConstPixelBufferAccess result(mapVkFormat(m_imageDstFormat), imageSize, alloc.getHostPtr());
+	const tcu::PixelBufferAccess result(mapVkFormat(m_imageDstFormat), imageSize, alloc.getHostPtr());
 
-	if (intThresholdCompare (m_context.getTestContext().getLog(), "Comparison", "Comparison", refAccess, result, tcu::UVec4(0), tcu::COMPARE_LOG_RESULT))
+	if (m_relaxedPrecision)
+	{
+		// Preserve the lowest 16 bits of the reference and result pixels only.
+		clearHighBits(refAccess, width, height);
+		clearHighBits(result, width, height);
+	}
+
+	if (tcu::intThresholdCompare (m_context.getTestContext().getLog(), "Comparison", "Comparison", refAccess, result, tcu::UVec4(0), tcu::COMPARE_LOG_RESULT, true/*use64Bits*/))
 		return tcu::TestStatus::pass("Passed");
 	else
 		return tcu::TestStatus::fail("Image comparison failed");
 }
+
+enum class ExtendTestType
+{
+	READ  = 0,
+	WRITE = 1,
+};
+
+enum class ExtendOperand
+{
+	SIGN_EXTEND = 0,
+	ZERO_EXTEND = 1
+};
 
 class ImageExtendOperandTest : public TestCase
 {
@@ -2137,49 +2178,83 @@ public:
 							ImageExtendOperandTest	(tcu::TestContext&					testCtx,
 													 const std::string&					name,
 													 const Texture						texture,
-													 const VkFormat						format,
+													 const VkFormat						readFormat,
+													 const VkFormat						writeFormat,
 													 const bool							signedInt,
-													 const bool							relaxedPrecision);
+													 const bool							relaxedPrecision,
+													 ExtendTestType						extendTestType);
 
 	void					checkSupport			(Context&				context) const;
 	void					initPrograms			(SourceCollections&		programCollection) const;
 	TestInstance*			createInstance			(Context&				context) const;
 
 private:
-	const Texture					m_texture;
-	VkFormat						m_format;
-	bool							m_operandForce;	// Use an operand that doesn't match SampledType?
-	bool							m_relaxedPrecision;
+	bool					isWriteTest				() const { return (m_extendTestType == ExtendTestType::WRITE); }
+
+	const Texture			m_texture;
+	VkFormat				m_readFormat;
+	VkFormat				m_writeFormat;
+	bool					m_operandForce;			// Use an operand that doesn't match SampledType?
+	bool					m_relaxedPrecision;
+	ExtendTestType			m_extendTestType;
 };
 
 ImageExtendOperandTest::ImageExtendOperandTest (tcu::TestContext&				testCtx,
 												const std::string&				name,
 												const Texture					texture,
-												const VkFormat					format,
+												const VkFormat					readFormat,
+												const VkFormat					writeFormat,
 												const bool						operandForce,
-												const bool						relaxedPrecision)
+												const bool						relaxedPrecision,
+												ExtendTestType					extendTestType)
 	: TestCase						(testCtx, name, "")
 	, m_texture						(texture)
-	, m_format						(format)
+	, m_readFormat					(readFormat)
+	, m_writeFormat					(writeFormat)
 	, m_operandForce				(operandForce)
 	, m_relaxedPrecision			(relaxedPrecision)
+	, m_extendTestType				(extendTestType)
 {
+}
+
+void checkFormatProperties (const InstanceInterface& vki, VkPhysicalDevice physDev, VkFormat format)
+{
+	const auto formatProperties = getPhysicalDeviceFormatProperties(vki, physDev, format);
+
+	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+}
+
+bool is64BitIntegerFormat (VkFormat format)
+{
+	const auto tcuFormat = mapVkFormat(format);
+	return (tcuFormat.type == tcu::TextureFormat::UNSIGNED_INT64 || tcuFormat.type == tcu::TextureFormat::SIGNED_INT64);
+}
+
+void check64BitSupportIfNeeded (Context& context, VkFormat readFormat, VkFormat writeFormat)
+{
+	if (is64BitIntegerFormat(readFormat) || is64BitIntegerFormat(writeFormat))
+	{
+		const auto& features = context.getDeviceFeatures();
+		if (!features.shaderInt64)
+			TCU_THROW(NotSupportedError, "64-bit integers not supported in shaders");
+	}
 }
 
 void ImageExtendOperandTest::checkSupport (Context& context) const
 {
-	const vk::VkFormatProperties	formatProperties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
-																							   context.getPhysicalDevice(),
-																							   m_format));
+	DE_ASSERT(m_texture.type() != IMAGE_TYPE_BUFFER);
 
 	if (!context.requireDeviceFunctionality("VK_KHR_spirv_1_4"))
 		TCU_THROW(NotSupportedError, "VK_KHR_spirv_1_4 not supported");
 
-	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
-		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+	check64BitSupportIfNeeded(context, m_readFormat, m_writeFormat);
 
-	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
-		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
+	const auto& vki     = context.getInstanceInterface();
+	const auto  physDev = context.getPhysicalDevice();
+
+	checkFormatProperties(vki, physDev, m_readFormat);
+	checkFormatProperties(vki, physDev, m_writeFormat);
 }
 
 void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection) const
@@ -2188,6 +2263,7 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 		"OpCapability Shader\n"
 
 		"${capability}"
+		"${extension}"
 
 		"%std450 = OpExtInstImport \"GLSL.std.450\"\n"
 		"OpMemoryModel Logical GLSL450\n"
@@ -2211,10 +2287,13 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 		"%type_void                          = OpTypeVoid\n"
 		"%type_i32                           = OpTypeInt 32 1\n"
 		"%type_u32                           = OpTypeInt 32 0\n"
+		"%type_vec2_i32                      = OpTypeVector %type_i32 2\n"
+		"%type_vec2_u32                      = OpTypeVector %type_u32 2\n"
 		"%type_vec3_i32                      = OpTypeVector %type_i32 3\n"
 		"%type_vec3_u32                      = OpTypeVector %type_u32 3\n"
 		"%type_vec4_i32                      = OpTypeVector %type_i32 4\n"
 		"%type_vec4_u32                      = OpTypeVector %type_u32 4\n"
+		"${extra_types}"
 
 		"%type_fun_void                      = OpTypeFunction %type_void\n"
 
@@ -2236,64 +2315,100 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 
 		"${image_load}"
 
-		"%coord                              = OpLoad %type_vec3_u32 %id\n"
-		"%value                              = OpImageRead ${read_vect4_type} %src_image %coord ${extend_operand}\n"
-		"                                      OpImageWrite %dst_image %coord %value ${extend_operand}\n"
+		"%idvec                              = OpLoad %type_vec3_u32 %id\n"
+		"%id_xy                              = OpVectorShuffle %type_vec2_u32 %idvec %idvec 0 1\n"
+		"%coord                              = OpBitcast %type_vec2_i32 %id_xy\n"
+		"%value                              = OpImageRead ${sampled_type_vec4} %src_image %coord ${read_extend_operand}\n"
+		"                                      OpImageWrite %dst_image %coord %value ${write_extend_operand}\n"
 		"                                      OpReturn\n"
 		"                                      OpFunctionEnd\n");
 
-	tcu::TextureFormat	tcuFormat			= mapVkFormat(m_format);
-	const ImageType		usedImageType		= getImageTypeForSingleLayer(m_texture.type());
-	const std::string	imageTypeStr		= getShaderImageType(tcuFormat, usedImageType);
-	const bool			isSigned			= (getTextureChannelClass(tcuFormat.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER);
+	const auto	testedFormat	= mapVkFormat(isWriteTest() ? m_writeFormat : m_readFormat);
+	const bool	isSigned		= (getTextureChannelClass(testedFormat.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER);
 
 	struct FormatData
 	{
 		std::string		spirvImageFormat;
 		bool			isExtendedFormat;
 	};
+
 	const std::map<vk::VkFormat, FormatData> formatDataMap =
 	{
 		// Mandatory support
-		{ VK_FORMAT_R32G32B32A32_UINT,			{ "Rgba32ui",	false } },
-		{ VK_FORMAT_R16G16B16A16_UINT,			{ "Rgba16ui",	false } },
-		{ VK_FORMAT_R8G8B8A8_UINT,				{ "Rgba8ui",	false } },
-		{ VK_FORMAT_R32_UINT,					{ "R32ui",		false } },
-		{ VK_FORMAT_R32G32B32A32_SINT,			{ "Rgba32i",	false } },
-		{ VK_FORMAT_R16G16B16A16_SINT,			{ "Rgba16i",	false } },
-		{ VK_FORMAT_R8G8B8A8_SINT,				{ "Rgba8i",		false } },
-		{ VK_FORMAT_R32_SINT,					{ "R32i",		false } },
+		{ VK_FORMAT_R32G32B32A32_UINT,			{ "Rgba32ui",	false	} },
+		{ VK_FORMAT_R16G16B16A16_UINT,			{ "Rgba16ui",	false	} },
+		{ VK_FORMAT_R8G8B8A8_UINT,				{ "Rgba8ui",	false	} },
+		{ VK_FORMAT_R32_UINT,					{ "R32ui",		false	} },
+		{ VK_FORMAT_R32G32B32A32_SINT,			{ "Rgba32i",	false	} },
+		{ VK_FORMAT_R16G16B16A16_SINT,			{ "Rgba16i",	false	} },
+		{ VK_FORMAT_R8G8B8A8_SINT,				{ "Rgba8i",		false	} },
+		{ VK_FORMAT_R32_SINT,					{ "R32i",		false	} },
 
 		// Requires StorageImageExtendedFormats capability
-		{ VK_FORMAT_R32G32_UINT,				{ "Rg32ui",		true } },
-		{ VK_FORMAT_R16G16_UINT,				{ "Rg16ui",		true } },
-		{ VK_FORMAT_R16_UINT,					{ "R16ui",		true } },
-		{ VK_FORMAT_R8G8_UINT,					{ "Rg8ui",		true } },
-		{ VK_FORMAT_R8_UINT,					{ "R8ui",		true } },
-		{ VK_FORMAT_R32G32_SINT,				{ "Rg32i",		true } },
-		{ VK_FORMAT_R16G16_SINT,				{ "Rg16i",		true } },
-		{ VK_FORMAT_R16_SINT,					{ "R16i",		true } },
-		{ VK_FORMAT_R8G8_SINT,					{ "Rg8i",		true } },
-		{ VK_FORMAT_R8_SINT,					{ "R8i",		true } },
-		{ VK_FORMAT_A2B10G10R10_UINT_PACK32,	{ "Rgb10a2ui",	true } }
+		{ VK_FORMAT_R32G32_UINT,				{ "Rg32ui",		true,	} },
+		{ VK_FORMAT_R16G16_UINT,				{ "Rg16ui",		true,	} },
+		{ VK_FORMAT_R16_UINT,					{ "R16ui",		true,	} },
+		{ VK_FORMAT_R8G8_UINT,					{ "Rg8ui",		true,	} },
+		{ VK_FORMAT_R8_UINT,					{ "R8ui",		true,	} },
+		{ VK_FORMAT_R32G32_SINT,				{ "Rg32i",		true,	} },
+		{ VK_FORMAT_R16G16_SINT,				{ "Rg16i",		true,	} },
+		{ VK_FORMAT_R16_SINT,					{ "R16i",		true,	} },
+		{ VK_FORMAT_R8G8_SINT,					{ "Rg8i",		true,	} },
+		{ VK_FORMAT_R8_SINT,					{ "R8i",		true,	} },
+		{ VK_FORMAT_A2B10G10R10_UINT_PACK32,	{ "Rgb10a2ui",	true,	} },
+
+		// Requires Int64ImageEXT.
+		{ VK_FORMAT_R64_SINT,					{ "R64i",		false,	} },
+		{ VK_FORMAT_R64_UINT,					{ "R64ui",		false,	} },
 	};
 
-	auto it = formatDataMap.find(m_format);
-	DE_ASSERT (it != formatDataMap.end());		// Missing int format data
-	auto spirvImageFormat = it->second.spirvImageFormat;
+	const auto readIter		= formatDataMap.find(m_readFormat);
+	const auto writeIter	= formatDataMap.find(m_writeFormat);
 
-	// Request additional capability when needed
-	std::string capability = "";
-	if (it->second.isExtendedFormat)
+	DE_ASSERT (readIter != formatDataMap.end() && writeIter != formatDataMap.end()); // Missing int format data
+
+	const auto isRead64		= is64BitIntegerFormat(m_readFormat);
+	const auto isWrite64	= is64BitIntegerFormat(m_writeFormat);
+	DE_ASSERT(isRead64 == isWrite64);
+
+	const auto readSpirvImageFormat		= readIter->second.spirvImageFormat;
+	const auto writeSpirvImageFormat	= writeIter->second.spirvImageFormat;
+	const bool using64Bits				= (isRead64 || isWrite64);
+
+	// Additional capabilities when needed.
+	std::string capability;
+	std::string extension;
+	std::string extraTypes;
+
+	if (readIter->second.isExtendedFormat || writeIter->second.isExtendedFormat)
 		capability += "OpCapability StorageImageExtendedFormats\n";
+
+	if (using64Bits)
+	{
+			extension  += "OpExtension \"SPV_EXT_shader_image_int64\"\n";
+			capability +=
+				"OpCapability Int64\n"
+				"OpCapability Int64ImageEXT\n"
+				;
+			extraTypes +=
+				"%type_i64                           = OpTypeInt 64 1\n"
+				"%type_u64                           = OpTypeInt 64 0\n"
+				"%type_vec3_i64                      = OpTypeVector %type_i64 3\n"
+				"%type_vec3_u64                      = OpTypeVector %type_u64 3\n"
+				"%type_vec4_i64                      = OpTypeVector %type_i64 4\n"
+				"%type_vec4_u64                      = OpTypeVector %type_u64 4\n"
+				;
+	}
 
 	std::string relaxed = "";
 	if (m_relaxedPrecision)
 		relaxed += "OpDecorate %src_image_ptr RelaxedPrecision\n";
 
-	// Use i32 SampledType only for signed images and only where we're not forcing
-	// the signedness usingthe SignExtend operand. Everything else uses u32.
-	std::string readTypePostfix = (isSigned && !m_operandForce) ? "i32" : "u32";
+	// Sampled type depends on the format sign and mismatch force flag.
+	const bool			signedSampleType	= ((isSigned && !m_operandForce) || (!isSigned && m_operandForce));
+	const std::string	bits				= (using64Bits ? "64" : "32");
+	const std::string	sampledTypePostfix	= (signedSampleType ? "i" : "u") + bits;
+	const std::string	extendOperandStr	= (isSigned ? "SignExtend" : "ZeroExtend");
 
 	std::map<std::string, std::string> specializations =
 	{
@@ -2302,11 +2417,14 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 		{ "image_var_id",			"%src_image_ptr" },
 		{ "image_id",				"%src_image" },
 		{ "capability",				capability },
+		{ "extension",				extension },
+		{ "extra_types",			extraTypes },
 		{ "relaxed_precision",		relaxed },
-		{ "image_format",			spirvImageFormat },
-		{ "sampled_type",			(std::string("%type_") + readTypePostfix) },
-		{ "read_vect4_type",		(std::string("%type_vec4_") + readTypePostfix) },
-		{ "extend_operand",			(isSigned ? "SignExtend" : "ZeroExtend") }
+		{ "image_format",			readSpirvImageFormat },
+		{ "sampled_type",			(std::string("%type_") + sampledTypePostfix) },
+		{ "sampled_type_vec4",		(std::string("%type_vec4_") + sampledTypePostfix) },
+		{ "read_extend_operand",	(!isWriteTest() ? extendOperandStr : "") },
+		{ "write_extend_operand",	(isWriteTest()  ? extendOperandStr : "") },
 	};
 
 	// Addidtional parametrization is needed for a case when source and destination textures have same format
@@ -2325,7 +2443,7 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 	std::string imageLoad;
 
 	// If input image format is the same as output there is less spir-v definitions
-	if ((m_format == VK_FORMAT_R32G32B32A32_SINT) || (m_format == VK_FORMAT_R32G32B32A32_UINT))
+	if (m_readFormat == m_writeFormat)
 	{
 		imageTypes			= imageTypeTemplate.specialize(specializations);
 		imageUniformTypes	= imageUniformTypeTemplate.specialize(specializations);
@@ -2346,7 +2464,7 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 		imageVariables		= imageVariablesTemplate.specialize(specializations);
 		imageLoad			= imageLoadTemplate.specialize(specializations);
 
-		specializations["image_format"]				= isSigned ? "Rgba32i" : "Rgba32ui";
+		specializations["image_format"]				= writeSpirvImageFormat;
 		specializations["image_type_id"]			= "%type_dst_image";
 		specializations["image_uni_ptr_type_id"]	= "%type_ptr_uniform_const_dst_image";
 		specializations["image_var_id"]				= "%dst_image_ptr";
@@ -2369,7 +2487,7 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 
 TestInstance* ImageExtendOperandTest::createInstance(Context& context) const
 {
-	return new ImageExtendOperandTestInstance(context, m_texture, m_format);
+	return new ImageExtendOperandTestInstance(context, m_texture, m_readFormat, m_writeFormat, m_relaxedPrecision);
 }
 
 static const Texture s_textures[] =
@@ -2634,36 +2752,122 @@ de::MovePtr<TestCase> createImageQualifierRestrictCase (tcu::TestContext& testCt
 	return de::MovePtr<TestCase>(new LoadStoreTest(testCtx, name, "", texture, format, format, LoadStoreTest::FLAG_RESTRICT_IMAGES | LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
 }
 
-static bool relaxedOK(VkFormat format)
+namespace
+{
+
+bool relaxedOK(VkFormat format)
 {
 	tcu::IVec4 bitDepth = tcu::getTextureFormatBitDepth(mapVkFormat(format));
 	int maxBitDepth = deMax32(deMax32(bitDepth[0], bitDepth[1]), deMax32(bitDepth[2], bitDepth[3]));
 	return maxBitDepth <= 16;
 }
 
+// Get a format used for reading or writing in extension operand tests. These formats allow representing the shader sampled type to
+// verify results from read or write operations.
+VkFormat getShaderExtensionOperandFormat (bool isSigned, bool is64Bit)
+{
+	const VkFormat formats[] =
+	{
+		VK_FORMAT_R32G32B32A32_UINT,
+		VK_FORMAT_R32G32B32A32_SINT,
+		VK_FORMAT_R64_UINT,
+		VK_FORMAT_R64_SINT,
+	};
+	return formats[2u * (is64Bit ? 1u : 0u) + (isSigned ? 1u : 0u)];
+}
+
+// INT or UINT format?
+bool isIntegralFormat (VkFormat format)
+{
+	return (isIntFormat(format) || isUintFormat(format));
+}
+
+// Return the list of formats used for the extension operand tests (SignExten/ZeroExtend).
+std::vector<VkFormat> getExtensionOperandFormatList (void)
+{
+	std::vector<VkFormat> formatList;
+
+	for (auto format : s_formats)
+	{
+		if (isIntegralFormat(format))
+			formatList.push_back(format);
+	}
+
+	formatList.push_back(VK_FORMAT_R64_SINT);
+	formatList.push_back(VK_FORMAT_R64_UINT);
+
+	return formatList;
+}
+
+} // anonymous
+
 tcu::TestCaseGroup* createImageExtendOperandsTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "extend_operands_spirv1p4", "Cases with SignExtend and ZeroExtend"));
+	using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
-	const auto texture = Texture(IMAGE_TYPE_2D, tcu::IVec3(8, 8, 1), 1);
-	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++formatNdx)
+	GroupPtr testGroup(new tcu::TestCaseGroup(testCtx, "extend_operands_spirv1p4", "Cases with SignExtend and ZeroExtend"));
+
+	const struct
 	{
-		auto format = s_formats[formatNdx];
-		if (!isIntFormat(format) && !isUintFormat(format))
-			continue;
+		ExtendTestType	testType;
+		const char*		name;
+	} testTypes[] =
+	{
+		{ ExtendTestType::READ,		"read"	},
+		{ ExtendTestType::WRITE,	"write"	},
+	};
 
-		for (int prec = 0; prec < 2; prec++)
+	const auto texture		= Texture(IMAGE_TYPE_2D, tcu::IVec3(8, 8, 1), 1);
+	const auto formatList	= getExtensionOperandFormatList();
+
+	for (const auto format : formatList)
+	{
+		const auto isInt		= isIntFormat(format);
+		const auto isUint		= isUintFormat(format);
+		const auto use64Bits	= is64BitIntegerFormat(format);
+
+		DE_ASSERT(isInt || isUint);
+
+		GroupPtr formatGroup (new tcu::TestCaseGroup(testCtx, getFormatShortString(format).c_str(), ""));
+
+		for (const auto& testType : testTypes)
 		{
-			bool relaxedPrecision = (prec != 0);
-			if (relaxedPrecision && !relaxedOK(format))
-				continue;
+			GroupPtr testTypeGroup (new tcu::TestCaseGroup(testCtx, testType.name, ""));
 
-			const std::string name = getFormatShortString(format) + (relaxedPrecision ? "_relaxed" : "");
-			testGroup->addChild(new ImageExtendOperandTest(testCtx, name + "_matching_extend", texture, format, false, relaxedPrecision));
-			// For signed types test both using the sign bit in SPIR-V and the new operand
-			if (isIntFormat(format))
-				testGroup->addChild(new ImageExtendOperandTest(testCtx, name + "_force_sign_extend", texture, format, true, relaxedPrecision));
+			for (int match = 0; match < 2; ++match)
+			{
+				const bool	mismatched		= (match == 1);
+				const char*	matchGroupName	= (mismatched ? "mismatched_sign" : "matched_sign");
+
+				// SPIR-V does not allow this kind of sampled type override.
+				if (mismatched && isUint)
+					continue;
+
+				GroupPtr matchGroup (new tcu::TestCaseGroup(testCtx, matchGroupName, ""));
+
+				for (int prec = 0; prec < 2; prec++)
+				{
+					const bool relaxedPrecision = (prec != 0);
+
+					const char* precisionName	= (relaxedPrecision ? "relaxed_precision" : "normal_precision");
+					const auto  signedOther		= ((isInt && !mismatched) || (isUint && mismatched));
+					const auto	otherFormat		= getShaderExtensionOperandFormat(signedOther, use64Bits);
+					const auto  readFormat		= (testType.testType == ExtendTestType::READ ?  format : otherFormat);
+					const auto  writeFormat		= (testType.testType == ExtendTestType::WRITE ? format : otherFormat);
+
+					if (relaxedPrecision && !relaxedOK(readFormat))
+						continue;
+
+					matchGroup->addChild(new ImageExtendOperandTest(testCtx, precisionName, texture, readFormat, writeFormat, mismatched, relaxedPrecision, testType.testType));
+				}
+
+				testTypeGroup->addChild(matchGroup.release());
+			}
+
+			formatGroup->addChild(testTypeGroup.release());
 		}
+
+		testGroup->addChild(formatGroup.release());
 	}
 
 	return testGroup.release();
