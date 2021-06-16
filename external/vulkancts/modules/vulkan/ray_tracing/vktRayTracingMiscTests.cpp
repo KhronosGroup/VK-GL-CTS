@@ -1344,7 +1344,7 @@ public:
 				"void main()\n"
 				"{\n"
 				"    uint  nInvocation  = gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;\n"
-				"    uint  rayFlags     = 0;\n"
+				"    uint  rayFlags     = gl_RayFlagsCullBackFacingTrianglesEXT;\n"
 				"    float tmin         = 0.001;\n"
 				"    float tmax         = 9.0;\n"
 				"\n"
@@ -1446,14 +1446,9 @@ public:
 		return m_nASesToUse;
 	}
 
-	std::vector<std::string> getAHitShaderCollectionShaderNames() const final
-	{
-		return {};
-	}
-
 	std::vector<std::string> getCHitShaderCollectionShaderNames() const final
 	{
-		return {"chit"};
+		return {};
 	}
 
 	deUint32 getInstanceCustomIndex(const deUint32& nBL, const deUint32& nInstance) const final
@@ -1604,7 +1599,7 @@ public:
 				"    hits[nHit].nAS                 = nAS;\n"
 				"}\n";
 
-			programCollection.glslSources.add("chit") << glu::ClosestHitSource(css.str()) << buildOptions;
+			programCollection.glslSources.add("ahit") << glu::AnyHitSource(css.str() ) << buildOptions;
 		}
 
 		{
@@ -1671,7 +1666,7 @@ public:
 				"void main()\n"
 				"{\n"
 				"    uint  nInvocation  = gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;\n"
-				"    uint  rayFlags     = 0;\n"
+				"    uint  rayFlags     = gl_RayFlagsCullBackFacingTrianglesEXT;\n"
 				"    float tmin         = 0.001;\n"
 				"    float tmax         = 9.0;\n"
 				"\n"
@@ -2641,7 +2636,7 @@ public:
 				"    const uint nRaysPerInvocation = " + de::toString(m_nRaysPerInvocation) + ";\n"
 				"\n"
 				"    uint  nInvocation  = gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;\n"
-				"    uint  rayFlags     = 0;\n"
+				"    uint  rayFlags     = gl_RayFlagsCullBackFacingTrianglesEXT;\n"
 				"    float tmin         = 0.001;\n"
 				"    float tmax         = 4.0;\n"
 				"\n"
