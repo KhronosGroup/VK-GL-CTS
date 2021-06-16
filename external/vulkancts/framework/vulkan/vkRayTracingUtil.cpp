@@ -539,7 +539,15 @@ SerialStorage::SerialStorage (const DeviceInterface&									vk,
 	, m_storageSize(storageSize)
 {
 	const VkBufferCreateInfo	bufferCreateInfo	= makeBufferCreateInfo(storageSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-	m_buffer										= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+	try
+	{
+		m_buffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::Cached | MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+	}
+	catch (const tcu::NotSupportedError&)
+	{
+		// retry without Cached flag
+		m_buffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+	}
 }
 
 VkDeviceOrHostAddressKHR SerialStorage::getAddress (const DeviceInterface&				vk,
@@ -826,7 +834,8 @@ protected:
 	de::MovePtr<BufferWithMemory>							m_accelerationStructureBuffer;
 	de::MovePtr<BufferWithMemory>							m_vertexBuffer;
 	de::MovePtr<BufferWithMemory>							m_indexBuffer;
-	de::MovePtr<BufferWithMemory>							m_scratchBuffer;
+	de::MovePtr<BufferWithMemory>							m_deviceScratchBuffer;
+	std::vector<deUint8>									m_hostScratchBuffer;
 	Move<VkAccelerationStructureKHR>						m_accelerationStructureKHR;
 	VkBuffer												m_indirectBuffer;
 	VkDeviceSize											m_indirectBufferOffset;
@@ -845,7 +854,7 @@ deUint32 BottomLevelAccelerationStructureKHR::getRequiredAllocationCount (void)
 	/*
 		de::MovePtr<BufferWithMemory>							m_geometryBuffer; // but only when m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR
 		de::MovePtr<Allocation>									m_accelerationStructureAlloc;
-		de::MovePtr<BufferWithMemory>							m_scratchBuffer;
+		de::MovePtr<BufferWithMemory>							m_deviceScratchBuffer;
 	*/
 	return 3u;
 }
@@ -868,7 +877,7 @@ BottomLevelAccelerationStructureKHR::BottomLevelAccelerationStructureKHR ()
 	, m_accelerationStructureBuffer		(DE_NULL)
 	, m_vertexBuffer					(DE_NULL)
 	, m_indexBuffer						(DE_NULL)
-	, m_scratchBuffer					(DE_NULL)
+	, m_deviceScratchBuffer				(DE_NULL)
 	, m_accelerationStructureKHR		()
 	, m_indirectBuffer					(DE_NULL)
 	, m_indirectBufferOffset			(0)
@@ -991,7 +1000,15 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 
 	{
 		const VkBufferCreateInfo		bufferCreateInfo	= makeBufferCreateInfo(m_structureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-		m_accelerationStructureBuffer						= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+		try
+		{
+			m_accelerationStructureBuffer						= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::Cached | MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+		}
+		catch (const tcu::NotSupportedError&)
+		{
+			// retry without Cached flag
+			m_accelerationStructureBuffer						= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+		}
 	}
 
 	{
@@ -1015,8 +1032,15 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 
 	if (m_buildScratchSize > 0u)
 	{
-		const VkBufferCreateInfo		bufferCreateInfo	= makeBufferCreateInfo(m_buildScratchSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-		m_scratchBuffer										= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+		if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+		{
+			const VkBufferCreateInfo		bufferCreateInfo = makeBufferCreateInfo(m_buildScratchSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+			m_deviceScratchBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+		}
+		else
+		{
+			m_hostScratchBuffer.resize(static_cast<size_t>(m_buildScratchSize));
+		}
 	}
 
 	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR && !m_geometriesData.empty())
@@ -1052,8 +1076,8 @@ void BottomLevelAccelerationStructureKHR::build (const DeviceInterface&						vk,
 		const VkAccelerationStructureGeometryKHR*			accelerationStructureGeometriesKHRPointer	= accelerationStructureGeometriesKHR.data();
 		const VkAccelerationStructureGeometryKHR* const*	accelerationStructureGeometry				= accelerationStructureGeometriesKHRPointers.data();
 		VkDeviceOrHostAddressKHR							scratchData									= (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
-																										? makeDeviceOrHostAddressKHR(vk, device, m_scratchBuffer->get(), 0)
-																										: makeDeviceOrHostAddressKHR(m_scratchBuffer->getAllocation().getHostPtr());
+																										? makeDeviceOrHostAddressKHR(vk, device, m_deviceScratchBuffer->get(), 0)
+																										: makeDeviceOrHostAddressKHR(m_hostScratchBuffer.data());
 		const deUint32										geometryCount								= (m_buildWithoutGeometries
 																										? 0u
 																										: static_cast<deUint32>(accelerationStructureGeometriesKHR.size()));
@@ -1475,7 +1499,15 @@ BufferWithMemory* createInstanceBuffer (const DeviceInterface&											vk,
 
 	const VkDeviceSize			bufferSizeBytes		= bottomLevelInstances.size() * sizeof(VkAccelerationStructureInstanceKHR);
 	const VkBufferCreateInfo	bufferCreateInfo	= makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-	return new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress);
+	try
+	{
+		return new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::Cached | MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress);
+	}
+	catch (const tcu::NotSupportedError&)
+	{
+		// retry without Cached flag
+		return new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress);
+	}
 }
 
 void updateInstanceBuffer (const DeviceInterface&											vk,
@@ -1603,7 +1635,8 @@ protected:
 	de::MovePtr<BufferWithMemory>							m_accelerationStructureBuffer;
 	de::MovePtr<BufferWithMemory>							m_instanceBuffer;
 	de::MovePtr<BufferWithMemory>							m_instanceAddressBuffer;
-	de::MovePtr<BufferWithMemory>							m_scratchBuffer;
+	de::MovePtr<BufferWithMemory>							m_deviceScratchBuffer;
+	std::vector<deUint8>									m_hostScratchBuffer;
 	Move<VkAccelerationStructureKHR>						m_accelerationStructureKHR;
 	VkBuffer												m_indirectBuffer;
 	VkDeviceSize											m_indirectBufferOffset;
@@ -1620,7 +1653,7 @@ deUint32 TopLevelAccelerationStructureKHR::getRequiredAllocationCount (void)
 	/*
 		de::MovePtr<BufferWithMemory>							m_instanceBuffer;
 		de::MovePtr<Allocation>									m_accelerationStructureAlloc;
-		de::MovePtr<BufferWithMemory>							m_scratchBuffer;
+		de::MovePtr<BufferWithMemory>							m_deviceScratchBuffer;
 	*/
 	return 3u;
 }
@@ -1639,7 +1672,7 @@ TopLevelAccelerationStructureKHR::TopLevelAccelerationStructureKHR ()
 	, m_accelerationStructureBuffer	(DE_NULL)
 	, m_instanceBuffer				(DE_NULL)
 	, m_instanceAddressBuffer		(DE_NULL)
-	, m_scratchBuffer				(DE_NULL)
+	, m_deviceScratchBuffer			(DE_NULL)
 	, m_accelerationStructureKHR	()
 	, m_indirectBuffer				(DE_NULL)
 	, m_indirectBufferOffset		(0)
@@ -1762,7 +1795,15 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 
 	{
 		const VkBufferCreateInfo		bufferCreateInfo = makeBufferCreateInfo(m_structureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-		m_accelerationStructureBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+		try
+		{
+			m_accelerationStructureBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::Cached | MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+		}
+		catch (const tcu::NotSupportedError&)
+		{
+			// retry without Cached flag
+			m_accelerationStructureBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+		}
 	}
 
 	{
@@ -1786,8 +1827,15 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 
 	if (m_buildScratchSize > 0u)
 	{
-		const VkBufferCreateInfo		bufferCreateInfo	= makeBufferCreateInfo(m_buildScratchSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-		m_scratchBuffer										= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+		if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+		{
+			const VkBufferCreateInfo		bufferCreateInfo	= makeBufferCreateInfo(m_buildScratchSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+			m_deviceScratchBuffer								= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+		}
+		else
+		{
+			m_hostScratchBuffer.resize(static_cast<size_t>(m_buildScratchSize));
+		}
 	}
 
 	if (m_useArrayOfPointers)
@@ -1815,8 +1863,8 @@ void TopLevelAccelerationStructureKHR::build (const DeviceInterface&	vk,
 	prepareInstances(vk, device, accelerationStructureGeometryKHR, maxPrimitiveCounts);
 
 	VkDeviceOrHostAddressKHR				scratchData										= (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
-																							? makeDeviceOrHostAddressKHR(vk, device, m_scratchBuffer->get(), 0)
-																							: makeDeviceOrHostAddressKHR(m_scratchBuffer->getAllocation().getHostPtr());
+																							? makeDeviceOrHostAddressKHR(vk, device, m_deviceScratchBuffer->get(), 0)
+																							: makeDeviceOrHostAddressKHR(m_hostScratchBuffer.data());
 
 	VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfoKHR		=
 	{

@@ -1278,7 +1278,9 @@ MemoryObject* MemoryHeap::allocateRandom (const DeviceInterface& vkd, VkDevice d
 				// atomSizeBits = atomSize * 8
 				// maxAllocationSizeBytes == atomSize * 8 * availableBits / (17 * atomSize * 8 + 8)
 				// maxAllocationSizeBytes == atomSize * availableBits / (17 * atomSize + 1)
-				const VkDeviceSize	maxAllocationSize		= roundDownToMultiple(((atomSize * availableBits) / (17 * atomSize + 1)), allocationSizeGranularity);
+				//
+				// Finally, the allocation size must be less than or equal to memory heap size
+				const VkDeviceSize	maxAllocationSize		= roundDownToMultiple(de::min((atomSize * availableBits) / (17 * atomSize + 1), availableInHeap), allocationSizeGranularity);
 
 				DE_ASSERT(totalUsage <= totalSysMem);
 				DE_ASSERT(maxAllocationSize <= totalSysMem);
@@ -1308,7 +1310,9 @@ MemoryObject* MemoryHeap::allocateRandom (const DeviceInterface& vkd, VkDevice d
 				// maxRefBits = 8 * atomSize * 8 * availableRefBits / (9 * atomSize * 8 + 8)
 				// maxRefBits = atomSize * 8 * availableRefBits / (9 * atomSize + 1)
 				// maxRefBytes = atomSize * availableRefBits / (9 * atomSize + 1)
-				const VkDeviceSize	maxAllocationSize	= roundDownToMultiple(de::min(totalMemClass - usedMemClass, (atomSize * 8 * (totalSysMem - totalUsage)) / (9 * atomSize + 1)), allocationSizeGranularity);
+				//
+				// Finally, the allocation size must be less than or equal to memory heap size
+				const VkDeviceSize	maxAllocationSize = roundDownToMultiple(de::min(de::min(totalMemClass - usedMemClass, (atomSize * 8 * (totalSysMem - totalUsage)) / (9 * atomSize + 1)), availableInHeap), allocationSizeGranularity);
 
 				DE_ASSERT(usedMemClass <= totalMemClass);
 

@@ -2207,8 +2207,8 @@ tcu::TestStatus enumerateDeviceExtensions (Context& context)
 			if (context.contextSupports(vk::ApiVersion(versionMajor, versionMinor, 0)))
 			{
 				checkDeviceExtensionDependencies(results,
-					DE_LENGTH_OF_ARRAY(instanceExtensionDependencies),
-					instanceExtensionDependencies,
+					DE_LENGTH_OF_ARRAY(deviceExtensionDependencies),
+					deviceExtensionDependencies,
 					versionMajor,
 					versionMinor,
 					instanceExtensionProperties,
