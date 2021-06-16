@@ -70,12 +70,17 @@ const VkFormat s_compatible_formats[] =
 	// 8-bit compatibility class
 	// Compatible format for VK_FORMAT_R8_UNORM
 	VK_FORMAT_R4G4_UNORM_PACK8,
+	VK_FORMAT_R8_UINT,
+	VK_FORMAT_R8_SINT,
 	// 16-bit compatibility class
 	// Compatible formats with VK_FORMAT_R8G8_UNORM, VK_FORMAT_R10X6_UNORM_PACK16, VK_FORMAT_R12X4_UNORM_PACK16 and VK_FORMAT_R16_UNORM
 	VK_FORMAT_R8G8_UNORM,
+	VK_FORMAT_R8G8_UINT,
 	VK_FORMAT_R10X6_UNORM_PACK16,
 	VK_FORMAT_R12X4_UNORM_PACK16,
 	VK_FORMAT_R16_UNORM,
+	VK_FORMAT_R16_UINT,
+	VK_FORMAT_R16_SINT,
 	VK_FORMAT_R4G4B4A4_UNORM_PACK16,
 	// 32-bit compatibility class
 	// Compatible formats for VK_FORMAT_R10X6G10X6_UNORM_2PACK16, VK_FORMAT_R12X4G12X4_UNORM_2PACK16 and VK_FORMAT_R16G16_UNORM
@@ -83,6 +88,8 @@ const VkFormat s_compatible_formats[] =
 	VK_FORMAT_R12X4G12X4_UNORM_2PACK16,
 	VK_FORMAT_R16G16_UNORM,
 	VK_FORMAT_R8G8B8A8_UNORM,
+	VK_FORMAT_R8G8B8A8_UINT,
+	VK_FORMAT_R32_UINT,
 };
 
 inline bool formatsAreCompatible (const VkFormat format0, const VkFormat format1)
@@ -343,7 +350,13 @@ struct TestParameters
 	}
 };
 
-ShaderSpec getShaderSpec (const TestParameters&)
+static std::string getSamplerDecl(VkFormat f) {
+	if (isIntFormat(f))			return "isampler2D";
+	else if (isUintFormat(f))	return "usampler2D";
+	else						return "sampler2D";
+}
+
+ShaderSpec getShaderSpec (const TestParameters& params)
 {
 	ShaderSpec spec;
 
@@ -351,13 +364,14 @@ ShaderSpec getShaderSpec (const TestParameters&)
 	spec.outputs.push_back(Symbol("result0", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
 	spec.outputs.push_back(Symbol("result1", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
 
+	const std::string sampler = getSamplerDecl(params.planeCompatibleFormat);
 	spec.globalDeclarations =
 		"layout(binding = 1, set = 1) uniform highp sampler2D u_image;\n"
-		"layout(binding = 0, set = 1) uniform highp sampler2D u_planeView;\n";
+		"layout(binding = 0, set = 1) uniform highp " + sampler + " u_planeView;\n";
 
 	spec.source =
 		"result0 = texture(u_image, texCoord);\n"
-		"result1 = texture(u_planeView, texCoord);\n";
+		"result1 = vec4(texture(u_planeView, texCoord));\n";
 
 	return spec;
 }
