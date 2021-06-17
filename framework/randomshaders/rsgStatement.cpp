@@ -280,9 +280,8 @@ DeclarationStatement::DeclarationStatement (GeneratorState& state, Variable* var
 			break;
 
 		case Variable::STORAGE_LOCAL:
-			// \note Currently booleans are always treated as not having undefined range and thus
-			//       initializer is always created.
-			createInitializer = value && !isUndefinedValueRange(value->getValueRange());
+			// initializer is always created if value isn't null.
+			createInitializer = value;
 			break;
 
 		default:
