@@ -154,6 +154,109 @@ struct ImagesFormat
 	VkFormat	stencil;
 };
 
+struct ClearAttachmentData
+{
+	std::vector<VkClearAttachment>	colorDepthClear1;
+	std::vector<VkClearAttachment>	colorDepthClear2;
+	VkClearAttachment				stencilClear1;
+	VkClearAttachment				stencilClear2;
+	VkClearRect						rectColorDepth1;
+	VkClearRect						rectColorDepth2;
+	VkClearRect						rectStencil1;
+	VkClearRect						rectStencil2;
+
+	ClearAttachmentData	(const deUint32	colorAtchCount,
+						const VkFormat	depth,
+						const VkFormat	stencil)
+	{
+		if (colorAtchCount != 0)
+		{
+			for (deUint32 atchNdx = 0; atchNdx < colorAtchCount; ++atchNdx)
+			{
+				const VkClearAttachment green =
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,
+					atchNdx,
+					makeClearValueColorF32(0.0f, 1.0f, static_cast<float>(atchNdx) * 0.15f, 1.0f)
+				};
+				colorDepthClear1.push_back(green);
+
+				const VkClearAttachment yellow =
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,
+					atchNdx,
+					makeClearValueColorF32(1.0f, 1.0f, static_cast<float>(atchNdx) * 0.15f, 1.0f)
+				};
+				colorDepthClear2.push_back(yellow);
+			}
+		}
+
+		if (depth != VK_FORMAT_UNDEFINED)
+		{
+			const VkClearAttachment zero =
+			{
+				VK_IMAGE_ASPECT_DEPTH_BIT,
+				0,
+				makeClearValueDepthStencil(0.0f, 0)
+			};
+			colorDepthClear1.push_back(zero);
+
+			const VkClearAttachment one =
+			{
+				VK_IMAGE_ASPECT_DEPTH_BIT,
+				0,
+				makeClearValueDepthStencil(0.2f, 0)
+			};
+			colorDepthClear2.push_back(one);
+		}
+
+		if (stencil != VK_FORMAT_UNDEFINED)
+		{
+			stencilClear1 =
+			{
+				VK_IMAGE_ASPECT_STENCIL_BIT,
+				0,
+				makeClearValueDepthStencil(0.0f, 1)
+			};
+
+			stencilClear2 =
+			{
+				VK_IMAGE_ASPECT_STENCIL_BIT,
+				0,
+				makeClearValueDepthStencil(0.0f, 2)
+			};
+
+			rectStencil1 =
+			{
+				makeRect2D(0, 0, 32, 16),
+				0u,
+				1u,
+			};
+
+			rectStencil2 =
+			{
+				makeRect2D(0, 16, 32, 32),
+				0u,
+				1u,
+			};
+		}
+
+		rectColorDepth1 =
+		{
+			makeRect2D(0, 0, 16, 32),
+			0u,
+			1u,
+		};
+
+		rectColorDepth2 =
+		{
+			makeRect2D(16, 0, 32, 32),
+			0u,
+			1u,
+		};
+	}
+};
+
 template<typename T>
 inline VkDeviceSize sizeInBytes (const std::vector<T>& vec)
 {
@@ -892,6 +995,7 @@ void DynamicRenderingTestInstance::rendering (const VkPipeline					pipeline,
 	for (deUint32 attachmentLoadOp  = 0; attachmentLoadOp  < TEST_ATTACHMENT_LOAD_OP_LAST;  ++attachmentLoadOp)
 	for (deUint32 attachmentStoreOp = 0; attachmentStoreOp < TEST_ATTACHMENT_STORE_OP_LAST; ++attachmentStoreOp)
 	{
+
 		beginCommandBuffer(vk, *m_cmdBuffer);
 		preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
@@ -924,7 +1028,53 @@ void DynamicRenderingTestInstance::rendering (const VkPipeline					pipeline,
 
 		if ((static_cast<VkAttachmentLoadOp>(attachmentLoadOp)   == VK_ATTACHMENT_LOAD_OP_CLEAR) &&
 			(static_cast<VkAttachmentStoreOp>(attachmentStoreOp) == VK_ATTACHMENT_STORE_OP_STORE))
+		{
 			verifyResults(colorAtchCount, imagesFormat);
+
+			const ClearAttachmentData clearData(colorAtchCount, imagesFormat.depth, imagesFormat.stencil);
+
+			beginCommandBuffer(vk, *m_cmdBuffer);
+			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+
+			beginRenderingKHR(*m_cmdBuffer,
+							  attachmentBindInfos,
+							  0,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			if (clearData.colorDepthClear1.size() != 0)
+			{
+				vk.cmdClearAttachments(*m_cmdBuffer,
+										static_cast<deUint32>(clearData.colorDepthClear1.size()),
+										clearData.colorDepthClear1.data(),
+										1, &clearData.rectColorDepth1);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
+
+			if (clearData.colorDepthClear2.size() != 0)
+			{
+				vk.cmdClearAttachments(*m_cmdBuffer,
+										static_cast<deUint32>(clearData.colorDepthClear2.size()),
+										clearData.colorDepthClear2.data(),
+										1, &clearData.rectColorDepth2);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
+
+			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+
+			copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
+
+			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+			submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+
+			verifyResults(colorAtchCount, imagesFormat);
+		}
 	}
 }
 
@@ -1269,7 +1419,63 @@ void	SingleCmdBufferResuming::rendering (const VkPipeline				pipeline,
 
 		if ((static_cast<VkAttachmentLoadOp>(attachmentLoadOp)   == VK_ATTACHMENT_LOAD_OP_CLEAR) &&
 			(static_cast<VkAttachmentStoreOp>(attachmentStoreOp) == VK_ATTACHMENT_STORE_OP_STORE))
+		{
 			verifyResults(colorAtchCount, imagesFormat);
+
+			const ClearAttachmentData clearData(colorAtchCount, imagesFormat.depth, imagesFormat.stencil);
+
+			beginCommandBuffer(vk, *m_cmdBuffer);
+			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+
+			beginRenderingKHR(*m_cmdBuffer,
+							  attachmentBindInfos,
+							  VK_RENDERING_SUSPENDING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			if (clearData.colorDepthClear1.size() != 0)
+			{
+				vk.cmdClearAttachments(*m_cmdBuffer,
+										static_cast<deUint32>(clearData.colorDepthClear1.size()),
+										clearData.colorDepthClear1.data(),
+										1, &clearData.rectColorDepth1);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
+
+			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+
+			beginRenderingKHR(*m_cmdBuffer,
+							  attachmentBindInfos,
+							  VK_RENDERING_RESUMING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			if (clearData.colorDepthClear2.size() != 0)
+			{
+				vk.cmdClearAttachments(*m_cmdBuffer,
+										static_cast<deUint32>(clearData.colorDepthClear2.size()),
+										clearData.colorDepthClear2.data(),
+										1, &clearData.rectColorDepth2);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
+
+			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+
+			copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
+
+			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+			submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+
+			verifyResults(colorAtchCount, imagesFormat);
+		}
 	}
 }
 
@@ -1369,7 +1575,70 @@ void	TwoPrimaryCmdBufferResuming::rendering (const VkPipeline				pipeline,
 
 		if ((static_cast<VkAttachmentLoadOp>(attachmentLoadOp)   == VK_ATTACHMENT_LOAD_OP_CLEAR) &&
 			(static_cast<VkAttachmentStoreOp>(attachmentStoreOp) == VK_ATTACHMENT_STORE_OP_STORE))
+		{
 			verifyResults(colorAtchCount, imagesFormat);
+
+			const ClearAttachmentData clearData(colorAtchCount, imagesFormat.depth, imagesFormat.stencil);
+
+			// First Primary CommandBuffer
+			beginCommandBuffer(vk, *m_cmdBuffer);
+			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+
+			beginRenderingKHR(*m_cmdBuffer,
+							  attachmentBindInfos,
+							  VK_RENDERING_SUSPENDING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			if (clearData.colorDepthClear1.size() != 0)
+			{
+				vk.cmdClearAttachments(*m_cmdBuffer,
+										static_cast<deUint32>(clearData.colorDepthClear1.size()),
+										clearData.colorDepthClear1.data(),
+										1, &clearData.rectColorDepth1);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
+
+			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+
+			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+
+			// Second Primary CommandBuffer
+			beginCommandBuffer(vk, *m_cmdBuffer2);
+
+			beginRenderingKHR(*m_cmdBuffer2,
+							  attachmentBindInfos,
+							  VK_RENDERING_RESUMING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			if (clearData.colorDepthClear2.size() != 0)
+			{
+				vk.cmdClearAttachments(*m_cmdBuffer2,
+										static_cast<deUint32>(clearData.colorDepthClear2.size()),
+										clearData.colorDepthClear2.data(),
+										1, &clearData.rectColorDepth2);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(*m_cmdBuffer2, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
+
+			vk.cmdEndRenderingKHR(*m_cmdBuffer2);
+
+			copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
+
+			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer2));
+
+			submitCommandsAndWait(vk, device, queue, *m_cmdBuffer, *m_cmdBuffer2);
+
+			verifyResults(colorAtchCount, imagesFormat);
+		}
 	}
 }
 
@@ -1412,7 +1681,6 @@ void	TwoSecondaryCmdBufferResuming::rendering (const VkPipeline					pipeline,
 	for (deUint32 attachmentLoadOp  = 0; attachmentLoadOp  < TEST_ATTACHMENT_LOAD_OP_LAST;  ++attachmentLoadOp)
 	for (deUint32 attachmentStoreOp = 0; attachmentStoreOp < TEST_ATTACHMENT_STORE_OP_LAST; ++attachmentStoreOp)
 	{
-
 		VkCommandBuffer		secCmdBuffers[2]	= {
 													*(m_secCmdBuffers[0]),
 													*(m_secCmdBuffers[1])
@@ -1439,7 +1707,6 @@ void	TwoSecondaryCmdBufferResuming::rendering (const VkPipeline					pipeline,
 
 		vk.cmdEndRenderingKHR(secCmdBuffers[0]);
 		VK_CHECK(vk.endCommandBuffer(secCmdBuffers[0]));
-
 
 		// secCmdBuffersSecond
 		beginSecondaryCmdBuffer(vk, secCmdBuffers[1]);
@@ -1473,7 +1740,74 @@ void	TwoSecondaryCmdBufferResuming::rendering (const VkPipeline					pipeline,
 
 		if ((static_cast<VkAttachmentLoadOp>(attachmentLoadOp)   == VK_ATTACHMENT_LOAD_OP_CLEAR) &&
 			(static_cast<VkAttachmentStoreOp>(attachmentStoreOp) == VK_ATTACHMENT_STORE_OP_STORE))
+		{
 			verifyResults(colorAtchCount, imagesFormat);
+
+			const ClearAttachmentData clearData(colorAtchCount, imagesFormat.depth, imagesFormat.stencil);
+
+		// secCmdBuffersFirst
+			beginSecondaryCmdBuffer(vk, secCmdBuffers[0]);
+
+			beginRenderingKHR(secCmdBuffers[0],
+							  attachmentBindInfos,
+							  VK_RENDERING_SUSPENDING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			if (clearData.colorDepthClear1.size() != 0)
+			{
+				vk.cmdClearAttachments(secCmdBuffers[0],
+									   static_cast<deUint32>(clearData.colorDepthClear1.size()),
+									   clearData.colorDepthClear1.data(),
+									   1, &clearData.rectColorDepth1);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(secCmdBuffers[0], 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
+
+			vk.cmdEndRenderingKHR(secCmdBuffers[0]);
+			VK_CHECK(vk.endCommandBuffer(secCmdBuffers[0]));
+
+			// secCmdBuffersSecond
+			beginSecondaryCmdBuffer(vk, secCmdBuffers[1]);
+
+			beginRenderingKHR(secCmdBuffers[1],
+							  attachmentBindInfos,
+							  VK_RENDERING_RESUMING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			if (clearData.colorDepthClear2.size() != 0)
+			{
+				vk.cmdClearAttachments(secCmdBuffers[1],
+									   static_cast<deUint32>(clearData.colorDepthClear2.size()),
+									   clearData.colorDepthClear2.data(),
+									   1, &clearData.rectColorDepth2);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(secCmdBuffers[1], 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
+
+			vk.cmdEndRenderingKHR(secCmdBuffers[1]);
+			VK_CHECK(vk.endCommandBuffer(secCmdBuffers[1]));
+
+			// Primary commandBuffer
+			beginCommandBuffer(vk, *m_cmdBuffer);
+			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+
+			vk.cmdExecuteCommands(*m_cmdBuffer, 2u, secCmdBuffers);
+
+			copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
+			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+
+			submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+
+			verifyResults(colorAtchCount, imagesFormat);
+		}
 	}
 }
 
@@ -1585,7 +1919,81 @@ void	TwoSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipeline				pip
 
 		if ((static_cast<VkAttachmentLoadOp>(attachmentLoadOp)   == VK_ATTACHMENT_LOAD_OP_CLEAR) &&
 			(static_cast<VkAttachmentStoreOp>(attachmentStoreOp) == VK_ATTACHMENT_STORE_OP_STORE))
+		{
 			verifyResults(colorAtchCount, imagesFormat);
+
+			const ClearAttachmentData clearData(colorAtchCount, imagesFormat.depth, imagesFormat.stencil);
+
+			// secCmdBuffersFirst
+			beginSecondaryCmdBuffer(vk, secCmdBuffers[0]);
+
+			beginRenderingKHR(secCmdBuffers[0],
+							  attachmentBindInfos,
+							  VK_RENDERING_SUSPENDING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			if (clearData.colorDepthClear1.size() != 0)
+			{
+				vk.cmdClearAttachments(secCmdBuffers[0],
+									   static_cast<deUint32>(clearData.colorDepthClear1.size()),
+									   clearData.colorDepthClear1.data(),
+									   1, &clearData.rectColorDepth1);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(secCmdBuffers[0], 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
+
+			vk.cmdEndRenderingKHR(secCmdBuffers[0]);
+			VK_CHECK(vk.endCommandBuffer(secCmdBuffers[0]));
+
+			// secCmdBuffersSecond
+			beginSecondaryCmdBuffer(vk, secCmdBuffers[1]);
+
+			beginRenderingKHR(secCmdBuffers[1],
+							  attachmentBindInfos,
+							  VK_RENDERING_RESUMING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			if (clearData.colorDepthClear2.size() != 0)
+			{
+				vk.cmdClearAttachments(secCmdBuffers[1],
+										static_cast<deUint32>(clearData.colorDepthClear2.size()),
+										clearData.colorDepthClear2.data(),
+										1, &clearData.rectColorDepth2);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(secCmdBuffers[1], 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
+
+			vk.cmdEndRenderingKHR(secCmdBuffers[1]);
+			VK_CHECK(vk.endCommandBuffer(secCmdBuffers[1]));
+
+			// Primary commandBuffer
+			beginCommandBuffer(vk, *m_cmdBuffer);
+			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+
+			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffers[0]);
+
+			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+
+			// Primary commandBuffer2
+			beginCommandBuffer(vk, *m_cmdBuffer2);
+
+			vk.cmdExecuteCommands(*m_cmdBuffer2, 1u, &secCmdBuffers[1]);
+
+			copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
+			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer2));
+
+			submitCommandsAndWait(vk, device, queue, *m_cmdBuffer, *m_cmdBuffer2);
+
+			verifyResults(colorAtchCount, imagesFormat);
+		}
 	}
 }
 
@@ -1665,7 +2073,61 @@ void	ContentsSecondaryCmdBuffer::rendering (const VkPipeline					pipeline,
 
 		if ((static_cast<VkAttachmentLoadOp>(attachmentLoadOp)   == VK_ATTACHMENT_LOAD_OP_CLEAR) &&
 			(static_cast<VkAttachmentStoreOp>(attachmentStoreOp) == VK_ATTACHMENT_STORE_OP_STORE))
+		{
 			verifyResults(colorAtchCount, imagesFormat);
+
+			const ClearAttachmentData clearData(colorAtchCount, imagesFormat.depth, imagesFormat.stencil);
+
+			// secCmdBuffers
+			beginSecondaryCmdBuffer(vk, *m_secCmdBuffers, (VkRenderingFlagsKHR)0u, colorAtchCount, imagesFormat);
+
+			if (clearData.colorDepthClear1.size() != 0)
+			{
+				vk.cmdClearAttachments(*m_secCmdBuffers,
+									   static_cast<deUint32>(clearData.colorDepthClear1.size()),
+									   clearData.colorDepthClear1.data(),
+									   1, &clearData.rectColorDepth1);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(*m_secCmdBuffers, 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
+
+			if (clearData.colorDepthClear2.size() != 0)
+			{
+				vk.cmdClearAttachments(*m_secCmdBuffers,
+										static_cast<deUint32>(clearData.colorDepthClear2.size()),
+										clearData.colorDepthClear2.data(),
+										1, &clearData.rectColorDepth2);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(*m_secCmdBuffers, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
+
+			VK_CHECK(vk.endCommandBuffer(*m_secCmdBuffers));
+
+			// Primary commandBuffer
+			beginCommandBuffer(vk, *m_cmdBuffer);
+			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+
+			beginRenderingKHR(*m_cmdBuffer,
+							  attachmentBindInfos,
+							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffers));
+
+			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+
+			copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
+			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+
+			submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+
+			verifyResults(colorAtchCount, imagesFormat);
+		}
 	}
 }
 
@@ -1760,7 +2222,66 @@ void	ContentsTwoSecondaryCmdBuffer::rendering (const VkPipeline					pipeline,
 
 		if ((static_cast<VkAttachmentLoadOp>(attachmentLoadOp)   == VK_ATTACHMENT_LOAD_OP_CLEAR) &&
 			(static_cast<VkAttachmentStoreOp>(attachmentStoreOp) == VK_ATTACHMENT_STORE_OP_STORE))
+		{
 			verifyResults(colorAtchCount, imagesFormat);
+
+			const ClearAttachmentData clearData(colorAtchCount, imagesFormat.depth, imagesFormat.stencil);
+
+			// secCmdBuffers
+			beginSecondaryCmdBuffer(vk, secCmdBuffers[0], (VkRenderingFlagsKHR)0u, colorAtchCount, imagesFormat);
+
+			if (clearData.colorDepthClear1.size() != 0)
+			{
+				vk.cmdClearAttachments(secCmdBuffers[0],
+									   static_cast<deUint32>(clearData.colorDepthClear1.size()),
+									   clearData.colorDepthClear1.data(),
+									   1, &clearData.rectColorDepth1);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(secCmdBuffers[0], 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
+
+			VK_CHECK(vk.endCommandBuffer(secCmdBuffers[0]));
+
+			// secCmdBuffers2
+			beginSecondaryCmdBuffer(vk, secCmdBuffers[1], (VkRenderingFlagsKHR)0u, colorAtchCount, imagesFormat);
+
+			if (clearData.colorDepthClear2.size() != 0)
+			{
+				vk.cmdClearAttachments(secCmdBuffers[1],
+										static_cast<deUint32>(clearData.colorDepthClear2.size()),
+										clearData.colorDepthClear2.data(),
+										1, &clearData.rectColorDepth2);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(secCmdBuffers[1], 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
+
+			VK_CHECK(vk.endCommandBuffer(secCmdBuffers[1]));
+
+			// Primary commandBuffer
+			beginCommandBuffer(vk, *m_cmdBuffer);
+			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+
+			beginRenderingKHR(*m_cmdBuffer,
+							  attachmentBindInfos,
+							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			vk.cmdExecuteCommands(*m_cmdBuffer, 2u, secCmdBuffers);
+
+			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+
+			copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
+			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+
+			submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+
+			verifyResults(colorAtchCount, imagesFormat);
+		}
 	}
 }
 
@@ -1869,7 +2390,80 @@ void	ContentsTwoSecondaryCmdBufferResuming::rendering (const VkPipeline					pipe
 
 		if ((static_cast<VkAttachmentLoadOp>(attachmentLoadOp)   == VK_ATTACHMENT_LOAD_OP_CLEAR) &&
 			(static_cast<VkAttachmentStoreOp>(attachmentStoreOp) == VK_ATTACHMENT_STORE_OP_STORE))
+		{
 			verifyResults(colorAtchCount, imagesFormat);
+
+			const ClearAttachmentData clearData(colorAtchCount, imagesFormat.depth, imagesFormat.stencil);
+
+			// secCmdBuffers
+			beginSecondaryCmdBuffer(vk, secCmdBuffers[0], VK_RENDERING_SUSPENDING_BIT_KHR, colorAtchCount, imagesFormat);
+
+			if (clearData.colorDepthClear1.size() != 0)
+			{
+				vk.cmdClearAttachments(secCmdBuffers[0],
+									   static_cast<deUint32>(clearData.colorDepthClear1.size()),
+									   clearData.colorDepthClear1.data(),
+									   1, &clearData.rectColorDepth1);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(secCmdBuffers[0], 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
+
+			VK_CHECK(vk.endCommandBuffer(secCmdBuffers[0]));
+
+			// secCmdBuffers2
+			beginSecondaryCmdBuffer(vk, secCmdBuffers[1], VK_RENDERING_RESUMING_BIT_KHR, colorAtchCount, imagesFormat);
+
+			if (clearData.colorDepthClear2.size() != 0)
+			{
+				vk.cmdClearAttachments(secCmdBuffers[1],
+										static_cast<deUint32>(clearData.colorDepthClear2.size()),
+										clearData.colorDepthClear2.data(),
+										1, &clearData.rectColorDepth2);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(secCmdBuffers[1], 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
+
+			VK_CHECK(vk.endCommandBuffer(secCmdBuffers[1]));
+
+			// Primary commandBuffer
+			beginCommandBuffer(vk, *m_cmdBuffer);
+			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+
+			beginRenderingKHR(*m_cmdBuffer,
+							  attachmentBindInfos,
+							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+							  VK_RENDERING_SUSPENDING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffers[0]);
+
+			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+
+			beginRenderingKHR(*m_cmdBuffer,
+							  attachmentBindInfos,
+							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+							  VK_RENDERING_RESUMING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffers[1]);
+
+			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+
+			copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
+			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+
+			submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+
+			verifyResults(colorAtchCount, imagesFormat);
+		}
 	}
 }
 
@@ -1986,7 +2580,86 @@ void	ContentsTwoSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipelin
 
 		if ((static_cast<VkAttachmentLoadOp>(attachmentLoadOp)   == VK_ATTACHMENT_LOAD_OP_CLEAR) &&
 			(static_cast<VkAttachmentStoreOp>(attachmentStoreOp) == VK_ATTACHMENT_STORE_OP_STORE))
+		{
 			verifyResults(colorAtchCount, imagesFormat);
+
+			const ClearAttachmentData clearData(colorAtchCount, imagesFormat.depth, imagesFormat.stencil);
+
+			// secCmdBuffers
+			beginSecondaryCmdBuffer(vk, secCmdBuffers[0], VK_RENDERING_SUSPENDING_BIT_KHR, colorAtchCount, imagesFormat);
+
+			if (clearData.colorDepthClear1.size() != 0)
+			{
+				vk.cmdClearAttachments(secCmdBuffers[0],
+										static_cast<deUint32>(clearData.colorDepthClear1.size()),
+										clearData.colorDepthClear1.data(),
+										1, &clearData.rectColorDepth1);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(secCmdBuffers[0], 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
+
+			VK_CHECK(vk.endCommandBuffer(secCmdBuffers[0]));
+
+			// secCmdBuffers2
+			beginSecondaryCmdBuffer(vk, secCmdBuffers[1], VK_RENDERING_RESUMING_BIT_KHR, colorAtchCount, imagesFormat);
+
+			if (clearData.colorDepthClear2.size() != 0)
+			{
+				vk.cmdClearAttachments(secCmdBuffers[1],
+										static_cast<deUint32>(clearData.colorDepthClear2.size()),
+										clearData.colorDepthClear2.data(),
+										1, &clearData.rectColorDepth2);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(secCmdBuffers[1], 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
+
+			VK_CHECK(vk.endCommandBuffer(secCmdBuffers[1]));
+
+			// Primary commandBuffer
+			beginCommandBuffer(vk, *m_cmdBuffer);
+			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+
+			beginRenderingKHR(*m_cmdBuffer,
+							  attachmentBindInfos,
+							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+							  VK_RENDERING_SUSPENDING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffers[0]);
+
+			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+
+			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+
+			// Primary commandBuffer2
+			beginCommandBuffer(vk, *m_cmdBuffer2);
+
+			beginRenderingKHR(*m_cmdBuffer2,
+							  attachmentBindInfos,
+							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+							  VK_RENDERING_RESUMING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			vk.cmdExecuteCommands(*m_cmdBuffer2, 1u, &secCmdBuffers[1]);
+
+			vk.cmdEndRenderingKHR(*m_cmdBuffer2);
+
+			copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
+
+			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer2));
+
+			submitCommandsAndWait(vk, device, queue, *m_cmdBuffer, *m_cmdBuffer2);
+
+			verifyResults(colorAtchCount, imagesFormat);
+		}
 	}
 }
 
@@ -2082,7 +2755,73 @@ void	ContentsPrimarySecondaryCmdBufferResuming::rendering (const VkPipeline					
 
 		if ((static_cast<VkAttachmentLoadOp>(attachmentLoadOp)   == VK_ATTACHMENT_LOAD_OP_CLEAR) &&
 			(static_cast<VkAttachmentStoreOp>(attachmentStoreOp) == VK_ATTACHMENT_STORE_OP_STORE))
+		{
 			verifyResults(colorAtchCount, imagesFormat);
+
+			const ClearAttachmentData clearData(colorAtchCount, imagesFormat.depth, imagesFormat.stencil);
+
+			// secCmdBuffer
+			beginSecondaryCmdBuffer(vk, *m_secCmdBuffer, VK_RENDERING_RESUMING_BIT_KHR, colorAtchCount, imagesFormat);
+
+			if (clearData.colorDepthClear1.size() != 0)
+			{
+				vk.cmdClearAttachments(*m_secCmdBuffer,
+										static_cast<deUint32>(clearData.colorDepthClear1.size()),
+										clearData.colorDepthClear1.data(),
+										1, &clearData.rectColorDepth1);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(*m_secCmdBuffer, 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
+
+			VK_CHECK(vk.endCommandBuffer(*m_secCmdBuffer));
+
+			// Primary commandBuffer
+			beginCommandBuffer(vk, *m_cmdBuffer);
+			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+
+			beginRenderingKHR(*m_cmdBuffer,
+							  attachmentBindInfos,
+							  VK_RENDERING_SUSPENDING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			if (clearData.colorDepthClear2.size() != 0)
+			{
+				vk.cmdClearAttachments(*m_cmdBuffer,
+										static_cast<deUint32>(clearData.colorDepthClear2.size()),
+										clearData.colorDepthClear2.data(),
+										1, &clearData.rectColorDepth2);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
+
+			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+
+			beginRenderingKHR(*m_cmdBuffer,
+							  attachmentBindInfos,
+							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+							  VK_RENDERING_RESUMING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
+
+			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+
+			copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
+
+			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+
+			submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+
+			verifyResults(colorAtchCount, imagesFormat);
+		}
 	}
 }
 
@@ -2178,7 +2917,73 @@ void	ContentsSecondaryPrimaryCmdBufferResuming::rendering (const VkPipeline					
 
 		if ((static_cast<VkAttachmentLoadOp>(attachmentLoadOp)   == VK_ATTACHMENT_LOAD_OP_CLEAR) &&
 			(static_cast<VkAttachmentStoreOp>(attachmentStoreOp) == VK_ATTACHMENT_STORE_OP_STORE))
+		{
 			verifyResults(colorAtchCount, imagesFormat);
+
+			const ClearAttachmentData clearData(colorAtchCount, imagesFormat.depth, imagesFormat.stencil);
+
+			// secCmdBuffer
+			beginSecondaryCmdBuffer(vk, *m_secCmdBuffer, VK_RENDERING_SUSPENDING_BIT_KHR, colorAtchCount, imagesFormat);
+
+			if (clearData.colorDepthClear1.size() != 0)
+			{
+				vk.cmdClearAttachments(*m_secCmdBuffer,
+										static_cast<deUint32>(clearData.colorDepthClear1.size()),
+										clearData.colorDepthClear1.data(),
+										1, &clearData.rectColorDepth1);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(*m_secCmdBuffer, 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
+
+			VK_CHECK(vk.endCommandBuffer(*m_secCmdBuffer));
+
+			// Primary commandBuffer
+			beginCommandBuffer(vk, *m_cmdBuffer);
+			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+
+			beginRenderingKHR(*m_cmdBuffer,
+							  attachmentBindInfos,
+							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+							  VK_RENDERING_SUSPENDING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
+
+			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+
+			beginRenderingKHR(*m_cmdBuffer,
+							  attachmentBindInfos,
+							  VK_RENDERING_RESUMING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			if (clearData.colorDepthClear2.size() != 0)
+			{
+				vk.cmdClearAttachments(*m_cmdBuffer,
+										static_cast<deUint32>(clearData.colorDepthClear2.size()),
+										clearData.colorDepthClear2.data(),
+										1, &clearData.rectColorDepth2);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
+
+			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+
+			copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
+
+			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+
+			submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+
+			verifyResults(colorAtchCount, imagesFormat);
+		}
 	}
 }
 
@@ -2280,7 +3085,77 @@ void	ContentsTwoPrimarySecondaryCmdBufferResuming::rendering (const VkPipeline		
 
 		if ((static_cast<VkAttachmentLoadOp>(attachmentLoadOp)   == VK_ATTACHMENT_LOAD_OP_CLEAR) &&
 			(static_cast<VkAttachmentStoreOp>(attachmentStoreOp) == VK_ATTACHMENT_STORE_OP_STORE))
+		{
 			verifyResults(colorAtchCount, imagesFormat);
+
+			const ClearAttachmentData clearData(colorAtchCount, imagesFormat.depth, imagesFormat.stencil);
+
+			// secCmdBuffer
+			beginSecondaryCmdBuffer(vk, *m_secCmdBuffer, VK_RENDERING_RESUMING_BIT_KHR, colorAtchCount, imagesFormat);
+
+			if (clearData.colorDepthClear1.size() != 0)
+			{
+				vk.cmdClearAttachments(*m_secCmdBuffer,
+										static_cast<deUint32>(clearData.colorDepthClear1.size()),
+										clearData.colorDepthClear1.data(),
+										1, &clearData.rectColorDepth1);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(*m_secCmdBuffer, 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
+
+			VK_CHECK(vk.endCommandBuffer(*m_secCmdBuffer));
+
+			// Primary commandBuffer
+			beginCommandBuffer(vk, *m_cmdBuffer);
+			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+
+			beginRenderingKHR(*m_cmdBuffer,
+							  attachmentBindInfos,
+							  VK_RENDERING_SUSPENDING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			if (clearData.colorDepthClear2.size() != 0)
+			{
+				vk.cmdClearAttachments(*m_cmdBuffer,
+										static_cast<deUint32>(clearData.colorDepthClear2.size()),
+										clearData.colorDepthClear2.data(),
+										1, &clearData.rectColorDepth2);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
+
+			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+
+			// Primary commandBuffer2
+			beginCommandBuffer(vk, *m_cmdBuffer2);
+
+			beginRenderingKHR(*m_cmdBuffer2,
+							  attachmentBindInfos,
+							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+							  VK_RENDERING_RESUMING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			vk.cmdExecuteCommands(*m_cmdBuffer2, 1u, &(*m_secCmdBuffer));
+
+			vk.cmdEndRenderingKHR(*m_cmdBuffer2);
+
+			copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
+
+			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer2));
+
+			submitCommandsAndWait(vk, device, queue, *m_cmdBuffer, *m_cmdBuffer2);
+
+			verifyResults(colorAtchCount, imagesFormat);
+		}
 	}
 }
 
@@ -2382,7 +3257,77 @@ void	ContentsSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipeline		
 
 		if ((static_cast<VkAttachmentLoadOp>(attachmentLoadOp)   == VK_ATTACHMENT_LOAD_OP_CLEAR) &&
 			(static_cast<VkAttachmentStoreOp>(attachmentStoreOp) == VK_ATTACHMENT_STORE_OP_STORE))
+		{
 			verifyResults(colorAtchCount, imagesFormat);
+
+			const ClearAttachmentData clearData(colorAtchCount, imagesFormat.depth, imagesFormat.stencil);
+
+			// secCmdBuffer
+			beginSecondaryCmdBuffer(vk, *m_secCmdBuffer, VK_RENDERING_SUSPENDING_BIT_KHR, colorAtchCount, imagesFormat);
+
+			if (clearData.colorDepthClear1.size() != 0)
+			{
+				vk.cmdClearAttachments(*m_secCmdBuffer,
+										static_cast<deUint32>(clearData.colorDepthClear1.size()),
+										clearData.colorDepthClear1.data(),
+										1, &clearData.rectColorDepth1);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(*m_secCmdBuffer, 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
+
+			VK_CHECK(vk.endCommandBuffer(*m_secCmdBuffer));
+
+			// Primary commandBuffer
+			beginCommandBuffer(vk, *m_cmdBuffer);
+			preBarier(colorAtchCount, imagesLayout, imagesFormat);
+
+			beginRenderingKHR(*m_cmdBuffer,
+							  attachmentBindInfos,
+							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+							  VK_RENDERING_SUSPENDING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
+
+			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+
+			// Primary commandBuffer2
+			beginCommandBuffer(vk, *m_cmdBuffer2);
+
+			beginRenderingKHR(*m_cmdBuffer2,
+							  attachmentBindInfos,
+							  VK_RENDERING_RESUMING_BIT_KHR,
+							  colorAtchCount,
+							  imagesFormat,
+							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+
+			if (clearData.colorDepthClear2.size() != 0)
+			{
+				vk.cmdClearAttachments(*m_cmdBuffer2,
+										static_cast<deUint32>(clearData.colorDepthClear2.size()),
+										clearData.colorDepthClear2.data(),
+										1, &clearData.rectColorDepth2);
+			}
+
+			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+				vk.cmdClearAttachments(*m_cmdBuffer2, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
+
+			vk.cmdEndRenderingKHR(*m_cmdBuffer2);
+
+			copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
+
+			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer2));
+
+			submitCommandsAndWait(vk, device, queue, *m_cmdBuffer, *m_cmdBuffer2);
+
+			verifyResults(colorAtchCount, imagesFormat);
+		}
 	}
 }
 
