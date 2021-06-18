@@ -30,7 +30,9 @@
 #include "tcuTestLog.hpp"
 #include "tcuWaiverUtil.hpp"
 
-#include "subgroups/glcSubgroupsTests.hpp"
+#include "glcSubgroupsTests.hpp"
+#include "gl4cEnhancedLayoutsTests.hpp"
+#include "../gles31/es31cArrayOfArraysTests.hpp"
 
 namespace glcts
 {
@@ -38,7 +40,7 @@ namespace glcts
 class TestCaseWrapper : public tcu::TestCaseExecutor
 {
 public:
-	TestCaseWrapper(SingleConfigTestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism);
+	TestCaseWrapper(deqp::TestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism);
 	~TestCaseWrapper(void);
 
 	void init(tcu::TestCase* testCase, const std::string& path);
@@ -46,11 +48,11 @@ public:
 	tcu::TestNode::IterateResult iterate(tcu::TestCase* testCase);
 
 private:
-	SingleConfigTestPackage& m_testPackage;
+	deqp::TestPackage& m_testPackage;
 	de::SharedPtr<tcu::WaiverUtil> m_waiverMechanism;
 };
 
-TestCaseWrapper::TestCaseWrapper(SingleConfigTestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism)
+TestCaseWrapper::TestCaseWrapper(deqp::TestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism)
 	: m_testPackage(package)
 	, m_waiverMechanism(waiverMechanism)
 {
@@ -109,19 +111,138 @@ tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase* testCase)
 	}
 }
 
-SingleConfigTestPackage::SingleConfigTestPackage(tcu::TestContext& testCtx, const char* packageName,
+SingleConfigGL43TestPackage::SingleConfigGL43TestPackage(tcu::TestContext& testCtx, const char* packageName, const char* description,
 												 glu::ContextType renderContextType)
-	: deqp::TestPackage(testCtx, packageName, "CTS Single Config Package",
-						renderContextType, "gl_cts/data/")
+	: deqp::TestPackage(testCtx, packageName, description, renderContextType, "gl_cts/data/")
 {
 }
 
-SingleConfigTestPackage::~SingleConfigTestPackage(void)
+SingleConfigGL43TestPackage::~SingleConfigGL43TestPackage(void)
 {
-	deqp::TestPackage::deinit();
+
 }
 
-void SingleConfigTestPackage::init(void)
+void SingleConfigGL43TestPackage::init(void)
+{
+	// Call init() in parent - this creates context.
+	deqp::TestPackage::init();
+
+	try
+	{
+		// Add main test groups
+		addChild(new glcts::ArrayOfArraysTestGroupGL(getContext()));
+	}
+	catch (...)
+	{
+		// Destroy context.
+		deqp::TestPackage::deinit();
+		throw;
+	}
+}
+
+tcu::TestCaseExecutor* SingleConfigGL43TestPackage::createExecutor(void) const
+{
+	return new TestCaseWrapper(const_cast<SingleConfigGL43TestPackage&>(*this), m_waiverMechanism);
+}
+
+SingleConfigGL44TestPackage::SingleConfigGL44TestPackage(tcu::TestContext& testCtx, const char* packageName, const char* description,
+												 glu::ContextType renderContextType)
+	: SingleConfigGL43TestPackage(testCtx, packageName, description, renderContextType)
+{
+}
+
+SingleConfigGL44TestPackage::~SingleConfigGL44TestPackage(void)
+{
+
+}
+
+void SingleConfigGL44TestPackage::init(void)
+{
+	// Call init() in parent - this creates context.
+	SingleConfigGL43TestPackage::init();
+
+	try
+	{
+		// Add main test groups
+		addChild(new gl4cts::EnhancedLayoutsTests(getContext()));
+	}
+	catch (...)
+	{
+		// Destroy context.
+		deqp::TestPackage::deinit();
+		throw;
+	}
+}
+
+SingleConfigGL45TestPackage::SingleConfigGL45TestPackage(tcu::TestContext& testCtx, const char* packageName, const char* description,
+												 glu::ContextType renderContextType)
+	: SingleConfigGL44TestPackage(testCtx, packageName, description, renderContextType)
+{
+}
+
+SingleConfigGL45TestPackage::~SingleConfigGL45TestPackage(void)
+{
+
+}
+
+void SingleConfigGL45TestPackage::init(void)
+{
+	// Call init() in parent - this creates context.
+	SingleConfigGL44TestPackage::init();
+
+	try
+	{
+		// Add main test groups
+		addChild(new glc::subgroups::GlSubgroupTests(getContext()));
+	}
+	catch (...)
+	{
+		// Destroy context.
+		deqp::TestPackage::deinit();
+		throw;
+	}
+}
+
+SingleConfigGL46TestPackage::SingleConfigGL46TestPackage(tcu::TestContext& testCtx, const char* packageName, const char* description,
+												 glu::ContextType renderContextType)
+	: SingleConfigGL45TestPackage(testCtx, packageName, description, renderContextType)
+{
+}
+
+SingleConfigGL46TestPackage::~SingleConfigGL46TestPackage(void)
+{
+
+}
+
+void SingleConfigGL46TestPackage::init(void)
+{
+	// Call init() in parent - this creates context.
+	SingleConfigGL45TestPackage::init();
+
+	try
+	{
+		// Add main test groups
+	}
+	catch (...)
+	{
+		// Destroy context.
+		deqp::TestPackage::deinit();
+		throw;
+	}
+}
+
+SingleConfigES32TestPackage::SingleConfigES32TestPackage(tcu::TestContext& testCtx, const char* packageName, const char* description,
+												 glu::ContextType renderContextType)
+	: deqp::TestPackage(testCtx, packageName, description, renderContextType, "gl_cts/data/")
+{
+}
+
+SingleConfigES32TestPackage::~SingleConfigES32TestPackage(void)
+{
+
+}
+
+void SingleConfigES32TestPackage::init(void)
 {
 	// Call init() in parent - this creates context.
 	deqp::TestPackage::init();
@@ -139,9 +260,9 @@ void SingleConfigTestPackage::init(void)
 	}
 }
 
-tcu::TestCaseExecutor* SingleConfigTestPackage::createExecutor(void) const
+tcu::TestCaseExecutor* SingleConfigES32TestPackage::createExecutor(void) const
 {
-	return new TestCaseWrapper(const_cast<SingleConfigTestPackage&>(*this), m_waiverMechanism);
+	return new TestCaseWrapper(const_cast<SingleConfigES32TestPackage&>(*this), m_waiverMechanism);
 }
 
 } // glcts
