@@ -813,6 +813,12 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_acquire_drm_display")
+	{
+		functions.push_back("vkAcquireDrmDisplayEXT");
+		functions.push_back("vkGetDrmDisplayEXT");
+		return;
+	}
 	if (extName == "VK_EXT_robustness2")
 	{
 		return;
@@ -842,6 +848,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_NV_fragment_shading_rate_enums")
+	{
+		return;
+	}
+	if (extName == "VK_NV_ray_tracing_motion_blur")
 	{
 		return;
 	}
@@ -879,6 +889,14 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_physical_device_drm")
+	{
+		return;
+	}
+	if (extName == "VK_HUAWEI_subpass_shading")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_extended_dynamic_state2")
 	{
 		return;
@@ -888,6 +906,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_global_priority_query")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_multi_draw")
 	{
 		return;
 	}
@@ -1980,6 +2002,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_acquire_drm_display")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_robustness2")
 	{
 		return;
@@ -2017,6 +2043,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdSetFragmentShadingRateEnumNV");
 		return;
 	}
+	if (extName == "VK_NV_ray_tracing_motion_blur")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_ycbcr_2plane_444_formats")
 	{
 		return;
@@ -2050,6 +2080,15 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdSetVertexInputEXT");
 		return;
 	}
+	if (extName == "VK_EXT_physical_device_drm")
+	{
+		return;
+	}
+	if (extName == "VK_HUAWEI_subpass_shading")
+	{
+		functions.push_back("vkCmdSubpassShadingHUAWEI");
+		return;
+	}
 	if (extName == "VK_EXT_extended_dynamic_state2")
 	{
 		functions.push_back("vkCmdSetPatchControlPointsEXT");
@@ -2066,6 +2105,12 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_EXT_global_priority_query")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_multi_draw")
+	{
+		functions.push_back("vkCmdDrawMultiEXT");
+		functions.push_back("vkCmdDrawMultiIndexedEXT");
 		return;
 	}
 	if (extName == "VK_KHR_acceleration_structure")
@@ -2275,6 +2320,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_NV_cooperative_matrix",
 	"VK_NV_coverage_reduction_mode",
 	"VK_EXT_headless_surface",
+	"VK_EXT_acquire_drm_display",
 	"VK_NV_acquire_winrt_display",
 	"VK_KHR_android_surface",
 	"VK_KHR_video_queue",
@@ -2351,6 +2397,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_EXT_vertex_input_dynamic_state",
 	"VK_EXT_extended_dynamic_state2",
 	"VK_EXT_color_write_enable",
+	"VK_EXT_multi_draw",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_ANDROID_external_memory_android_hardware_buffer",

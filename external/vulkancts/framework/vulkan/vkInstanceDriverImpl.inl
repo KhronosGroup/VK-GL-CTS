@@ -352,6 +352,16 @@ VkResult InstanceDriver::createHeadlessSurfaceEXT (VkInstance instance, const Vk
 	return m_vk.createHeadlessSurfaceEXT(instance, pCreateInfo, pAllocator, pSurface);
 }
 
+VkResult InstanceDriver::acquireDrmDisplayEXT (VkPhysicalDevice physicalDevice, deInt32 drmFd, VkDisplayKHR display) const
+{
+	return m_vk.acquireDrmDisplayEXT(physicalDevice, drmFd, display);
+}
+
+VkResult InstanceDriver::getDrmDisplayEXT (VkPhysicalDevice physicalDevice, deInt32 drmFd, deUint32 connectorId, VkDisplayKHR* display) const
+{
+	return m_vk.getDrmDisplayEXT(physicalDevice, drmFd, connectorId, display);
+}
+
 VkResult InstanceDriver::acquireWinrtDisplayNV (VkPhysicalDevice physicalDevice, VkDisplayKHR display) const
 {
 	return m_vk.acquireWinrtDisplayNV(physicalDevice, display);

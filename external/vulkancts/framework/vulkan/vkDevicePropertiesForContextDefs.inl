@@ -11,6 +11,7 @@ const vk::VkPhysicalDeviceDescriptorIndexingProperties&				Context::getDescripto
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&		Context::getDeviceGeneratedCommandsProperties		(void) const { return m_device->getDeviceGeneratedCommandsProperties();			}
 const vk::VkPhysicalDeviceDiscardRectanglePropertiesEXT&			Context::getDiscardRectanglePropertiesEXT			(void) const { return m_device->getDiscardRectanglePropertiesEXT();				}
 const vk::VkPhysicalDeviceDriverProperties&							Context::getDriverProperties						(void) const { return m_device->getDriverProperties();							}
+const vk::VkPhysicalDeviceDrmPropertiesEXT&							Context::getDrmPropertiesEXT						(void) const { return m_device->getDrmPropertiesEXT();							}
 const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			Context::getExternalMemoryHostPropertiesEXT			(void) const { return m_device->getExternalMemoryHostPropertiesEXT();			}
 const vk::VkPhysicalDeviceFloatControlsProperties&					Context::getFloatControlsProperties					(void) const { return m_device->getFloatControlsProperties();					}
 const vk::VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			Context::getFragmentDensityMapPropertiesEXT			(void) const { return m_device->getFragmentDensityMapPropertiesEXT();			}
@@ -24,6 +25,7 @@ const vk::VkPhysicalDeviceMaintenance3Properties&					Context::getMaintenance3Pr
 const vk::VkPhysicalDeviceMeshShaderPropertiesNV&					Context::getMeshShaderProperties					(void) const { return m_device->getMeshShaderProperties();						}
 const vk::VkPhysicalDeviceMultiviewProperties&						Context::getMultiviewProperties						(void) const { return m_device->getMultiviewProperties();						}
 const vk::VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX&	Context::getMultiviewPerViewAttributesPropertiesX	(void) const { return m_device->getMultiviewPerViewAttributesPropertiesX();		}
+const vk::VkPhysicalDeviceMultiDrawPropertiesEXT&					Context::getMultiDrawPropertiesEXT					(void) const { return m_device->getMultiDrawPropertiesEXT();					}
 const vk::VkPhysicalDevicePerformanceQueryPropertiesKHR&			Context::getPerformanceQueryProperties				(void) const { return m_device->getPerformanceQueryProperties();				}
 const vk::VkPhysicalDevicePointClippingProperties&					Context::getPointClippingProperties					(void) const { return m_device->getPointClippingProperties();					}
 const vk::VkPhysicalDevicePortabilitySubsetPropertiesKHR&			Context::getPortabilitySubsetProperties				(void) const { return m_device->getPortabilitySubsetProperties();				}
@@ -40,6 +42,7 @@ const vk::VkPhysicalDeviceShaderCoreProperties2AMD&					Context::getShaderCorePr
 const vk::VkPhysicalDeviceShadingRateImagePropertiesNV&				Context::getShadingRateImageProperties				(void) const { return m_device->getShadingRateImageProperties();				}
 const vk::VkPhysicalDeviceSubgroupProperties&						Context::getSubgroupProperties						(void) const { return m_device->getSubgroupProperties();						}
 const vk::VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&			Context::getSubgroupSizeControlPropertiesEXT		(void) const { return m_device->getSubgroupSizeControlPropertiesEXT();			}
+const vk::VkPhysicalDeviceSubpassShadingPropertiesHUAWEI&			Context::getSubpassShadingPropertiesHUAWEI			(void) const { return m_device->getSubpassShadingPropertiesHUAWEI();			}
 const vk::VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT&		Context::getTexelBufferAlignmentPropertiesEXT		(void) const { return m_device->getTexelBufferAlignmentPropertiesEXT();			}
 const vk::VkPhysicalDeviceTimelineSemaphoreProperties&				Context::getTimelineSemaphoreProperties				(void) const { return m_device->getTimelineSemaphoreProperties();				}
 const vk::VkPhysicalDeviceTransformFeedbackPropertiesEXT&			Context::getTransformFeedbackPropertiesEXT			(void) const { return m_device->getTransformFeedbackPropertiesEXT();			}

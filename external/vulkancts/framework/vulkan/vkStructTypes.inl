@@ -5029,6 +5029,91 @@ struct VkPipelineFragmentShadingRateEnumStateCreateInfoNV
 	VkFragmentShadingRateCombinerOpKHR	combinerOps[2];
 };
 
+union VkDeviceOrHostAddressConstKHR
+{
+	VkDeviceAddress	deviceAddress;
+	const void*		hostAddress;
+};
+
+struct VkAccelerationStructureGeometryMotionTrianglesDataNV
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkDeviceOrHostAddressConstKHR	vertexData;
+};
+
+struct VkAccelerationStructureMotionInfoNV
+{
+	VkStructureType								sType;
+	const void*									pNext;
+	deUint32									maxInstances;
+	VkAccelerationStructureMotionInfoFlagsNV	flags;
+};
+
+struct VkAccelerationStructureMatrixMotionInstanceNV
+{
+	VkTransformMatrixKHR		transformT0;
+	VkTransformMatrixKHR		transformT1;
+	deUint32					instanceCustomIndex:24;
+	deUint32					mask:8;
+	deUint32					instanceShaderBindingTableRecordOffset:24;
+	VkGeometryInstanceFlagsKHR	flags:8;
+	deUint64					accelerationStructureReference;
+};
+
+struct VkSRTDataNV
+{
+	float	sx;
+	float	a;
+	float	b;
+	float	pvx;
+	float	sy;
+	float	c;
+	float	pvy;
+	float	sz;
+	float	pvz;
+	float	qx;
+	float	qy;
+	float	qz;
+	float	qw;
+	float	tx;
+	float	ty;
+	float	tz;
+};
+
+struct VkAccelerationStructureSRTMotionInstanceNV
+{
+	VkSRTDataNV					transformT0;
+	VkSRTDataNV					transformT1;
+	deUint32					instanceCustomIndex:24;
+	deUint32					mask:8;
+	deUint32					instanceShaderBindingTableRecordOffset:24;
+	VkGeometryInstanceFlagsKHR	flags:8;
+	deUint64					accelerationStructureReference;
+};
+
+union VkAccelerationStructureMotionInstanceDataNV
+{
+	VkAccelerationStructureInstanceKHR				staticInstance;
+	VkAccelerationStructureMatrixMotionInstanceNV	matrixMotionInstance;
+	VkAccelerationStructureSRTMotionInstanceNV		srtMotionInstance;
+};
+
+struct VkAccelerationStructureMotionInstanceNV
+{
+	VkAccelerationStructureMotionInstanceTypeNV		type;
+	VkAccelerationStructureMotionInstanceFlagsNV	flags;
+	VkAccelerationStructureMotionInstanceDataNV		data;
+};
+
+struct VkPhysicalDeviceRayTracingMotionBlurFeaturesNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		rayTracingMotionBlur;
+	VkBool32		rayTracingMotionBlurPipelineTraceRaysIndirect;
+};
+
 struct VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT
 {
 	VkStructureType	sType;
@@ -5123,6 +5208,40 @@ struct VkVertexInputAttributeDescription2EXT
 	deUint32		offset;
 };
 
+struct VkPhysicalDeviceDrmPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		hasPrimary;
+	VkBool32		hasRender;
+	deInt64			primaryMajor;
+	deInt64			primaryMinor;
+	deInt64			renderMajor;
+	deInt64			renderMinor;
+};
+
+struct VkSubpassShadingPipelineCreateInfoHUAWEI
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkRenderPass	renderPass;
+	deUint32		subpass;
+};
+
+struct VkPhysicalDeviceSubpassShadingFeaturesHUAWEI
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		subpassShading;
+};
+
+struct VkPhysicalDeviceSubpassShadingPropertiesHUAWEI
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		maxSubpassShadingWorkgroupSizeAspectRatio;
+};
+
 struct VkPhysicalDeviceExtendedDynamicState2FeaturesEXT
 {
 	VkStructureType	sType;
@@ -5162,16 +5281,37 @@ struct VkQueueFamilyGlobalPriorityPropertiesEXT
 	VkQueueGlobalPriorityEXT	priorities[VK_MAX_GLOBAL_PRIORITY_SIZE_EXT];
 };
 
+struct VkPhysicalDeviceMultiDrawFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		multiDraw;
+};
+
+struct VkPhysicalDeviceMultiDrawPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		maxMultiDrawCount;
+};
+
+struct VkMultiDrawInfoEXT
+{
+	deUint32	firstVertex;
+	deUint32	vertexCount;
+};
+
+struct VkMultiDrawIndexedInfoEXT
+{
+	deUint32	firstIndex;
+	deUint32	indexCount;
+	deInt32		vertexOffset;
+};
+
 union VkDeviceOrHostAddressKHR
 {
 	VkDeviceAddress	deviceAddress;
 	void*			hostAddress;
-};
-
-union VkDeviceOrHostAddressConstKHR
-{
-	VkDeviceAddress	deviceAddress;
-	const void*		hostAddress;
 };
 
 struct VkAccelerationStructureBuildRangeInfoKHR

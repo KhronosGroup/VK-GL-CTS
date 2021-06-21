@@ -6,3 +6,4 @@ GetInstanceProcAddrFunc						getInstanceProcAddr;
 EnumerateInstanceExtensionPropertiesFunc	enumerateInstanceExtensionProperties;
 EnumerateInstanceLayerPropertiesFunc		enumerateInstanceLayerProperties;
 EnumerateInstanceVersionFunc				enumerateInstanceVersion;
+GetSubpassShadingMaxWorkgroupSizeHUAWEIFunc	getSubpassShadingMaxWorkgroupSizeHUAWEI;

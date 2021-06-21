@@ -6,3 +6,4 @@ virtual PFN_vkVoidFunction	getInstanceProcAddr						(VkInstance instance, const 
 virtual VkResult			enumerateInstanceExtensionProperties	(const char* pLayerName, deUint32* pPropertyCount, VkExtensionProperties* pProperties) const;
 virtual VkResult			enumerateInstanceLayerProperties		(deUint32* pPropertyCount, VkLayerProperties* pProperties) const;
 virtual VkResult			enumerateInstanceVersion				(deUint32* pApiVersion) const;
+virtual VkResult			getSubpassShadingMaxWorkgroupSizeHUAWEI	(VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize) const;

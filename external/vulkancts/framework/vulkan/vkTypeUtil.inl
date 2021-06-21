@@ -615,11 +615,50 @@ inline VkIndirectCommandsStreamNV makeIndirectCommandsStreamNV (VkBuffer buffer,
 	return res;
 }
 
+inline VkSRTDataNV makeSRTDataNV (float sx, float a, float b, float pvx, float sy, float c, float pvy, float sz, float pvz, float qx, float qy, float qz, float qw, float tx, float ty, float tz)
+{
+	VkSRTDataNV res;
+	res.sx	= sx;
+	res.a	= a;
+	res.b	= b;
+	res.pvx	= pvx;
+	res.sy	= sy;
+	res.c	= c;
+	res.pvy	= pvy;
+	res.sz	= sz;
+	res.pvz	= pvz;
+	res.qx	= qx;
+	res.qy	= qy;
+	res.qz	= qz;
+	res.qw	= qw;
+	res.tx	= tx;
+	res.ty	= ty;
+	res.tz	= tz;
+	return res;
+}
+
 inline VkMutableDescriptorTypeListVALVE makeMutableDescriptorTypeListVALVE (deUint32 descriptorTypeCount, const VkDescriptorType* pDescriptorTypes)
 {
 	VkMutableDescriptorTypeListVALVE res;
 	res.descriptorTypeCount	= descriptorTypeCount;
 	res.pDescriptorTypes	= pDescriptorTypes;
+	return res;
+}
+
+inline VkMultiDrawInfoEXT makeMultiDrawInfoEXT (deUint32 firstVertex, deUint32 vertexCount)
+{
+	VkMultiDrawInfoEXT res;
+	res.firstVertex	= firstVertex;
+	res.vertexCount	= vertexCount;
+	return res;
+}
+
+inline VkMultiDrawIndexedInfoEXT makeMultiDrawIndexedInfoEXT (deUint32 firstIndex, deUint32 indexCount, deInt32 vertexOffset)
+{
+	VkMultiDrawIndexedInfoEXT res;
+	res.firstIndex		= firstIndex;
+	res.indexCount		= indexCount;
+	res.vertexOffset	= vertexOffset;
 	return res;
 }
 

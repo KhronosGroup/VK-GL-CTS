@@ -157,6 +157,7 @@ def prefixName (prefix, name):
 	name = name.replace("AABBNV", "AABB_NV")
 	name = name.replace("_H_264_", "_H264_")
 	name = name.replace("_H_265_", "_H265_")
+	name = name.replace("SUBPASS_SHADING_PIPELINE_CREATE_INFO_HUAWEI", "SUBPASSS_SHADING_PIPELINE_CREATE_INFO_HUAWEI")	# typo in the header file that we need to account for
 
 	return prefix + name
 
@@ -1887,7 +1888,7 @@ def generateDeviceFeaturesDefs(src):
 				sType = "SCISSOR_EXCLUSIVE"
 			elif sType == "ASTC_DECODE":
 				sType = "ASTC_DECODE_MODE"
-			if sType in {'VULKAN_1_1', 'VULKAN_1_2'}:
+			if sType in {'VULKAN_1_1', 'VULKAN_1_2', 'RAY_TRACING_MOTION_BLUR'}:		# VkPhysicalDeviceRayTracingMotionBlurFeaturesNV has a const pNext, it can be allowed when this is fixed
 				continue
 			# end handling special cases
 			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sSuffix + '_' + sType + '_EXTENSION_NAME).+$'
