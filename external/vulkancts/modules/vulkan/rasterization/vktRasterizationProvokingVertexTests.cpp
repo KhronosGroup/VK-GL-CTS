@@ -225,6 +225,13 @@ void ProvokingVertexTestCase::checkSupport (Context& context) const
 				TCU_THROW(NotSupportedError, "provokingVertexModePerPipeline not supported");
 		}
 	}
+
+	if (m_params.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
+		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!context.getPortabilitySubsetFeatures().triangleFans)
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
+	}
 }
 
 TestInstance* ProvokingVertexTestCase::createInstance (Context& context) const

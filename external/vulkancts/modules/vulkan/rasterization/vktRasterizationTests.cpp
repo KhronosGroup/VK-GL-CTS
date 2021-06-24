@@ -2200,12 +2200,21 @@ void TriangleStripTestInstance::generateTriangles (int iteration, std::vector<tc
 class TriangleFanTestInstance : public BaseTriangleTestInstance
 {
 public:
-				TriangleFanTestInstance			(Context& context, VkSampleCountFlagBits sampleCount)
-					: BaseTriangleTestInstance(context, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN, sampleCount)
-				{}
+				TriangleFanTestInstance			(Context& context, VkSampleCountFlagBits sampleCount);
+
 
 	void		generateTriangles				(int iteration, std::vector<tcu::Vec4>& outData, std::vector<TriangleSceneSpec::SceneTriangle>& outTriangles);
 };
+
+TriangleFanTestInstance::TriangleFanTestInstance (Context& context, VkSampleCountFlagBits sampleCount)
+	: BaseTriangleTestInstance(context, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN, sampleCount)
+{
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!context.getPortabilitySubsetFeatures().triangleFans)
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
+	}
+}
 
 void TriangleFanTestInstance::generateTriangles (int iteration, std::vector<tcu::Vec4>& outData, std::vector<TriangleSceneSpec::SceneTriangle>& outTriangles)
 {
