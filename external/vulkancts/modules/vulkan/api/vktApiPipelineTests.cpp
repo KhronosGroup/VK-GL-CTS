@@ -1388,6 +1388,319 @@ tcu::TestStatus DestroyAfterEndTest (Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
+Move<VkPipeline> createSimpleGraphicsPipelineInvalidPointers (const DeviceInterface& vk, const VkDevice& device, deUint32 numShaderStages, const VkPipelineShaderStageCreateInfo* shaderStageCreateInfos, VkPipelineLayout pipelineLayout, VkRenderPass renderPass)
+{
+	const void *invalidPointer = reinterpret_cast<void*>(~(0));
+
+	const VkPipelineVertexInputStateCreateInfo		vertexInputStateCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType                             sType;
+		DE_NULL,													// const void*                                 pNext;
+		(VkPipelineVertexInputStateCreateFlags)0,					// VkPipelineVertexInputStateCreateFlags       flags;
+		0u,															// deUint32                                    vertexBindingDescriptionCount;
+		DE_NULL,													// const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
+		0u,															// deUint32                                    vertexAttributeDescriptionCount;
+		(const VkVertexInputAttributeDescription*)invalidPointer	// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
+	};
+
+	const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyStateCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType                            sType;
+		DE_NULL,														// const void*                                pNext;
+		(VkPipelineInputAssemblyStateCreateFlags)0,						// VkPipelineInputAssemblyStateCreateFlags    flags;
+		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,							// VkPrimitiveTopology                        topology;
+		VK_FALSE														// VkBool32                                   primitiveRestartEnable;
+	};
+
+	// Disable rasterization to test unused structs
+	const VkPipelineRasterizationStateCreateInfo	rasterizationStateCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	// VkStructureType                            sType;
+		DE_NULL,													// const void*                                pNext;
+		(VkPipelineRasterizationStateCreateFlags)0,					// VkPipelineRasterizationStateCreateFlags    flags;
+		VK_FALSE,													// VkBool32                                   depthClampEnable;
+		VK_TRUE,													// VkBool32                                   rasterizerDiscardEnable;
+		VK_POLYGON_MODE_FILL,										// VkPolygonMode                              polygonMode;
+		VK_CULL_MODE_BACK_BIT,										// VkCullModeFlags                            cullMode;
+		VK_FRONT_FACE_CLOCKWISE,									// VkFrontFace                                frontFace;
+		VK_FALSE,													// VkBool32                                   depthBiasEnable;
+		0.0f,														// float                                      depthBiasConstantFactor;
+		0.0f,														// float                                      depthBiasClamp;
+		0.0f,														// float                                      depthBiasSlopeFactor;
+		1.0f														// float                                      lineWidth;
+	};
+
+	const VkGraphicsPipelineCreateInfo				graphicsPipelineCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,				// VkStructureType                                  sType;
+		DE_NULL,														// const void*                                      pNext;
+		(VkPipelineCreateFlags)0,										// VkPipelineCreateFlags                            flags;
+		numShaderStages,												// deUint32                                         stageCount;
+		shaderStageCreateInfos,											// const VkPipelineShaderStageCreateInfo*           pStages;
+		&vertexInputStateCreateInfo,									// const VkPipelineVertexInputStateCreateInfo*      pVertexInputState;
+		&inputAssemblyStateCreateInfo,									// const VkPipelineInputAssemblyStateCreateInfo*    pInputAssemblyState;
+		DE_NULL,														// const VkPipelineTessellationStateCreateInfo*     pTessellationState;
+		(const VkPipelineViewportStateCreateInfo*)invalidPointer,		// const VkPipelineViewportStateCreateInfo*         pViewportState;
+		&rasterizationStateCreateInfo,									// const VkPipelineRasterizationStateCreateInfo*    pRasterizationState;
+		(const VkPipelineMultisampleStateCreateInfo*)invalidPointer,	// const VkPipelineMultisampleStateCreateInfo*      pMultisampleState;
+		(const VkPipelineDepthStencilStateCreateInfo*)invalidPointer,	// const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState;
+		(const VkPipelineColorBlendStateCreateInfo*)invalidPointer,		// const VkPipelineColorBlendStateCreateInfo*       pColorBlendState;
+	    DE_NULL,														// const VkPipelineDynamicStateCreateInfo*          pDynamicState;
+		pipelineLayout,													// VkPipelineLayout                                 layout;
+		renderPass,														// VkRenderPass                                     renderPass;
+		0u,																// deUint32                                         subpass;
+		DE_NULL,														// VkPipeline                                       basePipelineHandle;
+		0																// int                                              basePipelineIndex;
+	};
+
+	const VkPipelineCacheCreateInfo					pipelineCacheCreateInfo			=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,	// VkStructureType               sType;
+		DE_NULL,										// const void*                   pNext;
+		(VkPipelineCacheCreateFlags)0u,					// VkPipelineCacheCreateFlags    flags;
+		0,												// size_t                        initialDataSize;
+		invalidPointer									// const void*                   pInitialData;
+	};
+
+	const Unique<VkPipelineCache>					pipelineCache					(createPipelineCache(vk, device, &pipelineCacheCreateInfo));
+
+	return createGraphicsPipeline(vk, device, pipelineCache.get(), &graphicsPipelineCreateInfo);
+}
+
+tcu::TestStatus pipelineInvalidPointersUnusedStructsTest (Context& context, VkPipelineBindPoint bindPoint)
+{
+	const DeviceInterface&					vk							= context.getDeviceInterface();
+	const VkDevice							device						= context.getDevice();
+	const VkQueue							queue						= context.getUniversalQueue();
+	const deUint32							queueFamilyIndex			= context.getUniversalQueueFamilyIndex();
+	const bool								isGraphics					= (bindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS);
+	const void								*invalidPointer				= reinterpret_cast<void*>(~(0));
+
+	const VkCommandPoolCreateInfo			commandPoolParams			=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,	// VkStructureType             sType;
+		DE_NULL,									// const void*                 pNext;
+		(VkCommandPoolCreateFlags)0u,				// VkCommandPoolCreateFlags    flags;
+		queueFamilyIndex							// deUint32                    queueFamilyIndex;
+	};
+
+	const Unique<VkCommandPool>				commandPool					(createCommandPool(vk, device, &commandPoolParams, DE_NULL));
+	const Unique<VkCommandBuffer>			commandBuffer				(createCommandBuffer(vk, device, commandPool.get()));
+
+	// Begin command buffer.
+	{
+		const VkCommandBufferBeginInfo commandBufferBeginInfo =
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType                          sType;
+			DE_NULL,										// const void*                              pNext;
+			VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags                flags;
+			DE_NULL											// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
+		};
+
+		VK_CHECK(vk.beginCommandBuffer(commandBuffer.get(), &commandBufferBeginInfo));
+	}
+
+	// These will only be used for graphics pipelines.
+	Move<VkRenderPass>		renderPass;
+	Move<VkFramebuffer>		frameBuffer;
+
+	{
+		const VkSubpassDescription		subpassDescription		=
+		{
+			(VkSubpassDescriptionFlags)0u,						// VkSubpassDescriptionFlags       flags;
+			VK_PIPELINE_BIND_POINT_GRAPHICS,					// VkPipelineBindPoint             pipelineBindPoint
+			0u,													// deUint32                        inputAttachmentCount
+			(const VkAttachmentReference*)invalidPointer,		// const VkAttachmentReference*    pInputAttachments
+			0u,													// deUint32                        colorAttachmentCount
+			(const VkAttachmentReference*)invalidPointer,		// const VkAttachmentReference*    pColorAttachments
+			DE_NULL,											// const VkAttachmentReference*    pResolveAttachments
+			DE_NULL,											// const VkAttachmentReference*    pDepthStencilAttachment
+			0u,													// deUint32                        preserveAttachmentCount
+			(const deUint32*)invalidPointer						// const deUint32*                 pPreserveAttachments
+		};
+
+		const VkRenderPassCreateInfo	renderPassCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType                   sType;
+			DE_NULL,											// const void*                       pNext;
+			(VkRenderPassCreateFlags)0u,						// VkRenderPassCreateFlags           flags;
+			0u,													// deUint32                          attachmentCount
+			(const VkAttachmentDescription*)invalidPointer,		// const VkAttachmentDescription*    pAttachments
+			1u,													// deUint32                          subpassCount
+			&subpassDescription,								// const VkSubpassDescription*       pSubpasses
+			0u,													// deUint32                          dependencyCount
+			(const VkSubpassDependency*)invalidPointer			// const VkSubpassDependency*        pDependencies
+		};
+		renderPass			= createRenderPass(vk, device, &renderPassCreateInfo);
+
+		const VkFramebufferCreateInfo framebufferCreateInfo =
+		{
+			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		// VkStructureType             sType;
+			DE_NULL,										// const void*                 pNext;
+			(VkFramebufferCreateFlags)0u,					// VkFramebufferCreateFlags    flags;
+			renderPass.get(),								// VkRenderPass                renderPass;
+			0u,												// deUint32                    attachmentCount;
+			(const VkImageView*)invalidPointer,				// const VkImageView*          pAttachments;
+			256u,											// deUint32                    width;
+			256u,											// deUint32                    height;
+			1u												// deUint32                    layers;
+		};
+
+		frameBuffer = createFramebuffer(vk, device, &framebufferCreateInfo);
+	}
+
+	Move<VkPipelineLayout>				pipelineLayout;
+	{
+		const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType                 sType;
+			DE_NULL,										// const void*                     pNext;
+			(VkPipelineLayoutCreateFlags)0u,				// VkPipelineLayoutCreateFlags     flags;
+			0u,												// deUint32                        setLayoutCount;
+			(const VkDescriptorSetLayout*)invalidPointer,	// const VkDescriptorSetLayout*    pSetLayouts;
+			0u,												// deUint32                        pushConstantRangeCount;
+			(const VkPushConstantRange*)invalidPointer		// const VkPushConstantRange*      pPushConstantRanges;
+		};
+
+		pipelineLayout = vk::createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
+	}
+
+	std::vector<Move<VkShaderModule>>	shaderModules;
+	Move<VkPipeline>					pipeline;
+
+	if (isGraphics)
+	{
+		shaderModules.push_back(createShaderModule(vk, device, context.getBinaryCollection().get("vertex"), 0));
+		shaderModules.push_back(createShaderModule(vk, device, context.getBinaryCollection().get("fragment"), 0));
+
+		const VkPipelineShaderStageCreateInfo	shaderStageCreateInfos[]	=
+		{
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType                     sType;
+				DE_NULL,												// const void*                         pNext;
+				(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags    flags;
+				VK_SHADER_STAGE_VERTEX_BIT,								// VkShaderStageFlagBits               stage;
+				shaderModules[0].get(),									// VkShaderModule                      shader;
+				"main",													// const char*                         pName;
+				DE_NULL,												// const VkSpecializationInfo*         pSpecializationInfo;
+			},
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType                     sType;
+				DE_NULL,												// const void*                         pNext;
+				(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags    flags;
+				VK_SHADER_STAGE_FRAGMENT_BIT,							// VkShaderStageFlagBits               stage;
+				shaderModules[1].get(),									// VkShaderModule                      shader;
+				"main",													// const char*                         pName;
+				DE_NULL,												// const VkSpecializationInfo*         pSpecializationInfo;
+			}
+		};
+
+		pipeline = createSimpleGraphicsPipelineInvalidPointers(vk, device, DE_LENGTH_OF_ARRAY(shaderStageCreateInfos), shaderStageCreateInfos, *pipelineLayout, renderPass.get());
+	}
+	else
+	{
+		shaderModules.push_back(createShaderModule(vk, device, context.getBinaryCollection().get("compute"), 0));
+
+		const VkPipelineShaderStageCreateInfo	shaderStageCreateInfo		=
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType                     sType;
+			DE_NULL,												// const void*                         pNext;
+			(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags    flags;
+			VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits               stage;
+			shaderModules[0].get(),									// VkShaderModule                      shader;
+			"main",													// const char*                         pName;
+			DE_NULL,												// const VkSpecializationInfo*         pSpecializationInfo;
+		};
+
+		const VkComputePipelineCreateInfo		computePipelineCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,	// VkStructureType                    sType;
+			DE_NULL,										// const void*                        pNext
+			(VkPipelineCreateFlags)0,						// VkPipelineCreateFlags              flags
+			shaderStageCreateInfo,							// VkPipelineShaderStageCreateInfo    stage
+			*pipelineLayout,									// VkPipelineLayout                   layout
+			DE_NULL,										// VkPipeline                         basePipelineHandle
+			0												// int                                basePipelineIndex
+		};
+
+		pipeline = createComputePipeline(vk, device, DE_NULL, &computePipelineCreateInfo);
+	}
+
+	if (isGraphics)
+	{
+		beginRenderPass(vk, commandBuffer.get(), renderPass.get(), frameBuffer.get(), makeRect2D(0, 0, 256u, 256u), tcu::Vec4(0.25f, 0.25f, 0.25f, 0.0f));
+	}
+	vk.cmdBindPipeline(commandBuffer.get(), bindPoint, pipeline.get());
+
+	if (isGraphics)
+	{
+		vk.cmdDraw(commandBuffer.get(), 1u, 1u, 0u, 0u);
+		vk.cmdEndRenderPass(commandBuffer.get());
+    }
+	else
+	{
+		vk.cmdDispatch(commandBuffer.get(), 1u, 1u, 1u);
+	}
+	vk.endCommandBuffer(commandBuffer.get());
+
+	const VkSubmitInfo				submitInfo				=
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType                sType;
+		DE_NULL,						// const void*                    pNext;
+		0u,								// deUint32                       waitSemaphoreCount;
+		DE_NULL,						// const VkSemaphore*             pWaitSemaphores;
+		DE_NULL,						// const VkPipelineStageFlags*    pWaitDstStageMask;
+		1u,								// deUint32                       commandBufferCount;
+		&commandBuffer.get(),			// const VkCommandBuffer*         pCommandBuffers;
+		0u,								// deUint32                       signalSemaphoreCount;
+		DE_NULL							// const VkSemaphore*             pSignalSemaphores;
+	};
+
+	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, DE_NULL));
+	VK_CHECK(vk.queueWaitIdle(queue));
+
+	// Test should always pass
+	return tcu::TestStatus::pass("Pass");
+}
+
+void createPipelineInvalidPointersUnusedStructsGraphicsSource (SourceCollections& dst)
+{
+	dst.glslSources.add("vertex") << glu::VertexSource(
+		"#version 450\n"
+		"\n"
+		"void main (void)\n"
+		"{\n"
+		"   gl_Position = vec4(1.0f);\n"
+		"}\n");
+
+	dst.glslSources.add("fragment") << glu::FragmentSource(
+		"#version 450\n"
+		"\n"
+		"void main (void)\n"
+		"{\n"
+		"}\n");
+}
+
+tcu::TestStatus pipelineInvalidPointersUnusedStructsGraphicsTest (Context& context)
+{
+	return pipelineInvalidPointersUnusedStructsTest(context, VK_PIPELINE_BIND_POINT_GRAPHICS);
+}
+
+void createPipelineInvalidPointersUnusedStructsComputeSource (SourceCollections& dst)
+{
+	dst.glslSources.add("compute") << glu::ComputeSource(
+		"#version 450\n"
+		"layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+		"void main (void)\n"
+		"{\n"
+		"}\n");
+}
+
+tcu::TestStatus pipelineInvalidPointersUnusedStructsComputeTest (Context& context)
+{
+	return pipelineInvalidPointersUnusedStructsTest(context, VK_PIPELINE_BIND_POINT_COMPUTE);
+}
+
 tcu::TestCaseGroup* createrenderpassTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> renderPassTests(new tcu::TestCaseGroup(testCtx, "renderpass", "Renderpass tests"));
@@ -1418,6 +1731,16 @@ tcu::TestCaseGroup* createPipelineLayoutTests (tcu::TestContext& testCtx)
 	return pipelineLayoutTests.release();
 }
 
+tcu::TestCaseGroup* createPipelineInvalidPointersUnusedStructsTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> pipelineInvalidPointersUnusedStructsTests(new tcu::TestCaseGroup(testCtx, "pipeline_invalid_pointers_unused_structs", "Create pipelines with invalid pointers for unused structs"));
+
+	addFunctionCaseWithPrograms(pipelineInvalidPointersUnusedStructsTests.get(), "graphics", "Test structs when creating a graphics pipeline", checkSupport, createPipelineInvalidPointersUnusedStructsGraphicsSource, pipelineInvalidPointersUnusedStructsGraphicsTest);
+	addFunctionCaseWithPrograms(pipelineInvalidPointersUnusedStructsTests.get(), "compute", "Test structs when creating a compute pipeline", checkSupport, createPipelineInvalidPointersUnusedStructsComputeSource, pipelineInvalidPointersUnusedStructsComputeTest);
+
+	return pipelineInvalidPointersUnusedStructsTests.release();
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createPipelineTests (tcu::TestContext& testCtx)
@@ -1426,6 +1749,7 @@ tcu::TestCaseGroup* createPipelineTests (tcu::TestContext& testCtx)
 
 	pipelineTests->addChild(createrenderpassTests(testCtx));
 	pipelineTests->addChild(createPipelineLayoutTests(testCtx));
+	pipelineTests->addChild(createPipelineInvalidPointersUnusedStructsTests(testCtx));
 
 	return pipelineTests.release();
 }
