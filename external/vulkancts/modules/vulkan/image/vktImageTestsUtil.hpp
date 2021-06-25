@@ -95,6 +95,7 @@ public:
 													 vk::Allocator&					allocator,
 													 const vk::VkImageCreateInfo&	imageCreateInfo,
 													 const vk::MemoryRequirement	memoryRequirement);
+	virtual							~Image			(void)		 {}
 
 	const vk::VkImage&				get				(void) const { return *m_image; }
 	const vk::VkImage&				operator*		(void) const { return get(); }
