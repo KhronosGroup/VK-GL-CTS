@@ -2438,7 +2438,7 @@ struct VkAcquireNextImageInfoKHR
 struct VkDeviceGroupPresentCapabilitiesKHR
 {
 	VkStructureType						sType;
-	const void*							pNext;
+	void*								pNext;
 	deUint32							presentMask[VK_MAX_DEVICE_GROUP_SIZE];
 	VkDeviceGroupPresentModeFlagsKHR	modes;
 };
@@ -2644,7 +2644,7 @@ struct VkPhysicalDevicePerformanceQueryPropertiesKHR
 struct VkPerformanceCounterKHR
 {
 	VkStructureType					sType;
-	const void*						pNext;
+	void*							pNext;
 	VkPerformanceCounterUnitKHR		unit;
 	VkPerformanceCounterScopeKHR	scope;
 	VkPerformanceCounterStorageKHR	storage;
@@ -2654,7 +2654,7 @@ struct VkPerformanceCounterKHR
 struct VkPerformanceCounterDescriptionKHR
 {
 	VkStructureType							sType;
-	const void*								pNext;
+	void*									pNext;
 	VkPerformanceCounterDescriptionFlagsKHR	flags;
 	char									name[VK_MAX_DESCRIPTION_SIZE];
 	char									category[VK_MAX_DESCRIPTION_SIZE];
@@ -4903,7 +4903,7 @@ struct VkPhysicalDeviceDeviceMemoryReportFeaturesEXT
 struct VkDeviceMemoryReportCallbackDataEXT
 {
 	VkStructureType						sType;
-	const void*							pNext;
+	void*								pNext;
 	VkDeviceMemoryReportFlagsEXT		flags;
 	VkDeviceMemoryReportEventTypeEXT	type;
 	deUint64							memoryObjectId;
@@ -5109,7 +5109,7 @@ struct VkAccelerationStructureMotionInstanceNV
 struct VkPhysicalDeviceRayTracingMotionBlurFeaturesNV
 {
 	VkStructureType	sType;
-	const void*		pNext;
+	void*			pNext;
 	VkBool32		rayTracingMotionBlur;
 	VkBool32		rayTracingMotionBlurPipelineTraceRaysIndirect;
 };
