@@ -1,3 +1,5 @@
+dEQP-VK.fragment_shading_rate.misc.limits
+dEQP-VK.fragment_shading_rate.misc.shading_rates
 dEQP-VK.fragment_shading_rate.basic.dynamic.noattachment.noshaderrate.keep.keep.1x1.samples1.vs
 dEQP-VK.fragment_shading_rate.basic.dynamic.noattachment.noshaderrate.keep.keep.1x1.samples2.vs
 dEQP-VK.fragment_shading_rate.basic.dynamic.noattachment.noshaderrate.keep.keep.1x1.samples4.vs
