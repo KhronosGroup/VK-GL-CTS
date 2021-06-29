@@ -46,6 +46,7 @@ VK_EXT_TYPE_DEVICE				= 1
 VK_EXT_DEP_INSTANCE				= 'instanceExtensionDependencies'
 VK_EXT_DEP_DEVICE				= 'deviceExtensionDependencies'
 VK_EXT_API_VERSIONS				= 'releasedApiVersions'
+VK_EXT_CORE_VERSIONS			= 'extensionRequiredCoreVersion'
 VK_XML_EXT_DEPS					= 'requires'
 VK_XML_EXT_NAME					= 'name'
 VK_XML_EXT_PROMO				= 'promotedto'
@@ -75,23 +76,34 @@ def genApiVersions(name, apiVersions):
 		yield '\tstd::make_tuple({}, {}, {}),'.format(version, major, minor)
 	yield '};'
 
+def genRequiredCoreVersions(name, coreVersionsDict):
+	yield 'static const std::tuple<deUint32, deUint32, const char*>\t{}[]\t ='.format(name)
+	yield '{'
+	extNames = sorted(coreVersionsDict.keys())
+	for extName in extNames:
+		(major, minor) = coreVersionsDict[extName]
+		yield '\tstd::make_tuple({}, {}, "{}"),'.format(major, minor, extName)
+	yield '};'
+
 def genExtDepInl(dependenciesAndVersions):
-	allExtDepsDict, apiVersions = dependenciesAndVersions
+	allExtDepsDict, apiVersions, allExtCoreVersions = dependenciesAndVersions
 	apiVersions.reverse()
 	lines = []
 
-	lines = lines + [line for line in genExtDepArray(VK_EXT_DEP_INSTANCE, allExtDepsDict[VK_EXT_TYPE_INSTANCE])]
-	lines = lines + [line for line in genExtDepArray(VK_EXT_DEP_DEVICE, allExtDepsDict[VK_EXT_TYPE_DEVICE])]
-	lines = lines + [line for line in genApiVersions(VK_EXT_API_VERSIONS, apiVersions)]
+	lines.extend(genExtDepArray(VK_EXT_DEP_INSTANCE, allExtDepsDict[VK_EXT_TYPE_INSTANCE]))
+	lines.extend(genExtDepArray(VK_EXT_DEP_DEVICE, allExtDepsDict[VK_EXT_TYPE_DEVICE]))
+	lines.extend(genApiVersions(VK_EXT_API_VERSIONS, apiVersions))
+	lines.extend(genRequiredCoreVersions(VK_EXT_CORE_VERSIONS, allExtCoreVersions))
 
 	writeInlFile(VK_INL_FILE, lines)
 
 class extInfo:
 	def __init__(self):
-		self.type	= VK_EXT_TYPE_INSTANCE
-		self.core	= VK_MAKE_VERSION(1, 0, 0)
-		self.promo	= VK_EXT_NOT_PROMOTED
-		self.deps	= []
+		self.type			= VK_EXT_TYPE_INSTANCE
+		self.core			= VK_MAKE_VERSION(1, 0, 0)
+		self.coreMajorMinor	= (1, 0)
+		self.promo			= VK_EXT_NOT_PROMOTED
+		self.deps			= []
 
 def genExtDepsOnApiVersion(ext, extInfoDict, apiVersion):
 	deps = []
@@ -127,7 +139,12 @@ def genExtDeps(extensionsAndVersions):
 
 	for key, value in allExtDepsDict.items():
 		value.sort(key=lambda x: x[2])
-	return allExtDepsDict, apiVersions
+
+	allExtCoreVersions = {}
+	for (ext, info) in extInfoDict.items():
+		allExtCoreVersions[ext] = info.coreMajorMinor
+
+	return allExtDepsDict, apiVersions, allExtCoreVersions
 
 def getExtInfoDict(vkRegistry):
 	extInfoDict = {}
@@ -141,11 +158,14 @@ def getExtInfoDict(vkRegistry):
 			continue
 		apiVersionID.append( (int(featureName[2]), int(featureName[3])) )
 
-	apiVersionsByName	= {}
-	apiVersionsByNumber	= {}
+	apiVersionsByName		= {}
+	apiVersionsByNumber		= {}
+	apiMajorMinorByNumber	= {}
 	for (major,minor) in apiVersionID:
+		majorDotMinor = '{}.{}'.format(major,minor)
 		apiVersionsByName['VK_VERSION_{}_{}'.format(major,minor)]	= VK_MAKE_VERSION(major, minor, 0);
-		apiVersionsByNumber['{}.{}'.format(major,minor)]			= VK_MAKE_VERSION(major, minor, 0);
+		apiVersionsByNumber[majorDotMinor]							= VK_MAKE_VERSION(major, minor, 0);
+		apiMajorMinorByNumber[majorDotMinor]						= (major, minor)
 
 	for ext in vkRegistry.extensions:
 		if ext.attrib[VK_XML_EXT_SUPPORTED] != VK_XML_EXT_SUPPORTED_VULKAN:
@@ -157,6 +177,7 @@ def getExtInfoDict(vkRegistry):
 			extInfoDict[name].type = VK_EXT_TYPE_DEVICE
 		if VK_XML_EXT_REQUIRES_CORE in ext.attrib and ext.attrib[VK_XML_EXT_REQUIRES_CORE] in apiVersionsByNumber:
 			extInfoDict[name].core = apiVersionsByNumber[ext.attrib[VK_XML_EXT_REQUIRES_CORE]]
+			extInfoDict[name].coreMajorMinor = apiMajorMinorByNumber[ext.attrib[VK_XML_EXT_REQUIRES_CORE]]
 		if VK_XML_EXT_PROMO in ext.attrib and ext.attrib[VK_XML_EXT_PROMO] in apiVersionsByName :
 			extInfoDict[name].promo = apiVersionsByName[ext.attrib[VK_XML_EXT_PROMO]]
 		if VK_XML_EXT_DEPS in ext.attrib:

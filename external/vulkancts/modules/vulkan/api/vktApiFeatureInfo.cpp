@@ -2224,6 +2224,33 @@ tcu::TestStatus enumerateDeviceExtensions (Context& context)
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
+tcu::TestStatus extensionCoreVersions (Context& context)
+{
+	deUint32	major;
+	deUint32	minor;
+	const char*	extName;
+
+	auto&					log		= context.getTestContext().getLog();
+	tcu::ResultCollector	results	(log);
+
+	const auto instanceExtensionProperties	= enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL);
+	const auto deviceExtensionProperties	= enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), DE_NULL);
+
+	for (const auto& majorMinorName : extensionRequiredCoreVersion)
+	{
+		std::tie(major, minor, extName) = majorMinorName;
+		const RequiredExtension reqExt (extName);
+
+		if ((isExtensionSupported(instanceExtensionProperties, reqExt) || isExtensionSupported(deviceExtensionProperties, reqExt)) &&
+		    !context.contextSupports(vk::ApiVersion(major, minor, 0u)))
+		{
+			results.fail("Required core version for " + std::string(extName) + " not met (" + de::toString(major) + "." + de::toString(minor) + ")");
+		}
+	}
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
 #define VK_SIZE_OF(STRUCT, MEMBER)					(sizeof(((STRUCT*)0)->MEMBER))
 #define OFFSET_TABLE_ENTRY(STRUCT, MEMBER)			{ (size_t)DE_OFFSET_OF(STRUCT, MEMBER), VK_SIZE_OF(STRUCT, MEMBER) }
 
@@ -5646,6 +5673,14 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 
 	infoTests->addChild(createTestGroup(testCtx, "format_properties",		"VkGetPhysicalDeviceFormatProperties() Tests",		createFormatTests));
 	infoTests->addChild(createTestGroup(testCtx, "image_format_properties",	"VkGetPhysicalDeviceImageFormatProperties() Tests",	createImageFormatTests,	imageFormatProperties));
+
+	{
+		de::MovePtr<tcu::TestCaseGroup> extCoreVersionGrp (new tcu::TestCaseGroup(testCtx, "extension_core_versions", "Tests checking extension required core versions"));
+
+		addFunctionCase(extCoreVersionGrp.get(), "extension_core_versions", "", extensionCoreVersions);
+
+		infoTests->addChild(extCoreVersionGrp.release());
+	}
 
 	{
 		de::MovePtr<tcu::TestCaseGroup> extendedPropertiesTests (new tcu::TestCaseGroup(testCtx, "get_physical_device_properties2", "VK_KHR_get_physical_device_properties2"));
