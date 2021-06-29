@@ -449,7 +449,7 @@ void FSRTestCase::initPrograms (SourceCollections& programCollection) const
 		"  ivec2 fragCoordXY = ivec2(gl_FragCoord.xy);\n"
 		"  ivec2 fragSize = ivec2(1<<((gl_ShadingRateEXT/4)&3), 1<<(gl_ShadingRateEXT&3));\n"
 		// W component gets error code
-		"  col0.w = uint(zero);\n"
+		"  col0.w = uint(zero)" << (m_data.sampleShadingInput ? " * gl_SampleID" : "") << ";\n"
 		"  if (((fragCoordXY - fragSize / 2) % fragSize) != ivec2(0,0))\n"
 		"    col0.w = " << ERROR_FRAGCOORD_CENTER << ";\n";
 
@@ -2383,7 +2383,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 		{ 12,	"interlock",			"fragment shader interlock"	},
 		{ 13,	"samplelocations",		"custom sample locations"	},
 		{ 14,	"sampleshadingenable",	"enable sample shading in createinfo"	},
-		{ 15,	"sampleshadinginput",	"enable sample shading by using sample interpolation"	},
+		{ 15,	"sampleshadinginput",	"enable sample shading by using gl_SampleID"	},
 	};
 
 	TestGroupCase dynCases[] =
