@@ -145,3 +145,4 @@ VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT			FEATURES ( shaderImageInt64A
 VkPhysicalDeviceShaderAtomicFloatFeaturesEXT				FEATURES ( shaderImageFloat32Atomics )							REQUIREMENTS ( VK_EXT_shader_atomic_float physicalDeviceShaderAtomicFloatFeaturesEXT.sparseImageFloat32Atomics )
 VkPhysicalDeviceShaderAtomicFloatFeaturesEXT				FEATURES ( shaderImageFloat32AtomicAdd )						REQUIREMENTS ( VK_EXT_shader_atomic_float physicalDeviceShaderAtomicFloatFeaturesEXT.sparseImageFloat32AtomicAdd )
 VkPhysicalDeviceMultiDrawFeaturesEXT						FEATURES ( multiDraw )											REQUIREMENTS ( VK_EXT_multi_draw )
+VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR	FEATURES ( shaderSubgroupUniformControlFlow )					REQUIREMENTS ( VK_KHR_shader_subgroup_uniform_control_flow )
