@@ -1111,6 +1111,8 @@ NOCTX_GL30_KHR_MODULE			= getModuleByName("KHR-NOCTX-GL30")
 NOCTX_GL40_KHR_MODULE			= getModuleByName("KHR-NOCTX-GL40")
 NOCTX_GL43_KHR_MODULE			= getModuleByName("KHR-NOCTX-GL43")
 NOCTX_GL45_KHR_MODULE			= getModuleByName("KHR-NOCTX-GL45")
+SINGLE_GL43_KHR_MODULE			= getModuleByName("KHR-Single-GL43")
+SINGLE_GL44_KHR_MODULE			= getModuleByName("KHR-Single-GL44")
 SINGLE_GL45_KHR_MODULE			= getModuleByName("KHR-Single-GL45")
 SINGLE_GL46_KHR_MODULE			= getModuleByName("KHR-Single-GL46")
 
@@ -1148,6 +1150,24 @@ GLCTS_NOCTX_GL45_KHR_PKG			= Package(module = NOCTX_GL45_KHR_MODULE, configurati
 					surfaceheight	= "64",
 					baseseed		= "1",
 					filters			= [include("gl45-khr-master.txt")]),
+	])
+
+GLCTS_SINGLE_GL43_KHR_PKG			= Package(module = SINGLE_GL43_KHR_MODULE, configurations = [
+		# Master
+		Configuration(name			= "khr-single",
+					surfacewidth	= "64",
+					surfaceheight	= "64",
+					baseseed		= "1",
+					filters			= [include("gl43-khr-single.txt")]),
+	])
+
+GLCTS_SINGLE_GL44_KHR_PKG			= Package(module = SINGLE_GL44_KHR_MODULE, configurations = [
+		# Master
+		Configuration(name			= "khr-single",
+					surfacewidth	= "64",
+					surfaceheight	= "64",
+					baseseed		= "1",
+					filters			= [include("gl44-khr-single.txt")]),
 	])
 
 GLCTS_SINGLE_GL45_KHR_PKG			= Package(module = SINGLE_GL45_KHR_MODULE, configurations = [
@@ -1208,7 +1228,7 @@ def generateGLMustpass():
 					Mustpass(project = GL_CTS_NOCTX_PROJECT, version = "4.6.0.x", isCurrent=False, packages = [GLCTS_NOCTX_GL30_KHR_PKG, GLCTS_NOCTX_GL40_KHR_PKG, GLCTS_NOCTX_GL43_KHR_PKG, GLCTS_NOCTX_GL45_KHR_PKG]),
 				    Mustpass(project = GL_CTS_KHR_MP_PROJECT, version = "4.6.1.x", isCurrent=True, packages = gl_packages),
                     Mustpass(project = GL_CTS_NOCTX_PROJECT, version = "4.6.1.x", isCurrent=True, packages = [GLCTS_NOCTX_GL30_KHR_PKG, GLCTS_NOCTX_GL40_KHR_PKG, GLCTS_NOCTX_GL43_KHR_PKG, GLCTS_NOCTX_GL45_KHR_PKG]),
-                    Mustpass(project = GL_CTS_KHR_SINGLE_PROJECT, version = "4.6.1.x", isCurrent=True, packages = [GLCTS_SINGLE_GL45_KHR_PKG, GLCTS_SINGLE_GL46_KHR_PKG]),
+                    Mustpass(project = GL_CTS_KHR_SINGLE_PROJECT, version = "4.6.1.x", isCurrent=True, packages = [GLCTS_SINGLE_GL43_KHR_PKG, GLCTS_SINGLE_GL44_KHR_PKG, GLCTS_SINGLE_GL45_KHR_PKG, GLCTS_SINGLE_GL46_KHR_PKG]),
                     Mustpass(project = GL_CTS_GLES_PROJECT, version = "4.6.1.x", isCurrent=True, packages = [MASTER_GL_ES31_PKG]),
 					]
 		return mustpass

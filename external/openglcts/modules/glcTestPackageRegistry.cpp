@@ -160,18 +160,25 @@ static tcu::TestPackage* createNoDefaultCustomContextPackage(tcu::TestContext& t
 {
 	return new glcts::NoDefaultContextPackage(testCtx, "KHR-NoContext");
 }
-
+static tcu::TestPackage* createSingleConfigGL43TestPackage(tcu::TestContext& testCtx)
+{
+	return new glcts::SingleConfigGL43TestPackage(testCtx, "KHR-Single-GL43");
+}
+static tcu::TestPackage* createSingleConfigGL44TestPackage(tcu::TestContext& testCtx)
+{
+	return new glcts::SingleConfigGL44TestPackage(testCtx, "KHR-Single-GL44");
+}
 static tcu::TestPackage* createSingleConfigGL45TestPackage(tcu::TestContext& testCtx)
 {
-	return new glcts::SingleConfigTestPackage(testCtx, "KHR-Single-GL45", glu::ContextType(glu::ApiType::core(4, 5)));
+	return new glcts::SingleConfigGL45TestPackage(testCtx, "KHR-Single-GL45");
 }
 static tcu::TestPackage* createSingleConfigGL46TestPackage(tcu::TestContext& testCtx)
 {
-	return new glcts::SingleConfigTestPackage(testCtx, "KHR-Single-GL46", glu::ContextType(glu::ApiType::core(4, 6)));
+	return new glcts::SingleConfigGL45TestPackage(testCtx, "KHR-Single-GL46");
 }
 static tcu::TestPackage* createSingleConfigES32TestPackage(tcu::TestContext& testCtx)
 {
-	return new glcts::SingleConfigTestPackage(testCtx, "KHR-Single-GLES32", glu::ContextType(glu::ApiType::es(3, 2)));
+	return new glcts::SingleConfigES32TestPackage(testCtx, "KHR-Single-GLES32");
 }
 
 static tcu::TestPackage* createGL30Package(tcu::TestContext& testCtx)
@@ -313,7 +320,8 @@ void registerPackages(void)
 	registry->registerPackage("KHR-GLES32", createES32Package);
 
 	registry->registerPackage("KHR-NoContext", createNoDefaultCustomContextPackage);
-
+	registry->registerPackage("KHR-Single-GL43", createSingleConfigGL43TestPackage);
+	registry->registerPackage("KHR-Single-GL44", createSingleConfigGL44TestPackage);
 	registry->registerPackage("KHR-Single-GL45", createSingleConfigGL45TestPackage);
 	registry->registerPackage("KHR-Single-GL46", createSingleConfigGL46TestPackage);
 	registry->registerPackage("KHR-Single-GLES32", createSingleConfigES32TestPackage);

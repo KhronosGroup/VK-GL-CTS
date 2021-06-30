@@ -1821,7 +1821,7 @@ void SpirvGlslToSpirVBuiltInFunctionsTest::initMappings()
 	m_mappings["greaterThan"].push_back("OpFOrdGreaterThan");
 	m_mappings["greaterThanEqual"].push_back("OpFOrdGreaterThanEqual");
 	m_mappings["equal"].push_back("OpFOrdEqual");
-	m_mappings["notEqual"].push_back("OpFOrdNotEqual");
+	m_mappings["notEqual"].push_back("OpFUnordNotEqual");
 	m_mappings["any"].push_back("OpAny");
 	m_mappings["all"].push_back("OpAll");
 	m_mappings["not"].push_back("OpLogicalNot");
