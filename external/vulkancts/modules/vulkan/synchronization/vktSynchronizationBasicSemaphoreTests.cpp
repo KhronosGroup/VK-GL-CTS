@@ -522,12 +522,12 @@ tcu::TestStatus basicMultiQueueCase(Context& context, TestConfig config)
 			isTimelineSemaphore
 		);
 		synchronizationWrapper[SECOND]->addSubmitInfo(
-			0u,													// deUint32								waitSemaphoreInfoCount
-			DE_NULL,											// const VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos
-			1u,													// deUint32								commandBufferInfoCount
-			&commandBufferInfo[SECOND],							// const VkCommandBufferSubmitInfoKHR*	pCommandBufferInfos
-			1u,													// deUint32								signalSemaphoreInfoCount
-			&signalSemaphoreSubmitInfo[SECOND],					// const VkSemaphoreSubmitInfoKHR*		pSignalSemaphoreInfos
+			isTimelineSemaphore ? 0u : 1u,								// deUint32								waitSemaphoreInfoCount
+			isTimelineSemaphore ? DE_NULL : &waitSemaphoreSubmitInfo,	// const VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos
+			1u,															// deUint32								commandBufferInfoCount
+			&commandBufferInfo[SECOND],									// const VkCommandBufferSubmitInfoKHR*	pCommandBufferInfos
+			1u,															// deUint32								signalSemaphoreInfoCount
+			&signalSemaphoreSubmitInfo[FIRST],							// const VkSemaphoreSubmitInfoKHR*		pSignalSemaphoreInfos
 			DE_FALSE,
 			isTimelineSemaphore
 		);
