@@ -85,7 +85,8 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createPushDescriptorTests			(testCtx));
 	pipelineTests->addChild(createSpecConstantTests				(testCtx));
 	pipelineTests->addChild(createMatchedAttachmentsTests		(testCtx));
-	pipelineTests->addChild(createMultisampleTests				(testCtx));
+	pipelineTests->addChild(createMultisampleTests				(testCtx, false));
+	pipelineTests->addChild(createMultisampleTests				(testCtx, true));
 	pipelineTests->addChild(createMultisampleInterpolationTests	(testCtx));
 	pipelineTests->addChild(createMultisampleShaderBuiltInTests	(testCtx));
 	pipelineTests->addChild(createTestGroup						(testCtx,	"vertex_input", "", createVertexInputTests));

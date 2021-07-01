@@ -177,6 +177,45 @@ VkFormat findSupportedDepthStencilFormat (Context& context, const bool useDepth,
 	return VK_FORMAT_UNDEFINED;
 }
 
+void checkFragmentShadingRateRequirements(Context& context, deUint32 sampleCount)
+{
+	const auto&	vki = context.getInstanceInterface();
+	const auto	physicalDevice = context.getPhysicalDevice();
+
+	context.requireDeviceFunctionality("VK_KHR_fragment_shading_rate");
+
+	if (!context.getFragmentShadingRateFeatures().pipelineFragmentShadingRate)
+		TCU_THROW(NotSupportedError, "pipelineFragmentShadingRate not supported");
+
+	// Fetch information about supported fragment shading rates
+	deUint32 supportedFragmentShadingRateCount = 0;
+	vki.getPhysicalDeviceFragmentShadingRatesKHR(physicalDevice, &supportedFragmentShadingRateCount, DE_NULL);
+
+	std::vector<vk::VkPhysicalDeviceFragmentShadingRateKHR> supportedFragmentShadingRates(supportedFragmentShadingRateCount,
+		{
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_KHR,
+			DE_NULL,
+			vk::VK_SAMPLE_COUNT_1_BIT,
+			{1, 1}
+		});
+	vki.getPhysicalDeviceFragmentShadingRatesKHR(physicalDevice, &supportedFragmentShadingRateCount, supportedFragmentShadingRates.data());
+
+	bool requiredRateFound = false;
+	for (const auto& rate : supportedFragmentShadingRates)
+	{
+		if ((rate.fragmentSize.width == 2u) &&
+			(rate.fragmentSize.height == 2u) &&
+			(rate.sampleCounts & sampleCount))
+		{
+			requiredRateFound = true;
+			break;
+		}
+	}
+
+	if (!requiredRateFound)
+		TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
+}
+
 VkImageAspectFlags getImageAspectFlags (const VkFormat format)
 {
 	const tcu::TextureFormat tcuFormat = mapVkFormat(format);
@@ -534,7 +573,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&				vk,
 									   const bool							useStencil,
 									   const VertexInputConfig				vertexInputConfig,
 									   const VkPrimitiveTopology			topology,
-									   const VkStencilOpState&				stencilOpState)
+									   const VkStencilOpState&				stencilOpState,
+									   const bool							useFragmentShadingRate)
 {
 	std::vector<VkVertexInputBindingDescription>	vertexInputBindingDescriptions;
 	std::vector<VkVertexInputAttributeDescription>	vertexInputAttributeDescriptions;
@@ -543,23 +583,23 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&				vk,
 
 	switch (vertexInputConfig)
 	{
-		case VERTEX_INPUT_NONE:
-			break;
+	case VERTEX_INPUT_NONE:
+		break;
 
-		case VERTEX_INPUT_VEC4:
-			vertexInputBindingDescriptions.push_back  (makeVertexInputBindingDescription  (0u, sizeofVec4, VK_VERTEX_INPUT_RATE_VERTEX));
-			vertexInputAttributeDescriptions.push_back(makeVertexInputAttributeDescription(0u, 0u,		   VK_FORMAT_R32G32B32A32_SFLOAT, 0u));
-			break;
+	case VERTEX_INPUT_VEC4:
+		vertexInputBindingDescriptions.push_back(makeVertexInputBindingDescription(0u, sizeofVec4, VK_VERTEX_INPUT_RATE_VERTEX));
+		vertexInputAttributeDescriptions.push_back(makeVertexInputAttributeDescription(0u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT, 0u));
+		break;
 
-		case VERTEX_INPUT_VEC4_VEC4:
-			vertexInputBindingDescriptions.push_back  (makeVertexInputBindingDescription  (0u, 2u * sizeofVec4, VK_VERTEX_INPUT_RATE_VERTEX));
-			vertexInputAttributeDescriptions.push_back(makeVertexInputAttributeDescription(0u, 0u,				VK_FORMAT_R32G32B32A32_SFLOAT, 0u));
-			vertexInputAttributeDescriptions.push_back(makeVertexInputAttributeDescription(1u, 0u,				VK_FORMAT_R32G32B32A32_SFLOAT, sizeofVec4));
-			break;
+	case VERTEX_INPUT_VEC4_VEC4:
+		vertexInputBindingDescriptions.push_back(makeVertexInputBindingDescription(0u, 2u * sizeofVec4, VK_VERTEX_INPUT_RATE_VERTEX));
+		vertexInputAttributeDescriptions.push_back(makeVertexInputAttributeDescription(0u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT, 0u));
+		vertexInputAttributeDescriptions.push_back(makeVertexInputAttributeDescription(1u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT, sizeofVec4));
+		break;
 
-		default:
-			DE_FATAL("Vertex input config not supported");
-			break;
+	default:
+		DE_FATAL("Vertex input config not supported");
+		break;
 	}
 
 	const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo =
@@ -572,9 +612,6 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&				vk,
 		static_cast<deUint32>(vertexInputAttributeDescriptions.size()),	// uint32_t									vertexAttributeDescriptionCount;
 		dataOrNullPtr(vertexInputAttributeDescriptions),				// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 	};
-
-	const std::vector<VkViewport>	viewports	(1, viewport);
-	const std::vector<VkRect2D>		scissors	(1, scissor);
 
 	const VkPipelineSampleLocationsStateCreateInfoEXT pipelineSampleLocationsCreateInfo =
 	{
@@ -615,33 +652,114 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&				vk,
 
 	const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType                      sType;
-		DE_NULL,													// const void*                          pNext;
-		(VkPipelineDynamicStateCreateFlags)0,						// VkPipelineDynamicStateCreateFlags    flags;
-		static_cast<deUint32>(dynamicState.size()),					// uint32_t                             dynamicStateCount;
-		dataOrNullPtr(dynamicState),								// const VkDynamicState*                pDynamicStates;
+		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType						sType;
+		DE_NULL,													// const void*							pNext;
+		(VkPipelineDynamicStateCreateFlags)0,						// VkPipelineDynamicStateCreateFlags	flags;
+		static_cast<deUint32>(dynamicState.size()),					// uint32_t								dynamicStateCount;
+		dataOrNullPtr(dynamicState),								// const VkDynamicState*				pDynamicStates;
 	};
 
-	return makeGraphicsPipeline(vk,								// const DeviceInterface&                        vk
-								device,							// const VkDevice                                device
-								pipelineLayout,					// const VkPipelineLayout                        pipelineLayout
-								vertexModule,					// const VkShaderModule                          vertexShaderModule
-								DE_NULL,						// const VkShaderModule                          tessellationControlShaderModule
-								DE_NULL,						// const VkShaderModule                          tessellationEvalShaderModule
-								DE_NULL,						// const VkShaderModule                          geometryShaderModule
-								fragmentModule,					// const VkShaderModule                          fragmentShaderModule
-								renderPass,						// const VkRenderPass                            renderPass
-								viewports,						// const std::vector<VkViewport>&                viewports
-								scissors,						// const std::vector<VkRect2D>&                  scissors
-								topology,						// const VkPrimitiveTopology                     topology
-								subpassIndex,					// const deUint32                                subpass
-								0u,								// const deUint32                                patchControlPoints
-								&vertexInputStateInfo,			// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-								DE_NULL,						// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-								&pipelineMultisampleStateInfo,	// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-								&pipelineDepthStencilStateInfo,	// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
-								DE_NULL,						// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
-								&dynamicStateCreateInfo);		// const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
+	std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageParams(2, {
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType						sType
+		DE_NULL,													// const void*							pNext
+		0u,															// VkPipelineShaderStageCreateFlags		flags
+		VK_SHADER_STAGE_VERTEX_BIT,									// VkShaderStageFlagBits				stage
+		vertexModule,												// VkShaderModule						module
+		"main",														// const char*							pName
+		DE_NULL														// const VkSpecializationInfo*			pSpecializationInfo
+		});
+
+	pipelineShaderStageParams[1].stage	= VK_SHADER_STAGE_FRAGMENT_BIT;
+	pipelineShaderStageParams[1].module	= fragmentModule;
+
+	const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,											// VkStructureType							sType
+		DE_NULL,																								// const void*								pNext
+		0u,																										// VkPipelineInputAssemblyStateCreateFlags	flags
+		topology,																								// VkPrimitiveTopology						topology
+		VK_FALSE																								// VkBool32									primitiveRestartEnable
+	};
+
+	const VkPipelineViewportStateCreateInfo viewportStateCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,													// VkStructureType							sType
+		DE_NULL,																								// const void*								pNext
+		(VkPipelineViewportStateCreateFlags)0,																	// VkPipelineViewportStateCreateFlags		flags
+		1u,																										// deUint32									viewportCount
+		&viewport,																								// const VkViewport*						pViewports
+		1u,																										// deUint32									scissorCount
+		&scissor																								// const VkRect2D*							pScissors
+	};
+
+	const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfoDefault
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,												// VkStructureType							sType
+		DE_NULL,																								// const void*								pNext
+		0u,																										// VkPipelineRasterizationStateCreateFlags	flags
+		VK_FALSE,																								// VkBool32									depthClampEnable
+		VK_FALSE,																								// VkBool32									rasterizerDiscardEnable
+		VK_POLYGON_MODE_FILL,																					// VkPolygonMode							polygonMode
+		VK_CULL_MODE_NONE,																						// VkCullModeFlags							cullMode
+		VK_FRONT_FACE_COUNTER_CLOCKWISE,																		// VkFrontFace								frontFace
+		VK_FALSE,																								// VkBool32									depthBiasEnable
+		0.0f,																									// float									depthBiasConstantFactor
+		0.0f,																									// float									depthBiasClamp
+		0.0f,																									// float									depthBiasSlopeFactor
+		1.0f																									// float									lineWidth
+	};
+
+	const VkPipelineColorBlendAttachmentState colorBlendAttachmentState
+	{
+		VK_FALSE,																								// VkBool32                 blendEnable
+		VK_BLEND_FACTOR_ZERO,																					// VkBlendFactor            srcColorBlendFactor
+		VK_BLEND_FACTOR_ZERO,																					// VkBlendFactor            dstColorBlendFactor
+		VK_BLEND_OP_ADD,																						// VkBlendOp                colorBlendOp
+		VK_BLEND_FACTOR_ZERO,																					// VkBlendFactor            srcAlphaBlendFactor
+		VK_BLEND_FACTOR_ZERO,																					// VkBlendFactor            dstAlphaBlendFactor
+		VK_BLEND_OP_ADD,																						// VkBlendOp                alphaBlendOp
+		VK_COLOR_COMPONENT_R_BIT																				// VkColorComponentFlags    colorWriteMask
+		| VK_COLOR_COMPONENT_G_BIT
+		| VK_COLOR_COMPONENT_B_BIT
+		| VK_COLOR_COMPONENT_A_BIT
+	};
+
+	VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfoDefault = initVulkanStructure();
+	colorBlendStateCreateInfoDefault.attachmentCount	= 1u;
+	colorBlendStateCreateInfoDefault.pAttachments		= &colorBlendAttachmentState;
+
+	VkPipelineFragmentShadingRateStateCreateInfoKHR shadingRateStateCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR,									// VkStructureType						sType;
+		DE_NULL,																								// const void*							pNext;
+		{ 2, 2 },																								// VkExtent2D							fragmentSize;
+		{ VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR, VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR },		// VkFragmentShadingRateCombinerOpKHR	combinerOps[2];
+	};
+
+	const VkGraphicsPipelineCreateInfo pipelineCreateInfo
+	{
+		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,														// VkStructureType									sType
+		useFragmentShadingRate ? &shadingRateStateCreateInfo : DE_NULL,											// const void*										pNext
+		0u,																										// VkPipelineCreateFlags							flags
+		(deUint32)pipelineShaderStageParams.size(),																// deUint32											stageCount
+		&pipelineShaderStageParams[0],																			// const VkPipelineShaderStageCreateInfo*			pStages
+		&vertexInputStateInfo,																					// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState
+		&inputAssemblyStateCreateInfo,																			// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState
+		DE_NULL,																								// const VkPipelineTessellationStateCreateInfo*		pTessellationState
+		&viewportStateCreateInfo,																				// const VkPipelineViewportStateCreateInfo*			pViewportState
+		&rasterizationStateCreateInfoDefault,																	// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState
+		&pipelineMultisampleStateInfo,																			// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState
+		&pipelineDepthStencilStateInfo,																			// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState
+		&colorBlendStateCreateInfoDefault,																		// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState
+		&dynamicStateCreateInfo,																				// const VkPipelineDynamicStateCreateInfo*			pDynamicState
+		pipelineLayout,																							// VkPipelineLayout									layout
+		renderPass,																								// VkRenderPass										renderPass
+		subpassIndex,																							// deUint32											subpass
+		DE_NULL,																								// VkPipeline										basePipelineHandle
+		0																										// deInt32											basePipelineIndex;
+	};
+
+	return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
 
 inline Move<VkPipeline> makeGraphicsPipelineSinglePassColor (const DeviceInterface&				vk,
@@ -657,11 +775,12 @@ inline Move<VkPipeline> makeGraphicsPipelineSinglePassColor (const DeviceInterfa
 															 const bool							useSampleLocations,
 															 const VkSampleLocationsInfoEXT&	sampleLocationsInfo,
 															 const VertexInputConfig			vertexInputConfig,
-															 const VkPrimitiveTopology			topology)
+															 const VkPrimitiveTopology			topology,
+															 const bool							useFragmentShadingRate)
 {
 	return makeGraphicsPipeline(vk, device, dynamicState, pipelineLayout, renderPass, vertexModule, fragmentModule,
 								/*subpass*/ 0u, viewport, scissor, numSamples, useSampleLocations, sampleLocationsInfo,
-								/*depth test*/ false, /*stencil test*/ false, vertexInputConfig, topology, stencilOpStateIncrement());
+								/*depth test*/ false, /*stencil test*/ false, vertexInputConfig, topology, stencilOpStateIncrement(), useFragmentShadingRate);
 }
 
 //! Utility to build and maintain render pass, framebuffer and related resources.
@@ -1227,8 +1346,10 @@ static T*			sampleData		(void* const basePtr) { DE_STATIC_ASSERT(sizeof(T) == si
 
 enum TestOptionFlagBits
 {
-	TEST_OPTION_DYNAMIC_STATE_BIT	= 0x1,	//!< Use dynamic pipeline state to pass in sample locations
-	TEST_OPTION_CLOSELY_PACKED_BIT	= 0x2,	//!< Place samples as close as possible to each other
+	TEST_OPTION_DYNAMIC_STATE_BIT				= 0x1,	//!< Use dynamic pipeline state to pass in sample locations
+	TEST_OPTION_CLOSELY_PACKED_BIT				= 0x2,	//!< Place samples as close as possible to each other
+	TEST_OPTION_FRAGMENT_SHADING_RATE_BIT		= 0x4,	//!< Use VK_KHR_fragment_shading_rate
+
 };
 typedef deUint32 TestOptionFlags;
 
@@ -1249,8 +1370,10 @@ void checkSupportVerifyTests (Context& context, const TestParams params)
 
 	if ((getSampleLocationsPropertiesEXT(context).sampleLocationSampleCounts & params.numSamples) == 0u)
 		TCU_THROW(NotSupportedError, "VkPhysicalDeviceSampleLocationsPropertiesEXT: sample count not supported");
-}
 
+	if (TEST_OPTION_FRAGMENT_SHADING_RATE_BIT & params.options)
+		checkFragmentShadingRateRequirements(context, params.numSamples);
+}
 
 std::string declareSampleDataSSBO (void)
 {
@@ -1474,6 +1597,7 @@ protected:
 		const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device, *m_descriptorSetLayout));
 
 		const bool						useDynamicStateSampleLocations	= ((m_params.options & TEST_OPTION_DYNAMIC_STATE_BIT) != 0u);
+		const bool						useFragmentShadingRate			= ((m_params.options & TEST_OPTION_FRAGMENT_SHADING_RATE_BIT) != 0u);
 		const VkSampleLocationsInfoEXT	sampleLocationsInfo				= makeSampleLocationsInfo(*m_pixelGrid);
 
 		RenderTarget rt;
@@ -1518,13 +1642,13 @@ protected:
 
 			pipeline = makeGraphicsPipelineSinglePassColor(
 				vk, device, dynamicState, *pipelineLayout, rt.getRenderPass(), *vertexModule, *fragmentModule, viewport, scissor,
-				m_params.numSamples, /*use sample locations*/ true, makeEmptySampleLocationsInfo(), vertexInputConfig, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+				m_params.numSamples, /*use sample locations*/ true, makeEmptySampleLocationsInfo(), vertexInputConfig, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, useFragmentShadingRate);
 		}
 		else
 		{
 			pipeline = makeGraphicsPipelineSinglePassColor(
 				vk, device, std::vector<VkDynamicState>(), *pipelineLayout, rt.getRenderPass(), *vertexModule, *fragmentModule, viewport, scissor,
-				m_params.numSamples, /*use sample locations*/ true, sampleLocationsInfo, vertexInputConfig, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+				m_params.numSamples, /*use sample locations*/ true, sampleLocationsInfo, vertexInputConfig, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, useFragmentShadingRate);
 		}
 
 		const Unique<VkCommandPool>		cmdPool		(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_context.getUniversalQueueFamilyIndex()));
@@ -1714,20 +1838,20 @@ public:
 };
 
 template<typename Test, typename ProgramsFunc>
-void addCases (tcu::TestCaseGroup* group, const VkSampleCountFlagBits numSamples, const ProgramsFunc initPrograms)
+void addCases (tcu::TestCaseGroup* group, const VkSampleCountFlagBits numSamples, bool useFragmentShadingRate, const ProgramsFunc initPrograms)
 {
 	TestParams params;
 	deMemset(&params, 0, sizeof(params));
 
 	params.numSamples	= numSamples;
-	params.options		= (TestOptionFlags)0;
+	params.options		= useFragmentShadingRate ? (TestOptionFlags)TEST_OPTION_FRAGMENT_SHADING_RATE_BIT : (TestOptionFlags)0;
 
 	addInstanceTestCaseWithPrograms<Test>(group, getString(numSamples).c_str(), "", checkSupportVerifyTests, initPrograms, params);
 
-	params.options = (TestOptionFlags)TEST_OPTION_DYNAMIC_STATE_BIT;
+	params.options |= (TestOptionFlags)TEST_OPTION_DYNAMIC_STATE_BIT;
 	addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + "_dynamic").c_str(), "", checkSupportVerifyTests, initPrograms, params);
 
-	params.options = (TestOptionFlags)TEST_OPTION_CLOSELY_PACKED_BIT;
+	params.options |= (TestOptionFlags)TEST_OPTION_CLOSELY_PACKED_BIT;
 	addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + "_packed").c_str(), "", checkSupportVerifyTests, initPrograms, params);
 }
 
@@ -1746,6 +1870,7 @@ enum TestOptionFlagBits
 	TEST_OPTION_SECONDARY_COMMAND_BUFFER_BIT	= 1u << 2,	//!< Put drawing commands in a secondary buffer, including sample locations change (if dynamic)
 	TEST_OPTION_GENERAL_LAYOUT_BIT				= 1u << 3,	//!< Transition the image to general layout at some point in rendering
 	TEST_OPTION_WAIT_EVENTS_BIT					= 1u << 4,	//!< Use image memory barriers with vkCmdWaitEvents rather than vkCmdPipelineBarrier
+	TEST_OPTION_FRAGMENT_SHADING_RATE_BIT		= 1u << 5,	//!< Use VK_KHR_fragment_shading_rate
 };
 typedef deUint32 TestOptionFlags;
 
@@ -1796,6 +1921,9 @@ void checkSupportDrawTests (Context& context, const TestParams params)
 	// Are we allowed to modify the sample pattern within the same subpass?
 	if (params.drawIn == TEST_DRAW_IN_SAME_SUBPASS && ((params.options & TEST_OPTION_SAME_PATTERN_BIT) == 0) && !getSampleLocationsPropertiesEXT(context).variableSampleLocations)
 		TCU_THROW(NotSupportedError, "VkPhysicalDeviceSampleLocationsPropertiesEXT: variableSampleLocations not supported");
+
+	if (TEST_OPTION_FRAGMENT_SHADING_RATE_BIT & params.options)
+		checkFragmentShadingRateRequirements(context, params.numSamples);
 
 	if (TEST_OPTION_WAIT_EVENTS_BIT & params.options &&
 		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().events)
@@ -2118,6 +2246,7 @@ protected:
 	bool useSecondaryCmdBuffer	(void) const { return (m_params.options & TEST_OPTION_SECONDARY_COMMAND_BUFFER_BIT) != 0u; }
 	bool useGeneralLayout		(void) const { return (m_params.options & TEST_OPTION_GENERAL_LAYOUT_BIT) != 0u; }
 	bool useWaitEvents			(void) const { return (m_params.options & TEST_OPTION_WAIT_EVENTS_BIT) != 0u; }
+	bool useFragmentShadingRate	(void) const { return (m_params.options & TEST_OPTION_FRAGMENT_SHADING_RATE_BIT) != 0u; }
 
 	//! Draw the second pass image, but with sample pattern from the first pass -- used to verify that the pattern is different
 	void drawPatternChangeReference (void)
@@ -2188,7 +2317,7 @@ protected:
 		const Unique<VkPipeline> pipeline(makeGraphicsPipeline(
 				vk, device, std::vector<VkDynamicState>(), *pipelineLayout, rt.getRenderPass(), *vertexModule, *fragmentModule,
 				/*subpass index*/ 0u, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, sampleLocationsInfo,
-				useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce()));
+				useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce(), useFragmentShadingRate()));
 
 		const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_context.getUniversalQueueFamilyIndex()));
 		const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
@@ -2371,7 +2500,7 @@ protected:
 				pipeline[passNdx] = makeGraphicsPipeline(
 					vk, device, dynamicState, *pipelineLayout, rt[passNdx].getRenderPass(), *vertexModule, *fragmentModule,
 					/*subpass index*/ 0u, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, makeEmptySampleLocationsInfo(),
-					useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce());
+					useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce(), useFragmentShadingRate());
 			}
 		}
 		else for (deUint32 passNdx = 0; passNdx < NUM_PASSES; ++passNdx)
@@ -2379,7 +2508,7 @@ protected:
 			pipeline[passNdx] = makeGraphicsPipeline(
 				vk, device, std::vector<VkDynamicState>(), *pipelineLayout, rt[passNdx].getRenderPass(), *vertexModule, *fragmentModule,
 				/*subpass index*/ 0u, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, sampleLocationsInfo[passNdx],
-				useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce());
+				useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce(), useFragmentShadingRate());
 		}
 
 		// Record secondary command buffers
@@ -2737,7 +2866,7 @@ protected:
 				pipeline[passNdx] = makeGraphicsPipeline(
 					vk, device, dynamicState, *pipelineLayout, rt.getRenderPass(), *vertexModule, *fragmentModule,
 					/*subpass*/ passNdx, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, makeEmptySampleLocationsInfo(),
-					useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce());
+					useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce(), useFragmentShadingRate());
 			}
 		}
 		else for (deUint32 passNdx = 0; passNdx < NUM_PASSES; ++passNdx)
@@ -2745,7 +2874,7 @@ protected:
 			pipeline[passNdx] = makeGraphicsPipeline(
 				vk, device, std::vector<VkDynamicState>(), *pipelineLayout, rt.getRenderPass(), *vertexModule, *fragmentModule,
 				/*subpass*/ passNdx, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, sampleLocationsInfo[passNdx],
-				useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce());
+				useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce(), useFragmentShadingRate());
 		}
 
 		// Record secondary command buffers
@@ -2822,11 +2951,12 @@ protected:
 			makeSampleLocationsInfo(m_pixelGrids[0]),
 			makeSampleLocationsInfo(m_pixelGrids[useSameSamplePattern() ? 0 : 1]),
 		};
-		const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_context.getUniversalQueueFamilyIndex()));
-		const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
+		const bool						useFragmentShadingRate	(TEST_OPTION_FRAGMENT_SHADING_RATE_BIT & m_params.options);
+		const Unique<VkCommandPool>		cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_context.getUniversalQueueFamilyIndex()));
+		const Unique<VkCommandBuffer>	cmdBuffer				(makeCommandBuffer(vk, device, *cmdPool));
 		Move<VkCommandBuffer>			secondaryCmdBuffer;
 		RenderTarget					rt;
-		Move<VkPipeline>				pipeline			[NUM_PASSES];
+		Move<VkPipeline>				pipeline				[NUM_PASSES];
 		Move<VkEvent>					event;
 
 		// Prepare the render pass
@@ -2894,7 +3024,7 @@ protected:
 				pipeline[passNdx] = makeGraphicsPipeline(
 					vk, device, dynamicState, *pipelineLayout, rt.getRenderPass(), *vertexModule, *fragmentModule,
 					/*subpass*/ 0u, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, makeEmptySampleLocationsInfo(),
-					useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce());
+					useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce(), useFragmentShadingRate);
 			}
 		}
 		else for (deUint32 passNdx = 0; passNdx < NUM_PASSES; ++passNdx)
@@ -2902,7 +3032,7 @@ protected:
 			pipeline[passNdx] = makeGraphicsPipeline(
 				vk, device, std::vector<VkDynamicState>(), *pipelineLayout, rt.getRenderPass(), *vertexModule, *fragmentModule,
 				/*subpass*/ 0u, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, sampleLocationsInfo[passNdx],
-				useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce());
+				useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce(), useFragmentShadingRate);
 		}
 
 		// Record secondary command buffers
@@ -2970,9 +3100,10 @@ protected:
 
 } // Draw
 
-void createTestsInGroup (tcu::TestCaseGroup* rootGroup)
+void createTestsInGroup (tcu::TestCaseGroup* rootGroup, bool useFragmentShadingRate)
 {
 	// Queries
+	if (!useFragmentShadingRate)
 	{
 		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(rootGroup->getTestContext(), "query", ""));
 
@@ -3000,8 +3131,8 @@ void createTestsInGroup (tcu::TestCaseGroup* rootGroup)
 
 		for (const VkSampleCountFlagBits* pLoopNumSamples = sampleCountRange; pLoopNumSamples < DE_ARRAY_END(sampleCountRange); ++pLoopNumSamples)
 		{
-			addCases<VerifyLocationTest>	 (groupLocation.get(),		*pLoopNumSamples, addProgramsVerifyLocationGeometry);
-			addCases<VerifyInterpolationTest>(groupInterpolation.get(),	*pLoopNumSamples, addProgramsVerifyInterpolation);
+			addCases<VerifyLocationTest>	 (groupLocation.get(),		*pLoopNumSamples, useFragmentShadingRate, addProgramsVerifyLocationGeometry);
+			addCases<VerifyInterpolationTest>(groupInterpolation.get(),	*pLoopNumSamples, useFragmentShadingRate, addProgramsVerifyInterpolation);
 		}
 
 		rootGroup->addChild(groupLocation.release());
@@ -3012,20 +3143,21 @@ void createTestsInGroup (tcu::TestCaseGroup* rootGroup)
 	{
 		using namespace Draw;
 
+		const deUint32 globalOption = useFragmentShadingRate ? static_cast<deUint32>(TEST_OPTION_FRAGMENT_SHADING_RATE_BIT) : 0u;
 		const deUint32 optionSets[] =
 		{
-			TEST_OPTION_SAME_PATTERN_BIT,
-			0u,
-			TEST_OPTION_DYNAMIC_STATE_BIT,
-			TEST_OPTION_SECONDARY_COMMAND_BUFFER_BIT,
-			TEST_OPTION_DYNAMIC_STATE_BIT | TEST_OPTION_SECONDARY_COMMAND_BUFFER_BIT,
-			TEST_OPTION_GENERAL_LAYOUT_BIT,
-			TEST_OPTION_GENERAL_LAYOUT_BIT | TEST_OPTION_DYNAMIC_STATE_BIT,
-			TEST_OPTION_GENERAL_LAYOUT_BIT | TEST_OPTION_SECONDARY_COMMAND_BUFFER_BIT,
-			TEST_OPTION_GENERAL_LAYOUT_BIT | TEST_OPTION_DYNAMIC_STATE_BIT | TEST_OPTION_SECONDARY_COMMAND_BUFFER_BIT,
-			TEST_OPTION_WAIT_EVENTS_BIT,
-			TEST_OPTION_WAIT_EVENTS_BIT | TEST_OPTION_GENERAL_LAYOUT_BIT,
-			TEST_OPTION_WAIT_EVENTS_BIT | TEST_OPTION_GENERAL_LAYOUT_BIT | TEST_OPTION_SECONDARY_COMMAND_BUFFER_BIT,
+			globalOption | TEST_OPTION_SAME_PATTERN_BIT,
+			globalOption | 0u,
+			globalOption | TEST_OPTION_DYNAMIC_STATE_BIT,
+			globalOption | TEST_OPTION_SECONDARY_COMMAND_BUFFER_BIT,
+			globalOption | TEST_OPTION_DYNAMIC_STATE_BIT | TEST_OPTION_SECONDARY_COMMAND_BUFFER_BIT,
+			globalOption | TEST_OPTION_GENERAL_LAYOUT_BIT,
+			globalOption | TEST_OPTION_GENERAL_LAYOUT_BIT | TEST_OPTION_DYNAMIC_STATE_BIT,
+			globalOption | TEST_OPTION_GENERAL_LAYOUT_BIT | TEST_OPTION_SECONDARY_COMMAND_BUFFER_BIT,
+			globalOption | TEST_OPTION_GENERAL_LAYOUT_BIT | TEST_OPTION_DYNAMIC_STATE_BIT | TEST_OPTION_SECONDARY_COMMAND_BUFFER_BIT,
+			globalOption | TEST_OPTION_WAIT_EVENTS_BIT,
+			globalOption | TEST_OPTION_WAIT_EVENTS_BIT | TEST_OPTION_GENERAL_LAYOUT_BIT,
+			globalOption | TEST_OPTION_WAIT_EVENTS_BIT | TEST_OPTION_GENERAL_LAYOUT_BIT | TEST_OPTION_SECONDARY_COMMAND_BUFFER_BIT,
 		};
 
 		const struct
@@ -3104,9 +3236,9 @@ void createTestsInGroup (tcu::TestCaseGroup* rootGroup)
 
 } // anonymous ns
 
-tcu::TestCaseGroup* createMultisampleSampleLocationsExtTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createMultisampleSampleLocationsExtTests (tcu::TestContext& testCtx, bool useFragmentShadingRate)
 {
-	return createTestGroup(testCtx, "sample_locations_ext", "Test a graphics pipeline with user-defined sample locations", createTestsInGroup);
+	return createTestGroup(testCtx, "sample_locations_ext", "Test a graphics pipeline with user-defined sample locations", createTestsInGroup, useFragmentShadingRate);
 }
 
 } // pipeline
