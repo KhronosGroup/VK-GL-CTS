@@ -736,6 +736,58 @@ const VertexGenerator* chooseVertexGenerator (const VertexGenerator* staticGen, 
 	return getVertexWithPaddingGenerator();
 }
 
+enum class TopologyClass
+{
+	POINT,
+	LINE,
+	TRIANGLE,
+	PATCH,
+	INVALID,
+};
+
+std::string topologyClassName (TopologyClass tclass)
+{
+	switch (tclass)
+	{
+	case TopologyClass::POINT:		return "point";
+	case TopologyClass::LINE:		return "line";
+	case TopologyClass::TRIANGLE:	return "triangle";
+	case TopologyClass::PATCH:		return "patch";
+	default:
+		break;
+	}
+
+	DE_ASSERT(false);
+	return "";
+}
+
+TopologyClass getTopologyClass (vk::VkPrimitiveTopology topology)
+{
+	switch (topology)
+	{
+	case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+		return TopologyClass::POINT;
+	case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+	case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
+	case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+	case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+		return TopologyClass::LINE;
+	case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+	case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
+	case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
+	case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+	case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+		return TopologyClass::TRIANGLE;
+	case vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
+		return TopologyClass::PATCH;
+	default:
+		break;
+	}
+
+	DE_ASSERT(false);
+	return TopologyClass::INVALID;
+}
+
 struct TestConfig
 {
 	// Main sequence ordering.
@@ -821,7 +873,7 @@ struct TestConfig
 		, rastDiscardEnableConfig		(false)
 		, primRestartEnableConfig		(false)
 		, logicOpConfig					(vk::VK_LOGIC_OP_CLEAR)
-		, patchControlPointsConfig		(1)
+		, patchControlPointsConfig		(1u)
 		, m_swappedValues				(false)
 	{
 	}
@@ -842,6 +894,12 @@ struct TestConfig
 	const VertexGenerator* getInactiveVertexGenerator () const
 	{
 		return ((vertexGenerator.dynamicValue && m_swappedValues) ? vertexGenerator.dynamicValue.get() : vertexGenerator.staticValue);
+	}
+
+	// Get the active number of patch control points according to the test config.
+	deUint32 getActivePatchControlPoints () const
+	{
+		return ((patchControlPointsConfig.dynamicValue && !m_swappedValues) ? patchControlPointsConfig.dynamicValue.get() : patchControlPointsConfig.staticValue);
 	}
 
 	// Returns true if there is more than one viewport.
@@ -922,10 +980,16 @@ struct TestConfig
 		return static_cast<bool>(patchControlPointsConfig.dynamicValue);
 	}
 
+	// Returns true if the topology class is patches for tessellation.
+	bool patchesTopology () const
+	{
+		return (getTopologyClass(topologyConfig.staticValue) == TopologyClass::PATCH);
+	}
+
 	// Returns true if the test needs tessellation shaders.
 	bool needsTessellation () const
 	{
-		return testPatchControlPoints();
+		return (testPatchControlPoints() || patchesTopology());
 	}
 
 	// Returns true if the test needs an index buffer.
@@ -1037,58 +1101,6 @@ void copy(vk::VkStencilOpState& dst, const StencilOpParams& src)
 	dst.compareOp	= src.compareOp;
 }
 
-enum class TopologyClass
-{
-	POINT,
-	LINE,
-	TRIANGLE,
-	PATCH,
-	INVALID,
-};
-
-std::string topologyClassName (TopologyClass tclass)
-{
-	switch (tclass)
-	{
-	case TopologyClass::POINT:		return "point";
-	case TopologyClass::LINE:		return "line";
-	case TopologyClass::TRIANGLE:	return "triangle";
-	case TopologyClass::PATCH:		return "patch";
-	default:
-		break;
-	}
-
-	DE_ASSERT(false);
-	return "";
-}
-
-TopologyClass getTopologyClass (vk::VkPrimitiveTopology topology)
-{
-	switch (topology)
-	{
-	case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
-		return TopologyClass::POINT;
-	case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
-	case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
-	case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
-	case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
-		return TopologyClass::LINE;
-	case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
-	case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
-	case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
-	case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
-	case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
-		return TopologyClass::TRIANGLE;
-	case vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
-		return TopologyClass::PATCH;
-	default:
-		break;
-	}
-
-	DE_ASSERT(false);
-	return TopologyClass::INVALID;
-}
-
 class ExtendedDynamicStateTest : public vkt::TestCase
 {
 public:
@@ -1129,6 +1141,10 @@ ExtendedDynamicStateTest::ExtendedDynamicStateTest (tcu::TestContext& testCtx, c
 	// Supported topology classes for these tests.
 	DE_ASSERT(staticTopologyClass == TopologyClass::LINE || staticTopologyClass == TopologyClass::TRIANGLE
 		|| staticTopologyClass == TopologyClass::PATCH);
+
+	// Make sure these are consistent.
+	DE_ASSERT(!(m_testConfig.testPatchControlPoints() && !m_testConfig.patchesTopology()));
+	DE_ASSERT(!(m_testConfig.patchesTopology() && m_testConfig.getActivePatchControlPoints() <= 1u));
 }
 
 void ExtendedDynamicStateTest::checkSupport (Context& context) const
@@ -1333,7 +1349,11 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 			<< "in gl_PerVertex\n"
 			<< "{\n"
 			<< "    vec4 gl_Position;\n"
-			<< "} gl_in[];\n"
+			<< "} gl_in[gl_MaxPatchVertices];\n"
+			<< "out gl_PerVertex\n"
+			<< "{\n"
+			<< "  vec4 gl_Position;\n"
+			<< "} gl_out[];\n"
 			<< "void main() {\n"
 			<< "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
 			<< "  gl_TessLevelOuter[0] = 3.0;\n"
@@ -1346,6 +1366,14 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 			<< "#version 450\n"
 			<< "#extension GL_EXT_tessellation_shader : require\n"
 			<< "layout(triangles) in;\n"
+			<< "in gl_PerVertex\n"
+			<< "{\n"
+			<< "  vec4 gl_Position;\n"
+			<< "} gl_in[gl_MaxPatchVertices];\n"
+			<< "out gl_PerVertex\n"
+			<< "{\n"
+			<< "  vec4 gl_Position;\n"
+			<< "};\n"
 			<< "void main() {\n"
 			<< "  gl_Position = (gl_in[0].gl_Position * gl_TessCoord.x + \n"
 			<< "                 gl_in[1].gl_Position * gl_TessCoord.y + \n"
@@ -1716,6 +1744,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	}
 	else if (topologyClass == TopologyClass::PATCH)
 	{
+		DE_ASSERT(m_testConfig.getActivePatchControlPoints() > 1u);
+
 		// 2 triangles making a quad
 		vertices.reserve(6u);
 		vertices.push_back(tcu::Vec2(-1.0f,  1.0f));
@@ -2577,7 +2607,6 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			TestConfig config(kOrdering);
 			config.rastDiscardEnableConfig.staticValue = true;
 			config.rastDiscardEnableConfig.dynamicValue = tcu::just(false);
-			config.referenceColor = SingleColorGenerator(kDefaultTriangleColor);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "enable_raster", "Dynamically enable rasterizer", config));
 		}
 
@@ -2598,7 +2627,6 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			TestConfig config(kOrdering);
 			config.primRestartEnableConfig.staticValue = false;
 			config.primRestartEnableConfig.dynamicValue = tcu::just(true);
-			config.referenceColor = SingleColorGenerator(kDefaultTriangleColor);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "prim_restart_enable", "Dynamically enable primitiveRestart", config));
 		}
 
@@ -2608,7 +2636,6 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			config.topologyConfig.staticValue = vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
 			config.patchControlPointsConfig.staticValue = 1;
 			config.patchControlPointsConfig.dynamicValue = 3;
-			config.referenceColor = SingleColorGenerator(kDefaultTriangleColor);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "patch_control_points", "Dynamically change patch control points", config));
 		}
 
@@ -2628,14 +2655,16 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 				{
 					{ vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN	},
 					{ vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP	},
+					{ vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,		vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST	},
 				};
 
 				for (const auto& kTopologyCase : kTopologyCases)
 				{
 					TestConfig config(baseConfig);
-					config.forceGeometryShader			= forceGeometryShader;
-					config.topologyConfig.staticValue	= kTopologyCase.staticVal;
-					config.topologyConfig.dynamicValue	= tcu::just<vk::VkPrimitiveTopology>(kTopologyCase.dynamicVal);
+					config.forceGeometryShader					= forceGeometryShader;
+					config.topologyConfig.staticValue			= kTopologyCase.staticVal;
+					config.topologyConfig.dynamicValue			= tcu::just<vk::VkPrimitiveTopology>(kTopologyCase.dynamicVal);
+					config.patchControlPointsConfig.staticValue	= (config.needsTessellation() ? 3u : 1u);
 
 					const std::string	className	= topologyClassName(getTopologyClass(config.topologyConfig.staticValue));
 					const std::string	name		= "topology_" + className + (forceGeometryShader ? "_geom" : "");
@@ -2813,7 +2842,6 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			TestConfig config(kOrdering);
 			config.depthTestEnableConfig.staticValue	= true;
 			config.depthTestEnableConfig.dynamicValue	= tcu::just(false);
-			config.referenceColor						= SingleColorGenerator(kDefaultTriangleColor);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_test_disable", "Dynamically disable depth test", config));
 		}
 
@@ -3035,7 +3063,6 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 				TestConfig config = baseConfig;
 				config.depthBoundsTestEnableConfig.staticValue	= true;
 				config.depthBoundsTestEnableConfig.dynamicValue	= tcu::just(false);
-				config.referenceColor							= SingleColorGenerator(kDefaultTriangleColor);
 				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_bounds_test_disable", "Dynamically disable the depth bounds test", config));
 			}
 		}
@@ -3054,7 +3081,6 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			config.stencilTestEnableConfig.staticValue				= true;
 			config.stencilTestEnableConfig.dynamicValue				= tcu::just(false);
 			config.stencilOpConfig.staticValue.front().compareOp	= vk::VK_COMPARE_OP_NEVER;
-			config.referenceColor									= SingleColorGenerator(kDefaultTriangleColor);
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "stencil_test_disable", "Dynamically disable the stencil test", config));
 		}
 

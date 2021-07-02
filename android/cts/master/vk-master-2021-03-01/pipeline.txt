@@ -16643,8 +16643,10 @@ dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.prim_restart_enable
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.patch_control_points
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.topology_triangle
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.topology_line
+dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.topology_patch
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.topology_triangle_geom
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.topology_line_geom
+dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.topology_patch_geom
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.2_viewports
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.1_full_viewport
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.2_viewports_switch
@@ -18029,8 +18031,10 @@ dEQP-VK.pipeline.extended_dynamic_state.before_draw.prim_restart_enable
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.patch_control_points
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.topology_triangle
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.topology_line
+dEQP-VK.pipeline.extended_dynamic_state.before_draw.topology_patch
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.topology_triangle_geom
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.topology_line_geom
+dEQP-VK.pipeline.extended_dynamic_state.before_draw.topology_patch_geom
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.2_viewports
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.1_full_viewport
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.2_viewports_switch
@@ -19415,8 +19419,10 @@ dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.prim_restart_enable
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.patch_control_points
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.topology_triangle
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.topology_line
+dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.topology_patch
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.topology_triangle_geom
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.topology_line_geom
+dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.topology_patch_geom
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.2_viewports
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.1_full_viewport
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.2_viewports_switch
@@ -20801,8 +20807,10 @@ dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.prim_restart_enable
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.patch_control_points
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.topology_triangle
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.topology_line
+dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.topology_patch
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.topology_triangle_geom
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.topology_line_geom
+dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.topology_patch_geom
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.2_viewports
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.1_full_viewport
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.2_viewports_switch
@@ -22187,8 +22195,10 @@ dEQP-VK.pipeline.extended_dynamic_state.before_good_static.prim_restart_enable
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.patch_control_points
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.topology_triangle
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.topology_line
+dEQP-VK.pipeline.extended_dynamic_state.before_good_static.topology_patch
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.topology_triangle_geom
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.topology_line_geom
+dEQP-VK.pipeline.extended_dynamic_state.before_good_static.topology_patch_geom
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.2_viewports
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.1_full_viewport
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.2_viewports_switch
@@ -23573,8 +23583,10 @@ dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.prim_restart_enable
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.patch_control_points
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.topology_triangle
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.topology_line
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.topology_patch
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.topology_triangle_geom
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.topology_line_geom
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.topology_patch_geom
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.2_viewports
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.1_full_viewport
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.2_viewports_switch
@@ -24959,8 +24971,10 @@ dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.prim_restart_enable
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.patch_control_points
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.topology_triangle
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.topology_line
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.topology_patch
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.topology_triangle_geom
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.topology_line_geom
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.topology_patch_geom
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.2_viewports
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.1_full_viewport
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.2_viewports_switch
