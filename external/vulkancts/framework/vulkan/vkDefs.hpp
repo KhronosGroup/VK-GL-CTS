@@ -185,6 +185,8 @@ typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkDeviceMemoryReportCallbackEXT)	(cons
 
 #include "vkStructTypes.inl"
 
+typedef void* VkRemoteAddressNV;
+
 extern "C"
 {
 #include "vkFunctionPointerTypes.inl"

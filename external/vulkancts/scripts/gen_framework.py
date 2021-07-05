@@ -157,6 +157,8 @@ def prefixName (prefix, name):
 	name = name.replace("AABBNV", "AABB_NV")
 	name = name.replace("_H_264_", "_H264_")
 	name = name.replace("_H_265_", "_H265_")
+	name = name.replace("RDMAFEATURES", "RDMA_FEATURES")
+
 
 	return prefix + name
 

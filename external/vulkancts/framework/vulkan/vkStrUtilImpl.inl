@@ -677,6 +677,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SUBPASS_SHADING_PIPELINE_CREATE_INFO_HUAWEI:							return "VK_STRUCTURE_TYPE_SUBPASS_SHADING_PIPELINE_CREATE_INFO_HUAWEI";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_SHADING_FEATURES_HUAWEI:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_SHADING_FEATURES_HUAWEI";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_SHADING_PROPERTIES_HUAWEI:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_SHADING_PROPERTIES_HUAWEI";
+		case VK_STRUCTURE_TYPE_MEMORY_GET_REMOTE_ADDRESS_INFO_NV:									return "VK_STRUCTURE_TYPE_MEMORY_GET_REMOTE_ADDRESS_INFO_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX:										return "VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT";
@@ -780,6 +782,16 @@ const char* getObjectTypeName (VkObjectType value)
 	}
 }
 
+const char* getPipelineCacheHeaderVersionName (VkPipelineCacheHeaderVersion value)
+{
+	switch (value)
+	{
+		case VK_PIPELINE_CACHE_HEADER_VERSION_ONE:		return "VK_PIPELINE_CACHE_HEADER_VERSION_ONE";
+		case VK_PIPELINE_CACHE_HEADER_VERSION_MAX_ENUM:	return "VK_PIPELINE_CACHE_HEADER_VERSION_MAX_ENUM";
+		default:										return DE_NULL;
+	}
+}
+
 const char* getVendorIdName (VkVendorId value)
 {
 	switch (value)
@@ -792,16 +804,6 @@ const char* getVendorIdName (VkVendorId value)
 		case VK_VENDOR_ID_POCL:		return "VK_VENDOR_ID_POCL";
 		case VK_VENDOR_ID_MAX_ENUM:	return "VK_VENDOR_ID_MAX_ENUM";
 		default:					return DE_NULL;
-	}
-}
-
-const char* getPipelineCacheHeaderVersionName (VkPipelineCacheHeaderVersion value)
-{
-	switch (value)
-	{
-		case VK_PIPELINE_CACHE_HEADER_VERSION_ONE:		return "VK_PIPELINE_CACHE_HEADER_VERSION_ONE";
-		case VK_PIPELINE_CACHE_HEADER_VERSION_MAX_ENUM:	return "VK_PIPELINE_CACHE_HEADER_VERSION_MAX_ENUM";
-		default:										return DE_NULL;
 	}
 }
 
@@ -2906,6 +2908,7 @@ tcu::Format::Bitfield<32> getMemoryPropertyFlagsStr (VkMemoryPropertyFlags value
 		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_PROTECTED_BIT,				"VK_MEMORY_PROPERTY_PROTECTED_BIT"),
 		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD,	"VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD"),
 		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD,	"VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_RDMA_CAPABLE_BIT_NV,		"VK_MEMORY_PROPERTY_RDMA_CAPABLE_BIT_NV"),
 		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM,			"VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
@@ -3459,6 +3462,7 @@ tcu::Format::Bitfield<32> getExternalMemoryHandleTypeFlagsStr (VkExternalMemoryH
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,				"VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT,		"VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA,					"VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_RDMA_ADDRESS_BIT_NV,					"VK_EXTERNAL_MEMORY_HANDLE_TYPE_RDMA_ADDRESS_BIT_NV"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,						"VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR,					"VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR,				"VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR"),
@@ -4578,6 +4582,18 @@ std::ostream& operator<< (std::ostream& s, const VkMemoryBarrier& value)
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tsrcAccessMask = " << getAccessFlagsStr(value.srcAccessMask) << '\n';
 	s << "\tdstAccessMask = " << getAccessFlagsStr(value.dstAccessMask) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineCacheHeaderVersionOne& value)
+{
+	s << "VkPipelineCacheHeaderVersionOne = {\n";
+	s << "\theaderSize = " << value.headerSize << '\n';
+	s << "\theaderVersion = " << value.headerVersion << '\n';
+	s << "\tvendorID = " << value.vendorID << '\n';
+	s << "\tdeviceID = " << value.deviceID << '\n';
+	s << "\tpipelineCacheUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.pipelineCacheUUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.pipelineCacheUUID))) << '\n';
 	s << '}';
 	return s;
 }
@@ -11336,6 +11352,27 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSubpassShadingP
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmaxSubpassShadingWorkgroupSizeAspectRatio = " << value.maxSubpassShadingWorkgroupSizeAspectRatio << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryGetRemoteAddressInfoNV& value)
+{
+	s << "VkMemoryGetRemoteAddressInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemory = " << value.memory << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalMemoryRDMAFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceExternalMemoryRDMAFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\texternalMemoryRDMA = " << value.externalMemoryRDMA << '\n';
 	s << '}';
 	return s;
 }

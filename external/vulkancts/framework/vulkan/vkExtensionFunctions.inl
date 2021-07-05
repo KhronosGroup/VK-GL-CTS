@@ -897,6 +897,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_NV_external_memory_rdma")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_extended_dynamic_state2")
 	{
 		return;
@@ -2086,7 +2090,13 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_HUAWEI_subpass_shading")
 	{
+		functions.push_back("vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI");
 		functions.push_back("vkCmdSubpassShadingHUAWEI");
+		return;
+	}
+	if (extName == "VK_NV_external_memory_rdma")
+	{
+		functions.push_back("vkGetMemoryRemoteAddressNV");
 		return;
 	}
 	if (extName == "VK_EXT_extended_dynamic_state2")
@@ -2395,6 +2405,8 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_EXT_private_data",
 	"VK_NV_fragment_shading_rate_enums",
 	"VK_EXT_vertex_input_dynamic_state",
+	"VK_HUAWEI_subpass_shading",
+	"VK_NV_external_memory_rdma",
 	"VK_EXT_extended_dynamic_state2",
 	"VK_EXT_color_write_enable",
 	"VK_EXT_multi_draw",
