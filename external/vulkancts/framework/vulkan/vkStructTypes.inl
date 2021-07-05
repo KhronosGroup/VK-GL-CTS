@@ -113,6 +113,15 @@ struct VkMemoryBarrier
 	VkAccessFlags	dstAccessMask;
 };
 
+struct VkPipelineCacheHeaderVersionOne
+{
+	deUint32						headerSize;
+	VkPipelineCacheHeaderVersion	headerVersion;
+	deUint32						vendorID;
+	deUint32						deviceID;
+	deUint8							pipelineCacheUUID[VK_UUID_SIZE];
+};
+
 struct VkAllocationCallbacks
 {
 	void*									pUserData;
@@ -5240,6 +5249,21 @@ struct VkPhysicalDeviceSubpassShadingPropertiesHUAWEI
 	VkStructureType	sType;
 	void*			pNext;
 	deUint32		maxSubpassShadingWorkgroupSizeAspectRatio;
+};
+
+struct VkMemoryGetRemoteAddressInfoNV
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkDeviceMemory						memory;
+	VkExternalMemoryHandleTypeFlagBits	handleType;
+};
+
+struct VkPhysicalDeviceExternalMemoryRDMAFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		externalMemoryRDMA;
 };
 
 struct VkPhysicalDeviceExtendedDynamicState2FeaturesEXT

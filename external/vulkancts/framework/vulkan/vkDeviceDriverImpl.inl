@@ -1502,9 +1502,19 @@ void DeviceDriver::cmdSetVertexInputEXT (VkCommandBuffer commandBuffer, deUint32
 	m_vk.cmdSetVertexInputEXT(commandBuffer, vertexBindingDescriptionCount, pVertexBindingDescriptions, vertexAttributeDescriptionCount, pVertexAttributeDescriptions);
 }
 
+VkResult DeviceDriver::getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI (VkDevice device, VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize) const
+{
+	return m_vk.getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI(device, renderpass, pMaxWorkgroupSize);
+}
+
 void DeviceDriver::cmdSubpassShadingHUAWEI (VkCommandBuffer commandBuffer) const
 {
 	m_vk.cmdSubpassShadingHUAWEI(commandBuffer);
+}
+
+VkResult DeviceDriver::getMemoryRemoteAddressNV (VkDevice device, const VkMemoryGetRemoteAddressInfoNV* getMemoryRemoteAddressInfo, VkRemoteAddressNV* pAddress) const
+{
+	return m_vk.getMemoryRemoteAddressNV(device, getMemoryRemoteAddressInfo, pAddress);
 }
 
 void DeviceDriver::cmdSetPatchControlPointsEXT (VkCommandBuffer commandBuffer, deUint32 patchControlPoints) const

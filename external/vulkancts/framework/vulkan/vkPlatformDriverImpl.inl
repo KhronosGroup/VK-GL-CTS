@@ -30,8 +30,3 @@ VkResult PlatformDriver::enumerateInstanceVersion (deUint32* pApiVersion) const
 	*pApiVersion = VK_API_VERSION_1_0;
 	return VK_SUCCESS;
 }
-
-VkResult PlatformDriver::getSubpassShadingMaxWorkgroupSizeHUAWEI (VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize) const
-{
-	return m_vk.getSubpassShadingMaxWorkgroupSizeHUAWEI(renderpass, pMaxWorkgroupSize);
-}
