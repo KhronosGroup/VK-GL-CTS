@@ -2261,6 +2261,7 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 {
 	tcu::StringTemplate shaderTemplate(
 		"OpCapability Shader\n"
+		"OpCapability StorageImageExtendedFormats\n"
 
 		"${capability}"
 		"${extension}"
@@ -2326,40 +2327,31 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 	const auto	testedFormat	= mapVkFormat(isWriteTest() ? m_writeFormat : m_readFormat);
 	const bool	isSigned		= (getTextureChannelClass(testedFormat.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER);
 
-	struct FormatData
+	const std::map<vk::VkFormat, std::string> formatDataMap =
 	{
-		std::string		spirvImageFormat;
-		bool			isExtendedFormat;
-	};
+		{ VK_FORMAT_R32G32B32A32_UINT,			"Rgba32ui"	},
+		{ VK_FORMAT_R16G16B16A16_UINT,			"Rgba16ui"	},
+		{ VK_FORMAT_R8G8B8A8_UINT,				"Rgba8ui"	},
+		{ VK_FORMAT_R32_UINT,					"R32ui"		},
+		{ VK_FORMAT_R32G32B32A32_SINT,			"Rgba32i"	},
+		{ VK_FORMAT_R16G16B16A16_SINT,			"Rgba16i"	},
+		{ VK_FORMAT_R8G8B8A8_SINT,				"Rgba8i"	},
+		{ VK_FORMAT_R32_SINT,					"R32i"		},
 
-	const std::map<vk::VkFormat, FormatData> formatDataMap =
-	{
-		// Mandatory support
-		{ VK_FORMAT_R32G32B32A32_UINT,			{ "Rgba32ui",	false	} },
-		{ VK_FORMAT_R16G16B16A16_UINT,			{ "Rgba16ui",	false	} },
-		{ VK_FORMAT_R8G8B8A8_UINT,				{ "Rgba8ui",	false	} },
-		{ VK_FORMAT_R32_UINT,					{ "R32ui",		false	} },
-		{ VK_FORMAT_R32G32B32A32_SINT,			{ "Rgba32i",	false	} },
-		{ VK_FORMAT_R16G16B16A16_SINT,			{ "Rgba16i",	false	} },
-		{ VK_FORMAT_R8G8B8A8_SINT,				{ "Rgba8i",		false	} },
-		{ VK_FORMAT_R32_SINT,					{ "R32i",		false	} },
+		{ VK_FORMAT_R32G32_UINT,				"Rg32ui"	},
+		{ VK_FORMAT_R16G16_UINT,				"Rg16ui"	},
+		{ VK_FORMAT_R16_UINT,					"R16ui"		},
+		{ VK_FORMAT_R8G8_UINT,					"Rg8ui"		},
+		{ VK_FORMAT_R8_UINT,					"R8ui"		},
+		{ VK_FORMAT_R32G32_SINT,				"Rg32i"		},
+		{ VK_FORMAT_R16G16_SINT,				"Rg16i"		},
+		{ VK_FORMAT_R16_SINT,					"R16i"		},
+		{ VK_FORMAT_R8G8_SINT,					"Rg8i"		},
+		{ VK_FORMAT_R8_SINT,					"R8i"		},
+		{ VK_FORMAT_A2B10G10R10_UINT_PACK32,	"Rgb10a2ui"	},
 
-		// Requires StorageImageExtendedFormats capability
-		{ VK_FORMAT_R32G32_UINT,				{ "Rg32ui",		true,	} },
-		{ VK_FORMAT_R16G16_UINT,				{ "Rg16ui",		true,	} },
-		{ VK_FORMAT_R16_UINT,					{ "R16ui",		true,	} },
-		{ VK_FORMAT_R8G8_UINT,					{ "Rg8ui",		true,	} },
-		{ VK_FORMAT_R8_UINT,					{ "R8ui",		true,	} },
-		{ VK_FORMAT_R32G32_SINT,				{ "Rg32i",		true,	} },
-		{ VK_FORMAT_R16G16_SINT,				{ "Rg16i",		true,	} },
-		{ VK_FORMAT_R16_SINT,					{ "R16i",		true,	} },
-		{ VK_FORMAT_R8G8_SINT,					{ "Rg8i",		true,	} },
-		{ VK_FORMAT_R8_SINT,					{ "R8i",		true,	} },
-		{ VK_FORMAT_A2B10G10R10_UINT_PACK32,	{ "Rgb10a2ui",	true,	} },
-
-		// Requires Int64ImageEXT.
-		{ VK_FORMAT_R64_SINT,					{ "R64i",		false,	} },
-		{ VK_FORMAT_R64_UINT,					{ "R64ui",		false,	} },
+		{ VK_FORMAT_R64_SINT,					"R64i"		},
+		{ VK_FORMAT_R64_UINT,					"R64ui"		},
 	};
 
 	const auto readIter		= formatDataMap.find(m_readFormat);
@@ -2371,17 +2363,14 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 	const auto isWrite64	= is64BitIntegerFormat(m_writeFormat);
 	DE_ASSERT(isRead64 == isWrite64);
 
-	const auto readSpirvImageFormat		= readIter->second.spirvImageFormat;
-	const auto writeSpirvImageFormat	= writeIter->second.spirvImageFormat;
+	const auto readSpirvImageFormat		= readIter->second;
+	const auto writeSpirvImageFormat	= writeIter->second;
 	const bool using64Bits				= (isRead64 || isWrite64);
 
 	// Additional capabilities when needed.
 	std::string capability;
 	std::string extension;
 	std::string extraTypes;
-
-	if (readIter->second.isExtendedFormat || writeIter->second.isExtendedFormat)
-		capability += "OpCapability StorageImageExtendedFormats\n";
 
 	if (using64Bits)
 	{
