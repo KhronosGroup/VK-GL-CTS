@@ -45,6 +45,7 @@ enum Interpolation
 	NOPERSPECTIVE	= 2,
 	CENTROID		= 3,
 	SAMPLE			= 4,
+	COUNT			= 5,
 };
 
 struct DrawParams
@@ -88,10 +89,11 @@ class DrawTestInstance : public TestInstance
 {
 public:
 					DrawTestInstance	(Context& context, DrawParams params);
-	void			render				(std::vector<de::SharedPtr<Image> >& colorTargetImages,
-										 tcu::ConstPixelBufferAccess* frames,
+	void			render				(de::SharedPtr<Image>& colorTargetImage,
+										 tcu::ConstPixelBufferAccess* frame,
 										 const char* vsName,
-										 const char* fsName);
+										 const char* fsName,
+										 Interpolation interpolation);
 	bool			compare				(const tcu::ConstPixelBufferAccess& result,
 										 const tcu::ConstPixelBufferAccess& reference);
 	tcu::TestStatus	iterate				(void);
@@ -188,19 +190,22 @@ void DrawTestCase::initPrograms (vk::SourceCollections& programCollection) const
 		"${indent}layout(location = 4) ${inQual}sample vec4 in_color_sample;\n"
 		"${blockClosure}"
 		"\n"
-		"layout(location = " + de::toString(SMOOTH) + ") out vec4 out_color_smooth;\n"
-		"layout(location = " + de::toString(FLAT) + ") out vec4 out_color_flat;\n"
-		"layout(location = " + de::toString(NOPERSPECTIVE) + ") out vec4 out_color_noperspective;\n"
-		"layout(location = " + de::toString(CENTROID) + ") out vec4 out_color_centroid;\n"
-		"layout(location = " + de::toString(SAMPLE) + ") out vec4 out_color_sample;\n"
+		"layout(push_constant, std430) uniform PushConstants {\n"
+		"    uint interpolationIndex;\n"
+		"} pc;\n"
+		"\n"
+		"layout(location=0) out vec4 out_color;\n"
 		"\n"
 		"void main()\n"
 		"{\n"
-		"    out_color_smooth = ${accessPrefix}in_color_smooth;\n"
-		"    out_color_flat = ${accessPrefix}in_color_flat;\n"
-		"    out_color_noperspective = ${accessPrefix}in_color_noperspective;\n"
-		"    out_color_centroid = ${accessPrefix}in_color_centroid;\n"
-		"    out_color_sample = ${accessPrefix}in_color_sample;\n"
+		"    const vec4 in_colors[" + de::toString(COUNT) + "] = vec4[](\n"
+		"        ${accessPrefix}in_color_smooth,\n"
+		"        ${accessPrefix}in_color_flat,\n"
+		"        ${accessPrefix}in_color_noperspective,\n"
+		"        ${accessPrefix}in_color_centroid,\n"
+		"        ${accessPrefix}in_color_sample\n"
+		"    );\n"
+		"    out_color = in_colors[pc.interpolationIndex];\n"
 		"}\n"
 	};
 
@@ -276,11 +281,14 @@ TestInstance* DrawTestCase::createInstance (Context& context) const
 	return new DrawTestInstance(context, m_params);
 }
 
-void DrawTestInstance::render (std::vector<de::SharedPtr<Image> >& colorTargetImages,
-							   tcu::ConstPixelBufferAccess* frames,
+void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
+							   tcu::ConstPixelBufferAccess* frame,
 							   const char* vsName,
-							   const char* fsName)
+							   const char* fsName,
+							   Interpolation interpolation)
 {
+	const deUint32											pcData				= static_cast<deUint32>(interpolation);
+	const deUint32											pcDataSize			= static_cast<deUint32>(sizeof(pcData));
 	const bool												useMultisampling	= (m_params.samples != vk::VK_SAMPLE_COUNT_1_BIT);
 	const vk::DeviceInterface&								vk					= m_context.getDeviceInterface();
 	const vk::VkDevice										device				= m_context.getDevice();
@@ -289,16 +297,16 @@ void DrawTestInstance::render (std::vector<de::SharedPtr<Image> >& colorTargetIm
 	const CmdPoolCreateInfo									cmdPoolCreateInfo	= m_context.getUniversalQueueFamilyIndex();
 	vk::Move<vk::VkCommandPool>								cmdPool				= createCommandPool(vk, device, &cmdPoolCreateInfo);
 	vk::Move<vk::VkCommandBuffer>							cmdBuffer			= vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-	std::vector<de::SharedPtr<Image> >						multisampleImages;
+	de::SharedPtr<Image>									multisampleImage;
 	std::vector<de::SharedPtr<vk::Move<vk::VkImageView> > >	colorTargetViews;
 	std::vector<de::SharedPtr<vk::Move<vk::VkImageView> > >	multisampleViews;
 	de::SharedPtr<Buffer>									vertexBuffer;
 	vk::Move<vk::VkRenderPass>								renderPass;
 	vk::Move<vk::VkFramebuffer>								framebuffer;
+	vk::Move<vk::VkPipelineLayout>							pipelineLayout;
 	vk::Move<vk::VkPipeline>								pipeline;
 
 	// Create color buffer images
-	for (deUint32 frameNdx = 0; frameNdx < colorTargetImages.size(); frameNdx++)
 	{
 		const vk::VkExtent3D		targetImageExtent		= { m_params.size.x(), m_params.size.y(), 1 };
 		const vk::VkImageUsageFlags	usage					= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -311,9 +319,9 @@ void DrawTestInstance::render (std::vector<de::SharedPtr<Image> >& colorTargetIm
 															 vk::VK_IMAGE_TILING_OPTIMAL,
 															 usage);
 
-		colorTargetImages[frameNdx] = Image::createAndAlloc(vk, device, targetImageCreateInfo,
-															m_context.getDefaultAllocator(),
-															m_context.getUniversalQueueFamilyIndex());
+		colorTargetImage = Image::createAndAlloc(vk, device, targetImageCreateInfo,
+												 m_context.getDefaultAllocator(),
+												 m_context.getUniversalQueueFamilyIndex());
 
 		if (useMultisampling)
 		{
@@ -326,9 +334,9 @@ void DrawTestInstance::render (std::vector<de::SharedPtr<Image> >& colorTargetIm
 															  vk::VK_IMAGE_TILING_OPTIMAL,
 															  usage);
 
-			multisampleImages.push_back(Image::createAndAlloc(vk, device, multisampleImageCreateInfo,
-															  m_context.getDefaultAllocator(),
-															  m_context.getUniversalQueueFamilyIndex()));
+			multisampleImage = Image::createAndAlloc(vk, device, multisampleImageCreateInfo,
+													 m_context.getDefaultAllocator(),
+													 m_context.getUniversalQueueFamilyIndex());
 		}
 	}
 
@@ -340,9 +348,8 @@ void DrawTestInstance::render (std::vector<de::SharedPtr<Image> >& colorTargetIm
 		std::vector<vk::VkAttachmentReference>	multisampleAttachmentRefs;
 		deUint32								attachmentNdx				= 0;
 
-		for (deUint32 frameNdx = 0; frameNdx < colorTargetImages.size(); frameNdx++)
 		{
-			const ImageViewCreateInfo		colorTargetViewInfo			(colorTargetImages[frameNdx]->object(),
+			const ImageViewCreateInfo		colorTargetViewInfo			(colorTargetImage->object(),
 																		 vk::VK_IMAGE_VIEW_TYPE_2D,
 																		 m_params.format);
 
@@ -366,7 +373,7 @@ void DrawTestInstance::render (std::vector<de::SharedPtr<Image> >& colorTargetIm
 
 			if (useMultisampling)
 			{
-				const ImageViewCreateInfo		multisamplingTargetViewInfo		(multisampleImages[frameNdx]->object(),
+				const ImageViewCreateInfo		multisamplingTargetViewInfo		(multisampleImage->object(),
 																				 vk::VK_IMAGE_VIEW_TYPE_2D,
 																				 m_params.format);
 
@@ -464,8 +471,12 @@ void DrawTestInstance::render (std::vector<de::SharedPtr<Image> >& colorTargetIm
 	{
 		const vk::VkViewport											viewport							= vk::makeViewport(m_params.size.x(), m_params.size.y());
 		const vk::VkRect2D												scissor								= vk::makeRect2D(m_params.size.x(), m_params.size.y());
-		const PipelineLayoutCreateInfo									pipelineLayoutCreateInfo;
-		const vk::Move<vk::VkPipelineLayout>							pipelineLayout						= createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
+		const auto														pcRange								= vk::makePushConstantRange(vk::VK_SHADER_STAGE_FRAGMENT_BIT, 0u, pcDataSize);
+		const std::vector<vk::VkPushConstantRange>						pcRanges							(1u, pcRange);
+		const PipelineLayoutCreateInfo									pipelineLayoutCreateInfo			(0u, nullptr, static_cast<deUint32>(pcRanges.size()), pcRanges.data());
+
+		pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
+
 		PipelineCreateInfo												pipelineCreateInfo					(*pipelineLayout, *renderPass, 0, 0);
 
 		const vk::VkVertexInputBindingDescription						vertexInputBindingDescription		=
@@ -481,7 +492,7 @@ void DrawTestInstance::render (std::vector<de::SharedPtr<Image> >& colorTargetIm
 			{ 1u, 0u, vk::VK_FORMAT_R32G32B32A32_SFLOAT, (deUint32)(sizeof(float) * 4) }
 		};
 
-		std::vector<PipelineCreateInfo::ColorBlendState::Attachment>	vkCbAttachmentStates				(colorTargetImages.size());
+		std::vector<PipelineCreateInfo::ColorBlendState::Attachment>	vkCbAttachmentStates				(1u);
 		PipelineCreateInfo::VertexInputState							vertexInputState					= PipelineCreateInfo::VertexInputState(1,
 																																				   &vertexInputBindingDescription,
 																																				   2,
@@ -507,31 +518,31 @@ void DrawTestInstance::render (std::vector<de::SharedPtr<Image> >& colorTargetIm
 		const vk::VkDeviceSize			vertexBufferOffset	= 0;
 		const vk::VkBuffer				buffer				= vertexBuffer->object();
 		const vk::VkOffset3D			zeroOffset			= { 0, 0, 0 };
+		const auto						clearValueColor		= vk::makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 		std::vector<vk::VkClearValue>	clearValues;
 
-		for (deUint32 i = 0; i < colorTargetImages.size() + multisampleImages.size(); i++)
-			clearValues.push_back(vk::makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f)));
+		clearValues.push_back(clearValueColor);
+		if (useMultisampling)
+			clearValues.push_back(clearValueColor);
 
 		beginCommandBuffer(vk, *cmdBuffer, 0u);
 		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, (deUint32)clearValues.size(), &clearValues[0]);
 		vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &buffer, &vertexBufferOffset);
 		vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+		vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, vk::VK_SHADER_STAGE_FRAGMENT_BIT, 0u, pcDataSize, &pcData);
 		vk.cmdDraw(*cmdBuffer, 3u, 1u, 0u, 0u);
 		endRenderPass(vk, *cmdBuffer);
 
 		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
-		for (deUint32 frameNdx = 0; frameNdx < colorTargetImages.size(); frameNdx++)
-		{
-			frames[frameNdx] = colorTargetImages[frameNdx]->readSurface(queue,
-																		m_context.getDefaultAllocator(),
-																		vk::VK_IMAGE_LAYOUT_GENERAL,
-																		zeroOffset,
-																		(int)m_params.size.x(),
-																		(int)m_params.size.y(),
-																		vk::VK_IMAGE_ASPECT_COLOR_BIT);
-		}
+		*frame = colorTargetImage->readSurface(queue,
+											   m_context.getDefaultAllocator(),
+											   vk::VK_IMAGE_LAYOUT_GENERAL,
+											   zeroOffset,
+											   (int)m_params.size.x(),
+											   (int)m_params.size.y(),
+											   vk::VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 }
 
@@ -549,22 +560,24 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 {
 	tcu::TestLog&						log						= m_context.getTestContext().getLog();
 	const bool							useMultisampling		= (m_params.samples != vk::VK_SAMPLE_COUNT_1_BIT);
-	const deUint32						frameCount				= 5;
+	const deUint32						frameCount				= static_cast<deUint32>(COUNT);
 	std::vector<de::SharedPtr<Image> >	resImages				(frameCount);
-	std::vector<de::SharedPtr<Image> >	smoothImage				(1);
-	std::vector<de::SharedPtr<Image> >	flatImage				(1);
-	std::vector<de::SharedPtr<Image> >	noperspectiveImage		(1);
-	std::vector<de::SharedPtr<Image> >	centroidImage			(1);
-	std::vector<de::SharedPtr<Image> >	sampleImage				(1);
+	de::SharedPtr<Image>				smoothImage;
+	de::SharedPtr<Image>				flatImage;
+	de::SharedPtr<Image>				noperspectiveImage;
+	de::SharedPtr<Image>				centroidImage;
+	de::SharedPtr<Image>				sampleImage;
 	tcu::ConstPixelBufferAccess			resFrames[frameCount];
 	tcu::ConstPixelBufferAccess			refFrames[frameCount];
 
-	render(resImages,			resFrames,					"vert_multi",			"frag_multi");
-	render(smoothImage,			&refFrames[SMOOTH],			"vert_smooth",			"frag_smooth");
-	render(flatImage,			&refFrames[FLAT],			"vert_flat",			"frag_flat");
-	render(noperspectiveImage,	&refFrames[NOPERSPECTIVE],	"vert_noperspective",	"frag_noperspective");
-	render(centroidImage,		&refFrames[CENTROID],		"vert_centroid",		"frag_centroid");
-	render(sampleImage,			&refFrames[SAMPLE],			"vert_sample",			"frag_sample");
+	for (int interpolationType = 0; interpolationType < COUNT; ++interpolationType)
+		render(resImages[interpolationType], &resFrames[interpolationType], "vert_multi", "frag_multi", static_cast<Interpolation>(interpolationType));
+
+	render(smoothImage,			&refFrames[SMOOTH],			"vert_smooth",			"frag_smooth", SMOOTH);
+	render(flatImage,			&refFrames[FLAT],			"vert_flat",			"frag_flat", FLAT);
+	render(noperspectiveImage,	&refFrames[NOPERSPECTIVE],	"vert_noperspective",	"frag_noperspective", NOPERSPECTIVE);
+	render(centroidImage,		&refFrames[CENTROID],		"vert_centroid",		"frag_centroid", CENTROID);
+	render(sampleImage,			&refFrames[SAMPLE],			"vert_sample",			"frag_sample", SAMPLE);
 
 	for (deUint32 resNdx = 0; resNdx < frameCount; resNdx++)
 	{
