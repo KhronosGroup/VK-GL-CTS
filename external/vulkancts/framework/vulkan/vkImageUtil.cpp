@@ -358,6 +358,12 @@ const std::map<VkFormat, std::string> spirvFormats = {
 	{ VK_FORMAT_R64_UINT,					"R64ui"			},
 };
 
+bool hasSpirvFormat(VkFormat fmt)
+{
+	auto iter = spirvFormats.find(fmt);
+	return (iter != spirvFormats.end());
+}
+
 const std::string getSpirvFormat(VkFormat fmt)
 {
 	auto iter = spirvFormats.find(fmt);

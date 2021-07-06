@@ -563,7 +563,6 @@ void StoreTest::initPrograms (SourceCollections& programCollection) const
 	const std::string texelCoordStr = (dimension == 1 ? "gx" : dimension == 2 ? "ivec2(gx, gy)" : dimension == 3 ? "ivec3(gx, gy, gz)" : "");
 
 	const ImageType usedImageType = (m_singleLayerBind ? getImageTypeForSingleLayer(m_texture.type()) : m_texture.type());
-	const std::string formatQualifierStr = getShaderImageFormatQualifier(mapVkFormat(m_format));
 	const std::string imageTypeStr = getShaderImageType(mapVkFormat(m_format), usedImageType);
 
 	std::ostringstream src;
@@ -571,7 +570,10 @@ void StoreTest::initPrograms (SourceCollections& programCollection) const
 		<< "\n"
 		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
 	if (m_declareImageFormatInShader)
+	{
+		const std::string formatQualifierStr = getShaderImageFormatQualifier(mapVkFormat(m_format));
 		src << "layout (binding = 0, " << formatQualifierStr << ") writeonly uniform " << imageTypeStr << " u_image;\n";
+	}
 	else
 		src << "layout (binding = 0) writeonly uniform " << imageTypeStr << " u_image;\n";
 
@@ -2549,17 +2551,21 @@ tcu::TestCaseGroup* createImageStoreTests (tcu::TestContext& testCtx)
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++formatNdx)
 		{
-			groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx]));
+			const bool hasSpirvFmt = hasSpirvFormat(s_formats[formatNdx]);
+
+			if (hasSpirvFmt)
+				groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx]));
 			groupWithoutFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], 0));
 
-			if (isLayered)
+			if (isLayered && hasSpirvFmt)
 				groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_single_layer", "",
 														 texture, s_formats[formatNdx],
 														 StoreTest::FLAG_SINGLE_LAYER_BIND | StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
 
 			if (texture.type() == IMAGE_TYPE_BUFFER)
 			{
-				groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_minalign", "", texture, s_formats[formatNdx], StoreTest::FLAG_MINALIGN | StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
+				if (hasSpirvFmt)
+					groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_minalign", "", texture, s_formats[formatNdx], StoreTest::FLAG_MINALIGN | StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
 				groupWithoutFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_minalign", "", texture, s_formats[formatNdx], StoreTest::FLAG_MINALIGN));
 			}
 		}
@@ -2589,6 +2595,11 @@ tcu::TestCaseGroup* createImageLoadStoreTests (tcu::TestContext& testCtx)
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++formatNdx)
 		{
+			// These tests always require a SPIR-V format for the write image, even if the read
+			// image is being used without a format.
+			if (!hasSpirvFormat(s_formats[formatNdx]))
+				continue;
+
 			groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], s_formats[formatNdx]));
 			groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], s_formats[formatNdx], 0));
 
@@ -2653,6 +2664,11 @@ tcu::TestCaseGroup* createImageLoadStoreLodAMDTests (tcu::TestContext& testCtx)
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++formatNdx)
 		{
+			// These tests always require a SPIR-V format for the write image, even if the read
+			// image is being used without a format.
+			if (!hasSpirvFormat(s_formats[formatNdx]))
+				continue;
+
 			groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], s_formats[formatNdx], LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER, DE_TRUE));
 			groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], s_formats[formatNdx], 0, DE_TRUE));
 
@@ -2684,6 +2700,9 @@ tcu::TestCaseGroup* createImageFormatReinterpretTests (tcu::TestContext& testCtx
 		for (int imageFormatNdx = 0; imageFormatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++imageFormatNdx)
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++formatNdx)
 		{
+			if (!hasSpirvFormat(s_formats[formatNdx]))
+				continue;
+
 			const std::string caseName = getFormatShortString(s_formats[imageFormatNdx]) + "_" + getFormatShortString(s_formats[formatNdx]);
 			if (imageFormatNdx != formatNdx && formatsAreCompatible(s_formats[imageFormatNdx], s_formats[formatNdx]))
 				groupByImageViewType->addChild(new LoadStoreTest(testCtx, caseName, "", texture, s_formats[formatNdx], s_formats[imageFormatNdx]));
@@ -2805,6 +2824,9 @@ tcu::TestCaseGroup* createImageExtendOperandsTests(tcu::TestContext& testCtx)
 					const auto  writeFormat		= (testType.testType == ExtendTestType::WRITE ? format : otherFormat);
 
 					if (relaxedPrecision && !relaxedOK(readFormat))
+						continue;
+
+					if (!hasSpirvFormat(readFormat) || !hasSpirvFormat(writeFormat))
 						continue;
 
 					matchGroup->addChild(new ImageExtendOperandTest(testCtx, precisionName, texture, readFormat, writeFormat, mismatched, relaxedPrecision, testType.testType));
