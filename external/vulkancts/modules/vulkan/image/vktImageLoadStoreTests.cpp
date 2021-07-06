@@ -2321,44 +2321,10 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 	const auto	testedFormat	= mapVkFormat(isWriteTest() ? m_writeFormat : m_readFormat);
 	const bool	isSigned		= (getTextureChannelClass(testedFormat.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER);
 
-	const std::map<vk::VkFormat, std::string> formatDataMap =
-	{
-		{ VK_FORMAT_R32G32B32A32_UINT,			"Rgba32ui"	},
-		{ VK_FORMAT_R16G16B16A16_UINT,			"Rgba16ui"	},
-		{ VK_FORMAT_R8G8B8A8_UINT,				"Rgba8ui"	},
-		{ VK_FORMAT_R32_UINT,					"R32ui"		},
-		{ VK_FORMAT_R32G32B32A32_SINT,			"Rgba32i"	},
-		{ VK_FORMAT_R16G16B16A16_SINT,			"Rgba16i"	},
-		{ VK_FORMAT_R8G8B8A8_SINT,				"Rgba8i"	},
-		{ VK_FORMAT_R32_SINT,					"R32i"		},
-
-		{ VK_FORMAT_R32G32_UINT,				"Rg32ui"	},
-		{ VK_FORMAT_R16G16_UINT,				"Rg16ui"	},
-		{ VK_FORMAT_R16_UINT,					"R16ui"		},
-		{ VK_FORMAT_R8G8_UINT,					"Rg8ui"		},
-		{ VK_FORMAT_R8_UINT,					"R8ui"		},
-		{ VK_FORMAT_R32G32_SINT,				"Rg32i"		},
-		{ VK_FORMAT_R16G16_SINT,				"Rg16i"		},
-		{ VK_FORMAT_R16_SINT,					"R16i"		},
-		{ VK_FORMAT_R8G8_SINT,					"Rg8i"		},
-		{ VK_FORMAT_R8_SINT,					"R8i"		},
-		{ VK_FORMAT_A2B10G10R10_UINT_PACK32,	"Rgb10a2ui"	},
-
-		{ VK_FORMAT_R64_SINT,					"R64i"		},
-		{ VK_FORMAT_R64_UINT,					"R64ui"		},
-	};
-
-	const auto readIter		= formatDataMap.find(m_readFormat);
-	const auto writeIter	= formatDataMap.find(m_writeFormat);
-
-	DE_ASSERT (readIter != formatDataMap.end() && writeIter != formatDataMap.end()); // Missing int format data
-
 	const auto isRead64		= is64BitIntegerFormat(m_readFormat);
 	const auto isWrite64	= is64BitIntegerFormat(m_writeFormat);
 	DE_ASSERT(isRead64 == isWrite64);
 
-	const auto readSpirvImageFormat		= readIter->second;
-	const auto writeSpirvImageFormat	= writeIter->second;
 	const bool using64Bits				= (isRead64 || isWrite64);
 
 	// Additional capabilities when needed.
@@ -2403,7 +2369,7 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 		{ "extension",				extension },
 		{ "extra_types",			extraTypes },
 		{ "relaxed_precision",		relaxed },
-		{ "image_format",			readSpirvImageFormat },
+		{ "image_format",			getSpirvFormat(m_readFormat) },
 		{ "sampled_type",			(std::string("%type_") + sampledTypePostfix) },
 		{ "sampled_type_vec4",		(std::string("%type_vec4_") + sampledTypePostfix) },
 		{ "read_extend_operand",	(!isWriteTest() ? extendOperandStr : "") },
@@ -2447,7 +2413,7 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 		imageVariables		= imageVariablesTemplate.specialize(specializations);
 		imageLoad			= imageLoadTemplate.specialize(specializations);
 
-		specializations["image_format"]				= writeSpirvImageFormat;
+		specializations["image_format"]				= getSpirvFormat(m_writeFormat);
 		specializations["image_type_id"]			= "%type_dst_image";
 		specializations["image_uni_ptr_type_id"]	= "%type_ptr_uniform_const_dst_image";
 		specializations["image_var_id"]				= "%dst_image_ptr";

@@ -81,6 +81,8 @@ deUint32					getBlockSizeInBytes			(const VkFormat compressedFormat);
 deUint32					getBlockWidth				(const VkFormat compressedFormat);
 deUint32					getBlockHeight				(const VkFormat compressedFormat);
 
+const std::string			getSpirvFormat				(VkFormat fmt);
+
 const deUint32 BUFFER_IMAGE_COPY_OFFSET_GRANULARITY = 4u;
 
 // \todo [2017-05-18 pyry] Consider moving this to tcu

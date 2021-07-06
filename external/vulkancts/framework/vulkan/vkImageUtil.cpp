@@ -31,6 +31,9 @@
 #include "tcuTextureUtil.hpp"
 #include "deMath.h"
 
+#include <map>
+#include <assert.h>
+
 namespace vk
 {
 
@@ -307,6 +310,59 @@ bool isYCbCr422Format (VkFormat format)
 		default:
 			return false;
 	}
+}
+
+const std::map<VkFormat, std::string> spirvFormats = {
+	{ VK_FORMAT_R32G32B32A32_SFLOAT,		"Rgba32f"		},
+	{ VK_FORMAT_R32G32_SFLOAT,				"Rg32f"			},
+	{ VK_FORMAT_R32_SFLOAT,					"R32f"			},
+	{ VK_FORMAT_R16G16B16A16_SFLOAT,		"Rgba16f"		},
+	{ VK_FORMAT_R16G16_SFLOAT,				"Rg16f"			},
+	{ VK_FORMAT_R16_SFLOAT,					"R16f"			},
+	{ VK_FORMAT_R16G16B16A16_UNORM,			"Rgba16"		},
+	{ VK_FORMAT_R16G16_UNORM,				"Rg16"			},
+	{ VK_FORMAT_R16_UNORM,					"R16"			},
+	{ VK_FORMAT_R16G16B16A16_SNORM,			"Rgba16Snorm"	},
+	{ VK_FORMAT_R16G16_SNORM,				"Rg16Snorm"		},
+	{ VK_FORMAT_R16_SNORM,					"R16Snorm"		},
+	{ VK_FORMAT_A2B10G10R10_UNORM_PACK32,	"Rgb10A2"		},
+	{ VK_FORMAT_B10G11R11_UFLOAT_PACK32,	"R11fG11fB10f"	},
+	{ VK_FORMAT_R8G8B8A8_UNORM,				"Rgba8"			},
+	{ VK_FORMAT_R8G8_UNORM,					"Rg8"			},
+	{ VK_FORMAT_R8_UNORM,					"R8"			},
+
+	{ VK_FORMAT_R8G8B8A8_SNORM,				"Rgba8Snorm"	},
+	{ VK_FORMAT_R8G8_SNORM,					"Rg8Snorm"		},
+	{ VK_FORMAT_R8_SNORM,					"R8Snorm"		},
+	{ VK_FORMAT_R32G32B32A32_SINT,			"Rgba32i"		},
+	{ VK_FORMAT_R32G32_SINT,				"Rg32i"			},
+	{ VK_FORMAT_R32_SINT,					"R32i"			},
+	{ VK_FORMAT_R16G16B16A16_SINT,			"Rgba16i"		},
+	{ VK_FORMAT_R16G16_SINT,				"Rg16i"			},
+	{ VK_FORMAT_R16_SINT,					"R16i"			},
+	{ VK_FORMAT_R8G8B8A8_SINT,				"Rgba8i"		},
+	{ VK_FORMAT_R8G8_SINT,					"Rg8i"			},
+	{ VK_FORMAT_R8_SINT,					"R8i"			},
+	{ VK_FORMAT_R32G32B32A32_UINT,			"Rgba32ui"		},
+	{ VK_FORMAT_R32G32_UINT,				"Rg32ui"		},
+	{ VK_FORMAT_R32_UINT,					"R32ui"			},
+	{ VK_FORMAT_R16G16B16A16_UINT,			"Rgba16ui"		},
+	{ VK_FORMAT_R16G16_UINT,				"Rg16ui"		},
+	{ VK_FORMAT_R16_UINT,					"R16ui"			},
+	{ VK_FORMAT_A2B10G10R10_UINT_PACK32,	"Rgb10a2ui"		},
+	{ VK_FORMAT_R8G8B8A8_UINT,				"Rgba8ui"		},
+	{ VK_FORMAT_R8G8_UINT,					"Rg8ui"			},
+	{ VK_FORMAT_R8_UINT,					"R8ui"			},
+
+	{ VK_FORMAT_R64_SINT,					"R64i"			},
+	{ VK_FORMAT_R64_UINT,					"R64ui"			},
+};
+
+const std::string getSpirvFormat(VkFormat fmt)
+{
+	auto iter = spirvFormats.find(fmt);
+	assert(iter != spirvFormats.end());
+	return iter->second;
 }
 
 bool is64BitIntegerFormat (VkFormat format)

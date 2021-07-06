@@ -448,102 +448,59 @@ TestInstance* MismatchedSignednessAndTypeTest::createInstance (Context& context)
 	return (new MismatchedSignednessAndTypeTestInstance(context, m_params, this));
 }
 
-enum class OpCapability
+const VkFormat allFormats[] =
 {
-	Shader,
-	StorageImageExtendedFormats,
-	Int64ImageEXT
+	VK_FORMAT_R32G32B32A32_SFLOAT,
+	VK_FORMAT_R32G32_SFLOAT,
+	VK_FORMAT_R32_SFLOAT,
+	VK_FORMAT_R16G16B16A16_SFLOAT,
+	VK_FORMAT_R16G16_SFLOAT,
+	VK_FORMAT_R16_SFLOAT,
+	VK_FORMAT_R16G16B16A16_UNORM,
+	VK_FORMAT_R16G16_UNORM,
+	VK_FORMAT_R16_UNORM,
+	VK_FORMAT_R16G16B16A16_SNORM,
+	VK_FORMAT_R16G16_SNORM,
+	VK_FORMAT_R16_SNORM,
+	VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+	VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+	VK_FORMAT_R8G8B8A8_UNORM,
+	VK_FORMAT_R8G8_UNORM,
+	VK_FORMAT_R8_UNORM,
+	VK_FORMAT_R8G8B8A8_SNORM,
+	VK_FORMAT_R8G8_SNORM,
+	VK_FORMAT_R8_SNORM,
+	VK_FORMAT_R32G32B32A32_SINT,
+	VK_FORMAT_R32G32_SINT,
+	VK_FORMAT_R32_SINT,
+	VK_FORMAT_R16G16B16A16_SINT,
+	VK_FORMAT_R16G16_SINT,
+	VK_FORMAT_R16_SINT,
+	VK_FORMAT_R8G8B8A8_SINT,
+	VK_FORMAT_R8G8_SINT,
+	VK_FORMAT_R8_SINT,
+	VK_FORMAT_R32G32B32A32_UINT,
+	VK_FORMAT_R32G32_UINT,
+	VK_FORMAT_R32_UINT,
+	VK_FORMAT_R16G16B16A16_UINT,
+	VK_FORMAT_R16G16_UINT,
+	VK_FORMAT_R16_UINT,
+	VK_FORMAT_A2B10G10R10_UINT_PACK32,
+	VK_FORMAT_R8G8B8A8_UINT,
+	VK_FORMAT_R8G8_UINT,
+	VK_FORMAT_R8_UINT,
+
+	VK_FORMAT_R64_SINT,
+	VK_FORMAT_R64_UINT,
 };
 
-struct FormatInfo {
-	VkFormat		vkFormat;
-	const char*		spirvName;
-}
-const formatsInfos[] =
+std::vector<VkFormat> findFormatsByChannelClass(TextureChannelClass channelClass)
 {
-	// ----- FLOATS -----
-
-	{ VK_FORMAT_R32G32B32A32_SFLOAT,		"Rgba32f",		},
-	{ VK_FORMAT_R32G32_SFLOAT,				"Rg32f",		},
-	{ VK_FORMAT_R32_SFLOAT,					"R32f",			},
-
-	{ VK_FORMAT_R16G16B16A16_SFLOAT,		"Rgba16f",		},
-	{ VK_FORMAT_R16G16_SFLOAT,				"Rg16f",		},
-	{ VK_FORMAT_R16_SFLOAT,					"R16f",			},
-
-	{ VK_FORMAT_R16G16B16A16_UNORM,			"Rgba16",		},
-	{ VK_FORMAT_R16G16_UNORM,				"Rg16",			},
-	{ VK_FORMAT_R16_UNORM,					"R16",			},
-
-	{ VK_FORMAT_R16G16B16A16_SNORM,			"Rgba16Snorm",	},
-	{ VK_FORMAT_R16G16_SNORM,				"Rg16Snorm",	},
-	{ VK_FORMAT_R16_SNORM,					"R16Snorm",		},
-
-	{ VK_FORMAT_A2B10G10R10_UNORM_PACK32,	"Rgb10A2",		},
-	{ VK_FORMAT_B10G11R11_UFLOAT_PACK32,	"R11fG11fB10f",	},
-
-	{ VK_FORMAT_R8G8B8A8_UNORM,				"Rgba8",		},
-	{ VK_FORMAT_R8G8_UNORM,					"Rg8",			},
-	{ VK_FORMAT_R8_UNORM,					"R8",			},
-
-	{ VK_FORMAT_R8G8B8A8_SNORM,				"Rgba8Snorm",	},
-	{ VK_FORMAT_R8G8_SNORM,					"Rg8Snorm",		},
-	{ VK_FORMAT_R8_SNORM,					"R8Snorm",		},
-
-	// ----- SIGNED INTEGERS -----
-
-	{ VK_FORMAT_R32G32B32A32_SINT,			"Rgba32i",		},
-	{ VK_FORMAT_R32G32_SINT,				"Rg32i",		},
-	{ VK_FORMAT_R32_SINT,					"R32i",			},
-
-	{ VK_FORMAT_R16G16B16A16_SINT,			"Rgba16i",		},
-	{ VK_FORMAT_R16G16_SINT,				"Rg16i",		},
-	{ VK_FORMAT_R16_SINT,					"R16i",			},
-
-	{ VK_FORMAT_R8G8B8A8_SINT,				"Rgba8i",		},
-	{ VK_FORMAT_R8G8_SINT,					"Rg8i",			},
-	{ VK_FORMAT_R8_SINT,					"R8i",			},
-
-	// ----- UNSIGNED INTEGERS ------
-
-	{ VK_FORMAT_R32G32B32A32_UINT,			"Rgba32ui",		},
-	{ VK_FORMAT_R32G32_UINT,				"Rg32ui",		},
-	{ VK_FORMAT_R32_UINT,					"R32ui",		},
-
-	{ VK_FORMAT_R16G16B16A16_UINT,			"Rgba16ui",		},
-	{ VK_FORMAT_R16G16_UINT,				"Rg16ui",		},
-	{ VK_FORMAT_R16_UINT,					"R16ui",		},
-
-	{ VK_FORMAT_A2B10G10R10_UINT_PACK32,	"Rgb10a2ui",	},
-
-	{ VK_FORMAT_R8G8B8A8_UINT,				"Rgba8ui",		},
-	{ VK_FORMAT_R8G8_UINT,					"Rg8ui",		},
-	{ VK_FORMAT_R8_UINT,					"R8ui",			},
-
-	// ----- EXTENDED INTEGERS -----
-
-	{ VK_FORMAT_R64_SINT,					"R64i",			},
-	{ VK_FORMAT_R64_UINT,					"R64ui",		},
-};
-
-const FormatInfo* findFormatInfo (VkFormat vkFormat)
-{
-	for (const auto& formatInfo : formatsInfos)
+	std::vector<VkFormat> result;
+	for (const VkFormat& f : allFormats)
 	{
-		if (formatInfo.vkFormat == vkFormat)
-			return &formatInfo;
-	}
-	DE_ASSERT(DE_FALSE);
-	return nullptr;
-}
-
-std::vector<FormatInfo> findFormatsByChannelClass(TextureChannelClass channelClass)
-{
-	std::vector<FormatInfo> result;
-	for (const FormatInfo& fi : formatsInfos)
-	{
-		if (getTextureChannelClass(mapVkFormat(fi.vkFormat).type) == channelClass)
-			result.emplace_back(fi);
+		if (getTextureChannelClass(mapVkFormat(f).type) == channelClass)
+			result.emplace_back(f);
 	}
 	DE_ASSERT(!result.empty());
 	return result;
@@ -589,10 +546,8 @@ TextureFormat makeBufferFormat (tcu::TextureChannelClass channelClass, bool doub
 
 void MismatchedWriteOpTest::checkSupport (Context& context) const
 {
-	const FormatInfo* info = findFormatInfo(m_params->vkFormat);
-
 	// capabilities that may be used in the shader
-	if (is64BitIntegerFormat(info->vkFormat))
+	if (is64BitIntegerFormat(m_params->vkFormat))
 	{
 		const VkPhysicalDeviceFeatures deviceFeatures = getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
 		if(!deviceFeatures.shaderInt64)
@@ -616,9 +571,8 @@ void MismatchedWriteOpTest::checkSupport (Context& context) const
 
 TextureFormat MismatchedWriteOpTest::getBufferFormat (void) const
 {
-	const FormatInfo*	info		= findFormatInfo(m_params->vkFormat);
 	const TextureFormat texFormat	= mapVkFormat(m_params->vkFormat);
-	return makeBufferFormat(getTextureChannelClass(texFormat.type), is64BitIntegerFormat(info->vkFormat));
+	return makeBufferFormat(getTextureChannelClass(texFormat.type), is64BitIntegerFormat(m_params->vkFormat));
 }
 
 void MismatchedWriteOpTest::getProgramCodeAndVariables (StringTemplate& code, strings& variables) const
@@ -753,14 +707,12 @@ void MismatchedWriteOpTest::getProgramCodeAndVariables (StringTemplate& code, st
 
 	const tcu::TextureFormat			buffFormat	= getBufferFormat();
 
-	const FormatInfo*					info		= findFormatInfo(m_params->spirvFormat);
-
-	variables["SPIRV_IMAGE_FORMAT"]					= info->spirvName;
+	variables["SPIRV_IMAGE_FORMAT"]					= getSpirvFormat(m_params->vkFormat);
 	variables["CAPABILITY_INT64"]					= "";
 	variables["EXTENSIONS"]							= "";
 	variables["TYPES_INT64"]						= "";
 
-	if (is64BitIntegerFormat(info->vkFormat))
+	if (is64BitIntegerFormat(m_params->vkFormat))
 	{
 		variables["EXTENSIONS"]						= "OpExtension	   \"SPV_EXT_shader_image_int64\"";
 		variables["CAPABILITY_INT64"]				=	"OpCapability Int64ImageEXT\n"
@@ -1042,10 +994,10 @@ tcu::TestCaseGroup* createImageWriteOpTests (tcu::TestContext& testCtx)
 {
 	std::stringstream ss;
 
-	auto genVectorSizesTestName			= [&](const FormatInfo& info, const int sourceWidth) -> std::string
+	auto genVectorSizesTestName			= [&](const VkFormat& f, const int sourceWidth) -> std::string
 	{
 		ss.str(std::string());
-		ss << de::toLower(info.spirvName) << "_from";
+		ss << de::toLower(getSpirvFormat(f)) << "_from";
 		if (sourceWidth > 1)
 			ss << "_vec" << sourceWidth;
 		else ss << "_scalar";
@@ -1057,31 +1009,29 @@ tcu::TestCaseGroup* createImageWriteOpTests (tcu::TestContext& testCtx)
 	auto testGroupMismatchedVectorSizes	= new tcu::TestCaseGroup(testCtx, "mismatched_vector_sizes",		"Case OpImageWrite operation on mismatched vector sizes.");
 	auto testGroupMismatchedSignedness	= new tcu::TestCaseGroup(testCtx, "mismatched_signedness_and_type",	"Case OpImageWrite operation on mismatched signedness and values.");
 
-	for (const auto& info : formatsInfos)
+	for (const VkFormat& f : allFormats)
 	{
+		const auto switchClass = getTextureChannelClass(mapVkFormat(f).type);
+		auto compatibleFormats = findFormatsByChannelClass(switchClass);
+
+		auto end	= compatibleFormats.cend();
+		auto begin	= compatibleFormats.cbegin();
+		for (auto i = begin; i != end; ++i)
 		{
-			const auto switchClass = getTextureChannelClass(mapVkFormat(info.vkFormat).type);
-			auto compatibleFormats = findFormatsByChannelClass(switchClass);
+			if (is64BitIntegerFormat(i[0]) || is64BitIntegerFormat(f)) continue;
 
-			auto end	= compatibleFormats.cend();
-			auto begin	= compatibleFormats.cbegin();
-			for (auto i = begin; i != end; ++i)
-			{
-				if (is64BitIntegerFormat(i->vkFormat) || is64BitIntegerFormat(info.vkFormat)) continue;
-
-				const std::string testName = de::toLower(i->spirvName) + "_from_" + de::toLower(info.spirvName);
-				auto params	= new MismatchedWriteOpTest::Params { info.vkFormat, 12, 8*static_cast<int>(std::distance(begin,i)+1), i->vkFormat };
-				testGroupMismatchedSignedness->addChild(new MismatchedSignednessAndTypeTest(testCtx, testName, {}, MismatchedVectorSizesTest::ParamsSp(params)));
-			}
+			const std::string testName = de::toLower(getSpirvFormat(i[0])) + "_from_" + de::toLower(getSpirvFormat(f));
+			auto params	= new MismatchedWriteOpTest::Params { f, 12, 8*static_cast<int>(std::distance(begin,i)+1), i[0] };
+			testGroupMismatchedSignedness->addChild(new MismatchedSignednessAndTypeTest(testCtx, testName, {}, MismatchedVectorSizesTest::ParamsSp(params)));
 		}
 
 		for (int sourceWidth = 4; sourceWidth > 0; --sourceWidth)
 		{
-			if (sourceWidth >= getNumUsedChannels(info.vkFormat))
+			if (sourceWidth >= getNumUsedChannels(f))
 			{
-				auto params = new MismatchedWriteOpTest::Params { info.vkFormat, 12*sourceWidth, 8*(4-sourceWidth+1), info.vkFormat };
+				auto params = new MismatchedWriteOpTest::Params { f, 12*sourceWidth, 8*(4-sourceWidth+1), f };
 				testGroupMismatchedVectorSizes->addChild(
-					new MismatchedVectorSizesTest(testCtx, genVectorSizesTestName(info, sourceWidth), {}, MismatchedVectorSizesTest::ParamsSp(params), sourceWidth));
+					new MismatchedVectorSizesTest(testCtx, genVectorSizesTestName(f, sourceWidth), {}, MismatchedVectorSizesTest::ParamsSp(params), sourceWidth));
 			}
 		}
 	}
