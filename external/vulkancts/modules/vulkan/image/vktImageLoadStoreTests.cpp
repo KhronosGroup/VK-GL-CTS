@@ -2465,7 +2465,6 @@ const Texture& getTestTexture (const ImageType imageType)
 
 static const VkFormat s_formats[] =
 {
-	// Mandatory support
 	VK_FORMAT_R32G32B32A32_SFLOAT,
 	VK_FORMAT_R16G16B16A16_SFLOAT,
 	VK_FORMAT_R32_SFLOAT,
@@ -2482,9 +2481,11 @@ static const VkFormat s_formats[] =
 
 	VK_FORMAT_R8G8B8A8_UNORM,
 
+	VK_FORMAT_B8G8R8A8_UNORM,
+	VK_FORMAT_B8G8R8A8_UINT,
+
 	VK_FORMAT_R8G8B8A8_SNORM,
 
-	// Requires StorageImageExtendedFormats capability
 	VK_FORMAT_B10G11R11_UFLOAT_PACK32,
 
 	VK_FORMAT_R32G32_SFLOAT,
