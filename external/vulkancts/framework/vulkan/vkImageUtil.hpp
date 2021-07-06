@@ -45,6 +45,8 @@ bool						isDepthStencilFormat		(VkFormat format);
 bool						isCompressedFormat			(VkFormat format);
 bool						isSrgbFormat				(VkFormat format);
 
+bool						is64BitIntegerFormat		(VkFormat format);
+
 bool						isSupportedByFramework		(VkFormat format);
 void						checkImageSupport			(const InstanceInterface& vki, VkPhysicalDevice physicalDevice, const VkImageCreateInfo& imageCreateInfo);
 

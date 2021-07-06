@@ -455,91 +455,75 @@ enum class OpCapability
 	Int64ImageEXT
 };
 
-const char* OpCapabilityToStr (const OpCapability& cap)
-{
-	switch (cap)
-	{
-		case OpCapability::Shader:						return "Shader";
-		case OpCapability::StorageImageExtendedFormats:	return "StorageImageExtendedFormats";
-		case OpCapability::Int64ImageEXT:				return "Int64ImageEXT";
-	}
-	DE_ASSERT(DE_FALSE);
-	return nullptr;
-}
-
 struct FormatInfo {
 	VkFormat		vkFormat;
 	const char*		spirvName;
-	OpCapability	capability;
-	bool operator==(const FormatInfo& other) const {
-		return ((vkFormat == other.vkFormat) && (spirvName == other.spirvName) && (capability == other.capability));
-	}
 }
 const formatsInfos[] =
 {
 	// ----- FLOATS -----
 
-	{ VK_FORMAT_R32G32B32A32_SFLOAT,		"Rgba32f",		OpCapability::Shader						},
-	{ VK_FORMAT_R32G32_SFLOAT,				"Rg32f",		OpCapability::StorageImageExtendedFormats	},
-	{ VK_FORMAT_R32_SFLOAT,					"R32f",			OpCapability::Shader						},
+	{ VK_FORMAT_R32G32B32A32_SFLOAT,		"Rgba32f",		},
+	{ VK_FORMAT_R32G32_SFLOAT,				"Rg32f",		},
+	{ VK_FORMAT_R32_SFLOAT,					"R32f",			},
 
-	{ VK_FORMAT_R16G16B16A16_SFLOAT,		"Rgba16f",		OpCapability::Shader						},
-	{ VK_FORMAT_R16G16_SFLOAT,				"Rg16f",		OpCapability::StorageImageExtendedFormats	},
-	{ VK_FORMAT_R16_SFLOAT,					"R16f",			OpCapability::StorageImageExtendedFormats	},
+	{ VK_FORMAT_R16G16B16A16_SFLOAT,		"Rgba16f",		},
+	{ VK_FORMAT_R16G16_SFLOAT,				"Rg16f",		},
+	{ VK_FORMAT_R16_SFLOAT,					"R16f",			},
 
-	{ VK_FORMAT_R16G16B16A16_UNORM,			"Rgba16",		OpCapability::StorageImageExtendedFormats	},
-	{ VK_FORMAT_R16G16_UNORM,				"Rg16",			OpCapability::StorageImageExtendedFormats	},
-	{ VK_FORMAT_R16_UNORM,					"R16",			OpCapability::StorageImageExtendedFormats	},
+	{ VK_FORMAT_R16G16B16A16_UNORM,			"Rgba16",		},
+	{ VK_FORMAT_R16G16_UNORM,				"Rg16",			},
+	{ VK_FORMAT_R16_UNORM,					"R16",			},
 
-	{ VK_FORMAT_R16G16B16A16_SNORM,			"Rgba16Snorm",	OpCapability::StorageImageExtendedFormats	},
-	{ VK_FORMAT_R16G16_SNORM,				"Rg16Snorm",	OpCapability::StorageImageExtendedFormats	},
-	{ VK_FORMAT_R16_SNORM,					"R16Snorm",		OpCapability::StorageImageExtendedFormats	},
+	{ VK_FORMAT_R16G16B16A16_SNORM,			"Rgba16Snorm",	},
+	{ VK_FORMAT_R16G16_SNORM,				"Rg16Snorm",	},
+	{ VK_FORMAT_R16_SNORM,					"R16Snorm",		},
 
-	{ VK_FORMAT_A2B10G10R10_UNORM_PACK32,	"Rgb10A2",		OpCapability::StorageImageExtendedFormats	},
-	{ VK_FORMAT_B10G11R11_UFLOAT_PACK32,	"R11fG11fB10f",	OpCapability::StorageImageExtendedFormats	},
+	{ VK_FORMAT_A2B10G10R10_UNORM_PACK32,	"Rgb10A2",		},
+	{ VK_FORMAT_B10G11R11_UFLOAT_PACK32,	"R11fG11fB10f",	},
 
-	{ VK_FORMAT_R8G8B8A8_UNORM,				"Rgba8",		OpCapability::Shader						},
-	{ VK_FORMAT_R8G8_UNORM,					"Rg8",			OpCapability::StorageImageExtendedFormats	},
-	{ VK_FORMAT_R8_UNORM,					"R8",			OpCapability::StorageImageExtendedFormats	},
+	{ VK_FORMAT_R8G8B8A8_UNORM,				"Rgba8",		},
+	{ VK_FORMAT_R8G8_UNORM,					"Rg8",			},
+	{ VK_FORMAT_R8_UNORM,					"R8",			},
 
-	{ VK_FORMAT_R8G8B8A8_SNORM,				"Rgba8Snorm",	OpCapability::Shader						},
-	{ VK_FORMAT_R8G8_SNORM,					"Rg8Snorm",		OpCapability::StorageImageExtendedFormats	},
-	{ VK_FORMAT_R8_SNORM,					"R8Snorm",		OpCapability::StorageImageExtendedFormats	},
+	{ VK_FORMAT_R8G8B8A8_SNORM,				"Rgba8Snorm",	},
+	{ VK_FORMAT_R8G8_SNORM,					"Rg8Snorm",		},
+	{ VK_FORMAT_R8_SNORM,					"R8Snorm",		},
 
 	// ----- SIGNED INTEGERS -----
 
-	{ VK_FORMAT_R32G32B32A32_SINT,			"Rgba32i",		OpCapability::Shader						},
-	{ VK_FORMAT_R32G32_SINT,				"Rg32i",		OpCapability::StorageImageExtendedFormats	},
-	{ VK_FORMAT_R32_SINT,					"R32i",			OpCapability::Shader						},
+	{ VK_FORMAT_R32G32B32A32_SINT,			"Rgba32i",		},
+	{ VK_FORMAT_R32G32_SINT,				"Rg32i",		},
+	{ VK_FORMAT_R32_SINT,					"R32i",			},
 
-	{ VK_FORMAT_R16G16B16A16_SINT,			"Rgba16i",		OpCapability::Shader						},
-	{ VK_FORMAT_R16G16_SINT,				"Rg16i",		OpCapability::StorageImageExtendedFormats	},
-	{ VK_FORMAT_R16_SINT,					"R16i",			OpCapability::StorageImageExtendedFormats	},
+	{ VK_FORMAT_R16G16B16A16_SINT,			"Rgba16i",		},
+	{ VK_FORMAT_R16G16_SINT,				"Rg16i",		},
+	{ VK_FORMAT_R16_SINT,					"R16i",			},
 
-	{ VK_FORMAT_R8G8B8A8_SINT,				"Rgba8i",		OpCapability::Shader						},
-	{ VK_FORMAT_R8G8_SINT,					"Rg8i",			OpCapability::StorageImageExtendedFormats	},
-	{ VK_FORMAT_R8_SINT,					"R8i",			OpCapability::StorageImageExtendedFormats	},
+	{ VK_FORMAT_R8G8B8A8_SINT,				"Rgba8i",		},
+	{ VK_FORMAT_R8G8_SINT,					"Rg8i",			},
+	{ VK_FORMAT_R8_SINT,					"R8i",			},
 
 	// ----- UNSIGNED INTEGERS ------
 
-	{ VK_FORMAT_R32G32B32A32_UINT,			"Rgba32ui",		OpCapability::Shader						},
-	{ VK_FORMAT_R32G32_UINT,				"Rg32ui",		OpCapability::StorageImageExtendedFormats	},
-	{ VK_FORMAT_R32_UINT,					"R32ui",		OpCapability::Shader						},
+	{ VK_FORMAT_R32G32B32A32_UINT,			"Rgba32ui",		},
+	{ VK_FORMAT_R32G32_UINT,				"Rg32ui",		},
+	{ VK_FORMAT_R32_UINT,					"R32ui",		},
 
-	{ VK_FORMAT_R16G16B16A16_UINT,			"Rgba16ui",		OpCapability::Shader						},
-	{ VK_FORMAT_R16G16_UINT,				"Rg16ui",		OpCapability::StorageImageExtendedFormats	},
-	{ VK_FORMAT_R16_UINT,					"R16ui",		OpCapability::StorageImageExtendedFormats	},
+	{ VK_FORMAT_R16G16B16A16_UINT,			"Rgba16ui",		},
+	{ VK_FORMAT_R16G16_UINT,				"Rg16ui",		},
+	{ VK_FORMAT_R16_UINT,					"R16ui",		},
 
-	{ VK_FORMAT_A2B10G10R10_UINT_PACK32,	"Rgb10a2ui",	OpCapability::StorageImageExtendedFormats	},
+	{ VK_FORMAT_A2B10G10R10_UINT_PACK32,	"Rgb10a2ui",	},
 
-	{ VK_FORMAT_R8G8B8A8_UINT,				"Rgba8ui",		OpCapability::Shader						},
-	{ VK_FORMAT_R8G8_UINT,					"Rg8ui",		OpCapability::StorageImageExtendedFormats	},
-	{ VK_FORMAT_R8_UINT,					"R8ui",			OpCapability::StorageImageExtendedFormats	},
+	{ VK_FORMAT_R8G8B8A8_UINT,				"Rgba8ui",		},
+	{ VK_FORMAT_R8G8_UINT,					"Rg8ui",		},
+	{ VK_FORMAT_R8_UINT,					"R8ui",			},
 
 	// ----- EXTENDED INTEGERS -----
 
-	{ VK_FORMAT_R64_SINT,					"R64i",			OpCapability::Int64ImageEXT					},
-	{ VK_FORMAT_R64_UINT,					"R64ui",		OpCapability::Int64ImageEXT					},
+	{ VK_FORMAT_R64_SINT,					"R64i",			},
+	{ VK_FORMAT_R64_UINT,					"R64ui",		},
 };
 
 const FormatInfo* findFormatInfo (VkFormat vkFormat)
@@ -608,7 +592,7 @@ void MismatchedWriteOpTest::checkSupport (Context& context) const
 	const FormatInfo* info = findFormatInfo(m_params->vkFormat);
 
 	// capabilities that may be used in the shader
-	if (info->capability == OpCapability::Int64ImageEXT)
+	if (is64BitIntegerFormat(info->vkFormat))
 	{
 		const VkPhysicalDeviceFeatures deviceFeatures = getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
 		if(!deviceFeatures.shaderInt64)
@@ -634,15 +618,16 @@ TextureFormat MismatchedWriteOpTest::getBufferFormat (void) const
 {
 	const FormatInfo*	info		= findFormatInfo(m_params->vkFormat);
 	const TextureFormat texFormat	= mapVkFormat(m_params->vkFormat);
-	return makeBufferFormat(getTextureChannelClass(texFormat.type), info->capability == OpCapability::Int64ImageEXT);
+	return makeBufferFormat(getTextureChannelClass(texFormat.type), is64BitIntegerFormat(info->vkFormat));
 }
-
 
 void MismatchedWriteOpTest::getProgramCodeAndVariables (StringTemplate& code, strings& variables) const
 {
 	std::string shaderTemplate(R"(
 
-							  ${ENABLING_CAPABILITIES}
+							  OpCapability Shader
+							  OpCapability StorageImageExtendedFormats
+
 							  ${CAPABILITY_INT64}
 							  OpExtension      "SPV_KHR_variable_pointers"
 							  OpExtension      "SPV_KHR_storage_buffer_storage_class"
@@ -771,15 +756,15 @@ void MismatchedWriteOpTest::getProgramCodeAndVariables (StringTemplate& code, st
 	const FormatInfo*					info		= findFormatInfo(m_params->spirvFormat);
 
 	variables["SPIRV_IMAGE_FORMAT"]					= info->spirvName;
-	variables["ENABLING_CAPABILITIES"]				= std::string("OpCapability ") + OpCapabilityToStr(info->capability);
 	variables["CAPABILITY_INT64"]					= "";
 	variables["EXTENSIONS"]							= "";
 	variables["TYPES_INT64"]						= "";
 
-	if (info->capability == OpCapability::Int64ImageEXT)
+	if (is64BitIntegerFormat(info->vkFormat))
 	{
 		variables["EXTENSIONS"]						= "OpExtension	   \"SPV_EXT_shader_image_int64\"";
-		variables["CAPABILITY_INT64"]				= std::string("OpCapability Int64");
+		variables["CAPABILITY_INT64"]				=	"OpCapability Int64ImageEXT\n"
+														"OpCapability Int64";
 		variables["TYPES_INT64"]					= typesInt64;
 	}
 
@@ -1082,7 +1067,7 @@ tcu::TestCaseGroup* createImageWriteOpTests (tcu::TestContext& testCtx)
 			auto begin	= compatibleFormats.cbegin();
 			for (auto i = begin; i != end; ++i)
 			{
-				if (i->capability == OpCapability::Int64ImageEXT || info.capability == OpCapability::Int64ImageEXT) continue;
+				if (is64BitIntegerFormat(i->vkFormat) || is64BitIntegerFormat(info.vkFormat)) continue;
 
 				const std::string testName = de::toLower(i->spirvName) + "_from_" + de::toLower(info.spirvName);
 				auto params	= new MismatchedWriteOpTest::Params { info.vkFormat, 12, 8*static_cast<int>(std::distance(begin,i)+1), i->vkFormat };

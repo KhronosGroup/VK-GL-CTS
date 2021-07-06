@@ -309,6 +309,12 @@ bool isYCbCr422Format (VkFormat format)
 	}
 }
 
+bool is64BitIntegerFormat (VkFormat format)
+{
+	const auto tcuFormat = mapVkFormat(format);
+	return (tcuFormat.type == tcu::TextureFormat::UNSIGNED_INT64 || tcuFormat.type == tcu::TextureFormat::SIGNED_INT64);
+}
+
 const PlanarFormatDescription& getYCbCrPlanarFormatDescription (VkFormat format)
 {
 	using tcu::TextureFormat;

@@ -2225,12 +2225,6 @@ void checkFormatProperties (const InstanceInterface& vki, VkPhysicalDevice physD
 		TCU_THROW(NotSupportedError, "Format not supported for storage images");
 }
 
-bool is64BitIntegerFormat (VkFormat format)
-{
-	const auto tcuFormat = mapVkFormat(format);
-	return (tcuFormat.type == tcu::TextureFormat::UNSIGNED_INT64 || tcuFormat.type == tcu::TextureFormat::SIGNED_INT64);
-}
-
 void check64BitSupportIfNeeded (Context& context, VkFormat readFormat, VkFormat writeFormat)
 {
 	if (is64BitIntegerFormat(readFormat) || is64BitIntegerFormat(writeFormat))
