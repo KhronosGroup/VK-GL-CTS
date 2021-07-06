@@ -16661,6 +16661,7 @@ dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.stride_with_offset_and_
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.large_stride
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.large_stride_with_offset
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.large_stride_with_offset_and_padding
+dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.zero_stride_with_offset
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.depth_test_enable
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.depth_test_disable
 dEQP-VK.pipeline.extended_dynamic_state.cmd_buffer_start.depth_write_enable
@@ -18049,6 +18050,7 @@ dEQP-VK.pipeline.extended_dynamic_state.before_draw.stride_with_offset_and_paddi
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.large_stride
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.large_stride_with_offset
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.large_stride_with_offset_and_padding
+dEQP-VK.pipeline.extended_dynamic_state.before_draw.zero_stride_with_offset
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.depth_test_enable
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.depth_test_disable
 dEQP-VK.pipeline.extended_dynamic_state.before_draw.depth_write_enable
@@ -19437,6 +19439,7 @@ dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.stride_with_offset_and
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.large_stride
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.large_stride_with_offset
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.large_stride_with_offset_and_padding
+dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.zero_stride_with_offset
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.depth_test_enable
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.depth_test_disable
 dEQP-VK.pipeline.extended_dynamic_state.between_pipelines.depth_write_enable
@@ -20825,6 +20828,7 @@ dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.stride_with_offset_and_p
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.large_stride
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.large_stride_with_offset
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.large_stride_with_offset_and_padding
+dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.zero_stride_with_offset
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.depth_test_enable
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.depth_test_disable
 dEQP-VK.pipeline.extended_dynamic_state.after_pipelines.depth_write_enable
@@ -22213,6 +22217,7 @@ dEQP-VK.pipeline.extended_dynamic_state.before_good_static.stride_with_offset_an
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.large_stride
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.large_stride_with_offset
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.large_stride_with_offset_and_padding
+dEQP-VK.pipeline.extended_dynamic_state.before_good_static.zero_stride_with_offset
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.depth_test_enable
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.depth_test_disable
 dEQP-VK.pipeline.extended_dynamic_state.before_good_static.depth_write_enable
@@ -23601,6 +23606,7 @@ dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.stride_with_offset_and
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.large_stride
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.large_stride_with_offset
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.large_stride_with_offset_and_padding
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.zero_stride_with_offset
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.depth_test_enable
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.depth_test_disable
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_dynamic.depth_write_enable
@@ -24986,6 +24992,7 @@ dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.2_scissors_switch_clean
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.stride
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.stride_with_offset
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.stride_with_offset_and_padding
+dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.zero_stride_with_offset
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.depth_test_enable
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.depth_test_disable
 dEQP-VK.pipeline.extended_dynamic_state.two_draws_static.depth_write_enable

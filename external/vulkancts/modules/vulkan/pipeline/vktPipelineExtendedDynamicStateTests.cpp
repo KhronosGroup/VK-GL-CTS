@@ -601,6 +601,7 @@ struct MeshParams
 	float		scaleY;
 	float		offsetX;
 	float		offsetY;
+	float		fanScale;
 
 	MeshParams (const tcu::Vec4&	color_		= kDefaultTriangleColor,
 				float				depth_		= 0.0f,
@@ -608,7 +609,8 @@ struct MeshParams
 				float				scaleX_		= 1.0f,
 				float				scaleY_		= 1.0f,
 				float				offsetX_	= 0.0f,
-				float				offsetY_	= 0.0f)
+				float				offsetY_	= 0.0f,
+				float				fanScale_	= 0.0f)
 		: color		(color_)
 		, depth		(depth_)
 		, reversed	(reversed_)
@@ -616,6 +618,7 @@ struct MeshParams
 		, scaleY	(scaleY_)
 		, offsetX	(offsetX_)
 		, offsetY	(offsetY_)
+		, fanScale	(fanScale_)
 	{}
 };
 
@@ -814,6 +817,10 @@ struct TestConfig
 	// Force inclusion of passthrough geometry shader or not.
 	bool						forceGeometryShader;
 
+	// Force single vertex in the VBO.
+	bool						singleVertex;
+	deUint32					singleVertexDrawCount;
+
 	// Offset and extra room after the vertex buffer data.
 	vk::VkDeviceSize			vertexDataOffset;
 	vk::VkDeviceSize			vertexDataExtraBytes;
@@ -852,6 +859,8 @@ struct TestConfig
 		, minDepthBounds				(0.0f)
 		, maxDepthBounds				(1.0f)
 		, forceGeometryShader			(false)
+		, singleVertex					(false)
+		, singleVertexDrawCount			(0)
 		, vertexDataOffset				(0ull)
 		, vertexDataExtraBytes			(0ull)
 		, vertexGenerator				(makeVertexGeneratorConfig(staticVertexGenerator, dynamicVertexGenerator))
@@ -1091,6 +1100,7 @@ struct PushConstants
 	float		scaleY;
 	float		offsetX;
 	float		offsetY;
+	float		fanScale;
 };
 
 void copy(vk::VkStencilOpState& dst, const StencilOpParams& src)
@@ -1232,6 +1242,7 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 		<< "    float scaleY;\n"
 		<< "    float offsetX;\n"
 		<< "    float offsetY;\n"
+		<< "    float fanScale;\n"
 		<< "} pushConstants;\n"
 		;
 	const auto pushConstants = pushSource.str();
@@ -1274,6 +1285,17 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 		<< "void main() {\n"
 		<< "${CALCULATIONS}"
 		<< "    gl_Position = vec4(vertexCoords.x * pushConstants.scaleX + pushConstants.offsetX, vertexCoords.y * pushConstants.scaleY + pushConstants.offsetY, pushConstants.depthValue, 1.0);\n"
+		<< "    vec2 fanOffset;\n"
+		<< "    switch (gl_VertexIndex) {\n"
+		<< "    case 0: fanOffset = vec2(0.0, 0.0); break;\n"
+		<< "    case 1: fanOffset = vec2(1.0, 0.0); break;\n"
+		<< "    case 2: fanOffset = vec2(1.0, -1.0); break;\n"
+		<< "    case 3: fanOffset = vec2(0.0, -1.0); break;\n"
+		<< "    case 4: fanOffset = vec2(-1.0, -1.0); break;\n"
+		<< "    case 5: fanOffset = vec2(-1.0, 0.0); break;\n"
+		<< "    default: fanOffset = vec2(-1000.0); break;\n"
+		<< "    }\n"
+		<< "    gl_Position.xy += pushConstants.fanScale * fanOffset;\n"
 		<< "}\n"
 		;
 
@@ -1770,6 +1792,9 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			vertices.push_back(tcu::Vec2( 1.0f, yCoord));
 		}
 	}
+
+	if (m_testConfig.singleVertex)
+		vertices.resize(1);
 
 	// Reversed vertices, except for the first one (0, 5, 4, 3, 2, 1): clockwise mesh for triangles. Not to be used with lines.
 	std::vector<tcu::Vec2> rvertices;
@@ -2323,6 +2348,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 						m_testConfig.meshParams[meshIdx].scaleY,	//	float		scaleY;
 						m_testConfig.meshParams[meshIdx].offsetX,	//	float		offsetX;
 						m_testConfig.meshParams[meshIdx].offsetY,	//	float		offsetY;
+						m_testConfig.meshParams[meshIdx].fanScale,	//	float		fanScale;
 					};
 					vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), pushConstantStageFlags, 0u, static_cast<deUint32>(sizeof(pushConstants)), &pushConstants);
 
@@ -2360,7 +2386,12 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 						vkd.cmdDrawIndexed(cmdBuffer, numIndices, 1u, 0u, 0u, 0u);
 					}
 					else
-						vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);
+					{
+						deUint32 vertex_count = static_cast<deUint32>(vertices.size());
+						if (m_testConfig.singleVertex)
+							vertex_count = m_testConfig.singleVertexDrawCount;
+						vkd.cmdDraw(cmdBuffer, vertex_count, 1u, 0u, 0u);
+					}
 				}
 			}
 
@@ -2826,6 +2857,27 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 
 					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, prefix + "_with_offset_and_padding", "Dynamically set stride using a nonzero vertex data offset and extra bytes", config));
 				}
+			}
+
+			// Dynamic stride of 0
+			{
+				TestConfig config(kOrdering, getVertexWithExtraAttributesGenerator());
+				config.strideConfig.staticValue		= config.getActiveVertexGenerator()->getVertexDataStrides();
+				config.strideConfig.dynamicValue	= { 0 };
+				config.vertexDataOffset				= 4;
+				config.singleVertex                 = true;
+				config.singleVertexDrawCount        = 6;
+
+				// Make the mesh cover the top half only. If the implementation reads data outside the vertex data it should read the
+				// offscreen vertex and draw something in the bottom half.
+				config.referenceColor			= HorizontalSplitGenerator(kDefaultTriangleColor, kDefaultClearColor);
+				config.meshParams[0].scaleY		= 0.5f;
+				config.meshParams[0].offsetY	= -0.5f;
+
+				// Use fan scale to synthesize a fan from a vertex attribute which remains constant over the draw call.
+				config.meshParams[0].fanScale = 1.0f;
+
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "zero_stride_with_offset", "Dynamically set zero stride using a nonzero vertex data offset", config));
 			}
 		}
 
