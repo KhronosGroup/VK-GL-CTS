@@ -93,9 +93,6 @@ RESERVED_KEYWORDS = [
 ]
 
 INVALID_IDENTIFIERS = [
-	("two_underscores_begin",	"__invalid"),
-	("two_underscores_middle",	"in__valid"),
-	("two_underscores_end",		"invalid__"),
 	("gl_begin",				"gl_Invalid"),
 	("digit",					"0123"),
 	("digit_begin",				"0invalid"),
