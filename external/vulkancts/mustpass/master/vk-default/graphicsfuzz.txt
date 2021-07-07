@@ -145,7 +145,6 @@ dEQP-VK.graphicsfuzz.cov-fragcoord-clamp-array-access
 dEQP-VK.graphicsfuzz.cov-fragcoord-multiply
 dEQP-VK.graphicsfuzz.cov-function-fragcoord-condition-always-return
 dEQP-VK.graphicsfuzz.cov-function-vec2-never-discard
-dEQP-VK.graphicsfuzz.cov-function-with-nested-loops-called-from-nested-loops
 dEQP-VK.graphicsfuzz.cov-global-loop-bound-true-logical-or
 dEQP-VK.graphicsfuzz.cov-global-loop-counter-float-accumulate-matrix
 dEQP-VK.graphicsfuzz.cov-global-loop-counter-main-function-call
