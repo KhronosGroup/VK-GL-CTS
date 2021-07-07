@@ -5663,7 +5663,7 @@ void TextureViewTestViewSampling::initParentTextureContents()
 					{
 						gl.framebufferTexture(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_to_id, n_mipmap);
 
-						GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTextureLayer() call failed.");
+						GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTexture() call failed.");
 					}
 					else
 					{
