@@ -29,12 +29,16 @@
 #include "deDirectoryIterator.hpp"
 #include "deDynamicLibrary.hpp"
 #if DEQP_SUPPORT_DRM
+#if !defined(__FreeBSD__)
+// major() and minor() are defined in sys/types.h on FreeBSD, and in
+// sys/sysmacros.h on Linux and Solaris.
 #include <sys/sysmacros.h>
+#endif // !defined(__FreeBSD__)
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <xf86drm.h>
-#endif
+#endif // DEQP_SUPPORT_DRM
 
 using namespace vk;
 
