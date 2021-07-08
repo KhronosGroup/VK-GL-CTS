@@ -19175,6 +19175,7 @@ dEQP-VK.fragment_shading_rate.sampleshadinginput.dynamic.noattachmentptr.shaderr
 dEQP-VK.fragment_shading_rate.sampleshadinginput.dynamic.noattachmentptr.shaderrate.replace.replace.256x256.samples8.gs
 dEQP-VK.fragment_shading_rate.sampleshadinginput.dynamic.noattachmentptr.shaderrate.replace.replace.256x256.samples16.vs
 dEQP-VK.fragment_shading_rate.sampleshadinginput.dynamic.noattachmentptr.shaderrate.replace.replace.256x256.samples16.gs
+dEQP-VK.fragment_shading_rate.misc_tests.sample_mask_test
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_1.extent_1x1
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_1.extent_4x4
 dEQP-VK.fragment_shading_rate.pixel_consistency.rate_1x1.samples_1.extent_33x35
