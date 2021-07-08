@@ -31,6 +31,9 @@ namespace TexVerifierUtil
 
 float computeFloatingPointError (const float value, const int numAccurateBits)
 {
+	DE_ASSERT(numAccurateBits >= 0);
+	DE_ASSERT(numAccurateBits <= 23);
+
 	const int		numGarbageBits	= 23-numAccurateBits;
 	const deUint32	mask			= (1u<<numGarbageBits)-1u;
 	const int		exp				= tcu::Float32(value).exponent();
