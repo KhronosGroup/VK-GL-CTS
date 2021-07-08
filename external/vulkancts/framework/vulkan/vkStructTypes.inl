@@ -3192,6 +3192,20 @@ struct VkFormatPropertiesExtendedKHR
 	VkFormatFeatureFlags2KHR	bufferFeatures;
 };
 
+struct VkPhysicalDeviceMaintenance4FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		maintenance4;
+};
+
+struct VkPhysicalDeviceMaintenance4PropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	maxBufferSize;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;

@@ -80,5 +80,6 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_present_id",
 	"VK_KHR_present_wait",
 	"VK_KHR_format_feature_flags2",
+	"VK_KHR_maintenance4",
 };
 

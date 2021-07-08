@@ -1929,6 +1929,8 @@ def generateDevicePropertiesDefs(src):
 			extType = sType
 			if extType == "MAINTENANCE_3":
 				extType = "MAINTENANCE3"
+			elif extType == "MAINTENANCE_4":
+				extType = "MAINTENANCE4"
 			elif extType == "DISCARD_RECTANGLE":
 				extType = "DISCARD_RECTANGLES"
 			elif extType == "DRIVER":

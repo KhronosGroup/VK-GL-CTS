@@ -283,6 +283,9 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyBufferToImage2KHRFunc)										
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyImageToBuffer2KHRFunc)											(VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2KHR* pCopyImageToBufferInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBlitImage2KHRFunc)													(VkCommandBuffer commandBuffer, const VkBlitImageInfo2KHR* pBlitImageInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdResolveImage2KHRFunc)												(VkCommandBuffer commandBuffer, const VkResolveImageInfo2KHR* pResolveImageInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetBufferCreateInfoMemoryRequirementsKHRFunc)							(VkDevice device, const VkBufferCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetImageCreateInfoMemoryRequirementsKHRFunc)							(VkDevice device, const VkImageCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetImageCreateInfoSparseMemoryRequirementsKHRFunc)						(VkDevice device, const VkImageCreateInfo* pCreateInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateDebugReportCallbackEXTFunc)										(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyDebugReportCallbackEXTFunc)										(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DebugReportMessageEXTFunc)												(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage);

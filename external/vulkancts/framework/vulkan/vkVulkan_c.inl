@@ -1748,6 +1748,8 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_EXT = 1000388001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT = 1000392000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_PROPERTIES_EXT = 1000392001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES_KHR = 1000413000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES_KHR = 1000413001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
     VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
@@ -9316,6 +9318,42 @@ typedef struct VkFormatPropertiesExtendedKHR {
 	VkFormatFeatureFlags2KHR    bufferFeatures;
 } VkFormatPropertiesExtendedKHR;
 
+#define VK_KHR_maintenance4 1
+#define VK_KHR_MAINTENANCE4_SPEC_VERSION  1
+#define VK_KHR_MAINTENANCE4_EXTENSION_NAME "VK_KHR_maintenance4"
+typedef struct VkPhysicalDeviceMaintenance4FeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           maintenance4;
+} VkPhysicalDeviceMaintenance4FeaturesKHR;
+
+typedef struct VkPhysicalDeviceMaintenance4PropertiesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkDeviceSize       maxBufferSize;
+} VkPhysicalDeviceMaintenance4PropertiesKHR;
+
+typedef void (VKAPI_PTR *PFN_vkGetBufferCreateInfoMemoryRequirementsKHR)(VkDevice device, const VkBufferCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements);
+typedef void (VKAPI_PTR *PFN_vkGetImageCreateInfoMemoryRequirementsKHR)(VkDevice device, const VkImageCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements);
+typedef void (VKAPI_PTR *PFN_vkGetImageCreateInfoSparseMemoryRequirementsKHR)(VkDevice device, const VkImageCreateInfo* pCreateInfo, deUint32* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR void VKAPI_CALL vkGetBufferCreateInfoMemoryRequirementsKHR(
+    VkDevice                                    device,
+    const VkBufferCreateInfo*                   pCreateInfo,
+    VkMemoryRequirements2*                      pMemoryRequirements);
+
+VKAPI_ATTR void VKAPI_CALL vkGetImageCreateInfoMemoryRequirementsKHR(
+    VkDevice                                    device,
+    const VkImageCreateInfo*                    pCreateInfo,
+    VkMemoryRequirements2*                      pMemoryRequirements);
+
+VKAPI_ATTR void VKAPI_CALL vkGetImageCreateInfoSparseMemoryRequirementsKHR(
+    VkDevice                                    device,
+    const VkImageCreateInfo*                    pCreateInfo,
+    deUint32*                                   pSparseMemoryRequirementCount,
+    VkSparseImageMemoryRequirements2*           pSparseMemoryRequirements);
+#endif
 
 
 #define VK_EXT_debug_report 1

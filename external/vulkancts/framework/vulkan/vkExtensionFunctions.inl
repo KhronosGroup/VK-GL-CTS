@@ -322,6 +322,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_maintenance4")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_debug_report")
 	{
 		functions.push_back("vkCreateDebugReportCallbackEXT");
@@ -1454,6 +1458,13 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_maintenance4")
+	{
+		functions.push_back("vkGetBufferCreateInfoMemoryRequirementsKHR");
+		functions.push_back("vkGetImageCreateInfoMemoryRequirementsKHR");
+		functions.push_back("vkGetImageCreateInfoSparseMemoryRequirementsKHR");
+		return;
+	}
 	if (extName == "VK_EXT_debug_report")
 	{
 		return;
@@ -2423,6 +2434,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_pipeline_executable_properties",
 	"VK_KHR_synchronization2",
 	"VK_KHR_copy_commands2",
+	"VK_KHR_maintenance4",
 	"VK_EXT_debug_marker",
 	"VK_EXT_transform_feedback",
 	"VK_NVX_binary_import",

@@ -22,6 +22,7 @@ const vk::VkPhysicalDeviceIDProperties&								getIDProperties								(void) con
 const vk::VkPhysicalDeviceInlineUniformBlockPropertiesEXT&			getInlineUniformBlockPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceLineRasterizationPropertiesEXT&			getLineRasterizationPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceMaintenance3Properties&					getMaintenance3Properties					(void) const;
+const vk::VkPhysicalDeviceMaintenance4PropertiesKHR&				getMaintenance4Properties					(void) const;
 const vk::VkPhysicalDeviceMeshShaderPropertiesNV&					getMeshShaderProperties						(void) const;
 const vk::VkPhysicalDeviceMultiviewProperties&						getMultiviewProperties						(void) const;
 const vk::VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX&	getMultiviewPerViewAttributesPropertiesX	(void) const;

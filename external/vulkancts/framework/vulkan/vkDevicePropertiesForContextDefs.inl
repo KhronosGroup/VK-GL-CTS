@@ -22,6 +22,7 @@ const vk::VkPhysicalDeviceIDProperties&								Context::getIDProperties							(v
 const vk::VkPhysicalDeviceInlineUniformBlockPropertiesEXT&			Context::getInlineUniformBlockPropertiesEXT			(void) const { return m_device->getInlineUniformBlockPropertiesEXT();			}
 const vk::VkPhysicalDeviceLineRasterizationPropertiesEXT&			Context::getLineRasterizationPropertiesEXT			(void) const { return m_device->getLineRasterizationPropertiesEXT();			}
 const vk::VkPhysicalDeviceMaintenance3Properties&					Context::getMaintenance3Properties					(void) const { return m_device->getMaintenance3Properties();					}
+const vk::VkPhysicalDeviceMaintenance4PropertiesKHR&				Context::getMaintenance4Properties					(void) const { return m_device->getMaintenance4Properties();					}
 const vk::VkPhysicalDeviceMeshShaderPropertiesNV&					Context::getMeshShaderProperties					(void) const { return m_device->getMeshShaderProperties();						}
 const vk::VkPhysicalDeviceMultiviewProperties&						Context::getMultiviewProperties						(void) const { return m_device->getMultiviewProperties();						}
 const vk::VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX&	Context::getMultiviewPerViewAttributesPropertiesX	(void) const { return m_device->getMultiviewPerViewAttributesPropertiesX();		}
