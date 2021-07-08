@@ -1097,8 +1097,11 @@ void AtomicOperationCase::createShaderSpec (void)
 	else
 	{
 		nonVertexShaderTemplateStream
-			<< "int idx = atomicAdd(buf.data.index, 1);\n"
-			<< "buf.data.outputValues[idx] = ${ATOMICOP}(buf.data.inoutValues[idx % (${N}/2)], ${COMPARE_ARG}buf.data.inputValues[idx]);\n"
+			<< "if (atomicAdd(buf.data.invocationHitCount[0], 1) < ${N})\n"
+			<< "{\n"
+			<< "    int idx = atomicAdd(buf.data.index, 1);\n"
+			<< "    buf.data.outputValues[idx] = ${ATOMICOP}(buf.data.inoutValues[idx % (${N}/2)], ${COMPARE_ARG}buf.data.inputValues[idx]);\n"
+			<< "}\n"
 			;
 	}
 
