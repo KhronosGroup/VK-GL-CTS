@@ -383,7 +383,6 @@ tcu::TestStatus testStorageImageWrite (Context& context, TestParameters params)
 		tcu::ConstPixelBufferAccess			pixelBuffer					= vk::getChannelAccess(compatibleFormatDescription, compatibleShaderGridSize, planeRowPitches, (const void* const*)planePointers, channelNdx);
 		VkExtent3D							planeExtent					= getPlaneExtent(compatibleFormatDescription, compatibleImageSize, planeNdx, 0u);
 		tcu::IVec3							pixelDivider				= pixelBuffer.getDivider();
-		float								fixedPointError				= tcu::TexVerifierUtil::computeFixedPointError(formatDescription.channels[channelNdx].sizeBits);
 
 		for (deUint32 offsetZ = 0u; offsetZ < planeExtent.depth; ++offsetZ)
 		for (deUint32 offsetY = 0u; offsetY < planeExtent.height; ++offsetY)
@@ -428,6 +427,7 @@ tcu::TestStatus testStorageImageWrite (Context& context, TestParameters params)
 				case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 				case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 				{
+					float fixedPointError = tcu::TexVerifierUtil::computeFixedPointError(formatDescription.channels[channelNdx].sizeBits);
 					acceptableError += fixedPointError;
 					tcu::Vec4 outputValue = pixelBuffer.getPixel(offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), 0);
 
