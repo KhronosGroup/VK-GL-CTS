@@ -93,7 +93,8 @@ public:
 										 tcu::ConstPixelBufferAccess* frame,
 										 const char* vsName,
 										 const char* fsName,
-										 Interpolation interpolation);
+										 Interpolation interpolation,
+										 bool sampleRateShading);
 	bool			compare				(const tcu::ConstPixelBufferAccess& result,
 										 const tcu::ConstPixelBufferAccess& reference);
 	tcu::TestStatus	iterate				(void);
@@ -285,11 +286,13 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 							   tcu::ConstPixelBufferAccess* frame,
 							   const char* vsName,
 							   const char* fsName,
-							   Interpolation interpolation)
+							   Interpolation interpolation,
+							   bool sampleRateShading)
 {
 	const deUint32											pcData				= static_cast<deUint32>(interpolation);
 	const deUint32											pcDataSize			= static_cast<deUint32>(sizeof(pcData));
 	const bool												useMultisampling	= (m_params.samples != vk::VK_SAMPLE_COUNT_1_BIT);
+	const vk::VkBool32										sampleShadingEnable	= (sampleRateShading ? VK_TRUE : VK_FALSE);
 	const vk::DeviceInterface&								vk					= m_context.getDeviceInterface();
 	const vk::VkDevice										device				= m_context.getDevice();
 	const vk::Unique<vk::VkShaderModule>					vs					(createShaderModule(vk, device, m_context.getBinaryCollection().get(vsName), 0));
@@ -506,7 +509,7 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 		pipelineCreateInfo.addState(PipelineCreateInfo::ViewportState(1, std::vector<vk::VkViewport>(1, viewport), std::vector<vk::VkRect2D>(1, scissor)));
 		pipelineCreateInfo.addState(PipelineCreateInfo::DepthStencilState());
 		pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
-		pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState(m_params.samples));
+		pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState(m_params.samples, sampleShadingEnable, 1.0f));
 
 		pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 	}
@@ -562,22 +565,35 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 	const bool							useMultisampling		= (m_params.samples != vk::VK_SAMPLE_COUNT_1_BIT);
 	const deUint32						frameCount				= static_cast<deUint32>(COUNT);
 	std::vector<de::SharedPtr<Image> >	resImages				(frameCount);
-	de::SharedPtr<Image>				smoothImage;
-	de::SharedPtr<Image>				flatImage;
-	de::SharedPtr<Image>				noperspectiveImage;
-	de::SharedPtr<Image>				centroidImage;
-	de::SharedPtr<Image>				sampleImage;
+	de::SharedPtr<Image>				smoothImage[2];
+	de::SharedPtr<Image>				flatImage[2];
+	de::SharedPtr<Image>				noperspectiveImage[2];
+	de::SharedPtr<Image>				centroidImage[2];
+	de::SharedPtr<Image>				sampleImage[2];
 	tcu::ConstPixelBufferAccess			resFrames[frameCount];
 	tcu::ConstPixelBufferAccess			refFrames[frameCount];
+	tcu::ConstPixelBufferAccess			refSRSFrames[frameCount]; // Using sample rate shading.
 
 	for (int interpolationType = 0; interpolationType < COUNT; ++interpolationType)
-		render(resImages[interpolationType], &resFrames[interpolationType], "vert_multi", "frag_multi", static_cast<Interpolation>(interpolationType));
+		render(resImages[interpolationType], &resFrames[interpolationType], "vert_multi", "frag_multi", static_cast<Interpolation>(interpolationType), false);
 
-	render(smoothImage,			&refFrames[SMOOTH],			"vert_smooth",			"frag_smooth", SMOOTH);
-	render(flatImage,			&refFrames[FLAT],			"vert_flat",			"frag_flat", FLAT);
-	render(noperspectiveImage,	&refFrames[NOPERSPECTIVE],	"vert_noperspective",	"frag_noperspective", NOPERSPECTIVE);
-	render(centroidImage,		&refFrames[CENTROID],		"vert_centroid",		"frag_centroid", CENTROID);
-	render(sampleImage,			&refFrames[SAMPLE],			"vert_sample",			"frag_sample", SAMPLE);
+	const auto&	features					= m_context.getDeviceFeatures();
+	const bool	sampleRateShadingSupport	= features.sampleRateShading;
+
+	for (int i = 0; i < 2; ++i)
+	{
+		const bool useSampleRateShading = (i > 0);
+		if (useSampleRateShading && !sampleRateShadingSupport)
+			continue;
+
+		tcu::ConstPixelBufferAccess *framesArray = (useSampleRateShading ? refSRSFrames : refFrames);
+
+		render(smoothImage[i],			&framesArray[SMOOTH],			"vert_smooth",			"frag_smooth",			SMOOTH,			useSampleRateShading);
+		render(flatImage[i],			&framesArray[FLAT],				"vert_flat",			"frag_flat",			FLAT,			useSampleRateShading);
+		render(noperspectiveImage[i],	&framesArray[NOPERSPECTIVE],	"vert_noperspective",	"frag_noperspective",	NOPERSPECTIVE,	useSampleRateShading);
+		render(centroidImage[i],		&framesArray[CENTROID],			"vert_centroid",		"frag_centroid",		CENTROID,		useSampleRateShading);
+		render(sampleImage[i],			&framesArray[SAMPLE],			"vert_sample",			"frag_sample",			SAMPLE,			useSampleRateShading);
+	}
 
 	for (deUint32 resNdx = 0; resNdx < frameCount; resNdx++)
 	{
@@ -585,8 +601,10 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 
 		log	<< tcu::TestLog::ImageSet(resName, resName)
 			<< tcu::TestLog::Image("Result", "Result", resFrames[resNdx])
-			<< tcu::TestLog::Image("Reference", "Reference", refFrames[resNdx])
-			<< tcu::TestLog::EndImageSet;
+			<< tcu::TestLog::Image("Reference", "Reference", refFrames[resNdx]);
+		if (sampleRateShadingSupport)
+			log << tcu::TestLog::Image("ReferenceSRS", "Reference with sample shading", refSRSFrames[resNdx]);
+		log	<< tcu::TestLog::EndImageSet;
 
 		for (deUint32 refNdx = 0; refNdx < frameCount; refNdx++)
 		{
@@ -594,7 +612,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 
 			if (resNdx == refNdx)
 			{
-				if (!compare(resFrames[resNdx], refFrames[refNdx]))
+				if (!compare(resFrames[resNdx], refFrames[refNdx]) && (!sampleRateShadingSupport || !compare(resFrames[resNdx], refSRSFrames[refNdx])))
 					return tcu::TestStatus::fail(resName + " produced different results");
 			}
 			else if (!useMultisampling &&
@@ -612,10 +630,13 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 			{
 				// "smooth" means lack of centroid and sample.
 				// Spec does not specify exactly what "smooth" should be, so it can match centroid or sample.
-				if (!((resNdx == SMOOTH && refNdx == CENTROID) ||
-					(resNdx == CENTROID && refNdx == SMOOTH)   ||
-					(resNdx == SMOOTH && refNdx == SAMPLE)     ||
-					(resNdx == SAMPLE && refNdx == SMOOTH)))
+				// "centroid" and "sample" may also produce the same results.
+				if (!((resNdx == SMOOTH && refNdx == CENTROID)   ||
+					  (resNdx == CENTROID && refNdx == SMOOTH)   ||
+					  (resNdx == SMOOTH && refNdx == SAMPLE)     ||
+					  (resNdx == SAMPLE && refNdx == SMOOTH)     ||
+					  (resNdx == CENTROID && refNdx == SAMPLE)   ||
+					  (resNdx == SAMPLE && refNdx == CENTROID)   ))
 				{
 					if (compare(resFrames[resNdx], refFrames[refNdx]))
 						return tcu::TestStatus::fail(resName + " and " + refName + " produced same result");
