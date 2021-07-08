@@ -724,8 +724,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 			if (aspectIndex == NO_MATCH_FOUND)
 				TCU_THROW(NotSupportedError, "Not supported image aspect");
 
-			VkSparseImageMemoryRequirements		aspectRequirements	= sparseMemoryRequirements[aspectIndex];
-			float								fixedPointError		= tcu::TexVerifierUtil::computeFixedPointError(formatDescription.channels[channelNdx].sizeBits);;
+			VkSparseImageMemoryRequirements aspectRequirements	= sparseMemoryRequirements[aspectIndex];
 
 			for (deUint32 mipmapNdx = 0; mipmapNdx < aspectRequirements.imageMipTailFirstLod; ++mipmapNdx)
 			{
@@ -772,6 +771,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 						case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 						case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 						{
+							float fixedPointError = tcu::TexVerifierUtil::computeFixedPointError(formatDescription.channels[channelNdx].sizeBits);
 							acceptableError += fixedPointError;
 							const tcu::Vec4 outputValue = pixelBuffer.getPixel(offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), offsetZ * pixelDivider.z());
 
