@@ -42,6 +42,7 @@ const vk::VkPhysicalDeviceInheritedViewportScissorFeaturesNV&			Context::getInhe
 const vk::VkPhysicalDeviceInlineUniformBlockFeaturesEXT&				Context::getInlineUniformBlockFeaturesEXT				(void) const { return m_device->getInlineUniformBlockFeaturesEXT();				}
 const vk::VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&					Context::getInvocationMaskFeaturesHUAWEI				(void) const { return m_device->getInvocationMaskFeaturesHUAWEI();				}
 const vk::VkPhysicalDeviceLineRasterizationFeaturesEXT&					Context::getLineRasterizationFeaturesEXT				(void) const { return m_device->getLineRasterizationFeaturesEXT();				}
+const vk::VkPhysicalDeviceMaintenance4FeaturesKHR&						Context::getMaintenance4Features						(void) const { return m_device->getMaintenance4Features();						}
 const vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT&					Context::getMemoryPriorityFeaturesEXT					(void) const { return m_device->getMemoryPriorityFeaturesEXT();					}
 const vk::VkPhysicalDeviceMeshShaderFeaturesNV&							Context::getMeshShaderFeatures							(void) const { return m_device->getMeshShaderFeatures();						}
 const vk::VkPhysicalDeviceMultiviewFeatures&							Context::getMultiviewFeatures							(void) const { return m_device->getMultiviewFeatures();							}

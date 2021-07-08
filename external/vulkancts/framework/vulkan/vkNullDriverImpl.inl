@@ -1855,6 +1855,28 @@ VKAPI_ATTR void VKAPI_CALL cmdResolveImage2KHR (VkCommandBuffer commandBuffer, c
 	DE_UNREF(pResolveImageInfo);
 }
 
+VKAPI_ATTR void VKAPI_CALL getBufferCreateInfoMemoryRequirementsKHR (VkDevice device, const VkBufferCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pCreateInfo);
+	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR void VKAPI_CALL getImageCreateInfoMemoryRequirementsKHR (VkDevice device, const VkImageCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pCreateInfo);
+	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR void VKAPI_CALL getImageCreateInfoSparseMemoryRequirementsKHR (VkDevice device, const VkImageCreateInfo* pCreateInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pCreateInfo);
+	DE_UNREF(pSparseMemoryRequirementCount);
+	DE_UNREF(pSparseMemoryRequirements);
+}
+
 VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage)
 {
 	DE_UNREF(instance);
@@ -3553,6 +3575,9 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdCopyImageToBuffer2KHR,							cmdCopyImageToBuffer2KHR),
 	VK_NULL_FUNC_ENTRY(vkCmdBlitImage2KHR,									cmdBlitImage2KHR),
 	VK_NULL_FUNC_ENTRY(vkCmdResolveImage2KHR,								cmdResolveImage2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetBufferCreateInfoMemoryRequirementsKHR,			getBufferCreateInfoMemoryRequirementsKHR),
+	VK_NULL_FUNC_ENTRY(vkGetImageCreateInfoMemoryRequirementsKHR,			getImageCreateInfoMemoryRequirementsKHR),
+	VK_NULL_FUNC_ENTRY(vkGetImageCreateInfoSparseMemoryRequirementsKHR,		getImageCreateInfoSparseMemoryRequirementsKHR),
 	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectTagEXT,						debugMarkerSetObjectTagEXT),
 	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectNameEXT,						debugMarkerSetObjectNameEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerBeginEXT,							cmdDebugMarkerBeginEXT),
