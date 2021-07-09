@@ -3869,8 +3869,8 @@ typedef VkCommandPoolTrimFlags VkCommandPoolTrimFlagsKHR;
 
 typedef VkDescriptorUpdateTemplateCreateFlags VkDescriptorUpdateTemplateCreateFlagsKHR;
 
-typedef deUint64 VkPipelineStageFlags2KHR;
-typedef deUint64 VkPipelineStageFlagBits2KHR;
+typedef uint64_t VkPipelineStageFlags2KHR;
+typedef uint64_t VkPipelineStageFlagBits2KHR;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_NONE_KHR									= 0ULL;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR						= 0x00000001ULL;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT_KHR						= 0x00000002ULL;
@@ -3913,8 +3913,8 @@ static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_NV	
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_NV							= 0x00100000ULL;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_SUBPASS_SHADING_BIT_HUAWEI					= 0x8000000000ULL;
 
-typedef deUint64 VkAccessFlags2KHR;
-typedef deUint64 VkAccessFlagBits2KHR;
+typedef uint64_t VkAccessFlags2KHR;
+typedef uint64_t VkAccessFlagBits2KHR;
 static const VkAccessFlagBits2KHR VK_ACCESS_2_NONE_KHR										= 0ULL;
 static const VkAccessFlagBits2KHR VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT_KHR					= 0x00000001ULL;
 static const VkAccessFlagBits2KHR VK_ACCESS_2_INDEX_READ_BIT_KHR							= 0x00000002ULL;

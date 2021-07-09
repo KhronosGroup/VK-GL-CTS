@@ -40,7 +40,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateFenceFunc)														(VkDev
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyFenceFunc)														(VkDevice device, VkFence fence, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ResetFencesFunc)														(VkDevice device, uint32_t fenceCount, const VkFence* pFences);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetFenceStatusFunc)													(VkDevice device, VkFence fence);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* WaitForFencesFunc)														(VkDevice device, uint32_t fenceCount, const VkFence* pFences, VkBool32 waitAll, deUint64 timeout);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* WaitForFencesFunc)														(VkDevice device, uint32_t fenceCount, const VkFence* pFences, VkBool32 waitAll, uint64_t timeout);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateSemaphoreFunc)													(VkDevice device, const VkSemaphoreCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSemaphore* pSemaphore);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroySemaphoreFunc)													(VkDevice device, VkSemaphore semaphore, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateEventFunc)														(VkDevice device, const VkEventCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkEvent* pEvent);
@@ -173,8 +173,8 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginRenderPass2Func)												(Vk
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdNextSubpass2Func)													(VkCommandBuffer commandBuffer, const VkSubpassBeginInfo* pSubpassBeginInfo, const VkSubpassEndInfo* pSubpassEndInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRenderPass2Func)													(VkCommandBuffer commandBuffer, const VkSubpassEndInfo* pSubpassEndInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* ResetQueryPoolFunc)													(VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSemaphoreCounterValueFunc)											(VkDevice device, VkSemaphore semaphore, deUint64* pValue);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* WaitSemaphoresFunc)													(VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, deUint64 timeout);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSemaphoreCounterValueFunc)											(VkDevice device, VkSemaphore semaphore, uint64_t* pValue);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* WaitSemaphoresFunc)													(VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, uint64_t timeout);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SignalSemaphoreFunc)													(VkDevice device, const VkSemaphoreSignalInfo* pSignalInfo);
 typedef VKAPI_ATTR VkDeviceAddress		(VKAPI_CALL* GetBufferDeviceAddressFunc)											(VkDevice device, const VkBufferDeviceAddressInfo* pInfo);
 typedef VKAPI_ATTR uint64_t				(VKAPI_CALL* GetBufferOpaqueCaptureAddressFunc)										(VkDevice device, const VkBufferDeviceAddressInfo* pInfo);
@@ -187,7 +187,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceSurfacePresentModes
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateSwapchainKHRFunc)												(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroySwapchainKHRFunc)												(VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSwapchainImagesKHRFunc)												(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pSwapchainImageCount, VkImage* pSwapchainImages);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquireNextImageKHRFunc)												(VkDevice device, VkSwapchainKHR swapchain, deUint64 timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquireNextImageKHRFunc)												(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* QueuePresentKHRFunc)													(VkQueue queue, const VkPresentInfoKHR* pPresentInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceGroupPresentCapabilitiesKHRFunc)								(VkDevice device, VkDeviceGroupPresentCapabilitiesKHR* pDeviceGroupPresentCapabilities);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceGroupSurfacePresentModesKHRFunc)								(VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHR* pModes);
@@ -252,8 +252,8 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BindImageMemory2KHRFunc)												
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetDescriptorSetLayoutSupportKHRFunc)									(VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, VkDescriptorSetLayoutSupport* pSupport);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndirectCountKHRFunc)											(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndexedIndirectCountKHRFunc)									(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSemaphoreCounterValueKHRFunc)										(VkDevice device, VkSemaphore semaphore, deUint64* pValue);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* WaitSemaphoresKHRFunc)													(VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, deUint64 timeout);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSemaphoreCounterValueKHRFunc)										(VkDevice device, VkSemaphore semaphore, uint64_t* pValue);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* WaitSemaphoresKHRFunc)													(VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, uint64_t timeout);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SignalSemaphoreKHRFunc)												(VkDevice device, const VkSemaphoreSignalInfo* pSignalInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceFragmentShadingRatesKHRFunc)							(VkPhysicalDevice physicalDevice, uint32_t* pFragmentShadingRateCount, VkPhysicalDeviceFragmentShadingRateKHR* pFragmentShadingRates);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetFragmentShadingRateKHRFunc)										(VkCommandBuffer commandBuffer, const VkExtent2D* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]);
@@ -284,7 +284,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBlitImage2KHRFunc)													(VkCo
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdResolveImage2KHRFunc)												(VkCommandBuffer commandBuffer, const VkResolveImageInfo2KHR* pResolveImageInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateDebugReportCallbackEXTFunc)										(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyDebugReportCallbackEXTFunc)										(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator);
-typedef VKAPI_ATTR void					(VKAPI_CALL* DebugReportMessageEXTFunc)												(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DebugReportMessageEXTFunc)												(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, deUintptr location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* DebugMarkerSetObjectTagEXTFunc)										(VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* DebugMarkerSetObjectNameEXTFunc)										(VkDevice device, const VkDebugMarkerObjectNameInfoEXT* pNameInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDebugMarkerBeginEXTFunc)											(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo);
@@ -315,7 +315,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceSurfaceCapabilities
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* DisplayPowerControlEXTFunc)											(VkDevice device, VkDisplayKHR display, const VkDisplayPowerInfoEXT* pDisplayPowerInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* RegisterDeviceEventEXTFunc)											(VkDevice device, const VkDeviceEventInfoEXT* pDeviceEventInfo, const VkAllocationCallbacks* pAllocator, VkFence* pFence);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* RegisterDisplayEventEXTFunc)											(VkDevice device, VkDisplayKHR display, const VkDisplayEventInfoEXT* pDisplayEventInfo, const VkAllocationCallbacks* pAllocator, VkFence* pFence);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSwapchainCounterEXTFunc)											(VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, deUint64* pCounterValue);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSwapchainCounterEXTFunc)											(VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, uint64_t* pCounterValue);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetRefreshCycleDurationGOOGLEFunc)										(VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPastPresentationTimingGOOGLEFunc)									(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDiscardRectangleEXTFunc)											(VkCommandBuffer commandBuffer, uint32_t firstDiscardRectangle, uint32_t discardRectangleCount, const VkRect2D* pDiscardRectangles);
@@ -357,7 +357,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CompileDeferredNVFunc)													(
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryHostPointerPropertiesEXTFunc)									(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHostPointer, VkMemoryHostPointerPropertiesEXT* pMemoryHostPointerProperties);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdWriteBufferMarkerAMDFunc)											(VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCalibrateableTimeDomainsEXTFunc)						(VkPhysicalDevice physicalDevice, uint32_t* pTimeDomainCount, VkTimeDomainEXT* pTimeDomains);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetCalibratedTimestampsEXTFunc)										(VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, deUint64* pTimestamps, deUint64* pMaxDeviation);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetCalibratedTimestampsEXTFunc)										(VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawMeshTasksNVFunc)												(VkCommandBuffer commandBuffer, uint32_t taskCount, uint32_t firstTask);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawMeshTasksIndirectNVFunc)										(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawMeshTasksIndirectCountNVFunc)									(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride);
@@ -403,8 +403,8 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquireDrmDisplayEXTFunc)											
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDrmDisplayEXTFunc)													(VkPhysicalDevice physicalDevice, int32_t drmFd, uint32_t connectorId, VkDisplayKHR* display);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreatePrivateDataSlotEXTFunc)											(VkDevice device, const VkPrivateDataSlotCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPrivateDataSlotEXT* pPrivateDataSlot);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyPrivateDataSlotEXTFunc)											(VkDevice device, VkPrivateDataSlotEXT privateDataSlot, const VkAllocationCallbacks* pAllocator);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetPrivateDataEXTFunc)													(VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64 data);
-typedef VKAPI_ATTR void					(VKAPI_CALL* GetPrivateDataEXTFunc)													(VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64* pData);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetPrivateDataEXTFunc)													(VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t data);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetPrivateDataEXTFunc)													(VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t* pData);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetFragmentShadingRateEnumNVFunc)									(VkCommandBuffer commandBuffer, VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquireWinrtDisplayNVFunc)												(VkPhysicalDevice physicalDevice, VkDisplayKHR display);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetWinrtDisplayNVFunc)													(VkPhysicalDevice physicalDevice, uint32_t deviceRelativeId, VkDisplayKHR* pDisplay);

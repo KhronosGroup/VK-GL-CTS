@@ -451,14 +451,14 @@ inline VkViewportWScalingNV makeViewportWScalingNV (float xcoeff, float ycoeff)
 	return res;
 }
 
-inline VkRefreshCycleDurationGOOGLE makeRefreshCycleDurationGOOGLE (deUint64 refreshDuration)
+inline VkRefreshCycleDurationGOOGLE makeRefreshCycleDurationGOOGLE (uint64_t refreshDuration)
 {
 	VkRefreshCycleDurationGOOGLE res;
 	res.refreshDuration	= refreshDuration;
 	return res;
 }
 
-inline VkPastPresentationTimingGOOGLE makePastPresentationTimingGOOGLE (uint32_t presentID, deUint64 desiredPresentTime, deUint64 actualPresentTime, deUint64 earliestPresentTime, deUint64 presentMargin)
+inline VkPastPresentationTimingGOOGLE makePastPresentationTimingGOOGLE (uint32_t presentID, uint64_t desiredPresentTime, uint64_t actualPresentTime, uint64_t earliestPresentTime, uint64_t presentMargin)
 {
 	VkPastPresentationTimingGOOGLE res;
 	res.presentID			= presentID;
@@ -469,7 +469,7 @@ inline VkPastPresentationTimingGOOGLE makePastPresentationTimingGOOGLE (uint32_t
 	return res;
 }
 
-inline VkPresentTimeGOOGLE makePresentTimeGOOGLE (uint32_t presentID, deUint64 desiredPresentTime)
+inline VkPresentTimeGOOGLE makePresentTimeGOOGLE (uint32_t presentID, uint64_t desiredPresentTime)
 {
 	VkPresentTimeGOOGLE res;
 	res.presentID			= presentID;
@@ -503,7 +503,7 @@ inline VkSampleLocationEXT makeSampleLocationEXT (float x, float y)
 	return res;
 }
 
-inline VkDrmFormatModifierPropertiesEXT makeDrmFormatModifierPropertiesEXT (deUint64 drmFormatModifier, uint32_t drmFormatModifierPlaneCount, VkFormatFeatureFlags drmFormatModifierTilingFeatures)
+inline VkDrmFormatModifierPropertiesEXT makeDrmFormatModifierPropertiesEXT (uint64_t drmFormatModifier, uint32_t drmFormatModifierPlaneCount, VkFormatFeatureFlags drmFormatModifierTilingFeatures)
 {
 	VkDrmFormatModifierPropertiesEXT res;
 	res.drmFormatModifier				= drmFormatModifier;
@@ -559,7 +559,7 @@ inline VkVertexInputBindingDivisorDescriptionEXT makeVertexInputBindingDivisorDe
 	return res;
 }
 
-inline VkPipelineCreationFeedbackEXT makePipelineCreationFeedbackEXT (VkPipelineCreationFeedbackFlagsEXT flags, deUint64 duration)
+inline VkPipelineCreationFeedbackEXT makePipelineCreationFeedbackEXT (VkPipelineCreationFeedbackFlagsEXT flags, uint64_t duration)
 {
 	VkPipelineCreationFeedbackEXT res;
 	res.flags		= flags;

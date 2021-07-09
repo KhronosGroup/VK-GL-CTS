@@ -1910,7 +1910,7 @@ struct VkPhysicalDeviceVulkan12Properties
 	VkBool32							independentResolve;
 	VkBool32							filterMinmaxSingleComponentFormats;
 	VkBool32							filterMinmaxImageComponentMapping;
-	deUint64							maxTimelineSemaphoreValueDifference;
+	uint64_t							maxTimelineSemaphoreValueDifference;
 	VkSampleCountFlags					framebufferIntegerColorSampleCounts;
 };
 
@@ -2288,7 +2288,7 @@ struct VkPhysicalDeviceTimelineSemaphoreProperties
 {
 	VkStructureType	sType;
 	void*			pNext;
-	deUint64		maxTimelineSemaphoreValueDifference;
+	uint64_t		maxTimelineSemaphoreValueDifference;
 };
 
 struct VkSemaphoreTypeCreateInfo
@@ -2296,7 +2296,7 @@ struct VkSemaphoreTypeCreateInfo
 	VkStructureType	sType;
 	const void*		pNext;
 	VkSemaphoreType	semaphoreType;
-	deUint64		initialValue;
+	uint64_t		initialValue;
 };
 
 struct VkTimelineSemaphoreSubmitInfo
@@ -2304,9 +2304,9 @@ struct VkTimelineSemaphoreSubmitInfo
 	VkStructureType	sType;
 	const void*		pNext;
 	uint32_t		waitSemaphoreValueCount;
-	const deUint64*	pWaitSemaphoreValues;
+	const uint64_t*	pWaitSemaphoreValues;
 	uint32_t		signalSemaphoreValueCount;
-	const deUint64*	pSignalSemaphoreValues;
+	const uint64_t*	pSignalSemaphoreValues;
 };
 
 struct VkSemaphoreWaitInfo
@@ -2316,7 +2316,7 @@ struct VkSemaphoreWaitInfo
 	VkSemaphoreWaitFlags	flags;
 	uint32_t				semaphoreCount;
 	const VkSemaphore*		pSemaphores;
-	const deUint64*			pValues;
+	const uint64_t*			pValues;
 };
 
 struct VkSemaphoreSignalInfo
@@ -2324,7 +2324,7 @@ struct VkSemaphoreSignalInfo
 	VkStructureType	sType;
 	const void*		pNext;
 	VkSemaphore		semaphore;
-	deUint64		value;
+	uint64_t		value;
 };
 
 struct VkPhysicalDeviceBufferDeviceAddressFeatures
@@ -2347,14 +2347,14 @@ struct VkBufferOpaqueCaptureAddressCreateInfo
 {
 	VkStructureType	sType;
 	const void*		pNext;
-	deUint64		opaqueCaptureAddress;
+	uint64_t		opaqueCaptureAddress;
 };
 
 struct VkMemoryOpaqueCaptureAddressAllocateInfo
 {
 	VkStructureType	sType;
 	const void*		pNext;
-	deUint64		opaqueCaptureAddress;
+	uint64_t		opaqueCaptureAddress;
 };
 
 struct VkDeviceMemoryOpaqueCaptureAddressInfo
@@ -2438,7 +2438,7 @@ struct VkAcquireNextImageInfoKHR
 	VkStructureType	sType;
 	const void*		pNext;
 	VkSwapchainKHR	swapchain;
-	deUint64		timeout;
+	uint64_t		timeout;
 	VkSemaphore		semaphore;
 	VkFence			fence;
 	uint32_t		deviceMask;
@@ -2682,9 +2682,9 @@ struct VkQueryPoolPerformanceCreateInfoKHR
 union VkPerformanceCounterResultKHR
 {
 	int32_t		int32;
-	deInt64		int64;
+	int64_t		int64;
 	uint32_t	uint32;
-	deUint64	uint64;
+	uint64_t	uint64;
 	float		float32;
 	double		float64;
 };
@@ -2694,7 +2694,7 @@ struct VkAcquireProfilingLockInfoKHR
 	VkStructureType					sType;
 	const void*						pNext;
 	VkAcquireProfilingLockFlagsKHR	flags;
-	deUint64						timeout;
+	uint64_t						timeout;
 };
 
 struct VkPerformanceQuerySubmitInfoKHR
@@ -2874,8 +2874,8 @@ struct VkPipelineExecutableInfoKHR
 union VkPipelineExecutableStatisticValueKHR
 {
 	VkBool32	b32;
-	deInt64		i64;
-	deUint64	u64;
+	int64_t		i64;
+	uint64_t	u64;
 	double		f64;
 };
 
@@ -2967,7 +2967,7 @@ struct VkSemaphoreSubmitInfoKHR
 	VkStructureType				sType;
 	const void*					pNext;
 	VkSemaphore					semaphore;
-	deUint64					value;
+	uint64_t					value;
 	VkPipelineStageFlags2KHR	stageMask;
 	uint32_t					deviceIndex;
 };
@@ -3182,7 +3182,7 @@ struct VkDebugMarkerObjectNameInfoEXT
 	VkStructureType				sType;
 	const void*					pNext;
 	VkDebugReportObjectTypeEXT	objectType;
-	deUint64					object;
+	uint64_t					object;
 	const char*					pObjectName;
 };
 
@@ -3191,8 +3191,8 @@ struct VkDebugMarkerObjectTagInfoEXT
 	VkStructureType				sType;
 	const void*					pNext;
 	VkDebugReportObjectTypeEXT	objectType;
-	deUint64					object;
-	deUint64					tagName;
+	uint64_t					object;
+	uint64_t					tagName;
 	deUintptr					tagSize;
 	const void*					pTag;
 };
@@ -3481,22 +3481,22 @@ struct VkSwapchainCounterCreateInfoEXT
 
 struct VkRefreshCycleDurationGOOGLE
 {
-	deUint64	refreshDuration;
+	uint64_t	refreshDuration;
 };
 
 struct VkPastPresentationTimingGOOGLE
 {
 	uint32_t	presentID;
-	deUint64	desiredPresentTime;
-	deUint64	actualPresentTime;
-	deUint64	earliestPresentTime;
-	deUint64	presentMargin;
+	uint64_t	desiredPresentTime;
+	uint64_t	actualPresentTime;
+	uint64_t	earliestPresentTime;
+	uint64_t	presentMargin;
 };
 
 struct VkPresentTimeGOOGLE
 {
 	uint32_t	presentID;
-	deUint64	desiredPresentTime;
+	uint64_t	desiredPresentTime;
 };
 
 struct VkPresentTimesInfoGOOGLE
@@ -3620,7 +3620,7 @@ struct VkDebugUtilsObjectNameInfoEXT
 	VkStructureType	sType;
 	const void*		pNext;
 	VkObjectType	objectType;
-	deUint64		objectHandle;
+	uint64_t		objectHandle;
 	const char*		pObjectName;
 };
 
@@ -3656,8 +3656,8 @@ struct VkDebugUtilsObjectTagInfoEXT
 	VkStructureType	sType;
 	const void*		pNext;
 	VkObjectType	objectType;
-	deUint64		objectHandle;
-	deUint64		tagName;
+	uint64_t		objectHandle;
+	uint64_t		tagName;
 	deUintptr		tagSize;
 	const void*		pTag;
 };
@@ -3825,7 +3825,7 @@ struct VkPhysicalDeviceShaderSMBuiltinsFeaturesNV
 
 struct VkDrmFormatModifierPropertiesEXT
 {
-	deUint64				drmFormatModifier;
+	uint64_t				drmFormatModifier;
 	uint32_t				drmFormatModifierPlaneCount;
 	VkFormatFeatureFlags	drmFormatModifierTilingFeatures;
 };
@@ -3842,7 +3842,7 @@ struct VkPhysicalDeviceImageDrmFormatModifierInfoEXT
 {
 	VkStructureType	sType;
 	const void*		pNext;
-	deUint64		drmFormatModifier;
+	uint64_t		drmFormatModifier;
 	VkSharingMode	sharingMode;
 	uint32_t		queueFamilyIndexCount;
 	const uint32_t*	pQueueFamilyIndices;
@@ -3853,14 +3853,14 @@ struct VkImageDrmFormatModifierListCreateInfoEXT
 	VkStructureType	sType;
 	const void*		pNext;
 	uint32_t		drmFormatModifierCount;
-	const deUint64*	pDrmFormatModifiers;
+	const uint64_t*	pDrmFormatModifiers;
 };
 
 struct VkImageDrmFormatModifierExplicitCreateInfoEXT
 {
 	VkStructureType				sType;
 	const void*					pNext;
-	deUint64					drmFormatModifier;
+	uint64_t					drmFormatModifier;
 	uint32_t					drmFormatModifierPlaneCount;
 	const VkSubresourceLayout*	pPlaneLayouts;
 };
@@ -3869,7 +3869,7 @@ struct VkImageDrmFormatModifierPropertiesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
-	deUint64		drmFormatModifier;
+	uint64_t		drmFormatModifier;
 };
 
 struct VkValidationCacheCreateInfoEXT
@@ -4066,9 +4066,9 @@ struct VkPhysicalDeviceRayTracingPropertiesNV
 	uint32_t		maxRecursionDepth;
 	uint32_t		maxShaderGroupStride;
 	uint32_t		shaderGroupBaseAlignment;
-	deUint64		maxGeometryCount;
-	deUint64		maxInstanceCount;
-	deUint64		maxTriangleCount;
+	uint64_t		maxGeometryCount;
+	uint64_t		maxInstanceCount;
+	uint64_t		maxTriangleCount;
 	uint32_t		maxDescriptorSetAccelerationStructures;
 };
 
@@ -4094,7 +4094,7 @@ struct VkAccelerationStructureInstanceKHR
 	uint32_t					mask:8;
 	uint32_t					instanceShaderBindingTableRecordOffset:24;
 	VkGeometryInstanceFlagsKHR	flags:8;
-	deUint64					accelerationStructureReference;
+	uint64_t					accelerationStructureReference;
 };
 
 struct VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV
@@ -4228,7 +4228,7 @@ struct VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT
 struct VkPipelineCreationFeedbackEXT
 {
 	VkPipelineCreationFeedbackFlagsEXT	flags;
-	deUint64							duration;
+	uint64_t							duration;
 };
 
 struct VkPipelineCreationFeedbackCreateInfoEXT
@@ -4335,7 +4335,7 @@ struct VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL
 union VkPerformanceValueDataINTEL
 {
 	uint32_t	value32;
-	deUint64	value64;
+	uint64_t	value64;
 	float		valueFloat;
 	VkBool32	valueBool;
 	const char*	valueString;
@@ -4365,7 +4365,7 @@ struct VkPerformanceMarkerInfoINTEL
 {
 	VkStructureType	sType;
 	const void*		pNext;
-	deUint64		marker;
+	uint64_t		marker;
 };
 
 struct VkPerformanceStreamMarkerInfoINTEL
@@ -4381,7 +4381,7 @@ struct VkPerformanceOverrideInfoINTEL
 	const void*						pNext;
 	VkPerformanceOverrideTypeINTEL	type;
 	VkBool32						enable;
-	deUint64						parameter;
+	uint64_t						parameter;
 };
 
 struct VkPerformanceConfigurationAcquireInfoINTEL
@@ -4915,10 +4915,10 @@ struct VkDeviceMemoryReportCallbackDataEXT
 	void*								pNext;
 	VkDeviceMemoryReportFlagsEXT		flags;
 	VkDeviceMemoryReportEventTypeEXT	type;
-	deUint64							memoryObjectId;
+	uint64_t							memoryObjectId;
 	VkDeviceSize						size;
 	VkObjectType						objectType;
-	deUint64							objectHandle;
+	uint64_t							objectHandle;
 	uint32_t							heapIndex;
 };
 
@@ -5067,7 +5067,7 @@ struct VkAccelerationStructureMatrixMotionInstanceNV
 	uint32_t					mask:8;
 	uint32_t					instanceShaderBindingTableRecordOffset:24;
 	VkGeometryInstanceFlagsKHR	flags:8;
-	deUint64					accelerationStructureReference;
+	uint64_t					accelerationStructureReference;
 };
 
 struct VkSRTDataNV
@@ -5098,7 +5098,7 @@ struct VkAccelerationStructureSRTMotionInstanceNV
 	uint32_t					mask:8;
 	uint32_t					instanceShaderBindingTableRecordOffset:24;
 	VkGeometryInstanceFlagsKHR	flags:8;
-	deUint64					accelerationStructureReference;
+	uint64_t					accelerationStructureReference;
 };
 
 union VkAccelerationStructureMotionInstanceDataNV
@@ -5223,10 +5223,10 @@ struct VkPhysicalDeviceDrmPropertiesEXT
 	void*			pNext;
 	VkBool32		hasPrimary;
 	VkBool32		hasRender;
-	deInt64			primaryMajor;
-	deInt64			primaryMinor;
-	deInt64			renderMajor;
-	deInt64			renderMinor;
+	int64_t			primaryMajor;
+	int64_t			primaryMinor;
+	int64_t			renderMajor;
+	int64_t			renderMinor;
 };
 
 struct VkSubpassShadingPipelineCreateInfoHUAWEI
@@ -5441,9 +5441,9 @@ struct VkPhysicalDeviceAccelerationStructurePropertiesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
-	deUint64		maxGeometryCount;
-	deUint64		maxInstanceCount;
-	deUint64		maxPrimitiveCount;
+	uint64_t		maxGeometryCount;
+	uint64_t		maxInstanceCount;
+	uint64_t		maxPrimitiveCount;
 	uint32_t		maxPerStageDescriptorAccelerationStructures;
 	uint32_t		maxPerStageDescriptorUpdateAfterBindAccelerationStructures;
 	uint32_t		maxDescriptorSetAccelerationStructures;
@@ -5597,7 +5597,7 @@ struct VkAndroidHardwareBufferUsageANDROID
 {
 	VkStructureType	sType;
 	void*			pNext;
-	deUint64		androidHardwareBufferUsage;
+	uint64_t		androidHardwareBufferUsage;
 };
 
 struct VkAndroidHardwareBufferPropertiesANDROID
@@ -5613,7 +5613,7 @@ struct VkAndroidHardwareBufferFormatPropertiesANDROID
 	VkStructureType					sType;
 	void*							pNext;
 	VkFormat						format;
-	deUint64						externalFormat;
+	uint64_t						externalFormat;
 	VkFormatFeatureFlags			formatFeatures;
 	VkComponentMapping				samplerYcbcrConversionComponents;
 	VkSamplerYcbcrModelConversion	suggestedYcbcrModel;
@@ -5640,7 +5640,7 @@ struct VkExternalFormatANDROID
 {
 	VkStructureType	sType;
 	void*			pNext;
-	deUint64		externalFormat;
+	uint64_t		externalFormat;
 };
 
 struct VkVideoQueueFamilyProperties2KHR
@@ -6819,11 +6819,11 @@ struct VkWin32KeyedMutexAcquireReleaseInfoKHR
 	const void*				pNext;
 	uint32_t				acquireCount;
 	const VkDeviceMemory*	pAcquireSyncs;
-	const deUint64*			pAcquireKeys;
+	const uint64_t*			pAcquireKeys;
 	const uint32_t*			pAcquireTimeouts;
 	uint32_t				releaseCount;
 	const VkDeviceMemory*	pReleaseSyncs;
-	const deUint64*			pReleaseKeys;
+	const uint64_t*			pReleaseKeys;
 };
 
 struct VkImportSemaphoreWin32HandleInfoKHR
@@ -6851,9 +6851,9 @@ struct VkD3D12FenceSubmitInfoKHR
 	VkStructureType	sType;
 	const void*		pNext;
 	uint32_t		waitSemaphoreValuesCount;
-	const deUint64*	pWaitSemaphoreValues;
+	const uint64_t*	pWaitSemaphoreValues;
 	uint32_t		signalSemaphoreValuesCount;
-	const deUint64*	pSignalSemaphoreValues;
+	const uint64_t*	pSignalSemaphoreValues;
 };
 
 struct VkSemaphoreGetWin32HandleInfoKHR
@@ -6914,11 +6914,11 @@ struct VkWin32KeyedMutexAcquireReleaseInfoNV
 	const void*				pNext;
 	uint32_t				acquireCount;
 	const VkDeviceMemory*	pAcquireSyncs;
-	const deUint64*			pAcquireKeys;
+	const uint64_t*			pAcquireKeys;
 	const uint32_t*			pAcquireTimeoutMilliseconds;
 	uint32_t				releaseCount;
 	const VkDeviceMemory*	pReleaseSyncs;
-	const deUint64*			pReleaseKeys;
+	const uint64_t*			pReleaseKeys;
 };
 
 struct VkSurfaceFullScreenExclusiveInfoEXT

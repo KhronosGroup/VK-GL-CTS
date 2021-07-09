@@ -117,7 +117,7 @@ VkResult DeviceDriver::getFenceStatus (VkDevice device, VkFence fence) const
 	return m_vk.getFenceStatus(device, fence);
 }
 
-VkResult DeviceDriver::waitForFences (VkDevice device, uint32_t fenceCount, const VkFence* pFences, VkBool32 waitAll, deUint64 timeout) const
+VkResult DeviceDriver::waitForFences (VkDevice device, uint32_t fenceCount, const VkFence* pFences, VkBool32 waitAll, uint64_t timeout) const
 {
 	return m_vk.waitForFences(device, fenceCount, pFences, waitAll, timeout);
 }
@@ -722,12 +722,12 @@ void DeviceDriver::resetQueryPool (VkDevice device, VkQueryPool queryPool, uint3
 	m_vk.resetQueryPool(device, queryPool, firstQuery, queryCount);
 }
 
-VkResult DeviceDriver::getSemaphoreCounterValue (VkDevice device, VkSemaphore semaphore, deUint64* pValue) const
+VkResult DeviceDriver::getSemaphoreCounterValue (VkDevice device, VkSemaphore semaphore, uint64_t* pValue) const
 {
 	return m_vk.getSemaphoreCounterValue(device, semaphore, pValue);
 }
 
-VkResult DeviceDriver::waitSemaphores (VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, deUint64 timeout) const
+VkResult DeviceDriver::waitSemaphores (VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, uint64_t timeout) const
 {
 	return m_vk.waitSemaphores(device, pWaitInfo, timeout);
 }
@@ -767,7 +767,7 @@ VkResult DeviceDriver::getSwapchainImagesKHR (VkDevice device, VkSwapchainKHR sw
 	return m_vk.getSwapchainImagesKHR(device, swapchain, pSwapchainImageCount, pSwapchainImages);
 }
 
-VkResult DeviceDriver::acquireNextImageKHR (VkDevice device, VkSwapchainKHR swapchain, deUint64 timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex) const
+VkResult DeviceDriver::acquireNextImageKHR (VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex) const
 {
 	return m_vk.acquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex);
 }
@@ -1102,7 +1102,7 @@ VkResult DeviceDriver::registerDisplayEventEXT (VkDevice device, VkDisplayKHR di
 	return m_vk.registerDisplayEventEXT(device, display, pDisplayEventInfo, pAllocator, pFence);
 }
 
-VkResult DeviceDriver::getSwapchainCounterEXT (VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, deUint64* pCounterValue) const
+VkResult DeviceDriver::getSwapchainCounterEXT (VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, uint64_t* pCounterValue) const
 {
 	return m_vk.getSwapchainCounterEXT(device, swapchain, counter, pCounterValue);
 }
@@ -1287,7 +1287,7 @@ void DeviceDriver::cmdWriteBufferMarkerAMD (VkCommandBuffer commandBuffer, VkPip
 	m_vk.cmdWriteBufferMarkerAMD(commandBuffer, pipelineStage, dstBuffer, dstOffset, marker);
 }
 
-VkResult DeviceDriver::getCalibratedTimestampsEXT (VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, deUint64* pTimestamps, deUint64* pMaxDeviation) const
+VkResult DeviceDriver::getCalibratedTimestampsEXT (VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const
 {
 	return m_vk.getCalibratedTimestampsEXT(device, timestampCount, pTimestampInfos, pTimestamps, pMaxDeviation);
 }
@@ -1482,12 +1482,12 @@ void DeviceDriver::destroyPrivateDataSlotEXT (VkDevice device, VkPrivateDataSlot
 	m_vk.destroyPrivateDataSlotEXT(device, privateDataSlot, pAllocator);
 }
 
-VkResult DeviceDriver::setPrivateDataEXT (VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64 data) const
+VkResult DeviceDriver::setPrivateDataEXT (VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t data) const
 {
 	return m_vk.setPrivateDataEXT(device, objectType, objectHandle, privateDataSlot, data);
 }
 
-void DeviceDriver::getPrivateDataEXT (VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64* pData) const
+void DeviceDriver::getPrivateDataEXT (VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t* pData) const
 {
 	m_vk.getPrivateDataEXT(device, objectType, objectHandle, privateDataSlot, pData);
 }

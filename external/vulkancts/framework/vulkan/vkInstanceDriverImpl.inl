@@ -287,7 +287,7 @@ void InstanceDriver::destroyDebugReportCallbackEXT (VkInstance instance, VkDebug
 	m_vk.destroyDebugReportCallbackEXT(instance, callback, pAllocator);
 }
 
-void InstanceDriver::debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage) const
+void InstanceDriver::debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, deUintptr location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage) const
 {
 	m_vk.debugReportMessageEXT(instance, flags, objectType, object, location, messageCode, pLayerPrefix, pMessage);
 }

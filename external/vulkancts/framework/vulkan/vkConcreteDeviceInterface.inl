@@ -24,7 +24,7 @@ virtual VkResult			createFence										(VkDevice device, const VkFenceCreateInf
 virtual void				destroyFence									(VkDevice device, VkFence fence, const VkAllocationCallbacks* pAllocator) const;
 virtual VkResult			resetFences										(VkDevice device, uint32_t fenceCount, const VkFence* pFences) const;
 virtual VkResult			getFenceStatus									(VkDevice device, VkFence fence) const;
-virtual VkResult			waitForFences									(VkDevice device, uint32_t fenceCount, const VkFence* pFences, VkBool32 waitAll, deUint64 timeout) const;
+virtual VkResult			waitForFences									(VkDevice device, uint32_t fenceCount, const VkFence* pFences, VkBool32 waitAll, uint64_t timeout) const;
 virtual VkResult			createSemaphore									(VkDevice device, const VkSemaphoreCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSemaphore* pSemaphore) const;
 virtual void				destroySemaphore								(VkDevice device, VkSemaphore semaphore, const VkAllocationCallbacks* pAllocator) const;
 virtual VkResult			createEvent										(VkDevice device, const VkEventCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkEvent* pEvent) const;
@@ -145,8 +145,8 @@ virtual void				cmdBeginRenderPass2								(VkCommandBuffer commandBuffer, const
 virtual void				cmdNextSubpass2									(VkCommandBuffer commandBuffer, const VkSubpassBeginInfo* pSubpassBeginInfo, const VkSubpassEndInfo* pSubpassEndInfo) const;
 virtual void				cmdEndRenderPass2								(VkCommandBuffer commandBuffer, const VkSubpassEndInfo* pSubpassEndInfo) const;
 virtual void				resetQueryPool									(VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount) const;
-virtual VkResult			getSemaphoreCounterValue						(VkDevice device, VkSemaphore semaphore, deUint64* pValue) const;
-virtual VkResult			waitSemaphores									(VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, deUint64 timeout) const;
+virtual VkResult			getSemaphoreCounterValue						(VkDevice device, VkSemaphore semaphore, uint64_t* pValue) const;
+virtual VkResult			waitSemaphores									(VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, uint64_t timeout) const;
 virtual VkResult			signalSemaphore									(VkDevice device, const VkSemaphoreSignalInfo* pSignalInfo) const;
 virtual VkDeviceAddress		getBufferDeviceAddress							(VkDevice device, const VkBufferDeviceAddressInfo* pInfo) const;
 virtual uint64_t			getBufferOpaqueCaptureAddress					(VkDevice device, const VkBufferDeviceAddressInfo* pInfo) const;
@@ -154,7 +154,7 @@ virtual uint64_t			getDeviceMemoryOpaqueCaptureAddress				(VkDevice device, cons
 virtual VkResult			createSwapchainKHR								(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain) const;
 virtual void				destroySwapchainKHR								(VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator) const;
 virtual VkResult			getSwapchainImagesKHR							(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pSwapchainImageCount, VkImage* pSwapchainImages) const;
-virtual VkResult			acquireNextImageKHR								(VkDevice device, VkSwapchainKHR swapchain, deUint64 timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex) const;
+virtual VkResult			acquireNextImageKHR								(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex) const;
 virtual VkResult			queuePresentKHR									(VkQueue queue, const VkPresentInfoKHR* pPresentInfo) const;
 virtual VkResult			getDeviceGroupPresentCapabilitiesKHR			(VkDevice device, VkDeviceGroupPresentCapabilitiesKHR* pDeviceGroupPresentCapabilities) const;
 virtual VkResult			getDeviceGroupSurfacePresentModesKHR			(VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHR* pModes) const;
@@ -221,7 +221,7 @@ virtual void				cmdSetViewportWScalingNV						(VkCommandBuffer commandBuffer, ui
 virtual VkResult			displayPowerControlEXT							(VkDevice device, VkDisplayKHR display, const VkDisplayPowerInfoEXT* pDisplayPowerInfo) const;
 virtual VkResult			registerDeviceEventEXT							(VkDevice device, const VkDeviceEventInfoEXT* pDeviceEventInfo, const VkAllocationCallbacks* pAllocator, VkFence* pFence) const;
 virtual VkResult			registerDisplayEventEXT							(VkDevice device, VkDisplayKHR display, const VkDisplayEventInfoEXT* pDisplayEventInfo, const VkAllocationCallbacks* pAllocator, VkFence* pFence) const;
-virtual VkResult			getSwapchainCounterEXT							(VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, deUint64* pCounterValue) const;
+virtual VkResult			getSwapchainCounterEXT							(VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, uint64_t* pCounterValue) const;
 virtual VkResult			getRefreshCycleDurationGOOGLE					(VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties) const;
 virtual VkResult			getPastPresentationTimingGOOGLE					(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings) const;
 virtual void				cmdSetDiscardRectangleEXT						(VkCommandBuffer commandBuffer, uint32_t firstDiscardRectangle, uint32_t discardRectangleCount, const VkRect2D* pDiscardRectangles) const;
@@ -258,7 +258,7 @@ virtual void				cmdWriteAccelerationStructuresPropertiesNV		(VkCommandBuffer com
 virtual VkResult			compileDeferredNV								(VkDevice device, VkPipeline pipeline, uint32_t shader) const;
 virtual VkResult			getMemoryHostPointerPropertiesEXT				(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHostPointer, VkMemoryHostPointerPropertiesEXT* pMemoryHostPointerProperties) const;
 virtual void				cmdWriteBufferMarkerAMD							(VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker) const;
-virtual VkResult			getCalibratedTimestampsEXT						(VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, deUint64* pTimestamps, deUint64* pMaxDeviation) const;
+virtual VkResult			getCalibratedTimestampsEXT						(VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const;
 virtual void				cmdDrawMeshTasksNV								(VkCommandBuffer commandBuffer, uint32_t taskCount, uint32_t firstTask) const;
 virtual void				cmdDrawMeshTasksIndirectNV						(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) const;
 virtual void				cmdDrawMeshTasksIndirectCountNV					(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) const;
@@ -297,8 +297,8 @@ virtual VkResult			createIndirectCommandsLayoutNV					(VkDevice device, const Vk
 virtual void				destroyIndirectCommandsLayoutNV					(VkDevice device, VkIndirectCommandsLayoutNV indirectCommandsLayout, const VkAllocationCallbacks* pAllocator) const;
 virtual VkResult			createPrivateDataSlotEXT						(VkDevice device, const VkPrivateDataSlotCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPrivateDataSlotEXT* pPrivateDataSlot) const;
 virtual void				destroyPrivateDataSlotEXT						(VkDevice device, VkPrivateDataSlotEXT privateDataSlot, const VkAllocationCallbacks* pAllocator) const;
-virtual VkResult			setPrivateDataEXT								(VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64 data) const;
-virtual void				getPrivateDataEXT								(VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64* pData) const;
+virtual VkResult			setPrivateDataEXT								(VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t data) const;
+virtual void				getPrivateDataEXT								(VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t* pData) const;
 virtual void				cmdSetFragmentShadingRateEnumNV					(VkCommandBuffer commandBuffer, VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]) const;
 virtual void				cmdSetVertexInputEXT							(VkCommandBuffer commandBuffer, uint32_t vertexBindingDescriptionCount, const VkVertexInputBindingDescription2EXT* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const VkVertexInputAttributeDescription2EXT* pVertexAttributeDescriptions) const;
 virtual VkResult			getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI	(VkDevice device, VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize) const;

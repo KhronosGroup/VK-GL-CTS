@@ -630,7 +630,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getFenceStatus (VkDevice device, VkFence fence)
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL waitForFences (VkDevice device, uint32_t fenceCount, const VkFence* pFences, VkBool32 waitAll, deUint64 timeout)
+VKAPI_ATTR VkResult VKAPI_CALL waitForFences (VkDevice device, uint32_t fenceCount, const VkFence* pFences, VkBool32 waitAll, uint64_t timeout)
 {
 	DE_UNREF(device);
 	DE_UNREF(fenceCount);
@@ -1353,7 +1353,7 @@ VKAPI_ATTR void VKAPI_CALL resetQueryPool (VkDevice device, VkQueryPool queryPoo
 	DE_UNREF(queryCount);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getSemaphoreCounterValue (VkDevice device, VkSemaphore semaphore, deUint64* pValue)
+VKAPI_ATTR VkResult VKAPI_CALL getSemaphoreCounterValue (VkDevice device, VkSemaphore semaphore, uint64_t* pValue)
 {
 	DE_UNREF(device);
 	DE_UNREF(semaphore);
@@ -1361,7 +1361,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getSemaphoreCounterValue (VkDevice device, VkSema
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL waitSemaphores (VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, deUint64 timeout)
+VKAPI_ATTR VkResult VKAPI_CALL waitSemaphores (VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, uint64_t timeout)
 {
 	DE_UNREF(device);
 	DE_UNREF(pWaitInfo);
@@ -1441,7 +1441,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getSwapchainImagesKHR (VkDevice device, VkSwapcha
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL acquireNextImageKHR (VkDevice device, VkSwapchainKHR swapchain, deUint64 timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex)
+VKAPI_ATTR VkResult VKAPI_CALL acquireNextImageKHR (VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex)
 {
 	DE_UNREF(device);
 	DE_UNREF(swapchain);
@@ -1846,7 +1846,7 @@ VKAPI_ATTR void VKAPI_CALL cmdResolveImage2KHR (VkCommandBuffer commandBuffer, c
 	DE_UNREF(pResolveImageInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage)
+VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, deUintptr location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage)
 {
 	DE_UNREF(instance);
 	DE_UNREF(flags);
@@ -2073,7 +2073,7 @@ VKAPI_ATTR VkResult VKAPI_CALL registerDisplayEventEXT (VkDevice device, VkDispl
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getSwapchainCounterEXT (VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, deUint64* pCounterValue)
+VKAPI_ATTR VkResult VKAPI_CALL getSwapchainCounterEXT (VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, uint64_t* pCounterValue)
 {
 	DE_UNREF(device);
 	DE_UNREF(swapchain);
@@ -2363,7 +2363,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCalibrateableTimeDomainsEXT (VkP
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getCalibratedTimestampsEXT (VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, deUint64* pTimestamps, deUint64* pMaxDeviation)
+VKAPI_ATTR VkResult VKAPI_CALL getCalibratedTimestampsEXT (VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation)
 {
 	DE_UNREF(device);
 	DE_UNREF(timestampCount);
@@ -2657,7 +2657,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getDrmDisplayEXT (VkPhysicalDevice physicalDevice
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL setPrivateDataEXT (VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64 data)
+VKAPI_ATTR VkResult VKAPI_CALL setPrivateDataEXT (VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t data)
 {
 	DE_UNREF(device);
 	DE_UNREF(objectType);
@@ -2667,7 +2667,7 @@ VKAPI_ATTR VkResult VKAPI_CALL setPrivateDataEXT (VkDevice device, VkObjectType 
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL getPrivateDataEXT (VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64* pData)
+VKAPI_ATTR void VKAPI_CALL getPrivateDataEXT (VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t* pData)
 {
 	DE_UNREF(device);
 	DE_UNREF(objectType);

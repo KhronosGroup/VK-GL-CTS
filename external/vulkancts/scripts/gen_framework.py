@@ -106,8 +106,6 @@ PLATFORM_TYPES		= [
 PLATFORM_TYPE_NAMESPACE	= "pt"
 
 TYPE_SUBSTITUTIONS		= [
-	("uint64_t",	"deUint64"),
-	("int64_t",		"deInt64"),
 	("bool32_t",	"deUint32"),
 	("size_t",		"deUintptr"),
 
@@ -892,7 +890,7 @@ def genBitfieldSrc (bitfield):
 	yield "typedef uint32_t %s;" % bitfield.name
 
 def genBitfield64Src (bitfield64):
-	yield "typedef deUint64 %s;" % bitfield64.name
+	yield "typedef uint64_t %s;" % bitfield64.name
 	if len(bitfield64.values) > 0:
 		ptrn = "static const " + bitfield64.name + " %s\t= %s;"
 		for line in indentLines([ptrn % v for v in bitfield64.values]):
