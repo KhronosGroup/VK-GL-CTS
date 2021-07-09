@@ -276,7 +276,7 @@ virtual VkResult			queueSetPerformanceConfigurationINTEL			(VkQueue queue, VkPer
 virtual VkResult			getPerformanceParameterINTEL					(VkDevice device, VkPerformanceParameterTypeINTEL parameter, VkPerformanceValueINTEL* pValue) const;
 virtual void				setLocalDimmingAMD								(VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable) const;
 virtual VkDeviceAddress		getBufferDeviceAddressEXT						(VkDevice device, const VkBufferDeviceAddressInfo* pInfo) const;
-virtual void				cmdSetLineStippleEXT							(VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, deUint16 lineStipplePattern) const;
+virtual void				cmdSetLineStippleEXT							(VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern) const;
 virtual void				cmdSetCullModeEXT								(VkCommandBuffer commandBuffer, VkCullModeFlags cullMode) const;
 virtual void				cmdSetFrontFaceEXT								(VkCommandBuffer commandBuffer, VkFrontFace frontFace) const;
 virtual void				cmdSetPrimitiveTopologyEXT						(VkCommandBuffer commandBuffer, VkPrimitiveTopology primitiveTopology) const;

@@ -1377,7 +1377,7 @@ VkDeviceAddress DeviceDriver::getBufferDeviceAddressEXT (VkDevice device, const 
 	return m_vk.getBufferDeviceAddressEXT(device, pInfo);
 }
 
-void DeviceDriver::cmdSetLineStippleEXT (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, deUint16 lineStipplePattern) const
+void DeviceDriver::cmdSetLineStippleEXT (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern) const
 {
 	m_vk.cmdSetLineStippleEXT(commandBuffer, lineStippleFactor, lineStipplePattern);
 }

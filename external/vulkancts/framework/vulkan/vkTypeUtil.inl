@@ -690,7 +690,7 @@ inline VkTraceRaysIndirectCommandKHR makeTraceRaysIndirectCommandKHR (uint32_t w
 	return res;
 }
 
-inline StdVideoEncodeH264RefListModEntry makeStdVideoEncodeH264RefListModEntry (StdVideoH264ModificationOfPicNumsIdc modification_of_pic_nums_idc, deUint16 abs_diff_pic_num_minus1, deUint16 long_term_pic_num)
+inline StdVideoEncodeH264RefListModEntry makeStdVideoEncodeH264RefListModEntry (StdVideoH264ModificationOfPicNumsIdc modification_of_pic_nums_idc, uint16_t abs_diff_pic_num_minus1, uint16_t long_term_pic_num)
 {
 	StdVideoEncodeH264RefListModEntry res;
 	res.modification_of_pic_nums_idc	= modification_of_pic_nums_idc;
@@ -699,7 +699,7 @@ inline StdVideoEncodeH264RefListModEntry makeStdVideoEncodeH264RefListModEntry (
 	return res;
 }
 
-inline StdVideoEncodeH264RefPicMarkingEntry makeStdVideoEncodeH264RefPicMarkingEntry (StdVideoH264MemMgmtControlOp operation, deUint16 difference_of_pic_nums_minus1, deUint16 long_term_pic_num, deUint16 long_term_frame_idx, deUint16 max_long_term_frame_idx_plus1)
+inline StdVideoEncodeH264RefPicMarkingEntry makeStdVideoEncodeH264RefPicMarkingEntry (StdVideoH264MemMgmtControlOp operation, uint16_t difference_of_pic_nums_minus1, uint16_t long_term_pic_num, uint16_t long_term_frame_idx, uint16_t max_long_term_frame_idx_plus1)
 {
 	StdVideoEncodeH264RefPicMarkingEntry res;
 	res.operation						= operation;

@@ -379,7 +379,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceToolPropertiesEXTFu
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCooperativeMatrixPropertiesNVFunc)					(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNVFunc)	(VkPhysicalDevice physicalDevice, uint32_t* pCombinationCount, VkFramebufferMixedSamplesCombinationNV* pCombinations);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateHeadlessSurfaceEXTFunc)											(VkInstance instance, const VkHeadlessSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
-typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetLineStippleEXTFunc)												(VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, deUint16 lineStipplePattern);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetLineStippleEXTFunc)												(VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern);
 typedef VKAPI_ATTR void					(VKAPI_CALL* ResetQueryPoolEXTFunc)													(VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetCullModeEXTFunc)													(VkCommandBuffer commandBuffer, VkCullModeFlags cullMode);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetFrontFaceEXTFunc)												(VkCommandBuffer commandBuffer, VkFrontFace frontFace);

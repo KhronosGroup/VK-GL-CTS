@@ -106,9 +106,7 @@ PLATFORM_TYPES		= [
 PLATFORM_TYPE_NAMESPACE	= "pt"
 
 TYPE_SUBSTITUTIONS		= [
-	("uint16_t",	"deUint16"),
 	("uint64_t",	"deUint64"),
-	("int16_t",		"deInt16"),
 	("int64_t",		"deInt64"),
 	("bool32_t",	"deUint32"),
 	("size_t",		"deUintptr"),

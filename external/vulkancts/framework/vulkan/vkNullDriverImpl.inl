@@ -2522,7 +2522,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSupportedFramebufferMixedSamples
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetLineStippleEXT (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, deUint16 lineStipplePattern)
+VKAPI_ATTR void VKAPI_CALL cmdSetLineStippleEXT (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(lineStippleFactor);
