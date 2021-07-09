@@ -863,16 +863,23 @@ def genEnumSrc (enum):
 	yield "enum %s" % enum.name
 	yield "{"
 
-	lines = ["\t%s\t= %s," % v for v in enum.values]
+	lines = []
 	if areEnumValuesLinear(enum):
-		lastItem = "\t%s_LAST," % getEnumValuePrefix(enum)
-		if parseInt(enum.values[-1][1]) == 0x7FFFFFFF:
-			# if last enum item is *_MAX_ENUM then we need to make sure
-			# it stays last entry also if we append *_LAST to generated
-			# source (without this value of *_LAST won't be correct)
-			lines.insert(-1, lastItem)
-		else:
-			lines.append(lastItem)
+		hasMaxItem	= parseInt(enum.values[-1][1]) == 0x7FFFFFFF
+
+		values		= enum.values[:-1] if hasMaxItem else enum.values
+		lastItem	= "\t%s_LAST," % getEnumValuePrefix(enum)
+
+		# linear values first, followed by *_LAST
+		lines		+= ["\t%s\t= %s," % v for v in values if v[1][:2] != "VK"]
+		lines.append(lastItem)
+
+		# equivalence enums and *_MAX_ENUM
+		lines		+= ["\t%s\t= %s," % v for v in values if v[1][:2] == "VK"]
+		if hasMaxItem:
+			lines.append("\t%s\t= %s," % enum.values[-1])
+	else:
+		lines		+= ["\t%s\t= %s," % v for v in enum.values]
 
 	for line in indentLines(lines):
 		yield line
