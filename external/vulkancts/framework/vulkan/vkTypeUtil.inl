@@ -398,7 +398,7 @@ inline VkExternalMemoryProperties makeExternalMemoryProperties (VkExternalMemory
 	return res;
 }
 
-inline VkConformanceVersion makeConformanceVersion (deUint8 major, deUint8 minor, deUint8 subminor, deUint8 patch)
+inline VkConformanceVersion makeConformanceVersion (uint8_t major, uint8_t minor, uint8_t subminor, uint8_t patch)
 {
 	VkConformanceVersion res;
 	res.major		= major;

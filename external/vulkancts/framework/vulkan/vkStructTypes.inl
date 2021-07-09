@@ -119,7 +119,7 @@ struct VkPipelineCacheHeaderVersionOne
 	VkPipelineCacheHeaderVersion	headerVersion;
 	uint32_t						vendorID;
 	uint32_t						deviceID;
-	deUint8							pipelineCacheUUID[VK_UUID_SIZE];
+	uint8_t							pipelineCacheUUID[VK_UUID_SIZE];
 };
 
 struct VkAllocationCallbacks
@@ -377,7 +377,7 @@ struct VkPhysicalDeviceProperties
 	uint32_t							deviceID;
 	VkPhysicalDeviceType				deviceType;
 	char								deviceName[VK_MAX_PHYSICAL_DEVICE_NAME_SIZE];
-	deUint8								pipelineCacheUUID[VK_UUID_SIZE];
+	uint8_t								pipelineCacheUUID[VK_UUID_SIZE];
 	VkPhysicalDeviceLimits				limits;
 	VkPhysicalDeviceSparseProperties	sparseProperties;
 };
@@ -1660,9 +1660,9 @@ struct VkPhysicalDeviceIDProperties
 {
 	VkStructureType	sType;
 	void*			pNext;
-	deUint8			deviceUUID[VK_UUID_SIZE];
-	deUint8			driverUUID[VK_UUID_SIZE];
-	deUint8			deviceLUID[VK_LUID_SIZE];
+	uint8_t			deviceUUID[VK_UUID_SIZE];
+	uint8_t			driverUUID[VK_UUID_SIZE];
+	uint8_t			deviceLUID[VK_LUID_SIZE];
 	uint32_t		deviceNodeMask;
 	VkBool32		deviceLUIDValid;
 };
@@ -1778,9 +1778,9 @@ struct VkPhysicalDeviceVulkan11Properties
 {
 	VkStructureType			sType;
 	void*					pNext;
-	deUint8					deviceUUID[VK_UUID_SIZE];
-	deUint8					driverUUID[VK_UUID_SIZE];
-	deUint8					deviceLUID[VK_LUID_SIZE];
+	uint8_t					deviceUUID[VK_UUID_SIZE];
+	uint8_t					driverUUID[VK_UUID_SIZE];
+	uint8_t					deviceLUID[VK_LUID_SIZE];
 	uint32_t				deviceNodeMask;
 	VkBool32				deviceLUIDValid;
 	uint32_t				subgroupSize;
@@ -1850,10 +1850,10 @@ struct VkPhysicalDeviceVulkan12Features
 
 struct VkConformanceVersion
 {
-	deUint8	major;
-	deUint8	minor;
-	deUint8	subminor;
-	deUint8	patch;
+	uint8_t	major;
+	uint8_t	minor;
+	uint8_t	subminor;
+	uint8_t	patch;
 };
 
 struct VkPhysicalDeviceVulkan12Properties
@@ -2657,7 +2657,7 @@ struct VkPerformanceCounterKHR
 	VkPerformanceCounterUnitKHR		unit;
 	VkPerformanceCounterScopeKHR	scope;
 	VkPerformanceCounterStorageKHR	storage;
-	deUint8							uuid[VK_UUID_SIZE];
+	uint8_t							uuid[VK_UUID_SIZE];
 };
 
 struct VkPerformanceCounterDescriptionKHR
@@ -5462,7 +5462,7 @@ struct VkAccelerationStructureVersionInfoKHR
 {
 	VkStructureType	sType;
 	const void*		pNext;
-	const deUint8*	pVersionData;
+	const uint8_t*	pVersionData;
 };
 
 struct VkCopyAccelerationStructureToMemoryInfoKHR
@@ -5711,7 +5711,7 @@ struct VkVideoReferenceSlotKHR
 {
 	VkStructureType						sType;
 	const void*							pNext;
-	deInt8								slotIndex;
+	int8_t								slotIndex;
 	const VkVideoPictureResourceKHR*	pPictureResource;
 };
 
@@ -5879,12 +5879,12 @@ struct StdVideoH264SpsVuiFlags
 
 struct StdVideoH264HrdParameters
 {
-	deUint8		cpb_cnt_minus1;
-	deUint8		bit_rate_scale;
-	deUint8		cpb_size_scale;
+	uint8_t		cpb_cnt_minus1;
+	uint8_t		bit_rate_scale;
+	uint8_t		cpb_size_scale;
 	uint32_t	bit_rate_value_minus1[32];
 	uint32_t	cpb_size_value_minus1[32];
-	deUint8		cbr_flag[32];
+	uint8_t		cbr_flag[32];
 	uint32_t	initial_cpb_removal_delay_length_minus1;
 	uint32_t	cpb_removal_delay_length_minus1;
 	uint32_t	dpb_output_delay_length_minus1;
@@ -5896,15 +5896,15 @@ struct StdVideoH264SequenceParameterSetVui
 	StdVideoH264AspectRatioIdc	aspect_ratio_idc;
 	deUint16					sar_width;
 	deUint16					sar_height;
-	deUint8						video_format;
-	deUint8						color_primaries;
-	deUint8						transfer_characteristics;
-	deUint8						matrix_coefficients;
+	uint8_t						video_format;
+	uint8_t						color_primaries;
+	uint8_t						transfer_characteristics;
+	uint8_t						matrix_coefficients;
 	uint32_t					num_units_in_tick;
 	uint32_t					time_scale;
 	StdVideoH264HrdParameters	hrd_parameters;
-	deUint8						num_reorder_frames;
-	deUint8						max_dec_frame_buffering;
+	uint8_t						num_reorder_frames;
+	uint8_t						max_dec_frame_buffering;
 	StdVideoH264SpsVuiFlags		flags;
 };
 
@@ -5931,27 +5931,27 @@ struct StdVideoH264SpsFlags
 
 struct StdVideoH264ScalingLists
 {
-	deUint8	scaling_list_present_mask;
-	deUint8	use_default_scaling_matrix_mask;
-	deUint8	ScalingList4x4[6][16];
-	deUint8	ScalingList8x8[2][64];
+	uint8_t	scaling_list_present_mask;
+	uint8_t	use_default_scaling_matrix_mask;
+	uint8_t	ScalingList4x4[6][16];
+	uint8_t	ScalingList8x8[2][64];
 };
 
 struct StdVideoH264SequenceParameterSet
 {
 	StdVideoH264ProfileIdc					profile_idc;
 	StdVideoH264Level						level_idc;
-	deUint8									seq_parameter_set_id;
+	uint8_t									seq_parameter_set_id;
 	StdVideoH264ChromaFormatIdc				chroma_format_idc;
-	deUint8									bit_depth_luma_minus8;
-	deUint8									bit_depth_chroma_minus8;
-	deUint8									log2_max_frame_num_minus4;
+	uint8_t									bit_depth_luma_minus8;
+	uint8_t									bit_depth_chroma_minus8;
+	uint8_t									log2_max_frame_num_minus4;
 	StdVideoH264PocType						pic_order_cnt_type;
-	deUint8									log2_max_pic_order_cnt_lsb_minus4;
+	uint8_t									log2_max_pic_order_cnt_lsb_minus4;
 	int32_t									offset_for_non_ref_pic;
 	int32_t									offset_for_top_to_bottom_field;
-	deUint8									num_ref_frames_in_pic_order_cnt_cycle;
-	deUint8									max_num_ref_frames;
+	uint8_t									num_ref_frames_in_pic_order_cnt_cycle;
+	uint8_t									max_num_ref_frames;
 	uint32_t								pic_width_in_mbs_minus1;
 	uint32_t								pic_height_in_map_units_minus1;
 	uint32_t								frame_crop_left_offset;
@@ -5979,15 +5979,15 @@ struct StdVideoH264PpsFlags
 
 struct StdVideoH264PictureParameterSet
 {
-	deUint8							seq_parameter_set_id;
-	deUint8							pic_parameter_set_id;
-	deUint8							num_ref_idx_l0_default_active_minus1;
-	deUint8							num_ref_idx_l1_default_active_minus1;
+	uint8_t							seq_parameter_set_id;
+	uint8_t							pic_parameter_set_id;
+	uint8_t							num_ref_idx_l0_default_active_minus1;
+	uint8_t							num_ref_idx_l1_default_active_minus1;
 	StdVideoH264WeightedBiPredIdc	weighted_bipred_idc;
-	deInt8							pic_init_qp_minus26;
-	deInt8							pic_init_qs_minus26;
-	deInt8							chroma_qp_index_offset;
-	deInt8							second_chroma_qp_index_offset;
+	int8_t							pic_init_qp_minus26;
+	int8_t							pic_init_qs_minus26;
+	int8_t							chroma_qp_index_offset;
+	int8_t							second_chroma_qp_index_offset;
 	StdVideoH264PpsFlags			flags;
 	StdVideoH264ScalingLists*		pScalingLists;
 };
@@ -6035,11 +6035,11 @@ struct StdVideoEncodeH264RefPicMarkingEntry
 struct StdVideoEncodeH264RefMemMgmtCtrlOperations
 {
 	StdVideoEncodeH264RefMgmtFlags			flags;
-	deUint8									refList0ModOpCount;
+	uint8_t									refList0ModOpCount;
 	StdVideoEncodeH264RefListModEntry*		pRefList0ModOperations;
-	deUint8									refList1ModOpCount;
+	uint8_t									refList1ModOpCount;
 	StdVideoEncodeH264RefListModEntry*		pRefList1ModOperations;
-	deUint8									refPicMarkingOpCount;
+	uint8_t									refPicMarkingOpCount;
 	StdVideoEncodeH264RefPicMarkingEntry*	pRefPicMarkingOperations;
 };
 
@@ -6057,15 +6057,15 @@ struct StdVideoEncodeH264SliceHeader
 {
 	StdVideoEncodeH264SliceHeaderFlags			flags;
 	StdVideoH264SliceType						slice_type;
-	deUint8										seq_parameter_set_id;
-	deUint8										pic_parameter_set_id;
+	uint8_t										seq_parameter_set_id;
+	uint8_t										pic_parameter_set_id;
 	deUint16									idr_pic_id;
-	deUint8										num_ref_idx_l0_active_minus1;
-	deUint8										num_ref_idx_l1_active_minus1;
+	uint8_t										num_ref_idx_l0_active_minus1;
+	uint8_t										num_ref_idx_l1_active_minus1;
 	StdVideoH264CabacInitIdc					cabac_init_idc;
 	StdVideoH264DisableDeblockingFilterIdc		disable_deblocking_filter_idc;
-	deInt8										slice_alpha_c0_offset_div2;
-	deInt8										slice_beta_offset_div2;
+	int8_t										slice_alpha_c0_offset_div2;
+	int8_t										slice_beta_offset_div2;
 	StdVideoEncodeH264RefMemMgmtCtrlOperations*	pMemMgmtCtrlOperations;
 };
 
@@ -6079,10 +6079,10 @@ struct VkVideoEncodeH264CapabilitiesEXT
 	VkExtent2D								minPictureSizeInMbs;
 	VkExtent2D								maxPictureSizeInMbs;
 	VkExtent2D								inputImageDataAlignment;
-	deUint8									maxNumL0ReferenceForP;
-	deUint8									maxNumL0ReferenceForB;
-	deUint8									maxNumL1Reference;
-	deUint8									qualityLevelCount;
+	uint8_t									maxNumL0ReferenceForP;
+	uint8_t									maxNumL0ReferenceForB;
+	uint8_t									maxNumL1Reference;
+	uint8_t									qualityLevelCount;
 	VkExtensionProperties					stdExtensionVersion;
 };
 
@@ -6118,7 +6118,7 @@ struct VkVideoEncodeH264DpbSlotInfoEXT
 {
 	VkStructureType							sType;
 	const void*								pNext;
-	deInt8									slotIndex;
+	int8_t									slotIndex;
 	const StdVideoEncodeH264PictureInfo*	pStdPictureInfo;
 };
 
@@ -6128,22 +6128,22 @@ struct VkVideoEncodeH264NaluSliceEXT
 	const void*								pNext;
 	const StdVideoEncodeH264SliceHeader*	pSliceHeaderStd;
 	uint32_t								mbCount;
-	deUint8									refFinalList0EntryCount;
+	uint8_t									refFinalList0EntryCount;
 	const VkVideoEncodeH264DpbSlotInfoEXT*	pRefFinalList0Entries;
-	deUint8									refFinalList1EntryCount;
+	uint8_t									refFinalList1EntryCount;
 	const VkVideoEncodeH264DpbSlotInfoEXT*	pRefFinalList1Entries;
 	uint32_t								precedingNaluBytes;
-	deUint8									minQp;
-	deUint8									maxQp;
+	uint8_t									minQp;
+	uint8_t									maxQp;
 };
 
 struct VkVideoEncodeH264VclFrameInfoEXT
 {
 	VkStructureType							sType;
 	const void*								pNext;
-	deUint8									refDefaultFinalList0EntryCount;
+	uint8_t									refDefaultFinalList0EntryCount;
 	const VkVideoEncodeH264DpbSlotInfoEXT*	pRefDefaultFinalList0Entries;
-	deUint8									refDefaultFinalList1EntryCount;
+	uint8_t									refDefaultFinalList1EntryCount;
 	const VkVideoEncodeH264DpbSlotInfoEXT*	pRefDefaultFinalList1Entries;
 	uint32_t								naluSliceEntryCount;
 	const VkVideoEncodeH264NaluSliceEXT*	pNaluSliceEntries;
@@ -6154,10 +6154,10 @@ struct VkVideoEncodeH264EmitPictureParametersEXT
 {
 	VkStructureType	sType;
 	const void*		pNext;
-	deUint8			spsId;
+	uint8_t			spsId;
 	VkBool32		emitSpsEnable;
 	uint32_t		ppsIdEntryCount;
-	const deUint8*	ppsIdEntries;
+	const uint8_t*	ppsIdEntries;
 };
 
 struct VkVideoEncodeH264ProfileEXT
@@ -6178,8 +6178,8 @@ struct StdVideoDecodeH264PictureInfoFlags
 
 struct StdVideoDecodeH264PictureInfo
 {
-	deUint8								seq_parameter_set_id;
-	deUint8								pic_parameter_set_id;
+	uint8_t								seq_parameter_set_id;
+	uint8_t								pic_parameter_set_id;
 	deUint16							reserved;
 	deUint16							frame_num;
 	deUint16							idr_pic_id;
@@ -6304,8 +6304,8 @@ struct VkVideoDecodeH264DpbSlotInfoEXT
 struct StdVideoH265DecPicBufMgr
 {
 	uint32_t	max_latency_increase_plus1[7];
-	deUint8		max_dec_pic_buffering_minus1[7];
-	deUint8		max_num_reorder_pics[7];
+	uint8_t		max_dec_pic_buffering_minus1[7];
+	uint8_t		max_num_reorder_pics[7];
 };
 
 struct StdVideoH265SubLayerHrdParameters
@@ -6323,23 +6323,23 @@ struct StdVideoH265HrdFlags
 	uint32_t	vcl_hrd_parameters_present_flag:1;
 	uint32_t	sub_pic_hrd_params_present_flag:1;
 	uint32_t	sub_pic_cpb_params_in_pic_timing_sei_flag:1;
-	deUint8		fixed_pic_rate_general_flag;
-	deUint8		fixed_pic_rate_within_cvs_flag;
-	deUint8		low_delay_hrd_flag;
+	uint8_t		fixed_pic_rate_general_flag;
+	uint8_t		fixed_pic_rate_within_cvs_flag;
+	uint8_t		low_delay_hrd_flag;
 };
 
 struct StdVideoH265HrdParameters
 {
-	deUint8								tick_divisor_minus2;
-	deUint8								du_cpb_removal_delay_increment_length_minus1;
-	deUint8								dpb_output_delay_du_length_minus1;
-	deUint8								bit_rate_scale;
-	deUint8								cpb_size_scale;
-	deUint8								cpb_size_du_scale;
-	deUint8								initial_cpb_removal_delay_length_minus1;
-	deUint8								au_cpb_removal_delay_length_minus1;
-	deUint8								dpb_output_delay_length_minus1;
-	deUint8								cpb_cnt_minus1[7];
+	uint8_t								tick_divisor_minus2;
+	uint8_t								du_cpb_removal_delay_increment_length_minus1;
+	uint8_t								dpb_output_delay_du_length_minus1;
+	uint8_t								bit_rate_scale;
+	uint8_t								cpb_size_scale;
+	uint8_t								cpb_size_du_scale;
+	uint8_t								initial_cpb_removal_delay_length_minus1;
+	uint8_t								au_cpb_removal_delay_length_minus1;
+	uint8_t								dpb_output_delay_length_minus1;
+	uint8_t								cpb_cnt_minus1[7];
 	deUint16							elemental_duration_in_tc_minus1[7];
 	StdVideoH265SubLayerHrdParameters*	SubLayerHrdParametersNal[7];
 	StdVideoH265SubLayerHrdParameters*	SubLayerHrdParametersVcl[7];
@@ -6356,8 +6356,8 @@ struct StdVideoH265VpsFlags
 
 struct StdVideoH265VideoParameterSet
 {
-	deUint8						vps_video_parameter_set_id;
-	deUint8						vps_max_sub_layers_minus1;
+	uint8_t						vps_video_parameter_set_id;
+	uint8_t						vps_max_sub_layers_minus1;
 	uint32_t					vps_num_units_in_tick;
 	uint32_t					vps_time_scale;
 	uint32_t					vps_num_ticks_poc_diff_one_minus1;
@@ -6368,12 +6368,12 @@ struct StdVideoH265VideoParameterSet
 
 struct StdVideoH265ScalingLists
 {
-	deUint8	ScalingList4x4[6][16];
-	deUint8	ScalingList8x8[6][64];
-	deUint8	ScalingList16x16[6][64];
-	deUint8	ScalingList32x32[2][64];
-	deUint8	ScalingListDCCoef16x16[6];
-	deUint8	ScalingListDCCoef32x32[2];
+	uint8_t	ScalingList4x4[6][16];
+	uint8_t	ScalingList8x8[6][64];
+	uint8_t	ScalingList16x16[6][64];
+	uint8_t	ScalingList32x32[2][64];
+	uint8_t	ScalingListDCCoef16x16[6];
+	uint8_t	ScalingListDCCoef32x32[2];
 };
 
 struct StdVideoH265SpsVuiFlags
@@ -6400,15 +6400,15 @@ struct StdVideoH265SpsVuiFlags
 
 struct StdVideoH265SequenceParameterSetVui
 {
-	deUint8						aspect_ratio_idc;
+	uint8_t						aspect_ratio_idc;
 	deUint16					sar_width;
 	deUint16					sar_height;
-	deUint8						video_format;
-	deUint8						colour_primaries;
-	deUint8						transfer_characteristics;
-	deUint8						matrix_coeffs;
-	deUint8						chroma_sample_loc_type_top_field;
-	deUint8						chroma_sample_loc_type_bottom_field;
+	uint8_t						video_format;
+	uint8_t						colour_primaries;
+	uint8_t						transfer_characteristics;
+	uint8_t						matrix_coeffs;
+	uint8_t						chroma_sample_loc_type_top_field;
+	uint8_t						chroma_sample_loc_type_bottom_field;
 	deUint16					def_disp_win_left_offset;
 	deUint16					def_disp_win_right_offset;
 	deUint16					def_disp_win_top_offset;
@@ -6418,10 +6418,10 @@ struct StdVideoH265SequenceParameterSetVui
 	uint32_t					vui_num_ticks_poc_diff_one_minus1;
 	StdVideoH265HrdParameters*	hrd_parameters;
 	deUint16					min_spatial_segmentation_idc;
-	deUint8						max_bytes_per_pic_denom;
-	deUint8						max_bits_per_min_cu_denom;
-	deUint8						log2_max_mv_length_horizontal;
-	deUint8						log2_max_mv_length_vertical;
+	uint8_t						max_bytes_per_pic_denom;
+	uint8_t						max_bits_per_min_cu_denom;
+	uint8_t						log2_max_mv_length_horizontal;
+	uint8_t						log2_max_mv_length_vertical;
 	StdVideoH265SpsVuiFlags		flags;
 };
 
@@ -6467,26 +6467,26 @@ struct StdVideoH265SequenceParameterSet
 	StdVideoH265Level						level_idc;
 	uint32_t								pic_width_in_luma_samples;
 	uint32_t								pic_height_in_luma_samples;
-	deUint8									sps_video_parameter_set_id;
-	deUint8									sps_max_sub_layers_minus1;
-	deUint8									sps_seq_parameter_set_id;
-	deUint8									chroma_format_idc;
-	deUint8									bit_depth_luma_minus8;
-	deUint8									bit_depth_chroma_minus8;
-	deUint8									log2_max_pic_order_cnt_lsb_minus4;
-	deUint8									sps_max_dec_pic_buffering_minus1;
-	deUint8									log2_min_luma_coding_block_size_minus3;
-	deUint8									log2_diff_max_min_luma_coding_block_size;
-	deUint8									log2_min_luma_transform_block_size_minus2;
-	deUint8									log2_diff_max_min_luma_transform_block_size;
-	deUint8									max_transform_hierarchy_depth_inter;
-	deUint8									max_transform_hierarchy_depth_intra;
-	deUint8									num_short_term_ref_pic_sets;
-	deUint8									num_long_term_ref_pics_sps;
-	deUint8									pcm_sample_bit_depth_luma_minus1;
-	deUint8									pcm_sample_bit_depth_chroma_minus1;
-	deUint8									log2_min_pcm_luma_coding_block_size_minus3;
-	deUint8									log2_diff_max_min_pcm_luma_coding_block_size;
+	uint8_t									sps_video_parameter_set_id;
+	uint8_t									sps_max_sub_layers_minus1;
+	uint8_t									sps_seq_parameter_set_id;
+	uint8_t									chroma_format_idc;
+	uint8_t									bit_depth_luma_minus8;
+	uint8_t									bit_depth_chroma_minus8;
+	uint8_t									log2_max_pic_order_cnt_lsb_minus4;
+	uint8_t									sps_max_dec_pic_buffering_minus1;
+	uint8_t									log2_min_luma_coding_block_size_minus3;
+	uint8_t									log2_diff_max_min_luma_coding_block_size;
+	uint8_t									log2_min_luma_transform_block_size_minus2;
+	uint8_t									log2_diff_max_min_luma_transform_block_size;
+	uint8_t									max_transform_hierarchy_depth_inter;
+	uint8_t									max_transform_hierarchy_depth_intra;
+	uint8_t									num_short_term_ref_pic_sets;
+	uint8_t									num_long_term_ref_pics_sps;
+	uint8_t									pcm_sample_bit_depth_luma_minus1;
+	uint8_t									pcm_sample_bit_depth_chroma_minus1;
+	uint8_t									log2_min_pcm_luma_coding_block_size_minus3;
+	uint8_t									log2_diff_max_min_pcm_luma_coding_block_size;
 	uint32_t								conf_win_left_offset;
 	uint32_t								conf_win_right_offset;
 	uint32_t								conf_win_top_offset;
@@ -6495,10 +6495,10 @@ struct StdVideoH265SequenceParameterSet
 	StdVideoH265SpsFlags					flags;
 	StdVideoH265ScalingLists*				pScalingLists;
 	StdVideoH265SequenceParameterSetVui*	pSequenceParameterSetVui;
-	deUint8									palette_max_size;
-	deUint8									delta_palette_max_predictor_size;
-	deUint8									motion_vector_resolution_control_idc;
-	deUint8									sps_num_palette_predictor_initializer_minus1;
+	uint8_t									palette_max_size;
+	uint8_t									delta_palette_max_predictor_size;
+	uint8_t									motion_vector_resolution_control_idc;
+	uint8_t									sps_num_palette_predictor_initializer_minus1;
 	StdVideoH265PredictorPaletteEntries*	pPredictorPaletteEntries;
 };
 
@@ -6539,37 +6539,37 @@ struct StdVideoH265PpsFlags
 
 struct StdVideoH265PictureParameterSet
 {
-	deUint8									pps_pic_parameter_set_id;
-	deUint8									pps_seq_parameter_set_id;
-	deUint8									num_extra_slice_header_bits;
-	deUint8									num_ref_idx_l0_default_active_minus1;
-	deUint8									num_ref_idx_l1_default_active_minus1;
-	deInt8									init_qp_minus26;
-	deUint8									diff_cu_qp_delta_depth;
-	deInt8									pps_cb_qp_offset;
-	deInt8									pps_cr_qp_offset;
-	deUint8									num_tile_columns_minus1;
-	deUint8									num_tile_rows_minus1;
+	uint8_t									pps_pic_parameter_set_id;
+	uint8_t									pps_seq_parameter_set_id;
+	uint8_t									num_extra_slice_header_bits;
+	uint8_t									num_ref_idx_l0_default_active_minus1;
+	uint8_t									num_ref_idx_l1_default_active_minus1;
+	int8_t									init_qp_minus26;
+	uint8_t									diff_cu_qp_delta_depth;
+	int8_t									pps_cb_qp_offset;
+	int8_t									pps_cr_qp_offset;
+	uint8_t									num_tile_columns_minus1;
+	uint8_t									num_tile_rows_minus1;
 	deUint16								column_width_minus1[19];
 	deUint16								row_height_minus1[21];
-	deInt8									pps_beta_offset_div2;
-	deInt8									pps_tc_offset_div2;
-	deUint8									log2_parallel_merge_level_minus2;
+	int8_t									pps_beta_offset_div2;
+	int8_t									pps_tc_offset_div2;
+	uint8_t									log2_parallel_merge_level_minus2;
 	StdVideoH265PpsFlags					flags;
 	StdVideoH265ScalingLists*				pScalingLists;
-	deUint8									log2_max_transform_skip_block_size_minus2;
-	deUint8									diff_cu_chroma_qp_offset_depth;
-	deUint8									chroma_qp_offset_list_len_minus1;
-	deInt8									cb_qp_offset_list[6];
-	deInt8									cr_qp_offset_list[6];
-	deUint8									log2_sao_offset_scale_luma;
-	deUint8									log2_sao_offset_scale_chroma;
-	deInt8									pps_act_y_qp_offset_plus5;
-	deInt8									pps_act_cb_qp_offset_plus5;
-	deInt8									pps_act_cr_qp_offset_plus5;
-	deUint8									pps_num_palette_predictor_initializer;
-	deUint8									luma_bit_depth_entry_minus8;
-	deUint8									chroma_bit_depth_entry_minus8;
+	uint8_t									log2_max_transform_skip_block_size_minus2;
+	uint8_t									diff_cu_chroma_qp_offset_depth;
+	uint8_t									chroma_qp_offset_list_len_minus1;
+	int8_t									cb_qp_offset_list[6];
+	int8_t									cr_qp_offset_list[6];
+	uint8_t									log2_sao_offset_scale_luma;
+	uint8_t									log2_sao_offset_scale_chroma;
+	int8_t									pps_act_y_qp_offset_plus5;
+	int8_t									pps_act_cb_qp_offset_plus5;
+	int8_t									pps_act_cr_qp_offset_plus5;
+	uint8_t									pps_num_palette_predictor_initializer;
+	uint8_t									luma_bit_depth_entry_minus8;
+	uint8_t									chroma_bit_depth_entry_minus8;
 	StdVideoH265PredictorPaletteEntries*	pPredictorPaletteEntries;
 };
 
@@ -6583,16 +6583,16 @@ struct StdVideoDecodeH265PictureInfoFlags
 
 struct StdVideoDecodeH265PictureInfo
 {
-	deUint8								vps_video_parameter_set_id;
-	deUint8								sps_seq_parameter_set_id;
-	deUint8								pps_pic_parameter_set_id;
-	deUint8								num_short_term_ref_pic_sets;
+	uint8_t								vps_video_parameter_set_id;
+	uint8_t								sps_seq_parameter_set_id;
+	uint8_t								pps_pic_parameter_set_id;
+	uint8_t								num_short_term_ref_pic_sets;
 	int32_t								PicOrderCntVal;
 	deUint16							NumBitsForSTRefPicSetInSlice;
-	deUint8								NumDeltaPocsOfRefRpsIdx;
-	deUint8								RefPicSetStCurrBefore[8];
-	deUint8								RefPicSetStCurrAfter[8];
-	deUint8								RefPicSetLtCurr[8];
+	uint8_t								NumDeltaPocsOfRefRpsIdx;
+	uint8_t								RefPicSetStCurrBefore[8];
+	uint8_t								RefPicSetStCurrAfter[8];
+	uint8_t								RefPicSetLtCurr[8];
 	StdVideoDecodeH265PictureInfoFlags	flags;
 };
 

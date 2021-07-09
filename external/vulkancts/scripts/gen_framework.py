@@ -106,10 +106,8 @@ PLATFORM_TYPES		= [
 PLATFORM_TYPE_NAMESPACE	= "pt"
 
 TYPE_SUBSTITUTIONS		= [
-	("uint8_t",		"deUint8"),
 	("uint16_t",	"deUint16"),
 	("uint64_t",	"deUint64"),
-	("int8_t",		"deInt8"),
 	("int16_t",		"deInt16"),
 	("int64_t",		"deInt64"),
 	("bool32_t",	"deUint32"),
@@ -1185,7 +1183,7 @@ def writeStrUtilImpl (api, filename):
 						singleDimensional = not '][' in member.arraySize
 						if member.name in ["extensionName", "deviceName", "layerName", "description"]:
 							valFmt = "(const char*)value.%s" % member.name
-						elif singleDimensional and (member.getType() == 'char' or member.getType() == 'deUint8'):
+						elif singleDimensional and (member.getType() == 'char' or member.getType() == 'uint8_t'):
 							newLine = "'\\n' << "
 							valFmt	= "tcu::formatArray(tcu::Format::HexIterator<%s>(DE_ARRAY_BEGIN(value.%s)), tcu::Format::HexIterator<%s>(DE_ARRAY_END(value.%s)))" % (member.getType(), member.name, member.getType(), member.name)
 						else:
