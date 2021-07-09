@@ -3956,10 +3956,10 @@ static const VkAccessFlagBits2KHR VK_ACCESS_2_FRAGMENT_DENSITY_MAP_READ_BIT_EXT	
 static const VkAccessFlagBits2KHR VK_ACCESS_2_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT		= 0x00080000ULL;
 
 VK_DEFINE_PLATFORM_TYPE(XlibDisplayPtr,				void*);
-VK_DEFINE_PLATFORM_TYPE(XlibWindow,					deUintptr);
+VK_DEFINE_PLATFORM_TYPE(XlibWindow,					uintptr_t);
 VK_DEFINE_PLATFORM_TYPE(XlibVisualID,				uint32_t);
 VK_DEFINE_PLATFORM_TYPE(XcbConnectionPtr,			void*);
-VK_DEFINE_PLATFORM_TYPE(XcbWindow,					deUintptr);
+VK_DEFINE_PLATFORM_TYPE(XcbWindow,					uintptr_t);
 VK_DEFINE_PLATFORM_TYPE(XcbVisualid,				uint32_t);
 VK_DEFINE_PLATFORM_TYPE(WaylandDisplayPtr,			void*);
 VK_DEFINE_PLATFORM_TYPE(WaylandSurfacePtr,			void*);

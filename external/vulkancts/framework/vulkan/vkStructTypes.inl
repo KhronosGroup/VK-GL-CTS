@@ -310,7 +310,7 @@ struct VkPhysicalDeviceLimits
 	uint32_t			maxViewportDimensions[2];
 	float				viewportBoundsRange[2];
 	uint32_t			viewportSubPixelBits;
-	deUintptr			minMemoryMapAlignment;
+	size_t				minMemoryMapAlignment;
 	VkDeviceSize		minTexelBufferOffsetAlignment;
 	VkDeviceSize		minUniformBufferOffsetAlignment;
 	VkDeviceSize		minStorageBufferOffsetAlignment;
@@ -651,7 +651,7 @@ struct VkShaderModuleCreateInfo
 	VkStructureType				sType;
 	const void*					pNext;
 	VkShaderModuleCreateFlags	flags;
-	deUintptr					codeSize;
+	size_t						codeSize;
 	const uint32_t*				pCode;
 };
 
@@ -660,7 +660,7 @@ struct VkPipelineCacheCreateInfo
 	VkStructureType				sType;
 	const void*					pNext;
 	VkPipelineCacheCreateFlags	flags;
-	deUintptr					initialDataSize;
+	size_t						initialDataSize;
 	const void*					pInitialData;
 };
 
@@ -668,14 +668,14 @@ struct VkSpecializationMapEntry
 {
 	uint32_t	constantID;
 	uint32_t	offset;
-	deUintptr	size;
+	size_t		size;
 };
 
 struct VkSpecializationInfo
 {
 	uint32_t						mapEntryCount;
 	const VkSpecializationMapEntry*	pMapEntries;
-	deUintptr						dataSize;
+	size_t							dataSize;
 	const void*						pData;
 };
 
@@ -1601,8 +1601,8 @@ struct VkDescriptorUpdateTemplateEntry
 	uint32_t			dstArrayElement;
 	uint32_t			descriptorCount;
 	VkDescriptorType	descriptorType;
-	deUintptr			offset;
-	deUintptr			stride;
+	size_t				offset;
+	size_t				stride;
 };
 
 struct VkDescriptorUpdateTemplateCreateInfo
@@ -2896,7 +2896,7 @@ struct VkPipelineExecutableInternalRepresentationKHR
 	char			name[VK_MAX_DESCRIPTION_SIZE];
 	char			description[VK_MAX_DESCRIPTION_SIZE];
 	VkBool32		isText;
-	deUintptr		dataSize;
+	size_t			dataSize;
 	void*			pData;
 };
 
@@ -3193,7 +3193,7 @@ struct VkDebugMarkerObjectTagInfoEXT
 	VkDebugReportObjectTypeEXT	objectType;
 	uint64_t					object;
 	uint64_t					tagName;
-	deUintptr					tagSize;
+	size_t						tagSize;
 	const void*					pTag;
 };
 
@@ -3263,7 +3263,7 @@ struct VkCuModuleCreateInfoNVX
 {
 	VkStructureType	sType;
 	const void*		pNext;
-	deUintptr		dataSize;
+	size_t			dataSize;
 	const void*		pData;
 };
 
@@ -3287,9 +3287,9 @@ struct VkCuLaunchInfoNVX
 	uint32_t			blockDimY;
 	uint32_t			blockDimZ;
 	uint32_t			sharedMemBytes;
-	deUintptr			paramCount;
+	size_t				paramCount;
 	const void* const *	pParams;
-	deUintptr			extraCount;
+	size_t				extraCount;
 	const void* const *	pExtras;
 };
 
@@ -3322,8 +3322,8 @@ struct VkShaderResourceUsageAMD
 	uint32_t	numUsedVgprs;
 	uint32_t	numUsedSgprs;
 	uint32_t	ldsSizePerLocalWorkGroup;
-	deUintptr	ldsUsageSizeInBytes;
-	deUintptr	scratchMemUsageInBytes;
+	size_t		ldsUsageSizeInBytes;
+	size_t		scratchMemUsageInBytes;
 };
 
 struct VkShaderStatisticsInfoAMD
@@ -3658,7 +3658,7 @@ struct VkDebugUtilsObjectTagInfoEXT
 	VkObjectType	objectType;
 	uint64_t		objectHandle;
 	uint64_t		tagName;
-	deUintptr		tagSize;
+	size_t			tagSize;
 	const void*		pTag;
 };
 
@@ -3877,7 +3877,7 @@ struct VkValidationCacheCreateInfoEXT
 	VkStructureType					sType;
 	const void*						pNext;
 	VkValidationCacheCreateFlagsEXT	flags;
-	deUintptr						initialDataSize;
+	size_t							initialDataSize;
 	const void*						pInitialData;
 };
 

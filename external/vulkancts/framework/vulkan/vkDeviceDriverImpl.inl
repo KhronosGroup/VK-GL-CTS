@@ -167,7 +167,7 @@ void DeviceDriver::destroyQueryPool (VkDevice device, VkQueryPool queryPool, con
 	m_vk.destroyQueryPool(device, queryPool, pAllocator);
 }
 
-VkResult DeviceDriver::getQueryPoolResults (VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, deUintptr dataSize, void* pData, VkDeviceSize stride, VkQueryResultFlags flags) const
+VkResult DeviceDriver::getQueryPoolResults (VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, size_t dataSize, void* pData, VkDeviceSize stride, VkQueryResultFlags flags) const
 {
 	return m_vk.getQueryPoolResults(device, queryPool, firstQuery, queryCount, dataSize, pData, stride, flags);
 }
@@ -237,7 +237,7 @@ void DeviceDriver::destroyPipelineCache (VkDevice device, VkPipelineCache pipeli
 	m_vk.destroyPipelineCache(device, pipelineCache, pAllocator);
 }
 
-VkResult DeviceDriver::getPipelineCacheData (VkDevice device, VkPipelineCache pipelineCache, deUintptr* pDataSize, void* pData) const
+VkResult DeviceDriver::getPipelineCacheData (VkDevice device, VkPipelineCache pipelineCache, size_t* pDataSize, void* pData) const
 {
 	return m_vk.getPipelineCacheData(device, pipelineCache, pDataSize, pData);
 }
@@ -1067,7 +1067,7 @@ void DeviceDriver::cmdDrawIndexedIndirectCountAMD (VkCommandBuffer commandBuffer
 	m_vk.cmdDrawIndexedIndirectCountAMD(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
 }
 
-VkResult DeviceDriver::getShaderInfoAMD (VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, deUintptr* pInfoSize, void* pInfo) const
+VkResult DeviceDriver::getShaderInfoAMD (VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, size_t* pInfoSize, void* pInfo) const
 {
 	return m_vk.getShaderInfoAMD(device, pipeline, shaderStage, infoType, pInfoSize, pInfo);
 }
@@ -1192,7 +1192,7 @@ VkResult DeviceDriver::mergeValidationCachesEXT (VkDevice device, VkValidationCa
 	return m_vk.mergeValidationCachesEXT(device, dstCache, srcCacheCount, pSrcCaches);
 }
 
-VkResult DeviceDriver::getValidationCacheDataEXT (VkDevice device, VkValidationCacheEXT validationCache, deUintptr* pDataSize, void* pData) const
+VkResult DeviceDriver::getValidationCacheDataEXT (VkDevice device, VkValidationCacheEXT validationCache, size_t* pDataSize, void* pData) const
 {
 	return m_vk.getValidationCacheDataEXT(device, validationCache, pDataSize, pData);
 }
@@ -1252,17 +1252,17 @@ VkResult DeviceDriver::createRayTracingPipelinesNV (VkDevice device, VkPipelineC
 	return m_vk.createRayTracingPipelinesNV(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
 }
 
-VkResult DeviceDriver::getRayTracingShaderGroupHandlesKHR (VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, deUintptr dataSize, void* pData) const
+VkResult DeviceDriver::getRayTracingShaderGroupHandlesKHR (VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData) const
 {
 	return m_vk.getRayTracingShaderGroupHandlesKHR(device, pipeline, firstGroup, groupCount, dataSize, pData);
 }
 
-VkResult DeviceDriver::getRayTracingShaderGroupHandlesNV (VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, deUintptr dataSize, void* pData) const
+VkResult DeviceDriver::getRayTracingShaderGroupHandlesNV (VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData) const
 {
 	return m_vk.getRayTracingShaderGroupHandlesNV(device, pipeline, firstGroup, groupCount, dataSize, pData);
 }
 
-VkResult DeviceDriver::getAccelerationStructureHandleNV (VkDevice device, VkAccelerationStructureNV accelerationStructure, deUintptr dataSize, void* pData) const
+VkResult DeviceDriver::getAccelerationStructureHandleNV (VkDevice device, VkAccelerationStructureNV accelerationStructure, size_t dataSize, void* pData) const
 {
 	return m_vk.getAccelerationStructureHandleNV(device, accelerationStructure, dataSize, pData);
 }
@@ -1597,7 +1597,7 @@ VkResult DeviceDriver::copyMemoryToAccelerationStructureKHR (VkDevice device, Vk
 	return m_vk.copyMemoryToAccelerationStructureKHR(device, deferredOperation, pInfo);
 }
 
-VkResult DeviceDriver::writeAccelerationStructuresPropertiesKHR (VkDevice device, uint32_t accelerationStructureCount, const VkAccelerationStructureKHR* pAccelerationStructures, VkQueryType queryType, deUintptr dataSize, void* pData, deUintptr stride) const
+VkResult DeviceDriver::writeAccelerationStructuresPropertiesKHR (VkDevice device, uint32_t accelerationStructureCount, const VkAccelerationStructureKHR* pAccelerationStructures, VkQueryType queryType, size_t dataSize, void* pData, size_t stride) const
 {
 	return m_vk.writeAccelerationStructuresPropertiesKHR(device, accelerationStructureCount, pAccelerationStructures, queryType, dataSize, pData, stride);
 }
@@ -1647,7 +1647,7 @@ VkResult DeviceDriver::createRayTracingPipelinesKHR (VkDevice device, VkDeferred
 	return m_vk.createRayTracingPipelinesKHR(device, deferredOperation, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
 }
 
-VkResult DeviceDriver::getRayTracingCaptureReplayShaderGroupHandlesKHR (VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, deUintptr dataSize, void* pData) const
+VkResult DeviceDriver::getRayTracingCaptureReplayShaderGroupHandlesKHR (VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData) const
 {
 	return m_vk.getRayTracingCaptureReplayShaderGroupHandlesKHR(device, pipeline, firstGroup, groupCount, dataSize, pData);
 }

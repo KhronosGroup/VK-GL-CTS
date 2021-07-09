@@ -661,7 +661,7 @@ VKAPI_ATTR VkResult VKAPI_CALL resetEvent (VkDevice device, VkEvent event)
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getQueryPoolResults (VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, deUintptr dataSize, void* pData, VkDeviceSize stride, VkQueryResultFlags flags)
+VKAPI_ATTR VkResult VKAPI_CALL getQueryPoolResults (VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, size_t dataSize, void* pData, VkDeviceSize stride, VkQueryResultFlags flags)
 {
 	DE_UNREF(device);
 	DE_UNREF(queryPool);
@@ -682,7 +682,7 @@ VKAPI_ATTR void VKAPI_CALL getImageSubresourceLayout (VkDevice device, VkImage i
 	DE_UNREF(pLayout);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPipelineCacheData (VkDevice device, VkPipelineCache pipelineCache, deUintptr* pDataSize, void* pData)
+VKAPI_ATTR VkResult VKAPI_CALL getPipelineCacheData (VkDevice device, VkPipelineCache pipelineCache, size_t* pDataSize, void* pData)
 {
 	DE_UNREF(device);
 	DE_UNREF(pipelineCache);
@@ -1846,7 +1846,7 @@ VKAPI_ATTR void VKAPI_CALL cmdResolveImage2KHR (VkCommandBuffer commandBuffer, c
 	DE_UNREF(pResolveImageInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, deUintptr location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage)
+VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage)
 {
 	DE_UNREF(instance);
 	DE_UNREF(flags);
@@ -1988,7 +1988,7 @@ VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirectCountAMD (VkCommandBuffer comma
 	DE_UNREF(stride);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getShaderInfoAMD (VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, deUintptr* pInfoSize, void* pInfo)
+VKAPI_ATTR VkResult VKAPI_CALL getShaderInfoAMD (VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, size_t* pInfoSize, void* pInfo)
 {
 	DE_UNREF(device);
 	DE_UNREF(pipeline);
@@ -2201,7 +2201,7 @@ VKAPI_ATTR VkResult VKAPI_CALL mergeValidationCachesEXT (VkDevice device, VkVali
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getValidationCacheDataEXT (VkDevice device, VkValidationCacheEXT validationCache, deUintptr* pDataSize, void* pData)
+VKAPI_ATTR VkResult VKAPI_CALL getValidationCacheDataEXT (VkDevice device, VkValidationCacheEXT validationCache, size_t* pDataSize, void* pData)
 {
 	DE_UNREF(device);
 	DE_UNREF(validationCache);
@@ -2288,7 +2288,7 @@ VKAPI_ATTR void VKAPI_CALL cmdTraceRaysNV (VkCommandBuffer commandBuffer, VkBuff
 	DE_UNREF(depth);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getRayTracingShaderGroupHandlesKHR (VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, deUintptr dataSize, void* pData)
+VKAPI_ATTR VkResult VKAPI_CALL getRayTracingShaderGroupHandlesKHR (VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData)
 {
 	DE_UNREF(device);
 	DE_UNREF(pipeline);
@@ -2299,7 +2299,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getRayTracingShaderGroupHandlesKHR (VkDevice devi
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getRayTracingShaderGroupHandlesNV (VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, deUintptr dataSize, void* pData)
+VKAPI_ATTR VkResult VKAPI_CALL getRayTracingShaderGroupHandlesNV (VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData)
 {
 	DE_UNREF(device);
 	DE_UNREF(pipeline);
@@ -2310,7 +2310,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getRayTracingShaderGroupHandlesNV (VkDevice devic
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getAccelerationStructureHandleNV (VkDevice device, VkAccelerationStructureNV accelerationStructure, deUintptr dataSize, void* pData)
+VKAPI_ATTR VkResult VKAPI_CALL getAccelerationStructureHandleNV (VkDevice device, VkAccelerationStructureNV accelerationStructure, size_t dataSize, void* pData)
 {
 	DE_UNREF(device);
 	DE_UNREF(accelerationStructure);
@@ -2838,7 +2838,7 @@ VKAPI_ATTR VkResult VKAPI_CALL copyMemoryToAccelerationStructureKHR (VkDevice de
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL writeAccelerationStructuresPropertiesKHR (VkDevice device, uint32_t accelerationStructureCount, const VkAccelerationStructureKHR* pAccelerationStructures, VkQueryType queryType, deUintptr dataSize, void* pData, deUintptr stride)
+VKAPI_ATTR VkResult VKAPI_CALL writeAccelerationStructuresPropertiesKHR (VkDevice device, uint32_t accelerationStructureCount, const VkAccelerationStructureKHR* pAccelerationStructures, VkQueryType queryType, size_t dataSize, void* pData, size_t stride)
 {
 	DE_UNREF(device);
 	DE_UNREF(accelerationStructureCount);
@@ -2913,7 +2913,7 @@ VKAPI_ATTR void VKAPI_CALL cmdTraceRaysKHR (VkCommandBuffer commandBuffer, const
 	DE_UNREF(depth);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getRayTracingCaptureReplayShaderGroupHandlesKHR (VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, deUintptr dataSize, void* pData)
+VKAPI_ATTR VkResult VKAPI_CALL getRayTracingCaptureReplayShaderGroupHandlesKHR (VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData)
 {
 	DE_UNREF(device);
 	DE_UNREF(pipeline);

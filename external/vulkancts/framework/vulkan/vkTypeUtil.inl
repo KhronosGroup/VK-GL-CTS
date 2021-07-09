@@ -166,7 +166,7 @@ inline VkComponentMapping makeComponentMapping (VkComponentSwizzle r, VkComponen
 	return res;
 }
 
-inline VkSpecializationMapEntry makeSpecializationMapEntry (uint32_t constantID, uint32_t offset, deUintptr size)
+inline VkSpecializationMapEntry makeSpecializationMapEntry (uint32_t constantID, uint32_t offset, size_t size)
 {
 	VkSpecializationMapEntry res;
 	res.constantID	= constantID;
@@ -175,7 +175,7 @@ inline VkSpecializationMapEntry makeSpecializationMapEntry (uint32_t constantID,
 	return res;
 }
 
-inline VkSpecializationInfo makeSpecializationInfo (uint32_t mapEntryCount, const VkSpecializationMapEntry* pMapEntries, deUintptr dataSize, const void* pData)
+inline VkSpecializationInfo makeSpecializationInfo (uint32_t mapEntryCount, const VkSpecializationMapEntry* pMapEntries, size_t dataSize, const void* pData)
 {
 	VkSpecializationInfo res;
 	res.mapEntryCount	= mapEntryCount;
@@ -377,7 +377,7 @@ inline VkInputAttachmentAspectReference makeInputAttachmentAspectReference (uint
 	return res;
 }
 
-inline VkDescriptorUpdateTemplateEntry makeDescriptorUpdateTemplateEntry (uint32_t dstBinding, uint32_t dstArrayElement, uint32_t descriptorCount, VkDescriptorType descriptorType, deUintptr offset, deUintptr stride)
+inline VkDescriptorUpdateTemplateEntry makeDescriptorUpdateTemplateEntry (uint32_t dstBinding, uint32_t dstArrayElement, uint32_t descriptorCount, VkDescriptorType descriptorType, size_t offset, size_t stride)
 {
 	VkDescriptorUpdateTemplateEntry res;
 	res.dstBinding		= dstBinding;
@@ -432,7 +432,7 @@ inline VkPresentRegionKHR makePresentRegionKHR (uint32_t rectangleCount, const V
 	return res;
 }
 
-inline VkShaderResourceUsageAMD makeShaderResourceUsageAMD (uint32_t numUsedVgprs, uint32_t numUsedSgprs, uint32_t ldsSizePerLocalWorkGroup, deUintptr ldsUsageSizeInBytes, deUintptr scratchMemUsageInBytes)
+inline VkShaderResourceUsageAMD makeShaderResourceUsageAMD (uint32_t numUsedVgprs, uint32_t numUsedSgprs, uint32_t ldsSizePerLocalWorkGroup, size_t ldsUsageSizeInBytes, size_t scratchMemUsageInBytes)
 {
 	VkShaderResourceUsageAMD res;
 	res.numUsedVgprs				= numUsedVgprs;

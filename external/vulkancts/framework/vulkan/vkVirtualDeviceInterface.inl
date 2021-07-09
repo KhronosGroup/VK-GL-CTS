@@ -34,7 +34,7 @@ virtual VkResult			setEvent										(VkDevice device, VkEvent event) const = 0;
 virtual VkResult			resetEvent										(VkDevice device, VkEvent event) const = 0;
 virtual VkResult			createQueryPool									(VkDevice device, const VkQueryPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkQueryPool* pQueryPool) const = 0;
 virtual void				destroyQueryPool								(VkDevice device, VkQueryPool queryPool, const VkAllocationCallbacks* pAllocator) const = 0;
-virtual VkResult			getQueryPoolResults								(VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, deUintptr dataSize, void* pData, VkDeviceSize stride, VkQueryResultFlags flags) const = 0;
+virtual VkResult			getQueryPoolResults								(VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, size_t dataSize, void* pData, VkDeviceSize stride, VkQueryResultFlags flags) const = 0;
 virtual VkResult			createBuffer									(VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer) const = 0;
 virtual void				destroyBuffer									(VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual VkResult			createBufferView								(VkDevice device, const VkBufferViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBufferView* pView) const = 0;
@@ -48,7 +48,7 @@ virtual VkResult			createShaderModule								(VkDevice device, const VkShaderMod
 virtual void				destroyShaderModule								(VkDevice device, VkShaderModule shaderModule, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual VkResult			createPipelineCache								(VkDevice device, const VkPipelineCacheCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineCache* pPipelineCache) const = 0;
 virtual void				destroyPipelineCache							(VkDevice device, VkPipelineCache pipelineCache, const VkAllocationCallbacks* pAllocator) const = 0;
-virtual VkResult			getPipelineCacheData							(VkDevice device, VkPipelineCache pipelineCache, deUintptr* pDataSize, void* pData) const = 0;
+virtual VkResult			getPipelineCacheData							(VkDevice device, VkPipelineCache pipelineCache, size_t* pDataSize, void* pData) const = 0;
 virtual VkResult			mergePipelineCaches								(VkDevice device, VkPipelineCache dstCache, uint32_t srcCacheCount, const VkPipelineCache* pSrcCaches) const = 0;
 virtual VkResult			createGraphicsPipelines							(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const = 0;
 virtual VkResult			createComputePipelines							(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const = 0;
@@ -214,7 +214,7 @@ virtual uint32_t			getImageViewHandleNVX							(VkDevice device, const VkImageVi
 virtual VkResult			getImageViewAddressNVX							(VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties) const = 0;
 virtual void				cmdDrawIndirectCountAMD							(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) const = 0;
 virtual void				cmdDrawIndexedIndirectCountAMD					(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) const = 0;
-virtual VkResult			getShaderInfoAMD								(VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, deUintptr* pInfoSize, void* pInfo) const = 0;
+virtual VkResult			getShaderInfoAMD								(VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, size_t* pInfoSize, void* pInfo) const = 0;
 virtual void				cmdBeginConditionalRenderingEXT					(VkCommandBuffer commandBuffer, const VkConditionalRenderingBeginInfoEXT* pConditionalRenderingBegin) const = 0;
 virtual void				cmdEndConditionalRenderingEXT					(VkCommandBuffer commandBuffer) const = 0;
 virtual void				cmdSetViewportWScalingNV						(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewportWScalingNV* pViewportWScalings) const = 0;
@@ -239,7 +239,7 @@ virtual VkResult			getImageDrmFormatModifierPropertiesEXT			(VkDevice device, Vk
 virtual VkResult			createValidationCacheEXT						(VkDevice device, const VkValidationCacheCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkValidationCacheEXT* pValidationCache) const = 0;
 virtual void				destroyValidationCacheEXT						(VkDevice device, VkValidationCacheEXT validationCache, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual VkResult			mergeValidationCachesEXT						(VkDevice device, VkValidationCacheEXT dstCache, uint32_t srcCacheCount, const VkValidationCacheEXT* pSrcCaches) const = 0;
-virtual VkResult			getValidationCacheDataEXT						(VkDevice device, VkValidationCacheEXT validationCache, deUintptr* pDataSize, void* pData) const = 0;
+virtual VkResult			getValidationCacheDataEXT						(VkDevice device, VkValidationCacheEXT validationCache, size_t* pDataSize, void* pData) const = 0;
 virtual void				cmdBindShadingRateImageNV						(VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout) const = 0;
 virtual void				cmdSetViewportShadingRatePaletteNV				(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkShadingRatePaletteNV* pShadingRatePalettes) const = 0;
 virtual void				cmdSetCoarseSampleOrderNV						(VkCommandBuffer commandBuffer, VkCoarseSampleOrderTypeNV sampleOrderType, uint32_t customSampleOrderCount, const VkCoarseSampleOrderCustomNV* pCustomSampleOrders) const = 0;
@@ -251,9 +251,9 @@ virtual void				cmdBuildAccelerationStructureNV					(VkCommandBuffer commandBuff
 virtual void				cmdCopyAccelerationStructureNV					(VkCommandBuffer commandBuffer, VkAccelerationStructureNV dst, VkAccelerationStructureNV src, VkCopyAccelerationStructureModeKHR mode) const = 0;
 virtual void				cmdTraceRaysNV									(VkCommandBuffer commandBuffer, VkBuffer raygenShaderBindingTableBuffer, VkDeviceSize raygenShaderBindingOffset, VkBuffer missShaderBindingTableBuffer, VkDeviceSize missShaderBindingOffset, VkDeviceSize missShaderBindingStride, VkBuffer hitShaderBindingTableBuffer, VkDeviceSize hitShaderBindingOffset, VkDeviceSize hitShaderBindingStride, VkBuffer callableShaderBindingTableBuffer, VkDeviceSize callableShaderBindingOffset, VkDeviceSize callableShaderBindingStride, uint32_t width, uint32_t height, uint32_t depth) const = 0;
 virtual VkResult			createRayTracingPipelinesNV						(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkRayTracingPipelineCreateInfoNV* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const = 0;
-virtual VkResult			getRayTracingShaderGroupHandlesKHR				(VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, deUintptr dataSize, void* pData) const = 0;
-virtual VkResult			getRayTracingShaderGroupHandlesNV				(VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, deUintptr dataSize, void* pData) const = 0;
-virtual VkResult			getAccelerationStructureHandleNV				(VkDevice device, VkAccelerationStructureNV accelerationStructure, deUintptr dataSize, void* pData) const = 0;
+virtual VkResult			getRayTracingShaderGroupHandlesKHR				(VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData) const = 0;
+virtual VkResult			getRayTracingShaderGroupHandlesNV				(VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData) const = 0;
+virtual VkResult			getAccelerationStructureHandleNV				(VkDevice device, VkAccelerationStructureNV accelerationStructure, size_t dataSize, void* pData) const = 0;
 virtual void				cmdWriteAccelerationStructuresPropertiesNV		(VkCommandBuffer commandBuffer, uint32_t accelerationStructureCount, const VkAccelerationStructureNV* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery) const = 0;
 virtual VkResult			compileDeferredNV								(VkDevice device, VkPipeline pipeline, uint32_t shader) const = 0;
 virtual VkResult			getMemoryHostPointerPropertiesEXT				(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHostPointer, VkMemoryHostPointerPropertiesEXT* pMemoryHostPointerProperties) const = 0;
@@ -320,7 +320,7 @@ virtual VkResult			buildAccelerationStructuresKHR					(VkDevice device, VkDeferr
 virtual VkResult			copyAccelerationStructureKHR					(VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyAccelerationStructureInfoKHR* pInfo) const = 0;
 virtual VkResult			copyAccelerationStructureToMemoryKHR			(VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyAccelerationStructureToMemoryInfoKHR* pInfo) const = 0;
 virtual VkResult			copyMemoryToAccelerationStructureKHR			(VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMemoryToAccelerationStructureInfoKHR* pInfo) const = 0;
-virtual VkResult			writeAccelerationStructuresPropertiesKHR		(VkDevice device, uint32_t accelerationStructureCount, const VkAccelerationStructureKHR* pAccelerationStructures, VkQueryType queryType, deUintptr dataSize, void* pData, deUintptr stride) const = 0;
+virtual VkResult			writeAccelerationStructuresPropertiesKHR		(VkDevice device, uint32_t accelerationStructureCount, const VkAccelerationStructureKHR* pAccelerationStructures, VkQueryType queryType, size_t dataSize, void* pData, size_t stride) const = 0;
 virtual void				cmdCopyAccelerationStructureKHR					(VkCommandBuffer commandBuffer, const VkCopyAccelerationStructureInfoKHR* pInfo) const = 0;
 virtual void				cmdCopyAccelerationStructureToMemoryKHR			(VkCommandBuffer commandBuffer, const VkCopyAccelerationStructureToMemoryInfoKHR* pInfo) const = 0;
 virtual void				cmdCopyMemoryToAccelerationStructureKHR			(VkCommandBuffer commandBuffer, const VkCopyMemoryToAccelerationStructureInfoKHR* pInfo) const = 0;
@@ -330,7 +330,7 @@ virtual void				getDeviceAccelerationStructureCompatibilityKHR	(VkDevice device,
 virtual void				getAccelerationStructureBuildSizesKHR			(VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkAccelerationStructureBuildGeometryInfoKHR* pBuildInfo, const uint32_t* pMaxPrimitiveCounts, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo) const = 0;
 virtual void				cmdTraceRaysKHR									(VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, uint32_t width, uint32_t height, uint32_t depth) const = 0;
 virtual VkResult			createRayTracingPipelinesKHR					(VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const = 0;
-virtual VkResult			getRayTracingCaptureReplayShaderGroupHandlesKHR	(VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, deUintptr dataSize, void* pData) const = 0;
+virtual VkResult			getRayTracingCaptureReplayShaderGroupHandlesKHR	(VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData) const = 0;
 virtual void				cmdTraceRaysIndirectKHR							(VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, VkDeviceAddress indirectDeviceAddress) const = 0;
 virtual VkDeviceSize		getRayTracingShaderGroupStackSizeKHR			(VkDevice device, VkPipeline pipeline, uint32_t group, VkShaderGroupShaderKHR groupShader) const = 0;
 virtual void				cmdSetRayTracingPipelineStackSizeKHR			(VkCommandBuffer commandBuffer, uint32_t pipelineStackSize) const = 0;

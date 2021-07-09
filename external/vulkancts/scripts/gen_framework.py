@@ -66,12 +66,12 @@ DEFINITIONS			= [
 PLATFORM_TYPES		= [
 	# VK_KHR_xlib_surface
 	(["Display","*"],						["XlibDisplayPtr"],				"void*"),
-	(["Window"],							["XlibWindow"],					"deUintptr",),
+	(["Window"],							["XlibWindow"],					"uintptr_t",),
 	(["VisualID"],							["XlibVisualID"],				"uint32_t"),
 
 	# VK_KHR_xcb_surface
 	(["xcb_connection_t", "*"],				["XcbConnectionPtr"],			"void*"),
-	(["xcb_window_t"],						["XcbWindow"],					"deUintptr"),
+	(["xcb_window_t"],						["XcbWindow"],					"uintptr_t"),
 	(["xcb_visualid_t"],					["XcbVisualid"],				"uint32_t"),
 
 	# VK_KHR_wayland_surface
@@ -107,7 +107,6 @@ PLATFORM_TYPE_NAMESPACE	= "pt"
 
 TYPE_SUBSTITUTIONS		= [
 	("bool32_t",	"deUint32"),
-	("size_t",		"deUintptr"),
 
 	# Platform-specific
 	("DWORD",		"deUint32"),
