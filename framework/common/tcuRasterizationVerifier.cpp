@@ -955,7 +955,7 @@ bool verifyMultisampleLineGroupRasterization (const tcu::Surface&						surface,
 		};
 
 		const tcu::Vec2 lineDir			= tcu::normalize(lineScreenSpace[1] - lineScreenSpace[0]);
-		const tcu::Vec2 lineNormalDir	= strictMode ? tcu::Vec2(lineDir.y(), -lineDir.x())
+		const tcu::Vec2 lineNormalDir	= (strictMode || scene.isRectangular) ? tcu::Vec2(lineDir.y(), -lineDir.x())
 										: isLineXMajor(lineScreenSpace[0], lineScreenSpace[1]) ? tcu::Vec2(0.0f, 1.0f)
 										: tcu::Vec2(1.0f, 0.0f);
 
@@ -1110,7 +1110,7 @@ static bool verifyMultisampleLineGroupInterpolationInternal (const tcu::Surface&
 		};
 
 		const tcu::Vec2 lineDir			= tcu::normalize(lineScreenSpace[1] - lineScreenSpace[0]);
-		const tcu::Vec2 lineNormalDir	= strictMode ? tcu::Vec2(lineDir.y(), -lineDir.x())
+		const tcu::Vec2 lineNormalDir	= (strictMode || scene.isRectangular) ? tcu::Vec2(lineDir.y(), -lineDir.x())
 										: isLineXMajor(lineScreenSpace[0], lineScreenSpace[1]) ? tcu::Vec2(0.0f, 1.0f)
 										: tcu::Vec2(1.0f, 0.0f);
 

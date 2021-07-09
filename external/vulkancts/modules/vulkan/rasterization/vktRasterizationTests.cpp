@@ -1414,6 +1414,8 @@ bool BaseLineTestInstance::compareAndVerify (std::vector<LineSceneSpec::SceneLin
 	scene.stipplePattern = getLineStippleEnable() ? lineStipplePattern : 0xFFFF;
 	scene.isStrip = m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
 	scene.isSmooth = m_lineRasterizationMode == VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT;
+	scene.isRectangular = m_lineRasterizationMode == VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT ||
+	                      m_lineRasterizationMode == VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT;
 
 	// Choose verification mode. Smooth lines assume mostly over-rasterization (bloated lines with a falloff).
 	// Stippled lines lose some precision across segments in a strip, so need a weaker threshold than normal

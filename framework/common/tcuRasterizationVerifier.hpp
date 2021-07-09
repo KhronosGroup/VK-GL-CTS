@@ -76,6 +76,7 @@ struct LineSceneSpec
 	LineSceneSpec()
 		: isStrip(false)
 		, isSmooth(false)
+		, isRectangular(false)
 		, stippleEnable(false)
 		, verificationMode(VERIFICATIONMODE_STRICT)
 	{}
@@ -90,6 +91,7 @@ struct LineSceneSpec
 	float					lineWidth;
 	bool					isStrip;
 	bool					isSmooth;
+	bool					isRectangular;
 	bool					stippleEnable;
 	deUint32				stippleFactor;
 	deUint16				stipplePattern;
