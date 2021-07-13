@@ -89,6 +89,8 @@ struct TestParams
 	deUint32						stride;
 	tcu::Maybe<VertexOffsetParams>	vertexOffset;	// Only used for indexed draws.
 	deUint32						seed;
+	bool							useTessellation;
+	bool							useGeometry;
 
 	deUint32 maxInstanceIndex () const
 	{
@@ -352,6 +354,12 @@ TestInstance* MultiDrawTest::createInstance (Context& context) const
 void MultiDrawTest::checkSupport (Context& context) const
 {
 	context.requireDeviceFunctionality("VK_EXT_multi_draw");
+
+	if (m_params.useTessellation)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+
+	if (m_params.useGeometry)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 }
 
 void MultiDrawTest::initPrograms (vk::SourceCollections& programCollection) const
@@ -389,6 +397,11 @@ void MultiDrawTest::initPrograms (vk::SourceCollections& programCollection) cons
 	vert
 		<< "#version 460\n"
 		<< "\n"
+		<< "out gl_PerVertex\n"
+		<< "{\n"
+		<< "    vec4 gl_Position;\n"
+		<< "};\n"
+		<< "\n"
 		<< "layout (location=0) in vec4 inPos;\n"
 		<< "layout (location=0) out uvec4 outColor;\n"
 		<< "\n"
@@ -402,6 +415,7 @@ void MultiDrawTest::initPrograms (vk::SourceCollections& programCollection) cons
 		<< "    outColor.a = 255u;\n"
 		<< "}\n"
 		;
+	programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
 
 	std::ostringstream frag;
 	frag
@@ -415,9 +429,98 @@ void MultiDrawTest::initPrograms (vk::SourceCollections& programCollection) cons
 		<< "    outColor = inColor;\n"
 		<< "}\n"
 		;
-
-	programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
 	programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+
+	if (m_params.useTessellation)
+	{
+		std::ostringstream tesc;
+		tesc
+			<< "#version 460\n"
+			<< "\n"
+			<< "layout (vertices=3) out;\n"
+			<< "in gl_PerVertex\n"
+			<< "{\n"
+			<< "    vec4 gl_Position;\n"
+			<< "} gl_in[gl_MaxPatchVertices];\n"
+			<< "out gl_PerVertex\n"
+			<< "{\n"
+			<< "    vec4 gl_Position;\n"
+			<< "} gl_out[];\n"
+			<< "\n"
+			<< "layout (location=0) in uvec4 inColor[gl_MaxPatchVertices];\n"
+			<< "layout (location=0) out uvec4 outColor[];\n"
+			<< "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    gl_TessLevelInner[0] = 1.0;\n"
+			<< "    gl_TessLevelInner[1] = 1.0;\n"
+			<< "    gl_TessLevelOuter[0] = 1.0;\n"
+			<< "    gl_TessLevelOuter[1] = 1.0;\n"
+			<< "    gl_TessLevelOuter[2] = 1.0;\n"
+			<< "    gl_TessLevelOuter[3] = 1.0;\n"
+			<< "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+			<< "    outColor[gl_InvocationID] = inColor[gl_InvocationID];\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("tesc") << glu::TessellationControlSource(tesc.str());
+
+		std::ostringstream tese;
+		tese
+			<< "#version 460\n"
+			<< "\n"
+			<< "layout (triangles, fractional_odd_spacing, cw) in;\n"
+			<< "in gl_PerVertex\n"
+			<< "{\n"
+			<< "    vec4 gl_Position;\n"
+			<< "} gl_in[gl_MaxPatchVertices];\n"
+			<< "out gl_PerVertex\n"
+			<< "{\n"
+			<< "    vec4 gl_Position;\n"
+			<< "};\n"
+			<< "\n"
+			<< "layout (location=0) in uvec4 inColor[gl_MaxPatchVertices];\n"
+			<< "layout (location=0) out uvec4 outColor;\n"
+			<< "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    gl_Position = (gl_TessCoord.x * gl_in[0].gl_Position) +\n"
+			<< "                  (gl_TessCoord.y * gl_in[1].gl_Position) +\n"
+			<< "                  (gl_TessCoord.z * gl_in[2].gl_Position);\n"
+			<< "    outColor = inColor[0];\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(tese.str());
+	}
+
+	if (m_params.useGeometry)
+	{
+		std::ostringstream geom;
+		geom
+			<< "#version 460\n"
+			<< "\n"
+			<< "layout (triangles) in;\n"
+			<< "layout (triangle_strip, max_vertices=3) out;\n"
+			<< "in gl_PerVertex\n"
+			<< "{\n"
+			<< "    vec4 gl_Position;\n"
+			<< "} gl_in[3];\n"
+			<< "out gl_PerVertex\n"
+			<< "{\n"
+			<< "    vec4 gl_Position;\n"
+			<< "};\n"
+			<< "\n"
+			<< "layout (location=0) in uvec4 inColor[3];\n"
+			<< "layout (location=0) out uvec4 outColor;\n"
+			<< "\n"
+			<< "void main ()\n"
+			<< "{\n"
+			<< "    gl_Position = gl_in[0].gl_Position; outColor = inColor[0]; EmitVertex();\n"
+			<< "    gl_Position = gl_in[1].gl_Position; outColor = inColor[1]; EmitVertex();\n"
+			<< "    gl_Position = gl_in[2].gl_Position; outColor = inColor[2]; EmitVertex();\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("geom") << glu::GeometrySource(geom.str());
+	}
 }
 
 MultiDrawInstance::MultiDrawInstance (Context& context, const TestParams& params)
@@ -522,8 +625,20 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 	BufferWithMemory	stencilOutBuffer		(vkd, device, alloc, stencilOutCreateInfo, MemoryRequirement::HostVisible);
 
 	// Shaders.
-	const auto vertModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
-	const auto fragModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+	const auto				vertModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+	const auto				fragModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+	Move<VkShaderModule>	tescModule;
+	Move<VkShaderModule>	teseModule;
+	Move<VkShaderModule>	geomModule;
+
+	if (m_params.useGeometry)
+		geomModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("geom"), 0u);
+
+	if (m_params.useTessellation)
+	{
+		tescModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("tesc"), 0u);
+		teseModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("tese"), 0u);
+	}
 
 	DescriptorSetLayoutBuilder	layoutBuilder;
 	const auto					descriptorSetLayout	= layoutBuilder.build(vkd, device);
@@ -583,10 +698,13 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 		1.0f,															//	float									maxDepthBounds;
 	};
 
+	const auto primitiveTopology	= (m_params.useTessellation ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	const auto patchControlPoints	= (m_params.useTessellation ? 3u : 0u);
+
 	// Pipeline.
 	const auto pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
-		vertModule.get(), DE_NULL, DE_NULL, DE_NULL, fragModule.get(),
-		renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u/*subpass*/, 0u/*patchControlPoints*/,
+		vertModule.get(), tescModule.get(), teseModule.get(), geomModule.get(), fragModule.get(),
+		renderPass.get(), viewports, scissors, primitiveTopology, 0u/*subpass*/, patchControlPoints,
 		nullptr/*vertexInputStateCreateInfo*/, &rasterizationInfo, nullptr/*multisampleStateCreateInfo*/, &depthStencilInfo);
 
 	// Command pool and buffer.
@@ -928,6 +1046,19 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx)
 		{	3u,		2u,		"2_instances_base_3"	},
 	};
 
+	struct
+	{
+		bool		useTessellation;
+		bool		useGeometry;
+		const char*	name;
+	} shaderCases[] =
+	{
+		{ false,	false,		"vert_only"	},
+		{ false,	true,		"with_geom"	},
+		{ true,		false,		"with_tess"	},
+		{ true,		true,		"tess_geom"	},
+	};
+
 	constexpr deUint32 kSeed = 1621260419u;
 
 	for (const auto& meshTypeCase : meshTypeCases)
@@ -963,38 +1094,47 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx)
 						{
 							GroupPtr instanceGroup(new tcu::TestCaseGroup(testCtx, instanceCase.name, ""));
 
-							const auto	isIndexed	= (drawTypeCase.drawType == DrawType::INDEXED);
-							const auto	isPacked	= (offsetTypeCase.vertexOffsetType && *offsetTypeCase.vertexOffsetType == VertexOffsetType::CONSTANT_PACK);
-							const auto	baseStride	= ((isIndexed && !isPacked) ? sizeof(VkMultiDrawIndexedInfoEXT) : sizeof(VkMultiDrawInfoEXT));
-							const auto&	extraBytes	= strideCase.extraBytes;
-							const auto	testOffset	= (isIndexed ? VertexOffsetParams{*offsetTypeCase.vertexOffsetType, 0u } : tcu::nothing<VertexOffsetParams>());
-							deUint32	testStride	= 0u;
-
-							if (extraBytes >= 0)
-								testStride = static_cast<deUint32>(baseStride) + static_cast<deUint32>(extraBytes);
-
-							// For overlapping triangles we will skip instanced drawing.
-							if (instanceCase.instanceCount > 1u && meshTypeCase.meshType == MeshType::OVERLAPPING)
-								continue;
-
-							TestParams params =
+							for (const auto& shaderCase : shaderCases)
 							{
-								meshTypeCase.meshType,			//	MeshType						meshType;
-								drawTypeCase.drawType,			//	DrawType						drawType;
-								drawCountCase.drawCount,		//	deUint32						drawCount;
-								instanceCase.instanceCount,		//	deUint32						instanceCount;
-								instanceCase.firstInstance,		//	deUint32						firstInstance;
-								testStride,						//	deUint32						stride;
-								testOffset,						//	tcu::Maybe<VertexOffsetParams>>	vertexOffset;	// Only used for indexed draws.
-								kSeed,							//	deUint32						seed;
-							};
+								GroupPtr shaderGroup(new tcu::TestCaseGroup(testCtx, shaderCase.name, ""));
 
-							instanceGroup->addChild(new MultiDrawTest(testCtx, "no_offset", "", params));
+								const auto	isIndexed	= (drawTypeCase.drawType == DrawType::INDEXED);
+								const auto	isPacked	= (offsetTypeCase.vertexOffsetType && *offsetTypeCase.vertexOffsetType == VertexOffsetType::CONSTANT_PACK);
+								const auto	baseStride	= ((isIndexed && !isPacked) ? sizeof(VkMultiDrawIndexedInfoEXT) : sizeof(VkMultiDrawInfoEXT));
+								const auto&	extraBytes	= strideCase.extraBytes;
+								const auto	testOffset	= (isIndexed ? VertexOffsetParams{*offsetTypeCase.vertexOffsetType, 0u } : tcu::nothing<VertexOffsetParams>());
+								deUint32	testStride	= 0u;
 
-							if (isIndexed)
-							{
-								params.vertexOffset->offset = 6u;
-								instanceGroup->addChild(new MultiDrawTest(testCtx, "offset_6", "", params));
+								if (extraBytes >= 0)
+									testStride = static_cast<deUint32>(baseStride) + static_cast<deUint32>(extraBytes);
+
+								// For overlapping triangles we will skip instanced drawing.
+								if (instanceCase.instanceCount > 1u && meshTypeCase.meshType == MeshType::OVERLAPPING)
+									continue;
+
+								TestParams params =
+								{
+									meshTypeCase.meshType,			//	MeshType						meshType;
+									drawTypeCase.drawType,			//	DrawType						drawType;
+									drawCountCase.drawCount,		//	deUint32						drawCount;
+									instanceCase.instanceCount,		//	deUint32						instanceCount;
+									instanceCase.firstInstance,		//	deUint32						firstInstance;
+									testStride,						//	deUint32						stride;
+									testOffset,						//	tcu::Maybe<VertexOffsetParams>>	vertexOffset;	// Only used for indexed draws.
+									kSeed,							//	deUint32						seed;
+									shaderCase.useTessellation,		//	bool							useTessellation;
+									shaderCase.useGeometry,			//	bool							useGeometry;
+								};
+
+								shaderGroup->addChild(new MultiDrawTest(testCtx, "no_offset", "", params));
+
+								if (isIndexed)
+								{
+									params.vertexOffset->offset = 6u;
+									shaderGroup->addChild(new MultiDrawTest(testCtx, "offset_6", "", params));
+								}
+
+								instanceGroup->addChild(shaderGroup.release());
 							}
 
 							strideGroup->addChild(instanceGroup.release());
