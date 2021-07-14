@@ -1,3 +1,11 @@
+dEQP-VK.spirv_assembly.instruction.compute.localsize_id.literal_localsize
+dEQP-VK.spirv_assembly.instruction.compute.localsize_id.literal_and_specid_localsize
+dEQP-VK.spirv_assembly.instruction.compute.localsize_id.literal_localsize_x
+dEQP-VK.spirv_assembly.instruction.compute.localsize_id.literal_and_specid_localsize_x
+dEQP-VK.spirv_assembly.instruction.compute.localsize_id.literal_localsize_y
+dEQP-VK.spirv_assembly.instruction.compute.localsize_id.literal_and_specid_localsize_y
+dEQP-VK.spirv_assembly.instruction.compute.localsize_id.literal_localsize_z
+dEQP-VK.spirv_assembly.instruction.compute.localsize_id.literal_and_specid_localsize_z
 dEQP-VK.spirv_assembly.instruction.compute.opspecconstantop.shiftrightlogical_i64
 dEQP-VK.spirv_assembly.instruction.compute.opspecconstantop.shiftrightarithmetic_i64
 dEQP-VK.spirv_assembly.instruction.compute.opspecconstantop.shiftleftlogical_i64
