@@ -14913,6 +14913,7 @@ dEQP-VK.pipeline.logic_op.r32g32b32a32_uint.or_inverted
 dEQP-VK.pipeline.logic_op.r32g32b32a32_uint.nand
 dEQP-VK.pipeline.logic_op.r32g32b32a32_uint.set
 dEQP-VK.pipeline.push_constant.graphics_pipeline.overwrite
+dEQP-VK.pipeline.push_constant.compute_pipeline.uninitialized
 dEQP-VK.pipeline.push_constant.compute_pipeline.overwrite
 dEQP-VK.pipeline.push_constant.lifetime.push_range0_bind_layout1
 dEQP-VK.pipeline.push_constant.lifetime.push_range1_bind_layout1_push_range0
