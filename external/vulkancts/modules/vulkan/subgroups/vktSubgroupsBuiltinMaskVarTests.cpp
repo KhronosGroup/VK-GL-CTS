@@ -1242,6 +1242,11 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	{
 		TCU_THROW(NotSupportedError, "Device does not support subgroup ballot operations");
 	}
+
+	if (isAllRayTracingStages(caseDef.shaderStage))
+	{
+		context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+	}
 }
 
 TestStatus noSSBOtest(Context& context, const CaseDefinition caseDef)

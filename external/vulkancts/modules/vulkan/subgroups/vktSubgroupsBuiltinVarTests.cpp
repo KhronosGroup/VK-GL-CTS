@@ -1691,6 +1691,11 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 
 	*caseDef.geometryPointSizeSupported = subgroups::isTessellationAndGeometryPointSizeSupported(context);
 
+	if (isAllRayTracingStages(caseDef.shaderStage))
+	{
+		context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+	}
+
 	vkt::subgroups::supportedCheckShader(context, caseDef.shaderStage);
 }
 
