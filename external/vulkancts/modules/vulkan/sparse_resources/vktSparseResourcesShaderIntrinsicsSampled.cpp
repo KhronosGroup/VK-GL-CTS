@@ -734,7 +734,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (const VkCommandB
 		&lodConstantRange,									// const VkPushConstantRange*		pPushConstantRanges;
 	};
 
-	const Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(deviceInterface, getDevice(), &pipelineLayoutParams));
+	pipelineLayout = createPipelineLayout(deviceInterface, getDevice(), &pipelineLayoutParams);
 
 	// Create graphics pipeline
 	{
