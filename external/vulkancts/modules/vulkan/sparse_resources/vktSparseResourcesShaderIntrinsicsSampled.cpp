@@ -511,6 +511,8 @@ public:
 													 const VkImage				imageTexels,
 													 const VkImage				imageResidency);
 
+	virtual void			checkSupport			(VkImageCreateInfo imageSparseInfo) const;
+
 	virtual VkImageSubresourceRange	sampledImageRangeToBind(const VkImageCreateInfo& imageSparseInfo, const deUint32 mipLevel) const = 0;
 
 private:
@@ -538,16 +540,13 @@ VkQueueFlags SparseShaderIntrinsicsInstanceSampledBase::getQueueFlags (void) con
 	return VK_QUEUE_GRAPHICS_BIT;
 }
 
-void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (const VkCommandBuffer		commandBuffer,
-																const VkImageCreateInfo&	imageSparseInfo,
-																const VkImage				imageSparse,
-																const VkImage				imageTexels,
-																const VkImage				imageResidency)
+void SparseShaderIntrinsicsInstanceSampledBase::checkSupport(VkImageCreateInfo imageSparseInfo) const
 {
 	const InstanceInterface&		 instance			= m_context.getInstanceInterface();
-	const DeviceInterface&			 deviceInterface	= getDeviceInterface();
 	const VkPhysicalDevice			 physicalDevice		= m_context.getPhysicalDevice();
 	const VkPhysicalDeviceProperties deviceProperties	= getPhysicalDeviceProperties(instance, physicalDevice);
+
+	SparseShaderIntrinsicsInstanceBase::checkSupport(imageSparseInfo);
 
 	if (imageSparseInfo.extent.width  > deviceProperties.limits.maxFramebufferWidth  ||
 		imageSparseInfo.extent.height > deviceProperties.limits.maxFramebufferHeight ||
@@ -567,6 +566,17 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (const VkCommandB
 	// Make sure device supports VK_FORMAT_R32_UINT format for color attachment
 	if (!checkImageFormatFeatureSupport(instance, physicalDevice, mapTextureFormat(m_residencyFormat), VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT))
 		TCU_THROW(TestError, "Device does not support VK_FORMAT_R32_UINT format for color attachment");
+}
+
+void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (const VkCommandBuffer		commandBuffer,
+																const VkImageCreateInfo&	imageSparseInfo,
+																const VkImage				imageSparse,
+																const VkImage				imageTexels,
+																const VkImage				imageResidency)
+{
+	const InstanceInterface&		 instance			= m_context.getInstanceInterface();
+	const VkPhysicalDevice			 physicalDevice		= m_context.getPhysicalDevice();
+	const DeviceInterface&			 deviceInterface	= getDeviceInterface();
 
 	// Create buffer storing vertex data
 	std::vector<tcu::Vec2> vertexData;

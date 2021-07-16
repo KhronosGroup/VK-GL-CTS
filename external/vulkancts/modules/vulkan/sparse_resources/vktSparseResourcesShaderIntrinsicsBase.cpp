@@ -411,6 +411,32 @@ std::string getOpTypeImageResidency (const ImageType imageType)
 	return src.str();
 }
 
+void SparseShaderIntrinsicsInstanceBase::checkSupport(VkImageCreateInfo imageSparseInfo) const
+{
+	const InstanceInterface&			instance				= m_context.getInstanceInterface();
+	const VkPhysicalDevice				physicalDevice			= m_context.getPhysicalDevice();
+
+	if (formatIsR64(m_format))
+	{
+		m_context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
+
+		if (m_context.getShaderImageAtomicInt64FeaturesEXT().shaderImageInt64Atomics == VK_FALSE)
+		{
+			TCU_THROW(NotSupportedError, "shaderImageInt64Atomics is not supported");
+		}
+
+		if (m_context.getShaderImageAtomicInt64FeaturesEXT().sparseImageInt64Atomics == VK_FALSE)
+		{
+			TCU_THROW(NotSupportedError, "sparseImageInt64Atomics is not supported for device");
+		}
+	}
+
+	// Check if device supports sparse operations for image format
+	if (!checkSparseSupportForImageFormat(instance, physicalDevice, imageSparseInfo))
+		TCU_THROW(NotSupportedError, "The image format does not support sparse operations");
+
+}
+
 tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 {
 	const InstanceInterface&			instance				= m_context.getInstanceInterface();
@@ -437,29 +463,12 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 	imageSparseInfo.queueFamilyIndexCount	= 0u;
 	imageSparseInfo.pQueueFamilyIndices		= DE_NULL;
 
-	if (formatIsR64(m_format))
-	{
-		m_context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
-
-		if (m_context.getShaderImageAtomicInt64FeaturesEXT().shaderImageInt64Atomics == VK_FALSE)
-		{
-			TCU_THROW(NotSupportedError, "shaderImageInt64Atomics is not supported");
-		}
-
-		if (m_context.getShaderImageAtomicInt64FeaturesEXT().sparseImageInt64Atomics == VK_FALSE)
-		{
-			TCU_THROW(NotSupportedError, "sparseImageInt64Atomics is not supported for device");
-		}
-	}
-
 	if (m_imageType == IMAGE_TYPE_CUBE || m_imageType == IMAGE_TYPE_CUBE_ARRAY)
 	{
 		imageSparseInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 	}
 
-	// Check if device supports sparse operations for image format
-	if (!checkSparseSupportForImageFormat(instance, physicalDevice, imageSparseInfo))
-		TCU_THROW(NotSupportedError, "The image format does not support sparse operations");
+	checkSupport(imageSparseInfo);
 
 	{
 		// Assign maximum allowed mipmap levels to image

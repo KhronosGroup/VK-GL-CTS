@@ -171,6 +171,8 @@ public:
 																 const vk::VkImage				imageSparse,
 																 const vk::VkImage				imageTexels,
 																 const vk::VkImage				imageResidency) = 0;
+	virtual void			checkSupport			(vk::VkImageCreateInfo imageSparseInfo) const;
+
 protected:
 	const SpirVFunction			m_function;
 	const ImageType				m_imageType;
