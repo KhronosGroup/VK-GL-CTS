@@ -1721,11 +1721,12 @@ void T64bitCompareTest<T>::checkSupport (Context& context) const
 		DE_ASSERT(DE_NULL == "Invalid shader stage specified");
 	}
 
-	ExtensionFloatControlsFeatures fcFeatures;
+	vk::VkPhysicalDeviceFloatControlsProperties fcFeatures;
 	deMemset(&fcFeatures, 0, sizeof(fcFeatures));
 	fcFeatures.shaderSignedZeroInfNanPreserveFloat64 = VK_TRUE;
 
-	if (m_params.requireNanPreserve && !isFloatControlsFeaturesSupported(context, fcFeatures))
+	const char *unused;
+	if (m_params.requireNanPreserve && !isFloatControlsFeaturesSupported(context, fcFeatures, &unused))
 		TCU_THROW(NotSupportedError, "NaN preservation not supported");
 }
 

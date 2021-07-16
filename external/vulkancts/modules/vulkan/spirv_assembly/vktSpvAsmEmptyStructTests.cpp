@@ -307,8 +307,7 @@ void addPointerComparisionComputeGroup(tcu::TestCaseGroup* group)
   spec.assembly = computeSource;
   spec.numWorkGroups = tcu::IVec3(1, 1, 1);
   spec.spirvVersion = SPIRV_VERSION_1_4;
-  spec.requestedVulkanFeatures.extVariablePointers =
-      EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
+  spec.requestedVulkanFeatures.extVariablePointers.variablePointersStorageBuffer = true;
   spec.inputs.push_back(Resource(BufferSp(new Int32Buffer(input))));
   spec.outputs.push_back(Resource(BufferSp(new Int32Buffer(expectedOutput))));
   spec.extensions.push_back("VK_KHR_spirv_1_4");
@@ -524,8 +523,7 @@ void addFunctionArgumentReturnValueGroup(tcu::TestCaseGroup* group)
 		spec.assembly = shaderTemplate.specialize(specializationMap);
 		spec.numWorkGroups = tcu::IVec3(2, 1, 1);
 		spec.spirvVersion = SPIRV_VERSION_1_4;
-		spec.requestedVulkanFeatures.extVariablePointers =
-			EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
+		spec.requestedVulkanFeatures.extVariablePointers.variablePointersStorageBuffer = true;
 		spec.inputs.push_back(Resource(BufferSp(new Int32Buffer(input))));
 		spec.outputs.push_back(
 							   Resource(BufferSp(new Uint32Buffer(expectedOutput))));

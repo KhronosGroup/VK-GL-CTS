@@ -382,69 +382,44 @@ void SpvAsmComputeShaderCase::checkSupport(Context& context) const
 
 	// Core features
 	{
-		const char*						unsupportedFeature = DE_NULL;
-		vk::VkPhysicalDeviceFeatures	localRequiredCoreFeatures = m_shaderSpec.requestedVulkanFeatures.coreFeatures;
+		VulkanFeatures localRequired = m_shaderSpec.requestedVulkanFeatures;
 
 		// Skip check features not targeted to compute
-		localRequiredCoreFeatures.fullDrawIndexUint32						= DE_FALSE;
-		localRequiredCoreFeatures.independentBlend							= DE_FALSE;
-		localRequiredCoreFeatures.geometryShader							= DE_FALSE;
-		localRequiredCoreFeatures.tessellationShader						= DE_FALSE;
-		localRequiredCoreFeatures.sampleRateShading							= DE_FALSE;
-		localRequiredCoreFeatures.dualSrcBlend								= DE_FALSE;
-		localRequiredCoreFeatures.logicOp									= DE_FALSE;
-		localRequiredCoreFeatures.multiDrawIndirect							= DE_FALSE;
-		localRequiredCoreFeatures.drawIndirectFirstInstance					= DE_FALSE;
-		localRequiredCoreFeatures.depthClamp								= DE_FALSE;
-		localRequiredCoreFeatures.depthBiasClamp							= DE_FALSE;
-		localRequiredCoreFeatures.fillModeNonSolid							= DE_FALSE;
-		localRequiredCoreFeatures.depthBounds								= DE_FALSE;
-		localRequiredCoreFeatures.wideLines									= DE_FALSE;
-		localRequiredCoreFeatures.largePoints								= DE_FALSE;
-		localRequiredCoreFeatures.alphaToOne								= DE_FALSE;
-		localRequiredCoreFeatures.multiViewport								= DE_FALSE;
-		localRequiredCoreFeatures.occlusionQueryPrecise						= DE_FALSE;
-		localRequiredCoreFeatures.vertexPipelineStoresAndAtomics			= DE_FALSE;
-		localRequiredCoreFeatures.fragmentStoresAndAtomics					= DE_FALSE;
-		localRequiredCoreFeatures.shaderTessellationAndGeometryPointSize	= DE_FALSE;
-		localRequiredCoreFeatures.shaderClipDistance						= DE_FALSE;
-		localRequiredCoreFeatures.shaderCullDistance						= DE_FALSE;
-		localRequiredCoreFeatures.sparseBinding								= DE_FALSE;
-		localRequiredCoreFeatures.variableMultisampleRate					= DE_FALSE;
+		// TODO: Is this really needed? Just don't have tests ask for features that they don't want.
+		localRequired.coreFeatures.fullDrawIndexUint32						= DE_FALSE;
+		localRequired.coreFeatures.independentBlend							= DE_FALSE;
+		localRequired.coreFeatures.geometryShader							= DE_FALSE;
+		localRequired.coreFeatures.tessellationShader						= DE_FALSE;
+		localRequired.coreFeatures.sampleRateShading							= DE_FALSE;
+		localRequired.coreFeatures.dualSrcBlend								= DE_FALSE;
+		localRequired.coreFeatures.logicOp									= DE_FALSE;
+		localRequired.coreFeatures.multiDrawIndirect							= DE_FALSE;
+		localRequired.coreFeatures.drawIndirectFirstInstance					= DE_FALSE;
+		localRequired.coreFeatures.depthClamp								= DE_FALSE;
+		localRequired.coreFeatures.depthBiasClamp							= DE_FALSE;
+		localRequired.coreFeatures.fillModeNonSolid							= DE_FALSE;
+		localRequired.coreFeatures.depthBounds								= DE_FALSE;
+		localRequired.coreFeatures.wideLines									= DE_FALSE;
+		localRequired.coreFeatures.largePoints								= DE_FALSE;
+		localRequired.coreFeatures.alphaToOne								= DE_FALSE;
+		localRequired.coreFeatures.multiViewport								= DE_FALSE;
+		localRequired.coreFeatures.occlusionQueryPrecise						= DE_FALSE;
+		localRequired.coreFeatures.vertexPipelineStoresAndAtomics			= DE_FALSE;
+		localRequired.coreFeatures.fragmentStoresAndAtomics					= DE_FALSE;
+		localRequired.coreFeatures.shaderTessellationAndGeometryPointSize	= DE_FALSE;
+		localRequired.coreFeatures.shaderClipDistance						= DE_FALSE;
+		localRequired.coreFeatures.shaderCullDistance						= DE_FALSE;
+		localRequired.coreFeatures.sparseBinding								= DE_FALSE;
+		localRequired.coreFeatures.variableMultisampleRate					= DE_FALSE;
 
-		if (!isCoreFeaturesSupported(context, localRequiredCoreFeatures, &unsupportedFeature))
-			TCU_THROW(NotSupportedError, std::string("At least following requested core feature is not supported: ") + unsupportedFeature);
+		const char* unsupportedFeature = DE_NULL;
+		if (!isVulkanFeaturesSupported(context, localRequired, &unsupportedFeature))
+			TCU_THROW(NotSupportedError, std::string("At least following requested feature is not supported: ") + unsupportedFeature);
 	}
 
 	// Extension features
-	{
-		// 8bit storage features
-		if (!is8BitStorageFeaturesSupported(context, m_shaderSpec.requestedVulkanFeatures.ext8BitStorage))
-			TCU_THROW(NotSupportedError, "Requested 8bit storage features not supported");
-
-		// 16bit storage features
-		if (!is16BitStorageFeaturesSupported(context, m_shaderSpec.requestedVulkanFeatures.ext16BitStorage))
-			TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
-
-		// VariablePointers features
-		if (!isVariablePointersFeaturesSupported(context, m_shaderSpec.requestedVulkanFeatures.extVariablePointers))
-			TCU_THROW(NotSupportedError, "Requested Variable Pointer feature not supported");
-
-		// Float16/Int8 shader features
-		if (!isFloat16Int8FeaturesSupported(context, m_shaderSpec.requestedVulkanFeatures.extFloat16Int8))
-			TCU_THROW(NotSupportedError, "Requested 16bit float or 8bit int feature not supported");
-
-		// Vulkan Memory Model features
-		if (!isVulkanMemoryModelFeaturesSupported(context, m_shaderSpec.requestedVulkanFeatures.extVulkanMemoryModel))
-			TCU_THROW(NotSupportedError, "Requested Vulkan Memory Model feature not supported");
-
-		// FloatControls features
-		if (!isFloatControlsFeaturesSupported(context, m_shaderSpec.requestedVulkanFeatures.floatControlsProperties))
-			TCU_THROW(NotSupportedError, "Requested Float Controls features not supported");
-
-		if (m_shaderSpec.usesPhysStorageBuffer && !context.isBufferDeviceAddressSupported())
-			TCU_THROW(NotSupportedError, "Request physical storage buffer feature not supported");
-	}
+	if (m_shaderSpec.usesPhysStorageBuffer && !context.isBufferDeviceAddressSupported())
+		TCU_THROW(NotSupportedError, "Request physical storage buffer feature not supported");
 }
 
 void SpvAsmComputeShaderCase::initPrograms (SourceCollections& programCollection) const

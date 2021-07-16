@@ -3071,64 +3071,31 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		}
 	}
 
-	// Core features
 	{
+		VulkanFeatures localRequired = instance.requestedFeatures;
+
 		const VkShaderStageFlags		vertexPipelineStoresAndAtomicsAffected	= vk::VK_SHADER_STAGE_VERTEX_BIT
 																				| vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT
 																				| vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT
 																				| vk::VK_SHADER_STAGE_GEOMETRY_BIT;
-		const char*						unsupportedFeature						= DE_NULL;
-		vk::VkPhysicalDeviceFeatures	localRequiredCoreFeatures				= instance.requestedFeatures.coreFeatures;
 
 		// reset fragment stores and atomics feature requirement
-		if ((localRequiredCoreFeatures.fragmentStoresAndAtomics != DE_FALSE) &&
+		if ((localRequired.coreFeatures.fragmentStoresAndAtomics != DE_FALSE) &&
 			(instance.customizedStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT) == 0)
 		{
-			localRequiredCoreFeatures.fragmentStoresAndAtomics = DE_FALSE;
+			localRequired.coreFeatures.fragmentStoresAndAtomics = DE_FALSE;
 		}
 
 		// reset vertex pipeline stores and atomics feature requirement
-		if (localRequiredCoreFeatures.vertexPipelineStoresAndAtomics != DE_FALSE &&
+		if (localRequired.coreFeatures.vertexPipelineStoresAndAtomics != DE_FALSE &&
 			(instance.customizedStages & vertexPipelineStoresAndAtomicsAffected) == 0)
 		{
-			localRequiredCoreFeatures.vertexPipelineStoresAndAtomics = DE_FALSE;
+			localRequired.coreFeatures.vertexPipelineStoresAndAtomics = DE_FALSE;
 		}
 
-		if (!isCoreFeaturesSupported(context, localRequiredCoreFeatures, &unsupportedFeature))
-			TCU_THROW(NotSupportedError, std::string("At least following requested core feature is not supported: ") + unsupportedFeature);
-	}
-
-	// Extension features
-	{
-		// 8bit storage features
-		{
-			if (!is8BitStorageFeaturesSupported(context, instance.requestedFeatures.ext8BitStorage))
-				TCU_THROW(NotSupportedError, "Requested 8bit storage features not supported");
-		}
-
-		// 16bit storage features
-		{
-			if (!is16BitStorageFeaturesSupported(context, instance.requestedFeatures.ext16BitStorage))
-				TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
-		}
-
-		// Variable Pointers features
-		{
-			if (!isVariablePointersFeaturesSupported(context, instance.requestedFeatures.extVariablePointers))
-				TCU_THROW(NotSupportedError, "Requested Variable Pointer features not supported");
-		}
-
-		// Float16/Int8 shader features
-		{
-			if (!isFloat16Int8FeaturesSupported(context, instance.requestedFeatures.extFloat16Int8))
-				TCU_THROW(NotSupportedError, "Requested 16bit float or 8bit int feature not supported");
-		}
-	}
-
-	// FloatControls features
-	{
-		if (!isFloatControlsFeaturesSupported(context, instance.requestedFeatures.floatControlsProperties))
-			TCU_THROW(NotSupportedError, "Requested Float Controls features not supported");
+		const char* unsupportedFeature = DE_NULL;
+		if (!isVulkanFeaturesSupported(context, localRequired, &unsupportedFeature))
+			TCU_THROW(NotSupportedError, std::string("At least following requested feature not supported: ") + unsupportedFeature);
 	}
 
 	// Check Interface Input/Output formats are supported
