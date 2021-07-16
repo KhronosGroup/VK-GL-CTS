@@ -106,8 +106,6 @@ PLATFORM_TYPES		= [
 PLATFORM_TYPE_NAMESPACE	= "pt"
 
 TYPE_SUBSTITUTIONS		= [
-	("bool32_t",	"deUint32"),
-
 	# Platform-specific
 	("DWORD",		"uint32_t"),
 	("HANDLE*",		PLATFORM_TYPE_NAMESPACE + "::" + "Win32Handle*"),
