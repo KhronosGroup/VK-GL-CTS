@@ -6,3 +6,6 @@ dEQP-VK.glsl.texture_functions.texturegrad.sparse_samplercubeshadow_vertex
 # Test shader length is excessive, excluding until such time as the test case can be re-visited.
 dEQP-VK.ssbo.layout.random.scalar.75
 
+# VK-GL-CTS 3005
+dEQP-VK.ray_tracing_pipeline.build.cpuht*1048576_1_1
+dEQP-VK.ray_tracing_pipeline.build.cpuht*65536_4_4
