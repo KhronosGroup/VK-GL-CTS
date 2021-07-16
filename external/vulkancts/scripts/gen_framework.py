@@ -109,7 +109,7 @@ TYPE_SUBSTITUTIONS		= [
 	("bool32_t",	"deUint32"),
 
 	# Platform-specific
-	("DWORD",		"deUint32"),
+	("DWORD",		"uint32_t"),
 	("HANDLE*",		PLATFORM_TYPE_NAMESPACE + "::" + "Win32Handle*"),
 ]
 

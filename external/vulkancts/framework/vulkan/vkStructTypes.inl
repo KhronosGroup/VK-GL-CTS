@@ -6794,7 +6794,7 @@ struct VkExportMemoryWin32HandleInfoKHR
 	VkStructureType					sType;
 	const void*						pNext;
 	pt::Win32SecurityAttributesPtr	pAttributes;
-	deUint32						dwAccess;
+	uint32_t						dwAccess;
 	pt::Win32LPCWSTR				name;
 };
 
@@ -6842,7 +6842,7 @@ struct VkExportSemaphoreWin32HandleInfoKHR
 	VkStructureType					sType;
 	const void*						pNext;
 	pt::Win32SecurityAttributesPtr	pAttributes;
-	deUint32						dwAccess;
+	uint32_t						dwAccess;
 	pt::Win32LPCWSTR				name;
 };
 
@@ -6880,7 +6880,7 @@ struct VkExportFenceWin32HandleInfoKHR
 	VkStructureType					sType;
 	const void*						pNext;
 	pt::Win32SecurityAttributesPtr	pAttributes;
-	deUint32						dwAccess;
+	uint32_t						dwAccess;
 	pt::Win32LPCWSTR				name;
 };
 
@@ -6905,7 +6905,7 @@ struct VkExportMemoryWin32HandleInfoNV
 	VkStructureType					sType;
 	const void*						pNext;
 	pt::Win32SecurityAttributesPtr	pAttributes;
-	deUint32						dwAccess;
+	uint32_t						dwAccess;
 };
 
 struct VkWin32KeyedMutexAcquireReleaseInfoNV
