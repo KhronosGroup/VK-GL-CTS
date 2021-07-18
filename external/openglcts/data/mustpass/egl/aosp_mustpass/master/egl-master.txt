@@ -1085,6 +1085,7 @@ dEQP-EGL.functional.sharing.gles2.buffer.render
 dEQP-EGL.functional.sharing.gles2.texture.create_delete
 dEQP-EGL.functional.sharing.gles2.texture.create_delete_mixed
 dEQP-EGL.functional.sharing.gles2.texture.render
+dEQP-EGL.functional.sharing.gles2.texture.render_sample_mixed
 dEQP-EGL.functional.sharing.gles2.program.create_delete
 dEQP-EGL.functional.sharing.gles2.program.create_delete_mixed
 dEQP-EGL.functional.sharing.gles2.program.render
