@@ -1166,7 +1166,8 @@ public:
 			// is this nesting a switch?
 			deUint32 isSwitch;
 		};
-		SubgroupState stateStack[10] = {};
+		SubgroupState stateStack[10];
+		deMemset(&stateStack, 0, sizeof(stateStack));
 
 		const deUint64 fullSubgroupMask = subgroupSizeToMask(subgroupSize);
 
