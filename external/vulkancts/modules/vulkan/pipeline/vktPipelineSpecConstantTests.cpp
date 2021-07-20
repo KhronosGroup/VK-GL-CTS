@@ -101,20 +101,23 @@ struct SpecConstant
 	std::string			declarationCode;	//!< syntax to declare the constant, use ${ID} as an ID placeholder
 	deUint32			size;				//!< data size on the host, 0 = no specialized value
 	GenericValue		specValue;			//!< specialized value passed by the API
+	bool				forceUse;			//!< always include a VkSpecializationMapEntry for this spec constant
 
 	SpecConstant (const deUint32 specID_, const std::string declarationCode_)
 		: specID			(specID_)
 		, declarationCode	(declarationCode_)
 		, size				(0)
 		, specValue			()
+		, forceUse			(false)
 	{
 	}
 
-	SpecConstant (const deUint32 specID_, const std::string declarationCode_, const deUint32 size_, const GenericValue specValue_)
+	SpecConstant (const deUint32 specID_, const std::string declarationCode_, const deUint32 size_, const GenericValue specValue_, bool forceUse_ = false)
 		: specID			(specID_)
 		, declarationCode	(declarationCode_)
 		, size				(size_)
 		, specValue			(specValue_)
+		, forceUse			(forceUse_)
 	{
 	}
 };
@@ -221,9 +224,10 @@ Specialization::Specialization (const std::vector<SpecConstant>& specConstants, 
 	deUint32 offset = 0u;
 	for (const auto& sc : specConstants)
 	{
-		if (sc.size != 0u)
+		if (sc.size != 0u || sc.forceUse)
 		{
-			deMemcpy(&m_data[offset], &sc.specValue, sc.size);
+			if (sc.size > 0u)
+				deMemcpy(&m_data[offset], &sc.specValue, sc.size);
 			m_entries.push_back(makeSpecializationMapEntry(sc.specID, offset, sc.size));
 			offset += (packData ? sc.size : kGenericValueSize);
 		}
@@ -1417,6 +1421,70 @@ tcu::TestCaseGroup* createBasicSpecializationTests (tcu::TestContext& testCtx, c
 			testGroup->addChild(new SpecConstantTest(testCtx, shaderStage, def));
 		}
 	}
+
+	CaseDefinition defsUnusedCases[] =
+	{
+		{
+			"unused_single",
+			makeVector(SpecConstant(0u, "", 0u, GenericValue(), true)),
+			4,
+			"    int r0;\n",
+			"",
+			"    sb_out.r0 = 77;\n",
+			makeVector(OffsetValue(4u, 0u, makeValueInt32(77))),
+			(FeatureFlags)0,
+			false,
+		},
+		{
+			"unused_single_packed",
+			makeVector(SpecConstant(0u, "", 0u, GenericValue(), true),
+					   SpecConstant(1u, "layout(constant_id = ${ID}) const int sc1 = 0;", 4u, makeValueInt32(100))),
+			4,
+			"    int r1;\n",
+			"",
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(4u, 0u, makeValueInt32(100))),
+			(FeatureFlags)0,
+			true,
+		},
+		{
+			"unused_multiple",
+			makeVector(SpecConstant( 7u, "layout(constant_id = ${ID}) const int sc0 = 0;", 4u, makeValueInt32(-999)),
+					   SpecConstant( 1u, "", 0u, GenericValue(), true),
+					   SpecConstant(17u, "layout(constant_id = ${ID}) const int sc1 = 0;", 4u, makeValueInt32( 999)),
+					   SpecConstant( 3u, "", 0u, GenericValue(), true)),
+			8,
+			"    int r0;\n"
+			"    int r1;\n",
+			"",
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(4, 0, makeValueInt32(-999)),
+					   OffsetValue(4, 4, makeValueInt32( 999))),
+			(FeatureFlags)0,
+			false,
+		},
+		{
+			"unused_multiple_packed",
+			makeVector(SpecConstant( 7u, "layout(constant_id = ${ID}) const int sc0 = 0;", 4u, makeValueInt32(-999)),
+					   SpecConstant( 1u, "", 0u, GenericValue(), true),
+					   SpecConstant( 3u, "", 0u, GenericValue(), true),
+					   SpecConstant(17u, "layout(constant_id = ${ID}) const int sc1 = 0;", 4u, makeValueInt32( 999))),
+			8,
+			"    int r0;\n"
+			"    int r1;\n",
+			"",
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(4, 0, makeValueInt32(-999)),
+					   OffsetValue(4, 4, makeValueInt32( 999))),
+			(FeatureFlags)0,
+			true,
+		},
+	};
+
+	for (const auto& caseDef : defsUnusedCases)
+		testGroup->addChild(new SpecConstantTest(testCtx, shaderStage, caseDef));
 
 	return testGroup.release();
 }

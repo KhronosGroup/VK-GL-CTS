@@ -14985,6 +14985,10 @@ dEQP-VK.pipeline.spec_constant.graphics.vertex.basic.double_packed
 dEQP-VK.pipeline.spec_constant.graphics.vertex.basic.double_2_packed
 dEQP-VK.pipeline.spec_constant.graphics.vertex.basic.mixed_packed
 dEQP-VK.pipeline.spec_constant.graphics.vertex.basic.mixed_reversed_packed
+dEQP-VK.pipeline.spec_constant.graphics.vertex.basic.unused_single
+dEQP-VK.pipeline.spec_constant.graphics.vertex.basic.unused_single_packed
+dEQP-VK.pipeline.spec_constant.graphics.vertex.basic.unused_multiple
+dEQP-VK.pipeline.spec_constant.graphics.vertex.basic.unused_multiple_packed
 dEQP-VK.pipeline.spec_constant.graphics.fragment.default_value.int8
 dEQP-VK.pipeline.spec_constant.graphics.fragment.default_value.uint8
 dEQP-VK.pipeline.spec_constant.graphics.fragment.default_value.int16
@@ -15047,6 +15051,10 @@ dEQP-VK.pipeline.spec_constant.graphics.fragment.basic.double_packed
 dEQP-VK.pipeline.spec_constant.graphics.fragment.basic.double_2_packed
 dEQP-VK.pipeline.spec_constant.graphics.fragment.basic.mixed_packed
 dEQP-VK.pipeline.spec_constant.graphics.fragment.basic.mixed_reversed_packed
+dEQP-VK.pipeline.spec_constant.graphics.fragment.basic.unused_single
+dEQP-VK.pipeline.spec_constant.graphics.fragment.basic.unused_single_packed
+dEQP-VK.pipeline.spec_constant.graphics.fragment.basic.unused_multiple
+dEQP-VK.pipeline.spec_constant.graphics.fragment.basic.unused_multiple_packed
 dEQP-VK.pipeline.spec_constant.graphics.tess_control.default_value.int8
 dEQP-VK.pipeline.spec_constant.graphics.tess_control.default_value.uint8
 dEQP-VK.pipeline.spec_constant.graphics.tess_control.default_value.int16
@@ -15109,6 +15117,10 @@ dEQP-VK.pipeline.spec_constant.graphics.tess_control.basic.double_packed
 dEQP-VK.pipeline.spec_constant.graphics.tess_control.basic.double_2_packed
 dEQP-VK.pipeline.spec_constant.graphics.tess_control.basic.mixed_packed
 dEQP-VK.pipeline.spec_constant.graphics.tess_control.basic.mixed_reversed_packed
+dEQP-VK.pipeline.spec_constant.graphics.tess_control.basic.unused_single
+dEQP-VK.pipeline.spec_constant.graphics.tess_control.basic.unused_single_packed
+dEQP-VK.pipeline.spec_constant.graphics.tess_control.basic.unused_multiple
+dEQP-VK.pipeline.spec_constant.graphics.tess_control.basic.unused_multiple_packed
 dEQP-VK.pipeline.spec_constant.graphics.tess_eval.default_value.int8
 dEQP-VK.pipeline.spec_constant.graphics.tess_eval.default_value.uint8
 dEQP-VK.pipeline.spec_constant.graphics.tess_eval.default_value.int16
@@ -15171,6 +15183,10 @@ dEQP-VK.pipeline.spec_constant.graphics.tess_eval.basic.double_packed
 dEQP-VK.pipeline.spec_constant.graphics.tess_eval.basic.double_2_packed
 dEQP-VK.pipeline.spec_constant.graphics.tess_eval.basic.mixed_packed
 dEQP-VK.pipeline.spec_constant.graphics.tess_eval.basic.mixed_reversed_packed
+dEQP-VK.pipeline.spec_constant.graphics.tess_eval.basic.unused_single
+dEQP-VK.pipeline.spec_constant.graphics.tess_eval.basic.unused_single_packed
+dEQP-VK.pipeline.spec_constant.graphics.tess_eval.basic.unused_multiple
+dEQP-VK.pipeline.spec_constant.graphics.tess_eval.basic.unused_multiple_packed
 dEQP-VK.pipeline.spec_constant.graphics.geometry.default_value.int8
 dEQP-VK.pipeline.spec_constant.graphics.geometry.default_value.uint8
 dEQP-VK.pipeline.spec_constant.graphics.geometry.default_value.int16
@@ -15233,6 +15249,10 @@ dEQP-VK.pipeline.spec_constant.graphics.geometry.basic.double_packed
 dEQP-VK.pipeline.spec_constant.graphics.geometry.basic.double_2_packed
 dEQP-VK.pipeline.spec_constant.graphics.geometry.basic.mixed_packed
 dEQP-VK.pipeline.spec_constant.graphics.geometry.basic.mixed_reversed_packed
+dEQP-VK.pipeline.spec_constant.graphics.geometry.basic.unused_single
+dEQP-VK.pipeline.spec_constant.graphics.geometry.basic.unused_single_packed
+dEQP-VK.pipeline.spec_constant.graphics.geometry.basic.unused_multiple
+dEQP-VK.pipeline.spec_constant.graphics.geometry.basic.unused_multiple_packed
 dEQP-VK.pipeline.spec_constant.compute.default_value.int8
 dEQP-VK.pipeline.spec_constant.compute.default_value.uint8
 dEQP-VK.pipeline.spec_constant.compute.default_value.int16
@@ -15295,6 +15315,10 @@ dEQP-VK.pipeline.spec_constant.compute.basic.double_packed
 dEQP-VK.pipeline.spec_constant.compute.basic.double_2_packed
 dEQP-VK.pipeline.spec_constant.compute.basic.mixed_packed
 dEQP-VK.pipeline.spec_constant.compute.basic.mixed_reversed_packed
+dEQP-VK.pipeline.spec_constant.compute.basic.unused_single
+dEQP-VK.pipeline.spec_constant.compute.basic.unused_single_packed
+dEQP-VK.pipeline.spec_constant.compute.basic.unused_multiple
+dEQP-VK.pipeline.spec_constant.compute.basic.unused_multiple_packed
 dEQP-VK.pipeline.multisample.standardsampleposition.r8g8b8a8_unorm.samples_2
 dEQP-VK.pipeline.multisample.standardsampleposition.r8g8b8a8_unorm.samples_4
 dEQP-VK.pipeline.multisample.standardsampleposition.r8g8b8a8_unorm.samples_8
