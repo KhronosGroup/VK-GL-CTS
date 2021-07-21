@@ -73,6 +73,7 @@ enum FillMode
 {
 	FILL_MODE_GRADIENT = 0,
 	FILL_MODE_WHITE,
+	FILL_MODE_BLACK,
 	FILL_MODE_RED,
 	FILL_MODE_MULTISAMPLE,
 	FILL_MODE_BLUE_RED_X,
@@ -534,6 +535,7 @@ void CopiesAndBlittingTestInstance::generateBuffer (tcu::PixelBufferAccess buffe
 	const tcu::Vec4		greenColor	(0.0,			maxValue.y(),	0.0,			maxValue.w());
 	const tcu::Vec4		blueColor	(0.0,			0.0,			maxValue.z(),	maxValue.w());
 	const tcu::Vec4		whiteColor	(maxValue.x(),	maxValue.y(),	maxValue.z(),	maxValue.w());
+	const tcu::Vec4		blackColor	(0.0f,			0.0f,			0.0f,			0.0f);
 
 	for (int z = 0; z < depth;  ++z)
 	for (int y = 0; y < height; ++y)
@@ -550,6 +552,17 @@ void CopiesAndBlittingTestInstance::generateBuffer (tcu::PixelBufferAccess buffe
 				}
 				else
 					buffer.setPixel(whiteColor, x, y, z);
+				break;
+
+			case FILL_MODE_BLACK:
+				if (tcu::isCombinedDepthStencilType(buffer.getFormat().type))
+				{
+					buffer.setPixDepth(0.0f, x, y, z);
+					if (tcu::hasStencilComponent(buffer.getFormat().order))
+						buffer.setPixStencil(0, x, y, z);
+				}
+				else
+					buffer.setPixel(blackColor, x, y, z);
 				break;
 
 			case FILL_MODE_RED:
@@ -1994,7 +2007,7 @@ tcu::TestStatus CopyBufferToBuffer::iterate (void)
 
 	const int dstLevelWidth		= (int)(m_params.dst.buffer.size/4);
 	m_destinationTextureLevel	= de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), dstLevelWidth, 1));
-	generateBuffer(m_destinationTextureLevel->getAccess(), dstLevelWidth, 1, 1, FILL_MODE_WHITE);
+	generateBuffer(m_destinationTextureLevel->getAccess(), dstLevelWidth, 1, 1, FILL_MODE_BLACK);
 
 	generateExpectedResult();
 
