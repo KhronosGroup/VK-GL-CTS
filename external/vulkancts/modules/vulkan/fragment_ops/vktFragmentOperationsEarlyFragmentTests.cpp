@@ -1193,6 +1193,7 @@ tcu::TestStatus EarlyFragmentSampleMaskTestInstance::iterate (void)
 	const VkFormat				colorFormat			= VK_FORMAT_R8G8B8A8_UNORM;
 
 	DE_ASSERT(m_useTestAttachment);
+	DE_UNREF(m_useTestAttachment);
 
 	// Test attachment (depth or stencil)
 	static const VkFormat stencilFormats[] =
