@@ -420,44 +420,33 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 		// Wait for sparse queue to become idle
 		deviceInterface.queueWaitIdle(sparseQueue.queueHandle);
 
-		const deUint8* outputData = static_cast<const deUint8*>(outputBufferAlloc->getHostPtr());
+		const deUint8*	outputData		= static_cast<const deUint8*>(outputBufferAlloc->getHostPtr());
+		bool			ignoreLsb6Bits	= areLsb6BitsDontCare(imageSparseInfo.format);
+		bool			ignoreLsb4Bits	= areLsb4BitsDontCare(imageSparseInfo.format);
 
 		for (deUint32 planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
 		{
 			for (deUint32 mipmapNdx = 0; mipmapNdx < imageSparseInfo.mipLevels; ++mipmapNdx)
 			{
-				const deUint32	mipLevelSizeInBytes		= getImageMipLevelSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, formatDescription, planeNdx, mipmapNdx);
-				const deUint32	bufferOffset			= static_cast<deUint32>(bufferImageCopy[ planeNdx * imageSparseInfo.mipLevels + mipmapNdx].bufferOffset);
-				bool			is8bitSnormComponent	= false;
+				const deUint32 mipLevelSizeInBytes	= getImageMipLevelSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, formatDescription, planeNdx, mipmapNdx);
+				const deUint32 bufferOffset			= static_cast<deUint32>(bufferImageCopy[ planeNdx * imageSparseInfo.mipLevels + mipmapNdx].bufferOffset);
 
 				// Validate results
-				for (deUint32 channelNdx = 0; channelNdx < 4; ++channelNdx)
+				for (size_t byteNdx = 0; byteNdx < mipLevelSizeInBytes; byteNdx++)
 				{
-					if (!formatDescription.hasChannelNdx(channelNdx))
-						continue;
+					const deUint8	res	= *(outputData + bufferOffset + byteNdx);
+					const deUint8	ref	= referenceData[bufferOffset + byteNdx];
 
-					if ((formatDescription.channels[channelNdx].type == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT) &&
-						(formatDescription.channels[channelNdx].sizeBits == 8))
+					deUint8 mask = 0xFF;
+
+					if (!(byteNdx & 0x01) && (ignoreLsb6Bits))
+						mask = 0xC0;
+					else if (!(byteNdx & 0x01) && (ignoreLsb4Bits))
+						mask = 0xF0;
+
+					if ((res & mask) != (ref & mask))
 					{
-						is8bitSnormComponent = true;
-						break;
-					}
-				}
-
-				if (!is8bitSnormComponent)
-				{
-					if (deMemCmp(outputData + bufferOffset, &referenceData[bufferOffset], mipLevelSizeInBytes) != 0)
 						return tcu::TestStatus::fail("Failed");
-				}
-				else
-				{
-					for (deUint32 byte = 0; byte < mipLevelSizeInBytes; byte++)
-					{
-						deUint32 entryOffset = bufferOffset + byte;
-
-						// Ignore 0x80 which is undefined data for a 8 bit snorm component
-						if ((referenceData[entryOffset] != 0x80) && (deMemCmp(outputData + entryOffset, &referenceData[entryOffset], 1) != 0))
-							return tcu::TestStatus::fail("Failed");
 					}
 				}
 			}

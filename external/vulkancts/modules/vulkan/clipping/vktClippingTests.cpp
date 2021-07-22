@@ -283,9 +283,29 @@ bool checkFragColors (const tcu::ConstPixelBufferAccess pixels, IVec2 clipRegion
 		const int		barWidth				= pixels.getWidth() / 8;
 		const bool		insideBar				= x >= barWidth * barIdx && x < barWidth * (barIdx + 1);
 		const float		expectedClipDistance	= insideBar ? (((((float)y + 0.5f) / (float)pixels.getHeight()) - 0.5f) * 2.0f) : 0.0f;
-		const float		expectedCullDistance	= 0.5f;
+		float			expectedCullDistance	= 0.5f;
 		const float		clipDistance			= color.y();
 		const float		cullDistance			= color.z();
+		const float		height					= (float)pixels.getHeight();
+
+		if (hasCullDistance)
+		{
+			/* Linear interpolation of the cull distance.
+			 * Remember there are precision errors due to 8-bit UNORM, but they should fall inside 0.01f threshold.
+			 *
+			 * Notes about the results:
+			 * - linear interpolation of gl_CullDistance[i] = [0.0f, 0.5f]. Correct.
+			 * - Constant value:
+			 *   + 0.1f: value written by vertex shader when there are other geometry-related shaders. It means the value was not overriden. Failure.
+			 *   + 0.2f: value written by tessc shader when cull distance value from vertex is not 0.1f. Failure.
+			 *   + 0.3f: value written by tessc shader when cull distance value from vertex is 0.1f and there is geometry shader. Failure.
+			 *   + 0.4f: value written by geometry shader when cull distance is not either 0.1f (if no tess is present) or 0.3f (tess present). Failure.
+			 */
+			if (y >= (pixels.getHeight() / 2))
+				expectedCullDistance = expectedCullDistance * (1.0f + (2.0f * (float)y) - height) / height;
+			else
+				expectedCullDistance = 0.0f;
+		}
 
 		if (fabs(clipDistance - expectedClipDistance) > 0.01f)
 			return false;
@@ -1064,15 +1084,26 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 				src << "    for (int i = 0; i < " << caseDef.numClipDistances << "; ++i)\n"
 					<< "        gl_ClipDistance[i] = (barNdx == i ? v_position.y : 0.0);\n";
 			if (caseDef.numCullDistances > 0)
-				src << "    for (int i = 0; i < " << caseDef.numCullDistances << "; ++i)\n"
-					<< "        gl_CullDistance[i] = 0.5;\n";
+			{
+				src << "    for (int i = 0; i < " << caseDef.numCullDistances << "; ++i)\n";
+				if (caseDef.enableTessellation || caseDef.enableGeometry)
+					src	<< "        gl_CullDistance[i] = 0.1f;\n";
+				else
+					src	<< "        gl_CullDistance[i] = (gl_Position.y < 0) ? -0.5f : 0.5f;\n";
+			}
 		}
 		else
 		{
 			for (int i = 0; i < caseDef.numClipDistances; ++i)
 				src << "    gl_ClipDistance[" << i << "] = (barNdx == " << i << " ? v_position.y : 0.0);\n";
+
 			for (int i = 0; i < caseDef.numCullDistances; ++i)
-				src << "    gl_CullDistance[" << i << "] = 0.5;\n";		// don't cull anything
+			{
+				if (caseDef.enableTessellation || caseDef.enableGeometry)
+					src	<< "    gl_CullDistance[" << i << "] = 0.1f;\n";
+				else
+					src << "    gl_CullDistance[" << i << "] = (gl_Position.y < 0) ? -0.5f : 0.5f;\n";
+			}
 		}
 		src	<< "}\n";
 
@@ -1112,15 +1143,31 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 				src << "    for (int i = 0; i < " << caseDef.numClipDistances << "; ++i)\n"
 					<< "        gl_out[gl_InvocationID].gl_ClipDistance[i] = gl_in[gl_InvocationID].gl_ClipDistance[i];\n";
 			if (caseDef.numCullDistances > 0)
-				src << "    for (int i = 0; i < " << caseDef.numCullDistances << "; ++i)\n"
-					<< "        gl_out[gl_InvocationID].gl_CullDistance[i] = gl_in[gl_InvocationID].gl_CullDistance[i];\n";
+			{
+				src << "    for (int i = 0; i < " << caseDef.numCullDistances << "; ++i)\n";
+				src << "    {\n";
+				src	<< "        gl_out[gl_InvocationID].gl_CullDistance[i] = (gl_in[gl_InvocationID].gl_CullDistance[i] == 0.1f) ? ";
+				if (caseDef.enableGeometry)
+					src << "0.3f";
+				else
+					src << "((gl_in[gl_InvocationID].gl_Position.y < 0) ? -0.5f : 0.5f)";
+				src << " : 0.2f;\n";
+				src << "    }\n";
+			}
 		}
 		else
 		{
 			for (int i = 0; i < caseDef.numClipDistances; ++i)
 				src << "    gl_out[gl_InvocationID].gl_ClipDistance[" << i << "] = gl_in[gl_InvocationID].gl_ClipDistance[" << i << "];\n";
 			for (int i = 0; i < caseDef.numCullDistances; ++i)
-				src << "    gl_out[gl_InvocationID].gl_CullDistance[" << i << "] = gl_in[gl_InvocationID].gl_CullDistance[" << i << "];\n";
+			{
+				src	<< "    gl_out[gl_InvocationID].gl_CullDistance[" << i << "] = (gl_in[gl_InvocationID].gl_CullDistance[" << i << "] == 0.1f) ? ";
+				if (caseDef.enableGeometry)
+					src << "0.3f";
+				else
+					src << "((gl_in[gl_InvocationID].gl_Position.y < 0) ? -0.5f : 0.5f)";
+				src << " : 0.2f;\n";
+			}
 		}
 		src << "}\n";
 
@@ -1209,15 +1256,32 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 					src << "    for (int i = 0; i < " << caseDef.numClipDistances << "; ++i)\n"
 						<< "        gl_ClipDistance[i] = gl_in[" << vertNdx << "].gl_ClipDistance[i];\n";
 				if (caseDef.numCullDistances > 0)
-					src << "    for (int i = 0; i < " << caseDef.numCullDistances << "; ++i)\n"
-						<< "        gl_CullDistance[i] = gl_in[" << vertNdx << "].gl_CullDistance[i];\n";
+				{
+					src << "    for (int i = 0; i < " << caseDef.numCullDistances << "; ++i)\n";
+					src << "    {\n";
+					src	<< "        gl_CullDistance[i] = (gl_in[" << vertNdx << "].gl_CullDistance[i] == ";
+					if (caseDef.enableTessellation)
+						src << "0.3f";
+					else
+						src << "0.1f";
+					src << ") ? ((gl_in[" << vertNdx << "].gl_Position.y < 0) ? -0.5f : 0.5f) : 0.4f;\n";
+					src << "    }\n";
+				}
 			}
 			else
 			{
 				for (int i = 0; i < caseDef.numClipDistances; ++i)
 					src << "    gl_ClipDistance[" << i << "] = gl_in[" << vertNdx << "].gl_ClipDistance[" << i << "];\n";
+
 				for (int i = 0; i < caseDef.numCullDistances; ++i)
-					src << "    gl_CullDistance[" << i << "] = gl_in[" << vertNdx << "].gl_CullDistance[" << i << "];\n";
+				{
+					src	<< "        gl_CullDistance[" << i << "] = (gl_in[" << vertNdx << "].gl_CullDistance[" << i << "] == ";
+					if (caseDef.enableTessellation)
+						src << "0.3f";
+					else
+						src << "0.1f";
+					src << ") ? ((gl_in[" << vertNdx << "].gl_Position.y < 0) ? -0.5f : 0.5f) : 0.4f;\n";
+				}
 			}
 			src << "    EmitVertex();\n";
 		}

@@ -135,7 +135,7 @@ tcu::TestNode::IterateResult FunctionalTest::iterate()
 						}
 
 						/* Check basic API queries for source texture. */
-						is_ok = is_ok & checkSourceTextureSizeAndType(s_formats[i], s_source_texture_targets[j]);
+						if (is_ok) is_ok = checkSourceTextureSizeAndType(s_formats[i], s_source_texture_targets[j]);
 
 						/* For every [R, G, B, A] component. */
 						for (glw::GLuint k = 0; k < COMPONENTS_COUNT; ++k)
@@ -153,9 +153,9 @@ tcu::TestNode::IterateResult FunctionalTest::iterate()
 							drawQuad();
 
 							/* Check results. */
-							is_ok = is_ok & checkDestinationTexture(s_formats[i], ColorChannelSelector(k),
-																	s_source_texture_targets[j],
-																	s_source_texture_targets_names[j]);
+							if (is_ok) is_ok = checkDestinationTexture(s_formats[i], ColorChannelSelector(k),
+																	   s_source_texture_targets[j],
+																	   s_source_texture_targets_names[j]);
 
 							/* Cleanup. */
 							cleanDestinationTexture();

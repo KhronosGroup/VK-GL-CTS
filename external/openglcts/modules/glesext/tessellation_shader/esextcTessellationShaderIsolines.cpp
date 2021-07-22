@@ -155,7 +155,7 @@ void TessellationShadersIsolines::checkIrrelevantTessellationLevelsHaveNoEffect(
 	irrelevant_tess_level1 = (int)irrelevant_tess_level1_rounded_clamped;
 	irrelevant_tess_level2 = (int)irrelevant_tess_level2_rounded_clamped;
 
-	DE_ASSERT(de::abs(irrelevant_tess_level1 - irrelevant_tess_level2) > epsilon);
+	DE_ASSERT(de::abs(irrelevant_tess_level1 - irrelevant_tess_level2) > 0);
 
 	/* Iterate through all test runs for equal spacing */
 	for (_test_results_iterator test_result_iterator = test_result_iterator_start;

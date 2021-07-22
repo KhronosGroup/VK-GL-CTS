@@ -481,7 +481,6 @@ static bool isCoreQuery (QueryType query)
 {
 	return	es31::isCoreQuery(query)								||
 			query == QUERY_TEXTURE_PARAM_PURE_INTEGER				||
-			query == QUERY_TEXTURE_PARAM_PURE_INTEGER				||
 			query == QUERY_TEXTURE_PARAM_PURE_UNSIGNED_INTEGER		||
 			query == QUERY_TEXTURE_PARAM_PURE_INTEGER_VEC4			||
 			query == QUERY_TEXTURE_PARAM_PURE_UNSIGNED_INTEGER_VEC4	||

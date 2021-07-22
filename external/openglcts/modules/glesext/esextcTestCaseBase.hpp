@@ -46,6 +46,7 @@
 #define TEXTURE_BUFFER_EXTENSION_NOT_SUPPORTED "Texture buffer functionality not supported, skipping"
 #define DRAW_BUFFERS_INDEXED_NOT_SUPPORTED "Draw buffers indexed functionality not supported, skipping"
 #define VIEWPORT_ARRAY_NOT_SUPPORTED "Viewport array functionality not supported, skipping"
+#define DISJOINT_TIMER_QUERY_NOT_SUPPORTED "Disjoint timer query functionality not supported, skipping"
 
 namespace glcts
 {

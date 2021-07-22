@@ -19783,6 +19783,9 @@ FragmentDataLocationAPITest::FragmentDataLocationAPITest(deqp::Context& context)
 	, m_gohan(context)
 	, m_goten(context)
 	, m_chichi(context)
+	, m_goku_location(0)
+	, m_gohan_location(0)
+	, m_chichi_location(0)
 {
 }
 

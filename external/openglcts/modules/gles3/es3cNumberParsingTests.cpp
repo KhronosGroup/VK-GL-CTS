@@ -344,6 +344,8 @@ private:
 
 NumberParsingCase::NumberParsingCase(deqp::Context& context, const string& name, const TestParams& params, const string& vertexShader, const string& fragmentShader)
 	: TestCase(context, name.c_str(), params.description.c_str())
+	, m_fboId(0)
+	, m_rboId(0)
 	, m_params(params)
 	, m_vertexShader(vertexShader)
 	, m_fragmentShader(fragmentShader)

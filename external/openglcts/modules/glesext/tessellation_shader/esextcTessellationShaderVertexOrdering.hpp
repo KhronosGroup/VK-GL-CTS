@@ -91,10 +91,11 @@ private:
 			memset(inner_tess_levels, 0, sizeof(inner_tess_levels));
 			memset(outer_tess_levels, 0, sizeof(outer_tess_levels));
 
-			data			= DE_NULL;
-			n_vertices		= 0;
-			primitive_mode  = TESSELLATION_SHADER_PRIMITIVE_MODE_UNKNOWN;
-			vertex_ordering = TESSELLATION_SHADER_VERTEX_ORDERING_UNKNOWN;
+			data					= DE_NULL;
+			is_point_mode_enabled	= false;
+			n_vertices				= 0;
+			primitive_mode			= TESSELLATION_SHADER_PRIMITIVE_MODE_UNKNOWN;
+			vertex_ordering			= TESSELLATION_SHADER_VERTEX_ORDERING_UNKNOWN;
 		}
 	} _test_iteration;
 

@@ -289,6 +289,28 @@ macro (add_deqp_module MODULE_NAME SRCS LIBS EXECLIBS ENTRY)
 	add_dependencies("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}")
 endmacro (add_deqp_module)
 
+# Macro add_deqp_module_skip_android does not add module to DEQP_MODULE_LIBRARIES, so that it is not created on Android.
+# It's a temporary solution to disable Vulkan SC tests on Android, because later defined deqp library
+# uses both deqp-vk and deqp-vksc and this means that definitions CTS_USES_VULKAN and CTS_USES_VULKANSC
+# exist in deqp library at the same time which causes code to not compile.
+macro (add_deqp_module_skip_android MODULE_NAME SRCS LIBS EXECLIBS ENTRY)
+
+	# Library target
+	add_library("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" STATIC ${SRCS})
+	target_link_libraries("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" ${LIBS})
+
+	if (NOT DE_OS_IS_ANDROID AND NOT DE_OS_IS_IOS)
+		# Executable target
+		add_executable(${MODULE_NAME} ${PROJECT_SOURCE_DIR}/framework/platform/tcuMain.cpp ${ENTRY})
+		target_link_libraries(${MODULE_NAME} PUBLIC "${EXECLIBS}" "${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}")
+		target_copy_files(${MODULE_NAME} platform-libs-${MODULE_NAME} "${DEQP_PLATFORM_COPY_LIBRARIES}")
+	endif ()
+
+	# Data file target
+	add_custom_target("${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}")
+	add_dependencies("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}")
+endmacro (add_deqp_module_skip_android)
+
 # Macro for adding data dirs to module
 macro (add_data_dir MODULE_NAME SRC_DIR DST_DIR)
 	if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX OR DE_OS_IS_QNX)

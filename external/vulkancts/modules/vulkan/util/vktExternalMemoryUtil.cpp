@@ -1102,7 +1102,7 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 			0u
 		};
 
-		vkd.getAndroidHardwareBufferPropertiesANDROID(device, handle.getAndroidHardwareBuffer(), &ahbProperties);
+		VK_CHECK(vkd.getAndroidHardwareBufferPropertiesANDROID(device, handle.getAndroidHardwareBuffer(), &ahbProperties));
 
 		vk::VkImportAndroidHardwareBufferInfoANDROID	importInfo =
 		{

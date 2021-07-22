@@ -48,6 +48,7 @@
 #ifndef CTS_USES_VULKANSC
 #include "vktApiSmokeTests.hpp"
 #include "vktApiBufferMarkerTests.hpp"
+#include "vktApiDeviceDrmPropertiesTests.hpp"
 #include "vktApiExternalMemoryTests.hpp"
 #include "vktApiToolingInfoTests.hpp"
 #endif // CTS_USES_VULKANSC
@@ -78,6 +79,9 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 	apiTests->addChild(createSmokeTests							(testCtx));
 #endif // CTS_USES_VULKANSC
 	apiTests->addChild(api::createFeatureInfoTests				(testCtx));
+#ifndef CTS_USES_VULKANSC
+	apiTests->addChild(createDeviceDrmPropertiesTests			(testCtx));
+#endif // CTS_USES_VULKANSC
 	apiTests->addChild(createDeviceInitializationTests			(testCtx));
 	apiTests->addChild(createObjectManagementTests				(testCtx));
 	apiTests->addChild(createBufferTests						(testCtx));

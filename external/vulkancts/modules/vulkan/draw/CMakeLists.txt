@@ -11,6 +11,8 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawInstancedTests.cpp
 	vktDrawInvertedDepthRangesTests.hpp
 	vktDrawInvertedDepthRangesTests.cpp
+	vktDrawMultiExtTests.hpp
+	vktDrawMultiExtTests.cpp
 	vktDrawShaderDrawParametersTests.hpp
 	vktDrawShaderDrawParametersTests.cpp
 	vktDrawShaderLayerTests.hpp

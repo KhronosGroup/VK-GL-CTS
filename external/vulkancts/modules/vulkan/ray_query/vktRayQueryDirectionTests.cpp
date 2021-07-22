@@ -60,21 +60,41 @@ using namespace vk;
 
 using GeometryData = std::vector<tcu::Vec3>;
 
+// Should rays be shot from inside the geometry or not?
+enum class RayOriginType
+{
+	OUTSIDE = 0,	// Works with AABBs and triangles.
+	INSIDE,			// Works with AABBs only.
+};
+
+// When rays are shot from the outside, they are expected to cross the geometry.
+// When shot from the inside, they can end inside, at the edge or outside the geometry.
+enum class RayEndType
+{
+	CROSS = 0,		// For RayOriginType::OUTSIDE.
+	ZERO,			// For RayOriginType::INSIDE.
+	INSIDE,			// For RayOriginType::INSIDE.
+	EDGE,			// For RayOriginType::INSIDE.
+	OUTSIDE,		// For RayOriginType::INSIDE.
+};
+
 struct SpaceObjects
 {
 	tcu::Vec3		origin;
 	tcu::Vec3		direction;
 	GeometryData	geometry;
 
-	SpaceObjects (VkGeometryTypeKHR geometryType)
+	SpaceObjects (RayOriginType rayOriginType, VkGeometryTypeKHR geometryType)
 		: origin	(0.0f, 0.0f, 1.0f)	// Origin of the ray at (0, 0, 1).
 		, direction	(0.0f, 0.0f, 1.0f)	// Shooting towards (0, 0, 1).
 		, geometry	()
 	{
-		// Triangle or AABB around (0, 0, 5).
 		DE_ASSERT(geometryType == VK_GEOMETRY_TYPE_TRIANGLES_KHR || geometryType == VK_GEOMETRY_TYPE_AABBS_KHR);
+		DE_ASSERT(rayOriginType == RayOriginType::OUTSIDE || geometryType == VK_GEOMETRY_TYPE_AABBS_KHR);
+
 		if (geometryType == VK_GEOMETRY_TYPE_TRIANGLES_KHR)
 		{
+			// Triangle around (0, 0, 5).
 			geometry.reserve(3u);
 			geometry.push_back(tcu::Vec3( 0.0f,  0.5f, 5.0f));
 			geometry.push_back(tcu::Vec3(-0.5f, -0.5f, 5.0f));
@@ -82,20 +102,21 @@ struct SpaceObjects
 		}
 		else
 		{
+			// AABB around (0, 0, 5) or with its back side at that distance when shot from the inside.
 			geometry.reserve(2u);
-			geometry.push_back(tcu::Vec3(-0.5f, -0.5f, 5.0f));
+			geometry.push_back(tcu::Vec3(-0.5f, -0.5f, ((rayOriginType == RayOriginType::INSIDE) ? 0.0f : 5.0f)));
 			geometry.push_back(tcu::Vec3( 0.5f,  0.5f, 5.0f));
 		}
 	}
 
 	static float getDefaultDistance (void)
 	{
-		// Consistent with the Z coordinates of the origin, direction and points in the default constructor.
+		// Consistent with the Z coordinates of the origin, direction and points in constructors.
 		return 4.0f;
 	}
 
-	// Calculates expected distance given the direction scaling factor.
-	static float getExpectedDistance (float directionScale)
+	// Calculates distance to geometry edge given the direction scaling factor.
+	static float getDistanceToEdge (float directionScale)
 	{
 		return getDefaultDistance() / directionScale;
 	}
@@ -104,11 +125,31 @@ struct SpaceObjects
 // Default test tolerance for distance values.
 constexpr float kDefaultTolerance = 0.001f;
 
-// Calculates appropriate values for Tmin/Tmax given the expected distance.
-std::pair<float, float> calcTminTmax (float expectedDistance)
+// Calculates appropriate values for Tmin/Tmax given the distance to the geometry edge.
+std::pair<float, float> calcTminTmax (RayOriginType rayOriginType, RayEndType rayEndType, float distanceToEdge)
 {
-	const auto margin = kDefaultTolerance / 2.0f;
-	return std::make_pair(de::max(expectedDistance - margin, 0.0f), expectedDistance + margin);
+	std::pair<float, float> result;
+
+	if (rayOriginType == RayOriginType::OUTSIDE)
+	{
+		DE_ASSERT(rayEndType == RayEndType::CROSS);
+		const auto margin = kDefaultTolerance / 2.0f;
+		result = std::make_pair(de::max(distanceToEdge - margin, 0.0f), distanceToEdge + margin);
+	}
+	else
+	{
+		result.first = 0.0f;
+		switch (rayEndType)
+		{
+		case RayEndType::ZERO:		result.second = 0.0f;					break;
+		case RayEndType::INSIDE:	result.second = distanceToEdge / 2.0f;	break;
+		case RayEndType::EDGE:		result.second = distanceToEdge;			break;
+		case RayEndType::OUTSIDE:	result.second = distanceToEdge + 1.0f;	break;
+		default: DE_ASSERT(false); break;
+		}
+	}
+
+	return result;
 }
 
 // Get matrix to scale a point with the given scale factor.
@@ -171,6 +212,10 @@ struct TestParams
 	float					rotationX;
 	float					rotationY;
 	VkGeometryTypeKHR		geometryType;
+	bool					useArraysOfPointers;
+	bool					updateMatrixAfterBuild;
+	RayOriginType			rayOriginType;
+	RayEndType				rayEndtype;
 };
 
 class DirectionTestCase : public vkt::TestCase
@@ -259,7 +304,7 @@ void DirectionTestCase::initPrograms (vk::SourceCollections& programCollection) 
 		<< "      outVal = rayQueryGetIntersectionTEXT(rq, false);\n"
 		<< "    }\n"
 		<< "    else if (candidateType == gl_RayQueryCandidateIntersectionAABBEXT) {\n"
-		<< "      outVal = pc.tmax;\n"
+		<< "      outVal = pc.tmin;\n"
 		<< "    }\n"
 		<< "  }\n"
 		<< "  outBuffer.val = outVal;\n"
@@ -311,9 +356,16 @@ tcu::TestStatus DirectionTestInstance::iterate (void)
 	bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
 
 	de::SharedPtr<BottomLevelAccelerationStructure> blasSharedPtr (bottomLevelAS.release());
+	topLevelAS->setUseArrayOfPointers(m_params.useArraysOfPointers);
+	topLevelAS->setUsePPGeometries(m_params.useArraysOfPointers);
 	topLevelAS->setInstanceCount(1);
-	topLevelAS->addInstance(blasSharedPtr, transformMatrix, 0, 0xFFu, 0u, instanceFlags);
+	{
+		const auto& initialMatrix = (m_params.updateMatrixAfterBuild ? identityMatrix3x4 : transformMatrix);
+		topLevelAS->addInstance(blasSharedPtr, initialMatrix, 0, 0xFFu, 0u, instanceFlags);
+	}
 	topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+	if (m_params.updateMatrixAfterBuild)
+		topLevelAS->updateInstanceMatrix(vkd, device, 0u, transformMatrix);
 
 	// Create output buffer.
 	const auto			bufferSize			= static_cast<VkDeviceSize>(sizeof(float));
@@ -387,8 +439,8 @@ tcu::TestStatus DirectionTestInstance::iterate (void)
 	// Push constants.
 	const auto			rotatedOrigin		= m_params.spaceObjects.origin * rotationMatrix;
 	const auto			finalDirection		= m_params.spaceObjects.direction * scaleMatrix * rotationMatrix;
-	const auto			expectedDistance	= SpaceObjects::getExpectedDistance(m_params.directionScale);
-	const auto			tMinMax				= calcTminTmax(expectedDistance);
+	const auto			distanceToEdge		= SpaceObjects::getDistanceToEdge(m_params.directionScale);
+	const auto			tMinMax				= calcTminTmax(m_params.rayOriginType, m_params.rayEndtype, distanceToEdge);
 	const PushConstants	pcData				=
 	{
 		toVec4(rotatedOrigin),	//	tcu::Vec4	origin;
@@ -415,22 +467,73 @@ tcu::TestStatus DirectionTestInstance::iterate (void)
 	invalidateAlloc(vkd, device, bufferAlloc);
 	deMemcpy(&bufferValue, bufferAlloc.getHostPtr(), sizeof(bufferValue));
 
-	if (de::abs(bufferValue - expectedDistance) > kDefaultTolerance)
+	if (m_params.rayEndtype == RayEndType::CROSS)
 	{
-		std::ostringstream msg;
-		msg << "Result distance (" << bufferValue << ") differs from expected distance (" << expectedDistance << ", tolerance " << kDefaultTolerance << ")";
-		TCU_FAIL(msg.str());
+		// Shooting from the ouside.
+		if (de::abs(bufferValue - distanceToEdge) > kDefaultTolerance)
+		{
+			std::ostringstream msg;
+			msg << "Result distance (" << bufferValue << ") differs from expected distance (" << distanceToEdge << ", tolerance " << kDefaultTolerance << ")";
+			TCU_FAIL(msg.str());
+		}
+	}
+	else
+	{
+		// Rays are shot from inside AABBs, rayTMin should be zero and the reported hit distance.
+		if (bufferValue != 0.0f)
+		{
+			std::ostringstream msg;
+			msg << "Result distance nonzero (" << bufferValue << ")";
+			TCU_FAIL(msg.str());
+		}
 	}
 
 	return tcu::TestStatus::pass("Pass");
 }
 
+using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
+
+// Generate a list of scaling factors suitable for the tests.
+std::vector<float> generateScalingFactors (de::Random& rnd)
+{
+	const float	kMinScalingFactor			= 0.5f;
+	const float	kMaxScalingFactor			= 10.0f;
+	const int	kNumRandomScalingFactors	= 5;
+
+	// Scaling factors: 1.0 and some randomly-generated ones.
+	std::vector<float> scalingFactors;
+
+	scalingFactors.reserve(kNumRandomScalingFactors + 1);
+	scalingFactors.push_back(1.0f);
+
+	for (int i = 0; i < kNumRandomScalingFactors; ++i)
+		scalingFactors.push_back(rnd.getFloat() * (kMaxScalingFactor - kMinScalingFactor) + kMinScalingFactor);
+
+	return scalingFactors;
+}
+
+// Generate a list of rotation angles suitable for the tests.
+std::vector<std::pair<float, float>> generateRotationAngles (de::Random& rnd)
+{
+	const float	kPi2				= DE_PI * 2.0f;
+	const int	kNumRandomRotations	= 4;
+
+	// Rotations: 0.0 on both axis and some randomly-generated ones.
+	std::vector<std::pair<float, float>> rotationAngles;
+
+	rotationAngles.reserve(kNumRandomRotations + 1);
+	rotationAngles.push_back(std::make_pair(0.0f, 0.0f));
+
+	for (int i = 0; i < kNumRandomRotations; ++i)
+		rotationAngles.push_back(std::make_pair(rnd.getFloat() * kPi2, rnd.getFloat() * kPi2));
+
+	return rotationAngles;
+}
+
 } // anonymous
 
-tcu::TestCaseGroup*	createDirectionTests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createDirectionLengthTests (tcu::TestContext& testCtx)
 {
-	using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
-
 	GroupPtr directionGroup (new tcu::TestCaseGroup(testCtx, "direction_length", "Test direction vector length when using ray queries"));
 
 	struct
@@ -443,32 +546,13 @@ tcu::TestCaseGroup*	createDirectionTests(tcu::TestContext& testCtx)
 		{ VK_GEOMETRY_TYPE_AABBS_KHR,		"aabbs"		},
 	};
 
-	const float kPi2				= DE_PI * 2.0f;
-	const float kMinScalingFactor	= 0.5f;
-	const float kMaxScalingFactor	= 10.0f;
-
-	const int kNumRandomScalingFactors	= 5;
-	const int kNumRandomRotations		= 4;
-
-	de::Random rnd(1614686501u);
+	de::Random	rnd(1614686501u);
+	deUint32	caseCounter = 0u;
 
 	// Scaling factors: 1.0 and some randomly-generated ones.
-	std::vector<float> scalingFactors;
-
-	scalingFactors.reserve(kNumRandomScalingFactors + 1);
-	scalingFactors.push_back(1.0f);
-
-	for (int i = 0; i < kNumRandomScalingFactors; ++i)
-		scalingFactors.push_back(rnd.getFloat() * (kMaxScalingFactor - kMinScalingFactor) + kMinScalingFactor);
-
-	// Rotations: 0.0 on both axis and some randomly-generated ones.
-	std::vector<std::pair<float, float>> rotationAngles;
-
-	rotationAngles.reserve(kNumRandomRotations + 1);
-	rotationAngles.push_back(std::make_pair(0.0f, 0.0f));
-
-	for (int i = 0; i < kNumRandomRotations; ++i)
-		rotationAngles.push_back(std::make_pair(rnd.getFloat() * kPi2, rnd.getFloat() * kPi2));
+	// Scaling factors and rotation angles.
+	const auto scalingFactors = generateScalingFactors(rnd);
+	const auto rotationAngles = generateRotationAngles(rnd);
 
 	for (int geometryTypeIdx = 0; geometryTypeIdx < DE_LENGTH_OF_ARRAY(geometryTypes); ++geometryTypeIdx)
 	{
@@ -487,17 +571,26 @@ tcu::TestCaseGroup*	createDirectionTests(tcu::TestContext& testCtx)
 				const auto angles		= rotationAngles[rotationIdx];
 				const auto angleName	= "rotation_" + de::toString(rotationIdx);
 				const auto geometryType	= gType.geometryType;
+				const auto rayOrigType	= RayOriginType::OUTSIDE;
+				const auto rayEndType	= RayEndType::CROSS;
 
-				SpaceObjects spaceObjects(geometryType);
+				SpaceObjects spaceObjects(rayOrigType, geometryType);
 
 				TestParams params =
 				{
-					spaceObjects,			//		SpaceObjects			spaceObjects;
-					scale,					//		float					directionScale;
-					angles.first,			//		float					rotationX;
-					angles.second,			//		float					rotationY;
-					geometryType,			//		VkGeometryTypeKHR		geometryType;
+					spaceObjects,				//		SpaceObjects			spaceObjects;
+					scale,						//		float					directionScale;
+					angles.first,				//		float					rotationX;
+					angles.second,				//		float					rotationY;
+					geometryType,				//		VkGeometryTypeKHR		geometryType;
+					// Use arrays of pointers when building the TLAS in every other test.
+					(caseCounter % 2u == 0u),	//		bool					useArraysOfPointers;
+					// Sometimes, update matrix after building the lop level AS and before submitting the command buffer.
+					(caseCounter % 3u == 0u),	//		bool					updateMatrixAfterBuild;
+					rayOrigType,				//		RayOriginType			rayOriginType;
+					rayEndType,					//		RayEndType				rayEndType;
 				};
+				++caseCounter;
 
 				factorGroup->addChild(new DirectionTestCase(testCtx, angleName, "", params));
 			}
@@ -509,6 +602,75 @@ tcu::TestCaseGroup*	createDirectionTests(tcu::TestContext& testCtx)
 	}
 
 	return directionGroup.release();
+}
+
+tcu::TestCaseGroup*	createInsideAABBsTests (tcu::TestContext& testCtx)
+{
+	GroupPtr insideAABBsGroup (new tcu::TestCaseGroup(testCtx, "inside_aabbs", "Test shooting rays that start inside AABBs"));
+
+	struct
+	{
+		RayEndType				rayEndType;
+		const char*				name;
+	} rayEndCases[] =
+	{
+		{	RayEndType::ZERO,			"tmax_zero"	},
+		{	RayEndType::INSIDE,			"inside"	},
+		{	RayEndType::EDGE,			"edge"		},
+		{	RayEndType::OUTSIDE,		"outside"	},
+	};
+
+	de::Random rnd(1621948244u);
+
+	// Scaling factors: 1.0 and some randomly-generated ones.
+	// Scaling factors and rotation angles.
+	const auto scalingFactors = generateScalingFactors(rnd);
+	const auto rotationAngles = generateRotationAngles(rnd);
+
+	for (int rayEndCaseIdx = 0; rayEndCaseIdx < DE_LENGTH_OF_ARRAY(rayEndCases); ++rayEndCaseIdx)
+	{
+		const auto&			rayEndCase	= rayEndCases[rayEndCaseIdx];
+		const std::string	rayEndName	= std::string("ray_end_") + rayEndCase.name;
+		GroupPtr			rayEndGroup	(new tcu::TestCaseGroup(testCtx, rayEndName.c_str(), ""));
+
+		for (size_t scalingIdx = 0; scalingIdx < scalingFactors.size(); ++scalingIdx)
+		{
+			const auto scale		= scalingFactors[scalingIdx];
+			const auto scaleName	= "scaling_factor_" + de::toString(scalingIdx);
+			GroupPtr factorGroup (new tcu::TestCaseGroup(testCtx, scaleName.c_str(), ""));
+
+			for (size_t rotationIdx = 0; rotationIdx < rotationAngles.size(); ++rotationIdx)
+			{
+				const auto angles		= rotationAngles[rotationIdx];
+				const auto angleName	= "rotation_" + de::toString(rotationIdx);
+				const auto geometryType	= VK_GEOMETRY_TYPE_AABBS_KHR;
+				const auto rayOrigType	= RayOriginType::INSIDE;
+
+				SpaceObjects spaceObjects(rayOrigType, geometryType);
+
+				TestParams params =
+				{
+					spaceObjects,			//		SpaceObjects			spaceObjects;
+					scale,					//		float					directionScale;
+					angles.first,			//		float					rotationX;
+					angles.second,			//		float					rotationY;
+					geometryType,			//		VkGeometryTypeKHR		geometryType;
+					false,					//		bool					useArraysOfPointers;
+					false,					//		bool					updateMatrixAfterBuild;
+					rayOrigType,			//		RayOriginType			rayOriginType;
+					rayEndCase.rayEndType,	//		RayEndType				rayEndType;
+				};
+
+				factorGroup->addChild(new DirectionTestCase(testCtx, angleName, "", params));
+			}
+
+			rayEndGroup->addChild(factorGroup.release());
+		}
+
+		insideAABBsGroup->addChild(rayEndGroup.release());
+	}
+
+	return insideAABBsGroup.release();
 }
 
 } // RayQuery

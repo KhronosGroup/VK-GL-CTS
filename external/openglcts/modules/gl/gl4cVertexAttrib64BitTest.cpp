@@ -3929,7 +3929,7 @@ bool VAOTest::verifyXFBData(const void* data, _draw_call_type draw_call, bool in
 				(const double*)(xfb_data_ptr + (m_n_batches * n_instance + xfb_index) * m_xfb_total_size +
 								m_xfb_bo1_dvec2_offset);
 
-			if (memcmp(in_dvec2_data_ptr, in_dvec2_data_ptr, m_xfb_bo1_dvec2_size) != 0)
+			if (memcmp(in_dvec2_data_ptr, xfb_dvec2_data_ptr, m_xfb_bo1_dvec2_size) != 0)
 			{
 				m_testCtx.getLog() << tcu::TestLog::Message << "BO1 dvec2 attribute values mismatch for batch ["
 								   << n_element << "]"
@@ -4027,7 +4027,7 @@ bool VAOTest::verifyXFBData(const void* data, _draw_call_type draw_call, bool in
 				(const signed int*)(xfb_data_ptr + (m_n_batches * n_instance + xfb_index) * m_xfb_total_size +
 									m_xfb_bo1_int_offset);
 
-			if (de::abs((signed int)*in_char_data_ptr - *xfb_int_data_ptr) > epsilon)
+			if (de::abs((signed int)*in_char_data_ptr - *xfb_int_data_ptr) > 0)
 			{
 				m_testCtx.getLog() << tcu::TestLog::Message << "BO1 int attribute value mismatch for batch ["
 								   << n_element << "]"

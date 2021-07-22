@@ -226,12 +226,6 @@ public:
 
 	GLuint BuildShaderProgram(GLenum type, const std::string& source)
 	{
-		if (type == GL_COMPUTE_SHADER)
-		{
-			const char* const src[2] = { kGLSLVer, source.c_str() };
-			return glCreateShaderProgramv(type, 2, src);
-		}
-
 		const char* const src[2] = { kGLSLVer, source.c_str() };
 		return glCreateShaderProgramv(type, 2, src);
 	}

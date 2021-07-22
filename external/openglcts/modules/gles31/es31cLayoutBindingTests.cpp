@@ -276,7 +276,7 @@ public:
 	{
 		if (getStage() != ComputeShader)
 			return m_program->getShaderInfo(glu::SHADERTYPE_FRAGMENT).compileOk &&
-				   m_program->getShaderInfo(glu::SHADERTYPE_FRAGMENT).compileOk && m_program->getProgramInfo().linkOk;
+				   m_program->getShaderInfo(glu::SHADERTYPE_VERTEX).compileOk && m_program->getProgramInfo().linkOk;
 
 		return m_program->getShaderInfo(glu::SHADERTYPE_COMPUTE).compileOk && m_program->getProgramInfo().linkOk;
 	}
@@ -446,7 +446,6 @@ public:
 	virtual LayoutBindingTestResult binding_basic_multiple(void);
 	virtual LayoutBindingTestResult binding_basic_render(void);
 	virtual LayoutBindingTestResult binding_integer_constant(void);
-	virtual LayoutBindingTestResult binding_integer_constant_expression(void);
 	virtual LayoutBindingTestResult binding_array_size(void);
 	virtual LayoutBindingTestResult binding_array_implicit(void);
 	virtual LayoutBindingTestResult binding_array_multiple(void);
@@ -588,7 +587,7 @@ private:
 		LayoutBindingSubTest tests[] = {
 			MAKE_TEST_ENTRY(binding_basic_default),		 MAKE_TEST_ENTRY(binding_basic_explicit),
 			MAKE_TEST_ENTRY(binding_basic_multiple),	 MAKE_TEST_ENTRY(binding_basic_render),
-			MAKE_TEST_ENTRY(binding_integer_constant),   MAKE_TEST_ENTRY(binding_integer_constant_expression),
+			MAKE_TEST_ENTRY(binding_integer_constant),
 			MAKE_TEST_ENTRY(binding_array_size),		 MAKE_TEST_ENTRY(binding_array_implicit),
 			MAKE_TEST_ENTRY(binding_array_multiple),	 MAKE_TEST_ENTRY(binding_api_update),
 			MAKE_TEST_ENTRY(binding_compilation_errors), MAKE_TEST_ENTRY(binding_link_errors),
@@ -1567,17 +1566,6 @@ LayoutBindingTestResult LayoutBindingBaseCase::binding_integer_constant()
 	return true;
 }
 
-//== test integer constant expressions
-//== only for GL
-LayoutBindingTestResult LayoutBindingBaseCase::binding_integer_constant_expression()
-{
-	bool passed = true;
-	if (getGLSLVersion() == glu::GLSL_VERSION_310_ES)
-		return LayoutBindingTestResult(passed, String(), true);
-
-	return LayoutBindingTestResult(passed, String(), true);
-}
-
 //== test different sized arrays
 LayoutBindingTestResult LayoutBindingBaseCase::binding_array_size(void)
 {
@@ -2128,7 +2116,6 @@ private:
 	//virtual LayoutBindingTestResult        binding_basic_multiple              (void);
 	//virtual LayoutBindingTestResult        binding_basic_render                (void);
 	//virtual LayoutBindingTestResult        binding_integer_constant            (void);
-	//virtual LayoutBindingTestResult        binding_integer_constant_expression (void);
 	//virtual LayoutBindingTestResult        binding_array_size                  (void);
 	//virtual LayoutBindingTestResult        binding_array_implicit              (void);
 	//virtual LayoutBindingTestResult        binding_array_multiple              (void);
@@ -3317,7 +3304,6 @@ private:
 	//virtual LayoutBindingTestResult        binding_basic_multiple              (void);
 	//virtual LayoutBindingTestResult        binding_basic_render                (void);
 	//virtual LayoutBindingTestResult        binding_integer_constant            (void);
-	//virtual LayoutBindingTestResult        binding_integer_constant_expression (void);
 	//virtual LayoutBindingTestResult        binding_array_size                  (void);
 	//virtual LayoutBindingTestResult        binding_array_implicit              (void);
 	//virtual LayoutBindingTestResult        binding_array_multiple              (void);

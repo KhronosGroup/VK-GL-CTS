@@ -364,13 +364,40 @@ SizeCase::IterateResult SizeCase::iterate (void)
 	GLuint					framebuffer	= 0;
 	const int				width		= getWidth();
 	const int				height		= getHeight();
-	const int				samples		= getSamples();
+	int						samples		= getSamples();
 
-	gl.genFramebuffers(1, &framebuffer);
-	gl.bindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
-	gl.framebufferParameteri(GL_DRAW_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, width);
-	gl.framebufferParameteri(GL_DRAW_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, height);
-	gl.framebufferParameteri(GL_DRAW_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_SAMPLES, samples);
+	for (;;) {
+		gl.genFramebuffers(1, &framebuffer);
+		gl.bindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
+		gl.framebufferParameteri(GL_DRAW_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, width);
+		gl.framebufferParameteri(GL_DRAW_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, height);
+		gl.framebufferParameteri(GL_DRAW_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_SAMPLES, samples);
+
+		GLenum status = gl.checkFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+		if (status == GL_FRAMEBUFFER_COMPLETE)
+			break;
+		else
+		{
+			gl.deleteFramebuffers(1, &framebuffer);
+			framebuffer = 0;
+
+			if (status == GL_FRAMEBUFFER_UNSUPPORTED)
+				if (samples >= 2)
+					samples /= 2;
+				else
+					break;
+			else
+			{
+				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Unexpected no-attachment framebuffer status");
+				return STOP;
+			}
+		}
+	}
+	if (!framebuffer)
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Unable to find a supported no-attachment framebuffer width/height/samples");
+		return STOP;
+	}
 
 	log << TestLog::Message << "Verifying " << width << "x" << height << " framebuffer with " << samples << "x multisampling" << TestLog::EndMessage;
 

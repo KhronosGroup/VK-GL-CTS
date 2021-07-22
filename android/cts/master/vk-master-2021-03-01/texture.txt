@@ -3990,4 +3990,10 @@ dEQP-VK.texture.texel_buffer.uniform.snorm.r8g8b8-snorm
 dEQP-VK.texture.texel_buffer.uniform.snorm.r8g8b8a8-snorm
 dEQP-VK.texture.multisample.atomic.storage_image_r32i
 dEQP-VK.texture.multisample.atomic.storage_image_r32ui
+dEQP-VK.texture.multisample.invalid_sample_index.sample_count_2
+dEQP-VK.texture.multisample.invalid_sample_index.sample_count_4
+dEQP-VK.texture.multisample.invalid_sample_index.sample_count_8
+dEQP-VK.texture.multisample.invalid_sample_index.sample_count_16
+dEQP-VK.texture.multisample.invalid_sample_index.sample_count_32
+dEQP-VK.texture.multisample.invalid_sample_index.sample_count_64
 dEQP-VK.texture.texel_offset.texel_offset

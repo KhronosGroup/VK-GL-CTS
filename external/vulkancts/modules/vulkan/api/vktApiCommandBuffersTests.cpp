@@ -856,6 +856,8 @@ tcu::TestStatus resetBufferImplicitlyTest(Context& context)
 		return tcu::TestStatus::fail("Buffer was not reset correctly.");
 }
 
+#ifndef CTS_USES_VULKANSC
+
 using  de::SharedPtr;
 typedef SharedPtr<Unique<VkEvent> >			VkEventShared;
 
@@ -964,8 +966,6 @@ bool executeSecondaryCmdBuffer (Context&						context,
 	vk.freeCommandBuffers(vkDevice, pool, 1u, &cmdBuffer[0]);
 	return returnValue;
 }
-
-#ifndef CTS_USES_VULKANSC
 
 tcu::TestStatus trimCommandPoolTest (Context& context, const VkCommandBufferLevel cmdBufferLevel)
 {
@@ -4163,10 +4163,12 @@ void checkEventSupport (Context& context)
 #endif // CTS_USES_VULKANSC
 }
 
+#ifndef CTS_USES_VULKANSC
 void checkEventSupport (Context& context, const VkCommandBufferLevel)
 {
 	checkEventSupport(context);
 }
+#endif // CTS_USES_VULKANSC
 
 struct ManyDrawsParams
 {

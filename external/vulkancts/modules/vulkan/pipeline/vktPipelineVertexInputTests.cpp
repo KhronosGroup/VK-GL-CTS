@@ -890,6 +890,17 @@ std::string VertexInputTest::getGlslAttributeConditions (const AttributeInfo& at
 				else
 					glslCode << indentStr << "if (abs(" << accessStr << " - " << "(" << representableDiff << " * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0))) < " << threshold[rowNdx] << ")\n";
 			}
+			else if (isVertexFormatUfloat(attributeInfo.vkType))
+			{
+				if (VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].basicType == VertexInputTest::GLSL_BASIC_TYPE_DOUBLE)
+				{
+					glslCode << indentStr << "if (abs(" << accessStr << " - double(0.01 * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0))) < double(" << threshold[rowNdx] << "))\n";
+				}
+				else
+				{
+					glslCode << indentStr << "if (abs(" << accessStr << " - (0.01 * (" << totalComponentCount << ".0 * float(" << indexId << ") + " << componentIndex << ".0))) < (" << threshold[rowNdx] << "))\n";
+				}
+			}
 			else
 			{
 				DE_ASSERT(false);
@@ -938,6 +949,9 @@ tcu::Vec4 VertexInputTest::getFormatThreshold (VkFormat format)
 													1.5f * getRepresentableDifferenceUnormPacked(format, 2),
 													1.5f * getRepresentableDifferenceUnormPacked(format, 3))
 													: Vec4(1.5f * getRepresentableDifferenceUnorm(format)));
+	} else if (isVertexFormatUfloat(format))
+	{
+		return Vec4(0.008f);
 	}
 
 	return Vec4(0.001f);
@@ -1469,6 +1483,28 @@ void writeVertexInputValueSfloat (deUint8* destPtr, VkFormat format, int compone
 	}
 }
 
+void writeVertexInputValueUfloat (deUint8* destPtr, deUint32& packedFormat, deUint32& componentOffset, VkFormat format, deUint32 componentNdx, float value)
+{
+	deFloat16		f16				= deFloat32To16(value);
+
+	const deUint32	componentWidth	= getPackedVertexFormatComponentWidth(format, componentNdx);
+	const deUint32	componentCount	= getVertexFormatComponentCount(format);
+	const deUint32	usedBits		= ~(deUint32)0 >> ((getVertexFormatSize(format) * 8) - componentWidth);
+	// The ufloat 10 or 11 has no sign bit, but the same exponent bits than float16.
+	// The sign bit will be removed by the mask. Therefore we pick one more mantissa bit.
+	deUint32		valueUFloat		= f16 >> (16 - componentWidth - 1);
+
+	// TODO: VK_FORMAT_E5B9G9R9_UFLOAT_PACK32 not supported.
+	DE_ASSERT(format == VK_FORMAT_B10G11R11_UFLOAT_PACK32);
+
+	componentOffset -= componentWidth;
+	packedFormat |= (valueUFloat & usedBits) << componentOffset;
+
+	if (componentNdx == componentCount - 1)
+		*((deUint32*)destPtr) = (deUint32)packedFormat;
+}
+
+
 void VertexInputInstance::writeVertexInputValue (deUint8* destPtr, const VertexInputAttributeDescription& attribute, int indexId)
 {
 	const int		vertexInputCount	= VertexInputTest::s_glslTypeDescriptions[attribute.glslType].vertexInputCount;
@@ -1539,6 +1575,9 @@ void VertexInputInstance::writeVertexInputValue (deUint8* destPtr, const VertexI
 				if (isVertexFormatSfloat(attribute.vkDescription.format))
 				{
 					writeVertexInputValueSfloat(destPtr, attribute.vkDescription.format, componentNdx, -(0.01f * (float)(vertexInputIndex + swizzledNdx)));
+				} else if (isVertexFormatUfloat(attribute.vkDescription.format))
+				{
+					writeVertexInputValueUfloat(destPtr, packedFormat32, componentOffset, attribute.vkDescription.format, componentNdx, 0.01f * (float)(vertexInputIndex + swizzledNdx));
 				}
 				else if (isVertexFormatSscaled(attribute.vkDescription.format))
 				{
@@ -1609,7 +1648,8 @@ bool VertexInputTest::isCompatibleType (VkFormat format, GlslType glslType)
 
 			case GLSL_BASIC_TYPE_FLOAT:
 				return (isVertexFormatPacked(format) ? (getVertexFormatSize(format) <= 4) : getVertexFormatComponentSize(format) <= 4) && (isVertexFormatSfloat(format) ||
-					isVertexFormatSnorm(format) || isVertexFormatUnorm(format) || isVertexFormatSscaled(format) || isVertexFormatUscaled(format) || isVertexFormatSRGB(format));
+					isVertexFormatSnorm(format) || isVertexFormatUnorm(format) || isVertexFormatSscaled(format) || isVertexFormatUscaled(format) || isVertexFormatSRGB(format) ||
+					isVertexFormatUfloat(format));
 
 			case GLSL_BASIC_TYPE_DOUBLE:
 				return isVertexFormatSfloat(format) && getVertexFormatComponentSize(format) == 8;
@@ -1807,7 +1847,8 @@ void createSingleAttributeCases (tcu::TestCaseGroup* singleAttributeTests, Verte
 		VK_FORMAT_A2R10G10B10_UNORM_PACK32,
 		VK_FORMAT_A2R10G10B10_SNORM_PACK32,
 		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-		VK_FORMAT_A2B10G10R10_SNORM_PACK32
+		VK_FORMAT_A2B10G10R10_SNORM_PACK32,
+		VK_FORMAT_B10G11R11_UFLOAT_PACK32
 	};
 
 	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(vertexFormats); formatNdx++)

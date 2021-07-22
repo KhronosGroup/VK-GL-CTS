@@ -2,12 +2,12 @@
  * be lost! Modify the generating script instead.
  */
 
-void getCoreDeviceExtensionsImpl (deUint32 coreVersion, ::std::vector<const char*>&)
+void getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>&)
 {
 	DE_UNREF(coreVersion);
 }
 
-void getCoreInstanceExtensionsImpl (deUint32 coreVersion, ::std::vector<const char*>&)
+void getCoreInstanceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>&)
 {
 	DE_UNREF(coreVersion);
 }

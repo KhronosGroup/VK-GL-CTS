@@ -43,6 +43,7 @@ add_subdirectory(ray_tracing)
 add_subdirectory(ray_query)
 add_subdirectory(postmortem)
 add_subdirectory(fragment_shading_rate)
+add_subdirectory(reconvergence)
 
 
 include_directories(
@@ -89,6 +90,7 @@ include_directories(
 	ray_tracing
 	ray_query
 	postmortem
+	reconvergence
 	)
 
 set(DEQP_VK_SRCS
@@ -155,6 +157,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-ray-query
 	deqp-vk-postmortem
 	deqp-vk-fragment-shading-rate
+	deqp-vk-reconvergence
 	)
 
 set(DEQP_VKSC_LIBS
@@ -213,7 +216,7 @@ PCH(DEQP_VK_SRCS pch.cpp)
 
 add_deqp_module(deqp-vk "${DEQP_VK_SRCS}" "${DEQP_VK_LIBS}" "tcutil-platform" vktTestPackageEntry.cpp )
 
-add_deqp_module(deqp-vksc "${DEQP_VK_SRCS}" "${DEQP_VKSC_LIBS}" "tcutil-sc-platform" vktTestPackageEntrySC.cpp)
+add_deqp_module_skip_android(deqp-vksc "${DEQP_VK_SRCS}" "${DEQP_VKSC_LIBS}" "tcutil-sc-platform" vktTestPackageEntrySC.cpp)
 target_include_directories(deqp-vksc-package BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 if (NOT DE_OS_IS_ANDROID AND NOT DE_OS_IS_IOS)
 	target_include_directories(deqp-vksc BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)

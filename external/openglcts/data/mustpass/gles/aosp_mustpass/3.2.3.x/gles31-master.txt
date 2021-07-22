@@ -22269,7 +22269,6 @@ dEQP-GLES31.functional.program_interface_query.program_output.location.interface
 dEQP-GLES31.functional.program_interface_query.program_output.location.interface_blocks.out.unnamed_block.var_array_explicit_location
 dEQP-GLES31.functional.program_interface_query.program_output.location.interface_blocks.out.block_array.var
 dEQP-GLES31.functional.program_interface_query.program_output.location.interface_blocks.out.block_array.var_struct
-dEQP-GLES31.functional.program_interface_query.program_output.location.interface_blocks.out.block_array.var_array
 dEQP-GLES31.functional.program_interface_query.program_output.location.interface_blocks.patch_out.named_block.var
 dEQP-GLES31.functional.program_interface_query.program_output.location.interface_blocks.patch_out.named_block.var_explicit_location
 dEQP-GLES31.functional.program_interface_query.program_output.location.interface_blocks.patch_out.named_block.var_struct
@@ -22289,7 +22288,6 @@ dEQP-GLES31.functional.program_interface_query.program_output.location.interface
 dEQP-GLES31.functional.program_interface_query.program_output.location.interface_blocks.patch_out.unnamed_block.var_array
 dEQP-GLES31.functional.program_interface_query.program_output.location.interface_blocks.patch_out.unnamed_block.var_array_explicit_location
 dEQP-GLES31.functional.program_interface_query.program_output.location.interface_blocks.patch_out.block_array.var
-dEQP-GLES31.functional.program_interface_query.program_output.location.interface_blocks.patch_out.block_array.var_struct
 dEQP-GLES31.functional.program_interface_query.program_output.location.interface_blocks.patch_out.block_array.var_array
 dEQP-GLES31.functional.program_interface_query.program_output.name_length.vertex_fragment.var
 dEQP-GLES31.functional.program_interface_query.program_output.name_length.vertex_fragment.var_array

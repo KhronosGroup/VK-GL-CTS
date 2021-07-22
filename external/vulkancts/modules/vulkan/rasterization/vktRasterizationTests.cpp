@@ -27,6 +27,7 @@
 #include "vktAmberTestCase.hpp"
 #include "vktRasterizationTests.hpp"
 #include "vktRasterizationFragShaderSideEffectsTests.hpp"
+#include "vktRasterizationProvokingVertexTests.hpp"
 #include "tcuRasterizationVerifier.hpp"
 #include "tcuSurface.hpp"
 #include "tcuRenderTarget.hpp"
@@ -194,7 +195,7 @@ protected:
 	VkPipelineRasterizationLineStateCreateInfoEXT	initLineRasterizationStateCreateInfo	(void) const;
 
 	virtual
-	const VkPipelineRasterizationLineStateCreateInfoEXT*	getLineRasterizationStateCreateInfo	(void) const;
+	const VkPipelineRasterizationLineStateCreateInfoEXT*	getLineRasterizationStateCreateInfo	(void);
 
 	virtual
 	const VkPipelineColorBlendStateCreateInfo*		getColorBlendStateCreateInfo	(void) const;
@@ -259,7 +260,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance (Context& context, VkSample
 	, m_resultBufferSize	(renderSize * renderSize * m_textureFormat.getPixelSize())
 	, m_additionalRenderSize(additionalRenderSize)
 	, m_additionalResultBufferSize(additionalRenderSize * additionalRenderSize * m_textureFormat.getPixelSize())
-	, m_lineRasterizationStateInfo	(initLineRasterizationStateCreateInfo())
+	, m_lineRasterizationStateInfo	()
 {
 	const DeviceInterface&						vkd						= m_context.getDeviceInterface();
 	const VkDevice								vkDevice				= m_context.getDevice();
@@ -267,8 +268,6 @@ BaseRenderingTestInstance::BaseRenderingTestInstance (Context& context, VkSample
 	Allocator&									allocator				= m_context.getDefaultAllocator();
 	DescriptorPoolBuilder						descriptorPoolBuilder;
 	DescriptorSetLayoutBuilder					descriptorSetLayoutBuilder;
-
-	deMemset(&m_lineRasterizationStateInfo, 0, sizeof(m_lineRasterizationStateInfo));
 
 	// Command Pool
 	m_commandPool = createCommandPool(vkd, vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
@@ -911,8 +910,11 @@ VkPipelineRasterizationLineStateCreateInfoEXT BaseRenderingTestInstance::initLin
 	return lineRasterizationStateInfo;
 }
 
-const VkPipelineRasterizationLineStateCreateInfoEXT* BaseRenderingTestInstance::getLineRasterizationStateCreateInfo (void) const
+const VkPipelineRasterizationLineStateCreateInfoEXT* BaseRenderingTestInstance::getLineRasterizationStateCreateInfo (void)
 {
+	if (m_lineRasterizationStateInfo.sType != VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT)
+		m_lineRasterizationStateInfo = initLineRasterizationStateCreateInfo();
+
 	return &m_lineRasterizationStateInfo;
 }
 
@@ -1057,7 +1059,7 @@ public:
 	VkPipelineRasterizationLineStateCreateInfoEXT	initLineRasterizationStateCreateInfo	(void) const;
 
 	virtual
-	const VkPipelineRasterizationLineStateCreateInfoEXT*	getLineRasterizationStateCreateInfo	(void) const;
+	const VkPipelineRasterizationLineStateCreateInfoEXT*	getLineRasterizationStateCreateInfo	(void);
 
 protected:
 	int							getIteration			(void) const	{ return m_iteration;		}
@@ -1116,8 +1118,6 @@ BaseLineTestInstance::BaseLineTestInstance (Context&					context,
 	, m_lineRasterizationMode	(lineRasterizationMode)
 {
 	DE_ASSERT(m_primitiveWideness < PRIMITIVEWIDENESS_LAST);
-
-	m_lineRasterizationStateInfo = initLineRasterizationStateCreateInfo();
 
 	if (m_lineRasterizationMode != VK_LINE_RASTERIZATION_MODE_EXT_LAST)
 	{
@@ -1519,10 +1519,13 @@ VkPipelineRasterizationLineStateCreateInfoEXT BaseLineTestInstance::initLineRast
 	return lineRasterizationStateInfo;
 }
 
-const VkPipelineRasterizationLineStateCreateInfoEXT* BaseLineTestInstance::getLineRasterizationStateCreateInfo (void) const
+const VkPipelineRasterizationLineStateCreateInfoEXT* BaseLineTestInstance::getLineRasterizationStateCreateInfo (void)
 {
 	if (m_lineRasterizationMode == VK_LINE_RASTERIZATION_MODE_EXT_LAST)
 		return DE_NULL;
+
+	if (m_lineRasterizationStateInfo.sType != VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT)
+		m_lineRasterizationStateInfo = initLineRasterizationStateCreateInfo();
 
 	return &m_lineRasterizationStateInfo;
 }
@@ -2197,12 +2200,21 @@ void TriangleStripTestInstance::generateTriangles (int iteration, std::vector<tc
 class TriangleFanTestInstance : public BaseTriangleTestInstance
 {
 public:
-				TriangleFanTestInstance			(Context& context, VkSampleCountFlagBits sampleCount)
-					: BaseTriangleTestInstance(context, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN, sampleCount)
-				{}
+				TriangleFanTestInstance			(Context& context, VkSampleCountFlagBits sampleCount);
+
 
 	void		generateTriangles				(int iteration, std::vector<tcu::Vec4>& outData, std::vector<TriangleSceneSpec::SceneTriangle>& outTriangles);
 };
+
+TriangleFanTestInstance::TriangleFanTestInstance (Context& context, VkSampleCountFlagBits sampleCount)
+	: BaseTriangleTestInstance(context, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN, sampleCount)
+{
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!context.getPortabilitySubsetFeatures().triangleFans)
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
+	}
+}
 
 void TriangleFanTestInstance::generateTriangles (int iteration, std::vector<tcu::Vec4>& outData, std::vector<TriangleSceneSpec::SceneTriangle>& outTriangles)
 {
@@ -2470,7 +2482,7 @@ public:
 	const VkPipelineRasterizationStateCreateInfo*								getRasterizationStateCreateInfo					(void) const;
 
 protected:
-	virtual const VkPipelineRasterizationLineStateCreateInfoEXT*				getLineRasterizationStateCreateInfo				(void) const;
+	virtual const VkPipelineRasterizationLineStateCreateInfoEXT*				getLineRasterizationStateCreateInfo				(void);
 
 	virtual bool																compareAndVerify								(std::vector<TriangleSceneSpec::SceneTriangle>&	triangles,
 																																 tcu::Surface&									resultImage,
@@ -3208,7 +3220,7 @@ const VkPipelineRasterizationStateCreateInfo* ConservativeTraingleTestInstance::
 	return &m_rasterizationStateCreateInfo[getIteration()];
 }
 
-const VkPipelineRasterizationLineStateCreateInfoEXT* ConservativeTraingleTestInstance::getLineRasterizationStateCreateInfo	(void) const
+const VkPipelineRasterizationLineStateCreateInfoEXT* ConservativeTraingleTestInstance::getLineRasterizationStateCreateInfo	(void)
 {
 	return DE_NULL;
 }
@@ -3227,7 +3239,7 @@ public:
 	const VkPipelineRasterizationStateCreateInfo*								getRasterizationStateCreateInfo					(void) const;
 
 protected:
-	virtual const VkPipelineRasterizationLineStateCreateInfoEXT*				getLineRasterizationStateCreateInfo				(void) const;
+	virtual const VkPipelineRasterizationLineStateCreateInfoEXT*				getLineRasterizationStateCreateInfo				(void);
 
 	virtual bool																compareAndVerify								(std::vector<LineSceneSpec::SceneLine>&	lines,
 																																 tcu::Surface&							resultImage,
@@ -3963,7 +3975,7 @@ const VkPipelineRasterizationStateCreateInfo* ConservativeLineTestInstance::getR
 	return &m_rasterizationStateCreateInfo[getIteration()];
 }
 
-const VkPipelineRasterizationLineStateCreateInfoEXT* ConservativeLineTestInstance::getLineRasterizationStateCreateInfo	(void) const
+const VkPipelineRasterizationLineStateCreateInfoEXT* ConservativeLineTestInstance::getLineRasterizationStateCreateInfo	(void)
 {
 	return DE_NULL;
 }
@@ -4000,7 +4012,7 @@ public:
 	const VkPipelineRasterizationStateCreateInfo*								getRasterizationStateCreateInfo					(void) const;
 
 protected:
-	virtual const VkPipelineRasterizationLineStateCreateInfoEXT*				getLineRasterizationStateCreateInfo				(void) const;
+	virtual const VkPipelineRasterizationLineStateCreateInfoEXT*				getLineRasterizationStateCreateInfo				(void);
 
 	virtual bool																compareAndVerify								(std::vector<PointSceneSpec::ScenePoint>&	points,
 																																 tcu::Surface&								resultImage,
@@ -4400,7 +4412,7 @@ const VkPipelineRasterizationStateCreateInfo* ConservativePointTestInstance::get
 	return &m_rasterizationStateCreateInfo[getIteration()];
 }
 
-const VkPipelineRasterizationLineStateCreateInfoEXT* ConservativePointTestInstance::getLineRasterizationStateCreateInfo	(void) const
+const VkPipelineRasterizationLineStateCreateInfoEXT* ConservativePointTestInstance::getLineRasterizationStateCreateInfo	(void)
 {
 	return DE_NULL;
 }
@@ -7234,36 +7246,7 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 	// .provoking_vertex
 	{
-		tcu::TestCaseGroup* const	provokingVertex		= new tcu::TestCaseGroup(testCtx, "provoking_vertex", "Test provoking vertex");
-
-		struct Params { const char *type; bool requireGeometryShader; };
-		Params	primitiveTypes[]	=
-		{
-			{ "triangle_list", false },
-			{ "triangle_list_with_adjacency", true },
-			{ "triangle_strip", false },
-			{ "triangle_strip_with_adjacency", true },
-			{ "triangle_fan", false },
-			{ "line_list", false },
-			{ "line_list_with_adjacency", true },
-			{ "line_strip", false },
-			{ "line_strip_with_adjacency", true },
-		};
-
-		rasterizationTests->addChild(provokingVertex);
-
-		for (deUint32 primitiveTypeIdx = 0; primitiveTypeIdx < DE_LENGTH_OF_ARRAY(primitiveTypes); primitiveTypeIdx++)
-		{
-			Params &					params		= primitiveTypes[primitiveTypeIdx];
-			const std::string			file		= std::string(params.type) + ".amber";
-
-			cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, params.type, "", "provoking_vertex", file);
-			if (params.requireGeometryShader)
-			{
-				testCase->addRequirement("Features.geometryShader");
-			}
-			provokingVertex->addChild(testCase);
-		}
+		rasterizationTests->addChild(createProvokingVertexTests(testCtx));
 	}
 
 	// .line_continuity

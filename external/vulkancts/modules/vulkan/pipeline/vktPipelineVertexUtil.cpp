@@ -523,6 +523,7 @@ bool isVertexFormatComponentOrderBGR (VkFormat format)
 		case VK_FORMAT_A2B10G10R10_SSCALED_PACK32:
 		case VK_FORMAT_A2B10G10R10_UINT_PACK32:
 		case VK_FORMAT_A2B10G10R10_SINT_PACK32:
+		case VK_FORMAT_B10G11R11_UFLOAT_PACK32:
 			return true;
 
 		default:

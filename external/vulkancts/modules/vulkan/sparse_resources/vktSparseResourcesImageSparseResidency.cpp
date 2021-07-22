@@ -795,7 +795,6 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 			tcu::ConstPixelBufferAccess		pixelBuffer					= vk::getChannelAccess(compatibleFormatDescription, compatibleShaderGridSize, planeRowPitches, (const void* const*)planePointers, channelNdx);
 			VkExtent3D						planeExtent					= getPlaneExtent(compatibleFormatDescription, compatibleImageSize, planeNdx, 0u);
 			tcu::IVec3						pixelDivider				= pixelBuffer.getDivider();
-			float							fixedPointError				= tcu::TexVerifierUtil::computeFixedPointError(formatDescription.channels[channelNdx].sizeBits);
 
 			if( aspectRequirements.imageMipTailFirstLod > 0u )
 			{
@@ -869,6 +868,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 									case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 									case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 									{
+                                        float fixedPointError = tcu::TexVerifierUtil::computeFixedPointError(formatDescription.channels[channelNdx].sizeBits);
 										acceptableError += fixedPointError;
 										const tcu::Vec4 outputValue = pixelBuffer.getPixel(offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), offsetZ * pixelDivider.z());
 
@@ -913,6 +913,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 									case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 									case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 									{
+										float fixedPointError = tcu::TexVerifierUtil::computeFixedPointError(formatDescription.channels[channelNdx].sizeBits);
 										acceptableError += fixedPointError;
 										const tcu::Vec4 outputValue = pixelBuffer.getPixel(offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), offsetZ * pixelDivider.z());
 
@@ -982,6 +983,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 						case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 						case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 						{
+							float fixedPointError = tcu::TexVerifierUtil::computeFixedPointError(formatDescription.channels[channelNdx].sizeBits);
 							acceptableError += fixedPointError;
 							const tcu::Vec4 outputValue = pixelBuffer.getPixel(offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), offsetZ * pixelDivider.z());
 

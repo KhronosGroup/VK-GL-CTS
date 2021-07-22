@@ -1,0 +1,128 @@
+#!amber
+
+# Copyright 2021 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a coverage-gap found by the GraphicsFuzz project.
+
+# Short description: A fragment shader that covers specific VTN code path
+
+# The test passes because the shader always writes red.
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 320 es
+#
+# precision highp float;
+# precision highp int;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# void main()
+# {
+#     mat2 m = transpose(mat2(1, 2, 3, 4)) / 2.0;
+#
+#     if (m == mat2(0.5, 1.5, 1.0, 2.0))
+#         _GLF_color = vec4(1, 0, 0, 1);
+#     else
+#         _GLF_color = vec4(0);
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 10
+; Bound: 46
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %41
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %10 "m"
+               OpName %41 "_GLF_color"
+               OpDecorate %41 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 2
+          %8 = OpTypeMatrix %7 2
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %6 1
+         %12 = OpConstant %6 2
+         %13 = OpConstantComposite %7 %11 %12
+         %14 = OpConstant %6 3
+         %15 = OpConstant %6 4
+         %16 = OpConstantComposite %7 %14 %15
+         %17 = OpConstantComposite %8 %13 %16
+         %22 = OpConstant %6 0.5
+         %23 = OpConstant %6 1.5
+         %24 = OpConstantComposite %7 %22 %23
+         %25 = OpConstantComposite %8 %24 %13
+         %26 = OpTypeBool
+         %29 = OpTypeVector %26 2
+         %39 = OpTypeVector %6 4
+         %40 = OpTypePointer Output %39
+         %41 = OpVariable %40 Output
+         %42 = OpConstant %6 0
+         %43 = OpConstantComposite %39 %11 %42 %42 %11
+         %45 = OpConstantComposite %39 %42 %42 %42 %42
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %10 = OpVariable %9 Function
+         %18 = OpTranspose %8 %17
+         %19 = OpFDiv %6 %11 %12
+         %20 = OpMatrixTimesScalar %8 %18 %19
+               OpStore %10 %20
+         %21 = OpLoad %8 %10
+         %27 = OpCompositeExtract %7 %21 0
+         %28 = OpCompositeExtract %7 %25 0
+         %30 = OpFOrdEqual %29 %27 %28
+         %31 = OpAll %26 %30
+         %32 = OpCompositeExtract %7 %21 1
+         %33 = OpCompositeExtract %7 %25 1
+         %34 = OpFOrdEqual %29 %32 %33
+         %35 = OpAll %26 %34
+         %36 = OpLogicalAnd %26 %31 %35
+               OpSelectionMerge %38 None
+               OpBranchConditional %36 %37 %44
+         %37 = OpLabel
+               OpStore %41 %43
+               OpBranch %38
+         %44 = OpLabel
+               OpStore %41 %45
+               OpBranch %38
+         %38 = OpLabel
+               OpReturn
+               OpFunctionEnd
+END
+
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255

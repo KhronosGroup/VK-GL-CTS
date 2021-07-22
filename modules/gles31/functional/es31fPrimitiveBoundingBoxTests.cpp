@@ -4848,9 +4848,14 @@ bool ViewportCallOrderCase::verifyImage (const tcu::PixelBufferAccess& result)
 	for (int y = 0; y < result.getHeight(); ++y)
 	for (int x = 0; x < result.getWidth(); ++x)
 	{
+		/*
+			Test stores the xmin,xmax values in the insideBorder and outsideBorder vectors.
+			Thus the "y" in the vector is xmax.
+		*/
+
 		const tcu::IVec4	pixel			= result.getPixelInt(x, y);
-		const bool			insideMeshArea	= x >= insideBorder.x() && x <= insideBorder.x();
-		const bool			outsideMeshArea = x <= outsideBorder.x() && x >= outsideBorder.x();
+		const bool			insideMeshArea	= x >= insideBorder.x() && x <= insideBorder.y();
+		const bool			outsideMeshArea	= x <= outsideBorder.x() && x >= outsideBorder.y();
 
 		// inside mesh, allow green, yellow and any shade between
 		// outside mesh, allow background (black) only

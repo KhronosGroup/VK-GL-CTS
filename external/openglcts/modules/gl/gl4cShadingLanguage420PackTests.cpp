@@ -4691,6 +4691,7 @@ std::string ImplicitConversionsValidTest::getValueList(glw::GLuint n_columns, gl
 ImplicitConversionsInvalidTest::ImplicitConversionsInvalidTest(deqp::Context& context)
 	: NegativeTestBase(context, "implicit_conversions_invalid",
 					   "Verifies that implicit conversions from uint to int are forbidden")
+	, m_current_test_case_index(0)
 {
 	/* Nothing to be done here */
 }
@@ -5282,6 +5283,7 @@ void ConstDynamicValueTest::prepareUniforms(Utils::program& program)
  **/
 ConstAssignmentTest::ConstAssignmentTest(deqp::Context& context)
 	: NegativeTestBase(context, "const_assignment", "Verifies that constants cannot be overwritten")
+	, m_current_test_case_index(0)
 {
 	/* Nothing to be done here */
 }
@@ -5742,6 +5744,7 @@ void ConstDynamicValueAsConstExprTest::prepareShaderSource(Utils::SHADER_STAGES 
 QualifierOrderTest::QualifierOrderTest(deqp::Context& context)
 	: GLSLTestBase(context, "qualifier_order",
 				   "Test verifies that valid permutation of input and output qalifiers are accepted")
+	, m_current_test_case_index(0)
 {
 	/* Nothing to be done */
 }
@@ -6110,6 +6113,7 @@ const Utils::qualifierSet& QualifierOrderTest::getCurrentTestCase()
 QualifierOrderBlockTest::QualifierOrderBlockTest(deqp::Context& context)
 	: GLSLTestBase(context, "qualifier_order_block",
 				   "Verifies that qualifiers of members of input block can be arranged in any order")
+	, m_current_test_case_index(0)
 {
 	/* Nothing to be done here */
 }
@@ -6496,6 +6500,7 @@ const Utils::qualifierSet& QualifierOrderBlockTest::getCurrentTestCase()
 QualifierOrderUniformTest::QualifierOrderUniformTest(deqp::Context& context)
 	: GLSLTestBase(context, "qualifier_order_uniform",
 				   "Test verifies that all valid permutation of input qalifiers are accepted")
+	, m_current_test_case_index(0)
 {
 	/* Nothing to be done here */
 }
@@ -6810,6 +6815,7 @@ const Utils::qualifierSet& QualifierOrderUniformTest::getCurrentTestCase()
  **/
 QualifierOrderFunctionInoutTest::QualifierOrderFunctionInoutTest(deqp::Context& context)
 	: GLSLTestBase(context, "qualifier_order_function_inout", "Verify order of qualifiers of inout function parameters")
+	, m_current_test_case_index(0)
 {
 	/* Nothing to be done here */
 }
@@ -7128,6 +7134,7 @@ const Utils::qualifierSet& QualifierOrderFunctionInoutTest::getCurrentTestCase()
  **/
 QualifierOrderFunctionInputTest::QualifierOrderFunctionInputTest(deqp::Context& context)
 	: GLSLTestBase(context, "qualifier_order_function_input", "Verify order of qualifiers of function input parameters")
+	, m_current_test_case_index(0)
 {
 	/* Nothing to be done here */
 }
@@ -7451,6 +7458,7 @@ const Utils::qualifierSet& QualifierOrderFunctionInputTest::getCurrentTestCase()
 QualifierOrderFunctionOutputTest::QualifierOrderFunctionOutputTest(deqp::Context& context)
 	: GLSLTestBase(context, "qualifier_order_function_output",
 				   "Verify order of qualifiers of output function parameters")
+	, m_current_test_case_index(0)
 {
 	/* Nothing to be done here */
 }
@@ -8259,6 +8267,7 @@ void BindingUniformBlocksTest::releaseResource()
 BindingUniformSingleBlockTest::BindingUniformSingleBlockTest(deqp::Context& context)
 	: GLSLTestBase(context, "binding_uniform_single_block", "Test verifies uniform block binding")
 	, m_goku_buffer(context)
+	, m_test_stage(Utils::SHADER_STAGES_MAX)
 {
 	/* Nothing to be done here */
 }
@@ -9597,6 +9606,7 @@ void BindingUniformGlobalBlockTest::prepareShaderSource(Utils::SHADER_STAGES in_
  **/
 BindingUniformInvalidTest::BindingUniformInvalidTest(deqp::Context& context)
 	: NegativeTestBase(context, "binding_uniform_invalid", "Test verifies invalid binding values")
+	, m_case(TEST_CASES_MAX)
 {
 	/* Nothing to be done here */
 }
@@ -9870,6 +9880,7 @@ BindingSamplersTest::BindingSamplersTest(deqp::Context& context)
 	, m_vegeta_texture(context)
 	, m_trunks_texture(context)
 	, m_buffer(context)
+	, m_test_case(Utils::TEXTURE_TYPES_MAX)
 {
 	/* Nothing to be done here */
 }
@@ -13473,6 +13484,7 @@ const GLfloat InitializerListTest::m_value = 0.0625f;
  **/
 InitializerListTest::InitializerListTest(deqp::Context& context)
 	: GLSLTestBase(context, "initializer_list", "Test verifies initializer lists")
+	, m_current_test_case_index(0)
 {
 	/* Nothing to be done here */
 }
@@ -14792,6 +14804,7 @@ std::string InitializerListTest::getVectorValues(GLuint column, GLuint size)
  **/
 InitializerListNegativeTest::InitializerListNegativeTest(deqp::Context& context)
 	: NegativeTestBase(context, "initializer_list_negative", "Verifies invalid initializers")
+	, m_current_test_case_index(0)
 {
 	/* Nothing to be done here */
 }
@@ -17922,11 +17935,11 @@ Utils::shaderSource::shaderSource()
 {
 }
 
-Utils::shaderSource::shaderSource(const shaderSource& source) : m_parts(source.m_parts)
+Utils::shaderSource::shaderSource(const shaderSource& source) : m_parts(source.m_parts), m_use_lengths(false)
 {
 }
 
-Utils::shaderSource::shaderSource(const glw::GLchar* source_code)
+Utils::shaderSource::shaderSource(const glw::GLchar* source_code) : m_use_lengths(false)
 {
 	if (0 != source_code)
 	{
@@ -18558,7 +18571,7 @@ void Utils::program::printShaderSource(const shaderSource& source, tcu::MessageB
  *
  * @param context CTS context.
  **/
-Utils::texture::texture(deqp::Context& context) : m_id(0), m_context(context), m_texture_type(TEX_2D)
+Utils::texture::texture(deqp::Context& context) : m_id(0), m_buffer_id(0), m_context(context), m_texture_type(TEX_2D)
 {
 	/* Nothing to done here */
 }

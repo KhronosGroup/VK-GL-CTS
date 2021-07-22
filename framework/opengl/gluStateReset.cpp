@@ -1204,7 +1204,7 @@ void resetStateGLCore (const RenderContext& renderCtx, const ContextInfo& ctxInf
 		gl.getIntegerv(GL_MAX_IMAGE_UNITS, &numImageUnits);
 
 		for (int ndx = 0; ndx < numImageUnits; ndx++)
-			gl.bindImageTexture(ndx, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
+			gl.bindImageTexture(ndx, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
 
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Image state reset failed");
 	}

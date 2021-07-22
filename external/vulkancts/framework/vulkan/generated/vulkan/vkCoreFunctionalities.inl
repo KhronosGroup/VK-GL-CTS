@@ -11,14 +11,14 @@ enum FunctionOrigin
 
 typedef ::std::pair<const char*, FunctionOrigin> FunctionInfo;
 typedef ::std::vector<FunctionInfo> FunctionInfosList;
-typedef ::std::map<deUint32, FunctionInfosList> ApisMap;
+typedef ::std::map<uint32_t, FunctionInfosList> ApisMap;
 
 void initApisMap (ApisMap& apis)
 {
 	apis.clear();
-	apis.insert(::std::pair<deUint32, FunctionInfosList>(VK_API_VERSION_1_0, FunctionInfosList()));
-	apis.insert(::std::pair<deUint32, FunctionInfosList>(VK_API_VERSION_1_1, FunctionInfosList()));
-	apis.insert(::std::pair<deUint32, FunctionInfosList>(VK_API_VERSION_1_2, FunctionInfosList()));
+	apis.insert(::std::pair<uint32_t, FunctionInfosList>(VK_API_VERSION_1_0, FunctionInfosList()));
+	apis.insert(::std::pair<uint32_t, FunctionInfosList>(VK_API_VERSION_1_1, FunctionInfosList()));
+	apis.insert(::std::pair<uint32_t, FunctionInfosList>(VK_API_VERSION_1_2, FunctionInfosList()));
 
 	apis[VK_API_VERSION_1_0].push_back(FunctionInfo("vkCreateInstance",									FUNCTIONORIGIN_PLATFORM));
 	apis[VK_API_VERSION_1_0].push_back(FunctionInfo("vkDestroyInstance",								FUNCTIONORIGIN_INSTANCE));

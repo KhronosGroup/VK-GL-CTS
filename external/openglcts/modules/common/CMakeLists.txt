@@ -6,6 +6,7 @@ if (DEQP_SUPPORT_WGL)
 endif ()
 
 add_subdirectory(subgroups)
+include_directories(subgroups)
 
 set(GLCTS_COMMON_SRCS
 	glcAggressiveShaderOptimizationsTests.cpp
@@ -84,8 +85,6 @@ set(GLCTS_COMMON_SRCS
 	glcShaderRenderCase.hpp
 	glcShaderStructTests.cpp
 	glcShaderStructTests.hpp
-	glcShaderSwitchTests.cpp
-	glcShaderSwitchTests.hpp
 	glcSampleVariablesTests.cpp
 	glcSampleVariablesTests.hpp
 	glcSpirvUtils.cpp

@@ -333,10 +333,12 @@ T alignToPowerOfTwo (T value, T align)
 	return (value + align - T(1)) & ~(align - T(1));
 }
 
+#ifndef CTS_USES_VULKANSC
 inline bool hasDeviceExtension (Context& context, const string name)
 {
 	return context.isDeviceFunctionalitySupported(name);
 }
+#endif // CTS_USES_VULKANSC
 
 VkDeviceSize getPageTableSize (const PlatformMemoryLimits& limits, VkDeviceSize allocationSize)
 {
@@ -2766,6 +2768,8 @@ struct EnvClone
 	}
 };
 
+#ifndef CTS_USES_VULKANSC
+
 Device::Parameters getDefaulDeviceParameters (Context& context)
 {
 	return Device::Parameters(context.getTestContext().getCommandLine().getVKDeviceId()-1u,
@@ -2861,9 +2865,15 @@ tcu::TestStatus createSingleAllocCallbacksTest (Context& context, typename Objec
 	return tcu::TestStatus::pass("Ok");
 }
 
+#endif // CTS_USES_VULKANSC
+
 template<typename Object>	deUint32	getOomIterLimit					(void) { return 40;		}
+#ifndef CTS_USES_VULKANSC
 template<>					deUint32	getOomIterLimit<Device>			(void) { return 20;		}
 template<>					deUint32	getOomIterLimit<DeviceGroup>	(void) { return 20;		}
+#endif // CTS_USES_VULKANSC
+
+#ifndef CTS_USES_VULKANSC
 
 template<typename Object>
 tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parameters params)
@@ -2973,15 +2983,22 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 		return tcu::TestStatus::pass("Ok");
 }
 
+#endif // CTS_USES_VULKANSC
+
 // Determine whether an API call sets the invalid handles to NULL (true) or leaves them undefined or not modified (false)
 template<typename T> inline bool isNullHandleOnAllocationFailure				  (Context&)		 { return false; }
+
+#ifndef CTS_USES_VULKANSC
 template<>			 inline bool isNullHandleOnAllocationFailure<VkCommandBuffer> (Context& context) { return hasDeviceExtension(context, "VK_KHR_maintenance1"); }
 template<>			 inline bool isNullHandleOnAllocationFailure<VkDescriptorSet> (Context& context) { return hasDeviceExtension(context, "VK_KHR_maintenance1"); }
 template<>			 inline bool isNullHandleOnAllocationFailure<VkPipeline>	  (Context&)		 { return true;  }
+#endif // CTS_USES_VULKANSC
 
 template<typename T> inline bool isPooledObject					 (void) { return false; };
+#ifndef CTS_USES_VULKANSC
 template<>			 inline bool isPooledObject<VkCommandBuffer> (void) { return true;  };
 template<>			 inline bool isPooledObject<VkDescriptorSet> (void) { return true;  };
+#endif // CTS_USES_VULKANSC
 
 template<typename Object>
 tcu::TestStatus allocCallbackFailMultipleObjectsTest (Context& context, typename Object::Parameters params)
@@ -3177,6 +3194,7 @@ static void createTests (tcu::TestCaseGroup* group, CaseDescriptions cases)
 	addCases			(group, cases.commandBuffer);
 }
 
+#ifndef CTS_USES_VULKANSC
 static void cleanupGroup (tcu::TestCaseGroup* group, CaseDescriptions cases)
 {
 	DE_UNREF(group);
@@ -3187,6 +3205,7 @@ static void cleanupGroup (tcu::TestCaseGroup* group, CaseDescriptions cases)
 	SingletonDevice::destroy();
 #endif // CTS_USES_VULKANSC
 }
+#endif // CTS_USES_VULKANSC
 
 tcu::TestCaseGroup* createGroup (tcu::TestContext& testCtx, const char* name, const char* desc, const CaseDescriptions& cases)
 {

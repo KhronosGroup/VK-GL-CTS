@@ -86,7 +86,7 @@ const char* PipelineStatisticsQueryUtilities::dummy_cs_code =
 	"    atomicCounterIncrement(test_counter);\n"
 	"}\n";
 const char* PipelineStatisticsQueryUtilities::dummy_cs_code_arb =
-	"#version 330\n"
+	"#version 420 core\n"
 	"#extension GL_ARB_compute_shader : require\n"
 	"#extension GL_ARB_shader_atomic_counters : require\n"
 	"\n"
@@ -1670,6 +1670,11 @@ PipelineStatisticsQueryTestFunctionalBase::PipelineStatisticsQueryTestFunctional
 	, m_vbo_id(0)
 	, m_to_height(64)
 	, m_to_width(64)
+	, m_vbo_indirect_arrays_argument_offset(0)
+	, m_vbo_indirect_elements_argument_offset(0)
+	, m_vbo_index_data_offset(0)
+	, m_vbo_n_indices(0)
+	, m_vbo_vertex_data_offset(0)
 	, m_current_draw_call_type(PipelineStatisticsQueryUtilities::DRAW_CALL_TYPE_COUNT)
 	, m_current_primitive_type(PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_COUNT)
 	, m_indirect_draw_call_baseinstance_argument(0)

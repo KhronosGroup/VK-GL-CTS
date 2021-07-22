@@ -781,29 +781,27 @@ void BindingAcceleratioStructureGraphicsTestInstance::checkSupport (Context&			c
 {
 	switch (testParams.stage)
 	{
-		case VK_SHADER_STAGE_VERTEX_BIT:
-			break;
+	case VK_SHADER_STAGE_VERTEX_BIT:
+	case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+	case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+	case VK_SHADER_STAGE_GEOMETRY_BIT:
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
+		break;
+	default:
+		break;
+	}
 
-		case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
-		case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
-		{
-			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
-
-			break;
-		}
-
-		case VK_SHADER_STAGE_GEOMETRY_BIT:
-		{
-			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
-
-			break;
-		}
-
-		case VK_SHADER_STAGE_FRAGMENT_BIT:
-			break;
-
-		default:
-			TCU_THROW(InternalError, "Unknown stage");
+	switch (testParams.stage)
+	{
+	case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+	case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+		break;
+	case VK_SHADER_STAGE_GEOMETRY_BIT:
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+		break;
+	default:
+		break;
 	}
 }
 
@@ -2103,6 +2101,10 @@ void BindingAcceleratioStructureRayTracingRayTracingTestInstance::initPipeline (
 	if (0 != (m_shaders & VK_SHADER_STAGE_ANY_HIT_BIT_KHR))			m_rayTracingPipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR			, createShaderModule(vkd, device, collection.get("ahit"), 0), m_hitShaderGroup);
 	if (0 != (m_shaders & VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR))		m_rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR		, createShaderModule(vkd, device, collection.get("chit"), 0), m_hitShaderGroup);
 	if (0 != (m_shaders & VK_SHADER_STAGE_MISS_BIT_KHR))			m_rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR			, createShaderModule(vkd, device, collection.get("miss"), 0), m_missShaderGroup);
+
+	// The "chit" and "miss" cases both generate more rays from their shaders.
+	if (m_testParams.testType == TEST_TYPE_USING_RAY_TRACING && (m_testParams.stage == VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR || m_testParams.stage == VK_SHADER_STAGE_MISS_BIT_KHR))
+		m_rayTracingPipeline->setMaxRecursionDepth(2u);
 
 	if (0 != (shaders0 & VK_SHADER_STAGE_ANY_HIT_BIT_KHR))			m_rayTracingPipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR			, createShaderModule(vkd, device, collection.get("ahit0"), 0), m_hitShaderGroup + 1);
 	if (0 != (shaders0 & VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR))		m_rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR		, createShaderModule(vkd, device, collection.get("chit0"), 0), m_hitShaderGroup + 1);

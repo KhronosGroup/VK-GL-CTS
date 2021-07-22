@@ -8,6 +8,8 @@ set(DEQP_VK_RASTERIZATION_SRCS
 	vktRasterizationTests.hpp
 	vktRasterizationFragShaderSideEffectsTests.cpp
 	vktRasterizationFragShaderSideEffectsTests.hpp
+	vktRasterizationProvokingVertexTests.cpp
+	vktRasterizationProvokingVertexTests.hpp
 	)
 
 set(DEQP_VK_RASTERIZATION_LIBS

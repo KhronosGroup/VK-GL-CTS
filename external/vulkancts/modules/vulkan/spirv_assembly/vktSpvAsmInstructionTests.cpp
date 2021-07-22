@@ -20471,6 +20471,47 @@ tcu::TestCaseGroup* createEarlyFragmentTests(tcu::TestContext& testCtx)
 	return earlyFragTests.release();
 }
 
+tcu::TestCaseGroup* createOpExecutionModeTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "execution_mode", "Execution mode tests"));
+
+	static const char dataDir[] = "spirv_assembly/instruction/graphics/execution_mode";
+
+	static const struct Case
+	{
+		const string name;
+		const string desc;
+	} cases[] =
+	{
+		{ "depthless_0",		"FragDepth < Polygon depth: depth test should pass." },
+		{ "depthless_1",		"FragDepth > Polygon depth: violates the promise that FragDepth is less than the implicit depth, but the depth test should pass." },
+		{ "depthless_2",		"FragDepth < Polygon depth: depth test should fail." },
+		{ "depthless_3",		"FragDepth > Polygon depth: violates the promise that FragDepth is less than the implicit depth, the depth test should fail." },
+		{ "depthless_4",		"FragDepth < Polygon depth: depth test should pass." },
+		{ "depthgreater_0",		"FragDepth > Polygon depth: depth test should pass." },
+		{ "depthgreater_1",		"FragDepth < Polygon depth: violates the promise that FragDepth is greater than the implicit depth, but the depth test should pass." },
+		{ "depthgreater_2",		"FragDepth > Polygon depth: depth test should fail." },
+		{ "depthgreater_3",		"FragDepth > Polygon depth: violates the promise that FragDepth is greater than the implicit depth, the depth test should fail." },
+		{ "depthgreater_4",		"FragDepth > Polygon depth: depth test should pass." },
+		{ "depthunchanged_0",	"FragDepth == Polygon depth: depth test should pass." },
+		{ "depthunchanged_1",	"FragDepth == Polygon depth: depth test should fail." },
+		{ "depthunchanged_2",	"FragDepth != Polygon depth: violates the promise that FragDepth is equal to the implicit depth, the depth test should pass." },
+		{ "depthunchanged_3",	"FragDepth != Polygon depth: violates the promise that FragDepth is equal to the implicit depth, the depth test should fail." },
+	};
+
+	for (const auto& case_ : cases)
+	{
+		cts_amber::AmberTestCase *testCase = cts_amber::createAmberTestCase(testCtx,
+																			case_.name.c_str(),
+																			case_.desc.c_str(),
+																			dataDir,
+																			case_.name + ".amber");
+		testGroup->addChild(testCase);
+	}
+
+	return testGroup.release();
+}
+
 tcu::TestCaseGroup* createQueryGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "image_query", "image query tests"));
@@ -20664,6 +20705,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createSpirvIdsAbuseTests(testCtx));
 	graphicsTests->addChild(create64bitCompareGraphicsGroup(testCtx));
 	graphicsTests->addChild(createEarlyFragmentTests(testCtx));
+	graphicsTests->addChild(createOpExecutionModeTests(testCtx));
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());

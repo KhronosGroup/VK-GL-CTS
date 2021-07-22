@@ -564,18 +564,16 @@ tcu::TestStatus enumerateDevicesAllocLeakTest(Context& context)
 
 	typedef AllocationCallbackRecorder::RecordIterator RecordIterator;
 
-	const PlatformInterface&	vkp				(context.getPlatformInterface());
-	const deUint32				apiVersion		(context.getUsedApiVersion());
 	DeterministicFailAllocator	objAllocator	(getSystemAllocator(), DeterministicFailAllocator::MODE_DO_NOT_COUNT, 0);
 	AllocationCallbackRecorder	recorder		(objAllocator.getCallbacks(), 128);
-	Move<VkInstance>			instance		(vk::createDefaultInstance(vkp, apiVersion, {}, {}, recorder.getCallbacks()));
-	InstanceDriver				vki				(vkp, *instance);
-	vector<VkPhysicalDevice>	devices			(enumeratePhysicalDevices(vki, *instance));
+	const auto					instance		= createCustomInstanceFromContext(context, recorder.getCallbacks(), true);
+	const auto&					vki				= instance.getDriver();
+	vector<VkPhysicalDevice>	devices			(enumeratePhysicalDevices(vki, instance));
 	RecordIterator				recordToCheck	(recorder.getRecordsEnd());
 
 	try
 	{
-		devices = enumeratePhysicalDevices(vki, *instance);
+		devices = enumeratePhysicalDevices(vki, instance);
 	}
 	catch (const vk::OutOfMemoryError& e)
 	{
@@ -1027,6 +1025,159 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
+#ifndef CTS_USES_VULKANSC
+void checkGlobalPriorityQuerySupport (Context& context)
+{
+	context.requireDeviceFunctionality("VK_EXT_global_priority_query");
+}
+
+deBool isValidGlobalPriority(VkQueueGlobalPriorityEXT priority)
+{
+	switch (priority) {
+		case VK_QUEUE_GLOBAL_PRIORITY_LOW_EXT:
+		case VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT:
+		case VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT:
+		case VK_QUEUE_GLOBAL_PRIORITY_REALTIME_EXT:
+			return DE_TRUE;
+		default:
+			return DE_FALSE;
+	}
+}
+
+void checkGlobalPriorityProperties(const VkQueueFamilyGlobalPriorityPropertiesEXT& properties)
+{
+	TCU_CHECK(properties.priorityCount > 0);
+	TCU_CHECK(properties.priorityCount <= VK_MAX_GLOBAL_PRIORITY_SIZE_EXT);
+	TCU_CHECK(isValidGlobalPriority(properties.priorities[0]));
+
+	for (deUint32 ndx = 1; ndx < properties.priorityCount; ndx++)
+	{
+		TCU_CHECK(isValidGlobalPriority(properties.priorities[ndx]));
+		TCU_CHECK(properties.priorities[ndx] == (properties.priorities[ndx - 1] << 1));
+	}
+}
+#endif // CTS_USES_VULKANSC
+
+#ifndef CTS_USES_VULKANSC
+tcu::TestStatus createDeviceWithQueriedGlobalPriorityTest (Context& context)
+{
+	tcu::TestLog&					log							= context.getTestContext().getLog();
+	const PlatformInterface&		platformInterface			= context.getPlatformInterface();
+	const CustomInstance			instance					(createCustomInstanceFromContext(context));
+	const InstanceDriver&			instanceDriver				(instance.getDriver());
+	const VkPhysicalDevice			physicalDevice				= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const VkQueueGlobalPriorityEXT	globalPriorities[]			= { VK_QUEUE_GLOBAL_PRIORITY_LOW_EXT, VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT, VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT, VK_QUEUE_GLOBAL_PRIORITY_REALTIME_EXT };
+	const vector<float>				queuePriorities				(1, 1.0f);
+	std::vector<const char*>		enabledExtensions			= {"VK_EXT_global_priority", "VK_EXT_global_priority_query"};
+	deUint32						queueFamilyPropertyCount	= ~0u;
+
+	instanceDriver.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyPropertyCount, DE_NULL);
+	TCU_CHECK(queueFamilyPropertyCount > 0);
+
+	std::vector<VkQueueFamilyProperties2>					queueFamilyProperties2		(queueFamilyPropertyCount);
+	std::vector<VkQueueFamilyGlobalPriorityPropertiesEXT>	globalPriorityProperties	(queueFamilyPropertyCount);
+
+	for (deUint32 ndx = 0; ndx < queueFamilyPropertyCount; ndx++)
+	{
+		globalPriorityProperties[ndx].sType	= VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_EXT;
+		globalPriorityProperties[ndx].pNext	= DE_NULL;
+		queueFamilyProperties2[ndx].sType	= VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2;
+		queueFamilyProperties2[ndx].pNext	= &globalPriorityProperties[ndx];
+	}
+
+	instanceDriver.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyPropertyCount, queueFamilyProperties2.data());
+	TCU_CHECK((size_t)queueFamilyPropertyCount == queueFamilyProperties2.size());
+
+	if (!context.contextSupports(vk::ApiVersion(1, 1, 0)))
+	{
+		enabledExtensions.emplace_back("VK_KHR_get_physical_device_properties2");
+	}
+
+	for (deUint32 ndx = 0; ndx < queueFamilyPropertyCount; ndx++)
+	{
+		checkGlobalPriorityProperties(globalPriorityProperties[ndx]);
+
+		for (VkQueueGlobalPriorityEXT globalPriority : globalPriorities)
+		{
+			const VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT	globalPriorityQueryFeatures		=
+			{
+				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_EXT,	//sType;
+				DE_NULL,																//pNext;
+				VK_TRUE																	//globalPriorityQuery;
+			};
+			const VkDeviceQueueGlobalPriorityCreateInfoEXT			queueGlobalPriorityCreateInfo	=
+			{
+				VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT,			//sType;
+				DE_NULL,																//pNext;
+				globalPriority,															//globalPriority;
+			};
+			const VkDeviceQueueCreateInfo							queueCreateInfo					=
+			{
+				VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,								//sType;
+				&queueGlobalPriorityCreateInfo,											//pNext;
+				(VkDeviceQueueCreateFlags)0u,											//flags;
+				ndx,																	//queueFamilyIndex;
+				1,																		//queueCount;
+				queuePriorities.data()													//pQueuePriorities;
+			};
+			const VkDeviceCreateInfo								deviceCreateInfo				=
+			{
+				VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,									//sType;
+				&globalPriorityQueryFeatures,											//pNext;
+				(VkDeviceCreateFlags)0u,												//flags;
+				1,																		//queueRecordCount;
+				&queueCreateInfo,														//pRequestedQueues;
+				0,																		//layerCount;
+				DE_NULL,																//ppEnabledLayerNames;
+				(deUint32)enabledExtensions.size(),										//extensionCount;
+				enabledExtensions.data(),												//ppEnabledExtensionNames;
+				DE_NULL,																//pEnabledFeatures;
+			};
+			const bool												mayBeDenied						= globalPriority > VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT;
+			const bool												mustFail						= globalPriority < globalPriorityProperties[ndx].priorities[0] || globalPriority > globalPriorityProperties[ndx].priorities[globalPriorityProperties[ndx].priorityCount - 1];
+
+			try
+			{
+				const Unique<VkDevice>		device				(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+				const DeviceDriver			deviceDriver		(platformInterface, instance, device.get());
+				const VkQueue				queue				= getDeviceQueue(deviceDriver, *device, ndx, 0);
+
+				TCU_CHECK(!!queue);
+
+				if (mustFail)
+				{
+					log << TestLog::Message
+						<< "device creation must fail but not"
+						<< ", globalPriority = " << globalPriority
+						<< ", queueCreateInfo " << queueCreateInfo
+						<< TestLog::EndMessage;
+					return tcu::TestStatus::fail("Fail");
+				}
+			}
+			catch (const Error& error)
+			{
+				if (mustFail || (error.getError() == VK_ERROR_NOT_PERMITTED_EXT && mayBeDenied))
+				{
+					continue;
+				}
+				else
+				{
+					log << TestLog::Message
+						<< "exception thrown " << error.getMessage()
+						<< ", globalPriority = " << globalPriority
+						<< ", queueCreateInfo " << queueCreateInfo
+						<< ", Error Code: " << error.getError()
+						<< TestLog::EndMessage;
+					return tcu::TestStatus::fail("Fail");
+				}
+			}
+		}
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+#endif // CTS_USES_VULKANSC
+
 tcu::TestStatus createDeviceFeatures2Test (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
@@ -1417,6 +1568,8 @@ tcu::TestStatus createDeviceQueue2UnmatchedFlagsTest (Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
+#ifndef CTS_USES_VULKANSC
+
 // Allocation tracking utilities
 struct	AllocTrack
 {
@@ -1783,6 +1936,8 @@ tcu::TestStatus createInstanceDeviceIntentionalAllocFail (Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
+#endif // CTS_USES_VULKANSC
+
 } // anonymous
 
 tcu::TestCaseGroup* createDeviceInitializationTests (tcu::TestContext& testCtx)
@@ -1801,6 +1956,9 @@ tcu::TestCaseGroup* createDeviceInitializationTests (tcu::TestContext& testCtx)
 	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_extensions",			"", createDeviceWithUnsupportedExtensionsTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_various_queue_counts",				"", createDeviceWithVariousQueueCountsTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_global_priority",					"", checkGlobalPrioritySupport, createDeviceWithGlobalPriorityTest);
+#ifndef CTS_USES_VULKANSC
+	addFunctionCase(deviceInitializationTests.get(), "create_device_global_priority_query",				"", checkGlobalPriorityQuerySupport, createDeviceWithQueriedGlobalPriorityTest);
+#endif // CTS_USES_VULKANSC
 	addFunctionCase(deviceInitializationTests.get(), "create_device_features2",							"", createDeviceFeatures2Test);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_features",				"", createDeviceWithUnsupportedFeaturesTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2",							"", createDeviceQueue2Test);

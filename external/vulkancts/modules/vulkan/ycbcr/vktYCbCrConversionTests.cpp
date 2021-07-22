@@ -622,8 +622,8 @@ void checkSupport (Context& context, const TestConfig config)
 		if ((features & vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) == 0)
 			TCU_THROW(NotSupportedError, "Format doesn't support sampling");
 
-		if (config.textureFilter == vk::VK_FILTER_LINEAR && ((features & vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT) == 0))
-			TCU_THROW(NotSupportedError, "Format doesn't support YCbCr linear chroma reconstruction");
+		if (config.textureFilter == vk::VK_FILTER_LINEAR && ((features & vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT) == 0))
+			TCU_THROW(NotSupportedError, "Format doesn't support linear texture filtering");
 
 		if (config.chromaFilter == vk::VK_FILTER_LINEAR && ((features & vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT) == 0))
 			TCU_THROW(NotSupportedError, "Format doesn't support YCbCr linear chroma reconstruction");

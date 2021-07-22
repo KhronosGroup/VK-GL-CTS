@@ -533,7 +533,7 @@ deUint32 RayTracingBuildTestInstance::validateBuffer (de::MovePtr<BufferWithMemo
 
 		if (bufferPtr[pos] != expectedValue)
 		{
-			if (m_data.testType == TEST_TYPE_AABBS)
+			if (m_data.testType == TEST_TYPE_AABBS || m_data.testType == TEST_TYPE_MIXED)
 			{
 				// In the case of AABB geometries, implementations may increase their size in
 				// an acceleration structure in order to mitigate precision issues. This may
@@ -621,7 +621,7 @@ tcu::TestCaseGroup*	createBuildTests (tcu::TestContext& testCtx)
 		"level_geometries",
 		"level_instances"
 	};
-	const deUint32	sizes[]		= { 4, 16, 64, 256 };
+	const deUint32	sizes[]		= { 4, 16, 64, 256, 1024 };
 	const deUint32	factors[]	= { 1, 4 };
 	const deUint32	threads[]	= { 0, 1, 2, 3, 4, 8, std::numeric_limits<deUint32>::max() };
 
@@ -637,6 +637,8 @@ tcu::TestCaseGroup*	createBuildTests (tcu::TestContext& testCtx)
 															: threadsCount > 0 ? "Compare results of run with acceleration structures build on GPU and using host threading"
 															: "Run acceleration structures build using host threading";
 
+		const bool						deviceBuild			= !defferedOperation || threadsCount == 0;
+
 		de::MovePtr<tcu::TestCaseGroup>	groupGpuCpuHt		(new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupDesc.c_str()));
 
 		for (size_t testsNdx = 0; testsNdx < DE_LENGTH_OF_ARRAY(tests); ++testsNdx)
@@ -646,6 +648,9 @@ tcu::TestCaseGroup*	createBuildTests (tcu::TestContext& testCtx)
 			for (size_t factorNdx = 0; factorNdx < DE_LENGTH_OF_ARRAY(factors); ++factorNdx)
 			for (size_t sizesNdx = 0; sizesNdx < DE_LENGTH_OF_ARRAY(sizes); ++sizesNdx)
 			{
+				if (deviceBuild && sizes[sizesNdx] > 256)
+					continue;
+
 				const deUint32	factor					= factors[factorNdx];
 				const deUint32	largestGroup			= sizes[sizesNdx] * sizes[sizesNdx] / factor / factor;
 				const deUint32	squaresGroupCount		= testsNdx == 0 ? largestGroup : factor;
@@ -674,6 +679,9 @@ tcu::TestCaseGroup*	createBuildTests (tcu::TestContext& testCtx)
 			for (size_t factorNdx = 0; factorNdx < DE_LENGTH_OF_ARRAY(factors); ++factorNdx)
 			for (size_t sizesNdx = 0; sizesNdx < DE_LENGTH_OF_ARRAY(sizes); ++sizesNdx)
 			{
+				if (deviceBuild && sizes[sizesNdx] > 256)
+					continue;
+
 				const deUint32	factor					= factors[factorNdx];
 				const deUint32	largestGroup			= sizes[sizesNdx] * sizes[sizesNdx] / factor / factor;
 				const deUint32	squaresGroupCount		= testsNdx == 0 ? largestGroup : factor;
@@ -702,6 +710,9 @@ tcu::TestCaseGroup*	createBuildTests (tcu::TestContext& testCtx)
 			for (size_t factorNdx = 0; factorNdx < DE_LENGTH_OF_ARRAY(factors); ++factorNdx)
 			for (size_t sizesNdx = 0; sizesNdx < DE_LENGTH_OF_ARRAY(sizes); ++sizesNdx)
 			{
+				if (deviceBuild && sizes[sizesNdx] > 256)
+					continue;
+
 				const deUint32	factor					= factors[factorNdx];
 				const deUint32	largestGroup			= sizes[sizesNdx] * sizes[sizesNdx] / factor / factor;
 				const deUint32	squaresGroupCount		= testsNdx == 0 ? largestGroup : factor;

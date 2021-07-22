@@ -1256,6 +1256,7 @@ private:
 MaskProportionalityCase::MaskProportionalityCase (Context& context, const char* name, const char* description, CaseType type, int numFboSamples)
 	: MultisampleCase				(context, name, description, 32, numFboSamples >= 0 ? FboParams(numFboSamples, false, false) : FboParams())
 	, m_type						(type)
+	, m_numIterations				(0)
 	, m_currentIteration			(0)
 	, m_previousIterationColorSum	(-1)
 {

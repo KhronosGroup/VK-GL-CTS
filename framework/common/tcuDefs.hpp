@@ -93,6 +93,7 @@ class InternalError : public TestException
 {
 public:
 					InternalError		(const char* message, const char* expr, const char* file, int line);
+					InternalError		(const std::string& message, const char* expr, const char* file, int line);
 					InternalError		(const std::string& message);
 	virtual			~InternalError		(void) throw() {}
 };

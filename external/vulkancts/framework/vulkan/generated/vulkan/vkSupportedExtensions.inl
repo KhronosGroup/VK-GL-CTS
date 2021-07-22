@@ -2,7 +2,7 @@
  * be lost! Modify the generating script instead.
  */
 
-void getCoreDeviceExtensionsImpl (deUint32 coreVersion, ::std::vector<const char*>& dst)
+void getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>& dst)
 {
 	if (coreVersion >= VK_API_VERSION_1_2)
 	{
@@ -54,7 +54,7 @@ void getCoreDeviceExtensionsImpl (deUint32 coreVersion, ::std::vector<const char
 	}
 }
 
-void getCoreInstanceExtensionsImpl (deUint32 coreVersion, ::std::vector<const char*>& dst)
+void getCoreInstanceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>& dst)
 {
 	if (coreVersion >= VK_API_VERSION_1_1)
 	{

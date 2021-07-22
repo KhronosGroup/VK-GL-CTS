@@ -42,7 +42,6 @@
 #include "glcShaderMacroTests.hpp"
 #include "glcShaderNegativeTests.hpp"
 #include "glcShaderStructTests.hpp"
-#include "glcShaderSwitchTests.hpp"
 #include "glcTextureFilterAnisotropicTests.hpp"
 #include "glcTextureRepeatModeTests.hpp"
 #include "glcUniformBlockTests.hpp"
@@ -151,7 +150,6 @@ public:
 											  "literal_parsing.test"));
 		addChild(new deqp::ShaderLibraryGroup(m_context, "name_hiding", "Name Hiding Tests", "name_hiding.test"));
 		addChild(new deqp::ShaderStructTests(m_context, glu::GLSL_VERSION_300_ES));
-		addChild(new deqp::ShaderSwitchTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::UniformBlockTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::GLSLVectorConstructorTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::ShaderIntegerMixTests(m_context, glu::GLSL_VERSION_300_ES));

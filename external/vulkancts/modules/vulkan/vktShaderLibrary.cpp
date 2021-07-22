@@ -1180,17 +1180,6 @@ Move<vk::VkCommandBuffer> allocateCommandBuffer (Context& context, vk::VkCommand
 	return vk::allocateCommandBuffer(context.getDeviceInterface(), context.getDevice(), cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 }
 
-MovePtr<vk::Allocation> allocateAndBindMemory (Context& context, vk::VkBuffer buffer, vk::MemoryRequirement memReqs)
-{
-	const vk::DeviceInterface&		vkd		= context.getDeviceInterface();
-	const vk::VkMemoryRequirements	bufReqs	= vk::getBufferMemoryRequirements(vkd, context.getDevice(), buffer);
-	MovePtr<vk::Allocation>			memory	= context.getDefaultAllocator().allocate(bufReqs, memReqs);
-
-	vkd.bindBufferMemory(context.getDevice(), buffer, memory->getMemory(), memory->getOffset());
-
-	return memory;
-}
-
 vk::VkFormat getRenderTargetFormat (DataType dataType)
 {
 	switch (dataType)
@@ -1299,19 +1288,19 @@ ShaderCaseInstance::ShaderCaseInstance (Context& context, const ShaderCaseSpecif
 	, m_spec				(spec)
 
 	, m_posNdxBuffer		(createBuffer(context, (vk::VkDeviceSize)TOTAL_POS_NDX_SIZE, vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT|vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT))
-	, m_posNdxMem			(allocateAndBindMemory(context, *m_posNdxBuffer, vk::MemoryRequirement::HostVisible))
+	, m_posNdxMem			(vk::bindBuffer (context.getDeviceInterface(), context.getDevice(),m_context.getDefaultAllocator(), *m_posNdxBuffer, vk::MemoryRequirement::HostVisible))
 
 	, m_inputLayout			(computeStd430Layout(spec.values.inputs))
 	, m_inputBuffer			(m_inputLayout.size > 0 ? createBuffer(context, (vk::VkDeviceSize)m_inputLayout.size, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT) : Move<vk::VkBuffer>())
-	, m_inputMem			(m_inputLayout.size > 0 ? allocateAndBindMemory(context, *m_inputBuffer, vk::MemoryRequirement::HostVisible) : MovePtr<vk::Allocation>())
+	, m_inputMem			(m_inputLayout.size > 0 ? vk::bindBuffer (context.getDeviceInterface(), context.getDevice(),m_context.getDefaultAllocator(), *m_inputBuffer, vk::MemoryRequirement::HostVisible) : MovePtr<vk::Allocation>())
 
 	, m_referenceLayout		(computeStd140Layout(spec.values.outputs))
 	, m_referenceBuffer		(m_referenceLayout.size > 0 ? createBuffer(context, (vk::VkDeviceSize)m_referenceLayout.size, vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) : Move<vk::VkBuffer>())
-	, m_referenceMem		(m_referenceLayout.size > 0 ? allocateAndBindMemory(context, *m_referenceBuffer, vk::MemoryRequirement::HostVisible) : MovePtr<vk::Allocation>())
+	, m_referenceMem		(m_referenceLayout.size > 0 ? vk::bindBuffer (context.getDeviceInterface(), context.getDevice(),m_context.getDefaultAllocator(), *m_referenceBuffer, vk::MemoryRequirement::HostVisible) : MovePtr<vk::Allocation>())
 
 	, m_uniformLayout		(computeStd140Layout(spec.values.uniforms))
 	, m_uniformBuffer		(m_uniformLayout.size > 0 ? createBuffer(context, (vk::VkDeviceSize)m_uniformLayout.size, vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) : Move<vk::VkBuffer>())
-	, m_uniformMem			(m_uniformLayout.size > 0 ? allocateAndBindMemory(context, *m_uniformBuffer, vk::MemoryRequirement::HostVisible) : MovePtr<vk::Allocation>())
+	, m_uniformMem			(m_uniformLayout.size > 0 ? vk::bindBuffer (context.getDeviceInterface(), context.getDevice(),m_context.getDefaultAllocator(), *m_uniformBuffer, vk::MemoryRequirement::HostVisible) : MovePtr<vk::Allocation>())
 
 	, m_rtFormat			(getRenderTargetFormat(spec.outputFormat))
 	, m_outputCount			(((deUint32)m_spec.values.outputs.size() == 0 || m_spec.outputType == glu::sl::OUTPUT_RESULT) ? 1 : (deUint32)m_spec.values.outputs.size())
@@ -1346,7 +1335,7 @@ ShaderCaseInstance::ShaderCaseInstance (Context& context, const ShaderCaseSpecif
 			m_rtView[outNdx] = createAttachmentView(context, *m_rtImage[outNdx], m_rtFormat);
 
 			m_readImageBuffer[outNdx] = createBuffer(context, (vk::VkDeviceSize)(RENDER_WIDTH * RENDER_HEIGHT * tcu::getPixelSize(vk::mapVkFormat(m_rtFormat))), vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-			m_readImageMem[outNdx] = allocateAndBindMemory(context, *m_readImageBuffer[outNdx], vk::MemoryRequirement::HostVisible);
+			m_readImageMem[outNdx]	= vk::bindBuffer (context.getDeviceInterface(), context.getDevice(),m_context.getDefaultAllocator(), *m_readImageBuffer[outNdx], vk::MemoryRequirement::HostVisible);
 		}
 		m_framebuffer = createFramebuffer(context, *m_renderPass, m_rtView, m_outputCount, RENDER_WIDTH, RENDER_HEIGHT);
 	}

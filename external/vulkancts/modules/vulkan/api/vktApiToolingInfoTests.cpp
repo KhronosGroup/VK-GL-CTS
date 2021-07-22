@@ -66,21 +66,7 @@ void checkSupport (Context& context)
 
 CustomInstance createCustomInstance (Context& context, bool allowLayers)
 {
-	std::vector<const char*>		enabledLayers;
-	std::vector<std::string>		enabledLayersStr;
-	const std::vector<std::string>	enabledExtensions;
-
-	const deUint32					apiVersion	= context.getUsedApiVersion();
-	const vk::PlatformInterface&	vkp			= context.getPlatformInterface();
-
-	if (allowLayers)
-	{
-		enabledLayers		= getValidationLayers(context.getPlatformInterface());
-		enabledLayersStr	= std::vector<std::string>(begin(enabledLayers), end(enabledLayers));
-	}
-
-	Move<VkInstance> instance = vk::createDefaultInstance(vkp, apiVersion, enabledLayersStr, enabledExtensions, DE_NULL);
-	return CustomInstance(context, instance, !enabledLayers.empty(), context.getTestContext().getCommandLine().printValidationErrors());
+	return createCustomInstanceFromContext(context, nullptr, allowLayers);
 }
 
 bool checkToolsProperties (Context& context, const std::vector<VkPhysicalDeviceToolPropertiesEXT>& deviceToolPropertiesEXTArray)

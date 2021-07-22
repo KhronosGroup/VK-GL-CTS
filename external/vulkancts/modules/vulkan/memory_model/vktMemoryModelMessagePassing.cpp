@@ -24,6 +24,7 @@
 
 #include "vktMemoryModelTests.hpp"
 #include "vktMemoryModelPadding.hpp"
+#include "vktMemoryModelSharedLayout.hpp"
 
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
@@ -33,7 +34,6 @@
 #include "vkTypeUtil.hpp"
 #include "vkObjUtil.hpp"
 
-#include "vktTestGroupUtil.hpp"
 #include "vktTestCase.hpp"
 
 #include "deDefs.h"
@@ -2090,6 +2090,8 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 
 	// Padding tests.
 	group->addChild(createPaddingTests(testCtx));
+	// Shared memory layout tests.
+	group->addChild(createSharedMemoryLayoutTests(testCtx));
 
 	return group.release();
 }

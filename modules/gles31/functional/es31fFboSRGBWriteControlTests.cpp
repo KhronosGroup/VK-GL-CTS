@@ -441,9 +441,9 @@ TestVertexData::TestVertexData	(Context& context)
 	m_gl->bufferData(GL_ARRAY_BUFFER, (glw::GLsizei)(m_data.size() * sizeof(glw::GLfloat)), &m_data[0], GL_STATIC_DRAW);
 
 	m_gl->enableVertexAttribArray(0);
-	m_gl->vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * (glw::GLsizei)sizeof(GL_FLOAT), (glw::GLvoid *)0);
+	m_gl->vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * (glw::GLsizei)sizeof(float), (glw::GLvoid *)0);
 	m_gl->enableVertexAttribArray(1);
-	m_gl->vertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * (glw::GLsizei)sizeof(GL_FLOAT), (glw::GLvoid *)(3 * sizeof(GL_FLOAT)));
+	m_gl->vertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * (glw::GLsizei)sizeof(float), (glw::GLvoid *)(3 * sizeof(float)));
 
 	m_gl->bindVertexArray(0);
 	m_gl->bindBuffer(GL_ARRAY_BUFFER, 0);
@@ -1343,6 +1343,7 @@ private:
 FboSRGBTestCase::FboSRGBTestCase	(Context& context, const char* const name, const char* const desc)
 	: TestCase						(context, name, desc)
 	, m_hasTestConfig				(false)
+	, m_testcaseRequiresBlend		(false)
 {
 }
 

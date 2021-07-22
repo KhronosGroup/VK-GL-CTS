@@ -1552,7 +1552,7 @@ void SizedDeclarationsTypenameStyle3<API>::test_shader_compilation(
 {
 	std::string shader_source = "struct{\n" + this->extend_string("    float", "[2]", 2);
 
-	shader_source += this->extend_string(" a", "[2]", API::MAX_ARRAY_DIMENSIONS - API::MAX_ARRAY_DIMENSIONS);
+	shader_source += this->extend_string(" a", "[2]", 0);
 	shader_source += ",";
 	shader_source += this->extend_string("    b", "[2]", 1);
 	shader_source += ",";
@@ -1628,7 +1628,7 @@ void SizedDeclarationsTypenameStyle5<API>::test_shader_compilation(
 	std::string shader_source = example_struct_begin;
 
 	shader_source += this->extend_string("    float", "[2]", 2);
-	shader_source += this->extend_string(" a", "[2]", API::MAX_ARRAY_DIMENSIONS - API::MAX_ARRAY_DIMENSIONS);
+	shader_source += this->extend_string(" a", "[2]", 0);
 	shader_source += ", ";
 	shader_source += this->extend_string("b", "[2]", 2);
 	shader_source += ", ";

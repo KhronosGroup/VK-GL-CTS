@@ -211,6 +211,7 @@ static const GLenum		cubemapTextureTargets[]	=
 
 const glu::ApiType		apiES30					= glu::ApiType::es(3, 0);
 const glu::ApiType		apiES31					= glu::ApiType::es(3, 1);
+const glu::ApiType		apiES32					= glu::ApiType::es(3, 2);
 
 bool isDifferentRboSampleCountsSupported(TestContext& testContext, GLint& maxSamples)
 {
@@ -1170,6 +1171,97 @@ const TestParams		tests[]					=
 				});
 		}
 	},
+	{
+		"cube_map_layered_attachment_valid_size_and_format",									// string					name
+		"Cube map attachment with images of same size, same format and square should be valid",	// string					description
+		apiES32,																				// glu::ApiType				apiType
+		1,																						// size_t					numFboIds
+		1,																						// size_t					numTexIds
+		0,																						// size_t					numRboIds
+		{																						// vector<TestStep>			initialSteps
+			{
+				[](TestContext& context)
+				{
+					context.bindTexture(GL_TEXTURE_CUBE_MAP, context.texIds[0]);
+					for(const auto target : cubemapTextureTargets)
+						context.texImage2D(target, 0, GL_RGBA8, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+					context.bindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+					context.bindFramebuffer(GL_FRAMEBUFFER, context.fboIds[0]);
+					context.gl.framebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, context.texIds[0], 0);
+					GLU_EXPECT_NO_ERROR(context.gl.getError(), "glFramebufferTexture() failed");
+				},
+				expectedStatusConstant(GL_FRAMEBUFFER_COMPLETE),
+			}
+		},
+		DE_NULL,																				// StepsGeneratorFn			stepsGenerator
+	},
+	{
+		"cube_map_layered_attachment_different_formats",										// string					name
+		"Cube map attachment with images of the same size, square but different formats"
+		" should be incomplete",																// string					description
+		apiES32,																				// glu::ApiType				apiType
+		1,																						// size_t					numFboIds
+		1,																						// size_t					numTexIds
+		0,																						// size_t					numRboIds
+		{																						// vector<TestStep>			initialSteps
+			{
+				[](TestContext& context)
+				{
+					context.bindTexture(GL_TEXTURE_CUBE_MAP, context.texIds[0]);
+					for(size_t i = 0; i < DE_LENGTH_OF_ARRAY(cubemapTextureTargets); ++i)
+						context.texImage2D(cubemapTextureTargets[i], 0, (i % 2) ? GL_RGBA8 : GL_RGB8, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, (i % 2) ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, 0);
+					context.bindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+					context.bindFramebuffer(GL_FRAMEBUFFER, context.fboIds[0]);
+					context.gl.framebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, context.texIds[0], 0);
+					GLU_EXPECT_NO_ERROR(context.gl.getError(), "glFramebufferTexture() failed");
+				},
+				expectedStatusConstant(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT),
+			},
+			{
+				[](TestContext& context)
+				{
+					context.bindTexture(GL_TEXTURE_CUBE_MAP, context.texIds[0]);
+					for(size_t i = 0; i < DE_LENGTH_OF_ARRAY(cubemapTextureTargets); ++i)
+						context.texImage2D(cubemapTextureTargets[i], 0, (i % 2) ? GL_RGBA8 : GL_SRGB8_ALPHA8, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+					context.bindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+					context.bindFramebuffer(GL_FRAMEBUFFER, context.fboIds[0]);
+					context.gl.framebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, context.texIds[0], 0);
+					GLU_EXPECT_NO_ERROR(context.gl.getError(), "glFramebufferTexture() failed");
+				},
+				expectedStatusConstant(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT),
+			}
+		},
+		DE_NULL,																				// StepsGeneratorFn			stepsGenerator
+	},
+	{
+		"cube_map_layered_attachment_different_sizes",											// string					name
+		"Cube map with images of different sizes, same format and all square should"
+		" be incomplete",																		// string					description
+		apiES32,																				// glu::ApiType				apiType
+		1,																						// size_t					numFboIds
+		1,																						// size_t					numTexIds
+		0,																						// size_t					numRboIds
+		{																						// vector<TestStep>			initialSteps
+			{
+				[](TestContext& context)
+				{
+					context.bindTexture(GL_TEXTURE_CUBE_MAP, context.texIds[0]);
+					for(size_t i = 0; i < DE_LENGTH_OF_ARRAY(cubemapTextureTargets); ++i)
+						context.texImage2D(cubemapTextureTargets[i], 0, GL_RGBA8, (i % 2) ? TEXTURE_WIDTH : TEXTURE_WIDTH / 2, (i % 2) ? TEXTURE_HEIGHT : TEXTURE_HEIGHT / 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+					context.bindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+					context.bindFramebuffer(GL_FRAMEBUFFER, context.fboIds[0]);
+					context.gl.framebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, context.texIds[0], 0);
+					GLU_EXPECT_NO_ERROR(context.gl.getError(), "glFramebufferTexture() failed");
+				},
+				expectedStatusConstant(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT),
+			},
+		},
+		DE_NULL,																				// StepsGeneratorFn			stepsGenerator
+	}
 };
 
 class FramebufferCompletenessTestCase : public deqp::TestCase

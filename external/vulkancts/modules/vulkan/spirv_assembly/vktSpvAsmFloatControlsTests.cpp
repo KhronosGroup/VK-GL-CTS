@@ -3654,11 +3654,11 @@ void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo&	testCas
 	if (testCaseInfo.testedMode == SM_ROUNDING)
 	{
 		// make sure that only rounding options are used
-		DE_ASSERT((testCaseInfo.fp16Option != SO_FLUSH) ||
-				  (testCaseInfo.fp16Option != SO_PRESERVE) ||
-				  (testCaseInfo.fp32Option != SO_FLUSH) ||
-				  (testCaseInfo.fp32Option != SO_PRESERVE) ||
-				  (testCaseInfo.fp64Option != SO_FLUSH) ||
+		DE_ASSERT((testCaseInfo.fp16Option != SO_FLUSH) &&
+				  (testCaseInfo.fp16Option != SO_PRESERVE) &&
+				  (testCaseInfo.fp32Option != SO_FLUSH) &&
+				  (testCaseInfo.fp32Option != SO_PRESERVE) &&
+				  (testCaseInfo.fp64Option != SO_FLUSH) &&
 				  (testCaseInfo.fp64Option != SO_PRESERVE));
 
 		bool fp16RteRounding	= testCaseInfo.fp16Option == SO_RTE;
@@ -3693,11 +3693,11 @@ void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo&	testCas
 	else // SM_DENORMS
 	{
 		// make sure that only denorm options are used
-		DE_ASSERT((testCaseInfo.fp16Option != SO_RTE) ||
-				  (testCaseInfo.fp16Option != SO_RTZ) ||
-				  (testCaseInfo.fp32Option != SO_RTE) ||
-				  (testCaseInfo.fp32Option != SO_RTZ) ||
-				  (testCaseInfo.fp64Option != SO_RTE) ||
+		DE_ASSERT((testCaseInfo.fp16Option != SO_RTE) &&
+				  (testCaseInfo.fp16Option != SO_RTZ) &&
+				  (testCaseInfo.fp32Option != SO_RTE) &&
+				  (testCaseInfo.fp32Option != SO_RTZ) &&
+				  (testCaseInfo.fp64Option != SO_RTE) &&
 				  (testCaseInfo.fp64Option != SO_RTZ));
 
 		bool fp16DenormPreserve		= testCaseInfo.fp16Option == SO_PRESERVE;

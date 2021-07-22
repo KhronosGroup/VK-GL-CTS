@@ -1126,7 +1126,7 @@ GeometryShaderFramebufferTextureArgumentRefersToBufferTexture::
 	/* Allocate memory for m_tex_height * m_tex_width texels, with each texel being 3 GLints. */
 	m_texels = new glw::GLint[m_tex_height * m_tex_width * 3];
 
-	memset(m_texels, 255, m_tex_height * m_tex_width * 3);
+	memset(m_texels, 255, sizeof(glw::GLint) * m_tex_height * m_tex_width * 3);
 }
 
 /** Deinitializes GLES objects created during the test. */

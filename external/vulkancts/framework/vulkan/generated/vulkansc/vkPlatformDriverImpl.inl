@@ -12,17 +12,17 @@ PFN_vkVoidFunction PlatformDriver::getInstanceProcAddr (VkInstance instance, con
 	return m_vk.getInstanceProcAddr(instance, pName);
 }
 
-VkResult PlatformDriver::enumerateInstanceExtensionProperties (const char* pLayerName, deUint32* pPropertyCount, VkExtensionProperties* pProperties) const
+VkResult PlatformDriver::enumerateInstanceExtensionProperties (const char* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties) const
 {
 	return m_vk.enumerateInstanceExtensionProperties(pLayerName, pPropertyCount, pProperties);
 }
 
-VkResult PlatformDriver::enumerateInstanceLayerProperties (deUint32* pPropertyCount, VkLayerProperties* pProperties) const
+VkResult PlatformDriver::enumerateInstanceLayerProperties (uint32_t* pPropertyCount, VkLayerProperties* pProperties) const
 {
 	return m_vk.enumerateInstanceLayerProperties(pPropertyCount, pProperties);
 }
 
-VkResult PlatformDriver::enumerateInstanceVersion (deUint32* pApiVersion) const
+VkResult PlatformDriver::enumerateInstanceVersion (uint32_t* pApiVersion) const
 {
 	if (m_vk.enumerateInstanceVersion)
 		return m_vk.enumerateInstanceVersion(pApiVersion);

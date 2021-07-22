@@ -347,7 +347,7 @@ void NegativeVertexArrayApiTests::init (void)
 			GLuint fbo;
 			GLuint buf;
 			GLuint tfID;
-			GLfloat vertices[1];
+			GLfloat vertices[1] = { 0 };
 
 			m_log << tcu::TestLog::Section("", "GL_INVALID_ENUM is generated if mode is not an accepted value.");
 			glDrawElements(-1, 1, GL_UNSIGNED_BYTE, vertices);
@@ -414,7 +414,7 @@ void NegativeVertexArrayApiTests::init (void)
 		{
 			glUseProgram(0);
 			GLuint fbo;
-			GLfloat vertices[1];
+			GLfloat vertices[1] = { 0 };
 
 			m_log << tcu::TestLog::Section("", "GL_INVALID_ENUM is generated if mode is not an accepted value.");
 			glDrawElements(-1, 1, GL_UNSIGNED_BYTE, vertices);
@@ -450,7 +450,7 @@ void NegativeVertexArrayApiTests::init (void)
 			GLuint fbo;
 			GLuint buf;
 			GLuint tfID;
-			GLfloat vertices[1];
+			GLfloat vertices[1] = { 0 };
 
 			m_log << tcu::TestLog::Section("", "GL_INVALID_ENUM is generated if mode is not an accepted value.");
 			glDrawElements(-1, 1, GL_UNSIGNED_BYTE, vertices);
@@ -613,7 +613,7 @@ void NegativeVertexArrayApiTests::init (void)
 			GLuint fbo;
 			GLuint buf;
 			GLuint tfID;
-			GLfloat vertices[1];
+			GLfloat vertices[1] = { 0 };
 			glVertexAttribDivisor(0, 1);
 			expectError(GL_NO_ERROR);
 
@@ -684,7 +684,7 @@ void NegativeVertexArrayApiTests::init (void)
 		{
 			glUseProgram(0);
 			GLuint fbo;
-			GLfloat vertices[1];
+			GLfloat vertices[1] = { 0 };
 			glVertexAttribDivisor(0, 1);
 			expectError(GL_NO_ERROR);
 
@@ -724,7 +724,7 @@ void NegativeVertexArrayApiTests::init (void)
 			GLuint fbo;
 			GLuint buf;
 			GLuint tfID;
-			GLfloat vertices[1];
+			GLfloat vertices[1] = { 0 };
 			glVertexAttribDivisor(0, 1);
 			expectError(GL_NO_ERROR);
 

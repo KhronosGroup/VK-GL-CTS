@@ -32,7 +32,6 @@
 #include "gl4cCopyImageTests.hpp"
 #include "gl4cDirectStateAccessTests.hpp"
 #include "gl4cES31CompatibilityTests.hpp"
-#include "gl4cEnhancedLayoutsTests.hpp"
 #include "gl4cGPUShaderFP64Tests.hpp"
 #include "gl4cGetTextureSubImageTests.hpp"
 #include "gl4cGlSpirvTests.hpp"
@@ -86,7 +85,6 @@
 #include "glcViewportArrayTests.hpp"
 #include "glcPixelStorageModesTests.hpp"
 
-#include "../gles31/es31cArrayOfArraysTests.hpp"
 #include "../gles31/es31cDrawIndirectTests.hpp"
 #include "../gles31/es31cExplicitUniformLocationTest.hpp"
 #include "../gles31/es31cLayoutBindingTests.hpp"
@@ -293,7 +291,6 @@ void GL43TestPackage::init(void)
 
 	try
 	{
-		addChild(new glcts::ArrayOfArraysTestGroupGL(getContext()));
 		addChild(new gl4cts::CopyImageTests(getContext()));
 		addChild(new glcts::DrawIndirectTestsGL43(getContext()));
 		addChild(new gl4cts::ProgramInterfaceQueryTests(getContext()));
@@ -356,7 +353,6 @@ void GL44TestPackage::init(void)
 	{
 		addChild(new GL44ShaderTests(getContext()));
 		addChild(new gl4cts::BufferStorageTests(getContext()));
-		addChild(new gl4cts::EnhancedLayoutsTests(getContext()));
 		addChild(new glcts::LayoutBindingTests(getContext(), glu::GLSL_VERSION_440));
 		addChild(new gl4cts::MultiBindTests(getContext()));
 		addChild(new glcts::SeparateShaderObjsTests(getContext(), glu::GLSL_VERSION_440));

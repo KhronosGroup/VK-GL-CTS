@@ -9,6 +9,12 @@ set(GLCTS_ESEXT_SRCS
     esextcTestCaseBase.hpp
     esextcTestPackage.cpp
     esextcTestPackage.hpp
+    disjoint_timer_query/esextcDisjointTimerQueryBase.cpp
+    disjoint_timer_query/esextcDisjointTimerQueryBase.hpp
+    disjoint_timer_query/esextcDisjointTimerQueryHandleReuse.cpp
+    disjoint_timer_query/esextcDisjointTimerQueryHandleReuse.hpp
+    disjoint_timer_query/esextcDisjointTimerQueryTests.cpp
+    disjoint_timer_query/esextcDisjointTimerQueryTests.cpp
     draw_buffers_indexed/esextcDrawBuffersIndexedBase.cpp
     draw_buffers_indexed/esextcDrawBuffersIndexedBase.hpp
     draw_buffers_indexed/esextcDrawBuffersIndexedCoverage.cpp

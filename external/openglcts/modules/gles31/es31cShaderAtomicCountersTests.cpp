@@ -614,7 +614,7 @@ public:
 		GLuint* value = static_cast<GLuint*>(glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, offset, 4, GL_MAP_READ_BIT));
 		if (value[0] != expected_value)
 		{
-			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Counter value is " << value
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Counter value is " << value[0]
 												<< " should be " << expected_value << tcu::TestLog::EndMessage;
 			glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
 			glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
@@ -2418,6 +2418,221 @@ class AdvancedUsageManyCounters : public BasicUsageCS
 	}
 };
 
+class AdvancedUsageMultiDimArray : public BasicUsageCS
+{
+public:
+	virtual std::string Title()
+	{
+		return NL "Multidimensional atomic counter array";
+	}
+	virtual std::string Purpose()
+	{
+		return NL "Verify that multidimensional atomic counter array works as expected." NL
+				  "Built-ins tested: atomicCounterIncrement.";
+	}
+	virtual std::string Method()
+	{
+		return NL "";
+	}
+	virtual std::string PassCriteria()
+	{
+		return NL "";
+	}
+
+	virtual long Setup()
+	{
+		DE_ASSERT(dim_x_ != 0 && dim_y_ != 0 && dim_z_ != 0);
+		DE_ASSERT(!glsl_cs_.empty());
+		return NO_ERROR;
+	}
+
+	virtual long Run()
+	{
+		GLint				maxAtomicCounters	= 0;
+		glGetIntegerv(GL_MAX_COMPUTE_ATOMIC_COUNTERS, &maxAtomicCounters);
+		if (maxAtomicCounters < dim_x_ * dim_y_ * dim_z_)
+		{
+			OutputNotSupported("GL_MAX_COMPUTE_ATOMIC_COUNTERS is less than required");
+			return NOT_SUPPORTED;
+		}
+
+		GLsizeiptr			bufferSize			= dim_x_ * dim_y_ * dim_z_ * sizeof(GLuint);
+		GLint				maxBufferSize		= 0;
+		glGetIntegerv(GL_MAX_ATOMIC_COUNTER_BUFFER_SIZE, &maxBufferSize);
+		if (maxBufferSize < bufferSize)
+		{
+			OutputNotSupported("GL_MAX_ATOMIC_COUNTER_BUFFER_SIZE is less than required");
+			return NOT_SUPPORTED;
+		}
+
+		prog_ = CreateComputeProgram(glsl_cs_.c_str());
+		glLinkProgram(prog_);
+		if (!CheckProgram(prog_))
+			return ERROR;
+
+		// create atomic counter buffer
+		std::vector<GLuint>	init_data			(bufferSize, 1000);
+		glGenBuffers(1, &counter_buffer_);
+		glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, counter_buffer_);
+		glBufferData(GL_ATOMIC_COUNTER_BUFFER, bufferSize * sizeof(GLuint), &init_data[0], GL_DYNAMIC_COPY);
+		glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
+
+		// dispatch
+		glUseProgram(prog_);
+		glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, counter_buffer_);
+		glDispatchCompute(8, 8, 1);
+
+		// validate
+		glMemoryBarrier(GL_ATOMIC_COUNTER_BARRIER_BIT);
+		long				error				= NO_ERROR;
+
+		for (int x = 0; x < dim_x_; x++)
+			for (int y = 0; y < dim_y_; y++)
+				for (int z = 0; z < dim_z_; z++)
+					if (!CheckFinalCounterValue(counter_buffer_, (x * dim_y_ * dim_z_ + y * dim_z_ + z) * sizeof(GLuint), 1064))
+						error = ERROR;
+
+		glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
+		return error;
+	}
+
+	virtual long Cleanup()
+	{
+		glDeleteBuffers(1, &counter_buffer_);
+		glDeleteProgram(prog_);
+		glUseProgram(0);
+		return NO_ERROR;
+	}
+
+protected:
+	GLuint		counter_buffer_ = 0;
+	GLuint		prog_ = 0;
+	int			dim_x_ = 0;
+	int			dim_y_ = 0;
+	int			dim_z_ = 0;
+	std::string	glsl_cs_;
+};
+
+class AdvancedUsageMultiDimArrayLarge : public AdvancedUsageMultiDimArray
+{
+	virtual long Setup()
+	{
+		dim_x_		= 3;
+		dim_y_		= 5;
+		dim_z_		= 6;
+
+		glsl_cs_	= NL
+			"layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;" NL
+			"layout(binding = 0) uniform atomic_uint ac_counter[3][5][6];" NL
+			"// Increments all the elements in a one dimensional array using different methods." NL
+			"void incrementCounterArray1D(in atomic_uint arr[6]) {" NL
+			"  for (int i = 1; i < 5; i++)" NL
+			"    atomicCounterIncrement(arr[i]);" NL
+			"  atomicCounterIncrement(arr[0]);" NL
+			"  atomicCounterIncrement(arr[5]);" NL
+			"}" NL
+			"// Increments all the elements in a two dimensional counter array using different methods." NL
+			"void incrementCounterArray2D(in atomic_uint arr[5][6]) {" NL
+			"  incrementCounterArray1D(arr[1]);" NL
+			"  for (int i = 2; i < 5; i++) {" NL
+			"    for (int j = 0; j < 5; j++) {" NL
+			"      atomicCounterIncrement(arr[i][j]);" NL
+			"    }" NL
+			"    atomicCounterIncrement(arr[i][5]);" NL
+			"  }" NL
+			"  for (int i = 0; i < 4; i++)" NL
+			"     atomicCounterIncrement(arr[0][i]);" NL
+			"  atomicCounterIncrement(arr[0][4]);" NL
+			"  atomicCounterIncrement(arr[0][5]);" NL
+			"}" NL
+			"// Increments all the atomic counters once." NL
+			"void main() {" NL
+			"  for (int i = 0; i < 2; i++)" NL
+			"    incrementCounterArray2D(ac_counter[i]);" NL
+			"  for (int i = 0; i < 5; i++)" NL
+			"    incrementCounterArray1D(ac_counter[2][i]);" NL
+			"}";
+
+		return AdvancedUsageMultiDimArray::Setup();
+	}
+};
+
+class AdvancedUsageMultiDimArrayMedium : public AdvancedUsageMultiDimArray
+{
+	virtual long Setup()
+	{
+		dim_x_		= 3;
+		dim_y_		= 5;
+		dim_z_		= 3;
+
+		glsl_cs_	= NL
+			"layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;" NL
+			"layout(binding = 0) uniform atomic_uint ac_counter[3][5][3];" NL
+			"// Increments all the elements in a one dimensional array using different methods." NL
+			"void incrementCounterArray1D(in atomic_uint arr[3]) {" NL
+			"  for (int i = 1; i < 3; i++)" NL
+			"    atomicCounterIncrement(arr[i]);" NL
+			"  atomicCounterIncrement(arr[0]);" NL
+			"}" NL
+			"// Increments all the elements in a two dimensional counter array using different methods." NL
+			"void incrementCounterArray2D(in atomic_uint arr[5][3]) {" NL
+			"  incrementCounterArray1D(arr[1]);" NL
+			"  for (int i = 2; i < 5; i++) {" NL
+			"    for (int j = 0; j < 2; j++) {" NL
+			"      atomicCounterIncrement(arr[i][j]);" NL
+			"    }" NL
+			"    atomicCounterIncrement(arr[i][2]);" NL
+			"  }" NL
+			"  for (int i = 0; i < 2; i++)" NL
+			"     atomicCounterIncrement(arr[0][i]);" NL
+			"  atomicCounterIncrement(arr[0][2]);" NL
+			"}" NL
+			"// Increments all the atomic counters once." NL
+			"void main() {" NL
+			"  for (int i = 0; i < 2; i++)" NL
+			"    incrementCounterArray2D(ac_counter[i]);" NL
+			"  for (int i = 0; i < 5; i++)" NL
+			"    incrementCounterArray1D(ac_counter[2][i]);" NL
+			"}";
+
+		return AdvancedUsageMultiDimArray::Setup();
+	}
+};
+
+class AdvancedUsageMultiDimArraySmall : public AdvancedUsageMultiDimArray
+{
+	virtual long Setup()
+	{
+		dim_x_		= 2;
+		dim_y_		= 2;
+		dim_z_		= 2;
+
+		glsl_cs_	= NL
+			"layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;" NL
+			"layout(binding = 0) uniform atomic_uint ac_counter[2][2][2];" NL
+			"// Increments all the elements in a one dimensional array." NL
+			"void incrementCounterArray1D(in atomic_uint arr[2]) {" NL
+			"  atomicCounterIncrement(arr[0]);" NL
+			"  atomicCounterIncrement(arr[1]);" NL
+			"}" NL
+			"// Increments all the elements in a two dimensional counter array using different methods." NL
+			"void incrementCounterArray2D(in atomic_uint arr[2][2]) {" NL
+			"  incrementCounterArray1D(arr[1]);" NL
+			"  for (int i = 0; i < 2; i++) {" NL
+			"    atomicCounterIncrement(arr[0][i]);" NL
+			"  }" NL
+			"}" NL
+			"// Increments all the atomic counters once." NL
+			"void main() {" NL
+			"  incrementCounterArray2D(ac_counter[0]);" NL
+			"  for (int i = 0; i < 2; i++)" NL
+			"    incrementCounterArray1D(ac_counter[1][i]);" NL
+			"}";
+
+		return AdvancedUsageMultiDimArray::Setup();
+	}
+};
+
 class AdvancedUsageSwitchPrograms : public SACSubcaseBase
 {
 	virtual std::string Title()
@@ -3761,6 +3976,12 @@ void ShaderAtomicCountersTests::init()
 							 TestSubcase::Create<AdvancedUsageDrawUpdateDraw>));
 	addChild(
 		new TestSubcase(m_context, "advanced-usage-many-counters", TestSubcase::Create<AdvancedUsageManyCounters>));
+	addChild(
+		new TestSubcase(m_context, "advanced-usage-multidim-array-small", TestSubcase::Create<AdvancedUsageMultiDimArraySmall>));
+	addChild(
+		new TestSubcase(m_context, "advanced-usage-multidim-array-medium", TestSubcase::Create<AdvancedUsageMultiDimArrayMedium>));
+	addChild(
+		new TestSubcase(m_context, "advanced-usage-multidim-array-large", TestSubcase::Create<AdvancedUsageMultiDimArrayLarge>));
 	addChild(
 		new TestSubcase(m_context, "advanced-usage-switch-programs", TestSubcase::Create<AdvancedUsageSwitchPrograms>));
 	addChild(new TestSubcase(m_context, "advanced-usage-ubo", TestSubcase::Create<AdvancedUsageUBO>));

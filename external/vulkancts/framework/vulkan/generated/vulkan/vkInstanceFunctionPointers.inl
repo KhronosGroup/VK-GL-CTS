@@ -71,6 +71,8 @@ GetPhysicalDeviceToolPropertiesEXTFunc								getPhysicalDeviceToolPropertiesEXT
 GetPhysicalDeviceCooperativeMatrixPropertiesNVFunc					getPhysicalDeviceCooperativeMatrixPropertiesNV;
 GetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNVFunc	getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV;
 CreateHeadlessSurfaceEXTFunc										createHeadlessSurfaceEXT;
+AcquireDrmDisplayEXTFunc											acquireDrmDisplayEXT;
+GetDrmDisplayEXTFunc												getDrmDisplayEXT;
 AcquireWinrtDisplayNVFunc											acquireWinrtDisplayNV;
 GetWinrtDisplayNVFunc												getWinrtDisplayNV;
 CreateAndroidSurfaceKHRFunc											createAndroidSurfaceKHR;

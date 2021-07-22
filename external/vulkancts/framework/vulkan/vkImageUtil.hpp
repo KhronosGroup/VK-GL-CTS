@@ -45,6 +45,8 @@ bool						isDepthStencilFormat		(VkFormat format);
 bool						isCompressedFormat			(VkFormat format);
 bool						isSrgbFormat				(VkFormat format);
 
+bool						is64BitIntegerFormat		(VkFormat format);
+
 bool						isSupportedByFramework		(VkFormat format);
 void						checkImageSupport			(const InstanceInterface& vki, VkPhysicalDevice physicalDevice, const VkImageCreateInfo& imageCreateInfo);
 
@@ -78,6 +80,9 @@ deUint32					getFormatComponentWidth		(const VkFormat format, const deUint32 com
 deUint32					getBlockSizeInBytes			(const VkFormat compressedFormat);
 deUint32					getBlockWidth				(const VkFormat compressedFormat);
 deUint32					getBlockHeight				(const VkFormat compressedFormat);
+
+bool						hasSpirvFormat				(VkFormat fmt);
+const std::string			getSpirvFormat				(VkFormat fmt);
 
 const deUint32 BUFFER_IMAGE_COPY_OFFSET_GRANULARITY = 4u;
 

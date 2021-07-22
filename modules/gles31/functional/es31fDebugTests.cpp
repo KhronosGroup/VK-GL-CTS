@@ -165,6 +165,7 @@ private:
 TestFunctionWrapper::TestFunctionWrapper (void)
 	: m_type(TYPE_NULL)
 {
+	m_func.coreFn = 0;
 }
 
 TestFunctionWrapper::TestFunctionWrapper (CoreTestFunc func)

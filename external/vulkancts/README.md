@@ -144,7 +144,10 @@ Following command line options MUST be used when running CTS:
 	--deqp-log-images=disable
 	--deqp-log-shader-sources=disable
 
-In addition on multi-device systems the device for which conformance is claimed
+If an implementation ships with [implicit layers](https://github.com/KhronosGroup/Vulkan-Loader/blob/master/loader/LoaderAndLayerInterface.md#implicit-vs-explicit-layers) enabled, then such layers must be enabled
+when running CTS.
+
+In addition, on multi-device systems the device for which conformance is claimed
 can be selected with:
 
 	--deqp-vk-device-id=<value>

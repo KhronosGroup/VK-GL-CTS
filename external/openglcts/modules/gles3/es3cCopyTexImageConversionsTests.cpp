@@ -2865,8 +2865,7 @@ void ConversionDatabase::addEntryToConversionDatabase(PixelData src_topleft, Pix
 	if (src_topleft.data_internalformat != src_topright.data_internalformat ||
 		src_topleft.data_internalformat != src_bottomleft.data_internalformat ||
 		src_topleft.data_internalformat != src_bottomright.data_internalformat ||
-		src_topleft.data_internalformat != src_topright.data_internalformat ||
-		src_topleft.data_type != src_topright.data_type || src_topleft.data_type != src_bottomleft.data_type ||
+			src_topleft.data_type != src_topright.data_type || src_topleft.data_type != src_bottomleft.data_type ||
 		src_topleft.data_type != src_bottomright.data_type)
 	{
 		return;

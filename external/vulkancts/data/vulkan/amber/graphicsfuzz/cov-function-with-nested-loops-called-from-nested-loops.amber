@@ -1,0 +1,792 @@
+#!amber
+
+# Copyright 2021 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a coverage-gap found by the GraphicsFuzz project.
+
+# Short description: A fragment shader that covers specific BRW code paths
+
+# The test passes because the shader always writes red.
+
+# Optimized using spirv-opt with the following arguments:
+# '-O'
+# spirv-opt commit hash: a0370efd589be33d5d9a85cfde2f85841b3755af
+
+
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 320 es
+#
+# #define LOOP for (int i = 0; i < 1; i++)
+#
+# precision highp float;
+# precision highp int;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# layout(push_constant) uniform buf_push
+# {
+#     float five;
+# };
+#
+# // Function always returns 1.0.
+# float func(float x)
+# {
+#     float a = 1.0;
+#
+#     LOOP
+#     {
+#         LOOP
+#         {
+#             LOOP
+#             {
+#                 LOOP
+#                 {
+#                     LOOP
+#                     {
+#                         // Always false.
+#                         if (mod(1.0, x) < 0.0)
+#                         {
+#                             LOOP
+#                             {
+#                                 LOOP
+#                                 {
+#                                     LOOP
+#                                     {
+#                                         LOOP
+#                                         {
+#                                             LOOP
+#                                             {
+#                                                 LOOP
+#                                                 {
+#                                                     a += 1.0;
+#                                                 }
+#                                             }
+#                                         }
+#                                     }
+#                                 }
+#                             }
+#                         }
+#
+#                         // Always true.
+#                         if (x > 1.0)
+#                         {
+#                             return a;
+#                         }
+#                     }
+#                 }
+#             }
+#         }
+#     }
+#
+#     return 2.0;
+# }
+#
+# void main()
+# {
+#     float f = 0.0;
+#
+#     LOOP { LOOP { LOOP { LOOP { LOOP { LOOP { LOOP { LOOP { LOOP { LOOP {
+#     LOOP { LOOP { LOOP { LOOP { LOOP { LOOP { LOOP { LOOP { LOOP { LOOP {
+#     LOOP { LOOP { LOOP { LOOP { LOOP { LOOP { LOOP { LOOP
+#     {
+#         f = func(five);
+#     }
+#     } } } } } } } } } } } } } } } } } } } } } } } } } } }
+#
+#     // Always true.
+#     if (f == 1.0)
+#         _GLF_color = vec4(1, 0, 0, 1);
+#     else
+#         _GLF_color = vec4(0);
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 10
+; Bound: 1659
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %441
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %371 "buf_push"
+               OpMemberName %371 0 "five"
+               OpName %373 ""
+               OpName %441 "_GLF_color"
+               OpMemberDecorate %371 0 Offset 0
+               OpDecorate %371 Block
+               OpDecorate %441 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+         %13 = OpConstant %6 1
+         %14 = OpTypeInt 32 1
+         %17 = OpConstant %14 0
+         %24 = OpConstant %14 1
+         %25 = OpTypeBool
+         %61 = OpConstant %6 0
+        %143 = OpConstant %6 2
+        %371 = OpTypeStruct %6
+        %372 = OpTypePointer PushConstant %371
+        %373 = OpVariable %372 PushConstant
+        %375 = OpTypePointer PushConstant %6
+        %439 = OpTypeVector %6 4
+        %440 = OpTypePointer Output %439
+        %441 = OpVariable %440 Output
+        %442 = OpConstantComposite %439 %13 %61 %61 %13
+        %444 = OpConstantComposite %439 %61 %61 %61 %61
+        %449 = OpTypeInt 32 0
+        %450 = OpConstant %449 0
+        %451 = OpConstantFalse %25
+        %454 = OpConstantTrue %25
+        %747 = OpUndef %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %148
+        %148 = OpLabel
+        %606 = OpPhi %6 %61 %5 %786 %151
+        %605 = OpPhi %14 %17 %5 %434 %151
+        %746 = OpPhi %6 %747 %5 %745 %151
+        %154 = OpSLessThan %25 %605 %24
+               OpLoopMerge %150 %151 None
+               OpBranchConditional %154 %149 %150
+        %149 = OpLabel
+               OpBranch %156
+        %156 = OpLabel
+        %607 = OpPhi %14 %17 %149 %432 %159
+        %786 = OpPhi %6 %606 %149 %787 %159
+        %745 = OpPhi %6 %746 %149 %744 %159
+        %162 = OpSLessThan %25 %607 %24
+               OpLoopMerge %158 %159 None
+               OpBranchConditional %162 %157 %158
+        %157 = OpLabel
+               OpBranch %164
+        %164 = OpLabel
+        %609 = OpPhi %14 %17 %157 %430 %167
+        %787 = OpPhi %6 %786 %157 %788 %167
+        %744 = OpPhi %6 %745 %157 %743 %167
+        %170 = OpSLessThan %25 %609 %24
+               OpLoopMerge %166 %167 None
+               OpBranchConditional %170 %165 %166
+        %165 = OpLabel
+               OpBranch %172
+        %172 = OpLabel
+        %611 = OpPhi %14 %17 %165 %428 %175
+        %788 = OpPhi %6 %787 %165 %789 %175
+        %743 = OpPhi %6 %744 %165 %742 %175
+        %178 = OpSLessThan %25 %611 %24
+               OpLoopMerge %174 %175 None
+               OpBranchConditional %178 %173 %174
+        %173 = OpLabel
+               OpBranch %180
+        %180 = OpLabel
+        %613 = OpPhi %14 %17 %173 %426 %183
+        %789 = OpPhi %6 %788 %173 %790 %183
+        %742 = OpPhi %6 %743 %173 %741 %183
+        %186 = OpSLessThan %25 %613 %24
+               OpLoopMerge %182 %183 None
+               OpBranchConditional %186 %181 %182
+        %181 = OpLabel
+               OpBranch %188
+        %188 = OpLabel
+        %615 = OpPhi %14 %17 %181 %424 %191
+        %790 = OpPhi %6 %789 %181 %791 %191
+        %741 = OpPhi %6 %742 %181 %740 %191
+        %194 = OpSLessThan %25 %615 %24
+               OpLoopMerge %190 %191 None
+               OpBranchConditional %194 %189 %190
+        %189 = OpLabel
+               OpBranch %196
+        %196 = OpLabel
+        %617 = OpPhi %14 %17 %189 %422 %199
+        %791 = OpPhi %6 %790 %189 %792 %199
+        %740 = OpPhi %6 %741 %189 %739 %199
+        %202 = OpSLessThan %25 %617 %24
+               OpLoopMerge %198 %199 None
+               OpBranchConditional %202 %197 %198
+        %197 = OpLabel
+               OpBranch %204
+        %204 = OpLabel
+        %619 = OpPhi %14 %17 %197 %420 %207
+        %792 = OpPhi %6 %791 %197 %793 %207
+        %739 = OpPhi %6 %740 %197 %738 %207
+        %210 = OpSLessThan %25 %619 %24
+               OpLoopMerge %206 %207 None
+               OpBranchConditional %210 %205 %206
+        %205 = OpLabel
+               OpBranch %212
+        %212 = OpLabel
+        %621 = OpPhi %14 %17 %205 %418 %215
+        %793 = OpPhi %6 %792 %205 %794 %215
+        %738 = OpPhi %6 %739 %205 %737 %215
+        %218 = OpSLessThan %25 %621 %24
+               OpLoopMerge %214 %215 None
+               OpBranchConditional %218 %213 %214
+        %213 = OpLabel
+               OpBranch %220
+        %220 = OpLabel
+        %623 = OpPhi %14 %17 %213 %416 %223
+        %794 = OpPhi %6 %793 %213 %795 %223
+        %737 = OpPhi %6 %738 %213 %736 %223
+        %226 = OpSLessThan %25 %623 %24
+               OpLoopMerge %222 %223 None
+               OpBranchConditional %226 %221 %222
+        %221 = OpLabel
+               OpBranch %228
+        %228 = OpLabel
+        %625 = OpPhi %14 %17 %221 %414 %231
+        %795 = OpPhi %6 %794 %221 %796 %231
+        %736 = OpPhi %6 %737 %221 %735 %231
+        %234 = OpSLessThan %25 %625 %24
+               OpLoopMerge %230 %231 None
+               OpBranchConditional %234 %229 %230
+        %229 = OpLabel
+               OpBranch %236
+        %236 = OpLabel
+        %627 = OpPhi %14 %17 %229 %412 %239
+        %796 = OpPhi %6 %795 %229 %797 %239
+        %735 = OpPhi %6 %736 %229 %734 %239
+        %242 = OpSLessThan %25 %627 %24
+               OpLoopMerge %238 %239 None
+               OpBranchConditional %242 %237 %238
+        %237 = OpLabel
+               OpBranch %244
+        %244 = OpLabel
+        %629 = OpPhi %14 %17 %237 %410 %247
+        %797 = OpPhi %6 %796 %237 %798 %247
+        %734 = OpPhi %6 %735 %237 %733 %247
+        %250 = OpSLessThan %25 %629 %24
+               OpLoopMerge %246 %247 None
+               OpBranchConditional %250 %245 %246
+        %245 = OpLabel
+               OpBranch %252
+        %252 = OpLabel
+        %631 = OpPhi %14 %17 %245 %408 %255
+        %798 = OpPhi %6 %797 %245 %799 %255
+        %733 = OpPhi %6 %734 %245 %732 %255
+        %258 = OpSLessThan %25 %631 %24
+               OpLoopMerge %254 %255 None
+               OpBranchConditional %258 %253 %254
+        %253 = OpLabel
+               OpBranch %260
+        %260 = OpLabel
+        %633 = OpPhi %14 %17 %253 %406 %263
+        %799 = OpPhi %6 %798 %253 %800 %263
+        %732 = OpPhi %6 %733 %253 %731 %263
+        %266 = OpSLessThan %25 %633 %24
+               OpLoopMerge %262 %263 None
+               OpBranchConditional %266 %261 %262
+        %261 = OpLabel
+               OpBranch %268
+        %268 = OpLabel
+        %635 = OpPhi %14 %17 %261 %404 %271
+        %800 = OpPhi %6 %799 %261 %801 %271
+        %731 = OpPhi %6 %732 %261 %730 %271
+        %274 = OpSLessThan %25 %635 %24
+               OpLoopMerge %270 %271 None
+               OpBranchConditional %274 %269 %270
+        %269 = OpLabel
+               OpBranch %276
+        %276 = OpLabel
+        %637 = OpPhi %14 %17 %269 %402 %279
+        %801 = OpPhi %6 %800 %269 %802 %279
+        %730 = OpPhi %6 %731 %269 %729 %279
+        %282 = OpSLessThan %25 %637 %24
+               OpLoopMerge %278 %279 None
+               OpBranchConditional %282 %277 %278
+        %277 = OpLabel
+               OpBranch %284
+        %284 = OpLabel
+        %639 = OpPhi %14 %17 %277 %400 %287
+        %802 = OpPhi %6 %801 %277 %803 %287
+        %729 = OpPhi %6 %730 %277 %728 %287
+        %290 = OpSLessThan %25 %639 %24
+               OpLoopMerge %286 %287 None
+               OpBranchConditional %290 %285 %286
+        %285 = OpLabel
+               OpBranch %292
+        %292 = OpLabel
+        %641 = OpPhi %14 %17 %285 %398 %295
+        %803 = OpPhi %6 %802 %285 %804 %295
+        %728 = OpPhi %6 %729 %285 %727 %295
+        %298 = OpSLessThan %25 %641 %24
+               OpLoopMerge %294 %295 None
+               OpBranchConditional %298 %293 %294
+        %293 = OpLabel
+               OpBranch %300
+        %300 = OpLabel
+        %643 = OpPhi %14 %17 %293 %396 %303
+        %804 = OpPhi %6 %803 %293 %805 %303
+        %727 = OpPhi %6 %728 %293 %726 %303
+        %306 = OpSLessThan %25 %643 %24
+               OpLoopMerge %302 %303 None
+               OpBranchConditional %306 %301 %302
+        %301 = OpLabel
+               OpBranch %308
+        %308 = OpLabel
+        %645 = OpPhi %14 %17 %301 %394 %311
+        %805 = OpPhi %6 %804 %301 %806 %311
+        %726 = OpPhi %6 %727 %301 %725 %311
+        %314 = OpSLessThan %25 %645 %24
+               OpLoopMerge %310 %311 None
+               OpBranchConditional %314 %309 %310
+        %309 = OpLabel
+               OpBranch %316
+        %316 = OpLabel
+        %647 = OpPhi %14 %17 %309 %392 %319
+        %806 = OpPhi %6 %805 %309 %807 %319
+        %725 = OpPhi %6 %726 %309 %724 %319
+        %322 = OpSLessThan %25 %647 %24
+               OpLoopMerge %318 %319 None
+               OpBranchConditional %322 %317 %318
+        %317 = OpLabel
+               OpBranch %324
+        %324 = OpLabel
+        %649 = OpPhi %14 %17 %317 %390 %327
+        %807 = OpPhi %6 %806 %317 %808 %327
+        %724 = OpPhi %6 %725 %317 %723 %327
+        %330 = OpSLessThan %25 %649 %24
+               OpLoopMerge %326 %327 None
+               OpBranchConditional %330 %325 %326
+        %325 = OpLabel
+               OpBranch %332
+        %332 = OpLabel
+        %651 = OpPhi %14 %17 %325 %388 %335
+        %808 = OpPhi %6 %807 %325 %809 %335
+        %723 = OpPhi %6 %724 %325 %722 %335
+        %338 = OpSLessThan %25 %651 %24
+               OpLoopMerge %334 %335 None
+               OpBranchConditional %338 %333 %334
+        %333 = OpLabel
+               OpBranch %340
+        %340 = OpLabel
+        %653 = OpPhi %14 %17 %333 %386 %343
+        %809 = OpPhi %6 %808 %333 %810 %343
+        %722 = OpPhi %6 %723 %333 %721 %343
+        %346 = OpSLessThan %25 %653 %24
+               OpLoopMerge %342 %343 None
+               OpBranchConditional %346 %341 %342
+        %341 = OpLabel
+               OpBranch %348
+        %348 = OpLabel
+        %655 = OpPhi %14 %17 %341 %384 %351
+        %810 = OpPhi %6 %809 %341 %811 %351
+        %721 = OpPhi %6 %722 %341 %720 %351
+        %354 = OpSLessThan %25 %655 %24
+               OpLoopMerge %350 %351 None
+               OpBranchConditional %354 %349 %350
+        %349 = OpLabel
+               OpBranch %356
+        %356 = OpLabel
+        %657 = OpPhi %14 %17 %349 %382 %359
+        %811 = OpPhi %6 %810 %349 %812 %359
+        %720 = OpPhi %6 %721 %349 %719 %359
+        %362 = OpSLessThan %25 %657 %24
+               OpLoopMerge %358 %359 None
+               OpBranchConditional %362 %357 %358
+        %357 = OpLabel
+               OpBranch %364
+        %364 = OpLabel
+        %719 = OpPhi %6 %720 %357 %716 %367
+        %659 = OpPhi %14 %17 %357 %380 %367
+        %812 = OpPhi %6 %811 %357 %716 %367
+        %370 = OpSLessThan %25 %659 %24
+               OpLoopMerge %366 %367 None
+               OpBranchConditional %370 %365 %366
+        %365 = OpLabel
+        %376 = OpAccessChain %375 %373 %17
+        %377 = OpLoad %6 %376
+               OpSelectionMerge %603 None
+               OpSwitch %450 %481
+        %481 = OpLabel
+               OpBranch %482
+        %482 = OpLabel
+        %681 = OpPhi %25 %451 %481 %704 %597
+        %674 = OpPhi %6 %13 %481 %1655 %597
+        %661 = OpPhi %14 %17 %481 %599 %597
+        %718 = OpPhi %6 %719 %481 %748 %597
+        %485 = OpSLessThan %25 %661 %24
+               OpLoopMerge %600 %597 None
+               OpBranchConditional %485 %486 %600
+        %486 = OpLabel
+               OpBranch %487
+        %487 = OpLabel
+        %680 = OpPhi %25 %681 %486 %695 %591
+        %673 = OpPhi %6 %674 %486 %1656 %591
+        %662 = OpPhi %14 %17 %486 %593 %591
+        %749 = OpPhi %6 %718 %486 %750 %591
+        %490 = OpSLessThan %25 %662 %24
+               OpLoopMerge %594 %591 None
+               OpBranchConditional %490 %491 %594
+        %491 = OpLabel
+               OpBranch %492
+        %492 = OpLabel
+        %679 = OpPhi %25 %680 %491 %688 %585
+        %672 = OpPhi %6 %673 %491 %1657 %585
+        %663 = OpPhi %14 %17 %491 %587 %585
+        %751 = OpPhi %6 %749 %491 %752 %585
+        %495 = OpSLessThan %25 %663 %24
+               OpLoopMerge %588 %585 None
+               OpBranchConditional %495 %496 %588
+        %496 = OpLabel
+               OpBranch %497
+        %497 = OpLabel
+        %678 = OpPhi %25 %679 %496 %676 %579
+        %671 = OpPhi %6 %672 %496 %1658 %579
+        %664 = OpPhi %14 %17 %496 %581 %579
+        %753 = OpPhi %6 %751 %496 %754 %579
+        %500 = OpSLessThan %25 %664 %24
+               OpLoopMerge %582 %579 None
+               OpBranchConditional %500 %501 %582
+        %501 = OpLabel
+               OpBranch %502
+        %502 = OpLabel
+        %665 = OpPhi %14 %17 %501 %575 %573
+        %670 = OpPhi %6 %671 %501 %669 %573
+        %505 = OpSLessThan %25 %665 %24
+               OpLoopMerge %576 %573 None
+               OpBranchConditional %505 %506 %576
+        %506 = OpLabel
+        %508 = OpFMod %6 %13 %377
+        %509 = OpFOrdLessThan %25 %508 %61
+               OpSelectionMerge %567 None
+               OpBranchConditional %509 %510 %567
+        %510 = OpLabel
+               OpBranch %511
+        %511 = OpLabel
+        %675 = OpPhi %6 %670 %510 %785 %563
+        %666 = OpPhi %14 %17 %510 %565 %563
+        %514 = OpSLessThan %25 %666 %24
+               OpLoopMerge %566 %563 None
+               OpBranchConditional %514 %515 %566
+        %515 = OpLabel
+               OpBranch %516
+        %516 = OpLabel
+        %771 = OpPhi %14 %17 %515 %561 %559
+        %785 = OpPhi %6 %675 %515 %784 %559
+        %519 = OpSLessThan %25 %771 %24
+               OpLoopMerge %562 %559 None
+               OpBranchConditional %519 %520 %562
+        %520 = OpLabel
+               OpBranch %521
+        %521 = OpLabel
+        %773 = OpPhi %14 %17 %520 %557 %555
+        %784 = OpPhi %6 %785 %520 %783 %555
+        %524 = OpSLessThan %25 %773 %24
+               OpLoopMerge %558 %555 None
+               OpBranchConditional %524 %525 %558
+        %525 = OpLabel
+               OpBranch %526
+        %526 = OpLabel
+        %775 = OpPhi %14 %17 %525 %553 %551
+        %783 = OpPhi %6 %784 %525 %782 %551
+        %529 = OpSLessThan %25 %775 %24
+               OpLoopMerge %554 %551 None
+               OpBranchConditional %529 %530 %554
+        %530 = OpLabel
+               OpBranch %531
+        %531 = OpLabel
+        %777 = OpPhi %14 %17 %530 %549 %547
+        %782 = OpPhi %6 %783 %530 %781 %547
+        %534 = OpSLessThan %25 %777 %24
+               OpLoopMerge %550 %547 None
+               OpBranchConditional %534 %535 %550
+        %535 = OpLabel
+               OpBranch %536
+        %536 = OpLabel
+        %781 = OpPhi %6 %782 %535 %542 %540
+        %779 = OpPhi %14 %17 %535 %545 %540
+        %539 = OpSLessThan %25 %779 %24
+               OpLoopMerge %546 %540 None
+               OpBranchConditional %539 %540 %546
+        %540 = OpLabel
+        %542 = OpFAdd %6 %781 %13
+        %545 = OpIAdd %14 %779 %24
+               OpBranch %536
+        %546 = OpLabel
+               OpBranch %547
+        %547 = OpLabel
+        %549 = OpIAdd %14 %777 %24
+               OpBranch %531
+        %550 = OpLabel
+               OpBranch %551
+        %551 = OpLabel
+        %553 = OpIAdd %14 %775 %24
+               OpBranch %526
+        %554 = OpLabel
+               OpBranch %555
+        %555 = OpLabel
+        %557 = OpIAdd %14 %773 %24
+               OpBranch %521
+        %558 = OpLabel
+               OpBranch %559
+        %559 = OpLabel
+        %561 = OpIAdd %14 %771 %24
+               OpBranch %516
+        %562 = OpLabel
+               OpBranch %563
+        %563 = OpLabel
+        %565 = OpIAdd %14 %666 %24
+               OpBranch %511
+        %566 = OpLabel
+               OpBranch %567
+        %567 = OpLabel
+        %669 = OpPhi %6 %670 %506 %675 %566
+        %569 = OpFOrdGreaterThan %25 %377 %13
+               OpSelectionMerge %572 None
+               OpBranchConditional %569 %570 %572
+        %570 = OpLabel
+               OpBranch %576
+        %572 = OpLabel
+               OpBranch %573
+        %573 = OpLabel
+        %575 = OpIAdd %14 %665 %24
+               OpBranch %502
+        %576 = OpLabel
+       %1658 = OpPhi %6 %670 %502 %669 %570
+        %754 = OpPhi %6 %753 %502 %669 %570
+        %676 = OpPhi %25 %678 %502 %454 %570
+               OpSelectionMerge %578 None
+               OpBranchConditional %676 %582 %578
+        %578 = OpLabel
+               OpBranch %579
+        %579 = OpLabel
+        %581 = OpIAdd %14 %664 %24
+               OpBranch %497
+        %582 = OpLabel
+       %1657 = OpPhi %6 %671 %497 %1658 %576
+        %752 = OpPhi %6 %753 %497 %754 %576
+        %688 = OpPhi %25 %678 %497 %676 %576
+               OpSelectionMerge %584 None
+               OpBranchConditional %688 %588 %584
+        %584 = OpLabel
+               OpBranch %585
+        %585 = OpLabel
+        %587 = OpIAdd %14 %663 %24
+               OpBranch %492
+        %588 = OpLabel
+       %1656 = OpPhi %6 %672 %492 %1657 %582
+        %750 = OpPhi %6 %751 %492 %752 %582
+        %695 = OpPhi %25 %679 %492 %688 %582
+               OpSelectionMerge %590 None
+               OpBranchConditional %695 %594 %590
+        %590 = OpLabel
+               OpBranch %591
+        %591 = OpLabel
+        %593 = OpIAdd %14 %662 %24
+               OpBranch %487
+        %594 = OpLabel
+       %1655 = OpPhi %6 %673 %487 %1656 %588
+        %748 = OpPhi %6 %749 %487 %750 %588
+        %704 = OpPhi %25 %680 %487 %695 %588
+               OpSelectionMerge %596 None
+               OpBranchConditional %704 %600 %596
+        %596 = OpLabel
+               OpBranch %597
+        %597 = OpLabel
+        %599 = OpIAdd %14 %661 %24
+               OpBranch %482
+        %600 = OpLabel
+        %717 = OpPhi %6 %718 %482 %748 %594
+        %715 = OpPhi %25 %681 %482 %704 %594
+               OpSelectionMerge %602 None
+               OpBranchConditional %715 %603 %602
+        %602 = OpLabel
+               OpBranch %603
+        %603 = OpLabel
+        %716 = OpPhi %6 %717 %600 %143 %602
+               OpBranch %367
+        %367 = OpLabel
+        %380 = OpIAdd %14 %659 %24
+               OpBranch %364
+        %366 = OpLabel
+               OpBranch %359
+        %359 = OpLabel
+        %382 = OpIAdd %14 %657 %24
+               OpBranch %356
+        %358 = OpLabel
+               OpBranch %351
+        %351 = OpLabel
+        %384 = OpIAdd %14 %655 %24
+               OpBranch %348
+        %350 = OpLabel
+               OpBranch %343
+        %343 = OpLabel
+        %386 = OpIAdd %14 %653 %24
+               OpBranch %340
+        %342 = OpLabel
+               OpBranch %335
+        %335 = OpLabel
+        %388 = OpIAdd %14 %651 %24
+               OpBranch %332
+        %334 = OpLabel
+               OpBranch %327
+        %327 = OpLabel
+        %390 = OpIAdd %14 %649 %24
+               OpBranch %324
+        %326 = OpLabel
+               OpBranch %319
+        %319 = OpLabel
+        %392 = OpIAdd %14 %647 %24
+               OpBranch %316
+        %318 = OpLabel
+               OpBranch %311
+        %311 = OpLabel
+        %394 = OpIAdd %14 %645 %24
+               OpBranch %308
+        %310 = OpLabel
+               OpBranch %303
+        %303 = OpLabel
+        %396 = OpIAdd %14 %643 %24
+               OpBranch %300
+        %302 = OpLabel
+               OpBranch %295
+        %295 = OpLabel
+        %398 = OpIAdd %14 %641 %24
+               OpBranch %292
+        %294 = OpLabel
+               OpBranch %287
+        %287 = OpLabel
+        %400 = OpIAdd %14 %639 %24
+               OpBranch %284
+        %286 = OpLabel
+               OpBranch %279
+        %279 = OpLabel
+        %402 = OpIAdd %14 %637 %24
+               OpBranch %276
+        %278 = OpLabel
+               OpBranch %271
+        %271 = OpLabel
+        %404 = OpIAdd %14 %635 %24
+               OpBranch %268
+        %270 = OpLabel
+               OpBranch %263
+        %263 = OpLabel
+        %406 = OpIAdd %14 %633 %24
+               OpBranch %260
+        %262 = OpLabel
+               OpBranch %255
+        %255 = OpLabel
+        %408 = OpIAdd %14 %631 %24
+               OpBranch %252
+        %254 = OpLabel
+               OpBranch %247
+        %247 = OpLabel
+        %410 = OpIAdd %14 %629 %24
+               OpBranch %244
+        %246 = OpLabel
+               OpBranch %239
+        %239 = OpLabel
+        %412 = OpIAdd %14 %627 %24
+               OpBranch %236
+        %238 = OpLabel
+               OpBranch %231
+        %231 = OpLabel
+        %414 = OpIAdd %14 %625 %24
+               OpBranch %228
+        %230 = OpLabel
+               OpBranch %223
+        %223 = OpLabel
+        %416 = OpIAdd %14 %623 %24
+               OpBranch %220
+        %222 = OpLabel
+               OpBranch %215
+        %215 = OpLabel
+        %418 = OpIAdd %14 %621 %24
+               OpBranch %212
+        %214 = OpLabel
+               OpBranch %207
+        %207 = OpLabel
+        %420 = OpIAdd %14 %619 %24
+               OpBranch %204
+        %206 = OpLabel
+               OpBranch %199
+        %199 = OpLabel
+        %422 = OpIAdd %14 %617 %24
+               OpBranch %196
+        %198 = OpLabel
+               OpBranch %191
+        %191 = OpLabel
+        %424 = OpIAdd %14 %615 %24
+               OpBranch %188
+        %190 = OpLabel
+               OpBranch %183
+        %183 = OpLabel
+        %426 = OpIAdd %14 %613 %24
+               OpBranch %180
+        %182 = OpLabel
+               OpBranch %175
+        %175 = OpLabel
+        %428 = OpIAdd %14 %611 %24
+               OpBranch %172
+        %174 = OpLabel
+               OpBranch %167
+        %167 = OpLabel
+        %430 = OpIAdd %14 %609 %24
+               OpBranch %164
+        %166 = OpLabel
+               OpBranch %159
+        %159 = OpLabel
+        %432 = OpIAdd %14 %607 %24
+               OpBranch %156
+        %158 = OpLabel
+               OpBranch %151
+        %151 = OpLabel
+        %434 = OpIAdd %14 %605 %24
+               OpBranch %148
+        %150 = OpLabel
+        %436 = OpFOrdEqual %25 %606 %13
+               OpSelectionMerge %438 None
+               OpBranchConditional %436 %437 %443
+        %437 = OpLabel
+               OpStore %441 %442
+               OpBranch %438
+        %443 = OpLabel
+               OpStore %441 %444
+               OpBranch %438
+        %438 = OpLabel
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+# five
+BUFFER variant_five DATA_TYPE float STD140 DATA
+ 5.0
+END
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+  BIND BUFFER variant_five AS push_constant
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255

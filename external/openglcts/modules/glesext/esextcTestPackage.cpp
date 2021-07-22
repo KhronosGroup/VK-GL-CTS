@@ -32,7 +32,7 @@
 #include "texture_buffer/esextcTextureBufferTests.hpp"
 #include "texture_cube_map_array/esextcTextureCubeMapArrayTests.hpp"
 #include "texture_shadow_lod/esextcTextureShadowLodFunctionsTest.hpp"
-
+#include "disjoint_timer_query/esextcDisjointTimerQueryTests.hpp"
 #include "glcViewportArrayTests.hpp"
 #include "gluStateReset.hpp"
 #include "tcuTestLog.hpp"
@@ -144,6 +144,8 @@ void ESEXTTestPackage::init(void)
 		glcts::ExtParameters viewportParams(glu::GLSL_VERSION_310_ES, glcts::EXTENSIONTYPE_OES);
 		addChild(new glcts::ViewportArrayTests(getContext(), viewportParams));
 		addChild(new deqp::Functional::TextureShadowLodTest(getContext()));
+		glcts::ExtParameters viewportParams2(glu::GLSL_VERSION_100_ES, glcts::EXTENSIONTYPE_OES);
+		addChild(new glcts::DisjointTimerQueryTests(getContext(), viewportParams2));
 	}
 	catch (...)
 	{

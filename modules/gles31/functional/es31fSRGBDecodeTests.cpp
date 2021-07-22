@@ -276,6 +276,7 @@ FragmentShaderParameters::FragmentShaderParameters	(const ShaderOutputs	paramsOu
 													 Toggling				paramsToggleRequired)
 	: outputTotal									(paramsOutputTotal)
 	, uniformTotal									(paramsUniformTotal)
+	, samplingType									(TEXTURESAMPLING_TEXTURE)
 	, blendRequired									(paramsBlendRequired)
 	, toggleRequired								(paramsToggleRequired)
 {
@@ -931,10 +932,13 @@ private:
 SRGBTestCase::SRGBTestCase	(Context& context, const char* name, const char* description, const tcu::TextureFormat internalFormat)
 	: TestCase				(context, name, description)
 	, m_epsilonError		(EpsilonError::CPU)
+	, m_resultOutputTotal	(0)
 	, m_resultTextureFormat	(tcu::TextureFormat(tcu::TextureFormat::sRGBA, tcu::TextureFormat::UNORM_INT8))
 	, m_vaoID				(0)
 	, m_vertexDataID		(0)
 	, m_samplingGroup		(SHADERSAMPLINGGROUP_TEXTURE)
+	, m_px					(0)
+	, m_py					(0)
 	, m_internalFormat		(internalFormat)
 {
 }
@@ -952,6 +956,11 @@ void SRGBTestCase::init (void)
 	if ( (glu::getInternalFormat(m_internalFormat) == GL_SRGB8_ALPHA8) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_sRGB_decode") )
 	{
 		throw tcu::NotSupportedError("Test requires GL_EXT_texture_sRGB_decode extension");
+	}
+
+	if ( (glu::getInternalFormat(m_internalFormat) == GL_SRG8_EXT) && !(m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_sRGB_RG8")) )
+	{
+		throw tcu::NotSupportedError("Test requires GL_EXT_texture_sRGB_RG8 extension");
 	}
 
 	if ( (glu::getInternalFormat(m_internalFormat) == GL_SR8_EXT) && !(m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_sRGB_R8")) )
@@ -1230,6 +1239,12 @@ tcu::Vec4 SRGBTestCase::formatReferenceColor (tcu::Vec4 referenceColor)
 		{
 			return referenceColor;
 		}
+		case GL_SRG8_EXT:
+		{
+			// zero unwanted color channels
+			referenceColor.z() = 0;
+			return referenceColor;
+		}
 		case GL_SR8_EXT:
 		{
 			// zero unwanted color channels
@@ -1357,9 +1372,9 @@ void SRGBTestCase::initVertexData (void)
 	gl.bindBuffer(GL_ARRAY_BUFFER, m_vertexDataID);
 	gl.bufferData(GL_ARRAY_BUFFER, (glw::GLsizei)sizeof(squareVertexData), squareVertexData, GL_STATIC_DRAW);
 
-	gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * (glw::GLsizei)sizeof(GL_FLOAT), (glw::GLvoid *)0);
+	gl.vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * (glw::GLsizei)sizeof(float), (glw::GLvoid *)0);
 	gl.enableVertexAttribArray(0);
-	gl.vertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * (glw::GLsizei)sizeof(GL_FLOAT), (glw::GLvoid *)(3 * sizeof(GL_FLOAT)));
+	gl.vertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * (glw::GLsizei)sizeof(float), (glw::GLvoid *)(3 * sizeof(float)));
 	gl.enableVertexAttribArray(1);
 
 	gl.bindVertexArray(0);
@@ -1974,6 +1989,7 @@ void SRGBDecodeTests::init (void)
 	const TestGroupConfig testGroupConfigList[] =
 	{
 		TestGroupConfig("srgba8",	"srgb decode tests using srgba internal format",	tcu::TextureFormat(tcu::TextureFormat::sRGBA, tcu::TextureFormat::UNORM_INT8)),
+		TestGroupConfig("srg8",		"srgb decode tests using srg8 internal format",		tcu::TextureFormat(tcu::TextureFormat::sRG, tcu::TextureFormat::UNORM_INT8)),
 		TestGroupConfig("sr8",		"srgb decode tests using sr8 internal format",		tcu::TextureFormat(tcu::TextureFormat::sR, tcu::TextureFormat::UNORM_INT8))
 	};
 

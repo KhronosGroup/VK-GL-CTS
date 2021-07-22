@@ -636,10 +636,6 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 
 	// Initialize Marker Buffer
 	{
-		VkImageAspectFlags	depthImageAspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
-		if (hasStencilComponent(mapVkFormat(m_format).order))
-			depthImageAspectFlags |= VK_IMAGE_ASPECT_STENCIL_BIT;
-
 		const VkImageMemoryBarrier imageBarrier[] =
 		{
 			{
@@ -798,10 +794,6 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 
 	// Barrier to transition between first and second pass
 	{
-		VkImageAspectFlags	depthImageAspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
-		if (hasStencilComponent(mapVkFormat(m_format).order))
-			depthImageAspectFlags |= VK_IMAGE_ASPECT_STENCIL_BIT;
-
 		const VkImageMemoryBarrier imageBarrier[] =
 		{
 			{
@@ -815,7 +807,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 				0u,															// deUint32				dstQueueFamilyIndex
 				*depthImage,												// VkImage				image
 				{
-					depthImageAspectFlags,							// VkImageAspectFlags		aspectMask
+					VK_IMAGE_ASPECT_DEPTH_BIT,						// VkImageAspectFlags		aspectMask
 					0u,												// deUint32					baseMipLevel
 					1u,												// deUint32					levelCount
 					0u,												// deUint32					baseArrayLayer

@@ -49,6 +49,7 @@ inline void release (Context& context, VkBufferView bufferView, const VkAllocati
 	context.getDeviceInterface().destroyBufferView(context.getDevice(), bufferView, pAllocator);
 }
 
+#ifndef CTS_USES_VULKANSC
 inline void release (Context& context, VkCommandPool commandPool, const VkAllocationCallbacks* pAllocator)
 {
 #ifndef CTS_USES_VULKANSC
@@ -70,6 +71,7 @@ inline void release (Context& context, VkDescriptorPool descriptorPool, const Vk
 	DE_UNREF(pAllocator);
 #endif // CTS_USES_VULKANSC
 }
+#endif // CTS_USES_VULKANSC
 
 inline void release (Context& context, VkDescriptorSetLayout descriptorSetLayout, const VkAllocationCallbacks* pAllocator)
 {
@@ -126,6 +128,7 @@ inline void release (Context& context, VkPipelineLayout pipelineLayout, const Vk
 	context.getDeviceInterface().destroyPipelineLayout(context.getDevice(), pipelineLayout, pAllocator);
 }
 
+#ifndef CTS_USES_VULKANSC
 inline void release (Context& context, VkQueryPool queryPool, const VkAllocationCallbacks* pAllocator)
 {
 #ifndef CTS_USES_VULKANSC
@@ -136,6 +139,7 @@ inline void release (Context& context, VkQueryPool queryPool, const VkAllocation
 	DE_UNREF(pAllocator);
 #endif // CTS_USES_VULKANSC
 }
+#endif // CTS_USES_VULKANSC
 
 inline void release (Context& context, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator)
 {
@@ -179,6 +183,7 @@ inline void release (Context& context, VkDevice device, VkDescriptorPool descrip
 	context.getDeviceInterface().freeDescriptorSets(device, descriptorPool, numDescriptorSets, pDescriptorSets);
 }
 
+#ifndef CTS_USES_VULKANSC
 inline void release (Context& context, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator)
 {
 #ifndef CTS_USES_VULKANSC
@@ -189,6 +194,7 @@ inline void release (Context& context, VkDeviceMemory memory, const VkAllocation
 	DE_UNREF(pAllocator);
 #endif // CTS_USES_VULKANSC
 }
+#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus reportStatus (const bool success)
 {

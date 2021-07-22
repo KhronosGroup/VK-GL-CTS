@@ -5485,8 +5485,10 @@ ExceedingBoundariesTest::ExceedingBoundariesTest(deqp::Context& context)
 
 					if (0 != z_val)
 					{
-						if ((GL_TEXTURE_2D_ARRAY != tex_target) || (GL_TEXTURE_2D_MULTISAMPLE_ARRAY != tex_target) ||
-							(GL_TEXTURE_3D != tex_target) || (GL_TEXTURE_CUBE_MAP_ARRAY != tex_target))
+						if (!((GL_TEXTURE_2D_ARRAY == tex_target)
+							|| (GL_TEXTURE_2D_MULTISAMPLE_ARRAY == tex_target)
+							|| (GL_TEXTURE_3D == tex_target)
+							|| (GL_TEXTURE_CUBE_MAP_ARRAY == tex_target)))
 						{
 							/* Skip z != 0 for 2d textures */
 							continue;

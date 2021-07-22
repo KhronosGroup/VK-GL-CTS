@@ -72,7 +72,10 @@ namespace
 void checkSupport (const glu::ContextInfo& info, deUint32 internalFormat)
 {
 	if (internalFormat == GL_SR8_EXT && !info.isExtensionSupported("GL_EXT_texture_sRGB_R8"))
-		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_decode is not supported.");
+		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_R8 is not supported.");
+
+	if (internalFormat == GL_SRG8_EXT && !info.isExtensionSupported("GL_EXT_texture_sRGB_RG8"))
+		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_RG8 is not supported.");
 }
 
 } // anonymous
@@ -1368,6 +1371,7 @@ void TextureFormatTests::init (void)
 		{ "rgba8ui",			GL_RGBA8UI,			},
 		{ "srgb8_alpha8",		GL_SRGB8_ALPHA8,	},
 		{ "srgb_r8",			GL_SR8_EXT,			},
+		{ "srgb_rg8",			GL_SRG8_EXT,		},
 		{ "rgb10_a2",			GL_RGB10_A2,		},
 		{ "rgb10_a2ui",			GL_RGB10_A2UI,		},
 		{ "rgba4",				GL_RGBA4,			},

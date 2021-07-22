@@ -80,6 +80,7 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_AMD_shader_trinary_minmax",
 		"VK_AMD_texture_gather_bias_lod",
 		"VK_ANDROID_external_memory_android_hardware_buffer",
+		"VK_VALVE_mutable_descriptor_type",
 	};
 
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
@@ -184,17 +185,24 @@ std::pair<deUint32, deUint32> determineDeviceVersions(const PlatformInterface& v
 	return std::make_pair(choosenDeviceVersion, lowestDeviceVersion);
 }
 
-
-Move<VkInstance> createInstance (const PlatformInterface& vkp, deUint32 apiVersion, const vector<string>& enabledExtensions, const tcu::CommandLine& cmdLine)
+#ifndef CTS_USES_VULKANSC
+Move<VkInstance> createInstance (const PlatformInterface& vkp, deUint32 apiVersion, const vector<string>& enabledExtensions, DebugReportRecorder* recorder)
+#else
+Move<VkInstance> createInstance (const PlatformInterface& vkp, deUint32 apiVersion, const vector<string>& enabledExtensions)
+#endif // CTS_USES_VULKANSC
 {
-	const bool								isValidationEnabled	= cmdLine.isValidationEnabled();
-	vector<const char*>						enabledLayers;
+#ifndef CTS_USES_VULKANSC
+	const bool			isValidationEnabled	= (recorder != nullptr);
+#else
+	const bool			isValidationEnabled = false;
+#endif // CTS_USES_VULKANSC
+	vector<const char*>	enabledLayers;
 
 	// \note Extensions in core are not explicitly enabled even though
 	//		 they are in the extension list advertised to tests.
-	vector<const char*>						coreExtensions;
+	vector<const char*> coreExtensions;
 	getCoreInstanceExtensions(apiVersion, coreExtensions);
-	vector<string>							nonCoreExtensions	(removeExtensions(enabledExtensions, coreExtensions));
+	const auto nonCoreExtensions = removeExtensions(enabledExtensions, coreExtensions);
 
 	if (isValidationEnabled)
 	{
@@ -206,7 +214,11 @@ Move<VkInstance> createInstance (const PlatformInterface& vkp, deUint32 apiVersi
 			TCU_THROW(NotSupportedError, "No validation layers found");
 	}
 
+#ifndef CTS_USES_VULKANSC
+	return createDefaultInstance(vkp, apiVersion, vector<string>(begin(enabledLayers), end(enabledLayers)), nonCoreExtensions, recorder);
+#else
 	return createDefaultInstance(vkp, apiVersion, vector<string>(begin(enabledLayers), end(enabledLayers)), nonCoreExtensions);
+#endif // CTS_USES_VULKANSC
 }
 
 static deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
@@ -374,6 +386,7 @@ public:
 private:
 #ifndef CTS_USES_VULKANSC
 	using DebugReportRecorderPtr		= de::UniquePtr<vk::DebugReportRecorder>;
+	using DebugReportCallbackPtr		= vk::Move<VkDebugReportCallbackEXT>;
 #endif // CTS_USES_VULKANSC
 
 	const deUint32						m_maximumFrameworkVulkanVersion;
@@ -383,11 +396,14 @@ private:
 	const std::pair<deUint32, deUint32> m_deviceVersions;
 	const deUint32						m_usedApiVersion;
 
+#ifndef CTS_USES_VULKANSC
+	const DebugReportRecorderPtr		m_debugReportRecorder;
+#endif // CTS_USES_VULKANSC
 	const vector<string>				m_instanceExtensions;
 	const Unique<VkInstance>			m_instance;
 	const InstanceDriver				m_instanceInterface;
 #ifndef CTS_USES_VULKANSC
-	const DebugReportRecorderPtr		m_debugReportRecorder;
+	const DebugReportCallbackPtr		m_debugReportCallback;
 #endif // CTS_USES_VULKANSC
 	const VkPhysicalDevice				m_physicalDevice;
 	const deUint32						m_deviceVersion;
@@ -412,10 +428,10 @@ deUint32 sanitizeApiVersion(deUint32 v)
 }
 
 #ifndef CTS_USES_VULKANSC
-de::MovePtr<vk::DebugReportRecorder> createDebugReportRecorder (const vk::PlatformInterface& vkp, const vk::InstanceInterface& vki, vk::VkInstance instance, bool printValidationErrors)
+de::MovePtr<vk::DebugReportRecorder> createDebugReportRecorder (const vk::PlatformInterface& vkp, bool printValidationErrors)
 {
 	if (isDebugReportSupported(vkp))
-		return de::MovePtr<vk::DebugReportRecorder>(new vk::DebugReportRecorder(vki, instance, printValidationErrors));
+		return de::MovePtr<vk::DebugReportRecorder>(new vk::DebugReportRecorder(printValidationErrors));
 	else
 		TCU_THROW(NotSupportedError, "VK_EXT_debug_report is not supported");
 }
@@ -429,17 +445,24 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 	, m_deviceVersions					(determineDeviceVersions(vkPlatform, m_usedInstanceVersion, cmdLine))
 	, m_usedApiVersion					(sanitizeApiVersion(deMinu32(m_usedInstanceVersion, m_deviceVersions.first)))
 
+#ifndef CTS_USES_VULKANSC
+	, m_debugReportRecorder				(cmdLine.isValidationEnabled()
+										 ? createDebugReportRecorder(vkPlatform, cmdLine.printValidationErrors())
+										 : de::MovePtr<vk::DebugReportRecorder>())
+#endif // CTS_USES_VULKANSC
 	, m_instanceExtensions				(addCoreInstanceExtensions(filterExtensions(enumerateInstanceExtensionProperties(vkPlatform, DE_NULL)), m_usedApiVersion))
-	, m_instance						(createInstance(vkPlatform, m_usedApiVersion, m_instanceExtensions, cmdLine))
+#ifndef CTS_USES_VULKANSC
+	, m_instance						(createInstance(vkPlatform, m_usedApiVersion, m_instanceExtensions, m_debugReportRecorder.get()))
+#else
+	, m_instance						(createInstance(vkPlatform, m_usedApiVersion, m_instanceExtensions))
+#endif // CTS_USES_VULKANSC
 
 	, m_instanceInterface				(vkPlatform, *m_instance)
 #ifndef CTS_USES_VULKANSC
-	, m_debugReportRecorder				(cmdLine.isValidationEnabled()
-										 ? createDebugReportRecorder(vkPlatform,
-																	 m_instanceInterface,
-																	 *m_instance,
-																	 cmdLine.printValidationErrors())
-										 : de::MovePtr<vk::DebugReportRecorder>(DE_NULL))
+
+	, m_debugReportCallback				(cmdLine.isValidationEnabled()
+										 ? m_debugReportRecorder->createCallback(m_instanceInterface, m_instance.get())
+										 : DebugReportCallbackPtr())
 #endif // CTS_USES_VULKANSC
 	, m_physicalDevice					(chooseDevice(m_instanceInterface, *m_instance, cmdLine))
 	, m_deviceVersion					(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice).apiVersion)
@@ -577,7 +600,7 @@ bool Context::isDeviceFunctionalitySupported (const std::string& extension) cons
 		return true;
 	}
 
-	// check if extension is on the lits of extensions for current device
+	// check if extension is on the list of extensions for current device
 	const auto& extensions = getDeviceExtensions();
 	if (de::contains(extensions.begin(), extensions.end(), extension))
 	{

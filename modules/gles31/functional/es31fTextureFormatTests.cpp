@@ -55,6 +55,7 @@ struct SupportedExtensions
 {
 	bool cubeMapArray;
 	bool sRGBR8;
+	bool sRGBRG8;
 };
 
 static tcu::CubeFace getCubeFaceFromNdx (int ndx)
@@ -82,6 +83,7 @@ SupportedExtensions checkSupport (const glu::ContextInfo& renderCtxInfoid)
 
 	supportedExtensions.cubeMapArray = renderCtxInfoid.isExtensionSupported("GL_EXT_texture_cube_map_array");
 	supportedExtensions.sRGBR8 = renderCtxInfoid.isExtensionSupported("GL_EXT_texture_sRGB_R8");
+	supportedExtensions.sRGBRG8 = renderCtxInfoid.isExtensionSupported("GL_EXT_texture_sRGB_RG8");
 
 	return supportedExtensions;
 }
@@ -158,8 +160,9 @@ void TextureCubeArrayFormatCase::init (void)
 {
 	const SupportedExtensions supportedExtensions = checkSupport(m_renderCtxInfo);
 
-	if ((supportedExtensions.cubeMapArray && m_format != GL_SR8_EXT) ||
-		(supportedExtensions.cubeMapArray && m_format == GL_SR8_EXT && supportedExtensions.sRGBR8))
+	if ((supportedExtensions.cubeMapArray && m_format != GL_SR8_EXT && m_format != GL_SRG8_EXT) ||
+		(supportedExtensions.cubeMapArray && m_format == GL_SR8_EXT && supportedExtensions.sRGBR8) ||
+		(supportedExtensions.cubeMapArray && m_format == GL_SRG8_EXT && supportedExtensions.sRGBRG8))
 	{
 		m_texture = m_dataType != GL_NONE
 				  ? new glu::TextureCubeArray(m_renderCtx, m_format, m_dataType, m_size, m_depth)	// Implicit internal format.
@@ -182,6 +185,10 @@ void TextureCubeArrayFormatCase::init (void)
 
 		if (supportedExtensions.sRGBR8 == false)
 			m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "texture srgb r8 not supported");
+
+		if (supportedExtensions.sRGBRG8 == false)
+			m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "texture srgb rg8 not supported");
+
 	}
 }
 
@@ -473,6 +480,7 @@ void TextureFormatTests::init (void)
 		{ "rgba8i",				GL_RGBA8I,			},
 		{ "rgba8ui",			GL_RGBA8UI,			},
 		{ "srgb_r8",			GL_SR8_EXT,			},
+		{ "srgb_rg8",			GL_SRG8_EXT,		},
 		{ "srgb8_alpha8",		GL_SRGB8_ALPHA8,	},
 		{ "rgb10_a2",			GL_RGB10_A2,		},
 		{ "rgb10_a2ui",			GL_RGB10_A2UI,		},

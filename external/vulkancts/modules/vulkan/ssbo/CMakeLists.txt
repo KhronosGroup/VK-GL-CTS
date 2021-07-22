@@ -9,6 +9,8 @@ set(DEQP_VK_SSBO_SRCS
 	vktSSBOLayoutTests.hpp
 	vktSSBOCornerCase.cpp
 	vktSSBOCornerCase.hpp
+	../util/vktTypeComparisonUtil.cpp
+	../util/vktTypeComparisonUtil.hpp
 )
 
 set(DEQP_VK_SSBO_LIBS

@@ -310,42 +310,48 @@ inline float channelToFloat (const deUint8* value, TextureFormat::ChannelType ty
 	}
 }
 
-inline int channelToInt (const deUint8* value, TextureFormat::ChannelType type)
+template <class T>
+inline T channelToIntType (const deUint8* value, TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
 	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 48);
 
 	switch (type)
 	{
-		case TextureFormat::SNORM_INT8:			return (int)*((const deInt8*)value);
-		case TextureFormat::SNORM_INT16:		return (int)*((const deInt16*)value);
-		case TextureFormat::SNORM_INT32:		return (int)*((const deInt32*)value);
-		case TextureFormat::UNORM_INT8:			return (int)*((const deUint8*)value);
-		case TextureFormat::UNORM_INT16:		return (int)*((const deUint16*)value);
-		case TextureFormat::UNORM_INT24:		return (int)readUint24(value);
-		case TextureFormat::UNORM_INT32:		return (int)*((const deUint32*)value);
-		case TextureFormat::SIGNED_INT8:		return (int)*((const deInt8*)value);
-		case TextureFormat::SIGNED_INT16:		return (int)*((const deInt16*)value);
-		case TextureFormat::SIGNED_INT32:		return (int)*((const deInt32*)value);
-		case TextureFormat::SIGNED_INT64:		return (int)*((const deInt64*)value);
-		case TextureFormat::UNSIGNED_INT8:		return (int)*((const deUint8*)value);
-		case TextureFormat::UNSIGNED_INT16:		return (int)*((const deUint16*)value);
-		case TextureFormat::UNSIGNED_INT24:		return (int)readUint24(value);
-		case TextureFormat::UNSIGNED_INT32:		return (int)*((const deUint32*)value);
-		case TextureFormat::UNSIGNED_INT64:		return (int)*((const deUint64*)value);
-		case TextureFormat::HALF_FLOAT:			return (int)deFloat16To32(*(const deFloat16*)value);
-		case TextureFormat::FLOAT:				return (int)*((const float*)value);
-		case TextureFormat::FLOAT64:			return (int)*((const double*)value);
-		case TextureFormat::UNORM_SHORT_10:		return (int)((*(((const deUint16*)value))) >> 6u);
-		case TextureFormat::UNORM_SHORT_12:		return (int)((*(((const deUint16*)value))) >> 4u);
-		case TextureFormat::USCALED_INT8:		return (int)*((const deUint8*)value);
-		case TextureFormat::USCALED_INT16:		return (int)*((const deUint16*)value);
-		case TextureFormat::SSCALED_INT8:		return (int)*((const deInt8*)value);
-		case TextureFormat::SSCALED_INT16:		return (int)*((const deInt16*)value);
+		case TextureFormat::SNORM_INT8:			return (T)*((const deInt8*)value);
+		case TextureFormat::SNORM_INT16:		return (T)*((const deInt16*)value);
+		case TextureFormat::SNORM_INT32:		return (T)*((const deInt32*)value);
+		case TextureFormat::UNORM_INT8:			return (T)*((const deUint8*)value);
+		case TextureFormat::UNORM_INT16:		return (T)*((const deUint16*)value);
+		case TextureFormat::UNORM_INT24:		return (T)readUint24(value);
+		case TextureFormat::UNORM_INT32:		return (T)*((const deUint32*)value);
+		case TextureFormat::SIGNED_INT8:		return (T)*((const deInt8*)value);
+		case TextureFormat::SIGNED_INT16:		return (T)*((const deInt16*)value);
+		case TextureFormat::SIGNED_INT32:		return (T)*((const deInt32*)value);
+		case TextureFormat::SIGNED_INT64:		return (T)*((const deInt64*)value);
+		case TextureFormat::UNSIGNED_INT8:		return (T)*((const deUint8*)value);
+		case TextureFormat::UNSIGNED_INT16:		return (T)*((const deUint16*)value);
+		case TextureFormat::UNSIGNED_INT24:		return (T)readUint24(value);
+		case TextureFormat::UNSIGNED_INT32:		return (T)*((const deUint32*)value);
+		case TextureFormat::UNSIGNED_INT64:		return (T)*((const deUint64*)value);
+		case TextureFormat::HALF_FLOAT:			return (T)deFloat16To32(*(const deFloat16*)value);
+		case TextureFormat::FLOAT:				return (T)*((const float*)value);
+		case TextureFormat::FLOAT64:			return (T)*((const double*)value);
+		case TextureFormat::UNORM_SHORT_10:		return (T)((*(((const deUint16*)value))) >> 6u);
+		case TextureFormat::UNORM_SHORT_12:		return (T)((*(((const deUint16*)value))) >> 4u);
+		case TextureFormat::USCALED_INT8:		return (T)*((const deUint8*)value);
+		case TextureFormat::USCALED_INT16:		return (T)*((const deUint16*)value);
+		case TextureFormat::SSCALED_INT8:		return (T)*((const deInt8*)value);
+		case TextureFormat::SSCALED_INT16:		return (T)*((const deInt16*)value);
 		default:
 			DE_ASSERT(DE_FALSE);
 			return 0;
 	}
+}
+
+inline int channelToInt (const deUint8* value, TextureFormat::ChannelType type)
+{
+	return channelToIntType<int>(value, type);
 }
 
 void floatToChannel (deUint8* dst, float src, TextureFormat::ChannelType type)
@@ -1161,6 +1167,42 @@ Vec4 ConstPixelBufferAccess::getPixel (int x, int y, int z) const
 	return result;
 }
 
+template <typename T>
+static tcu::Vector<T, 4> getPixelIntGeneric (const deUint8* pixelPtr, const tcu::TextureFormat& format)
+{
+	tcu::Vector<T, 4> result;
+
+	// Generic path.
+	const TextureSwizzle::Channel*	channelMap	= getChannelReadSwizzle(format.order).components;
+	int								channelSize	= getChannelSize(format.type);
+
+	for (int c = 0; c < 4; c++)
+	{
+		switch (channelMap[c])
+		{
+			case TextureSwizzle::CHANNEL_0:
+			case TextureSwizzle::CHANNEL_1:
+			case TextureSwizzle::CHANNEL_2:
+			case TextureSwizzle::CHANNEL_3:
+				result[c] = channelToIntType<T>(pixelPtr + channelSize*((int)channelMap[c]), format.type);
+				break;
+
+			case TextureSwizzle::CHANNEL_ZERO:
+				result[c] = 0;
+				break;
+
+			case TextureSwizzle::CHANNEL_ONE:
+				result[c] = 1;
+				break;
+
+			default:
+				DE_ASSERT(false);
+		}
+	}
+
+	return result;
+}
+
 IVec4 ConstPixelBufferAccess::getPixelInt (int x, int y, int z) const
 {
 	DE_ASSERT(de::inBounds(x, 0, m_size.x()));
@@ -1170,7 +1212,6 @@ IVec4 ConstPixelBufferAccess::getPixelInt (int x, int y, int z) const
 	DE_ASSERT(m_format.order != TextureFormat::DS); // combined formats cannot be accessed directly
 
 	const deUint8* const	pixelPtr = (const deUint8*)getPixelPtr(x, y, z);
-	IVec4					result;
 
 	// Optimized fomats.
 	if (m_format.type == TextureFormat::UNORM_INT8)
@@ -1219,34 +1260,47 @@ IVec4 ConstPixelBufferAccess::getPixelInt (int x, int y, int z) const
 #undef S32
 
 	// Generic path.
-	const TextureSwizzle::Channel*	channelMap	= getChannelReadSwizzle(m_format.order).components;
-	int								channelSize	= getChannelSize(m_format.type);
+	return getPixelIntGeneric<int>(pixelPtr, m_format);
+}
 
-	for (int c = 0; c < 4; c++)
+I64Vec4 ConstPixelBufferAccess::getPixelInt64 (int x, int y, int z) const
+{
+	// Rely on getPixelInt() for some formats.
+	if (m_format.type == TextureFormat::UNORM_INT8 &&
+		(m_format.order == TextureFormat::RGBA || m_format.order == TextureFormat::sRGBA ||
+		 m_format.order == TextureFormat::RGB || m_format.order == TextureFormat::sRGB))
 	{
-		switch (channelMap[c])
-		{
-			case TextureSwizzle::CHANNEL_0:
-			case TextureSwizzle::CHANNEL_1:
-			case TextureSwizzle::CHANNEL_2:
-			case TextureSwizzle::CHANNEL_3:
-				result[c] = channelToInt(pixelPtr + channelSize*((int)channelMap[c]), m_format.type);
-				break;
-
-			case TextureSwizzle::CHANNEL_ZERO:
-				result[c] = 0;
-				break;
-
-			case TextureSwizzle::CHANNEL_ONE:
-				result[c] = 1;
-				break;
-
-			default:
-				DE_ASSERT(false);
-		}
+			return getPixelInt(x, y, z).cast<deInt64>();
 	}
 
-	return result;
+	switch (m_format.type)
+	{
+		case TextureFormat::UNSIGNED_BYTE_44:
+		case TextureFormat::UNORM_BYTE_44:
+		case TextureFormat::UNSIGNED_SHORT_565:
+		case TextureFormat::UNORM_SHORT_565:
+		case TextureFormat::UNORM_SHORT_555:
+		case TextureFormat::UNSIGNED_SHORT_4444:
+		case TextureFormat::UNORM_SHORT_4444:
+		case TextureFormat::UNSIGNED_SHORT_5551:
+		case TextureFormat::UNORM_SHORT_5551:
+		case TextureFormat::UNORM_INT_101010:
+		case TextureFormat::UNORM_INT_1010102_REV:
+		case TextureFormat::USCALED_INT_1010102_REV:
+		case TextureFormat::UNSIGNED_INT_1010102_REV:
+		case TextureFormat::SNORM_INT_1010102_REV:
+		case TextureFormat::SSCALED_INT_1010102_REV:
+		case TextureFormat::SIGNED_INT_1010102_REV:
+		case TextureFormat::UNORM_SHORT_1555:
+			return getPixelInt(x, y, z).cast<deInt64>();
+
+		default:
+			break; // To generic path.
+	}
+
+	// Generic path.
+	auto pixelPtr = reinterpret_cast<const deUint8*>(getPixelPtr(x, y, z));
+	return getPixelIntGeneric<deInt64>(pixelPtr, m_format);
 }
 
 template<>
@@ -1265,6 +1319,18 @@ template<>
 UVec4 ConstPixelBufferAccess::getPixelT (int x, int y, int z) const
 {
 	return getPixelUint(x, y, z);
+}
+
+template<>
+I64Vec4 ConstPixelBufferAccess::getPixelT (int x, int y, int z) const
+{
+	return getPixelInt64(x, y, z);
+}
+
+template<>
+U64Vec4 ConstPixelBufferAccess::getPixelT (int x, int y, int z) const
+{
+	return getPixelUint64(x, y, z);
 }
 
 float ConstPixelBufferAccess::getPixDepth (int x, int y, int z) const

@@ -509,6 +509,7 @@ MultiDrawElementsIndirectCountCase::MultiDrawElementsIndirectCountCase(deqp::Con
 		  "Test verifies if MultiDrawElementsIndirectCountARB function works as expected.")
 	, m_vao(0)
 	, m_arrayBuffer(0)
+	, m_elementBuffer(0)
 	, m_drawIndirectBuffer(0)
 	, m_parameterBuffer(0)
 {

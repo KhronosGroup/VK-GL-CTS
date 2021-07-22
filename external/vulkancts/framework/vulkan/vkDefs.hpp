@@ -223,6 +223,8 @@ struct VkShaderModuleCreateInfo
 
 #endif // CTS_USES_VULKANSC
 
+typedef void* VkRemoteAddressNV;
+
 extern "C"
 {
 #include "vkFunctionPointerTypes.inl"

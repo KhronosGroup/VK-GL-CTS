@@ -45,7 +45,6 @@
 #include "tcuFloat.hpp"
 
 #include <set>
-#include <limits>
 
 namespace vkt
 {
@@ -73,7 +72,8 @@ enum BottomTestType
 enum TopTestType
 {
 	TTT_IDENTICAL_INSTANCES,
-	TTT_DIFFERENT_INSTANCES
+	TTT_DIFFERENT_INSTANCES,
+	TTT_MIX_INSTANCES,
 };
 
 enum OperationTarget
@@ -2362,6 +2362,524 @@ tcu::TestStatus RayTracingASDynamicIndexingTestInstance::iterate(void)
 	return tcu::TestStatus::pass("Pass");
 }
 
+// Tests the vkGetDeviceAccelerationStructureKHR routine
+class RayTracingDeviceASCompabilityKHRTestInstance : public TestInstance
+{
+public:
+					RayTracingDeviceASCompabilityKHRTestInstance	(Context& context, const de::SharedPtr<TestParams> params)
+						: TestInstance	(context)
+						, m_params		(params)
+					{
+					}
+
+	tcu::TestStatus	iterate											(void) override;
+
+protected:
+	template<class ASType>
+		bool		performTest										(VkCommandPool								cmdPool,
+																	 VkCommandBuffer							cmdBuffer,
+																	 const std::vector<de::SharedPtr<ASType>>	sourceStructures,
+																	 const std::vector<VkDeviceSize>&			copySizes,
+																	 const std::vector<VkDeviceSize>&			compactSizes);
+
+	VkAccelerationStructureCompatibilityKHR
+					getDeviceASCompatibilityKHR						(const deUint8*		versionInfoData);
+	std::string		getUUIDsString									(const deUint8* header) const;
+
+
+private:
+	const de::SharedPtr<TestParams>	m_params;
+};
+
+// Tests for updating botto-level AS(s) address(es) in top-level AS's header
+class RayTracingHeaderBottomAddressTestInstance : public TestInstance
+{
+public:
+					RayTracingHeaderBottomAddressTestInstance						(Context&											context,
+																					 const de::SharedPtr<TestParams>					params)
+						: TestInstance	(context)
+						, m_params		(params)
+					{
+					}
+	tcu::TestStatus	iterate															(void) override;
+
+protected:
+	de::SharedPtr<TopLevelAccelerationStructure>	prepareTopAccelerationStructure	(const DeviceInterface&								vk,
+																					 VkDevice											device,
+																					 Allocator&											allocator,
+																					 VkCommandBuffer									cmdBuffer);
+
+	bool											areAddressesTheSame				(const std::vector<deUint64>&						addresses,
+																					 const SerialStorage::AccelerationStructureHeader*	header);
+
+	bool											areAddressesDifferent			(const std::vector<deUint64>&						addresses1,
+																					 const std::vector<deUint64>&						addresses2);
+private:
+	const de::SharedPtr<TestParams>	m_params;
+};
+
+class RayTracingDeviceASCompabilityKHRTestCase : public TestCase
+{
+public:
+					RayTracingDeviceASCompabilityKHRTestCase	(tcu::TestContext& ctx, const char* name, const de::SharedPtr<TestParams> params)
+						: TestCase(ctx, name, std::string())
+						, m_params(params)
+					{
+					}
+
+	void			checkSupport								(Context&			context) const override;
+	TestInstance*	createInstance								(Context&			context) const override
+	{
+		return new RayTracingDeviceASCompabilityKHRTestInstance(context, m_params);
+	}
+
+private:
+	de::SharedPtr<TestParams>	m_params;
+};
+
+class RayTracingHeaderBottomAddressTestCase : public TestCase
+{
+public:
+					RayTracingHeaderBottomAddressTestCase	(tcu::TestContext& ctx, const char* name, const de::SharedPtr<TestParams> params)
+						: TestCase(ctx, name, std::string())
+						, m_params(params)
+					{
+					}
+
+	void			checkSupport								(Context&			context) const override;
+	TestInstance*	createInstance								(Context&			context) const override
+	{
+		return new RayTracingHeaderBottomAddressTestInstance(context, m_params);
+	}
+
+private:
+	de::SharedPtr<TestParams>	m_params;
+};
+
+void RayTracingDeviceASCompabilityKHRTestCase ::checkSupport (Context& context) const
+{
+	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR = context.getAccelerationStructureFeatures();
+	if (m_params->buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR && accelerationStructureFeaturesKHR.accelerationStructureHostCommands == DE_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructureHostCommands");
+
+	// Check supported vertex format.
+	checkAccelerationStructureVertexBufferFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_params->vertexFormat);
+}
+
+void RayTracingHeaderBottomAddressTestCase ::checkSupport (Context& context) const
+{
+	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR = context.getAccelerationStructureFeatures();
+	if (m_params->buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR && accelerationStructureFeaturesKHR.accelerationStructureHostCommands == DE_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructureHostCommands");
+
+	// Check supported vertex format.
+	checkAccelerationStructureVertexBufferFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_params->vertexFormat);
+}
+
+VkAccelerationStructureCompatibilityKHR	RayTracingDeviceASCompabilityKHRTestInstance::getDeviceASCompatibilityKHR (const deUint8* versionInfoData)
+{
+	const VkDevice								device		= m_context.getDevice();
+	const DeviceInterface&						vkd			= m_context.getDeviceInterface();
+
+	VkAccelerationStructureCompatibilityKHR		compability = VK_ACCELERATION_STRUCTURE_COMPATIBILITY_MAX_ENUM_KHR;
+
+	const VkAccelerationStructureVersionInfoKHR versionInfo =
+	{
+		VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_VERSION_INFO_KHR,	// sType
+		DE_NULL,													// pNext
+		versionInfoData												// pVersionData
+	};
+
+	vkd.getDeviceAccelerationStructureCompatibilityKHR(device, &versionInfo, &compability);
+
+	return compability;
+}
+
+std::string RayTracingDeviceASCompabilityKHRTestInstance::getUUIDsString (const deUint8* header) const
+{
+	std::stringstream		ss;
+
+	int			offset		= 0;
+	const int	widths[]	= { 4, 2, 2, 2, 6 };
+
+	for (int h = 0; h < 2; ++h)
+	{
+		if (h) ss << ' ';
+
+		for (int w = 0; w < DE_LENGTH_OF_ARRAY(widths); ++w)
+		{
+			if (w) ss << '-';
+
+			for (int i = 0; i < widths[w]; ++i)
+				ss << std::hex << std::uppercase << static_cast<int>(header[i + offset]);
+
+			offset += widths[w];
+		}
+	}
+
+	return ss.str();
+}
+
+tcu::TestStatus RayTracingDeviceASCompabilityKHRTestInstance::iterate (void)
+{
+	const DeviceInterface&			vkd					= m_context.getDeviceInterface();
+	const VkDevice					device				= m_context.getDevice();
+	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue					queue				= m_context.getUniversalQueue();
+	Allocator&						allocator			= m_context.getDefaultAllocator();
+
+	const Move<VkCommandPool>		cmdPool				= createCommandPool(vkd, device, 0, queueFamilyIndex);
+	const Move<VkCommandBuffer>		cmdBuffer			= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	bool							result				= false;
+
+	std::vector<de::SharedPtr<BottomLevelAccelerationStructure>>	bottomStructures;
+	std::vector<VkAccelerationStructureKHR>							bottomHandles;
+	std::vector<de::SharedPtr<TopLevelAccelerationStructure>>		topStructures;
+	std::vector<VkAccelerationStructureKHR>							topHandles;
+	Move<VkQueryPool>												queryPoolCompact;
+	Move<VkQueryPool>												queryPoolSerial;
+	std::vector<VkDeviceSize>										compactSizes;
+	std::vector<VkDeviceSize>										serialSizes;
+
+	beginCommandBuffer(vkd, *cmdBuffer, 0u);
+
+	bottomStructures = m_params->testConfiguration->initBottomAccelerationStructures(m_context, *m_params);
+	for (auto& blas : bottomStructures)
+	{
+		blas->setBuildType(m_params->buildType);
+		blas->setBuildFlags(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR);
+		blas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+		bottomHandles.push_back(*(blas->getPtr()));
+	}
+
+	if (m_params->operationTarget == OT_TOP_ACCELERATION)
+	{
+		de::MovePtr<TopLevelAccelerationStructure> tlas = m_params->testConfiguration->initTopAccelerationStructure(m_context, *m_params, bottomStructures);
+		tlas->setBuildType					(m_params->buildType);
+		tlas->setBuildFlags				(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR);
+		tlas->createAndBuild				(vkd, device, *cmdBuffer, allocator);
+		topHandles.push_back							(*(tlas->getPtr()));
+		topStructures.push_back(de::SharedPtr<TopLevelAccelerationStructure>(tlas.release()));
+	}
+
+	const deUint32 queryCount = deUint32((m_params->operationTarget == OT_BOTTOM_ACCELERATION) ? bottomStructures.size() : topStructures.size());
+	const std::vector<VkAccelerationStructureKHR>& handles = (m_params->operationTarget == OT_BOTTOM_ACCELERATION) ? bottomHandles : topHandles;
+
+	// query compact size
+	if (m_params->buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+		queryPoolCompact = makeQueryPool(vkd, device, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR, queryCount);
+	queryAccelerationStructureSize(vkd, device, *cmdBuffer, handles, m_params->buildType, *queryPoolCompact, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR, 0u, compactSizes);
+
+	// query serialization size
+	if (m_params->buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+		queryPoolSerial = makeQueryPool(vkd, device, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR, queryCount);
+	queryAccelerationStructureSize(vkd, device, *cmdBuffer, handles, m_params->buildType, queryPoolSerial.get(), VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR, 0u, serialSizes);
+
+	endCommandBuffer(vkd, *cmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, cmdBuffer.get());
+
+	if (m_params->buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+	{
+		VK_CHECK(vkd.getQueryPoolResults(device, *queryPoolCompact, 0u, queryCount, queryCount * sizeof(VkDeviceSize), compactSizes.data(), sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+		VK_CHECK(vkd.getQueryPoolResults(device, *queryPoolSerial, 0u, queryCount, queryCount * sizeof(VkDeviceSize), serialSizes.data(), sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+
+		vkd.resetCommandPool(device, *cmdPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+	}
+
+	if (m_params->operationTarget == OT_BOTTOM_ACCELERATION)
+		result = performTest<BottomLevelAccelerationStructure>(*cmdPool, *cmdBuffer, bottomStructures, compactSizes, serialSizes);
+	else
+		result = performTest<TopLevelAccelerationStructure>(*cmdPool, *cmdBuffer, topStructures, compactSizes, serialSizes);
+
+	return result ? tcu::TestStatus::pass("") : tcu::TestStatus::fail("");
+}
+
+template<class ASType>
+bool RayTracingDeviceASCompabilityKHRTestInstance::performTest (VkCommandPool								cmdPool,
+																VkCommandBuffer								cmdBuffer,
+																const std::vector<de::SharedPtr<ASType>>	sourceStructures,
+																const std::vector<VkDeviceSize>&			compactSizes,
+																const std::vector<VkDeviceSize>&			serialSizes)
+{
+	const VkQueue								queue					= m_context.getUniversalQueue();
+	const VkDevice								device					= m_context.getDevice();
+	const DeviceInterface&						vkd						= m_context.getDeviceInterface();
+	Allocator&									allocator				= m_context.getDefaultAllocator();
+
+	const deUint32								sourceStructuresCount	= deUint32(sourceStructures.size());
+
+	Move<VkQueryPool>							queryPoolCompactSerial;
+	std::vector<VkDeviceSize>					compactSerialSizes;
+
+	std::vector<VkAccelerationStructureKHR>		compactHandles;
+	std::vector<de::SharedPtr<ASType>>			compactStructures;
+
+	std::vector<de::SharedPtr<SerialStorage>>	sourceSerialized;
+	std::vector<de::SharedPtr<SerialStorage>>	compactSerialized;
+
+
+	// make compact copy of acceleration structure
+	{
+		beginCommandBuffer(vkd, cmdBuffer, 0u);
+
+		for (size_t i = 0; i < sourceStructuresCount; ++i)
+		{
+			de::MovePtr<ASType> asCopy = makeAccelerationStructure<ASType>();
+			asCopy->setBuildType(m_params->buildType);
+			asCopy->createAndCopyFrom(vkd, device, cmdBuffer, allocator, sourceStructures[i].get(), compactSizes[i], 0u);
+			compactHandles.push_back(*(asCopy->getPtr()));
+			compactStructures.push_back(de::SharedPtr<ASType>(asCopy.release()));
+		}
+
+		// query serialization size of compact acceleration structures
+		if (m_params->buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+			queryPoolCompactSerial = makeQueryPool(vkd, device, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR, sourceStructuresCount);
+		queryAccelerationStructureSize(vkd, device, cmdBuffer, compactHandles, m_params->buildType, *queryPoolCompactSerial, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR, 0u, compactSerialSizes);
+
+		endCommandBuffer(vkd, cmdBuffer);
+		submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+		if (m_params->buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+		{
+			VK_CHECK(vkd.getQueryPoolResults(device, *queryPoolCompactSerial, 0u, sourceStructuresCount, (sourceStructuresCount * sizeof(VkDeviceSize)), compactSerialSizes.data(), sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+			vkd.resetCommandPool(device, cmdPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+		}
+	}
+
+	// serialize both structures to memory
+	{
+		beginCommandBuffer(vkd, cmdBuffer, 0u);
+
+		for (size_t i = 0 ; i < sourceStructuresCount; ++i)
+		{
+			sourceSerialized.push_back(de::SharedPtr<SerialStorage>(new SerialStorage(vkd, device, allocator, m_params->buildType, serialSizes[i])));
+			sourceStructures[i]->serialize(vkd, device, cmdBuffer, sourceSerialized.back().get());
+
+			compactSerialized.push_back(de::SharedPtr<SerialStorage>(new SerialStorage(vkd, device, allocator, m_params->buildType, compactSerialSizes[i])));
+			compactStructures[i]->serialize(vkd, device, cmdBuffer, compactSerialized.back().get());
+		}
+
+		endCommandBuffer(vkd, cmdBuffer);
+		submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+	}
+
+	// verify compatibility
+	bool result = true;
+	for (size_t i = 0; result && (i < sourceStructuresCount); ++i)
+	{
+		const deUint8* s_header = static_cast<const deUint8*>(sourceSerialized[i]->getHostAddressConst().hostAddress);
+		const deUint8* c_header = static_cast<const deUint8*>(compactSerialized[i]->getHostAddressConst().hostAddress);
+
+		const auto s_compability = getDeviceASCompatibilityKHR(s_header);
+		const auto c_compability = getDeviceASCompatibilityKHR(c_header);
+
+		result &= ((s_compability == c_compability) && (s_compability == VK_ACCELERATION_STRUCTURE_COMPATIBILITY_COMPATIBLE_KHR));
+
+		if (!result)
+		{
+			tcu::TestLog& log = m_context.getTestContext().getLog();
+
+			log << tcu::TestLog::Message << getUUIDsString(s_header) << " serialized AS compability failed" << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << getUUIDsString(c_header) << " compact AS compability failed" << tcu::TestLog::EndMessage;
+		}
+	}
+
+	return result;
+}
+
+de::SharedPtr<TopLevelAccelerationStructure>
+RayTracingHeaderBottomAddressTestInstance::prepareTopAccelerationStructure (const DeviceInterface&	vk,
+																			VkDevice				device,
+																			Allocator&				allocator,
+																			VkCommandBuffer			cmdBuffer)
+{
+	const std::vector<tcu::Vec3>									geometryData =
+	{
+		{ 0.0, 0.0, 0.0 },
+		{ 1.0, 0.0, 0.0 },
+		{ 0.0, 1.0, 0.0 },
+	};
+
+	std::vector<de::SharedPtr<BottomLevelAccelerationStructure>>	bottoms;
+
+	if (TTT_IDENTICAL_INSTANCES == m_params->topTestType)
+	{
+		auto blas = de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
+		blas->setBuildType(m_params->buildType);
+		blas->setGeometryData(geometryData, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
+		blas->createAndBuild(vk, device, cmdBuffer, allocator);
+		for (deUint32 i = 0; i < m_params->width; ++i)
+		{
+			bottoms.emplace_back(blas);
+		}
+	}
+	else if (TTT_DIFFERENT_INSTANCES == m_params->topTestType)
+	{
+		for (deUint32 i = 0; i < m_params->width; ++i)
+		{
+			auto blas = de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
+			blas->setBuildType(m_params->buildType);
+			blas->setGeometryData(geometryData, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
+			blas->createAndBuild(vk, device, cmdBuffer, allocator);
+			bottoms.emplace_back(blas);
+		}
+	}
+	else // TTT_MIX_INSTANCES == m_params->topTestType
+	{
+		for (deUint32 i = 0; i < m_params->width; ++i)
+		{
+			{
+				auto blas1 = de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
+				blas1->setBuildType(m_params->buildType);
+				blas1->setGeometryData(geometryData, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
+				blas1->createAndBuild(vk, device, cmdBuffer, allocator);
+				bottoms.emplace_back(blas1);
+			}
+
+			{
+				auto blas2 = de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
+				blas2->setBuildType(m_params->buildType);
+				blas2->setGeometryData(geometryData, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
+				blas2->createAndBuild(vk, device, cmdBuffer, allocator);
+				bottoms.emplace_back(blas2);
+			}
+		}
+
+	}
+
+	const std::size_t												instanceCount = bottoms.size();
+
+	de::MovePtr<TopLevelAccelerationStructure>						tlas = makeTopLevelAccelerationStructure();
+	tlas->setBuildType(m_params->buildType);
+	tlas->setInstanceCount(instanceCount);
+
+	for (std::size_t i = 0; i < instanceCount; ++i)
+	{
+		const VkTransformMatrixKHR	transformMatrixKHR =
+		{
+			{	//  float	matrix[3][4];
+				{ 1.0f, 0.0f, 0.0f, (float)i },
+				{ 0.0f, 1.0f, 0.0f, (float)i },
+				{ 0.0f, 0.0f, 1.0f, 0.0f },
+			}
+		};
+		tlas->addInstance(bottoms[i], transformMatrixKHR, 0, 0xFFu, 0u, getCullFlags((m_params->cullFlags)));
+	}
+
+	tlas->createAndBuild(vk, device, cmdBuffer, allocator);
+
+	return de::SharedPtr<TopLevelAccelerationStructure>(tlas.release());
+}
+
+tcu::TestStatus RayTracingHeaderBottomAddressTestInstance::iterate (void)
+{
+	const DeviceInterface&								vkd				= m_context.getDeviceInterface();
+	const VkDevice										device			= m_context.getDevice();
+	const deUint32										familyIndex		= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue										queue			= m_context.getUniversalQueue();
+	Allocator&											allocator		= m_context.getDefaultAllocator();
+
+	const Move<VkCommandPool>							cmdPool			= createCommandPool(vkd, device, 0, familyIndex);
+	const Move<VkCommandBuffer>							cmdBuffer		= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	beginCommandBuffer(vkd, *cmdBuffer, 0);
+	de::SharedPtr<TopLevelAccelerationStructure>		src				= prepareTopAccelerationStructure(vkd, device, allocator, *cmdBuffer);
+	endCommandBuffer(vkd, *cmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
+
+	de::MovePtr<TopLevelAccelerationStructure>			dst				= makeTopLevelAccelerationStructure();
+
+	const std::vector<deUint64>							inAddrs			= src->getSerializingAddresses(vkd, device);
+	const std::vector<VkDeviceSize>						inSizes			= src->getSerializingSizes(vkd, device, queue, familyIndex);
+
+	const SerialInfo									serialInfo		(inAddrs, inSizes);
+	SerialStorage										deepStorage		(vkd, device, allocator, m_params->buildType, serialInfo);
+
+	// make deep serialization - top-level AS width bottom-level structures that it owns
+	beginCommandBuffer(vkd, *cmdBuffer, 0);
+	src->serialize(vkd, device, *cmdBuffer, &deepStorage);
+	endCommandBuffer(vkd, *cmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
+
+	// deserialize all from the previous step to a new top-level AS
+	// bottom-level structure addresses should be updated when deep data is deserialized
+	beginCommandBuffer(vkd, *cmdBuffer, 0);
+	dst->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, &deepStorage);
+	endCommandBuffer(vkd, *cmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
+
+	SerialStorage										shallowStorage	(vkd, device, allocator, m_params->buildType, inSizes[0]);
+
+	// make shallow serialization - only top-level AS without bottom-level structures
+	beginCommandBuffer(vkd, *cmdBuffer, 0);
+	dst->serialize(vkd, device, *cmdBuffer, &shallowStorage);
+	endCommandBuffer(vkd, *cmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
+
+	// get data to verification
+	const std::vector<deUint64>							outAddrs		= dst->getSerializingAddresses(vkd, device);
+	const SerialStorage::AccelerationStructureHeader*	header			= shallowStorage.getASHeader();
+
+	return (areAddressesDifferent(inAddrs, outAddrs) && areAddressesTheSame(outAddrs, header)) ? tcu::TestStatus::pass("") : tcu::TestStatus::fail("");
+}
+
+bool RayTracingHeaderBottomAddressTestInstance::areAddressesTheSame (const std::vector<deUint64>& addresses, const SerialStorage::AccelerationStructureHeader* header)
+{
+	const deUint32 cbottoms = deUint32(addresses.size() - 1);
+
+	// header should contain the same number of handles as serialized/deserialized top-level AS
+	if (cbottoms != header->handleCount) return false;
+
+	std::set<deUint64> refAddrs;
+	std::set<deUint64> checkAddrs;
+
+	// distinct, squach and sort address list
+	for (deUint32 i = 0; i < cbottoms; ++i)
+	{
+		refAddrs.insert(addresses[i+1]);
+		checkAddrs.insert(header->handleArray[i]);
+	}
+
+	return std::equal(refAddrs.begin(), refAddrs.end(), checkAddrs.begin());
+}
+
+bool RayTracingHeaderBottomAddressTestInstance::areAddressesDifferent (const std::vector<deUint64>& addresses1, const std::vector<deUint64>& addresses2)
+{
+	// the number of addresses must be equal
+	if (addresses1.size() != addresses2.size())
+		return false;
+
+	// adresses of top-level AS must differ
+	if (addresses1[0] == addresses2[0])
+		return false;
+
+	std::set<deUint64>	addrs1;
+	std::set<deUint64>	addrs2;
+	deUint32			matches		= 0;
+	const deUint32		cbottoms	= deUint32(addresses1.size() - 1);
+
+	for (deUint32 i = 0; i < cbottoms; ++i)
+	{
+		addrs1.insert(addresses1[i+1]);
+		addrs2.insert(addresses2[i+1]);
+	}
+
+	// the first addresses set must not contain any address from the second addresses set
+	for (auto& addr1 : addrs1)
+	{
+		if (addrs2.end() != addrs2.find(addr1))
+			++matches;
+	}
+
+	return (matches == 0);
+}
+
 }	// anonymous
 
 void addBasicBuildingTests(tcu::TestCaseGroup* group)
@@ -3041,6 +3559,129 @@ void addInstanceIndexTests (tcu::TestCaseGroup* group)
 	}
 }
 
+void addGetDeviceAccelerationStructureCompabilityTests (tcu::TestCaseGroup* group)
+{
+	struct
+	{
+		vk::VkAccelerationStructureBuildTypeKHR				buildType;
+		std::string											name;
+	}
+	const buildTypes[] =
+	{
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,	"cpu_built"	},
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu_built"	},
+	};
+
+	struct
+	{
+		OperationTarget	target;
+		std::string		name;
+	}
+	const targets[] =
+	{
+		{ OT_TOP_ACCELERATION,		"top" },
+		{ OT_BOTTOM_ACCELERATION,	"bottom" },
+	};
+
+	auto& ctx = group->getTestContext();
+
+	for (int buildTypeIdx = 0; buildTypeIdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeIdx)
+	{
+		de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str(), ""));
+
+		for (int targetIdx = 0; targetIdx < DE_LENGTH_OF_ARRAY(targets); ++targetIdx)
+		{
+			TestParams testParams
+			{
+				buildTypes[buildTypeIdx].buildType,									// buildType		- are we making AS on CPU or GPU
+				VK_FORMAT_R32G32B32_SFLOAT,											// vertexFormat
+				false,																// padVertices
+				VK_INDEX_TYPE_NONE_KHR,												// indexType
+				BTT_TRIANGLES,														// bottomTestType	- what kind of geometry is stored in bottom AS
+				InstanceCullFlags::NONE,											// cullFlags		- Flags for instances, if needed.
+				false,																// bottomUsesAOP	- does bottom AS use arrays, or arrays of pointers
+				false,																// bottomGeneric	- Bottom created as generic AS type.
+				TTT_IDENTICAL_INSTANCES,											// topTestType		- If instances are identical then bottom geometries must have different vertices/aabbs
+				false,																// topUsesAOP		- does top AS use arrays, or arrays of pointers
+				false,																// topGeneric		- Top created as generic AS type.
+				VkBuildAccelerationStructureFlagsKHR(0u),							// buildFlags
+				targets[targetIdx].target,											// operationTarget
+				OP_NONE,															// operationType
+				RTAS_DEFAULT_SIZE,													// width
+				RTAS_DEFAULT_SIZE,													// height
+				de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration()),	// testConfiguration
+				0u,																	// workerThreadsCount
+				EmptyAccelerationStructureCase::NOT_EMPTY,							// emptyASCase
+				InstanceCustomIndexCase::NONE,										// instanceCustomIndexCase
+			};
+			buildTypeGroup->addChild(new RayTracingDeviceASCompabilityKHRTestCase(ctx, targets[targetIdx].name.c_str(), de::SharedPtr<TestParams>(new TestParams(testParams))));
+		}
+		group->addChild(buildTypeGroup.release());
+	}
+}
+
+void addUpdateHeaderBottomAddressTests (tcu::TestCaseGroup* group)
+{
+	struct
+	{
+		vk::VkAccelerationStructureBuildTypeKHR		buildType;
+		std::string									name;
+	}
+	const buildTypes[] =
+	{
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,	"cpu_built"	},
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu_built"	},
+	};
+
+	struct
+	{
+		TopTestType	type;
+		std::string	name;
+	}
+	const instTypes[] =
+	{
+		{ TTT_IDENTICAL_INSTANCES,	"the_same_instances"		},
+		{ TTT_DIFFERENT_INSTANCES,	"different_instances"		},
+		{ TTT_MIX_INSTANCES,		"mix_same_diff_instances"	},
+	};
+
+	auto& ctx = group->getTestContext();
+
+	for (int buildTypeIdx = 0; buildTypeIdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeIdx)
+	{
+		de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str(), ""));
+
+		for (int instTypeIdx = 0; instTypeIdx < DE_LENGTH_OF_ARRAY(instTypes); ++instTypeIdx)
+		{
+			TestParams testParams
+			{
+				buildTypes[buildTypeIdx].buildType,									// buildType
+				VK_FORMAT_R32G32B32_SFLOAT,											// vertexFormat
+				false,																// padVertices
+				VK_INDEX_TYPE_NONE_KHR,												// indexType
+				BTT_TRIANGLES,														// bottomTestType
+				InstanceCullFlags::NONE,											// cullFlags
+				false,																// bottomUsesAOP
+				false,																// bottomGeneric
+				instTypes[instTypeIdx].type,										// topTestType
+				false,																// topUsesAOP
+				false,																// topGeneric
+				VkBuildAccelerationStructureFlagsKHR(0u),							// buildFlags
+				OT_TOP_ACCELERATION,												// operationTarget
+				OP_NONE,															// operationType
+				RTAS_DEFAULT_SIZE,													// width
+				RTAS_DEFAULT_SIZE,													// height
+				de::SharedPtr<TestConfiguration>(DE_NULL),							// testConfiguration
+				0u,																	// workerThreadsCount
+				EmptyAccelerationStructureCase::NOT_EMPTY,							// emptyASCase
+				InstanceCustomIndexCase::NONE,										// instanceCustomIndexCase
+			};
+			buildTypeGroup->addChild(new RayTracingHeaderBottomAddressTestCase(ctx, instTypes[instTypeIdx].name.c_str(), de::SharedPtr<TestParams>(new TestParams(testParams))));
+		}
+		group->addChild(buildTypeGroup.release());
+	}
+}
+
 tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "acceleration_structures", "Acceleration structure tests"));
@@ -3054,6 +3695,8 @@ tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "dynamic_indexing", "Exercise dynamic indexing of acceleration structures", addDynamicIndexingTests);
 	addTestGroup(group.get(), "empty", "Test building empty acceleration structures using different methods", addEmptyAccelerationStructureTests);
 	addTestGroup(group.get(), "instance_index", "Test using different values for the instance index and checking them in shaders", addInstanceIndexTests);
+	addTestGroup(group.get(), "device_compability_khr", "", addGetDeviceAccelerationStructureCompabilityTests);
+	addTestGroup(group.get(), "header_bottom_address", "", addUpdateHeaderBottomAddressTests);
 
 	return group.release();
 }
@@ -3061,3 +3704,4 @@ tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 }	// RayTracing
 
 }	// vkt
+

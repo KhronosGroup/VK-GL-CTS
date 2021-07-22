@@ -38,7 +38,6 @@
 #include "glcShaderMacroTests.hpp"
 #include "glcShaderNegativeTests.hpp"
 #include "glcShaderStructTests.hpp"
-#include "glcShaderSwitchTests.hpp"
 #include "glcTextureCompatibilityTests.hpp"
 #include "glcUniformBlockTests.hpp"
 #include "glcNearestEdgeTests.hpp"

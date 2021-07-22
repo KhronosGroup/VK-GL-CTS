@@ -426,6 +426,8 @@ GLSLVectorConstructorTestCase::GLSLVectorConstructorTestCase(deqp::Context& cont
 	: TestCase(context, params.name.c_str(), params.description.c_str())
 	, m_glslVersion(glslVersion)
 	, m_params(params)
+	, m_fboId(0)
+	, m_rboId(0)
 {
 	switch(m_params.testType)
 	{

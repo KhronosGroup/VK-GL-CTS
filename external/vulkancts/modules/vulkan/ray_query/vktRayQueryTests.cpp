@@ -54,7 +54,8 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createWatertightnessTests(testCtx));
 	group->addChild(createCullRayFlagsTests(testCtx));
 	group->addChild(createMiscTests(testCtx));
-	group->addChild(createDirectionTests(testCtx));
+	group->addChild(createDirectionLengthTests(testCtx));
+	group->addChild(createInsideAABBsTests(testCtx));
 	group->addChild(createBarycentricCoordinatesTests(testCtx));
 	group->addChild(createNonUniformArgsTests(testCtx));
 

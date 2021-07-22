@@ -746,6 +746,8 @@ TextureUnitCase::TextureUnitCase (Context& context, const char* name, const char
 	, m_numUnitsParam	(numUnits)
 	, m_caseType		(caseType)
 	, m_randSeed		(randSeed)
+	, m_numTextures		(0)
+	, m_numUnits		(0)
 	, m_shader			(DE_NULL)
 {
 }
