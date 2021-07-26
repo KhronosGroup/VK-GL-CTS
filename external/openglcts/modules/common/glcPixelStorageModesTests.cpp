@@ -1341,6 +1341,14 @@ CompressedTexImage2DCase::IterateResult CompressedTexImage2DCase::iterate (void)
 
 	setContext((sglr::Context*)&gl_ctx);
 
+	if (!glu::contextSupports(renderCtx.getType(), glu::ApiType::core(4, 2)) &&
+		!ctxInfo.isExtensionSupported("GL_ARB_compressed_texture_pixel_storage"))
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED,
+								"GL_ARB_compressed_texture_pixel_storage extension is not supported");
+		return STOP;
+	}
+
 	switch (m_internalFormat)
 	{
 	case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
@@ -1681,6 +1689,14 @@ CompressedTexImage3DCase::IterateResult CompressedTexImage3DCase::iterate (void)
 							tcu::IVec4(0, 0, m_subcuboid_w, m_subcuboid_h));
 
 	setContext((sglr::Context*)&gl_ctx);
+
+	if (!glu::contextSupports(renderCtx.getType(), glu::ApiType::core(4, 2)) &&
+		!ctxInfo.isExtensionSupported("GL_ARB_compressed_texture_pixel_storage"))
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED,
+								"GL_ARB_compressed_texture_pixel_storage extension is not supported");
+		return STOP;
+	}
 
 	switch (m_internalFormat)
 	{
