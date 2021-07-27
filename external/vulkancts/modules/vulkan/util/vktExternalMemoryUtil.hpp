@@ -277,6 +277,11 @@ deUint32						chooseMemoryType					(deUint32									bits);
 deUint32						chooseHostVisibleMemoryType			(deUint32									bits,
 																	 const vk::VkPhysicalDeviceMemoryProperties	properties);
 
+vk::VkMemoryRequirements		getImageMemoryRequirements			(const vk::DeviceInterface& vkd,
+																	 vk::VkDevice device,
+																	 vk::VkImage image,
+																	 vk::VkExternalMemoryHandleTypeFlagBits externalType);
+
 // If buffer is not null use dedicated allocation
 vk::Move<vk::VkDeviceMemory>	allocateExportableMemory			(const vk::DeviceInterface&					vkd,
 																	 vk::VkDevice								device,
