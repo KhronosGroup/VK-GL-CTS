@@ -266,6 +266,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_present_wait")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_uniform_buffer_standard_layout")
 	{
 		return;
@@ -287,6 +291,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_KHR_shader_non_semantic_info")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_present_id")
 	{
 		return;
 	}
@@ -789,6 +797,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_atomic_float2")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_demote_to_helper_invocation")
 	{
 		return;
@@ -894,6 +906,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_HUAWEI_subpass_shading")
+	{
+		return;
+	}
+	if (extName == "VK_HUAWEI_invocation_mask")
 	{
 		return;
 	}
@@ -1350,6 +1366,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_present_wait")
+	{
+		functions.push_back("vkWaitForPresentKHR");
+		return;
+	}
 	if (extName == "VK_KHR_uniform_buffer_standard_layout")
 	{
 		return;
@@ -1382,6 +1403,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_KHR_shader_non_semantic_info")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_present_id")
 	{
 		return;
 	}
@@ -1976,6 +2001,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdSetStencilOpEXT");
 		return;
 	}
+	if (extName == "VK_EXT_shader_atomic_float2")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_demote_to_helper_invocation")
 	{
 		return;
@@ -2092,6 +2121,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		functions.push_back("vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI");
 		functions.push_back("vkCmdSubpassShadingHUAWEI");
+		return;
+	}
+	if (extName == "VK_HUAWEI_invocation_mask")
+	{
+		functions.push_back("vkCmdBindInvocationMaskHUAWEI");
 		return;
 	}
 	if (extName == "VK_NV_external_memory_rdma")
@@ -2367,6 +2401,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_maintenance3",
 	"VK_KHR_draw_indirect_count",
 	"VK_KHR_timeline_semaphore",
+	"VK_KHR_present_wait",
 	"VK_KHR_buffer_device_address",
 	"VK_KHR_deferred_host_operations",
 	"VK_KHR_pipeline_executable_properties",
@@ -2406,6 +2441,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_fragment_shading_rate_enums",
 	"VK_EXT_vertex_input_dynamic_state",
 	"VK_HUAWEI_subpass_shading",
+	"VK_HUAWEI_invocation_mask",
 	"VK_NV_external_memory_rdma",
 	"VK_EXT_extended_dynamic_state2",
 	"VK_EXT_color_write_enable",

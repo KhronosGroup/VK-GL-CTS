@@ -172,6 +172,7 @@ virtual VkResult			getFenceFdKHR									(VkDevice device, const VkFenceGetFdInf
 virtual VkResult			acquireProfilingLockKHR							(VkDevice device, const VkAcquireProfilingLockInfoKHR* pInfo) const;
 virtual void				releaseProfilingLockKHR							(VkDevice device) const;
 virtual void				cmdSetFragmentShadingRateKHR					(VkCommandBuffer commandBuffer, const VkExtent2D* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]) const;
+virtual VkResult			waitForPresentKHR								(VkDevice device, VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout) const;
 virtual VkResult			createDeferredOperationKHR						(VkDevice device, const VkAllocationCallbacks* pAllocator, VkDeferredOperationKHR* pDeferredOperation) const;
 virtual void				destroyDeferredOperationKHR						(VkDevice device, VkDeferredOperationKHR operation, const VkAllocationCallbacks* pAllocator) const;
 virtual uint32_t			getDeferredOperationMaxConcurrencyKHR			(VkDevice device, VkDeferredOperationKHR operation) const;
@@ -303,7 +304,8 @@ virtual void				cmdSetFragmentShadingRateEnumNV					(VkCommandBuffer commandBuff
 virtual void				cmdSetVertexInputEXT							(VkCommandBuffer commandBuffer, uint32_t vertexBindingDescriptionCount, const VkVertexInputBindingDescription2EXT* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const VkVertexInputAttributeDescription2EXT* pVertexAttributeDescriptions) const;
 virtual VkResult			getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI	(VkDevice device, VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize) const;
 virtual void				cmdSubpassShadingHUAWEI							(VkCommandBuffer commandBuffer) const;
-virtual VkResult			getMemoryRemoteAddressNV						(VkDevice device, const VkMemoryGetRemoteAddressInfoNV* getMemoryRemoteAddressInfo, VkRemoteAddressNV* pAddress) const;
+virtual void				cmdBindInvocationMaskHUAWEI						(VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout) const;
+virtual VkResult			getMemoryRemoteAddressNV						(VkDevice device, const VkMemoryGetRemoteAddressInfoNV* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress) const;
 virtual void				cmdSetPatchControlPointsEXT						(VkCommandBuffer commandBuffer, uint32_t patchControlPoints) const;
 virtual void				cmdSetRasterizerDiscardEnableEXT				(VkCommandBuffer commandBuffer, VkBool32 rasterizerDiscardEnable) const;
 virtual void				cmdSetDepthBiasEnableEXT						(VkCommandBuffer commandBuffer, VkBool32 depthBiasEnable) const;

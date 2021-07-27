@@ -567,6 +567,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT:									return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT:												return "VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_FEATURES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_NV:									return "VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_NV";
@@ -594,6 +595,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR:										return "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR:									return "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR:						return "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_GRAPHICS_SHADER_GROUP_CREATE_INFO_NV:								return "VK_STRUCTURE_TYPE_GRAPHICS_SHADER_GROUP_CREATE_INFO_NV";
@@ -618,6 +620,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_PROPERTIES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR:									return "VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PRESENT_ID_KHR:														return "VK_STRUCTURE_TYPE_PRESENT_ID_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIVATE_DATA_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIVATE_DATA_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_DEVICE_PRIVATE_DATA_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_DEVICE_PRIVATE_DATA_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PRIVATE_DATA_SLOT_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_PRIVATE_DATA_SLOT_CREATE_INFO_EXT";
@@ -677,6 +681,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SUBPASS_SHADING_PIPELINE_CREATE_INFO_HUAWEI:							return "VK_STRUCTURE_TYPE_SUBPASS_SHADING_PIPELINE_CREATE_INFO_HUAWEI";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_SHADING_FEATURES_HUAWEI:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_SHADING_FEATURES_HUAWEI";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_SHADING_PROPERTIES_HUAWEI:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_SHADING_PROPERTIES_HUAWEI";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INVOCATION_MASK_FEATURES_HUAWEI:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INVOCATION_MASK_FEATURES_HUAWEI";
 		case VK_STRUCTURE_TYPE_MEMORY_GET_REMOTE_ADDRESS_INFO_NV:									return "VK_STRUCTURE_TYPE_MEMORY_GET_REMOTE_ADDRESS_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT";
@@ -2878,6 +2883,7 @@ tcu::Format::Bitfield<32> getImageUsageFlagsStr (VkImageUsageFlags value)
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_ENCODE_DST_BIT_KHR,					"VK_IMAGE_USAGE_VIDEO_ENCODE_DST_BIT_KHR"),
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR,					"VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR"),
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR,					"VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_INVOCATION_MASK_BIT_HUAWEI,					"VK_IMAGE_USAGE_INVOCATION_MASK_BIT_HUAWEI"),
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV,					"VK_IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV"),
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM,							"VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM"),
 	};
@@ -8119,6 +8125,16 @@ std::ostream& operator<< (std::ostream& s, const VkSurfaceProtectedCapabilitiesK
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePresentWaitFeaturesKHR& value)
+{
+	s << "VkPhysicalDevicePresentWaitFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpresentWait = " << value.presentWait << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR& value)
 {
 	s << "VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR = {\n";
@@ -8208,6 +8224,27 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineLibraryCreateInfoKHR&
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tlibraryCount = " << value.libraryCount << '\n';
 	s << "\tpLibraries = " << value.pLibraries << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPresentIdKHR& value)
+{
+	s << "VkPresentIdKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tswapchainCount = " << value.swapchainCount << '\n';
+	s << "\tpPresentIds = " << value.pPresentIds << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePresentIdFeaturesKHR& value)
+{
+	s << "VkPhysicalDevicePresentIdFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpresentId = " << value.presentId << '\n';
 	s << '}';
 	return s;
 }
@@ -10634,6 +10671,27 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExtendedDynamic
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderBufferFloat16Atomics = " << value.shaderBufferFloat16Atomics << '\n';
+	s << "\tshaderBufferFloat16AtomicAdd = " << value.shaderBufferFloat16AtomicAdd << '\n';
+	s << "\tshaderBufferFloat16AtomicMinMax = " << value.shaderBufferFloat16AtomicMinMax << '\n';
+	s << "\tshaderBufferFloat32AtomicMinMax = " << value.shaderBufferFloat32AtomicMinMax << '\n';
+	s << "\tshaderBufferFloat64AtomicMinMax = " << value.shaderBufferFloat64AtomicMinMax << '\n';
+	s << "\tshaderSharedFloat16Atomics = " << value.shaderSharedFloat16Atomics << '\n';
+	s << "\tshaderSharedFloat16AtomicAdd = " << value.shaderSharedFloat16AtomicAdd << '\n';
+	s << "\tshaderSharedFloat16AtomicMinMax = " << value.shaderSharedFloat16AtomicMinMax << '\n';
+	s << "\tshaderSharedFloat32AtomicMinMax = " << value.shaderSharedFloat32AtomicMinMax << '\n';
+	s << "\tshaderSharedFloat64AtomicMinMax = " << value.shaderSharedFloat64AtomicMinMax << '\n';
+	s << "\tshaderImageFloat32AtomicMinMax = " << value.shaderImageFloat32AtomicMinMax << '\n';
+	s << "\tsparseImageFloat32AtomicMinMax = " << value.sparseImageFloat32AtomicMinMax << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT& value)
 {
 	s << "VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT = {\n";
@@ -11352,6 +11410,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSubpassShadingP
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmaxSubpassShadingWorkgroupSizeAspectRatio = " << value.maxSubpassShadingWorkgroupSizeAspectRatio << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceInvocationMaskFeaturesHUAWEI& value)
+{
+	s << "VkPhysicalDeviceInvocationMaskFeaturesHUAWEI = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tinvocationMask = " << value.invocationMask << '\n';
 	s << '}';
 	return s;
 }

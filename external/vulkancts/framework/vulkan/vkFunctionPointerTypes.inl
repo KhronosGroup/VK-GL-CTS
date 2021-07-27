@@ -257,6 +257,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* WaitSemaphoresKHRFunc)													(
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SignalSemaphoreKHRFunc)												(VkDevice device, const VkSemaphoreSignalInfo* pSignalInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceFragmentShadingRatesKHRFunc)							(VkPhysicalDevice physicalDevice, uint32_t* pFragmentShadingRateCount, VkPhysicalDeviceFragmentShadingRateKHR* pFragmentShadingRates);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetFragmentShadingRateKHRFunc)										(VkCommandBuffer commandBuffer, const VkExtent2D* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* WaitForPresentKHRFunc)													(VkDevice device, VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout);
 typedef VKAPI_ATTR VkDeviceAddress		(VKAPI_CALL* GetBufferDeviceAddressKHRFunc)											(VkDevice device, const VkBufferDeviceAddressInfo* pInfo);
 typedef VKAPI_ATTR uint64_t				(VKAPI_CALL* GetBufferOpaqueCaptureAddressKHRFunc)									(VkDevice device, const VkBufferDeviceAddressInfo* pInfo);
 typedef VKAPI_ATTR uint64_t				(VKAPI_CALL* GetDeviceMemoryOpaqueCaptureAddressKHRFunc)							(VkDevice device, const VkDeviceMemoryOpaqueCaptureAddressInfo* pInfo);
@@ -411,7 +412,8 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetWinrtDisplayNVFunc)													(
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetVertexInputEXTFunc)												(VkCommandBuffer commandBuffer, uint32_t vertexBindingDescriptionCount, const VkVertexInputBindingDescription2EXT* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const VkVertexInputAttributeDescription2EXT* pVertexAttributeDescriptions);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceSubpassShadingMaxWorkgroupSizeHUAWEIFunc)						(VkDevice device, VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSubpassShadingHUAWEIFunc)											(VkCommandBuffer commandBuffer);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryRemoteAddressNVFunc)											(VkDevice device, const VkMemoryGetRemoteAddressInfoNV* getMemoryRemoteAddressInfo, VkRemoteAddressNV* pAddress);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindInvocationMaskHUAWEIFunc)										(VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryRemoteAddressNVFunc)											(VkDevice device, const VkMemoryGetRemoteAddressInfoNV* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetPatchControlPointsEXTFunc)										(VkCommandBuffer commandBuffer, uint32_t patchControlPoints);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRasterizerDiscardEnableEXTFunc)									(VkCommandBuffer commandBuffer, VkBool32 rasterizerDiscardEnable);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDepthBiasEnableEXTFunc)											(VkCommandBuffer commandBuffer, VkBool32 depthBiasEnable);

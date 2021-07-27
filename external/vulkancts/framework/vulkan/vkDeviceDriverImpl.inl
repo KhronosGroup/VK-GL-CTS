@@ -857,6 +857,11 @@ void DeviceDriver::cmdSetFragmentShadingRateKHR (VkCommandBuffer commandBuffer, 
 	m_vk.cmdSetFragmentShadingRateKHR(commandBuffer, pFragmentSize, combinerOps);
 }
 
+VkResult DeviceDriver::waitForPresentKHR (VkDevice device, VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout) const
+{
+	return m_vk.waitForPresentKHR(device, swapchain, presentId, timeout);
+}
+
 VkResult DeviceDriver::createDeferredOperationKHR (VkDevice device, const VkAllocationCallbacks* pAllocator, VkDeferredOperationKHR* pDeferredOperation) const
 {
 	return m_vk.createDeferredOperationKHR(device, pAllocator, pDeferredOperation);
@@ -1512,9 +1517,14 @@ void DeviceDriver::cmdSubpassShadingHUAWEI (VkCommandBuffer commandBuffer) const
 	m_vk.cmdSubpassShadingHUAWEI(commandBuffer);
 }
 
-VkResult DeviceDriver::getMemoryRemoteAddressNV (VkDevice device, const VkMemoryGetRemoteAddressInfoNV* getMemoryRemoteAddressInfo, VkRemoteAddressNV* pAddress) const
+void DeviceDriver::cmdBindInvocationMaskHUAWEI (VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout) const
 {
-	return m_vk.getMemoryRemoteAddressNV(device, getMemoryRemoteAddressInfo, pAddress);
+	m_vk.cmdBindInvocationMaskHUAWEI(commandBuffer, imageView, imageLayout);
+}
+
+VkResult DeviceDriver::getMemoryRemoteAddressNV (VkDevice device, const VkMemoryGetRemoteAddressInfoNV* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress) const
+{
+	return m_vk.getMemoryRemoteAddressNV(device, pMemoryGetRemoteAddressInfo, pAddress);
 }
 
 void DeviceDriver::cmdSetPatchControlPointsEXT (VkCommandBuffer commandBuffer, uint32_t patchControlPoints) const

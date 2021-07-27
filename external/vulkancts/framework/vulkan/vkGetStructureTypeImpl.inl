@@ -1031,6 +1031,11 @@ template<> VkStructureType getStructureType<VkSurfaceProtectedCapabilitiesKHR> (
 	return VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePresentWaitFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR;
@@ -1064,6 +1069,16 @@ template<> VkStructureType getStructureType<VkPipelineExecutableInternalRepresen
 template<> VkStructureType getStructureType<VkPipelineLibraryCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPresentIdKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PRESENT_ID_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePresentIdFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkMemoryBarrier2KHR> (void)
@@ -1966,6 +1981,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceExtendedDynamicState
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT;
@@ -2214,6 +2234,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceSubpassShadingFeatur
 template<> VkStructureType getStructureType<VkPhysicalDeviceSubpassShadingPropertiesHUAWEI> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_SHADING_PROPERTIES_HUAWEI;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceInvocationMaskFeaturesHUAWEI> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INVOCATION_MASK_FEATURES_HUAWEI;
 }
 
 template<> VkStructureType getStructureType<VkMemoryGetRemoteAddressInfoNV> (void)

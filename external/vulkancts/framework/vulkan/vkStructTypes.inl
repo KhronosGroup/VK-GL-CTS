@@ -2839,6 +2839,13 @@ struct VkSurfaceProtectedCapabilitiesKHR
 	VkBool32		supportsProtected;
 };
 
+struct VkPhysicalDevicePresentWaitFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		presentWait;
+};
+
 struct VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR
 {
 	VkStructureType	sType;
@@ -2906,6 +2913,21 @@ struct VkPipelineLibraryCreateInfoKHR
 	const void*			pNext;
 	uint32_t			libraryCount;
 	const VkPipeline*	pLibraries;
+};
+
+struct VkPresentIdKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		swapchainCount;
+	const uint64_t*	pPresentIds;
+};
+
+struct VkPhysicalDevicePresentIdFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		presentId;
 };
 
 struct VkMemoryBarrier2KHR
@@ -4715,6 +4737,24 @@ struct VkPhysicalDeviceExtendedDynamicStateFeaturesEXT
 	VkBool32		extendedDynamicState;
 };
 
+struct VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderBufferFloat16Atomics;
+	VkBool32		shaderBufferFloat16AtomicAdd;
+	VkBool32		shaderBufferFloat16AtomicMinMax;
+	VkBool32		shaderBufferFloat32AtomicMinMax;
+	VkBool32		shaderBufferFloat64AtomicMinMax;
+	VkBool32		shaderSharedFloat16Atomics;
+	VkBool32		shaderSharedFloat16AtomicAdd;
+	VkBool32		shaderSharedFloat16AtomicMinMax;
+	VkBool32		shaderSharedFloat32AtomicMinMax;
+	VkBool32		shaderSharedFloat64AtomicMinMax;
+	VkBool32		shaderImageFloat32AtomicMinMax;
+	VkBool32		sparseImageFloat32AtomicMinMax;
+};
+
 struct VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT
 {
 	VkStructureType	sType;
@@ -5249,6 +5289,13 @@ struct VkPhysicalDeviceSubpassShadingPropertiesHUAWEI
 	VkStructureType	sType;
 	void*			pNext;
 	uint32_t		maxSubpassShadingWorkgroupSizeAspectRatio;
+};
+
+struct VkPhysicalDeviceInvocationMaskFeaturesHUAWEI
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		invocationMask;
 };
 
 struct VkMemoryGetRemoteAddressInfoNV

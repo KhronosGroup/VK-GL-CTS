@@ -40,6 +40,7 @@ const vk::VkPhysicalDeviceImageRobustnessFeaturesEXT&					getImageRobustnessFeat
 const vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT&					getIndexTypeUint8FeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceInheritedViewportScissorFeaturesNV&			getInheritedViewportScissorFeatures				(void) const;
 const vk::VkPhysicalDeviceInlineUniformBlockFeaturesEXT&				getInlineUniformBlockFeaturesEXT				(void) const;
+const vk::VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&					getInvocationMaskFeaturesHUAWEI					(void) const;
 const vk::VkPhysicalDeviceLineRasterizationFeaturesEXT&					getLineRasterizationFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT&					getMemoryPriorityFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceMeshShaderFeaturesNV&							getMeshShaderFeatures							(void) const;
@@ -50,6 +51,8 @@ const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&					getPerformanceQueryFe
 const vk::VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT&		getPipelineCreationCacheControlFeaturesEXT		(void) const;
 const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&		getPipelineExecutablePropertiesFeatures			(void) const;
 const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR&					getPortabilitySubsetFeatures					(void) const;
+const vk::VkPhysicalDevicePresentIdFeaturesKHR&							getPresentIdFeatures							(void) const;
+const vk::VkPhysicalDevicePresentWaitFeaturesKHR&						getPresentWaitFeatures							(void) const;
 const vk::VkPhysicalDevicePrivateDataFeaturesEXT&						getPrivateDataFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&						getProtectedMemoryFeatures						(void) const;
 const vk::VkPhysicalDeviceProvokingVertexFeaturesEXT&					getProvokingVertexFeaturesEXT					(void) const;
@@ -62,6 +65,7 @@ const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures&				getSamplerYcbcrConv
 const vk::VkPhysicalDeviceScalarBlockLayoutFeatures&					getScalarBlockLayoutFeatures					(void) const;
 const vk::VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures&			getSeparateDepthStencilLayoutsFeatures			(void) const;
 const vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&					getShaderAtomicFloatFeaturesEXT					(void) const;
+const vk::VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT&				getShaderAtomicFloat2FeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceShaderAtomicInt64Features&					getShaderAtomicInt64Features					(void) const;
 const vk::VkPhysicalDeviceShaderClockFeaturesKHR&						getShaderClockFeatures							(void) const;
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT&	getShaderDemoteToHelperInvocationFeaturesEXT	(void) const;
