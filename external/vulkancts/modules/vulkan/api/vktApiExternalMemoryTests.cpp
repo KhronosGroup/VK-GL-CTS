@@ -4091,19 +4091,7 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 	const vk::InstanceDriver&					  vki					(instance.getDriver());
 	const vk::VkPhysicalDevice					  physicalDevice		(vk::chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
 	const deUint32								  queueFamilyIndex		(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-
-	vk::VkPhysicalDeviceProtectedMemoryFeatures		protectedFeatures;
-	protectedFeatures.sType				= vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES;
-	protectedFeatures.pNext				= DE_NULL;
-	protectedFeatures.protectedMemory	= VK_FALSE;
-
-	vk::VkPhysicalDeviceFeatures2					deviceFeatures;
-	deviceFeatures.sType		= vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	deviceFeatures.pNext		= &protectedFeatures;
-
-	vki.getPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures);
-
-	const vk::Unique<vk::VkDevice>				  device				(createTestDevice(context, vkp, instance, vki, physicalDevice, 0u, externalMemoryType, 0u, queueFamilyIndex, false, &protectedFeatures));
+	const vk::Unique<vk::VkDevice>				  device				(createTestDevice(context, vkp, instance, vki, physicalDevice, 0u, externalMemoryType, 0u, queueFamilyIndex));
 	const vk::DeviceDriver						  vkd					(vkp, instance, *device);
 	TestLog&									  log				  = context.getTestContext().getLog();
 	const vk::VkPhysicalDeviceLimits			  limits			  = getPhysicalDeviceProperties(vki, physicalDevice).limits;
