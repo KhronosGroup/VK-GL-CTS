@@ -1701,6 +1701,15 @@ VKAPI_ATTR void VKAPI_CALL cmdSetFragmentShadingRateKHR (VkCommandBuffer command
 	DE_UNREF(combinerOps);
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL waitForPresentKHR (VkDevice device, VkSwapchainKHR swapchain, deUint64 presentId, deUint64 timeout)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(presentId);
+	DE_UNREF(timeout);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR uint32_t VKAPI_CALL getDeferredOperationMaxConcurrencyKHR (VkDevice device, VkDeferredOperationKHR operation)
 {
 	DE_UNREF(device);
@@ -2720,10 +2729,17 @@ VKAPI_ATTR void VKAPI_CALL cmdSubpassShadingHUAWEI (VkCommandBuffer commandBuffe
 	DE_UNREF(commandBuffer);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getMemoryRemoteAddressNV (VkDevice device, const VkMemoryGetRemoteAddressInfoNV* getMemoryRemoteAddressInfo, VkRemoteAddressNV* pAddress)
+VKAPI_ATTR void VKAPI_CALL cmdBindInvocationMaskHUAWEI (VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(imageView);
+	DE_UNREF(imageLayout);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryRemoteAddressNV (VkDevice device, const VkMemoryGetRemoteAddressInfoNV* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress)
 {
 	DE_UNREF(device);
-	DE_UNREF(getMemoryRemoteAddressInfo);
+	DE_UNREF(pMemoryGetRemoteAddressInfo);
 	DE_UNREF(pAddress);
 	return VK_SUCCESS;
 }
@@ -3504,6 +3520,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkWaitSemaphoresKHR,									waitSemaphores),
 	VK_NULL_FUNC_ENTRY(vkSignalSemaphoreKHR,								signalSemaphore),
 	VK_NULL_FUNC_ENTRY(vkCmdSetFragmentShadingRateKHR,						cmdSetFragmentShadingRateKHR),
+	VK_NULL_FUNC_ENTRY(vkWaitForPresentKHR,									waitForPresentKHR),
 	VK_NULL_FUNC_ENTRY(vkGetBufferDeviceAddressKHR,							getBufferDeviceAddress),
 	VK_NULL_FUNC_ENTRY(vkGetBufferOpaqueCaptureAddressKHR,					getBufferOpaqueCaptureAddress),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceMemoryOpaqueCaptureAddressKHR,			getDeviceMemoryOpaqueCaptureAddress),
@@ -3639,6 +3656,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdSetVertexInputEXT,								cmdSetVertexInputEXT),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI,		getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI),
 	VK_NULL_FUNC_ENTRY(vkCmdSubpassShadingHUAWEI,							cmdSubpassShadingHUAWEI),
+	VK_NULL_FUNC_ENTRY(vkCmdBindInvocationMaskHUAWEI,						cmdBindInvocationMaskHUAWEI),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryRemoteAddressNV,							getMemoryRemoteAddressNV),
 	VK_NULL_FUNC_ENTRY(vkCmdSetPatchControlPointsEXT,						cmdSetPatchControlPointsEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetRasterizerDiscardEnableEXT,					cmdSetRasterizerDiscardEnableEXT),

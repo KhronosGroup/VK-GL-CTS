@@ -22,7 +22,7 @@ namespace vk
 #define VK_EXT_FRAGMENT_DENSITY_MAP_2_EXTENSION_NAME "VK_EXT_fragment_density_map2"
 #define VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME "VK_KHR_fragment_shading_rate"
 #define VK_NV_FRAGMENT_SHADING_RATE_ENUMS_EXTENSION_NAME "VK_NV_fragment_shading_rate_enums"
-#define DECL_ID_EXTENSION_NAME "core_property"
+#define VK_KHR_PRESENT_ID_EXTENSION_NAME  "VK_KHR_present_id"
 #define VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME "VK_EXT_inline_uniform_block"
 #define VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME "VK_EXT_line_rasterization"
 #define VK_KHR_MAINTENANCE3_EXTENSION_NAME "VK_KHR_maintenance3"
@@ -219,7 +219,7 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFragmentDensityMapPrope
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFragmentDensityMap2PropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT, VK_EXT_FRAGMENT_DENSITY_MAP_2_EXTENSION_NAME, VK_EXT_FRAGMENT_DENSITY_MAP_2_SPEC_VERSION, 32}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFragmentShadingRatePropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_PROPERTIES_KHR, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, VK_KHR_FRAGMENT_SHADING_RATE_SPEC_VERSION, 31}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_PROPERTIES_NV, VK_NV_FRAGMENT_SHADING_RATE_ENUMS_EXTENSION_NAME, VK_NV_FRAGMENT_SHADING_RATE_ENUMS_SPEC_VERSION, 30}; }
-template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceIDProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES, DECL_ID_EXTENSION_NAME, 0, 29}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceIDProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES, VK_KHR_PRESENT_ID_EXTENSION_NAME, VK_KHR_PRESENT_ID_SPEC_VERSION, 29}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceInlineUniformBlockPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES_EXT, VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME, VK_EXT_INLINE_UNIFORM_BLOCK_SPEC_VERSION, 28}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceLineRasterizationPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT, VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME, VK_EXT_LINE_RASTERIZATION_SPEC_VERSION, 27}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMaintenance3Properties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES, VK_KHR_MAINTENANCE3_EXTENSION_NAME, VK_KHR_MAINTENANCE3_SPEC_VERSION, 26}; }
@@ -269,7 +269,7 @@ static const PropertyStructCreationData propertyStructCreationArray[] =
 	{ createPropertyStructWrapper<VkPhysicalDeviceFragmentDensityMap2PropertiesEXT>, VK_EXT_FRAGMENT_DENSITY_MAP_2_EXTENSION_NAME, VK_EXT_FRAGMENT_DENSITY_MAP_2_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceFragmentShadingRatePropertiesKHR>, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, VK_KHR_FRAGMENT_SHADING_RATE_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV>, VK_NV_FRAGMENT_SHADING_RATE_ENUMS_EXTENSION_NAME, VK_NV_FRAGMENT_SHADING_RATE_ENUMS_SPEC_VERSION },
-	{ createPropertyStructWrapper<VkPhysicalDeviceIDProperties>, DECL_ID_EXTENSION_NAME, 0 },
+	{ createPropertyStructWrapper<VkPhysicalDeviceIDProperties>, VK_KHR_PRESENT_ID_EXTENSION_NAME, VK_KHR_PRESENT_ID_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceInlineUniformBlockPropertiesEXT>, VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME, VK_EXT_INLINE_UNIFORM_BLOCK_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceLineRasterizationPropertiesEXT>, VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME, VK_EXT_LINE_RASTERIZATION_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceMaintenance3Properties>, VK_KHR_MAINTENANCE3_EXTENSION_NAME, VK_KHR_MAINTENANCE3_SPEC_VERSION },

@@ -40,6 +40,7 @@ const vk::VkPhysicalDeviceImageRobustnessFeaturesEXT&					Context::getImageRobus
 const vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT&					Context::getIndexTypeUint8FeaturesEXT					(void) const { return m_device->getIndexTypeUint8FeaturesEXT();					}
 const vk::VkPhysicalDeviceInheritedViewportScissorFeaturesNV&			Context::getInheritedViewportScissorFeatures			(void) const { return m_device->getInheritedViewportScissorFeatures();			}
 const vk::VkPhysicalDeviceInlineUniformBlockFeaturesEXT&				Context::getInlineUniformBlockFeaturesEXT				(void) const { return m_device->getInlineUniformBlockFeaturesEXT();				}
+const vk::VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&					Context::getInvocationMaskFeaturesHUAWEI				(void) const { return m_device->getInvocationMaskFeaturesHUAWEI();				}
 const vk::VkPhysicalDeviceLineRasterizationFeaturesEXT&					Context::getLineRasterizationFeaturesEXT				(void) const { return m_device->getLineRasterizationFeaturesEXT();				}
 const vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT&					Context::getMemoryPriorityFeaturesEXT					(void) const { return m_device->getMemoryPriorityFeaturesEXT();					}
 const vk::VkPhysicalDeviceMeshShaderFeaturesNV&							Context::getMeshShaderFeatures							(void) const { return m_device->getMeshShaderFeatures();						}
@@ -50,6 +51,8 @@ const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&					Context::getPerforman
 const vk::VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT&		Context::getPipelineCreationCacheControlFeaturesEXT		(void) const { return m_device->getPipelineCreationCacheControlFeaturesEXT();	}
 const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&		Context::getPipelineExecutablePropertiesFeatures		(void) const { return m_device->getPipelineExecutablePropertiesFeatures();		}
 const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR&					Context::getPortabilitySubsetFeatures					(void) const { return m_device->getPortabilitySubsetFeatures();					}
+const vk::VkPhysicalDevicePresentIdFeaturesKHR&							Context::getPresentIdFeatures							(void) const { return m_device->getPresentIdFeatures();							}
+const vk::VkPhysicalDevicePresentWaitFeaturesKHR&						Context::getPresentWaitFeatures							(void) const { return m_device->getPresentWaitFeatures();						}
 const vk::VkPhysicalDevicePrivateDataFeaturesEXT&						Context::getPrivateDataFeaturesEXT						(void) const { return m_device->getPrivateDataFeaturesEXT();					}
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&						Context::getProtectedMemoryFeatures						(void) const { return m_device->getProtectedMemoryFeatures();					}
 const vk::VkPhysicalDeviceProvokingVertexFeaturesEXT&					Context::getProvokingVertexFeaturesEXT					(void) const { return m_device->getProvokingVertexFeaturesEXT();				}
@@ -62,6 +65,7 @@ const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures&				Context::getSampler
 const vk::VkPhysicalDeviceScalarBlockLayoutFeatures&					Context::getScalarBlockLayoutFeatures					(void) const { return m_device->getScalarBlockLayoutFeatures();					}
 const vk::VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures&			Context::getSeparateDepthStencilLayoutsFeatures			(void) const { return m_device->getSeparateDepthStencilLayoutsFeatures();		}
 const vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&					Context::getShaderAtomicFloatFeaturesEXT				(void) const { return m_device->getShaderAtomicFloatFeaturesEXT();				}
+const vk::VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT&				Context::getShaderAtomicFloat2FeaturesEXT				(void) const { return m_device->getShaderAtomicFloat2FeaturesEXT();				}
 const vk::VkPhysicalDeviceShaderAtomicInt64Features&					Context::getShaderAtomicInt64Features					(void) const { return m_device->getShaderAtomicInt64Features();					}
 const vk::VkPhysicalDeviceShaderClockFeaturesKHR&						Context::getShaderClockFeatures							(void) const { return m_device->getShaderClockFeatures();						}
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT&	Context::getShaderDemoteToHelperInvocationFeaturesEXT	(void) const { return m_device->getShaderDemoteToHelperInvocationFeaturesEXT();	}
