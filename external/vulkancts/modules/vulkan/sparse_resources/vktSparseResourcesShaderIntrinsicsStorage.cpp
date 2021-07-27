@@ -407,7 +407,7 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands (const VkCommandBuffe
 	const Unique<VkDescriptorSetLayout> descriptorSetLayout(descriptorLayerBuilder.build(deviceInterface, getDevice()));
 
 	// Create pipeline layout
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(deviceInterface, getDevice(), *descriptorSetLayout));
+	pipelineLayout = makePipelineLayout(deviceInterface, getDevice(), *descriptorSetLayout);
 
 	// Create descriptor pool
 	DescriptorPoolBuilder descriptorPoolBuilder;

@@ -180,6 +180,7 @@ protected:
 
 	typedef de::SharedPtr< vk::Unique<vk::VkPipeline> >			SharedVkPipeline;
 	std::vector<SharedVkPipeline>								pipelines;
+	vk::Move<vk::VkPipelineLayout>								pipelineLayout;
 
 	typedef de::SharedPtr< vk::Unique<vk::VkImageView> >		SharedVkImageView;
 	std::vector<SharedVkImageView>								imageSparseViews;
