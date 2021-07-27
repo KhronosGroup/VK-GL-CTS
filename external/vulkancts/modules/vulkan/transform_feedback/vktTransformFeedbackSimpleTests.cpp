@@ -2018,8 +2018,6 @@ tcu::TestStatus TransformFeedbackMultiQueryTestInstance::iterate (void)
 	const Move<VkBuffer>						queryPoolResultsBuffer		= createBuffer(vk, device, &queryBufferCreateInfo);
 	const MovePtr<Allocation>					queryPoolResultsBufferAlloc	= allocator.allocate(getBufferMemoryRequirements(vk, device, *queryPoolResultsBuffer), MemoryRequirement::HostVisible);
 
-    vk.resetQueryPool(device, *queryPool, queryIndex, queryCountersNumber);
-
 	DE_ASSERT(queryCountersNumber == queryExpectedData.size());
 
 	VK_CHECK(vk.bindBufferMemory(device, *queryPoolResultsBuffer, queryPoolResultsBufferAlloc->getMemory(), queryPoolResultsBufferAlloc->getOffset()));
@@ -2028,6 +2026,8 @@ tcu::TestStatus TransformFeedbackMultiQueryTestInstance::iterate (void)
 
 	beginCommandBuffer(vk, *cmdBuffer);
 	{
+		vk.cmdResetQueryPool(*cmdBuffer, *queryPool, queryIndex, queryCountersNumber);
+
 		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(m_imageExtent2D));
 		{
 			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
