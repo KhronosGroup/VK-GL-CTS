@@ -1389,6 +1389,10 @@ void MultisampleTextureUsageCase::genSamplerShader (void)
 	const glu::GLSLVersion glslVersion = glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
 	fragmentArguments["GLSL_VERSION_DECL"] = glu::getGLSLVersionDeclaration(glslVersion);
 
+	const bool supportsES32orGL45 =
+		glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+		glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
+
 	if (m_isArrayType)
 		fragmentArguments["FETCHPOS"] = "ivec3(floor(gl_FragCoord.xy), u_layer)";
 	else
@@ -1399,7 +1403,7 @@ void MultisampleTextureUsageCase::genSamplerShader (void)
 	else
 		fragmentArguments["EPSILON"] = "1.0";
 
-	if (m_isArrayType && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+	if (m_isArrayType && !supportsES32orGL45)
 		fragmentArguments["EXTENSION_STATEMENT"] = "#extension GL_OES_texture_storage_multisample_2d_array : require\n";
 	else
 		fragmentArguments["EXTENSION_STATEMENT"] = "";
@@ -1925,9 +1929,11 @@ NegativeTexParameterCase::IterateResult NegativeTexParameterCase::iterate (void)
 	};
 
 	const tcu::ScopedLogSection scope(m_testCtx.getLog(), "Iteration", std::string() + "Testing parameter with " + types[m_iteration].name + " texture");
-	const bool					supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool supportsES32orGL45 =
+		glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+		glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
 
-	if (types[m_iteration].isArrayType && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	if (types[m_iteration].isArrayType && !supportsES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 		m_testCtx.getLog() << tcu::TestLog::Message << "GL_OES_texture_storage_multisample_2d_array not supported, skipping target" << tcu::TestLog::EndMessage;
 	else
 	{
