@@ -1470,9 +1470,9 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_maintenance4")
 	{
-		functions.push_back("vkGetBufferCreateInfoMemoryRequirementsKHR");
-		functions.push_back("vkGetImageCreateInfoMemoryRequirementsKHR");
-		functions.push_back("vkGetImageCreateInfoSparseMemoryRequirementsKHR");
+		functions.push_back("vkGetDeviceBufferMemoryRequirementsKHR");
+		functions.push_back("vkGetDeviceImageMemoryRequirementsKHR");
+		functions.push_back("vkGetDeviceImageSparseMemoryRequirementsKHR");
 		return;
 	}
 	if (extName == "VK_EXT_debug_report")

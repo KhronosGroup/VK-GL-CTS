@@ -3297,6 +3297,21 @@ struct VkPhysicalDeviceMaintenance4PropertiesKHR
 	VkDeviceSize	maxBufferSize;
 };
 
+struct VkDeviceBufferMemoryRequirementsKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	const VkBufferCreateInfo*	pCreateInfo;
+};
+
+struct VkDeviceImageMemoryRequirementsKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	const VkImageCreateInfo*	pCreateInfo;
+	VkImageAspectFlagBits		planeAspect;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;

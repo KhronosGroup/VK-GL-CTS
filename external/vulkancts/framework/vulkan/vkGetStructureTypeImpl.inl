@@ -1261,6 +1261,16 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance4Properti
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkDeviceBufferMemoryRequirementsKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDeviceImageMemoryRequirementsKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR;
+}
+
 template<> VkStructureType getStructureType<VkDebugReportCallbackCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;

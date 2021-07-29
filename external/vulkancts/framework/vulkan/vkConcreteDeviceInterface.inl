@@ -197,9 +197,9 @@ virtual void				cmdCopyBufferToImage2KHR						(VkCommandBuffer commandBuffer, co
 virtual void				cmdCopyImageToBuffer2KHR						(VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2KHR* pCopyImageToBufferInfo) const;
 virtual void				cmdBlitImage2KHR								(VkCommandBuffer commandBuffer, const VkBlitImageInfo2KHR* pBlitImageInfo) const;
 virtual void				cmdResolveImage2KHR								(VkCommandBuffer commandBuffer, const VkResolveImageInfo2KHR* pResolveImageInfo) const;
-virtual void				getBufferCreateInfoMemoryRequirementsKHR		(VkDevice device, const VkBufferCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements) const;
-virtual void				getImageCreateInfoMemoryRequirementsKHR			(VkDevice device, const VkImageCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements) const;
-virtual void				getImageCreateInfoSparseMemoryRequirementsKHR	(VkDevice device, const VkImageCreateInfo* pCreateInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements) const;
+virtual void				getDeviceBufferMemoryRequirementsKHR			(VkDevice device, const VkDeviceBufferMemoryRequirementsKHR* pInfo, VkMemoryRequirements2* pMemoryRequirements) const;
+virtual void				getDeviceImageMemoryRequirementsKHR				(VkDevice device, const VkDeviceImageMemoryRequirementsKHR* pInfo, VkMemoryRequirements2* pMemoryRequirements) const;
+virtual void				getDeviceImageSparseMemoryRequirementsKHR		(VkDevice device, const VkDeviceImageMemoryRequirementsKHR* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements) const;
 virtual VkResult			debugMarkerSetObjectTagEXT						(VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const;
 virtual VkResult			debugMarkerSetObjectNameEXT						(VkDevice device, const VkDebugMarkerObjectNameInfoEXT* pNameInfo) const;
 virtual void				cmdDebugMarkerBeginEXT							(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const;
