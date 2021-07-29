@@ -972,19 +972,19 @@ void DeviceDriver::cmdResolveImage2KHR (VkCommandBuffer commandBuffer, const VkR
 	m_vk.cmdResolveImage2KHR(commandBuffer, pResolveImageInfo);
 }
 
-void DeviceDriver::getBufferCreateInfoMemoryRequirementsKHR (VkDevice device, const VkBufferCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements) const
+void DeviceDriver::getDeviceBufferMemoryRequirementsKHR (VkDevice device, const VkDeviceBufferMemoryRequirementsKHR* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
 {
-	m_vk.getBufferCreateInfoMemoryRequirementsKHR(device, pCreateInfo, pMemoryRequirements);
+	m_vk.getDeviceBufferMemoryRequirementsKHR(device, pInfo, pMemoryRequirements);
 }
 
-void DeviceDriver::getImageCreateInfoMemoryRequirementsKHR (VkDevice device, const VkImageCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements) const
+void DeviceDriver::getDeviceImageMemoryRequirementsKHR (VkDevice device, const VkDeviceImageMemoryRequirementsKHR* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
 {
-	m_vk.getImageCreateInfoMemoryRequirementsKHR(device, pCreateInfo, pMemoryRequirements);
+	m_vk.getDeviceImageMemoryRequirementsKHR(device, pInfo, pMemoryRequirements);
 }
 
-void DeviceDriver::getImageCreateInfoSparseMemoryRequirementsKHR (VkDevice device, const VkImageCreateInfo* pCreateInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements) const
+void DeviceDriver::getDeviceImageSparseMemoryRequirementsKHR (VkDevice device, const VkDeviceImageMemoryRequirementsKHR* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements) const
 {
-	m_vk.getImageCreateInfoSparseMemoryRequirementsKHR(device, pCreateInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
+	m_vk.getDeviceImageSparseMemoryRequirementsKHR(device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
 }
 
 VkResult DeviceDriver::debugMarkerSetObjectTagEXT (VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const

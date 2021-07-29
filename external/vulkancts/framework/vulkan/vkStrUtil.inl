@@ -826,6 +826,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkResolveImageInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkFormatPropertiesExtendedKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance4FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance4PropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceBufferMemoryRequirementsKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceImageMemoryRequirementsKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationStateRasterizationOrderAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerObjectNameInfoEXT& value);
