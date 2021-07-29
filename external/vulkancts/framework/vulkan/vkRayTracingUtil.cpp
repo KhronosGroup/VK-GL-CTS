@@ -604,10 +604,11 @@ SerialStorage::SerialStorage (const DeviceInterface&						vk,
 	}
 }
 
-VkDeviceOrHostAddressKHR SerialStorage::getAddress (const DeviceInterface&				vk,
-													const VkDevice						device)
+VkDeviceOrHostAddressKHR SerialStorage::getAddress (const DeviceInterface&						vk,
+													const VkDevice								device,
+													const VkAccelerationStructureBuildTypeKHR	buildType)
 {
-	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+	if (buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 		return makeDeviceOrHostAddressKHR(vk, device, m_buffer->get(), 0);
 	else
 		return makeDeviceOrHostAddressKHR(m_buffer->getAllocation().getHostPtr());
@@ -639,10 +640,11 @@ VkDeviceOrHostAddressConstKHR SerialStorage::getHostAddressConst (VkDeviceSize o
 	return makeDeviceOrHostAddressConstKHR(static_cast<deUint8*>(m_buffer->getAllocation().getHostPtr()) + offset);
 }
 
-VkDeviceOrHostAddressConstKHR SerialStorage::getAddressConst (const DeviceInterface&	vk,
-															  const VkDevice			device)
+VkDeviceOrHostAddressConstKHR SerialStorage::getAddressConst (const DeviceInterface&					vk,
+															  const VkDevice							device,
+															  const VkAccelerationStructureBuildTypeKHR	buildType)
 {
-	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+	if (buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 		return makeDeviceOrHostAddressConstKHR(vk, device, m_buffer->get(), 0);
 	else
 		return getHostAddressConst();
@@ -1281,7 +1283,7 @@ void BottomLevelAccelerationStructureKHR::serialize (const DeviceInterface&		vk,
 		VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_TO_MEMORY_INFO_KHR,	// VkStructureType						sType;
 		DE_NULL,															// const void*							pNext;
 		*(getPtr()),														// VkAccelerationStructureKHR			src;
-		storage->getAddress(vk,device),										// VkDeviceOrHostAddressKHR				dst;
+		storage->getAddress(vk, device, m_buildType),						// VkDeviceOrHostAddressKHR				dst;
 		VK_COPY_ACCELERATION_STRUCTURE_MODE_SERIALIZE_KHR					// VkCopyAccelerationStructureModeKHR	mode;
 	};
 
@@ -1318,7 +1320,7 @@ void BottomLevelAccelerationStructureKHR::deserialize (const DeviceInterface&	vk
 	{
 		VK_STRUCTURE_TYPE_COPY_MEMORY_TO_ACCELERATION_STRUCTURE_INFO_KHR,	// VkStructureType							sType;
 		DE_NULL,															// const void*								pNext;
-		storage->getAddressConst(vk,device),								// VkDeviceOrHostAddressConstKHR			src;
+		storage->getAddressConst(vk, device, m_buildType),					// VkDeviceOrHostAddressConstKHR			src;
 		*(getPtr()),														// VkAccelerationStructureKHR				dst;
 		VK_COPY_ACCELERATION_STRUCTURE_MODE_DESERIALIZE_KHR					// VkCopyAccelerationStructureModeKHR		mode;
 	};
@@ -2140,7 +2142,7 @@ void TopLevelAccelerationStructureKHR::serialize (const DeviceInterface&	vk,
 		VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_TO_MEMORY_INFO_KHR,	// VkStructureType						sType;
 		DE_NULL,															// const void*							pNext;
 		*(getPtr()),														// VkAccelerationStructureKHR			src;
-		storage->getAddress(vk, device),									// VkDeviceOrHostAddressKHR				dst;
+		storage->getAddress(vk, device, m_buildType),						// VkDeviceOrHostAddressKHR				dst;
 		VK_COPY_ACCELERATION_STRUCTURE_MODE_SERIALIZE_KHR					// VkCopyAccelerationStructureModeKHR	mode;
 	};
 
@@ -2180,7 +2182,7 @@ void TopLevelAccelerationStructureKHR::deserialize (const DeviceInterface&	vk,
 	{
 		VK_STRUCTURE_TYPE_COPY_MEMORY_TO_ACCELERATION_STRUCTURE_INFO_KHR,	// VkStructureType							sType;
 		DE_NULL,															// const void*								pNext;
-		storage->getAddressConst(vk,device),								// VkDeviceOrHostAddressConstKHR			src;
+		storage->getAddressConst(vk, device, m_buildType),					// VkDeviceOrHostAddressConstKHR			src;
 		*(getPtr()),														// VkAccelerationStructureKHR				dst;
 		VK_COPY_ACCELERATION_STRUCTURE_MODE_DESERIALIZE_KHR					// VkCopyAccelerationStructureModeKHR		mode;
 	};
