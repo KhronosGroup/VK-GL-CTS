@@ -79,6 +79,12 @@ static amber::EngineConfig* createEngineConfig (Context& ctx)
 // Throws an internal error If the feature is not recognized at all.
 static bool isFeatureSupported(const vkt::Context& ctx, const std::string& feature)
 {
+	if (feature == "Storage16BitFeatures.storageBuffer16BitAccess")
+		return ctx.get16BitStorageFeatures().storageBuffer16BitAccess;
+	if (feature == "Float16Int8Features.shaderFloat16")
+		return ctx.getShaderFloat16Int8Features().shaderFloat16;
+	if (feature == "Features.shaderFloat64")
+		return ctx.getDeviceFeatures().shaderFloat64;
 	if (feature == "Features.shaderInt16")
 		return ctx.getDeviceFeatures().shaderInt16;
 	if (feature == "Features.shaderInt64")

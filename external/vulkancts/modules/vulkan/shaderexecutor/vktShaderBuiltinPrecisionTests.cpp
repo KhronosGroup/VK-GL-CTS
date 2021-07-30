@@ -26,6 +26,7 @@
 
 #include "vktShaderBuiltinPrecisionTests.hpp"
 #include "vktShaderExecutor.hpp"
+#include "amber/vktAmberTestCase.hpp"
 
 #include "deMath.h"
 #include "deMemory.h"
@@ -6861,11 +6862,37 @@ public:
 		TestCaseGroup* group = new TestCaseGroup(ctx.testContext, ctx.name.c_str(), ctx.name.c_str());
 
 		group->addChild(createFuncCase(ctx, "mat2", instance<GenF<2> >()));
-#if 0
-		// disabled until we get reasonable results
-		group->addChild(createFuncCase(ctx, "mat3", instance<GenF<3> >()));
-		group->addChild(createFuncCase(ctx, "mat4", instance<GenF<4> >()));
-#endif
+
+		// There is no defined precision for mediump/RelaxedPrecision in Vulkan
+		if (ctx.name != "mediump")
+		{
+			static const char			dataDir[]		= "builtin/precision/square_matrix";
+			std::string					fileName		= getFunc().getName() + "_" + ctx.name;
+			std::vector<std::string>	requirements;
+
+			if (ctx.name == "compute")
+			{
+				if (ctx.isFloat64b)
+				{
+					requirements.push_back("Features.shaderFloat64");
+					fileName += "_fp64";
+				}
+				else
+				{
+					requirements.push_back("Float16Int8Features.shaderFloat16");
+					fileName += "_fp16";
+
+					if (ctx.isPackFloat16b == true)
+					{
+						requirements.push_back("Storage16BitFeatures.storageBuffer16BitAccess");
+						fileName += "_32bit";
+					}
+				}
+			}
+
+			group->addChild(cts_amber::createAmberTestCase(ctx.testContext, "mat3", "Square matrix 3x3 precision tests", dataDir, fileName + "_mat_3x3.amber", requirements));
+			group->addChild(cts_amber::createAmberTestCase(ctx.testContext, "mat4", "Square matrix 4x4 precision tests", dataDir, fileName + "_mat_4x4.amber", requirements));
+		}
 
 		return MovePtr<TestNode>(group);
 	}

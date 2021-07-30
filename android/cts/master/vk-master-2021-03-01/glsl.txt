@@ -397,6 +397,10 @@ dEQP-VK.glsl.builtin.precision.modfstruct.highp.scalar
 dEQP-VK.glsl.builtin.precision.modfstruct.highp.vec2
 dEQP-VK.glsl.builtin.precision.modfstruct.highp.vec3
 dEQP-VK.glsl.builtin.precision.modfstruct.highp.vec4
+dEQP-VK.glsl.builtin.precision.determinant.highp.mat3
+dEQP-VK.glsl.builtin.precision.determinant.highp.mat4
+dEQP-VK.glsl.builtin.precision.inverse.highp.mat3
+dEQP-VK.glsl.builtin.precision.inverse.highp.mat4
 dEQP-VK.glsl.builtin.precision.frexpstruct.mediump.scalar
 dEQP-VK.glsl.builtin.precision.frexpstruct.mediump.vec2
 dEQP-VK.glsl.builtin.precision.frexpstruct.mediump.vec3
@@ -412,6 +416,10 @@ dEQP-VK.glsl.builtin.precision_fp16_storage16b.modfstruct.compute.scalar
 dEQP-VK.glsl.builtin.precision_fp16_storage16b.modfstruct.compute.vec2
 dEQP-VK.glsl.builtin.precision_fp16_storage16b.modfstruct.compute.vec3
 dEQP-VK.glsl.builtin.precision_fp16_storage16b.modfstruct.compute.vec4
+dEQP-VK.glsl.builtin.precision_fp16_storage16b.determinant.compute.mat3
+dEQP-VK.glsl.builtin.precision_fp16_storage16b.determinant.compute.mat4
+dEQP-VK.glsl.builtin.precision_fp16_storage16b.inverse.compute.mat3
+dEQP-VK.glsl.builtin.precision_fp16_storage16b.inverse.compute.mat4
 dEQP-VK.glsl.builtin.precision_fp16_storage16b.frexpstruct.compute.scalar
 dEQP-VK.glsl.builtin.precision_fp16_storage16b.frexpstruct.compute.vec2
 dEQP-VK.glsl.builtin.precision_fp16_storage16b.frexpstruct.compute.vec3
@@ -423,6 +431,10 @@ dEQP-VK.glsl.builtin.precision_fp16_storage32b.modfstruct.compute.scalar
 dEQP-VK.glsl.builtin.precision_fp16_storage32b.modfstruct.compute.vec2
 dEQP-VK.glsl.builtin.precision_fp16_storage32b.modfstruct.compute.vec3
 dEQP-VK.glsl.builtin.precision_fp16_storage32b.modfstruct.compute.vec4
+dEQP-VK.glsl.builtin.precision_fp16_storage32b.determinant.compute.mat3
+dEQP-VK.glsl.builtin.precision_fp16_storage32b.determinant.compute.mat4
+dEQP-VK.glsl.builtin.precision_fp16_storage32b.inverse.compute.mat3
+dEQP-VK.glsl.builtin.precision_fp16_storage32b.inverse.compute.mat4
 dEQP-VK.glsl.builtin.precision_fp16_storage32b.frexpstruct.compute.scalar
 dEQP-VK.glsl.builtin.precision_fp16_storage32b.frexpstruct.compute.vec2
 dEQP-VK.glsl.builtin.precision_fp16_storage32b.frexpstruct.compute.vec3
@@ -584,7 +596,11 @@ dEQP-VK.glsl.builtin.precision_double.transpose.compute.mat4x2
 dEQP-VK.glsl.builtin.precision_double.transpose.compute.mat4x3
 dEQP-VK.glsl.builtin.precision_double.transpose.compute.mat4
 dEQP-VK.glsl.builtin.precision_double.determinant.compute.mat2
+dEQP-VK.glsl.builtin.precision_double.determinant.compute.mat3
+dEQP-VK.glsl.builtin.precision_double.determinant.compute.mat4
 dEQP-VK.glsl.builtin.precision_double.inverse.compute.mat2
+dEQP-VK.glsl.builtin.precision_double.inverse.compute.mat3
+dEQP-VK.glsl.builtin.precision_double.inverse.compute.mat4
 dEQP-VK.glsl.builtin.precision_double.frexp.compute.scalar
 dEQP-VK.glsl.builtin.precision_double.frexp.compute.vec2
 dEQP-VK.glsl.builtin.precision_double.frexp.compute.vec3
