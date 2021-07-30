@@ -668,10 +668,13 @@ void MultisampleRenderCase::drawOneIteration (void)
 
 std::string	MultisampleRenderCase::genVertexSource (int numTargetSamples) const
 {
-	const bool				supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool supportsES32orGL45 =
+		glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+		glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
+
 	map<string, string>		args;
 
-	args["GLSL_VERSION_DECL"] = supportsES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_VERSION_DECL"] = supportsES32orGL45 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 
 	DE_UNREF(numTargetSamples);
 	return std::string(tcu::StringTemplate(s_vertexSource).specialize(args));
