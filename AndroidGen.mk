@@ -178,6 +178,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/image/vktImageAtomicOperationTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageAtomicSpirvShaders.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageCompressionTranscodingSupport.cpp \
+	external/vulkancts/modules/vulkan/image/vktImageDepthStencilDescriptorTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageLoadStoreTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageLoadStoreUtil.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageMisalignedCubeTests.cpp \
