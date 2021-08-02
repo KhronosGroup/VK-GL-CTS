@@ -4610,9 +4610,12 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 						// Note: RTZ/RNE rounding leniency isn't applied for the checks below:
 
 						// Some *variable_pointers* tests store counters in buffer
-						// whose value may vary if the same vertex shader may be executed for multiple times
+						// whose value may vary if the same shader may be executed for multiple times
 						// in this case the output value can be expected value + non-negative integer N
-						if (instance.customizedStages == VK_SHADER_STAGE_VERTEX_BIT)
+						if (instance.customizedStages == VK_SHADER_STAGE_VERTEX_BIT ||
+							instance.customizedStages == VK_SHADER_STAGE_GEOMETRY_BIT ||
+							instance.customizedStages == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ||
+							instance.customizedStages == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
 						{
 							if (deFloatIsInf(outputFloats[expectedNdx]) || deFloatIsNaN(outputFloats[expectedNdx]))
 								return tcu::TestStatus::fail("Value returned is invalid");
