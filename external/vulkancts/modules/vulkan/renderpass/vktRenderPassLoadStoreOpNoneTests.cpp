@@ -68,7 +68,10 @@ enum AttachmentUsage
 	ATTACHMENT_USAGE_STENCIL = 4,
 	ATTACHMENT_USAGE_INPUT = 8,
 	ATTACHMENT_USAGE_WRITE_OFF = 16,
-	ATTACHMENT_USAGE_DEPTH_STENCIL = ATTACHMENT_USAGE_DEPTH | ATTACHMENT_USAGE_STENCIL
+	ATTACHMENT_USAGE_DEPTH_STENCIL = ATTACHMENT_USAGE_DEPTH | ATTACHMENT_USAGE_STENCIL,
+	ATTACHMENT_USAGE_MULTISAMPLE = 32,
+	ATTACHMENT_USAGE_RESOLVE_TARGET = 64,
+	ATTACHMENT_USAGE_INTEGER = 128
 };
 
 struct AttachmentParams
@@ -164,6 +167,23 @@ std::string getFormatCaseName(VkFormat format)
 	return de::toLower(de::toString(getFormatStr(format)).substr(10));
 }
 
+// Selects an image format based on the usage flags.
+VkFormat getFormat (deUint32 usage, VkFormat depthStencilFormat)
+{
+	if (usage & ATTACHMENT_USAGE_DEPTH_STENCIL)
+	{
+		return depthStencilFormat;
+	}
+
+	if (usage & ATTACHMENT_USAGE_INTEGER)
+	{
+		// Color attachment using integer format.
+		return VK_FORMAT_R8G8B8A8_UINT;
+	}
+
+	return VK_FORMAT_R8G8B8A8_UNORM;
+}
+
 template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
 Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 									 VkDevice				vkDevice,
@@ -177,6 +197,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 	struct Refs
 	{
 		std::vector<AttachmentRef>	colorAttachmentRefs;
+		std::vector<AttachmentRef>	resolveAttachmentRefs;
 		std::vector<AttachmentRef>	depthStencilAttachmentRefs;
 		std::vector<AttachmentRef>	inputAttachmentRefs;
 	};
@@ -188,17 +209,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 	{
 		VkImageLayout	initialLayout;
 		VkImageLayout	finalLayout;
-		VkFormat		format;
-
-		if (testParams.attachments[i].usage & ATTACHMENT_USAGE_DEPTH_STENCIL)
-		{
-			format = testParams.depthStencilFormat;
-		}
-		else
-		{
-			// Color and input attachments.
-			format = VK_FORMAT_R8G8B8A8_UNORM;
-		}
+		VkFormat		format			= getFormat(testParams.attachments[i].usage, testParams.depthStencilFormat);
 
 		// Search for the first reference to determine the initial layout.
 		deUint32 firstUsage = getFirstUsage((deUint32)i, testParams.subpasses);
@@ -225,12 +236,14 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 		else
 			finalLayout = initialLayout;
 
-		const AttachmentDesc attachmentDesc =
+		const VkSampleCountFlagBits	sampleCount		= testParams.attachments[i].usage & ATTACHMENT_USAGE_MULTISAMPLE ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
+
+		const AttachmentDesc		attachmentDesc	=
 		{
 			DE_NULL,							// const void*						pNext
 			(VkAttachmentDescriptionFlags) 0,	// VkAttachmentDescriptionFlags		flags
 			format,								// VkFormat							format
-			VK_SAMPLE_COUNT_1_BIT,				// VkSampleCountFlagBits			samples
+			sampleCount,						// VkSampleCountFlagBits			samples
 			testParams.attachments[i].loadOp,	// VkAttachmentLoadOp				loadOp
 			testParams.attachments[i].storeOp,	// VkAttachmentStoreOp				storeOp
 			testParams.attachments[i].loadOp,	// VkAttachmentLoadOp				stencilLoadOp
@@ -251,7 +264,12 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 		{
 			VkImageLayout layout;
 
-			if (ref.usage & ATTACHMENT_USAGE_COLOR)
+			if (ref.usage & ATTACHMENT_USAGE_RESOLVE_TARGET)
+			{
+				layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+				refs.resolveAttachmentRefs.push_back({DE_NULL, ref.idx, layout, aspectMask});
+			}
+			else if (ref.usage & ATTACHMENT_USAGE_COLOR)
 			{
 				layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 				refs.colorAttachmentRefs.push_back({DE_NULL, ref.idx, layout, aspectMask});
@@ -280,7 +298,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 			refs.inputAttachmentRefs.empty() ? DE_NULL : refs.inputAttachmentRefs.data(),				// const VkAttachmentReference*		pInputAttachments
 			(deUint32)refs.colorAttachmentRefs.size(),													// deUint32							colorAttachmentCount
 			refs.colorAttachmentRefs.empty() ? DE_NULL : refs.colorAttachmentRefs.data(),				// const VkAttachmentReference*		pColorAttachments
-			DE_NULL,																					// const VkAttachmentReference*		pResolveAttachments
+			refs.resolveAttachmentRefs.empty() ? DE_NULL : refs.resolveAttachmentRefs.data(),			// const VkAttachmentReference*		pResolveAttachments
 			refs.depthStencilAttachmentRefs.empty() ? DE_NULL : refs.depthStencilAttachmentRefs.data(),	// const VkAttachmentReference*		pDepthStencilAttachment
 			0u,																							// deUint32							preserveAttachmentCount
 			DE_NULL																						// const deUint32*					pPreserveAttachments
@@ -424,6 +442,16 @@ void LoadStoreOpNoneTest::initPrograms (SourceCollections& sourceCollections) co
 		"	gl_FragDepth = 1.0;\n"
 		"}\n");
 
+	sourceCollections.glslSources.add("color_frag_uint") << glu::FragmentSource(
+		"#version 450\n"
+		"layout(location = 0) in highp vec4 vtxColor;\n"
+		"layout(location = 0) out highp uvec4 fragColor;\n"
+		"void main (void)\n"
+		"{\n"
+		"	fragColor = uvec4(vtxColor * vec4(255));\n"
+		"	gl_FragDepth = 1.0;\n"
+		"}\n");
+
 	sourceCollections.glslSources.add("color_frag_blend") << glu::FragmentSource(
 		"#version 450\n"
 		"layout(location = 0) in highp vec4 vtxColor;\n"
@@ -498,7 +526,24 @@ void LoadStoreOpNoneTestInstance::createCommandBuffer	(const DeviceInterface&			
 
 		for (size_t i = 0; i < imageViews.size(); i++)
 		{
-			if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_COLOR)
+			if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_MULTISAMPLE)
+			{
+				DE_ASSERT(m_testParams.attachments[i+1].usage & ATTACHMENT_USAGE_RESOLVE_TARGET);
+				colorAttachments.push_back({
+					VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,		// VkStructureType						sType;
+					DE_NULL,												// const void*							pNext;
+					*imageViews[i],											// VkImageView							imageView;
+					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
+					VK_RESOLVE_MODE_AVERAGE_BIT,							// VkResolveModeFlagBits				resolveMode;
+					*imageViews[i+1],										// VkImageView							resolveImageView;
+					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout						resolveImageLayout;
+					m_testParams.attachments[i].loadOp,						// VkAttachmentLoadOp					loadOp;
+					m_testParams.attachments[i].storeOp,					// VkAttachmentStoreOp					storeOp;
+					makeClearValueColor(tcu::Vec4(0.0f))					// VkClearValue							clearValue;
+					});
+				i += 1;
+			}
+			else if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_COLOR)
 			{
 				colorAttachments.push_back({
 					VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,		// VkStructureType						sType;
@@ -633,7 +678,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 
 	for (const auto& att : m_testParams.attachments)
 	{
-		VkFormat				format;
+		VkFormat				format				= getFormat(att.usage, m_testParams.depthStencilFormat);
 		VkImageUsageFlags		usage				= 0;
 		VkImageAspectFlags		aspectFlags;
 
@@ -657,7 +702,6 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 		else
 		{
 			// Color and input attachments.
-			format = VK_FORMAT_R8G8B8A8_UNORM;
 			aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
 
 			if (att.usage & ATTACHMENT_USAGE_COLOR)
@@ -665,6 +709,8 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 			if (att.usage & ATTACHMENT_USAGE_INPUT)
 				usage |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
 		}
+
+		const VkSampleCountFlagBits	sampleCount		= att.usage & ATTACHMENT_USAGE_MULTISAMPLE ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
 
 		const VkImageCreateInfo		imageParams		=
 		{
@@ -676,7 +722,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 			{ m_imageSize.x(), m_imageSize.y(), 1u },	// VkExtent3D				extent
 			1u,											// deUint32					mipLevels
 			1u,											// deUint32					arrayLayers
-			VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits	samples
+			sampleCount,								// VkSampleCountFlagBits	samples
 			VK_IMAGE_TILING_OPTIMAL,					// VkImageTiling			tiling
 			usage,										// VkImageUsageFlags		usage
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode			sharingMode
@@ -721,9 +767,10 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 			}
 			else
 			{
-				clearColorImage(vk, vkDevice, queue, queueFamilyIndex, *attachmentImages.back(), tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f),
-								VK_IMAGE_LAYOUT_UNDEFINED, firstUsage & ATTACHMENT_USAGE_COLOR ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-								VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+				VkClearColorValue clearColor = att.usage & ATTACHMENT_USAGE_INTEGER ? makeClearValueColorU32(0u, 255u, 0u, 255u).color : makeClearValueColorF32(0.0f, 1.0f, 0.0f, 1.0f).color;
+				clearColorImage(vk, vkDevice, queue, queueFamilyIndex, *attachmentImages.back(), clearColor, VK_IMAGE_LAYOUT_UNDEFINED,
+								firstUsage & ATTACHMENT_USAGE_COLOR ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+								VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 1u);
 			}
 		}
 	}
@@ -760,6 +807,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 	// Create shader modules
 	Unique<VkShaderModule>		vertexShaderModule			(createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0));
 	Unique<VkShaderModule>		fragmentShaderModule		(createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0));
+	Unique<VkShaderModule>		fragmentShaderModuleUint	(createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag_uint"), 0));
 	Unique<VkShaderModule>		fragmentShaderModuleBlend	(createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag_blend"), 0));
 	Unique<VkShaderModule>		fragmentShaderModuleInput	(createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag_input"), 0));
 
@@ -794,6 +842,8 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 		bool		noColorWrite		= false;
 		bool		depthTest			= false;
 		bool		stencilTest			= false;
+		bool		multisample			= false;
+		bool		uintColorBuffer		= false;
 
 		// Create pipeline layout.
 		{
@@ -829,6 +879,14 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 				{
 					if (!(ref.usage & ATTACHMENT_USAGE_WRITE_OFF))
 						stencilTest = true;
+				}
+				if (ref.usage & ATTACHMENT_USAGE_MULTISAMPLE)
+				{
+					multisample = true;
+				}
+				if (ref.usage & ATTACHMENT_USAGE_INTEGER)
+				{
+					uintColorBuffer = true;
 				}
 			}
 
@@ -994,12 +1052,27 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 				1.0f,														// float									maxDepthBounds
 			};
 
+			const VkPipelineMultisampleStateCreateInfo		multisampleStateParams			=
+			{
+					VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,		// VkStructureType							sType
+					DE_NULL,														// const void*								pNext
+					0u,																// VkPipelineMultisampleStateCreateFlags	flags
+					multisample ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT,	// VkSampleCountFlagBits					rasterizationSamples
+					VK_FALSE,														// VkBool32									sampleShadingEnable
+					1.0f,															// float									minSampleShading
+					DE_NULL,														// const VkSampleMask*						pSampleMask
+					VK_FALSE,														// VkBool32									alphaToCoverageEnable
+					VK_FALSE														// VkBool32									alphaToOneEnable
+			};
+
 			const std::vector<VkViewport>					viewports						(1, makeViewport(m_imageSize));
 			const std::vector<VkRect2D>						scissors						(1, makeRect2D(m_renderSize));
 			VkShaderModule									fragShader						= *fragmentShaderModule;
 
 			if (numInputAttachments > 0u)
 				fragShader = *fragmentShaderModuleInput;
+			else if (uintColorBuffer)
+				fragShader = *fragmentShaderModuleUint;
 			else if (m_testParams.alphaBlend)
 				fragShader = *fragmentShaderModuleBlend;
 
@@ -1048,7 +1121,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 				0u,										// const deUint32									patchControlPoints
 				&vertexInputStateParams,				// const VkPipelineVertexInputStateCreateInfo*		vertexInputStateCreateInfo
 				DE_NULL,								// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
-				DE_NULL,								// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
+				&multisampleStateParams,				// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
 				&depthStencilStateParams,				// const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo
 				&colorBlendStateParams,					// const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo
 				DE_NULL,								// const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo
@@ -1102,6 +1175,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 			de::MovePtr<tcu::TextureLevel>		textureLevelResult;
 
 			SimpleAllocator						allocator			(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
+			VkFormat							format				= getFormat(m_testParams.attachments[i].usage, m_testParams.depthStencilFormat);
 
 			if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_DEPTH)
 			{
@@ -1113,7 +1187,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 			}
 			else
 			{
-				textureLevelResult = pipeline::readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *attachmentImages[i], VK_FORMAT_R8G8B8A8_UNORM, m_imageSize, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+				textureLevelResult = pipeline::readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *attachmentImages[i], format, m_imageSize, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 			}
 
 			const tcu::ConstPixelBufferAccess&	access				= textureLevelResult->getAccess();
@@ -1165,6 +1239,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 	const tcu::Vec4	depthFull	(1.0f, 0.0f, 0.0f, 1.0f);
 	const tcu::Vec4	stencilInit	(128.0f, 0.0f, 0.0f, 1.0f);
 	const tcu::Vec4	stencilFull	(255.0f, 0.0f, 0.0f, 1.0f);
+	const tcu::Vec4	redUint		(255.0f, 0.0f, 0.0f, 255.0f);
+	const tcu::Vec4	greenUint	(0.0f, 255.0f, 0.0f, 255.0f);
 
 	// Preinitialize attachments 0 and 1 to green.
 	// Subpass 0: draw a red rectangle inside attachment 0.
@@ -1295,6 +1371,30 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_INPUT}, {1u, ATTACHMENT_USAGE_COLOR}}, 1u});
 
 		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_dontcare", "", params));
+	}
+
+	// Preinitialize color attachment to green. Use a render pass with load and store ops none for a multisample color
+	// target. Write a red rectangle and check it ends up in the resolved buffer even though the multisample attachment
+	// doesn't store the results.
+	{
+		TestParams params;
+		params.alphaBlend = false;
+		params.renderingType = renderingType;
+		params.attachments.push_back({ATTACHMENT_USAGE_COLOR | ATTACHMENT_USAGE_MULTISAMPLE | ATTACHMENT_USAGE_INTEGER,
+									  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+									  VK_ATTACHMENT_STORE_OP_NONE_EXT,
+									  ATTACHMENT_INIT_PRE,
+									  false, green,
+									  false, green});
+		params.attachments.push_back({ATTACHMENT_USAGE_COLOR | ATTACHMENT_USAGE_RESOLVE_TARGET | ATTACHMENT_USAGE_INTEGER,
+									  VK_ATTACHMENT_LOAD_OP_LOAD,
+									  VK_ATTACHMENT_STORE_OP_STORE,
+									  ATTACHMENT_INIT_PRE,
+									  true, redUint,
+									  true, greenUint});
+		params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR | ATTACHMENT_USAGE_MULTISAMPLE | ATTACHMENT_USAGE_INTEGER}, {1u, ATTACHMENT_USAGE_COLOR | ATTACHMENT_USAGE_RESOLVE_TARGET}}, 1u});
+
+		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_none_resolve", "", params));
 	}
 
 	// Preinitialize attachment 0 (color) to green and attachment 1 (depth) to 0.5.

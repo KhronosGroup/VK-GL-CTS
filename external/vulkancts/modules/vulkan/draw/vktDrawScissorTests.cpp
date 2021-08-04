@@ -522,7 +522,7 @@ TestStatus ScissorTestInstance::iterate (void)
 		clearColorImage(vk, device, m_context.getUniversalQueue(), m_context.getUniversalQueueFamilyIndex(), colorTargetImage->object(), clearColor,
 						VK_IMAGE_LAYOUT_UNDEFINED,
 						VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-						VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+						VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 1u);
 
 		beginCommandBuffer(vk, *cmdBuffer, 0u);
 
