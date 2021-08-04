@@ -4090,8 +4090,20 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 	const CustomInstance						  instance				(createTestInstance(context, 0u, externalMemoryType, 0u));
 	const vk::InstanceDriver&					  vki					(instance.getDriver());
 	const vk::VkPhysicalDevice					  physicalDevice		(vk::chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
+
+	vk::VkPhysicalDeviceProtectedMemoryFeatures		protectedFeatures;
+	protectedFeatures.sType				= vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES;
+	protectedFeatures.pNext				= DE_NULL;
+	protectedFeatures.protectedMemory	= VK_FALSE;
+
+	vk::VkPhysicalDeviceFeatures2					deviceFeatures;
+	deviceFeatures.sType		= vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	deviceFeatures.pNext		= &protectedFeatures;
+
+	vki.getPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures);
+
 	const deUint32								  queueFamilyIndex		(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-	const vk::Unique<vk::VkDevice>				  device				(createTestDevice(context, vkp, instance, vki, physicalDevice, 0u, externalMemoryType, 0u, queueFamilyIndex));
+	const vk::Unique<vk::VkDevice>				  device				(createTestDevice(context, vkp, instance, vki, physicalDevice, 0u, externalMemoryType, 0u, queueFamilyIndex, false, &protectedFeatures));
 	const vk::DeviceDriver						  vkd					(vkp, instance, *device);
 	TestLog&									  log				  = context.getTestContext().getLog();
 	const vk::VkPhysicalDeviceLimits			  limits			  = getPhysicalDeviceProperties(vki, physicalDevice).limits;
@@ -4111,6 +4123,7 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 	{
 		vk::VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT,
 		vk::VK_IMAGE_CREATE_EXTENDED_USAGE_BIT,
+		vk::VK_IMAGE_CREATE_PROTECTED_BIT,
 		vk::VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
 	};
 	const vk::VkImageTiling						  tilings[]			  =
@@ -4143,6 +4156,10 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 			const size_t	bit	= numOfUsageFlags + createFlagNdx;
 			if ((combo & (one << bit)) == 0)
 				continue;
+			if (((createFlags[createFlagNdx] & vk::VK_IMAGE_CREATE_PROTECTED_BIT) == vk::VK_IMAGE_CREATE_PROTECTED_BIT ) &&
+				(protectedFeatures.protectedMemory == VK_FALSE))
+				continue;
+
 			createFlag |= createFlags[createFlagNdx];
 			requiredAhbUsage |= ahbApi->vkCreateToAhbUsage(createFlags[createFlagNdx]);
 		}
@@ -4239,7 +4256,22 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 			{
 				const vk::Unique<vk::VkImage>			image					(createExternalImage(vkd, *device, queueFamilyIndex, externalMemoryType, format, sizes[i].width, sizes[i].height, tiling, createFlag, usage));
 				const vk::VkMemoryRequirements			requirements			(getImageMemoryRequirements(vkd, *device, *image, externalMemoryType));
-				const deUint32							exportedMemoryTypeIndex	(chooseMemoryType(requirements.memoryTypeBits));
+				deUint32								exportedMemoryTypeIndex	= 0;
+
+				if (createFlag & vk::VK_IMAGE_CREATE_PROTECTED_BIT)
+				{
+					const vk::VkPhysicalDeviceMemoryProperties memProperties(vk::getPhysicalDeviceMemoryProperties(vki, physicalDevice));
+
+					for (deUint32 memoryTypeIndex = 0; memoryTypeIndex < VK_MAX_MEMORY_TYPES; memoryTypeIndex++)
+					{
+						if (memProperties.memoryTypes[memoryTypeIndex].propertyFlags & vk::VK_MEMORY_PROPERTY_PROTECTED_BIT)
+						{
+							exportedMemoryTypeIndex = memoryTypeIndex;
+							break;
+						}
+					}
+				}
+
 				const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, externalMemoryType, *image));
 				NativeHandle							handle;
 
@@ -4256,9 +4288,9 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 				context.getTestContext().touchWatchdog();
 			}
 
-			if (properties.imageFormatProperties.maxMipLevels > 1u)
+			if (properties.imageFormatProperties.maxMipLevels >= 7u)
 			{
-				const vk::Unique<vk::VkImage>			image					(createExternalImage(vkd, *device, queueFamilyIndex, externalMemoryType, format, 64u, 64u, tiling, createFlag, usage, properties.imageFormatProperties.maxMipLevels));
+				const vk::Unique<vk::VkImage>			image					(createExternalImage(vkd, *device, queueFamilyIndex, externalMemoryType, format, 64u, 64u, tiling, createFlag, usage, 7u));
 				const vk::VkMemoryRequirements			requirements			(getImageMemoryRequirements(vkd, *device, *image, externalMemoryType));
 				const deUint32							exportedMemoryTypeIndex	(chooseMemoryType(requirements.memoryTypeBits));
 				const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, externalMemoryType, *image));
