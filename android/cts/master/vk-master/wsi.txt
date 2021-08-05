@@ -44,6 +44,7 @@ dEQP-VK.wsi.android.swapchain.render.10swapchains
 dEQP-VK.wsi.android.swapchain.render.10swapchains2
 dEQP-VK.wsi.android.swapchain.modify.resize
 dEQP-VK.wsi.android.swapchain.destroy.null_handle
+dEQP-VK.wsi.android.swapchain.destroy.old_swapchain
 dEQP-VK.wsi.android.swapchain.get_images.incomplete
 dEQP-VK.wsi.android.swapchain.get_images.count
 dEQP-VK.wsi.android.swapchain.acquire.too_many
@@ -855,6 +856,7 @@ dEQP-VK.wsi.macos.swapchain.render.2swapchains2
 dEQP-VK.wsi.macos.swapchain.render.10swapchains
 dEQP-VK.wsi.macos.swapchain.render.10swapchains2
 dEQP-VK.wsi.macos.swapchain.destroy.null_handle
+dEQP-VK.wsi.macos.swapchain.destroy.old_swapchain
 dEQP-VK.wsi.macos.swapchain.get_images.incomplete
 dEQP-VK.wsi.macos.swapchain.get_images.count
 dEQP-VK.wsi.macos.swapchain.acquire.too_many
@@ -1305,6 +1307,7 @@ dEQP-VK.wsi.headless.swapchain.render.10swapchains
 dEQP-VK.wsi.headless.swapchain.render.10swapchains2
 dEQP-VK.wsi.headless.swapchain.modify.resize
 dEQP-VK.wsi.headless.swapchain.destroy.null_handle
+dEQP-VK.wsi.headless.swapchain.destroy.old_swapchain
 dEQP-VK.wsi.headless.swapchain.get_images.incomplete
 dEQP-VK.wsi.headless.swapchain.get_images.count
 dEQP-VK.wsi.headless.swapchain.acquire.too_many

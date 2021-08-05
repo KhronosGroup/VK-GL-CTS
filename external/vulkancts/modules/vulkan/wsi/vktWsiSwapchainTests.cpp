@@ -2471,6 +2471,33 @@ tcu::TestStatus destroyNullHandleSwapchainTest (Context& context, Type wsiType)
 	return tcu::TestStatus::pass("Destroying a VK_NULL_HANDLE surface has no effect");
 }
 
+tcu::TestStatus destroyOldSwapchainTest (Context& context, Type wsiType)
+{
+	const tcu::UVec2			desiredSize			(256, 256);
+	const InstanceHelper		instHelper			(context, wsiType);
+	const NativeObjects			native				(context, instHelper.supportedExtensions, wsiType);
+	const Unique<VkSurfaceKHR>	surface				(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow()));
+	const DeviceHelper			devHelper			(context, instHelper.vki, instHelper.instance, *surface);
+
+	// Create the first swapchain.
+	VkSwapchainCreateInfoKHR swapchainInfo = getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
+	VkSwapchainKHR swapchain = 0;
+	VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, DE_NULL, &swapchain));
+
+	// Create a new swapchain replacing the old one.
+	swapchainInfo.oldSwapchain = swapchain;
+	VkSwapchainKHR recreatedSwapchain = 0;
+	VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, DE_NULL, &recreatedSwapchain));
+
+	// Destroying the old swapchain should have no effect.
+	devHelper.vkd.destroySwapchainKHR(*devHelper.device, swapchain, DE_NULL);
+
+	// Destroy the new swapchain for cleanup.
+	devHelper.vkd.destroySwapchainKHR(*devHelper.device, recreatedSwapchain, DE_NULL);
+
+	return tcu::TestStatus::pass("Destroying an old swapchain has no effect.");
+}
+
 tcu::TestStatus acquireTooManyTest (Context& context, Type wsiType)
 {
 	const tcu::UVec2               desiredSize     (256, 256);
@@ -2594,6 +2621,7 @@ void populateModifyGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 void populateDestroyGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 {
 	addFunctionCase(testGroup, "null_handle", "Destroying a VK_NULL_HANDLE swapchain", destroyNullHandleSwapchainTest, wsiType);
+	addFunctionCase(testGroup, "old_swapchain", "Destroying an old swapchain", destroyOldSwapchainTest, wsiType);
 }
 
 void populateAcquireGroup (tcu::TestCaseGroup* testGroup, Type wsiType)

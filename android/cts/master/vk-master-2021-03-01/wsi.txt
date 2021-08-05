@@ -1,3 +1,4 @@
+dEQP-VK.wsi.android.swapchain.destroy.old_swapchain
 dEQP-VK.wsi.android.swapchain.acquire.too_many
 dEQP-VK.wsi.android.swapchain.acquire.too_many_timeout
 dEQP-VK.wsi.android.swapchain.private_data.min_image_count
@@ -28,6 +29,7 @@ dEQP-VK.wsi.android.present_id_wait.wait.no_frames
 dEQP-VK.wsi.android.present_id_wait.wait.no_frame_id
 dEQP-VK.wsi.android.present_id_wait.wait.future_frame
 dEQP-VK.wsi.android.present_id_wait.wait.two_swapchains
+dEQP-VK.wsi.macos.swapchain.destroy.old_swapchain
 dEQP-VK.wsi.macos.swapchain.acquire.too_many
 dEQP-VK.wsi.macos.swapchain.acquire.too_many_timeout
 dEQP-VK.wsi.macos.swapchain.private_data.min_image_count
@@ -105,6 +107,7 @@ dEQP-VK.wsi.headless.swapchain.render.10swapchains
 dEQP-VK.wsi.headless.swapchain.render.10swapchains2
 dEQP-VK.wsi.headless.swapchain.modify.resize
 dEQP-VK.wsi.headless.swapchain.destroy.null_handle
+dEQP-VK.wsi.headless.swapchain.destroy.old_swapchain
 dEQP-VK.wsi.headless.swapchain.get_images.incomplete
 dEQP-VK.wsi.headless.swapchain.get_images.count
 dEQP-VK.wsi.headless.swapchain.acquire.too_many
