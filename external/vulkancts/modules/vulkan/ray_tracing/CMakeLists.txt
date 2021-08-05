@@ -50,6 +50,8 @@ set(DEQP_VK_RAY_TRACING_SRCS
 	vktRayTracingCaptureReplayTests.hpp
 	vktRayTracingTests.cpp
 	vktRayTracingTests.hpp
+	vktRayTracingPipelineFlagsTests.cpp
+	vktRayTracingPipelineFlagsTests.hpp
 	)
 
 set(DEQP_VK_RAY_TRACING_LIBS
