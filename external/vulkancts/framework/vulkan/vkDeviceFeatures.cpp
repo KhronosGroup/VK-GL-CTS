@@ -33,11 +33,12 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 								 const std::vector<std::string>&	deviceExtensions,
 								 const deBool						enableAllFeatures)
 {
-	VkPhysicalDeviceRobustness2FeaturesEXT*			robustness2Features			= nullptr;
-	VkPhysicalDeviceImageRobustnessFeaturesEXT*		imageRobustnessFeatures		= nullptr;
-	VkPhysicalDeviceFragmentShadingRateFeaturesKHR*	fragmentShadingRateFeatures	= nullptr;
-	VkPhysicalDeviceShadingRateImageFeaturesNV*		shadingRateImageFeatures	= nullptr;
-	VkPhysicalDeviceFragmentDensityMapFeaturesEXT*	fragmentDensityMapFeatures	= nullptr;
+	VkPhysicalDeviceRobustness2FeaturesEXT*					robustness2Features					= nullptr;
+	VkPhysicalDeviceImageRobustnessFeaturesEXT*				imageRobustnessFeatures				= nullptr;
+	VkPhysicalDeviceFragmentShadingRateFeaturesKHR*			fragmentShadingRateFeatures			= nullptr;
+	VkPhysicalDeviceShadingRateImageFeaturesNV*				shadingRateImageFeatures			= nullptr;
+	VkPhysicalDeviceFragmentDensityMapFeaturesEXT*			fragmentDensityMapFeatures			= nullptr;
+	VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT*	pageableDeviceLocalMemoryFeatures	= nullptr;
 
 	m_coreFeatures2		= initVulkanStructure();
 	m_vulkan11Features	= initVulkanStructure();
@@ -103,6 +104,8 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 						shadingRateImageFeatures = reinterpret_cast<VkPhysicalDeviceShadingRateImageFeaturesNV*>(rawStructPtr);
 					else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_EXT)
 						fragmentDensityMapFeatures = reinterpret_cast<VkPhysicalDeviceFragmentDensityMapFeaturesEXT*>(rawStructPtr);
+					else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT)
+						pageableDeviceLocalMemoryFeatures = reinterpret_cast<VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT*>(rawStructPtr);
 
 					// add to chain
 					*nextPtr	= rawStructPtr;
@@ -161,6 +164,12 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 				fragmentDensityMapFeatures->fragmentDensityMap = false;
 		}
 	}
+
+	// Disable pageableDeviceLocalMemory by default since it may modify the behavior
+	// of device-local, and even host-local, memory allocations for all tests.
+	// pageableDeviceLocalMemory will use targetted testing on a custom device.
+	if (pageableDeviceLocalMemoryFeatures)
+		pageableDeviceLocalMemoryFeatures->pageableDeviceLocalMemory = false;
 }
 
 bool DeviceFeatures::verifyFeatureAddCriteria (const FeatureStructCreationData& item, const std::vector<VkExtensionProperties>& properties)

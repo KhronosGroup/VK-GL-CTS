@@ -102,5 +102,6 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_global_priority",
 	"VK_NV_mesh_shader",
 	"VK_KHR_portability_subset",
+	"VK_EXT_pageable_device_local_memory",
 };
 
