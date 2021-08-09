@@ -37,6 +37,8 @@
 #include "vkCmdUtil.hpp"
 #include "vkImageUtil.hpp"
 
+#include <cassert>
+
 namespace
 {
 
@@ -381,41 +383,36 @@ void SpvAsmComputeShaderCase::checkSupport(Context& context) const
 		context.requireDeviceFunctionality(ext);
 
 	// Core features
-	{
-		VulkanFeatures localRequired = m_shaderSpec.requestedVulkanFeatures;
+	// Check that we're not skipping tests needlessly based on things that don't affect compute.
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.fullDrawIndexUint32						== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.independentBlend						== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.geometryShader							== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.tessellationShader						== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.sampleRateShading						== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.dualSrcBlend							== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.logicOp									== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.multiDrawIndirect						== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.drawIndirectFirstInstance				== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.depthClamp								== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.depthBiasClamp							== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.fillModeNonSolid						== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.depthBounds								== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.wideLines								== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.largePoints								== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.alphaToOne								== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.multiViewport							== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.occlusionQueryPrecise					== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics			== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.fragmentStoresAndAtomics				== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.shaderTessellationAndGeometryPointSize	== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.shaderClipDistance						== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.shaderCullDistance						== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.sparseBinding							== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.variableMultisampleRate					== DE_FALSE);
 
-		// Skip check features not targeted to compute
-		// TODO: Is this really needed? Just don't have tests ask for features that they don't want.
-		localRequired.coreFeatures.fullDrawIndexUint32						= DE_FALSE;
-		localRequired.coreFeatures.independentBlend							= DE_FALSE;
-		localRequired.coreFeatures.geometryShader							= DE_FALSE;
-		localRequired.coreFeatures.tessellationShader						= DE_FALSE;
-		localRequired.coreFeatures.sampleRateShading							= DE_FALSE;
-		localRequired.coreFeatures.dualSrcBlend								= DE_FALSE;
-		localRequired.coreFeatures.logicOp									= DE_FALSE;
-		localRequired.coreFeatures.multiDrawIndirect							= DE_FALSE;
-		localRequired.coreFeatures.drawIndirectFirstInstance					= DE_FALSE;
-		localRequired.coreFeatures.depthClamp								= DE_FALSE;
-		localRequired.coreFeatures.depthBiasClamp							= DE_FALSE;
-		localRequired.coreFeatures.fillModeNonSolid							= DE_FALSE;
-		localRequired.coreFeatures.depthBounds								= DE_FALSE;
-		localRequired.coreFeatures.wideLines									= DE_FALSE;
-		localRequired.coreFeatures.largePoints								= DE_FALSE;
-		localRequired.coreFeatures.alphaToOne								= DE_FALSE;
-		localRequired.coreFeatures.multiViewport								= DE_FALSE;
-		localRequired.coreFeatures.occlusionQueryPrecise						= DE_FALSE;
-		localRequired.coreFeatures.vertexPipelineStoresAndAtomics			= DE_FALSE;
-		localRequired.coreFeatures.fragmentStoresAndAtomics					= DE_FALSE;
-		localRequired.coreFeatures.shaderTessellationAndGeometryPointSize	= DE_FALSE;
-		localRequired.coreFeatures.shaderClipDistance						= DE_FALSE;
-		localRequired.coreFeatures.shaderCullDistance						= DE_FALSE;
-		localRequired.coreFeatures.sparseBinding								= DE_FALSE;
-		localRequired.coreFeatures.variableMultisampleRate					= DE_FALSE;
-
-		const char* unsupportedFeature = DE_NULL;
-		if (!isVulkanFeaturesSupported(context, localRequired, &unsupportedFeature))
-			TCU_THROW(NotSupportedError, std::string("At least following requested feature is not supported: ") + unsupportedFeature);
-	}
+	const char* unsupportedFeature = DE_NULL;
+	if (!isVulkanFeaturesSupported(context, m_shaderSpec.requestedVulkanFeatures, &unsupportedFeature))
+		TCU_THROW(NotSupportedError, std::string("At least following requested feature is not supported: ") + unsupportedFeature);
 
 	// Extension features
 	if (m_shaderSpec.usesPhysStorageBuffer && !context.isBufferDeviceAddressSupported())

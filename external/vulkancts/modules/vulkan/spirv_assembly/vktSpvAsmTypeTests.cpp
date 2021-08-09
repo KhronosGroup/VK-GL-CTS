@@ -1631,9 +1631,13 @@ void SpvAsmTypeTests<T>::createStageTests (const char*			testName,
 	fragments["capability"]	= spirvCapabilities;
 
 	requiredFeaturesFromStrings(features, requiredFeatures);
-	computeResources.requestedVulkanFeatures = requiredFeatures;
 
 	createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, noExtensions, this, requiredFeatures);
+
+	computeResources.requestedVulkanFeatures = requiredFeatures;
+	computeResources.requestedVulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = false;
+	computeResources.requestedVulkanFeatures.coreFeatures.fragmentStoresAndAtomics = false;
+
 	createComputeTest(computeResources, computeShaderTemplate, fragments, *this, testName);
 }
 
