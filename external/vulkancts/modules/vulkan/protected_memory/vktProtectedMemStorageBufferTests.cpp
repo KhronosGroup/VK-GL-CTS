@@ -117,24 +117,25 @@ void static addBufferCopyCmd (const vk::DeviceInterface&	vk,
 							  deUint32						queueFamilyIndex,
 							  vk::VkBuffer					srcBuffer,
 							  vk::VkBuffer					dstBuffer,
-							  deUint32						copySize)
+							  deUint32						copySize,
+							  bool							dstFragment)
 {
 	const vk::VkBufferMemoryBarrier		dstWriteStartBarrier	=
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,		// VkStructureType		sType
 		DE_NULL,											// const void*			pNext
-		0,													// VkAccessFlags		srcAccessMask
+		vk::VK_ACCESS_HOST_WRITE_BIT,						// VkAccessFlags		srcAccessMask
 		vk::VK_ACCESS_SHADER_WRITE_BIT,						// VkAccessFlags		dstAccessMask
 		queueFamilyIndex,									// uint32_t				srcQueueFamilyIndex
 		queueFamilyIndex,									// uint32_t				dstQueueFamilyIndex
-		dstBuffer,											// VkBuffer				buffer
+		srcBuffer,											// VkBuffer				buffer
 		0u,													// VkDeviceSize			offset
 		VK_WHOLE_SIZE,										// VkDeviceSize			size
 	};
 
 	vk.cmdPipelineBarrier(cmdBuffer,
-						  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,	// srcStageMask
-						  vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,	// dstStageMask
+						  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, // srcStageMask
+						  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,	 // dstStageMask
 						  (vk::VkDependencyFlags)0,
 						  0, (const vk::VkMemoryBarrier*)DE_NULL,
 						  1, &dstWriteStartBarrier,
@@ -160,9 +161,11 @@ void static addBufferCopyCmd (const vk::DeviceInterface&	vk,
 		0u,													// VkDeviceSize			offset
 		VK_WHOLE_SIZE,										// VkDeviceSize			size
 	};
+
 	vk.cmdPipelineBarrier(cmdBuffer,
-						  vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,		// srcStageMask
-						  vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,	// dstStageMask
+						  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,			// srcStageMask
+						  dstFragment ? vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT :
+						  vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,	// dstStageMask
 						  (vk::VkDependencyFlags)0,
 						  0, (const vk::VkMemoryBarrier*)DE_NULL,
 						  1, &dstWriteEndBarrier,
@@ -452,7 +455,7 @@ tcu::TestStatus StorageBufferTestInstance<T>::executeFragmentTest(void)
 	if (m_testType == SSBO_READ || m_testType == SSBO_ATOMIC)
 	{
 		vk::VkBuffer targetBuffer = (m_testType == SSBO_ATOMIC) ? **testBuffer : **testBufferSource;
-		addBufferCopyCmd(vk, *cmdBuffer, queueFamilyIndex, **testUniform, targetBuffer, testUniformSize);
+		addBufferCopyCmd(vk, *cmdBuffer, queueFamilyIndex, **testUniform, targetBuffer, testUniformSize, true);
 	}
 
 	// Start image barrier
@@ -612,7 +615,6 @@ tcu::TestStatus StorageBufferTestInstance<T>::executeComputeTest(void)
 			.update(vk, device);
 	}
 
-
 	// Build and execute test
 	{
 		const vk::Unique<vk::VkFence>		fence				(vk::createFence(vk, device));
@@ -627,7 +629,7 @@ tcu::TestStatus StorageBufferTestInstance<T>::executeComputeTest(void)
 		if (m_testType == SSBO_READ || m_testType == SSBO_ATOMIC)
 		{
 			vk::VkBuffer targetBuffer = (m_testType == SSBO_ATOMIC) ? **testBuffer : **testBufferSource;
-			addBufferCopyCmd(vk, *cmdBuffer, queueFamilyIndex, **testUniform, targetBuffer, testUniformSize);
+			addBufferCopyCmd(vk, *cmdBuffer, queueFamilyIndex, **testUniform, targetBuffer, testUniformSize, false);
 		}
 
 		vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *SSBOPipeline);
