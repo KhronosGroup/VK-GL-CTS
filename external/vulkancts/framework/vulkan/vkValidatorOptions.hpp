@@ -46,7 +46,8 @@ struct SpirvValidatorOptions
 
 	enum Flags
 	{
-		FLAG_SPIRV_VALIDATOR_WORKGROUP_SCALAR_BLOCK_LAYOUT		= (1u<<0)
+		FLAG_SPIRV_VALIDATOR_WORKGROUP_SCALAR_BLOCK_LAYOUT		= (1u<<0),
+		FLAG_SPIRV_VALIDATOR_ALLOW_LOCALSIZEID					= (1u<<1)
 	};
 
 	SpirvValidatorOptions(deUint32 the_vulkan_version = VK_MAKE_VERSION(1, 0, 0), BlockLayoutRules the_layout = kDefaultBlockLayout, bool allowSpirv14 = false, deUint32 the_flags = 0)
