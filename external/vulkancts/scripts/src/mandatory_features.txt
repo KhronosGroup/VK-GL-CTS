@@ -153,3 +153,4 @@ VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT				FEATURES ( shaderImageFloat32At
 VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR			FEATURES ( shaderIntegerDotProduct )							REQUIREMENTS ( VK_KHR_shader_integer_dot_product )
 VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT		FEATURES ( primitiveTopologyListRestart )						REQUIREMENTS ( VK_EXT_primitive_topology_list_restart )
 VkPhysicalDeviceBorderColorSwizzleFeaturesEXT				FEATURES ( borderColorSwizzle )									REQUIREMENTS ( VK_EXT_border_color_swizzle )
+VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT		FEATURES ( pageableDeviceLocalMemory )							REQUIREMENTS ( VK_EXT_pageable_device_local_memory )

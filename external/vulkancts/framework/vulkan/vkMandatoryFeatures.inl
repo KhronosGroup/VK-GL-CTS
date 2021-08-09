@@ -257,6 +257,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceMutableDescriptorTypeFeaturesVALVE.pNext;
 	}
 
+	vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT physicalDevicePageableDeviceLocalMemoryFeaturesEXT;
+	deMemset(&physicalDevicePageableDeviceLocalMemoryFeaturesEXT, 0, sizeof(physicalDevicePageableDeviceLocalMemoryFeaturesEXT));
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_pageable_device_local_memory")) )
+	{
+		physicalDevicePageableDeviceLocalMemoryFeaturesEXT.sType = getStructureType<VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT>();
+		*nextPtr = &physicalDevicePageableDeviceLocalMemoryFeaturesEXT;
+		nextPtr  = &physicalDevicePageableDeviceLocalMemoryFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDevicePerformanceQueryFeaturesKHR physicalDevicePerformanceQueryFeaturesKHR;
 	deMemset(&physicalDevicePerformanceQueryFeaturesKHR, 0, sizeof(physicalDevicePerformanceQueryFeaturesKHR));
 
@@ -1968,6 +1978,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceBorderColorSwizzleFeaturesEXT.borderColorSwizzle == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature borderColorSwizzle not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_pageable_device_local_memory")) )
+	{
+		if ( physicalDevicePageableDeviceLocalMemoryFeaturesEXT.pageableDeviceLocalMemory == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature pageableDeviceLocalMemory not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
