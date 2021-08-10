@@ -145,10 +145,7 @@ inline deUint8 floatToU8 (float fv)
 	m &= 0x00ffffffu;
 	m |= 0x00800000u;
 	m  = (m << 8) - m;
-	m  = 0x00800000u + (m >> e);
-
-	if (e > 8)
-		m = e;
+	m  = (e > 8) ? e : (0x00800000u + (m >> e));
 
 	return (deUint8)(m>>24);
 }

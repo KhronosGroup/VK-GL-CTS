@@ -1343,7 +1343,9 @@ deUint32 packRGB999E5 (const tcu::Vec4& color)
 	float	gc		= deFloatClamp(color[1], 0.0f, maxVal);
 	float	bc		= deFloatClamp(color[2], 0.0f, maxVal);
 	float	maxc	= de::max(rc, de::max(gc, bc));
-	int		exps	= de::max(-eBias - 1, deFloorFloatToInt32(deFloatLog2(maxc))) + 1 + eBias;
+	float	log2c	= deFloatLog2(maxc);
+	deInt32	floorc	= deIsInf(log2c) ? std::numeric_limits<deInt32>::min() : deFloorFloatToInt32(log2c);
+	int		exps	= de::max(-eBias - 1, floorc) + 1 + eBias;
 	float	e		= deFloatPow(2.0f, (float)(exps-eBias-mBits));
 	int		maxs	= deFloorFloatToInt32(maxc / e + 0.5f);
 

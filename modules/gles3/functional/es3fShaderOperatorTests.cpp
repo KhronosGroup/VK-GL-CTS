@@ -350,8 +350,12 @@ static inline float getGLSLUintMaxAsFloat (const glw::Functions& gl, ShaderType 
 
 	TCU_CHECK(de::inBounds(range[0], 8, 32));
 
-	const int numBitsInType = range[0] + 1;
-	return (float)((1ull << numBitsInType) - 1);
+	const int	numBitsInType			= range[0] + 1;
+	const float	maxAsFloat				= static_cast<float>((1ull << numBitsInType) - 1);
+	const float	maxRepresentableAsFloat = floorf(nextafterf(maxAsFloat, 0));
+
+	// Not accurate for integers wider than 24 bits.
+	return numBitsInType > 24 ? maxRepresentableAsFloat : maxAsFloat;
 }
 
 // Float scalar that can be either constant or a symbol that can be evaluated later.
