@@ -1173,6 +1173,7 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 		clearColor.float32[2] = 1.0f;
 		clearColor.float32[3] = 1.0f;
 		vk.cmdClearColorImage(*m_cmdBuffer, m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1u, &range);
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
 	}
 
 	if (m_params.extensionUse == EXTENSION_USE_NONE)
