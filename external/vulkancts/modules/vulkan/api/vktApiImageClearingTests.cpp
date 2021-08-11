@@ -71,6 +71,12 @@ enum AllocationKind
 	ALLOCATION_KIND_LAST,
 };
 
+union Threshold {
+	Vec4	vec4;
+	IVec4	ivec4;
+	UVec4	uvec4;
+};
+
 de::MovePtr<Allocation> allocateBuffer (const InstanceInterface&	vki,
 										const DeviceInterface&		vkd,
 										const VkPhysicalDevice&		physDevice,
@@ -331,38 +337,31 @@ bool comparePixelToColorClearValue (const ConstPixelBufferAccess&	access,
 									int								y,
 									int								z,
 									const VkClearColorValue&		ref,
-									std::string&					stringResult)
+									std::string&					stringResult,
+									const Threshold&				threshold,
+									const BVec4&					channelMask,
+									const TextureChannelClass&		channelClass)
 {
-	const TextureFormat				format			= access.getFormat();
-	const TextureChannelClass		channelClass	= getTextureChannelClass(format.type);
-	const BVec4						channelMask		= getTextureFormatChannelMask(format);
-
 	switch (channelClass)
 	{
 		case TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 		case TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 		{
-			const IVec4	bitDepth	(getTextureFormatBitDepth(format));
 			const Vec4	resColor	(access.getPixel(x, y, z));
 			Vec4		refColor	(ref.float32[0],
 									 ref.float32[1],
 									 ref.float32[2],
 									 ref.float32[3]);
-			const int	modifier	= (channelClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT) ? 0 : 1;
-			const Vec4	threshold	(bitDepth[0] > 0 ? 1.0f / ((float)(1 << (bitDepth[0] - modifier)) - 1.0f) : 1.0f,
-									 bitDepth[1] > 0 ? 1.0f / ((float)(1 << (bitDepth[1] - modifier)) - 1.0f) : 1.0f,
-									 bitDepth[2] > 0 ? 1.0f / ((float)(1 << (bitDepth[2] - modifier)) - 1.0f) : 1.0f,
-									 bitDepth[3] > 0 ? 1.0f / ((float)(1 << (bitDepth[3] - modifier)) - 1.0f) : 1.0f);
 
 			if (isSRGB(access.getFormat()))
 				refColor	= linearToSRGB(refColor);
 
-			const bool	result		= !(anyNotEqual(logicalAnd(lessThanEqual(absDiff(resColor, refColor), threshold), channelMask), channelMask));
+			const bool	result		= !(anyNotEqual(logicalAnd(lessThanEqual(absDiff(resColor, refColor), threshold.vec4), channelMask), channelMask));
 
 			if (!result)
 			{
 				std::stringstream s;
-				s << "Ref:" << refColor << " Mask:" << channelMask << " Threshold:" << threshold << " Color:" << resColor;
+				s << "Ref:" << refColor << " Mask:" << channelMask << " Threshold:" << threshold.vec4 << " Color:" << resColor;
 				stringResult	= s.str();
 			}
 
@@ -376,14 +375,12 @@ bool comparePixelToColorClearValue (const ConstPixelBufferAccess&	access,
 									 ref.uint32[1],
 									 ref.uint32[2],
 									 ref.uint32[3]);
-			const UVec4	threshold	(1);
-
-			const bool	result		= !(anyNotEqual(logicalAnd(lessThanEqual(absDiff(resColor, refColor), threshold), channelMask), channelMask));
+			const bool	result		= !(anyNotEqual(logicalAnd(lessThanEqual(absDiff(resColor, refColor), threshold.uvec4), channelMask), channelMask));
 
 			if (!result)
 			{
 				std::stringstream s;
-				s << "Ref:" << refColor << " Mask:" << channelMask << " Threshold:" << threshold << " Color:" << resColor;
+				s << "Ref:" << refColor << " Mask:" << channelMask << " Threshold:" << threshold.uvec4 << " Color:" << resColor;
 				stringResult	= s.str();
 			}
 
@@ -397,14 +394,12 @@ bool comparePixelToColorClearValue (const ConstPixelBufferAccess&	access,
 									 ref.int32[1],
 									 ref.int32[2],
 									 ref.int32[3]);
-			const IVec4	threshold	(1);
-
-			const bool	result		= !(anyNotEqual(logicalAnd(lessThanEqual(absDiff(resColor, refColor), threshold), channelMask), channelMask));
+			const bool	result		= !(anyNotEqual(logicalAnd(lessThanEqual(absDiff(resColor, refColor), threshold.ivec4), channelMask), channelMask));
 
 			if (!result)
 			{
 				std::stringstream s;
-				s << "Ref:" << refColor << " Mask:" << channelMask << " Threshold:" << threshold << " Color:" << resColor;
+				s << "Ref:" << refColor << " Mask:" << channelMask << " Threshold:" << threshold.ivec4 << " Color:" << resColor;
 				stringResult	= s.str();
 			}
 
@@ -418,18 +413,15 @@ bool comparePixelToColorClearValue (const ConstPixelBufferAccess&	access,
 										 ref.float32[1],
 										 ref.float32[2],
 										 ref.float32[3]);
-			const IVec4	mantissaBits	(getTextureFormatMantissaBitDepth(format));
-			const IVec4	threshold		(10 * IVec4(1) << (23 - mantissaBits));
-
-			DE_ASSERT(allEqual(greaterThanEqual(threshold, IVec4(0)), BVec4(true)));
+			DE_ASSERT(allEqual(greaterThanEqual(threshold.ivec4, IVec4(0)), BVec4(true)));
 
 			for (int ndx = 0; ndx < 4; ndx++)
 			{
-				const bool result	= !(calcFloatDiff(resColor[ndx], refColor[ndx]) > threshold[ndx] && channelMask[ndx]);
+				const bool result	= !(calcFloatDiff(resColor[ndx], refColor[ndx]) > threshold.ivec4[ndx] && channelMask[ndx]);
 
 				if (!result)
 				{
-					float				floatThreshold	= Float32((deUint32)(threshold)[0]).asFloat();
+					float				floatThreshold	= Float32((deUint32)(threshold).ivec4[0]).asFloat();
 					Vec4				thresholdVec4	(floatThreshold,
 														 floatThreshold,
 														 floatThreshold,
@@ -1240,6 +1232,43 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 
 	if (!isDepthStencilFormat(m_params.imageFormat))
 	{
+		const TextureFormat			format			= mapVkFormat(m_params.imageFormat);
+		const TextureChannelClass	channelClass	= getTextureChannelClass(format.type);
+		const BVec4					channelMask		= getTextureFormatChannelMask(format);
+		Threshold					threshold		{Vec4 (0)};
+		switch (channelClass)
+		{
+			case TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+			case TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+			{
+				const IVec4	formatDepth	= getTextureFormatBitDepth(format);
+				const int	modifier	= (channelClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT) ? 0 : 1;
+				threshold.vec4			= {formatDepth[0] > 0 ? 1.0f / ((float)(1 << (formatDepth[0] - modifier)) - 1.0f) : 1.0f,
+										   formatDepth[1] > 0 ? 1.0f / ((float)(1 << (formatDepth[1] - modifier)) - 1.0f) : 1.0f,
+										   formatDepth[2] > 0 ? 1.0f / ((float)(1 << (formatDepth[2] - modifier)) - 1.0f) : 1.0f,
+										   formatDepth[3] > 0 ? 1.0f / ((float)(1 << (formatDepth[3] - modifier)) - 1.0f) : 1.0f};
+				break;
+			}
+			case TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+			{
+				threshold.uvec4 = UVec4(1U);
+				break;
+			}
+			case TEXTURECHANNELCLASS_SIGNED_INTEGER:
+			{
+				threshold.ivec4 = IVec4(1);
+				break;
+			}
+			case TEXTURECHANNELCLASS_FLOATING_POINT:
+			{
+				const IVec4& mantissaBits	= getTextureFormatMantissaBitDepth(format);
+				threshold.ivec4				= IVec4(10 * IVec4(1) << (23 - mantissaBits));
+				break;
+			}
+			default:
+				DE_FATAL("Invalid channel class");
+		}
+
 		for (deUint32 arrayLayer = 0; arrayLayer < m_params.imageLayerCount; ++arrayLayer)
 		{
 			de::MovePtr<TextureLevelPyramid>	image			= readImage(VK_IMAGE_ASPECT_COLOR_BIT, arrayLayer);
@@ -1248,9 +1277,10 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 
 			for (deUint32 mipLevel = 0; mipLevel < m_imageMipLevels; ++mipLevel)
 			{
-				const int					clearColorNdx	= ((mipLevel < m_thresholdMipLevel || m_params.isColorMultipleSubresourceRangeTest) ? 0 : 1);
-				const VkExtent3D			extent			= getMipLevelExtent(m_params.imageExtent, mipLevel);
-				const VkClearColorValue*	pExpectedColorValue = &(m_params.useSeparateExpectedClearValue ? m_params.expectedClearValue : m_params.clearValue)[clearColorNdx].color;
+				const int					clearColorNdx		= ((mipLevel < m_thresholdMipLevel || m_params.isColorMultipleSubresourceRangeTest) ? 0 : 1);
+				const VkExtent3D			extent				= getMipLevelExtent(m_params.imageExtent, mipLevel);
+				const VkClearColorValue*	pExpectedColorValue	= &(m_params.useSeparateExpectedClearValue ? m_params.expectedClearValue : m_params.clearValue)[clearColorNdx].color;
+				const auto&					pixelBufferAccess	= image->getLevel(mipLevel);
 
 				for (deUint32 z = 0; z < extent.depth;  ++z)
 				for (deUint32 y = 0; y < extent.height; ++y)
@@ -1271,7 +1301,7 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 							continue;
 						}
 					}
-					if (!comparePixelToColorClearValue(image->getLevel(mipLevel), x, y, z, *pColorValue, message))
+					if (!comparePixelToColorClearValue(pixelBufferAccess, x, y, z, *pColorValue, message, threshold, channelMask, channelClass))
 						return TestStatus::fail("Color value mismatch! " + message);
 				}
 			}
