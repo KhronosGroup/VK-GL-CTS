@@ -39,10 +39,14 @@
 #include "tcuTextureUtil.hpp"
 #include "tcuImageIO.hpp"
 #include "tcuImageCompare.hpp"
+#include "tcuMaybe.hpp"
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
 
 #include <string>
+#include <vector>
+#include <algorithm>
+#include <iterator>
 
 namespace vkt
 {
@@ -99,15 +103,16 @@ std::vector<VkDrmFormatModifierPropertiesEXT> getDrmFormatModifiers (const Insta
 	return drmFormatModifiers;
 }
 
-VkImageFormatProperties2 verifyHandleTypeForFormatModifier (const InstanceInterface&	vki,
-															  VkPhysicalDevice			physicalDevice,
-															  const VkFormat			format,
-															  const VkImageType			imageType,
-															  const VkImageUsageFlags	imageUsages,
-															  const VkExternalMemoryHandleTypeFlags handleType,
-															  const deUint64			drmFormatModifier)
+// Returns true if the image with the given parameters and modifiers supports the given handle type.
+bool verifyHandleTypeForFormatModifier (const InstanceInterface&				vki,
+									    VkPhysicalDevice						physicalDevice,
+									    const VkFormat							format,
+									    const VkImageType						imageType,
+									    const VkImageUsageFlags					imageUsages,
+									    const VkExternalMemoryHandleTypeFlags	handleType,
+									    const deUint64							drmFormatModifier)
 {
-	const VkPhysicalDeviceImageDrmFormatModifierInfoEXT	imageFormatModifierInfo	=
+	const VkPhysicalDeviceImageDrmFormatModifierInfoEXT imageFormatModifierInfo =
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_DRM_FORMAT_MODIFIER_INFO_EXT,
 		DE_NULL,
@@ -116,13 +121,15 @@ VkImageFormatProperties2 verifyHandleTypeForFormatModifier (const InstanceInterf
 		0,
 		DE_NULL,
 	};
+
 	const VkPhysicalDeviceExternalImageFormatInfo externalImageFormatInfo =
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO,
 		&imageFormatModifierInfo,
 		(VkExternalMemoryHandleTypeFlagBits)handleType,
 	};
-	const VkPhysicalDeviceImageFormatInfo2				imageFormatInfo			=
+
+	const VkPhysicalDeviceImageFormatInfo2 imageFormatInfo =
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
 		&externalImageFormatInfo,
@@ -132,25 +139,49 @@ VkImageFormatProperties2 verifyHandleTypeForFormatModifier (const InstanceInterf
 		imageUsages,
 		0,
 	};
-	VkExternalImageFormatProperties	externalImageProperties;
-	deMemset(&externalImageProperties, 0, sizeof(externalImageProperties));
-	externalImageProperties.sType = VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES;
-	externalImageProperties.sType = VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES;
 
-	VkImageFormatProperties2							imageProperties;
-	deMemset(&imageProperties, 0, sizeof(imageProperties));
-	imageProperties.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
-	imageProperties.pNext = &externalImageProperties;
+	VkExternalImageFormatProperties	externalImageProperties	= initVulkanStructure();
+	VkImageFormatProperties2		imageProperties			= initVulkanStructure(&externalImageProperties);
+
 	if (vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &imageFormatInfo, &imageProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
-	{
-		TCU_THROW(NotSupportedError, de::toString(format) + " does not support any DRM modifiers");
-	};
+		return false;
+
 	if ((externalImageProperties.externalMemoryProperties.compatibleHandleTypes & handleType) != handleType)
+		return false;
+
+	return true;
+}
+
+std::vector<deUint64> getExportImportCompatibleModifiers (Context& context, VkFormat format)
+{
+	const auto&				vki					= context.getInstanceInterface();
+	const auto				drmFormatModifiers	= getDrmFormatModifiers(vki, context.getPhysicalDevice(), format);
+	std::vector<deUint64>	compatibleModifiers;
+
+	if (drmFormatModifiers.empty())
+		return compatibleModifiers;
+
+	const VkFormatFeatureFlags testFeatures = (VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT);
+
+	for (const auto& modifierProps : drmFormatModifiers)
 	{
-		TCU_THROW(NotSupportedError, de::toString(format) + " does not support the expected memory handle type");
+		if ((modifierProps.drmFormatModifierTilingFeatures & testFeatures) != testFeatures)
+			continue;
+
+		const auto&	modifier	= modifierProps.drmFormatModifier;
+		const auto	supported	= verifyHandleTypeForFormatModifier(vki, context.getPhysicalDevice(), format,
+																	VK_IMAGE_TYPE_2D,
+																	(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
+																	VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
+																	modifier);
+
+		if (!supported)
+			continue;
+
+		compatibleModifiers.push_back(modifier);
 	}
 
-	return imageProperties;
+	return compatibleModifiers;
 }
 
 void checkExportImportExtensions (Context& context, VkFormat format)
@@ -179,29 +210,11 @@ void checkExportImportExtensions (Context& context, VkFormat format)
 
 	if (!context.isDeviceFunctionalitySupported("VK_KHR_external_memory_fd"))
 		TCU_THROW(NotSupportedError, "VK_KHR_external_memory_fd not supported");
+
 	checkModifiersSupported(context, format);
 
-	const InstanceInterface&						vki					= context.getInstanceInterface();
-	std::vector<VkDrmFormatModifierPropertiesEXT>	drmFormatModifiers	= getDrmFormatModifiers(vki, context.getPhysicalDevice(), format);
-
-	if (drmFormatModifiers.size() < 1)
-		TCU_THROW(NotSupportedError, de::toString(format) + " does not support any DRM modifiers");
-	bool												featureCompatible				= false;
-	for (deUint32 m = 0; m < drmFormatModifiers.size(); m++)
-	{
-		const VkFormatFeatureFlags							testFeatures		= VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
-		if ((drmFormatModifiers[m].drmFormatModifierTilingFeatures & testFeatures) != testFeatures)
-			continue;
-		verifyHandleTypeForFormatModifier(vki, context.getPhysicalDevice(), format,
-																			VK_IMAGE_TYPE_2D,
-																			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-																			VK_IMAGE_USAGE_SAMPLED_BIT,
-																			VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
-																			drmFormatModifiers[m].drmFormatModifier);
-
-		featureCompatible = true;
-	}
-	if (!featureCompatible)
+	const auto compatibleModifiers = getExportImportCompatibleModifiers(context, format);
+	if (compatibleModifiers.empty())
 		TCU_THROW(NotSupportedError, "Could not find a format modifier supporting required transfer features for " + de::toString(format));
 }
 
@@ -251,19 +264,21 @@ tcu::TestStatus listModifiersCase (Context& context, VkFormat format)
 	TestLog&										log					= context.getTestContext().getLog();
 	const InstanceInterface&						vki					= context.getInstanceInterface();
 	std::vector<VkDrmFormatModifierPropertiesEXT>	drmFormatModifiers	= getDrmFormatModifiers(vki, context.getPhysicalDevice(), format);
+	bool											noneCompatible		= true;
 
-	if (drmFormatModifiers.size() < 1)
+	if (drmFormatModifiers.empty())
 		TCU_THROW(NotSupportedError, de::toString(format) + " does not support any DRM modifiers");
 
 	for (deUint32 m = 0; m < drmFormatModifiers.size(); m++) {
 		VkImageFormatProperties2	imageProperties {};
-		deBool	isCompatible	= isModifierCompatibleWithImageProperties(vki, context.getPhysicalDevice(),
-																		  &format, 1u, VK_IMAGE_TYPE_2D,
-																		  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-																		  drmFormatModifiers[m].drmFormatModifier, imageProperties);
+		deBool						isCompatible	= isModifierCompatibleWithImageProperties(vki, context.getPhysicalDevice(),
+																							  &format, 1u, VK_IMAGE_TYPE_2D,
+																							  (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
+																							  drmFormatModifiers[m].drmFormatModifier, imageProperties);
 
 		if (!isCompatible)
-			TCU_THROW(NotSupportedError, de::toString(format) + " does not support any DRM modifiers");
+			continue;
+		noneCompatible = false;
 
 		TCU_CHECK(imageProperties.imageFormatProperties.maxExtent.width >= 1 && imageProperties.imageFormatProperties.maxExtent.height >= 1);
 		TCU_CHECK(imageProperties.imageFormatProperties.maxArrayLayers >= 1);
@@ -274,6 +289,9 @@ tcu::TestStatus listModifiersCase (Context& context, VkFormat format)
 			<< imageProperties
 			<< TestLog::EndMessage;
 	}
+
+	if (noneCompatible)
+		TCU_THROW(NotSupportedError, de::toString(format) + " does not support any DRM modifiers for the requested image features");
 
 	return tcu::TestStatus::pass("OK");
 }
@@ -306,14 +324,14 @@ Move<VkImage> createImageNoModifiers (const DeviceInterface&			vkd,
 	return createImage(vkd, device, &createInfo);
 }
 
-Move<VkImage> createImageWithDrmFormatModifiers (const DeviceInterface&			vkd,
-												 const VkDevice					device,
-												 const VkImageType				imageType,
-												 const VkImageUsageFlags		imageUsages,
-												 const VkExternalMemoryHandleTypeFlags		externalMemoryHandleTypeFlags,
-												 const std::vector<VkFormat>					formats,
-												 const UVec2&					size,
-												 const std::vector<deUint64>&	drmFormatModifiers)
+Move<VkImage> createImageWithDrmFormatModifiers (const DeviceInterface&					vkd,
+												 const VkDevice							device,
+												 const VkImageType						imageType,
+												 const VkImageUsageFlags				imageUsages,
+												 const VkExternalMemoryHandleTypeFlags	externalMemoryHandleTypeFlags,
+												 const std::vector<VkFormat>&			formats,
+												 const UVec2&							size,
+												 const std::vector<deUint64>&			drmFormatModifiers)
 {
 	const VkImageDrmFormatModifierListCreateInfoEXT	modifierListCreateInfo =
 	{
@@ -373,50 +391,44 @@ tcu::TestStatus createImageListModifiersCase (Context& context, const VkFormat f
 	const VkDevice									device				= context.getDevice();
 	std::vector<VkDrmFormatModifierPropertiesEXT>	drmFormatModifiers	= getDrmFormatModifiers(vki, context.getPhysicalDevice(), format);
 
-	if (drmFormatModifiers.size() < 1)
+	if (drmFormatModifiers.empty())
 		TCU_THROW(NotSupportedError, de::toString(format) + " does not support any DRM modifiers");
 
-	for (deUint32 modifierNdx = 0; modifierNdx < drmFormatModifiers.size(); modifierNdx++) {
-		VkImageDrmFormatModifierPropertiesEXT	properties;
-		std::vector<deUint64>					modifiers;
-		bool									found		= false;
+	// Get the list of modifiers supported for some specific image parameters.
+	std::vector<deUint64> modifiers;
 
-		deMemset(&properties, 0, sizeof(properties));
-		properties.sType = VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_PROPERTIES_EXT;
+	for (const auto& modProps : drmFormatModifiers)
+	{
+		VkImageFormatProperties2	imgFormatProperties	= initVulkanStructure();
+		const auto					isCompatible		= isModifierCompatibleWithImageProperties(vki, context.getPhysicalDevice(), &format, 1u, VK_IMAGE_TYPE_2D,
+																								  (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
+																								  modProps.drmFormatModifier, imgFormatProperties);
+		if (isCompatible)
+			modifiers.push_back(modProps.drmFormatModifier);
+	}
 
-		for (deUint32 m = 0; m <= modifierNdx; m++)
+	if (modifiers.empty())
+		TCU_THROW(NotSupportedError, de::toString(format) + " does not support any DRM modifiers for the requested image features");
+
+	// Test with lists of compatible modifiers of increasing lengths.
+	for (size_t len = 1u; len <= modifiers.size(); ++len)
+	{
+		std::vector<deUint64> creationModifiers;
+		creationModifiers.reserve(len);
+		std::copy_n(begin(modifiers), len, std::back_inserter(creationModifiers));
+
+		VkImageDrmFormatModifierPropertiesEXT	properties	= initVulkanStructure();
+
 		{
-			VkImageFormatProperties2 imgFormatProperties {};
-			deBool isCompatible	= isModifierCompatibleWithImageProperties(vki, context.getPhysicalDevice(), &format, 1u, VK_IMAGE_TYPE_2D,
-																		  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-																		  drmFormatModifiers[m].drmFormatModifier, imgFormatProperties);
-			if (isCompatible)
-				modifiers.push_back(drmFormatModifiers[m].drmFormatModifier);
-		}
-
-		if (modifiers.empty())
-			TCU_THROW(NotSupportedError, de::toString(format) + " does not support any DRM modifiers");
-
-		{
-			Move<VkImage>						image		(createImageWithDrmFormatModifiers(vkd, device, VK_IMAGE_TYPE_2D,
-																								 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-																								 VK_IMAGE_USAGE_SAMPLED_BIT,
-																								 0,
-																								 {format}, UVec2(64, 64), modifiers));
-
+			std::vector<VkFormat>	formats	(1u, format);
+			const auto				image	= createImageWithDrmFormatModifiers(vkd, device, VK_IMAGE_TYPE_2D,
+																				(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
+																				0, formats, UVec2(64, 64), creationModifiers);
 
 			VK_CHECK(vkd.getImageDrmFormatModifierPropertiesEXT(device, *image, &properties));
 		}
 
-		for (deUint32 m = 0; m < modifiers.size(); m++)
-		{
-			if (properties.drmFormatModifier == modifiers[m]) {
-				found = true;
-				break;
-			}
-		}
-
-		if (!found)
+		if (!de::contains(begin(creationModifiers), end(creationModifiers), properties.drmFormatModifier))
 			return tcu::TestStatus::fail("Image created with modifier not specified in the create list");
 	}
 
@@ -437,21 +449,24 @@ deUint32 chooseMemoryType(deUint32 bits)
 	return -1;
 }
 
-bool exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat format, const VkDrmFormatModifierPropertiesEXT& modifier)
+bool exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat format, deUint64 modifier)
 {
 	const InstanceInterface&						vki					= context.getInstanceInterface();
 	const DeviceInterface&							vkd					= context.getDeviceInterface();
 	const VkDevice									device				= context.getDevice();
 
 
-	verifyHandleTypeForFormatModifier(vki, context.getPhysicalDevice(), format,
-																		VK_IMAGE_TYPE_2D,
-																		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-																		VK_IMAGE_USAGE_SAMPLED_BIT,
-																		VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
-																		modifier.drmFormatModifier);
+	const auto supported = verifyHandleTypeForFormatModifier(vki, context.getPhysicalDevice(), format,
+															 VK_IMAGE_TYPE_2D,
+															 (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
+															 VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
+															 modifier);
+
+	if (!supported)
+		TCU_FAIL("Modifier " + de::toString(modifier) + " for format " + de::toString(format) + " expected to be compatible");
+
 	std::vector<deUint64>					modifiers;
-	modifiers.push_back(modifier.drmFormatModifier);
+	modifiers.push_back(modifier);
 
 
 	const UVec2									imageSize		(64, 64);
@@ -683,15 +698,14 @@ bool exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat f
 
 tcu::TestStatus exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat format)
 {
-	const InstanceInterface&						vki					= context.getInstanceInterface();
-	std::vector<VkDrmFormatModifierPropertiesEXT>	drmFormatModifiers	= getDrmFormatModifiers(vki, context.getPhysicalDevice(), format);
+	const auto compatibleModifiers = getExportImportCompatibleModifiers(context, format);
 
-	for (deUint32 m = 0; m < drmFormatModifiers.size(); m++)
+	if (compatibleModifiers.empty())
+		TCU_FAIL("Expected non-empty list of compatible modifiers for the given format");
+
+	for (const auto& modifier : compatibleModifiers)
 	{
-		const VkFormatFeatureFlags							testFeatures		= VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
-		if ((drmFormatModifiers[m].drmFormatModifierTilingFeatures & testFeatures) != testFeatures)
-			continue;
-		if (!exportImportMemoryExplicitModifiersCase(context, format, drmFormatModifiers[m]))
+		if (!exportImportMemoryExplicitModifiersCase(context, format, modifier))
 			return tcu::TestStatus::fail("Unexpected copy image result");
 	}
 

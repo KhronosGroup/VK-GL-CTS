@@ -418,7 +418,7 @@ bool compareWithFileImage (Context& context, const tcu::ConstPixelBufferAccess& 
 	tcu::ImageIO::loadPNG(referenceImage, context.getTestContext().getArchive(), fileName.c_str());
 
 	if (tcu::fuzzyCompare(context.getTestContext().getLog(), "ImageComparison", "Image Comparison",
-								referenceImage.getAccess(), resultImage, 0.001f, tcu::COMPARE_LOG_RESULT))
+								referenceImage.getAccess(), resultImage, 0.0015f, tcu::COMPARE_LOG_RESULT))
 		return tcu::intThresholdPositionDeviationCompare(context.getTestContext().getLog(), "ImageComparison", "Image Comparison",
 														referenceImage.getAccess(), resultImage, tcu::UVec4(1u, 1u, 1u, 1u), tcu::IVec3(2,2,2), false, tcu::COMPARE_LOG_RESULT);
 	else
