@@ -100,6 +100,7 @@ struct TestParams
 	std::vector<AttachmentParams>	attachments;
 	std::vector<SubpassParams>		subpasses;
 	RenderingType					renderingType;
+	VkFormat						depthStencilFormat;
 	bool							alphaBlend;
 };
 
@@ -158,6 +159,11 @@ deUint32 getFirstUsage (deUint32 attachmentIdx, const std::vector<SubpassParams>
 	return ATTACHMENT_USAGE_UNDEFINED;
 }
 
+std::string getFormatCaseName(VkFormat format)
+{
+	return de::toLower(de::toString(getFormatStr(format)).substr(10));
+}
+
 template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
 Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 									 VkDevice				vkDevice,
@@ -186,7 +192,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 
 		if (testParams.attachments[i].usage & ATTACHMENT_USAGE_DEPTH_STENCIL)
 		{
-			format = VK_FORMAT_D24_UNORM_S8_UINT;
+			format = testParams.depthStencilFormat;
 		}
 		else
 		{
@@ -385,6 +391,10 @@ void LoadStoreOpNoneTest::checkSupport (Context& ctx) const
 	// Check for renderpass2 extension if used.
 	if (m_testParams.renderingType == RENDERING_TYPE_RENDERPASS2)
 		ctx.requireDeviceFunctionality("VK_KHR_create_renderpass2");
+
+	// Check for dynamic_rendering extension if used
+	if (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+		ctx.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
 	ctx.requireDeviceFunctionality("VK_EXT_load_store_op_none");
 }
@@ -629,11 +639,20 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 
 		if (att.verifyInner || att.verifyOuter) usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 		if (att.init & ATTACHMENT_INIT_PRE) usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
 		if (att.usage & ATTACHMENT_USAGE_DEPTH_STENCIL)
 		{
-			format = VK_FORMAT_D24_UNORM_S8_UINT;
 			aspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
 			usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+			format = m_testParams.depthStencilFormat;
+
+			VkImageFormatProperties		properties;
+			VkResult result = m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
+				m_context.getPhysicalDevice(), format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, usage, 0u, &properties);
+			if (result != VK_SUCCESS)
+			{
+				TCU_THROW(NotSupportedError, "Depth-stencil format not supported");
+			}
 		}
 		else
 		{
@@ -1086,11 +1105,11 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 
 			if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_DEPTH)
 			{
-				textureLevelResult = pipeline::readDepthAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *attachmentImages[i], VK_FORMAT_D24_UNORM_S8_UINT, m_imageSize, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+				textureLevelResult = pipeline::readDepthAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *attachmentImages[i], m_testParams.depthStencilFormat, m_imageSize, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 			}
 			else if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_STENCIL)
 			{
-				textureLevelResult = pipeline::readStencilAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *attachmentImages[i], VK_FORMAT_D24_UNORM_S8_UINT, m_imageSize, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+				textureLevelResult = pipeline::readStencilAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *attachmentImages[i], m_testParams.depthStencilFormat, m_imageSize, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 			}
 			else
 			{
@@ -1381,106 +1400,224 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_load_op_none_store_op_dontcare", "", params));
 	}
 
-	// Preinitialize attachment 0 (color) to green and attachment 1 (stencil) to 128.
-	// Draw a red rectangle using stencil testing with compare op 'greater' and reference of 255. The stencil test
-	// will pass. This is followed by another draw with a blue rectangle using the same stencil settings. This time
-	// the stencil test fails and nothing is written.
-	// After the renderpass the red color should remain inside the render area of the color buffer.
-	// Store op 'store' for stencil buffer makes the written values undefined, but the pixels outside
-	// render area should still contain the original value of 128.
+	std::vector<VkFormat>	formats = { VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT };
+
+	for (deUint32 f = 0; f < formats.size(); ++f)
 	{
-		TestParams params;
-		params.alphaBlend = false;
-		params.renderingType = renderingType;
-		params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
-									  VK_ATTACHMENT_LOAD_OP_LOAD,
-									  VK_ATTACHMENT_STORE_OP_STORE,
-									  ATTACHMENT_INIT_PRE,
-									  true, red,
-									  true, green});
-		params.attachments.push_back({ATTACHMENT_USAGE_STENCIL,
-									  VK_ATTACHMENT_LOAD_OP_LOAD,
-									  VK_ATTACHMENT_STORE_OP_NONE_EXT,
-									  ATTACHMENT_INIT_PRE,
-									  false, stencilInit,
-									  true, stencilInit});
-		params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_STENCIL}}, 2u});
+		const std::string	formatName = getFormatCaseName(formats[f]);
 
-		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_load_op_load_store_op_none", "", params));
-	}
+		// Preinitialize attachment 0 (color) to green and attachment 1 (depth) to 0.5.
+		// Draw a red rectangle using depth 1.0 and depth op 'greater'. Depth test will pass and update
+		// depth buffer to 1.0.
+		// This is followed by another draw with a blue rectangle using the same depth of 1.0. This time
+		// the depth test fails and nothing is written.
+		// After the renderpass the red color should remain inside the render area of the color buffer.
+		// Store op 'store' for depth buffer makes the written values undefined, but the pixels outside
+		// render area should still contain the original value of 0.5.
+		{
+			TestParams params;
+			params.alphaBlend = false;
+			params.depthStencilFormat = formats[f];
+			params.renderingType = renderingType;
+			params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
+										  VK_ATTACHMENT_LOAD_OP_LOAD,
+										  VK_ATTACHMENT_STORE_OP_STORE,
+										  ATTACHMENT_INIT_PRE,
+										  true, red,
+										  true, green});
+			params.attachments.push_back({ATTACHMENT_USAGE_DEPTH,
+										  VK_ATTACHMENT_LOAD_OP_LOAD,
+										  VK_ATTACHMENT_STORE_OP_NONE_EXT,
+										  ATTACHMENT_INIT_PRE,
+										  false, depthInit,
+										  true, depthInit});
+			params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_DEPTH}}, 2u});
 
-	// Preinitialize stencil attachment to 128. Use a render pass with load and store ops none for the stencil, but
-	// disable stencil test which also disables stencil writes. The stencil attachment should have the original
-	// preinitialized value after the render pass.
-	{
-		TestParams params;
-		params.alphaBlend = false;
-		params.renderingType = renderingType;
-		params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
-									  VK_ATTACHMENT_LOAD_OP_LOAD,
-									  VK_ATTACHMENT_STORE_OP_STORE,
-									  ATTACHMENT_INIT_PRE,
-									  true, red,
-									  true, green});
-		params.attachments.push_back({ATTACHMENT_USAGE_STENCIL,
-									  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
-									  VK_ATTACHMENT_STORE_OP_NONE_EXT,
-									  ATTACHMENT_INIT_PRE,
-									  true, stencilInit,
-									  true, stencilInit});
-		params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_STENCIL | ATTACHMENT_USAGE_WRITE_OFF}}, 1u});
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_"+formatName+"_load_op_load_store_op_none", "", params));
+		}
 
-		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_load_op_none_store_op_none_write_off", "", params));
-	}
+		// Preinitialize depth attachment to 0.5. Use a render pass with load and store ops none for the depth, but
+		// disable depth test which also disables depth writes. The depth attachment should have the original
+		// preinitialized value after the render pass.
+		{
+			TestParams params;
+			params.alphaBlend = false;
+			params.depthStencilFormat = formats[f];
+			params.renderingType = renderingType;
+			params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
+										  VK_ATTACHMENT_LOAD_OP_LOAD,
+										  VK_ATTACHMENT_STORE_OP_STORE,
+										  ATTACHMENT_INIT_PRE,
+										  true, red,
+										  true, green});
+			params.attachments.push_back({ATTACHMENT_USAGE_DEPTH,
+										  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+										  VK_ATTACHMENT_STORE_OP_NONE_EXT,
+										  ATTACHMENT_INIT_PRE,
+										  true, depthInit,
+										  true, depthInit});
+			params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_DEPTH | ATTACHMENT_USAGE_WRITE_OFF}}, 1u});
 
-	// Preinitialize attachment 0 (color) to green and stencil buffer to 128. During the render pass initialize attachment 1 (stencil) to 64
-	// using cmdClearAttachments. Draw a red rectangle using stencil reference of 255 and stencil op 'greater'. Stencil test will pass and update
-	// stencil buffer to 255. After the renderpass the color buffer should have red inside the render area and stencil should have the
-	// shader updated value of 255.
-	{
-		TestParams params;
-		params.alphaBlend = false;
-		params.renderingType = renderingType;
-		params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
-									  VK_ATTACHMENT_LOAD_OP_LOAD,
-									  VK_ATTACHMENT_STORE_OP_STORE,
-									  ATTACHMENT_INIT_PRE,
-									  true, red,
-									  true, green});
-		params.attachments.push_back({ATTACHMENT_USAGE_STENCIL,
-									  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
-									  VK_ATTACHMENT_STORE_OP_STORE,
-									  ATTACHMENT_INIT_PRE | ATTACHMENT_INIT_CMD_CLEAR,
-									  true, stencilFull,
-									  true, stencilInit});
-		params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_STENCIL}}, 1u});
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_" + formatName + "_load_op_none_store_op_none_write_off", "", params));
+		}
 
-		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_load_op_none_store_op_store", "", params));
-	}
+		// Preinitialize attachment 0 (color) to green and depth buffer to 0.5. During the render pass initialize attachment 1 (depth) to 0.25
+		// using cmdClearAttachments. Draw a red rectangle using depth 1.0 and depth op 'greater'. Depth test will pass and update
+		// depth buffer to 1.0. After the renderpass the color buffer should have red inside the render area and depth should have the
+		// shader updated value of 1.0.
+		{
+			TestParams params;
+			params.alphaBlend = false;
+			params.depthStencilFormat = formats[f];
+			params.renderingType = renderingType;
+			params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
+										  VK_ATTACHMENT_LOAD_OP_LOAD,
+										  VK_ATTACHMENT_STORE_OP_STORE,
+										  ATTACHMENT_INIT_PRE,
+										  true, red,
+										  true, green});
+			params.attachments.push_back({ATTACHMENT_USAGE_DEPTH,
+										  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+										  VK_ATTACHMENT_STORE_OP_STORE,
+										  ATTACHMENT_INIT_PRE | ATTACHMENT_INIT_CMD_CLEAR,
+										  true, depthFull,
+										  true, depthInit});
+			params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_DEPTH}}, 1u});
 
-	// Preinitialize attachment 0 (color) to green and stencil buffer to 128. During the render pass initialize attachment 1 (stencil) to 64
-	// using cmdClearAttachments. Draw a red rectangle using stencil reference 255 and stencil op 'greater' which will pass.
-	// After the renderpass the color buffer should have red inside the render area. Stencil buffer contents inside render
-	// are is undefined because of store op 'don't care', but the outside should have the original value of 128.
-	{
-		TestParams params;
-		params.alphaBlend = false;
-		params.renderingType = renderingType;
-		params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
-									  VK_ATTACHMENT_LOAD_OP_LOAD,
-									  VK_ATTACHMENT_STORE_OP_STORE,
-									  ATTACHMENT_INIT_PRE,
-									  true, red,
-									  true, green});
-		params.attachments.push_back({ATTACHMENT_USAGE_STENCIL,
-									  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
-									  VK_ATTACHMENT_STORE_OP_DONT_CARE,
-									  ATTACHMENT_INIT_PRE | ATTACHMENT_INIT_CMD_CLEAR,
-									  false, stencilFull,
-									  true, stencilInit});
-		params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_STENCIL}}, 1u});
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_" + formatName + "_load_op_none_store_op_store", "", params));
+		}
 
-		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_load_op_none_store_op_dontcare", "", params));
+		// Preinitialize attachment 0 (color) to green and depth buffer to 0.5. During the render pass initialize attachment 1 (depth) to 0.25
+		// using cmdClearAttachments. Draw a red rectangle using depth 1.0 and depth op 'greater' which will pass.
+		// After the renderpass the color buffer should have red inside the render area. Depth buffer contents inside render
+		// are is undefined because of store op 'don't care', but the outside should have the original value of 0.5.
+		{
+			TestParams params;
+			params.alphaBlend = false;
+			params.depthStencilFormat = formats[f];
+			params.renderingType = renderingType;
+			params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
+										  VK_ATTACHMENT_LOAD_OP_LOAD,
+										  VK_ATTACHMENT_STORE_OP_STORE,
+										  ATTACHMENT_INIT_PRE,
+										  true, red,
+										  true, green});
+			params.attachments.push_back({ATTACHMENT_USAGE_DEPTH,
+										  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+										  VK_ATTACHMENT_STORE_OP_DONT_CARE,
+										  ATTACHMENT_INIT_PRE | ATTACHMENT_INIT_CMD_CLEAR,
+										  false, depthFull,
+										  true, depthInit});
+			params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_DEPTH}}, 1u});
+
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_" + formatName + "_load_op_none_store_op_dontcare", "", params));
+		}
+
+		// Preinitialize attachment 0 (color) to green and attachment 1 (stencil) to 128.
+		// Draw a red rectangle using stencil testing with compare op 'greater' and reference of 255. The stencil test
+		// will pass. This is followed by another draw with a blue rectangle using the same stencil settings. This time
+		// the stencil test fails and nothing is written.
+		// After the renderpass the red color should remain inside the render area of the color buffer.
+		// Store op 'store' for stencil buffer makes the written values undefined, but the pixels outside
+		// render area should still contain the original value of 128.
+		{
+			TestParams params;
+			params.alphaBlend = false;
+			params.depthStencilFormat = formats[f];
+			params.renderingType = renderingType;
+			params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
+										  VK_ATTACHMENT_LOAD_OP_LOAD,
+										  VK_ATTACHMENT_STORE_OP_STORE,
+										  ATTACHMENT_INIT_PRE,
+										  true, red,
+										  true, green});
+			params.attachments.push_back({ATTACHMENT_USAGE_STENCIL,
+										  VK_ATTACHMENT_LOAD_OP_LOAD,
+										  VK_ATTACHMENT_STORE_OP_NONE_EXT,
+										  ATTACHMENT_INIT_PRE,
+										  false, stencilInit,
+										  true, stencilInit});
+			params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_STENCIL}}, 2u});
+
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_load_store_op_none", "", params));
+		}
+
+		// Preinitialize stencil attachment to 128. Use a render pass with load and store ops none for the stencil, but
+		// disable stencil test which also disables stencil writes. The stencil attachment should have the original
+		// preinitialized value after the render pass.
+		{
+			TestParams params;
+			params.alphaBlend = false;
+			params.depthStencilFormat = formats[f];
+			params.renderingType = renderingType;
+			params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
+										  VK_ATTACHMENT_LOAD_OP_LOAD,
+										  VK_ATTACHMENT_STORE_OP_STORE,
+										  ATTACHMENT_INIT_PRE,
+										  true, red,
+										  true, green});
+			params.attachments.push_back({ATTACHMENT_USAGE_STENCIL,
+										  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+										  VK_ATTACHMENT_STORE_OP_NONE_EXT,
+										  ATTACHMENT_INIT_PRE,
+										  true, stencilInit,
+										  true, stencilInit});
+			params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_STENCIL | ATTACHMENT_USAGE_WRITE_OFF}}, 1u});
+
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_none_store_op_none_write_off", "", params));
+		}
+
+		// Preinitialize attachment 0 (color) to green and stencil buffer to 128. During the render pass initialize attachment 1 (stencil) to 64
+		// using cmdClearAttachments. Draw a red rectangle using stencil reference of 255 and stencil op 'greater'. Stencil test will pass and update
+		// stencil buffer to 255. After the renderpass the color buffer should have red inside the render area and stencil should have the
+		// shader updated value of 255.
+		{
+			TestParams params;
+			params.alphaBlend = false;
+			params.depthStencilFormat = formats[f];
+			params.renderingType = renderingType;
+			params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
+										  VK_ATTACHMENT_LOAD_OP_LOAD,
+										  VK_ATTACHMENT_STORE_OP_STORE,
+										  ATTACHMENT_INIT_PRE,
+										  true, red,
+										  true, green});
+			params.attachments.push_back({ATTACHMENT_USAGE_STENCIL,
+										  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+										  VK_ATTACHMENT_STORE_OP_STORE,
+										  ATTACHMENT_INIT_PRE | ATTACHMENT_INIT_CMD_CLEAR,
+										  true, stencilFull,
+										  true, stencilInit});
+			params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_STENCIL}}, 1u});
+
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_none_store_op_store", "", params));
+		}
+
+		// Preinitialize attachment 0 (color) to green and stencil buffer to 128. During the render pass initialize attachment 1 (stencil) to 64
+		// using cmdClearAttachments. Draw a red rectangle using stencil reference 255 and stencil op 'greater' which will pass.
+		// After the renderpass the color buffer should have red inside the render area. Stencil buffer contents inside render
+		// are is undefined because of store op 'don't care', but the outside should have the original value of 128.
+		{
+			TestParams params;
+			params.alphaBlend = false;
+			params.depthStencilFormat = formats[f];
+			params.renderingType = renderingType;
+			params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
+										  VK_ATTACHMENT_LOAD_OP_LOAD,
+										  VK_ATTACHMENT_STORE_OP_STORE,
+										  ATTACHMENT_INIT_PRE,
+										  true, red,
+										  true, green});
+			params.attachments.push_back({ATTACHMENT_USAGE_STENCIL,
+										  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+										  VK_ATTACHMENT_STORE_OP_DONT_CARE,
+										  ATTACHMENT_INIT_PRE | ATTACHMENT_INIT_CMD_CLEAR,
+										  false, stencilFull,
+										  true, stencilInit});
+			params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_STENCIL}}, 1u});
+
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_none_store_op_dontcare", "", params));
+		}
 	}
 
 	return opNoneTests.release();
