@@ -70,6 +70,52 @@ static void writeCaselistsToStdout (TestPackageRoot& root, TestContext& testCtx)
 	}
 }
 
+
+/*--------------------------------------------------------------------*//*!
+ * Verifies that amber capability requirements in the .amber files
+ * match with capabilities defined on the CTS C code.
+ *//*--------------------------------------------------------------------*/
+static void verifyAmberCapabilityCoherency (TestPackageRoot& root, TestContext& testCtx)
+{
+	DefaultHierarchyInflater			inflater(testCtx);
+	de::MovePtr<const CaseListFilter>	caseListFilter(testCtx.getCommandLine().createCaseListFilter(testCtx.getArchive()));
+	TestHierarchyIterator				iter(root, inflater, *caseListFilter);
+	int									count = 0;
+	int									errorCount = 0;
+
+	bool ok = true;
+
+	while (iter.getState() != TestHierarchyIterator::STATE_FINISHED)
+	{
+		iter.next();
+
+		while (iter.getNode()->getNodeType() != NODETYPE_PACKAGE)
+		{
+			if (iter.getState() == TestHierarchyIterator::STATE_ENTER_NODE &&
+				isTestNodeTypeExecutable(iter.getNode()->getNodeType()))
+			{
+				std::cout << iter.getNodePath() << "\n";
+				testCtx.getLog() << tcu::TestLog::Message << iter.getNodePath() << tcu::TestLog::EndMessage;
+				if (!iter.getNode()->validateRequirements())
+				{
+					ok = false;
+					errorCount++;
+				}
+				count++;
+			}
+			iter.next();
+		}
+
+		DE_ASSERT(iter.getState() == TestHierarchyIterator::STATE_LEAVE_NODE &&
+			iter.getNode()->getNodeType() == NODETYPE_PACKAGE);
+		iter.next();
+	}
+	std::cout << count << " amber tests, " << errorCount << " errors.\n";
+	if (!ok)
+		TCU_THROW(InternalError, "One or more CTS and Amber test requirements do not match; check log for details");
+
+}
+
 /*--------------------------------------------------------------------*//*!
  * \brief Construct test application
  *
@@ -120,6 +166,8 @@ App::App (Platform& platform, Archive& archive, TestLog& log, const CommandLine&
 			writeXmlCaselistsToFiles(*m_testRoot, *m_testCtx, cmdLine);
 		else if (runMode == RUNMODE_DUMP_TEXT_CASELIST)
 			writeTxtCaselistsToFiles(*m_testRoot, *m_testCtx, cmdLine);
+		else if (runMode == RUNMODE_VERIFY_AMBER_COHERENCY)
+			verifyAmberCapabilityCoherency(*m_testRoot, *m_testCtx);
 		else
 			DE_ASSERT(false);
 	}

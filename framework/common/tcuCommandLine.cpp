@@ -131,10 +131,11 @@ void registerOptions (de::cmdline::Parser& parser)
 	};
 	static const NamedValue<tcu::RunMode> s_runModes[] =
 	{
-		{ "execute",		RUNMODE_EXECUTE				},
-		{ "xml-caselist",	RUNMODE_DUMP_XML_CASELIST	},
-		{ "txt-caselist",	RUNMODE_DUMP_TEXT_CASELIST	},
-		{ "stdout-caselist",RUNMODE_DUMP_STDOUT_CASELIST}
+		{ "execute",		RUNMODE_EXECUTE				  },
+		{ "xml-caselist",	RUNMODE_DUMP_XML_CASELIST	  },
+		{ "txt-caselist",	RUNMODE_DUMP_TEXT_CASELIST	  },
+		{ "stdout-caselist",RUNMODE_DUMP_STDOUT_CASELIST  },
+		{ "amber-verify",   RUNMODE_VERIFY_AMBER_COHERENCY}
 	};
 	static const NamedValue<WindowVisibility> s_visibilites[] =
 	{
@@ -171,7 +172,7 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<CaseListResource>				(DE_NULL,	"deqp-caselist-resource",					"Read case list (in trie format) from given file located application's assets")
 		<< Option<StdinCaseList>				(DE_NULL,	"deqp-stdin-caselist",						"Read case list (in trie format) from stdin")
 		<< Option<LogFilename>					(DE_NULL,	"deqp-log-filename",						"Write test results to given file",					"TestResults.qpa")
-		<< Option<RunMode>						(DE_NULL,	"deqp-runmode",								"Execute tests, or write list of test cases into a file",
+		<< Option<RunMode>						(DE_NULL,	"deqp-runmode",								"Execute tests, write list of test cases into a file, or verify amber capability coherency",
 																																							s_runModes,			"execute")
 		<< Option<ExportFilenamePattern>		(DE_NULL,	"deqp-caselist-export-file",				"Set the target file name pattern for caselist export",					"${packageName}-cases.${typeExtension}")
 		<< Option<WatchDog>						(DE_NULL,	"deqp-watchdog",							"Enable test watchdog",								s_enableNames,		"disable")
@@ -1049,8 +1050,16 @@ CaseListFilter::CaseListFilter (void)
 
 CaseListFilter::CaseListFilter (const de::cmdline::CommandLine& cmdLine, const tcu::Archive& archive)
 	: m_caseTree	(DE_NULL)
-	, m_runnerType	(cmdLine.getOption<opt::RunnerType>())
 {
+	if (cmdLine.getOption<opt::RunMode>() == RUNMODE_VERIFY_AMBER_COHERENCY)
+	{
+		m_runnerType = RUNNERTYPE_AMBER;
+	}
+	else
+	{
+		m_runnerType = cmdLine.getOption<opt::RunnerType>();
+	}
+
 	if (cmdLine.hasOption<opt::CaseList>())
 	{
 		std::istringstream str(cmdLine.getOption<opt::CaseList>());

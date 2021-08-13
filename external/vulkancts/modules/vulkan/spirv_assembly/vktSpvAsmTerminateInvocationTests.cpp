@@ -116,12 +116,12 @@ tcu::TestCaseGroup* createTerminateInvocationGroup(tcu::TestContext& testCtx)
 	VarPtr.push_back("Features.fragmentStoresAndAtomics");
 
 	std::vector<std::string> Vote;
-	Vote.push_back("SubgroupProperties.supportedOperations.vote");
-	Vote.push_back("SubgroupProperties.supportedStages.fragment");
+	Vote.push_back("SubgroupSupportedOperations.vote");
+	Vote.push_back("SubgroupSupportedStages.fragment");
 
 	std::vector<std::string> Ballot;
-	Ballot.push_back("SubgroupProperties.supportedOperations.ballot");
-	Ballot.push_back("SubgroupProperties.supportedStages.fragment");
+	Ballot.push_back("SubgroupSupportedOperations.ballot");
+	Ballot.push_back("SubgroupSupportedStages.fragment");
 
 	CaseGroup group(data_data);
 	group.add("no_output_write", "no write to after calling terminate invocation", false);

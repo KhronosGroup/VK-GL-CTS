@@ -138,6 +138,10 @@ tcu::TestCaseGroup* createSpirvVersion1p4Group (tcu::TestContext& testCtx)
 	std::vector<std::string> Int16;
 	Int16.push_back("Features.shaderInt16");
 
+	std::vector<std::string> Int16_storage = Int16;
+	Int16_storage.push_back("VK_KHR_16bit_storage");
+	Int16_storage.push_back("Storage16BitFeatures.storageBuffer16BitAccess");
+
 	std::vector<std::string> Int64;
 	Int64.push_back("Features.shaderInt64");
 
@@ -159,7 +163,7 @@ tcu::TestCaseGroup* createSpirvVersion1p4Group (tcu::TestContext& testCtx)
 
 	group = CaseGroup(data_dir, "opptrdiff");
 	group.add("ssbo_comparisons_diff", "pointer diff within an SSBO", Varptr_ssbo);
-	group.add("variable_pointers_vars_ssbo_2_diff", "pointer diff in SSBO with full VariablePointers", Varptr_full);
+	group.add("variable_pointers_vars_ssbo_2_diff", "pointer diff in SSBO with full VariablePointers", Varptr_ssbo);
 	group.add("variable_pointers_vars_ssbo_diff", "pointer diff in SSBO, stored in private var", Varptr_ssbo);
 	group.add("variable_pointers_vars_wg_diff", "pointer diff in workgroup storage, stored in private var", Varptr_full);
 	group.add("wg_comparisons_diff", "pointer diff in workgroup storage", Varptr_full);
@@ -272,8 +276,8 @@ tcu::TestCaseGroup* createSpirvVersion1p4Group (tcu::TestContext& testCtx)
 	group.add("spec_const_opt_extend_251658240_64_bits","uconvert large to int64", Int64);
 	group.add("spec_const_opt_extend_61440", "uconvert large from int16", Int16);
 	group.add("spec_const_opt_truncate_16_64_bit", "uconvert from int64", Int64);
-	group.add("spec_const_opt_truncate_16", "uconvert small to int16", Int16);
-	group.add("spec_const_opt_truncate_983040", "uconvert large to int16", Int16);
+	group.add("spec_const_opt_truncate_16", "uconvert small to int16", Int16_storage);
+	group.add("spec_const_opt_truncate_983040", "uconvert large to int16", Int16_storage);
 	group.add("spec_const_opt_zero_extend_n4096", "uconvert negative from int16", Int16);
 	spirv1p4Tests->addChild(createTestGroup(testCtx, "uconvert", "SPIR-V 1.4 UConvert in OpSpecConstantOp", addTestsForAmberFiles, group));
 

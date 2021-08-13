@@ -1329,7 +1329,8 @@ cts_amber::AmberTestCase* CreateAmberTestCase(tcu::TestContext& testCtx,
 											  const char* name,
 											  const char* description,
 											  const std::string& filename,
-											  const std::vector<std::string>& requirements = std::vector<std::string>())
+											  const std::vector<std::string>& requirements = std::vector<std::string>(),
+											  bool zeroinit = false)
 {
 	vk::SpirVAsmBuildOptions asm_options(VK_MAKE_VERSION(1, 1, 0), vk::SPIRV_VERSION_1_4);
 	asm_options.supports_VK_KHR_spirv_1_4 = true;
@@ -1337,6 +1338,11 @@ cts_amber::AmberTestCase* CreateAmberTestCase(tcu::TestContext& testCtx,
 	cts_amber::AmberTestCase *t = cts_amber::createAmberTestCase(testCtx, name, description, "compute/workgroup_memory_explicit_layout", filename, requirements);
 	t->setSpirVAsmBuildOptions(asm_options);
 	t->addRequirement("VK_KHR_workgroup_memory_explicit_layout");
+	t->addRequirement("VK_KHR_spirv_1_4");
+	if (zeroinit)
+	{
+		t->addRequirement("VK_KHR_zero_initialize_workgroup_memory");
+	}
 	return t;
 }
 
@@ -1354,9 +1360,9 @@ void AddZeroInitializeExtensionTests(tcu::TestCaseGroup* group)
 {
 	tcu::TestContext& testCtx = group->getTestContext();
 
-	group->addChild(CreateAmberTestCase(testCtx, "block", "", "zero_ext_block.amber"));
-	group->addChild(CreateAmberTestCase(testCtx, "other_block", "", "zero_ext_other_block.amber"));
-	group->addChild(CreateAmberTestCase(testCtx, "block_with_offset", "", "zero_ext_block_with_offset.amber"));
+	group->addChild(CreateAmberTestCase(testCtx, "block", "", "zero_ext_block.amber", std::vector<std::string>(), true));
+	group->addChild(CreateAmberTestCase(testCtx, "other_block", "", "zero_ext_other_block.amber", std::vector<std::string>(), true));
+	group->addChild(CreateAmberTestCase(testCtx, "block_with_offset", "", "zero_ext_block_with_offset.amber", std::vector<std::string>(), true));
 }
 
 } // anonymous

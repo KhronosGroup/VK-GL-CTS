@@ -111,23 +111,23 @@ public:
 	};
 
 	// Methods.
-							TestNode		(TestContext& testCtx, TestNodeType nodeType, const char* name, const char* description);
-							TestNode		(TestContext& testCtx, TestNodeType nodeType, const char* name, const char* description, const std::vector<TestNode*>& children);
-	virtual					~TestNode		(void);
+							TestNode				(TestContext& testCtx, TestNodeType nodeType, const char* name, const char* description);
+							TestNode				(TestContext& testCtx, TestNodeType nodeType, const char* name, const char* description, const std::vector<TestNode*>& children);
+	virtual					~TestNode				(void);
 
-	TestNodeType			getNodeType		(void) const	{ return m_nodeType;			}
-	TestContext&			getTestContext	(void) const	{ return m_testCtx;				}
-	const char*				getName			(void) const	{ return m_name.c_str();		}
-	const char*				getDescription	(void) const	{ return m_description.c_str(); }
-	void					getChildren		(std::vector<TestNode*>& children);
-	void					addChild		(TestNode* node);
-	bool					empty			() const		{ return m_children.empty();	}
+	TestNodeType			getNodeType				(void) const	{ return m_nodeType;			}
+	TestContext&			getTestContext			(void) const	{ return m_testCtx;				}
+	const char*				getName					(void) const	{ return m_name.c_str();		}
+	const char*				getDescription			(void) const	{ return m_description.c_str(); }
+	void					getChildren				(std::vector<TestNode*>& children);
+	void					addChild				(TestNode* node);
+	bool					empty					() const		{ return m_children.empty();	}
 
-	virtual void			init			(void);
-	virtual void			deinit			(void);
-	virtual IterateResult	iterate			(void) = 0;
-	virtual TestRunnerType	getRunnerType	(void) const	{ return RUNNERTYPE_NONE;		}
-
+	virtual void			init					(void);
+	virtual void			deinit					(void);
+	virtual IterateResult	iterate					(void) = 0;
+	virtual TestRunnerType	getRunnerType			(void) const	{ return RUNNERTYPE_NONE;		}
+	virtual bool			validateRequirements	()				{ return true;					}
 protected:
 	TestContext&			m_testCtx;
 	std::string				m_name;
