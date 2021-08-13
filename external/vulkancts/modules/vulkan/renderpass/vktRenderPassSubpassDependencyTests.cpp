@@ -2356,8 +2356,7 @@ tcu::TestStatus SeparateChannelsTestInstance::iterateInternal (void)
 	const VkImageLayout									colorImageLayout		= isDSFormat ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
 	Move<VkImage>										dsImage;
 	de::MovePtr<Allocation>								dsImageAllocation;
-	Move<VkImageView>									outputImageView;
-	Move<VkImageView>									inputImageView;
+	Move<VkImageView>									imageView;
 	Move<VkImageView>									dsImageView;
 	Move<VkPipelineLayout>								pipelineLayout;
 	Move<VkPipeline>									renderPipeline;
@@ -2464,8 +2463,7 @@ tcu::TestStatus SeparateChannelsTestInstance::iterateInternal (void)
 			}
 		};
 
-		if (!isDSFormat) inputImageView	= createImageView(vkd, device, &imageViewCreateInfo);
-		outputImageView	= createImageView(vkd, device, &imageViewCreateInfo);
+		imageView = createImageView(vkd, device, &imageViewCreateInfo);
 	}
 
 	// Create depth/stencil image view
@@ -2514,7 +2512,7 @@ tcu::TestStatus SeparateChannelsTestInstance::iterateInternal (void)
 	// Update descriptor set information.
 	if (!isDSFormat)
 	{
-		VkDescriptorImageInfo descInputAttachment = makeDescriptorImageInfo(DE_NULL, *inputImageView, VK_IMAGE_LAYOUT_GENERAL);
+		VkDescriptorImageInfo descInputAttachment = makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
 		DescriptorSetUpdateBuilder()
 			.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &descInputAttachment)
@@ -2557,8 +2555,7 @@ tcu::TestStatus SeparateChannelsTestInstance::iterateInternal (void)
 		}
 		else
 		{
-			attachments.push_back(Attachment(colorFormat, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_LOAD, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL));
-			inputAttachmentReferences.push_back(AttachmentReference(1u, VK_IMAGE_LAYOUT_GENERAL, inputAttachmentAspectMask));
+			inputAttachmentReferences.push_back(AttachmentReference(0u, VK_IMAGE_LAYOUT_GENERAL, inputAttachmentAspectMask));
 		}
 
 		const vector<Subpass>		subpasses	(1, Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, inputAttachmentReferences, colorAttachmentReferences, vector<AttachmentReference>(), isDSFormat ? dsAttachmentReference : AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL), vector<deUint32>()));
@@ -2676,10 +2673,10 @@ tcu::TestStatus SeparateChannelsTestInstance::iterateInternal (void)
 
 	// Create framebuffer.
 	{
-		const VkImageView				attachments[]			=
+		const VkImageView				dsAttachments[]			=
 		{
-			*outputImageView,
-			isDSFormat ? *dsImageView : *inputImageView
+			*imageView,
+			*dsImageView
 		};
 
 		const VkFramebufferCreateInfo	framebufferCreateInfo	=
@@ -2688,8 +2685,8 @@ tcu::TestStatus SeparateChannelsTestInstance::iterateInternal (void)
 			DE_NULL,									// const void*				pNext
 			0u,											// VkFramebufferCreateFlags	flags
 			*renderPass,								// VkRenderPass				renderPass
-			2u,											// uint32_t					attachmentCount
-			attachments,								// const VkImageView*		pAttachments
+			isDSFormat ? 2u : 1u,						// uint32_t					attachmentCount
+			isDSFormat ? dsAttachments : &*imageView,	// const VkImageView*		pAttachments
 			m_width,									// uint32_t					width
 			m_height,									// uint32_t					height
 			1u											// uint32_t					layers
