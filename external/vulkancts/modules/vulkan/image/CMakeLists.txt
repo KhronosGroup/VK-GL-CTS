@@ -41,6 +41,8 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageMismatchedWriteOpTests.hpp
 	vktImageDepthStencilDescriptorTests.cpp
 	vktImageDepthStencilDescriptorTests.hpp
+	vktImageSampleCompressedTextureTests.cpp
+	vktImageSampleCompressedTextureTests.hpp
 	)
 
 set(DEQP_VK_IMAGE_LIBS
