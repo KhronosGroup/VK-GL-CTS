@@ -531,9 +531,6 @@ public:
 		deUint32				maxQueues		= 0;
 		std::vector<deUint32>	queueFamilies;
 
-		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
-			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
-
 		if (m_queues->totalQueueCount() < 2)
 			TCU_THROW(NotSupportedError, "Not enough queues");
 
@@ -837,6 +834,22 @@ public:
 		const std::vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
 		if (m_sharingMode == VK_SHARING_MODE_CONCURRENT && queueFamilyProperties.size() < 2)
 			TCU_THROW(NotSupportedError, "Concurrent requires more than 1 queue family");
+
+		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
+			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
+
+		if (m_resourceDesc.type == RESOURCE_TYPE_IMAGE)
+		{
+			VkImageFormatProperties	imageFormatProperties;
+			const deUint32			usage					= m_writeOp->getOutResourceUsageFlags() | m_readOp->getInResourceUsageFlags();
+			const VkResult			formatResult			= instance.getPhysicalDeviceImageFormatProperties(physicalDevice, m_resourceDesc.imageFormat, m_resourceDesc.imageType, VK_IMAGE_TILING_OPTIMAL, usage, (VkImageCreateFlags)0, &imageFormatProperties);
+
+			if (formatResult != VK_SUCCESS)
+				TCU_THROW(NotSupportedError, "Image format is not supported");
+
+			if ((imageFormatProperties.sampleCounts & m_resourceDesc.imageSamples) != m_resourceDesc.imageSamples)
+				TCU_THROW(NotSupportedError, "Requested sample count is not supported");
+		}
 	}
 
 	TestInstance* createInstance (Context& context) const
