@@ -2373,7 +2373,7 @@ def preprocessTopInclude(src, dir):
 			return src
 		incFileName = inc.string[inc.start(1):inc.end(1)]
 		patternIncNamed = r'#include\s+"' + incFileName + '"'
-		incBody = readFile(os.path.join(dir, incFileName)) if incFileName != 'vulkan/vk_platform.h' else ''
+		incBody = readFile(os.path.join(dir, incFileName)) if incFileName != 'vk_platform.h' else ''
 		incBodySanitized = re.sub(pattern, '', incBody)
 		bodyEndSanitized = re.sub(patternIncNamed, '', src[inc.end(0):])
 		src = src[0:inc.start(0)] + incBodySanitized + bodyEndSanitized
