@@ -130,6 +130,11 @@ static const FormatKey s_extColorBufferFloatFormats[] =
 	GL_RGBA32F, GL_RGBA16F, GL_R11F_G11F_B10F, GL_RG32F, GL_RG16F, GL_R32F, GL_R16F,
 };
 
+// GL_QCOM_render_shared_exponent
+static const FormatKey s_qcomRenderSharedExponent[] =
+{
+	GL_RGB9_E5,
+};
 // GL_OES_texture_stencil8
 static const FormatKey s_extOESTextureStencil8[] =
 {
@@ -168,6 +173,14 @@ static const FormatExtEntry s_es3ExtFormats[] =
 		"DEQP_gles31_core_compatible GL_EXT_render_snorm",
 		(deUint32)(REQUIRED_RENDERABLE | COLOR_RENDERABLE | TEXTURE_VALID | RENDERBUFFER_VALID),
 		GLS_ARRAY_RANGE(s_extRenderSnorm)
+		},
+
+	{
+		"GL_QCOM_render_shared_exponent",
+		// This is already texture-valid in ES3, the extension just adds RBO
+		// support to RGB9_E5 and make it color-renderable.
+		(deUint32)(REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID | TEXTURE_VALID),
+		GLS_ARRAY_RANGE(s_qcomRenderSharedExponent)
 	},
 };
 
