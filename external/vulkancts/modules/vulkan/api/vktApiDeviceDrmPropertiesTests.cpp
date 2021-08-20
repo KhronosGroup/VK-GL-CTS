@@ -98,7 +98,7 @@ public:
 		*pNumDevices = intGetDevices(DE_NULL, 0);
 
 		if (*pNumDevices < 0)
-			TCU_FAIL("Failed to query number of DRM devices in system");
+			TCU_THROW(NotSupportedError, "Failed to query number of DRM devices in system");
 
 		if (*pNumDevices == 0)
 			return DE_NULL;
@@ -177,11 +177,9 @@ void testFilesExist (const VkPhysicalDeviceDrmPropertiesEXT& deviceDrmProperties
 	libDrm.freeDevices(drmDevices, numDrmDevices);
 #endif // DEQP_SUPPORT_DRM
 
-	if (!primaryFound)
-		TCU_FAIL("DRM primary device file not found");
-
-	if (!renderFound)
-		TCU_FAIL("DRM render device file not found");
+	if (!primaryFound && !renderFound) {
+		TCU_THROW(NotSupportedError, "Nether DRM primary nor render device files were found");
+	}
 }
 
 static tcu::TestStatus testDeviceDrmProperties (Context& context, const TestType testType)

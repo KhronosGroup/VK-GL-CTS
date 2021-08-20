@@ -406,7 +406,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 						{
 							for (size_t ndx = 0; ndx < m_config.memoryAllocationCount; ndx++)
 							{
-								VkMemoryAllocateInfo alloc =
+								VkMemoryAllocateInfo	alloc	=
 								{
 									VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,				// sType
 									m_useDeviceGroups ? &m_allocFlagsInfo : DE_NULL,	// pNext
@@ -414,7 +414,15 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 									m_memoryTypeIndex									// memoryTypeIndex;
 								};
 
-								VK_CHECK(vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks*)DE_NULL, &memoryObjects[ndx]));
+								VkResult				res		= vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks*)DE_NULL, &memoryObjects[ndx]);
+
+								// Some implementations might have limitations on protected heap, and these limitations
+								// don't show up in Vulkan queries. Use a hard coded threshold after which out of memory
+								// is allowed.
+								if (res == VK_ERROR_OUT_OF_DEVICE_MEMORY && memoryType.propertyFlags & vk::VK_MEMORY_PROPERTY_PROTECTED_BIT && ndx > 80)
+									break;
+
+								VK_CHECK(res);
 
 								TCU_CHECK(!!memoryObjects[ndx]);
 							}
@@ -425,8 +433,11 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 								{
 									const VkDeviceMemory mem = memoryObjects[memoryObjects.size() - 1 - ndx];
 
-									vkd.freeMemory(device, mem, (const VkAllocationCallbacks*)DE_NULL);
-									memoryObjects[memoryObjects.size() - 1 - ndx] = (VkDeviceMemory)0;
+									if (!!mem)
+									{
+										vkd.freeMemory(device, mem, (const VkAllocationCallbacks *) DE_NULL);
+										memoryObjects[memoryObjects.size() - 1 - ndx] = (VkDeviceMemory) 0;
+									}
 								}
 							}
 							else
@@ -435,8 +446,11 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 								{
 									const VkDeviceMemory mem = memoryObjects[ndx];
 
-									vkd.freeMemory(device, mem, (const VkAllocationCallbacks*)DE_NULL);
-									memoryObjects[ndx] = (VkDeviceMemory)0;
+									if (!!mem)
+									{
+										vkd.freeMemory(device, mem, (const VkAllocationCallbacks *) DE_NULL);
+										memoryObjects[ndx] = (VkDeviceMemory) 0;
+									}
 								}
 							}
 						}
