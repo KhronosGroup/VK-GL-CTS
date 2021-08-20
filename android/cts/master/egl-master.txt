@@ -1049,6 +1049,7 @@ dEQP-EGL.functional.image.create.gles2_android_native_rgb10a2_read_pixels
 dEQP-EGL.functional.image.create.gles2_android_native_rgba16f_texture
 dEQP-EGL.functional.image.create.gles2_android_native_rgba16f_read_pixels
 dEQP-EGL.functional.image.create.gles2_android_native_s8_stencil_buffer
+dEQP-EGL.functional.image.create.gles3_android_native_yuv420_yuv_texture
 dEQP-EGL.functional.image.create.gles3_android_native_array_rgba4_texture_array
 dEQP-EGL.functional.image.create.gles3_android_native_array_rgb5_a1_texture_array
 dEQP-EGL.functional.image.create.gles3_android_native_array_rgb565_texture_array
