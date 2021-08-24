@@ -1321,11 +1321,11 @@ glw::GLenum TextureSizeCase::getGLTextureTarget() const
 {
 	switch (m_textureSpec.type)
 	{
-		case TEXTURETYPE_2D:		return GL_TEXTURE_2D;		break;
-		case TEXTURETYPE_CUBE_MAP:	return GL_TEXTURE_CUBE_MAP;	break;
-		case TEXTURETYPE_2D_ARRAY:	return GL_TEXTURE_2D_ARRAY;	break;
-		case TEXTURETYPE_3D:		return GL_TEXTURE_3D;		break;
-		default:					DE_ASSERT(DE_FALSE);		break;
+		case TEXTURETYPE_2D:		return GL_TEXTURE_2D;
+		case TEXTURETYPE_CUBE_MAP:	return GL_TEXTURE_CUBE_MAP;
+		case TEXTURETYPE_2D_ARRAY:	return GL_TEXTURE_2D_ARRAY;
+		case TEXTURETYPE_3D:		return GL_TEXTURE_3D;
+		default:					DE_ASSERT(DE_FALSE);
 	}
 	return 0;
 }

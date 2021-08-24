@@ -690,8 +690,6 @@ const char* MultiTextureSamplerTest::selectFragmentShader (GLenum target)
 			"\t${FRAG_COLOR} = vec4(0.75, 0.75, 0.75, 1.0) * (texture(u_sampler1, v_texCoord) + texture(u_sampler2, v_texCoord));\n"
 			"}";
 
-			break;
-
 		case GL_TEXTURE_3D:
 			return
 			"${FRAG_HDR}"

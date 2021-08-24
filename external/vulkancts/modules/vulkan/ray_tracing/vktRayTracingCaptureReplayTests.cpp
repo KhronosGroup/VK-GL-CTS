@@ -466,7 +466,6 @@ void TestShaderBindingTablesConfiguration::initShaderBindingTables (de::MovePtr<
 			break;
 		default:
 			TCU_THROW(InternalError, "Wrong test type");
-			break;
 		}
 	}
 }

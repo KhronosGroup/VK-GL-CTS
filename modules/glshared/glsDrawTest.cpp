@@ -550,52 +550,40 @@ float GLValue::toFloat (void) const
 	{
 		case DrawTestSpec::INPUTTYPE_FLOAT:
 			return fl.getValue();
-			break;
 
 		case DrawTestSpec::INPUTTYPE_BYTE:
 			return b.getValue();
-			break;
 
 		case DrawTestSpec::INPUTTYPE_UNSIGNED_BYTE:
 			return ub.getValue();
-			break;
 
 		case DrawTestSpec::INPUTTYPE_SHORT:
 			return s.getValue();
-			break;
 
 		case DrawTestSpec::INPUTTYPE_UNSIGNED_SHORT:
 			return us.getValue();
-			break;
 
 		case DrawTestSpec::INPUTTYPE_FIXED:
 		{
 			int maxValue = 65536;
 			return (float)(double(2 * fi.getValue() + 1) / (maxValue - 1));
-
-			break;
 		}
 
 		case DrawTestSpec::INPUTTYPE_UNSIGNED_INT:
 			return (float)ui.getValue();
-			break;
 
 		case DrawTestSpec::INPUTTYPE_INT:
 			return (float)i.getValue();
-			break;
 
 		case DrawTestSpec::INPUTTYPE_HALF:
 			return h.to<float>();
-			break;
 
 		case DrawTestSpec::INPUTTYPE_DOUBLE:
 			return d.to<float>();
-			break;
 
 		default:
 			DE_ASSERT(false);
 			return 0.0f;
-			break;
 	}
 }
 

@@ -339,7 +339,7 @@ void setUniformValue (sglr::Context& ctx, int location, rsg::ConstValueAccess va
 				case 2:		ctx.uniform2fv(location, 1, (float*)value.value().getValuePtr());	break;
 				case 3:		ctx.uniform3fv(location, 1, (float*)value.value().getValuePtr());	break;
 				case 4:		ctx.uniform4fv(location, 1, (float*)value.value().getValuePtr());	break;
-				default:	TCU_FAIL("Unsupported type");										break;
+				default:	TCU_FAIL("Unsupported type");
 			}
 			break;
 
@@ -353,7 +353,7 @@ void setUniformValue (sglr::Context& ctx, int location, rsg::ConstValueAccess va
 				case 2:		ctx.uniform2iv(location, 1, (int*)value.value().getValuePtr());		break;
 				case 3:		ctx.uniform3iv(location, 1, (int*)value.value().getValuePtr());		break;
 				case 4:		ctx.uniform4iv(location, 1, (int*)value.value().getValuePtr());		break;
-				default:	TCU_FAIL("Unsupported type");										break;
+				default:	TCU_FAIL("Unsupported type");
 			}
 			break;
 

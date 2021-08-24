@@ -1319,7 +1319,6 @@ const GLchar* Utils::programInterfaceToStr(glw::GLenum program_interface)
 		break;
 	default:
 		TCU_FAIL("Not implemented");
-		break;
 	}
 
 	return string;
@@ -1384,7 +1383,6 @@ const GLchar* Utils::pnameToStr(glw::GLenum pname)
 		break;
 	default:
 		TCU_FAIL("Not implemented");
-		break;
 	}
 
 	return string;

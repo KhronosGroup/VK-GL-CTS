@@ -86,23 +86,18 @@ std::string stringifyDescriptorUpdateMethod(DescriptorUpdateMethod method)
 	{
 		case DESCRIPTOR_UPDATE_METHOD_NORMAL:
 			return "";
-			break;
 
 		case DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE:
 			return "with_template";
-			break;
 
 		case DESCRIPTOR_UPDATE_METHOD_WITH_PUSH:
 			return "with_push";
-			break;
 
 		case DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE:
 			return "with_push_template";
-			break;
 
 		default:
 			return "N/A";
-			break;
 	}
 }
 

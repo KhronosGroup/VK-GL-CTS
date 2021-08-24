@@ -2217,7 +2217,6 @@ std::string CommonDescriptorInstance::getShaderAsm					(VkShaderStageFlagBits			
 					break;
 				default:
 					TCU_THROW(InternalError, "Unexpected descriptor type");
-					break;
 			}
 			break;
 		case VK_SHADER_STAGE_FRAGMENT_BIT:
@@ -2654,7 +2653,6 @@ std::string CommonDescriptorInstance::getShaderAsm					(VkShaderStageFlagBits			
 					break;
 				default:
 					TCU_THROW(InternalError, "Unexpected descriptor type");
-					break;
 			}
 		    break;
 		case VK_SHADER_STAGE_COMPUTE_BIT:
@@ -2734,12 +2732,10 @@ std::string CommonDescriptorInstance::getShaderAsm					(VkShaderStageFlagBits			
 					break;
 				default:
 					TCU_THROW(InternalError, "Unexpected descriptor type");
-					break;
 			}
 			break;
 		default:
 			TCU_THROW(InternalError, "Unexpected stage");
-			break;
 	}
 
 	return s.str();

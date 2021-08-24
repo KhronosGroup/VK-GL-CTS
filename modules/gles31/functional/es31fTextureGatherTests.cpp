@@ -1085,18 +1085,15 @@ IVec2 TextureGatherCase::getOffsetRange (void) const
 	{
 		case OFFSETSIZE_NONE:
 			return IVec2(0);
-			break;
 
 		case OFFSETSIZE_MINIMUM_REQUIRED:
 			// \note Defined by spec.
 			return IVec2(SPEC_MAX_MIN_OFFSET,
 						 SPEC_MIN_MAX_OFFSET);
-			break;
 
 		case OFFSETSIZE_IMPLEMENTATION_MAXIMUM:
 			return IVec2(m_context.getContextInfo().getInt(GL_MIN_PROGRAM_TEXTURE_GATHER_OFFSET),
 						 m_context.getContextInfo().getInt(GL_MAX_PROGRAM_TEXTURE_GATHER_OFFSET));
-			break;
 
 		default:
 			DE_ASSERT(false);

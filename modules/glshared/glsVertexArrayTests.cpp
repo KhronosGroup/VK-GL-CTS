@@ -1255,52 +1255,40 @@ float GLValue::toFloat (void) const
 	{
 		case Array::INPUTTYPE_FLOAT:
 			return fl.getValue();
-			break;
 
 		case Array::INPUTTYPE_BYTE:
 			return b.getValue();
-			break;
 
 		case Array::INPUTTYPE_UNSIGNED_BYTE:
 			return ub.getValue();
-			break;
 
 		case Array::INPUTTYPE_SHORT:
 			return s.getValue();
-			break;
 
 		case Array::INPUTTYPE_UNSIGNED_SHORT:
 			return us.getValue();
-			break;
 
 		case Array::INPUTTYPE_FIXED:
 		{
 			int maxValue = 65536;
 			return (float)(double(2 * fi.getValue() + 1) / (maxValue - 1));
-
-			break;
 		}
 
 		case Array::INPUTTYPE_UNSIGNED_INT:
 			return (float)ui.getValue();
-			break;
 
 		case Array::INPUTTYPE_INT:
 			return (float)i.getValue();
-			break;
 
 		case Array::INPUTTYPE_HALF:
 			return h.to<float>();
-			break;
 
 		case Array::INPUTTYPE_DOUBLE:
 			return (float)d.getValue();
-			break;
 
 		default:
 			DE_ASSERT(false);
 			return 0.0f;
-			break;
 	}
 }
 

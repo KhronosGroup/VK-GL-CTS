@@ -782,7 +782,7 @@ tcu::TestStatus testLargePoints (Context& context)
 		{
 			case VK_POINT_CLIPPING_BEHAVIOR_ALL_CLIP_PLANES:		pointClippingOutside = true;				break;
 			case VK_POINT_CLIPPING_BEHAVIOR_USER_CLIP_PLANES_ONLY:	pointClippingOutside = false;				break;
-			case invalidClippingBehavior:							TCU_FAIL("Clipping behavior read failure");	break;
+			case invalidClippingBehavior:							TCU_FAIL("Clipping behavior read failure");	// Does not fall through
 			default:
 			{
 				TCU_FAIL("Unexpected clipping behavior reported");

@@ -382,7 +382,7 @@ void setUniformValue (int location, rsg::ConstValueAccess value)
 				case 2:		glUniform2fv(location, 1, (float*)value.value().getValuePtr());		break;
 				case 3:		glUniform3fv(location, 1, (float*)value.value().getValuePtr());		break;
 				case 4:		glUniform4fv(location, 1, (float*)value.value().getValuePtr());		break;
-				default:	TCU_FAIL("Unsupported type");										break;
+				default:	TCU_FAIL("Unsupported type");
 			}
 			break;
 
@@ -396,7 +396,7 @@ void setUniformValue (int location, rsg::ConstValueAccess value)
 				case 2:		glUniform2iv(location, 1, (int*)value.value().getValuePtr());		break;
 				case 3:		glUniform3iv(location, 1, (int*)value.value().getValuePtr());		break;
 				case 4:		glUniform4iv(location, 1, (int*)value.value().getValuePtr());		break;
-				default:	TCU_FAIL("Unsupported type");										break;
+				default:	TCU_FAIL("Unsupported type");
 			}
 			break;
 

@@ -2519,16 +2519,12 @@ deUint32 getResultBinding (const VkShaderStageFlagBits shaderStage)
 	{
 		case VK_SHADER_STAGE_VERTEX_BIT:
 			return 0u;
-			break;
 		case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
 			return 1u;
-			break;
 		case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
 			return 2u;
-			break;
 		case VK_SHADER_STAGE_GEOMETRY_BIT:
 			return 3u;
-			break;
 		default:
 			DE_ASSERT(0);
 			return -1;

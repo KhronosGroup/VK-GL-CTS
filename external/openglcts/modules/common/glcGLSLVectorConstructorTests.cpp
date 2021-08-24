@@ -474,7 +474,6 @@ GLSLVectorConstructorTestCase::IterateResult GLSLVectorConstructorTestCase::iter
 			return STOP;
 		default:
 			TCU_FAIL("Shader compilation failed:\nVertex shader:\n" + m_vertexShader + "\nFragment shader:\n" + m_fragmentShader);
-			break;
 		}
 	}
 

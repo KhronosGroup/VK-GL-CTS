@@ -7849,14 +7849,11 @@ private:
 		case GL_TEXTURE_2D_ARRAY:
 		case GL_TEXTURE_3D:
 			return 1;
-			break;
 		case GL_TEXTURE_CUBE_MAP:
 		case GL_TEXTURE_CUBE_MAP_ARRAY:
 			return 6;
-			break;
 		default:
 			throw tcu::InternalError("Not supported texture type", "", __FILE__, __LINE__);
-			break;
 		}
 	}
 

@@ -1234,12 +1234,10 @@ bool Renderer::isFramebufferAttachmentSRGB (const deUint32 targetType, const deU
 		case GL_SRGB:
 		{
 			return true;
-			break;
 		}
 		case GL_LINEAR:
 		{
 			return false;
-			break;
 		}
 		default:
 		{

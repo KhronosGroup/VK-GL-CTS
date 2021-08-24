@@ -1997,7 +1997,6 @@ std::string getTypeSpirv(const glu::DataType type, const bool packFloat16Bit = f
 	default:
 		DE_ASSERT(0);
 		return "";
-		break;
 	}
 }
 
@@ -2051,7 +2050,6 @@ std::string scalarComparison(const std::string operation, const int operationNdx
 	default:
 		DE_ASSERT(0);
 		return "";
-		break;
 	}
 
 	src << "\n"

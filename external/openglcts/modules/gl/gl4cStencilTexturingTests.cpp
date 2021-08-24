@@ -960,7 +960,6 @@ GLuint FunctionalTest::prepareSourceTexture(GLenum internal_format, bool is_sten
 		break;
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 
 	/* Create texture */
@@ -1025,7 +1024,6 @@ void FunctionalTest::prepareSourceTextureData(GLenum internal_format, std::vecto
 		break;
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 
 	line_size	= pixel_size * m_width;
@@ -1067,7 +1065,6 @@ void FunctionalTest::prepareSourceTextureData(GLenum internal_format, std::vecto
 				break;
 			default:
 				TCU_FAIL("Invalid value");
-				break;
 			}
 		}
 	}

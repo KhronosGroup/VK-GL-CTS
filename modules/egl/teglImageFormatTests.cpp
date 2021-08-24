@@ -1043,7 +1043,6 @@ bool GLESImageApi::RenderReadPixelsRenderbuffer::invokeGLES (GLESImageApi& api, 
 		default:
 			// Skip, not in the list of allowed render buffer formats for GLES.
 			throw tcu::NotSupportedError("Image format not allowed for glReadPixels.");
-			break;
 	}
 
 	const glw::Functions&	gl				= api.m_gl;

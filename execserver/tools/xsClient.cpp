@@ -241,7 +241,6 @@ void Client::run (void)
 
 			default:
 				XS_FAIL("Unknown message");
-				break;
 		}
 	}
 

@@ -2206,8 +2206,8 @@ static inline ShaderBodyTextFunc getShaderBodyTextFunc (const TestType testType)
 {
 	switch (testType)
 	{
-		case TEST_TYPE_NO_MISS:		return getShaderBodyText;	break;
-		case TEST_TYPE_SINGLE_HIT:	return getShaderBodyText;	break;
+		case TEST_TYPE_NO_MISS:		return getShaderBodyText;
+		case TEST_TYPE_SINGLE_HIT:	return getShaderBodyText;
 		default:					TCU_THROW(InternalError, "Unknown test type");
 	}
 }

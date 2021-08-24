@@ -1431,7 +1431,6 @@ bool validateResultImage (const TestTexture&					texture,
 			UniquePtr<tcu::TextureCubeArrayView>	texView(getTextureCubeArrayView(texture, subresource, levels));
 
 			return validateResultImage(*texView, sampler, componentMapping, coordAccess, lodBounds, lookupPrecision, lookupScale, lookupBias, resultAccess, errorAccess);
-			break;
 		}
 
 		case VK_IMAGE_VIEW_TYPE_3D:

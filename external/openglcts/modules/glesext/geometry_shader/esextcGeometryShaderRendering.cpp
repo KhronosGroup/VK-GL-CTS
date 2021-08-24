@@ -1971,8 +1971,6 @@ void GeometryShaderRenderingPointsCase::verify(_draw_call_type drawcall_type, un
 	default:
 	{
 		TCU_FAIL("Unsupported output layout qualifier requested.");
-
-		break;
 	}
 	} /* switch(m_output_type) */
 }

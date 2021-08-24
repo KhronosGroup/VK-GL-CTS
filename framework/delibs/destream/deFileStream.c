@@ -44,23 +44,19 @@ static deStreamResult fileIOStream_read (deStreamData* stream, void* buf, deInt3
 	{
 		case  DE_FILERESULT_SUCCESS:
 			return DE_STREAMRESULT_SUCCESS;
-			break;
 
 		case DE_FILERESULT_ERROR:
 			fileStream->error	= "deFile: DE_FILERESULT_ERROR";
 			fileStream->status	= DE_STREAMSTATUS_ERROR;
 			return DE_STREAMRESULT_ERROR;
-			break;
 
 		case DE_FILERESULT_END_OF_FILE:
 			return DE_STREAMRESULT_END_OF_STREAM;
-			break;
 
 		default:
 			fileStream->error	= "Uknown: DE_FILERESULT";
 			fileStream->status	= DE_STREAMSTATUS_ERROR;
 			return DE_STREAMRESULT_ERROR;
-			break;
 	}
 }
 
@@ -76,23 +72,19 @@ static deStreamResult fileIOStream_write (deStreamData* stream, const void* buf,
 	{
 		case  DE_FILERESULT_SUCCESS:
 			return DE_STREAMRESULT_SUCCESS;
-			break;
 
 		case DE_FILERESULT_ERROR:
 			fileStream->error	= "deFile: DE_FILERESULT_ERROR";
 			fileStream->status	= DE_STREAMSTATUS_ERROR;
 			return DE_STREAMRESULT_ERROR;
-			break;
 
 		case DE_FILERESULT_END_OF_FILE:
 			return DE_STREAMRESULT_END_OF_STREAM;
-			break;
 
 		default:
 			fileStream->error	= "Uknown: DE_FILERESULT";
 			fileStream->status	= DE_STREAMSTATUS_ERROR;
 			return DE_STREAMRESULT_ERROR;
-			break;
 	}
 }
 

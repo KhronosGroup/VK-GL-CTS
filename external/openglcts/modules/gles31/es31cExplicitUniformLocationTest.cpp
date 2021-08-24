@@ -1196,10 +1196,8 @@ public:
 			return generateVertexShader(key, uniforms, subroutineUniforms, additionalDef, type);
 		case GL_FRAGMENT_SHADER:
 			return generateFragmentShader(key, uniforms, subroutineUniforms, additionalDef, type);
-			break;
 		case GL_COMPUTE_SHADER:
 			return generateComputeShader(key, uniforms, subroutineUniforms, additionalDef, type);
-			break;
 		default:
 			assert(0);
 			return "";

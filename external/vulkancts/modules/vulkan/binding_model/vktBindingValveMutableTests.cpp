@@ -1920,7 +1920,6 @@ bool isRayTracingStage (TestingStage stage)
 	case TestingStage::MISS:
 	case TestingStage::CALLABLE:
 		return true;
-		break;
 	default:
 		break;
 	}
@@ -2588,7 +2587,6 @@ bool isVertexStage (TestingStage stage)
 	case TestingStage::TESS_EVAL:
 	case TestingStage::GEOMETRY:
 		return true;
-		break;
 	default:
 		break;
 	}
@@ -2678,7 +2676,6 @@ void MutableTypesTest::checkSupport (Context& context) const
 
 			case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
 				TCU_THROW(InternalError, "Tests do not support update-after-bind with input attachments");
-				break;
 
 			case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:
 				{
@@ -2702,11 +2699,9 @@ void MutableTypesTest::checkSupport (Context& context) const
 
 			case VK_DESCRIPTOR_TYPE_MUTABLE_VALVE:
 				TCU_THROW(InternalError, "Found VK_DESCRIPTOR_TYPE_MUTABLE_VALVE in list of used descriptor types");
-				break;
 
 			default:
 				TCU_THROW(InternalError, "Unexpected descriptor type found in list of used descriptor types: " + de::toString(descType));
-				break;
 			}
 		}
 	}
@@ -2768,11 +2763,9 @@ void MutableTypesTest::checkSupport (Context& context) const
 
 			case VK_DESCRIPTOR_TYPE_MUTABLE_VALVE:
 				TCU_THROW(InternalError, "Found VK_DESCRIPTOR_TYPE_MUTABLE_VALVE in list of used array descriptor types");
-				break;
 
 			default:
 				TCU_THROW(InternalError, "Unexpected descriptor type found in list of used descriptor types: " + de::toString(descType));
-				break;
 			}
 		}
 	}

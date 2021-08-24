@@ -1095,7 +1095,6 @@ void Texture::CompressedImage(const glw::Functions& gl, glw::GLenum target, glw:
 		break;
 	default:
 		TCU_FAIL("Invliad enum");
-		break;
 	}
 }
 
@@ -1200,7 +1199,6 @@ void Texture::Image(const glw::Functions& gl, glw::GLenum target, glw::GLint lev
 		break;
 	default:
 		TCU_FAIL("Invliad enum");
-		break;
 	}
 }
 
@@ -1261,7 +1259,6 @@ void Texture::Storage(const glw::Functions& gl, glw::GLenum target, glw::GLsizei
 		break;
 	default:
 		TCU_FAIL("Invliad enum");
-		break;
 	}
 }
 
@@ -1313,7 +1310,6 @@ void Texture::SubImage(const glw::Functions& gl, glw::GLenum target, glw::GLint 
 		break;
 	default:
 		TCU_FAIL("Invliad enum");
-		break;
 	}
 }
 

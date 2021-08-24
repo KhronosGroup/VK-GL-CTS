@@ -296,7 +296,6 @@ void Utils::programInfo::setUniform(Utils::_variable_type type, const glw::GLcha
 		break;
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Uniform");

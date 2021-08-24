@@ -2451,8 +2451,8 @@ static inline ShaderBodyTextFunc getShaderBodyTextFunc (const TestType testType)
 {
 	switch (testType)
 	{
-		case TEST_TYPE_USING_RAY_QUERY:		return getRayQueryShaderBodyText;	break;
-		case TEST_TYPE_USING_RAY_TRACING:	return getRayTracingShaderBodyText;	break;
+		case TEST_TYPE_USING_RAY_QUERY:		return getRayQueryShaderBodyText;
+		case TEST_TYPE_USING_RAY_TRACING:	return getRayTracingShaderBodyText;
 		default:							TCU_THROW(InternalError, "Unknown test type");
 	}
 }

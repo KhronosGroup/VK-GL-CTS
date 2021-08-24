@@ -947,7 +947,6 @@ FragmentOutputCase::IterateResult FragmentOutputCase::iterate (void)
 
 			default:
 				TCU_FAIL("Unsupported comparison");
-				break;
 		}
 
 		if (!isOk)

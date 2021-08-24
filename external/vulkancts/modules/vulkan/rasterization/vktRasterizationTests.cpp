@@ -2848,8 +2848,6 @@ bool ConservativeTraingleTestInstance::compareAndVerify (std::vector<TriangleSce
 				return compareAndVerifyOverestimatedDegenerate(triangles, resultImage);
 			else
 				return compareAndVerifyOverestimatedNormal(triangles, resultImage);
-
-			break;
 		}
 
 		case VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT:
@@ -2858,8 +2856,6 @@ bool ConservativeTraingleTestInstance::compareAndVerify (std::vector<TriangleSce
 				return compareAndVerifyUnderestimatedDegenerate(triangles, resultImage);
 			else
 				return compareAndVerifyUnderestimatedNormal(triangles, resultImage);
-
-			break;
 		}
 
 		default:
@@ -3629,8 +3625,6 @@ bool ConservativeLineTestInstance::compareAndVerify (std::vector<LineSceneSpec::
 				return compareAndVerifyOverestimatedDegenerate(lines, resultImage);
 			else
 				return compareAndVerifyOverestimatedNormal(lines, resultImage);
-
-			break;
 		}
 		case VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT:
 		{
@@ -3638,8 +3632,6 @@ bool ConservativeLineTestInstance::compareAndVerify (std::vector<LineSceneSpec::
 				return compareAndVerifyUnderestimatedDegenerate(lines, resultImage);
 			else
 				return compareAndVerifyUnderestimatedNormal(lines, resultImage);
-
-			break;
 		}
 
 		default:

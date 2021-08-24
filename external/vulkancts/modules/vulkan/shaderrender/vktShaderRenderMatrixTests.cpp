@@ -1377,7 +1377,6 @@ BaseAttributeType getAttributeType(const glu::DataType dataType)
 	case TYPE_FLOAT_MAT4:		return MAT4;
 	default:
 		TCU_THROW(InternalError, "Not supported");
-		break;
 	}
 }
 
