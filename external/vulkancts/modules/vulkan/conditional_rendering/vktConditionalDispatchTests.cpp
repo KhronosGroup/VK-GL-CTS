@@ -147,7 +147,7 @@ ConditionalDispatchTestInstance::ConditionalDispatchTestInstance (Context &conte
 	, m_numCalls(testSpec.numCalls)
 	, m_conditionalData(testSpec.conditionalData)
 {
-};
+}
 
 void ConditionalDispatchTestInstance::recordDispatch (const vk::DeviceInterface& vk,
 													  vk::VkCommandBuffer cmdBuffer,
@@ -354,7 +354,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 	}
 
 	return tcu::TestStatus(res, qpGetTestResultName(res));
-};
+}
 
 }	// anonymous
 

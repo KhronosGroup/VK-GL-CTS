@@ -83,7 +83,7 @@ struct PositionValueVertex {
 	PositionValueVertex(tcu::Vec4 pos, float val)
 	: position(pos)
 	, value(val)
-	{};
+	{}
 public:
 	tcu::Vec4	position;
 	float		value;

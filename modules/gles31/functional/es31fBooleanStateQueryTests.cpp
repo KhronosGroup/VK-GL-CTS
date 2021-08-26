@@ -124,13 +124,15 @@ void BooleanStateQueryTests::init (void)
 		QUERY_FLOAT
 	};
 
-#define FOR_EACH_VERIFIER(VERIFIERS, X) \
-	for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(VERIFIERS); ++verifierNdx)	\
-	{																						\
-		const char* verifierSuffix = getVerifierSuffix((VERIFIERS)[verifierNdx]);			\
-		const QueryType verifier = (VERIFIERS)[verifierNdx];								\
-		this->addChild(X);																	\
-	}
+#define FOR_EACH_VERIFIER(VERIFIERS, X)															\
+	do {																						\
+		for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(VERIFIERS); ++verifierNdx)	\
+		{																						\
+			const char* verifierSuffix = getVerifierSuffix((VERIFIERS)[verifierNdx]);			\
+			const QueryType verifier = (VERIFIERS)[verifierNdx];								\
+			this->addChild(X);																	\
+		}																						\
+	} while (0)
 
 	struct StateBoolean
 	{

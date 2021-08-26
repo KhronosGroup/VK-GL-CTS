@@ -737,7 +737,7 @@ FragmentShader::FragmentShader (int drawBufferNdx, const DrawBufferInfo& info)
 
 		default:
 			DE_ASSERT(false);
-	};
+	}
 }
 
 void FragmentShader::shadeFragments (rr::FragmentPacket* packets, const int numPackets, const rr::FragmentShadingContext& context) const
@@ -799,7 +799,7 @@ void FragmentShader::shadeFragments (rr::FragmentPacket* packets, const int numP
 
 				default:
 					DE_ASSERT(DE_FALSE);
-			};
+			}
 		}
 	}
 }
@@ -925,7 +925,7 @@ glu::FragmentSource genFragmentSource (const BlendState& preCommonBlendState, co
 
 			default:
 				DE_ASSERT(DE_FALSE);
-		};
+		}
 
 		stream << " o_drawBuffer" <<  drawBufferNdx << ";\n";
 	}
@@ -974,7 +974,7 @@ glu::FragmentSource genFragmentSource (const BlendState& preCommonBlendState, co
 
 			default:
 				DE_ASSERT(DE_FALSE);
-		};
+		}
 	}
 
 	stream << "}";

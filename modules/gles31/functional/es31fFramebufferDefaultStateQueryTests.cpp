@@ -209,13 +209,15 @@ void FramebufferDefaultStateQueryTests::init (void)
 		QUERY_FRAMEBUFFER_INTEGER,
 	};
 
-#define FOR_EACH_VERIFIER(X) \
-	for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(verifiers); ++verifierNdx)	\
-	{																						\
-		const char* verifierSuffix = getVerifierSuffix(verifiers[verifierNdx]);				\
-		const QueryType verifier = verifiers[verifierNdx];								\
-		this->addChild(X);																	\
-	}
+#define FOR_EACH_VERIFIER(X)																	\
+	do {																						\
+		for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(verifiers); ++verifierNdx)	\
+		{																						\
+			const char* verifierSuffix = getVerifierSuffix(verifiers[verifierNdx]);				\
+			const QueryType verifier = verifiers[verifierNdx];									\
+			this->addChild(X);																	\
+		}																						\
+	} while (0)
 
 	FOR_EACH_VERIFIER(new FramebufferDimensionTest				(m_context, verifier, FramebufferDimensionTest::DIMENSION_WIDTH,	(std::string("framebuffer_default_width_") + verifierSuffix).c_str(),					"Test FRAMEBUFFER_DEFAULT_WIDTH"));
 	FOR_EACH_VERIFIER(new FramebufferDimensionTest				(m_context, verifier, FramebufferDimensionTest::DIMENSION_HEIGHT,	(std::string("framebuffer_default_height_") + verifierSuffix).c_str(),					"Test FRAMEBUFFER_DEFAULT_HEIGHT"));

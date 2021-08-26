@@ -246,7 +246,7 @@ void MakeCurrentPerfCase::createSurfaces (void)
 
 			default:
 				DE_ASSERT(false);
-		};
+		}
 	}
 }
 

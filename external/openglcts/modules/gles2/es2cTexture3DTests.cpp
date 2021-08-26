@@ -1106,7 +1106,6 @@ CompressedTexture3DCase::IterateResult CompressedTexture3DCase::iterate(void)
 		deInt32 partWidth  = de::max(width >> levelIndex, 1);
 		deInt32 partHeight = de::max(height >> levelIndex, 1);
 		deInt32 partDepth  = de::max(depth >> levelIndex, 1);
-		;
 
 		tcu::CompressedTexture dataPart(format, partWidth, partHeight, partDepth);
 		const int			   dataSize = dataPart.getDataSize();

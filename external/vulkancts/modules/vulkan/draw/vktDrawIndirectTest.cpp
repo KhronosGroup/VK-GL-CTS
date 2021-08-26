@@ -85,7 +85,7 @@ struct DrawTypedTestSpec : public TestSpecBase
 		: drawType(DRAWTYPE_LAST)
 		, testFirstInstanceNdx(false)
 		, testIndirectCountExt(IndirectCountType::NONE)
-	{};
+	{}
 
 	DrawType			drawType;
 	bool				testFirstInstanceNdx;

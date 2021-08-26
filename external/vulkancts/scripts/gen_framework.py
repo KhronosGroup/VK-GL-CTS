@@ -996,7 +996,7 @@ def writeBasicTypes (api, filename):
 			for line in genBitfield64Src(bitfield64):
 				yield line
 
-		for line in indentLines(["VK_DEFINE_PLATFORM_TYPE(%s,\t%s);" % (s[0], c) for n, s, c in PLATFORM_TYPES]):
+		for line in indentLines(["VK_DEFINE_PLATFORM_TYPE(%s,\t%s)" % (s[0], c) for n, s, c in PLATFORM_TYPES]):
 			yield line
 
 		for ext in api.extensions:

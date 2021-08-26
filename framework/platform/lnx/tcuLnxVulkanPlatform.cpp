@@ -280,7 +280,7 @@ vk::wsi::Display* VulkanPlatform::createWsiDisplay (vk::wsi::Type wsiType) const
 	default:
 		TCU_THROW(NotSupportedError, "WSI type not supported");
 
-	};
+	}
 }
 bool VulkanPlatform::hasDisplay (vk::wsi::Type wsiType) const
 {
@@ -305,7 +305,7 @@ bool VulkanPlatform::hasDisplay (vk::wsi::Type wsiType) const
 	default:
 		return false;
 
-	};
+	}
 }
 vk::Library* VulkanPlatform::createLibrary (void) const
 {

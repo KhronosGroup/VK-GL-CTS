@@ -36,7 +36,7 @@ namespace warmupCPUInternal
 
 volatile Dummy g_dummy;
 
-};
+}
 
 template <typename T, int Size>
 static inline float floatMedian (const T (&v)[Size])

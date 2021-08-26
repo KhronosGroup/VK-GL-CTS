@@ -48,7 +48,7 @@ public:
 	using const_pointer = const value_type*;
 	using const_iterator = const value_type*;
 
-	inline constexpr ConstexprVector() noexcept : values{}, count{0} {};
+	inline constexpr ConstexprVector() noexcept : values{}, count{0} {}
 
 	/*--------------------------------------------------------------------*//*!
 	 * MSVC v140 chokes on this if it is a raw variadic template list.

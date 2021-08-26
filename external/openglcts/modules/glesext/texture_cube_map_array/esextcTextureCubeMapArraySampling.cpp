@@ -1408,7 +1408,7 @@ void prepareTextureCoordinatesForFace(glw::GLfloat* data, glw::GLuint width, glw
 		vectorSet4(data, 7, middle, bottom, negative, layer);
 		vectorSet4(data, 8, right, bottom, negative, layer);
 		break;
-	};
+	}
 
 	vectorNormalize<3, 4>(data, 0);
 	vectorNormalize<3, 4>(data, 1);
@@ -1517,7 +1517,7 @@ void prepareTextureCoordinatesForGatherForFace(glw::GLfloat* data, glw::GLuint w
 		vectorSet4(data, 7, middle, bottom, negative, layer);
 		vectorSet4(data, 8, right, bottom, negative, layer);
 		break;
-	};
+	}
 
 	vectorNormalize<3, 4>(data, 0);
 	vectorNormalize<3, 4>(data, 1);
@@ -1957,7 +1957,7 @@ void TextureCubeMapArraySamplingTest::getAttributes(samplerType					sampler_type
 		out_attribute_definitions = 0;
 		out_n_attributes		  = 0;
 		break;
-	};
+	}
 }
 
 /** Get attributes specific for sampling function
@@ -2010,7 +2010,7 @@ void TextureCubeMapArraySamplingTest::getAttributes(samplingFunction			sampling_
 		out_attribute_definitions = textureGather_attributes;
 		out_n_attributes		  = n_textureGather_attributes;
 		break;
-	};
+	}
 }
 
 /** Get information about color type for type of sampler
@@ -2064,7 +2064,7 @@ void TextureCubeMapArraySamplingTest::getColorType(samplerType sampler_type, con
 		out_n_components	   = 1;
 		out_is_shadow		   = false;
 		break;
-	};
+	}
 }
 
 /** Get information about color type for type of sampler
@@ -2109,7 +2109,7 @@ void TextureCubeMapArraySamplingTest::getColorType(samplerType sampler_type, con
 		out_image_type   = image_uint;
 		out_image_layout = "r32ui";
 		break;
-	};
+	}
 }
 
 /** Prepare code for passthrough fragment shader
@@ -2467,7 +2467,7 @@ void TextureCubeMapArraySamplingTest::getSamplingComputeShaderCode(const sampler
 		/* imageStore(image, image_coord, color);*/
 		stream << compute_shader_color;
 		break;
-	};
+	}
 
 	stream << ");\n";
 
@@ -4265,7 +4265,7 @@ const TextureCubeMapArraySamplingTest::programCollectionForFunction* TextureCube
 	case TextureGather:
 		return &m_programs_for_textureGather;
 		break;
-	};
+	}
 
 	return 0;
 }

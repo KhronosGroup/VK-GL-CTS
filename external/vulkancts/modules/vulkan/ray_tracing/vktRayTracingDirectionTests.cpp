@@ -389,7 +389,6 @@ void DirectionTestCase::initPrograms (vk::SourceCollections& programCollection) 
 		<< "{\n"
 		<< "  outBuffer.val = -10000.0f;\n"
 		<< "}\n";
-		;
 
 	programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(miss.str())) << buildOptions;
 }

@@ -596,7 +596,7 @@ float GLValue::toFloat (void) const
 			DE_ASSERT(false);
 			return 0.0f;
 			break;
-	};
+	}
 }
 
 GLValue GLValue::getMaxValue (DrawTestSpec::InputType type)
@@ -652,16 +652,16 @@ template<> struct GLValueTypeTraits<GLValue::Half>	 { static const DrawTestSpec:
 template<typename T>
 inline T extractGLValue (const GLValue& v);
 
-template<> GLValue::Float	inline extractGLValue<GLValue::Float>		(const GLValue& v) { return v.fl; };
-template<> GLValue::Double	inline extractGLValue<GLValue::Double>		(const GLValue& v) { return v.d; };
-template<> GLValue::Byte	inline extractGLValue<GLValue::Byte>		(const GLValue& v) { return v.b; };
-template<> GLValue::Ubyte	inline extractGLValue<GLValue::Ubyte>		(const GLValue& v) { return v.ub; };
-template<> GLValue::Ushort	inline extractGLValue<GLValue::Ushort>		(const GLValue& v) { return v.us; };
-template<> GLValue::Short	inline extractGLValue<GLValue::Short>		(const GLValue& v) { return v.s; };
-template<> GLValue::Fixed	inline extractGLValue<GLValue::Fixed>		(const GLValue& v) { return v.fi; };
-template<> GLValue::Int		inline extractGLValue<GLValue::Int>			(const GLValue& v) { return v.i; };
-template<> GLValue::Uint	inline extractGLValue<GLValue::Uint>		(const GLValue& v) { return v.ui; };
-template<> GLValue::Half	inline extractGLValue<GLValue::Half>		(const GLValue& v) { return v.h; };
+template<> GLValue::Float	inline extractGLValue<GLValue::Float>		(const GLValue& v) { return v.fl; }
+template<> GLValue::Double	inline extractGLValue<GLValue::Double>		(const GLValue& v) { return v.d; }
+template<> GLValue::Byte	inline extractGLValue<GLValue::Byte>		(const GLValue& v) { return v.b; }
+template<> GLValue::Ubyte	inline extractGLValue<GLValue::Ubyte>		(const GLValue& v) { return v.ub; }
+template<> GLValue::Ushort	inline extractGLValue<GLValue::Ushort>		(const GLValue& v) { return v.us; }
+template<> GLValue::Short	inline extractGLValue<GLValue::Short>		(const GLValue& v) { return v.s; }
+template<> GLValue::Fixed	inline extractGLValue<GLValue::Fixed>		(const GLValue& v) { return v.fi; }
+template<> GLValue::Int		inline extractGLValue<GLValue::Int>			(const GLValue& v) { return v.i; }
+template<> GLValue::Uint	inline extractGLValue<GLValue::Uint>		(const GLValue& v) { return v.ui; }
+template<> GLValue::Half	inline extractGLValue<GLValue::Half>		(const GLValue& v) { return v.h; }
 
 template<class T>
 inline T getRandom (deRandom& rnd, T min, T max);

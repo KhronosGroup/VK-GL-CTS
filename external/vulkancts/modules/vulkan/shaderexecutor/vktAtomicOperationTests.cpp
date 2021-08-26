@@ -250,7 +250,7 @@ public:
 
 	virtual void checkResults(tcu::ResultCollector& resultCollector) = 0;
 
-	virtual ~BufferInterface() {};
+	virtual ~BufferInterface() {}
 };
 
 template<typename dataTypeT>
@@ -598,7 +598,7 @@ void TestBuffer<T>::checkOperation (const BufferData<T>&	original,
 			default:
 				DE_FATAL("Unexpected atomic operation.");
 				break;
-		};
+		}
 
 		const T resIo		= result.inout[elementNdx];
 		const T resOutput0	= result.output[elementNdx];
@@ -802,7 +802,7 @@ void TestBufferFloatingPoint<T>::checkOperationFloatingPoint(const BufferDataFlo
 		default:
 			DE_FATAL("Unexpected atomic operation.");
 			break;
-		};
+		}
 
 		const T resIo = result.inout[elementNdx];
 		const T resOutput0 = result.output[elementNdx];

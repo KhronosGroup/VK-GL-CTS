@@ -163,7 +163,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 			break;
 		default:
 			break;
-	};
+	}
 
 	const VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateInfo =
 	{

@@ -609,38 +609,42 @@ void FragmentProcessor::executeAdvancedBlend (BlendEquationAdvanced equation)
 {
 	using namespace advblend;
 
-#define SAMPLE_REGISTER_ADV_BLEND(FUNCTION_NAME)											\
-	for (int regSampleNdx = 0; regSampleNdx < SAMPLE_REGISTER_SIZE; regSampleNdx++)			\
-	{																						\
-		if (m_sampleRegister[regSampleNdx].isAlive)											\
-		{																					\
-			SampleData&	sample		= m_sampleRegister[regSampleNdx];						\
-			const Vec4&	srcColor	= sample.clampedBlendSrcColor;							\
-			const Vec4&	dstColor	= sample.clampedBlendDstColor;							\
-			const Vec3&	bias		= sample.blendSrcFactorRGB;								\
-			const float	p0			= sample.blendSrcFactorA;								\
-			const float	r			= FUNCTION_NAME(srcColor[0], dstColor[0])*p0 + bias[0];	\
-			const float	g			= FUNCTION_NAME(srcColor[1], dstColor[1])*p0 + bias[1];	\
-			const float	b			= FUNCTION_NAME(srcColor[2], dstColor[2])*p0 + bias[2];	\
-																							\
-			sample.blendedRGB = Vec3(r, g, b);												\
-		}																					\
-	}
+#define SAMPLE_REGISTER_ADV_BLEND(FUNCTION_NAME)												\
+	do {																						\
+		for (int regSampleNdx = 0; regSampleNdx < SAMPLE_REGISTER_SIZE; regSampleNdx++)			\
+		{																						\
+			if (m_sampleRegister[regSampleNdx].isAlive)											\
+			{																					\
+				SampleData&	sample		= m_sampleRegister[regSampleNdx];						\
+				const Vec4&	srcColor	= sample.clampedBlendSrcColor;							\
+				const Vec4&	dstColor	= sample.clampedBlendDstColor;							\
+				const Vec3&	bias		= sample.blendSrcFactorRGB;								\
+				const float	p0			= sample.blendSrcFactorA;								\
+				const float	r			= FUNCTION_NAME(srcColor[0], dstColor[0])*p0 + bias[0];	\
+				const float	g			= FUNCTION_NAME(srcColor[1], dstColor[1])*p0 + bias[1];	\
+				const float	b			= FUNCTION_NAME(srcColor[2], dstColor[2])*p0 + bias[2];	\
+																								\
+				sample.blendedRGB = Vec3(r, g, b);												\
+			}																					\
+		}																						\
+	} while (0)
 
-#define SAMPLE_REGISTER_ADV_BLEND_HSL(COLOR_EXPRESSION)										\
-	for (int regSampleNdx = 0; regSampleNdx < SAMPLE_REGISTER_SIZE; regSampleNdx++)			\
-	{																						\
-		if (m_sampleRegister[regSampleNdx].isAlive)											\
-		{																					\
-			SampleData&	sample		= m_sampleRegister[regSampleNdx];						\
-			const Vec3	srcColor	= sample.clampedBlendSrcColor.swizzle(0,1,2);			\
-			const Vec3	dstColor	= sample.clampedBlendDstColor.swizzle(0,1,2);			\
-			const Vec3&	bias		= sample.blendSrcFactorRGB;								\
-			const float	p0			= sample.blendSrcFactorA;								\
-																							\
-			sample.blendedRGB = (COLOR_EXPRESSION)*p0 + bias;								\
-		}																					\
-	}
+#define SAMPLE_REGISTER_ADV_BLEND_HSL(COLOR_EXPRESSION)											\
+	do {																						\
+		for (int regSampleNdx = 0; regSampleNdx < SAMPLE_REGISTER_SIZE; regSampleNdx++)			\
+		{																						\
+			if (m_sampleRegister[regSampleNdx].isAlive)											\
+			{																					\
+				SampleData&	sample		= m_sampleRegister[regSampleNdx];						\
+				const Vec3	srcColor	= sample.clampedBlendSrcColor.swizzle(0,1,2);			\
+				const Vec3	dstColor	= sample.clampedBlendDstColor.swizzle(0,1,2);			\
+				const Vec3&	bias		= sample.blendSrcFactorRGB;								\
+				const float	p0			= sample.blendSrcFactorA;								\
+																								\
+				sample.blendedRGB = (COLOR_EXPRESSION)*p0 + bias;								\
+			}																					\
+		}																						\
+	} while (0)
 
 	// Pre-compute factors & compute alpha \todo [2014-03-18 pyry] Re-using variable names.
 	// \note clampedBlend*Color contains clamped & unpremultiplied colors

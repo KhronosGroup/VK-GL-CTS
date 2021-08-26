@@ -226,7 +226,7 @@ void addComputeIndexingStructTests (tcu::TestCaseGroup* group)
 						vulkanFeatures.extVariablePointers = EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
 						spec.extensions.push_back("VK_KHR_variable_pointers");
 						break;
-				};
+				}
 
 				spec.inputs.push_back(BufferSp(new Float32Buffer(inputData)));
 				spec.inputs.push_back(BufferSp(new Buffer<UVec4>(indexSelectorData)));
@@ -475,7 +475,7 @@ void addGraphicsIndexingStructTests (tcu::TestCaseGroup* group)
 						vulkanFeatures.extVariablePointers	= EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
 						element = 1;
 						break;
-				};
+				}
 
 				outputData.reserve(numItems);
 				for (deUint32 numIdx = 0; numIdx < numItems; ++numIdx)

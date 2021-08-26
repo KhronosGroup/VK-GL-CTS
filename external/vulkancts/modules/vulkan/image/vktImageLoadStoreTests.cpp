@@ -1926,7 +1926,7 @@ public:
 																			 const VkFormat			writeFormat,
 																			 bool					relaxedPrecision);
 
-	virtual							~ImageExtendOperandTestInstance			(void) {};
+	virtual							~ImageExtendOperandTestInstance			(void) {}
 
 protected:
 

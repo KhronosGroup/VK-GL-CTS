@@ -1792,7 +1792,7 @@ bool isCompatibleFormats (GLenum createFormat, GLenum modifyFormat, GLenum modif
 				default:
 					DE_FATAL("Unknown modify type");
 					return false;
-			};
+			}
 
 		default:
 			DE_FATAL("Unknown modify format");

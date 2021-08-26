@@ -262,7 +262,7 @@ const GLchar* Utils::getQualifierString(Utils::QUALIFIERS qualifier)
 		break;
 	default:
 		TCU_FAIL("Invalid enum");
-	};
+	}
 
 	return result;
 }
@@ -323,7 +323,7 @@ Utils::qualifierSet Utils::prepareQualifiersSet(const qualifierSet& in_qualifier
 		if (false == doesStageSupportQualifier(stage, storage, qualifier))
 		{
 			continue;
-		};
+		}
 
 		/* Replace wrong storage qualifiers */
 		if ((Utils::INPUT == storage) && ((Utils::QUAL_UNIFORM == qualifier) || (Utils::QUAL_OUT == qualifier)))
@@ -2838,7 +2838,7 @@ void LineContinuationTest::prepareShaderSourceForDraw(Utils::SHADER_STAGES stage
 		break;
 	default:
 		break;
-	};
+	}
 	const GLuint store_results_length  = static_cast<GLuint>(strlen(store_results));
 	const GLuint pass_condition_length = static_cast<GLuint>(strlen(pass_condition));
 
@@ -3147,7 +3147,7 @@ bool LineContinuationTest::isShaderMultipart() const
 	case PART_NEXT_TO_TERMINATION_NON_NULL:
 		result = true;
 		break;
-	};
+	}
 
 	return result;
 }
@@ -3280,7 +3280,7 @@ void LineContinuationTest::replaceAllCaseTokens(std::string& source) const
 	case DEBUG_CASE: /* intended fall through */
 	default:
 		break; /* no line continuations */
-	};
+	}
 
 	Utils::replaceAllTokens(token_assignment_after_operator_case, assignment_after_operator_case, source);
 	Utils::replaceAllTokens(token_assignment_before_operator_case, assignment_before_operator_case, source);
@@ -3326,7 +3326,7 @@ bool LineContinuationTest::useSourceLengths() const
 	case PART_NEXT_TO_TERMINATION_NON_NULL:
 		result = true;
 		break;
-	};
+	}
 
 	return result;
 }
@@ -5761,7 +5761,7 @@ bool QualifierOrderTest::prepareNextTestCase(glw::GLuint test_case_index)
 
 	if ((glw::GLuint)-1 == test_case_index)
 	{
-		/* Nothing to be done here */;
+		/* Nothing to be done here */
 	}
 	else if (m_test_cases.size() <= test_case_index)
 	{
@@ -6130,7 +6130,7 @@ bool QualifierOrderBlockTest::prepareNextTestCase(glw::GLuint test_case_index)
 
 	if ((glw::GLuint)-1 == test_case_index)
 	{
-		/* Nothing to be done here */;
+		/* Nothing to be done here */
 	}
 	else if (m_test_cases.size() <= test_case_index)
 	{
@@ -6517,7 +6517,7 @@ bool QualifierOrderUniformTest::prepareNextTestCase(glw::GLuint test_case_index)
 
 	if ((glw::GLuint)-1 == test_case_index)
 	{
-		/* Nothing to be done here */;
+		/* Nothing to be done here */
 	}
 	else if (m_test_cases.size() <= test_case_index)
 	{
@@ -6832,7 +6832,7 @@ bool QualifierOrderFunctionInoutTest::prepareNextTestCase(glw::GLuint test_case_
 
 	if ((glw::GLuint)-1 == test_case_index)
 	{
-		/* Nothing to be done here */;
+		/* Nothing to be done here */
 	}
 	else if (m_test_cases.size() <= test_case_index)
 	{
@@ -7151,7 +7151,7 @@ bool QualifierOrderFunctionInputTest::prepareNextTestCase(glw::GLuint test_case_
 
 	if ((glw::GLuint)-1 == test_case_index)
 	{
-		/* Nothing to be done here */;
+		/* Nothing to be done here */
 	}
 	else if (m_test_cases.size() <= test_case_index)
 	{
@@ -7475,7 +7475,7 @@ bool QualifierOrderFunctionOutputTest::prepareNextTestCase(glw::GLuint test_case
 
 	if ((glw::GLuint)-1 == test_case_index)
 	{
-		/* Nothing to be done here */;
+		/* Nothing to be done here */
 	}
 	else if (m_test_cases.size() <= test_case_index)
 	{
@@ -17198,7 +17198,7 @@ void ScalarSwizzlersInvalidTest::prepareShaderSource(Utils::SHADER_STAGES in_sta
 	default:
 		TCU_FAIL("Invalid enum");
 		break;
-	};
+	}
 
 	out_source.m_parts[0].m_code = shader_template;
 

@@ -5402,8 +5402,8 @@ private:
 	void					logAndSetTestResult				(void);
 	void					logSamples						(void);
 	void					drawMisc						(void);
-	int						findStabilizationSample			(deUint64 (Result::*target), const char* description);
-	bool					checkSampleTemporalStability	(deUint64 (Result::*target), const char* description);
+	int						findStabilizationSample			(deUint64 Result::*target, const char* description);
+	bool					checkSampleTemporalStability	(deUint64 Result::*target, const char* description);
 
 	const DrawMethod		m_drawMethod;
 	const TargetBuffer		m_targetBuffer;
@@ -6072,7 +6072,7 @@ struct ThresholdComparer
 	}
 };
 
-int UploadWaitDrawCase::findStabilizationSample (deUint64 (UploadWaitDrawCase::Result::*target), const char* description)
+int UploadWaitDrawCase::findStabilizationSample (deUint64 UploadWaitDrawCase::Result::*target, const char* description)
 {
 	std::vector<std::vector<deUint64> >	sampleObservations(m_numMaxSwaps+1);
 	ThresholdComparer<deUint64>			comparer;
@@ -6146,7 +6146,7 @@ int UploadWaitDrawCase::findStabilizationSample (deUint64 (UploadWaitDrawCase::R
 	return 0;
 }
 
-bool UploadWaitDrawCase::checkSampleTemporalStability (deUint64 (UploadWaitDrawCase::Result::*target), const char* description)
+bool UploadWaitDrawCase::checkSampleTemporalStability (deUint64 UploadWaitDrawCase::Result::*target, const char* description)
 {
 	// Try to find correlation with sample order and sample times
 

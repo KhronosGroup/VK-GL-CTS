@@ -193,7 +193,7 @@ protected:
 																						VkImage image, VkImage resolvedImage, VkFramebuffer frameBuffer, const deUint32 renderSize, VkBuffer resultBuffer, const Allocation& resultBufferMemory);
 	virtual float									getLineWidth					(void) const;
 	virtual float									getPointSize					(void) const;
-	virtual bool									getLineStippleDynamic			(void) const { return false; };
+	virtual bool									getLineStippleDynamic			(void) const { return false; }
 
 	virtual
 	const VkPipelineRasterizationStateCreateInfo*	getRasterizationStateCreateInfo	(void) const;
@@ -1061,7 +1061,7 @@ public:
 	virtual tcu::TestStatus		iterate					(void);
 	virtual float				getLineWidth			(void) const;
 	bool						getLineStippleEnable	(void) const { return m_stipple != LINESTIPPLE_DISABLED; }
-	virtual bool				getLineStippleDynamic	(void) const { return m_stipple == LINESTIPPLE_DYNAMIC; };
+	virtual bool				getLineStippleDynamic	(void) const { return m_stipple == LINESTIPPLE_DYNAMIC; }
 
 	virtual
 	VkPipelineRasterizationLineStateCreateInfoEXT	initLineRasterizationStateCreateInfo	(void) const;
@@ -4549,7 +4549,7 @@ public:
 								}
 
 	bool					getLineStippleEnable	(void) const { return m_stipple != LINESTIPPLE_DISABLED; }
-	virtual bool			getLineStippleDynamic	(void) const { return m_stipple == LINESTIPPLE_DYNAMIC; };
+	virtual bool			getLineStippleDynamic	(void) const { return m_stipple == LINESTIPPLE_DYNAMIC; }
 
 protected:
 	const PrimitiveWideness				m_wideness;

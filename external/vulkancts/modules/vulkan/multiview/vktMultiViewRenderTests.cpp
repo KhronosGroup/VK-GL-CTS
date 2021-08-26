@@ -798,7 +798,7 @@ void MultiViewRenderTestInstance::madeShaderModule (map<VkShaderStageFlagBits, S
 		default:
 			DE_ASSERT(0);
 		break;
-	};
+	}
 
 	VkPipelineShaderStageCreateInfo	pipelineShaderStage	=
 	{
@@ -3766,7 +3766,7 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 				default:
 					DE_ASSERT(0);
 					break;
-			};
+			}
 		}
 
 		targetGroup->addChild(groupViewIndex.release());

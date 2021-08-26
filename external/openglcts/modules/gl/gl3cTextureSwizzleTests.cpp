@@ -1930,7 +1930,7 @@ const _out_ch_desc& get_descriptor_for_channel(const _texture_format& format, co
 	default:
 		TCU_FAIL("Invalid value");
 		break;
-	};
+	}
 
 	switch (desc->m_internal_format)
 	{

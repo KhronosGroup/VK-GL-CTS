@@ -884,7 +884,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	{
 		for (size_t outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
 		{
-			const BufferSp&	expectedOutput = m_shaderSpec.outputs[outputNdx].getBuffer();;
+			const BufferSp&	expectedOutput = m_shaderSpec.outputs[outputNdx].getBuffer();
 			vector<deUint8>	expectedBytes;
 
 			expectedOutput->getBytes(expectedBytes);

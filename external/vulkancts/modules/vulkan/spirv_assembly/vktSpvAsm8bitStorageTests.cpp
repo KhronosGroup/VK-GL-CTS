@@ -3136,7 +3136,7 @@ void addGraphics8BitStorageUniformInt8To32Group (tcu::TestCaseGroup* testGroup)
 					default:
 						DE_FATAL("Impossible");
 						break;
-					};
+					}
 				}
 				else
 				{
@@ -3966,7 +3966,7 @@ void addGraphics8BitStorageUniformInt8To16Group (tcu::TestCaseGroup* testGroup)
 					default:
 						DE_FATAL("Impossible");
 						break;
-					};
+					}
 				}
 				else
 				{

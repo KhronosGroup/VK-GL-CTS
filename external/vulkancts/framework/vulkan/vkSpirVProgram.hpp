@@ -78,7 +78,7 @@ struct SpirVAsmSource
 	{
 		buildOptions = buildOptions_;
 		return *this;
-	};
+	}
 
 	SpirVAsmBuildOptions	buildOptions;
 	std::string				source;

@@ -59,8 +59,8 @@ const MemoryRequirement	legalMemoryTypes[legalMemoryTypeCount]	=
 class IObjectAllocator
 {
 public:
-					IObjectAllocator	()	{};
-	virtual			~IObjectAllocator	()	{};
+					IObjectAllocator	()	{}
+	virtual			~IObjectAllocator	()	{}
 	virtual void	allocate			(Context&	context)	= 0;
 	virtual void	deallocate			(Context&	context)	= 0;
 	virtual	size_t	getSize				(Context&	context)	= 0;

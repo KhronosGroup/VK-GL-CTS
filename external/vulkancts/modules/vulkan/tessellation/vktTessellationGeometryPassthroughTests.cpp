@@ -650,7 +650,7 @@ TestInstance* IdentityGeometryShaderTestCase::createInstance (Context& context) 
 					 "Using additive blending to detect overlap.\n";
 
 	return new PassthroughTestInstance(context, params);
-};
+}
 
 TestInstance* IdentityTessellationShaderTestCase::createInstance (Context& context) const
 {
@@ -682,7 +682,7 @@ TestInstance* IdentityTessellationShaderTestCase::createInstance (Context& conte
 					 "Using additive blending to detect overlap.\n";
 
 	return new PassthroughTestInstance(context, params);
-};
+}
 
 inline TestCase* makeIdentityGeometryShaderCase (tcu::TestContext& testCtx, const TessPrimitiveType primitiveType)
 {

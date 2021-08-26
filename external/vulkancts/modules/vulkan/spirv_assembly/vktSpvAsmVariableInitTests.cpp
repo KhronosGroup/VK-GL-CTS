@@ -203,7 +203,7 @@ void addComputeVariableInitPrivateTest (tcu::TestCaseGroup* group)
 				spec.requestedVulkanFeatures.extVariablePointers = EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS;
 				spec.extensions.push_back("VK_KHR_variable_pointers");
 				break;
-		};
+		}
 
 		if (testParams[paramIdx].type == "matrix")
 		{

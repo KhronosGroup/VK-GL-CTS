@@ -2946,9 +2946,9 @@ template<>			 inline bool isNullHandleOnAllocationFailure<VkCommandBuffer> (Cont
 template<>			 inline bool isNullHandleOnAllocationFailure<VkDescriptorSet> (Context& context) { return hasDeviceExtension(context, "VK_KHR_maintenance1"); }
 template<>			 inline bool isNullHandleOnAllocationFailure<VkPipeline>	  (Context&)		 { return true;  }
 
-template<typename T> inline bool isPooledObject					 (void) { return false; };
-template<>			 inline bool isPooledObject<VkCommandBuffer> (void) { return true;  };
-template<>			 inline bool isPooledObject<VkDescriptorSet> (void) { return true;  };
+template<typename T> inline bool isPooledObject					 (void) { return false; }
+template<>			 inline bool isPooledObject<VkCommandBuffer> (void) { return true;  }
+template<>			 inline bool isPooledObject<VkDescriptorSet> (void) { return true;  }
 
 template<typename Object>
 tcu::TestStatus allocCallbackFailMultipleObjectsTest (Context& context, typename Object::Parameters params)

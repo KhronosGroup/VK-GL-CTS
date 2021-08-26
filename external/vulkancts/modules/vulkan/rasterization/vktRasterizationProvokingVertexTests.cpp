@@ -340,7 +340,7 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 		const Unique<VkShaderModule>									vertexShader					(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0));
 		const Unique<VkShaderModule>									fragmentShader					(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0));
 		const std::vector<VkViewport>									viewports						(1, makeViewport(tcu::UVec2(m_params.size)));
-		const std::vector<VkRect2D>										scissors						(1, makeRect2D(tcu::UVec2(m_params.size)));;
+		const std::vector<VkRect2D>										scissors						(1, makeRect2D(tcu::UVec2(m_params.size)));
 		const Move<VkPipelineLayout>									pipelineLayout					= makePipelineLayout(vk, device, 0, DE_NULL);
 
 		const VkVertexInputBindingDescription							vertexInputBindingDescription	=

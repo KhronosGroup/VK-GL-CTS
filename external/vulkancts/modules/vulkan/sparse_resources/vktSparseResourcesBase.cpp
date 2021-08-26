@@ -41,7 +41,7 @@ namespace
 
 struct QueueFamilyQueuesCount
 {
-	QueueFamilyQueuesCount() : queueCount(0u) {};
+	QueueFamilyQueuesCount() : queueCount(0u) {}
 
 	deUint32 queueCount;
 };

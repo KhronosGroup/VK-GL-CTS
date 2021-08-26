@@ -906,7 +906,7 @@ void gl4cts::GetTextureSubImage::Functional::prepare(glw::GLenum target, bool is
 			break;
 		default:
 			throw 0;
-		};
+		}
 	}
 	else
 	{
@@ -958,7 +958,7 @@ void gl4cts::GetTextureSubImage::Functional::prepare(glw::GLenum target, bool is
 			break;
 		default:
 			throw 0;
-		};
+		}
 	}
 }
 

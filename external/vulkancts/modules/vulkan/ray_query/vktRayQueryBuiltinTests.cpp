@@ -129,8 +129,8 @@ namespace vkt
 			class PipelineConfiguration
 			{
 			public:
-				PipelineConfiguration() {};
-				virtual			~PipelineConfiguration() {};
+				PipelineConfiguration() {}
+				virtual			~PipelineConfiguration() {}
 
 				virtual void	initConfiguration(const TestEnvironment& env,
 					TestParams& testParams) = 0;
@@ -379,7 +379,7 @@ namespace vkt
 					const TestParams& testParams);
 
 				GraphicsConfiguration();
-				virtual							~GraphicsConfiguration() {};
+				virtual							~GraphicsConfiguration() {}
 
 				void							initVertexBuffer(const TestEnvironment& env,
 					TestParams& testParams);
@@ -1005,7 +1005,7 @@ namespace vkt
 			{
 			public:
 				ComputeConfiguration();
-				virtual						~ComputeConfiguration() {};
+				virtual						~ComputeConfiguration() {}
 
 				static void					checkSupport(Context& context,
 					const TestParams& testParams);
@@ -1142,7 +1142,7 @@ namespace vkt
 			{
 			public:
 				RayTracingConfiguration();
-				virtual											~RayTracingConfiguration() {};
+				virtual											~RayTracingConfiguration() {}
 
 				static void										checkSupport(Context& context,
 					const TestParams& testParams);
@@ -5147,7 +5147,6 @@ namespace vkt
 						"  }\n"
 						"\n"
 						"  imageStore(result, pos, ivec4(result_i32, 0, 0, 0));\n";
-						;
 
 					return result;
 				}

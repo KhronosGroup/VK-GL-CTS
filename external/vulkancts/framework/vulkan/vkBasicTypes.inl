@@ -3966,29 +3966,29 @@ static const VkAccessFlagBits2KHR VK_ACCESS_2_FRAGMENT_DENSITY_MAP_READ_BIT_EXT	
 static const VkAccessFlagBits2KHR VK_ACCESS_2_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT		= 0x00080000ULL;
 static const VkAccessFlagBits2KHR VK_ACCESS_2_INVOCATION_MASK_READ_BIT_HUAWEI				= 0x8000000000ULL;
 
-VK_DEFINE_PLATFORM_TYPE(XlibDisplayPtr,				void*);
-VK_DEFINE_PLATFORM_TYPE(XlibWindow,					uintptr_t);
-VK_DEFINE_PLATFORM_TYPE(XlibVisualID,				uint32_t);
-VK_DEFINE_PLATFORM_TYPE(XcbConnectionPtr,			void*);
-VK_DEFINE_PLATFORM_TYPE(XcbWindow,					uintptr_t);
-VK_DEFINE_PLATFORM_TYPE(XcbVisualid,				uint32_t);
-VK_DEFINE_PLATFORM_TYPE(WaylandDisplayPtr,			void*);
-VK_DEFINE_PLATFORM_TYPE(WaylandSurfacePtr,			void*);
-VK_DEFINE_PLATFORM_TYPE(MirConnectionPtr,			void*);
-VK_DEFINE_PLATFORM_TYPE(MirSurfacePtr,				void*);
-VK_DEFINE_PLATFORM_TYPE(AndroidNativeWindowPtr,		void*);
-VK_DEFINE_PLATFORM_TYPE(Win32InstanceHandle,		void*);
-VK_DEFINE_PLATFORM_TYPE(Win32WindowHandle,			void*);
-VK_DEFINE_PLATFORM_TYPE(Win32Handle,				void*);
-VK_DEFINE_PLATFORM_TYPE(Win32SecurityAttributesPtr,	const void*);
-VK_DEFINE_PLATFORM_TYPE(AndroidHardwareBufferPtr,	void*);
-VK_DEFINE_PLATFORM_TYPE(Win32MonitorHandle,			void*);
-VK_DEFINE_PLATFORM_TYPE(Win32LPCWSTR,				const void*);
-VK_DEFINE_PLATFORM_TYPE(RROutput,					void*);
-VK_DEFINE_PLATFORM_TYPE(zx_handle_t,				int32_t);
-VK_DEFINE_PLATFORM_TYPE(GgpFrameToken,				int32_t);
-VK_DEFINE_PLATFORM_TYPE(GgpStreamDescriptor,		int32_t);
-VK_DEFINE_PLATFORM_TYPE(CAMetalLayer,				void*);
+VK_DEFINE_PLATFORM_TYPE(XlibDisplayPtr,				void*)
+VK_DEFINE_PLATFORM_TYPE(XlibWindow,					uintptr_t)
+VK_DEFINE_PLATFORM_TYPE(XlibVisualID,				uint32_t)
+VK_DEFINE_PLATFORM_TYPE(XcbConnectionPtr,			void*)
+VK_DEFINE_PLATFORM_TYPE(XcbWindow,					uintptr_t)
+VK_DEFINE_PLATFORM_TYPE(XcbVisualid,				uint32_t)
+VK_DEFINE_PLATFORM_TYPE(WaylandDisplayPtr,			void*)
+VK_DEFINE_PLATFORM_TYPE(WaylandSurfacePtr,			void*)
+VK_DEFINE_PLATFORM_TYPE(MirConnectionPtr,			void*)
+VK_DEFINE_PLATFORM_TYPE(MirSurfacePtr,				void*)
+VK_DEFINE_PLATFORM_TYPE(AndroidNativeWindowPtr,		void*)
+VK_DEFINE_PLATFORM_TYPE(Win32InstanceHandle,		void*)
+VK_DEFINE_PLATFORM_TYPE(Win32WindowHandle,			void*)
+VK_DEFINE_PLATFORM_TYPE(Win32Handle,				void*)
+VK_DEFINE_PLATFORM_TYPE(Win32SecurityAttributesPtr,	const void*)
+VK_DEFINE_PLATFORM_TYPE(AndroidHardwareBufferPtr,	void*)
+VK_DEFINE_PLATFORM_TYPE(Win32MonitorHandle,			void*)
+VK_DEFINE_PLATFORM_TYPE(Win32LPCWSTR,				const void*)
+VK_DEFINE_PLATFORM_TYPE(RROutput,					void*)
+VK_DEFINE_PLATFORM_TYPE(zx_handle_t,				int32_t)
+VK_DEFINE_PLATFORM_TYPE(GgpFrameToken,				int32_t)
+VK_DEFINE_PLATFORM_TYPE(GgpStreamDescriptor,		int32_t)
+VK_DEFINE_PLATFORM_TYPE(CAMetalLayer,				void*)
 #define VK_KHR_SURFACE_SPEC_VERSION 25
 #define VK_KHR_SWAPCHAIN_SPEC_VERSION 70
 #define VK_KHR_DISPLAY_SPEC_VERSION 23

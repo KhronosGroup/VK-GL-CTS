@@ -264,9 +264,9 @@ public:
 	bool			nextCell				(void);
 	IVec2			getOrigin				(void) const;
 
-	const IVec2&	getCellSize				(void) const { return m_cellSize; };
+	const IVec2&	getCellSize				(void) const { return m_cellSize; }
 	IVec4			getUsedAreaBoundingBox	(void) const;
-	int				getCellCount			(void) const { return m_cellCount; };
+	int				getCellCount			(void) const { return m_cellCount; }
 
 private:
 	static IVec2	getRandomOffset			(deUint32 seed, IVec2 targetSize, IVec2 cellSize, IVec2 grid, int cellCount);
@@ -1210,7 +1210,7 @@ void renderTexture (glu::RenderContext&		renderContext,
 				if (!intThresholdCompare(log, cell.name.c_str(), cell.description.c_str(), cell.reference.getAccess(), resultAccess, threshold.toIVec().cast<deUint32>(), tcu::COMPARE_LOG_ON_ERROR))
 					results.fail("Image comparison of " + cell.description + " failed.");
 				else
-					log << TestLog::Message << "Image comparison of " << cell.description << " passed." << TestLog::EndMessage;;
+					log << TestLog::Message << "Image comparison of " << cell.description << " passed." << TestLog::EndMessage;
 			}
 		}
 	}

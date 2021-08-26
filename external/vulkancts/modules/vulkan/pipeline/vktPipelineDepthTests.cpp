@@ -471,7 +471,7 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 	// Create pipeline
 	{
 		const std::vector<VkViewport>				viewports							(1, makeViewport(m_renderSize));
-		const std::vector<VkRect2D>					scissors							(1, makeRect2D(m_renderSize));;
+		const std::vector<VkRect2D>					scissors							(1, makeRect2D(m_renderSize));
 
 		const VkVertexInputBindingDescription		vertexInputBindingDescription		=
 		{

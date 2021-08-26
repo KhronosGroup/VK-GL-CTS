@@ -61,7 +61,7 @@ static deStreamResult fileIOStream_read (deStreamData* stream, void* buf, deInt3
 			fileStream->status	= DE_STREAMSTATUS_ERROR;
 			return DE_STREAMRESULT_ERROR;
 			break;
-	};
+	}
 }
 
 static deStreamResult fileIOStream_write (deStreamData* stream, const void* buf, deInt32 bufSize, deInt32* numWritten)
@@ -93,7 +93,7 @@ static deStreamResult fileIOStream_write (deStreamData* stream, const void* buf,
 			fileStream->status	= DE_STREAMSTATUS_ERROR;
 			return DE_STREAMRESULT_ERROR;
 			break;
-	};
+	}
 }
 
 static const char* fileIOStream_getError (deStreamData* stream)
@@ -212,5 +212,5 @@ void deFileOutStream_init (deOutStream* stream, const char* filename, deFileMode
 	fileStream->error	= DE_NULL;
 
 	if (!fileStream->file)
-		fileStream->status = DE_STREAMSTATUS_ERROR;;
+		fileStream->status = DE_STREAMSTATUS_ERROR;
 }

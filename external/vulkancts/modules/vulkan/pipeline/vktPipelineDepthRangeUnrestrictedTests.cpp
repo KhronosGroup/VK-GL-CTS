@@ -144,7 +144,7 @@ deBool isFloatingPointDepthFormat (VkFormat format)
 		return DE_FALSE;
 	default:
 		DE_FATAL("No depth format");
-	};
+	}
 	return DE_FALSE;
 }
 
@@ -161,7 +161,7 @@ deBool depthFormatHasStencilComponent (VkFormat format)
 		return DE_FALSE;
 	default:
 		DE_FATAL("No depth format");
-	};
+	}
 	return DE_FALSE;
 }
 
@@ -200,7 +200,7 @@ deBool compareDepthResult (VkCompareOp compare, float depth, float clearValue)
 	default:
 		result = false;
 		break;
-	};
+	}
 	return result;
 }
 

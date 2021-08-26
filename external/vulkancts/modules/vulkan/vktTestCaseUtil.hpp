@@ -163,7 +163,7 @@ private:
 
 struct NoSupport0
 {
-	void			checkSupport	(Context&) const {};
+	void			checkSupport	(Context&) const {}
 };
 
 class FunctionSupport0
@@ -184,7 +184,7 @@ private:
 template<typename Arg0>
 struct NoSupport1
 {
-	void			checkSupport	(Context&, Arg0) const {};
+	void			checkSupport	(Context&, Arg0) const {}
 };
 
 template<typename Arg0>

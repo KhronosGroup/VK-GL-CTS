@@ -57,7 +57,7 @@ namespace KHRDebug
  * @param error_message  Message logged if generated error is not the expected one
  **/
 #define CHECK_ERROR(expected_error, error_message)                                                      \
-	{                                                                                                   \
+	do {                                                                                                \
 		GLenum generated_error = m_gl->getError();                                                      \
                                                                                                         \
 		if (expected_error != generated_error)                                                          \
@@ -70,7 +70,7 @@ namespace KHRDebug
 			TestBase::done();                                                                           \
 			TCU_FAIL("Invalid error generated");                                                        \
 		}                                                                                               \
-	}
+	} while (0)
 
 /** Pop all groups from stack
  *

@@ -5708,7 +5708,7 @@ void DrawReadBuffersErrorsTest::PrepareObjects()
 		case GL_RIGHT:
 		case GL_FRONT_AND_BACK:
 			is_attachment = true;
-		};
+		}
 
 		for (glw::GLint i = 0; i < m_max_color_attachments; ++i)
 		{
@@ -6027,10 +6027,10 @@ void InvalidateDataAndSubDataErrorsTest::PrepareObjects()
 		case GL_STENCIL_ATTACHMENT:
 		case GL_DEPTH_STENCIL_ATTACHMENT:
 			continue;
-		};
+		}
 
 		break;
-	};
+	}
 
 	/* Invalid color attachment. */
 	glw::GLint max_color_attachments = 8; /* Spec default. */
@@ -6053,7 +6053,7 @@ void InvalidateDataAndSubDataErrorsTest::PrepareObjects()
 		case GL_DEPTH:
 		case GL_STENCIL:
 			continue;
-		};
+		}
 
 		break;
 	}

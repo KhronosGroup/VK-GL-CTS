@@ -861,12 +861,12 @@ protected:
 class RayTracingProperties
 {
 protected:
-									RayTracingProperties						() {};
+									RayTracingProperties						() {}
 
 public:
 									RayTracingProperties						(const InstanceInterface&	vki,
-																				 const VkPhysicalDevice		physicalDevice) { DE_UNREF(vki); DE_UNREF(physicalDevice); };
-	virtual							~RayTracingProperties						() {};
+																				 const VkPhysicalDevice		physicalDevice) { DE_UNREF(vki); DE_UNREF(physicalDevice); }
+	virtual							~RayTracingProperties						() {}
 
 	virtual deUint32				getShaderGroupHandleSize					(void)	= DE_NULL;
 	virtual deUint32				getMaxRecursionDepth						(void)	= DE_NULL;

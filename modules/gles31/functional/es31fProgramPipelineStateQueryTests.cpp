@@ -391,13 +391,15 @@ void ProgramPipelineStateQueryTests::init (void)
 		QUERY_PIPELINE_INTEGER,
 	};
 
-#define FOR_EACH_VERIFIER(X) \
-	for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(verifiers); ++verifierNdx)	\
-	{																						\
-		const char* verifierSuffix = getVerifierSuffix(verifiers[verifierNdx]);				\
-		const QueryType verifier = verifiers[verifierNdx];									\
-		this->addChild(X);																	\
-	}
+#define FOR_EACH_VERIFIER(X)																	\
+	do {																						\
+		for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(verifiers); ++verifierNdx)	\
+		{																						\
+			const char* verifierSuffix = getVerifierSuffix(verifiers[verifierNdx]);				\
+			const QueryType verifier = verifiers[verifierNdx];									\
+			this->addChild(X);																	\
+		}																						\
+	} while (0)
 
 	FOR_EACH_VERIFIER(new ActiveProgramCase(m_context, verifier, (std::string("active_program_") + verifierSuffix).c_str(), "Test ACTIVE_PROGRAM"));
 	FOR_EACH_VERIFIER(new PipelineProgramCase(m_context, verifier, (std::string("vertex_shader_") + verifierSuffix).c_str(), "Test VERTEX_SHADER", GL_VERTEX_SHADER));

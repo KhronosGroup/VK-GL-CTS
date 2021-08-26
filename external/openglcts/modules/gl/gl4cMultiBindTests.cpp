@@ -1374,7 +1374,7 @@ static const size_t s_n_texture_tragets = sizeof(s_texture_infos) / sizeof(s_tex
  * @param error_message  Message logged if generated error is not the expected one
  **/
 #define CHECK_ERROR(expected_error, error_message)                                                      \
-	{                                                                                                   \
+	do {                                                                                                   \
 		GLenum generated_error = gl.getError();                                                         \
                                                                                                         \
 		if (expected_error != generated_error)                                                          \
@@ -1386,7 +1386,7 @@ static const size_t s_n_texture_tragets = sizeof(s_texture_infos) / sizeof(s_tex
 				<< tcu::TestLog::EndMessage;                                                            \
 			TCU_FAIL("Invalid error generated");                                                        \
 		}                                                                                               \
-	}
+	} while (0)
 
 /* Prototypes */
 void replaceToken(const GLchar* token, size_t& search_position, const GLchar* text, std::string& string);

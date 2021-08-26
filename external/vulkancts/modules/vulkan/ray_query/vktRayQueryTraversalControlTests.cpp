@@ -388,7 +388,7 @@ void GraphicsConfiguration::initConfiguration (Context&						context,
 			break;
 		default:
 			TCU_THROW(InternalError, "Wrong shader source type");
-	};
+	}
 
 	const VkVertexInputBindingDescription vertexInputBindingDescription =
 	{
@@ -680,7 +680,7 @@ bool GraphicsConfiguration::verifyImage (BufferWithMemory*					resultBuffer,
 			break;
 		default:
 			TCU_THROW(InternalError, "Wrong shader source type");
-	};
+	}
 
 	// compare result and reference
 	return tcu::intThresholdCompare(context.getTestContext().getLog(), "Result comparison", "", referenceAccess, resultAccess, tcu::UVec4(0), tcu::COMPARE_LOG_RESULT);

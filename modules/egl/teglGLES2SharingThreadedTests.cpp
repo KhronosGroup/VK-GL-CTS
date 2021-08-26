@@ -2929,7 +2929,7 @@ tcu::TestCase::IterateResult GLES2SharingRandomTest::iterate (void)
 				default:
 					DE_ASSERT(false);
 					isOk = false;
-			};
+			}
 		}
 
 		if (notSupported)
@@ -3744,7 +3744,7 @@ tcu::TestCase::IterateResult GLES2ThreadedSharingTest::iterate (void)
 				default:
 					DE_ASSERT(false);
 					isOk = false;
-			};
+			}
 		}
 
 		if (notSupported)

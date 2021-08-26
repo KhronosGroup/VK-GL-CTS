@@ -264,8 +264,8 @@ void BufferObjectQueryTests::init (void)
 	m_verifierInt		= new GetBufferParameterIVerifier	(m_context.getRenderContext().getFunctions(), m_context.getTestContext().getLog());
 	BufferParamVerifier* verifiers[] = {m_verifierInt};
 
-	FOR_EACH_VERIFIER(verifiers, addChild(new BufferSizeCase		(m_context, verifier,	(std::string("buffer_size")				+ verifier->getTestNamePostfix()).c_str(), "BUFFER_SIZE")));
-	FOR_EACH_VERIFIER(verifiers, addChild(new BufferUsageCase		(m_context, verifier,	(std::string("buffer_usage")			+ verifier->getTestNamePostfix()).c_str(), "BUFFER_USAGE")));
+	FOR_EACH_VERIFIER(verifiers, addChild(new BufferSizeCase		(m_context, verifier,	(std::string("buffer_size")				+ verifier->getTestNamePostfix()).c_str(), "BUFFER_SIZE")))
+	FOR_EACH_VERIFIER(verifiers, addChild(new BufferUsageCase		(m_context, verifier,	(std::string("buffer_usage")			+ verifier->getTestNamePostfix()).c_str(), "BUFFER_USAGE")))
 }
 
 void BufferObjectQueryTests::deinit (void)

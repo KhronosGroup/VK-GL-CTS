@@ -408,7 +408,7 @@ deUint8* VertexArrayObjectTest::createRandomBufferData (const BufferSpec& buffer
 
 				default:
 					DE_ASSERT(false);
-			};
+			}
 		}
 
 		itr += stride;
@@ -992,7 +992,7 @@ deUint8* MultiVertexArrayObjectTest::createRandomBufferData (const BufferSpec& b
 
 				default:
 					DE_ASSERT(false);
-			};
+			}
 		}
 
 		itr += stride;
@@ -1570,7 +1570,7 @@ void VertexArrayObjectTestGroup::init (void)
 		spec.indexCount			= 0;
 
 		spec.vao.attributes[0].normalized	= GL_TRUE;
-		spec.state.attributes[0].normalized	= GL_FALSE;;
+		spec.state.attributes[0].normalized	= GL_FALSE;
 		addChild(new VertexArrayObjectTest(m_context, spec, "diff_normalize", "diff_normalize"));
 	}
 	// DrawElements with buffer / Pointer

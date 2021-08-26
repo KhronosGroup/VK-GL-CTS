@@ -127,7 +127,7 @@ void TextureStateQueryTests::init (void)
 																	 states[stateNdx].desc,
 																	 verifier,
 																	 textureTargets[targetNdx].target,
-																	 states[stateNdx].tester)));
+																	 states[stateNdx].tester)))
 		}
 	}
 }

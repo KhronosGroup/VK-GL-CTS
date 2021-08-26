@@ -33,7 +33,7 @@ class GeometryShaderOutput : public TestCaseBase
 protected:
 	/* Protected methods */
 	GeometryShaderOutput(Context& context, const ExtParameters& extParams, const char* name, const char* description);
-	virtual ~GeometryShaderOutput(){};
+	virtual ~GeometryShaderOutput(){}
 
 	/* Protected variables */
 	static const char* const m_fragment_shader_code_white_color;
@@ -66,7 +66,7 @@ public:
 	/* Public methods */
 	GeometryShaderDuplicateOutputLayoutQualifierTest(Context& context, const ExtParameters& extParams, const char* name,
 													 const char* description);
-	virtual ~GeometryShaderDuplicateOutputLayoutQualifierTest(){};
+	virtual ~GeometryShaderDuplicateOutputLayoutQualifierTest(){}
 
 	virtual IterateResult iterate(void);
 
@@ -100,7 +100,7 @@ public:
 	/* Public methods */
 	GeometryShaderDuplicateMaxVerticesLayoutQualifierTest(Context& context, const ExtParameters& extParams,
 														  const char* name, const char* description);
-	virtual ~GeometryShaderDuplicateMaxVerticesLayoutQualifierTest(){};
+	virtual ~GeometryShaderDuplicateMaxVerticesLayoutQualifierTest(){}
 
 	virtual IterateResult iterate(void);
 
@@ -127,7 +127,7 @@ protected:
 	/* Protected methods */
 	GeometryShaderOutputRenderingBase(Context& context, const ExtParameters& extParams, const char* name,
 									  const char* description, const char* geometry_shader_code);
-	virtual ~GeometryShaderOutputRenderingBase(){};
+	virtual ~GeometryShaderOutputRenderingBase(){}
 
 	void initTest(void);
 
@@ -185,7 +185,7 @@ public:
 	/* Public methods */
 	GeometryShaderIfVertexEmitIsDoneAtEndTest(Context& context, const ExtParameters& extParams, const char* name,
 											  const char* description);
-	virtual ~GeometryShaderIfVertexEmitIsDoneAtEndTest(){};
+	virtual ~GeometryShaderIfVertexEmitIsDoneAtEndTest(){}
 
 	virtual bool verifyResult(const unsigned char* result_image, unsigned int width, unsigned int height,
 							  unsigned int pixel_size) const;
@@ -218,7 +218,7 @@ public:
 	/* Public methods */
 	GeometryShaderMissingEndPrimitiveCallTest(Context& context, const ExtParameters& extParams, const char* name,
 											  const char* description);
-	virtual ~GeometryShaderMissingEndPrimitiveCallTest(){};
+	virtual ~GeometryShaderMissingEndPrimitiveCallTest(){}
 
 	virtual bool verifyResult(const unsigned char* result_image, unsigned int width, unsigned int height,
 							  unsigned int pixel_size) const;
@@ -255,7 +255,7 @@ public:
 	/* Public methods */
 	GeometryShaderMissingEndPrimitiveCallForSinglePrimitiveTest(Context& context, const ExtParameters& extParams,
 																const char* name, const char* description);
-	virtual ~GeometryShaderMissingEndPrimitiveCallForSinglePrimitiveTest(){};
+	virtual ~GeometryShaderMissingEndPrimitiveCallForSinglePrimitiveTest(){}
 
 	virtual IterateResult iterate(void);
 

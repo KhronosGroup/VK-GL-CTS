@@ -4393,7 +4393,7 @@ void gl3cts::TransformFeedback::DrawXFB::bindBOForXFB(glw::GLenum capture_mode, 
 		break;
 	default:
 		throw 0;
-	};
+	}
 }
 
 void gl3cts::TransformFeedback::DrawXFB::bindBOForDraw(glw::GLuint program_id, glw::GLenum capture_mode,

@@ -481,7 +481,7 @@ VkAccessFlags pipelineAccessFromStage (VkPipelineStageFlagBits stage, bool readO
 
 	case VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT:
 		readAccess = static_cast<VkAccessFlagBits>(VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT);
-		writeAccess = VK_ACCESS_SHADER_READ_BIT;;
+		writeAccess = VK_ACCESS_SHADER_READ_BIT;
 		break;
 
 	case VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT:

@@ -519,7 +519,7 @@ std::string makeArray(const std::string& type, const std::vector<deUint64>& valu
 		s << type << "(" << std::to_string(values[i]) << ")";
 		if (i != values.size() - 1)
 			s << ", ";
-	};
+	}
 	s << ")";
 	return s.str();
 }

@@ -427,7 +427,7 @@ class DiscardRectanglesTestInstance : public TestInstance
 public:
 							DiscardRectanglesTestInstance		(Context& context,
 																 TestParams params);
-	virtual					~DiscardRectanglesTestInstance		(void) {};
+	virtual					~DiscardRectanglesTestInstance		(void) {}
 	virtual tcu::TestStatus	iterate								(void);
 
 private:
@@ -617,7 +617,7 @@ public:
 															 const char *name,
 															 const char *description,
 															 TestParams params);
-	virtual						~DiscardRectanglesTestCase	(void) {};
+	virtual						~DiscardRectanglesTestCase	(void) {}
 
 	virtual TestInstance*		createInstance				(Context& context)	const;
 	virtual void				initPrograms				(SourceCollections& programCollection) const;

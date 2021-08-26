@@ -147,7 +147,7 @@ de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR ge
 				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::Vec2, deUint32>(builderParams));
 				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::Vec2, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
-			};
+			}
 		case VK_FORMAT_R32G32B32_SFLOAT:
 			switch (indexType)
 			{
@@ -155,7 +155,7 @@ de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR ge
 				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::Vec3, deUint32>(builderParams));
 				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::Vec3, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
-			};
+			}
 		case VK_FORMAT_R32G32B32A32_SFLOAT:
 			switch (indexType)
 			{
@@ -163,7 +163,7 @@ de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR ge
 				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::Vec4, deUint32>(builderParams));
 				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::Vec4, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
-			};
+			}
 		case VK_FORMAT_R16G16_SFLOAT:
 			switch (indexType)
 			{
@@ -171,7 +171,7 @@ de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR ge
 				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec2_16, deUint32>(builderParams));
 				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec2_16, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
-			};
+			}
 		case VK_FORMAT_R16G16B16_SFLOAT:
 			switch (indexType)
 			{
@@ -179,7 +179,7 @@ de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR ge
 				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec3_16, deUint32>(builderParams));
 				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec3_16, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
-			};
+			}
 		case VK_FORMAT_R16G16B16A16_SFLOAT:
 			switch (indexType)
 			{
@@ -187,7 +187,7 @@ de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR ge
 				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec4_16, deUint32>(builderParams));
 				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec4_16, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
-			};
+			}
 		case VK_FORMAT_R16G16_SNORM:
 			switch (indexType)
 			{
@@ -195,7 +195,7 @@ de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR ge
 				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec2_16SNorm, deUint32>(builderParams));
 				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec2_16SNorm, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
-			};
+			}
 		case VK_FORMAT_R16G16B16_SNORM:
 			switch (indexType)
 			{
@@ -203,7 +203,7 @@ de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR ge
 				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec3_16SNorm, deUint32>(builderParams));
 				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec3_16SNorm, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
-			};
+			}
 		case VK_FORMAT_R16G16B16A16_SNORM:
 			switch (indexType)
 			{
@@ -211,7 +211,7 @@ de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR ge
 				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec4_16SNorm, deUint32>(builderParams));
 				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec4_16SNorm, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
-			};
+			}
 		case VK_FORMAT_R64G64_SFLOAT:
 			switch (indexType)
 			{
@@ -219,7 +219,7 @@ de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR ge
 				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::DVec2, deUint32>(builderParams));
 				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::DVec2, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
-			};
+			}
 		case VK_FORMAT_R64G64B64_SFLOAT:
 			switch (indexType)
 			{
@@ -227,7 +227,7 @@ de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR ge
 				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::DVec3, deUint32>(builderParams));
 				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::DVec3, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
-			};
+			}
 		case VK_FORMAT_R64G64B64A64_SFLOAT:
 			switch (indexType)
 			{
@@ -235,7 +235,7 @@ de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR ge
 				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::DVec4, deUint32>(builderParams));
 				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::DVec4, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
-			};
+			}
 		case VK_FORMAT_R8G8_SNORM:
 			switch (indexType)
 			{
@@ -243,7 +243,7 @@ de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR ge
 				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec2_8SNorm, deUint32>(builderParams));
 				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec2_8SNorm, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
-			};
+			}
 		case VK_FORMAT_R8G8B8_SNORM:
 			switch (indexType)
 			{
@@ -251,7 +251,7 @@ de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR ge
 				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec3_8SNorm, deUint32>(builderParams));
 				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec3_8SNorm, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
-			};
+			}
 		case VK_FORMAT_R8G8B8A8_SNORM:
 			switch (indexType)
 			{
@@ -259,10 +259,10 @@ de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR ge
 				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec4_8SNorm, deUint32>(builderParams));
 				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec4_8SNorm, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
-			};
+			}
 		default:
 			TCU_THROW(InternalError, "Wrong vertex format");
-	};
+	}
 
 }
 
@@ -2850,16 +2850,16 @@ public:
 																		 const VkPhysicalDevice		physicalDevice);
 	virtual					~RayTracingPropertiesKHR					();
 
-	virtual deUint32		getShaderGroupHandleSize					(void)	{ return m_rayTracingPipelineProperties.shaderGroupHandleSize;						};
-	virtual deUint32		getMaxRecursionDepth						(void)	{ return m_rayTracingPipelineProperties.maxRayRecursionDepth;						};
-	virtual deUint32		getMaxShaderGroupStride						(void)	{ return m_rayTracingPipelineProperties.maxShaderGroupStride;						};
-	virtual deUint32		getShaderGroupBaseAlignment					(void)	{ return m_rayTracingPipelineProperties.shaderGroupBaseAlignment;					};
-	virtual deUint64		getMaxGeometryCount							(void)	{ return m_accelerationStructureProperties.maxGeometryCount;						};
-	virtual deUint64		getMaxInstanceCount							(void)	{ return m_accelerationStructureProperties.maxInstanceCount;						};
-	virtual deUint64		getMaxPrimitiveCount						(void)	{ return m_accelerationStructureProperties.maxPrimitiveCount;						};
-	virtual deUint32		getMaxDescriptorSetAccelerationStructures	(void)	{ return m_accelerationStructureProperties.maxDescriptorSetAccelerationStructures;	};
-	deUint32				getMaxRayDispatchInvocationCount			(void)	{ return m_rayTracingPipelineProperties.maxRayDispatchInvocationCount;				};
-	deUint32				getMaxRayHitAttributeSize					(void)	{ return m_rayTracingPipelineProperties.maxRayHitAttributeSize;						};
+	virtual deUint32		getShaderGroupHandleSize					(void)	{ return m_rayTracingPipelineProperties.shaderGroupHandleSize;						}
+	virtual deUint32		getMaxRecursionDepth						(void)	{ return m_rayTracingPipelineProperties.maxRayRecursionDepth;						}
+	virtual deUint32		getMaxShaderGroupStride						(void)	{ return m_rayTracingPipelineProperties.maxShaderGroupStride;						}
+	virtual deUint32		getShaderGroupBaseAlignment					(void)	{ return m_rayTracingPipelineProperties.shaderGroupBaseAlignment;					}
+	virtual deUint64		getMaxGeometryCount							(void)	{ return m_accelerationStructureProperties.maxGeometryCount;						}
+	virtual deUint64		getMaxInstanceCount							(void)	{ return m_accelerationStructureProperties.maxInstanceCount;						}
+	virtual deUint64		getMaxPrimitiveCount						(void)	{ return m_accelerationStructureProperties.maxPrimitiveCount;						}
+	virtual deUint32		getMaxDescriptorSetAccelerationStructures	(void)	{ return m_accelerationStructureProperties.maxDescriptorSetAccelerationStructures;	}
+	deUint32				getMaxRayDispatchInvocationCount			(void)	{ return m_rayTracingPipelineProperties.maxRayDispatchInvocationCount;				}
+	deUint32				getMaxRayHitAttributeSize					(void)	{ return m_rayTracingPipelineProperties.maxRayHitAttributeSize;						}
 
 protected:
 	VkPhysicalDeviceAccelerationStructurePropertiesKHR	m_accelerationStructureProperties;

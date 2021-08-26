@@ -176,7 +176,7 @@ std::string getOpTypeImageSparse (const ImageType			imageType,
 		default :
 			DE_FATAL("Unexpected image type");
 		break;
-	};
+	}
 
 	if (requiresSampler)
 		src << "1 ";
@@ -243,7 +243,7 @@ std::string getOpTypeImageSparse (const ImageType			imageType,
 		default:
 			DE_FATAL("Unexpected channel type");
 		break;
-	};
+	}
 
 	return src.str();
 }
@@ -283,7 +283,7 @@ std::string getOpTypeImageSparse (const ImageType		imageType,
 		default :
 			DE_FATAL("Unexpected image type");
 		break;
-	};
+	}
 
 	if (requiresSampler)
 		src << "1 ";
@@ -406,7 +406,7 @@ std::string getOpTypeImageResidency (const ImageType imageType)
 		default :
 			DE_FATAL("Unexpected image type");
 		break;
-	};
+	}
 
 	return src.str();
 }

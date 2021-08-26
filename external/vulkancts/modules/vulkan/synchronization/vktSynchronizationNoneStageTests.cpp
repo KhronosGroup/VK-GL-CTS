@@ -531,7 +531,7 @@ Move<VkRenderPass> NoneStageTestInstance::buildBasicRenderPass(VkFormat outputFo
 		DE_NULL													// const deUint32*					pCorrelatedViewMasks
 	};
 
-	return vk::createRenderPass2(m_context.getDeviceInterface(), m_context.getDevice(), &renderPassInfo);;
+	return vk::createRenderPass2(m_context.getDeviceInterface(), m_context.getDevice(), &renderPassInfo);
 }
 
 Move<VkRenderPass> NoneStageTestInstance::buildComplexRenderPass(VkFormat intermediateFormat,	VkImageLayout intermediateLayout, VkImageAspectFlags intermediateAspect,

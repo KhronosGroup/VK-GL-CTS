@@ -3600,7 +3600,7 @@ void SamplerInstance::createAndPopulateDescriptors					(IterateCommonVariables&	
 		{
 			imageExtent.width *= 2;
 			imageExtent.height *= 2;
-		};
+		}
 
 		createImages(variables.descriptorsImages, variables.descriptorsBufferInfos, variables.descriptorsBuffer,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT, imageExtent, m_colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, 1, m_testParams.usesMipMaps);

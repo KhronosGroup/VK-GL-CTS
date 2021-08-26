@@ -232,7 +232,7 @@ void StateChangeCallTests::init (void)
 			GL_RASTERIZER_DISCARD,
 			GL_PRIMITIVE_RESTART_FIXED_INDEX
 		})
-	);
+	)
 
 	ADD_ARG_CASE1(disable, "Test cost of glDisable() calls",
 		disable,
@@ -250,7 +250,7 @@ void StateChangeCallTests::init (void)
 			GL_RASTERIZER_DISCARD,
 			GL_PRIMITIVE_RESTART_FIXED_INDEX
 		})
-	);
+	)
 
 	ADD_ARG_CASE1(depth_func, "Test cost of glDepthFunc() calls",
 		depthFunc,
@@ -265,7 +265,7 @@ void StateChangeCallTests::init (void)
 			GL_GEQUAL,
 			GL_NOTEQUAL
 		})
-	);
+	)
 
 	ADD_ARG_CASE1(depth_mask, "Test cost of glDepthMask() calls",
 		depthMask,
@@ -274,7 +274,7 @@ void StateChangeCallTests::init (void)
 			GL_TRUE,
 			GL_FALSE
 		})
-	);
+	)
 
 	ADD_ARG_CASE1(stencil_mask, "Test cost of glStencilMask() calls",
 		stencilMask,
@@ -283,7 +283,7 @@ void StateChangeCallTests::init (void)
 			GL_TRUE,
 			GL_FALSE
 		})
-	);
+	)
 
 	ADD_ARG_CASE1(clear_depth, "Test cost of glClearDepth() calls",
 		clearDepthf,
@@ -293,7 +293,7 @@ void StateChangeCallTests::init (void)
 			0.5f,
 			1.0f
 		})
-	);
+	)
 
 	ADD_ARG_CASE1(clear_stencil, "Test cost of glClearStencil() calls",
 		clearStencil,
@@ -303,7 +303,7 @@ void StateChangeCallTests::init (void)
 			128,
 			28
 		})
-	);
+	)
 
 	ADD_ARG_CASE1(line_width, "Test cost of glLineWidth() calls",
 		lineWidth,
@@ -313,7 +313,7 @@ void StateChangeCallTests::init (void)
 			0.5f,
 			10.0f
 		})
-	);
+	)
 
 	ADD_ARG_CASE1(cull_face, "Test cost of glCullFace() calls",
 		cullFace,
@@ -323,7 +323,7 @@ void StateChangeCallTests::init (void)
 			GL_BACK,
 			GL_FRONT_AND_BACK
 		})
-	);
+	)
 
 	ADD_ARG_CASE1(front_face, "Test cost of glFrontFace() calls",
 		frontFace,
@@ -332,7 +332,7 @@ void StateChangeCallTests::init (void)
 			GL_CCW,
 			GL_CW
 		})
-	);
+	)
 
 	ADD_ARG_CASE1(blend_equation, "Test cost of glBlendEquation() calls",
 		blendEquation,
@@ -342,7 +342,7 @@ void StateChangeCallTests::init (void)
 			GL_FUNC_SUBTRACT,
 			GL_FUNC_REVERSE_SUBTRACT
 		})
-	);
+	)
 
 	ADD_ARG_CASE1(enable_vertex_attrib_array, "Test cost of glEnableVertexAttribArray() calls",
 		enableVertexAttribArray,
@@ -357,7 +357,7 @@ void StateChangeCallTests::init (void)
 			6,
 			7,
 		})
-	);
+	)
 
 	ADD_ARG_CASE1(disable_vertex_attrib_array, "Test cost of glDisableVertexAttribArray() calls",
 		disableVertexAttribArray,
@@ -372,7 +372,7 @@ void StateChangeCallTests::init (void)
 			6,
 			7,
 		})
-	);
+	)
 
 	ADD_ARG_CASE1(use_program, "Test cost of glUseProgram() calls. Note: Uses only program 0.",
 		useProgram,
@@ -380,7 +380,7 @@ void StateChangeCallTests::init (void)
 		ARG_LIST({
 			0,
 		})
-	);
+	)
 
 	ADD_ARG_CASE1(active_texture, "Test cost of glActiveTexture() calls",
 		activeTexture,
@@ -395,7 +395,7 @@ void StateChangeCallTests::init (void)
 			GL_TEXTURE6,
 			GL_TEXTURE7
 		})
-	);
+	)
 
 	ADD_ARG_CASE2(depth_range, "Test cost of glDepthRangef() calls",
 		depthRangef,
@@ -411,7 +411,7 @@ void StateChangeCallTests::init (void)
 			1.0f,
 			0.5f
 		})
-	);
+	)
 
 	ADD_ARG_CASE2(polygon_offset, "Test cost of glPolygonOffset() calls",
 		polygonOffset,
@@ -429,7 +429,7 @@ void StateChangeCallTests::init (void)
 			0.5f,
 			1000.0f
 		})
-	);
+	)
 
 	ADD_ARG_CASE2(sample_coverage, "Test cost of glSampleCoverage() calls",
 		sampleCoverage,
@@ -445,7 +445,7 @@ void StateChangeCallTests::init (void)
 			GL_TRUE,
 			GL_FALSE
 		})
-	);
+	)
 
 	ADD_ARG_CASE2(blend_func, "Test cost of glBlendFunc() calls",
 		blendFunc,
@@ -483,7 +483,7 @@ void StateChangeCallTests::init (void)
 			GL_CONSTANT_ALPHA,
 			GL_ONE_MINUS_CONSTANT_ALPHA
 		})
-	);
+	)
 
 	ADD_ARG_CASE2(blend_equation_separate, "Test cost of glBlendEquationSeparate() calls",
 		blendEquationSeparate,
@@ -499,7 +499,7 @@ void StateChangeCallTests::init (void)
 			GL_FUNC_SUBTRACT,
 			GL_FUNC_REVERSE_SUBTRACT
 		})
-	);
+	)
 
 	ADD_ARG_CASE2(stencil_mask_separate, "Test cost of glStencilMaskSeparate() calls",
 		stencilMaskSeparate,
@@ -514,7 +514,7 @@ void StateChangeCallTests::init (void)
 			GL_TRUE,
 			GL_FALSE
 		})
-	);
+	)
 
 	ADD_ARG_CASE2(bind_buffer, "Test cost of glBindBuffer() calls. Note: Uses only buffer 0",
 		bindBuffer,
@@ -527,7 +527,7 @@ void StateChangeCallTests::init (void)
 		ARG_LIST({
 			0
 		})
-	);
+	)
 
 	ADD_ARG_CASE2(bind_texture, "Test cost of glBindTexture() calls. Note: Uses only texture 0",
 		bindTexture,
@@ -540,7 +540,7 @@ void StateChangeCallTests::init (void)
 		ARG_LIST({
 			0
 		})
-	);
+	)
 
 	ADD_ARG_CASE2(bind_sampler, "Test cost of glBindSampler() calls. Note: Uses only sampler 0",
 		bindSampler,
@@ -559,7 +559,7 @@ void StateChangeCallTests::init (void)
 		ARG_LIST({
 			0
 		})
-	);
+	)
 
 	ADD_ARG_CASE1(bind_vertex_array, "Test cost of glBindVertexArray() calls. Note: Uses only VAO 0",
 		bindVertexArray,
@@ -567,7 +567,7 @@ void StateChangeCallTests::init (void)
 		ARG_LIST({
 			0
 		})
-	);
+	)
 
 	ADD_ARG_CASE2(hint, "Test cost of glHint() calls",
 		hint,
@@ -581,7 +581,7 @@ void StateChangeCallTests::init (void)
 			GL_NICEST,
 			GL_DONT_CARE
 		})
-	);
+	)
 
 	ADD_ARG_CASE3(stencil_func, "Test cost of glStencilFunc() calls",
 		stencilFunc,
@@ -613,7 +613,7 @@ void StateChangeCallTests::init (void)
 			7,
 			0xFFFFFFFF
 		})
-	);
+	)
 
 	ADD_ARG_CASE3(stencil_op, "Test cost of glStencilOp() calls",
 		stencilOp,
@@ -650,7 +650,7 @@ void StateChangeCallTests::init (void)
 			GL_INCR_WRAP,
 			GL_DECR_WRAP
 		})
-	);
+	)
 
 	ADD_ARG_CASE4(viewport, "Test cost of glViewport() calls",
 		viewport,
@@ -682,7 +682,7 @@ void StateChangeCallTests::init (void)
 			100,
 			1145235
 		})
-	);
+	)
 
 	ADD_ARG_CASE4(scissor, "Test cost of glScissor() calls",
 		scissor,
@@ -714,7 +714,7 @@ void StateChangeCallTests::init (void)
 			100,
 			1145235
 		})
-	);
+	)
 
 	ADD_ARG_CASE4(stencil_func_separate, "Test cost of glStencilFuncSeparate() calls",
 		stencilFuncSeparate,
@@ -752,7 +752,7 @@ void StateChangeCallTests::init (void)
 			7,
 			0xFFFFFFFF
 		})
-	);
+	)
 
 	ADD_ARG_CASE4(stencil_op_separatae, "Test cost of glStencilOpSeparate() calls",
 		stencilOpSeparate,
@@ -795,7 +795,7 @@ void StateChangeCallTests::init (void)
 			GL_INCR_WRAP,
 			GL_DECR_WRAP
 		})
-	);
+	)
 
 	ADD_ARG_CASE4(blend_func_separate, "Test cost of glBlendFuncSeparate() calls",
 		blendFuncSeparate,
@@ -867,7 +867,7 @@ void StateChangeCallTests::init (void)
 			GL_CONSTANT_ALPHA,
 			GL_ONE_MINUS_CONSTANT_ALPHA
 		})
-	);
+	)
 
 	ADD_ARG_CASE4(color_mask, "Test cost of glColorMask() calls",
 		colorMask,
@@ -891,7 +891,7 @@ void StateChangeCallTests::init (void)
 			GL_TRUE,
 			GL_FALSE
 		})
-	);
+	)
 
 	ADD_ARG_CASE4(clear_color, "Test cost of glClearColor() calls",
 		clearColor,
@@ -923,7 +923,7 @@ void StateChangeCallTests::init (void)
 			0.5f,
 			0.33f
 		})
-	);
+	)
 
 	ADD_ARG_CASE6(vertex_attrib_pointer, "Test cost of glVertexAttribPointer() calls",
 		vertexAttribPointer,
@@ -969,7 +969,7 @@ void StateChangeCallTests::init (void)
 			(void*)(deUintptr)(0x0FF),
 			(void*)(deUintptr)(0x0EF)
 		})
-	);
+	)
 
 	ADD_ARG_CASE2(vertex_attrib_divisor, "Test cost of glVertexAttribDivisor() calls",
 		vertexAttribDivisor,
@@ -994,7 +994,7 @@ void StateChangeCallTests::init (void)
 			127,
 			256
 		})
-	);
+	)
 
 	ADD_ARG_CASE3(bind_buffer_base, "Test cost of glBindBufferBase() calls. Note: uses only buffer 0.",
 		bindBufferBase,
@@ -1013,7 +1013,7 @@ void StateChangeCallTests::init (void)
 		ARG_LIST({
 			0
 		})
-	);
+	)
 
 	ADD_ARG_CASE5(bind_buffer_range, "Test cost of glBindBufferRange() calls. Note: uses only buffer 0.",
 		bindBufferRange,
@@ -1040,7 +1040,7 @@ void StateChangeCallTests::init (void)
 		ARG_LIST({
 			0
 		})
-	);
+	)
 }
 
 } // Performance

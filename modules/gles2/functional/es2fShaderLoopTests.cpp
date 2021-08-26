@@ -1248,7 +1248,7 @@ static ShaderLoopCase* createSpecialLoopCase (Context& context, const char* case
 		requirement = LOOPREQUIREMENT_DYNAMIC;
 
 	return new ShaderLoopCase(context, caseName, description, isVertexCase, evalFunc, requirement, vertexShaderSource.c_str(), fragmentShaderSource.c_str());
-};
+}
 
 // ShaderLoopTests.
 

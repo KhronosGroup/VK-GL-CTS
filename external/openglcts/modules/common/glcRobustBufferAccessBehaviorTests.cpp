@@ -2614,7 +2614,7 @@ std::string ImageLoadStoreTest::getComputeShader(VERSION version, GLuint coord_o
 		break;
 	default:
 		TCU_FAIL("Invalid enum");
-	};
+	}
 
 	m_specializationMap["SRC_COORD_OFFSET"]  = "0";
 	m_specializationMap["SRC_SAMPLE_OFFSET"] = "0";

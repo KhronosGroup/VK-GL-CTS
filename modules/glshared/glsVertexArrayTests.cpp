@@ -1301,7 +1301,7 @@ float GLValue::toFloat (void) const
 			DE_ASSERT(false);
 			return 0.0f;
 			break;
-	};
+	}
 }
 
 class RandomArrayGenerator

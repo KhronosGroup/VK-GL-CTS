@@ -1269,7 +1269,7 @@ void TextureCubeMapArrayTextureSizeRTBase::checkFramebufferStatus(glw::GLenum fr
 		{
 			TCU_FAIL("Framebuffer incomplete, status not recognized");
 		}
-		}; /* switch (framebuffer_status) */
+		} /* switch (framebuffer_status) */
 	}	  /* if (GL_FRAMEBUFFER_COMPLETE != framebuffer_status) */
 }
 

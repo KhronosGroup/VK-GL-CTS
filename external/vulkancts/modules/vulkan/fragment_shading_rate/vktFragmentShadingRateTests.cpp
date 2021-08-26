@@ -318,7 +318,7 @@ tcu::TestStatus testShadingRates(Context& context)
 				if (fsr.sampleCounts & highestSampleCount)
 					break;
 				highestSampleCount >>= 1;
-			};
+			}
 
 			// Check that the highest sample count in sampleCounts is less than or equal to maxFragmentShadingRateRasterizationSamples limit
 			if (highestSampleCount > static_cast<deUint32>(fragmentShadingRateProperties.maxFragmentShadingRateRasterizationSamples))

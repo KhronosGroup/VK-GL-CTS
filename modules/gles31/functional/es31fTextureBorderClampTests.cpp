@@ -1614,7 +1614,7 @@ void TextureBorderClampRangeClampCase::init (void)
 	}
 	else if (isFixed)
 	{
-		const bool		isSigned	= m_channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT;;
+		const bool		isSigned	= m_channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT;
 		const tcu::Vec4	lookupBias	= (isSigned) ? (tcu::Vec4(0.5f))    : (tcu::Vec4(0.25f)); // scale & bias to [0.25, 0.5] range to make out-of-range values visible
 		const tcu::Vec4	lookupScale	= (isSigned) ? (tcu::Vec4(0.25f))   : (tcu::Vec4(0.5f));
 

@@ -1515,7 +1515,7 @@ std::string getColorReadStr (deUint32 size)
 	const std::string	arrayNdx		= (size == 128u)	? "[7]"
 										: (size == 32u)		? "[1]"
 										: "";
-	const std::string	colorReadStr	= getSwizzleStr(size) + " += matInst.color" + arrayNdx + ";\n";;
+	const std::string	colorReadStr	= getSwizzleStr(size) + " += matInst.color" + arrayNdx + ";\n";
 
 	return colorReadStr;
 }

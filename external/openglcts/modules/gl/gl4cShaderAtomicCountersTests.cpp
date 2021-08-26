@@ -2547,7 +2547,7 @@ class AdvancedUsageManyCounters : public SACSubcaseBase
 		{
 			glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, rt_[i], 0);
 			draw_buffers[i] = GL_COLOR_ATTACHMENT0 + i;
-		};
+		}
 		glDrawBuffers(8, draw_buffers);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

@@ -1186,7 +1186,7 @@ void MultiThreadedObjectTest::createDestroyObjects (TestThread& thread, int coun
 
 				default:
 					DE_ASSERT(false);
-			};
+			}
 		}
 		else
 		{

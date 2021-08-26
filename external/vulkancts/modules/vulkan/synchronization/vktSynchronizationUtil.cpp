@@ -1071,7 +1071,7 @@ VkDependencyInfoKHR makeCommonDependencyInfo(const VkMemoryBarrier2KHR* pMemoryB
 		!!pImageMemoryBarrier,						// deUint32							imageMemoryBarrierCount
 		pImageMemoryBarrier							// const VkImageMemoryBarrier2KHR*	pImageMemoryBarriers
 	};
-};
+}
 
 PipelineCacheData::PipelineCacheData (void)
 {

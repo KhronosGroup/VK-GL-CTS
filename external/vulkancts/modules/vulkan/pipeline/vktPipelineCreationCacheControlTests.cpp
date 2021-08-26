@@ -290,8 +290,8 @@ struct TestParams
 		static constexpr VariantArray BATCH_NOCOMPILE_COMPILE_NOCOMPILE = VariantArray{NO_COMPILE, NORMAL, NO_COMPILE};
 		static constexpr VariantArray BATCH_RETURN_COMPILE_NOCOMPILE = VariantArray{EARLY_RETURN, NORMAL, NO_COMPILE};
 
-		inline constexpr Iteration() : variants{}, validators{} {};
-		inline constexpr Iteration(const VariantArray& v, const ValidatorArray& f) : variants{v}, validators{f} {};
+		inline constexpr Iteration() : variants{}, validators{} {}
+		inline constexpr Iteration(const VariantArray& v, const ValidatorArray& f) : variants{v}, validators{f} {}
 
 		VariantArray   variants;
 		ValidatorArray validators;

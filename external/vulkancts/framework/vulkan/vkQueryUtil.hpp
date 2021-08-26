@@ -143,7 +143,7 @@ StructType*									findStructure							(void* first)
 
 struct initVulkanStructure
 {
-	initVulkanStructure	(void*	pNext = DE_NULL)	: m_next(pNext)	{};
+	initVulkanStructure	(void*	pNext = DE_NULL)	: m_next(pNext)	{}
 
 	template<class StructType>
 	operator StructType()
@@ -174,7 +174,7 @@ void addToChainVulkanStructure (void***	chainPNextPtr, StructType&	structType)
 
 struct initVulkanStructureConst
 {
-	initVulkanStructureConst	(const void*	pNext = DE_NULL)	: m_next(pNext)	{};
+	initVulkanStructureConst	(const void*	pNext = DE_NULL)	: m_next(pNext)	{}
 
 	template<class StructType>
 	operator const StructType()
@@ -195,7 +195,7 @@ private:
 
 struct getPhysicalDeviceExtensionProperties
 {
-	getPhysicalDeviceExtensionProperties (const InstanceInterface&	vki, VkPhysicalDevice physicalDevice) : m_vki(vki), m_physicalDevice(physicalDevice) {};
+	getPhysicalDeviceExtensionProperties (const InstanceInterface&	vki, VkPhysicalDevice physicalDevice) : m_vki(vki), m_physicalDevice(physicalDevice) {}
 
 	template<class ExtensionProperties>
 	operator ExtensionProperties ()

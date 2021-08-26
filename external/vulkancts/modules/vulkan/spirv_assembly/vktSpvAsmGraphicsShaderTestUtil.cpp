@@ -2985,7 +2985,7 @@ VkImageAspectFlags getImageAspectFlags (VkFormat format)
 		aspectFlags |= VK_IMAGE_ASPECT_COLOR_BIT;
 
 	return aspectFlags;
-};
+}
 
 TestStatus runAndVerifyUnusedVariablePipeline (Context &context, UnusedVariableContext unusedVariableContext)
 {
@@ -4034,7 +4034,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			sizeof(Vec4),						// deUint32	offsetInBytes;
 		};
 		vertexAttribs.push_back(attr1);
-	};
+	}
 
 	// If the test instantiation has additional input/output interface variables, we need to create additional bindings.
 	// Right now we only support one additional input varible for the vertex stage, and that will be bound to binding #1
@@ -4675,7 +4675,7 @@ const vector<ShaderElement>& getVertFragPipelineStages (void)
 	{
 		vertFragPipelineStages.push_back(ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT));
 		vertFragPipelineStages.push_back(ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT));
-	};
+	}
 	return vertFragPipelineStages;
 }
 
@@ -4688,7 +4688,7 @@ const vector<ShaderElement>& getTessPipelineStages (void)
 		tessPipelineStages.push_back(ShaderElement("tessc", "main", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
 		tessPipelineStages.push_back(ShaderElement("tesse", "main", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
 		tessPipelineStages.push_back(ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT));
-	};
+	}
 	return tessPipelineStages;
 }
 
@@ -4700,7 +4700,7 @@ const vector<ShaderElement>& getGeomPipelineStages (void)
 		geomPipelineStages.push_back(ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT));
 		geomPipelineStages.push_back(ShaderElement("geom", "main", VK_SHADER_STAGE_GEOMETRY_BIT));
 		geomPipelineStages.push_back(ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT));
-	};
+	}
 	return geomPipelineStages;
 }
 

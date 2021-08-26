@@ -802,9 +802,9 @@ protected:
 
 	struct SampleCoverage
 	{
-		SampleCoverage() {};
+		SampleCoverage() {}
 		SampleCoverage(deUint32 min_, deUint32 max_)
-			: min(min_), max(max_) {};
+			: min(min_), max(max_) {}
 
 		deUint32	min;
 		deUint32	max;
@@ -3408,7 +3408,7 @@ void MultisampleRenderer::initialize (Context&									context,
 				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL									// VkImageLayout					finalLayout;
 			};
 			attachmentDescriptions.push_back(depthStencilAttachmentDescription);
-		};
+		}
 
 		const VkAttachmentReference colorAttachmentReference =
 		{
@@ -4137,7 +4137,7 @@ void MultisampleRenderer::initialize (Context&									context,
 			};
 			imageLayoutBarriers.push_back(depthStencilImageBarrier);
 			dstStageMask |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-		};
+		}
 
 		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 

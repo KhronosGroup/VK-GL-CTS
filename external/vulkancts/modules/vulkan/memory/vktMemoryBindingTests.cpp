@@ -545,7 +545,7 @@ void									createMemory<VkBuffer, DE_TRUE>		(BuffersList&			targets,
 
 		vk.getBufferMemoryRequirements(vkDevice, **targets[i], &memReqs);
 
-		ConstDedicatedInfo				dedicatedAllocationInfo				= makeDedicatedAllocationInfo(**targets[i]);;
+		ConstDedicatedInfo				dedicatedAllocationInfo				= makeDedicatedAllocationInfo(**targets[i]);
 		VkMemoryPriorityAllocateInfoEXT	priority							= makeMemoryPriorityAllocateInfo(&dedicatedAllocationInfo, ((float)i)/((float)count));
 		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, params.usePriority ? &priority : (const void *)&dedicatedAllocationInfo);
 		VkDeviceMemory					rawMemory							= DE_NULL;

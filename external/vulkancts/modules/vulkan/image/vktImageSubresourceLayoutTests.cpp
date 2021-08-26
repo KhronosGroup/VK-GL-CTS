@@ -129,7 +129,7 @@ BufferLevels::BufferLevels (VkImageType type, VkFormat format, VkExtent3D levelZ
 
 		currentOffset += level.size;
 		++levelCount;
-	};
+	}
 }
 
 VkDeviceSize BufferLevels::totalSize () const

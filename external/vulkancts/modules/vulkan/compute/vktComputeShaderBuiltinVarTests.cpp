@@ -152,7 +152,7 @@ public:
 	TestInstance*			createInstance			(Context& context) const
 	{
 		return new ComputeBuiltinVarInstance(context, m_subCases, m_varType, this);
-	};
+	}
 
 	virtual void			initPrograms			(SourceCollections& programCollection) const;
 	virtual UVec3			computeReference		(const UVec3& numWorkGroups, const UVec3& workGroupSize, const UVec3& workGroupID, const UVec3& localInvocationID) const = 0;

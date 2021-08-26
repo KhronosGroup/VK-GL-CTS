@@ -4036,7 +4036,7 @@ void addShaderCode16BitStorageInputOutput16To16x2 (vk::SourceCollections& dst, T
 		default:
 			DE_FATAL("Unexpected data type");
 			break;
-	};
+	}
 
 	// Read input data from binding 1, location 2. Should have value(s) of 0.5 in 16bit float or 32767 in 16bit int.
 	// Store the value to two outputs (dataOut0 and 1).

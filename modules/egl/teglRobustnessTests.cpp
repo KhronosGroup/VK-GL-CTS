@@ -208,7 +208,7 @@ public:
 	class Params
 	{
 	public:
-							Params					(void) {};
+							Params					(void) {}
 
 							Params					(const string&				name,
 													 const string&				description,
@@ -571,7 +571,7 @@ public:
 						ContextReset				(glw::Functions& gl, tcu::TestLog& log, ShaderType shaderType);
 						ContextReset				(glw::Functions& gl, tcu::TestLog& log, ShaderType shaderType, ResourceType resourceType, ReadWriteType readWriteType);
 
-	virtual				~ContextReset				(void) {};
+	virtual				~ContextReset				(void) {}
 
 	virtual void		setup						(void) = 0;
 	virtual void		draw						(void) = 0;
@@ -1602,7 +1602,7 @@ class ContextResetCase : public RobustnessTestCase
 
 public:
 							ContextResetCase		(EglTestContext& eglTestCtx, const char* name, const char* description, Params params);
-	virtual					~ContextResetCase		(void) {};
+	virtual					~ContextResetCase		(void) {}
 
 	virtual void			provokeReset			(de::SharedPtr<ContextReset>& contextReset) = 0;
 	virtual void			waitForReset			(de::SharedPtr<ContextReset>& contextReset) = 0;

@@ -88,8 +88,8 @@ ColorQuad scissorQuad (ColorQuad quad, VkRect2D scissor, VkExtent2D framebufferS
 class TestCommand
 {
 	public:
-											TestCommand		(void) {};
-		virtual								~TestCommand	(void) {};
+											TestCommand		(void) {}
+		virtual								~TestCommand	(void) {}
 
 		virtual vector<PositionColorVertex>	getVertices		(deUint32 offset) { DE_UNREF(offset); return vector<PositionColorVertex>(); }
 		virtual void						addCommands		(const DeviceInterface& vk, VkCommandBuffer cmdBuffer) = 0;
@@ -228,7 +228,7 @@ vector<VkRect2D> DynamicScissorTestCommand::updateScissors (vector<VkRect2D> sci
 
 struct TestParams
 {
-	TestParams() : framebufferSize({WIDTH,HEIGHT}) {};
+	TestParams() : framebufferSize({WIDTH,HEIGHT}) {}
 
 	bool					dynamicScissor;
 	vector<VkRect2D>		staticScissors;

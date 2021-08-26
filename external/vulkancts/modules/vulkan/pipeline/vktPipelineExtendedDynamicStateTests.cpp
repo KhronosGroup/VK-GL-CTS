@@ -1430,7 +1430,6 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 			<< "                 gl_in[1].gl_Position * gl_TessCoord.y + \n"
 			<< "                 gl_in[2].gl_Position * gl_TessCoord.z);\n"
 			<< "}\n";
-			;
 	}
 
 

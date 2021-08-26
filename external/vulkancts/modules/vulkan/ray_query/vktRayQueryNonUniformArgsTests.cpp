@@ -156,7 +156,6 @@ void NonUniformArgsCase::initPrograms (vk::SourceCollections& programCollection)
 		<< "  }\n"
 		<< "  result.candidateFound = candidateFoundVal;\n"
 		<< "}\n";
-		;
 
 	programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str()) << buildOptions;
 }

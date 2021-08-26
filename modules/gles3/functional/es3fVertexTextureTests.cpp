@@ -1900,7 +1900,7 @@ void VertexTextureTests::init (void)
 															   magFilterModes[magFilter].mode,
 															   wrapModes[wrapMode].mode,
 															   wrapModes[wrapMode].mode));
-		})));
+		})))
 
 	FOR_EACH(wrapSMode,		wrapModes,
 	FOR_EACH(wrapTMode,		wrapModes,
@@ -1913,7 +1913,7 @@ void VertexTextureTests::init (void)
 														  GL_LINEAR,
 														  wrapModes[wrapSMode].mode,
 														  wrapModes[wrapTMode].mode));
-		}));
+		}))
 
 	// Cube map cases.
 
@@ -1929,7 +1929,7 @@ void VertexTextureTests::init (void)
 																   magFilterModes[magFilter].mode,
 																   wrapModes[wrapMode].mode,
 																   wrapModes[wrapMode].mode));
-		})));
+		})))
 
 	FOR_EACH(wrapSMode,		wrapModes,
 	FOR_EACH(wrapTMode,		wrapModes,
@@ -1942,7 +1942,7 @@ void VertexTextureTests::init (void)
 															  GL_LINEAR,
 															  wrapModes[wrapSMode].mode,
 															  wrapModes[wrapTMode].mode));
-		}));
+		}))
 
 	// 2D array cases.
 
@@ -1958,7 +1958,7 @@ void VertexTextureTests::init (void)
 																		 magFilterModes[magFilter].mode,
 																		 wrapModes[wrapMode].mode,
 																		 wrapModes[wrapMode].mode));
-		})));
+		})))
 
 	FOR_EACH(wrapSMode,		wrapModes,
 	FOR_EACH(wrapTMode,		wrapModes,
@@ -1971,7 +1971,7 @@ void VertexTextureTests::init (void)
 																	GL_LINEAR,
 																	wrapModes[wrapSMode].mode,
 																	wrapModes[wrapTMode].mode));
-		}));
+		}))
 
 	// 3D cases.
 
@@ -1988,7 +1988,7 @@ void VertexTextureTests::init (void)
 															   wrapModes[wrapMode].mode,
 															   wrapModes[wrapMode].mode,
 															   wrapModes[wrapMode].mode));
-		})));
+		})))
 
 	FOR_EACH(wrapSMode,		wrapModes,
 	FOR_EACH(wrapTMode,		wrapModes,
@@ -2003,7 +2003,7 @@ void VertexTextureTests::init (void)
 														  wrapModes[wrapSMode].mode,
 														  wrapModes[wrapTMode].mode,
 														  wrapModes[wrapRMode].mode));
-		})));
+		})))
 }
 
 } // Functional

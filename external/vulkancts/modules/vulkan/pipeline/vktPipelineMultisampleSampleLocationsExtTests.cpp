@@ -1263,7 +1263,7 @@ std::string declareSampleDataSSBO (void)
 		<< "    vec2  data[];\n"
 		<< "} sb_data;\n";
 	return str.str();
-};
+}
 
 void addProgramsVerifyLocationGeometry (SourceCollections& programCollection, const TestParams)
 {

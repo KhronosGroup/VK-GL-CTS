@@ -101,7 +101,7 @@ class RenderData
 {
 public:
 								RenderData		(const ObjectData& object, const glu::RenderContext& renderCtx, TestLog& log);
-								~RenderData		(void) {};
+								~RenderData		(void) {}
 
 	const glu::ShaderProgram	m_program;
 	const glu::VertexArray		m_vao;

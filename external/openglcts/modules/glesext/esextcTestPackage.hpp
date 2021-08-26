@@ -33,7 +33,7 @@
 namespace tcu
 {
 class WaiverUtil;
-};
+}
 
 namespace esextcts
 {

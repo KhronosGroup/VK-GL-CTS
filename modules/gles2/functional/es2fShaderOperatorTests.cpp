@@ -130,27 +130,27 @@ DEFINE_FLOAT_FLOAT_VEC_FUNCTION	(smoothStepFloatFloatVec,	smoothStep)
 #undef DEFINE_VEC_FLOAT_FLOAT_FUNCTION
 #undef DEFINE_FLOAT_FLOAT_VEC_FUNCTION
 
-inline float	addOne (float v)	{ return v + 1.0f; };
-inline float	subOne (float v)	{ return v - 1.0f; };
-inline int		addOne (int v)		{ return v + 1; };
-inline int		subOne (int v)		{ return v - 1; };
+inline float	addOne (float v)	{ return v + 1.0f; }
+inline float	subOne (float v)	{ return v - 1.0f; }
+inline int		addOne (int v)		{ return v + 1; }
+inline int		subOne (int v)		{ return v - 1; }
 
-template<int Size> inline Vector<float, Size>	addOne (const Vector<float, Size>& v)	{ return v + 1.0f; };
-template<int Size> inline Vector<float, Size>	subOne (const Vector<float, Size>& v)	{ return v - 1.0f; };
-template<int Size> inline Vector<int, Size>		addOne (const Vector<int, Size>& v)		{ return v + 1; };
-template<int Size> inline Vector<int, Size>		subOne (const Vector<int, Size>& v)		{ return v - 1; };
+template<int Size> inline Vector<float, Size>	addOne (const Vector<float, Size>& v)	{ return v + 1.0f; }
+template<int Size> inline Vector<float, Size>	subOne (const Vector<float, Size>& v)	{ return v - 1.0f; }
+template<int Size> inline Vector<int, Size>		addOne (const Vector<int, Size>& v)		{ return v + 1; }
+template<int Size> inline Vector<int, Size>		subOne (const Vector<int, Size>& v)		{ return v - 1; }
 
-template<typename T> inline T selection	(bool cond, T a, T b)	{ return cond ? a : b; };
+template<typename T> inline T selection	(bool cond, T a, T b)	{ return cond ? a : b; }
 
-template<typename T, int Size> inline Vector<T, Size> addVecScalar	(const Vector<T, Size>& v, T s) { return v + s; };
-template<typename T, int Size> inline Vector<T, Size> subVecScalar	(const Vector<T, Size>& v, T s) { return v - s; };
-template<typename T, int Size> inline Vector<T, Size> mulVecScalar	(const Vector<T, Size>& v, T s) { return v * s; };
-template<typename T, int Size> inline Vector<T, Size> divVecScalar	(const Vector<T, Size>& v, T s) { return v / s; };
+template<typename T, int Size> inline Vector<T, Size> addVecScalar	(const Vector<T, Size>& v, T s) { return v + s; }
+template<typename T, int Size> inline Vector<T, Size> subVecScalar	(const Vector<T, Size>& v, T s) { return v - s; }
+template<typename T, int Size> inline Vector<T, Size> mulVecScalar	(const Vector<T, Size>& v, T s) { return v * s; }
+template<typename T, int Size> inline Vector<T, Size> divVecScalar	(const Vector<T, Size>& v, T s) { return v / s; }
 
-template<typename T, int Size> inline Vector<T, Size> addScalarVec	(T s, const Vector<T, Size>& v) { return s + v; };
-template<typename T, int Size> inline Vector<T, Size> subScalarVec	(T s, const Vector<T, Size>& v) { return s - v; };
-template<typename T, int Size> inline Vector<T, Size> mulScalarVec	(T s, const Vector<T, Size>& v) { return s * v; };
-template<typename T, int Size> inline Vector<T, Size> divScalarVec	(T s, const Vector<T, Size>& v) { return s / v; };
+template<typename T, int Size> inline Vector<T, Size> addScalarVec	(T s, const Vector<T, Size>& v) { return s + v; }
+template<typename T, int Size> inline Vector<T, Size> subScalarVec	(T s, const Vector<T, Size>& v) { return s - v; }
+template<typename T, int Size> inline Vector<T, Size> mulScalarVec	(T s, const Vector<T, Size>& v) { return s * v; }
+template<typename T, int Size> inline Vector<T, Size> divScalarVec	(T s, const Vector<T, Size>& v) { return s / v; }
 
 // Reference functions for specific sequence operations for the sequence operator tests.
 
@@ -901,8 +901,8 @@ DECLARE_BOOL_CWISE_COMPARE_FUNCS(notEqual)
 	void eval_##GLSL_NAME##_bvec3	(ShaderEvalContext& c) { c.color.xyz()	= FUNC_NAME(greaterThan(c.in[0].swizzle(2, 0, 1), Vec3(0.0f))).asFloat(); }	\
 	void eval_##GLSL_NAME##_bvec4	(ShaderEvalContext& c) { c.color.xyzw()	= FUNC_NAME(greaterThan(c.in[0].swizzle(1, 2, 3, 0), Vec4(0.0f))).asFloat(); }
 
-DECLARE_UNARY_SCALAR_BVEC_FUNCS(any, boolAny);
-DECLARE_UNARY_SCALAR_BVEC_FUNCS(all, boolAll);
+DECLARE_UNARY_SCALAR_BVEC_FUNCS(any, boolAny)
+DECLARE_UNARY_SCALAR_BVEC_FUNCS(all, boolAll)
 
 void ShaderOperatorTests::init (void)
 {

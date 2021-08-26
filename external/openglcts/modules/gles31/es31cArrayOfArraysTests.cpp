@@ -392,7 +392,7 @@ void initializeMap()
  * @param SOURCE Tested shader source
  **/
 #define DEFAULT_MAIN_ENDING(TYPE, SOURCE)                           \
-	{                                                               \
+	do {                                                            \
 		/* Apply stage specific stuff */                            \
 		switch (TYPE)                                               \
 		{                                                           \
@@ -418,7 +418,7 @@ void initializeMap()
                                                                     \
 		/* End main function */                                     \
 		SOURCE += shader_end;                                       \
-	}
+	} while (0)
 
 /** Macro executes positive test selected on USE_ALL_SHADER_STAGES
  *
@@ -427,7 +427,7 @@ void initializeMap()
  * @param DELETE Selects if program should be deleted afterwards
  **/
 #define EXECUTE_POSITIVE_TEST(TYPE, SOURCE, DELETE, GPU5)                              \
-	{                                                                                  \
+	do {                                                                               \
 		const std::string* cs  = &empty_string;                                        \
 		const std::string* vs  = &default_vertex_shader_source;                        \
 		const std::string* tcs = &default_tc_shader_source;                            \
@@ -473,7 +473,7 @@ void initializeMap()
 		{                                                                              \
 			this->execute_positive_test(*vs, *fs, DELETE, GPU5);                       \
 		}                                                                              \
-	}
+	} while (0)
 
 /** Macro executes either positive or negative test
  *
@@ -481,15 +481,17 @@ void initializeMap()
  * @param TYPE	Tested shader stage
  * @param SOURCE Tested shader source
  **/
-#define EXECUTE_SHADER_TEST(S, TYPE, SOURCE)              \
-	if (S)                                                \
-	{                                                     \
-		EXECUTE_POSITIVE_TEST(TYPE, SOURCE, true, false); \
-	}                                                     \
-	else                                                  \
-	{                                                     \
-		this->execute_negative_test(TYPE, SOURCE);        \
-	}
+#define EXECUTE_SHADER_TEST(S, TYPE, SOURCE)                  \
+	do {                                                      \
+		if (S)                                                \
+		{                                                     \
+			EXECUTE_POSITIVE_TEST(TYPE, SOURCE, true, false); \
+		}                                                     \
+		else                                                  \
+		{                                                     \
+			this->execute_negative_test(TYPE, SOURCE);        \
+		}                                                     \
+	} while (0)
 
 /** Test case constructor.
  *
@@ -8688,7 +8690,7 @@ void AtomicUsageTest<API>::execute(typename TestCaseBase<API>::TestShaderType te
 	default:
 		TCU_FAIL("Invalid enum");
 		break;
-	};
+	}
 
 	/* Prepare valid source */
 	valid_shader_source += varying_definition;
@@ -8754,7 +8756,7 @@ void AtomicUsageTest<API>::execute(typename TestCaseBase<API>::TestShaderType te
 		default:
 			TCU_FAIL("Invalid enum");
 			break;
-		};
+		}
 
 		if (API::USE_ALL_SHADER_STAGES)
 		{

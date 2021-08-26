@@ -2837,7 +2837,7 @@ bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const Triang
 
 			default:
 				DE_ASSERT(false);
-		};
+		}
 	}
 
 	if (((mode == VERIFICATIONMODE_STRICT) && (missingPixels + unexpectedPixels > 0)) ||

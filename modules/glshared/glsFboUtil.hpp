@@ -196,7 +196,7 @@ namespace config
 
 struct Config
 {
-	virtual						~Config			(void) {};
+	virtual						~Config			(void) {}
 };
 
 struct Image : public Config

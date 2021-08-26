@@ -1139,7 +1139,7 @@ tcu::TestStatus recordLargePrimaryBufferTest(Context &context)
 
 			// record resetting event
 			vk.cmdResetEvent(*primCmdBuf, *event,stageMask);
-		};
+		}
 
 	}
 	endCommandBuffer(vk, *primCmdBuf);
@@ -1289,7 +1289,7 @@ tcu::TestStatus recordLargeSecondaryBufferTest(Context &context)
 
 				// record resetting event
 				vk.cmdResetEvent(*primCmdBuf, *event,stageMask);
-			};
+			}
 		}
 
 		// end recording of secondary buffers
@@ -3175,7 +3175,7 @@ tcu::TestStatus submitBufferWaitManySemaphores(Context& context)
 		// create semaphores for use in this test
 		semaphoreArray[idx] = createSemaphore(vk, vkDevice);
 		semaphores[idx] = semaphoreArray[idx].get();
-	};
+	}
 
 	{
 		// create submit info for buffer - signal semaphores
@@ -3641,7 +3641,7 @@ tcu::TestStatus executeSecondaryBufferTwiceTest(Context& context)
 		}
 		// end recording of secondary buffers
 		endCommandBuffer(vk, cmdBuffers[ndx]);
-	};
+	}
 
 	// record primary command buffer one
 	VK_CHECK(vk.beginCommandBuffer(*primCmdBufOne, &primCmdBufBeginInfo));

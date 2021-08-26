@@ -1771,7 +1771,7 @@ public:
 	deUint32						getColorAttachmentIndex			(deUint32 attachmentNdx) const { return m_colorAttachments[attachmentNdx].getAttachment(); }
 	const Attachment&				getColorAttachment				(deUint32 attachmentNdx) const { return m_colorAttachmentInfo[attachmentNdx]; }
 	Maybe<VkImageLayout>			getDepthStencilAttachmentLayout	(void) const { return m_depthStencilAttachment ? tcu::just(m_depthStencilAttachment->getImageLayout()) : tcu::nothing<VkImageLayout>(); }
-	Maybe<deUint32>					getDepthStencilAttachmentIndex	(void) const { return m_depthStencilAttachment ? tcu::just(m_depthStencilAttachment->getAttachment()) : tcu::nothing<deUint32>(); };
+	Maybe<deUint32>					getDepthStencilAttachmentIndex	(void) const { return m_depthStencilAttachment ? tcu::just(m_depthStencilAttachment->getAttachment()) : tcu::nothing<deUint32>(); }
 	const Maybe<Attachment>&		getDepthStencilAttachment		(void) const { return m_depthStencilAttachmentInfo; }
 	VkSubpassDescriptionFlags		getSubpassFlags					(void) const { return m_flags; }
 

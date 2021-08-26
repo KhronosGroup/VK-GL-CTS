@@ -32,7 +32,7 @@
 namespace tcu
 {
 	class WaiverUtil;
-};
+}
 
 namespace deqp
 {

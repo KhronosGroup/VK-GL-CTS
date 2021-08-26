@@ -622,12 +622,12 @@ void CrossStageTestInstance::redFill (tcu::Texture2DArray& referenceFrame)
 struct Decorations
 {
 	Decorations()
-	{};
+	{}
 	Decorations(const string& f, const string& v, const string& o)
 		: fragment	(f)
 		, vertex	(v)
 		, others	(o)
-	{};
+	{}
 	string fragment;
 	string vertex;
 	string others;

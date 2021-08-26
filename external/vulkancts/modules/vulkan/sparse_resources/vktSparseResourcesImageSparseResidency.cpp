@@ -767,7 +767,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 			tcu::ConstPixelBufferAccess	pixelBuffer					= vk::getChannelAccess(compatibleFormatDescription, compatibleShaderGridSize, planeRowPitches, (const void* const*)planePointers, channelNdx);
 			std::ostringstream str;
 			str << "image" << channelNdx;
-			m_context.getTestContext().getLog() << tcu::LogImage(str.str(), str.str(), pixelBuffer);;
+			m_context.getTestContext().getLog() << tcu::LogImage(str.str(), str.str(), pixelBuffer);
 		}
 
 		// Validate results

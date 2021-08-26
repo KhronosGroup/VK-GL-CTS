@@ -288,7 +288,7 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&			vkp,
 	deviceInfo.pEnabledFeatures				= enabledFeatures.pNext ? DE_NULL : &enabledFeatures.features;
 
 	return createDevice(vkp, instance, vki, physicalDevice, &deviceInfo);
-};
+}
 
 } // anonymous
 

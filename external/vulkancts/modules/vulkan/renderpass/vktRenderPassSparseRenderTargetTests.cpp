@@ -645,7 +645,7 @@ struct Programs
 					"}\n";
 			}
 			break;
-		};
+		}
 
 		dst.glslSources.add("quad-frag") << glu::FragmentSource(fragmentShader.str());
 	}

@@ -118,7 +118,7 @@ private:
 		{
 			array.elementType	= DE_NULL;
 			array.size			= 0;
-		};
+		}
 	} m_data;
 };
 

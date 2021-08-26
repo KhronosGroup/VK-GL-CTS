@@ -649,7 +649,7 @@ TestStatus BasicComputeTestInstance::iterate (void)
 				offset += getCompressedImageSizeInBytes(m_parameters.formatCompressed, mipMapSizes[mipNdx]);
 			}
 		}
-	};
+	}
 	if (!decompressImage(*cmdBuffer, imageData, mipMapSizes))
 			return TestStatus::fail("Fail");
 

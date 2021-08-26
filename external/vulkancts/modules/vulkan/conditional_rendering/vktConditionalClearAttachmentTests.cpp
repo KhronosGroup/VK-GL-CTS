@@ -78,7 +78,7 @@ ConditionalClearAttachmentTest::ConditionalClearAttachmentTest (Context &context
 	initialize();
 
 	m_secondaryCmdBuffer = vk::allocateCommandBuffer(m_vk, m_context.getDevice(), *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY);
-};
+}
 
 tcu::TestStatus ConditionalClearAttachmentTest::iterate (void)
 {
@@ -218,7 +218,7 @@ tcu::TestStatus ConditionalClearAttachmentTest::iterate (void)
 	}
 
 	return tcu::TestStatus(res, qpGetTestResultName(res));
-};
+}
 
 }	// anonymous
 

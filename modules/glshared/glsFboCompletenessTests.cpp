@@ -706,7 +706,7 @@ ImageFormat TestBase::getDefaultFormat (GLenum attPoint, GLenum bufType) const
 		throw tcu::NotSupportedError("Unsupported attachment kind for attachment point",
 									 "", __FILE__, __LINE__);
 	return *it;
-};
+}
 
 Image* makeImage (GLenum bufType, ImageFormat format,
 				  GLsizei width, GLsizei height, FboBuilder& builder)

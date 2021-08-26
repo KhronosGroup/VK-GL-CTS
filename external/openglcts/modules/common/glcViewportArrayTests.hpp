@@ -220,8 +220,8 @@ public:
 	class DepthFuncWrapper
 	{
 	public:
-		DepthFuncWrapper(deqp::Context& context) : m_gl(context.getRenderContext().getFunctions()){};
-		~DepthFuncWrapper(){};
+		DepthFuncWrapper(deqp::Context& context) : m_gl(context.getRenderContext().getFunctions()){}
+		~DepthFuncWrapper(){}
 
 		void depthRangeArray(glw::GLuint first, glw::GLsizei count, const glw::GLfloat* v)
 		{

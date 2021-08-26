@@ -88,8 +88,8 @@ typedef const std::string (*ShaderBodyTextFunc)(const TestParams& testParams);
 class PipelineConfiguration
 {
 public:
-					PipelineConfiguration	()	{};
-	virtual			~PipelineConfiguration	()	{};
+					PipelineConfiguration	()	{}
+	virtual			~PipelineConfiguration	()	{}
 
 	virtual void	initConfiguration	(Context&							context,
 										 TestParams&						testParams) = 0;
@@ -338,7 +338,7 @@ public:
 															 const TestParams&					testParams);
 
 									GraphicsConfiguration	();
-	virtual							~GraphicsConfiguration	() {};
+	virtual							~GraphicsConfiguration	() {}
 
 	void							initVertexBuffer		(Context&							context,
 															 TestParams&						testParams);
@@ -925,7 +925,7 @@ class ComputeConfiguration : public PipelineConfiguration
 {
 public:
 								ComputeConfiguration	();
-	virtual						~ComputeConfiguration	() {};
+	virtual						~ComputeConfiguration	() {}
 
 	static void					checkSupport			(Context&							context,
 														 const TestParams&					testParams);
@@ -1062,7 +1062,7 @@ class RayTracingConfiguration : public PipelineConfiguration
 {
 public:
 													RayTracingConfiguration				();
-	virtual											~RayTracingConfiguration			() {};
+	virtual											~RayTracingConfiguration			() {}
 
 	static void										checkSupport						(Context&							context,
 																						 const TestParams&					testParams);

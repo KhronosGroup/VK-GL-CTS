@@ -8844,7 +8844,7 @@ void addImageToImageArrayTests (tcu::TestCaseGroup* group, AllocationKind alloca
 			group->addChild(new CopyImageToImageMipmapTestCase(testCtx, testName.str(), "copy 2d array mipmap image to 2d array mipmap image all at once", paramsArrayToArray));
 		}
 	}
-};
+}
 
 void addImageToImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {

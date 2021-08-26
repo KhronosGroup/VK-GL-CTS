@@ -4468,7 +4468,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 	{
 		// Check various code fragments
 		const FloatStatementUsageFlags	commandsFloatConstMask				= B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_CONST_FP16;
-		const bool						commandsUsesFloatConstant			= (testCaseInfo.operation.statementUsageFlags & commandsFloatConstMask) != 0;;
+		const bool						commandsUsesFloatConstant			= (testCaseInfo.operation.statementUsageFlags & commandsFloatConstMask) != 0;
 		const FloatStatementUsageFlags	argumentsFloatConstMask				= B_STATEMENT_USAGE_ARGS_CONST_FLOAT | B_STATEMENT_USAGE_ARGS_CONST_FP16;
 		const bool						argumentsUsesFloatConstant			= (specOpData.argumentsUsesFloatConstant & argumentsFloatConstMask) != 0;
 		bool							hasFP16ConstsInCommandsOrArguments	= commandsUsesFloatConstant || argumentsUsesFloatConstant;

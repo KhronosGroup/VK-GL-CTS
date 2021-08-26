@@ -322,7 +322,7 @@ public:
 																	 const tcu::UVec3&			imageSize,
 																	 const tcu::TextureFormat&	format);
 
-	virtual							~MemoryQualifierInstanceBase	(void) {};
+	virtual							~MemoryQualifierInstanceBase	(void) {}
 
 	virtual tcu::TestStatus			iterate							(void);
 
@@ -479,7 +479,7 @@ public:
 														 const tcu::TextureFormat&	format)
 							: MemoryQualifierInstanceBase(context, name, imageType, imageSize, format) {}
 
-	virtual				~MemoryQualifierInstanceImage	(void) {};
+	virtual				~MemoryQualifierInstanceImage	(void) {}
 
 	virtual void		prepareResources				(const VkDeviceSize			bufferSizeInBytes);
 
@@ -619,7 +619,7 @@ public:
 														 const tcu::TextureFormat&	format)
 							: MemoryQualifierInstanceBase(context, name, imageType, imageSize, format) {}
 
-	virtual				~MemoryQualifierInstanceBuffer	(void) {};
+	virtual				~MemoryQualifierInstanceBuffer	(void) {}
 
 	virtual void		prepareResources				(const VkDeviceSize			bufferSizeInBytes);
 

@@ -617,7 +617,7 @@ void TextureBufferOperations::checkFramebufferStatus(glw::GLenum framebuffer)
 		{
 			TCU_FAIL("Framebuffer incomplete, status not recognized");
 		}
-		};
+		}
 	} /* if (GL_FRAMEBUFFER_COMPLETE != framebuffer_status) */
 }
 

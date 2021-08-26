@@ -579,7 +579,7 @@ std::string Utils::getFPVariableTypeStringForVariableType(_variable_type type)
 	{
 		TCU_FAIL("Unrecognized variable type");
 	}
-	}; /* switch (type) */
+	} /* switch (type) */
 
 	return result;
 }
@@ -1458,7 +1458,7 @@ std::string Utils::getVariableTypeString(_variable_type type)
 	{
 		TCU_FAIL("Unrecognized variable type");
 	}
-	}; /* switch (type) */
+	} /* switch (type) */
 
 	return result;
 }
@@ -1551,7 +1551,7 @@ bool Utils::isScalarVariableType(_variable_type type)
 		break;
 	default:
 		break;
-	}; /* switch (type) */
+	} /* switch (type) */
 
 	return result;
 }
@@ -3923,7 +3923,7 @@ void GPUShaderFP64Test2::prepareProgram(shaderStage shader_stage, const uniformT
 
 	default:
 		break;
-	};
+	}
 
 	/* Select shaders that will be used by program */
 	const glw::GLchar* cs_c_str  = 0;
@@ -15006,7 +15006,7 @@ void BuiltinFunctionTest::prepareComponents(const functionObject& function_objec
 		TCU_FAIL("Not implemented");
 		return;
 		break;
-	};
+	}
 
 	switch (function_object.getFunctionEnum())
 	{

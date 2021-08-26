@@ -715,7 +715,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 
 				dependencies.push_back(dependency);
 			}
-		};
+		}
 		// the last subpass must synchronize with all prior subpasses
 		for (deUint32 splitSubpassIndex = 0; splitSubpassIndex < (splitSubpassCount - 1); splitSubpassIndex++)
 		{

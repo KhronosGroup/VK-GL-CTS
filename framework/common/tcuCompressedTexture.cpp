@@ -1319,7 +1319,7 @@ inline deInt8 extractModeBc6 (deUint8 src)
 		case 0x1b:
 		case 0x1f:
 			return -1;
-	};
+	}
 
 	switch (src & 0x3)
 	{
@@ -1327,7 +1327,7 @@ inline deInt8 extractModeBc6 (deUint8 src)
 		case 1: return 1;
 		case 2: return (deInt8)(2 + ((src >> 2) & 0x7));
 		case 3: return (deInt8)(10 + ((src >> 2) & 0x7));
-	};
+	}
 
 	return -1;
 }
@@ -2135,7 +2135,7 @@ void decompressBc6H (const PixelBufferAccess& dst, const deUint8* src, bool hasS
 			b[0] |= getBits128(low, high, 64, 59) << 10;
 			deltaBitsR = deltaBitsG = deltaBitsB = 4;
 			break;
-	};
+	}
 
 	if (hasSign)
 	{
