@@ -1317,6 +1317,12 @@ void ImageFormatCase::init (void)
 	try
 	{
 		m_display	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+
+		if (m_spec.contexts[0] == TestSpec::API_GLES3 && eglu::getVersion(egl, m_display) < eglu::Version(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "EGL 1.5 or higher is required for tests using GLES3");
+		}
+
 		m_config	= getConfig();
 		m_window	= windowFactory.createWindow(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL, eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
 		m_surface	= eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_display, m_config, DE_NULL);
