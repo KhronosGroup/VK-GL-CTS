@@ -1325,7 +1325,8 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 						0u,										// deUint32				baseMipLevel;
 						1u,										// deUint32				levelCount;
 						0u,										// deUint32				baseArrayLayer;
-						numSRLayers								// deUint32				layerCount;
+						srViewType == VK_IMAGE_VIEW_TYPE_2D ?
+						1 : numSRLayers,						// deUint32				layerCount;
 					}											// VkImageSubresourceRange	subresourceRange;
 				};
 				srImageView = createImageView(vk, device, &imageViewCreateInfo, NULL);
@@ -2196,7 +2197,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 							deInt32 pipelineRate = PrimIDToPipelineShadingRate(primID);
 							deInt32 primitiveRate = m_data.shaderWritesRate ? PrimIDToPrimitiveShadingRate(primID) : 0;
 
-							deInt32 attachmentLayer = m_data.srLayered ? layer : 0;
+							deInt32 attachmentLayer = (m_data.srLayered && modeIdx == ATTACHMENT_MODE_2DARRAY) ? layer : 0;
 							deInt32 attachmentRate = m_data.useAttachment() ? fillPtr[srFillBpp*((attachmentLayer * srHeight + (y / srTexelHeight)) * srWidth + (x / srTexelWidth))] : 0;
 
 							// Get mask of allowed shading rates
