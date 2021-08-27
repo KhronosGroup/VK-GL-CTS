@@ -1,6 +1,7 @@
 dEQP-VK.memory.mapping.suballocation.full.variable.implicit_unmap
 dEQP-VK.memory.mapping.dedicated_alloc.buffer.full.variable.implicit_unmap
 dEQP-VK.memory.mapping.dedicated_alloc.image.full.variable.implicit_unmap
+dEQP-VK.memory.requirements.memory_property_flags.check_all
 dEQP-VK.memory.device_memory_report.create_and_destroy_object.device
 dEQP-VK.memory.device_memory_report.create_and_destroy_object.device_memory_small
 dEQP-VK.memory.device_memory_report.create_and_destroy_object.buffer_uniform_small

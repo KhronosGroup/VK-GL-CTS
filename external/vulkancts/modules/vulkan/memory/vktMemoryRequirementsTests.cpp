@@ -1731,6 +1731,63 @@ void populateMultiplaneTestGroup (tcu::TestCaseGroup* group)
 	}
 }
 
+tcu::TestStatus testVkMemoryPropertyFlags(Context& context)
+{
+	VkMemoryPropertyFlags	propertyFlagSets[]	=
+	{
+		0,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT	| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT	| VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT	| VK_MEMORY_PROPERTY_HOST_CACHED_BIT			| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT	| VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT			| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT	| VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT			| VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT	| VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT			| VK_MEMORY_PROPERTY_HOST_CACHED_BIT			| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT	| VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT,
+		VK_MEMORY_PROPERTY_PROTECTED_BIT,
+		VK_MEMORY_PROPERTY_PROTECTED_BIT	| VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT	| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT			| VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT	| VK_MEMORY_PROPERTY_HOST_CACHED_BIT			| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT			| VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT	| VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT	| VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT			| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT			| VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT	| VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT			| VK_MEMORY_PROPERTY_HOST_CACHED_BIT			| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT			| VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT	| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT			| VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD	| VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT	| VK_MEMORY_PROPERTY_HOST_CACHED_BIT			| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT			| VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD	| VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT	| VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD	| VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT	| VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT			| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT			| VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD	| VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT	| VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT			| VK_MEMORY_PROPERTY_HOST_CACHED_BIT			| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT			| VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD	| VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT	| VK_MEMORY_PROPERTY_RDMA_CAPABLE_BIT_NV
+	};
+
+	const InstanceInterface&				vki					= context.getInstanceInterface();
+	const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
+	VkPhysicalDeviceMemoryProperties		memoryProperties;
+	uint32_t								matchingTypes		= 0;
+	tcu::TestLog&							log					= context.getTestContext().getLog();
+	tcu::ResultCollector					result				(log, "ERROR: ");
+
+	vki.getPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
+
+	for (uint32_t ndx = 0; ndx < memoryProperties.memoryTypeCount; ndx++)
+	{
+		for (auto& flag : propertyFlagSets)
+		{
+			if (memoryProperties.memoryTypes[ndx].propertyFlags == flag) matchingTypes++;
+		}
+	}
+
+	std::string								diffStr				= std::to_string(int(memoryProperties.memoryTypeCount - matchingTypes));
+
+	result.check(matchingTypes == memoryProperties.memoryTypeCount, "Unknown memory type bits set in memory requirements: " + diffStr + " mismatch");
+
+	return tcu::TestStatus(result.getResult(), result.getMessage());
+}
+
+void populateMemoryPropertyFlagsTestGroup(tcu::TestCaseGroup* group)
+{
+	addFunctionCase(group, "check_all", "", testVkMemoryPropertyFlags);
+}
+
 } // anonymous
 
 
@@ -1742,6 +1799,7 @@ tcu::TestCaseGroup* createRequirementsTests (tcu::TestContext& testCtx)
 	requirementsGroup->addChild(createTestGroup(testCtx, "extended",				"Memory requirements tests with extension VK_KHR_get_memory_requirements2",	populateExtendedTestGroup));
 	requirementsGroup->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Memory requirements tests with extension VK_KHR_dedicated_allocation",		populateDedicatedAllocationTestGroup));
 	requirementsGroup->addChild(createTestGroup(testCtx, "multiplane_image",		"Memory requirements tests with vkGetImagePlaneMemoryRequirements",			populateMultiplaneTestGroup));
+	requirementsGroup->addChild(createTestGroup(testCtx, "memory_property_flags",	"Memory requirements tests with vkGetPhysicalDeviceMemoryProperties",		populateMemoryPropertyFlagsTestGroup));
 
 	return requirementsGroup.release();
 }
