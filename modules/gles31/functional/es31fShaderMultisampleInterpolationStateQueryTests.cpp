@@ -91,9 +91,17 @@ InterpolationOffsetCase::IterateResult InterpolationOffsetCase::iterate (void)
 	gl.enableLogging(true);
 
 	if (m_testType == TEST_MAX_OFFSET)
-		verifyStateFloatMin(result, gl, GL_MAX_FRAGMENT_INTERPOLATION_OFFSET, 0.5, m_verifier);
+	{
+		glw::GLfloat fragmentInterpolationOffsetBits = 0.0;
+		gl.glGetFloatv(GL_FRAGMENT_INTERPOLATION_OFFSET_BITS, &fragmentInterpolationOffsetBits);
+		GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetIntegerv");
+
+		glw::GLfloat ULP = 1.0f / powf(2, fragmentInterpolationOffsetBits);
+
+		verifyStateFloatMin(result, gl, GL_MAX_FRAGMENT_INTERPOLATION_OFFSET, 0.5f-ULP, m_verifier);
+	}
 	else if (m_testType == TEST_MIN_OFFSET)
-		verifyStateFloatMax(result, gl, GL_MIN_FRAGMENT_INTERPOLATION_OFFSET, -0.5, m_verifier);
+		verifyStateFloatMax(result, gl, GL_MIN_FRAGMENT_INTERPOLATION_OFFSET, -0.5f, m_verifier);
 	else
 		DE_ASSERT(false);
 
