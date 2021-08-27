@@ -2487,7 +2487,7 @@ public:
 				ATan2			(void) : CFloatFunc2 ("atan", deAtan2) {}
 
 protected:
-	Interval	innerExtrema	(const EvalContext&		ctx,
+	Interval	innerExtrema	(const EvalContext&,
 								 const Interval&		yi,
 								 const Interval&		xi) const
 	{
@@ -2501,7 +2501,7 @@ protected:
 				ret |= Interval(-DE_PI_DOUBLE, DE_PI_DOUBLE);
 		}
 
-		if (ctx.format.hasInf() != YES && (!yi.isFinite() || !xi.isFinite()))
+		if ((!yi.isFinite() || !xi.isFinite()))
 		{
 			// Infinities may not be supported, allow anything, including NaN
 			ret |= TCU_NAN;
