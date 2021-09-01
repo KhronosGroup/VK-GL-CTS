@@ -35,6 +35,7 @@
 #include "vkDeviceUtil.hpp"
 #include "vkApiVersion.hpp"
 #include "vkAllocationCallbackUtil.hpp"
+#include "vkDeviceFeatures.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuResultCollector.hpp"
@@ -44,6 +45,7 @@
 #include "deStringUtil.hpp"
 
 #include <vector>
+#include <set>
 
 namespace vkt
 {
@@ -1198,130 +1200,330 @@ struct Feature
 	size_t		offset;
 };
 
-#define FEATURE_ITEM(MEMBER) {#MEMBER, DE_OFFSET_OF(VkPhysicalDeviceFeatures, MEMBER)}
+#define FEATURE_ITEM(STRUCT, MEMBER) {#MEMBER, DE_OFFSET_OF(STRUCT, MEMBER)}
+// This macro is used to avoid the "out of array bounds" compiler warnings/errors in the checkFeatures function.
+#define SAFE_OFFSET(LIMITING_STRUCT, STRUCT, MEMBER) std::min(static_cast<deUint32>(sizeof(LIMITING_STRUCT) - sizeof(VkBool32)), DE_OFFSET_OF(STRUCT, MEMBER))
 
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTest (Context& context)
+template<typename StructType>
+void checkFeatures (const PlatformInterface& vkp, const VkInstance& instance, const InstanceDriver& instanceDriver, const VkPhysicalDevice physicalDevice, int numFeatures, const Feature features[], const StructType* supportedFeatures, const deUint32 queueFamilyIndex, const deUint32 queueCount, const float queuePriority, int& numErrors, tcu::ResultCollector& resultCollector, const vector<const char*>* extensionNames, const VkPhysicalDeviceFeatures& defaultPhysicalDeviceFeatures)
 {
-	tcu::TestLog&				log						= context.getTestContext().getLog();
-	tcu::ResultCollector		resultCollector			(log);
-	const CustomInstance		instance				(createCustomInstanceFromContext(context, DE_NULL, false));
-	const InstanceDriver&		instanceDriver			(instance.getDriver());
-	const VkPhysicalDevice		physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32				queueFamilyIndex		= 0;
-	const deUint32				queueCount				= 1;
-	const float					queuePriority			= 1.0f;
-	VkPhysicalDeviceFeatures	physicalDeviceFeatures;
-
-	const vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
-
-	instanceDriver.getPhysicalDeviceFeatures(physicalDevice, &physicalDeviceFeatures);
-
-	static const Feature features[] =
+	struct StructureBase
 	{
-		FEATURE_ITEM(robustBufferAccess),
-		FEATURE_ITEM(fullDrawIndexUint32),
-		FEATURE_ITEM(imageCubeArray),
-		FEATURE_ITEM(independentBlend),
-		FEATURE_ITEM(geometryShader),
-		FEATURE_ITEM(tessellationShader),
-		FEATURE_ITEM(sampleRateShading),
-		FEATURE_ITEM(dualSrcBlend),
-		FEATURE_ITEM(logicOp),
-		FEATURE_ITEM(multiDrawIndirect),
-		FEATURE_ITEM(drawIndirectFirstInstance),
-		FEATURE_ITEM(depthClamp),
-		FEATURE_ITEM(depthBiasClamp),
-		FEATURE_ITEM(fillModeNonSolid),
-		FEATURE_ITEM(depthBounds),
-		FEATURE_ITEM(wideLines),
-		FEATURE_ITEM(largePoints),
-		FEATURE_ITEM(alphaToOne),
-		FEATURE_ITEM(multiViewport),
-		FEATURE_ITEM(samplerAnisotropy),
-		FEATURE_ITEM(textureCompressionETC2),
-		FEATURE_ITEM(textureCompressionASTC_LDR),
-		FEATURE_ITEM(textureCompressionBC),
-		FEATURE_ITEM(occlusionQueryPrecise),
-		FEATURE_ITEM(pipelineStatisticsQuery),
-		FEATURE_ITEM(vertexPipelineStoresAndAtomics),
-		FEATURE_ITEM(fragmentStoresAndAtomics),
-		FEATURE_ITEM(shaderTessellationAndGeometryPointSize),
-		FEATURE_ITEM(shaderImageGatherExtended),
-		FEATURE_ITEM(shaderStorageImageExtendedFormats),
-		FEATURE_ITEM(shaderStorageImageMultisample),
-		FEATURE_ITEM(shaderStorageImageReadWithoutFormat),
-		FEATURE_ITEM(shaderStorageImageWriteWithoutFormat),
-		FEATURE_ITEM(shaderUniformBufferArrayDynamicIndexing),
-		FEATURE_ITEM(shaderSampledImageArrayDynamicIndexing),
-		FEATURE_ITEM(shaderStorageBufferArrayDynamicIndexing),
-		FEATURE_ITEM(shaderStorageImageArrayDynamicIndexing),
-		FEATURE_ITEM(shaderClipDistance),
-		FEATURE_ITEM(shaderCullDistance),
-		FEATURE_ITEM(shaderFloat64),
-		FEATURE_ITEM(shaderInt64),
-		FEATURE_ITEM(shaderInt16),
-		FEATURE_ITEM(shaderResourceResidency),
-		FEATURE_ITEM(shaderResourceMinLod),
-		FEATURE_ITEM(sparseBinding),
-		FEATURE_ITEM(sparseResidencyBuffer),
-		FEATURE_ITEM(sparseResidencyImage2D),
-		FEATURE_ITEM(sparseResidencyImage3D),
-		FEATURE_ITEM(sparseResidency2Samples),
-		FEATURE_ITEM(sparseResidency4Samples),
-		FEATURE_ITEM(sparseResidency8Samples),
-		FEATURE_ITEM(sparseResidency16Samples),
-		FEATURE_ITEM(sparseResidencyAliased),
-		FEATURE_ITEM(variableMultisampleRate),
-		FEATURE_ITEM(inheritedQueries)
+		VkStructureType		sType;
+		void*				pNext;
 	};
-
-	const int	numFeatures		= DE_LENGTH_OF_ARRAY(features);
-	int			numErrors		= 0;
 
 	for (int featureNdx = 0; featureNdx < numFeatures; featureNdx++)
 	{
 		// Test only features that are not supported.
-		if (*(((VkBool32*)((deUint8*)(&physicalDeviceFeatures) + features[featureNdx].offset))))
+		if (*(((VkBool32*)((deUint8*)(supportedFeatures) + features[featureNdx].offset))))
 			continue;
 
-		VkPhysicalDeviceFeatures enabledFeatures;
+		StructType structCopy;
+		deMemset(&structCopy, 0, sizeof(StructType));
 
-		for (int i = 0; i < numFeatures; i++)
-			*((VkBool32*)((deUint8*)(&enabledFeatures) + features[i].offset)) = (i == featureNdx ? VK_TRUE : VK_FALSE);
+		auto* structBase = reinterpret_cast<StructureBase*>(&structCopy);
+		VkStructureType structureType = reinterpret_cast<const StructureBase*>(supportedFeatures)->sType;
+		structBase->sType = structureType;
+		structBase->pNext = DE_NULL;
+
+		VkPhysicalDeviceFeatures physicalDeviceFeaturesCopy = defaultPhysicalDeviceFeatures;
+
+		// Some features require that other feature(s) are also enabled.
+
+		// If rayTracingPipelineShaderGroupHandleCaptureReplayMixed is VK_TRUE, rayTracingPipelineShaderGroupHandleCaptureReplay must also be VK_TRUE.
+		if (structureType == vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR &&
+			features[featureNdx].offset == DE_OFFSET_OF(VkPhysicalDeviceRayTracingPipelineFeaturesKHR, rayTracingPipelineShaderGroupHandleCaptureReplayMixed))
+		{
+			DE_ASSERT((std::is_same<VkPhysicalDeviceRayTracingPipelineFeaturesKHR, StructType>::value));
+			auto* memberPtr = reinterpret_cast<VkBool32*>(reinterpret_cast<deUint8*>(&structCopy) + SAFE_OFFSET(StructType, VkPhysicalDeviceRayTracingPipelineFeaturesKHR, rayTracingPipelineShaderGroupHandleCaptureReplay));
+			*memberPtr = VK_TRUE;
+		}
+		else if (structureType == vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES)
+		{
+			DE_ASSERT((std::is_same<VkPhysicalDeviceVulkan11Features, StructType>::value));
+			// If multiviewGeometryShader is enabled then multiview must also be enabled.
+			// If multiviewTessellationShader is enabled then multiview must also be enabled.
+			if (features[featureNdx].offset == DE_OFFSET_OF(VkPhysicalDeviceVulkan11Features, multiviewGeometryShader) ||
+				features[featureNdx].offset == DE_OFFSET_OF(VkPhysicalDeviceVulkan11Features, multiviewTessellationShader))
+			{
+				auto* memberPtr = reinterpret_cast<VkBool32*>(reinterpret_cast<deUint8*>(&structCopy) + SAFE_OFFSET(StructType, VkPhysicalDeviceVulkan11Features, multiview));
+				*memberPtr = VK_TRUE;
+			}
+
+			// If variablePointers is enabled then variablePointersStorageBuffer must also be enabled.
+			if (features[featureNdx].offset == DE_OFFSET_OF(VkPhysicalDeviceVulkan11Features, variablePointers))
+			{
+				auto* memberPtr = reinterpret_cast<VkBool32*>(reinterpret_cast<deUint8*>(&structCopy) + SAFE_OFFSET(StructType, VkPhysicalDeviceVulkan11Features, variablePointersStorageBuffer));
+				*memberPtr = VK_TRUE;
+			}
+		}
+		else if (structureType == vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES)
+		{
+			DE_ASSERT((std::is_same<VkPhysicalDeviceMultiviewFeatures, StructType>::value));
+			// If multiviewGeometryShader is enabled then multiview must also be enabled.
+			// If multiviewTessellationShader is enabled then multiview must also be enabled.
+			if (features[featureNdx].offset == DE_OFFSET_OF(VkPhysicalDeviceMultiviewFeatures, multiviewGeometryShader) ||
+			features[featureNdx].offset == DE_OFFSET_OF(VkPhysicalDeviceMultiviewFeatures, multiviewTessellationShader))
+			{
+				auto* memberPtr = reinterpret_cast<VkBool32*>(reinterpret_cast<deUint8*>(&structCopy) + SAFE_OFFSET(StructType, VkPhysicalDeviceMultiviewFeatures, multiview));
+				*memberPtr = VK_TRUE;
+			}
+		}
+		else if (structureType == vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT)
+		{
+			DE_ASSERT((std::is_same<VkPhysicalDeviceRobustness2FeaturesEXT, StructType>::value));
+			// If robustBufferAccess2 is enabled then robustBufferAccess must also be enabled.
+			if (features[featureNdx].offset == DE_OFFSET_OF(VkPhysicalDeviceRobustness2FeaturesEXT, robustBufferAccess2))
+			{
+				physicalDeviceFeaturesCopy.robustBufferAccess = true;
+			}
+		}
+		else if (structureType == vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_ATOMIC_INT64_FEATURES_EXT)
+		{
+			DE_ASSERT((std::is_same<VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT, StructType>::value));
+			// If sparseImageInt64Atomics is enabled, shaderImageInt64Atomics must be enabled.
+			if (features[featureNdx].offset == DE_OFFSET_OF(VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT, sparseImageInt64Atomics))
+			{
+				auto* memberPtr = reinterpret_cast<VkBool32*>(reinterpret_cast<deUint8*>(&structCopy) + SAFE_OFFSET(StructType, VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT, shaderImageInt64Atomics));
+				*memberPtr = VK_TRUE;
+			}
+		}
+		else if (structureType == vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT)
+		{
+			DE_ASSERT((std::is_same<VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, StructType>::value));
+			// If sparseImageFloat32Atomics is enabled, shaderImageFloat32Atomics must be enabled.
+			if (features[featureNdx].offset ==
+				DE_OFFSET_OF(VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, sparseImageFloat32Atomics)) {
+				auto *memberPtr = reinterpret_cast<VkBool32 *>(reinterpret_cast<deUint8 *>(&structCopy) + SAFE_OFFSET(StructType, VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderImageFloat32Atomics));
+				*memberPtr = VK_TRUE;
+			}
+
+			// If sparseImageFloat32AtomicAdd is enabled, shaderImageFloat32AtomicAdd must be enabled.
+			if (features[featureNdx].offset ==
+				DE_OFFSET_OF(VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, sparseImageFloat32AtomicAdd)) {
+				auto *memberPtr = reinterpret_cast<VkBool32 *>(reinterpret_cast<deUint8 *>(&structCopy) + SAFE_OFFSET(StructType, VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, shaderImageFloat32AtomicAdd));
+				*memberPtr = VK_TRUE;
+			}
+		}
+		else if (structureType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT)
+		{
+			DE_ASSERT((std::is_same<VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT, StructType>::value));
+			// If sparseImageFloat32AtomicMinMax is enabled, shaderImageFloat32AtomicMinMax must be enabled.
+			if (features[featureNdx].offset == DE_OFFSET_OF(VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT, sparseImageFloat32AtomicMinMax))
+			{
+				auto* memberPtr = reinterpret_cast<VkBool32*>(reinterpret_cast<deUint8*>(&structCopy) + SAFE_OFFSET(StructType, VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT, shaderImageFloat32AtomicMinMax));
+				*memberPtr = VK_TRUE;
+			}
+		}
+
+		// Enable the feature we're testing.
+		*reinterpret_cast<VkBool32*>(reinterpret_cast<deUint8*>(&structCopy) + features[featureNdx].offset) = VK_TRUE;
 
 		const VkDeviceQueueCreateInfo	deviceQueueCreateInfo	=
 		{
-			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-			DE_NULL,
-			(VkDeviceQueueCreateFlags)0u,
-			queueFamilyIndex,
-			queueCount,
-			&queuePriority
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	// sType
+			DE_NULL,									// pNext
+			(VkDeviceQueueCreateFlags)0u,				// flags
+			queueFamilyIndex,							// queueFamilyIndex
+			queueCount,									// queueCount
+			&queuePriority								// pQueuePriorities
+		};
+		const VkPhysicalDeviceFeatures2 deviceFeatures2 =
+		{
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,	// sType
+			&structCopy,									// pNext
+			physicalDeviceFeaturesCopy						// features
 		};
 		const VkDeviceCreateInfo		deviceCreateInfo		=
 		{
-			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-			DE_NULL,
-			(VkDeviceCreateFlags)0u,
-			1,
-			&deviceQueueCreateInfo,
-			0u,
-			DE_NULL,
-			0,
-			DE_NULL,
-			&enabledFeatures
+			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,											// sType
+			&deviceFeatures2,																// pNext
+			(VkDeviceCreateFlags)0u,														// flags
+			1,																				// queueCreateInfoCount
+			&deviceQueueCreateInfo,															// pQueueCreateInfos
+			0u,																				// enabledLayerCount
+			DE_NULL,																		// ppEnabledLayerNames
+			static_cast<deUint32>(extensionNames == DE_NULL ? 0 : extensionNames->size()),	// enabledExtensionCount
+			extensionNames == DE_NULL ? DE_NULL : extensionNames->data(),					// ppEnabledExtensionNames
+			DE_NULL																			// pEnabledFeatures
 		};
 
-		VkDevice		device;
+		VkDevice		device = (VkDevice)DE_NULL;
 		const VkResult	res	= createUncheckedDevice(false, instanceDriver, physicalDevice, &deviceCreateInfo, DE_NULL, &device);
 
 		if (res != VK_ERROR_FEATURE_NOT_PRESENT)
 		{
 			numErrors++;
 			resultCollector.fail("Not returning VK_ERROR_FEATURE_NOT_PRESENT when creating device with feature "
-								 + de::toString(features[featureNdx].name) + ", which was reported as unsupported.");
+				+ de::toString(features[featureNdx].name) + ", which was reported as unsupported.");
+		}
+		if (device != (VkDevice)DE_NULL)
+		{
+			DeviceDriver deviceDriver(vkp, instance, device);
+			deviceDriver.destroyDevice(device, DE_NULL);
 		}
 	}
+}
+
+vector<string> removeExtensions (const vector<string>& a, const vector<const char*>& b)
+{
+	vector<string>	res;
+	set<string>		removeExts	(b.begin(), b.end());
+
+	for (const auto & aIter : a)
+	{
+		if (!de::contains(removeExts, aIter))
+			res.push_back(aIter);
+	}
+
+	return res;
+}
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTest (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	const VkPhysicalDeviceFeatures			deviceFeatures			= deviceFeatures2.features;
+	const vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+	int										numErrors				= 0;
+
+	// Test features listed in VkPhysicalDeviceFeatures structure
+	{
+		static const Feature features[] =
+		{
+			// robustBufferAccess is removed, because it's always supported.
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, fullDrawIndexUint32),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, imageCubeArray),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, independentBlend),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, geometryShader),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, tessellationShader),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, sampleRateShading),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, dualSrcBlend),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, logicOp),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, multiDrawIndirect),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, drawIndirectFirstInstance),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, depthClamp),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, depthBiasClamp),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, fillModeNonSolid),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, depthBounds),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, wideLines),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, largePoints),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, alphaToOne),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, multiViewport),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, samplerAnisotropy),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, textureCompressionETC2),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, textureCompressionASTC_LDR),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, textureCompressionBC),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, occlusionQueryPrecise),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, pipelineStatisticsQuery),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, vertexPipelineStoresAndAtomics),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, fragmentStoresAndAtomics),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, shaderTessellationAndGeometryPointSize),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, shaderImageGatherExtended),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, shaderStorageImageExtendedFormats),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, shaderStorageImageMultisample),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, shaderStorageImageReadWithoutFormat),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, shaderStorageImageWriteWithoutFormat),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, shaderUniformBufferArrayDynamicIndexing),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, shaderSampledImageArrayDynamicIndexing),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, shaderStorageBufferArrayDynamicIndexing),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, shaderStorageImageArrayDynamicIndexing),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, shaderClipDistance),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, shaderCullDistance),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, shaderFloat64),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, shaderInt64),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, shaderInt16),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, shaderResourceResidency),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, shaderResourceMinLod),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, sparseBinding),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, sparseResidencyBuffer),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, sparseResidencyImage2D),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, sparseResidencyImage3D),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, sparseResidency2Samples),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, sparseResidency4Samples),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, sparseResidency8Samples),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, sparseResidency16Samples),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, sparseResidencyAliased),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, variableMultisampleRate),
+			FEATURE_ITEM(VkPhysicalDeviceFeatures, inheritedQueries)
+		};
+
+		for (const auto& feature : features)
+		{
+			// Test only features that are not supported.
+			if (*(((VkBool32*)((deUint8*)(&deviceFeatures) + feature.offset))))
+				continue;
+
+			VkPhysicalDeviceFeatures		enabledFeatures			= deviceFeatures;
+			*((VkBool32*)((deUint8*)(&enabledFeatures) + feature.offset)) = VK_TRUE;
+
+			const VkDeviceQueueCreateInfo	deviceQueueCreateInfo	=
+			{
+				VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+				DE_NULL,
+				(VkDeviceQueueCreateFlags)0u,
+				queueFamilyIndex,
+				queueCount,
+				&queuePriority
+			};
+			const VkDeviceCreateInfo		deviceCreateInfo		=
+			{
+				VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+				DE_NULL,
+				(VkDeviceCreateFlags)0u,
+				1,
+				&deviceQueueCreateInfo,
+				0u,
+				DE_NULL,
+				0,
+				DE_NULL,
+				&enabledFeatures
+			};
+
+			VkDevice		device	= DE_NULL;
+			const VkResult	res		= createUncheckedDevice(false, instanceDriver, physicalDevice, &deviceCreateInfo, DE_NULL, &device);
+
+			if (res != VK_ERROR_FEATURE_NOT_PRESENT)
+			{
+				numErrors++;
+				resultCollector.fail("Not returning VK_ERROR_FEATURE_NOT_PRESENT when creating device with feature "
+				+ de::toString(feature.name) + ", which was reported as unsupported.");
+			}
+
+			if (device != DE_NULL)
+			{
+				DeviceDriver deviceDriver(vkp, instance, device);
+				deviceDriver.destroyDevice(device, DE_NULL);
+			}
+		}
+	}
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	vector<const char*>	coreExtensions;
+	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
+	vector<string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
+
+	vector<const char*> extensionNames;
+	extensionNames.reserve(nonCoreExtensions.size());
+	for (const string& extension : nonCoreExtensions)
+		extensionNames.push_back(extension.c_str());
+
+	// Test features provided by extensions and Vulkan 1.1 and 1.2.
+
+	#include "vkDeviceFeatureTest.inl"
 
 	if (numErrors > 1)
 		return tcu::TestStatus(resultCollector.getResult(), "Enabling " + de::toString(numErrors) + " unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");

@@ -2080,6 +2080,42 @@ def writeDeviceFeatures(api, dfDefs, filename):
 	stream.append('} // vk\n')
 	writeInlFile(filename, INL_HEADER, stream)
 
+def writeDeviceFeatureTest(api, filename):
+
+	coreFeaturesPattern = re.compile("^VkPhysicalDeviceVulkan([1-9][0-9])Features[0-9]*$")
+	featureItems = []
+	# iterate over all feature structures
+	allFeaturesPattern = re.compile("^VkPhysicalDevice\w+Features[1-9]*")
+	for structureType in api.compositeTypes:
+		# skip structures that are not feature structures
+		if not allFeaturesPattern.match(structureType.name):
+			continue
+		# skip alias structures
+		if structureType.isAlias:
+			continue
+		# skip sType and pNext and just grab third and next attributes
+		structureMembers = structureType.members[2:]
+
+		items = []
+		for member in structureMembers:
+			items.append("		FEATURE_ITEM ({0}, {1}),".format(structureType.name, member.name))
+
+		testBlock = \
+			"if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<{0}>()))\n" \
+			"{{\n" \
+			"	static const Feature features[] =\n" \
+			"	{{\n" \
+			"{1}\n" \
+			"	}};\n" \
+			"	auto* supportedFeatures = reinterpret_cast<const {0}*>(featuresStruct);\n" \
+			"	checkFeatures(vkp, instance, instanceDriver, physicalDevice, {2}, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, {3}, emptyDeviceFeatures);\n" \
+			"}}\n"
+		featureItems.append(testBlock.format(structureType.name, "\n".join(items), len(items), ("DE_NULL" if coreFeaturesPattern.match(structureType.name) else "&extensionNames")))
+
+	stream = ['']
+	stream.extend(featureItems)
+	writeInlFile(filename, INL_HEADER, stream)
+
 def writeDeviceProperties(api, dpDefs, filename):
 	# find VkPhysicalDeviceVulkan[1-9][0-9]Features blob structurs
 	# and construct dictionary with all of their attributes
@@ -2407,6 +2443,7 @@ if __name__ == "__main__":
 	writeDeviceFeaturesDefaultDeviceDefs	(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
 	writeDeviceFeaturesContextDecl			(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForContextDecl.inl"))
 	writeDeviceFeaturesContextDefs			(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForContextDefs.inl"))
+	writeDeviceFeatureTest					(api, os.path.join(VULKAN_DIR, "vkDeviceFeatureTest.inl"))
 
 	dpd										= generateDevicePropertiesDefs(src)
 	writeDeviceProperties					(api, dpd, os.path.join(VULKAN_DIR, "vkDeviceProperties.inl"))

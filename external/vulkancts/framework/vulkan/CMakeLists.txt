@@ -71,6 +71,7 @@ set(VKUTILNOSHADER_SRCS
 	vkDeviceFeatures.hpp
 	vkDeviceFeatures.cpp
 	vkDeviceFeatures.inl
+	vkDeviceFeatureTest.inl
 	vkDeviceProperties.hpp
 	vkDeviceProperties.cpp
 	vkDeviceProperties.inl
