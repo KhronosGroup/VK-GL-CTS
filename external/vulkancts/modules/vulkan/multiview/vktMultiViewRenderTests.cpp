@@ -3622,7 +3622,7 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 		"vertex_shader",
 		"fragment_shader",
 		"geometry_shader",
-		"tesellation_shader",
+		"tessellation_shader",
 		"input_attachments",
 		"input_attachments_geometry",
 		"instanced",
