@@ -1648,7 +1648,8 @@ tcu::Sampler createSampler (tcu::Sampler::WrapMode wrapU, tcu::Sampler::WrapMode
 						normalizedCoords /* normalized coords */,
 						tcu::Sampler::COMPAREMODE_NONE /* no compare */,
 						0 /* compare channel */,
-						tcu::Vec4(0.0f) /* border color, not used */);
+						tcu::Vec4(0.0f) /* border color, not used */,
+						true /* seamless cube map */);
 }
 
 /*--------------------------------------------------------------------*//*!

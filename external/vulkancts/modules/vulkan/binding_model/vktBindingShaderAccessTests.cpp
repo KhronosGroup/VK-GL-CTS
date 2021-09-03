@@ -5503,12 +5503,14 @@ tcu::Sampler ImageSampleInstanceImages::createRefSampler (int ndx)
 	if (ndx % 2 == 0)
 	{
 		// linear, wrapping
-		return tcu::Sampler(tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::LINEAR, tcu::Sampler::LINEAR);
+		return tcu::Sampler(tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::LINEAR, tcu::Sampler::LINEAR,
+							0.0f, true, tcu::Sampler::COMPAREMODE_NONE, 0, tcu::Vec4(0.0f), true);
 	}
 	else
 	{
 		// nearest, clamping
-		return tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST);
+		return tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST,
+							0.0f, true, tcu::Sampler::COMPAREMODE_NONE, 0, tcu::Vec4(0.0f), true);
 	}
 }
 
