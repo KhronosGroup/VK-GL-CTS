@@ -1554,6 +1554,18 @@ void RayQueryASBasicTestCase::checkSupport (Context& context) const
 			TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
 	}
 
+	switch (m_data.shaderSourceType)
+	{
+	case SST_VERTEX_SHADER:
+	case SST_TESSELATION_CONTROL_SHADER:
+	case SST_TESSELATION_EVALUATION_SHADER:
+	case SST_GEOMETRY_SHADER:
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
+		break;
+	default:
+		break;
+	}
+
 	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR = context.getAccelerationStructureFeatures();
 	if (m_data.buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR && accelerationStructureFeaturesKHR.accelerationStructureHostCommands == DE_FALSE)
 		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructureHostCommands");
