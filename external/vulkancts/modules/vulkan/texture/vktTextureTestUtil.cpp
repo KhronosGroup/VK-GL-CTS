@@ -1829,6 +1829,7 @@ Texture2DTestCaseParameters::Texture2DTestCaseParameters (void)
 TextureCubeTestCaseParameters::TextureCubeTestCaseParameters (void)
 	: wrapT					(tcu::Sampler::REPEAT_GL)
 	, size					(64)
+	, seamless				(true)
 {
 }
 
