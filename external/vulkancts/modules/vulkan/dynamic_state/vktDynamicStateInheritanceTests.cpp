@@ -635,12 +635,12 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		m_vk.cmdSetScissor(m_setStateCmdBuffer, 0, 1, &geometry.scissors[0]);
 		break;
 	case kInheritFromSecondaryWithCount:
-		m_vk.cmdSetViewportWithCountEXT(m_setStateCmdBuffer,
-										deUint32(geometry.viewports.size()),
-										&geometry.viewports[0]);
-		m_vk.cmdSetScissorWithCountEXT(m_setStateCmdBuffer,
-									   deUint32(geometry.scissors.size()),
-									   &geometry.scissors[0]);
+		m_vk.cmdSetViewportWithCount(m_setStateCmdBuffer,
+									 deUint32(geometry.viewports.size()),
+									 &geometry.viewports[0]);
+		m_vk.cmdSetScissorWithCount(m_setStateCmdBuffer,
+									deUint32(geometry.scissors.size()),
+									&geometry.scissors[0]);
 		break;
 	}
 	VK_CHECK(m_vk.endCommandBuffer(m_setStateCmdBuffer));
@@ -744,12 +744,12 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		break;
 	case kInheritFromPrimaryWithCount:
 		// Same but with count inherited.
-		m_vk.cmdSetViewportWithCountEXT(m_primaryCmdBuffer,
-										deUint32(geometry.viewports.size()),
-										&geometry.viewports[0]);
-		m_vk.cmdSetScissorWithCountEXT(m_primaryCmdBuffer,
-									   deUint32(geometry.scissors.size()),
-									   &geometry.scissors[0]);
+		m_vk.cmdSetViewportWithCount(m_primaryCmdBuffer,
+									 deUint32(geometry.viewports.size()),
+									 &geometry.viewports[0]);
+		m_vk.cmdSetScissorWithCount(m_primaryCmdBuffer,
+									deUint32(geometry.scissors.size()),
+									&geometry.scissors[0]);
 		break;
 	case kSplitInheritance:
 		// Specify the remaining viewport, scissors not set by the

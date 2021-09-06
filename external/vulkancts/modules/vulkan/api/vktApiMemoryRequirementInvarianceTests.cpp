@@ -785,13 +785,13 @@ tcu::TestStatus AlignmentMatchingInstance::iterate(void)
 			DE_NULL,
 			&bufferCreateInfo
 		};
-		vk.getDeviceBufferMemoryRequirementsKHR(device, &bufferMemInfo, &requirements2[1]);
+		vk.getDeviceBufferMemoryRequirements(device, &bufferMemInfo, &requirements2[1]);
 
 		if (!areRequirementsTheSame(requirements2[0], requirements2[1]))
 		{
 			success = false;
 			log << tcu::TestLog::Message
-				<< "vkGetDeviceBufferMemoryRequirementsKHR and vkGetBufferMemoryRequirements2\n"
+				<< "vkGetDeviceBufferMemoryRequirements and vkGetBufferMemoryRequirements2\n"
 				   "report diferent memory requirements\n"
 				<< tcu::TestLog::EndMessage;
 		}
@@ -806,13 +806,13 @@ tcu::TestStatus AlignmentMatchingInstance::iterate(void)
 			&imageCreateInfo,
 			vk::VkImageAspectFlagBits(0)
 		};
-		vk.getDeviceImageMemoryRequirementsKHR(device, &imageMemInfo, &requirements2[1]);
+		vk.getDeviceImageMemoryRequirements(device, &imageMemInfo, &requirements2[1]);
 
 		if (!areRequirementsTheSame(requirements2[0], requirements2[1]))
 		{
 			success = false;
 			log << tcu::TestLog::Message
-				<< "vkGetDeviceImageMemoryRequirementsKHR and vkGetImageMemoryRequirements2\n"
+				<< "vkGetDeviceImageMemoryRequirements and vkGetImageMemoryRequirements2\n"
 				   "report diferent memory requirements\n"
 				<< tcu::TestLog::EndMessage;
 		}

@@ -921,7 +921,7 @@ void UnusedClearAttachmentTestInstance::createCommandBuffer (const DeviceInterfa
 			hasStencil ? &depthAttachment : DE_NULL,							// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 		};
 
-		vk.cmdBeginRenderingKHR(*m_cmdBuffer, &renderingInfo);
+		vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
 	}
 	else
 	{
@@ -944,7 +944,7 @@ void UnusedClearAttachmentTestInstance::createCommandBuffer (const DeviceInterfa
 	vk.cmdClearAttachments(*m_cmdBuffer, static_cast<deUint32>(clearAttachments.size()), (clearAttachments.empty() ? DE_NULL : clearAttachments.data()), 1u, &clearRect);
 
 	if (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
-		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 	else
 	{
 		const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(DE_NULL);

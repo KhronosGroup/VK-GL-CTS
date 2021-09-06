@@ -1234,7 +1234,7 @@ void checkSupportExtInlineUniformBlock (Context& context)
 tcu::TestStatus validateLimitsExtInlineUniformBlock (Context& context)
 {
 	const VkBool32											checkAlways						= VK_TRUE;
-	const VkPhysicalDeviceInlineUniformBlockPropertiesEXT&	inlineUniformBlockPropertiesEXT	= context.getInlineUniformBlockPropertiesEXT();
+	const VkPhysicalDeviceInlineUniformBlockProperties&		inlineUniformBlockPropertiesEXT	= context.getInlineUniformBlockProperties();
 	TestLog&												log								= context.getTestContext().getLog();
 	bool													limitsOk						= true;
 
@@ -2525,7 +2525,7 @@ tcu::TestStatus deviceProperties (Context& context)
 
 	{
 		const ApiVersion deviceVersion = unpackVersion(props->apiVersion);
-		const ApiVersion deqpVersion = unpackVersion(VK_API_VERSION_1_2);
+		const ApiVersion deqpVersion = unpackVersion(VK_API_VERSION_1_3);
 
 		if (deviceVersion.majorNum != deqpVersion.majorNum)
 		{
@@ -4097,7 +4097,11 @@ tcu::TestStatus deviceProperties2 (Context& context)
 	const bool khr_shader_float_controls			= checkExtension(properties, "VK_KHR_shader_float_controls")			||	context.contextSupports(vk::ApiVersion(1, 2, 0));
 	const bool khr_descriptor_indexing				= checkExtension(properties, "VK_EXT_descriptor_indexing")				||	context.contextSupports(vk::ApiVersion(1, 2, 0));
 	const bool khr_sampler_filter_minmax			= checkExtension(properties, "VK_EXT_sampler_filter_minmax")			||	context.contextSupports(vk::ApiVersion(1, 2, 0));
-	const bool khr_integer_dot_product				= checkExtension(properties, "VK_KHR_shader_integer_dot_product");
+	const bool khr_integer_dot_product				= checkExtension(properties, "VK_KHR_shader_integer_dot_product")		||	context.contextSupports(vk::ApiVersion(1, 3, 0));
+	const bool khr_inline_uniform_block				= checkExtension(properties, "VK_EXT_inline_uniform_block")				||	context.contextSupports(vk::ApiVersion(1, 3, 0));
+	const bool khr_maintenance4						= checkExtension(properties, "VK_KHR_maintenance4")						||	context.contextSupports(vk::ApiVersion(1, 3, 0));
+	const bool khr_subgroup_size_control			= checkExtension(properties, "VK_EXT_subgroup_size_control")			||	context.contextSupports(vk::ApiVersion(1, 3, 0));
+	const bool khr_texel_buffer_alignment			= checkExtension(properties, "VK_EXT_texel_buffer_alignment")			||	context.contextSupports(vk::ApiVersion(1, 3, 0));
 
 	VkPhysicalDeviceIDProperties							idProperties[count];
 	VkPhysicalDeviceMultiviewProperties						multiviewProperties[count];
@@ -4110,22 +4114,30 @@ tcu::TestStatus deviceProperties2 (Context& context)
 	VkPhysicalDeviceFloatControlsProperties					floatControlsProperties[count];
 	VkPhysicalDeviceDescriptorIndexingProperties			descriptorIndexingProperties[count];
 	VkPhysicalDeviceSamplerFilterMinmaxProperties			samplerFilterMinmaxProperties[count];
-	VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR	integerDotProductProperties[count];
+	VkPhysicalDeviceShaderIntegerDotProductProperties		integerDotProductProperties[count];
+	VkPhysicalDeviceInlineUniformBlockProperties			inlineUniformBlockProperties[count];
+	VkPhysicalDeviceMaintenance4Properties					maintenance4Properties[count];
+	VkPhysicalDeviceSubgroupSizeControlProperties			subgroupSizeControlProperties[count];
+	VkPhysicalDeviceTexelBufferAlignmentProperties			texelBufferAlignmentProperties[count];
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
-		deMemset(&idProperties[ndx],					0xFF*ndx, sizeof(VkPhysicalDeviceIDProperties					));
-		deMemset(&multiviewProperties[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceMultiviewProperties			));
-		deMemset(&protectedMemoryPropertiesKHR[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceProtectedMemoryProperties		));
-		deMemset(&subgroupProperties[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceSubgroupProperties				));
-		deMemset(&pointClippingProperties[ndx],			0xFF*ndx, sizeof(VkPhysicalDevicePointClippingProperties		));
-		deMemset(&maintenance3Properties[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceMaintenance3Properties			));
-		deMemset(&depthStencilResolveProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceDepthStencilResolveProperties	));
-		deMemset(&driverProperties[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceDriverProperties				));
-		deMemset(&floatControlsProperties[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceFloatControlsProperties		));
-		deMemset(&descriptorIndexingProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceDescriptorIndexingProperties	));
-		deMemset(&samplerFilterMinmaxProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceSamplerFilterMinmaxProperties	));
+		deMemset(&idProperties[ndx],					0xFF*ndx, sizeof(VkPhysicalDeviceIDProperties							));
+		deMemset(&multiviewProperties[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceMultiviewProperties					));
+		deMemset(&protectedMemoryPropertiesKHR[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceProtectedMemoryProperties				));
+		deMemset(&subgroupProperties[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceSubgroupProperties						));
+		deMemset(&pointClippingProperties[ndx],			0xFF*ndx, sizeof(VkPhysicalDevicePointClippingProperties				));
+		deMemset(&maintenance3Properties[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceMaintenance3Properties					));
+		deMemset(&depthStencilResolveProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceDepthStencilResolveProperties			));
+		deMemset(&driverProperties[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceDriverProperties						));
+		deMemset(&floatControlsProperties[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceFloatControlsProperties				));
+		deMemset(&descriptorIndexingProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceDescriptorIndexingProperties			));
+		deMemset(&samplerFilterMinmaxProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceSamplerFilterMinmaxProperties			));
 		deMemset(&integerDotProductProperties[ndx],		0xFF*ndx, sizeof(VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR	));
+		deMemset(&inlineUniformBlockProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceInlineUniformBlockProperties			));
+		deMemset(&maintenance4Properties[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceMaintenance4Properties					));
+		deMemset(&subgroupSizeControlProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceSubgroupSizeControlProperties			));
+		deMemset(&texelBufferAlignmentProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceTexelBufferAlignmentProperties			));
 
 		idProperties[ndx].sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
 		idProperties[ndx].pNext						= &multiviewProperties[ndx];
@@ -4161,7 +4173,19 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		samplerFilterMinmaxProperties[ndx].pNext	= &integerDotProductProperties[ndx];
 
 		integerDotProductProperties[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR;
-		integerDotProductProperties[ndx].pNext		= DE_NULL;
+		integerDotProductProperties[ndx].pNext		= &inlineUniformBlockProperties[ndx];
+
+		inlineUniformBlockProperties[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES;
+		inlineUniformBlockProperties[ndx].pNext		= &maintenance4Properties[ndx];
+
+		maintenance4Properties[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES;
+		maintenance4Properties[ndx].pNext			= &subgroupSizeControlProperties[ndx];
+
+		subgroupSizeControlProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES;
+		subgroupSizeControlProperties[ndx].pNext	= &texelBufferAlignmentProperties[ndx];
+
+		texelBufferAlignmentProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES;
+		texelBufferAlignmentProperties[ndx].pNext	= DE_NULL;
 
 		extProperties.pNext							= &idProperties[ndx];
 
@@ -4192,6 +4216,15 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		log << TestLog::Message << samplerFilterMinmaxProperties[0] << TestLog::EndMessage;
 	if (khr_integer_dot_product)
 		log << TestLog::Message << integerDotProductProperties[0] << TestLog::EndMessage;
+	if (khr_inline_uniform_block)
+		log << TestLog::Message << inlineUniformBlockProperties[0] << TestLog::EndMessage;
+	if (khr_maintenance4)
+		log << TestLog::Message << maintenance4Properties[0] << TestLog::EndMessage;
+	if (khr_subgroup_size_control)
+		log << TestLog::Message << subgroupSizeControlProperties[0] << TestLog::EndMessage;
+	if (khr_texel_buffer_alignment)
+		log << TestLog::Message << texelBufferAlignmentProperties[0] << TestLog::EndMessage;
+
 
 	if ( khr_external_fence_capabilities || khr_external_memory_capabilities || khr_external_semaphore_capabilities )
 	{
@@ -4326,7 +4359,6 @@ tcu::TestStatus deviceProperties2 (Context& context)
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDeviceSamplerFilterMinmaxProperties");
 	}
-
 	if (khr_integer_dot_product &&
 		(integerDotProductProperties[0].integerDotProduct8BitUnsignedAccelerated										!= integerDotProductProperties[1].integerDotProduct8BitUnsignedAccelerated ||
 		 integerDotProductProperties[0].integerDotProduct8BitSignedAccelerated											!= integerDotProductProperties[1].integerDotProduct8BitSignedAccelerated ||
@@ -4360,6 +4392,36 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating64BitMixedSignednessAccelerated			!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating64BitMixedSignednessAccelerated))
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR");
+	}
+	if (khr_inline_uniform_block &&
+		(inlineUniformBlockProperties[0].maxInlineUniformBlockSize									!= inlineUniformBlockProperties[1].maxInlineUniformBlockSize ||
+		 inlineUniformBlockProperties[0].maxPerStageDescriptorInlineUniformBlocks					!= inlineUniformBlockProperties[1].maxPerStageDescriptorInlineUniformBlocks ||
+		 inlineUniformBlockProperties[0].maxPerStageDescriptorUpdateAfterBindInlineUniformBlocks	!= inlineUniformBlockProperties[1].maxPerStageDescriptorUpdateAfterBindInlineUniformBlocks ||
+		 inlineUniformBlockProperties[0].maxDescriptorSetInlineUniformBlocks						!= inlineUniformBlockProperties[1].maxDescriptorSetInlineUniformBlocks ||
+		 inlineUniformBlockProperties[0].maxDescriptorSetUpdateAfterBindInlineUniformBlocks			!= inlineUniformBlockProperties[1].maxDescriptorSetUpdateAfterBindInlineUniformBlocks))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceInlineUniformBlockProperties");
+	}
+	if (khr_maintenance4 &&
+		(maintenance4Properties[0].maxBufferSize	!= maintenance4Properties[1].maxBufferSize))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceMaintenance4Properties");
+	}
+	if (khr_subgroup_size_control &&
+		(subgroupSizeControlProperties[0].minSubgroupSize				!= subgroupSizeControlProperties[1].minSubgroupSize ||
+		 subgroupSizeControlProperties[0].maxSubgroupSize				!= subgroupSizeControlProperties[1].maxSubgroupSize ||
+		 subgroupSizeControlProperties[0].maxComputeWorkgroupSubgroups	!= subgroupSizeControlProperties[1].maxComputeWorkgroupSubgroups ||
+		 subgroupSizeControlProperties[0].requiredSubgroupSizeStages		!= subgroupSizeControlProperties[1].requiredSubgroupSizeStages))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceSubgroupSizeControlProperties");
+	}
+	if (khr_texel_buffer_alignment &&
+		(texelBufferAlignmentProperties[0].storageTexelBufferOffsetAlignmentBytes		!= texelBufferAlignmentProperties[1].storageTexelBufferOffsetAlignmentBytes ||
+		 texelBufferAlignmentProperties[0].storageTexelBufferOffsetSingleTexelAlignment	!= texelBufferAlignmentProperties[1].storageTexelBufferOffsetSingleTexelAlignment ||
+		 texelBufferAlignmentProperties[0].uniformTexelBufferOffsetAlignmentBytes		!= texelBufferAlignmentProperties[1].uniformTexelBufferOffsetAlignmentBytes ||
+		 texelBufferAlignmentProperties[0].uniformTexelBufferOffsetSingleTexelAlignment	!= texelBufferAlignmentProperties[1].uniformTexelBufferOffsetSingleTexelAlignment))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceTexelBufferAlignmentProperties");
 	}
 
 	if (isExtensionSupported(properties, RequiredExtension("VK_KHR_push_descriptor")))

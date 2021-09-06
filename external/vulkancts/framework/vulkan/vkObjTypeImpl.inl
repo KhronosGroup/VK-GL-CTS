@@ -31,6 +31,7 @@ template<> inline VkObjectType	getObjectType<VkFramebuffer>					(void) { return 
 template<> inline VkObjectType	getObjectType<VkCommandPool>					(void) { return VK_OBJECT_TYPE_COMMAND_POOL;					}
 template<> inline VkObjectType	getObjectType<VkSamplerYcbcrConversion>			(void) { return VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION;		}
 template<> inline VkObjectType	getObjectType<VkDescriptorUpdateTemplate>		(void) { return VK_OBJECT_TYPE_DESCRIPTOR_UPDATE_TEMPLATE;		}
+template<> inline VkObjectType	getObjectType<VkPrivateDataSlot>				(void) { return VK_OBJECT_TYPE_PRIVATE_DATA_SLOT;				}
 template<> inline VkObjectType	getObjectType<VkSurfaceKHR>						(void) { return VK_OBJECT_TYPE_SURFACE_KHR;						}
 template<> inline VkObjectType	getObjectType<VkSwapchainKHR>					(void) { return VK_OBJECT_TYPE_SWAPCHAIN_KHR;					}
 template<> inline VkObjectType	getObjectType<VkDisplayKHR>						(void) { return VK_OBJECT_TYPE_DISPLAY_KHR;						}
@@ -44,7 +45,6 @@ template<> inline VkObjectType	getObjectType<VkValidationCacheEXT>				(void) { r
 template<> inline VkObjectType	getObjectType<VkAccelerationStructureNV>		(void) { return VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_NV;		}
 template<> inline VkObjectType	getObjectType<VkPerformanceConfigurationINTEL>	(void) { return VK_OBJECT_TYPE_PERFORMANCE_CONFIGURATION_INTEL;	}
 template<> inline VkObjectType	getObjectType<VkIndirectCommandsLayoutNV>		(void) { return VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV;		}
-template<> inline VkObjectType	getObjectType<VkPrivateDataSlotEXT>				(void) { return VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT;			}
 template<> inline VkObjectType	getObjectType<VkAccelerationStructureKHR>		(void) { return VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR;		}
 template<> inline VkObjectType	getObjectType<VkVideoSessionKHR>				(void) { return VK_OBJECT_TYPE_VIDEO_SESSION_KHR;				}
 template<> inline VkObjectType	getObjectType<VkVideoSessionParametersKHR>		(void) { return VK_OBJECT_TYPE_VIDEO_SESSION_PARAMETERS_KHR;	}

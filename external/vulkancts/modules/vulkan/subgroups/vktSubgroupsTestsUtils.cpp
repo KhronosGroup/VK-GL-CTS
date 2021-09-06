@@ -3834,7 +3834,7 @@ tcu::TestStatus vkt::subgroups::makeComputeTestRequiredSubgroupSize (Context&			
 	const VkDevice											device							= context.getDevice();
 	const VkQueue											queue							= context.getUniversalQueue();
 	const deUint32											queueFamilyIndex				= context.getUniversalQueueFamilyIndex();
-	const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context.getSubgroupSizeControlPropertiesEXT();
+	const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context.getSubgroupSizeControlProperties();
 	const VkDeviceSize										elementSize						= getFormatSizeInBytes(format);
 	const VkDeviceSize										maxSubgroupSize					= isRequiredSubgroupSize
 																							? deMax32(subgroupSizeControlProperties.maxSubgroupSize, maxSupportedSubgroupSize())

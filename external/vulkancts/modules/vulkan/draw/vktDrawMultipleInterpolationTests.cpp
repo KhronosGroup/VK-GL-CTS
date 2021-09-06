@@ -595,7 +595,7 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 				DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 			};
 
-			vk.cmdBeginRenderingKHR(*cmdBuffer, &renderingInfo);
+			vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
 		}
 		else
 		{

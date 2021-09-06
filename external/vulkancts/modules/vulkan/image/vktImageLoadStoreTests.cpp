@@ -479,7 +479,7 @@ StoreTest::StoreTest (tcu::TestContext&		testCtx,
 
 void StoreTest::checkSupport (Context& context) const
 {
-	const VkFormatPropertiesExtendedKHR formatProperties (context.getFormatProperties(m_format));
+	const VkFormatProperties3 formatProperties (context.getFormatProperties(m_format));
 
 	if (!m_declareImageFormatInShader && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format not supported for unformatted stores via storage images");
@@ -1079,8 +1079,8 @@ LoadStoreTest::LoadStoreTest (tcu::TestContext&		testCtx,
 
 void LoadStoreTest::checkSupport (Context& context) const
 {
-	const VkFormatPropertiesExtendedKHR formatProperties (context.getFormatProperties(m_format));
-	const VkFormatPropertiesExtendedKHR imageFormatProperties (context.getFormatProperties(m_imageFormat));
+	const VkFormatProperties3 formatProperties (context.getFormatProperties(m_format));
+	const VkFormatProperties3 imageFormatProperties (context.getFormatProperties(m_imageFormat));
 
 	if (m_imageLoadStoreLodAMD)
 		context.requireDeviceFunctionality("VK_AMD_shader_image_load_store_lod");
@@ -1107,7 +1107,7 @@ void LoadStoreTest::checkSupport (Context& context) const
 	{
 		// When the source buffer is three-component, the destination buffer is single-component.
 		VkFormat dstFormat = getSingleComponentFormat(m_format);
-		const VkFormatPropertiesExtendedKHR dstFormatProperties (context.getFormatProperties(dstFormat));
+		const VkFormatProperties3 dstFormatProperties (context.getFormatProperties(dstFormat));
 
 		if (m_texture.type() == IMAGE_TYPE_BUFFER && !(dstFormatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
 			TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
@@ -2216,7 +2216,7 @@ ImageExtendOperandTest::ImageExtendOperandTest (tcu::TestContext&				testCtx,
 
 void checkFormatProperties (Context& context, VkFormat format)
 {
-	const VkFormatPropertiesExtendedKHR formatProperties (context.getFormatProperties(format));
+	const VkFormatProperties3 formatProperties (context.getFormatProperties(format));
 
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for storage images");

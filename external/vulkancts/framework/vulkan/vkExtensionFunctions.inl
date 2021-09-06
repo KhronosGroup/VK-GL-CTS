@@ -921,6 +921,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_primitive_topology_list_restart")
+	{
+		return;
+	}
 	if (extName == "VK_HUAWEI_subpass_shading")
 	{
 		return;
@@ -950,6 +954,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_load_store_op_none")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_pageable_device_local_memory")
 	{
 		return;
 	}
@@ -2158,6 +2166,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_primitive_topology_list_restart")
+	{
+		return;
+	}
 	if (extName == "VK_HUAWEI_subpass_shading")
 	{
 		functions.push_back("vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI");
@@ -2200,6 +2212,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_EXT_load_store_op_none")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_pageable_device_local_memory")
+	{
+		functions.push_back("vkSetDeviceMemoryPriorityEXT");
 		return;
 	}
 	if (extName == "VK_KHR_acceleration_structure")
@@ -2493,6 +2510,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_extended_dynamic_state2",
 	"VK_EXT_color_write_enable",
 	"VK_EXT_multi_draw",
+	"VK_EXT_pageable_device_local_memory",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_ANDROID_external_memory_android_hardware_buffer",

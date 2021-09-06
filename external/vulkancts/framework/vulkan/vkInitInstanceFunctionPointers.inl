@@ -46,6 +46,9 @@ if (!m_vk.getPhysicalDeviceExternalFenceProperties)
 m_vk.getPhysicalDeviceExternalSemaphoreProperties						= (GetPhysicalDeviceExternalSemaphorePropertiesFunc)					GET_PROC_ADDR("vkGetPhysicalDeviceExternalSemaphoreProperties");
 if (!m_vk.getPhysicalDeviceExternalSemaphoreProperties)
 	m_vk.getPhysicalDeviceExternalSemaphoreProperties					= (GetPhysicalDeviceExternalSemaphorePropertiesFunc)					GET_PROC_ADDR("vkGetPhysicalDeviceExternalSemaphorePropertiesKHR");
+m_vk.getPhysicalDeviceToolProperties									= (GetPhysicalDeviceToolPropertiesFunc)									GET_PROC_ADDR("vkGetPhysicalDeviceToolProperties");
+if (!m_vk.getPhysicalDeviceToolProperties)
+	m_vk.getPhysicalDeviceToolProperties								= (GetPhysicalDeviceToolPropertiesFunc)									GET_PROC_ADDR("vkGetPhysicalDeviceToolPropertiesEXT");
 m_vk.destroySurfaceKHR													= (DestroySurfaceKHRFunc)												GET_PROC_ADDR("vkDestroySurfaceKHR");
 m_vk.getPhysicalDeviceSurfaceSupportKHR									= (GetPhysicalDeviceSurfaceSupportKHRFunc)								GET_PROC_ADDR("vkGetPhysicalDeviceSurfaceSupportKHR");
 m_vk.getPhysicalDeviceSurfaceCapabilitiesKHR							= (GetPhysicalDeviceSurfaceCapabilitiesKHRFunc)							GET_PROC_ADDR("vkGetPhysicalDeviceSurfaceCapabilitiesKHR");

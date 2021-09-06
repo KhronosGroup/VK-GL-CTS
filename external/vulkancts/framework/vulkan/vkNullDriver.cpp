@@ -594,10 +594,10 @@ public:
 						{}
 };
 
-class PrivateDataSlotEXT
+class PrivateDataSlot
 {
 public:
-						PrivateDataSlotEXT			(VkDevice, const VkPrivateDataSlotCreateInfoEXT*)
+						PrivateDataSlot				(VkDevice, const VkPrivateDataSlotCreateInfo*)
 						{}
 };
 

@@ -142,6 +142,8 @@ def prefixName (prefix, name):
 	name = name.replace("VULKAN_11_PROPERTIES", "VULKAN_1_1_PROPERTIES")
 	name = name.replace("VULKAN_12_FEATURES", "VULKAN_1_2_FEATURES")
 	name = name.replace("VULKAN_12_PROPERTIES", "VULKAN_1_2_PROPERTIES")
+	name = name.replace("VULKAN_13_FEATURES", "VULKAN_1_3_FEATURES")
+	name = name.replace("VULKAN_13_PROPERTIES", "VULKAN_1_3_PROPERTIES")
 	name = name.replace("INT_8_", "INT8_")
 	name = name.replace("AABBNV", "AABB_NV")
 	name = name.replace("_H_264_", "_H264_")
@@ -693,7 +695,7 @@ def parseExtensions (src, versions, allFunctions, allCompositeTypes, allEnums, a
 		functions			= parseFunctions(extensionSrc)
 		compositeTypes		= parseCompositeTypes(extensionSrc)
 		rawEnums			= parseEnums(extensionSrc)
-		bitfieldNames		= parseBitfieldNames(extensionSrc)
+		bitfieldNames		= parse32bitBitfieldNames(extensionSrc)
 		typedefs			= parseTypedefs(extensionSrc)
 		enumBitfieldNames	= [getBitEnumNameForBitfield(name) for name in bitfieldNames]
 		enums				= [enum for enum in rawEnums if enum.name not in enumBitfieldNames]
@@ -715,7 +717,7 @@ def parseExtensions (src, versions, allFunctions, allCompositeTypes, allEnums, a
 		extensions.append(Extension(extensionName, extHandles, extEnums, extBitfields, extCompositeTypes, extFunctions, extDefinitions, additionalDefinitions, typedefs, extCoreVersion))
 	return extensions
 
-def parseBitfieldNames (src):
+def parse32bitBitfieldNames (src):
 	ptrn		= r'typedef\s+VkFlags\s(' + IDENT_PTRN + r')\s*;'
 	matches		= re.findall(ptrn, src)
 
@@ -745,7 +747,7 @@ def parseAPI (src):
 
 	handles				= parseHandles(src)
 	rawEnums			= parseEnums(src)
-	bitfieldNames		= parseBitfieldNames(src)
+	bitfieldNames		= parse32bitBitfieldNames(src)
 	bitfieldEnums		= set([getBitEnumNameForBitfield(n) for n in bitfieldNames if getBitEnumNameForBitfield(n) in [enum.name for enum in rawEnums]])
 	bitfield64Names		= parse64bitBitfieldNames(src)
 	bitfields64			= parse64bitBitfieldValues(src, bitfield64Names)
@@ -771,6 +773,7 @@ def parseAPI (src):
 	populateAliasesWithTypedefs(compositeTypes, src)
 	populateAliasesWithTypedefs(enums, src)
 	populateAliasesWithTypedefs(bitfields, src)
+	populateAliasesWithTypedefs(bitfields64, src)
 	populateAliasesWithTypedefs(handles, src)
 
 	for enum in enums:
@@ -992,9 +995,15 @@ def writeBasicTypes (api, filename):
 						yield "typedef %s %s;" % (bitfield2.name, bitfield.name)
 			yield ""
 
-		for bitfield64 in api.bitfields64:
-			for line in genBitfield64Src(bitfield64):
-				yield line
+		for bitfield in api.bitfields64:
+			if not bitfield.isAlias:
+				for line in genBitfield64Src(bitfield):
+					yield line
+			else:
+				for bitfield2 in api.bitfields64:
+					if bitfield2.alias == bitfield:
+						yield "typedef %s %s;" % (bitfield2.name, bitfield.name)
+			yield ""
 
 		for line in indentLines(["VK_DEFINE_PLATFORM_TYPE(%s,\t%s)" % (s[0], c) for n, s, c in PLATFORM_TYPES]):
 			yield line
@@ -1723,25 +1732,80 @@ def writeDeviceFeatures2(api, filename):
 	# this is not posible to determine from vulkan_core.h, if new feature structures
 	# are added they should be manualy added to this list
 	testedStructures = [
-		'VkPhysicalDeviceConditionalRenderingFeaturesEXT',
-		'VkPhysicalDeviceScalarBlockLayoutFeatures',
-		'VkPhysicalDevicePerformanceQueryFeaturesKHR',
-		'VkPhysicalDevice16BitStorageFeatures',
-		'VkPhysicalDeviceMultiviewFeatures',
-		'VkPhysicalDeviceProtectedMemoryFeatures',
-		'VkPhysicalDeviceSamplerYcbcrConversionFeatures',
-		'VkPhysicalDeviceVariablePointersFeatures',
+		'VkPhysicalDevice4444FormatsFeaturesEXT',
 		'VkPhysicalDevice8BitStorageFeatures',
-		'VkPhysicalDeviceShaderAtomicInt64Features',
-		'VkPhysicalDeviceShaderFloat16Int8Features',
+		'VkPhysicalDevice16BitStorageFeatures',
+		'VkPhysicalDeviceAccelerationStructureFeaturesKHR',
+		'VkPhysicalDeviceASTCDecodeFeaturesEXT',
+		'VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT',
 		'VkPhysicalDeviceBufferDeviceAddressFeaturesEXT',
 		'VkPhysicalDeviceBufferDeviceAddressFeatures',
+		'VkPhysicalDeviceConditionalRenderingFeaturesEXT',
+		'VkPhysicalDeviceCustomBorderColorFeaturesEXT',
+		'VkPhysicalDeviceColorWriteEnableFeaturesEXT',
 		'VkPhysicalDeviceDescriptorIndexingFeatures',
-		'VkPhysicalDeviceTimelineSemaphoreFeatures',
+		'VkPhysicalDeviceDepthClipEnableFeaturesEXT',
+		'VkPhysicalDeviceDynamicRenderingFeatures',
+		'VkPhysicalDeviceExtendedDynamicStateFeaturesEXT',
+		'VkPhysicalDeviceExtendedDynamicState2FeaturesEXT',
 		'VkPhysicalDeviceFragmentDensityMapFeaturesEXT',
 		'VkPhysicalDeviceFragmentDensityMap2FeaturesEXT',
-		'VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR',
+		'VkPhysicalDeviceFragmentShadingRateFeaturesKHR',
+		'VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT',
+		'VkPhysicalDeviceInlineUniformBlockFeatures',
+		'VkPhysicalDeviceIndexTypeUint8FeaturesEXT',
+		'VkPhysicalDeviceImagelessFramebufferFeatures',
+		'VkPhysicalDeviceImageRobustnessFeatures',
+		'VkPhysicalDeviceHostQueryResetFeatures',
+		'VkPhysicalDeviceLineRasterizationFeaturesEXT',
+		'VkPhysicalDeviceMaintenance4Features',
+		'VkPhysicalDeviceMultiviewFeatures',
+		'VkPhysicalDeviceMultiDrawFeaturesEXT',
+		'VkPhysicalDeviceMemoryPriorityFeaturesEXT',
+		'VkPhysicalDeviceDeviceMemoryReportFeaturesEXT',
+		'VkPhysicalDevicePerformanceQueryFeaturesKHR',
+		'VkPhysicalDevicePipelineCreationCacheControlFeatures',
+		'VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR',
+		'VkPhysicalDevicePresentIdFeaturesKHR',
+		'VkPhysicalDevicePresentWaitFeaturesKHR',
+		'VkPhysicalDeviceProtectedMemoryFeatures',
+		'VkPhysicalDeviceProvokingVertexFeaturesEXT',
+		'VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT',
+		'VkPhysicalDevicePrivateDataFeatures',
+		'VkPhysicalDeviceRayTracingPipelineFeaturesKHR',
+		'VkPhysicalDeviceRayQueryFeaturesKHR',
+		'VkPhysicalDeviceRobustness2FeaturesEXT',
+		'VkPhysicalDeviceSamplerYcbcrConversionFeatures',
+		'VkPhysicalDeviceScalarBlockLayoutFeatures',
+		'VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures',
+		'VkPhysicalDeviceShaderAtomicInt64Features',
+		'VkPhysicalDeviceShaderAtomicFloatFeaturesEXT',
+		'VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT',
+		'VkPhysicalDeviceShaderFloat16Int8Features',
+		'VkPhysicalDeviceShaderClockFeaturesKHR',
+		'VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures',
+		'VkPhysicalDeviceShaderDrawParametersFeatures',
+		'VkPhysicalDeviceShaderIntegerDotProductFeatures',
+		'VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures',
+		'VkPhysicalDeviceShaderTerminateInvocationFeatures',
+		'VkPhysicalDeviceSubgroupSizeControlFeatures',
+		'VkPhysicalDeviceSynchronization2Features',
+		'VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT',
+		'VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT',
+		'VkPhysicalDeviceTextureCompressionASTCHDRFeatures',
+		'VkPhysicalDeviceTimelineSemaphoreFeatures',
+		'VkPhysicalDeviceTransformFeedbackFeaturesEXT',
+		'VkPhysicalDeviceUniformBufferStandardLayoutFeatures',
+		'VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR',
+		'VkPhysicalDeviceVariablePointersFeatures',
+		'VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT',
+		'VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT',
+		'VkPhysicalDeviceVulkanMemoryModelFeaturesKHR',
+		'VkPhysicalDeviceYcbcrImageArraysFeaturesEXT',
+		'VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT',
+		'VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeatures',
 	]
+
 	# helper class used to encapsulate all data needed during generation
 	class StructureDetail:
 		def __init__ (self, name):
@@ -1752,12 +1816,23 @@ def writeDeviceFeatures2(api, filename):
 			# VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT
 			# but mostly they are not:
 			# VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES
-			if (nameResult.group(1) == 'FragmentDensityMap2'):
-				nameSplitUp		= ['FRAGMENT', 'DENSITY', 'MAP', '2', 'FEATURES']
-			else:
+			specialCaseDict = {
+				'FragmentDensityMap2'			: ['FRAGMENT', 'DENSITY', 'MAP', '2'],
+				'Ycbcr2Plane444Formats'			: ['YCBCR', '2', 'PLANE', '444', 'FORMATS'],
+				'ASTCDecode'					: ['ASTC', 'DECODE'],
+				'4444Formats'					: ['4444', 'FORMATS'],
+				'TextureCompressionASTCHDR'		: ['TEXTURE', 'COMPRESSION', 'ASTC', 'HDR'],
+				'Synchronization2'				: ['SYNCHRONIZATION', '2'],
+				'ShaderAtomicFloat2'			: ['SHADER', 'ATOMIC', 'FLOAT', '2'],
+				'Robustness2'					: ['ROBUSTNESS', '2'],
+				'Maintenance4'					: ['MAINTENANCE', '4'],
+				'ExtendedDynamicState2'			: ['EXTENDED', 'DYNAMIC', 'STATE', '2'],
+			}
+			nameSplitUp = specialCaseDict.get(nameResult.group(1))
+			if nameSplitUp == None:
 				nameSplit		= re.findall(r'[1-9A-Z]+(?:[a-z1-9]+|[A-Z]*(?=[A-Z]|$))', nameResult.group(1))
 				nameSplitUp		= map(str.upper, nameSplit)
-				nameSplitUp		= list(nameSplitUp) + ['FEATURES']
+			nameSplitUp = list(nameSplitUp) + ['FEATURES']
 			# check if there is extension suffix
 			if (len(nameResult.group(2)) != 0):
 				nameSplitUp.append(nameResult.group(2))
@@ -1816,7 +1891,7 @@ def writeDeviceFeatures2(api, filename):
 	verifyStructures = []
 	for index, structureDetail in enumerate(testedStructureDetail):
 		# create two instances of each structure
-		nameSpacing = '\t' * int((55 - len(structureDetail.name)) / 4)
+		nameSpacing = '\t' * int((67 - len(structureDetail.name)) / 4)
 		structureDefinitions.append(structureDetail.name + nameSpacing + structureDetail.instanceName + '[count];')
 		# create flags that check if proper extension or vulkan version is available
 		condition	= ''
@@ -1826,15 +1901,15 @@ def writeDeviceFeatures2(api, filename):
 			condition = ' checkExtension(properties, "' + extension + '")'
 		if major is not None:
 			if condition != '':
-				condition += '\t' * int((39 - len(extension)) / 4) + '|| '
+				condition += '\t' * int((47 - len(extension)) / 4) + '|| '
 			else:
-				condition += '\t' * 17 + '   '
+				condition += '\t' * 19 + '   '
 			condition += 'context.contextSupports(vk::ApiVersion(' + str(major) + ', ' + str(structureDetail.minor) + ', 0))'
 		condition += ';'
-		nameSpacing = '\t' * int((40 - len(structureDetail.flagName)) / 4)
+		nameSpacing = '\t' * int((48 - len(structureDetail.flagName)) / 4)
 		featureEnabledFlags.append('const bool ' + structureDetail.flagName + nameSpacing + '=' + condition)
 		# clear memory of each structure
-		nameSpacing = '\t' * int((43 - len(structureDetail.instanceName)) / 4)
+		nameSpacing = '\t' * int((51 - len(structureDetail.instanceName)) / 4)
 		clearStructures.append('\tdeMemset(&' + structureDetail.instanceName + '[ndx],' + nameSpacing + '0xFF * ndx, sizeof(' + structureDetail.name + '));')
 		# construct structure chain
 		nextInstanceName = 'DE_NULL';
@@ -1887,7 +1962,11 @@ def generateDeviceFeaturesDefs(src):
 				sType = "SCISSOR_EXCLUSIVE"
 			elif sType == "ASTC_DECODE":
 				sType = "ASTC_DECODE_MODE"
-			if sType in {'VULKAN_1_1', 'VULKAN_1_2'}:
+			elif sType == "MAINTENANCE_4":
+				sType = "MAINTENANCE4"
+			elif sType == "YCBCR_2_PLANE_444_FORMATS":
+				sType = "YCBCR_2PLANE_444_FORMATS"
+			elif sType in {'VULKAN_1_1', 'VULKAN_1_2', 'VULKAN_1_3'}:
 				continue
 			# end handling special cases
 			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sSuffix + '_' + sType + '_EXTENSION_NAME).+$'
@@ -1909,7 +1988,7 @@ def generateDevicePropertiesDefs(src):
 	defs = []
 	for sType, sSuffix in matches:
 		# handle special cases
-		if sType in {'VULKAN_1_1', 'VULKAN_1_2', 'GROUP', 'MEMORY_BUDGET', 'MEMORY', 'TOOL'}:
+		if sType in {'VULKAN_1_1', 'VULKAN_1_2', 'VULKAN_1_3', 'GROUP', 'MEMORY_BUDGET', 'MEMORY', 'TOOL'}:
 			continue
 		# there are cases like VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD
 		# where 2 is after PROPERTIES - to handle this we need to split suffix to two parts
@@ -2027,6 +2106,10 @@ def writeDeviceFeatures(api, dfDefs, filename):
 			sType = "EXCLUSIVE_SCISSOR"
 		elif sType == "ASTC_DECODE_MODE":
 			sType = "ASTC_DECODE"
+		elif sType == "MAINTENANCE4":
+			sType = "MAINTENANCE_4"
+		elif sType == "YCBCR_2PLANE_444_FORMATS":
+			sType = "YCBCR_2_PLANE_444_FORMATS"
 		# end handling special cases
 		# construct makeFeatureDesc template function definitions
 		sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_FEATURES{1}".format(sType, sVerSuffix + sExtSuffix)
@@ -2034,9 +2117,9 @@ def writeDeviceFeatures(api, dfDefs, filename):
 			"{{ return FeatureDesc{{{1}, {2}, {3}, {4}}}; }}".format(extStruct, sTypeName, extensionNameDefinition, specVer, len(dfDefs)-idx))
 		# construct CreateFeatureStruct wrapper block
 		featureStructWrappers.append("\t{{ createFeatureStructWrapper<{0}>, {1}, {2} }},".format(extStruct, extensionNameDefinition, specVer))
-	# construct method that will check if structure sType is part of blob
-	blobChecker = "bool isPartOfBlobFeatures (VkStructureType sType)\n{\n" \
-				  "\tconst std::vector<VkStructureType> sTypeVect =" \
+	# construct function that will check for which vk version structure sType is part of blob
+	blobChecker = "deUint32 getBlobFeaturesVersion (VkStructureType sType)\n{\n" \
+				  "\tconst std::map<VkStructureType, deUint32> sTypeBlobMap\n" \
 				  "\t{\n"
 	# iterate over blobs with list of structures
 	for blobName in sorted(blobStructs.keys()):
@@ -2057,11 +2140,17 @@ def writeDeviceFeatures(api, dfDefs, filename):
 			# handle special cases
 			if sType == "SCISSOR_EXCLUSIVE":
 				sType = "EXCLUSIVE_SCISSOR"
+			elif sType == "MAINTENANCE4":
+				sType = "MAINTENANCE_4"
 			# end handling special cases
 			sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_FEATURES{1}".format(sType, sSuffix)
-			blobChecker += "\t\t{0},\n".format(sTypeName)
-	blobChecker += "\t};\n" \
-				   "\treturn de::contains(sTypeVect.begin(), sTypeVect.end(), sType);\n" \
+			tabs = "\t" * int((88 - len(sTypeName)) / 4)
+			blobChecker += "\t\t{{ {0},{1}VK_API_VERSION_{2}_{3} }},\n".format(sTypeName, tabs, blobName[0], blobName[1])
+	blobChecker += "\t};\n\n" \
+				   "\tauto it = sTypeBlobMap.find(sType);\n" \
+				   "\tif(it == sTypeBlobMap.end())\n" \
+				   "\t\treturn 0;\n" \
+				   "\treturn it->second;\n" \
 				   "}\n"
 	# combine all definition lists
 	stream = [
@@ -2075,7 +2164,7 @@ def writeDeviceFeatures(api, dfDefs, filename):
 	stream.append('\n')
 	stream.extend(makeFeatureDescDefinitions)
 	stream.append('\n')
-	stream.append('static const FeatureStructCreationData featureStructCreationArray[] =\n{')
+	stream.append('static const FeatureStructCreationData featureStructCreationArray[]\n{')
 	stream.extend(featureStructWrappers)
 	stream.append('};\n')
 	stream.append(blobChecker)
@@ -2166,9 +2255,9 @@ def writeDeviceProperties(api, dpDefs, filename):
 			"{{ return PropertyDesc{{{1}, {2}, {3}, {4}}}; }}".format(extStruct, sTypeName, extensionNameDefinition, specVer, len(dpDefs)-idx))
 		# construct CreateProperty struct wrapper block
 		propertyStructWrappers.append("\t{{ createPropertyStructWrapper<{0}>, {1}, {2} }},".format(extStruct, extensionNameDefinition, specVer))
-			# construct method that will check if structure sType is part of blob
-	blobChecker = "bool isPartOfBlobProperties (VkStructureType sType)\n{\n" \
-				  "\tconst std::vector<VkStructureType> sTypeVect =" \
+	# construct method that will check if structure sType is part of blob
+	blobChecker = "deUint32 getBlobPropertiesVersion (VkStructureType sType)\n{\n" \
+				  "\tconst std::map<VkStructureType, deUint32> sTypeBlobMap\n" \
 				  "\t{\n"
 	# iterate over blobs with list of structures
 	for blobName in sorted(blobStructs.keys()):
@@ -2183,9 +2272,13 @@ def writeDeviceProperties(api, dpDefs, filename):
 			sType = structDef[0]
 			sSuffix = structDef[1] + structDef[2]
 			sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_PROPERTIES{1}".format(sType, sSuffix)
-			blobChecker += "\t\t{0},\n".format(sTypeName)
-	blobChecker += "\t};\n" \
-				   "\treturn de::contains(sTypeVect.begin(), sTypeVect.end(), sType);\n" \
+			tabs = "\t" * int((76 - len(sTypeName)) / 4)
+			blobChecker += "\t\t{{ {0},{1}VK_API_VERSION_{2}_{3} }},\n".format(sTypeName, tabs, blobName[0], blobName[1])
+	blobChecker += "\t};\n\n" \
+				   "\tauto it = sTypeBlobMap.find(sType);\n" \
+				   "\tif(it == sTypeBlobMap.end())\n" \
+				   "\t\treturn 0;\n" \
+				   "\treturn it->second;\n" \
 				   "}\n"
 	# combine all definition lists
 	stream = [

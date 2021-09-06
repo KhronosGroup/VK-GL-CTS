@@ -2093,7 +2093,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 					m_data.useDepthStencil ? &depthStencilAttachments[1] : DE_NULL,			// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 				};
 
-				vk.cmdBeginRenderingKHR(*cmdBuffer, &renderingInfo);
+				vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
 			}
 			else
 			{

@@ -3616,7 +3616,7 @@ void MultiViewDepthStencilTestInstance::draw (const deUint32 subpassCount, VkRen
 				(m_stencilTest ? &dsAttachment : DE_NULL),				// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 			};
 
-			m_device->cmdBeginRenderingKHR(*m_cmdBuffer, &renderingInfo);
+			m_device->cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
 		}
 
 		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)

@@ -507,7 +507,7 @@ tcu::TestStatus SparseRenderTargetTestInstance::iterateInternal (void)
 	vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
 
 	if (m_renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
-		vkd.cmdEndRenderingKHR(*commandBuffer);
+		vkd.cmdEndRendering(*commandBuffer);
 	else
 	{
 		const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(DE_NULL);

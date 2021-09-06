@@ -1496,43 +1496,43 @@ void copyAndFlush(const vk::DeviceInterface& vkd, vk::VkDevice device, vk::Buffe
 void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& vkd, vk::VkCommandBuffer cmdBuffer)
 {
 	if (testConfig.cullModeConfig.dynamicValue)
-		vkd.cmdSetCullModeEXT(cmdBuffer, testConfig.cullModeConfig.dynamicValue.get());
+		vkd.cmdSetCullMode(cmdBuffer, testConfig.cullModeConfig.dynamicValue.get());
 
 	if (testConfig.frontFaceConfig.dynamicValue)
-		vkd.cmdSetFrontFaceEXT(cmdBuffer, testConfig.frontFaceConfig.dynamicValue.get());
+		vkd.cmdSetFrontFace(cmdBuffer, testConfig.frontFaceConfig.dynamicValue.get());
 
 	if (testConfig.topologyConfig.dynamicValue)
-		vkd.cmdSetPrimitiveTopologyEXT(cmdBuffer, testConfig.topologyConfig.dynamicValue.get());
+		vkd.cmdSetPrimitiveTopology(cmdBuffer, testConfig.topologyConfig.dynamicValue.get());
 
 	if (testConfig.viewportConfig.dynamicValue)
 	{
 		const auto& viewports = testConfig.viewportConfig.dynamicValue.get();
-		vkd.cmdSetViewportWithCountEXT(cmdBuffer, static_cast<deUint32>(viewports.size()), viewports.data());
+		vkd.cmdSetViewportWithCount(cmdBuffer, static_cast<deUint32>(viewports.size()), viewports.data());
 	}
 
 	if (testConfig.scissorConfig.dynamicValue)
 	{
 		const auto& scissors = testConfig.scissorConfig.dynamicValue.get();
-		vkd.cmdSetScissorWithCountEXT(cmdBuffer, static_cast<deUint32>(scissors.size()), scissors.data());
+		vkd.cmdSetScissorWithCount(cmdBuffer, static_cast<deUint32>(scissors.size()), scissors.data());
 	}
 
 	if (testConfig.depthTestEnableConfig.dynamicValue)
-		vkd.cmdSetDepthTestEnableEXT(cmdBuffer, makeVkBool32(testConfig.depthTestEnableConfig.dynamicValue.get()));
+		vkd.cmdSetDepthTestEnable(cmdBuffer, makeVkBool32(testConfig.depthTestEnableConfig.dynamicValue.get()));
 
 	if (testConfig.depthWriteEnableConfig.dynamicValue)
-		vkd.cmdSetDepthWriteEnableEXT(cmdBuffer, makeVkBool32(testConfig.depthWriteEnableConfig.dynamicValue.get()));
+		vkd.cmdSetDepthWriteEnable(cmdBuffer, makeVkBool32(testConfig.depthWriteEnableConfig.dynamicValue.get()));
 
 	if (testConfig.depthCompareOpConfig.dynamicValue)
-		vkd.cmdSetDepthCompareOpEXT(cmdBuffer, testConfig.depthCompareOpConfig.dynamicValue.get());
+		vkd.cmdSetDepthCompareOp(cmdBuffer, testConfig.depthCompareOpConfig.dynamicValue.get());
 
 	if (testConfig.depthBoundsTestEnableConfig.dynamicValue)
-		vkd.cmdSetDepthBoundsTestEnableEXT(cmdBuffer, makeVkBool32(testConfig.depthBoundsTestEnableConfig.dynamicValue.get()));
+		vkd.cmdSetDepthBoundsTestEnable(cmdBuffer, makeVkBool32(testConfig.depthBoundsTestEnableConfig.dynamicValue.get()));
 
 	if (testConfig.stencilTestEnableConfig.dynamicValue)
-		vkd.cmdSetStencilTestEnableEXT(cmdBuffer, makeVkBool32(testConfig.stencilTestEnableConfig.dynamicValue.get()));
+		vkd.cmdSetStencilTestEnable(cmdBuffer, makeVkBool32(testConfig.stencilTestEnableConfig.dynamicValue.get()));
 
 	if (testConfig.depthBiasEnableConfig.dynamicValue)
-		vkd.cmdSetDepthBiasEnableEXT(cmdBuffer, makeVkBool32(testConfig.depthBiasEnableConfig.dynamicValue.get()));
+		vkd.cmdSetDepthBiasEnable(cmdBuffer, makeVkBool32(testConfig.depthBiasEnableConfig.dynamicValue.get()));
 
 	if (testConfig.depthBiasConfig.dynamicValue)
 	{
@@ -1541,10 +1541,10 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	}
 
 	if (testConfig.rastDiscardEnableConfig.dynamicValue)
-		vkd.cmdSetRasterizerDiscardEnableEXT(cmdBuffer, makeVkBool32(testConfig.rastDiscardEnableConfig.dynamicValue.get()));
+		vkd.cmdSetRasterizerDiscardEnable(cmdBuffer, makeVkBool32(testConfig.rastDiscardEnableConfig.dynamicValue.get()));
 
 	if (testConfig.primRestartEnableConfig.dynamicValue)
-		vkd.cmdSetPrimitiveRestartEnableEXT(cmdBuffer, makeVkBool32(testConfig.primRestartEnableConfig.dynamicValue.get()));
+		vkd.cmdSetPrimitiveRestartEnable(cmdBuffer, makeVkBool32(testConfig.primRestartEnableConfig.dynamicValue.get()));
 
 	if (testConfig.logicOpConfig.dynamicValue)
 		vkd.cmdSetLogicOpEXT(cmdBuffer, testConfig.logicOpConfig.dynamicValue.get());
@@ -1555,7 +1555,7 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	if (testConfig.stencilOpConfig.dynamicValue)
 	{
 		for (const auto& params : testConfig.stencilOpConfig.dynamicValue.get())
-			vkd.cmdSetStencilOpEXT(cmdBuffer, params.faceMask, params.failOp, params.passOp, params.depthFailOp, params.compareOp);
+			vkd.cmdSetStencilOp(cmdBuffer, params.faceMask, params.failOp, params.passOp, params.depthFailOp, params.compareOp);
 	}
 
 	if (testConfig.vertexGenerator.dynamicValue)
@@ -1606,7 +1606,7 @@ bool maybeBindVertexBufferDynStride(const TestConfig& testConfig, const vk::Devi
 		sizes.push_back		(vertBuffer.dataSize);
 	}
 
-	vkd.cmdBindVertexBuffers2EXT(cmdBuffer, 0u, static_cast<deUint32>(chosenBuffers.size()), buffers.data(), offsets.data(), sizes.data(), strides.data());
+	vkd.cmdBindVertexBuffers2(cmdBuffer, 0u, static_cast<deUint32>(chosenBuffers.size()), buffers.data(), offsets.data(), sizes.data(), strides.data());
 
 	return true;
 }

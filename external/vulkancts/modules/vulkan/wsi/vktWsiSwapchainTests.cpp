@@ -720,7 +720,7 @@ template<typename T> static deUint64 HandleToInt(T t) { return t.getInternal(); 
 
 tcu::TestStatus createSwapchainPrivateDataTest (Context& context, TestParameters params)
 {
-	if (!context.getPrivateDataFeaturesEXT().privateData)
+	if (!context.getPrivateDataFeatures().privateData)
 		TCU_THROW(NotSupportedError, "privateData not supported");
 
 	tcu::TestLog&							log			= context.getTestContext().getLog();
@@ -793,7 +793,7 @@ tcu::TestStatus createSwapchainPrivateDataTest (Context& context, TestParameters
 
 				for (int i = 0; i < numSlots; ++i)
 				{
-					Move<VkPrivateDataSlotEXT> s = createPrivateDataSlotEXT(devHelper.vkd, *devHelper.device, &createInfo, DE_NULL);
+					Move<VkPrivateDataSlotEXT> s = createPrivateDataSlot(devHelper.vkd, *devHelper.device, &createInfo, DE_NULL);
 					slots.push_back(PrivateDataSlotSp(new PrivateDataSlotUp(s)));
 				}
 
@@ -805,7 +805,7 @@ tcu::TestStatus createSwapchainPrivateDataTest (Context& context, TestParameters
 					for (int i = 0; i < numSlots; ++i)
 					{
 						data = 1234;
-						devHelper.vkd.getPrivateDataEXT(*devHelper.device, getObjectType<VkSwapchainKHR>(), HandleToInt(swapchain.get()), **slots[i], &data);
+						devHelper.vkd.getPrivateData(*devHelper.device, getObjectType<VkSwapchainKHR>(), HandleToInt(swapchain.get()), **slots[i], &data);
 						// Don't test default value of zero on Android, due to spec erratum
 						if (params.wsiType != TYPE_ANDROID)
 						{
@@ -815,12 +815,12 @@ tcu::TestStatus createSwapchainPrivateDataTest (Context& context, TestParameters
 					}
 
 					for (int i = 0; i < numSlots; ++i)
-						VK_CHECK(devHelper.vkd.setPrivateDataEXT(*devHelper.device, getObjectType<VkSwapchainKHR>(), HandleToInt(swapchain.get()), **slots[i], i*i*i + 1));
+						VK_CHECK(devHelper.vkd.setPrivateData(*devHelper.device, getObjectType<VkSwapchainKHR>(), HandleToInt(swapchain.get()), **slots[i], i*i*i + 1));
 
 					for (int i = 0; i < numSlots; ++i)
 					{
 						data = 1234;
-						devHelper.vkd.getPrivateDataEXT(*devHelper.device, getObjectType<VkSwapchainKHR>(), HandleToInt(swapchain.get()), **slots[i], &data);
+						devHelper.vkd.getPrivateData(*devHelper.device, getObjectType<VkSwapchainKHR>(), HandleToInt(swapchain.get()), **slots[i], &data);
 						if (data != (deUint64)(i*i*i + 1))
 							return tcu::TestStatus::fail("Didn't read back set value");
 					}
@@ -829,7 +829,7 @@ tcu::TestStatus createSwapchainPrivateDataTest (Context& context, TestParameters
 					slots.clear();
 					for (int i = 0; i < numSlots; ++i)
 					{
-						Move<VkPrivateDataSlotEXT> s = createPrivateDataSlotEXT(devHelper.vkd, *devHelper.device, &createInfo, DE_NULL);
+						Move<VkPrivateDataSlotEXT> s = createPrivateDataSlot(devHelper.vkd, *devHelper.device, &createInfo, DE_NULL);
 						slots.push_back(PrivateDataSlotSp(new PrivateDataSlotUp(s)));
 					}
 				}

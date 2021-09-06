@@ -90,7 +90,7 @@ UVec3	getLocalSizes (const VkPhysicalDeviceProperties&	physicalDeviceProperties,
 
 deUint32 getRequiredSubgroupSizeFromMode (Context&													context,
 										  const CaseDefinition&										caseDef,
-										  const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties)
+										  const VkPhysicalDeviceSubgroupSizeControlProperties&		subgroupSizeControlProperties)
 {
 	switch (caseDef.requiredSubgroupSizeMode)
 	{
@@ -108,7 +108,7 @@ static bool checkVertexPipelineStages (const void*			internalData,
 {
 	const struct internalDataStruct*						checkInternalData				= reinterpret_cast<const struct internalDataStruct *>(internalData);
 	const Context*											context							= checkInternalData->context;
-	const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context->getSubgroupSizeControlPropertiesEXT();
+	const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context->getSubgroupSizeControlProperties();
 	TestLog&												log								= context->getTestContext().getLog();
 	const deUint32*											data							= reinterpret_cast<const deUint32*>(datas[0]);
 
@@ -141,7 +141,7 @@ static bool checkFragmentPipelineStages (const void*			internalData,
 {
 	const struct internalDataStruct*						checkInternalData				= reinterpret_cast<const struct internalDataStruct *>(internalData);
 	const Context*											context							= checkInternalData->context;
-	const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context->getSubgroupSizeControlPropertiesEXT();
+	const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context->getSubgroupSizeControlProperties();
 	TestLog&												log								= context->getTestContext().getLog();
 	const deUint32*											data							= reinterpret_cast<const deUint32*>(datas[0]);
 
@@ -179,7 +179,7 @@ static bool checkCompute (const void*			internalData,
 {
 	const struct internalDataStruct*						checkInternalData				= reinterpret_cast<const struct internalDataStruct *>(internalData);
 	const Context*											context							= checkInternalData->context;
-	const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context->getSubgroupSizeControlPropertiesEXT();
+	const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context->getSubgroupSizeControlProperties();
 	TestLog&												log								= context->getTestContext().getLog();
 	const deUint32											globalSizeX						= numWorkgroups[0] * localSize[0];
 	const deUint32											globalSizeY						= numWorkgroups[1] * localSize[1];
@@ -219,7 +219,7 @@ static bool checkComputeRequireFull (const void*			internalData,
 {
 	const struct internalDataStruct*						checkInternalData				= reinterpret_cast<const struct internalDataStruct *>(internalData);
 	const Context*											context							= checkInternalData->context;
-	const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context->getSubgroupSizeControlPropertiesEXT();
+	const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context->getSubgroupSizeControlProperties();
 	TestLog&												log								= context->getTestContext().getLog();
 	const deUint32											globalSizeX						= numWorkgroups[0] * localSize[0];
 	const deUint32											globalSizeY						= numWorkgroups[1] * localSize[1];
@@ -505,14 +505,14 @@ void supportedCheckFeatures (Context& context, CaseDefinition caseDef)
 	if (caseDef.requiredSubgroupSizeMode != REQUIRED_SUBGROUP_SIZE_NONE ||
 		caseDef.pipelineShaderStageCreateFlags == VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT)
 	{
-		const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&	subgroupSizeControlFeatures	= context.getSubgroupSizeControlFeaturesEXT();
+		const VkPhysicalDeviceSubgroupSizeControlFeatures&	subgroupSizeControlFeatures	= context.getSubgroupSizeControlFeatures();
 
 		if (subgroupSizeControlFeatures.subgroupSizeControl == DE_FALSE)
 			TCU_THROW(NotSupportedError, "Device does not support varying subgroup sizes nor required subgroup size");
 
 		if (caseDef.requiredSubgroupSizeMode != REQUIRED_SUBGROUP_SIZE_NONE)
 		{
-			const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context.getSubgroupSizeControlPropertiesEXT();
+			const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context.getSubgroupSizeControlProperties();
 
 			if ((subgroupSizeControlProperties.requiredSubgroupSizeStages & caseDef.shaderStage) != caseDef.shaderStage)
 				TCU_THROW(NotSupportedError, "Device does not support setting required subgroup size for the stages selected");
@@ -521,7 +521,7 @@ void supportedCheckFeatures (Context& context, CaseDefinition caseDef)
 
 	if (caseDef.pipelineShaderStageCreateFlags == VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT)
 	{
-		const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&	subgroupSizeControlFeatures	= context.getSubgroupSizeControlFeaturesEXT();
+		const VkPhysicalDeviceSubgroupSizeControlFeatures&	subgroupSizeControlFeatures	= context.getSubgroupSizeControlFeatures();
 
 		if (subgroupSizeControlFeatures.computeFullSubgroups == DE_FALSE)
 			TCU_THROW(NotSupportedError, "Device does not support full subgroups in compute shaders");
@@ -663,7 +663,7 @@ TestStatus testRequireFullSubgroups (Context& context, const CaseDefinition case
 	DE_ASSERT(caseDef.requiredSubgroupSizeMode == REQUIRED_SUBGROUP_SIZE_NONE);
 
 	const deUint32												numWorkgroups[3]							= {1, 1, 1};
-	const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&		subgroupSizeControlProperties				= context.getSubgroupSizeControlPropertiesEXT();
+	const VkPhysicalDeviceSubgroupSizeControlProperties&		subgroupSizeControlProperties				= context.getSubgroupSizeControlProperties();
 	const VkPhysicalDeviceProperties&							physicalDeviceProperties					= context.getDeviceProperties();
 	// Calculate the local workgroup sizes to exercise the maximum supported by the driver
 	const UVec3													localSize									= getLocalSizes(physicalDeviceProperties, physicalDeviceProperties.limits.maxComputeWorkGroupInvocations);
@@ -707,7 +707,7 @@ TestStatus testRequireSubgroupSize (Context& context, const CaseDefinition caseD
 	if (isAllComputeStages(caseDef.shaderStage))
 	{
 		const deUint32											numWorkgroups[3]							= {1, 1, 1};
-		const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties				= context.getSubgroupSizeControlPropertiesEXT();
+		const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties				= context.getSubgroupSizeControlProperties();
 		const VkPhysicalDeviceProperties&						physicalDeviceProperties					= context.getDeviceProperties();
 		const deUint32											requiredSubgroupSize						= getRequiredSubgroupSizeFromMode(context, caseDef, subgroupSizeControlProperties);
 		const deUint64											maxSubgroupLimitSize						= (deUint64)requiredSubgroupSize * subgroupSizeControlProperties.maxComputeWorkgroupSubgroups;
@@ -746,7 +746,7 @@ TestStatus testRequireSubgroupSize (Context& context, const CaseDefinition caseD
 	else if (isAllGraphicsStages(caseDef.shaderStage))
 	{
 		const VkShaderStageFlags								stages							= subgroups::getPossibleGraphicsSubgroupStages(context, caseDef.shaderStage);
-		const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context.getSubgroupSizeControlPropertiesEXT();
+		const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context.getSubgroupSizeControlProperties();
 		const deUint32											requiredSubgroupSize			= getRequiredSubgroupSizeFromMode(context, caseDef, subgroupSizeControlProperties);
 		const deUint32											requiredSubgroupSizes[5]		= { requiredSubgroupSize, requiredSubgroupSize, requiredSubgroupSize, requiredSubgroupSize, requiredSubgroupSize};
 		const struct internalDataStruct							internalData					=
@@ -773,7 +773,7 @@ TestStatus testRequireSubgroupSize (Context& context, const CaseDefinition caseD
 	else if (isAllRayTracingStages(caseDef.shaderStage))
 	{
 		const VkShaderStageFlags								stages							= subgroups::getPossibleRayTracingSubgroupStages(context, caseDef.shaderStage);
-		const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context.getSubgroupSizeControlPropertiesEXT();
+		const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context.getSubgroupSizeControlProperties();
 		const deUint32											requiredSubgroupSize			= getRequiredSubgroupSizeFromMode(context, caseDef, subgroupSizeControlProperties);
 		const vector<deUint32>									flags							(6, caseDef.pipelineShaderStageCreateFlags);
 		const vector<deUint32>									requiredSubgroupSizes			(6, requiredSubgroupSize);
@@ -800,7 +800,7 @@ TestStatus testRequireSubgroupSize (Context& context, const CaseDefinition caseD
 
 TestStatus noSSBOtestRequireSubgroupSize (Context& context, const CaseDefinition caseDef)
 {
-	const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT& subgroupSizeControlProperties	= context.getSubgroupSizeControlPropertiesEXT();
+	const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context.getSubgroupSizeControlProperties();
 	const deUint32											requiredSubgroupSize			= getRequiredSubgroupSizeFromMode(context, caseDef, subgroupSizeControlProperties);
 	const VkFormat											format							= VK_FORMAT_R32_UINT;
 	const deUint32&											flags							= caseDef.pipelineShaderStageCreateFlags;
@@ -825,8 +825,8 @@ TestStatus noSSBOtestRequireSubgroupSize (Context& context, const CaseDefinition
 
 TestStatus testSanitySubgroupSizeProperties (Context& context)
 {
-	VkPhysicalDeviceSubgroupSizeControlPropertiesEXT subgroupSizeControlProperties;
-	subgroupSizeControlProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT;
+	VkPhysicalDeviceSubgroupSizeControlProperties subgroupSizeControlProperties;
+	subgroupSizeControlProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES;
 	subgroupSizeControlProperties.pNext = DE_NULL;
 
 	VkPhysicalDeviceSubgroupProperties subgroupProperties;

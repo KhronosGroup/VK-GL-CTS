@@ -36,14 +36,14 @@ using namespace vkt;
 void checkSupport (Context& context, const VkFormat format)
 {
 	DE_UNREF(format);
-	context.requireDeviceFunctionality(VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME);
+	context.requireDeviceFunctionality("VK_KHR_format_feature_flags2");
 	context.requireInstanceFunctionality(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 }
 
 tcu::TestStatus test (Context& context, const VkFormat format)
 {
-	const VkFormatPropertiesExtendedKHR formatProperties (context.getFormatProperties(format));
-	const VkFormatPropertiesExtendedKHR requiredProperties (context.getRequiredFormatProperties(format));
+	const VkFormatProperties3 formatProperties (context.getFormatProperties(format));
+	const VkFormatProperties3 requiredProperties (context.getRequiredFormatProperties(format));
 
 	bool allPass = true;
 	allPass = allPass && ((formatProperties.bufferFeatures			& requiredProperties.bufferFeatures) == requiredProperties.bufferFeatures);

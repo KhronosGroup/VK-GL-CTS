@@ -120,7 +120,7 @@ VkMemoryRequirements getBufferCreateInfoMemoryRequirementsKHR (const DeviceInter
 		{0, 0, 0}													// VkMemoryRequirements	memoryRequirements
 	};
 
-	vk.getDeviceBufferMemoryRequirementsKHR(device, &memoryInfo, &req2);
+	vk.getDeviceBufferMemoryRequirements(device, &memoryInfo, &req2);
 
 	return req2.memoryRequirements;
 }
@@ -147,7 +147,7 @@ VkMemoryRequirements getImageMemoryRequirements2 (const DeviceInterface& vk, con
 	return req2.memoryRequirements;
 }
 
-VkMemoryRequirements getDeviceImageMemoryRequirementsKHR (const DeviceInterface& vk, const VkDevice device, const VkImageCreateInfo& createInfo, void* next = DE_NULL)
+VkMemoryRequirements getDeviceImageMemoryRequirements (const DeviceInterface& vk, const VkDevice device, const VkImageCreateInfo& createInfo, void* next = DE_NULL)
 {
 	VkDeviceImageMemoryRequirementsKHR info =
 	{
@@ -163,7 +163,7 @@ VkMemoryRequirements getDeviceImageMemoryRequirementsKHR (const DeviceInterface&
 		{0, 0, 0}													// VkMemoryRequirements	memoryRequirements
 	};
 
-	vk.getDeviceImageMemoryRequirementsKHR(device, &info, &req2);
+	vk.getDeviceImageMemoryRequirements(device, &info, &req2);
 
 	return req2.memoryRequirements;
 }
@@ -181,7 +181,7 @@ std::vector<VkSparseImageMemoryRequirements> getImageCreateInfoSparseMemoryRequi
 	std::vector<VkSparseImageMemoryRequirements>	requirements;
 	std::vector<VkSparseImageMemoryRequirements2>	requirements2;
 
-	vk.getDeviceImageSparseMemoryRequirementsKHR(device, &info, &requirementsCount, DE_NULL);
+	vk.getDeviceImageSparseMemoryRequirements(device, &info, &requirementsCount, DE_NULL);
 
 	if (requirementsCount > 0)
 	{
@@ -192,7 +192,7 @@ std::vector<VkSparseImageMemoryRequirements> getImageCreateInfoSparseMemoryRequi
 			requirements2[ndx].pNext = DE_NULL;
 		}
 
-		vk.getDeviceImageSparseMemoryRequirementsKHR(device, &info, &requirementsCount, &requirements2[0]);
+		vk.getDeviceImageSparseMemoryRequirements(device, &info, &requirementsCount, &requirements2[0]);
 
 		if ((size_t)requirementsCount != requirements2.size())
 			TCU_FAIL("Returned sparse image memory requirements count changes between queries");
@@ -1738,14 +1738,14 @@ void ImageMemoryRequirementsCreateInfo::addFunctionTestCase (tcu::TestCaseGroup*
 void ImageMemoryRequirementsCreateInfo::updateMemoryRequirements (const DeviceInterface&	vk,
 																  const VkDevice			device)
 {
-	m_currentTestRequirements = getDeviceImageMemoryRequirementsKHR(vk, device, m_currentTestImageInfo);
+	m_currentTestRequirements = getDeviceImageMemoryRequirements(vk, device, m_currentTestImageInfo);
 
 	const Unique<VkImage> image(createImage(vk, device, &m_currentTestImageInfo));
 	m_currentTestOriginalRequirements = getImageMemoryRequirements(vk, device, *image);
 
 	VkImageCreateInfo halfImageCreateInfo = m_currentTestImageInfo;
 	halfImageCreateInfo.extent = halfExtentForImage(m_currentTestImageInfo.imageType, m_currentTestImageInfo.extent);
-	m_currentTestHalfRequirements = getDeviceImageMemoryRequirementsKHR(vk, device, halfImageCreateInfo);
+	m_currentTestHalfRequirements = getDeviceImageMemoryRequirements(vk, device, halfImageCreateInfo);
 
 	if (m_currentTestImageInfo.flags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT)
 	{
@@ -1971,7 +1971,7 @@ tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
 							&imageInfo,
 							aspect
 						};
-						vk.getDeviceImageMemoryRequirementsKHR(device, &info, &requirements);
+						vk.getDeviceImageMemoryRequirements(device, &info, &requirements);
 					}
 					else
 					{

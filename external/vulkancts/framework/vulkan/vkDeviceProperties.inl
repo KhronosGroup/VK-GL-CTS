@@ -157,23 +157,80 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceTimelineSemaphoreProperties
 {
 	propertyType.maxTimelineSemaphoreValueDifference = allPropertiesBlobs.vk12.maxTimelineSemaphoreValueDifference;
 }
+template<> void initPropertyFromBlob<VkPhysicalDeviceSubgroupSizeControlProperties>(VkPhysicalDeviceSubgroupSizeControlProperties& propertyType, const AllPropertiesBlobs& allPropertiesBlobs)
+{
+	propertyType.minSubgroupSize = allPropertiesBlobs.vk13.minSubgroupSize;
+	propertyType.maxSubgroupSize = allPropertiesBlobs.vk13.maxSubgroupSize;
+	propertyType.maxComputeWorkgroupSubgroups = allPropertiesBlobs.vk13.maxComputeWorkgroupSubgroups;
+	propertyType.requiredSubgroupSizeStages = allPropertiesBlobs.vk13.requiredSubgroupSizeStages;
+}
+template<> void initPropertyFromBlob<VkPhysicalDeviceInlineUniformBlockProperties>(VkPhysicalDeviceInlineUniformBlockProperties& propertyType, const AllPropertiesBlobs& allPropertiesBlobs)
+{
+	propertyType.maxInlineUniformBlockSize = allPropertiesBlobs.vk13.maxInlineUniformBlockSize;
+	propertyType.maxPerStageDescriptorInlineUniformBlocks = allPropertiesBlobs.vk13.maxPerStageDescriptorInlineUniformBlocks;
+	propertyType.maxPerStageDescriptorUpdateAfterBindInlineUniformBlocks = allPropertiesBlobs.vk13.maxPerStageDescriptorUpdateAfterBindInlineUniformBlocks;
+	propertyType.maxDescriptorSetInlineUniformBlocks = allPropertiesBlobs.vk13.maxDescriptorSetInlineUniformBlocks;
+	propertyType.maxDescriptorSetUpdateAfterBindInlineUniformBlocks = allPropertiesBlobs.vk13.maxDescriptorSetUpdateAfterBindInlineUniformBlocks;
+}
+template<> void initPropertyFromBlob<VkPhysicalDeviceShaderIntegerDotProductProperties>(VkPhysicalDeviceShaderIntegerDotProductProperties& propertyType, const AllPropertiesBlobs& allPropertiesBlobs)
+{
+	propertyType.integerDotProduct8BitUnsignedAccelerated = allPropertiesBlobs.vk13.integerDotProduct8BitUnsignedAccelerated;
+	propertyType.integerDotProduct8BitSignedAccelerated = allPropertiesBlobs.vk13.integerDotProduct8BitSignedAccelerated;
+	propertyType.integerDotProduct8BitMixedSignednessAccelerated = allPropertiesBlobs.vk13.integerDotProduct8BitMixedSignednessAccelerated;
+	propertyType.integerDotProduct4x8BitPackedUnsignedAccelerated = allPropertiesBlobs.vk13.integerDotProduct4x8BitPackedUnsignedAccelerated;
+	propertyType.integerDotProduct4x8BitPackedSignedAccelerated = allPropertiesBlobs.vk13.integerDotProduct4x8BitPackedSignedAccelerated;
+	propertyType.integerDotProduct4x8BitPackedMixedSignednessAccelerated = allPropertiesBlobs.vk13.integerDotProduct4x8BitPackedMixedSignednessAccelerated;
+	propertyType.integerDotProduct16BitUnsignedAccelerated = allPropertiesBlobs.vk13.integerDotProduct16BitUnsignedAccelerated;
+	propertyType.integerDotProduct16BitSignedAccelerated = allPropertiesBlobs.vk13.integerDotProduct16BitSignedAccelerated;
+	propertyType.integerDotProduct16BitMixedSignednessAccelerated = allPropertiesBlobs.vk13.integerDotProduct16BitMixedSignednessAccelerated;
+	propertyType.integerDotProduct32BitUnsignedAccelerated = allPropertiesBlobs.vk13.integerDotProduct32BitUnsignedAccelerated;
+	propertyType.integerDotProduct32BitSignedAccelerated = allPropertiesBlobs.vk13.integerDotProduct32BitSignedAccelerated;
+	propertyType.integerDotProduct32BitMixedSignednessAccelerated = allPropertiesBlobs.vk13.integerDotProduct32BitMixedSignednessAccelerated;
+	propertyType.integerDotProduct64BitUnsignedAccelerated = allPropertiesBlobs.vk13.integerDotProduct64BitUnsignedAccelerated;
+	propertyType.integerDotProduct64BitSignedAccelerated = allPropertiesBlobs.vk13.integerDotProduct64BitSignedAccelerated;
+	propertyType.integerDotProduct64BitMixedSignednessAccelerated = allPropertiesBlobs.vk13.integerDotProduct64BitMixedSignednessAccelerated;
+	propertyType.integerDotProductAccumulatingSaturating8BitUnsignedAccelerated = allPropertiesBlobs.vk13.integerDotProductAccumulatingSaturating8BitUnsignedAccelerated;
+	propertyType.integerDotProductAccumulatingSaturating8BitSignedAccelerated = allPropertiesBlobs.vk13.integerDotProductAccumulatingSaturating8BitSignedAccelerated;
+	propertyType.integerDotProductAccumulatingSaturating8BitMixedSignednessAccelerated = allPropertiesBlobs.vk13.integerDotProductAccumulatingSaturating8BitMixedSignednessAccelerated;
+	propertyType.integerDotProductAccumulatingSaturating4x8BitPackedUnsignedAccelerated = allPropertiesBlobs.vk13.integerDotProductAccumulatingSaturating4x8BitPackedUnsignedAccelerated;
+	propertyType.integerDotProductAccumulatingSaturating4x8BitPackedSignedAccelerated = allPropertiesBlobs.vk13.integerDotProductAccumulatingSaturating4x8BitPackedSignedAccelerated;
+	propertyType.integerDotProductAccumulatingSaturating4x8BitPackedMixedSignednessAccelerated = allPropertiesBlobs.vk13.integerDotProductAccumulatingSaturating4x8BitPackedMixedSignednessAccelerated;
+	propertyType.integerDotProductAccumulatingSaturating16BitUnsignedAccelerated = allPropertiesBlobs.vk13.integerDotProductAccumulatingSaturating16BitUnsignedAccelerated;
+	propertyType.integerDotProductAccumulatingSaturating16BitSignedAccelerated = allPropertiesBlobs.vk13.integerDotProductAccumulatingSaturating16BitSignedAccelerated;
+	propertyType.integerDotProductAccumulatingSaturating16BitMixedSignednessAccelerated = allPropertiesBlobs.vk13.integerDotProductAccumulatingSaturating16BitMixedSignednessAccelerated;
+	propertyType.integerDotProductAccumulatingSaturating32BitUnsignedAccelerated = allPropertiesBlobs.vk13.integerDotProductAccumulatingSaturating32BitUnsignedAccelerated;
+	propertyType.integerDotProductAccumulatingSaturating32BitSignedAccelerated = allPropertiesBlobs.vk13.integerDotProductAccumulatingSaturating32BitSignedAccelerated;
+	propertyType.integerDotProductAccumulatingSaturating32BitMixedSignednessAccelerated = allPropertiesBlobs.vk13.integerDotProductAccumulatingSaturating32BitMixedSignednessAccelerated;
+	propertyType.integerDotProductAccumulatingSaturating64BitUnsignedAccelerated = allPropertiesBlobs.vk13.integerDotProductAccumulatingSaturating64BitUnsignedAccelerated;
+	propertyType.integerDotProductAccumulatingSaturating64BitSignedAccelerated = allPropertiesBlobs.vk13.integerDotProductAccumulatingSaturating64BitSignedAccelerated;
+	propertyType.integerDotProductAccumulatingSaturating64BitMixedSignednessAccelerated = allPropertiesBlobs.vk13.integerDotProductAccumulatingSaturating64BitMixedSignednessAccelerated;
+}
+template<> void initPropertyFromBlob<VkPhysicalDeviceTexelBufferAlignmentProperties>(VkPhysicalDeviceTexelBufferAlignmentProperties& propertyType, const AllPropertiesBlobs& allPropertiesBlobs)
+{
+	propertyType.storageTexelBufferOffsetAlignmentBytes = allPropertiesBlobs.vk13.storageTexelBufferOffsetAlignmentBytes;
+	propertyType.storageTexelBufferOffsetSingleTexelAlignment = allPropertiesBlobs.vk13.storageTexelBufferOffsetSingleTexelAlignment;
+	propertyType.uniformTexelBufferOffsetAlignmentBytes = allPropertiesBlobs.vk13.uniformTexelBufferOffsetAlignmentBytes;
+	propertyType.uniformTexelBufferOffsetSingleTexelAlignment = allPropertiesBlobs.vk13.uniformTexelBufferOffsetSingleTexelAlignment;
+}
+template<> void initPropertyFromBlob<VkPhysicalDeviceMaintenance4Properties>(VkPhysicalDeviceMaintenance4Properties& propertyType, const AllPropertiesBlobs& allPropertiesBlobs)
+{
+	propertyType.maxBufferSize = allPropertiesBlobs.vk13.maxBufferSize;
+}
 
 // generic template is not enough for some compilers
 template<> void initPropertyFromBlob<VkPhysicalDeviceMemoryProperties>(VkPhysicalDeviceMemoryProperties&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceSparseProperties>(VkPhysicalDeviceSparseProperties&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceGroupProperties>(VkPhysicalDeviceGroupProperties&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceMemoryProperties2>(VkPhysicalDeviceMemoryProperties2&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceToolProperties>(VkPhysicalDeviceToolProperties&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDevicePushDescriptorPropertiesKHR>(VkPhysicalDevicePushDescriptorPropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDevicePerformanceQueryPropertiesKHR>(VkPhysicalDevicePerformanceQueryPropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceFragmentShadingRatePropertiesKHR>(VkPhysicalDeviceFragmentShadingRatePropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR>(VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&, const AllPropertiesBlobs&) {}
-template<> void initPropertyFromBlob<VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR>(VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR&, const AllPropertiesBlobs&) {}
-template<> void initPropertyFromBlob<VkPhysicalDeviceMaintenance4PropertiesKHR>(VkPhysicalDeviceMaintenance4PropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceTransformFeedbackPropertiesEXT>(VkPhysicalDeviceTransformFeedbackPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX>(VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceDiscardRectanglePropertiesEXT>(VkPhysicalDeviceDiscardRectanglePropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceConservativeRasterizationPropertiesEXT>(VkPhysicalDeviceConservativeRasterizationPropertiesEXT&, const AllPropertiesBlobs&) {}
-template<> void initPropertyFromBlob<VkPhysicalDeviceInlineUniformBlockPropertiesEXT>(VkPhysicalDeviceInlineUniformBlockPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceSampleLocationsPropertiesEXT>(VkPhysicalDeviceSampleLocationsPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT>(VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceShaderSMBuiltinsPropertiesNV>(VkPhysicalDeviceShaderSMBuiltinsPropertiesNV&, const AllPropertiesBlobs&) {}
@@ -185,15 +242,12 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceVertexAttributeDivisorPrope
 template<> void initPropertyFromBlob<VkPhysicalDeviceMeshShaderPropertiesNV>(VkPhysicalDeviceMeshShaderPropertiesNV&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDevicePCIBusInfoPropertiesEXT>(VkPhysicalDevicePCIBusInfoPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceFragmentDensityMapPropertiesEXT>(VkPhysicalDeviceFragmentDensityMapPropertiesEXT&, const AllPropertiesBlobs&) {}
-template<> void initPropertyFromBlob<VkPhysicalDeviceSubgroupSizeControlPropertiesEXT>(VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceShaderCoreProperties2AMD>(VkPhysicalDeviceShaderCoreProperties2AMD&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceMemoryBudgetPropertiesEXT>(VkPhysicalDeviceMemoryBudgetPropertiesEXT&, const AllPropertiesBlobs&) {}
-template<> void initPropertyFromBlob<VkPhysicalDeviceToolPropertiesEXT>(VkPhysicalDeviceToolPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceCooperativeMatrixPropertiesNV>(VkPhysicalDeviceCooperativeMatrixPropertiesNV&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceProvokingVertexPropertiesEXT>(VkPhysicalDeviceProvokingVertexPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceLineRasterizationPropertiesEXT>(VkPhysicalDeviceLineRasterizationPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV>(VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&, const AllPropertiesBlobs&) {}
-template<> void initPropertyFromBlob<VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT>(VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceRobustness2PropertiesEXT>(VkPhysicalDeviceRobustness2PropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceCustomBorderColorPropertiesEXT>(VkPhysicalDeviceCustomBorderColorPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV>(VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV&, const AllPropertiesBlobs&) {}
@@ -224,10 +278,10 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFragmentDensityMap2Prop
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFragmentShadingRatePropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_PROPERTIES_KHR, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, VK_KHR_FRAGMENT_SHADING_RATE_SPEC_VERSION, 33}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_PROPERTIES_NV, VK_NV_FRAGMENT_SHADING_RATE_ENUMS_EXTENSION_NAME, VK_NV_FRAGMENT_SHADING_RATE_ENUMS_SPEC_VERSION, 32}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceIDProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES, VK_KHR_PRESENT_ID_EXTENSION_NAME, VK_KHR_PRESENT_ID_SPEC_VERSION, 31}; }
-template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceInlineUniformBlockPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES_EXT, VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME, VK_EXT_INLINE_UNIFORM_BLOCK_SPEC_VERSION, 30}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceInlineUniformBlockProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES, VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME, VK_EXT_INLINE_UNIFORM_BLOCK_SPEC_VERSION, 30}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceLineRasterizationPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT, VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME, VK_EXT_LINE_RASTERIZATION_SPEC_VERSION, 29}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMaintenance3Properties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES, VK_KHR_MAINTENANCE3_EXTENSION_NAME, VK_KHR_MAINTENANCE3_SPEC_VERSION, 28}; }
-template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMaintenance4PropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES_KHR, VK_KHR_MAINTENANCE4_EXTENSION_NAME, VK_KHR_MAINTENANCE4_SPEC_VERSION, 27}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMaintenance4Properties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES, VK_KHR_MAINTENANCE4_EXTENSION_NAME, VK_KHR_MAINTENANCE4_SPEC_VERSION, 27}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMeshShaderPropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_NV, VK_NV_MESH_SHADER_EXTENSION_NAME, VK_NV_MESH_SHADER_SPEC_VERSION, 26}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMultiviewProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES, VK_KHR_MULTIVIEW_EXTENSION_NAME, VK_KHR_MULTIVIEW_SPEC_VERSION, 25}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_ATTRIBUTES_PROPERTIES_NVX, VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_EXTENSION_NAME, VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_SPEC_VERSION, 24}; }
@@ -245,12 +299,12 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceSamplerFilterMinmaxProp
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceSampleLocationsPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLE_LOCATIONS_PROPERTIES_EXT, VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, VK_EXT_SAMPLE_LOCATIONS_SPEC_VERSION, 12}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderCorePropertiesAMD>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD, VK_AMD_SHADER_CORE_PROPERTIES_EXTENSION_NAME, VK_AMD_SHADER_CORE_PROPERTIES_SPEC_VERSION, 11}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderCoreProperties2AMD>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD, VK_AMD_SHADER_CORE_PROPERTIES_2_EXTENSION_NAME, VK_AMD_SHADER_CORE_PROPERTIES_2_SPEC_VERSION, 10}; }
-template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR, VK_KHR_SHADER_INTEGER_DOT_PRODUCT_EXTENSION_NAME, VK_KHR_SHADER_INTEGER_DOT_PRODUCT_SPEC_VERSION, 9}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderIntegerDotProductProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES, VK_KHR_SHADER_INTEGER_DOT_PRODUCT_EXTENSION_NAME, VK_KHR_SHADER_INTEGER_DOT_PRODUCT_SPEC_VERSION, 9}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShadingRateImagePropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADING_RATE_IMAGE_PROPERTIES_NV, VK_NV_SHADING_RATE_IMAGE_EXTENSION_NAME, VK_NV_SHADING_RATE_IMAGE_SPEC_VERSION, 8}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceSubgroupProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES, DECL_SUBGROUP_EXTENSION_NAME, 0, 7}; }
-template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceSubgroupSizeControlPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT, VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME, VK_EXT_SUBGROUP_SIZE_CONTROL_SPEC_VERSION, 6}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceSubgroupSizeControlProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES, VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME, VK_EXT_SUBGROUP_SIZE_CONTROL_SPEC_VERSION, 6}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceSubpassShadingPropertiesHUAWEI>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBPASS_SHADING_PROPERTIES_HUAWEI, VK_HUAWEI_SUBPASS_SHADING_EXTENSION_NAME, VK_HUAWEI_SUBPASS_SHADING_SPEC_VERSION, 5}; }
-template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT, VK_EXT_TEXEL_BUFFER_ALIGNMENT_EXTENSION_NAME, VK_EXT_TEXEL_BUFFER_ALIGNMENT_SPEC_VERSION, 4}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceTexelBufferAlignmentProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES, VK_EXT_TEXEL_BUFFER_ALIGNMENT_EXTENSION_NAME, VK_EXT_TEXEL_BUFFER_ALIGNMENT_SPEC_VERSION, 4}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceTimelineSemaphoreProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME, VK_KHR_TIMELINE_SEMAPHORE_SPEC_VERSION, 3}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceTransformFeedbackPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_PROPERTIES_EXT, VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME, VK_EXT_TRANSFORM_FEEDBACK_SPEC_VERSION, 2}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT, VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME, VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_SPEC_VERSION, 1}; }
@@ -276,10 +330,10 @@ static const PropertyStructCreationData propertyStructCreationArray[] =
 	{ createPropertyStructWrapper<VkPhysicalDeviceFragmentShadingRatePropertiesKHR>, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, VK_KHR_FRAGMENT_SHADING_RATE_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV>, VK_NV_FRAGMENT_SHADING_RATE_ENUMS_EXTENSION_NAME, VK_NV_FRAGMENT_SHADING_RATE_ENUMS_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceIDProperties>, VK_KHR_PRESENT_ID_EXTENSION_NAME, VK_KHR_PRESENT_ID_SPEC_VERSION },
-	{ createPropertyStructWrapper<VkPhysicalDeviceInlineUniformBlockPropertiesEXT>, VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME, VK_EXT_INLINE_UNIFORM_BLOCK_SPEC_VERSION },
+	{ createPropertyStructWrapper<VkPhysicalDeviceInlineUniformBlockProperties>, VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME, VK_EXT_INLINE_UNIFORM_BLOCK_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceLineRasterizationPropertiesEXT>, VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME, VK_EXT_LINE_RASTERIZATION_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceMaintenance3Properties>, VK_KHR_MAINTENANCE3_EXTENSION_NAME, VK_KHR_MAINTENANCE3_SPEC_VERSION },
-	{ createPropertyStructWrapper<VkPhysicalDeviceMaintenance4PropertiesKHR>, VK_KHR_MAINTENANCE4_EXTENSION_NAME, VK_KHR_MAINTENANCE4_SPEC_VERSION },
+	{ createPropertyStructWrapper<VkPhysicalDeviceMaintenance4Properties>, VK_KHR_MAINTENANCE4_EXTENSION_NAME, VK_KHR_MAINTENANCE4_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceMeshShaderPropertiesNV>, VK_NV_MESH_SHADER_EXTENSION_NAME, VK_NV_MESH_SHADER_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceMultiviewProperties>, VK_KHR_MULTIVIEW_EXTENSION_NAME, VK_KHR_MULTIVIEW_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX>, VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_EXTENSION_NAME, VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_SPEC_VERSION },
@@ -297,36 +351,47 @@ static const PropertyStructCreationData propertyStructCreationArray[] =
 	{ createPropertyStructWrapper<VkPhysicalDeviceSampleLocationsPropertiesEXT>, VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, VK_EXT_SAMPLE_LOCATIONS_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceShaderCorePropertiesAMD>, VK_AMD_SHADER_CORE_PROPERTIES_EXTENSION_NAME, VK_AMD_SHADER_CORE_PROPERTIES_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceShaderCoreProperties2AMD>, VK_AMD_SHADER_CORE_PROPERTIES_2_EXTENSION_NAME, VK_AMD_SHADER_CORE_PROPERTIES_2_SPEC_VERSION },
-	{ createPropertyStructWrapper<VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR>, VK_KHR_SHADER_INTEGER_DOT_PRODUCT_EXTENSION_NAME, VK_KHR_SHADER_INTEGER_DOT_PRODUCT_SPEC_VERSION },
+	{ createPropertyStructWrapper<VkPhysicalDeviceShaderIntegerDotProductProperties>, VK_KHR_SHADER_INTEGER_DOT_PRODUCT_EXTENSION_NAME, VK_KHR_SHADER_INTEGER_DOT_PRODUCT_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceShadingRateImagePropertiesNV>, VK_NV_SHADING_RATE_IMAGE_EXTENSION_NAME, VK_NV_SHADING_RATE_IMAGE_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceSubgroupProperties>, DECL_SUBGROUP_EXTENSION_NAME, 0 },
-	{ createPropertyStructWrapper<VkPhysicalDeviceSubgroupSizeControlPropertiesEXT>, VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME, VK_EXT_SUBGROUP_SIZE_CONTROL_SPEC_VERSION },
+	{ createPropertyStructWrapper<VkPhysicalDeviceSubgroupSizeControlProperties>, VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME, VK_EXT_SUBGROUP_SIZE_CONTROL_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceSubpassShadingPropertiesHUAWEI>, VK_HUAWEI_SUBPASS_SHADING_EXTENSION_NAME, VK_HUAWEI_SUBPASS_SHADING_SPEC_VERSION },
-	{ createPropertyStructWrapper<VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT>, VK_EXT_TEXEL_BUFFER_ALIGNMENT_EXTENSION_NAME, VK_EXT_TEXEL_BUFFER_ALIGNMENT_SPEC_VERSION },
+	{ createPropertyStructWrapper<VkPhysicalDeviceTexelBufferAlignmentProperties>, VK_EXT_TEXEL_BUFFER_ALIGNMENT_EXTENSION_NAME, VK_EXT_TEXEL_BUFFER_ALIGNMENT_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceTimelineSemaphoreProperties>, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME, VK_KHR_TIMELINE_SEMAPHORE_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceTransformFeedbackPropertiesEXT>, VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME, VK_EXT_TRANSFORM_FEEDBACK_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT>, VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME, VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_SPEC_VERSION },
 };
 
-bool isPartOfBlobProperties (VkStructureType sType)
+deUint32 getBlobPropertiesVersion (VkStructureType sType)
 {
-	const std::vector<VkStructureType> sTypeVect =	{
+	const std::map<VkStructureType, deUint32> sTypeBlobMap
+	{
 		// Vulkan11
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES,
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES,
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES,
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES,
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES,
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES,
+		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES,							VK_API_VERSION_1_1 },
+		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES,				VK_API_VERSION_1_1 },
+		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES,					VK_API_VERSION_1_1 },
+		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES,				VK_API_VERSION_1_1 },
+		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES,			VK_API_VERSION_1_1 },
+		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES,					VK_API_VERSION_1_1 },
 		// Vulkan12
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES,
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES,
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES,
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES,
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES,
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES,
+		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES,		VK_API_VERSION_1_2 },
+		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES,			VK_API_VERSION_1_2 },
+		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES,						VK_API_VERSION_1_2 },
+		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES,				VK_API_VERSION_1_2 },
+		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES,		VK_API_VERSION_1_2 },
+		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES,			VK_API_VERSION_1_2 },
+		// Vulkan13
+		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES,		VK_API_VERSION_1_3 },
+		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES,				VK_API_VERSION_1_3 },
+		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES,	VK_API_VERSION_1_3 },
+		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES,		VK_API_VERSION_1_3 },
+		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES,		VK_API_VERSION_1_3 },
 	};
-	return de::contains(sTypeVect.begin(), sTypeVect.end(), sType);
+
+	auto it = sTypeBlobMap.find(sType);
+	if(it == sTypeBlobMap.end())
+		return 0;
+	return it->second;
 }
 
 } // vk

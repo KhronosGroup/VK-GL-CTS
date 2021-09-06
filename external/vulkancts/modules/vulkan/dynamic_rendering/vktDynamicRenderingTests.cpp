@@ -700,7 +700,7 @@ protected:
 	void							preBarier						(const deUint32						colorAtchCount,
 																	 ImagesLayout&						imagesLayout,
 																	 const ImagesFormat&				imagesFormat);
-	void							beginRenderingKHR				(VkCommandBuffer					cmdBuffer,
+	void							beginRendering					(VkCommandBuffer					cmdBuffer,
 																	 const std::vector<VkImageView>&	attachmentBindInfos,
 																	 const VkRenderingFlagsKHR			flags,
 																	 const deUint32						colorAtchCount,
@@ -999,13 +999,13 @@ void DynamicRenderingTestInstance::rendering (const VkPipeline					pipeline,
 		beginCommandBuffer(vk, *m_cmdBuffer);
 		preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-		beginRenderingKHR(*m_cmdBuffer,
-						  attachmentBindInfos,
-						  0,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(*m_cmdBuffer,
+					   attachmentBindInfos,
+					   0,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
@@ -1019,7 +1019,7 @@ void DynamicRenderingTestInstance::rendering (const VkPipeline					pipeline,
 		vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 0u);
 		vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 4u, 0u);
 
-		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 
 		copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -1036,13 +1036,13 @@ void DynamicRenderingTestInstance::rendering (const VkPipeline					pipeline,
 			beginCommandBuffer(vk, *m_cmdBuffer);
 			preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-			beginRenderingKHR(*m_cmdBuffer,
-							  attachmentBindInfos,
-							  0,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(*m_cmdBuffer,
+						   attachmentBindInfos,
+						   0,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			if (clearData.colorDepthClear1.size() != 0)
 			{
@@ -1066,7 +1066,7 @@ void DynamicRenderingTestInstance::rendering (const VkPipeline					pipeline,
 			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
 				vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
 
-			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
 
 			copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -1134,13 +1134,13 @@ void DynamicRenderingTestInstance::preBarier (const deUint32		colorAtchCount,
 								  barriers.size());
 }
 
-void DynamicRenderingTestInstance::beginRenderingKHR (VkCommandBuffer					cmdBuffer,
-													  const std::vector<VkImageView>&	attachmentBindInfos,
-													  const VkRenderingFlagsKHR			flags,
-													  const deUint32					colorAtchCount,
-													  const ImagesFormat&				imagesFormat,
-													  const VkAttachmentLoadOp			loadOp,
-													  const VkAttachmentStoreOp			storeOp)
+void DynamicRenderingTestInstance::beginRendering (VkCommandBuffer					cmdBuffer,
+												   const std::vector<VkImageView>&	attachmentBindInfos,
+												   const VkRenderingFlagsKHR			flags,
+												   const deUint32					colorAtchCount,
+												   const ImagesFormat&				imagesFormat,
+												   const VkAttachmentLoadOp			loadOp,
+												   const VkAttachmentStoreOp			storeOp)
 {
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 	const VkClearValue		clearValue	= makeClearValueColor(m_parameters.clearColor);
@@ -1229,7 +1229,7 @@ void DynamicRenderingTestInstance::beginRenderingKHR (VkCommandBuffer					cmdBuf
 			DE_NULL),											// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 	};
 
-	vk.cmdBeginRenderingKHR(cmdBuffer, &renderingInfo);
+	vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
 }
 
 void DynamicRenderingTestInstance::copyImgToBuff (VkCommandBuffer		commandBuffer,
@@ -1380,13 +1380,13 @@ void	SingleCmdBufferResuming::rendering (const VkPipeline				pipeline,
 		beginCommandBuffer(vk, *m_cmdBuffer);
 		preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-		beginRenderingKHR(*m_cmdBuffer,
-						  attachmentBindInfos,
-						  VK_RENDERING_SUSPENDING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(*m_cmdBuffer,
+					   attachmentBindInfos,
+					   VK_RENDERING_SUSPENDING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
@@ -1398,19 +1398,19 @@ void	SingleCmdBufferResuming::rendering (const VkPipeline				pipeline,
 
 		vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 8u, 0u);
 		vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 0u);
-		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 
-		beginRenderingKHR(*m_cmdBuffer,
-						  attachmentBindInfos,
-						  VK_RENDERING_RESUMING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(*m_cmdBuffer,
+					   attachmentBindInfos,
+					   VK_RENDERING_RESUMING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 4u, 0u);
 
-		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 
 		copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -1427,13 +1427,13 @@ void	SingleCmdBufferResuming::rendering (const VkPipeline				pipeline,
 			beginCommandBuffer(vk, *m_cmdBuffer);
 			preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-			beginRenderingKHR(*m_cmdBuffer,
-							  attachmentBindInfos,
-							  VK_RENDERING_SUSPENDING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(*m_cmdBuffer,
+						   attachmentBindInfos,
+						   VK_RENDERING_SUSPENDING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			if (clearData.colorDepthClear1.size() != 0)
 			{
@@ -1446,15 +1446,15 @@ void	SingleCmdBufferResuming::rendering (const VkPipeline				pipeline,
 			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
 				vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
 
-			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
 
-			beginRenderingKHR(*m_cmdBuffer,
-							  attachmentBindInfos,
-							  VK_RENDERING_RESUMING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(*m_cmdBuffer,
+						   attachmentBindInfos,
+						   VK_RENDERING_RESUMING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			if (clearData.colorDepthClear2.size() != 0)
 			{
@@ -1467,7 +1467,7 @@ void	SingleCmdBufferResuming::rendering (const VkPipeline				pipeline,
 			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
 				vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
 
-			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
 
 			copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -1521,13 +1521,13 @@ void	TwoPrimaryCmdBufferResuming::rendering (const VkPipeline				pipeline,
 		beginCommandBuffer(vk, *m_cmdBuffer);
 		preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-		beginRenderingKHR(*m_cmdBuffer,
-						  attachmentBindInfos,
-						  VK_RENDERING_SUSPENDING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(*m_cmdBuffer,
+					   attachmentBindInfos,
+					   VK_RENDERING_SUSPENDING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
@@ -1540,20 +1540,20 @@ void	TwoPrimaryCmdBufferResuming::rendering (const VkPipeline				pipeline,
 		vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 8u, 0u);
 		vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 0u);
 
-		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
 		// Second Primary CommandBuffer
 		beginCommandBuffer(vk, *m_cmdBuffer2);
 
-		beginRenderingKHR(*m_cmdBuffer2,
-						  attachmentBindInfos,
-						  VK_RENDERING_RESUMING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(*m_cmdBuffer2,
+					   attachmentBindInfos,
+					   VK_RENDERING_RESUMING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdBindPipeline(*m_cmdBuffer2, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
@@ -1565,7 +1565,7 @@ void	TwoPrimaryCmdBufferResuming::rendering (const VkPipeline				pipeline,
 
 		vk.cmdDraw(*m_cmdBuffer2, 4u, 1u, 4u, 0u);
 
-		vk.cmdEndRenderingKHR(*m_cmdBuffer2);
+		vk.cmdEndRendering(*m_cmdBuffer2);
 
 		copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -1584,13 +1584,13 @@ void	TwoPrimaryCmdBufferResuming::rendering (const VkPipeline				pipeline,
 			beginCommandBuffer(vk, *m_cmdBuffer);
 			preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-			beginRenderingKHR(*m_cmdBuffer,
-							  attachmentBindInfos,
-							  VK_RENDERING_SUSPENDING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(*m_cmdBuffer,
+						   attachmentBindInfos,
+						   VK_RENDERING_SUSPENDING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			if (clearData.colorDepthClear1.size() != 0)
 			{
@@ -1603,20 +1603,20 @@ void	TwoPrimaryCmdBufferResuming::rendering (const VkPipeline				pipeline,
 			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
 				vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
 
-			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
 
 			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
 			// Second Primary CommandBuffer
 			beginCommandBuffer(vk, *m_cmdBuffer2);
 
-			beginRenderingKHR(*m_cmdBuffer2,
-							  attachmentBindInfos,
-							  VK_RENDERING_RESUMING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(*m_cmdBuffer2,
+						   attachmentBindInfos,
+						   VK_RENDERING_RESUMING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			if (clearData.colorDepthClear2.size() != 0)
 			{
@@ -1629,7 +1629,7 @@ void	TwoPrimaryCmdBufferResuming::rendering (const VkPipeline				pipeline,
 			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
 				vk.cmdClearAttachments(*m_cmdBuffer2, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
 
-			vk.cmdEndRenderingKHR(*m_cmdBuffer2);
+			vk.cmdEndRendering(*m_cmdBuffer2);
 
 			copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -1691,13 +1691,13 @@ void	TwoSecondaryCmdBufferResuming::rendering (const VkPipeline					pipeline,
 		// secCmdBuffersFirst
 		beginSecondaryCmdBuffer(vk, secCmdBuffers[0]);
 
-		beginRenderingKHR(secCmdBuffers[0],
-						  attachmentBindInfos,
-						  VK_RENDERING_SUSPENDING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(secCmdBuffers[0],
+					   attachmentBindInfos,
+					   VK_RENDERING_SUSPENDING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdBindPipeline(secCmdBuffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 		vk.cmdBindVertexBuffers(secCmdBuffers[0], 0u, 1u, &vertexBuffer, &vertexBufferOffset);
@@ -1705,26 +1705,26 @@ void	TwoSecondaryCmdBufferResuming::rendering (const VkPipeline					pipeline,
 		vk.cmdDraw(secCmdBuffers[0], 4u, 1u, 8u, 0u);
 		vk.cmdDraw(secCmdBuffers[0], 4u, 1u, 0u, 0u);
 
-		vk.cmdEndRenderingKHR(secCmdBuffers[0]);
+		vk.cmdEndRendering(secCmdBuffers[0]);
 		VK_CHECK(vk.endCommandBuffer(secCmdBuffers[0]));
 
 		// secCmdBuffersSecond
 		beginSecondaryCmdBuffer(vk, secCmdBuffers[1]);
 
-		beginRenderingKHR(secCmdBuffers[1],
-						  attachmentBindInfos,
-						  VK_RENDERING_RESUMING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(secCmdBuffers[1],
+					   attachmentBindInfos,
+					   VK_RENDERING_RESUMING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdBindPipeline(secCmdBuffers[1], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 		vk.cmdBindVertexBuffers(secCmdBuffers[1], 0u, 1u, &vertexBuffer, &vertexBufferOffset);
 
 		vk.cmdDraw(secCmdBuffers[1], 4u, 1u, 4u, 0u);
 
-		vk.cmdEndRenderingKHR(secCmdBuffers[1]);
+		vk.cmdEndRendering(secCmdBuffers[1]);
 		VK_CHECK(vk.endCommandBuffer(secCmdBuffers[1]));
 
 		// Primary commandBuffer
@@ -1748,13 +1748,13 @@ void	TwoSecondaryCmdBufferResuming::rendering (const VkPipeline					pipeline,
 		// secCmdBuffersFirst
 			beginSecondaryCmdBuffer(vk, secCmdBuffers[0]);
 
-			beginRenderingKHR(secCmdBuffers[0],
-							  attachmentBindInfos,
-							  VK_RENDERING_SUSPENDING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(secCmdBuffers[0],
+						   attachmentBindInfos,
+						   VK_RENDERING_SUSPENDING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			if (clearData.colorDepthClear1.size() != 0)
 			{
@@ -1767,19 +1767,19 @@ void	TwoSecondaryCmdBufferResuming::rendering (const VkPipeline					pipeline,
 			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
 				vk.cmdClearAttachments(secCmdBuffers[0], 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
 
-			vk.cmdEndRenderingKHR(secCmdBuffers[0]);
+			vk.cmdEndRendering(secCmdBuffers[0]);
 			VK_CHECK(vk.endCommandBuffer(secCmdBuffers[0]));
 
 			// secCmdBuffersSecond
 			beginSecondaryCmdBuffer(vk, secCmdBuffers[1]);
 
-			beginRenderingKHR(secCmdBuffers[1],
-							  attachmentBindInfos,
-							  VK_RENDERING_RESUMING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(secCmdBuffers[1],
+						   attachmentBindInfos,
+						   VK_RENDERING_RESUMING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			if (clearData.colorDepthClear2.size() != 0)
 			{
@@ -1792,7 +1792,7 @@ void	TwoSecondaryCmdBufferResuming::rendering (const VkPipeline					pipeline,
 			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
 				vk.cmdClearAttachments(secCmdBuffers[1], 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
 
-			vk.cmdEndRenderingKHR(secCmdBuffers[1]);
+			vk.cmdEndRendering(secCmdBuffers[1]);
 			VK_CHECK(vk.endCommandBuffer(secCmdBuffers[1]));
 
 			// Primary commandBuffer
@@ -1862,13 +1862,13 @@ void	TwoSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipeline				pip
 		// secCmdBuffersFirst
 		beginSecondaryCmdBuffer(vk, secCmdBuffers[0]);
 
-		beginRenderingKHR(secCmdBuffers[0],
-						  attachmentBindInfos,
-						  VK_RENDERING_SUSPENDING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(secCmdBuffers[0],
+					   attachmentBindInfos,
+					   VK_RENDERING_SUSPENDING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdBindPipeline(secCmdBuffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 		vk.cmdBindVertexBuffers(secCmdBuffers[0], 0u, 1u, &vertexBuffer, &vertexBufferOffset);
@@ -1876,27 +1876,27 @@ void	TwoSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipeline				pip
 		vk.cmdDraw(secCmdBuffers[0], 4u, 1u, 8u, 0u);
 		vk.cmdDraw(secCmdBuffers[0], 4u, 1u, 0u, 0u);
 
-		vk.cmdEndRenderingKHR(secCmdBuffers[0]);
+		vk.cmdEndRendering(secCmdBuffers[0]);
 		VK_CHECK(vk.endCommandBuffer(secCmdBuffers[0]));
 
 
 		// secCmdBuffersSecond
 		beginSecondaryCmdBuffer(vk, secCmdBuffers[1]);
 
-		beginRenderingKHR(secCmdBuffers[1],
-						  attachmentBindInfos,
-						  VK_RENDERING_RESUMING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(secCmdBuffers[1],
+					   attachmentBindInfos,
+					   VK_RENDERING_RESUMING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdBindPipeline(secCmdBuffers[1], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 		vk.cmdBindVertexBuffers(secCmdBuffers[1], 0u, 1u, &vertexBuffer, &vertexBufferOffset);
 
 		vk.cmdDraw(secCmdBuffers[1], 4u, 1u, 4u, 0u);
 
-		vk.cmdEndRenderingKHR(secCmdBuffers[1]);
+		vk.cmdEndRendering(secCmdBuffers[1]);
 		VK_CHECK(vk.endCommandBuffer(secCmdBuffers[1]));
 
 		// Primary commandBuffer
@@ -1927,13 +1927,13 @@ void	TwoSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipeline				pip
 			// secCmdBuffersFirst
 			beginSecondaryCmdBuffer(vk, secCmdBuffers[0]);
 
-			beginRenderingKHR(secCmdBuffers[0],
-							  attachmentBindInfos,
-							  VK_RENDERING_SUSPENDING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(secCmdBuffers[0],
+						   attachmentBindInfos,
+						   VK_RENDERING_SUSPENDING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			if (clearData.colorDepthClear1.size() != 0)
 			{
@@ -1946,19 +1946,19 @@ void	TwoSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipeline				pip
 			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
 				vk.cmdClearAttachments(secCmdBuffers[0], 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
 
-			vk.cmdEndRenderingKHR(secCmdBuffers[0]);
+			vk.cmdEndRendering(secCmdBuffers[0]);
 			VK_CHECK(vk.endCommandBuffer(secCmdBuffers[0]));
 
 			// secCmdBuffersSecond
 			beginSecondaryCmdBuffer(vk, secCmdBuffers[1]);
 
-			beginRenderingKHR(secCmdBuffers[1],
-							  attachmentBindInfos,
-							  VK_RENDERING_RESUMING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(secCmdBuffers[1],
+						   attachmentBindInfos,
+						   VK_RENDERING_RESUMING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			if (clearData.colorDepthClear2.size() != 0)
 			{
@@ -1971,7 +1971,7 @@ void	TwoSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipeline				pip
 			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
 				vk.cmdClearAttachments(secCmdBuffers[1], 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
 
-			vk.cmdEndRenderingKHR(secCmdBuffers[1]);
+			vk.cmdEndRendering(secCmdBuffers[1]);
 			VK_CHECK(vk.endCommandBuffer(secCmdBuffers[1]));
 
 			// Primary commandBuffer
@@ -2054,17 +2054,17 @@ void	ContentsSecondaryCmdBuffer::rendering (const VkPipeline					pipeline,
 		beginCommandBuffer(vk, *m_cmdBuffer);
 		preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-		beginRenderingKHR(*m_cmdBuffer,
-						  attachmentBindInfos,
-						  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(*m_cmdBuffer,
+					   attachmentBindInfos,
+					   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffers));
 
-		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 
 		copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
@@ -2109,17 +2109,17 @@ void	ContentsSecondaryCmdBuffer::rendering (const VkPipeline					pipeline,
 			beginCommandBuffer(vk, *m_cmdBuffer);
 			preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-			beginRenderingKHR(*m_cmdBuffer,
-							  attachmentBindInfos,
-							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(*m_cmdBuffer,
+						   attachmentBindInfos,
+						   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffers));
 
-			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
 
 			copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
@@ -2203,17 +2203,17 @@ void	ContentsTwoSecondaryCmdBuffer::rendering (const VkPipeline					pipeline,
 		beginCommandBuffer(vk, *m_cmdBuffer);
 		preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-		beginRenderingKHR(*m_cmdBuffer,
-						  attachmentBindInfos,
-						  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(*m_cmdBuffer,
+					   attachmentBindInfos,
+					   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdExecuteCommands(*m_cmdBuffer, 2u, secCmdBuffers);
 
-		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 
 		copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
@@ -2263,17 +2263,17 @@ void	ContentsTwoSecondaryCmdBuffer::rendering (const VkPipeline					pipeline,
 			beginCommandBuffer(vk, *m_cmdBuffer);
 			preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-			beginRenderingKHR(*m_cmdBuffer,
-							  attachmentBindInfos,
-							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(*m_cmdBuffer,
+						   attachmentBindInfos,
+						   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			vk.cmdExecuteCommands(*m_cmdBuffer, 2u, secCmdBuffers);
 
-			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
 
 			copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
@@ -2357,31 +2357,31 @@ void	ContentsTwoSecondaryCmdBufferResuming::rendering (const VkPipeline					pipe
 		beginCommandBuffer(vk, *m_cmdBuffer);
 		preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-		beginRenderingKHR(*m_cmdBuffer,
-						  attachmentBindInfos,
-						  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
-						  VK_RENDERING_SUSPENDING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(*m_cmdBuffer,
+					   attachmentBindInfos,
+					   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+					   VK_RENDERING_SUSPENDING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffers[0]);
 
-		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 
-		beginRenderingKHR(*m_cmdBuffer,
-						  attachmentBindInfos,
-						  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
-						  VK_RENDERING_RESUMING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(*m_cmdBuffer,
+					   attachmentBindInfos,
+					   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+					   VK_RENDERING_RESUMING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffers[1]);
 
-		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 
 		copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
@@ -2431,31 +2431,31 @@ void	ContentsTwoSecondaryCmdBufferResuming::rendering (const VkPipeline					pipe
 			beginCommandBuffer(vk, *m_cmdBuffer);
 			preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-			beginRenderingKHR(*m_cmdBuffer,
-							  attachmentBindInfos,
-							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
-							  VK_RENDERING_SUSPENDING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(*m_cmdBuffer,
+						   attachmentBindInfos,
+						   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+						   VK_RENDERING_SUSPENDING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffers[0]);
 
-			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
 
-			beginRenderingKHR(*m_cmdBuffer,
-							  attachmentBindInfos,
-							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
-							  VK_RENDERING_RESUMING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(*m_cmdBuffer,
+						   attachmentBindInfos,
+						   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+						   VK_RENDERING_RESUMING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffers[1]);
 
-			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
 
 			copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
@@ -2541,36 +2541,36 @@ void	ContentsTwoSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipelin
 		beginCommandBuffer(vk, *m_cmdBuffer);
 		preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-		beginRenderingKHR(*m_cmdBuffer,
-						  attachmentBindInfos,
-						  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
-						  VK_RENDERING_SUSPENDING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(*m_cmdBuffer,
+					   attachmentBindInfos,
+					   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+					   VK_RENDERING_SUSPENDING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffers[0]);
 
-		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
 		// Primary commandBuffer2
 		beginCommandBuffer(vk, *m_cmdBuffer2);
 
-		beginRenderingKHR(*m_cmdBuffer2,
-						  attachmentBindInfos,
-						  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
-						  VK_RENDERING_RESUMING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(*m_cmdBuffer2,
+					   attachmentBindInfos,
+					   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+					   VK_RENDERING_RESUMING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdExecuteCommands(*m_cmdBuffer2, 1u, &secCmdBuffers[1]);
 
-		vk.cmdEndRenderingKHR(*m_cmdBuffer2);
+		vk.cmdEndRendering(*m_cmdBuffer2);
 
 		copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -2621,36 +2621,36 @@ void	ContentsTwoSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipelin
 			beginCommandBuffer(vk, *m_cmdBuffer);
 			preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-			beginRenderingKHR(*m_cmdBuffer,
-							  attachmentBindInfos,
-							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
-							  VK_RENDERING_SUSPENDING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(*m_cmdBuffer,
+						   attachmentBindInfos,
+						   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+						   VK_RENDERING_SUSPENDING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffers[0]);
 
-			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
 
 			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
 			// Primary commandBuffer2
 			beginCommandBuffer(vk, *m_cmdBuffer2);
 
-			beginRenderingKHR(*m_cmdBuffer2,
-							  attachmentBindInfos,
-							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
-							  VK_RENDERING_RESUMING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(*m_cmdBuffer2,
+						   attachmentBindInfos,
+						   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+						   VK_RENDERING_RESUMING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			vk.cmdExecuteCommands(*m_cmdBuffer2, 1u, &secCmdBuffers[1]);
 
-			vk.cmdEndRenderingKHR(*m_cmdBuffer2);
+			vk.cmdEndRendering(*m_cmdBuffer2);
 
 			copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -2718,13 +2718,13 @@ void	ContentsPrimarySecondaryCmdBufferResuming::rendering (const VkPipeline					
 		beginCommandBuffer(vk, *m_cmdBuffer);
 		preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-		beginRenderingKHR(*m_cmdBuffer,
-						  attachmentBindInfos,
-						  VK_RENDERING_SUSPENDING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(*m_cmdBuffer,
+					   attachmentBindInfos,
+					   VK_RENDERING_SUSPENDING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
@@ -2732,20 +2732,20 @@ void	ContentsPrimarySecondaryCmdBufferResuming::rendering (const VkPipeline					
 		vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 8u, 0u);
 		vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 0u);
 
-		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 
-		beginRenderingKHR(*m_cmdBuffer,
-						  attachmentBindInfos,
-						  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
-						  VK_RENDERING_RESUMING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(*m_cmdBuffer,
+					   attachmentBindInfos,
+					   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+					   VK_RENDERING_RESUMING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
 
-		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 
 		copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -2780,13 +2780,13 @@ void	ContentsPrimarySecondaryCmdBufferResuming::rendering (const VkPipeline					
 			beginCommandBuffer(vk, *m_cmdBuffer);
 			preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-			beginRenderingKHR(*m_cmdBuffer,
-							  attachmentBindInfos,
-							  VK_RENDERING_SUSPENDING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(*m_cmdBuffer,
+						   attachmentBindInfos,
+						   VK_RENDERING_SUSPENDING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			if (clearData.colorDepthClear2.size() != 0)
 			{
@@ -2799,20 +2799,20 @@ void	ContentsPrimarySecondaryCmdBufferResuming::rendering (const VkPipeline					
 			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
 				vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
 
-			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
 
-			beginRenderingKHR(*m_cmdBuffer,
-							  attachmentBindInfos,
-							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
-							  VK_RENDERING_RESUMING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(*m_cmdBuffer,
+						   attachmentBindInfos,
+						   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+						   VK_RENDERING_RESUMING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
 
-			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
 
 			copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -2881,33 +2881,33 @@ void	ContentsSecondaryPrimaryCmdBufferResuming::rendering (const VkPipeline					
 		beginCommandBuffer(vk, *m_cmdBuffer);
 		preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-		beginRenderingKHR(*m_cmdBuffer,
-						  attachmentBindInfos,
-						  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
-						  VK_RENDERING_SUSPENDING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(*m_cmdBuffer,
+					   attachmentBindInfos,
+					   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+					   VK_RENDERING_SUSPENDING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
 
-		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 
-		beginRenderingKHR(*m_cmdBuffer,
-						  attachmentBindInfos,
-						  VK_RENDERING_RESUMING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(*m_cmdBuffer,
+					   attachmentBindInfos,
+					   VK_RENDERING_RESUMING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
 
 		vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 4u, 0u);
 
-		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 
 		copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -2942,26 +2942,26 @@ void	ContentsSecondaryPrimaryCmdBufferResuming::rendering (const VkPipeline					
 			beginCommandBuffer(vk, *m_cmdBuffer);
 			preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-			beginRenderingKHR(*m_cmdBuffer,
-							  attachmentBindInfos,
-							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
-							  VK_RENDERING_SUSPENDING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(*m_cmdBuffer,
+						   attachmentBindInfos,
+						   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+						   VK_RENDERING_SUSPENDING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
 
-			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
 
-			beginRenderingKHR(*m_cmdBuffer,
-							  attachmentBindInfos,
-							  VK_RENDERING_RESUMING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(*m_cmdBuffer,
+						   attachmentBindInfos,
+						   VK_RENDERING_RESUMING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			if (clearData.colorDepthClear2.size() != 0)
 			{
@@ -2974,7 +2974,7 @@ void	ContentsSecondaryPrimaryCmdBufferResuming::rendering (const VkPipeline					
 			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
 				vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
 
-			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
 
 			copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -3044,13 +3044,13 @@ void	ContentsTwoPrimarySecondaryCmdBufferResuming::rendering (const VkPipeline		
 		beginCommandBuffer(vk, *m_cmdBuffer);
 		preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-		beginRenderingKHR(*m_cmdBuffer,
-						  attachmentBindInfos,
-						  VK_RENDERING_SUSPENDING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(*m_cmdBuffer,
+					   attachmentBindInfos,
+					   VK_RENDERING_SUSPENDING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
@@ -3058,24 +3058,24 @@ void	ContentsTwoPrimarySecondaryCmdBufferResuming::rendering (const VkPipeline		
 		vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 8u, 0u);
 		vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 0u);
 
-		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
 		// Primary commandBuffer2
 		beginCommandBuffer(vk, *m_cmdBuffer2);
 
-		beginRenderingKHR(*m_cmdBuffer2,
-						  attachmentBindInfos,
-						  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
-						  VK_RENDERING_RESUMING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(*m_cmdBuffer2,
+					   attachmentBindInfos,
+					   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+					   VK_RENDERING_RESUMING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdExecuteCommands(*m_cmdBuffer2, 1u, &(*m_secCmdBuffer));
 
-		vk.cmdEndRenderingKHR(*m_cmdBuffer2);
+		vk.cmdEndRendering(*m_cmdBuffer2);
 
 		copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -3110,13 +3110,13 @@ void	ContentsTwoPrimarySecondaryCmdBufferResuming::rendering (const VkPipeline		
 			beginCommandBuffer(vk, *m_cmdBuffer);
 			preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-			beginRenderingKHR(*m_cmdBuffer,
-							  attachmentBindInfos,
-							  VK_RENDERING_SUSPENDING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(*m_cmdBuffer,
+						   attachmentBindInfos,
+						   VK_RENDERING_SUSPENDING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			if (clearData.colorDepthClear2.size() != 0)
 			{
@@ -3129,24 +3129,24 @@ void	ContentsTwoPrimarySecondaryCmdBufferResuming::rendering (const VkPipeline		
 			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
 				vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
 
-			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
 			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
 			// Primary commandBuffer2
 			beginCommandBuffer(vk, *m_cmdBuffer2);
 
-			beginRenderingKHR(*m_cmdBuffer2,
-							  attachmentBindInfos,
-							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
-							  VK_RENDERING_RESUMING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(*m_cmdBuffer2,
+						   attachmentBindInfos,
+						   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+						   VK_RENDERING_RESUMING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			vk.cmdExecuteCommands(*m_cmdBuffer2, 1u, &(*m_secCmdBuffer));
 
-			vk.cmdEndRenderingKHR(*m_cmdBuffer2);
+			vk.cmdEndRendering(*m_cmdBuffer2);
 
 			copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -3217,37 +3217,37 @@ void	ContentsSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipeline		
 		beginCommandBuffer(vk, *m_cmdBuffer);
 		preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-		beginRenderingKHR(*m_cmdBuffer,
-						  attachmentBindInfos,
-						  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
-						  VK_RENDERING_SUSPENDING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(*m_cmdBuffer,
+					   attachmentBindInfos,
+					   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+					   VK_RENDERING_SUSPENDING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
 
-		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
 		// Primary commandBuffer2
 		beginCommandBuffer(vk, *m_cmdBuffer2);
 
-		beginRenderingKHR(*m_cmdBuffer2,
-						  attachmentBindInfos,
-						  VK_RENDERING_RESUMING_BIT_KHR,
-						  colorAtchCount,
-						  imagesFormat,
-						  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-						  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+		beginRendering(*m_cmdBuffer2,
+					   attachmentBindInfos,
+					   VK_RENDERING_RESUMING_BIT_KHR,
+					   colorAtchCount,
+					   imagesFormat,
+					   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+					   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 		vk.cmdBindPipeline(*m_cmdBuffer2, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 		vk.cmdBindVertexBuffers(*m_cmdBuffer2, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
 
 		vk.cmdDraw(*m_cmdBuffer2, 4u, 1u, 4u, 0u);
 
-		vk.cmdEndRenderingKHR(*m_cmdBuffer2);
+		vk.cmdEndRendering(*m_cmdBuffer2);
 
 		copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -3282,30 +3282,30 @@ void	ContentsSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipeline		
 			beginCommandBuffer(vk, *m_cmdBuffer);
 			preBarier(colorAtchCount, imagesLayout, imagesFormat);
 
-			beginRenderingKHR(*m_cmdBuffer,
-							  attachmentBindInfos,
-							  VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
-							  VK_RENDERING_SUSPENDING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(*m_cmdBuffer,
+						   attachmentBindInfos,
+						   VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR |
+						   VK_RENDERING_SUSPENDING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
 
-			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
 			VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
 			// Primary commandBuffer2
 			beginCommandBuffer(vk, *m_cmdBuffer2);
 
-			beginRenderingKHR(*m_cmdBuffer2,
-							  attachmentBindInfos,
-							  VK_RENDERING_RESUMING_BIT_KHR,
-							  colorAtchCount,
-							  imagesFormat,
-							  static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
-							  static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
+			beginRendering(*m_cmdBuffer2,
+						   attachmentBindInfos,
+						   VK_RENDERING_RESUMING_BIT_KHR,
+						   colorAtchCount,
+						   imagesFormat,
+						   static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
+						   static_cast<VkAttachmentStoreOp>(attachmentStoreOp));
 
 			if (clearData.colorDepthClear2.size() != 0)
 			{
@@ -3318,7 +3318,7 @@ void	ContentsSecondaryTwoPrimaryCmdBufferResuming::rendering (const VkPipeline		
 			if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
 				vk.cmdClearAttachments(*m_cmdBuffer2, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
 
-			vk.cmdEndRenderingKHR(*m_cmdBuffer2);
+			vk.cmdEndRendering(*m_cmdBuffer2);
 
 			copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
 

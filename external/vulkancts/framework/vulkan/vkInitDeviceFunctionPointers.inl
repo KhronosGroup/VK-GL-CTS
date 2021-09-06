@@ -207,6 +207,108 @@ if (!m_vk.getBufferOpaqueCaptureAddress)
 m_vk.getDeviceMemoryOpaqueCaptureAddress				= (GetDeviceMemoryOpaqueCaptureAddressFunc)				GET_PROC_ADDR("vkGetDeviceMemoryOpaqueCaptureAddress");
 if (!m_vk.getDeviceMemoryOpaqueCaptureAddress)
 	m_vk.getDeviceMemoryOpaqueCaptureAddress			= (GetDeviceMemoryOpaqueCaptureAddressFunc)				GET_PROC_ADDR("vkGetDeviceMemoryOpaqueCaptureAddressKHR");
+m_vk.createPrivateDataSlot								= (CreatePrivateDataSlotFunc)							GET_PROC_ADDR("vkCreatePrivateDataSlot");
+if (!m_vk.createPrivateDataSlot)
+	m_vk.createPrivateDataSlot							= (CreatePrivateDataSlotFunc)							GET_PROC_ADDR("vkCreatePrivateDataSlotEXT");
+m_vk.destroyPrivateDataSlot								= (DestroyPrivateDataSlotFunc)							GET_PROC_ADDR("vkDestroyPrivateDataSlot");
+if (!m_vk.destroyPrivateDataSlot)
+	m_vk.destroyPrivateDataSlot							= (DestroyPrivateDataSlotFunc)							GET_PROC_ADDR("vkDestroyPrivateDataSlotEXT");
+m_vk.setPrivateData										= (SetPrivateDataFunc)									GET_PROC_ADDR("vkSetPrivateData");
+if (!m_vk.setPrivateData)
+	m_vk.setPrivateData									= (SetPrivateDataFunc)									GET_PROC_ADDR("vkSetPrivateDataEXT");
+m_vk.getPrivateData										= (GetPrivateDataFunc)									GET_PROC_ADDR("vkGetPrivateData");
+if (!m_vk.getPrivateData)
+	m_vk.getPrivateData									= (GetPrivateDataFunc)									GET_PROC_ADDR("vkGetPrivateDataEXT");
+m_vk.cmdSetEvent2										= (CmdSetEvent2Func)									GET_PROC_ADDR("vkCmdSetEvent2");
+if (!m_vk.cmdSetEvent2)
+	m_vk.cmdSetEvent2									= (CmdSetEvent2Func)									GET_PROC_ADDR("vkCmdSetEvent2KHR");
+m_vk.cmdResetEvent2										= (CmdResetEvent2Func)									GET_PROC_ADDR("vkCmdResetEvent2");
+if (!m_vk.cmdResetEvent2)
+	m_vk.cmdResetEvent2									= (CmdResetEvent2Func)									GET_PROC_ADDR("vkCmdResetEvent2KHR");
+m_vk.cmdWaitEvents2										= (CmdWaitEvents2Func)									GET_PROC_ADDR("vkCmdWaitEvents2");
+if (!m_vk.cmdWaitEvents2)
+	m_vk.cmdWaitEvents2									= (CmdWaitEvents2Func)									GET_PROC_ADDR("vkCmdWaitEvents2KHR");
+m_vk.cmdPipelineBarrier2								= (CmdPipelineBarrier2Func)								GET_PROC_ADDR("vkCmdPipelineBarrier2");
+if (!m_vk.cmdPipelineBarrier2)
+	m_vk.cmdPipelineBarrier2							= (CmdPipelineBarrier2Func)								GET_PROC_ADDR("vkCmdPipelineBarrier2KHR");
+m_vk.cmdWriteTimestamp2									= (CmdWriteTimestamp2Func)								GET_PROC_ADDR("vkCmdWriteTimestamp2");
+if (!m_vk.cmdWriteTimestamp2)
+	m_vk.cmdWriteTimestamp2								= (CmdWriteTimestamp2Func)								GET_PROC_ADDR("vkCmdWriteTimestamp2KHR");
+m_vk.queueSubmit2										= (QueueSubmit2Func)									GET_PROC_ADDR("vkQueueSubmit2");
+if (!m_vk.queueSubmit2)
+	m_vk.queueSubmit2									= (QueueSubmit2Func)									GET_PROC_ADDR("vkQueueSubmit2KHR");
+m_vk.cmdCopyBuffer2										= (CmdCopyBuffer2Func)									GET_PROC_ADDR("vkCmdCopyBuffer2");
+if (!m_vk.cmdCopyBuffer2)
+	m_vk.cmdCopyBuffer2									= (CmdCopyBuffer2Func)									GET_PROC_ADDR("vkCmdCopyBuffer2KHR");
+m_vk.cmdCopyImage2										= (CmdCopyImage2Func)									GET_PROC_ADDR("vkCmdCopyImage2");
+if (!m_vk.cmdCopyImage2)
+	m_vk.cmdCopyImage2									= (CmdCopyImage2Func)									GET_PROC_ADDR("vkCmdCopyImage2KHR");
+m_vk.cmdCopyBufferToImage2								= (CmdCopyBufferToImage2Func)							GET_PROC_ADDR("vkCmdCopyBufferToImage2");
+if (!m_vk.cmdCopyBufferToImage2)
+	m_vk.cmdCopyBufferToImage2							= (CmdCopyBufferToImage2Func)							GET_PROC_ADDR("vkCmdCopyBufferToImage2KHR");
+m_vk.cmdCopyImageToBuffer2								= (CmdCopyImageToBuffer2Func)							GET_PROC_ADDR("vkCmdCopyImageToBuffer2");
+if (!m_vk.cmdCopyImageToBuffer2)
+	m_vk.cmdCopyImageToBuffer2							= (CmdCopyImageToBuffer2Func)							GET_PROC_ADDR("vkCmdCopyImageToBuffer2KHR");
+m_vk.cmdBlitImage2										= (CmdBlitImage2Func)									GET_PROC_ADDR("vkCmdBlitImage2");
+if (!m_vk.cmdBlitImage2)
+	m_vk.cmdBlitImage2									= (CmdBlitImage2Func)									GET_PROC_ADDR("vkCmdBlitImage2KHR");
+m_vk.cmdResolveImage2									= (CmdResolveImage2Func)								GET_PROC_ADDR("vkCmdResolveImage2");
+if (!m_vk.cmdResolveImage2)
+	m_vk.cmdResolveImage2								= (CmdResolveImage2Func)								GET_PROC_ADDR("vkCmdResolveImage2KHR");
+m_vk.cmdBeginRendering									= (CmdBeginRenderingFunc)								GET_PROC_ADDR("vkCmdBeginRendering");
+if (!m_vk.cmdBeginRendering)
+	m_vk.cmdBeginRendering								= (CmdBeginRenderingFunc)								GET_PROC_ADDR("vkCmdBeginRenderingKHR");
+m_vk.cmdEndRendering									= (CmdEndRenderingFunc)									GET_PROC_ADDR("vkCmdEndRendering");
+if (!m_vk.cmdEndRendering)
+	m_vk.cmdEndRendering								= (CmdEndRenderingFunc)									GET_PROC_ADDR("vkCmdEndRenderingKHR");
+m_vk.cmdSetCullMode										= (CmdSetCullModeFunc)									GET_PROC_ADDR("vkCmdSetCullMode");
+if (!m_vk.cmdSetCullMode)
+	m_vk.cmdSetCullMode									= (CmdSetCullModeFunc)									GET_PROC_ADDR("vkCmdSetCullModeEXT");
+m_vk.cmdSetFrontFace									= (CmdSetFrontFaceFunc)									GET_PROC_ADDR("vkCmdSetFrontFace");
+if (!m_vk.cmdSetFrontFace)
+	m_vk.cmdSetFrontFace								= (CmdSetFrontFaceFunc)									GET_PROC_ADDR("vkCmdSetFrontFaceEXT");
+m_vk.cmdSetPrimitiveTopology							= (CmdSetPrimitiveTopologyFunc)							GET_PROC_ADDR("vkCmdSetPrimitiveTopology");
+if (!m_vk.cmdSetPrimitiveTopology)
+	m_vk.cmdSetPrimitiveTopology						= (CmdSetPrimitiveTopologyFunc)							GET_PROC_ADDR("vkCmdSetPrimitiveTopologyEXT");
+m_vk.cmdSetViewportWithCount							= (CmdSetViewportWithCountFunc)							GET_PROC_ADDR("vkCmdSetViewportWithCount");
+if (!m_vk.cmdSetViewportWithCount)
+	m_vk.cmdSetViewportWithCount						= (CmdSetViewportWithCountFunc)							GET_PROC_ADDR("vkCmdSetViewportWithCountEXT");
+m_vk.cmdSetScissorWithCount								= (CmdSetScissorWithCountFunc)							GET_PROC_ADDR("vkCmdSetScissorWithCount");
+if (!m_vk.cmdSetScissorWithCount)
+	m_vk.cmdSetScissorWithCount							= (CmdSetScissorWithCountFunc)							GET_PROC_ADDR("vkCmdSetScissorWithCountEXT");
+m_vk.cmdBindVertexBuffers2								= (CmdBindVertexBuffers2Func)							GET_PROC_ADDR("vkCmdBindVertexBuffers2");
+if (!m_vk.cmdBindVertexBuffers2)
+	m_vk.cmdBindVertexBuffers2							= (CmdBindVertexBuffers2Func)							GET_PROC_ADDR("vkCmdBindVertexBuffers2EXT");
+m_vk.cmdSetDepthTestEnable								= (CmdSetDepthTestEnableFunc)							GET_PROC_ADDR("vkCmdSetDepthTestEnable");
+if (!m_vk.cmdSetDepthTestEnable)
+	m_vk.cmdSetDepthTestEnable							= (CmdSetDepthTestEnableFunc)							GET_PROC_ADDR("vkCmdSetDepthTestEnableEXT");
+m_vk.cmdSetDepthWriteEnable								= (CmdSetDepthWriteEnableFunc)							GET_PROC_ADDR("vkCmdSetDepthWriteEnable");
+if (!m_vk.cmdSetDepthWriteEnable)
+	m_vk.cmdSetDepthWriteEnable							= (CmdSetDepthWriteEnableFunc)							GET_PROC_ADDR("vkCmdSetDepthWriteEnableEXT");
+m_vk.cmdSetDepthCompareOp								= (CmdSetDepthCompareOpFunc)							GET_PROC_ADDR("vkCmdSetDepthCompareOp");
+if (!m_vk.cmdSetDepthCompareOp)
+	m_vk.cmdSetDepthCompareOp							= (CmdSetDepthCompareOpFunc)							GET_PROC_ADDR("vkCmdSetDepthCompareOpEXT");
+m_vk.cmdSetDepthBoundsTestEnable						= (CmdSetDepthBoundsTestEnableFunc)						GET_PROC_ADDR("vkCmdSetDepthBoundsTestEnable");
+if (!m_vk.cmdSetDepthBoundsTestEnable)
+	m_vk.cmdSetDepthBoundsTestEnable					= (CmdSetDepthBoundsTestEnableFunc)						GET_PROC_ADDR("vkCmdSetDepthBoundsTestEnableEXT");
+m_vk.cmdSetStencilTestEnable							= (CmdSetStencilTestEnableFunc)							GET_PROC_ADDR("vkCmdSetStencilTestEnable");
+if (!m_vk.cmdSetStencilTestEnable)
+	m_vk.cmdSetStencilTestEnable						= (CmdSetStencilTestEnableFunc)							GET_PROC_ADDR("vkCmdSetStencilTestEnableEXT");
+m_vk.cmdSetStencilOp									= (CmdSetStencilOpFunc)									GET_PROC_ADDR("vkCmdSetStencilOp");
+if (!m_vk.cmdSetStencilOp)
+	m_vk.cmdSetStencilOp								= (CmdSetStencilOpFunc)									GET_PROC_ADDR("vkCmdSetStencilOpEXT");
+m_vk.cmdSetRasterizerDiscardEnable						= (CmdSetRasterizerDiscardEnableFunc)					GET_PROC_ADDR("vkCmdSetRasterizerDiscardEnable");
+m_vk.cmdSetDepthBiasEnable								= (CmdSetDepthBiasEnableFunc)							GET_PROC_ADDR("vkCmdSetDepthBiasEnable");
+m_vk.cmdSetPrimitiveRestartEnable						= (CmdSetPrimitiveRestartEnableFunc)					GET_PROC_ADDR("vkCmdSetPrimitiveRestartEnable");
+m_vk.getDeviceBufferMemoryRequirements					= (GetDeviceBufferMemoryRequirementsFunc)				GET_PROC_ADDR("vkGetDeviceBufferMemoryRequirements");
+if (!m_vk.getDeviceBufferMemoryRequirements)
+	m_vk.getDeviceBufferMemoryRequirements				= (GetDeviceBufferMemoryRequirementsFunc)				GET_PROC_ADDR("vkGetDeviceBufferMemoryRequirementsKHR");
+m_vk.getDeviceImageMemoryRequirements					= (GetDeviceImageMemoryRequirementsFunc)				GET_PROC_ADDR("vkGetDeviceImageMemoryRequirements");
+if (!m_vk.getDeviceImageMemoryRequirements)
+	m_vk.getDeviceImageMemoryRequirements				= (GetDeviceImageMemoryRequirementsFunc)				GET_PROC_ADDR("vkGetDeviceImageMemoryRequirementsKHR");
+m_vk.getDeviceImageSparseMemoryRequirements				= (GetDeviceImageSparseMemoryRequirementsFunc)			GET_PROC_ADDR("vkGetDeviceImageSparseMemoryRequirements");
+if (!m_vk.getDeviceImageSparseMemoryRequirements)
+	m_vk.getDeviceImageSparseMemoryRequirements			= (GetDeviceImageSparseMemoryRequirementsFunc)			GET_PROC_ADDR("vkGetDeviceImageSparseMemoryRequirementsKHR");
 m_vk.createSwapchainKHR									= (CreateSwapchainKHRFunc)								GET_PROC_ADDR("vkCreateSwapchainKHR");
 m_vk.destroySwapchainKHR								= (DestroySwapchainKHRFunc)								GET_PROC_ADDR("vkDestroySwapchainKHR");
 m_vk.getSwapchainImagesKHR								= (GetSwapchainImagesKHRFunc)							GET_PROC_ADDR("vkGetSwapchainImagesKHR");
@@ -216,8 +318,6 @@ m_vk.getDeviceGroupPresentCapabilitiesKHR				= (GetDeviceGroupPresentCapabilitie
 m_vk.getDeviceGroupSurfacePresentModesKHR				= (GetDeviceGroupSurfacePresentModesKHRFunc)			GET_PROC_ADDR("vkGetDeviceGroupSurfacePresentModesKHR");
 m_vk.acquireNextImage2KHR								= (AcquireNextImage2KHRFunc)							GET_PROC_ADDR("vkAcquireNextImage2KHR");
 m_vk.createSharedSwapchainsKHR							= (CreateSharedSwapchainsKHRFunc)						GET_PROC_ADDR("vkCreateSharedSwapchainsKHR");
-m_vk.cmdBeginRenderingKHR								= (CmdBeginRenderingKHRFunc)							GET_PROC_ADDR("vkCmdBeginRenderingKHR");
-m_vk.cmdEndRenderingKHR									= (CmdEndRenderingKHRFunc)								GET_PROC_ADDR("vkCmdEndRenderingKHR");
 m_vk.getMemoryFdKHR										= (GetMemoryFdKHRFunc)									GET_PROC_ADDR("vkGetMemoryFdKHR");
 m_vk.getMemoryFdPropertiesKHR							= (GetMemoryFdPropertiesKHRFunc)						GET_PROC_ADDR("vkGetMemoryFdPropertiesKHR");
 m_vk.importSemaphoreFdKHR								= (ImportSemaphoreFdKHRFunc)							GET_PROC_ADDR("vkImportSemaphoreFdKHR");
@@ -239,23 +339,8 @@ m_vk.deferredOperationJoinKHR							= (DeferredOperationJoinKHRFunc)						GET_PR
 m_vk.getPipelineExecutablePropertiesKHR					= (GetPipelineExecutablePropertiesKHRFunc)				GET_PROC_ADDR("vkGetPipelineExecutablePropertiesKHR");
 m_vk.getPipelineExecutableStatisticsKHR					= (GetPipelineExecutableStatisticsKHRFunc)				GET_PROC_ADDR("vkGetPipelineExecutableStatisticsKHR");
 m_vk.getPipelineExecutableInternalRepresentationsKHR	= (GetPipelineExecutableInternalRepresentationsKHRFunc)	GET_PROC_ADDR("vkGetPipelineExecutableInternalRepresentationsKHR");
-m_vk.cmdSetEvent2KHR									= (CmdSetEvent2KHRFunc)									GET_PROC_ADDR("vkCmdSetEvent2KHR");
-m_vk.cmdResetEvent2KHR									= (CmdResetEvent2KHRFunc)								GET_PROC_ADDR("vkCmdResetEvent2KHR");
-m_vk.cmdWaitEvents2KHR									= (CmdWaitEvents2KHRFunc)								GET_PROC_ADDR("vkCmdWaitEvents2KHR");
-m_vk.cmdPipelineBarrier2KHR								= (CmdPipelineBarrier2KHRFunc)							GET_PROC_ADDR("vkCmdPipelineBarrier2KHR");
-m_vk.cmdWriteTimestamp2KHR								= (CmdWriteTimestamp2KHRFunc)							GET_PROC_ADDR("vkCmdWriteTimestamp2KHR");
-m_vk.queueSubmit2KHR									= (QueueSubmit2KHRFunc)									GET_PROC_ADDR("vkQueueSubmit2KHR");
 m_vk.cmdWriteBufferMarker2AMD							= (CmdWriteBufferMarker2AMDFunc)						GET_PROC_ADDR("vkCmdWriteBufferMarker2AMD");
 m_vk.getQueueCheckpointData2NV							= (GetQueueCheckpointData2NVFunc)						GET_PROC_ADDR("vkGetQueueCheckpointData2NV");
-m_vk.cmdCopyBuffer2KHR									= (CmdCopyBuffer2KHRFunc)								GET_PROC_ADDR("vkCmdCopyBuffer2KHR");
-m_vk.cmdCopyImage2KHR									= (CmdCopyImage2KHRFunc)								GET_PROC_ADDR("vkCmdCopyImage2KHR");
-m_vk.cmdCopyBufferToImage2KHR							= (CmdCopyBufferToImage2KHRFunc)						GET_PROC_ADDR("vkCmdCopyBufferToImage2KHR");
-m_vk.cmdCopyImageToBuffer2KHR							= (CmdCopyImageToBuffer2KHRFunc)						GET_PROC_ADDR("vkCmdCopyImageToBuffer2KHR");
-m_vk.cmdBlitImage2KHR									= (CmdBlitImage2KHRFunc)								GET_PROC_ADDR("vkCmdBlitImage2KHR");
-m_vk.cmdResolveImage2KHR								= (CmdResolveImage2KHRFunc)								GET_PROC_ADDR("vkCmdResolveImage2KHR");
-m_vk.getDeviceBufferMemoryRequirementsKHR				= (GetDeviceBufferMemoryRequirementsKHRFunc)			GET_PROC_ADDR("vkGetDeviceBufferMemoryRequirementsKHR");
-m_vk.getDeviceImageMemoryRequirementsKHR				= (GetDeviceImageMemoryRequirementsKHRFunc)				GET_PROC_ADDR("vkGetDeviceImageMemoryRequirementsKHR");
-m_vk.getDeviceImageSparseMemoryRequirementsKHR			= (GetDeviceImageSparseMemoryRequirementsKHRFunc)		GET_PROC_ADDR("vkGetDeviceImageSparseMemoryRequirementsKHR");
 m_vk.debugMarkerSetObjectTagEXT							= (DebugMarkerSetObjectTagEXTFunc)						GET_PROC_ADDR("vkDebugMarkerSetObjectTagEXT");
 m_vk.debugMarkerSetObjectNameEXT						= (DebugMarkerSetObjectNameEXTFunc)						GET_PROC_ADDR("vkDebugMarkerSetObjectNameEXT");
 m_vk.cmdDebugMarkerBeginEXT								= (CmdDebugMarkerBeginEXTFunc)							GET_PROC_ADDR("vkCmdDebugMarkerBeginEXT");
@@ -339,28 +424,12 @@ m_vk.getPerformanceParameterINTEL						= (GetPerformanceParameterINTELFunc)					
 m_vk.setLocalDimmingAMD									= (SetLocalDimmingAMDFunc)								GET_PROC_ADDR("vkSetLocalDimmingAMD");
 m_vk.getBufferDeviceAddressEXT							= (GetBufferDeviceAddressEXTFunc)						GET_PROC_ADDR("vkGetBufferDeviceAddressEXT");
 m_vk.cmdSetLineStippleEXT								= (CmdSetLineStippleEXTFunc)							GET_PROC_ADDR("vkCmdSetLineStippleEXT");
-m_vk.cmdSetCullModeEXT									= (CmdSetCullModeEXTFunc)								GET_PROC_ADDR("vkCmdSetCullModeEXT");
-m_vk.cmdSetFrontFaceEXT									= (CmdSetFrontFaceEXTFunc)								GET_PROC_ADDR("vkCmdSetFrontFaceEXT");
-m_vk.cmdSetPrimitiveTopologyEXT							= (CmdSetPrimitiveTopologyEXTFunc)						GET_PROC_ADDR("vkCmdSetPrimitiveTopologyEXT");
-m_vk.cmdSetViewportWithCountEXT							= (CmdSetViewportWithCountEXTFunc)						GET_PROC_ADDR("vkCmdSetViewportWithCountEXT");
-m_vk.cmdSetScissorWithCountEXT							= (CmdSetScissorWithCountEXTFunc)						GET_PROC_ADDR("vkCmdSetScissorWithCountEXT");
-m_vk.cmdBindVertexBuffers2EXT							= (CmdBindVertexBuffers2EXTFunc)						GET_PROC_ADDR("vkCmdBindVertexBuffers2EXT");
-m_vk.cmdSetDepthTestEnableEXT							= (CmdSetDepthTestEnableEXTFunc)						GET_PROC_ADDR("vkCmdSetDepthTestEnableEXT");
-m_vk.cmdSetDepthWriteEnableEXT							= (CmdSetDepthWriteEnableEXTFunc)						GET_PROC_ADDR("vkCmdSetDepthWriteEnableEXT");
-m_vk.cmdSetDepthCompareOpEXT							= (CmdSetDepthCompareOpEXTFunc)							GET_PROC_ADDR("vkCmdSetDepthCompareOpEXT");
-m_vk.cmdSetDepthBoundsTestEnableEXT						= (CmdSetDepthBoundsTestEnableEXTFunc)					GET_PROC_ADDR("vkCmdSetDepthBoundsTestEnableEXT");
-m_vk.cmdSetStencilTestEnableEXT							= (CmdSetStencilTestEnableEXTFunc)						GET_PROC_ADDR("vkCmdSetStencilTestEnableEXT");
-m_vk.cmdSetStencilOpEXT									= (CmdSetStencilOpEXTFunc)								GET_PROC_ADDR("vkCmdSetStencilOpEXT");
 m_vk.getGeneratedCommandsMemoryRequirementsNV			= (GetGeneratedCommandsMemoryRequirementsNVFunc)		GET_PROC_ADDR("vkGetGeneratedCommandsMemoryRequirementsNV");
 m_vk.cmdPreprocessGeneratedCommandsNV					= (CmdPreprocessGeneratedCommandsNVFunc)				GET_PROC_ADDR("vkCmdPreprocessGeneratedCommandsNV");
 m_vk.cmdExecuteGeneratedCommandsNV						= (CmdExecuteGeneratedCommandsNVFunc)					GET_PROC_ADDR("vkCmdExecuteGeneratedCommandsNV");
 m_vk.cmdBindPipelineShaderGroupNV						= (CmdBindPipelineShaderGroupNVFunc)					GET_PROC_ADDR("vkCmdBindPipelineShaderGroupNV");
 m_vk.createIndirectCommandsLayoutNV						= (CreateIndirectCommandsLayoutNVFunc)					GET_PROC_ADDR("vkCreateIndirectCommandsLayoutNV");
 m_vk.destroyIndirectCommandsLayoutNV					= (DestroyIndirectCommandsLayoutNVFunc)					GET_PROC_ADDR("vkDestroyIndirectCommandsLayoutNV");
-m_vk.createPrivateDataSlotEXT							= (CreatePrivateDataSlotEXTFunc)						GET_PROC_ADDR("vkCreatePrivateDataSlotEXT");
-m_vk.destroyPrivateDataSlotEXT							= (DestroyPrivateDataSlotEXTFunc)						GET_PROC_ADDR("vkDestroyPrivateDataSlotEXT");
-m_vk.setPrivateDataEXT									= (SetPrivateDataEXTFunc)								GET_PROC_ADDR("vkSetPrivateDataEXT");
-m_vk.getPrivateDataEXT									= (GetPrivateDataEXTFunc)								GET_PROC_ADDR("vkGetPrivateDataEXT");
 m_vk.cmdSetFragmentShadingRateEnumNV					= (CmdSetFragmentShadingRateEnumNVFunc)					GET_PROC_ADDR("vkCmdSetFragmentShadingRateEnumNV");
 m_vk.cmdSetVertexInputEXT								= (CmdSetVertexInputEXTFunc)							GET_PROC_ADDR("vkCmdSetVertexInputEXT");
 m_vk.getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI		= (GetDeviceSubpassShadingMaxWorkgroupSizeHUAWEIFunc)	GET_PROC_ADDR("vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI");
@@ -375,6 +444,7 @@ m_vk.cmdSetPrimitiveRestartEnableEXT					= (CmdSetPrimitiveRestartEnableEXTFunc)
 m_vk.cmdSetColorWriteEnableEXT							= (CmdSetColorWriteEnableEXTFunc)						GET_PROC_ADDR("vkCmdSetColorWriteEnableEXT");
 m_vk.cmdDrawMultiEXT									= (CmdDrawMultiEXTFunc)									GET_PROC_ADDR("vkCmdDrawMultiEXT");
 m_vk.cmdDrawMultiIndexedEXT								= (CmdDrawMultiIndexedEXTFunc)							GET_PROC_ADDR("vkCmdDrawMultiIndexedEXT");
+m_vk.setDeviceMemoryPriorityEXT							= (SetDeviceMemoryPriorityEXTFunc)						GET_PROC_ADDR("vkSetDeviceMemoryPriorityEXT");
 m_vk.createAccelerationStructureKHR						= (CreateAccelerationStructureKHRFunc)					GET_PROC_ADDR("vkCreateAccelerationStructureKHR");
 m_vk.destroyAccelerationStructureKHR					= (DestroyAccelerationStructureKHRFunc)					GET_PROC_ADDR("vkDestroyAccelerationStructureKHR");
 m_vk.cmdBuildAccelerationStructuresKHR					= (CmdBuildAccelerationStructuresKHRFunc)				GET_PROC_ADDR("vkCmdBuildAccelerationStructuresKHR");
