@@ -1009,20 +1009,24 @@ public:
 		RENDERWIDTH		= 16,
 		RENDERHEIGHT	= 16
 	};
-				BuiltinFragCoordMsaaCaseInstance	(Context& context, VkSampleCountFlagBits sampleCount, bool useEnable);
+				BuiltinFragCoordMsaaCaseInstance	(Context& context, VkSampleCountFlagBits sampleCount, bool sampleShading, std::vector<uint32_t> sampleMaskArray, bool useEnable);
 	TestStatus	iterate								(void);
 private:
 	bool		validateSampleLocations				(const ConstPixelBufferAccess& sampleLocationBuffer) const;
 
 	const tcu::UVec2				m_renderSize;
 	const VkSampleCountFlagBits		m_sampleCount;
+	const bool						m_sampleShading;
+	const std::vector<uint32_t>		m_sampleMaskArray;
 	const bool						m_useEnable;
 };
 
-BuiltinFragCoordMsaaCaseInstance::BuiltinFragCoordMsaaCaseInstance (Context& context, VkSampleCountFlagBits sampleCount, bool useEnable)
+BuiltinFragCoordMsaaCaseInstance::BuiltinFragCoordMsaaCaseInstance (Context& context, VkSampleCountFlagBits sampleCount, bool sampleShading, std::vector<uint32_t> sampleMaskArray, bool useEnable)
 	: TestInstance		(context)
 	, m_renderSize		(RENDERWIDTH, RENDERHEIGHT)
 	, m_sampleCount		(sampleCount)
+	, m_sampleShading	(sampleShading)
+	, m_sampleMaskArray	(sampleMaskArray)
 	, m_useEnable		(useEnable)
 {
 	const InstanceInterface&	vki					= m_context.getInstanceInterface();
@@ -1257,8 +1261,9 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate (void)
 
 		frameBufferState.numSamples				= m_sampleCount;
 		pipelineState.sampleShadingEnable		= m_useEnable; // When m_useEnable is false, we rely on the gl_SampleID input to enable sample shading
-		vulkanProgram.descriptorSetLayout	= *descriptorSetLayout;
-		vulkanProgram.descriptorSet			= *descriptorSet;
+		pipelineState.sampleMasks				= m_sampleMaskArray;
+		vulkanProgram.descriptorSetLayout		= *descriptorSetLayout;
+		vulkanProgram.descriptorSet				= *descriptorSet;
 
 		VulkanDrawContext			vulkanDrawContext(m_context, frameBufferState);
 		vulkanDrawContext.registerDrawObject(pipelineState, vulkanProgram, drawCallData);
@@ -1357,12 +1362,69 @@ bool BuiltinFragCoordMsaaCaseInstance::validateSampleLocations (const ConstPixel
 	{
 		for (deInt32 colNdx = 0; colNdx < (deInt32)m_renderSize.x(); colNdx++)
 		{
-			std::vector<Vec2> locations;
-
-			for (deUint32 sampleNdx = 0; sampleNdx < (deUint32)m_sampleCount; sampleNdx++)
+			// Check standard sample locations
+			if (m_sampleShading == true)
 			{
-				const UVec2 pixelAddress	= UVec2(sampleNdx + m_sampleCount * colNdx, rowNdx);
-				const Vec4  pixelData		= sampleLocationBuffer.getPixel(pixelAddress.x(), pixelAddress.y());
+				std::vector<Vec2> locations;
+
+				for (deUint32 sampleNdx = 0; sampleNdx < (deUint32)m_sampleCount; sampleNdx++)
+				{
+					const UVec2 pixelAddress	= UVec2(sampleNdx + m_sampleCount * colNdx, rowNdx);
+					const Vec4  pixelData		= sampleLocationBuffer.getPixel(pixelAddress.x(), pixelAddress.y());
+
+					if (pixelData.z() != 0.0f)
+					{
+						log << TestLog::Message << "Pixel (" << colNdx << "," << rowNdx << "): has unexpected .z component, expected: 0.0, got: " << pixelData.z() << TestLog::EndMessage;
+						return false;
+					}
+
+					if (pixelData.w() != 1.0f)
+					{
+						log << TestLog::Message << "Pixel (" << colNdx << "," << rowNdx << "): has unexpected .w component, expected: 1.0, got: " << pixelData.w() << TestLog::EndMessage;
+						return false;
+					}
+
+					locations.push_back(Vec2(pixelData.x(), pixelData.y()));
+				}
+				std::sort(locations.begin(), locations.end(), pixelOffsetCompare);
+				for (std::vector<Vec2>::const_iterator sampleIt = locations.begin(); sampleIt != locations.end(); sampleIt++)
+				{
+					IVec2	sampleFloor(deFloorFloatToInt32((*sampleIt).x()), deFloorFloatToInt32((*sampleIt).y()));
+					IVec2	sampleCeil(deCeilFloatToInt32((*sampleIt).x()), deCeilFloatToInt32((*sampleIt).y()));
+
+					if ((sampleFloor.x() < colNdx) || (sampleCeil.x() > colNdx + 1) || (sampleFloor.y() < rowNdx) || (sampleCeil.y() > rowNdx + 1))
+					{
+						log << TestLog::Message << "Pixel (" << colNdx << "," << rowNdx << "): " << *sampleIt << TestLog::EndMessage;
+						return false;
+					}
+				}
+
+				std::vector<Vec2>::iterator last = std::unique(locations.begin(), locations.end());
+				if (last != locations.end())
+				{
+					log << TestLog::Message << "Fail: Sample locations contains non-unique entry" << TestLog::EndMessage;
+					return false;
+				}
+
+				if (logSampleCount < DE_LENGTH_OF_ARRAY(standardSampleLocationTable))
+				{
+					if (physicalDeviceProperties.limits.standardSampleLocations)
+					{
+						for (deUint32 sampleNdx = 0; sampleNdx < (deUint32)m_sampleCount; sampleNdx++)
+						{
+							if (!de::contains(locations.begin(), locations.end(), standardSampleLocationTable[logSampleCount][sampleNdx] + Vec2(float(colNdx), float(rowNdx))))
+							{
+								log << TestLog::Message << "Didn't match sample locations " << standardSampleLocationTable[logSampleCount][sampleNdx] << TestLog::EndMessage;
+								return false;
+							}
+						}
+					}
+				}
+			}
+			else
+			{
+				// Check the sample location is at the pixel center when sample shading is disabled.
+				const Vec4 pixelData = sampleLocationBuffer.getPixel(colNdx, rowNdx);
 
 				if (pixelData.z() != 0.0f)
 				{
@@ -1376,42 +1438,10 @@ bool BuiltinFragCoordMsaaCaseInstance::validateSampleLocations (const ConstPixel
 					return false;
 				}
 
-				locations.push_back(Vec2(pixelData.x(), pixelData.y()));
-			}
-
-			std::sort(locations.begin(), locations.end(), pixelOffsetCompare);
-			for (std::vector<Vec2>::const_iterator sampleIt = locations.begin(); sampleIt != locations.end(); sampleIt++)
-			{
-				IVec2	sampleFloor(deFloorFloatToInt32((*sampleIt).x()), deFloorFloatToInt32((*sampleIt).y()));
-				IVec2	sampleCeil(deCeilFloatToInt32((*sampleIt).x()), deCeilFloatToInt32((*sampleIt).y()));
-
-				if ( (sampleFloor.x() < colNdx) || (sampleCeil.x() > colNdx + 1) || (sampleFloor.y() < rowNdx) || (sampleCeil.y() > rowNdx + 1) )
+				if (!(deFloatFrac(pixelData.x()) == 0.5f && deFloatFrac(pixelData.y()) == 0.5f))
 				{
-					log << TestLog::Message << "Pixel (" << colNdx << "," << rowNdx << "): " << *sampleIt << TestLog::EndMessage;
+					log << TestLog::Message << "Didn't match sample locations (" << pixelData.x() << ", " << pixelData.y() << "): " << Vec2(float(colNdx) + 0.5f, float(rowNdx) + 0.5f) << TestLog::EndMessage;
 					return false;
-				}
-			}
-
-			std::vector<Vec2>::iterator last = std::unique(locations.begin(), locations.end());
-			if (last != locations.end())
-			{
-				log << TestLog::Message << "Fail: Sample locations contains non-unique entry" << TestLog::EndMessage;
-				return false;
-			}
-
-			// Check standard sample locations
-			if (logSampleCount < DE_LENGTH_OF_ARRAY(standardSampleLocationTable))
-			{
-				if (physicalDeviceProperties.limits.standardSampleLocations)
-				{
-					for (deUint32 sampleNdx = 0; sampleNdx < (deUint32)m_sampleCount; sampleNdx++)
-					{
-						if (!de::contains(locations.begin(), locations.end(), standardSampleLocationTable[logSampleCount][sampleNdx] + Vec2(float(colNdx), float(rowNdx))))
-						{
-							log << TestLog::Message << "Didn't match sample locations " << standardSampleLocationTable[logSampleCount][sampleNdx] << TestLog::EndMessage;
-							return false;
-						}
-					}
 				}
 			}
 		}
@@ -1423,18 +1453,24 @@ bool BuiltinFragCoordMsaaCaseInstance::validateSampleLocations (const ConstPixel
 class BuiltinFragCoordMsaaTestCase : public TestCase
 {
 public:
-					BuiltinFragCoordMsaaTestCase	(TestContext& testCtx, const char* name, const char* description, VkSampleCountFlagBits sampleCount, bool useEnable);
+					BuiltinFragCoordMsaaTestCase	(TestContext& testCtx, const char* name, const char* description, VkSampleCountFlagBits sampleCount, bool sampleShading, std::vector<uint32_t> sampleMaskArray, bool useCentroid, bool useEnable);
 	virtual			~BuiltinFragCoordMsaaTestCase	(void);
 	void			initPrograms					(SourceCollections& sourceCollections) const;
 	TestInstance*	createInstance					(Context& context) const;
 private:
-	const VkSampleCountFlagBits			m_sampleCount;
-	const bool							m_useEnable;
+	const VkSampleCountFlagBits		m_sampleCount;
+	const bool						m_sampleShading;	// Enable or disable Sample Shading.
+	const std::vector<uint32_t>		m_sampleMaskArray;
+	const bool						m_useCentroid;		// Use Centroid interpolation decoration.
+	const bool						m_useEnable;
 };
 
-BuiltinFragCoordMsaaTestCase::BuiltinFragCoordMsaaTestCase (TestContext& testCtx, const char* name, const char* description, VkSampleCountFlagBits sampleCount, bool useEnable)
+BuiltinFragCoordMsaaTestCase::BuiltinFragCoordMsaaTestCase (TestContext& testCtx, const char* name, const char* description, VkSampleCountFlagBits sampleCount, bool sampleShading, std::vector<uint32_t> sampleMaskArray, bool useCentroid, bool useEnable)
 	: TestCase			(testCtx, name, description)
 	, m_sampleCount		(sampleCount)
+	, m_sampleShading	(sampleShading)
+	, m_sampleMaskArray	(sampleMaskArray)
+	, m_useCentroid		(useCentroid)
 	, m_useEnable		(useEnable)
 {
 }
@@ -1449,7 +1485,7 @@ void BuiltinFragCoordMsaaTestCase::initPrograms (SourceCollections& programColle
 		std::ostringstream vertexSource;
 		vertexSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
 			<< "\n"
-			<<  "layout (location = 0) in vec4 position;\n"
+			<< "layout (location = 0) in vec4 position;\n"
 			<< "void main()\n"
 			<< "{\n"
 			<< "	gl_Position = position;\n"
@@ -1457,6 +1493,7 @@ void BuiltinFragCoordMsaaTestCase::initPrograms (SourceCollections& programColle
 		programCollection.glslSources.add("FragCoordMsaaVert") << glu::VertexSource(vertexSource.str());
 	}
 
+	if(m_sampleShading == true)
 	{
 		std::ostringstream fragmentSource;
 		fragmentSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
@@ -1472,11 +1509,100 @@ void BuiltinFragCoordMsaaTestCase::initPrograms (SourceCollections& programColle
 			<< "}\n";
 		programCollection.glslSources.add("FragCoordMsaaFrag") << glu::FragmentSource(fragmentSource.str());
 	}
+	else
+	{
+		if (m_useCentroid == false)
+		{
+			std::ostringstream src;
+
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+				<< "\n"
+				<< "layout (location = 0) out mediump vec4 color;\n"
+				<< "layout (set = 0, binding = 0, rgba32f) writeonly uniform image2D storageImage;\n"
+				<< "void main()\n"
+				<< "{\n"
+				<< "	ivec2 imageCoord = ivec2(int(gl_FragCoord.x), int(gl_FragCoord.y));\n"
+				<< "	imageStore(storageImage, imageCoord, gl_FragCoord);\n"
+				<< "	color = vec4(1.0, 0.0, 0.0, 1.0);\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("FragCoordMsaaFrag") << glu::FragmentSource(src.str());
+		}
+		else
+		{
+			// This SPIR-V shader is identical to GLSL shader above but with the exception of that added cendroid decoration line.
+			std::ostringstream src;
+			src << "; SPIR - V\n"
+				<< "; Version: 1.0\n"
+				<< "; Generator: Khronos Glslang Reference Front End; 10\n"
+				<< "; Bound: 36\n"
+				<< "; Schema: 0\n"
+				<< "OpCapability Shader\n"
+				<< "%1 = OpExtInstImport \"GLSL.std.450\"\n"
+				<< "OpMemoryModel Logical GLSL450\n"
+				<< "OpEntryPoint Fragment %main \"main\" %gl_FragCoord %color\n"
+				<< "OpExecutionMode %main OriginUpperLeft\n"
+				<< "OpSource GLSL 450\n"
+				<< "OpName %main \"main\"\n"
+				<< "OpName %imageCoord \"imageCoord\"\n"
+				<< "OpName %gl_FragCoord \"gl_FragCoord\"\n"
+				<< "OpName %storageImage \"storageImage\"\n"
+				<< "OpName %color \"color\"\n"
+				<< "OpDecorate %gl_FragCoord BuiltIn FragCoord\n"
+				<< "OpDecorate %gl_FragCoord Centroid\n"
+				<< "OpDecorate %storageImage DescriptorSet 0\n"
+				<< "OpDecorate %storageImage Binding 0\n"
+				<< "OpDecorate %storageImage NonReadable\n"
+				<< "OpDecorate %color RelaxedPrecision\n"
+				<< "OpDecorate %color Location 0\n"
+				<< "%void = OpTypeVoid\n"
+				<< "%3 = OpTypeFunction %void\n"
+				<< "%int = OpTypeInt 32 1\n"
+				<< "%v2int = OpTypeVector %int 2\n"
+				<< "%_ptr_Function_v2int = OpTypePointer Function %v2int\n"
+				<< "%float = OpTypeFloat 32\n"
+				<< "%v4float = OpTypeVector %float 4\n"
+				<< "%_ptr_Input_v4float = OpTypePointer Input %v4float\n"
+				<< "%gl_FragCoord = OpVariable %_ptr_Input_v4float Input\n"
+				<< "%uint = OpTypeInt 32 0\n"
+				<< "%uint_0 = OpConstant %uint 0\n"
+				<< "%_ptr_Input_float = OpTypePointer Input %float\n"
+				<< "%uint_1 = OpConstant %uint 1\n"
+				<< "%25 = OpTypeImage %float 2D 0 0 0 2 Rgba32f\n"
+				<< "%_ptr_UniformConstant_25 = OpTypePointer UniformConstant %25\n"
+				<< "%storageImage = OpVariable %_ptr_UniformConstant_25 UniformConstant\n"
+				<< "%_ptr_Output_v4float = OpTypePointer Output %v4float\n"
+				<< "%color = OpVariable %_ptr_Output_v4float Output\n"
+				<< "%float_1 = OpConstant %float 1\n"
+				<< "%float_0 = OpConstant %float 0\n"
+				<< "%35 = OpConstantComposite %v4float %float_1 %float_0 %float_0 %float_1\n"
+				<< "%main = OpFunction %void None %3\n"
+				<< "%5 = OpLabel\n"
+				<< "%imageCoord = OpVariable %_ptr_Function_v2int Function\n"
+				<< "%17 = OpAccessChain %_ptr_Input_float %gl_FragCoord %uint_0\n"
+				<< "%18 = OpLoad %float %17\n"
+				<< "%19 = OpConvertFToS %int %18\n"
+				<< "%21 = OpAccessChain %_ptr_Input_float %gl_FragCoord %uint_1\n"
+				<< "%22 = OpLoad %float %21\n"
+				<< "%23 = OpConvertFToS %int %22\n"
+				<< "%24 = OpCompositeConstruct %v2int %19 %23\n"
+				<< "OpStore %imageCoord %24\n"
+				<< "%28 = OpLoad %25 %storageImage\n"
+				<< "%29 = OpLoad %v2int %imageCoord\n"
+				<< "%30 = OpLoad %v4float %gl_FragCoord\n"
+				<< "OpImageWrite %28 %29 %30\n"
+				<< "OpStore %color %35\n"
+				<< "OpReturn\n"
+				<< "OpFunctionEnd\n";
+
+			programCollection.spirvAsmSources.add("FragCoordMsaaFrag") << src.str();
+		}
+	}
 }
 
 TestInstance* BuiltinFragCoordMsaaTestCase::createInstance (Context& context) const
 {
-	return new BuiltinFragCoordMsaaCaseInstance(context, m_sampleCount, m_useEnable);
+	return new BuiltinFragCoordMsaaCaseInstance(context, m_sampleCount, m_sampleShading, m_sampleMaskArray, m_useEnable);
 }
 
 class BuiltinFragDepthCase : public TestCase
@@ -2345,19 +2471,36 @@ TestCaseGroup* createBuiltinVarTests (TestContext& testCtx)
 			VkSampleCountFlagBits	sampleCount;
 		} fragCoordMsaaCaseList[] =
 		{
-			{ "1_bit",	"Test FragCoord locations with 2 samples", VK_SAMPLE_COUNT_1_BIT },
-			{ "2_bit",	"Test FragCoord locations with 2 samples", VK_SAMPLE_COUNT_2_BIT },
-			{ "4_bit",	"Test FragCoord locations with 4 samples", VK_SAMPLE_COUNT_4_BIT },
-			{ "8_bit",	"Test FragCoord locations with 8 samples", VK_SAMPLE_COUNT_8_BIT },
-			{ "16_bit",	"Test FragCoord locations with 16 samples", VK_SAMPLE_COUNT_16_BIT },
-			{ "32_bit", "Test FragCoord locations with 32 samples", VK_SAMPLE_COUNT_32_BIT },
-			{ "64_bit", "Test FragCoord locaitons with 64 samples", VK_SAMPLE_COUNT_64_BIT }
+			{ "1_bit",	"Test FragCoord locations with 1 sample",	VK_SAMPLE_COUNT_1_BIT },
+			{ "2_bit",	"Test FragCoord locations with 2 samples",	VK_SAMPLE_COUNT_2_BIT },
+			{ "4_bit",	"Test FragCoord locations with 4 samples",	VK_SAMPLE_COUNT_4_BIT },
+			{ "8_bit",	"Test FragCoord locations with 8 samples",	VK_SAMPLE_COUNT_8_BIT },
+			{ "16_bit",	"Test FragCoord locations with 16 samples",	VK_SAMPLE_COUNT_16_BIT },
+			{ "32_bit",	"Test FragCoord locations with 32 samples",	VK_SAMPLE_COUNT_32_BIT },
+			{ "64_bit",	"Test FragCoord locaitons with 64 samples",	VK_SAMPLE_COUNT_64_BIT },
 		};
+
+		// Standard sample tests
+		std::vector<uint32_t> sampleMaskArray;
 
 		for (deUint32 caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(fragCoordMsaaCaseList); caseNdx++)
 		{
-			fragCoordMsaaGroup->addChild(new BuiltinFragCoordMsaaTestCase(testCtx, fragCoordMsaaCaseList[caseNdx].name, fragCoordMsaaCaseList[caseNdx].description, fragCoordMsaaCaseList[caseNdx].sampleCount, true));
-			fragCoordMsaaInputGroup->addChild(new BuiltinFragCoordMsaaTestCase(testCtx, fragCoordMsaaCaseList[caseNdx].name, fragCoordMsaaCaseList[caseNdx].description, fragCoordMsaaCaseList[caseNdx].sampleCount, false));
+			fragCoordMsaaGroup->addChild(new BuiltinFragCoordMsaaTestCase(testCtx, fragCoordMsaaCaseList[caseNdx].name, fragCoordMsaaCaseList[caseNdx].description, fragCoordMsaaCaseList[caseNdx].sampleCount, true, sampleMaskArray, false, true));
+			fragCoordMsaaInputGroup->addChild(new BuiltinFragCoordMsaaTestCase(testCtx, fragCoordMsaaCaseList[caseNdx].name, fragCoordMsaaCaseList[caseNdx].description, fragCoordMsaaCaseList[caseNdx].sampleCount, true, sampleMaskArray, false, false));
+		}
+
+		sampleMaskArray.push_back(1u);
+
+		// No sample shading tests
+		for (deUint32 caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(fragCoordMsaaCaseList); caseNdx++)
+		{
+			fragCoordMsaaInputGroup->addChild(new BuiltinFragCoordMsaaTestCase(testCtx, (std::string(fragCoordMsaaCaseList[caseNdx].name) + "_no_sample_shading").c_str(), fragCoordMsaaCaseList[caseNdx].description, fragCoordMsaaCaseList[caseNdx].sampleCount, false, sampleMaskArray, false, false));
+		}
+
+		// No sample shading tests with centroid interpolation decoration
+		for (deUint32 caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(fragCoordMsaaCaseList); caseNdx++)
+		{
+			fragCoordMsaaInputGroup->addChild(new BuiltinFragCoordMsaaTestCase(testCtx, (std::string(fragCoordMsaaCaseList[caseNdx].name) + "_no_sample_shading_centroid_interpolation").c_str(), fragCoordMsaaCaseList[caseNdx].description, fragCoordMsaaCaseList[caseNdx].sampleCount, false, sampleMaskArray, true, false));
 		}
 	}
 
