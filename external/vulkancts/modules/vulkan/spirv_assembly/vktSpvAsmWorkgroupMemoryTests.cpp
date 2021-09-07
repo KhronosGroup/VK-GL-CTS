@@ -425,6 +425,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		shaderSpec["extensions"]	= "OpExtension \"SPV_KHR_16bit_storage\"\n";
 		shaderSpec["capabilities"]	= "OpCapability Int16\n";
 
+		features.coreFeatures.shaderInt16 = VK_TRUE;
 		features.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
 
 		vector<deInt16>		inputData	= getInt16s(rnd, numElements);
@@ -554,6 +555,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		shaderSpec["capabilities"]	= "OpCapability Int16\n";
 		shaderSpec["extensions"]	= "OpExtension \"SPV_KHR_16bit_storage\"\n";
 
+		features.coreFeatures.shaderInt16 = VK_TRUE;
 		features.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
 
 		vector<deUint16>	inputData;
