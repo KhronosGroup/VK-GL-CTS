@@ -63,6 +63,7 @@ const vk::VkPhysicalDeviceRayQueryFeaturesKHR&							Context::getRayQueryFeature
 const vk::VkPhysicalDeviceRayTracingMotionBlurFeaturesNV&				Context::getRayTracingMotionBlurFeatures				(void) const { return m_device->getRayTracingMotionBlurFeatures();				}
 const vk::VkPhysicalDeviceRayTracingPipelineFeaturesKHR&				Context::getRayTracingPipelineFeatures					(void) const { return m_device->getRayTracingPipelineFeatures();				}
 const vk::VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV&			Context::getRepresentativeFragmentTestFeatures			(void) const { return m_device->getRepresentativeFragmentTestFeatures();		}
+const vk::VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT&					Context::getRGBA10X6FormatsFeaturesEXT					(void) const { return m_device->getRGBA10X6FormatsFeaturesEXT();				}
 const vk::VkPhysicalDeviceRobustness2FeaturesEXT&						Context::getRobustness2FeaturesEXT						(void) const { return m_device->getRobustness2FeaturesEXT();					}
 const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures&				Context::getSamplerYcbcrConversionFeatures				(void) const { return m_device->getSamplerYcbcrConversionFeatures();			}
 const vk::VkPhysicalDeviceScalarBlockLayoutFeatures&					Context::getScalarBlockLayoutFeatures					(void) const { return m_device->getScalarBlockLayoutFeatures();					}

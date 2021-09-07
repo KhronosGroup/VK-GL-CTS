@@ -5052,6 +5052,13 @@ struct VkDeviceDeviceMemoryReportCreateInfoEXT
 	void*								pUserData;
 };
 
+struct VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		formatRgba10x6WithoutYCbCrSampler;
+};
+
 struct VkPhysicalDeviceRobustness2FeaturesEXT
 {
 	VkStructureType	sType;

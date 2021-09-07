@@ -63,6 +63,7 @@ const vk::VkPhysicalDeviceRayQueryFeaturesKHR&							getRayQueryFeatures								
 const vk::VkPhysicalDeviceRayTracingMotionBlurFeaturesNV&				getRayTracingMotionBlurFeatures					(void) const;
 const vk::VkPhysicalDeviceRayTracingPipelineFeaturesKHR&				getRayTracingPipelineFeatures					(void) const;
 const vk::VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV&			getRepresentativeFragmentTestFeatures			(void) const;
+const vk::VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT&					getRGBA10X6FormatsFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceRobustness2FeaturesEXT&						getRobustness2FeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures&				getSamplerYcbcrConversionFeatures				(void) const;
 const vk::VkPhysicalDeviceScalarBlockLayoutFeatures&					getScalarBlockLayoutFeatures					(void) const;

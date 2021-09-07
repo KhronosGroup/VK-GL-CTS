@@ -712,7 +712,8 @@ void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
 		VK_FORMAT_R32G32_SFLOAT,
 		VK_FORMAT_R32G32B32A32_UINT,
 		VK_FORMAT_R32G32B32A32_SINT,
-		VK_FORMAT_R32G32B32A32_SFLOAT
+		VK_FORMAT_R32G32B32A32_SFLOAT,
+		VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16
 	};
 
 	tcu::TestContext&		testCtx		(group->getTestContext());

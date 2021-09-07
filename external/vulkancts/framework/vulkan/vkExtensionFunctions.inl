@@ -837,6 +837,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_rgba10x6_formats")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_acquire_drm_display")
 	{
 		functions.push_back("vkAcquireDrmDisplayEXT");
@@ -2071,6 +2075,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_EXT_device_memory_report")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_rgba10x6_formats")
 	{
 		return;
 	}
