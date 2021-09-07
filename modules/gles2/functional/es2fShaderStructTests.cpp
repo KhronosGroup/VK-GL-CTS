@@ -646,7 +646,7 @@ void LocalStructTests::init (void)
 			<< "	if (s.red == vec3(1.0, 0.0, 0.0) && s.blue == vec3(0.0, 0.0, 1.0))"
 			<< "		${DST} = vec4(1.0, 1.0, 1.0, 1.0);"
 			<< "	${ASSIGN_POS}"
-			<< "}",
+			<< "}";
 
 
 	precisionParams["PRECISION"] = "lowp";

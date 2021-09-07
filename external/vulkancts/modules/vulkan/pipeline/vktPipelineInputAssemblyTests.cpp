@@ -821,7 +821,7 @@ void PrimitiveRestartTest::createBufferData (VkPrimitiveTopology topology, int p
 						vertices.push_back(vertex);
 						indices.push_back((deUint32)vertices.size() - 1);
 
-						vertex.position = tcu::Vec4(primitiveSizeX * deFloatCos(stepAngle * float(primitiveNdx)), primitiveSizeY * deFloatSin(stepAngle * float(primitiveNdx)), 0.0f, 1.0f),
+						vertex.position = tcu::Vec4(primitiveSizeX * deFloatCos(stepAngle * float(primitiveNdx)), primitiveSizeY * deFloatSin(stepAngle * float(primitiveNdx)), 0.0f, 1.0f);
 						vertices.push_back(vertex);
 						indices.push_back((deUint32)vertices.size() - 1);
 

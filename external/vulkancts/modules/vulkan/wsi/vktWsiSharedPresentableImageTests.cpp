@@ -694,7 +694,7 @@ vk::VkSurfaceCapabilitiesKHR getPhysicalDeviceSurfaceCapabilities (const vk::Ins
 	sharedCapabilities.sType	= vk::VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR;
 	sharedCapabilities.pNext	= DE_NULL;
 
-	capabilities.sType			= vk::VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR,
+	capabilities.sType			= vk::VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
 	capabilities.pNext			= &sharedCapabilities;
 
 	VK_CHECK(vki.getPhysicalDeviceSurfaceCapabilities2KHR(physicalDevice, &info, &capabilities));

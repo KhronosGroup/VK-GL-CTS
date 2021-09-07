@@ -712,11 +712,11 @@ void PixelBufferObjectTests::init (void)
 		{
 			ReadPixelsTest::TestSpec testSpec;
 
-			testSpec.name					= string(renderbufferFormatsStr [formatNdx]) + "_" + (trianglesClears == 0 ? "triangles" : "clears"),
+			testSpec.name					= string(renderbufferFormatsStr [formatNdx]) + "_" + (trianglesClears == 0 ? "triangles" : "clears");
 			testSpec.description			= testSpec.name;
-			testSpec.useColorClear			= trianglesClears == 1,
-			testSpec.renderTriangles		= trianglesClears == 0,
-			testSpec.framebufferType		= ReadPixelsTest::TestSpec::FRAMEBUFFERTYPE_RENDERBUFFER,
+			testSpec.useColorClear			= trianglesClears == 1;
+			testSpec.renderTriangles		= trianglesClears == 0;
+			testSpec.framebufferType		= ReadPixelsTest::TestSpec::FRAMEBUFFERTYPE_RENDERBUFFER;
 			testSpec.renderbufferFormat		= renderbufferFormats[formatNdx];
 
 			renderbufferGroup->addChild(new ReadPixelsTest(m_context, testSpec));
