@@ -953,6 +953,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_image_view_min_lod")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_multi_draw")
 	{
 		return;
@@ -2213,6 +2217,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_EXT_global_priority_query")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_image_view_min_lod")
 	{
 		return;
 	}

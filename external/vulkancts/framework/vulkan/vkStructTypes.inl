@@ -5541,6 +5541,20 @@ struct VkQueueFamilyGlobalPriorityPropertiesEXT
 	VkQueueGlobalPriorityEXT	priorities[VK_MAX_GLOBAL_PRIORITY_SIZE_EXT];
 };
 
+struct VkPhysicalDeviceImageViewMinLodFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		minLod;
+};
+
+struct VkImageViewMinLodCreateInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	float			minLod;
+};
+
 struct VkPhysicalDeviceMultiDrawFeaturesEXT
 {
 	VkStructureType	sType;
