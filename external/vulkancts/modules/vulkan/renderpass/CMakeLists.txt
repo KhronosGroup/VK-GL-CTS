@@ -29,6 +29,8 @@ set(DEQP_VK_RENDER_PASS_SRCS
 	vktRenderPassFragmentDensityMapTests.hpp
 	vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.cpp
 	vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.hpp
+	vktRenderPassLoadStoreOpNoneTests.cpp
+	vktRenderPassLoadStoreOpNoneTests.hpp
 	)
 
 set(DEQP_VK_RENDER_PASS_LIBS

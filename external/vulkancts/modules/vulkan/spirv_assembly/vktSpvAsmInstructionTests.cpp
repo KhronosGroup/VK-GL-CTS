@@ -85,6 +85,7 @@
 #include "vktSpvAsm64bitCompareTests.hpp"
 #include "vktSpvAsmTrinaryMinMaxTests.hpp"
 #include "vktSpvAsmTerminateInvocationTests.hpp"
+#include "vktSpvAsmIntegerDotProductTests.hpp"
 
 #include <cmath>
 #include <limits>
@@ -20635,6 +20636,12 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpSRemComputeGroup64(testCtx, QP_TEST_RESULT_PASS));
 	computeTests->addChild(createOpSModComputeGroup(testCtx, QP_TEST_RESULT_PASS));
 	computeTests->addChild(createOpSModComputeGroup64(testCtx, QP_TEST_RESULT_PASS));
+	computeTests->addChild(createOpSDotKHRComputeGroup(testCtx));
+	computeTests->addChild(createOpUDotKHRComputeGroup(testCtx));
+	computeTests->addChild(createOpSUDotKHRComputeGroup(testCtx));
+	computeTests->addChild(createOpSDotAccSatKHRComputeGroup(testCtx));
+	computeTests->addChild(createOpUDotAccSatKHRComputeGroup(testCtx));
+	computeTests->addChild(createOpSUDotAccSatKHRComputeGroup(testCtx));
 	computeTests->addChild(createConvertComputeTests(testCtx, "OpSConvert", "sconvert"));
 	computeTests->addChild(createConvertComputeTests(testCtx, "OpUConvert", "uconvert"));
 	computeTests->addChild(createConvertComputeTests(testCtx, "OpFConvert", "fconvert"));
@@ -20723,6 +20730,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 
 		graphicsTests->addChild(graphicsAndroidTests.release());
 	}
+
 	graphicsTests->addChild(createOpNameTests(testCtx));
 	graphicsTests->addChild(createOpNameAbuseTests(testCtx));
 	graphicsTests->addChild(createOpMemberNameAbuseTests(testCtx));
