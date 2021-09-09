@@ -173,6 +173,15 @@ bool isVulkanMemoryModelFeaturesSupported(const Context& context, const vk::VkPh
 	return true;
 }
 
+bool isIntegerDotProductFeaturesSupported(const Context& context, const vk::VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR& toCheck, const char **missingFeature)
+{
+	const VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR& extensionFeatures = context.getShaderIntegerDotProductFeatures();
+
+	IS_AVAIL("ShaderIntegerDotProduct.", shaderIntegerDotProduct);
+
+	return true;
+}
+
 #undef IS_AVAIL
 
 bool isFloatControlsFeaturesSupported (const Context& context, const vk::VkPhysicalDeviceFloatControlsProperties& toCheck, const char **missingFeature)
@@ -276,6 +285,9 @@ bool isVulkanFeaturesSupported(const Context& context, const VulkanFeatures& req
 		return false;
 
 	if (!isFloatControlsFeaturesSupported(context, requested.floatControlsProperties, missingFeature))
+		return false;
+
+	if (!isIntegerDotProductFeaturesSupported(context, requested.extIntegerDotProduct, missingFeature))
 		return false;
 
 	return true;
