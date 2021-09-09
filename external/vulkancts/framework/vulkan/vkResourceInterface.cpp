@@ -491,14 +491,23 @@ VkResult ResourceInterfaceStandard::createShaderModule (VkDevice							device,
 {
 	if (normalMode)
 	{
-		const auto it = m_createShaderModuleFunc.find(device);
-		if (it != end(m_createShaderModuleFunc))
+		if (isVulkanSC())
 		{
-			VkResult result = it->second(device, pCreateInfo, pAllocator, pShaderModule);
+			*pShaderModule = VkShaderModule(++m_resourceCounter);
 			registerObjectHash(pShaderModule->getInternal(), calculateShaderModuleHash(*pCreateInfo, getObjectHashes()));
-			return result;
+			return VK_SUCCESS;
 		}
-		TCU_THROW(InternalError, "vkCreateShaderModule not defined");
+		else
+		{
+			const auto it = m_createShaderModuleFunc.find(device);
+			if (it != end(m_createShaderModuleFunc))
+			{
+				VkResult result = it->second(device, pCreateInfo, pAllocator, pShaderModule);
+				registerObjectHash(pShaderModule->getInternal(), calculateShaderModuleHash(*pCreateInfo, getObjectHashes()));
+				return result;
+			}
+			TCU_THROW(InternalError, "vkCreateShaderModule not defined");
+		}
 	}
 
 	// main process: store VkShaderModuleCreateInfo in JSON format. Shaders will be sent later for m_pipelineCache creation ( and sent through file to another process )
@@ -940,16 +949,26 @@ void ResourceInterfaceStandard::importPipelineCacheData (const PlatformInterface
 														 VkPhysicalDevice					physicalDevice,
 														 deUint32							queueIndex)
 {
-	std::vector<vksc_server::VulkanPipelineSize> outPipelineSizes;
-	m_cacheData = vksc_server::CreatePipelineCache(	m_pipelineInput,
-													outPipelineSizes,
-													vksc_server::CmdLineParams{},
-													vkp,
-													instance,
-													vki,
-													physicalDevice,
-													queueIndex);
-	m_pipelineSizes = outPipelineSizes;
+	if(!std::string(m_testCtx.getCommandLine().getPipelineCompilerPath()).empty())
+	{
+		m_cacheData = vksc_server::buildOfflinePipelineCache(m_pipelineInput,
+															 std::string( m_testCtx.getCommandLine().getPipelineCompilerPath()),
+															 std::string( m_testCtx.getCommandLine().getPipelineCompilerDataDir()),
+															 std::string( m_testCtx.getCommandLine().getPipelineCompilerArgs()),
+															 std::string( m_testCtx.getCommandLine().getPipelineCompilerOutputFile()),
+															 std::string( m_testCtx.getCommandLine().getPipelineCompilerLogFile()),
+															 std::string( m_testCtx.getCommandLine().getPipelineCompilerFilePrefix()) );
+	}
+	else
+	{
+		m_cacheData = vksc_server::buildPipelineCache(m_pipelineInput, vkp, instance, vki, physicalDevice, queueIndex);
+	}
+
+	VkPhysicalDeviceVulkanSC10Properties	vulkanSC10Properties	= initVulkanStructure();
+	VkPhysicalDeviceProperties2				deviceProperties2		= initVulkanStructure(&vulkanSC10Properties);
+	vki.getPhysicalDeviceProperties2(physicalDevice, &deviceProperties2);
+
+	m_pipelineSizes	= vksc_server::extractSizesFromPipelineCache( m_pipelineInput, m_cacheData, deUint32(m_testCtx.getCommandLine().getPipelineDefaultSize()), vulkanSC10Properties.recyclePipelineMemory == VK_TRUE);
 	preparePipelinePoolSizes();
 }
 
@@ -1124,7 +1143,9 @@ void ResourceInterfaceVKSC::importPipelineCacheData (const PlatformInterface&			
 	}
 
 	vksc_server::CreateCacheRequest request;
-	request.input = m_pipelineInput;
+	request.input						= m_pipelineInput;
+	std::vector<int>	caseFraction	= m_testCtx.getCommandLine().getCaseFraction();
+	request.caseFraction				= caseFraction.empty() ? -1 : caseFraction[0];
 
 	vksc_server::CreateCacheResponse response;
 	getServer()->SendRequest(request, response);
@@ -1133,7 +1154,11 @@ void ResourceInterfaceVKSC::importPipelineCacheData (const PlatformInterface&			
 	{
 		m_cacheData = std::move(response.binary);
 
-		m_pipelineSizes = response.pipelineSizes;
+		VkPhysicalDeviceVulkanSC10Properties	vulkanSC10Properties	= initVulkanStructure();
+		VkPhysicalDeviceProperties2				deviceProperties2		= initVulkanStructure(&vulkanSC10Properties);
+		vki.getPhysicalDeviceProperties2(physicalDevice, &deviceProperties2);
+
+		m_pipelineSizes	= vksc_server::extractSizesFromPipelineCache( m_pipelineInput, m_cacheData, deUint32(m_testCtx.getCommandLine().getPipelineDefaultSize()), vulkanSC10Properties.recyclePipelineMemory == VK_TRUE);
 		preparePipelinePoolSizes();
 	}
 	else { TCU_THROW(InternalError, "Server did not return pipeline cache data when requested (check server log for details)"); }

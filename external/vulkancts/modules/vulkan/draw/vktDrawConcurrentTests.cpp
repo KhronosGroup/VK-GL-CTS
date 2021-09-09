@@ -356,33 +356,39 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 
 	// Have to wait for all fences before calling fail, or some fence may be left hanging.
 
-	if (err == ERROR_WAIT_COMPUTE)
+
+#ifdef CTS_USES_VULKANSC
+	if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 	{
-		return tcu::TestStatus::fail("Failed waiting for compute queue fence.");
-	}
-
-	if (err == ERROR_WAIT_DRAW)
-	{
-		return tcu::TestStatus::fail("Failed waiting for draw queue fence.");
-	}
-
-	// Validation - compute
-
-	const Allocation&	bufferAllocation	= buffer.getAllocation();
-	invalidateAlloc(vk, *computeDevice, bufferAllocation);
-	const deUint32*		bufferPtr			= static_cast<deUint32*>(bufferAllocation.getHostPtr());
-
-	for (deUint32 ndx = 0; ndx < numValues; ++ndx)
-	{
-		const deUint32 res = bufferPtr[ndx];
-		const deUint32 inp = inputData[ndx];
-		const deUint32 ref = ~inp;
-
-		if (res != ref)
+		if (err == ERROR_WAIT_COMPUTE)
 		{
-			std::ostringstream msg;
-			msg << "Comparison failed (compute) for InOut.values[" << ndx << "] ref:" << ref << " res:" << res << " inp:" << inp;
-			return tcu::TestStatus::fail(msg.str());
+			return tcu::TestStatus::fail("Failed waiting for compute queue fence.");
+		}
+
+		if (err == ERROR_WAIT_DRAW)
+		{
+			return tcu::TestStatus::fail("Failed waiting for draw queue fence.");
+		}
+
+		// Validation - compute
+
+		const Allocation&	bufferAllocation	= buffer.getAllocation();
+		invalidateAlloc(vk, *computeDevice, bufferAllocation);
+		const deUint32*		bufferPtr			= static_cast<deUint32*>(bufferAllocation.getHostPtr());
+
+		for (deUint32 ndx = 0; ndx < numValues; ++ndx)
+		{
+			const deUint32 res = bufferPtr[ndx];
+			const deUint32 inp = inputData[ndx];
+			const deUint32 ref = ~inp;
+
+			if (res != ref)
+			{
+				std::ostringstream msg;
+				msg << "Comparison failed (compute) for InOut.values[" << ndx << "] ref:" << ref << " res:" << res << " inp:" << inp;
+				return tcu::TestStatus::fail(msg.str());
+			}
 		}
 	}
 

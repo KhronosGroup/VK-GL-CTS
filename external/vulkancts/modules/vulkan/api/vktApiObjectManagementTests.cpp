@@ -2450,6 +2450,25 @@ tcu::TestStatus createMultipleUniqueResourcesTest (Context& context, typename Ob
 	return tcu::TestStatus::pass("Ok");
 }
 
+#ifdef CTS_USES_VULKANSC
+template<>
+tcu::TestStatus createMultipleUniqueResourcesTest<Instance> (Context& context, Instance::Parameters params)
+{
+	const Environment					env(context, 1u);
+	const typename Instance::Resources	res0(env, params);
+	const typename Instance::Resources	res1(env, params);
+	const typename Instance::Resources	res2(env, params);
+
+	{
+		Unique<typename Instance::Type>	obj0(Instance::create(env, res0, params));
+		Unique<typename Instance::Type>	obj1(Instance::create(env, res1, params));
+		Unique<typename Instance::Type>	obj2(Instance::create(env, res2, params));
+	}
+
+	return tcu::TestStatus::pass("Ok");
+}
+#endif // CTS_USES_VULKANSC
+
 template<typename Object>
 tcu::TestStatus createMultipleSharedResourcesTest (Context& context, typename Object::Parameters params)
 {

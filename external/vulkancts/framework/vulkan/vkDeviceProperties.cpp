@@ -45,8 +45,8 @@ DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 		void**										nextPtr						= &m_coreProperties2.pNext;
 		std::vector<PropertyStructWrapperBase*>		propertiesToFillFromBlob;
 		std::vector<PropertyStructWrapperBase*>		propertiesAddedWithVK;
-		bool										vk11Supported				= (apiVersion >= VK_MAKE_VERSION(1, 1, 0));
-		bool										vk12Supported				= (apiVersion >= VK_MAKE_VERSION(1, 2, 0));
+		bool										vk11Supported				= (apiVersion >= VK_MAKE_API_VERSION(0, 1, 1, 0));
+		bool										vk12Supported				= (apiVersion >= VK_MAKE_API_VERSION(0, 1, 2, 0));
 #ifdef CTS_USES_VULKANSC
 		bool										vksc10Supported				= (apiVersion >= VK_MAKE_API_VERSION(1, 1, 0, 0));
 #endif // CTS_USES_VULKANSC

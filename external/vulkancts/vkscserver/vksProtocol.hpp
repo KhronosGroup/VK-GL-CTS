@@ -108,12 +108,14 @@ struct GetContentResponse
 struct CreateCacheRequest
 {
 	VulkanPipelineCacheInput	input;
+	s32							caseFraction;
 	static constexpr u32 Type() { return 7; }
 
 	template <typename TYPE>
 	void Serialize (Serializer<TYPE>& archive)
 	{
 		archive.SerializeObject(input);
+		archive.Serialize(caseFraction);
 	}
 };
 
@@ -121,11 +123,10 @@ struct CreateCacheResponse
 {
 	bool status{};
 	vector<u8>							binary;
-	vector<VulkanPipelineSize>			pipelineSizes;
 	static constexpr u32 Type() { return 8; }
 
 	template <typename TYPE>
-	void Serialize (Serializer<TYPE>& archive) { archive.Serialize(status, binary, pipelineSizes); }
+	void Serialize (Serializer<TYPE>& archive) { archive.Serialize(status, binary); }
 };
 
 struct LogRequest

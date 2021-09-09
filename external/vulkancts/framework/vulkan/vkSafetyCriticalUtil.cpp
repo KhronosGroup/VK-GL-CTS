@@ -297,6 +297,21 @@ void hashPNextChain (std::size_t& seed, const void* pNext, const std::map<deUint
 	}
 }
 
+bool graphicsPipelineHasDynamicState(const VkGraphicsPipelineCreateInfo& gpCI, VkDynamicState state)
+{
+	if (gpCI.pDynamicState == DE_NULL)
+		return false;
+
+	if (gpCI.pDynamicState->pDynamicStates == DE_NULL)
+		return false;
+
+	for (deUint32 i = 0; i < gpCI.pDynamicState->dynamicStateCount; ++i)
+		if (gpCI.pDynamicState->pDynamicStates[i] == state)
+			return true;
+
+	return false;
+}
+
 std::size_t calculateGraphicsPipelineHash (const VkGraphicsPipelineCreateInfo& gpCI, const std::map<deUint64, std::size_t>& objectHashes)
 {
 	std::size_t seed = 0;
@@ -464,7 +479,8 @@ std::size_t calculateGraphicsPipelineHash (const VkGraphicsPipelineCreateInfo& g
 				if (constFactors.find(gpCI.pColorBlendState->pAttachments[i].dstAlphaBlendFactor) != end(constFactors))	hashBlendConstants = true;
 			}
 		}
-		if (hashBlendConstants)
+		// omit blendConstants when VK_DYNAMIC_STATE_BLEND_CONSTANTS is present
+		if (hashBlendConstants && !graphicsPipelineHasDynamicState(gpCI, VK_DYNAMIC_STATE_BLEND_CONSTANTS))
 			for (deUint32 i = 0; i < 4; ++i)
 				hash_combine(seed, gpCI.pColorBlendState->blendConstants[i]);
 	}
@@ -937,4 +953,3 @@ VkFormat getRenderTargetFormat (const InstanceInterface& vk, const VkPhysicalDev
 #else
 	DE_EMPTY_CPP_FILE
 #endif // CTS_USES_VULKANSC
-

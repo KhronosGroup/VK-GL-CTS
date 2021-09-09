@@ -547,18 +547,23 @@ public:
 				const Data	expected	= writeOp->getData();
 				const Data	actual		= readOp->getData();
 
-				if (isIndirectBuffer(m_resourceDesc.type))
+#ifdef CTS_USES_VULKANSC
+				if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 				{
-					const deUint32 expectedValue = reinterpret_cast<const deUint32*>(expected.data)[0];
-					const deUint32 actualValue   = reinterpret_cast<const deUint32*>(actual.data)[0];
+					if (isIndirectBuffer(m_resourceDesc.type))
+					{
+						const deUint32 expectedValue = reinterpret_cast<const deUint32*>(expected.data)[0];
+						const deUint32 actualValue   = reinterpret_cast<const deUint32*>(actual.data)[0];
 
-					if (actualValue < expectedValue)
-						return tcu::TestStatus::fail("Counter value is smaller than expected");
-				}
-				else
-				{
-					if (0 != deMemCmp(expected.data, actual.data, expected.size))
-						return tcu::TestStatus::fail("Memory contents don't match");
+						if (actualValue < expectedValue)
+							return tcu::TestStatus::fail("Counter value is smaller than expected");
+					}
+					else
+					{
+						if (0 != deMemCmp(expected.data, actual.data, expected.size))
+							return tcu::TestStatus::fail("Memory contents don't match");
+					}
 				}
 			}
 		}
@@ -815,18 +820,23 @@ public:
 				const Data	expected = writeOp->getData();
 				const Data	actual	 = readOp->getData();
 
-				if (isIndirectBuffer(m_resourceDesc.type))
+#ifdef CTS_USES_VULKANSC
+				if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 				{
-					const deUint32 expectedValue = reinterpret_cast<const deUint32*>(expected.data)[0];
-					const deUint32 actualValue   = reinterpret_cast<const deUint32*>(actual.data)[0];
+					if (isIndirectBuffer(m_resourceDesc.type))
+					{
+						const deUint32 expectedValue = reinterpret_cast<const deUint32*>(expected.data)[0];
+						const deUint32 actualValue   = reinterpret_cast<const deUint32*>(actual.data)[0];
 
-					if (actualValue < expectedValue)
-						return tcu::TestStatus::fail("Counter value is smaller than expected");
-				}
-				else
-				{
-					if (0 != deMemCmp(expected.data, actual.data, expected.size))
-						return tcu::TestStatus::fail("Memory contents don't match");
+						if (actualValue < expectedValue)
+							return tcu::TestStatus::fail("Counter value is smaller than expected");
+					}
+					else
+					{
+						if (0 != deMemCmp(expected.data, actual.data, expected.size))
+							return tcu::TestStatus::fail("Memory contents don't match");
+					}
 				}
 			}
 		}

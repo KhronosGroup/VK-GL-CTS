@@ -10,9 +10,9 @@ VkPhysicalDeviceFeatures									FEATURES ( robustBufferAccess )									REQUIRE
 VkPhysicalDeviceFeatures									FEATURES ( shaderSampledImageArrayDynamicIndexing )				REQUIREMENTS ( VK_EXT_descriptor_indexing )
 VkPhysicalDeviceFeatures									FEATURES ( shaderStorageBufferArrayDynamicIndexing )			REQUIREMENTS ( VK_EXT_descriptor_indexing )
 VkPhysicalDevice8BitStorageFeatures							FEATURES ( storageBuffer8BitAccess )							REQUIREMENTS ( VK_KHR_8bit_storage )
-VkPhysicalDeviceVulkan11Features							FEATURES ( multiview )											REQUIREMENTS ( "ApiVersion(0, 1, 2, 0)" )
-VkPhysicalDeviceMultiviewFeatures							FEATURES ( multiview )											REQUIREMENTS ( "ApiVersion(0, 1, 1, 0)" )
+VkPhysicalDeviceVulkan11Features							FEATURES ( multiview )											REQUIREMENTS ( "ApiVersion(0, 1, 2, 0)" )	MANDATORY_VARIANT: VULKAN
 VkPhysicalDeviceMultiviewFeatures							FEATURES ( multiview )											REQUIREMENTS ( VK_KHR_multiview )
+VkPhysicalDeviceMultiviewFeatures							FEATURES ( multiview )											REQUIREMENTS ( "ApiVersion(0, 1, 1, 0)" )	MANDATORY_VARIANT: VULKAN
 VkPhysicalDeviceVariablePointersFeatures					FEATURES ( variablePointersStorageBuffer )						REQUIREMENTS ( VK_KHR_variable_pointers )
 VkPhysicalDeviceDescriptorIndexingFeatures					FEATURES ( shaderUniformTexelBufferArrayDynamicIndexing )		REQUIREMENTS ( VK_EXT_descriptor_indexing )
 VkPhysicalDeviceDescriptorIndexingFeatures					FEATURES ( shaderStorageTexelBufferArrayDynamicIndexing )		REQUIREMENTS ( VK_EXT_descriptor_indexing )

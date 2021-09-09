@@ -415,6 +415,8 @@ void createGraphicsPipelines (const DeviceInterface&				vkd,
 							  VkShaderModule						fragmentShaderModule,
 							  VkRenderPass							renderPass,
 							  VkPipelineLayout						pipelineLayout,
+							  VkDeviceSize							poolEntrySize,
+							  de::SharedPtr<vk::ResourceInterface>	resourceInterface,
 							  std::vector<PipelineSp>::iterator		begin,
 							  std::vector<PipelineSp>::iterator		end)
 {
@@ -431,6 +433,7 @@ void createGraphicsPipelines (const DeviceInterface&				vkd,
 			DE_NULL,														// const VkSpecializationInfo*         pSpecializationInfo;
 		}
 	);
+
 	shaderStageCreateInfos.push_back
 	(
 		{
@@ -443,7 +446,6 @@ void createGraphicsPipelines (const DeviceInterface&				vkd,
 			DE_NULL,														// const VkSpecializationInfo*         pSpecializationInfo;
 		}
 	);
-
 
 	for (std::vector<PipelineSp>::iterator it = begin; it != end; ++it)
 	{
@@ -547,7 +549,7 @@ void createGraphicsPipelines (const DeviceInterface&				vkd,
 			dynamicStates													// const VkDynamicState*                pDynamicStates;
 		};
 
-		const VkGraphicsPipelineCreateInfo				graphicsPipelineCI				=
+		VkGraphicsPipelineCreateInfo					graphicsPipelineCI				=
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,				// VkStructureType                                  sType;
 			DE_NULL,														// const void*                                      pNext;
@@ -570,6 +572,17 @@ void createGraphicsPipelines (const DeviceInterface&				vkd,
 			0																// int                                              basePipelineIndex;
 		};
 
+		// we have to ensure that proper poolEntrySize is used
+		VkPipelineOfflineCreateInfo						pipelineOfflineCreateInfo;
+		if (poolEntrySize != 0u)
+		{
+			pipelineOfflineCreateInfo				= resetPipelineOfflineCreateInfo();
+			std::size_t					hashValue	= calculateGraphicsPipelineHash(graphicsPipelineCI, resourceInterface->getObjectHashes());
+			memcpy(pipelineOfflineCreateInfo.pipelineIdentifier, &hashValue, sizeof(std::size_t));
+			pipelineOfflineCreateInfo.poolEntrySize = poolEntrySize;
+			graphicsPipelineCI.pNext				= &pipelineOfflineCreateInfo;
+		}
+
 		*it = PipelineSp(new Unique<VkPipeline>(createGraphicsPipeline(vkd, device, (VkPipelineCache)0u, &graphicsPipelineCI)));
 	}
 }
@@ -578,12 +591,14 @@ void createComputePipelines (const DeviceInterface&					vkd,
 							 const VkDevice							device,
 							 VkShaderModule							shaderModule,
 							 VkPipelineLayout						pipelineLayout,
+							 VkDeviceSize							poolEntrySize,
+							 de::SharedPtr<vk::ResourceInterface>	resourceInterface,
 							 std::vector<PipelineSp>::iterator		begin,
 							 std::vector<PipelineSp>::iterator		end)
 {
 	for (std::vector<PipelineSp>::iterator it = begin; it != end; ++it)
 	{
-		VkPipelineShaderStageCreateInfo shaderStageCreateInfo				=
+		VkPipelineShaderStageCreateInfo				shaderStageCreateInfo	=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,			// VkStructureType                     sType;
 			DE_NULL,														// const void*                         pNext;
@@ -594,7 +609,7 @@ void createComputePipelines (const DeviceInterface&					vkd,
 			DE_NULL,														// const VkSpecializationInfo*         pSpecializationInfo;
 		};
 
-		const VkComputePipelineCreateInfo				computePipelineCI	=
+		VkComputePipelineCreateInfo						computePipelineCI	=
 		{
 			VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,					// VkStructureType					sType
 			DE_NULL,														// const void*						pNext
@@ -604,6 +619,18 @@ void createComputePipelines (const DeviceInterface&					vkd,
 			(vk::VkPipeline)0,												// VkPipeline						basePipelineHandle
 			0u,																// deInt32							basePipelineIndex
 		};
+
+		// we have to ensure that proper poolEntrySize is used
+		VkPipelineOfflineCreateInfo						pipelineOfflineCreateInfo;
+		if (poolEntrySize != 0u)
+		{
+			pipelineOfflineCreateInfo				= resetPipelineOfflineCreateInfo();
+			std::size_t					hashValue	= calculateComputePipelineHash(computePipelineCI, resourceInterface->getObjectHashes());
+			memcpy(pipelineOfflineCreateInfo.pipelineIdentifier, &hashValue, sizeof(std::size_t));
+			pipelineOfflineCreateInfo.poolEntrySize = poolEntrySize;
+			computePipelineCI.pNext					= &pipelineOfflineCreateInfo;
+		}
+
 		*it = PipelineSp(new Unique<VkPipeline>(createComputePipeline(vkd, device, (VkPipelineCache)0u, &computePipelineCI)));
 	}
 }
@@ -1238,7 +1265,8 @@ public:
 	{
 		DE_UNREF(sc10Features);
 
-		std::vector<VkPipelinePoolSize> poolSizes;
+		std::vector<VkPipelinePoolSize>	poolSizes;
+		VkDeviceSize					pipelineDefaultSize			= VkDeviceSize(m_context.getTestContext().getCommandLine().getPipelineDefaultSize());
 
 		switch (testParams.testRequestCounts)
 		{
@@ -1303,12 +1331,12 @@ public:
 				objectInfo.subpassDescriptionRequestCount			= 1u;
 				objectInfo.attachmentDescriptionRequestCount		= 1u;
 				objectInfo.graphicsPipelineRequestCount				= VERIFYMAXVALUES_OBJECT_COUNT;
-				poolSizes.push_back({ VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE, DE_NULL, VKSC_DEFAULT_PIPELINE_POOL_SIZE, VERIFYMAXVALUES_OBJECT_COUNT });
+				poolSizes.push_back({ VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE, DE_NULL, pipelineDefaultSize, VERIFYMAXVALUES_OBJECT_COUNT });
 				break;
 			case TRC_COMPUTE_PIPELINE:
 				objectInfo.pipelineLayoutRequestCount				= 1u;
 				objectInfo.computePipelineRequestCount				= VERIFYMAXVALUES_OBJECT_COUNT;
-				poolSizes.push_back({ VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE, DE_NULL, VKSC_DEFAULT_PIPELINE_POOL_SIZE, VERIFYMAXVALUES_OBJECT_COUNT });
+				poolSizes.push_back({ VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE, DE_NULL, pipelineDefaultSize, VERIFYMAXVALUES_OBJECT_COUNT });
 				break;
 			case TRC_DESCRIPTORSET_LAYOUT:
 				objectInfo.descriptorSetLayoutRequestCount			= VERIFYMAXVALUES_OBJECT_COUNT;
@@ -1370,6 +1398,7 @@ public:
 					  VkDevice								device) override
 	{
 		SimpleAllocator	allocator			(vkd, device, getPhysicalDeviceMemoryProperties(instance.getDriver(), physicalDevice));
+		VkDeviceSize	pipelineDefaultSize	= VkDeviceSize(m_context.getTestContext().getCommandLine().getPipelineDefaultSize());
 		deUint32		queueFamilyIndex	= 0u;
 
 		switch (testParams.testRequestCounts)
@@ -1585,14 +1614,14 @@ public:
 				Move<VkShaderModule>			fragmentShaderModule	= createShaderModule(vkd, device, m_context.getBinaryCollection().get("fragment"), 0u);
 
 				std::vector<PipelineSp> pipelines(VERIFYMAXVALUES_OBJECT_COUNT);
-				createGraphicsPipelines(vkd, device, vertexShaderModule.get(), fragmentShaderModule.get(), renderPasses[0]->get(), pipelineLayouts[0]->get(), begin(pipelines), end(pipelines));
+				createGraphicsPipelines(vkd, device, vertexShaderModule.get(), fragmentShaderModule.get(), renderPasses[0]->get(), pipelineLayouts[0]->get(), pipelineDefaultSize, m_context.getResourceInterface(), begin(pipelines), end(pipelines));
 
 				if (m_context.getDeviceVulkanSC10Properties().recyclePipelineMemory)
 				{
 					std::fill(begin(pipelines) + VERIFYMAXVALUES_OBJECT_COUNT / 2, end(pipelines), PipelineSp());
-					createGraphicsPipelines(vkd, device, vertexShaderModule.get(), fragmentShaderModule.get(), renderPasses[0]->get(), pipelineLayouts[0]->get(), begin(pipelines) + VERIFYMAXVALUES_OBJECT_COUNT / 2, end(pipelines));
+					createGraphicsPipelines(vkd, device, vertexShaderModule.get(), fragmentShaderModule.get(), renderPasses[0]->get(), pipelineLayouts[0]->get(), pipelineDefaultSize, m_context.getResourceInterface(), begin(pipelines) + VERIFYMAXVALUES_OBJECT_COUNT / 2, end(pipelines));
 					std::fill(begin(pipelines), end(pipelines), PipelineSp());
-					createGraphicsPipelines(vkd, device, vertexShaderModule.get(), fragmentShaderModule.get(), renderPasses[0]->get(), pipelineLayouts[0]->get(), begin(pipelines), end(pipelines));
+					createGraphicsPipelines(vkd, device, vertexShaderModule.get(), fragmentShaderModule.get(), renderPasses[0]->get(), pipelineLayouts[0]->get(), pipelineDefaultSize, m_context.getResourceInterface(), begin(pipelines), end(pipelines));
 				}
 
 				break;
@@ -1604,14 +1633,14 @@ public:
 				Move<VkShaderModule>			shaderModule	= createShaderModule(vkd, device, m_context.getBinaryCollection().get("compute"), 0u);
 
 				std::vector<PipelineSp> pipelines(VERIFYMAXVALUES_OBJECT_COUNT);
-				createComputePipelines(vkd, device, shaderModule.get(), pipelineLayouts[0]->get(), begin(pipelines), end(pipelines));
+				createComputePipelines(vkd, device, shaderModule.get(), pipelineLayouts[0]->get(), pipelineDefaultSize, m_context.getResourceInterface(), begin(pipelines), end(pipelines));
 
 				if (m_context.getDeviceVulkanSC10Properties().recyclePipelineMemory)
 				{
 					std::fill(begin(pipelines) + VERIFYMAXVALUES_OBJECT_COUNT / 2, end(pipelines), PipelineSp());
-					createComputePipelines(vkd, device, shaderModule.get(), pipelineLayouts[0]->get(), begin(pipelines) + VERIFYMAXVALUES_OBJECT_COUNT / 2, end(pipelines));
+					createComputePipelines(vkd, device, shaderModule.get(), pipelineLayouts[0]->get(), pipelineDefaultSize, m_context.getResourceInterface(), begin(pipelines) + VERIFYMAXVALUES_OBJECT_COUNT / 2, end(pipelines));
 					std::fill(begin(pipelines), end(pipelines), PipelineSp());
-					createComputePipelines(vkd, device, shaderModule.get(), pipelineLayouts[0]->get(), begin(pipelines), end(pipelines));
+					createComputePipelines(vkd, device, shaderModule.get(), pipelineLayouts[0]->get(), pipelineDefaultSize, m_context.getResourceInterface(), begin(pipelines), end(pipelines));
 				}
 				break;
 			}
@@ -1759,7 +1788,7 @@ public:
 		std::vector<VkPipelinePoolSize> poolSizes;
 
 		const VkDeviceSize psTooSmall		= 64u;
-		const VkDeviceSize psForOnePipeline	= VKSC_DEFAULT_PIPELINE_POOL_SIZE;
+		const VkDeviceSize psForOnePipeline	= VkDeviceSize(m_context.getTestContext().getCommandLine().getPipelineDefaultSize());
 
 		switch (testParams.testPoolSizeType)
 		{
@@ -1869,7 +1898,7 @@ public:
 
 		if (m_context.getTestContext().getCommandLine().isSubProcess())
 		{
-			pipelineID.poolEntrySize = VKSC_DEFAULT_PIPELINE_POOL_SIZE;
+			pipelineID.poolEntrySize = VkDeviceSize(m_context.getTestContext().getCommandLine().getPipelineDefaultSize());
 		}
 
 		std::size_t										pipelineCount					= 0u;

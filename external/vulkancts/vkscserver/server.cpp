@@ -36,11 +36,13 @@ using namespace vksc_server;
 namespace opt
 {
 
-DE_DECLARE_COMMAND_LINE_OPT(Port,				int);
-DE_DECLARE_COMMAND_LINE_OPT(CompilerPath,		std::string);
-DE_DECLARE_COMMAND_LINE_OPT(CompilerDataDir,	std::string);
-DE_DECLARE_COMMAND_LINE_OPT(CompilerOutputFile,	std::string);
-DE_DECLARE_COMMAND_LINE_OPT(CompilerArgs,		std::string);
+DE_DECLARE_COMMAND_LINE_OPT(Port,						int);
+DE_DECLARE_COMMAND_LINE_OPT(LogFile,					std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerPath,		std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerDataDir,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerOutputFile,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerLogFile,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerArgs,		std::string);
 
 const auto DefaultPortStr = std::to_string(DefaultPort);
 
@@ -49,11 +51,13 @@ void registerOptions (de::cmdline::Parser& parser)
 	using de::cmdline::Option;
 	using de::cmdline::NamedValue;
 
-	parser << Option<Port>					("p", "port",		"Port",									DefaultPortStr.c_str());
-	parser << Option<CompilerPath>			("c", "compiler",	"Path to offline pipeline compiler",	"");
-	parser << Option<CompilerDataDir>		("d", "dir",		"Offline pipeline data directory",		"");
-	parser << Option<CompilerOutputFile>	("f", "file",		"Output file with pipeline cache",		"");
-	parser << Option<CompilerArgs>			("a", "args",		"Additional compiler parameters",		"");
+	parser << Option<Port>							(DE_NULL, "port",				"Port",									DefaultPortStr.c_str());
+	parser << Option<LogFile>						(DE_NULL, "log",				"Log filename",							"dummy.log");
+	parser << Option<PipelineCompilerPath>			(DE_NULL, "pipeline-compiler",	"Path to offline pipeline compiler",	"");
+	parser << Option<PipelineCompilerDataDir>		(DE_NULL, "pipeline-dir",		"Offline pipeline data directory",		"");
+	parser << Option<PipelineCompilerOutputFile>	(DE_NULL, "pipeline-file",		"Output file with pipeline cache",		"");
+	parser << Option<PipelineCompilerLogFile>		(DE_NULL, "pipeline-log",		"Compiler log file",					"compiler.log");
+	parser << Option<PipelineCompilerArgs>			(DE_NULL, "pipeline-args",		"Additional compiler parameters",		"");
 }
 
 }
@@ -82,6 +86,7 @@ struct Client
 	std::atomic<bool>&			appactive;
 	vector<u8>					recvb;
 	CmdLineParams				cmdLineParams;
+	std::string					logFile;
 };
 
 std::future<void> CreateClientThread (Client client);
@@ -120,7 +125,15 @@ int main (int argc, char** argv)
 		while (appActive)
 		{
 			remove_erase_if(clients, [](const std::future<void>& c) { return is_ready(c); });
-			Client client{ ++id, std::unique_ptr<de::Socket>(listener.accept()), appActive, vector<u8>{}, { cmdLine.getOption<opt::CompilerPath>(), cmdLine.getOption<opt::CompilerDataDir>(), cmdLine.getOption<opt::CompilerOutputFile>(), cmdLine.getOption<opt::CompilerArgs>()  } };
+			Client client{ ++id, std::unique_ptr<de::Socket>(listener.accept()), appActive, vector<u8>{},
+			{
+				cmdLine.getOption<opt::PipelineCompilerPath>(),
+				cmdLine.getOption<opt::PipelineCompilerDataDir>(),
+				cmdLine.getOption<opt::PipelineCompilerOutputFile>(),
+				cmdLine.getOption<opt::PipelineCompilerLogFile>(),
+				cmdLine.getOption<opt::PipelineCompilerArgs>()
+			},
+			cmdLine.getOption<opt::LogFile>() };
 			Debug("New client with id", id - 1, "connected");
 			clients.push_back(CreateClientThread(std::move(client)));
 		}
@@ -195,11 +208,10 @@ void ProcessPacketsOnServer (Client& client, u32 type, vector<u8> packet)
 			auto req = Deserialize<CreateCacheRequest>(packet);
 
 			vector<u8>							binary;
-			vector<VulkanPipelineSize>			outPipelineSizes;
 			bool ok = false;
 			try
 			{
-				CreateVulkanSCCache(req.input, binary, outPipelineSizes, client.cmdLineParams);
+				CreateVulkanSCCache(req.input, req.caseFraction, binary, client.cmdLineParams, client.logFile);
 				ok = true;
 			}
 			catch (const std::exception& e)
@@ -211,7 +223,6 @@ void ProcessPacketsOnServer (Client& client, u32 type, vector<u8> packet)
 			CreateCacheResponse res;
 			res.status			= ok;
 			res.binary			= std::move(binary);
-			res.pipelineSizes	= std::move(outPipelineSizes);
 			SendResponse(client, res);
 		}
 		break;

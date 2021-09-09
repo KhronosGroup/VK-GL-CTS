@@ -260,6 +260,7 @@ struct CmdLineParams
 	std::string											compilerPath;
 	std::string											compilerDataDir;
 	std::string											compilerPipelineCacheFile;
+	std::string											compilerLogFile;
 	std::string											compilerArgs;
 };
 

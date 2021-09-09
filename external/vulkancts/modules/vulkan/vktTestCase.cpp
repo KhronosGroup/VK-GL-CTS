@@ -587,7 +587,7 @@ bool Context::isDeviceFunctionalitySupported (const std::string& extension) cons
 	deUint32 apiVersion = getUsedApiVersion();
 	if (isCoreDeviceExtension(apiVersion, extension))
 	{
-		if (apiVersion < VK_MAKE_VERSION(1, 2, 0))
+		if (apiVersion < VK_MAKE_API_VERSION(0, 1, 2, 0))
 		{
 			// Check feature bits in extension-specific structures.
 			if (extension == "VK_KHR_multiview")

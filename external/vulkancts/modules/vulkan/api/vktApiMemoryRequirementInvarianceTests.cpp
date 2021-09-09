@@ -37,7 +37,11 @@ namespace api
 using namespace vk;
 
 // Number of items to allocate
+#ifndef CTS_USES_VULKANSC
 const unsigned int		testCycles								= 1000u;
+#else
+const unsigned int		testCycles								= 100u;
+#endif // CTS_USES_VULKANSC
 
 // All legal memory combinations (spec chapter 10.2: Device Memory)
 const unsigned int		legalMemoryTypeCount					= 11u;

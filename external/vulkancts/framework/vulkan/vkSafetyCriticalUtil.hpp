@@ -33,8 +33,6 @@
 namespace vk
 {
 
-const VkDeviceSize VKSC_DEFAULT_PIPELINE_POOL_SIZE	= 16u * 1024u;
-
 VkDeviceObjectReservationCreateInfo resetDeviceObjectReservationCreateInfo	();
 VkPipelineOfflineCreateInfo			resetPipelineOfflineCreateInfo			();
 VkPhysicalDeviceVulkanSC10Features	createDefaultSC10Features				();

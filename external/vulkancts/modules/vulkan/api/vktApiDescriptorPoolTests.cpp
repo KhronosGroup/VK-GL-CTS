@@ -77,7 +77,11 @@ void checkSupportFreeDescriptorSets (Context& context, const ResetDescriptorPool
 
 tcu::TestStatus resetDescriptorPoolTest (Context& context, const ResetDescriptorPoolTestParams params)
 {
+#ifndef CTS_USES_VULKANSC
 	const deUint32				numDescriptorSetsPerIter = 2048;
+#else
+	const deUint32				numDescriptorSetsPerIter = 100;
+#endif // CTS_USES_VULKANSC
 	const DeviceInterface&		vkd						 = context.getDeviceInterface();
 	const VkDevice				device					 = context.getDevice();
 

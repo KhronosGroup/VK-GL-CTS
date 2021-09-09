@@ -19,6 +19,7 @@
  *-------------------------------------------------------------------------*/
 
 #include "vksCacheBuilder.hpp"
+#include "pcreader.hpp"
 #include "vksJson.hpp"
 
 #include <fstream>
@@ -26,6 +27,8 @@
 //#include <filesystem>
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "deDirectoryIterator.hpp"
+#include "deFile.h"
 #include "vkSafetyCriticalUtil.hpp"
 
 namespace vk
@@ -56,7 +59,12 @@ typedef VKAPI_ATTR VkResult	(VKAPI_CALL* GetPipelineCacheDataFunc)			(VkDevice d
 namespace vksc_server
 {
 
-void exportFilesForExternalCompiler (const VulkanPipelineCacheInput& input, const std::string& path)
+
+const VkDeviceSize VKSC_DEFAULT_PIPELINE_POOL_SIZE = 2u * 1024u * 1024u;
+
+void exportFilesForExternalCompiler (const VulkanPipelineCacheInput&	input,
+									 const std::string&					path,
+									 const std::string&					filePrefix)
 {
 	// unpack JSON data to track relations between objects
 	using namespace	vk;
@@ -223,9 +231,13 @@ void exportFilesForExternalCompiler (const VulkanPipelineCacheInput& input, cons
 			readJSON_VkPhysicalDeviceFeatures2(jsonReader, pipeline.deviceFeatures, deviceFeatures2);
 
 			// export shaders and objects to JSON compatible with https://schema.khronos.org/vulkan/vkpcc.json
-			std::string gpTxt = writeJSON_GraphicsPipeline_vkpccjson(exportedPipelines, pipeline.id, gpCI, deviceFeatures2, pipeline.deviceExtensions, samplerYcbcrConversions, samplers, descriptorSetLayouts, renderPasses, renderPasses2, pipelineLayouts);
+			std::string gpTxt = writeJSON_GraphicsPipeline_vkpccjson(filePrefix, exportedPipelines, pipeline.id, gpCI, deviceFeatures2, pipeline.deviceExtensions, samplerYcbcrConversions, samplers, descriptorSetLayouts, renderPasses, renderPasses2, pipelineLayouts);
 			std::stringstream fileName;
-			fileName << path << "\\graphics_pipeline_" << exportedPipelines << ".json";
+#ifdef _WIN32
+			fileName << path << "\\" << filePrefix << "graphics_pipeline_" << exportedPipelines << ".json";
+#else
+			fileName << path << "/" << filePrefix << "graphics_pipeline_" << exportedPipelines << ".json";
+#endif
 			{
 				std::ofstream oFile(fileName.str().c_str(), std::ios::out);
 				oFile << gpTxt;
@@ -234,8 +246,11 @@ void exportFilesForExternalCompiler (const VulkanPipelineCacheInput& input, cons
 			for (deUint32 j = 0; j < gpCI.stageCount; ++j)
 			{
 				std::stringstream shaderName;
-				shaderName << path << "\\shader_" << exportedPipelines << "_" << gpCI.pStages[j].module.getInternal() << ".";
-
+#ifdef _WIN32
+				shaderName << path << "\\" << filePrefix << "shader_" << exportedPipelines << "_" << gpCI.pStages[j].module.getInternal() << ".";
+#else
+				shaderName << path << "/" << filePrefix << "shader_" << exportedPipelines << "_" << gpCI.pStages[j].module.getInternal() << ".";
+#endif
 				switch (gpCI.pStages[j].stage)
 				{
 				case VK_SHADER_STAGE_VERTEX_BIT:					shaderName << "vert";	break;
@@ -324,9 +339,13 @@ void exportFilesForExternalCompiler (const VulkanPipelineCacheInput& input, cons
 			readJSON_VkPhysicalDeviceFeatures2(jsonReader, pipeline.deviceFeatures, deviceFeatures2);
 
 			// export shaders and objects to JSON compatible with https://schema.khronos.org/vulkan/vkpcc.json
-			std::string cpTxt = writeJSON_ComputePipeline_vkpccjson(exportedPipelines, pipeline.id, cpCI, deviceFeatures2, pipeline.deviceExtensions, samplerYcbcrConversions, samplers, descriptorSetLayouts, pipelineLayouts);
+			std::string cpTxt = writeJSON_ComputePipeline_vkpccjson(filePrefix, exportedPipelines, pipeline.id, cpCI, deviceFeatures2, pipeline.deviceExtensions, samplerYcbcrConversions, samplers, descriptorSetLayouts, pipelineLayouts);
 			std::stringstream fileName;
-			fileName << path << "\\compute_pipeline_" << exportedPipelines << ".json";
+#ifdef _WIN32
+			fileName << path << "\\" << filePrefix << "compute_pipeline_" << exportedPipelines << ".json";
+#else
+			fileName << path << "/" << filePrefix << "compute_pipeline_" << exportedPipelines << ".json";
+#endif
 			{
 				std::ofstream oFile(fileName.str().c_str(), std::ios::out);
 				oFile << cpTxt;
@@ -334,8 +353,11 @@ void exportFilesForExternalCompiler (const VulkanPipelineCacheInput& input, cons
 
 			{
 				std::stringstream shaderName;
-				shaderName << path << "\\shader_" << exportedPipelines << "_" << cpCI.stage.module.getInternal() << ".";
-
+#ifdef _WIN32
+				shaderName << path << "\\" << filePrefix << "shader_" << exportedPipelines << "_" << cpCI.stage.module.getInternal() << ".";
+#else
+				shaderName << path << "/" << filePrefix << "shader_" << exportedPipelines << "_" << cpCI.stage.module.getInternal() << ".";
+#endif
 				switch (cpCI.stage.stage)
 				{
 				case VK_SHADER_STAGE_COMPUTE_BIT:					shaderName << "comp";	break;
@@ -357,93 +379,80 @@ void exportFilesForExternalCompiler (const VulkanPipelineCacheInput& input, cons
 	}
 }
 
-#if 0
-
 // This is function prototype for creating pipeline cache using offline pipeline compiler
 
-vector<u8>	CreatePipelineCache(const VulkanPipelineCacheInput&		input,
-								std::vector<VulkanPipelineSize>&	pipelineSizes,
-								const CmdLineParams&				cmdLineParams,
-								const vk::PlatformInterface&		vkp,
-								vk::VkInstance						instance,
-								const vk::InstanceInterface&		vki,
-								vk::VkPhysicalDevice				physicalDevice,
-								deUint32							queueIndex)
+vector<u8>	buildOfflinePipelineCache (const VulkanPipelineCacheInput&		input,
+									   const std::string&					pipelineCompilerPath,
+									   const std::string&					pipelineCompilerDataDir,
+									   const std::string&					pipelineCompilerArgs,
+									   const std::string&					pipelineCompilerOutputFile,
+									   const std::string&					pipelineCompilerLogFile,
+									   const std::string&					pipelineCompilerFilePrefix)
 {
-	DE_UNREF(vkp);
-	DE_UNREF(instance);
-	DE_UNREF(vki);
-	DE_UNREF(physicalDevice);
-	DE_UNREF(queueIndex);
-
+	if (!deFileExists(pipelineCompilerPath.c_str()))
+		TCU_THROW(InternalError, std::string("Can't find pipeline compiler") + pipelineCompilerPath);
 	// Remove all files from output directory
-//	Currently CTS does not use C++17, so universal method of deleting files from directory has been commented out
-//	{
-//		std::filesystem::path dataDir(cmdLineParams.compilerDataDir);
-//		if (!std::filesystem::is_directory(dataDir))
-//			TCU_THROW(InternalError, std::string("Not a directory: ") + dataDir.str());
-//
-//		for (auto& dirContent : std::filesystem::directory_iterator(dataDir))
-//			if (!std::filesystem::is_directory(dirContent))
-//				std::filesystem::remove_all(dirContent.path());
-//	}
+	for (de::DirectoryIterator iter(pipelineCompilerDataDir); iter.hasItem(); iter.next())
+	{
+		const de::FilePath filePath = iter.getItem();
+		if (filePath.getType() != de::FilePath::TYPE_FILE)
+			continue;
+		if (!pipelineCompilerFilePrefix.empty() && filePath.getBaseName().find(pipelineCompilerFilePrefix) != 0)
+			continue;
+		deDeleteFile(filePath.getPath());
+	}
 
 	// export new files
-	exportFilesForExternalCompiler(input, cmdLineParams.compilerDataDir);
+	exportFilesForExternalCompiler(input, pipelineCompilerDataDir, pipelineCompilerFilePrefix);
+	if (input.pipelines.size() == 0)
+		return vector<u8>();
 
 	// run offline pipeline compiler
 	{
 		std::stringstream compilerCommand;
-		compilerCommand << cmdLineParams.compilerPath << " -path " << cmdLineParams.compilerDataDir << " -out " << cmdLineParams.compilerPipelineCacheFile;
-		if (!cmdLineParams.compilerArgs.empty())
-			compilerCommand << " " << cmdLineParams.compilerArgs;
-		system(compilerCommand.str().c_str());
+		compilerCommand << pipelineCompilerPath << " --path " << pipelineCompilerDataDir << " --out " << pipelineCompilerOutputFile;
+		if (!pipelineCompilerLogFile.empty())
+			compilerCommand << " --log " << pipelineCompilerLogFile;
+		if (!pipelineCompilerFilePrefix.empty())
+			compilerCommand << " --prefix " << pipelineCompilerFilePrefix;
+		if (!pipelineCompilerArgs.empty())
+			compilerCommand << " " << pipelineCompilerArgs;
+
+		std::string command = compilerCommand.str();
+		int returnValue = system(command.c_str());
+		DE_UNREF(returnValue);
 	}
 
 	// read created pipeline cache into result vector
 	vector<u8> result;
 	{
-		std::ifstream	iFile		(cmdLineParams.compilerPipelineCacheFile.c_str(), std::ios::in | std::ios::binary);
+		std::ifstream	iFile		(pipelineCompilerOutputFile.c_str(), std::ios::in | std::ios::binary);
 		if(!iFile)
-			TCU_THROW(InternalError, (std::string("Cannot open file ") + cmdLineParams.compilerPipelineCacheFile).c_str());
+			TCU_THROW(InternalError, (std::string("Cannot open file ") + pipelineCompilerOutputFile).c_str());
 
 		auto			fileBegin	= iFile.tellg();
 		iFile.seekg(0, std::ios::end);
 		auto			fileEnd		= iFile.tellg();
 		iFile.seekg(0, std::ios::beg);
 		std::size_t		fileSize	= static_cast<std::size_t>(fileEnd - fileBegin);
-		if(fileSize == 0)
-			TCU_THROW(InternalError, (std::string("Cannot load file - size is 0 : ") + cmdLineParams.compilerPipelineCacheFile).c_str());
-		result.resize(fileSize);
-		iFile.read(reinterpret_cast<char*>(result.data()), fileSize);
-		if(iFile.fail())
-			TCU_THROW(InternalError, (std::string("Cannot load file ") + cmdLineParams.compilerPipelineCacheFile).c_str());
-	}
-
-	// Update pipelineSizes with proper pipeline sizes.
-	// NOTE: pipeline sizes should be delivered by offline pipeline compiler.
-	// Specific pipelines may be recognized by the same pipeline identifier stored in VulkanPipelineStatistics class.
-	// Code below is just a prototype setting the same guesstimated size for each pipeline
-	pipelineSizes.clear();
-	for (const auto& pipeline : input.pipelines)
-	{
-		pipelineSizes.push_back(VulkanPipelineSize{ pipeline.id, pipeline.count, VKSC_DEFAULT_PIPELINE_POOL_SIZE });
+		if(fileSize > 0)
+		{
+			result.resize(fileSize);
+			iFile.read(reinterpret_cast<char*>(result.data()), fileSize);
+			if(iFile.fail())
+				TCU_THROW(InternalError, (std::string("Cannot load file ") + pipelineCompilerOutputFile).c_str());
+		}
 	}
 	return result;
 }
 
-#else
-
-vector<u8>	CreatePipelineCache (const VulkanPipelineCacheInput&		input,
-								 std::vector<VulkanPipelineSize>&	pipelineSizes,
-								 const CmdLineParams&				cmdLineParams,
-								 const vk::PlatformInterface&		vkp,
-								 vk::VkInstance						instance,
-								 const vk::InstanceInterface&		vki,
-								 vk::VkPhysicalDevice				physicalDevice,
-								 deUint32							queueIndex)
+vector<u8>	buildPipelineCache (const VulkanPipelineCacheInput&		input,
+								const vk::PlatformInterface&		vkp,
+								vk::VkInstance						instance,
+								const vk::InstanceInterface&		vki,
+								vk::VkPhysicalDevice				physicalDevice,
+								deUint32							queueIndex)
 {
-	DE_UNREF(cmdLineParams);
 	using namespace vk;
 	using namespace json;
 
@@ -457,14 +466,10 @@ vector<u8>	CreatePipelineCache (const VulkanPipelineCacheInput&		input,
 	std::vector<std::string>			deviceExtensions		= { "<empty>" };
 
 	Move<VkDevice>						pcDevice;
-	VkPhysicalDeviceProperties2
-										deviceProperties2;
-	VkPhysicalDeviceVulkanSC10Properties	vulkanSC10Properties;
 	VkPipelineCache						pipelineCache;
 	vector<u8>							resultCacheData;
 
 	GetDeviceProcAddrFunc				getDeviceProcAddrFunc				= DE_NULL;
-	GetPhysicalDeviceProperties2Func	getPhysicalDeviceProperties2Func	= DE_NULL;
 	CreateSamplerYcbcrConversionFunc	createSamplerYcbcrConversionFunc	= DE_NULL;
 	DestroySamplerYcbcrConversionFunc	destroySamplerYcbcrConversionFunc	= DE_NULL;
 	CreateSamplerFunc					createSamplerFunc					= DE_NULL;
@@ -603,7 +608,6 @@ vector<u8>	CreatePipelineCache (const VulkanPipelineCacheInput&		input,
 			};
 			chainedObjReservation->pipelineCacheCreateInfoCount			= 1u;
 			chainedObjReservation->pPipelineCacheCreateInfos			= &pcCI;
-			chainedObjReservation->pipelineCacheRequestCount			= 1u;
 
 			chainedObjReservation->pipelineLayoutRequestCount			= de::max(chainedObjReservation->pipelineLayoutRequestCount,			deUint32(input.pipelineLayouts.size()));
 			chainedObjReservation->renderPassRequestCount				= de::max(chainedObjReservation->renderPassRequestCount,				deUint32(input.renderPasses.size()));
@@ -654,7 +658,6 @@ vector<u8>	CreatePipelineCache (const VulkanPipelineCacheInput&		input,
 
 			// create local function pointers required to perform pipeline cache creation
 			getDeviceProcAddrFunc				= (GetDeviceProcAddrFunc)				vkp.getInstanceProcAddr	(instance, "vkGetDeviceProcAddr");
-			getPhysicalDeviceProperties2Func	= (GetPhysicalDeviceProperties2Func)	vkp.getInstanceProcAddr	(instance, "vkGetPhysicalDeviceProperties2");
 			createSamplerYcbcrConversionFunc	= (CreateSamplerYcbcrConversionFunc)	getDeviceProcAddrFunc	(*pcDevice, "vkCreateSamplerYcbcrConversion");
 			destroySamplerYcbcrConversionFunc	= (DestroySamplerYcbcrConversionFunc)	getDeviceProcAddrFunc	(*pcDevice, "vkDestroySamplerYcbcrConversion");
 			createSamplerFunc					= (CreateSamplerFunc)					getDeviceProcAddrFunc	(*pcDevice, "vkCreateSampler");
@@ -674,10 +677,6 @@ vector<u8>	CreatePipelineCache (const VulkanPipelineCacheInput&		input,
 			destroyPipelineCacheFunc			= (DestroyPipelineCacheFunc)			getDeviceProcAddrFunc	(*pcDevice, "vkDestroyPipelineCache");
 			destroyPipelineFunc					= (DestroyPipelineFunc)					getDeviceProcAddrFunc	(*pcDevice, "vkDestroyPipeline");
 			getPipelineCacheDataFunc			= (GetPipelineCacheDataFunc)			getDeviceProcAddrFunc	(*pcDevice, "vkGetPipelineCacheData");
-
-			vulkanSC10Properties				= initVulkanStructure();
-			deviceProperties2					= initVulkanStructure(&vulkanSC10Properties);
-			getPhysicalDeviceProperties2Func(physicalDevice, &deviceProperties2);
 
 			VK_CHECK(createPipelineCacheFunc(*pcDevice, &pcCI, DE_NULL, &pipelineCache));
 
@@ -836,14 +835,8 @@ vector<u8>	CreatePipelineCache (const VulkanPipelineCacheInput&		input,
 		if (pipeline.pipelineContents.find("VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO") != std::string::npos)
 		{
 			VkGraphicsPipelineCreateInfo	gpCI{};
+			gpCI.basePipelineHandle = VkPipeline(0);
 			readJSON_VkGraphicsPipelineCreateInfo(jsonReader, pipeline.pipelineContents, gpCI);
-
-			// There is no Vulkan function, that delivers pipeline size, so we just guesstimate that VKSC_DEFAULT_PIPELINE_POOL_SIZE should be enough
-			// BTW: this is main difference between this function ( which really is just placeholder for debugging on normal Vulkan driver ) and offline pipeline compiler
-			if(vulkanSC10Properties.recyclePipelineMemory == VK_TRUE)
-				pipelineSizes.push_back(VulkanPipelineSize{ pipeline.id, pipeline.maxCount, VKSC_DEFAULT_PIPELINE_POOL_SIZE });
-			else // you'd better have enough memory...
-				pipelineSizes.push_back(VulkanPipelineSize{ pipeline.id, pipeline.allCount, VKSC_DEFAULT_PIPELINE_POOL_SIZE });
 
 			// set poolEntrySize for pipeline
 			VkPipelineOfflineCreateInfo*				offlineCreateInfo = (VkPipelineOfflineCreateInfo*)findStructureInChain(gpCI.pNext, VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO);
@@ -887,14 +880,8 @@ vector<u8>	CreatePipelineCache (const VulkanPipelineCacheInput&		input,
 		else if (pipeline.pipelineContents.find("VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO") != std::string::npos)
 		{
 			VkComputePipelineCreateInfo	cpCI{};
+			cpCI.basePipelineHandle = VkPipeline(0);
 			readJSON_VkComputePipelineCreateInfo(jsonReader, pipeline.pipelineContents, cpCI);
-
-			// There is no Vulkan function, that delivers pipeline size, so we just guesstimate that VKSC_DEFAULT_PIPELINE_POOL_SIZE should be enough
-			// BTW: this is main difference between this function ( which really is just placeholder for debugging on normal Vulkan driver ) and offline pipeline compiler
-			if (vulkanSC10Properties.recyclePipelineMemory == VK_TRUE)
-				pipelineSizes.push_back(VulkanPipelineSize{ pipeline.id, pipeline.maxCount, VKSC_DEFAULT_PIPELINE_POOL_SIZE });
-			else // you'd better have enough memory...
-				pipelineSizes.push_back(VulkanPipelineSize{ pipeline.id, pipeline.allCount, VKSC_DEFAULT_PIPELINE_POOL_SIZE });
 
 			// set poolEntrySize for pipeline
 			VkPipelineOfflineCreateInfo*				offlineCreateInfo = (VkPipelineOfflineCreateInfo*)findStructureInChain(cpCI.pNext, VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO);
@@ -948,6 +935,59 @@ vector<u8>	CreatePipelineCache (const VulkanPipelineCacheInput&		input,
 	return resultCacheData;
 }
 
-#endif // 0
+std::vector<VulkanPipelineSize>	extractSizesFromPipelineCache (const VulkanPipelineCacheInput&	input,
+															   const vector<u8>&				pipelineCache,
+															   deUint32							pipelineDefaultSize,
+															   bool								recyclePipelineMemory)
+{
+	std::vector<VulkanPipelineSize>							result;
+	if (input.pipelines.empty())
+		return result;
+	VKSCPipelineCacheHeaderReader							pcr	(pipelineCache.size(), pipelineCache.data());
+	if(pcr.isValid())
+	{
+		for (uint32_t p = 0; p < pcr.getPipelineIndexCount(); ++p)
+		{
+			const VkPipelineCacheSafetyCriticalIndexEntry*	pie	= pcr.getPipelineIndexEntry(p);
+			if (nullptr != pie)
+			{
+				VulkanPipelineSize pipelineSize;
+				pipelineSize.id = resetPipelineOfflineCreateInfo();
+				for (deUint32 i = 0; i < VK_UUID_SIZE; ++i)
+					pipelineSize.id.pipelineIdentifier[i] = pie->pipelineIdentifier[i];
+				pipelineSize.size	= deUint32(pie->pipelineMemorySize);
+				pipelineSize.count	= 0u;
+				auto it = std::find_if(begin(input.pipelines), end(input.pipelines), vksc_server::PipelineIdentifierEqual(pipelineSize.id));
+				if (it != end(input.pipelines))
+				{
+					if (recyclePipelineMemory)
+						pipelineSize.count = it->maxCount;
+					else // you'd better have enough memory...
+						pipelineSize.count = it->allCount;
+				}
+				result.emplace_back(pipelineSize);
+			}
+		}
+	}
+	else // ordinary Vulkan pipeline. Declare all pipeline sizes as equal to pipelineDefaultSize
+	{
+		for (uint32_t p = 0; p < input.pipelines.size(); ++p)
+		{
+			VulkanPipelineSize pipelineSize;
+			pipelineSize.id = resetPipelineOfflineCreateInfo();
+			for (deUint32 i = 0; i < VK_UUID_SIZE; ++i)
+				pipelineSize.id.pipelineIdentifier[i] = input.pipelines[p].id.pipelineIdentifier[i];
+			pipelineSize.size = pipelineDefaultSize;
+			if (recyclePipelineMemory)
+				pipelineSize.count = input.pipelines[p].maxCount;
+			else // you'd better have enough memory...
+				pipelineSize.count = input.pipelines[p].allCount;
+			result.emplace_back(pipelineSize);
+		}
+	}
+
+	return result;
+}
+
 
 }

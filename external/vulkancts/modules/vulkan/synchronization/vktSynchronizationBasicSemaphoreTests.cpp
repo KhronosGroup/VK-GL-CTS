@@ -356,11 +356,7 @@ tcu::TestStatus basicMultiQueueCase(Context& context, TestConfig config)
 		VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,	// VkCommandBufferUsageFlags                flags;
 		DE_NULL,										// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
 	};
-	Move<VkSemaphore>						semaphore;
-	Move<VkCommandPool>						cmdPool[COUNT];
-	Move<VkCommandBuffer>					cmdBuffer[COUNT];
-	deUint64								timelineValues[COUNT] = { 1ull, 2ull };
-	Move<VkFence>							fence[COUNT];
+
 	bool									isTimelineSemaphore = config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE;
 
 	queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
@@ -482,6 +478,12 @@ tcu::TestStatus basicMultiQueueCase(Context& context, TestConfig config)
 		else
 			vk.getDeviceQueue(*logicalDevice, queues[queueReqNdx].queueFamilyIndex, 0u, &queues[queueReqNdx].queue);
 	}
+
+	Move<VkSemaphore>						semaphore;
+	Move<VkCommandPool>						cmdPool[COUNT];
+	Move<VkCommandBuffer>					cmdBuffer[COUNT];
+	deUint64								timelineValues[COUNT] = { 1ull, 2ull };
+	Move<VkFence>							fence[COUNT];
 
 	semaphore			= (createTestSemaphore(context, vk, *logicalDevice, config));
 	cmdPool[FIRST]		= (createCommandPool(vk, *logicalDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queues[FIRST].queueFamilyIndex));

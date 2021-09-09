@@ -61,7 +61,8 @@ string	writeJSON_VkSamplerYcbcrConversionCreateInfo		(const vk::VkSamplerYcbcrCo
 string	writeJSON_VkShaderModuleCreateInfo					(const vk::VkShaderModuleCreateInfo&			smCI);
 string	writeJSON_VkDeviceObjectReservationCreateInfo		(const vk::VkDeviceObjectReservationCreateInfo&	dmrCI);
 string	writeJSON_VkPipelineOfflineCreateInfo				(const vk::VkPipelineOfflineCreateInfo&			piInfo);
-string	writeJSON_GraphicsPipeline_vkpccjson				(deUint32																				pipelineIndex,
+string	writeJSON_GraphicsPipeline_vkpccjson				(const std::string&																		filePrefix,
+															 deUint32																				pipelineIndex,
 															 const vk::VkPipelineOfflineCreateInfo													id,
 															 const vk::VkGraphicsPipelineCreateInfo&												gpCI,
 															 const vk::VkPhysicalDeviceFeatures2&													deviceFeatures2,
@@ -72,7 +73,8 @@ string	writeJSON_GraphicsPipeline_vkpccjson				(deUint32																				pipe
 															 const std::map<vk::VkRenderPass, vk::VkRenderPassCreateInfo>&							renderPasses,
 															 const std::map<vk::VkRenderPass, vk::VkRenderPassCreateInfo2>&							renderPasses2,
 															 const std::map<vk::VkPipelineLayout, vk::VkPipelineLayoutCreateInfo>&					pipelineLayouts);
-string	writeJSON_ComputePipeline_vkpccjson					(deUint32																				pipelineIndex,
+string	writeJSON_ComputePipeline_vkpccjson					(const std::string&																		filePrefix,
+															 deUint32																				pipelineIndex,
 															 const vk::VkPipelineOfflineCreateInfo													id,
 															 const vk::VkComputePipelineCreateInfo&													cpCI,
 															 const vk::VkPhysicalDeviceFeatures2&													deviceFeatures2,

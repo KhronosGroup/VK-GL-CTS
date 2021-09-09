@@ -244,10 +244,13 @@ tcu::TestStatus testGraphicsPipelineIdentifier (Context& context, TestParams tes
 		TCU_THROW(InternalError, "Unrecognized test type");
 	}
 
-	// fill pipeline identifiers with initial values
+	// fill pipeline identifiers with initial values, apply pipeline names from sourcePID
 	std::vector<VkPipelineOfflineCreateInfo>				pipelineIDs;
 	for (deUint32 i = 0; i < pipelineCount; ++i)
+	{
 		pipelineIDs.emplace_back(resetPipelineOfflineCreateInfo());
+		applyPipelineIdentifier(pipelineIDs[i], sourcePID[i]);
+	}
 
 	switch (testParams.matchControl)
 	{
@@ -259,14 +262,12 @@ tcu::TestStatus testGraphicsPipelineIdentifier (Context& context, TestParams tes
 		TCU_THROW(InternalError, "Unrecognized match control");
 	}
 
-	// if it's a main process - we create a graphics pipeline only to increase VkDeviceObjectReservationCreateInfo::graphicsPipelineRequestCount
 	if (!context.getTestContext().getCommandLine().isSubProcess())
 	{
-		// If it's a main process - we create compute pipelines only to increase VkDeviceObjectReservationCreateInfo::computePipelineRequestCount.
+		// If it's a main process - we create graphics pipelines only to increase VkDeviceObjectReservationCreateInfo::computePipelineRequestCount.
 		// We also fill all pipeline identifiers with distinct values ( otherwise the framework will create pipeline identifiers itself )
 		for (deUint32 i = 0; i < pipelineCount; ++i)
 		{
-			applyPipelineIdentifier(pipelineIDs[i], sourcePID[i]);
 			pipelineIDs[i].pNext					= graphicsPipelineCreateInfos[i].pNext;
 			graphicsPipelineCreateInfos[i].pNext	= &pipelineIDs[i];
 		}
@@ -278,7 +279,7 @@ tcu::TestStatus testGraphicsPipelineIdentifier (Context& context, TestParams tes
 	}
 
 	for (deUint32 i = 0; i < pipelineCount; ++i)
-		pipelineIDs[i].poolEntrySize = VKSC_DEFAULT_PIPELINE_POOL_SIZE;
+		context.getResourceInterface()->fillPoolEntrySize(pipelineIDs[i]);
 
 	// subprocess - we create the same pipeline, but we use vkCreateGraphicsPipelines directly to skip the framework
 	GetDeviceProcAddrFunc									getDeviceProcAddrFunc			= (GetDeviceProcAddrFunc)vkp.getInstanceProcAddr(instance, "vkGetDeviceProcAddr");
@@ -300,7 +301,7 @@ tcu::TestStatus testGraphicsPipelineIdentifier (Context& context, TestParams tes
 			applyPipelineIdentifier(pipelineIDs[i], destPID[i]);
 			pipelineIDs[i].pNext					= graphicsPipelineCreateInfos[i].pNext;
 			graphicsPipelineCreateInfos[i].pNext	= &pipelineIDs[i];
-			expectedNullHandle[i] = (i == 0);
+			expectedNullHandle[i] = 0;
 		}
 		break;
 	case PITT_NONEXISTING_ID:
@@ -430,10 +431,13 @@ tcu::TestStatus testComputePipelineIdentifier (Context& context, TestParams test
 		TCU_THROW(InternalError, "Unrecognized test type");
 	}
 
-	// fill pipeline identifiers with initial values
+	// fill pipeline identifiers with initial values, apply pipeline names from sourcePID
 	std::vector<VkPipelineOfflineCreateInfo>		pipelineIDs;
 	for (deUint32 i = 0; i < pipelineCount; ++i)
+	{
 		pipelineIDs.emplace_back(resetPipelineOfflineCreateInfo());
+		applyPipelineIdentifier(pipelineIDs[i], sourcePID[i]);
+	}
 
 	switch (testParams.matchControl)
 	{
@@ -451,7 +455,6 @@ tcu::TestStatus testComputePipelineIdentifier (Context& context, TestParams test
 		// We also fill all pipeline identifiers with distinct values ( otherwise the framework will create pipeline identifiers itself )
 		for (deUint32 i = 0; i < pipelineCount; ++i)
 		{
-			applyPipelineIdentifier(pipelineIDs[i], sourcePID[i]);
 			pipelineIDs[i].pNext					= computePipelineCreateInfos[i].pNext;
 			computePipelineCreateInfos[i].pNext		= &pipelineIDs[i];
 		}
@@ -463,7 +466,7 @@ tcu::TestStatus testComputePipelineIdentifier (Context& context, TestParams test
 	}
 
 	for (deUint32 i = 0; i < pipelineCount; ++i)
-		pipelineIDs[i].poolEntrySize = VKSC_DEFAULT_PIPELINE_POOL_SIZE;
+		context.getResourceInterface()->fillPoolEntrySize(pipelineIDs[i]);
 
 	// In subprocess we create the same pipelines, but we use vkCreateGraphicsPipelines directly to skip the framework
 	GetDeviceProcAddrFunc							getDeviceProcAddrFunc		= (GetDeviceProcAddrFunc)vkp.getInstanceProcAddr(instance, "vkGetDeviceProcAddr");
@@ -485,7 +488,7 @@ tcu::TestStatus testComputePipelineIdentifier (Context& context, TestParams test
 			applyPipelineIdentifier(pipelineIDs[i], destPID[i]);
 			pipelineIDs[i].pNext					= computePipelineCreateInfos[i].pNext;
 			computePipelineCreateInfos[i].pNext		= &pipelineIDs[i];
-			expectedNullHandle[i]					= (i==0);
+			expectedNullHandle[i]					= 0;
 		}
 		break;
 	case PITT_NONEXISTING_ID:

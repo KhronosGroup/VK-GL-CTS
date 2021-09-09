@@ -111,6 +111,13 @@ DE_DECLARE_COMMAND_LINE_OPT(ServerAddress,				std::string);
 DE_DECLARE_COMMAND_LINE_OPT(CommandPoolMinSize,			int);
 DE_DECLARE_COMMAND_LINE_OPT(CommandDefaultSize,			int);
 DE_DECLARE_COMMAND_LINE_OPT(PipelineDefaultSize,		int);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerPath,		std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerDataDir,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerArgs,		std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerOutputFile,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerLogFile,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerFilePrefix,	std::string);
+
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -222,12 +229,18 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<WaiverFile>					(DE_NULL,	"deqp-waiver-file",							"Read waived tests from given file",									"")
 		<< Option<RunnerType>					(DE_NULL,	"deqp-runner-type",							"Filter test cases based on runner",				s_runnerTypes,		"any")
 		<< Option<TerminateOnFail>				(DE_NULL,	"deqp-terminate-on-fail",					"Terminate the run on first failure",				s_enableNames,		"disable")
-		<< Option<SubProcess>					(DE_NULL,	"deqp-subprocess",							"Inform app that it works as subprocess (Vulkan SC only, do not use)", s_enableNames, "disable")
+		<< Option<SubProcess>					(DE_NULL,	"deqp-subprocess",							"Inform app that it works as subprocess (Vulkan SC only, do not use manually)", s_enableNames, "disable")
 		<< Option<SubprocessTestCount>			(DE_NULL,	"deqp-subprocess-test-count",				"Define number of tests performed in subprocess (Vulkan SC only)",		"64")
 		<< Option<ServerAddress>				(DE_NULL,	"deqp-server-address",						"Server address (host:port) responsible for shader compilation (Vulkan SC only)", "")
 		<< Option<CommandPoolMinSize>			(DE_NULL,	"deqp-command-pool-min-size",				"Define minimum size of the command pool (in bytes) to use (Vulkan SC only)","0")
-		<< Option<CommandDefaultSize>			(DE_NULL,	"deqp-command-default-size",				"Define default command size (in bytes) to use (Vulkan SC only)",		"128")
-		<< Option<PipelineDefaultSize>			(DE_NULL,	"deqp-pipeline-default-size",				"Define default pipeline size (in bytes) to use (Vulkan SC only)",		"16384");
+		<< Option<CommandDefaultSize>			(DE_NULL,	"deqp-command-default-size",				"Define default single command size (in bytes) to use (Vulkan SC only)",	"256")
+		<< Option<PipelineDefaultSize>			(DE_NULL,	"deqp-pipeline-default-size",				"Define default pipeline size (in bytes) to use (Vulkan SC only)",		"16384")
+		<< Option<PipelineCompilerPath>			(DE_NULL,	"deqp-pipeline-compiler",					"Path to offline pipeline compiler (Vulkan SC only)", "")
+		<< Option<PipelineCompilerDataDir>		(DE_NULL,	"deqp-pipeline-dir",						"Offline pipeline data directory (Vulkan SC only)", "")
+		<< Option<PipelineCompilerArgs>			(DE_NULL,	"deqp-pipeline-args",						"Additional compiler parameters (Vulkan SC only)", "")
+		<< Option<PipelineCompilerOutputFile>	(DE_NULL,	"deqp-pipeline-file",						"Output file with pipeline cache (Vulkan SC only, do not use manually)", "")
+		<< Option<PipelineCompilerLogFile>		(DE_NULL,	"deqp-pipeline-logfile",					"Log file for pipeline compiler (Vulkan SC only, do not use manually)", "")
+		<< Option<PipelineCompilerFilePrefix>	(DE_NULL,	"deqp-pipeline-prefix",						"Prefix for input pipeline compiler files (Vulkan SC only, do not use manually)", "");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -1019,6 +1032,54 @@ const char* CommandLine::getServerAddress (void) const
 {
 	if (m_cmdLine.hasOption<opt::ServerAddress>())
 		return m_cmdLine.getOption<opt::ServerAddress>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getPipelineCompilerPath(void) const
+{
+	if (m_cmdLine.hasOption<opt::PipelineCompilerPath>())
+		return m_cmdLine.getOption<opt::PipelineCompilerPath>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getPipelineCompilerDataDir(void) const
+{
+	if (m_cmdLine.hasOption<opt::PipelineCompilerDataDir>())
+		return m_cmdLine.getOption<opt::PipelineCompilerDataDir>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getPipelineCompilerArgs(void) const
+{
+	if (m_cmdLine.hasOption<opt::PipelineCompilerArgs>())
+		return m_cmdLine.getOption<opt::PipelineCompilerArgs>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getPipelineCompilerOutputFile(void) const
+{
+	if (m_cmdLine.hasOption<opt::PipelineCompilerOutputFile>())
+		return m_cmdLine.getOption<opt::PipelineCompilerOutputFile>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getPipelineCompilerLogFile(void) const
+{
+	if (m_cmdLine.hasOption<opt::PipelineCompilerLogFile>())
+		return m_cmdLine.getOption<opt::PipelineCompilerLogFile>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getPipelineCompilerFilePrefix(void) const
+{
+	if (m_cmdLine.hasOption<opt::PipelineCompilerFilePrefix>())
+		return m_cmdLine.getOption<opt::PipelineCompilerFilePrefix>().c_str();
 	else
 		return DE_NULL;
 }

@@ -76,7 +76,7 @@ void addTestsForAmberFiles (tcu::TestCaseGroup* tests, CaseGroup group)
 	const std::string subdir(group.subdir);
 	const std::string category = data_dir + "/" + subdir;
 	std::vector<Case> cases(group.cases);
-	vk::SpirVAsmBuildOptions asm_options(VK_MAKE_VERSION(1, 1, 0), vk::SPIRV_VERSION_1_4);
+	vk::SpirVAsmBuildOptions asm_options(VK_MAKE_API_VERSION(0, 1, 1, 0), vk::SPIRV_VERSION_1_4);
 	asm_options.supports_VK_KHR_spirv_1_4 = true;
 
 	for (unsigned i = 0; i < cases.size() ; ++i)

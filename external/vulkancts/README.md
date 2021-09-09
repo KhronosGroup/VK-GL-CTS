@@ -525,7 +525,6 @@ This causes the framework to interface with the debugger and mark each dEQP
 test case as a separate 'frame', just for the purpose of capturing. The frames
 are added using RenderDoc 'In-Application API', instead of swapchain operations.
 
-
 Third Party Runners
 -------------------
 
@@ -535,10 +534,46 @@ external runners (`none`) or to only include tests using a certain runner:
 
 	--deqp-runner-type=(any|none|amber)
 
+Vulkan SC Conformance Test suite
+--------------------------------
+
+This project is also able to perform conformance tests for Vulkan SC
+implementations. For this purpose Vulkan CTS framework has been adapted
+to Vulkan SC requirements:
+
+- Vulkan SC CTS contains its own mustpass list
+
+  external/vulkancts/mustpass/master/vksc-default.txt
+
+- Vulkan SC CTS uses its own executable module to perform tests: deqp-vksc
+
+- Each test in deqp-vksc is performed twice.
+  First test run is performed in main process and its purpose is to collect
+  information about used pipelines, number of created Vulkan objects etc.
+  Second test run is done in separate process ( subprocess ) and it performs
+  the real tests.
+
+- Vulkan SC pipelines may be compiled using offline pipeline compiler
+  delivered by implementation vendor. You can use command line parameters
+  to achieve this ( see parameters: --deqp-pipeline-compiler, --deqp-pipeline-dir,
+  --deqp-pipeline-args, --deqp-pipeline-file, --deqp-pipeline-logfile,
+  --deqp-pipeline-prefix )
+
+  Reference offline pipeline compiler was created to showcase how input and output
+  should look like for such application. It uses Vulkan API to create pipeline cache.
+  The name of the executable is vksc-pipeline-compiler.
+
+- Some of the future Vulkan SC implementations may not have a possibility to use
+  filesystem, create pipeline caches or log results to file. For these implementations
+  Vulkan SC CTS contains server application that may handle such requests on external
+  host machine. Define parameter --deqp-server-address in deqp-vksc application
+  to use external server.
+  Server application's name is vksc-server and its parameters are listed below,
+  in Command Line section.
 
 Command Line
 ------------
-Full list of parameters for the `deqp-vk` module:
+Full list of parameters for the `deqp-vk` and `deqp-vksc` modules:
 
 OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
 
@@ -688,10 +723,79 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
     default: 'disable'
 
   --deqp-subprocess=[enable|disable]
-    Inform app that it works as subprocess (Vulkan SC only)
+    Inform app that it works as subprocess (Vulkan SC only, do not use manually)
     default: 'disable'
 
   --deqp-subprocess-test-count=<value>
     Define number of tests performed in subprocess (Vulkan SC only)
-    default: 64
+    default: '64'
 
+  --deqp-server-address=<value>
+    Server address (host:port) responsible for shader compilation (Vulkan SC only)
+    default: ''
+
+  --deqp-command-pool-min-size=<value>
+    Define minimum size of the command pool (in bytes) to use (Vulkan SC only)
+	default: '0'
+
+  --deqp-command-default-size=<value>
+    Define default single command size (in bytes) to use (Vulkan SC only)
+	default: '256'
+
+  --deqp-pipeline-default-size=<value>
+    Define default pipeline size (in bytes) to use (Vulkan SC only)
+	default: '16384'
+
+  --deqp-pipeline-compiler=<value>
+    Path to offline pipeline compiler (Vulkan SC only)
+    default: ''
+
+  --deqp-pipeline-dir=<value>
+    Offline pipeline data directory (Vulkan SC only)
+    default: ''
+
+  --deqp-pipeline-args=<value>
+    Additional compiler parameters (Vulkan SC only)
+    default: ''
+
+  --deqp-pipeline-file=<value>
+    Output file with pipeline cache (Vulkan SC only, do not use manually)
+    default: ''
+
+  --deqp-pipeline-logfile=<value>
+    Log file for pipeline compiler (Vulkan SC only, do not use manually)
+    default: ''
+
+  --deqp-pipeline-prefix=<value>
+    Prefix for input pipeline compiler files (Vulkan SC only, do not use manually)
+    default: ''
+
+Full list of parameters for the `vksc-server` application:
+
+  --port
+    Port
+    default: '59333'
+
+  --log
+    Log filename
+    default: 'dummy.log'
+
+  --pipeline-compiler
+    Path to offline pipeline compiler
+    default: ''
+
+  --pipeline-dir
+    Offline pipeline data directory
+    default: ''
+
+  --pipeline-file
+    Output file with pipeline cache
+    default: ''
+
+  --pipeline-log
+    Compiler log file
+    default: 'compiler.log'
+
+  --pipeline-args
+    Additional compiler parameters
+    default: ''

@@ -590,16 +590,28 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 		return;
 
 	std::vector<int>	caseFraction	= testCtx.getCommandLine().getCaseFraction();
-	std::ostringstream	jsonFileName, qpaFileName;
+	std::ostringstream	jsonFileName, qpaFileName, pipelineCompilerOutFileName, pipelineCompilerLogFileName, pipelineCompilerPrefix;
 	if (caseFraction.empty())
 	{
-		jsonFileName	<< "pipeline_data.txt";
-		qpaFileName		<< "sub.qpa";
+		jsonFileName				<< "pipeline_data.txt";
+		qpaFileName					<< "sub.qpa";
+		if (!std::string(testCtx.getCommandLine().getPipelineCompilerPath()).empty())
+		{
+			pipelineCompilerOutFileName << "pipeline_cache.bin";
+			pipelineCompilerLogFileName << "compiler.log";
+			pipelineCompilerPrefix << "";
+		}
 	}
 	else
 	{
 		jsonFileName	<< "pipeline_data_" << caseFraction[0] << ".txt";
 		qpaFileName		<< "sub_" << caseFraction[0] << ".qpa";
+		if (!std::string(testCtx.getCommandLine().getPipelineCompilerPath()).empty())
+		{
+			pipelineCompilerOutFileName << "pipeline_cache_" << caseFraction[0] <<".bin";
+			pipelineCompilerLogFileName << "compiler_" << caseFraction[0] << ".log";
+			pipelineCompilerPrefix << "sub_" << caseFraction[0] << "_";
+		}
 	}
 
 	// export data collected during statistics gathering to JSON file ( VkDeviceObjectReservationCreateInfo, SPIR-V shaders, pipelines )
@@ -618,30 +630,72 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 			TCU_THROW(InternalError, "Application name is not defined");
 		// add --deqp-subprocess option to inform deqp-vksc process that it works as slave process
 		newCmdLine = appName + " --deqp-subprocess=enable --deqp-log-filename=" + qpaFileName.str();
+
+		// add offline pipeline compiler parameters if present
+		if (!std::string(testCtx.getCommandLine().getPipelineCompilerPath()).empty())
+		{
+			newCmdLine += " --deqp-pipeline-compiler="		+ std::string(testCtx.getCommandLine().getPipelineCompilerPath());
+			newCmdLine += " --deqp-pipeline-file="			+ pipelineCompilerOutFileName.str();
+			if (!std::string(testCtx.getCommandLine().getPipelineCompilerDataDir()).empty())
+				newCmdLine += " --deqp-pipeline-dir="			+ std::string(testCtx.getCommandLine().getPipelineCompilerDataDir());
+			newCmdLine += " --deqp-pipeline-logfile="		+ pipelineCompilerLogFileName.str();
+			if(!pipelineCompilerPrefix.str().empty())
+				newCmdLine += " --deqp-pipeline-prefix="	+ pipelineCompilerPrefix.str();
+			if (!std::string(testCtx.getCommandLine().getPipelineCompilerArgs()).empty())
+				newCmdLine += " --deqp-pipeline-args=\""	+ std::string( testCtx.getCommandLine().getPipelineCompilerArgs() ) + "\"";
+		}
 	}
 
 	// collect parameters, remove parameters associated with case filter and case fraction. We will provide our own case list
 	{
 		std::string							originalCmdLine		= testCtx.getCommandLine().getInitialCmdLine();
-		std::stringstream					ss					(originalCmdLine);
-		std::string item;
-		std::vector<std::string>			skipElements		= {
+
+		// brave ( but working ) assumption that each CTS parameter starts with "--deqp"
+
+		std::string							paramStr			("--deqp");
+		std::vector<std::string>			skipElements		=
+		{
 			"--deqp-case",
 			"--deqp-stdin-caselist",
-			"--deqp-log-filename"
+			"--deqp-log-filename",
+			"--deqp-pipeline-compiler",
+			"--deqp-pipeline-dir",
+			"--deqp-pipeline-args",
+			"--deqp-pipeline-file",
+			"--deqp-pipeline-logfile",
+			"--deqp-pipeline-prefix"
 		};
-		while (std::getline(ss, item, ' '))
+
+		std::size_t							pos = 0;
+		std::vector<std::size_t>			argPos;
+		while ((pos = originalCmdLine.find(paramStr, pos)) != std::string::npos)
+			argPos.push_back(pos++);
+		if (!argPos.empty())
+			argPos.push_back(originalCmdLine.size());
+
+		std::vector<std::string> args;
+		for (std::size_t i = 0; i < argPos.size()-1; ++i)
+		{
+			std::string s = originalCmdLine.substr(argPos[i], argPos[i + 1] - argPos[i]);
+			std::size_t found = s.find_last_not_of(' ');
+			if (found != std::string::npos)
+			{
+				s.erase(found + 1);
+				args.push_back(s);
+			}
+		}
+		for (std::size_t i = 0; i < args.size(); ++i)
 		{
 			bool skipElement = false;
 			for (const auto& elem : skipElements)
-				if (item.rfind(elem, 0) == 0)
+				if (args[i].find(elem) == 0)
 				{
 					skipElement = true;
 					break;
 				}
 			if (skipElement)
 				continue;
-			newCmdLine = newCmdLine + " " + item;
+			newCmdLine = newCmdLine + " " + args[i];
 		}
 	}
 

@@ -609,6 +609,7 @@ struct TestContext
 	const deUint32				queueFamilyIndex;
 	const BinaryCollection&		binaryCollection;
 	Allocator&					allocator;
+	de::SharedPtr<vk::ResourceInterface>	resourceInterface;
 
 	const tcu::Vec4*			vertices;
 	deUint32					numVertices;
@@ -631,16 +632,18 @@ struct TestContext
 	vk::Move<VkPipeline>		pipeline;
 	MovePtr<Allocation>			imageAllocation;
 
-	TestContext (const DeviceInterface&		vkd_,
-				 const VkDevice				device_,
-				 deUint32					queueFamilyIndex_,
-				 const BinaryCollection&	binaryCollection_,
-				 Allocator&					allocator_)
+	TestContext (const DeviceInterface&					vkd_,
+				 const VkDevice							device_,
+				 deUint32								queueFamilyIndex_,
+				 const BinaryCollection&				binaryCollection_,
+				 Allocator&								allocator_,
+				 de::SharedPtr<vk::ResourceInterface>	resourceInterface_)
 		: vkd				(vkd_)
 		, device			(device_)
 		, queueFamilyIndex	(queueFamilyIndex_)
 		, binaryCollection	(binaryCollection_)
 		, allocator			(allocator_)
+		, resourceInterface	(resourceInterface_)
 		, vertices			(0)
 		, numVertices		(0)
 		, renderSize		(0)
@@ -922,12 +925,18 @@ void generateWork (TestContext& testContext)
 	deMemset(&cacheState, 0xcd, sizeof(cacheState));
 	cacheState.sType							= VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
 	cacheState.pNext							= DE_NULL;
-	cacheState.flags							= 0;
+#ifndef CTS_USES_VULKANSC
+	cacheState.flags							= (VkPipelineCacheCreateFlags)0u;
 	cacheState.initialDataSize					= 0;
 	cacheState.pInitialData						= DE_NULL;
+#else
+	cacheState.flags							= VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT | VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT;
+	cacheState.initialDataSize					= testContext.resourceInterface->getCacheDataSize();
+	cacheState.pInitialData						= testContext.resourceInterface->getCacheData();
+#endif
 
-	testContext.pipelineCache	= createPipelineCache(deviceInterface, testContext.device, &cacheState);
-	testContext.pipeline		= createGraphicsPipeline(deviceInterface, testContext.device, testContext.pipelineCache.get(), &pipelineState);
+	testContext.pipelineCache					= createPipelineCache(deviceInterface, testContext.device, &cacheState);
+	testContext.pipeline						= createGraphicsPipeline(deviceInterface, testContext.device, testContext.pipelineCache.get(), &pipelineState);
 
 	deMemset(&fbState, 0xcd, sizeof(fbState));
 	fbState.sType								= VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -1038,7 +1047,7 @@ tcu::TestStatus testFences (Context& context)
 	VkDevice					device				= context.getDevice();
 	VkResult					waitStatus;
 	VkResult					fenceStatus;
-	TestContext					testContext			(deviceInterface, device, queueFamilyIdx, context.getBinaryCollection(), context.getDefaultAllocator());
+	TestContext					testContext			(deviceInterface, device, queueFamilyIdx, context.getBinaryCollection(), context.getDefaultAllocator(), context.getResourceInterface());
 	void*						resultImage;
 
 	const tcu::Vec4				vertices[]			=
@@ -1159,8 +1168,8 @@ tcu::TestStatus testSemaphores (Context& context, SemaphoreTestConfig config)
 		getDeviceQueue(deviceDriver, *device, queueFamilyIdx, 1)
 	};
 	VkResult							testStatus;
-	TestContext							testContext1				(deviceDriver, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator);
-	TestContext							testContext2				(deviceDriver, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator);
+	TestContext							testContext1				(deviceDriver, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator, context.getResourceInterface());
+	TestContext							testContext2				(deviceDriver, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator, context.getResourceInterface());
 	Unique<VkSemaphore>					semaphore					(createSemaphoreType(deviceDriver, *device, config.semaphoreType));
 	VkSemaphoreSubmitInfoKHR			waitSemaphoreSubmitInfo		= makeCommonSemaphoreSubmitInfo(*semaphore, 1u, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR);
 	VkSemaphoreSubmitInfoKHR			signalSemaphoreSubmitInfo	= makeCommonSemaphoreSubmitInfo(*semaphore, 1u, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR);

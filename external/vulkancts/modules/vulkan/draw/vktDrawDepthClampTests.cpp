@@ -614,7 +614,11 @@ public:
 			context.requireDeviceFunctionality(extensionName);
 
 		if (m_params.viewportData.size() > 1)
+		{
 			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_VIEWPORT);
+			if (!context.getDeviceFeatures().geometryShader)
+				throw tcu::NotSupportedError("Geometry shader is not supported");
+		}
 
 		VkImageFormatProperties imageFormatProperties;
 		const auto&	vki		= context.getInstanceInterface();

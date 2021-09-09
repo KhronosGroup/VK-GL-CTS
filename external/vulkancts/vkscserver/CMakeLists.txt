@@ -31,6 +31,7 @@ set(VKSC_SERVER_UTIL_SRCS
 	vksIPC.hpp
 	vksIPC.cpp
 	vksStore.hpp
+	pcreader.hpp
 	vksCacheBuilder.hpp
 	vksCacheBuilder.cpp
 	vksClient.hpp

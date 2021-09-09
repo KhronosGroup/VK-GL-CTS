@@ -56,7 +56,7 @@ struct TestParams
 	CommandPoolReservedSize	commandPoolReservedSize;
 	deUint32				commandBufferCount;
 	deUint32				iterations;
-	bool					simultaneous;
+	bool					multipleRecording;
 };
 
 void beginCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags flags)
@@ -197,7 +197,7 @@ tcu::TestStatus verifyCommandPoolAllocEqualsCommandBufferAlloc (Context& context
 		// Build command buffers on even iteration
 		if (0 == iter % 2)
 		{
-			if (testParams.simultaneous)
+			if (testParams.multipleRecording)
 			{
 				for (deUint32 i = 0; i < testParams.commandBufferCount; ++i)
 					beginCommandBuffer(vk, commandBuffers[i], 0u);
@@ -260,8 +260,8 @@ void checkSupport (Context& context, TestParams testParams)
 {
 	if (testParams.iterations > 1 && context.getDeviceVulkanSC10Properties().commandPoolResetCommandBuffer == VK_FALSE)
 		TCU_THROW(NotSupportedError, "commandPoolResetCommandBuffer is not supported");
-	if (testParams.simultaneous && context.getDeviceVulkanSC10Properties().commandBufferSimultaneousUse == VK_FALSE)
-		TCU_THROW(NotSupportedError, "commandBufferSimultaneousUse is not supported");
+	if (testParams.multipleRecording && context.getDeviceVulkanSC10Properties().commandPoolMultipleCommandBuffersRecording == VK_FALSE)
+		TCU_THROW(NotSupportedError, "commandPoolMultipleCommandBuffersRecording is not supported");
 }
 
 } // anonymous
@@ -294,12 +294,12 @@ tcu::TestCaseGroup*	createCommandPoolMemoryReservationTests (tcu::TestContext& t
 
 	const struct
 	{
-		bool						simultaneous;
+		bool						multipleRecording;
 		const char*					name;
-	} simultaneousUse[] =
+	} recording[] =
 	{
-		{ false,					"serial"			},
-		{ true,						"simultaneous"		},
+		{ false,					"single_recording"		},
+		{ true,						"multiple_recording"	},
 	};
 
 	const struct
@@ -325,11 +325,11 @@ tcu::TestCaseGroup*	createCommandPoolMemoryReservationTests (tcu::TestContext& t
 			{
 				de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, reservedSizes[sizeIdx].name, ""));
 
-				for (int simIdx = 0; simIdx < DE_LENGTH_OF_ARRAY(simultaneousUse); ++simIdx)
+				for (int simIdx = 0; simIdx < DE_LENGTH_OF_ARRAY(recording); ++simIdx)
 				{
-					de::MovePtr<tcu::TestCaseGroup> simGroup(new tcu::TestCaseGroup(testCtx, simultaneousUse[simIdx].name, ""));
+					de::MovePtr<tcu::TestCaseGroup> simGroup(new tcu::TestCaseGroup(testCtx, recording[simIdx].name, ""));
 
-					if(!simultaneousUse[simIdx].simultaneous)
+					if(!recording[simIdx].multipleRecording)
 					{
 						TestParams	testParams =
 						{
@@ -348,7 +348,7 @@ tcu::TestCaseGroup*	createCommandPoolMemoryReservationTests (tcu::TestContext& t
 							reservedSizes[sizeIdx].commandPoolReservedSize,
 							maxCommandBuffers[cbIdx].commandPoolMaxCommandBuffers,
 							iterations[iterIdx].count,
-							simultaneousUse[simIdx].simultaneous
+							recording[simIdx].multipleRecording
 						};
 						std::ostringstream testName;
 						testName << "allocated_size_" << iterations[iterIdx].name;

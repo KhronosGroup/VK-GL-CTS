@@ -140,7 +140,9 @@ tcu::TestStatus createInstanceTest (Context& context)
 
 		appInfos.push_back(appInfo);
 	}
-	const deUint32	manjorNum	= unpackVersion(apiVersion).majorNum;
+
+	const deUint32	variantNum	= unpackVersion(apiVersion).variantNum;
+	const deUint32	majorNum	= unpackVersion(apiVersion).majorNum;
 	const deUint32	minorNum	= unpackVersion(apiVersion).minorNum;
 
 	// patch component of api version checking (should be ignored by implementation)
@@ -148,13 +150,13 @@ tcu::TestStatus createInstanceTest (Context& context)
 	{
 		const VkApplicationInfo appInfo =
 		{
-			VK_STRUCTURE_TYPE_APPLICATION_INFO,									// VkStructureType				sType;
-			DE_NULL,															// const void*					pNext;
-			"appName",															// const char*					pAppName;
-			0u,																	// deUint32						appVersion;
-			"engineName",														// const char*					pEngineName;
-			0u,																	// deUint32						engineVersion;
-			VK_MAKE_VERSION(manjorNum, minorNum, patchNumbers[patchVersion]),	// deUint32						apiVersion;
+			VK_STRUCTURE_TYPE_APPLICATION_INFO,													// VkStructureType				sType;
+			DE_NULL,																			// const void*					pNext;
+			"appName",																			// const char*					pAppName;
+			0u,																					// deUint32						appVersion;
+			"engineName",																		// const char*					pEngineName;
+			0u,																					// deUint32						engineVersion;
+			VK_MAKE_API_VERSION(variantNum, majorNum, minorNum, patchNumbers[patchVersion]),	// deUint32						apiVersion;
 		};
 
 		appInfos.push_back(appInfo);

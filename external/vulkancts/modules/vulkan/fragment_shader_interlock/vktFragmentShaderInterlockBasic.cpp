@@ -149,7 +149,7 @@ VkDevice getDevice(Context& context, Interlock interlock)
 	}
 #else
 	DE_UNREF(interlock);
-#endif
+#endif // CTS_USES_VULKANSC
 	return context.getDevice();
 }
 
@@ -245,13 +245,12 @@ void FSITestCase::checkSupport(Context& context) const
 		VkPhysicalDeviceShadingRateImageFeaturesNV	shadingRateImageFeatures	= initVulkanStructure();
 		VkPhysicalDeviceFeatures2					features2					= initVulkanStructure(&shadingRateImageFeatures);
 
-		const VkPhysicalDevice						physicalDevice				= chooseDevice(g_instanceWrapper->instance.getDriver(), g_instanceWrapper->instance, context.getTestContext().getCommandLine());
-		g_instanceWrapper->instance.getDriver().getPhysicalDeviceFeatures2(physicalDevice, &features2);
+		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 
 		if (!shadingRateImageFeatures.shadingRateImage)
 			TCU_THROW(NotSupportedError, "Shading rate image not supported");
 	}
-#endif
+#endif // CTS_USES_VULKANSC
 }
 
 static int bitsPerQuad(const CaseDef &c)
@@ -401,13 +400,6 @@ tcu::TestStatus FSITestInstance::iterate (void)
 	Allocator&				allocator				= m_context.getDefaultAllocator();
 	VkFlags					allShaderStages			= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	VkFlags					allPipelineStages		= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-
-	VkPhysicalDeviceProperties2 properties;
-	deMemset(&properties, 0, sizeof(properties));
-	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-
-	const VkPhysicalDevice	physicalDevice			= chooseDevice(g_instanceWrapper->instance.getDriver(), g_instanceWrapper->instance, m_context.getTestContext().getCommandLine());
-	g_instanceWrapper->instance.getDriver().getPhysicalDeviceProperties2(physicalDevice, &properties);
 
 	VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
@@ -916,7 +908,7 @@ tcu::TestCaseGroup*	createBasicTests (tcu::TestContext& testCtx)
 #ifndef CTS_USES_VULKANSC
 		{ INT_SHADING_RATE_ORDERED,		"shading_rate_ordered",	"shading_rate_ordered"		},
 		{ INT_SHADING_RATE_UNORDERED,	"shading_rate_unordered",	"shading_rate_unordered"		},
-#endif
+#endif // CTS_USES_VULKANSC
 	};
 
 	for (int killNdx = 0; killNdx < DE_LENGTH_OF_ARRAY(killCases); killNdx++)
@@ -966,7 +958,10 @@ tcu::TestCaseGroup*	createBasicTests (tcu::TestContext& testCtx)
 
 void cleanupDevice()
 {
+#ifndef CTS_USES_VULKANSC
 	g_singletonDevice.clear();
+	g_instanceWrapper.reset();
+#endif // CTS_USES_VULKANSC
 }
 
 }	// FragmentShaderInterlock

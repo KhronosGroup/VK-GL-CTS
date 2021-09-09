@@ -742,6 +742,8 @@ void DeviceDriverSC::createCommandPoolHandlerStat (VkDevice							device,
 	VkCommandPoolMemoryReservationCreateInfo* chainedMemoryReservation = (VkCommandPoolMemoryReservationCreateInfo*)findStructureInChain(pCreateInfo->pNext, VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_RESERVATION_CREATE_INFO);
 	if (chainedMemoryReservation != DE_NULL)
 		m_resourceInterface->getStatMax().commandBufferRequestCount += chainedMemoryReservation->commandPoolMaxCommandBuffers;
+	else
+		m_resourceInterface->getStatMax().commandBufferRequestCount += 1u;
 
 	*pCommandPool = Handle<HANDLE_TYPE_COMMAND_POOL>(m_resourceInterface->incResourceCounter());
 	m_resourceInterface->createCommandPool(device, pCreateInfo, pAllocator, pCommandPool);

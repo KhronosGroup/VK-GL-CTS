@@ -292,6 +292,24 @@ public:
 	//! Define default size for single pipeline ( Vulkan SC )
 	int								getPipelineDefaultSize(void) const;
 
+	//! Path to offline pipeline compiler executable
+	const char*						getPipelineCompilerPath		(void) const;
+
+	//! Directory containing input and output pipeline compiler files
+	const char*						getPipelineCompilerDataDir	(void) const;
+
+	//! Additional args for offline pipeline compiler
+	const char*						getPipelineCompilerArgs		(void) const;
+
+	//! Output pipeline cache file produced by offline pipeline compiler
+	const char*						getPipelineCompilerOutputFile(void) const;
+
+	//! Log file for offline pipeline compiler
+	const char*						getPipelineCompilerLogFile	(void) const;
+
+	//! Prefix for offline pipeline compiler input files
+	const char*						getPipelineCompilerFilePrefix(void) const;
+
 	/*--------------------------------------------------------------------*//*!
 	 * \brief Creates case list filter
 	 * \param archive Resources

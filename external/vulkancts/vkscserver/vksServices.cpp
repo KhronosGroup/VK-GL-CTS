@@ -51,7 +51,7 @@ struct VkscServer
 	const vk::VkPhysicalDeviceFeatures2&			enabledFeatures;
 };
 
-VkscServer* createServerVKSC();
+VkscServer* createServerVKSC(const std::string& logFile);
 std::unique_ptr<VkscServer> vkscServer;
 
 namespace vksc_server
@@ -94,19 +94,36 @@ bool AppendFile (const string& path, const vector<u8>& content, bool clear)
 	return true;
 }
 
-void CreateVulkanSCCache (const VulkanPipelineCacheInput& input, vector<u8>& binary, vector<VulkanPipelineSize>& outPipelineSizes, const CmdLineParams& cmdLineParams)
+void CreateVulkanSCCache (const VulkanPipelineCacheInput& input, int caseFraction, vector<u8>& binary, const CmdLineParams& cmdLineParams, const std::string& logFile)
 {
-	if(vkscServer.get() == DE_NULL)
-		vkscServer.reset( createServerVKSC() );
+	if (!cmdLineParams.compilerPath.empty())
+	{
+		std::stringstream prefix;
+		if (caseFraction >= 0)
+			prefix << "sub_" << caseFraction << "_";
+		else
+			prefix << "";
 
-	binary = CreatePipelineCache(	input,
-									outPipelineSizes,
-									cmdLineParams,
+		binary = vksc_server::buildOfflinePipelineCache(input,
+														cmdLineParams.compilerPath,
+														cmdLineParams.compilerDataDir,
+														cmdLineParams.compilerArgs,
+														cmdLineParams.compilerPipelineCacheFile,
+														cmdLineParams.compilerLogFile,
+														prefix.str());
+	}
+	else
+	{
+		if (vkscServer.get() == DE_NULL)
+			vkscServer.reset(createServerVKSC(logFile));
+
+		binary = buildPipelineCache(input,
 									vkscServer->vkp,
 									vkscServer->instance,
 									vkscServer->vki,
 									vkscServer->physicalDevice,
 									vkscServer->queueIndex);
+	}
 }
 
 bool CompileShader (const SourceVariant& source, const string& commandLine, vector<u8>& binary)
@@ -140,11 +157,11 @@ bool CompileShader (const SourceVariant& source, const string& commandLine, vect
 
 } // vksc_server
 
-VkscServer* createServerVKSC()
+VkscServer* createServerVKSC(const std::string& logFile)
 {
 	tcu::CommandLine				cmdLine		{"--deqp-vk-device-id=0"};
 	tcu::DirArchive					archive		{""};
-	tcu::TestLog					log			{"dummy.log"}; log.supressLogging(true);
+	tcu::TestLog					log			{ logFile.c_str() }; log.supressLogging(true);
 	tcu::Platform*					platform	{createPlatform()};
 	vk::Library*					library		{platform->getVulkanPlatform().createLibrary()};
 	tcu::TestContext*				tcx			= new tcu::TestContext{*platform, archive, log, cmdLine, nullptr};

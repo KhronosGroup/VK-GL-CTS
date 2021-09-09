@@ -162,7 +162,8 @@ string	writeJSON_VkPipelineOfflineCreateInfo(const vk::VkPipelineOfflineCreateIn
 	return vk_json::_string_stream.str();
 }
 
-string	writeJSON_GraphicsPipeline_vkpccjson (deUint32																		pipelineIndex,
+string	writeJSON_GraphicsPipeline_vkpccjson (const std::string&															filePrefix,
+											  deUint32																		pipelineIndex,
 											  const vk::VkPipelineOfflineCreateInfo											id,
 											  const VkGraphicsPipelineCreateInfo&											gpCI,
 											  const vk::VkPhysicalDeviceFeatures2&											deviceFeatures2,
@@ -325,7 +326,7 @@ string	writeJSON_GraphicsPipeline_vkpccjson (deUint32																		pipelineI
 			vk_json::print_VkShaderStageFlagBits(gpCI.pStages[j].stage, "stage", 1);
 
 			std::stringstream shaderName;
-			shaderName << "shader_" << pipelineIndex << "_" << gpCI.pStages[j].module.getInternal() << ".";
+			shaderName << filePrefix << "shader_" << pipelineIndex << "_" << gpCI.pStages[j].module.getInternal() << ".";
 
 			switch (gpCI.pStages[j].stage)
 			{
@@ -400,7 +401,8 @@ string	writeJSON_GraphicsPipeline_vkpccjson (deUint32																		pipelineI
 	return vk_json::_string_stream.str();
 }
 
-string	writeJSON_ComputePipeline_vkpccjson (deUint32																		pipelineIndex,
+string	writeJSON_ComputePipeline_vkpccjson (const std::string&																filePrefix,
+											 deUint32																		pipelineIndex,
 											 const vk::VkPipelineOfflineCreateInfo											id,
 											 const VkComputePipelineCreateInfo&												cpCI,
 											 const vk::VkPhysicalDeviceFeatures2&											deviceFeatures2,
@@ -548,7 +550,7 @@ string	writeJSON_ComputePipeline_vkpccjson (deUint32																		pipelineIn
 			vk_json::print_VkShaderStageFlagBits(cpCI.stage.stage, "stage", 1);
 
 			std::stringstream shaderName;
-			shaderName << "shader_" << pipelineIndex << "_" << cpCI.stage.module.getInternal() << ".";
+			shaderName << filePrefix << "shader_" << pipelineIndex << "_" << cpCI.stage.module.getInternal() << ".";
 
 			switch (cpCI.stage.stage)
 			{

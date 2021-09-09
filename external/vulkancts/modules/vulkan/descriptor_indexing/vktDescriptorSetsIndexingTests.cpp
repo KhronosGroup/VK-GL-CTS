@@ -4184,7 +4184,7 @@ public:
 
 		std::string(*genShaderSource)(VkShaderStageFlagBits, const TestCaseParams&, bool) = &CommonDescriptorInstance::getShaderAsm;
 
-		deUint32 vulkan_version = VK_MAKE_VERSION(1, 2, 0);
+		deUint32 vulkan_version = VK_MAKE_API_VERSION(0, 1, 2, 0);
 		vk::SpirvVersion spirv_version = vk::SPIRV_VERSION_1_4;
 		vk::SpirVAsmBuildOptions asm_options(vulkan_version, spirv_version);
 

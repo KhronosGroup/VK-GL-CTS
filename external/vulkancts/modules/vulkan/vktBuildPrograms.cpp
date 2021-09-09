@@ -581,9 +581,9 @@ void registerOptions (de::cmdline::Parser& parser)
 
 	static const NamedValue<deUint32> s_vulkanVersion[] =
 	{
-		{ "1.0",	VK_MAKE_VERSION(1, 0, 0)	},
-		{ "1.1",	VK_MAKE_VERSION(1, 1, 0)	},
-		{ "1.2",	VK_MAKE_VERSION(1, 2, 0)	},
+		{ "1.0",	VK_MAKE_API_VERSION(0, 1, 0, 0)	},
+		{ "1.1",	VK_MAKE_API_VERSION(0, 1, 1, 0)	},
+		{ "1.2",	VK_MAKE_API_VERSION(0, 1, 2, 0)	},
 	};
 
 	DE_STATIC_ASSERT(vk::SPIRV_VERSION_1_5 + 1 == vk::SPIRV_VERSION_LAST);

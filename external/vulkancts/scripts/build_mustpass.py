@@ -67,7 +67,8 @@ VULKAN_MASTER_PKG	= Package(module = VULKAN_MODULE, configurations = [
 VULKAN_SC_MASTER_PKG	= Package(module = VULKAN_SC_MODULE, configurations = [
 		  # Master
 		  Configuration(name		= "default",
-						filters					= [include("master_sc.txt"),],
+						filters					= [include("master_sc.txt"),
+												   exclude("android-tests-sc.txt")],
 						splitToMultipleFiles	= True),
 	])
 

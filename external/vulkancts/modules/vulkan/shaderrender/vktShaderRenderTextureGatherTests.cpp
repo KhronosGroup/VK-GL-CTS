@@ -1183,8 +1183,15 @@ TextureGatherInstance::TextureGatherInstance (Context&						context,
 			  (m_baseParams.magFilter == tcu::Sampler::NEAREST && (m_baseParams.minFilter == tcu::Sampler::NEAREST || m_baseParams.minFilter == tcu::Sampler::NEAREST_MIPMAP_NEAREST)));
 	DE_ASSERT(m_baseParams.textureType == TEXTURETYPE_CUBE || !(m_baseParams.flags & GATHERCASE_DONT_SAMPLE_CUBE_CORNERS));
 
-	m_renderSize				= RENDER_SIZE.asUint();
-	m_colorFormat				= vk::mapTextureFormat(m_colorBufferFormat);
+	m_renderSize								= RENDER_SIZE.asUint();
+	m_colorFormat								= vk::mapTextureFormat(m_colorBufferFormat);
+
+#ifdef CTS_USES_VULKANSC
+	const VkDevice			vkDevice			= getDevice();
+	const DeviceInterface&	vk					= getDeviceInterface();
+	const deUint32			queueFamilyIndex	= getUniversalQueueFamilyIndex();
+	m_externalCommandPool						= de::SharedPtr<Unique<VkCommandPool>>(new vk::Unique<VkCommandPool>(createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex)));
+#endif // CTS_USES_VULKANSC
 }
 
 TextureGatherInstance::~TextureGatherInstance (void)
