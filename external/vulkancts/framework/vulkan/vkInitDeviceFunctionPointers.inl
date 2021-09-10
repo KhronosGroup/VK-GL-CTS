@@ -370,6 +370,7 @@ m_vk.cmdSetPrimitiveRestartEnableEXT					= (CmdSetPrimitiveRestartEnableEXTFunc)
 m_vk.cmdSetColorWriteEnableEXT							= (CmdSetColorWriteEnableEXTFunc)						GET_PROC_ADDR("vkCmdSetColorWriteEnableEXT");
 m_vk.cmdDrawMultiEXT									= (CmdDrawMultiEXTFunc)									GET_PROC_ADDR("vkCmdDrawMultiEXT");
 m_vk.cmdDrawMultiIndexedEXT								= (CmdDrawMultiIndexedEXTFunc)							GET_PROC_ADDR("vkCmdDrawMultiIndexedEXT");
+m_vk.setDeviceMemoryPriorityEXT							= (SetDeviceMemoryPriorityEXTFunc)						GET_PROC_ADDR("vkSetDeviceMemoryPriorityEXT");
 m_vk.createAccelerationStructureKHR						= (CreateAccelerationStructureKHRFunc)					GET_PROC_ADDR("vkCreateAccelerationStructureKHR");
 m_vk.destroyAccelerationStructureKHR					= (DestroyAccelerationStructureKHRFunc)					GET_PROC_ADDR("vkDestroyAccelerationStructureKHR");
 m_vk.cmdBuildAccelerationStructuresKHR					= (CmdBuildAccelerationStructuresKHRFunc)				GET_PROC_ADDR("vkCmdBuildAccelerationStructuresKHR");

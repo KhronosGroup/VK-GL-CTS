@@ -47,12 +47,14 @@ const vk::VkPhysicalDeviceMeshShaderFeaturesNV&							Context::getMeshShaderFeat
 const vk::VkPhysicalDeviceMultiviewFeatures&							Context::getMultiviewFeatures							(void) const { return m_device->getMultiviewFeatures();							}
 const vk::VkPhysicalDeviceMultiDrawFeaturesEXT&							Context::getMultiDrawFeaturesEXT						(void) const { return m_device->getMultiDrawFeaturesEXT();						}
 const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE&			Context::getMutableDescriptorTypeFeaturesVALVE			(void) const { return m_device->getMutableDescriptorTypeFeaturesVALVE();		}
+const vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT&			Context::getPageableDeviceLocalMemoryFeaturesEXT		(void) const { return m_device->getPageableDeviceLocalMemoryFeaturesEXT();		}
 const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&					Context::getPerformanceQueryFeatures					(void) const { return m_device->getPerformanceQueryFeatures();					}
 const vk::VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT&		Context::getPipelineCreationCacheControlFeaturesEXT		(void) const { return m_device->getPipelineCreationCacheControlFeaturesEXT();	}
 const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&		Context::getPipelineExecutablePropertiesFeatures		(void) const { return m_device->getPipelineExecutablePropertiesFeatures();		}
 const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR&					Context::getPortabilitySubsetFeatures					(void) const { return m_device->getPortabilitySubsetFeatures();					}
 const vk::VkPhysicalDevicePresentIdFeaturesKHR&							Context::getPresentIdFeatures							(void) const { return m_device->getPresentIdFeatures();							}
 const vk::VkPhysicalDevicePresentWaitFeaturesKHR&						Context::getPresentWaitFeatures							(void) const { return m_device->getPresentWaitFeatures();						}
+const vk::VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT&		Context::getPrimitiveTopologyListRestartFeaturesEXT		(void) const { return m_device->getPrimitiveTopologyListRestartFeaturesEXT();	}
 const vk::VkPhysicalDevicePrivateDataFeaturesEXT&						Context::getPrivateDataFeaturesEXT						(void) const { return m_device->getPrivateDataFeaturesEXT();					}
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&						Context::getProtectedMemoryFeatures						(void) const { return m_device->getProtectedMemoryFeatures();					}
 const vk::VkPhysicalDeviceProvokingVertexFeaturesEXT&					Context::getProvokingVertexFeaturesEXT					(void) const { return m_device->getProvokingVertexFeaturesEXT();				}

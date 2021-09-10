@@ -314,6 +314,7 @@ CmdSetPrimitiveRestartEnableEXTFunc					cmdSetPrimitiveRestartEnableEXT;
 CmdSetColorWriteEnableEXTFunc						cmdSetColorWriteEnableEXT;
 CmdDrawMultiEXTFunc									cmdDrawMultiEXT;
 CmdDrawMultiIndexedEXTFunc							cmdDrawMultiIndexedEXT;
+SetDeviceMemoryPriorityEXTFunc						setDeviceMemoryPriorityEXT;
 CreateAccelerationStructureKHRFunc					createAccelerationStructureKHR;
 DestroyAccelerationStructureKHRFunc					destroyAccelerationStructureKHR;
 CmdBuildAccelerationStructuresKHRFunc				cmdBuildAccelerationStructuresKHR;

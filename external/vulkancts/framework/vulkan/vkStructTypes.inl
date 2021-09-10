@@ -5312,6 +5312,14 @@ struct VkPhysicalDeviceDrmPropertiesEXT
 	int64_t			renderMinor;
 };
 
+struct VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		primitiveTopologyListRestart;
+	VkBool32		primitiveTopologyPatchListRestart;
+};
+
 struct VkSubpassShadingPipelineCreateInfoHUAWEI
 {
 	VkStructureType	sType;
@@ -5420,6 +5428,13 @@ struct VkMultiDrawIndexedInfoEXT
 	uint32_t	firstIndex;
 	uint32_t	indexCount;
 	int32_t		vertexOffset;
+};
+
+struct VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		pageableDeviceLocalMemory;
 };
 
 union VkDeviceOrHostAddressKHR
