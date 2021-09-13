@@ -4,6 +4,7 @@ dEQP-VK.spirv_assembly.instruction.compute.spirv_version.1_2_compute
 dEQP-VK.spirv_assembly.instruction.compute.spirv_version.1_3_compute
 dEQP-VK.spirv_assembly.instruction.compute.spirv_version.1_4_compute
 dEQP-VK.spirv_assembly.instruction.compute.spirv_version.1_5_compute
+dEQP-VK.spirv_assembly.instruction.compute.spirv_version.1_6_compute
 dEQP-VK.spirv_assembly.instruction.compute.localsize.literal_localsize
 dEQP-VK.spirv_assembly.instruction.compute.localsize.literal_and_specid_localsize
 dEQP-VK.spirv_assembly.instruction.compute.localsize.specid_localsize
@@ -6152,6 +6153,11 @@ dEQP-VK.spirv_assembly.instruction.graphics.spirv_version.1_5_tesselation_evalua
 dEQP-VK.spirv_assembly.instruction.graphics.spirv_version.1_5_tesselation_control
 dEQP-VK.spirv_assembly.instruction.graphics.spirv_version.1_5_geometry
 dEQP-VK.spirv_assembly.instruction.graphics.spirv_version.1_5_fragment
+dEQP-VK.spirv_assembly.instruction.graphics.spirv_version.1_6_vertex
+dEQP-VK.spirv_assembly.instruction.graphics.spirv_version.1_6_tesselation_evaluation
+dEQP-VK.spirv_assembly.instruction.graphics.spirv_version.1_6_tesselation_control
+dEQP-VK.spirv_assembly.instruction.graphics.spirv_version.1_6_geometry
+dEQP-VK.spirv_assembly.instruction.graphics.spirv_version.1_6_fragment
 dEQP-VK.spirv_assembly.instruction.graphics.opnop.opnop_vert
 dEQP-VK.spirv_assembly.instruction.graphics.opnop.opnop_tessc
 dEQP-VK.spirv_assembly.instruction.graphics.opnop.opnop_tesse

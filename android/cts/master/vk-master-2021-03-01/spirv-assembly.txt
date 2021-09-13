@@ -1,3 +1,4 @@
+dEQP-VK.spirv_assembly.instruction.compute.spirv_version.1_6_compute
 dEQP-VK.spirv_assembly.instruction.compute.localsize_id.literal_localsize
 dEQP-VK.spirv_assembly.instruction.compute.localsize_id.literal_and_specid_localsize
 dEQP-VK.spirv_assembly.instruction.compute.localsize_id.literal_localsize_x
@@ -1967,6 +1968,11 @@ dEQP-VK.spirv_assembly.instruction.compute.empty_struct.function.global_variable
 dEQP-VK.spirv_assembly.instruction.compute.empty_struct.function.global_variable_shared
 dEQP-VK.spirv_assembly.instruction.compute.empty_struct.function.local_variable
 dEQP-VK.spirv_assembly.instruction.compute.oparraylength.array-stride-larger-than-element-size
+dEQP-VK.spirv_assembly.instruction.graphics.spirv_version.1_6_vertex
+dEQP-VK.spirv_assembly.instruction.graphics.spirv_version.1_6_tesselation_evaluation
+dEQP-VK.spirv_assembly.instruction.graphics.spirv_version.1_6_tesselation_control
+dEQP-VK.spirv_assembly.instruction.graphics.spirv_version.1_6_geometry
+dEQP-VK.spirv_assembly.instruction.graphics.spirv_version.1_6_fragment
 dEQP-VK.spirv_assembly.instruction.graphics.switch_block_order.switch-case-to-merge-block
 dEQP-VK.spirv_assembly.instruction.graphics.opspecconstantop.shiftrightlogical_i64_vert
 dEQP-VK.spirv_assembly.instruction.graphics.opspecconstantop.shiftrightlogical_i64_tessc

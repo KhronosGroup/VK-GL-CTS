@@ -331,9 +331,9 @@ PACKAGES = [
 		"73bf8a239d5e3a7ef37ede266fcf7d1e485f8a66",
 		"spirv-headers"),
 	GitRepo(
-		"https://github.com/google/amber.git",
-		None,
-		"3e22a7d6694983df7bf575b0c0ae829b8333a5bf",
+		"https://gitlab.khronos.org/spirv/amber.git",
+		"git@gitlab.khronos.org:spirv/amber.git",
+		"94586d6c879db7394a4203813a40f0d7e437e0aa",
 		"amber"),
 ]
 
