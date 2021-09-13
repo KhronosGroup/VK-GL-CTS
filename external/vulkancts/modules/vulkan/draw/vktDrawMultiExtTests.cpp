@@ -1318,9 +1318,6 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx, bool use
 
 							for (const auto& shaderCase : shaderCases)
 							{
-								if (useDynamicRendering && (shaderCase.useTessellation || shaderCase.useGeometry))
-									continue;
-
 								GroupPtr shaderGroup(new tcu::TestCaseGroup(testCtx, shaderCase.name, ""));
 
 								for (const auto& multiviewCase : multiviewCases)
