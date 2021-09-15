@@ -18,6 +18,7 @@ const vk::VkPhysicalDeviceFloatControlsProperties&					Context::getFloatControls
 const vk::VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			Context::getFragmentDensityMapPropertiesEXT			(void) const { return m_device->getFragmentDensityMapPropertiesEXT();			}
 const vk::VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&			Context::getFragmentDensityMap2PropertiesEXT		(void) const { return m_device->getFragmentDensityMap2PropertiesEXT();			}
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM&	Context::getFragmentDensityMapOffsetPropertiesQCOM	(void) const { return m_device->getFragmentDensityMapOffsetPropertiesQCOM();	}
+const vk::VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR&	Context::getFragmentShaderBarycentricProperties		(void) const { return m_device->getFragmentShaderBarycentricProperties();		}
 const vk::VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			Context::getFragmentShadingRateProperties			(void) const { return m_device->getFragmentShadingRateProperties();				}
 const vk::VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV&		Context::getFragmentShadingRateEnumsProperties		(void) const { return m_device->getFragmentShadingRateEnumsProperties();		}
 const vk::VkPhysicalDeviceIDProperties&								Context::getIDProperties							(void) const { return m_device->getIDProperties();								}

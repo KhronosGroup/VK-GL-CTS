@@ -47,6 +47,7 @@ add_subdirectory(postmortem)
 add_subdirectory(fragment_shading_rate)
 add_subdirectory(reconvergence)
 add_subdirectory(mesh_shader)
+add_subdirectory(fragment_shading_barycentric)
 
 
 include_directories(
@@ -95,6 +96,7 @@ include_directories(
 	postmortem
 	reconvergence
 	mesh_shader
+	fragment_shading_barycentric
 	${DEQP_INL_DIR}
 	)
 
@@ -164,6 +166,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-fragment-shading-rate
 	deqp-vk-reconvergence
 	deqp-vk-mesh-shader
+	deqp-vk-fragment-shading-barycentric
 	)
 
 if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))

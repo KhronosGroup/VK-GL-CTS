@@ -23,6 +23,7 @@ const vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&	getDedicat
 const vk::VkPhysicalDeviceDepthClipControlFeaturesEXT&					getDepthClipControlFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&					getDepthClipEnableFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceDescriptorIndexingFeatures&					getDescriptorIndexingFeatures				(void) const;
+const vk::VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE&		getDescriptorSetHostMappingFeaturesVALVE	(void) const;
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV&			getDeviceGeneratedCommandsFeatures			(void) const;
 const vk::VkPhysicalDeviceDeviceMemoryReportFeaturesEXT&				getDeviceMemoryReportFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceDiagnosticsConfigFeaturesNV&					getDiagnosticsConfigFeatures				(void) const;
@@ -34,7 +35,7 @@ const vk::VkPhysicalDeviceExternalMemoryRDMAFeaturesNV&					getExternalMemoryRDM
 const vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT&				getFragmentDensityMapFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&				getFragmentDensityMap2FeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM&			getFragmentDensityMapOffsetFeaturesQCOM		(void) const;
-const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV&			getFragmentShaderBarycentricFeatures		(void) const;
+const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR&			getFragmentShaderBarycentricFeatures		(void) const;
 const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&			getFragmentShaderInterlockFeaturesEXT		(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&				getFragmentShadingRateFeatures				(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV&			getFragmentShadingRateEnumsFeatures			(void) const;

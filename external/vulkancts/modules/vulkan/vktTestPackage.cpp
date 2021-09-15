@@ -105,6 +105,7 @@
 #include "vktFragmentShadingRateTests.hpp"
 #include "vktReconvergenceTests.hpp"
 #include "vktMeshShaderTests.hpp"
+#include "vktFragmentShadingBarycentricTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -584,6 +585,7 @@ void TestPackage::init (void)
 	addChild(FragmentShadingRate::createTests	(m_testCtx));
 	addChild(Reconvergence::createTests			(m_testCtx, false));
 	addChild(MeshShader::createTests			(m_testCtx));
+	addChild(FragmentShadingBarycentric::createTests(m_testCtx));
 }
 
 void ExperimentalTestPackage::init (void)

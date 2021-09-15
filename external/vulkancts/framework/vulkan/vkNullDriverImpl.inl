@@ -2855,6 +2855,20 @@ VKAPI_ATTR void VKAPI_CALL setDeviceMemoryPriorityEXT (VkDevice device, VkDevice
 	DE_UNREF(priority);
 }
 
+VKAPI_ATTR void VKAPI_CALL getDescriptorSetLayoutHostMappingInfoVALVE (VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping)
+{
+	DE_UNREF(device);
+	DE_UNREF(pBindingReference);
+	DE_UNREF(pHostMapping);
+}
+
+VKAPI_ATTR void VKAPI_CALL getDescriptorSetHostMappingVALVE (VkDevice device, VkDescriptorSet descriptorSet, void** ppData)
+{
+	DE_UNREF(device);
+	DE_UNREF(descriptorSet);
+	DE_UNREF(ppData);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructuresKHR (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos)
 {
 	DE_UNREF(commandBuffer);
@@ -3786,6 +3800,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdDrawMultiEXT,									cmdDrawMultiEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawMultiIndexedEXT,							cmdDrawMultiIndexedEXT),
 	VK_NULL_FUNC_ENTRY(vkSetDeviceMemoryPriorityEXT,						setDeviceMemoryPriorityEXT),
+	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetLayoutHostMappingInfoVALVE,		getDescriptorSetLayoutHostMappingInfoVALVE),
+	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetHostMappingVALVE,					getDescriptorSetHostMappingVALVE),
 	VK_NULL_FUNC_ENTRY(vkCreateAccelerationStructureKHR,					createAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkDestroyAccelerationStructureKHR,					destroyAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdBuildAccelerationStructuresKHR,					cmdBuildAccelerationStructuresKHR),

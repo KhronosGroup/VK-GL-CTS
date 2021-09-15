@@ -321,6 +321,8 @@ CmdSetColorWriteEnableEXTFunc						cmdSetColorWriteEnableEXT;
 CmdDrawMultiEXTFunc									cmdDrawMultiEXT;
 CmdDrawMultiIndexedEXTFunc							cmdDrawMultiIndexedEXT;
 SetDeviceMemoryPriorityEXTFunc						setDeviceMemoryPriorityEXT;
+GetDescriptorSetLayoutHostMappingInfoVALVEFunc		getDescriptorSetLayoutHostMappingInfoVALVE;
+GetDescriptorSetHostMappingVALVEFunc				getDescriptorSetHostMappingVALVE;
 CreateAccelerationStructureKHRFunc					createAccelerationStructureKHR;
 DestroyAccelerationStructureKHRFunc					destroyAccelerationStructureKHR;
 CmdBuildAccelerationStructuresKHRFunc				cmdBuildAccelerationStructuresKHR;

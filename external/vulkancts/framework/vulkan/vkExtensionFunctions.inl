@@ -315,6 +315,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_fragment_shader_barycentric")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_shader_subgroup_uniform_control_flow")
 	{
 		return;
@@ -986,6 +990,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_VALVE_descriptor_set_host_mapping")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_fragment_density_map_offset")
 	{
 		return;
@@ -1505,6 +1513,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdPipelineBarrier2KHR");
 		functions.push_back("vkCmdWriteTimestamp2KHR");
 		functions.push_back("vkQueueSubmit2KHR");
+		return;
+	}
+	if (extName == "VK_KHR_fragment_shader_barycentric")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_shader_subgroup_uniform_control_flow")
@@ -2288,6 +2300,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkSetDeviceMemoryPriorityEXT");
 		return;
 	}
+	if (extName == "VK_VALVE_descriptor_set_host_mapping")
+	{
+		functions.push_back("vkGetDescriptorSetLayoutHostMappingInfoVALVE");
+		functions.push_back("vkGetDescriptorSetHostMappingVALVE");
+		return;
+	}
 	if (extName == "VK_QCOM_fragment_density_map_offset")
 	{
 		return;
@@ -2605,6 +2623,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_color_write_enable",
 	"VK_EXT_multi_draw",
 	"VK_EXT_pageable_device_local_memory",
+	"VK_VALVE_descriptor_set_host_mapping",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_ANDROID_external_memory_android_hardware_buffer",

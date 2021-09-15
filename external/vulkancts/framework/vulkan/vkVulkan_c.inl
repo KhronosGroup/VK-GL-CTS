@@ -363,11 +363,9 @@ extern "C" {
 
 #define vulkan_video_codec_h264std_encode 1
 typedef struct StdVideoEncodeH264SliceHeaderFlags {
-    deUint32    idr_flag : 1;
-    deUint32    is_reference_flag : 1;
+    deUint32    direct_spatial_mv_pred_flag : 1;
     deUint32    num_ref_idx_active_override_flag : 1;
     deUint32    no_output_of_prior_pics_flag : 1;
-    deUint32    long_term_reference_flag : 1;
     deUint32    adaptive_ref_pic_marking_mode_flag : 1;
     deUint32    no_prior_references_available_flag : 1;
 } StdVideoEncodeH264SliceHeaderFlags;
@@ -377,6 +375,10 @@ typedef struct StdVideoEncodeH264PictureInfoFlags {
     deUint32    is_reference_flag : 1;
     deUint32    long_term_reference_flag : 1;
 } StdVideoEncodeH264PictureInfoFlags;
+
+typedef struct StdVideoEncodeH264ReferenceInfoFlags {
+    deUint32    is_long_term : 1;
+} StdVideoEncodeH264ReferenceInfoFlags;
 
 typedef struct StdVideoEncodeH264RefMgmtFlags {
     deUint32    ref_pic_list_modification_l0_flag : 1;
@@ -410,25 +412,31 @@ typedef struct StdVideoEncodeH264RefMemMgmtCtrlOperations {
 typedef struct StdVideoEncodeH264PictureInfo {
     StdVideoEncodeH264PictureInfoFlags    flags;
     StdVideoH264PictureType               pictureType;
-    deUint32                              frameNum;
-    deUint32                              pictureOrderCount;
-    deUint16                              long_term_pic_num;
-    deUint16                              long_term_frame_idx;
+    deUint32                              frame_num;
+    deInt32                               PicOrderCnt;
 } StdVideoEncodeH264PictureInfo;
 
+typedef struct StdVideoEncodeH264ReferenceInfo {
+    StdVideoEncodeH264ReferenceInfoFlags    flags;
+    deUint32                                FrameNum;
+    deInt32                                 PicOrderCnt;
+    deUint16                                long_term_pic_num;
+    deUint16                                long_term_frame_idx;
+} StdVideoEncodeH264ReferenceInfo;
+
 typedef struct StdVideoEncodeH264SliceHeader {
-    StdVideoEncodeH264SliceHeaderFlags             flags;
-    StdVideoH264SliceType                          slice_type;
-    deUint8                                        seq_parameter_set_id;
-    deUint8                                        pic_parameter_set_id;
-    deUint16                                       idr_pic_id;
-    deUint8                                        num_ref_idx_l0_active_minus1;
-    deUint8                                        num_ref_idx_l1_active_minus1;
-    StdVideoH264CabacInitIdc                       cabac_init_idc;
-    StdVideoH264DisableDeblockingFilterIdc         disable_deblocking_filter_idc;
-    deInt8                                         slice_alpha_c0_offset_div2;
-    deInt8                                         slice_beta_offset_div2;
-    StdVideoEncodeH264RefMemMgmtCtrlOperations*    pMemMgmtCtrlOperations;
+    StdVideoEncodeH264SliceHeaderFlags        flags;
+    deUint32                                  first_mb_in_slice;
+    StdVideoH264SliceType                     slice_type;
+    deUint8                                   seq_parameter_set_id;
+    deUint8                                   pic_parameter_set_id;
+    deUint16                                  idr_pic_id;
+    deUint8                                   num_ref_idx_l0_active_minus1;
+    deUint8                                   num_ref_idx_l1_active_minus1;
+    StdVideoH264CabacInitIdc                  cabac_init_idc;
+    StdVideoH264DisableDeblockingFilterIdc    disable_deblocking_filter_idc;
+    deInt8                                    slice_alpha_c0_offset_div2;
+    deInt8                                    slice_beta_offset_div2;
 } StdVideoEncodeH264SliceHeader;
 
 
@@ -1029,7 +1037,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 204
+#define VK_HEADER_VERSION 207
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 3, VK_HEADER_VERSION)
@@ -1435,6 +1443,9 @@ typedef enum VkStructureType {
 #ifdef VK_ENABLE_BETA_EXTENSIONS
     VK_STRUCTURE_TYPE_VIDEO_DECODE_INFO_KHR = 1000024000,
 #endif
+#ifdef VK_ENABLE_BETA_EXTENSIONS
+    VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR = 1000024001,
+#endif
     VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_IMAGE_CREATE_INFO_NV = 1000026000,
     VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_BUFFER_CREATE_INFO_NV = 1000026001,
     VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_MEMORY_ALLOCATE_INFO_NV = 1000026002,
@@ -1480,6 +1491,9 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_LAYER_INFO_EXT = 1000038010,
 #endif
 #ifdef VK_ENABLE_BETA_EXTENSIONS
+    VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_REFERENCE_LISTS_EXT = 1000038011,
+#endif
+#ifdef VK_ENABLE_BETA_EXTENSIONS
     VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_CAPABILITIES_EXT = 1000039000,
 #endif
 #ifdef VK_ENABLE_BETA_EXTENSIONS
@@ -1498,7 +1512,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_DPB_SLOT_INFO_EXT = 1000039005,
 #endif
 #ifdef VK_ENABLE_BETA_EXTENSIONS
-    VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_NALU_SLICE_EXT = 1000039006,
+    VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_NALU_SLICE_SEGMENT_EXT = 1000039006,
 #endif
 #ifdef VK_ENABLE_BETA_EXTENSIONS
     VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_EMIT_PICTURE_PARAMETERS_EXT = 1000039007,
@@ -1730,7 +1744,6 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_NV = 1000201000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_NV = 1000202000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_NV = 1000202001,
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_NV = 1000203000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_FOOTPRINT_FEATURES_NV = 1000204000,
     VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_EXCLUSIVE_SCISSOR_STATE_CREATE_INFO_NV = 1000205000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXCLUSIVE_SCISSOR_FEATURES_NV = 1000205002,
@@ -1829,10 +1842,15 @@ typedef enum VkStructureType {
 #ifdef VK_ENABLE_BETA_EXTENSIONS
     VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_LAYER_INFO_KHR = 1000299002,
 #endif
+#ifdef VK_ENABLE_BETA_EXTENSIONS
+    VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR = 1000299003,
+#endif
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV = 1000300000,
     VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV = 1000300001,
     VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_2_NV = 1000314008,
     VK_STRUCTURE_TYPE_CHECKPOINT_DATA_2_NV = 1000314009,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_KHR = 1000203000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_PROPERTIES_KHR = 1000322000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR = 1000323000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_PROPERTIES_NV = 1000326000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_FEATURES_NV = 1000326001,
@@ -1890,6 +1908,9 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BORDER_COLOR_SWIZZLE_FEATURES_EXT = 1000411000,
     VK_STRUCTURE_TYPE_SAMPLER_BORDER_COLOR_COMPONENT_MAPPING_CREATE_INFO_EXT = 1000411001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT = 1000412000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE = 1000420000,
+    VK_STRUCTURE_TYPE_DESCRIPTOR_SET_BINDING_REFERENCE_VALVE = 1000420001,
+    VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_HOST_MAPPING_INFO_VALVE = 1000420002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM = 1000425000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM = 1000425001,
     VK_STRUCTURE_TYPE_SUBPASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_QCOM = 1000425002,
@@ -1999,6 +2020,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES,
     VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_NV = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_KHR,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES,
     VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
@@ -2941,14 +2963,15 @@ typedef enum VkImageAspectFlagBits {
     VK_IMAGE_ASPECT_PLANE_0_BIT = 0x00000010,
     VK_IMAGE_ASPECT_PLANE_1_BIT = 0x00000020,
     VK_IMAGE_ASPECT_PLANE_2_BIT = 0x00000040,
+    VK_IMAGE_ASPECT_NONE = 0,
     VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT = 0x00000080,
     VK_IMAGE_ASPECT_MEMORY_PLANE_1_BIT_EXT = 0x00000100,
     VK_IMAGE_ASPECT_MEMORY_PLANE_2_BIT_EXT = 0x00000200,
     VK_IMAGE_ASPECT_MEMORY_PLANE_3_BIT_EXT = 0x00000400,
-    VK_IMAGE_ASPECT_NONE_KHR = 0,
     VK_IMAGE_ASPECT_PLANE_0_BIT_KHR = VK_IMAGE_ASPECT_PLANE_0_BIT,
     VK_IMAGE_ASPECT_PLANE_1_BIT_KHR = VK_IMAGE_ASPECT_PLANE_1_BIT,
     VK_IMAGE_ASPECT_PLANE_2_BIT_KHR = VK_IMAGE_ASPECT_PLANE_2_BIT,
+    VK_IMAGE_ASPECT_NONE_KHR = VK_IMAGE_ASPECT_NONE,
     VK_IMAGE_ASPECT_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkImageAspectFlagBits;
 typedef VkFlags VkImageAspectFlags;
@@ -7216,10 +7239,6 @@ typedef enum VkToolPurposeFlagBits {
     VK_TOOL_PURPOSE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkToolPurposeFlagBits;
 typedef VkFlags VkToolPurposeFlags;
-
-typedef enum VkPrivateDataSlotCreateFlagBits {
-    VK_PRIVATE_DATA_SLOT_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
-} VkPrivateDataSlotCreateFlagBits;
 typedef VkFlags VkPrivateDataSlotCreateFlags;
 typedef VkFlags64 VkPipelineStageFlags2;
 
@@ -10323,6 +10342,23 @@ VKAPI_ATTR void VKAPI_CALL vkGetQueueCheckpointData2NV(
 #endif
 
 
+#define VK_KHR_fragment_shader_barycentric 1
+#define VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_SPEC_VERSION 1
+#define VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME "VK_KHR_fragment_shader_barycentric"
+typedef struct VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           fragmentShaderBarycentric;
+} VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR;
+
+typedef struct VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           triStripVertexOrderIndependentOfProvokingVertex;
+} VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR;
+
+
+
 #define VK_KHR_shader_subgroup_uniform_control_flow 1
 #define VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_SPEC_VERSION 1
 #define VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_EXTENSION_NAME "VK_KHR_shader_subgroup_uniform_control_flow"
@@ -12840,11 +12876,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawMeshTasksIndirectCountNV(
 #define VK_NV_fragment_shader_barycentric 1
 #define VK_NV_FRAGMENT_SHADER_BARYCENTRIC_SPEC_VERSION 1
 #define VK_NV_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME "VK_NV_fragment_shader_barycentric"
-typedef struct VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV {
-    VkStructureType    sType;
-    void*              pNext;
-    VkBool32           fragmentShaderBarycentric;
-} VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV;
+typedef VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV;
 
 
 
@@ -14084,8 +14116,6 @@ typedef VkPrivateDataSlot VkPrivateDataSlotEXT;
 #define VK_EXT_PRIVATE_DATA_EXTENSION_NAME "VK_EXT_private_data"
 typedef VkPrivateDataSlotCreateFlags VkPrivateDataSlotCreateFlagsEXT;
 
-typedef VkPrivateDataSlotCreateFlagBits VkPrivateDataSlotCreateFlagBitsEXT;
-
 typedef VkPhysicalDevicePrivateDataFeatures VkPhysicalDevicePrivateDataFeaturesEXT;
 
 typedef VkDevicePrivateDataCreateInfo VkDevicePrivateDataCreateInfoEXT;
@@ -14375,7 +14405,7 @@ typedef struct VkPhysicalDevice4444FormatsFeaturesEXT {
 #define VK_ARM_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_EXTENSION_NAME "VK_ARM_rasterization_order_attachment_access"
 typedef struct VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM {
     VkStructureType    sType;
-    const void*        pNext;
+    void*              pNext;
     VkBool32           rasterizationOrderColorAttachmentAccess;
     VkBool32           rasterizationOrderDepthAttachmentAccess;
     VkBool32           rasterizationOrderStencilAttachmentAccess;
@@ -14783,6 +14813,45 @@ VKAPI_ATTR void VKAPI_CALL vkSetDeviceMemoryPriorityEXT(
     VkDevice                                    device,
     VkDeviceMemory                              memory,
     float                                       priority);
+#endif
+
+
+#define VK_VALVE_descriptor_set_host_mapping 1
+#define VK_VALVE_DESCRIPTOR_SET_HOST_MAPPING_SPEC_VERSION 1
+#define VK_VALVE_DESCRIPTOR_SET_HOST_MAPPING_EXTENSION_NAME "VK_VALVE_descriptor_set_host_mapping"
+typedef struct VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           descriptorSetHostMapping;
+} VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE;
+
+typedef struct VkDescriptorSetBindingReferenceVALVE {
+    VkStructureType          sType;
+    const void*              pNext;
+    VkDescriptorSetLayout    descriptorSetLayout;
+    deUint32                 binding;
+} VkDescriptorSetBindingReferenceVALVE;
+
+typedef struct VkDescriptorSetLayoutHostMappingInfoVALVE {
+    VkStructureType    sType;
+    void*              pNext;
+    deUintptr             descriptorOffset;
+    deUint32           descriptorSize;
+} VkDescriptorSetLayoutHostMappingInfoVALVE;
+
+typedef void (VKAPI_PTR *PFN_vkGetDescriptorSetLayoutHostMappingInfoVALVE)(VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping);
+typedef void (VKAPI_PTR *PFN_vkGetDescriptorSetHostMappingVALVE)(VkDevice device, VkDescriptorSet descriptorSet, void** ppData);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR void VKAPI_CALL vkGetDescriptorSetLayoutHostMappingInfoVALVE(
+    VkDevice                                    device,
+    const VkDescriptorSetBindingReferenceVALVE* pBindingReference,
+    VkDescriptorSetLayoutHostMappingInfoVALVE*  pHostMapping);
+
+VKAPI_ATTR void VKAPI_CALL vkGetDescriptorSetHostMappingVALVE(
+    VkDevice                                    device,
+    VkDescriptorSet                             descriptorSet,
+    void**                                      ppData);
 #endif
 
 

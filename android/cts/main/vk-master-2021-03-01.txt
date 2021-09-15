@@ -8,6 +8,7 @@ vk-master-2021-03-01/drm-format-modifiers.txt
 vk-master-2021-03-01/dynamic-rendering.txt
 vk-master-2021-03-01/dynamic-state.txt
 vk-master-2021-03-01/fragment-operations.txt
+vk-master-2021-03-01/fragment-shading-barycentric.txt
 vk-master-2021-03-01/fragment-shading-rate.txt
 vk-master-2021-03-01/geometry.txt
 vk-master-2021-03-01/glsl.txt

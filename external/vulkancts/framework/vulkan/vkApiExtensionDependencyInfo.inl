@@ -315,6 +315,7 @@ static const std::tuple<deUint32, deUint32, const char*, const char*>	deviceExte
 	std::make_tuple(1, 0, "VK_KHR_external_semaphore_fd", "VK_KHR_external_semaphore"),
 	std::make_tuple(1, 0, "VK_KHR_external_semaphore_win32", "VK_KHR_external_semaphore"),
 	std::make_tuple(1, 0, "VK_KHR_format_feature_flags2", "VK_KHR_get_physical_device_properties2"),
+	std::make_tuple(1, 0, "VK_KHR_fragment_shader_barycentric", "VK_KHR_get_physical_device_properties2"),
 	std::make_tuple(1, 0, "VK_KHR_fragment_shading_rate", "VK_KHR_create_renderpass2"),
 	std::make_tuple(1, 0, "VK_KHR_fragment_shading_rate", "VK_KHR_get_physical_device_properties2"),
 	std::make_tuple(1, 1, "VK_KHR_fragment_shading_rate", "VK_KHR_create_renderpass2"),
@@ -650,6 +651,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_KHR_external_semaphore_fd"),
 	std::make_tuple(1, 0, "VK_KHR_external_semaphore_win32"),
 	std::make_tuple(1, 0, "VK_KHR_format_feature_flags2"),
+	std::make_tuple(1, 0, "VK_KHR_fragment_shader_barycentric"),
 	std::make_tuple(1, 0, "VK_KHR_fragment_shading_rate"),
 	std::make_tuple(1, 0, "VK_KHR_get_display_properties2"),
 	std::make_tuple(1, 0, "VK_KHR_get_memory_requirements2"),
@@ -758,5 +760,6 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_QCOM_render_pass_transform"),
 	std::make_tuple(1, 0, "VK_QCOM_rotated_copy_commands"),
 	std::make_tuple(1, 0, "VK_QNX_screen_surface"),
+	std::make_tuple(1, 0, "VK_VALVE_descriptor_set_host_mapping"),
 	std::make_tuple(1, 0, "VK_VALVE_mutable_descriptor_type"),
 };
