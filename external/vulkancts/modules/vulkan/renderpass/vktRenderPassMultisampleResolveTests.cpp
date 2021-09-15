@@ -730,6 +730,43 @@ void MultisampleRenderPassTestInstance::submit (void)
 		vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, (deUint32)barriers.size(), &barriers[0]);
 	}
 
+	// Memory barriers to set multisample image layout to COLOR_ATTACHMENT_OPTIMAL
+	if (m_renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+	{
+		std::vector<VkImageMemoryBarrier> barriers;
+
+		for (size_t dstNdx = 0; dstNdx < m_multisampleImages.size(); dstNdx++)
+		{
+			const VkImageMemoryBarrier barrier =
+			{
+				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				DE_NULL,
+
+				0,
+				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+
+				VK_QUEUE_FAMILY_IGNORED,
+				VK_QUEUE_FAMILY_IGNORED,
+
+				**m_multisampleImages[dstNdx],
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,
+					0u,
+					1u,
+					0u,
+					m_layerCount
+				}
+			};
+
+			barriers.push_back(barrier);
+		}
+
+		vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, (deUint32)barriers.size(), &barriers[0]);
+	}
+
 	VkRect2D renderArea = makeRect2D(m_width, m_height);
 	if (m_renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 	{
