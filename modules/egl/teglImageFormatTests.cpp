@@ -1318,9 +1318,21 @@ void ImageFormatCase::init (void)
 	{
 		m_display	= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
 
+		// GLES3 requires either EGL 1.5 or EGL_KHR_create_context extension.
 		if (m_spec.contexts[0] == TestSpec::API_GLES3 && eglu::getVersion(egl, m_display) < eglu::Version(1, 5))
 		{
-			TCU_THROW(NotSupportedError, "EGL 1.5 or higher is required for tests using GLES3");
+			set<string>				exts;
+			const vector<string>	eglExts	= eglu::getDisplayExtensions(egl, m_display);
+			exts.insert(eglExts.begin(), eglExts.end());
+
+			if (!de::contains(exts, "EGL_KHR_create_context"))
+			{
+				getLog() << tcu::TestLog::Message
+						 << "EGL version is under 1.5 and the test is using OpenGL ES 3.2."
+						 << "This requires EGL_KHR_create_context extension."
+						 << tcu::TestLog::EndMessage;
+				TCU_THROW(NotSupportedError, "Extension not supported: EGL_KHR_create_context");
+			}
 		}
 
 		m_config	= getConfig();
