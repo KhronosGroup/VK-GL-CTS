@@ -1786,6 +1786,7 @@ def writeDeviceFeatures2(api, filename):
 		'VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures',
 		'VkPhysicalDeviceShaderDrawParametersFeatures',
 		'VkPhysicalDeviceShaderIntegerDotProductFeatures',
+		'VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR',
 		'VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures',
 		'VkPhysicalDeviceShaderTerminateInvocationFeatures',
 		'VkPhysicalDeviceSubgroupSizeControlFeatures',

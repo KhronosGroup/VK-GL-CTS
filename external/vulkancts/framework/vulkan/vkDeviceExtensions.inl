@@ -97,5 +97,6 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_EXT_texture_compression_astc_hdr",
 	"VK_EXT_tooling_info",
 	"VK_EXT_ycbcr_2plane_444_formats",
+	"VK_KHR_shader_integer_dot_product",
 };
 

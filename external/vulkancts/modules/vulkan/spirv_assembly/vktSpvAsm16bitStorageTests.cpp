@@ -4054,7 +4054,6 @@ void addShaderCode16BitStorageInputOutput16To16x2 (vk::SourceCollections& dst, T
 		"                             OpDecorate %gl_PerVertex Block\n"
 		"                             OpDecorate %position Location 0\n"
 		"                             OpDecorate %vtxColor Location 1\n"
-		"                             OpDecorate %dataIn Binding 1\n"
 		"                             OpDecorate %dataIn Location 2\n"
 		"                             OpDecorate %color Location 1\n"
 		"                             OpDecorate %dataOut0 Location 2\n"

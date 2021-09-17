@@ -9085,8 +9085,6 @@ typedef VkPhysicalDeviceShaderIntegerDotProductFeatures VkPhysicalDeviceShaderIn
 
 typedef VkPhysicalDeviceShaderIntegerDotProductProperties VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR;
 
-
-
 #define VK_KHR_pipeline_library 1
 #define VK_KHR_PIPELINE_LIBRARY_SPEC_VERSION 1
 #define VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME "VK_KHR_pipeline_library"

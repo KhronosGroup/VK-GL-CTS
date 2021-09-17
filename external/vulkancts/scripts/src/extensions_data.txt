@@ -116,3 +116,4 @@ VK_EXT_texel_buffer_alignment				DEVICE 1_3_0
 VK_EXT_texture_compression_astc_hdr			DEVICE 1_3_0
 VK_EXT_tooling_info							DEVICE 1_3_0
 VK_EXT_ycbcr_2plane_444_formats				DEVICE 1_3_0
+VK_KHR_shader_integer_dot_product			DEVICE

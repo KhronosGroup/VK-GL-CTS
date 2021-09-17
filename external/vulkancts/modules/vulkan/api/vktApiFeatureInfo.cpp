@@ -4323,6 +4323,8 @@ tcu::TestStatus deviceProperties2 (Context& context)
 	if (khr_texel_buffer_alignment)
 		log << TestLog::Message << texelBufferAlignmentProperties[0] << TestLog::EndMessage;
 
+	if (khr_integer_dot_product)
+		log << TestLog::Message << integerDotProductProperties[0] << TestLog::EndMessage;
 
 	if ( khr_external_fence_capabilities || khr_external_memory_capabilities || khr_external_semaphore_capabilities )
 	{
@@ -4520,6 +4522,41 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		 texelBufferAlignmentProperties[0].uniformTexelBufferOffsetSingleTexelAlignment	!= texelBufferAlignmentProperties[1].uniformTexelBufferOffsetSingleTexelAlignment))
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDeviceTexelBufferAlignmentProperties");
+	}
+
+	if (khr_integer_dot_product &&
+		(integerDotProductProperties[0].integerDotProduct8BitUnsignedAccelerated										!= integerDotProductProperties[1].integerDotProduct8BitUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct8BitSignedAccelerated											!= integerDotProductProperties[1].integerDotProduct8BitSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct8BitMixedSignednessAccelerated									!= integerDotProductProperties[1].integerDotProduct8BitMixedSignednessAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct4x8BitPackedUnsignedAccelerated								!= integerDotProductProperties[1].integerDotProduct4x8BitPackedUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct4x8BitPackedSignedAccelerated									!= integerDotProductProperties[1].integerDotProduct4x8BitPackedSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct4x8BitPackedMixedSignednessAccelerated							!= integerDotProductProperties[1].integerDotProduct4x8BitPackedMixedSignednessAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct16BitUnsignedAccelerated										!= integerDotProductProperties[1].integerDotProduct16BitUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct16BitSignedAccelerated											!= integerDotProductProperties[1].integerDotProduct16BitSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct16BitMixedSignednessAccelerated								!= integerDotProductProperties[1].integerDotProduct16BitMixedSignednessAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct32BitUnsignedAccelerated										!= integerDotProductProperties[1].integerDotProduct32BitUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct32BitSignedAccelerated											!= integerDotProductProperties[1].integerDotProduct32BitSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct32BitMixedSignednessAccelerated								!= integerDotProductProperties[1].integerDotProduct32BitMixedSignednessAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct64BitUnsignedAccelerated										!= integerDotProductProperties[1].integerDotProduct64BitUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct64BitSignedAccelerated											!= integerDotProductProperties[1].integerDotProduct64BitSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct64BitMixedSignednessAccelerated								!= integerDotProductProperties[1].integerDotProduct64BitMixedSignednessAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating8BitUnsignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating8BitUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating8BitSignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating8BitSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating8BitMixedSignednessAccelerated			!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating8BitMixedSignednessAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating4x8BitPackedUnsignedAccelerated			!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating4x8BitPackedUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating4x8BitPackedSignedAccelerated			!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating4x8BitPackedSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating4x8BitPackedMixedSignednessAccelerated	!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating4x8BitPackedMixedSignednessAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating16BitUnsignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating16BitUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating16BitSignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating16BitSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating16BitMixedSignednessAccelerated			!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating16BitMixedSignednessAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating32BitUnsignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating32BitUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating32BitSignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating32BitSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating32BitMixedSignednessAccelerated			!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating32BitMixedSignednessAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating64BitUnsignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating64BitUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating64BitSignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating64BitSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating64BitMixedSignednessAccelerated			!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating64BitMixedSignednessAccelerated))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR");
 	}
 
 	if (isExtensionSupported(properties, RequiredExtension("VK_KHR_push_descriptor")))
