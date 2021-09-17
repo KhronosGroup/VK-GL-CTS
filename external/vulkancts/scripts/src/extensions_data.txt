@@ -98,3 +98,4 @@ VK_EXT_multi_draw							DEVICE
 VK_KHR_shader_subgroup_uniform_control_flow	DEVICE
 VK_KHR_present_id							DEVICE
 VK_KHR_present_wait							DEVICE
+VK_KHR_shader_integer_dot_product			DEVICE

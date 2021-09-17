@@ -749,23 +749,23 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* 
 		"OpDecorate %outer_struct_ptr    ArrayStride 256	\n"
 		"OpDecorate %v4f32_ptr           ArrayStride 16		\n";
 
-	const string inputABDecorations (
+	string inputABDecorations = physPtrs ? "" :
 		"OpDecorate %inputA DescriptorSet 0				\n"
 		"OpDecorate %inputB DescriptorSet 0				\n"
 		"OpDecorate %inputA Binding 0					\n"
-		"OpDecorate %inputB Binding 1					\n"
+		"OpDecorate %inputB Binding 1					\n";
 
 		// inputA and inputB have type outer_struct so it needs Block
-		"OpDecorate %outer_struct	Block				\n"
-	);
+	inputABDecorations +=
+		"OpDecorate %outer_struct	Block				\n";
 
-	const string inputCDecorations (
+	string inputCDecorations = physPtrs ? "" :
 		"OpDecorate %inputC DescriptorSet 0				\n"
-		"OpDecorate %inputC Binding 2					\n"
+		"OpDecorate %inputC Binding 2					\n";
 
+	inputCDecorations += physPtrs ? "" :
 		// inputC has type input_buffer so it needs Block
-		"OpDecorate %input_buffer	Block				\n"
-	);
+		"OpDecorate %input_buffer	Block				\n";
 
 	string types =
 		///////////////

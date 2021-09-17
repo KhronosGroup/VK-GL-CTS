@@ -305,10 +305,6 @@ void addComputePointerBufferMemoryTest (tcu::TestCaseGroup* group)
 			"                          OpDecorate %Output Block\n"
 			"                          OpDecorate %dataOutput DescriptorSet 0\n"
 			"                          OpDecorate %dataOutput Binding 0\n"
-			"                          OpDecorate %f0 DescriptorSet 0\n"
-			"                          OpDecorate %f0 Binding 0\n"
-			"                          OpDecorate %f1 DescriptorSet 0\n"
-			"                          OpDecorate %f1 Binding 0\n"
 			"                          OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId\n"
 			"                  %void = OpTypeVoid\n"
 			"             %void_func = OpTypeFunction %void\n"
@@ -936,10 +932,6 @@ void addGraphicsPointerBufferMemoryTest (tcu::TestCaseGroup* group)
 		"                          OpDecorate %Output Block\n"
 		"                          OpDecorate %dataOutput DescriptorSet 0\n"
 		"                          OpDecorate %dataOutput Binding 0\n"
-		"                          OpDecorate %f0 DescriptorSet 0\n"
-		"                          OpDecorate %f0 Binding 0\n"
-		"                          OpDecorate %f1 DescriptorSet 0\n"
-		"                          OpDecorate %f1 Binding 0\n"
 		"                          OpDecorate %arr_v4f32_2 ArrayStride 16\n"
 		"                          OpDecorate %arr_v4f32_rt ArrayStride 16\n";
 

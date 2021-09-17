@@ -286,6 +286,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_integer_dot_product")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_pipeline_library")
 	{
 		return;
@@ -1396,6 +1400,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetPipelineExecutablePropertiesKHR");
 		functions.push_back("vkGetPipelineExecutableStatisticsKHR");
 		functions.push_back("vkGetPipelineExecutableInternalRepresentationsKHR");
+		return;
+	}
+	if (extName == "VK_KHR_shader_integer_dot_product")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_pipeline_library")

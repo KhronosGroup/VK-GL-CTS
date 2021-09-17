@@ -79,5 +79,6 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_shader_subgroup_uniform_control_flow",
 	"VK_KHR_present_id",
 	"VK_KHR_present_wait",
+	"VK_KHR_shader_integer_dot_product",
 };
 
