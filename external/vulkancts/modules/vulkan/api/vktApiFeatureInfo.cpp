@@ -1533,12 +1533,6 @@ tcu::TestStatus validateLimitsExtLineRasterization (Context& context)
 		return tcu::TestStatus::fail("fail");
 }
 
-void checkSupportFeatureBitInfluence (Context& context)
-{
-	if (!context.contextSupports(vk::ApiVersion(1, 2, 0)))
-		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
-}
-
 tcu::TestStatus validateLimitsMaxInlineUniformTotalSize (Context& context)
 {
 	const VkBool32								checkAlways			= VK_TRUE;
