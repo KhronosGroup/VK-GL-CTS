@@ -644,7 +644,7 @@ END
 
 # resolution
 BUFFER reference_resolution DATA_TYPE vec2<float> DATA
- 256.0 256.0
+ 64.0 64.0
 END
 
 BUFFER reference_framebuffer FORMAT B8G8R8A8_UNORM
@@ -652,14 +652,14 @@ BUFFER reference_framebuffer FORMAT B8G8R8A8_UNORM
 PIPELINE graphics reference_pipeline
   ATTACH reference_vertex_shader
   ATTACH reference_fragment_shader
-  FRAMEBUFFER_SIZE 256 256
+  FRAMEBUFFER_SIZE 64 64
   BIND BUFFER reference_framebuffer AS color LOCATION 0
   BIND BUFFER reference_resolution AS uniform DESCRIPTOR_SET 0 BINDING 0
 END
 CLEAR_COLOR reference_pipeline 0 0 0 255
 
 CLEAR reference_pipeline
-RUN reference_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+RUN reference_pipeline DRAW_RECT POS 0 0 SIZE 64 64
 
 
 SHADER vertex variant_vertex_shader PASSTHROUGH
@@ -1296,7 +1296,7 @@ END
 
 # resolution
 BUFFER variant_resolution DATA_TYPE vec2<float> DATA
- 256.0 256.0
+ 64.0 64.0
 END
 
 BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
@@ -1304,13 +1304,13 @@ BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
 PIPELINE graphics variant_pipeline
   ATTACH variant_vertex_shader
   ATTACH variant_fragment_shader
-  FRAMEBUFFER_SIZE 256 256
+  FRAMEBUFFER_SIZE 64 64
   BIND BUFFER variant_framebuffer AS color LOCATION 0
   BIND BUFFER variant_resolution AS uniform DESCRIPTOR_SET 0 BINDING 0
 END
 CLEAR_COLOR variant_pipeline 0 0 0 255
 
 CLEAR variant_pipeline
-RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 64 64
 
 EXPECT reference_framebuffer EQ_HISTOGRAM_EMD_BUFFER variant_framebuffer TOLERANCE 0.005

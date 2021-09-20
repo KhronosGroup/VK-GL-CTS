@@ -543,13 +543,13 @@ BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
 PIPELINE graphics variant_pipeline
   ATTACH variant_vertex_shader
   ATTACH variant_fragment_shader
-  FRAMEBUFFER_SIZE 256 256
+  FRAMEBUFFER_SIZE 64 64
   BIND BUFFER variant_framebuffer AS color LOCATION 0
   BIND BUFFER variant_zero AS uniform DESCRIPTOR_SET 0 BINDING 0
 END
 CLEAR_COLOR variant_pipeline 0 0 0 255
 
 CLEAR variant_pipeline
-RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 64 64
 
-EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255
+EXPECT variant_framebuffer IDX 0 0 SIZE 64 64 EQ_RGBA 255 0 0 255
