@@ -51,6 +51,8 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawExplicitVertexParameterTests.hpp
 	vktDrawOutputLocationTests.cpp
 	vktDrawOutputLocationTests.hpp
+	vktDrawDepthBiasTests.cpp
+	vktDrawDepthBiasTests.hpp
 	vktDrawDepthClampTests.cpp
 	vktDrawDepthClampTests.hpp
 	vktDrawAhbTests.cpp

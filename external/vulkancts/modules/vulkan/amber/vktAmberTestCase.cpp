@@ -91,6 +91,8 @@ static bool isFeatureSupported(const vkt::Context& ctx, const std::string& featu
 		return ctx.getDeviceFeatures().shaderInt64;
 	if (feature == "Features.tessellationShader")
 		return ctx.getDeviceFeatures().tessellationShader;
+	if (feature == "Features.shaderTessellationAndGeometryPointSize")
+		return ctx.getDeviceFeatures().shaderTessellationAndGeometryPointSize;
 	if (feature == "Features.geometryShader")
 		return ctx.getDeviceFeatures().geometryShader;
 	if (feature == "Features.fragmentStoresAndAtomics")
