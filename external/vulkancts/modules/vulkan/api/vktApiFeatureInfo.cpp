@@ -5685,8 +5685,6 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context& context)
 			TCU_FAIL("vulkanMemoryModel feature from VkPhysicalDeviceVulkanMemoryModelFeatures is required");
 		if (!vulkanMemoryModelFeatures.vulkanMemoryModelDeviceScope)
 			TCU_FAIL("vulkanMemoryModelDeviceScope feature from VkPhysicalDeviceVulkanMemoryModelFeatures is required");
-		if (!vulkanMemoryModelFeatures.vulkanMemoryModelAvailabilityVisibilityChains)
-			TCU_FAIL("vulkanMemoryModelAvailabilityVisibilityChains feature from VkPhysicalDeviceVulkanMemoryModelFeatures is required");
 		if (!bufferDeviceAddressFeatures.bufferDeviceAddress)
 			TCU_FAIL("bufferDeviceAddress feature from VkPhysicalDeviceBufferDeviceAddressFeatures is required");
 	}
