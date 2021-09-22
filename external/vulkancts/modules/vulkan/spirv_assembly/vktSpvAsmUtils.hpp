@@ -243,6 +243,7 @@ struct VulkanFeatures
 		deMemset(&ext16BitStorage,			0, sizeof(vk::VkPhysicalDevice16BitStorageFeatures));
 		deMemset(&extVariablePointers,		0, sizeof(vk::VkPhysicalDeviceVariablePointersFeatures));
 		deMemset(&extVulkanMemoryModel,		0, sizeof(vk::VkPhysicalDeviceVulkanMemoryModelFeatures));
+		deMemset(&extIntegerDotProduct,		0, sizeof(vk::VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR));
 		deMemset(&floatControlsProperties,	0, sizeof(vk::VkPhysicalDeviceFloatControlsProperties));
 		floatControlsProperties.denormBehaviorIndependence	= vk::VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR;
 		floatControlsProperties.roundingModeIndependence	= vk::VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR;
