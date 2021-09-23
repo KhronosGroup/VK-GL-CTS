@@ -460,7 +460,7 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 		vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
 		endRenderPass(vk, *cmdBuffer);
 
-		copyImageToBuffer(vk, *cmdBuffer, *colorImage, *colorBuffer, renderSize, VK_ACCESS_SHADER_WRITE_BIT);
+		copyImageToBuffer(vk, *cmdBuffer, *colorImage, *colorBuffer, renderSize, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
 
 		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
