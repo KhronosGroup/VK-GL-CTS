@@ -3251,7 +3251,7 @@ protected:
 				ret |= ctx.format.roundOut(Interval(-DE_PI_DOUBLE, DE_PI_DOUBLE), true);
 		}
 
-		if (ctx.format.hasInf() != YES && (!yi.isFinite() || !xi.isFinite()))
+		if (!yi.isFinite() || !xi.isFinite())
 		{
 			// Infinities may not be supported, allow anything, including NaN
 			ret |= TCU_NAN;
