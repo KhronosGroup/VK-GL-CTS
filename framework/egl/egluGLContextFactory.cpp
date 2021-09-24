@@ -63,7 +63,7 @@ using std::vector;
 #	if (DE_OS == DE_OS_WIN32)
 #		define DEQP_GLES2_LIBRARY_PATH "libGLESv2.dll"
 #	else
-#		define DEQP_GLES2_LIBRARY_PATH "libGLESv2.so"
+#		define DEQP_GLES2_LIBRARY_PATH "libGLESv2.so.2"
 #	endif
 #endif
 
@@ -75,7 +75,7 @@ using std::vector;
 #	if (DE_OS == DE_OS_WIN32)
 #		define DEQP_OPENGL_LIBRARY_PATH "opengl32.dll"
 #	else
-#		define DEQP_OPENGL_LIBRARY_PATH "libGL.so"
+#		define DEQP_OPENGL_LIBRARY_PATH "libGL.so.1"
 #	endif
 #endif
 

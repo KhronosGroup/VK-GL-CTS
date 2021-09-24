@@ -148,7 +148,7 @@ DefaultLibrary::~DefaultLibrary (void)
 const char* DefaultLibrary::getLibraryFileName (void)
 {
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
-	return "libEGL.so";
+	return "libEGL.so.1";
 #elif (DE_OS == DE_OS_WIN32)
 	return "libEGL.dll";
 #else

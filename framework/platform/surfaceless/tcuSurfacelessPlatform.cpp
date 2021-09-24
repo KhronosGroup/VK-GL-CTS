@@ -69,7 +69,7 @@ using std::vector;
 
 // Default library names
 #if !defined(DEQP_GLES2_LIBRARY_PATH)
-#	define DEQP_GLES2_LIBRARY_PATH "libGLESv2.so"
+#	define DEQP_GLES2_LIBRARY_PATH "libGLESv2.so.2"
 #endif
 
 #if !defined(DEQP_GLES3_LIBRARY_PATH)
@@ -77,7 +77,7 @@ using std::vector;
 #endif
 
 #if !defined(DEQP_OPENGL_LIBRARY_PATH)
-#	define DEQP_OPENGL_LIBRARY_PATH "libGL.so"
+#	define DEQP_OPENGL_LIBRARY_PATH "libGL.so.1"
 #endif
 
 #if !defined(DEQP_VULKAN_LIBRARY_PATH)
@@ -248,7 +248,7 @@ glu::RenderContext* ContextFactory::createContext(const glu::RenderConfig& confi
 }
 
 EglRenderContext::EglRenderContext(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine)
-	: m_egl("libEGL.so")
+	: m_egl("libEGL.so.1")
 	, m_contextType(config.type)
 	, m_eglDisplay(EGL_NO_DISPLAY)
 	, m_eglContext(EGL_NO_CONTEXT)

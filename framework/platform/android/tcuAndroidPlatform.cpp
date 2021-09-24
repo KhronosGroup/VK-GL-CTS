@@ -57,7 +57,7 @@ static const eglu::NativeWindow::Capability		WINDOW_CAPABILITIES		= (eglu::Nativ
 class NativeDisplay : public eglu::NativeDisplay
 {
 public:
-									NativeDisplay			(void) : eglu::NativeDisplay(DISPLAY_CAPABILITIES), m_library("libEGL.so") {}
+									NativeDisplay			(void) : eglu::NativeDisplay(DISPLAY_CAPABILITIES), m_library("libEGL.so.1") {}
 	virtual							~NativeDisplay			(void) {}
 
 	virtual EGLNativeDisplayType	getLegacyNative			(void)			{ return EGL_DEFAULT_DISPLAY;	}

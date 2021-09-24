@@ -75,7 +75,7 @@ class Library : public eglw::DefaultLibrary
 {
 public:
 	Library (void)
-		: eglw::DefaultLibrary("libEGL.so")
+		: eglw::DefaultLibrary("libEGL.so.1")
 	{
 	}
 

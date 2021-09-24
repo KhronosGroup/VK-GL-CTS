@@ -66,7 +66,7 @@ public:
 													 EGL_PLATFORM_WAYLAND_KHR,
 													 "EGL_KHR_platform_wayland")
 									, m_display		(waylandDisplay)
-									, m_library		("libEGL.so") {}
+									, m_library		("libEGL.so.1") {}
 
 	~Display(void) {}
 	wayland::Display&			getWaylandDisplay	(void)	{ return *m_display; }
