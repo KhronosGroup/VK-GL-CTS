@@ -424,6 +424,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineSampleLocationsUtil.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineSamplerBorderSwizzleTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineSamplerTests.cpp",
+        "external/vulkancts/modules/vulkan/pipeline/vktPipelineShaderComponentDecoratedLayoutMatchingTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineShaderModuleIdentifierTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineSpecConstantTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineSpecConstantUtil.cpp",
