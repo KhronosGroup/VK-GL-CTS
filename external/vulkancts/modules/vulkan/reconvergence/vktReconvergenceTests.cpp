@@ -1656,6 +1656,9 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 
 	for (deUint32 i = 0; i < 3; ++i)
 	{
+		if (sizes[i] > properties2.properties.limits.maxStorageBufferRange)
+			TCU_THROW(NotSupportedError, "Storage buffer size larger than device limits");
+
 		try
 		{
 			buffers[i] = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
@@ -1823,6 +1826,9 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 	{
 		maxLoc = newMaxLoc;
 		sizes[1] = maxLoc * sizeof(deUint64);
+
+		if (sizes[1] > properties2.properties.limits.maxStorageBufferRange)
+			TCU_THROW(NotSupportedError, "Storage buffer size larger than device limits");
 
 		try
 		{
