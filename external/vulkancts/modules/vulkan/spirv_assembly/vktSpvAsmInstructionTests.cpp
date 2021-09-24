@@ -15279,7 +15279,7 @@ struct fp16Atan2 : public fp16PerComponent
 		const double	yd		(y.asDouble());
 		double			result	(0.0);
 
-		if (x.isZero() && y.isZero())
+		if ((x.isZero() && y.isZero())||(x.isInf() && y.isInf()))
 			return false;
 
 		if (getFlavor() == 0)
