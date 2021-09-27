@@ -1092,7 +1092,10 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 				if (att.usage & ATTACHMENT_USAGE_DEPTH_STENCIL)
 					renderingCreateInfo.depthStencilAttachmentFormat = VK_FORMAT_D24_UNORM_S8_UINT;
 				else
-					colorVector.push_back(VK_FORMAT_R8G8B8A8_UNORM);
+				{
+					VkFormat format = getFormat(att.usage, m_testParams.depthStencilFormat);
+					colorVector.push_back(format);
+				}
 			}
 
 			vk::VkPipelineRenderingCreateInfoKHR* nextPtr = DE_NULL;
