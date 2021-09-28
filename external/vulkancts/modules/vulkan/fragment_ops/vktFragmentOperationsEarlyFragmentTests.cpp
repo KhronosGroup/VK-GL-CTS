@@ -741,7 +741,10 @@ tcu::TestStatus EarlyFragmentDiscardTestInstance::iterate (void)
 	// Verify depth-stencil output
 	{
 		invalidateAlloc(vk, device, *dsBufferAlloc);
-		tcu::TextureFormat format = mapVkFormat(depthStencilFormat);
+		// the buffer holds only one aspect of d/s format
+		tcu::TextureFormat format = vk::mapVkFormat(m_testMode == MODE_STENCIL ? VK_FORMAT_S8_UINT : depthStencilFormat);
+		DE_ASSERT(format.order == tcu::TextureFormat::D || format.order == tcu::TextureFormat::S);
+
 		const tcu::ConstPixelBufferAccess	dsPixelAccess (format, renderSize.x(), renderSize.y(), 1, dsBufferAlloc->getHostPtr());
 
 		for(int z = 0; z < dsPixelAccess.getDepth(); z++)
