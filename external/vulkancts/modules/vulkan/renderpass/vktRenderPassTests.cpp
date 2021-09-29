@@ -1777,7 +1777,8 @@ void beginCommandBuffer (const DeviceInterface&			vk,
 						 VkBool32						pInheritanceInfo_occlusionQueryEnable,
 						 VkQueryControlFlags			pInheritanceInfo_queryFlags,
 						 VkQueryPipelineStatisticFlags	pInheritanceInfo_pipelineStatistics,
-						 const SubpassRenderInfo*		pRenderInfo = 0)
+						 const SubpassRenderInfo*		pRenderInfo = 0,
+						 bool							dynamicRenderPass = false )
 {
 	VkCommandBufferInheritanceInfo pInheritanceInfo =
 	{
@@ -1820,7 +1821,8 @@ void beginCommandBuffer (const DeviceInterface&			vk,
 		else
 			inheritanceRenderingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
-		pInheritanceInfo.pNext = &inheritanceRenderingInfo;
+		if (dynamicRenderPass)
+			pInheritanceInfo.pNext = &inheritanceRenderingInfo;
 	}
 	const VkCommandBufferBeginInfo pBeginInfo =
 	{
@@ -2088,7 +2090,8 @@ public:
 					 const vector<pair<VkImageView, VkImageView> >&	attachmentViews,
 					 const SubpassRenderInfo&						renderInfo,
 					 const vector<Attachment>&						attachmentInfos,
-					 const AllocationKind							allocationKind)
+					 const AllocationKind							allocationKind,
+					 const bool										dynamicRendering)
 		: m_renderInfo	(renderInfo)
 	{
 		const InstanceInterface&				vki				= context.getInstanceInterface();
@@ -2339,7 +2342,7 @@ public:
 		{
 			m_commandBuffer = allocateCommandBuffer(vk, device, commandBufferPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
-			beginCommandBuffer(vk, *m_commandBuffer, vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT, renderPass, subpassIndex, framebuffer, VK_FALSE, (VkQueryControlFlags)0, (VkQueryPipelineStatisticFlags)0, &renderInfo);
+			beginCommandBuffer(vk, *m_commandBuffer, vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT, renderPass, subpassIndex, framebuffer, VK_FALSE, (VkQueryControlFlags)0, (VkQueryPipelineStatisticFlags)0, &renderInfo, dynamicRendering);
 			pushRenderCommands(vk, *m_commandBuffer);
 			endCommandBuffer(vk, *m_commandBuffer);
 		}
@@ -5002,7 +5005,7 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 				framebuffer = createFramebuffer(vk, device, *renderPass, targetSize, attachmentViews);
 
 			for (size_t subpassNdx = 0; subpassNdx < renderPassInfo.getSubpasses().size(); subpassNdx++)
-				subpassRenderers.push_back(de::SharedPtr<SubpassRenderer>(new SubpassRenderer(context, vk, device, allocator, *renderPass, *framebuffer, *commandBufferPool, queueIndex, attachmentImages, inputAttachmentViews, subpassRenderInfo[subpassNdx], config.renderPass.getAttachments(), config.allocationKind)));
+				subpassRenderers.push_back(de::SharedPtr<SubpassRenderer>(new SubpassRenderer(context, vk, device, allocator, *renderPass, *framebuffer, *commandBufferPool, queueIndex, attachmentImages, inputAttachmentViews, subpassRenderInfo[subpassNdx], config.renderPass.getAttachments(), config.allocationKind, config.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)));
 
 			beginCommandBuffer(vk, *renderCommandBuffer, (VkCommandBufferUsageFlags)0, DE_NULL, 0, DE_NULL, VK_FALSE, (VkQueryControlFlags)0, (VkQueryPipelineStatisticFlags)0);
 			pushRenderPassCommands(vk, *renderCommandBuffer, *renderPass, renderPassInfo, attachmentResources, *framebuffer, subpassRenderers, renderPos, renderSize, renderPassClearValues, config.renderTypes, config.renderingType);
