@@ -5830,8 +5830,8 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 			DE_NULL,									// const void*				pNext;
 			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			srcAccessMask;
 			VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout;
+			m_params.src.image.operationLayout,			// VkImageLayout			oldLayout;
+			m_params.src.image.operationLayout,			// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
 			sourceImage,								// VkImage					image;
@@ -5850,7 +5850,7 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 			0u,											// VkAccessFlags			srcAccessMask;
 			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			newLayout;
+			m_params.dst.image.operationLayout,			// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
 			m_destination.get(),						// VkImage					image;
@@ -5870,8 +5870,8 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 		DE_NULL,								// const void*				pNext;
 		VK_ACCESS_TRANSFER_WRITE_BIT,			// VkAccessFlags			srcAccessMask;
 		VK_ACCESS_HOST_READ_BIT,				// VkAccessFlags			dstAccessMask;
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,	// VkImageLayout			oldLayout;
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,	// VkImageLayout			newLayout;
+		m_params.dst.image.operationLayout,		// VkImageLayout			oldLayout;
+		m_params.dst.image.operationLayout,		// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,				// deUint32					srcQueueFamilyIndex;
 		VK_QUEUE_FAMILY_IGNORED,				// deUint32					dstQueueFamilyIndex;
 		m_destination.get(),					// VkImage					image;
@@ -5889,7 +5889,7 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 
 	if (m_params.extensionUse == EXTENSION_USE_NONE)
 	{
-		vk.cmdResolveImage(*m_cmdBuffer, sourceImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), imageResolves.data());
+		vk.cmdResolveImage(*m_cmdBuffer, sourceImage, m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)m_params.regions.size(), imageResolves.data());
 	}
 	else
 	{
@@ -5899,9 +5899,9 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 			VK_STRUCTURE_TYPE_RESOLVE_IMAGE_INFO_2_KHR,	// VkStructureType				sType;
 			DE_NULL,									// const void*					pNext;
 			sourceImage,								// VkImage						srcImage;
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout				srcImageLayout;
+			m_params.src.image.operationLayout,			// VkImageLayout				srcImageLayout;
 			m_destination.get(),						// VkImage						dstImage;
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout				dstImageLayout;
+			m_params.dst.image.operationLayout,			// VkImageLayout				dstImageLayout;
 			(deUint32)m_params.regions.size(),			// uint32_t						regionCount;
 			imageResolves2KHR.data()					// const  VkImageResolve2KHR*	pRegions;
 		};
@@ -5968,7 +5968,7 @@ tcu::TestStatus ResolveImageToImage::checkIntermediateCopy (void)
 	const		auto	queue				= m_context.getUniversalQueue();
 	const		auto	queueIndex			= m_context.getUniversalQueueFamilyIndex();
 				auto&	alloc				= m_context.getDefaultAllocator();
-	const		auto	currentLayout		= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	const		auto	currentLayout		= m_params.src.image.operationLayout;
 	const		auto	numDstLayers		= getArraySize(m_params.dst.image);
 	const		auto	numInputAttachments	= numDstLayers + 1u; // For the source image.
 	constexpr	auto	numSets				= 2u; // 1 for the output buffer, 1 for the input attachments.
@@ -6304,7 +6304,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			srcAccessMask;
 			VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask;
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout;
+			m_params.src.image.operationLayout,			// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
 			m_multisampledImage.get(),					// VkImage					image;
@@ -6323,7 +6323,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 			0,											// VkAccessFlags			srcAccessMask;
 			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
 			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			newLayout;
+			m_params.dst.image.operationLayout,			// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
 			m_multisampledCopyImage.get(),				// VkImage					image;
@@ -6344,8 +6344,8 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 		DE_NULL,									// const void*				pNext;
 		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
 		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			dstAccessMask;
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout			newLayout;
+		m_params.dst.image.operationLayout,			// VkImageLayout			oldLayout;
+		m_params.src.image.operationLayout,			// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
 		m_multisampledCopyImage.get(),				// VkImage					image;
@@ -6363,7 +6363,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 
 	if (m_params.extensionUse == EXTENSION_USE_NONE)
 	{
-		vk.cmdCopyImage(*m_cmdBuffer, m_multisampledImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_multisampledCopyImage.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)imageCopies.size(), imageCopies.data());
+		vk.cmdCopyImage(*m_cmdBuffer, m_multisampledImage.get(), m_params.src.image.operationLayout, m_multisampledCopyImage.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
 	}
 	else
 	{
@@ -6373,9 +6373,9 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 			VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2_KHR,	// VkStructureType			sType;
 			DE_NULL,									// const void*				pNext;
 			m_multisampledImage.get(),					// VkImage					srcImage;
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			srcImageLayout;
+			m_params.src.image.operationLayout,			// VkImageLayout			srcImageLayout;
 			m_multisampledCopyImage.get(),				// VkImage					dstImage;
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			dstImageLayout;
+			m_params.dst.image.operationLayout,			// VkImageLayout			dstImageLayout;
 			(deUint32)imageCopies2KHR.size(),			// uint32_t					regionCount;
 			imageCopies2KHR.data()						// const VkImageCopy2KHR*	pRegions;
 		};
@@ -11923,6 +11923,72 @@ void addResolveImageWholeCopyBeforeResolvingTests (tcu::TestCaseGroup* group, Al
 	}
 }
 
+void addResolveImageWholeCopyDiffLayoutsBeforeResolvingTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+{
+	TestParams	params;
+	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
+	params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+	params.src.image.extent				= defaultExtent;
+	params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+	params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
+	params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+	params.dst.image.extent				= defaultExtent;
+	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	params.allocationKind				= allocationKind;
+	params.extensionUse					= extensionUse;
+
+	{
+		const VkImageSubresourceLayers	sourceLayer	=
+		{
+			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+			0u,							// deUint32				mipLevel;
+			0u,							// deUint32				baseArrayLayer;
+			1u							// deUint32				layerCount;
+		};
+
+		const VkImageResolve			testResolve	=
+		{
+			sourceLayer,		// VkImageSubresourceLayers	srcSubresource;
+			{0, 0, 0},			// VkOffset3D				srcOffset;
+			sourceLayer,		// VkImageSubresourceLayers	dstSubresource;
+			{0, 0, 0},			// VkOffset3D				dstOffset;
+			defaultExtent,		// VkExtent3D				extent;
+		};
+
+		CopyRegion	imageResolve;
+		imageResolve.imageResolve	= testResolve;
+		params.regions.push_back(imageResolve);
+	}
+
+	const struct
+	{
+		VkImageLayout	layout;
+		std::string		name;
+	}	imageLayouts[]			=
+	{
+		{ VK_IMAGE_LAYOUT_GENERAL,					"general"							},
+		{ VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		"transfer_src_optimal"				},
+		{ VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		"transfer_dst_optimal"				}
+	};
+
+	for (int samplesIndex = 0; samplesIndex < DE_LENGTH_OF_ARRAY(samples); ++samplesIndex)
+	for (int srcLayoutIndex = 0; srcLayoutIndex < DE_LENGTH_OF_ARRAY(imageLayouts); ++srcLayoutIndex)
+	for (int dstLayoutIndex = 0; dstLayoutIndex < DE_LENGTH_OF_ARRAY(imageLayouts); ++dstLayoutIndex)
+	{
+		params.src.image.operationLayout	= imageLayouts[srcLayoutIndex].layout;
+		params.dst.image.operationLayout	= imageLayouts[dstLayoutIndex].layout;
+		if (params.src.image.operationLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL ||
+			params.dst.image.operationLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+			continue;
+		params.samples						= samples[samplesIndex];
+		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
+		std::string testName = getSampleCountCaseName(samples[samplesIndex]) + "_" + imageLayouts[srcLayoutIndex].name + "_" + imageLayouts[dstLayoutIndex].name;
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), testName, description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
+	}
+}
+
 void addResolveImageWholeArrayImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
 	TestParams	params;
@@ -12113,6 +12179,7 @@ void addResolveImageTests (tcu::TestCaseGroup* group, AllocationKind allocationK
 	addTestGroup(group, "partial", "Resolve from image to image (partial)", addResolveImagePartialTests, allocationKind, extensionUse);
 	addTestGroup(group, "with_regions", "Resolve from image to image (with regions)", addResolveImageWithRegionsTests, allocationKind, extensionUse);
 	addTestGroup(group, "whole_copy_before_resolving", "Resolve from image to image (whole copy before resolving)", addResolveImageWholeCopyBeforeResolvingTests, allocationKind, extensionUse);
+	addTestGroup(group, "diff_layout_copy_before_resolving", "Resolve from image to image (whole copy before resolving with different layouts)", addResolveImageWholeCopyDiffLayoutsBeforeResolvingTests, allocationKind, extensionUse);
 	addTestGroup(group, "whole_array_image", "Resolve from image to image (whole array image)", addResolveImageWholeArrayImageTests, allocationKind, extensionUse);
 	addTestGroup(group, "whole_array_image_one_region", "Resolve from image to image (whole array image with single region)", addResolveImageWholeArrayImageSingleRegionTests, allocationKind, extensionUse);
 	addTestGroup(group, "diff_image_size", "Resolve from image to image of different size", addResolveImageDiffImageSizeTests, allocationKind, extensionUse);
