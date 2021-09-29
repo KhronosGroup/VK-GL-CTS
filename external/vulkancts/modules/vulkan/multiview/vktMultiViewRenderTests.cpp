@@ -3117,27 +3117,7 @@ void MultiViewReadbackTestInstance::drawClears (const deUint32 subpassCount, VkR
 	if (clearPass)
 		beforeDraw();
 
-	if (m_useDynamicRendering)
-	{
-		const VkImageSubresourceRange	subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-		const VkImageMemoryBarrier		imageBarrier
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			0u,												// VkAccessFlags			outputMask;
-			VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			inputMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		// VkImageLayout			newLayout;
-			VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
-			VK_QUEUE_FAMILY_IGNORED,						// deUint32					destQueueFamilyIndex;
-			m_colorAttachment->getImage(),					// VkImage					image;
-			subresourceRange,								// VkImageSubresourceRange	subresourceRange;
-		};
-
-		m_device->cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0,
-									 (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
-	}
-	else
+	if (!m_useDynamicRendering)
 	{
 		const VkRenderPassBeginInfo renderPassBeginInfo
 		{
@@ -3768,9 +3748,9 @@ void MultiViewDepthStencilTestInstance::beforeDraw (void)
 		m_parameters.extent.depth,									//deUint32				layerCount;
 	};
 	imageBarrier(*m_device, *m_cmdBuffer, m_dsAttachment->getImage(), subresourceRange,
-		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		0, VK_ACCESS_TRANSFER_WRITE_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 	const tcu::Vec4		baseColor	= getQuarterRefColor(0u, 0u, 0u, false);
 	const float			clearDepth	= baseColor[0];
