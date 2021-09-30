@@ -366,6 +366,16 @@ if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(de
 	checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
 }
 
+if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR>()))
+{
+	static const Feature features[] =
+	{
+		FEATURE_ITEM (VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR, shaderIntegerDotProduct),
+	};
+	auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR*>(featuresStruct);
+	checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
+}
+
 if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePresentIdFeaturesKHR>()))
 {
 	static const Feature features[] =
@@ -1000,6 +1010,17 @@ if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(de
 	checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
 }
 
+if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>()))
+{
+	static const Feature features[] =
+	{
+		FEATURE_ITEM (VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT, primitiveTopologyListRestart),
+		FEATURE_ITEM (VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT, primitiveTopologyPatchListRestart),
+	};
+	auto* supportedFeatures = reinterpret_cast<const VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT*>(featuresStruct);
+	checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
+}
+
 if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceSubpassShadingFeaturesHUAWEI>()))
 {
 	static const Feature features[] =
@@ -1069,6 +1090,16 @@ if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(de
 		FEATURE_ITEM (VkPhysicalDeviceMultiDrawFeaturesEXT, multiDraw),
 	};
 	auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceMultiDrawFeaturesEXT*>(featuresStruct);
+	checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
+}
+
+if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT>()))
+{
+	static const Feature features[] =
+	{
+		FEATURE_ITEM (VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT, pageableDeviceLocalMemory),
+	};
+	auto* supportedFeatures = reinterpret_cast<const VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT*>(featuresStruct);
 	checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
 }
 
