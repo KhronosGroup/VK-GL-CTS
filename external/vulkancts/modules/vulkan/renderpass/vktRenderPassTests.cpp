@@ -1792,7 +1792,7 @@ void beginCommandBuffer (const DeviceInterface&			vk,
 		pInheritanceInfo_pipelineStatistics,
 	};
 	std::vector<vk::VkFormat> colorAttachmentFormats;
-	VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo =
+	VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,
 		DE_NULL,
@@ -1800,6 +1800,7 @@ void beginCommandBuffer (const DeviceInterface&			vk,
 		0u,
 		0u,
 		DE_NULL,
+		VK_FORMAT_UNDEFINED,
 		VK_FORMAT_UNDEFINED,
 		VK_SAMPLE_COUNT_1_BIT,
 	};
@@ -1811,15 +1812,14 @@ void beginCommandBuffer (const DeviceInterface&			vk,
 		inheritanceRenderingInfo.colorAttachmentCount = static_cast<deUint32>(colorAttachmentFormats.size());
 		inheritanceRenderingInfo.pColorAttachmentFormats = colorAttachmentFormats.data();
 		if (pRenderInfo->getDepthStencilAttachment())
-			inheritanceRenderingInfo.depthStencilAttachmentFormat = pRenderInfo->getDepthStencilAttachment()->getFormat();
-		else
-			inheritanceRenderingInfo.depthStencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+		{
+			inheritanceRenderingInfo.depthAttachmentFormat		= pRenderInfo->getDepthStencilAttachment()->getFormat();
+			inheritanceRenderingInfo.stencilAttachmentFormat	= pRenderInfo->getDepthStencilAttachment()->getFormat();
+		}
 		if (pRenderInfo->getColorAttachmentCount())
 			inheritanceRenderingInfo.rasterizationSamples = pRenderInfo->getColorAttachment(0).getSamples();
 		else if (pRenderInfo->getDepthStencilAttachment())
 			inheritanceRenderingInfo.rasterizationSamples = pRenderInfo->getDepthStencilAttachment()->getSamples();
-		else
-			inheritanceRenderingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
 		if (dynamicRenderPass)
 			pInheritanceInfo.pNext = &inheritanceRenderingInfo;
@@ -2041,13 +2041,14 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 		depthStencilFormat = attachment.getFormat();
 	}
 
-	vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+	VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
 		DE_NULL,
 		0u,
 		static_cast<deUint32>(colorAttachmentFormats.size()),
 		colorAttachmentFormats.data(),
+		depthStencilFormat,
 		depthStencilFormat
 	};
 

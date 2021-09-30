@@ -871,6 +871,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 		0u,
 		1u,
 		&colorFormat,
+		dsFormat,
 		dsFormat
 	};
 

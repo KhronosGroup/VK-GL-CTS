@@ -252,7 +252,7 @@ tcu::TestStatus SampleDrawnCubeFaceTestInstance::iterate (void)
 	const deUint32					layerCount				= 6;
 	const deUint32					levelCount				= 1;
 
-	const IVec3						imageSize				= {m_size.x(), m_size.y(), layerCount};
+	const IVec3						imageSize				= {m_size.x(), m_size.y(), (deInt32)layerCount};
 	const VkExtent2D				renderSize				= {deUint32(m_size.x()), deUint32(m_size.y())};
 	const VkRect2D					renderArea				= makeRect2D(makeExtent3D(m_size.x(), m_size.y(), 1u));
 	const vector<VkRect2D>			scissors				(1u, renderArea);
@@ -433,7 +433,7 @@ tcu::TestStatus SampleDrawnCubeFaceTestInstance::iterate (void)
 
 	invalidateAlloc(vk, device, *resultBufferMemory);
 
-	tcu::clear(resultImage->getAccess(), IVec4(0.));
+	tcu::clear(resultImage->getAccess(), IVec4(0));
 	tcu::copy(resultImage->getAccess(), ConstPixelBufferAccess(resultImage.get()->getFormat(),
 			  resultImage.get()->getSize(), resultBufferMemory->getHostPtr()));
 

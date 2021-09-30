@@ -1603,6 +1603,7 @@ Move<VkPipeline> MultisampleRenderPassTestInstance::createRenderPipeline (void)
 		0u,
 		m_attachmentsCount,
 		attachmentFormats.data(),
+		VK_FORMAT_UNDEFINED,
 		VK_FORMAT_UNDEFINED
 	};
 	if (m_renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)

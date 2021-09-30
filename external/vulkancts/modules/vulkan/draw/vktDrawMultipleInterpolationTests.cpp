@@ -531,6 +531,7 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 			0u,
 			static_cast<deUint32>(colorAttachmentFormats.size()),
 			colorAttachmentFormats.data(),
+			vk::VK_FORMAT_UNDEFINED,
 			vk::VK_FORMAT_UNDEFINED
 		};
 

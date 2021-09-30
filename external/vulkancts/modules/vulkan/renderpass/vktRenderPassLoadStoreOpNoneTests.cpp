@@ -1076,13 +1076,14 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 			else if (m_testParams.alphaBlend)
 				fragShader = *fragmentShaderModuleBlend;
 
-			vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+			VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 			{
-				vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+				VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
 				DE_NULL,
 				0u,
 				0u,
 				DE_NULL,
+				VK_FORMAT_UNDEFINED,
 				VK_FORMAT_UNDEFINED
 			};
 
@@ -1090,7 +1091,10 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 			for (const auto& att : m_testParams.attachments)
 			{
 				if (att.usage & ATTACHMENT_USAGE_DEPTH_STENCIL)
-					renderingCreateInfo.depthStencilAttachmentFormat = VK_FORMAT_D24_UNORM_S8_UINT;
+				{
+					renderingCreateInfo.depthAttachmentFormat	= VK_FORMAT_D24_UNORM_S8_UINT;
+					renderingCreateInfo.stencilAttachmentFormat	= VK_FORMAT_D24_UNORM_S8_UINT;
+				}
 				else
 				{
 					VkFormat format = getFormat(att.usage, m_testParams.depthStencilFormat);

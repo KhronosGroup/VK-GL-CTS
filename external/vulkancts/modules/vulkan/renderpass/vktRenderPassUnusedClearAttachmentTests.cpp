@@ -783,14 +783,15 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context&			
 
 		VkPipelineRenderingCreateInfoKHR* pNext = DE_NULL;
 		const std::vector<VkFormat> colorAttachmentFormats(testParams.colorUsed.size(), FORMAT_COLOR);
-		vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+		VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 		{
-			vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+			VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
 			DE_NULL,
 			0u,
 			static_cast<deUint32>(colorAttachmentFormats.size()),
 			colorAttachmentFormats.data(),
-			(hasDepthStencil(m_testParams.depthStencilType) ? m_testParams.depthStencilFormat : vk::VK_FORMAT_UNDEFINED)
+			(hasDepthStencil(m_testParams.depthStencilType) ? m_testParams.depthStencilFormat : vk::VK_FORMAT_UNDEFINED),
+			(hasDepthStencil(m_testParams.depthStencilType) ? m_testParams.depthStencilFormat : vk::VK_FORMAT_UNDEFINED),
 		};
 
 		if (testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)

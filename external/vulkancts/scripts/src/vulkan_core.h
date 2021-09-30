@@ -6835,7 +6835,8 @@ typedef struct VkPipelineRenderingCreateInfo {
     uint32_t           viewMask;
     uint32_t           colorAttachmentCount;
     const VkFormat*    pColorAttachmentFormats;
-    VkFormat           depthStencilAttachmentFormat;
+    VkFormat           depthAttachmentFormat;
+    VkFormat           stencilAttachmentFormat;
 } VkPipelineRenderingCreateInfo;
 
 typedef struct VkPhysicalDeviceDynamicRenderingFeatures {
@@ -6851,7 +6852,8 @@ typedef struct VkCommandBufferInheritanceRenderingInfo {
     uint32_t                 viewMask;
     uint32_t                 colorAttachmentCount;
     const VkFormat*          pColorAttachmentFormats;
-    VkFormat                 depthStencilAttachmentFormat;
+    VkFormat                 depthAttachmentFormat;
+    VkFormat                 stencilAttachmentFormat;
     VkSampleCountFlagBits    rasterizationSamples;
 } VkCommandBufferInheritanceRenderingInfo;
 

@@ -288,14 +288,15 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 			pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
 			pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
 
-			vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+			VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 			{
-				vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+				VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
 				DE_NULL,
 				0u,
 				1u,
 				&targetImageFormat,
-				vk::VK_FORMAT_UNDEFINED
+				VK_FORMAT_UNDEFINED,
+				VK_FORMAT_UNDEFINED
 			};
 
 			if (m_data.useDynamicRendering)

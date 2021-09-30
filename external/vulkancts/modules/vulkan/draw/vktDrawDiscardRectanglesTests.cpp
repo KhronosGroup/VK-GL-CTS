@@ -355,6 +355,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&			vk,
 		0u,
 		1u,
 		&colorAttachmentFormat,
+		VK_FORMAT_UNDEFINED,
 		VK_FORMAT_UNDEFINED
 	};
 
