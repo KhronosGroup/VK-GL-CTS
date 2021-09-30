@@ -1808,6 +1808,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				m_data.multiView ? 0x3 : 0u,
 				1u,
 				&cbFormat,
+				m_data.useDepthStencil ? dsFormat : VK_FORMAT_UNDEFINED,
 				m_data.useDepthStencil ? dsFormat : VK_FORMAT_UNDEFINED
 			};
 

@@ -357,6 +357,7 @@ Move<VkPipeline> createRenderPipeline (const DeviceInterface&							vkd,
 		DE_NULL,
 		1u,
 		&format,
+		VK_FORMAT_UNDEFINED,
 		VK_FORMAT_UNDEFINED
 	};
 	if (renderPass == DE_NULL)

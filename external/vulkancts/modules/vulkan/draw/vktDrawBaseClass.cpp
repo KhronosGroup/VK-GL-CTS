@@ -175,6 +175,7 @@ void DrawTestsBaseClass::initPipeline (const vk::VkDevice device)
 		0u,
 		1u,
 		&m_colorAttachmentFormat,
+		vk::VK_FORMAT_UNDEFINED,
 		vk::VK_FORMAT_UNDEFINED
 	};
 

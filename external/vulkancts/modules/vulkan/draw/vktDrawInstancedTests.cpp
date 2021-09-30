@@ -515,6 +515,7 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 		0u,
 		1u,
 		&m_colorAttachmentFormat,
+		vk::VK_FORMAT_UNDEFINED,
 		vk::VK_FORMAT_UNDEFINED
 	};
 

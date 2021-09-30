@@ -296,7 +296,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&	vk,
 									   const UVec2				renderSize,
 									   const deUint32			colorAttachmentCount,
 									   const VkFormat*			pColorAttachmentFormats,
-									   const VkFormat			pDepthStencilAttachmentFormat)
+									   const VkFormat			depthStencilAttachmentFormat)
 {
 	const VkVertexInputBindingDescription vertexInputBindingDescription =
 	{
@@ -462,14 +462,15 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&	vk,
 		},
 	};
 
-	const VkPipelineRenderingCreateInfoKHR renderingCreateInfo =
+	const VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,			// VkStructureType	sType;
 		DE_NULL,														// const void*		pNext;
 		0u,																// deUint32			viewMask;
 		colorAttachmentCount,											// deUint32			colorAttachmentCount;
 		pColorAttachmentFormats,										// const VkFormat*	pColorAttachmentFormats;
-		pDepthStencilAttachmentFormat,									// VkFormat			pDepthStencilAttachmentFormat;
+		depthStencilAttachmentFormat,									// VkFormat			depthAttachmentFormat;
+		depthStencilAttachmentFormat,									// VkFormat			stencilAttachmentFormat;
 	};
 
 	const VkGraphicsPipelineCreateInfo graphicsPipelineInfo =
@@ -622,7 +623,9 @@ void beginSecondaryCmdBuffer (const DeviceInterface&	vk,
 							  const deUint32			colorAttachmentCount,
 							  const ImagesFormat&		imagesFormat)
 {
-	const VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo =
+	const VkFormat depthStencilFormat = (imagesFormat.depth != VK_FORMAT_UNDEFINED) ?
+		imagesFormat.depth : imagesFormat.stencil;
+	const VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,	// VkStructureType			sType;
 		DE_NULL,															// const void*				pNext;
@@ -630,8 +633,8 @@ void beginSecondaryCmdBuffer (const DeviceInterface&	vk,
 		0u,																	// uint32_t					viewMask;
 		colorAttachmentCount,												// uint32_t					colorAttachmentCount;
 		(colorAttachmentCount > 0) ? imagesFormat.colors : DE_NULL,			// const VkFormat*			pColorAttachmentFormats;
-		(imagesFormat.depth != VK_FORMAT_UNDEFINED) ?
-			imagesFormat.depth : imagesFormat.stencil,						// VkFormat					depthStencilAttachmentFormat;
+		depthStencilFormat,													// VkFormat					depthAttachmentFormat;
+		depthStencilFormat,													// VkFormat					stencilAttachmentFormat;
 		VK_SAMPLE_COUNT_1_BIT,												// VkSampleCountFlagBits	rasterizationSamples;
 	};
 

@@ -494,14 +494,15 @@ TestStatus ScissorTestInstance::iterate (void)
 			pipelineCreateInfo.addState(PipelineCreateInfo::ViewportState(numScissors, vector<VkViewport>(numScissors, viewport), m_params.staticScissors));
 		}
 
-		vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+		VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 		{
-			vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+			VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
 			DE_NULL,
 			0u,
 			1u,
 			&colorImageFormat,
-			vk::VK_FORMAT_UNDEFINED
+			VK_FORMAT_UNDEFINED,
+			VK_FORMAT_UNDEFINED
 		};
 
 		if (m_params.usesDynamicRendering)

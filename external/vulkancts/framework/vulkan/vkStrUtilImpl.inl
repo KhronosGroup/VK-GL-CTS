@@ -7793,7 +7793,8 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineRenderingCreateInfoKH
 	s << "\tviewMask = " << value.viewMask << '\n';
 	s << "\tcolorAttachmentCount = " << value.colorAttachmentCount << '\n';
 	s << "\tpColorAttachmentFormats = " << value.pColorAttachmentFormats << '\n';
-	s << "\tdepthStencilAttachmentFormat = " << value.depthStencilAttachmentFormat << '\n';
+	s << "\tdepthAttachmentFormat = " << value.depthAttachmentFormat << '\n';
+	s << "\tstencilAttachmentFormat = " << value.stencilAttachmentFormat << '\n';
 	s << '}';
 	return s;
 }
@@ -7817,7 +7818,8 @@ std::ostream& operator<< (std::ostream& s, const VkCommandBufferInheritanceRende
 	s << "\tviewMask = " << value.viewMask << '\n';
 	s << "\tcolorAttachmentCount = " << value.colorAttachmentCount << '\n';
 	s << "\tpColorAttachmentFormats = " << value.pColorAttachmentFormats << '\n';
-	s << "\tdepthStencilAttachmentFormat = " << value.depthStencilAttachmentFormat << '\n';
+	s << "\tdepthAttachmentFormat = " << value.depthAttachmentFormat << '\n';
+	s << "\tstencilAttachmentFormat = " << value.stencilAttachmentFormat << '\n';
 	s << "\trasterizationSamples = " << value.rasterizationSamples << '\n';
 	s << '}';
 	return s;

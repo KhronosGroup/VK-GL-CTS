@@ -1033,13 +1033,14 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline (const VkRend
 		4u															// deUint32									patchControlPoints;
 	};
 
-	vk::VkPipelineRenderingCreateInfoKHR			renderingCreateInfo
+	VkPipelineRenderingCreateInfoKHR				renderingCreateInfo
 	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
 		DE_NULL,
 		m_parameters.viewMasks[subpass],
 		1u,
 		&m_parameters.colorFormat,
+		dsFormat,
 		dsFormat
 	};
 
@@ -2289,7 +2290,8 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 			m_parameters.viewMasks[subpassNdx],									// uint32_t									viewMask;
 			1u,																	// uint32_t									colorAttachmentCount;
 			&m_parameters.colorFormat,											// const VkFormat*							pColorAttachmentFormats;
-			VK_FORMAT_UNDEFINED,												// VkFormat									depthStencilAttachmentFormat;
+			VK_FORMAT_UNDEFINED,												// VkFormat									depthAttachmentFormat;
+			VK_FORMAT_UNDEFINED,												// VkFormat									stencilAttachmentFormat;
 			m_parameters.samples												// VkSampleCountFlagBits					rasterizationSamples;
 		};
 

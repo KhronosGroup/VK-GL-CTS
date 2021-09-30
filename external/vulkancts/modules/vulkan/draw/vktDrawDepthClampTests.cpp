@@ -443,13 +443,14 @@ DepthClampTestInstance::DepthClampTestInstance (Context& context, const TestPara
 	pipelineCreateInfo.addState (PipelineCreateInfo::MultiSampleState	());
 	pipelineCreateInfo.addState (PipelineCreateInfo::DynamicState		(dynamicStates));
 
-	vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+	VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
 		DE_NULL,
 		0u,
 		0u,
 		DE_NULL,
+		m_format,
 		m_format
 	};
 

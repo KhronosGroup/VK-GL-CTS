@@ -345,13 +345,14 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 	};
 
 	VkFormat colorAttachmentFormat = VK_FORMAT_R8G8B8A8_UNORM;
-	vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+	VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
 		DE_NULL,
 		0u,
 		1u,
 		&colorAttachmentFormat,
+		VK_FORMAT_UNDEFINED,
 		VK_FORMAT_UNDEFINED
 	};
 
