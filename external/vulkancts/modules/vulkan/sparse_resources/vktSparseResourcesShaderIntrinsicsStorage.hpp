@@ -38,8 +38,9 @@ public:
 															 const SpirVFunction	function,
 															 const ImageType		imageType,
 															 const tcu::UVec3&		imageSize,
-															 const vk::VkFormat		format)
-		: SparseShaderIntrinsicsCaseBase(testCtx, name, function, imageType, imageSize, format) {}
+															 const vk::VkFormat		format,
+															 const std::string&		operand)
+		: SparseShaderIntrinsicsCaseBase(testCtx, name, function, imageType, imageSize, format, operand) {}
 
 	void				initPrograms						(vk::SourceCollections&	programCollection) const;
 
@@ -61,8 +62,9 @@ public:
 														 const SpirVFunction	function,
 														 const ImageType		imageType,
 														 const tcu::UVec3&		imageSize,
-														 const vk::VkFormat		format)
-		: SparseShaderIntrinsicsCaseStorage (testCtx, name, function, imageType, imageSize, format) {}
+														 const vk::VkFormat		format,
+														 const std::string&		operand)
+		: SparseShaderIntrinsicsCaseStorage (testCtx, name, function, imageType, imageSize, format, operand) {}
 
 	TestInstance*	createInstance						(Context&				context) const;
 
@@ -84,8 +86,9 @@ public:
 														 const SpirVFunction	function,
 														 const ImageType		imageType,
 														 const tcu::UVec3&		imageSize,
-														 const vk::VkFormat		format)
-		: SparseShaderIntrinsicsCaseStorage (testCtx, name, function, imageType, imageSize, format) {}
+														 const vk::VkFormat		format,
+														 const std::string&		operand)
+		: SparseShaderIntrinsicsCaseStorage (testCtx, name, function, imageType, imageSize, format, operand) {}
 
 	TestInstance*	createInstance						(Context&				context) const;
 

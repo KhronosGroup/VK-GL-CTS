@@ -434,7 +434,6 @@ void SparseShaderIntrinsicsInstanceBase::checkSupport(VkImageCreateInfo imageSpa
 	// Check if device supports sparse operations for image format
 	if (!checkSparseSupportForImageFormat(instance, physicalDevice, imageSparseInfo))
 		TCU_THROW(NotSupportedError, "The image format does not support sparse operations");
-
 }
 
 tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)

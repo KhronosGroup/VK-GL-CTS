@@ -62,6 +62,7 @@ void createChildren (tcu::TestCaseGroup* imageTests)
 	imageTests->addChild(createImageCompressionTranscodingTests(testCtx));
 	imageTests->addChild(createImageTranscodingSupportTests(testCtx));
 	imageTests->addChild(createImageExtendOperandsTests(testCtx));
+	imageTests->addChild(createImageNontemporalOperandTests(testCtx));
 	imageTests->addChild(createImageAstcDecodeModeTests(testCtx));
 	imageTests->addChild(createMisalignedCubeTests(testCtx));
 	imageTests->addChild(createImageLoadStoreLodAMDTests(testCtx));
