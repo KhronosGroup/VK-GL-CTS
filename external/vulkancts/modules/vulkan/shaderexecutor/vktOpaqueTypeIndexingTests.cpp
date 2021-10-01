@@ -185,7 +185,7 @@ public:
 											generateSources(m_shaderType, m_shaderSpec, programCollection);
 										}
 
-			void						checkSupport				(Context& context) const;
+	virtual	void						checkSupport				(Context& context) const;
 
 protected:
 	const char*							m_name;
@@ -1390,6 +1390,7 @@ public:
 	virtual						~BlockArrayIndexingCase		(void);
 
 	virtual TestInstance*		createInstance				(Context& ctx) const;
+	virtual	void				checkSupport				(Context& context) const;
 
 private:
 								BlockArrayIndexingCase		(const BlockArrayIndexingCase&);
@@ -1422,6 +1423,33 @@ BlockArrayIndexingCase::BlockArrayIndexingCase (tcu::TestContext&			testCtx,
 
 BlockArrayIndexingCase::~BlockArrayIndexingCase (void)
 {
+}
+
+void BlockArrayIndexingCase::checkSupport(Context &context) const
+{
+	OpaqueTypeIndexingCase::checkSupport(context);
+
+	uint32_t maxDescriptorStorageBuffers = (uint32_t)(m_inValues.size());
+
+	switch (m_shaderType)
+	{
+	case glu::SHADERTYPE_VERTEX:
+	case glu::SHADERTYPE_TESSELLATION_CONTROL:
+	case glu::SHADERTYPE_TESSELLATION_EVALUATION:
+	case glu::SHADERTYPE_GEOMETRY:
+	case glu::SHADERTYPE_FRAGMENT:
+		// No extra storage buffers
+		break;
+	case glu::SHADERTYPE_COMPUTE:
+		// From ComputerShaderExecutor class
+		maxDescriptorStorageBuffers += 2u;
+		break;
+	default:
+		TCU_THROW(InternalError, "Unsupported shader type");
+	}
+
+	if (maxDescriptorStorageBuffers > context.getDeviceProperties2().properties.limits.maxPerStageDescriptorStorageBuffers)
+		TCU_THROW(NotSupportedError, "Driver supports less maxPerStageDescriptorStorageBuffers than the ones required");
 }
 
 TestInstance* BlockArrayIndexingCase::createInstance (Context& ctx) const
