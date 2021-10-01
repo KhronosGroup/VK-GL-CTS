@@ -547,11 +547,12 @@ TestCase::IterateResult PartialUpdateTest::iterate (void)
 			else
 			{
 				damageRegion = getDamageRegion(newFrame, 0, 0, 0, 0);
-				// Set empty damage region to avoid invalidating the framebuffer. The damage area is invalidated
-				// if the buffer age extension is not supported.
-				if (damageRegion.size() == 0)
-					damageRegion = vector<EGLint>(4, 0);
 			}
+
+			// Set empty damage region to avoid invalidating the framebuffer. The damage area is invalidated
+			// if the buffer age extension is not supported.
+			if (damageRegion.size() == 0)
+				damageRegion = vector<EGLint>(4, 0);
 
 			EGLU_CHECK_CALL(egl, setDamageRegionKHR(m_eglDisplay, m_eglSurface, &damageRegion[0], (EGLint)damageRegion.size()/4));
 		}
