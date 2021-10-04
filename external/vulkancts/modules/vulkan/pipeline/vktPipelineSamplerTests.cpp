@@ -2013,7 +2013,7 @@ tcu::TestCaseGroup* createExactSamplingTests (tcu::TestContext& testCtx)
 		const std::string		desc;
 	} testEdges[] =
 	{
-		{ tcu::nothing<float>(),	"centered",		"Sampling points centered in texel"		},
+		{ tcu::Nothing,				"centered",		"Sampling points centered in texel"		},
 		{ tcu::just<float>(-1.0f),	"edge_left",	"Sampling points near left edge"		},
 		{ tcu::just<float>(+1.0f),	"edge_right",	"Sampling points near right edge"		},
 	};

@@ -567,7 +567,7 @@ tcu::UVec2 getFullScreenSize (const vk::wsi::Type wsiType, const vk::wsi::Displa
 		case TYPE_WIN32:
 		{
 #if ( DE_OS == DE_OS_WIN32 )
-			de::MovePtr<Window>					nullWindow		(display.createWindow(tcu::nothing<tcu::UVec2>()));
+			de::MovePtr<Window>					nullWindow		(display.createWindow(tcu::Nothing));
 			const Win32WindowInterface&			win32Window		= dynamic_cast<const Win32WindowInterface&>(*nullWindow);
 			HMONITOR							hMonitor		= (HMONITOR)MonitorFromWindow((HWND)win32Window.getNative().internal, MONITOR_DEFAULTTONEAREST);
 			MONITORINFO							monitorInfo;

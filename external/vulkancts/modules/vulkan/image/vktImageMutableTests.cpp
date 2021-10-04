@@ -1968,9 +1968,9 @@ struct NativeObjects
 	const UniquePtr<Window>		window;
 
 	NativeObjects(Context&				context,
-		const Extensions&	supportedExtensions,
-		Type					wsiType,
-		const Maybe<UVec2>&	initialWindowSize = tcu::nothing<UVec2>())
+				  const Extensions&		supportedExtensions,
+				  Type					wsiType,
+				  const Maybe<UVec2>&	initialWindowSize = tcu::Nothing)
 		: display(createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), supportedExtensions, wsiType))
 		, window(createWindow(*display, initialWindowSize))
 	{}

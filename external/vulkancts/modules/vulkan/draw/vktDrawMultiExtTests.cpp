@@ -952,7 +952,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 	}
 
 	// Prepare draw information.
-	const auto offsetType	= (m_params.vertexOffset ? m_params.vertexOffset->offsetType : tcu::nothing<VertexOffsetType>());
+	const auto offsetType	= (m_params.vertexOffset ? tcu::just(m_params.vertexOffset->offsetType) : tcu::Nothing);
 	const auto vertexOffset	= static_cast<deInt32>(extraVertices);
 
 	DrawInfoPacker drawInfos(m_params.drawType, offsetType, m_params.stride, m_params.drawCount, m_params.seed);
@@ -1169,7 +1169,7 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx)
 		const char*						name;
 	} offsetTypeCases[] =
 	{
-		{ tcu::nothing<VertexOffsetType>(),		""			},
+		{ tcu::Nothing,							""			},
 		{ VertexOffsetType::MIXED,				"mixed"		},
 		{ VertexOffsetType::CONSTANT_RANDOM,	"random"	},
 		{ VertexOffsetType::CONSTANT_PACK,		"packed"	},
@@ -1282,7 +1282,7 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx)
 									const auto	isPacked	= (offsetTypeCase.vertexOffsetType && *offsetTypeCase.vertexOffsetType == VertexOffsetType::CONSTANT_PACK);
 									const auto	baseStride	= ((isIndexed && !isPacked) ? sizeof(VkMultiDrawIndexedInfoEXT) : sizeof(VkMultiDrawInfoEXT));
 									const auto&	extraBytes	= strideCase.extraBytes;
-									const auto	testOffset	= (isIndexed ? VertexOffsetParams{*offsetTypeCase.vertexOffsetType, 0u } : tcu::nothing<VertexOffsetParams>());
+									const auto	testOffset	= (isIndexed ? tcu::just(VertexOffsetParams{*offsetTypeCase.vertexOffsetType, 0u }) : tcu::Nothing);
 									deUint32	testStride	= 0u;
 
 									if (extraBytes >= 0)

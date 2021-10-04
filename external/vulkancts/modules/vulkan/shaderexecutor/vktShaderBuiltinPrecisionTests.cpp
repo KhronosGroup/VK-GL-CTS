@@ -294,7 +294,7 @@ typename Traits<T>::IVal unionIVal (const typename Traits<T>::IVal& a,
 
 //! Returns true iff every element of `ival` contains the corresponding element of `value`.
 template <typename T, typename U = Void>
-bool contains (const typename Traits<T>::IVal& ival, const T& value, bool is16Bit = false, const tcu::Maybe<U>& modularDivisor = tcu::nothing<U>())
+bool contains (const typename Traits<T>::IVal& ival, const T& value, bool is16Bit = false, const tcu::Maybe<U>& modularDivisor = tcu::Nothing)
 {
 	return Traits<T>::doContains(ival, value, is16Bit, modularDivisor);
 }
@@ -698,7 +698,7 @@ struct Traits<deFloat16> : ScalarTraits<deFloat16>
 	{
 		DE_UNREF(is16Bit);
 		float res0 = deFloat16To32(value);
-		const tcu::Maybe<float> convertedDivisor = (modularDivisor ? tcu::just(deFloat16To32(modularDivisor.get())) : tcu::nothing<float>());
+		const tcu::Maybe<float> convertedDivisor = (modularDivisor ? tcu::just(deFloat16To32(modularDivisor.get())) : tcu::Nothing);
 		return intervalContains(a, res0, convertedDivisor);
 	}
 
@@ -828,7 +828,7 @@ struct ContainerTraits
 
 		for (int ndx = 0; ndx < T::SIZE; ++ndx)
 		{
-			const tcu::Maybe<DivisorElement> divisorElement = (modularDivisor ? tcu::just((*modularDivisor)[ndx]) : tcu::nothing<DivisorElement>());
+			const tcu::Maybe<DivisorElement> divisorElement = (modularDivisor ? tcu::just((*modularDivisor)[ndx]) : tcu::Nothing);
 			if (!contains(ival[ndx], value[ndx], is16Bit, divisorElement))
 				return false;
 		}
@@ -6288,7 +6288,7 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate (void)
 				case 1:
 					{
 						// Pass b from mod(a, b) if we are in the modulo operation.
-						const tcu::Maybe<In1> modularDivisor = (m_modularOp ? tcu::just(inputs.in1[valueNdx]) : tcu::nothing<In1>());
+						const tcu::Maybe<In1> modularDivisor = (m_modularOp ? tcu::just(inputs.in1[valueNdx]) : tcu::Nothing);
 
 						reference0 = convert<Out0>(highpFmt, env.lookup(*m_variables.out0));
 						if (!status.check(contains(reference0, outputs.out0[valueNdx], m_caseCtx.isPackFloat16b, modularDivisor), "Shader output 0 is outside acceptable range"))

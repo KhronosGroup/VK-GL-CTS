@@ -550,7 +550,7 @@ struct StaticAndDynamicPair
 	// Helper constructor to set a static value and no dynamic value.
 	StaticAndDynamicPair (const T& value)
 		: staticValue	(value)
-		, dynamicValue	(tcu::nothing<T>())
+		, dynamicValue	(tcu::Nothing)
 	{
 	}
 

@@ -98,7 +98,7 @@ tcu::Maybe<std::string> layoutExtension (VkImageLayout layout)
 
 	if (!extension.empty())
 		return tcu::just(extension);
-	return tcu::nothing<std::string>();
+	return tcu::Nothing;
 }
 
 // Types of access for an image aspect.
@@ -275,7 +275,7 @@ void addDescriptors (IODescVec& descriptors, uint32_t& inputAttachmentCount, con
 		InputOutputDescriptor descriptor =
 		{
 			static_cast<uint32_t>(descriptors.size()),	//	uint32_t				binding;
-			tcu::nothing<uint32_t>(),					//	tcu::Maybe<uint32_t>	inputAttachmentIndex;
+			tcu::Nothing,								//	tcu::Maybe<uint32_t>	inputAttachmentIndex;
 			aspect,										//	VkImageAspectFlagBits	aspect;
 		};
 
@@ -1374,7 +1374,7 @@ tcu::TestCaseGroup* createImageDepthStencilDescriptorTests (tcu::TestContext& te
 							depthAccess,					//	AspectAccess			depthAccess;
 							stencilAccess,					//	AspectAccess			stencilAccess;
 							tcu::just(*depthROCase),		//	tcu::Maybe<ROAccessVec>	depthROAccesses;
-							tcu::nothing<ROAccessVec>(),	//	tcu::Maybe<ROAccessVec>	stencilROAccesses;
+							tcu::Nothing,					//	tcu::Maybe<ROAccessVec>	stencilROAccesses;
 						};
 						formatGroup->addChild(new DepthStencilDescriptorCase(testCtx, depthPart + stencilPart, "", params));
 					}
@@ -1398,7 +1398,7 @@ tcu::TestCaseGroup* createImageDepthStencilDescriptorTests (tcu::TestContext& te
 							layout,							//	VkImageLayout			layout;
 							depthAccess,					//	AspectAccess			depthAccess;
 							stencilAccess,					//	AspectAccess			stencilAccess;
-							tcu::nothing<ROAccessVec>(),	//	tcu::Maybe<ROAccessVec>	depthROAccesses;
+							tcu::Nothing,					//	tcu::Maybe<ROAccessVec>	depthROAccesses;
 							tcu::just(*stencilROCase),		//	tcu::Maybe<ROAccessVec>	stencilROAccesses;
 						};
 						formatGroup->addChild(new DepthStencilDescriptorCase(testCtx, depthPart + stencilPart, "", params));
@@ -1416,8 +1416,8 @@ tcu::TestCaseGroup* createImageDepthStencilDescriptorTests (tcu::TestContext& te
 						layout,							//	VkImageLayout			layout;
 						depthAccess,					//	AspectAccess			depthAccess;
 						stencilAccess,					//	AspectAccess			stencilAccess;
-						tcu::nothing<ROAccessVec>(),	//	tcu::Maybe<ROAccessVec>	depthROAccesses;
-						tcu::nothing<ROAccessVec>(),	//	tcu::Maybe<ROAccessVec>	stencilROAccesses;
+						tcu::Nothing,					//	tcu::Maybe<ROAccessVec>	depthROAccesses;
+						tcu::Nothing,					//	tcu::Maybe<ROAccessVec>	stencilROAccesses;
 					};
 					formatGroup->addChild(new DepthStencilDescriptorCase(testCtx, depthPart + stencilPart, "", params));
 				}
