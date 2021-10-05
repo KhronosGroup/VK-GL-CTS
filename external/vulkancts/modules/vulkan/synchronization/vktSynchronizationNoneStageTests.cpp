@@ -406,7 +406,7 @@ NoneStageTestInstance::NoneStageTestInstance(Context& context, const TestParams&
 				m_referenceImageUsage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
 			// when we read stencil as color we need to use usampler2D
-			if (readAspect == VK_IMAGE_ASPECT_STENCIL_BIT || (readAspect == IMAGE_ASPECT_DEPTH_STENCIL && readStencilFromCombinedDepthStencil))
+			if ((readAspect | writeAspect) == VK_IMAGE_ASPECT_STENCIL_BIT || (readAspect == IMAGE_ASPECT_DEPTH_STENCIL && readStencilFromCombinedDepthStencil))
 				m_readFragShaderName		 = "frag-stencil-to-color";
 		}
 	}
@@ -1232,7 +1232,7 @@ void NoneStageTestCase::initPrograms(SourceCollections& sourceCollections) const
 	}
 	if ((readLayout != VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) &&
 		(readLayout != VK_IMAGE_LAYOUT_GENERAL) &&
-		(readAspect == VK_IMAGE_ASPECT_STENCIL_BIT || (readAspect == IMAGE_ASPECT_DEPTH_STENCIL && m_testParams.readLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)))
+		((readAspect | writeAspect) == VK_IMAGE_ASPECT_STENCIL_BIT || (readAspect == IMAGE_ASPECT_DEPTH_STENCIL && m_testParams.readLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)))
 	{
 		// use usampler2D and uvec4 for color
 		sourceCollections.glslSources.add("frag-stencil-to-color") << glu::FragmentSource(
