@@ -7,6 +7,7 @@ const vk::VkPhysicalDevice8BitStorageFeatures&							Context::get8BitStorageFeat
 const vk::VkPhysicalDeviceAccelerationStructureFeaturesKHR&				Context::getAccelerationStructureFeatures				(void) const { return m_device->getAccelerationStructureFeatures();				}
 const vk::VkPhysicalDeviceASTCDecodeFeaturesEXT&						Context::getASTCDecodeFeaturesEXT						(void) const { return m_device->getASTCDecodeFeaturesEXT();						}
 const vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&			Context::getBlendOperationAdvancedFeaturesEXT			(void) const { return m_device->getBlendOperationAdvancedFeaturesEXT();			}
+const vk::VkPhysicalDeviceBorderColorSwizzleFeaturesEXT&				Context::getBorderColorSwizzleFeaturesEXT				(void) const { return m_device->getBorderColorSwizzleFeaturesEXT();				}
 const vk::VkPhysicalDeviceBufferDeviceAddressFeatures&					Context::getBufferDeviceAddressFeatures					(void) const { return m_device->getBufferDeviceAddressFeatures();				}
 const vk::VkPhysicalDeviceBufferDeviceAddressFeaturesEXT&				Context::getBufferDeviceAddressFeaturesEXT				(void) const { return m_device->getBufferDeviceAddressFeaturesEXT();			}
 const vk::VkPhysicalDeviceCoherentMemoryFeaturesAMD&					Context::getCoherentMemoryFeaturesAMD					(void) const { return m_device->getCoherentMemoryFeaturesAMD();					}

@@ -957,6 +957,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_border_color_swizzle")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_pageable_device_local_memory")
 	{
 		return;
@@ -2209,6 +2213,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_EXT_load_store_op_none")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_border_color_swizzle")
 	{
 		return;
 	}

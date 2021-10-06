@@ -24,6 +24,7 @@
 
 #include "vktPipelineSamplerTests.hpp"
 #include "vktPipelineImageSamplingInstance.hpp"
+#include "vktPipelineSamplerBorderSwizzleTests.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
 #include "vktTestCase.hpp"
@@ -2072,6 +2073,9 @@ tcu::TestCaseGroup* createSamplerTests (tcu::TestContext& testCtx)
 		separateStencilUsageSamplerTests->addChild(createAllFormatsSamplerTests(testCtx, true));
 		samplerTests->addChild(separateStencilUsageSamplerTests.release());
 	}
+
+	// Border color swizzle tests.
+	samplerTests->addChild(createSamplerBorderSwizzleTests(testCtx));
 
 	return samplerTests.release();
 }
