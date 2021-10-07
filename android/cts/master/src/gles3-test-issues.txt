@@ -149,3 +149,7 @@ dEQP-GLES3.functional.shaders.texture_functions.texturegrad.isamplercube_fragmen
 
 # Bug 26651667
 dEQP-GLES3.functional.draw.draw_elements_instanced.indices.buffer.index_byte
+
+# Khronos bug 13916, internal bugs 20558284, 143459817
+dEQP-GLES3.functional.flush_finish.*
+

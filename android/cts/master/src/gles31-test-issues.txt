@@ -36,3 +36,6 @@ dEQP-GLES31.functional.debug.negative_coverage.get_error.texture.compressedtexim
 
 # Bug 28813504
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.41
+
+# Bug 122608943 shader generated is ridiculously large.
+dEQP-GLES31.functional.ssbo.layout.random.all_shared_buffer.48
