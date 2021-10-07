@@ -235,7 +235,7 @@ struct ClearAttachmentData
 
 			rectStencil2 =
 			{
-				makeRect2D(0, 16, 32, 32),
+				makeRect2D(0, 16, 32, 16),
 				0u,
 				1u,
 			};
@@ -250,7 +250,7 @@ struct ClearAttachmentData
 
 		rectColorDepth2 =
 		{
-			makeRect2D(16, 0, 32, 32),
+			makeRect2D(16, 0, 16, 32),
 			0u,
 			1u,
 		};
