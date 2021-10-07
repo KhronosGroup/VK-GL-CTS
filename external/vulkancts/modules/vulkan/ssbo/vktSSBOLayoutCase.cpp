@@ -2608,7 +2608,8 @@ void SSBOLayoutCase::checkSupport(Context& context) const
 		TCU_THROW(NotSupportedError, "scalarBlockLayout not supported");
 	if (m_usePhysStorageBuffer && !context.isBufferDeviceAddressSupported())
 		TCU_THROW(NotSupportedError, "Physical storage buffer pointers not supported");
-	if (!context.getDescriptorIndexingFeatures().shaderStorageBufferArrayNonUniformIndexing && usesDescriptorIndexing(m_interface))
+	if (usesDescriptorIndexing(m_interface) && (	!context.getDescriptorIndexingFeatures().shaderStorageBufferArrayNonUniformIndexing ||
+													!context.getDescriptorIndexingFeatures().runtimeDescriptorArray ) )
 		TCU_THROW(NotSupportedError, "Descriptor indexing over storage buffer not supported");
 
 	const vk::VkPhysicalDeviceProperties &properties = context.getDeviceProperties();
