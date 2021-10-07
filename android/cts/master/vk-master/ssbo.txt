@@ -11394,7 +11394,6 @@ dEQP-VK.ssbo.phys.layout.random.16bit.scalar.9
 dEQP-VK.ssbo.phys.layout.random.16bit.scalar.10
 dEQP-VK.ssbo.phys.layout.random.16bit.scalar.11
 dEQP-VK.ssbo.phys.layout.random.16bit.scalar.12
-dEQP-VK.ssbo.phys.layout.random.16bit.scalar.13
 dEQP-VK.ssbo.phys.layout.random.16bit.scalar.14
 dEQP-VK.ssbo.phys.layout.random.16bit.scalar.15
 dEQP-VK.ssbo.phys.layout.random.16bit.scalar.16

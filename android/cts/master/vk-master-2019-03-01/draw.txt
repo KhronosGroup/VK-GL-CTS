@@ -453,8 +453,6 @@ dEQP-VK.draw.zero_viewport_height.front_cw_cull_front
 dEQP-VK.draw.zero_viewport_height.front_cw_cull_back
 dEQP-VK.draw.zero_viewport_height.front_cw_cull_both
 dEQP-VK.draw.inverted_depth_ranges.depthclamp_deltazero
-dEQP-VK.draw.inverted_depth_ranges.depthclamp_deltasmall
-dEQP-VK.draw.inverted_depth_ranges.depthclamp_deltaone
 dEQP-VK.draw.inverted_depth_ranges.depthclamp_depth_range_unrestricted
 dEQP-VK.draw.inverted_depth_ranges.nodepthclamp_deltasmall
 dEQP-VK.draw.inverted_depth_ranges.nodepthclamp_deltaone

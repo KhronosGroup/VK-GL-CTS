@@ -14,6 +14,8 @@ dEQP-VK.draw.indirect_draw.indexed.indirect_draw_param_count_instanced.no_first_
 dEQP-VK.draw.indirect_draw.indexed.indirect_draw_param_count_instanced.no_first_instance.triangle_strip
 dEQP-VK.draw.indirect_draw.indexed.indirect_draw_param_count_instanced.first_instance.triangle_list
 dEQP-VK.draw.indirect_draw.indexed.indirect_draw_param_count_instanced.first_instance.triangle_strip
+dEQP-VK.draw.inverted_depth_ranges.depthclamp_deltasmall
+dEQP-VK.draw.inverted_depth_ranges.depthclamp_deltaone
 dEQP-VK.draw.inverted_depth_ranges.depthclamp_deltaone_bias_clamp_neg
 dEQP-VK.draw.inverted_depth_ranges.depthclamp_deltasmall_bias_clamp_pos
 dEQP-VK.draw.inverted_depth_ranges.nodepthclamp_deltaone_bias_clamp_neg
