@@ -1840,7 +1840,8 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 
 	if (m_useArrayOfPointers)
 	{
-		const VkBufferCreateInfo	bufferCreateInfo = makeBufferCreateInfo(m_bottomLevelInstances.size() * sizeof(VkDeviceOrHostAddressConstKHR), VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+		const size_t				pointerSize = (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR) ? sizeof(VkDeviceOrHostAddressConstKHR::deviceAddress) : sizeof(VkDeviceOrHostAddressConstKHR::hostAddress);
+		const VkBufferCreateInfo	bufferCreateInfo = makeBufferCreateInfo(static_cast<VkDeviceSize>(m_bottomLevelInstances.size() * pointerSize), VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 		m_instanceAddressBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
 	}
 
@@ -2090,8 +2091,8 @@ void TopLevelAccelerationStructureKHR::prepareInstances (const DeviceInterface&	
 					VkDeviceOrHostAddressConstKHR	currentInstance;
 					currentInstance.deviceAddress	= firstInstance.deviceAddress + instanceNdx * sizeof(VkAccelerationStructureInstanceKHR);
 
-					deMemcpy(&bufferStart[bufferOffset], &currentInstance, sizeof(VkDeviceOrHostAddressConstKHR));
-					bufferOffset += sizeof(VkDeviceOrHostAddressConstKHR);
+					deMemcpy(&bufferStart[bufferOffset], &currentInstance, sizeof(VkDeviceOrHostAddressConstKHR::deviceAddress));
+					bufferOffset += sizeof(VkDeviceOrHostAddressConstKHR::deviceAddress);
 				}
 				flushMappedMemoryRange(vk, device, m_instanceAddressBuffer->getAllocation().getMemory(), m_instanceAddressBuffer->getAllocation().getOffset(), VK_WHOLE_SIZE);
 
@@ -2116,8 +2117,8 @@ void TopLevelAccelerationStructureKHR::prepareInstances (const DeviceInterface&	
 					VkDeviceOrHostAddressConstKHR	currentInstance;
 					currentInstance.hostAddress	= (deUint8*)m_instanceBuffer->getAllocation().getHostPtr() + instanceNdx * sizeof(VkAccelerationStructureInstanceKHR);
 
-					deMemcpy(&bufferStart[bufferOffset], &currentInstance, sizeof(VkDeviceOrHostAddressConstKHR));
-					bufferOffset += sizeof(VkDeviceOrHostAddressConstKHR);
+					deMemcpy(&bufferStart[bufferOffset], &currentInstance, sizeof(VkDeviceOrHostAddressConstKHR::hostAddress));
+					bufferOffset += sizeof(VkDeviceOrHostAddressConstKHR::hostAddress);
 				}
 				instancesData = makeDeviceOrHostAddressConstKHR(m_instanceAddressBuffer->getAllocation().getHostPtr());
 			}
