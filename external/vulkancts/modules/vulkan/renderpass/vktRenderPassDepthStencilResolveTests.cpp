@@ -580,7 +580,7 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (VkFormat vkformat)
 	AttachmentReference2 singlesampleAttachmentRef			// VkAttachmentReference2
 	(
 																// VkStructureType					sType;
-		DE_NULL,												// const void*						pNext;
+		attachmentRefStencil,									// const void*						pNext;
 		(m_config.unusedResolve ? VK_ATTACHMENT_UNUSED : 1u),	// deUint32							attachment;
 		layout,													// VkImageLayout					layout;
 		aspectFlags												// VkImageAspectFlags				aspectMask;
