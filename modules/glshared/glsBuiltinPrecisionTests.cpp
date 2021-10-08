@@ -1167,7 +1167,7 @@ public:
 	virtual			~FuncBase				(void)					{}
 	virtual string	getName					(void)					const = 0;
 	//! Name of extension that this function requires, or empty.
-	virtual string	getRequiredExtension	(void)					const { return ""; }
+	virtual string	getRequiredExtension	(const RenderContext &)			const { return ""; }
 	virtual void	print					(ostream&,
 											 const BaseArgExprs&)	const = 0;
 	//! Index of output parameter, or -1 if none of the parameters is output.
@@ -3925,9 +3925,9 @@ public:
 		return "fma";
 	}
 
-	string			getRequiredExtension	(void) const
+	string			getRequiredExtension	(const RenderContext&   context) const
 	{
-		return "GL_EXT_gpu_shader5";
+		return (glu::contextSupports(context.getType(), glu::ApiType::core(4, 5))) ? "" : "GL_EXT_gpu_shader5";
 	}
 
 protected:
@@ -3996,9 +3996,9 @@ public:
 		return m_func.getOutParamIndex();
 	}
 
-	string	getRequiredExtension	(void) const
+	string	getRequiredExtension	(const RenderContext &context) const
 	{
-		return m_func.getRequiredExtension();
+		return m_func.getRequiredExtension(context);
 	}
 
 protected:
@@ -5057,7 +5057,7 @@ protected:
 					FuncCaseBase	(const Context&		context,
 									 const string&		name,
 									 const FuncBase&	func)
-						: PrecisionCase	(context, name, func.getRequiredExtension()) {}
+						: PrecisionCase	(context, name, func.getRequiredExtension(context.renderContext)) {}
 };
 
 IterateResult FuncCaseBase::iterate (void)
