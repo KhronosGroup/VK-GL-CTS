@@ -250,6 +250,9 @@ class GitRepo (Source):
 			protocol = 'https'
 		return protocol
 
+	def https2sshUrl(self, httpsUrl):
+		return httpsUrl.replace("https://github.com/", "git@github.com:")
+
 	def selectUrl(self, cmdProtocol = None):
 		try:
 			if cmdProtocol == None:
@@ -265,7 +268,7 @@ class GitRepo (Source):
 				url = self.sshUrl
 			else:
 				assert self.httpsUrl != None
-				url = self.httpsUrl
+				url = self.https2sshUrl(self.httpsUrl)
 		else:
 			assert protocol == 'https'
 			url = self.httpsUrl
