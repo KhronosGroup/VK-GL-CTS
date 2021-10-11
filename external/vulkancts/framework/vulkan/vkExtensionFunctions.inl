@@ -933,6 +933,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_primitives_generated_query")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_global_priority_query")
 	{
 		return;
@@ -2169,6 +2173,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	if (extName == "VK_EXT_color_write_enable")
 	{
 		functions.push_back("vkCmdSetColorWriteEnableEXT");
+		return;
+	}
+	if (extName == "VK_EXT_primitives_generated_query")
+	{
 		return;
 	}
 	if (extName == "VK_EXT_global_priority_query")

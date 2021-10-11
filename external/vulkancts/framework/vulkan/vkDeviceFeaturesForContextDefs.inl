@@ -54,6 +54,7 @@ const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&		Context::get
 const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR&					Context::getPortabilitySubsetFeatures					(void) const { return m_device->getPortabilitySubsetFeatures();					}
 const vk::VkPhysicalDevicePresentIdFeaturesKHR&							Context::getPresentIdFeatures							(void) const { return m_device->getPresentIdFeatures();							}
 const vk::VkPhysicalDevicePresentWaitFeaturesKHR&						Context::getPresentWaitFeatures							(void) const { return m_device->getPresentWaitFeatures();						}
+const vk::VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT&			Context::getPrimitivesGeneratedQueryFeaturesEXT			(void) const { return m_device->getPrimitivesGeneratedQueryFeaturesEXT();		}
 const vk::VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT&		Context::getPrimitiveTopologyListRestartFeaturesEXT		(void) const { return m_device->getPrimitiveTopologyListRestartFeaturesEXT();	}
 const vk::VkPhysicalDevicePrivateDataFeaturesEXT&						Context::getPrivateDataFeaturesEXT						(void) const { return m_device->getPrivateDataFeaturesEXT();					}
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&						Context::getProtectedMemoryFeatures						(void) const { return m_device->getProtectedMemoryFeatures();					}

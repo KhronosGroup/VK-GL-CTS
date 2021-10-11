@@ -501,6 +501,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/texture/vktTextureTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureTexelBufferTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureTexelOffsetTests.cpp \
+	external/vulkancts/modules/vulkan/transform_feedback/vktPrimitivesGeneratedQueryTests.cpp \
 	external/vulkancts/modules/vulkan/transform_feedback/vktTransformFeedbackFuzzLayoutCase.cpp \
 	external/vulkancts/modules/vulkan/transform_feedback/vktTransformFeedbackFuzzLayoutTests.cpp \
 	external/vulkancts/modules/vulkan/transform_feedback/vktTransformFeedbackRandomLayoutCase.cpp \

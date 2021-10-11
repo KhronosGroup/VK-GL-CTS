@@ -5388,6 +5388,15 @@ struct VkPipelineColorWriteCreateInfoEXT
 	const VkBool32*	pColorWriteEnables;
 };
 
+struct VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		primitivesGeneratedQuery;
+	VkBool32		primitivesGeneratedQueryWithRasterizerDiscard;
+	VkBool32		primitivesGeneratedQueryWithNonZeroStreams;
+};
+
 struct VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT
 {
 	VkStructureType	sType;

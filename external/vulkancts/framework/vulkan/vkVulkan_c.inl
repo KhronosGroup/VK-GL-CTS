@@ -1746,6 +1746,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX = 1000378000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT = 1000381000,
     VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT = 1000381001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT = 1000382000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_EXT = 1000388000,
     VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_EXT = 1000388001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT = 1000392000,
@@ -2326,6 +2327,7 @@ typedef enum VkQueryType {
 #ifdef VK_ENABLE_BETA_EXTENSIONS
     VK_QUERY_TYPE_VIDEO_ENCODE_BITSTREAM_BUFFER_RANGE_KHR = 1000299000,
 #endif
+    VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT = 1000382000,
     VK_QUERY_TYPE_MAX_ENUM = 0x7FFFFFFF
 } VkQueryType;
 
@@ -13563,6 +13565,16 @@ VKAPI_ATTR void                                    VKAPI_CALL vkCmdSetColorWrite
     const VkBool32*                             pColorWriteEnables);
 #endif
 
+#define VK_EXT_primitives_generated_query 1
+#define VK_EXT_PRIMITIVES_GENERATED_QUERY_SPEC_VERSION 1
+#define VK_EXT_PRIMITIVES_GENERATED_QUERY_EXTENSION_NAME "VK_EXT_primitives_generated_query"
+typedef struct VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           primitivesGeneratedQuery;
+    VkBool32           primitivesGeneratedQueryWithRasterizerDiscard;
+    VkBool32           primitivesGeneratedQueryWithNonZeroStreams;
+} VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT;
 
 #define VK_EXT_global_priority_query 1
 #define VK_MAX_GLOBAL_PRIORITY_SIZE_EXT   16U

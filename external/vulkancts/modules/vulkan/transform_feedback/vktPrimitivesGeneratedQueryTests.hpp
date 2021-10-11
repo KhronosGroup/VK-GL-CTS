@@ -1,3 +1,5 @@
+#ifndef _VKTPRIMITIVESGENERATEDQUERYTESTS_HPP
+#define _VKTPRIMITIVESGENERATEDQUERYTESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -18,32 +20,20 @@
  *
  *//*!
  * \file
- * \brief Vulkan Transform Feedback Tests
+ * \brief Vulkan Primitives Generated Query Tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktTransformFeedbackTests.hpp"
-#include "vktTransformFeedbackSimpleTests.hpp"
-#include "vktTransformFeedbackFuzzLayoutTests.hpp"
-#include "vktPrimitivesGeneratedQueryTests.hpp"
-#include "vktTestGroupUtil.hpp"
-#include "vktTestCase.hpp"
-
+#include "tcuDefs.hpp"
+#include "tcuTestCase.hpp"
 
 namespace vkt
 {
 namespace TransformFeedback
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
-{
-	de::MovePtr<tcu::TestCaseGroup> transformFeedbackGroup (new tcu::TestCaseGroup(testCtx, "transform_feedback", "Transform Feedback tests"));
-
-	transformFeedbackGroup->addChild(createTransformFeedbackSimpleTests(testCtx));
-	transformFeedbackGroup->addChild(createTransformFeedbackFuzzLayoutTests(testCtx));
-	transformFeedbackGroup->addChild(createPrimitivesGeneratedQueryTests(testCtx));
-
-	return transformFeedbackGroup.release();
-}
+tcu::TestCaseGroup* createPrimitivesGeneratedQueryTests (tcu::TestContext& testCtx);
 
 } // TransformFeedback
 } // vkt
+
+#endif // _VKTPRIMITIVESGENERATEDQUERYTESTS_HPP

@@ -2281,6 +2281,11 @@ template<> VkStructureType getStructureType<VkPipelineColorWriteCreateInfoEXT> (
 	return VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_EXT;

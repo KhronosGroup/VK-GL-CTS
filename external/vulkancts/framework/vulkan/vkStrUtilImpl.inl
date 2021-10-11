@@ -691,6 +691,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX:										return "VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_EXT:							return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT";
@@ -1149,6 +1150,7 @@ const char* getQueryTypeName (VkQueryType value)
 		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_NV:		return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_NV";
 		case VK_QUERY_TYPE_PERFORMANCE_QUERY_INTEL:							return "VK_QUERY_TYPE_PERFORMANCE_QUERY_INTEL";
 		case VK_QUERY_TYPE_VIDEO_ENCODE_BITSTREAM_BUFFER_RANGE_KHR:			return "VK_QUERY_TYPE_VIDEO_ENCODE_BITSTREAM_BUFFER_RANGE_KHR";
+		case VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT:						return "VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT";
 		case VK_QUERY_TYPE_MAX_ENUM:										return "VK_QUERY_TYPE_MAX_ENUM";
 		default:															return DE_NULL;
 	}
@@ -11537,6 +11539,18 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineColorWriteCreateInfoE
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tattachmentCount = " << value.attachmentCount << '\n';
 	s << "\tpColorWriteEnables = " << value.pColorWriteEnables << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT& value)
+{
+	s << "VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tprimitivesGeneratedQuery = " << value.primitivesGeneratedQuery << '\n';
+	s << "\tprimitivesGeneratedQueryWithRasterizerDiscard = " << value.primitivesGeneratedQueryWithRasterizerDiscard << '\n';
+	s << "\tprimitivesGeneratedQueryWithNonZeroStreams = " << value.primitivesGeneratedQueryWithNonZeroStreams << '\n';
 	s << '}';
 	return s;
 }
