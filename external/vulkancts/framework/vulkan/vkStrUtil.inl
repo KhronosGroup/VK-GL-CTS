@@ -1060,6 +1060,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice4444FormatsFeat
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeListVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeCreateInfoVALVE& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthClipControlFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineViewportDepthClipControlCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVertexInputBindingDescription2EXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVertexInputAttributeDescription2EXT& value);

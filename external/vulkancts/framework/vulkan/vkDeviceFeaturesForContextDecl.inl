@@ -18,6 +18,7 @@ const vk::VkPhysicalDeviceCornerSampledImageFeaturesNV&					getCornerSampledImag
 const vk::VkPhysicalDeviceCoverageReductionModeFeaturesNV&				getCoverageReductionModeFeatures				(void) const;
 const vk::VkPhysicalDeviceCustomBorderColorFeaturesEXT&					getCustomBorderColorFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&	getDedicatedAllocationImageAliasingFeatures		(void) const;
+const vk::VkPhysicalDeviceDepthClipControlFeaturesEXT&					getDepthClipControlFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&					getDepthClipEnableFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceDescriptorIndexingFeatures&					getDescriptorIndexingFeatures					(void) const;
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV&			getDeviceGeneratedCommandsFeatures				(void) const;

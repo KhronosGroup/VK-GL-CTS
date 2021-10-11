@@ -821,6 +821,8 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT = 1000340000,
     VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT = 1000346000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE = 1000351000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_CONTROL_FEATURES_EXT = 1000355000,
+    VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT = 1000355001,
     VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_VALVE = 1000351002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT = 1000352000,
     VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT = 1000352001,
@@ -12442,6 +12444,23 @@ typedef struct VkMutableDescriptorTypeCreateInfoVALVE {
     uint32_t                                   mutableDescriptorTypeListCount;
     const VkMutableDescriptorTypeListVALVE*    pMutableDescriptorTypeLists;
 } VkMutableDescriptorTypeCreateInfoVALVE;
+
+
+
+#define VK_EXT_depth_clip_control 1
+#define VK_EXT_DEPTH_CLIP_CONTROL_SPEC_VERSION 1
+#define VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME "VK_EXT_depth_clip_control"
+typedef struct VkPhysicalDeviceDepthClipControlFeaturesEXT {
+        VkStructureType    sType;
+            void*              pNext;
+                VkBool32           depthClipControl;
+} VkPhysicalDeviceDepthClipControlFeaturesEXT;
+
+typedef struct VkPipelineViewportDepthClipControlCreateInfoEXT {
+        VkStructureType    sType;
+            const void*        pNext;
+                VkBool32           negativeOneToOne;
+} VkPipelineViewportDepthClipControlCreateInfoEXT;
 
 
 

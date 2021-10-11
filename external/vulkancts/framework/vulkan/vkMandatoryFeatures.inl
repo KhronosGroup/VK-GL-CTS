@@ -86,6 +86,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceConditionalRenderingFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceDepthClipControlFeaturesEXT physicalDeviceDepthClipControlFeaturesEXT;
+	deMemset(&physicalDeviceDepthClipControlFeaturesEXT, 0, sizeof(physicalDeviceDepthClipControlFeaturesEXT));
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_depth_clip_control")) )
+	{
+		physicalDeviceDepthClipControlFeaturesEXT.sType = getStructureType<VkPhysicalDeviceDepthClipControlFeaturesEXT>();
+		*nextPtr = &physicalDeviceDepthClipControlFeaturesEXT;
+		nextPtr  = &physicalDeviceDepthClipControlFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT physicalDeviceDepthClipEnableFeaturesEXT;
 	deMemset(&physicalDeviceDepthClipEnableFeaturesEXT, 0, sizeof(physicalDeviceDepthClipEnableFeaturesEXT));
 
@@ -1820,6 +1830,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceMutableDescriptorTypeFeaturesVALVE.mutableDescriptorType == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature mutableDescriptorType not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_depth_clip_control")) )
+	{
+		if ( physicalDeviceDepthClipControlFeaturesEXT.depthClipControl == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature depthClipControl not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

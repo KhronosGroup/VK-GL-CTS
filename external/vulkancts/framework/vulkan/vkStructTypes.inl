@@ -5273,6 +5273,20 @@ struct VkMutableDescriptorTypeCreateInfoVALVE
 	const VkMutableDescriptorTypeListVALVE*	pMutableDescriptorTypeLists;
 };
 
+struct VkPhysicalDeviceDepthClipControlFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		depthClipControl;
+};
+
+struct VkPipelineViewportDepthClipControlCreateInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		negativeOneToOne;
+};
+
 struct VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT
 {
 	VkStructureType	sType;

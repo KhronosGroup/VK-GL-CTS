@@ -18,6 +18,7 @@ const vk::VkPhysicalDeviceCornerSampledImageFeaturesNV&					Context::getCornerSa
 const vk::VkPhysicalDeviceCoverageReductionModeFeaturesNV&				Context::getCoverageReductionModeFeatures				(void) const { return m_device->getCoverageReductionModeFeatures();				}
 const vk::VkPhysicalDeviceCustomBorderColorFeaturesEXT&					Context::getCustomBorderColorFeaturesEXT				(void) const { return m_device->getCustomBorderColorFeaturesEXT();				}
 const vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&	Context::getDedicatedAllocationImageAliasingFeatures	(void) const { return m_device->getDedicatedAllocationImageAliasingFeatures();	}
+const vk::VkPhysicalDeviceDepthClipControlFeaturesEXT&					Context::getDepthClipControlFeaturesEXT					(void) const { return m_device->getDepthClipControlFeaturesEXT();				}
 const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&					Context::getDepthClipEnableFeaturesEXT					(void) const { return m_device->getDepthClipEnableFeaturesEXT();				}
 const vk::VkPhysicalDeviceDescriptorIndexingFeatures&					Context::getDescriptorIndexingFeatures					(void) const { return m_device->getDescriptorIndexingFeatures();				}
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV&			Context::getDeviceGeneratedCommandsFeatures				(void) const { return m_device->getDeviceGeneratedCommandsFeatures();			}

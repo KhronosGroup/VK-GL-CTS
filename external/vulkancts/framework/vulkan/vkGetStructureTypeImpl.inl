@@ -2211,6 +2211,16 @@ template<> VkStructureType getStructureType<VkMutableDescriptorTypeCreateInfoVAL
 	return VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_VALVE;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceDepthClipControlFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_CONTROL_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPipelineViewportDepthClipControlCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT;
