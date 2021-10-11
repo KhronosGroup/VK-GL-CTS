@@ -1569,9 +1569,9 @@ static std::string specializeShader(Context& context, const char* code)
 		specializationMap["GLSL_PER_VERTEX_OUT"]				= "out gl_PerVertex { vec4 gl_Position; };\n";
 		specializationMap["GLSL_PER_VERTEX_IN_ARR"]				= "in gl_PerVertex { vec4 gl_Position; } gl_in[];\n";
 		specializationMap["GLSL_PER_VERTEX_OUT_ARR"]			= "out gl_PerVertex { vec4 gl_Position; } gl_out[];\n";
-		specializationMap["GLSL_PRECISE_PER_VERTEX_OUT"]		= "out gl_PerVertex { precise vec4 gl_Position; };\n";
-		specializationMap["GLSL_PRECISE_PER_VERTEX_IN_ARR"]		= "in gl_PerVertex { precise vec4 gl_Position; } gl_in[];\n";
-		specializationMap["GLSL_PRECISE_PER_VERTEX_OUT_ARR"]	= "out gl_PerVertex { precise vec4 gl_Position; } gl_out[];\n";
+		specializationMap["GLSL_PRECISE_PER_VERTEX_OUT"]                = "out gl_PerVertex { vec4 gl_Position; };\nprecise gl_Position;\n";
+		specializationMap["GLSL_PRECISE_PER_VERTEX_IN_ARR"]             = "in gl_PerVertex { vec4 gl_Position; } gl_in[];\nprecise gl_in;\n";
+		specializationMap["GLSL_PRECISE_PER_VERTEX_OUT_ARR"]    = "out gl_PerVertex { vec4 gl_Position; } gl_out[];\nprecise gl_out;\n";
 	}
 
 	return tcu::StringTemplate(code).specialize(specializationMap);
