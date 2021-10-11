@@ -1152,18 +1152,16 @@ tcu::TestNode::IterateResult RenderbufferCase::iterate(void)
 		GLint hasDepthBuffer	= 0;
 		GLint hasStencilBuffer	= 0;
 
-		gl.getNamedFramebufferAttachmentParameteriv(0, GL_DEPTH, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE,
-													&hasDepthBuffer);
-		gl.getNamedFramebufferAttachmentParameteriv(0, GL_STENCIL, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE,
-													&hasStencilBuffer);
+		gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_DEPTH, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &hasDepthBuffer);
+		gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_STENCIL, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &hasStencilBuffer);
 
 		if (hasDepthBuffer != GL_NONE)
-			gl.getNamedFramebufferAttachmentParameteriv(0, GL_DEPTH, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE,
-														&defaultFramebufferDepthBits);
+			gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_DEPTH, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE,
+							       &defaultFramebufferDepthBits);
 
 		if (hasStencilBuffer != GL_NONE)
-			gl.getNamedFramebufferAttachmentParameteriv(0, GL_STENCIL, GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE,
-														&defaultFramebufferStencilBits);
+			gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_STENCIL, GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE,
+							       &defaultFramebufferStencilBits);
 	}
 
 	// Create two programs for rendering, one for rendering into default FB, and
