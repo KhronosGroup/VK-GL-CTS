@@ -2845,12 +2845,11 @@ void RayQueryASDynamicIndexingTestCase::initPrograms(SourceCollections& programC
 	// #version 460 core
 	// #extension GL_EXT_ray_query : require
 	// #extension GL_EXT_nonuniform_qualifier : enable
-	// #extension GL_ARB_gpu_shader_int64 : enable			// needed only to generate spir-v
 
 	// #define ARRAY_SIZE 500
 	// layout(set = 0, binding = 0) uniform accelerationStructureEXT tlasArray[ARRAY_SIZE];
 	// layout(set = 0, binding = 1) readonly buffer topLevelASPointers {
-	//     uint64_t ptr[];
+	//     uvec2 ptr[];
 	// } tlasPointers;
 	// layout(set = 0, binding = 2) readonly buffer topLevelASIndices {
 	//     uint idx[];
@@ -2889,7 +2888,6 @@ void RayQueryASDynamicIndexingTestCase::initPrograms(SourceCollections& programC
 	// }
 
 	const std::string compSource =
-		"OpCapability Int64\n"
 		"OpCapability Shader\n"
 		"OpCapability RayQueryKHR\n"
 		"OpCapability ShaderNonUniform\n"
@@ -2985,12 +2983,12 @@ void RayQueryASDynamicIndexingTestCase::initPrograms(SourceCollections& programC
 		"%124						= OpConstant %type_uint32 7\n"
 
 		// <changed_section>
-		"%type_uint64				= OpTypeInt 64 0\n"
-		"%127						= OpTypeRuntimeArray %type_uint64\n"
+		"%v2uint					= OpTypeVector %type_uint32 2\n"
+		"%127						= OpTypeRuntimeArray %v2uint\n"
 		"%128						= OpTypeStruct %127\n"
 		"%129						= OpTypePointer StorageBuffer %128\n"
 		"%var_as_pointers_ssbo		= OpVariable %129 StorageBuffer\n"
-		"%type_uint64_ssbo_ptr		= OpTypePointer StorageBuffer %type_uint64\n"
+		"%type_uint64_ssbo_ptr		= OpTypePointer StorageBuffer %v2uint\n"
 		// </changed_section>
 
 		// void main()
@@ -3059,7 +3057,7 @@ void RayQueryASDynamicIndexingTestCase::initPrograms(SourceCollections& programC
 
 		// <changed_section>
 		"%as_device_addres_ptr		= OpAccessChain %type_uint64_ssbo_ptr %var_as_pointers_ssbo %c_int32_0 %as_index\n"
-		"%as_device_addres			= OpLoad %type_uint64 %as_device_addres_ptr Aligned 8\n"
+		"%as_device_addres			= OpLoad %v2uint %as_device_addres_ptr\n"
 		"%as_to_use					= OpConvertUToAccelerationStructureKHR %type_as %as_device_addres\n"
 		// </changed_section>
 
