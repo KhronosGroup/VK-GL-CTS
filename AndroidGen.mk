@@ -66,6 +66,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/api/vktApiBufferAndImageAllocationUtil.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiBufferComputeInstance.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiBufferMarkerTests.cpp \
+	external/vulkancts/modules/vulkan/api/vktApiBufferMemoryRequirementsTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiBufferTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiBufferViewAccessTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiBufferViewCreateTests.cpp \
