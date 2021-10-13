@@ -38,7 +38,6 @@ VULKAN_H	= [
 	os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vk_video", "vulkan_video_codec_h265std_decode.h"),
 	os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vulkan", "vulkan_core.h"),
 	]
-VULKAN_DIR	= os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan")
 
 INL_HEADER = """\
 /* WARNING: This is auto-generated file. Do not modify, since changes will
@@ -73,8 +72,14 @@ def writeVulkanCHeader (src, filename):
 	writeInlFile(filename, INL_HEADER, gen())
 
 if __name__ == "__main__":
+
+	# script requires output path to which .inl files will be written
+	if len(sys.argv) == 1:
+		sys.exit("Error - output path wasn't specified in argument")
+	outputPath = str(sys.argv[1])
+
 	src = ""
 	for file in VULKAN_H:
 		src += readFile(file)
 
-	writeVulkanCHeader				(src, os.path.join(VULKAN_DIR, "vkVulkan_c.inl"))
+	writeVulkanCHeader				(src, os.path.join(outputPath, "vkVulkan_c.inl"))

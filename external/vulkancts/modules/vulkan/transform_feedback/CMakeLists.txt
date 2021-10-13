@@ -1,4 +1,7 @@
-include_directories(..)
+include_directories(
+	..
+	${DEQP_INL_DIR}
+)
 
 set(DEQP_VK_TRANSFORM_FEEDBACK_SRCS
 	vktTransformFeedbackTests.hpp

@@ -1,7 +1,8 @@
 include_directories(
-		..
-		../amber
-		)
+	..
+	../amber
+	${DEQP_INL_DIR}
+	)
 
 set(DEQP_VK_RASTERIZATION_SRCS
 	vktRasterizationTests.cpp

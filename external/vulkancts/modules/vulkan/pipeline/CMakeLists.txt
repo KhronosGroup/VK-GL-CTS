@@ -125,4 +125,5 @@ target_include_directories(deqp-vk-pipeline
 		../../../../amber/src/include
 		../amber
 		../util
+		${DEQP_INL_DIR}
 )

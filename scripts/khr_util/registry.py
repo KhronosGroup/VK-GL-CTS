@@ -112,7 +112,8 @@ class Index:
 
 	def __setitem__(self, key, item):
 		if key in self.index:
-			self.duplicateKey(key, item)
+			if key is not None:
+				self.duplicateKey(key, item)
 		else:
 			self.index[key] = item
 
