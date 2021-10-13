@@ -76,7 +76,7 @@ def genApiVersions(name, apiVersions):
 		yield '\tstd::make_tuple({}, {}, {}),'.format(version, major, minor)
 	yield '};'
 
-def genExtDepInl(dependenciesAndVersions):
+def genExtDepInl(dependenciesAndVersions, filename):
 	allExtDepsDict, apiVersions = dependenciesAndVersions
 	apiVersions.reverse()
 	lines = []
@@ -85,7 +85,7 @@ def genExtDepInl(dependenciesAndVersions):
 	lines = lines + [line for line in genExtDepArray(VK_EXT_DEP_DEVICE, allExtDepsDict[VK_EXT_TYPE_DEVICE])]
 	lines = lines + [line for line in genApiVersions(VK_EXT_API_VERSIONS, apiVersions)]
 
-	writeInlFile(VK_INL_FILE, lines)
+	writeInlFile(filename, lines)
 
 class extInfo:
 	def __init__(self):
@@ -167,7 +167,12 @@ def getExtInfoDict(vkRegistry):
 
 if __name__ == '__main__':
 
+	# script requires output path to which .inl files will be written
+	if len(sys.argv) == 1:
+		sys.exit("Error - output path wasn't specified in argument")
+	outputPath = str(sys.argv[1])
+
 	VULKAN_XML = os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "xml", "vk.xml")
 	vkRegistry = registry.parse(VULKAN_XML)
 
-	genExtDepInl(genExtDeps(getExtInfoDict(vkRegistry)))
+	genExtDepInl(genExtDeps(getExtInfoDict(vkRegistry)), os.path.join(outputPath, "vkApiExtensionDependencyInfo.inl"))

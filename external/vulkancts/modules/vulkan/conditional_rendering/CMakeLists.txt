@@ -2,6 +2,7 @@ include_directories(
 	..
 	../draw
 	../compute
+	${DEQP_INL_DIR}
 )
 
 set(DEQP_VK_CONDITIONAL_REDENDERING_SRCS

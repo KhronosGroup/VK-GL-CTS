@@ -1,5 +1,7 @@
 # dEQP-VK
 
+set(DEQP_INL_DIR ${PROJECT_BINARY_DIR}/external/vulkancts/framework/vulkan)
+
 add_subdirectory(api)
 add_subdirectory(pipeline)
 add_subdirectory(binding_model)
@@ -91,6 +93,7 @@ include_directories(
 	ray_query
 	postmortem
 	reconvergence
+	${DEQP_INL_DIR}
 	)
 
 set(DEQP_VK_SRCS

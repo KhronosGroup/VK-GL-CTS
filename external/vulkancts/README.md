@@ -62,6 +62,10 @@ To download sources, run:
 You may need to re-run `fetch_sources.py` to update to the latest glslang,
 vulkan-docs and spirv-tools revisions occasionally.
 
+You also need to install lxml python module by running:
+
+	python -m pip install lxml
+
 With CMake out-of-source builds are always recommended. Create a build directory
 of your choosing, and in that directory generate Makefiles or IDE project
 using cmake.
