@@ -78,6 +78,7 @@
 #define DE_OS_SYMBIAN	6			/*!< Symbian OS									*/
 #define DE_OS_IOS		7			/*!< iOS										*/
 #define DE_OS_QNX       8           /*!< QNX                                        */
+#define DE_OS_FUCHSIA   9           /*!< Fuchsia									*/
 
 /* OS detection (set to one of DE_OS_*). */
 #if defined(DE_OS)

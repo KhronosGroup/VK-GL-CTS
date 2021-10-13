@@ -161,6 +161,11 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 			)
 		list(APPEND TCUTIL_PLATFORM_LIBS ${QUARTZCORE_LIBRARY} ${COCOA_LIBRARY})
 
+	elseif (DE_OS_IS_FUCHSIA)
+		set(TCUTIL_PLATFORM_SRCS
+			fuchsia/tcuFuchsiaPlatform.cpp
+			)
+
 	else ()
 		set(TCUTIL_PLATFORM_SRCS
 			vanilla/tcuVanillaPlatform.cpp
