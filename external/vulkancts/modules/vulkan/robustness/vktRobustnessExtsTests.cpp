@@ -458,6 +458,9 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 
 	if (m_data.pushDescriptor)
 		context.requireDeviceFunctionality("VK_KHR_push_descriptor");
+
+	if (m_data.viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY && !features2.features.imageCubeArray)
+		TCU_THROW(NotSupportedError, "Cube array image view type not supported");
 }
 
 void generateLayout(Layout &layout, const CaseDef &caseDef)
