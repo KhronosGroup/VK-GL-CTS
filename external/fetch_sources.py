@@ -316,23 +316,23 @@ PACKAGES = [
 		"renderdoc"),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
-		None,
+		"git@github.com:KhronosGroup/SPIRV-Tools.git",
 		"11cd875ed88484f93943071083b4821b4c3d2193",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
-		None,
+		"git@github.com:KhronosGroup/glslang.git",
 		"9158061398a96033c990e69156bd28c67114544b",
 		"glslang",
 		removeTags = ["master-tot"]),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
-		None,
+		"git@github.com:KhronosGroup/SPIRV-Headers.git",
 		"cf653e4ca4858583802b0d1656bc934edff6bd7f",
 		"spirv-headers"),
 	GitRepo(
 		"https://github.com/google/amber.git",
-		None,
+		"git@github.com:google/amber.git",
 		"3e22a7d6694983df7bf575b0c0ae829b8333a5bf",
 		"amber"),
 ]
