@@ -675,7 +675,7 @@ void AddAliasTests(tcu::TestCaseGroup* group)
 		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT16,
 			"u32",			"uint32_t v",		"uint32_t(0x12345678)",
 			"u16_array",	"uint16_t v[2]",	makeU16Array({0x5678, 0x1234})),
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT8,
+		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT64 | INT8,
 			"u64",			"uint64_t v",		"uint64_t(0x1234567890ABCDEFUL)",
 			"u8_array",		"uint8_t v[8]",		makeU8Array({0xEF, 0xCD, 0xAB, 0x90, 0x78, 0x56, 0x34, 0x12})),
 		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT64 | INT16,
