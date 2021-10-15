@@ -2597,6 +2597,11 @@ void SSBOLayoutCase::initPrograms (vk::SourceCollections& programCollection) con
 
 TestInstance* SSBOLayoutCase::createInstance (Context& context) const
 {
+	return new SSBOLayoutCaseInstance(context, m_bufferMode, m_interface, m_refLayout, m_initialData, m_writeData, m_usePhysStorageBuffer);
+}
+
+void SSBOLayoutCase::checkSupport(Context& context) const
+{
 	if (!context.isDeviceFunctionalitySupported("VK_KHR_relaxed_block_layout") && usesRelaxedLayout(m_interface))
 		TCU_THROW(NotSupportedError, "VK_KHR_relaxed_block_layout not supported");
 	if (!context.get16BitStorageFeatures().storageBuffer16BitAccess && uses16BitStorage(m_interface))
@@ -2607,9 +2612,20 @@ TestInstance* SSBOLayoutCase::createInstance (Context& context) const
 		TCU_THROW(NotSupportedError, "scalarBlockLayout not supported");
 	if (m_usePhysStorageBuffer && !context.isBufferDeviceAddressSupported())
 		TCU_THROW(NotSupportedError, "Physical storage buffer pointers not supported");
-	if (!context.getDescriptorIndexingFeatures().shaderStorageBufferArrayNonUniformIndexing && usesDescriptorIndexing(m_interface))
+	if (usesDescriptorIndexing(m_interface) && (	!context.getDescriptorIndexingFeatures().shaderStorageBufferArrayNonUniformIndexing ||
+													!context.getDescriptorIndexingFeatures().runtimeDescriptorArray ) )
 		TCU_THROW(NotSupportedError, "Descriptor indexing over storage buffer not supported");
-	return new SSBOLayoutCaseInstance(context, m_bufferMode, m_interface, m_refLayout, m_initialData, m_writeData, m_usePhysStorageBuffer);
+
+	const vk::VkPhysicalDeviceProperties &properties = context.getDeviceProperties();
+	// Shader defines N+1 storage buffers: N to operate and one more to store the number of cases passed.
+	deUint32 blockCount = 1u;
+	for (deInt32 blockIdx = 0u; blockIdx < m_interface.getNumBlocks(); blockIdx++)
+	{
+		blockCount += m_interface.getBlock(blockIdx).getArraySize() ? m_interface.getBlock(blockIdx).getArraySize() : 1u;
+	}
+
+	if (properties.limits.maxPerStageDescriptorStorageBuffers < blockCount)
+		TCU_THROW(NotSupportedError, "Descriptor set storage buffers count higher than the maximum supported by the driver");
 }
 
 void SSBOLayoutCase::delayedInit (void)
