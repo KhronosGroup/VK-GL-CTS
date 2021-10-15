@@ -2559,8 +2559,15 @@ tcu::TestStatus SeparateChannelsTestInstance::iterateInternal (void)
 		}
 
 		const vector<Subpass>		subpasses	(1, Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, inputAttachmentReferences, colorAttachmentReferences, vector<AttachmentReference>(), isDSFormat ? dsAttachmentReference : AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL), vector<deUint32>()));
+		vector<SubpassDependency> subpassDependency;
+		if(!isDSFormat)
+		{
+			/* Self supass-dependency */
+			subpassDependency.push_back(SubpassDependency(0u, 0u, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+							VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT, VK_DEPENDENCY_BY_REGION_BIT));
+		}
+		renderPass = createRenderPass(vkd, device, RenderPass(attachments, subpasses, subpassDependency), m_renderPassType);
 
-		renderPass = createRenderPass(vkd, device, RenderPass(attachments, subpasses, vector<SubpassDependency>()), m_renderPassType);
 	}
 
 	// Create render pipeline.
@@ -2763,6 +2770,26 @@ tcu::TestStatus SeparateChannelsTestInstance::iterateInternal (void)
 
 	vkd.cmdBindVertexBuffers(*commandBuffer, 0u, 1u, &vertexBuffer.get(), &bindingOffset);
 	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *renderPipeline);
+
+	if(!isDSFormat)
+	{
+		const VkImageMemoryBarrier	imageBarrier	=
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext;
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags			dstAccessMask;
+			VK_IMAGE_LAYOUT_GENERAL,						// VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_GENERAL,						// VkImageLayout			newLayout;
+			VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,						// deUint32					destQueueFamilyIndex;
+			*colorImage,									// VkImage					image;
+			makeImageSubresourceRange(1u, 0u, 1u, 0, 1u)	// VkImageSubresourceRange	subresourceRange;
+		};
+		vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+						VK_DEPENDENCY_BY_REGION_BIT, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+	}
+
 	vkd.cmdDraw(*commandBuffer, 4u, 1u, 0u, 0u);
 	RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
 

@@ -380,6 +380,7 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 	const	auto				extent		= NoPositionCase::getImageExtent();
 	const	auto				color		= NoPositionCase::getBackGroundColor();
 	const	VkImageUsageFlags	usage		= (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+	const	auto				viewType	= (m_params.numViews > 1u ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
 	const	bool				tess		= m_params.tessellation();
 			VkShaderStageFlags	stageFlags	= 0u;
 
@@ -436,7 +437,7 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 	ImageWithMemory colorImage (vkd, device, alloc, colorImageInfo, MemoryRequirement::Any);
 
 	const auto subresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_params.numViews);
-	const auto colorImageView	= makeImageView(vkd, device, colorImage.get(), VK_IMAGE_VIEW_TYPE_2D, format, subresourceRange);
+	const auto colorImageView	= makeImageView(vkd, device, colorImage.get(), viewType, format, subresourceRange);
 
 	// Vertices and vertex buffer.
 	std::vector<tcu::Vec4> vertices =
