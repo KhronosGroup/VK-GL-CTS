@@ -388,6 +388,7 @@ bool InterInvocationTestCase::verifyResults (void)
 	bool					error				= false;
 
 	gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, m_resultBuf);
+	gl.memoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
 	mapped = gl.mapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, m_workWidth * m_workHeight * sizeof(deInt32), GL_MAP_READ_BIT);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "map buffer");
 

@@ -2232,7 +2232,8 @@ TestInstance* UniformBlockCase::createInstance (Context& context) const
 		TCU_THROW(NotSupportedError, "std430 not supported");
 	if (!context.getScalarBlockLayoutFeatures().scalarBlockLayout && usesBlockLayout(LAYOUT_SCALAR))
 		TCU_THROW(NotSupportedError, "scalarBlockLayout not supported");
-	if (!context.getDescriptorIndexingFeatures().shaderUniformBufferArrayNonUniformIndexing && usesBlockLayout(LAYOUT_DESCRIPTOR_INDEXING))
+	if (usesBlockLayout(LAYOUT_DESCRIPTOR_INDEXING) && (	!context.getDescriptorIndexingFeatures().shaderUniformBufferArrayNonUniformIndexing ||
+															!context.getDescriptorIndexingFeatures().runtimeDescriptorArray ) )
 		TCU_THROW(NotSupportedError, "Descriptor indexing over uniform buffer not supported");
 
 	return new UniformBlockCaseInstance(context, m_bufferMode, m_uniformLayout, m_blockPointers);
