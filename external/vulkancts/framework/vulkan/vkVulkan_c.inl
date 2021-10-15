@@ -1731,6 +1731,8 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT = 1000352001,
     VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT = 1000352002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT = 1000353000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ADDRESS_BINDING_REPORT_FEATURES_EXT = 1000354000,
+    VK_STRUCTURE_TYPE_DEVICE_ADDRESS_BINDING_CALLBACK_DATA_EXT = 1000354001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT = 1000356000,
     VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_EXTENDED_KHR = 1000360000,
     VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA = 1000364000,
@@ -10525,6 +10527,7 @@ typedef enum VkDebugUtilsMessageTypeFlagBitsEXT {
     VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT = 0x00000001,
     VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT = 0x00000002,
     VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT = 0x00000004,
+    VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT = 0x00000008,
     VK_DEBUG_UTILS_MESSAGE_TYPE_FLAG_BITS_MAX_ENUM_EXT = 0x7FFFFFFF
 } VkDebugUtilsMessageTypeFlagBitsEXT;
 typedef VkFlags VkDebugUtilsMessageTypeFlagsEXT;
@@ -13470,7 +13473,35 @@ typedef struct VkMutableDescriptorTypeCreateInfoVALVE {
     const VkMutableDescriptorTypeListVALVE*    pMutableDescriptorTypeLists;
 } VkMutableDescriptorTypeCreateInfoVALVE;
 
+#define VK_EXT_device_address_binding_report 1
+#define VK_EXT_DEVICE_ADDRESS_BINDING_REPORT_SPEC_VERSION 0
+#define VK_EXT_DEVICE_ADDRESS_BINDING_REPORT_EXTENSION_NAME "VK_EXT_device_address_binding_report"
 
+typedef enum VkDeviceAddressBindingTypeEXT {
+    VK_DEVICE_ADDRESS_BINDING_TYPE_BIND_EXT = 0,
+    VK_DEVICE_ADDRESS_BINDING_TYPE_UNBIND_EXT = 1,
+    VK_DEVICE_ADDRESS_BINDING_TYPE_MAX_ENUM_EXT = 0x7FFFFFFF
+} VkDeviceAddressBindingTypeEXT;
+
+typedef enum VkDeviceAddressBindingFlagBitsEXT {
+    VK_DEVICE_ADDRESS_BINDING_INTERNAL_OBJECT_BIT_EXT = 0x00000001,
+    VK_DEVICE_ADDRESS_BINDING_FLAG_BITS_MAX_ENUM_EXT = 0x7FFFFFFF
+} VkDeviceAddressBindingFlagBitsEXT;
+typedef VkFlags VkDeviceAddressBindingFlagsEXT;
+typedef struct VkPhysicalDeviceAddressBindingReportFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           reportAddressBinding;
+} VkPhysicalDeviceAddressBindingReportFeaturesEXT;
+
+typedef struct VkDeviceAddressBindingCallbackDataEXT {
+    VkStructureType                   sType;
+    void*                             pNext;
+    VkDeviceAddressBindingFlagsEXT    flags;
+    VkDeviceAddress                   baseAddress;
+    VkDeviceSize                      size;
+    VkDeviceAddressBindingTypeEXT     bindingType;
+} VkDeviceAddressBindingCallbackDataEXT;
 
 #define VK_EXT_vertex_input_dynamic_state 1
 #define VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_SPEC_VERSION 2

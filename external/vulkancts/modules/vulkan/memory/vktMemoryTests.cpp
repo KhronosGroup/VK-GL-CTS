@@ -30,6 +30,7 @@
 #include "vktMemoryBindingTests.hpp"
 #include "vktMemoryExternalMemoryHostTests.hpp"
 #include "vktMemoryDeviceMemoryReportTests.hpp"
+#include "vktMemoryAddressBindingTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -52,6 +53,7 @@ void createChildren (tcu::TestCaseGroup* memoryTests)
 	memoryTests->addChild(createMemoryBindingTests				(testCtx));
 	memoryTests->addChild(createMemoryExternalMemoryHostTests	(testCtx));
 	memoryTests->addChild(createDeviceMemoryReportTests			(testCtx));
+	memoryTests->addChild(createAddressBindingReportTests		(testCtx));
 }
 
 } // anonymous

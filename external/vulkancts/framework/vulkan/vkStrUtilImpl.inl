@@ -676,6 +676,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT:								return "VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT";
 		case VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT:							return "VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT:									return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ADDRESS_BINDING_REPORT_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ADDRESS_BINDING_REPORT_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_DEVICE_ADDRESS_BINDING_CALLBACK_DATA_EXT:							return "VK_STRUCTURE_TYPE_DEVICE_ADDRESS_BINDING_CALLBACK_DATA_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_EXTENDED_KHR:										return "VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_EXTENDED_KHR";
 		case VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA:							return "VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA";
@@ -2397,6 +2399,17 @@ const char* getAccelerationStructureMotionInstanceTypeNVName (VkAccelerationStru
 	}
 }
 
+const char* getDeviceAddressBindingTypeEXTName (VkDeviceAddressBindingTypeEXT value)
+{
+	switch (value)
+	{
+		case VK_DEVICE_ADDRESS_BINDING_TYPE_BIND_EXT:		return "VK_DEVICE_ADDRESS_BINDING_TYPE_BIND_EXT";
+		case VK_DEVICE_ADDRESS_BINDING_TYPE_UNBIND_EXT:		return "VK_DEVICE_ADDRESS_BINDING_TYPE_UNBIND_EXT";
+		case VK_DEVICE_ADDRESS_BINDING_TYPE_MAX_ENUM_EXT:	return "VK_DEVICE_ADDRESS_BINDING_TYPE_MAX_ENUM_EXT";
+		default:											return DE_NULL;
+	}
+}
+
 const char* getBuildAccelerationStructureModeKHRName (VkBuildAccelerationStructureModeKHR value)
 {
 	switch (value)
@@ -3810,10 +3823,11 @@ tcu::Format::Bitfield<32> getDebugUtilsMessageTypeFlagsEXTStr (VkDebugUtilsMessa
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT,			"VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT"),
-		tcu::Format::BitDesc(VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT,		"VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT"),
-		tcu::Format::BitDesc(VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,		"VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT"),
-		tcu::Format::BitDesc(VK_DEBUG_UTILS_MESSAGE_TYPE_FLAG_BITS_MAX_ENUM_EXT,	"VK_DEBUG_UTILS_MESSAGE_TYPE_FLAG_BITS_MAX_ENUM_EXT"),
+		tcu::Format::BitDesc(VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT,					"VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT,				"VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,				"VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT,	"VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DEBUG_UTILS_MESSAGE_TYPE_FLAG_BITS_MAX_ENUM_EXT,			"VK_DEBUG_UTILS_MESSAGE_TYPE_FLAG_BITS_MAX_ENUM_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3954,6 +3968,16 @@ tcu::Format::Bitfield<32> getDeviceDiagnosticsConfigFlagsNVStr (VkDeviceDiagnost
 		tcu::Format::BitDesc(VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_RESOURCE_TRACKING_BIT_NV,		"VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_RESOURCE_TRACKING_BIT_NV"),
 		tcu::Format::BitDesc(VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_AUTOMATIC_CHECKPOINTS_BIT_NV,	"VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_AUTOMATIC_CHECKPOINTS_BIT_NV"),
 		tcu::Format::BitDesc(VK_DEVICE_DIAGNOSTICS_CONFIG_FLAG_BITS_MAX_ENUM_NV,				"VK_DEVICE_DIAGNOSTICS_CONFIG_FLAG_BITS_MAX_ENUM_NV"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getDeviceAddressBindingFlagsEXTStr (VkDeviceAddressBindingFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_DEVICE_ADDRESS_BINDING_INTERNAL_OBJECT_BIT_EXT,	"VK_DEVICE_ADDRESS_BINDING_INTERNAL_OBJECT_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DEVICE_ADDRESS_BINDING_FLAG_BITS_MAX_ENUM_EXT,	"VK_DEVICE_ADDRESS_BINDING_FLAG_BITS_MAX_ENUM_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -11449,6 +11473,29 @@ std::ostream& operator<< (std::ostream& s, const VkMutableDescriptorTypeCreateIn
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmutableDescriptorTypeListCount = " << value.mutableDescriptorTypeListCount << '\n';
 	s << "\tpMutableDescriptorTypeLists = " << value.pMutableDescriptorTypeLists << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceAddressBindingReportFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceAddressBindingReportFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\treportAddressBinding = " << value.reportAddressBinding << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceAddressBindingCallbackDataEXT& value)
+{
+	s << "VkDeviceAddressBindingCallbackDataEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getDeviceAddressBindingFlagsEXTStr(value.flags) << '\n';
+	s << "\tbaseAddress = " << value.baseAddress << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << "\tbindingType = " << value.bindingType << '\n';
 	s << '}';
 	return s;
 }

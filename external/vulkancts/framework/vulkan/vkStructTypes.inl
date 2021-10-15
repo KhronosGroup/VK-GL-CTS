@@ -5318,6 +5318,23 @@ struct VkMutableDescriptorTypeCreateInfoVALVE
 	const VkMutableDescriptorTypeListVALVE*	pMutableDescriptorTypeLists;
 };
 
+struct VkPhysicalDeviceAddressBindingReportFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		reportAddressBinding;
+};
+
+struct VkDeviceAddressBindingCallbackDataEXT
+{
+	VkStructureType					sType;
+	void*							pNext;
+	VkDeviceAddressBindingFlagsEXT	flags;
+	VkDeviceAddress					baseAddress;
+	VkDeviceSize					size;
+	VkDeviceAddressBindingTypeEXT	bindingType;
+};
+
 struct VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT
 {
 	VkStructureType	sType;

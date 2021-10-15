@@ -5,6 +5,7 @@ const vk::VkPhysicalDevice16BitStorageFeatures&							get16BitStorageFeatures			
 const vk::VkPhysicalDevice4444FormatsFeaturesEXT&						get4444FormatsFeaturesEXT						(void) const;
 const vk::VkPhysicalDevice8BitStorageFeatures&							get8BitStorageFeatures							(void) const;
 const vk::VkPhysicalDeviceAccelerationStructureFeaturesKHR&				getAccelerationStructureFeatures				(void) const;
+const vk::VkPhysicalDeviceAddressBindingReportFeaturesEXT&				getAddressBindingReportFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceASTCDecodeFeaturesEXT&						getASTCDecodeFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&			getBlendOperationAdvancedFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceBufferDeviceAddressFeatures&					getBufferDeviceAddressFeatures					(void) const;

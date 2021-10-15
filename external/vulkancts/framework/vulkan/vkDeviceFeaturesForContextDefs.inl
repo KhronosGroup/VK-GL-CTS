@@ -5,6 +5,7 @@ const vk::VkPhysicalDevice16BitStorageFeatures&							Context::get16BitStorageFe
 const vk::VkPhysicalDevice4444FormatsFeaturesEXT&						Context::get4444FormatsFeaturesEXT						(void) const { return m_device->get4444FormatsFeaturesEXT();					}
 const vk::VkPhysicalDevice8BitStorageFeatures&							Context::get8BitStorageFeatures							(void) const { return m_device->get8BitStorageFeatures();						}
 const vk::VkPhysicalDeviceAccelerationStructureFeaturesKHR&				Context::getAccelerationStructureFeatures				(void) const { return m_device->getAccelerationStructureFeatures();				}
+const vk::VkPhysicalDeviceAddressBindingReportFeaturesEXT&				Context::getAddressBindingReportFeaturesEXT				(void) const { return m_device->getAddressBindingReportFeaturesEXT();			}
 const vk::VkPhysicalDeviceASTCDecodeFeaturesEXT&						Context::getASTCDecodeFeaturesEXT						(void) const { return m_device->getASTCDecodeFeaturesEXT();						}
 const vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&			Context::getBlendOperationAdvancedFeaturesEXT			(void) const { return m_device->getBlendOperationAdvancedFeaturesEXT();			}
 const vk::VkPhysicalDeviceBufferDeviceAddressFeatures&					Context::getBufferDeviceAddressFeatures					(void) const { return m_device->getBufferDeviceAddressFeatures();				}

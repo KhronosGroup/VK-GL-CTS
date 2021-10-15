@@ -5,6 +5,7 @@ const VkPhysicalDevice16BitStorageFeatures&							get16BitStorageFeatures							
 const VkPhysicalDevice4444FormatsFeaturesEXT&						get4444FormatsFeaturesEXT						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevice4444FormatsFeaturesEXT>();						}
 const VkPhysicalDevice8BitStorageFeatures&							get8BitStorageFeatures							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevice8BitStorageFeatures>();							}
 const VkPhysicalDeviceAccelerationStructureFeaturesKHR&				getAccelerationStructureFeatures				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceAccelerationStructureFeaturesKHR>();				}
+const VkPhysicalDeviceAddressBindingReportFeaturesEXT&				getAddressBindingReportFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceAddressBindingReportFeaturesEXT>();				}
 const VkPhysicalDeviceASTCDecodeFeaturesEXT&						getASTCDecodeFeaturesEXT						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceASTCDecodeFeaturesEXT>();							}
 const VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&			getBlendOperationAdvancedFeaturesEXT			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT>();				}
 const VkPhysicalDeviceBufferDeviceAddressFeatures&					getBufferDeviceAddressFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceBufferDeviceAddressFeatures>();					}

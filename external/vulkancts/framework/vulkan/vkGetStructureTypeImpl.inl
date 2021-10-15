@@ -2241,6 +2241,16 @@ template<> VkStructureType getStructureType<VkMutableDescriptorTypeCreateInfoVAL
 	return VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_VALVE;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceAddressBindingReportFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ADDRESS_BINDING_REPORT_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDeviceAddressBindingCallbackDataEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_ADDRESS_BINDING_CALLBACK_DATA_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT;

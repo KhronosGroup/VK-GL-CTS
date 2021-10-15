@@ -913,6 +913,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_device_address_binding_report")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_vertex_input_dynamic_state")
 	{
 		return;
@@ -2152,6 +2156,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_VALVE_mutable_descriptor_type")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_device_address_binding_report")
 	{
 		return;
 	}

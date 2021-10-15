@@ -22,6 +22,8 @@ set(DEQP_VK_MEMORY_SRCS
 	vktMemoryExternalMemoryHostTests.hpp
 	vktMemoryDeviceMemoryReportTests.cpp
 	vktMemoryDeviceMemoryReportTests.hpp
+	vktMemoryAddressBindingTests.cpp
+	vktMemoryAddressBindingTests.hpp
 	)
 
 set(DEQP_VK_MEMORY_LIBS

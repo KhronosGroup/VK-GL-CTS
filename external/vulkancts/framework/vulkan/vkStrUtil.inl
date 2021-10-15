@@ -95,6 +95,7 @@ const char*	getDeviceMemoryReportEventTypeEXTName					(VkDeviceMemoryReportEvent
 const char*	getFragmentShadingRateTypeNVName						(VkFragmentShadingRateTypeNV value);
 const char*	getFragmentShadingRateNVName							(VkFragmentShadingRateNV value);
 const char*	getAccelerationStructureMotionInstanceTypeNVName		(VkAccelerationStructureMotionInstanceTypeNV value);
+const char*	getDeviceAddressBindingTypeEXTName						(VkDeviceAddressBindingTypeEXT value);
 const char*	getBuildAccelerationStructureModeKHRName				(VkBuildAccelerationStructureModeKHR value);
 const char*	getAccelerationStructureBuildTypeKHRName				(VkAccelerationStructureBuildTypeKHR value);
 const char*	getAccelerationStructureCompatibilityKHRName			(VkAccelerationStructureCompatibilityKHR value);
@@ -212,6 +213,7 @@ inline tcu::Format::Enum<VkDeviceMemoryReportEventTypeEXT>					getDeviceMemoryRe
 inline tcu::Format::Enum<VkFragmentShadingRateTypeNV>						getFragmentShadingRateTypeNVStr						(VkFragmentShadingRateTypeNV value)						{ return tcu::Format::Enum<VkFragmentShadingRateTypeNV>(getFragmentShadingRateTypeNVName, value);											}
 inline tcu::Format::Enum<VkFragmentShadingRateNV>							getFragmentShadingRateNVStr							(VkFragmentShadingRateNV value)							{ return tcu::Format::Enum<VkFragmentShadingRateNV>(getFragmentShadingRateNVName, value);													}
 inline tcu::Format::Enum<VkAccelerationStructureMotionInstanceTypeNV>		getAccelerationStructureMotionInstanceTypeNVStr		(VkAccelerationStructureMotionInstanceTypeNV value)		{ return tcu::Format::Enum<VkAccelerationStructureMotionInstanceTypeNV>(getAccelerationStructureMotionInstanceTypeNVName, value);			}
+inline tcu::Format::Enum<VkDeviceAddressBindingTypeEXT>						getDeviceAddressBindingTypeEXTStr					(VkDeviceAddressBindingTypeEXT value)					{ return tcu::Format::Enum<VkDeviceAddressBindingTypeEXT>(getDeviceAddressBindingTypeEXTName, value);										}
 inline tcu::Format::Enum<VkBuildAccelerationStructureModeKHR>				getBuildAccelerationStructureModeKHRStr				(VkBuildAccelerationStructureModeKHR value)				{ return tcu::Format::Enum<VkBuildAccelerationStructureModeKHR>(getBuildAccelerationStructureModeKHRName, value);							}
 inline tcu::Format::Enum<VkAccelerationStructureBuildTypeKHR>				getAccelerationStructureBuildTypeKHRStr				(VkAccelerationStructureBuildTypeKHR value)				{ return tcu::Format::Enum<VkAccelerationStructureBuildTypeKHR>(getAccelerationStructureBuildTypeKHRName, value);							}
 inline tcu::Format::Enum<VkAccelerationStructureCompatibilityKHR>			getAccelerationStructureCompatibilityKHRStr			(VkAccelerationStructureCompatibilityKHR value)			{ return tcu::Format::Enum<VkAccelerationStructureCompatibilityKHR>(getAccelerationStructureCompatibilityKHRName, value);					}
@@ -329,6 +331,7 @@ inline std::ostream&	operator<<	(std::ostream& s, VkDeviceMemoryReportEventTypeE
 inline std::ostream&	operator<<	(std::ostream& s, VkFragmentShadingRateTypeNV value)						{ return s << getFragmentShadingRateTypeNVStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkFragmentShadingRateNV value)							{ return s << getFragmentShadingRateNVStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkAccelerationStructureMotionInstanceTypeNV value)		{ return s << getAccelerationStructureMotionInstanceTypeNVStr(value);		}
+inline std::ostream&	operator<<	(std::ostream& s, VkDeviceAddressBindingTypeEXT value)						{ return s << getDeviceAddressBindingTypeEXTStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkBuildAccelerationStructureModeKHR value)				{ return s << getBuildAccelerationStructureModeKHRStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkAccelerationStructureBuildTypeKHR value)				{ return s << getAccelerationStructureBuildTypeKHRStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkAccelerationStructureCompatibilityKHR value)			{ return s << getAccelerationStructureCompatibilityKHRStr(value);			}
@@ -432,6 +435,7 @@ tcu::Format::Bitfield<32>	getIndirectStateFlagsNVStr									(VkIndirectStateFla
 tcu::Format::Bitfield<32>	getIndirectCommandsLayoutUsageFlagsNVStr					(VkIndirectCommandsLayoutUsageFlagsNV value);
 tcu::Format::Bitfield<32>	getPrivateDataSlotCreateFlagsEXTStr							(VkPrivateDataSlotCreateFlagsEXT value);
 tcu::Format::Bitfield<32>	getDeviceDiagnosticsConfigFlagsNVStr						(VkDeviceDiagnosticsConfigFlagsNV value);
+tcu::Format::Bitfield<32>	getDeviceAddressBindingFlagsEXTStr							(VkDeviceAddressBindingFlagsEXT value);
 tcu::Format::Bitfield<32>	getAccelerationStructureCreateFlagsKHRStr					(VkAccelerationStructureCreateFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoCodecOperationFlagsKHRStr							(VkVideoCodecOperationFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoChromaSubsamplingFlagsKHRStr						(VkVideoChromaSubsamplingFlagsKHR value);
@@ -1066,6 +1070,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice4444FormatsFeat
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeListVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeCreateInfoVALVE& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAddressBindingReportFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceAddressBindingCallbackDataEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVertexInputBindingDescription2EXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVertexInputAttributeDescription2EXT& value);
