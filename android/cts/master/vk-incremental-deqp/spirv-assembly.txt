@@ -1,0 +1,6 @@
+dEQP-VK.spirv_assembly.type.vec4.u16.bitwise_and_vert
+dEQP-VK.spirv_assembly.type.vec4.u16.bitwise_and_tessc
+dEQP-VK.spirv_assembly.type.vec4.u16.bitwise_and_tesse
+dEQP-VK.spirv_assembly.type.vec4.u16.bitwise_and_geom
+dEQP-VK.spirv_assembly.type.vec4.u16.bitwise_and_frag
+dEQP-VK.spirv_assembly.type.vec4.u16.bitwise_and_comp

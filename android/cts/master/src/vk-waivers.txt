@@ -66,3 +66,42 @@ dEQP-VK.draw.inverted_depth_ranges.nodepthclamp_deltazero
 # accesses at device scope.
 #
 dEQP-VK.memory_model.*core11*.device.*
+
+#
+# VK-GL-CTS CL: 6171
+# VK-GL-CTS issue: 229
+# VK-GL-CTS issue: 2418
+# VK-GL-CTS issue: 2189
+#
+# IMG Rogue SNORM Waiver.
+#
+dEQP-VK.pipeline.sampler.exact_sampling.b8g8r8_snorm.solid_color.normalized_coords.centered
+dEQP-VK.pipeline.sampler.exact_sampling.b8g8r8_snorm.solid_color.normalized_coords.edge_left
+dEQP-VK.pipeline.sampler.exact_sampling.b8g8r8_snorm.solid_color.normalized_coords.edge_right
+dEQP-VK.pipeline.sampler.exact_sampling.b8g8r8_snorm.solid_color.unnormalized_coords.centered
+dEQP-VK.pipeline.sampler.exact_sampling.b8g8r8_snorm.solid_color.unnormalized_coords.edge_left
+dEQP-VK.pipeline.sampler.exact_sampling.b8g8r8_snorm.solid_color.unnormalized_coords.edge_right
+dEQP-VK.pipeline.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.normalized_coords.centered
+dEQP-VK.pipeline.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.normalized_coords.edge_left
+dEQP-VK.pipeline.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.normalized_coords.edge_right
+dEQP-VK.pipeline.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.unnormalized_coords.centered
+dEQP-VK.pipeline.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.unnormalized_coords.edge_left
+dEQP-VK.pipeline.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.unnormalized_coords.edge_right
+dEQP-VK.pipeline.sampler.exact_sampling.r8_snorm.solid_color.normalized_coords.centered
+dEQP-VK.pipeline.sampler.exact_sampling.r8_snorm.solid_color.normalized_coords.edge_left
+dEQP-VK.pipeline.sampler.exact_sampling.r8_snorm.solid_color.normalized_coords.edge_right
+dEQP-VK.pipeline.sampler.exact_sampling.r8_snorm.solid_color.unnormalized_coords.centered
+dEQP-VK.pipeline.sampler.exact_sampling.r8_snorm.solid_color.unnormalized_coords.edge_left
+dEQP-VK.pipeline.sampler.exact_sampling.r8_snorm.solid_color.unnormalized_coords.edge_right
+dEQP-VK.pipeline.sampler.exact_sampling.r8g8_snorm.solid_color.normalized_coords.centered
+dEQP-VK.pipeline.sampler.exact_sampling.r8g8_snorm.solid_color.normalized_coords.edge_left
+dEQP-VK.pipeline.sampler.exact_sampling.r8g8_snorm.solid_color.normalized_coords.edge_right
+dEQP-VK.pipeline.sampler.exact_sampling.r8g8_snorm.solid_color.unnormalized_coords.centered
+dEQP-VK.pipeline.sampler.exact_sampling.r8g8_snorm.solid_color.unnormalized_coords.edge_left
+dEQP-VK.pipeline.sampler.exact_sampling.r8g8_snorm.solid_color.unnormalized_coords.edge_right
+dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.normalized_coords.centered
+dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.normalized_coords.edge_left
+dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.normalized_coords.edge_right
+dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.unnormalized_coords.centered
+dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.unnormalized_coords.edge_left
+dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.unnormalized_coords.edge_right
