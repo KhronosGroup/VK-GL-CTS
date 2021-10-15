@@ -1,0 +1,3 @@
+dEQP-VK.glsl.derivate.dfdx.texture.basic.float_mediump
+dEQP-VK.glsl.derivate.dfdx.texture.basic.float_highp
+dEQP-VK.glsl.derivate.dfdx.texture.basic.vec2_mediump

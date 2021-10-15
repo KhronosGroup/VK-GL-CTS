@@ -1,0 +1,4 @@
+dEQP-VK.memory.pipeline_barrier.host_read_host_write.8192
+dEQP-VK.memory.pipeline_barrier.host_read_host_write.65536
+dEQP-VK.memory.pipeline_barrier.host_read_host_write.1048576
+dEQP-VK.memory.pipeline_barrier.host_write_transfer_src.1024

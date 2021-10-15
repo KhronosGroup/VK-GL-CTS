@@ -24,6 +24,7 @@
 
 #include "vktPipelineSamplerTests.hpp"
 #include "vktPipelineImageSamplingInstance.hpp"
+#include "vktPipelineSamplerBorderSwizzleTests.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
 #include "vktTestCase.hpp"
@@ -417,9 +418,9 @@ void SamplerTest::initPrograms (SourceCollections& sourceCollections) const
 				<< "{\n"
 				<< "	fragColor = ";
 
-	if (m_samplerLod > 0.0f)
+	if (m_samplerLod > 0.0f || !m_imageViewType.isNormalized())
 	{
-		DE_ASSERT(m_imageViewType.isNormalized());
+		DE_ASSERT(m_imageViewType.isNormalized() || (m_samplerLod == 0.0f && !m_imageViewType.isNormalized()));
 		fragmentSrc << "textureLod(texSampler, vtxTexCoords." << texCoordSwizzle << ", " << std::fixed <<  m_samplerLod << ")";
 	}
 	else
@@ -1328,10 +1329,18 @@ void ExactSamplingCase::initPrograms (vk::SourceCollections& programCollection) 
 		<< "\n"
 		<< "layout(location = 0) out " << colorType << " outColor;\n"
 		<< "\n"
-		<< "void main() {\n"
-		<< "    outColor = texture(texSampler, fragTexCoord);\n"
-		<< "}\n"
-		;
+		<< "void main() {\n";
+
+	if (m_params.unnormalizedCoordinates)
+	{
+		fragmentShader << "    outColor = textureLod(texSampler, fragTexCoord, 0.0f);";
+	}
+	else
+	{
+		fragmentShader << "    outColor = texture(texSampler, fragTexCoord);\n";
+	}
+
+	fragmentShader << "}\n";
 
 	programCollection.glslSources.add("frag") << glu::FragmentSource{fragmentShader.str()};
 }
@@ -2064,6 +2073,9 @@ tcu::TestCaseGroup* createSamplerTests (tcu::TestContext& testCtx)
 		separateStencilUsageSamplerTests->addChild(createAllFormatsSamplerTests(testCtx, true));
 		samplerTests->addChild(separateStencilUsageSamplerTests.release());
 	}
+
+	// Border color swizzle tests.
+	samplerTests->addChild(createSamplerBorderSwizzleTests(testCtx));
 
 	return samplerTests.release();
 }
