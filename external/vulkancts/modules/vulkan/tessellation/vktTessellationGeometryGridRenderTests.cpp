@@ -131,7 +131,7 @@ GridRenderTestCase::GridRenderTestCase (tcu::TestContext& testCtx, const std::st
 		//    |\ |\ |\ |
 		//    |_\|_\|_\|
 
-		const int	numSliceNodesComponentLimit	= geometryTotalOutputComponents / (2 * numComponentsPerVertex);			// each node 2 vertices
+		const int	numSliceNodesComponentLimit	= geometryTotalOutputComponents / (2 * numComponentsPerVertex + 2);		// each node 2 vertices
 		const int	numSliceNodesOutputLimit	= geometryOutputVertices / 2;											// each node 2 vertices
 		const int	numSliceNodes				= de::min(numSliceNodesComponentLimit, numSliceNodesOutputLimit);
 
