@@ -372,7 +372,6 @@ tcu::Format::Bitfield<32>	getQueryResultFlagsStr										(VkQueryResultFlags va
 tcu::Format::Bitfield<32>	getBufferCreateFlagsStr										(VkBufferCreateFlags value);
 tcu::Format::Bitfield<32>	getBufferUsageFlagsStr										(VkBufferUsageFlags value);
 tcu::Format::Bitfield<32>	getImageViewCreateFlagsStr									(VkImageViewCreateFlags value);
-tcu::Format::Bitfield<32>	getShaderModuleCreateFlagsStr								(VkShaderModuleCreateFlags value);
 tcu::Format::Bitfield<32>	getPipelineCacheCreateFlagsStr								(VkPipelineCacheCreateFlags value);
 tcu::Format::Bitfield<32>	getColorComponentFlagsStr									(VkColorComponentFlags value);
 tcu::Format::Bitfield<32>	getPipelineCreateFlagsStr									(VkPipelineCreateFlags value);
@@ -437,7 +436,7 @@ tcu::Format::Bitfield<32>	getAccelerationStructureCreateFlagsKHRStr					(VkAccel
 tcu::Format::Bitfield<32>	getVideoCodecOperationFlagsKHRStr							(VkVideoCodecOperationFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoChromaSubsamplingFlagsKHRStr						(VkVideoChromaSubsamplingFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoComponentBitDepthFlagsKHRStr						(VkVideoComponentBitDepthFlagsKHR value);
-tcu::Format::Bitfield<32>	getVideoCapabilitiesFlagsKHRStr								(VkVideoCapabilitiesFlagsKHR value);
+tcu::Format::Bitfield<32>	getVideoCapabilityFlagsKHRStr								(VkVideoCapabilityFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoSessionCreateFlagsKHRStr							(VkVideoSessionCreateFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoCodingControlFlagsKHRStr							(VkVideoCodingControlFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoCodingQualityPresetFlagsKHRStr						(VkVideoCodingQualityPresetFlagsKHR value);
@@ -445,17 +444,18 @@ tcu::Format::Bitfield<32>	getVideoDecodeFlagsKHRStr									(VkVideoDecodeFlagsK
 tcu::Format::Bitfield<32>	getVideoEncodeFlagsKHRStr									(VkVideoEncodeFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoEncodeRateControlFlagsKHRStr						(VkVideoEncodeRateControlFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoEncodeRateControlModeFlagsKHRStr					(VkVideoEncodeRateControlModeFlagsKHR value);
-tcu::Format::Bitfield<32>	getVideoEncodeH264CapabilitiesFlagsEXTStr					(VkVideoEncodeH264CapabilitiesFlagsEXT value);
+tcu::Format::Bitfield<32>	getVideoEncodeH264CapabilityFlagsEXTStr						(VkVideoEncodeH264CapabilityFlagsEXT value);
 tcu::Format::Bitfield<32>	getVideoEncodeH264InputModeFlagsEXTStr						(VkVideoEncodeH264InputModeFlagsEXT value);
 tcu::Format::Bitfield<32>	getVideoEncodeH264OutputModeFlagsEXTStr						(VkVideoEncodeH264OutputModeFlagsEXT value);
 tcu::Format::Bitfield<32>	getVideoEncodeH264CreateFlagsEXTStr							(VkVideoEncodeH264CreateFlagsEXT value);
-tcu::Format::Bitfield<32>	getVideoDecodeH264FieldLayoutFlagsEXTStr					(VkVideoDecodeH264FieldLayoutFlagsEXT value);
+tcu::Format::Bitfield<32>	getVideoDecodeH264PictureLayoutFlagsEXTStr					(VkVideoDecodeH264PictureLayoutFlagsEXT value);
 tcu::Format::Bitfield<32>	getInstanceCreateFlagsStr									(VkInstanceCreateFlags value);
 tcu::Format::Bitfield<32>	getDeviceCreateFlagsStr										(VkDeviceCreateFlags value);
 tcu::Format::Bitfield<32>	getMemoryMapFlagsStr										(VkMemoryMapFlags value);
 tcu::Format::Bitfield<32>	getSemaphoreCreateFlagsStr									(VkSemaphoreCreateFlags value);
 tcu::Format::Bitfield<32>	getQueryPoolCreateFlagsStr									(VkQueryPoolCreateFlags value);
 tcu::Format::Bitfield<32>	getBufferViewCreateFlagsStr									(VkBufferViewCreateFlags value);
+tcu::Format::Bitfield<32>	getShaderModuleCreateFlagsStr								(VkShaderModuleCreateFlags value);
 tcu::Format::Bitfield<32>	getPipelineVertexInputStateCreateFlagsStr					(VkPipelineVertexInputStateCreateFlags value);
 tcu::Format::Bitfield<32>	getPipelineInputAssemblyStateCreateFlagsStr					(VkPipelineInputAssemblyStateCreateFlags value);
 tcu::Format::Bitfield<32>	getPipelineTessellationStateCreateFlagsStr					(VkPipelineTessellationStateCreateFlags value);
@@ -1064,6 +1064,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexInputDyna
 std::ostream&	operator<<	(std::ostream& s, const VkVertexInputBindingDescription2EXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVertexInputAttributeDescription2EXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDrmPropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSubpassShadingPipelineCreateInfoHUAWEI& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSubpassShadingFeaturesHUAWEI& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSubpassShadingPropertiesHUAWEI& value);

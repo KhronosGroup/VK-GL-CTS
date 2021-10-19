@@ -30,15 +30,14 @@ from build.common import DEQP_DIR
 from khr_util.format import writeInlFile
 
 VULKAN_H	= [
-	os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codecs_common.h"),
-	os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h264std.h"),
-	os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h264std_encode.h"),
-	os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h265std.h"),
-	os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h264std_decode.h"),
-	os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h265std_decode.h"),
-	os.path.join(os.path.dirname(__file__), "src", "vulkan_core.h"),
+	os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vk_video", "vulkan_video_codecs_common.h"),
+	os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vk_video", "vulkan_video_codec_h264std.h"),
+	os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vk_video", "vulkan_video_codec_h264std_encode.h"),
+	os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vk_video", "vulkan_video_codec_h265std.h"),
+	os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vk_video", "vulkan_video_codec_h264std_decode.h"),
+	os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vk_video", "vulkan_video_codec_h265std_decode.h"),
+	os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include", "vulkan", "vulkan_core.h"),
 	]
-#VULKAN_H	= os.path.join(os.path.dirname(__file__), "src", "vulkan_core.h")
 VULKAN_DIR	= os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan")
 
 INL_HEADER = """\

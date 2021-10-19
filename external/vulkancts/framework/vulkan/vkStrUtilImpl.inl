@@ -675,6 +675,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT:								return "VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT";
 		case VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT:							return "VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT:									return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA:							return "VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA";
 		case VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA:								return "VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA";
 		case VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA:								return "VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA";
@@ -1528,6 +1529,7 @@ const char* getAttachmentLoadOpName (VkAttachmentLoadOp value)
 		case VK_ATTACHMENT_LOAD_OP_LOAD:		return "VK_ATTACHMENT_LOAD_OP_LOAD";
 		case VK_ATTACHMENT_LOAD_OP_CLEAR:		return "VK_ATTACHMENT_LOAD_OP_CLEAR";
 		case VK_ATTACHMENT_LOAD_OP_DONT_CARE:	return "VK_ATTACHMENT_LOAD_OP_DONT_CARE";
+		case VK_ATTACHMENT_LOAD_OP_NONE_EXT:	return "VK_ATTACHMENT_LOAD_OP_NONE_EXT";
 		case VK_ATTACHMENT_LOAD_OP_MAX_ENUM:	return "VK_ATTACHMENT_LOAD_OP_MAX_ENUM";
 		default:								return DE_NULL;
 	}
@@ -1539,7 +1541,7 @@ const char* getAttachmentStoreOpName (VkAttachmentStoreOp value)
 	{
 		case VK_ATTACHMENT_STORE_OP_STORE:		return "VK_ATTACHMENT_STORE_OP_STORE";
 		case VK_ATTACHMENT_STORE_OP_DONT_CARE:	return "VK_ATTACHMENT_STORE_OP_DONT_CARE";
-		case VK_ATTACHMENT_STORE_OP_NONE_QCOM:	return "VK_ATTACHMENT_STORE_OP_NONE_QCOM";
+		case VK_ATTACHMENT_STORE_OP_NONE_EXT:	return "VK_ATTACHMENT_STORE_OP_NONE_EXT";
 		case VK_ATTACHMENT_STORE_OP_MAX_ENUM:	return "VK_ATTACHMENT_STORE_OP_MAX_ENUM";
 		default:								return DE_NULL;
 	}
@@ -1683,9 +1685,6 @@ const char* getDriverIdName (VkDriverId value)
 		case VK_DRIVER_ID_COREAVI_PROPRIETARY:			return "VK_DRIVER_ID_COREAVI_PROPRIETARY";
 		case VK_DRIVER_ID_JUICE_PROPRIETARY:			return "VK_DRIVER_ID_JUICE_PROPRIETARY";
 		case VK_DRIVER_ID_VERISILICON_PROPRIETARY:		return "VK_DRIVER_ID_VERISILICON_PROPRIETARY";
-		case VK_DRIVER_ID_MESA_TURNIP:					return "VK_DRIVER_ID_MESA_TURNIP";
-		case VK_DRIVER_ID_MESA_V3DV:					return "VK_DRIVER_ID_MESA_V3DV";
-		case VK_DRIVER_ID_MESA_PANVK:					return "VK_DRIVER_ID_MESA_PANVK";
 		case VK_DRIVER_ID_MAX_ENUM:						return "VK_DRIVER_ID_MAX_ENUM";
 		default:										return DE_NULL;
 	}
@@ -3126,15 +3125,6 @@ tcu::Format::Bitfield<32> getImageViewCreateFlagsStr (VkImageViewCreateFlags val
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getShaderModuleCreateFlagsStr (VkShaderModuleCreateFlags value)
-{
-	static const tcu::Format::BitDesc s_desc[] =
-	{
-		tcu::Format::BitDesc(VK_SHADER_MODULE_CREATE_FLAG_BITS_MAX_ENUM,	"VK_SHADER_MODULE_CREATE_FLAG_BITS_MAX_ENUM"),
-	};
-	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
-}
-
 tcu::Format::Bitfield<32> getPipelineCacheCreateFlagsStr (VkPipelineCacheCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -3839,9 +3829,10 @@ tcu::Format::Bitfield<32> getGeometryInstanceFlagsKHRStr (VkGeometryInstanceFlag
 	static const tcu::Format::BitDesc s_desc[] =
 	{
 		tcu::Format::BitDesc(VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR,		"VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR"),
-		tcu::Format::BitDesc(VK_GEOMETRY_INSTANCE_TRIANGLE_FRONT_COUNTERCLOCKWISE_BIT_KHR,	"VK_GEOMETRY_INSTANCE_TRIANGLE_FRONT_COUNTERCLOCKWISE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_GEOMETRY_INSTANCE_TRIANGLE_FLIP_FACING_BIT_KHR,				"VK_GEOMETRY_INSTANCE_TRIANGLE_FLIP_FACING_BIT_KHR"),
 		tcu::Format::BitDesc(VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_KHR,						"VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_KHR"),
 		tcu::Format::BitDesc(VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_KHR,					"VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_GEOMETRY_INSTANCE_TRIANGLE_FRONT_COUNTERCLOCKWISE_BIT_KHR,	"VK_GEOMETRY_INSTANCE_TRIANGLE_FRONT_COUNTERCLOCKWISE_BIT_KHR"),
 		tcu::Format::BitDesc(VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV,				"VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV"),
 		tcu::Format::BitDesc(VK_GEOMETRY_INSTANCE_TRIANGLE_FRONT_COUNTERCLOCKWISE_BIT_NV,	"VK_GEOMETRY_INSTANCE_TRIANGLE_FRONT_COUNTERCLOCKWISE_BIT_NV"),
 		tcu::Format::BitDesc(VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV,						"VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_NV"),
@@ -4011,13 +4002,13 @@ tcu::Format::Bitfield<32> getVideoComponentBitDepthFlagsKHRStr (VkVideoComponent
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getVideoCapabilitiesFlagsKHRStr (VkVideoCapabilitiesFlagsKHR value)
+tcu::Format::Bitfield<32> getVideoCapabilityFlagsKHRStr (VkVideoCapabilityFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_VIDEO_CAPABILITIES_PROTECTED_CONTENT_BIT_KHR,			"VK_VIDEO_CAPABILITIES_PROTECTED_CONTENT_BIT_KHR"),
-		tcu::Format::BitDesc(VK_VIDEO_CAPABILITIES_SEPARATE_REFERENCE_IMAGES_BIT_KHR,	"VK_VIDEO_CAPABILITIES_SEPARATE_REFERENCE_IMAGES_BIT_KHR"),
-		tcu::Format::BitDesc(VK_VIDEO_CAPABILITIES_FLAG_BITS_MAX_ENUM_KHR,				"VK_VIDEO_CAPABILITIES_FLAG_BITS_MAX_ENUM_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CAPABILITY_PROTECTED_CONTENT_BIT_KHR,			"VK_VIDEO_CAPABILITY_PROTECTED_CONTENT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CAPABILITY_SEPARATE_REFERENCE_IMAGES_BIT_KHR,	"VK_VIDEO_CAPABILITY_SEPARATE_REFERENCE_IMAGES_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CAPABILITY_FLAG_BITS_MAX_ENUM_KHR,			"VK_VIDEO_CAPABILITY_FLAG_BITS_MAX_ENUM_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4102,7 +4093,7 @@ tcu::Format::Bitfield<32> getVideoEncodeRateControlModeFlagsKHRStr (VkVideoEncod
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH264CapabilitiesFlagsEXTStr (VkVideoEncodeH264CapabilitiesFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH264CapabilityFlagsEXTStr (VkVideoEncodeH264CapabilityFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
@@ -4117,7 +4108,7 @@ tcu::Format::Bitfield<32> getVideoEncodeH264CapabilitiesFlagsEXTStr (VkVideoEnco
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_DEBLOCKING_FILTER_PARTIAL_BIT_EXT,		"VK_VIDEO_ENCODE_H264_CAPABILITY_DEBLOCKING_FILTER_PARTIAL_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_MULTIPLE_SLICE_PER_FRAME_BIT_EXT,		"VK_VIDEO_ENCODE_H264_CAPABILITY_MULTIPLE_SLICE_PER_FRAME_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_EVENLY_DISTRIBUTED_SLICE_SIZE_BIT_EXT,	"VK_VIDEO_ENCODE_H264_CAPABILITY_EVENLY_DISTRIBUTED_SLICE_SIZE_BIT_EXT"),
-		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITIES_FLAG_BITS_MAX_ENUM_EXT,				"VK_VIDEO_ENCODE_H264_CAPABILITIES_FLAG_BITS_MAX_ENUM_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_FLAG_BITS_MAX_ENUM_EXT,				"VK_VIDEO_ENCODE_H264_CAPABILITY_FLAG_BITS_MAX_ENUM_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4157,14 +4148,14 @@ tcu::Format::Bitfield<32> getVideoEncodeH264CreateFlagsEXTStr (VkVideoEncodeH264
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getVideoDecodeH264FieldLayoutFlagsEXTStr (VkVideoDecodeH264FieldLayoutFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoDecodeH264PictureLayoutFlagsEXTStr (VkVideoDecodeH264PictureLayoutFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_VIDEO_DECODE_H264_PROGRESSIVE_PICTURES_ONLY_EXT,					"VK_VIDEO_DECODE_H264_PROGRESSIVE_PICTURES_ONLY_EXT"),
-		tcu::Format::BitDesc(VK_VIDEO_DECODE_H264_FIELD_LAYOUT_LINE_INTERLACED_PLANE_BIT_EXT,		"VK_VIDEO_DECODE_H264_FIELD_LAYOUT_LINE_INTERLACED_PLANE_BIT_EXT"),
-		tcu::Format::BitDesc(VK_VIDEO_DECODE_H264_FIELD_LAYOUT_SEPARATE_INTERLACED_PLANE_BIT_EXT,	"VK_VIDEO_DECODE_H264_FIELD_LAYOUT_SEPARATE_INTERLACED_PLANE_BIT_EXT"),
-		tcu::Format::BitDesc(VK_VIDEO_DECODE_H264_FIELD_LAYOUT_FLAG_BITS_MAX_ENUM_EXT,				"VK_VIDEO_DECODE_H264_FIELD_LAYOUT_FLAG_BITS_MAX_ENUM_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_EXT,						"VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_INTERLEAVED_LINES_BIT_EXT,	"VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_INTERLEAVED_LINES_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_SEPARATE_PLANES_BIT_EXT,	"VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_SEPARATE_PLANES_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_FLAG_BITS_MAX_ENUM_EXT,				"VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_FLAG_BITS_MAX_ENUM_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4195,6 +4186,11 @@ tcu::Format::Bitfield<32> getQueryPoolCreateFlagsStr (VkQueryPoolCreateFlags val
 }
 
 tcu::Format::Bitfield<32> getBufferViewCreateFlagsStr (VkBufferViewCreateFlags value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getShaderModuleCreateFlagsStr (VkShaderModuleCreateFlags value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -11438,6 +11434,17 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDrmPropertiesEX
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT& value)
+{
+	s << "VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tprimitiveTopologyListRestart = " << value.primitiveTopologyListRestart << '\n';
+	s << "\tprimitiveTopologyPatchListRestart = " << value.primitiveTopologyPatchListRestart << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkSubpassShadingPipelineCreateInfoHUAWEI& value)
 {
 	s << "VkSubpassShadingPipelineCreateInfoHUAWEI = {\n";
@@ -12042,7 +12049,7 @@ std::ostream& operator<< (std::ostream& s, const VkVideoCapabilitiesKHR& value)
 	s << "VkVideoCapabilitiesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tcapabilityFlags = " << getVideoCapabilitiesFlagsKHRStr(value.capabilityFlags) << '\n';
+	s << "\tcapabilityFlags = " << getVideoCapabilityFlagsKHRStr(value.capabilityFlags) << '\n';
 	s << "\tminBitstreamBufferOffsetAlignment = " << value.minBitstreamBufferOffsetAlignment << '\n';
 	s << "\tminBitstreamBufferSizeAlignment = " << value.minBitstreamBufferSizeAlignment << '\n';
 	s << "\tvideoPictureExtentGranularity = " << value.videoPictureExtentGranularity << '\n';
@@ -12545,7 +12552,7 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264CapabilitiesEX
 	s << "VkVideoEncodeH264CapabilitiesEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getVideoEncodeH264CapabilitiesFlagsEXTStr(value.flags) << '\n';
+	s << "\tflags = " << getVideoEncodeH264CapabilityFlagsEXTStr(value.flags) << '\n';
 	s << "\tinputModeFlags = " << getVideoEncodeH264InputModeFlagsEXTStr(value.inputModeFlags) << '\n';
 	s << "\toutputModeFlags = " << getVideoEncodeH264OutputModeFlagsEXTStr(value.outputModeFlags) << '\n';
 	s << "\tminPictureSizeInMbs = " << value.minPictureSizeInMbs << '\n';
@@ -12759,7 +12766,7 @@ std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264ProfileEXT& va
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tstdProfileIdc = " << value.stdProfileIdc << '\n';
-	s << "\tfieldLayout = " << getVideoDecodeH264FieldLayoutFlagsEXTStr(value.fieldLayout) << '\n';
+	s << "\tpictureLayout = " << getVideoDecodeH264PictureLayoutFlagsEXTStr(value.pictureLayout) << '\n';
 	s << '}';
 	return s;
 }

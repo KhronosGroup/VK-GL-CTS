@@ -53,14 +53,14 @@ Building CTS
 ------------
 
 To build dEQP, you need first to download sources for zlib, libpng, glslang,
-spirv-headers, and spirv-tools.
+vulkan-docs, spirv-headers, and spirv-tools.
 
 To download sources, run:
 
 	python external/fetch_sources.py
 
-You may need to re-run `fetch_sources.py` to update to the latest glslang and
-spirv-tools revisions occasionally.
+You may need to re-run `fetch_sources.py` to update to the latest glslang,
+vulkan-docs and spirv-tools revisions occasionally.
 
 With CMake out-of-source builds are always recommended. Create a build directory
 of your choosing, and in that directory generate Makefiles or IDE project

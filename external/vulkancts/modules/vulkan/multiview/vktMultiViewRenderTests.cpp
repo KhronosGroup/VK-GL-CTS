@@ -2795,7 +2795,7 @@ tcu::TestStatus MultiViewReadbackTestInstance::iterate (void)
 		const VkAttachmentLoadOp					loadOp			= (!fullClearPass) ? VK_ATTACHMENT_LOAD_OP_LOAD :
 																	  (m_parameters.viewIndex == TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR) ? VK_ATTACHMENT_LOAD_OP_CLEAR :
 																	  (m_parameters.viewIndex == TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR) ? VK_ATTACHMENT_LOAD_OP_DONT_CARE :
-																	  VK_ATTACHMENT_LOAD_OP_LAST;
+																	  VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		Unique<VkRenderPass>						renderPass		(makeRenderPass (*m_device, *m_logicalDevice, m_parameters.colorFormat, m_parameters.viewMasks, m_parameters.renderPassType, VK_SAMPLE_COUNT_1_BIT, loadOp));
 		Unique<VkFramebuffer>						frameBuffer		(makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, m_colorAttachment->getImageView(), m_parameters.extent.width, m_parameters.extent.height));
 		Unique<VkPipelineLayout>					pipelineLayout	(makePipelineLayout(*m_device, *m_logicalDevice));

@@ -53,6 +53,7 @@ const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&		getPipelineE
 const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR&					getPortabilitySubsetFeatures					(void) const;
 const vk::VkPhysicalDevicePresentIdFeaturesKHR&							getPresentIdFeatures							(void) const;
 const vk::VkPhysicalDevicePresentWaitFeaturesKHR&						getPresentWaitFeatures							(void) const;
+const vk::VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT&		getPrimitiveTopologyListRestartFeaturesEXT		(void) const;
 const vk::VkPhysicalDevicePrivateDataFeaturesEXT&						getPrivateDataFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&						getProtectedMemoryFeatures						(void) const;
 const vk::VkPhysicalDeviceProvokingVertexFeaturesEXT&					getProvokingVertexFeaturesEXT					(void) const;
