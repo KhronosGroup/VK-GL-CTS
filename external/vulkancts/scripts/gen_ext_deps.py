@@ -26,16 +26,17 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
 
 import khr_util.format
-import khr_util.registry_cache
+from khr_util import registry
 from collections import defaultdict
 
-VK_SOURCE						= khr_util.registry_cache.RegistrySource(
-									"https://github.com/KhronosGroup/Vulkan-Docs.git",
-									"xml/vk.xml",
-									"b4e8cd820b2487bc892b391fb26b49501473a6a6",
-									"09c543ece64a965811ffb635caa52c13fdf9873f824cec4986a93d3d7380c8f0")
 VK_INL_FILE						= os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "vkApiExtensionDependencyInfo.inl")
-VK_INL_HEADER					= khr_util.format.genInlHeader("Khronos Vulkan API description (vk.xml)", VK_SOURCE.getRevision())
+VK_INL_HEADER					= """\
+/* WARNING: This is auto-generated file. Do not modify, since changes will
+ * be lost! Modify the generating script instead.
+ */\
+
+"""
+
 
 def VK_MAKE_VERSION(major, minor, patch):
 	return (((major) << 22) | ((minor) << 12) | (patch))
@@ -164,8 +165,9 @@ def getExtInfoDict(vkRegistry):
 
 	return extInfoDict, apiVersionID
 
-def getVKRegistry():
-	return khr_util.registry_cache.getRegistry(VK_SOURCE)
-
 if __name__ == '__main__':
-	genExtDepInl(genExtDeps(getExtInfoDict(getVKRegistry())))
+
+	VULKAN_XML = os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "xml", "vk.xml")
+	vkRegistry = registry.parse(VULKAN_XML)
+
+	genExtDepInl(genExtDeps(getExtInfoDict(vkRegistry)))

@@ -5312,6 +5312,14 @@ struct VkPhysicalDeviceDrmPropertiesEXT
 	deInt64			renderMinor;
 };
 
+struct VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		primitiveTopologyListRestart;
+	VkBool32		primitiveTopologyPatchListRestart;
+};
+
 struct VkSubpassShadingPipelineCreateInfoHUAWEI
 {
 	VkStructureType	sType;
@@ -5762,7 +5770,7 @@ struct VkVideoCapabilitiesKHR
 {
 	VkStructureType				sType;
 	void*						pNext;
-	VkVideoCapabilitiesFlagsKHR	capabilityFlags;
+	VkVideoCapabilityFlagsKHR	capabilityFlags;
 	VkDeviceSize				minBitstreamBufferOffsetAlignment;
 	VkDeviceSize				minBitstreamBufferSizeAlignment;
 	VkExtent2D					videoPictureExtentGranularity;
@@ -5775,7 +5783,7 @@ struct VkVideoCapabilitiesKHR
 struct VkPhysicalDeviceVideoFormatInfoKHR
 {
 	VkStructureType				sType;
-	const void*					pNext;
+	void*						pNext;
 	VkImageUsageFlags			imageUsage;
 	const VkVideoProfilesKHR*	pVideoProfiles;
 };
@@ -6161,19 +6169,19 @@ struct StdVideoEncodeH264SliceHeader
 
 struct VkVideoEncodeH264CapabilitiesEXT
 {
-	VkStructureType							sType;
-	const void*								pNext;
-	VkVideoEncodeH264CapabilitiesFlagsEXT	flags;
-	VkVideoEncodeH264InputModeFlagsEXT		inputModeFlags;
-	VkVideoEncodeH264OutputModeFlagsEXT		outputModeFlags;
-	VkExtent2D								minPictureSizeInMbs;
-	VkExtent2D								maxPictureSizeInMbs;
-	VkExtent2D								inputImageDataAlignment;
-	deUint8									maxNumL0ReferenceForP;
-	deUint8									maxNumL0ReferenceForB;
-	deUint8									maxNumL1Reference;
-	deUint8									qualityLevelCount;
-	VkExtensionProperties					stdExtensionVersion;
+	VkStructureType						sType;
+	const void*							pNext;
+	VkVideoEncodeH264CapabilityFlagsEXT	flags;
+	VkVideoEncodeH264InputModeFlagsEXT	inputModeFlags;
+	VkVideoEncodeH264OutputModeFlagsEXT	outputModeFlags;
+	VkExtent2D							minPictureSizeInMbs;
+	VkExtent2D							maxPictureSizeInMbs;
+	VkExtent2D							inputImageDataAlignment;
+	deUint8								maxNumL0ReferenceForP;
+	deUint8								maxNumL0ReferenceForB;
+	deUint8								maxNumL1Reference;
+	deUint8								qualityLevelCount;
+	VkExtensionProperties				stdExtensionVersion;
 };
 
 struct VkVideoEncodeH264SessionCreateInfoEXT
@@ -6329,7 +6337,7 @@ struct VkVideoDecodeH264ProfileEXT
 	VkStructureType							sType;
 	const void*								pNext;
 	StdVideoH264ProfileIdc					stdProfileIdc;
-	VkVideoDecodeH264FieldLayoutFlagsEXT	fieldLayout;
+	VkVideoDecodeH264PictureLayoutFlagsEXT	pictureLayout;
 };
 
 struct VkVideoDecodeH264CapabilitiesEXT

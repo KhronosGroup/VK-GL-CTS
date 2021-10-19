@@ -2231,6 +2231,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceDrmPropertiesEXT> (v
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkSubpassShadingPipelineCreateInfoHUAWEI> (void)
 {
 	return VK_STRUCTURE_TYPE_SUBPASS_SHADING_PIPELINE_CREATE_INFO_HUAWEI;

@@ -29,11 +29,12 @@ from collections import OrderedDict
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
 
-from build.common import DEQP_DIR
+from build.common import DEQP_DIR, execute
 from khr_util.format import indentLines, writeInlFile
 
-VULKAN_H_DIR	= os.path.join(os.path.dirname(__file__), "src")
-VULKAN_DIR		= os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan")
+VULKAN_HEADERS_INCLUDE_DIR	= os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include")
+VULKAN_SRC_DIR				= os.path.join(os.path.dirname(__file__), "src")
+VULKAN_DIR					= os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan")
 
 INL_HEADER = """\
 /* WARNING: This is auto-generated file. Do not modify, since changes will
@@ -122,7 +123,7 @@ TYPE_SUBSTITUTIONS		= [
 	("HANDLE*",		PLATFORM_TYPE_NAMESPACE + "::" + "Win32Handle*"),
 ]
 
-EXTENSION_POSTFIXES				= ["KHR", "EXT", "NV", "NVX", "KHX", "NN", "MVK", "FUCHSIA", "GGP", "AMD"]
+EXTENSION_POSTFIXES				= ["KHR", "EXT", "NV", "NVX", "KHX", "NN", "MVK", "FUCHSIA", "GGP", "AMD", "QNX"]
 EXTENSION_POSTFIXES_STANDARD	= ["KHR", "EXT"]
 
 def prefixName (prefix, name):
@@ -685,7 +686,7 @@ def parseExtensions (src, versions, allFunctions, allCompositeTypes, allEnums, a
 			return [coreVersion.group(1)] + [int(number) for number in coreVersion.group(2).split('_')[:3]]
 		return None
 
-	extensionsData			= readFile(os.path.join(VULKAN_H_DIR, "extensions_data.txt"))
+	extensionsData			= readFile(os.path.join(VULKAN_SRC_DIR, "extensions_data.txt"))
 	splitSrc				= splitByExtension(src)
 	extensions				= []
 	functionsByName			= {function.name: function for function in allFunctions}
@@ -1532,7 +1533,7 @@ def writeDriverIds(filename):
 					 "} driverIds [] =\n"
 					 "{")
 
-	vulkanCore = readFile(os.path.join(VULKAN_H_DIR, "vulkan_core.h"))
+	vulkanCore = readFile(os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vulkan", "vulkan_core.h"))
 
 	items = re.search(r'(?:typedef\s+enum\s+VkDriverId\s*{)((.*\n)*)(?:}\s*VkDriverId\s*;)', vulkanCore).group(1).split(',')
 	driverItems = dict()
@@ -2258,7 +2259,7 @@ def splitWithQuotation(line):
 def writeMandatoryFeatures(filename):
 	stream = []
 	pattern = r'\s*([\w]+)\s+FEATURES\s+\((.*)\)\s+REQUIREMENTS\s+\((.*)\)'
-	mandatoryFeatures = readFile(os.path.join(VULKAN_H_DIR, "mandatory_features.txt"))
+	mandatoryFeatures = readFile(os.path.join(VULKAN_SRC_DIR, "mandatory_features.txt"))
 	matches = re.findall(pattern, mandatoryFeatures)
 	dictStructs = {}
 	dictData = []
@@ -2362,7 +2363,7 @@ def writeMandatoryFeatures(filename):
 def writeExtensionList(filename, patternPart):
 	stream = []
 	stream.append('static const char* s_allowed{0}KhrExtensions[] =\n{{'.format(patternPart.title()))
-	extensionsData = readFile(os.path.join(VULKAN_H_DIR, "extensions_data.txt"))
+	extensionsData = readFile(os.path.join(VULKAN_SRC_DIR, "extensions_data.txt"))
 	pattern = r'\s*([^\s]+)\s+{0}\s*[0-9_]*'.format(patternPart)
 	matches	= re.findall(pattern, extensionsData)
 	for m in matches:
@@ -2378,24 +2379,51 @@ def preprocessTopInclude(src, dir):
 			return src
 		incFileName = inc.string[inc.start(1):inc.end(1)]
 		patternIncNamed = r'#include\s+"' + incFileName + '"'
-		incBody = readFile(os.path.join(dir, incFileName)) if incFileName != 'vulkan/vk_platform.h' else ''
+		incBody = readFile(os.path.join(dir, incFileName)) if incFileName != 'vk_platform.h' else ''
 		incBodySanitized = re.sub(pattern, '', incBody)
 		bodyEndSanitized = re.sub(patternIncNamed, '', src[inc.end(0):])
 		src = src[0:inc.start(0)] + incBodySanitized + bodyEndSanitized
 	return src
 
 if __name__ == "__main__":
-	# Read all .h files, with vulkan_core.h first
-	files			= os.listdir(VULKAN_H_DIR)
-	files			= [f for f in files if f.endswith(".h")]
+
+	# Generate vulkan headers from vk.xml
+	currentDir			= os.getcwd()
+	pythonExecutable	= sys.executable or "python"
+	os.chdir(os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "..", "xml"))
+	targets = [
+		"vulkan_android.h",
+		"vulkan_beta.h",
+		"vulkan_core.h",
+		"vulkan_fuchsia.h",
+		"vulkan_ggp.h",
+		"vulkan_ios.h",
+		"vulkan_macos.h",
+		"vulkan_metal.h",
+		"vulkan_vi.h",
+		"vulkan_wayland.h",
+		"vulkan_win32.h",
+		"vulkan_xcb.h",
+		"vulkan_xlib.h",
+		"vulkan_xlib_xrandr.h",
+	]
+	for target in targets:
+		execute([pythonExecutable, "../scripts/genvk.py", "-o", "../include/vulkan", target])
+	os.chdir(currentDir)
+
+	# Read all .h files and make sure vulkan_core.h is first out of vulkan files
+	files			= os.listdir(os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vulkan"))
+	files			= [f for f in files if f.startswith("vulkan") and f.endswith(".h")]
 	files.sort()
+	files.remove("vulkan.h")
 	files.remove("vulkan_core.h")
-	first = ["vk_video/vulkan_video_codecs_common.h", "vulkan_core.h"]
-	files = first + files
+	vkFilesWithCatalog =  [os.path.join("vulkan", f) for f in files]
+	first = [os.path.join("vk_video", "vulkan_video_codecs_common.h"), os.path.join("vulkan", "vulkan_core.h")]
+	allFilesWithCatalog = first + vkFilesWithCatalog
 
 	src				= ""
-	for file in files:
-		src += preprocessTopInclude(readFile(os.path.join(VULKAN_H_DIR,file)), VULKAN_H_DIR)
+	for file in allFilesWithCatalog:
+		src += preprocessTopInclude(readFile(os.path.join(VULKAN_HEADERS_INCLUDE_DIR,file)), VULKAN_HEADERS_INCLUDE_DIR)
 
 	src = re.sub('\s*//[^\n]*', '', src)
 	src = re.sub('\n\n', '\n', src)

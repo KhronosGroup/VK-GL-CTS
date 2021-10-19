@@ -909,6 +909,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_primitive_topology_list_restart")
+	{
+		return;
+	}
 	if (extName == "VK_HUAWEI_subpass_shading")
 	{
 		return;
@@ -934,6 +938,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_multi_draw")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_load_store_op_none")
 	{
 		return;
 	}
@@ -2125,6 +2133,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_primitive_topology_list_restart")
+	{
+		return;
+	}
 	if (extName == "VK_HUAWEI_subpass_shading")
 	{
 		functions.push_back("vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI");
@@ -2163,6 +2175,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		functions.push_back("vkCmdDrawMultiEXT");
 		functions.push_back("vkCmdDrawMultiIndexedEXT");
+		return;
+	}
+	if (extName == "VK_EXT_load_store_op_none")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_acceleration_structure")
