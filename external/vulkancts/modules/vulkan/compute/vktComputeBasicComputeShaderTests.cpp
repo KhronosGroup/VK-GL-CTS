@@ -3301,6 +3301,128 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 	return tcu::TestStatus::pass("Test passed");
 }
 
+class EmptyWorkGroupCase : public vkt::TestCase
+{
+public:
+					EmptyWorkGroupCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const tcu::UVec3& dispatchSize);
+	virtual			~EmptyWorkGroupCase		(void) {}
+
+	TestInstance*	createInstance			(Context& context) const override;
+	void			initPrograms			(vk::SourceCollections& programCollection) const override;
+
+protected:
+	const tcu::UVec3 m_dispatchSize;
+};
+
+class EmptyWorkGroupInstance : public vkt::TestInstance
+{
+public:
+						EmptyWorkGroupInstance	(Context& context, const tcu::UVec3& dispatchSize)
+							: vkt::TestInstance	(context)
+							, m_dispatchSize	(dispatchSize)
+							{}
+	virtual				~EmptyWorkGroupInstance	(void) {}
+
+	tcu::TestStatus		iterate					(void) override;
+
+protected:
+	const tcu::UVec3 m_dispatchSize;
+};
+
+EmptyWorkGroupCase::EmptyWorkGroupCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const tcu::UVec3& dispatchSize)
+	: vkt::TestCase		(testCtx, name, description)
+	, m_dispatchSize	(dispatchSize)
+{
+	DE_ASSERT(m_dispatchSize.x() == 0u || m_dispatchSize.y() == 0u || m_dispatchSize.z() == 0u);
+}
+
+TestInstance* EmptyWorkGroupCase::createInstance (Context& context) const
+{
+	return new EmptyWorkGroupInstance(context, m_dispatchSize);
+}
+
+void EmptyWorkGroupCase::initPrograms (vk::SourceCollections& programCollection) const
+{
+	std::ostringstream comp;
+	comp
+		<< "#version 450\n"
+		<< "layout (local_size_x=1, local_size_y=1, local_size_z=1) in;\n"
+		<< "layout (set=0, binding=0) buffer VerificationBlock { uint value; } verif;\n"
+		<< "void main () { atomicAdd(verif.value, 1u); }\n"
+		;
+	programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str());
+}
+
+tcu::TestStatus EmptyWorkGroupInstance::iterate (void)
+{
+	const auto&		vkd				= m_context.getDeviceInterface();
+	const auto		device			= m_context.getDevice();
+	auto&			alloc			= m_context.getDefaultAllocator();
+	const auto		queueIndex		= m_context.getUniversalQueueFamilyIndex();
+	const auto		queue			= m_context.getUniversalQueue();
+
+	const auto			verifBufferSize		= static_cast<VkDeviceSize>(sizeof(uint32_t));
+	const auto			verifBufferInfo		= makeBufferCreateInfo(verifBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	BufferWithMemory	verifBuffer			(vkd, device, alloc, verifBufferInfo, MemoryRequirement::HostVisible);
+	auto&				verifBufferAlloc	= verifBuffer.getAllocation();
+	void*				verifBufferPtr		= verifBufferAlloc.getHostPtr();
+
+	deMemset(verifBufferPtr, 0, static_cast<size_t>(verifBufferSize));
+	flushAlloc(vkd, device, verifBufferAlloc);
+
+	DescriptorSetLayoutBuilder layoutBuilder;
+	layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+	const auto descriptorSetLayout = layoutBuilder.build(vkd, device);
+
+	const auto pipelineLayout	= makePipelineLayout(vkd, device, descriptorSetLayout.get());
+	const auto shaderModule		= createShaderModule(vkd, device, m_context.getBinaryCollection().get("comp"), 0u);
+	const auto pipeline			= makeComputePipeline(vkd, device, pipelineLayout.get(), shaderModule.get());
+
+	DescriptorPoolBuilder poolBuilder;
+	poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	const auto descriptorPool	= poolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	const auto descriptorSet	= makeDescriptorSet(vkd, device, descriptorPool.get(), descriptorSetLayout.get());
+
+	DescriptorSetUpdateBuilder updateBuilder;
+	const auto verifBufferDescInfo = makeDescriptorBufferInfo(verifBuffer.get(), 0ull, verifBufferSize);
+	updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &verifBufferDescInfo);
+	updateBuilder.update(vkd, device);
+
+	const auto cmdPool = makeCommandPool(vkd, device, queueIndex);
+	const auto cmdBufferPtr = allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto cmdBuffer = cmdBufferPtr.get();
+
+	beginCommandBuffer(vkd, cmdBuffer);
+	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.get());
+	vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	vkd.cmdDispatch(cmdBuffer, m_dispatchSize.x(), m_dispatchSize.y(), m_dispatchSize.z());
+
+	const auto readWriteAccess	= (VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT);
+	const auto computeToCompute = makeMemoryBarrier(readWriteAccess, readWriteAccess);
+	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0U, 1u, &computeToCompute, 0u, nullptr, 0u, nullptr);
+
+	vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+
+	const auto computeToHost = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &computeToHost, 0u, nullptr, 0u, nullptr);
+
+	endCommandBuffer(vkd, cmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	uint32_t value;
+	invalidateAlloc(vkd, device, verifBufferAlloc);
+	deMemcpy(&value, verifBufferPtr, sizeof(value));
+
+	if (value != 1u)
+	{
+		std::ostringstream msg;
+		msg << "Unexpected value found in buffer: " << value << " while expecting 1";
+		TCU_FAIL(msg.str());
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 class MaxWorkGroupSizeTest : public vkt::TestCase
 {
 public:
@@ -3641,6 +3763,11 @@ tcu::TestCaseGroup* createBasicComputeShaderTests (tcu::TestContext& testCtx)
 	addFunctionCaseWithPrograms(basicComputeTests.get(), "empty_shader", "Shader that does nothing", EmptyShaderTest::createProgram, EmptyShaderTest::createTest);
 
 	basicComputeTests->addChild(new ConcurrentCompute(testCtx, "concurrent_compute", "Concurrent compute test"));
+
+	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_x", "Use an empty workgroup with size 0 on the X axis", tcu::UVec3(0u, 2u, 3u)));
+	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_y", "Use an empty workgroup with size 0 on the Y axis", tcu::UVec3(2u, 0u, 3u)));
+	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_z", "Use an empty workgroup with size 0 on the Z axis", tcu::UVec3(2u, 3u, 0u)));
+	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_all", "Use an empty workgroup with size 0 on the X, Y and Z axes", tcu::UVec3(0u, 0u, 0u)));
 
 	basicComputeTests->addChild(new MaxWorkGroupSizeTest(testCtx, "max_local_size_x", "Use the maximum work group size on the X axis", MaxWorkGroupSizeTest::Params{MaxWorkGroupSizeTest::Axis::X}));
 	basicComputeTests->addChild(new MaxWorkGroupSizeTest(testCtx, "max_local_size_y", "Use the maximum work group size on the Y axis", MaxWorkGroupSizeTest::Params{MaxWorkGroupSizeTest::Axis::Y}));
