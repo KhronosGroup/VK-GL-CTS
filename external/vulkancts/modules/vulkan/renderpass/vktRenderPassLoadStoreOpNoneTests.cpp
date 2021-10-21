@@ -513,7 +513,7 @@ void LoadStoreOpNoneTestInstance::createCommandBuffer	(const DeviceInterface&			
 			VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,				// VkStructureType						sType;
 			DE_NULL,														// const void*							pNext;
 			DE_NULL,														// VkImageView							imageView;
-			VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,						// VkImageLayout						imageLayout;
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
 			VK_RESOLVE_MODE_NONE,											// VkResolveModeFlagBits				resolveMode;
 			DE_NULL,														// VkImageView							resolveImageView;
 			VK_IMAGE_LAYOUT_UNDEFINED,										// VkImageLayout						resolveImageLayout;
@@ -1186,11 +1186,13 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 
 			if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_DEPTH)
 			{
-				textureLevelResult = pipeline::readDepthAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *attachmentImages[i], m_testParams.depthStencilFormat, m_imageSize, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+				VkImageLayout layout = (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+				textureLevelResult = pipeline::readDepthAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *attachmentImages[i], m_testParams.depthStencilFormat, m_imageSize, layout);
 			}
 			else if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_STENCIL)
 			{
-				textureLevelResult = pipeline::readStencilAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *attachmentImages[i], m_testParams.depthStencilFormat, m_imageSize, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+				VkImageLayout layout = (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+				textureLevelResult = pipeline::readStencilAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *attachmentImages[i], m_testParams.depthStencilFormat, m_imageSize, layout);
 			}
 			else
 			{
