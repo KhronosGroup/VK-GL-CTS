@@ -362,7 +362,7 @@ InvertedDepthRangesTestInstance::ColorAndDepth InvertedDepthRangesTestInstance::
 	}
 
 	if (m_params.useDynamicRendering)
-		beginRendering(vk, *cmdBuffer, *m_colorTargetView, *m_depthTargetView, makeRect2D(kImageExtent), clearColor, clearDepth);
+		beginRendering(vk, *cmdBuffer, *m_colorTargetView, *m_depthTargetView, false, makeRect2D(kImageExtent), clearColor, clearDepth);
 	else
 		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(kImageExtent));
 

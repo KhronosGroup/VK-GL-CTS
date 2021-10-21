@@ -1006,7 +1006,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 
 	if (m_params.useDynamicRendering)
 	{
-		// Transition color attachment to the proper initial layout for dynamic rendering
+		// Transition color and depth stencil attachment to the proper initial layout for dynamic rendering
 		const auto colorPreBarrier = makeImageMemoryBarrier(
 			0u,
 			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -1017,10 +1017,23 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 		vkd.cmdPipelineBarrier(
 			cmdBuffer,
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT),
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 			0u, 0u, nullptr, 0u, nullptr, 1u, &colorPreBarrier);
 
-		beginRendering(vkd, cmdBuffer, *colorBufferView, *dsBufferView, scissor, clearValues[0], clearValues[1],
+		const auto dsPreBarrier = makeImageMemoryBarrier(
+			0u,
+			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+			dsBuffer.get(), dsSubresourceRange);
+
+		vkd.cmdPipelineBarrier(
+			cmdBuffer,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT),
+			0u, 0u, nullptr, 0u, nullptr, 1u, &dsPreBarrier);
+
+		beginRendering(vkd, cmdBuffer, *colorBufferView, *dsBufferView, true, scissor, clearValues[0], clearValues[1],
 					   vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 					   VK_ATTACHMENT_LOAD_OP_CLEAR);
 	}
