@@ -24,6 +24,7 @@
 
 #include "vktRasterizationProvokingVertexTests.hpp"
 
+#include "vkBarrierUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkObjUtil.hpp"
@@ -127,6 +128,7 @@ class ProvokingVertexTestInstance : public TestInstance
 public:
 						ProvokingVertexTestInstance	(Context& context, Params params);
 	tcu::TestStatus		iterate						(void);
+	Move<VkRenderPass>	makeRenderPass				(const DeviceInterface& vk, const VkDevice device);
 private:
 	Params	m_params;
 };
@@ -246,6 +248,7 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 	const VkDevice				device					= m_context.getDevice();
 	const deUint32				queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	const tcu::TextureFormat	textureFormat			= vk::mapVkFormat(m_params.format);
+	const VkDeviceSize			counterBufferOffset		= 0u;
 	Allocator&					allocator				= m_context.getDefaultAllocator();
 	Move<VkImage>				image;
 	Move<VkImageView>			imageView;
@@ -255,6 +258,8 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 	Move<VkBuffer>				xfbBuffer;
 	de::MovePtr<Allocation>		xfbBufferMemory;
 	VkDeviceSize				xfbBufferSize			= 0;
+	Move<VkBuffer>				counterBuffer;
+	de::MovePtr<Allocation>		counterBufferMemory;
 	Move<VkBuffer>				vertexBuffer;
 	de::MovePtr<Allocation>		vertexBufferMemory;
 	Move<VkRenderPass>			renderPass;
@@ -319,23 +324,7 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 		VK_CHECK(vk.bindBufferMemory(device, *resultBuffer, resultBufferMemory->getMemory(), resultBufferMemory->getOffset()));
 	}
 
-	// Render pass and framebuffer
-	{
-		renderPass = makeRenderPass(vk,
-									device,
-									m_params.format,							// colorFormat
-									VK_FORMAT_UNDEFINED,						// depthStencilFormat
-									VK_ATTACHMENT_LOAD_OP_CLEAR,				// loadOperation
-									VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// finalLayoutColor
-									VK_IMAGE_LAYOUT_UNDEFINED,					// finalLayoutDepthStencil
-									VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// subpassLayoutColor
-									VK_IMAGE_LAYOUT_UNDEFINED,					// subpassLayoutDepthStencil
-									DE_NULL);									// allocationCallbacks
-
-		framebuffer = makeFramebuffer(vk, device, *renderPass, *imageView, m_params.size.x(), m_params.size.y(), 1u);
-	}
-
-	// Pipelines
+	// Render pass, framebuffer and pipelines
 	{
 		const Unique<VkShaderModule>									vertexShader					(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0));
 		const Unique<VkShaderModule>									fragmentShader					(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0));
@@ -407,26 +396,28 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 			1.0f															// lineWidth
 		};
 
-		pipeline = makeGraphicsPipeline(vk,
-										device,
-										*pipelineLayout,
-										*vertexShader,
-										DE_NULL,						// tessellationControlShaderModule
-										DE_NULL,						// tessellationEvalShaderModule
-										DE_NULL,						// geometryShaderModule
-										*fragmentShader,
-										*renderPass,
-										viewports,
-										scissors,
-										m_params.primitiveTopology,
-										0u,								// subpass
-										0u,								// patchControlPoints
-										&vertexInputStateParams,
-										&rasterizationStateCreateInfo,
-										DE_NULL,						// multisampleStateCreateInfo
-										DE_NULL,						// depthStencilStateCreateInfo
-										DE_NULL,						// colorBlendStateCreateInfo
-										DE_NULL);						// dynamicStateCreateInfo
+		renderPass	= ProvokingVertexTestInstance::makeRenderPass(vk, device);
+		framebuffer	= makeFramebuffer(vk, device, *renderPass, *imageView, m_params.size.x(), m_params.size.y(), 1u);
+		pipeline	= makeGraphicsPipeline(vk,
+										   device,
+										   *pipelineLayout,
+										   *vertexShader,
+										   DE_NULL,							// tessellationControlShaderModule
+										   DE_NULL,							// tessellationEvalShaderModule
+										   DE_NULL,							// geometryShaderModule
+										   *fragmentShader,
+										   *renderPass,
+										   viewports,
+										   scissors,
+										   m_params.primitiveTopology,
+										   0u,								// subpass
+										   0u,								// patchControlPoints
+										   &vertexInputStateParams,
+										   &rasterizationStateCreateInfo,
+										   DE_NULL,							// multisampleStateCreateInfo
+										   DE_NULL,							// depthStencilStateCreateInfo
+										   DE_NULL,							// colorBlendStateCreateInfo
+										   DE_NULL);						// dynamicStateCreateInfo
 
 		if (m_params.provokingVertexMode == PROVOKING_VERTEX_PER_PIPELINE)
 		{
@@ -660,7 +651,7 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 		flushAlloc(vk, device, *vertexBufferMemory);
 	}
 
-	// Transform feedback buffer
+	// Transform feedback and counter buffers
 	if (m_params.transformFeedback)
 	{
 		xfbBufferSize	= getXfbBufferSize(vertexCount, m_params.primitiveTopology);
@@ -668,12 +659,18 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 		if (m_params.provokingVertexMode ==PROVOKING_VERTEX_PER_PIPELINE)
 			xfbBufferSize = xfbBufferSize * 2;
 
-		const int					bufferUsage	= VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT;
-		const VkBufferCreateInfo	createInfo	= makeBufferCreateInfo(xfbBufferSize, bufferUsage);
+		const int					xfbBufferUsage		= VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT;
+		const VkBufferCreateInfo	xfbCreateInfo		= makeBufferCreateInfo(xfbBufferSize, xfbBufferUsage);
+		const VkDeviceSize			counterBufferSize	= 16 * sizeof(deUint32);
+		const VkBufferCreateInfo	counterBufferInfo	= makeBufferCreateInfo(counterBufferSize, VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT);
 
-		xfbBuffer		= createBuffer(vk, device, &createInfo);
-		xfbBufferMemory	= allocator.allocate(getBufferMemoryRequirements(vk, device, *xfbBuffer), MemoryRequirement::HostVisible);
+		xfbBuffer			= createBuffer(vk, device, &xfbCreateInfo);
+		xfbBufferMemory		= allocator.allocate(getBufferMemoryRequirements(vk, device, *xfbBuffer), MemoryRequirement::HostVisible);
 		VK_CHECK(vk.bindBufferMemory(device, *xfbBuffer, xfbBufferMemory->getMemory(), xfbBufferMemory->getOffset()));
+
+		counterBuffer		= createBuffer(vk, device, &counterBufferInfo);
+		counterBufferMemory	= allocator.allocate(getBufferMemoryRequirements(vk, device, *counterBuffer), MemoryRequirement::Any);
+		VK_CHECK(vk.bindBufferMemory(device, *counterBuffer, counterBufferMemory->getMemory(), counterBufferMemory->getOffset()));
 	}
 
 	// Clear the color buffer to red and check the drawing doesn't add any
@@ -709,13 +706,8 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 			subResourcerange							// subresourceRange
 		};
 
-		const VkMemoryBarrier			xfbMemoryBarrier	=
-		{
-			VK_STRUCTURE_TYPE_MEMORY_BARRIER,			// sType
-			DE_NULL,									// pNext
-			VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT,	// srcAccessMask
-			VK_ACCESS_HOST_READ_BIT						// dstAccessMask
-		};
+		const VkMemoryBarrier			xfbMemoryBarrier	= makeMemoryBarrier(VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT, VK_ACCESS_HOST_READ_BIT);
+		const VkMemoryBarrier			counterBarrier		= makeMemoryBarrier(VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT, VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT);
 
 		// The first half of the vertex buffer is for PROVOKING_VERTEX_FIRST,
 		// the second half for PROVOKING_VERTEX_LAST
@@ -740,19 +732,30 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 					const VkDeviceSize	xfbBufferOffset	= 0;
 
 					vk.cmdBindTransformFeedbackBuffersEXT(*commandBuffer, 0, 1, &*xfbBuffer, &xfbBufferOffset, &xfbBufferSize);
-					vk.cmdBeginTransformFeedbackEXT(*commandBuffer, 0, 0, DE_NULL, DE_NULL);
+					vk.cmdBeginTransformFeedbackEXT(*commandBuffer, 0, 1, &*counterBuffer, &counterBufferOffset);
 				}
 
 				vk.cmdDraw(*commandBuffer, vertexCount, 1u, firstVertex, 0u);
 
 				if (m_params.provokingVertexMode == PROVOKING_VERTEX_PER_PIPELINE)
 				{
+					// vkCmdBindPipeline must not be recorded when transform feedback is active.
+					if (m_params.transformFeedback)
+					{
+						vk.cmdEndTransformFeedbackEXT(*commandBuffer, 0, 1, &*counterBuffer, &counterBufferOffset);
+						vk.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT, VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT, 0u, 1u, &counterBarrier, 0u, DE_NULL, 0u, DE_NULL);
+					}
+
 					vk.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *altPipeline);
+
+					if (m_params.transformFeedback)
+						vk.cmdBeginTransformFeedbackEXT(*commandBuffer, 0, 1, &*counterBuffer, &counterBufferOffset);
+
 					vk.cmdDraw(*commandBuffer, vertexCount, 1u, vertexCount, 0u);
 				}
 
 				if (m_params.transformFeedback)
-					vk.cmdEndTransformFeedbackEXT(*commandBuffer, 0, 0, DE_NULL, DE_NULL);
+					vk.cmdEndTransformFeedbackEXT(*commandBuffer, 0, 1, &*counterBuffer, &counterBufferOffset);
 			}
 			endRenderPass(vk, *commandBuffer);
 
@@ -836,6 +839,71 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 	}
 
 	return tcu::TestStatus::pass("Solid red");
+}
+
+// Copied from vkObjUtil.cpp with an additional subpass.
+Move<VkRenderPass> ProvokingVertexTestInstance::makeRenderPass (const DeviceInterface& vk, const VkDevice device)
+{
+	const VkAttachmentDescription		colorAttachmentDescription	=
+	{
+		(VkAttachmentDescriptionFlags)0,			// VkAttachmentDescriptionFlags    flags
+		m_params.format,							// VkFormat                        format
+		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits           samples
+		VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp              loadOp
+		VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp             storeOp
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp              stencilLoadOp
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp             stencilStoreOp
+		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout                   initialLayout
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout                   finalLayout
+	};
+
+	const VkAttachmentReference			colorAttachmentRef			=
+	{
+		0u,											// deUint32         attachment
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout    layout
+	};
+
+	const VkSubpassDescription			subpassDescription			=
+	{
+		(VkSubpassDescriptionFlags)0,		// VkSubpassDescriptionFlags       flags
+		VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint             pipelineBindPoint
+		0u,									// deUint32                        inputAttachmentCount
+		DE_NULL,							// const VkAttachmentReference*    pInputAttachments
+		1u,									// deUint32                        colorAttachmentCount
+		&colorAttachmentRef,				// const VkAttachmentReference*    pColorAttachments
+		DE_NULL,							// const VkAttachmentReference*    pResolveAttachments
+		DE_NULL,							// const VkAttachmentReference*    pDepthStencilAttachment
+		0u,									// deUint32                        preserveAttachmentCount
+		DE_NULL								// const deUint32*                 pPreserveAttachments
+	};
+
+	const VkSubpassDependency			selfDependency			=
+	{
+		0u,													// deUint32                srcSubpass
+		0u,													// deUint32                dstSubpass
+		VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,		// VkPipelineStageFlags    srcStageMask
+		VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,		// VkPipelineStageFlags    dstStageMask
+		VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT,	// VkAccessFlags           srcAccessMask
+		VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT,	// VkAccessFlags           dstAccessMask
+		0u													// VkDependencyFlags       dependencyFlags
+	};
+
+	const bool							xfbPerPipeline				= m_params.transformFeedback && m_params.provokingVertexMode == PROVOKING_VERTEX_PER_PIPELINE;
+
+	const VkRenderPassCreateInfo		renderPassInfo				=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType                   sType
+		DE_NULL,									// const void*                       pNext
+		(VkRenderPassCreateFlags)0,					// VkRenderPassCreateFlags           flags
+		1u,											// deUint32                          attachmentCount
+		&colorAttachmentDescription,				// const VkAttachmentDescription*    pAttachments
+		1u,											// deUint32                          subpassCount
+		&subpassDescription,						// const VkSubpassDescription*       pSubpasses
+		xfbPerPipeline ? 1u : 0u,					// deUint32                          dependencyCount
+		xfbPerPipeline ? &selfDependency : DE_NULL	// const VkSubpassDependency*        pDependencies
+	};
+
+	return createRenderPass(vk, device, &renderPassInfo, DE_NULL);
 }
 
 void createTests (tcu::TestCaseGroup* testGroup)
