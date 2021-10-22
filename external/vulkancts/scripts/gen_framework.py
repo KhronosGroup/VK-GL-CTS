@@ -97,7 +97,7 @@ PLATFORM_TYPES		= [
 	# VK_EXT_acquire_xlib_display
 	(["RROutput"],							["RROutput"],					"void*"),
 
-	(["zx_handle_t"],						["zx_handle_t"],				"int32_t"),
+	(["zx_handle_t"],						["zx_handle_t"],				"uint32_t"),
 	(["GgpFrameToken"],						["GgpFrameToken"],				"int32_t"),
 	(["GgpStreamDescriptor"],				["GgpStreamDescriptor"],		"int32_t"),
 	(["CAMetalLayer"],						["CAMetalLayer"],				"void*"),
