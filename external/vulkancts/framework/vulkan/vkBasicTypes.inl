@@ -3921,7 +3921,7 @@ VK_DEFINE_PLATFORM_TYPE(AndroidHardwareBufferPtr,	void*);
 VK_DEFINE_PLATFORM_TYPE(Win32MonitorHandle,			void*);
 VK_DEFINE_PLATFORM_TYPE(Win32LPCWSTR,				const void*);
 VK_DEFINE_PLATFORM_TYPE(RROutput,					void*);
-VK_DEFINE_PLATFORM_TYPE(zx_handle_t,				deInt32);
+VK_DEFINE_PLATFORM_TYPE(zx_handle_t,				deUint32);
 VK_DEFINE_PLATFORM_TYPE(GgpFrameToken,				deInt32);
 VK_DEFINE_PLATFORM_TYPE(GgpStreamDescriptor,		deInt32);
 VK_DEFINE_PLATFORM_TYPE(CAMetalLayer,				void*);

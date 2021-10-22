@@ -324,37 +324,39 @@ void AmberTestCase::initPrograms (vk::SourceCollections& programCollection) cons
 		}
 		else if (shader.format == amber::kShaderFormatGlsl)
 		{
+			bool allowSpirv14 = (spirvVersion == vk::SPIRV_VERSION_1_4);
+
 			switch (shader.type)
 			{
 				case amber::kShaderTypeCompute:
 					programCollection.glslSources.add(shader.shader_name)
 						<< glu::ComputeSource(shader.shader_source)
-						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
+						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, allowSpirv14);
 					break;
 				case amber::kShaderTypeGeometry:
 					programCollection.glslSources.add(shader.shader_name)
 						<< glu::GeometrySource(shader.shader_source)
-						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
+						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, allowSpirv14);
 					break;
 				case amber::kShaderTypeFragment:
 					programCollection.glslSources.add(shader.shader_name)
 						<< glu::FragmentSource(shader.shader_source)
-						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
+						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, allowSpirv14);
 					break;
 				case amber::kShaderTypeVertex:
 					programCollection.glslSources.add(shader.shader_name)
 						<< glu::VertexSource(shader.shader_source)
-						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
+						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, allowSpirv14);
 					break;
 				case amber::kShaderTypeTessellationControl:
 					programCollection.glslSources.add(shader.shader_name)
 						<< glu::TessellationControlSource(shader.shader_source)
-						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
+						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, allowSpirv14);
 					break;
 				case amber::kShaderTypeTessellationEvaluation:
 					programCollection.glslSources.add(shader.shader_name)
 						<< glu::TessellationEvaluationSource(shader.shader_source)
-						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
+						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, allowSpirv14);
 					break;
 				case amber::kShaderTypeMulti:
 					DE_ASSERT(false && "Multi shaders not supported");
