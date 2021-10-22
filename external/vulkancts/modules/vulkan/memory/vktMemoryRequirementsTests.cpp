@@ -887,6 +887,7 @@ void ImageMemoryRequirementsOriginal::populateTestGroup (tcu::TestCaseGroup* gro
 
 		params.flags		=  imageFlagsCases[flagsNdx].flags;
 		params.transient	=  imageFlagsCases[flagsNdx].transient;
+		params.useMaint4	=  false;
 		caseName			<< imageFlagsCases[flagsNdx].name;
 
 		if (tilingNdx != 0)
