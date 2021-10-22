@@ -29,7 +29,7 @@
 #include "deRandom.hpp"
 #include "deMath.h"
 #include "deString.h"
-#include "deInt32.h"
+#include "deDefs.hpp"
 
 namespace deqp
 {
@@ -991,24 +991,6 @@ public:
 	}
 };
 
-static int findMSB (deInt32 value)
-{
-	if (value > 0)
-		return 31 - deClz32((deUint32)value);
-	else if (value < 0)
-		return 31 - deClz32(~(deUint32)value);
-	else
-		return -1;
-}
-
-static int findMSB (deUint32 value)
-{
-	if (value > 0)
-		return 31 - deClz32(value);
-	else
-		return -1;
-}
-
 static deUint32 toPrecision (deUint32 value, int numIntegerBits)
 {
 	return value & getLowBitMask(numIntegerBits);
@@ -1055,8 +1037,8 @@ public:
 		{
 			const deUint32	value	= ((const deUint32*)inputs[0])[compNdx];
 			const int		out		= ((const deInt32*)outputs[0])[compNdx];
-			const int		minRef	= isSigned ? findMSB(toPrecision(deInt32(value), integerLength))	: findMSB(toPrecision(value, integerLength));
-			const int		maxRef	= isSigned ? findMSB(deInt32(value))								: findMSB(value);
+			const int		minRef	= isSigned ? de::findMSB(toPrecision(deInt32(value), integerLength))	: de::findMSB(toPrecision(value, integerLength));
+			const int		maxRef	= isSigned ? de::findMSB(deInt32(value))								: de::findMSB(value);
 
 			if (!de::inRange(out, minRef, maxRef))
 			{
