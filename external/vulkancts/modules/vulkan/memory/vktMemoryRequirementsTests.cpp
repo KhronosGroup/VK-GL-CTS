@@ -1178,6 +1178,9 @@ bool ImageMemoryRequirementsOriginal::isImageSupported (const Context& context, 
 			return false;
 	}
 
+	if ((info.flags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT) && !checkSparseImageFormatSupport(physDevice, vki, info))
+		return false;
+
 	return result == VK_SUCCESS;
 }
 
@@ -2169,7 +2172,7 @@ tcu::TestCaseGroup* createRequirementsTests (tcu::TestContext& testCtx)
 	requirementsGroup->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Memory requirements tests with extension VK_KHR_dedicated_allocation",		populateDedicatedAllocationTestGroup));
 	requirementsGroup->addChild(createTestGroup(testCtx, "multiplane_image",		"Memory requirements tests with vkGetImagePlaneMemoryRequirements",			populateMultiplaneTestGroup));
 	requirementsGroup->addChild(createTestGroup(testCtx, "memory_property_flags",	"Memory requirements tests with vkGetPhysicalDeviceMemoryProperties",		populateMemoryPropertyFlagsTestGroup));
-	requirementsGroup->addChild(createTestGroup(testCtx, "create_info",				"Memory requirements tests with extension VK_KHR_maintenance4",						populateCreateInfoTestGroup));
+	requirementsGroup->addChild(createTestGroup(testCtx, "create_info",				"Memory requirements tests with extension VK_KHR_maintenance4",				populateCreateInfoTestGroup));
 
 	return requirementsGroup.release();
 }
