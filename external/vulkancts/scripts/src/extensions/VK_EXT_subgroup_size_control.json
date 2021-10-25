@@ -1,0 +1,10 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceSubgroupSizeControlFeaturesEXT":
+		[
+			{ "features": ["subgroupSizeControl"],			"requirements": ["VK_EXT_subgroup_size_control"] },
+			{ "features": ["computeFullSubgroups"],			"requirements": ["VK_EXT_subgroup_size_control"] }
+		]
+	}
+}

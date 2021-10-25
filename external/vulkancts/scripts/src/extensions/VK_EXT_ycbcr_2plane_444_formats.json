@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT":
+		[
+			{ "features": ["ycbcr2plane444Formats"],	"requirements": ["VK_EXT_ycbcr_2plane_444_formats"] }
+		]
+	}
+}

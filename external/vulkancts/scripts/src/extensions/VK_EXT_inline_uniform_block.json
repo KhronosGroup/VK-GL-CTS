@@ -1,0 +1,10 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceInlineUniformBlockFeaturesEXT":
+		[
+			{ "features": ["inlineUniformBlock"],										"requirements": ["VK_EXT_inline_uniform_block"] },
+			{ "features": ["descriptorBindingInlineUniformBlockUpdateAfterBind"],		"requirements": ["VK_EXT_inline_uniform_block", "VK_EXT_descriptor_indexing"] }
+		]
+	}
+}

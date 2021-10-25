@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": "1.2.0"
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceScalarBlockLayoutFeaturesEXT":
+		[
+			{ "features": ["scalarBlockLayout"],		"requirements": ["VK_EXT_scalar_block_layout"] }
+		]
+	}
+}

@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT":
+		[
+			{ "features": ["shaderDemoteToHelperInvocation"],	"requirements": ["VK_EXT_shader_demote_to_helper_invocation"] }
+		]
+	}
+}

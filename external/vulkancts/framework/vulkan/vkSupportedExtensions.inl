@@ -15,12 +15,10 @@ void getCoreDeviceExtensionsImpl (deUint32 coreVersion, ::std::vector<const char
 		dst.push_back("VK_KHR_draw_indirect_count");
 		dst.push_back("VK_KHR_shader_subgroup_extended_types");
 		dst.push_back("VK_KHR_8bit_storage");
-		dst.push_back("VK_KHR_shader_atomic_int64");
 		dst.push_back("VK_KHR_driver_properties");
 		dst.push_back("VK_KHR_shader_float_controls");
 		dst.push_back("VK_KHR_depth_stencil_resolve");
 		dst.push_back("VK_KHR_timeline_semaphore");
-		dst.push_back("VK_KHR_vulkan_memory_model");
 		dst.push_back("VK_KHR_spirv_1_4");
 		dst.push_back("VK_KHR_separate_depth_stencil_layouts");
 		dst.push_back("VK_KHR_uniform_buffer_standard_layout");
@@ -29,6 +27,7 @@ void getCoreDeviceExtensionsImpl (deUint32 coreVersion, ::std::vector<const char
 		dst.push_back("VK_EXT_descriptor_indexing");
 		dst.push_back("VK_EXT_shader_viewport_index_layer");
 		dst.push_back("VK_EXT_scalar_block_layout");
+		dst.push_back("VK_EXT_shader_image_atomic_int64");
 		dst.push_back("VK_EXT_separate_stencil_usage");
 		dst.push_back("VK_EXT_host_query_reset");
 	}
@@ -39,7 +38,6 @@ void getCoreDeviceExtensionsImpl (deUint32 coreVersion, ::std::vector<const char
 		dst.push_back("VK_KHR_shader_draw_parameters");
 		dst.push_back("VK_KHR_maintenance1");
 		dst.push_back("VK_KHR_external_memory");
-		dst.push_back("VK_KHR_external_semaphore");
 		dst.push_back("VK_KHR_16bit_storage");
 		dst.push_back("VK_KHR_descriptor_update_template");
 		dst.push_back("VK_KHR_external_fence");
@@ -52,6 +50,7 @@ void getCoreDeviceExtensionsImpl (deUint32 coreVersion, ::std::vector<const char
 		dst.push_back("VK_KHR_sampler_ycbcr_conversion");
 		dst.push_back("VK_KHR_bind_memory2");
 		dst.push_back("VK_KHR_maintenance3");
+		dst.push_back("VK_KHR_vulkan_memory_model");
 	}
 }
 
