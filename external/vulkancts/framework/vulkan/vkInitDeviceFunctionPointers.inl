@@ -360,6 +360,7 @@ m_vk.destroyPrivateDataSlotEXT							= (DestroyPrivateDataSlotEXTFunc)						GET_
 m_vk.setPrivateDataEXT									= (SetPrivateDataEXTFunc)								GET_PROC_ADDR("vkSetPrivateDataEXT");
 m_vk.getPrivateDataEXT									= (GetPrivateDataEXTFunc)								GET_PROC_ADDR("vkGetPrivateDataEXT");
 m_vk.cmdSetFragmentShadingRateEnumNV					= (CmdSetFragmentShadingRateEnumNVFunc)					GET_PROC_ADDR("vkCmdSetFragmentShadingRateEnumNV");
+m_vk.getDeviceFaultInfoEXT								= (GetDeviceFaultInfoEXTFunc)							GET_PROC_ADDR("vkGetDeviceFaultInfoEXT");
 m_vk.cmdSetVertexInputEXT								= (CmdSetVertexInputEXTFunc)							GET_PROC_ADDR("vkCmdSetVertexInputEXT");
 m_vk.getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI		= (GetDeviceSubpassShadingMaxWorkgroupSizeHUAWEIFunc)	GET_PROC_ADDR("vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI");
 m_vk.cmdSubpassShadingHUAWEI							= (CmdSubpassShadingHUAWEIFunc)							GET_PROC_ADDR("vkCmdSubpassShadingHUAWEI");

@@ -903,6 +903,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_device_fault")
+	{
+		return;
+	}
 	if (extName == "VK_NV_acquire_winrt_display")
 	{
 		functions.push_back("vkAcquireWinrtDisplayNV");
@@ -2151,6 +2155,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_device_fault")
+	{
+		functions.push_back("vkGetDeviceFaultInfoEXT");
+		return;
+	}
 	if (extName == "VK_NV_acquire_winrt_display")
 	{
 		return;
@@ -2508,6 +2517,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_device_generated_commands",
 	"VK_EXT_private_data",
 	"VK_NV_fragment_shading_rate_enums",
+	"VK_EXT_device_fault",
 	"VK_EXT_vertex_input_dynamic_state",
 	"VK_HUAWEI_subpass_shading",
 	"VK_HUAWEI_invocation_mask",

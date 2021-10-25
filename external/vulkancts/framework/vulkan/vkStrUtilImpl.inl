@@ -668,6 +668,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2_KHR:												return "VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2_KHR";
 		case VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2_KHR:													return "VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_EXT:									return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_DEVICE_FAULT_COUNTS_EXT:												return "VK_STRUCTURE_TYPE_DEVICE_FAULT_COUNTS_EXT";
+		case VK_STRUCTURE_TYPE_DEVICE_FAULT_INFO_EXT:												return "VK_STRUCTURE_TYPE_DEVICE_FAULT_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE";
@@ -2399,6 +2402,32 @@ const char* getAccelerationStructureMotionInstanceTypeNVName (VkAccelerationStru
 		case VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_SRT_MOTION_NV:		return "VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_SRT_MOTION_NV";
 		case VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_MAX_ENUM_NV:		return "VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_MAX_ENUM_NV";
 		default:																return DE_NULL;
+	}
+}
+
+const char* getDeviceFaultAddressTypeEXTName (VkDeviceFaultAddressTypeEXT value)
+{
+	switch (value)
+	{
+		case VK_DEVICE_FAULT_ADDRESS_TYPE_NONE_EXT:							return "VK_DEVICE_FAULT_ADDRESS_TYPE_NONE_EXT";
+		case VK_DEVICE_FAULT_ADDRESS_TYPE_READ_INVALID_EXT:					return "VK_DEVICE_FAULT_ADDRESS_TYPE_READ_INVALID_EXT";
+		case VK_DEVICE_FAULT_ADDRESS_TYPE_WRITE_INVALID_EXT:				return "VK_DEVICE_FAULT_ADDRESS_TYPE_WRITE_INVALID_EXT";
+		case VK_DEVICE_FAULT_ADDRESS_TYPE_EXECUTE_INVALID_EXT:				return "VK_DEVICE_FAULT_ADDRESS_TYPE_EXECUTE_INVALID_EXT";
+		case VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_UNKNOWN_EXT:	return "VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_UNKNOWN_EXT";
+		case VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_INVALID_EXT:	return "VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_INVALID_EXT";
+		case VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_FAULT_EXT:	return "VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_FAULT_EXT";
+		case VK_DEVICE_FAULT_ADDRESS_TYPE_MAX_ENUM_EXT:						return "VK_DEVICE_FAULT_ADDRESS_TYPE_MAX_ENUM_EXT";
+		default:															return DE_NULL;
+	}
+}
+
+const char* getDeviceFaultVendorBinaryHeaderVersionEXTName (VkDeviceFaultVendorBinaryHeaderVersionEXT value)
+{
+	switch (value)
+	{
+		case VK_DEVICE_FAULT_VENDOR_BINARY_HEADER_VERSION_ONE_EXT:		return "VK_DEVICE_FAULT_VENDOR_BINARY_HEADER_VERSION_ONE_EXT";
+		case VK_DEVICE_FAULT_VENDOR_BINARY_HEADER_VERSION_MAX_ENUM_EXT:	return "VK_DEVICE_FAULT_VENDOR_BINARY_HEADER_VERSION_MAX_ENUM_EXT";
+		default:														return DE_NULL;
 	}
 }
 
@@ -11424,6 +11453,80 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevice4444FormatsFeat
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tformatA4R4G4B4 = " << value.formatA4R4G4B4 << '\n';
 	s << "\tformatA4B4G4R4 = " << value.formatA4B4G4R4 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFaultFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceFaultFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdeviceFault = " << value.deviceFault << '\n';
+	s << "\tdeviceFaultVendorBinary = " << value.deviceFaultVendorBinary << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceFaultCountsEXT& value)
+{
+	s << "VkDeviceFaultCountsEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\taddressInfoCount = " << value.addressInfoCount << '\n';
+	s << "\tvendorInfoCount = " << value.vendorInfoCount << '\n';
+	s << "\tvendorBinarySize = " << value.vendorBinarySize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceFaultAddressInfoEXT& value)
+{
+	s << "VkDeviceFaultAddressInfoEXT = {\n";
+	s << "\taddressType = " << value.addressType << '\n';
+	s << "\treportedAddress = " << value.reportedAddress << '\n';
+	s << "\taddressPrecision = " << value.addressPrecision << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceFaultVendorInfoEXT& value)
+{
+	s << "VkDeviceFaultVendorInfoEXT = {\n";
+	s << "\tdescription = " << (const char*)value.description << '\n';
+	s << "\tvendorFaultCode = " << value.vendorFaultCode << '\n';
+	s << "\tvendorFaultData = " << value.vendorFaultData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceFaultInfoEXT& value)
+{
+	s << "VkDeviceFaultInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdescription = " << (const char*)value.description << '\n';
+	s << "\tpAddressInfos = " << value.pAddressInfos << '\n';
+	s << "\tpVendorInfos = " << value.pVendorInfos << '\n';
+	s << "\tpVendorBinaryData = " << value.pVendorBinaryData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceFaultVendorBinaryHeaderVersionOneEXT& value)
+{
+	s << "VkDeviceFaultVendorBinaryHeaderVersionOneEXT = {\n";
+	s << "\theaderSize = " << value.headerSize << '\n';
+	s << "\theaderVersion = " << value.headerVersion << '\n';
+	s << "\tvendorID = " << value.vendorID << '\n';
+	s << "\tdeviceID = " << value.deviceID << '\n';
+	s << "\tdriverVersion = " << value.driverVersion << '\n';
+	s << "\tpipelineCacheUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.pipelineCacheUUID)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.pipelineCacheUUID))) << '\n';
+	s << "\tapplicationNameOffset = " << value.applicationNameOffset << '\n';
+	s << "\tapplicationVersion = " << value.applicationVersion << '\n';
+	s << "\tengineNameOffset = " << value.engineNameOffset << '\n';
+	s << "\tengineVersion = " << value.engineVersion << '\n';
+	s << "\tapiVersion = " << value.apiVersion << '\n';
 	s << '}';
 	return s;
 }

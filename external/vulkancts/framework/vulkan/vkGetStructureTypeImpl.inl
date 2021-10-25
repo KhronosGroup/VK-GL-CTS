@@ -2231,6 +2231,21 @@ template<> VkStructureType getStructureType<VkPhysicalDevice4444FormatsFeaturesE
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceFaultFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDeviceFaultCountsEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_FAULT_COUNTS_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDeviceFaultInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_FAULT_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE;

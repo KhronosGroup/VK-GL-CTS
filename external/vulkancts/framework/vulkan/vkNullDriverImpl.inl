@@ -2714,6 +2714,14 @@ VKAPI_ATTR void VKAPI_CALL cmdSetFragmentShadingRateEnumNV (VkCommandBuffer comm
 	DE_UNREF(combinerOps);
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getDeviceFaultInfoEXT (VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pFaultCounts);
+	DE_UNREF(pFaultInfo);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL acquireWinrtDisplayNV (VkPhysicalDevice physicalDevice, VkDisplayKHR display)
 {
 	DE_UNREF(physicalDevice);
@@ -3685,6 +3693,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkSetPrivateDataEXT,									setPrivateDataEXT),
 	VK_NULL_FUNC_ENTRY(vkGetPrivateDataEXT,									getPrivateDataEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetFragmentShadingRateEnumNV,					cmdSetFragmentShadingRateEnumNV),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceFaultInfoEXT,								getDeviceFaultInfoEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetVertexInputEXT,								cmdSetVertexInputEXT),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI,		getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI),
 	VK_NULL_FUNC_ENTRY(vkCmdSubpassShadingHUAWEI,							cmdSubpassShadingHUAWEI),

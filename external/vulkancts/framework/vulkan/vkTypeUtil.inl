@@ -637,6 +637,15 @@ inline VkSRTDataNV makeSRTDataNV (float sx, float a, float b, float pvx, float s
 	return res;
 }
 
+inline VkDeviceFaultAddressInfoEXT makeDeviceFaultAddressInfoEXT (VkDeviceFaultAddressTypeEXT addressType, VkDeviceAddress reportedAddress, VkDeviceSize addressPrecision)
+{
+	VkDeviceFaultAddressInfoEXT res;
+	res.addressType			= addressType;
+	res.reportedAddress		= reportedAddress;
+	res.addressPrecision	= addressPrecision;
+	return res;
+}
+
 inline VkMutableDescriptorTypeListVALVE makeMutableDescriptorTypeListVALVE (uint32_t descriptorTypeCount, const VkDescriptorType* pDescriptorTypes)
 {
 	VkMutableDescriptorTypeListVALVE res;

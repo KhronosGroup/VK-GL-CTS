@@ -5297,6 +5297,62 @@ struct VkPhysicalDevice4444FormatsFeaturesEXT
 	VkBool32		formatA4B4G4R4;
 };
 
+struct VkPhysicalDeviceFaultFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		deviceFault;
+	VkBool32		deviceFaultVendorBinary;
+};
+
+struct VkDeviceFaultCountsEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		addressInfoCount;
+	uint32_t		vendorInfoCount;
+	VkDeviceSize	vendorBinarySize;
+};
+
+struct VkDeviceFaultAddressInfoEXT
+{
+	VkDeviceFaultAddressTypeEXT	addressType;
+	VkDeviceAddress				reportedAddress;
+	VkDeviceSize				addressPrecision;
+};
+
+struct VkDeviceFaultVendorInfoEXT
+{
+	char		description[VK_MAX_DESCRIPTION_SIZE];
+	uint64_t	vendorFaultCode;
+	uint64_t	vendorFaultData;
+};
+
+struct VkDeviceFaultInfoEXT
+{
+	VkStructureType					sType;
+	void*							pNext;
+	char							description[VK_MAX_DESCRIPTION_SIZE];
+	VkDeviceFaultAddressInfoEXT*	pAddressInfos;
+	VkDeviceFaultVendorInfoEXT*		pVendorInfos;
+	void*							pVendorBinaryData;
+};
+
+struct VkDeviceFaultVendorBinaryHeaderVersionOneEXT
+{
+	uint32_t									headerSize;
+	VkDeviceFaultVendorBinaryHeaderVersionEXT	headerVersion;
+	uint32_t									vendorID;
+	uint32_t									deviceID;
+	uint32_t									driverVersion;
+	uint8_t										pipelineCacheUUID[VK_UUID_SIZE];
+	uint32_t									applicationNameOffset;
+	uint32_t									applicationVersion;
+	uint32_t									engineNameOffset;
+	uint32_t									engineVersion;
+	uint32_t									apiVersion;
+};
+
 struct VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE
 {
 	VkStructureType	sType;

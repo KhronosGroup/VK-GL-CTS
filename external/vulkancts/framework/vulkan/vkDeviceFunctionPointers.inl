@@ -304,6 +304,7 @@ DestroyPrivateDataSlotEXTFunc						destroyPrivateDataSlotEXT;
 SetPrivateDataEXTFunc								setPrivateDataEXT;
 GetPrivateDataEXTFunc								getPrivateDataEXT;
 CmdSetFragmentShadingRateEnumNVFunc					cmdSetFragmentShadingRateEnumNV;
+GetDeviceFaultInfoEXTFunc							getDeviceFaultInfoEXT;
 CmdSetVertexInputEXTFunc							cmdSetVertexInputEXT;
 GetDeviceSubpassShadingMaxWorkgroupSizeHUAWEIFunc	getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI;
 CmdSubpassShadingHUAWEIFunc							cmdSubpassShadingHUAWEI;

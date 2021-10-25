@@ -95,6 +95,8 @@ const char*	getDeviceMemoryReportEventTypeEXTName					(VkDeviceMemoryReportEvent
 const char*	getFragmentShadingRateTypeNVName						(VkFragmentShadingRateTypeNV value);
 const char*	getFragmentShadingRateNVName							(VkFragmentShadingRateNV value);
 const char*	getAccelerationStructureMotionInstanceTypeNVName		(VkAccelerationStructureMotionInstanceTypeNV value);
+const char*	getDeviceFaultAddressTypeEXTName						(VkDeviceFaultAddressTypeEXT value);
+const char*	getDeviceFaultVendorBinaryHeaderVersionEXTName			(VkDeviceFaultVendorBinaryHeaderVersionEXT value);
 const char*	getBuildAccelerationStructureModeKHRName				(VkBuildAccelerationStructureModeKHR value);
 const char*	getAccelerationStructureBuildTypeKHRName				(VkAccelerationStructureBuildTypeKHR value);
 const char*	getAccelerationStructureCompatibilityKHRName			(VkAccelerationStructureCompatibilityKHR value);
@@ -212,6 +214,8 @@ inline tcu::Format::Enum<VkDeviceMemoryReportEventTypeEXT>					getDeviceMemoryRe
 inline tcu::Format::Enum<VkFragmentShadingRateTypeNV>						getFragmentShadingRateTypeNVStr						(VkFragmentShadingRateTypeNV value)						{ return tcu::Format::Enum<VkFragmentShadingRateTypeNV>(getFragmentShadingRateTypeNVName, value);											}
 inline tcu::Format::Enum<VkFragmentShadingRateNV>							getFragmentShadingRateNVStr							(VkFragmentShadingRateNV value)							{ return tcu::Format::Enum<VkFragmentShadingRateNV>(getFragmentShadingRateNVName, value);													}
 inline tcu::Format::Enum<VkAccelerationStructureMotionInstanceTypeNV>		getAccelerationStructureMotionInstanceTypeNVStr		(VkAccelerationStructureMotionInstanceTypeNV value)		{ return tcu::Format::Enum<VkAccelerationStructureMotionInstanceTypeNV>(getAccelerationStructureMotionInstanceTypeNVName, value);			}
+inline tcu::Format::Enum<VkDeviceFaultAddressTypeEXT>						getDeviceFaultAddressTypeEXTStr						(VkDeviceFaultAddressTypeEXT value)						{ return tcu::Format::Enum<VkDeviceFaultAddressTypeEXT>(getDeviceFaultAddressTypeEXTName, value);											}
+inline tcu::Format::Enum<VkDeviceFaultVendorBinaryHeaderVersionEXT>			getDeviceFaultVendorBinaryHeaderVersionEXTStr		(VkDeviceFaultVendorBinaryHeaderVersionEXT value)		{ return tcu::Format::Enum<VkDeviceFaultVendorBinaryHeaderVersionEXT>(getDeviceFaultVendorBinaryHeaderVersionEXTName, value);				}
 inline tcu::Format::Enum<VkBuildAccelerationStructureModeKHR>				getBuildAccelerationStructureModeKHRStr				(VkBuildAccelerationStructureModeKHR value)				{ return tcu::Format::Enum<VkBuildAccelerationStructureModeKHR>(getBuildAccelerationStructureModeKHRName, value);							}
 inline tcu::Format::Enum<VkAccelerationStructureBuildTypeKHR>				getAccelerationStructureBuildTypeKHRStr				(VkAccelerationStructureBuildTypeKHR value)				{ return tcu::Format::Enum<VkAccelerationStructureBuildTypeKHR>(getAccelerationStructureBuildTypeKHRName, value);							}
 inline tcu::Format::Enum<VkAccelerationStructureCompatibilityKHR>			getAccelerationStructureCompatibilityKHRStr			(VkAccelerationStructureCompatibilityKHR value)			{ return tcu::Format::Enum<VkAccelerationStructureCompatibilityKHR>(getAccelerationStructureCompatibilityKHRName, value);					}
@@ -329,6 +333,8 @@ inline std::ostream&	operator<<	(std::ostream& s, VkDeviceMemoryReportEventTypeE
 inline std::ostream&	operator<<	(std::ostream& s, VkFragmentShadingRateTypeNV value)						{ return s << getFragmentShadingRateTypeNVStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkFragmentShadingRateNV value)							{ return s << getFragmentShadingRateNVStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkAccelerationStructureMotionInstanceTypeNV value)		{ return s << getAccelerationStructureMotionInstanceTypeNVStr(value);		}
+inline std::ostream&	operator<<	(std::ostream& s, VkDeviceFaultAddressTypeEXT value)						{ return s << getDeviceFaultAddressTypeEXTStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkDeviceFaultVendorBinaryHeaderVersionEXT value)			{ return s << getDeviceFaultVendorBinaryHeaderVersionEXTStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkBuildAccelerationStructureModeKHR value)				{ return s << getBuildAccelerationStructureModeKHRStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkAccelerationStructureBuildTypeKHR value)				{ return s << getAccelerationStructureBuildTypeKHRStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkAccelerationStructureCompatibilityKHR value)			{ return s << getAccelerationStructureCompatibilityKHRStr(value);			}
@@ -1063,6 +1069,12 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensity
 std::ostream&	operator<<	(std::ostream& s, const VkCopyCommandTransformInfoQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageRobustnessFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice4444FormatsFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFaultFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultCountsEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultAddressInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultVendorInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultVendorBinaryHeaderVersionOneEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeListVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeCreateInfoVALVE& value);
