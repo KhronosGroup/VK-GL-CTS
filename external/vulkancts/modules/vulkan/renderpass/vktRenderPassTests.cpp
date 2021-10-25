@@ -2751,6 +2751,7 @@ void pushDynamicRenderingCommands (const DeviceInterface&								vk,
 								   const UVec2&											renderPos,
 								   const UVec2&											renderSize,
 								   const vector<Maybe<VkClearValue> >&					renderPassClearValues,
+								   deUint32												queueIndex,
 								   TestConfig::RenderTypes								render)
 {
 	const float			clearNan		= tcu::Float32::nan().asFloat();
@@ -2770,6 +2771,8 @@ void pushDynamicRenderingCommands (const DeviceInterface&								vk,
 
 	// translate structures that were prepared to construct renderpass to structures needed for dynamic rendering
 
+	vector<VkImageMemoryBarrier>					imageBarriersBeforeRendering;
+	vector<VkImageMemoryBarrier>					imageBarriersAfterRendering;
 	std::vector<vk::VkRenderingAttachmentInfoKHR>	colorAttachmentVect;
 	const Subpass&									subpassInfo				= renderPassInfo.getSubpasses()[0];
 	const vector<AttachmentReference>&				colorAttachmentsInfo	= subpassInfo.getColorAttachments();
@@ -2801,7 +2804,7 @@ void pushDynamicRenderingCommands (const DeviceInterface&								vk,
 			vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,			// VkStructureType			sType
 			DE_NULL,														// const void*				pNext
 			attachmentResources[colorAttachmentIndex]->getAttachmentView(),	// VkImageView				imageView
-			colorAttachmentInfo.getInitialLayout(),							// VkImageLayout			imageLayout
+			colorAttachmentReference.getImageLayout(),						// VkImageLayout			imageLayout
 			resolveMode,													// VkResolveModeFlagBits	resolveMode
 			resolveImageView,												// VkImageView				resolveImageView
 			resolveImageLayout,												// VkImageLayout			resolveImageLayout
@@ -2811,6 +2814,60 @@ void pushDynamicRenderingCommands (const DeviceInterface&								vk,
 				*renderPassClearValues[colorAttachmentIndex] :
 				clearValueNan)												// VkClearValue				clearValue
 			});
+
+		const VkImageLayout initialLayout = colorAttachmentInfo.getInitialLayout();
+		const VkImageLayout renderingLayout = colorAttachmentReference.getImageLayout();
+		const VkImageLayout finalLayout = colorAttachmentInfo.getFinalLayout();
+
+		const VkImageMemoryBarrier barrierBeforeRendering
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,								// sType
+			DE_NULL,															// pNext
+
+			getAllMemoryWriteFlags() | getMemoryFlagsForLayout(initialLayout),	// srcAccessMask
+			getMemoryFlagsForLayout(renderingLayout),							// dstAccessMask
+
+			initialLayout,														// oldLayout
+			renderingLayout,													// newLayout
+
+			queueIndex,															// srcQueueFamilyIndex
+			queueIndex,															// destQueueFamilyIndex
+
+			attachmentResources[colorAttachmentIndex]->getImage(),				// image
+			{																	// subresourceRange
+				getImageAspectFlags(colorAttachmentInfo.getFormat()),			// aspect;
+				0,																// baseMipLevel
+				1,																// mipLevels
+				0,																// baseArraySlice
+				1																// arraySize
+			}
+		};
+		imageBarriersBeforeRendering.push_back(barrierBeforeRendering);
+
+		const VkImageMemoryBarrier barrierAfterRendering
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,								// sType
+			DE_NULL,															// pNext
+
+			getMemoryFlagsForLayout(renderingLayout),							// srcAccessMask
+			getAllMemoryReadFlags() | getMemoryFlagsForLayout(finalLayout),		// dstAccessMask
+
+			renderingLayout,													// oldLayout
+			finalLayout,														// newLayout
+
+			queueIndex,															// srcQueueFamilyIndex
+			queueIndex,															// destQueueFamilyIndex
+
+			attachmentResources[colorAttachmentIndex]->getImage(),				// image
+			{																	// subresourceRange
+				getImageAspectFlags(colorAttachmentInfo.getFormat()),			// aspect;
+				0,																// baseMipLevel
+				1,																// mipLevels
+				0,																// baseArraySlice
+				1																// arraySize
+			}
+		};
+		imageBarriersAfterRendering.push_back(barrierAfterRendering);
 	}
 
 	VkRenderingAttachmentInfoKHR*	pDepthAttachment	= DE_NULL;
@@ -2840,7 +2897,7 @@ void pushDynamicRenderingCommands (const DeviceInterface&								vk,
 		if (tcu::hasDepthComponent(format.order))
 		{
 			depthAttachment.imageView		= attachmentResources[dsAttachmentIndex]->getAttachmentView();
-			depthAttachment.imageLayout		= dsAttachmentInfo.getInitialLayout();
+			depthAttachment.imageLayout		= depthStencilAttachmentReference.getImageLayout();
 			depthAttachment.loadOp			= dsAttachmentInfo.getLoadOp();
 			depthAttachment.storeOp			= dsAttachmentInfo.getStoreOp();
 
@@ -2853,7 +2910,7 @@ void pushDynamicRenderingCommands (const DeviceInterface&								vk,
 		if (tcu::hasStencilComponent(format.order))
 		{
 			stencilAttachment.imageView		= attachmentResources[dsAttachmentIndex]->getAttachmentView();
-			stencilAttachment.imageLayout	= dsAttachmentInfo.getInitialLayout();
+			stencilAttachment.imageLayout		= depthStencilAttachmentReference.getImageLayout();
 			stencilAttachment.loadOp		= dsAttachmentInfo.getStencilLoadOp();
 			stencilAttachment.storeOp		= dsAttachmentInfo.getStencilStoreOp();
 
@@ -2862,7 +2919,71 @@ void pushDynamicRenderingCommands (const DeviceInterface&								vk,
 
 			pStencilAttachment = &stencilAttachment;
 		}
+
+		const VkImageLayout initialLayout = dsAttachmentInfo.getInitialLayout();
+		const VkImageLayout renderingLayout = depthStencilAttachmentReference.getImageLayout();
+		const VkImageLayout finalLayout = dsAttachmentInfo.getFinalLayout();
+
+		const VkImageMemoryBarrier barrierBeforeRendering
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,								// sType
+			DE_NULL,															// pNext
+
+			getAllMemoryWriteFlags() | getMemoryFlagsForLayout(initialLayout),	// srcAccessMask
+			getMemoryFlagsForLayout(renderingLayout),							// dstAccessMask
+
+			initialLayout,														// oldLayout
+			renderingLayout,													// newLayout
+
+			queueIndex,															// srcQueueFamilyIndex
+			queueIndex,															// destQueueFamilyIndex
+
+			attachmentResources[dsAttachmentIndex]->getImage(),					// image
+			{																	// subresourceRange
+				getImageAspectFlags(dsAttachmentInfo.getFormat()),				// aspect;
+				0,																// baseMipLevel
+				1,																// mipLevels
+				0,																// baseArraySlice
+				1																// arraySize
+			}
+		};
+		imageBarriersBeforeRendering.push_back(barrierBeforeRendering);
+
+		const VkImageMemoryBarrier barrierAfterRendering
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,								// sType
+			DE_NULL,															// pNext
+
+			getMemoryFlagsForLayout(renderingLayout),							// srcAccessMask
+			getAllMemoryReadFlags() | getMemoryFlagsForLayout(finalLayout),		// dstAccessMask
+
+			renderingLayout,													// oldLayout
+			finalLayout,														// newLayout
+
+			queueIndex,															// srcQueueFamilyIndex
+			queueIndex,															// destQueueFamilyIndex
+
+			attachmentResources[dsAttachmentIndex]->getImage(),					// image
+			{																	// subresourceRange
+				getImageAspectFlags(dsAttachmentInfo.getFormat()),				// aspect;
+				0,																// baseMipLevel
+				1,																// mipLevels
+				0,																// baseArraySlice
+				1																// arraySize
+			}
+		};
+		imageBarriersAfterRendering.push_back(barrierAfterRendering);
 	}
+
+	if (!imageBarriersBeforeRendering.empty())
+		vk.cmdPipelineBarrier(commandBuffer,
+							  getAllPipelineStageFlags(),
+							  getAllPipelineStageFlags(),
+							  (VkDependencyFlags)0,
+							  0, (const VkMemoryBarrier*)DE_NULL,
+							  0, (const VkBufferMemoryBarrier*)DE_NULL,
+							  (deUint32)imageBarriersBeforeRendering.size(),
+							  &imageBarriersBeforeRendering[0]);
 
 	vk::VkRenderingInfoKHR renderingInfo
 	{
@@ -2892,6 +3013,16 @@ void pushDynamicRenderingCommands (const DeviceInterface&								vk,
 	}
 
 	vk.cmdEndRendering(commandBuffer);
+
+	if (!imageBarriersAfterRendering.empty())
+		vk.cmdPipelineBarrier(commandBuffer,
+							  getAllPipelineStageFlags(),
+							  getAllPipelineStageFlags(),
+							  (VkDependencyFlags)0,
+							  0, (const VkMemoryBarrier*)DE_NULL,
+							  0, (const VkBufferMemoryBarrier*)DE_NULL,
+							  (deUint32)imageBarriersAfterRendering.size(),
+							  &imageBarriersAfterRendering[0]);
 }
 
 void pushRenderPassCommands (const DeviceInterface&								vk,
@@ -2904,6 +3035,7 @@ void pushRenderPassCommands (const DeviceInterface&								vk,
 							 const UVec2&										renderPos,
 							 const UVec2&										renderSize,
 							 const vector<Maybe<VkClearValue> >&				renderPassClearValues,
+							 deUint32											queueIndex,
 							 TestConfig::RenderTypes							render,
 							 RenderingType										renderingType)
 {
@@ -2914,7 +3046,7 @@ void pushRenderPassCommands (const DeviceInterface&								vk,
 		case RENDERING_TYPE_RENDERPASS2:
 			return pushRenderPassCommands<RenderpassSubpass2>(vk, commandBuffer, renderPass, framebuffer, subpassRenderers, renderPos, renderSize, renderPassClearValues, render);
 		case RENDERING_TYPE_DYNAMIC_RENDERING:
-			return pushDynamicRenderingCommands(vk, commandBuffer, renderPassInfo, attachmentResources, subpassRenderers, renderPos, renderSize, renderPassClearValues, render);
+			return pushDynamicRenderingCommands(vk, commandBuffer, renderPassInfo, attachmentResources, subpassRenderers, renderPos, renderSize, renderPassClearValues, queueIndex, render);
 		default:
 			TCU_THROW(InternalError, "Impossible");
 	}
@@ -5009,7 +5141,7 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 				subpassRenderers.push_back(de::SharedPtr<SubpassRenderer>(new SubpassRenderer(context, vk, device, allocator, *renderPass, *framebuffer, *commandBufferPool, queueIndex, attachmentImages, inputAttachmentViews, subpassRenderInfo[subpassNdx], config.renderPass.getAttachments(), config.allocationKind, config.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)));
 
 			beginCommandBuffer(vk, *renderCommandBuffer, (VkCommandBufferUsageFlags)0, DE_NULL, 0, DE_NULL, VK_FALSE, (VkQueryControlFlags)0, (VkQueryPipelineStatisticFlags)0);
-			pushRenderPassCommands(vk, *renderCommandBuffer, *renderPass, renderPassInfo, attachmentResources, *framebuffer, subpassRenderers, renderPos, renderSize, renderPassClearValues, config.renderTypes, config.renderingType);
+			pushRenderPassCommands(vk, *renderCommandBuffer, *renderPass, renderPassInfo, attachmentResources, *framebuffer, subpassRenderers, renderPos, renderSize, renderPassClearValues, queueIndex, config.renderTypes, config.renderingType);
 			endCommandBuffer(vk, *renderCommandBuffer);
 
 			beginCommandBuffer(vk, *readImagesToBuffersCommandBuffer, (VkCommandBufferUsageFlags)0, DE_NULL, 0, DE_NULL, VK_FALSE, (VkQueryControlFlags)0, (VkQueryPipelineStatisticFlags)0);
