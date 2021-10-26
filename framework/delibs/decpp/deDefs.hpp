@@ -127,6 +127,10 @@ size_t alignOf (void)
 	return (size_t)DE_OFFSET_OF(PaddingCheck, t);
 }
 
+//! Similar to DE_LENGTH_OF_ARRAY but constexpr and without auxiliar helpers.
+template <typename T, size_t N>
+constexpr size_t arrayLength (const T (&)[N]) { return N; }
+
 } // de
 
 /*--------------------------------------------------------------------*//*!
