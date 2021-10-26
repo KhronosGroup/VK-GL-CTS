@@ -4770,7 +4770,7 @@ tcu::TestNode::IterateResult AttributeFormatErrorsTest::iterate()
 		{
 			bad_type++;
 			is_accepted_type = false;
-			for (glw::GLuint i = 0; i < sizeof(accepted_types) / sizeof(accepted_types); ++i)
+			for (glw::GLuint i = 0; i < sizeof(accepted_types) / sizeof(accepted_types[0]); ++i)
 			{
 				if (accepted_types[i] == bad_type)
 				{
@@ -5481,7 +5481,7 @@ tcu::TestNode::IterateResult GetVertexArrayIndexedErrorsTest::iterate()
 		{
 			bad_pname++;
 			is_accepted_pname = false;
-			for (glw::GLuint i = 0; i < sizeof(accepted_pnames) / sizeof(accepted_pnames); ++i)
+			for (glw::GLuint i = 0; i < sizeof(accepted_pnames) / sizeof(accepted_pnames[0]); ++i)
 			{
 				if (accepted_pnames[i] == bad_pname)
 				{

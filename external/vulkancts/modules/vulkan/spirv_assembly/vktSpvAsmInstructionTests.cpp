@@ -13889,7 +13889,7 @@ tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& te
 		},
 	};
 
-	DE_ASSERT(opIndex >= 0 && opIndex < DE_LENGTH_OF_ARRAY(opPartsArray));
+	DE_ASSERT(opIndex < DE_LENGTH_OF_ARRAY(opPartsArray));
 
 	const char*	accessPathF16[] =
 	{

@@ -35,6 +35,7 @@
 #include "tcuPlatform.hpp"
 
 #include <algorithm>
+#include <limits>
 
 namespace vkt
 {
