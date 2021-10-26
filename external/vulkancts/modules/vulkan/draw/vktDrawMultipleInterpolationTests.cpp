@@ -596,6 +596,16 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 				DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 			};
 
+			// Transition Images
+			initialTransitionColor2DImage(vk, *cmdBuffer, colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
+				vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+			if (useMultisampling)
+			{
+				initialTransitionColor2DImage(vk, *cmdBuffer, multisampleImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
+					vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+			}
+
 			vk.cmdBeginRenderingKHR(*cmdBuffer, &renderingInfo);
 		}
 		else
