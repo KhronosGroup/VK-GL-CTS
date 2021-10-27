@@ -36,6 +36,7 @@
 #include "vktRenderPassFragmentDensityMapTests.hpp"
 #include "vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.hpp"
 #include "vktRenderPassLoadStoreOpNoneTests.hpp"
+#include "vktDynamicRenderingTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -7557,7 +7558,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 {
 	const char*		renderingTestsGroupName		= (renderingType == RENDERING_TYPE_RENDERPASS_LEGACY) ? "renderpass" :
 												  (renderingType == RENDERING_TYPE_RENDERPASS2) ? "renderpass2" :
-												  (renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) ? "renderpass_with_dynamic_rendering" :
+												  (renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) ? "dynamic_rendering" :
 												  "";
 	const char*		renderingTestsGroupDescription	= (renderingType == RENDERING_TYPE_RENDERPASS_LEGACY) ? "RenderPass Tests" :
 													  (renderingType == RENDERING_TYPE_RENDERPASS2) ? "RenderPass2 Tests" :
@@ -7589,6 +7590,8 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 	case RENDERING_TYPE_DYNAMIC_RENDERING:
 		suballocationTestGroup->addChild(createDynamicRenderingMultisampleResolveTests(testCtx));
 		suballocationTestGroup->addChild(createDynamicRenderingSparseRenderTargetTests(testCtx));
+
+		renderingTests->addChild(createDynamicRenderingBasicTests(testCtx));
 		break;
 	}
 
