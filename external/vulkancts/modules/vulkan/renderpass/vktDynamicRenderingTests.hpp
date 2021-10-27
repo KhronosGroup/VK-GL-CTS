@@ -4,7 +4,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2019 The Khronos Group Inc.
+ * Copyright (c) 2021 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +28,12 @@
 
 namespace vkt
 {
-namespace DynamicRendering
+namespace renderpass
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createDynamicRenderingBasicTests (tcu::TestContext& testCtx);
 
-} // DynamicRendering
+} // renderpass
 } // vkt
 
 #endif // _VKTDYNAMICRENDERINGTESTS_HPP

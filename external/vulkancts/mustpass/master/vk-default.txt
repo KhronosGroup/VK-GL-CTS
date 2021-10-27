@@ -5,14 +5,12 @@ vk-default/compute.txt
 vk-default/conditional-rendering.txt
 vk-default/descriptor-indexing.txt
 vk-default/device-group.txt
-vk-default/draw-with-dynamic-rendering.txt
 vk-default/draw.txt
 vk-default/drm-format-modifiers.txt
 vk-default/dynamic-rendering.txt
 vk-default/dynamic-state.txt
 vk-default/fragment-operations.txt
 vk-default/fragment-shader-interlock.txt
-vk-default/fragment-shading-rate-with-dynamic-rendering.txt
 vk-default/fragment-shading-rate.txt
 vk-default/geometry.txt
 vk-default/glsl.txt
@@ -30,7 +28,6 @@ vk-default/rasterization.txt
 vk-default/ray-query.txt
 vk-default/ray-tracing-pipeline.txt
 vk-default/reconvergence.txt
-vk-default/renderpass-with-dynamic-rendering.txt
 vk-default/renderpass.txt
 vk-default/renderpass2.txt
 vk-default/robustness.txt

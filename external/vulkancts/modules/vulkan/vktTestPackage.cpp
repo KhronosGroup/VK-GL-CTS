@@ -104,7 +104,6 @@
 #include "vktPostmortemTests.hpp"
 #include "vktFragmentShadingRateTests.hpp"
 #include "vktReconvergenceTests.hpp"
-#include "vktDynamicRenderingTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -552,7 +551,6 @@ void TestPackage::init (void)
 	addChild(ssbo::createTests					(m_testCtx));
 	addChild(QueryPool::createTests				(m_testCtx));
 	addChild(Draw::createTests					(m_testCtx));
-	addChild(Draw::createDynamicRenderingTests	(m_testCtx));
 	addChild(compute::createTests				(m_testCtx));
 	addChild(image::createTests					(m_testCtx));
 	addChild(wsi::createTests					(m_testCtx));
@@ -581,10 +579,8 @@ void TestPackage::init (void)
 	addChild(modifiers::createTests				(m_testCtx));
 	addChild(RayTracing::createTests			(m_testCtx));
 	addChild(RayQuery::createTests				(m_testCtx));
-	addChild(FragmentShadingRate::createTests	(m_testCtx, false));
-	addChild(FragmentShadingRate::createTests	(m_testCtx, true));
+	addChild(FragmentShadingRate::createTests	(m_testCtx));
 	addChild(Reconvergence::createTests			(m_testCtx, false));
-	addChild(DynamicRendering::createTests		(m_testCtx));
 }
 
 void ExperimentalTestPackage::init (void)

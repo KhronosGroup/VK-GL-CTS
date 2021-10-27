@@ -47,7 +47,7 @@
 
 namespace vkt
 {
-namespace DynamicRendering
+namespace renderpass
 {
 namespace
 {
@@ -3502,9 +3502,9 @@ tcu::TestNode* dynamicRenderingTests (tcu::TestContext& testCtx, const TestParam
 
 }	// anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createDynamicRenderingBasicTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup (new tcu::TestCaseGroup(testCtx, "dynamic_rendering", "Dynamic Rendering tests"));
+	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup (new tcu::TestCaseGroup(testCtx, "basic", "Basic dynamic rendering tests"));
 
 	for (int testType = 0; testType < TEST_TYPE_LAST; ++testType)
 	{
@@ -3522,5 +3522,5 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	return dynamicRenderingGroup.release();
 }
 
-} // DynamicRendering
+} // renderpass
 } // vkt

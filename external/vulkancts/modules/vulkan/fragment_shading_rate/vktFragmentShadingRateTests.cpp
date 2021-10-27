@@ -423,27 +423,35 @@ void createMiscTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup)
 	parentGroup->addChild(group.release());
 }
 
-void createChildren (tcu::TestCaseGroup* group, bool useDynamicRendering)
+void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, bool useDynamicRendering)
 {
-	tcu::TestContext&	testCtx		= group->getTestContext();
-
-	if (!useDynamicRendering)
-		createMiscTests(testCtx, group);
-
 	createBasicTests(testCtx, group, useDynamicRendering);
 
 	if (!useDynamicRendering)
+	{
+		// there is no point in duplicating those tests for dynamic rendering
+		createMiscTests(testCtx, group);
+
+		// subpasses can't be translated to dynamic rendering
 		createPixelConsistencyTests(testCtx, group);
+	}
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, bool useDynamicRendering)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
-	const char*		groupName[]			{ "fragment_shading_rate",			"fragment_shading_rate_with_dynamic_rendering" };
-	const char*		groupDescription[]	{ "Fragment shading rate tests",	"Fragment shading rate tests using VK_KHR_dynamic_rendering" };
+	de::MovePtr<tcu::TestCaseGroup> mainGroup				(new tcu::TestCaseGroup(testCtx, "fragment_shading_rate", "Fragment shading rate tests"));
+	de::MovePtr<tcu::TestCaseGroup> renderpass2Group		(new tcu::TestCaseGroup(testCtx, "renderpass2", "Draw using render pass object"));
+	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup	(new tcu::TestCaseGroup(testCtx, "dynamic_rendering", "Draw using VK_KHR_dynamic_rendering"));
 
-	return createTestGroup(testCtx, groupName[useDynamicRendering], groupDescription[useDynamicRendering], createChildren, useDynamicRendering);
+	createChildren(testCtx, renderpass2Group.get(), false);
+	createChildren(testCtx, dynamicRenderingGroup.get(), true);
+
+	mainGroup->addChild(renderpass2Group.release());
+	mainGroup->addChild(dynamicRenderingGroup.release());
+
+	return mainGroup.release();
 }
 
 } // FragmentShadingRate
