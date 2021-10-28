@@ -1337,6 +1337,9 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx, bool use
 
 								for (const auto& multiviewCase : multiviewCases)
 								{
+									if (useDynamicRendering && multiviewCase.multiview)
+										continue;
+
 									GroupPtr multiviewGroup(new tcu::TestCaseGroup(testCtx, multiviewCase.name, ""));
 
 									const auto	isIndexed	= (drawTypeCase.drawType == DrawType::INDEXED);
