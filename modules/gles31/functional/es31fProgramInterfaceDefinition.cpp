@@ -51,12 +51,16 @@ static const glu::ShaderType s_shaderStageOrder[] =
 	glu::SHADERTYPE_TESSELLATION_EVALUATION,
 	glu::SHADERTYPE_GEOMETRY,
 	glu::SHADERTYPE_FRAGMENT,
+
 	glu::SHADERTYPE_RAYGEN,
 	glu::SHADERTYPE_ANY_HIT,
 	glu::SHADERTYPE_CLOSEST_HIT,
 	glu::SHADERTYPE_MISS,
 	glu::SHADERTYPE_INTERSECTION,
 	glu::SHADERTYPE_CALLABLE,
+
+	glu::SHADERTYPE_TASK,
+	glu::SHADERTYPE_MESH,
 };
 
 // s_shaderStageOrder does not contain ShaderType_LAST

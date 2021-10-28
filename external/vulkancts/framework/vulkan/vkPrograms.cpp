@@ -738,6 +738,8 @@ VkShaderStageFlagBits getVkShaderStage (glu::ShaderType shaderType)
 		VK_SHADER_STAGE_MISS_BIT_NV,
 		VK_SHADER_STAGE_INTERSECTION_BIT_NV,
 		VK_SHADER_STAGE_CALLABLE_BIT_NV,
+		VK_SHADER_STAGE_TASK_BIT_NV,
+		VK_SHADER_STAGE_MESH_BIT_NV,
 	};
 
 	return de::getSizedArrayElement<glu::SHADERTYPE_LAST>(s_shaderStages, shaderType);
