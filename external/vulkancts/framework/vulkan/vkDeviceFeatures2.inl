@@ -146,7 +146,7 @@ const bool isVertexAttributeDivisorFeaturesEXT			= checkExtension(properties, "V
 const bool isVertexInputDynamicStateFeaturesEXT			= checkExtension(properties, "VK_EXT_vertex_input_dynamic_state");
 const bool isVulkanMemoryModelFeaturesKHR				=																			   context.contextSupports(vk::ApiVersion(1, 2, 0));
 const bool isYcbcrImageArraysFeaturesEXT				= checkExtension(properties, "VK_EXT_ycbcr_image_arrays");
-const bool isYcbcr2Plane444FormatsFeaturesEXT			= checkExtension(properties, "VK_EXT_ycbcr_2plane_444_formats")				|| context.contextSupports(vk::ApiVersion(1, 3, 0));
+const bool isYcbcr2Plane444FormatsFeaturesEXT			= checkExtension(properties, "VK_EXT_ycbcr_2plane_444_formats");
 const bool isZeroInitializeWorkgroupMemoryFeatures		= checkExtension(properties, "VK_KHR_zero_initialize_workgroup_memory")		|| context.contextSupports(vk::ApiVersion(1, 3, 0));
 
 for (int ndx = 0; ndx < count; ++ndx)

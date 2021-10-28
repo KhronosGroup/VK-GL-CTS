@@ -52,7 +52,6 @@ void getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char
 		dst.push_back("VK_EXT_texel_buffer_alignment");
 		dst.push_back("VK_EXT_private_data");
 		dst.push_back("VK_EXT_pipeline_creation_cache_control");
-		dst.push_back("VK_EXT_ycbcr_2plane_444_formats");
 		dst.push_back("VK_EXT_image_robustness");
 		dst.push_back("VK_EXT_4444_formats");
 	}

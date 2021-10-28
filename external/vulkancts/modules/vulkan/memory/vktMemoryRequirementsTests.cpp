@@ -1024,12 +1024,6 @@ bool ImageMemoryRequirementsOriginal::isImageSupported (const Context& context, 
 		return false;
 	}
 
-	if (isYCbCrExtensionFormat(info.format)
-		&& !context.isDeviceFunctionalitySupported("VK_EXT_ycbcr_2plane_444_formats"))
-	{
-		return false;
-	}
-
 	if (info.imageType == VK_IMAGE_TYPE_1D)
 	{
 		DE_ASSERT(info.extent.height == 1u && info.extent.depth == 1u);
