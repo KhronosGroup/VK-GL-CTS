@@ -94,12 +94,10 @@ using namespace vk;
 class ShaderClockTestInstance : public TestInstance
 {
 public:
-	ShaderClockTestInstance(Context& context, bool realtimeTest, const ShaderSpec& shaderSpec, glu::ShaderType shaderType)
+	ShaderClockTestInstance(Context& context, const ShaderSpec& shaderSpec, glu::ShaderType shaderType)
 		: TestInstance(context)
-		, m_realtime_test(realtimeTest)
 		, m_executor(createExecutor(m_context, shaderType, shaderSpec))
 	{
-		checkSupported();
 	}
 
 	virtual tcu::TestStatus iterate(void)
@@ -120,34 +118,12 @@ public:
 	}
 
 private:
-	void checkSupported(void)
-	{
-		m_context.requireDeviceFunctionality("VK_KHR_shader_clock");
-
-		VkPhysicalDeviceShaderClockFeaturesKHR shaderClockFeatures;
-		shaderClockFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR;
-		shaderClockFeatures.pNext = DE_NULL;
-
-		VkPhysicalDeviceFeatures2 features;
-		features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-		features.pNext = &shaderClockFeatures;
-
-		m_context.getInstanceInterface().getPhysicalDeviceFeatures2(m_context.getPhysicalDevice(), &features);
-
-		if (m_realtime_test && !shaderClockFeatures.shaderDeviceClock)
-			TCU_THROW(NotSupportedError, "Shader device clock is not supported");
-
-		if (!m_realtime_test && !shaderClockFeatures.shaderSubgroupClock)
-			TCU_THROW(NotSupportedError, "Shader subgroup clock is not supported");
-	}
-
 	bool validateOutput(std::vector<deUint64>& outputs)
 	{
 		// The shader will write a 1 in the output if the clock did not increase
 		return (outputs.size() == deUint64(std::count(std::begin(outputs), std::end(outputs), 0)));
 	}
 
-	const bool							m_realtime_test;
 	de::UniquePtr<ShaderExecutor>		m_executor;
 };
 
@@ -163,14 +139,31 @@ public:
 		initShaderSpec();
 	}
 
-	TestInstance* createInstance(Context& ctx) const
+	TestInstance* createInstance (Context& ctx) const override
 	{
-		return new ShaderClockTestInstance(ctx, (m_operation.testClockType == DEVICE), m_shaderSpec, m_shaderType);
+		return new ShaderClockTestInstance(ctx, m_shaderSpec, m_shaderType);
 	}
 
-	void initPrograms(vk::SourceCollections& programCollection) const
+	void initPrograms (vk::SourceCollections& programCollection) const override
 	{
 		generateSources(m_shaderType, m_shaderSpec, programCollection);
+	}
+
+	void checkSupport (Context& context) const override
+	{
+		context.requireDeviceFunctionality("VK_KHR_shader_clock");
+
+		if (m_operation.testBitType == BIT_64)
+			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_INT64);
+
+		const auto&	shaderClockFeatures	= context.getShaderClockFeatures();
+		const auto	realTimeTest		= (m_operation.testClockType == DEVICE);
+
+		if (realTimeTest && !shaderClockFeatures.shaderDeviceClock)
+			TCU_THROW(NotSupportedError, "Shader device clock is not supported");
+
+		if (!realTimeTest && !shaderClockFeatures.shaderSubgroupClock)
+			TCU_THROW(NotSupportedError, "Shader subgroup clock is not supported");
 	}
 
 private:
