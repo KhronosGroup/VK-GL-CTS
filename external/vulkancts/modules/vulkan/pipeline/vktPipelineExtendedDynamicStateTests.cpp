@@ -1432,9 +1432,11 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 			<< "}\n";
 	}
 
+	// In reversed test configurations, the pipeline with dynamic state needs to have the inactive shader.
+	const auto kReversed = m_testConfig.isReversed();
+	programCollection.glslSources.add("dynamicVert") << glu::VertexSource(kReversed ? inactiveVertSource : activeVertSource);
+	programCollection.glslSources.add("staticVert") << glu::VertexSource(kReversed ? activeVertSource : inactiveVertSource);
 
-	programCollection.glslSources.add("vert") << glu::VertexSource(activeVertSource);
-	programCollection.glslSources.add("vert2") << glu::VertexSource(inactiveVertSource);
 	programCollection.glslSources.add("frag") << glu::FragmentSource(fragSource.str());
 	if (m_testConfig.needsGeometryShader())
 		programCollection.glslSources.add("geom") << glu::GeometrySource(geomSource.str());
@@ -1992,9 +1994,9 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	}
 
 	// Shader modules.
-	const auto						vertModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
-	const auto						vertModule2	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert2"), 0u);
-	const auto						fragModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+	const auto						dynamicVertModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("dynamicVert"), 0u);
+	const auto						staticVertModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("staticVert"), 0u);
+	const auto						fragModule			= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
 	vk::Move<vk::VkShaderModule>	geomModule;
 	vk::Move<vk::VkShaderModule>	tescModule;
 	vk::Move<vk::VkShaderModule>	teseModule;
@@ -2047,10 +2049,10 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	shaderStaticStages = shaderStages;
 	shaderStageCreateInfo.stage = vk::VK_SHADER_STAGE_VERTEX_BIT;
 
-	shaderStageCreateInfo.module = vertModule.get();
+	shaderStageCreateInfo.module = dynamicVertModule.get();
 	shaderStages.push_back(shaderStageCreateInfo);
 
-	shaderStageCreateInfo.module = vertModule2.get();
+	shaderStageCreateInfo.module = staticVertModule.get();
 	shaderStaticStages.push_back(shaderStageCreateInfo);
 
 	// Input state.
