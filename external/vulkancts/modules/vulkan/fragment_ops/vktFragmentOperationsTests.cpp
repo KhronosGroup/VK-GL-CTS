@@ -23,6 +23,7 @@
 
 #include "vktFragmentOperationsTests.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktFragmentOperationsOcclusionQueryTests.hpp"
 #include "vktFragmentOperationsScissorTests.hpp"
 #include "vktFragmentOperationsEarlyFragmentTests.hpp"
 
@@ -39,6 +40,7 @@ void addFragmentOperationsTests (tcu::TestCaseGroup* fragmentOperationsTestsGrou
 
 	fragmentOperationsTestsGroup->addChild(createScissorTests		(testCtx));
 	fragmentOperationsTestsGroup->addChild(createEarlyFragmentTests	(testCtx));
+	fragmentOperationsTestsGroup->addChild(createOcclusionQueryTests(testCtx));
 }
 
 } // anonymous
