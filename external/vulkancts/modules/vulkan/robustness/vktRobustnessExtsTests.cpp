@@ -464,6 +464,9 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 
 	if (m_data.viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY && !features2.features.imageCubeArray)
 		TCU_THROW(NotSupportedError, "Cube array image view type not supported");
+
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getDeviceFeatures().robustBufferAccess)
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: robustBufferAccess not supported by this implementation");
 }
 
 void generateLayout(Layout &layout, const CaseDef &caseDef)
