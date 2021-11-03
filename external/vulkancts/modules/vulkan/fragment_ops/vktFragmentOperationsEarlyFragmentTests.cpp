@@ -1519,15 +1519,12 @@ tcu::TestStatus EarlyFragmentSampleMaskTestInstance::iterate (void)
 		const int  expectedCounter	   = expectPartialResult ? renderSize.x() * renderSize.y() / 2 : renderSize.x() * renderSize.y();
 		const int  tolerance		   = expectPartialResult ? de::max(renderSize.x(), renderSize.y()) * 3	: 0;
 		const int  expectedMin         = de::max(0, expectedCounter - tolerance);
-		const int  expectedMax		   = expectedCounter + tolerance;
 
 		tcu::TestLog& log = m_context.getTestContext().getLog();
-		log << tcu::TestLog::Message << "Expected value"
-			<< (expectPartialResult ? " in range: [" + de::toString(expectedMin) + ", " + de::toString(expectedMax) + "]" : ": " + de::toString(expectedCounter))
-			<< tcu::TestLog::EndMessage;
+		log << tcu::TestLog::Message << "Minimum expected value: " + de::toString(expectedMin) << tcu::TestLog::EndMessage;
 		log << tcu::TestLog::Message << "Result value: " << de::toString(actualCounter) << tcu::TestLog::EndMessage;
 
-		if (expectedMin <= actualCounter && actualCounter <= expectedMax)
+		if (expectedMin <= actualCounter)
 			return tcu::TestStatus::pass("Success");
 		else
 			return tcu::TestStatus::fail("Value out of range");
