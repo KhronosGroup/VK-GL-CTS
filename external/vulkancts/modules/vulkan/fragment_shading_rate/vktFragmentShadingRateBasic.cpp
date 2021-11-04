@@ -106,6 +106,7 @@ struct CaseDef
 	bool sampleShadingEnable;
 	bool sampleShadingInput;
 	bool sampleMaskTest;
+	bool earlyAndLateTest;
 
 	bool useAttachment () const
 	{
@@ -374,6 +375,15 @@ void FSRTestCase::checkSupport(Context& context) const
 		TCU_THROW(NotSupportedError, "fragmentShadingRateWithSampleMask not supported");
 
 	checkPipelineLibraryRequirements(vki, physicalDevice, m_data.groupParams->pipelineConstructionType);
+
+#ifndef CTS_USES_VULKANSC
+	if (m_data.earlyAndLateTest)
+	{
+		context.requireDeviceFunctionality("VK_AMD_shader_early_and_late_fragment_tests");
+		if (context.getShaderEarlyAndLateFragmentTestsFeaturesAMD().shaderEarlyAndLateFragmentTests == VK_FALSE)
+			TCU_THROW(NotSupportedError, "shaderEarlyAndLateFragmentTests is not supported");
+	}
+#endif
 }
 
 // Error codes writted by the fragment shader
@@ -506,13 +516,26 @@ void FSRTestCase::initPrograms (SourceCollections& programCollection) const
 		"#version 450 core\n"
 		"#extension GL_EXT_fragment_shading_rate : enable\n"
 		"#extension GL_ARB_shader_stencil_export : enable\n"
-		"#extension GL_ARB_fragment_shader_interlock : enable\n"
-		"layout(location = 0) out uvec4 col0;\n"
+		"#extension GL_ARB_fragment_shader_interlock : enable\n";
+
+	if (m_data.earlyAndLateTest)
+		fss << "#extension GL_AMD_shader_early_and_late_fragment_tests : enable\n";
+
+	fss << "layout(location = 0) out uvec4 col0;\n"
 		"layout(set = 0, binding = 0) buffer Block { uint counter; } buf;\n"
 		"layout(set = 0, binding = 3) uniform usampler2D tex;\n"
 		"layout(location = 0) flat in int instanceIndex;\n"
 		"layout(location = 1) flat in int readbackok;\n"
 		"layout(location = 2) " << (m_data.sampleShadingInput ? "sample " : "") << "in float zero;\n";
+
+	if (m_data.earlyAndLateTest)
+		fss << "layout(early_and_late_fragment_tests_amd) in;\n";
+
+	if (m_data.fragDepth && m_data.earlyAndLateTest)
+		fss << "layout(depth_less) out float gl_FragDepth;\n";
+
+	if (m_data.fragStencil && m_data.earlyAndLateTest)
+		fss << "layout(stencil_ref_less_front_amd) out int gl_FragStencilRefARB;\n";
 
 	if (m_data.interlock)
 		fss << "layout(pixel_interlock_ordered) in;\n";
@@ -2681,23 +2704,27 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 
 	TestGroupCase groupCases[] =
 	{
-		{ 0,	"basic",				"basic tests"					},
-		{ 1,	"apisamplemask",		"use pSampleMask"				},
-		{ 2,	"samplemaskin",			"use gl_SampleMaskIn"			},
-		{ 3,	"conservativeunder",	"conservative underestimation"	},
-		{ 4,	"conservativeover",		"conservative overestimation"	},
-		{ 5,	"fragdepth",			"depth shader output"			},
-		{ 6,	"fragstencil",			"stencil shader output"			},
-		{ 7,	"multiviewport",		"multiple viewports and gl_ViewportIndex"	},
-		{ 8,	"colorlayered",			"multiple layer color, single layer shading rate"	},
-		{ 9,	"srlayered",			"multiple layer color, multiple layers shading rate"	},
-		{ 10,	"multiview",			"multiview"	},
-		{ 11,	"multiviewsrlayered",	"multiview and multilayer shading rate"	},
-		{ 12,	"multiviewcorrelation", "multiview with correlation mask"	},
-		{ 13,	"interlock",			"fragment shader interlock"	},
-		{ 14,	"samplelocations",		"custom sample locations"	},
-		{ 15,	"sampleshadingenable",	"enable sample shading in createinfo"	},
-		{ 16,	"sampleshadinginput",	"enable sample shading by using gl_SampleID"	},
+		{ 0,	"basic",					"basic tests"											},
+		{ 1,	"apisamplemask",			"use pSampleMask"										},
+		{ 2,	"samplemaskin",				"use gl_SampleMaskIn"									},
+		{ 3,	"conservativeunder",		"conservative underestimation"							},
+		{ 4,	"conservativeover",			"conservative overestimation"							},
+		{ 5,	"fragdepth",				"depth shader output"									},
+		{ 6,	"fragstencil",				"stencil shader output"									},
+		{ 7,	"multiviewport",			"multiple viewports and gl_ViewportIndex"				},
+		{ 8,	"colorlayered",				"multiple layer color, single layer shading rate"		},
+		{ 9,	"srlayered",				"multiple layer color, multiple layers shading rate"	},
+		{ 10,	"multiview",				"multiview"												},
+		{ 11,	"multiviewsrlayered",		"multiview and multilayer shading rate"					},
+		{ 12,	"multiviewcorrelation",		"multiview with correlation mask"						},
+		{ 13,	"interlock",				"fragment shader interlock"								},
+		{ 14,	"samplelocations",			"custom sample locations"								},
+		{ 15,	"sampleshadingenable",		"enable sample shading in createinfo"					},
+		{ 16,	"sampleshadinginput",		"enable sample shading by using gl_SampleID"			},
+#ifndef CTS_USES_VULKANSC
+		{ 17,	"fragdepth_early_late",		"depth shader output"									},
+		{ 18,	"fragstencil_early_late",	"stencil shader output"									},
+#endif
 	};
 
 	TestGroupCase dynCases[] =
@@ -2816,8 +2843,8 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 										bool useApiSampleMask = groupNdx == 1;
 										bool useSampleMaskIn = groupNdx == 2;
 										bool consRast = groupNdx == 3 || groupNdx == 4;
-										bool fragDepth = groupNdx == 5;
-										bool fragStencil = groupNdx == 6;
+										bool fragDepth = groupNdx == 5 || groupNdx == 17;
+										bool fragStencil = groupNdx == 6 || groupNdx == 18;
 										bool multiViewport = groupNdx == 7;
 										bool colorLayered = groupNdx == 8 || groupNdx == 9;
 										bool srLayered = groupNdx == 9 || groupNdx == 11;
@@ -2827,6 +2854,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 										bool sampleLocations = groupNdx == 14;
 										bool sampleShadingEnable = groupNdx == 15;
 										bool sampleShadingInput = groupNdx == 16;
+										bool earlyAndLateTest = groupNdx == 17 || groupNdx == 18;
 										VkConservativeRasterizationModeEXT conservativeMode = (groupNdx == 3) ? VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT : VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT;
 										deUint32 numColorLayers = (colorLayered || multiView) ? 2u : 1u;
 
@@ -2889,6 +2917,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 											sampleShadingEnable,									// bool sampleShadingEnable;
 											sampleShadingInput,										// bool sampleShadingInput;
 											false,													// bool sampleMaskTest;
+											earlyAndLateTest,										// bool earlyAndLateTest;
 										};
 
 										sampGroup->addChild(new FSRTestCase(testCtx, geomCases[geomNdx].name, geomCases[geomNdx].description, c));
@@ -2944,6 +2973,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 			false,													// bool sampleShadingEnable;
 			false,													// bool sampleShadingInput;
 			true,													// bool sampleMaskTest;
+			false,													// bool earlyAndLateTest;
 		}));
 
 		parentGroup->addChild(group.release());

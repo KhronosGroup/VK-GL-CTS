@@ -506,6 +506,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderDemoteToHelperInvocationFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD;
+	deMemset(&physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD, 0, sizeof(physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD));
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_AMD_shader_early_and_late_fragment_tests")) )
+	{
+		physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD.sType = getStructureType<VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD>();
+		*nextPtr = &physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD;
+		nextPtr  = &physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD.pNext;
+	}
+
 	vk::VkPhysicalDeviceShaderFloat16Int8Features physicalDeviceShaderFloat16Int8Features;
 	deMemset(&physicalDeviceShaderFloat16Int8Features, 0, sizeof(physicalDeviceShaderFloat16Int8Features));
 
@@ -776,6 +786,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 
 	context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);
 	bool result = true;
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_AMD_shader_early_and_late_fragment_tests")) )
+	{
+		if ( physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD.shaderEarlyAndLateFragmentTests == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderEarlyAndLateFragmentTests not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
 
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_4444_formats")) )
 	{
