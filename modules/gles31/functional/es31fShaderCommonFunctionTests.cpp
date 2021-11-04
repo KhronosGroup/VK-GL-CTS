@@ -2035,13 +2035,13 @@ public:
 		TCU_SET_INTERVAL(prod2, tmp, tmp = ia.hi() * ib.lo());
 		TCU_SET_INTERVAL(prod3, tmp, tmp = ia.hi() * ib.hi());
 
-		prod = format.convert(format.roundOut(prod0 | prod1 | prod2 | prod3, ia.isFinite() && ib.isFinite()));
+		prod = format.convert(format.roundOut(prod0 | prod1 | prod2 | prod3, ia.isFinite(format.getMaxValue()) && ib.isFinite(format.getMaxValue())));
 
 		TCU_SET_INTERVAL_BOUNDS(res, tmp,
 								tmp = prod.lo() + ic.lo(),
 								tmp = prod.hi() + ic.hi());
 
-		return format.convert(format.roundOut(res, prod.isFinite() && ic.isFinite()));
+		return format.convert(format.roundOut(res, prod.isFinite(format.getMaxValue()) && ic.isFinite(format.getMaxValue())));
 	}
 
 	bool compare (const void* const* inputs, const void* const* outputs)
