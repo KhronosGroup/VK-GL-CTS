@@ -86,6 +86,7 @@ struct CaseDef
 	bool shaderWritesRate;
 	bool geometryShader;
 	bool useDynamicState;
+	bool useDynamicRendering;
 	bool useApiSampleMask;
 	bool useSampleMaskIn;
 	bool conservativeEnable;
@@ -229,6 +230,9 @@ static VkImageUsageFlags cbUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
 void FSRTestCase::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_fragment_shading_rate");
+
+	if (m_data.useDynamicRendering)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
 	if (!context.getFragmentShadingRateFeatures().pipelineFragmentShadingRate)
 		TCU_THROW(NotSupportedError, "pipelineFragmentShadingRate not supported");
@@ -777,6 +781,8 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 													  VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
 													  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
 													  VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV;
+	const VkFormat			cbFormat				= VK_FORMAT_R32G32B32A32_UINT;
+	const VkFormat			dsFormat				= VK_FORMAT_D32_SFLOAT_S8_UINT;
 
 	if (m_data.geometryShader)
 	{
@@ -874,7 +880,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			DE_NULL,								// const void*				pNext;
 			(VkImageCreateFlags)0u,					// VkImageCreateFlags		flags;
 			VK_IMAGE_TYPE_2D,						// VkImageType				imageType;
-			VK_FORMAT_R32G32B32A32_UINT,			// VkFormat					format;
+			cbFormat,								// VkFormat					format;
 			{
 				m_data.framebufferDim.width,		// deUint32	width;
 				m_data.framebufferDim.height,		// deUint32	height;
@@ -900,7 +906,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			(VkImageViewCreateFlags)0u,					// VkImageViewCreateFlags	flags;
 			**cbImage,									// VkImage					image;
 			VK_IMAGE_VIEW_TYPE_2D_ARRAY,				// VkImageViewType			viewType;
-			VK_FORMAT_R32G32B32A32_UINT,				// VkFormat					format;
+			cbFormat,									// VkFormat					format;
 			{
 				VK_COMPONENT_SWIZZLE_R,					// VkComponentSwizzle	r;
 				VK_COMPONENT_SWIZZLE_G,					// VkComponentSwizzle	g;
@@ -932,7 +938,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			DE_NULL,								// const void*				pNext;
 			(VkImageCreateFlags)0u,					// VkImageCreateFlags		flags;
 			VK_IMAGE_TYPE_2D,						// VkImageType				imageType;
-			VK_FORMAT_D32_SFLOAT_S8_UINT,			// VkFormat					format;
+			dsFormat,								// VkFormat					format;
 			{
 				m_data.framebufferDim.width,		// deUint32	width;
 				m_data.framebufferDim.height,		// deUint32	height;
@@ -958,7 +964,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			(VkImageViewCreateFlags)0u,					// VkImageViewCreateFlags	flags;
 			**dsImage,									// VkImage					image;
 			VK_IMAGE_VIEW_TYPE_2D_ARRAY,				// VkImageViewType			viewType;
-			VK_FORMAT_D32_SFLOAT_S8_UINT,				// VkFormat					format;
+			dsFormat,									// VkFormat					format;
 			{
 				VK_COMPONENT_SWIZZLE_R,					// VkComponentSwizzle	r;
 				VK_COMPONENT_SWIZZLE_G,					// VkComponentSwizzle	g;
@@ -1412,193 +1418,196 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				attachments.push_back(*dsImageView);
 			}
 
-			const vk::VkAttachmentReference2 colorAttachmentReference =
+			if (!m_data.useDynamicRendering)
 			{
-				VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,					// sType
-				DE_NULL,													// pNext
-				0,															// attachment
-				vk::VK_IMAGE_LAYOUT_GENERAL,								// layout
-				0,															// aspectMask
-			};
-
-			const vk::VkAttachmentReference2 fragmentShadingRateAttachment =
-			{
-				VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,					// sType
-				DE_NULL,													// pNext
-				srAttachmentIdx,											// attachment
-				srLayout,													// layout
-				0,															// aspectMask
-			};
-
-			const vk::VkAttachmentReference2 depthAttachmentReference =
-			{
-				VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,					// sType
-				DE_NULL,													// pNext
-				dsAttachmentIdx,											// attachment
-				vk::VK_IMAGE_LAYOUT_GENERAL,								// layout
-				0,															// aspectMask
-			};
-
-			const bool										noAttachmentPtr				= (m_data.attachmentUsage == AttachmentUsage::NO_ATTACHMENT_PTR);
-			const VkFragmentShadingRateAttachmentInfoKHR	shadingRateAttachmentInfo	=
-			{
-				VK_STRUCTURE_TYPE_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR,							// VkStructureType				  sType;
-				DE_NULL,																				// const void*					  pNext;
-				(noAttachmentPtr ? nullptr : &fragmentShadingRateAttachment),							// const VkAttachmentReference2*	pFragmentShadingRateAttachment;
-				{ srTexelWidth, srTexelHeight },														// VkExtent2D					   shadingRateAttachmentTexelSize;
-			};
-
-			const bool						useAttachmentInfo	= (m_data.attachmentUsage != AttachmentUsage::NO_ATTACHMENT);
-			const VkSubpassDescription2		subpassDesc			=
-			{
-				VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,						// sType
-				(useAttachmentInfo ? &shadingRateAttachmentInfo : nullptr),		// pNext;
-				(vk::VkSubpassDescriptionFlags)0,								// flags
-				vk::VK_PIPELINE_BIND_POINT_GRAPHICS,							// pipelineBindPoint
-				m_data.multiView ? 0x3 : 0u,									// viewMask
-				0u,																// inputCount
-				DE_NULL,														// pInputAttachments
-				1,																// colorCount
-				&colorAttachmentReference,										// pColorAttachments
-				DE_NULL,														// pResolveAttachments
-				m_data.useDepthStencil ? &depthAttachmentReference : DE_NULL,	// depthStencilAttachment
-				0u,																// preserveCount
-				DE_NULL,														// pPreserveAttachments
-			};
-
-			std::vector<VkAttachmentDescription2> attachmentDescriptions;
-			attachmentDescriptions.push_back(
+				const vk::VkAttachmentReference2 colorAttachmentReference
 				{
-					VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,	// VkStructureType sType;
-					DE_NULL,									// const void* pNext;
-					(VkAttachmentDescriptionFlags)0u,			// VkAttachmentDescriptionFlags		flags;
-					VK_FORMAT_R32G32B32A32_UINT,				// VkFormat							format;
-					m_data.samples,								// VkSampleCountFlagBits			samples;
-					VK_ATTACHMENT_LOAD_OP_LOAD,					// VkAttachmentLoadOp				loadOp;
-					VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				storeOp;
-					VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp				stencilLoadOp;
-					VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp				stencilStoreOp;
-					VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout					initialLayout;
-					VK_IMAGE_LAYOUT_GENERAL						// VkImageLayout					finalLayout;
-				}
-			);
-			if (m_data.useAttachment())
-				attachmentDescriptions.push_back(
+					VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,					// sType
+					DE_NULL,													// pNext
+					0,															// attachment
+					vk::VK_IMAGE_LAYOUT_GENERAL,								// layout
+					0,															// aspectMask
+				};
+
+				const vk::VkAttachmentReference2 fragmentShadingRateAttachment =
 				{
-					VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,	// VkStructureType sType;
-					DE_NULL,									// const void* pNext;
-					(VkAttachmentDescriptionFlags)0u,			// VkAttachmentDescriptionFlags		flags;
-					srFormat,									// VkFormat							format;
-					VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits			samples;
-					VK_ATTACHMENT_LOAD_OP_LOAD,					// VkAttachmentLoadOp				loadOp;
-					VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				storeOp;
-					VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp				stencilLoadOp;
-					VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp				stencilStoreOp;
-					srLayout,									// VkImageLayout					initialLayout;
-					srLayout									// VkImageLayout					finalLayout;
-				}
-				);
+					VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,					// sType
+					DE_NULL,													// pNext
+					srAttachmentIdx,											// attachment
+					srLayout,													// layout
+					0,															// aspectMask
+				};
 
-			if (m_data.useDepthStencil)
-				attachmentDescriptions.push_back(
+				const vk::VkAttachmentReference2 depthAttachmentReference =
 				{
-					VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,	// VkStructureType sType;
-					DE_NULL,									// const void* pNext;
-					(VkAttachmentDescriptionFlags)0u,			// VkAttachmentDescriptionFlags		flags;
-					VK_FORMAT_D32_SFLOAT_S8_UINT,				// VkFormat							format;
-					m_data.samples,								// VkSampleCountFlagBits			samples;
-					VK_ATTACHMENT_LOAD_OP_LOAD,					// VkAttachmentLoadOp				loadOp;
-					VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				storeOp;
-					VK_ATTACHMENT_LOAD_OP_LOAD,					// VkAttachmentLoadOp				stencilLoadOp;
-					VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				stencilStoreOp;
-					VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout					initialLayout;
-					VK_IMAGE_LAYOUT_GENERAL						// VkImageLayout					finalLayout;
-				}
-				);
+					VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,					// sType
+					DE_NULL,													// pNext
+					dsAttachmentIdx,											// attachment
+					vk::VK_IMAGE_LAYOUT_GENERAL,								// layout
+					0,															// aspectMask
+				};
 
-			const VkRenderPassCreateInfo2	renderPassParams	=
-			{
-				VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,			// sType
-				DE_NULL,												// pNext
-				(vk::VkRenderPassCreateFlags)0,
-				(deUint32)attachmentDescriptions.size(),				// attachmentCount
-				&attachmentDescriptions[0],								// pAttachments
-				1u,														// subpassCount
-				&subpassDesc,											// pSubpasses
-				0u,														// dependencyCount
-				DE_NULL,												// pDependencies
-				0u,														// correlatedViewMaskCount
-				DE_NULL,												// pCorrelatedViewMasks
-			};
-
-			renderPass = createRenderPass2(vk, device, &renderPassParams);
-
-			std::vector<VkFramebufferAttachmentImageInfo> framebufferAttachmentImageInfo;
-			framebufferAttachmentImageInfo.push_back(
+				const bool										noAttachmentPtr				= (m_data.attachmentUsage == AttachmentUsage::NO_ATTACHMENT_PTR);
+				const VkFragmentShadingRateAttachmentInfoKHR	shadingRateAttachmentInfo	=
 				{
-					VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO,		//  VkStructureType		sType;
-					DE_NULL,													//  const void*			pNext;
-					(VkImageCreateFlags)0u,										//  VkImageCreateFlags	flags;
-					cbUsage,													//  VkImageUsageFlags	usage;
-					m_data.framebufferDim.width,								//  deUint32			width;
-					m_data.framebufferDim.height,								//  deUint32			height;
-					m_data.numColorLayers,										//  deUint32			layerCount;
-					0u,															//  deUint32			viewFormatCount;
-					DE_NULL														//  const VkFormat*		pViewFormats;
-				}
-			);
-			if (m_data.useAttachment())
+					VK_STRUCTURE_TYPE_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR,							// VkStructureType				  sType;
+					DE_NULL,																				// const void*					  pNext;
+					(noAttachmentPtr ? nullptr : &fragmentShadingRateAttachment),							// const VkAttachmentReference2*	pFragmentShadingRateAttachment;
+					{ srTexelWidth, srTexelHeight },														// VkExtent2D					   shadingRateAttachmentTexelSize;
+				};
+
+				const bool						useAttachmentInfo	= (m_data.attachmentUsage != AttachmentUsage::NO_ATTACHMENT);
+				const VkSubpassDescription2		subpassDesc			=
+				{
+					VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,						// sType
+					(useAttachmentInfo ? &shadingRateAttachmentInfo : nullptr),		// pNext;
+					(vk::VkSubpassDescriptionFlags)0,								// flags
+					vk::VK_PIPELINE_BIND_POINT_GRAPHICS,							// pipelineBindPoint
+					m_data.multiView ? 0x3 : 0u,									// viewMask
+					0u,																// inputCount
+					DE_NULL,														// pInputAttachments
+					1,																// colorCount
+					&colorAttachmentReference,										// pColorAttachments
+					DE_NULL,														// pResolveAttachments
+					m_data.useDepthStencil ? &depthAttachmentReference : DE_NULL,	// depthStencilAttachment
+					0u,																// preserveCount
+					DE_NULL,														// pPreserveAttachments
+				};
+
+				std::vector<VkAttachmentDescription2> attachmentDescriptions
+				{
+					{
+						VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,	// VkStructureType sType;
+						DE_NULL,									// const void* pNext;
+						(VkAttachmentDescriptionFlags)0u,			// VkAttachmentDescriptionFlags		flags;
+						VK_FORMAT_R32G32B32A32_UINT,				// VkFormat							format;
+						m_data.samples,								// VkSampleCountFlagBits			samples;
+						VK_ATTACHMENT_LOAD_OP_LOAD,					// VkAttachmentLoadOp				loadOp;
+						VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				storeOp;
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp				stencilLoadOp;
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp				stencilStoreOp;
+						VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout					initialLayout;
+						VK_IMAGE_LAYOUT_GENERAL						// VkImageLayout					finalLayout;
+					}
+				};
+				if (m_data.useAttachment())
+					attachmentDescriptions.push_back(
+					{
+						VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,	// VkStructureType sType;
+						DE_NULL,									// const void* pNext;
+						(VkAttachmentDescriptionFlags)0u,			// VkAttachmentDescriptionFlags		flags;
+						srFormat,									// VkFormat							format;
+						VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits			samples;
+						VK_ATTACHMENT_LOAD_OP_LOAD,					// VkAttachmentLoadOp				loadOp;
+						VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				storeOp;
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp				stencilLoadOp;
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp				stencilStoreOp;
+						srLayout,									// VkImageLayout					initialLayout;
+						srLayout									// VkImageLayout					finalLayout;
+					}
+					);
+
+				if (m_data.useDepthStencil)
+					attachmentDescriptions.push_back(
+					{
+						VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,	// VkStructureType sType;
+						DE_NULL,									// const void* pNext;
+						(VkAttachmentDescriptionFlags)0u,			// VkAttachmentDescriptionFlags		flags;
+						VK_FORMAT_D32_SFLOAT_S8_UINT,				// VkFormat							format;
+						m_data.samples,								// VkSampleCountFlagBits			samples;
+						VK_ATTACHMENT_LOAD_OP_LOAD,					// VkAttachmentLoadOp				loadOp;
+						VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				storeOp;
+						VK_ATTACHMENT_LOAD_OP_LOAD,					// VkAttachmentLoadOp				stencilLoadOp;
+						VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				stencilStoreOp;
+						VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout					initialLayout;
+						VK_IMAGE_LAYOUT_GENERAL						// VkImageLayout					finalLayout;
+					}
+					);
+
+				const VkRenderPassCreateInfo2	renderPassParams	=
+				{
+					VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,			// sType
+					DE_NULL,												// pNext
+					(vk::VkRenderPassCreateFlags)0,
+					(deUint32)attachmentDescriptions.size(),				// attachmentCount
+					&attachmentDescriptions[0],								// pAttachments
+					1u,														// subpassCount
+					&subpassDesc,											// pSubpasses
+					0u,														// dependencyCount
+					DE_NULL,												// pDependencies
+					0u,														// correlatedViewMaskCount
+					DE_NULL,												// pCorrelatedViewMasks
+				};
+
+				renderPass = createRenderPass2(vk, device, &renderPassParams);
+
+				std::vector<VkFramebufferAttachmentImageInfo> framebufferAttachmentImageInfo;
 				framebufferAttachmentImageInfo.push_back(
-				{
-					VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO,		//  VkStructureType		sType;
-					DE_NULL,													//  const void*			pNext;
-					(VkImageCreateFlags)0u,										//  VkImageCreateFlags	flags;
-					srUsage,													//  VkImageUsageFlags	usage;
-					srWidth,													//  deUint32			width;
-					srHeight,													//  deUint32			height;
-					numSRLayers,												//  deUint32			layerCount;
-					0u,															//  deUint32			viewFormatCount;
-					DE_NULL														//  const VkFormat*		pViewFormats;
-				}
+					{
+						VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO,		//  VkStructureType		sType;
+						DE_NULL,													//  const void*			pNext;
+						(VkImageCreateFlags)0u,										//  VkImageCreateFlags	flags;
+						cbUsage,													//  VkImageUsageFlags	usage;
+						m_data.framebufferDim.width,								//  deUint32			width;
+						m_data.framebufferDim.height,								//  deUint32			height;
+						m_data.numColorLayers,										//  deUint32			layerCount;
+						0u,															//  deUint32			viewFormatCount;
+						DE_NULL														//  const VkFormat*		pViewFormats;
+					}
 				);
+				if (m_data.useAttachment())
+					framebufferAttachmentImageInfo.push_back(
+					{
+						VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO,		//  VkStructureType		sType;
+						DE_NULL,													//  const void*			pNext;
+						(VkImageCreateFlags)0u,										//  VkImageCreateFlags	flags;
+						srUsage,													//  VkImageUsageFlags	usage;
+						srWidth,													//  deUint32			width;
+						srHeight,													//  deUint32			height;
+						numSRLayers,												//  deUint32			layerCount;
+						0u,															//  deUint32			viewFormatCount;
+						DE_NULL														//  const VkFormat*		pViewFormats;
+					}
+					);
 
-			if (m_data.useDepthStencil)
-				framebufferAttachmentImageInfo.push_back(
+				if (m_data.useDepthStencil)
+					framebufferAttachmentImageInfo.push_back(
+					{
+						VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO,		//  VkStructureType		sType;
+						DE_NULL,													//  const void*			pNext;
+						(VkImageCreateFlags)0u,										//  VkImageCreateFlags	flags;
+						dsUsage,													//  VkImageUsageFlags	usage;
+						m_data.framebufferDim.width,								//  deUint32			width;
+						m_data.framebufferDim.height,								//  deUint32			height;
+						m_data.numColorLayers,										//  deUint32			layerCount;
+						0u,															//  deUint32			viewFormatCount;
+						DE_NULL														//  const VkFormat*		pViewFormats;
+					}
+					);
+
+				const VkFramebufferAttachmentsCreateInfo				framebufferAttachmentsCreateInfo	=
 				{
-					VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO,		//  VkStructureType		sType;
-					DE_NULL,													//  const void*			pNext;
-					(VkImageCreateFlags)0u,										//  VkImageCreateFlags	flags;
-					dsUsage,													//  VkImageUsageFlags	usage;
-					m_data.framebufferDim.width,								//  deUint32			width;
-					m_data.framebufferDim.height,								//  deUint32			height;
-					m_data.numColorLayers,										//  deUint32			layerCount;
-					0u,															//  deUint32			viewFormatCount;
-					DE_NULL														//  const VkFormat*		pViewFormats;
-				}
-				);
+					VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO,		//  VkStructureType								sType;
+					DE_NULL,													//  const void*									pNext;
+					(deUint32)framebufferAttachmentImageInfo.size(),			//  deUint32									attachmentImageInfoCount;
+					&framebufferAttachmentImageInfo[0]							//  const VkFramebufferAttachmentImageInfo*		pAttachmentImageInfos;
+				};
 
-			const VkFramebufferAttachmentsCreateInfo				framebufferAttachmentsCreateInfo	=
-			{
-				VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO,		//  VkStructureType								sType;
-				DE_NULL,													//  const void*									pNext;
-				(deUint32)framebufferAttachmentImageInfo.size(),			//  deUint32									attachmentImageInfoCount;
-				&framebufferAttachmentImageInfo[0]							//  const VkFramebufferAttachmentImageInfo*		pAttachmentImageInfos;
-			};
+				const vk::VkFramebufferCreateInfo	framebufferParams	=
+				{
+					vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// sType
+					imagelessFB ? &framebufferAttachmentsCreateInfo : DE_NULL,				// pNext
+					(vk::VkFramebufferCreateFlags)(imagelessFB ? VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT : 0),
+					*renderPass,									// renderPass
+					(deUint32)attachments.size(),					// attachmentCount
+					imagelessFB ? DE_NULL : &attachments[0],		// pAttachments
+					m_data.framebufferDim.width,					// width
+					m_data.framebufferDim.height,					// height
+					m_data.multiView ? 1 : m_data.numColorLayers,	// layers
+				};
 
-			const vk::VkFramebufferCreateInfo	framebufferParams	=
-			{
-				vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// sType
-				imagelessFB ? &framebufferAttachmentsCreateInfo : DE_NULL,				// pNext
-				(vk::VkFramebufferCreateFlags)(imagelessFB ? VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT : 0),
-				*renderPass,									// renderPass
-				(deUint32)attachments.size(),					// attachmentCount
-				imagelessFB ? DE_NULL : &attachments[0],		// pAttachments
-				m_data.framebufferDim.width,					// width
-				m_data.framebufferDim.height,					// height
-				m_data.multiView ? 1 : m_data.numColorLayers,	// layers
-			};
-
-			framebuffer = createFramebuffer(vk, device, &framebufferParams);
+				framebuffer = createFramebuffer(vk, device, &framebufferParams);
+			}
 
 			const VkVertexInputBindingDescription		vertexBinding =
 			{
@@ -1791,10 +1800,22 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			};
 
 			const deUint32 fragSizeWH = m_data.sampleMaskTest ? 2 : 0;
+
+			VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+				DE_NULL,
+				m_data.multiView ? 0x3 : 0u,
+				1u,
+				&cbFormat,
+				m_data.useDepthStencil ? dsFormat : VK_FORMAT_UNDEFINED,
+				m_data.useDepthStencil ? dsFormat : VK_FORMAT_UNDEFINED
+			};
+
 			VkPipelineFragmentShadingRateStateCreateInfoKHR shadingRateStateCreateInfo =
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR,	// VkStructureType						sType;
-				DE_NULL,																// const void*							pNext;
+				m_data.useDynamicRendering ? &renderingCreateInfo : DE_NULL,			// const void*							pNext;
 				{ fragSizeWH, fragSizeWH },												// VkExtent2D							fragmentSize;
 				{ m_data.combinerOp[0], m_data.combinerOp[1] },							// VkFragmentShadingRateCombinerOpKHR	combinerOps[2];
 			};
@@ -1802,10 +1823,10 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			VkDynamicState dynamicState = VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR;
 			const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo =
 			{
-				VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType					  sType;
-				DE_NULL,													// const void*						  pNext;
+				VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType						sType;
+				DE_NULL,													// const void*							pNext;
 				(VkPipelineDynamicStateCreateFlags)0,						// VkPipelineDynamicStateCreateFlags	flags;
-				m_data.useDynamicState ? 1u : 0u,							// uint32_t							 dynamicStateCount;
+				m_data.useDynamicState ? 1u : 0u,							// uint32_t								dynamicStateCount;
 				&dynamicState,												// const VkDynamicState*				pDynamicStates;
 			};
 
@@ -1867,7 +1888,6 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				0													// int												basePipelineIndex;
 			};
 
-
 			VkImageMemoryBarrier imageBarrier =
 			{
 				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType		sType
@@ -1891,6 +1911,8 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			const VkQueue					queue					= m_context.getUniversalQueue();
 			Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_context.getUniversalQueueFamilyIndex());
 			Move<VkCommandBuffer>			cmdBuffer				= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+			VkClearValue					clearColor				= makeClearValueColorU32(0, 0, 0, 0);
+			VkClearValue					clearDepthStencil		= makeClearValueDepthStencil(0.0, 0);
 
 			beginCommandBuffer(vk, *cmdBuffer, 0u);
 
@@ -1913,15 +1935,13 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			for (deUint32 i = 0; i < derivNumLevels; ++i)
 			{
 				VkImageSubresourceRange range = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, i, 1u, 0u, 1u);
-				VkClearValue clearColor = makeClearValueColorU32(1<<i,0,0,0);
-				vk.cmdClearColorImage(*cmdBuffer, **derivImage, VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &range);
+				VkClearValue clearLevelColor = makeClearValueColorU32(1<<i,0,0,0);
+				vk.cmdClearColorImage(*cmdBuffer, **derivImage, VK_IMAGE_LAYOUT_GENERAL, &clearLevelColor.color, 1, &range);
 			}
 
 			// Clear color buffer to transparent black
 			{
 				VkImageSubresourceRange range = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, VK_REMAINING_ARRAY_LAYERS);
-				VkClearValue clearColor = makeClearValueColorU32(0,0,0,0);
-
 				vk.cmdClearColorImage(*cmdBuffer, **cbImage, VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &range);
 			}
 
@@ -1929,7 +1949,6 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			if (m_data.useDepthStencil)
 			{
 				VkImageSubresourceRange range = makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 1u, 0u, VK_REMAINING_ARRAY_LAYERS);
-				VkClearValue clearColor = makeClearValueDepthStencil(0.0, 0);
 				VkImageMemoryBarrier dsBarrier = imageBarrier;
 				dsBarrier.image = **dsImage;
 				dsBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
@@ -1939,7 +1958,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 										0u, nullptr,
 										0u, nullptr,
 										1u, &dsBarrier);
-				vk.cmdClearDepthStencilImage(*cmdBuffer, **dsImage, VK_IMAGE_LAYOUT_GENERAL, &clearColor.depthStencil, 1, &range);
+				vk.cmdClearDepthStencilImage(*cmdBuffer, **dsImage, VK_IMAGE_LAYOUT_GENERAL, &clearDepthStencil.depthStencil, 1, &range);
 			}
 
 			// Initialize shading rate image with varying values
@@ -2021,17 +2040,75 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelines[0]);
 			}
 
-			const VkRenderPassAttachmentBeginInfo		renderPassAttachmentBeginInfo	=
+			VkRect2D renderArea = makeRect2D(m_data.framebufferDim.width, m_data.framebufferDim.height);
+			if (m_data.useDynamicRendering)
 			{
-				VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,		//  VkStructureType		sType;
-				DE_NULL,													//  const void*			pNext;
-				(deUint32)attachments.size(),								//  deUint32			attachmentCount;
-				&attachments[0]												//  const VkImageView*	pAttachments;
-			};
+				VkRenderingFragmentShadingRateAttachmentInfoKHR shadingRateAttachmentInfo
+				{
+					VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR,	// VkStructureType		sType;
+					DE_NULL,																// const void*			pNext;
+					*srImageView,															// VkImageView			imageView;
+					srLayout,																// VkImageLayout		imageLayout;
+					{ srTexelWidth, srTexelHeight }											// VkExtent2D			shadingRateAttachmentTexelSize;
+				};
 
-			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer,
-							makeRect2D(m_data.framebufferDim.width, m_data.framebufferDim.height),
-							0, DE_NULL, VK_SUBPASS_CONTENTS_INLINE, imagelessFB ? &renderPassAttachmentBeginInfo : DE_NULL);
+				VkRenderingAttachmentInfoKHR colorAttachment
+				{
+					vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,					// VkStructureType						sType;
+					DE_NULL,																// const void*							pNext;
+					*cbImageView,															// VkImageView							imageView;
+					VK_IMAGE_LAYOUT_GENERAL,												// VkImageLayout						imageLayout;
+					VK_RESOLVE_MODE_NONE,													// VkResolveModeFlagBits				resolveMode;
+					DE_NULL,																// VkImageView							resolveImageView;
+					VK_IMAGE_LAYOUT_UNDEFINED,												// VkImageLayout						resolveImageLayout;
+					VK_ATTACHMENT_LOAD_OP_LOAD,												// VkAttachmentLoadOp					loadOp;
+					VK_ATTACHMENT_STORE_OP_STORE,											// VkAttachmentStoreOp					storeOp;
+					clearColor																// VkClearValue							clearValue;
+				};
+
+				std::vector<VkRenderingAttachmentInfoKHR> depthStencilAttachments(2,
+				{
+					VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,						// VkStructureType						sType;
+					DE_NULL,																// const void*							pNext;
+					*dsImageView,															// VkImageView							imageView;
+					VK_IMAGE_LAYOUT_GENERAL,												// VkImageLayout						imageLayout;
+					VK_RESOLVE_MODE_NONE,													// VkResolveModeFlagBits				resolveMode;
+					DE_NULL,																// VkImageView							resolveImageView;
+					VK_IMAGE_LAYOUT_UNDEFINED,												// VkImageLayout						resolveImageLayout;
+					VK_ATTACHMENT_LOAD_OP_LOAD,												// VkAttachmentLoadOp					loadOp;
+					VK_ATTACHMENT_STORE_OP_STORE,											// VkAttachmentStoreOp					storeOp;
+					clearDepthStencil														// VkClearValue							clearValue;
+				});
+
+				vk::VkRenderingInfoKHR renderingInfo
+				{
+					vk::VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+					m_data.useAttachment() ? &shadingRateAttachmentInfo : DE_NULL,
+					0,																		// VkRenderingFlagsKHR					flags;
+					renderArea,																// VkRect2D								renderArea;
+					m_data.multiView ? 1 : m_data.numColorLayers,							// deUint32								layerCount;
+					m_data.multiView ? 0x3 : 0u,											// deUint32								viewMask;
+					1u,																		// deUint32								colorAttachmentCount;
+					&colorAttachment,														// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+					m_data.useDepthStencil ? &depthStencilAttachments[0] : DE_NULL,			// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+					m_data.useDepthStencil ? &depthStencilAttachments[1] : DE_NULL,			// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+				};
+
+				vk.cmdBeginRenderingKHR(*cmdBuffer, &renderingInfo);
+			}
+			else
+			{
+				const VkRenderPassAttachmentBeginInfo renderPassAttachmentBeginInfo
+				{
+					VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,		//  VkStructureType		sType;
+					DE_NULL,													//  const void*			pNext;
+					(deUint32)attachments.size(),								//  deUint32			attachmentCount;
+					&attachments[0]												//  const VkImageView*	pAttachments;
+				};
+
+				beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea,
+								0, DE_NULL, VK_SUBPASS_CONTENTS_INLINE, imagelessFB ? &renderPassAttachmentBeginInfo : DE_NULL);
+			}
 
 			for (deInt32 i = 0; i < NUM_TRIANGLES; ++i)
 			{
@@ -2061,7 +2138,10 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				vk.cmdDraw(*cmdBuffer, 3u, 1, 0u, i);
 			}
 
-			endRenderPass(vk, *cmdBuffer);
+			if (m_data.useDynamicRendering)
+				endRendering(vk, *cmdBuffer);
+			else
+				endRenderPass(vk, *cmdBuffer);
 
 			memBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 			memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
@@ -2369,7 +2449,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 
 }	// anonymous
 
-void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup)
+void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup, bool useDynamicRendering)
 {
 	typedef struct
 	{
@@ -2474,6 +2554,9 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 			de::MovePtr<tcu::TestCaseGroup> dynGroup(new tcu::TestCaseGroup(testCtx, dynCases[dynNdx].name, dynCases[dynNdx].description));
 			for (int attNdx = 0; attNdx < DE_LENGTH_OF_ARRAY(attCases); attNdx++)
 			{
+				if (useDynamicRendering && attCases[attNdx].usage == AttachmentUsage::NO_ATTACHMENT_PTR)
+					continue;
+
 				de::MovePtr<tcu::TestCaseGroup> attGroup(new tcu::TestCaseGroup(testCtx, attCases[attNdx].name, attCases[attNdx].description));
 				for (int shdNdx = 0; shdNdx < DE_LENGTH_OF_ARRAY(shdCases); shdNdx++)
 				{
@@ -2548,6 +2631,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 											(bool)shdCases[shdNdx].count,							// bool shaderWritesRate;
 											(bool)geomCases[geomNdx].count,							// bool geometryShader;
 											(bool)dynCases[dynNdx].count,							// bool useDynamicState;
+											useDynamicRendering,									// bool useDynamicRendering;
 											useApiSampleMask,										// bool useApiSampleMask;
 											useSampleMaskIn,										// bool useSampleMaskIn;
 											consRast,												// bool conservativeEnable;
@@ -2599,6 +2683,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 		true,													// bool shaderWritesRate;
 		false,													// bool geometryShader;
 		false,													// bool useDynamicState;
+		false,													// bool useDynamicRendering;
 		true,													// bool useApiSampleMask;
 		false,													// bool useSampleMaskIn;
 		false,													// bool conservativeEnable;

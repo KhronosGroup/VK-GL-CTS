@@ -355,6 +355,15 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_ADD_INFO_EXT:					return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_ADD_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_DPB_SLOT_INFO_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_DPB_SLOT_INFO_EXT";
 		case VK_STRUCTURE_TYPE_TEXTURE_LOD_GATHER_FORMAT_PROPERTIES_AMD:							return "VK_STRUCTURE_TYPE_TEXTURE_LOD_GATHER_FORMAT_PROPERTIES_AMD";
+		case VK_STRUCTURE_TYPE_RENDERING_INFO_KHR:													return "VK_STRUCTURE_TYPE_RENDERING_INFO_KHR";
+		case VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR:										return "VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR:									return "VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR:						return "VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR";
+		case VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR:					return "VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR";
+		case VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_INFO_EXT:					return "VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_INFO_EXT";
+		case VK_STRUCTURE_TYPE_ATTACHMENT_SAMPLE_COUNT_INFO_AMD:									return "VK_STRUCTURE_TYPE_ATTACHMENT_SAMPLE_COUNT_INFO_AMD";
+		case VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_ATTRIBUTES_INFO_NVX:								return "VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_ATTRIBUTES_INFO_NVX";
 		case VK_STRUCTURE_TYPE_STREAM_DESCRIPTOR_SURFACE_CREATE_INFO_GGP:							return "VK_STRUCTURE_TYPE_STREAM_DESCRIPTOR_SURFACE_CREATE_INFO_GGP";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CORNER_SAMPLED_IMAGE_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CORNER_SAMPLED_IMAGE_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_NV:								return "VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_NV";
@@ -3164,30 +3173,32 @@ tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,								"VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,									"VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DERIVATIVE_BIT,											"VK_PIPELINE_CREATE_DERIVATIVE_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT,						"VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE_BIT,										"VK_PIPELINE_CREATE_DISPATCH_BASE_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_ANY_HIT_SHADERS_BIT_KHR,			"VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_ANY_HIT_SHADERS_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_CLOSEST_HIT_SHADERS_BIT_KHR,		"VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_CLOSEST_HIT_SHADERS_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_MISS_SHADERS_BIT_KHR,				"VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_MISS_SHADERS_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_INTERSECTION_SHADERS_BIT_KHR,		"VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_INTERSECTION_SHADERS_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR,						"VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR,							"VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_BIT_KHR,	"VK_PIPELINE_CREATE_RAY_TRACING_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DEFER_COMPILE_BIT_NV,									"VK_PIPELINE_CREATE_DEFER_COMPILE_BIT_NV"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR,								"VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_CAPTURE_INTERNAL_REPRESENTATIONS_BIT_KHR,				"VK_PIPELINE_CREATE_CAPTURE_INTERNAL_REPRESENTATIONS_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_INDIRECT_BINDABLE_BIT_NV,								"VK_PIPELINE_CREATE_INDIRECT_BINDABLE_BIT_NV"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_LIBRARY_BIT_KHR,										"VK_PIPELINE_CREATE_LIBRARY_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT_EXT,				"VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT_EXT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_EARLY_RETURN_ON_FAILURE_BIT_EXT,						"VK_PIPELINE_CREATE_EARLY_RETURN_ON_FAILURE_BIT_EXT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_ALLOW_MOTION_BIT_NV,						"VK_PIPELINE_CREATE_RAY_TRACING_ALLOW_MOTION_BIT_NV"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE,											"VK_PIPELINE_CREATE_DISPATCH_BASE"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR,					"VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE_KHR,										"VK_PIPELINE_CREATE_DISPATCH_BASE_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM,										"VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,										"VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,											"VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DERIVATIVE_BIT,													"VK_PIPELINE_CREATE_DERIVATIVE_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT,								"VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE_BIT,												"VK_PIPELINE_CREATE_DISPATCH_BASE_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_RASTERIZATION_STATE_CREATE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,	"VK_PIPELINE_RASTERIZATION_STATE_CREATE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_RASTERIZATION_STATE_CREATE_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_EXT,	"VK_PIPELINE_RASTERIZATION_STATE_CREATE_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_ANY_HIT_SHADERS_BIT_KHR,					"VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_ANY_HIT_SHADERS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_CLOSEST_HIT_SHADERS_BIT_KHR,				"VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_CLOSEST_HIT_SHADERS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_MISS_SHADERS_BIT_KHR,						"VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_MISS_SHADERS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_INTERSECTION_SHADERS_BIT_KHR,				"VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_INTERSECTION_SHADERS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR,								"VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR,									"VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_BIT_KHR,			"VK_PIPELINE_CREATE_RAY_TRACING_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DEFER_COMPILE_BIT_NV,											"VK_PIPELINE_CREATE_DEFER_COMPILE_BIT_NV"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR,										"VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_CAPTURE_INTERNAL_REPRESENTATIONS_BIT_KHR,						"VK_PIPELINE_CREATE_CAPTURE_INTERNAL_REPRESENTATIONS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_INDIRECT_BINDABLE_BIT_NV,										"VK_PIPELINE_CREATE_INDIRECT_BINDABLE_BIT_NV"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_LIBRARY_BIT_KHR,												"VK_PIPELINE_CREATE_LIBRARY_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT_EXT,						"VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_EARLY_RETURN_ON_FAILURE_BIT_EXT,								"VK_PIPELINE_CREATE_EARLY_RETURN_ON_FAILURE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_ALLOW_MOTION_BIT_NV,								"VK_PIPELINE_CREATE_RAY_TRACING_ALLOW_MOTION_BIT_NV"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE,													"VK_PIPELINE_CREATE_DISPATCH_BASE"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR,							"VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE_KHR,												"VK_PIPELINE_CREATE_DISPATCH_BASE_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM,												"VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3702,6 +3713,18 @@ tcu::Format::Bitfield<32> getDisplayPlaneAlphaFlagsKHRStr (VkDisplayPlaneAlphaFl
 		tcu::Format::BitDesc(VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR,					"VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR"),
 		tcu::Format::BitDesc(VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR,	"VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR"),
 		tcu::Format::BitDesc(VK_DISPLAY_PLANE_ALPHA_FLAG_BITS_MAX_ENUM_KHR,				"VK_DISPLAY_PLANE_ALPHA_FLAG_BITS_MAX_ENUM_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getRenderingFlagsKHRStr (VkRenderingFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR,	"VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_RENDERING_SUSPENDING_BIT_KHR,							"VK_RENDERING_SUSPENDING_BIT_KHR"),
+		tcu::Format::BitDesc(VK_RENDERING_RESUMING_BIT_KHR,								"VK_RENDERING_RESUMING_BIT_KHR"),
+		tcu::Format::BitDesc(VK_RENDERING_FLAG_BITS_MAX_ENUM_KHR,						"VK_RENDERING_FLAG_BITS_MAX_ENUM_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -7729,6 +7752,126 @@ std::ostream& operator<< (std::ostream& s, const VkDisplayPresentInfoKHR& value)
 	s << "\tsrcRect = " << value.srcRect << '\n';
 	s << "\tdstRect = " << value.dstRect << '\n';
 	s << "\tpersistent = " << value.persistent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderingAttachmentInfoKHR& value)
+{
+	s << "VkRenderingAttachmentInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageView = " << value.imageView << '\n';
+	s << "\timageLayout = " << value.imageLayout << '\n';
+	s << "\tresolveMode = " << value.resolveMode << '\n';
+	s << "\tresolveImageView = " << value.resolveImageView << '\n';
+	s << "\tresolveImageLayout = " << value.resolveImageLayout << '\n';
+	s << "\tloadOp = " << value.loadOp << '\n';
+	s << "\tstoreOp = " << value.storeOp << '\n';
+	s << "\tclearValue = " << value.clearValue << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderingInfoKHR& value)
+{
+	s << "VkRenderingInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getRenderingFlagsKHRStr(value.flags) << '\n';
+	s << "\trenderArea = " << value.renderArea << '\n';
+	s << "\tlayerCount = " << value.layerCount << '\n';
+	s << "\tviewMask = " << value.viewMask << '\n';
+	s << "\tcolorAttachmentCount = " << value.colorAttachmentCount << '\n';
+	s << "\tpColorAttachments = " << value.pColorAttachments << '\n';
+	s << "\tpDepthAttachment = " << value.pDepthAttachment << '\n';
+	s << "\tpStencilAttachment = " << value.pStencilAttachment << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineRenderingCreateInfoKHR& value)
+{
+	s << "VkPipelineRenderingCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tviewMask = " << value.viewMask << '\n';
+	s << "\tcolorAttachmentCount = " << value.colorAttachmentCount << '\n';
+	s << "\tpColorAttachmentFormats = " << value.pColorAttachmentFormats << '\n';
+	s << "\tdepthAttachmentFormat = " << value.depthAttachmentFormat << '\n';
+	s << "\tstencilAttachmentFormat = " << value.stencilAttachmentFormat << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDynamicRenderingFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceDynamicRenderingFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdynamicRendering = " << value.dynamicRendering << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCommandBufferInheritanceRenderingInfoKHR& value)
+{
+	s << "VkCommandBufferInheritanceRenderingInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getRenderingFlagsKHRStr(value.flags) << '\n';
+	s << "\tviewMask = " << value.viewMask << '\n';
+	s << "\tcolorAttachmentCount = " << value.colorAttachmentCount << '\n';
+	s << "\tpColorAttachmentFormats = " << value.pColorAttachmentFormats << '\n';
+	s << "\tdepthAttachmentFormat = " << value.depthAttachmentFormat << '\n';
+	s << "\tstencilAttachmentFormat = " << value.stencilAttachmentFormat << '\n';
+	s << "\trasterizationSamples = " << value.rasterizationSamples << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderingFragmentShadingRateAttachmentInfoKHR& value)
+{
+	s << "VkRenderingFragmentShadingRateAttachmentInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageView = " << value.imageView << '\n';
+	s << "\timageLayout = " << value.imageLayout << '\n';
+	s << "\tshadingRateAttachmentTexelSize = " << value.shadingRateAttachmentTexelSize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderingFragmentDensityMapAttachmentInfoEXT& value)
+{
+	s << "VkRenderingFragmentDensityMapAttachmentInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageView = " << value.imageView << '\n';
+	s << "\timageLayout = " << value.imageLayout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAttachmentSampleCountInfoAMD& value)
+{
+	s << "VkAttachmentSampleCountInfoAMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcolorAttachmentCount = " << value.colorAttachmentCount << '\n';
+	s << "\tpColorAttachmentSamples = " << value.pColorAttachmentSamples << '\n';
+	s << "\tdepthStencilAttachmentSamples = " << value.depthStencilAttachmentSamples << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMultiviewPerViewAttributesInfoNVX& value)
+{
+	s << "VkMultiviewPerViewAttributesInfoNVX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tperViewAttributes = " << value.perViewAttributes << '\n';
+	s << "\tperViewAttributesPositionXOnly = " << value.perViewAttributesPositionXOnly << '\n';
 	s << '}';
 	return s;
 }

@@ -61,6 +61,7 @@ struct DrawParams
 	string	fragShader;
 	string	refVertShader;
 	string	refFragShader;
+	bool	useDynamicRendering;
 };
 
 class DrawTestInstance : public TestInstance
@@ -95,6 +96,7 @@ class DrawTestCase : public TestCase
 								DrawTestCase		(tcu::TestContext& context, const char* name, const char* desc, const DrawParams data);
 								~DrawTestCase		(void);
 	virtual	void				initPrograms		(SourceCollections& programCollection) const;
+	virtual void				checkSupport		(Context& context) const;
 	virtual TestInstance*		createInstance		(Context& context) const;
 
 private:
@@ -151,6 +153,12 @@ void DrawTestCase::initPrograms (SourceCollections& programCollection) const
 	programCollection.glslSources.add("fragNoPerspective") << glu::FragmentSource(fragShader.specialize(noPerspective));
 }
 
+void DrawTestCase::checkSupport(Context& context) const
+{
+	if (m_data.useDynamicRendering)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+}
+
 TestInstance* DrawTestCase::createInstance (Context& context) const
 {
 	return new DrawTestInstance(context, m_data);
@@ -174,6 +182,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 		Move<VkCommandBuffer>			cmdBuffer				= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 		const Unique<VkShaderModule>	vs						(createShaderModule(vk, device, m_context.getBinaryCollection().get(vertShaderNames[frameIdx].c_str()), 0));
 		const Unique<VkShaderModule>	fs						(createShaderModule(vk, device, m_context.getBinaryCollection().get(fragShaderNames[frameIdx].c_str()), 0));
+		const VkFormat					targetImageFormat		= VK_FORMAT_R8G8B8A8_UNORM;
 		de::SharedPtr<Buffer>			vertexBuffer;
 		Move<VkRenderPass>				renderPass;
 		Move<VkImageView>				colorTargetView;
@@ -183,18 +192,19 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 		// Create color buffer image.
 		{
 			const VkExtent3D				targetImageExtent		= { WIDTH, HEIGHT, 1 };
-			const ImageCreateInfo			targetImageCreateInfo	(VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, targetImageExtent, 1, 1, VK_SAMPLE_COUNT_1_BIT,
+			const ImageCreateInfo			targetImageCreateInfo	(VK_IMAGE_TYPE_2D, targetImageFormat, targetImageExtent, 1, 1, VK_SAMPLE_COUNT_1_BIT,
 				VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 			colorTargetImages[frameIdx]								= Image::createAndAlloc(vk, device, targetImageCreateInfo, m_context.getDefaultAllocator(), m_context.getUniversalQueueFamilyIndex());
 		}
 
-		// Create render pass and frame buffer.
-		{
-			const ImageViewCreateInfo		colorTargetViewInfo		(colorTargetImages[frameIdx]->object(), VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM);
-			colorTargetView	= createImageView(vk, device, &colorTargetViewInfo);
+		const ImageViewCreateInfo colorTargetViewInfo(colorTargetImages[frameIdx]->object(), VK_IMAGE_VIEW_TYPE_2D, targetImageFormat);
+		colorTargetView = createImageView(vk, device, &colorTargetViewInfo);
 
+		// Create render pass and frame buffer.
+		if (!m_data.useDynamicRendering)
+		{
 			RenderPassCreateInfo			renderPassCreateInfo;
-			renderPassCreateInfo.addAttachment(AttachmentDescription(VK_FORMAT_R8G8B8A8_UNORM,
+			renderPassCreateInfo.addAttachment(AttachmentDescription(targetImageFormat,
 																	 VK_SAMPLE_COUNT_1_BIT,
 																	 VK_ATTACHMENT_LOAD_OP_LOAD,
 																	 VK_ATTACHMENT_STORE_OP_STORE,
@@ -215,13 +225,10 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 															   0,
 															   DE_NULL));
 
-			vector<VkImageView>				colorAttachments		(1);
+			renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
 
-			renderPass			= createRenderPass(vk, device, &renderPassCreateInfo);
-			colorAttachments[0]	= *colorTargetView;
-
+			vector<VkImageView>				colorAttachments		{ *colorTargetView };
 			const FramebufferCreateInfo		framebufferCreateInfo	(*renderPass, colorAttachments, WIDTH, HEIGHT, 1);
-
 			framebuffer	= createFramebuffer(vk, device, &framebufferCreateInfo);
 		}
 
@@ -281,13 +288,27 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 			pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
 			pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
 
+			VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+				DE_NULL,
+				0u,
+				1u,
+				&targetImageFormat,
+				VK_FORMAT_UNDEFINED,
+				VK_FORMAT_UNDEFINED
+			};
+
+			if (m_data.useDynamicRendering)
+				pipelineCreateInfo.pNext = &renderingCreateInfo;
+
 			pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 		}
 
 		// Queue draw and read results.
 		{
 			const VkQueue				queue				= m_context.getUniversalQueue();
-			const VkClearColorValue		clearColor			= { { 0.0f, 0.0f, 0.0f, 1.0f } };
+			const VkClearValue			clearColor			= { { { 0.0f, 0.0f, 0.0f, 1.0f } } };
 			const ImageSubresourceRange subresourceRange	(VK_IMAGE_ASPECT_COLOR_BIT);
 			const VkMemoryBarrier		memBarrier			=
 			{
@@ -307,17 +328,26 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 										  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 			vk.cmdClearColorImage(*cmdBuffer, colorTargetImages[frameIdx]->object(),
-				VK_IMAGE_LAYOUT_GENERAL, &clearColor, 1, &subresourceRange);
+				VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &subresourceRange);
 
 			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 				0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 
-			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea);
+			if (m_data.useDynamicRendering)
+				beginRendering(vk, *cmdBuffer, *colorTargetView, renderArea, clearColor);
+			else
+				beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea);
+
 			vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &buffer, &vertexBufferOffset);
 			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 			vk.cmdDraw(*cmdBuffer, 3u, 1u, 0u, 0u);
-			endRenderPass(vk, *cmdBuffer);
+
+			if (m_data.useDynamicRendering)
+				endRendering(vk, *cmdBuffer);
+			else
+				endRenderPass(vk, *cmdBuffer);
+
 			endCommandBuffer(vk, *cmdBuffer);
 
 			submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
@@ -334,14 +364,14 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
-void createTests (tcu::TestCaseGroup* testGroup)
+void createTests (tcu::TestCaseGroup* testGroup, bool useDynamicRendering)
 {
 	tcu::TestContext&	testCtx	= testGroup->getTestContext();
-	const DrawParams	paramsFlat0	= { "vert", "fragFlatColor", "vertFlatColor", "fragFlatColor" };
-	const DrawParams	paramsFlat1	= { "vertFlatColor", "frag", "vert", "frag" };
+	const DrawParams	paramsFlat0	= { "vert", "fragFlatColor", "vertFlatColor", "fragFlatColor", useDynamicRendering };
+	const DrawParams	paramsFlat1	= { "vertFlatColor", "frag", "vert", "frag", useDynamicRendering };
 
-	const DrawParams	paramsNoPerspective0	= { "vert", "fragNoPerspective", "vertNoPerspective", "fragNoPerspective" };
-	const DrawParams	paramsNoPerspective1	= { "vertNoPerspective", "frag", "vert", "frag" };
+	const DrawParams	paramsNoPerspective0	= { "vert", "fragNoPerspective", "vertNoPerspective", "fragNoPerspective", useDynamicRendering };
+	const DrawParams	paramsNoPerspective1	= { "vertNoPerspective", "frag", "vert", "frag", useDynamicRendering };
 
 	testGroup->addChild(new DrawTestCase(testCtx, "flat_0", "Mismatching flat interpolation testcase 0.", paramsFlat0));
 	testGroup->addChild(new DrawTestCase(testCtx, "flat_1", "Mismatching flat interpolation testcase 1.", paramsFlat1));
@@ -352,9 +382,9 @@ void createTests (tcu::TestCaseGroup* testGroup)
 
 }	// anonymous
 
-tcu::TestCaseGroup*	createDifferingInterpolationTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createDifferingInterpolationTests (tcu::TestContext& testCtx, bool useDynamicRendering)
 {
-	return createTestGroup(testCtx, "differing_interpolation", "Tests for mismatched interpolation decorations.", createTests);
+	return createTestGroup(testCtx, "differing_interpolation", "Tests for mismatched interpolation decorations.", createTests, useDynamicRendering);
 }
 
 }	// Draw

@@ -61,7 +61,7 @@ public:
 };
 
 SimpleDraw::SimpleDraw (Context &context, TestSpec testSpec)
-	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.topology)
+	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.useDynamicRendering, testSpec.topology)
 {
 	m_data.push_back(VertexElementData(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), -1));
 	m_data.push_back(VertexElementData(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), -1));
@@ -113,7 +113,7 @@ tcu::TestStatus SimpleDraw::iterate (void)
 	const vk::VkQueue		queue				= m_context.getUniversalQueue();
 	const vk::VkDevice		device				= m_context.getDevice();
 
-	beginRenderPass();
+	beginRender();
 
 	const vk::VkDeviceSize	vertexBufferOffset	= 0;
 	const vk::VkBuffer		vertexBuffer		= m_vertexBuffer->object();
@@ -146,7 +146,7 @@ tcu::TestStatus SimpleDraw::iterate (void)
 			break;
 	}
 
-	endRenderPass(m_vk, *m_cmdBuffer);
+	endRender();
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -204,7 +204,7 @@ tcu::TestStatus SimpleDrawInstanced::iterate (void)
 	const vk::VkQueue	queue					= m_context.getUniversalQueue();
 	const vk::VkDevice	device					= m_context.getDevice();
 
-	beginRenderPass();
+	beginRender();
 
 	const vk::VkDeviceSize	vertexBufferOffset	= 0;
 	const vk::VkBuffer		vertexBuffer		= m_vertexBuffer->object();
@@ -238,7 +238,7 @@ tcu::TestStatus SimpleDrawInstanced::iterate (void)
 			break;
 	}
 
-	endRenderPass(m_vk, *m_cmdBuffer);
+	endRender();
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -288,16 +288,22 @@ tcu::TestStatus SimpleDrawInstanced::iterate (void)
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
+void checkSupport(Context& context, SimpleDraw::TestSpec testSpec)
+{
+	if (testSpec.useDynamicRendering)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+}
+
 }	// anonymous
 
-SimpleDrawTests::SimpleDrawTests (tcu::TestContext &testCtx)
-: TestCaseGroup	(testCtx, "simple_draw", "drawing simple geometry")
+SimpleDrawTests::SimpleDrawTests (tcu::TestContext &testCtx, bool useDynamicRendering)
+	: TestCaseGroup			(testCtx, "simple_draw", "drawing simple geometry")
+	, m_useDynamicRendering	(useDynamicRendering)
 {
 	/* Left blank on purpose */
 }
 
 SimpleDrawTests::~SimpleDrawTests (void) {}
-
 
 void SimpleDrawTests::init (void)
 {
@@ -305,21 +311,27 @@ void SimpleDrawTests::init (void)
 		SimpleDraw::TestSpec testSpec;
 		testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetch.vert";
 		testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
+		testSpec.useDynamicRendering = m_useDynamicRendering;
 
 		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		addChild(new InstanceFactory<SimpleDraw>(m_testCtx, "simple_draw_triangle_list", "Draws triangle list", testSpec));
+		addChild(new InstanceFactory<SimpleDraw, FunctionSupport1<SimpleDraw::TestSpec> >
+			(m_testCtx, "simple_draw_triangle_list", "Draws triangle list", testSpec, FunctionSupport1<SimpleDraw::TestSpec>::Args(checkSupport, testSpec)));
 		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-		addChild(new InstanceFactory<SimpleDraw>(m_testCtx, "simple_draw_triangle_strip", "Draws triangle strip", testSpec));
+		addChild(new InstanceFactory<SimpleDraw, FunctionSupport1<SimpleDraw::TestSpec> >
+			(m_testCtx, "simple_draw_triangle_strip", "Draws triangle strip", testSpec, FunctionSupport1<SimpleDraw::TestSpec>::Args(checkSupport, testSpec)));
 	}
 	{
 		SimpleDrawInstanced::TestSpec testSpec;
 		testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchInstancedFirstInstance.vert";
 		testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
+		testSpec.useDynamicRendering = m_useDynamicRendering;
 
 		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		addChild(new InstanceFactory<SimpleDrawInstanced>(m_testCtx, "simple_draw_instanced_triangle_list", "Draws an instanced triangle list", testSpec));
+		addChild(new InstanceFactory<SimpleDrawInstanced, FunctionSupport1<SimpleDrawInstanced::TestSpec> >
+			(m_testCtx, "simple_draw_instanced_triangle_list", "Draws an instanced triangle list", testSpec, FunctionSupport1<SimpleDrawInstanced::TestSpec>::Args(checkSupport, testSpec)));
 		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-		addChild(new InstanceFactory<SimpleDrawInstanced>(m_testCtx, "simple_draw_instanced_triangle_strip", "Draws an instanced triangle strip", testSpec));
+		addChild(new InstanceFactory<SimpleDrawInstanced, FunctionSupport1<SimpleDrawInstanced::TestSpec> >
+			(m_testCtx, "simple_draw_instanced_triangle_strip", "Draws an instanced triangle strip", testSpec, FunctionSupport1<SimpleDrawInstanced::TestSpec>::Args(checkSupport, testSpec)));
 	}
 }
 

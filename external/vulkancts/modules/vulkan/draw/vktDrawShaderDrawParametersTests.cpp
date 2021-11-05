@@ -56,12 +56,6 @@ struct FlagsTestSpec : public TestSpecBase
 	TestFlags	flags;
 };
 
-inline FlagsTestSpec addFlags (FlagsTestSpec spec, const TestFlags flags)
-{
-	spec.flags |= flags;
-	return spec;
-}
-
 enum Constants
 {
 	// \note Data layout in buffers (junk data and good data is intertwined).
@@ -102,7 +96,7 @@ private:
 };
 
 DrawTest::DrawTest (Context &context, TestSpec testSpec)
-	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.topology)
+	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.useDynamicRendering, testSpec.topology)
 	, m_flags			(testSpec.flags)
 {
 	DE_ASSERT(m_topology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
@@ -224,7 +218,7 @@ tcu::TestStatus DrawTest::iterate (void)
 {
 	// Draw
 	{
-		beginRenderPass();
+		beginRender();
 
 		const vk::VkDeviceSize	vertexBufferOffset	= 0;
 		const vk::VkBuffer		vertexBuffer		= m_vertexBuffer->object();
@@ -282,7 +276,7 @@ tcu::TestStatus DrawTest::iterate (void)
 				m_vk.cmdDraw(*m_cmdBuffer, NUM_VERTICES, numInstances, NDX_FIRST_VERTEX, firstInstance);
 		}
 
-		endRenderPass(m_vk, *m_cmdBuffer);
+		endRender();
 		endCommandBuffer(m_vk, *m_cmdBuffer);
 	}
 
@@ -311,7 +305,7 @@ tcu::TestStatus DrawTest::iterate (void)
 	}
 }
 
-void checkSupport (Context& context, TestFlags flags)
+void checkSupport (Context& context, DrawTest::TestSpec testSpec)
 {
 	context.requireDeviceFunctionality("VK_KHR_shader_draw_parameters");
 
@@ -342,14 +336,17 @@ void checkSupport (Context& context, TestFlags flags)
 			TCU_THROW(NotSupportedError, "shaderDrawParameters feature not supported by the device");
 	}
 
-	if (flags & TEST_FLAG_MULTIDRAW)
+	if (testSpec.useDynamicRendering)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
+	if (testSpec.flags & TEST_FLAG_MULTIDRAW)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_DRAW_INDIRECT);
 
-	if (flags & TEST_FLAG_FIRST_INSTANCE)
+	if (testSpec.flags & TEST_FLAG_FIRST_INSTANCE)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_DRAW_INDIRECT_FIRST_INSTANCE);
 }
 
-void addDrawCase (tcu::TestCaseGroup* group, const DrawTest::TestSpec testSpec, const TestFlags flags)
+void addDrawCase (tcu::TestCaseGroup* group, DrawTest::TestSpec testSpec, const TestFlags flags)
 {
 	std::ostringstream name;
 	name << "draw";
@@ -359,13 +356,16 @@ void addDrawCase (tcu::TestCaseGroup* group, const DrawTest::TestSpec testSpec, 
 	if (flags & TEST_FLAG_INSTANCED)		name << "_instanced";
 	if (flags & TEST_FLAG_FIRST_INSTANCE)	name << "_first_instance";
 
-	group->addChild(new InstanceFactory<DrawTest, FunctionSupport1<TestFlags>>(group->getTestContext(), name.str(), "", addFlags(testSpec, flags), FunctionSupport1<TestFlags>::Args(checkSupport, testSpec.flags | flags)));
+	testSpec.flags |= flags;
+
+	group->addChild(new InstanceFactory<DrawTest, FunctionSupport1<DrawTest::TestSpec>>(group->getTestContext(), name.str(), "", testSpec, FunctionSupport1<DrawTest::TestSpec>::Args(checkSupport, testSpec)));
 }
 
 }	// anonymous
 
-ShaderDrawParametersTests::ShaderDrawParametersTests (tcu::TestContext &testCtx)
-	: TestCaseGroup	(testCtx, "shader_draw_parameters", "VK_KHR_shader_draw_parameters")
+ShaderDrawParametersTests::ShaderDrawParametersTests (tcu::TestContext &testCtx, bool useDynamicRendering)
+	: TestCaseGroup			(testCtx, "shader_draw_parameters", "VK_KHR_shader_draw_parameters")
+	, m_useDynamicRendering	(useDynamicRendering)
 {
 }
 
@@ -375,6 +375,7 @@ void ShaderDrawParametersTests::init (void)
 		DrawTest::TestSpec testSpec;
 		testSpec.shaders[glu::SHADERTYPE_VERTEX]	= "vulkan/draw/VertexFetchShaderDrawParameters.vert";
 		testSpec.shaders[glu::SHADERTYPE_FRAGMENT]	= "vulkan/draw/VertexFetch.frag";
+		testSpec.useDynamicRendering				= m_useDynamicRendering;
 		testSpec.topology							= vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 		testSpec.flags								= 0;
 
@@ -389,6 +390,7 @@ void ShaderDrawParametersTests::init (void)
 		DrawTest::TestSpec testSpec;
 		testSpec.shaders[glu::SHADERTYPE_VERTEX]	= "vulkan/draw/VertexFetchShaderDrawParameters.vert";
 		testSpec.shaders[glu::SHADERTYPE_FRAGMENT]	= "vulkan/draw/VertexFetch.frag";
+		testSpec.useDynamicRendering				= m_useDynamicRendering;
 		testSpec.topology							= vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 		testSpec.flags								= TEST_FLAG_INSTANCED;
 
@@ -405,6 +407,7 @@ void ShaderDrawParametersTests::init (void)
 		DrawTest::TestSpec testSpec;
 		testSpec.shaders[glu::SHADERTYPE_VERTEX]	= "vulkan/draw/VertexFetchShaderDrawParametersDrawIndex.vert";
 		testSpec.shaders[glu::SHADERTYPE_FRAGMENT]	= "vulkan/draw/VertexFetch.frag";
+		testSpec.useDynamicRendering				= m_useDynamicRendering;
 		testSpec.topology							= vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 		testSpec.flags								= TEST_FLAG_INDIRECT | TEST_FLAG_MULTIDRAW;
 

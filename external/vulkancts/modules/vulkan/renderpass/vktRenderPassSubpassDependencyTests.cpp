@@ -384,13 +384,13 @@ struct ExternalTestConfig
 	ExternalTestConfig	(VkFormat				format_,
 						 UVec2					imageSize_,
 						 vector<RenderPass>		renderPasses_,
-						 RenderPassType			renderPassType_,
+						 RenderingType			renderingType_,
 						 SynchronizationType	synchronizationType_,
 						 deUint32				blurKernel_ = 4)
 		: format				(format_)
 		, imageSize				(imageSize_)
 		, renderPasses			(renderPasses_)
-		, renderPassType		(renderPassType_)
+		, renderingType			(renderingType_)
 		, synchronizationType	(synchronizationType_)
 		, blurKernel			(blurKernel_)
 	{
@@ -399,7 +399,7 @@ struct ExternalTestConfig
 	VkFormat			format;
 	UVec2				imageSize;
 	vector<RenderPass>	renderPasses;
-	RenderPassType		renderPassType;
+	RenderingType		renderingType;
 	SynchronizationType	synchronizationType;
 	deUint32			blurKernel;
 };
@@ -427,7 +427,7 @@ public:
 	vector<SharedPtrVkRenderPass>			createRenderPasses				(const DeviceInterface&					vkd,
 																			 VkDevice								device,
 																			 vector<RenderPass>						renderPassInfos,
-																			 const RenderPassType					renderPassType,
+																			 const RenderingType					renderingType,
 																			 const SynchronizationType				synchronizationType);
 
 	vector<SharedPtrVkFramebuffer>			createFramebuffers				(const DeviceInterface&					vkd,
@@ -465,7 +465,7 @@ public:
 private:
 	const bool								m_renderPass2Supported;
 	const bool								m_synchronization2Supported;
-	const RenderPassType					m_renderPassType;
+	const RenderingType						m_renderingType;
 
 	const deUint32							m_width;
 	const deUint32							m_height;
@@ -496,9 +496,9 @@ private:
 
 ExternalDependencyTestInstance::ExternalDependencyTestInstance (Context& context, ExternalTestConfig testConfig)
 	: TestInstance					(context)
-	, m_renderPass2Supported		((testConfig.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
+	, m_renderPass2Supported		((testConfig.renderingType == RENDERING_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
 	, m_synchronization2Supported	((testConfig.synchronizationType == SYNCHRONIZATION_TYPE_SYNCHRONIZATION2) && context.requireDeviceFunctionality("VK_KHR_synchronization2"))
-	, m_renderPassType				(testConfig.renderPassType)
+	, m_renderingType				(testConfig.renderingType)
 	, m_width						(testConfig.imageSize.x())
 	, m_height						(testConfig.imageSize.y())
 	, m_blurKernel					(testConfig.blurKernel)
@@ -508,7 +508,7 @@ ExternalDependencyTestInstance::ExternalDependencyTestInstance (Context& context
 	, m_samplers					(createSamplers(context.getDeviceInterface(), context.getDevice(), testConfig.renderPasses))
 	, m_dstBuffer					(createBuffer(context.getDeviceInterface(), context.getDevice(), m_format, m_width, m_height))
 	, m_dstBufferMemory				(createBufferMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), *m_dstBuffer))
-	, m_renderPasses				(createRenderPasses(context.getDeviceInterface(), context.getDevice(), testConfig.renderPasses, testConfig.renderPassType, testConfig.synchronizationType))
+	, m_renderPasses				(createRenderPasses(context.getDeviceInterface(), context.getDevice(), testConfig.renderPasses, testConfig.renderingType, testConfig.synchronizationType))
 	, m_framebuffers				(createFramebuffers(context.getDeviceInterface(), context.getDevice(), m_renderPasses, m_imageViews, m_width, m_height))
 	, m_subpassDescriptorSetLayouts	(createDescriptorSetLayouts(context.getDeviceInterface(), context.getDevice(), m_samplers))
 	, m_subpassDescriptorPools		(createDescriptorPools(context.getDeviceInterface(), context.getDevice(), m_subpassDescriptorSetLayouts, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER))
@@ -612,14 +612,14 @@ vector<SharedPtrVkSampler> ExternalDependencyTestInstance::createSamplers (const
 vector<SharedPtrVkRenderPass> ExternalDependencyTestInstance::createRenderPasses (const DeviceInterface&	vkd,
 																				  VkDevice					device,
 																				  vector<RenderPass>		renderPassInfos,
-																				  const RenderPassType		renderPassType,
+																				  const RenderingType		renderingType,
 																				  const SynchronizationType	synchronizationType)
 {
 	vector<SharedPtrVkRenderPass> renderPasses;
 	renderPasses.reserve(renderPassInfos.size());
 
 	for (const auto& renderPassInfo : renderPassInfos)
-		renderPasses.push_back(makeSharedPtr(createRenderPass(vkd, device, renderPassInfo, renderPassType, synchronizationType)));
+		renderPasses.push_back(makeSharedPtr(createRenderPass(vkd, device, renderPassInfo, renderingType, synchronizationType)));
 
 	return renderPasses;
 }
@@ -786,11 +786,11 @@ vector<SharedPtrVkPipeline> ExternalDependencyTestInstance::createRenderPipeline
 
 tcu::TestStatus ExternalDependencyTestInstance::iterate (void)
 {
-	switch (m_renderPassType)
+	switch (m_renderingType)
 	{
-		case RENDERPASS_TYPE_LEGACY:
+		case RENDERING_TYPE_RENDERPASS_LEGACY:
 			return iterateInternal<RenderpassSubpass1>();
-		case RENDERPASS_TYPE_RENDERPASS2:
+		case RENDERING_TYPE_RENDERPASS2:
 			return iterateInternal<RenderpassSubpass2>();
 		default:
 			TCU_THROW(InternalError, "Impossible");
@@ -990,18 +990,18 @@ struct SubpassTestConfig
 		SubpassTestConfig	(VkFormat		format_,
 							 UVec2			imageSize_,
 							 RenderPass		renderPass_,
-							 RenderPassType	renderPassType_)
+							 RenderingType	renderingType_)
 		: format			(format_)
 		, imageSize			(imageSize_)
 		, renderPass		(renderPass_)
-		, renderPassType	(renderPassType_)
+		, renderingType		(renderingType_)
 	{
 	}
 
 	VkFormat			format;
 	UVec2				imageSize;
 	RenderPass			renderPass;
-	RenderPassType		renderPassType;
+	RenderingType		renderingType;
 };
 
 class SubpassDependencyTestInstance : public TestInstance
@@ -1064,7 +1064,7 @@ public:
 private:
 	const bool							m_extensionSupported;
 	const RenderPass					m_renderPassInfo;
-	const RenderPassType				m_renderPassType;
+	const RenderingType					m_renderingType;
 
 	const deUint32						m_width;
 	const deUint32						m_height;
@@ -1095,9 +1095,9 @@ private:
 
 SubpassDependencyTestInstance::SubpassDependencyTestInstance (Context& context, SubpassTestConfig testConfig)
 	: TestInstance					(context)
-	, m_extensionSupported			((testConfig.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
+	, m_extensionSupported			((testConfig.renderingType == RENDERING_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
 	, m_renderPassInfo				(testConfig.renderPass)
-	, m_renderPassType				(testConfig.renderPassType)
+	, m_renderingType				(testConfig.renderingType)
 	, m_width						(testConfig.imageSize.x())
 	, m_height						(testConfig.imageSize.y())
 	, m_format						(testConfig.format)
@@ -1107,7 +1107,7 @@ SubpassDependencyTestInstance::SubpassDependencyTestInstance (Context& context, 
 	, m_secondaryBuffer				(createBuffer(context.getDeviceInterface(), context.getDevice(), m_format, m_width, m_height))
 	, m_primaryBufferMemory			(createBufferMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), *m_primaryBuffer))
 	, m_secondaryBufferMemory		(createBufferMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), *m_secondaryBuffer))
-	, m_renderPass					(createRenderPass(context.getDeviceInterface(), context.getDevice(), m_renderPassInfo, testConfig.renderPassType))
+	, m_renderPass					(createRenderPass(context.getDeviceInterface(), context.getDevice(), m_renderPassInfo, testConfig.renderingType))
 	, m_framebuffer					(createFramebuffer(context.getDeviceInterface(), context.getDevice(), m_renderPassInfo, *m_renderPass, m_imageViews, m_width, m_height))
 	, m_subpassDescriptorSetLayouts	(createDescriptorSetLayouts(context.getDeviceInterface(), context.getDevice(), m_renderPassInfo))
 	, m_subpassDescriptorPools		(createDescriptorPools(context.getDeviceInterface(), context.getDevice(), m_subpassDescriptorSetLayouts, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT))
@@ -1438,11 +1438,11 @@ vector<SharedPtrVkDescriptorSet> SubpassDependencyTestInstance::createDescriptor
 
 tcu::TestStatus SubpassDependencyTestInstance::iterate (void)
 {
-	switch (m_renderPassType)
+	switch (m_renderingType)
 	{
-		case RENDERPASS_TYPE_LEGACY:
+		case RENDERING_TYPE_RENDERPASS_LEGACY:
 			return iterateInternal<RenderpassSubpass1>();
-		case RENDERPASS_TYPE_RENDERPASS2:
+		case RENDERING_TYPE_RENDERPASS2:
 			return iterateInternal<RenderpassSubpass2>();
 		default:
 			TCU_THROW(InternalError, "Impossible");
@@ -1809,16 +1809,16 @@ struct SubpassSelfDependencyBackwardsTestConfig
 {
 		SubpassSelfDependencyBackwardsTestConfig	(VkFormat		format_,
 													 UVec2			imageSize_,
-													 RenderPassType	renderPassType_)
+													 RenderingType	renderingType_)
 		: format			(format_)
 		, imageSize			(imageSize_)
-		, renderPassType	(renderPassType_)
+		, renderingType		(renderingType_)
 	{
 	}
 
 	VkFormat		format;
 	UVec2			imageSize;
-	RenderPassType	renderPassType;
+	RenderingType	renderingType;
 };
 
 class SubpassSelfDependencyBackwardsTestInstance : public TestInstance
@@ -1837,7 +1837,7 @@ public:
 private:
 	const bool				m_extensionSupported;
 	const bool				m_featuresSupported;
-	const RenderPassType	m_renderPassType;
+	const RenderingType		m_renderingType;
 
 	const deUint32			m_width;
 	const deUint32			m_height;
@@ -1847,9 +1847,9 @@ private:
 
 SubpassSelfDependencyBackwardsTestInstance::SubpassSelfDependencyBackwardsTestInstance (Context& context, SubpassSelfDependencyBackwardsTestConfig testConfig)
 	: TestInstance			(context)
-	, m_extensionSupported	((testConfig.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
+	, m_extensionSupported	((testConfig.renderingType == RENDERING_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
 	, m_featuresSupported	(context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER))
-	, m_renderPassType		(testConfig.renderPassType)
+	, m_renderingType		(testConfig.renderingType)
 	, m_width				(testConfig.imageSize.x())
 	, m_height				(testConfig.imageSize.y())
 	, m_format				(testConfig.format)
@@ -1862,11 +1862,11 @@ SubpassSelfDependencyBackwardsTestInstance::~SubpassSelfDependencyBackwardsTestI
 
 tcu::TestStatus SubpassSelfDependencyBackwardsTestInstance::iterate (void)
 {
-	switch (m_renderPassType)
+	switch (m_renderingType)
 	{
-		case RENDERPASS_TYPE_LEGACY:
+		case RENDERING_TYPE_RENDERPASS_LEGACY:
 			return iterateInternal<RenderpassSubpass1>();
-		case RENDERPASS_TYPE_RENDERPASS2:
+		case RENDERING_TYPE_RENDERPASS2:
 			return iterateInternal<RenderpassSubpass2>();
 		default:
 			TCU_THROW(InternalError, "Impossible");
@@ -2026,7 +2026,7 @@ tcu::TestStatus SubpassSelfDependencyBackwardsTestInstance::iterateInternal (voi
 										 VK_ACCESS_INDIRECT_COMMAND_READ_BIT,	// VkAccessFlags		dstAccessMask
 										 0));									// VkDependencyFlags	flags
 
-		renderPass = createRenderPass(vkd, device, RenderPass(attachments, subpasses, deps), m_renderPassType);
+		renderPass = createRenderPass(vkd, device, RenderPass(attachments, subpasses, deps), m_renderingType);
 	}
 
 	// Create render pipeline.
@@ -2271,14 +2271,14 @@ tcu::TestStatus SubpassSelfDependencyBackwardsTestInstance::iterateInternal (voi
 struct SeparateChannelsTestConfig
 {
 		SeparateChannelsTestConfig	(VkFormat		format_,
-									 RenderPassType	renderPassType_)
+									 RenderingType	renderingType_)
 		: format			(format_)
-		, renderPassType	(renderPassType_)
+		, renderingType		(renderingType_)
 	{
 	}
 
 	VkFormat		format;
-	RenderPassType	renderPassType;
+	RenderingType	renderingType;
 };
 
 class SeparateChannelsTestInstance : public TestInstance
@@ -2296,7 +2296,7 @@ public:
 
 private:
 	const bool				m_extensionSupported;
-	const RenderPassType	m_renderPassType;
+	const RenderingType		m_renderingType;
 
 	const deUint32			m_width;
 	const deUint32			m_height;
@@ -2306,8 +2306,8 @@ private:
 
 SeparateChannelsTestInstance::SeparateChannelsTestInstance (Context& context, SeparateChannelsTestConfig testConfig)
 	: TestInstance			(context)
-	, m_extensionSupported	((testConfig.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
-	, m_renderPassType		(testConfig.renderPassType)
+	, m_extensionSupported	((testConfig.renderingType == RENDERING_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
+	, m_renderingType		(testConfig.renderingType)
 	, m_width				(256u)
 	, m_height				(256u)
 	, m_format				(testConfig.format)
@@ -2320,11 +2320,11 @@ SeparateChannelsTestInstance::~SeparateChannelsTestInstance (void)
 
 tcu::TestStatus SeparateChannelsTestInstance::iterate (void)
 {
-	switch (m_renderPassType)
+	switch (m_renderingType)
 	{
-		case RENDERPASS_TYPE_LEGACY:
+		case RENDERING_TYPE_RENDERPASS_LEGACY:
 			return iterateInternal<RenderpassSubpass1>();
-		case RENDERPASS_TYPE_RENDERPASS2:
+		case RENDERING_TYPE_RENDERPASS2:
 			return iterateInternal<RenderpassSubpass2>();
 		default:
 			TCU_THROW(InternalError, "Impossible");
@@ -2542,7 +2542,7 @@ tcu::TestStatus SeparateChannelsTestInstance::iterateInternal (void)
 		vector<AttachmentReference>	inputAttachmentReferences;
 		AttachmentReference			dsAttachmentReference		(1u, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT);
 
-		const VkImageAspectFlags	inputAttachmentAspectMask	((m_renderPassType == RENDERPASS_TYPE_RENDERPASS2)
+		const VkImageAspectFlags	inputAttachmentAspectMask	((m_renderingType == RENDERING_TYPE_RENDERPASS2)
 																? static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_COLOR_BIT)
 																: static_cast<VkImageAspectFlags>(0));
 
@@ -2566,7 +2566,7 @@ tcu::TestStatus SeparateChannelsTestInstance::iterateInternal (void)
 			subpassDependency.push_back(SubpassDependency(0u, 0u, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 							VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT, VK_DEPENDENCY_BY_REGION_BIT));
 		}
-		renderPass = createRenderPass(vkd, device, RenderPass(attachments, subpasses, subpassDependency), m_renderPassType);
+		renderPass = createRenderPass(vkd, device, RenderPass(attachments, subpasses, subpassDependency), m_renderingType);
 
 	}
 
@@ -2872,14 +2872,14 @@ tcu::TestStatus SeparateChannelsTestInstance::iterateInternal (void)
 struct SingleAttachmentTestConfig
 {
 		SingleAttachmentTestConfig	(VkFormat		format_,
-									 RenderPassType	renderPassType_)
+									 RenderingType	renderingType_)
 		: format			(format_)
-		, renderPassType	(renderPassType_)
+		, renderingType		(renderingType_)
 	{
 	}
 
 	VkFormat		format;
-	RenderPassType	renderPassType;
+	RenderingType	renderingType;
 };
 
 class SingleAttachmentTestInstance : public TestInstance
@@ -2897,7 +2897,7 @@ public:
 
 private:
 	const bool				m_extensionSupported;
-	const RenderPassType	m_renderPassType;
+	const RenderingType		m_renderingType;
 
 	const deUint32			m_width;
 	const deUint32			m_height;
@@ -2907,8 +2907,8 @@ private:
 
 SingleAttachmentTestInstance::SingleAttachmentTestInstance (Context& context, SingleAttachmentTestConfig testConfig)
 	: TestInstance			(context)
-	, m_extensionSupported	((testConfig.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
-	, m_renderPassType		(testConfig.renderPassType)
+	, m_extensionSupported	((testConfig.renderingType == RENDERING_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
+	, m_renderingType		(testConfig.renderingType)
 	, m_width				(256u)
 	, m_height				(256u)
 	, m_format				(testConfig.format)
@@ -2921,11 +2921,11 @@ SingleAttachmentTestInstance::~SingleAttachmentTestInstance (void)
 
 tcu::TestStatus SingleAttachmentTestInstance::iterate (void)
 {
-	switch (m_renderPassType)
+	switch (m_renderingType)
 	{
-		case RENDERPASS_TYPE_LEGACY:
+		case RENDERING_TYPE_RENDERPASS_LEGACY:
 			return iterateInternal<RenderpassSubpass1>();
-		case RENDERPASS_TYPE_RENDERPASS2:
+		case RENDERING_TYPE_RENDERPASS2:
 			return iterateInternal<RenderpassSubpass2>();
 		default:
 			TCU_THROW(InternalError, "Impossible");
@@ -3188,14 +3188,14 @@ tcu::TestStatus SingleAttachmentTestInstance::iterateInternal (void)
 													 colorAttachmentReferences, vector<AttachmentReference>(),
 													 AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL), vector<deUint32>()));
 
-		renderPass1 = createRenderPass(vkd, device, RenderPass(attachments, subpasses, vector<SubpassDependency>()), m_renderPassType);
+		renderPass1 = createRenderPass(vkd, device, RenderPass(attachments, subpasses, vector<SubpassDependency>()), m_renderingType);
 	}
 	{
 		vector<Attachment>			attachments;
 		vector<AttachmentReference>	colorAttachmentReferences;
 		vector<AttachmentReference>	inputAttachmentReferences;
 
-		const VkImageAspectFlags	inputAttachmentAspectMask	((m_renderPassType == RENDERPASS_TYPE_RENDERPASS2)
+		const VkImageAspectFlags	inputAttachmentAspectMask	((m_renderingType == RENDERING_TYPE_RENDERPASS2)
 																? static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_COLOR_BIT)
 																: static_cast<VkImageAspectFlags>(0));
 
@@ -3213,7 +3213,7 @@ tcu::TestStatus SingleAttachmentTestInstance::iterateInternal (void)
 														 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 														 VK_ACCESS_INPUT_ATTACHMENT_READ_BIT, VK_DEPENDENCY_BY_REGION_BIT));
 
-		renderPass0 = createRenderPass(vkd, device, RenderPass(attachments, subpasses, dependencies), m_renderPassType);
+		renderPass0 = createRenderPass(vkd, device, RenderPass(attachments, subpasses, dependencies), m_renderingType);
 	}
 
 	// Create pipelines.
@@ -3899,7 +3899,7 @@ std::string formatToName (VkFormat format)
 	return de::toLower(formatStr.substr(prefix.length()));
 }
 
-void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
+void initTests (tcu::TestCaseGroup* group, const RenderingType renderingType)
 {
 	tcu::TestContext& testCtx(group->getTestContext());
 
@@ -3976,13 +3976,13 @@ void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
 					VK_FORMAT_R8G8B8A8_UNORM,
 					renderSizes[renderSizeNdx],
 					renderPasses,
-					renderPassType,
+					renderingType,
 					SYNCHRONIZATION_TYPE_LEGACY,
 					blurKernel
 				};
 
 				renderSizeGroup->addChild(new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
-				if (renderPassType == RENDERPASS_TYPE_RENDERPASS2)
+				if (renderingType == RENDERING_TYPE_RENDERPASS2)
 				{
 					testName += "_sync_2";
 					testConfig.synchronizationType = SYNCHRONIZATION_TYPE_SYNCHRONIZATION2;
@@ -4049,7 +4049,7 @@ void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
 			}
 
 			const deUint32				blurKernel	(12u);
-			const ExternalTestConfig	testConfig	(VK_FORMAT_R8G8B8A8_UNORM, UVec2(128, 128), renderPasses, renderPassType, SYNCHRONIZATION_TYPE_LEGACY, blurKernel);
+			const ExternalTestConfig	testConfig	(VK_FORMAT_R8G8B8A8_UNORM, UVec2(128, 128), renderPasses, renderingType, SYNCHRONIZATION_TYPE_LEGACY, blurKernel);
 			const string				testName	("render_passes_" + de::toString(renderPassCounts[renderPassCountNdx]));
 
 			implicitGroup->addChild(new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
@@ -4120,7 +4120,7 @@ void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
 					for (size_t subpassNdx = 0; subpassNdx < subpassCount; subpassNdx++)
 					{
 						vector<AttachmentReference>	inputAttachmentReferences;
-						const VkImageAspectFlags	inputAttachmentAspectMask	((renderPassType == RENDERPASS_TYPE_RENDERPASS2)
+						const VkImageAspectFlags	inputAttachmentAspectMask	((renderingType == RENDERING_TYPE_RENDERPASS2)
 																					? static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_DEPTH_BIT)
 																					: static_cast<VkImageAspectFlags>(0));
 
@@ -4154,7 +4154,7 @@ void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
 													 VK_DEPENDENCY_BY_REGION_BIT));								// VkDependencyFlags	flags
 
 					const RenderPass		renderPass	(attachments, subpasses, deps);
-					const SubpassTestConfig	testConfig	(formats[formatNdx], renderSizes[renderSizeNdx], renderPass, renderPassType);
+					const SubpassTestConfig	testConfig	(formats[formatNdx], renderSizes[renderSizeNdx], renderPass, renderingType);
 					const string			format		(formatToName(formats[formatNdx]).c_str());
 
 					subpassCountGroup->addChild(new InstanceFactory1<SubpassDependencyTestInstance, SubpassTestConfig, SubpassPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, format, format, testConfig));
@@ -4185,7 +4185,7 @@ void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
 			string groupName	("render_size_" + de::toString(renderSizes[renderSizeNdx].x()) + "_" + de::toString(renderSizes[renderSizeNdx].y()));
 			de::MovePtr<tcu::TestCaseGroup>	renderSizeGroup	(new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupName.c_str()));
 
-			const SubpassSelfDependencyBackwardsTestConfig	testConfig	(VK_FORMAT_R8G8B8A8_UNORM, renderSizes[renderSizeNdx], renderPassType);
+			const SubpassSelfDependencyBackwardsTestConfig	testConfig	(VK_FORMAT_R8G8B8A8_UNORM, renderSizes[renderSizeNdx], renderingType);
 			renderSizeGroup->addChild(new InstanceFactory1<SubpassSelfDependencyBackwardsTestInstance, SubpassSelfDependencyBackwardsTestConfig, SubpassSelfDependencyBackwardsPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "geometry_to_indirectdraw", "", testConfig));
 
 			selfDependencyGroup->addChild(renderSizeGroup.release());
@@ -4212,7 +4212,7 @@ void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
 
 		for (deUint32 configIdx = 0; configIdx < DE_LENGTH_OF_ARRAY(configs); configIdx++)
 		{
-			const SeparateChannelsTestConfig testConfig(configs[configIdx].format, renderPassType);
+			const SeparateChannelsTestConfig testConfig(configs[configIdx].format, renderingType);
 
 			separateChannelsGroup->addChild(new InstanceFactory1<SeparateChannelsTestInstance, SeparateChannelsTestConfig, SeparateChannelsPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, configs[configIdx].name, "", testConfig));
 		}
@@ -4239,7 +4239,7 @@ void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
 
 		for (deUint32 configIdx = 0; configIdx < DE_LENGTH_OF_ARRAY(configs); configIdx++)
 		{
-			const SingleAttachmentTestConfig testConfig(configs[configIdx].format, renderPassType);
+			const SingleAttachmentTestConfig testConfig(configs[configIdx].format, renderingType);
 
 			singleAttachmentGroup->addChild(new InstanceFactory1<SingleAttachmentTestInstance, SingleAttachmentTestConfig, SingleAttachmentPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, configs[configIdx].name, "", testConfig));
 		}
@@ -4251,11 +4251,11 @@ void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
 
 tcu::TestCaseGroup* createRenderPassSubpassDependencyTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "subpass_dependencies", "Subpass dependency tests", initTests, RENDERPASS_TYPE_LEGACY);
+	return createTestGroup(testCtx, "subpass_dependencies", "Subpass dependency tests", initTests, RENDERING_TYPE_RENDERPASS_LEGACY);
 }
 
 tcu::TestCaseGroup* createRenderPass2SubpassDependencyTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "subpass_dependencies", "Subpass dependency tests", initTests, RENDERPASS_TYPE_RENDERPASS2);
+	return createTestGroup(testCtx, "subpass_dependencies", "Subpass dependency tests", initTests, RENDERING_TYPE_RENDERPASS2);
 }
 } // vkt

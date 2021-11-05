@@ -820,18 +820,18 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 									 VkDevice				device,
 									 const RenderPass&		renderPassInfo,
-									 RenderPassType			renderPassType,
+									 RenderingType			renderingType,
 									 SynchronizationType	synchronizationType)
 {
-	switch (renderPassType)
+	switch (renderingType)
 	{
-		case RENDERPASS_TYPE_LEGACY:
+		case RENDERING_TYPE_RENDERPASS_LEGACY:
 			return createRenderPass<AttachmentDescription1,
 									AttachmentReference1,
 									SubpassDescription1,
 									SubpassDependency1,
 									RenderPassCreateInfo1>(vk, device, renderPassInfo, SYNCHRONIZATION_TYPE_LEGACY);
-		case RENDERPASS_TYPE_RENDERPASS2:
+		case RENDERING_TYPE_RENDERPASS2:
 			return createRenderPass<AttachmentDescription2,
 									AttachmentReference2,
 									SubpassDescription2,

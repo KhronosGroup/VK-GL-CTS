@@ -1614,9 +1614,6 @@ void MemoryBarrierInstance::generateReferenceLevel ()
 bool MemoryBarrierInstance::verifyResult (const tcu::ConstPixelBufferAccess& resultAccess) const
 {
 	// Any of the two results is considered valid.
-	constexpr auto Message		= tcu::TestLog::Message;
-	constexpr auto EndMessage	= tcu::TestLog::EndMessage;
-
 	// Clarify what we are checking in the logs; otherwise, they could be confusing.
 	auto& log = m_context.getTestContext().getLog();
 	const std::vector<tcu::TextureLevel*> levels = { m_referenceLevel.get(), m_referenceLevel2.get() };
@@ -1624,11 +1621,11 @@ bool MemoryBarrierInstance::verifyResult (const tcu::ConstPixelBufferAccess& res
 	bool good = false;
 	for (size_t i = 0; i < levels.size(); ++i)
 	{
-		log << Message << "Comparing result with reference " << i << "..." << EndMessage;
+		log << tcu::TestLog::Message << "Comparing result with reference " << i << "..." << tcu::TestLog::EndMessage;
 		const auto success = MeshShaderMiscInstance::verifyResult(resultAccess, *levels[i]);
 		if (success)
 		{
-			log << Message << "Match! The test has passed" << EndMessage;
+			log << tcu::TestLog::Message << "Match! The test has passed" << tcu::TestLog::EndMessage;
 			good = true;
 			break;
 		}

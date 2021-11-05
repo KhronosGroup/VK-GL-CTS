@@ -7,6 +7,7 @@ vk-master/descriptor-indexing.txt
 vk-master/device-group.txt
 vk-master/draw.txt
 vk-master/drm-format-modifiers.txt
+vk-master/dynamic-rendering.txt
 vk-master/dynamic-state.txt
 vk-master/fragment-operations.txt
 vk-master/fragment-shader-interlock.txt

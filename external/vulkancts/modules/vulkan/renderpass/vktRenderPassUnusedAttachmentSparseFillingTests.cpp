@@ -73,7 +73,7 @@ namespace
 
 struct TestParams
 {
-	RenderPassType		renderPassType;
+	RenderingType		renderingType;
 	deUint32			activeInputAttachmentCount;
 };
 
@@ -243,7 +243,7 @@ TestInstance* InputAttachmentSparseFillingTest::createInstance(Context& context)
 
 void InputAttachmentSparseFillingTest::checkSupport(Context& context) const
 {
-	if (m_testParams.renderPassType == RENDERPASS_TYPE_RENDERPASS2)
+	if (m_testParams.renderingType == RENDERING_TYPE_RENDERPASS2)
 		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
 	const vk::VkPhysicalDeviceLimits limits = getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits;
@@ -374,7 +374,7 @@ InputAttachmentSparseFillingTestInstance::InputAttachmentSparseFillingTestInstan
 	}
 
 	// Create render pass
-	if (testParams.renderPassType == RENDERPASS_TYPE_LEGACY)
+	if (testParams.renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
 		m_renderPass = createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vk, vkDevice);
 	else
 		m_renderPass = createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vk, vkDevice);
@@ -554,7 +554,7 @@ InputAttachmentSparseFillingTestInstance::InputAttachmentSparseFillingTestInstan
 	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
 	// Create command buffer
-	if (testParams.renderPassType == RENDERPASS_TYPE_LEGACY)
+	if (testParams.renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
 		createCommandBuffer<RenderpassSubpass1>(vk, vkDevice);
 	else
 		createCommandBuffer<RenderpassSubpass2>(vk, vkDevice);
@@ -665,7 +665,7 @@ template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, 
 Move<VkRenderPass> InputAttachmentSparseFillingTestInstance::createRenderPass (const DeviceInterface&	vk,
 																			   VkDevice					vkDevice)
 {
-	const VkImageAspectFlags	aspectMask						= m_testParams.renderPassType == RENDERPASS_TYPE_LEGACY ? 0 : VK_IMAGE_ASPECT_COLOR_BIT;
+	const VkImageAspectFlags	aspectMask						= m_testParams.renderingType == RENDERING_TYPE_RENDERPASS_LEGACY ? 0 : VK_IMAGE_ASPECT_COLOR_BIT;
 	std::vector<AttachmentDesc>	attachmentDescriptions;
 	std::vector<AttachmentRef>	attachmentRefs;
 
@@ -788,7 +788,7 @@ tcu::TestStatus InputAttachmentSparseFillingTestInstance::verifyImage (void)
 
 } // anonymous
 
-tcu::TestCaseGroup* createRenderPassUnusedAttachmentSparseFillingTests (tcu::TestContext& testCtx, const RenderPassType renderPassType)
+tcu::TestCaseGroup* createRenderPassUnusedAttachmentSparseFillingTests (tcu::TestContext& testCtx, const RenderingType renderingType)
 {
 	de::MovePtr<tcu::TestCaseGroup>		unusedAttTests		(new tcu::TestCaseGroup(testCtx, "attachment_sparse_filling", "Unused attachment tests"));
 
@@ -805,7 +805,7 @@ tcu::TestCaseGroup* createRenderPassUnusedAttachmentSparseFillingTests (tcu::Tes
 
 	for (std::size_t attachmentNdx = 0; attachmentNdx < activeInputAttachmentCount.size(); ++attachmentNdx)
 	{
-		TestParams testParams{ renderPassType, activeInputAttachmentCount[attachmentNdx] };
+		TestParams testParams{ renderingType, activeInputAttachmentCount[attachmentNdx] };
 		unusedAttTests->addChild(new InputAttachmentSparseFillingTest(testCtx, std::string("input_attachment_") + de::toString(activeInputAttachmentCount[attachmentNdx]), "", testParams));
 	}
 
