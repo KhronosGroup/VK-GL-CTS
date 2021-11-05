@@ -173,7 +173,7 @@ void SubgroupUniformControlFlowTestCase::checkSupport(Context& ctx) const
 	}
 }
 
-void addTestsForAmberFiles(tcu::TestCaseGroup* tests, CaseGroup group)
+template<bool requirements> void addTestsForAmberFiles(tcu::TestCaseGroup* tests, CaseGroup group)
 {
 	tcu::TestContext&	testCtx = tests->getTestContext();
 	const std::string	data_dir(group.data_dir);
@@ -198,6 +198,11 @@ void addTestsForAmberFiles(tcu::TestCaseGroup* tests, CaseGroup group)
 													cases[i].stage,
 													cases[i].operation);
 		DE_ASSERT(testCase != DE_NULL);
+		if (requirements)
+		{
+			testCase->addRequirement("SubgroupSizeControl.computeFullSubgroups");
+			testCase->addRequirement("SubgroupSizeControl.subgroupSizeControl");
+		}
 		tests->addChild(testCase);
 	}
 }
@@ -263,7 +268,7 @@ tcu::TestCaseGroup* createSubgroupUniformControlFlowTests(tcu::TestContext&	test
 		const char*	group_name = (control ? "large_full_control" : "large_full");
 		uniformControlFlowTests->addChild(createTestGroup(testCtx, group_name,
 														  "Large Full subgroups",
-														  addTestsForAmberFiles, group));
+														  control?addTestsForAmberFiles<true>:addTestsForAmberFiles<false>, group));
 
 		// Partial subgroup.
 		group = CaseGroup(data_dir, subdir);
@@ -291,7 +296,7 @@ tcu::TestCaseGroup* createSubgroupUniformControlFlowTests(tcu::TestContext&	test
 		group_name = (control ? "large_partial_control" : "large_partial");
 		uniformControlFlowTests->addChild(createTestGroup(testCtx, group_name,
 														  "Large Partial subgroups",
-														  addTestsForAmberFiles, group));
+														  control?addTestsForAmberFiles<true>:addTestsForAmberFiles<false>, group));
 	}
 
 	for (unsigned c = 0; c < controls.size(); ++c)
@@ -326,7 +331,7 @@ tcu::TestCaseGroup* createSubgroupUniformControlFlowTests(tcu::TestContext&	test
 		const char*	group_name = (control ? "small_full_control" : "small_full");
 		uniformControlFlowTests->addChild(createTestGroup(testCtx, group_name,
 														  "Small Full subgroups",
-														  addTestsForAmberFiles, group));
+														  control?addTestsForAmberFiles<true>:addTestsForAmberFiles<false>, group));
 
 		// Partial subgroup.
 		group = CaseGroup(data_dir, subdir);
@@ -354,7 +359,7 @@ tcu::TestCaseGroup* createSubgroupUniformControlFlowTests(tcu::TestContext&	test
 		group_name = (control ? "small_partial_control" : "small_partial");
 		uniformControlFlowTests->addChild(createTestGroup(testCtx, group_name,
 														  "Small Partial subgroups",
-														  addTestsForAmberFiles, group));
+														  control?addTestsForAmberFiles<true>:addTestsForAmberFiles<false>, group));
 	}
 
 	// Discard test
@@ -362,7 +367,7 @@ tcu::TestCaseGroup* createSubgroupUniformControlFlowTests(tcu::TestContext&	test
 	group.add("subgroup_reconverge_discard00", "discard test", true, false, vk::VK_SHADER_STAGE_FRAGMENT_BIT);
 	uniformControlFlowTests->addChild(createTestGroup(testCtx, "discard",
 														"Discard tests",
-														addTestsForAmberFiles, group));
+														addTestsForAmberFiles<false>, group));
 
 	return uniformControlFlowTests.release();
 }

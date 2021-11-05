@@ -3601,6 +3601,9 @@ deUint32 getFormatComponentWidth (const VkFormat format, const deUint32 componen
 			case tcu::TextureFormat::SIGNED_INT8:
 				return 8;
 
+			case tcu::TextureFormat::UNORM_SHORT_10:
+				return 10;
+
 			case tcu::TextureFormat::UNORM_SHORT_12:
 				return 12;
 
@@ -4443,7 +4446,9 @@ void clearColorImage (const DeviceInterface&	vk,
 					  tcu::Vec4					clearColor,
 					  VkImageLayout				oldLayout,
 					  VkImageLayout				newLayout,
-					  VkPipelineStageFlags		dstStageFlags)
+					  VkPipelineStageFlags		dstStageFlags,
+					  deUint32					baseArrayLayer,
+					  deUint32					layerCount)
 {
 	Move<VkCommandPool>				cmdPool				= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 	Move<VkCommandBuffer>			cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -4455,8 +4460,8 @@ void clearColorImage (const DeviceInterface&	vk,
 		VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask
 		0u,							// deUint32				baseMipLevel
 		1u,							// deUint32				levelCount
-		0u,							// deUint32				baseArrayLayer
-		1u,							// deUint32				layerCount
+		baseArrayLayer,							// deUint32				baseArrayLayer
+		layerCount,							// deUint32				layerCount
 	};
 
 	const VkImageMemoryBarrier		preImageBarrier		=

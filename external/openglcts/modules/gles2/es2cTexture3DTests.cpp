@@ -835,7 +835,7 @@ CopyTexSubImage3DCase::IterateResult CopyTexSubImage3DCase::iterate(void)
 	GLU_EXPECT_NO_ERROR(gl.getError(),
 						"Could not setup texture object for draw framebuffer color attachment.");
 
-	gl.framebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, new_dst_to, 0);
+	gl.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, new_dst_to, 0);
 
 	GLU_EXPECT_NO_ERROR(gl.getError(),
 						"Could not attach texture object to draw framebuffer color attachment.");
@@ -1106,7 +1106,6 @@ CompressedTexture3DCase::IterateResult CompressedTexture3DCase::iterate(void)
 		deInt32 partWidth  = de::max(width >> levelIndex, 1);
 		deInt32 partHeight = de::max(height >> levelIndex, 1);
 		deInt32 partDepth  = de::max(depth >> levelIndex, 1);
-		;
 
 		tcu::CompressedTexture dataPart(format, partWidth, partHeight, partDepth);
 		const int			   dataSize = dataPart.getDataSize();
@@ -1149,6 +1148,11 @@ NegativeTexImage3DCase::IterateResult NegativeTexImage3DCase::iterate(void)
 
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
+	/* Integer textures supported for OpenGL ES 3.0+ */
+	int major = 0;
+	gl.getIntegerv(GL_MAJOR_VERSION, &major);
+	bool supportsIntegerTextures = major >= 3;
+
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
 	// negative usage
@@ -1186,8 +1190,11 @@ NegativeTexImage3DCase::IterateResult NegativeTexImage3DCase::iterate(void)
 		verifyError(GL_INVALID_OPERATION, message3);
 		callTexImage3D(GL_TEXTURE_3D, 0, GL_RGB10_A2, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_INT_2_10_10_10_REV, 0);
 		verifyError(GL_INVALID_OPERATION, message3);
-		callTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32UI, 1, 1, 1, 0, GL_RGBA_INTEGER, GL_INT, 0);
-		verifyError(GL_INVALID_OPERATION, message3);
+
+		if (supportsIntegerTextures) {
+			callTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32UI, 1, 1, 1, 0, GL_RGBA_INTEGER, GL_INT, 0);
+			verifyError(GL_INVALID_OPERATION, message3);
+		}
 	}
 
 	// invalid leve
@@ -1546,8 +1553,8 @@ NegativeCopyTexSubImage3DCase::IterateResult NegativeCopyTexSubImage3DCase::iter
 		gl.bindTexture(GL_TEXTURE_3D, texture);
 		callTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 		gl.genFramebuffers(1, &fbo);
-		gl.bindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
-		gl.checkFramebufferStatus(GL_READ_FRAMEBUFFER);
+		gl.bindFramebuffer(GL_FRAMEBUFFER, fbo);
+		gl.checkFramebufferStatus(GL_FRAMEBUFFER);
 
 		const char* message = "GL_INVALID_FRAMEBUFFER_OPERATION is generated if the currently "
 							  "bound framebuffer is not framebuffer complete.";

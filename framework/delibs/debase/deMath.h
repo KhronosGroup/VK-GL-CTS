@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "deDefs.h"
+#include "deMemory.h"
 
 #include <math.h>
 #include <float.h>
@@ -68,6 +69,82 @@ DE_INLINE deBool	deFloatIsNaN		(float x)		{ return (x != x); }
 
 DE_INLINE int		deIsInf				(double x)		{ return (x > DBL_MAX) - (x < -DBL_MAX); }
 DE_INLINE deBool	deIsNaN				(double x)		{ return (x != x); }
+
+DE_INLINE deUint32 deFloatBitsToUint32(float x)
+{
+	deUint32 bits;
+	deMemcpy((void *)&bits, (void *)&x, 4);
+	return bits;
+}
+
+DE_INLINE deUint64 deDoubleBitsToUint64(double x)
+{
+	deUint64 bits;
+	deMemcpy((void *)&bits, (void *)&x, 8);
+	return bits;
+}
+
+DE_INLINE deBool deFloatIsPositiveZero(float x)
+{
+	return x == 0 && (deFloatBitsToUint32(x) >> 31) == 0;
+}
+
+DE_INLINE deBool deDoubleIsPositiveZero(double x)
+{
+	return x == 0 && (deDoubleBitsToUint64(x) >> 63) == 0;
+}
+
+DE_INLINE deBool deFloatIsNegativeZero(float x)
+{
+	return x == 0 && (deFloatBitsToUint32(x) >> 31) != 0;
+}
+
+DE_INLINE deBool deDoubleIsNegativeZero(double x)
+{
+	return x == 0 && (deDoubleBitsToUint64(x) >> 63) != 0;
+}
+
+DE_INLINE deBool deFloatIsIEEENaN(float x)
+{
+	deUint32 e = (deFloatBitsToUint32(x) & 0x7f800000u) >> 23;
+	deUint32 m = (deFloatBitsToUint32(x) & 0x007fffffu);
+	return e == 0xff && m != 0;
+}
+
+DE_INLINE deBool deDoubleIsIEEENaN(double x)
+{
+	deUint64 e = (deDoubleBitsToUint64(x) & 0x7ff0000000000000ull) >> 52;
+	deUint64 m = (deDoubleBitsToUint64(x) & 0x000fffffffffffffull);
+	return e == 0x7ff && m != 0;
+}
+
+/* \note The definition used for signaling NaN here is valid for ARM and
+ * x86 but possibly not for other platforms.
+ *
+ * These are defined as overloads so that they can be used in templated
+ * code without risking a type conversion which would triggern an exception
+ * on a signaling NaN.  We don't use deIsNan in these helpers because they
+ * do a comparison operation which may also trigger exceptions.
+ */
+DE_INLINE deBool deFloatIsSignalingNaN(float x)
+{
+	return deFloatIsIEEENaN(x) && (deFloatBitsToUint32(x) & (1u << 22)) == 0;
+}
+
+DE_INLINE deBool deDoubleIsSignalingNaN(double x)
+{
+	return deDoubleIsIEEENaN(x) && (deDoubleBitsToUint64(x) & (1ull << 51)) == 0;
+}
+
+DE_INLINE deBool deFloatIsQuietNaN(float x)
+{
+	return deFloatIsIEEENaN(x) && (deFloatBitsToUint32(x) & (1u << 22)) != 0;
+}
+
+DE_INLINE deBool deDoubleIsQuietNaN(double x)
+{
+	return deDoubleIsIEEENaN(x) && (deDoubleBitsToUint64(x) & (1ull << 51)) != 0;
+}
 
 /* Basic utilities. */
 

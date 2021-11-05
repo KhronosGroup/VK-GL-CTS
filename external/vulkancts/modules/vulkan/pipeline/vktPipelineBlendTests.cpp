@@ -909,6 +909,10 @@ tcu::Vec4 getFormatThreshold (const tcu::TextureFormat& format)
 			threshold = Vec4(getNormChannelThreshold(format, 5), getNormChannelThreshold(format, 5), getNormChannelThreshold(format, 5), 0.1f);
 			break;
 
+		case TextureFormat::UNORM_SHORT_10:
+			threshold = Vec4(getNormChannelThreshold(format, 10));
+			break;
+
 		case TextureFormat::UNORM_INT_1010102_REV:
 		case TextureFormat::SNORM_INT_1010102_REV:
 			threshold = Vec4(getNormChannelThreshold(format, 10), getNormChannelThreshold(format, 10), getNormChannelThreshold(format, 10), 0.34f);
@@ -973,6 +977,7 @@ bool isLegalExpandableFormat (tcu::TextureFormat::ChannelType channeltype)
 		case TextureFormat::UNORM_SHORT_4444:
 		case TextureFormat::UNORM_SHORT_5551:
 		case TextureFormat::UNORM_SHORT_1555:
+		case TextureFormat::UNORM_SHORT_10:
 		case TextureFormat::UNORM_INT_101010:
 		case TextureFormat::SNORM_INT_1010102_REV:
 		case TextureFormat::UNORM_INT_1010102_REV:
@@ -1047,6 +1052,7 @@ bool isSmallerThan8BitFormat (tcu::TextureFormat::ChannelType channeltype)
 		case TextureFormat::UNSIGNED_INT_24_8_REV:
 		case TextureFormat::UNSIGNED_INT24:
 		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
+		case TextureFormat::UNORM_SHORT_10:
 			return false;
 
 		default:
@@ -2073,6 +2079,7 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx)
 		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 		VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
 		VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
+		VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
 	};
 
 	de::MovePtr<tcu::TestCaseGroup>				blendTests				(new tcu::TestCaseGroup(testCtx, "blend", "Blend tests"));

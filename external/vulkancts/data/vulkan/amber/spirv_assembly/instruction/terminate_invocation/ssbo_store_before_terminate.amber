@@ -1,6 +1,7 @@
 #!amber
 
 DEVICE_FEATURE fragmentStoresAndAtomics
+DEVICE_EXTENSION VK_KHR_shader_terminate_invocation
 
 SHADER vertex vs SPIRV-ASM
 ;#version 450

@@ -530,10 +530,12 @@ public:
 																 const SerialInfo&							SerialInfo);
 
 	// below methods will return host addres if AS was build on cpu and device addres when it was build on gpu
-	VkDeviceOrHostAddressKHR				getAddress			(const DeviceInterface&	vk,
-																 const VkDevice			device);
-	VkDeviceOrHostAddressConstKHR			getAddressConst		(const DeviceInterface&	vk,
-																 const VkDevice			device);
+	VkDeviceOrHostAddressKHR				getAddress			(const DeviceInterface&						vk,
+																 const VkDevice								device,
+																 const VkAccelerationStructureBuildTypeKHR	buildType);
+	VkDeviceOrHostAddressConstKHR			getAddressConst		(const DeviceInterface&						vk,
+																 const VkDevice								device,
+																 const VkAccelerationStructureBuildTypeKHR	buildType);
 
 	// this methods retun host address regardless of where AS was built
 	VkDeviceOrHostAddressKHR				getHostAddress		(VkDeviceSize			offset = 0);
@@ -862,12 +864,12 @@ protected:
 class RayTracingProperties
 {
 protected:
-									RayTracingProperties						() {};
+									RayTracingProperties						() {}
 
 public:
 									RayTracingProperties						(const InstanceInterface&	vki,
-																				 const VkPhysicalDevice		physicalDevice) { DE_UNREF(vki); DE_UNREF(physicalDevice); };
-	virtual							~RayTracingProperties						() {};
+																				 const VkPhysicalDevice		physicalDevice) { DE_UNREF(vki); DE_UNREF(physicalDevice); }
+	virtual							~RayTracingProperties						() {}
 
 	virtual deUint32				getShaderGroupHandleSize					(void)	= DE_NULL;
 	virtual deUint32				getMaxRecursionDepth						(void)	= DE_NULL;

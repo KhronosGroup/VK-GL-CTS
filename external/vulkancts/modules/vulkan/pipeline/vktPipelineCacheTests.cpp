@@ -102,7 +102,7 @@ std::string getShaderFlagStr (const VkShaderStageFlagBits	shader,
 		desc << "unknown shader stage!";
 		DE_FATAL("Unknown shader Stage!");
 		break;
-	};
+	}
 
 	return desc.str();
 }
@@ -752,7 +752,7 @@ void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) cons
 				default:
 					DE_FATAL("Unknown Shader Stage!");
 					break;
-			};
+			}
 		}
 	}
 }
@@ -772,7 +772,7 @@ void GraphicsCacheTest::checkSupport (Context& context) const
 				break;
 			default:
 				break;
-		};
+		}
 	}
 }
 
@@ -984,7 +984,7 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&				context,
 			default:
 				DE_FATAL("Unknown Shader Stage!");
 				break;
-		};
+		}
 	}
 
 	// Create pipeline layout

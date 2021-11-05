@@ -857,6 +857,11 @@ void DeviceDriver::cmdSetFragmentShadingRateKHR (VkCommandBuffer commandBuffer, 
 	m_vk.cmdSetFragmentShadingRateKHR(commandBuffer, pFragmentSize, combinerOps);
 }
 
+VkResult DeviceDriver::waitForPresentKHR (VkDevice device, VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout) const
+{
+	return m_vk.waitForPresentKHR(device, swapchain, presentId, timeout);
+}
+
 VkResult DeviceDriver::createDeferredOperationKHR (VkDevice device, const VkAllocationCallbacks* pAllocator, VkDeferredOperationKHR* pDeferredOperation) const
 {
 	return m_vk.createDeferredOperationKHR(device, pAllocator, pDeferredOperation);
@@ -965,6 +970,21 @@ void DeviceDriver::cmdBlitImage2KHR (VkCommandBuffer commandBuffer, const VkBlit
 void DeviceDriver::cmdResolveImage2KHR (VkCommandBuffer commandBuffer, const VkResolveImageInfo2KHR* pResolveImageInfo) const
 {
 	m_vk.cmdResolveImage2KHR(commandBuffer, pResolveImageInfo);
+}
+
+void DeviceDriver::getDeviceBufferMemoryRequirementsKHR (VkDevice device, const VkDeviceBufferMemoryRequirementsKHR* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
+{
+	m_vk.getDeviceBufferMemoryRequirementsKHR(device, pInfo, pMemoryRequirements);
+}
+
+void DeviceDriver::getDeviceImageMemoryRequirementsKHR (VkDevice device, const VkDeviceImageMemoryRequirementsKHR* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
+{
+	m_vk.getDeviceImageMemoryRequirementsKHR(device, pInfo, pMemoryRequirements);
+}
+
+void DeviceDriver::getDeviceImageSparseMemoryRequirementsKHR (VkDevice device, const VkDeviceImageMemoryRequirementsKHR* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements) const
+{
+	m_vk.getDeviceImageSparseMemoryRequirementsKHR(device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
 }
 
 VkResult DeviceDriver::debugMarkerSetObjectTagEXT (VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const
@@ -1512,9 +1532,14 @@ void DeviceDriver::cmdSubpassShadingHUAWEI (VkCommandBuffer commandBuffer) const
 	m_vk.cmdSubpassShadingHUAWEI(commandBuffer);
 }
 
-VkResult DeviceDriver::getMemoryRemoteAddressNV (VkDevice device, const VkMemoryGetRemoteAddressInfoNV* getMemoryRemoteAddressInfo, VkRemoteAddressNV* pAddress) const
+void DeviceDriver::cmdBindInvocationMaskHUAWEI (VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout) const
 {
-	return m_vk.getMemoryRemoteAddressNV(device, getMemoryRemoteAddressInfo, pAddress);
+	m_vk.cmdBindInvocationMaskHUAWEI(commandBuffer, imageView, imageLayout);
+}
+
+VkResult DeviceDriver::getMemoryRemoteAddressNV (VkDevice device, const VkMemoryGetRemoteAddressInfoNV* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress) const
+{
+	return m_vk.getMemoryRemoteAddressNV(device, pMemoryGetRemoteAddressInfo, pAddress);
 }
 
 void DeviceDriver::cmdSetPatchControlPointsEXT (VkCommandBuffer commandBuffer, uint32_t patchControlPoints) const
@@ -1555,6 +1580,11 @@ void DeviceDriver::cmdDrawMultiEXT (VkCommandBuffer commandBuffer, uint32_t draw
 void DeviceDriver::cmdDrawMultiIndexedEXT (VkCommandBuffer commandBuffer, uint32_t drawCount, const VkMultiDrawIndexedInfoEXT* pIndexInfo, uint32_t instanceCount, uint32_t firstInstance, uint32_t stride, const int32_t* pVertexOffset) const
 {
 	m_vk.cmdDrawMultiIndexedEXT(commandBuffer, drawCount, pIndexInfo, instanceCount, firstInstance, stride, pVertexOffset);
+}
+
+void DeviceDriver::setDeviceMemoryPriorityEXT (VkDevice device, VkDeviceMemory memory, float priority) const
+{
+	m_vk.setDeviceMemoryPriorityEXT(device, memory, priority);
 }
 
 VkResult DeviceDriver::createAccelerationStructureKHR (VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const

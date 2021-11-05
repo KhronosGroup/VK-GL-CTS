@@ -914,7 +914,8 @@ bool verifyMultisampleLineGroupRasterization (const tcu::Surface&						surface,
 											  ClipMode									clipMode,
 											  VerifyTriangleGroupRasterizationLogStash*	logStash,
 											  const bool								vulkanLinesTest,
-											  const bool								strictMode)
+											  const bool								strictMode,
+											  const bool								carryRemainder)
 {
 	// Multisampled line == 2 triangles
 
@@ -955,7 +956,7 @@ bool verifyMultisampleLineGroupRasterization (const tcu::Surface&						surface,
 		};
 
 		const tcu::Vec2 lineDir			= tcu::normalize(lineScreenSpace[1] - lineScreenSpace[0]);
-		const tcu::Vec2 lineNormalDir	= strictMode ? tcu::Vec2(lineDir.y(), -lineDir.x())
+		const tcu::Vec2 lineNormalDir	= (strictMode || scene.isRectangular) ? tcu::Vec2(lineDir.y(), -lineDir.x())
 										: isLineXMajor(lineScreenSpace[0], lineScreenSpace[1]) ? tcu::Vec2(0.0f, 1.0f)
 										: tcu::Vec2(1.0f, 0.0f);
 
@@ -969,29 +970,37 @@ bool verifyMultisampleLineGroupRasterization (const tcu::Surface&						surface,
 				float d0 = (float)lineOffset;
 				float d1 = d0 + 1.0f;
 
-				// "leftoverPhase" carries over a fractional stipple phase that was "unused"
-				// by the last line segment in the strip, if it wasn't an integer length.
-				if (leftoverPhase > lineLength)
+				if (carryRemainder)
 				{
-					DE_ASSERT(d0 == 0.0f);
-					d1 = lineLength;
-					leftoverPhase -= lineLength;
-				}
-				else if (leftoverPhase != 0.0f)
-				{
-					DE_ASSERT(d0 == 0.0f);
-					d1 = leftoverPhase;
-					leftoverPhase = 0.0f;
+					// "leftoverPhase" carries over a fractional stipple phase that was "unused"
+					// by the last line segment in the strip, if it wasn't an integer length.
+					if (leftoverPhase > lineLength)
+					{
+						DE_ASSERT(d0 == 0.0f);
+						d1 = lineLength;
+						leftoverPhase -= lineLength;
+					}
+					else if (leftoverPhase != 0.0f)
+					{
+						DE_ASSERT(d0 == 0.0f);
+						d1 = leftoverPhase;
+						leftoverPhase = 0.0f;
+					}
+					else
+					{
+						if (d0 + 1.0f > lineLength)
+						{
+							d1 = lineLength;
+							leftoverPhase = d0 + 1.0f - lineLength;
+						}
+						else
+							d1 = d0 + 1.0f;
+					}
 				}
 				else
 				{
-					if (d0 + 1.0f > lineLength)
-					{
+					if (d1 > lineLength)
 						d1 = lineLength;
-						leftoverPhase = d0 + 1.0f - lineLength;
-					}
-					else
-						d1 = d0 + 1.0f;
 				}
 
 				// set offset for next iteration
@@ -1078,6 +1087,22 @@ bool verifyMultisampleLineGroupRasterization (const tcu::Surface&						surface,
 	return verifyTriangleGroupRasterization(surface, triangleScene, args, log, scene.verificationMode, logStash, vulkanLinesTest);
 }
 
+bool verifyMultisampleLineGroupRasterization (const tcu::Surface&						surface,
+											  const LineSceneSpec&						scene,
+											  const RasterizationArguments&				args,
+											  tcu::TestLog&								log,
+											  ClipMode									clipMode,
+											  VerifyTriangleGroupRasterizationLogStash*	logStash,
+											  const bool								vulkanLinesTest,
+											  const bool								strictMode)
+{
+	if (scene.stippleEnable)
+		return verifyMultisampleLineGroupRasterization(surface, scene, args, log, clipMode, logStash, vulkanLinesTest, strictMode, true) ||
+		       verifyMultisampleLineGroupRasterization(surface, scene, args, log, clipMode, logStash, vulkanLinesTest, strictMode, false);
+	else
+		return verifyMultisampleLineGroupRasterization(surface, scene, args, log, clipMode, logStash, vulkanLinesTest, strictMode, true);
+}
+
 static bool verifyMultisampleLineGroupInterpolationInternal (const tcu::Surface&						surface,
 													  const LineSceneSpec&						scene,
 													  const RasterizationArguments&				args,
@@ -1110,7 +1135,7 @@ static bool verifyMultisampleLineGroupInterpolationInternal (const tcu::Surface&
 		};
 
 		const tcu::Vec2 lineDir			= tcu::normalize(lineScreenSpace[1] - lineScreenSpace[0]);
-		const tcu::Vec2 lineNormalDir	= strictMode ? tcu::Vec2(lineDir.y(), -lineDir.x())
+		const tcu::Vec2 lineNormalDir	= (strictMode || scene.isRectangular) ? tcu::Vec2(lineDir.y(), -lineDir.x())
 										: isLineXMajor(lineScreenSpace[0], lineScreenSpace[1]) ? tcu::Vec2(0.0f, 1.0f)
 										: tcu::Vec2(1.0f, 0.0f);
 
@@ -2837,7 +2862,7 @@ bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const Triang
 
 			default:
 				DE_ASSERT(false);
-		};
+		}
 	}
 
 	if (((mode == VERIFICATIONMODE_STRICT) && (missingPixels + unexpectedPixels > 0)) ||

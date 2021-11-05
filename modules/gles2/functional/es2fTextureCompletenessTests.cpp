@@ -123,7 +123,7 @@ class Tex2DCompletenessCase : public tcu::TestCase
 {
 public:
 							Tex2DCompletenessCase	(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description);
-							~Tex2DCompletenessCase	(void) {};
+							~Tex2DCompletenessCase	(void) {}
 
 	IterateResult			iterate					(void);
 
@@ -180,7 +180,7 @@ class TexCubeCompletenessCase : public tcu::TestCase
 {
 public:
 							TexCubeCompletenessCase		(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description);
-							~TexCubeCompletenessCase	(void) {};
+							~TexCubeCompletenessCase	(void) {}
 
 	IterateResult			iterate						(void);
 

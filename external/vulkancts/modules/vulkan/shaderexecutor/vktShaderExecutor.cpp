@@ -1544,7 +1544,7 @@ static deUint32 getVecStd430ByteAlignment (glu::DataType type)
 	switch (glu::getDataTypeScalarSize(type))
 	{
 		case 1:		return baseSize;
-		case 2:		return baseSize * 2u;;
+		case 2:		return baseSize * 2u;
 		case 3:		// fallthrough.
 		case 4:		return baseSize * 4u;
 		default:
@@ -1999,7 +1999,6 @@ std::string getTypeSpirv(const glu::DataType type, const bool packFloat16Bit = f
 	default:
 		DE_ASSERT(0);
 		return "";
-		break;
 	}
 }
 
@@ -2053,7 +2052,6 @@ std::string scalarComparison(const std::string operation, const int operationNdx
 	default:
 		DE_ASSERT(0);
 		return "";
-		break;
 	}
 
 	src << "\n"
@@ -2135,7 +2133,7 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 	default:
 		DE_ASSERT(false);
 		break;
-	};
+	}
 
 	std::ostringstream	src;
 	src << "; SPIR-V\n"

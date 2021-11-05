@@ -61,6 +61,8 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineMultisampleShaderFragmentMaskTests.hpp
 	vktPipelineInputAssemblyTests.cpp
 	vktPipelineInputAssemblyTests.hpp
+	vktPipelineInterfaceMatchingTests.cpp
+	vktPipelineInterfaceMatchingTests.hpp
 	vktPipelineReferenceRenderer.cpp
 	vktPipelineReferenceRenderer.hpp
 	vktPipelineRenderToImageTests.cpp
@@ -117,6 +119,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineExecutablePropertiesTests.hpp
 	vktPipelineCreationCacheControlTests.cpp
 	vktPipelineCreationCacheControlTests.hpp
+	vktPipelineSamplerBorderSwizzleTests.cpp
+	vktPipelineSamplerBorderSwizzleTests.hpp
 	)
 
 #vktPipelinePushDescriptorTests.cpp				- missing VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR

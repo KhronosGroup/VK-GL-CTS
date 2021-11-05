@@ -516,7 +516,7 @@ class StencilClearsTest : public FboRenderCase
 {
 public:
 						StencilClearsTest		(Context& context, const FboConfig& config);
-	virtual				~StencilClearsTest		(void) {};
+	virtual				~StencilClearsTest		(void) {}
 
 	void				render					(sglr::Context& context, Surface& dst);
 };
@@ -607,7 +607,7 @@ class SharedColorbufferTest : public FboRenderCase
 {
 public:
 						SharedColorbufferTest			(Context& context, const FboConfig& config);
-	virtual				~SharedColorbufferTest			(void) {};
+	virtual				~SharedColorbufferTest			(void) {}
 
 	void				render							(sglr::Context& context, Surface& dst);
 };
@@ -840,7 +840,7 @@ class SharedDepthStencilTest : public FboRenderCase
 {
 public:
 					SharedDepthStencilTest		(Context& context, const FboConfig& config);
-	virtual			~SharedDepthStencilTest		(void) {};
+	virtual			~SharedDepthStencilTest		(void) {}
 
 	static bool		isConfigSupported			(const FboConfig& config);
 	void			render						(sglr::Context& context, Surface& dst);

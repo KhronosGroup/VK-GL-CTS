@@ -26,6 +26,7 @@
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
+#include "vktNativeObjectsUtil.hpp"
 
 #include "vkDefs.hpp"
 #include "vkPlatform.hpp"
@@ -333,80 +334,6 @@ struct MultiQueueDeviceHelper
 	}
 };
 
-MovePtr<Display> createDisplay (const vk::Platform&	platform,
-								const Extensions&	supportedExtensions,
-								Type				wsiType)
-{
-	try
-	{
-		return MovePtr<Display>(platform.createWsiDisplay(wsiType));
-	}
-	catch (const tcu::NotSupportedError& e)
-	{
-		if (isExtensionSupported(supportedExtensions, RequiredExtension(getExtensionName(wsiType))) &&
-			platform.hasDisplay(wsiType))
-		{
-			// If VK_KHR_{platform}_surface was supported, vk::Platform implementation
-			// must support creating native display & window for that WSI type.
-			throw tcu::TestError(e.getMessage());
-		}
-		else
-			throw;
-	}
-}
-
-MovePtr<Window> createWindow (const Display& display, const Maybe<UVec2>& initialSize)
-{
-	try
-	{
-		return MovePtr<Window>(display.createWindow(initialSize));
-	}
-	catch (const tcu::NotSupportedError& e)
-	{
-		// See createDisplay - assuming that wsi::Display was supported platform port
-		// should also support creating a window.
-		throw tcu::TestError(e.getMessage());
-	}
-}
-
-class NativeObjects
-{
-private:
-	UniquePtr<Display>		display;
-	vector<MovePtr<Window>>	windows;
-
-public:
-	NativeObjects (Context&				context,
-				   const Extensions&	supportedExtensions,
-				   Type					wsiType,
-				   size_t				windowCount = 1u,
-				   const Maybe<UVec2>&	initialWindowSize = tcu::nothing<UVec2>())
-		: display	(createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), supportedExtensions, wsiType))
-	{
-		DE_ASSERT(windowCount > 0u);
-		for (size_t i = 0; i < windowCount; ++i)
-			windows.emplace_back(createWindow(*display, initialWindowSize));
-	}
-
-	NativeObjects (NativeObjects&& other)
-		: display	(other.display.move())
-		, windows	()
-	{
-		windows.swap(other.windows);
-	}
-
-	Display&	getDisplay	() const
-	{
-		return *display;
-	}
-
-	Window&		getWindow	(size_t index = 0u) const
-	{
-		DE_ASSERT(index < windows.size());
-		return *windows[index];
-	}
-};
-
 enum TestDimension
 {
 	TEST_DIMENSION_MIN_IMAGE_COUNT = 0,	//!< Test all supported image counts
@@ -419,6 +346,7 @@ enum TestDimension
 	TEST_DIMENSION_COMPOSITE_ALPHA,
 	TEST_DIMENSION_PRESENT_MODE,
 	TEST_DIMENSION_CLIPPED,
+	TEST_DIMENSION_EXCLUSIVE_NONZERO,	//!< Test VK_SHARING_MODE_EXCLUSIVE and a nonzero queue count.
 
 	TEST_DIMENSION_LAST
 };
@@ -436,8 +364,11 @@ const char* getTestDimensionName (TestDimension dimension)
 		"pre_transform",
 		"composite_alpha",
 		"present_mode",
-		"clipped"
+		"clipped",
+		"exclusive_nonzero_queues",
 	};
+	static_assert(static_cast<int>(de::arrayLength(s_names)) == TEST_DIMENSION_LAST,
+		"Array of names does not provide a 1:1 mapping to TestDimension");
 	return de::getSizedArrayElement<TEST_DIMENSION_LAST>(s_names, dimension);
 }
 
@@ -483,7 +414,7 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (const Instance
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 		VK_SHARING_MODE_EXCLUSIVE,
 		0u,
-		(const deUint32*)DE_NULL,
+		nullptr,
 		defaultTransform,
 		VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 		VK_PRESENT_MODE_FIFO_KHR,
@@ -664,6 +595,15 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (const Instance
 			break;
 		}
 
+		case TEST_DIMENSION_EXCLUSIVE_NONZERO:
+		{
+			// Test the implementation doesn't attempt to do anything with the queue index array in exclusive sharing mode.
+			cases.push_back(baseParameters);
+			cases.back().queueFamilyIndexCount = 2u;
+
+			break;
+		}
+
 		default:
 			DE_FATAL("Impossible");
 	}
@@ -710,20 +650,16 @@ tcu::TestStatus createSwapchainTest (Context& context, TestParameters params)
 
 		if (curParams.imageSharingMode == VK_SHARING_MODE_CONCURRENT)
 		{
-			const deUint32 numFamilies = static_cast<deUint32>(devHelper.queueFamilyIndices.size());
+			const auto numFamilies = static_cast<deUint32>(devHelper.queueFamilyIndices.size());
 			if (numFamilies < 2u)
 				TCU_THROW(NotSupportedError, "Only " + de::toString(numFamilies) + " queue families available for VK_SHARING_MODE_CONCURRENT");
+
 			curParams.queueFamilyIndexCount	= numFamilies;
+			curParams.pQueueFamilyIndices	= devHelper.queueFamilyIndices.data();
 		}
-		else
-		{
-			// Take only the first queue.
-			if (devHelper.queueFamilyIndices.empty())
-				TCU_THROW(NotSupportedError, "No queue families compatible with the given surface");
-			curParams.queueFamilyIndexCount	= 1u;
-		}
-		curParams.pQueueFamilyIndices	= devHelper.queueFamilyIndices.data();
-		curParams.surface				= *surface;
+
+		// Overwrite surface.
+		curParams.surface = *surface;
 
 		log << TestLog::Message << subcase.str() << curParams << TestLog::EndMessage;
 
@@ -2544,6 +2480,33 @@ tcu::TestStatus destroyNullHandleSwapchainTest (Context& context, Type wsiType)
 	return tcu::TestStatus::pass("Destroying a VK_NULL_HANDLE surface has no effect");
 }
 
+tcu::TestStatus destroyOldSwapchainTest (Context& context, Type wsiType)
+{
+	const tcu::UVec2			desiredSize			(256, 256);
+	const InstanceHelper		instHelper			(context, wsiType);
+	const NativeObjects			native				(context, instHelper.supportedExtensions, wsiType);
+	const Unique<VkSurfaceKHR>	surface				(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow()));
+	const DeviceHelper			devHelper			(context, instHelper.vki, instHelper.instance, *surface);
+
+	// Create the first swapchain.
+	VkSwapchainCreateInfoKHR swapchainInfo = getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
+	VkSwapchainKHR swapchain = 0;
+	VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, DE_NULL, &swapchain));
+
+	// Create a new swapchain replacing the old one.
+	swapchainInfo.oldSwapchain = swapchain;
+	VkSwapchainKHR recreatedSwapchain = 0;
+	VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, DE_NULL, &recreatedSwapchain));
+
+	// Destroying the old swapchain should have no effect.
+	devHelper.vkd.destroySwapchainKHR(*devHelper.device, swapchain, DE_NULL);
+
+	// Destroy the new swapchain for cleanup.
+	devHelper.vkd.destroySwapchainKHR(*devHelper.device, recreatedSwapchain, DE_NULL);
+
+	return tcu::TestStatus::pass("Destroying an old swapchain has no effect.");
+}
+
 tcu::TestStatus acquireTooManyTest (Context& context, Type wsiType)
 {
 	const tcu::UVec2               desiredSize     (256, 256);
@@ -2667,6 +2630,7 @@ void populateModifyGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 void populateDestroyGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 {
 	addFunctionCase(testGroup, "null_handle", "Destroying a VK_NULL_HANDLE swapchain", destroyNullHandleSwapchainTest, wsiType);
+	addFunctionCase(testGroup, "old_swapchain", "Destroying an old swapchain", destroyOldSwapchainTest, wsiType);
 }
 
 void populateAcquireGroup (tcu::TestCaseGroup* testGroup, Type wsiType)

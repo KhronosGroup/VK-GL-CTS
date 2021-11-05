@@ -26,6 +26,7 @@
 
 #include "vktShaderBuiltinPrecisionTests.hpp"
 #include "vktShaderExecutor.hpp"
+#include "amber/vktAmberTestCase.hpp"
 
 #include "deMath.h"
 #include "deMemory.h"
@@ -293,7 +294,7 @@ typename Traits<T>::IVal unionIVal (const typename Traits<T>::IVal& a,
 
 //! Returns true iff every element of `ival` contains the corresponding element of `value`.
 template <typename T, typename U = Void>
-bool contains (const typename Traits<T>::IVal& ival, const T& value, bool is16Bit = false, const tcu::Maybe<U>& modularDivisor = tcu::nothing<U>())
+bool contains (const typename Traits<T>::IVal& ival, const T& value, bool is16Bit = false, const tcu::Maybe<U>& modularDivisor = tcu::Nothing)
 {
 	return Traits<T>::doContains(ival, value, is16Bit, modularDivisor);
 }
@@ -697,7 +698,7 @@ struct Traits<deFloat16> : ScalarTraits<deFloat16>
 	{
 		DE_UNREF(is16Bit);
 		float res0 = deFloat16To32(value);
-		const tcu::Maybe<float> convertedDivisor = (modularDivisor ? tcu::just(deFloat16To32(modularDivisor.get())) : tcu::nothing<float>());
+		const tcu::Maybe<float> convertedDivisor = (modularDivisor ? tcu::just(deFloat16To32(modularDivisor.get())) : tcu::Nothing);
 		return intervalContains(a, res0, convertedDivisor);
 	}
 
@@ -827,7 +828,7 @@ struct ContainerTraits
 
 		for (int ndx = 0; ndx < T::SIZE; ++ndx)
 		{
-			const tcu::Maybe<DivisorElement> divisorElement = (modularDivisor ? tcu::just((*modularDivisor)[ndx]) : tcu::nothing<DivisorElement>());
+			const tcu::Maybe<DivisorElement> divisorElement = (modularDivisor ? tcu::just((*modularDivisor)[ndx]) : tcu::Nothing);
 			if (!contains(ival[ndx], value[ndx], is16Bit, divisorElement))
 				return false;
 		}
@@ -3011,18 +3012,18 @@ typedef	 InverseSqrt< Signature<deFloat16, deFloat16> >	InverseSqrt16Bit;
 typedef	 InverseSqrt< Signature<float, float> >			InverseSqrt32Bit;
 typedef InverseSqrt< Signature<double, double> >		InverseSqrt64Bit;
 
-DEFINE_DERIVED_FLOAT1(Sqrt32Bit,		sqrt,		x,		constant(1.0f) / app<InverseSqrt32Bit>(x));
-DEFINE_DERIVED_FLOAT1_16BIT(Sqrt16Bit,	sqrt,		x,		constant((deFloat16)FLOAT16_1_0) / app<InverseSqrt16Bit>(x));
-DEFINE_DERIVED_DOUBLE1(Sqrt64Bit,		sqrt,		x,		constant(1.0) / app<InverseSqrt64Bit>(x));
-DEFINE_DERIVED_FLOAT2(Pow,				pow,		x,	y,	exp2<float>(y * log2(x)));
-DEFINE_DERIVED_FLOAT2_16BIT(Pow16,		pow,		x,	y,	exp2<deFloat16>(y * log2(x)));
-DEFINE_DERIVED_DOUBLE2(Pow64,			pow,		x,	y,	exp2<double>(y * log2(x)));
-DEFINE_DERIVED_FLOAT1(Radians,			radians,	d,		(constant(DE_PI) / constant(180.0f)) * d);
-DEFINE_DERIVED_FLOAT1_16BIT(Radians16,	radians,	d,		(constant((deFloat16)DE_PI_16BIT) / constant((deFloat16)FLOAT16_180_0)) * d);
-DEFINE_DERIVED_DOUBLE1(Radians64,		radians,	d,		(constant((double)(DE_PI)) / constant(180.0)) * d);
-DEFINE_DERIVED_FLOAT1(Degrees,			degrees,	r,		(constant(180.0f) / constant(DE_PI)) * r);
-DEFINE_DERIVED_FLOAT1_16BIT(Degrees16,	degrees,	r,		(constant((deFloat16)FLOAT16_180_0) / constant((deFloat16)DE_PI_16BIT)) * r);
-DEFINE_DERIVED_DOUBLE1(Degrees64,		degrees,	r,		(constant(180.0) / constant((double)(DE_PI))) * r);
+DEFINE_DERIVED_FLOAT1(Sqrt32Bit,		sqrt,		x,		constant(1.0f) / app<InverseSqrt32Bit>(x))
+DEFINE_DERIVED_FLOAT1_16BIT(Sqrt16Bit,	sqrt,		x,		constant((deFloat16)FLOAT16_1_0) / app<InverseSqrt16Bit>(x))
+DEFINE_DERIVED_DOUBLE1(Sqrt64Bit,		sqrt,		x,		constant(1.0) / app<InverseSqrt64Bit>(x))
+DEFINE_DERIVED_FLOAT2(Pow,				pow,		x,	y,	exp2<float>(y * log2(x)))
+DEFINE_DERIVED_FLOAT2_16BIT(Pow16,		pow,		x,	y,	exp2<deFloat16>(y * log2(x)))
+DEFINE_DERIVED_DOUBLE2(Pow64,			pow,		x,	y,	exp2<double>(y * log2(x)))
+DEFINE_DERIVED_FLOAT1(Radians,			radians,	d,		(constant(DE_PI) / constant(180.0f)) * d)
+DEFINE_DERIVED_FLOAT1_16BIT(Radians16,	radians,	d,		(constant((deFloat16)DE_PI_16BIT) / constant((deFloat16)FLOAT16_180_0)) * d)
+DEFINE_DERIVED_DOUBLE1(Radians64,		radians,	d,		(constant((double)(DE_PI)) / constant(180.0)) * d)
+DEFINE_DERIVED_FLOAT1(Degrees,			degrees,	r,		(constant(180.0f) / constant(DE_PI)) * r)
+DEFINE_DERIVED_FLOAT1_16BIT(Degrees16,	degrees,	r,		(constant((deFloat16)FLOAT16_180_0) / constant((deFloat16)DE_PI_16BIT)) * r)
+DEFINE_DERIVED_DOUBLE1(Degrees64,		degrees,	r,		(constant(180.0) / constant((double)(DE_PI))) * r)
 
 /*Proper parameters for template T
 	Signature<float, float>		32bit tests
@@ -3205,9 +3206,9 @@ ExprP<float> cos (const ExprP<float>& x) { return app<Cos<Signature<float, float
 ExprP<deFloat16> cos (const ExprP<deFloat16>& x) { return app<Cos<Signature<deFloat16, deFloat16> > >(x); }
 ExprP<double> cos (const ExprP<double>& x) { return app<Cos<Signature<double, double> > >(x); }
 
-DEFINE_DERIVED_FLOAT1_INPUTRANGE(Tan, tan, x, sin(x) * (constant(1.0f) / cos(x)), Interval(false, -DE_PI_DOUBLE, DE_PI_DOUBLE));
-DEFINE_DERIVED_FLOAT1_INPUTRANGE_16BIT(Tan16Bit, tan, x, sin(x) * (constant((deFloat16)FLOAT16_1_0) / cos(x)), Interval(false, -DE_PI_DOUBLE, DE_PI_DOUBLE));
-DEFINE_DERIVED_DOUBLE1_INPUTRANGE(Tan64Bit, tan, x, sin(x) * (constant(1.0) / cos(x)), Interval(false, -DE_PI_DOUBLE, DE_PI_DOUBLE));
+DEFINE_DERIVED_FLOAT1_INPUTRANGE(Tan, tan, x, sin(x) * (constant(1.0f) / cos(x)), Interval(false, -DE_PI_DOUBLE, DE_PI_DOUBLE))
+DEFINE_DERIVED_FLOAT1_INPUTRANGE_16BIT(Tan16Bit, tan, x, sin(x) * (constant((deFloat16)FLOAT16_1_0) / cos(x)), Interval(false, -DE_PI_DOUBLE, DE_PI_DOUBLE))
+DEFINE_DERIVED_DOUBLE1_INPUTRANGE(Tan64Bit, tan, x, sin(x) * (constant(1.0) / cos(x)), Interval(false, -DE_PI_DOUBLE, DE_PI_DOUBLE))
 
 template <class T>
 class ATan : public CFloatFunc1<T>
@@ -3251,7 +3252,7 @@ protected:
 				ret |= ctx.format.roundOut(Interval(-DE_PI_DOUBLE, DE_PI_DOUBLE), true);
 		}
 
-		if (ctx.format.hasInf() != YES && (!yi.isFinite() || !xi.isFinite()))
+		if (!yi.isFinite() || !xi.isFinite())
 		{
 			// Infinities may not be supported, allow anything, including NaN
 			ret |= TCU_NAN;
@@ -3281,41 +3282,41 @@ ExprP<deFloat16> atan2	(const ExprP<deFloat16>& x, const ExprP<deFloat16>& y)	{ 
 ExprP<double> atan2	(const ExprP<double>& x, const ExprP<double>& y)	{ return app<ATan2<Signature<double, double, double> > >(x, y); }
 
 
-DEFINE_DERIVED_FLOAT1(Sinh, sinh, x, (exp<float>(x) - exp<float>(-x)) / constant(2.0f));
-DEFINE_DERIVED_FLOAT1(Cosh, cosh, x, (exp<float>(x) + exp<float>(-x)) / constant(2.0f));
-DEFINE_DERIVED_FLOAT1(Tanh, tanh, x, sinh(x) / cosh(x));
+DEFINE_DERIVED_FLOAT1(Sinh, sinh, x, (exp<float>(x) - exp<float>(-x)) / constant(2.0f))
+DEFINE_DERIVED_FLOAT1(Cosh, cosh, x, (exp<float>(x) + exp<float>(-x)) / constant(2.0f))
+DEFINE_DERIVED_FLOAT1(Tanh, tanh, x, sinh(x) / cosh(x))
 
-DEFINE_DERIVED_FLOAT1_16BIT(Sinh16Bit, sinh, x, (exp(x) - exp(-x)) / constant((deFloat16)FLOAT16_2_0));
-DEFINE_DERIVED_FLOAT1_16BIT(Cosh16Bit, cosh, x, (exp(x) + exp(-x)) / constant((deFloat16)FLOAT16_2_0));
-DEFINE_DERIVED_FLOAT1_16BIT(Tanh16Bit, tanh, x, sinh(x) / cosh(x));
+DEFINE_DERIVED_FLOAT1_16BIT(Sinh16Bit, sinh, x, (exp(x) - exp(-x)) / constant((deFloat16)FLOAT16_2_0))
+DEFINE_DERIVED_FLOAT1_16BIT(Cosh16Bit, cosh, x, (exp(x) + exp(-x)) / constant((deFloat16)FLOAT16_2_0))
+DEFINE_DERIVED_FLOAT1_16BIT(Tanh16Bit, tanh, x, sinh(x) / cosh(x))
 
-DEFINE_DERIVED_DOUBLE1(Sinh64Bit, sinh, x, (exp<double>(x) - exp<double>(-x)) / constant(2.0));
-DEFINE_DERIVED_DOUBLE1(Cosh64Bit, cosh, x, (exp<double>(x) + exp<double>(-x)) / constant(2.0));
-DEFINE_DERIVED_DOUBLE1(Tanh64Bit, tanh, x, sinh(x) / cosh(x));
+DEFINE_DERIVED_DOUBLE1(Sinh64Bit, sinh, x, (exp<double>(x) - exp<double>(-x)) / constant(2.0))
+DEFINE_DERIVED_DOUBLE1(Cosh64Bit, cosh, x, (exp<double>(x) + exp<double>(-x)) / constant(2.0))
+DEFINE_DERIVED_DOUBLE1(Tanh64Bit, tanh, x, sinh(x) / cosh(x))
 
-DEFINE_DERIVED_FLOAT1(ASin, asin, x, atan2(x, sqrt(constant(1.0f) - x * x)));
-DEFINE_DERIVED_FLOAT1(ACos, acos, x, atan2(sqrt(constant(1.0f) - x * x), x));
-DEFINE_DERIVED_FLOAT1(ASinh, asinh, x, log(x + sqrt(x * x + constant(1.0f))));
+DEFINE_DERIVED_FLOAT1(ASin, asin, x, atan2(x, sqrt(constant(1.0f) - x * x)))
+DEFINE_DERIVED_FLOAT1(ACos, acos, x, atan2(sqrt(constant(1.0f) - x * x), x))
+DEFINE_DERIVED_FLOAT1(ASinh, asinh, x, log(x + sqrt(x * x + constant(1.0f))))
 DEFINE_DERIVED_FLOAT1(ACosh, acosh, x, log(x + sqrt(alternatives((x + constant(1.0f)) * (x - constant(1.0f)),
-																 (x * x - constant(1.0f))))));
+																 (x * x - constant(1.0f))))))
 DEFINE_DERIVED_FLOAT1(ATanh, atanh, x, constant(0.5f) * log((constant(1.0f) + x) /
-															(constant(1.0f) - x)));
+															(constant(1.0f) - x)))
 
-DEFINE_DERIVED_FLOAT1_16BIT(ASin16Bit, asin, x, atan2(x, sqrt(constant((deFloat16)FLOAT16_1_0) - x * x)));
-DEFINE_DERIVED_FLOAT1_16BIT(ACos16Bit, acos, x, atan2(sqrt(constant((deFloat16)FLOAT16_1_0) - x * x), x));
-DEFINE_DERIVED_FLOAT1_16BIT(ASinh16Bit, asinh, x, log(x + sqrt(x * x + constant((deFloat16)FLOAT16_1_0))));
+DEFINE_DERIVED_FLOAT1_16BIT(ASin16Bit, asin, x, atan2(x, sqrt(constant((deFloat16)FLOAT16_1_0) - x * x)))
+DEFINE_DERIVED_FLOAT1_16BIT(ACos16Bit, acos, x, atan2(sqrt(constant((deFloat16)FLOAT16_1_0) - x * x), x))
+DEFINE_DERIVED_FLOAT1_16BIT(ASinh16Bit, asinh, x, log(x + sqrt(x * x + constant((deFloat16)FLOAT16_1_0))))
 DEFINE_DERIVED_FLOAT1_16BIT(ACosh16Bit, acosh, x, log(x + sqrt(alternatives((x + constant((deFloat16)FLOAT16_1_0)) * (x - constant((deFloat16)FLOAT16_1_0)),
-																 (x * x - constant((deFloat16)FLOAT16_1_0))))));
+																 (x * x - constant((deFloat16)FLOAT16_1_0))))))
 DEFINE_DERIVED_FLOAT1_16BIT(ATanh16Bit, atanh, x, constant((deFloat16)FLOAT16_0_5) * log((constant((deFloat16)FLOAT16_1_0) + x) /
-															(constant((deFloat16)FLOAT16_1_0) - x)));
+															(constant((deFloat16)FLOAT16_1_0) - x)))
 
-DEFINE_DERIVED_DOUBLE1(ASin64Bit, asin, x, atan2(x, sqrt(constant(1.0) - pow(x, constant(2.0)))));
-DEFINE_DERIVED_DOUBLE1(ACos64Bit, acos, x, atan2(sqrt(constant(1.0) - pow(x, constant(2.0))), x));
-DEFINE_DERIVED_DOUBLE1(ASinh64Bit, asinh, x, log(x + sqrt(x * x + constant(1.0))));
+DEFINE_DERIVED_DOUBLE1(ASin64Bit, asin, x, atan2(x, sqrt(constant(1.0) - pow(x, constant(2.0)))))
+DEFINE_DERIVED_DOUBLE1(ACos64Bit, acos, x, atan2(sqrt(constant(1.0) - pow(x, constant(2.0))), x))
+DEFINE_DERIVED_DOUBLE1(ASinh64Bit, asinh, x, log(x + sqrt(x * x + constant(1.0))))
 DEFINE_DERIVED_DOUBLE1(ACosh64Bit, acosh, x, log(x + sqrt(alternatives((x + constant(1.0)) * (x - constant(1.0)),
-																 (x * x - constant(1.0))))));
+																 (x * x - constant(1.0))))))
 DEFINE_DERIVED_DOUBLE1(ATanh64Bit, atanh, x, constant(0.5) * log((constant(1.0) + x) /
-															(constant(1.0) - x)));
+															(constant(1.0) - x)))
 
 template <typename T>
 class GetComponent : public PrimitiveFunc<Signature<typename T::Element, T, int> >
@@ -4222,9 +4223,9 @@ typedef Trunc< Signature<double, double> > Trunc64Bit;
 typedef Trunc< Signature<float, float> > Trunc32Bit;
 typedef Trunc< Signature<deFloat16, deFloat16> > Trunc16Bit;
 
-DEFINE_DERIVED_FLOAT1(Fract, fract, x, x - app<Floor32Bit>(x));
-DEFINE_DERIVED_FLOAT1_16BIT(Fract16Bit, fract, x, x - app<Floor16Bit>(x));
-DEFINE_DERIVED_DOUBLE1(Fract64Bit, fract, x, x - app<Floor64Bit>(x));
+DEFINE_DERIVED_FLOAT1(Fract, fract, x, x - app<Floor32Bit>(x))
+DEFINE_DERIVED_FLOAT1_16BIT(Fract16Bit, fract, x, x - app<Floor16Bit>(x))
+DEFINE_DERIVED_DOUBLE1(Fract64Bit, fract, x, x - app<Floor64Bit>(x))
 
 template <class T>
 class PreciseFunc2 : public CFloatFunc2<T>
@@ -4235,13 +4236,13 @@ protected:
 	double	precision		(const EvalContext&, double, double, double) const { return 0.0; }
 };
 
-DEFINE_DERIVED_FLOAT2(Mod32Bit, mod, x, y, x - y * app<Floor32Bit>(x / y));
-DEFINE_DERIVED_FLOAT2_16BIT(Mod16Bit, mod, x, y, x - y * app<Floor16Bit>(x / y));
-DEFINE_DERIVED_DOUBLE2(Mod64Bit, mod, x, y, x - y * app<Floor64Bit>(x / y));
+DEFINE_DERIVED_FLOAT2(Mod32Bit, mod, x, y, x - y * app<Floor32Bit>(x / y))
+DEFINE_DERIVED_FLOAT2_16BIT(Mod16Bit, mod, x, y, x - y * app<Floor16Bit>(x / y))
+DEFINE_DERIVED_DOUBLE2(Mod64Bit, mod, x, y, x - y * app<Floor64Bit>(x / y))
 
-DEFINE_CASED_DERIVED_FLOAT2(FRem32Bit, frem, x, y, x - y * app<Trunc32Bit>(x / y), SPIRV_CASETYPE_FREM);
-DEFINE_CASED_DERIVED_FLOAT2_16BIT(FRem16Bit, frem, x, y, x - y * app<Trunc16Bit>(x / y), SPIRV_CASETYPE_FREM);
-DEFINE_CASED_DERIVED_DOUBLE2(FRem64Bit, frem, x, y, x - y * app<Trunc64Bit>(x / y), SPIRV_CASETYPE_FREM);
+DEFINE_CASED_DERIVED_FLOAT2(FRem32Bit, frem, x, y, x - y * app<Trunc32Bit>(x / y), SPIRV_CASETYPE_FREM)
+DEFINE_CASED_DERIVED_FLOAT2_16BIT(FRem16Bit, frem, x, y, x - y * app<Trunc16Bit>(x / y), SPIRV_CASETYPE_FREM)
+DEFINE_CASED_DERIVED_DOUBLE2(FRem64Bit, frem, x, y, x - y * app<Trunc64Bit>(x / y), SPIRV_CASETYPE_FREM)
 
 template <class T>
 class Modf : public PrimitiveFunc<T>
@@ -4365,13 +4366,13 @@ ExprP<double> nanIfGreaterOrEqual(const ExprP<double>& edge0, const ExprP<double
 }
 
 DEFINE_DERIVED_FLOAT3(Mix, mix, x, y, a, alternatives((x * (constant(1.0f) - a)) + y * a,
-													  x + (y - x) * a));
+													  x + (y - x) * a))
 
 DEFINE_DERIVED_FLOAT3_16BIT(Mix16Bit, mix, x, y, a, alternatives((x * (constant((deFloat16)FLOAT16_1_0) - a)) + y * a,
-													  x + (y - x) * a));
+													  x + (y - x) * a))
 
 DEFINE_DERIVED_DOUBLE3(Mix64Bit, mix, x, y, a, alternatives((x * (constant(1.0) - a)) + y * a,
-													  x + (y - x) * a));
+													  x + (y - x) * a))
 
 static double step (double edge, double x)
 {
@@ -5603,7 +5604,7 @@ class Sampling
 public:
 	virtual void	genFixeds			(const FloatFormat&, const Precision, vector<T>&, const Interval&)	const {}
 	virtual T		genRandom			(const FloatFormat&,const Precision, Random&, const Interval&)		const { return T(); }
-	virtual void	removeNotInRange	(vector<T>&, const Interval&, const Precision)					const {};
+	virtual void	removeNotInRange	(vector<T>&, const Interval&, const Precision)						const {}
 };
 
 template <>
@@ -6287,7 +6288,7 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate (void)
 				case 1:
 					{
 						// Pass b from mod(a, b) if we are in the modulo operation.
-						const tcu::Maybe<In1> modularDivisor = (m_modularOp ? tcu::just(inputs.in1[valueNdx]) : tcu::nothing<In1>());
+						const tcu::Maybe<In1> modularDivisor = (m_modularOp ? tcu::just(inputs.in1[valueNdx]) : tcu::Nothing);
 
 						reference0 = convert<Out0>(highpFmt, env.lookup(*m_variables.out0));
 						if (!status.check(contains(reference0, outputs.out0[valueNdx], m_caseCtx.isPackFloat16b, modularDivisor), "Shader output 0 is outside acceptable range"))
@@ -6581,7 +6582,7 @@ struct InputLess<InTuple<In> >
 		if (inputLess(in1.d, in2.d))
 			return true;
 		return false;
-	};
+	}
 };
 
 template<typename In>
@@ -6852,6 +6853,7 @@ public:
 	const FuncBase&		getFunc			(void) const { return instance<GenF<1, T> >(); }
 };
 
+#ifndef CTS_USES_VULKANSC
 template <template <int> class GenF>
 class SquareMatrixFuncCaseFactory : public FuncCaseFactory
 {
@@ -6861,17 +6863,44 @@ public:
 		TestCaseGroup* group = new TestCaseGroup(ctx.testContext, ctx.name.c_str(), ctx.name.c_str());
 
 		group->addChild(createFuncCase(ctx, "mat2", instance<GenF<2> >()));
-#if 0
-		// disabled until we get reasonable results
-		group->addChild(createFuncCase(ctx, "mat3", instance<GenF<3> >()));
-		group->addChild(createFuncCase(ctx, "mat4", instance<GenF<4> >()));
-#endif
+
+		// There is no defined precision for mediump/RelaxedPrecision in Vulkan
+		if (ctx.name != "mediump")
+		{
+			static const char			dataDir[]		= "builtin/precision/square_matrix";
+			std::string					fileName		= getFunc().getName() + "_" + ctx.name;
+			std::vector<std::string>	requirements;
+
+			if (ctx.name == "compute")
+			{
+				if (ctx.isFloat64b)
+				{
+					requirements.push_back("Features.shaderFloat64");
+					fileName += "_fp64";
+				}
+				else
+				{
+					requirements.push_back("Float16Int8Features.shaderFloat16");
+					fileName += "_fp16";
+
+					if (ctx.isPackFloat16b == true)
+					{
+						requirements.push_back("Storage16BitFeatures.storageBuffer16BitAccess");
+						fileName += "_32bit";
+					}
+				}
+			}
+
+			group->addChild(cts_amber::createAmberTestCase(ctx.testContext, "mat3", "Square matrix 3x3 precision tests", dataDir, fileName + "_mat_3x3.amber", requirements));
+			group->addChild(cts_amber::createAmberTestCase(ctx.testContext, "mat4", "Square matrix 4x4 precision tests", dataDir, fileName + "_mat_4x4.amber", requirements));
+		}
 
 		return MovePtr<TestNode>(group);
 	}
 
 	const FuncBase&		getFunc			(void) const { return instance<GenF<2> >(); }
 };
+#endif // CTS_USES_VULKANSC
 
 template <template <int, int, class> class GenF, typename T>
 class MatrixFuncCaseFactory : public FuncCaseFactory
@@ -7029,8 +7058,10 @@ MovePtr<const CaseFactories> createBuiltinCases ()
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<MatrixCompMult, float>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<OuterProduct, float>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<Transpose, float>()));
+#ifndef CTS_USES_VULKANSC
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Determinant>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Inverse>()));
+#endif // CTS_USES_VULKANSC
 
 	addScalarFactory<Frexp32Bit>(*funcs);
 	addScalarFactory<FrexpStruct32Bit>(*funcs);
@@ -7112,8 +7143,10 @@ MovePtr<const CaseFactories> createBuiltinDoubleCases ()
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<MatrixCompMult, double>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<OuterProduct, double>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<Transpose, double>()));
+#ifndef CTS_USES_VULKANSC
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Determinant64bit>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Inverse64bit>()));
+#endif // CTS_USES_VULKANSC
 
 	addScalarFactory<Frexp64Bit>(*funcs);
 	addScalarFactory<FrexpStruct64Bit>(*funcs);
@@ -7191,8 +7224,10 @@ MovePtr<const CaseFactories> createBuiltinCases16Bit(void)
 
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<OuterProduct, deFloat16>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<Transpose, deFloat16>()));
+#ifndef CTS_USES_VULKANSC
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Determinant16bit>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Inverse16bit>()));
+#endif // CTS_USES_VULKANSC
 
 	addScalarFactory<Frexp16Bit>(*funcs);
 	addScalarFactory<FrexpStruct16Bit>(*funcs);

@@ -253,7 +253,7 @@ tcu::TestStatus MisalignedCubeTestInstance::iterate (void)
 	{
 		const deUint32	layerUsed		= cube0LayerStart + layerNdx;
 		const float		componentValue	= float(16 * layerUsed) / 255.0f;
-		const tcu::Vec4	expectedColor	= tcu::Vec4(componentValue, componentValue, componentValue, 1.0f);;
+		const tcu::Vec4	expectedColor	= tcu::Vec4(componentValue, componentValue, componentValue, 1.0f);
 		const tcu::Vec4	resultColor		= readVec4(resultBufferAlloc.getHostPtr(), layerNdx);
 		const tcu::Vec4	delta			= expectedColor - resultColor;
 
@@ -266,7 +266,7 @@ tcu::TestStatus MisalignedCubeTestInstance::iterate (void)
 	{
 		const deUint32	layerUsed		= cube1LayerStart + layerNdx;
 		const float		componentValue	= float(16 * layerUsed) / 255.0f;
-		const tcu::Vec4	expectedColor	= tcu::Vec4(componentValue, componentValue, componentValue, 1.0f);;
+		const tcu::Vec4	expectedColor	= tcu::Vec4(componentValue, componentValue, componentValue, 1.0f);
 		const tcu::Vec4 resultColor		= readVec4(resultBufferAlloc.getHostPtr(), layerNdx + 6u);
 		const tcu::Vec4	delta			= expectedColor - resultColor;
 

@@ -258,15 +258,11 @@ public:
 		EGLint	renderableType = EGL_OPENGL_ES_BIT;
 		switch (m_apiType) {
 			case EGL14:
-				if (m_eglVersion >= EGL_MAKE_VERSION(1, 4)) return true;
-				return false;
-				break;
+				return m_eglVersion >= EGL_MAKE_VERSION(1, 4);
 			case EGL15:
 				// With Android Q, EGL 1.5 entry points must have valid
 				// GetProcAddress.
-				if (m_eglVersion >= EGL_MAKE_VERSION(1, 5)) return true;
-				return false;
-				break;
+				return m_eglVersion >= EGL_MAKE_VERSION(1, 5);
 			case GLES:
 			case GLES2:
 			case GLES3:

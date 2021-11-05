@@ -259,28 +259,24 @@ vk::wsi::Display* VulkanPlatform::createWsiDisplay (vk::wsi::Type wsiType) const
 #if defined (DEQP_SUPPORT_X11)
 	case vk::wsi::TYPE_XLIB:
 		return new VulkanDisplayXlib(MovePtr<x11::DisplayBase>(new x11::XlibDisplay(m_eventState,X11_DISPLAY)));
-		break;
 #endif // DEQP_SUPPORT_X11
 #if defined (DEQP_SUPPORT_XCB)
 	case vk::wsi::TYPE_XCB:
 		return new VulkanDisplayXcb(MovePtr<x11::DisplayBase>(new x11::XcbDisplay(m_eventState,X11_DISPLAY)));
-		break;
 #endif // DEQP_SUPPORT_XCB
 #if defined (DEQP_SUPPORT_WAYLAND)
 	case vk::wsi::TYPE_WAYLAND:
 		return new VulkanDisplayWayland(MovePtr<wayland::Display>(new wayland::Display(m_eventState, WAYLAND_DISPLAY)));
-		break;
 #endif // DEQP_SUPPORT_WAYLAND
 #if defined (DEQP_SUPPORT_HEADLESS)
 	case vk::wsi::TYPE_HEADLESS:
 		return new VulkanDisplayHeadless();
-		break;
 #endif // DEQP_SUPPORT_HEADLESS
 
 	default:
 		TCU_THROW(NotSupportedError, "WSI type not supported");
 
-	};
+	}
 }
 bool VulkanPlatform::hasDisplay (vk::wsi::Type wsiType) const
 {
@@ -305,7 +301,7 @@ bool VulkanPlatform::hasDisplay (vk::wsi::Type wsiType) const
 	default:
 		return false;
 
-	};
+	}
 }
 vk::Library* VulkanPlatform::createLibrary (void) const
 {

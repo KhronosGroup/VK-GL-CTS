@@ -1,5 +1,9 @@
 #!amber
 
+DEVICE_FEATURE SubgroupSupportedOperations.ballot
+DEVICE_FEATURE SubgroupSupportedStages.fragment
+DEVICE_EXTENSION VK_KHR_shader_terminate_invocation
+
 SHADER vertex vs SPIRV-ASM
 ;#version 450
 ;

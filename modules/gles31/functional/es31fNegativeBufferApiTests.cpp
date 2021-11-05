@@ -1098,7 +1098,7 @@ void delete_framebuffers (NegativeTestContext& ctx)
 }
 
 void delete_renderbuffers (NegativeTestContext& ctx)
-{;
+{
 	ctx.beginSection("GL_INVALID_VALUE is generated if n is negative.");
 	ctx.glDeleteRenderbuffers(-1, 0);
 	ctx.expectError(GL_INVALID_VALUE);

@@ -580,10 +580,10 @@ struct ShaderInterface
 {
 	ShaderInterface(Shader::STAGES stage);
 
-	DEFINE_VARIABLE_CLASS(Input, Variable::VARYING_INPUT, m_inputs);
-	DEFINE_VARIABLE_CLASS(Output, Variable::VARYING_OUTPUT, m_outputs);
-	DEFINE_VARIABLE_CLASS(Uniform, Variable::UNIFORM, m_uniforms);
-	DEFINE_VARIABLE_CLASS(SSB, Variable::SSB, m_ssb_blocks);
+	DEFINE_VARIABLE_CLASS(Input, Variable::VARYING_INPUT, m_inputs)
+	DEFINE_VARIABLE_CLASS(Output, Variable::VARYING_OUTPUT, m_outputs)
+	DEFINE_VARIABLE_CLASS(Uniform, Variable::UNIFORM, m_uniforms)
+	DEFINE_VARIABLE_CLASS(SSB, Variable::SSB, m_ssb_blocks)
 
 	/**/
 	std::string GetDefinitionsGlobals() const;

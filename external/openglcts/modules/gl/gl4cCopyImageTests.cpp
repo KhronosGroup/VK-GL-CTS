@@ -596,7 +596,6 @@ GLdouble Utils::getEpsilon(GLenum internal_format)
 		break;
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 
 	return epsilon;
@@ -705,7 +704,6 @@ GLenum Utils::getFormat(GLenum internal_format)
 
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 
 	return format;
@@ -798,7 +796,6 @@ GLuint Utils::getNumberOfChannels(GLenum internal_format)
 
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 
 	return result;
@@ -924,7 +921,6 @@ GLenum Utils::getType(GLenum internal_format)
 
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 
 	return type;
@@ -1078,7 +1074,6 @@ GLuint Utils::getPixelSizeForFormat(GLenum internal_format)
 
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 
 	return size;
@@ -1310,7 +1305,6 @@ GLuint Utils::prepareMultisampleTex(deqp::Context& context, GLenum target, GLsiz
 
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 
 	/* Clean binding point */
@@ -1542,7 +1536,6 @@ void Utils::prepareTexture(deqp::Context& context, GLuint name, GLenum target, G
 
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 
 	if (GL_NO_ERROR != error)
@@ -1889,7 +1882,6 @@ void read11F_11F_10F_Channel(GLuint channel, const GLubyte* pixel, GLdouble& out
 	break;
 	default:
 		TCU_FAIL("Invalid channel");
-		break;
 	}
 }
 
@@ -2133,7 +2125,6 @@ void write11F_11F_10F_Channel(GLuint channel, GLdouble value, GLubyte* pixel)
 	break;
 	default:
 		TCU_FAIL("Invalid channel");
-		break;
 	}
 }
 
@@ -2204,7 +2195,6 @@ void Utils::readChannel(GLenum type, GLuint channel, const GLubyte* pixel, GLdou
 
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 }
 
@@ -2276,7 +2266,6 @@ void Utils::writeChannel(GLenum type, GLuint channel, GLdouble value, GLubyte* p
 
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 }
 
@@ -2376,7 +2365,6 @@ void Utils::packPixel(GLenum internal_format, GLenum type, GLdouble red, GLdoubl
 
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 }
 
@@ -2436,7 +2424,6 @@ void Utils::unpackPixel(GLenum format, GLenum type, const GLubyte* pixel, GLdoub
 		break;
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 }
 

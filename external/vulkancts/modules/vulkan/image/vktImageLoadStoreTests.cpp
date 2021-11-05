@@ -479,7 +479,22 @@ StoreTest::StoreTest (tcu::TestContext&		testCtx,
 
 void StoreTest::checkSupport (Context& context) const
 {
-	const VkFormatProperties formatProperties (getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), m_format));
+#ifndef CTS_USES_VULKANSC
+	const VkFormatPropertiesExtendedKHR formatProperties (context.getFormatProperties(m_format));
+
+	if (!m_declareImageFormatInShader && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
+		TCU_THROW(NotSupportedError, "Format not supported for unformatted stores via storage images");
+
+	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
+
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+
+	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
+#else
+	const VkFormatProperties formatProperties(getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), m_format));
 
 	if (!m_declareImageFormatInShader)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_STORAGE_IMAGE_WRITE_WITHOUT_FORMAT);
@@ -492,6 +507,7 @@ void StoreTest::checkSupport (Context& context) const
 
 	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
+#endif // CTS_USES_VULKANSC
 }
 
 void StoreTest::initPrograms (SourceCollections& programCollection) const
@@ -1079,6 +1095,47 @@ LoadStoreTest::LoadStoreTest (tcu::TestContext&		testCtx,
 
 void LoadStoreTest::checkSupport (Context& context) const
 {
+#ifndef CTS_USES_VULKANSC
+	const VkFormatPropertiesExtendedKHR formatProperties (context.getFormatProperties(m_format));
+	const VkFormatPropertiesExtendedKHR imageFormatProperties (context.getFormatProperties(m_imageFormat));
+
+	if (m_imageLoadStoreLodAMD)
+		context.requireDeviceFunctionality("VK_AMD_shader_image_load_store_lod");
+
+	if (!m_bufferLoadUniform && !m_declareImageFormatInShader && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
+		TCU_THROW(NotSupportedError, "Format not supported for unformatted loads via storage images");
+
+	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
+
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+
+	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
+
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(imageFormatProperties.optimalTilingFeatures))
+		TCU_THROW(NotSupportedError, "Underlying format not supported at all for images");
+
+	if ((m_texture.type() == IMAGE_TYPE_BUFFER) && !(imageFormatProperties.bufferFeatures))
+		TCU_THROW(NotSupportedError, "Underlying format not supported at all for buffers");
+
+	if (formatHasThreeComponents(m_format))
+	{
+		// When the source buffer is three-component, the destination buffer is single-component.
+		VkFormat dstFormat = getSingleComponentFormat(m_format);
+		const VkFormatPropertiesExtendedKHR dstFormatProperties (context.getFormatProperties(dstFormat));
+
+		if (m_texture.type() == IMAGE_TYPE_BUFFER && !(dstFormatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
+			TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
+	}
+	else
+		if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
+			TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
+
+	if (m_bufferLoadUniform && m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for uniform texel buffers");
+#else
 	const vk::VkFormatProperties	formatProperties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
 																							   context.getPhysicalDevice(),
 																							   m_format));
@@ -1123,6 +1180,7 @@ void LoadStoreTest::checkSupport (Context& context) const
 
 	if (m_bufferLoadUniform && m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for uniform texel buffers");
+#endif // CTS_USES_VULKANSC
 }
 
 void LoadStoreTest::initPrograms (SourceCollections& programCollection) const
@@ -1926,7 +1984,7 @@ public:
 																			 const VkFormat			writeFormat,
 																			 bool					relaxedPrecision);
 
-	virtual							~ImageExtendOperandTestInstance			(void) {};
+	virtual							~ImageExtendOperandTestInstance			(void) {}
 
 protected:
 
@@ -2219,12 +2277,19 @@ ImageExtendOperandTest::ImageExtendOperandTest (tcu::TestContext&				testCtx,
 {
 }
 
-void checkFormatProperties (const InstanceInterface& vki, VkPhysicalDevice physDev, VkFormat format)
+void checkFormatProperties (Context& context, VkFormat format)
 {
-	const auto formatProperties = getPhysicalDeviceFormatProperties(vki, physDev, format);
+#ifndef CTS_USES_VULKANSC
+	const VkFormatPropertiesExtendedKHR formatProperties (context.getFormatProperties(format));
 
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+#else
+	const VkFormatProperties formatProperties(getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format));
+
+	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+#endif // CTS_USES_VULKANSC
 }
 
 void check64BitSupportIfNeeded (Context& context, VkFormat readFormat, VkFormat writeFormat)
@@ -2239,18 +2304,13 @@ void check64BitSupportIfNeeded (Context& context, VkFormat readFormat, VkFormat 
 
 void ImageExtendOperandTest::checkSupport (Context& context) const
 {
-	DE_ASSERT(m_texture.type() != IMAGE_TYPE_BUFFER);
-
 	if (!context.requireDeviceFunctionality("VK_KHR_spirv_1_4"))
 		TCU_THROW(NotSupportedError, "VK_KHR_spirv_1_4 not supported");
 
 	check64BitSupportIfNeeded(context, m_readFormat, m_writeFormat);
 
-	const auto& vki     = context.getInstanceInterface();
-	const auto  physDev = context.getPhysicalDevice();
-
-	checkFormatProperties(vki, physDev, m_readFormat);
-	checkFormatProperties(vki, physDev, m_writeFormat);
+	checkFormatProperties(context, m_readFormat);
+	checkFormatProperties(context, m_writeFormat);
 }
 
 void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection) const
@@ -2465,7 +2525,6 @@ const Texture& getTestTexture (const ImageType imageType)
 
 static const VkFormat s_formats[] =
 {
-	// Mandatory support
 	VK_FORMAT_R32G32B32A32_SFLOAT,
 	VK_FORMAT_R16G16B16A16_SFLOAT,
 	VK_FORMAT_R32_SFLOAT,
@@ -2482,9 +2541,11 @@ static const VkFormat s_formats[] =
 
 	VK_FORMAT_R8G8B8A8_UNORM,
 
+	VK_FORMAT_B8G8R8A8_UNORM,
+	VK_FORMAT_B8G8R8A8_UINT,
+
 	VK_FORMAT_R8G8B8A8_SNORM,
 
-	// Requires StorageImageExtendedFormats capability
 	VK_FORMAT_B10G11R11_UFLOAT_PACK32,
 
 	VK_FORMAT_R32G32_SFLOAT,

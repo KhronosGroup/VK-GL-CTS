@@ -42,23 +42,28 @@ struct SpirVAsmBuildOptions
 	deUint32		vulkanVersion;
 	SpirvVersion	targetVersion;
 	bool			supports_VK_KHR_spirv_1_4;
+	bool			supports_VK_KHR_maintenance4;
 
-	SpirVAsmBuildOptions (deUint32 vulkanVersion_, SpirvVersion targetVersion_, bool allowSpirv14 = false)
-		: vulkanVersion				(vulkanVersion_)
-		, targetVersion				(targetVersion_)
-		, supports_VK_KHR_spirv_1_4	(allowSpirv14)
+	SpirVAsmBuildOptions (deUint32 vulkanVersion_, SpirvVersion targetVersion_, bool allowSpirv14 = false, bool allowMaintenance4 = false)
+		: vulkanVersion					(vulkanVersion_)
+		, targetVersion					(targetVersion_)
+		, supports_VK_KHR_spirv_1_4		(allowSpirv14)
+		, supports_VK_KHR_maintenance4	(allowMaintenance4)
 	{}
 
 	SpirVAsmBuildOptions (void)
-		: vulkanVersion				(VK_MAKE_VERSION(1, 0, 0))
-		, targetVersion				(SPIRV_VERSION_1_0)
-		, supports_VK_KHR_spirv_1_4	(false)
+		: vulkanVersion					(VK_MAKE_VERSION(1, 0, 0))
+		, targetVersion					(SPIRV_VERSION_1_0)
+		, supports_VK_KHR_spirv_1_4		(false)
+		, supports_VK_KHR_maintenance4	(false)
 	{}
 
 	SpirvValidatorOptions getSpirvValidatorOptions() const
 	{
 		SpirvValidatorOptions result(vulkanVersion);
 		result.supports_VK_KHR_spirv_1_4 = supports_VK_KHR_spirv_1_4;
+		if (supports_VK_KHR_maintenance4)
+			result.flags = result.flags | SpirvValidatorOptions::FLAG_SPIRV_VALIDATOR_ALLOW_LOCALSIZEID;
 		return result;
 	}
 };
@@ -78,7 +83,7 @@ struct SpirVAsmSource
 	{
 		buildOptions = buildOptions_;
 		return *this;
-	};
+	}
 
 	SpirVAsmBuildOptions	buildOptions;
 	std::string				source;

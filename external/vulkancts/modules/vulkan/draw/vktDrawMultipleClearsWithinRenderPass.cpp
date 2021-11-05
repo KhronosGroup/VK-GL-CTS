@@ -275,7 +275,7 @@ MultipleClearsTest::MultipleClearsTest (Context &context, const TestParams& para
 				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));	// finalLayout
 
 			const ImageViewCreateInfo	depthTargetViewInfo			(m_depthTargetImage->object(), VK_IMAGE_VIEW_TYPE_2D, m_params.depthFormat);
-			m_depthTargetView										= createImageView(vk, device, &depthTargetViewInfo);;
+			m_depthTargetView										= createImageView(vk, device, &depthTargetViewInfo);
 			attachments.push_back(*m_depthTargetView);
 		}
 		const VkAttachmentReference colorAttachmentReference		= hasColor ? makeAttachmentReference(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) : AttachmentReference();

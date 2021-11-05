@@ -91,7 +91,7 @@ struct StaticAndDynamicPair
 	// Helper constructor to set a static value and no dynamic value.
 	StaticAndDynamicPair (const T& value)
 		: staticValue	(value)
-		, dynamicValue	(tcu::nothing<T>())
+		, dynamicValue	(tcu::Nothing)
 	{
 	}
 
@@ -160,6 +160,9 @@ struct TestConfig
 	// Clearing parameters for the framebuffer.
 	tcu::Vec4						clearColorValue;
 	float							clearDepthValue;
+
+	// Channels to enable
+	tcu::BVec4						channelMask;
 
 	// Expected output in the attachments.
 	std::vector<tcu::Vec4>			expectedColor;
@@ -774,17 +777,19 @@ tcu::TestStatus ColorWriteEnableInstance::iterate (void)
 		kNumColorAttachments,
 		vk::VkPipelineColorBlendAttachmentState
 		{
-			VK_FALSE,						// VkBool32                 blendEnable
-			vk::VK_BLEND_FACTOR_ZERO,		// VkBlendFactor            srcColorBlendFactor
-			vk::VK_BLEND_FACTOR_ZERO,		// VkBlendFactor            dstColorBlendFactor
-			vk::VK_BLEND_OP_ADD,			// VkBlendOp                colorBlendOp
-			vk::VK_BLEND_FACTOR_ZERO,		// VkBlendFactor            srcAlphaBlendFactor
-			vk::VK_BLEND_FACTOR_ZERO,		// VkBlendFactor            dstAlphaBlendFactor
-			vk::VK_BLEND_OP_ADD,			// VkBlendOp                alphaBlendOp
-			vk::VK_COLOR_COMPONENT_R_BIT	// VkColorComponentFlags    colorWriteMask
-			| vk::VK_COLOR_COMPONENT_G_BIT
-			| vk::VK_COLOR_COMPONENT_B_BIT
-			| vk::VK_COLOR_COMPONENT_A_BIT
+			VK_FALSE,								// VkBool32                 blendEnable
+			vk::VK_BLEND_FACTOR_ZERO,				// VkBlendFactor            srcColorBlendFactor
+			vk::VK_BLEND_FACTOR_ZERO,				// VkBlendFactor            dstColorBlendFactor
+			vk::VK_BLEND_OP_ADD,					// VkBlendOp                colorBlendOp
+			vk::VK_BLEND_FACTOR_ZERO,				// VkBlendFactor            srcAlphaBlendFactor
+			vk::VK_BLEND_FACTOR_ZERO,				// VkBlendFactor            dstAlphaBlendFactor
+			vk::VK_BLEND_OP_ADD,					// VkBlendOp                alphaBlendOp
+			static_cast<vk::VkColorComponentFlags>(	// VkColorComponentFlags    colorWriteMask
+				(m_testConfig.channelMask.x() ? vk::VK_COLOR_COMPONENT_R_BIT : 0)
+				| (m_testConfig.channelMask.y() ? vk::VK_COLOR_COMPONENT_G_BIT : 0)
+				| (m_testConfig.channelMask.z() ? vk::VK_COLOR_COMPONENT_B_BIT : 0)
+				| (m_testConfig.channelMask.w() ? vk::VK_COLOR_COMPONENT_A_BIT : 0)
+			)
 		}
 	);
 
@@ -1041,10 +1046,22 @@ VectorType MaskVector(const VectorType& valueIfMaskIsFalse, const VectorType& va
 	return ret;
 }
 
+void ApplyChannelMask(std::vector<tcu::Vec4>& meshColors, const tcu::BVec4& channelMask, const tcu::Vec4& clearColor)
+{
+	for (auto&& attachmentColor : meshColors)
+		attachmentColor = tcu::Vec4(
+			channelMask.x() ? attachmentColor.x() : clearColor.x(),
+			channelMask.y() ? attachmentColor.y() : clearColor.y(),
+			channelMask.z() ? attachmentColor.z() : clearColor.z(),
+			channelMask.w() ? attachmentColor.w() : clearColor.w()
+		);
+}
+
 void AddSingleTestCaseStatic(
 	const std::string& name,
 	const std::string& description,
 	const std::vector<bool> mask,
+	const tcu::BVec4 channelMask,
 	bool inverse,
 	tcu::TestCaseGroup* orderingGroup,
 	tcu::TestContext& testCtx)
@@ -1059,6 +1076,8 @@ void AddSingleTestCaseStatic(
 	const auto allVkFalse						= Bool32Vec(kNumColorAttachments, VK_FALSE);
 	const auto allVkTrue						= Bool32Vec(kNumColorAttachments, VK_TRUE);
 
+	config.channelMask = channelMask;
+
 	config.colorWriteEnableConfig.staticValue	= MaskVector(allVkFalse, allVkTrue, mask, inverse);
 
 	// Note colorWriteEnableConfig.dynamicValue is unset, defaults to an empty Maybe<T>
@@ -1069,6 +1088,8 @@ void AddSingleTestCaseStatic(
 		meshColorsPerAttachment[i] = meshColorsPerAttachment[i - 1] * 0.5f;
 
 	std::vector<tcu::Vec4> clearColorsPerAttachment(kNumColorAttachments, config.clearColorValue);
+
+	ApplyChannelMask(meshColorsPerAttachment, channelMask, config.clearColorValue);
 
 	config.expectedColor = MaskVector(clearColorsPerAttachment, meshColorsPerAttachment, mask, inverse);
 
@@ -1084,6 +1105,7 @@ void AddSingleTestCaseDynamic(
 	const std::string& name,
 	const std::string& description,
 	const std::vector<bool> mask,
+	const tcu::BVec4 channelMask,
 	bool inverse,
 	tcu::TestCaseGroup* orderingGroup,
 	tcu::TestContext& testCtx,
@@ -1099,6 +1121,8 @@ void AddSingleTestCaseDynamic(
 	const auto allVkFalse						= Bool32Vec(kNumColorAttachments, VK_FALSE);
 	const auto allVkTrue						= Bool32Vec(kNumColorAttachments, VK_TRUE);
 
+	config.channelMask = channelMask;
+
 	config.colorWriteEnableConfig.staticValue	= inverse ? allVkTrue : allVkFalse;
 	config.colorWriteEnableConfig.dynamicValue	= MaskVector(allVkFalse, allVkTrue, mask, inverse);
 
@@ -1108,6 +1132,8 @@ void AddSingleTestCaseDynamic(
 		meshColorsPerAttachment[i] = meshColorsPerAttachment[i - 1] * 0.5f;
 
 	std::vector<tcu::Vec4> clearColorsPerAttachment(kNumColorAttachments, config.clearColorValue);
+
+	ApplyChannelMask(meshColorsPerAttachment, channelMask, config.clearColorValue);
 
 	config.expectedColor = MaskVector(clearColorsPerAttachment, meshColorsPerAttachment, mask, inverse);
 
@@ -1134,6 +1160,22 @@ tcu::TestCaseGroup* createColorWriteEnableTests (tcu::TestContext& testCtx)
 	std::vector<bool> mask_first_and_second	(kNumColorAttachments, false);	mask_first_and_second[0]	= mask_first_and_second[1]		= true;
 	std::vector<bool> mask_second_and_last	(kNumColorAttachments, false);	mask_second_and_last[1]		= mask_second_and_last.back()	= true;
 
+	// Test cases for channel enables
+	static const struct
+	{
+		tcu::BVec4		enabledChannels;
+		std::string		name;
+		std::string		desc;
+	} kChannelCases[] =
+	{
+		{ tcu::BVec4(true, true, true, true), "all_channels", "Enable all channels in colorWriteMask"},
+		{ tcu::BVec4(true, false, false, false), "red_channel", "Red channel enabled in colorWriteMask"},
+		{ tcu::BVec4(false, true, false, false), "green_channel", "Green channel enabled in colorWriteMask"},
+		{ tcu::BVec4(false, false, true, false), "blue_channel", "Blue channel enabled in colorWriteMask"},
+		{ tcu::BVec4(false, false, false, true), "alpha_channel", "Alpha channel enabled in colorWriteMask"},
+		{ tcu::BVec4(false, false, false, false), "no_channels", "Disable all channels in colorWriteMask"},
+	};
+
 	// Test cases for the dynamic state
 	static const struct
 	{
@@ -1151,51 +1193,59 @@ tcu::TestCaseGroup* createColorWriteEnableTests (tcu::TestContext& testCtx)
 		{ SequenceOrdering::TWO_DRAWS_STATIC,	"two_draws_static",		"Bind bad dynamic pipeline and draw, followed by binding correct static pipeline and drawing again"											},
 	};
 
-	for (int orderingIdx = 0; orderingIdx < DE_LENGTH_OF_ARRAY(kOrderingCases); ++orderingIdx)
+	for (int channelCaseIdx = 0; channelCaseIdx < DE_LENGTH_OF_ARRAY(kChannelCases); ++channelCaseIdx)
 	{
-		const auto& kOrderingCase	= kOrderingCases[orderingIdx];
-		const auto& kOrdering		= kOrderingCase.ordering;
+		const auto& kChannelCase	 = kChannelCases[channelCaseIdx];
+		de::MovePtr<tcu::TestCaseGroup> channelGroup(new tcu::TestCaseGroup(testCtx, kChannelCase.name.c_str(), kChannelCase.desc.c_str()));
 
-		de::MovePtr<tcu::TestCaseGroup> orderingGroup(new tcu::TestCaseGroup(testCtx, kOrderingCase.name.c_str(), kOrderingCase.desc.c_str()));
+		for (int orderingIdx = 0; orderingIdx < DE_LENGTH_OF_ARRAY(kOrderingCases); ++orderingIdx)
+		{
+			const auto& kOrderingCase	= kOrderingCases[orderingIdx];
+			const auto& kOrdering		= kOrderingCase.ordering;
 
-		AddSingleTestCaseDynamic("enable_all",					"Dynamically enable writes to all color attachments",					mask_all,				false, orderingGroup.get(), testCtx, kOrdering);
-		AddSingleTestCaseDynamic("enable_first",				"Dynamically enable writes to the first color attachment",				mask_first,				false, orderingGroup.get(), testCtx, kOrdering);
-		AddSingleTestCaseDynamic("enable_second",				"Dynamically enable writes to the second color attachment",				mask_second,			false, orderingGroup.get(), testCtx, kOrdering);
-		AddSingleTestCaseDynamic("enable_last",					"Dynamically enable writes to the last color attachment",				mask_last,				false, orderingGroup.get(), testCtx, kOrdering);
-		AddSingleTestCaseDynamic("enable_first_and_second",		"Dynamically enable writes to the first two color attachments",			mask_first_and_second,	false, orderingGroup.get(), testCtx, kOrdering);
-		AddSingleTestCaseDynamic("enable_second_and_last",		"Dynamically enable writes to the second and last color attachments",	mask_second_and_last,	false, orderingGroup.get(), testCtx, kOrdering);
+			de::MovePtr<tcu::TestCaseGroup> orderingGroup(new tcu::TestCaseGroup(testCtx, kOrderingCase.name.c_str(), kOrderingCase.desc.c_str()));
 
-		AddSingleTestCaseDynamic("disable_all",					"Dynamically disable writes to all color attachments",					mask_all,				true,  orderingGroup.get(), testCtx, kOrdering);
-		AddSingleTestCaseDynamic("disable_first",				"Dynamically disable writes to the first color attachment",				mask_first,				true,  orderingGroup.get(), testCtx, kOrdering);
-		AddSingleTestCaseDynamic("disable_second",				"Dynamically disable writes to the second color attachment",			mask_second,			true,  orderingGroup.get(), testCtx, kOrdering);
-		AddSingleTestCaseDynamic("disable_last",				"Dynamically disable writes to the last color attachment",				mask_last,				true,  orderingGroup.get(), testCtx, kOrdering);
-		AddSingleTestCaseDynamic("disable_first_and_second",	"Dynamically disable writes to the first two color attachments",		mask_first_and_second,	true,  orderingGroup.get(), testCtx, kOrdering);
-		AddSingleTestCaseDynamic("disable_second_and_last",		"Dynamically disable writes to the second and last color attachments",	mask_second_and_last,	true,  orderingGroup.get(), testCtx, kOrdering);
+			AddSingleTestCaseDynamic("enable_all",					"Dynamically enable writes to all color attachments",							mask_all,				kChannelCase.enabledChannels, false, orderingGroup.get(), testCtx, kOrdering);
+			AddSingleTestCaseDynamic("enable_first",				"Dynamically enable writes to the first color attachment",						mask_first,				kChannelCase.enabledChannels, false, orderingGroup.get(), testCtx, kOrdering);
+			AddSingleTestCaseDynamic("enable_second",				"Dynamically enable writes to the second color attachment",						mask_second,			kChannelCase.enabledChannels, false, orderingGroup.get(), testCtx, kOrdering);
+			AddSingleTestCaseDynamic("enable_last",					"Dynamically enable writes to the last color attachment",						mask_last,				kChannelCase.enabledChannels, false, orderingGroup.get(), testCtx, kOrdering);
+			AddSingleTestCaseDynamic("enable_first_and_second",		"Dynamically enable writes to the first two color attachments",					mask_first_and_second,	kChannelCase.enabledChannels, false, orderingGroup.get(), testCtx, kOrdering);
+			AddSingleTestCaseDynamic("enable_second_and_last",		"Dynamically enable writes to the second and last color attachments",			mask_second_and_last,	kChannelCase.enabledChannels, false, orderingGroup.get(), testCtx, kOrdering);
 
-		colorWriteEnableGroup->addChild(orderingGroup.release());
+			AddSingleTestCaseDynamic("disable_all",					"Dynamically disable writes to all color attachments",							mask_all,				kChannelCase.enabledChannels, true,  orderingGroup.get(), testCtx, kOrdering);
+			AddSingleTestCaseDynamic("disable_first",				"Dynamically disable writes to the first color attachment",						mask_first,				kChannelCase.enabledChannels, true,  orderingGroup.get(), testCtx, kOrdering);
+			AddSingleTestCaseDynamic("disable_second",				"Dynamically disable writes to the second color attachment",					mask_second,			kChannelCase.enabledChannels, true,  orderingGroup.get(), testCtx, kOrdering);
+			AddSingleTestCaseDynamic("disable_last",				"Dynamically disable writes to the last color attachment",						mask_last,				kChannelCase.enabledChannels, true,  orderingGroup.get(), testCtx, kOrdering);
+			AddSingleTestCaseDynamic("disable_first_and_second",	"Dynamically disable writes to the first two color attachments",				mask_first_and_second,	kChannelCase.enabledChannels, true,  orderingGroup.get(), testCtx, kOrdering);
+			AddSingleTestCaseDynamic("disable_second_and_last",		"Dynamically disable writes to the second and last color attachments",			mask_second_and_last,	kChannelCase.enabledChannels, true,  orderingGroup.get(), testCtx, kOrdering);
+
+			channelGroup->addChild(orderingGroup.release());
+		}
+
+		// Test cases for the static state
+		// Note that the dynamic state test cases above also test pipelines with static state (when ordering is BEFORE_GOOD_STATIC and TWO_DRAWS_STATIC).
+		// However they all bind a pipeline with the static state AFTER binding a pipeline with the dynamic state.
+		// The only case missing, then, is static state alone without any dynamic pipelines in the same render pass or command buffer.
+		de::MovePtr<tcu::TestCaseGroup> staticOrderingGroup(new tcu::TestCaseGroup(testCtx, "static", "Static state set"));
+
+		AddSingleTestCaseStatic("enable_all",				"Statically enable writes to all color attachments",							mask_all,				kChannelCase.enabledChannels, false, staticOrderingGroup.get(), testCtx);
+		AddSingleTestCaseStatic("enable_first",				"Statically enable writes to the first color attachment",						mask_first,				kChannelCase.enabledChannels, false, staticOrderingGroup.get(), testCtx);
+		AddSingleTestCaseStatic("enable_second",			"Statically enable writes to the second color attachment",						mask_second,			kChannelCase.enabledChannels, false, staticOrderingGroup.get(), testCtx);
+		AddSingleTestCaseStatic("enable_last",				"Statically enable writes to the last color attachment",						mask_last,				kChannelCase.enabledChannels, false, staticOrderingGroup.get(), testCtx);
+		AddSingleTestCaseStatic("enable_first_and_second",	"Statically enable writes to the first two color attachments",					mask_first_and_second,	kChannelCase.enabledChannels, false, staticOrderingGroup.get(), testCtx);
+		AddSingleTestCaseStatic("enable_second_and_last",	"Statically enable writes to the second and last color attachments",			mask_second_and_last,	kChannelCase.enabledChannels, false, staticOrderingGroup.get(), testCtx);
+
+		AddSingleTestCaseStatic("disable_all",				"Statically disable writes to all color attachments",							mask_all,				kChannelCase.enabledChannels, true,  staticOrderingGroup.get(), testCtx);
+		AddSingleTestCaseStatic("disable_first",			"Statically disable writes to the first color attachment",						mask_first,				kChannelCase.enabledChannels, true,  staticOrderingGroup.get(), testCtx);
+		AddSingleTestCaseStatic("disable_second",			"Statically disable writes to the second color attachment",						mask_second,			kChannelCase.enabledChannels, true,  staticOrderingGroup.get(), testCtx);
+		AddSingleTestCaseStatic("disable_last",				"Statically disable writes to the last color attachment",						mask_last,				kChannelCase.enabledChannels, true,  staticOrderingGroup.get(), testCtx);
+		AddSingleTestCaseStatic("disable_first_and_second",	"Statically disable writes to the first two color attachments",					mask_first_and_second,	kChannelCase.enabledChannels, true,  staticOrderingGroup.get(), testCtx);
+		AddSingleTestCaseStatic("disable_second_and_last",	"Statically disable writes to the second and last color attachments",			mask_second_and_last,	kChannelCase.enabledChannels, true,  staticOrderingGroup.get(), testCtx);
+
+		channelGroup->addChild(staticOrderingGroup.release());
+
+		colorWriteEnableGroup->addChild(channelGroup.release());
 	}
-
-	// Test cases for the static state
-	// Note that the dynamic state test cases above also test pipelines with static state (when ordering is BEFORE_GOOD_STATIC and TWO_DRAWS_STATIC).
-	// However they all bind a pipeline with the static state AFTER binding a pipeline with the dynamic state.
-	// The only case missing, then, is static state alone without any dynamic pipelines in the same render pass or command buffer.
-	de::MovePtr<tcu::TestCaseGroup> staticOrderingGroup(new tcu::TestCaseGroup(testCtx, "static", "Static state set"));
-
-	AddSingleTestCaseStatic("enable_all",				"Statically enable writes to all color attachments",					mask_all,				false, staticOrderingGroup.get(), testCtx);
-	AddSingleTestCaseStatic("enable_first",				"Statically enable writes to the first color attachment",				mask_first,				false, staticOrderingGroup.get(), testCtx);
-	AddSingleTestCaseStatic("enable_second",			"Statically enable writes to the second color attachment",				mask_second,			false, staticOrderingGroup.get(), testCtx);
-	AddSingleTestCaseStatic("enable_last",				"Statically enable writes to the last color attachment",				mask_last,				false, staticOrderingGroup.get(), testCtx);
-	AddSingleTestCaseStatic("enable_first_and_second",	"Statically enable writes to the first two color attachments",			mask_first_and_second,	false, staticOrderingGroup.get(), testCtx);
-	AddSingleTestCaseStatic("enable_second_and_last",	"Statically enable writes to the second and last color attachments",	mask_second_and_last,	false, staticOrderingGroup.get(), testCtx);
-
-	AddSingleTestCaseStatic("disable_all",				"Statically disable writes to all color attachments",					mask_all,				true,  staticOrderingGroup.get(), testCtx);
-	AddSingleTestCaseStatic("disable_first",			"Statically disable writes to the first color attachment",				mask_first,				true,  staticOrderingGroup.get(), testCtx);
-	AddSingleTestCaseStatic("disable_second",			"Statically disable writes to the second color attachment",				mask_second,			true,  staticOrderingGroup.get(), testCtx);
-	AddSingleTestCaseStatic("disable_last",				"Statically disable writes to the last color attachment",				mask_last,				true,  staticOrderingGroup.get(), testCtx);
-	AddSingleTestCaseStatic("disable_first_and_second",	"Statically disable writes to the first two color attachments",			mask_first_and_second,	true,  staticOrderingGroup.get(), testCtx);
-	AddSingleTestCaseStatic("disable_second_and_last",	"Statically disable writes to the second and last color attachments",	mask_second_and_last,	true,  staticOrderingGroup.get(), testCtx);
-
-	colorWriteEnableGroup->addChild(staticOrderingGroup.release());
 
 	return colorWriteEnableGroup.release();
 }

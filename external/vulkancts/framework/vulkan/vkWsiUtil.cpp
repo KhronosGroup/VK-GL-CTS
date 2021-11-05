@@ -589,7 +589,7 @@ tcu::UVec2 getFullScreenSize (const vk::wsi::Type wsiType, const vk::wsi::Displa
 		case TYPE_WIN32:
 		{
 #if ( DE_OS == DE_OS_WIN32 )
-			de::MovePtr<Window>					nullWindow		(display.createWindow(tcu::nothing<tcu::UVec2>()));
+			de::MovePtr<Window>					nullWindow		(display.createWindow(tcu::Nothing));
 			const Win32WindowInterface&			win32Window		= dynamic_cast<const Win32WindowInterface&>(*nullWindow);
 			HMONITOR							hMonitor		= (HMONITOR)MonitorFromWindow((HWND)win32Window.getNative().internal, MONITOR_DEFAULTTONEAREST);
 			MONITORINFO							monitorInfo;
@@ -631,7 +631,7 @@ Move<VkRenderPass> WsiTriangleRenderer::createRenderPass (const DeviceInterface&
 		VK_ATTACHMENT_STORE_OP_STORE,
 		VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 		VK_ATTACHMENT_STORE_OP_DONT_CARE,
-		(explicitLayoutTransitions) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+		(explicitLayoutTransitions) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED,
 		(explicitLayoutTransitions) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 	};
 	const VkAttachmentReference		colorAttRef			=

@@ -2089,7 +2089,7 @@ protected:
 			   "   gl_TessLevelOuter[1] = 1.0;                                                  \n"
 			   "   gl_TessLevelOuter[2] = 1.0;                                                  \n"
 			   "}";
-	};
+	}
 
 	virtual std::string TessEvalShader()
 	{

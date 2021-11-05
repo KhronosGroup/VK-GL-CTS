@@ -152,7 +152,7 @@ ConditionalDraw::ConditionalDraw (Context &context, ConditionalTestSpec testSpec
 	initialize();
 
 	m_secondaryCmdBuffer = vk::allocateCommandBuffer(m_vk, m_context.getDevice(), *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY);
-};
+}
 
 void ConditionalDraw::createAndBindIndexBuffer (vk::VkCommandBuffer cmdBuffer)
 {
@@ -502,7 +502,7 @@ tcu::TestStatus ConditionalDraw::iterate (void)
 	}
 
 	return tcu::TestStatus(res, qpGetTestResultName(res));
-};
+}
 
 }	// anonymous
 

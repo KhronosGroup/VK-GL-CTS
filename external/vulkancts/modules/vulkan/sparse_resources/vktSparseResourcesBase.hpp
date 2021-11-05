@@ -68,7 +68,7 @@ public:
 		const tcu::CommandLine&	cmdLine	= context.getTestContext().getCommandLine();
 		m_deviceGroupIdx				= cmdLine.getVKDeviceGroupId() - 1;
 	}
-	bool		usingDeviceGroups() { return m_useDeviceGroups; }
+	bool			usingDeviceGroups		()							{ return m_useDeviceGroups; }
 
 protected:
 	typedef std::vector<QueueRequirements>				QueueRequirementsVec;

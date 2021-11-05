@@ -74,7 +74,7 @@ public:
 	const std::string			getInstanceName			(void) const			{ return m_instanceName; }
 
 	void						addMember				(SharedStructVar var)	{ m_members.push_back(var); }
-	int							getNumMembers			(void)					{ return static_cast<int>(m_members.size()); };
+	int							getNumMembers			(void)					{ return static_cast<int>(m_members.size()); }
 
 	inline iterator				begin					(void)					{ return m_members.begin(); }
 	inline const_iterator		begin					(void) const			{ return m_members.begin(); }
@@ -95,14 +95,14 @@ private:
 class ShaderInterface
 {
 public:
-										ShaderInterface		(void) {};
-										~ShaderInterface	(void) {};
+										ShaderInterface		(void) {}
+										~ShaderInterface	(void) {}
 
 	SharedStruct&						allocSharedObject	(const std::string& name, const std::string& instanceName);
 	NamedStructSP						allocStruct			(const std::string& name);
 
-	std::vector<NamedStructSP>&			getStructs			(void)			{ return m_structs; };
-	int									getNumStructs		(void)			{ return static_cast<int>(m_structs.size()); };
+	std::vector<NamedStructSP>&			getStructs			(void)			{ return m_structs; }
+	int									getNumStructs		(void)			{ return static_cast<int>(m_structs.size()); }
 
 	int									getNumSharedObjects	(void) const	{ return static_cast<int>(m_sharedMemoryObjects.size()); }
 	std::vector<SharedStruct>&			getSharedObjects	(void)			{ return m_sharedMemoryObjects; }

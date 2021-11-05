@@ -477,7 +477,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 			<< writerCalcAndWrite
 			<< "  hitAttribute = vec3(0.0f, 0.0f, 0.0f);\n"
 			<< "  reportIntersectionEXT(1.0f, 0);\n"
-			<< "}\n";
+			<< "}\n"
 			;
 		programCollection.glslSources.add("writer_isect") << glu::IntersectionSource(updateRayTracingGLSL(isect.str())) << buildOptions;
 	}
@@ -496,7 +496,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 			<< "{\n"
 			<< rayTracingIds
 			<< writerCalcAndWrite
-			<< "}\n";
+			<< "}\n"
 			;
 		programCollection.glslSources.add("writer_ahit") << glu::AnyHitSource(updateRayTracingGLSL(ahit.str())) << buildOptions;
 	}
@@ -515,7 +515,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 			<< "{\n"
 			<< rayTracingIds
 			<< writerCalcAndWrite
-			<< "}\n";
+			<< "}\n"
 			;
 		programCollection.glslSources.add("writer_chit") << glu::ClosestHitSource(updateRayTracingGLSL(chit.str())) << buildOptions;
 	}
@@ -533,7 +533,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 			<< "{\n"
 			<< rayTracingIds
 			<< writerCalcAndWrite
-			<< "}\n";
+			<< "}\n"
 			;
 		programCollection.glslSources.add("writer_miss") << glu::MissSource(updateRayTracingGLSL(miss.str())) << buildOptions;
 	}
@@ -565,7 +565,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 			<< "{\n"
 			<< rayTracingIds
 			<< writerCalcAndWrite
-			<< "}\n";
+			<< "}\n"
 			;
 		programCollection.glslSources.add("writer_callable") << glu::CallableSource(updateRayTracingGLSL(callable.str())) << buildOptions;
 	}
@@ -653,7 +653,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 			<< readerReadAndSave
 			<< "  hitAttribute = vec3(0.0f, 0.0f, 0.0f);\n"
 			<< "  reportIntersectionEXT(1.0f, 0);\n"
-			<< "}\n";
+			<< "}\n"
 			;
 		programCollection.glslSources.add("reader_isect") << glu::IntersectionSource(updateRayTracingGLSL(isect.str())) << buildOptions;
 	}
@@ -672,7 +672,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 			<< "{\n"
 			<< rayTracingIds
 			<< readerReadAndSave
-			<< "}\n";
+			<< "}\n"
 			;
 		programCollection.glslSources.add("reader_ahit") << glu::AnyHitSource(updateRayTracingGLSL(ahit.str())) << buildOptions;
 	}
@@ -691,7 +691,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 			<< "{\n"
 			<< rayTracingIds
 			<< readerReadAndSave
-			<< "}\n";
+			<< "}\n"
 			;
 		programCollection.glslSources.add("reader_chit") << glu::ClosestHitSource(updateRayTracingGLSL(chit.str())) << buildOptions;
 	}
@@ -709,7 +709,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 			<< "{\n"
 			<< rayTracingIds
 			<< readerReadAndSave
-			<< "}\n";
+			<< "}\n"
 			;
 		programCollection.glslSources.add("reader_miss") << glu::MissSource(updateRayTracingGLSL(miss.str())) << buildOptions;
 	}
@@ -741,7 +741,7 @@ void BarrierTestCase::initPrograms (SourceCollections& programCollection) const
 			<< "{\n"
 			<< rayTracingIds
 			<< readerReadAndSave
-			<< "}\n";
+			<< "}\n"
 			;
 		programCollection.glslSources.add("reader_callable") << glu::CallableSource(updateRayTracingGLSL(callable.str())) << buildOptions;
 	}

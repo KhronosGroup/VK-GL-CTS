@@ -295,7 +295,7 @@ void generateBaseClearAndDepthCommands (const TestRenderTarget& target, vector<C
 
 					RenderCommand renderCmd;
 					renderCmd.params.visibleFace		= rr::FACETYPE_FRONT;
-					renderCmd.params.depth				= depthValues[y1*numL1CellsX + x1];;
+					renderCmd.params.depth				= depthValues[y1*numL1CellsX + x1];
 					renderCmd.params.depthTestEnabled	= true;
 					renderCmd.params.depthFunc			= GL_ALWAYS;
 					renderCmd.params.depthWriteMask		= true;

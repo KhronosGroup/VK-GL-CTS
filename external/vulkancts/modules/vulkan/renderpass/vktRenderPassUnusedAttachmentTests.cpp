@@ -947,7 +947,7 @@ std::string loadOpToString (VkAttachmentLoadOp loadOp)
 		default:
 			DE_FATAL("unexpected attachment load op");
 			return "";
-	};
+	}
 }
 
 std::string storeOpToString (VkAttachmentStoreOp storeOp)
@@ -961,7 +961,7 @@ std::string storeOpToString (VkAttachmentStoreOp storeOp)
 		default:
 			DE_FATAL("unexpected attachment store op");
 			return "";
-	};
+	}
 }
 
 } // anonymous

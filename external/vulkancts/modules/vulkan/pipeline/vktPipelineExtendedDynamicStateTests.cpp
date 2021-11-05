@@ -528,6 +528,14 @@ const StencilOpParams kDefaultStencilOpParams =
 	vk::VK_COMPARE_OP_ALWAYS
 };
 
+struct DepthBiasParams
+{
+	float constantFactor;
+	float clamp;
+};
+
+const DepthBiasParams kNoDepthBiasParams = { 0.0f, 0.0f };
+
 using ViewportVec	= std::vector<vk::VkViewport>;
 using ScissorVec	= std::vector<vk::VkRect2D>;
 using StencilOpVec	= std::vector<StencilOpParams>;
@@ -542,7 +550,7 @@ struct StaticAndDynamicPair
 	// Helper constructor to set a static value and no dynamic value.
 	StaticAndDynamicPair (const T& value)
 		: staticValue	(value)
-		, dynamicValue	(tcu::nothing<T>())
+		, dynamicValue	(tcu::Nothing)
 	{
 	}
 
@@ -584,6 +592,7 @@ using RastDiscardEnableConfig		= BooleanFlagConfig;
 using PrimRestartEnableConfig		= BooleanFlagConfig;
 using LogicOpConfig					= StaticAndDynamicPair<vk::VkLogicOp>;
 using PatchControlPointsConfig		= StaticAndDynamicPair<deUint8>;
+using DepthBiasConfig				= StaticAndDynamicPair<DepthBiasParams>;
 
 const tcu::Vec4		kDefaultTriangleColor	(0.0f, 0.0f, 1.0f, 1.0f);	// Opaque blue.
 const tcu::Vec4		kDefaultClearColor		(0.0f, 0.0f, 0.0f, 1.0f);	// Opaque black.
@@ -601,6 +610,7 @@ struct MeshParams
 	float		scaleY;
 	float		offsetX;
 	float		offsetY;
+	float		fanScale;
 
 	MeshParams (const tcu::Vec4&	color_		= kDefaultTriangleColor,
 				float				depth_		= 0.0f,
@@ -608,7 +618,8 @@ struct MeshParams
 				float				scaleX_		= 1.0f,
 				float				scaleY_		= 1.0f,
 				float				offsetX_	= 0.0f,
-				float				offsetY_	= 0.0f)
+				float				offsetY_	= 0.0f,
+				float				fanScale_	= 0.0f)
 		: color		(color_)
 		, depth		(depth_)
 		, reversed	(reversed_)
@@ -616,6 +627,7 @@ struct MeshParams
 		, scaleY	(scaleY_)
 		, offsetX	(offsetX_)
 		, offsetY	(offsetY_)
+		, fanScale	(fanScale_)
 	{}
 };
 
@@ -814,6 +826,10 @@ struct TestConfig
 	// Force inclusion of passthrough geometry shader or not.
 	bool						forceGeometryShader;
 
+	// Force single vertex in the VBO.
+	bool						singleVertex;
+	deUint32					singleVertexDrawCount;
+
 	// Offset and extra room after the vertex buffer data.
 	vk::VkDeviceSize			vertexDataOffset;
 	vk::VkDeviceSize			vertexDataExtraBytes;
@@ -837,6 +853,7 @@ struct TestConfig
 	PrimRestartEnableConfig		primRestartEnableConfig;
 	LogicOpConfig				logicOpConfig;
 	PatchControlPointsConfig	patchControlPointsConfig;
+	DepthBiasConfig				depthBiasConfig;
 
 	// Sane defaults.
 	TestConfig (SequenceOrdering ordering, const VertexGenerator* staticVertexGenerator = nullptr, const VertexGenerator* dynamicVertexGenerator = nullptr)
@@ -852,6 +869,8 @@ struct TestConfig
 		, minDepthBounds				(0.0f)
 		, maxDepthBounds				(1.0f)
 		, forceGeometryShader			(false)
+		, singleVertex					(false)
+		, singleVertexDrawCount			(0)
 		, vertexDataOffset				(0ull)
 		, vertexDataExtraBytes			(0ull)
 		, vertexGenerator				(makeVertexGeneratorConfig(staticVertexGenerator, dynamicVertexGenerator))
@@ -874,6 +893,7 @@ struct TestConfig
 		, primRestartEnableConfig		(false)
 		, logicOpConfig					(vk::VK_LOGIC_OP_CLEAR)
 		, patchControlPointsConfig		(1u)
+		, depthBiasConfig				(kNoDepthBiasParams)
 		, m_swappedValues				(false)
 	{
 	}
@@ -900,6 +920,12 @@ struct TestConfig
 	deUint32 getActivePatchControlPoints () const
 	{
 		return ((patchControlPointsConfig.dynamicValue && !m_swappedValues) ? patchControlPointsConfig.dynamicValue.get() : patchControlPointsConfig.staticValue);
+	}
+
+	// Get the active depth bias parameters.
+	DepthBiasParams getActiveDepthBiasParams () const
+	{
+		return ((depthBiasConfig.dynamicValue && !m_swappedValues) ? depthBiasConfig.dynamicValue.get() : depthBiasConfig.staticValue);
 	}
 
 	// Returns true if there is more than one viewport.
@@ -945,6 +971,7 @@ struct TestConfig
 		primRestartEnableConfig.swapValues();
 		logicOpConfig.swapValues();
 		patchControlPointsConfig.swapValues();
+		depthBiasConfig.swapValues();
 
 		m_swappedValues = !m_swappedValues;
 	}
@@ -998,6 +1025,12 @@ struct TestConfig
 		return static_cast<bool>(primRestartEnableConfig.dynamicValue);
 	}
 
+	// Returns true if the test needs the depth bias clamp feature.
+	bool needsDepthBiasClampFeature () const
+	{
+		return (getActiveDepthBiasParams().clamp != 0.0f);
+	}
+
 	// Returns the appropriate color image format for the test.
 	vk::VkFormat colorFormat () const
 	{
@@ -1010,6 +1043,7 @@ struct TestConfig
 	{
 		std::vector<vk::VkDynamicState> dynamicStates;
 
+		if (depthBiasConfig.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_BIAS);
 		if (cullModeConfig.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_CULL_MODE_EXT);
 		if (frontFaceConfig.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_FRONT_FACE_EXT);
 		if (topologyConfig.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY_EXT);
@@ -1091,6 +1125,7 @@ struct PushConstants
 	float		scaleY;
 	float		offsetX;
 	float		offsetY;
+	float		fanScale;
 };
 
 void copy(vk::VkStencilOpState& dst, const StencilOpParams& src)
@@ -1186,7 +1221,7 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 	const auto&	dbTestEnable	= m_testConfig.depthBoundsTestEnableConfig;
 	const bool	useDepthBounds	= (dbTestEnable.staticValue || (dbTestEnable.dynamicValue && dbTestEnable.dynamicValue.get()));
 
-	if (useDepthBounds || m_testConfig.needsGeometryShader() || m_testConfig.needsTessellation())
+	if (useDepthBounds || m_testConfig.needsGeometryShader() || m_testConfig.needsTessellation() || m_testConfig.needsDepthBiasClampFeature())
 	{
 		const auto features = vk::getPhysicalDeviceFeatures(vki, physicalDevice);
 
@@ -1201,6 +1236,10 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 		// Check tessellation support
 		if (m_testConfig.needsTessellation() && !features.tessellationShader)
 			TCU_THROW(NotSupportedError, "Tessellation feature not supported");
+
+		// Check depth bias clamp feature.
+		if (m_testConfig.needsDepthBiasClampFeature() && !features.depthBiasClamp)
+			TCU_THROW(NotSupportedError, "Depth bias clamp not supported");
 	}
 
 	// Check color image format support (depth/stencil will be chosen at runtime).
@@ -1232,6 +1271,7 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 		<< "    float scaleY;\n"
 		<< "    float offsetX;\n"
 		<< "    float offsetY;\n"
+		<< "    float fanScale;\n"
 		<< "} pushConstants;\n"
 		;
 	const auto pushConstants = pushSource.str();
@@ -1274,6 +1314,17 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 		<< "void main() {\n"
 		<< "${CALCULATIONS}"
 		<< "    gl_Position = vec4(vertexCoords.x * pushConstants.scaleX + pushConstants.offsetX, vertexCoords.y * pushConstants.scaleY + pushConstants.offsetY, pushConstants.depthValue, 1.0);\n"
+		<< "    vec2 fanOffset;\n"
+		<< "    switch (gl_VertexIndex) {\n"
+		<< "    case 0: fanOffset = vec2(0.0, 0.0); break;\n"
+		<< "    case 1: fanOffset = vec2(1.0, 0.0); break;\n"
+		<< "    case 2: fanOffset = vec2(1.0, -1.0); break;\n"
+		<< "    case 3: fanOffset = vec2(0.0, -1.0); break;\n"
+		<< "    case 4: fanOffset = vec2(-1.0, -1.0); break;\n"
+		<< "    case 5: fanOffset = vec2(-1.0, 0.0); break;\n"
+		<< "    default: fanOffset = vec2(-1000.0); break;\n"
+		<< "    }\n"
+		<< "    gl_Position.xy += pushConstants.fanScale * fanOffset;\n"
 		<< "}\n"
 		;
 
@@ -1379,12 +1430,13 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 			<< "                 gl_in[1].gl_Position * gl_TessCoord.y + \n"
 			<< "                 gl_in[2].gl_Position * gl_TessCoord.z);\n"
 			<< "}\n";
-			;
 	}
 
+	// In reversed test configurations, the pipeline with dynamic state needs to have the inactive shader.
+	const auto kReversed = m_testConfig.isReversed();
+	programCollection.glslSources.add("dynamicVert") << glu::VertexSource(kReversed ? inactiveVertSource : activeVertSource);
+	programCollection.glslSources.add("staticVert") << glu::VertexSource(kReversed ? activeVertSource : inactiveVertSource);
 
-	programCollection.glslSources.add("vert") << glu::VertexSource(activeVertSource);
-	programCollection.glslSources.add("vert2") << glu::VertexSource(inactiveVertSource);
 	programCollection.glslSources.add("frag") << glu::FragmentSource(fragSource.str());
 	if (m_testConfig.needsGeometryShader())
 		programCollection.glslSources.add("geom") << glu::GeometrySource(geomSource.str());
@@ -1483,6 +1535,12 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 
 	if (testConfig.depthBiasEnableConfig.dynamicValue)
 		vkd.cmdSetDepthBiasEnableEXT(cmdBuffer, makeVkBool32(testConfig.depthBiasEnableConfig.dynamicValue.get()));
+
+	if (testConfig.depthBiasConfig.dynamicValue)
+	{
+		const auto& bias = testConfig.depthBiasConfig.dynamicValue.get();
+		vkd.cmdSetDepthBias(cmdBuffer, bias.constantFactor, bias.clamp, 0.0f);
+	}
 
 	if (testConfig.rastDiscardEnableConfig.dynamicValue)
 		vkd.cmdSetRasterizerDiscardEnableEXT(cmdBuffer, makeVkBool32(testConfig.rastDiscardEnableConfig.dynamicValue.get()));
@@ -1771,6 +1829,9 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		}
 	}
 
+	if (m_testConfig.singleVertex)
+		vertices.resize(1);
+
 	// Reversed vertices, except for the first one (0, 5, 4, 3, 2, 1): clockwise mesh for triangles. Not to be used with lines.
 	std::vector<tcu::Vec2> rvertices;
 	if (topologyClass == TopologyClass::TRIANGLE)
@@ -1933,9 +1994,9 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	}
 
 	// Shader modules.
-	const auto						vertModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
-	const auto						vertModule2	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert2"), 0u);
-	const auto						fragModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+	const auto						dynamicVertModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("dynamicVert"), 0u);
+	const auto						staticVertModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("staticVert"), 0u);
+	const auto						fragModule			= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
 	vk::Move<vk::VkShaderModule>	geomModule;
 	vk::Move<vk::VkShaderModule>	tescModule;
 	vk::Move<vk::VkShaderModule>	teseModule;
@@ -1988,10 +2049,10 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	shaderStaticStages = shaderStages;
 	shaderStageCreateInfo.stage = vk::VK_SHADER_STAGE_VERTEX_BIT;
 
-	shaderStageCreateInfo.module = vertModule.get();
+	shaderStageCreateInfo.module = dynamicVertModule.get();
 	shaderStages.push_back(shaderStageCreateInfo);
 
-	shaderStageCreateInfo.module = vertModule2.get();
+	shaderStageCreateInfo.module = staticVertModule.get();
 	shaderStaticStages.push_back(shaderStageCreateInfo);
 
 	// Input state.
@@ -2080,9 +2141,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		m_testConfig.cullModeConfig.staticValue,						//	VkCullModeFlags							cullMode;
 		m_testConfig.frontFaceConfig.staticValue,						//	VkFrontFace								frontFace;
 		makeVkBool32(m_testConfig.depthBiasEnableConfig.staticValue),	//	VkBool32								depthBiasEnable;
-		// Change the depth bias parameters if depth bias is dynamic
-		m_testConfig.depthBiasEnableConfig.dynamicValue ? 2e7f : 0.0f,	//	float									depthBiasConstantFactor;
-		m_testConfig.depthBiasEnableConfig.dynamicValue ? 0.25f : 0.0f,	//	float									depthBiasClamp;
+		m_testConfig.depthBiasConfig.staticValue.constantFactor,		//	float									depthBiasConstantFactor;
+		m_testConfig.depthBiasConfig.staticValue.clamp,					//	float									depthBiasClamp;
 		0.0f,															//	float									depthBiasSlopeFactor;
 		1.0f,															//	float									lineWidth;
 	};
@@ -2323,6 +2383,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 						m_testConfig.meshParams[meshIdx].scaleY,	//	float		scaleY;
 						m_testConfig.meshParams[meshIdx].offsetX,	//	float		offsetX;
 						m_testConfig.meshParams[meshIdx].offsetY,	//	float		offsetY;
+						m_testConfig.meshParams[meshIdx].fanScale,	//	float		fanScale;
 					};
 					vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), pushConstantStageFlags, 0u, static_cast<deUint32>(sizeof(pushConstants)), &pushConstants);
 
@@ -2360,7 +2421,12 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 						vkd.cmdDrawIndexed(cmdBuffer, numIndices, 1u, 0u, 0u, 0u);
 					}
 					else
-						vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);
+					{
+						deUint32 vertex_count = static_cast<deUint32>(vertices.size());
+						if (m_testConfig.singleVertex)
+							vertex_count = m_testConfig.singleVertexDrawCount;
+						vkd.cmdDraw(cmdBuffer, vertex_count, 1u, 0u, 0u);
+					}
 				}
 			}
 
@@ -2827,6 +2893,27 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, prefix + "_with_offset_and_padding", "Dynamically set stride using a nonzero vertex data offset and extra bytes", config));
 				}
 			}
+
+			// Dynamic stride of 0
+			{
+				TestConfig config(kOrdering, getVertexWithExtraAttributesGenerator());
+				config.strideConfig.staticValue		= config.getActiveVertexGenerator()->getVertexDataStrides();
+				config.strideConfig.dynamicValue	= { 0 };
+				config.vertexDataOffset				= 4;
+				config.singleVertex                 = true;
+				config.singleVertexDrawCount        = 6;
+
+				// Make the mesh cover the top half only. If the implementation reads data outside the vertex data it should read the
+				// offscreen vertex and draw something in the bottom half.
+				config.referenceColor			= HorizontalSplitGenerator(kDefaultTriangleColor, kDefaultClearColor);
+				config.meshParams[0].scaleY		= 0.5f;
+				config.meshParams[0].offsetY	= -0.5f;
+
+				// Use fan scale to synthesize a fan from a vertex attribute which remains constant over the draw call.
+				config.meshParams[0].fanScale = 1.0f;
+
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "zero_stride_with_offset", "Dynamically set zero stride using a nonzero vertex data offset", config));
+			}
 		}
 
 		// Depth test enable.
@@ -2879,45 +2966,90 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_write_disable", "Dynamically disable writes to the depth buffer", config));
 		}
 
-		// Depth bias enable.
+		// Depth bias enable with static or dynamic depth bias parameters.
 		{
+			const DepthBiasParams kAlternativeDepthBiasParams = { 2e7f, 0.25f };
+
+			for (int dynamicBiasIter = 0; dynamicBiasIter < 2; ++dynamicBiasIter)
 			{
-				TestConfig config(kOrdering);
+				const bool useDynamicBias = (dynamicBiasIter > 0);
 
-				// Enable depth test and write 1.0f
-				config.depthTestEnableConfig.staticValue = true;
-				config.depthWriteEnableConfig.staticValue = true;
-				config.depthCompareOpConfig.staticValue = vk::VK_COMPARE_OP_ALWAYS;
-				// Clear depth buffer to 0.25f
-				config.clearDepthValue = 0.25f;
-				// Write depth to 0.5f
-				config.meshParams[0].depth = 0.5f;
+				{
+					TestConfig config(kOrdering);
 
-				// Enable dynamic depth bias and expect the depth value to be clamped to 0.75f based on depthBiasConstantFactor and depthBiasClamp
-				config.depthBiasEnableConfig.staticValue = false;
-				config.depthBiasEnableConfig.dynamicValue = tcu::just(true);
-				config.expectedDepth = 0.75f;
+					// Enable depth test and write 1.0f
+					config.depthTestEnableConfig.staticValue = true;
+					config.depthWriteEnableConfig.staticValue = true;
+					config.depthCompareOpConfig.staticValue = vk::VK_COMPARE_OP_ALWAYS;
+					// Clear depth buffer to 0.25f
+					config.clearDepthValue = 0.25f;
+					// Write depth to 0.5f
+					config.meshParams[0].depth = 0.5f;
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_bias_enable", "Dynamically enable the depth bias", config));
-			}
-			{
-				TestConfig config(kOrdering);
+					// Enable dynamic depth bias and expect the depth value to be clamped to 0.75f based on depthBiasConstantFactor and depthBiasClamp
+					if (useDynamicBias)
+					{
+						config.depthBiasConfig.staticValue	= kNoDepthBiasParams;
+						config.depthBiasConfig.dynamicValue	= kAlternativeDepthBiasParams;
+					}
+					else
+					{
+						config.depthBiasConfig.staticValue	= kAlternativeDepthBiasParams;
+					}
 
-				// Enable depth test and write 1.0f
-				config.depthTestEnableConfig.staticValue = true;
-				config.depthWriteEnableConfig.staticValue = true;
-				config.depthCompareOpConfig.staticValue = vk::VK_COMPARE_OP_ALWAYS;
-				// Clear depth buffer to 0.25f
-				config.clearDepthValue = 0.25f;
-				// Write depth to 0.5f
-				config.meshParams[0].depth = 0.5f;
+					config.depthBiasEnableConfig.staticValue = false;
+					config.depthBiasEnableConfig.dynamicValue = tcu::just(true);
+					config.expectedDepth = 0.75f;
 
-				// Disable dynamic depth bias and expect the depth value to remain at 0.5f based on written value
-				config.depthBiasEnableConfig.staticValue = true;
-				config.depthBiasEnableConfig.dynamicValue = tcu::just(false);
-				config.expectedDepth = 0.5f;
+					std::string caseName = "depth_bias_enable";
+					std::string caseDesc = "Dynamically enable the depth bias";
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_bias_disable", "Dynamically disable the depth bias", config));
+					if (useDynamicBias)
+					{
+						caseName += "_dynamic_bias_params";
+						caseDesc += " and set the bias params dynamically";
+					}
+
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, caseName, caseDesc, config));
+				}
+				{
+					TestConfig config(kOrdering);
+
+					// Enable depth test and write 1.0f
+					config.depthTestEnableConfig.staticValue = true;
+					config.depthWriteEnableConfig.staticValue = true;
+					config.depthCompareOpConfig.staticValue = vk::VK_COMPARE_OP_ALWAYS;
+					// Clear depth buffer to 0.25f
+					config.clearDepthValue = 0.25f;
+					// Write depth to 0.5f
+					config.meshParams[0].depth = 0.5f;
+
+					// Disable dynamic depth bias and expect the depth value to remain at 0.5f based on written value
+					if (useDynamicBias)
+					{
+						config.depthBiasConfig.staticValue	= kNoDepthBiasParams;
+						config.depthBiasConfig.dynamicValue	= kAlternativeDepthBiasParams;
+					}
+					else
+					{
+						config.depthBiasConfig.staticValue	= kAlternativeDepthBiasParams;
+					}
+
+					config.depthBiasEnableConfig.staticValue = true;
+					config.depthBiasEnableConfig.dynamicValue = tcu::just(false);
+					config.expectedDepth = 0.5f;
+
+					std::string caseName = "depth_bias_disable";
+					std::string caseDesc = "Dynamically disable the depth bias";
+
+					if (useDynamicBias)
+					{
+						caseName += "_dynamic_bias_params";
+						caseDesc += " and set the bias params dynamically";
+					}
+
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, caseName, caseDesc, config));
+				}
 			}
 		}
 

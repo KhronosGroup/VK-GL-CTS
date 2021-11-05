@@ -107,7 +107,7 @@ public:
 	const std::vector<VertexOutputInfo>&	getOutputs			(void) const	{ return m_outputs;	}
 
 protected:
-											~VertexShader		(void) {}; // \note Renderer will not delete any objects passed in.
+											~VertexShader		(void) {} // \note Renderer will not delete any objects passed in.
 
 	std::vector<VertexInputInfo>			m_inputs;
 	std::vector<VertexOutputInfo>			m_outputs;
@@ -130,7 +130,7 @@ public:
 	virtual void							shadeFragments		(FragmentPacket* packets, const int numPackets, const FragmentShadingContext& context) const = 0; // \note numPackets must be greater than zero.
 
 protected:
-											~FragmentShader		(void) {}; // \note Renderer will not delete any objects passed in.
+											~FragmentShader		(void) {} // \note Renderer will not delete any objects passed in.
 
 	std::vector<FragmentInputInfo>			m_inputs;
 	std::vector<FragmentOutputInfo>			m_outputs;

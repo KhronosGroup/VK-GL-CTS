@@ -22,6 +22,7 @@ const VkPhysicalDeviceIDProperties&								getIDProperties								(void) const {
 const VkPhysicalDeviceInlineUniformBlockPropertiesEXT&			getInlineUniformBlockPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceInlineUniformBlockPropertiesEXT>();			}
 const VkPhysicalDeviceLineRasterizationPropertiesEXT&			getLineRasterizationPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceLineRasterizationPropertiesEXT>();				}
 const VkPhysicalDeviceMaintenance3Properties&					getMaintenance3Properties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMaintenance3Properties>();						}
+const VkPhysicalDeviceMaintenance4PropertiesKHR&				getMaintenance4Properties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMaintenance4PropertiesKHR>();					}
 const VkPhysicalDeviceMeshShaderPropertiesNV&					getMeshShaderProperties						(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMeshShaderPropertiesNV>();						}
 const VkPhysicalDeviceMultiviewProperties&						getMultiviewProperties						(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMultiviewProperties>();						}
 const VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX&	getMultiviewPerViewAttributesPropertiesX	(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX>();	}
@@ -39,6 +40,7 @@ const VkPhysicalDeviceSamplerFilterMinmaxProperties&			getSamplerFilterMinmaxPro
 const VkPhysicalDeviceSampleLocationsPropertiesEXT&				getSampleLocationsPropertiesEXT				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceSampleLocationsPropertiesEXT>();				}
 const VkPhysicalDeviceShaderCorePropertiesAMD&					getShaderCorePropertiesAMD					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderCorePropertiesAMD>();					}
 const VkPhysicalDeviceShaderCoreProperties2AMD&					getShaderCoreProperties2AMD					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderCoreProperties2AMD>();					}
+const VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR&		getShaderIntegerDotProductProperties		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR>();		}
 const VkPhysicalDeviceShadingRateImagePropertiesNV&				getShadingRateImageProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShadingRateImagePropertiesNV>();				}
 const VkPhysicalDeviceSubgroupProperties&						getSubgroupProperties						(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceSubgroupProperties>();							}
 const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&			getSubgroupSizeControlPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceSubgroupSizeControlPropertiesEXT>();			}

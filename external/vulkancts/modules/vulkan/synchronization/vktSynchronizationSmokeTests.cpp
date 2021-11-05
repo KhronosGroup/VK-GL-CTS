@@ -210,7 +210,7 @@ Move<VkDevice> createTestDevice (Context& context, SemaphoreTestConfig& config, 
 	*outQueueFamilyIndex					= queueInfo.queueFamilyIndex;
 
 	return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceInfo);
-};
+}
 
 struct BufferParameters
 {

@@ -44,6 +44,7 @@
 #include "vktApiDescriptorSetTests.hpp"
 #include "vktApiPipelineTests.hpp"
 #include "vktApiMemoryRequirementInvarianceTests.hpp"
+#include "vktApiBufferMemoryRequirementsTests.hpp"
 
 #ifndef CTS_USES_VULKANSC
 #include "vktApiSmokeTests.hpp"
@@ -51,6 +52,7 @@
 #include "vktApiDeviceDrmPropertiesTests.hpp"
 #include "vktApiExternalMemoryTests.hpp"
 #include "vktApiToolingInfoTests.hpp"
+#include "vktApiFormatPropertiesExtendedKHRtests.hpp"
 #endif // CTS_USES_VULKANSC
 
 namespace vkt
@@ -106,7 +108,9 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 	apiTests->addChild(createMemoryRequirementInvarianceTests	(testCtx));
 #ifndef CTS_USES_VULKANSC
 	apiTests->addChild(createToolingInfoTests					(testCtx));
+	apiTests->addChild(createFormatPropertiesExtendedKHRTests	(testCtx));
 #endif // CTS_USES_VULKANSC
+	apiTests->addChild(createBufferMemoryRequirementsTests		(testCtx));
 }
 
 } // anonymous

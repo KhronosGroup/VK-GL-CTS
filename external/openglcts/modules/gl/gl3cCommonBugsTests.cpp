@@ -2691,7 +2691,6 @@ bool PerVertexValidationTest::runPipelineObjectValidationTestMode(_test_iteratio
 			break;
 		default:
 			TCU_FAIL("Invalid enum");
-			break;
 		}
 
 		if (validate_status != validate_expected_status)

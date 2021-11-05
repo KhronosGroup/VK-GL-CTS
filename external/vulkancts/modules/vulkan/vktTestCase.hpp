@@ -116,6 +116,11 @@ public:
 	bool										requireInstanceFunctionality		(const std::string& required) const;
 	bool										requireDeviceCoreFeature			(const DeviceCoreFeature requiredDeviceCoreFeature);
 
+#ifndef CTS_USES_VULKANSC
+	vk::VkFormatPropertiesExtendedKHR				getFormatProperties					(const vk::VkFormat&	format)	const;
+	vk::VkFormatPropertiesExtendedKHR				getRequiredFormatProperties			(const vk::VkFormat&	format)	const;
+#endif // CTS_USES_VULKANSC
+
 	void*											getInstanceProcAddr					();
 
 	bool											isBufferDeviceAddressSupported		(void) const;

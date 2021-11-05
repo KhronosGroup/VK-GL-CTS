@@ -1933,7 +1933,8 @@ public:
 		m_spec.outputs.push_back(Symbol("res", glu::VarType(baseType, precision)));
 		m_spec.source = "res = fma(a, b, c);";
 
-		if (!glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+		if (!glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::es(3, 2))
+				&& !glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::core(4, 5)))
 			m_spec.globalDeclarations = "#extension GL_EXT_gpu_shader5 : require\n";
 	}
 

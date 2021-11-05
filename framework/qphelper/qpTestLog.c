@@ -699,7 +699,9 @@ deBool Buffer_resize (Buffer* buffer, size_t newSize)
 		if (!newData)
 			return DE_FALSE;
 
-		memcpy(newData, buffer->data, buffer->size);
+		if (buffer->data)
+			memcpy(newData, buffer->data, buffer->size);
+
 		deFree(buffer->data);
 		buffer->data		= newData;
 		buffer->capacity	= newCapacity;

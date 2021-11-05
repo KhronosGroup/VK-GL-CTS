@@ -78,7 +78,7 @@ tcu::Vector<T1, S1> convertToTypeVec (const tcu::Vector<T2, S2>& v)
 class FloatLoader
 {
 public:
-	virtual				~FloatLoader	(void) {};
+	virtual				~FloatLoader	(void) {}
 
 	// returns the value loaded
 	virtual tcu::Vec4	load			(glu::CallLogWrapper& gl, int index, const tcu::Vec4& v) const = 0;

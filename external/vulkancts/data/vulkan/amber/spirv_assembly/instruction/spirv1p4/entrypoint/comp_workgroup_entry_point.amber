@@ -17,6 +17,7 @@ VK_KHR_spirv_1_4
 ;
 ; void main() {
 ;     atomicExchange(wg_data[gl_LocalInvocationIndex], gl_LocalInvocationIndex);
+;     barrier();
 ;     uint val = atomicExchange(wg_data[(gl_LocalInvocationIndex+1)%4], 0);
 ;     x[gl_LocalInvocationIndex] = val;
 ; }
@@ -62,6 +63,7 @@ VK_KHR_spirv_1_4
 %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
      %v3uint = OpTypeVector %uint 3
      %uint_2 = OpConstant %uint 2
+   %uint_264 = OpConstant %uint 264
 %gl_WorkGroupSize = OpConstantComposite %v3uint %uint_2 %uint_2 %uint_1
        %main = OpFunction %void None %3
           %5 = OpLabel
@@ -70,6 +72,7 @@ VK_KHR_spirv_1_4
          %15 = OpAccessChain %_ptr_Workgroup_uint %wg_data %13
          %16 = OpLoad %uint %gl_LocalInvocationIndex
          %19 = OpAtomicExchange %uint %15 %uint_1 %uint_0 %16
+               OpControlBarrier %uint_2 %uint_2 %uint_264
          %22 = OpLoad %uint %gl_LocalInvocationIndex
          %23 = OpIAdd %uint %22 %uint_1
          %24 = OpUMod %uint %23 %uint_4

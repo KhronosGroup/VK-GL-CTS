@@ -99,7 +99,7 @@ public:
 	public:
 		SupportedTextureType(glw::GLenum type, const std::string& shaderTexcoordType,
 							 const std::string& shaderSamplerType);
-		virtual ~SupportedTextureType(){};
+		virtual ~SupportedTextureType(){}
 
 		inline glw::GLenum getType() const
 		{

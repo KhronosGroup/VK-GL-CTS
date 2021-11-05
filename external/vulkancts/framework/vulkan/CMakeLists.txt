@@ -82,11 +82,13 @@ set(VKUTILNOSHADER_SRCS
 
 set(VKUTILNOSHADER_INLS
 	generated/vulkan/vkDeviceFeatures.inl
+	generated/vulkan/vkDeviceFeatureTest.inl
 	generated/vulkan/vkDeviceProperties.inl
 	)
 
 set(VKSCUTILNOSHADER_INLS
 	generated/vulkansc/vkDeviceFeatures.inl
+	generated/vulkansc/vkDeviceFeatureTest.inl
 	generated/vulkansc/vkDeviceProperties.inl
 	generated/vulkansc/vulkan_json_data.hpp
 	generated/vulkansc/vulkan_json_parser.hpp
@@ -124,6 +126,10 @@ if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 		FILES vkPrograms.cpp
 		PROPERTIES COMPILE_FLAGS "${DE_3RD_PARTY_CXX_FLAGS}")
 endif ()
+
+if(DEQP_HAVE_RENDERDOC_HEADER)
+	add_definitions(-DDEQP_HAVE_RENDERDOC_HEADER=1)
+endif()
 
 PCH(VKUTILNOSHADER_SRCS ../../modules/vulkan/pch.cpp)
 PCH(VKUTIL_SRCS ../../modules/vulkan/pch.cpp)

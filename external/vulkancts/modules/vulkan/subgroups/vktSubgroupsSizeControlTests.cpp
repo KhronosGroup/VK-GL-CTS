@@ -533,6 +533,13 @@ void supportedCheckFeatures (Context& context, CaseDefinition caseDef)
 	}
 
 	*caseDef.geometryPointSizeSupported = subgroups::isTessellationAndGeometryPointSizeSupported(context);
+
+#ifndef CTS_USES_VULKANSC
+	if (isAllRayTracingStages(caseDef.shaderStage))
+	{
+		context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+	}
+#endif // CTS_USES_VULKANSC
 }
 
 void supportedCheckFeaturesShader (Context& context, CaseDefinition caseDef)

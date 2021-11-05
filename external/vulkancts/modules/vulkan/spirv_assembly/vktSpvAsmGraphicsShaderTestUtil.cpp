@@ -2985,7 +2985,7 @@ VkImageAspectFlags getImageAspectFlags (VkFormat format)
 		aspectFlags |= VK_IMAGE_ASPECT_COLOR_BIT;
 
 	return aspectFlags;
-};
+}
 
 TestStatus runAndVerifyUnusedVariablePipeline (Context &context, UnusedVariableContext unusedVariableContext)
 {
@@ -3073,64 +3073,31 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	}
 #endif // CTS_USES_VULKANSC
 
-	// Core features
 	{
+		VulkanFeatures localRequired = instance.requestedFeatures;
+
 		const VkShaderStageFlags		vertexPipelineStoresAndAtomicsAffected	= vk::VK_SHADER_STAGE_VERTEX_BIT
 																				| vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT
 																				| vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT
 																				| vk::VK_SHADER_STAGE_GEOMETRY_BIT;
-		const char*						unsupportedFeature						= DE_NULL;
-		vk::VkPhysicalDeviceFeatures	localRequiredCoreFeatures				= instance.requestedFeatures.coreFeatures;
 
 		// reset fragment stores and atomics feature requirement
-		if ((localRequiredCoreFeatures.fragmentStoresAndAtomics != DE_FALSE) &&
+		if ((localRequired.coreFeatures.fragmentStoresAndAtomics != DE_FALSE) &&
 			(instance.customizedStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT) == 0)
 		{
-			localRequiredCoreFeatures.fragmentStoresAndAtomics = DE_FALSE;
+			localRequired.coreFeatures.fragmentStoresAndAtomics = DE_FALSE;
 		}
 
 		// reset vertex pipeline stores and atomics feature requirement
-		if (localRequiredCoreFeatures.vertexPipelineStoresAndAtomics != DE_FALSE &&
+		if (localRequired.coreFeatures.vertexPipelineStoresAndAtomics != DE_FALSE &&
 			(instance.customizedStages & vertexPipelineStoresAndAtomicsAffected) == 0)
 		{
-			localRequiredCoreFeatures.vertexPipelineStoresAndAtomics = DE_FALSE;
+			localRequired.coreFeatures.vertexPipelineStoresAndAtomics = DE_FALSE;
 		}
 
-		if (!isCoreFeaturesSupported(context, localRequiredCoreFeatures, &unsupportedFeature))
-			TCU_THROW(NotSupportedError, std::string("At least following requested core feature is not supported: ") + unsupportedFeature);
-	}
-
-	// Extension features
-	{
-		// 8bit storage features
-		{
-			if (!is8BitStorageFeaturesSupported(context, instance.requestedFeatures.ext8BitStorage))
-				TCU_THROW(NotSupportedError, "Requested 8bit storage features not supported");
-		}
-
-		// 16bit storage features
-		{
-			if (!is16BitStorageFeaturesSupported(context, instance.requestedFeatures.ext16BitStorage))
-				TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
-		}
-
-		// Variable Pointers features
-		{
-			if (!isVariablePointersFeaturesSupported(context, instance.requestedFeatures.extVariablePointers))
-				TCU_THROW(NotSupportedError, "Requested Variable Pointer features not supported");
-		}
-
-		// Float16/Int8 shader features
-		{
-			if (!isFloat16Int8FeaturesSupported(context, instance.requestedFeatures.extFloat16Int8))
-				TCU_THROW(NotSupportedError, "Requested 16bit float or 8bit int feature not supported");
-		}
-	}
-
-	// FloatControls features
-	{
-		if (!isFloatControlsFeaturesSupported(context, instance.requestedFeatures.floatControlsProperties))
-			TCU_THROW(NotSupportedError, "Requested Float Controls features not supported");
+		const char* unsupportedFeature = DE_NULL;
+		if (!isVulkanFeaturesSupported(context, localRequired, &unsupportedFeature))
+			TCU_THROW(NotSupportedError, std::string("At least following requested feature not supported: ") + unsupportedFeature);
 	}
 
 	// Check Interface Input/Output formats are supported
@@ -4036,7 +4003,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			sizeof(Vec4),						// deUint32	offsetInBytes;
 		};
 		vertexAttribs.push_back(attr1);
-	};
+	}
 
 	// If the test instantiation has additional input/output interface variables, we need to create additional bindings.
 	// Right now we only support one additional input varible for the vertex stage, and that will be bound to binding #1
@@ -4643,9 +4610,12 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 						// Note: RTZ/RNE rounding leniency isn't applied for the checks below:
 
 						// Some *variable_pointers* tests store counters in buffer
-						// whose value may vary if the same vertex shader may be executed for multiple times
+						// whose value may vary if the same shader may be executed for multiple times
 						// in this case the output value can be expected value + non-negative integer N
-						if (instance.customizedStages == VK_SHADER_STAGE_VERTEX_BIT)
+						if (instance.customizedStages == VK_SHADER_STAGE_VERTEX_BIT ||
+							instance.customizedStages == VK_SHADER_STAGE_GEOMETRY_BIT ||
+							instance.customizedStages == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ||
+							instance.customizedStages == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
 						{
 							if (deFloatIsInf(outputFloats[expectedNdx]) || deFloatIsNaN(outputFloats[expectedNdx]))
 								return tcu::TestStatus::fail("Value returned is invalid");
@@ -4676,7 +4646,7 @@ const vector<ShaderElement>& getVertFragPipelineStages (void)
 	{
 		vertFragPipelineStages.push_back(ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT));
 		vertFragPipelineStages.push_back(ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT));
-	};
+	}
 	return vertFragPipelineStages;
 }
 
@@ -4689,7 +4659,7 @@ const vector<ShaderElement>& getTessPipelineStages (void)
 		tessPipelineStages.push_back(ShaderElement("tessc", "main", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
 		tessPipelineStages.push_back(ShaderElement("tesse", "main", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
 		tessPipelineStages.push_back(ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT));
-	};
+	}
 	return tessPipelineStages;
 }
 
@@ -4701,7 +4671,7 @@ const vector<ShaderElement>& getGeomPipelineStages (void)
 		geomPipelineStages.push_back(ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT));
 		geomPipelineStages.push_back(ShaderElement("geom", "main", VK_SHADER_STAGE_GEOMETRY_BIT));
 		geomPipelineStages.push_back(ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT));
-	};
+	}
 	return geomPipelineStages;
 }
 

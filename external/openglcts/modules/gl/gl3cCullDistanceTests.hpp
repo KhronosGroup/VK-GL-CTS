@@ -258,7 +258,7 @@ private:
 	Tests(const CullDistance::Tests& other);
 	Tests& operator=(const CullDistance::Tests& other);
 };
-};
+}
 /* CullDistance namespace */
 } /* glcts namespace */
 

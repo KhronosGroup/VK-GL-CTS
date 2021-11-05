@@ -47,7 +47,7 @@ public:
 	int					dimension		(void) const;							//!< Coordinate dimension used for addressing (e.g. 3 (x,y,z) for 2d array)
 	int					layerDimension	(void) const;							//!< Coordinate dimension used for addressing a single layer (e.g. 2 (x,y) for 2d array)
 
-	int					numMipmapLevels	(void) const { return m_numMipmapLevels; };	//!< Number of levels of detail (mipmap texture)
+	int					numMipmapLevels	(void) const { return m_numMipmapLevels; }	//!< Number of levels of detail (mipmap texture)
 
 private:
 	void				checkInvariants	(void) const;

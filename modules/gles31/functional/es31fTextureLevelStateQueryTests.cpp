@@ -1651,13 +1651,16 @@ void TextureLevelStateQueryTests::init (void)
 		QUERY_TEXTURE_LEVEL_FLOAT,
 	};
 
-#define FOR_EACH_VERIFIER(X) \
-	for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(verifiers); ++verifierNdx)	\
-	{																						\
-		const std::string verifierSuffix = getVerifierSuffix(verifiers[verifierNdx]);		\
-		const QueryType verifier = verifiers[verifierNdx];									\
-		targetGroup->addChild(X);															\
-	}
+#define FOR_EACH_VERIFIER(X)																	\
+	do {																						\
+		for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(verifiers); ++verifierNdx)	\
+		{																						\
+			const std::string verifierSuffix = getVerifierSuffix(verifiers[verifierNdx]);		\
+			const QueryType verifier = verifiers[verifierNdx];									\
+			targetGroup->addChild(X);															\
+		}																						\
+	} while (0)
+
 	static const struct
 	{
 		const char*	name;

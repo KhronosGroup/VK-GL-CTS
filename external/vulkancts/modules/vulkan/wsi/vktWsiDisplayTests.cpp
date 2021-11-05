@@ -283,18 +283,18 @@ tcu::TestStatus DisplayCoverageTestInstance::iterate (void)
 {
 	switch (m_testId)
 	{
-		case DISPLAY_TEST_INDEX_GET_DISPLAY_PROPERTIES:					return testGetPhysicalDeviceDisplayPropertiesKHR();			break;
-		case DISPLAY_TEST_INDEX_GET_DISPLAY_PLANES:						return testGetPhysicalDeviceDisplayPlanePropertiesKHR();	break;
-		case DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_SUPPORTED_DISPLAY:	return testGetDisplayPlaneSupportedDisplaysKHR();			break;
-		case DISPLAY_TEST_INDEX_GET_DISPLAY_MODE:						return testGetDisplayModePropertiesKHR();					break;
-		case DISPLAY_TEST_INDEX_CREATE_DISPLAY_MODE:					return testCreateDisplayModeKHR();							break;
-		case DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_CAPABILITIES:			return testGetDisplayPlaneCapabilitiesKHR();				break;
-		case DISPLAY_TEST_INDEX_CREATE_DISPLAY_PLANE_SURFACE:			return testDisplaySurface(SURFACE_CREATE);					break;
-		case DISPLAY_TEST_INDEX_SURFACE_COUNTERS:						return testDisplaySurface(SURFACE_COUNTERS);				break;
-		case DISPLAY_TEST_INDEX_GET_DISPLAY_PROPERTIES2:				return testGetPhysicalDeviceDisplayProperties2KHR();		break;
-		case DISPLAY_TEST_INDEX_GET_DISPLAY_PLANES2:					return testGetPhysicalDeviceDisplayPlaneProperties2KHR();	break;
-		case DISPLAY_TEST_INDEX_GET_DISPLAY_MODE2:						return testGetDisplayModeProperties2KHR();					break;
-		case DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_CAPABILITIES2:		return testGetDisplayPlaneCapabilities2KHR();				break;
+		case DISPLAY_TEST_INDEX_GET_DISPLAY_PROPERTIES:					return testGetPhysicalDeviceDisplayPropertiesKHR();
+		case DISPLAY_TEST_INDEX_GET_DISPLAY_PLANES:						return testGetPhysicalDeviceDisplayPlanePropertiesKHR();
+		case DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_SUPPORTED_DISPLAY:	return testGetDisplayPlaneSupportedDisplaysKHR();
+		case DISPLAY_TEST_INDEX_GET_DISPLAY_MODE:						return testGetDisplayModePropertiesKHR();
+		case DISPLAY_TEST_INDEX_CREATE_DISPLAY_MODE:					return testCreateDisplayModeKHR();
+		case DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_CAPABILITIES:			return testGetDisplayPlaneCapabilitiesKHR();
+		case DISPLAY_TEST_INDEX_CREATE_DISPLAY_PLANE_SURFACE:			return testDisplaySurface(SURFACE_CREATE);
+		case DISPLAY_TEST_INDEX_SURFACE_COUNTERS:						return testDisplaySurface(SURFACE_COUNTERS);
+		case DISPLAY_TEST_INDEX_GET_DISPLAY_PROPERTIES2:				return testGetPhysicalDeviceDisplayProperties2KHR();
+		case DISPLAY_TEST_INDEX_GET_DISPLAY_PLANES2:					return testGetPhysicalDeviceDisplayPlaneProperties2KHR();
+		case DISPLAY_TEST_INDEX_GET_DISPLAY_MODE2:						return testGetDisplayModeProperties2KHR();
+		case DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_CAPABILITIES2:		return testGetDisplayPlaneCapabilities2KHR();
 		default:
 		{
 			DE_FATAL("Impossible");

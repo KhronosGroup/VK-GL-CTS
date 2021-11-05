@@ -38,12 +38,15 @@ bool XcbDisplay::hasDisplay (const char* name)
 	if (s_displayState == DISPLAY_STATE_UNKNOWN)
 	{
 		xcb_connection_t *connection = xcb_connect(name, NULL);
-		if (connection)
+		if (connection && !xcb_connection_has_error(connection) )
 		{
 			s_displayState = DISPLAY_STATE_AVAILABLE;
 			xcb_disconnect(connection);
-		} else
+		}
+		else
+		{
 			s_displayState = DISPLAY_STATE_UNAVAILABLE;
+		}
 	}
 	return s_displayState == DISPLAY_STATE_AVAILABLE ? true : false;
 }

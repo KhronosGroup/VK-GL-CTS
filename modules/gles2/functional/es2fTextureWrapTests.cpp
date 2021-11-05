@@ -325,7 +325,7 @@ void TextureWrapTests::init (void)
 										 filteringModes[filter].mode, filteringModes[filter].mode,
 										 sizes[size].width, sizes[size].height));
 
-		})))));
+		})))))
 
 	// Power-of-two ETC1 texture
 	std::vector<std::string> potFilenames;
@@ -342,7 +342,7 @@ void TextureWrapTests::init (void)
 										 filteringModes[filter].mode, filteringModes[filter].mode,
 										 potFilenames));
 
-		})));
+		})))
 
 	std::vector<std::string> npotFilenames;
 	npotFilenames.push_back("data/etc1/photo_helsinki_113x89.pkm");

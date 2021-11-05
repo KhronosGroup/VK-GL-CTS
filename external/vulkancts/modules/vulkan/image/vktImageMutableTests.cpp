@@ -1057,6 +1057,18 @@ void UploadDownloadExecutor::run(Context& context, VkBuffer buffer)
 	const VkImageUsageFlags		imageUsage	= getImageUsageForTestCase(m_caseDef);
 	const VkImageCreateFlags	imageFlags	= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | (m_haveMaintenance2 ? VK_IMAGE_CREATE_EXTENDED_USAGE_BIT : 0);
 
+	VkImageFormatProperties	properties;
+	if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(context.getPhysicalDevice(),
+																			   m_caseDef.imageFormat,
+																			   getImageType(m_caseDef.imageType),
+																			   VK_IMAGE_TILING_OPTIMAL,
+																			   imageUsage,
+																			   imageFlags,
+																			   &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+	{
+		TCU_THROW(NotSupportedError, "Format not supported");
+	}
+
 	m_imageHolder							= makeImage(m_vk, m_device, imageFlags, getImageType(m_caseDef.imageType), m_caseDef.imageFormat, m_caseDef.viewFormat,
 														m_caseDef.isFormatListTest, m_caseDef.size, 1u, m_caseDef.numLayers, imageUsage);
 	m_image									= *m_imageHolder;
@@ -2001,9 +2013,9 @@ struct NativeObjects
 	const UniquePtr<Window>		window;
 
 	NativeObjects(Context&				context,
-		const Extensions&	supportedExtensions,
-		Type					wsiType,
-		const Maybe<UVec2>&	initialWindowSize = tcu::nothing<UVec2>())
+				  const Extensions&		supportedExtensions,
+				  Type					wsiType,
+				  const Maybe<UVec2>&	initialWindowSize = tcu::Nothing)
 		: display(createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), supportedExtensions, wsiType))
 		, window(createWindow(*display, initialWindowSize))
 	{}

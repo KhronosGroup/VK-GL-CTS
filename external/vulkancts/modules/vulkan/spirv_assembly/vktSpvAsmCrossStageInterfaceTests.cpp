@@ -217,7 +217,7 @@ tcu::TestStatus CrossStageTestInstance::iterate (void)
 
 	// Init host buffer data
 	VK_CHECK(vk.bindBufferMemory(vkDevice, *vertexBuffer, allocationVertex->getMemory(), allocationVertex->getOffset()));
-	deMemcpy(allocationVertex->getHostPtr(), m_data.data(), static_cast<size_t>(vertexDataSize));
+	deMemcpy(allocationVertex->getHostPtr(), m_data.data(), de::dataSize(m_data));
 	flushAlloc(vk, vkDevice, *allocationVertex);
 
 	Move<VkRenderPass>						renderPass				= makeRenderPass (vk, vkDevice, m_colorFormat);
@@ -625,12 +625,12 @@ void CrossStageTestInstance::redFill (tcu::Texture2DArray& referenceFrame)
 struct Decorations
 {
 	Decorations()
-	{};
+	{}
 	Decorations(const string& f, const string& v, const string& o)
 		: fragment	(f)
 		, vertex	(v)
 		, others	(o)
-	{};
+	{}
 	string fragment;
 	string vertex;
 	string others;

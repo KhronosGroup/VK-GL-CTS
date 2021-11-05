@@ -129,8 +129,8 @@ namespace vkt
 			class PipelineConfiguration
 			{
 			public:
-				PipelineConfiguration() {};
-				virtual			~PipelineConfiguration() {};
+				PipelineConfiguration() {}
+				virtual			~PipelineConfiguration() {}
 
 				virtual void	initConfiguration(const TestEnvironment& env,
 					TestParams& testParams) = 0;
@@ -379,7 +379,7 @@ namespace vkt
 					const TestParams& testParams);
 
 				GraphicsConfiguration();
-				virtual							~GraphicsConfiguration() {};
+				virtual							~GraphicsConfiguration() {}
 
 				void							initVertexBuffer(const TestEnvironment& env,
 					TestParams& testParams);
@@ -1005,7 +1005,7 @@ namespace vkt
 			{
 			public:
 				ComputeConfiguration();
-				virtual						~ComputeConfiguration() {};
+				virtual						~ComputeConfiguration() {}
 
 				static void					checkSupport(Context& context,
 					const TestParams& testParams);
@@ -1142,7 +1142,7 @@ namespace vkt
 			{
 			public:
 				RayTracingConfiguration();
-				virtual											~RayTracingConfiguration() {};
+				virtual											~RayTracingConfiguration() {}
 
 				static void										checkSupport(Context& context,
 					const TestParams& testParams);
@@ -5147,7 +5147,6 @@ namespace vkt
 						"  }\n"
 						"\n"
 						"  imageStore(result, pos, ivec4(result_i32, 0, 0, 0));\n";
-						;
 
 					return result;
 				}
@@ -5861,32 +5860,32 @@ namespace vkt
 			{
 				switch (testType)
 				{
-				case TEST_TYPE_FLOW:																	return TestConfigurationFlow::getShaderBodyText;															break;
-				case TEST_TYPE_PRIMITIVE_ID:															return TestConfigurationPrimitiveId::getShaderBodyText;														break;
-				case TEST_TYPE_INSTANCE_ID:																return TestConfigurationInstanceId::getShaderBodyText;														break;
-				case TEST_TYPE_INSTANCE_CUSTOM_INDEX:													return TestConfigurationInstanceCustomIndex::getShaderBodyText;												break;
-				case TEST_TYPE_INTERSECTION_T_KHR:														return TestConfigurationIntersectionT::getShaderBodyText;													break;
-				case TEST_TYPE_OBJECT_RAY_ORIGIN_KHR:													return TestConfigurationObjectRayOrigin::getShaderBodyText;													break;
-				case TEST_TYPE_OBJECT_RAY_DIRECTION_KHR:												return TestConfigurationObjectRayDirection::getShaderBodyText;												break;
-				case TEST_TYPE_OBJECT_TO_WORLD_KHR:														return TestConfigurationObjectToWorld::getShaderBodyText;													break;
-				case TEST_TYPE_WORLD_TO_OBJECT_KHR:														return TestConfigurationWorldToObject::getShaderBodyText;													break;
-				case TEST_TYPE_NULL_ACCELERATION_STRUCTURE:												return TestConfigurationNullASStruct::getShaderBodyText;													break;
-				case TEST_TYPE_USING_WRAPPER_FUNCTION:													return TestConfigurationUsingWrapperFunction::getShaderBodyText;											break;
-				case TEST_TYPE_GET_RAY_TMIN:															return TestConfigurationGetRayTMin::getShaderBodyText;														break;
-				case TEST_TYPE_GET_WORLD_RAY_ORIGIN:													return TestConfigurationGetWorldRayOrigin::getShaderBodyText;												break;
-				case TEST_TYPE_GET_WORLD_RAY_DIRECTION:													return TestConfigurationGetWorldRayDirection::getShaderBodyText;											break;
-				case TEST_TYPE_GET_INTERSECTION_CANDIDATE_AABB_OPAQUE:									return TestConfigurationGetIntersectionCandidateAABBOpaque::getShaderBodyText;								break;
-				case TEST_TYPE_GET_INTERSECTION_FRONT_FACE_CANDIDATE:									return TestConfigurationGetIntersectionFrontFace::getShaderBodyTextCandidate;								break;
-				case TEST_TYPE_GET_INTERSECTION_FRONT_FACE_COMMITTED:									return TestConfigurationGetIntersectionFrontFace::getShaderBodyTextCommitted;								break;
-				case TEST_TYPE_GET_INTERSECTION_GEOMETRY_INDEX_CANDIDATE:								return TestConfigurationGetIntersectionGeometryIndex::getShaderBodyTextCandidate;							break;
-				case TEST_TYPE_GET_INTERSECTION_GEOMETRY_INDEX_COMMITTED:								return TestConfigurationGetIntersectionGeometryIndex::getShaderBodyTextCommitted;							break;
-				case TEST_TYPE_GET_INTERSECTION_BARYCENTRICS_CANDIDATE:									return TestConfigurationGetIntersectionBarycentrics::getShaderBodyTextCandidate;							break;
-				case TEST_TYPE_GET_INTERSECTION_BARYCENTRICS_COMMITTED:									return TestConfigurationGetIntersectionBarycentrics::getShaderBodyTextCommitted;							break;
-				case TEST_TYPE_GET_INTERSECTION_INSTANCE_SHADER_BINDING_TABLE_RECORD_OFFSET_CANDIDATE:	return TestConfigurationGetIntersectionInstanceShaderBindingTableRecordOffset::getShaderBodyTextCandidate;	break;
-				case TEST_TYPE_GET_INTERSECTION_INSTANCE_SHADER_BINDING_TABLE_RECORD_OFFSET_COMMITTED:	return TestConfigurationGetIntersectionInstanceShaderBindingTableRecordOffset::getShaderBodyTextCommitted;	break;
-				case TEST_TYPE_RAY_QUERY_TERMINATE:														return TestConfigurationRayQueryTerminate::getShaderBodyText;												break;
-				case TEST_TYPE_GET_INTERSECTION_TYPE_CANDIDATE:											return TestConfigurationGetIntersectionType::getShaderBodyTextCandidate;									break;
-				case TEST_TYPE_GET_INTERSECTION_TYPE_COMMITTED:											return TestConfigurationGetIntersectionType::getShaderBodyTextCommitted;									break;
+				case TEST_TYPE_FLOW:																	return TestConfigurationFlow::getShaderBodyText;
+				case TEST_TYPE_PRIMITIVE_ID:															return TestConfigurationPrimitiveId::getShaderBodyText;
+				case TEST_TYPE_INSTANCE_ID:																return TestConfigurationInstanceId::getShaderBodyText;
+				case TEST_TYPE_INSTANCE_CUSTOM_INDEX:													return TestConfigurationInstanceCustomIndex::getShaderBodyText;
+				case TEST_TYPE_INTERSECTION_T_KHR:														return TestConfigurationIntersectionT::getShaderBodyText;
+				case TEST_TYPE_OBJECT_RAY_ORIGIN_KHR:													return TestConfigurationObjectRayOrigin::getShaderBodyText;
+				case TEST_TYPE_OBJECT_RAY_DIRECTION_KHR:												return TestConfigurationObjectRayDirection::getShaderBodyText;
+				case TEST_TYPE_OBJECT_TO_WORLD_KHR:														return TestConfigurationObjectToWorld::getShaderBodyText;
+				case TEST_TYPE_WORLD_TO_OBJECT_KHR:														return TestConfigurationWorldToObject::getShaderBodyText;
+				case TEST_TYPE_NULL_ACCELERATION_STRUCTURE:												return TestConfigurationNullASStruct::getShaderBodyText;
+				case TEST_TYPE_USING_WRAPPER_FUNCTION:													return TestConfigurationUsingWrapperFunction::getShaderBodyText;
+				case TEST_TYPE_GET_RAY_TMIN:															return TestConfigurationGetRayTMin::getShaderBodyText;
+				case TEST_TYPE_GET_WORLD_RAY_ORIGIN:													return TestConfigurationGetWorldRayOrigin::getShaderBodyText;
+				case TEST_TYPE_GET_WORLD_RAY_DIRECTION:													return TestConfigurationGetWorldRayDirection::getShaderBodyText;;
+				case TEST_TYPE_GET_INTERSECTION_CANDIDATE_AABB_OPAQUE:									return TestConfigurationGetIntersectionCandidateAABBOpaque::getShaderBodyText;
+				case TEST_TYPE_GET_INTERSECTION_FRONT_FACE_CANDIDATE:									return TestConfigurationGetIntersectionFrontFace::getShaderBodyTextCandidate;
+				case TEST_TYPE_GET_INTERSECTION_FRONT_FACE_COMMITTED:									return TestConfigurationGetIntersectionFrontFace::getShaderBodyTextCommitted;
+				case TEST_TYPE_GET_INTERSECTION_GEOMETRY_INDEX_CANDIDATE:								return TestConfigurationGetIntersectionGeometryIndex::getShaderBodyTextCandidate;
+				case TEST_TYPE_GET_INTERSECTION_GEOMETRY_INDEX_COMMITTED:								return TestConfigurationGetIntersectionGeometryIndex::getShaderBodyTextCommitted;
+				case TEST_TYPE_GET_INTERSECTION_BARYCENTRICS_CANDIDATE:									return TestConfigurationGetIntersectionBarycentrics::getShaderBodyTextCandidate;
+				case TEST_TYPE_GET_INTERSECTION_BARYCENTRICS_COMMITTED:									return TestConfigurationGetIntersectionBarycentrics::getShaderBodyTextCommitted;
+				case TEST_TYPE_GET_INTERSECTION_INSTANCE_SHADER_BINDING_TABLE_RECORD_OFFSET_CANDIDATE:	return TestConfigurationGetIntersectionInstanceShaderBindingTableRecordOffset::getShaderBodyTextCandidate;
+				case TEST_TYPE_GET_INTERSECTION_INSTANCE_SHADER_BINDING_TABLE_RECORD_OFFSET_COMMITTED:	return TestConfigurationGetIntersectionInstanceShaderBindingTableRecordOffset::getShaderBodyTextCommitted;
+				case TEST_TYPE_RAY_QUERY_TERMINATE:														return TestConfigurationRayQueryTerminate::getShaderBodyText;
+				case TEST_TYPE_GET_INTERSECTION_TYPE_CANDIDATE:											return TestConfigurationGetIntersectionType::getShaderBodyTextCandidate;
+				case TEST_TYPE_GET_INTERSECTION_TYPE_COMMITTED:											return TestConfigurationGetIntersectionType::getShaderBodyTextCommitted;
 
 				default:									TCU_THROW(InternalError, "Unknown test type");
 				}
@@ -5899,7 +5898,7 @@ namespace vkt
 
 				switch (testType)
 				{
-				case TEST_TYPE_NULL_ACCELERATION_STRUCTURE:	return TestConfigurationNullASStruct::checkSupport;	break;
+				case TEST_TYPE_NULL_ACCELERATION_STRUCTURE:	return TestConfigurationNullASStruct::checkSupport;
 				default:									return DE_NULL;
 				}
 			}

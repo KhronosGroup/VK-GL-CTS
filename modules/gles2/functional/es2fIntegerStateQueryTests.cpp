@@ -2016,19 +2016,23 @@ static const char* getQueryTypeSuffix (QueryType type)
 	}
 }
 
-#define FOR_EACH_VERIFIER(VERIFIERS, CODE_BLOCK)												\
-	for (int _verifierNdx = 0; _verifierNdx < DE_LENGTH_OF_ARRAY(VERIFIERS); _verifierNdx++)	\
-	{																							\
-		StateVerifier* verifier = (VERIFIERS)[_verifierNdx];									\
-		CODE_BLOCK;																				\
-	}
+#define FOR_EACH_VERIFIER(VERIFIERS, CODE_BLOCK)													\
+	do {																							\
+		for (int _verifierNdx = 0; _verifierNdx < DE_LENGTH_OF_ARRAY(VERIFIERS); _verifierNdx++)	\
+		{																							\
+			StateVerifier* verifier = (VERIFIERS)[_verifierNdx];									\
+			CODE_BLOCK;																				\
+		}																							\
+	} while (0)
 
-#define FOR_EACH_QUERYTYPE(QUERYTYPES, CODE_BLOCK)													\
-	for (int _queryTypeNdx = 0; _queryTypeNdx < DE_LENGTH_OF_ARRAY(QUERYTYPES); _queryTypeNdx++)	\
-	{																								\
-		const QueryType queryType = (QUERYTYPES)[_queryTypeNdx];									\
-		CODE_BLOCK;																					\
-	}
+#define FOR_EACH_QUERYTYPE(QUERYTYPES, CODE_BLOCK)														\
+	do {																								\
+		for (int _queryTypeNdx = 0; _queryTypeNdx < DE_LENGTH_OF_ARRAY(QUERYTYPES); _queryTypeNdx++)	\
+		{																								\
+			const QueryType queryType = (QUERYTYPES)[_queryTypeNdx];									\
+			CODE_BLOCK;																					\
+		}																								\
+	} while (0)																							\
 
 } // anonymous
 

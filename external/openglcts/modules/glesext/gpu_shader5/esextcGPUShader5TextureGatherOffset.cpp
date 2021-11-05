@@ -2776,7 +2776,7 @@ bool GPUShader5TextureGatherOffsetDepth2DClampToBorderCaseTest::checkResult(cons
 			wrap_matrix[1] = 1;
 		}
 		break;
-	};
+	}
 
 	/* Apply integral part of texture coordinates to wrap_matrix */
 	for (unsigned int i = 0; i < m_n_components_per_varying; ++i)

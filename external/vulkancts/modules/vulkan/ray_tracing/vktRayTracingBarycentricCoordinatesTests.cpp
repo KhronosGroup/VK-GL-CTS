@@ -167,7 +167,6 @@ void BarycentricCoordinatesCase::initPrograms (vk::SourceCollections& programCol
 		<< "{\n"
 		<< "  coordinates.values[gl_LaunchIDEXT.x] = vec4(-1.0, -1.0, -1.0, -1.0);\n"
 		<< "}\n";
-		;
 
 	programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(rgen.str())) << buildOptions;
 	programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(miss.str())) << buildOptions;

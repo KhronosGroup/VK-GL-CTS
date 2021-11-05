@@ -64,7 +64,7 @@ public:
 									 const VkFormat		format,
 									 deUint32			numSamples);
 
-	void			initPrograms			(SourceCollections&			sourceCollections) const {DE_UNREF(sourceCollections);};
+	void			initPrograms			(SourceCollections&			sourceCollections) const {DE_UNREF(sourceCollections);}
 	TestInstance*	createInstance			(Context&					context) const;
 	virtual void	checkSupport			(Context&					context) const;
 
@@ -263,7 +263,7 @@ tcu::TestStatus ImageBlockShapesInstance::iterate (void)
 					expectedGranularity.height = 16;
 					expectedGranularity.depth = 16;
 					break;
-			};
+			}
 		}
 		else if (m_numSamples == 2)
 		{
@@ -295,7 +295,7 @@ tcu::TestStatus ImageBlockShapesInstance::iterate (void)
 					expectedGranularity.width = 32;
 					expectedGranularity.height = 64;
 					break;
-			};
+			}
 		}
 		else if (m_numSamples == 4)
 		{
@@ -327,7 +327,7 @@ tcu::TestStatus ImageBlockShapesInstance::iterate (void)
 					expectedGranularity.width = 32;
 					expectedGranularity.height = 32;
 					break;
-			};
+			}
 		}
 		else if (m_numSamples == 8)
 		{
@@ -359,7 +359,7 @@ tcu::TestStatus ImageBlockShapesInstance::iterate (void)
 					expectedGranularity.width = 16;
 					expectedGranularity.height = 32;
 					break;
-			};
+			}
 		}
 		else if (m_numSamples == 16)
 		{
@@ -391,7 +391,7 @@ tcu::TestStatus ImageBlockShapesInstance::iterate (void)
 					expectedGranularity.width = 16;
 					expectedGranularity.height = 16;
 					break;
-			};
+			}
 		}
 		else
 		{
@@ -425,7 +425,7 @@ tcu::TestStatus ImageBlockShapesInstance::iterate (void)
 					expectedGranularity.width = 64;
 					expectedGranularity.height = 64;
 					break;
-			};
+			}
 		}
 
 		if (   imageGranularity.width  != expectedGranularity.width

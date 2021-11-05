@@ -2031,6 +2031,7 @@ TestInstance* TextureGather2DCase::createInstance (Context& context) const
 
 void TextureGather2DCase::checkSupport(Context& context) const
 {
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_IMAGE_GATHER_EXTENDED);
 	checkMutableComparisonSamplersSupport(context, m_baseParams);
 }
 
@@ -2259,6 +2260,7 @@ TestInstance* TextureGather2DArrayCase::createInstance (Context& context) const
 
 void TextureGather2DArrayCase::checkSupport(Context& context) const
 {
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_IMAGE_GATHER_EXTENDED);
 	checkMutableComparisonSamplersSupport(context, m_baseParams);
 }
 
@@ -2484,6 +2486,7 @@ TestInstance* TextureGatherCubeCase::createInstance (Context& context) const
 
 void TextureGatherCubeCase::checkSupport(Context& context) const
 {
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_IMAGE_GATHER_EXTENDED);
 	checkMutableComparisonSamplersSupport(context, m_baseParams);
 }
 

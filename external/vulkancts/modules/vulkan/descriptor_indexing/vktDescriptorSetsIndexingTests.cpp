@@ -2222,7 +2222,6 @@ std::string CommonDescriptorInstance::getShaderAsm					(VkShaderStageFlagBits			
 					break;
 				default:
 					TCU_THROW(InternalError, "Unexpected descriptor type");
-					break;
 			}
 			break;
 		case VK_SHADER_STAGE_FRAGMENT_BIT:
@@ -2659,7 +2658,6 @@ std::string CommonDescriptorInstance::getShaderAsm					(VkShaderStageFlagBits			
 					break;
 				default:
 					TCU_THROW(InternalError, "Unexpected descriptor type");
-					break;
 			}
 		    break;
 		case VK_SHADER_STAGE_COMPUTE_BIT:
@@ -2739,12 +2737,10 @@ std::string CommonDescriptorInstance::getShaderAsm					(VkShaderStageFlagBits			
 					break;
 				default:
 					TCU_THROW(InternalError, "Unexpected descriptor type");
-					break;
 			}
 			break;
 		default:
 			TCU_THROW(InternalError, "Unexpected stage");
-			break;
 	}
 
 	return s.str();
@@ -3605,7 +3601,7 @@ void SamplerInstance::createAndPopulateDescriptors					(IterateCommonVariables&	
 		{
 			imageExtent.width *= 2;
 			imageExtent.height *= 2;
-		};
+		}
 
 		createImages(variables.descriptorsImages, variables.descriptorsBufferInfos, variables.descriptorsBuffer,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT, imageExtent, m_colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, 1, m_testParams.usesMipMaps);

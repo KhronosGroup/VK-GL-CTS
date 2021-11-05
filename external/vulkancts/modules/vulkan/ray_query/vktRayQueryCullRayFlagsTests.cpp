@@ -469,7 +469,7 @@ void GraphicsConfiguration::initConfiguration (Context&						context,
 			break;
 		default:
 			TCU_THROW(InternalError, "Wrong shader source type");
-	};
+	}
 
 	const VkVertexInputBindingDescription vertexInputBindingDescription =
 	{
@@ -724,7 +724,7 @@ bool GraphicsConfiguration::verifyImage (BufferWithMemory*					resultBuffer,
 			break;
 		default:
 			TCU_THROW(InternalError, "Wrong shader source type");
-	};
+	}
 
 	// compare result and reference
 	return tcu::intThresholdCompare(context.getTestContext().getLog(), "Result comparison", "", referenceAccess, resultAccess, tcu::UVec4(0), tcu::COMPARE_LOG_RESULT);
@@ -1220,6 +1220,18 @@ void RayQueryCullRayFlagsTestCase::checkSupport (Context& context) const
 	if (m_data.shaderSourceType == SST_GEOMETRY_SHADER &&
 		features2.features.geometryShader == DE_FALSE )
 		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceFeatures2.geometryShader");
+
+	switch (m_data.shaderSourceType)
+	{
+	case SST_VERTEX_SHADER:
+	case SST_TESSELATION_CONTROL_SHADER:
+	case SST_TESSELATION_EVALUATION_SHADER:
+	case SST_GEOMETRY_SHADER:
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
+		break;
+	default:
+		break;
+	}
 
 	if ( m_data.shaderSourceType == SST_RAY_GENERATION_SHADER ||
 		 m_data.shaderSourceType == SST_INTERSECTION_SHADER ||

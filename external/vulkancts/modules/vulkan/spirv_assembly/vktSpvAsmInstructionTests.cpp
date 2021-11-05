@@ -85,6 +85,9 @@
 #include "vktSpvAsm64bitCompareTests.hpp"
 #include "vktSpvAsmTrinaryMinMaxTests.hpp"
 #include "vktSpvAsmTerminateInvocationTests.hpp"
+#ifndef CTS_USES_VULKANSC
+#include "vktSpvAsmIntegerDotProductTests.hpp"
+#endif // CTS_USES_VULKANSC
 
 #include <cmath>
 #include <limits>
@@ -848,62 +851,89 @@ struct CaseParameter
 //   output_data.elements[x] = -input_data.elements[x];
 // }
 
-static string getAsmForLocalSizeTest(bool useLiteralLocalSize, bool useSpecConstantWorkgroupSize, IVec3 workGroupSize, deUint32 ndx)
+static string getAsmForLocalSizeTest(bool useLiteralLocalSize, bool useLiteralLocalSizeId, bool useSpecConstantWorkgroupSize, IVec3 workGroupSize, deUint32 ndx)
 {
 	std::ostringstream out;
-	out << getComputeAsmShaderPreambleWithoutLocalSize();
+	out << "OpCapability Shader\n"
+		   "OpMemoryModel Logical GLSL450\n";
 
-	if (useLiteralLocalSize)
+	if (useLiteralLocalSizeId)
 	{
-		out << "OpExecutionMode %main LocalSize "
-			<< workGroupSize.x() << " " << workGroupSize.y() << " " << workGroupSize.z() << "\n";
+		out << "OpEntryPoint GLCompute %main \"main\" %id %indata %outdata\n"
+			   "OpExecutionModeId %main LocalSizeId %const_0 %const_1 %const_2\n";
+	}
+	else
+	{
+		out << "OpEntryPoint GLCompute %main \"main\" %id\n";
+
+		if (useLiteralLocalSize)
+		{
+			out << "OpExecutionMode %main LocalSize "
+				<< workGroupSize.x() << " " << workGroupSize.y() << " " << workGroupSize.z() << "\n";
+		}
 	}
 
 	out << "OpSource GLSL 430\n"
-		"OpName %main           \"main\"\n"
-		"OpName %id             \"gl_GlobalInvocationID\"\n"
-		"OpDecorate %id BuiltIn GlobalInvocationId\n";
+		   "OpName %main           \"main\"\n"
+		   "OpName %id             \"gl_GlobalInvocationID\"\n"
+		   "OpDecorate %id BuiltIn GlobalInvocationId\n";
 
 	if (useSpecConstantWorkgroupSize)
 	{
 		out << "OpDecorate %spec_0 SpecId 100\n"
-			<< "OpDecorate %spec_1 SpecId 101\n"
-			<< "OpDecorate %spec_2 SpecId 102\n"
-			<< "OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize\n";
+			   "OpDecorate %spec_1 SpecId 101\n"
+			   "OpDecorate %spec_2 SpecId 102\n"
+			   "OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize\n";
 	}
 
-	out << getComputeAsmInputOutputBufferTraits()
-		<< getComputeAsmCommonTypes()
-		<< getComputeAsmInputOutputBuffer()
-		<< "%id        = OpVariable %uvec3ptr Input\n"
-		<< "%zero      = OpConstant %i32 0 \n";
+	if (useLiteralLocalSizeId)
+	{
+		out << getComputeAsmInputOutputBufferTraits("Block")
+			<< getComputeAsmCommonTypes("StorageBuffer")
+			<< getComputeAsmInputOutputBuffer("StorageBuffer")
+			<< "%const_0  = OpConstant %u32 " << workGroupSize.x() << "\n"
+			   "%const_1  = OpConstant %u32 " << workGroupSize.y() << "\n"
+			   "%const_2  = OpConstant %u32 " << workGroupSize.z() << "\n";
+	}
+	else
+	{
+		out << getComputeAsmInputOutputBufferTraits()
+			<< getComputeAsmCommonTypes()
+			<< getComputeAsmInputOutputBuffer();
+	}
+
+	out << "%id        = OpVariable %uvec3ptr Input\n"
+		   "%zero      = OpConstant %i32 0 \n";
 
 	if (useSpecConstantWorkgroupSize)
 	{
-		out	<< "%spec_0   = OpSpecConstant %u32 "<< workGroupSize.x() << "\n"
-			<< "%spec_1   = OpSpecConstant %u32 "<< workGroupSize.y() << "\n"
-			<< "%spec_2   = OpSpecConstant %u32 "<< workGroupSize.z() << "\n"
-			<< "%gl_WorkGroupSize = OpSpecConstantComposite %uvec3 %spec_0 %spec_1 %spec_2\n";
+		out << "%spec_0   = OpSpecConstant %u32 "<< workGroupSize.x() << "\n"
+			   "%spec_1   = OpSpecConstant %u32 "<< workGroupSize.y() << "\n"
+			   "%spec_2   = OpSpecConstant %u32 "<< workGroupSize.z() << "\n"
+			   "%gl_WorkGroupSize = OpSpecConstantComposite %uvec3 %spec_0 %spec_1 %spec_2\n";
 	}
 
 	out << "%main      = OpFunction %void None %voidf\n"
-		<< "%label     = OpLabel\n"
-		<< "%idval     = OpLoad %uvec3 %id\n"
-		<< "%ndx         = OpCompositeExtract %u32 %idval " << ndx << "\n"
+		   "%label     = OpLabel\n"
+		   "%idval     = OpLoad %uvec3 %id\n"
+		   "%ndx       = OpCompositeExtract %u32 %idval " << ndx << "\n"
 
-			"%inloc     = OpAccessChain %f32ptr %indata %zero %ndx\n"
-			"%inval     = OpLoad %f32 %inloc\n"
-			"%neg       = OpFNegate %f32 %inval\n"
-			"%outloc    = OpAccessChain %f32ptr %outdata %zero %ndx\n"
-			"             OpStore %outloc %neg\n"
-			"             OpReturn\n"
-			"             OpFunctionEnd\n";
+		   "%inloc     = OpAccessChain %f32ptr %indata %zero %ndx\n"
+		   "%inval     = OpLoad %f32 %inloc\n"
+		   "%neg       = OpFNegate %f32 %inval\n"
+		   "%outloc    = OpAccessChain %f32ptr %outdata %zero %ndx\n"
+		   "             OpStore %outloc %neg\n"
+		   "             OpReturn\n"
+		   "             OpFunctionEnd\n";
+
 	return out.str();
 }
 
-tcu::TestCaseGroup* createLocalSizeGroup (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createLocalSizeGroup(tcu::TestContext& testCtx, bool useLocalSizeId)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "localsize", ""));
+	const char*		groupName[]{ "localsize", "localsize_id" };
+
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, groupName[useLocalSizeId], ""));
 	ComputeShaderSpec				spec;
 	de::Random						rnd				(deStringHash(group->getName()));
 	const deUint32					numElements		= 64u;
@@ -918,45 +948,63 @@ tcu::TestCaseGroup* createLocalSizeGroup (tcu::TestContext& testCtx)
 	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 
+	if (useLocalSizeId)
+	{
+		spec.spirvVersion = SPIRV_VERSION_1_5;
+		spec.extensions.push_back("VK_KHR_maintenance4");
+	}
+
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
 
-	spec.assembly = getAsmForLocalSizeTest(true, false, IVec3(1, 1, 1), 0u);
+	spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, false, IVec3(1, 1, 1), 0u);
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_localsize", "", spec));
 
-	spec.assembly = getAsmForLocalSizeTest(true, true, IVec3(1, 1, 1), 0u);
+	spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, true, IVec3(1, 1, 1), 0u);
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_and_specid_localsize", "", spec));
 
-	spec.assembly = getAsmForLocalSizeTest(false, true, IVec3(1, 1, 1), 0u);
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize", "", spec));
+	if (!useLocalSizeId)	// dont repeat this test when useLocalSizeId is true
+	{
+		spec.assembly = getAsmForLocalSizeTest(false, false, true, IVec3(1, 1, 1), 0u);
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize", "", spec));
+	}
 
 	spec.numWorkGroups = IVec3(1, 1, 1);
 
-	spec.assembly = getAsmForLocalSizeTest(true, false, IVec3(numElements, 1, 1), 0u);
+	spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, false, IVec3(numElements, 1, 1), 0u);
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_localsize_x", "", spec));
 
-	spec.assembly = getAsmForLocalSizeTest(true, true, IVec3(numElements, 1, 1), 0u);
+	spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, true, IVec3(numElements, 1, 1), 0u);
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_and_specid_localsize_x", "", spec));
 
-	spec.assembly = getAsmForLocalSizeTest(false, true, IVec3(numElements, 1, 1), 0u);
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize_x", "", spec));
+	if (!useLocalSizeId)	// dont repeat this test when useLocalSizeId is true
+	{
+		spec.assembly = getAsmForLocalSizeTest(false, false, true, IVec3(numElements, 1, 1), 0u);
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize_x", "", spec));
+	}
 
-	spec.assembly = getAsmForLocalSizeTest(true, false, IVec3(1, numElements, 1), 1u);
+	spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, false, IVec3(1, numElements, 1), 1u);
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_localsize_y", "", spec));
 
-	spec.assembly = getAsmForLocalSizeTest(true, true, IVec3(1, numElements, 1), 1u);
+	spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, true, IVec3(1, numElements, 1), 1u);
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_and_specid_localsize_y", "", spec));
 
-	spec.assembly = getAsmForLocalSizeTest(false, true, IVec3(1, numElements, 1), 1u);
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize_y", "", spec));
+	if (!useLocalSizeId)	// dont repeat this test when useLocalSizeId is true
+	{
+		spec.assembly = getAsmForLocalSizeTest(false, false, true, IVec3(1, numElements, 1), 1u);
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize_y", "", spec));
+	}
 
-	spec.assembly = getAsmForLocalSizeTest(true, false, IVec3(1, 1, numElements), 2u);
+	spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, false, IVec3(1, 1, numElements), 2u);
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_localsize_z", "", spec));
 
-	spec.assembly = getAsmForLocalSizeTest(true, true, IVec3(1, 1, numElements), 2u);
+	spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, true, IVec3(1, 1, numElements), 2u);
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_and_specid_localsize_z", "", spec));
 
-	spec.assembly = getAsmForLocalSizeTest(false, true, IVec3(1, 1, numElements), 2u);
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize_z", "", spec));
+	if (!useLocalSizeId)	// dont repeat this test when useLocalSizeId is true
+	{
+		spec.assembly = getAsmForLocalSizeTest(false, false, true, IVec3(1, 1, numElements), 2u);
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize_z", "", spec));
+	}
 
 	return group.release();
 }
@@ -1442,7 +1490,7 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		if (volatileAtomic)
 		{
 			spec.extensions.push_back("VK_KHR_vulkan_memory_model");
-			spec.requestedVulkanFeatures.extVulkanMemoryModel = EXTVULKANMEMORYMODELFEATURES_ENABLE;
+			spec.requestedVulkanFeatures.extVulkanMemoryModel.vulkanMemoryModel = true;
 
 			// volatile, queuefamily scope
 			specializations["SEMANTICS"] = "%volbit";
@@ -3878,7 +3926,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		// Special SPIR-V code when using 16-bit floats.
 		if (cases[caseNdx].caseFlags & FLAG_F16)
 		{
-			spec.requestedVulkanFeatures.extFloat16Int8	|= EXTFLOAT16INT8FEATURES_FLOAT16;
+			spec.requestedVulkanFeatures.extFloat16Int8.shaderFloat16 = true;
 			specializations["CAPABILITIES"]				+= "OpCapability Float16\n";						// Adds 16-bit float capability
 			specializations["OPTYPE_DEFINITIONS"]		+= "%f16 = OpTypeFloat 16\n";						// Adds 16-bit float type
 			if (cases[caseNdx].caseFlags & FLAG_CONVERT)
@@ -3888,7 +3936,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		// Special SPIR-V code when using 8-bit integers.
 		if (cases[caseNdx].caseFlags & FLAG_I8)
 		{
-			spec.requestedVulkanFeatures.extFloat16Int8	|= EXTFLOAT16INT8FEATURES_INT8;
+			spec.requestedVulkanFeatures.extFloat16Int8.shaderInt8 = true;
 			specializations["CAPABILITIES"]				+= "OpCapability Int8\n";						// Adds 8-bit integer capability
 			specializations["OPTYPE_DEFINITIONS"]		+= "%i8 = OpTypeInt 8 1\n";						// Adds 8-bit integer type
 			if (cases[caseNdx].caseFlags & FLAG_CONVERT)
@@ -4144,7 +4192,7 @@ void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestC
 	specFloat16.inputs.push_back(BufferSp(new Uint32Buffer(inputUints)));
 	specFloat16.outputs.push_back(BufferSp(new Uint32Buffer(outputUints)));
 	specFloat16.numWorkGroups = IVec3(numElements, 1, 1);
-	specFloat16.requestedVulkanFeatures.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
+	specFloat16.requestedVulkanFeatures.extFloat16Int8.shaderFloat16 = true;
 
 	specMat4.assembly =
 		string(getComputeAsmShaderPreamble()) +
@@ -7121,7 +7169,7 @@ tcu::TestCaseGroup* createFloat16OpConstantCompositeGroup (tcu::TestContext& tes
 
 		spec.extensions.push_back("VK_KHR_shader_float16_int8");
 
-		spec.requestedVulkanFeatures.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
+		spec.requestedVulkanFeatures.extFloat16Int8.shaderFloat16 = true;
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -8302,7 +8350,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		// Special SPIR-V code when using 16-bit floats.
 		if (cases[caseNdx].caseFlags & FLAG_F16)
 		{
-			requiredFeatures.extFloat16Int8				|= EXTFLOAT16INT8FEATURES_FLOAT16;
+			requiredFeatures.extFloat16Int8.shaderFloat16 = true;
 			fragments["capability"]						+= "OpCapability Float16\n";						// Adds 16-bit float capability
 			specializations["OPTYPE_DEFINITIONS"]		+= "%f16 = OpTypeFloat 16\n";						// Adds 16-bit float type
 			if (cases[caseNdx].caseFlags & FLAG_CONVERT)
@@ -8312,7 +8360,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		// Special SPIR-V code when using 8-bit integers.
 		if (cases[caseNdx].caseFlags & FLAG_I8)
 		{
-			requiredFeatures.extFloat16Int8				|= EXTFLOAT16INT8FEATURES_INT8;
+			requiredFeatures.extFloat16Int8.shaderInt8 = true;
 			fragments["capability"]						+= "OpCapability Int8\n";						// Adds 8-bit integer capability
 			specializations["OPTYPE_DEFINITIONS"]		+= "%i8 = OpTypeInt 8 1\n";						// Adds 8-bit integer type
 			if (cases[caseNdx].caseFlags & FLAG_CONVERT)
@@ -8628,7 +8676,7 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 
 	extensions4.push_back("VK_KHR_shader_float16_int8");
 
-	vulkanFeatures4.extFloat16Int8	= EXTFLOAT16INT8FEATURES_FLOAT16;
+	vulkanFeatures4.extFloat16Int8.shaderFloat16 = true;
 
 	outputColors4[0]			= RGBA(127, 127, 127, 255);
 	outputColors4[1]			= RGBA(127, 0,   0,   255);
@@ -10396,7 +10444,7 @@ void getVulkanFeaturesAndExtensions (ConversionDataType from, ConversionDataType
 	if ((usesInt16(from, to) || usesFloat16(from, to)) && useStorageExt)
 	{
 		extensions.push_back("VK_KHR_16bit_storage");
-		vulkanFeatures.ext16BitStorage |= EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		vulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
 	}
 
 	if (usesFloat16(from, to) || usesInt8(from, to))
@@ -10405,15 +10453,15 @@ void getVulkanFeaturesAndExtensions (ConversionDataType from, ConversionDataType
 
 		if (usesFloat16(from, to))
 		{
-			vulkanFeatures.extFloat16Int8 |= EXTFLOAT16INT8FEATURES_FLOAT16;
+			vulkanFeatures.extFloat16Int8.shaderFloat16 = true;
 		}
 
 		if (usesInt8(from, to))
 		{
-			vulkanFeatures.extFloat16Int8 |= EXTFLOAT16INT8FEATURES_INT8;
+			vulkanFeatures.extFloat16Int8.shaderInt8 = true;
 
 			extensions.push_back("VK_KHR_8bit_storage");
-			vulkanFeatures.ext8BitStorage |= EXT8BITSTORAGEFEATURES_STORAGE_BUFFER;
+			vulkanFeatures.ext8BitStorage.storageBuffer8BitAccess = true;
 		}
 	}
 }
@@ -11307,7 +11355,7 @@ tcu::TestCaseGroup* createOpConstantFloat16Tests(tcu::TestContext& testCtx)
 	outputColors[3] = RGBA(127, 127, 255, 255);
 
 	extensions.push_back("VK_KHR_shader_float16_int8");
-	features.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
+	features.extFloat16Int8.shaderFloat16 = true;
 
 	for (size_t testNdx = 0; testNdx < sizeof(tests) / sizeof(NameConstantsCode); ++testNdx)
 	{
@@ -11541,7 +11589,7 @@ tcu::TestCaseGroup* createFloat16LogicalSet (tcu::TestContext& testCtx, const bo
 				features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat16 = DE_TRUE;
 			}
 
-			features.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
+			features.extFloat16Int8.shaderFloat16 = true;
 
 			finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 		}
@@ -11670,7 +11718,7 @@ tcu::TestCaseGroup* createFloat16LogicalSet (tcu::TestContext& testCtx, const bo
 				features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat16 = DE_TRUE;
 			}
 
-			features.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
+			features.extFloat16Int8.shaderFloat16 = true;
 
 			finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1), true);
 		}
@@ -11876,7 +11924,7 @@ tcu::TestCaseGroup* createFloat16FuncSet (tcu::TestContext& testCtx)
 
 		extensions.push_back("VK_KHR_shader_float16_int8");
 
-		features.extFloat16Int8	= EXTFLOAT16INT8FEATURES_FLOAT16;
+		features.extFloat16Int8.shaderFloat16 = true;
 
 		finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 	}
@@ -12129,7 +12177,7 @@ tcu::TestCaseGroup* createFloat16VectorExtractSet (tcu::TestContext& testCtx)
 
 		extensions.push_back("VK_KHR_shader_float16_int8");
 
-		features.extFloat16Int8		= EXTFLOAT16INT8FEATURES_FLOAT16;
+		features.extFloat16Int8.shaderFloat16 = true;
 
 		finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 	}
@@ -12386,7 +12434,7 @@ tcu::TestCaseGroup* createFloat16VectorInsertSet (tcu::TestContext& testCtx)
 
 		extensions.push_back("VK_KHR_shader_float16_int8");
 
-		features.extFloat16Int8		= EXTFLOAT16INT8FEATURES_FLOAT16;
+		features.extFloat16Int8.shaderFloat16 = true;
 
 		finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 	}
@@ -12766,7 +12814,7 @@ tcu::TestCaseGroup* createFloat16VectorShuffleSet (tcu::TestContext& testCtx)
 
 				extensions.push_back("VK_KHR_shader_float16_int8");
 
-				features.extFloat16Int8		= EXTFLOAT16INT8FEATURES_FLOAT16;
+				features.extFloat16Int8.shaderFloat16 = true;
 
 				finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 			}
@@ -13272,7 +13320,7 @@ tcu::TestCaseGroup* createFloat16CompositeConstructSet (tcu::TestContext& testCt
 
 		extensions.push_back("VK_KHR_shader_float16_int8");
 
-		features.extFloat16Int8		= EXTFLOAT16INT8FEATURES_FLOAT16;
+		features.extFloat16Int8.shaderFloat16 = true;
 
 		finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 	}
@@ -14202,7 +14250,7 @@ tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& te
 
 		extensions.push_back("VK_KHR_shader_float16_int8");
 
-		features.extFloat16Int8		= EXTFLOAT16INT8FEATURES_FLOAT16;
+		features.extFloat16Int8.shaderFloat16 = true;
 
 		finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 	}
@@ -15315,7 +15363,7 @@ struct fp16Atan2 : public fp16PerComponent
 		const double	yd		(y.asDouble());
 		double			result	(0.0);
 
-		if (x.isZero() && y.isZero())
+		if ((x.isZero() && y.isZero())||(x.isInf() && y.isInf()))
 			return false;
 
 		if (getFlavor() == 0)
@@ -18641,7 +18689,7 @@ void createFloat16ArithmeticFuncTest (tcu::TestContext& testCtx, tcu::TestCaseGr
 
 	extensions.push_back("VK_KHR_shader_float16_int8");
 
-	features.extFloat16Int8		= EXTFLOAT16INT8FEATURES_FLOAT16;
+	features.extFloat16Int8.shaderFloat16 = true;
 
 	finalizeTestsCreation(specResource, fragments, testCtx, testGroup, testName, features, extensions, IVec3(1, 1, 1));
 }
@@ -19956,9 +20004,9 @@ tcu::TestCaseGroup* createBoolMixedBitSizeGroup (tcu::TestContext& testCtx)
 		spec.outputs.push_back(BufferSp(new Float32Buffer(outputData)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
 		if (hasFloat16)
-			spec.requestedVulkanFeatures.extFloat16Int8 |= EXTFLOAT16INT8FEATURES_FLOAT16;
+			spec.requestedVulkanFeatures.extFloat16Int8.shaderFloat16 = true;
 		if (hasInt8)
-			spec.requestedVulkanFeatures.extFloat16Int8 |= EXTFLOAT16INT8FEATURES_INT8;
+			spec.requestedVulkanFeatures.extFloat16Int8.shaderInt8 = true;
 		spec.extensions.push_back("VK_KHR_shader_float16_int8");
 
 		string testName = "b" + de::toString(cases[caseNdx][0]) + "b" + de::toString(cases[caseNdx][1]) + "b" + de::toString(cases[caseNdx][2]) + "b" + de::toString(cases[caseNdx][3]);
@@ -20252,8 +20300,11 @@ void createSparseIdsAbuseTest (tcu::TestContext& testCtx, de::MovePtr<tcu::TestC
 	specResource.inputs.push_back(Resource(BufferSp(new Uint32Buffer(inData2)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 	specResource.outputs.push_back(Resource(BufferSp(new Uint32Buffer(outData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
-	features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
-	features.coreFeatures.fragmentStoresAndAtomics			= true;
+	if (std::is_base_of<GraphicsResources, SpecResource>::value)
+	{
+		features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+		features.coreFeatures.fragmentStoresAndAtomics			= true;
+	}
 
 	finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 }
@@ -20397,8 +20448,11 @@ void createLotsIdsAbuseTest (tcu::TestContext& testCtx, de::MovePtr<tcu::TestCas
 	specResource.inputs.push_back(Resource(BufferSp(new Uint32Buffer(inData2)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 	specResource.outputs.push_back(Resource(BufferSp(new Uint32Buffer(outData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
-	features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
-	features.coreFeatures.fragmentStoresAndAtomics			= true;
+	if (std::is_base_of<GraphicsResources, SpecResource>::value)
+	{
+		features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+		features.coreFeatures.fragmentStoresAndAtomics			= true;
+	}
 
 	finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 }
@@ -20574,7 +20628,8 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> graphicsTests		(new tcu::TestCaseGroup(testCtx, "graphics", "Graphics Instructions with special opcodes/operands"));
 
 	computeTests->addChild(createSpivVersionCheckTests(testCtx, testComputePipeline));
-	computeTests->addChild(createLocalSizeGroup(testCtx));
+	computeTests->addChild(createLocalSizeGroup(testCtx, false));
+	computeTests->addChild(createLocalSizeGroup(testCtx, true));
 	computeTests->addChild(createNonSemanticInfoGroup(testCtx));
 	computeTests->addChild(createOpNopGroup(testCtx));
 	computeTests->addChild(createOpFUnordGroup(testCtx, TEST_WITHOUT_NAN));
@@ -20611,6 +20666,14 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpSRemComputeGroup64(testCtx, QP_TEST_RESULT_PASS));
 	computeTests->addChild(createOpSModComputeGroup(testCtx, QP_TEST_RESULT_PASS));
 	computeTests->addChild(createOpSModComputeGroup64(testCtx, QP_TEST_RESULT_PASS));
+#ifndef CTS_USES_VULKANSC
+	computeTests->addChild(createOpSDotKHRComputeGroup(testCtx));
+	computeTests->addChild(createOpUDotKHRComputeGroup(testCtx));
+	computeTests->addChild(createOpSUDotKHRComputeGroup(testCtx));
+	computeTests->addChild(createOpSDotAccSatKHRComputeGroup(testCtx));
+	computeTests->addChild(createOpUDotAccSatKHRComputeGroup(testCtx));
+	computeTests->addChild(createOpSUDotAccSatKHRComputeGroup(testCtx));
+#endif // CTS_USES_VULKANSC
 	computeTests->addChild(createConvertComputeTests(testCtx, "OpSConvert", "sconvert"));
 	computeTests->addChild(createConvertComputeTests(testCtx, "OpUConvert", "uconvert"));
 	computeTests->addChild(createConvertComputeTests(testCtx, "OpFConvert", "fconvert"));
@@ -20706,6 +20769,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 
 		graphicsTests->addChild(graphicsAndroidTests.release());
 	}
+
 	graphicsTests->addChild(createOpNameTests(testCtx));
 	graphicsTests->addChild(createOpNameAbuseTests(testCtx));
 	graphicsTests->addChild(createOpMemberNameAbuseTests(testCtx));

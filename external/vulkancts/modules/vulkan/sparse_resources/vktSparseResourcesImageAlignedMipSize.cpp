@@ -63,7 +63,7 @@ public:
 									 const tcu::UVec3&	imageSize,
 									 const VkFormat		format);
 
-	void			initPrograms	(SourceCollections&	sourceCollections) const {DE_UNREF(sourceCollections);};
+	void			initPrograms	(SourceCollections&	sourceCollections) const {DE_UNREF(sourceCollections);}
 	TestInstance*	createInstance	(Context&			context) const;
 	virtual void	checkSupport	(Context&			context) const;
 

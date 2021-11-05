@@ -745,7 +745,7 @@ void TextureFilteringTests::init (void)
 														 wrapModes[wrapMode].mode,
 														 formats[format].format, formats[format].dataType,
 														 sizes2D[size].width, sizes2D[size].height));
-		})))));
+		})))))
 
 	// Cubemap cases.
 	FOR_EACH(minFilter,		minFilterModes,
@@ -779,7 +779,7 @@ void TextureFilteringTests::init (void)
 															 wrapModes[wrapMode].mode,
 															 formats[format].format, formats[format].dataType,
 															 sizesCube[size].width, sizesCube[size].height));
-		})))));
+		})))))
 }
 
 } // Accuracy

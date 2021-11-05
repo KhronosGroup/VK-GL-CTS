@@ -199,7 +199,7 @@ class LessOrEqualOp : public LessOrEqualBase
 {
 public:
 								LessOrEqualOp		(GeneratorState& state, ConstValueRangeAccess valueRange);
-	virtual						~LessOrEqualOp		(void) {};
+	virtual						~LessOrEqualOp		(void) {}
 
 	static float				getWeight			(const GeneratorState& state, ConstValueRangeAccess valueRange);
 };
@@ -253,7 +253,7 @@ class GreaterOrEqualOp : public GreaterOrEqualBase
 {
 public:
 								GreaterOrEqualOp	(GeneratorState& state, ConstValueRangeAccess valueRange);
-	virtual						~GreaterOrEqualOp	(void) {};
+	virtual						~GreaterOrEqualOp	(void) {}
 
 	static float				getWeight			(const GeneratorState& state, ConstValueRangeAccess valueRange);
 };

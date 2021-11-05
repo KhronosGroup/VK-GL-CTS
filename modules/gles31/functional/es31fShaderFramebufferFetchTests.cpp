@@ -577,7 +577,7 @@ class TextureFormatTestCase : public FramebufferFetchTestCase
 {
 public:
 						TextureFormatTestCase		(Context& context, const char* name, const char* desc, deUint32 format);
-						~TextureFormatTestCase		(void) {};
+						~TextureFormatTestCase		(void) {}
 
 	IterateResult		iterate						(void);
 
@@ -804,7 +804,7 @@ class LastFragDataTestCase : public FramebufferFetchTestCase
 {
 public:
 						LastFragDataTestCase			(Context& context, const char* name, const char* desc, deUint32 format);
-						~LastFragDataTestCase			(void) {};
+						~LastFragDataTestCase			(void) {}
 
 	IterateResult		iterate							(void);
 

@@ -172,6 +172,7 @@ virtual VkResult			getFenceFdKHR									(VkDevice device, const VkFenceGetFdInf
 virtual VkResult			acquireProfilingLockKHR							(VkDevice device, const VkAcquireProfilingLockInfoKHR* pInfo) const = 0;
 virtual void				releaseProfilingLockKHR							(VkDevice device) const = 0;
 virtual void				cmdSetFragmentShadingRateKHR					(VkCommandBuffer commandBuffer, const VkExtent2D* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]) const = 0;
+virtual VkResult			waitForPresentKHR								(VkDevice device, VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout) const = 0;
 virtual VkResult			createDeferredOperationKHR						(VkDevice device, const VkAllocationCallbacks* pAllocator, VkDeferredOperationKHR* pDeferredOperation) const = 0;
 virtual void				destroyDeferredOperationKHR						(VkDevice device, VkDeferredOperationKHR operation, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual uint32_t			getDeferredOperationMaxConcurrencyKHR			(VkDevice device, VkDeferredOperationKHR operation) const = 0;
@@ -194,6 +195,9 @@ virtual void				cmdCopyBufferToImage2KHR						(VkCommandBuffer commandBuffer, co
 virtual void				cmdCopyImageToBuffer2KHR						(VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2KHR* pCopyImageToBufferInfo) const = 0;
 virtual void				cmdBlitImage2KHR								(VkCommandBuffer commandBuffer, const VkBlitImageInfo2KHR* pBlitImageInfo) const = 0;
 virtual void				cmdResolveImage2KHR								(VkCommandBuffer commandBuffer, const VkResolveImageInfo2KHR* pResolveImageInfo) const = 0;
+virtual void				getDeviceBufferMemoryRequirementsKHR			(VkDevice device, const VkDeviceBufferMemoryRequirementsKHR* pInfo, VkMemoryRequirements2* pMemoryRequirements) const = 0;
+virtual void				getDeviceImageMemoryRequirementsKHR				(VkDevice device, const VkDeviceImageMemoryRequirementsKHR* pInfo, VkMemoryRequirements2* pMemoryRequirements) const = 0;
+virtual void				getDeviceImageSparseMemoryRequirementsKHR		(VkDevice device, const VkDeviceImageMemoryRequirementsKHR* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements) const = 0;
 virtual VkResult			debugMarkerSetObjectTagEXT						(VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const = 0;
 virtual VkResult			debugMarkerSetObjectNameEXT						(VkDevice device, const VkDebugMarkerObjectNameInfoEXT* pNameInfo) const = 0;
 virtual void				cmdDebugMarkerBeginEXT							(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const = 0;
@@ -303,7 +307,8 @@ virtual void				cmdSetFragmentShadingRateEnumNV					(VkCommandBuffer commandBuff
 virtual void				cmdSetVertexInputEXT							(VkCommandBuffer commandBuffer, uint32_t vertexBindingDescriptionCount, const VkVertexInputBindingDescription2EXT* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const VkVertexInputAttributeDescription2EXT* pVertexAttributeDescriptions) const = 0;
 virtual VkResult			getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI	(VkDevice device, VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize) const = 0;
 virtual void				cmdSubpassShadingHUAWEI							(VkCommandBuffer commandBuffer) const = 0;
-virtual VkResult			getMemoryRemoteAddressNV						(VkDevice device, const VkMemoryGetRemoteAddressInfoNV* getMemoryRemoteAddressInfo, VkRemoteAddressNV* pAddress) const = 0;
+virtual void				cmdBindInvocationMaskHUAWEI						(VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout) const = 0;
+virtual VkResult			getMemoryRemoteAddressNV						(VkDevice device, const VkMemoryGetRemoteAddressInfoNV* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress) const = 0;
 virtual void				cmdSetPatchControlPointsEXT						(VkCommandBuffer commandBuffer, uint32_t patchControlPoints) const = 0;
 virtual void				cmdSetRasterizerDiscardEnableEXT				(VkCommandBuffer commandBuffer, VkBool32 rasterizerDiscardEnable) const = 0;
 virtual void				cmdSetDepthBiasEnableEXT						(VkCommandBuffer commandBuffer, VkBool32 depthBiasEnable) const = 0;
@@ -312,6 +317,7 @@ virtual void				cmdSetPrimitiveRestartEnableEXT					(VkCommandBuffer commandBuff
 virtual void				cmdSetColorWriteEnableEXT						(VkCommandBuffer commandBuffer, uint32_t attachmentCount, const VkBool32* pColorWriteEnables) const = 0;
 virtual void				cmdDrawMultiEXT									(VkCommandBuffer commandBuffer, uint32_t drawCount, const VkMultiDrawInfoEXT* pVertexInfo, uint32_t instanceCount, uint32_t firstInstance, uint32_t stride) const = 0;
 virtual void				cmdDrawMultiIndexedEXT							(VkCommandBuffer commandBuffer, uint32_t drawCount, const VkMultiDrawIndexedInfoEXT* pIndexInfo, uint32_t instanceCount, uint32_t firstInstance, uint32_t stride, const int32_t* pVertexOffset) const = 0;
+virtual void				setDeviceMemoryPriorityEXT						(VkDevice device, VkDeviceMemory memory, float priority) const = 0;
 virtual VkResult			createAccelerationStructureKHR					(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const = 0;
 virtual void				destroyAccelerationStructureKHR					(VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual void				cmdBuildAccelerationStructuresKHR				(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos) const = 0;

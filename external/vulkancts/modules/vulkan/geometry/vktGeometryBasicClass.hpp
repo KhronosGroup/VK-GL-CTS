@@ -49,7 +49,7 @@ protected:
 																		 const vk::VkDevice				/*device*/,
 																		 vk::Allocator&					/*memAlloc*/,
 																		 const vk::VkCommandBuffer&		/*cmdBuffer*/,
-																		 const vk::VkPipelineLayout&	/*pipelineLayout*/){};
+																		 const vk::VkPipelineLayout&	/*pipelineLayout*/){}
 	virtual void						drawCommand						(const vk::VkCommandBuffer&		cmdBuffer);
 
 	const vk::VkPrimitiveTopology	m_primitiveType;

@@ -1112,7 +1112,7 @@ void AttachmentTest::testDeletedNames (void)
 				 "Attachment name returned by query even after detachment.");
 	errors.check(!elemType.exists(elementId),
 				 "Deleted attached object name still usable after detachment.");
-};
+}
 
 class InputAttachmentTest : public TestBase
 {
@@ -1299,7 +1299,7 @@ IterateResult OutputAttachmentTest::iterate (void)
 			"Result of container modification on original attachment before deletion.",
 			refSurface);
 	return STOP;
-};
+}
 
 struct LifeTestSpec
 {

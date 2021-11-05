@@ -95,7 +95,7 @@ void SamplerStateQueryTests::init (void)
 																	 std::string() + states[stateNdx].name + getVerifierSuffix(verifier),
 																	 states[stateNdx].desc,
 																	 verifier,
-																	 states[stateNdx].tester)));
+																	 states[stateNdx].tester)))
 	}
 }
 

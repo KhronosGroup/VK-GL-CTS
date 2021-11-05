@@ -1714,7 +1714,7 @@ public:
 
 		memBarrier.dstAccessMask	= VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
 		memBarrier.pNext			= nullptr;
-		memBarrier.srcAccessMask	= VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;;
+		memBarrier.srcAccessMask	= VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
 		memBarrier.sType			= VK_STRUCTURE_TYPE_MEMORY_BARRIER;
 
 		context.getDeviceInterface().cmdPipelineBarrier(commandBuffer,

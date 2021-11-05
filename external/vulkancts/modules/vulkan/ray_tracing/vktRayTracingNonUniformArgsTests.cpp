@@ -171,7 +171,7 @@ void NonUniformArgsCase::initPrograms (vk::SourceCollections& programCollection)
 		<< "    args.direction.xyz,\n"
 		<< "    args.Tmax,\n"
 		<< "    0);\n"
-		<< "}\n";
+		<< "}\n"
 		;
 
 	std::ostringstream chit;
@@ -186,7 +186,7 @@ void NonUniformArgsCase::initPrograms (vk::SourceCollections& programCollection)
 		<< "void main()\n"
 		<< "{\n"
 		<< "  result.shaderId = chitShaderId;\n"
-		<< "}\n";
+		<< "}\n"
 		;
 
 	std::ostringstream miss;
@@ -201,7 +201,7 @@ void NonUniformArgsCase::initPrograms (vk::SourceCollections& programCollection)
 		<< "void main()\n"
 		<< "{\n"
 		<< "  result.shaderId = missShaderId;\n"
-		<< "}\n";
+		<< "}\n"
 		;
 
 	programCollection.glslSources.add("rgen") << glu::RaygenSource(rgen.str()) << buildOptions;

@@ -1,10 +1,7 @@
 [require]
 VK_KHR_spirv_1_4
-VK_KHR_variable_pointers
 VariablePointerFeatures.variablePointersStorageBuffer
 VariablePointerFeatures.variablePointers
-VK_KHR_storage_buffer_storage_class
-VK_KHR_get_physical_device_properties2
 
 [compute shader spirv]
 ; Test operates on a Workgroup array (%wg_var) containing an array of 16 arrays of four ints.

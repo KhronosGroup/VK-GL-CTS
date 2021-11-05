@@ -729,7 +729,7 @@ void TextureFilteringTests::init (void)
 														 wrapModes[wrapMode].mode,
 														 formats[format].format, formats[format].dataType,
 														 sizes2D[size].width, sizes2D[size].height));
-		})))));
+		})))))
 
 	// 2D ETC1 texture cases.
 	{
@@ -750,7 +750,7 @@ void TextureFilteringTests::init (void)
 															 wrapModes[wrapMode].mode,
 															 wrapModes[wrapMode].mode,
 															 filenames));
-			})));
+			})))
 	}
 
 	// Cubemap cases.
@@ -785,7 +785,7 @@ void TextureFilteringTests::init (void)
 															 wrapModes[wrapMode].mode,
 															 formats[format].format, formats[format].dataType,
 															 sizesCube[size].width, sizesCube[size].height));
-		})))));
+		})))))
 
 	// Cubemap ETC1 cases
 	{
@@ -809,7 +809,7 @@ void TextureFilteringTests::init (void)
 																 GL_CLAMP_TO_EDGE,
 																 GL_CLAMP_TO_EDGE,
 																 filenames));
-			}));
+			}))
 	}
 }
 

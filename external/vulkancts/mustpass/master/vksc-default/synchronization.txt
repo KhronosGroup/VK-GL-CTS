@@ -2886,6 +2886,8 @@ dEQP-VKSC.synchronization.basic.fence.one
 dEQP-VKSC.synchronization.basic.fence.multi
 dEQP-VKSC.synchronization.basic.fence.empty_submit
 dEQP-VKSC.synchronization.basic.fence.multi_waitall_false
+dEQP-VKSC.synchronization.basic.fence.one_signaled
+dEQP-VKSC.synchronization.basic.fence.multiple_signaled
 dEQP-VKSC.synchronization.basic.binary_semaphore.one_queue
 dEQP-VKSC.synchronization.basic.binary_semaphore.multi_queue
 dEQP-VKSC.synchronization.basic.binary_semaphore.one_queue_typed

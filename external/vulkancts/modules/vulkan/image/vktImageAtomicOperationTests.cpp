@@ -584,6 +584,17 @@ void commonCheckSupport (Context& context, const tcu::TextureFormat& tcuFormat, 
 		if ((operation == ATOMIC_OPERATION_ADD) && !atomicFloatFeatures.shaderImageFloat32AtomicAdd)
 			TCU_THROW(NotSupportedError, "shaderImageFloat32AtomicAdd not supported");
 
+		if (operation == ATOMIC_OPERATION_MIN || operation == ATOMIC_OPERATION_MAX)
+		{
+			context.requireDeviceFunctionality("VK_EXT_shader_atomic_float2");
+#ifndef CTS_USES_VULKANSC
+			if (!context.getShaderAtomicFloat2FeaturesEXT().shaderImageFloat32AtomicMinMax)
+			{
+				TCU_THROW(NotSupportedError, "shaderImageFloat32AtomicMinMax not supported");
+			}
+#endif // CTS_USES_VULKANSC
+		}
+
 		if ((formatProperties.optimalTilingFeatures & requiredFeatures) != requiredFeatures)
 			TCU_FAIL("Required format feature bits not supported");
 
@@ -727,7 +738,9 @@ void BinaryAtomicEndResultCase::initPrograms (SourceCollections& sourceCollectio
 		const string	atomicInvocation		= getAtomicOperationShaderFuncName(m_operation) + "(u_resultImage, " + atomicCoord + compareExchangeStr + ", " + atomicArgExpr + ")";
 		const string	shaderImageFormatStr	= getShaderImageFormatQualifier(m_format);
 		const string	shaderImageTypeStr		= getShaderImageType(m_format, m_imageType);
-		const string	extensions				= "#extension GL_EXT_shader_atomic_float : enable\n#extension GL_KHR_memory_scope_semantics : enable  ";
+		const string	extensions				= "#extension GL_EXT_shader_atomic_float : enable\n"
+												  "#extension GL_EXT_shader_atomic_float2 : enable\n"
+												  "#extension GL_KHR_memory_scope_semantics : enable";
 
 		string source = versionDecl + "\n" + extensions + "\n";
 
@@ -853,7 +866,9 @@ void BinaryAtomicIntermValuesCase::initPrograms (SourceCollections& sourceCollec
 												"(u_resultImage, " + atomicCoord + compareExchangeStr + ", " + atomicArgExpr + ")";
 		const string	shaderImageFormatStr	= getShaderImageFormatQualifier(m_format);
 		const string	shaderImageTypeStr		= getShaderImageType(m_format, m_imageType);
-		const string	extensions				= "#extension GL_EXT_shader_atomic_float : enable\n#extension GL_KHR_memory_scope_semantics : enable  ";
+		const string	extensions				= "#extension GL_EXT_shader_atomic_float : enable\n"
+												  "#extension GL_EXT_shader_atomic_float2 : enable\n"
+												  "#extension GL_KHR_memory_scope_semantics : enable";
 
 		string source = versionDecl + "\n" + extensions + "\n"
 						"\n";
@@ -1459,12 +1474,12 @@ bool BinaryAtomicEndResultInstance::verifyResult (Allocation&	outputBufferAlloca
 	for (deInt32 x = 0; x < resultBuffer.getWidth();  x++)
 	{
 		const void* resultValue = resultBuffer.getPixelPtr(x, y, z);
-		deUint32 floatToUnsignedValue = 0;
+		deInt32 floatToIntValue = 0;
 		bool isFloatValue = false;
 		if (isFloatFormat(mapTextureFormat(m_format)))
 		{
 			isFloatValue = true;
-			floatToUnsignedValue = static_cast<deUint32>(*((float*)resultValue));
+			floatToIntValue = static_cast<deInt32>(*((float*)resultValue));
 		}
 
 		if (isOrderIndependentAtomicOperation(m_operation))
@@ -1498,7 +1513,7 @@ bool BinaryAtomicEndResultInstance::verifyResult (Allocation&	outputBufferAlloca
 			else
 			{
 				// 32-bit floating point
-				if (!isValueCorrect<deUint32>(floatToUnsignedValue, x, y, z, gridSize, extendedGridSize))
+				if (!isValueCorrect<deInt32>(floatToIntValue, x, y, z, gridSize, extendedGridSize))
 					return false;
 			}
 		}
@@ -1513,7 +1528,7 @@ bool BinaryAtomicEndResultInstance::verifyResult (Allocation&	outputBufferAlloca
 				matchFound = is64Bit ?
 					(*((deInt64*)resultValue) == getAtomicFuncArgument<deInt64>(m_operation, gid, extendedGridSize)) :
 					isFloatValue ?
-					floatToUnsignedValue == getAtomicFuncArgument<deUint32>(m_operation, gid, extendedGridSize) :
+					floatToIntValue == getAtomicFuncArgument<deInt32>(m_operation, gid, extendedGridSize) :
 					(*((deInt32*)resultValue) == getAtomicFuncArgument<deInt32>(m_operation, gid, extendedGridSize));
 
 			}
@@ -1532,7 +1547,7 @@ bool BinaryAtomicEndResultInstance::verifyResult (Allocation&	outputBufferAlloca
 				matchFound = is64Bit ?
 					(*((deInt64*)resultValue) == getAtomicFuncArgument<deInt64>(m_operation, gid, extendedGridSize)) :
 					isFloatValue ?
-					floatToUnsignedValue == getAtomicFuncArgument<deUint32>(m_operation, gid, extendedGridSize) :
+					floatToIntValue == getAtomicFuncArgument<deInt32>(m_operation, gid, extendedGridSize) :
 					(*((deInt32*)resultValue) == getAtomicFuncArgument<deInt32>(m_operation, gid, extendedGridSize));
 			}
 
@@ -1808,7 +1823,7 @@ bool BinaryAtomicIntermValuesInstance::verifyResult (Allocation&	outputBufferAll
 		else
 		{
 			// 32-bit floating point
-			if (!areValuesCorrect<deUint32>(resultBuffer, true, x, y, z, gridSize, extendedGridSize))
+			if (!areValuesCorrect<deInt32>(resultBuffer, true, x, y, z, gridSize, extendedGridSize))
 				return false;
 		}
 	}
@@ -1985,10 +2000,15 @@ tcu::TestCaseGroup* createImageAtomicOperationTests (tcu::TestContext& testCtx)
 							if (backingType.type == ImageBackingType::SPARSE && (vkImageType != VK_IMAGE_TYPE_2D && vkImageType != VK_IMAGE_TYPE_3D))
 								continue;
 
-							// Only ADD and EXCHANGE are supported on floating-point
+							// Only some operations are supported on floating-point
 							if (format.type == tcu::TextureFormat::FLOAT)
 							{
-								if (operation != ATOMIC_OPERATION_ADD && operation != ATOMIC_OPERATION_EXCHANGE)
+								if (operation != ATOMIC_OPERATION_ADD &&
+#ifndef CTS_USES_VULKANSC
+									operation != ATOMIC_OPERATION_MIN &&
+									operation != ATOMIC_OPERATION_MAX &&
+#endif // CTS_USES_VULKANSC
+									operation != ATOMIC_OPERATION_EXCHANGE)
 								{
 									continue;
 								}

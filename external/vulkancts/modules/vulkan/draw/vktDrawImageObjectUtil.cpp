@@ -289,7 +289,7 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 							 vk::VkImageAspectFlagBits	aspect,
 							 void *						data)
 {
-	DE_ASSERT(layout == vk::VK_IMAGE_LAYOUT_GENERAL || layout == vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);;
+	DE_ASSERT(layout == vk::VK_IMAGE_LAYOUT_GENERAL || layout == vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 	de::SharedPtr<Buffer> stagingResource;
 

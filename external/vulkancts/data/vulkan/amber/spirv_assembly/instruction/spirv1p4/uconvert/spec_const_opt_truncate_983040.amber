@@ -1,5 +1,8 @@
 [require]
 VK_KHR_spirv_1_4
+VK_KHR_16bit_storage
+shaderInt16
+Storage16BitFeatures.storageBuffer16BitAccess
 
 [compute shader spirv]
 ; SpecConstantOp truncate 32-bit 983,041 value to 16-bit.

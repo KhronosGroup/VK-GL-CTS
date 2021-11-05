@@ -286,11 +286,9 @@ static size_t getTotalSystemMemory (ANativeActivity* activity)
 
 	try
 	{
-		const size_t	cddRequiredSize	= getCDDRequiredSystemMemory(activity);
-
-		print("Device has at least %.2f MiB total system memory per Android CDD\n", double(cddRequiredSize) / double(MiB));
-
-		return cddRequiredSize;
+		const size_t totalMemory = getTotalAndroidSystemMemory(activity);
+		print("Device has %.2f MiB of system memory\n", static_cast<double>(totalMemory) / static_cast<double>(MiB));
+		return totalMemory;
 	}
 	catch (const std::exception& e)
 	{

@@ -549,7 +549,7 @@ void TextureUploadTests::init (void)
 
 		textureSizes[texSize].uploadCallGroup->addChild		(new TextureUploadCallCase		(m_context, caseName.c_str(), "", function, format, type, size));
 		textureSizes[texSize].uploadAndDrawGroup->addChild	(new TextureUploadAndDrawCase	(m_context, caseName.c_str(), "", function, format, type, size));
-	})));
+	})))
 
 	for (int i = 0; i < DE_LENGTH_OF_ARRAY(textureSizes); i++)
 	{

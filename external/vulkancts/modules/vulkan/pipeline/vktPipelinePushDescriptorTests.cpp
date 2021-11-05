@@ -1464,7 +1464,7 @@ void PushDescriptorImageGraphicsTestInstance::init (void)
 			default:
 				DE_FATAL("unexpected descriptor type");
 				break;
-		};
+		}
 
 		const VkDescriptorSetLayoutCreateInfo	descriptorSetLayoutCreateInfo	=
 		{
@@ -2196,7 +2196,7 @@ void PushDescriptorImageComputeTestInstance::init (void)
 			default:
 				DE_FATAL("unexpected descriptor type");
 				break;
-		};
+		}
 
 		const VkDescriptorSetLayoutBinding		descriptorSetLayoutBindingOutputBuffer	=
 		{
@@ -2510,7 +2510,7 @@ tcu::TestStatus PushDescriptorImageComputeTestInstance::verifyOutput (void)
 		default:
 			DE_FATAL("unexpected descriptor type");
 			break;
-	};
+	}
 
 	// Verify result
 	const auto			bufferDataPtr		= reinterpret_cast<const char*>(m_outputBufferAlloc->getHostPtr());
@@ -4306,7 +4306,7 @@ tcu::TestCaseGroup* createPushDescriptorTests (tcu::TestContext& testCtx)
 			default:
 				DE_FATAL("Unexpected descriptor type");
 				break;
-		};
+		}
 	}
 
 	pushDescriptorTests->addChild(graphicsTests.release());

@@ -89,6 +89,9 @@ struct TestParams
 	deUint32						stride;
 	tcu::Maybe<VertexOffsetParams>	vertexOffset;	// Only used for indexed draws.
 	deUint32						seed;
+	bool							useTessellation;
+	bool							useGeometry;
+	bool							multiview;
 
 	deUint32 maxInstanceIndex () const
 	{
@@ -352,6 +355,26 @@ TestInstance* MultiDrawTest::createInstance (Context& context) const
 void MultiDrawTest::checkSupport (Context& context) const
 {
 	context.requireDeviceFunctionality("VK_EXT_multi_draw");
+
+	if (m_params.useTessellation)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+
+	if (m_params.useGeometry)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
+	if (m_params.multiview)
+	{
+		const auto& multiviewFeatures = context.getMultiviewFeatures();
+
+		if (!multiviewFeatures.multiview)
+			TCU_THROW(NotSupportedError, "Multiview not supported");
+
+		if (m_params.useTessellation && !multiviewFeatures.multiviewTessellationShader)
+			TCU_THROW(NotSupportedError, "Multiview not supported with tesellation shaders");
+
+		if (m_params.useGeometry && !multiviewFeatures.multiviewGeometryShader)
+			TCU_THROW(NotSupportedError, "Multiview not supported with geometry shaders");
+	}
 }
 
 void MultiDrawTest::initPrograms (vk::SourceCollections& programCollection) const
@@ -362,9 +385,9 @@ void MultiDrawTest::initPrograms (vk::SourceCollections& programCollection) cons
 	// using an overlapping mesh, each single triangle will cover the whole framebuffer using a different depth value, and the depth
 	// test will be enabled.
 	//
-	// The color of each triangle will depend on the instance index and the draw index. This way, it's possible to draw those 1024
-	// triangles with a single draw call or to draw each triangle with a separate draw call, with up to 1024 draw calls.
-	// Combinations in between are possible.
+	// The color of each triangle will depend on the instance index, the draw index and, when using multiview, the view index. This
+	// way, it's possible to draw those 1024 triangles with a single draw call or to draw each triangle with a separate draw call,
+	// with up to 1024 draw calls. Combinations in between are possible.
 	//
 	// With overlapping meshes, the resulting color buffer will be uniform in color. With mosaic meshes, it depends on the submitted
 	// draw count. In some cases, all pixels will be slightly different in color.
@@ -388,6 +411,12 @@ void MultiDrawTest::initPrograms (vk::SourceCollections& programCollection) cons
 	std::ostringstream vert;
 	vert
 		<< "#version 460\n"
+		<< (m_params.multiview ? "#extension GL_EXT_multiview : enable\n" : "")
+		<< "\n"
+		<< "out gl_PerVertex\n"
+		<< "{\n"
+		<< "    vec4 gl_Position;\n"
+		<< "};\n"
 		<< "\n"
 		<< "layout (location=0) in vec4 inPos;\n"
 		<< "layout (location=0) out uvec4 outColor;\n"
@@ -399,9 +428,10 @@ void MultiDrawTest::initPrograms (vk::SourceCollections& programCollection) cons
 		<< "    outColor.r = ((uDrawIndex >> 8u) & 0xFFu);\n"
 		<< "    outColor.g = ((uDrawIndex      ) & 0xFFu);\n"
 		<< "    outColor.b = 255u - uint(gl_InstanceIndex);\n"
-		<< "    outColor.a = 255u;\n"
+		<< "    outColor.a = 255u" << (m_params.multiview ? " - uint(gl_ViewIndex)" : "") << ";\n"
 		<< "}\n"
 		;
+	programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
 
 	std::ostringstream frag;
 	frag
@@ -415,9 +445,98 @@ void MultiDrawTest::initPrograms (vk::SourceCollections& programCollection) cons
 		<< "    outColor = inColor;\n"
 		<< "}\n"
 		;
-
-	programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
 	programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+
+	if (m_params.useTessellation)
+	{
+		std::ostringstream tesc;
+		tesc
+			<< "#version 460\n"
+			<< "\n"
+			<< "layout (vertices=3) out;\n"
+			<< "in gl_PerVertex\n"
+			<< "{\n"
+			<< "    vec4 gl_Position;\n"
+			<< "} gl_in[gl_MaxPatchVertices];\n"
+			<< "out gl_PerVertex\n"
+			<< "{\n"
+			<< "    vec4 gl_Position;\n"
+			<< "} gl_out[];\n"
+			<< "\n"
+			<< "layout (location=0) in uvec4 inColor[gl_MaxPatchVertices];\n"
+			<< "layout (location=0) out uvec4 outColor[];\n"
+			<< "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    gl_TessLevelInner[0] = 1.0;\n"
+			<< "    gl_TessLevelInner[1] = 1.0;\n"
+			<< "    gl_TessLevelOuter[0] = 1.0;\n"
+			<< "    gl_TessLevelOuter[1] = 1.0;\n"
+			<< "    gl_TessLevelOuter[2] = 1.0;\n"
+			<< "    gl_TessLevelOuter[3] = 1.0;\n"
+			<< "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+			<< "    outColor[gl_InvocationID] = inColor[gl_InvocationID];\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("tesc") << glu::TessellationControlSource(tesc.str());
+
+		std::ostringstream tese;
+		tese
+			<< "#version 460\n"
+			<< "\n"
+			<< "layout (triangles, fractional_odd_spacing, cw) in;\n"
+			<< "in gl_PerVertex\n"
+			<< "{\n"
+			<< "    vec4 gl_Position;\n"
+			<< "} gl_in[gl_MaxPatchVertices];\n"
+			<< "out gl_PerVertex\n"
+			<< "{\n"
+			<< "    vec4 gl_Position;\n"
+			<< "};\n"
+			<< "\n"
+			<< "layout (location=0) in uvec4 inColor[gl_MaxPatchVertices];\n"
+			<< "layout (location=0) out uvec4 outColor;\n"
+			<< "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    gl_Position = (gl_TessCoord.x * gl_in[0].gl_Position) +\n"
+			<< "                  (gl_TessCoord.y * gl_in[1].gl_Position) +\n"
+			<< "                  (gl_TessCoord.z * gl_in[2].gl_Position);\n"
+			<< "    outColor = inColor[0];\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(tese.str());
+	}
+
+	if (m_params.useGeometry)
+	{
+		std::ostringstream geom;
+		geom
+			<< "#version 460\n"
+			<< "\n"
+			<< "layout (triangles) in;\n"
+			<< "layout (triangle_strip, max_vertices=3) out;\n"
+			<< "in gl_PerVertex\n"
+			<< "{\n"
+			<< "    vec4 gl_Position;\n"
+			<< "} gl_in[3];\n"
+			<< "out gl_PerVertex\n"
+			<< "{\n"
+			<< "    vec4 gl_Position;\n"
+			<< "};\n"
+			<< "\n"
+			<< "layout (location=0) in uvec4 inColor[3];\n"
+			<< "layout (location=0) out uvec4 outColor;\n"
+			<< "\n"
+			<< "void main ()\n"
+			<< "{\n"
+			<< "    gl_Position = gl_in[0].gl_Position; outColor = inColor[0]; EmitVertex();\n"
+			<< "    gl_Position = gl_in[1].gl_Position; outColor = inColor[1]; EmitVertex();\n"
+			<< "    gl_Position = gl_in[2].gl_Position; outColor = inColor[2]; EmitVertex();\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("geom") << glu::GeometrySource(geom.str());
+	}
 }
 
 MultiDrawInstance::MultiDrawInstance (Context& context, const TestParams& params)
@@ -429,6 +548,138 @@ void appendPaddingVertices (std::vector<tcu::Vec4>& vertices, deUint32 count)
 {
 	for (deUint32 i = 0u; i < count; ++i)
 		vertices.emplace_back(0.0f, 0.0f, 0.0f, 1.0f);
+}
+
+// Creates a render pass with multiple subpasses, one per layer.
+Move<VkRenderPass> makeMultidrawRenderPass (const DeviceInterface&	vk,
+											VkDevice				device,
+											VkFormat				colorFormat,
+											VkFormat				depthStencilFormat,
+											deUint32				layerCount)
+{
+	const VkAttachmentDescription colorAttachmentDescription =
+	{
+		0u,											// VkAttachmentDescriptionFlags    flags
+		colorFormat,								// VkFormat                        format
+		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits           samples
+		VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp              loadOp
+		VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp             storeOp
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp              stencilLoadOp
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp             stencilStoreOp
+		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout                   initialLayout
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout                   finalLayout
+	};
+
+	const VkAttachmentDescription depthStencilAttachmentDescription =
+	{
+		0u,													// VkAttachmentDescriptionFlags    flags
+		depthStencilFormat,									// VkFormat                        format
+		VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits           samples
+		VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp              loadOp
+		VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp             storeOp
+		VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp              stencilLoadOp
+		VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp             stencilStoreOp
+		VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout                   initialLayout
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout                   finalLayout
+	};
+
+	const std::vector<VkAttachmentDescription>	attachmentDescriptions		= { colorAttachmentDescription, depthStencilAttachmentDescription };
+	const VkAttachmentReference					colorAttachmentRef			= makeAttachmentReference(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	const VkAttachmentReference					depthStencilAttachmentRef	= makeAttachmentReference(1u, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+	const VkSubpassDescription subpassDescription =
+	{
+		0u,									// VkSubpassDescriptionFlags       flags
+		VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint             pipelineBindPoint
+		0u,									// deUint32                        inputAttachmentCount
+		nullptr,							// const VkAttachmentReference*    pInputAttachments
+		1u,									// deUint32                        colorAttachmentCount
+		&colorAttachmentRef,				// const VkAttachmentReference*    pColorAttachments
+		nullptr,							// const VkAttachmentReference*    pResolveAttachments
+		&depthStencilAttachmentRef,			// const VkAttachmentReference*    pDepthStencilAttachment
+		0u,									// deUint32                        preserveAttachmentCount
+		nullptr								// const deUint32*                 pPreserveAttachments
+	};
+
+	std::vector<VkSubpassDescription> subpassDescriptions;
+
+	subpassDescriptions.reserve(layerCount);
+	for (deUint32 subpassIdx = 0u; subpassIdx < layerCount; ++subpassIdx)
+		subpassDescriptions.push_back(subpassDescription);
+
+	using MultiviewInfoPtr = de::MovePtr<VkRenderPassMultiviewCreateInfo>;
+
+	MultiviewInfoPtr multiviewCreateInfo;
+	std::vector<deUint32> viewMasks;
+
+	if (layerCount > 1u)
+	{
+		multiviewCreateInfo		= MultiviewInfoPtr(new VkRenderPassMultiviewCreateInfo);
+		*multiviewCreateInfo	= initVulkanStructure();
+
+		viewMasks.resize(subpassDescriptions.size());
+		for (deUint32 subpassIdx = 0u; subpassIdx < static_cast<deUint32>(viewMasks.size()); ++subpassIdx)
+			viewMasks[subpassIdx] = (1u << subpassIdx);
+
+		multiviewCreateInfo->subpassCount	= static_cast<deUint32>(viewMasks.size());
+		multiviewCreateInfo->pViewMasks		= de::dataOrNull(viewMasks);
+	}
+
+	// Dependencies between subpasses for color and depth/stencil read/writes.
+	std::vector<VkSubpassDependency> dependencies;
+	if (layerCount > 1u)
+		dependencies.reserve((layerCount - 1u) * 2u);
+
+	const auto fragmentTestStages	= (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+	const auto dsWrites				= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+	const auto dsReadWrites			= (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT);
+	const auto colorStage			= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	const auto colorWrites			= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	const auto colorReadWrites		= (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT);
+
+	for (deUint32 subpassIdx = 1u; subpassIdx < layerCount; ++subpassIdx)
+	{
+		const auto prev = subpassIdx - 1u;
+
+		const VkSubpassDependency dsDep =
+		{
+			prev,							//	deUint32				srcSubpass;
+			subpassIdx,						//	deUint32				dstSubpass;
+			fragmentTestStages,				//	VkPipelineStageFlags	srcStageMask;
+			fragmentTestStages,				//	VkPipelineStageFlags	dstStageMask;
+			dsWrites,						//	VkAccessFlags			srcAccessMask;
+			dsReadWrites,					//	VkAccessFlags			dstAccessMask;
+			VK_DEPENDENCY_BY_REGION_BIT,	//	VkDependencyFlags		dependencyFlags;
+		};
+		dependencies.push_back(dsDep);
+
+		const VkSubpassDependency colorDep =
+		{
+			prev,							//	deUint32				srcSubpass;
+			subpassIdx,						//	deUint32				dstSubpass;
+			colorStage,						//	VkPipelineStageFlags	srcStageMask;
+			colorStage,						//	VkPipelineStageFlags	dstStageMask;
+			colorWrites,					//	VkAccessFlags			srcAccessMask;
+			colorReadWrites,				//	VkAccessFlags			dstAccessMask;
+			VK_DEPENDENCY_BY_REGION_BIT,	//	VkDependencyFlags		dependencyFlags;
+		};
+		dependencies.push_back(colorDep);
+	}
+
+	const VkRenderPassCreateInfo renderPassInfo =
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,				// VkStructureType                   sType
+		multiviewCreateInfo.get(),								// const void*                       pNext
+		0u,														// VkRenderPassCreateFlags           flags
+		static_cast<deUint32>(attachmentDescriptions.size()),	// deUint32                          attachmentCount
+		de::dataOrNull(attachmentDescriptions),					// const VkAttachmentDescription*    pAttachments
+		static_cast<deUint32>(subpassDescriptions.size()),		// deUint32                          subpassCount
+		de::dataOrNull(subpassDescriptions),					// const VkSubpassDescription*       pSubpasses
+		static_cast<deUint32>(dependencies.size()),				// deUint32                          dependencyCount
+		de::dataOrNull(dependencies),							// const VkSubpassDependency*        pDependencies
+	};
+
+	return createRenderPass(vk, device, &renderPassInfo, nullptr);
 }
 
 tcu::TestStatus MultiDrawInstance::iterate (void)
@@ -447,6 +698,8 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 	const auto	triangleCount	= getTriangleCount();
 	const auto	imageDim		= static_cast<deUint32>(deSqrt(static_cast<double>(triangleCount)));
 	const auto	imageExtent		= makeExtent3D(imageDim, imageDim, 1u);
+	const auto	imageLayers		= (m_params.multiview ? 2u : 1u);
+	const auto	imageViewType	= ((imageLayers > 1u) ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
 	const auto	colorUsage		= (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 	const auto	dsUsage			= (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 	const auto	pixelCount		= imageExtent.width * imageExtent.height;
@@ -472,7 +725,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 		colorFormat,							//	VkFormat				format;
 		imageExtent,							//	VkExtent3D				extent;
 		1u,										//	deUint32				mipLevels;
-		1u,										//	deUint32				arrayLayers;
+		imageLayers,							//	deUint32				arrayLayers;
 		VK_SAMPLE_COUNT_1_BIT,					//	VkSampleCountFlagBits	samples;
 		VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
 		colorUsage,								//	VkImageUsageFlags		usage;
@@ -483,8 +736,8 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 	};
 
 	ImageWithMemory	colorBuffer				(vkd, device, alloc, imageCreateInfo, MemoryRequirement::Any);
-	const auto		colorSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-	const auto		colorBufferView			= makeImageView(vkd, device, colorBuffer.get(), VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange);
+	const auto		colorSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, imageLayers);
+	const auto		colorBufferView			= makeImageView(vkd, device, colorBuffer.get(), imageViewType, colorFormat, colorSubresourceRange);
 
 	// Depth/stencil buffer.
 	const VkImageCreateInfo dsCreateInfo =
@@ -496,7 +749,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 		dsFormat,								//	VkFormat				format;
 		imageExtent,							//	VkExtent3D				extent;
 		1u,										//	deUint32				mipLevels;
-		1u,										//	deUint32				arrayLayers;
+		imageLayers,							//	deUint32				arrayLayers;
 		VK_SAMPLE_COUNT_1_BIT,					//	VkSampleCountFlagBits	samples;
 		VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
 		dsUsage,								//	VkImageUsageFlags		usage;
@@ -507,34 +760,55 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 	};
 
 	ImageWithMemory dsBuffer			(vkd, device, alloc, dsCreateInfo, MemoryRequirement::Any);
-	const auto		dsSubresourceRange	= makeImageSubresourceRange((VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT), 0u, 1u, 0u, 1u);
-	const auto		dsBufferView		= makeImageView(vkd, device, dsBuffer.get(), VK_IMAGE_VIEW_TYPE_2D, dsFormat, dsSubresourceRange);
+	const auto		dsSubresourceRange	= makeImageSubresourceRange((VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT), 0u, 1u, 0u, imageLayers);
+	const auto		dsBufferView		= makeImageView(vkd, device, dsBuffer.get(), imageViewType, dsFormat, dsSubresourceRange);
 
-	// Buffer to read color attachment.
+	// Output buffers to verify attachments.
+	using BufferWithMemoryPtr = de::MovePtr<BufferWithMemory>;
+
+	// Buffers to read color attachment.
 	const auto outputBufferSize = pixelCount * static_cast<VkDeviceSize>(tcu::getPixelSize(tcuColorFormat));
 	const auto bufferCreateInfo = makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-	BufferWithMemory outputBuffer (vkd, device, alloc, bufferCreateInfo, MemoryRequirement::HostVisible);
+
+	std::vector<BufferWithMemoryPtr> outputBuffers;
+	for (deUint32 i = 0u; i < imageLayers; ++i)
+		outputBuffers.push_back(BufferWithMemoryPtr(new BufferWithMemory(vkd, device, alloc, bufferCreateInfo, MemoryRequirement::HostVisible)));
 
 	// Buffer to read depth/stencil attachment. Note: this supposes we'll only copy the stencil aspect. See below.
 	const auto			tcuStencilFmt			= mapVkFormat(getStencilVerificationFormat());
 	const auto			stencilOutBufferSize	= pixelCount * static_cast<VkDeviceSize>(tcu::getPixelSize(tcuStencilFmt));
 	const auto			stencilOutCreateInfo	= makeBufferCreateInfo(stencilOutBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-	BufferWithMemory	stencilOutBuffer		(vkd, device, alloc, stencilOutCreateInfo, MemoryRequirement::HostVisible);
+
+	std::vector<BufferWithMemoryPtr> stencilOutBuffers;
+	for (deUint32 i = 0u; i < imageLayers; ++i)
+		stencilOutBuffers.push_back(BufferWithMemoryPtr(new BufferWithMemory(vkd, device, alloc, stencilOutCreateInfo, MemoryRequirement::HostVisible)));
 
 	// Shaders.
-	const auto vertModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
-	const auto fragModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+	const auto				vertModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+	const auto				fragModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+	Move<VkShaderModule>	tescModule;
+	Move<VkShaderModule>	teseModule;
+	Move<VkShaderModule>	geomModule;
+
+	if (m_params.useGeometry)
+		geomModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("geom"), 0u);
+
+	if (m_params.useTessellation)
+	{
+		tescModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("tesc"), 0u);
+		teseModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("tese"), 0u);
+	}
 
 	DescriptorSetLayoutBuilder	layoutBuilder;
 	const auto					descriptorSetLayout	= layoutBuilder.build(vkd, device);
 	const auto					pipelineLayout		= makePipelineLayout(vkd, device, descriptorSetLayout.get());
 
 	// Render pass.
-	const auto renderPass = makeRenderPass(vkd, device, colorFormat, dsFormat);
+	const auto renderPass = makeMultidrawRenderPass(vkd, device, colorFormat, dsFormat, imageLayers);
 
-	// Framebuffer.
+	// Framebuffer (note layers is always 1 as required by the spec).
 	const std::vector<VkImageView> attachments { colorBufferView.get(), dsBufferView.get() };
-	const auto framebuffer = makeFramebuffer(vkd, device, renderPass.get(), static_cast<deUint32>(attachments.size()), de::dataOrNull(attachments), imageExtent.width, imageExtent.height);
+	const auto framebuffer = makeFramebuffer(vkd, device, renderPass.get(), static_cast<deUint32>(attachments.size()), de::dataOrNull(attachments), imageExtent.width, imageExtent.height, 1u);
 
 	// Viewports and scissors.
 	const auto						viewport	= makeViewport(imageExtent);
@@ -583,11 +857,19 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 		1.0f,															//	float									maxDepthBounds;
 	};
 
-	// Pipeline.
-	const auto pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
-		vertModule.get(), DE_NULL, DE_NULL, DE_NULL, fragModule.get(),
-		renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u/*subpass*/, 0u/*patchControlPoints*/,
-		nullptr/*vertexInputStateCreateInfo*/, &rasterizationInfo, nullptr/*multisampleStateCreateInfo*/, &depthStencilInfo);
+	const auto primitiveTopology	= (m_params.useTessellation ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	const auto patchControlPoints	= (m_params.useTessellation ? 3u : 0u);
+
+	// Pipelines.
+	std::vector<Move<VkPipeline>> pipelines;
+	pipelines.reserve(imageLayers);
+	for (deUint32 subpassIdx = 0u; subpassIdx < imageLayers; ++subpassIdx)
+	{
+		pipelines.emplace_back(makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
+			vertModule.get(), tescModule.get(), teseModule.get(), geomModule.get(), fragModule.get(),
+			renderPass.get(), viewports, scissors, primitiveTopology, subpassIdx, patchControlPoints,
+			nullptr/*vertexInputStateCreateInfo*/, &rasterizationInfo, nullptr/*multisampleStateCreateInfo*/, &depthStencilInfo));
+	}
 
 	// Command pool and buffer.
 	const auto cmdPool		= makeCommandPool(vkd, device, qIndex);
@@ -669,37 +951,8 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 		flushAlloc(vkd, device, indexBufferAlloc);
 	}
 
-	beginCommandBuffer(vkd, cmdBuffer);
-
-	// Transition depth/stencil attachment to the proper initial layout for the render pass.
-	const auto dsPreBarrier = makeImageMemoryBarrier(
-		0u,
-		(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT),
-		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		dsBuffer.get(), dsSubresourceRange);
-
-	vkd.cmdPipelineBarrier(
-		cmdBuffer,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT),
-		0u, 0u, nullptr, 0u, nullptr, 1u, &dsPreBarrier);
-
-	// Draw stuff.
-	std::vector<VkClearValue> clearValues;
-	clearValues.reserve(2u);
-	clearValues.push_back(makeClearValueColorU32(0u, 0u, 0u, 0u));
-	clearValues.push_back(makeClearValueDepthStencil(((isMosaic || isIndexed) ? 0.0f : 1.0f), 0u));
-
-	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissor, static_cast<deUint32>(clearValues.size()), de::dataOrNull(clearValues));
-
-	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
-	vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-	if (isIndexed)
-		vkd.cmdBindIndexBuffer(cmdBuffer, indexBuffer->get(), indexBufferOffset, VK_INDEX_TYPE_UINT32);
-
-	// Draw stuff.
-	const auto offsetType	= (m_params.vertexOffset ? m_params.vertexOffset->offsetType : tcu::nothing<VertexOffsetType>());
+	// Prepare draw information.
+	const auto offsetType	= (m_params.vertexOffset ? tcu::just(m_params.vertexOffset->offsetType) : tcu::Nothing);
 	const auto vertexOffset	= static_cast<deInt32>(extraVertices);
 
 	DrawInfoPacker drawInfos(m_params.drawType, offsetType, m_params.stride, m_params.drawCount, m_params.seed);
@@ -720,16 +973,37 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 		}
 	}
 
-	if (isIndexed)
+	beginCommandBuffer(vkd, cmdBuffer);
+
+	// Draw stuff.
+	std::vector<VkClearValue> clearValues;
+	clearValues.reserve(2u);
+	clearValues.push_back(makeClearValueColorU32(0u, 0u, 0u, 0u));
+	clearValues.push_back(makeClearValueDepthStencil(((isMosaic || isIndexed) ? 0.0f : 1.0f), 0u));
+
+	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissor, static_cast<deUint32>(clearValues.size()), de::dataOrNull(clearValues));
+
+	for (deUint32 layerIdx = 0u; layerIdx < imageLayers; ++layerIdx)
 	{
-		const auto drawInfoPtr	= reinterpret_cast<const VkMultiDrawIndexedInfoEXT*>(drawInfos.drawInfoData());
-		const auto offsetPtr	= (isMixedMode ? nullptr : &vertexOffset);
-		vkd.cmdDrawMultiIndexedEXT(cmdBuffer, drawInfos.drawInfoCount(), drawInfoPtr, m_params.instanceCount, m_params.firstInstance, drawInfos.stride(), offsetPtr);
-	}
-	else
-	{
-		const auto drawInfoPtr = reinterpret_cast<const VkMultiDrawInfoEXT*>(drawInfos.drawInfoData());
-		vkd.cmdDrawMultiEXT(cmdBuffer, drawInfos.drawInfoCount(), drawInfoPtr, m_params.instanceCount, m_params.firstInstance, drawInfos.stride());
+		if (layerIdx > 0u)
+			vkd.cmdNextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[layerIdx].get());
+		vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+		if (isIndexed)
+			vkd.cmdBindIndexBuffer(cmdBuffer, indexBuffer->get(), indexBufferOffset, VK_INDEX_TYPE_UINT32);
+
+		if (isIndexed)
+		{
+			const auto drawInfoPtr	= reinterpret_cast<const VkMultiDrawIndexedInfoEXT*>(drawInfos.drawInfoData());
+			const auto offsetPtr	= (isMixedMode ? nullptr : &vertexOffset);
+			vkd.cmdDrawMultiIndexedEXT(cmdBuffer, drawInfos.drawInfoCount(), drawInfoPtr, m_params.instanceCount, m_params.firstInstance, drawInfos.stride(), offsetPtr);
+		}
+		else
+		{
+			const auto drawInfoPtr = reinterpret_cast<const VkMultiDrawInfoEXT*>(drawInfos.drawInfoData());
+			vkd.cmdDrawMultiEXT(cmdBuffer, drawInfos.drawInfoCount(), drawInfoPtr, m_params.instanceCount, m_params.firstInstance, drawInfos.stride());
+		}
 	}
 
 	endRenderPass(vkd, cmdBuffer);
@@ -748,14 +1022,20 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 	vkd.cmdPipelineBarrier(cmdBuffer, (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT), VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &dsBufferBarrier);
 
 	// Copy images to output buffers.
-	const auto colorSubresourceLayers	= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
-	const auto colorCopyRegion			= makeBufferImageCopy(imageExtent, colorSubresourceLayers);
-	vkd.cmdCopyImageToBuffer(cmdBuffer, colorBuffer.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, outputBuffer.get(), 1u, &colorCopyRegion);
+	for (deUint32 layerIdx = 0u; layerIdx < imageLayers; ++layerIdx)
+	{
+		const auto colorSubresourceLayers	= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, layerIdx, 1u);
+		const auto colorCopyRegion			= makeBufferImageCopy(imageExtent, colorSubresourceLayers);
+		vkd.cmdCopyImageToBuffer(cmdBuffer, colorBuffer.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, outputBuffers[layerIdx]->get(), 1u, &colorCopyRegion);
+	}
 
 	// Note: this only copies the stencil aspect. See stencilOutBuffer creation.
-	const auto stencilSubresourceLayers	= makeImageSubresourceLayers(VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, 1u);
-	const auto stencilCopyRegion		= makeBufferImageCopy(imageExtent, stencilSubresourceLayers);
-	vkd.cmdCopyImageToBuffer(cmdBuffer, dsBuffer.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, stencilOutBuffer.get(), 1u, &stencilCopyRegion);
+	for (deUint32 layerIdx = 0u; layerIdx < imageLayers; ++layerIdx)
+	{
+		const auto stencilSubresourceLayers	= makeImageSubresourceLayers(VK_IMAGE_ASPECT_STENCIL_BIT, 0u, layerIdx, 1u);
+		const auto stencilCopyRegion		= makeBufferImageCopy(imageExtent, stencilSubresourceLayers);
+		vkd.cmdCopyImageToBuffer(cmdBuffer, dsBuffer.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, stencilOutBuffers[layerIdx]->get(), 1u, &stencilCopyRegion);
+	}
 
 	// Prepare buffers for host reading.
 	const auto outputBufferBarrier		= makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
@@ -765,29 +1045,6 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
 
 	// Read output buffers and verify their contents.
-	auto& outputBufferAlloc = outputBuffer.getAllocation();
-	invalidateAlloc(vkd, device, outputBufferAlloc);
-	const void* outputBufferData = outputBufferAlloc.getHostPtr();
-
-	auto& stencilOutBufferAlloc = stencilOutBuffer.getAllocation();
-	invalidateAlloc(vkd, device, stencilOutBufferAlloc);
-	const void* stencilOutBufferData = stencilOutBufferAlloc.getHostPtr();
-
-	const auto iWidth	= static_cast<int>(imageExtent.width);
-	const auto iHeight	= static_cast<int>(imageExtent.height);
-
-	const auto					colorVerificationFormat	= mapVkFormat(getVerificationFormat());
-	tcu::ConstPixelBufferAccess	colorAccess				(colorVerificationFormat, iWidth, iHeight, 1, outputBufferData);
-	tcu::ConstPixelBufferAccess	stencilAccess			(tcuStencilFmt, iWidth, iHeight, 1, stencilOutBufferData);
-
-	// Generate reference images.
-	tcu::TextureLevel			refColorLevel		(colorVerificationFormat, iWidth, iHeight);
-	tcu::PixelBufferAccess		refColorAccess		= refColorLevel.getAccess();
-	tcu::TextureLevel			refStencilLevel		(tcuStencilFmt, iWidth, iHeight);
-	tcu::PixelBufferAccess		refStencilAccess	= refStencilLevel.getAccess();
-	tcu::IVec4					referenceColor;
-	int							referenceStencil;
-	const auto					maxInstanceIndex	= m_params.maxInstanceIndex();
 
 	// With stride zero, mosaic meshes increment the stencil buffer as many times as draw operations for affected pixels and
 	// overlapping meshes increment the stencil buffer only in the first draw operation (the rest fail the depth test) as many times
@@ -795,56 +1052,83 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 	//
 	// With nonzero stride, mosaic meshes increment the stencil buffer once per pixel. Overlapping meshes increment it once per
 	// triangle.
-	const auto					stencilIncrements	=	((m_params.stride == 0u)
-														? (isMosaic ? drawInfos.drawInfoCount() : trianglesPerDraw)
-														: (isMosaic ? 1u : triangleCount));
+	const auto	stencilIncrements		=	((m_params.stride == 0u)
+											? (isMosaic ? drawInfos.drawInfoCount() : trianglesPerDraw)
+											: (isMosaic ? 1u : triangleCount));
+	const auto	maxInstanceIndex		= m_params.maxInstanceIndex();
+	const auto	colorVerificationFormat	= mapVkFormat(getVerificationFormat());
+	const auto	iWidth					= static_cast<int>(imageExtent.width);
+	const auto	iHeight					= static_cast<int>(imageExtent.height);
+	auto&		log						= m_context.getTestContext().getLog();
+	const auto	logMode					= tcu::CompareLogMode::COMPARE_LOG_ON_ERROR;
 
-	for (int y = 0; y < iHeight; ++y)
-	for (int x = 0; x < iWidth; ++x)
+	for (deUint32 layerIdx = 0u; layerIdx < imageLayers; ++layerIdx)
 	{
-		const auto pixelNumber		= static_cast<deUint32>(y * iWidth + x);
-		const auto triangleIndex	= (isIndexed ? (pixelCount - 1u - pixelNumber) : pixelNumber); // Reverse order for indexed draws.
+		auto& outputBufferAlloc = outputBuffers[layerIdx]->getAllocation();
+		invalidateAlloc(vkd, device, outputBufferAlloc);
+		const void* outputBufferData = outputBufferAlloc.getHostPtr();
 
-		if (m_params.instanceCount == 0u || drawInfos.drawInfoCount() == 0u ||
-			(m_params.stride == 0u && triangleIndex >= trianglesPerDraw && isMosaic))
+		auto& stencilOutBufferAlloc = stencilOutBuffers[layerIdx]->getAllocation();
+		invalidateAlloc(vkd, device, stencilOutBufferAlloc);
+		const void* stencilOutBufferData = stencilOutBufferAlloc.getHostPtr();
+
+		tcu::ConstPixelBufferAccess	colorAccess				(colorVerificationFormat, iWidth, iHeight, 1, outputBufferData);
+		tcu::ConstPixelBufferAccess	stencilAccess			(tcuStencilFmt, iWidth, iHeight, 1, stencilOutBufferData);
+
+		// Generate reference images.
+		tcu::TextureLevel			refColorLevel		(colorVerificationFormat, iWidth, iHeight);
+		tcu::PixelBufferAccess		refColorAccess		= refColorLevel.getAccess();
+		tcu::TextureLevel			refStencilLevel		(tcuStencilFmt, iWidth, iHeight);
+		tcu::PixelBufferAccess		refStencilAccess	= refStencilLevel.getAccess();
+		tcu::IVec4					referenceColor;
+		int							referenceStencil;
+
+		for (int y = 0; y < iHeight; ++y)
+		for (int x = 0; x < iWidth; ++x)
 		{
-			// Some pixels may not be drawn into when there are no instances or draws, or when the stride is zero in mosaic mode.
-			referenceColor		= tcu::IVec4(0, 0, 0, 0);
-			referenceStencil	= 0;
+			const auto pixelNumber		= static_cast<deUint32>(y * iWidth + x);
+			const auto triangleIndex	= (isIndexed ? (pixelCount - 1u - pixelNumber) : pixelNumber); // Reverse order for indexed draws.
+
+			if (m_params.instanceCount == 0u || drawInfos.drawInfoCount() == 0u ||
+				(m_params.stride == 0u && triangleIndex >= trianglesPerDraw && isMosaic))
+			{
+				// Some pixels may not be drawn into when there are no instances or draws, or when the stride is zero in mosaic mode.
+				referenceColor		= tcu::IVec4(0, 0, 0, 0);
+				referenceStencil	= 0;
+			}
+			else
+			{
+				// This must match the vertex shader.
+				//
+				// With stride zero, the same block is drawn over and over again in each draw call. This affects both the draw index and
+				// the values in the depth/stencil buffer and, with overlapping meshes, only the first draw passes the depth test.
+				//
+				// With nonzero stride, the draw index depends on the triangle index and the number of triangles per draw and, for
+				// overlapping meshes, the draw index is always the last one.
+				const auto drawIndex =	(m_params.stride == 0u
+										? (isMosaic ? (drawInfos.drawInfoCount() - 1u) : 0u)
+										: (isMosaic ? (triangleIndex / trianglesPerDraw) : (drawInfos.drawInfoCount() - 1u)));
+				referenceColor = tcu::IVec4(
+					static_cast<int>((drawIndex >> 8) & 0xFFu),
+					static_cast<int>((drawIndex     ) & 0xFFu),
+					static_cast<int>(255u - maxInstanceIndex),
+					static_cast<int>(255u - layerIdx));
+
+				referenceStencil = static_cast<int>((m_params.instanceCount * stencilIncrements) % 256u); // VK_STENCIL_OP_INCREMENT_AND_WRAP.
+			}
+
+			refColorAccess.setPixel(referenceColor, x, y);
+			refStencilAccess.setPixStencil(referenceStencil, x, y);
 		}
-		else
-		{
-			// This must match the vertex shader.
-			//
-			// With stride zero, the same block is drawn over and over again in each draw call. This affects both the draw index and
-			// the values in the depth/stencil buffer and, with overlapping meshes, only the first draw passes the depth test.
-			//
-			// With nonzero stride, the draw index depends on the triangle index and the number of triangles per draw and, for
-			// overlapping meshes, the draw index is always the last one.
-			const auto drawIndex =	(m_params.stride == 0u
-									? (isMosaic ? (drawInfos.drawInfoCount() - 1u) : 0u)
-									: (isMosaic ? (triangleIndex / trianglesPerDraw) : (drawInfos.drawInfoCount() - 1u)));
-			referenceColor = tcu::IVec4(
-				static_cast<int>((drawIndex >> 8) & 0xFFu),
-				static_cast<int>((drawIndex     ) & 0xFFu),
-				static_cast<int>(255u - maxInstanceIndex),
-				255);
 
-			referenceStencil = static_cast<int>((m_params.instanceCount * stencilIncrements) % 256u); // VK_STENCIL_OP_INCREMENT_AND_WRAP.
-		}
+		const auto layerIdxStr		= de::toString(layerIdx);
+		const auto colorSetName		= "ColorTestResultLayer" + layerIdxStr;
+		const auto stencilSetName	= "StencilTestResultLayer" + layerIdxStr;
 
-		refColorAccess.setPixel(referenceColor, x, y);
-		refStencilAccess.setPixStencil(referenceStencil, x, y);
-	}
-
-	{
-		auto&		log		= m_context.getTestContext().getLog();
-		const auto	logMode	= tcu::CompareLogMode::COMPARE_LOG_ON_ERROR;
-
-		if (!tcu::intThresholdCompare(log, "ColorTestResult", "", refColorAccess, colorAccess, tcu::UVec4(0u, 0u, 0u, 0u), logMode))
+		if (!tcu::intThresholdCompare(log, colorSetName.c_str(), "", refColorAccess, colorAccess, tcu::UVec4(0u, 0u, 0u, 0u), logMode))
 			return tcu::TestStatus::fail("Color image comparison failed; check log for more details");
 
-		if (!tcu::dsThresholdCompare(log, "StencilTestResult", "", refStencilAccess, stencilAccess, 0.0f, logMode))
+		if (!tcu::dsThresholdCompare(log, stencilSetName.c_str(), "", refStencilAccess, stencilAccess, 0.0f, logMode))
 			return tcu::TestStatus::fail("Stencil image comparison failed; check log for more details");
 	}
 
@@ -859,7 +1143,7 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx)
 
 	GroupPtr drawMultiGroup (new tcu::TestCaseGroup(testCtx, "multi_draw", "VK_EXT_multi_draw tests"));
 
-	struct
+	const struct
 	{
 		MeshType	meshType;
 		const char*	name;
@@ -869,7 +1153,7 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx)
 		{ MeshType::OVERLAPPING,	"overlapping"	},
 	};
 
-	struct
+	const struct
 	{
 		DrawType	drawType;
 		const char*	name;
@@ -879,19 +1163,19 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx)
 		{ DrawType::INDEXED,	"indexed"	},
 	};
 
-	struct
+	const struct
 	{
 		tcu::Maybe<VertexOffsetType>	vertexOffsetType;
 		const char*						name;
 	} offsetTypeCases[] =
 	{
-		{ tcu::nothing<VertexOffsetType>(),		""			},
+		{ tcu::Nothing,							""			},
 		{ VertexOffsetType::MIXED,				"mixed"		},
 		{ VertexOffsetType::CONSTANT_RANDOM,	"random"	},
 		{ VertexOffsetType::CONSTANT_PACK,		"packed"	},
 	};
 
-	struct
+	const struct
 	{
 		deUint32	drawCount;
 		const char*	name;
@@ -903,7 +1187,7 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx)
 		{ getTriangleCount(),	"max_draws"	},
 	};
 
-	struct
+	const struct
 	{
 		int			extraBytes;
 		const char*	name;
@@ -915,7 +1199,7 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx)
 		{ 12,		"stride_extra_12"	},
 	};
 
-	struct
+	const struct
 	{
 		deUint32	firstInstance;
 		deUint32	instanceCount;
@@ -926,6 +1210,29 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx)
 		{	0u,		1u,		"1_instance"			},
 		{	0u,		10u,	"10_instances"			},
 		{	3u,		2u,		"2_instances_base_3"	},
+	};
+
+	const struct
+	{
+		bool		useTessellation;
+		bool		useGeometry;
+		const char*	name;
+	} shaderCases[] =
+	{
+		{ false,	false,		"vert_only"	},
+		{ false,	true,		"with_geom"	},
+		{ true,		false,		"with_tess"	},
+		{ true,		true,		"tess_geom"	},
+	};
+
+	const struct
+	{
+		bool		multiview;
+		const char*	name;
+	} multiviewCases[] =
+	{
+		{ false,	"single_view"	},
+		{ true,		"multiview"		},
 	};
 
 	constexpr deUint32 kSeed = 1621260419u;
@@ -963,38 +1270,55 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx)
 						{
 							GroupPtr instanceGroup(new tcu::TestCaseGroup(testCtx, instanceCase.name, ""));
 
-							const auto	isIndexed	= (drawTypeCase.drawType == DrawType::INDEXED);
-							const auto	isPacked	= (offsetTypeCase.vertexOffsetType && *offsetTypeCase.vertexOffsetType == VertexOffsetType::CONSTANT_PACK);
-							const auto	baseStride	= ((isIndexed && !isPacked) ? sizeof(VkMultiDrawIndexedInfoEXT) : sizeof(VkMultiDrawInfoEXT));
-							const auto&	extraBytes	= strideCase.extraBytes;
-							const auto	testOffset	= (isIndexed ? VertexOffsetParams{*offsetTypeCase.vertexOffsetType, 0u } : tcu::nothing<VertexOffsetParams>());
-							deUint32	testStride	= 0u;
-
-							if (extraBytes >= 0)
-								testStride = static_cast<deUint32>(baseStride) + static_cast<deUint32>(extraBytes);
-
-							// For overlapping triangles we will skip instanced drawing.
-							if (instanceCase.instanceCount > 1u && meshTypeCase.meshType == MeshType::OVERLAPPING)
-								continue;
-
-							TestParams params =
+							for (const auto& shaderCase : shaderCases)
 							{
-								meshTypeCase.meshType,			//	MeshType						meshType;
-								drawTypeCase.drawType,			//	DrawType						drawType;
-								drawCountCase.drawCount,		//	deUint32						drawCount;
-								instanceCase.instanceCount,		//	deUint32						instanceCount;
-								instanceCase.firstInstance,		//	deUint32						firstInstance;
-								testStride,						//	deUint32						stride;
-								testOffset,						//	tcu::Maybe<VertexOffsetParams>>	vertexOffset;	// Only used for indexed draws.
-								kSeed,							//	deUint32						seed;
-							};
+								GroupPtr shaderGroup(new tcu::TestCaseGroup(testCtx, shaderCase.name, ""));
 
-							instanceGroup->addChild(new MultiDrawTest(testCtx, "no_offset", "", params));
+								for (const auto& multiviewCase : multiviewCases)
+								{
+									GroupPtr multiviewGroup(new tcu::TestCaseGroup(testCtx, multiviewCase.name, ""));
 
-							if (isIndexed)
-							{
-								params.vertexOffset->offset = 6u;
-								instanceGroup->addChild(new MultiDrawTest(testCtx, "offset_6", "", params));
+									const auto	isIndexed	= (drawTypeCase.drawType == DrawType::INDEXED);
+									const auto	isPacked	= (offsetTypeCase.vertexOffsetType && *offsetTypeCase.vertexOffsetType == VertexOffsetType::CONSTANT_PACK);
+									const auto	baseStride	= ((isIndexed && !isPacked) ? sizeof(VkMultiDrawIndexedInfoEXT) : sizeof(VkMultiDrawInfoEXT));
+									const auto&	extraBytes	= strideCase.extraBytes;
+									const auto	testOffset	= (isIndexed ? tcu::just(VertexOffsetParams{*offsetTypeCase.vertexOffsetType, 0u }) : tcu::Nothing);
+									deUint32	testStride	= 0u;
+
+									if (extraBytes >= 0)
+										testStride = static_cast<deUint32>(baseStride) + static_cast<deUint32>(extraBytes);
+
+									// For overlapping triangles we will skip instanced drawing.
+									if (instanceCase.instanceCount > 1u && meshTypeCase.meshType == MeshType::OVERLAPPING)
+										continue;
+
+									TestParams params =
+									{
+										meshTypeCase.meshType,			//	MeshType						meshType;
+										drawTypeCase.drawType,			//	DrawType						drawType;
+										drawCountCase.drawCount,		//	deUint32						drawCount;
+										instanceCase.instanceCount,		//	deUint32						instanceCount;
+										instanceCase.firstInstance,		//	deUint32						firstInstance;
+										testStride,						//	deUint32						stride;
+										testOffset,						//	tcu::Maybe<VertexOffsetParams>>	vertexOffset;	// Only used for indexed draws.
+										kSeed,							//	deUint32						seed;
+										shaderCase.useTessellation,		//	bool							useTessellation;
+										shaderCase.useGeometry,			//	bool							useGeometry;
+										multiviewCase.multiview,		//	bool							multiview;
+									};
+
+									multiviewGroup->addChild(new MultiDrawTest(testCtx, "no_offset", "", params));
+
+									if (isIndexed)
+									{
+										params.vertexOffset->offset = 6u;
+										multiviewGroup->addChild(new MultiDrawTest(testCtx, "offset_6", "", params));
+									}
+
+									shaderGroup->addChild(multiviewGroup.release());
+								}
+
+								instanceGroup->addChild(shaderGroup.release());
 							}
 
 							strideGroup->addChild(instanceGroup.release());

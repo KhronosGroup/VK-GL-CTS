@@ -1124,7 +1124,7 @@ static ShaderLoopCase* createSpecialLoopCase (Context& context, const char* case
 	// Create the case.
 	ShaderEvalFunc evalFunc = getLoopEvalFunc(numIters);
 	return new ShaderLoopCase(context, caseName, description, isVertexCase, evalFunc, vertexShaderSource.c_str(), fragmentShaderSource.c_str());
-};
+}
 
 // ShaderLoopTests.
 

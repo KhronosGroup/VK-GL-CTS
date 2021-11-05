@@ -86,23 +86,18 @@ std::string stringifyDescriptorUpdateMethod(DescriptorUpdateMethod method)
 	{
 		case DESCRIPTOR_UPDATE_METHOD_NORMAL:
 			return "";
-			break;
 
 		case DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE:
 			return "with_template";
-			break;
 
 		case DESCRIPTOR_UPDATE_METHOD_WITH_PUSH:
 			return "with_push";
-			break;
 
 		case DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE:
 			return "with_push_template";
-			break;
 
 		default:
 			return "N/A";
-			break;
 	}
 }
 
@@ -2090,8 +2085,8 @@ public:
 																	 deUint32							numDescriptorSets,
 																	 const vk::VkDescriptorSetLayout*	descriptorSetLayouts);
 
-	inline vk::VkPipeline					getPipeline				(void) const { return *m_pipeline;			};
-	inline vk::VkPipelineLayout				getPipelineLayout		(void) const { return *m_pipelineLayout;	};
+	inline vk::VkPipeline					getPipeline				(void) const { return *m_pipeline;			}
+	inline vk::VkPipelineLayout				getPipelineLayout		(void) const { return *m_pipelineLayout;	}
 
 private:
 	static vk::Move<vk::VkPipelineLayout>	createPipelineLayout	(const vk::DeviceInterface&			vki,
@@ -2549,7 +2544,7 @@ vk::Move<vk::VkDescriptorSetLayout> BufferComputeInstance::createDescriptorSetLa
 
 		default:
 			DE_FATAL("Impossible");
-	};
+	}
 
 	return builder.build(m_vki, m_device, extraFlags);
 }
@@ -4868,7 +4863,7 @@ vk::Move<vk::VkDescriptorSetLayout> ImageFetchComputeInstance::createDescriptorS
 
 		default:
 			DE_FATAL("Impossible");
-	};
+	}
 
 	return builder.build(m_vki, m_device, extraFlags);
 }
@@ -6661,7 +6656,7 @@ vk::Move<vk::VkDescriptorSetLayout> ImageSampleComputeInstance::createDescriptor
 
 		default:
 			DE_FATAL("Impossible");
-	};
+	}
 
 	return builder.build(m_vki, m_device, extraFlags);
 }
@@ -8815,7 +8810,7 @@ vk::Move<vk::VkDescriptorSetLayout> TexelBufferComputeInstance::createDescriptor
 
 		default:
 			DE_FATAL("Impossible");
-	};
+	}
 
 	return builder.build(m_vki, m_device, extraFlags);
 }

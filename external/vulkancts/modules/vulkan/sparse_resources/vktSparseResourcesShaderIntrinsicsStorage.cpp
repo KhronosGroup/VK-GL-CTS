@@ -359,9 +359,26 @@ public:
 													 const VkImage				imageSparse,
 													 const VkImage				imageTexels,
 													 const VkImage				imageResidency);
+	virtual void			checkSupport			(VkImageCreateInfo imageSparseInfo) const;
 
 	virtual VkDescriptorType	imageSparseDescType	(void) const = 0;
 };
+
+void SparseShaderIntrinsicsInstanceStorage::checkSupport (VkImageCreateInfo imageSparseInfo) const
+{
+	const InstanceInterface&	instance		= m_context.getInstanceInterface();
+	const VkPhysicalDevice		physicalDevice	= m_context.getPhysicalDevice();
+
+	SparseShaderIntrinsicsInstanceBase::checkSupport(imageSparseInfo);
+
+	// Check if device supports image format for storage image
+	if (!checkImageFormatFeatureSupport(instance, physicalDevice, imageSparseInfo.format, VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+		TCU_THROW(NotSupportedError, "Device does not support image format for storage image");
+
+	// Make sure device supports VK_FORMAT_R32_UINT format for storage image
+	if (!checkImageFormatFeatureSupport(instance, physicalDevice, mapTextureFormat(m_residencyFormat), VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+		TCU_THROW(TestError, "Device does not support VK_FORMAT_R32_UINT format for storage image");
+}
 
 VkImageUsageFlags SparseShaderIntrinsicsInstanceStorage::imageOutputUsageFlags (void) const
 {
@@ -379,17 +396,7 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands (const VkCommandBuffe
 															const VkImage				imageTexels,
 															const VkImage				imageResidency)
 {
-	const InstanceInterface&	instance		= m_context.getInstanceInterface();
 	const DeviceInterface&		deviceInterface = getDeviceInterface();
-	const VkPhysicalDevice		physicalDevice	= m_context.getPhysicalDevice();
-
-	// Check if device supports image format for storage image
-	if (!checkImageFormatFeatureSupport(instance, physicalDevice, imageSparseInfo.format, VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
-		TCU_THROW(NotSupportedError, "Device does not support image format for storage image");
-
-	// Make sure device supports VK_FORMAT_R32_UINT format for storage image
-	if (!checkImageFormatFeatureSupport(instance, physicalDevice, mapTextureFormat(m_residencyFormat), VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
-		TCU_THROW(TestError, "Device does not support VK_FORMAT_R32_UINT format for storage image");
 
 	pipelines.resize(imageSparseInfo.mipLevels);
 	descriptorSets.resize(imageSparseInfo.mipLevels);
@@ -407,7 +414,7 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands (const VkCommandBuffe
 	const Unique<VkDescriptorSetLayout> descriptorSetLayout(descriptorLayerBuilder.build(deviceInterface, getDevice()));
 
 	// Create pipeline layout
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(deviceInterface, getDevice(), *descriptorSetLayout));
+	pipelineLayout = makePipelineLayout(deviceInterface, getDevice(), *descriptorSetLayout);
 
 	// Create descriptor pool
 	DescriptorPoolBuilder descriptorPoolBuilder;

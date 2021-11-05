@@ -3549,7 +3549,7 @@ bool LayeredRenderCase::verifyLayerContent (const tcu::Surface& layer, int layer
 		default:
 			DE_ASSERT(DE_FALSE);
 			return false;
-	};
+	}
 }
 
 bool LayeredRenderCase::verifyImageSingleColoredRow (const tcu::Surface& layer, float rowWidthRatio, const tcu::Vec4& barColor, bool logging)

@@ -37,6 +37,9 @@
 #include "vktRenderPassUnusedAttachmentSparseFillingTests.hpp"
 #include "vktRenderPassFragmentDensityMapTests.hpp"
 #include "vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.hpp"
+#ifndef CTS_USES_VULKANSC
+#include "vktRenderPassLoadStoreOpNoneTests.hpp"
+#endif // CTS_USES_VULKANSC
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -87,7 +90,6 @@ using tcu::Vec4;
 
 using tcu::Maybe;
 using tcu::just;
-using tcu::nothing;
 
 using tcu::ConstPixelBufferAccess;
 using tcu::PixelBufferAccess;
@@ -1772,8 +1774,8 @@ public:
 	VkImageLayout					getColorAttachmentLayout		(deUint32 attachmentNdx) const { return m_colorAttachments[attachmentNdx].getImageLayout(); }
 	deUint32						getColorAttachmentIndex			(deUint32 attachmentNdx) const { return m_colorAttachments[attachmentNdx].getAttachment(); }
 	const Attachment&				getColorAttachment				(deUint32 attachmentNdx) const { return m_colorAttachmentInfo[attachmentNdx]; }
-	Maybe<VkImageLayout>			getDepthStencilAttachmentLayout	(void) const { return m_depthStencilAttachment ? tcu::just(m_depthStencilAttachment->getImageLayout()) : tcu::nothing<VkImageLayout>(); }
-	Maybe<deUint32>					getDepthStencilAttachmentIndex	(void) const { return m_depthStencilAttachment ? tcu::just(m_depthStencilAttachment->getAttachment()) : tcu::nothing<deUint32>(); };
+	Maybe<VkImageLayout>			getDepthStencilAttachmentLayout	(void) const { return m_depthStencilAttachment ? tcu::just(m_depthStencilAttachment->getImageLayout()) : tcu::Nothing; }
+	Maybe<deUint32>					getDepthStencilAttachmentIndex	(void) const { return m_depthStencilAttachment ? tcu::just(m_depthStencilAttachment->getAttachment()) : tcu::Nothing; }
 	const Maybe<Attachment>&		getDepthStencilAttachment		(void) const { return m_depthStencilAttachmentInfo; }
 	VkSubpassDescriptionFlags		getSubpassFlags					(void) const { return m_flags; }
 
@@ -2868,10 +2870,10 @@ void pushReadImagesToBuffers (const DeviceInterface&								vk,
 class PixelValue
 {
 public:
-				PixelValue		(const Maybe<bool>&	x = nothing<bool>(),
-								 const Maybe<bool>&	y = nothing<bool>(),
-								 const Maybe<bool>&	z = nothing<bool>(),
-								 const Maybe<bool>&	w = nothing<bool>());
+				PixelValue		(const Maybe<bool>&	x = tcu::Nothing,
+								 const Maybe<bool>&	y = tcu::Nothing,
+								 const Maybe<bool>&	z = tcu::Nothing,
+								 const Maybe<bool>&	w = tcu::Nothing);
 
 	void		setUndefined	(size_t ndx);
 	void		setValue		(size_t ndx, bool value);
@@ -2937,7 +2939,7 @@ Maybe<bool> PixelValue::getValue (size_t ndx) const
 		return just((m_status & (0x1u << (deUint32)(ndx * 2 + 1))) != 0);
 	}
 	else
-		return nothing<bool>();
+		return tcu::Nothing;
 }
 
 void clearReferenceValues (vector<PixelValue>&	values,
@@ -3364,7 +3366,7 @@ void renderReferenceValues (vector<vector<PixelValue> >&		referenceAttachments,
 									if (!output)
 										break;
 									else if (!inputs[((outputValueNdx + compNdx) * inputsPerOutput + i) % inputs.size()])
-										output = tcu::nothing<bool>();
+										output = tcu::Nothing;
 									else
 										output = (*output) == (*inputs[((outputValueNdx + compNdx) * inputsPerOutput + i) % inputs.size()]);
 								}
@@ -3397,7 +3399,7 @@ void renderReferenceValues (vector<vector<PixelValue> >&		referenceAttachments,
 								else if (inputs[(outputValueNdx * inputsPerOutput + i) % inputs.size()])
 									output = (*output) == (*inputs[(outputValueNdx * inputsPerOutput + i) % inputs.size()]);
 								else
-									output = tcu::nothing<bool>();
+									output = tcu::Nothing;
 							}
 
 							if (output)
@@ -4422,7 +4424,7 @@ void initializeImageClearValues (de::Random& rng, vector<Maybe<VkClearValue> >& 
 		if (!isLazy[attachmentNdx])
 			clearValues.push_back(just(randomClearValue(attachments[attachmentNdx], rng, useFormatCompCount, depthValues)));
 		else
-			clearValues.push_back(nothing<VkClearValue>());
+			clearValues.push_back(tcu::Nothing);
 	}
 }
 
@@ -4436,7 +4438,7 @@ void initializeRenderPassClearValues (de::Random& rng, vector<Maybe<VkClearValue
 			clearValues.push_back(just(randomClearValue(attachments[attachmentNdx], rng, useFormatCompCount, depthValues)));
 		}
 		else
-			clearValues.push_back(nothing<VkClearValue>());
+			clearValues.push_back(tcu::Nothing);
 	}
 }
 
@@ -5362,7 +5364,7 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 						attachments.push_back(Attachment(format, sampleCount, loadOp, storeOp, stencilLoadOp, stencilStoreOp, initialLayout, finalizeLayout));
 					}
 				}
-				vector<Maybe<deUint32> >	lastUseOfAttachment	(attachments.size(), nothing<deUint32>());
+				vector<Maybe<deUint32> >	lastUseOfAttachment	(attachments.size(), tcu::Nothing);
 				vector<SubpassDependency>	deps;
 
 				for (deUint32 subpassIndex = 0; subpassIndex < subpassCount; subpassIndex++)
@@ -5376,7 +5378,7 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 					std::vector<deUint32>		subpassInputAttachments		(inputAttachmentCount);
 					Maybe<deUint32>				depthStencilAttachment		(useDepthStencilAttachment
 																			? just(chooseRandom(rng, depthStencilAttachments))
-																			: nothing<deUint32>());
+																			: tcu::Nothing);
 					std::vector<deUint32>		subpassPreserveAttachments;
 
 					rng.choose(colorAttachments.begin(), colorAttachments.end(), subpassColorAttachments.begin(), colorAttachmentCount);
@@ -5521,8 +5523,8 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 																	  | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
 																	  | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 
-																	  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-																	  VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+																	  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+																	  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
 
 																	  dependencyFlags);
 								for (SubpassDependency& dependency : deps)
@@ -5530,7 +5532,7 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 									if (dependency.getSrcPass() == srcPass && dependency.getDstPass() == dstPass)
 									{
 										const VkAccessFlags newSrcFlags = dependency.getSrcAccessMask() | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-										const VkAccessFlags newDstFlags = dependency.getDstAccessMask() | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+										const VkAccessFlags newDstFlags = dependency.getDstAccessMask() | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
 										dependency.setDstAccessMask(newSrcFlags);
 										dependency.setDstAccessMask(newDstFlags);
 										foundDuplicate = true;
@@ -7182,6 +7184,9 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 	suballocationTestGroup->addChild(createRenderPassUnusedAttachmentTests(testCtx, renderPassType));
 	suballocationTestGroup->addChild(createRenderPassUnusedClearAttachmentTests(testCtx, renderPassType));
 	suballocationTestGroup->addChild(createRenderPassUnusedAttachmentSparseFillingTests(testCtx, renderPassType));
+#ifndef CTS_USES_VULKANSC
+	suballocationTestGroup->addChild(createRenderPassLoadStoreOpNoneTests(testCtx, renderPassType));
+#endif // CTS_USES_VULKANSC
 
 	renderpassTests->addChild(suballocationTestGroup.release());
 	renderpassTests->addChild(dedicatedAllocationTestGroup.release());

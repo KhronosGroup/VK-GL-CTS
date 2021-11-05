@@ -553,7 +553,7 @@ private:
 	vector<const StructType*>	m_structTypes;
 };
 
-}; // anonymous
+} // anonymous
 
 static VarValue getSamplerFillValue (const VarValue& sampler)
 {

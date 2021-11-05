@@ -475,7 +475,7 @@ tcu::TestNode::IterateResult TextureBorderClampSamplingTexture<InputType, Output
 	default:
 		throw tcu::TestError("Unsupported sized internal format. Should never happen!", "", __FILE__, __LINE__);
 		break;
-	};
+	}
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Error setting border color parameter!");
 
 	/* Set sampler's GL_TEXTURE_WRAP_* parameters values to GL_CLAMP_TO_BORDER_EXT */

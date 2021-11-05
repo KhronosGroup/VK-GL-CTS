@@ -1813,7 +1813,7 @@ static inline float unnormalize (Sampler::WrapMode mode, float c, int size)
 
 static bool isFixedPointDepthTextureFormat (const tcu::TextureFormat& format)
 {
-	DE_ASSERT(format.order == TextureFormat::D);
+	DE_ASSERT(format.order == TextureFormat::D || format.order == TextureFormat::R);
 
 	const tcu::TextureChannelClass channelClass = tcu::getTextureChannelClass(format.type);
 	if (channelClass == tcu::TEXTURECHANNELCLASS_FLOATING_POINT)

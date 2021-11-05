@@ -64,7 +64,6 @@ using tcu::Vec4;
 
 using tcu::Maybe;
 using tcu::just;
-using tcu::nothing;
 
 using tcu::ConstPixelBufferAccess;
 using tcu::PixelBufferAccess;
@@ -715,7 +714,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 
 				dependencies.push_back(dependency);
 			}
-		};
+		}
 		// the last subpass must synchronize with all prior subpasses
 		for (deUint32 splitSubpassIndex = 0; splitSubpassIndex < (splitSubpassCount - 1); splitSubpassIndex++)
 		{
@@ -2162,6 +2161,7 @@ void initTests (tcu::TestCaseGroup* group, RenderPassType renderPassType)
 		VK_FORMAT_R32G32B32A32_UINT,
 		VK_FORMAT_R32G32B32A32_SINT,
 		VK_FORMAT_R32G32B32A32_SFLOAT,
+		VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
 
 		VK_FORMAT_D16_UNORM,
 		VK_FORMAT_X8_D24_UNORM_PACK32,

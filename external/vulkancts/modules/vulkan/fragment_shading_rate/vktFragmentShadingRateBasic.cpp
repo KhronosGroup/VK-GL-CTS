@@ -102,6 +102,7 @@ struct CaseDef
 	bool sampleLocations;
 	bool sampleShadingEnable;
 	bool sampleShadingInput;
+	bool sampleMaskTest;
 
 	bool useAttachment () const
 	{
@@ -302,6 +303,9 @@ void FSRTestCase::checkSupport(Context& context) const
 		if (!(m_data.samples & context.getSampleLocationsPropertiesEXT().sampleLocationSampleCounts))
 			TCU_THROW(NotSupportedError, "samples not supported in sampleLocationSampleCounts");
 	}
+
+	if (m_data.sampleMaskTest && !context.getFragmentShadingRateProperties().fragmentShadingRateWithSampleMask)
+		TCU_THROW(NotSupportedError, "fragmentShadingRateWithSampleMask not supported");
 }
 
 // Error codes writted by the fragment shader
@@ -1321,7 +1325,8 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 						0u,										// deUint32				baseMipLevel;
 						1u,										// deUint32				levelCount;
 						0u,										// deUint32				baseArrayLayer;
-						numSRLayers								// deUint32				layerCount;
+						srViewType == VK_IMAGE_VIEW_TYPE_2D ?
+						1 : numSRLayers,						// deUint32				layerCount;
 					}											// VkImageSubresourceRange	subresourceRange;
 				};
 				srImageView = createImageView(vk, device, &imageViewCreateInfo, NULL);
@@ -1656,8 +1661,8 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			};
 
 			// Kill some bits from each AA mode
-			VkSampleMask sampleMask = 0x7D56;
-			VkSampleMask *pSampleMask = m_data.useApiSampleMask ? &sampleMask : DE_NULL;
+			const VkSampleMask	sampleMask	= m_data.sampleMaskTest ? 0x9 : 0x7D56;
+			const VkSampleMask*	pSampleMask = m_data.useApiSampleMask ? &sampleMask : DE_NULL;
 
 			// All samples at pixel center. We'll validate that pixels are fully covered or uncovered.
 			std::vector<VkSampleLocationEXT> sampleLocations(m_data.samples, { 0.5f, 0.5f });
@@ -1775,24 +1780,24 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 
 			const VkPipelineColorBlendStateCreateInfo		colorBlendStateCreateInfo		=
 			{
-				VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType							   sType;
-				DE_NULL,													// const void*								   pNext;
-				0u,															// VkPipelineColorBlendStateCreateFlags		  flags;
-				VK_FALSE,													// VkBool32									  logicOpEnable;
-				VK_LOGIC_OP_COPY,											// VkLogicOp									 logicOp;
-				1u,															// deUint32									  attachmentCount;
+				VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
+				DE_NULL,													// const void*									pNext;
+				0u,															// VkPipelineColorBlendStateCreateFlags			flags;
+				VK_FALSE,													// VkBool32										logicOpEnable;
+				VK_LOGIC_OP_COPY,											// VkLogicOp									logicOp;
+				1u,															// deUint32										attachmentCount;
 				&colorBlendAttachmentState,									// const VkPipelineColorBlendAttachmentState*	pAttachments;
-				{ 1.0f, 1.0f, 1.0f, 1.0f }									// float										 blendConstants[4];
+				{ 1.0f, 1.0f, 1.0f, 1.0f }									// float										blendConstants[4];
 			};
 
+			const deUint32 fragSizeWH = m_data.sampleMaskTest ? 2 : 0;
 			VkPipelineFragmentShadingRateStateCreateInfoKHR shadingRateStateCreateInfo =
 			{
-				VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR,	// VkStructureType							   sType;
-				DE_NULL,																// const void*								   pNext;
-				{ 0, 0 },																// VkExtent2D							fragmentSize;
+				VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR,	// VkStructureType						sType;
+				DE_NULL,																// const void*							pNext;
+				{ fragSizeWH, fragSizeWH },												// VkExtent2D							fragmentSize;
 				{ m_data.combinerOp[0], m_data.combinerOp[1] },							// VkFragmentShadingRateCombinerOpKHR	combinerOps[2];
 			};
-
 
 			VkDynamicState dynamicState = VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR;
 			const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo =
@@ -2192,7 +2197,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 							deInt32 pipelineRate = PrimIDToPipelineShadingRate(primID);
 							deInt32 primitiveRate = m_data.shaderWritesRate ? PrimIDToPrimitiveShadingRate(primID) : 0;
 
-							deInt32 attachmentLayer = m_data.srLayered ? layer : 0;
+							deInt32 attachmentLayer = (m_data.srLayered && modeIdx == ATTACHMENT_MODE_2DARRAY) ? layer : 0;
 							deInt32 attachmentRate = m_data.useAttachment() ? fillPtr[srFillBpp*((attachmentLayer * srHeight + (y / srTexelHeight)) * srWidth + (x / srTexelWidth))] : 0;
 
 							// Get mask of allowed shading rates
@@ -2559,6 +2564,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 											sampleLocations,										// bool sampleLocations;
 											sampleShadingEnable,									// bool sampleShadingEnable;
 											sampleShadingInput,										// bool sampleShadingInput;
+											false,													// bool sampleMaskTest;
 										};
 
 										sampGroup->addChild(new FSRTestCase(testCtx, geomCases[geomNdx].name, geomCases[geomNdx].description, c));
@@ -2579,6 +2585,40 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 		}
 		parentGroup->addChild(group.release());
 	}
+
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "misc_tests", "Single tests that don't need to be part of above test matrix"));
+	group->addChild(new FSRTestCase(testCtx, "sample_mask_test", "", {
+		123,													// deInt32 seed;
+		{32,  33},												// VkExtent2D framebufferDim;
+		VK_SAMPLE_COUNT_4_BIT,									// VkSampleCountFlagBits samples;
+		{
+			VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR,
+			VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR
+		},														// VkFragmentShadingRateCombinerOpKHR combinerOp[2];
+		AttachmentUsage::NO_ATTACHMENT,							// AttachmentUsage attachmentUsage;
+		true,													// bool shaderWritesRate;
+		false,													// bool geometryShader;
+		false,													// bool useDynamicState;
+		true,													// bool useApiSampleMask;
+		false,													// bool useSampleMaskIn;
+		false,													// bool conservativeEnable;
+		VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT,	// VkConservativeRasterizationModeEXT conservativeMode;
+		false,													// bool useDepthStencil;
+		false,													// bool fragDepth;
+		false,													// bool fragStencil;
+		false,													// bool multiViewport;
+		false,													// bool colorLayered;
+		false,													// bool srLayered;
+		1u,														// deUint32 numColorLayers;
+		false,													// bool multiView;
+		false,													// bool interlock;
+		false,													// bool sampleLocations;
+		false,													// bool sampleShadingEnable;
+		false,													// bool sampleShadingInput;
+		true,													// bool sampleMaskTest;
+	}));
+
+	parentGroup->addChild(group.release());
 }
 
 }	// FragmentShadingRage

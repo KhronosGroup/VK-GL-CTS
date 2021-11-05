@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+DEVICE_FEATURE VariablePointerFeatures.variablePointers
 DEVICE_EXTENSION VK_KHR_spirv_1_4
 DEVICE_EXTENSION VK_KHR_workgroup_memory_explicit_layout
 

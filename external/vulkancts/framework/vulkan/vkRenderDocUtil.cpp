@@ -28,7 +28,9 @@
 #include "deUniquePtr.hpp"
 #include "tcuDefs.hpp"
 
+#if defined(DEQP_HAVE_RENDERDOC_HEADER)
 #include "renderdoc_app.h"
+#endif
 #include <stdexcept>
 
 #if (DE_OS == DE_OS_WIN32)
@@ -44,16 +46,19 @@ namespace vk
 
 struct RenderDocPrivate
 {
+#if defined(DEQP_HAVE_RENDERDOC_HEADER)
 										RenderDocPrivate	(void)	: m_api(DE_NULL), m_valid(false) {}
 
 	de::MovePtr<de::DynamicLibrary>		m_library;
 	::RENDERDOC_API_1_1_2*				m_api;
 	bool								m_valid;
+#endif
 };
 
 RenderDocUtil::RenderDocUtil (void)
 	: m_priv	(new RenderDocPrivate)
 {
+#if defined(DEQP_HAVE_RENDERDOC_HEADER)
 	try
 	{
 		m_priv->m_library	 = de::MovePtr<de::DynamicLibrary>(new de::DynamicLibrary(RENDERDOC_LIBRARY_NAME));
@@ -79,6 +84,7 @@ RenderDocUtil::RenderDocUtil (void)
 			tcu::print("RENDERDOC_GetAPI returned %d status, RenderDoc API not available", ret);
 		}
 	}
+#endif
 }
 
 RenderDocUtil::~RenderDocUtil (void)
@@ -91,21 +97,31 @@ RenderDocUtil::~RenderDocUtil (void)
 
 bool RenderDocUtil::isValid (void)
 {
+#if defined(DEQP_HAVE_RENDERDOC_HEADER)
 	return m_priv != DE_NULL && m_priv->m_valid;
+#else
+        return false;
+#endif
 }
 
 void RenderDocUtil::startFrame (vk::VkInstance instance)
 {
 	if (!isValid()) return;
-
+#if defined(DEQP_HAVE_RENDERDOC_HEADER)
 	m_priv->m_api->StartFrameCapture(RENDERDOC_DEVICEPOINTER_FROM_VKINSTANCE(instance), DE_NULL);
+#else
+	(void) instance;
+#endif
 }
 
 void RenderDocUtil::endFrame (vk::VkInstance instance)
 {
 	if (!isValid()) return;
-
+#if defined(DEQP_HAVE_RENDERDOC_HEADER)
 	m_priv->m_api->EndFrameCapture(RENDERDOC_DEVICEPOINTER_FROM_VKINSTANCE(instance), DE_NULL);
+#else
+	(void) instance;
+#endif
 }
 
 } // vk

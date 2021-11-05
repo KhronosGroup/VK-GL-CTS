@@ -716,7 +716,7 @@ bool UniformPreservationTest::testCase(const glw::GLuint bit_field[5])
 	for (GLuint i = 0; i < m_n_shared_contexts + 1; ++i)
 	{
 		subroutine_indices[i].set(bit_field[i], m_subroutine_indices);
-	};
+	}
 
 	/* Update subroutine uniforms, each context gets different set */
 	for (GLuint i = 0; i < m_n_shared_contexts; ++i)

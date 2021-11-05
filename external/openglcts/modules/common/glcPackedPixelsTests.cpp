@@ -1189,7 +1189,7 @@ void RectangleTest::createGradient()
 		break;
 	default:
 		TCU_FAIL("Unsupported type");
-	};
+	}
 }
 
 template <typename Type>
@@ -2511,7 +2511,6 @@ bool RectangleTest::compare(GLvoid* gradient, GLvoid* data, const PixelFormat& o
 						// internal format positive range (otherwise it may wrap and
 						// yield negative internalformat values)
 						inputValue = clampUnsignedValue(bit3 - 1, inputValue);
-					;
 
 					inputValue = clampSignedValue(bit3, inputValue);
 					if (isCopy)

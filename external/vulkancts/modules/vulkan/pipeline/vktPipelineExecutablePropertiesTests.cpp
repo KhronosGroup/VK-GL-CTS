@@ -136,7 +136,7 @@ std::string getShaderFlagStr (const VkShaderStageFlagBits	shader,
 		desc << "unknown shader stage!";
 		DE_FATAL("Unknown shader Stage!");
 		break;
-	};
+	}
 
 	return desc.str();
 }
@@ -1194,7 +1194,7 @@ void GraphicsExecutablePropertiesTest::initPrograms (SourceCollections& programC
 				default:
 					DE_FATAL("Unknown Shader Stage!");
 					break;
-		};
+		}
 	}
 }
 
@@ -1284,7 +1284,7 @@ GraphicsExecutablePropertiesTestInstance::GraphicsExecutablePropertiesTestInstan
 			default:
 				DE_FATAL("Unknown Shader Stage!");
 				break;
-			};
+			}
 
 		}
 

@@ -2356,8 +2356,7 @@ tcu::TestStatus SeparateChannelsTestInstance::iterateInternal (void)
 	const VkImageLayout									colorImageLayout		= isDSFormat ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
 	Move<VkImage>										dsImage;
 	de::MovePtr<Allocation>								dsImageAllocation;
-	Move<VkImageView>									outputImageView;
-	Move<VkImageView>									inputImageView;
+	Move<VkImageView>									imageView;
 	Move<VkImageView>									dsImageView;
 	Move<VkPipelineLayout>								pipelineLayout;
 	Move<VkPipeline>									renderPipeline;
@@ -2464,8 +2463,7 @@ tcu::TestStatus SeparateChannelsTestInstance::iterateInternal (void)
 			}
 		};
 
-		if (!isDSFormat) inputImageView	= createImageView(vkd, device, &imageViewCreateInfo);
-		outputImageView	= createImageView(vkd, device, &imageViewCreateInfo);
+		imageView = createImageView(vkd, device, &imageViewCreateInfo);
 	}
 
 	// Create depth/stencil image view
@@ -2514,7 +2512,7 @@ tcu::TestStatus SeparateChannelsTestInstance::iterateInternal (void)
 	// Update descriptor set information.
 	if (!isDSFormat)
 	{
-		VkDescriptorImageInfo descInputAttachment = makeDescriptorImageInfo(DE_NULL, *inputImageView, VK_IMAGE_LAYOUT_GENERAL);
+		VkDescriptorImageInfo descInputAttachment = makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
 		DescriptorSetUpdateBuilder()
 			.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &descInputAttachment)
@@ -2557,13 +2555,19 @@ tcu::TestStatus SeparateChannelsTestInstance::iterateInternal (void)
 		}
 		else
 		{
-			attachments.push_back(Attachment(colorFormat, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_LOAD, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL));
-			inputAttachmentReferences.push_back(AttachmentReference(1u, VK_IMAGE_LAYOUT_GENERAL, inputAttachmentAspectMask));
+			inputAttachmentReferences.push_back(AttachmentReference(0u, VK_IMAGE_LAYOUT_GENERAL, inputAttachmentAspectMask));
 		}
 
 		const vector<Subpass>		subpasses	(1, Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, inputAttachmentReferences, colorAttachmentReferences, vector<AttachmentReference>(), isDSFormat ? dsAttachmentReference : AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL), vector<deUint32>()));
+		vector<SubpassDependency> subpassDependency;
+		if(!isDSFormat)
+		{
+			/* Self supass-dependency */
+			subpassDependency.push_back(SubpassDependency(0u, 0u, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+							VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT, VK_DEPENDENCY_BY_REGION_BIT));
+		}
+		renderPass = createRenderPass(vkd, device, RenderPass(attachments, subpasses, subpassDependency), m_renderPassType);
 
-		renderPass = createRenderPass(vkd, device, RenderPass(attachments, subpasses, vector<SubpassDependency>()), m_renderPassType);
 	}
 
 	// Create render pipeline.
@@ -2676,10 +2680,10 @@ tcu::TestStatus SeparateChannelsTestInstance::iterateInternal (void)
 
 	// Create framebuffer.
 	{
-		const VkImageView				attachments[]			=
+		const VkImageView				dsAttachments[]			=
 		{
-			*outputImageView,
-			isDSFormat ? *dsImageView : *inputImageView
+			*imageView,
+			*dsImageView
 		};
 
 		const VkFramebufferCreateInfo	framebufferCreateInfo	=
@@ -2688,8 +2692,8 @@ tcu::TestStatus SeparateChannelsTestInstance::iterateInternal (void)
 			DE_NULL,									// const void*				pNext
 			0u,											// VkFramebufferCreateFlags	flags
 			*renderPass,								// VkRenderPass				renderPass
-			2u,											// uint32_t					attachmentCount
-			attachments,								// const VkImageView*		pAttachments
+			isDSFormat ? 2u : 1u,						// uint32_t					attachmentCount
+			isDSFormat ? dsAttachments : &*imageView,	// const VkImageView*		pAttachments
 			m_width,									// uint32_t					width
 			m_height,									// uint32_t					height
 			1u											// uint32_t					layers
@@ -2766,6 +2770,26 @@ tcu::TestStatus SeparateChannelsTestInstance::iterateInternal (void)
 
 	vkd.cmdBindVertexBuffers(*commandBuffer, 0u, 1u, &vertexBuffer.get(), &bindingOffset);
 	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *renderPipeline);
+
+	if(!isDSFormat)
+	{
+		const VkImageMemoryBarrier	imageBarrier	=
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext;
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags			dstAccessMask;
+			VK_IMAGE_LAYOUT_GENERAL,						// VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_GENERAL,						// VkImageLayout			newLayout;
+			VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,						// deUint32					destQueueFamilyIndex;
+			*colorImage,									// VkImage					image;
+			makeImageSubresourceRange(1u, 0u, 1u, 0, 1u)	// VkImageSubresourceRange	subresourceRange;
+		};
+		vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+						VK_DEPENDENCY_BY_REGION_BIT, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+	}
+
 	vkd.cmdDraw(*commandBuffer, 4u, 1u, 0u, 0u);
 	RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
 

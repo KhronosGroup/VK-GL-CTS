@@ -432,7 +432,7 @@ void TextureWrapTests::init (void)
 															 filteringModes[filter].mode, filteringModes[filter].mode,
 															 rgba8Sizes[size].width, rgba8Sizes[size].height));
 
-				}))));
+				}))))
 		}
 	}
 
@@ -456,7 +456,7 @@ void TextureWrapTests::init (void)
 														filteringModes[filter].mode, filteringModes[filter].mode,
 														potFilenames));
 
-			})));
+			})))
 
 		std::vector<std::string> npotFilenames;
 		npotFilenames.push_back("data/etc1/photo_helsinki_113x89.pkm");
@@ -472,7 +472,7 @@ void TextureWrapTests::init (void)
 														wrapModes[wrapT].mode,
 														filteringModes[filter].mode, filteringModes[filter].mode,
 														npotFilenames));
-			})));
+			})))
 	}
 
 	// ETC-2 (and EAC) cases.
@@ -523,7 +523,7 @@ void TextureWrapTests::init (void)
 															  wrapModes[wrapT].mode,
 															  filteringModes[filter].mode, filteringModes[filter].mode,
 															  etc2Sizes[size].width, etc2Sizes[size].height));
-				}))));
+				}))))
 		}
 	}
 
@@ -568,7 +568,7 @@ void TextureWrapTests::init (void)
 																  wrapModes[wrapT].mode,
 																  filteringModes[filter].mode, filteringModes[filter].mode,
 																  formatSizes[size].width, formatSizes[size].height));
-					}))));
+					}))))
 			}
 		}
 	}

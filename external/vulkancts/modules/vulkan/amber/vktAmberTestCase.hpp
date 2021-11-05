@@ -97,6 +97,8 @@ public:
 	void addImageRequirement(vk::VkImageCreateInfo info);
 	void addBufferRequirement(BufferRequirement req);
 
+	virtual bool validateRequirements() override;
+
 	tcu::TestRunnerType getRunnerType (void) const override { return tcu::RUNNERTYPE_AMBER; }
 
 private:

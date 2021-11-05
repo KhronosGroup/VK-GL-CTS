@@ -2229,8 +2229,6 @@ void TextureViewUtilities::initTextureStorage(const glw::Functions& gl, bool ini
 
 					GLU_EXPECT_NO_ERROR(gl.getError(),
 										"glTexImage2D() call failed for one of the cube-map texture targets");
-
-					break;
 				} /* for (all cube-map texture targets) */
 
 				break;

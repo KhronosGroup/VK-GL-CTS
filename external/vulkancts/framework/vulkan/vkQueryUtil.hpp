@@ -89,8 +89,8 @@ struct RequiredExtension
 	tcu::Maybe<deUint32>	maxVersion;
 
 	explicit RequiredExtension (const std::string&		name_,
-								tcu::Maybe<deUint32>	minVersion_ = tcu::nothing<deUint32>(),
-								tcu::Maybe<deUint32>	maxVersion_ = tcu::nothing<deUint32>())
+								tcu::Maybe<deUint32>	minVersion_ = tcu::Nothing,
+								tcu::Maybe<deUint32>	maxVersion_ = tcu::Nothing)
 		: name			(name_)
 		, minVersion	(minVersion_)
 		, maxVersion	(maxVersion_)
@@ -106,10 +106,10 @@ struct RequiredLayer
 	tcu::Maybe<deUint32>	maxImplVersion;
 
 	explicit RequiredLayer (const std::string&			name_,
-							tcu::Maybe<deUint32>		minSpecVersion_		= tcu::nothing<deUint32>(),
-							tcu::Maybe<deUint32>		maxSpecVersion_		= tcu::nothing<deUint32>(),
-							tcu::Maybe<deUint32>		minImplVersion_		= tcu::nothing<deUint32>(),
-							tcu::Maybe<deUint32>		maxImplVersion_		= tcu::nothing<deUint32>())
+							tcu::Maybe<deUint32>		minSpecVersion_		= tcu::Nothing,
+							tcu::Maybe<deUint32>		maxSpecVersion_		= tcu::Nothing,
+							tcu::Maybe<deUint32>		minImplVersion_		= tcu::Nothing,
+							tcu::Maybe<deUint32>		maxImplVersion_		= tcu::Nothing)
 		: name			(name_)
 		, minSpecVersion(minSpecVersion_)
 		, maxSpecVersion(maxSpecVersion_)
@@ -151,7 +151,7 @@ StructType*									findStructure							(void* first)
 
 struct initVulkanStructure
 {
-	initVulkanStructure	(void*	pNext = DE_NULL)	: m_next(pNext)	{};
+	initVulkanStructure	(void*	pNext = DE_NULL)	: m_next(pNext)	{}
 
 	template<class StructType>
 	operator StructType()
@@ -182,7 +182,7 @@ void addToChainVulkanStructure (void***	chainPNextPtr, StructType&	structType)
 
 struct initVulkanStructureConst
 {
-	initVulkanStructureConst	(const void*	pNext = DE_NULL)	: m_next(pNext)	{};
+	initVulkanStructureConst	(const void*	pNext = DE_NULL)	: m_next(pNext)	{}
 
 	template<class StructType>
 	operator const StructType()
@@ -203,7 +203,7 @@ private:
 
 struct getPhysicalDeviceExtensionProperties
 {
-	getPhysicalDeviceExtensionProperties (const InstanceInterface&	vki, VkPhysicalDevice physicalDevice) : m_vki(vki), m_physicalDevice(physicalDevice) {};
+	getPhysicalDeviceExtensionProperties (const InstanceInterface&	vki, VkPhysicalDevice physicalDevice) : m_vki(vki), m_physicalDevice(physicalDevice) {}
 
 	template<class ExtensionProperties>
 	operator ExtensionProperties ()

@@ -249,7 +249,7 @@ public:
 					TCU_THROW(NotSupportedError, "Native pixmap doesn't support eglCreatePlatformPixmapSurface()");
 			}
 			break;
-		};
+		}
 
 		log << TestLog::Message << "Creating pixmap surface with config ID " << id << TestLog::EndMessage;
 		EGLU_CHECK_MSG(egl, "init");

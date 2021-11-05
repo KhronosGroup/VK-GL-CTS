@@ -174,7 +174,7 @@ inline std::string getProgramDescription (const Winding winding, const bool useP
 	std::ostringstream str;
 	str << "winding mode " << getWindingShaderName(winding) << ", " << (usePointMode ? "" : "don't ") << "use point mode";
 	return str.str();
-};
+}
 
 template <typename T, int N>
 std::vector<T> arrayToVector (const T (&arr)[N])
@@ -1025,7 +1025,7 @@ public:
 	TestInstance* createInstance (Context& context) const
 	{
 		return new OuterEdgeDivisionTestInstance(context, m_caseDef);
-	};
+	}
 
 	void checkSupport (Context& context) const
 	{
@@ -1059,7 +1059,7 @@ public:
 	TestInstance* createInstance (Context& context) const
 	{
 		return new OuterEdgeIndexIndependenceTestInstance(context, m_caseDef);
-	};
+	}
 
 	void checkSupport (Context& context) const
 	{
@@ -1088,7 +1088,7 @@ public:
 	TestInstance* createInstance (Context& context) const
 	{
 		return new SymmetricOuterEdgeTestInstance(context, m_caseDef);
-	};
+	}
 
 	void checkSupport (Context& context) const
 	{

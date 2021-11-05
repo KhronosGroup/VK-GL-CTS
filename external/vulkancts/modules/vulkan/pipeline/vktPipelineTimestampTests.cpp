@@ -100,28 +100,28 @@ std::string getPipelineStageFlagStr (const VkPipelineStageFlagBits stage,
 			GEN_DESC_STRING(p, stage);             \
 			break;                                 \
 		}
-		STAGE_CASE(TOP_OF_PIPE);
-		STAGE_CASE(DRAW_INDIRECT);
-		STAGE_CASE(VERTEX_INPUT);
-		STAGE_CASE(VERTEX_SHADER);
-		STAGE_CASE(TESSELLATION_CONTROL_SHADER);
-		STAGE_CASE(TESSELLATION_EVALUATION_SHADER);
-		STAGE_CASE(GEOMETRY_SHADER);
-		STAGE_CASE(FRAGMENT_SHADER);
-		STAGE_CASE(EARLY_FRAGMENT_TESTS);
-		STAGE_CASE(LATE_FRAGMENT_TESTS);
-		STAGE_CASE(COLOR_ATTACHMENT_OUTPUT);
-		STAGE_CASE(COMPUTE_SHADER);
-		STAGE_CASE(TRANSFER);
-		STAGE_CASE(HOST);
-		STAGE_CASE(ALL_GRAPHICS);
-		STAGE_CASE(ALL_COMMANDS);
+		STAGE_CASE(TOP_OF_PIPE)
+		STAGE_CASE(DRAW_INDIRECT)
+		STAGE_CASE(VERTEX_INPUT)
+		STAGE_CASE(VERTEX_SHADER)
+		STAGE_CASE(TESSELLATION_CONTROL_SHADER)
+		STAGE_CASE(TESSELLATION_EVALUATION_SHADER)
+		STAGE_CASE(GEOMETRY_SHADER)
+		STAGE_CASE(FRAGMENT_SHADER)
+		STAGE_CASE(EARLY_FRAGMENT_TESTS)
+		STAGE_CASE(LATE_FRAGMENT_TESTS)
+		STAGE_CASE(COLOR_ATTACHMENT_OUTPUT)
+		STAGE_CASE(COMPUTE_SHADER)
+		STAGE_CASE(TRANSFER)
+		STAGE_CASE(HOST)
+		STAGE_CASE(ALL_GRAPHICS)
+		STAGE_CASE(ALL_COMMANDS)
 #undef STAGE_CASE
 	  default:
 		desc << "unknown stage!";
 		DE_FATAL("Unknown Stage!");
 		break;
-	};
+	}
 
 	return desc.str();
 }
@@ -172,7 +172,7 @@ std::string getTransferMethodStr (const TransferMethod	method,
 		desc << "unknown method!";
 		DE_FATAL("Unknown method!");
 		break;
-	};
+	}
 
 	return desc.str();
 }
@@ -1952,7 +1952,7 @@ void AdvGraphicsTestInstance::featureSupportCheck (void)
 			case VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT:
 			default:
 				break;
-		};
+		}
 	}
 }
 
@@ -2634,7 +2634,7 @@ void TransferTestInstance::configCommandBuffer (void)
 		default:
 			DE_FATAL("Unknown Transfer Method!");
 			break;
-	};
+	}
 
 	deUint32 timestampEntry = 0u;
 

@@ -1091,12 +1091,14 @@ private:
 	StateVerifier*	m_verifier;
 };
 
-#define FOR_EACH_VERIFIER(VERIFIERS, CODE_BLOCK)												\
-	for (int _verifierNdx = 0; _verifierNdx < DE_LENGTH_OF_ARRAY(VERIFIERS); _verifierNdx++)	\
-	{																							\
-		StateVerifier* verifier = (VERIFIERS)[_verifierNdx];									\
-		CODE_BLOCK;																				\
-	}
+#define FOR_EACH_VERIFIER(VERIFIERS, CODE_BLOCK)													\
+	do {																							\
+		for (int _verifierNdx = 0; _verifierNdx < DE_LENGTH_OF_ARRAY(VERIFIERS); _verifierNdx++)	\
+		{																							\
+			StateVerifier* verifier = (VERIFIERS)[_verifierNdx];									\
+			CODE_BLOCK;																				\
+		}																							\
+	} while (0)
 
 } // anonymous
 

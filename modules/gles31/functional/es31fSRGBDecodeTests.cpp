@@ -200,7 +200,7 @@ struct TestGroupConfig
 		, description		(groupDescription)
 		, internalFormat	(groupInternalFormat) {}
 
-	~TestGroupConfig		(void) {};
+	~TestGroupConfig		(void) {}
 
 	const char*					name;
 	const char*					description;

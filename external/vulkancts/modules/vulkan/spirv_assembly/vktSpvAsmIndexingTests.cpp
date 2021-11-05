@@ -223,10 +223,10 @@ void addComputeIndexingStructTests (tcu::TestCaseGroup* group)
 						specs["extensions"]				= "OpExtension \"SPV_KHR_variable_pointers\"\n                             "
 														  "OpExtension \"SPV_KHR_storage_buffer_storage_class\"";
 						element = 1;
-						vulkanFeatures.extVariablePointers = EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
+						vulkanFeatures.extVariablePointers.variablePointersStorageBuffer = true;
 						spec.extensions.push_back("VK_KHR_variable_pointers");
 						break;
-				};
+				}
 
 				spec.inputs.push_back(BufferSp(new Float32Buffer(inputData)));
 				spec.inputs.push_back(BufferSp(new Buffer<UVec4>(indexSelectorData)));
@@ -472,10 +472,10 @@ void addGraphicsIndexingStructTests (tcu::TestCaseGroup* group)
 						fragments["capability"]				+= "OpCapability VariablePointersStorageBuffer";
 						fragments["extension"]				= "OpExtension \"SPV_KHR_variable_pointers\"\nOpExtension \"SPV_KHR_storage_buffer_storage_class\"";
 						extensions.push_back				("VK_KHR_variable_pointers");
-						vulkanFeatures.extVariablePointers	= EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
+						vulkanFeatures.extVariablePointers.variablePointersStorageBuffer = true;
 						element = 1;
 						break;
-				};
+				}
 
 				outputData.reserve(numItems);
 				for (deUint32 numIdx = 0; numIdx < numItems; ++numIdx)
@@ -675,7 +675,7 @@ void addComputeIndexingNon16BaseAlignmentTests (tcu::TestCaseGroup* group)
 			"                             OpReturn\n"
 			"                             OpFunctionEnd\n";
 
-	vulkanFeatures.extVariablePointers = EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
+	vulkanFeatures.extVariablePointers.variablePointersStorageBuffer = true;
 	spec.extensions.push_back("VK_KHR_variable_pointers");
 
 	inputData.reserve(numInputFloats);

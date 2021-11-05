@@ -24,6 +24,9 @@
 
 #include "vktPipelineSamplerTests.hpp"
 #include "vktPipelineImageSamplingInstance.hpp"
+#ifndef CTS_USES_VULKANSC
+#include "vktPipelineSamplerBorderSwizzleTests.hpp"
+#endif // CTS_USES_VULKANSC
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
 #include "vktTestCase.hpp"
@@ -419,9 +422,9 @@ void SamplerTest::initPrograms (SourceCollections& sourceCollections) const
 				<< "{\n"
 				<< "	fragColor = ";
 
-	if (m_samplerLod > 0.0f)
+	if (m_samplerLod > 0.0f || !m_imageViewType.isNormalized())
 	{
-		DE_ASSERT(m_imageViewType.isNormalized());
+		DE_ASSERT(m_imageViewType.isNormalized() || (m_samplerLod == 0.0f && !m_imageViewType.isNormalized()));
 		fragmentSrc << "textureLod(texSampler, vtxTexCoords." << texCoordSwizzle << ", " << std::fixed <<  m_samplerLod << ")";
 	}
 	else
@@ -1330,10 +1333,18 @@ void ExactSamplingCase::initPrograms (vk::SourceCollections& programCollection) 
 		<< "\n"
 		<< "layout(location = 0) out " << colorType << " outColor;\n"
 		<< "\n"
-		<< "void main() {\n"
-		<< "    outColor = texture(texSampler, fragTexCoord);\n"
-		<< "}\n"
-		;
+		<< "void main() {\n";
+
+	if (m_params.unnormalizedCoordinates)
+	{
+		fragmentShader << "    outColor = textureLod(texSampler, fragTexCoord, 0.0f);";
+	}
+	else
+	{
+		fragmentShader << "    outColor = texture(texSampler, fragTexCoord);\n";
+	}
+
+	fragmentShader << "}\n";
 
 	programCollection.glslSources.add("frag") << glu::FragmentSource{fragmentShader.str()};
 }
@@ -1372,8 +1383,6 @@ vk::VkExtent3D ExactSamplingInstance::getTextureExtent (void) const
 
 tcu::TestStatus ExactSamplingInstance::iterate (void)
 {
-	const auto& vki			= m_context.getInstanceInterface();
-	const auto	physDevice	= m_context.getPhysicalDevice();
 	const auto&	vkd			= m_context.getDeviceInterface();
 	const auto	device		= m_context.getDevice();
 	auto&		allocator	= m_context.getDefaultAllocator();
@@ -1538,12 +1547,8 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 	const auto descriptorSet = vk::makeDescriptorSet(vkd, device, descriptorPool.get(), descriptorSetLayout.get());
 
 	// Texture sampler. When using a solid color, test linear filtering. Linear filtering may incur in a small precission loss, but
-	// it should be minimal and we should get the same color when converting back to the original format. Anisotropy should be
-	// irrelevant too, so it is enabled and set to the maximum level if available.
+	// it should be minimal and we should get the same color when converting back to the original format.
 	const auto	minMagFilter			= (m_params.solidColor ? vk::VK_FILTER_LINEAR : vk::VK_FILTER_NEAREST);
-	const bool	anisotropySupported		= (vk::getPhysicalDeviceFeatures(vki, physDevice).samplerAnisotropy == VK_TRUE);
-	const bool	anisotropyEnable		= (!unnorm && m_params.solidColor && anisotropySupported);
-	const float	maxAnisotropy			= (anisotropyEnable ? vk::getPhysicalDeviceProperties(vki, physDevice).limits.maxSamplerAnisotropy : 1.0f);
 	const auto	addressMode				= (unnorm ? vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE : vk::VK_SAMPLER_ADDRESS_MODE_REPEAT);
 	const auto	unnormalizedCoordinates	= (unnorm ? VK_TRUE : VK_FALSE);
 
@@ -1559,8 +1564,8 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 		addressMode,									// VkSamplerAddressMode	addressModeV;
 		addressMode,									// VkSamplerAddressMode	addressModeW;
 		0.0f,											// float				mipLodBias;
-		(anisotropyEnable ? VK_TRUE : VK_FALSE),		// VkBool32				anisotropyEnable;
-		maxAnisotropy,									// float				maxAnisotropy;
+		VK_FALSE,										// VkBool32				anisotropyEnable;
+		1.0f,											// float				maxAnisotropy;
 		VK_FALSE,										// VkBool32				compareEnable;
 		vk::VK_COMPARE_OP_NEVER,						// VkCompareOp			compareOp;
 		0.0f,											// float				minLod;
@@ -2012,7 +2017,7 @@ tcu::TestCaseGroup* createExactSamplingTests (tcu::TestContext& testCtx)
 		const std::string		desc;
 	} testEdges[] =
 	{
-		{ tcu::nothing<float>(),	"centered",		"Sampling points centered in texel"		},
+		{ tcu::Nothing,				"centered",		"Sampling points centered in texel"		},
 		{ tcu::just<float>(-1.0f),	"edge_left",	"Sampling points near left edge"		},
 		{ tcu::just<float>(+1.0f),	"edge_right",	"Sampling points near right edge"		},
 	};
@@ -2072,6 +2077,11 @@ tcu::TestCaseGroup* createSamplerTests (tcu::TestContext& testCtx)
 		separateStencilUsageSamplerTests->addChild(createAllFormatsSamplerTests(testCtx, true));
 		samplerTests->addChild(separateStencilUsageSamplerTests.release());
 	}
+
+#ifndef CTS_USES_VULKANSC
+	// Border color swizzle tests.
+	samplerTests->addChild(createSamplerBorderSwizzleTests(testCtx));
+#endif // CTS_USES_VULKANSC
 
 	return samplerTests.release();
 }

@@ -1701,6 +1701,15 @@ VKAPI_ATTR void VKAPI_CALL cmdSetFragmentShadingRateKHR (VkCommandBuffer command
 	DE_UNREF(combinerOps);
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL waitForPresentKHR (VkDevice device, VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(presentId);
+	DE_UNREF(timeout);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR uint32_t VKAPI_CALL getDeferredOperationMaxConcurrencyKHR (VkDevice device, VkDeferredOperationKHR operation)
 {
 	DE_UNREF(device);
@@ -1844,6 +1853,28 @@ VKAPI_ATTR void VKAPI_CALL cmdResolveImage2KHR (VkCommandBuffer commandBuffer, c
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pResolveImageInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL getDeviceBufferMemoryRequirementsKHR (VkDevice device, const VkDeviceBufferMemoryRequirementsKHR* pInfo, VkMemoryRequirements2* pMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR void VKAPI_CALL getDeviceImageMemoryRequirementsKHR (VkDevice device, const VkDeviceImageMemoryRequirementsKHR* pInfo, VkMemoryRequirements2* pMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR void VKAPI_CALL getDeviceImageSparseMemoryRequirementsKHR (VkDevice device, const VkDeviceImageMemoryRequirementsKHR* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pSparseMemoryRequirementCount);
+	DE_UNREF(pSparseMemoryRequirements);
 }
 
 VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage)
@@ -2720,10 +2751,17 @@ VKAPI_ATTR void VKAPI_CALL cmdSubpassShadingHUAWEI (VkCommandBuffer commandBuffe
 	DE_UNREF(commandBuffer);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getMemoryRemoteAddressNV (VkDevice device, const VkMemoryGetRemoteAddressInfoNV* getMemoryRemoteAddressInfo, VkRemoteAddressNV* pAddress)
+VKAPI_ATTR void VKAPI_CALL cmdBindInvocationMaskHUAWEI (VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(imageView);
+	DE_UNREF(imageLayout);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryRemoteAddressNV (VkDevice device, const VkMemoryGetRemoteAddressInfoNV* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress)
 {
 	DE_UNREF(device);
-	DE_UNREF(getMemoryRemoteAddressInfo);
+	DE_UNREF(pMemoryGetRemoteAddressInfo);
 	DE_UNREF(pAddress);
 	return VK_SUCCESS;
 }
@@ -2784,6 +2822,13 @@ VKAPI_ATTR void VKAPI_CALL cmdDrawMultiIndexedEXT (VkCommandBuffer commandBuffer
 	DE_UNREF(firstInstance);
 	DE_UNREF(stride);
 	DE_UNREF(pVertexOffset);
+}
+
+VKAPI_ATTR void VKAPI_CALL setDeviceMemoryPriorityEXT (VkDevice device, VkDeviceMemory memory, float priority)
+{
+	DE_UNREF(device);
+	DE_UNREF(memory);
+	DE_UNREF(priority);
 }
 
 VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructuresKHR (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos)
@@ -3504,6 +3549,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkWaitSemaphoresKHR,									waitSemaphores),
 	VK_NULL_FUNC_ENTRY(vkSignalSemaphoreKHR,								signalSemaphore),
 	VK_NULL_FUNC_ENTRY(vkCmdSetFragmentShadingRateKHR,						cmdSetFragmentShadingRateKHR),
+	VK_NULL_FUNC_ENTRY(vkWaitForPresentKHR,									waitForPresentKHR),
 	VK_NULL_FUNC_ENTRY(vkGetBufferDeviceAddressKHR,							getBufferDeviceAddress),
 	VK_NULL_FUNC_ENTRY(vkGetBufferOpaqueCaptureAddressKHR,					getBufferOpaqueCaptureAddress),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceMemoryOpaqueCaptureAddressKHR,			getDeviceMemoryOpaqueCaptureAddress),
@@ -3529,6 +3575,9 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdCopyImageToBuffer2KHR,							cmdCopyImageToBuffer2KHR),
 	VK_NULL_FUNC_ENTRY(vkCmdBlitImage2KHR,									cmdBlitImage2KHR),
 	VK_NULL_FUNC_ENTRY(vkCmdResolveImage2KHR,								cmdResolveImage2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceBufferMemoryRequirementsKHR,				getDeviceBufferMemoryRequirementsKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceImageMemoryRequirementsKHR,				getDeviceImageMemoryRequirementsKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceImageSparseMemoryRequirementsKHR,			getDeviceImageSparseMemoryRequirementsKHR),
 	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectTagEXT,						debugMarkerSetObjectTagEXT),
 	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectNameEXT,						debugMarkerSetObjectNameEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerBeginEXT,							cmdDebugMarkerBeginEXT),
@@ -3639,6 +3688,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdSetVertexInputEXT,								cmdSetVertexInputEXT),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI,		getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI),
 	VK_NULL_FUNC_ENTRY(vkCmdSubpassShadingHUAWEI,							cmdSubpassShadingHUAWEI),
+	VK_NULL_FUNC_ENTRY(vkCmdBindInvocationMaskHUAWEI,						cmdBindInvocationMaskHUAWEI),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryRemoteAddressNV,							getMemoryRemoteAddressNV),
 	VK_NULL_FUNC_ENTRY(vkCmdSetPatchControlPointsEXT,						cmdSetPatchControlPointsEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetRasterizerDiscardEnableEXT,					cmdSetRasterizerDiscardEnableEXT),
@@ -3648,6 +3698,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdSetColorWriteEnableEXT,							cmdSetColorWriteEnableEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawMultiEXT,									cmdDrawMultiEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawMultiIndexedEXT,							cmdDrawMultiIndexedEXT),
+	VK_NULL_FUNC_ENTRY(vkSetDeviceMemoryPriorityEXT,						setDeviceMemoryPriorityEXT),
 	VK_NULL_FUNC_ENTRY(vkCreateAccelerationStructureKHR,					createAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkDestroyAccelerationStructureKHR,					destroyAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdBuildAccelerationStructuresKHR,					cmdBuildAccelerationStructuresKHR),

@@ -266,6 +266,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_present_wait")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_uniform_buffer_standard_layout")
 	{
 		return;
@@ -282,11 +286,19 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_integer_dot_product")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_pipeline_library")
 	{
 		return;
 	}
 	if (extName == "VK_KHR_shader_non_semantic_info")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_present_id")
 	{
 		return;
 	}
@@ -307,6 +319,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_KHR_copy_commands2")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_format_feature_flags2")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_maintenance4")
 	{
 		return;
 	}
@@ -789,6 +809,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_atomic_float2")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_demote_to_helper_invocation")
 	{
 		return;
@@ -810,6 +834,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_device_memory_report")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_rgba10x6_formats")
 	{
 		return;
 	}
@@ -893,7 +921,15 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_primitive_topology_list_restart")
+	{
+		return;
+	}
 	if (extName == "VK_HUAWEI_subpass_shading")
+	{
+		return;
+	}
+	if (extName == "VK_HUAWEI_invocation_mask")
 	{
 		return;
 	}
@@ -914,6 +950,18 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_multi_draw")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_load_store_op_none")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_border_color_swizzle")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_pageable_device_local_memory")
 	{
 		return;
 	}
@@ -1350,6 +1398,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_present_wait")
+	{
+		functions.push_back("vkWaitForPresentKHR");
+		return;
+	}
 	if (extName == "VK_KHR_uniform_buffer_standard_layout")
 	{
 		return;
@@ -1377,11 +1430,19 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetPipelineExecutableInternalRepresentationsKHR");
 		return;
 	}
+	if (extName == "VK_KHR_shader_integer_dot_product")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_pipeline_library")
 	{
 		return;
 	}
 	if (extName == "VK_KHR_shader_non_semantic_info")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_present_id")
 	{
 		return;
 	}
@@ -1415,6 +1476,17 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdCopyImageToBuffer2KHR");
 		functions.push_back("vkCmdBlitImage2KHR");
 		functions.push_back("vkCmdResolveImage2KHR");
+		return;
+	}
+	if (extName == "VK_KHR_format_feature_flags2")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_maintenance4")
+	{
+		functions.push_back("vkGetDeviceBufferMemoryRequirementsKHR");
+		functions.push_back("vkGetDeviceImageMemoryRequirementsKHR");
+		functions.push_back("vkGetDeviceImageSparseMemoryRequirementsKHR");
 		return;
 	}
 	if (extName == "VK_EXT_debug_report")
@@ -1976,6 +2048,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdSetStencilOpEXT");
 		return;
 	}
+	if (extName == "VK_EXT_shader_atomic_float2")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_demote_to_helper_invocation")
 	{
 		return;
@@ -2003,6 +2079,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_EXT_device_memory_report")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_rgba10x6_formats")
 	{
 		return;
 	}
@@ -2088,10 +2168,19 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_primitive_topology_list_restart")
+	{
+		return;
+	}
 	if (extName == "VK_HUAWEI_subpass_shading")
 	{
 		functions.push_back("vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI");
 		functions.push_back("vkCmdSubpassShadingHUAWEI");
+		return;
+	}
+	if (extName == "VK_HUAWEI_invocation_mask")
+	{
+		functions.push_back("vkCmdBindInvocationMaskHUAWEI");
 		return;
 	}
 	if (extName == "VK_NV_external_memory_rdma")
@@ -2121,6 +2210,19 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		functions.push_back("vkCmdDrawMultiEXT");
 		functions.push_back("vkCmdDrawMultiIndexedEXT");
+		return;
+	}
+	if (extName == "VK_EXT_load_store_op_none")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_border_color_swizzle")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_pageable_device_local_memory")
+	{
+		functions.push_back("vkSetDeviceMemoryPriorityEXT");
 		return;
 	}
 	if (extName == "VK_KHR_acceleration_structure")
@@ -2367,11 +2469,13 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_maintenance3",
 	"VK_KHR_draw_indirect_count",
 	"VK_KHR_timeline_semaphore",
+	"VK_KHR_present_wait",
 	"VK_KHR_buffer_device_address",
 	"VK_KHR_deferred_host_operations",
 	"VK_KHR_pipeline_executable_properties",
 	"VK_KHR_synchronization2",
 	"VK_KHR_copy_commands2",
+	"VK_KHR_maintenance4",
 	"VK_EXT_debug_marker",
 	"VK_EXT_transform_feedback",
 	"VK_NVX_binary_import",
@@ -2406,10 +2510,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_fragment_shading_rate_enums",
 	"VK_EXT_vertex_input_dynamic_state",
 	"VK_HUAWEI_subpass_shading",
+	"VK_HUAWEI_invocation_mask",
 	"VK_NV_external_memory_rdma",
 	"VK_EXT_extended_dynamic_state2",
 	"VK_EXT_color_write_enable",
 	"VK_EXT_multi_draw",
+	"VK_EXT_pageable_device_local_memory",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_ANDROID_external_memory_android_hardware_buffer",

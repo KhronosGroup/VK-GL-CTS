@@ -1,5 +1,9 @@
 dEQP-VKSC.compute.basic.empty_shader
 dEQP-VKSC.compute.basic.concurrent_compute
+dEQP-VKSC.compute.basic.empty_workgroup_x
+dEQP-VKSC.compute.basic.empty_workgroup_y
+dEQP-VKSC.compute.basic.empty_workgroup_z
+dEQP-VKSC.compute.basic.empty_workgroup_all
 dEQP-VKSC.compute.basic.max_local_size_x
 dEQP-VKSC.compute.basic.max_local_size_y
 dEQP-VKSC.compute.basic.max_local_size_z

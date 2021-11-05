@@ -200,10 +200,10 @@ void addComputeVariableInitPrivateTest (tcu::TestCaseGroup* group)
 													  "                   OpStore %" + type + "_global_1 %" + type + "_1\n"
 													  "     %outputData = OpLoad %" + type + " %outputDataPtr\n";
 
-				spec.requestedVulkanFeatures.extVariablePointers = EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS;
+				spec.requestedVulkanFeatures.extVariablePointers.variablePointers = true;
 				spec.extensions.push_back("VK_KHR_variable_pointers");
 				break;
-		};
+		}
 
 		if (testParams[paramIdx].type == "matrix")
 		{

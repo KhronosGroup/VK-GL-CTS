@@ -22,6 +22,7 @@ const vk::VkPhysicalDeviceIDProperties&								getIDProperties								(void) con
 const vk::VkPhysicalDeviceInlineUniformBlockPropertiesEXT&			getInlineUniformBlockPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceLineRasterizationPropertiesEXT&			getLineRasterizationPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceMaintenance3Properties&					getMaintenance3Properties					(void) const;
+const vk::VkPhysicalDeviceMaintenance4PropertiesKHR&				getMaintenance4Properties					(void) const;
 const vk::VkPhysicalDeviceMeshShaderPropertiesNV&					getMeshShaderProperties						(void) const;
 const vk::VkPhysicalDeviceMultiviewProperties&						getMultiviewProperties						(void) const;
 const vk::VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX&	getMultiviewPerViewAttributesPropertiesX	(void) const;
@@ -39,6 +40,7 @@ const vk::VkPhysicalDeviceSamplerFilterMinmaxProperties&			getSamplerFilterMinma
 const vk::VkPhysicalDeviceSampleLocationsPropertiesEXT&				getSampleLocationsPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceShaderCorePropertiesAMD&					getShaderCorePropertiesAMD					(void) const;
 const vk::VkPhysicalDeviceShaderCoreProperties2AMD&					getShaderCoreProperties2AMD					(void) const;
+const vk::VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR&		getShaderIntegerDotProductProperties		(void) const;
 const vk::VkPhysicalDeviceShadingRateImagePropertiesNV&				getShadingRateImageProperties				(void) const;
 const vk::VkPhysicalDeviceSubgroupProperties&						getSubgroupProperties						(void) const;
 const vk::VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&			getSubgroupSizeControlPropertiesEXT			(void) const;

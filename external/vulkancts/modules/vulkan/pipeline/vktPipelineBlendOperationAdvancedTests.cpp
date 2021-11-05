@@ -253,7 +253,7 @@ Vec3 calculateWeightingFactors(BlendOperationAdvancedParam param,
 		break;
 	default:
 		DE_FATAL("Unsupported Advanced Blend Overlap Mode");
-	};
+	}
 	return p;
 }
 
@@ -326,7 +326,7 @@ Vec3 calculateWeightingFactors(BlendOperationAdvancedParam param,
 
 	default:
 		DE_FATAL("Unsupported f/X/Y/Z Advanced Blend Operations Mode");
-	};
+	}
 
 	return xyz;
 }
@@ -660,7 +660,7 @@ Vec3 calculateFFunction(VkBlendOp op,
 
 	default:
 		DE_FATAL("Unsupported f/X/Y/Z Advanced Blend Operations Mode");
-	};
+	}
 
 	return f;
 }
@@ -739,7 +739,7 @@ Vec4 additionalRGBBlendOperations(VkBlendOp op,
 
 	default:
 		DE_FATAL("Unsupported blend operation");
-	};
+	}
 	return res;
 }
 

@@ -30,12 +30,19 @@
 #include "vkImageUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
+#include "vkBuilderUtil.hpp"
 
 #include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuRGBA.hpp"
 
 #include "deMath.h"
+
+#include <vector>
+#include <string>
+#include <sstream>
+#include <iomanip>
 
 namespace vkt
 {
@@ -649,6 +656,306 @@ void checkWideLinesSupport (Context& context)
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_WIDE_LINES);
 }
 
+// Tests that fail if both the depth bias clamp or depth constant factor stay at 0.0f instead of applying the real values.
+struct DepthBiasNonZeroPushConstants
+{
+	float geometryDepth;
+	float minDepth;
+	float maxDepth;
+};
+
+struct DepthBiasNonZeroParams
+{
+	float							depthBiasConstant;
+	float							depthBiasClamp;
+	DepthBiasNonZeroPushConstants	pushConstants;
+};
+
+class DepthBiasNonZeroCase : public vkt::TestCase
+{
+private:
+	DepthBiasNonZeroParams m_params;
+
+public:
+						DepthBiasNonZeroCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const DepthBiasNonZeroParams& params);
+	virtual				~DepthBiasNonZeroCase	(void) {}
+
+	void				checkSupport			(Context& context) const override;
+	void				initPrograms			(vk::SourceCollections& programCollection) const override;
+	TestInstance*		createInstance			(Context& context) const override;
+
+	static tcu::Vec4	getExpectedColor		() { return tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f); }
+};
+
+class DepthBiasNonZeroInstance : public vkt::TestInstance
+{
+private:
+	DepthBiasNonZeroParams m_params;
+
+public:
+						DepthBiasNonZeroInstance	(Context& context, const DepthBiasNonZeroParams& params);
+	virtual				~DepthBiasNonZeroInstance	(void) {}
+
+	tcu::TestStatus		iterate						(void) override;
+};
+
+DepthBiasNonZeroCase::DepthBiasNonZeroCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const DepthBiasNonZeroParams& params)
+	: vkt::TestCase		(testCtx, name, description)
+	, m_params			(params)
+{}
+
+TestInstance* DepthBiasNonZeroCase::createInstance (Context& context) const
+{
+	return new DepthBiasNonZeroInstance(context, m_params);
+}
+
+DepthBiasNonZeroInstance::DepthBiasNonZeroInstance (Context& context, const DepthBiasNonZeroParams& params)
+	: vkt::TestInstance	(context)
+	, m_params			(params)
+{}
+
+void DepthBiasNonZeroCase::checkSupport (Context& context) const
+{
+	const auto& features = context.getDeviceFeatures();
+	if (m_params.depthBiasClamp != 0.0f && !features.depthBiasClamp)
+		TCU_THROW(NotSupportedError, "Depth bias clamping not supported");
+}
+
+void DepthBiasNonZeroCase::initPrograms (vk::SourceCollections& programCollection) const
+{
+	std::ostringstream vert;
+	vert
+		<< "#version 450\n"
+		<< "\n"
+		<< "layout (push_constant, std430) uniform PushConstantBlock {\n"
+		<< "	float geometryDepth;\n"
+		<< "	float minDepth;\n"
+		<< "	float maxDepth;\n"
+		<< "} pc;\n"
+		<< "\n"
+		<< "vec2 positions[3] = vec2[](\n"
+		<< "    vec2(-1.0, -1.0),\n"
+		<< "    vec2(3.0, -1.0),\n"
+		<< "    vec2(-1.0, 3.0)\n"
+		<< ");\n"
+		<< "\n"
+		<< "void main() {\n"
+		<< "    gl_Position = vec4(positions[gl_VertexIndex], pc.geometryDepth, 1.0);\n"
+		<< "}\n"
+		;
+
+	const auto outColor = getExpectedColor();
+	std::ostringstream frag;
+	frag
+		<< std::fixed << std::setprecision(1)
+		<< "#version 450\n"
+		<< "\n"
+		<< "layout (push_constant, std430) uniform PushConstantBlock {\n"
+		<< "	float geometryDepth;\n"
+		<< "	float minDepth;\n"
+		<< "	float maxDepth;\n"
+		<< "} pc;\n"
+		<< "\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "\n"
+		<< "void main() {\n"
+		<< "    const float depth = gl_FragCoord.z;\n"
+		<< "    if (depth >= pc.minDepth && depth <= pc.maxDepth) {\n"
+		<< "	    outColor = vec4(" << outColor.x() << ", " << outColor.y() << ", " << outColor.z() << ", " << outColor.w() << ");\n"
+		<< "    }\n"
+		<< "}\n"
+		;
+
+	programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+	programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus DepthBiasNonZeroInstance::iterate (void)
+{
+	const auto&	vkd			= m_context.getDeviceInterface();
+	const auto	device		= m_context.getDevice();
+	auto&		alloc		= m_context.getDefaultAllocator();
+	const auto	qIndex		= m_context.getUniversalQueueFamilyIndex();
+	const auto	queue		= m_context.getUniversalQueue();
+
+	const auto	depthFormat	= vk::VK_FORMAT_D16_UNORM;
+	const auto	colorFormat	= vk::VK_FORMAT_R8G8B8A8_UNORM;
+	const auto	colorUsage	= (vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const auto	depthUsage	= (vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const auto	extent		= vk::makeExtent3D(8u, 8u, 1u);
+	const auto&	pcData		= m_params.pushConstants;
+	const auto	pcDataSize	= static_cast<deUint32>(sizeof(pcData));
+	const auto	pcStages	= (vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+	const auto	pcRange		= vk::makePushConstantRange(pcStages, 0u, pcDataSize);
+	const auto	renderPass	= vk::makeRenderPass(vkd, device, colorFormat, depthFormat, vk::VK_ATTACHMENT_LOAD_OP_CLEAR, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	const auto	stencilOp	= vk::makeStencilOpState(vk::VK_STENCIL_OP_KEEP, vk::VK_STENCIL_OP_KEEP, vk::VK_STENCIL_OP_KEEP, vk::VK_COMPARE_OP_NEVER, 0u, 0u, 0u);
+
+	// Color buffer.
+	const vk::VkImageCreateInfo colorBufferInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+		nullptr,									//	const void*				pNext;
+		0u,											//	VkImageCreateFlags		flags;
+		vk::VK_IMAGE_TYPE_2D,						//	VkImageType				imageType;
+		colorFormat,								//	VkFormat				format;
+		extent,										//	VkExtent3D				extent;
+		1u,											//	deUint32				mipLevels;
+		1u,											//	deUint32				arrayLayers;
+		vk::VK_SAMPLE_COUNT_1_BIT,					//	VkSampleCountFlagBits	samples;
+		vk::VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
+		colorUsage,									//	VkImageUsageFlags		usage;
+		vk::VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode			sharingMode;
+		0u,											//	deUint32				queueFamilyIndexCount;
+		nullptr,									//	const deUint32*			pQueueFamilyIndices;
+		vk::VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+	};
+	const auto colorBuffer = Image::createAndAlloc(vkd, device, colorBufferInfo, alloc, qIndex);
+
+	// Depth buffer.
+	const vk::VkImageCreateInfo depthBufferInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+		nullptr,									//	const void*				pNext;
+		0u,											//	VkImageCreateFlags		flags;
+		vk::VK_IMAGE_TYPE_2D,						//	VkImageType				imageType;
+		depthFormat,								//	VkFormat				format;
+		extent,										//	VkExtent3D				extent;
+		1u,											//	deUint32				mipLevels;
+		1u,											//	deUint32				arrayLayers;
+		vk::VK_SAMPLE_COUNT_1_BIT,					//	VkSampleCountFlagBits	samples;
+		vk::VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
+		depthUsage,									//	VkImageUsageFlags		usage;
+		vk::VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode			sharingMode;
+		0u,											//	deUint32				queueFamilyIndexCount;
+		nullptr,									//	const deUint32*			pQueueFamilyIndices;
+		vk::VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+	};
+	const auto depthBuffer = Image::createAndAlloc(vkd, device, depthBufferInfo, alloc, qIndex);
+
+	const auto colorSubresourceRange	= vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const auto colorView				= vk::makeImageView(vkd, device, colorBuffer->object(), vk::VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange);
+
+	const auto depthSubresourceRange	= vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u);
+	const auto depthView				= vk::makeImageView(vkd, device, depthBuffer->object(), vk::VK_IMAGE_VIEW_TYPE_2D, depthFormat, depthSubresourceRange);
+
+	// Create framebuffer.
+	const std::vector<vk::VkImageView>	attachments	= { colorView.get(), depthView.get() };
+	const auto							framebuffer	= vk::makeFramebuffer(vkd, device, renderPass.get(), static_cast<deUint32>(attachments.size()), de::dataOrNull(attachments), extent.width, extent.height);
+
+	// Descriptor set and pipeline layout.
+	vk::DescriptorSetLayoutBuilder setLayoutBuilder;
+	const auto dsLayout			= setLayoutBuilder.build(vkd, device);
+	const auto pipelineLayout	= vk::makePipelineLayout(vkd, device, 1u, &dsLayout.get(), 1u, &pcRange);
+
+	// Shader modules.
+	const auto vertModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+	const auto fragModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+
+	const std::vector<vk::VkViewport>	viewports	= { vk::makeViewport(extent) };
+	const std::vector<vk::VkRect2D>		scissors	= { vk::makeRect2D(extent) };
+
+	// Vertex input state without bindings and attributes.
+	const vk::VkPipelineVertexInputStateCreateInfo vertexInputInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType                             sType
+		nullptr,														// const void*                                 pNext
+		0u,																// VkPipelineVertexInputStateCreateFlags       flags
+		0u,																// deUint32                                    vertexBindingDescriptionCount
+		nullptr,														// const VkVertexInputBindingDescription*      pVertexBindingDescriptions
+		0u,																// deUint32                                    vertexAttributeDescriptionCount
+		nullptr,														// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
+	};
+
+	// Depth/stencil state, with depth test and writes enabled.
+	const vk::VkPipelineDepthStencilStateCreateInfo depthStencilStateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType                          sType
+		nullptr,														// const void*                              pNext
+		0u,																// VkPipelineDepthStencilStateCreateFlags   flags
+		VK_TRUE,														// VkBool32                                 depthTestEnable
+		VK_TRUE,														// VkBool32                                 depthWriteEnable
+		vk::VK_COMPARE_OP_ALWAYS,										// VkCompareOp                              depthCompareOp
+		VK_FALSE,														// VkBool32                                 depthBoundsTestEnable
+		VK_FALSE,														// VkBool32                                 stencilTestEnable
+		stencilOp,														// VkStencilOpState                         front
+		stencilOp,														// VkStencilOpState                         back
+		0.0f,															// float                                    minDepthBounds
+		1.0f,															// float                                    maxDepthBounds
+	};
+
+	// Rasterization state with depth bias enabled.
+	const vk::VkPipelineRasterizationStateCreateInfo rasterizationInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	// VkStructureType                            sType
+		nullptr,														// const void*                                pNext
+		0u,																// VkPipelineRasterizationStateCreateFlags    flags
+		VK_FALSE,														// VkBool32                                   depthClampEnable
+		VK_FALSE,														// VkBool32                                   rasterizerDiscardEnable
+		vk::VK_POLYGON_MODE_FILL,										// VkPolygonMode                              polygonMode
+		vk::VK_CULL_MODE_NONE,											// VkCullModeFlags                            cullMode
+		vk::VK_FRONT_FACE_CLOCKWISE,									// VkFrontFace                                frontFace
+		VK_TRUE,														// VkBool32                                   depthBiasEnable
+		0.0f,															// float                                      depthBiasConstantFactor
+		0.0f,															// float                                      depthBiasClamp
+		0.0f,															// float                                      depthBiasSlopeFactor
+		1.0f															// float                                      lineWidth
+	};
+
+	// Dynamic state.
+	const std::vector<vk::VkDynamicState> dynamicStates (1u, vk::VK_DYNAMIC_STATE_DEPTH_BIAS);
+
+	const vk::VkPipelineDynamicStateCreateInfo dynamicStateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	//	VkStructureType						sType;
+		nullptr,													//	const void*							pNext;
+		0u,															//	VkPipelineDynamicStateCreateFlags	flags;
+		static_cast<deUint32>(dynamicStates.size()),				//	deUint32							dynamicStateCount;
+		de::dataOrNull(dynamicStates),								//	const VkDynamicState*				pDynamicStates;
+	};
+
+	// Graphics pipeline.
+	const auto pipeline = vk::makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
+		vertModule.get(), DE_NULL, DE_NULL, DE_NULL, fragModule.get(), // shaders
+		renderPass.get(), viewports, scissors, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u/*subpass*/, 0u/*patchControlPoints*/,
+		&vertexInputInfo, &rasterizationInfo, nullptr, &depthStencilStateInfo, nullptr, &dynamicStateInfo);
+
+	// Command pool and buffer.
+	const auto cmdPool		= vk::makeCommandPool(vkd, device, qIndex);
+	const auto cmdBufferPtr	= vk::allocateCommandBuffer(vkd, device, cmdPool.get(), vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto cmdBuffer	= cmdBufferPtr.get();
+
+	// Clear colors.
+	const std::vector<vk::VkClearValue> clearColors =
+	{
+		vk::makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f),
+		vk::makeClearValueDepthStencil(0.0f, 0u),
+	};
+
+	vk::beginCommandBuffer(vkd, cmdBuffer);
+	vk::beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0), static_cast<deUint32>(clearColors.size()), de::dataOrNull(clearColors));
+	vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+	vkd.cmdSetDepthBias(cmdBuffer, m_params.depthBiasConstant, m_params.depthBiasClamp, 0.0f);
+	vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), pcStages, 0u, pcDataSize, &pcData);
+	vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+	vk::endRenderPass(vkd, cmdBuffer);
+	vk::endCommandBuffer(vkd, cmdBuffer);
+	vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	// Check color buffer contents.
+	const auto		offset		= vk::makeOffset3D(0, 0, 0);
+	const auto		iWidth		= static_cast<int>(extent.width);
+	const auto		iHeight		= static_cast<int>(extent.height);
+	const auto		colorPixels	= colorBuffer->readSurface(queue, alloc, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, offset, iWidth, iHeight, vk::VK_IMAGE_ASPECT_COLOR_BIT);
+	const auto		expected	= DepthBiasNonZeroCase::getExpectedColor();
+	const tcu::Vec4	threshold	(0.0f);
+	auto&			log			= m_context.getTestContext().getLog();
+
+	if (!tcu::floatThresholdCompare(log, "Result", "Result", expected, colorPixels, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Unexpected color buffer value; check log for details");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 } //anonymous
 
 DynamicStateRSTests::DynamicStateRSTests (tcu::TestContext& testCtx)
@@ -670,6 +977,33 @@ void DynamicStateRSTests::init (void)
 	addChild(new InstanceFactory<DepthBiasParamTestInstance>(m_testCtx, "depth_bias", "Test depth bias functionality", shaderPaths));
 	addChild(new InstanceFactory<DepthBiasClampParamTestInstance, FunctionSupport0>(m_testCtx, "depth_bias_clamp", "Test depth bias clamp functionality", shaderPaths, checkDepthBiasClampSupport));
 	addChild(new InstanceFactory<LineWidthParamTestInstance, FunctionSupport0>(m_testCtx, "line_width", "Draw a line with width set to max defined by physical device", shaderPaths, checkWideLinesSupport));
+
+	{
+		const DepthBiasNonZeroParams params =
+		{
+			16384.0f,	//	float							depthBiasConstant;
+			0.0f,		//	float							depthBiasClamp;
+			{			//	DepthBiasNonZeroPushConstants	pushConstants;
+				0.375f,	//		float geometryDepth;
+				0.5f,	//		float minDepth;
+				1.0f,	//		float maxDepth;
+			},
+		};
+		addChild(new DepthBiasNonZeroCase(m_testCtx, "nonzero_depth_bias_constant", "", params));
+	}
+	{
+		const DepthBiasNonZeroParams params =
+		{
+			16384.0f,		//	float							depthBiasConstant;
+			0.125f,			//	float							depthBiasClamp;
+			{				//	DepthBiasNonZeroPushConstants	pushConstants;
+				0.375f,		//		float geometryDepth;
+				0.46875f,	//		float minDepth;
+				0.53125f,	//		float maxDepth;
+			},
+		};
+		addChild(new DepthBiasNonZeroCase(m_testCtx, "nonzero_depth_bias_clamp", "", params));
+	}
 }
 
 } // DynamicState

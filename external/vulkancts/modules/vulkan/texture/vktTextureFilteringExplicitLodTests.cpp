@@ -105,7 +105,7 @@ std::vector<de::SharedPtr<tcu::FloatFormat>> getPrecision (VkFormat format, int 
 			default:
 				DE_FATAL("Unexpected channel class.");
 			break;
-		};
+		}
 	}
 
 	return floatFormats;

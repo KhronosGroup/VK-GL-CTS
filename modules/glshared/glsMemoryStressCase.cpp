@@ -48,33 +48,26 @@ static const char* glErrorToString (deUint32 error)
 	{
 		case GL_OUT_OF_MEMORY:
 			return "GL_OUT_OF_MEMORY";
-			break;
 
 		case GL_INVALID_ENUM:
 			return "GL_INVALID_ENUM";
-			break;
 
 		case GL_INVALID_FRAMEBUFFER_OPERATION:
 			return "GL_INVALID_FRAMEBUFFER_OPERATION";
-			break;
 
 		case GL_INVALID_OPERATION:
 			return "GL_INVALID_OPERATION";
-			break;
 
 		case GL_INVALID_VALUE:
 			return "GL_INVALID_VALUE";
-			break;
 
 		case 0:
 			return "<none>";
-			break;
 
 		default:
 			// \todo [mika] Handle uknown errors?
 			DE_ASSERT(false);
 			return NULL;
-			break;
 	}
 }
 
@@ -764,51 +757,39 @@ const char* MemObjectAllocator::resultToString (Result result)
 	{
 		case RESULT_GOT_BAD_ALLOC:
 			return "Caught std::bad_alloc";
-			break;
 
 		case RESULT_GEN_TEXTURES_FAILED:
 			return "glGenTextures failed";
-			break;
 
 		case RESULT_GEN_BUFFERS_FAILED:
 			return "glGenBuffers failed";
-			break;
 
 		case RESULT_BUFFER_DATA_FAILED:
 			return "glBufferData failed";
-			break;
 
 		case RESULT_BUFFER_SUB_DATA_FAILED:
 			return "glBufferSubData failed";
-			break;
 
 		case RESULT_TEXTURE_IMAGE_FAILED:
 			return "glTexImage2D failed";
-			break;
 
 		case RESULT_TEXTURE_SUB_IMAGE_FAILED:
 			return "glTexSubImage2D failed";
-			break;
 
 		case RESULT_BIND_TEXTURE_FAILED:
 			return "glBindTexture failed";
-			break;
 
 		case RESULT_BIND_BUFFER_FAILED:
 			return "glBindBuffer failed";
-			break;
 
 		case RESULT_DELETE_TEXTURES_FAILED:
 			return "glDeleteTextures failed";
-			break;
 
 		case RESULT_DELETE_BUFFERS_FAILED:
 			return "glDeleteBuffers failed";
-			break;
 
 		case RESULT_RENDER_FAILED:
 			return "Rendering result failed";
-			break;
 
 		default:
 			DE_ASSERT(false);

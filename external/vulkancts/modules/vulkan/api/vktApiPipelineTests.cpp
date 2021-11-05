@@ -36,6 +36,8 @@
 #include "vkBarrierUtil.hpp"
 #include "vkBufferWithMemory.hpp"
 #include "vkBuilderUtil.hpp"
+#include "vkImageUtil.hpp"
+#include "tcuTestLog.hpp"
 
 #include <vector>
 #include <sstream>
@@ -85,8 +87,13 @@ Move<VkCommandBuffer> createCommandBuffer (const DeviceInterface& vkd, VkDevice 
 	return allocateCommandBuffer(vkd, device, &allocateInfo);
 }
 
-// This test has the same functionality as VkPositiveLayerTest.DestroyPipelineRenderPass
-tcu::TestStatus renderpassLifetimeTest (Context& context)
+enum DrawTriangleMode
+{
+	DTM_DESTROY_RENDER_PASS_AFTER_CREATING_PIPELINE = 0,
+	DTM_DESTROY_PIPELINE_LAYOUT_AFTER_CREATING_PIPELINE,
+};
+
+tcu::TestStatus drawTriangleTest (Context& context, DrawTriangleMode mode)
 {
 	const DeviceInterface&							vk								= context.getDeviceInterface();
 	const InstanceInterface&						vki								= context.getInstanceInterface();
@@ -115,7 +122,8 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 		1u,										// deUint32                 arrayLayers;
 		VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits    samples;
 		imageTiling,							// VkImageTiling            tiling;
-		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,	// VkImageUsageFlags        usage;
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+		VK_IMAGE_USAGE_TRANSFER_SRC_BIT,		// VkImageUsageFlags        usage;
 		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode            sharingMode;
 		0u,										// deUint32                 queueFamilyIndexCount;
 		DE_NULL,								// const deUint32*          pQueueFamilyIndices;
@@ -126,6 +134,24 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 	de::MovePtr<Allocation>							attachmentImageMemory			= context.getDefaultAllocator().allocate(getImageMemoryRequirements(vk, device, *attachmentImage), MemoryRequirement::Any);
 
 	VK_CHECK(vk.bindImageMemory(device, *attachmentImage, attachmentImageMemory->getMemory(), attachmentImageMemory->getOffset()));
+
+	const tcu::TextureFormat						resultFormat					= mapVkFormat(format);
+	const VkDeviceSize								imageSizeBytes					= (VkDeviceSize)(resultFormat.getPixelSize() * 256 * 256);
+	const VkBufferCreateInfo						readImageBufferParams
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
+		DE_NULL,									// const void*			pNext;
+		0u,											// VkBufferCreateFlags	flags;
+		imageSizeBytes,								// VkDeviceSize			size;
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
+		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
+		0u,											// deUint32				queueFamilyCount;
+		DE_NULL,									// const deUint32*		pQueueFamilyIndices;
+	};
+	const Unique<VkBuffer>				readImageBuffer(createBuffer(vk, device, &readImageBufferParams));
+	const de::UniquePtr<Allocation>		readImageBufferMemory(context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, device, *readImageBuffer), MemoryRequirement::HostVisible));
+
+	VK_CHECK(vk.bindBufferMemory(device, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
 
 	const deUint32									queueFamilyIndex				= context.getUniversalQueueFamilyIndex();
 
@@ -196,12 +222,12 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 		DE_NULL											// const VkSubpassDependency*        pDependencies
 	};
 
-	// Create two compatible renderpasses
-	VkRenderPass									renderPassA;
+	// When testing renderpass lifetime - create two compatible renderpasses, otherwise use just renderPassB
+	VkRenderPass renderPassA;
+	if (DTM_DESTROY_RENDER_PASS_AFTER_CREATING_PIPELINE == mode)
+		VK_CHECK(vk.createRenderPass(device, &renderPassCreateInfo, DE_NULL, &renderPassA));
 
-	VK_CHECK(vk.createRenderPass(device, &renderPassCreateInfo, DE_NULL, &renderPassA));
-
-	const Unique<VkRenderPass>						renderPassB						(createRenderPass(vk, device, &renderPassCreateInfo));
+	const Move<VkRenderPass>						renderPassB						(createRenderPass(vk, device, &renderPassCreateInfo));
 
 	const VkImageViewCreateInfo						attachmentImageViewCreateInfo	=
 	{
@@ -257,7 +283,7 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 		DE_NULL												// const VkPushConstantRange*          pPushConstantRanges;
 	};
 
-	const Unique<VkPipelineLayout>					pipelineLayout					(createPipelineLayout(vk, device, &pipelineLayoutCreateInfo));
+	Move<VkPipelineLayout>							pipelineLayout					(createPipelineLayout(vk, device, &pipelineLayoutCreateInfo));
 
 	const VkPipelineVertexInputStateCreateInfo		vertexInputStateCreateInfo		=
 	{
@@ -291,7 +317,7 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 		VK_FALSE,														// VkBool32                                   depthClampEnable;
 		VK_FALSE,														// VkBool32                                   rasterizerDiscardEnable;
 		VK_POLYGON_MODE_FILL,											// VkPolygonMode                              polygonMode;
-		VK_CULL_MODE_BACK_BIT | VK_CULL_MODE_FRONT_AND_BACK,			// VkCullModeFlags                            cullMode;
+		VK_CULL_MODE_NONE,												// VkCullModeFlags                            cullMode;
 		VK_FRONT_FACE_CLOCKWISE,										// VkFrontFace                                frontFace;
 		VK_FALSE,														// VkBool32                                   depthBiasEnable;
 		0.0f,															// float                                      depthBiasConstantFactor;
@@ -324,6 +350,10 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 		{ 1.0f, 1.0f, 1.0f, 1.0f }										// float                                         blendConstants[4];
 	};
 
+	VkRenderPass renderPassUsedForPipeline = *renderPassB;
+	if (DTM_DESTROY_RENDER_PASS_AFTER_CREATING_PIPELINE == mode)
+		renderPassUsedForPipeline = renderPassA;
+
 	const Unique<VkPipeline>						graphicsPipeline				(makeGraphicsPipeline(vk,									// const DeviceInterface&                        vk
 																										  device,								// const VkDevice                                device
 																										  *pipelineLayout,						// const VkPipelineLayout                        pipelineLayout
@@ -332,7 +362,7 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 																										  DE_NULL,								// const VkShaderModule                          tessellationEvalModule
 																										  DE_NULL,								// const VkShaderModule                          geometryShaderModule
 																										  *fragmentShaderModule,				// const VkShaderModule                          fragmentShaderModule
-																										  renderPassA,							// const VkRenderPass                            renderPass
+																										  renderPassUsedForPipeline,			// const VkRenderPass                            renderPass
 																										  viewports,							// const std::vector<VkViewport>&                viewports
 																										  scissors,								// const std::vector<VkRect2D>&                  scissors
 																										  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	// const VkPrimitiveTopology                     topology
@@ -344,18 +374,27 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 																										  DE_NULL,								// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
 																										  &colorBlendStateCreateInfo));			// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
 
-	beginRenderPass(vk, commandBuffer.get(), renderPassB.get(), frameBuffer.get(), makeRect2D(0, 0, 256u, 256u), tcu::Vec4(0.25f, 0.25f, 0.25f, 0.0f));
+	if (DTM_DESTROY_PIPELINE_LAYOUT_AFTER_CREATING_PIPELINE == mode)
+		pipelineLayout = decltype(pipelineLayout)();
 
-	vk.cmdBindPipeline(commandBuffer.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.get());
+	beginRenderPass(vk, *commandBuffer, renderPassB.get(), frameBuffer.get(), makeRect2D(0, 0, 256u, 256u), tcu::Vec4(0.25f, 0.25f, 0.25f, 0.0f));
+
+	vk.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.get());
 
 	// Destroy the renderpass that was used to create the graphics pipeline
-	vk.destroyRenderPass(device, renderPassA, DE_NULL);
+	if (DTM_DESTROY_RENDER_PASS_AFTER_CREATING_PIPELINE == mode)
+		vk.destroyRenderPass(device, renderPassA, DE_NULL);
 
-	vk.cmdDraw(commandBuffer.get(), 3u, 1u, 0u, 0u);
+	vk.cmdDraw(*commandBuffer, 3u, 1u, 0u, 0u);
 
-	endRenderPass(vk, commandBuffer.get());
+	endRenderPass(vk, *commandBuffer);
 
-	VK_CHECK(vk.endCommandBuffer(commandBuffer.get()));
+	// Copy image to buffer
+	{
+		copyImageToBuffer(vk, *commandBuffer, *attachmentImage, *readImageBuffer, tcu::IVec2(256, 256));
+	}
+
+	VK_CHECK(vk.endCommandBuffer(*commandBuffer));
 
 	const VkSubmitInfo								submitInfo						=
 	{
@@ -370,22 +409,41 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 		DE_NULL								// const VkSemaphore*             pSignalSemaphores;
 	};
 
-	VK_CHECK(vk.queueSubmit(context.getUniversalQueue(), 1, &submitInfo, DE_NULL));
+	vk::VkQueue queue = context.getUniversalQueue();
 
-	VK_CHECK(vk.queueWaitIdle(context.getUniversalQueue()));
+	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, DE_NULL));
+	VK_CHECK(vk.queueWaitIdle(queue));
 	VK_CHECK(vk.deviceWaitIdle(device));
 
-	// Test should always pass
+	invalidateAlloc(vk, device, *readImageBufferMemory);
+	const tcu::ConstPixelBufferAccess resultAccess(resultFormat, 256, 256, 1, readImageBufferMemory->getHostPtr());
+
+	// check just one pixel
+	tcu::Vec4 pixel = resultAccess.getPixel(1, 1);
+	if ((pixel.x() < 0.9f) || (pixel.y() > 0.1f) || (pixel.z() > 0.1f) || (pixel.w() < 0.9f))
+		return tcu::TestStatus::fail("Fail");
+
+	tcu::TestLog& log = context.getTestContext().getLog();
+	log << tcu::TestLog::ImageSet("Image verification", "")
+		<< tcu::TestLog::Image("Result", "Result", resultAccess, tcu::Vec4(1.0f), tcu::Vec4(0.0f))
+		<< tcu::TestLog::EndImageSet;
+
 	return tcu::TestStatus::pass("Pass");
 }
 
-void createDestroyPipelineRenderPassSource (SourceCollections& dst)
+tcu::TestStatus renderpassLifetimeTest(Context& context)
+{
+	return drawTriangleTest(context, DTM_DESTROY_RENDER_PASS_AFTER_CREATING_PIPELINE);
+}
+
+void createDrawTriangleSource (SourceCollections& dst)
 {
 	dst.glslSources.add("vertex") << glu::VertexSource(
 		"#version 310 es\n"
 		"void main (void)\n"
 		"{\n"
-		"    gl_Position = vec4(0.0, 0.0, 0.0, 1.0);\n"
+		"    gl_Position = vec4(float(1 - 2 * int(gl_VertexIndex != 1)),\n"
+		"                       float(1 - 2 * int(gl_VertexIndex > 0)), 0.0, 1.0);\n"
 		"}\n");
 
 	dst.glslSources.add("fragment") << glu::FragmentSource(
@@ -393,7 +451,7 @@ void createDestroyPipelineRenderPassSource (SourceCollections& dst)
 		"layout (location = 0) out highp vec4 color;\n"
 		"void main (void)\n"
 		"{\n"
-		"    color = vec4(1.0, 0.0, 1.0, 1.0);\n"
+		"    color = vec4(1.0, 0.0, 0.0, 1.0);\n"
 		"}\n");
 }
 
@@ -989,7 +1047,7 @@ tcu::TestStatus pipelineLayoutLifetimeTest (Context& context, VkPipelineBindPoin
 			0,									// deUint32              binding;
 			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	// VkDescriptorType      descriptorType;
 			5,									// deUint32              descriptorCount;
-			shaderStage,						// VkShaderStageFlags    stageFlags;
+			(VkShaderStageFlags)shaderStage,	// VkShaderStageFlags    stageFlags;
 			DE_NULL								// const VkSampler*      pImmutableSamplers;
 		}
 	};
@@ -1231,33 +1289,41 @@ void checkSupport (Context& context)
 	getRenderTargetFormat(vki, physicalDevice);
 }
 
-void DestroyAfterEndPrograms (SourceCollections& programs)
+void destroyEarlyComputeSource(SourceCollections& programs)
 {
-	std::ostringstream comp;
+	std::string comp =
+		"#version 450\n"
+		"layout (local_size_x=1, local_size_y=1, local_size_z=1) in;\n"
+		"layout (constant_id=0) const uint flag = 0;\n"
+		"layout (push_constant, std430) uniform PushConstants {\n"
+		"    uint base;\n"
+		"};\n"
+		"layout (set=0, binding=0, std430) buffer Block {\n"
+		"    uint data[];\n"
+		"};\n"
+		"\n"
+		"void main() {\n"
+		"    if (flag != 0u) {\n"
+		"        uint idx = gl_GlobalInvocationID.x;\n"
+		"        data[idx] = data[idx] + base + idx;\n"
+		"    }\n"
+		"}\n";
 
-	comp
-		<< "#version 450\n"
-		<< "layout (local_size_x=1, local_size_y=1, local_size_z=1) in;\n"
-		<< "layout (constant_id=0) const uint flag = 0;\n"
-		<< "layout (push_constant, std430) uniform PushConstants {\n"
-		<< "    uint base;\n"
-		<< "};\n"
-		<< "layout (set=0, binding=0, std430) buffer Block {\n"
-		<< "    uint data[];\n"
-		<< "};\n"
-		<< "\n"
-		<< "void main() {\n"
-		<< "    if (flag != 0u) {\n"
-		<< "        uint idx = gl_GlobalInvocationID.x;\n"
-		<< "        data[idx] = data[idx] + base + idx;\n"
-		<< "    }\n"
-		<< "}\n"
-		;
-
-	programs.glslSources.add("comp") << glu::ComputeSource(comp.str());
+	programs.glslSources.add("comp") << glu::ComputeSource(comp);
 }
 
-tcu::TestStatus DestroyAfterEndTest (Context& context)
+void checkMaintenance4Support(Context& context)
+{
+	context.requireDeviceFunctionality("VK_KHR_maintenance4");
+}
+
+enum DestroyPipelineLayoutMode
+{
+	DPLM_DESTROY_AFTER_END_COMMAND_BUFFER = 0,
+	DPLM_DESTROY_AFTER_CREATE_COMPUTE_PIPELINES,
+};
+
+tcu::TestStatus destroyEarlyTest (Context& context, DestroyPipelineLayoutMode mode)
 {
 	const auto&	vkd		= context.getDeviceInterface();
 	const auto	device	= context.getDevice();
@@ -1348,6 +1414,10 @@ tcu::TestStatus DestroyAfterEndTest (Context& context)
 
 	const auto pipeline = vk::createComputePipeline(vkd, device, DE_NULL, &pipelineInfo);
 
+	// Delete pipeline layout just after creating pipeline - this is what the test is for
+	if (DPLM_DESTROY_AFTER_CREATE_COMPUTE_PIPELINES == mode)
+		pipelineLayout = decltype(pipelineLayout)();
+
 	// Descriptor set.
 	vk::DescriptorPoolBuilder descriptorPoolBuilder;
 	descriptorPoolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -1366,6 +1436,10 @@ tcu::TestStatus DestroyAfterEndTest (Context& context)
 	const auto cmdBuffer	= cmdBufferPtr.get();
 	const auto barrier		= vk::makeMemoryBarrier(vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT);
 
+	// Create new pipeline layout that will be used during dispatch
+	if (DPLM_DESTROY_AFTER_CREATE_COMPUTE_PIPELINES == mode)
+		pipelineLayout = vk::createPipelineLayout(vkd, device, &pipelineLayoutInfo);
+
 	vk::beginCommandBuffer(vkd, cmdBuffer);
 	vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.get());
 	vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
@@ -1374,8 +1448,9 @@ tcu::TestStatus DestroyAfterEndTest (Context& context)
 	vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &barrier, 0u, nullptr, 0u, nullptr);
 	vk::endCommandBuffer(vkd, cmdBuffer);
 
-	// Critical: delete pipeline layout just after recording command buffer. This is what the test is for.
-	pipelineLayout = decltype(pipelineLayout)();
+	// Delete pipeline layout just after recording command buffer - this is what the test is for
+	if (DPLM_DESTROY_AFTER_END_COMMAND_BUFFER == mode)
+		pipelineLayout = decltype(pipelineLayout)();
 
 	// Submit commands.
 	vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
@@ -1398,6 +1473,21 @@ tcu::TestStatus DestroyAfterEndTest (Context& context)
 	}
 
 	return tcu::TestStatus::pass("Pass");
+}
+
+tcu::TestStatus destroyAfterEndCommndBufferTest(Context& context)
+{
+	return destroyEarlyTest(context, DPLM_DESTROY_AFTER_END_COMMAND_BUFFER);
+}
+
+tcu::TestStatus destroyAfterCreateComputePipelineTest(Context& context)
+{
+	return destroyEarlyTest(context, DPLM_DESTROY_AFTER_CREATE_COMPUTE_PIPELINES);
+}
+
+tcu::TestStatus destroyAfterCreateGraphicsPipelineTest(Context& context)
+{
+	return drawTriangleTest(context, DTM_DESTROY_PIPELINE_LAYOUT_AFTER_CREATING_PIPELINE);
 }
 
 Move<VkPipeline> createSimpleGraphicsPipelineInvalidPointers (const DeviceInterface& vk, const VkDevice& device, deUint32 numShaderStages, const VkPipelineShaderStageCreateInfo* shaderStageCreateInfos, VkPipelineLayout pipelineLayout, VkRenderPass renderPass, de::SharedPtr<vk::ResourceInterface> resourceInterface)
@@ -1461,7 +1551,7 @@ Move<VkPipeline> createSimpleGraphicsPipelineInvalidPointers (const DeviceInterf
 		(const VkPipelineMultisampleStateCreateInfo*)invalidPointer,	// const VkPipelineMultisampleStateCreateInfo*      pMultisampleState;
 		(const VkPipelineDepthStencilStateCreateInfo*)invalidPointer,	// const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState;
 		(const VkPipelineColorBlendStateCreateInfo*)invalidPointer,		// const VkPipelineColorBlendStateCreateInfo*       pColorBlendState;
-	    DE_NULL,														// const VkPipelineDynamicStateCreateInfo*          pDynamicState;
+		DE_NULL,														// const VkPipelineDynamicStateCreateInfo*          pDynamicState;
 		pipelineLayout,													// VkPipelineLayout                                 layout;
 		renderPass,														// VkRenderPass                                     renderPass;
 		0u,																// deUint32                                         subpass;
@@ -1659,7 +1749,7 @@ tcu::TestStatus pipelineInvalidPointersUnusedStructsTest (Context& context, VkPi
 	{
 		vk.cmdDraw(commandBuffer.get(), 1u, 1u, 0u, 0u);
 		vk.cmdEndRenderPass(commandBuffer.get());
-    }
+	}
 	else
 	{
 		vk.cmdDispatch(commandBuffer.get(), 1u, 1u, 1u);
@@ -1728,7 +1818,7 @@ tcu::TestCaseGroup* createrenderpassTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> renderPassTests(new tcu::TestCaseGroup(testCtx, "renderpass", "Renderpass tests"));
 
-	addFunctionCaseWithPrograms(renderPassTests.get(), "destroy_pipeline_renderpass", "Draw after destroying the renderpass used to create a pipeline", checkSupport, createDestroyPipelineRenderPassSource, renderpassLifetimeTest);
+	addFunctionCaseWithPrograms(renderPassTests.get(), "destroy_pipeline_renderpass", "Draw after destroying the renderpass used to create a pipeline", checkSupport, createDrawTriangleSource, renderpassLifetimeTest);
 	addFunctionCase(renderPassTests.get(), "framebuffer_compatible_renderpass", "Use a render pass with a framebuffer that was created using another compatible render pass", checkSupport, framebufferCompatibleRenderPassTest);
 
 	return renderPassTests.release();
@@ -1740,7 +1830,9 @@ tcu::TestCaseGroup* createPipelineLayoutLifetimeTests (tcu::TestContext& testCtx
 
 	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "graphics", "Test pipeline layout lifetime in graphics pipeline", checkSupport, createPipelineLayoutLifetimeGraphicsSource, pipelineLayoutLifetimeGraphicsTest);
 	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "compute", "Test pipeline layout lifetime in compute pipeline", checkSupport, createPipelineLayoutLifetimeComputeSource, pipelineLayoutLifetimeComputeTest);
-	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "destroy_after_end", "Test destroying the pipeline layout after vkEndCommandBuffer", DestroyAfterEndPrograms, DestroyAfterEndTest);
+	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "destroy_after_end", "Test destroying the pipeline layout after vkEndCommandBuffer", destroyEarlyComputeSource, destroyAfterEndCommndBufferTest);
+	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "destroy_after_compute_pipeline_construction", "Test destroying the pipeline layout after compute pipeline creation", checkMaintenance4Support, destroyEarlyComputeSource, destroyAfterCreateComputePipelineTest);
+	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "destroy_after_graphics_pipeline_construction", "Test destroying the pipeline layout after graphics pipeline creation", checkMaintenance4Support, createDrawTriangleSource, destroyAfterCreateGraphicsPipelineTest);
 
 	return pipelineLayoutLifetimeTests.release();
 }

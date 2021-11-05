@@ -204,7 +204,7 @@ static bool isRequiredFormat (deUint32 format, glu::RenderContext& renderContext
 		case GL_R11F_G11F_B10F:
 		case GL_RG32F:
 		case GL_R32F:
-			return glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));;
+			return glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
 
 		default:
 			return false;

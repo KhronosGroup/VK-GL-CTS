@@ -1056,16 +1056,12 @@ deUint32 getResultBinding (const glc::subgroups::ShaderStageFlags shaderStage)
 	{
 		case SHADER_STAGE_VERTEX_BIT:
 			return 0u;
-			break;
 		case SHADER_STAGE_TESS_CONTROL_BIT:
 			return 1u;
-			break;
 		case SHADER_STAGE_TESS_EVALUATION_BIT:
 			return 2u;
-			break;
 		case SHADER_STAGE_GEOMETRY_BIT:
 			return 3u;
-			break;
 		default:
 			DE_ASSERT(0);
 			return -1;

@@ -37,7 +37,7 @@
 namespace tcu
 {
 	class WaiverUtil;
-};
+}
 
 namespace es2cts
 {

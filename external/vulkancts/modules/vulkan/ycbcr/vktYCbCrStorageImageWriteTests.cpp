@@ -365,7 +365,7 @@ tcu::TestStatus testStorageImageWrite (Context& context, TestParameters params)
 		tcu::ConstPixelBufferAccess	pixelBuffer					= vk::getChannelAccess(compatibleFormatDescription, compatibleShaderGridSize, planeRowPitches, (const void* const*)planePointers, channelNdx);
 		std::ostringstream str;
 		str << "image" << channelNdx;
-		context.getTestContext().getLog() << tcu::LogImage(str.str(), str.str(), pixelBuffer);;
+		context.getTestContext().getLog() << tcu::LogImage(str.str(), str.str(), pixelBuffer);
 	}
 
 	// verify data

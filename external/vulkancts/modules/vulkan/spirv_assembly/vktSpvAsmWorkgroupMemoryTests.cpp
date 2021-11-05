@@ -335,8 +335,8 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		shaderSpec["extensions"]	= "OpExtension \"SPV_KHR_16bit_storage\"\n";
 		shaderSpec["capabilities"]	= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
 
-		features.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
-		features.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
+		features.ext16BitStorage.storageBuffer16BitAccess = true;
+		features.extFloat16Int8.shaderFloat16 = true;
 
 		vector<deFloat16>	inputData	= getFloat16s(rnd, numElements);
 		vector<deFloat16>	outputData;
@@ -425,7 +425,8 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		shaderSpec["extensions"]	= "OpExtension \"SPV_KHR_16bit_storage\"\n";
 		shaderSpec["capabilities"]	= "OpCapability Int16\n";
 
-		features.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		features.coreFeatures.shaderInt16 = true;
+		features.ext16BitStorage.storageBuffer16BitAccess = true;
 
 		vector<deInt16>		inputData	= getInt16s(rnd, numElements);
 		vector<deInt16>		outputData;
@@ -457,8 +458,8 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		shaderSpec["capabilities"]	= "OpCapability UniformAndStorageBuffer8BitAccess\nOpCapability Int8\n";
 		shaderSpec["extensions"]	= "OpExtension \"SPV_KHR_8bit_storage\"\n";
 
-		features.ext8BitStorage = EXT8BITSTORAGEFEATURES_UNIFORM_STORAGE_BUFFER;
-		features.extFloat16Int8 = EXTFLOAT16INT8FEATURES_INT8;
+		features.ext8BitStorage.storageBuffer8BitAccess = true;
+		features.extFloat16Int8.shaderInt8 = true;
 
 		vector<deInt8>		inputData	= getInt8s(rnd, numElements);
 		vector<deInt8>		outputData;
@@ -554,7 +555,8 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		shaderSpec["capabilities"]	= "OpCapability Int16\n";
 		shaderSpec["extensions"]	= "OpExtension \"SPV_KHR_16bit_storage\"\n";
 
-		features.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		features.coreFeatures.shaderInt16 = true;
+		features.ext16BitStorage.storageBuffer16BitAccess = true;
 
 		vector<deUint16>	inputData;
 		vector<deUint16>	outputData;
@@ -590,8 +592,8 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		shaderSpec["capabilities"]	= "OpCapability UniformAndStorageBuffer8BitAccess\nOpCapability Int8\n";
 		shaderSpec["extensions"]	= "OpExtension \"SPV_KHR_8bit_storage\"\n";
 
-		features.ext8BitStorage = EXT8BITSTORAGEFEATURES_UNIFORM_STORAGE_BUFFER;
-		features.extFloat16Int8 = EXTFLOAT16INT8FEATURES_INT8;
+		features.ext8BitStorage.storageBuffer8BitAccess = true;
+		features.extFloat16Int8.shaderInt8 = true;
 
 		vector<deUint8>		inputData;
 		vector<deUint8>		outputData;

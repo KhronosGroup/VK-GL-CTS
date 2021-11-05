@@ -529,7 +529,7 @@ public:
 	virtual IterateResult iterate(void)
 	{
 		return CaptureGeometryInterleaved::iterate();
-	};
+	}
 
 protected:
 	glw::GLuint* m_buffers;
@@ -538,27 +538,27 @@ protected:
 	virtual void draw(glw::GLenum primitive_type)
 	{
 		CaptureGeometryInterleaved::draw(primitive_type);
-	};
+	}
 	virtual void fetchLimits(void)
 	{
 		CaptureVertexSeparate::fetchLimits();
-	};
+	}
 	virtual void createTransformFeedbackBuffer(void)
 	{
 		CaptureVertexSeparate::createTransformFeedbackBuffer();
-	};
+	}
 	virtual void bindBuffer(BindBufferCase bind_case)
 	{
 		CaptureVertexSeparate::bindBuffer(bind_case);
-	};
+	}
 	virtual void cleanBuffer(void)
 	{
 		CaptureVertexSeparate::cleanBuffer();
-	};
+	}
 	virtual bool checkTransformFeedbackBuffer(BindBufferCase bind_case, glw::GLenum primitive_type)
 	{
 		return CaptureVertexSeparate::checkTransformFeedbackBuffer(bind_case, primitive_type);
-	};
+	}
 };
 
 /** GetXFBVaryingVertexInterleaved

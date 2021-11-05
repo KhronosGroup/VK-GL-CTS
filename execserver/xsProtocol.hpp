@@ -122,7 +122,7 @@ public:
 
 					ExecuteBinaryMessage	(const deUint8* data, size_t dataSize);
 					ExecuteBinaryMessage	(void) : Message(MESSAGETYPE_EXECUTE_BINARY) {}
-					~ExecuteBinaryMessage	(void) {};
+					~ExecuteBinaryMessage	(void) {}
 
 	void			write			(std::vector<deUint8>& buf) const;
 };

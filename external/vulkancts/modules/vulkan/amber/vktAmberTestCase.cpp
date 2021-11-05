@@ -79,6 +79,12 @@ static amber::EngineConfig* createEngineConfig (Context& ctx)
 // Throws an internal error If the feature is not recognized at all.
 static bool isFeatureSupported(const vkt::Context& ctx, const std::string& feature)
 {
+	if (feature == "Storage16BitFeatures.storageBuffer16BitAccess")
+		return ctx.get16BitStorageFeatures().storageBuffer16BitAccess;
+	if (feature == "Float16Int8Features.shaderFloat16")
+		return ctx.getShaderFloat16Int8Features().shaderFloat16;
+	if (feature == "Features.shaderFloat64")
+		return ctx.getDeviceFeatures().shaderFloat64;
 	if (feature == "Features.shaderInt16")
 		return ctx.getDeviceFeatures().shaderInt16;
 	if (feature == "Features.shaderInt64")
@@ -99,12 +105,14 @@ static bool isFeatureSupported(const vkt::Context& ctx, const std::string& featu
 		return ctx.getVariablePointersFeatures().variablePointersStorageBuffer;
 	if (feature == "VariablePointerFeatures.variablePointers")
 		return ctx.getVariablePointersFeatures().variablePointers;
-	if (feature == "SubgroupProperties.supportedStages.fragment")
+	if (feature == "SubgroupSupportedStages.fragment")
 		return (ctx.getSubgroupProperties().supportedStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT) != 0;
-	if (feature == "SubgroupProperties.supportedOperations.vote")
+	if (feature == "SubgroupSupportedOperations.vote")
 		return (ctx.getSubgroupProperties().supportedOperations & vk::VK_SUBGROUP_FEATURE_VOTE_BIT) != 0;
-	if (feature == "SubgroupProperties.supportedOperations.ballot")
+	if (feature == "SubgroupSupportedOperations.ballot")
 		return (ctx.getSubgroupProperties().supportedOperations & vk::VK_SUBGROUP_FEATURE_BALLOT_BIT) != 0;
+	if (feature == "Storage16BitFeatures.storageBuffer16BitAccess")
+		return ctx.get16BitStorageFeatures().storageBuffer16BitAccess;
 
 	std::string message = std::string("Unexpected feature name: ") + feature;
 	TCU_THROW(InternalError, message.c_str());
@@ -344,37 +352,39 @@ void AmberTestCase::initPrograms (vk::SourceCollections& programCollection) cons
 		}
 		else if (shader.format == amber::kShaderFormatGlsl)
 		{
+			bool allowSpirv14 = (spirvVersion == vk::SPIRV_VERSION_1_4);
+
 			switch (shader.type)
 			{
 				case amber::kShaderTypeCompute:
 					programCollection.glslSources.add(shader.shader_name)
 						<< glu::ComputeSource(shader.shader_source)
-						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
+						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, allowSpirv14);
 					break;
 				case amber::kShaderTypeGeometry:
 					programCollection.glslSources.add(shader.shader_name)
 						<< glu::GeometrySource(shader.shader_source)
-						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
+						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, allowSpirv14);
 					break;
 				case amber::kShaderTypeFragment:
 					programCollection.glslSources.add(shader.shader_name)
 						<< glu::FragmentSource(shader.shader_source)
-						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
+						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, allowSpirv14);
 					break;
 				case amber::kShaderTypeVertex:
 					programCollection.glslSources.add(shader.shader_name)
 						<< glu::VertexSource(shader.shader_source)
-						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
+						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, allowSpirv14);
 					break;
 				case amber::kShaderTypeTessellationControl:
 					programCollection.glslSources.add(shader.shader_name)
 						<< glu::TessellationControlSource(shader.shader_source)
-						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
+						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, allowSpirv14);
 					break;
 				case amber::kShaderTypeTessellationEvaluation:
 					programCollection.glslSources.add(shader.shader_name)
 						<< glu::TessellationEvaluationSource(shader.shader_source)
-						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
+						<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, allowSpirv14);
 					break;
 				case amber::kShaderTypeMulti:
 					DE_ASSERT(false && "Multi shaders not supported");
@@ -466,6 +476,54 @@ void AmberTestCase::addImageRequirement (vk::VkImageCreateInfo info)
 void AmberTestCase::addBufferRequirement (BufferRequirement req)
 {
 	m_bufferRequirements.push_back(req);
+}
+
+bool AmberTestCase::validateRequirements()
+{
+	if (!parse(m_readFilename))
+	{
+		std::string message = "Failed to parse Amber file: " + m_readFilename;
+		m_testCtx.getLog() << tcu::TestLog::Message << message << tcu::TestLog::EndMessage;
+		return false;
+	}
+
+	// Check if the list of required CTS features and extensions matches the
+	// one in the recipe. Throw InternalError if they do not match.
+
+	const auto& deviceExtensions = m_recipe->GetRequiredInstanceExtensions();
+	const auto& instanceExtensions = m_recipe->GetRequiredDeviceExtensions();
+	auto requiredFeatures = m_recipe->GetRequiredFeatures();
+
+	for (auto& req : requiredFeatures)
+	{
+		if (req.find(".") == std::string::npos)
+			req = "Features." + req;
+	}
+
+	std::set<std::string> allRequirements;
+	allRequirements.insert(begin(deviceExtensions), end(deviceExtensions));
+	allRequirements.insert(begin(instanceExtensions), end(instanceExtensions));
+	allRequirements.insert(begin(requiredFeatures), end(requiredFeatures));
+
+	std::set<std::string> ctsRequirements = m_required_features;
+	ctsRequirements.insert(begin(m_required_extensions), end(m_required_extensions));
+
+	if (allRequirements != ctsRequirements)
+	{
+		auto& log = m_testCtx.getLog();
+		log << tcu::TestLog::Message << "ERROR: CTS and Amber test requirement mismatch." << tcu::TestLog::EndMessage;
+		log << tcu::TestLog::Message << "Amber filename: " << m_readFilename << tcu::TestLog::EndMessage;
+		log << tcu::TestLog::Message << "CTS requirements:" << tcu::TestLog::EndMessage;
+		for (const auto& ctsReq : ctsRequirements)
+			log << tcu::TestLog::Message << "    " << ctsReq << tcu::TestLog::EndMessage;
+
+		log << tcu::TestLog::Message << "Amber requirements:" << tcu::TestLog::EndMessage;
+		for (const auto& amberReq : allRequirements)
+			log << tcu::TestLog::Message << "    " << amberReq << tcu::TestLog::EndMessage;
+
+		return false;
+	}
+	return true;
 }
 
 } // cts_amber

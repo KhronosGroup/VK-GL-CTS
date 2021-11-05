@@ -130,7 +130,7 @@ DrawIndexed::DrawIndexed (Context &context, TestSpec testSpec)
 	m_data.push_back(VertexElementData(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec(), -1));
 
 	initialize();
-};
+}
 
 tcu::TestStatus DrawIndexed::iterate (void)
 {
@@ -207,7 +207,7 @@ tcu::TestStatus DrawIndexed::iterate (void)
 	}
 
 	return tcu::TestStatus(res, qpGetTestResultName(res));
-};
+}
 
 DrawInstancedIndexed::DrawInstancedIndexed (Context &context, TestSpec testSpec)
 	: DrawIndexed	(context, testSpec)

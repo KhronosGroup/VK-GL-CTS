@@ -33,10 +33,16 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageTranscodingSupportTests.hpp
 	vktImageMisalignedCubeTests.cpp
 	vktImageMisalignedCubeTests.hpp
+	vktImageSampleDrawnCubeFaceTests.cpp
+	vktImageSampleDrawnCubeFaceTests.hpp
 	vktImageSubresourceLayoutTests.cpp
 	vktImageSubresourceLayoutTests.hpp
 	vktImageMismatchedWriteOpTests.cpp
 	vktImageMismatchedWriteOpTests.hpp
+	vktImageDepthStencilDescriptorTests.cpp
+	vktImageDepthStencilDescriptorTests.hpp
+	vktImageSampleCompressedTextureTests.cpp
+	vktImageSampleCompressedTextureTests.hpp
 	)
 
 PCH(DEQP_VK_IMAGE_SRCS ../pch.cpp)

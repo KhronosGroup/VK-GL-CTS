@@ -86,7 +86,8 @@ de::MovePtr<tcu::TextureLevel>	readColorAttachment			 (const vk::DeviceInterface
 															  vk::Allocator&				allocator,
 															  vk::VkImage					image,
 															  vk::VkFormat					format,
-															  const tcu::UVec2&				renderSize);
+															  const tcu::UVec2&				renderSize,
+															  vk::VkImageLayout				oldLayout = vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 
 /*--------------------------------------------------------------------*//*!

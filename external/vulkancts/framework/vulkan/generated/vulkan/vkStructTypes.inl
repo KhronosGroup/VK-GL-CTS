@@ -2839,6 +2839,13 @@ struct VkSurfaceProtectedCapabilitiesKHR
 	VkBool32		supportsProtected;
 };
 
+struct VkPhysicalDevicePresentWaitFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		presentWait;
+};
+
 struct VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR
 {
 	VkStructureType	sType;
@@ -2900,12 +2907,70 @@ struct VkPipelineExecutableInternalRepresentationKHR
 	void*			pData;
 };
 
+struct VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderIntegerDotProduct;
+};
+
+struct VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		integerDotProduct8BitUnsignedAccelerated;
+	VkBool32		integerDotProduct8BitSignedAccelerated;
+	VkBool32		integerDotProduct8BitMixedSignednessAccelerated;
+	VkBool32		integerDotProduct4x8BitPackedUnsignedAccelerated;
+	VkBool32		integerDotProduct4x8BitPackedSignedAccelerated;
+	VkBool32		integerDotProduct4x8BitPackedMixedSignednessAccelerated;
+	VkBool32		integerDotProduct16BitUnsignedAccelerated;
+	VkBool32		integerDotProduct16BitSignedAccelerated;
+	VkBool32		integerDotProduct16BitMixedSignednessAccelerated;
+	VkBool32		integerDotProduct32BitUnsignedAccelerated;
+	VkBool32		integerDotProduct32BitSignedAccelerated;
+	VkBool32		integerDotProduct32BitMixedSignednessAccelerated;
+	VkBool32		integerDotProduct64BitUnsignedAccelerated;
+	VkBool32		integerDotProduct64BitSignedAccelerated;
+	VkBool32		integerDotProduct64BitMixedSignednessAccelerated;
+	VkBool32		integerDotProductAccumulatingSaturating8BitUnsignedAccelerated;
+	VkBool32		integerDotProductAccumulatingSaturating8BitSignedAccelerated;
+	VkBool32		integerDotProductAccumulatingSaturating8BitMixedSignednessAccelerated;
+	VkBool32		integerDotProductAccumulatingSaturating4x8BitPackedUnsignedAccelerated;
+	VkBool32		integerDotProductAccumulatingSaturating4x8BitPackedSignedAccelerated;
+	VkBool32		integerDotProductAccumulatingSaturating4x8BitPackedMixedSignednessAccelerated;
+	VkBool32		integerDotProductAccumulatingSaturating16BitUnsignedAccelerated;
+	VkBool32		integerDotProductAccumulatingSaturating16BitSignedAccelerated;
+	VkBool32		integerDotProductAccumulatingSaturating16BitMixedSignednessAccelerated;
+	VkBool32		integerDotProductAccumulatingSaturating32BitUnsignedAccelerated;
+	VkBool32		integerDotProductAccumulatingSaturating32BitSignedAccelerated;
+	VkBool32		integerDotProductAccumulatingSaturating32BitMixedSignednessAccelerated;
+	VkBool32		integerDotProductAccumulatingSaturating64BitUnsignedAccelerated;
+	VkBool32		integerDotProductAccumulatingSaturating64BitSignedAccelerated;
+	VkBool32		integerDotProductAccumulatingSaturating64BitMixedSignednessAccelerated;
+};
+
 struct VkPipelineLibraryCreateInfoKHR
 {
 	VkStructureType		sType;
 	const void*			pNext;
 	uint32_t			libraryCount;
 	const VkPipeline*	pLibraries;
+};
+
+struct VkPresentIdKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		swapchainCount;
+	const uint64_t*	pPresentIds;
+};
+
+struct VkPhysicalDevicePresentIdFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		presentId;
 };
 
 struct VkMemoryBarrier2KHR
@@ -3159,6 +3224,44 @@ struct VkResolveImageInfo2KHR
 	VkImageLayout				dstImageLayout;
 	uint32_t					regionCount;
 	const VkImageResolve2KHR*	pRegions;
+};
+
+struct VkFormatPropertiesExtendedKHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkFormatFeatureFlags2KHR	linearTilingFeatures;
+	VkFormatFeatureFlags2KHR	optimalTilingFeatures;
+	VkFormatFeatureFlags2KHR	bufferFeatures;
+};
+
+struct VkPhysicalDeviceMaintenance4FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		maintenance4;
+};
+
+struct VkPhysicalDeviceMaintenance4PropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	maxBufferSize;
+};
+
+struct VkDeviceBufferMemoryRequirementsKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	const VkBufferCreateInfo*	pCreateInfo;
+};
+
+struct VkDeviceImageMemoryRequirementsKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	const VkImageCreateInfo*	pCreateInfo;
+	VkImageAspectFlagBits		planeAspect;
 };
 
 struct VkDebugReportCallbackCreateInfoEXT
@@ -4715,6 +4818,24 @@ struct VkPhysicalDeviceExtendedDynamicStateFeaturesEXT
 	VkBool32		extendedDynamicState;
 };
 
+struct VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderBufferFloat16Atomics;
+	VkBool32		shaderBufferFloat16AtomicAdd;
+	VkBool32		shaderBufferFloat16AtomicMinMax;
+	VkBool32		shaderBufferFloat32AtomicMinMax;
+	VkBool32		shaderBufferFloat64AtomicMinMax;
+	VkBool32		shaderSharedFloat16Atomics;
+	VkBool32		shaderSharedFloat16AtomicAdd;
+	VkBool32		shaderSharedFloat16AtomicMinMax;
+	VkBool32		shaderSharedFloat32AtomicMinMax;
+	VkBool32		shaderSharedFloat64AtomicMinMax;
+	VkBool32		shaderImageFloat32AtomicMinMax;
+	VkBool32		sparseImageFloat32AtomicMinMax;
+};
+
 struct VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT
 {
 	VkStructureType	sType;
@@ -4929,6 +5050,13 @@ struct VkDeviceDeviceMemoryReportCreateInfoEXT
 	VkDeviceMemoryReportFlagsEXT		flags;
 	PFN_vkDeviceMemoryReportCallbackEXT	pfnUserCallback;
 	void*								pUserData;
+};
+
+struct VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		formatRgba10x6WithoutYCbCrSampler;
 };
 
 struct VkPhysicalDeviceRobustness2FeaturesEXT
@@ -5229,6 +5357,14 @@ struct VkPhysicalDeviceDrmPropertiesEXT
 	int64_t			renderMinor;
 };
 
+struct VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		primitiveTopologyListRestart;
+	VkBool32		primitiveTopologyPatchListRestart;
+};
+
 struct VkSubpassShadingPipelineCreateInfoHUAWEI
 {
 	VkStructureType	sType;
@@ -5249,6 +5385,13 @@ struct VkPhysicalDeviceSubpassShadingPropertiesHUAWEI
 	VkStructureType	sType;
 	void*			pNext;
 	uint32_t		maxSubpassShadingWorkgroupSizeAspectRatio;
+};
+
+struct VkPhysicalDeviceInvocationMaskFeaturesHUAWEI
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		invocationMask;
 };
 
 struct VkMemoryGetRemoteAddressInfoNV
@@ -5330,6 +5473,29 @@ struct VkMultiDrawIndexedInfoEXT
 	uint32_t	firstIndex;
 	uint32_t	indexCount;
 	int32_t		vertexOffset;
+};
+
+struct VkPhysicalDeviceBorderColorSwizzleFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		borderColorSwizzle;
+	VkBool32		borderColorSwizzleFromImage;
+};
+
+struct VkSamplerBorderColorComponentMappingCreateInfoEXT
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkComponentMapping	components;
+	VkBool32			srgb;
+};
+
+struct VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		pageableDeviceLocalMemory;
 };
 
 union VkDeviceOrHostAddressKHR
@@ -6794,7 +6960,7 @@ struct VkExportMemoryWin32HandleInfoKHR
 	VkStructureType					sType;
 	const void*						pNext;
 	pt::Win32SecurityAttributesPtr	pAttributes;
-	deUint32						dwAccess;
+	uint32_t						dwAccess;
 	pt::Win32LPCWSTR				name;
 };
 
@@ -6842,7 +7008,7 @@ struct VkExportSemaphoreWin32HandleInfoKHR
 	VkStructureType					sType;
 	const void*						pNext;
 	pt::Win32SecurityAttributesPtr	pAttributes;
-	deUint32						dwAccess;
+	uint32_t						dwAccess;
 	pt::Win32LPCWSTR				name;
 };
 
@@ -6880,7 +7046,7 @@ struct VkExportFenceWin32HandleInfoKHR
 	VkStructureType					sType;
 	const void*						pNext;
 	pt::Win32SecurityAttributesPtr	pAttributes;
-	deUint32						dwAccess;
+	uint32_t						dwAccess;
 	pt::Win32LPCWSTR				name;
 };
 
@@ -6905,7 +7071,7 @@ struct VkExportMemoryWin32HandleInfoNV
 	VkStructureType					sType;
 	const void*						pNext;
 	pt::Win32SecurityAttributesPtr	pAttributes;
-	deUint32						dwAccess;
+	uint32_t						dwAccess;
 };
 
 struct VkWin32KeyedMutexAcquireReleaseInfoNV

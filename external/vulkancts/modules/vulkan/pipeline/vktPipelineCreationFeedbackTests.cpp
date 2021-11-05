@@ -100,7 +100,7 @@ std::string getShaderFlagStr (const VkShaderStageFlagBits	shader,
 		desc << "unknown shader stage!";
 		DE_FATAL("Unknown shader Stage!");
 		break;
-	};
+	}
 
 	return desc.str();
 }
@@ -129,7 +129,7 @@ std::string getCaseStr (const deUint32 ndx)
 		desc << "Unknown case";
 		DE_FATAL("Unknown case!");
 		break;
-	};
+	}
 
 	return desc.str();
 }
@@ -717,7 +717,7 @@ void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) cons
 				default:
 					DE_FATAL("Unknown Shader Stage!");
 					break;
-		};
+		}
 	}
 }
 
@@ -736,7 +736,7 @@ void GraphicsCacheTest::checkSupport (Context& context) const
 			break;
 		default:
 			break;
-		};
+		}
 	}
 }
 
@@ -807,7 +807,7 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&				context,
 			default:
 				DE_FATAL("Unknown Shader Stage!");
 				break;
-			};
+			}
 		}
 		if (ndx == PIPELINE_CACHE_NDX_CACHED && !param->isDelayedDestroy())
 		{

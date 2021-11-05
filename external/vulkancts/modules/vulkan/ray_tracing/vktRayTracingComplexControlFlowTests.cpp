@@ -719,7 +719,7 @@ std::vector<deUint32> RayTracingComplexControlFlowInstance::getExpectedValues (v
 					case 2: { v0 = v1 = v3 = p.b; v2 = p.c & id; break; }
 					case 3: { v0 = v1 = v2 = p.b; v3 = p.c & id; break; }
 					default: { v0 = v1 = v2 = v3 = 0; break; }
-				};
+				}
 
 				if (!fixed)
 					result[plain8Ofs + id] = p.c & id;

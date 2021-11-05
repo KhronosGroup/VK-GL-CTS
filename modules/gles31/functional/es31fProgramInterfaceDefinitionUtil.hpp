@@ -97,8 +97,8 @@ public:
 	bool						matchesFilter					(const glu::VariableDeclaration& variable) const;
 	bool						matchesFilter					(const glu::InterfaceBlock& block) const;
 
-	deUint32					getShaderTypeBits				(void) const { return m_shaderTypeBits;	};
-	deUint32					getStorageBits					(void) const { return m_storageBits;	};
+	deUint32					getShaderTypeBits				(void) const { return m_shaderTypeBits;	}
+	deUint32					getStorageBits					(void) const { return m_storageBits;	}
 private:
 	deUint32					m_shaderTypeBits;
 	deUint32					m_storageBits;

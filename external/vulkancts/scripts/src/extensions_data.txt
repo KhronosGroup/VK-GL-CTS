@@ -96,3 +96,9 @@ VK_EXT_color_write_enable					DEVICE
 VK_VALVE_mutable_descriptor_type			DEVICE
 VK_EXT_multi_draw							DEVICE
 VK_KHR_shader_subgroup_uniform_control_flow	DEVICE
+VK_KHR_present_id							DEVICE
+VK_KHR_present_wait							DEVICE
+VK_KHR_shader_integer_dot_product			DEVICE
+VK_KHR_format_feature_flags2				DEVICE
+VK_KHR_maintenance4							DEVICE
+VK_EXT_border_color_swizzle					DEVICE

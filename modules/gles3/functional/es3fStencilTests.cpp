@@ -426,22 +426,22 @@ void StencilTests::init (void)
 			// \note Unused bits are set to 1, clear should mask them out
 			int mask = (1<<stencilBits)-1;
 			dst.push_back(StencilOp::clearStencil(targetStencil | ~mask));
-		});
+		})
 
 	// Replace in different points
 	STENCIL_CASE(stencil_fail_replace, "Set stencil on stencil fail",
 		{
 			dst.push_back(StencilOp::quad(GL_NEVER, targetStencil, GL_ALWAYS, 0.0f, GL_REPLACE, GL_KEEP, GL_KEEP));
-		});
+		})
 	STENCIL_CASE(depth_fail_replace, "Set stencil on depth fail",
 		{
 			dst.push_back(StencilOp::clearDepth(0.0f));
 			dst.push_back(StencilOp::quad(GL_ALWAYS, targetStencil, GL_LESS, 0.5f, GL_KEEP, GL_REPLACE, GL_KEEP));
-		});
+		})
 	STENCIL_CASE(depth_pass_replace, "Set stencil on depth pass",
 		{
 			dst.push_back(StencilOp::quad(GL_ALWAYS, targetStencil, GL_LESS, 0.0f, GL_KEEP, GL_KEEP, GL_REPLACE));
-		});
+		})
 
 	// Increment, decrement
 	STENCIL_CASE(incr_stencil_fail, "Increment on stencil fail",
@@ -453,7 +453,7 @@ void StencilTests::init (void)
 			}
 			else
 				dst.push_back(StencilOp::clearStencil(targetStencil));
-		});
+		})
 	STENCIL_CASE(decr_stencil_fail, "Decrement on stencil fail",
 		{
 			int maxStencil = (1<<stencilBits)-1;
@@ -464,19 +464,19 @@ void StencilTests::init (void)
 			}
 			else
 				dst.push_back(StencilOp::clearStencil(targetStencil));
-		});
+		})
 	STENCIL_CASE(incr_wrap_stencil_fail, "Increment (wrap) on stencil fail",
 		{
 			int maxStencil = (1<<stencilBits)-1;
 			dst.push_back(StencilOp::clearStencil((targetStencil-1)&maxStencil));
 			dst.push_back(StencilOp::quad(GL_EQUAL, targetStencil, GL_ALWAYS, 0.0f, GL_INCR_WRAP, GL_KEEP, GL_KEEP));
-		});
+		})
 	STENCIL_CASE(decr_wrap_stencil_fail, "Decrement (wrap) on stencil fail",
 		{
 			int maxStencil = (1<<stencilBits)-1;
 			dst.push_back(StencilOp::clearStencil((targetStencil+1)&maxStencil));
 			dst.push_back(StencilOp::quad(GL_EQUAL, targetStencil, GL_ALWAYS, 0.0f, GL_DECR_WRAP, GL_KEEP, GL_KEEP));
-		});
+		})
 
 	// Zero, Invert
 	STENCIL_CASE(zero_stencil_fail, "Zero on stencil fail",
@@ -484,13 +484,13 @@ void StencilTests::init (void)
 			dst.push_back(StencilOp::clearStencil(targetStencil));
 			dst.push_back(StencilOp::quad(GL_NOTEQUAL, targetStencil, GL_ALWAYS, 0.0f, GL_ZERO, GL_KEEP, GL_KEEP));
 			dst.push_back(StencilOp::quad(GL_EQUAL, targetStencil, GL_ALWAYS, 0.0f, GL_REPLACE, GL_KEEP, GL_KEEP));
-		});
+		})
 	STENCIL_CASE(invert_stencil_fail, "Invert on stencil fail",
 		{
 			int mask = (1<<stencilBits)-1;
 			dst.push_back(StencilOp::clearStencil((~targetStencil)&mask));
 			dst.push_back(StencilOp::quad(GL_EQUAL, targetStencil, GL_ALWAYS, 0.0f, GL_INVERT, GL_KEEP, GL_KEEP));
-		});
+		})
 
 	// Comparison modes
 	STENCIL_CASE(cmp_equal, "Equality comparison",
@@ -500,7 +500,7 @@ void StencilTests::init (void)
 			dst.push_back(StencilOp::clearStencil(inv));
 			dst.push_back(StencilOp::quad(GL_EQUAL, inv, GL_ALWAYS, 0.0f, GL_KEEP, GL_KEEP, GL_INVERT));
 			dst.push_back(StencilOp::quad(GL_EQUAL, inv, GL_ALWAYS, 0.0f, GL_KEEP, GL_KEEP, GL_INVERT));
-		});
+		})
 	STENCIL_CASE(cmp_not_equal, "Equality comparison",
 		{
 			int mask = (1<<stencilBits)-1;
@@ -508,7 +508,7 @@ void StencilTests::init (void)
 			dst.push_back(StencilOp::clearStencil(inv));
 			dst.push_back(StencilOp::quad(GL_NOTEQUAL, targetStencil, GL_ALWAYS, 0.0f, GL_KEEP, GL_KEEP, GL_INVERT));
 			dst.push_back(StencilOp::quad(GL_NOTEQUAL, targetStencil, GL_ALWAYS, 0.0f, GL_KEEP, GL_KEEP, GL_INVERT));
-		});
+		})
 	STENCIL_CASE(cmp_less_than, "Less than comparison",
 		{
 			int maxStencil = (1<<stencilBits)-1;
@@ -520,7 +520,7 @@ void StencilTests::init (void)
 			}
 			else
 				dst.push_back(StencilOp::clearStencil(targetStencil));
-		});
+		})
 	STENCIL_CASE(cmp_less_or_equal, "Less or equal comparison",
 		{
 			int maxStencil = (1<<stencilBits)-1;
@@ -532,7 +532,7 @@ void StencilTests::init (void)
 			}
 			else
 				dst.push_back(StencilOp::clearStencil(targetStencil));
-		});
+		})
 	STENCIL_CASE(cmp_greater_than, "Greater than comparison",
 		{
 			if (targetStencil > 0)
@@ -543,7 +543,7 @@ void StencilTests::init (void)
 			}
 			else
 				dst.push_back(StencilOp::clearStencil(targetStencil));
-		});
+		})
 	STENCIL_CASE(cmp_greater_or_equal, "Greater or equal comparison",
 		{
 			if (targetStencil > 0)
@@ -554,7 +554,7 @@ void StencilTests::init (void)
 			}
 			else
 				dst.push_back(StencilOp::clearStencil(targetStencil));
-		});
+		})
 	STENCIL_CASE(cmp_mask_equal, "Equality comparison with mask",
 		{
 			int valMask = (1<<stencilBits)-1;
@@ -563,7 +563,7 @@ void StencilTests::init (void)
 			StencilOp op = StencilOp::quad(GL_EQUAL, (~targetStencil | ~mask) & valMask, GL_ALWAYS, 0.0f, GL_KEEP, GL_KEEP, GL_INVERT);
 			op.stencilMask = mask;
 			dst.push_back(op);
-		});
+		})
 }
 
 } // Functional

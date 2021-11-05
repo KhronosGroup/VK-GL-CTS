@@ -73,7 +73,6 @@ constexpr deUint32 kFramebufferWidth	= 32u;
 constexpr deUint32 kFramebufferHeight	= 32u;
 constexpr deUint32 kTotalPixels			= kFramebufferWidth * kFramebufferHeight;
 
-constexpr vk::VkFormatFeatureFlags	kNeededColorFeatures	= (vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT);
 constexpr vk::VkFormat				kColorFormat			= vk::VK_FORMAT_R8G8B8A8_UNORM;
 constexpr vk::VkFormatFeatureFlags	kNeededDSFeatures		= vk::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
 // VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT must be supported for one of these two, according to the spec.
@@ -154,12 +153,13 @@ FragSideEffectsTestCase::FragSideEffectsTestCase (tcu::TestContext& testCtx, con
 
 void FragSideEffectsTestCase::checkSupport (Context& context) const
 {
-	const auto&	vki				= context.getInstanceInterface();
-	const auto	physicalDevice	= context.getPhysicalDevice();
+	const auto& features = context.getDeviceFeatures();
+
+	if (!features.fragmentStoresAndAtomics)
+		TCU_THROW(NotSupportedError, "Fragment shader stores and atomics not supported");
 
 	if (m_params.caseType == CaseType::DEPTH_BOUNDS)
 	{
-		const auto features = vk::getPhysicalDeviceFeatures(vki, physicalDevice);
 		if (!features.depthBounds)
 			TCU_THROW(NotSupportedError, "Depth bounds test not supported");
 	}
@@ -171,10 +171,6 @@ void FragSideEffectsTestCase::checkSupport (Context& context) const
 	{
 		context.requireDeviceFunctionality("VK_KHR_shader_terminate_invocation");
 	}
-
-	const auto colorFormatProperties = vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, kColorFormat);
-	if ((colorFormatProperties.optimalTilingFeatures & kNeededColorFeatures) != kNeededColorFeatures)
-		TCU_THROW(NotSupportedError, "Color format lacks required features");
 }
 
 void FragSideEffectsTestCase::initPrograms (vk::SourceCollections& programCollection) const
@@ -679,7 +675,7 @@ tcu::TestCaseGroup* createFragSideEffectsTests (tcu::TestContext& testCtx)
 
 	const tcu::Vec4		kDefaultClearColor			(0.0f, 0.0f, 0.0f, 1.0f);
 	const tcu::Vec4		kDefaultDrawColor			(0.0f, 0.0f, 1.0f, 1.0f);
-	const auto			kDefaultDepthBoundsParams	= tcu::nothing<DepthBoundsParameters>();
+	const auto			kDefaultDepthBoundsParams	= tcu::Nothing;
 
 	static const struct
 	{

@@ -99,7 +99,7 @@ PLATFORM_TYPES		= [
 	# VK_EXT_acquire_xlib_display
 	(["RROutput"],							["RROutput"],					"void*"),
 
-	(["zx_handle_t"],						["zx_handle_t"],				"int32_t"),
+	(["zx_handle_t"],						["zx_handle_t"],				"uint32_t"),
 	(["GgpFrameToken"],						["GgpFrameToken"],				"int32_t"),
 	(["GgpStreamDescriptor"],				["GgpStreamDescriptor"],		"int32_t"),
 	(["CAMetalLayer"],						["CAMetalLayer"],				"void*"),
@@ -108,10 +108,8 @@ PLATFORM_TYPES		= [
 PLATFORM_TYPE_NAMESPACE	= "pt"
 
 TYPE_SUBSTITUTIONS		= [
-	("bool32_t",	"deUint32"),
-
 	# Platform-specific
-	("DWORD",		"deUint32"),
+	("DWORD",		"uint32_t"),
 	("HANDLE*",		PLATFORM_TYPE_NAMESPACE + "::" + "Win32Handle*"),
 ]
 
@@ -153,6 +151,7 @@ def prefixName (prefix, name):
 	name = name.replace("_H_264_", "_H264_")
 	name = name.replace("_H_265_", "_H265_")
 	name = name.replace("RDMAFEATURES", "RDMA_FEATURES")
+	name = name.replace("RGBA_10_X_6", "RGBA10X6")
 
 
 	return prefix + name
@@ -658,6 +657,7 @@ def parseDefinitions (extensionName, src):
 		extNameUpper = extNameUpper.replace("VK_INTEL_SHADER_INTEGER_FUNCTIONS2", "VK_INTEL_SHADER_INTEGER_FUNCTIONS_2")
 		extNameUpper = extNameUpper.replace("VK_EXT_ROBUSTNESS2", "VK_EXT_ROBUSTNESS_2")
 		extNameUpper = extNameUpper.replace("VK_EXT_FRAGMENT_DENSITY_MAP2", "VK_EXT_FRAGMENT_DENSITY_MAP_2")
+		extNameUpper = extNameUpper.replace("VK_EXT_SHADER_ATOMIC_FLOAT2", "VK_EXT_SHADER_ATOMIC_FLOAT_2")
 		extNameUpper = extNameUpper.replace("VK_AMD_SHADER_CORE_PROPERTIES2", "VK_AMD_SHADER_CORE_PROPERTIES_2")
 		extNameUpper = extNameUpper.replace("VK_EXT_EXTENDED_DYNAMIC_STATE2", "VK_EXT_EXTENDED_DYNAMIC_STATE_2")
 		# SPEC_VERSION enums
@@ -883,16 +883,23 @@ def genEnumSrc (enum):
 	yield "enum %s" % enum.name
 	yield "{"
 
-	lines = ["\t%s\t= %s," % v for v in enum.values]
+	lines = []
 	if areEnumValuesLinear(enum):
-		lastItem = "\t%s_LAST," % getEnumValuePrefix(enum)
-		if parseInt(enum.values[-1][1]) == 0x7FFFFFFF:
-			# if last enum item is *_MAX_ENUM then we need to make sure
-			# it stays last entry also if we append *_LAST to generated
-			# source (without this value of *_LAST won't be correct)
-			lines.insert(-1, lastItem)
-		else:
-			lines.append(lastItem)
+		hasMaxItem	= parseInt(enum.values[-1][1]) == 0x7FFFFFFF
+
+		values		= enum.values[:-1] if hasMaxItem else enum.values
+		lastItem	= "\t%s_LAST," % getEnumValuePrefix(enum)
+
+		# linear values first, followed by *_LAST
+		lines		+= ["\t%s\t= %s," % v for v in values if v[1][:2] != "VK"]
+		lines.append(lastItem)
+
+		# equivalence enums and *_MAX_ENUM
+		lines		+= ["\t%s\t= %s," % v for v in values if v[1][:2] == "VK"]
+		if hasMaxItem:
+			lines.append("\t%s\t= %s," % enum.values[-1])
+	else:
+		lines		+= ["\t%s\t= %s," % v for v in enum.values]
 
 	for line in indentLines(lines):
 		yield line
@@ -1030,7 +1037,7 @@ def writeBasicTypes (apiName, api, filename):
 			for line in genBitfield64Src(bitfield64):
 				yield line
 
-		for line in indentLines(["VK_DEFINE_PLATFORM_TYPE(%s,\t%s);" % (s[0], c) for n, s, c in PLATFORM_TYPES]):
+		for line in indentLines(["VK_DEFINE_PLATFORM_TYPE(%s,\t%s)" % (s[0], c) for n, s, c in PLATFORM_TYPES]):
 			yield line
 
 		for ext in api.extensions:
@@ -1912,7 +1919,8 @@ def writeDeviceFeatures2(api, filename):
 		'VkPhysicalDeviceDescriptorIndexingFeatures',
 		'VkPhysicalDeviceTimelineSemaphoreFeatures',
 		'VkPhysicalDeviceFragmentDensityMapFeaturesEXT',
-		'VkPhysicalDeviceFragmentDensityMap2FeaturesEXT'
+		'VkPhysicalDeviceFragmentDensityMap2FeaturesEXT',
+		'VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR',
 	]
 	# helper class used to encapsulate all data needed during generation
 	class StructureDetail:
@@ -2138,6 +2146,8 @@ def generateDevicePropertiesDefs(apiName, src):
 			extType = sType
 			if extType == "MAINTENANCE_3":
 				extType = "MAINTENANCE3"
+			elif extType == "MAINTENANCE_4":
+				extType = "MAINTENANCE4"
 			elif extType == "DISCARD_RECTANGLE":
 				extType = "DISCARD_RECTANGLES"
 			elif extType == "DRIVER":
@@ -2288,6 +2298,42 @@ def writeDeviceFeatures(api, dfDefs, filename):
 	stream.append('};\n')
 	stream.append(blobChecker)
 	stream.append('} // vk\n')
+	writeInlFile(filename, INL_HEADER, stream)
+
+def writeDeviceFeatureTest(api, filename):
+
+	coreFeaturesPattern = re.compile("^VkPhysicalDeviceVulkan([1-9][0-9])Features[0-9]*$")
+	featureItems = []
+	# iterate over all feature structures
+	allFeaturesPattern = re.compile("^VkPhysicalDevice\w+Features[1-9]*")
+	for structureType in api.compositeTypes:
+		# skip structures that are not feature structures
+		if not allFeaturesPattern.match(structureType.name):
+			continue
+		# skip alias structures
+		if structureType.isAlias:
+			continue
+		# skip sType and pNext and just grab third and next attributes
+		structureMembers = structureType.members[2:]
+
+		items = []
+		for member in structureMembers:
+			items.append("		FEATURE_ITEM ({0}, {1}),".format(structureType.name, member.name))
+
+		testBlock = \
+			"if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<{0}>()))\n" \
+			"{{\n" \
+			"	static const Feature features[] =\n" \
+			"	{{\n" \
+			"{1}\n" \
+			"	}};\n" \
+			"	auto* supportedFeatures = reinterpret_cast<const {0}*>(featuresStruct);\n" \
+			"	checkFeatures(vkp, instance, instanceDriver, physicalDevice, {2}, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, {3}, emptyDeviceFeatures);\n" \
+			"}}\n"
+		featureItems.append(testBlock.format(structureType.name, "\n".join(items), len(items), ("DE_NULL" if coreFeaturesPattern.match(structureType.name) else "&extensionNames")))
+
+	stream = ['']
+	stream.extend(featureItems)
 	writeInlFile(filename, INL_HEADER, stream)
 
 def writeDeviceProperties(api, dpDefs, filename):
@@ -2621,7 +2667,7 @@ def preprocessTopInclude(src, dir):
 			return src
 		incFileName = inc.string[inc.start(1):inc.end(1)]
 		patternIncNamed = r'#include\s+"' + incFileName + '"'
-		incBody = readFile(os.path.join(dir, incFileName)) if incFileName != 'vulkan/vk_platform.h' and incFileName != 'vk_platform.h' else ''
+		incBody = readFile(os.path.join(dir, incFileName)) if incFileName != 'vk_platform.h' else ''
 		incBodySanitized = re.sub(pattern, '', incBody)
 		bodyEndSanitized = re.sub(patternIncNamed, '', src[inc.end(0):])
 		src = src[0:inc.start(0)] + incBodySanitized + bodyEndSanitized
@@ -2662,6 +2708,7 @@ if __name__ == "__main__":
 	writeDeviceFeaturesDefaultDeviceDefs	(dfd, os.path.join(VULKAN_DIR[args.api], "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
 	writeDeviceFeaturesContextDecl			(dfd, os.path.join(VULKAN_DIR[args.api], "vkDeviceFeaturesForContextDecl.inl"))
 	writeDeviceFeaturesContextDefs			(dfd, os.path.join(VULKAN_DIR[args.api], "vkDeviceFeaturesForContextDefs.inl"))
+	writeDeviceFeatureTest					(api, os.path.join(VULKAN_DIR[args.api], "vkDeviceFeatureTest.inl"))
 
 	dpd										= generateDevicePropertiesDefs(args.api, src)
 	writeDeviceProperties					(api, dpd, os.path.join(VULKAN_DIR[args.api], "vkDeviceProperties.inl"))

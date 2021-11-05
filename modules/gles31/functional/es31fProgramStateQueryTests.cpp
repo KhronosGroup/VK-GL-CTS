@@ -824,21 +824,25 @@ void ProgramStateQueryTests::init (void)
 		QUERY_PROGRAM_INTEGER_VEC3,
 	};
 
-#define FOR_EACH_INT_VERIFIER(X) \
-	for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(intVerifiers); ++verifierNdx)	\
-	{																							\
-		const char* verifierSuffix = getVerifierSuffix(intVerifiers[verifierNdx]);				\
-		const QueryType verifier = intVerifiers[verifierNdx];									\
-		this->addChild(X);																		\
-	}
+#define FOR_EACH_INT_VERIFIER(X)																	\
+	do {																							\
+		for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(intVerifiers); ++verifierNdx)	\
+		{																							\
+			const char* verifierSuffix = getVerifierSuffix(intVerifiers[verifierNdx]);				\
+			const QueryType verifier = intVerifiers[verifierNdx];									\
+			this->addChild(X);																		\
+		}																							\
+	} while (0)
 
-#define FOR_EACH_VEC_VERIFIER(X) \
-	for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(intVec3Verifiers); ++verifierNdx)	\
-	{																								\
-		const char* verifierSuffix = getVerifierSuffix(intVec3Verifiers[verifierNdx]);				\
-		const QueryType verifier = intVec3Verifiers[verifierNdx];									\
-		this->addChild(X);																			\
-	}
+#define FOR_EACH_VEC_VERIFIER(X)																		\
+	do {																								\
+		for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(intVec3Verifiers); ++verifierNdx)	\
+		{																								\
+			const char* verifierSuffix = getVerifierSuffix(intVec3Verifiers[verifierNdx]);				\
+			const QueryType verifier = intVec3Verifiers[verifierNdx];									\
+			this->addChild(X);																			\
+		}																								\
+	} while (0)
 
 	FOR_EACH_INT_VERIFIER(new ProgramSeparableCase				(m_context, verifier, (std::string("program_separable_") + verifierSuffix).c_str(),				"Test PROGRAM_SEPARABLE"));
 	FOR_EACH_VEC_VERIFIER(new ComputeWorkGroupSizeCase			(m_context, verifier, (std::string("compute_work_group_size_") + verifierSuffix).c_str(),		"Test COMPUTE_WORK_GROUP_SIZE"));

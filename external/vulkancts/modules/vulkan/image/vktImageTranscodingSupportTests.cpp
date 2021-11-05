@@ -831,6 +831,9 @@ void ImageTranscodingCase::checkSupport (Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_maintenance2");
 
+	if ((m_parameters.operation == OPERATION_TEXTURE_READ || m_parameters.operation == OPERATION_TEXTURE_WRITE) && !context.getDeviceFeatures().fragmentStoresAndAtomics)
+		TCU_THROW(NotSupportedError, "fragmentStoresAndAtomics not supported");
+
 	if (!isFormatUsageFlagSupported(context, m_parameters.featuredFormat, m_parameters.testedImageUsageFeature))
 		TCU_THROW(NotSupportedError, "Test skipped due to feature is not supported by the format");
 

@@ -129,42 +129,42 @@ inline Vector<T, Size> smoothStepScalarScalarVec (T s0, T s1, const Vector<T, Si
 	return res;
 }
 
-inline int		addOne (int v)		{ return v + 1; };
-inline int		subOne (int v)		{ return v - 1; };
-inline deUint32	addOne (deUint32 v)	{ return v + 1; };
-inline deUint32	subOne (deUint32 v)	{ return v - 1; };
+inline int		addOne (int v)		{ return v + 1; }
+inline int		subOne (int v)		{ return v - 1; }
+inline deUint32	addOne (deUint32 v)	{ return v + 1; }
+inline deUint32	subOne (deUint32 v)	{ return v - 1; }
 
-template<int Size> inline Vector<float, Size>		addOne (const Vector<float, Size>& v)		{ return v + 1.0f; };
-template<int Size> inline Vector<float, Size>		subOne (const Vector<float, Size>& v)		{ return v - 1.0f; };
-template<int Size> inline Vector<int, Size>			addOne (const Vector<int, Size>& v)			{ return v + 1; };
-template<int Size> inline Vector<int, Size>			subOne (const Vector<int, Size>& v)			{ return v - 1; };
-template<int Size> inline Vector<deUint32, Size>	addOne (const Vector<deUint32, Size>& v)	{ return v + 1U; };
-template<int Size> inline Vector<deUint32, Size>	subOne (const Vector<deUint32, Size>& v)	{ return (v.asInt() - 1).asUint(); };
+template<int Size> inline Vector<float, Size>		addOne (const Vector<float, Size>& v)		{ return v + 1.0f; }
+template<int Size> inline Vector<float, Size>		subOne (const Vector<float, Size>& v)		{ return v - 1.0f; }
+template<int Size> inline Vector<int, Size>			addOne (const Vector<int, Size>& v)			{ return v + 1; }
+template<int Size> inline Vector<int, Size>			subOne (const Vector<int, Size>& v)			{ return v - 1; }
+template<int Size> inline Vector<deUint32, Size>	addOne (const Vector<deUint32, Size>& v)	{ return v + 1U; }
+template<int Size> inline Vector<deUint32, Size>	subOne (const Vector<deUint32, Size>& v)	{ return (v.asInt() - 1).asUint(); }
 
-template<typename T> inline T selection	(bool cond, T a, T b)	{ return cond ? a : b; };
+template<typename T> inline T selection	(bool cond, T a, T b)	{ return cond ? a : b; }
 
 // Vec-scalar and scalar-vec binary operators.
 
 // \note This one is done separately due to how the overloaded minus operator is implemented for vector-scalar operands.
-template<int Size>				inline Vector<deUint32, Size>	subVecScalar			(const Vector<deUint32, Size>& v, deUint32 s)	{ return (v.asInt() - (int)s).asUint(); };
+template<int Size>				inline Vector<deUint32, Size>	subVecScalar			(const Vector<deUint32, Size>& v, deUint32 s)	{ return (v.asInt() - (int)s).asUint(); }
 
-template<typename T, int Size>	inline Vector<T, Size>			addVecScalar			(const Vector<T, Size>& v, T s)					{ return v + s; };
-template<typename T, int Size>	inline Vector<T, Size>			subVecScalar			(const Vector<T, Size>& v, T s)					{ return v - s; };
-template<typename T, int Size>	inline Vector<T, Size>			mulVecScalar			(const Vector<T, Size>& v, T s)					{ return v * s; };
-template<typename T, int Size>	inline Vector<T, Size>			divVecScalar			(const Vector<T, Size>& v, T s)					{ return v / s; };
-template<typename T, int Size>	inline Vector<T, Size>			modVecScalar			(const Vector<T, Size>& v, T s)					{ return mod(v, Vector<T, Size>(s)); };
-template<typename T, int Size>	inline Vector<T, Size>			bitwiseAndVecScalar		(const Vector<T, Size>& v, T s)					{ return bitwiseAnd(v, Vector<T, Size>(s)); };
-template<typename T, int Size>	inline Vector<T, Size>			bitwiseOrVecScalar		(const Vector<T, Size>& v, T s)					{ return bitwiseOr(v, Vector<T, Size>(s)); };
-template<typename T, int Size>	inline Vector<T, Size>			bitwiseXorVecScalar		(const Vector<T, Size>& v, T s)					{ return bitwiseXor(v, Vector<T, Size>(s)); };
+template<typename T, int Size>	inline Vector<T, Size>			addVecScalar			(const Vector<T, Size>& v, T s)					{ return v + s; }
+template<typename T, int Size>	inline Vector<T, Size>			subVecScalar			(const Vector<T, Size>& v, T s)					{ return v - s; }
+template<typename T, int Size>	inline Vector<T, Size>			mulVecScalar			(const Vector<T, Size>& v, T s)					{ return v * s; }
+template<typename T, int Size>	inline Vector<T, Size>			divVecScalar			(const Vector<T, Size>& v, T s)					{ return v / s; }
+template<typename T, int Size>	inline Vector<T, Size>			modVecScalar			(const Vector<T, Size>& v, T s)					{ return mod(v, Vector<T, Size>(s)); }
+template<typename T, int Size>	inline Vector<T, Size>			bitwiseAndVecScalar		(const Vector<T, Size>& v, T s)					{ return bitwiseAnd(v, Vector<T, Size>(s)); }
+template<typename T, int Size>	inline Vector<T, Size>			bitwiseOrVecScalar		(const Vector<T, Size>& v, T s)					{ return bitwiseOr(v, Vector<T, Size>(s)); }
+template<typename T, int Size>	inline Vector<T, Size>			bitwiseXorVecScalar		(const Vector<T, Size>& v, T s)					{ return bitwiseXor(v, Vector<T, Size>(s)); }
 
-template<typename T, int Size> inline Vector<T, Size>			addScalarVec			(T s, const Vector<T, Size>& v)					{ return s + v; };
-template<typename T, int Size> inline Vector<T, Size>			subScalarVec			(T s, const Vector<T, Size>& v)					{ return s - v; };
-template<typename T, int Size> inline Vector<T, Size>			mulScalarVec			(T s, const Vector<T, Size>& v)					{ return s * v; };
-template<typename T, int Size> inline Vector<T, Size>			divScalarVec			(T s, const Vector<T, Size>& v)					{ return s / v; };
-template<typename T, int Size> inline Vector<T, Size>			modScalarVec			(T s, const Vector<T, Size>& v)					{ return mod(Vector<T, Size>(s), v); };
-template<typename T, int Size> inline Vector<T, Size>			bitwiseAndScalarVec		(T s, const Vector<T, Size>& v)					{ return bitwiseAnd(Vector<T, Size>(s), v); };
-template<typename T, int Size> inline Vector<T, Size>			bitwiseOrScalarVec		(T s, const Vector<T, Size>& v)					{ return bitwiseOr(Vector<T, Size>(s), v); };
-template<typename T, int Size> inline Vector<T, Size>			bitwiseXorScalarVec		(T s, const Vector<T, Size>& v)					{ return bitwiseXor(Vector<T, Size>(s), v); };
+template<typename T, int Size> inline Vector<T, Size>			addScalarVec			(T s, const Vector<T, Size>& v)					{ return s + v; }
+template<typename T, int Size> inline Vector<T, Size>			subScalarVec			(T s, const Vector<T, Size>& v)					{ return s - v; }
+template<typename T, int Size> inline Vector<T, Size>			mulScalarVec			(T s, const Vector<T, Size>& v)					{ return s * v; }
+template<typename T, int Size> inline Vector<T, Size>			divScalarVec			(T s, const Vector<T, Size>& v)					{ return s / v; }
+template<typename T, int Size> inline Vector<T, Size>			modScalarVec			(T s, const Vector<T, Size>& v)					{ return mod(Vector<T, Size>(s), v); }
+template<typename T, int Size> inline Vector<T, Size>			bitwiseAndScalarVec		(T s, const Vector<T, Size>& v)					{ return bitwiseAnd(Vector<T, Size>(s), v); }
+template<typename T, int Size> inline Vector<T, Size>			bitwiseOrScalarVec		(T s, const Vector<T, Size>& v)					{ return bitwiseOr(Vector<T, Size>(s), v); }
+template<typename T, int Size> inline Vector<T, Size>			bitwiseXorScalarVec		(T s, const Vector<T, Size>& v)					{ return bitwiseXor(Vector<T, Size>(s), v); }
 
 // Reference functions for specific sequence operations for the sequence operator tests.
 
@@ -1224,8 +1224,8 @@ DECLARE_BOOL_VEC_CWISE_COMPARE_FUNCS(notEqual)
 	void eval_##GLSL_NAME##_bvec3	(ShaderEvalContext& c) { c.color.xyz()	= FUNC_NAME(greaterThan(c.in[0].swizzle(2, 0, 1), Vec3(0.0f))).asFloat(); }	\
 	void eval_##GLSL_NAME##_bvec4	(ShaderEvalContext& c) { c.color.xyzw()	= FUNC_NAME(greaterThan(c.in[0].swizzle(1, 2, 3, 0), Vec4(0.0f))).asFloat(); }
 
-DECLARE_UNARY_SCALAR_BVEC_FUNCS(any, boolAny);
-DECLARE_UNARY_SCALAR_BVEC_FUNCS(all, boolAll);
+DECLARE_UNARY_SCALAR_BVEC_FUNCS(any, boolAny)
+DECLARE_UNARY_SCALAR_BVEC_FUNCS(all, boolAll)
 
 // ShaderOperatorTests.
 

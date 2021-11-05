@@ -951,7 +951,7 @@ deInt32 getMaxIOComponents(deBool input, VkShaderStageFlags stage, VkPhysicalDev
 		break;
 	default:
 		DE_FATAL("Unsupported shader");
-	};
+	}
 
 	return data;
 }

@@ -181,7 +181,7 @@ void SamplerStateQueryTests::init (void)
 																		   std::string() + states[stateNdx].name + verifierSuffix,
 																		   states[stateNdx].desc,
 																		   verifier,
-																		   states[stateNdx].tester));
+																		   states[stateNdx].tester))
 			}
 			else if (isIsVectorQuery(states[stateNdx].tester))
 			{
@@ -190,7 +190,7 @@ void SamplerStateQueryTests::init (void)
 																		  std::string() + states[stateNdx].name + verifierSuffix,
 																		  states[stateNdx].desc,
 																		  verifier,
-																		  states[stateNdx].tester));
+																		  states[stateNdx].tester))
 			}
 			else
 			{
@@ -199,7 +199,7 @@ void SamplerStateQueryTests::init (void)
 																		  std::string() + states[stateNdx].name + verifierSuffix,
 																		  states[stateNdx].desc,
 																		  verifier,
-																		  states[stateNdx].tester));
+																		  states[stateNdx].tester))
 			}
 		}
 	}

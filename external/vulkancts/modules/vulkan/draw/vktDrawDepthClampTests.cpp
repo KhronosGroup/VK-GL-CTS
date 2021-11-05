@@ -37,9 +37,11 @@
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuTestLog.hpp"
 
 #include <cmath>
 #include <limits>
+#include "deMath.h"
 
 namespace vkt
 {
@@ -54,11 +56,18 @@ using tcu::Vec4;
 static const int					WIDTH				= 256;
 static const int					HEIGHT				= 256;
 
+struct ViewportData
+{
+	float minDepth;
+	float maxDepth;
+	float depthValue;
+	float expectedValue;
+};
+
 struct TestParams
 {
 	string							testNameSuffix;
-	float							depthValue;
-	float							expectedValue;
+	std::vector<ViewportData>		viewportData;
 	bool							enableDepthBias;
 	float							depthBiasConstantFactor;
 	bool							skipUNorm;
@@ -77,7 +86,7 @@ const VkFormat		depthStencilImageFormatsToTest[]	=
 };
 const float			depthEpsilonValuesByFormat[]		=
 {
-    1e-5f,
+	1e-5f,
 	std::numeric_limits<float>::epsilon(),
 	std::numeric_limits<float>::epsilon(),
 	1e-5f,
@@ -85,13 +94,17 @@ const float			depthEpsilonValuesByFormat[]		=
 	std::numeric_limits<float>::epsilon()
 };
 
-const float			initialClearDepth				    = 0.5f;
+const float			initialClearDepth					= 0.5f;
 const TestParams	depthClearValuesToTest[]			=
 {
 	{
 		"",											// testNameSuffix
-		0.3f,										// depthValue
-		0.3f,										// expectedValue
+		{ {											// viewportData
+			0.0f,									//   minDepth
+			1.0f,									//   maxDepth
+			0.3f,									//   depthValue
+			0.3f,									//   expectedValue
+		} },
 		false,										// enableDepthBias
 		0.0f,										// depthBiasConstantFactor
 		false,										// skipUNorm
@@ -100,8 +113,12 @@ const TestParams	depthClearValuesToTest[]			=
 	},
 	{
 		"_clamp_input_negative",					// testNameSuffix
-		-1e6f,										// depthValue
-		0.0f,										// expectedValue
+		{ {											// viewportData
+			0.0f,									//   minDepth
+			1.0f,									//   maxDepth
+		   -1e6f,									//   depthValue
+			0.0f,									//   expectedValue
+		} },
 		false,										// enableDepthBias
 		0.0f,										// depthBiasConstantFactor
 		false,										// skipUNorm
@@ -110,8 +127,12 @@ const TestParams	depthClearValuesToTest[]			=
 	},
 	{
 		"_clamp_input_positive",					// testNameSuffix
-		1.e6f,										// depthValue
-		1.0f,										// expectedValue
+		{ {											// viewportData
+			0.0f,									//   minDepth
+			1.0f,									//   maxDepth
+			1.e6f,									//   depthValue
+			1.0f,									//   expectedValue
+		} },
 		false,										// enableDepthBias
 		0.0f,										// depthBiasConstantFactor
 		false,										// skipUNorm
@@ -120,8 +141,12 @@ const TestParams	depthClearValuesToTest[]			=
 	},
 	{
 		"_depth_bias_clamp_input_negative",			// testNameSuffix
-		0.3f,										// depthValue
-		0.0f,										// expectedValue
+		{ {											// viewportData
+			0.0f,									//   minDepth
+			1.0f,									//   maxDepth
+			0.3f,									//   depthValue
+			0.0f,									//   expectedValue
+		} },
 		true,										// enableDepthBias
 		-2e11f,										// depthBiasConstantFactor
 		false,										// skipUNorm
@@ -130,8 +155,12 @@ const TestParams	depthClearValuesToTest[]			=
 	},
 	{
 		"_depth_bias_clamp_input_positive",			// testNameSuffix
-		0.7f,										// depthValue
-		1.0f,										// expectedValue
+		{ {											// viewportData
+			0.0f,									//   minDepth
+			1.0f,									//   maxDepth
+			0.7f,									//   depthValue
+			1.0f,									//   expectedValue
+		} },
 		true,										// enableDepthBias
 		2e11f,										// depthBiasConstantFactor
 		false,										// skipUNorm
@@ -140,8 +169,12 @@ const TestParams	depthClearValuesToTest[]			=
 	},
 	{
 		"_depth_range_unrestricted_negative",		// testNameSuffix
-		-1.5f,										// depthValue
-		-1.5f,										// expectedValue
+		{ {											// viewportData
+		   -1.5f,									//   minDepth
+			1.0f,									//   maxDepth
+		   -1.5f,									//   depthValue
+		   -1.5f,									//   expectedValue
+		} },
 		false,										// enableDepthBias
 		0.0f,										// depthBiasConstantFactor
 		true,										// skipUNorm
@@ -152,8 +185,12 @@ const TestParams	depthClearValuesToTest[]			=
 	},
 	{
 		"_depth_range_unrestricted_positive",		// testNameSuffix
-		1.5f,										// depthValue
-		1.5f,										// expectedValue
+		{ {											// viewportData
+			0.0f,									//   minDepth
+			1.5f,									//   maxDepth
+			1.5f,									//   depthValue
+			1.5f,									//   expectedValue
+		} },
 		false,										// enableDepthBias
 		0.0f,										// depthBiasConstantFactor
 		true,										// skipUNorm
@@ -161,6 +198,40 @@ const TestParams	depthClearValuesToTest[]			=
 		{
 			"VK_EXT_depth_range_unrestricted"		// requiredExtensions[0]
 		},
+	},
+	{
+		"_clamp_four_viewports",					// testNameSuffix
+		{											// viewportData
+			{
+				0.0f,								//   minDepth
+				0.5f,								//   maxDepth
+				0.7f,								//   depthValue
+				0.35f,								//   expectedValue: 0.7 * 0.5 + (1.0 - 0.7) * 0.0) = 0.35
+			},
+			{
+				0.9f,								//   minDepth
+				1.0f,								//   maxDepth
+				1.0f,								//   depthValue
+				1.0f,								//   expectedValue: 1.0 * 1.0 + (1.0 - 1.0) * 0.9 = 1.0
+			},
+			{
+				0.5f,								//   minDepth
+				1.0f,								//   maxDepth
+				0.9f,								//   depthValue
+				0.95f,								//   expectedValue: 0.9 * 1.0 + (1.0 - 0.9) * 0.5 = 0.95
+			},
+			{
+				0.5f,								//   minDepth
+				0.9f,								//   maxDepth
+				0.4f,								//   depthValue
+				0.66f,								//   expectedValue: 0.4 * 0.9 + (1.0 - 0.4) * 0.5 = 0.66
+			},
+		},
+		false,										// enableDepthBias
+		0.0f,										// depthBiasConstantFactor
+		true,										// skipUNorm
+		true,										// skipSNorm
+		{},
 	}
 };
 
@@ -185,13 +256,15 @@ public:
 	tcu::TestStatus				iterate					();
 
 private:
-	tcu::ConstPixelBufferAccess draw					(const VkViewport viewport);
+	tcu::ConstPixelBufferAccess draw					();
 
 	const TestParams									m_params;
 	const VkFormat										m_format;
 	const float											m_epsilon;
+	std::vector<VkViewport>								m_viewportVect;
+	std::vector<VkRect2D>								m_scissorVect;
 	SharedPtr<Image>									m_depthTargetImage;
-    Move<VkImageView>									m_depthTargetView;
+	Move<VkImageView>									m_depthTargetView;
 	SharedPtr<Buffer>									m_vertexBuffer;
 	Move<VkRenderPass>									m_renderPass;
 	Move<VkFramebuffer>									m_framebuffer;
@@ -205,31 +278,72 @@ static const Vec4					vertices[]			= {
 	Vec4( 1.0f, -1.0f,  0.5f, 1.0f),	// | /  |
 	Vec4( 1.0f,  1.0f,  0.5f, 1.0f)		// 1 -- 3
 };
-static const VkPrimitiveTopology    verticesTopology	= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+static const VkPrimitiveTopology	verticesTopology	= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 
 DepthClampTestInstance::DepthClampTestInstance (Context& context, const TestParams& params, const VkFormat format, const float epsilon)
 	: TestInstance(context)
 	, m_params(params)
 	, m_format(format)
 	, m_epsilon(epsilon)
+	, m_viewportVect(params.viewportData.size(), VkViewport())
+	, m_scissorVect(params.viewportData.size(), VkRect2D())
 {
 	const DeviceInterface&		vk								= m_context.getDeviceInterface();
 	const VkDevice				device							= m_context.getDevice();
-	const deUint32			    queueFamilyIndex				= m_context.getUniversalQueueFamilyIndex();
+	const deUint32				queueFamilyIndex				= m_context.getUniversalQueueFamilyIndex();
+	const deUint32				viewportCount					= static_cast<deUint32>(m_params.viewportData.size());
+
+	// create viewport grid
+	{
+		const deUint32	columnCount		= deCeilFloatToInt32(deFloatSqrt(static_cast<float>(viewportCount)));
+		const deUint32	rowCount		= deCeilFloatToInt32(static_cast<float>(viewportCount) / static_cast<float>(columnCount));
+		const deUint32	rectWidth		= WIDTH / columnCount;
+		const deUint32	rectHeight		= HEIGHT / rowCount;
+
+		VkOffset2D		pos				{ 0, 0 };
+
+		for (deUint32 viewportIndex = 0; viewportIndex < viewportCount; ++viewportIndex)
+		{
+			// move to next row
+			if ((viewportIndex != 0) && (viewportIndex % columnCount == 0))
+			{
+				pos.x = 0;
+				pos.y += rectHeight;
+			}
+
+			m_viewportVect[viewportIndex] =
+			{
+				static_cast<float>(pos.x),							// float	x;
+				static_cast<float>(pos.y),							// float	y;
+				static_cast<float>(rectWidth),						// float	width;
+				static_cast<float>(rectHeight),						// float	height;
+				m_params.viewportData[viewportIndex].minDepth,		// float	minDepth;
+				m_params.viewportData[viewportIndex].maxDepth,		// float	maxDepth;
+			};
+
+			m_scissorVect[viewportIndex] =
+			{
+				pos,
+				{rectWidth, rectHeight}
+			};
+
+			pos.x += rectWidth;
+		}
+	}
 
 	DescriptorPoolBuilder		descriptorPoolBuilder;
 	DescriptorSetLayoutBuilder	descriptorSetLayoutBuilder;
 	// Vertex data
 	{
 		const size_t			verticesCount					= DE_LENGTH_OF_ARRAY(vertices);
-		const VkDeviceSize		dataSize					    = verticesCount * sizeof(Vec4);
+		const VkDeviceSize		dataSize						= verticesCount * sizeof(Vec4);
 		m_vertexBuffer											= Buffer::createAndAlloc(vk, device, BufferCreateInfo(dataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
 																m_context.getDefaultAllocator(), MemoryRequirement::HostVisible);
 
 		Vec4 testVertices[verticesCount];
 		deMemcpy(testVertices, vertices, dataSize);
 		for(size_t i = 0; i < verticesCount; ++i)
-			testVertices[i][2] = params.depthValue;
+			testVertices[i][2] = params.viewportData[0].depthValue;
 		deMemcpy(m_vertexBuffer->getBoundMemory().getHostPtr(), testVertices, static_cast<std::size_t>(dataSize));
 		flushMappedMemoryRange(vk, device, m_vertexBuffer->getBoundMemory().getMemory(), m_vertexBuffer->getBoundMemory().getOffset(), VK_WHOLE_SIZE);
 	}
@@ -261,7 +375,7 @@ DepthClampTestInstance::DepthClampTestInstance (Context& context, const TestPara
 			depthAttachmentReference,			// depthStencilAttachment
 			0u,									// preserveAttachmentCount
 			DE_NULL));							// preserveAttachments
-		m_renderPass														    = createRenderPass(vk, device, &renderPassCreateInfo);
+		m_renderPass															= createRenderPass(vk, device, &renderPassCreateInfo);
 	}
 
 	const ImageViewCreateInfo					depthTargetViewInfo				(m_depthTargetImage->object(), VK_IMAGE_VIEW_TYPE_2D, m_format);
@@ -293,21 +407,24 @@ DepthClampTestInstance::DepthClampTestInstance (Context& context, const TestPara
 
 	// Graphics pipeline
 	const Unique<VkShaderModule>	vertexModule								(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0));
+	Move<VkShaderModule>			geometryModule;
 	const Unique<VkShaderModule>	fragmentModule								(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0));
+
+	if (viewportCount > 1)
+		geometryModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("geom"), 0);
 
 	const PipelineLayoutCreateInfo	pipelineLayoutCreateInfo					(0u, DE_NULL, 0u, DE_NULL);
 	m_pipelineLayout															= createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
-
-	const VkRect2D					scissor										= makeRect2D(WIDTH, HEIGHT);
-	const VkViewport				viewport									= makeViewport(WIDTH, HEIGHT);
-	std::vector<VkDynamicState>		dynamicStates								(1, VK_DYNAMIC_STATE_VIEWPORT);
+	std::vector<VkDynamicState>		dynamicStates								{ VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 
 	PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, (VkPipelineCreateFlags)0);
 	pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vertexModule,   "main", VK_SHADER_STAGE_VERTEX_BIT));
+	if (*geometryModule != 0)
+		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*geometryModule, "main", VK_SHADER_STAGE_GEOMETRY_BIT));
 	pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fragmentModule, "main", VK_SHADER_STAGE_FRAGMENT_BIT));
 	pipelineCreateInfo.addState (PipelineCreateInfo::VertexInputState	(vertexInputState));
 	pipelineCreateInfo.addState (PipelineCreateInfo::InputAssemblerState(verticesTopology));
-	pipelineCreateInfo.addState (PipelineCreateInfo::ViewportState		(1, std::vector<VkViewport>(1, viewport), std::vector<VkRect2D>(1, scissor)));
+	pipelineCreateInfo.addState (PipelineCreateInfo::ViewportState		(viewportCount, m_viewportVect, m_scissorVect));
 	pipelineCreateInfo.addState (PipelineCreateInfo::DepthStencilState	(VK_TRUE, VK_TRUE, VK_COMPARE_OP_ALWAYS, VK_FALSE, VK_FALSE));
 	pipelineCreateInfo.addState (PipelineCreateInfo::RasterizerState	(
 		VK_TRUE,										// depthClampEnable
@@ -322,10 +439,11 @@ DepthClampTestInstance::DepthClampTestInstance (Context& context, const TestPara
 		1.0f));											// lineWidth
 	pipelineCreateInfo.addState (PipelineCreateInfo::MultiSampleState	());
 	pipelineCreateInfo.addState (PipelineCreateInfo::DynamicState		(dynamicStates));
-	m_pipeline																	= createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+
+	m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
 
-tcu::ConstPixelBufferAccess DepthClampTestInstance::draw (const VkViewport viewport)
+tcu::ConstPixelBufferAccess DepthClampTestInstance::draw ()
 {
 	const DeviceInterface&				vk					= m_context.getDeviceInterface();
 	const VkDevice						device				= m_context.getDevice();
@@ -339,7 +457,7 @@ tcu::ConstPixelBufferAccess DepthClampTestInstance::draw (const VkViewport viewp
 	const bool							isCombinedType		= tcu::isCombinedDepthStencilType(mapVkFormat(m_format).type) && m_format != VK_FORMAT_X8_D24_UNORM_PACK32;
 
 	beginCommandBuffer(vk, *cmdBuffer);
-	vk.cmdSetViewport(*cmdBuffer, 0u, 1u, &viewport);
+
 	if (isCombinedType)
 		initialTransitionDepthStencil2DImage(vk, *cmdBuffer, m_depthTargetImage->object(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	else
@@ -359,6 +477,17 @@ tcu::ConstPixelBufferAccess DepthClampTestInstance::draw (const VkViewport viewp
 	{
 		const VkMemoryBarrier memBarrier					= { VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT };
 		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+	}
+
+	// if there is more then one viewport we are also checking
+	// proper behaviour of cmdSetViewport/Scissor - there was
+	// a driver bug that caused invalid behaviour of those
+	// functions when firstViewport/Scissor had a non 0 value
+	deUint32 indexCount = static_cast<deUint32>(m_viewportVect.size());
+	for (deUint32 index = 0 ; index < indexCount ; ++index)
+	{
+		vk.cmdSetViewport(*cmdBuffer, index, 1u, &m_viewportVect[index]);
+		vk.cmdSetScissor (*cmdBuffer, index, 1u, &m_scissorVect[index]);
 	}
 
 	beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT));
@@ -384,30 +513,37 @@ tcu::ConstPixelBufferAccess DepthClampTestInstance::draw (const VkViewport viewp
 
 tcu::TestStatus DepthClampTestInstance::iterate (void)
 {
-	// Set up the viewport and draw
-	const VkViewport viewport						=
-	{
-		0.0f,															// float    x;
-		0.0f,															// float    y;
-		WIDTH,															// float    width;
-		HEIGHT,															// float    height;
-		m_params.expectedValue < 0.0f ? m_params.expectedValue : 0.0f,	// float    minDepth;
-		m_params.expectedValue > 1.0f ? m_params.expectedValue : 1.0f,	// float    maxDepth;
-	};
-	const tcu::ConstPixelBufferAccess	resultImage	= draw(viewport);
+	const tcu::ConstPixelBufferAccess resultImage = draw();
 
 	DE_ASSERT((isUnormDepthFormat(m_format) == false) ||
-		(m_params.expectedValue >= 0.0f && m_params.expectedValue <= 1.0f));
+		(m_params.viewportData[0].expectedValue >= 0.0f && m_params.viewportData[0].expectedValue <= 1.0f));
 
-	for(int z = 0; z < resultImage.getDepth(); ++z)
-	for(int y = 0; y < resultImage.getHeight(); ++y)
-	for(int x = 0; x < resultImage.getWidth(); ++x)
+	for(deUint32 viewportIndex = 0 ; viewportIndex < m_scissorVect.size() ; ++viewportIndex)
 	{
-		if (std::abs(m_params.expectedValue - resultImage.getPixDepth(x,y,z)) >= m_epsilon)
+		const float		expectedValue	= m_params.viewportData[viewportIndex].expectedValue;
+		const VkRect2D&	viewRect		= m_scissorVect[viewportIndex];
+
+		deInt32 xStart	= viewRect.offset.x;
+		deInt32 xEnd	= xStart + viewRect.extent.width;
+		deInt32 yStart	= viewRect.offset.y;
+		deInt32 yEnd	= yStart + viewRect.extent.height;
+
+		for (int y = yStart; y < yEnd; ++y)
+		for (int x = xStart; x < xEnd; ++x)
 		{
-			std::ostringstream msg;
-			msg << "Depth value mismatch, expected: " << m_params.expectedValue << ", got: " << resultImage.getPixDepth(x,y,z) << " at " << "(" << x << ", " << y << ", " << z << ")";
-			return tcu::TestStatus::fail(msg.str());
+			if (std::abs(expectedValue - resultImage.getPixDepth(x, y, 0)) >= m_epsilon)
+			{
+				tcu::TestLog& log = m_context.getTestContext().getLog();
+				log << tcu::TestLog::ImageSet("Result of rendering", "")
+					<< tcu::TestLog::Image("Result", "", resultImage)
+					<< tcu::TestLog::EndImageSet;
+
+				std::ostringstream msg;
+				msg << "Depth value mismatch, expected: " << expectedValue
+					<< ", got: " << resultImage.getPixDepth(x, y, 0) << " at (" << x << ", " << y << ", 0)";
+
+				return tcu::TestStatus::fail(msg.str());
+			}
 		}
 	}
 	return tcu::TestStatus::pass("Pass");
@@ -416,7 +552,7 @@ tcu::TestStatus DepthClampTestInstance::iterate (void)
 class DepthClampTest : public TestCase
 {
 public:
-    DepthClampTest (tcu::TestContext &testCtx, const string& name, const string& description, const TestParams &params, const VkFormat format, const float epsilon)
+	DepthClampTest (tcu::TestContext &testCtx, const string& name, const string& description, const TestParams &params, const VkFormat format, const float epsilon)
 		: TestCase	(testCtx, name, description)
 		, m_params(params)
 		, m_format(format)
@@ -426,40 +562,60 @@ public:
 
 	virtual void initPrograms (SourceCollections& programCollection) const
 	{
+		programCollection.glslSources.add("vert") << glu::VertexSource(
+			"#version 450\n"
+			"\n"
+			"layout(location = 0) in vec4 in_position;\n"
+			"void main(void)\n"
+			"{\n"
+			"    gl_Position = in_position;\n"
+			"}\n");
+
+		if (m_params.viewportData.size() > 1)
 		{
-			std::ostringstream src;
-			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
-				<< "\n"
-				<< "layout(location = 0) in vec4 in_position;\n"
-				<< "\n"
-				<< "out gl_PerVertex {\n"
-				<< "    vec4  gl_Position;\n"
-				<< "};\n"
-				<< "\n"
-				<< "void main(void)\n"
-				<< "{\n"
-				<< "    gl_Position = in_position;\n"
-				<< "}\n";
-			programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+			// gl_ViewportIndex built-in variable is available only to the geometry shader
+
+			std::string depthValues = "";
+			for (const auto& vd : m_params.viewportData)
+				depthValues += std::to_string(vd.depthValue) + ", ";
+
+			// this geometry shader draws the same quad but with diferent depth to all viewports
+			programCollection.glslSources.add("geom") << glu::GeometrySource(
+				std::string("#version 450\n") +
+				"#extension GL_EXT_geometry_shader : require\n"
+				"layout(invocations = " + std::to_string(m_params.viewportData.size()) + ") in;\n"
+				"layout(triangles) in;\n"
+				"layout(triangle_strip, max_vertices = 4) out;\n"
+				"void main()\n"
+				"{\n"
+				"  const float depthValues[] = { " + depthValues + " 0.0 };\n"
+				"  for (int i = 0; i < gl_in.length(); i++)\n"
+				"  {\n"
+				"    gl_ViewportIndex = gl_InvocationID;\n"
+				"    gl_Position      = gl_in[i].gl_Position;\n"
+				"    gl_Position.z    = depthValues[gl_InvocationID];\n"
+				"    EmitVertex();\n"
+				"  }\n"
+				"  EndPrimitive();\n"
+				"}");
 		}
-		{
-			std::ostringstream src;
-			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
-				<< "\n"
-				<< "void main(void)\n"
-				<< "{\n"
-				<< "}\n";
-			programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
-		}
+
+		programCollection.glslSources.add("frag") << glu::FragmentSource(
+			"#version 450\n"
+			"void main(void)\n"
+			"{\n"
+			"}\n");
 	}
 
 	virtual void checkSupport (Context& context) const
 	{
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_DEPTH_CLAMP);
 		for(const auto& extensionName : m_params.requiredExtensions)
-		{
 			context.requireDeviceFunctionality(extensionName);
-		}
+
+		if (m_params.viewportData.size() > 1)
+			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_VIEWPORT);
+
 		VkImageFormatProperties imageFormatProperties;
 		const auto&	vki		= context.getInstanceInterface();
 		const auto&	vkd		= context.getPhysicalDevice();

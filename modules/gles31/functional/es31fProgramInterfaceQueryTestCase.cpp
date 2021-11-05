@@ -1757,7 +1757,7 @@ static glw::GLenum getGLInterfaceEnumValue (ProgramInterface interface)
 		default:
 			DE_ASSERT(false);
 			return 0;
-	};
+	}
 }
 
 static bool isInterfaceBlockInterfaceName (const ProgramInterfaceDefinition::Program* program, ProgramInterface interface, const std::string& blockInterfaceName)

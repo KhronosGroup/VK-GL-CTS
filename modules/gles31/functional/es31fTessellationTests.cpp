@@ -3639,7 +3639,7 @@ private:
 
 				Program			(Winding w, const SharedPtr<const ShaderProgram>& prog) : winding(w), program(prog) {}
 
-		string	description		(void) const { return string() + "winding mode " + getWindingShaderName(winding); };
+		string	description		(void) const { return string() + "winding mode " + getWindingShaderName(winding); }
 	};
 
 	static const int			RENDER_SIZE = 16;
@@ -3978,7 +3978,7 @@ private:
 
 				Program			(Winding w, bool point, const SharedPtr<const ShaderProgram>& prog) : winding(w), usePointMode(point), program(prog) {}
 
-		string	description		(void) const { return string() + "winding mode " + getWindingShaderName(winding) + ", " + (usePointMode ? "" : "don't ") + "use point mode"; };
+		string	description		(void) const { return string() + "winding mode " + getWindingShaderName(winding) + ", " + (usePointMode ? "" : "don't ") + "use point mode"; }
 	};
 
 	static vector<float>		generatePatchTessLevels (int numPatches, int constantOuterLevelIndex, float constantOuterLevel);

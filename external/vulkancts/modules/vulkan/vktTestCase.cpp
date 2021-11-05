@@ -352,7 +352,7 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 #endif // CTS_USES_VULKANSC
 
 	return createDevice(vkp, instance, vki, physicalDevice, &deviceInfo);
-};
+}
 
 } // anonymous
 
@@ -796,6 +796,127 @@ bool Context::requireDeviceCoreFeature (const DeviceCoreFeature requiredFeature)
 
 	return true;
 }
+
+static bool isExtendedStorageFormat (VkFormat format)
+{
+	switch(format)
+	{
+		case VK_FORMAT_R8G8B8A8_UNORM:
+		case VK_FORMAT_R8G8B8A8_SNORM:
+		case VK_FORMAT_R8G8B8A8_UINT:
+		case VK_FORMAT_R8G8B8A8_SINT:
+		case VK_FORMAT_R32_UINT:
+		case VK_FORMAT_R32_SINT:
+		case VK_FORMAT_R32_SFLOAT:
+		case VK_FORMAT_R32G32_UINT:
+		case VK_FORMAT_R32G32_SINT:
+		case VK_FORMAT_R32G32_SFLOAT:
+		case VK_FORMAT_R32G32B32A32_UINT:
+		case VK_FORMAT_R32G32B32A32_SINT:
+		case VK_FORMAT_R32G32B32A32_SFLOAT:
+		case VK_FORMAT_R16G16B16A16_UINT:
+		case VK_FORMAT_R16G16B16A16_SINT:
+		case VK_FORMAT_R16G16B16A16_SFLOAT:
+		case VK_FORMAT_R16G16_SFLOAT:
+		case VK_FORMAT_B10G11R11_UFLOAT_PACK32:
+		case VK_FORMAT_R16_SFLOAT:
+		case VK_FORMAT_R16G16B16A16_UNORM:
+		case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
+		case VK_FORMAT_R16G16_UNORM:
+		case VK_FORMAT_R8G8_UNORM:
+		case VK_FORMAT_R16_UNORM:
+		case VK_FORMAT_R8_UNORM:
+		case VK_FORMAT_R16G16B16A16_SNORM:
+		case VK_FORMAT_R16G16_SNORM:
+		case VK_FORMAT_R8G8_SNORM:
+		case VK_FORMAT_R16_SNORM:
+		case VK_FORMAT_R8_SNORM:
+		case VK_FORMAT_R16G16_SINT:
+		case VK_FORMAT_R8G8_SINT:
+		case VK_FORMAT_R16_SINT:
+		case VK_FORMAT_R8_SINT:
+		case VK_FORMAT_A2B10G10R10_UINT_PACK32:
+		case VK_FORMAT_R16G16_UINT:
+		case VK_FORMAT_R8G8_UINT:
+		case VK_FORMAT_R16_UINT:
+		case VK_FORMAT_R8_UINT:
+			return true;
+		default:
+			return false;
+	}
+}
+
+static bool isDepthFormat (VkFormat format)
+{
+	switch(format)
+	{
+		case VK_FORMAT_D16_UNORM:
+		case VK_FORMAT_X8_D24_UNORM_PACK32:
+		case VK_FORMAT_D32_SFLOAT:
+		case VK_FORMAT_D16_UNORM_S8_UINT:
+		case VK_FORMAT_D24_UNORM_S8_UINT:
+		case VK_FORMAT_D32_SFLOAT_S8_UINT:
+			return true;
+		default:
+			return false;
+	}
+}
+
+#ifndef CTS_USES_VULKANSC
+vk::VkFormatPropertiesExtendedKHR Context::getRequiredFormatProperties(const vk::VkFormat& format) const
+{
+	vk::VkFormatPropertiesExtendedKHR p;
+	p.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_EXTENDED_KHR;
+	p.pNext = DE_NULL;
+
+	vk::VkFormatProperties properties;
+	getInstanceInterface().getPhysicalDeviceFormatProperties(getPhysicalDevice(), format, &properties);
+	p.linearTilingFeatures	= properties.linearTilingFeatures;
+	p.optimalTilingFeatures	= properties.optimalTilingFeatures;
+	p.bufferFeatures		= properties.bufferFeatures;
+
+	const vk::VkPhysicalDeviceFeatures& featuresAvailable = getDeviceFeatures();
+	if (isExtendedStorageFormat(format) && featuresAvailable.shaderStorageImageReadWithoutFormat)
+	{
+		if (p.linearTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT_KHR)
+			p.linearTilingFeatures	|= VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR;
+		if (p.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT_KHR)
+			p.optimalTilingFeatures	|= VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR;
+	}
+	if (isExtendedStorageFormat(format) && featuresAvailable.shaderStorageImageWriteWithoutFormat)
+	{
+		if (p.linearTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT_KHR)
+			p.linearTilingFeatures	|= VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR;
+		if (p.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT_KHR)
+			p.optimalTilingFeatures	|= VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR;
+	}
+	if (isDepthFormat(format) && (p.linearTilingFeatures & (VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT_KHR)))
+		p.linearTilingFeatures |= VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR;
+	if (isDepthFormat(format) && (p.optimalTilingFeatures & (VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT_KHR)))
+		p.optimalTilingFeatures |= VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR;
+
+	return p;
+}
+
+vk::VkFormatPropertiesExtendedKHR Context::getFormatProperties(const vk::VkFormat& format) const
+{
+	if (isDeviceFunctionalitySupported(VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME)) // "VK_KHR_format_feature_flags2"
+	{
+		vk::VkFormatPropertiesExtendedKHR p;
+		p.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_EXTENDED_KHR;
+		p.pNext = DE_NULL;
+
+		vk::VkFormatProperties2 properties;
+		properties.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
+		properties.pNext = &p;
+
+		getInstanceInterface().getPhysicalDeviceFormatProperties2(getPhysicalDevice(), format, &properties);
+		return p;
+	}
+	else
+		return Context::getRequiredFormatProperties(format);
+}
+#endif // CTS_USES_VULKANSC
 
 void* Context::getInstanceProcAddr	()
 {

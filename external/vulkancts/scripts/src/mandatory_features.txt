@@ -147,3 +147,9 @@ VkPhysicalDeviceShaderAtomicFloatFeaturesEXT				FEATURES ( shaderImageFloat32Ato
 VkPhysicalDeviceMultiDrawFeaturesEXT						FEATURES ( multiDraw )											REQUIREMENTS ( VK_EXT_multi_draw )
 VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR	FEATURES ( shaderSubgroupUniformControlFlow )					REQUIREMENTS ( VK_KHR_shader_subgroup_uniform_control_flow )
 VkPhysicalDeviceVulkan12Features							FEATURES ( vulkanMemoryModel )									REQUIREMENTS ( "ApiVersion(1, 1, 0, 0)" )	MANDATORY_VARIANT: VULKANSC
+VkPhysicalDevicePresentIdFeaturesKHR						FEATURES ( presentId )											REQUIREMENTS ( VK_KHR_present_id )	MANDATORY_VARIANT: VULKAN
+VkPhysicalDevicePresentWaitFeaturesKHR						FEATURES ( presentWait )										REQUIREMENTS ( VK_KHR_present_wait )	MANDATORY_VARIANT: VULKAN
+VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT				FEATURES ( shaderImageFloat32AtomicMinMax )						REQUIREMENTS ( VK_EXT_shader_atomic_float2 physicalDeviceShaderAtomicFloat2FeaturesEXT.sparseImageFloat32AtomicMinMax )	MANDATORY_VARIANT: VULKAN
+VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR			FEATURES ( shaderIntegerDotProduct )							REQUIREMENTS ( VK_KHR_shader_integer_dot_product )	MANDATORY_VARIANT: VULKAN
+VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT		FEATURES ( primitiveTopologyListRestart )						REQUIREMENTS ( VK_EXT_primitive_topology_list_restart )	MANDATORY_VARIANT: VULKAN
+VkPhysicalDeviceBorderColorSwizzleFeaturesEXT				FEATURES ( borderColorSwizzle )									REQUIREMENTS ( VK_EXT_border_color_swizzle )	MANDATORY_VARIANT: VULKAN

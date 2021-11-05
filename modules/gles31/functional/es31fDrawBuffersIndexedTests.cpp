@@ -737,7 +737,7 @@ FragmentShader::FragmentShader (int drawBufferNdx, const DrawBufferInfo& info)
 
 		default:
 			DE_ASSERT(false);
-	};
+	}
 }
 
 void FragmentShader::shadeFragments (rr::FragmentPacket* packets, const int numPackets, const rr::FragmentShadingContext& context) const
@@ -799,7 +799,7 @@ void FragmentShader::shadeFragments (rr::FragmentPacket* packets, const int numP
 
 				default:
 					DE_ASSERT(DE_FALSE);
-			};
+			}
 		}
 	}
 }
@@ -925,7 +925,7 @@ glu::FragmentSource genFragmentSource (const BlendState& preCommonBlendState, co
 
 			default:
 				DE_ASSERT(DE_FALSE);
-		};
+		}
 
 		stream << " o_drawBuffer" <<  drawBufferNdx << ";\n";
 	}
@@ -974,7 +974,7 @@ glu::FragmentSource genFragmentSource (const BlendState& preCommonBlendState, co
 
 			default:
 				DE_ASSERT(DE_FALSE);
-		};
+		}
 	}
 
 	stream << "}";
@@ -1379,7 +1379,7 @@ void genRandomTest (de::Random& rng, BlendState& preCommon, BlendState& postComm
 			{
 				// Either don't set enable blend or disable blending
 				if (rng.getBool())
-					postCommon.enableBlend = tcu::nothing<bool>();
+					postCommon.enableBlend = tcu::Nothing;
 				else
 					postCommon.enableBlend = tcu::just(false);
 			}
@@ -1503,14 +1503,14 @@ enum PrePost
 
 TestCase* createDiffTest (Context& context, PrePost prepost, const char* name, const BlendState& commonState, const BlendState& drawBufferState)
 {
-	const BlendState emptyState = BlendState(tcu::nothing<bool>(), tcu::nothing<Either<BlendEq, SeparateBlendEq> >(), tcu::nothing<Either<BlendFunc, SeparateBlendFunc> >(), tcu::nothing<BVec4>());
+	const BlendState emptyState = BlendState(tcu::Nothing, tcu::Nothing, tcu::Nothing, tcu::Nothing);
 
 	if (prepost == PRE)
 	{
 		const BlendState		preState	= BlendState((commonState.enableBlend ? commonState.enableBlend : just(true)),
 														 commonState.blendEq,
 														 (commonState.blendFunc ? commonState.blendFunc : just(Either<BlendFunc, SeparateBlendFunc>(BlendFunc(GL_ONE, GL_ONE)))),
-														 tcu::nothing<BVec4>());
+														 tcu::Nothing);
 		vector<DrawBufferInfo>	drawBuffers;
 
 		drawBuffers.push_back(DrawBufferInfo(true, IVec2(64, 64), emptyState, TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8)));
@@ -1521,9 +1521,9 @@ TestCase* createDiffTest (Context& context, PrePost prepost, const char* name, c
 	else if (prepost == POST)
 	{
 		const BlendState		preState	= BlendState(just(true),
-														 tcu::nothing<Either<BlendEq, SeparateBlendEq> >(),
+														 tcu::Nothing,
 														 Maybe<Either<BlendFunc, SeparateBlendFunc> >(BlendFunc(GL_ONE, GL_ONE)),
-														 tcu::nothing<BVec4>());
+														 tcu::Nothing);
 		vector<DrawBufferInfo>	drawBuffers;
 
 		drawBuffers.push_back(DrawBufferInfo(true, IVec2(64, 64), emptyState, TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8)));
@@ -1540,14 +1540,14 @@ TestCase* createDiffTest (Context& context, PrePost prepost, const char* name, c
 
 TestCase* createAdvancedEqDiffTest (Context& context, PrePost prepost, const char* name, const BlendState& commonState, const BlendState& drawBufferState)
 {
-	const BlendState emptyState = BlendState(tcu::nothing<bool>(), tcu::nothing<Either<BlendEq, SeparateBlendEq> >(), tcu::nothing<Either<BlendFunc, SeparateBlendFunc> >(), tcu::nothing<BVec4>());
+	const BlendState emptyState = BlendState(tcu::Nothing, tcu::Nothing, tcu::Nothing, tcu::Nothing);
 
 	if (prepost == PRE)
 	{
 		const BlendState		preState	= BlendState((commonState.enableBlend ? commonState.enableBlend : just(true)),
 														 commonState.blendEq,
 														 (commonState.blendFunc ? commonState.blendFunc : just(Either<BlendFunc, SeparateBlendFunc>(BlendFunc(GL_ONE, GL_ONE)))),
-														 tcu::nothing<BVec4>());
+														 tcu::Nothing);
 		vector<DrawBufferInfo>	drawBuffers;
 
 		drawBuffers.push_back(DrawBufferInfo(true, IVec2(64, 64), drawBufferState, TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8)));
@@ -1557,9 +1557,9 @@ TestCase* createAdvancedEqDiffTest (Context& context, PrePost prepost, const cha
 	else if (prepost == POST)
 	{
 		const BlendState		preState	= BlendState(just(true),
-														 tcu::nothing<Either<BlendEq, SeparateBlendEq> >(),
+														 tcu::Nothing,
 														 Maybe<Either<BlendFunc, SeparateBlendFunc> >(BlendFunc(GL_ONE, GL_ONE)),
-														 tcu::nothing<BVec4>());
+														 tcu::Nothing);
 		vector<DrawBufferInfo>	drawBuffers;
 
 		drawBuffers.push_back(DrawBufferInfo(true, IVec2(64, 64), drawBufferState, TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8)));
@@ -1588,14 +1588,14 @@ void addDrawBufferCommonTests (TestCaseGroup* root, PrePost prepost)
 	}
 
 	{
-		const BlendState	eqStateA			= BlendState(tcu::nothing<bool>(), Maybe<Either<BlendEq, SeparateBlendEq> >(GL_FUNC_ADD), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>());
-		const BlendState	eqStateB			= BlendState(tcu::nothing<bool>(), Maybe<Either<BlendEq, SeparateBlendEq> >(GL_FUNC_SUBTRACT), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>());
+		const BlendState	eqStateA			= BlendState(tcu::Nothing, Maybe<Either<BlendEq, SeparateBlendEq> >(GL_FUNC_ADD), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>());
+		const BlendState	eqStateB			= BlendState(tcu::Nothing, Maybe<Either<BlendEq, SeparateBlendEq> >(GL_FUNC_SUBTRACT), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>());
 
-		const BlendState	separateEqStateA	= BlendState(tcu::nothing<bool>(), Maybe<Either<BlendEq, SeparateBlendEq> >(SeparateBlendEq(GL_FUNC_ADD, GL_FUNC_SUBTRACT)), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>());
-		const BlendState	separateEqStateB	= BlendState(tcu::nothing<bool>(), Maybe<Either<BlendEq, SeparateBlendEq> >(SeparateBlendEq(GL_FUNC_SUBTRACT, GL_FUNC_ADD)), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>());
+		const BlendState	separateEqStateA	= BlendState(tcu::Nothing, Maybe<Either<BlendEq, SeparateBlendEq> >(SeparateBlendEq(GL_FUNC_ADD, GL_FUNC_SUBTRACT)), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>());
+		const BlendState	separateEqStateB	= BlendState(tcu::Nothing, Maybe<Either<BlendEq, SeparateBlendEq> >(SeparateBlendEq(GL_FUNC_SUBTRACT, GL_FUNC_ADD)), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>());
 
-		const BlendState	advancedEqStateA	= BlendState(tcu::nothing<bool>(), Maybe<Either<BlendEq, SeparateBlendEq> >(GL_DIFFERENCE), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>());
-		const BlendState	advancedEqStateB	= BlendState(tcu::nothing<bool>(), Maybe<Either<BlendEq, SeparateBlendEq> >(GL_SCREEN), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>());
+		const BlendState	advancedEqStateA	= BlendState(tcu::Nothing, Maybe<Either<BlendEq, SeparateBlendEq> >(GL_DIFFERENCE), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>());
+		const BlendState	advancedEqStateB	= BlendState(tcu::Nothing, Maybe<Either<BlendEq, SeparateBlendEq> >(GL_SCREEN), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>());
 
 		root->addChild(createDiffTest(root->getContext(), prepost, "common_blend_eq_buffer_blend_eq", eqStateA, eqStateB));
 		root->addChild(createDiffTest(root->getContext(), prepost, "common_blend_eq_buffer_separate_blend_eq", eqStateA, separateEqStateB));
@@ -1611,10 +1611,10 @@ void addDrawBufferCommonTests (TestCaseGroup* root, PrePost prepost)
 	}
 
 	{
-		const BlendState	funcStateA			= BlendState(tcu::nothing<bool>(), Maybe<Either<BlendEq, SeparateBlendEq> >(), Maybe<Either<BlendFunc, SeparateBlendFunc> >(BlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA)), Maybe<BVec4>());
-		const BlendState	funcStateB			= BlendState(tcu::nothing<bool>(), Maybe<Either<BlendEq, SeparateBlendEq> >(), Maybe<Either<BlendFunc, SeparateBlendFunc> >(BlendFunc(GL_DST_ALPHA, GL_SRC_ALPHA)), Maybe<BVec4>());
-		const BlendState	separateFuncStateA	= BlendState(tcu::nothing<bool>(), Maybe<Either<BlendEq, SeparateBlendEq> >(), Maybe<Either<BlendFunc, SeparateBlendFunc> >(SeparateBlendFunc(BlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA), BlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA))), Maybe<BVec4>());
-		const BlendState	separateFuncStateB	= BlendState(tcu::nothing<bool>(), Maybe<Either<BlendEq, SeparateBlendEq> >(), Maybe<Either<BlendFunc, SeparateBlendFunc> >(SeparateBlendFunc(BlendFunc(GL_DST_ALPHA, GL_SRC_ALPHA), BlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA))), Maybe<BVec4>());
+		const BlendState	funcStateA			= BlendState(tcu::Nothing, Maybe<Either<BlendEq, SeparateBlendEq> >(), Maybe<Either<BlendFunc, SeparateBlendFunc> >(BlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA)), Maybe<BVec4>());
+		const BlendState	funcStateB			= BlendState(tcu::Nothing, Maybe<Either<BlendEq, SeparateBlendEq> >(), Maybe<Either<BlendFunc, SeparateBlendFunc> >(BlendFunc(GL_DST_ALPHA, GL_SRC_ALPHA)), Maybe<BVec4>());
+		const BlendState	separateFuncStateA	= BlendState(tcu::Nothing, Maybe<Either<BlendEq, SeparateBlendEq> >(), Maybe<Either<BlendFunc, SeparateBlendFunc> >(SeparateBlendFunc(BlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA), BlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA))), Maybe<BVec4>());
+		const BlendState	separateFuncStateB	= BlendState(tcu::Nothing, Maybe<Either<BlendEq, SeparateBlendEq> >(), Maybe<Either<BlendFunc, SeparateBlendFunc> >(SeparateBlendFunc(BlendFunc(GL_DST_ALPHA, GL_SRC_ALPHA), BlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA))), Maybe<BVec4>());
 
 		root->addChild(createDiffTest(root->getContext(), prepost, "common_blend_func_buffer_blend_func",					funcStateA,			funcStateB));
 		root->addChild(createDiffTest(root->getContext(), prepost, "common_blend_func_buffer_separate_blend_func",			funcStateA,			separateFuncStateB));
@@ -1623,8 +1623,8 @@ void addDrawBufferCommonTests (TestCaseGroup* root, PrePost prepost)
 	}
 
 	{
-		const BlendState	commonColorMaskState	= BlendState(tcu::nothing<bool>(), Maybe<Either<BlendEq, SeparateBlendEq> >(), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>(BVec4(true, false, true, false)));
-		const BlendState	bufferColorMaskState	= BlendState(tcu::nothing<bool>(), Maybe<Either<BlendEq, SeparateBlendEq> >(), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>(BVec4(false, true, false, true)));
+		const BlendState	commonColorMaskState	= BlendState(tcu::Nothing, Maybe<Either<BlendEq, SeparateBlendEq> >(), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>(BVec4(true, false, true, false)));
+		const BlendState	bufferColorMaskState	= BlendState(tcu::Nothing, Maybe<Either<BlendEq, SeparateBlendEq> >(), Maybe<Either<BlendFunc, SeparateBlendFunc> >(), Maybe<BVec4>(BVec4(false, true, false, true)));
 
 		root->addChild(createDiffTest(root->getContext(), prepost, "common_color_mask_buffer_color_mask", commonColorMaskState, bufferColorMaskState));
 	}

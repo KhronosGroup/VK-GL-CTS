@@ -454,7 +454,7 @@ public:
 		}
 
 		TCU_CHECK(m_sync == eglNoSync);
-	};
+	}
 
 	IterateResult	iterate						(void)
 	{
@@ -644,7 +644,7 @@ public:
 		}
 
 		TCU_CHECK(m_sync == eglNoSync);
-	};
+	}
 
 	IterateResult	iterate						(void)
 	{
@@ -783,7 +783,7 @@ public:
 
 		TCU_CHECK(status == condSatisfied);
 		EGLU_CHECK_MSG(egl, clientWaitSyncMsgChk.c_str());
-	};
+	}
 
 	IterateResult	iterate					(void)
 	{
@@ -868,7 +868,7 @@ public:
 			TestLog::EndMessage;
 
 		TCU_CHECK(result == condSatisfied);
-	};
+	}
 
 	IterateResult	iterate					(void)
 	{
@@ -1463,7 +1463,7 @@ public:
 
 		TCU_CHECK(result == EGL_FALSE);
 		TCU_CHECK(condition == 0xF0F0F);
-	};
+	}
 
 	IterateResult	iterate						(void)
 	{

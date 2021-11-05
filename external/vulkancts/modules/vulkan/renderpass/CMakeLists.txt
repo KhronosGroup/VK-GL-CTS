@@ -32,6 +32,8 @@ set(DEQP_VK_RENDER_PASS_SRCS
 	vktRenderPassFragmentDensityMapTests.hpp
 	vktRenderPassSparseRenderTargetTests.cpp
 	vktRenderPassSparseRenderTargetTests.hpp
+	vktRenderPassLoadStoreOpNoneTests.cpp
+	vktRenderPassLoadStoreOpNoneTests.hpp
 	)
 
 PCH(DEQP_VK_RENDER_PASS_SRCS ../pch.cpp)

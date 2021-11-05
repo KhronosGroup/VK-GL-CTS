@@ -302,7 +302,7 @@ void BufferVAOInputAttacher::drawContainer (GLuint vao, Surface& dst)
 	m_program.draw(vao, 1.0, false, &dst);
 	log() << TestLog::Message << "// Drew an output image with VAO " << vao
 		  << TestLog::EndMessage;
-};
+}
 
 class BufferTfAttacher : public Attacher
 {

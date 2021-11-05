@@ -45,7 +45,7 @@ public:
 
 extern volatile Dummy g_dummy;
 
-};
+}
 
 } // tcu
 

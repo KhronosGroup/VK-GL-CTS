@@ -1020,7 +1020,6 @@ void prepareDepthTextureFace(const glw::Functions& gl, glw::GLint cube_face, glw
 
 	default:
 		TCU_FAIL("Not implemented case !");
-		break;
 	}
 }
 
@@ -1242,7 +1241,6 @@ void prepareRGBAIntegerTextureFace(const glw::Functions& gl, glw::GLint cube_fac
 
 	default:
 		TCU_FAIL("Not implemented case !");
-		break;
 	}
 }
 
@@ -1278,7 +1276,6 @@ void prepareRGBATextureFace(const glw::Functions& gl, glw::GLint cube_face, glw:
 
 	default:
 		TCU_FAIL("Not implemented case !");
-		break;
 	}
 }
 
@@ -1308,7 +1305,6 @@ void prepareStencilTextureFace(const glw::Functions& gl, glw::GLint cube_face, g
 
 	default:
 		TCU_FAIL("Not implemented case !");
-		break;
 	}
 }
 
@@ -1408,7 +1404,7 @@ void prepareTextureCoordinatesForFace(glw::GLfloat* data, glw::GLuint width, glw
 		vectorSet4(data, 7, middle, bottom, negative, layer);
 		vectorSet4(data, 8, right, bottom, negative, layer);
 		break;
-	};
+	}
 
 	vectorNormalize<3, 4>(data, 0);
 	vectorNormalize<3, 4>(data, 1);
@@ -1517,7 +1513,7 @@ void prepareTextureCoordinatesForGatherForFace(glw::GLfloat* data, glw::GLuint w
 		vectorSet4(data, 7, middle, bottom, negative, layer);
 		vectorSet4(data, 8, right, bottom, negative, layer);
 		break;
-	};
+	}
 
 	vectorNormalize<3, 4>(data, 0);
 	vectorNormalize<3, 4>(data, 1);
@@ -1571,7 +1567,6 @@ void prepareTextureFace(const glw::Functions& gl, glw::GLint cube_face, glw::GLi
 
 	default:
 		TCU_FAIL("Not implemented case !");
-		break;
 	}
 }
 
@@ -1957,7 +1952,7 @@ void TextureCubeMapArraySamplingTest::getAttributes(samplerType					sampler_type
 		out_attribute_definitions = 0;
 		out_n_attributes		  = 0;
 		break;
-	};
+	}
 }
 
 /** Get attributes specific for sampling function
@@ -2010,7 +2005,7 @@ void TextureCubeMapArraySamplingTest::getAttributes(samplingFunction			sampling_
 		out_attribute_definitions = textureGather_attributes;
 		out_n_attributes		  = n_textureGather_attributes;
 		break;
-	};
+	}
 }
 
 /** Get information about color type for type of sampler
@@ -2064,7 +2059,7 @@ void TextureCubeMapArraySamplingTest::getColorType(samplerType sampler_type, con
 		out_n_components	   = 1;
 		out_is_shadow		   = false;
 		break;
-	};
+	}
 }
 
 /** Get information about color type for type of sampler
@@ -2109,7 +2104,7 @@ void TextureCubeMapArraySamplingTest::getColorType(samplerType sampler_type, con
 		out_image_type   = image_uint;
 		out_image_layout = "r32ui";
 		break;
-	};
+	}
 }
 
 /** Prepare code for passthrough fragment shader
@@ -2467,7 +2462,7 @@ void TextureCubeMapArraySamplingTest::getSamplingComputeShaderCode(const sampler
 		/* imageStore(image, image_coord, color);*/
 		stream << compute_shader_color;
 		break;
-	};
+	}
 
 	stream << ");\n";
 
@@ -3068,7 +3063,6 @@ void TextureCubeMapArraySamplingTest::getShadowSamplingFunctionCall(
 		/* fs_in_color = textureGrad(sampler, vs_out_texture_coordinates, vs_out_grad_x, vs_out_grad_y); */
 		throw tcu::NotSupportedError("textureGrad operation is not available for samplerCubeArrayShadow", "", __FILE__,
 									 __LINE__);
-		break;
 	case TextureGather:
 		if (4 == n_components)
 		{
@@ -4255,17 +4249,13 @@ const TextureCubeMapArraySamplingTest::programCollectionForFunction* TextureCube
 	{
 	case Texture:
 		return &m_programs_for_texture;
-		break;
 	case TextureLod:
 		return &m_programs_for_textureLod;
-		break;
 	case TextureGrad:
 		return &m_programs_for_textureGrad;
-		break;
 	case TextureGather:
 		return &m_programs_for_textureGather;
-		break;
-	};
+	}
 
 	return 0;
 }
@@ -4308,22 +4298,16 @@ const TextureCubeMapArraySamplingTest::programDefinition* TextureCubeMapArraySam
 	{
 	case Compute:
 		return &program_with_sampling_compute_shader;
-		break;
 	case Fragment:
 		return &program_with_sampling_fragment_shader;
-		break;
 	case Geometry:
 		return &program_with_sampling_geometry_shader;
-		break;
 	case Tesselation_Control:
 		return &program_with_sampling_tesselation_control_shader;
-		break;
 	case Tesselation_Evaluation:
 		return &program_with_sampling_tesselation_evaluation_shader;
-		break;
 	case Vertex:
 		return &program_with_sampling_vertex_shader;
-		break;
 	}
 
 	return 0;
@@ -4416,22 +4400,16 @@ const TextureCubeMapArraySamplingTest::shaderDefinition* TextureCubeMapArraySamp
 	{
 	case Compute:
 		return compute_shader;
-		break;
 	case Fragment:
 		return fragment_shader;
-		break;
 	case Geometry:
 		return geometry_shader;
-		break;
 	case Tesselation_Control:
 		return tesselation_control_shader;
-		break;
 	case Tesselation_Evaluation:
 		return tesselation_evaluation_shader;
-		break;
 	case Vertex:
 		return vertex_shader;
-		break;
 	}
 
 	return 0;

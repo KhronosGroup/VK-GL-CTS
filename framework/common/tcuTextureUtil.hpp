@@ -44,6 +44,8 @@ bool					hasStencilComponent			(TextureFormat::ChannelOrder order);
 bool					hasDepthComponent			(TextureFormat::ChannelOrder order);
 
 // sRGB - linear conversion.
+float					linearChannelToSRGB			(float cl);
+float					sRGBChannelToLinear			(float cl);
 Vec4					sRGBToLinear				(const Vec4& cs);
 Vec4					sRGB8ToLinear				(const UVec4& cs);
 Vec4					sRGBA8ToLinear				(const UVec4& cs);
@@ -145,10 +147,7 @@ inline deUint8 floatToU8 (float fv)
 	m &= 0x00ffffffu;
 	m |= 0x00800000u;
 	m  = (m << 8) - m;
-	m  = 0x00800000u + (m >> e);
-
-	if (e > 8)
-		m = e;
+	m  = (e > 8) ? e : (0x00800000u + (m >> e));
 
 	return (deUint8)(m>>24);
 }

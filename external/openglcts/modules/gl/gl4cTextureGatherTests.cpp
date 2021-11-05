@@ -3206,7 +3206,7 @@ class GatherGeometryShader : public GatherBase
 			   "   gl_Position = vec4(0, 0, 0, 1); \n"
 			   "   d = v_in_0;                     \n"
 			   "}";
-	};
+	}
 
 	virtual std::string GeometryShader()
 	{

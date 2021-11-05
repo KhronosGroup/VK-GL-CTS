@@ -161,6 +161,7 @@ protected:
 																	 VkAttachmentLoadOp					loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE);
 	Move<VkRenderPass>				buildComplexRenderPass			(VkFormat							intermediateFormat,
 																	 VkImageLayout						intermediateLayout,
+																	 VkImageAspectFlags					intermediateAspect,
 																	 VkFormat							outputFormat,
 																	 VkImageLayout						outputLayout);
 	Move<VkImageView>				buildImageView					(VkImage							image,
@@ -274,6 +275,10 @@ NoneStageTestInstance::NoneStageTestInstance(Context& context, const TestParams&
 	const auto readLayout	= m_testParams.readLayout;
 	const auto readAspect	= m_testParams.readAspect;
 
+	// When testing depth stencil combined images, the stencil aspect is only tested when depth aspect is in ATTACHMENT_OPTIMAL layout.
+	// - it is invalid to read depth using sampler or input attachment in such layout
+	const auto readStencilFromCombinedDepthStencil = (readLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL);
+
 	// select format that will be used for test
 	if ((writeAspect == VK_IMAGE_ASPECT_DEPTH_BIT) || (readAspect == VK_IMAGE_ASPECT_DEPTH_BIT))
 	{
@@ -290,9 +295,17 @@ NoneStageTestInstance::NoneStageTestInstance(Context& context, const TestParams&
 	else if ((writeAspect == IMAGE_ASPECT_DEPTH_STENCIL) || (readAspect == IMAGE_ASPECT_DEPTH_STENCIL))
 	{
 		m_transitionImageFormat			= VK_FORMAT_D24_UNORM_S8_UINT;
-		// note: in test we focus only on depth aspect; no need to check both in those cases
-		m_transitionImageAspect			= VK_IMAGE_ASPECT_DEPTH_BIT;
 		m_writeRenderPassOutputLayout	= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		if (readStencilFromCombinedDepthStencil)
+		{
+			m_transitionImageAspect = VK_IMAGE_ASPECT_STENCIL_BIT;
+		}
+		else
+		{
+			// note: in test we focus only on depth aspect; no need to check both in those cases
+			m_transitionImageAspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+		}
 	}
 	else
 	{
@@ -331,7 +344,7 @@ NoneStageTestInstance::NoneStageTestInstance(Context& context, const TestParams&
 		// depth/stencil layouts need diferent configuration
 		if (writeAspect & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT))
 		{
-			if (writeAspect & VK_IMAGE_ASPECT_DEPTH_BIT)
+			if ((writeAspect & VK_IMAGE_ASPECT_DEPTH_BIT) && !readStencilFromCombinedDepthStencil)
 			{
 				m_referenceImageFormat					 = VK_FORMAT_R32_SFLOAT;
 				m_referenceImageUsage					|= VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -365,7 +378,7 @@ NoneStageTestInstance::NoneStageTestInstance(Context& context, const TestParams&
 		m_dstAccessFromNoneAccessMask	= getAccessFlag(VK_ACCESS_2_SHADER_READ_BIT_KHR);
 
 		m_readSubresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		if ((readAspect | writeAspect) & VK_IMAGE_ASPECT_DEPTH_BIT)
+		if (((readAspect | writeAspect) & VK_IMAGE_ASPECT_DEPTH_BIT) && !readStencilFromCombinedDepthStencil)
 			m_readImageFormat = VK_FORMAT_R32_SFLOAT;
 		else if ((readAspect | writeAspect) & VK_IMAGE_ASPECT_STENCIL_BIT)
 			m_readImageFormat = VK_FORMAT_R8_UINT;
@@ -393,7 +406,7 @@ NoneStageTestInstance::NoneStageTestInstance(Context& context, const TestParams&
 				m_referenceImageUsage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
 			// when we read stencil as color we need to use usampler2D
-			if (writeAspect == VK_IMAGE_ASPECT_STENCIL_BIT)
+			if ((readAspect | writeAspect) == VK_IMAGE_ASPECT_STENCIL_BIT || (readAspect == IMAGE_ASPECT_DEPTH_STENCIL && readStencilFromCombinedDepthStencil))
 				m_readFragShaderName		 = "frag-stencil-to-color";
 		}
 	}
@@ -518,10 +531,10 @@ Move<VkRenderPass> NoneStageTestInstance::buildBasicRenderPass(VkFormat outputFo
 		DE_NULL													// const deUint32*					pCorrelatedViewMasks
 	};
 
-	return vk::createRenderPass2(m_context.getDeviceInterface(), m_context.getDevice(), &renderPassInfo);;
+	return vk::createRenderPass2(m_context.getDeviceInterface(), m_context.getDevice(), &renderPassInfo);
 }
 
-Move<VkRenderPass> NoneStageTestInstance::buildComplexRenderPass(VkFormat intermediateFormat,	VkImageLayout intermediateLayout,
+Move<VkRenderPass> NoneStageTestInstance::buildComplexRenderPass(VkFormat intermediateFormat,	VkImageLayout intermediateLayout, VkImageAspectFlags intermediateAspect,
 																 VkFormat outputFormat,			VkImageLayout outputLayout)
 {
 	std::vector<VkAttachmentDescription2> attachmentDescriptions
@@ -556,7 +569,6 @@ Move<VkRenderPass> NoneStageTestInstance::buildComplexRenderPass(VkFormat interm
 		}
 	};
 
-	VkImageAspectFlags					intermediateAspect	= getImageAspectFlags(mapVkFormat(intermediateFormat));
 	VkImageAspectFlags					outputAspect		= getImageAspectFlags(mapVkFormat(outputFormat));
 	std::vector<VkAttachmentReference2>	attachmentRefs
 	{
@@ -806,6 +818,14 @@ tcu::TestStatus NoneStageTestInstance::iterate(void)
 	// generate gradient
 	std::vector<deUint32>	referenceData	(m_imageExtent.width * m_imageExtent.height);
 	tcu::TextureFormat		referenceFormat	(mapVkFormat(m_referenceImageFormat));
+	if (m_testParams.readLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
+	{
+		// when testing stencil aspect of depth stencil combined image, prepare reference date only with stencil,
+		// as the copy operation (used when m_usePipelineToWrite == false) sources just one aspect
+
+		// this format is used for tcu operations only - does not need to be supported by the Vulkan implementation
+		referenceFormat = mapVkFormat(VK_FORMAT_S8_UINT);
+	}
 	PixelBufferAccess		referencePBA	(referenceFormat, m_imageExtent.width, m_imageExtent.height, m_imageExtent.depth, referenceData.data());
 	fillWithComponentGradients(referencePBA, tcu::Vec4(0.0f), tcu::Vec4(1.0f));
 	deMemcpy(srcBuffer.memory->getHostPtr(), referenceData.data(), static_cast<size_t>(imageSizeInBytes));
@@ -877,7 +897,7 @@ tcu::TestStatus NoneStageTestInstance::iterate(void)
 				m_readDescriptorPool		= buildDescriptorPool(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT);
 				m_readDescriptorSet			= buildDescriptorSet(*m_readDescriptorPool, *m_readDescriptorSetLayout, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
 																 *m_attachmentViews[m_usePipelineToWrite], m_testParams.readLayout);
-				m_readRenderPass			= buildComplexRenderPass(m_transitionImageFormat, m_testParams.readLayout,
+				m_readRenderPass			= buildComplexRenderPass(m_transitionImageFormat, m_testParams.readLayout, m_transitionImageAspect,
 																	 m_readImageFormat, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 				m_readFramebuffer			= buildFramebuffer(*m_readRenderPass, &m_attachmentViews[m_usePipelineToWrite].get(),
 																				  &m_attachmentViews[m_usePipelineToWrite+1].get());
@@ -1068,11 +1088,11 @@ tcu::TestStatus NoneStageTestInstance::iterate(void)
 	invalidateAlloc(vk, device, *dstBuffer.memory);
 	PixelBufferAccess resultPBA(resultFormat, m_imageExtent.width, m_imageExtent.height, m_imageExtent.depth, dstBuffer.memory->getHostPtr());
 
-	// if result/reference is depth-stencil format then focus only on depth component
+	// if result/reference is depth-stencil format then focus only on tested component
 	if (isCombinedDepthStencilType(referenceFormat.type))
-		referencePBA = getEffectiveDepthStencilAccess(referencePBA, tcu::Sampler::MODE_DEPTH);
+		referencePBA = getEffectiveDepthStencilAccess(referencePBA, (m_referenceSubresourceRange.aspectMask & VK_IMAGE_ASPECT_DEPTH_BIT) ? tcu::Sampler::MODE_DEPTH : tcu::Sampler::MODE_STENCIL);
 	if (isCombinedDepthStencilType(resultFormat.type))
-		resultPBA = getEffectiveDepthStencilAccess(resultPBA, tcu::Sampler::MODE_DEPTH);
+		resultPBA = getEffectiveDepthStencilAccess(resultPBA, (m_readSubresourceRange.aspectMask & VK_IMAGE_ASPECT_DEPTH_BIT) ? tcu::Sampler::MODE_DEPTH : tcu::Sampler::MODE_STENCIL);
 
 	if (verifyResult(referencePBA, resultPBA))
 		return TestStatus::pass("Pass");
@@ -1083,7 +1103,9 @@ bool NoneStageTestInstance::verifyResult(const PixelBufferAccess& reference, con
 {
 	TestLog& log = m_context.getTestContext().getLog();
 
-	if (isIntFormat(m_referenceImageFormat) || isUintFormat(m_referenceImageFormat))
+	const auto forceStencil = (m_testParams.readLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL);
+
+	if (isIntFormat(m_referenceImageFormat) || isUintFormat(m_referenceImageFormat) || forceStencil)
 	{
 		// special case for stencil (1bit gradient - top-left of image is 0, bottom-right is 1)
 
@@ -1207,22 +1229,22 @@ void NoneStageTestCase::initPrograms(SourceCollections& sourceCollections) const
 			"{\n"
 			"}\n"
 		);
-
-		if ((readLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) ||
-		   ((readLayout == VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL_KHR) && (readAspect == IMAGE_ASPECT_ALL)))
-		{
-			// use usampler2D and uvec4 for color
-			sourceCollections.glslSources.add("frag-stencil-to-color") << glu::FragmentSource(
-				"#version 450\n"
-				"layout(binding = 0) uniform usampler2D u_sampler;\n"
-				"layout(location = 0) in vec2 inUV;\n"
-				"layout(location = 0) out uvec4 fragColor;\n"
-				"void main(void)\n"
-				"{\n"
-				"  fragColor = texture(u_sampler, inUV);\n"
-				"}\n"
-			);
-		}
+	}
+	if ((readLayout != VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) &&
+		(readLayout != VK_IMAGE_LAYOUT_GENERAL) &&
+		((readAspect | writeAspect) == VK_IMAGE_ASPECT_STENCIL_BIT || (readAspect == IMAGE_ASPECT_DEPTH_STENCIL && m_testParams.readLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)))
+	{
+		// use usampler2D and uvec4 for color
+		sourceCollections.glslSources.add("frag-stencil-to-color") << glu::FragmentSource(
+			"#version 450\n"
+			"layout(binding = 0) uniform usampler2D u_sampler;\n"
+			"layout(location = 0) in vec2 inUV;\n"
+			"layout(location = 0) out uvec4 fragColor;\n"
+			"void main(void)\n"
+			"{\n"
+			"  fragColor = texture(u_sampler, inUV);\n"
+			"}\n"
+		);
 	}
 
 	if (readAspect & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT))

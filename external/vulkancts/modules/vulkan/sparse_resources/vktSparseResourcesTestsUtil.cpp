@@ -983,7 +983,7 @@ bool checkSparseSupportForImageType (const InstanceInterface&	instance,
 		default:
 			DE_FATAL("Unexpected image type");
 			return false;
-	};
+	}
 }
 
 bool checkSparseSupportForImageFormat (const InstanceInterface&	instance,

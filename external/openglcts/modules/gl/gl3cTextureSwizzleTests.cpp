@@ -1724,7 +1724,6 @@ void calculate_expected_value(size_t source_format_idx, size_t output_format_idx
 
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 
 	/* Signed formats use one bit less */
@@ -1795,7 +1794,6 @@ void calculate_expected_value(size_t source_format_idx, size_t output_format_idx
 			break;
 		default:
 			TCU_FAIL("Invalid enum");
-			break;
 		}
 		out_expected_data_size = texel_size;
 	}
@@ -1890,7 +1888,6 @@ size_t get_swizzled_channel_idx(const size_t channel_idx, const glw::GLint swizz
 		break;
 	default:
 		TCU_FAIL("Invalid value");
-		break;
 	}
 
 	return channel;
@@ -1929,8 +1926,7 @@ const _out_ch_desc& get_descriptor_for_channel(const _texture_format& format, co
 		break;
 	default:
 		TCU_FAIL("Invalid value");
-		break;
-	};
+	}
 
 	switch (desc->m_internal_format)
 	{
@@ -2738,7 +2734,6 @@ bool SmokeTest::fillSourceTexture(size_t format_idx, size_t target_idx)
 
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 
 	/* Attach texture */
@@ -2751,7 +2746,6 @@ bool SmokeTest::fillSourceTexture(size_t format_idx, size_t target_idx)
 
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 
 	/* Unbind */
@@ -3227,7 +3221,6 @@ std::string SmokeTest::prepareCoordinates(const testCase& test_case)
 			break;
 		default:
 			TCU_FAIL("Invalid value");
-			break;
 		}
 	}
 	else
@@ -3248,7 +3241,6 @@ std::string SmokeTest::prepareCoordinates(const testCase& test_case)
 			break;
 		default:
 			TCU_FAIL("Invalid value");
-			break;
 		}
 	}
 
@@ -3318,7 +3310,6 @@ std::string SmokeTest::prepareDerivatives(const testCase& test_case, size_t inde
 		break;
 	default:
 		TCU_FAIL("Invalid value");
-		break;
 	}
 
 	size_t position = 0;
@@ -3376,7 +3367,6 @@ std::string SmokeTest::prepareOffsets(const testCase& test_case)
 		break;
 	default:
 		TCU_FAIL("Invalid value");
-		break;
 	}
 
 	size_t position = 0;
@@ -3538,7 +3528,6 @@ void SmokeTest::prepareSourceTexture(size_t format_idx, size_t target_idx, glw::
 
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 
 	/* Log error */
@@ -3702,7 +3691,6 @@ void SmokeTest::verifyOutputImage(const testCase& test_case, size_t /* output_fo
 
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 }
 
@@ -3972,7 +3960,6 @@ bool FunctionalTest::fillMSTexture(size_t format_idx, size_t target_idx)
 
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 
 	/* Verify status */
@@ -4085,7 +4072,6 @@ bool FunctionalTest::fillSourceTexture(size_t format_idx, size_t target_idx)
 
 	default:
 		TCU_FAIL("Invalid enum");
-		break;
 	}
 
 	/* Unbind */
@@ -4228,7 +4214,6 @@ void FunctionalTest::verifyOutputImage(const testCase& test_case, size_t output_
 			break;
 		default:
 			TCU_FAIL("Invalid enum");
-			break;
 		}
 
 		if (false == res)

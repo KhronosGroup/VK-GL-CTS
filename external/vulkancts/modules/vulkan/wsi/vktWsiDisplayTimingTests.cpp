@@ -692,7 +692,7 @@ DisplayTimingTestInstance::DisplayTimingTestInstance (Context& context, const Te
 	, m_vki						(m_instance.getDriver())
 	, m_physicalDevice			(vk::chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
 	, m_nativeDisplay			(createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), m_instanceExtensions, testConfig.wsiType))
-	, m_nativeWindow			(createWindow(*m_nativeDisplay, tcu::nothing<UVec2>()))
+	, m_nativeWindow			(createWindow(*m_nativeDisplay, tcu::Nothing))
 	, m_surface					(vk::wsi::createSurface(m_vki, m_instance, testConfig.wsiType, *m_nativeDisplay, *m_nativeWindow))
 
 	, m_queueFamilyIndex		(vk::wsi::chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))

@@ -3404,14 +3404,36 @@ VkFormatFeatureFlags getRequiredOptimalTilingFeatures (Context& context, VkForma
 	}
 }
 
-bool requiresYCbCrConversion(VkFormat format)
+bool requiresYCbCrConversion(Context& context, VkFormat format)
 {
+#ifndef CTS_USES_VULKANSC
+	if (format == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16)
+	{
+		VkPhysicalDeviceFeatures2						coreFeatures;
+		VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT	rgba10x6features;
+
+		deMemset(&coreFeatures, 0, sizeof(coreFeatures));
+		deMemset(&rgba10x6features, 0, sizeof(rgba10x6features));
+
+		coreFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		coreFeatures.pNext		= &rgba10x6features;
+		rgba10x6features.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT;
+
+		const InstanceInterface &vk = context.getInstanceInterface();
+		vk.getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);
+
+		return !rgba10x6features.formatRgba10x6WithoutYCbCrSampler;
+	}
+#else
+	DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
+
 	return isYCbCrFormat(format) &&
 			format != VK_FORMAT_R10X6_UNORM_PACK16 && format != VK_FORMAT_R10X6G10X6_UNORM_2PACK16 &&
 			format != VK_FORMAT_R12X4_UNORM_PACK16 && format != VK_FORMAT_R12X4G12X4_UNORM_2PACK16;
 }
 
-VkFormatFeatureFlags getAllowedOptimalTilingFeatures (VkFormat format)
+VkFormatFeatureFlags getAllowedOptimalTilingFeatures (Context &context, VkFormat format)
 {
 	// YCbCr formats only support a subset of format feature flags
 	const VkFormatFeatureFlags ycbcrAllows =
@@ -3432,7 +3454,7 @@ VkFormatFeatureFlags getAllowedOptimalTilingFeatures (VkFormat format)
 	// By default everything is allowed.
 	VkFormatFeatureFlags allow = (VkFormatFeatureFlags)~0u;
 	// Formats for which SamplerYCbCrConversion is required may not support certain features.
-	if (requiresYCbCrConversion(format))
+	if (requiresYCbCrConversion(context, format))
 		allow &= ycbcrAllows;
 	// single-plane formats *may not* support DISJOINT_BIT
 	if (!isYCbCrFormat(format) || getPlaneCount(format) == 1)
@@ -3441,10 +3463,10 @@ VkFormatFeatureFlags getAllowedOptimalTilingFeatures (VkFormat format)
 	return allow;
 }
 
-VkFormatFeatureFlags getAllowedBufferFeatures (VkFormat format)
+VkFormatFeatureFlags getAllowedBufferFeatures (Context &context, VkFormat format)
 {
 	// TODO: Do we allow non-buffer flags in the bufferFeatures?
-	return requiresYCbCrConversion(format) ? (VkFormatFeatureFlags)0 : (VkFormatFeatureFlags)(~VK_FORMAT_FEATURE_DISJOINT_BIT);
+	return requiresYCbCrConversion(context, format) ? (VkFormatFeatureFlags)0 : (VkFormatFeatureFlags)(~VK_FORMAT_FEATURE_DISJOINT_BIT);
 }
 
 tcu::TestStatus formatProperties (Context& context, VkFormat format)
@@ -3459,8 +3481,8 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 
 	const VkFormatFeatureFlags reqImg	= getRequiredOptimalTilingFeatures(context, format);
 	const VkFormatFeatureFlags reqBuf	= getRequiredBufferFeatures(format);
-	const VkFormatFeatureFlags allowImg	= getAllowedOptimalTilingFeatures(format);
-	const VkFormatFeatureFlags allowBuf	= getAllowedBufferFeatures(format);
+	const VkFormatFeatureFlags allowImg	= getAllowedOptimalTilingFeatures(context, format);
+	const VkFormatFeatureFlags allowBuf	= getAllowedBufferFeatures(context, format);
 
 	const struct feature_req
 	{
@@ -4226,18 +4248,24 @@ tcu::TestStatus deviceProperties2 (Context& context)
 	const bool khr_shader_float_controls			= checkExtension(properties, "VK_KHR_shader_float_controls")			||	context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
 	const bool khr_descriptor_indexing				= checkExtension(properties, "VK_EXT_descriptor_indexing")				||	context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
 	const bool khr_sampler_filter_minmax			= checkExtension(properties, "VK_EXT_sampler_filter_minmax")			||	context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
+#ifndef CTS_USES_VULKANSC
+	const bool khr_integer_dot_product				= checkExtension(properties, "VK_KHR_shader_integer_dot_product");
+#endif // CTS_USES_VULKANSC
 
-	VkPhysicalDeviceIDProperties					idProperties[count];
-	VkPhysicalDeviceMultiviewProperties				multiviewProperties[count];
-	VkPhysicalDeviceProtectedMemoryProperties		protectedMemoryPropertiesKHR[count];
-	VkPhysicalDeviceSubgroupProperties				subgroupProperties[count];
-	VkPhysicalDevicePointClippingProperties			pointClippingProperties[count];
-	VkPhysicalDeviceMaintenance3Properties			maintenance3Properties[count];
-	VkPhysicalDeviceDepthStencilResolveProperties	depthStencilResolveProperties[count];
-	VkPhysicalDeviceDriverProperties				driverProperties[count];
-	VkPhysicalDeviceFloatControlsProperties			floatControlsProperties[count];
-	VkPhysicalDeviceDescriptorIndexingProperties	descriptorIndexingProperties[count];
-	VkPhysicalDeviceSamplerFilterMinmaxProperties	samplerFilterMinmaxProperties[count];
+	VkPhysicalDeviceIDProperties							idProperties[count];
+	VkPhysicalDeviceMultiviewProperties						multiviewProperties[count];
+	VkPhysicalDeviceProtectedMemoryProperties				protectedMemoryPropertiesKHR[count];
+	VkPhysicalDeviceSubgroupProperties						subgroupProperties[count];
+	VkPhysicalDevicePointClippingProperties					pointClippingProperties[count];
+	VkPhysicalDeviceMaintenance3Properties					maintenance3Properties[count];
+	VkPhysicalDeviceDepthStencilResolveProperties			depthStencilResolveProperties[count];
+	VkPhysicalDeviceDriverProperties						driverProperties[count];
+	VkPhysicalDeviceFloatControlsProperties					floatControlsProperties[count];
+	VkPhysicalDeviceDescriptorIndexingProperties			descriptorIndexingProperties[count];
+	VkPhysicalDeviceSamplerFilterMinmaxProperties			samplerFilterMinmaxProperties[count];
+#ifndef CTS_USES_VULKANSC
+	VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR	integerDotProductProperties[count];
+#endif // CTS_USES_VULKANSC
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
@@ -4252,6 +4280,9 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		deMemset(&floatControlsProperties[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceFloatControlsProperties		));
 		deMemset(&descriptorIndexingProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceDescriptorIndexingProperties	));
 		deMemset(&samplerFilterMinmaxProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceSamplerFilterMinmaxProperties	));
+#ifndef CTS_USES_VULKANSC
+		deMemset(&integerDotProductProperties[ndx],		0xFF*ndx, sizeof(VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR	));
+#endif // CTS_USES_VULKANSC
 
 		idProperties[ndx].sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
 		idProperties[ndx].pNext						= &multiviewProperties[ndx];
@@ -4284,7 +4315,14 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		descriptorIndexingProperties[ndx].pNext		= &samplerFilterMinmaxProperties[ndx];
 
 		samplerFilterMinmaxProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES;
+#ifndef CTS_USES_VULKANSC
+		samplerFilterMinmaxProperties[ndx].pNext	= &integerDotProductProperties[ndx];
+
+		integerDotProductProperties[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR;
+		integerDotProductProperties[ndx].pNext		= DE_NULL;
+#else
 		samplerFilterMinmaxProperties[ndx].pNext	= DE_NULL;
+#endif // CTS_USES_VULKANSC
 
 		extProperties.pNext							= &idProperties[ndx];
 
@@ -4313,6 +4351,10 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		log << TestLog::Message << descriptorIndexingProperties[0] << TestLog::EndMessage;
 	if (khr_sampler_filter_minmax)
 		log << TestLog::Message << samplerFilterMinmaxProperties[0] << TestLog::EndMessage;
+#ifndef CTS_USES_VULKANSC
+	if (khr_integer_dot_product)
+		log << TestLog::Message << integerDotProductProperties[0] << TestLog::EndMessage;
+#endif // CTS_USES_VULKANSC
 
 	if ( khr_external_fence_capabilities || khr_external_memory_capabilities || khr_external_semaphore_capabilities )
 	{
@@ -4449,6 +4491,41 @@ tcu::TestStatus deviceProperties2 (Context& context)
 	}
 
 #ifndef CTS_USES_VULKANSC
+
+	if (khr_integer_dot_product &&
+		(integerDotProductProperties[0].integerDotProduct8BitUnsignedAccelerated										!= integerDotProductProperties[1].integerDotProduct8BitUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct8BitSignedAccelerated											!= integerDotProductProperties[1].integerDotProduct8BitSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct8BitMixedSignednessAccelerated									!= integerDotProductProperties[1].integerDotProduct8BitMixedSignednessAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct4x8BitPackedUnsignedAccelerated								!= integerDotProductProperties[1].integerDotProduct4x8BitPackedUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct4x8BitPackedSignedAccelerated									!= integerDotProductProperties[1].integerDotProduct4x8BitPackedSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct4x8BitPackedMixedSignednessAccelerated							!= integerDotProductProperties[1].integerDotProduct4x8BitPackedMixedSignednessAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct16BitUnsignedAccelerated										!= integerDotProductProperties[1].integerDotProduct16BitUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct16BitSignedAccelerated											!= integerDotProductProperties[1].integerDotProduct16BitSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct16BitMixedSignednessAccelerated								!= integerDotProductProperties[1].integerDotProduct16BitMixedSignednessAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct32BitUnsignedAccelerated										!= integerDotProductProperties[1].integerDotProduct32BitUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct32BitSignedAccelerated											!= integerDotProductProperties[1].integerDotProduct32BitSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct32BitMixedSignednessAccelerated								!= integerDotProductProperties[1].integerDotProduct32BitMixedSignednessAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct64BitUnsignedAccelerated										!= integerDotProductProperties[1].integerDotProduct64BitUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct64BitSignedAccelerated											!= integerDotProductProperties[1].integerDotProduct64BitSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProduct64BitMixedSignednessAccelerated								!= integerDotProductProperties[1].integerDotProduct64BitMixedSignednessAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating8BitUnsignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating8BitUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating8BitSignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating8BitSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating8BitMixedSignednessAccelerated			!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating8BitMixedSignednessAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating4x8BitPackedUnsignedAccelerated			!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating4x8BitPackedUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating4x8BitPackedSignedAccelerated			!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating4x8BitPackedSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating4x8BitPackedMixedSignednessAccelerated	!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating4x8BitPackedMixedSignednessAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating16BitUnsignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating16BitUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating16BitSignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating16BitSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating16BitMixedSignednessAccelerated			!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating16BitMixedSignednessAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating32BitUnsignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating32BitUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating32BitSignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating32BitSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating32BitMixedSignednessAccelerated			!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating32BitMixedSignednessAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating64BitUnsignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating64BitUnsignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating64BitSignedAccelerated					!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating64BitSignedAccelerated ||
+		 integerDotProductProperties[0].integerDotProductAccumulatingSaturating64BitMixedSignednessAccelerated			!= integerDotProductProperties[1].integerDotProductAccumulatingSaturating64BitMixedSignednessAccelerated))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR");
+	}
 
 	if (isExtensionSupported(properties, RequiredExtension("VK_KHR_push_descriptor")))
 	{

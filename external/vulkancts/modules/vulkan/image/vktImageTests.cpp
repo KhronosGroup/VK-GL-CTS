@@ -36,6 +36,9 @@
 #include "vktImageSubresourceLayoutTests.hpp"
 #include "vktImageMismatchedFormatsTests.hpp"
 #include "vktImageMismatchedWriteOpTests.hpp"
+#include "vktImageSampleDrawnCubeFaceTests.hpp"
+#include "vktImageDepthStencilDescriptorTests.hpp"
+#include "vktImageSampleCompressedTextureTests.hpp"
 
 namespace vkt
 {
@@ -67,6 +70,9 @@ void createChildren (tcu::TestCaseGroup* imageTests)
 	imageTests->addChild(createImageSubresourceLayoutTests(testCtx));
 	imageTests->addChild(createImageMismatchedFormatsTests(testCtx));
 	imageTests->addChild(createImageWriteOpTests(testCtx));
+	imageTests->addChild(createImageSampleDrawnCubeFaceTests(testCtx));
+	imageTests->addChild(createImageDepthStencilDescriptorTests(testCtx));
+	imageTests->addChild(createImageSampleDrawnTextureTests(testCtx));
 }
 
 } // anonymous

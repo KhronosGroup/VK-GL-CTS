@@ -525,7 +525,7 @@ void clearUndefined (const tcu::PixelBufferAccess& access, int numValidChannels)
 			{
 				const IVec4	bitDepth	= tcu::getTextureFormatBitDepth(access.getFormat());
 				const IVec4	srcPixel	= access.getPixelInt(x, y);
-				IVec4		dstPixel	(0, 0, 0, (0x1u << (deUint64)bitDepth.w()) - 1);
+				IVec4		dstPixel	(0, 0, 0, (int)(((deInt64)0x1u << bitDepth.w()) - 1));
 
 				for (int channelNdx = 0; channelNdx < numValidChannels; channelNdx++)
 					dstPixel[channelNdx] = srcPixel[channelNdx];
@@ -687,8 +687,9 @@ FragmentOutputCase::IterateResult FragmentOutputCase::iterate (void)
 						// Limit to range of output format as conversion mode is not specified.
 						const IVec4 fmtBits		= tcu::getTextureFormatBitDepth(attachments[output.location+vecNdx].format);
 						const BVec4	isZero		= lessThanEqual(fmtBits, IVec4(0));
-						const IVec4	fmtMinVal	= (-(tcu::Vector<deInt64, 4>(1) << (fmtBits-1).cast<deInt64>())).asInt();
-						const IVec4	fmtMaxVal	= ((tcu::Vector<deInt64, 4>(1) << (fmtBits-1).cast<deInt64>())-deInt64(1)).asInt();
+						const IVec4	shift		= tcu::clamp(fmtBits-1, tcu::IVec4(0), tcu::IVec4(256));
+						const IVec4	fmtMinVal	= (-(tcu::Vector<deInt64, 4>(1) << shift.cast<deInt64>())).asInt();
+						const IVec4	fmtMaxVal	= ((tcu::Vector<deInt64, 4>(1) << shift.cast<deInt64>())-deInt64(1)).asInt();
 
 						minVal = select(minVal, tcu::max(minVal, fmtMinVal), isZero);
 						maxVal = select(maxVal, tcu::min(maxVal, fmtMaxVal), isZero);
@@ -946,7 +947,6 @@ FragmentOutputCase::IterateResult FragmentOutputCase::iterate (void)
 
 			default:
 				TCU_FAIL("Unsupported comparison");
-				break;
 		}
 
 		if (!isOk)

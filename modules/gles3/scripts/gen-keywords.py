@@ -83,8 +83,8 @@ RESERVED_KEYWORDS = [
 	"hvec2", "hvec3", "hvec4", "dvec2", "dvec3", "dvec4", "fvec2", "fvec3", "fvec4", "sampler3DRect",
 	"filter", "image1D", "image2D", "image3D", "imageCube", "iimage1D", "iimage2D", "iimage3D",
 	"iimageCube", "uimage1D", "uimage2D", "uimage3D", "uimageCube", "image1DArray", "image2DArray",
-	"iimage1DArray", "iimage2DArray", "uimage1DArray", "uimage2DArray", "image1DShadow", "image2DShadow",
-	"image1DArrayShadow", "image2DArrayShadow", "imageBuffer", "iimageBuffer", "uimageBuffer",
+	"iimage1DArray", "iimage2DArray", "uimage1DArray", "uimage2DArray",
+	"imageBuffer", "iimageBuffer", "uimageBuffer",
 	"sampler1D", "sampler1DShadow", "sampler1DArray", "sampler1DArrayShadow", "isampler1D",
 	"isampler1DArray", "usampler1D", "usampler1DArray", "sampler2DRect", "sampler2DRectShadow",
 	"isampler2DRect", "usampler2DRect", "samplerBuffer", "isamplerBuffer", "usamplerBuffer",
@@ -93,9 +93,6 @@ RESERVED_KEYWORDS = [
 ]
 
 INVALID_IDENTIFIERS = [
-	("two_underscores_begin",	"__invalid"),
-	("two_underscores_middle",	"in__valid"),
-	("two_underscores_end",		"invalid__"),
 	("gl_begin",				"gl_Invalid"),
 	("digit",					"0123"),
 	("digit_begin",				"0invalid"),

@@ -694,7 +694,7 @@ vk::VkSurfaceCapabilitiesKHR getPhysicalDeviceSurfaceCapabilities (const vk::Ins
 	sharedCapabilities.sType	= vk::VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR;
 	sharedCapabilities.pNext	= DE_NULL;
 
-	capabilities.sType			= vk::VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR,
+	capabilities.sType			= vk::VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
 	capabilities.pNext			= &sharedCapabilities;
 
 	VK_CHECK(vki.getPhysicalDeviceSurfaceCapabilities2KHR(physicalDevice, &info, &capabilities));
@@ -715,7 +715,7 @@ SharedPresentableImageTestInstance::SharedPresentableImageTestInstance (Context&
 	, m_vki						(m_instance.getDriver())
 	, m_physicalDevice			(vk::chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
 	, m_nativeDisplay			(createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), m_instanceExtensions, testConfig.wsiType))
-	, m_nativeWindow			(createWindow(*m_nativeDisplay, tcu::nothing<UVec2>()))
+	, m_nativeWindow			(createWindow(*m_nativeDisplay, tcu::Nothing))
 	, m_surface					(vk::wsi::createSurface(m_vki, m_instance, testConfig.wsiType, *m_nativeDisplay, *m_nativeWindow))
 
 	, m_queueFamilyIndex		(vk::wsi::chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
