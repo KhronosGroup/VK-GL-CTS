@@ -20,6 +20,7 @@ vk-master/imageless-framebuffer.txt
 vk-master/info.txt
 vk-master/memory-model.txt
 vk-master/memory.txt
+vk-master/mesh-shader.txt
 vk-master/multiview.txt
 vk-master/pipeline.txt
 vk-master/protected-memory.txt

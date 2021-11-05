@@ -32,7 +32,7 @@
 namespace tcu
 {
 
-static inline float sRGBChannelToLinear (float cs)
+float sRGBChannelToLinear (float cs)
 {
 	if (cs <= 0.04045)
 		return cs / 12.92f;
@@ -53,7 +53,7 @@ static inline float sRGB8ChannelToLinear (deUint32 cs)
 	return ((const float*)s_srgb8Lut)[cs];
 }
 
-static inline float linearChannelToSRGB (float cl)
+float linearChannelToSRGB (float cl)
 {
 	if (cl <= 0.0f)
 		return 0.0f;

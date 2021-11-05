@@ -738,6 +738,9 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 			!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_dynamic_rendering"))
 			deviceExtensions.push_back("VK_KHR_dynamic_rendering");
 
+		if (m_parameters.viewIndex == TEST_TYPE_DEPTH_DIFFERENT_RANGES)
+			deviceExtensions.push_back("VK_EXT_depth_range_unrestricted");
+
 		const VkDeviceCreateInfo		deviceInfo			=
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//VkStructureType					sType;
@@ -3857,6 +3860,8 @@ private:
 			context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
 		context.requireDeviceFunctionality("VK_KHR_multiview");
+		if (m_parameters.viewIndex == TEST_TYPE_DEPTH_DIFFERENT_RANGES)
+			context.requireDeviceFunctionality("VK_EXT_depth_range_unrestricted");
 	}
 
 	void				initPrograms		(SourceCollections& programCollection) const

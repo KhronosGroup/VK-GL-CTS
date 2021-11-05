@@ -1,0 +1,8 @@
+vk-incremental-deqp/api.txt
+vk-incremental-deqp/glsl.txt
+vk-incremental-deqp/info.txt
+vk-incremental-deqp/memory.txt
+vk-incremental-deqp/pipeline.txt
+vk-incremental-deqp/query-pool.txt
+vk-incremental-deqp/spirv-assembly.txt
+vk-incremental-deqp/texture.txt

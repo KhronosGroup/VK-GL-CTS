@@ -5568,6 +5568,22 @@ struct VkMultiDrawIndexedInfoEXT
 	int32_t		vertexOffset;
 };
 
+struct VkPhysicalDeviceBorderColorSwizzleFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		borderColorSwizzle;
+	VkBool32		borderColorSwizzleFromImage;
+};
+
+struct VkSamplerBorderColorComponentMappingCreateInfoEXT
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkComponentMapping	components;
+	VkBool32			srgb;
+};
+
 struct VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT
 {
 	VkStructureType	sType;

@@ -56,6 +56,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceAccelerationStructureFeaturesKHR.pNext;
 	}
 
+	vk::VkPhysicalDeviceBorderColorSwizzleFeaturesEXT physicalDeviceBorderColorSwizzleFeaturesEXT;
+	deMemset(&physicalDeviceBorderColorSwizzleFeaturesEXT, 0, sizeof(physicalDeviceBorderColorSwizzleFeaturesEXT));
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_border_color_swizzle")) )
+	{
+		physicalDeviceBorderColorSwizzleFeaturesEXT.sType = getStructureType<VkPhysicalDeviceBorderColorSwizzleFeaturesEXT>();
+		*nextPtr = &physicalDeviceBorderColorSwizzleFeaturesEXT;
+		nextPtr  = &physicalDeviceBorderColorSwizzleFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceBufferDeviceAddressFeaturesKHR physicalDeviceBufferDeviceAddressFeaturesKHR;
 	deMemset(&physicalDeviceBufferDeviceAddressFeaturesKHR, 0, sizeof(physicalDeviceBufferDeviceAddressFeaturesKHR));
 
@@ -1929,6 +1939,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDevicePrimitiveTopologyListRestartFeaturesEXT.primitiveTopologyListRestart == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature primitiveTopologyListRestart not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_border_color_swizzle")) )
+	{
+		if ( physicalDeviceBorderColorSwizzleFeaturesEXT.borderColorSwizzle == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature borderColorSwizzle not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

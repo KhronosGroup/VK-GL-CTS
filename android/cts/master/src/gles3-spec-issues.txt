@@ -510,9 +510,6 @@ dEQP-GLES3.functional.shaders.random.trigonometric.vertex.94
 # Khronos bugs 11207, 12408, internal bug 20699693
 dEQP-GLES3.functional.shaders.arrays.invalid.empty_declaration_without_var_name_*
 
-# Khronos bug 13916, internal bug 20558284
-dEQP-GLES3.functional.flush_finish.flush_wait
-
 # Khronos bug 14284, internal bug 22461511
 dEQP-GLES3.functional.shaders.linkage.uniform.block.layout_qualifier_mismatch_3
 

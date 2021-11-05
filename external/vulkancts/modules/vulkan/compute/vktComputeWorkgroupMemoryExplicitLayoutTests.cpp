@@ -507,7 +507,7 @@ void AliasTest::initPrograms(SourceCollections& sourceCollections) const
 
 	sourceCollections.glslSources.add("comp")
 		<< glu::ComputeSource(src.str())
-		<< vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_4, buildFlags);
+		<< vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_4, buildFlags, true);
 }
 
 std::string makeArray(const std::string& type, const std::vector<deUint64>& values)
@@ -675,7 +675,7 @@ void AddAliasTests(tcu::TestCaseGroup* group)
 		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT16,
 			"u32",			"uint32_t v",		"uint32_t(0x12345678)",
 			"u16_array",	"uint16_t v[2]",	makeU16Array({0x5678, 0x1234})),
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT8,
+		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT64 | INT8,
 			"u64",			"uint64_t v",		"uint64_t(0x1234567890ABCDEFUL)",
 			"u8_array",		"uint8_t v[8]",		makeU8Array({0xEF, 0xCD, 0xAB, 0x90, 0x78, 0x56, 0x34, 0x12})),
 		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT64 | INT16,
@@ -941,7 +941,7 @@ void ZeroTest::initPrograms(SourceCollections& sourceCollections) const
 	sourceCollections.glslSources.add("comp")
 		<< ComputeSource(src.str())
 		<< vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_4,
-								  vk::ShaderBuildOptions::Flags(0u));
+								  vk::ShaderBuildOptions::Flags(0u), true);
 }
 
 bool isTestedZeroElementType(glu::DataType dt)
@@ -1169,7 +1169,7 @@ void PaddingTest::initPrograms(SourceCollections& sourceCollections) const
 	sourceCollections.glslSources.add("comp")
 		<< ComputeSource(src.str())
 		<< vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_4,
-								  vk::ShaderBuildOptions::Flags(0u));
+								  vk::ShaderBuildOptions::Flags(0u), true);
 }
 
 void AddPaddingTests(tcu::TestCaseGroup* group)
@@ -1301,7 +1301,7 @@ void SizeTest::initPrograms(SourceCollections& sourceCollections) const
 	sourceCollections.glslSources.add("comp")
 		<< ComputeSource(src.str())
 		<< vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_4,
-								  vk::ShaderBuildOptions::Flags(0u));
+								  vk::ShaderBuildOptions::Flags(0u), true);
 }
 
 void AddSizeTests(tcu::TestCaseGroup* group)
