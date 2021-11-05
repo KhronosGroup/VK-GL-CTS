@@ -221,6 +221,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_global_priority")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_driver_properties")
 	{
 		return;
@@ -1347,6 +1351,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_KHR_shader_clock")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_global_priority")
 	{
 		return;
 	}

@@ -38,7 +38,7 @@ namespace vk
 #define VK_EXT_FRAGMENT_SHADER_INTERLOCK_EXTENSION_NAME "VK_EXT_fragment_shader_interlock"
 #define VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME "VK_KHR_fragment_shading_rate"
 #define VK_NV_FRAGMENT_SHADING_RATE_ENUMS_EXTENSION_NAME "VK_NV_fragment_shading_rate_enums"
-#define VK_EXT_GLOBAL_PRIORITY_QUERY_EXTENSION_NAME "VK_EXT_global_priority_query"
+#define DECL_KHR_GLOBAL_PRIORITY_QUERY_EXTENSION_NAME "not_existent_feature"
 #define VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME "VK_EXT_host_query_reset"
 #define VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME "VK_KHR_imageless_framebuffer"
 #define VK_EXT_IMAGE_ROBUSTNESS_EXTENSION_NAME "VK_EXT_image_robustness"
@@ -220,6 +220,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceBufferDeviceAddressFeatures>
 // generic template is not enough for some compilers
 template<> void initFeatureFromBlob<VkPhysicalDevicePerformanceQueryFeaturesKHR>(VkPhysicalDevicePerformanceQueryFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderClockFeaturesKHR>(VkPhysicalDeviceShaderClockFeaturesKHR&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR>(VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR>(VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceFragmentShadingRateFeaturesKHR>(VkPhysicalDeviceFragmentShadingRateFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDevicePresentWaitFeaturesKHR>(VkPhysicalDevicePresentWaitFeaturesKHR&, const AllFeaturesBlobs&) {}
@@ -291,7 +292,6 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceInvocationMaskFeaturesHUAWEI
 template<> void initFeatureFromBlob<VkPhysicalDeviceExternalMemoryRDMAFeaturesNV>(VkPhysicalDeviceExternalMemoryRDMAFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceExtendedDynamicState2FeaturesEXT>(VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceColorWriteEnableFeaturesEXT>(VkPhysicalDeviceColorWriteEnableFeaturesEXT&, const AllFeaturesBlobs&) {}
-template<> void initFeatureFromBlob<VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT>(VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceMultiDrawFeaturesEXT>(VkPhysicalDeviceMultiDrawFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceBorderColorSwizzleFeaturesEXT>(VkPhysicalDeviceBorderColorSwizzleFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT>(VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT&, const AllFeaturesBlobs&) {}
@@ -334,7 +334,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceFragmentShaderBarycentric
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_INTERLOCK_FEATURES_EXT, VK_EXT_FRAGMENT_SHADER_INTERLOCK_EXTENSION_NAME, VK_EXT_FRAGMENT_SHADER_INTERLOCK_SPEC_VERSION, 70}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceFragmentShadingRateFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, VK_KHR_FRAGMENT_SHADING_RATE_SPEC_VERSION, 69}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_FEATURES_NV, VK_NV_FRAGMENT_SHADING_RATE_ENUMS_EXTENSION_NAME, VK_NV_FRAGMENT_SHADING_RATE_ENUMS_SPEC_VERSION, 68}; }
-template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_EXT, VK_EXT_GLOBAL_PRIORITY_QUERY_EXTENSION_NAME, VK_EXT_GLOBAL_PRIORITY_QUERY_SPEC_VERSION, 67}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_KHR, DECL_KHR_GLOBAL_PRIORITY_QUERY_EXTENSION_NAME, 0, 67}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceHostQueryResetFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES, VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME, VK_EXT_HOST_QUERY_RESET_SPEC_VERSION, 66}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceImagelessFramebufferFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES, VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME, VK_KHR_IMAGELESS_FRAMEBUFFER_SPEC_VERSION, 65}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceImageRobustnessFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES_EXT, VK_EXT_IMAGE_ROBUSTNESS_EXTENSION_NAME, VK_EXT_IMAGE_ROBUSTNESS_SPEC_VERSION, 64}; }
@@ -438,7 +438,7 @@ static const FeatureStructCreationData featureStructCreationArray[] =
 	{ createFeatureStructWrapper<VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT>, VK_EXT_FRAGMENT_SHADER_INTERLOCK_EXTENSION_NAME, VK_EXT_FRAGMENT_SHADER_INTERLOCK_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceFragmentShadingRateFeaturesKHR>, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, VK_KHR_FRAGMENT_SHADING_RATE_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV>, VK_NV_FRAGMENT_SHADING_RATE_ENUMS_EXTENSION_NAME, VK_NV_FRAGMENT_SHADING_RATE_ENUMS_SPEC_VERSION },
-	{ createFeatureStructWrapper<VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT>, VK_EXT_GLOBAL_PRIORITY_QUERY_EXTENSION_NAME, VK_EXT_GLOBAL_PRIORITY_QUERY_SPEC_VERSION },
+	{ createFeatureStructWrapper<VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR>, DECL_KHR_GLOBAL_PRIORITY_QUERY_EXTENSION_NAME, 0 },
 	{ createFeatureStructWrapper<VkPhysicalDeviceHostQueryResetFeatures>, VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME, VK_EXT_HOST_QUERY_RESET_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceImagelessFramebufferFeatures>, VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME, VK_KHR_IMAGELESS_FRAMEBUFFER_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceImageRobustnessFeaturesEXT>, VK_EXT_IMAGE_ROBUSTNESS_EXTENSION_NAME, VK_EXT_IMAGE_ROBUSTNESS_SPEC_VERSION },

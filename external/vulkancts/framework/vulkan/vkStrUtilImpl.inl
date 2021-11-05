@@ -501,7 +501,6 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PIPELINE_REPRESENTATIVE_FRAGMENT_TEST_STATE_CREATE_INFO_NV:			return "VK_STRUCTURE_TYPE_PIPELINE_REPRESENTATIVE_FRAGMENT_TEST_STATE_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_IMAGE_FORMAT_INFO_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_IMAGE_FORMAT_INFO_EXT";
 		case VK_STRUCTURE_TYPE_FILTER_CUBIC_IMAGE_VIEW_IMAGE_FORMAT_PROPERTIES_EXT:					return "VK_STRUCTURE_TYPE_FILTER_CUBIC_IMAGE_VIEW_IMAGE_FORMAT_PROPERTIES_EXT";
-		case VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT:						return "VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT:									return "VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT";
 		case VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT:									return "VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT";
@@ -516,6 +515,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_EXT:										return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PICTURE_INFO_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PICTURE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_DPB_SLOT_INFO_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_DPB_SLOT_INFO_EXT";
+		case VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_KHR:						return "VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_KHR:							return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_DEVICE_MEMORY_OVERALLOCATION_CREATE_INFO_AMD:						return "VK_STRUCTURE_TYPE_DEVICE_MEMORY_OVERALLOCATION_CREATE_INFO_AMD";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT:					return "VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT";
@@ -693,8 +695,6 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX:										return "VK_STRUCTURE_TYPE_SCREEN_SURFACE_CREATE_INFO_QNX";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_EXT";
-		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_EXT:							return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_PROPERTIES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BORDER_COLOR_SWIZZLE_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BORDER_COLOR_SWIZZLE_FEATURES_EXT";
@@ -1824,6 +1824,19 @@ const char* getPerformanceCounterStorageKHRName (VkPerformanceCounterStorageKHR 
 	}
 }
 
+const char* getQueueGlobalPriorityKHRName (VkQueueGlobalPriorityKHR value)
+{
+	switch (value)
+	{
+		case VK_QUEUE_GLOBAL_PRIORITY_LOW_KHR:		return "VK_QUEUE_GLOBAL_PRIORITY_LOW_KHR";
+		case VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR:	return "VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR";
+		case VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR:		return "VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR";
+		case VK_QUEUE_GLOBAL_PRIORITY_REALTIME_KHR:	return "VK_QUEUE_GLOBAL_PRIORITY_REALTIME_KHR";
+		case VK_QUEUE_GLOBAL_PRIORITY_MAX_ENUM_KHR:	return "VK_QUEUE_GLOBAL_PRIORITY_MAX_ENUM_KHR";
+		default:									return DE_NULL;
+	}
+}
+
 const char* getFragmentShadingRateCombinerOpKHRName (VkFragmentShadingRateCombinerOpKHR value)
 {
 	switch (value)
@@ -2131,19 +2144,6 @@ const char* getAccelerationStructureMemoryRequirementsTypeNVName (VkAcceleration
 		case VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_UPDATE_SCRATCH_NV:	return "VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_UPDATE_SCRATCH_NV";
 		case VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_MAX_ENUM_NV:		return "VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_MAX_ENUM_NV";
 		default:																	return DE_NULL;
-	}
-}
-
-const char* getQueueGlobalPriorityEXTName (VkQueueGlobalPriorityEXT value)
-{
-	switch (value)
-	{
-		case VK_QUEUE_GLOBAL_PRIORITY_LOW_EXT:		return "VK_QUEUE_GLOBAL_PRIORITY_LOW_EXT";
-		case VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT:	return "VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT";
-		case VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT:		return "VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT";
-		case VK_QUEUE_GLOBAL_PRIORITY_REALTIME_EXT:	return "VK_QUEUE_GLOBAL_PRIORITY_REALTIME_EXT";
-		case VK_QUEUE_GLOBAL_PRIORITY_MAX_ENUM_EXT:	return "VK_QUEUE_GLOBAL_PRIORITY_MAX_ENUM_EXT";
-		default:									return DE_NULL;
 	}
 }
 
@@ -8048,6 +8048,37 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderClockFeat
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkDeviceQueueGlobalPriorityCreateInfoKHR& value)
+{
+	s << "VkDeviceQueueGlobalPriorityCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tglobalPriority = " << value.globalPriority << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tglobalPriorityQuery = " << value.globalPriorityQuery << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkQueueFamilyGlobalPriorityPropertiesKHR& value)
+{
+	s << "VkQueueFamilyGlobalPriorityPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpriorityCount = " << value.priorityCount << '\n';
+	s << "\tpriorities = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.priorities), DE_ARRAY_END(value.priorities)) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR& value)
 {
 	s << "VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR = {\n";
@@ -9985,16 +10016,6 @@ std::ostream& operator<< (std::ostream& s, const VkFilterCubicImageViewImageForm
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkDeviceQueueGlobalPriorityCreateInfoEXT& value)
-{
-	s << "VkDeviceQueueGlobalPriorityCreateInfoEXT = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tglobalPriority = " << value.globalPriority << '\n';
-	s << '}';
-	return s;
-}
-
 std::ostream& operator<< (std::ostream& s, const VkImportMemoryHostPointerInfoEXT& value)
 {
 	s << "VkImportMemoryHostPointerInfoEXT = {\n";
@@ -11611,27 +11632,6 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineColorWriteCreateInfoE
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tattachmentCount = " << value.attachmentCount << '\n';
 	s << "\tpColorWriteEnables = " << value.pColorWriteEnables << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT& value)
-{
-	s << "VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tglobalPriorityQuery = " << value.globalPriorityQuery << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkQueueFamilyGlobalPriorityPropertiesEXT& value)
-{
-	s << "VkQueueFamilyGlobalPriorityPropertiesEXT = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tpriorityCount = " << value.priorityCount << '\n';
-	s << "\tpriorities = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.priorities), DE_ARRAY_END(value.priorities)) << '\n';
 	s << '}';
 	return s;
 }

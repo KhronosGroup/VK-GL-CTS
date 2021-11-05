@@ -2769,6 +2769,28 @@ struct VkPhysicalDeviceShaderClockFeaturesKHR
 	VkBool32		shaderDeviceClock;
 };
 
+struct VkDeviceQueueGlobalPriorityCreateInfoKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkQueueGlobalPriorityKHR	globalPriority;
+};
+
+struct VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		globalPriorityQuery;
+};
+
+struct VkQueueFamilyGlobalPriorityPropertiesKHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	uint32_t					priorityCount;
+	VkQueueGlobalPriorityKHR	priorities[VK_MAX_GLOBAL_PRIORITY_SIZE_KHR];
+};
+
 struct VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR
 {
 	VkStructureType	sType;
@@ -4229,13 +4251,6 @@ struct VkFilterCubicImageViewImageFormatPropertiesEXT
 	VkBool32		filterCubicMinmax;
 };
 
-struct VkDeviceQueueGlobalPriorityCreateInfoEXT
-{
-	VkStructureType				sType;
-	const void*					pNext;
-	VkQueueGlobalPriorityEXT	globalPriority;
-};
-
 struct VkImportMemoryHostPointerInfoEXT
 {
 	VkStructureType						sType;
@@ -5431,21 +5446,6 @@ struct VkPipelineColorWriteCreateInfoEXT
 	const void*		pNext;
 	uint32_t		attachmentCount;
 	const VkBool32*	pColorWriteEnables;
-};
-
-struct VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT
-{
-	VkStructureType	sType;
-	void*			pNext;
-	VkBool32		globalPriorityQuery;
-};
-
-struct VkQueueFamilyGlobalPriorityPropertiesEXT
-{
-	VkStructureType				sType;
-	void*						pNext;
-	uint32_t					priorityCount;
-	VkQueueGlobalPriorityEXT	priorities[VK_MAX_GLOBAL_PRIORITY_SIZE_EXT];
 };
 
 struct VkPhysicalDeviceMultiDrawFeaturesEXT
@@ -7339,6 +7339,12 @@ typedef VkBufferOpaqueCaptureAddressCreateInfo VkBufferOpaqueCaptureAddressCreat
 typedef VkMemoryOpaqueCaptureAddressAllocateInfo VkMemoryOpaqueCaptureAddressAllocateInfoKHR;
 
 typedef VkDeviceMemoryOpaqueCaptureAddressInfo VkDeviceMemoryOpaqueCaptureAddressInfoKHR;
+
+typedef VkDeviceQueueGlobalPriorityCreateInfoKHR VkDeviceQueueGlobalPriorityCreateInfoEXT;
+
+typedef VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT;
+
+typedef VkQueueFamilyGlobalPriorityPropertiesKHR VkQueueFamilyGlobalPriorityPropertiesEXT;
 
 typedef VkTransformMatrixKHR VkTransformMatrixNV;
 
