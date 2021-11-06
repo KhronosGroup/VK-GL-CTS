@@ -24,6 +24,7 @@ const vk::VkPhysicalDeviceDescriptorIndexingFeatures&					Context::getDescriptor
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV&			Context::getDeviceGeneratedCommandsFeatures				(void) const { return m_device->getDeviceGeneratedCommandsFeatures();			}
 const vk::VkPhysicalDeviceDeviceMemoryReportFeaturesEXT&				Context::getDeviceMemoryReportFeaturesEXT				(void) const { return m_device->getDeviceMemoryReportFeaturesEXT();				}
 const vk::VkPhysicalDeviceDiagnosticsConfigFeaturesNV&					Context::getDiagnosticsConfigFeatures					(void) const { return m_device->getDiagnosticsConfigFeatures();					}
+const vk::VkPhysicalDeviceDynamicRenderingFeaturesKHR&					Context::getDynamicRenderingFeatures					(void) const { return m_device->getDynamicRenderingFeatures();					}
 const vk::VkPhysicalDeviceExclusiveScissorFeaturesNV&					Context::getExclusiveScissorFeatures					(void) const { return m_device->getExclusiveScissorFeatures();					}
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&				Context::getExtendedDynamicStateFeaturesEXT				(void) const { return m_device->getExtendedDynamicStateFeaturesEXT();			}
 const vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&				Context::getExtendedDynamicState2FeaturesEXT			(void) const { return m_device->getExtendedDynamicState2FeaturesEXT();			}

@@ -65,7 +65,7 @@ struct TestParams
 	VkAttachmentStoreOp	storeOp;
 	VkAttachmentLoadOp	stencilLoadOp;
 	VkAttachmentStoreOp	stencilStoreOp;
-	RenderPassType		renderPassType;
+	RenderingType		renderingType;
 };
 
 struct Vertex4RGBA
@@ -100,7 +100,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 									 VkDevice				vkDevice,
 									 const TestParams		testParams)
 {
-	const VkImageAspectFlags	aspectMask						= testParams.renderPassType == RENDERPASS_TYPE_LEGACY ? 0 : VK_IMAGE_ASPECT_COLOR_BIT;
+	const VkImageAspectFlags	aspectMask						= testParams.renderingType == RENDERING_TYPE_RENDERPASS_LEGACY ? 0 : VK_IMAGE_ASPECT_COLOR_BIT;
 	const AttachmentDesc		attachmentDescriptions[]		=
 	{
 		// Result attachment
@@ -360,7 +360,7 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 	const VkComponentMapping	componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 
 	// Check for renderpass2 extension if used
-	if (testParams.renderPassType == RENDERPASS_TYPE_RENDERPASS2)
+	if (testParams.renderingType == RENDERING_TYPE_RENDERPASS2)
 		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
 	// Create color image
@@ -577,7 +577,7 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 	}
 
 	// Create render pass
-	if (testParams.renderPassType == RENDERPASS_TYPE_LEGACY)
+	if (testParams.renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
 		m_renderPass = createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vk, vkDevice, testParams);
 	else
 		m_renderPass = createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vk, vkDevice, testParams);
@@ -829,7 +829,7 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
 	// Create command buffer
-	if (testParams.renderPassType == RENDERPASS_TYPE_LEGACY)
+	if (testParams.renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
 		createCommandBuffer<RenderpassSubpass1>(vk, vkDevice);
 	else
 		createCommandBuffer<RenderpassSubpass2>(vk, vkDevice);
@@ -966,7 +966,7 @@ std::string storeOpToString (VkAttachmentStoreOp storeOp)
 
 } // anonymous
 
-tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& testCtx, const RenderPassType renderPassType)
+tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& testCtx, const RenderingType renderingType)
 {
 	de::MovePtr<tcu::TestCaseGroup>		unusedAttTests		(new tcu::TestCaseGroup(testCtx, "unused_attachment", "Unused attachment tests"));
 
@@ -1004,7 +1004,7 @@ tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& tes
 					params.storeOp			= storeOps[storeOpIdx];
 					params.stencilLoadOp	= loadOps[stencilLoadOpIdx];
 					params.stencilStoreOp	= storeOps[stencilStoreOpIdx];
-					params.renderPassType	= renderPassType;
+					params.renderingType	= renderingType;
 
 					stencilLoadOpGroup->addChild(new UnusedAttachmentTest(testCtx, testName, "", params));
 				}

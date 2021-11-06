@@ -73,18 +73,12 @@ enum Constants
 	MIN_MAX_VIEWPORTS = 16,		//!< Minimum number of viewports for an implementation supporting multiViewport.
 };
 
-struct FragmentTestParams
+struct TestParams
 {
 	int		numViewports;
 	bool	writeFromVertex;
-
-	FragmentTestParams (int nvp, bool write)
-		: numViewports		(nvp)
-		, writeFromVertex	(write)
-	{
-		if (!write)
-			DE_ASSERT(nvp == 1);
-	}
+	bool	useDynamicRendering;
+	bool	useTessellationShader;
 };
 
 template<typename T>
@@ -327,7 +321,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		3,																// uint32_t									patchControlPoints;
 	};
 
-	const VkGraphicsPipelineCreateInfo graphicsPipelineInfo =
+	VkGraphicsPipelineCreateInfo graphicsPipelineInfo
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,					// VkStructureType									sType;
 		DE_NULL,															// const void*										pNext;
@@ -349,6 +343,22 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		DE_NULL,															// VkPipeline										basePipelineHandle;
 		0,																	// deInt32											basePipelineIndex;
 	};
+
+	VkFormat colorAttachmentFormat = VK_FORMAT_R8G8B8A8_UNORM;
+	VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+		DE_NULL,
+		0u,
+		1u,
+		&colorAttachmentFormat,
+		VK_FORMAT_UNDEFINED,
+		VK_FORMAT_UNDEFINED
+	};
+
+	// when pipeline is created without render pass we are using dynamic rendering
+	if (renderPass == DE_NULL)
+		graphicsPipelineInfo.pNext = &renderingCreateInfo;
 
 	return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
 }
@@ -433,10 +443,8 @@ tcu::TextureLevel generateReferenceImage (const tcu::TextureFormat	format,
 	return image;
 }
 
-void initVertexTestPrograms (SourceCollections& programCollection, const int numViewports)
+void initVertexTestPrograms (SourceCollections& programCollection, const TestParams)
 {
-	DE_UNREF(numViewports);
-
 	// Vertex shader
 	{
 		std::ostringstream src;
@@ -474,7 +482,7 @@ void initVertexTestPrograms (SourceCollections& programCollection, const int num
 	}
 }
 
-void initFragmentTestPrograms (SourceCollections& programCollection, FragmentTestParams testParams)
+void initFragmentTestPrograms (SourceCollections& programCollection, const TestParams testParams)
 {
 	// Vertex shader.
 	{
@@ -517,10 +525,8 @@ void initFragmentTestPrograms (SourceCollections& programCollection, FragmentTes
 	}
 }
 
-void initTessellationTestPrograms (SourceCollections& programCollection, const int numViewports)
+void initTessellationTestPrograms (SourceCollections& programCollection, const TestParams)
 {
-	DE_UNREF(numViewports);
-
 	// Vertex shader
 	{
 		std::ostringstream src;
@@ -651,17 +657,18 @@ public:
 
 	Renderer (Context&						context,
 			  const UVec2&					renderSize,
-			  const int						numViewports,
+			  const TestParams&				testParams,
 			  const std::vector<UVec4>&		cells,
 			  const VkFormat				colorFormat,
 			  const Vec4&					clearColor,
 			  const std::vector<Vec4>&		colors,
 			  const Shader					shader)
-		: m_renderSize				(renderSize)
+		: m_useDynamicRendering		(testParams.useDynamicRendering)
+		, m_renderSize				(renderSize)
 		, m_colorFormat				(colorFormat)
 		, m_colorSubresourceRange	(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u))
-		, m_clearColor				(clearColor)
-		, m_numViewports			(numViewports)
+		, m_clearValue				(makeClearValueColor(clearColor))
+		, m_numViewports			(testParams.numViewports)
 		, m_colors					(colors)
 		, m_vertices				(generateVertices(colors))
 		, m_shader					(shader)
@@ -691,9 +698,14 @@ public:
 
 		m_vertexModule		= createShaderModule	(vk, device, context.getBinaryCollection().get("vert"), 0u);
 		m_fragmentModule	= createShaderModule	(vk, device, context.getBinaryCollection().get("frag"), 0u);
-		m_renderPass		= makeRenderPass		(vk, device, m_colorFormat);
-		m_framebuffer		= makeFramebuffer		(vk, device, *m_renderPass, m_colorAttachment.get(),
+
+		if (!m_useDynamicRendering)
+		{
+			m_renderPass	= makeRenderPass		(vk, device, m_colorFormat);
+
+			m_framebuffer	= makeFramebuffer		(vk, device, *m_renderPass, m_colorAttachment.get(),
 													 static_cast<deUint32>(m_renderSize.x()),  static_cast<deUint32>(m_renderSize.y()));
+		}
 
 		if (shader == FRAGMENT)
 		{
@@ -718,7 +730,15 @@ public:
 
 		beginCommandBuffer(vk, *m_cmdBuffer);
 
-		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), m_clearColor);
+		const VkRect2D renderArea = makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y());
+		if (m_useDynamicRendering)
+		{
+			initialTransitionColor2DImage(vk, *m_cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+										  VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+			beginRendering(vk, *m_cmdBuffer, *m_colorAttachment, renderArea, m_clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+		}
+		else
+			beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea, m_clearValue);
 
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 		{
@@ -762,7 +782,11 @@ public:
 		}
 
 		vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_numViewports * 6), 1u, 0u, 0u);	// two triangles per viewport
-		endRenderPass(vk, *m_cmdBuffer);
+
+		if (m_useDynamicRendering)
+			endRendering(vk, *m_cmdBuffer);
+		else
+			endRenderPass(vk, *m_cmdBuffer);
 
 		copyImageToBuffer(vk, *m_cmdBuffer, *m_colorImage, colorBuffer, tcu::IVec2(m_renderSize.x(), m_renderSize.y()));
 
@@ -771,10 +795,11 @@ public:
 	}
 
 private:
+	const bool								m_useDynamicRendering;
 	const UVec2								m_renderSize;
 	const VkFormat							m_colorFormat;
 	const VkImageSubresourceRange			m_colorSubresourceRange;
-	const Vec4								m_clearColor;
+	const VkClearValue						m_clearValue;
 	const int								m_numViewports;
 	const std::vector<Vec4>					m_colors;
 	const std::vector<PositionColorVertex>	m_vertices;
@@ -801,7 +826,7 @@ private:
 	Renderer&	operator=	(const Renderer&);
 };
 
-tcu::TestStatus testVertexFragmentShader (Context& context, const int numViewports, Renderer::Shader shader)
+tcu::TestStatus testVertexFragmentShader (Context& context, const TestParams& testParams, Renderer::Shader shader)
 {
 	const DeviceInterface&			vk					= context.getDeviceInterface();
 	const VkDevice					device				= context.getDevice();
@@ -810,8 +835,8 @@ tcu::TestStatus testVertexFragmentShader (Context& context, const int numViewpor
 	const UVec2						renderSize			(128, 128);
 	const VkFormat					colorFormat			= VK_FORMAT_R8G8B8A8_UNORM;
 	const Vec4						clearColor			(0.5f, 0.5f, 0.5f, 1.0f);
-	const std::vector<Vec4>			colors				= generateColors(numViewports);
-	const std::vector<UVec4>		cells				= generateGrid(numViewports, renderSize);
+	const std::vector<Vec4>			colors				= generateColors(testParams.numViewports);
+	const std::vector<UVec4>		cells				= generateGrid(testParams.numViewports, renderSize);
 
 	const VkDeviceSize				colorBufferSize		= renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
 
@@ -826,13 +851,13 @@ tcu::TestStatus testVertexFragmentShader (Context& context, const int numViewpor
 
 	{
 		context.getTestContext().getLog()
-			<< tcu::TestLog::Message << "Rendering a colorful grid of " << numViewports << " rectangle(s)." << tcu::TestLog::EndMessage
+			<< tcu::TestLog::Message << "Rendering a colorful grid of " << testParams.numViewports << " rectangle(s)." << tcu::TestLog::EndMessage
 			<< tcu::TestLog::Message << "Not covered area will be filled with a gray color." << tcu::TestLog::EndMessage;
 	}
 
 	// Draw
 	{
-		const Renderer renderer (context, renderSize, numViewports, cells, colorFormat, clearColor, colors, shader);
+		const Renderer renderer (context, renderSize, testParams, cells, colorFormat, clearColor, colors, shader);
 		renderer.draw(context, colorBuffer->object());
 	}
 
@@ -852,17 +877,17 @@ tcu::TestStatus testVertexFragmentShader (Context& context, const int numViewpor
 	return tcu::TestStatus::pass("OK");
 }
 
-tcu::TestStatus testVertexShader (Context& context, const int numViewports)
+tcu::TestStatus testVertexShader (Context& context, const TestParams testParams)
 {
-	return testVertexFragmentShader(context, numViewports, Renderer::VERTEX);
+	return testVertexFragmentShader(context, testParams, Renderer::VERTEX);
 }
 
-tcu::TestStatus testFragmentShader (Context& context, FragmentTestParams testParams)
+tcu::TestStatus testFragmentShader (Context& context, const TestParams testParams)
 {
-	return testVertexFragmentShader(context, testParams.numViewports, Renderer::FRAGMENT);
+	return testVertexFragmentShader(context, testParams, Renderer::FRAGMENT);
 }
 
-tcu::TestStatus testTessellationShader (Context& context, const int numViewports)
+tcu::TestStatus testTessellationShader (Context& context, const TestParams testParams)
 {
 	const DeviceInterface&			vk					= context.getDeviceInterface();
 	const VkDevice					device				= context.getDevice();
@@ -871,8 +896,8 @@ tcu::TestStatus testTessellationShader (Context& context, const int numViewports
 	const UVec2						renderSize			(128, 128);
 	const VkFormat					colorFormat			= VK_FORMAT_R8G8B8A8_UNORM;
 	const Vec4						clearColor			(0.5f, 0.5f, 0.5f, 1.0f);
-	const std::vector<Vec4>			colors				= generateColors(numViewports);
-	const std::vector<UVec4>		cells				= generateGrid(numViewports, renderSize);
+	const std::vector<Vec4>			colors				= generateColors(testParams.numViewports);
+	const std::vector<UVec4>		cells				= generateGrid(testParams.numViewports, renderSize);
 
 	const VkDeviceSize				colorBufferSize		= renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
 
@@ -887,13 +912,13 @@ tcu::TestStatus testTessellationShader (Context& context, const int numViewports
 
 	{
 		context.getTestContext().getLog()
-			<< tcu::TestLog::Message << "Rendering a colorful grid of " << numViewports << " rectangle(s)." << tcu::TestLog::EndMessage
+			<< tcu::TestLog::Message << "Rendering a colorful grid of " << testParams.numViewports << " rectangle(s)." << tcu::TestLog::EndMessage
 			<< tcu::TestLog::Message << "Not covered area will be filled with a gray color." << tcu::TestLog::EndMessage;
 	}
 
 	// Draw
 	{
-		const Renderer renderer (context, renderSize, numViewports, cells, colorFormat, clearColor, colors, Renderer::TESSELLATION);
+		const Renderer renderer (context, renderSize, testParams, cells, colorFormat, clearColor, colors, Renderer::TESSELLATION);
 		renderer.draw(context, colorBuffer->object());
 	}
 
@@ -913,42 +938,48 @@ tcu::TestStatus testTessellationShader (Context& context, const int numViewports
 	return tcu::TestStatus::pass("OK");
 }
 
-void checkSupportVertex (Context& context, const int)
+void checkSupport (Context& context, TestParams params)
 {
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_VIEWPORT);
 	context.requireDeviceFunctionality("VK_EXT_shader_viewport_index_layer");
 
 	if (context.getDeviceProperties().limits.maxViewports < MIN_MAX_VIEWPORTS)
 		TCU_FAIL("multiViewport supported but maxViewports is less than the minimum required");
-}
 
-void checkSupportFragment (Context& context, FragmentTestParams)
-{
-	checkSupportVertex(context, 0);
-}
+	if (params.useTessellationShader)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
 
-void checkSupportTessellation (Context& context, const int)
-{
-	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
-
-	checkSupportVertex(context, 0);
+	if (params.useDynamicRendering)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createShaderViewportIndexTests	(tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createShaderViewportIndexTests	(tcu::TestContext& testCtx, bool useDynamicRendering)
 {
 	MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "shader_viewport_index", ""));
 
-	for (int numViewports = 1; numViewports <= MIN_MAX_VIEWPORTS; ++numViewports)
-		addFunctionCaseWithPrograms(group.get(), "vertex_shader_" + de::toString(numViewports), "", checkSupportVertex, initVertexTestPrograms, testVertexShader, numViewports);
+	TestParams testParams
+	{
+		1,						// int		numViewports;
+		false,					// bool		writeFromVertex;
+		useDynamicRendering,	// bool		useDynamicRendering;
+		false					// bool		useTessellationShader;
+	};
 
-	addFunctionCaseWithPrograms(group.get(), "fragment_shader_implicit", "", checkSupportFragment, initFragmentTestPrograms, testFragmentShader, FragmentTestParams(1, false));
-	for (int numViewports = 1; numViewports <= MIN_MAX_VIEWPORTS; ++numViewports)
-		addFunctionCaseWithPrograms(group.get(), "fragment_shader_" + de::toString(numViewports), "", checkSupportFragment, initFragmentTestPrograms, testFragmentShader, FragmentTestParams(numViewports, true));
+	for (testParams.numViewports = 1; testParams.numViewports <= MIN_MAX_VIEWPORTS; ++testParams.numViewports)
+		addFunctionCaseWithPrograms(group.get(), "vertex_shader_" + de::toString(testParams.numViewports), "", checkSupport, initVertexTestPrograms, testVertexShader, testParams);
 
-	for (int numViewports = 1; numViewports <= MIN_MAX_VIEWPORTS; ++numViewports)
-		addFunctionCaseWithPrograms(group.get(), "tessellation_shader_" + de::toString(numViewports), "", checkSupportTessellation, initTessellationTestPrograms, testTessellationShader, numViewports);
+	testParams.numViewports = 1;
+	addFunctionCaseWithPrograms(group.get(), "fragment_shader_implicit", "", checkSupport, initFragmentTestPrograms, testFragmentShader, testParams);
+	testParams.writeFromVertex = true;
+	for (testParams.numViewports = 1; testParams.numViewports <= MIN_MAX_VIEWPORTS; ++testParams.numViewports)
+		addFunctionCaseWithPrograms(group.get(), "fragment_shader_" + de::toString(testParams.numViewports), "", checkSupport, initFragmentTestPrograms, testFragmentShader, testParams);
+	testParams.writeFromVertex = false;
+
+	testParams.useTessellationShader = true;
+	for (testParams.numViewports = 1; testParams.numViewports <= MIN_MAX_VIEWPORTS; ++testParams.numViewports)
+		addFunctionCaseWithPrograms(group.get(), "tessellation_shader_" + de::toString(testParams.numViewports), "", checkSupport, initTessellationTestPrograms, testTessellationShader, testParams);
 
 	return group.release();
 }

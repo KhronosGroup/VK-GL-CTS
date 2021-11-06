@@ -101,4 +101,6 @@ VK_KHR_present_wait							DEVICE
 VK_KHR_shader_integer_dot_product			DEVICE
 VK_KHR_format_feature_flags2				DEVICE
 VK_KHR_maintenance4							DEVICE
+VK_KHR_dynamic_rendering					DEVICE
 VK_EXT_border_color_swizzle					DEVICE
+VK_NV_mesh_shader							DEVICE

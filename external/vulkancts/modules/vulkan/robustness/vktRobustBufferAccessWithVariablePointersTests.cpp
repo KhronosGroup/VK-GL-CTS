@@ -219,6 +219,9 @@ void RobustAccessWithPointersTest::checkSupport (Context &context) const
 	const auto& pointerFeatures = context.getVariablePointersFeatures();
 	if (!pointerFeatures.variablePointersStorageBuffer)
 		TCU_THROW(NotSupportedError, "VariablePointersStorageBuffer SPIR-V capability not supported");
+
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getDeviceFeatures().robustBufferAccess)
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: robustBufferAccess not supported by this implementation");
 }
 
 // A subclass for testing reading with variable pointers

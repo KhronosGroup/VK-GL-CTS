@@ -160,6 +160,8 @@ GetDeviceGroupPresentCapabilitiesKHRFunc			getDeviceGroupPresentCapabilitiesKHR;
 GetDeviceGroupSurfacePresentModesKHRFunc			getDeviceGroupSurfacePresentModesKHR;
 AcquireNextImage2KHRFunc							acquireNextImage2KHR;
 CreateSharedSwapchainsKHRFunc						createSharedSwapchainsKHR;
+CmdBeginRenderingKHRFunc							cmdBeginRenderingKHR;
+CmdEndRenderingKHRFunc								cmdEndRenderingKHR;
 GetMemoryFdKHRFunc									getMemoryFdKHR;
 GetMemoryFdPropertiesKHRFunc						getMemoryFdPropertiesKHR;
 ImportSemaphoreFdKHRFunc							importSemaphoreFdKHR;

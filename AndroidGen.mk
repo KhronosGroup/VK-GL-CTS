@@ -211,6 +211,13 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/memory_model/vktMemoryModelPadding.cpp \
 	external/vulkancts/modules/vulkan/memory_model/vktMemoryModelSharedLayout.cpp \
 	external/vulkancts/modules/vulkan/memory_model/vktMemoryModelSharedLayoutCase.cpp \
+	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderApiTests.cpp \
+	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderBuiltinTests.cpp \
+	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderMiscTests.cpp \
+	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderPropertyTests.cpp \
+	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderSmokeTests.cpp \
+	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderSyncTests.cpp \
+	external/vulkancts/modules/vulkan/mesh_shader/vktMeshShaderTests.cpp \
 	external/vulkancts/modules/vulkan/modifiers/vktModifiersTests.cpp \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewRenderPassUtil.cpp \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewRenderTests.cpp \
@@ -337,6 +344,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingTraversalControlTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingWatertightnessTests.cpp \
 	external/vulkancts/modules/vulkan/reconvergence/vktReconvergenceTests.cpp \
+	external/vulkancts/modules/vulkan/renderpass/vktDynamicRenderingTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassDepthStencilResolveTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassFragmentDensityMapTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassLoadStoreOpNoneTests.cpp \
@@ -1252,6 +1260,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/imageless_framebuffer \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/memory \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/memory_model \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/mesh_shader \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/modifiers \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/multiview \
 	$(deqp_dir)/external/vulkancts/modules/vulkan \

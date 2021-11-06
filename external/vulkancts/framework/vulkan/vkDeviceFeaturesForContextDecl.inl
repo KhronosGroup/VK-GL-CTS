@@ -24,6 +24,7 @@ const vk::VkPhysicalDeviceDescriptorIndexingFeatures&					getDescriptorIndexingF
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV&			getDeviceGeneratedCommandsFeatures				(void) const;
 const vk::VkPhysicalDeviceDeviceMemoryReportFeaturesEXT&				getDeviceMemoryReportFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceDiagnosticsConfigFeaturesNV&					getDiagnosticsConfigFeatures					(void) const;
+const vk::VkPhysicalDeviceDynamicRenderingFeaturesKHR&					getDynamicRenderingFeatures						(void) const;
 const vk::VkPhysicalDeviceExclusiveScissorFeaturesNV&					getExclusiveScissorFeatures						(void) const;
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&				getExtendedDynamicStateFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&				getExtendedDynamicState2FeaturesEXT				(void) const;

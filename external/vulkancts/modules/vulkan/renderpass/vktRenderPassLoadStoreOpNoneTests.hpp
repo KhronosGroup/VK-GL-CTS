@@ -32,7 +32,7 @@ namespace vkt
 namespace renderpass
 {
 
-tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& testCtx, const RenderPassType renderPassType);
+tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& testCtx, const RenderingType renderingType);
 
 } // renderpass
 } // vkt
