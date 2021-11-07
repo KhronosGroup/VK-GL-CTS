@@ -70,11 +70,11 @@ typedef u::BitsSet<BufferFateFlags, BufferFateFlagBits, cstr> BufferFateBits;
 
 const BufferFateBits	AvailableBufferFateBits
 {
-	{ Transfer,		"transfer_usage_bits"	},
-	{ Storage,		"storage_usage_bits"	},
-	{ Other,		"other_usage_bits"		},
-	{ AccStructure,	"acc_struct_usage_bits"	},
-	{ Video,		"video_usage_bits"		}
+	std::make_tuple(Transfer,		"transfer_usage_bits"	),
+	std::make_tuple(Storage,		"storage_usage_bits"	),
+	std::make_tuple(Other,			"other_usage_bits"		),
+	std::make_tuple(AccStructure,	"acc_struct_usage_bits"	),
+	std::make_tuple(Video,			"video_usage_bits"		),
 };
 
 typedef u::BitsSet<VkBufferCreateFlags, VkBufferCreateFlagBits, cstr>				BufferCreateBits;
@@ -112,54 +112,54 @@ struct InstanceConfig
 
 const BufferCreateBits	AvailableBufferCreateBits
 {
-	{ VkBufferCreateFlagBits(0),				"no_flags"			},
-	{ VK_BUFFER_CREATE_PROTECTED_BIT,			"protected"			},
-	{ VK_BUFFER_CREATE_SPARSE_BINDING_BIT,		"sparse_binding"	},
-	{ VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,	"sparse_residency"	},
-	{ VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,		"sparse_aliased"	},
+	std::make_tuple(VkBufferCreateFlagBits(0),				"no_flags"			),
+	std::make_tuple(VK_BUFFER_CREATE_PROTECTED_BIT,			"protected"			),
+	std::make_tuple(VK_BUFFER_CREATE_SPARSE_BINDING_BIT,	"sparse_binding"	),
+	std::make_tuple(VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,	"sparse_residency"	),
+	std::make_tuple(VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,	"sparse_aliased"	),
 };
 
 const BufferUsageBits	AvailableBufferUsageBits
 {
-	{ VK_BUFFER_USAGE_TRANSFER_SRC_BIT										, Transfer		},
-	{ VK_BUFFER_USAGE_TRANSFER_DST_BIT										, Transfer		},
-	{ VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT								, Storage		},
-	{ VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT								, Storage		},
-	{ VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT									, Storage		},
-	{ VK_BUFFER_USAGE_STORAGE_BUFFER_BIT									, Storage		},
-	{ VK_BUFFER_USAGE_INDEX_BUFFER_BIT										, Storage		},
-	{ VK_BUFFER_USAGE_VERTEX_BUFFER_BIT										, Storage		},
-	{ VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT									, Other			},
-	{ VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT								, Other			},
-	{ VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR								, Video			},
-	{ VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR								, Video			},
-	{ VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT						, Other			},
-	{ VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT				, Other			},
-	{ VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT							, Other			},
-	{ VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR	, AccStructure	},
-	{ VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR				, AccStructure	},
-	{ VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR							, AccStructure	},
-	{ VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR								, Video			},
-	{ VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR								, Video			},
+	std::make_tuple(VK_BUFFER_USAGE_TRANSFER_SRC_BIT										, Transfer		),
+	std::make_tuple(VK_BUFFER_USAGE_TRANSFER_DST_BIT										, Transfer		),
+	std::make_tuple(VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT								, Storage		),
+	std::make_tuple(VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT								, Storage		),
+	std::make_tuple(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT										, Storage		),
+	std::make_tuple(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT										, Storage		),
+	std::make_tuple(VK_BUFFER_USAGE_INDEX_BUFFER_BIT										, Storage		),
+	std::make_tuple(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT										, Storage		),
+	std::make_tuple(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT										, Other			),
+	std::make_tuple(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT								, Other			),
+	std::make_tuple(VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR								, Video			),
+	std::make_tuple(VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR								, Video			),
+	std::make_tuple(VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT						, Other			),
+	std::make_tuple(VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT				, Other			),
+	std::make_tuple(VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT							, Other			),
+	std::make_tuple(VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR	, AccStructure	),
+	std::make_tuple(VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR					, AccStructure	),
+	std::make_tuple(VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR							, AccStructure	),
+	std::make_tuple(VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR								, Video			),
+	std::make_tuple(VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR								, Video			),
 };
 
 #define INTERNALTEST_EXTERNAL_MEMORY_HANDLE_TYPE_NO_BITS VkExternalMemoryHandleTypeFlagBits(0)
 const ExternalMemoryHandleBits	AvailableExternalMemoryHandleBits
 {
-	{ INTERNALTEST_EXTERNAL_MEMORY_HANDLE_TYPE_NO_BITS						, "no_flags",			false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT							, "opaque_fd",			false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT						, "opaque_win32",		false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT					, "opaque_win32_kmt",	false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT						, "d3d11_tex",			false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT					, "d3d11_tex_kmt",		false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP_BIT							, "d3d12_heap",			false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT						, "d3d12_rsrc",			false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT						, "dma_buf",			false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID	, "android_hw",			false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT				, "host_alloc",			true  },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT		, "host_mapped",		true  },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA					, "zircon_vmo",			false },
-	{ VK_EXTERNAL_MEMORY_HANDLE_TYPE_RDMA_ADDRESS_BIT_NV					, "roma_addr",			false },
+	std::make_tuple(INTERNALTEST_EXTERNAL_MEMORY_HANDLE_TYPE_NO_BITS					, "no_flags",			false ),
+	std::make_tuple(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT						, "opaque_fd",			false ),
+	std::make_tuple(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT						, "opaque_win32",		false ),
+	std::make_tuple(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT					, "opaque_win32_kmt",	false ),
+	std::make_tuple(VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT					, "d3d11_tex",			false ),
+	std::make_tuple(VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT				, "d3d11_tex_kmt",		false ),
+	std::make_tuple(VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP_BIT						, "d3d12_heap",			false ),
+	std::make_tuple(VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT					, "d3d12_rsrc",			false ),
+	std::make_tuple(VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT						, "dma_buf",			false ),
+	std::make_tuple(VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID	, "android_hw",			false ),
+	std::make_tuple(VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT				, "host_alloc",			true  ),
+	std::make_tuple(VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT	, "host_mapped",		true  ),
+	std::make_tuple(VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA				, "zircon_vmo",			false ),
+	std::make_tuple(VK_EXTERNAL_MEMORY_HANDLE_TYPE_RDMA_ADDRESS_BIT_NV					, "roma_addr",			false ),
 };
 
 template<class Flag, class Bit, class Str, class... Ignored>
@@ -314,9 +314,6 @@ struct Info
 
 void MemoryRequirementsTest::checkSupport (Context& context) const
 {
-	//const DeviceInterface&							vkd					= context.getDeviceInterface();
-	//const VkDevice									device				= context.getDevice();
-
 	const InstanceInterface&						intf				= context.getInstanceInterface();
 	const VkPhysicalDevice							physDevice			= context.getPhysicalDevice();
 	const std::vector<VkExtensionProperties>		supportedExtensions = enumerateDeviceExtensionProperties(intf, physDevice, nullptr);
