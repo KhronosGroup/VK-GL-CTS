@@ -673,6 +673,7 @@ void GetFrameTimestampTest::executeForConfig (EGLDisplay display, EGLConfig conf
 					verifyNeighboringFrames(frame7ago, frame6ago, m_result);
 				}
 			}
+			deSleep(static_cast<deUint32>(frame.compositeInterval / 1000000));
 		}
 
 		// All timestamps for the most recently swapped frame should
