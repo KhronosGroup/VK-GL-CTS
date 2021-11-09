@@ -2470,7 +2470,7 @@ tcu::TestStatus RayTracingDeviceASCompabilityKHRTestInstance::iterate (void)
 	const VkQueue					queue				= m_context.getUniversalQueue();
 	Allocator&						allocator			= m_context.getDefaultAllocator();
 
-	const Move<VkCommandPool>		cmdPool				= createCommandPool(vkd, device, 0, queueFamilyIndex);
+	const Move<VkCommandPool>		cmdPool				= createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 	const Move<VkCommandBuffer>		cmdBuffer			= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	bool							result				= false;
