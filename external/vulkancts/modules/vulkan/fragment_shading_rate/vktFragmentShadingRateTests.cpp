@@ -427,6 +427,7 @@ void createMiscTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup)
 void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, bool useDynamicRendering)
 {
 	createBasicTests(testCtx, group, useDynamicRendering);
+	createAttachmentRateTests(testCtx, group, useDynamicRendering);
 
 	if (!useDynamicRendering)
 	{
@@ -435,8 +436,6 @@ void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, bool 
 
 		// subpasses can't be translated to dynamic rendering
 		createPixelConsistencyTests(testCtx, group);
-
-		createAttachmentRateTests(testCtx, group);
 	}
 }
 
