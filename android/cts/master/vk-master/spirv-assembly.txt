@@ -20488,6 +20488,7 @@ dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrequal.ssbo_comparisons_equal
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrequal.variable_pointers_ssbo_2_equal
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrequal.variable_pointers_ssbo_equal
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrequal.variable_pointers_vars_ssbo_equal
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrequal.simple_variable_pointers_ptr_equal
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrequal.variable_pointers_vars_wg_equal
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrequal.variable_pointers_wg_equal
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrequal.wg_comparisons_equal
@@ -20498,6 +20499,7 @@ dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrnotequal.null_comparisons_wg_no
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrnotequal.ssbo_comparisons_not_equal
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrnotequal.variable_pointers_ssbo_2_not_equal
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrnotequal.variable_pointers_ssbo_not_equal
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrnotequal.simple_variable_pointers_ptr_not_equal
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrnotequal.variable_pointers_vars_ssbo_not_equal
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrnotequal.variable_pointers_vars_wg_not_equal
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrnotequal.variable_pointers_wg_not_equal

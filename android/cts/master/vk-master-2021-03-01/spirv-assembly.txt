@@ -3706,6 +3706,8 @@ dEQP-VK.spirv_assembly.instruction.graphics.execution_mode.depthunchanged_0
 dEQP-VK.spirv_assembly.instruction.graphics.execution_mode.depthunchanged_1
 dEQP-VK.spirv_assembly.instruction.graphics.execution_mode.depthunchanged_2
 dEQP-VK.spirv_assembly.instruction.graphics.execution_mode.depthunchanged_3
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrequal.simple_variable_pointers_ptr_equal
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrnotequal.simple_variable_pointers_ptr_not_equal
 dEQP-VK.spirv_assembly.instruction.spirv1p4.hlsl_functionality1.member_decorate_string
 dEQP-VK.spirv_assembly.instruction.function_params.sampler_param
 dEQP-VK.spirv_assembly.instruction.image_query.samples_storage
