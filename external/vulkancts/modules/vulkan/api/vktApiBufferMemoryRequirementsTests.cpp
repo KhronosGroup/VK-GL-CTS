@@ -91,6 +91,9 @@ struct TestConfig
 	SharedPtr<BufferCreateBits>	createBits;
 	SharedPtr<BufferFateBits>	fateBits;
 	bool						incExtMemTypeFlags;
+	// Tests the buffer memory size requirement is less than or equal to the aligned size of the buffer.
+	// Requires VK_KHR_maintenance4 extension.
+	bool						testSizeRequirements;
 };
 struct InstanceConfig
 {
@@ -100,6 +103,7 @@ struct InstanceConfig
 	SharedPtr<std::vector<BufferUsageBitsPtr>>			usageFlags;
 	bool												incExtMemTypeFlags;
 	SharedPtr<std::vector<ExternalMemoryHandleBitsPtr>>	extMemHandleFlags;
+	bool												testSizeRequirements;
 
 	InstanceConfig(const TestConfig& conf)
 		: useMethod2			(conf.useMethod2)
@@ -107,7 +111,8 @@ struct InstanceConfig
 		, fateBits				(conf.fateBits)
 		, usageFlags			(new std::vector<SharedPtr<BufferUsageBits>>)
 		, incExtMemTypeFlags	(conf.incExtMemTypeFlags)
-		, extMemHandleFlags		(new std::vector<SharedPtr<ExternalMemoryHandleBits>>) {}
+		, extMemHandleFlags		(new std::vector<SharedPtr<ExternalMemoryHandleBits>>)
+		, testSizeRequirements	(conf.testSizeRequirements) {}
 };
 
 const BufferCreateBits	AvailableBufferCreateBits
@@ -472,6 +477,12 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 		std::transform(extMemHandleFlags.begin(), extMemHandleFlags.end(), m_instConfig.extMemHandleFlags->begin(),
 					   [](ExternalMemoryHandleBits& bits){ return ExternalMemoryHandleBits::makeShared(std::move(bits)); });
 	}
+
+	if (m_testConfig.testSizeRequirements)
+	{
+		if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance4"))
+			TCU_THROW(NotSupportedError, "VK_KHR_maintenance4 not supported");
+	}
 }
 
 void BufferMemoryRequirementsInstance::logFailedSubtests (const std::vector<BufferCreateBitsPtr>&			failCreateBits,
@@ -641,7 +652,7 @@ TestStatus	BufferMemoryRequirementsInstance::iterate (void)
 				{
 					pNext = chainVkStructure<VkExternalMemoryBufferCreateInfo>(pNext, handleFlags);
 				}
-				const VkBufferCreateInfo	createInfo
+				VkBufferCreateInfo	createInfo
 				{
 					VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,					// VkStructureType					sType;
 					pNext,													// const void*						pNext;
@@ -653,18 +664,73 @@ TestStatus	BufferMemoryRequirementsInstance::iterate (void)
 					&queueFamilyIndex,										// const uint32_t*					pQueueFamilyIndices;
 				};
 
-				Move<VkBuffer> buffer = createBuffer(vkd, device, &createInfo);
+				if (m_config.testSizeRequirements)
+				{
+					VkPhysicalDeviceMaintenance4PropertiesKHR	maintenance4Properties		=
+					{
+						VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES_KHR,	// VkStructureType	sType;
+						DE_NULL,														// void*			pNext;
+						0u																// VkDeviceSize		maxBufferSize;
+					};
 
-				VkMemoryRequirements		reqs{};
-				(this->*method)(reqs, vkd, device, *buffer);
-				if (reqs.memoryTypeBits)
-					++passCount;
+					VkPhysicalDeviceProperties2					physicalDeviceProperties2	=
+					{
+						VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,	// VkStructureType				sType;
+						&maintenance4Properties,						// void*						pNext;
+						{},												// VkPhysicalDeviceProperties	properties;
+					};
+
+					m_context.getInstanceInterface().getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &physicalDeviceProperties2);
+
+					const VkDeviceSize							maxBufferSize				= maintenance4Properties.maxBufferSize;
+					DE_ASSERT(maxBufferSize > 0);
+					VkDeviceSize								N							= 0;
+
+					while ((1ull << N) + 1 < maxBufferSize)
+					{
+						createInfo.size = (1ull << N) + 1;
+
+						try
+						{
+							Move<VkBuffer> buffer = createBuffer(vkd, device, &createInfo);
+
+							VkMemoryRequirements reqs{};
+							(this->*method)(reqs, vkd, device, *buffer);
+
+							if (reqs.size <= static_cast<VkDeviceSize>(deAlign64(static_cast<deInt64>(createInfo.size), static_cast<deInt64>(reqs.alignment))))
+							{
+								++passCount;
+							} else
+							{
+								++failCount;
+								failCreateBits.emplace_back(m_config.createBits);
+								failUsageBits.emplace_back(*u);
+								failExtMemHandleBits.emplace_back(*m);
+							}
+
+							N++;
+						}
+						catch (const vk::OutOfMemoryError&)
+						{
+							break;
+						}
+					}
+				}
 				else
 				{
-					++failCount;
-					failCreateBits.emplace_back(m_config.createBits);
-					failUsageBits.emplace_back(*u);
-					failExtMemHandleBits.emplace_back(*m);
+					Move<VkBuffer> buffer = createBuffer(vkd, device, &createInfo);
+
+					VkMemoryRequirements reqs{};
+					(this->*method)(reqs, vkd, device, *buffer);
+					if (reqs.memoryTypeBits)
+						++passCount;
+					else
+					{
+						++failCount;
+						failCreateBits.emplace_back(m_config.createBits);
+						failUsageBits.emplace_back(*u);
+						failExtMemHandleBits.emplace_back(*m);
+					}
 				}
 			}
 		}
@@ -695,7 +761,7 @@ tcu::TestCaseGroup* createBufferMemoryRequirementsTests (tcu::TestContext& testC
 	{
 		bool		method;
 		cstr		name;
-	} const methods[] { { false, "method1" }, { true, "mothod2" } };
+	} const methods[] { { false, "method1" }, { true, "method2" } };
 
 	std::vector<SharedPtr<BufferCreateBits>>	createBitPtrs;
 	{
@@ -738,12 +804,16 @@ tcu::TestCaseGroup* createBufferMemoryRequirementsTests (tcu::TestContext& testC
 				auto groupMethod = new TestCaseGroup(testCtx, method.name, nilstr);
 				for (const auto& fateBits : fateBitPtrs)
 				{
-					TestConfig	config;
-					config.fateBits				= fateBits;
-					config.incExtMemTypeFlags	= extMemTypeFlag.include;
-					config.createBits			= createBits;
-					config.useMethod2			= method.method;
-					groupMethod->addChild(new MemoryRequirementsTest(testCtx, bitsToString(*fateBits).c_str(), config));
+					for (const auto testSizeReq : {false, true})
+					{
+						TestConfig	config;
+						config.fateBits				= fateBits;
+						config.incExtMemTypeFlags	= extMemTypeFlag.include;
+						config.createBits			= createBits;
+						config.useMethod2			= method.method;
+						config.testSizeRequirements	= testSizeReq;
+						groupMethod->addChild(new MemoryRequirementsTest(testCtx, ((testSizeReq ? "size_req_" : "") + bitsToString(*fateBits)).c_str(), config));
+					}
 				}
 				groupExtMemTypeFlags->addChild(groupMethod);
 			}
