@@ -624,12 +624,12 @@ TestStatus	BufferMemoryRequirementsInstance::iterate (void)
 		DE_ASSERT(!m_config.usageFlags->empty());
 		for (auto u = m_config.usageFlags->cbegin(); u != m_config.usageFlags->cend(); ++u)
 		{
-			const VkBufferUsageFlags infoUsageFlags = *u;
+			const VkBufferUsageFlags infoUsageFlags = *(u->get());
 
 			DE_ASSERT(!m_config.extMemHandleFlags->empty());
 			for (auto m = m_config.extMemHandleFlags->cbegin(); m != m_config.extMemHandleFlags->cend(); ++m)
 			{
-				const VkExternalMemoryHandleTypeFlags handleFlags = *m;
+				const VkExternalMemoryHandleTypeFlags handleFlags = *(m->get());
 
 				void* pNext = nullptr;
 
