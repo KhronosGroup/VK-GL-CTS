@@ -8260,11 +8260,7 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 					resultBufferDataVec.data(),
 					resultBufferDataVec.size() );
 
-			flushMappedMemoryRange(	deviceInterface,
-									deviceVk,
-									resultBufferPtr->getAllocation().getMemory(),
-									resultBufferPtr->getAllocation().getOffset(),
-									resultBufferSize);
+			flushAlloc(deviceInterface, deviceVk, resultBufferPtr->getAllocation());
 		}
 
 	}
@@ -8361,18 +8357,22 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 
 		{
 			const auto	nTraceRaysInvocationsNeeded			= m_testPtr->getNTraceRayInvocationsNeeded();
+			const auto	handleSize							= m_rayTracingPropsPtr->getShaderGroupHandleSize();
+			const auto	missStride							= de::roundUp(handleSize + m_testPtr->getShaderRecordSize(ShaderGroups::MISS_GROUP), handleSize);
+			const auto	hitStride							= de::roundUp(handleSize + m_testPtr->getShaderRecordSize(ShaderGroups::HIT_GROUP), handleSize);
+			const auto	callStride							= de::roundUp(handleSize + m_testPtr->getShaderRecordSize(ShaderGroups::FIRST_CALLABLE_GROUP), handleSize);
 			const auto	raygenShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(	deviceInterface,
 																														deviceVk,
 																														raygenShaderBindingTablePtr->get(),
 																														0 /* offset */),
-																								m_rayTracingPropsPtr->getShaderGroupHandleSize(),
-																								m_rayTracingPropsPtr->getShaderGroupHandleSize() );
+																								handleSize,
+																								handleSize);
 			const auto	missShaderBindingTableRegion		= ((nMissGroups > 0u)	?	makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(	deviceInterface,
 																																					deviceVk,
 																																					missShaderBindingTablePtr->get(),
 																																					0 /* offset */),
-																															m_rayTracingPropsPtr->getShaderGroupHandleSize() + m_testPtr->getShaderRecordSize(ShaderGroups::MISS_GROUP),
-																															m_rayTracingPropsPtr->getShaderGroupHandleSize())
+																															missStride,
+																															missStride * nMissGroups)
 																					:	makeStridedDeviceAddressRegionKHR(DE_NULL,
 																														  0, /* stride */
 																														  0  /* size   */));
@@ -8380,8 +8380,8 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 																																					deviceVk,
 																																					hitShaderBindingTablePtr->get(),
 																																					0 /* offset */),
-																															m_rayTracingPropsPtr->getShaderGroupHandleSize() + m_testPtr->getShaderRecordSize(ShaderGroups::HIT_GROUP),
-																															m_rayTracingPropsPtr->getShaderGroupHandleSize() )
+																															hitStride,
+																															hitStride * nHitGroups)
 																					:	makeStridedDeviceAddressRegionKHR(DE_NULL,
 																														  0, /* stride */
 																														  0  /* size   */));
@@ -8390,8 +8390,8 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 																																										deviceVk,
 																																										callableShaderBindingTablePtr->get(),
 																																										0 /* offset */),
-																																				m_rayTracingPropsPtr->getShaderGroupHandleSize(), /* stride */
-																																				(m_rayTracingPropsPtr->getShaderGroupHandleSize() + m_testPtr->getShaderRecordSize(ShaderGroups::FIRST_CALLABLE_GROUP) ) * static_cast<deUint32>(callableShaderCollectionNames.size() ) )
+																																				callStride, /* stride */
+																																				callStride * static_cast<deUint32>(callableShaderCollectionNames.size() ) )
 																											: makeStridedDeviceAddressRegionKHR(DE_NULL,
 																																				0, /* stride */
 																																				0  /* size   */);
