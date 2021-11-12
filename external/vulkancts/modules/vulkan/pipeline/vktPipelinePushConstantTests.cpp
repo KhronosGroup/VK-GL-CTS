@@ -2684,9 +2684,9 @@ void OverwriteTestCase::initPrograms (vk::SourceCollections& programCollection) 
 			<< "\n"
 			<< "void main()\n"
 			<< "{\n"
-			// Full-screen clockwise triangle fan with 4 vertices.
-			<< "    const float x = (-1.0+2.0*(((gl_VertexIndex+1)&2)>>1));\n"
-			<< "    const float y = (-1.0+2.0*(( gl_VertexIndex   &2)>>1));\n"
+			// Full-screen clockwise triangle strip with 4 vertices.
+			<< "	const float x = (-1.0+2.0*((gl_VertexIndex & 2)>>1));\n"
+			<< "	const float y = ( 1.0-2.0* (gl_VertexIndex % 2));\n"
 			<< "	gl_Position = vec4(x, y, 0.0, 1.0);\n"
 			<< "}\n"
 			;
@@ -2818,7 +2818,7 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 		framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), 0u, nullptr, imageExtent.width, imageExtent.height);
 		pipeline	= makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
 			vertModule.get(), DE_NULL, DE_NULL, DE_NULL, fragModule.get(), renderPass.get(),
-			viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN, 0u, 0u, &inputState);
+			viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u, &inputState);
 	}
 
 	// Offsets and sizes.

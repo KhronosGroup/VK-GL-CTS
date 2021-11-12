@@ -528,8 +528,8 @@ struct TestConfig
 		, vertexDataExtraBytes			(0ull)
 		, cullModeConfig				(static_cast<vk::VkCullModeFlags>(vk::VK_CULL_MODE_NONE))
 		, frontFaceConfig				(vk::VK_FRONT_FACE_COUNTER_CLOCKWISE)
-		// By default we will use a triangle fan with 6 vertices that could be wrongly interpreted as a triangle list with 2 triangles.
-		, topologyConfig				(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN)
+		// By default we will use a triangle strip with 6 vertices that could be wrongly interpreted as a triangle list with 2 triangles.
+		, topologyConfig				(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 		, viewportConfig				(ViewportVec(1u, vk::makeViewport(kFramebufferWidth, kFramebufferHeight)))
 		, scissorConfig					(ScissorVec(1u, vk::makeRect2D(kFramebufferWidth, kFramebufferHeight)))
 		// By default, the vertex stride is the size of a vertex according to the chosen vertex type.
@@ -1234,39 +1234,40 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	// Vertex buffer.
 	const auto									topologyClass = getTopologyClass(m_testConfig.topologyConfig.staticValue);
 	std::vector<de::MovePtr<GeometryVertex>>	vertexPtrs;
-	std::vector<deUint32>		indices{ 0, 1, 2, 3, 0xFFFFFFFF, 4, 5, 0, 3 };
+	std::vector<deUint32>		indices{ 0, 1, 2, 3, 0xFFFFFFFF, 2, 3, 4, 5 };
 
 	if (topologyClass == TopologyClass::TRIANGLE)
 	{
-		// Full-screen triangle fan with 6 vertices.
+		// Full-screen triangle strip with 6 vertices.
 		//
-		// 4        3        2
+		// 0        2        4
 		//  +-------+-------+
-		//  |X      X      X|
-		//  | X     X     X |
-		//  |  X    X    X  |
+		//  |      XX      X|
+		//  |     X X     X |
+		//  |    X  X    X  |
 		//  |   X   X   X   |
-		//  |    X  X  X    |
-		//  |     X X X     |
-		//  |      XXX      |
+		//  |  X    X  X    |
+		//  | X     X X     |
+		//  |X      XX      |
 		//  +-------+-------+
-		// 5        0        1
-		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2( 0.0f,  1.0f)));
-		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2( 1.0f,  1.0f)));
-		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2( 1.0f, -1.0f)));
-		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2( 0.0f, -1.0f)));
+		// 1        3        5
+
 		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2(-1.0f, -1.0f)));
 		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2(-1.0f,  1.0f)));
+		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2( 0.0f, -1.0f)));
+		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2( 0.0f,  1.0f)));
+		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2( 1.0f, -1.0f)));
+		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2( 1.0f,  1.0f)));
 	}
 	else if (topologyClass == TopologyClass::PATCH)
 	{
 		// 2 triangles making a quad
-		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2(-1.0f, 1.0f)));
-		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2(1.0f, 1.0f)));
-		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2(1.0f, -1.0f)));
-		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2(1.0f, -1.0f)));
+		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2(-1.0f,  1.0f)));
+		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2( 1.0f,  1.0f)));
+		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2( 1.0f, -1.0f)));
+		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2( 1.0f, -1.0f)));
 		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2(-1.0f, -1.0f)));
-		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2(-1.0f, 1.0f)));
+		vertexPtrs.push_back(m_testConfig.vertexFactory(tcu::Vec2(-1.0f,  1.0f)));
 	}
 	else // TopologyClass::LINE
 	{
@@ -1288,12 +1289,19 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	std::transform(begin(vertexPtrs), end(vertexPtrs), std::back_inserter(vertexRawPtrs),
 				   [](const de::MovePtr<GeometryVertex>& p) { return p.get(); });
 
-	// Reversed vertices, except for the first one (0, 5, 4, 3, 2, 1): clockwise mesh for triangles. Not to be used with lines.
+	// Reversed vertices order in triangle strip (1, 0, 3, 2, 5, 4)
 	std::vector<GeometryVertex*> reversedVertexRawPtrs;
-	reversedVertexRawPtrs.push_back(vertexRawPtrs[0]);
 	if (topologyClass == TopologyClass::TRIANGLE)
 	{
-		std::copy_n(vertexRawPtrs.rbegin(), vertexRawPtrs.size() - 1u, std::back_inserter(reversedVertexRawPtrs));
+		reversedVertexRawPtrs =
+		{
+			vertexRawPtrs[1],
+			vertexRawPtrs[0],
+			vertexRawPtrs[3],
+			vertexRawPtrs[2],
+			vertexRawPtrs[5],
+			vertexRawPtrs[4],
+		};
 	}
 
 	if (topologyClass == TopologyClass::LINE)
@@ -2204,8 +2212,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 					vk::VkPrimitiveTopology dynamicVal;
 				} kTopologyCases[] =
 				{
-					{ vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN	},
-					{ vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP	},
+					{ vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP	},
+					{ vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP		},
 				};
 
 				for (int topoCaseIdx = 0; topoCaseIdx < DE_LENGTH_OF_ARRAY(kTopologyCases); ++topoCaseIdx)
