@@ -227,9 +227,9 @@ void BorderSwizzleCase::initPrograms (vk::SourceCollections& programCollection) 
 		<< "\n"
 		<< "void main()\n"
 		<< "{\n"
-		// Full-screen clockwise triangle fan with 4 vertices.
-		<< "    const float x = (-1.0+2.0*(((gl_VertexIndex+1)&2)>>1));\n"
-		<< "    const float y = (-1.0+2.0*(( gl_VertexIndex   &2)>>1));\n"
+		// Full-screen clockwise triangle strip with 4 vertices.
+		<< "	const float x = (-1.0+2.0*((gl_VertexIndex & 2)>>1));\n"
+		<< "	const float y = ( 1.0-2.0* (gl_VertexIndex % 2));\n"
 		<< "	gl_Position = vec4(x, y, 0.0, 1.0);\n"
 		<< "}\n"
 		;
@@ -908,7 +908,7 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 	const VkPipelineVertexInputStateCreateInfo vertexInputInfo = initVulkanStructure();
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo = initVulkanStructure();
-	inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+	inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 
 	const auto viewport	= makeViewport(extent);
 	const auto scissor	= makeRect2D(extent);
