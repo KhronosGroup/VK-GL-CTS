@@ -1247,12 +1247,13 @@ void RectangleTest::makeGradient(Type (*unpack)(float))
 	const Type  defaultValue = unpack(0.5f);
 	std::fill(data, data + dataToSkip, defaultValue);
 
-	for (int k = 0; k < depth; k++)
+	for (int k = m_unpackProperties.skipImages; k < depth; k++)
 	{
 		for (int j = 0; j < rowCount; j++)
 		{
 			for (int i = 0; i < elementsInRow; i++)
 			{
+				DE_ASSERT(index < bufferSize);
 				int x = i / elementsInGroup;
 				if ((k == depth - 1) && (m_unpackProperties.skipRows <= j) &&
 					(j < m_unpackProperties.skipRows + GRADIENT_HEIGHT) && (m_unpackProperties.skipPixels <= x) &&
