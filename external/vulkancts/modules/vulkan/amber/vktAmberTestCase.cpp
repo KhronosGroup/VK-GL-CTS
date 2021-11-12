@@ -101,6 +101,8 @@ static bool isFeatureSupported(const vkt::Context& ctx, const std::string& featu
 		return ctx.getDeviceFeatures().fillModeNonSolid;
 	if (feature == "Features.shaderStorageImageMultisample")
 		return ctx.getDeviceFeatures().shaderStorageImageMultisample;
+	if (feature == "Features.sampleRateShading")
+		return ctx.getDeviceFeatures().sampleRateShading;
 	if (feature == "VariablePointerFeatures.variablePointersStorageBuffer")
 		return ctx.getVariablePointersFeatures().variablePointersStorageBuffer;
 	if (feature == "VariablePointerFeatures.variablePointers")
