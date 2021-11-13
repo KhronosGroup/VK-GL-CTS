@@ -672,18 +672,18 @@ void get_sampler_parameterIiv (NegativeTestContext& ctx)
 	if (!supportsES32orGL45(ctx))
 		throw tcu::NotSupportedError("glGetSamplerParameterIiv is not supported.", DE_NULL, __FILE__, __LINE__);
 
-	GLuint	sampler		= 0x1234;
-	GLint	borderColor	= 0x1234;
+	GLuint	sampler			= 0x1234;
+	GLint	borderColor[]	= { 0x1234, 0x4123, 0x3412, 0x2341 };
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if sampler is not the name of a sampler object returned from a previous call to ctx.glGenSamplers.");
-	ctx.glGetSamplerParameterIiv(sampler, GL_TEXTURE_BORDER_COLOR, &borderColor);
+	ctx.glGetSamplerParameterIiv(sampler, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.endSection();
 
 	ctx.glGenSamplers(1, &sampler);
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not an accepted value.");
-	ctx.glGetSamplerParameterIiv(sampler, -1, &borderColor);
+	ctx.glGetSamplerParameterIiv(sampler, -1, &borderColor[0]);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
@@ -695,18 +695,18 @@ void get_sampler_parameterIuiv (NegativeTestContext& ctx)
 	if (!supportsES32orGL45(ctx))
 		throw tcu::NotSupportedError("glGetSamplerParameterIuiv is not supported.", DE_NULL, __FILE__, __LINE__);
 
-	GLuint	sampler		= 0x1234;
-	GLuint	borderColor	= 0x1234;
+	GLuint	sampler			= 0x1234;
+	GLuint	borderColor[]	= { 0x1234, 0x4123, 0x3412, 0x2341 };
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if sampler is not the name of a sampler object returned from a previous call to ctx.glGenSamplers.");
-	ctx.glGetSamplerParameterIuiv(sampler, GL_TEXTURE_BORDER_COLOR, &borderColor);
+	ctx.glGetSamplerParameterIuiv(sampler, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.endSection();
 
 	ctx.glGenSamplers(1, &sampler);
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not an accepted value.");
-	ctx.glGetSamplerParameterIuiv(sampler, -1, &borderColor);
+	ctx.glGetSamplerParameterIuiv(sampler, -1, &borderColor[0]);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
