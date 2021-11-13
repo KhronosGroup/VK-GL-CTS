@@ -205,9 +205,9 @@ void BindPointTest::initPrograms (vk::SourceCollections& programCollection) cons
 			<< "\n"
 			<< "void main()\n"
 			<< "{\n"
-			// Full-screen clockwise triangle fan with 4 vertices.
-			<< "    const float x = (-1.0+2.0*(((gl_VertexIndex+1)&2)>>1));\n"
-			<< "    const float y = (-1.0+2.0*(( gl_VertexIndex   &2)>>1));\n"
+			// Full-screen clockwise triangle strip with 4 vertices.
+			<< "	const float x = (-1.0+2.0*((gl_VertexIndex & 2)>>1));\n"
+			<< "	const float y = ( 1.0-2.0* (gl_VertexIndex % 2));\n"
 			<< "	gl_Position = vec4(x, y, 0.0, 1.0);\n"
 			<< "}\n"
 			;
@@ -515,7 +515,7 @@ tcu::TestStatus BindPointInstance::iterate (void)
 
 		graphicsPipeline = makeGraphicsPipeline(vkd, device, graphicsPipelineLayout.get(),
 			vertShader.get(), DE_NULL, DE_NULL, DE_NULL, fragShader.get(),	// Shaders.
-			renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN, 0u, 0u, &vertexInputState);
+			renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u, &vertexInputState);
 	}
 
 	// Compute pipeline.
