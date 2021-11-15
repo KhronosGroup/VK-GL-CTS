@@ -727,7 +727,11 @@ tcu::TestStatus testLargeBuffer(Context& context, LargeBufferParameters params)
 
 void checkMaintenance4Support(Context& context, LargeBufferParameters params)
 {
-	context.requireDeviceFunctionality("VK_KHR_maintenance4");
+	if (params.useMaxBufferSize)
+		context.requireDeviceFunctionality("VK_KHR_maintenance4");
+	else if (context.isDeviceFunctionalitySupported("VK_KHR_maintenance4") &&
+		params.bufferSize > context.getMaintenance4Properties().maxBufferSize)
+		TCU_THROW(NotSupportedError, "vkCreateBuffer with a size larger than maxBufferSize is not valid usage");
 
 	const VkPhysicalDeviceFeatures& physicalDeviceFeatures = getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
 	if ((params.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) && !physicalDeviceFeatures.sparseBinding)
@@ -769,7 +773,7 @@ void checkMaintenance4Support(Context& context, LargeBufferParameters params)
 							VK_BUFFER_CREATE_SPARSE_BINDING_BIT
 						});
 		addFunctionCase(basicTests.get(), "size_max_uint64", "Creating a ULLONG_MAX buffer and verify that it either succeeds or returns one of the allowed errors.",
-						testLargeBuffer, LargeBufferParameters
+						checkMaintenance4Support, testLargeBuffer, LargeBufferParameters
 						{
 							std::numeric_limits<deUint64>::max(),
 							false,
