@@ -6884,11 +6884,17 @@ public:
 
 					if (ctx.isPackFloat16b == true)
 					{
-						requirements.push_back("Storage16BitFeatures.storageBuffer16BitAccess");
 						fileName += "_32bit";
+					}
+					else
+					{
+						requirements.push_back("Storage16BitFeatures.storageBuffer16BitAccess");
 					}
 				}
 			}
+
+			requirements.push_back("VK_KHR_16bit_storage");
+			requirements.push_back("VK_KHR_storage_buffer_storage_class");
 
 			group->addChild(cts_amber::createAmberTestCase(ctx.testContext, "mat3", "Square matrix 3x3 precision tests", dataDir, fileName + "_mat_3x3.amber", requirements));
 			group->addChild(cts_amber::createAmberTestCase(ctx.testContext, "mat4", "Square matrix 4x4 precision tests", dataDir, fileName + "_mat_4x4.amber", requirements));
