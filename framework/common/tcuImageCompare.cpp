@@ -638,6 +638,100 @@ bool floatThresholdCompare (TestLog& log, const char* imageSetName, const char* 
 }
 
 /*--------------------------------------------------------------------*//*!
+ * \brief Per-pixel threshold-based comparison with ignore key
+ *
+ * This compare computes per-pixel differences between result and reference
+ * image. Comparison fails if any pixels exceed the given threshold value.
+ *
+ * Any pixels in reference that match the ignore key are ignored.
+ *
+ * This comparison can be used for floating-point and fixed-point formats.
+ * Difference is computed in floating-point space.
+ *
+ * On failure an error image is generated that shows where the failing
+ * pixels are.
+ *
+ * \param log			Test log for results
+ * \param imageSetName	Name for image set when logging results
+ * \param imageSetDesc	Description for image set
+ * \param reference		Reference image
+ * \param result		Result image
+ * \param ignorekey     Ignore key
+ * \param threshold		Maximum allowed difference
+ * \param logMode		Logging mode
+ * \return true if comparison passes, false otherwise
+ *//*--------------------------------------------------------------------*/
+bool floatThresholdCompare (TestLog& log, const char* imageSetName, const char* imageSetDesc, const ConstPixelBufferAccess& reference, const ConstPixelBufferAccess& result, const Vec4& ignorekey, const Vec4& threshold, CompareLogMode logMode)
+{
+	int					width = reference.getWidth();
+	int					height = reference.getHeight();
+	int					depth = reference.getDepth();
+	TextureLevel		errorMaskStorage(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), width, height, depth);
+	PixelBufferAccess	errorMask = errorMaskStorage.getAccess();
+	Vec4				maxDiff(0.0f, 0.0f, 0.0f, 0.0f);
+	Vec4				pixelBias(0.0f, 0.0f, 0.0f, 0.0f);
+	Vec4				pixelScale(1.0f, 1.0f, 1.0f, 1.0f);
+
+	TCU_CHECK_INTERNAL(result.getWidth() == width && result.getHeight() == height && result.getDepth() == depth);
+
+	for (int z = 0; z < depth; z++)
+	{
+		for (int y = 0; y < height; y++)
+		{
+			for (int x = 0; x < width; x++)
+			{
+				Vec4	refPix = reference.getPixel(x, y, z);
+				Vec4	cmpPix = result.getPixel(x, y, z);
+
+				if (refPix != ignorekey)
+				{
+
+					Vec4	diff = abs(refPix - cmpPix);
+					bool	isOk = boolAll(lessThanEqual(diff, threshold));
+
+					maxDiff = max(maxDiff, diff);
+
+					errorMask.setPixel(isOk ? Vec4(0.0f, 1.0f, 0.0f, 1.0f) : Vec4(1.0f, 0.0f, 0.0f, 1.0f), x, y, z);
+				}
+			}
+		}
+	}
+
+	bool compareOk = boolAll(lessThanEqual(maxDiff, threshold));
+
+	if (!compareOk || logMode == COMPARE_LOG_EVERYTHING)
+	{
+		// All formats except normalized unsigned fixed point ones need remapping in order to fit into unorm channels in logged images.
+		if (tcu::getTextureChannelClass(reference.getFormat().type) != tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT ||
+			tcu::getTextureChannelClass(result.getFormat().type) != tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT)
+		{
+			computeScaleAndBias(reference, result, pixelScale, pixelBias);
+			log << TestLog::Message << "Result and reference images are normalized with formula p * " << pixelScale << " + " << pixelBias << TestLog::EndMessage;
+		}
+
+		if (!compareOk)
+			log << TestLog::Message << "Image comparison failed: max difference = " << maxDiff << ", threshold = " << threshold << TestLog::EndMessage;
+
+		log << TestLog::ImageSet(imageSetName, imageSetDesc)
+			<< TestLog::Image("Result", "Result", result, pixelScale, pixelBias)
+			<< TestLog::Image("Reference", "Reference", reference, pixelScale, pixelBias)
+			<< TestLog::Image("ErrorMask", "Error mask", errorMask)
+			<< TestLog::EndImageSet;
+	}
+	else if (logMode == COMPARE_LOG_RESULT)
+	{
+		if (result.getFormat() != TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8))
+			computePixelScaleBias(result, pixelScale, pixelBias);
+
+		log << TestLog::ImageSet(imageSetName, imageSetDesc)
+			<< TestLog::Image("Result", "Result", result, pixelScale, pixelBias)
+			<< TestLog::EndImageSet;
+	}
+
+	return compareOk;
+}
+
+/*--------------------------------------------------------------------*//*!
  * \brief Per-pixel threshold-based comparison
  *
  * This compare computes per-pixel differences between result and reference

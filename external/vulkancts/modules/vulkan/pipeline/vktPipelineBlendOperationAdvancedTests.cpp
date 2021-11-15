@@ -207,6 +207,7 @@ struct BlendOperationAdvancedParam
 	VkBool32						premultipliedSrcColor;
 	VkBool32						premultipliedDstColor;
 	VkBlendOverlapEXT				overlap;
+	VkFormat						format;
 };
 
 // helper functions
@@ -220,6 +221,8 @@ const std::string generateTestName (struct BlendOperationAdvancedParam param)
 	result << (!param.premultipliedSrcColor ? "_nonpremultipliedsrc" : "");
 	result << (!param.premultipliedDstColor ? "_nonpremultiplieddst" : "");
 	result << "_" << param.testNumber;
+	if (param.format == VK_FORMAT_R8G8B8A8_UNORM)
+		result << "_r8g8b8a8_unorm";
 	return result.str();
 }
 
@@ -1357,7 +1360,7 @@ BlendOperationAdvancedTestInstance::BlendOperationAdvancedTestInstance	(Context&
 	: TestInstance			(context)
 	, m_param				(param)
 	, m_renderSize			(tcu::UVec2(widthArea, heightArea))
-	, m_colorFormat			(VK_FORMAT_R16G16B16A16_SFLOAT)
+	, m_colorFormat			(param.format)
 	, m_shaderStageCount	(0)
 {
 	const DeviceInterface&		vk				 = m_context.getDeviceInterface();
@@ -1555,6 +1558,7 @@ deBool BlendOperationAdvancedTestInstance::verifyTestResult ()
 		for (deUint32 colorAtt = 0; colorAtt < m_param.colorAttachmentsCount; colorAtt++)
 		{
 			Vec4 rectColor = calculateFinalColor(m_param, m_param.blendOps[colorAtt], srcColors[color], dstColors[color]);
+
 			if (m_param.premultipliedDstColor == VK_FALSE)
 			{
 				if (rectColor.w() > 0.0f)
@@ -1573,6 +1577,13 @@ deBool BlendOperationAdvancedTestInstance::verifyTestResult ()
 					}
 				}
 			}
+
+			// If pixel value is not normal (inf, nan, denorm), skip it
+			if (!isnormal(rectColor.x()) ||
+				!isnormal(rectColor.y()) ||
+				!isnormal(rectColor.z()) ||
+				!isnormal(rectColor.w()))
+				skipColor = DE_TRUE;
 		}
 
 		// Skip ill-formed colors that appears in any color attachment.
@@ -1611,12 +1622,14 @@ deBool BlendOperationAdvancedTestInstance::verifyTestResult ()
 		std::ostringstream name;
 		name << "Image comparison. Color attachment: "  << colorAtt << ". Depth op: " << de::toLower(getBlendOpStr(m_param.blendOps[colorAtt]).toString().substr(3));
 
+		// R8G8B8A8 threshold was derived experimentally.
 		compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(),
 											   "FloatImageCompare",
 											   name.str().c_str(),
 											   referenceImages[colorAtt].getAccess(),
 											   result->getAccess(),
-											   Vec4(0.01f, 0.01f, 0.01f, 0.01f),
+											   clearColorVec4,
+											   m_colorFormat == VK_FORMAT_R8G8B8A8_UNORM ? Vec4(0.15f, 0.15f, 0.15f, 0.13f) : Vec4(0.01f, 0.01f, 0.01f, 0.01f),
 											   tcu::COMPARE_LOG_RESULT);
 		if (!compareOk)
 			return DE_FALSE;
@@ -2162,7 +2175,7 @@ BlendOperationAdvancedTestCoherentInstance::BlendOperationAdvancedTestCoherentIn
 	: TestInstance			(context)
 	, m_param				(param)
 	, m_renderSize			(tcu::UVec2(widthArea, heightArea))
-	, m_colorFormat			(VK_FORMAT_R16G16B16A16_SFLOAT)
+	, m_colorFormat			(param.format)
 	, m_shaderStageCount	(0)
 {
 	const DeviceInterface&		vk				 = m_context.getDeviceInterface();
@@ -2373,12 +2386,15 @@ tcu::TestStatus BlendOperationAdvancedTestCoherentInstance::verifyTestResult (vo
 	de::MovePtr<tcu::TextureLevel> result = vkt::pipeline::readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_colorImage, m_colorFormat, m_renderSize);
 	std::ostringstream name;
 	name << "Image comparison. Depth ops: " << de::toLower(getBlendOpStr(m_param.blendOps[0]).toString().substr(3)) << " and " << de::toLower(getBlendOpStr(m_param.blendOps[1]).toString().substr(3));
+
+	// R8G8B8A8 threshold was derived experimentally.
 	compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(),
 										   "FloatImageCompare",
 										   name.str().c_str(),
 										   refImage.getAccess(),
 										   result->getAccess(),
-										   Vec4(0.01f, 0.01f, 0.01f, 0.01f),
+										   clearColorVec4,
+										   m_colorFormat == VK_FORMAT_R8G8B8A8_UNORM ? Vec4(0.13f, 0.13f, 0.13f, 0.13f) : Vec4(0.01f, 0.01f, 0.01f, 0.01f),
 										   tcu::COMPARE_LOG_RESULT);
 	if (!compareOk)
 		return tcu::TestStatus::fail("Image mismatch");
@@ -2449,9 +2465,13 @@ tcu::TestCaseGroup* createBlendOperationAdvancedTests (tcu::TestContext& testCtx
 					testParams.premultipliedSrcColor	= (premultiplyModes[premultiply] & PREMULTIPLY_SRC) ? VK_TRUE : VK_FALSE;
 					testParams.premultipliedDstColor	= (premultiplyModes[premultiply] & PREMULTIPLY_DST) ? VK_TRUE : VK_FALSE;
 					testParams.testNumber				= testNumber++;
+					testParams.format					= VK_FORMAT_R16G16B16A16_SFLOAT;
 
 					for (deUint32 numColorAtt = 0; numColorAtt < colorAttachmentCounts[colorAttachmentCount]; numColorAtt++)
 						testParams.blendOps.push_back(blendOps[blendOp]);
+					opsTests->addChild(newTestCase<BlendOperationAdvancedTest>(testCtx, testParams));
+
+					testParams.format = VK_FORMAT_R8G8B8A8_UNORM;
 					opsTests->addChild(newTestCase<BlendOperationAdvancedTest>(testCtx, testParams));
 				}
 			}
@@ -2474,12 +2494,16 @@ tcu::TestCaseGroup* createBlendOperationAdvancedTests (tcu::TestContext& testCtx
 		testParams.premultipliedSrcColor	= VK_TRUE;
 		testParams.premultipliedDstColor	= VK_TRUE;
 		testParams.testNumber				= testNumber++;
+		testParams.format					= VK_FORMAT_R16G16B16A16_SFLOAT;
 
 		for (deUint32 numColorAtt = 0; numColorAtt < colorAttachmentCounts[colorAttachmentCount]; numColorAtt++)
 		{
 			deUint32 i = de::randomScalar<deUint32>(rnd, 0, DE_LENGTH_OF_ARRAY(blendOps) - 1);
 			testParams.blendOps.push_back(blendOps[i]);
 		}
+		independentTests->addChild(newTestCase<BlendOperationAdvancedTest>(testCtx, testParams));
+
+		testParams.format = VK_FORMAT_R8G8B8A8_UNORM;
 		independentTests->addChild(newTestCase<BlendOperationAdvancedTest>(testCtx, testParams));
 	}
 
@@ -2500,6 +2524,7 @@ tcu::TestCaseGroup* createBlendOperationAdvancedTests (tcu::TestContext& testCtx
 		testParams.premultipliedSrcColor	= VK_TRUE;
 		testParams.premultipliedDstColor	= VK_TRUE;
 		testParams.testNumber				= testNumber++;
+		testParams.format					= VK_FORMAT_R16G16B16A16_SFLOAT;
 
 		// We do two consecutive advanced blending operations
 		deUint32 i = de::randomScalar<deUint32>(rnd, 0, DE_LENGTH_OF_ARRAY(blendOps) - 1);
@@ -2507,6 +2532,9 @@ tcu::TestCaseGroup* createBlendOperationAdvancedTests (tcu::TestContext& testCtx
 		i = de::randomScalar<deUint32>(rnd, 0, DE_LENGTH_OF_ARRAY(blendOps) - 1);
 		testParams.blendOps.push_back(blendOps[i]);
 
+		coherentTests->addChild(newTestCase<BlendOperationAdvancedTest>(testCtx, testParams));
+
+		testParams.format = VK_FORMAT_R8G8B8A8_UNORM;
 		coherentTests->addChild(newTestCase<BlendOperationAdvancedTest>(testCtx, testParams));
 	}
 	tests->addChild(coherentTests.release());
