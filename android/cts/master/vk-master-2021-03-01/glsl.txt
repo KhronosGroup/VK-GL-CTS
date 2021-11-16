@@ -1013,3 +1013,5 @@ dEQP-VK.glsl.atomic_operations.xor_unsigned64bit_compute_shared
 dEQP-VK.glsl.atomic_operations.xor_unsigned64bit_compute_reference
 dEQP-VK.glsl.combined_operations.notxor
 dEQP-VK.glsl.combined_operations.negintdivand
+dEQP-VK.glsl.crash_test.divbyzero_frag
+dEQP-VK.glsl.crash_test.divbyzero_comp
