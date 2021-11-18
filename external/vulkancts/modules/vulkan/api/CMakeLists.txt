@@ -62,13 +62,15 @@ set(DEQP_VK_API_SRCS
 	vktApiPipelineTests.cpp
 	vktApiMemoryRequirementInvarianceTests.cpp
 	vktApiMemoryRequirementInvarianceTests.hpp
-    vktApiToolingInfoTests.cpp
-    vktApiToolingInfoTests.hpp
-    vktApiFormatPropertiesExtendedKHRtests.cpp
-    vktApiFormatPropertiesExtendedKHRtests.hpp
+	vktApiToolingInfoTests.cpp
+	vktApiToolingInfoTests.hpp
+	vktApiFormatPropertiesExtendedKHRtests.cpp
+	vktApiFormatPropertiesExtendedKHRtests.hpp
 	vktApiBufferMemoryRequirementsTests.cpp
 	vktApiBufferMemoryRequirementsTests.hpp
-    vktApiBufferMemoryRequirementsTestsUtils.hpp
+	vktApiBufferMemoryRequirementsTestsUtils.hpp
+	vktApiImageCompressionControlTests.cpp
+	vktApiImageCompressionControlTests.hpp
 	)
 
 set(DEQP_VK_API_LIBS

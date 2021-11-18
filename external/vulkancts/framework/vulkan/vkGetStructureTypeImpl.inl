@@ -2496,6 +2496,36 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceRayQueryFeaturesKHR>
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceImageCompressionControlFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkImageCompressionControlEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_CONTROL_EXT;
+}
+
+template<> VkStructureType getStructureType<VkSubresourceLayout2EXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SUBRESOURCE_LAYOUT_2_EXT;
+}
+
+template<> VkStructureType getStructureType<VkImageSubresource2EXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2_EXT;
+}
+
+template<> VkStructureType getStructureType<VkImageCompressionPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkAndroidSurfaceCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;

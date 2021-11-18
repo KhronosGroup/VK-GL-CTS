@@ -5844,6 +5844,51 @@ struct VkPhysicalDeviceRayQueryFeaturesKHR
 	VkBool32		rayQuery;
 };
 
+struct VkPhysicalDeviceImageCompressionControlFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		imageCompressionControl;
+};
+
+struct VkImageCompressionControlEXT
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkImageCompressionFlagsEXT				flags;
+	uint32_t								compressionControlPlaneCount;
+	VkImageCompressionFixedRateFlagsEXT*	pFixedRateFlags;
+};
+
+struct VkSubresourceLayout2EXT
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkSubresourceLayout	subresourceLayout;
+};
+
+struct VkImageSubresource2EXT
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkImageSubresource	imageSubresource;
+};
+
+struct VkImageCompressionPropertiesEXT
+{
+	VkStructureType						sType;
+	void*								pNext;
+	VkImageCompressionFlagsEXT			imageCompressionFlags;
+	VkImageCompressionFixedRateFlagsEXT	imageCompressionFixedRateFlags;
+};
+
+struct VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		imageCompressionControlSwapchain;
+};
+
 struct VkAndroidSurfaceCreateInfoKHR
 {
 	VkStructureType						sType;

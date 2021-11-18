@@ -1707,6 +1707,11 @@ void DeviceDriver::cmdSetRayTracingPipelineStackSizeKHR (VkCommandBuffer command
 	m_vk.cmdSetRayTracingPipelineStackSizeKHR(commandBuffer, pipelineStackSize);
 }
 
+void DeviceDriver::getImageSubresourceLayout2EXT (VkDevice device, VkImage image, const VkImageSubresource2EXT* pSubresource, VkSubresourceLayout2EXT* pLayout) const
+{
+	m_vk.getImageSubresourceLayout2EXT(device, image, pSubresource, pLayout);
+}
+
 VkResult DeviceDriver::getAndroidHardwareBufferPropertiesANDROID (VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties) const
 {
 	return m_vk.getAndroidHardwareBufferPropertiesANDROID(device, buffer, pProperties);

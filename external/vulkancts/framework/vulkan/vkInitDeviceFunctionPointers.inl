@@ -398,6 +398,7 @@ m_vk.getRayTracingCaptureReplayShaderGroupHandlesKHR	= (GetRayTracingCaptureRepl
 m_vk.cmdTraceRaysIndirectKHR							= (CmdTraceRaysIndirectKHRFunc)							GET_PROC_ADDR("vkCmdTraceRaysIndirectKHR");
 m_vk.getRayTracingShaderGroupStackSizeKHR				= (GetRayTracingShaderGroupStackSizeKHRFunc)			GET_PROC_ADDR("vkGetRayTracingShaderGroupStackSizeKHR");
 m_vk.cmdSetRayTracingPipelineStackSizeKHR				= (CmdSetRayTracingPipelineStackSizeKHRFunc)			GET_PROC_ADDR("vkCmdSetRayTracingPipelineStackSizeKHR");
+m_vk.getImageSubresourceLayout2EXT						= (GetImageSubresourceLayout2EXTFunc)					GET_PROC_ADDR("vkGetImageSubresourceLayout2EXT");
 m_vk.getAndroidHardwareBufferPropertiesANDROID			= (GetAndroidHardwareBufferPropertiesANDROIDFunc)		GET_PROC_ADDR("vkGetAndroidHardwareBufferPropertiesANDROID");
 m_vk.getMemoryAndroidHardwareBufferANDROID				= (GetMemoryAndroidHardwareBufferANDROIDFunc)			GET_PROC_ADDR("vkGetMemoryAndroidHardwareBufferANDROID");
 m_vk.createVideoSessionKHR								= (CreateVideoSessionKHRFunc)							GET_PROC_ADDR("vkCreateVideoSessionKHR");

@@ -51,6 +51,7 @@
 #include "vktApiToolingInfoTests.hpp"
 #include "vktApiFormatPropertiesExtendedKHRtests.hpp"
 #include "vktApiBufferMemoryRequirementsTests.hpp"
+#include "vktApiImageCompressionControlTests.hpp"
 
 namespace vkt
 {
@@ -98,6 +99,7 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 	apiTests->addChild(createToolingInfoTests					(testCtx));
 	apiTests->addChild(createFormatPropertiesExtendedKHRTests	(testCtx));
 	apiTests->addChild(createBufferMemoryRequirementsTests		(testCtx));
+	apiTests->addChild(createImageCompressionControlTests		(testCtx));
 }
 
 } // anonymous

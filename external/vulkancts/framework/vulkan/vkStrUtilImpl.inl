@@ -676,6 +676,11 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMAGE_BLIT_2_KHR:													return "VK_STRUCTURE_TYPE_IMAGE_BLIT_2_KHR";
 		case VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2_KHR:												return "VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2_KHR";
 		case VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2_KHR:													return "VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_CONTROL_EXT:										return "VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_CONTROL_EXT";
+		case VK_STRUCTURE_TYPE_SUBRESOURCE_LAYOUT_2_EXT:											return "VK_STRUCTURE_TYPE_SUBRESOURCE_LAYOUT_2_EXT";
+		case VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2_EXT:												return "VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2_EXT";
+		case VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_PROPERTIES_EXT:									return "VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT";
@@ -713,6 +718,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS_KHR:								return "VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS_KHR";
 		case VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR:								return "VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_MAX_ENUM:															return "VK_STRUCTURE_TYPE_MAX_ENUM";
 		default:																					return DE_NULL;
 	}
@@ -3993,6 +3999,53 @@ tcu::Format::Bitfield<32> getAccelerationStructureCreateFlagsKHRStr (VkAccelerat
 		tcu::Format::BitDesc(VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR,	"VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR"),
 		tcu::Format::BitDesc(VK_ACCELERATION_STRUCTURE_CREATE_MOTION_BIT_NV,							"VK_ACCELERATION_STRUCTURE_CREATE_MOTION_BIT_NV"),
 		tcu::Format::BitDesc(VK_ACCELERATION_STRUCTURE_CREATE_FLAG_BITS_MAX_ENUM_KHR,					"VK_ACCELERATION_STRUCTURE_CREATE_FLAG_BITS_MAX_ENUM_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getImageCompressionFlagsEXTStr (VkImageCompressionFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_DEFAULT_EXT,				"VK_IMAGE_COMPRESSION_DEFAULT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_DEFAULT_EXT,	"VK_IMAGE_COMPRESSION_FIXED_RATE_DEFAULT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT,	"VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_DISABLED_EXT,				"VK_IMAGE_COMPRESSION_DISABLED_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FLAG_BITS_MAX_ENUM_EXT,	"VK_IMAGE_COMPRESSION_FLAG_BITS_MAX_ENUM_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getImageCompressionFixedRateFlagsEXTStr (VkImageCompressionFixedRateFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_NONE_EXT,					"VK_IMAGE_COMPRESSION_FIXED_RATE_NONE_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_1BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_1BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_2BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_2BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_3BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_3BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_4BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_4BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_5BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_5BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_6BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_6BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_7BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_7BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_8BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_8BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_9BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_9BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_10BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_10BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_11BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_11BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_12BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_12BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_13BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_13BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_14BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_14BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_15BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_15BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_16BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_16BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_17BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_17BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_18BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_18BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_19BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_19BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_20BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_20BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_21BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_21BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_22BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_22BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_23BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_23BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_24BPC_BIT_EXT,				"VK_IMAGE_COMPRESSION_FIXED_RATE_24BPC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_COMPRESSION_FIXED_RATE_FLAG_BITS_MAX_ENUM_EXT,	"VK_IMAGE_COMPRESSION_FIXED_RATE_FLAG_BITS_MAX_ENUM_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -12177,6 +12230,69 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayQueryFeature
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\trayQuery = " << value.rayQuery << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageCompressionControlFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceImageCompressionControlFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageCompressionControl = " << value.imageCompressionControl << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageCompressionControlEXT& value)
+{
+	s << "VkImageCompressionControlEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getImageCompressionFlagsEXTStr(value.flags) << '\n';
+	s << "\tcompressionControlPlaneCount = " << value.compressionControlPlaneCount << '\n';
+	s << "\tpFixedRateFlags = " << value.pFixedRateFlags << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSubresourceLayout2EXT& value)
+{
+	s << "VkSubresourceLayout2EXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsubresourceLayout = " << value.subresourceLayout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageSubresource2EXT& value)
+{
+	s << "VkImageSubresource2EXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageSubresource = " << value.imageSubresource << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageCompressionPropertiesEXT& value)
+{
+	s << "VkImageCompressionPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageCompressionFlags = " << getImageCompressionFlagsEXTStr(value.imageCompressionFlags) << '\n';
+	s << "\timageCompressionFixedRateFlags = " << getImageCompressionFixedRateFlagsEXTStr(value.imageCompressionFixedRateFlags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageCompressionControlSwapchain = " << value.imageCompressionControlSwapchain << '\n';
 	s << '}';
 	return s;
 }

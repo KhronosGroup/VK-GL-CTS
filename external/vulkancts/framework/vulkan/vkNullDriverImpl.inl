@@ -3005,6 +3005,14 @@ VKAPI_ATTR void VKAPI_CALL cmdSetRayTracingPipelineStackSizeKHR (VkCommandBuffer
 	DE_UNREF(pipelineStackSize);
 }
 
+VKAPI_ATTR void VKAPI_CALL getImageSubresourceLayout2EXT (VkDevice device, VkImage image, const VkImageSubresource2EXT* pSubresource, VkSubresourceLayout2EXT* pLayout)
+{
+	DE_UNREF(device);
+	DE_UNREF(image);
+	DE_UNREF(pSubresource);
+	DE_UNREF(pLayout);
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getAndroidHardwareBufferPropertiesANDROID (VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties)
 {
 	DE_UNREF(device);
@@ -3734,6 +3742,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdTraceRaysIndirectKHR,							cmdTraceRaysIndirectKHR),
 	VK_NULL_FUNC_ENTRY(vkGetRayTracingShaderGroupStackSizeKHR,				getRayTracingShaderGroupStackSizeKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdSetRayTracingPipelineStackSizeKHR,				cmdSetRayTracingPipelineStackSizeKHR),
+	VK_NULL_FUNC_ENTRY(vkGetImageSubresourceLayout2EXT,						getImageSubresourceLayout2EXT),
 	VK_NULL_FUNC_ENTRY(vkGetAndroidHardwareBufferPropertiesANDROID,			getAndroidHardwareBufferPropertiesANDROID),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryAndroidHardwareBufferANDROID,				getMemoryAndroidHardwareBufferANDROID),
 	VK_NULL_FUNC_ENTRY(vkCreateVideoSessionKHR,								createVideoSessionKHR),
