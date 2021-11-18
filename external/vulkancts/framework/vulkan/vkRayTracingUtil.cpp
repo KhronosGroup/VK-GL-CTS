@@ -31,6 +31,7 @@
 #include <vector>
 #include <string>
 #include <thread>
+#include <limits>
 
 namespace vk
 {

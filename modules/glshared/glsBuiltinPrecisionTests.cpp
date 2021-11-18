@@ -56,6 +56,7 @@
 #include <iostream>
 #include <map>
 #include <utility>
+#include <limits>
 
 // Uncomment this to get evaluation trace dumps to std::cerr
 // #define GLS_ENABLE_TRACE
