@@ -85,5 +85,6 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_dynamic_rendering",
 	"VK_EXT_border_color_swizzle",
 	"VK_NV_mesh_shader",
+	"VK_KHR_portability_subset",
 };
 
