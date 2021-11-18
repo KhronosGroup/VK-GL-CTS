@@ -18,14 +18,14 @@
  *
  *//*!
  * \file
- * \brief OpenGL ES 3.1 Test Package that runs on GL4.5 context
+ * \brief OpenGL ES 3 Test Package that runs on GL4.5 context
  *//*--------------------------------------------------------------------*/
 
-#include "tgl45TestPackage.hpp"
-#include "tes31TestCaseWrapper.hpp"
-#include "tes31InfoTests.hpp"
-#include "es31fFunctionalTests.hpp"
-#include "es31sStressTests.hpp"
+#include "tgl45es3TestPackage.hpp"
+#include "tes3TestCaseWrapper.hpp"
+#include "tes3InfoTests.hpp"
+#include "es3fFunctionalTests.hpp"
+#include "es3sStressTests.hpp"
 #include "gluStateReset.hpp"
 #include "gluRenderContext.hpp"
 #include "gluContextInfo.hpp"
@@ -36,25 +36,25 @@
 
 namespace deqp
 {
-namespace gles31
+namespace gles3
 {
 
-TestPackageGL45::TestPackageGL45 (tcu::TestContext& testCtx)
-	: tcu::TestPackage	(testCtx, "dEQP-GL45", "dEQP OpenGL ES 3.1 Tests On GL4.5 Context")
-	, m_archive			(testCtx.getRootArchive(), "gles31/")
+TestPackageGL45ES3::TestPackageGL45ES3 (tcu::TestContext& testCtx)
+	: tcu::TestPackage	(testCtx, "dEQP-GL45-ES3", "dEQP OpenGL ES 3 Tests On GL4.5 Context")
+	, m_archive			(testCtx.getRootArchive(), "gles3/")
 	, m_context			(DE_NULL)
 	, m_waiverMechanism (new tcu::WaiverUtil)
 {
 }
 
-TestPackageGL45::~TestPackageGL45 (void)
+TestPackageGL45ES3::~TestPackageGL45ES3 (void)
 {
 	// Destroy children first since destructors may access context.
 	TestNode::deinit();
 	delete m_context;
 }
 
-void TestPackageGL45::init (void)
+void TestPackageGL45ES3::init (void)
 {
 	try
 	{
@@ -75,7 +75,7 @@ void TestPackageGL45::init (void)
 
 		// Add main test groups
 		addChild(new InfoTests							(*m_context));
-		addChild(new Functional::GL45FunctionalTests	(*m_context));
+		addChild(new Functional::GL45ES3FunctionalTests	(*m_context));
 	}
 	catch (...)
 	{
@@ -86,17 +86,17 @@ void TestPackageGL45::init (void)
 	}
 }
 
-void TestPackageGL45::deinit (void)
+void TestPackageGL45ES3::deinit (void)
 {
 	TestNode::deinit();
 	delete m_context;
 	m_context = DE_NULL;
 }
 
-tcu::TestCaseExecutor* TestPackageGL45::createExecutor (void) const
+tcu::TestCaseExecutor* TestPackageGL45ES3::createExecutor (void) const
 {
-	return new TestCaseWrapper<TestPackageGL45>(const_cast<TestPackageGL45&>(*this), m_waiverMechanism);
+	return new TestCaseWrapper<TestPackageGL45ES3>(const_cast<TestPackageGL45ES3&>(*this), m_waiverMechanism);
 }
 
-} // gles31
+} // gles3
 } // deqp

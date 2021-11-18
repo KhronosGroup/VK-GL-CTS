@@ -87,7 +87,6 @@
 #include "es31fPrimitiveBoundingBoxTests.hpp"
 #include "es31fAndroidExtensionPackES31ATests.hpp"
 #include "es31fCopyImageTests.hpp"
-#include "es31fDrawBuffersIndexedTests.hpp"
 #include "es31fDefaultVertexArrayObjectTests.hpp"
 #include "es31fSRGBDecodeTests.hpp"
 #include "es31fDrawElementsBaseVertexTests.hpp"
@@ -477,22 +476,21 @@ void GLES31FunctionalTests::init (void)
 	addChild(new PrimitiveBoundingBoxTests				(m_context));
 	addChild(new AndroidExtensionPackES31ATests			(m_context));
 	addChild(createCopyImageTests						(m_context, false));
-	addChild(createDrawBuffersIndexedTests				(m_context));
 	addChild(new DefaultVertexArrayObjectTests			(m_context));
 	addChild(new SRGBTextureDecodeTests					(m_context));
 	addChild(new DrawElementsBaseVertexTests			(m_context));
 }
 
-GL45FunctionalTests::GL45FunctionalTests (Context& context)
+GL45ES31FunctionalTests::GL45ES31FunctionalTests (Context& context)
 	: TestCaseGroup(context, "functional", "Functionality Tests")
 {
 }
 
-GL45FunctionalTests::~GL45FunctionalTests (void)
+GL45ES31FunctionalTests::~GL45ES31FunctionalTests (void)
 {
 }
 
-void GL45FunctionalTests::init (void)
+void GL45ES31FunctionalTests::init (void)
 {
 	addChild(new ShaderTests							(m_context, true));
 	addChild(new ComputeTests							(m_context));
@@ -521,7 +519,6 @@ void GL45FunctionalTests::init (void)
 	addChild(new LayoutBindingTests						(m_context));
 	addChild(new PrimitiveBoundingBoxTests				(m_context));
 	addChild(createCopyImageTests						(m_context, true));
-	addChild(createDrawBuffersIndexedTests				(m_context));
 	addChild(new SRGBTextureDecodeTests					(m_context));
 	addChild(new DrawElementsBaseVertexTests			(m_context));
 }

@@ -1472,7 +1472,6 @@ IndexedStateQueryTests::~IndexedStateQueryTests (void)
 void IndexedStateQueryTests::init (void)
 {
 	static const QueryType verifiers[] = { QUERY_INDEXED_BOOLEAN, QUERY_INDEXED_INTEGER, QUERY_INDEXED_INTEGER64 };
-	static const QueryType vec4Verifiers[] = { QUERY_INDEXED_BOOLEAN_VEC4, QUERY_INDEXED_INTEGER_VEC4, QUERY_INDEXED_INTEGER64_VEC4 };
 
 #define FOR_EACH_VERIFIER(X) \
 	for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(verifiers); ++verifierNdx)	\
@@ -1480,14 +1479,6 @@ void IndexedStateQueryTests::init (void)
 		const QueryType verifier = verifiers[verifierNdx];									\
 		const char* verifierSuffix = getVerifierSuffix(verifier);							\
 		this->addChild(X);																	\
-	}
-
-#define FOR_EACH_VEC4_VERIFIER(X) \
-	for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(vec4Verifiers); ++verifierNdx)	\
-	{																							\
-		const QueryType verifier = vec4Verifiers[verifierNdx];									\
-		const char* verifierSuffix = getVerifierSuffix(verifier);								\
-		this->addChild(X);																		\
 	}
 
 	FOR_EACH_VERIFIER(new SampleMaskCase			(m_context, (std::string() + "sample_mask_value_" + verifierSuffix).c_str(),				"Test SAMPLE_MASK_VALUE", verifier))
@@ -1510,15 +1501,11 @@ void IndexedStateQueryTests::init (void)
 	FOR_EACH_VERIFIER(new ImageBindingAccessCase	(m_context, (std::string() + "image_binding_access_" + verifierSuffix).c_str(),				"Test IMAGE_BINDING_ACCESS",			verifier))
 	FOR_EACH_VERIFIER(new ImageBindingFormatCase	(m_context, (std::string() + "image_binding_format_" + verifierSuffix).c_str(),				"Test IMAGE_BINDING_FORMAT",			verifier))
 
-	{
-		const QueryType verifier = QUERY_INDEXED_ISENABLED;
-		const char* verifierSuffix = getVerifierSuffix(verifier);
-		this->addChild(new EnableBlendCase			(m_context, (std::string() + "blend_" + verifierSuffix).c_str(),							"BLEND",								verifier));
-	}
-	FOR_EACH_VEC4_VERIFIER(new ColorMaskCase		(m_context, (std::string() + "color_mask_" + verifierSuffix).c_str(),						"COLOR_WRITEMASK",						verifier))
-	FOR_EACH_VERIFIER(new BlendFuncCase				(m_context, (std::string() + "blend_func_" + verifierSuffix).c_str(),						"BLEND_SRC and BLEND_DST",				verifier))
-	FOR_EACH_VERIFIER(new BlendEquationCase			(m_context, (std::string() + "blend_equation_" + verifierSuffix).c_str(),					"BLEND_EQUATION_RGB and BLEND_DST",		verifier))
-	FOR_EACH_VERIFIER(new BlendEquationAdvancedCase	(m_context, (std::string() + "blend_equation_advanced_" + verifierSuffix).c_str(),			"BLEND_EQUATION_RGB and BLEND_DST",		verifier))
+	// All non-boolean verifiers are tested in ES3 test module.
+	addChild(new ColorMaskCase(m_context, "color_mask_getbooleani_v", "COLOR_WRITEMASK", QUERY_INDEXED_BOOLEAN_VEC4));
+	addChild(new BlendFuncCase(m_context, "blend_func_getbooleani_v", "BLEND_SRC and BLEND_DST", QUERY_INDEXED_BOOLEAN));
+	addChild(new BlendEquationCase(m_context, "blend_equation_getbooleani_v", "BLEND_EQUATION_RGB and BLEND_DST", QUERY_INDEXED_BOOLEAN));
+	addChild(new BlendEquationAdvancedCase(m_context, "blend_equation_advanced_getbooleani_v", "BLEND_EQUATION_RGB and BLEND_DST", QUERY_INDEXED_BOOLEAN));
 
 #undef FOR_EACH_VEC4_VERIFIER
 #undef FOR_EACH_VERIFIER

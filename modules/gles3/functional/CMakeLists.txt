@@ -201,6 +201,8 @@ set(DEQP_GLES3_FUNCTIONAL_SRCS
 	es3fShaderDerivateTests.hpp
 	es3fDrawTests.cpp
 	es3fDrawTests.hpp
+	es3fDrawBuffersIndexedTests.cpp
+	es3fDrawBuffersIndexedTests.hpp
 	es3fShaderPackingFunctionTests.cpp
 	es3fShaderPackingFunctionTests.hpp
 	es3fShaderCommonFunctionTests.cpp

@@ -1,5 +1,5 @@
 /*-------------------------------------------------------------------------
- * drawElements Quality Program OpenGL ES 3.1 Module
+ * drawElements Quality Program OpenGL ES 3 Module
  * -------------------------------------------------
  *
  * Copyright 2015 The Android Open Source Project
@@ -21,7 +21,7 @@
  * \brief Indexed blend operation tests (GL_EXT_draw_buffers_indexed)
  *//*--------------------------------------------------------------------*/
 
-#include "es31fDrawBuffersIndexedTests.hpp"
+#include "es3fDrawBuffersIndexedTests.hpp"
 
 #include "gluContextInfo.hpp"
 #include "gluDrawUtil.hpp"
@@ -85,7 +85,7 @@ using sglr::rr_util::mapGLBlendEquationAdvanced;
 
 namespace deqp
 {
-namespace gles31
+namespace gles3
 {
 namespace Functional
 {
@@ -880,7 +880,7 @@ glu::VertexSource genVertexSource (glu::RenderContext& renderContext)
 		"}";
 
 	map<string, string> args;
-	args["GLSL_VERSION_DECL"] = supportsES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_VERSION_DECL"] = supportsES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_300_ES);
 
 	return glu::VertexSource(tcu::StringTemplate(vertexSource).specialize(args));
 }
@@ -980,7 +980,7 @@ glu::FragmentSource genFragmentSource (const BlendState& preCommonBlendState, co
 	stream << "}";
 
 	map<string, string> args;
-	args["GLSL_VERSION_DECL"] = supportsES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_VERSION_DECL"] = supportsES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_300_ES);
 	args["GLSL_EXTENSION"] = supportsES32 ? "\n" : "#extension GL_KHR_blend_equation_advanced : require\n";
 
 	return glu::FragmentSource(tcu::StringTemplate(stream.str()).specialize(args));
@@ -1671,5 +1671,5 @@ TestCaseGroup* createDrawBuffersIndexedTests (Context& context)
 }
 
 } // Functional
-} // gles31
+} // gles3
 } // deqp

@@ -972,6 +972,7 @@ LOCAL_SRC_FILES := \
 	modules/gles3/functional/es3fDepthStencilTests.cpp \
 	modules/gles3/functional/es3fDepthTests.cpp \
 	modules/gles3/functional/es3fDitheringTests.cpp \
+	modules/gles3/functional/es3fDrawBuffersIndexedTests.cpp \
 	modules/gles3/functional/es3fDrawTests.cpp \
 	modules/gles3/functional/es3fFboApiTests.cpp \
 	modules/gles3/functional/es3fFboColorbufferTests.cpp \
@@ -1090,6 +1091,7 @@ LOCAL_SRC_FILES := \
 	modules/gles3/tes3TestCase.cpp \
 	modules/gles3/tes3TestPackage.cpp \
 	modules/gles3/tes3TestPackageEntry.cpp \
+	modules/gles3/tgl45es3TestPackage.cpp \
 	modules/gles31/functional/es31fAdvancedBlendTests.cpp \
 	modules/gles31/functional/es31fAndroidExtensionPackES31ATests.cpp \
 	modules/gles31/functional/es31fAtomicCounterTests.cpp \
@@ -1100,7 +1102,6 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fCopyImageTests.cpp \
 	modules/gles31/functional/es31fDebugTests.cpp \
 	modules/gles31/functional/es31fDefaultVertexArrayObjectTests.cpp \
-	modules/gles31/functional/es31fDrawBuffersIndexedTests.cpp \
 	modules/gles31/functional/es31fDrawElementsBaseVertexTests.cpp \
 	modules/gles31/functional/es31fDrawTests.cpp \
 	modules/gles31/functional/es31fFboColorbufferTests.cpp \
@@ -1195,7 +1196,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/tes31TestCase.cpp \
 	modules/gles31/tes31TestPackage.cpp \
 	modules/gles31/tes31TestPackageEntry.cpp \
-	modules/gles31/tgl45TestPackage.cpp \
+	modules/gles31/tgl45es31TestPackage.cpp \
 	modules/glshared/glsAttributeLocationTests.cpp \
 	modules/glshared/glsBufferTestUtil.cpp \
 	modules/glshared/glsBuiltinPrecisionTests.cpp \

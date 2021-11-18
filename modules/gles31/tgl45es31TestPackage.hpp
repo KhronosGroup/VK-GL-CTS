@@ -1,5 +1,5 @@
-#ifndef _TGL45TESTPACKAGE_HPP
-#define _TGL45TESTPACKAGE_HPP
+#ifndef _TGL45ES31TESTPACKAGE_HPP
+#define _TGL45ES31TESTPACKAGE_HPP
 /*-------------------------------------------------------------------------
  * OpenGL Conformance Test Suite
  * -----------------------------
@@ -39,11 +39,11 @@ namespace deqp
 namespace gles31
 {
 
-class TestPackageGL45 : public tcu::TestPackage
+class TestPackageGL45ES31 : public tcu::TestPackage
 {
 public:
-									TestPackageGL45			(tcu::TestContext& testCtx);
-	virtual							~TestPackageGL45		(void);
+									TestPackageGL45ES31		(tcu::TestContext& testCtx);
+	virtual							~TestPackageGL45ES31	(void);
 
 	virtual void					init					(void);
 	virtual void					deinit					(void);
@@ -62,4 +62,4 @@ private:
 } // gles31
 } // deqp
 
-#endif // _TGL45TESTPACKAGE_HPP
+#endif // _TGL45ES31TESTPACKAGE_HPP

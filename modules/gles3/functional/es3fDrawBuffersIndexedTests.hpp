@@ -1,7 +1,7 @@
-#ifndef _ES31FDRAWBUFFERSINDEXEDTESTS_HPP
-#define _ES31FDRAWBUFFERSINDEXEDTESTS_HPP
+#ifndef _ES3FDRAWBUFFERSINDEXEDTESTS_HPP
+#define _ES3FDRAWBUFFERSINDEXEDTESTS_HPP
 /*-------------------------------------------------------------------------
- * drawElements Quality Program OpenGL ES 3.1 Module
+ * drawElements Quality Program OpenGL ES 3 Module
  * -------------------------------------------------
  *
  * Copyright 2015 The Android Open Source Project
@@ -24,11 +24,11 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
-#include "tes31TestCase.hpp"
+#include "tes3TestCase.hpp"
 
 namespace deqp
 {
-namespace gles31
+namespace gles3
 {
 namespace Functional
 {
@@ -36,7 +36,7 @@ namespace Functional
 TestCaseGroup* createDrawBuffersIndexedTests (Context& context);
 
 } // Functional
-} // gles31
+} // gles3
 } // deqp
 
-#endif // _ES31FDRAWBUFFERSINDEXEDTESTS_HPP
+#endif // _ES3FDRAWBUFFERSINDEXEDTESTS_HPP
