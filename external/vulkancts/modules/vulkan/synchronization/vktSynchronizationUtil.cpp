@@ -27,6 +27,7 @@
 #include "vkBarrierUtil.hpp"
 #include "deStringUtil.hpp"
 #include <set>
+#include <limits>
 
 namespace vkt
 {

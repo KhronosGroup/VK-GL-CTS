@@ -28,6 +28,8 @@
 #include "vktSpvAsmComputeShaderCase.hpp"
 #include "vktSpvAsmGraphicsShaderTestUtil.hpp"
 
+#include <limits>
+
 namespace vkt
 {
 namespace SpirVAssembly
