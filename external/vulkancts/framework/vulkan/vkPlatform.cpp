@@ -740,10 +740,11 @@ void DeviceDriverSC::createCommandPoolHandlerStat (VkDevice							device,
 	// ( some of the dEQP-VKSC.sc.command_pool_memory_reservation.memory_consumption.*.reserved_size tests use VkCommandPoolMemoryReservationCreateInfo without really creating command buffers and as
 	// a result - commandBufferRequestCount was too low )
 	VkCommandPoolMemoryReservationCreateInfo* chainedMemoryReservation = (VkCommandPoolMemoryReservationCreateInfo*)findStructureInChain(pCreateInfo->pNext, VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_RESERVATION_CREATE_INFO);
+
 	if (chainedMemoryReservation != DE_NULL)
-		m_resourceInterface->getStatMax().commandBufferRequestCount += chainedMemoryReservation->commandPoolMaxCommandBuffers;
+		DDSTAT_HANDLE_CREATE(commandBufferRequestCount, chainedMemoryReservation->commandPoolMaxCommandBuffers);
 	else
-		m_resourceInterface->getStatMax().commandBufferRequestCount += 1u;
+		DDSTAT_HANDLE_CREATE(commandBufferRequestCount, 1);
 
 	*pCommandPool = Handle<HANDLE_TYPE_COMMAND_POOL>(m_resourceInterface->incResourceCounter());
 	m_resourceInterface->createCommandPool(device, pCreateInfo, pAllocator, pCommandPool);

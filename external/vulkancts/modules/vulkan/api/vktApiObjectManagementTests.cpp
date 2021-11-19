@@ -232,7 +232,12 @@ inline void ThreadGroupThread::barrier (void)
 
 deUint32 getDefaultTestThreadCount (void)
 {
+#ifndef CTS_USES_VULKANSC
 	return de::clamp(deGetNumAvailableLogicalCores(), 2u, 8u);
+#else
+	return 2u;
+#endif // CTS_USES_VULKANSC
+
 }
 
 // Utilities
@@ -2457,12 +2462,10 @@ tcu::TestStatus createMultipleUniqueResourcesTest<Instance> (Context& context, I
 	const Environment					env(context, 1u);
 	const typename Instance::Resources	res0(env, params);
 	const typename Instance::Resources	res1(env, params);
-	const typename Instance::Resources	res2(env, params);
 
 	{
 		Unique<typename Instance::Type>	obj0(Instance::create(env, res0, params));
 		Unique<typename Instance::Type>	obj1(Instance::create(env, res1, params));
-		Unique<typename Instance::Type>	obj2(Instance::create(env, res2, params));
 	}
 
 	return tcu::TestStatus::pass("Ok");
@@ -2791,9 +2794,16 @@ tcu::TestStatus createMaxConcurrentTest (Context& context, typename Object::Para
 template<typename Object>	int getCreateCount				(void) { return 100;	}
 
 // Creating VkDevice and VkInstance can take significantly longer than other object types
+
+#ifndef CTS_USES_VULKANSC
 template<>					int getCreateCount<Instance>	(void) { return 20;		}
 template<>					int getCreateCount<Device>		(void) { return 20;		}
 template<>					int getCreateCount<DeviceGroup>	(void) { return 20;		}
+#else
+template<>					int getCreateCount<Instance>	(void) { return 2;		}
+template<>					int getCreateCount<Device>		(void) { return 2;		}
+template<>					int getCreateCount<DeviceGroup>	(void) { return 2;		}
+#endif // CTS_USES_VULKANSC
 
 template<typename Object>
 class CreateThread : public ThreadGroupThread
@@ -2808,7 +2818,11 @@ public:
 	void runThread (void)
 	{
 		const int	numIters			= getCreateCount<Object>();
+#ifndef CTS_USES_VULKANSC
 		const int	itersBetweenSyncs	= numIters / 5;
+#else
+		const int	itersBetweenSyncs	= 1;
+#endif // CTS_USES_VULKANSC
 
 		DE_ASSERT(itersBetweenSyncs > 0);
 
@@ -2820,6 +2834,12 @@ public:
 
 			{
 				Unique<typename Object::Type>	obj	(Object::create(m_env, m_resources, m_params));
+#ifdef CTS_USES_VULKANSC
+				if (iterNdx == 0)
+				{
+					barrier();
+				}
+#endif
 			}
 		}
 	}
@@ -3555,10 +3575,11 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createMultipleUniqueResourcesTest	<Instance>,					s_instanceCases,			DE_NULL),
 #ifndef CTS_USES_VULKANSC
 		CASE_DESC(createMultipleUniqueResourcesTest	<Device>,					s_deviceCases,				DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<DeviceGroup>,				s_deviceGroupCases,			DE_NULL),
 #else
 		EMPTY_CASE_DESC(Device),
+		EMPTY_CASE_DESC(DeviceGroup),
 #endif
-		CASE_DESC(createMultipleUniqueResourcesTest	<DeviceGroup>,				s_deviceGroupCases,			DE_NULL),
 		CASE_DESC(createMultipleUniqueResourcesTest	<DeviceMemory>,				s_deviceMemCases,			DE_NULL),
 		CASE_DESC(createMultipleUniqueResourcesTest	<Buffer>,					s_bufferCases,				DE_NULL),
 		CASE_DESC(createMultipleUniqueResourcesTest	<BufferView>,				s_bufferViewCases,			DE_NULL),
@@ -3587,8 +3608,13 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	const CaseDescriptions	s_createMultipleSharedResourcesGroup	=
 	{
 		EMPTY_CASE_DESC(Instance), // No resources used
+#ifndef CTS_USES_VULKANSC
 		CASE_DESC(createMultipleSharedResourcesTest	<Device>,					s_deviceCases,				DE_NULL),
 		CASE_DESC(createMultipleSharedResourcesTest	<DeviceGroup>,				s_deviceGroupCases,			DE_NULL),
+#else
+		EMPTY_CASE_DESC(Device),
+		EMPTY_CASE_DESC(DeviceGroup),
+#endif
 		CASE_DESC(createMultipleSharedResourcesTest	<DeviceMemory>,				s_deviceMemCases,			DE_NULL),
 		CASE_DESC(createMultipleSharedResourcesTest	<Buffer>,					s_bufferCases,				DE_NULL),
 		CASE_DESC(createMultipleSharedResourcesTest	<BufferView>,				s_bufferViewCases,			DE_NULL),

@@ -627,6 +627,12 @@ bool Context::isDeviceFunctionalitySupported (const std::string& extension) cons
 				return !!vk12Features.samplerFilterMinmax;
 			if (extension == "VK_EXT_shader_viewport_index_layer")
 				return !!vk12Features.shaderOutputViewportIndex && !!vk12Features.shaderOutputLayer;
+
+#ifdef CTS_USES_VULKANSC
+			const auto& vk12Properties = m_device->getDeviceVulkan12Properties();
+			if (extension == "VK_KHR_depth_stencil_resolve")
+				return (vk12Properties.supportedDepthResolveModes != VK_RESOLVE_MODE_NONE) && (vk12Properties.supportedStencilResolveModes != VK_RESOLVE_MODE_NONE);
+#endif // CTS_USES_VULKANSC
 		}
 
 		// No feature flags to check.

@@ -1134,7 +1134,7 @@ vector<SharedPtrVkImage> SubpassDependencyTestInstance::createAndAllocateImages 
 {
 	// Verify format support
 	{
-		const VkFormatFeatureFlags	flags		= isDepthStencilFormat(m_format) ? VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT;
+		const VkFormatFeatureFlags	flags		= ( isDepthStencilFormat(m_format) ? VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT ) | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
 		const VkFormatProperties	properties	= vk::getPhysicalDeviceFormatProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), format);
 
 		if ((properties.optimalTilingFeatures & flags) != flags)

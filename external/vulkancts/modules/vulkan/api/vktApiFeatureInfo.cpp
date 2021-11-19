@@ -686,6 +686,9 @@ tcu::TestStatus validateLimits12 (Context& context)
 
 	const VkPhysicalDeviceFeatures2&			features2				= context.getDeviceFeatures2();
 	const VkPhysicalDeviceFeatures&				features				= features2.features;
+#ifdef CTS_USES_VULKANSC
+	const VkPhysicalDeviceVulkan11Features		features11				= getPhysicalDeviceVulkan11Features(vki, physicalDevice);
+#endif // CTS_USES_VULKANSC
 	const VkPhysicalDeviceVulkan12Features		features12				= getPhysicalDeviceVulkan12Features(vki, physicalDevice);
 
 	const VkPhysicalDeviceProperties2&			properties2				= context.getDeviceProperties2();
@@ -850,10 +853,11 @@ tcu::TestStatus validateLimits12 (Context& context)
 		// VK_KHR_multiview
 #ifndef CTS_USES_VULKANSC
 		{ PN(checkVulkan12Limit),						PN(vulkan11Properties.maxMultiviewViewCount),													LIM_MIN_UINT32(6) },
+		{ PN(checkVulkan12Limit),						PN(vulkan11Properties.maxMultiviewInstanceIndex),												LIM_MIN_UINT32((1 << 27) - 1) },
 #else
-		{ PN(checkVulkan12Limit),						PN(vulkan11Properties.maxMultiviewViewCount),													LIM_MIN_UINT32(1) },
+		{ PN(features11.multiview),						PN(vulkan11Properties.maxMultiviewViewCount),													LIM_MIN_UINT32(6) },
+		{ PN(features11.multiview),						PN(vulkan11Properties.maxMultiviewInstanceIndex),												LIM_MIN_UINT32((1 << 27) - 1) },
 #endif // CTS_USES_VULKANSC
-		{ PN(checkVulkan12Limit),						PN(vulkan11Properties.maxMultiviewInstanceIndex),												LIM_MIN_UINT32((1<<27) - 1) },
 
 		// VK_KHR_maintenance3
 		{ PN(checkVulkan12Limit),						PN(vulkan11Properties.maxPerSetDescriptors),													LIM_MIN_UINT32(1024) },
@@ -893,7 +897,12 @@ tcu::TestStatus validateLimits12 (Context& context)
 		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindInputAttachments),							LIM_MIN_UINT32(limits.maxDescriptorSetInputAttachments) },
 
 		// timelineSemaphore
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxTimelineSemaphoreValueDifference),										LIM_MIN_DEVSIZE((1ull<<31) - 1) },
+#ifndef CTS_USES_VULKANSC
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxTimelineSemaphoreValueDifference),										LIM_MIN_DEVSIZE((1ull << 31) - 1) },
+#else
+		// VkPhysicalDeviceVulkan12Features::timelineSemaphore is optional in Vulkan SC
+		{ PN(features12.timelineSemaphore),				PN(vulkan12Properties.maxTimelineSemaphoreValueDifference),										LIM_MIN_DEVSIZE((1ull << 31) - 1) },
+#endif // CTS_USES_VULKANSC
 
 		// Vulkan SC
 #ifdef CTS_USES_VULKANSC
@@ -990,11 +999,7 @@ tcu::TestStatus validateLimitsKhrMultiview (Context& context)
 	FeatureLimitTableItem featureLimitTable[] =
 	{
 		// VK_KHR_multiview
-#ifndef CTS_USES_VULKANSC
 		{ PN(checkAlways),	PN(multiviewProperties.maxMultiviewViewCount),		LIM_MIN_UINT32(6) },
-#else
-		{ PN(checkAlways),	PN(multiviewProperties.maxMultiviewViewCount),		LIM_MIN_UINT32(1) },
-#endif // CTS_USES_VULKANSC
 		{ PN(checkAlways),	PN(multiviewProperties.maxMultiviewInstanceIndex),	LIM_MIN_UINT32((1<<27) - 1) },
 	};
 
@@ -2781,7 +2786,9 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 
 	const vector<VkPhysicalDeviceGroupProperties>		deviceGroupProps = enumeratePhysicalDeviceGroups(vki, instance);
 	std::vector<const char*>							deviceExtensions;
+#ifndef CTS_USES_VULKANSC
 	deviceExtensions.push_back("VK_KHR_device_group");
+#endif // CTS_USES_VULKANSC
 
 	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
 		deviceExtensions.push_back("VK_KHR_device_group");

@@ -424,6 +424,15 @@ inline VkDrmFormatModifierPropertiesEXT makeDrmFormatModifierPropertiesEXT (uint
 	return res;
 }
 
+inline VkDrmFormatModifierProperties2EXT makeDrmFormatModifierProperties2EXT (uint64_t drmFormatModifier, uint32_t drmFormatModifierPlaneCount, VkFormatFeatureFlags2KHR drmFormatModifierTilingFeatures)
+{
+	VkDrmFormatModifierProperties2EXT res;
+	res.drmFormatModifier				= drmFormatModifier;
+	res.drmFormatModifierPlaneCount		= drmFormatModifierPlaneCount;
+	res.drmFormatModifierTilingFeatures	= drmFormatModifierTilingFeatures;
+	return res;
+}
+
 inline VkVertexInputBindingDivisorDescriptionEXT makeVertexInputBindingDivisorDescriptionEXT (uint32_t binding, uint32_t divisor)
 {
 	VkVertexInputBindingDivisorDescriptionEXT res;

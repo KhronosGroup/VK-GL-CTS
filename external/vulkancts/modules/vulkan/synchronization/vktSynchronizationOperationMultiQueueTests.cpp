@@ -152,7 +152,8 @@ class MultiQueues
 			std::vector<const char*> deviceExtensions;
 			if (timelineSemaphore)
 			{
-				deviceExtensions.push_back("VK_KHR_timeline_semaphore");
+				if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_timeline_semaphore"))
+					deviceExtensions.push_back("VK_KHR_timeline_semaphore");
 				addToChainVulkanStructure(&nextPtr, timelineSemaphoreFeatures);
 			}
 			if (type == SynchronizationType::SYNCHRONIZATION2)

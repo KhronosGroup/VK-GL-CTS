@@ -681,8 +681,13 @@ tcu::TestStatus initialValueCase (Context& context, SynchronizationType type)
 	}
 
 	VK_CHECK(vk.getSemaphoreCounterValue(device, *semaphoreDefaultValue, &value));
-	if (value != initialValue)
-		return tcu::TestStatus::fail("Invalid zero initial value");
+#ifdef CTS_USES_VULKANSC
+	if (context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+	{
+		if (value != initialValue)
+			return tcu::TestStatus::fail("Invalid zero initial value");
+	}
 
 	waitInfo.pSemaphores = &semaphoreInitialValue.get();
 	initialValue = nonZeroValue;
@@ -691,8 +696,13 @@ tcu::TestStatus initialValueCase (Context& context, SynchronizationType type)
 		return tcu::TestStatus::fail("Wait non zero initial value failed");
 
 	VK_CHECK(vk.getSemaphoreCounterValue(device, *semaphoreInitialValue, &value));
-	if (value != nonZeroValue)
-		return tcu::TestStatus::fail("Invalid non zero initial value");
+#ifdef CTS_USES_VULKANSC
+	if (context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+	{
+		if (value != nonZeroValue)
+			return tcu::TestStatus::fail("Invalid non zero initial value");
+	}
 
 	if (maxTimelineValueDifference != std::numeric_limits<deUint64>::max())
 	{
@@ -706,8 +716,13 @@ tcu::TestStatus initialValueCase (Context& context, SynchronizationType type)
 			return tcu::TestStatus::fail("Wait max value failed");
 
 		VK_CHECK(vk.getSemaphoreCounterValue(device, *semaphoreMaxValue, &value));
-		if (value != nonZeroMaxValue)
-			return tcu::TestStatus::fail("Invalid max value initial value");
+#ifdef CTS_USES_VULKANSC
+		if (context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+		{
+			if (value != nonZeroMaxValue)
+				return tcu::TestStatus::fail("Invalid max value initial value");
+		}
 	}
 
 	return tcu::TestStatus::pass("Initial value correct");
@@ -1290,10 +1305,10 @@ Move<VkDevice> createTestDevice(Context& context, const VkInstance& instance, co
 	VkPhysicalDeviceFeatures2						createPhysicalFeatures		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &timelineSemaphoreFeatures, context.getDeviceFeatures() };
 	void**											nextPtr						= &timelineSemaphoreFeatures.pNext;
 
-	std::vector<const char*> deviceExtensions =
-	{
-		"VK_KHR_timeline_semaphore"
-	};
+	std::vector<const char*> deviceExtensions;
+
+	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_timeline_semaphore"))
+		deviceExtensions.push_back("VK_KHR_timeline_semaphore");
 	if (type == SynchronizationType::SYNCHRONIZATION2)
 	{
 		deviceExtensions.push_back("VK_KHR_synchronization2");
@@ -1348,7 +1363,7 @@ Move<VkDevice> createTestDevice(Context& context, const VkInstance& instance, co
 		0u,																//deUint32							enabledLayerCount;
 		DE_NULL,														//const char* const*				ppEnabledLayerNames;
 		static_cast<deUint32>(deviceExtensions.size()),					//deUint32							enabledExtensionCount;
-		&deviceExtensions[0],											//const char* const*				ppEnabledExtensionNames;
+		deviceExtensions.data(),										//const char* const*				ppEnabledExtensionNames;
 		0u																//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	std::vector<SharedPtr<std::vector<float> > >	queuePriorities;
@@ -1438,12 +1453,12 @@ public:
 		, m_type			(type)
 		, m_resourceDesc	(resourceDesc)
 		, m_device			(SingletonDevice::getDevice(context, type))
+		, m_context			(context)
 #ifndef CTS_USES_VULKANSC
 		, m_deviceDriver	(de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), SingletonDevice::getInstance(), *m_device)))
 #else
 		, m_deviceDriver	(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), SingletonDevice::getInstance(), *m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_device)))
 #endif // CTS_USES_VULKANSC
-		, m_context			(context)
 		, m_allocator		(new SimpleAllocator(*m_deviceDriver, *m_device,
 												 getPhysicalDeviceMemoryProperties(SingletonDevice::getDriver(),
 												 chooseDevice(SingletonDevice::getDriver(), SingletonDevice::getInstance(), context.getTestContext().getCommandLine()))))
@@ -1679,12 +1694,12 @@ protected:
 	const SynchronizationType						m_type;
 	const ResourceDescription						m_resourceDesc;
 	const Unique<VkDevice>&							m_device;
+	const Context&									m_context;
 #ifndef CTS_USES_VULKANSC
 	de::MovePtr<vk::DeviceDriver>					m_deviceDriver;
 #else
 	de::MovePtr<DeviceDriverSC,DeinitDeviceDeleter>	m_deviceDriver;
 #endif // CTS_USES_VULKANSC
-	const Context&									m_context;
 	MovePtr<Allocator>								m_allocator;
 	OperationContext								m_opContext;
 	std::vector<SharedPtr<QueueTimelineIteration> >	m_iterations;
@@ -1870,12 +1885,12 @@ public:
 		, m_type			(type)
 		, m_resourceDesc	(resourceDesc)
 		, m_device			(SingletonDevice::getDevice(context, type))
+		, m_context			(context)
 #ifndef CTS_USES_VULKANSC
 		, m_deviceDriver(de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), SingletonDevice::getInstance(), *m_device)))
 #else
 		, m_deviceDriver(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), SingletonDevice::getInstance(), *m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_device)))
 #endif // CTS_USES_VULKANSC
-		, m_context			(context)
 		, m_allocator		(new SimpleAllocator(*m_deviceDriver, *m_device,
 												 getPhysicalDeviceMemoryProperties(SingletonDevice::getDriver(),
 												 chooseDevice(SingletonDevice::getDriver(), SingletonDevice::getInstance(), context.getTestContext().getCommandLine()))))
@@ -2167,12 +2182,12 @@ protected:
 	SynchronizationType								m_type;
 	ResourceDescription								m_resourceDesc;
 	const Unique<VkDevice>&							m_device;
+	const Context&									m_context;
 #ifndef CTS_USES_VULKANSC
 	de::MovePtr<vk::DeviceDriver>					m_deviceDriver;
 #else
 	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	m_deviceDriver;
 #endif // CTS_USES_VULKANSC
-	const Context&									m_context;
 	MovePtr<Allocator>								m_allocator;
 	OperationContext								m_opContext;
 	SharedPtr<QueueTimelineIteration>				m_writeIteration;

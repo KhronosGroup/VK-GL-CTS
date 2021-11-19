@@ -341,6 +341,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_LIST_CREATE_INFO_EXT:					return "VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_LIST_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_PROPERTIES_EXT:						return "VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT:						return "VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_IMAGE_FORMAT_INFO_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_IMAGE_FORMAT_INFO_EXT";
 		case VK_STRUCTURE_TYPE_FILTER_CUBIC_IMAGE_VIEW_IMAGE_FORMAT_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_FILTER_CUBIC_IMAGE_VIEW_IMAGE_FORMAT_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT:					return "VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT";
@@ -1343,6 +1344,9 @@ const char* getDriverIdName (VkDriverId value)
 		case VK_DRIVER_ID_COREAVI_PROPRIETARY:			return "VK_DRIVER_ID_COREAVI_PROPRIETARY";
 		case VK_DRIVER_ID_JUICE_PROPRIETARY:			return "VK_DRIVER_ID_JUICE_PROPRIETARY";
 		case VK_DRIVER_ID_VERISILICON_PROPRIETARY:		return "VK_DRIVER_ID_VERISILICON_PROPRIETARY";
+		case VK_DRIVER_ID_MESA_TURNIP:					return "VK_DRIVER_ID_MESA_TURNIP";
+		case VK_DRIVER_ID_MESA_V3DV:					return "VK_DRIVER_ID_MESA_V3DV";
+		case VK_DRIVER_ID_MESA_PANVK:					return "VK_DRIVER_ID_MESA_PANVK";
 		case VK_DRIVER_ID_MAX_ENUM:						return "VK_DRIVER_ID_MAX_ENUM";
 		default:										return DE_NULL;
 	}
@@ -5559,6 +5563,8 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVulkanSC10Prope
 	s << "\tmaxDescriptorSetLayoutBindings = " << value.maxDescriptorSetLayoutBindings << '\n';
 	s << "\tmaxQueryFaultCount = " << value.maxQueryFaultCount << '\n';
 	s << "\tmaxCallbackFaultCount = " << value.maxCallbackFaultCount << '\n';
+	s << "\tmaxCommandPoolCommandBuffers = " << value.maxCommandPoolCommandBuffers << '\n';
+	s << "\tmaxCommandBufferSize = " << value.maxCommandBufferSize << '\n';
 	s << '}';
 	return s;
 }
@@ -7106,6 +7112,27 @@ std::ostream& operator<< (std::ostream& s, const VkImageDrmFormatModifierPropert
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tdrmFormatModifier = " << value.drmFormatModifier << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDrmFormatModifierProperties2EXT& value)
+{
+	s << "VkDrmFormatModifierProperties2EXT = {\n";
+	s << "\tdrmFormatModifier = " << value.drmFormatModifier << '\n';
+	s << "\tdrmFormatModifierPlaneCount = " << value.drmFormatModifierPlaneCount << '\n';
+	s << "\tdrmFormatModifierTilingFeatures = " << value.drmFormatModifierTilingFeatures << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDrmFormatModifierPropertiesList2EXT& value)
+{
+	s << "VkDrmFormatModifierPropertiesList2EXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdrmFormatModifierCount = " << value.drmFormatModifierCount << '\n';
+	s << "\tpDrmFormatModifierProperties = " << value.pDrmFormatModifierProperties << '\n';
 	s << '}';
 	return s;
 }

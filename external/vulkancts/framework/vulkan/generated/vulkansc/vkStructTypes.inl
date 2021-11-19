@@ -2246,6 +2246,8 @@ struct VkPhysicalDeviceVulkanSC10Properties
 	uint32_t		maxDescriptorSetLayoutBindings;
 	uint32_t		maxQueryFaultCount;
 	uint32_t		maxCallbackFaultCount;
+	uint32_t		maxCommandPoolCommandBuffers;
+	VkDeviceSize	maxCommandBufferSize;
 };
 
 struct VkPipelinePoolSize
@@ -3421,6 +3423,21 @@ struct VkImageDrmFormatModifierPropertiesEXT
 	VkStructureType	sType;
 	void*			pNext;
 	uint64_t		drmFormatModifier;
+};
+
+struct VkDrmFormatModifierProperties2EXT
+{
+	uint64_t					drmFormatModifier;
+	uint32_t					drmFormatModifierPlaneCount;
+	VkFormatFeatureFlags2KHR	drmFormatModifierTilingFeatures;
+};
+
+struct VkDrmFormatModifierPropertiesList2EXT
+{
+	VkStructureType						sType;
+	void*								pNext;
+	uint32_t							drmFormatModifierCount;
+	VkDrmFormatModifierProperties2EXT*	pDrmFormatModifierProperties;
 };
 
 struct VkPhysicalDeviceImageViewImageFormatInfoEXT

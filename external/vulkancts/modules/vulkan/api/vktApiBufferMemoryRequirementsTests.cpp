@@ -158,13 +158,15 @@ const ExternalMemoryHandleBits	AvailableExternalMemoryHandleBits
 	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT					, "d3d11_tex_kmt",		false ),
 	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP_BIT							, "d3d12_heap",			false ),
 	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT						, "d3d12_rsrc",			false ),
-	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT						, "dma_buf",				false ),
+	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT							, "dma_buf",			false ),
 #ifndef CTS_USES_VULKANSC
-	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID	, "android_hw",				false ),
-	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT				, "host_alloc",				true  ),
+	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID		, "android_hw",			false ),
+#endif // CTS_USES_VULKANSC
+	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT					, "host_alloc",			true  ),
 	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT		, "host_mapped",		true  ),
+#ifndef CTS_USES_VULKANSC
 	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA					, "zircon_vmo",			false ),
-	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_RDMA_ADDRESS_BIT_NV					, "roma_addr",				false ),
+	std::make_tuple( VK_EXTERNAL_MEMORY_HANDLE_TYPE_RDMA_ADDRESS_BIT_NV						, "roma_addr",			false ),
 #endif // CTS_USES_VULKANSC
 };
 

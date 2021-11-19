@@ -1306,6 +1306,11 @@ template<> VkStructureType getStructureType<VkImageDrmFormatModifierPropertiesEX
 	return VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_PROPERTIES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkDrmFormatModifierPropertiesList2EXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceImageViewImageFormatInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_IMAGE_FORMAT_INFO_EXT;
