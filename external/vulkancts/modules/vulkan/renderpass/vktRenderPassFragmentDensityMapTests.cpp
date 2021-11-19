@@ -99,6 +99,7 @@ struct TestParams
 	tcu::UVec2				fragmentArea;
 	tcu::UVec2				densityMapSize;
 	VkFormat				densityMapFormat;
+	RenderingType			renderingType;
 };
 
 struct Vertex4RGBA
@@ -305,25 +306,110 @@ void prepareImageAndImageView	(const DeviceInterface&			vk,
 	imageView = createImageView(vk, vkDevice, &imageViewCreateInfo);
 }
 
-Move<VkRenderPass> createRenderPassProduceDynamicDensityMap(const DeviceInterface&	vk,
-															VkDevice				vkDevice,
-															deUint32				viewMask,
-															const TestParams&		testParams)
+// Class that provides abstraction over renderpass and renderpass2.
+class RenderPassWrapperBase
 {
-	DE_ASSERT(testParams.dynamicDensityMap);
+public:
 
+	RenderPassWrapperBase() = default;
+	virtual ~RenderPassWrapperBase() = default;
+
+	virtual Move<VkRenderPass>	createRenderPassProduceDynamicDensityMap	(deUint32						viewMask) const = 0;
+	virtual Move<VkRenderPass>	createRenderPassProduceSubsampledImage		(deUint32						viewMask,
+																			 bool							makeCopySubpass,
+																			 bool							resampleSubsampled) const = 0;
+	virtual Move<VkRenderPass>	createRenderPassOutputSubsampledImage		() const = 0;
+
+	virtual void				cmdBeginRenderPass							(VkCommandBuffer				cmdBuffer,
+																			 const VkRenderPassBeginInfo*	pRenderPassBegin) const = 0;
+	virtual void				cmdNextSubpass								(VkCommandBuffer				cmdBuffer) const = 0;
+	virtual void				cmdEndRenderPass							(VkCommandBuffer				cmdBuffer) const = 0;
+};
+
+// Helper template that lets us define all used types basing on single enum value.
+template <RenderingType>
+struct RenderPassTraits;
+
+template <> struct RenderPassTraits<RENDERING_TYPE_RENDERPASS_LEGACY>
+{
+	typedef AttachmentDescription1	AttachmentDesc;
+	typedef AttachmentReference1	AttachmentRef;
+	typedef SubpassDescription1		SubpassDesc;
+	typedef SubpassDependency1		SubpassDep;
+	typedef RenderPassCreateInfo1	RenderPassCreateInfo;
+	typedef RenderpassSubpass1		RenderpassSubpass;
+};
+
+template <> struct RenderPassTraits<RENDERING_TYPE_RENDERPASS2>
+{
 	typedef AttachmentDescription2	AttachmentDesc;
 	typedef AttachmentReference2	AttachmentRef;
 	typedef SubpassDescription2		SubpassDesc;
 	typedef SubpassDependency2		SubpassDep;
 	typedef RenderPassCreateInfo2	RenderPassCreateInfo;
+	typedef RenderpassSubpass2		RenderpassSubpass;
+};
+
+// Template that can be used to construct required
+// renderpasses using legacy renderpass and renderpass2.
+template <RenderingType RenderingTypeValue>
+class RenderPassWrapper: public RenderPassWrapperBase
+{
+	typedef typename RenderPassTraits<RenderingTypeValue>::AttachmentDesc		AttachmentDesc;
+	typedef typename RenderPassTraits<RenderingTypeValue>::AttachmentRef		AttachmentRef;
+	typedef typename RenderPassTraits<RenderingTypeValue>::SubpassDesc			SubpassDesc;
+	typedef typename RenderPassTraits<RenderingTypeValue>::SubpassDep			SubpassDep;
+	typedef typename RenderPassTraits<RenderingTypeValue>::RenderPassCreateInfo	RenderPassCreateInfo;
+	typedef typename RenderPassTraits<RenderingTypeValue>::RenderpassSubpass	RenderpassSubpass;
+
+public:
+
+	RenderPassWrapper(const DeviceInterface& vk, const VkDevice vkDevice, const TestParams& testParams);
+	~RenderPassWrapper() = default;
+
+	Move<VkRenderPass>	createRenderPassProduceDynamicDensityMap	(deUint32						viewMask) const override;
+	Move<VkRenderPass>	createRenderPassProduceSubsampledImage		(deUint32						viewMask,
+																	 bool							makeCopySubpass,
+																	 bool							resampleSubsampled) const override;
+	Move<VkRenderPass>	createRenderPassOutputSubsampledImage		() const override;
+
+	void				cmdBeginRenderPass							(VkCommandBuffer				cmdBufferm,
+																	 const VkRenderPassBeginInfo*	pRenderPassBegin) const override;
+	void				cmdNextSubpass								(VkCommandBuffer				cmdBuffer) const override;
+	void				cmdEndRenderPass							(VkCommandBuffer				cmdBuffer) const override;
+
+private:
+
+	const DeviceInterface&	m_vk;
+	const VkDevice			m_vkDevice;
+	const TestParams&		m_testParams;
+
+	const typename RenderpassSubpass::SubpassBeginInfo	m_subpassBeginInfo;
+	const typename RenderpassSubpass::SubpassEndInfo	m_subpassEndInfo;
+};
+
+template<RenderingType RenderingTypeValue>
+RenderPassWrapper<RenderingTypeValue>::RenderPassWrapper(const DeviceInterface& vk, const VkDevice vkDevice, const TestParams& testParams)
+	: RenderPassWrapperBase		()
+	, m_vk						(vk)
+	, m_vkDevice				(vkDevice)
+	, m_testParams				(testParams)
+	, m_subpassBeginInfo		(DE_NULL, VK_SUBPASS_CONTENTS_INLINE)
+	, m_subpassEndInfo			(DE_NULL)
+{
+}
+
+template<RenderingType RenderingTypeValue>
+Move<VkRenderPass> RenderPassWrapper<RenderingTypeValue>::createRenderPassProduceDynamicDensityMap(deUint32 viewMask) const
+{
+	DE_ASSERT(m_testParams.dynamicDensityMap);
 
 	std::vector<AttachmentDesc> attachmentDescriptions
 	{
 		{
 			DE_NULL,															// const void*						pNext
 			(VkAttachmentDescriptionFlags)0,									// VkAttachmentDescriptionFlags		flags
-			testParams.densityMapFormat,										// VkFormat							format
+			m_testParams.densityMapFormat,										// VkFormat							format
 			VK_SAMPLE_COUNT_1_BIT,												// VkSampleCountFlagBits			samples
 			VK_ATTACHMENT_LOAD_OP_CLEAR,										// VkAttachmentLoadOp				loadOp
 			VK_ATTACHMENT_STORE_OP_STORE,										// VkAttachmentStoreOp				storeOp
@@ -396,22 +482,14 @@ Move<VkRenderPass> createRenderPassProduceDynamicDensityMap(const DeviceInterfac
 		DE_NULL																	// const deUint32*					pCorrelatedViewMasks
 	);
 
-	return renderPassInfo.createRenderPass(vk, vkDevice);
+	return renderPassInfo.createRenderPass(m_vk, m_vkDevice);
 }
 
-Move<VkRenderPass> createRenderPassProduceSubsampledImage(const DeviceInterface&	vk,
-														  VkDevice					vkDevice,
-														  deUint32					viewMask,
-														  bool						makeCopySubpass,
-														  bool						resampleSubsampled,
-														  const TestParams&			testParams)
+template<RenderingType RenderingTypeValue>
+Move<VkRenderPass> RenderPassWrapper<RenderingTypeValue>::createRenderPassProduceSubsampledImage(deUint32	viewMask,
+																								 bool		makeCopySubpass,
+																								 bool		resampleSubsampled) const
 {
-	typedef AttachmentDescription2	AttachmentDesc;
-	typedef AttachmentReference2	AttachmentRef;
-	typedef SubpassDescription2		SubpassDesc;
-	typedef SubpassDependency2		SubpassDep;
-	typedef RenderPassCreateInfo2	RenderPassCreateInfo;
-
 	const void* constNullPtr				= DE_NULL;
 	deUint32	multisampleAttachmentIndex	= 0;
 	deUint32	copyAttachmentIndex			= 0;
@@ -426,7 +504,7 @@ Move<VkRenderPass> createRenderPassProduceSubsampledImage(const DeviceInterface&
 			DE_NULL,															// const void*						pNext
 			(VkAttachmentDescriptionFlags)0,									// VkAttachmentDescriptionFlags		flags
 			VK_FORMAT_R8G8B8A8_UNORM,											// VkFormat							format
-			testParams.colorSamples,											// VkSampleCountFlagBits			samples
+			m_testParams.colorSamples,											// VkSampleCountFlagBits			samples
 			loadOp,																// VkAttachmentLoadOp				loadOp
 			VK_ATTACHMENT_STORE_OP_STORE,										// VkAttachmentStoreOp				storeOp
 			VK_ATTACHMENT_LOAD_OP_DONT_CARE,									// VkAttachmentLoadOp				stencilLoadOp
@@ -437,7 +515,7 @@ Move<VkRenderPass> createRenderPassProduceSubsampledImage(const DeviceInterface&
 	};
 
 	// add resolve image when we use more than one sample per fragment
-	if (testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT)
+	if (m_testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT)
 	{
 		multisampleAttachmentIndex = static_cast<deUint32>(attachmentDescriptions.size());
 		attachmentDescriptions.emplace_back(
@@ -462,7 +540,7 @@ Move<VkRenderPass> createRenderPassProduceSubsampledImage(const DeviceInterface&
 			constNullPtr,														// const void*						pNext
 			(VkAttachmentDescriptionFlags)0,									// VkAttachmentDescriptionFlags		flags
 			VK_FORMAT_R8G8B8A8_UNORM,											// VkFormat							format
-			testParams.colorSamples,											// VkSampleCountFlagBits			samples
+			m_testParams.colorSamples,											// VkSampleCountFlagBits			samples
 			VK_ATTACHMENT_LOAD_OP_CLEAR,										// VkAttachmentLoadOp				loadOp
 			VK_ATTACHMENT_STORE_OP_STORE,										// VkAttachmentStoreOp				storeOp
 			VK_ATTACHMENT_LOAD_OP_DONT_CARE,									// VkAttachmentLoadOp				stencilLoadOp
@@ -477,7 +555,7 @@ Move<VkRenderPass> createRenderPassProduceSubsampledImage(const DeviceInterface&
 	attachmentDescriptions.emplace_back(
 		constNullPtr,															// const void*						pNext
 		(VkAttachmentDescriptionFlags)0,										// VkAttachmentDescriptionFlags		flags
-		testParams.densityMapFormat,											// VkFormat							format
+		m_testParams.densityMapFormat,											// VkFormat							format
 		VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits			samples
 		VK_ATTACHMENT_LOAD_OP_LOAD,												// VkAttachmentLoadOp				loadOp
 		VK_ATTACHMENT_STORE_OP_DONT_CARE,										// VkAttachmentStoreOp				storeOp
@@ -502,7 +580,7 @@ Move<VkRenderPass> createRenderPassProduceSubsampledImage(const DeviceInterface&
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		VK_IMAGE_ASPECT_COLOR_BIT
 	};
-	if (testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT)
+	if (m_testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT)
 		pResolveAttachments = &resolveAttachmentRef;
 
 	std::vector<SubpassDesc> subpassDescriptions
@@ -551,7 +629,7 @@ Move<VkRenderPass> createRenderPassProduceSubsampledImage(const DeviceInterface&
 		});
 
 		VkDependencyFlags dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-		if (testParams.viewCount > 1)
+		if (m_testParams.viewCount > 1)
 			dependencyFlags |= VK_DEPENDENCY_VIEW_LOCAL_BIT;
 
 		subpassDependencies.emplace_back(
@@ -570,7 +648,7 @@ Move<VkRenderPass> createRenderPassProduceSubsampledImage(const DeviceInterface&
 	VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
 	// for coarse reconstruction we need to put barrier on vertex stage
-	if (testParams.coarseReconstruction)
+	if (m_testParams.coarseReconstruction)
 		dstStageMask = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
 
 	subpassDependencies.emplace_back(
@@ -585,7 +663,7 @@ Move<VkRenderPass> createRenderPassProduceSubsampledImage(const DeviceInterface&
 		0u																				// deInt32					viewOffset
 	);
 
-	VkRenderPassFragmentDensityMapCreateInfoEXT renderPassFragmentDensityMap =
+	VkRenderPassFragmentDensityMapCreateInfoEXT renderPassFragmentDensityMap
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_CREATE_INFO_EXT,
 		DE_NULL,
@@ -613,20 +691,15 @@ Move<VkRenderPass> createRenderPassProduceSubsampledImage(const DeviceInterface&
 		DE_NULL																		// const deUint32*					pCorrelatedViewMasks
 	);
 
-	return renderPassInfo.createRenderPass(vk, vkDevice);
+	return renderPassInfo.createRenderPass(m_vk, m_vkDevice);
 }
 
-Move<VkRenderPass> createRenderPassOutputSubsampledImage(const DeviceInterface&	vk,
-														 VkDevice				vkDevice)
+template<RenderingType RenderingTypeValue>
+Move<VkRenderPass> RenderPassWrapper<RenderingTypeValue>::createRenderPassOutputSubsampledImage() const
 {
-	typedef AttachmentDescription2	AttachmentDesc;
-	typedef AttachmentReference2	AttachmentRef;
-	typedef SubpassDescription2		SubpassDesc;
-	typedef RenderPassCreateInfo2	RenderPassCreateInfo;
-
 	// copy subsampled image to ordinary image - you cannot retrieve subsampled image to CPU in any way.
 	// You must first convert it into plain image through rendering
-	std::vector<AttachmentDesc> attachmentDescriptions =
+	std::vector<AttachmentDesc> attachmentDescriptions
 	{
 		// output attachment
 		{
@@ -648,7 +721,7 @@ Move<VkRenderPass> createRenderPassOutputSubsampledImage(const DeviceInterface&	
 		{ DE_NULL, 0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT }
 	};
 
-	std::vector<SubpassDesc> subpassDescriptions =
+	std::vector<SubpassDesc> subpassDescriptions
 	{
 		{
 			DE_NULL,
@@ -679,7 +752,25 @@ Move<VkRenderPass> createRenderPassOutputSubsampledImage(const DeviceInterface&	
 		DE_NULL													// const deUint32*					pCorrelatedViewMasks
 	);
 
-	return renderPassInfo.createRenderPass(vk, vkDevice);
+	return renderPassInfo.createRenderPass(m_vk, m_vkDevice);
+}
+
+template<RenderingType RenderingTypeValue>
+void RenderPassWrapper<RenderingTypeValue>::cmdBeginRenderPass(VkCommandBuffer cmdBuffer, const VkRenderPassBeginInfo* pRenderPassBegin) const
+{
+	RenderpassSubpass::cmdBeginRenderPass(m_vk, cmdBuffer, pRenderPassBegin, &m_subpassBeginInfo);
+}
+
+template<RenderingType RenderingTypeValue>
+void RenderPassWrapper<RenderingTypeValue>::cmdNextSubpass(VkCommandBuffer cmdBuffer) const
+{
+	RenderpassSubpass::cmdNextSubpass(m_vk, cmdBuffer, &m_subpassBeginInfo, &m_subpassEndInfo);
+}
+
+template<RenderingType RenderingTypeValue>
+void RenderPassWrapper<RenderingTypeValue>::cmdEndRenderPass(VkCommandBuffer cmdBuffer) const
+{
+	RenderpassSubpass::cmdEndRenderPass(m_vk, cmdBuffer, &m_subpassEndInfo);
 }
 
 Move<VkFramebuffer> createFrameBuffer( const DeviceInterface& vk, VkDevice vkDevice, VkRenderPass renderPass, VkExtent3D size, const std::vector<VkImageView>& imageViews)
@@ -1110,8 +1201,6 @@ void FragmentDensityMapTest::checkSupport(Context& context) const
 #else
 	context.requireDeviceFunctionality("VK_EXT_fragment_density_map");
 
-
-
 	VkPhysicalDeviceFragmentDensityMapFeaturesEXT		fragmentDensityMapFeatures		= initVulkanStructure();
 	VkPhysicalDeviceFragmentDensityMap2FeaturesEXT		fragmentDensityMap2Features		= initVulkanStructure(&fragmentDensityMapFeatures);
 	VkPhysicalDeviceFeatures2KHR						features2						= initVulkanStructure(&fragmentDensityMap2Features);
@@ -1204,6 +1293,9 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 	const VkQueue				queue						= getDeviceQueue(vk, vkDevice, queueFamilyIndex, 0);
 	SimpleAllocator				memAlloc					(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), vkPhysicalDevice));
 	const VkComponentMapping	componentMappingRGBA		= makeComponentMappingRGBA();
+
+	typedef std::shared_ptr<RenderPassWrapperBase> RenderPassWrapperBasePtr;
+	RenderPassWrapperBasePtr	renderPassWrapper;
 
 	// calculate all image sizes, image usage flags, view types etc.
 	deUint32					densitiMapCount				= 1 + m_testParams.subsampledLoads;
@@ -1370,12 +1462,19 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 		m_colorSamplers.push_back(VkSamplerSp(new Unique<VkSampler>(createSampler(vk, vkDevice, &samplerInfo))));
 
 	// Create render passes
-	if (testParams.dynamicDensityMap)
-		m_renderPassProduceDynamicDensityMap	= createRenderPassProduceDynamicDensityMap(vk, vkDevice, m_viewMask, testParams);
-	m_renderPassProduceSubsampledImage			= createRenderPassProduceSubsampledImage(vk, vkDevice, m_viewMask, testParams.makeCopy, false, testParams);
-	if (testParams.subsampledLoads)
-		m_renderPassUpdateSubsampledImage		= createRenderPassProduceSubsampledImage(vk, vkDevice, m_viewMask, false, true, testParams);
-	m_renderPassOutputSubsampledImage			= createRenderPassOutputSubsampledImage(vk, vkDevice);
+	{
+		if (m_testParams.renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
+			renderPassWrapper = RenderPassWrapperBasePtr(new RenderPassWrapper<RENDERING_TYPE_RENDERPASS_LEGACY>(vk, vkDevice, testParams));
+		else
+			renderPassWrapper = RenderPassWrapperBasePtr(new RenderPassWrapper<RENDERING_TYPE_RENDERPASS2>(vk, vkDevice, testParams));
+
+		if (testParams.dynamicDensityMap)
+			m_renderPassProduceDynamicDensityMap = renderPassWrapper->createRenderPassProduceDynamicDensityMap(m_viewMask);
+		m_renderPassProduceSubsampledImage = renderPassWrapper->createRenderPassProduceSubsampledImage(m_viewMask, testParams.makeCopy, false);
+		if (testParams.subsampledLoads)
+			m_renderPassUpdateSubsampledImage = renderPassWrapper->createRenderPassProduceSubsampledImage(m_viewMask, false, true);
+		m_renderPassOutputSubsampledImage = renderPassWrapper->createRenderPassOutputSubsampledImage();
+	}
 
 	std::vector<VkImageView> imageViewsProduceSubsampledImage = { *m_colorImageView };
 	if (isColorImageMultisampled)
@@ -1664,9 +1763,6 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 	m_cmdPool	= createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-	typedef RenderpassSubpass2 RPS2;
-	const typename RPS2::SubpassBeginInfo	subpassBeginInfo		(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
-	const typename RPS2::SubpassEndInfo		subpassEndInfo			(DE_NULL);
 	const VkDeviceSize						vertexBufferOffset		= 0;
 	const VkClearValue						attachmentClearValue	= makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f);
 	const deUint32							attachmentCount			= 1 + testParams.makeCopy + isColorImageMultisampled;
@@ -1688,11 +1784,11 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 			static_cast<deUint32>(attachmentClearValuesDDM.size()),				// uint32_t				clearValueCount;
 			attachmentClearValuesDDM.data()										// const VkClearValue*	pClearValues;
 		};
-		RPS2::cmdBeginRenderPass(vk, *m_cmdBuffer, &renderPassBeginInfoProduceDynamicDensityMap, &subpassBeginInfo);
+		renderPassWrapper->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfoProduceDynamicDensityMap);
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineProduceDynamicDensityMap);
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBufferDDM.get(), &vertexBufferOffset);
 		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_verticesDDM.size(), 1, 0, 0);
-		RPS2::cmdEndRenderPass(vk, *m_cmdBuffer, &subpassEndInfo);
+		renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
 	}
 
 	// Render subsampled image
@@ -1706,19 +1802,19 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 		static_cast<deUint32>(attachmentClearValues.size()),			// uint32_t				clearValueCount;
 		attachmentClearValues.data()									// const VkClearValue*	pClearValues;
 	};
-	RPS2::cmdBeginRenderPass(vk, *m_cmdBuffer, &renderPassBeginInfoProduceSubsampledImage, &subpassBeginInfo);
+	renderPassWrapper->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfoProduceSubsampledImage);
 	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineProduceSubsampledImage);
 	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 	vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
 	if (testParams.makeCopy)
 	{
-		RPS2::cmdNextSubpass(vk, *m_cmdBuffer, &subpassBeginInfo, &subpassEndInfo);
+		renderPassWrapper->cmdNextSubpass(*m_cmdBuffer);
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineCopySubsampledImage);
 		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutOperateOnSubsampledImage, 0, 1, &m_descriptorSetOperateOnSubsampledImage.get(), 0, DE_NULL);
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
 	}
-	RPS2::cmdEndRenderPass(vk, *m_cmdBuffer, &subpassEndInfo);
+	renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
 
 	// Resample subsampled image
 	if (testParams.subsampledLoads)
@@ -1733,12 +1829,12 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 			0u,															// uint32_t				clearValueCount;
 			DE_NULL														// const VkClearValue*	pClearValues;
 		};
-		RPS2::cmdBeginRenderPass(vk, *m_cmdBuffer, &renderPassBeginInfoUpdateSubsampledImage, &subpassBeginInfo);
+		renderPassWrapper->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfoUpdateSubsampledImage);
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineUpdateSubsampledImage);
 		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutOperateOnSubsampledImage, 0, 1, &m_descriptorSetOperateOnSubsampledImage.get(), 0, DE_NULL);
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
-		RPS2::cmdEndRenderPass(vk, *m_cmdBuffer, &subpassEndInfo);
+		renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
 	}
 
 	// Copy subsampled image to normal image using sampler that is able to read from subsampled images
@@ -1753,12 +1849,12 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 		static_cast<deUint32>(attachmentClearValues.size()),				// uint32_t				clearValueCount;
 		attachmentClearValues.data()										// const VkClearValue*	pClearValues;
 	};
-	RPS2::cmdBeginRenderPass(vk, *m_cmdBuffer, &renderPassBeginInfoOutputSubsampledImage, &subpassBeginInfo);
+	renderPassWrapper->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfoOutputSubsampledImage);
 	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineOutputSubsampledImage);
 	vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutOutputSubsampledImage, 0, 1, &m_descriptorSetOutputSubsampledImage.get(), 0, DE_NULL);
 	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBufferOutput.get(), &vertexBufferOffset);
 	vk.cmdDraw(*m_cmdBuffer, (deUint32)m_verticesOutput.size(), 1, 0, 0);
-	RPS2::cmdEndRenderPass(vk, *m_cmdBuffer, &subpassEndInfo);
+	renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 }
@@ -1848,7 +1944,7 @@ tcu::TestStatus FragmentDensityMapTestInstance::verifyImage (void)
 
 } // anonymous
 
-static void createChildren (tcu::TestCaseGroup* fdmTests)
+static void createChildren (tcu::TestCaseGroup* fdmTests, RenderingType renderingType)
 {
 	tcu::TestContext&	testCtx		= fdmTests->getTestContext();
 
@@ -1905,6 +2001,9 @@ static void createChildren (tcu::TestCaseGroup* fdmTests)
 
 	for (const auto& view : views)
 	{
+		if ((renderingType == RENDERING_TYPE_RENDERPASS_LEGACY) && view.viewCount > 1)
+			continue;
+
 		de::MovePtr<tcu::TestCaseGroup> viewGroup(new tcu::TestCaseGroup(testCtx, view.name.c_str(), ""));
 		for (const auto& render : renders)
 		{
@@ -1934,7 +2033,9 @@ static void createChildren (tcu::TestCaseGroup* fdmTests)
 							sample.samples,					// VkSampleCountFlagBits	colorSamples;
 							area,							// tcu::UVec2				fragmentArea;
 							{ 16, 16 },						// tcu::UVec2				densityMapSize;
-							VK_FORMAT_R8G8_UNORM			// VkFormat					densityMapFormat;
+							VK_FORMAT_R8G8_UNORM,			// VkFormat					densityMapFormat;
+							renderingType					// RenderingType			renderingType;
+
 						};
 
 						sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("static_subsampled") + str.str(), "", params));
@@ -1994,43 +2095,49 @@ static void createChildren (tcu::TestCaseGroup* fdmTests)
 			VK_SAMPLE_COUNT_1_BIT,			// VkSampleCountFlagBits	colorSamples;
 			{  2,  2 },						// tcu::UVec2				fragmentArea;
 			{ 16, 16 },						// tcu::UVec2				densityMapSize;
-			VK_FORMAT_R8G8_UNORM			// VkFormat					densityMapFormat;
+			VK_FORMAT_R8G8_UNORM,			// VkFormat					densityMapFormat;
+			renderingType					// RenderingType			renderingType;
 		};
 		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, sampler.name, "", params));
 	}
-	TestParams params
+
+	if (renderingType != RENDERING_TYPE_RENDERPASS_LEGACY)
 	{
-		false,							// bool						dynamicDensityMap;
-		false,							// bool						deferredDensityMap;
-		false,							// bool						nonSubsampledImages;
-		true,							// bool						subsampledLoads;
-		false,							// bool						coarseReconstruction;
-		1,								// deUint32					samplersCount;
-		2,								// deUint32					viewCount;
-		false,							// bool						makeCopy;
-		4.0f,							// float					renderMultiplier;
-		VK_SAMPLE_COUNT_1_BIT,			// VkSampleCountFlagBits	colorSamples;
-		{  1,  2 },						// tcu::UVec2				fragmentArea;
-		{ 16, 16 },						// tcu::UVec2				densityMapSize;
-		VK_FORMAT_R8G8_UNORM			// VkFormat					densityMapFormat;
-	};
-	propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "subsampled_loads", "", params));
-	params.subsampledLoads		= false;
-	params.coarseReconstruction	= true;
-	propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "subsampled_coarse_reconstruction", "", params));
-	fdmTests->addChild(propertiesGroup.release());
+		TestParams params
+		{
+			false,							// bool						dynamicDensityMap;
+			false,							// bool						deferredDensityMap;
+			false,							// bool						nonSubsampledImages;
+			true,							// bool						subsampledLoads;
+			false,							// bool						coarseReconstruction;
+			1,								// deUint32					samplersCount;
+			2,								// deUint32					viewCount;
+			false,							// bool						makeCopy;
+			4.0f,							// float					renderMultiplier;
+			VK_SAMPLE_COUNT_1_BIT,			// VkSampleCountFlagBits	colorSamples;
+			{  1,  2 },						// tcu::UVec2				fragmentArea;
+			{ 16, 16 },						// tcu::UVec2				densityMapSize;
+			VK_FORMAT_R8G8_UNORM,			// VkFormat					densityMapFormat;
+			renderingType					// RenderingType			renderingType;
+		};
+		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "subsampled_loads", "", params));
+		params.subsampledLoads		= false;
+		params.coarseReconstruction	= true;
+		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "subsampled_coarse_reconstruction", "", params));
+		fdmTests->addChild(propertiesGroup.release());
+	}
 }
 
-static void cleanupGroup (tcu::TestCaseGroup* group)
+static void cleanupGroup (tcu::TestCaseGroup* group, RenderingType)
 {
 	DE_UNREF(group);
 	// Destroy singleton objects.
 	g_singletonDevice.clear();
 }
 
-tcu::TestCaseGroup* createFragmentDensityMapTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createFragmentDensityMapTests (tcu::TestContext& testCtx, RenderingType renderingType)
 {
-	return createTestGroup(testCtx, "fragment_density_map", "VK_EXT_fragment_density_map and VK_EXT_fragment_density_map2 extensions tests", createChildren, cleanupGroup);
+	return createTestGroup(testCtx, "fragment_density_map", "VK_EXT_fragment_density_map and VK_EXT_fragment_density_map2 extensions tests", createChildren, renderingType, cleanupGroup);
 }
 
 } // renderpass
