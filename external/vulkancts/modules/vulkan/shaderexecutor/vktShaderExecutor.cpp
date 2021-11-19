@@ -854,9 +854,9 @@ static Move<VkDescriptorSetLayout> createEmptyDescriptorSetLayout (const DeviceI
 	return createDescriptorSetLayout(vkd, device, &createInfo);
 }
 
-static Move<VkDescriptorPool> createDummyDescriptorPool (const DeviceInterface& vkd, VkDevice device)
+static Move<VkDescriptorPool> createEmptyDescriptorPool (const DeviceInterface& vkd, VkDevice device)
 {
-	const VkDescriptorPoolSize			dummySize	=
+	const VkDescriptorPoolSize			emptySize	=
 	{
 		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 		1u,
@@ -868,7 +868,7 @@ static Move<VkDescriptorPool> createDummyDescriptorPool (const DeviceInterface& 
 		(VkDescriptorPoolCreateFlags)VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
 		1u,
 		1u,
-		&dummySize
+		&emptySize
 	};
 	return createDescriptorPool(vkd, device, &createInfo);
 }
@@ -925,8 +925,8 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 	Move<VkCommandBuffer>								cmdBuffer;
 
 	Unique<VkDescriptorSetLayout>						emptyDescriptorSetLayout	(createEmptyDescriptorSetLayout(vk, vkDevice));
-	Unique<VkDescriptorPool>							dummyDescriptorPool			(createDummyDescriptorPool(vk, vkDevice));
-	Unique<VkDescriptorSet>								emptyDescriptorSet			(allocateSingleDescriptorSet(vk, vkDevice, *dummyDescriptorPool, *emptyDescriptorSetLayout));
+	Unique<VkDescriptorPool>							emptyDescriptorPool			(createEmptyDescriptorPool(vk, vkDevice));
+	Unique<VkDescriptorSet>								emptyDescriptorSet			(allocateSingleDescriptorSet(vk, vkDevice, *emptyDescriptorPool, *emptyDescriptorSetLayout));
 
 	clearRenderData();
 

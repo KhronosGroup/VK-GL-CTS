@@ -682,7 +682,7 @@ void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) cons
 					break;
 
 				case VK_SHADER_STAGE_GEOMETRY_BIT:
-					programCollection.glslSources.add("dummy_geo" + missSuffix) << glu::GeometrySource(
+					programCollection.glslSources.add("unused_geo" + missSuffix) << glu::GeometrySource(
 						"#version 450 \n"
 						"layout(triangles) in;\n"
 						"layout(triangle_strip, max_vertices = 3) out;\n"
@@ -957,10 +957,10 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&				context,
 				}
 				break;
 			case VK_SHADER_STAGE_GEOMETRY_BIT:
-				m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "dummy_geo", "main");
+				m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "unused_geo", "main");
 				if (m_param->getCompileMissShaders())
 				{
-					m_missPipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "dummy_geo_miss", "main");
+					m_missPipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "unused_geo_miss", "main");
 				}
 				break;
 			case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:

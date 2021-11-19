@@ -1824,7 +1824,7 @@ void AdvGraphicsTest::initPrograms (SourceCollections& programCollection) const
 {
 	BasicGraphicsTest::initPrograms(programCollection);
 
-	programCollection.glslSources.add("dummy_geo") << glu::GeometrySource(
+	programCollection.glslSources.add("unused_geo") << glu::GeometrySource(
 		"#version 310 es\n"
 		"#extension GL_EXT_geometry_shader : enable\n"
 		"layout(triangles) in;\n"
@@ -1928,7 +1928,7 @@ AdvGraphicsTestInstance::AdvGraphicsTestInstance (Context&				context,
 
 	if(m_features.geometryShader == VK_TRUE)
 	{
-		m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "dummy_geo");
+		m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "unused_geo");
 	}
 
 	if(m_features.tessellationShader == VK_TRUE)

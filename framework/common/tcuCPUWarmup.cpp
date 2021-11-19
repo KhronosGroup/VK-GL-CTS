@@ -34,7 +34,7 @@ namespace tcu
 namespace warmupCPUInternal
 {
 
-volatile Dummy g_dummy;
+volatile Unused g_unused;
 
 };
 
@@ -64,7 +64,7 @@ static inline float floatRelativeMedianAbsoluteDeviation (const T (&v)[Size])
 	return floatMedian(absoluteDeviations) / median;
 }
 
-static inline float dummyComputation (float initial, int numIterations)
+static inline float unusedComputation (float initial, int numIterations)
 {
 	float	a = initial;
 	int		b = 123;
@@ -84,10 +84,10 @@ static inline float dummyComputation (float initial, int numIterations)
 
 void warmupCPU (void)
 {
-	float	dummy				= *warmupCPUInternal::g_dummy.m_v;
+	float	unused				= *warmupCPUInternal::g_unused.m_v;
 	int		computationSize		= 1;
 
-	// Do a rough calibration for computationSize to get dummyComputation's running time above a certain threshold.
+	// Do a rough calibration for computationSize to get unusedComputation's running time above a certain threshold.
 	while (computationSize < 1<<30) // \note This condition is unlikely to be met. The "real" loop exit is the break below.
 	{
 		const float		singleMeasurementThreshold	= 10000.0f;
@@ -97,7 +97,7 @@ void warmupCPU (void)
 		for (int i = 0; i < numMeasurements; i++)
 		{
 			const deUint64 startTime = deGetMicroseconds();
-			dummy = dummyComputation(dummy, computationSize);
+			unused = unusedComputation(unused, computationSize);
 			times[i] = (deInt64)(deGetMicroseconds() - startTime);
 		}
 
@@ -107,7 +107,7 @@ void warmupCPU (void)
 		computationSize *= 2;
 	}
 
-	// Do dummyComputations until running time seems stable enough.
+	// Do unusedComputations until running time seems stable enough.
 	{
 		const int			maxNumMeasurements							= 50;
 		const int			numConsecutiveMeasurementsRequired			= 5;
@@ -123,12 +123,12 @@ void warmupCPU (void)
 			 measurementNdx++)
 		{
 			const deUint64 startTime = deGetMicroseconds();
-			dummy = dummyComputation(dummy, computationSize);
+			unused = unusedComputation(unused, computationSize);
 			latestTimes[measurementNdx % numConsecutiveMeasurementsRequired] = (deInt64)(deGetMicroseconds() - startTime);
 		}
 	}
 
-	*warmupCPUInternal::g_dummy.m_v = dummy;
+	*warmupCPUInternal::g_unused.m_v = unused;
 }
 
 } // tcu

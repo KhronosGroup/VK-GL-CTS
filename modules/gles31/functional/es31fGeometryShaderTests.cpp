@@ -4068,11 +4068,11 @@ void GeometryProgramQueryCase::expectProgramValue (deUint32 program, int value)
 void GeometryProgramQueryCase::expectQueryError (deUint32 program)
 {
 	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
-	glw::GLint				dummy;
+	glw::GLint				unused;
 	glw::GLenum				errorCode;
 
 	m_testCtx.getLog() << tcu::TestLog::Message << "Querying " << glu::getProgramParamStr(m_target) << ", expecting INVALID_OPERATION" << tcu::TestLog::EndMessage;
-	gl.getProgramiv(program, m_target, &dummy);
+	gl.getProgramiv(program, m_target, &unused);
 
 	errorCode = gl.getError();
 
@@ -5858,7 +5858,7 @@ void VertexFeedbackOverflowCase::init (void)
 			const int					feedbackCount			= 5 * 4; // 5x vec4
 			const std::vector<float>	initialBufferContents	(feedbackCount, -1.0f);
 
-			m_testCtx.getLog() << tcu::TestLog::Message << "Filling feeback buffer with dummy value (-1.0)." << tcu::TestLog::EndMessage;
+			m_testCtx.getLog() << tcu::TestLog::Message << "Filling feeback buffer with unused value (-1.0)." << tcu::TestLog::EndMessage;
 
 			gl.genBuffers(1, &m_feedbackBuf);
 			gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, m_feedbackBuf);
