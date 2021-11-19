@@ -34,6 +34,7 @@
 #include "tcuVectorType.hpp"
 
 #include <vector>
+#include <limits>
 
 namespace vk
 {
