@@ -669,8 +669,11 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 		VK_CHECK(vk.bindBufferMemory(device, *xfbBuffer, xfbBufferMemory->getMemory(), xfbBufferMemory->getOffset()));
 
 		counterBuffer		= createBuffer(vk, device, &counterBufferInfo);
-		counterBufferMemory	= allocator.allocate(getBufferMemoryRequirements(vk, device, *counterBuffer), MemoryRequirement::Any);
+		counterBufferMemory	= allocator.allocate(getBufferMemoryRequirements(vk, device, *counterBuffer), MemoryRequirement::HostVisible);
 		VK_CHECK(vk.bindBufferMemory(device, *counterBuffer, counterBufferMemory->getMemory(), counterBufferMemory->getOffset()));
+		// Make sure uninitialized values are not read when starting XFB for the first time.
+		deMemset(counterBufferMemory->getHostPtr(), 0, static_cast<size_t>(counterBufferSize));
+		flushAlloc(vk, device, *counterBufferMemory);
 	}
 
 	// Clear the color buffer to red and check the drawing doesn't add any
