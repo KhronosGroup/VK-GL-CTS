@@ -16,6 +16,8 @@ set(DEQP_VK_FRAGMENT_OPS_SRCS
 	vktFragmentOperationsScissorTests.hpp
 	vktFragmentOperationsTests.cpp
 	vktFragmentOperationsTests.hpp
+	vktFragmentOperationsTransientAttachmentTests.cpp
+	vktFragmentOperationsTransientAttachmentTests.hpp
 	)
 
 set(DEQP_VK_FRAGMENT_OPS_LIBS
