@@ -193,8 +193,6 @@ void combine
 		tmp.erase(std::next(tmp.begin(), b));
 		combine(result, tmp, hints);
 	}
-
-	return ::vkt::api::u::combine<Flag>(result, bits, hints);
 }
 
 } // u

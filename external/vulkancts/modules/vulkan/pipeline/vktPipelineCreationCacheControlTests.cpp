@@ -608,7 +608,7 @@ VkGraphicsPipelineCreateInfo getPipelineCreateInfoCommon()
 		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // sType
 		DE_NULL,													// pNext
 		VkPipelineRasterizationStateCreateFlags{},					// flags
-		VK_TRUE,													// depthClampEnable
+		VK_FALSE,													// depthClampEnable
 		VK_TRUE,													// rasterizerDiscardEnable
 		VK_POLYGON_MODE_FILL,										// polygonMode
 		VK_CULL_MODE_NONE,											// cullMode

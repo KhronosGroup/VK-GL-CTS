@@ -1387,6 +1387,12 @@ static void createTests (tcu::TestCaseGroup* group, SynchronizationType type)
 				{
 					for (int semaphoreType = 0; semaphoreType < vk::VK_SEMAPHORE_TYPE_LAST; semaphoreType++)
 					{
+						if (cases[caseNdx].semaphoreType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT &&
+						    (vk::VkSemaphoreType)semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE)
+						{
+							continue;
+						}
+
 						if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
 						{
 							const TestConfig	config (type, resource, (vk::VkSemaphoreType)semaphoreType, writeOp, readOp, cases[caseNdx].memoryType, cases[caseNdx].semaphoreType, dedicated);

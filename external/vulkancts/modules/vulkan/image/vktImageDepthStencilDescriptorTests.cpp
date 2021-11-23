@@ -1065,11 +1065,16 @@ tcu::TestStatus	DepthStencilDescriptorInstance::iterate ()
 	vkd.cmdClearColorImage(cmdBuffer, colorBuffer.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &colorClearValue.color, 1u, &colorSRR);
 	vkd.cmdClearDepthStencilImage(cmdBuffer, dsImage.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &dsClearValue.depthStencil, 1u, &depthStencilSRR);
 
-	const auto colorPostTransferBarrier	= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, 0u, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, colorLayout, colorBuffer.get(), colorSRR);
-	const auto dsPostTransferBarrier	= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, 0u, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_params.layout, dsImage.get(), depthStencilSRR);
+	const auto graphicsAccesses			=	( VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
+											| VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+											| VK_ACCESS_INPUT_ATTACHMENT_READ_BIT
+											| VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT
+											| VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT );
+	const auto colorPostTransferBarrier	= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, graphicsAccesses, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, colorLayout, colorBuffer.get(), colorSRR);
+	const auto dsPostTransferBarrier	= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, graphicsAccesses, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_params.layout, dsImage.get(), depthStencilSRR);
 	const std::vector<VkImageMemoryBarrier> postTransferBarriers = { colorPostTransferBarrier, dsPostTransferBarrier };
 
-	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0u, 0u, nullptr, 0u, nullptr,
+	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0u, 0u, nullptr, 0u, nullptr,
 		static_cast<uint32_t>(postTransferBarriers.size()), de::dataOrNull(postTransferBarriers));
 
 	// Render pass.

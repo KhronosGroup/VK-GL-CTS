@@ -42,6 +42,7 @@ enum RoundingDirection
 	ROUND_TO_EVEN = 0,
 	ROUND_DOWNWARD,		// Towards -Inf.
 	ROUND_UPWARD,		// Towards +Inf.
+	ROUND_TO_ZERO
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -338,6 +339,9 @@ Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::convert
 				}
 				return Float(StorageType(s | m));
 
+			case ROUND_TO_ZERO:
+				return Float(StorageType(s | (m >> bitDiff)));
+
 			default:
 				DE_ASSERT(false);
 				break;
@@ -379,6 +383,10 @@ Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::convert
 			{
 				m += 1;
 			}
+			break;
+
+		case ROUND_TO_ZERO:
+			m = (m >> bitDiff);
 			break;
 
 		default:
