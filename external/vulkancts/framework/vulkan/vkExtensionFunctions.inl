@@ -907,6 +907,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_ARM_rasterization_order_attachment_access")
+	{
+		return;
+	}
 	if (extName == "VK_NV_acquire_winrt_display")
 	{
 		functions.push_back("vkAcquireWinrtDisplayNV");
@@ -2158,6 +2162,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_EXT_4444_formats")
+	{
+		return;
+	}
+	if (extName == "VK_ARM_rasterization_order_attachment_access")
 	{
 		return;
 	}

@@ -678,6 +678,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2_KHR:													return "VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_ARM:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_ARM";
 		case VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE";
 		case VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_VALVE:							return "VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_VALVE";
@@ -3259,6 +3260,27 @@ tcu::Format::Bitfield<32> getCullModeFlagsStr (VkCullModeFlags value)
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+tcu::Format::Bitfield<32> getPipelineDepthStencilStateCreateFlagsStr (VkPipelineDepthStencilStateCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_PIPELINE_DEPTH_STENCIL_STATE_CREATE_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_ARM,	"VK_PIPELINE_DEPTH_STENCIL_STATE_CREATE_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_ARM"),
+		tcu::Format::BitDesc(VK_PIPELINE_DEPTH_STENCIL_STATE_CREATE_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_ARM,	"VK_PIPELINE_DEPTH_STENCIL_STATE_CREATE_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_ARM"),
+		tcu::Format::BitDesc(VK_PIPELINE_DEPTH_STENCIL_STATE_CREATE_FLAG_BITS_MAX_ENUM,										"VK_PIPELINE_DEPTH_STENCIL_STATE_CREATE_FLAG_BITS_MAX_ENUM"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getPipelineColorBlendStateCreateFlagsStr (VkPipelineColorBlendStateCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_PIPELINE_COLOR_BLEND_STATE_CREATE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_BIT_ARM,	"VK_PIPELINE_COLOR_BLEND_STATE_CREATE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_BIT_ARM"),
+		tcu::Format::BitDesc(VK_PIPELINE_COLOR_BLEND_STATE_CREATE_FLAG_BITS_MAX_ENUM,								"VK_PIPELINE_COLOR_BLEND_STATE_CREATE_FLAG_BITS_MAX_ENUM"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getSamplerCreateFlagsStr (VkSamplerCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -3345,11 +3367,14 @@ tcu::Format::Bitfield<32> getSubpassDescriptionFlagsStr (VkSubpassDescriptionFla
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_PER_VIEW_ATTRIBUTES_BIT_NVX,		"VK_SUBPASS_DESCRIPTION_PER_VIEW_ATTRIBUTES_BIT_NVX"),
-		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_PER_VIEW_POSITION_X_ONLY_BIT_NVX,	"VK_SUBPASS_DESCRIPTION_PER_VIEW_POSITION_X_ONLY_BIT_NVX"),
-		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_FRAGMENT_REGION_BIT_QCOM,			"VK_SUBPASS_DESCRIPTION_FRAGMENT_REGION_BIT_QCOM"),
-		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_SHADER_RESOLVE_BIT_QCOM,			"VK_SUBPASS_DESCRIPTION_SHADER_RESOLVE_BIT_QCOM"),
-		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_FLAG_BITS_MAX_ENUM,					"VK_SUBPASS_DESCRIPTION_FLAG_BITS_MAX_ENUM"),
+		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_PER_VIEW_ATTRIBUTES_BIT_NVX,							"VK_SUBPASS_DESCRIPTION_PER_VIEW_ATTRIBUTES_BIT_NVX"),
+		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_PER_VIEW_POSITION_X_ONLY_BIT_NVX,						"VK_SUBPASS_DESCRIPTION_PER_VIEW_POSITION_X_ONLY_BIT_NVX"),
+		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_FRAGMENT_REGION_BIT_QCOM,								"VK_SUBPASS_DESCRIPTION_FRAGMENT_REGION_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_SHADER_RESOLVE_BIT_QCOM,								"VK_SUBPASS_DESCRIPTION_SHADER_RESOLVE_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_BIT_ARM,	"VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_BIT_ARM"),
+		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_ARM,	"VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_ARM"),
+		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_ARM,	"VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_ARM"),
+		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_FLAG_BITS_MAX_ENUM,										"VK_SUBPASS_DESCRIPTION_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4256,16 +4281,6 @@ tcu::Format::Bitfield<32> getPipelineRasterizationStateCreateFlagsStr (VkPipelin
 }
 
 tcu::Format::Bitfield<32> getPipelineMultisampleStateCreateFlagsStr (VkPipelineMultisampleStateCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
-}
-
-tcu::Format::Bitfield<32> getPipelineDepthStencilStateCreateFlagsStr (VkPipelineDepthStencilStateCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
-}
-
-tcu::Format::Bitfield<32> getPipelineColorBlendStateCreateFlagsStr (VkPipelineColorBlendStateCreateFlags value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -11567,6 +11582,18 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevice4444FormatsFeat
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tformatA4R4G4B4 = " << value.formatA4R4G4B4 << '\n';
 	s << "\tformatA4B4G4R4 = " << value.formatA4B4G4R4 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM& value)
+{
+	s << "VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trasterizationOrderColorAttachmentAccess = " << value.rasterizationOrderColorAttachmentAccess << '\n';
+	s << "\trasterizationOrderDepthAttachmentAccess = " << value.rasterizationOrderDepthAttachmentAccess << '\n';
+	s << "\trasterizationOrderStencilAttachmentAccess = " << value.rasterizationOrderStencilAttachmentAccess << '\n';
 	s << '}';
 	return s;
 }

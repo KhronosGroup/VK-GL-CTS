@@ -1020,6 +1020,18 @@ if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(de
 	checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
 }
 
+if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM>()))
+{
+	static const Feature features[] =
+	{
+		FEATURE_ITEM (VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM, rasterizationOrderColorAttachmentAccess),
+		FEATURE_ITEM (VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM, rasterizationOrderDepthAttachmentAccess),
+		FEATURE_ITEM (VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM, rasterizationOrderStencilAttachmentAccess),
+	};
+	auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM*>(featuresStruct);
+	checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
+}
+
 if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE>()))
 {
 	static const Feature features[] =
