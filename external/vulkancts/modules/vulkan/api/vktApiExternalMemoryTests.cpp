@@ -4252,26 +4252,27 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 				{64u, 64u},
 				{1024u, 2096u},
 			};
+
+			deUint32 exportedMemoryTypeIndex = 0;
+
+			if (createFlag & vk::VK_IMAGE_CREATE_PROTECTED_BIT)
+			{
+				const vk::VkPhysicalDeviceMemoryProperties memProperties(vk::getPhysicalDeviceMemoryProperties(vki, physicalDevice));
+
+				for (deUint32 memoryTypeIndex = 0; memoryTypeIndex < VK_MAX_MEMORY_TYPES; memoryTypeIndex++)
+				{
+					if (memProperties.memoryTypes[memoryTypeIndex].propertyFlags & vk::VK_MEMORY_PROPERTY_PROTECTED_BIT)
+					{
+						exportedMemoryTypeIndex = memoryTypeIndex;
+						break;
+					}
+				}
+			}
+
 			for (size_t i = 0; i < DE_LENGTH_OF_ARRAY(sizes); i++)
 			{
 				const vk::Unique<vk::VkImage>			image					(createExternalImage(vkd, *device, queueFamilyIndex, externalMemoryType, format, sizes[i].width, sizes[i].height, tiling, createFlag, usage));
 				const vk::VkMemoryRequirements			requirements			(getImageMemoryRequirements(vkd, *device, *image, externalMemoryType));
-				deUint32								exportedMemoryTypeIndex	= 0;
-
-				if (createFlag & vk::VK_IMAGE_CREATE_PROTECTED_BIT)
-				{
-					const vk::VkPhysicalDeviceMemoryProperties memProperties(vk::getPhysicalDeviceMemoryProperties(vki, physicalDevice));
-
-					for (deUint32 memoryTypeIndex = 0; memoryTypeIndex < VK_MAX_MEMORY_TYPES; memoryTypeIndex++)
-					{
-						if (memProperties.memoryTypes[memoryTypeIndex].propertyFlags & vk::VK_MEMORY_PROPERTY_PROTECTED_BIT)
-						{
-							exportedMemoryTypeIndex = memoryTypeIndex;
-							break;
-						}
-					}
-				}
-
 				const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, externalMemoryType, *image));
 				NativeHandle							handle;
 
@@ -4292,7 +4293,6 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 			{
 				const vk::Unique<vk::VkImage>			image					(createExternalImage(vkd, *device, queueFamilyIndex, externalMemoryType, format, 64u, 64u, tiling, createFlag, usage, 7u));
 				const vk::VkMemoryRequirements			requirements			(getImageMemoryRequirements(vkd, *device, *image, externalMemoryType));
-				const deUint32							exportedMemoryTypeIndex	(chooseMemoryType(requirements.memoryTypeBits));
 				const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, externalMemoryType, *image));
 				NativeHandle							handle;
 
@@ -4310,7 +4310,6 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 			{
 				const vk::Unique<vk::VkImage>			image					(createExternalImage(vkd, *device, queueFamilyIndex, externalMemoryType, format, 64u, 64u, tiling, createFlag, usage, 1u, properties.imageFormatProperties.maxArrayLayers));
 				const vk::VkMemoryRequirements			requirements			(getImageMemoryRequirements(vkd, *device, *image, externalMemoryType));
-				const deUint32							exportedMemoryTypeIndex	(chooseMemoryType(requirements.memoryTypeBits));
 				const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, externalMemoryType, *image));
 				NativeHandle							handle;
 
