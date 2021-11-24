@@ -797,6 +797,16 @@ VkResult DeviceDriver::createSharedSwapchainsKHR (VkDevice device, uint32_t swap
 	return m_vk.createSharedSwapchainsKHR(device, swapchainCount, pCreateInfos, pAllocator, pSwapchains);
 }
 
+void DeviceDriver::cmdBeginRenderingKHR (VkCommandBuffer commandBuffer, const VkRenderingInfoKHR* pRenderingInfo) const
+{
+	m_vk.cmdBeginRenderingKHR(commandBuffer, pRenderingInfo);
+}
+
+void DeviceDriver::cmdEndRenderingKHR (VkCommandBuffer commandBuffer) const
+{
+	m_vk.cmdEndRenderingKHR(commandBuffer);
+}
+
 VkResult DeviceDriver::getMemoryFdKHR (VkDevice device, const VkMemoryGetFdInfoKHR* pGetFdInfo, int* pFd) const
 {
 	return m_vk.getMemoryFdKHR(device, pGetFdInfo, pFd);
@@ -970,6 +980,21 @@ void DeviceDriver::cmdBlitImage2KHR (VkCommandBuffer commandBuffer, const VkBlit
 void DeviceDriver::cmdResolveImage2KHR (VkCommandBuffer commandBuffer, const VkResolveImageInfo2KHR* pResolveImageInfo) const
 {
 	m_vk.cmdResolveImage2KHR(commandBuffer, pResolveImageInfo);
+}
+
+void DeviceDriver::getDeviceBufferMemoryRequirementsKHR (VkDevice device, const VkDeviceBufferMemoryRequirementsKHR* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
+{
+	m_vk.getDeviceBufferMemoryRequirementsKHR(device, pInfo, pMemoryRequirements);
+}
+
+void DeviceDriver::getDeviceImageMemoryRequirementsKHR (VkDevice device, const VkDeviceImageMemoryRequirementsKHR* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
+{
+	m_vk.getDeviceImageMemoryRequirementsKHR(device, pInfo, pMemoryRequirements);
+}
+
+void DeviceDriver::getDeviceImageSparseMemoryRequirementsKHR (VkDevice device, const VkDeviceImageMemoryRequirementsKHR* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements) const
+{
+	m_vk.getDeviceImageSparseMemoryRequirementsKHR(device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
 }
 
 VkResult DeviceDriver::debugMarkerSetObjectTagEXT (VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const

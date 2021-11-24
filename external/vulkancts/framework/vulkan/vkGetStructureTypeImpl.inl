@@ -866,6 +866,51 @@ template<> VkStructureType getStructureType<VkDisplayPresentInfoKHR> (void)
 	return VK_STRUCTURE_TYPE_DISPLAY_PRESENT_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkRenderingAttachmentInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkRenderingInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPipelineRenderingCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDynamicRenderingFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCommandBufferInheritanceRenderingInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkRenderingFragmentShadingRateAttachmentInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkRenderingFragmentDensityMapAttachmentInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkAttachmentSampleCountInfoAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_ATTACHMENT_SAMPLE_COUNT_INFO_AMD;
+}
+
+template<> VkStructureType getStructureType<VkMultiviewPerViewAttributesInfoNVX> (void)
+{
+	return VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_ATTRIBUTES_INFO_NVX;
+}
+
 template<> VkStructureType getStructureType<VkImportMemoryFdInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR;
@@ -1209,6 +1254,31 @@ template<> VkStructureType getStructureType<VkImageResolve2KHR> (void)
 template<> VkStructureType getStructureType<VkResolveImageInfo2KHR> (void)
 {
 	return VK_STRUCTURE_TYPE_RESOLVE_IMAGE_INFO_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkFormatPropertiesExtendedKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_EXTENDED_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance4FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance4PropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDeviceBufferMemoryRequirementsKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDeviceImageMemoryRequirementsKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR;
 }
 
 template<> VkStructureType getStructureType<VkDebugReportCallbackCreateInfoEXT> (void)
@@ -2086,6 +2156,11 @@ template<> VkStructureType getStructureType<VkDeviceDeviceMemoryReportCreateInfo
 	return VK_STRUCTURE_TYPE_DEVICE_DEVICE_MEMORY_REPORT_CREATE_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceRobustness2FeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
@@ -2309,6 +2384,16 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceMultiDrawFeaturesEXT
 template<> VkStructureType getStructureType<VkPhysicalDeviceMultiDrawPropertiesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceBorderColorSwizzleFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BORDER_COLOR_SWIZZLE_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkSamplerBorderColorComponentMappingCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SAMPLER_BORDER_COLOR_COMPONENT_MAPPING_CREATE_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT> (void)

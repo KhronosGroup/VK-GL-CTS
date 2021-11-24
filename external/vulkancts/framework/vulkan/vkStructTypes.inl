@@ -2541,6 +2541,99 @@ struct VkDisplayPresentInfoKHR
 	VkBool32		persistent;
 };
 
+struct VkRenderingAttachmentInfoKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkImageView				imageView;
+	VkImageLayout			imageLayout;
+	VkResolveModeFlagBits	resolveMode;
+	VkImageView				resolveImageView;
+	VkImageLayout			resolveImageLayout;
+	VkAttachmentLoadOp		loadOp;
+	VkAttachmentStoreOp		storeOp;
+	VkClearValue			clearValue;
+};
+
+struct VkRenderingInfoKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkRenderingFlagsKHR					flags;
+	VkRect2D							renderArea;
+	uint32_t							layerCount;
+	uint32_t							viewMask;
+	uint32_t							colorAttachmentCount;
+	const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+	const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+	const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+};
+
+struct VkPipelineRenderingCreateInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		viewMask;
+	uint32_t		colorAttachmentCount;
+	const VkFormat*	pColorAttachmentFormats;
+	VkFormat		depthAttachmentFormat;
+	VkFormat		stencilAttachmentFormat;
+};
+
+struct VkPhysicalDeviceDynamicRenderingFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		dynamicRendering;
+};
+
+struct VkCommandBufferInheritanceRenderingInfoKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkRenderingFlagsKHR		flags;
+	uint32_t				viewMask;
+	uint32_t				colorAttachmentCount;
+	const VkFormat*			pColorAttachmentFormats;
+	VkFormat				depthAttachmentFormat;
+	VkFormat				stencilAttachmentFormat;
+	VkSampleCountFlagBits	rasterizationSamples;
+};
+
+struct VkRenderingFragmentShadingRateAttachmentInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkImageView		imageView;
+	VkImageLayout	imageLayout;
+	VkExtent2D		shadingRateAttachmentTexelSize;
+};
+
+struct VkRenderingFragmentDensityMapAttachmentInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkImageView		imageView;
+	VkImageLayout	imageLayout;
+};
+
+struct VkAttachmentSampleCountInfoAMD
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	uint32_t						colorAttachmentCount;
+	const VkSampleCountFlagBits*	pColorAttachmentSamples;
+	VkSampleCountFlagBits			depthStencilAttachmentSamples;
+};
+
+struct VkMultiviewPerViewAttributesInfoNVX
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		perViewAttributes;
+	VkBool32		perViewAttributesPositionXOnly;
+};
+
 struct VkImportMemoryFdInfoKHR
 {
 	VkStructureType						sType;
@@ -3224,6 +3317,44 @@ struct VkResolveImageInfo2KHR
 	VkImageLayout				dstImageLayout;
 	uint32_t					regionCount;
 	const VkImageResolve2KHR*	pRegions;
+};
+
+struct VkFormatPropertiesExtendedKHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkFormatFeatureFlags2KHR	linearTilingFeatures;
+	VkFormatFeatureFlags2KHR	optimalTilingFeatures;
+	VkFormatFeatureFlags2KHR	bufferFeatures;
+};
+
+struct VkPhysicalDeviceMaintenance4FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		maintenance4;
+};
+
+struct VkPhysicalDeviceMaintenance4PropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	maxBufferSize;
+};
+
+struct VkDeviceBufferMemoryRequirementsKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	const VkBufferCreateInfo*	pCreateInfo;
+};
+
+struct VkDeviceImageMemoryRequirementsKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	const VkImageCreateInfo*	pCreateInfo;
+	VkImageAspectFlagBits		planeAspect;
 };
 
 struct VkDebugReportCallbackCreateInfoEXT
@@ -5014,6 +5145,13 @@ struct VkDeviceDeviceMemoryReportCreateInfoEXT
 	void*								pUserData;
 };
 
+struct VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		formatRgba10x6WithoutYCbCrSampler;
+};
+
 struct VkPhysicalDeviceRobustness2FeaturesEXT
 {
 	VkStructureType	sType;
@@ -5442,6 +5580,22 @@ struct VkMultiDrawIndexedInfoEXT
 	uint32_t	firstIndex;
 	uint32_t	indexCount;
 	int32_t		vertexOffset;
+};
+
+struct VkPhysicalDeviceBorderColorSwizzleFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		borderColorSwizzle;
+	VkBool32		borderColorSwizzleFromImage;
+};
+
+struct VkSamplerBorderColorComponentMappingCreateInfoEXT
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkComponentMapping	components;
+	VkBool32			srgb;
 };
 
 struct VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT
@@ -7292,6 +7446,8 @@ typedef VkBufferOpaqueCaptureAddressCreateInfo VkBufferOpaqueCaptureAddressCreat
 typedef VkMemoryOpaqueCaptureAddressAllocateInfo VkMemoryOpaqueCaptureAddressAllocateInfoKHR;
 
 typedef VkDeviceMemoryOpaqueCaptureAddressInfo VkDeviceMemoryOpaqueCaptureAddressInfoKHR;
+
+typedef VkAttachmentSampleCountInfoAMD VkAttachmentSampleCountInfoNV;
 
 typedef VkTransformMatrixKHR VkTransformMatrixNV;
 

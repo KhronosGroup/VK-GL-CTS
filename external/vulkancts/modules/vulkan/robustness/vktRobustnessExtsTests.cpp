@@ -402,6 +402,9 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 	if (m_data.stage == STAGE_VERTEX && !features2.features.vertexPipelineStoresAndAtomics)
 		TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
 
+	if (m_data.stage == STAGE_FRAGMENT && !features2.features.fragmentStoresAndAtomics)
+		TCU_THROW(NotSupportedError, "Fragment shader stores not supported");
+
 	if (m_data.stage == STAGE_RAYGEN)
 		context.requireDeviceFunctionality("VK_NV_ray_tracing");
 
@@ -453,12 +456,23 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 		TCU_THROW(NotSupportedError, "Vulkan 1.1 not supported");
 
 	if ((m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER || m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) &&
-		!m_data.formatQualifier &&
-		(!features2.features.shaderStorageImageReadWithoutFormat || !features2.features.shaderStorageImageWriteWithoutFormat))
-		TCU_THROW(NotSupportedError, "shaderStorageImageReadWithoutFormat or shaderStorageImageWriteWithoutFormat not supported");
+		!m_data.formatQualifier)
+	{
+		const VkFormatPropertiesExtendedKHR formatProperties = context.getFormatProperties(m_data.format);
+		if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
+			TCU_THROW(NotSupportedError, "Format does not support reading without format");
+		if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
+			TCU_THROW(NotSupportedError, "Format does not support writing without format");
+	}
 
 	if (m_data.pushDescriptor)
 		context.requireDeviceFunctionality("VK_KHR_push_descriptor");
+
+	if (m_data.viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY && !features2.features.imageCubeArray)
+		TCU_THROW(NotSupportedError, "Cube array image view type not supported");
+
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getDeviceFeatures().robustBufferAccess)
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: robustBufferAccess not supported by this implementation");
 }
 
 void generateLayout(Layout &layout, const CaseDef &caseDef)

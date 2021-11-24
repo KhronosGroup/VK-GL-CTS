@@ -30,6 +30,10 @@
 #include "vkRef.hpp"
 #include "vkCmdUtil.hpp"
 
+#include <vector>
+#include <algorithm>
+#include <iterator>
+
 namespace vkt
 {
 namespace synchronization
@@ -99,6 +103,38 @@ tcu::TestStatus basicOneFenceCase (Context& context)
 		return tcu::TestStatus::fail("Fence after reset should be in unsignaled state");
 
 	return tcu::TestStatus::pass("Basic one fence tests passed");
+}
+
+tcu::TestStatus basicSignaledCase (Context& context, uint32_t numFences)
+{
+	const auto&		vkd			= context.getDeviceInterface();
+	const auto		device		= context.getDevice();
+
+	std::vector<Move<VkFence>> fences;
+	fences.reserve(numFences);
+
+	const VkFenceCreateInfo fenceCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	//	VkStructureType		sType;
+		nullptr,								//	const void*			pNext;
+		VK_FENCE_CREATE_SIGNALED_BIT,			//	VkFenceCreateFlags	flags;
+	};
+
+	for (uint32_t i = 0u; i < numFences; ++i)
+	{
+		fences.push_back(createFence(vkd, device, &fenceCreateInfo));
+		if (vkd.getFenceStatus(device, fences.back().get()) != VK_SUCCESS)
+			TCU_FAIL("Fence was not created signaled");
+	}
+
+	std::vector<VkFence> rawFences;
+	std::transform(begin(fences), end(fences), std::back_inserter(rawFences), [](const Move<VkFence>& f) { return f.get(); });
+
+	const auto waitResult = vkd.waitForFences(device, static_cast<uint32_t>(rawFences.size()), de::dataOrNull(rawFences), VK_TRUE, LONG_FENCE_WAIT);
+	if (waitResult != VK_SUCCESS)
+		TCU_FAIL("vkWaitForFences failed with exit status " + std::to_string(waitResult));
+
+	return tcu::TestStatus::pass("Pass");
 }
 
 tcu::TestStatus basicMultiFenceCase (Context& context)
@@ -296,6 +332,8 @@ tcu::TestCaseGroup* createBasicFenceTests (tcu::TestContext& testCtx)
 	addFunctionCase(basicFenceTests.get(),	"multi",				"Basic multi fence tests",							basicMultiFenceCase);
 	addFunctionCase(basicFenceTests.get(),	"empty_submit",			"Signal a fence after an empty queue submission",	emptySubmitCase);
 	addFunctionCase(basicFenceTests.get(),	"multi_waitall_false",	"Basic multi fence test without waitAll",			basicMultiFenceWaitAllFalseCase);
+	addFunctionCase(basicFenceTests.get(),	"one_signaled",			"Create a single signaled fence and wait on it",	basicSignaledCase, 1u);
+	addFunctionCase(basicFenceTests.get(),	"multiple_signaled",	"Create multiple signaled fences and wait on them",	basicSignaledCase, 10u);
 
 	return basicFenceTests.release();
 }

@@ -94,6 +94,37 @@ VkMemoryRequirements getBufferMemoryRequirements2 (const DeviceInterface& vk, co
 	return req2.memoryRequirements;
 }
 
+VkMemoryRequirements getBufferCreateInfoMemoryRequirementsKHR (const DeviceInterface& vk, const VkDevice device, const VkDeviceSize size, const VkBufferCreateFlags flags, const VkBufferUsageFlags usage, void* next = DE_NULL)
+{
+	const VkBufferCreateInfo createInfo =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType        sType;
+		DE_NULL,									// const void*            pNext;
+		flags,										// VkBufferCreateFlags    flags;
+		size,										// VkDeviceSize           size;
+		usage,										// VkBufferUsageFlags     usage;
+		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode          sharingMode;
+		0u,											// uint32_t               queueFamilyIndexCount;
+		DE_NULL,									// const uint32_t*        pQueueFamilyIndices;
+	};
+	const VkDeviceBufferMemoryRequirementsKHR memoryInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS_KHR,
+		DE_NULL,
+		&createInfo
+	};
+	VkMemoryRequirements2				req2	=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,				// VkStructureType		sType
+		next,														// void*				pNext
+		{0, 0, 0}													// VkMemoryRequirements	memoryRequirements
+	};
+
+	vk.getDeviceBufferMemoryRequirementsKHR(device, &memoryInfo, &req2);
+
+	return req2.memoryRequirements;
+}
+
 VkMemoryRequirements getImageMemoryRequirements2 (const DeviceInterface& vk, const VkDevice device, const VkImageCreateInfo& createInfo, void* next = DE_NULL)
 {
 	const Unique<VkImage> image(createImage(vk, device, &createInfo));
@@ -114,6 +145,64 @@ VkMemoryRequirements getImageMemoryRequirements2 (const DeviceInterface& vk, con
 	vk.getImageMemoryRequirements2(device, &info, &req2);
 
 	return req2.memoryRequirements;
+}
+
+VkMemoryRequirements getDeviceImageMemoryRequirementsKHR (const DeviceInterface& vk, const VkDevice device, const VkImageCreateInfo& createInfo, void* next = DE_NULL)
+{
+	VkDeviceImageMemoryRequirementsKHR info =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR,
+		DE_NULL,
+		&createInfo,
+		VkImageAspectFlagBits(0)
+	};
+	VkMemoryRequirements2				req2	=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,				// VkStructureType		sType
+		next,														// void*				pNext
+		{0, 0, 0}													// VkMemoryRequirements	memoryRequirements
+	};
+
+	vk.getDeviceImageMemoryRequirementsKHR(device, &info, &req2);
+
+	return req2.memoryRequirements;
+}
+
+std::vector<VkSparseImageMemoryRequirements> getImageCreateInfoSparseMemoryRequirements (const DeviceInterface& vk, VkDevice device, const VkImageCreateInfo& createInfo)
+{
+	VkDeviceImageMemoryRequirementsKHR info =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR,
+		DE_NULL,
+		&createInfo,
+		VkImageAspectFlagBits(0)
+	};
+	deUint32										requirementsCount = 0;
+	std::vector<VkSparseImageMemoryRequirements>	requirements;
+	std::vector<VkSparseImageMemoryRequirements2>	requirements2;
+
+	vk.getDeviceImageSparseMemoryRequirementsKHR(device, &info, &requirementsCount, DE_NULL);
+
+	if (requirementsCount > 0)
+	{
+		requirements2.resize(requirementsCount);
+		for (deUint32 ndx = 0; ndx < requirementsCount; ++ndx)
+		{
+			requirements2[ndx].sType = VK_STRUCTURE_TYPE_SPARSE_IMAGE_MEMORY_REQUIREMENTS_2;
+			requirements2[ndx].pNext = DE_NULL;
+		}
+
+		vk.getDeviceImageSparseMemoryRequirementsKHR(device, &info, &requirementsCount, &requirements2[0]);
+
+		if ((size_t)requirementsCount != requirements2.size())
+			TCU_FAIL("Returned sparse image memory requirements count changes between queries");
+
+		requirements.resize(requirementsCount);
+		for (deUint32 ndx = 0; ndx < requirementsCount; ++ndx)
+			requirements[ndx] = requirements2[ndx].memoryRequirements;
+	}
+
+	return requirements;
 }
 
 //! Get an index of each set bit, starting from the least significant bit.
@@ -587,15 +676,110 @@ void BufferMemoryRequirementsDedicatedAllocation::verifyMemoryRequirements (tcu:
 		"Regular (non-shared) objects must not require dedicated allocations");
 }
 
+class BufferMemoryRequirementsCreateInfo : public BufferMemoryRequirementsOriginal
+{
+	static tcu::TestStatus testEntryPoint	(Context&									context,
+											 const VkBufferCreateFlags					bufferFlags);
+
+protected:
+	virtual void addFunctionTestCase		(tcu::TestCaseGroup*						group,
+											 const std::string&							name,
+											 const std::string&							desc,
+											 VkBufferCreateFlags						arg0);
+
+	virtual void updateMemoryRequirements	(const DeviceInterface&						vk,
+											 const VkDevice								device,
+											 const VkDeviceSize							size,
+											 const VkBufferCreateFlags					flags,
+											 const VkBufferUsageFlags					usage,
+											 const bool									all);
+
+	virtual void verifyMemoryRequirements	(tcu::ResultCollector&						result,
+											 const VkPhysicalDeviceMemoryProperties&	deviceMemoryProperties,
+											 const VkPhysicalDeviceLimits&				limits,
+											 const VkBufferCreateFlags					bufferFlags,
+											 const VkBufferUsageFlags					usage);
+
+protected:
+	VkMemoryRequirements	m_currentTestOriginalRequirements;
+	VkMemoryRequirements	m_currentTestHalfRequirements;
+};
+
+
+tcu::TestStatus BufferMemoryRequirementsCreateInfo::testEntryPoint(Context& context, const VkBufferCreateFlags bufferFlags)
+{
+	BufferMemoryRequirementsCreateInfo test;
+
+	return test.execTest(context, bufferFlags);
+}
+
+void checkSupportBufferMemoryRequirementsCreateInfo (Context& context, VkBufferCreateFlags flags)
+{
+	checkSupportBufferMemoryRequirementsExtended(context, flags);
+
+	context.requireDeviceFunctionality("VK_KHR_maintenance4");
+}
+
+void BufferMemoryRequirementsCreateInfo::addFunctionTestCase(tcu::TestCaseGroup*	group,
+															 const std::string&		name,
+															 const std::string&		desc,
+															 VkBufferCreateFlags	arg0)
+{
+	addFunctionCase(group, name, desc, checkSupportBufferMemoryRequirementsCreateInfo, testEntryPoint, arg0);
+}
+
+void BufferMemoryRequirementsCreateInfo::updateMemoryRequirements	(const DeviceInterface&		vk,
+																	 const VkDevice				device,
+																	 const VkDeviceSize			size,
+																	 const VkBufferCreateFlags	flags,
+																	 const VkBufferUsageFlags	usage,
+																	 const bool					all)
+{
+	if (all)
+	{
+		m_allUsageFlagsRequirements		= getBufferCreateInfoMemoryRequirementsKHR(vk, device, size, flags, usage);
+	}
+	else
+	{
+		m_currentTestRequirements		= getBufferCreateInfoMemoryRequirementsKHR(vk, device, size, flags, usage);
+		m_currentTestHalfRequirements	= getBufferCreateInfoMemoryRequirementsKHR(vk, device, size / 2, flags, usage);
+	}
+
+	m_currentTestOriginalRequirements = getBufferMemoryRequirements(vk, device, size, flags, usage);
+}
+
+void BufferMemoryRequirementsCreateInfo::verifyMemoryRequirements	(tcu::ResultCollector&						result,
+																	 const VkPhysicalDeviceMemoryProperties&	deviceMemoryProperties,
+																	 const VkPhysicalDeviceLimits&				limits,
+																	 const VkBufferCreateFlags					bufferFlags,
+																	 const VkBufferUsageFlags					usage)
+{
+	BufferMemoryRequirementsOriginal::verifyMemoryRequirements(result, deviceMemoryProperties, limits, bufferFlags, usage);
+
+	result.check(m_currentTestRequirements.alignment == m_currentTestOriginalRequirements.alignment,
+			"VkMemoryRequirements alignment queried from vkBufferCreateInfo does not match alignment from equivalent object");
+
+	result.check(m_currentTestRequirements.memoryTypeBits == m_currentTestOriginalRequirements.memoryTypeBits,
+			"VkMemoryRequirements memoryTypeBits queried from vkBufferCreateInfo does not match memoryTypeBits from equivalent object");
+
+	result.check(m_currentTestRequirements.size == m_currentTestOriginalRequirements.size,
+			"VkMemoryRequirements size queried from vkBufferCreateInfo does not match size from equivalent object");
+
+	result.check(m_currentTestRequirements.size >= m_currentTestHalfRequirements.size,
+			"VkMemoryRequirements size queried from vkBufferCreateInfo is larger for a smaller buffer");
+}
+
 
 struct ImageTestParams
 {
 	ImageTestParams (VkImageCreateFlags		flags_,
 					 VkImageTiling			tiling_,
-					 bool					transient_)
+					 bool					transient_,
+					 bool					useMaint4_ = false)
 	: flags		(flags_)
 	, tiling	(tiling_)
 	, transient	(transient_)
+	, useMaint4	(useMaint4_)
 	{
 	}
 
@@ -606,6 +790,7 @@ struct ImageTestParams
 	VkImageCreateFlags		flags;
 	VkImageTiling			tiling;
 	bool					transient;
+	bool					useMaint4;
 };
 
 class IImageMemoryRequirements
@@ -662,8 +847,9 @@ private:
 											 const VkImageAspectFlags					aspect);
 
 protected:
-	VkImageCreateInfo		m_currentTestImageInfo;
-	VkMemoryRequirements	m_currentTestRequirements;
+	VkImageCreateInfo								m_currentTestImageInfo;
+	VkMemoryRequirements							m_currentTestRequirements;
+	std::vector<VkSparseImageMemoryRequirements>	m_currentTestSparseRequirements;
 };
 
 
@@ -701,6 +887,7 @@ void ImageMemoryRequirementsOriginal::populateTestGroup (tcu::TestCaseGroup* gro
 
 		params.flags		=  imageFlagsCases[flagsNdx].flags;
 		params.transient	=  imageFlagsCases[flagsNdx].transient;
+		params.useMaint4	=  false;
 		caseName			<< imageFlagsCases[flagsNdx].name;
 
 		if (tilingNdx != 0)
@@ -751,6 +938,9 @@ void ImageMemoryRequirementsOriginal::updateMemoryRequirements	(const DeviceInte
 	const Unique<VkImage> image(createImage(vk, device, &m_currentTestImageInfo));
 
 	m_currentTestRequirements = getImageMemoryRequirements(vk, device, *image);
+
+	if (m_currentTestImageInfo.flags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT)
+		m_currentTestSparseRequirements = getImageSparseMemoryRequirements(vk, device, *image);
 }
 
 void ImageMemoryRequirementsOriginal::verifyMemoryRequirements (tcu::ResultCollector&					result,
@@ -794,6 +984,15 @@ void ImageMemoryRequirementsOriginal::verifyMemoryRequirements (tcu::ResultColle
 
 		result.check(m_currentTestImageInfo.tiling == VK_IMAGE_TILING_OPTIMAL || hostVisibleCoherentMemoryFound,
 			"Required memory type doesn't include VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT and VK_MEMORY_PROPERTY_HOST_COHERENT_BIT");
+
+		if (m_currentTestImageInfo.flags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT)
+		{
+			for (const VkSparseImageMemoryRequirements &sparseRequirements : m_currentTestSparseRequirements)
+			{
+				result.check((sparseRequirements.imageMipTailSize % m_currentTestRequirements.alignment) == 0,
+					"VkSparseImageMemoryRequirements imageMipTailSize is not aligned with sparse block size");
+			}
+		}
 	}
 }
 
@@ -979,6 +1178,9 @@ bool ImageMemoryRequirementsOriginal::isImageSupported (const Context& context, 
 			return false;
 	}
 
+	if ((info.flags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT) && !checkSparseImageFormatSupport(physDevice, vki, info))
+		return false;
+
 	return result == VK_SUCCESS;
 }
 
@@ -992,6 +1194,20 @@ VkExtent3D makeExtentForImage (const VkImageType imageType)
 		extent.depth = 1u;
 
 	return extent;
+}
+
+VkExtent3D halfExtentForImage (const VkImageType imageType, VkExtent3D extent)
+{
+	VkExtent3D halfExtent = extent;
+
+	if (imageType == VK_IMAGE_TYPE_1D)
+		halfExtent.width /= 2;
+	else if (imageType == VK_IMAGE_TYPE_2D)
+		halfExtent.height /= 2;
+	else
+		halfExtent.depth /= 2;
+
+	return halfExtent;
 }
 
 bool ImageMemoryRequirementsOriginal::isFormatMatchingAspect (const VkFormat format, const VkImageAspectFlags aspect)
@@ -1477,6 +1693,126 @@ void ImageMemoryRequirementsDedicatedAllocation::verifyMemoryRequirements (tcu::
 		"Test design expects m_currentTestRequiresDedicatedAllocation to be false");
 }
 
+class ImageMemoryRequirementsCreateInfo : public ImageMemoryRequirementsExtended
+{
+public:
+	static tcu::TestStatus testEntryPoint	(Context&									context,
+											 const ImageTestParams						params);
+
+protected:
+	virtual void addFunctionTestCase		(tcu::TestCaseGroup*						group,
+											 const std::string&							name,
+											 const std::string&							desc,
+											 const ImageTestParams						arg0);
+
+	virtual void updateMemoryRequirements	(const DeviceInterface&						vk,
+											 const VkDevice								device);
+
+	virtual void verifyMemoryRequirements	(tcu::ResultCollector&						result,
+											 const VkPhysicalDeviceMemoryProperties&	deviceMemoryProperties);
+
+	VkMemoryRequirements							m_currentTestOriginalRequirements;
+	VkMemoryRequirements							m_currentTestHalfRequirements;
+	std::vector<VkSparseImageMemoryRequirements>	m_currentTestOriginalSparseRequirements;
+};
+
+
+tcu::TestStatus ImageMemoryRequirementsCreateInfo::testEntryPoint (Context& context, const ImageTestParams params)
+{
+	ImageMemoryRequirementsCreateInfo test;
+
+	return test.execTest(context, params);
+}
+
+void checkSupportImageMemoryRequirementsCreateInfo (Context& context, ImageTestParams params)
+{
+	checkSupportImageMemoryRequirementsExtended(context, params);
+
+	context.requireDeviceFunctionality("VK_KHR_maintenance4");
+}
+
+void ImageMemoryRequirementsCreateInfo::addFunctionTestCase (tcu::TestCaseGroup*	group,
+															 const std::string&		name,
+															 const std::string&		desc,
+															 const ImageTestParams	arg0)
+{
+	addFunctionCase(group, name, desc, checkSupportImageMemoryRequirementsCreateInfo, testEntryPoint, arg0);
+}
+
+void ImageMemoryRequirementsCreateInfo::updateMemoryRequirements (const DeviceInterface&	vk,
+																  const VkDevice			device)
+{
+	m_currentTestRequirements = getDeviceImageMemoryRequirementsKHR(vk, device, m_currentTestImageInfo);
+
+	const Unique<VkImage> image(createImage(vk, device, &m_currentTestImageInfo));
+	m_currentTestOriginalRequirements = getImageMemoryRequirements(vk, device, *image);
+
+	VkImageCreateInfo halfImageCreateInfo = m_currentTestImageInfo;
+	halfImageCreateInfo.extent = halfExtentForImage(m_currentTestImageInfo.imageType, m_currentTestImageInfo.extent);
+	m_currentTestHalfRequirements = getDeviceImageMemoryRequirementsKHR(vk, device, halfImageCreateInfo);
+
+	if (m_currentTestImageInfo.flags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT)
+	{
+		m_currentTestSparseRequirements = getImageCreateInfoSparseMemoryRequirements(vk, device, m_currentTestImageInfo);
+		m_currentTestOriginalSparseRequirements = getImageSparseMemoryRequirements(vk, device, *image);
+	}
+}
+
+void ImageMemoryRequirementsCreateInfo::verifyMemoryRequirements (tcu::ResultCollector&					result,
+																  const VkPhysicalDeviceMemoryProperties&	deviceMemoryProperties)
+{
+	ImageMemoryRequirementsOriginal::verifyMemoryRequirements(result, deviceMemoryProperties);
+
+	result.check(m_currentTestRequirements.alignment == m_currentTestOriginalRequirements.alignment,
+			"VkMemoryRequirements alignment queried from vkImageCreateInfo differs from equivalent object query");
+
+	result.check(m_currentTestRequirements.memoryTypeBits == m_currentTestOriginalRequirements.memoryTypeBits,
+			"VkMemoryRequirements memoryTypeBits queried from vkImageCreateInfo differs from equivalent object query");
+
+	result.check(m_currentTestRequirements.size == m_currentTestOriginalRequirements.size,
+			"VkMemoryRequirements size queried from vkImageCreateInfo differs from equivalent object query");
+
+	result.check(m_currentTestRequirements.size >= m_currentTestHalfRequirements.size,
+			"VkMemoryRequirements size queried from vkImageCreateInfo is larger for a smaller image");
+
+	if (m_currentTestImageInfo.flags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT)
+	{
+		result.check(m_currentTestSparseRequirements.size() == m_currentTestOriginalSparseRequirements.size(),
+			"VkSparseImageMemoryRequirements count queried from vkImageCreateInfo differs from equivalent object query");
+
+		for (deUint32 ndx = 0; ndx < m_currentTestSparseRequirements.size(); ++ndx)
+		{
+			const VkSparseImageMemoryRequirements &sparseRequirementsFromCreateInfo	= m_currentTestSparseRequirements[ndx];
+			const VkSparseImageMemoryRequirements &sparseRequirementsFromObject		= m_currentTestOriginalSparseRequirements[ndx];
+
+			result.check(sparseRequirementsFromCreateInfo.formatProperties.aspectMask == sparseRequirementsFromObject.formatProperties.aspectMask,
+				"VkSparseImageMemoryRequirements aspectMask queried from vkImageCreateInfo differs from equivalent object query");
+
+			result.check(sparseRequirementsFromCreateInfo.formatProperties.flags == sparseRequirementsFromObject.formatProperties.flags,
+				"VkSparseImageMemoryRequirements flags queried from vkImageCreateInfo differs from equivalent object query");
+
+			result.check(sparseRequirementsFromCreateInfo.formatProperties.imageGranularity.width == sparseRequirementsFromObject.formatProperties.imageGranularity.width,
+				"VkSparseImageMemoryRequirements imageGranularity queried from vkImageCreateInfo differs from equivalent object query");
+			result.check(sparseRequirementsFromCreateInfo.formatProperties.imageGranularity.height == sparseRequirementsFromObject.formatProperties.imageGranularity.height,
+				"VkSparseImageMemoryRequirements imageGranularity queried from vkImageCreateInfo differs from equivalent object query");
+			result.check(sparseRequirementsFromCreateInfo.formatProperties.imageGranularity.depth == sparseRequirementsFromObject.formatProperties.imageGranularity.depth,
+				"VkSparseImageMemoryRequirements imageGranularity queried from vkImageCreateInfo differs from equivalent object query");
+
+			result.check(sparseRequirementsFromCreateInfo.imageMipTailFirstLod == sparseRequirementsFromObject.imageMipTailFirstLod,
+				"VkSparseImageMemoryRequirements imageMipTailFirstLod queried from vkImageCreateInfo differs from equivalent object query");
+
+			result.check(sparseRequirementsFromCreateInfo.imageMipTailSize == sparseRequirementsFromObject.imageMipTailSize,
+				"VkSparseImageMemoryRequirements imageMipTailSize queried from vkImageCreateInfo differs from equivalent object query");
+
+			result.check(sparseRequirementsFromCreateInfo.imageMipTailOffset == sparseRequirementsFromObject.imageMipTailOffset,
+				"VkSparseImageMemoryRequirements imageMipTailOffset queried from vkImageCreateInfo differs from equivalent object query");
+
+			result.check(sparseRequirementsFromCreateInfo.imageMipTailStride == sparseRequirementsFromObject.imageMipTailStride,
+				"VkSparseImageMemoryRequirements imageMipTailStride queried from vkImageCreateInfo differs from equivalent object query");
+		}
+	}
+}
+
 void populateCoreTestGroup (tcu::TestCaseGroup* group)
 {
 	BufferMemoryRequirementsOriginal	bufferTest;
@@ -1616,33 +1952,48 @@ tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
 
 			if (isMultiplaneImageSupported(vki, physicalDevice, imageInfo))
 			{
-				const Unique<VkImage>			image			(createImage(vk, device, &imageInfo));
+				const Unique<VkImage>			image			((params.useMaint4) ? Move<VkImage>() : createImage(vk, device, &imageInfo));
 
 				log << tcu::TestLog::Message << "- " << getImageInfoString(imageInfo) << tcu::TestLog::EndMessage;
 
 				for (deUint32 planeNdx = 0; planeNdx < (deUint32)getPlaneCount(format); planeNdx++)
 				{
-					const VkImageAspectFlagBits					aspect		= getPlaneAspect(planeNdx);
-					const VkImagePlaneMemoryRequirementsInfo	aspectInfo	=
-					{
-						VK_STRUCTURE_TYPE_IMAGE_PLANE_MEMORY_REQUIREMENTS_INFO_KHR,
-						DE_NULL,
-						aspect
-					};
-					const VkImageMemoryRequirementsInfo2		info		=
-					{
-						VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR,
-						(actualCreateFlags & VK_IMAGE_CREATE_DISJOINT_BIT_KHR) == 0 ? DE_NULL : &aspectInfo,
-						*image
-					};
 					VkMemoryRequirements2						requirements	=
 					{
 						VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,
 						DE_NULL,
 						{ 0u, 0u, 0u }
 					};
+					const VkImageAspectFlagBits					aspect		= getPlaneAspect(planeNdx);
 
-					vk.getImageMemoryRequirements2(device, &info, &requirements);
+					if (params.useMaint4)
+					{
+						const VkDeviceImageMemoryRequirementsKHR	info	=
+						{
+							VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR,
+							DE_NULL,
+							&imageInfo,
+							aspect
+						};
+						vk.getDeviceImageMemoryRequirementsKHR(device, &info, &requirements);
+					}
+					else
+					{
+						const VkImagePlaneMemoryRequirementsInfo	aspectInfo	=
+						{
+							VK_STRUCTURE_TYPE_IMAGE_PLANE_MEMORY_REQUIREMENTS_INFO_KHR,
+							DE_NULL,
+							aspect
+						};
+						const VkImageMemoryRequirementsInfo2		info		=
+						{
+							VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR,
+							(actualCreateFlags & VK_IMAGE_CREATE_DISJOINT_BIT_KHR) == 0 ? DE_NULL : &aspectInfo,
+							*image
+						};
+
+						vk.getImageMemoryRequirements2(device, &info, &requirements);
+					}
 
 					log << TestLog::Message << "Aspect: " << getImageAspectFlagsStr(aspect) << ", Requirements: " << requirements << TestLog::EndMessage;
 
@@ -1687,9 +2038,12 @@ void checkSupportMultiplane (Context& context, ImageTestParams params)
 
 	context.requireDeviceFunctionality("VK_KHR_get_memory_requirements2");
 	context.requireDeviceFunctionality("VK_KHR_sampler_ycbcr_conversion");
+
+	if (params.useMaint4)
+		context.requireDeviceFunctionality("VK_KHR_maintenance4");
 }
 
-void populateMultiplaneTestGroup (tcu::TestCaseGroup* group)
+void populateMultiplaneTestGroup (tcu::TestCaseGroup* group, bool useMaint4)
 {
 	const struct
 	{
@@ -1721,7 +2075,7 @@ void populateMultiplaneTestGroup (tcu::TestCaseGroup* group)
 		const VkImageCreateFlags	flags		= imageFlagsCases[flagsNdx].flags;
 		const bool					transient	= imageFlagsCases[flagsNdx].transient;
 		const VkImageTiling			tiling		= tilings[tilingNdx].value;
-		const ImageTestParams		params		(flags, tiling, transient);
+		const ImageTestParams		params		(flags, tiling, transient, useMaint4);
 		const std::string			name		= std::string(imageFlagsCases[flagsNdx].name) + "_" + tilings[tilingNdx].name;
 
 		if (tiling == VK_IMAGE_TILING_LINEAR && (flags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT) != 0)
@@ -1788,6 +2142,24 @@ void populateMemoryPropertyFlagsTestGroup(tcu::TestCaseGroup* group)
 	addFunctionCase(group, "check_all", "", testVkMemoryPropertyFlags);
 }
 
+void populateMultiplaneTestGroup (tcu::TestCaseGroup* group)
+{
+	populateMultiplaneTestGroup(group, false);
+}
+
+void populateCreateInfoTestGroup (tcu::TestCaseGroup* group)
+{
+	BufferMemoryRequirementsCreateInfo			bufferTest;
+	ImageMemoryRequirementsCreateInfo			imageTest;
+
+	bufferTest.populateTestGroup(group);
+	imageTest.populateTestGroup(group);
+
+	de::MovePtr<tcu::TestCaseGroup> multiplaneGroup(new tcu::TestCaseGroup(group->getTestContext(), "multiplane_image", ""));
+	populateMultiplaneTestGroup(multiplaneGroup.get(), true);
+	group->addChild(multiplaneGroup.release());
+}
+
 } // anonymous
 
 
@@ -1800,6 +2172,7 @@ tcu::TestCaseGroup* createRequirementsTests (tcu::TestContext& testCtx)
 	requirementsGroup->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Memory requirements tests with extension VK_KHR_dedicated_allocation",		populateDedicatedAllocationTestGroup));
 	requirementsGroup->addChild(createTestGroup(testCtx, "multiplane_image",		"Memory requirements tests with vkGetImagePlaneMemoryRequirements",			populateMultiplaneTestGroup));
 	requirementsGroup->addChild(createTestGroup(testCtx, "memory_property_flags",	"Memory requirements tests with vkGetPhysicalDeviceMemoryProperties",		populateMemoryPropertyFlagsTestGroup));
+	requirementsGroup->addChild(createTestGroup(testCtx, "create_info",				"Memory requirements tests with extension VK_KHR_maintenance4",				populateCreateInfoTestGroup));
 
 	return requirementsGroup.release();
 }

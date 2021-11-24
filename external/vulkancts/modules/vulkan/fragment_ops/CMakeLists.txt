@@ -5,6 +5,8 @@ set(DEQP_VK_FRAGMENT_OPS_SRCS
 	vktFragmentOperationsEarlyFragmentTests.hpp
 	vktFragmentOperationsMakeUtil.cpp
 	vktFragmentOperationsMakeUtil.hpp
+	vktFragmentOperationsOcclusionQueryTests.cpp
+	vktFragmentOperationsOcclusionQueryTests.hpp
 	vktFragmentOperationsScissorMultiViewportTests.cpp
 	vktFragmentOperationsScissorMultiViewportTests.hpp
 	vktFragmentOperationsScissorTests.cpp

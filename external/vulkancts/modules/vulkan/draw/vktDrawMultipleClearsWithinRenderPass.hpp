@@ -33,13 +33,16 @@ namespace Draw
 class MultipleClearsWithinRenderPassTests : public tcu::TestCaseGroup
 {
 public:
-						MultipleClearsWithinRenderPassTests		(tcu::TestContext &testCtx);
+						MultipleClearsWithinRenderPassTests		(tcu::TestContext &testCtx, bool useDynamicRendering);
 						~MultipleClearsWithinRenderPassTests	();
 	void				init									();
 
 private:
 	MultipleClearsWithinRenderPassTests							(const MultipleClearsWithinRenderPassTests &other);
 	MultipleClearsWithinRenderPassTests&	operator=			(const MultipleClearsWithinRenderPassTests &other);
+
+private:
+	const bool m_useDynamicRendering;
 };
 }
 }

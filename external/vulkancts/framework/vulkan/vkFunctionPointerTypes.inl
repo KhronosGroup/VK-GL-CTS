@@ -201,6 +201,8 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateDisplayModeKHRFunc)											
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDisplayPlaneCapabilitiesKHRFunc)									(VkPhysicalDevice physicalDevice, VkDisplayModeKHR mode, uint32_t planeIndex, VkDisplayPlaneCapabilitiesKHR* pCapabilities);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateDisplayPlaneSurfaceKHRFunc)										(VkInstance instance, const VkDisplaySurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateSharedSwapchainsKHRFunc)											(VkDevice device, uint32_t swapchainCount, const VkSwapchainCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchains);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginRenderingKHRFunc)												(VkCommandBuffer commandBuffer, const VkRenderingInfoKHR* pRenderingInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRenderingKHRFunc)												(VkCommandBuffer commandBuffer);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceFeatures2KHRFunc)										(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures2* pFeatures);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceProperties2KHRFunc)									(VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties2* pProperties);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceFormatProperties2KHRFunc)								(VkPhysicalDevice physicalDevice, VkFormat format, VkFormatProperties2* pFormatProperties);
@@ -283,6 +285,9 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyBufferToImage2KHRFunc)										
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyImageToBuffer2KHRFunc)											(VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2KHR* pCopyImageToBufferInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBlitImage2KHRFunc)													(VkCommandBuffer commandBuffer, const VkBlitImageInfo2KHR* pBlitImageInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdResolveImage2KHRFunc)												(VkCommandBuffer commandBuffer, const VkResolveImageInfo2KHR* pResolveImageInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetDeviceBufferMemoryRequirementsKHRFunc)								(VkDevice device, const VkDeviceBufferMemoryRequirementsKHR* pInfo, VkMemoryRequirements2* pMemoryRequirements);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetDeviceImageMemoryRequirementsKHRFunc)								(VkDevice device, const VkDeviceImageMemoryRequirementsKHR* pInfo, VkMemoryRequirements2* pMemoryRequirements);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetDeviceImageSparseMemoryRequirementsKHRFunc)							(VkDevice device, const VkDeviceImageMemoryRequirementsKHR* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateDebugReportCallbackEXTFunc)										(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyDebugReportCallbackEXTFunc)										(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DebugReportMessageEXTFunc)												(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage);

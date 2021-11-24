@@ -1,6 +1,9 @@
 # Render pass tests
 
-include_directories(..)
+include_directories(
+	..
+	../draw
+	)
 
 set(DEQP_VK_RENDER_PASS_SRCS
 	vktRenderPassTests.cpp
@@ -31,11 +34,14 @@ set(DEQP_VK_RENDER_PASS_SRCS
 	vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.hpp
 	vktRenderPassLoadStoreOpNoneTests.cpp
 	vktRenderPassLoadStoreOpNoneTests.hpp
+	vktDynamicRenderingTests.cpp
+	vktDynamicRenderingTests.hpp
 	)
 
 set(DEQP_VK_RENDER_PASS_LIBS
 	tcutil
 	vkutil
+	deqp-vk-draw
 	)
 
 PCH(DEQP_VK_RENDER_PASS_SRCS ../pch.cpp)

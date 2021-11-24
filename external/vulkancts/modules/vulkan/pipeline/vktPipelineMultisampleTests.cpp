@@ -1000,7 +1000,7 @@ bool isSupportedSampleCount (const InstanceInterface& instanceInterface, VkPhysi
 	return !!(deviceProperties.limits.framebufferColorSampleCounts & rasterizationSamples);
 }
 
-void checkFragmentShadingRateRequirements(Context& context, deUint32 sampleCount)
+bool checkFragmentShadingRateRequirements(Context& context, deUint32 sampleCount)
 {
 	const auto&	vki = context.getInstanceInterface();
 	const auto	physicalDevice = context.getPhysicalDevice();
@@ -1023,20 +1023,15 @@ void checkFragmentShadingRateRequirements(Context& context, deUint32 sampleCount
 		});
 	vki.getPhysicalDeviceFragmentShadingRatesKHR(physicalDevice, &supportedFragmentShadingRateCount, supportedFragmentShadingRates.data());
 
-	bool requiredRateFound = false;
 	for (const auto& rate : supportedFragmentShadingRates)
 	{
 		if ((rate.fragmentSize.width == 2u) &&
 			(rate.fragmentSize.height == 2u) &&
 			(rate.sampleCounts & sampleCount))
-		{
-			requiredRateFound = true;
-			break;
-		}
+			return true;
 	}
 
-	if (!requiredRateFound)
-		TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
+	return false;
 }
 
 VkPipelineColorBlendAttachmentState getDefaultColorBlendAttachmentState (void)
@@ -1308,8 +1303,8 @@ void MultisampleTest::checkSupport (Context& context) const
 	if (m_geometryType == GEOMETRY_TYPE_OPAQUE_POINT && m_pointSize > 1.0f)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_LARGE_POINTS);
 
-	if (m_useFragmentShadingRate)
-		checkFragmentShadingRateRequirements(context, m_multisampleStateParams.rasterizationSamples);
+	if (m_useFragmentShadingRate && !checkFragmentShadingRateRequirements(context, m_multisampleStateParams.rasterizationSamples))
+		TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
 }
 
 // RasterizationSamplesTest
@@ -1703,8 +1698,8 @@ void SampleMaskWithConservativeTest::checkSupport(Context& context) const
 	if (!context.getDeviceProperties().limits.standardSampleLocations)
 		TCU_THROW(NotSupportedError, "standardSampleLocations required");
 
-	if (m_useFragmentShadingRate)
-		checkFragmentShadingRateRequirements(context, m_rasterizationSamples);
+	if (m_useFragmentShadingRate && !checkFragmentShadingRateRequirements(context, m_rasterizationSamples))
+		TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
 
 	if (m_enablePostDepthCoverage)
 		context.requireDeviceFunctionality("VK_EXT_post_depth_coverage");
@@ -1870,7 +1865,8 @@ void SampleMaskWithDepthTestTest::checkSupport (Context& context) const
 		if (!context.getFragmentShadingRateProperties().fragmentShadingRateWithShaderSampleMask)
 			TCU_THROW(NotSupportedError, "fragmentShadingRateWithShaderSampleMask not supported");
 
-		checkFragmentShadingRateRequirements(context, m_rasterizationSamples);
+		if (!checkFragmentShadingRateRequirements(context, m_rasterizationSamples))
+			TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
 	}
 }
 
@@ -2357,7 +2353,10 @@ tcu::TestStatus testRasterSamplesConsistency (Context& context, MultisampleTestP
 		if (!isSupportedSampleCount(context.getInstanceInterface(), context.getPhysicalDevice(), samples[samplesNdx]))
 			continue;
 
-		const VkPipelineMultisampleStateCreateInfo multisampleStateParams =
+		if (params.useFragmentShadingRate && !checkFragmentShadingRateRequirements(context, samples[samplesNdx]))
+			continue;
+
+		const VkPipelineMultisampleStateCreateInfo multisampleStateParams
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType							sType;
 			DE_NULL,													// const void*								pNext;
@@ -2388,7 +2387,11 @@ tcu::TestStatus testRasterSamplesConsistency (Context& context, MultisampleTestP
 	}
 
 	if (renderCount == 0)
-		throw tcu::NotSupportedError("Multisampling is unsupported");
+	{
+		if (params.useFragmentShadingRate && !context.getFragmentShadingRateFeatures().pipelineFragmentShadingRate)
+			TCU_THROW(NotSupportedError, "pipelineFragmentShadingRate is unsupported");
+		TCU_THROW(NotSupportedError, "Multisampling is unsupported");
+	}
 
 	return tcu::TestStatus::pass("Number of unique colors increases as the sample count increases");
 }
@@ -4588,8 +4591,8 @@ void VariableRateTestCase::checkSupport (Context& context) const
 			TCU_THROW(NotSupportedError, "Sample count of " + de::toString(m_params.fbCount) + " not supported for color attachment");
 	}
 
-	if (m_params.useFragmentShadingRate)
-		checkFragmentShadingRateRequirements(context, m_params.fbCount);
+	if (m_params.useFragmentShadingRate && !checkFragmentShadingRateRequirements(context, m_params.fbCount))
+		TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
 }
 
 void zeroOutAndFlush(const vk::DeviceInterface& vkd, vk::VkDevice device, vk::BufferWithMemory& buffer, vk::VkDeviceSize size)

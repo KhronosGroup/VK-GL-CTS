@@ -1,3 +1,11 @@
+dEQP-VK.spirv_assembly.instruction.compute.localsize_id.literal_localsize
+dEQP-VK.spirv_assembly.instruction.compute.localsize_id.literal_and_specid_localsize
+dEQP-VK.spirv_assembly.instruction.compute.localsize_id.literal_localsize_x
+dEQP-VK.spirv_assembly.instruction.compute.localsize_id.literal_and_specid_localsize_x
+dEQP-VK.spirv_assembly.instruction.compute.localsize_id.literal_localsize_y
+dEQP-VK.spirv_assembly.instruction.compute.localsize_id.literal_and_specid_localsize_y
+dEQP-VK.spirv_assembly.instruction.compute.localsize_id.literal_localsize_z
+dEQP-VK.spirv_assembly.instruction.compute.localsize_id.literal_and_specid_localsize_z
 dEQP-VK.spirv_assembly.instruction.compute.opspecconstantop.shiftrightlogical_i64
 dEQP-VK.spirv_assembly.instruction.compute.opspecconstantop.shiftrightarithmetic_i64
 dEQP-VK.spirv_assembly.instruction.compute.opspecconstantop.shiftleftlogical_i64
@@ -1959,6 +1967,10 @@ dEQP-VK.spirv_assembly.instruction.compute.empty_struct.function.global_variable
 dEQP-VK.spirv_assembly.instruction.compute.empty_struct.function.global_variable_shared
 dEQP-VK.spirv_assembly.instruction.compute.empty_struct.function.local_variable
 dEQP-VK.spirv_assembly.instruction.compute.oparraylength.array-stride-larger-than-element-size
+dEQP-VK.spirv_assembly.instruction.compute.physical_storage_buffer.push_constants
+dEQP-VK.spirv_assembly.instruction.compute.physical_storage_buffer.push_constants_function
+dEQP-VK.spirv_assembly.instruction.compute.physical_storage_buffer.vertex_in_out_in
+dEQP-VK.spirv_assembly.instruction.compute.physical_storage_buffer.addrs_in_ssbo
 dEQP-VK.spirv_assembly.instruction.graphics.switch_block_order.switch-case-to-merge-block
 dEQP-VK.spirv_assembly.instruction.graphics.opspecconstantop.shiftrightlogical_i64_vert
 dEQP-VK.spirv_assembly.instruction.graphics.opspecconstantop.shiftrightlogical_i64_tessc

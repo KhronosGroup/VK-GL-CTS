@@ -256,7 +256,7 @@ public:
 					m_context.getTestContext().getLog()
 						<< tcu::TestLog::Message << "Incorrect framebuffer color at pixel (" << x << " " << y
 						<< "). Color is (" << fb[i + 0] / g_color_max[0] << " " << fb[i + 1] / g_color_max[1] << " "
-						<< fb[i + 2] / g_color_max[2] << "Color should be (" << expected[0] << " " << expected[1] << " "
+						<< fb[i + 2] / g_color_max[2] << "). Color should be (" << expected[0] << " " << expected[1] << " "
 						<< expected[2] << ")." << tcu::TestLog::EndMessage;
 					return false;
 				}

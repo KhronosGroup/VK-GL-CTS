@@ -63,12 +63,16 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineMultisampleShaderFragmentMaskTests.hpp
 	vktPipelineInputAssemblyTests.cpp
 	vktPipelineInputAssemblyTests.hpp
+	vktPipelineInterfaceMatchingTests.cpp
+	vktPipelineInterfaceMatchingTests.hpp
 	vktPipelineReferenceRenderer.cpp
 	vktPipelineReferenceRenderer.hpp
 	vktPipelineRenderToImageTests.cpp
 	vktPipelineRenderToImageTests.hpp
 	vktPipelineFramebufferAttachmentTests.cpp
 	vktPipelineFramebufferAttachmentTests.hpp
+	vktPipelineSamplerBorderSwizzleTests.cpp
+	vktPipelineSamplerBorderSwizzleTests.hpp
 	vktPipelineSamplerTests.cpp
 	vktPipelineSamplerTests.hpp
 	vktPipelineStencilExportTests.cpp

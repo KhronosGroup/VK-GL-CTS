@@ -10,3 +10,6 @@ dEQP-VK.glsl.texture_functions.texturegrad.sparse_samplercubeshadow_vertex
 
 # b/135200048: Compile time is unreasonable on low-end parts, revisit for R
 dEQP-VK.ssbo.layout.random.scalar.75
+
+# b/156595708: Randomly generated shader is unusually large compared to the others.
+dEQP-VK.ssbo.phys.layout.random.16bit.scalar.13

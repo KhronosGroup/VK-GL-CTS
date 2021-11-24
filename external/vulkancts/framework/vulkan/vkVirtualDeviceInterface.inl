@@ -160,6 +160,8 @@ virtual VkResult			getDeviceGroupPresentCapabilitiesKHR			(VkDevice device, VkDe
 virtual VkResult			getDeviceGroupSurfacePresentModesKHR			(VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHR* pModes) const = 0;
 virtual VkResult			acquireNextImage2KHR							(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex) const = 0;
 virtual VkResult			createSharedSwapchainsKHR						(VkDevice device, uint32_t swapchainCount, const VkSwapchainCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchains) const = 0;
+virtual void				cmdBeginRenderingKHR							(VkCommandBuffer commandBuffer, const VkRenderingInfoKHR* pRenderingInfo) const = 0;
+virtual void				cmdEndRenderingKHR								(VkCommandBuffer commandBuffer) const = 0;
 virtual VkResult			getMemoryFdKHR									(VkDevice device, const VkMemoryGetFdInfoKHR* pGetFdInfo, int* pFd) const = 0;
 virtual VkResult			getMemoryFdPropertiesKHR						(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, int fd, VkMemoryFdPropertiesKHR* pMemoryFdProperties) const = 0;
 virtual VkResult			importSemaphoreFdKHR							(VkDevice device, const VkImportSemaphoreFdInfoKHR* pImportSemaphoreFdInfo) const = 0;
@@ -195,6 +197,9 @@ virtual void				cmdCopyBufferToImage2KHR						(VkCommandBuffer commandBuffer, co
 virtual void				cmdCopyImageToBuffer2KHR						(VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2KHR* pCopyImageToBufferInfo) const = 0;
 virtual void				cmdBlitImage2KHR								(VkCommandBuffer commandBuffer, const VkBlitImageInfo2KHR* pBlitImageInfo) const = 0;
 virtual void				cmdResolveImage2KHR								(VkCommandBuffer commandBuffer, const VkResolveImageInfo2KHR* pResolveImageInfo) const = 0;
+virtual void				getDeviceBufferMemoryRequirementsKHR			(VkDevice device, const VkDeviceBufferMemoryRequirementsKHR* pInfo, VkMemoryRequirements2* pMemoryRequirements) const = 0;
+virtual void				getDeviceImageMemoryRequirementsKHR				(VkDevice device, const VkDeviceImageMemoryRequirementsKHR* pInfo, VkMemoryRequirements2* pMemoryRequirements) const = 0;
+virtual void				getDeviceImageSparseMemoryRequirementsKHR		(VkDevice device, const VkDeviceImageMemoryRequirementsKHR* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements) const = 0;
 virtual VkResult			debugMarkerSetObjectTagEXT						(VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const = 0;
 virtual VkResult			debugMarkerSetObjectNameEXT						(VkDevice device, const VkDebugMarkerObjectNameInfoEXT* pNameInfo) const = 0;
 virtual void				cmdDebugMarkerBeginEXT							(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const = 0;

@@ -71,6 +71,12 @@ enum Constants
 	MIN_MAX_VIEWPORTS = 16,				//!< Minimum number of viewports for an implementation supporting multiViewport.
 };
 
+struct TestParams
+{
+	int		numLayers;
+	bool	useDynamicRendering;
+};
+
 template<typename T>
 inline VkDeviceSize sizeInBytes(const std::vector<T>& vec)
 {
@@ -298,7 +304,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		3,																// uint32_t									patchControlPoints;
 	};
 
-	const VkGraphicsPipelineCreateInfo graphicsPipelineInfo =
+	VkGraphicsPipelineCreateInfo graphicsPipelineInfo
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,					// VkStructureType									sType;
 		DE_NULL,															// const void*										pNext;
@@ -321,6 +327,22 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		0,																	// deInt32											basePipelineIndex;
 	};
 
+	VkFormat colorAttachmentFormat = VK_FORMAT_R8G8B8A8_UNORM;
+	VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+		DE_NULL,
+		0u,
+		1u,
+		&colorAttachmentFormat,
+		VK_FORMAT_UNDEFINED,
+		VK_FORMAT_UNDEFINED
+	};
+
+	// when pipeline is created without render pass we are using dynamic rendering
+	if (renderPass == DE_NULL)
+		graphicsPipelineInfo.pNext = &renderingCreateInfo;
+
 	return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
 }
 
@@ -340,9 +362,9 @@ tcu::TextureLevel generateReferenceImage (const tcu::TextureFormat	format,
 	return image;
 }
 
-void initVertexTestPrograms (SourceCollections& programCollection, const int numViewports)
+void initVertexTestPrograms (SourceCollections& programCollection, const TestParams params)
 {
-	DE_UNREF(numViewports);
+	DE_UNREF(params.numLayers);
 
 	// Vertex shader
 	{
@@ -381,9 +403,9 @@ void initVertexTestPrograms (SourceCollections& programCollection, const int num
 	}
 }
 
-void initTessellationTestPrograms (SourceCollections& programCollection, const int numViewports)
+void initTessellationTestPrograms (SourceCollections& programCollection, const TestParams params)
 {
-	DE_UNREF(numViewports);
+	DE_UNREF(params.numLayers);
 
 	// Vertex shader
 	{
@@ -586,13 +608,15 @@ public:
 	};
 
 	Renderer (Context&									context,
+			  const bool								useDynamicRendering,
 			  const UVec2&								renderSize,
 			  const int									numLayers,
 			  const VkFormat							colorFormat,
 			  const Vec4&								clearColor,
 			  const std::vector<PositionColorVertex>&	vertices,
 			  const Shader								shader)
-		: m_renderSize				(renderSize)
+		: m_useDynamicRendering		(useDynamicRendering)
+		, m_renderSize				(renderSize)
 		, m_colorFormat				(colorFormat)
 		, m_colorSubresourceRange	(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, numLayers))
 		, m_clearColor				(clearColor)
@@ -622,11 +646,17 @@ public:
 
 		m_vertexModule		= createShaderModule	(vk, device, context.getBinaryCollection().get("vert"), 0u);
 		m_fragmentModule	= createShaderModule	(vk, device, context.getBinaryCollection().get("frag"), 0u);
-		m_renderPass		= makeRenderPass		(vk, device, m_colorFormat);
-		m_framebuffer		= makeFramebuffer		(vk, device, *m_renderPass, m_colorAttachment.get(),
+
+		if (!m_useDynamicRendering)
+		{
+			m_renderPass	= makeRenderPass		(vk, device, m_colorFormat);
+
+			m_framebuffer	= makeFramebuffer		(vk, device, *m_renderPass, m_colorAttachment.get(),
 													 static_cast<deUint32>(m_renderSize.x()),
 													 static_cast<deUint32>(m_renderSize.y()),
 													 numLayers);
+		}
+
 		m_pipelineLayout	= makePipelineLayout	(vk, device);
 		m_pipeline			= makeGraphicsPipeline	(vk, device, *m_pipelineLayout, *m_renderPass, *m_vertexModule, *m_tessellationControlModule,
 													 *m_tessellationEvaluationModule, *m_fragmentModule, m_renderSize);
@@ -648,17 +678,27 @@ public:
 			makeOffset2D(0, 0),
 			makeExtent2D(m_renderSize.x(), m_renderSize.y()),
 		};
-		const VkRenderPassBeginInfo renderPassBeginInfo =
+
+		if (m_useDynamicRendering)
 		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// VkStructureType         sType;
-			DE_NULL,										// const void*             pNext;
-			*m_renderPass,									// VkRenderPass            renderPass;
-			*m_framebuffer,									// VkFramebuffer           framebuffer;
-			renderArea,										// VkRect2D                renderArea;
-			1u,												// uint32_t                clearValueCount;
-			&clearValue,									// const VkClearValue*     pClearValues;
-		};
-		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			initialTransitionColor2DImage(vk, *m_cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+										  VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+			beginRendering(vk, *m_cmdBuffer, *m_colorAttachment, renderArea, clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR, 0, m_numLayers);
+		}
+		else
+		{
+			const VkRenderPassBeginInfo renderPassBeginInfo =
+			{
+				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// VkStructureType         sType;
+				DE_NULL,										// const void*             pNext;
+				*m_renderPass,									// VkRenderPass            renderPass;
+				*m_framebuffer,									// VkFramebuffer           framebuffer;
+				renderArea,										// VkRect2D                renderArea;
+				1u,												// uint32_t                clearValueCount;
+				&clearValue,									// const VkClearValue*     pClearValues;
+			};
+			vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		}
 
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 		{
@@ -667,7 +707,11 @@ public:
 			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
 		}
 		vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_numLayers * 6), 1u, 0u, 0u);	// two triangles per layer
-		vk.cmdEndRenderPass(*m_cmdBuffer);
+
+		if (m_useDynamicRendering)
+			endRendering(vk, *m_cmdBuffer);
+		else
+			vk.cmdEndRenderPass(*m_cmdBuffer);
 
 		copyImageToBuffer(vk, *m_cmdBuffer, *m_colorImage, colorBuffer, tcu::IVec2(m_renderSize.x(), m_renderSize.y()), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, m_colorSubresourceRange.layerCount);
 
@@ -676,6 +720,7 @@ public:
 	}
 
 private:
+	const bool								m_useDynamicRendering;
 	const UVec2								m_renderSize;
 	const VkFormat							m_colorFormat;
 	const VkImageSubresourceRange			m_colorSubresourceRange;
@@ -703,10 +748,13 @@ private:
 	Renderer&	operator=	(const Renderer&);
 };
 
-void checkRequirements (Context& context, const int)
+void checkRequirements (Context& context, const TestParams params)
 {
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_VIEWPORT);
 	context.requireDeviceFunctionality("VK_EXT_shader_viewport_index_layer");
+
+	if (params.useDynamicRendering)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
 	const VkPhysicalDeviceLimits	limits	= context.getDeviceProperties().limits;
 
@@ -717,7 +765,7 @@ void checkRequirements (Context& context, const int)
 		TCU_FAIL("multiViewport supported but maxViewports is less than the minimum required");
 }
 
-tcu::TestStatus testVertexShader (Context& context, const int numLayers)
+tcu::TestStatus testVertexShader (Context& context, const TestParams params)
 {
 	const DeviceInterface&					vk					= context.getDeviceInterface();
 	const VkDevice							device				= context.getDevice();
@@ -726,11 +774,11 @@ tcu::TestStatus testVertexShader (Context& context, const int numLayers)
 	const UVec2								renderSize			(256, 256);
 	const VkFormat							colorFormat			= VK_FORMAT_R8G8B8A8_UNORM;
 	const Vec4								clearColor			(0.5f, 0.5f, 0.5f, 1.0f);
-	const std::vector<UVec4>				grid				= generateGrid(numLayers, renderSize);
-	const std::vector<Vec4>					colors				= generateColors(numLayers);
+	const std::vector<UVec4>				grid				= generateGrid(params.numLayers, renderSize);
+	const std::vector<Vec4>					colors				= generateColors(params.numLayers);
 	const std::vector<PositionColorVertex>	vertices			= generateVertices(grid, colors, renderSize);
 
-	const VkDeviceSize						colorBufferSize		= renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat)) * numLayers;
+	const VkDeviceSize						colorBufferSize		= renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat)) * params.numLayers;
 
 	const SharedPtr<Buffer>					colorBuffer			= Buffer::createAndAlloc(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT), allocator, MemoryRequirement::HostVisible);
 
@@ -743,13 +791,13 @@ tcu::TestStatus testVertexShader (Context& context, const int numLayers)
 
 	{
 		context.getTestContext().getLog()
-			<< tcu::TestLog::Message << "Rendering a rectangle in each of the " << numLayers << " layer(s)." << tcu::TestLog::EndMessage
+			<< tcu::TestLog::Message << "Rendering a rectangle in each of the " << params.numLayers << " layer(s)." << tcu::TestLog::EndMessage
 			<< tcu::TestLog::Message << "Not covered area will be filled with a gray color." << tcu::TestLog::EndMessage;
 	}
 
 	// Draw.
 	{
-		const Renderer renderer (context, renderSize, numLayers, colorFormat, clearColor, vertices, Renderer::VERTEX);
+		const Renderer renderer (context, params.useDynamicRendering, renderSize, params.numLayers, colorFormat, clearColor, vertices, Renderer::VERTEX);
 		renderer.draw(context, colorBuffer->object());
 	}
 
@@ -759,9 +807,9 @@ tcu::TestStatus testVertexShader (Context& context, const int numLayers)
 		invalidateAlloc(vk, device, alloc);
 
 		deUint8* resultMem = reinterpret_cast<deUint8*>(alloc.getHostPtr());
-		for (int i = 0; i < numLayers; i++)
+		for (int i = 0; i < params.numLayers; i++)
 		{
-			const tcu::ConstPixelBufferAccess	resultImage		(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1u, resultMem + ((colorBufferSize / numLayers) * i));
+			const tcu::ConstPixelBufferAccess	resultImage		(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1u, resultMem + ((colorBufferSize / params.numLayers) * i));
 			const tcu::TextureLevel				referenceImage	= generateReferenceImage(mapVkFormat(colorFormat), renderSize, clearColor, grid[i], colors[i]);
 			std::string imageSetName = "layer_" + de::toString(i);
 			std::string imageSetDesc = "Image compare for layer " + de::toString(i);
@@ -773,7 +821,7 @@ tcu::TestStatus testVertexShader (Context& context, const int numLayers)
 	return tcu::TestStatus::pass("OK");
 }
 
-tcu::TestStatus testTessellationShader (Context& context, const int numLayers)
+tcu::TestStatus testTessellationShader (Context& context, const TestParams params)
 {
 	const VkPhysicalDeviceFeatures&			features			= context.getDeviceFeatures();
 	if (!features.tessellationShader)
@@ -786,11 +834,11 @@ tcu::TestStatus testTessellationShader (Context& context, const int numLayers)
 	const UVec2								renderSize			(256, 256);
 	const VkFormat							colorFormat			= VK_FORMAT_R8G8B8A8_UNORM;
 	const Vec4								clearColor			(0.5f, 0.5f, 0.5f, 1.0f);
-	const std::vector<UVec4>				grid				= generateGrid(numLayers, renderSize);
-	const std::vector<Vec4>					colors				= generateColors(numLayers);
+	const std::vector<UVec4>				grid				= generateGrid(params.numLayers, renderSize);
+	const std::vector<Vec4>					colors				= generateColors(params.numLayers);
 	const std::vector<PositionColorVertex>	vertices			= generateVertices(grid, colors, renderSize);
 
-	const VkDeviceSize						colorBufferSize		= renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat)) * numLayers;
+	const VkDeviceSize						colorBufferSize		= renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat)) * params.numLayers;
 
 	const SharedPtr<Buffer>					colorBuffer			= Buffer::createAndAlloc(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT), allocator, MemoryRequirement::HostVisible);
 
@@ -803,13 +851,13 @@ tcu::TestStatus testTessellationShader (Context& context, const int numLayers)
 
 	{
 		context.getTestContext().getLog()
-			<< tcu::TestLog::Message << "Rendering a rectangle in each of the " << numLayers << " layer(s)." << tcu::TestLog::EndMessage
+			<< tcu::TestLog::Message << "Rendering a rectangle in each of the " << params.numLayers << " layer(s)." << tcu::TestLog::EndMessage
 			<< tcu::TestLog::Message << "Not covered area will be filled with a gray color." << tcu::TestLog::EndMessage;
 	}
 
 	// Draw.
 	{
-		const Renderer renderer (context, renderSize, numLayers, colorFormat, clearColor, vertices, Renderer::TESSELLATION);
+		const Renderer renderer (context, params.useDynamicRendering, renderSize, params.numLayers, colorFormat, clearColor, vertices, Renderer::TESSELLATION);
 		renderer.draw(context, colorBuffer->object());
 	}
 
@@ -819,8 +867,8 @@ tcu::TestStatus testTessellationShader (Context& context, const int numLayers)
 		invalidateAlloc(vk, device, alloc);
 
 		deUint8* resultMem = reinterpret_cast<deUint8*>(alloc.getHostPtr());
-		for (int i = 0; i < numLayers; i++) {
-			const tcu::ConstPixelBufferAccess	resultImage		(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1u, resultMem + ((colorBufferSize / numLayers) * i));
+		for (int i = 0; i < params.numLayers; i++) {
+			const tcu::ConstPixelBufferAccess	resultImage		(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1u, resultMem + ((colorBufferSize / params.numLayers) * i));
 			const tcu::TextureLevel				referenceImage	= generateReferenceImage(mapVkFormat(colorFormat), renderSize, clearColor, grid[i], colors[i]);
 			std::string imageSetName = "layer_" + de::toString(i);
 			std::string imageSetDesc = "Image compare for layer " + de::toString(i);
@@ -834,7 +882,7 @@ tcu::TestStatus testTessellationShader (Context& context, const int numLayers)
 
 } // anonymous
 
-tcu::TestCaseGroup* createShaderLayerTests	(tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createShaderLayerTests	(tcu::TestContext& testCtx, bool useDynamicRendering)
 {
 	MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "shader_layer", ""));
 
@@ -851,16 +899,22 @@ tcu::TestCaseGroup* createShaderLayerTests	(tcu::TestContext& testCtx)
 		MIN_MAX_FRAMEBUFFER_LAYERS,
 	};
 
+	TestParams parmas
+	{
+		1,
+		useDynamicRendering
+	};
+
 	for (int i = 0; i < DE_LENGTH_OF_ARRAY(numLayersToTest); ++i)
 	{
-		int numLayers = numLayersToTest[i];
-		addFunctionCaseWithPrograms(group.get(), "vertex_shader_" + de::toString(numLayers), "", checkRequirements, initVertexTestPrograms, testVertexShader, numLayers);
+		parmas.numLayers = numLayersToTest[i];
+		addFunctionCaseWithPrograms<TestParams>(group.get(), "vertex_shader_" + de::toString(parmas.numLayers), "", checkRequirements, initVertexTestPrograms, testVertexShader, parmas);
 	}
 
 	for (int i = 0; i < DE_LENGTH_OF_ARRAY(numLayersToTest); ++i)
 	{
-		int numLayers = numLayersToTest[i];
-		addFunctionCaseWithPrograms(group.get(), "tessellation_shader_" + de::toString(numLayers), "", checkRequirements, initTessellationTestPrograms, testTessellationShader, numLayers);
+		parmas.numLayers = numLayersToTest[i];
+		addFunctionCaseWithPrograms<TestParams>(group.get(), "tessellation_shader_" + de::toString(parmas.numLayers), "", checkRequirements, initTessellationTestPrograms, testTessellationShader, parmas);
 	}
 
 	return group.release();

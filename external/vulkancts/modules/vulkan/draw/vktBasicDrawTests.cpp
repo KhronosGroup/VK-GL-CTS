@@ -105,12 +105,14 @@ struct DrawParamsBase
 {
 	std::vector<PositionColorVertex>	vertices;
 	vk::VkPrimitiveTopology				topology;
+	bool								useDynamicRendering;
 
 	DrawParamsBase ()
 	{}
 
-	DrawParamsBase (const vk::VkPrimitiveTopology top)
+	DrawParamsBase (const vk::VkPrimitiveTopology top, bool dynamicRendering)
 		: topology	(top)
+		, useDynamicRendering(dynamicRendering)
 	{}
 };
 
@@ -130,8 +132,8 @@ struct DrawParams : DrawParamsBase
 	// vkCmdDraw parameters is like a single VkDrawIndirectCommand
 	vk::VkDrawIndirectCommand	params;
 
-	DrawParams (const vk::VkPrimitiveTopology top, const deUint32 vertexC, const deUint32 instanceC, const deUint32 firstV, const deUint32 firstI)
-		: DrawParamsBase	(top)
+	DrawParams (const vk::VkPrimitiveTopology top, bool dynamicRendering, const deUint32 vertexC, const deUint32 instanceC, const deUint32 firstV, const deUint32 firstI)
+		: DrawParamsBase	(top, dynamicRendering)
 	{
 		params.vertexCount		= vertexC;
 		params.instanceCount	= instanceC;
@@ -145,8 +147,8 @@ struct DrawIndexedParams : DrawParamsBase, IndexedParamsBase
 	// vkCmdDrawIndexed parameters is like a single VkDrawIndexedIndirectCommand
 	vk::VkDrawIndexedIndirectCommand	params;
 
-	DrawIndexedParams (const vk::VkPrimitiveTopology top, const vk::VkIndexType indexT, const deUint32 indexC, const deUint32 instanceC, const deUint32 firstIdx, const deInt32 vertexO, const deUint32 firstIns)
-		: DrawParamsBase	(top)
+	DrawIndexedParams (const vk::VkPrimitiveTopology top, bool dynamicRendering, const vk::VkIndexType indexT, const deUint32 indexC, const deUint32 instanceC, const deUint32 firstIdx, const deInt32 vertexO, const deUint32 firstIns)
+		: DrawParamsBase	(top, dynamicRendering)
 		, IndexedParamsBase	(indexT)
 	{
 		params.indexCount		= indexC;
@@ -161,8 +163,8 @@ struct DrawIndirectParams : DrawParamsBase
 {
 	std::vector<vk::VkDrawIndirectCommand>	commands;
 
-	DrawIndirectParams (const vk::VkPrimitiveTopology top)
-		: DrawParamsBase	(top)
+	DrawIndirectParams (const vk::VkPrimitiveTopology top, bool dynamicRendering)
+		: DrawParamsBase	(top, dynamicRendering)
 	{}
 
 	void addCommand (const deUint32 vertexC, const deUint32 instanceC, const deUint32 firstV, const deUint32 firstI)
@@ -181,8 +183,8 @@ struct DrawIndexedIndirectParams : DrawParamsBase, IndexedParamsBase
 {
 	std::vector<vk::VkDrawIndexedIndirectCommand>	commands;
 
-	DrawIndexedIndirectParams (const vk::VkPrimitiveTopology top, const vk::VkIndexType indexT)
-		: DrawParamsBase	(top)
+	DrawIndexedIndirectParams (const vk::VkPrimitiveTopology top, bool dynamicRendering, const vk::VkIndexType indexT)
+		: DrawParamsBase	(top, dynamicRendering)
 		, IndexedParamsBase	(indexT)
 	{}
 
@@ -275,6 +277,7 @@ public:
 	void							initialize				(const DrawParamsBase& data);
 	void							initPipeline			(const vk::VkDevice device);
 	void							beginRenderPass			(void);
+	void							endRenderPass			(void);
 
 	// Specialize this function for each type
 	virtual tcu::TestStatus			iterate					(void) = 0;
@@ -334,41 +337,43 @@ void DrawTestInstanceBase::initialize (const DrawParamsBase& data)
 	const ImageViewCreateInfo colorTargetViewInfo(m_colorTargetImage->object(), vk::VK_IMAGE_VIEW_TYPE_2D, m_colorAttachmentFormat);
 	m_colorTargetView						= vk::createImageView(m_vk, device, &colorTargetViewInfo);
 
-	RenderPassCreateInfo renderPassCreateInfo;
-	renderPassCreateInfo.addAttachment(AttachmentDescription(m_colorAttachmentFormat,
-															 vk::VK_SAMPLE_COUNT_1_BIT,
-															 vk::VK_ATTACHMENT_LOAD_OP_LOAD,
-															 vk::VK_ATTACHMENT_STORE_OP_STORE,
-															 vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-															 vk::VK_ATTACHMENT_STORE_OP_STORE,
-															 vk::VK_IMAGE_LAYOUT_GENERAL,
-															 vk::VK_IMAGE_LAYOUT_GENERAL));
-
-	const vk::VkAttachmentReference colorAttachmentReference =
+	// create render pass only when we are not using dynamic rendering
+	if (!m_data.useDynamicRendering)
 	{
-		0,
-		vk::VK_IMAGE_LAYOUT_GENERAL
-	};
+		RenderPassCreateInfo renderPassCreateInfo;
+		renderPassCreateInfo.addAttachment(AttachmentDescription(m_colorAttachmentFormat,
+																 vk::VK_SAMPLE_COUNT_1_BIT,
+																 vk::VK_ATTACHMENT_LOAD_OP_LOAD,
+																 vk::VK_ATTACHMENT_STORE_OP_STORE,
+																 vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+																 vk::VK_ATTACHMENT_STORE_OP_STORE,
+																 vk::VK_IMAGE_LAYOUT_GENERAL,
+																 vk::VK_IMAGE_LAYOUT_GENERAL));
 
-	renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
-													   0,
-													   0,
-													   DE_NULL,
-													   1,
-													   &colorAttachmentReference,
-													   DE_NULL,
-													   AttachmentReference(),
-													   0,
-													   DE_NULL));
+		const vk::VkAttachmentReference colorAttachmentReference
+		{
+			0,
+			vk::VK_IMAGE_LAYOUT_GENERAL
+		};
 
-	m_renderPass		= vk::createRenderPass(m_vk, device, &renderPassCreateInfo);
+		renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
+														   0,
+														   0,
+														   DE_NULL,
+														   1,
+														   &colorAttachmentReference,
+														   DE_NULL,
+														   AttachmentReference(),
+														   0,
+														   DE_NULL));
 
-	std::vector<vk::VkImageView> colorAttachments(1);
-	colorAttachments[0] = *m_colorTargetView;
+		m_renderPass = vk::createRenderPass(m_vk, device, &renderPassCreateInfo);
 
-	const FramebufferCreateInfo framebufferCreateInfo(*m_renderPass, colorAttachments, WIDTH, HEIGHT, 1);
-
-	m_framebuffer		= vk::createFramebuffer(m_vk, device, &framebufferCreateInfo);
+		// create framebuffer
+		std::vector<vk::VkImageView>	colorAttachments		{ *m_colorTargetView };
+		const FramebufferCreateInfo		framebufferCreateInfo	(*m_renderPass, colorAttachments, WIDTH, HEIGHT, 1);
+		m_framebuffer = vk::createFramebuffer(m_vk, device, &framebufferCreateInfo);
+	}
 
 	const vk::VkVertexInputBindingDescription vertexInputBindingDescription =
 	{
@@ -424,6 +429,7 @@ void DrawTestInstanceBase::initPipeline (const vk::VkDevice device)
 	vk::VkViewport viewport	= vk::makeViewport(WIDTH, HEIGHT);
 	vk::VkRect2D scissor	= vk::makeRect2D(WIDTH, HEIGHT);
 
+	// when dynamic_rendering is tested then renderPass won't be created and VK_NULL_HANDLE will be used here
 	PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, 0);
 	pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
 	pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
@@ -435,12 +441,26 @@ void DrawTestInstanceBase::initPipeline (const vk::VkDevice device)
 	pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
 	pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
 
+	vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+		DE_NULL,
+		0u,
+		1u,
+		&m_colorAttachmentFormat,
+		vk::VK_FORMAT_UNDEFINED,
+		vk::VK_FORMAT_UNDEFINED
+	};
+
+	if (m_data.useDynamicRendering)
+		pipelineCreateInfo.pNext = &renderingCreateInfo;
+
 	m_pipeline = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo);
 }
 
 void DrawTestInstanceBase::beginRenderPass (void)
 {
-	const vk::VkClearColorValue clearColor = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+	const vk::VkClearValue clearColor { { { 0.0f, 0.0f, 0.0f, 1.0f } } };
 
 	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 
@@ -449,7 +469,7 @@ void DrawTestInstanceBase::beginRenderPass (void)
 
 	const ImageSubresourceRange subresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT);
 	m_vk.cmdClearColorImage(*m_cmdBuffer, m_colorTargetImage->object(),
-		vk::VK_IMAGE_LAYOUT_GENERAL, &clearColor, 1, &subresourceRange);
+		vk::VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &subresourceRange);
 
 	const vk::VkMemoryBarrier memBarrier =
 	{
@@ -463,9 +483,20 @@ void DrawTestInstanceBase::beginRenderPass (void)
 		vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 		0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 
-	const vk::VkRect2D renderArea = vk::makeRect2D(WIDTH, HEIGHT);
+	const vk::VkRect2D	renderArea	= vk::makeRect2D(WIDTH, HEIGHT);
 
-	vk::beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea, tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	if (m_data.useDynamicRendering)
+		vk::beginRendering(m_vk, *m_cmdBuffer, *m_colorTargetView, renderArea, clearColor);
+	else
+		vk::beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea, 1u, &clearColor);
+}
+
+void DrawTestInstanceBase::endRenderPass (void)
+{
+	if (m_data.useDynamicRendering)
+		vk::endRendering(m_vk, *m_cmdBuffer);
+	else
+		vk::endRenderPass(m_vk, *m_cmdBuffer);
 }
 
 void DrawTestInstanceBase::generateRefImage (const tcu::PixelBufferAccess& access, const std::vector<tcu::Vec4>& vertices, const std::vector<tcu::Vec4>& colors) const
@@ -579,6 +610,9 @@ void DrawTestCase<T>::checkSupport (Context& context) const
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 	}
 
+	if (m_data.useDynamicRendering)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
 	if (m_data.topology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
 		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().triangleFans)
@@ -664,7 +698,7 @@ tcu::TestStatus DrawTestInstance<DrawParams>::iterate (void)
 	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 	m_vk.cmdDraw(*m_cmdBuffer, m_data.params.vertexCount, m_data.params.instanceCount, m_data.params.firstVertex, m_data.params.firstInstance);
-	endRenderPass(m_vk, *m_cmdBuffer);
+	endRenderPass();
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -780,7 +814,7 @@ tcu::TestStatus DrawTestInstance<DrawIndexedParams>::iterate (void)
 
 	m_vk.cmdBindIndexBuffer(*m_cmdBuffer, *indexBuffer, 0u, m_data.indexType);
 	m_vk.cmdDrawIndexed(*m_cmdBuffer, m_data.params.indexCount, m_data.params.instanceCount, m_data.params.firstIndex, m_data.params.vertexOffset, m_data.params.firstInstance);
-	endRenderPass(m_vk, *m_cmdBuffer);
+	endRenderPass();
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, vkDevice, queue, m_cmdBuffer.get());
@@ -909,7 +943,7 @@ tcu::TestStatus DrawTestInstance<DrawIndirectParams>::iterate (void)
 		m_vk.cmdDrawIndirect(*m_cmdBuffer, *indirectBuffer, indirectAlloc->getOffset(), (deUint32)m_data.commands.size(), sizeof(vk::VkDrawIndirectCommand));
 	}
 
-	endRenderPass(m_vk, *m_cmdBuffer);
+	endRenderPass();
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, vkDevice, queue, m_cmdBuffer.get());
@@ -1091,7 +1125,7 @@ tcu::TestStatus DrawTestInstance<DrawIndexedIndirectParams>::iterate (void)
 		m_vk.cmdDrawIndexedIndirect(*m_cmdBuffer, *indirectBuffer, indirectAlloc->getOffset(), (deUint32)m_data.commands.size(), sizeof(vk::VkDrawIndexedIndirectCommand));
 	}
 
-	endRenderPass(m_vk, *m_cmdBuffer);
+	endRenderPass();
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, vkDevice, queue, m_cmdBuffer.get());
@@ -1135,10 +1169,12 @@ struct TestCaseParams
 {
 	const DrawCommandType			command;
 	const vk::VkPrimitiveTopology	topology;
+	const bool						useDynamicRendering;
 
-	TestCaseParams (const DrawCommandType cmd, const vk::VkPrimitiveTopology top)
-		: command	(cmd)
-		, topology	(top)
+	TestCaseParams (const DrawCommandType cmd, const vk::VkPrimitiveTopology top, bool dynamicRendering)
+		: command				(cmd)
+		, topology				(top)
+		, useDynamicRendering	(dynamicRendering)
 	{}
 };
 
@@ -1146,14 +1182,20 @@ struct TestCaseParams
 
 void populateSubGroup (tcu::TestCaseGroup* testGroup, const TestCaseParams caseParams)
 {
-	de::Random						rnd			(SEED ^ deStringHash(testGroup->getName()));
-	tcu::TestContext&				testCtx		= testGroup->getTestContext();
-	const DrawCommandType			command		= caseParams.command;
-	const vk::VkPrimitiveTopology	topology	= caseParams.topology;
+	de::Random						rnd						(SEED ^ deStringHash(testGroup->getName()));
+	tcu::TestContext&				testCtx					= testGroup->getTestContext();
+	const DrawCommandType			command					= caseParams.command;
+	const vk::VkPrimitiveTopology	topology				= caseParams.topology;
+	const bool						useDynamicRendering		= caseParams.useDynamicRendering;
+	const deUint32					primitiveCountArrLength = DE_LENGTH_OF_ARRAY(PRIMITIVE_COUNT);
 
-	for (deUint32 primitiveCountIdx = 0; primitiveCountIdx < DE_LENGTH_OF_ARRAY(PRIMITIVE_COUNT); ++primitiveCountIdx)
+	for (deUint32 primitiveCountIdx = 0; primitiveCountIdx < primitiveCountArrLength; ++primitiveCountIdx)
 	{
 		const deUint32 primitives = PRIMITIVE_COUNT[primitiveCountIdx];
+
+		// when testing VK_KHR_dynamic_rendering there is no need to duplicate tests for all primitive counts; use just 1 and 45
+		if (useDynamicRendering && (primitiveCountIdx != 0) && (primitiveCountIdx != primitiveCountArrLength-1))
+			continue;
 
 		deUint32	multiplier	= 1;
 		deUint32	offset		= 0;
@@ -1183,7 +1225,7 @@ void populateSubGroup (tcu::TestCaseGroup* testGroup, const TestCaseParams caseP
 				deUint32	firstPrimitive	= rnd.getInt(0, primitives);
 				deUint32	firstVertex		= multiplier * firstPrimitive;
 				testGroup->addChild(new DrawCase(testCtx, name.c_str(), "vkCmdDraw testcase.",
-					DrawParams(topology, vertexCount, 1, firstVertex, 0))
+					DrawParams(topology, useDynamicRendering, vertexCount, 1, firstVertex, 0))
 				);
 				break;
 			}
@@ -1192,7 +1234,7 @@ void populateSubGroup (tcu::TestCaseGroup* testGroup, const TestCaseParams caseP
 				deUint32	firstIndex			= rnd.getInt(0, OFFSET_LIMIT);
 				deUint32	vertexOffset		= rnd.getInt(0, OFFSET_LIMIT);
 				testGroup->addChild(new IndexedCase(testCtx, name.c_str(), "vkCmdDrawIndexed testcase.",
-					DrawIndexedParams(topology, vk::VK_INDEX_TYPE_UINT32, vertexCount, 1, firstIndex, vertexOffset, 0))
+					DrawIndexedParams(topology, useDynamicRendering, vk::VK_INDEX_TYPE_UINT32, vertexCount, 1, firstIndex, vertexOffset, 0))
 				);
 				break;
 			}
@@ -1200,7 +1242,7 @@ void populateSubGroup (tcu::TestCaseGroup* testGroup, const TestCaseParams caseP
 			{
 				deUint32	firstVertex		= rnd.getInt(0, OFFSET_LIMIT);
 
-				DrawIndirectParams	params	= DrawIndirectParams(topology);
+				DrawIndirectParams	params	= DrawIndirectParams(topology, useDynamicRendering);
 
 				params.addCommand(vertexCount, 1, 0, 0);
 				testGroup->addChild(new IndirectCase(testCtx, (name + "_single_command").c_str(), "vkCmdDrawIndirect testcase.", params));
@@ -1214,7 +1256,7 @@ void populateSubGroup (tcu::TestCaseGroup* testGroup, const TestCaseParams caseP
 				deUint32	firstIndex		= rnd.getInt(vertexCount, OFFSET_LIMIT);
 				deUint32	vertexOffset	= rnd.getInt(vertexCount, OFFSET_LIMIT);
 
-				DrawIndexedIndirectParams	params	= DrawIndexedIndirectParams(topology, vk::VK_INDEX_TYPE_UINT32);
+				DrawIndexedIndirectParams	params	= DrawIndexedIndirectParams(topology, useDynamicRendering, vk::VK_INDEX_TYPE_UINT32);
 				params.addCommand(vertexCount, 1, 0, 0, 0);
 				testGroup->addChild(new IndexedIndirectCase(testCtx, (name + "_single_command").c_str(), "vkCmdDrawIndexedIndirect testcase.", params));
 
@@ -1228,28 +1270,28 @@ void populateSubGroup (tcu::TestCaseGroup* testGroup, const TestCaseParams caseP
 	}
 }
 
-void createTopologyGroups (tcu::TestCaseGroup* testGroup, const DrawCommandType cmdType)
+void createDrawTests(tcu::TestCaseGroup* testGroup, bool useDynamicRendering)
 {
-	for (deUint32 idx = 0; idx != vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST; ++idx)
+	for (deUint32 drawTypeIndex = 0; drawTypeIndex < DRAW_COMMAND_TYPE_DRAW_LAST; ++drawTypeIndex)
 	{
-		const vk::VkPrimitiveTopology	topology	= vk::VkPrimitiveTopology(idx);
-		const std::string				groupName	= de::toLower(getPrimitiveTopologyName(topology)).substr(22);
-		addTestGroup(testGroup, groupName, "Testcases with a specific topology.", populateSubGroup, TestCaseParams(cmdType, topology));
+		const DrawCommandType			command			(static_cast<DrawCommandType>(drawTypeIndex));
+		de::MovePtr<tcu::TestCaseGroup>	topologyGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), getDrawCommandTypeName(command), "Group for testing a specific draw command."));
+
+		for (deUint32 topologyIdx = 0; topologyIdx != vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST; ++topologyIdx)
+		{
+			const vk::VkPrimitiveTopology	topology	(static_cast<vk::VkPrimitiveTopology>(topologyIdx));
+			const std::string				groupName	(de::toLower(getPrimitiveTopologyName(topology)).substr(22));
+
+			addTestGroup(topologyGroup.get(), groupName, "Testcases with a specific topology.", populateSubGroup, TestCaseParams(command, topology, useDynamicRendering));
+		}
+
+		testGroup->addChild(topologyGroup.release());
 	}
 }
 
-void createDrawTests (tcu::TestCaseGroup* testGroup)
+tcu::TestCaseGroup*	createBasicDrawTests (tcu::TestContext& testCtx, bool useDynamicRendering)
 {
-	for (deUint32 idx = 0; idx < DRAW_COMMAND_TYPE_DRAW_LAST; ++idx)
-	{
-		const DrawCommandType	command	= DrawCommandType(idx);
-		addTestGroup(testGroup, getDrawCommandTypeName(command), "Group for testing a specific draw command.", createTopologyGroups, command);
-	}
-}
-
-tcu::TestCaseGroup*	createBasicDrawTests (tcu::TestContext& testCtx)
-{
-	return createTestGroup(testCtx, "basic_draw", "Basic drawing tests", createDrawTests);
+	return createTestGroup(testCtx, "basic_draw", "Basic drawing tests", createDrawTests, useDynamicRendering);
 }
 
 }	// DrawTests

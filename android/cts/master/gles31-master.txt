@@ -10290,7 +10290,6 @@ dEQP-GLES31.functional.ssbo.layout.random.all_shared_buffer.44
 dEQP-GLES31.functional.ssbo.layout.random.all_shared_buffer.45
 dEQP-GLES31.functional.ssbo.layout.random.all_shared_buffer.46
 dEQP-GLES31.functional.ssbo.layout.random.all_shared_buffer.47
-dEQP-GLES31.functional.ssbo.layout.random.all_shared_buffer.48
 dEQP-GLES31.functional.ssbo.layout.random.all_shared_buffer.49
 dEQP-GLES31.functional.ssbo.atomic.add.lowp_uint
 dEQP-GLES31.functional.ssbo.atomic.add.lowp_int
@@ -17697,7 +17696,6 @@ dEQP-GLES31.functional.separate_shader.random.34
 dEQP-GLES31.functional.separate_shader.random.35
 dEQP-GLES31.functional.separate_shader.random.36
 dEQP-GLES31.functional.separate_shader.random.37
-dEQP-GLES31.functional.separate_shader.random.38
 dEQP-GLES31.functional.separate_shader.random.39
 dEQP-GLES31.functional.separate_shader.random.40
 dEQP-GLES31.functional.separate_shader.random.41

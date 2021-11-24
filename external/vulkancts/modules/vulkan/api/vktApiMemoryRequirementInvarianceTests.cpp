@@ -656,39 +656,265 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 	return tcu::TestStatus::fail("One or more allocation is not invariant");
 }
 
+class AlignmentMatchingInstance : public vkt::TestInstance
+{
+public:
+							AlignmentMatchingInstance	(Context& context);
+	virtual					~AlignmentMatchingInstance	(void) = default;
+	virtual	tcu::TestStatus	iterate						(void);
+};
+
+AlignmentMatchingInstance::AlignmentMatchingInstance(Context& context)
+	: vkt::TestInstance(context)
+{
+}
+
+tcu::TestStatus AlignmentMatchingInstance::iterate(void)
+{
+	const VkDevice			device			= m_context.getDevice();
+	const DeviceInterface&	vk				= m_context.getDeviceInterface();
+	const deUint32			objectsCount	= 5;
+	tcu::TestLog&			log				= m_context.getTestContext().getLog();
+	bool					success			= true;
+	VkExtent3D				baseExtent		= { 32, 31, 1 };
+	VkDeviceSize			baseSize		= 1023;
+
+	VkImageCreateInfo imageCreateInfo
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType		sType;
+		DE_NULL,								// const void*			pNext;
+		0u,										// VkImageCreateFlags	flags;
+		VK_IMAGE_TYPE_2D,						// VkImageType			imageType;
+		VK_FORMAT_R8G8B8A8_UNORM,				// VkFormat				format;
+		baseExtent,								// VkExtent3D			extent;
+		1u,										// deUint32				mipLevels;
+		1u,										// deUint32				arraySize;
+		VK_SAMPLE_COUNT_1_BIT,					// deUint32				samples;
+		VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling		tiling;
+		VK_IMAGE_USAGE_TRANSFER_SRC_BIT,		// VkImageUsageFlags	usage;
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
+		0u,										// deUint32				queueFamilyCount;
+		DE_NULL,								// const deUint32*		pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
+	};
+
+	VkBufferCreateInfo bufferCreateInfo
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType
+		DE_NULL,								// const void*			pNext
+		0u,										// VkBufferCreateFlags	flags
+		baseSize,								// VkDeviceSize			size
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT,		// VkBufferUsageFlags	usage
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode
+		0u,										// uint32_t				queueFamilyIndexCount
+		DE_NULL									// const uint32_t*		pQueueFamilyIndices
+	};
+
+	Move<VkImage>			baseImage				= createImage (vk, device, &imageCreateInfo);
+	Move<VkBuffer>			baseBuffer				= createBuffer(vk, device, &bufferCreateInfo);
+
+	VkMemoryRequirements	baseImageRequirements	= getImageMemoryRequirements (vk, device, *baseImage);
+	VkMemoryRequirements	baseBufferRequirements	= getBufferMemoryRequirements(vk, device, *baseBuffer);
+
+	// Create a bunch of VkBuffer and VkImage objects with the same
+	// create infos and make sure their alignments all match.
+	{
+		std::vector<Move<VkImage>>	images (objectsCount);
+		std::vector<Move<VkBuffer>>	buffers(objectsCount);
+
+		for (deUint32 idx = 0; idx < objectsCount; ++idx)
+		{
+			images [idx]	= createImage (vk, device, &imageCreateInfo);
+			buffers[idx]	= createBuffer(vk, device, &bufferCreateInfo);
+
+			VkMemoryRequirements imageRequirements		= getImageMemoryRequirements (vk, device, *images[idx]);
+			VkMemoryRequirements buffersRequirements	= getBufferMemoryRequirements(vk, device, *buffers[idx]);
+
+			if (baseImageRequirements.alignment != imageRequirements.alignment)
+			{
+				success = false;
+				log << tcu::TestLog::Message
+					<< "Alignments for all VkImage objects created with the same create infos should match\n"
+					<< tcu::TestLog::EndMessage;
+			}
+			if (baseBufferRequirements.alignment != buffersRequirements.alignment)
+			{
+				success = false;
+				log << tcu::TestLog::Message
+					<< "Alignments for all VkBuffer objects created with the same create infos should match\n"
+					<< tcu::TestLog::EndMessage;
+			}
+		}
+	}
+
+	if (m_context.isDeviceFunctionalitySupported("VK_KHR_get_memory_requirements2"))
+	{
+		VkBufferMemoryRequirementsInfo2 bufferMemoryRequirementsInfo
+		{
+			VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR,	// VkStructureType	sType
+			DE_NULL,													// const void*		pNext
+			*baseBuffer													// VkBuffer			buffer
+		};
+		VkImageMemoryRequirementsInfo2 imageMemoryRequirementsInfo
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR,		// VkStructureType	sType
+			DE_NULL,													// const void*		pNext
+			*baseImage													// VkImage			image
+		};
+		std::vector<VkMemoryRequirements2> requirements2(2,
+			{
+				VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,			// VkStructureType		sType
+				DE_NULL,												// void*				pNext
+				{0, 0, 0}												// VkMemoryRequirements	memoryRequirements
+			});
+
+		auto areRequirementsTheSame = [](VkMemoryRequirements2& a, VkMemoryRequirements2& b)
+		{
+			return ((a.memoryRequirements.size == b.memoryRequirements.size) &&
+					(a.memoryRequirements.alignment == b.memoryRequirements.alignment) &&
+					(a.memoryRequirements.memoryTypeBits == b.memoryRequirements.memoryTypeBits));
+		};
+
+		// The memory requirements returned by vkGetBufferCreateInfoMemoryRequirementsKHR are identical to those that
+		// would be returned by vkGetBufferMemoryRequirements2 if it were called with a VkBuffer created with the same
+		// VkBufferCreateInfo values.
+		vk.getBufferMemoryRequirements2(device, &bufferMemoryRequirementsInfo, &requirements2[0]);
+		const VkDeviceBufferMemoryRequirementsKHR bufferMemInfo =
+		{
+			VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS_KHR,
+			DE_NULL,
+			&bufferCreateInfo
+		};
+		vk.getDeviceBufferMemoryRequirementsKHR(device, &bufferMemInfo, &requirements2[1]);
+
+		if (!areRequirementsTheSame(requirements2[0], requirements2[1]))
+		{
+			success = false;
+			log << tcu::TestLog::Message
+				<< "vkGetDeviceBufferMemoryRequirementsKHR and vkGetBufferMemoryRequirements2\n"
+				   "report diferent memory requirements\n"
+				<< tcu::TestLog::EndMessage;
+		}
+
+		// Similarly, vkGetImageCreateInfoMemoryRequirementsKHR will report the same memory requirements as
+		// vkGetImageMemoryRequirements2 would if called with a VkImage created with the supplied VkImageCreateInfo
+		vk.getImageMemoryRequirements2(device, &imageMemoryRequirementsInfo, &requirements2[0]);
+		const VkDeviceImageMemoryRequirementsKHR imageMemInfo =
+		{
+			VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR,
+			DE_NULL,
+			&imageCreateInfo,
+			vk::VkImageAspectFlagBits(0)
+		};
+		vk.getDeviceImageMemoryRequirementsKHR(device, &imageMemInfo, &requirements2[1]);
+
+		if (!areRequirementsTheSame(requirements2[0], requirements2[1]))
+		{
+			success = false;
+			log << tcu::TestLog::Message
+				<< "vkGetDeviceImageMemoryRequirementsKHR and vkGetImageMemoryRequirements2\n"
+				   "report diferent memory requirements\n"
+				<< tcu::TestLog::EndMessage;
+		}
+	}
+
+	// For a VkImage, the size memory requirement is never greater than that of another VkImage created with
+	// a greater or equal extent dimension specified in VkImageCreateInfo, all other creation parameters being identical.
+	// For a VkBuffer, the size memory requirement is never greater than that of another VkBuffer created with
+	// a greater or equal size specified in VkBufferCreateInfo, all other creation parameters being identical.
+	{
+		std::vector<Move<VkImage>>	images (objectsCount);
+		std::vector<Move<VkBuffer>>	buffers(objectsCount);
+
+		for (deUint32 idx = 0; idx < objectsCount; ++idx)
+		{
+			imageCreateInfo.extent	= { baseExtent.width + (idx % 2) * idx, baseExtent.height + idx, 1u };
+			bufferCreateInfo.size	= baseSize + idx;
+
+			images [idx]	= createImage(vk, device, &imageCreateInfo);
+			buffers[idx]	= createBuffer(vk, device, &bufferCreateInfo);
+
+			VkMemoryRequirements imageRequirements		= getImageMemoryRequirements(vk, device, *images[idx]);
+			VkMemoryRequirements buffersRequirements	= getBufferMemoryRequirements(vk, device, *buffers[idx]);
+
+			if (baseImageRequirements.size > imageRequirements.size)
+			{
+				success = false;
+				log << tcu::TestLog::Message
+					<< "Size memory requiremen for VkImage should never be greater than that of another VkImage\n"
+					   "created with a greater or equal extent dimension specified in VkImageCreateInfo when all\n"
+					   "other creation parameters are identical\n"
+					<< tcu::TestLog::EndMessage;
+			}
+			if (baseBufferRequirements.size > buffersRequirements.size)
+			{
+				success = false;
+				log << tcu::TestLog::Message
+					<< "Size memory requiremen for VkBuffer should never be greater than that of another VkBuffer\n"
+					   "created with a greater or size specified in VkImageCreateInfo when all\n"
+					   "other creation parameters are identical\n"
+					<< tcu::TestLog::EndMessage;
+			}
+		}
+	}
+
+	if (success)
+		return tcu::TestStatus::pass("Pass");
+
+	return tcu::TestStatus::fail("Fail");
+}
+
+enum TestType
+{
+	TT_BASIC_INVARIANCE = 0,
+	TT_REQUIREMENTS_MATCHING
+};
+
 class InvarianceCase : public vkt::TestCase
 {
 public:
 							InvarianceCase	(tcu::TestContext&	testCtx,
 											 const std::string&	name,
-											 const std::string&	description);
-	virtual					~InvarianceCase	(void);
+											 const std::string&	description,
+											 TestType			testType);
+	virtual					~InvarianceCase	(void) = default;
 
 	virtual TestInstance*	createInstance	(Context&			context) const;
+	virtual void			checkSupport	(Context& context) const;
+
+protected:
+	TestType m_testType;
 };
 
 InvarianceCase::InvarianceCase	(tcu::TestContext&	testCtx,
 								 const std::string&	name,
-								 const std::string&	description)
-	: vkt::TestCase(testCtx, name, description)
-{
-}
-
-InvarianceCase::~InvarianceCase()
+								 const std::string&	description,
+								 TestType			testType)
+	: vkt::TestCase	(testCtx, name, description)
+	, m_testType	(testType)
 {
 }
 
 TestInstance* InvarianceCase::createInstance (Context& context) const
 {
+	if (TT_REQUIREMENTS_MATCHING == m_testType)
+		return new AlignmentMatchingInstance(context);
+
 	return new InvarianceInstance(context, 0x600613);
+}
+
+void InvarianceCase::checkSupport(Context& context) const
+{
+	if (TT_REQUIREMENTS_MATCHING == m_testType)
+		context.requireDeviceFunctionality("VK_KHR_maintenance4");
 }
 
 tcu::TestCaseGroup* createMemoryRequirementInvarianceTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> invarianceTests(new tcu::TestCaseGroup(testCtx, "invariance", "Memory requirement invariance tests"));
 
-	// Only one child, leaving room for potential targeted cases later on.
-	invarianceTests->addChild(new InvarianceCase(testCtx, "random", std::string("Random case")));
+	invarianceTests->addChild(new InvarianceCase(testCtx, "random", "Random case", TT_BASIC_INVARIANCE));
+	invarianceTests->addChild(new InvarianceCase(testCtx, "memory_requirements_matching", "VK_KHR_maintenance4 case", TT_REQUIREMENTS_MATCHING));
 
 	return invarianceTests.release();
 }

@@ -97,7 +97,7 @@ PLATFORM_TYPES		= [
 	# VK_EXT_acquire_xlib_display
 	(["RROutput"],							["RROutput"],					"void*"),
 
-	(["zx_handle_t"],						["zx_handle_t"],				"int32_t"),
+	(["zx_handle_t"],						["zx_handle_t"],				"uint32_t"),
 	(["GgpFrameToken"],						["GgpFrameToken"],				"int32_t"),
 	(["GgpStreamDescriptor"],				["GgpStreamDescriptor"],		"int32_t"),
 	(["CAMetalLayer"],						["CAMetalLayer"],				"void*"),
@@ -147,6 +147,7 @@ def prefixName (prefix, name):
 	name = name.replace("_H_264_", "_H264_")
 	name = name.replace("_H_265_", "_H265_")
 	name = name.replace("RDMAFEATURES", "RDMA_FEATURES")
+	name = name.replace("RGBA_10_X_6", "RGBA10X6")
 
 
 	return prefix + name
@@ -1930,6 +1931,8 @@ def generateDevicePropertiesDefs(src):
 			extType = sType
 			if extType == "MAINTENANCE_3":
 				extType = "MAINTENANCE3"
+			elif extType == "MAINTENANCE_4":
+				extType = "MAINTENANCE4"
 			elif extType == "DISCARD_RECTANGLE":
 				extType = "DISCARD_RECTANGLES"
 			elif extType == "DRIVER":

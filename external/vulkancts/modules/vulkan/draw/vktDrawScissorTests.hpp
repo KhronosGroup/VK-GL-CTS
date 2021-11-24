@@ -32,7 +32,7 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup* createScissorTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createScissorTests (tcu::TestContext& testCtx, bool useDynamicRendering);
 
 } // Draw
 } // vkt

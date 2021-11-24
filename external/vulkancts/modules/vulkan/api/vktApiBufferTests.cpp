@@ -658,19 +658,43 @@ void createBufferUsageCases (tcu::TestCaseGroup& testGroup, const deUint32 first
 	}
 }
 
-tcu::TestStatus testOverlyLargeBuffer(Context& context, deUint64 bufferSize)
+tcu::TestStatus testDepthStencilBufferFeatures(Context& context, VkFormat format)
+{
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	VkPhysicalDevice			physicalDevice	= context.getPhysicalDevice();
+	VkFormatProperties			formatProperties;
+
+	vki.getPhysicalDeviceFormatProperties(physicalDevice, format, &formatProperties);
+
+	if (formatProperties.bufferFeatures == 0x0)
+		return tcu::TestStatus::pass("Pass");
+	else
+		return tcu::TestStatus::fail("Fail");
+}
+
+struct LargeBufferParameters
+{
+	deUint64				bufferSize;
+	bool					useMaxBufferSize;
+	VkBufferCreateFlags		flags;
+};
+
+tcu::TestStatus testLargeBuffer(Context& context, LargeBufferParameters params)
 {
 	const DeviceInterface&	vk					= context.getDeviceInterface();
 	const VkDevice			vkDevice			= context.getDevice();
 	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	VkBuffer				rawBuffer			= DE_NULL;
 
+	if (params.useMaxBufferSize)
+		params.bufferSize = context.getMaintenance4Properties().maxBufferSize;
+
 	VkBufferCreateInfo bufferParams =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType			sType;
 		DE_NULL,								// const void*				pNext;
-		0u,										// VkBufferCreateFlags		flags;
-		bufferSize,								// VkDeviceSize				size;
+		params.flags,							// VkBufferCreateFlags		flags;
+		params.bufferSize,						// VkDeviceSize				size;
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,		// VkBufferUsageFlags		usage;
 		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode			sharingMode;
 		1u,										// uint32_t					queueFamilyIndexCount;
@@ -686,7 +710,7 @@ tcu::TestStatus testOverlyLargeBuffer(Context& context, deUint64 bufferSize)
 		vk.getBufferMemoryRequirements(vkDevice, rawBuffer, &memoryRequirements);
 		vk.destroyBuffer(vkDevice, rawBuffer, DE_NULL);
 
-		if (memoryRequirements.size >= bufferSize)
+		if (memoryRequirements.size >= params.bufferSize)
 			return tcu::TestStatus::pass("Pass");
 		return tcu::TestStatus::fail("Fail");
 	}
@@ -699,6 +723,19 @@ tcu::TestStatus testOverlyLargeBuffer(Context& context, deUint64 bufferSize)
 		return tcu::TestStatus::pass("Pass");
 
 	return tcu::TestStatus::fail("Fail");
+}
+
+void checkMaintenance4Support(Context& context, LargeBufferParameters params)
+{
+	if (params.useMaxBufferSize)
+		context.requireDeviceFunctionality("VK_KHR_maintenance4");
+	else if (context.isDeviceFunctionalitySupported("VK_KHR_maintenance4") &&
+		params.bufferSize > context.getMaintenance4Properties().maxBufferSize)
+		TCU_THROW(NotSupportedError, "vkCreateBuffer with a size larger than maxBufferSize is not valid usage");
+
+	const VkPhysicalDeviceFeatures& physicalDeviceFeatures = getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
+	if ((params.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) && !physicalDeviceFeatures.sparseBinding)
+		TCU_THROW(NotSupportedError, "Sparse bindings feature is not supported");
 }
 
 } // anonymous
@@ -721,8 +758,52 @@ tcu::TestStatus testOverlyLargeBuffer(Context& context, deUint64 bufferSize)
 
 	{
 		de::MovePtr<tcu::TestCaseGroup> basicTests(new tcu::TestCaseGroup(testCtx, "basic", "Basic buffer tests."));
-		addFunctionCase(basicTests.get(), "size_max_uint64", "Creating a ULLONG_MAX buffer and verify that it either succeeds or returns one of the allowed errors.", testOverlyLargeBuffer, std::numeric_limits<deUint64>::max());
+		addFunctionCase(basicTests.get(), "max_size", "Creating buffer using maxBufferSize limit.",
+						checkMaintenance4Support, testLargeBuffer, LargeBufferParameters
+						{
+							0u,
+							true,
+							0u
+						});
+		addFunctionCase(basicTests.get(), "max_size_sparse", "Creating sparse buffer using maxBufferSize limit.",
+						checkMaintenance4Support, testLargeBuffer, LargeBufferParameters
+						{
+							0u,
+							true,
+							VK_BUFFER_CREATE_SPARSE_BINDING_BIT
+						});
+		addFunctionCase(basicTests.get(), "size_max_uint64", "Creating a ULLONG_MAX buffer and verify that it either succeeds or returns one of the allowed errors.",
+						checkMaintenance4Support, testLargeBuffer, LargeBufferParameters
+						{
+							std::numeric_limits<deUint64>::max(),
+							false,
+							0u
+						});
 		buffersTests->addChild(basicTests.release());
+	}
+
+	{
+		static const VkFormat dsFormats[] =
+		{
+			VK_FORMAT_S8_UINT,
+			VK_FORMAT_D16_UNORM,
+			VK_FORMAT_D16_UNORM_S8_UINT,
+			VK_FORMAT_D24_UNORM_S8_UINT,
+			VK_FORMAT_D32_SFLOAT,
+			VK_FORMAT_D32_SFLOAT_S8_UINT,
+			VK_FORMAT_X8_D24_UNORM_PACK32
+		};
+
+		de::MovePtr<tcu::TestCaseGroup>	invalidBufferFeatures(new tcu::TestCaseGroup(testCtx, "invalid_buffer_features", "Checks that drivers are not exposing undesired format features for depth/stencil formats."));
+
+		for (const auto& testFormat : dsFormats)
+		{
+			std::string formatName = de::toLower(getFormatName(testFormat));
+
+			addFunctionCase(invalidBufferFeatures.get(), formatName, formatName, testDepthStencilBufferFeatures, testFormat);
+		}
+
+		buffersTests->addChild(invalidBufferFeatures.release());
 	}
 
 	return buffersTests.release();
