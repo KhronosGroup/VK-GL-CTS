@@ -7609,9 +7609,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 
 	renderingTests->addChild(suballocationTestGroup.release());
 	renderingTests->addChild(dedicatedAllocationTestGroup.release());
-
-	if (renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
-		renderingTests->addChild(createFragmentDensityMapTests(testCtx, renderingType));
+	renderingTests->addChild(createFragmentDensityMapTests(testCtx, renderingType));
 
 	return renderingTests.release();
 }
