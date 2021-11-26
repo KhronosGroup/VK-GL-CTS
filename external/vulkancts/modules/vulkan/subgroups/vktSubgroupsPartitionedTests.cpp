@@ -291,7 +291,7 @@ void initPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 	const ShaderBuildOptions	buildOptions		(programCollection.usedVulkanVersion, spirvVersion, 0u);
 	const string				extHeader			= getExtHeader(caseDef);
 	const string				testSrc				= getTestString(caseDef);
-	const bool					pointSizeSupport	= false;
+	const bool					pointSizeSupport	= *caseDef.geometryPointSizeSupported;
 
 	subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.format, pointSizeSupport, extHeader, testSrc, "");
 }
@@ -342,6 +342,7 @@ TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 		subgroups::SSBOData::LayoutStd140,		//  InputDataLayoutType			layout;
 		caseDef.format,							//  vk::VkFormat				format;
 		subgroups::maxSupportedSubgroupSize(),	//  vk::VkDeviceSize			numElements;
+		subgroups::SSBOData::BindingUBO,		//  BindingType					bindingType;
 	};
 
 	switch (caseDef.shaderStage)
@@ -397,7 +398,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			subgroups::SSBOData::LayoutStd430,		//  InputDataLayoutType			layout;
 			caseDef.format,							//  vk::VkFormat				format;
 			subgroups::maxSupportedSubgroupSize(),	//  vk::VkDeviceSize			numElements;
-			false,									//  bool						isImage;
+			subgroups::SSBOData::BindingSSBO,		//  bool						isImage;
 			4u,										//  deUint32					binding;
 			stages,									//  vk::VkShaderStageFlags		stages;
 		};
@@ -413,7 +414,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			subgroups::SSBOData::LayoutStd430,		//  InputDataLayoutType			layout;
 			caseDef.format,							//  vk::VkFormat				format;
 			subgroups::maxSupportedSubgroupSize(),	//  vk::VkDeviceSize			numElements;
-			false,									//  bool						isImage;
+			subgroups::SSBOData::BindingSSBO,		//  bool						isImage;
 			6u,										//  deUint32					binding;
 			stages,									//  vk::VkShaderStageFlags		stages;
 		};
