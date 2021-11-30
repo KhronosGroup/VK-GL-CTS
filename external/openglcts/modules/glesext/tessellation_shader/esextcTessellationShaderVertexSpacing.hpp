@@ -279,7 +279,7 @@ private:
 	/** Comparator that is used to compare two tessellation coordinates using FP value
 	 *  equal operator.
 	 */
-	struct _comparator_exact_tess_coordinate_match : public std::unary_function<float, bool>
+	struct _comparator_exact_tess_coordinate_match
 	{
 		/* Constructor.
 		 *
