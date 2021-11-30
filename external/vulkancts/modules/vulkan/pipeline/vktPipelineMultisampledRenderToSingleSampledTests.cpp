@@ -1519,6 +1519,11 @@ void checkRequirements (Context& context, TestParams params)
 	}
 }
 
+void checkHasMsrtss (Context& context, VkFormat)
+{
+	context.requireDeviceFunctionality("VK_EXT_multisampled_render_to_single_sampled");
+}
+
 void generateRandomClearValues(de::Random& rng, const TestParams& params, VkClearValue clearValues[4], bool smallValues)
 {
 	const bool		usesSignedIntFormat	= params.intColorFormat == VK_FORMAT_R16G16B16A16_SINT;
@@ -4190,6 +4195,34 @@ void initInputAttachmentsPrograms (SourceCollections& programCollection, const T
 	}
 }
 
+//! Verify that subpass resolve perf hint query works.
+tcu::TestStatus testPerfQuery (Context& context, VkFormat format)
+{
+	const InstanceInterface&			vki					= context.getInstanceInterface();
+	const VkPhysicalDevice				physicalDevice		= context.getPhysicalDevice();
+	VkFormatProperties2					formatProperties	= {};
+	VkSubpassResolvePerformanceHintEXT	perfHint			= {};
+
+	perfHint.sType = VK_STRUCTURE_TYPE_SUBPASS_RESOLVE_PERFORMANCE_HINT_EXT;
+	perfHint.optimal = 0xDEADBEEF;
+
+	formatProperties.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
+	formatProperties.pNext = &perfHint;
+
+	vki.getPhysicalDeviceFormatProperties2(physicalDevice, format, &formatProperties);
+
+	// There is actually nothing to verify other than that the above query was successful.
+	// Regardless of optimal resolve or not, the operations must succeed.  We'll just make sure
+	// the driver did produce a valid response.
+	if (perfHint.optimal != VK_FALSE && perfHint.optimal != VK_TRUE)
+	{
+		std::string errorMsg = "VkSubpassResolvePerformanceHintEXT::optimal is not populated after query";
+		return tcu::TestStatus::fail(errorMsg);
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 std::string getFormatShortString (const VkFormat format)
 {
 	std::string s(de::toLower(getFormatName(format)));
@@ -4560,6 +4593,58 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup* rootGroup, const bool i
 				formatGroup->addChild(sampleGroup.release());
 			}
 			group->addChild(formatGroup.release());
+		}
+
+		rootGroup->addChild(group.release());
+	}
+
+	// Test 6: Tests subpass resolve efficiency query
+	if (isMultisampledRenderToSingleSampled)
+	{
+		MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "subpass_resolve_efficiency_query", "Tests that subpass resolve efficiency performance hint query works"));
+
+		for (const VkFormat format		: color1FormatRange)
+		{
+			addFunctionCase(
+					group.get(),
+					getFormatShortString(format),
+					"",
+					checkHasMsrtss,
+					testPerfQuery,
+					format);
+		}
+
+		for (const VkFormat format		: color2FormatRange)
+		{
+			addFunctionCase(
+					group.get(),
+					getFormatShortString(format),
+					"",
+					checkHasMsrtss,
+					testPerfQuery,
+					format);
+		}
+
+		for (const VkFormat format		: color3FormatRange)
+		{
+			addFunctionCase(
+					group.get(),
+					getFormatShortString(format),
+					"",
+					checkHasMsrtss,
+					testPerfQuery,
+					format);
+		}
+
+		for (const VkFormat format	: depthStencilFormatRange)
+		{
+			addFunctionCase(
+					group.get(),
+					getFormatShortString(format),
+					"",
+					checkHasMsrtss,
+					testPerfQuery,
+					format);
 		}
 
 		rootGroup->addChild(group.release());
