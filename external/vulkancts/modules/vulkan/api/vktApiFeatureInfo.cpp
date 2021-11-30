@@ -3279,6 +3279,8 @@ bool requiresYCbCrConversion(Context& context, VkFormat format)
 {
 	if (format == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16)
 	{
+		if (!context.isDeviceFunctionalitySupported("VK_EXT_rgba10x6_formats"))
+			return true;
 		VkPhysicalDeviceFeatures2						coreFeatures;
 		VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT	rgba10x6features;
 
