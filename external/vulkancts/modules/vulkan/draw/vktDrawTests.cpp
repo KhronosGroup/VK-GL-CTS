@@ -55,39 +55,54 @@ namespace Draw
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* group)
+void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, bool useDynamicRendering)
 {
-	tcu::TestContext&	testCtx		= group->getTestContext();
+	group->addChild(new ConcurrentDrawTests					(testCtx, useDynamicRendering));
+	group->addChild(new SimpleDrawTests						(testCtx, useDynamicRendering));
+	group->addChild(new DrawIndexedTests					(testCtx, useDynamicRendering));
+	group->addChild(new IndirectDrawTests					(testCtx, useDynamicRendering));
+	group->addChild(createBasicDrawTests					(testCtx, useDynamicRendering));
+	group->addChild(new InstancedTests						(testCtx, useDynamicRendering));
+	group->addChild(new ShaderDrawParametersTests			(testCtx, useDynamicRendering));
+	group->addChild(createNegativeViewportHeightTests		(testCtx, useDynamicRendering));
+	group->addChild(createZeroViewportHeightTests			(testCtx, useDynamicRendering));
+	group->addChild(createInvertedDepthRangesTests			(testCtx, useDynamicRendering));
+	group->addChild(createDifferingInterpolationTests		(testCtx, useDynamicRendering));
+	group->addChild(createShaderLayerTests					(testCtx, useDynamicRendering));
+	group->addChild(createShaderViewportIndexTests			(testCtx, useDynamicRendering));
+	group->addChild(createScissorTests						(testCtx, useDynamicRendering));
+	group->addChild(createMultipleInterpolationTests		(testCtx, useDynamicRendering));
+	group->addChild(createDiscardRectanglesTests			(testCtx, useDynamicRendering));
+	group->addChild(createExplicitVertexParameterTests		(testCtx, useDynamicRendering));
+	group->addChild(createDepthClampTests					(testCtx, useDynamicRendering));
+	group->addChild(new MultipleClearsWithinRenderPassTests	(testCtx, useDynamicRendering));
+	group->addChild(createDrawMultiExtTests					(testCtx, useDynamicRendering));
 
-	group->addChild(new ConcurrentDrawTests					(testCtx));
-	group->addChild(new SimpleDrawTests						(testCtx));
-	group->addChild(new DrawIndexedTests					(testCtx));
-	group->addChild(new IndirectDrawTests					(testCtx));
-	group->addChild(createBasicDrawTests					(testCtx));
-	group->addChild(new InstancedTests						(testCtx));
-	group->addChild(new ShaderDrawParametersTests			(testCtx));
-	group->addChild(createNegativeViewportHeightTests		(testCtx));
-	group->addChild(createZeroViewportHeightTests			(testCtx));
-	group->addChild(createInvertedDepthRangesTests			(testCtx));
-	group->addChild(createDifferingInterpolationTests		(testCtx));
-	group->addChild(createShaderLayerTests					(testCtx));
-	group->addChild(createShaderViewportIndexTests			(testCtx));
-	group->addChild(createScissorTests						(testCtx));
-	group->addChild(createMultipleInterpolationTests		(testCtx));
-	group->addChild(createDiscardRectanglesTests			(testCtx));
-	group->addChild(createExplicitVertexParameterTests		(testCtx));
-	group->addChild(createOutputLocationTests		        (testCtx));
-	group->addChild(createDepthClampTests					(testCtx));
-	group->addChild(createAhbTests							(testCtx));
-	group->addChild(new MultipleClearsWithinRenderPassTests	(testCtx));
-	group->addChild(createDrawMultiExtTests					(testCtx));
+	if (!useDynamicRendering)
+	{
+		// amber tests - no support for dynamic rendering
+		group->addChild(createOutputLocationTests			(testCtx));
+
+		// subpasses can't be translated to dynamic rendering
+		group->addChild(createAhbTests						(testCtx));
+	}
 }
 
 } // anonymous
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "draw", "Simple Draw tests", createChildren);
+	de::MovePtr<tcu::TestCaseGroup> mainGroup				(new tcu::TestCaseGroup(testCtx, "draw", "Simple Draw tests"));
+	de::MovePtr<tcu::TestCaseGroup> renderpassGroup			(new tcu::TestCaseGroup(testCtx, "renderpass", "Draw using render pass object"));
+	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup	(new tcu::TestCaseGroup(testCtx, "dynamic_rendering", "Draw using VK_KHR_dynamic_rendering"));
+
+	createChildren(testCtx, renderpassGroup.get(), false);
+	createChildren(testCtx, dynamicRenderingGroup.get(), true);
+
+	mainGroup->addChild(renderpassGroup.release());
+	mainGroup->addChild(dynamicRenderingGroup.release());
+
+	return mainGroup.release();
 }
 
 } // Draw

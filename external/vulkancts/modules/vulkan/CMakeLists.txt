@@ -44,6 +44,7 @@ add_subdirectory(ray_query)
 add_subdirectory(postmortem)
 add_subdirectory(fragment_shading_rate)
 add_subdirectory(reconvergence)
+add_subdirectory(mesh_shader)
 
 
 include_directories(
@@ -91,6 +92,7 @@ include_directories(
 	ray_query
 	postmortem
 	reconvergence
+	mesh_shader
 	)
 
 set(DEQP_VK_SRCS
@@ -158,6 +160,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-postmortem
 	deqp-vk-fragment-shading-rate
 	deqp-vk-reconvergence
+	deqp-vk-mesh-shader
 	)
 
 if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))

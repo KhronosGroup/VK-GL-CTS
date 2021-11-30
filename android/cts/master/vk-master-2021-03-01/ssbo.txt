@@ -3953,5 +3953,4 @@ dEQP-VK.ssbo.phys.layout.multi_nested_struct.single_buffer.scalar_store_cols
 dEQP-VK.ssbo.phys.layout.multi_nested_struct.single_buffer.scalar_comp_access_store_cols
 dEQP-VK.ssbo.phys.layout.multi_nested_struct.single_buffer.scalar_instance_array_store_cols
 dEQP-VK.ssbo.phys.layout.multi_nested_struct.single_buffer.scalar_instance_array_comp_access_store_cols
-dEQP-VK.ssbo.phys.layout.random.16bit.scalar.13
 dEQP-VK.ssbo.corner_case.long_shader_bitwise_and

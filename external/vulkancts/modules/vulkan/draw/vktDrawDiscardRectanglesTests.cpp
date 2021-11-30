@@ -36,6 +36,7 @@
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktDrawBufferObjectUtil.hpp"
+#include "vktDrawImageObjectUtil.hpp"
 
 #include "tcuTestCase.hpp"
 #include "tcuVector.hpp"
@@ -86,6 +87,7 @@ struct TestParams
 	deUint32		numRectangles;
 	deBool			dynamicDiscardRectangles;
 	TestScissorMode	scissorMode;
+	deBool			useDynamicRendering;
 };
 
 template<typename T>
@@ -318,11 +320,11 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&			vk,
 		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,			// VkStructureType								sType;
 		DE_NULL,														// const void*									pNext;
 		0u,																// VkPipelineDynamicStateCreateFlags			flags;
-	    (deUint32)dynamicStates.size(),									// deUint32										dynamicStateCount;
+		(deUint32)dynamicStates.size(),									// deUint32										dynamicStateCount;
 		dynamicStates.data()											// const VkDynamicState*						pDynamicStates;
 	};
 
-	const VkGraphicsPipelineCreateInfo graphicsPipelineInfo =
+	VkGraphicsPipelineCreateInfo graphicsPipelineInfo =
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,				// VkStructureType									sType;
 		&discardRectangleStateCreateInfo,								// const void*										pNext;
@@ -344,6 +346,22 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&			vk,
 		DE_NULL,														// VkPipeline										basePipelineHandle;
 		0,																// deInt32											basePipelineIndex;
 	};
+
+	VkFormat colorAttachmentFormat = VK_FORMAT_R8G8B8A8_UNORM;
+	vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+		&discardRectangleStateCreateInfo,
+		0u,
+		1u,
+		&colorAttachmentFormat,
+		VK_FORMAT_UNDEFINED,
+		VK_FORMAT_UNDEFINED
+	};
+
+	// when pipeline is created without render pass we are using dynamic rendering
+	if (renderPass == DE_NULL)
+		graphicsPipelineInfo.pNext = &renderingCreateInfo;
 
 	return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
 }
@@ -537,10 +555,15 @@ tcu::TestStatus DiscardRectanglesTestInstance::iterate	(void)
 
 		m_vertexModule				= createShaderModule	(vk, device, m_context.getBinaryCollection().get("vert"), 0u);
 		m_fragmentModule			= createShaderModule	(vk, device, m_context.getBinaryCollection().get("frag"), 0u);
-		m_renderPass				= makeRenderPass		(vk, device, colorFormat);
-		m_framebuffer				= makeFramebuffer		(vk, device, *m_renderPass, m_colorAttachment.get(),
+
+		if (!m_params.useDynamicRendering)
+		{
+			m_renderPass			= makeRenderPass		(vk, device, colorFormat);
+			m_framebuffer			= makeFramebuffer		(vk, device, *m_renderPass, m_colorAttachment.get(),
 															 static_cast<deUint32>(m_renderSize.x()),
 															 static_cast<deUint32>(m_renderSize.y()));
+		}
+
 		m_pipelineLayout			= makePipelineLayout	(vk, device);
 
 		generateDiscardRectangles(m_renderSize, m_params.numRectangles, m_rectangles);
@@ -561,17 +584,27 @@ tcu::TestStatus DiscardRectanglesTestInstance::iterate	(void)
 			makeOffset2D(0, 0),
 			makeExtent2D(m_renderSize.x(), m_renderSize.y()),
 		};
-		const VkRenderPassBeginInfo renderPassBeginInfo =
+
+		if (m_params.useDynamicRendering)
 		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// VkStructureType         sType;
-			DE_NULL,										// const void*             pNext;
-			*m_renderPass,									// VkRenderPass            renderPass;
-			*m_framebuffer,									// VkFramebuffer           framebuffer;
-			renderArea,										// VkRect2D                renderArea;
-			1u,												// uint32_t                clearValueCount;
-			&clearValue,									// const VkClearValue*     pClearValues;
-		};
-		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			initialTransitionColor2DImage(vk, *m_cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+										  VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+			beginRendering(vk, *m_cmdBuffer, *m_colorAttachment, renderArea, clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+		}
+		else
+		{
+			const VkRenderPassBeginInfo renderPassBeginInfo =
+			{
+				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// VkStructureType         sType;
+				DE_NULL,										// const void*             pNext;
+				*m_renderPass,									// VkRenderPass            renderPass;
+				*m_framebuffer,									// VkFramebuffer           framebuffer;
+				renderArea,										// VkRect2D                renderArea;
+				1u,												// uint32_t                clearValueCount;
+				&clearValue,									// const VkClearValue*     pClearValues;
+			};
+			vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		}
 
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 		{
@@ -588,7 +621,11 @@ tcu::TestStatus DiscardRectanglesTestInstance::iterate	(void)
 			vk.cmdSetScissor(*m_cmdBuffer, 0u, 1u, &rectScissor);
 		}
 		vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_vertices.size()), 1u, 0u, 0u);	// two triangles
-		vk.cmdEndRenderPass(*m_cmdBuffer);
+
+		if (m_params.useDynamicRendering)
+			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		else
+			vk.cmdEndRenderPass(*m_cmdBuffer);
 
 		copyImageToBuffer(vk, *m_cmdBuffer, *m_colorImage, m_colorBuffer->object(), tcu::IVec2(m_renderSize.x(), m_renderSize.y()), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, colorSubresourceRange.layerCount);
 
@@ -677,6 +714,8 @@ void DiscardRectanglesTestCase::initPrograms(SourceCollections& programCollectio
 void DiscardRectanglesTestCase::checkSupport (Context& context) const
 {
 	context.requireDeviceFunctionality("VK_EXT_discard_rectangles");
+	if (m_params.useDynamicRendering)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 }
 
 TestInstance* DiscardRectanglesTestCase::createInstance (Context& context) const
@@ -684,7 +723,7 @@ TestInstance* DiscardRectanglesTestCase::createInstance (Context& context) const
 	return new DiscardRectanglesTestInstance(context, m_params);
 }
 
-void createTests (tcu::TestCaseGroup* testGroup)
+void createTests (tcu::TestCaseGroup* testGroup, bool useDynamicRendering)
 {
 	tcu::TestContext&	testCtx											= testGroup->getTestContext();
 	deUint32			numRect [NUM_RECT_TESTS]						= { 1, 2, 3, 4,  8, 16};
@@ -707,6 +746,7 @@ void createTests (tcu::TestCaseGroup* testGroup)
 					params.dynamicDiscardRectangles		= dynamic ? DE_TRUE : DE_FALSE;
 					params.scissorMode					= (TestScissorMode) scissor;
 					params.numRectangles				= numRect[rect];
+					params.useDynamicRendering			= useDynamicRendering;
 					name << dynamicName[dynamic] << scissorName[scissor] << modeName[mode] << "rect_" << numRect[rect];
 
 					testGroup->addChild(new DiscardRectanglesTestCase(testCtx, name.str().c_str(), "", params));
@@ -717,9 +757,9 @@ void createTests (tcu::TestCaseGroup* testGroup)
 }
 }	// Anonymous
 
-tcu::TestCaseGroup* createDiscardRectanglesTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createDiscardRectanglesTests (tcu::TestContext& testCtx, bool useDynamicRendering)
 {
-	return createTestGroup(testCtx, "discard_rectangles", "Discard Rectangles tests", createTests);
+	return createTestGroup(testCtx, "discard_rectangles", "Discard Rectangles tests", createTests, useDynamicRendering);
 }
 
 }	// Draw

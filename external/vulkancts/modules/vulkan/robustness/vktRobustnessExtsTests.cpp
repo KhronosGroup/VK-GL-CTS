@@ -402,6 +402,9 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 	if (m_data.stage == STAGE_VERTEX && !features2.features.vertexPipelineStoresAndAtomics)
 		TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
 
+	if (m_data.stage == STAGE_FRAGMENT && !features2.features.fragmentStoresAndAtomics)
+		TCU_THROW(NotSupportedError, "Fragment shader stores not supported");
+
 	if (m_data.stage == STAGE_RAYGEN)
 		context.requireDeviceFunctionality("VK_NV_ray_tracing");
 
@@ -464,6 +467,12 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 
 	if (m_data.pushDescriptor)
 		context.requireDeviceFunctionality("VK_KHR_push_descriptor");
+
+	if (m_data.viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY && !features2.features.imageCubeArray)
+		TCU_THROW(NotSupportedError, "Cube array image view type not supported");
+
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getDeviceFeatures().robustBufferAccess)
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: robustBufferAccess not supported by this implementation");
 }
 
 void generateLayout(Layout &layout, const CaseDef &caseDef)

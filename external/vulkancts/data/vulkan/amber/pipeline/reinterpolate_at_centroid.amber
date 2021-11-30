@@ -1,0 +1,52 @@
+#!amber
+DEVICE_FEATURE sampleRateShading
+SHADER vertex vert_shader GLSL
+#version 440
+layout(location = 0) in vec4 vs_in_position_ndc;
+layout(location = 1) in float vs_in_position_screen;
+layout(location = 0) out float vs_out_pos_screen;
+void main (void)
+{
+    gl_Position = vs_in_position_ndc;
+    vs_out_pos_screen = vs_in_position_screen;
+}
+END
+SHADER fragment frag_shader GLSL
+#version 440
+layout(location = 0) centroid in float fs_in_pos_screen;
+layout(location = 0) out vec4 fs_out_color;
+void main (void)
+{
+    const float threshold = 0.0005;
+    const float a = interpolateAtCentroid(fs_in_pos_screen);
+    const float b = fs_in_pos_screen;
+    const bool  valuesEqual = (abs(a - b) < threshold);
+    if (valuesEqual)
+        fs_out_color = vec4(0.0, 1.0, 0.0, 1.0);
+    else
+        fs_out_color = vec4(1.0, 0.0, 0.0, 1.0);
+}
+END
+BUFFER position DATA_TYPE vec4<float> DATA
+-1.0 -1.0 0.0 1.0
+ 1.0 -1.0 0.0 1.0
+ 1.0  1.0 0.0 1.0
+-1.0  1.0 0.0 1.0
+END
+BUFFER position_screen DATA_TYPE float DATA
+ 0.0
+64.0
+64.0
+ 0.0
+END
+BUFFER framebuffer FORMAT B8G8R8A8_UNORM
+PIPELINE graphics pipeline
+  ATTACH vert_shader
+  ATTACH frag_shader
+  VERTEX_DATA position LOCATION 0
+  VERTEX_DATA position_screen LOCATION 1
+  BIND BUFFER framebuffer AS color LOCATION 0
+  FRAMEBUFFER_SIZE 64 64
+END
+RUN pipeline DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
+EXPECT framebuffer IDX 0 0 SIZE 64 64 EQ_RGBA 0 255 0 255

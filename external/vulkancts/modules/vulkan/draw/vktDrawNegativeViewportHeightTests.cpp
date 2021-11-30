@@ -63,6 +63,7 @@ struct TestParams
 	VkFrontFace			frontFace;
 	VkCullModeFlagBits	cullMode;
 	bool				zeroViewportHeight;
+	bool				useDynamicRendering;
 };
 
 class NegativeViewportHeightTestInstance : public TestInstance
@@ -116,23 +117,27 @@ NegativeViewportHeightTestInstance::NegativeViewportHeightTestInstance (Context&
 		flushMappedMemoryRange(vk, device, m_vertexBuffer->getBoundMemory().getMemory(), m_vertexBuffer->getBoundMemory().getOffset(), VK_WHOLE_SIZE);
 	}
 
-	// Render pass
+	const VkExtent3D		targetImageExtent		= { WIDTH, HEIGHT, 1 };
+	const VkImageUsageFlags	targetImageUsageFlags	= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+	const ImageCreateInfo	targetImageCreateInfo(
+		VK_IMAGE_TYPE_2D,						// imageType,
+		m_colorAttachmentFormat,				// format,
+		targetImageExtent,						// extent,
+		1u,										// mipLevels,
+		1u,										// arrayLayers,
+		VK_SAMPLE_COUNT_1_BIT,					// samples,
+		VK_IMAGE_TILING_OPTIMAL,				// tiling,
+		targetImageUsageFlags);					// usage,
+
+	m_colorTargetImage = Image::createAndAlloc(vk, device, targetImageCreateInfo, m_context.getDefaultAllocator(), m_context.getUniversalQueueFamilyIndex());
+
+	const ImageViewCreateInfo colorTargetViewInfo(m_colorTargetImage->object(), VK_IMAGE_VIEW_TYPE_2D, m_colorAttachmentFormat);
+	m_colorTargetView = createImageView(vk, device, &colorTargetViewInfo);
+
+	// Render pass and framebuffer
+	if (!m_params.useDynamicRendering)
 	{
-		const VkExtent3D		targetImageExtent		= { WIDTH, HEIGHT, 1 };
-		const VkImageUsageFlags	targetImageUsageFlags	= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-
-		const ImageCreateInfo	targetImageCreateInfo(
-			VK_IMAGE_TYPE_2D,						// imageType,
-			m_colorAttachmentFormat,				// format,
-			targetImageExtent,						// extent,
-			1u,										// mipLevels,
-			1u,										// arrayLayers,
-			VK_SAMPLE_COUNT_1_BIT,					// samples,
-			VK_IMAGE_TILING_OPTIMAL,				// tiling,
-			targetImageUsageFlags);					// usage,
-
-		m_colorTargetImage = Image::createAndAlloc(vk, device, targetImageCreateInfo, m_context.getDefaultAllocator(), m_context.getUniversalQueueFamilyIndex());
-
 		RenderPassCreateInfo	renderPassCreateInfo;
 		renderPassCreateInfo.addAttachment(AttachmentDescription(
 			m_colorAttachmentFormat,				// format
@@ -163,17 +168,9 @@ NegativeViewportHeightTestInstance::NegativeViewportHeightTestInstance (Context&
 			DE_NULL));								// preserveAttachments
 
 		m_renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
-	}
 
-	// Framebuffer
-	{
-		const ImageViewCreateInfo colorTargetViewInfo (m_colorTargetImage->object(), VK_IMAGE_VIEW_TYPE_2D, m_colorAttachmentFormat);
-		m_colorTargetView = createImageView(vk, device, &colorTargetViewInfo);
-
-		std::vector<VkImageView> colorAttachments(1);
-		colorAttachments[0] = *m_colorTargetView;
-
-		const FramebufferCreateInfo	framebufferCreateInfo(*m_renderPass, colorAttachments, WIDTH, HEIGHT, 1);
+		std::vector<VkImageView>		colorAttachments		{ *m_colorTargetView };
+		const FramebufferCreateInfo		framebufferCreateInfo	(*m_renderPass, colorAttachments, WIDTH, HEIGHT, 1);
 		m_framebuffer = createFramebuffer(vk, device, &framebufferCreateInfo);
 	}
 
@@ -234,6 +231,20 @@ NegativeViewportHeightTestInstance::NegativeViewportHeightTestInstance (Context&
 	pipelineCreateInfo.addState (PipelineCreateInfo::MultiSampleState	());
 	pipelineCreateInfo.addState (PipelineCreateInfo::DynamicState		(dynamicStates));
 
+	vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+		DE_NULL,
+		0u,
+		1u,
+		&m_colorAttachmentFormat,
+		vk::VK_FORMAT_UNDEFINED,
+		vk::VK_FORMAT_UNDEFINED
+	};
+
+	if (m_params.useDynamicRendering)
+		pipelineCreateInfo.pNext = &renderingCreateInfo;
+
 	m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
 
@@ -243,6 +254,7 @@ tcu::ConstPixelBufferAccess NegativeViewportHeightTestInstance::draw (const VkVi
 	const VkDevice			device				= m_context.getDevice();
 	const VkQueue			queue				= m_context.getUniversalQueue();
 	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const VkClearValue		clearColor			= makeClearValueColorF32(0.125f, 0.25f, 0.5f, 1.0f);
 
 	// Command buffer
 
@@ -257,12 +269,11 @@ tcu::ConstPixelBufferAccess NegativeViewportHeightTestInstance::draw (const VkVi
 	vk.cmdSetViewport(*cmdBuffer, 0u, 1u, &viewport);
 
 	{
-		const VkClearColorValue		clearColor			= makeClearValueColorF32(0.125f, 0.25f, 0.5f, 1.0f).color;
 		const ImageSubresourceRange subresourceRange	(VK_IMAGE_ASPECT_COLOR_BIT);
 
 		initialTransitionColor2DImage(vk, *cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL,
 									  VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-		vk.cmdClearColorImage(*cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, &clearColor, 1, &subresourceRange);
+		vk.cmdClearColorImage(*cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &subresourceRange);
 	}
 
 	if (m_params.zeroViewportHeight)
@@ -293,7 +304,11 @@ tcu::ConstPixelBufferAccess NegativeViewportHeightTestInstance::draw (const VkVi
 		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 	}
 
-	beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT));
+	VkRect2D rect = makeRect2D(0, 0, WIDTH, HEIGHT);
+	if (m_params.useDynamicRendering)
+		beginRendering(vk, *cmdBuffer, *m_colorTargetView, rect, clearColor);
+	else
+		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, rect);
 
 	{
 		const VkDeviceSize	offset	= 0;
@@ -304,7 +319,12 @@ tcu::ConstPixelBufferAccess NegativeViewportHeightTestInstance::draw (const VkVi
 
 	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 	vk.cmdDraw(*cmdBuffer, 6, 1, 0, 0);
-	endRenderPass(vk, *cmdBuffer);
+
+	if (m_params.useDynamicRendering)
+		endRendering(vk, *cmdBuffer);
+	else
+		endRenderPass(vk, *cmdBuffer);
+
 	endCommandBuffer(vk, *cmdBuffer);
 
 	// Submit
@@ -500,6 +520,9 @@ public:
 
 	virtual void checkSupport (Context& context) const
 	{
+		if (m_params.useDynamicRendering)
+			context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
 		context.requireDeviceFunctionality("VK_KHR_maintenance1");
 	}
 
@@ -512,7 +535,13 @@ private:
 	const TestParams	m_params;
 };
 
-void populateTestGroup (tcu::TestCaseGroup* testGroup, bool zeroViewportHeight)
+struct GroupParams
+{
+	bool zeroViewportHeight;
+	bool useDynamicRendering;
+};
+
+void populateTestGroup (tcu::TestCaseGroup* testGroup, GroupParams groupParams)
 {
 	const struct
 	{
@@ -543,7 +572,8 @@ void populateTestGroup (tcu::TestCaseGroup* testGroup, bool zeroViewportHeight)
 		{
 			frontFace[ndxFrontFace].frontFace,
 			cullMode[ndxCullMode].cullMode,
-			zeroViewportHeight
+			groupParams.zeroViewportHeight,
+			groupParams.useDynamicRendering
 		};
 		std::ostringstream	name;
 		name << frontFace[ndxFrontFace].name << "_" << cullMode[ndxCullMode].name;
@@ -554,14 +584,16 @@ void populateTestGroup (tcu::TestCaseGroup* testGroup, bool zeroViewportHeight)
 
 }	// anonymous
 
-tcu::TestCaseGroup*	createNegativeViewportHeightTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createNegativeViewportHeightTests (tcu::TestContext& testCtx, bool useDynamicRendering)
 {
-	return createTestGroup(testCtx, "negative_viewport_height", "Negative viewport height (VK_KHR_maintenance1)", populateTestGroup, false);
+	GroupParams groupParams { false, useDynamicRendering };
+	return createTestGroup(testCtx, "negative_viewport_height", "Negative viewport height (VK_KHR_maintenance1)", populateTestGroup, groupParams);
 }
 
-tcu::TestCaseGroup*	createZeroViewportHeightTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createZeroViewportHeightTests (tcu::TestContext& testCtx, bool useDynamicRendering)
 {
-	return createTestGroup(testCtx, "zero_viewport_height", "Zero viewport height (VK_KHR_maintenance1)", populateTestGroup, true);
+	GroupParams groupParams{ false, useDynamicRendering };
+	return createTestGroup(testCtx, "zero_viewport_height", "Zero viewport height (VK_KHR_maintenance1)", populateTestGroup, groupParams);
 }
 
 }	// Draw

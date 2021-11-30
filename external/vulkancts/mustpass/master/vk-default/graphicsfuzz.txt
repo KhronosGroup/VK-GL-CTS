@@ -165,6 +165,7 @@ dEQP-VK.graphicsfuzz.cov-function-nested-do-whiles-looped-once
 dEQP-VK.graphicsfuzz.cov-function-trivial-switch-case
 dEQP-VK.graphicsfuzz.cov-function-unpack-unorm-2x16-one
 dEQP-VK.graphicsfuzz.cov-function-vec2-never-discard
+dEQP-VK.graphicsfuzz.cov-function-with-nested-loops-called-from-nested-loops
 dEQP-VK.graphicsfuzz.cov-global-loop-bound-true-logical-or
 dEQP-VK.graphicsfuzz.cov-global-loop-counter-exhaust-calling-function-twice
 dEQP-VK.graphicsfuzz.cov-global-loop-counter-float-accumulate-matrix

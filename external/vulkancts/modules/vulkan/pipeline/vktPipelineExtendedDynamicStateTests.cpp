@@ -550,7 +550,7 @@ struct StaticAndDynamicPair
 	// Helper constructor to set a static value and no dynamic value.
 	StaticAndDynamicPair (const T& value)
 		: staticValue	(value)
-		, dynamicValue	(tcu::nothing<T>())
+		, dynamicValue	(tcu::Nothing)
 	{
 	}
 
@@ -876,8 +876,8 @@ struct TestConfig
 		, vertexGenerator				(makeVertexGeneratorConfig(staticVertexGenerator, dynamicVertexGenerator))
 		, cullModeConfig				(static_cast<vk::VkCullModeFlags>(vk::VK_CULL_MODE_NONE))
 		, frontFaceConfig				(vk::VK_FRONT_FACE_COUNTER_CLOCKWISE)
-		// By default we will use a triangle fan with 6 vertices that could be wrongly interpreted as a triangle list with 2 triangles.
-		, topologyConfig				(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN)
+		// By default we will use a triangle strip with 6 vertices that could be wrongly interpreted as a triangle list with 2 triangles.
+		, topologyConfig				(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 		, viewportConfig				(ViewportVec(1u, vk::makeViewport(kFramebufferWidth, kFramebufferHeight)))
 		, scissorConfig					(ScissorVec(1u, vk::makeRect2D(kFramebufferWidth, kFramebufferHeight)))
 		// By default, the vertex stride is the size of a vertex according to the chosen vertex type.
@@ -1432,9 +1432,11 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 			<< "}\n";
 	}
 
+	// In reversed test configurations, the pipeline with dynamic state needs to have the inactive shader.
+	const auto kReversed = m_testConfig.isReversed();
+	programCollection.glslSources.add("dynamicVert") << glu::VertexSource(kReversed ? inactiveVertSource : activeVertSource);
+	programCollection.glslSources.add("staticVert") << glu::VertexSource(kReversed ? activeVertSource : inactiveVertSource);
 
-	programCollection.glslSources.add("vert") << glu::VertexSource(activeVertSource);
-	programCollection.glslSources.add("vert2") << glu::VertexSource(inactiveVertSource);
 	programCollection.glslSources.add("frag") << glu::FragmentSource(fragSource.str());
 	if (m_testConfig.needsGeometryShader())
 		programCollection.glslSources.add("geom") << glu::GeometrySource(geomSource.str());
@@ -1771,32 +1773,32 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		dsImageViews.emplace_back(vk::makeImageView(vkd, device, img->get(), vk::VK_IMAGE_VIEW_TYPE_2D, dsFormatInfo->imageFormat, dsSubresourceRange));
 
 	// Vertex buffer.
-	const auto									topologyClass	= getTopologyClass(m_testConfig.topologyConfig.staticValue);
-	const std::vector<deUint32>					indices			{ 0, 1, 2, 3, 0xFFFFFFFF, 4, 5, 0, 3 };
-	std::vector<tcu::Vec2>						vertices;
+	const auto			topologyClass	= getTopologyClass(m_testConfig.topologyConfig.staticValue);
+	std::vector<tcu::Vec2>		vertices;
+	std::vector<deUint32>		indices{ 0, 1, 2, 3, 0xFFFFFFFF, 2, 3, 4, 5 };
 
 	if (topologyClass == TopologyClass::TRIANGLE)
 	{
-		// Full-screen triangle fan with 6 vertices.
+		// Full-screen triangle strip with 6 vertices.
 		//
-		// 4        3        2
+		// 0        2        4
 		//  +-------+-------+
-		//  |X      X      X|
-		//  | X     X     X |
-		//  |  X    X    X  |
+		//  |      XX      X|
+		//  |     X X     X |
+		//  |    X  X    X  |
 		//  |   X   X   X   |
-		//  |    X  X  X    |
-		//  |     X X X     |
-		//  |      XXX      |
+		//  |  X    X  X    |
+		//  | X     X X     |
+		//  |X      XX      |
 		//  +-------+-------+
-		// 5        0        1
+		// 1        3       5
 		vertices.reserve(6u);
-		vertices.push_back(tcu::Vec2( 0.0f,  1.0f));
-		vertices.push_back(tcu::Vec2( 1.0f,  1.0f));
-		vertices.push_back(tcu::Vec2( 1.0f, -1.0f));
-		vertices.push_back(tcu::Vec2( 0.0f, -1.0f));
 		vertices.push_back(tcu::Vec2(-1.0f, -1.0f));
 		vertices.push_back(tcu::Vec2(-1.0f,  1.0f));
+		vertices.push_back(tcu::Vec2( 0.0f, -1.0f));
+		vertices.push_back(tcu::Vec2( 0.0f,  1.0f));
+		vertices.push_back(tcu::Vec2( 1.0f, -1.0f));
+		vertices.push_back(tcu::Vec2( 1.0f,  1.0f));
 	}
 	else if (topologyClass == TopologyClass::PATCH)
 	{
@@ -1830,14 +1832,18 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	if (m_testConfig.singleVertex)
 		vertices.resize(1);
 
-	// Reversed vertices, except for the first one (0, 5, 4, 3, 2, 1): clockwise mesh for triangles. Not to be used with lines.
+	// Reversed vertices order in triangle strip (1, 0, 3, 2, 5, 4)
 	std::vector<tcu::Vec2> rvertices;
 	if (topologyClass == TopologyClass::TRIANGLE)
 	{
 		DE_ASSERT(!vertices.empty());
-		rvertices.reserve(vertices.size());
-		rvertices.push_back(vertices[0]);
-		std::copy_n(vertices.rbegin(), vertices.size() - 1u, std::back_inserter(rvertices));
+		rvertices.reserve(6u);
+                rvertices.push_back(vertices[1]);
+                rvertices.push_back(vertices[0]);
+                rvertices.push_back(vertices[3]);
+                rvertices.push_back(vertices[2]);
+                rvertices.push_back(vertices[5]);
+                rvertices.push_back(vertices[4]);
 	}
 
 	if (topologyClass != TopologyClass::TRIANGLE)
@@ -1992,9 +1998,9 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	}
 
 	// Shader modules.
-	const auto						vertModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
-	const auto						vertModule2	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert2"), 0u);
-	const auto						fragModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+	const auto						dynamicVertModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("dynamicVert"), 0u);
+	const auto						staticVertModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("staticVert"), 0u);
+	const auto						fragModule			= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
 	vk::Move<vk::VkShaderModule>	geomModule;
 	vk::Move<vk::VkShaderModule>	tescModule;
 	vk::Move<vk::VkShaderModule>	teseModule;
@@ -2047,10 +2053,10 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	shaderStaticStages = shaderStages;
 	shaderStageCreateInfo.stage = vk::VK_SHADER_STAGE_VERTEX_BIT;
 
-	shaderStageCreateInfo.module = vertModule.get();
+	shaderStageCreateInfo.module = dynamicVertModule.get();
 	shaderStages.push_back(shaderStageCreateInfo);
 
-	shaderStageCreateInfo.module = vertModule2.get();
+	shaderStageCreateInfo.module = staticVertModule.get();
 	shaderStaticStages.push_back(shaderStageCreateInfo);
 
 	// Input state.
@@ -2717,9 +2723,9 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 					vk::VkPrimitiveTopology dynamicVal;
 				} kTopologyCases[] =
 				{
-					{ vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN	},
-					{ vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP	},
-					{ vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,		vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST	},
+					{ vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP	},
+					{ vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP		},
+					{ vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,		vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST		},
 				};
 
 				for (const auto& kTopologyCase : kTopologyCases)

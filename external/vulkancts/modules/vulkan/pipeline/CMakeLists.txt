@@ -73,6 +73,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineRenderToImageTests.hpp
 	vktPipelineFramebufferAttachmentTests.cpp
 	vktPipelineFramebufferAttachmentTests.hpp
+	vktPipelineSamplerBorderSwizzleTests.cpp
+	vktPipelineSamplerBorderSwizzleTests.hpp
 	vktPipelineSamplerTests.cpp
 	vktPipelineSamplerTests.hpp
 	vktPipelineStencilExportTests.cpp

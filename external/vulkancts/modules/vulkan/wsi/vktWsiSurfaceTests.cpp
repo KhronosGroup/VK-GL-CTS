@@ -1179,7 +1179,7 @@ tcu::TestStatus resizeSurfaceTest (Context& context, Type wsiType)
 	const UniquePtr<Display>		nativeDisplay	(NativeObjects::createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(),
 																				  instHelper.supportedExtensions,
 																				  wsiType));
-	UniquePtr<Window>				nativeWindow	(NativeObjects::createWindow(*nativeDisplay, tcu::nothing<UVec2>()));
+	UniquePtr<Window>				nativeWindow	(NativeObjects::createWindow(*nativeDisplay, tcu::Nothing));
 
 	const vector<VkPhysicalDevice>	physicalDevices	= enumeratePhysicalDevices(instHelper.vki, instHelper.instance);
 	const Unique<VkSurfaceKHR>		surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, *nativeDisplay, *nativeWindow));

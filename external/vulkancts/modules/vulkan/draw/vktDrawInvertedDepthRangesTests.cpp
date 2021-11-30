@@ -64,7 +64,7 @@ struct TestParams
 	VkBool32	depthClampEnable;
 	VkBool32	depthBiasEnable;
 	float		depthBiasClamp;
-
+	VkBool32	useDynamicRendering;
 };
 
 constexpr deUint32			kImageDim		= 256u;
@@ -142,35 +142,42 @@ InvertedDepthRangesTestInstance::InvertedDepthRangesTestInstance (Context& conte
 		flushMappedMemoryRange(vk, device, m_vertexBuffer->getBoundMemory().getMemory(), m_vertexBuffer->getBoundMemory().getOffset(), VK_WHOLE_SIZE);
 	}
 
-	// Render pass
+	const VkImageUsageFlags	targetImageUsageFlags	= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	const VkImageUsageFlags depthTargeUsageFlags	= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+	const ImageCreateInfo	targetImageCreateInfo(
+		VK_IMAGE_TYPE_2D,						// imageType,
+		m_colorAttachmentFormat,				// format,
+		kImageExtent,							// extent,
+		1u,										// mipLevels,
+		1u,										// arrayLayers,
+		VK_SAMPLE_COUNT_1_BIT,					// samples,
+		VK_IMAGE_TILING_OPTIMAL,				// tiling,
+		targetImageUsageFlags);					// usage,
+
+	m_colorTargetImage = Image::createAndAlloc(vk, device, targetImageCreateInfo, alloc, qIndex);
+
+	const ImageCreateInfo	depthTargetImageCreateInfo(
+		VK_IMAGE_TYPE_2D,						// imageType,
+		m_depthAttachmentFormat,				// format,
+		kImageExtent,							// extent,
+		1u,										// mipLevels,
+		1u,										// arrayLayers,
+		VK_SAMPLE_COUNT_1_BIT,					// samples,
+		VK_IMAGE_TILING_OPTIMAL,				// tiling,
+		depthTargeUsageFlags);					// usage,
+
+	m_depthTargetImage = Image::createAndAlloc(vk, device, depthTargetImageCreateInfo, alloc, qIndex);
+
+	const ImageViewCreateInfo colorTargetViewInfo(m_colorTargetImage->object(), VK_IMAGE_VIEW_TYPE_2D, m_colorAttachmentFormat);
+	m_colorTargetView = createImageView(vk, device, &colorTargetViewInfo);
+
+	const ImageViewCreateInfo depthTargetViewInfo(m_depthTargetImage->object(), VK_IMAGE_VIEW_TYPE_2D, m_depthAttachmentFormat);
+	m_depthTargetView = createImageView(vk, device, &depthTargetViewInfo);
+
+	// Render pass and framebuffer
+	if (!m_params.useDynamicRendering)
 	{
-		const VkImageUsageFlags	targetImageUsageFlags	= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-		const VkImageUsageFlags depthTargeUsageFlags	= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-
-		const ImageCreateInfo	targetImageCreateInfo(
-			VK_IMAGE_TYPE_2D,						// imageType,
-			m_colorAttachmentFormat,				// format,
-			kImageExtent,							// extent,
-			1u,										// mipLevels,
-			1u,										// arrayLayers,
-			VK_SAMPLE_COUNT_1_BIT,					// samples,
-			VK_IMAGE_TILING_OPTIMAL,				// tiling,
-			targetImageUsageFlags);					// usage,
-
-		m_colorTargetImage = Image::createAndAlloc(vk, device, targetImageCreateInfo, alloc, qIndex);
-
-		const ImageCreateInfo	depthTargetImageCreateInfo(
-			VK_IMAGE_TYPE_2D,						// imageType,
-			m_depthAttachmentFormat,				// format,
-			kImageExtent,							// extent,
-			1u,										// mipLevels,
-			1u,										// arrayLayers,
-			VK_SAMPLE_COUNT_1_BIT,					// samples,
-			VK_IMAGE_TILING_OPTIMAL,				// tiling,
-			depthTargeUsageFlags);					// usage,
-
-		m_depthTargetImage = Image::createAndAlloc(vk, device, depthTargetImageCreateInfo, alloc, qIndex);
-
 		RenderPassCreateInfo	renderPassCreateInfo;
 		renderPassCreateInfo.addAttachment(AttachmentDescription(
 			m_colorAttachmentFormat,				// format
@@ -217,19 +224,12 @@ InvertedDepthRangesTestInstance::InvertedDepthRangesTestInstance (Context& conte
 			DE_NULL));								// preserveAttachments
 
 		m_renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
-	}
 
-	// Framebuffer
-	{
-		const ImageViewCreateInfo colorTargetViewInfo (m_colorTargetImage->object(), VK_IMAGE_VIEW_TYPE_2D, m_colorAttachmentFormat);
-		m_colorTargetView = createImageView(vk, device, &colorTargetViewInfo);
-
-		const ImageViewCreateInfo depthTargetViewInfo (m_depthTargetImage->object(), VK_IMAGE_VIEW_TYPE_2D, m_depthAttachmentFormat);
-		m_depthTargetView = createImageView(vk, device, &depthTargetViewInfo);
-
-		std::vector<VkImageView> fbAttachments(2);
-		fbAttachments[0] = *m_colorTargetView;
-		fbAttachments[1] = *m_depthTargetView;
+		std::vector<VkImageView> fbAttachments
+		{
+			*m_colorTargetView,
+			*m_depthTargetView
+		};
 
 		const FramebufferCreateInfo	framebufferCreateInfo(*m_renderPass, fbAttachments, kImageExtent.width, kImageExtent.height, 1u);
 		m_framebuffer = createFramebuffer(vk, device, &framebufferCreateInfo);
@@ -292,16 +292,32 @@ InvertedDepthRangesTestInstance::InvertedDepthRangesTestInstance (Context& conte
 	pipelineCreateInfo.addState (PipelineCreateInfo::MultiSampleState	());
 	pipelineCreateInfo.addState (PipelineCreateInfo::DynamicState		(dynamicStates));
 
+	VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+		DE_NULL,
+		0u,
+		1u,
+		&m_colorAttachmentFormat,
+		m_depthAttachmentFormat,
+		m_depthAttachmentFormat
+	};
+
+	if (m_params.useDynamicRendering)
+		pipelineCreateInfo.pNext = &renderingCreateInfo;
+
 	m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
 
 InvertedDepthRangesTestInstance::ColorAndDepth InvertedDepthRangesTestInstance::draw (const VkViewport viewport)
 {
-	const DeviceInterface&	vk					= m_context.getDeviceInterface();
-	const VkDevice			device				= m_context.getDevice();
-	const VkQueue			queue				= m_context.getUniversalQueue();
-	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	auto&					alloc				= m_context.getDefaultAllocator();
+	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+	const VkDevice				device				= m_context.getDevice();
+	const VkQueue				queue				= m_context.getUniversalQueue();
+	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	auto&						alloc				= m_context.getDefaultAllocator();
+	const VkClearValue			clearColor			= makeClearValueColor(kClearColor);
+	const VkClearValue			clearDepth			= makeClearValueDepthStencil(kClearDepth, 0u);
 
 	// Command buffer
 
@@ -316,16 +332,13 @@ InvertedDepthRangesTestInstance::ColorAndDepth InvertedDepthRangesTestInstance::
 	vk.cmdSetViewport(*cmdBuffer, 0u, 1u, &viewport);
 
 	{
-		const VkClearColorValue			clearColor				= makeClearValueColor(kClearColor).color;
 		const ImageSubresourceRange		subresourceRange		(VK_IMAGE_ASPECT_COLOR_BIT);
-
-		const VkClearDepthStencilValue	clearDepth				= makeClearValueDepthStencil(kClearDepth, 0u).depthStencil;
 		const ImageSubresourceRange		depthSubresourceRange	(VK_IMAGE_ASPECT_DEPTH_BIT);
 
 		initialTransitionColor2DImage(vk, *cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 		initialTransitionDepth2DImage(vk, *cmdBuffer, m_depthTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-		vk.cmdClearColorImage(*cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, &clearColor, 1, &subresourceRange);
-		vk.cmdClearDepthStencilImage(*cmdBuffer, m_depthTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, &clearDepth, 1u, &depthSubresourceRange);
+		vk.cmdClearColorImage(*cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &subresourceRange);
+		vk.cmdClearDepthStencilImage(*cmdBuffer, m_depthTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, &clearDepth.depthStencil, 1u, &depthSubresourceRange);
 	}
 	{
 		const VkMemoryBarrier memBarrier =
@@ -348,7 +361,10 @@ InvertedDepthRangesTestInstance::ColorAndDepth InvertedDepthRangesTestInstance::
 		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT), 0, 1, &depthBarrier, 0, DE_NULL, 0, DE_NULL);
 	}
 
-	beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(kImageExtent));
+	if (m_params.useDynamicRendering)
+		beginRendering(vk, *cmdBuffer, *m_colorTargetView, *m_depthTargetView, false, makeRect2D(kImageExtent), clearColor, clearDepth);
+	else
+		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(kImageExtent));
 
 	{
 		const VkDeviceSize	offset	= 0;
@@ -359,7 +375,12 @@ InvertedDepthRangesTestInstance::ColorAndDepth InvertedDepthRangesTestInstance::
 
 	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 	vk.cmdDraw(*cmdBuffer, 3, 1, 0, 0);
-	endRenderPass(vk, *cmdBuffer);
+
+	if (m_params.useDynamicRendering)
+		endRendering(vk, *cmdBuffer);
+	else
+		endRenderPass(vk, *cmdBuffer);
+
 	endCommandBuffer(vk, *cmdBuffer);
 
 	// Submit
@@ -603,6 +624,9 @@ public:
 
 		if (m_params.minDepth > 1.0f || m_params.minDepth < 0.0f || m_params.maxDepth > 1.0f || m_params.maxDepth < 0.0f)
 			context.requireDeviceFunctionality("VK_EXT_depth_range_unrestricted");
+
+		if (m_params.useDynamicRendering)
+			context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 	}
 
 	virtual TestInstance* createInstance (Context& context) const
@@ -614,7 +638,7 @@ private:
 	const TestParams	m_params;
 };
 
-void populateTestGroup (tcu::TestCaseGroup* testGroup)
+void populateTestGroup (tcu::TestCaseGroup* testGroup, bool useDynamicRendering)
 {
 	const struct
 	{
@@ -662,6 +686,7 @@ void populateTestGroup (tcu::TestCaseGroup* testGroup)
 			cDepthClamp.depthClamp,
 			cDepthParams.depthBiasEnable,
 			cDepthParams.depthBiasClamp,
+			useDynamicRendering
 		};
 
 		std::string name = cDepthClamp.name + "_" + cDepthParams.name;
@@ -671,9 +696,9 @@ void populateTestGroup (tcu::TestCaseGroup* testGroup)
 
 }	// anonymous
 
-tcu::TestCaseGroup*	createInvertedDepthRangesTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createInvertedDepthRangesTests (tcu::TestContext& testCtx, bool useDynamicRendering)
 {
-	return createTestGroup(testCtx, "inverted_depth_ranges", "Inverted depth ranges", populateTestGroup);
+	return createTestGroup(testCtx, "inverted_depth_ranges", "Inverted depth ranges", populateTestGroup, useDynamicRendering);
 }
 
 }	// Draw

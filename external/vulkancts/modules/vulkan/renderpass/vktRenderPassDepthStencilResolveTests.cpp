@@ -1551,7 +1551,7 @@ void initTests (tcu::TestCaseGroup* group)
 										0u,
 										useSeparateDepthStencilLayouts,
 										unusedResolve,
-										tcu::nothing<VkFormat>(),
+										tcu::Nothing,
 										false
 									};
 									formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
@@ -1595,7 +1595,7 @@ void initTests (tcu::TestCaseGroup* group)
 										expectedValue,
 										useSeparateDepthStencilLayouts,
 										unusedResolve,
-										tcu::nothing<VkFormat>(),
+										tcu::Nothing,
 										false
 									};
 									formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
@@ -1706,7 +1706,7 @@ void initTests (tcu::TestCaseGroup* group)
 									0u,
 									useSeparateDepthStencilLayouts,
 									unusedResolve,
-									tcu::nothing<VkFormat>(),
+									tcu::Nothing,
 									false
 								};
 								formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
@@ -1740,7 +1740,7 @@ void initTests (tcu::TestCaseGroup* group)
 									expectedValue,
 									useSeparateDepthStencilLayouts,
 									unusedResolve,
-									tcu::nothing<VkFormat>(),
+									tcu::Nothing,
 									false
 								};
 								formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));

@@ -346,6 +346,7 @@ enum TestDimension
 	TEST_DIMENSION_COMPOSITE_ALPHA,
 	TEST_DIMENSION_PRESENT_MODE,
 	TEST_DIMENSION_CLIPPED,
+	TEST_DIMENSION_EXCLUSIVE_NONZERO,	//!< Test VK_SHARING_MODE_EXCLUSIVE and a nonzero queue count.
 
 	TEST_DIMENSION_LAST
 };
@@ -363,8 +364,11 @@ const char* getTestDimensionName (TestDimension dimension)
 		"pre_transform",
 		"composite_alpha",
 		"present_mode",
-		"clipped"
+		"clipped",
+		"exclusive_nonzero_queues",
 	};
+	static_assert(static_cast<int>(de::arrayLength(s_names)) == TEST_DIMENSION_LAST,
+		"Array of names does not provide a 1:1 mapping to TestDimension");
 	return de::getSizedArrayElement<TEST_DIMENSION_LAST>(s_names, dimension);
 }
 
@@ -410,7 +414,7 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (const Instance
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 		VK_SHARING_MODE_EXCLUSIVE,
 		0u,
-		(const deUint32*)DE_NULL,
+		nullptr,
 		defaultTransform,
 		VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 		VK_PRESENT_MODE_FIFO_KHR,
@@ -591,6 +595,15 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (const Instance
 			break;
 		}
 
+		case TEST_DIMENSION_EXCLUSIVE_NONZERO:
+		{
+			// Test the implementation doesn't attempt to do anything with the queue index array in exclusive sharing mode.
+			cases.push_back(baseParameters);
+			cases.back().queueFamilyIndexCount = 2u;
+
+			break;
+		}
+
 		default:
 			DE_FATAL("Impossible");
 	}
@@ -637,20 +650,16 @@ tcu::TestStatus createSwapchainTest (Context& context, TestParameters params)
 
 		if (curParams.imageSharingMode == VK_SHARING_MODE_CONCURRENT)
 		{
-			const deUint32 numFamilies = static_cast<deUint32>(devHelper.queueFamilyIndices.size());
+			const auto numFamilies = static_cast<deUint32>(devHelper.queueFamilyIndices.size());
 			if (numFamilies < 2u)
 				TCU_THROW(NotSupportedError, "Only " + de::toString(numFamilies) + " queue families available for VK_SHARING_MODE_CONCURRENT");
+
 			curParams.queueFamilyIndexCount	= numFamilies;
+			curParams.pQueueFamilyIndices	= devHelper.queueFamilyIndices.data();
 		}
-		else
-		{
-			// Take only the first queue.
-			if (devHelper.queueFamilyIndices.empty())
-				TCU_THROW(NotSupportedError, "No queue families compatible with the given surface");
-			curParams.queueFamilyIndexCount	= 1u;
-		}
-		curParams.pQueueFamilyIndices	= devHelper.queueFamilyIndices.data();
-		curParams.surface				= *surface;
+
+		// Overwrite surface.
+		curParams.surface = *surface;
 
 		log << TestLog::Message << subcase.str() << curParams << TestLog::EndMessage;
 

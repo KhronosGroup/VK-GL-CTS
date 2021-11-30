@@ -33,7 +33,7 @@ namespace Draw
 class DrawIndexedTests : public tcu::TestCaseGroup
 {
 public:
-							DrawIndexedTests		(tcu::TestContext &testCtx);
+							DrawIndexedTests		(tcu::TestContext &testCtx, bool useDynamicRendering);
 							~DrawIndexedTests		(void);
 	void					init					(void);
 
@@ -41,6 +41,8 @@ private:
 	DrawIndexedTests								(const DrawIndexedTests &other);
 	DrawIndexedTests&		operator=				(const DrawIndexedTests &other);
 
+private:
+	const bool m_useDynamicRendering;
 };
 } // Draw
 } // vkt

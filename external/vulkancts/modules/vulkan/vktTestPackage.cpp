@@ -104,6 +104,7 @@
 #include "vktPostmortemTests.hpp"
 #include "vktFragmentShadingRateTests.hpp"
 #include "vktReconvergenceTests.hpp"
+#include "vktMeshShaderTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -545,6 +546,7 @@ void TestPackage::init (void)
 	addChild(createTestGroup					(m_testCtx, "glsl", "GLSL shader execution tests", createGlslTests));
 	addChild(createRenderPassTests				(m_testCtx));
 	addChild(createRenderPass2Tests				(m_testCtx));
+	addChild(createDynamicRenderingTests		(m_testCtx));
 	addChild(ubo::createTests					(m_testCtx));
 	addChild(DynamicState::createTests			(m_testCtx));
 	addChild(ssbo::createTests					(m_testCtx));
@@ -580,6 +582,7 @@ void TestPackage::init (void)
 	addChild(RayQuery::createTests				(m_testCtx));
 	addChild(FragmentShadingRate::createTests	(m_testCtx));
 	addChild(Reconvergence::createTests			(m_testCtx, false));
+	addChild(MeshShader::createTests			(m_testCtx));
 }
 
 void ExperimentalTestPackage::init (void)

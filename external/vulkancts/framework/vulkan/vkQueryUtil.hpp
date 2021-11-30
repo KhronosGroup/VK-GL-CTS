@@ -81,8 +81,8 @@ struct RequiredExtension
 	tcu::Maybe<deUint32>	maxVersion;
 
 	explicit RequiredExtension (const std::string&		name_,
-								tcu::Maybe<deUint32>	minVersion_ = tcu::nothing<deUint32>(),
-								tcu::Maybe<deUint32>	maxVersion_ = tcu::nothing<deUint32>())
+								tcu::Maybe<deUint32>	minVersion_ = tcu::Nothing,
+								tcu::Maybe<deUint32>	maxVersion_ = tcu::Nothing)
 		: name			(name_)
 		, minVersion	(minVersion_)
 		, maxVersion	(maxVersion_)
@@ -98,10 +98,10 @@ struct RequiredLayer
 	tcu::Maybe<deUint32>	maxImplVersion;
 
 	explicit RequiredLayer (const std::string&			name_,
-							tcu::Maybe<deUint32>		minSpecVersion_		= tcu::nothing<deUint32>(),
-							tcu::Maybe<deUint32>		maxSpecVersion_		= tcu::nothing<deUint32>(),
-							tcu::Maybe<deUint32>		minImplVersion_		= tcu::nothing<deUint32>(),
-							tcu::Maybe<deUint32>		maxImplVersion_		= tcu::nothing<deUint32>())
+							tcu::Maybe<deUint32>		minSpecVersion_		= tcu::Nothing,
+							tcu::Maybe<deUint32>		maxSpecVersion_		= tcu::Nothing,
+							tcu::Maybe<deUint32>		minImplVersion_		= tcu::Nothing,
+							tcu::Maybe<deUint32>		maxImplVersion_		= tcu::Nothing)
 		: name			(name_)
 		, minSpecVersion(minSpecVersion_)
 		, maxSpecVersion(maxSpecVersion_)
