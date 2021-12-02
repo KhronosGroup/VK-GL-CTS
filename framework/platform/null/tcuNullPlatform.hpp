@@ -43,10 +43,10 @@ public:
 	virtual const glu::Platform&	getGLPlatform		(void) const { return static_cast<const glu::Platform&>(*this); }
 	virtual const eglu::Platform&	getEGLPlatform		(void) const { return static_cast<const eglu::Platform&>(*this); }
 	virtual const vk::Platform&		getVulkanPlatform	(void) const { return static_cast<const vk::Platform&>(*this);	}
+	virtual void					getMemoryLimits		(tcu::PlatformMemoryLimits& limits) const;
 
 private:
 	virtual vk::Library*			createLibrary		(void) const;
-	void							getMemoryLimits		(vk::PlatformMemoryLimits& limits) const;
 };
 
 } // null
