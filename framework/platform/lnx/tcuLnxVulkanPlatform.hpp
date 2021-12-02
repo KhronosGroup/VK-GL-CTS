@@ -41,7 +41,6 @@ public:
 	vk::Library*		createLibrary		(void) const;
 	bool				hasDisplay			(vk::wsi::Type wsiType) const;
 	void				describePlatform	(std::ostream& dst) const;
-	void				getMemoryLimits		(vk::PlatformMemoryLimits& limits) const;
 
 private :
 	 EventState&		m_eventState;

@@ -54,4 +54,15 @@ const vk::Platform& Platform::getVulkanPlatform (void) const
 	TCU_THROW(NotSupportedError, "Vulkan is not supported");
 }
 
+void Platform::getMemoryLimits (PlatformMemoryLimits& limits) const
+{
+	// Default values. Platforms can override these values.
+	limits.totalSystemMemory					= 256*1024*1024;
+	limits.totalDeviceLocalMemory				= 128*1024*1024;
+	limits.deviceMemoryAllocationGranularity	= 64*1024;
+	limits.devicePageSize						= 4096;
+	limits.devicePageTableEntrySize				= 8;
+	limits.devicePageTableHierarchyLevels		= 3;
+}
+
 } // tcu
