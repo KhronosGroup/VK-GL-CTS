@@ -662,7 +662,12 @@ GLhalf InternalformatCaseBase::floatToHalf(float f)
 		// Store a denorm half-float value or zero
 		exp = (HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP - exp) >> 23;
 		mantissa |= (1 << 23);
-		mantissa >>= (14 + exp);
+
+		if (exp < 18)
+			mantissa >>= (14 + exp);
+		else
+			mantissa = 0;
+
 		return (GLhalf)((((GLhalf)sign) << 15) | (GLhalf)(mantissa));
 	}
 
