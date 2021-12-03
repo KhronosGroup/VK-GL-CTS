@@ -29,11 +29,11 @@ from collections import OrderedDict
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
 
-from build.common import DEQP_DIR
+from build.common import DEQP_DIR, execute
 from khr_util.format import indentLines, writeInlFile
 
-VULKAN_H_DIR	= os.path.join(os.path.dirname(__file__), "src")
-VULKAN_DIR		= os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan")
+VULKAN_HEADERS_INCLUDE_DIR	= os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include")
+VULKAN_SRC_DIR				= os.path.join(os.path.dirname(__file__), "src")
 
 INL_HEADER = """\
 /* WARNING: This is auto-generated file. Do not modify, since changes will
@@ -111,7 +111,7 @@ TYPE_SUBSTITUTIONS		= [
 	("HANDLE*",		PLATFORM_TYPE_NAMESPACE + "::" + "Win32Handle*"),
 ]
 
-EXTENSION_POSTFIXES				= ["KHR", "EXT", "NV", "NVX", "KHX", "NN", "MVK", "FUCHSIA", "GGP", "AMD"]
+EXTENSION_POSTFIXES				= ["KHR", "EXT", "NV", "NVX", "KHX", "NN", "MVK", "FUCHSIA", "GGP", "AMD", "QNX"]
 EXTENSION_POSTFIXES_STANDARD	= ["KHR", "EXT"]
 
 def prefixName (prefix, name):
@@ -131,6 +131,7 @@ def prefixName (prefix, name):
 	name = name.replace("VIEWPORT_W", "VIEWPORT_W_")
 	name = name.replace("_IDPROPERTIES", "_ID_PROPERTIES")
 	name = name.replace("PHYSICAL_DEVICE_SHADER_FLOAT_16_INT_8_FEATURES", "PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES")
+	name = name.replace("PHYSICAL_DEVICE_RGBA_10_X_6_FORMATS_FEATURES_EXT", "PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT")
 	name = name.replace("_PCIBUS_", "_PCI_BUS_")
 	name = name.replace("ASTCD", "ASTC_D")
 	name = name.replace("AABBNV", "AABB_NV")
@@ -646,7 +647,7 @@ def parseDefinitions (extensionName, src):
 			return False
 		if definition[0].startswith(extNameUpper):
 			return True
-		if definition[1].isdigit():
+		if definition[0].endswith("_H_"):
 			return True
 		return False
 
@@ -666,7 +667,7 @@ def parseExtensions (src, versions, allFunctions, allCompositeTypes, allEnums, a
 
 	def getExtensionDataDict():
 		ptrn = r'(VK_\S+)\s+(DEVICE|INSTANCE)\s+([0-9_]*)?'
-		extensionsDataFile	= readFile(os.path.join(VULKAN_H_DIR, "extensions_data.txt"))
+		extensionsDataFile	= readFile(os.path.join(VULKAN_SRC_DIR, "extensions_data.txt"))
 		extensionList		= re.findall(ptrn, extensionsDataFile)
 		extensionDict = {}
 		# dictionary value is list containing DEVICE or INSTANCE string followed
@@ -1492,7 +1493,10 @@ def writeTypeUtil (api, filename):
 			"StdVideoH265PpsFlags",
 			"StdVideoDecodeH265PictureInfoFlags",
 			"StdVideoDecodeH265ReferenceInfoFlags",
-			"StdVideoEncodeH265PictureInfoFlags"
+			"StdVideoEncodeH265PictureInfoFlags",
+			"StdVideoEncodeH265SliceHeaderFlags",
+			"StdVideoEncodeH265ReferenceModificationFlags",
+			"StdVideoEncodeH265ReferenceInfoFlags",
 		])
 	COMPOSITE_TYPES = set([t.name for t in api.compositeTypes if not t.isAlias])
 
@@ -1543,7 +1547,7 @@ def writeDriverIds(filename):
 					 "} driverIds [] =\n"
 					 "{")
 
-	vulkanCore = readFile(os.path.join(VULKAN_H_DIR, "vulkan_core.h"))
+	vulkanCore = readFile(os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vulkan", "vulkan_core.h"))
 
 	items = re.search(r'(?:typedef\s+enum\s+VkDriverId\s*{)((.*\n)*)(?:}\s*VkDriverId\s*;)', vulkanCore).group(1).split(',')
 	driverItems = dict()
@@ -1975,6 +1979,9 @@ def generateDeviceFeaturesDefs(src):
 				sType = "YCBCR_2PLANE_444_FORMATS"
 			elif sType in {'VULKAN_1_1', 'VULKAN_1_2', 'VULKAN_1_3'}:
 				continue
+			elif sType == 'RASTERIZATION_ORDER_ATTACHMENT_ACCESS':
+				# skip case that has const pNext pointer
+				continue
 			# end handling special cases
 			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sSuffix + '_' + sType + '_EXTENSION_NAME).+$'
 			matchExtensionName	= re.search(ptrnExtensionName, src, re.M)
@@ -2014,16 +2021,12 @@ def generateDevicePropertiesDefs(src):
 		matchStructName		= re.search(ptrnStructName, src, re.M)
 		if matchStructName:
 			extType = sType
-			if extType == "MAINTENANCE_3":
-				extType = "MAINTENANCE3"
-			elif extType == "MAINTENANCE_4":
-				extType = "MAINTENANCE4"
-			elif extType == "DISCARD_RECTANGLE":
+			if extType == "DISCARD_RECTANGLE":
 				extType = "DISCARD_RECTANGLES"
 			elif extType == "DRIVER":
 				extType = "DRIVER_PROPERTIES"
 			elif extType == "POINT_CLIPPING":
-				extType = "MAINTENANCE2"
+				extType = "MAINTENANCE_2"
 			elif extType == "SHADER_CORE":
 				extType = "SHADER_CORE_PROPERTIES"
 			elif extType == "DRM":
@@ -2356,7 +2359,7 @@ def splitWithQuotation(line):
 def writeMandatoryFeatures(filename):
 	stream = []
 	pattern = r'\s*([\w]+)\s+FEATURES\s+\((.*)\)\s+REQUIREMENTS\s+\((.*)\)'
-	mandatoryFeatures = readFile(os.path.join(VULKAN_H_DIR, "mandatory_features.txt"))
+	mandatoryFeatures = readFile(os.path.join(VULKAN_SRC_DIR, "mandatory_features.txt"))
 	matches = re.findall(pattern, mandatoryFeatures)
 	dictStructs = {}
 	dictData = []
@@ -2460,7 +2463,7 @@ def writeMandatoryFeatures(filename):
 def writeExtensionList(filename, patternPart):
 	stream = []
 	stream.append('static const char* s_allowed{0}KhrExtensions[] =\n{{'.format(patternPart.title()))
-	extensionsData = readFile(os.path.join(VULKAN_H_DIR, "extensions_data.txt"))
+	extensionsData = readFile(os.path.join(VULKAN_SRC_DIR, "extensions_data.txt"))
 	pattern = r'\s*([^\s]+)\s+{0}\s*[0-9_]*'.format(patternPart)
 	matches	= re.findall(pattern, extensionsData)
 	for m in matches:
@@ -2483,17 +2486,46 @@ def preprocessTopInclude(src, dir):
 	return src
 
 if __name__ == "__main__":
-	# Read all .h files, with vulkan_core.h first
-	files			= os.listdir(VULKAN_H_DIR)
-	files			= [f for f in files if f.endswith(".h")]
-	files.sort()
-	files.remove("vulkan_core.h")
-	first = ["vk_video/vulkan_video_codecs_common.h", "vulkan_core.h"]
-	files = first + files
 
-	src				= ""
-	for file in files:
-		src += preprocessTopInclude(readFile(os.path.join(VULKAN_H_DIR,file)), VULKAN_H_DIR)
+	# Script requires output path to which .inl files will be written
+	if len(sys.argv) == 1:
+		sys.exit("Error - output path wasn't specified in argument")
+	outputPath = str(sys.argv[1])
+
+	# Generate vulkan headers from vk.xml
+	currentDir			= os.getcwd()
+	pythonExecutable	= sys.executable or "python"
+	os.chdir(os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "..", "xml"))
+	targets = [
+		"vulkan_android.h",
+		"vulkan_beta.h",
+		"vulkan_core.h",
+		"vulkan_fuchsia.h",
+		"vulkan_ggp.h",
+		"vulkan_ios.h",
+		"vulkan_macos.h",
+		"vulkan_metal.h",
+		"vulkan_vi.h",
+		"vulkan_wayland.h",
+		"vulkan_win32.h",
+		"vulkan_xcb.h",
+		"vulkan_xlib.h",
+		"vulkan_xlib_xrandr.h",
+	]
+	for target in targets:
+		execute([pythonExecutable, "../scripts/genvk.py", "-o", "../include/vulkan", target])
+	os.chdir(currentDir)
+
+	# Read all .h files and make sure vulkan_core.h is first out of vulkan files
+	targets.remove("vulkan_core.h")
+	targets.sort()
+	vkFilesWithCatalog =  [os.path.join("vulkan", f) for f in targets]
+	first = [os.path.join("vk_video", "vulkan_video_codecs_common.h"), os.path.join("vulkan", "vulkan_core.h")]
+	allFilesWithCatalog = first + vkFilesWithCatalog
+
+	src = ""
+	for file in allFilesWithCatalog:
+		src += preprocessTopInclude(readFile(os.path.join(VULKAN_HEADERS_INCLUDE_DIR,file)), VULKAN_HEADERS_INCLUDE_DIR)
 
 	src = re.sub('\s*//[^\n]*', '', src)
 	src = re.sub('\n\n', '\n', src)
@@ -2505,50 +2537,52 @@ if __name__ == "__main__":
 	deviceFuncs		= [Function.TYPE_DEVICE]
 
 	dfd										= generateDeviceFeaturesDefs(src)
-	writeDeviceFeatures						(api, dfd, os.path.join(VULKAN_DIR, "vkDeviceFeatures.inl"))
-	writeDeviceFeaturesDefaultDeviceDefs	(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
-	writeDeviceFeaturesContextDecl			(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForContextDecl.inl"))
-	writeDeviceFeaturesContextDefs			(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForContextDefs.inl"))
+	writeDeviceFeatures						(api, dfd, os.path.join(outputPath, "vkDeviceFeatures.inl"))
+	writeDeviceFeaturesDefaultDeviceDefs	(dfd, os.path.join(outputPath, "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
+	writeDeviceFeaturesContextDecl			(dfd, os.path.join(outputPath, "vkDeviceFeaturesForContextDecl.inl"))
+	writeDeviceFeaturesContextDefs			(dfd, os.path.join(outputPath, "vkDeviceFeaturesForContextDefs.inl"))
 
 	dpd										= generateDevicePropertiesDefs(src)
-	writeDeviceProperties					(api, dpd, os.path.join(VULKAN_DIR, "vkDeviceProperties.inl"))
+	writeDeviceProperties					(api, dpd, os.path.join(outputPath, "vkDeviceProperties.inl"))
 
-	writeDevicePropertiesDefaultDeviceDefs	(dpd, os.path.join(VULKAN_DIR, "vkDevicePropertiesForDefaultDeviceDefs.inl"))
-	writeDevicePropertiesContextDecl		(dpd, os.path.join(VULKAN_DIR, "vkDevicePropertiesForContextDecl.inl"))
-	writeDevicePropertiesContextDefs		(dpd, os.path.join(VULKAN_DIR, "vkDevicePropertiesForContextDefs.inl"))
+	writeDevicePropertiesDefaultDeviceDefs	(dpd, os.path.join(outputPath, "vkDevicePropertiesForDefaultDeviceDefs.inl"))
+	writeDevicePropertiesContextDecl		(dpd, os.path.join(outputPath, "vkDevicePropertiesForContextDecl.inl"))
+	writeDevicePropertiesContextDefs		(dpd, os.path.join(outputPath, "vkDevicePropertiesForContextDefs.inl"))
 
-	writeHandleType							(api, os.path.join(VULKAN_DIR, "vkHandleType.inl"))
-	writeBasicTypes							(api, os.path.join(VULKAN_DIR, "vkBasicTypes.inl"))
-	writeCompositeTypes						(api, os.path.join(VULKAN_DIR, "vkStructTypes.inl"))
-	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR, "vkVirtualPlatformInterface.inl"),		platformFuncs,	False)
-	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR, "vkVirtualInstanceInterface.inl"),		instanceFuncs,	False)
-	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR, "vkVirtualDeviceInterface.inl"),			deviceFuncs,	False)
-	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR, "vkConcretePlatformInterface.inl"),		platformFuncs,	True)
-	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR, "vkConcreteInstanceInterface.inl"),		instanceFuncs,	True)
-	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR, "vkConcreteDeviceInterface.inl"),		deviceFuncs,	True)
-	writeFunctionPtrTypes					(api, os.path.join(VULKAN_DIR, "vkFunctionPointerTypes.inl"))
-	writeFunctionPointers					(api, os.path.join(VULKAN_DIR, "vkPlatformFunctionPointers.inl"),		platformFuncs)
-	writeFunctionPointers					(api, os.path.join(VULKAN_DIR, "vkInstanceFunctionPointers.inl"),		instanceFuncs)
-	writeFunctionPointers					(api, os.path.join(VULKAN_DIR, "vkDeviceFunctionPointers.inl"),			deviceFuncs)
-	writeInitFunctionPointers				(api, os.path.join(VULKAN_DIR, "vkInitPlatformFunctionPointers.inl"),	platformFuncs,	lambda f: f.name != "vkGetInstanceProcAddr")
-	writeInitFunctionPointers				(api, os.path.join(VULKAN_DIR, "vkInitInstanceFunctionPointers.inl"),	instanceFuncs)
-	writeInitFunctionPointers				(api, os.path.join(VULKAN_DIR, "vkInitDeviceFunctionPointers.inl"),		deviceFuncs)
-	writeFuncPtrInterfaceImpl				(api, os.path.join(VULKAN_DIR, "vkPlatformDriverImpl.inl"),				platformFuncs,	"PlatformDriver")
-	writeFuncPtrInterfaceImpl				(api, os.path.join(VULKAN_DIR, "vkInstanceDriverImpl.inl"),				instanceFuncs,	"InstanceDriver")
-	writeFuncPtrInterfaceImpl				(api, os.path.join(VULKAN_DIR, "vkDeviceDriverImpl.inl"),				deviceFuncs,	"DeviceDriver")
-	writeStrUtilProto						(api, os.path.join(VULKAN_DIR, "vkStrUtil.inl"))
-	writeStrUtilImpl						(api, os.path.join(VULKAN_DIR, "vkStrUtilImpl.inl"))
-	writeRefUtilProto						(api, os.path.join(VULKAN_DIR, "vkRefUtil.inl"))
-	writeRefUtilImpl						(api, os.path.join(VULKAN_DIR, "vkRefUtilImpl.inl"))
-	writeStructTraitsImpl					(api, os.path.join(VULKAN_DIR, "vkGetStructureTypeImpl.inl"))
-	writeNullDriverImpl						(api, os.path.join(VULKAN_DIR, "vkNullDriverImpl.inl"))
-	writeTypeUtil							(api, os.path.join(VULKAN_DIR, "vkTypeUtil.inl"))
-	writeSupportedExtenions					(api, os.path.join(VULKAN_DIR, "vkSupportedExtensions.inl"))
-	writeCoreFunctionalities				(api, os.path.join(VULKAN_DIR, "vkCoreFunctionalities.inl"))
-	writeExtensionFunctions					(api, os.path.join(VULKAN_DIR, "vkExtensionFunctions.inl"))
-	writeDeviceFeatures2					(api, os.path.join(VULKAN_DIR, "vkDeviceFeatures2.inl"))
-	writeMandatoryFeatures					(     os.path.join(VULKAN_DIR, "vkMandatoryFeatures.inl"))
-	writeExtensionList						(     os.path.join(VULKAN_DIR, "vkInstanceExtensions.inl"),				'INSTANCE')
-	writeExtensionList						(     os.path.join(VULKAN_DIR, "vkDeviceExtensions.inl"),				'DEVICE')
-	writeDriverIds							(     os.path.join(VULKAN_DIR, "vkKnownDriverIds.inl"))
-	writeObjTypeImpl						(api, os.path.join(VULKAN_DIR, "vkObjTypeImpl.inl"))
+	writeHandleType							(api, os.path.join(outputPath, "vkHandleType.inl"))
+	writeBasicTypes							(api, os.path.join(outputPath, "vkBasicTypes.inl"))
+	writeCompositeTypes						(api, os.path.join(outputPath, "vkStructTypes.inl"))
+	writeInterfaceDecl						(api, os.path.join(outputPath, "vkVirtualPlatformInterface.inl"),		platformFuncs,	False)
+	writeInterfaceDecl						(api, os.path.join(outputPath, "vkVirtualInstanceInterface.inl"),		instanceFuncs,	False)
+	writeInterfaceDecl						(api, os.path.join(outputPath, "vkVirtualDeviceInterface.inl"),			deviceFuncs,	False)
+	writeInterfaceDecl						(api, os.path.join(outputPath, "vkConcretePlatformInterface.inl"),		platformFuncs,	True)
+	writeInterfaceDecl						(api, os.path.join(outputPath, "vkConcreteInstanceInterface.inl"),		instanceFuncs,	True)
+	writeInterfaceDecl						(api, os.path.join(outputPath, "vkConcreteDeviceInterface.inl"),		deviceFuncs,	True)
+	writeFunctionPtrTypes					(api, os.path.join(outputPath, "vkFunctionPointerTypes.inl"))
+	writeFunctionPointers					(api, os.path.join(outputPath, "vkPlatformFunctionPointers.inl"),		platformFuncs)
+	writeFunctionPointers					(api, os.path.join(outputPath, "vkInstanceFunctionPointers.inl"),		instanceFuncs)
+	writeFunctionPointers					(api, os.path.join(outputPath, "vkDeviceFunctionPointers.inl"),			deviceFuncs)
+	writeInitFunctionPointers				(api, os.path.join(outputPath, "vkInitPlatformFunctionPointers.inl"),	platformFuncs,	lambda f: f.name != "vkGetInstanceProcAddr")
+	writeInitFunctionPointers				(api, os.path.join(outputPath, "vkInitInstanceFunctionPointers.inl"),	instanceFuncs)
+	writeInitFunctionPointers				(api, os.path.join(outputPath, "vkInitDeviceFunctionPointers.inl"),		deviceFuncs)
+	writeFuncPtrInterfaceImpl				(api, os.path.join(outputPath, "vkPlatformDriverImpl.inl"),				platformFuncs,	"PlatformDriver")
+	writeFuncPtrInterfaceImpl				(api, os.path.join(outputPath, "vkInstanceDriverImpl.inl"),				instanceFuncs,	"InstanceDriver")
+	writeFuncPtrInterfaceImpl				(api, os.path.join(outputPath, "vkDeviceDriverImpl.inl"),				deviceFuncs,	"DeviceDriver")
+	writeStrUtilProto						(api, os.path.join(outputPath, "vkStrUtil.inl"))
+	writeStrUtilImpl						(api, os.path.join(outputPath, "vkStrUtilImpl.inl"))
+	writeRefUtilProto						(api, os.path.join(outputPath, "vkRefUtil.inl"))
+	writeRefUtilImpl						(api, os.path.join(outputPath, "vkRefUtilImpl.inl"))
+	writeStructTraitsImpl					(api, os.path.join(outputPath, "vkGetStructureTypeImpl.inl"))
+	writeNullDriverImpl						(api, os.path.join(outputPath, "vkNullDriverImpl.inl"))
+	writeTypeUtil							(api, os.path.join(outputPath, "vkTypeUtil.inl"))
+	writeSupportedExtenions					(api, os.path.join(outputPath, "vkSupportedExtensions.inl"))
+	writeCoreFunctionalities				(api, os.path.join(outputPath, "vkCoreFunctionalities.inl"))
+	writeExtensionFunctions					(api, os.path.join(outputPath, "vkExtensionFunctions.inl"))
+	writeDeviceFeatures2					(api, os.path.join(outputPath, "vkDeviceFeatures2.inl"))
+	writeMandatoryFeatures					(     os.path.join(outputPath, "vkMandatoryFeatures.inl"))
+	writeExtensionList						(     os.path.join(outputPath, "vkInstanceExtensions.inl"),				'INSTANCE')
+	writeExtensionList						(     os.path.join(outputPath, "vkDeviceExtensions.inl"),				'DEVICE')
+	writeDriverIds							(     os.path.join(outputPath, "vkKnownDriverIds.inl"))
+	writeObjTypeImpl						(api, os.path.join(outputPath, "vkObjTypeImpl.inl"))
+	# NOTE: when new files are generated then they should also be added to the
+	# vk-gl-cts\external\vulkancts\framework\vulkan\CMakeLists.txt outputs list
