@@ -24,12 +24,14 @@
 #include "vktMemoryMappingTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "tcuMaybe.hpp"
 #include "tcuResultCollector.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuPlatform.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "vkDeviceUtil.hpp"
 #include "vkPlatform.hpp"
@@ -573,18 +575,77 @@ bool compareAndLogBuffer (TestLog& log, size_t size, size_t referenceSize, const
 		return true;
 }
 
+static Move<VkDevice> createProtectedMemoryDevice(const Context& context, const VkPhysicalDeviceFeatures2& features2)
+{
+	auto&											cmdLine					= context.getTestContext().getCommandLine();
+	const InstanceInterface&						vki						= context.getInstanceInterface();
+	const float										queuePriority			= 1.0f;
+	deUint32										queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+
+	VkDeviceQueueCreateInfo							queueInfo		=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,					// VkStructureType					sType;
+		DE_NULL,													// const void*						pNext;
+		vk::VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT,					// VkDeviceQueueCreateFlags			flags;
+		queueFamilyIndex,											// deUint32							queueFamilyIndex;
+		1u,															// deUint32							queueCount;
+		&queuePriority												// const float*						pQueuePriorities;
+	};
+
+	const VkDeviceCreateInfo						deviceInfo		=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,						// VkStructureType					sType;
+		&features2,													// const void*						pNext;
+		(VkDeviceCreateFlags)0,										// VkDeviceCreateFlags				flags;
+		1u,															// uint32_t							queueCreateInfoCount;
+		&queueInfo,													// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+		0u,															// uint32_t							enabledLayerCount;
+		DE_NULL,													// const char* const*				ppEnabledLayerNames;
+		0u,															// uint32_t							enabledExtensionCount;
+		DE_NULL,													// const char* const*				ppEnabledExtensionNames;
+		DE_NULL														// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+	};
+
+	return createCustomDevice(cmdLine.isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), vki, context.getPhysicalDevice(), &deviceInfo);
+}
+
 tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 {
 	TestLog&								log							= context.getTestContext().getLog();
 	tcu::ResultCollector					result						(log);
 	bool									atLeastOneTestPerformed		= false;
 	const VkPhysicalDevice					physicalDevice				= context.getPhysicalDevice();
-	const VkDevice							device						= context.getDevice();
 	const InstanceInterface&				vki							= context.getInstanceInterface();
 	const DeviceInterface&					vkd							= context.getDeviceInterface();
 	const VkPhysicalDeviceMemoryProperties	memoryProperties			= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
 	const VkDeviceSize						nonCoherentAtomSize			= context.getDeviceProperties().limits.nonCoherentAtomSize;
 	const deUint32							queueFamilyIndex			= context.getUniversalQueueFamilyIndex();
+
+	//Create protected memory device if protected memory is supported
+	//otherwise use the default device
+	Move<VkDevice>	protectMemoryDevice;
+	VkDevice		device;
+	{
+		VkPhysicalDeviceProtectedMemoryFeatures		protectedFeatures;
+		protectedFeatures.sType				= vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES;
+		protectedFeatures.pNext				= DE_NULL;
+		protectedFeatures.protectedMemory	= VK_FALSE;
+
+		VkPhysicalDeviceFeatures2					deviceFeatures2;
+		deviceFeatures2.sType		= vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		deviceFeatures2.pNext		= &protectedFeatures;
+
+		vki.getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &deviceFeatures2);
+		if(protectedFeatures.protectedMemory && config.implicitUnmap)
+		{
+			protectMemoryDevice = createProtectedMemoryDevice(context, deviceFeatures2);
+			device = *protectMemoryDevice;
+		}
+		else
+		{
+			device = context.getDevice();
+		}
+	}
 
 	{
 		const tcu::ScopedLogSection	section	(log, "TestCaseInfo", "TestCaseInfo");

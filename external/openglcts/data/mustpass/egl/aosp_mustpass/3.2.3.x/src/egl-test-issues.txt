@@ -27,25 +27,3 @@ dEQP-EGL.functional.color_clears.*.gles*.rgba5551_pbuffer
 # Bug: 30909609
 dEQP-EGL.functional.image.modify.tex_rgba4_renderbuffer_clear_color
 dEQP-EGL.functional.image.modify.renderbuffer_rgba4_renderbuffer_clear_color
-
-#VK-GL-CTS 257
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.reset_status.vertex
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.reset_status.fragment
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.reset_status.vertex_and_fragment
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.reset_status.compute
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.sync_status.vertex
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.sync_status.fragment
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.sync_status.vertex_and_fragment
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.sync_status.compute
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.query_status.vertex
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.query_status.fragment
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.query_status.vertex_and_fragment
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.query_status.compute
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.shared_context_status.vertex
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.shared_context_status.fragment
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.shared_context_status.vertex_and_fragment
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.shared_context_status.compute
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.recover_from_reset.vertex
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.recover_from_reset.fragment
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.recover_from_reset.vertex_and_fragment
-dEQP-EGL.functional.robustness.reset_context.shaders.infinite_loop.recover_from_reset.compute
