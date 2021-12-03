@@ -378,6 +378,8 @@ tcu::Format::Bitfield<32>	getPipelineCreateFlagsStr									(VkPipelineCreateFla
 tcu::Format::Bitfield<32>	getPipelineShaderStageCreateFlagsStr						(VkPipelineShaderStageCreateFlags value);
 tcu::Format::Bitfield<32>	getShaderStageFlagsStr										(VkShaderStageFlags value);
 tcu::Format::Bitfield<32>	getCullModeFlagsStr											(VkCullModeFlags value);
+tcu::Format::Bitfield<32>	getPipelineDepthStencilStateCreateFlagsStr					(VkPipelineDepthStencilStateCreateFlags value);
+tcu::Format::Bitfield<32>	getPipelineColorBlendStateCreateFlagsStr					(VkPipelineColorBlendStateCreateFlags value);
 tcu::Format::Bitfield<32>	getSamplerCreateFlagsStr									(VkSamplerCreateFlags value);
 tcu::Format::Bitfield<32>	getDescriptorPoolCreateFlagsStr								(VkDescriptorPoolCreateFlags value);
 tcu::Format::Bitfield<32>	getDescriptorSetLayoutCreateFlagsStr						(VkDescriptorSetLayoutCreateFlags value);
@@ -463,8 +465,6 @@ tcu::Format::Bitfield<32>	getPipelineTessellationStateCreateFlagsStr					(VkPipe
 tcu::Format::Bitfield<32>	getPipelineViewportStateCreateFlagsStr						(VkPipelineViewportStateCreateFlags value);
 tcu::Format::Bitfield<32>	getPipelineRasterizationStateCreateFlagsStr					(VkPipelineRasterizationStateCreateFlags value);
 tcu::Format::Bitfield<32>	getPipelineMultisampleStateCreateFlagsStr					(VkPipelineMultisampleStateCreateFlags value);
-tcu::Format::Bitfield<32>	getPipelineDepthStencilStateCreateFlagsStr					(VkPipelineDepthStencilStateCreateFlags value);
-tcu::Format::Bitfield<32>	getPipelineColorBlendStateCreateFlagsStr					(VkPipelineColorBlendStateCreateFlags value);
 tcu::Format::Bitfield<32>	getPipelineDynamicStateCreateFlagsStr						(VkPipelineDynamicStateCreateFlags value);
 tcu::Format::Bitfield<32>	getPipelineLayoutCreateFlagsStr								(VkPipelineLayoutCreateFlags value);
 tcu::Format::Bitfield<32>	getDescriptorPoolResetFlagsStr								(VkDescriptorPoolResetFlags value);
@@ -1073,6 +1073,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensity
 std::ostream&	operator<<	(std::ostream& s, const VkCopyCommandTransformInfoQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageRobustnessFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice4444FormatsFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeListVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeCreateInfoVALVE& value);
