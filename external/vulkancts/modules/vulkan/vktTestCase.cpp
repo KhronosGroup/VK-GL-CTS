@@ -753,10 +753,10 @@ static bool isDepthFormat (VkFormat format)
 	}
 }
 
-vk::VkFormatPropertiesExtendedKHR Context::getRequiredFormatProperties(const vk::VkFormat& format) const
+vk::VkFormatProperties3KHR Context::getRequiredFormatProperties(const vk::VkFormat& format) const
 {
-	vk::VkFormatPropertiesExtendedKHR p;
-	p.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_EXTENDED_KHR;
+	vk::VkFormatProperties3KHR p;
+	p.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3_KHR;
 	p.pNext = DE_NULL;
 
 	vk::VkFormatProperties properties;
@@ -788,12 +788,12 @@ vk::VkFormatPropertiesExtendedKHR Context::getRequiredFormatProperties(const vk:
 	return p;
 }
 
-vk::VkFormatPropertiesExtendedKHR Context::getFormatProperties(const vk::VkFormat& format) const
+vk::VkFormatProperties3KHR Context::getFormatProperties(const vk::VkFormat& format) const
 {
 	if (isDeviceFunctionalitySupported(VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME)) // "VK_KHR_format_feature_flags2"
 	{
-		vk::VkFormatPropertiesExtendedKHR p;
-		p.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_EXTENDED_KHR;
+		vk::VkFormatProperties3KHR p;
+		p.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3_KHR;
 		p.pNext = DE_NULL;
 
 		vk::VkFormatProperties2 properties;
