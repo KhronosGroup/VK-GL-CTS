@@ -462,19 +462,19 @@ std::vector<deInt8> getInt8s (de::Random& rnd, const deUint32 count)
 
 // Generate and return 64-bit floats
 //
-// The first 24 number pairs are manually picked, while the rest are randomly generated.
-// Expected count to be at least 24 (numPicks).
-std::vector<double> getFloat64s (de::Random& rnd, deUint32 count)
+// If includeSpecialFloat16Values is false, random float64 that can be converted to float16 inf/nan/denormal must be excluded
+// since inf may be clamped, and nan/denormal be flushed without float control features.
+// And expected count to be at least 14 (numPicks).
+// Otherwise, the first 24 number pairs are manually picked, while the rest are randomly generated.
+// And expected count to be at least 24 (numPicks).
+std::vector<double> getFloat64s (de::Random& rnd, deUint32 count, deBool includeSpecialFloat16Values)
 {
 	std::vector<double> float64;
 
 	float64.reserve(count);
 
-	if (count >= 24)
+	if (includeSpecialFloat16Values)
 	{
-		// Zero
-		float64.push_back(0.f);
-		float64.push_back(-0.f);
 		// Infinity
 		float64.push_back(std::numeric_limits<double>::infinity());
 		float64.push_back(-std::numeric_limits<double>::infinity());
@@ -484,44 +484,52 @@ std::vector<double> getFloat64s (de::Random& rnd, deUint32 count)
 		// QNaN
 		float64.push_back(std::numeric_limits<double>::quiet_NaN());
 		float64.push_back(-std::numeric_limits<double>::quiet_NaN());
-
-		// Denormalized 64-bit float matching 0 in 16-bit
-		float64.push_back(ldexp((double)1.f, -1023));
-		float64.push_back(-ldexp((double)1.f, -1023));
-
-		// Normalized 64-bit float matching 0 in 16-bit
-		float64.push_back(ldexp((double)1.f, -100));
-		float64.push_back(-ldexp((double)1.f, -100));
 		// Normalized 64-bit float with exact denormalized match in 16-bit
 		float64.push_back(bitwiseCast<double>(deUint64(0x3B0357C299A88EA8)));
 		float64.push_back(bitwiseCast<double>(deUint64(0xBB0357C299A88EA8)));
-
-		// Normalized 64-bit float with exact normalized match in 16-bit
-		float64.push_back(ldexp((double)1.f, -14));  // 2e-14: minimum 16-bit positive normalized
-		float64.push_back(-ldexp((double)1.f, -14)); // 2e-14: maximum 16-bit negative normalized
-		// Normalized 64-bit float falling above half way within two 16-bit normalized
-		float64.push_back(bitwiseCast<double>(deUint64(0x3FD2000000000000)));
-		float64.push_back(bitwiseCast<double>(deUint64(0xBFD2000000000000)));
-		// Normalized 64-bit float falling exact half way within two 16-bit normalized
-		float64.push_back(bitwiseCast<double>(deUint64(0x3F100C0000000000)));
-		float64.push_back(bitwiseCast<double>(deUint64(0xBF100C0000000000)));
-		// Some number
-		float64.push_back((double)0.28125f);
-		float64.push_back((double)-0.28125f);
 		// Normalized 64-bit float matching infinity in 16-bit
 		float64.push_back(ldexp((double)1.f, 100));
 		float64.push_back(-ldexp((double)1.f, 100));
 	}
+	// Zero
+	float64.push_back(0.f);
+	float64.push_back(-0.f);
+	// Denormalized 64-bit float matching 0 in 16-bit
+	float64.push_back(ldexp((double)1.f, -1023));
+	float64.push_back(-ldexp((double)1.f, -1023));
+	// Normalized 64-bit float matching 0 in 16-bit
+	float64.push_back(ldexp((double)1.f, -100));
+	float64.push_back(-ldexp((double)1.f, -100));
+	// Normalized 64-bit float with exact normalized match in 16-bit
+	float64.push_back(ldexp((double)1.f, -14));  // 2e-14: minimum 16-bit positive normalized
+	float64.push_back(-ldexp((double)1.f, -14)); // 2e-14: maximum 16-bit negative normalized
+	// Normalized 64-bit float falling above half way within two 16-bit normalized
+	float64.push_back(bitwiseCast<double>(deUint64(0x3FD2000000000000)));
+	float64.push_back(bitwiseCast<double>(deUint64(0xBFD2000000000000)));
+	// Normalized 64-bit float falling exact half way within two 16-bit normalized
+	float64.push_back(bitwiseCast<double>(deUint64(0x3F100C0000000000)));
+	float64.push_back(bitwiseCast<double>(deUint64(0xBF100C0000000000)));
+	// Some number
+	float64.push_back((double)0.28125f);
+	float64.push_back((double)-0.28125f);
 
 	const deUint32		numPicks	= static_cast<deUint32>(float64.size());
 
 	DE_ASSERT(count >= numPicks);
 	count -= numPicks;
 
-	for (deUint32 numNdx = 0; numNdx < count; ++numNdx)
+	for (deUint32 numNdx = 0; numNdx < count;)
 	{
-		double randValue = rnd.getDouble();
-		float64.push_back(randValue);
+		double rndFloat = rnd.getDouble();
+		// If special float16 values must be excluded, generated double values that result in inf/nan/denormal of float16 should be removed.
+		if (!includeSpecialFloat16Values)
+		{
+			deFloat16 rndFloat16 = deFloat64To16(rndFloat);
+			if (deHalfIsInf(rndFloat16) || deHalfIsIEEENaN(rndFloat16) || deHalfIsDenormal(rndFloat16))
+				continue;
+		}
+		float64.push_back(rndFloat);
+		++numNdx;
 	}
 
 	return float64;
@@ -552,37 +560,44 @@ std::vector<double> getFloat64s (de::Random& rnd, deUint32 count)
 
 // Generate and return 32-bit floats
 //
-// The first 24 number pairs are manually picked, while the rest are randomly generated.
-// Expected count to be at least 24 (numPicks).
-std::vector<float> getFloat32s (de::Random& rnd, deUint32 count)
+// If includeSpecialFloat16Values is false, random float32 that can be converted to float16 inf/nan/denormal must be excluded
+// since inf may be clamped, and nan/denormal be flushed without float control features.
+// And expected count to be at least 14 (numPicks).
+// Otherwise, the first 24 number pairs are manually picked, while the rest are randomly generated.
+// And expected count to be at least 24 (numPicks).
+std::vector<float> getFloat32s (de::Random& rnd, deUint32 count, deBool includeSpecialFloat16Values)
 {
 	std::vector<float> float32;
 
 	float32.reserve(count);
 
+	if (includeSpecialFloat16Values)
+	{
+		// Infinity
+		float32.push_back(std::numeric_limits<float>::infinity());
+		float32.push_back(-std::numeric_limits<float>::infinity());
+		// SNaN
+		float32.push_back(std::numeric_limits<float>::signaling_NaN());
+		float32.push_back(-std::numeric_limits<float>::signaling_NaN());
+		// QNaN
+		float32.push_back(std::numeric_limits<float>::quiet_NaN());
+		float32.push_back(-std::numeric_limits<float>::quiet_NaN());
+		// Normalized 32-bit float with exact denormalized match in 16-bit
+		float32.push_back(deFloatLdExp(1.f, -24));  // 2e-24: minimum 16-bit positive denormalized
+		float32.push_back(-deFloatLdExp(1.f, -24)); // 2e-24: maximum 16-bit negative denormalized
+		// Normalized 32-bit float matching infinity in 16-bit
+		float32.push_back(deFloatLdExp(1.f, 100));
+		float32.push_back(-deFloatLdExp(1.f, 100));
+	}
 	// Zero
 	float32.push_back(0.f);
 	float32.push_back(-0.f);
-	// Infinity
-	float32.push_back(std::numeric_limits<float>::infinity());
-	float32.push_back(-std::numeric_limits<float>::infinity());
-	// SNaN
-	float32.push_back(std::numeric_limits<float>::signaling_NaN());
-	float32.push_back(-std::numeric_limits<float>::signaling_NaN());
-	// QNaN
-	float32.push_back(std::numeric_limits<float>::quiet_NaN());
-	float32.push_back(-std::numeric_limits<float>::quiet_NaN());
-
 	// Denormalized 32-bit float matching 0 in 16-bit
 	float32.push_back(deFloatLdExp(1.f, -127));
 	float32.push_back(-deFloatLdExp(1.f, -127));
-
 	// Normalized 32-bit float matching 0 in 16-bit
 	float32.push_back(deFloatLdExp(1.f, -100));
 	float32.push_back(-deFloatLdExp(1.f, -100));
-	// Normalized 32-bit float with exact denormalized match in 16-bit
-	float32.push_back(deFloatLdExp(1.f, -24));  // 2e-24: minimum 16-bit positive denormalized
-	float32.push_back(-deFloatLdExp(1.f, -24)); // 2e-24: maximum 16-bit negative denormalized
 	// Normalized 32-bit float with exact normalized match in 16-bit
 	float32.push_back(deFloatLdExp(1.f, -14));  // 2e-14: minimum 16-bit positive normalized
 	float32.push_back(-deFloatLdExp(1.f, -14)); // 2e-14: maximum 16-bit negative normalized
@@ -595,17 +610,26 @@ std::vector<float> getFloat32s (de::Random& rnd, deUint32 count)
 	// Some number
 	float32.push_back(0.28125f);
 	float32.push_back(-0.28125f);
-	// Normalized 32-bit float matching infinity in 16-bit
-	float32.push_back(deFloatLdExp(1.f, 100));
-	float32.push_back(-deFloatLdExp(1.f, 100));
 
 	const deUint32		numPicks	= static_cast<deUint32>(float32.size());
 
 	DE_ASSERT(count >= numPicks);
 	count -= numPicks;
 
-	for (deUint32 numNdx = 0; numNdx < count; ++numNdx)
-		float32.push_back(rnd.getFloat());
+	for (deUint32 numNdx = 0; numNdx < count;)
+	{
+		float rndFloat = rnd.getFloat();
+		// If special float16 values must be excluded, generated float values that result in inf/nan/denormal of float16 should be removed.
+		if (!includeSpecialFloat16Values)
+		{
+			deFloat16 rndFloat16 = deFloat32To16(rndFloat);
+			if (deHalfIsInf(rndFloat16) || deHalfIsIEEENaN(rndFloat16) || deHalfIsDenormal(rndFloat16))
+				continue;
+		}
+
+		float32.push_back(rndFloat);
+		++numNdx;
+	}
 
 	return float32;
 }
@@ -632,32 +656,36 @@ std::vector<float> getFloat32s (de::Random& rnd, deUint32 count)
 // 0   111 11   00 0000 1111 (0x7c0f: +SNaN)
 // 0   111 11   00 1111 0000 (0x7c0f: +QNaN)
 
-// Generate and return 16-bit floats and their corresponding 32-bit values.
+// Generate and return 16-bit floats
 //
-// The first 14 number pairs are manually picked, while the rest are randomly generated.
-// Expected count to be at least 14 (numPicks).
-std::vector<deFloat16> getFloat16s (de::Random& rnd, deUint32 count)
+// If includeSpecialFloat16Values is false, float16 inf/nan/denormal must be excluded since inf may be clamped,
+// and nan/denormal be flushed without float control features. And expected count to be at least 6 (numPicks).
+// Otherwise, the first 14 number pairs are manually picked, while the rest are randomly generated.
+// And expected count to be at least 14 (numPicks).
+std::vector<deFloat16> getFloat16s (de::Random& rnd, deUint32 count, deBool includeSpecialFloat16Values)
 {
 	std::vector<deFloat16> float16;
 
 	float16.reserve(count);
 
+	if (includeSpecialFloat16Values)
+	{
+		// Infinity
+		float16.push_back(deUint16(0x7c00));
+		float16.push_back(deUint16(0xfc00));
+		// SNaN
+		float16.push_back(deUint16(0x7c0f));
+		float16.push_back(deUint16(0xfc0f));
+		// QNaN
+		float16.push_back(deUint16(0x7cf0));
+		float16.push_back(deUint16(0xfcf0));
+		// Denormalized
+		float16.push_back(deUint16(0x03f0));
+		float16.push_back(deUint16(0x83f0));
+	}
 	// Zero
 	float16.push_back(deUint16(0x0000));
 	float16.push_back(deUint16(0x8000));
-	// Infinity
-	float16.push_back(deUint16(0x7c00));
-	float16.push_back(deUint16(0xfc00));
-	// SNaN
-	float16.push_back(deUint16(0x7c0f));
-	float16.push_back(deUint16(0xfc0f));
-	// QNaN
-	float16.push_back(deUint16(0x7cf0));
-	float16.push_back(deUint16(0xfcf0));
-
-	// Denormalized
-	float16.push_back(deUint16(0x03f0));
-	float16.push_back(deUint16(0x83f0));
 	// Normalized
 	float16.push_back(deUint16(0x0401));
 	float16.push_back(deUint16(0x8401));
@@ -670,8 +698,15 @@ std::vector<deFloat16> getFloat16s (de::Random& rnd, deUint32 count)
 	DE_ASSERT(count >= numPicks);
 	count -= numPicks;
 
-	for (deUint32 numIdx = 0; numIdx < count; ++numIdx)
-		float16.push_back(rnd.getUint16());
+	for (deUint32 numIdx = 0; numIdx < count;)
+	{
+		deFloat16 rndFloat = rnd.getUint16();
+		// If special float16 values must be excluded, generated values in inf/nan/denormal should be removed.
+		if (!includeSpecialFloat16Values && (deHalfIsInf(rndFloat) || deHalfIsIEEENaN(rndFloat) || deHalfIsDenormal(rndFloat)))
+			continue;
+		float16.push_back(rndFloat);
+		++numIdx;
+	}
 
 	return float16;
 }
