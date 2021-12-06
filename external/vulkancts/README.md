@@ -144,7 +144,7 @@ Running CTS
 
 Following command line options MUST be used when running CTS:
 
-	--deqp-caselist-file=<vulkancts>/external/vulkancts/mustpass/master/vk-default.txt
+	--deqp-caselist-file=<vulkancts>/external/vulkancts/mustpass/master/vk-default.txt (or vksc-default.txt for Vulkan SC implementations)
 	--deqp-log-images=disable
 	--deqp-log-shader-sources=disable
 
@@ -245,6 +245,17 @@ are performed on separate process in a single batch:
 
 	--deqp-subprocess-test-count=<value>
 
+Above mentioned parameter works as default value for all tests.
+You may also define how many tests are performed on a separate process
+for specific test tree branch using parameter:
+
+	--deqp-subprocess-cfg-file=<path>
+
+File should contain test pattern followed by numeric value, for example:
+dEQP-VKSC.api.copy_and_blit.core.image_to_image.dimensions.src32768x4_dst32768x4.*, 5
+dEQP-VKSC.texture.explicit_lod.2d.sizes.*, 20
+dEQP-VKSC.texture.explicit_lod.2d.sizes.128x128_*, 4
+
 There is also one option used by CTS internally and should not be used manually.
 It informs deqp-vksc application that it works as subprocess:
 
@@ -254,7 +265,7 @@ No other command line options are allowed.
 
 ### Win32
 
-    Vulkan:
+	Vulkan:
 
 	cd <builddir>/external/vulkancts/modules/vulkan
 	Debug\deqp-vk.exe --deqp-caselist-file=...
@@ -268,7 +279,7 @@ Test log will be written into TestResults.qpa
 
 ### Linux
 
-    Vulkan:
+	Vulkan:
 
 	cd <builddir>/external/vulkancts/modules/vulkan
 	./deqp-vk --deqp-caselist-file=...
@@ -797,8 +808,12 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
     default: 'disable'
 
   --deqp-subprocess-test-count=<value>
-    Define number of tests performed in subprocess (Vulkan SC only)
-    default: '64'
+    Define default number of tests performed in subprocess (Vulkan SC only)
+    default: '65536'
+
+  --deqp-subprocess-cfg-file=<path>
+	Config file defining number of tests performed in subprocess for specific test branches (Vulkan SC only)
+    default: ''
 
   --deqp-server-address=<value>
     Server address (host:port) responsible for shader compilation (Vulkan SC only)

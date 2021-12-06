@@ -65,6 +65,11 @@ void ResourceInterface::initTestCase (const std::string& casePath)
 	m_currentTestPath = casePath;
 }
 
+const std::string& ResourceInterface::getCasePath() const
+{
+	return m_currentTestPath;
+}
+
 #ifdef CTS_USES_VULKANSC
 void ResourceInterface::initApiVersion (const deUint32 version)
 {

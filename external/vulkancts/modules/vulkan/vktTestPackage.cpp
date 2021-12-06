@@ -134,28 +134,37 @@ using tcu::TestLog;
 
 // TestCaseExecutor
 
+#ifdef CTS_USES_VULKANSC
+struct DetailedSubprocessTestCount
+{
+	std::string									testPattern;
+	int											testCount;
+};
+#endif // CTS_USES_VULKANSC
+
 class TestCaseExecutor : public tcu::TestCaseExecutor
 {
 public:
-												TestCaseExecutor	(tcu::TestContext& testCtx);
-												~TestCaseExecutor	(void);
+												TestCaseExecutor			(tcu::TestContext& testCtx);
+												~TestCaseExecutor			(void);
 
-	void										init				(tcu::TestCase* testCase, const std::string& path) override;
-	void										deinit				(tcu::TestCase* testCase) override;
+	void										init						(tcu::TestCase* testCase, const std::string& path) override;
+	void										deinit						(tcu::TestCase* testCase) override;
 
-	tcu::TestNode::IterateResult				iterate				(tcu::TestCase* testCase) override;
+	tcu::TestNode::IterateResult				iterate						(tcu::TestCase* testCase) override;
 
-	void										deinitTestPackage	(tcu::TestContext& testCtx) override;
-	bool										usesLocalStatus		() override;
-	void										updateGlobalStatus	(tcu::TestRunStatus& status) override;
-	void										reportDurations		(tcu::TestContext& testCtx, const std::string& packageName, const deInt64& duration, const std::map<std::string, deUint64>& groupsDurationTime) override;
+	void										deinitTestPackage			(tcu::TestContext& testCtx) override;
+	bool										usesLocalStatus				() override;
+	void										updateGlobalStatus			(tcu::TestRunStatus& status) override;
+	void										reportDurations				(tcu::TestContext& testCtx, const std::string& packageName, const deInt64& duration, const std::map<std::string, deUint64>& groupsDurationTime) override;
+	int											getCurrentSubprocessCount	(const std::string& casePath, int defaultSubprocessCount);
 
 private:
-	void										logUnusedShaders	(tcu::TestCase* testCase);
+	void										logUnusedShaders		(tcu::TestCase* testCase);
 
-	void										runTestsInSubprocess(tcu::TestContext& testCtx);
+	void										runTestsInSubprocess	(tcu::TestContext& testCtx);
 
-	bool										spirvVersionSupported(vk::SpirvVersion);
+	bool										spirvVersionSupported	(vk::SpirvVersion);
 
 	vk::BinaryCollection						m_progCollection;
 	vk::BinaryRegistryReader					m_prebuiltBinRegistry;
@@ -174,7 +183,8 @@ private:
 
 #ifdef CTS_USES_VULKANSC
 	std::unique_ptr<vksc_server::ipc::Parent>	m_parentIPC;
-#endif
+	std::vector<DetailedSubprocessTestCount>	m_detailedSubprocessTestCount;
+#endif // CTS_USES_VULKANSC
 };
 
 #ifdef CTS_USES_VULKANSC
@@ -184,7 +194,7 @@ static deBool	openWrite				(int type, const char* message)					{ DE_UNREF(type);
 static deBool	openWriteFtm			(int type, const char* format, va_list args)	{ DE_UNREF(type); DE_UNREF(format); DE_UNREF(args); return true; }
 static void		suppressStandardOutput	()												{ qpRedirectOut(supressedWrite, supressedWriteFtm); }
 static void		restoreStandardOutput	()												{ qpRedirectOut(openWrite, openWriteFtm); }
-#endif
+#endif // CTS_USES_VULKANSC
 
 static MovePtr<vk::Library> createLibrary (tcu::TestContext& testCtx)
 {
@@ -199,6 +209,16 @@ static vk::VkPhysicalDeviceProperties getPhysicalDeviceProperties(vkt::Context& 
 	vk::VkPhysicalDeviceProperties	properties;
 	vki.getPhysicalDeviceProperties(physicalDevice, &properties);
 	return properties;
+}
+
+std::string trim (const std::string& original)
+{
+	static const std::string whiteSigns = " \t";
+	const auto beg = original.find_first_not_of(whiteSigns);
+	if (beg == std::string::npos)
+		return std::string();
+	const auto end = original.find_last_not_of(whiteSigns);
+	return original.substr(beg, end - beg + 1);
 }
 
 TestCaseExecutor::TestCaseExecutor (tcu::TestContext& testCtx)
@@ -237,6 +257,41 @@ TestCaseExecutor::TestCaseExecutor (tcu::TestContext& testCtx)
 	else
 	{
 		m_parentIPC.reset( new vksc_server::ipc::Parent{portOffset} );
+	}
+
+	// Load information about test tree branches that use subprocess test count other than default
+	// Expected file format:
+	if (!testCtx.getCommandLine().isSubProcess() && !std::string(testCtx.getCommandLine().getSubprocessConfigFile()).empty())
+	{
+		std::ifstream			iFile(testCtx.getCommandLine().getSubprocessConfigFile(), std::ios::in);
+		if (!iFile)
+			TCU_THROW(InternalError, (std::string("Missing config file defining number of tests: ") + testCtx.getCommandLine().getSubprocessConfigFile()).c_str());
+		std::string line;
+		while (std::getline(iFile, line))
+		{
+			if (line.empty())
+				continue;
+			std::size_t pos = line.find_first_of(',');
+			if (pos == std::string::npos)
+				continue;
+			std::string testPattern, testNumber;
+			std::copy(line.begin(), line.begin() + pos, std::back_inserter(testPattern));
+			testPattern = trim(testPattern);
+			std::copy(line.begin() + pos + 1, line.end(), std::back_inserter(testNumber));
+			testNumber = trim(testNumber);
+			if (testPattern.empty() || testNumber.empty())
+				continue;
+			std::istringstream is(testNumber);
+			int testCount;
+			if ((is >> testCount).fail())
+				continue;
+			m_detailedSubprocessTestCount.push_back(DetailedSubprocessTestCount{ testPattern, testCount });
+		}
+		// sort test patterns
+		std::sort(m_detailedSubprocessTestCount.begin(), m_detailedSubprocessTestCount.end(), [](const DetailedSubprocessTestCount& lhs, const DetailedSubprocessTestCount& rhs)
+			{
+				return lhs.testCount < rhs.testCount;
+			} );
 	}
 
 	// If we are provided with remote location
@@ -417,7 +472,8 @@ void TestCaseExecutor::deinit (tcu::TestCase* testCase)
 #ifdef CTS_USES_VULKANSC
 	if (!m_context->getTestContext().getCommandLine().isSubProcess())
 	{
-		if (m_testsForSubprocess.size() >= std::size_t(m_context->getTestContext().getCommandLine().getSubprocessTestCount()) )
+		int currentSubprocessCount = getCurrentSubprocessCount(m_context->getResourceInterface()->getCasePath(), m_context->getTestContext().getCommandLine().getSubprocessTestCount());
+		if (m_testsForSubprocess.size() >= std::size_t(currentSubprocessCount) )
 		{
 			runTestsInSubprocess(m_context->getTestContext());
 
@@ -578,6 +634,18 @@ void TestCaseExecutor::reportDurations(tcu::TestContext& testCtx, const std::str
 	DE_UNREF(groupsDurationTime);
 #endif // CTS_USES_VULKANSC
 
+}
+
+int TestCaseExecutor::getCurrentSubprocessCount(const std::string& casePath, int defaultSubprocessCount)
+{
+#ifdef CTS_USES_VULKANSC
+	for (const auto& detailed : m_detailedSubprocessTestCount)
+		if (tcu::matchWildcards(detailed.testPattern.begin(), detailed.testPattern.end(), casePath.begin(), casePath.end(), false))
+			return detailed.testCount;
+#else
+	DE_UNREF(casePath);
+#endif // CTS_USES_VULKANSC
+	return defaultSubprocessCount;
 }
 
 void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)

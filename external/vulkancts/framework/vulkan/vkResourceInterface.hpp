@@ -52,6 +52,7 @@ public:
 	virtual void												deinitDevice				(VkDevice								device) = 0;
 
 	virtual void												initTestCase				(const std::string&						casePath);
+	const std::string&											getCasePath					() const;
 
 	// buildProgram
 	template <typename InfoType, typename IteratorType>

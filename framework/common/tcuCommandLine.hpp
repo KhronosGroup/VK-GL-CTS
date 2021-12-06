@@ -277,8 +277,11 @@ public:
 	//! Start as subprocess ( Vulkan SC )
 	bool							isSubProcess				(void) const;
 
-	//! Define number of tests performed in main process ( Vulkan SC )
+	//! Define default number of tests performed in main process ( Vulkan SC )
 	int								getSubprocessTestCount		(void) const;
+
+	//! Config file defining number of tests performed in subprocess for specific test branches
+	const char*						getSubprocessConfigFile		(void) const;
 
 	//! Optional server address that will be responsible for (among other things) compiling shaders ( Vulkan SC )
 	const char*						getServerAddress			(void) const;

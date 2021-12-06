@@ -107,6 +107,7 @@ DE_DECLARE_COMMAND_LINE_OPT(RunnerType,					tcu::TestRunnerType);
 DE_DECLARE_COMMAND_LINE_OPT(TerminateOnFail,			bool);
 DE_DECLARE_COMMAND_LINE_OPT(SubProcess,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(SubprocessTestCount,		int);
+DE_DECLARE_COMMAND_LINE_OPT(SubprocessConfigFile,		std::string);
 DE_DECLARE_COMMAND_LINE_OPT(ServerAddress,				std::string);
 DE_DECLARE_COMMAND_LINE_OPT(CommandPoolMinSize,			int);
 DE_DECLARE_COMMAND_LINE_OPT(CommandDefaultSize,			int);
@@ -230,7 +231,8 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<RunnerType>					(DE_NULL,	"deqp-runner-type",							"Filter test cases based on runner",				s_runnerTypes,		"any")
 		<< Option<TerminateOnFail>				(DE_NULL,	"deqp-terminate-on-fail",					"Terminate the run on first failure",				s_enableNames,		"disable")
 		<< Option<SubProcess>					(DE_NULL,	"deqp-subprocess",							"Inform app that it works as subprocess (Vulkan SC only, do not use manually)", s_enableNames, "disable")
-		<< Option<SubprocessTestCount>			(DE_NULL,	"deqp-subprocess-test-count",				"Define number of tests performed in subprocess (Vulkan SC only)",		"64")
+		<< Option<SubprocessTestCount>			(DE_NULL,	"deqp-subprocess-test-count",				"Define default number of tests performed in subprocess for specific test cases(Vulkan SC only)",	"65536")
+		<< Option<SubprocessConfigFile>			(DE_NULL,	"deqp-subprocess-cfg-file",					"Config file defining number of tests performed in subprocess for specific test branches (Vulkan SC only)", "")
 		<< Option<ServerAddress>				(DE_NULL,	"deqp-server-address",						"Server address (host:port) responsible for shader compilation (Vulkan SC only)", "")
 		<< Option<CommandPoolMinSize>			(DE_NULL,	"deqp-command-pool-min-size",				"Define minimum size of the command pool (in bytes) to use (Vulkan SC only)","0")
 		<< Option<CommandDefaultSize>			(DE_NULL,	"deqp-command-default-size",				"Define default single command size (in bytes) to use (Vulkan SC only)",	"256")
@@ -1027,6 +1029,15 @@ const char* CommandLine::getEGLPixmapType (void) const
 	else
 		return DE_NULL;
 }
+
+const char* CommandLine::getSubprocessConfigFile (void) const
+{
+	if (m_cmdLine.hasOption<opt::SubprocessConfigFile>())
+		return m_cmdLine.getOption<opt::SubprocessConfigFile>().c_str();
+	else
+		return DE_NULL;
+}
+
 
 const char* CommandLine::getServerAddress (void) const
 {
