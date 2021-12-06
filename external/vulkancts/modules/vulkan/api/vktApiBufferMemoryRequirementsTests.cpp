@@ -317,13 +317,61 @@ struct Info
 #define INFOCREATE(msg_) Info(Info::Create, (msg_), __FILE__, __LINE__)
 #define INFOUSAGE(msg_) Info(Info::Usage, (msg_), __FILE__, __LINE__)
 
+#ifndef VK_KHR_VIDEO_QUEUE_EXTENSION_NAME
+#define VK_KHR_VIDEO_QUEUE_EXTENSION_NAME "VK_KHR_video_queue"
+#endif
+
+#ifndef VK_EXT_VIDEO_ENCODE_H264_EXTENSION_NAME
+#define VK_EXT_VIDEO_ENCODE_H264_EXTENSION_NAME "VK_EXT_video_encode_h264"
+#endif
+
+#ifndef VK_EXT_VIDEO_DECODE_H264_EXTENSION_NAME
+#define VK_EXT_VIDEO_DECODE_H264_EXTENSION_NAME "VK_EXT_video_decode_h264"
+#endif
+
+VkVideoCodecOperationFlagsKHR readVideoCodecOperationFlagsKHR (const InstanceInterface& vki, const VkPhysicalDevice& device)
+{
+	uint32_t	queueFamilyPropertyCount = 0;
+	vki.getPhysicalDeviceQueueFamilyProperties2(device, &queueFamilyPropertyCount, nullptr);
+	DE_ASSERT(queueFamilyPropertyCount);
+
+	std::vector<VkVideoQueueFamilyProperties2KHR>	videoQueueFamilyProperties(
+														queueFamilyPropertyCount,
+														{
+														   VK_STRUCTURE_TYPE_VIDEO_QUEUE_FAMILY_PROPERTIES_2_KHR,	// VkStructureType					sType
+														   nullptr,													// void*							pNext
+														   0														// VkVideoCodecOperationFlagsKHR	videoCodecOperations
+														});
+	std::vector<VkQueueFamilyProperties2>			queueFamilyProperties(
+														queueFamilyPropertyCount,
+														{
+															VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2,			// VkStructureType					sType
+															nullptr,												// void*							pNext
+															{}														// VkQueueFamilyProperties			queueFamilyProperties
+														});
+	for (auto begin = queueFamilyProperties.begin(), i = begin, end = queueFamilyProperties.end(); i != end; ++i)
+	{
+		i->pNext = &videoQueueFamilyProperties.data()[std::distance(begin, i)];
+	}
+
+	vki.getPhysicalDeviceQueueFamilyProperties2(device, &queueFamilyPropertyCount, queueFamilyProperties.data());
+
+	VkVideoCodecOperationFlagsKHR	codecOperationFlags = VK_VIDEO_CODEC_OPERATION_INVALID_BIT_KHR;
+	for (const VkVideoQueueFamilyProperties2KHR& props : videoQueueFamilyProperties)
+	{
+		codecOperationFlags |= props.videoCodecOperations;
+	}
+
+	return codecOperationFlags;
+}
+
 void MemoryRequirementsTest::checkSupport (Context& context) const
 {
 	const InstanceInterface&						intf				= context.getInstanceInterface();
 	const VkPhysicalDevice							physDevice			= context.getPhysicalDevice();
 
 	if (m_testConfig.useMethod2)
-		context.requireDeviceFunctionality("VK_KHR_get_memory_requirements2");
+		context.requireDeviceFunctionality(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
 
 	VkPhysicalDeviceProtectedMemoryFeatures			protectedMemFeatures
 	{
@@ -391,7 +439,7 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 		}
 
 		std::ostringstream str;
-		std::array<bool, 3> msgs;
+		std::array<bool, 7> msgs;
 		bool notSupported	= false;
 		int  entryCount		= 0;
 		msgs.fill(false);
@@ -425,17 +473,70 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 				notSupported = true;
 			}
 
-			if (i->any({VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR, VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR,
-					   VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR, VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR}) &&
-					   !context.isDeviceFunctionalitySupported("VK_KHR_video_queue"))
+			if (i->any({VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR, VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR,
+						VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR, VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR}))
 			{
-				if (!msgs[2])
+				if (!context.isDeviceFunctionalitySupported(VK_KHR_VIDEO_QUEUE_EXTENSION_NAME))
 				{
-					if (entryCount++) str << std::endl;
-					str << INFOUSAGE("VK_KHR_video_queue not supported by device");
-					msgs[2] = true;
+					if (!msgs[2])
+					{
+						if (entryCount++) str << std::endl;
+						str << INFOUSAGE("VK_EXT_video_queue not supported by device");
+						msgs[2] = true;
+					}
+					notSupported = true;
 				}
-				notSupported = true;
+				else
+				{
+					const VkVideoCodecOperationFlagsKHR videoFlags = readVideoCodecOperationFlagsKHR(intf, physDevice);
+
+					if (i->any({VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR, VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR}))
+					{
+						if (!context.isDeviceFunctionalitySupported(VK_EXT_VIDEO_ENCODE_H264_EXTENSION_NAME))
+						{
+							if (!msgs[3])
+							{
+								if (entryCount++) str << std::endl;
+								str << INFOUSAGE("VK_EXT_video_encode_h264 not supported by device");
+								msgs[3] = true;
+							}
+							notSupported = true;
+						}
+						if (!(videoFlags & VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT))
+						{
+							if (!msgs[4])
+							{
+								if (entryCount++) str << std::endl;
+								str << INFOUSAGE("Could not find a queue that supports VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT on device");
+								msgs[4] = true;
+							}
+							notSupported = true;
+						}
+					}
+					if (i->any({VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR, VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR}))
+					{
+						if (!context.isDeviceFunctionalitySupported(VK_EXT_VIDEO_DECODE_H264_EXTENSION_NAME))
+						{
+							if (!msgs[5])
+							{
+								if (entryCount++) str << std::endl;
+								str << INFOUSAGE("VK_EXT_video_decode_h264 not supported by device");
+								msgs[5] = true;
+							}
+							notSupported = true;
+						}
+						if (!(videoFlags & VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT))
+						{
+							if (!msgs[6])
+							{
+								if (entryCount++) str << std::endl;
+								str << INFOUSAGE("Could not find a queue that supports VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT on device");
+								msgs[6] = true;
+							}
+							notSupported = true;
+						}
+					}
+				}
 			}
 
 			i = notSupported ? usageFlags.erase(i) : std::next(i);
@@ -600,34 +701,65 @@ BufferMemoryRequirementsInstance::chainVkStructure<VkExternalMemoryBufferCreateI
 	return &memInfo;
 }
 
-template<> void* BufferMemoryRequirementsInstance::chainVkStructure<VkVideoProfilesKHR> (void* pNext) const
+template<> void* BufferMemoryRequirementsInstance::chainVkStructure<VkVideoProfilesKHR> (void* pNext, const VkBufferUsageFlags& videoCodecUsage) const
 {
-	static const VkVideoProfileKHR		videoProfiles[2] {
+	const bool encode = (videoCodecUsage & VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR) || (videoCodecUsage & VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR);
+	const bool decode = (videoCodecUsage & VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR) || (videoCodecUsage & VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR);
+
+	static VkVideoEncodeH264ProfileEXT	encodeProfile
+	{
+		VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_EXT,		// VkStructureType						sType;
+		nullptr,												// const void*							pNext;
+		STD_VIDEO_H264_PROFILE_IDC_BASELINE						// StdVideoH264ProfileIdc				stdProfileIdc;
+	};
+
+	static VkVideoDecodeH264ProfileEXT	decodeProfile
+	{
+		VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_EXT,		// VkStructureType						sType;
+		nullptr,												// const void*							pNext;
+		STD_VIDEO_H264_PROFILE_IDC_BASELINE,					// StdVideoH264ProfileIdc				stdProfileIdc;
+		VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_EXT		// VkVideoDecodeH264FieldLayoutFlagsEXT	fieldLayout;
+	};
+
+	static const VkVideoProfileKHR	videoProfiles[]
+	{
+		// encode profile
 		{
-			VK_STRUCTURE_TYPE_VIDEO_PROFILE_KHR,					// VkStructureType					sType
-			nullptr,												// void*							pNext
-			VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT,			// VkVideoCodecOperationFlagBitsKHR	videoCodecOperation
-			VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR,			// VkVideoChromaSubsamplingFlagsKHR	chromaSubsampling
-			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,					// VkVideoComponentBitDepthFlagsKHR	lumaBitDepth
-			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR					// VkVideoComponentBitDepthFlagsKHR	chromaBitDepth
+			VK_STRUCTURE_TYPE_VIDEO_PROFILE_KHR,				// VkStructureType						sType;
+			&encodeProfile,										// void*								pNext;
+			VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT,		// VkVideoCodecOperationFlagBitsKHR		videoCodecOperation;
+			VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR,		// VkVideoChromaSubsamplingFlagsKHR		chromaSubsampling;
+			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,				// VkVideoComponentBitDepthFlagsKHR		lumaBitDepth;
+			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR				// VkVideoComponentBitDepthFlagsKHR		chromaBitDepth;
 		},
+		// decode profile
 		{
-			VK_STRUCTURE_TYPE_VIDEO_PROFILE_KHR,					// VkStructureType					sType
-			nullptr,												// void*							pNext
-			VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT,			// VkVideoCodecOperationFlagBitsKHR	videoCodecOperation
-			VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR,			// VkVideoChromaSubsamplingFlagsKHR	chromaSubsampling
-			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,					// VkVideoComponentBitDepthFlagsKHR	lumaBitDepth
-			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR					// VkVideoComponentBitDepthFlagsKHR	chromaBitDepth
+			VK_STRUCTURE_TYPE_VIDEO_PROFILE_KHR,				// VkStructureType						sType;
+			&decodeProfile,										// void*								pNext;
+			VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT,		// VkVideoCodecOperationFlagBitsKHR		videoCodecOperation;
+			VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR,		// VkVideoChromaSubsamplingFlagsKHR		chromaSubsampling;
+			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,				// VkVideoComponentBitDepthFlagsKHR		lumaBitDepth;
+			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR				// VkVideoComponentBitDepthFlagsKHR		chromaBitDepth;
 		}
 	};
-
-	static VkVideoProfilesKHR			profiles {
-		VK_STRUCTURE_TYPE_VIDEO_PROFILES_KHR,	// VkStructureType			sType
-		pNext,									// void*					pNext
-		2u,										// uint32_t					profileCount
-		videoProfiles							// const VkVideoProfileKHR*	pProfiles
-	};
-
+	static VkVideoProfilesKHR	profiles;
+	profiles.sType			= VK_STRUCTURE_TYPE_VIDEO_PROFILES_KHR;
+	profiles.pNext			= pNext;
+	if (encode && decode)
+	{
+		profiles.profileCount	= 2u;
+		profiles.pProfiles		= videoProfiles;
+	}
+	else if (encode)
+	{
+		profiles.profileCount	= 1u;
+		profiles.pProfiles		= &videoProfiles[0];
+	}
+	else
+	{
+		profiles.profileCount	= 1u;
+		profiles.pProfiles		= &videoProfiles[1];
+	}
 	return &profiles;
 }
 
@@ -663,7 +795,7 @@ TestStatus	BufferMemoryRequirementsInstance::iterate (void)
 
 				if (m_config.fateBits->contains(BufferFateFlagBits::Video))
 				{
-					pNext = chainVkStructure<VkVideoProfilesKHR>(pNext);
+					pNext = chainVkStructure<VkVideoProfilesKHR>(pNext, infoUsageFlags);
 				}
 				if (m_config.incExtMemTypeFlags)
 				{
