@@ -22,8 +22,6 @@
 * \brief VK_EXT_tooling_info tests
 *//*--------------------------------------------------------------------*/
 
-#include "vktCustomInstancesDevices.hpp"
-#include "vkDeviceUtil.hpp"
 #include "vktApiToolingInfoTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCaseUtil.hpp"
@@ -31,7 +29,6 @@
 #include "vkStrUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "tcuTestLog.hpp"
-#include "tcuCommandLine.hpp"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -47,7 +44,7 @@ namespace api
 namespace
 {
 
-bool validateToolPurposeFlagBits (const VkToolPurposeFlagsEXT purposes)
+bool validateToolPurposeFlagBits(const VkToolPurposeFlagsEXT purposes)
 {
 	const VkToolPurposeFlagsEXT validPurposes =	VK_TOOL_PURPOSE_VALIDATION_BIT_EXT			|
 												VK_TOOL_PURPOSE_PROFILING_BIT_EXT			|
@@ -64,63 +61,7 @@ void checkSupport (Context& context)
 	context.requireDeviceFunctionality("VK_EXT_tooling_info");
 }
 
-CustomInstance createCustomInstance (Context& context, bool allowLayers)
-{
-	std::vector<const char*>		enabledLayers;
-	std::vector<std::string>		enabledLayersStr;
-	const std::vector<std::string>	enabledExtensions;
-
-	const deUint32					apiVersion	= context.getUsedApiVersion();
-	const vk::PlatformInterface&	vkp			= context.getPlatformInterface();
-
-	if (allowLayers)
-	{
-		enabledLayers		= getValidationLayers(context.getPlatformInterface());
-		enabledLayersStr	= std::vector<std::string>(begin(enabledLayers), end(enabledLayers));
-	}
-
-	Move<VkInstance> instance = vk::createDefaultInstance(vkp, apiVersion, enabledLayersStr, enabledExtensions, DE_NULL);
-	return CustomInstance(context, instance, !enabledLayers.empty(), context.getTestContext().getCommandLine().printValidationErrors());
-}
-
-bool checkToolsProperties (Context& context, const std::vector<VkPhysicalDeviceToolPropertiesEXT>& deviceToolPropertiesEXTArray)
-{
-	tcu::TestLog&	testLog = context.getTestContext().getLog();
-	bool			result  = true;
-
-	for (size_t i = 0; i < deviceToolPropertiesEXTArray.size(); ++i)
-	{
-		size_t nameSize		= strnlen(deviceToolPropertiesEXTArray[i].name, VK_MAX_EXTENSION_NAME_SIZE);
-		size_t versionSize	= strnlen(deviceToolPropertiesEXTArray[i].version, VK_MAX_EXTENSION_NAME_SIZE);
-		size_t descSize		= strnlen(deviceToolPropertiesEXTArray[i].description, VK_MAX_DESCRIPTION_SIZE);
-		size_t layerSize	= strnlen(deviceToolPropertiesEXTArray[i].layer, VK_MAX_EXTENSION_NAME_SIZE);
-
-		result = result && (deviceToolPropertiesEXTArray[i].sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT);
-		result = result && validateToolPurposeFlagBits(deviceToolPropertiesEXTArray[i].purposes);
-		result = result && ((nameSize > 0)		&& (nameSize < VK_MAX_EXTENSION_NAME_SIZE));
-		result = result && ((versionSize > 0)	&& (versionSize < VK_MAX_EXTENSION_NAME_SIZE));
-		result = result && ((descSize > 0)		&& (descSize < VK_MAX_DESCRIPTION_SIZE));
-		result = result && ((layerSize == 0)	|| (layerSize < VK_MAX_EXTENSION_NAME_SIZE));
-
-		if (result == false)
-		{
-			testLog << tcu::TestLog::Message << "Tool validation failed" << tcu::TestLog::EndMessage;
-			testLog << tcu::TestLog::Message << "Tool name: " << deviceToolPropertiesEXTArray[i].name << tcu::TestLog::EndMessage;
-			testLog << tcu::TestLog::Message << "Version: " << deviceToolPropertiesEXTArray[i].version << tcu::TestLog::EndMessage;
-			testLog << tcu::TestLog::Message << "Description: " << deviceToolPropertiesEXTArray[i].description << tcu::TestLog::EndMessage;
-			testLog << tcu::TestLog::Message << "Purposes: " << getToolPurposeFlagsEXTStr(deviceToolPropertiesEXTArray[i].purposes) << tcu::TestLog::EndMessage;
-			if (layerSize > 0)
-			{
-				testLog << tcu::TestLog::Message << "Corresponding Layer: " << deviceToolPropertiesEXTArray[i].layer << tcu::TestLog::EndMessage;
-			}
-
-			break;
-		}
-	}
-	return result;
-}
-
-tcu::TestStatus validateGetter (Context& context)
+tcu::TestStatus validateGetter(Context& context)
 {
 	tcu::TestLog& testLog = context.getTestContext().getLog();
 
@@ -163,6 +104,11 @@ tcu::TestStatus validateGetter (Context& context)
 		toolCountSecondCall++;
 
 		deviceToolPropertiesEXTArray.resize(toolCountSecondCall);
+
+		for (size_t toolNdx = 0; toolNdx < deviceToolPropertiesEXTArray.size(); ++toolNdx)
+		{
+			deviceToolPropertiesEXTArray[toolNdx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT;
+		}
 
 		result = context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCountSecondCall, &deviceToolPropertiesEXTArray[0]);
 
@@ -226,6 +172,9 @@ tcu::TestStatus validateGetter (Context& context)
 
 tcu::TestStatus validateToolsProperties (Context& context)
 {
+	tcu::TestLog& testLog = context.getTestContext().getLog();
+
+	bool	 result		= true;
 	deUint32 toolCount	= 0;
 
 	VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCount, DE_NULL));
@@ -241,104 +190,43 @@ tcu::TestStatus validateToolsProperties (Context& context)
 
 		VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCount, &deviceToolPropertiesEXTArray[0]));
 
-		if (checkToolsProperties(context, deviceToolPropertiesEXTArray) == false)
-			return tcu::TestStatus::fail("Fail");
-	}
-
-	return tcu::TestStatus::pass("Pass");
-}
-
-tcu::TestStatus validateInstanceLayers (Context& context)
-{
-	const std::vector<const char*>	layers			= getValidationLayers(context.getPlatformInterface());
-	bool							qualityWarning	= false;
-
-	{
-		deUint32			toolCount		= 0;
-		CustomInstance		instance		(createCustomInstance(context, true));
-		VkPhysicalDevice	physicalDevice	= chooseDevice(instance.getDriver(), instance, context.getTestContext().getCommandLine());
-
-		VK_CHECK(instance.getDriver().getPhysicalDeviceToolPropertiesEXT(physicalDevice, &toolCount, DE_NULL));
-
-		if (toolCount < layers.size())
-			qualityWarning = true;
-
-		if (toolCount > 0)
+		for (deUint32 i = 0; i < toolCount; ++i)
 		{
-			std::vector<VkPhysicalDeviceToolPropertiesEXT>	deviceToolPropertiesEXTArray(toolCount);
+			size_t nameSize		= strnlen(deviceToolPropertiesEXTArray[i].name, VK_MAX_EXTENSION_NAME_SIZE);
+			size_t versionSize	= strnlen(deviceToolPropertiesEXTArray[i].version, VK_MAX_EXTENSION_NAME_SIZE);
+			size_t descSize		= strnlen(deviceToolPropertiesEXTArray[i].description, VK_MAX_DESCRIPTION_SIZE);
+			size_t layerSize	= strnlen(deviceToolPropertiesEXTArray[i].layer, VK_MAX_EXTENSION_NAME_SIZE);
 
-			for (size_t toolNdx = 0; toolNdx < deviceToolPropertiesEXTArray.size(); ++toolNdx)
+			result = result && (deviceToolPropertiesEXTArray[i].sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT);
+			result = result && validateToolPurposeFlagBits(deviceToolPropertiesEXTArray[i].purposes);
+			result = result && ((nameSize > 0)		&& (nameSize < VK_MAX_EXTENSION_NAME_SIZE));
+			result = result && ((versionSize > 0)	&& (versionSize < VK_MAX_EXTENSION_NAME_SIZE));
+			result = result && ((descSize > 0)		&& (descSize < VK_MAX_DESCRIPTION_SIZE));
+			result = result && ((layerSize == 0)	|| (layerSize < VK_MAX_EXTENSION_NAME_SIZE));
+
+			if (result == false)
 			{
-				deviceToolPropertiesEXTArray[toolNdx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT;
-			}
-
-			VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(physicalDevice, &toolCount, &deviceToolPropertiesEXTArray[0]));
-
-			if (checkToolsProperties(context, deviceToolPropertiesEXTArray) == false)
-				return tcu::TestStatus::fail("Fail");
-
-			for (size_t layerNdx = 0; layerNdx < layers.size(); ++layerNdx)
-			{
-				deUint32 count = 0u;
-
-				for (deUint32 toolNdx = 0; toolNdx < toolCount; ++toolNdx)
+				testLog << tcu::TestLog::Message << "Tool validation failed" << tcu::TestLog::EndMessage;
+				testLog << tcu::TestLog::Message << "Tool name: " << deviceToolPropertiesEXTArray[i].name << tcu::TestLog::EndMessage;
+				testLog << tcu::TestLog::Message << "Version: " << deviceToolPropertiesEXTArray[i].version << tcu::TestLog::EndMessage;
+				testLog << tcu::TestLog::Message << "Description: " << deviceToolPropertiesEXTArray[i].description << tcu::TestLog::EndMessage;
+				testLog << tcu::TestLog::Message << "Purposes: " << getToolPurposeFlagsEXTStr(deviceToolPropertiesEXTArray[i].purposes) << tcu::TestLog::EndMessage;
+				if (layerSize > 0)
 				{
-					if (strcmp(layers[layerNdx], deviceToolPropertiesEXTArray[toolNdx].layer) == 0)
-						count++;
+					testLog << tcu::TestLog::Message << "Corresponding Layer: " << deviceToolPropertiesEXTArray[i].layer << tcu::TestLog::EndMessage;
 				}
-
-				if (count != 1)
-				{
-					qualityWarning = true;
-					break;
-				}
+				break;
 			}
 		}
 	}
 
+	if (result)
 	{
-		deUint32			toolCount		= 0;
-		CustomInstance		instance		(createCustomInstance(context, false));
-		VkPhysicalDevice	physicalDevice	= chooseDevice(instance.getDriver(), instance, context.getTestContext().getCommandLine());
-
-		VK_CHECK(instance.getDriver().getPhysicalDeviceToolPropertiesEXT(physicalDevice, &toolCount, DE_NULL));
-
-		if (toolCount > 0)
-		{
-			std::vector<VkPhysicalDeviceToolPropertiesEXT>	deviceToolPropertiesEXTArray(toolCount);
-
-			for (size_t toolNdx = 0; toolNdx < deviceToolPropertiesEXTArray.size(); ++toolNdx)
-			{
-				deviceToolPropertiesEXTArray[toolNdx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT;
-			}
-
-			VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(physicalDevice, &toolCount, &deviceToolPropertiesEXTArray[0]));
-
-			if (checkToolsProperties(context, deviceToolPropertiesEXTArray) == false)
-				return tcu::TestStatus::fail("Fail");
-
-			for (size_t layerNdx = 0; layerNdx < layers.size(); ++layerNdx)
-			{
-				for (deUint32 toolNdx = 0; toolNdx < toolCount; ++toolNdx)
-				{
-					if (strcmp(layers[layerNdx], deviceToolPropertiesEXTArray[toolNdx].layer) == 0)
-					{
-						qualityWarning	= true;
-						layerNdx		= layers.size();
-						break;
-					}
-				}
-			}
-		}
-	}
-
-	if (qualityWarning)
-	{
-		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Layers have been reported wrong");
+		return tcu::TestStatus::pass("Pass");
 	}
 	else
 	{
-		return tcu::TestStatus::pass("Pass");
+		return tcu::TestStatus::fail("Fail");
 	}
 }
 
@@ -346,12 +234,11 @@ void createTestCases (tcu::TestCaseGroup* group)
 {
 	addFunctionCase(group, "validate_getter", "Validate getPhysicalDeviceToolPropertiesEXT", checkSupport, validateGetter);
 	addFunctionCase(group, "validate_tools_properties","Validate tools properties",	checkSupport, validateToolsProperties);
-	addFunctionCase(group, "validate_instance_layers", "Validate instance layers", checkSupport, validateInstanceLayers);
 }
 
 } // anonymous
 
-tcu::TestCaseGroup*	createToolingInfoTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createToolingInfoTests(tcu::TestContext& testCtx)
 {
 	return createTestGroup(testCtx, "tooling_info", "VK_EXT_tooling_info tests", createTestCases);
 }
