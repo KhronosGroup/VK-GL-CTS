@@ -49,9 +49,9 @@ PROJECT				= Project(path = MUSTPASS_PATH, copyright = COPYRIGHT_DECLARATION)
 VULKAN_MODULE		= getModuleByName("dEQP-VK")
 BUILD_CONFIG		= getBuildConfig(DEFAULT_BUILD_DIR, DEFAULT_TARGET, "Debug")
 
-# master
+# main
 
-VULKAN_MASTER_PKG	= Package(module = VULKAN_MODULE, configurations = [
+VULKAN_MAIN_PKG	= Package(module = VULKAN_MODULE, configurations = [
 		  # Master
 		  Configuration(name					= "default",
 						filters					= [include("master.txt"),
@@ -64,7 +64,7 @@ VULKAN_MASTER_PKG	= Package(module = VULKAN_MODULE, configurations = [
 	 ])
 
 MUSTPASS_LISTS		= [
-		  Mustpass(project = PROJECT,	version = "master",	packages = [VULKAN_MASTER_PKG]),
+		  Mustpass(project = PROJECT,	version = "main",	packages = [VULKAN_MAIN_PKG]),
 	]
 
 if __name__ == "__main__":

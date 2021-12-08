@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Mustpass version="master">
+<Mustpass version="main">
 	<!--/*     Copyright (C) 2016-2017 The Khronos Group Inc
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,8 +17,7 @@
 	<!--/* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  */-->
-	<TestPackage name="Khronos Mustpass ES NoContext">
-		<Configuration caseListFile="gles2-khr-noctx-master.txt" commandLine="--deqp-screen-rotation=unspecified --deqp-surface-width=64 --deqp-surface-height=64 --deqp-base-seed=1 --deqp-watchdog=disable" name="khr-noctx-master" os="any" useForFirstEGLConfig="True"/>
-		<Configuration caseListFile="gles32-khr-noctx-master.txt" commandLine="--deqp-screen-rotation=unspecified --deqp-surface-width=64 --deqp-surface-height=64 --deqp-base-seed=1 --deqp-watchdog=disable" name="khr-noctx-master" os="any" useForFirstEGLConfig="True"/>
+	<TestPackage name="AOSP Mustpass EGL">
+		<Configuration caseListFile="egl-master.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-width=256 --deqp-surface-height=256 --deqp-watchdog=disable" name="master" os="any" useForFirstEGLConfig="True"/>
 	</TestPackage>
 </Mustpass>
