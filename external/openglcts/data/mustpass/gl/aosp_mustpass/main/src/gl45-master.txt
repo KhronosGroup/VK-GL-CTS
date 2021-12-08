@@ -1,0 +1,2 @@
+dEQP-GL45.info.*
+dEQP-GL45.functional.*
