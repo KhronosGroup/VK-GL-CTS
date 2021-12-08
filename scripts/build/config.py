@@ -182,7 +182,8 @@ class VSProjectGenerator(CMakeGenerator):
 				12:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.12.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\12.0")],
 				14:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.14.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\14.0")],
 				15:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.15.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\15.0")],
-				16:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.16.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\16.0")]
+				16:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.16.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\16.0")],
+				17:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.17.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\17.0")]
 			}
 
 			if not self.version in keyMap:
@@ -213,6 +214,8 @@ VS2017_X32_GENERATOR	= VSProjectGenerator(15, VSProjectGenerator.ARCH_32BIT)
 VS2017_X64_GENERATOR	= VSProjectGenerator(15, VSProjectGenerator.ARCH_64BIT)
 VS2019_X32_GENERATOR	= VSProjectGenerator(16, VSProjectGenerator.ARCH_32BIT)
 VS2019_X64_GENERATOR	= VSProjectGenerator(16, VSProjectGenerator.ARCH_64BIT)
+VS2022_X32_GENERATOR	= VSProjectGenerator(17, VSProjectGenerator.ARCH_32BIT)
+VS2022_X64_GENERATOR	= VSProjectGenerator(17, VSProjectGenerator.ARCH_64BIT)
 
 def selectFirstAvailableGenerator (generators):
 	for generator in generators:
@@ -221,6 +224,7 @@ def selectFirstAvailableGenerator (generators):
 	return None
 
 ANY_VS_X32_GENERATOR	= selectFirstAvailableGenerator([
+								VS2022_X32_GENERATOR,
 								VS2019_X32_GENERATOR,
 								VS2017_X32_GENERATOR,
 								VS2015_X32_GENERATOR,
@@ -229,6 +233,7 @@ ANY_VS_X32_GENERATOR	= selectFirstAvailableGenerator([
 								VS2010_X32_GENERATOR,
 							])
 ANY_VS_X64_GENERATOR	= selectFirstAvailableGenerator([
+								VS2022_X64_GENERATOR,
 								VS2019_X64_GENERATOR,
 								VS2017_X64_GENERATOR,
 								VS2015_X64_GENERATOR,
@@ -242,6 +247,8 @@ ANY_UNIX_GENERATOR		= selectFirstAvailableGenerator([
 								NMAKE_GENERATOR,
 							])
 ANY_GENERATOR			= selectFirstAvailableGenerator([
+								VS2022_X64_GENERATOR,
+								VS2022_X32_GENERATOR,
 								VS2019_X64_GENERATOR,
 								VS2019_X32_GENERATOR,
 								VS2017_X64_GENERATOR,
