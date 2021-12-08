@@ -1657,13 +1657,15 @@ tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
 
 					if (result.check(requirements.memoryRequirements.memoryTypeBits != 0, "No supported memory types"))
 					{
-						bool	hasHostVisibleType	= false;
+						typedef std::vector<deUint32>::const_iterator	IndexIterator;
+						const std::vector<deUint32>						usedMemoryTypeIndices	= bitsToIndices(requirements.memoryRequirements.memoryTypeBits);
+						bool											hasHostVisibleType		= false;
 
-						for (deUint32 memoryTypeIndex = 0; (0x1u << memoryTypeIndex) <= requirements.memoryRequirements.memoryTypeBits; memoryTypeIndex++)
+						for (IndexIterator memoryTypeNdx = usedMemoryTypeIndices.begin(); memoryTypeNdx != usedMemoryTypeIndices.end(); ++memoryTypeNdx)
 						{
-							if (result.check(memoryTypeIndex < memoryProperties.memoryTypeCount, "Unknown memory type bits set in memory requirements"))
+							if (result.check(*memoryTypeNdx < memoryProperties.memoryTypeCount, "Unknown memory type bits set in memory requirements"))
 							{
-								const VkMemoryPropertyFlags	propertyFlags	(memoryProperties.memoryTypes[memoryTypeIndex].propertyFlags);
+								const VkMemoryPropertyFlags	propertyFlags	(memoryProperties.memoryTypes[*memoryTypeNdx].propertyFlags);
 
 								if (propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
 									hasHostVisibleType = true;
