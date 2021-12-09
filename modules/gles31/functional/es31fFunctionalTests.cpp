@@ -297,12 +297,19 @@ private:
 		addChild(new ShaderHelperInvocationTests		(m_context));
 
 		{
-			static const ShaderLibraryGroup::File s_implicitConversionsFiles[] =
+			static const ShaderLibraryGroup::File s_implicitConversionsFilesES[] =
 			{
 				{ "shaders/es31/implicit_conversions.test",		"es31",		"GLSL ES 3.1 GL_EXT_shader_implicit_conversions Tests"	},
 				{ "shaders/es32/implicit_conversions.test",		"es32",		"GLSL ES 3.2 GL_EXT_shader_implicit_conversions Tests"	},
 			};
-			addChild(new ShaderLibraryGroup(m_context, "implicit_conversions", "GL_EXT_shader_implicit_conversions Tests", DE_LENGTH_OF_ARRAY(s_implicitConversionsFiles), s_implicitConversionsFiles));
+			static const ShaderLibraryGroup::File s_implicitConversionsFilesGL[] =
+			{
+				{ "shaders/gl45/implicit_conversions.test",		"gl45",		"GL45 implicit conversions Tests" },
+			};
+			if (m_isGL45)
+				addChild(new ShaderLibraryGroup(m_context, "implicit_conversions", "GL45 implicit conversions Tests", DE_LENGTH_OF_ARRAY(s_implicitConversionsFilesGL), s_implicitConversionsFilesGL));
+			else
+				addChild(new ShaderLibraryGroup(m_context, "implicit_conversions", "GL_EXT_shader_implicit_conversions Tests", DE_LENGTH_OF_ARRAY(s_implicitConversionsFilesES), s_implicitConversionsFilesES));
 		}
 
 		{
