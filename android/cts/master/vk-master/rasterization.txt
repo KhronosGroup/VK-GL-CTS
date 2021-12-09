@@ -978,7 +978,6 @@ dEQP-VK.rasterization.provoking_vertex.transform_feedback.per_pipeline.triangle_
 dEQP-VK.rasterization.line_continuity.line-strip
 dEQP-VK.rasterization.line_continuity.polygon-mode-lines
 dEQP-VK.rasterization.depth_bias.d16_unorm
-dEQP-VK.rasterization.depth_bias.d32_sfloat
 dEQP-VK.rasterization.depth_bias.d24_unorm
 dEQP-VK.rasterization.frag_side_effects.color_at_beginning.kill
 dEQP-VK.rasterization.frag_side_effects.color_at_beginning.demote
