@@ -44,6 +44,8 @@
 #include "tcuImageCompare.hpp"
 #include "tcuFloat.hpp"
 
+#include <cmath>
+#include <cstddef>
 #include <set>
 
 namespace vkt
@@ -54,6 +56,7 @@ namespace
 {
 using namespace vk;
 using namespace vkt;
+using namespace tcu;
 
 static const VkFlags	ALL_RAY_TRACING_STAGES	= VK_SHADER_STAGE_RAYGEN_BIT_KHR
 												| VK_SHADER_STAGE_ANY_HIT_BIT_KHR
@@ -2944,6 +2947,391 @@ bool RayTracingHeaderBottomAddressTestInstance::areAddressesDifferent (const std
 	return (matches == 0);
 }
 
+// note that these names should be auto-generated but they do not
+#ifndef VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME
+#define VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME "VK_KHR_acceleration_structure"
+#endif
+#ifndef VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME
+#define VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME "VK_KHR_ray_tracing_maintenance1"
+#endif
+
+template<class X, class... Y>
+inline de::SharedPtr<X> makeShared(Y&&... ctorArgs) {
+	return de::SharedPtr<X>(new X(std::forward<Y>(ctorArgs)...));
+}
+template<class X, class... Y>
+inline de::MovePtr<X> makeMovePtr(Y&&... ctorArgs) {
+	return de::MovePtr<X>(new X(std::forward<Y>(ctorArgs)...));
+}
+template<class X>
+inline de::SharedPtr<X> makeSharedFrom(const X& x) {
+	return makeShared<X>(x);
+}
+
+struct QueryPoolResultsParams
+{
+	enum class Type
+	{
+		Size,
+		Pointers
+	}									queryType;
+	VkAccelerationStructureBuildTypeKHR	buildType;
+	bool								inVkBuffer;
+	deUint32							blasCount;
+};
+
+typedef de::SharedPtr<const QueryPoolResultsParams> QueryPoolResultsParamsPtr;
+
+class QueryPoolResultsInstance : public TestInstance
+{
+public:
+	using TlasPtr = de::SharedPtr<TopLevelAccelerationStructure>;
+	using BlasPtr = de::SharedPtr<BottomLevelAccelerationStructure>;
+
+				QueryPoolResultsInstance	(Context&						context,
+											 QueryPoolResultsParamsPtr		params)
+					: TestInstance	(context)
+					, m_params		(params) {}
+	auto		prepareBottomAccStructures	(const DeviceInterface&			vk,
+											 VkDevice						device,
+											 Allocator&						allocator,
+											 VkCommandBuffer				cmdBuffer) ->std::vector<BlasPtr>;
+	TlasPtr		prepareTopAccStructure		(const DeviceInterface&			vk,
+											 VkDevice						device,
+											 Allocator&						allocator,
+											 VkCommandBuffer				cmdBuffer,
+											 const std::vector<BlasPtr>&	bottoms);
+protected:
+	const QueryPoolResultsParamsPtr	m_params;
+};
+
+class QueryPoolResultsSizeInstance : public QueryPoolResultsInstance
+{
+public:
+				QueryPoolResultsSizeInstance (Context& context, QueryPoolResultsParamsPtr params)
+					: QueryPoolResultsInstance(context, params) {}
+	TestStatus	iterate						  (void) override;
+};
+
+class QueryPoolResultsPointersInstance : public QueryPoolResultsInstance
+{
+public:
+				QueryPoolResultsPointersInstance (Context& context, QueryPoolResultsParamsPtr params)
+					: QueryPoolResultsInstance(context, params) {}
+
+	TestStatus	iterate							  (void) override;
+};
+
+class QueryPoolResultsCase : public TestCase
+{
+public:
+					QueryPoolResultsCase	(TestContext&				ctx,
+											 const char*				name,
+											 QueryPoolResultsParamsPtr	params)
+						: TestCase(ctx, name, std::string())
+						, m_params(params) {}
+	void			checkSupport			(Context&					context) const override;
+	TestInstance*	createInstance			(Context&					context) const override;
+
+	template<class T, class P = T(*)[1], class R = decltype(std::begin(*std::declval<P>()))>
+	static auto makeStdBeginEnd(void* p, deUint32 n) -> std::pair<R, R>
+	{
+		auto tmp = std::begin(*P(p));
+		auto begin = tmp;
+		std::advance(tmp, n);
+		return { begin, tmp };
+	}
+
+private:
+	const QueryPoolResultsParamsPtr	m_params;
+};
+
+TestInstance* QueryPoolResultsCase::createInstance (Context& context) const
+{
+	switch (m_params->queryType)
+	{
+		case QueryPoolResultsParams::Type::Size:		return new QueryPoolResultsSizeInstance(context, m_params);
+		case QueryPoolResultsParams::Type::Pointers:	return new QueryPoolResultsPointersInstance(context, m_params);
+	}
+	TCU_THROW(InternalError, "Unknown test type");
+	return nullptr;
+}
+
+void QueryPoolResultsCase::checkSupport (Context& context) const
+{
+	context.requireDeviceFunctionality(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+	context.requireDeviceFunctionality(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME);
+
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR = context.getAccelerationStructureFeatures();
+	if (m_params->buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR && accelerationStructureFeaturesKHR.accelerationStructureHostCommands == DE_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructureHostCommands");
+
+	const VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR& maintenance1FeaturesKHR = context.getRayTracingMaintenance1Features();
+	if (maintenance1FeaturesKHR.rayTracingMaintenance1 == VK_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR::rayTracingMaintenance1");
+}
+
+auto QueryPoolResultsInstance::prepareBottomAccStructures (const DeviceInterface&	vk,
+														   VkDevice					device,
+														   Allocator&				allocator,
+														   VkCommandBuffer			cmdBuffer) -> std::vector<BlasPtr>
+{
+	std::vector<Vec3>		triangle		=
+	{
+		{ 0.0, 0.0, 0.0 },
+		{ 0.5, 0.0, 0.0 },
+		{ 0.0, 0.5, 0.0 },
+	};
+
+	const deUint32			triangleCount	= ((1 + m_params->blasCount) * m_params->blasCount) / 2;
+	const float				angle			= (4.0f * std::acos(0.0f)) / float(triangleCount);
+	auto					rotateCcwZ		= [&](const Vec3& p, const Vec3& center) -> tcu::Vec3
+	{
+		const float s = std::sin(angle);
+		const float c = std::cos(angle);
+		const auto  t = p - center;
+		return tcu::Vec3(c * t.x() - s * t.y(), s * t.x() + c * t.y(), t.z()) + center;
+	};
+	auto					nextGeometry	= [&]() -> void
+	{
+		for (auto& vertex : triangle)
+			vertex = rotateCcwZ(vertex, Vec3(0.0f, 0.0f, 0.0f));
+	};
+
+	std::vector<BlasPtr>	bottoms			(m_params->blasCount);
+
+	for (deUint32 b = 0; b < m_params->blasCount; ++b)
+	{
+		BlasPtr blas(makeBottomLevelAccelerationStructure().release());
+
+		blas->setBuildType(m_params->buildType);
+		blas->addGeometry(triangle, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
+		for (deUint32 geom = b; geom < m_params->blasCount; ++geom)
+		{
+			nextGeometry();
+			blas->addGeometry(triangle, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
+		}
+
+		blas->createAndBuild(vk, device, cmdBuffer, allocator);
+
+		bottoms[b] = blas;
+	}
+
+	return bottoms;
+}
+
+auto QueryPoolResultsInstance::prepareTopAccStructure (const DeviceInterface&		vk,
+													   VkDevice						device,
+													   Allocator&					allocator,
+													   VkCommandBuffer				cmdBuffer,
+													   const std::vector<BlasPtr>&	bottoms) -> TlasPtr
+{
+	const std::size_t	instanceCount = bottoms.size();
+
+	de::MovePtr<TopLevelAccelerationStructure>	tlas = makeTopLevelAccelerationStructure();
+	tlas->setBuildType(m_params->buildType);
+	tlas->setInstanceCount(instanceCount);
+
+	for (std::size_t i = 0; i < instanceCount; ++i)
+	{
+		tlas->addInstance(bottoms[i], identityMatrix3x4, 0, 0xFFu, 0u, VkGeometryInstanceFlagsKHR(0));
+	}
+
+	tlas->createAndBuild(vk, device, cmdBuffer, allocator);
+
+	return TlasPtr(tlas.release());
+}
+
+TestStatus QueryPoolResultsSizeInstance::iterate (void)
+{
+	const DeviceInterface&								vk				= m_context.getDeviceInterface();
+	const VkDevice										device			= m_context.getDevice();
+	const deUint32										familyIndex		= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue										queue			= m_context.getUniversalQueue();
+	Allocator&											allocator		= m_context.getDefaultAllocator();
+
+	const Move<VkCommandPool>							cmdPool			= createCommandPool(vk, device, 0, familyIndex);
+	const Move<VkCommandBuffer>							cmdBuffer		= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	beginCommandBuffer(vk, *cmdBuffer, 0);
+	const std::vector<BlasPtr>							bottoms			= prepareBottomAccStructures(vk, device, allocator, *cmdBuffer);
+	TlasPtr												tlas			= prepareTopAccStructure(vk, device, allocator, *cmdBuffer, bottoms);
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	const deUint32										queryCount		= m_params->blasCount + 1;
+	std::vector<VkAccelerationStructureKHR>				handles			(queryCount);
+	handles[0] = *tlas.get()->getPtr();
+	std::transform(bottoms.begin(), bottoms.end(), std::next(handles.begin()), [](const BlasPtr& blas){ return *blas.get()->getPtr(); });
+
+	Move<VkQueryPool>									queryPoolSize	= makeQueryPool(vk, device, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SIZE_KHR, queryCount);
+	Move<VkQueryPool>									queryPoolSerial	= makeQueryPool(vk, device, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR, queryCount);
+
+	de::MovePtr<BufferWithMemory>						buffer;
+	std::vector<VkDeviceSize>							sizeSizes		(queryCount);
+	std::vector<VkDeviceSize>							serialSizes		(queryCount);
+
+	if (m_params->inVkBuffer)
+	{
+		const auto vci = makeBufferCreateInfo(2 * queryCount * sizeof(VkDeviceSize), VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+		buffer = makeMovePtr<BufferWithMemory>(vk, device, allocator, vci, MemoryRequirement::Coherent | MemoryRequirement::HostVisible);
+	}
+
+	if (m_params->buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+	{
+		beginCommandBuffer(vk, *cmdBuffer, 0);
+		vk.cmdResetQueryPool(*cmdBuffer, *queryPoolSize, 0, queryCount);
+		vk.cmdResetQueryPool(*cmdBuffer, *queryPoolSerial, 0, queryCount);
+		vk.cmdWriteAccelerationStructuresPropertiesKHR(*cmdBuffer, queryCount, handles.data(), VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SIZE_KHR, *queryPoolSize, 0);
+		vk.cmdWriteAccelerationStructuresPropertiesKHR(*cmdBuffer, queryCount, handles.data(), VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR, *queryPoolSerial, 0);
+		if (m_params->inVkBuffer)
+		{
+			vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPoolSize, 0, queryCount, **buffer, (0 * queryCount * sizeof(VkDeviceSize)),
+									   sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+			vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPoolSerial, 0, queryCount, **buffer, (1 * queryCount * sizeof(VkDeviceSize)),
+									   sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+		}
+		endCommandBuffer(vk, *cmdBuffer);
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+		if (m_params->inVkBuffer)
+		{
+			Allocation&	alloc		= buffer->getAllocation();
+			invalidateMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), VK_WHOLE_SIZE);
+
+			deUint8*	ptrSize		= reinterpret_cast<deUint8*>(alloc.getHostPtr());
+			deUint8*	ptrSerial	= ptrSize + queryCount * sizeof(VkDeviceSize);
+
+			auto		rangeSize	= QueryPoolResultsCase::makeStdBeginEnd<VkDeviceSize>(ptrSize, queryCount);
+			auto		rangeSerial	= QueryPoolResultsCase::makeStdBeginEnd<VkDeviceSize>(ptrSerial, queryCount);
+
+			std::copy_n(rangeSize.first, queryCount, sizeSizes.begin());
+			std::copy_n(rangeSerial.first, queryCount, serialSizes.begin());
+		}
+		else
+		{
+			VK_CHECK(vk.getQueryPoolResults(device, *queryPoolSize, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
+											sizeSizes.data(), sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+			VK_CHECK(vk.getQueryPoolResults(device, *queryPoolSerial, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
+											serialSizes.data(), sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+		}
+	}
+	else
+	{
+		vk.writeAccelerationStructuresPropertiesKHR(device, queryCount, handles.data(), VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SIZE_KHR,
+													queryCount * sizeof(VkDeviceSize), sizeSizes.data(), sizeof(VkDeviceSize));
+		vk.writeAccelerationStructuresPropertiesKHR(device, queryCount, handles.data(), VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR,
+													queryCount * sizeof(VkDeviceSize), serialSizes.data(), sizeof(VkDeviceSize));
+	}
+
+	// verification
+	bool pass = true;
+	const VkDeviceSize payloadOffset = offsetof(SerialStorage::AccelerationStructureHeader, handleArray);
+
+	for (deUint32 i = 0; pass && i < queryCount; ++i)
+	{
+		const VkDeviceSize	accSize		= sizeSizes[i];
+		const VkDeviceSize	serialSize	= serialSizes[i];
+		if (i)
+		{
+			pass = (payloadOffset + accSize) == serialSize;
+		}
+		else // process top accelleration structure size
+		{
+			const VkDeviceSize pointersSize = bottoms.size() * sizeof(VkDeviceSize);
+			pass = (payloadOffset + pointersSize + accSize) == serialSize;
+		}
+	}
+
+	return pass ? TestStatus::pass("") : TestStatus::fail("");
+}
+
+TestStatus QueryPoolResultsPointersInstance::iterate (void)
+{
+	const DeviceInterface&								vk				= m_context.getDeviceInterface();
+	const VkDevice										device			= m_context.getDevice();
+	const deUint32										familyIndex		= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue										queue			= m_context.getUniversalQueue();
+	Allocator&											allocator		= m_context.getDefaultAllocator();
+
+	const Move<VkCommandPool>							cmdPool			= createCommandPool(vk, device, 0, familyIndex);
+	const Move<VkCommandBuffer>							cmdBuffer		= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	beginCommandBuffer(vk, *cmdBuffer, 0);
+	const std::vector<BlasPtr>							bottoms			= prepareBottomAccStructures(vk, device, allocator, *cmdBuffer);
+	TlasPtr												tlas			= prepareTopAccStructure(vk, device, allocator, *cmdBuffer, bottoms);
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	const deUint32										queryCount		= m_params->blasCount + 1;
+	std::vector<VkAccelerationStructureKHR>				handles			(queryCount);
+	handles[0] = *tlas.get()->getPtr();
+	std::transform(bottoms.begin(), bottoms.end(), std::next(handles.begin()), [](const BlasPtr& blas){ return *blas.get()->getPtr(); });
+
+	const VkQueryType									queryType		= VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_BOTTOM_LEVEL_POINTERS_KHR;
+	Move<VkQueryPool>									queryPoolCounts	= makeQueryPool(vk, device, queryType, queryCount);
+
+	de::MovePtr<BufferWithMemory>						buffer;
+	std::vector<VkDeviceSize>							pointerCounts	(queryCount, 123u);
+
+	if (m_params->inVkBuffer)
+	{
+		const auto vci = makeBufferCreateInfo(queryCount * sizeof(VkDeviceSize), VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+		buffer = makeMovePtr<BufferWithMemory>(vk, device, allocator, vci, MemoryRequirement::Coherent | MemoryRequirement::HostVisible);
+	}
+
+	if (m_params->buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+	{
+		beginCommandBuffer(vk, *cmdBuffer, 0);
+		vk.cmdResetQueryPool(*cmdBuffer, *queryPoolCounts, 0, queryCount);
+		vk.cmdWriteAccelerationStructuresPropertiesKHR(*cmdBuffer, queryCount, handles.data(), queryType, *queryPoolCounts, 0);
+		if (m_params->inVkBuffer)
+		{
+			vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPoolCounts, 0, queryCount, **buffer, 0 /*offset*/,
+									   sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+		}
+		endCommandBuffer(vk, *cmdBuffer);
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+		if (m_params->inVkBuffer)
+		{
+			Allocation&	alloc		= buffer->getAllocation();
+			invalidateMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), VK_WHOLE_SIZE);
+			auto		rangeCounts	= QueryPoolResultsCase::makeStdBeginEnd<VkDeviceSize>(alloc.getHostPtr(), queryCount);
+			std::copy_n(rangeCounts.first, queryCount, pointerCounts.begin());
+		}
+		else
+		{
+			VK_CHECK(vk.getQueryPoolResults(device, *queryPoolCounts, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
+											pointerCounts.data(), sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+		}
+	}
+	else
+	{
+		vk.writeAccelerationStructuresPropertiesKHR(device, queryCount, handles.data(), queryType,
+													queryCount * sizeof(VkDeviceSize), pointerCounts.data(), sizeof(VkDeviceSize));
+	}
+
+	// verification
+	const std::vector<VkDeviceSize>						inSizes			= tlas->getSerializingSizes(vk, device, queue, familyIndex);
+	SerialStorage										storage			(vk, device, allocator, m_params->buildType, inSizes[0]);
+
+	beginCommandBuffer(vk, *cmdBuffer, 0);
+	tlas->serialize(vk, device, *cmdBuffer, &storage);
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	const SerialStorage::AccelerationStructureHeader*	header			= storage.getASHeader();
+
+	bool pass = (header->handleCount == pointerCounts[0]); // must be the same as bottoms.size()
+	for (deUint32 i = 1; pass && i < queryCount; ++i)
+	{
+		pass = (0 == pointerCounts[i]); // bottoms have no chidren
+	}
+
+	return pass ? TestStatus::pass("") : TestStatus::fail("");
+}
+
 }	// anonymous
 
 void addBasicBuildingTests(tcu::TestCaseGroup* group)
@@ -3849,6 +4237,53 @@ void addUpdateHeaderBottomAddressTests (tcu::TestCaseGroup* group)
 	}
 }
 
+void addQueryPoolResultsTests (TestCaseGroup* group)
+{
+	std::pair<VkAccelerationStructureBuildTypeKHR, const char*>
+	const buildTypes[]
+	{
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,	"cpu"	},
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu"	},
+	};
+
+	std::pair<bool, const char*>
+	const storeTypes[]
+	{
+		{ false,	"memory"	},
+		{ true,		"buffer"	}
+	};
+
+	std::pair<QueryPoolResultsParams::Type, const char*>
+	const queryTypes[]
+	{
+		{ QueryPoolResultsParams::Type::Size,		"size"			},
+		{ QueryPoolResultsParams::Type::Pointers,	"pointer_count"	}
+	};
+
+
+	auto& testContext = group->getTestContext();
+	for (const auto& buildType : buildTypes)
+	{
+		auto buildTypeGroup	= makeMovePtr<TestCaseGroup>(testContext, buildType.second, "");
+		for (const auto& storeType : storeTypes)
+		{
+			auto storeTypeGroup	= makeMovePtr<TestCaseGroup>(testContext, storeType.second, "");
+			for (const auto& queryType : queryTypes)
+			{
+				QueryPoolResultsParams	p;
+				p.buildType		= buildType.first;
+				p.inVkBuffer	= storeType.first;
+				p.queryType		= queryType.first;
+				p.blasCount		= 5;
+
+				storeTypeGroup->addChild(new QueryPoolResultsCase(testContext, queryType.second, makeSharedFrom(p)));
+			}
+			buildTypeGroup->addChild(storeTypeGroup.release());
+		}
+		group->addChild(buildTypeGroup.release());
+	}
+}
+
 tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "acceleration_structures", "Acceleration structure tests"));
@@ -3865,6 +4300,7 @@ tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "instance_index", "Test using different values for the instance index and checking them in shaders", addInstanceIndexTests);
 	addTestGroup(group.get(), "device_compability_khr", "", addGetDeviceAccelerationStructureCompabilityTests);
 	addTestGroup(group.get(), "header_bottom_address", "", addUpdateHeaderBottomAddressTests);
+	addTestGroup(group.get(), "query_pool_results", "Test for a new VkQueryPool queries for VK_KHR_ray_tracing_maintenance1", addQueryPoolResultsTests);
 
 	return group.release();
 }
