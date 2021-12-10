@@ -10319,7 +10319,6 @@ void GPUShaderFP64Test7::releaseXFBVaryingNames()
 void GPUShaderFP64Test7::setInputAttributeValues(const _variables& variables)
 {
 	const glw::Functions& gl	  = m_context.getRenderContext().getFunctions();
-	unsigned int		  counter = 6;
 
 	for (_variables_const_iterator variable_iterator = variables.begin(); variable_iterator != variables.end();
 		 variable_iterator++)
@@ -10391,8 +10390,6 @@ void GPUShaderFP64Test7::setInputAttributeValues(const _variables& variables)
 			/* Make sure VAAs are disabled */
 			gl.disableVertexAttribArray(variable.attribute_location + index);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glDisableVertexAttribArray() call failed.");
-
-			counter += n_components;
 		} /* for (all array indices) */
 	}	 /* for (all variables) */
 }
