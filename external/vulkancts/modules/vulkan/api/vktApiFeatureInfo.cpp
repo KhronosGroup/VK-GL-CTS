@@ -3367,14 +3367,32 @@ VkFormatFeatureFlags getRequiredOptimalTilingFeatures (Context& context, VkForma
 	}
 }
 
-bool requiresYCbCrConversion(VkFormat format)
+bool requiresYCbCrConversion(Context& context, VkFormat format)
 {
+	if (format == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16)
+	{
+		VkPhysicalDeviceFeatures2						coreFeatures;
+		VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT	rgba10x6features;
+
+		deMemset(&coreFeatures, 0, sizeof(coreFeatures));
+		deMemset(&rgba10x6features, 0, sizeof(rgba10x6features));
+
+		coreFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		coreFeatures.pNext		= &rgba10x6features;
+		rgba10x6features.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT;
+
+		const InstanceInterface &vk = context.getInstanceInterface();
+		vk.getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);
+
+		return !rgba10x6features.formatRgba10x6WithoutYCbCrSampler;
+	}
+
 	return isYCbCrFormat(format) &&
 			format != VK_FORMAT_R10X6_UNORM_PACK16 && format != VK_FORMAT_R10X6G10X6_UNORM_2PACK16 &&
 			format != VK_FORMAT_R12X4_UNORM_PACK16 && format != VK_FORMAT_R12X4G12X4_UNORM_2PACK16;
 }
 
-VkFormatFeatureFlags getAllowedOptimalTilingFeatures (VkFormat format)
+VkFormatFeatureFlags getAllowedOptimalTilingFeatures (Context &context, VkFormat format)
 {
 	// YCbCr formats only support a subset of format feature flags
 	const VkFormatFeatureFlags ycbcrAllows =
@@ -3395,7 +3413,7 @@ VkFormatFeatureFlags getAllowedOptimalTilingFeatures (VkFormat format)
 	// By default everything is allowed.
 	VkFormatFeatureFlags allow = (VkFormatFeatureFlags)~0u;
 	// Formats for which SamplerYCbCrConversion is required may not support certain features.
-	if (requiresYCbCrConversion(format))
+	if (requiresYCbCrConversion(context, format))
 		allow &= ycbcrAllows;
 	// single-plane formats *may not* support DISJOINT_BIT
 	if (!isYCbCrFormat(format) || getPlaneCount(format) == 1)
@@ -3404,10 +3422,10 @@ VkFormatFeatureFlags getAllowedOptimalTilingFeatures (VkFormat format)
 	return allow;
 }
 
-VkFormatFeatureFlags getAllowedBufferFeatures (VkFormat format)
+VkFormatFeatureFlags getAllowedBufferFeatures (Context &context, VkFormat format)
 {
 	// TODO: Do we allow non-buffer flags in the bufferFeatures?
-	return requiresYCbCrConversion(format) ? (VkFormatFeatureFlags)0 : (VkFormatFeatureFlags)(~VK_FORMAT_FEATURE_DISJOINT_BIT);
+	return requiresYCbCrConversion(context, format) ? (VkFormatFeatureFlags)0 : (VkFormatFeatureFlags)(~VK_FORMAT_FEATURE_DISJOINT_BIT);
 }
 
 tcu::TestStatus formatProperties (Context& context, VkFormat format)
@@ -3422,8 +3440,8 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 
 	const VkFormatFeatureFlags reqImg	= getRequiredOptimalTilingFeatures(context, format);
 	const VkFormatFeatureFlags reqBuf	= getRequiredBufferFeatures(format);
-	const VkFormatFeatureFlags allowImg	= getAllowedOptimalTilingFeatures(format);
-	const VkFormatFeatureFlags allowBuf	= getAllowedBufferFeatures(format);
+	const VkFormatFeatureFlags allowImg	= getAllowedOptimalTilingFeatures(context, format);
+	const VkFormatFeatureFlags allowBuf	= getAllowedBufferFeatures(context, format);
 
 	const struct feature_req
 	{

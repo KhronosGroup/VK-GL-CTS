@@ -120,6 +120,9 @@ set(GLCTS_COMMON_SRCS
 	glcGLSLVectorConstructorTests.hpp
 	glcFramebufferCompleteness.cpp
 	glcFramebufferCompleteness.hpp
+	glcCompressedFormatTests_data.inl
+	glcCompressedFormatTests.cpp
+	glcCompressedFormatTests.hpp
 	)
 
 set(GLCTS_COMMON_LIBS

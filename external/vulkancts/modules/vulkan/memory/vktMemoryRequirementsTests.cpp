@@ -887,6 +887,7 @@ void ImageMemoryRequirementsOriginal::populateTestGroup (tcu::TestCaseGroup* gro
 
 		params.flags		=  imageFlagsCases[flagsNdx].flags;
 		params.transient	=  imageFlagsCases[flagsNdx].transient;
+		params.useMaint4	=  false;
 		caseName			<< imageFlagsCases[flagsNdx].name;
 
 		if (tilingNdx != 0)
@@ -1170,6 +1171,9 @@ bool ImageMemoryRequirementsOriginal::isImageSupported (const Context& context, 
 		if ((info.samples & imageFormatProperties.sampleCounts) == 0u)
 			return false;
 	}
+
+	if ((info.flags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT) && !checkSparseImageFormatSupport(physDevice, vki, info))
+		return false;
 
 	return result == VK_SUCCESS;
 }

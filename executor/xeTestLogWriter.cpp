@@ -308,6 +308,8 @@ static void writeResultItem (const ri::Item& item, xml::Writer& dst)
 				case ri::Shader::SHADERTYPE_MISS:				tagName = "MissShader";				break;
 				case ri::Shader::SHADERTYPE_INTERSECTION:		tagName = "IntersectionShader";		break;
 				case ri::Shader::SHADERTYPE_CALLABLE:			tagName = "CallableShader";			break;
+				case ri::Shader::SHADERTYPE_TASK:				tagName = "TaskShader";				break;
+				case ri::Shader::SHADERTYPE_MESH:				tagName = "MeshShader";				break;
 
 				default:
 					throw Error("Unknown shader type");

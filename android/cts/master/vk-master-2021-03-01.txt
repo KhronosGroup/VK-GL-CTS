@@ -15,6 +15,7 @@ vk-master-2021-03-01/graphicsfuzz.txt
 vk-master-2021-03-01/image.txt
 vk-master-2021-03-01/memory-model.txt
 vk-master-2021-03-01/memory.txt
+vk-master-2021-03-01/mesh-shader.txt
 vk-master-2021-03-01/multiview.txt
 vk-master-2021-03-01/pipeline.txt
 vk-master-2021-03-01/protected-memory.txt

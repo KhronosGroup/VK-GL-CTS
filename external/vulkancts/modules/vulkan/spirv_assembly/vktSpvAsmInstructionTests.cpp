@@ -1489,7 +1489,7 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		if (volatileAtomic)
 		{
 			spec.extensions.push_back("VK_KHR_vulkan_memory_model");
-			spec.requestedVulkanFeatures.extVulkanMemoryModel = EXTVULKANMEMORYMODELFEATURES_ENABLE;
+			spec.requestedVulkanFeatures.extVulkanMemoryModel.vulkanMemoryModel = true;
 
 			// volatile, queuefamily scope
 			specializations["SEMANTICS"] = "%volbit";
@@ -3913,7 +3913,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		// Special SPIR-V code when using 16-bit floats.
 		if (cases[caseNdx].caseFlags & FLAG_F16)
 		{
-			spec.requestedVulkanFeatures.extFloat16Int8	|= EXTFLOAT16INT8FEATURES_FLOAT16;
+			spec.requestedVulkanFeatures.extFloat16Int8.shaderFloat16 = true;
 			specializations["CAPABILITIES"]				+= "OpCapability Float16\n";						// Adds 16-bit float capability
 			specializations["OPTYPE_DEFINITIONS"]		+= "%f16 = OpTypeFloat 16\n";						// Adds 16-bit float type
 			if (cases[caseNdx].caseFlags & FLAG_CONVERT)
@@ -3923,7 +3923,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		// Special SPIR-V code when using 8-bit integers.
 		if (cases[caseNdx].caseFlags & FLAG_I8)
 		{
-			spec.requestedVulkanFeatures.extFloat16Int8	|= EXTFLOAT16INT8FEATURES_INT8;
+			spec.requestedVulkanFeatures.extFloat16Int8.shaderInt8 = true;
 			specializations["CAPABILITIES"]				+= "OpCapability Int8\n";						// Adds 8-bit integer capability
 			specializations["OPTYPE_DEFINITIONS"]		+= "%i8 = OpTypeInt 8 1\n";						// Adds 8-bit integer type
 			if (cases[caseNdx].caseFlags & FLAG_CONVERT)
@@ -4179,7 +4179,7 @@ void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestC
 	specFloat16.inputs.push_back(BufferSp(new Uint32Buffer(inputUints)));
 	specFloat16.outputs.push_back(BufferSp(new Uint32Buffer(outputUints)));
 	specFloat16.numWorkGroups = IVec3(numElements, 1, 1);
-	specFloat16.requestedVulkanFeatures.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
+	specFloat16.requestedVulkanFeatures.extFloat16Int8.shaderFloat16 = true;
 
 	specMat4.assembly =
 		string(getComputeAsmShaderPreamble()) +
@@ -7154,7 +7154,7 @@ tcu::TestCaseGroup* createFloat16OpConstantCompositeGroup (tcu::TestContext& tes
 
 		spec.extensions.push_back("VK_KHR_shader_float16_int8");
 
-		spec.requestedVulkanFeatures.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
+		spec.requestedVulkanFeatures.extFloat16Int8.shaderFloat16 = true;
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -8335,7 +8335,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		// Special SPIR-V code when using 16-bit floats.
 		if (cases[caseNdx].caseFlags & FLAG_F16)
 		{
-			requiredFeatures.extFloat16Int8				|= EXTFLOAT16INT8FEATURES_FLOAT16;
+			requiredFeatures.extFloat16Int8.shaderFloat16 = true;
 			fragments["capability"]						+= "OpCapability Float16\n";						// Adds 16-bit float capability
 			specializations["OPTYPE_DEFINITIONS"]		+= "%f16 = OpTypeFloat 16\n";						// Adds 16-bit float type
 			if (cases[caseNdx].caseFlags & FLAG_CONVERT)
@@ -8345,7 +8345,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		// Special SPIR-V code when using 8-bit integers.
 		if (cases[caseNdx].caseFlags & FLAG_I8)
 		{
-			requiredFeatures.extFloat16Int8				|= EXTFLOAT16INT8FEATURES_INT8;
+			requiredFeatures.extFloat16Int8.shaderInt8 = true;
 			fragments["capability"]						+= "OpCapability Int8\n";						// Adds 8-bit integer capability
 			specializations["OPTYPE_DEFINITIONS"]		+= "%i8 = OpTypeInt 8 1\n";						// Adds 8-bit integer type
 			if (cases[caseNdx].caseFlags & FLAG_CONVERT)
@@ -8661,7 +8661,7 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 
 	extensions4.push_back("VK_KHR_shader_float16_int8");
 
-	vulkanFeatures4.extFloat16Int8	= EXTFLOAT16INT8FEATURES_FLOAT16;
+	vulkanFeatures4.extFloat16Int8.shaderFloat16 = true;
 
 	outputColors4[0]			= RGBA(127, 127, 127, 255);
 	outputColors4[1]			= RGBA(127, 0,   0,   255);
@@ -10429,7 +10429,7 @@ void getVulkanFeaturesAndExtensions (ConversionDataType from, ConversionDataType
 	if ((usesInt16(from, to) || usesFloat16(from, to)) && useStorageExt)
 	{
 		extensions.push_back("VK_KHR_16bit_storage");
-		vulkanFeatures.ext16BitStorage |= EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		vulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
 	}
 
 	if (usesFloat16(from, to) || usesInt8(from, to))
@@ -10438,15 +10438,15 @@ void getVulkanFeaturesAndExtensions (ConversionDataType from, ConversionDataType
 
 		if (usesFloat16(from, to))
 		{
-			vulkanFeatures.extFloat16Int8 |= EXTFLOAT16INT8FEATURES_FLOAT16;
+			vulkanFeatures.extFloat16Int8.shaderFloat16 = true;
 		}
 
 		if (usesInt8(from, to))
 		{
-			vulkanFeatures.extFloat16Int8 |= EXTFLOAT16INT8FEATURES_INT8;
+			vulkanFeatures.extFloat16Int8.shaderInt8 = true;
 
 			extensions.push_back("VK_KHR_8bit_storage");
-			vulkanFeatures.ext8BitStorage |= EXT8BITSTORAGEFEATURES_STORAGE_BUFFER;
+			vulkanFeatures.ext8BitStorage.storageBuffer8BitAccess = true;
 		}
 	}
 }
@@ -11340,7 +11340,7 @@ tcu::TestCaseGroup* createOpConstantFloat16Tests(tcu::TestContext& testCtx)
 	outputColors[3] = RGBA(127, 127, 255, 255);
 
 	extensions.push_back("VK_KHR_shader_float16_int8");
-	features.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
+	features.extFloat16Int8.shaderFloat16 = true;
 
 	for (size_t testNdx = 0; testNdx < sizeof(tests) / sizeof(NameConstantsCode); ++testNdx)
 	{
@@ -11574,7 +11574,7 @@ tcu::TestCaseGroup* createFloat16LogicalSet (tcu::TestContext& testCtx, const bo
 				features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat16 = DE_TRUE;
 			}
 
-			features.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
+			features.extFloat16Int8.shaderFloat16 = true;
 
 			finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 		}
@@ -11703,7 +11703,7 @@ tcu::TestCaseGroup* createFloat16LogicalSet (tcu::TestContext& testCtx, const bo
 				features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat16 = DE_TRUE;
 			}
 
-			features.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
+			features.extFloat16Int8.shaderFloat16 = true;
 
 			finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1), true);
 		}
@@ -11909,7 +11909,7 @@ tcu::TestCaseGroup* createFloat16FuncSet (tcu::TestContext& testCtx)
 
 		extensions.push_back("VK_KHR_shader_float16_int8");
 
-		features.extFloat16Int8	= EXTFLOAT16INT8FEATURES_FLOAT16;
+		features.extFloat16Int8.shaderFloat16 = true;
 
 		finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 	}
@@ -12162,7 +12162,7 @@ tcu::TestCaseGroup* createFloat16VectorExtractSet (tcu::TestContext& testCtx)
 
 		extensions.push_back("VK_KHR_shader_float16_int8");
 
-		features.extFloat16Int8		= EXTFLOAT16INT8FEATURES_FLOAT16;
+		features.extFloat16Int8.shaderFloat16 = true;
 
 		finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 	}
@@ -12419,7 +12419,7 @@ tcu::TestCaseGroup* createFloat16VectorInsertSet (tcu::TestContext& testCtx)
 
 		extensions.push_back("VK_KHR_shader_float16_int8");
 
-		features.extFloat16Int8		= EXTFLOAT16INT8FEATURES_FLOAT16;
+		features.extFloat16Int8.shaderFloat16 = true;
 
 		finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 	}
@@ -12799,7 +12799,7 @@ tcu::TestCaseGroup* createFloat16VectorShuffleSet (tcu::TestContext& testCtx)
 
 				extensions.push_back("VK_KHR_shader_float16_int8");
 
-				features.extFloat16Int8		= EXTFLOAT16INT8FEATURES_FLOAT16;
+				features.extFloat16Int8.shaderFloat16 = true;
 
 				finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 			}
@@ -13305,7 +13305,7 @@ tcu::TestCaseGroup* createFloat16CompositeConstructSet (tcu::TestContext& testCt
 
 		extensions.push_back("VK_KHR_shader_float16_int8");
 
-		features.extFloat16Int8		= EXTFLOAT16INT8FEATURES_FLOAT16;
+		features.extFloat16Int8.shaderFloat16 = true;
 
 		finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 	}
@@ -14235,7 +14235,7 @@ tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& te
 
 		extensions.push_back("VK_KHR_shader_float16_int8");
 
-		features.extFloat16Int8		= EXTFLOAT16INT8FEATURES_FLOAT16;
+		features.extFloat16Int8.shaderFloat16 = true;
 
 		finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 	}
@@ -18674,7 +18674,7 @@ void createFloat16ArithmeticFuncTest (tcu::TestContext& testCtx, tcu::TestCaseGr
 
 	extensions.push_back("VK_KHR_shader_float16_int8");
 
-	features.extFloat16Int8		= EXTFLOAT16INT8FEATURES_FLOAT16;
+	features.extFloat16Int8.shaderFloat16 = true;
 
 	finalizeTestsCreation(specResource, fragments, testCtx, testGroup, testName, features, extensions, IVec3(1, 1, 1));
 }
@@ -19986,9 +19986,9 @@ tcu::TestCaseGroup* createBoolMixedBitSizeGroup (tcu::TestContext& testCtx)
 		spec.outputs.push_back(BufferSp(new Float32Buffer(outputData)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
 		if (hasFloat16)
-			spec.requestedVulkanFeatures.extFloat16Int8 |= EXTFLOAT16INT8FEATURES_FLOAT16;
+			spec.requestedVulkanFeatures.extFloat16Int8.shaderFloat16 = true;
 		if (hasInt8)
-			spec.requestedVulkanFeatures.extFloat16Int8 |= EXTFLOAT16INT8FEATURES_INT8;
+			spec.requestedVulkanFeatures.extFloat16Int8.shaderInt8 = true;
 		spec.extensions.push_back("VK_KHR_shader_float16_int8");
 
 		string testName = "b" + de::toString(cases[caseNdx][0]) + "b" + de::toString(cases[caseNdx][1]) + "b" + de::toString(cases[caseNdx][2]) + "b" + de::toString(cases[caseNdx][3]);
@@ -20282,8 +20282,11 @@ void createSparseIdsAbuseTest (tcu::TestContext& testCtx, de::MovePtr<tcu::TestC
 	specResource.inputs.push_back(Resource(BufferSp(new Uint32Buffer(inData2)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 	specResource.outputs.push_back(Resource(BufferSp(new Uint32Buffer(outData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
-	features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
-	features.coreFeatures.fragmentStoresAndAtomics			= true;
+	if (std::is_base_of<GraphicsResources, SpecResource>::value)
+	{
+		features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+		features.coreFeatures.fragmentStoresAndAtomics			= true;
+	}
 
 	finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 }
@@ -20427,8 +20430,11 @@ void createLotsIdsAbuseTest (tcu::TestContext& testCtx, de::MovePtr<tcu::TestCas
 	specResource.inputs.push_back(Resource(BufferSp(new Uint32Buffer(inData2)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 	specResource.outputs.push_back(Resource(BufferSp(new Uint32Buffer(outData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
-	features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
-	features.coreFeatures.fragmentStoresAndAtomics			= true;
+	if (std::is_base_of<GraphicsResources, SpecResource>::value)
+	{
+		features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+		features.coreFeatures.fragmentStoresAndAtomics			= true;
+	}
 
 	finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 }

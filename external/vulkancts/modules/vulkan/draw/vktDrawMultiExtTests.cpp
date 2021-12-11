@@ -703,6 +703,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 	const auto	imageDim		= static_cast<deUint32>(deSqrt(static_cast<double>(triangleCount)));
 	const auto	imageExtent		= makeExtent3D(imageDim, imageDim, 1u);
 	const auto	imageLayers		= (m_params.multiview ? 2u : 1u);
+	const auto	imageViewType	= ((imageLayers > 1u) ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
 	const auto	colorUsage		= (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 	const auto	dsUsage			= (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 	const auto	pixelCount		= imageExtent.width * imageExtent.height;
@@ -740,7 +741,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 
 	ImageWithMemory	colorBuffer				(vkd, device, alloc, imageCreateInfo, MemoryRequirement::Any);
 	const auto		colorSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, imageLayers);
-	const auto		colorBufferView			= makeImageView(vkd, device, colorBuffer.get(), VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange);
+	const auto		colorBufferView			= makeImageView(vkd, device, colorBuffer.get(), imageViewType, colorFormat, colorSubresourceRange);
 
 	// Depth/stencil buffer.
 	const VkImageCreateInfo dsCreateInfo =
@@ -764,7 +765,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 
 	ImageWithMemory dsBuffer			(vkd, device, alloc, dsCreateInfo, MemoryRequirement::Any);
 	const auto		dsSubresourceRange	= makeImageSubresourceRange((VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT), 0u, 1u, 0u, imageLayers);
-	const auto		dsBufferView		= makeImageView(vkd, device, dsBuffer.get(), VK_IMAGE_VIEW_TYPE_2D, dsFormat, dsSubresourceRange);
+	const auto		dsBufferView		= makeImageView(vkd, device, dsBuffer.get(), imageViewType, dsFormat, dsSubresourceRange);
 
 	// Output buffers to verify attachments.
 	using BufferWithMemoryPtr = de::MovePtr<BufferWithMemory>;

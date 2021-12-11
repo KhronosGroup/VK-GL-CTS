@@ -87,6 +87,7 @@ enum TestType
 	TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR,
 	TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR,
 	TEST_TYPE_DEPTH,
+	TEST_TYPE_DEPTH_DIFFERENT_RANGES,
 	TEST_TYPE_STENCIL,
 	TEST_TYPE_LAST
 };
@@ -262,37 +263,39 @@ protected:
 	typedef de::SharedPtr<Unique<VkPipeline> >		PipelineSp;
 	typedef de::SharedPtr<Unique<VkShaderModule> >	ShaderModuleSP;
 
-	virtual tcu::TestStatus			iterate					(void);
-	virtual void					beforeDraw				(void);
-	virtual void					afterDraw				(void);
-	virtual void					draw					(const deUint32			subpassCount,
-															 VkRenderPass			renderPass,
-															 VkFramebuffer			frameBuffer,
-															 vector<PipelineSp>&	pipelines);
-	virtual void					createVertexData		(void);
-	TestParameters					fillMissingParameters	(const TestParameters&	parameters);
-	void							createVertexBuffer		(void);
-	void							createMultiViewDevices	(void);
-	void							createCommandBuffer		(void);
-	void							madeShaderModule		(map<VkShaderStageFlagBits,ShaderModuleSP>& shaderModule, vector<VkPipelineShaderStageCreateInfo>& shaderStageParams);
-	Move<VkPipeline>				makeGraphicsPipeline	(const VkRenderPass							renderPass,
-															 const VkPipelineLayout						pipelineLayout,
-															 const deUint32								pipelineShaderStageCount,
-															 const VkPipelineShaderStageCreateInfo*		pipelineShaderStageCreate,
-															 const deUint32								subpass,
-															 const VkVertexInputRate					vertexInputRate = VK_VERTEX_INPUT_RATE_VERTEX,
-															 const bool									useDepthTest = false,
-															 const bool									useStencilTest = false,
-															 const VkFormat								dsFormat = VK_FORMAT_UNDEFINED);
-	void							readImage				(VkImage image, const tcu::PixelBufferAccess& dst);
-	bool							checkImage				(tcu::ConstPixelBufferAccess& dst);
-	MovePtr<tcu::Texture2DArray>	imageData				(void);
-	const tcu::Vec4					getQuarterRefColor		(const deUint32 quarterNdx, const int colorNdx, const int layerNdx, const bool background = true, const deUint32 subpassNdx = 0u);
-	void							appendVertex			(const tcu::Vec4& coord, const tcu::Vec4& color);
-	void							setPoint				(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& pointColor, const int pointSize, const int layerNdx, const deUint32 quarter);
-	void							fillTriangle			(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx, const deUint32 quarter);
-	void							fillLayer				(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx);
-	void							fillQuarter				(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx, const deUint32 quarter, const deUint32 subpassNdx);
+	virtual tcu::TestStatus					iterate					(void);
+	virtual void							beforeDraw				(void);
+	virtual void							afterDraw				(void);
+	virtual void							draw					(const deUint32			subpassCount,
+																	 VkRenderPass			renderPass,
+																	 VkFramebuffer			frameBuffer,
+																	 vector<PipelineSp>&	pipelines);
+	virtual void							createVertexData		(void);
+	virtual MovePtr<tcu::Texture2DArray>	imageData				(void) const;
+	TestParameters							fillMissingParameters	(const TestParameters&	parameters);
+	void									createVertexBuffer		(void);
+	void									createMultiViewDevices	(void);
+	void									createCommandBuffer		(void);
+	void									madeShaderModule		(map<VkShaderStageFlagBits,ShaderModuleSP>& shaderModule, vector<VkPipelineShaderStageCreateInfo>& shaderStageParams);
+	Move<VkPipeline>						makeGraphicsPipeline	(const VkRenderPass							renderPass,
+																	 const VkPipelineLayout						pipelineLayout,
+																	 const deUint32								pipelineShaderStageCount,
+																	 const VkPipelineShaderStageCreateInfo*		pipelineShaderStageCreate,
+																	 const deUint32								subpass,
+																	 const VkVertexInputRate					vertexInputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+																	 const bool									useDepthTest = false,
+																	 const bool									useStencilTest = false,
+																	 const float								minDepth = 0.0f,
+																	 const float								maxDepth = 1.0f,
+																	 const VkFormat                                                         dsFormat = VK_FORMAT_UNDEFINED);
+	void									readImage				(VkImage image, const tcu::PixelBufferAccess& dst);
+	bool									checkImage				(tcu::ConstPixelBufferAccess& dst);
+	const tcu::Vec4							getQuarterRefColor		(const deUint32 quarterNdx, const int colorNdx, const int layerNdx, const bool background = true, const deUint32 subpassNdx = 0u) const;
+	void									appendVertex			(const tcu::Vec4& coord, const tcu::Vec4& color);
+	void									setPoint				(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& pointColor, const int pointSize, const int layerNdx, const deUint32 quarter) const;
+	void									fillTriangle			(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx, const deUint32 quarter) const;
+	void									fillLayer				(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx) const;
+	void									fillQuarter				(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx, const deUint32 quarter, const deUint32 subpassNdx) const;
 
 	const TestParameters			m_parameters;
 	const bool						m_useDynamicRendering;
@@ -735,6 +738,9 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 			!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_dynamic_rendering"))
 			deviceExtensions.push_back("VK_KHR_dynamic_rendering");
 
+		if (m_parameters.viewIndex == TEST_TYPE_DEPTH_DIFFERENT_RANGES)
+			deviceExtensions.push_back("VK_EXT_depth_range_unrestricted");
+
 		const VkDeviceCreateInfo		deviceInfo			=
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//VkStructureType					sType;
@@ -807,6 +813,7 @@ void MultiViewRenderTestInstance::madeShaderModule (map<VkShaderStageFlagBits, S
 		case TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR:
 		case TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR:
 		case TEST_TYPE_DEPTH:
+		case TEST_TYPE_DEPTH_DIFFERENT_RANGES:
 		case TEST_TYPE_STENCIL:
 			shaderModule[VK_SHADER_STAGE_VERTEX_BIT]					= (ShaderModuleSP(new Unique<VkShaderModule>(createShaderModule(*m_device, *m_logicalDevice, m_context.getBinaryCollection().get("vertex"), 0))));
 			shaderModule[VK_SHADER_STAGE_FRAGMENT_BIT]					= (ShaderModuleSP(new Unique<VkShaderModule>(createShaderModule(*m_device, *m_logicalDevice, m_context.getBinaryCollection().get("fragment"), 0))));
@@ -856,6 +863,8 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline (const VkRend
 																	const VkVertexInputRate						vertexInputRate,
 																	const bool									useDepthTest,
 																	const bool									useStencilTest,
+																	const float									minDepth,
+																	const float									maxDepth,
 																	const VkFormat								dsFormat)
 {
 	const VkVertexInputBindingDescription			vertexInputBindingDescriptions[]	=
@@ -912,8 +921,8 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline (const VkRend
 		VK_FALSE,														// VkBool32									primitiveRestartEnable;
 	};
 
-	const VkViewport								viewport							= makeViewport(m_parameters.extent);
-	const VkRect2D									scissor								= makeRect2D(m_parameters.extent);
+	const VkViewport	viewport	= makeViewport(0.0f, 0.0f, (float)m_parameters.extent.width, (float)m_parameters.extent.height, minDepth, maxDepth);
+	const VkRect2D		scissor		= makeRect2D(m_parameters.extent);
 
 	const VkPipelineViewportStateCreateInfo			viewportStateParams					=
 	{
@@ -1166,8 +1175,10 @@ bool MultiViewRenderTestInstance::checkImage (tcu::ConstPixelBufferAccess& rende
 	return result;
 }
 
-const tcu::Vec4 MultiViewRenderTestInstance::getQuarterRefColor (const deUint32 quarterNdx, const int colorNdx, const int layerNdx, const bool background, const deUint32 subpassNdx)
+const tcu::Vec4 MultiViewRenderTestInstance::getQuarterRefColor (const deUint32 quarterNdx, const int colorNdx, const int layerNdx, const bool background, const deUint32 subpassNdx) const
 {
+	// this function is used for genrating same colors while rendering and while creating reference
+
 	switch (m_parameters.viewIndex)
 	{
 		case TEST_TYPE_VIEW_MASK:
@@ -1225,6 +1236,15 @@ const tcu::Vec4 MultiViewRenderTestInstance::getQuarterRefColor (const deUint32 
 			else
 				return tcu::Vec4(0.99f, 0.0f, 0.0f, 1.0f);
 
+		case TEST_TYPE_DEPTH_DIFFERENT_RANGES:
+			// for quads from partA generate  1.20, 0.90, 0.60,  0.30
+			// for quads from partB generate  0.55, 0.35, 0.15, -0.05
+			// depth ranges in views are <0;0.5>, <0;1> or <0.5;1> so
+			// at least one quad from partA/partB will always be drawn
+			if (subpassNdx < 4)
+				return tcu::Vec4(1.2f - 0.3f * static_cast<float>(subpassNdx), 0.0f, 0.0f, 1.0f);
+			return tcu::Vec4(0.55f - 0.2f * static_cast<float>(subpassNdx % 4), 0.0f, 0.0f, 1.0f);
+
 		case TEST_TYPE_STENCIL:
 			if (background)
 				return tcu::Vec4(0.33f, 0.0f, 0.0f, 0.0f); // Increment value
@@ -1236,7 +1256,7 @@ const tcu::Vec4 MultiViewRenderTestInstance::getQuarterRefColor (const deUint32 
 	}
 }
 
-void MultiViewRenderTestInstance::setPoint (const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& pointColor, const int pointSize, const int layerNdx, const deUint32 quarter)
+void MultiViewRenderTestInstance::setPoint (const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& pointColor, const int pointSize, const int layerNdx, const deUint32 quarter) const
 {
 	DE_ASSERT(TEST_POINT_SIZE_WIDE > TEST_POINT_SIZE_SMALL);
 
@@ -1249,7 +1269,7 @@ void MultiViewRenderTestInstance::setPoint (const tcu::PixelBufferAccess& pixelB
 		pixelBuffer.setPixel(pointColor, offsetX + x, offsetY + y, layerNdx);
 }
 
-void MultiViewRenderTestInstance::fillTriangle (const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx, const deUint32 quarter)
+void MultiViewRenderTestInstance::fillTriangle (const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx, const deUint32 quarter) const
 {
 	const int		offsetX				= static_cast<int>((quarter == 0u || quarter == 1u) ? 0 : m_parameters.extent.width / 2u);
 	const int		offsetY				= static_cast<int>((quarter == 0u || quarter == 2u) ? 0 : m_parameters.extent.height / 2u);
@@ -1266,14 +1286,14 @@ void MultiViewRenderTestInstance::fillTriangle (const tcu::PixelBufferAccess& pi
 	}
 }
 
-void MultiViewRenderTestInstance::fillLayer (const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx)
+void MultiViewRenderTestInstance::fillLayer (const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx) const
 {
 	for (deUint32 y = 0u; y < m_parameters.extent.height; ++y)
 	for (deUint32 x = 0u; x < m_parameters.extent.width; ++x)
 		pixelBuffer.setPixel(color, x, y, layerNdx);
 }
 
-void MultiViewRenderTestInstance::fillQuarter (const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx, const deUint32 quarter, const deUint32 subpassNdx)
+void MultiViewRenderTestInstance::fillQuarter (const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx, const deUint32 quarter, const deUint32 subpassNdx) const
 {
 	const int h		= m_parameters.extent.height;
 	const int h2	= h / 2;
@@ -1293,7 +1313,9 @@ void MultiViewRenderTestInstance::fillQuarter (const tcu::PixelBufferAccess& pix
 		default: TCU_THROW(InternalError, "Impossible");
 	}
 
-	if (TEST_TYPE_STENCIL == m_parameters.viewIndex || TEST_TYPE_DEPTH == m_parameters.viewIndex)
+	if (TEST_TYPE_STENCIL == m_parameters.viewIndex ||
+		TEST_TYPE_DEPTH == m_parameters.viewIndex ||
+		TEST_TYPE_DEPTH_DIFFERENT_RANGES == m_parameters.viewIndex)
 	{
 		if (subpassNdx < 4)
 		{	// Part A: Horizontal bars near X axis
@@ -1314,7 +1336,8 @@ void MultiViewRenderTestInstance::fillQuarter (const tcu::PixelBufferAccess& pix
 				pixelBuffer.setPixel(pixelBuffer.getPixel(x, y, layerNdx) + color, x, y, layerNdx);
 		}
 
-		if (TEST_TYPE_DEPTH == m_parameters.viewIndex)
+		if (TEST_TYPE_DEPTH == m_parameters.viewIndex ||
+			TEST_TYPE_DEPTH_DIFFERENT_RANGES == m_parameters.viewIndex)
 		{
 			for (int y = yStart; y < yEnd; ++y)
 			for (int x = xStart; x < xEnd; ++x)
@@ -1334,7 +1357,7 @@ void MultiViewRenderTestInstance::fillQuarter (const tcu::PixelBufferAccess& pix
 	}
 }
 
-MovePtr<tcu::Texture2DArray> MultiViewRenderTestInstance::imageData (void)
+MovePtr<tcu::Texture2DArray> MultiViewRenderTestInstance::imageData (void) const
 {
 	MovePtr<tcu::Texture2DArray>	referenceFrame	= MovePtr<tcu::Texture2DArray>(new tcu::Texture2DArray(mapVkFormat(m_parameters.colorFormat), m_parameters.extent.width, m_parameters.extent.height, m_parameters.extent.depth));
 	const deUint32					subpassCount	= static_cast<deUint32>(m_parameters.viewMasks.size());
@@ -1363,15 +1386,12 @@ MovePtr<tcu::Texture2DArray> MultiViewRenderTestInstance::imageData (void)
 		}
 	}
 
-	if (TEST_TYPE_DEPTH == m_parameters.viewIndex || TEST_TYPE_STENCIL == m_parameters.viewIndex)
-		for (deUint32 layerNdx = 0; layerNdx < m_parameters.extent.depth; ++layerNdx)
-			fillLayer(referenceFrame->getLevel(0), getQuarterRefColor(0u, 0u, 0u, false), layerNdx);
-
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
 		int			layerNdx	= 0;
 		deUint32	mask		= m_parameters.viewMasks[subpassNdx];
 
+		// iterate over image layers
 		while (mask > 0u)
 		{
 			int colorNdx	= 0;
@@ -3197,20 +3217,23 @@ void MultiViewReadbackTestInstance::clear (const VkCommandBuffer commandBuffer, 
 class MultiViewDepthStencilTestInstance : public MultiViewRenderTestInstance
 {
 public:
-						MultiViewDepthStencilTestInstance	(Context& context, const TestParameters& parameters);
+									MultiViewDepthStencilTestInstance	(Context& context, const TestParameters& parameters);
 protected:
-	tcu::TestStatus		iterate								(void);
-	void				createVertexData					(void);
+	tcu::TestStatus					iterate								(void) override;
+	void							createVertexData					(void) override;
 
-	void				draw								(const deUint32					subpassCount,
-															 VkRenderPass					renderPass,
-															 VkFramebuffer					frameBuffer,
-															 vector<PipelineSp>&			pipelines);
-	void				beforeDraw							(void);
-	void				afterDraw							(void);
-	vector<VkImageView>	makeAttachmentsVector				(void);
-	void				readImage							(VkImage						image,
-															 const tcu::PixelBufferAccess&	dst);
+	void							draw								(const deUint32					subpassCount,
+																		 VkRenderPass					renderPass,
+																		 VkFramebuffer					frameBuffer,
+																		 vector<PipelineSp>&			pipelines) override;
+	void							beforeDraw							(void) override;
+	void							afterDraw							(void) override;
+	vector<VkImageView>				makeAttachmentsVector				(void);
+	MovePtr<tcu::Texture2DArray>	imageData							(void) const override;
+	void							readImage							(VkImage						image,
+																		 const tcu::PixelBufferAccess&	dst);
+	vector<tcu::Vec2>				getDepthRanges						(void) const;
+
 private:
 	VkFormat						m_dsFormat;
 	de::SharedPtr<ImageAttachment>	m_dsAttachment;
@@ -3221,7 +3244,8 @@ private:
 MultiViewDepthStencilTestInstance::MultiViewDepthStencilTestInstance (Context& context, const TestParameters& parameters)
 	: MultiViewRenderTestInstance	(context, parameters)
 	, m_dsFormat					(VK_FORMAT_UNDEFINED)
-	, m_depthTest					(m_parameters.viewIndex == TEST_TYPE_DEPTH)
+	, m_depthTest					(m_parameters.viewIndex == TEST_TYPE_DEPTH ||
+									 m_parameters.viewIndex == TEST_TYPE_DEPTH_DIFFERENT_RANGES)
 	, m_stencilTest					(m_parameters.viewIndex == TEST_TYPE_STENCIL)
 {
 	const VkFormat formats[] = { VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT };
@@ -3254,6 +3278,58 @@ vector<VkImageView>	MultiViewDepthStencilTestInstance::makeAttachmentsVector (vo
 	attachments.push_back(m_dsAttachment->getImageView());
 
 	return attachments;
+}
+
+MovePtr<tcu::Texture2DArray> MultiViewDepthStencilTestInstance::imageData(void) const
+{
+	MovePtr<tcu::Texture2DArray>	referenceFrame		= MovePtr<tcu::Texture2DArray>(new tcu::Texture2DArray(mapVkFormat(m_parameters.colorFormat), m_parameters.extent.width, m_parameters.extent.height, m_parameters.extent.depth));
+	const deUint32					subpassCount		= static_cast<deUint32>(m_parameters.viewMasks.size());
+	const vector<tcu::Vec2>			depthRanges			= getDepthRanges();
+
+	referenceFrame->allocLevel(0);
+	deMemset(referenceFrame->getLevel(0).getDataPtr(), 0, m_parameters.extent.width * m_parameters.extent.height * m_parameters.extent.depth* mapVkFormat(m_parameters.colorFormat).getPixelSize());
+
+	for (deUint32 layerNdx = 0; layerNdx < m_parameters.extent.depth; ++layerNdx)
+		fillLayer(referenceFrame->getLevel(0), getQuarterRefColor(0u, 0u, 0u, false), layerNdx);
+
+	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
+	{
+		int					layerNdx			= 0;
+		deUint32			mask				= m_parameters.viewMasks[subpassNdx];
+		const tcu::Vec2&	depthRange			= depthRanges[subpassNdx];
+		const float			depthMin			= depthRange[0];
+		const float			depthMax			= depthRange[1];
+
+		// iterate over image layers
+		while (mask > 0u)
+		{
+			if (mask & 1u)
+			{
+				const deUint32	subpassQuarterNdx	= subpassNdx % m_squareCount;
+				const int		colorNdx			= subpassQuarterNdx * 4;
+				tcu::Vec4		color				= getQuarterRefColor(subpassQuarterNdx, colorNdx, layerNdx, true, subpassNdx);
+
+				if (m_parameters.viewIndex == TEST_TYPE_DEPTH_DIFFERENT_RANGES)
+				{
+					// quads with depth out of range should be cliiped
+					// to simplify code we are drawing them with background color
+					if ((color.x() < 0.0f) || (color.x() > 1.0f))
+						color.x() = 1.0f;
+					else
+					{
+						const float depthClamped = de::clamp(color.x(), 0.0f, 1.0f);
+						color.x() = depthClamped * depthMax + (1.0f - depthClamped) * depthMin;
+					}
+				}
+
+				fillQuarter(referenceFrame->getLevel(0), color, layerNdx, subpassQuarterNdx, subpassNdx);
+			}
+
+			mask = mask >> 1;
+			++layerNdx;
+		}
+	}
+	return referenceFrame;
 }
 
 void MultiViewDepthStencilTestInstance::readImage (VkImage image, const tcu::PixelBufferAccess& dst)
@@ -3377,18 +3453,24 @@ void MultiViewDepthStencilTestInstance::readImage (VkImage image, const tcu::Pix
 			dst.setPixel(color, x, y, z);
 		}
 	}
-
 }
 
 tcu::TestStatus MultiViewDepthStencilTestInstance::iterate (void)
 {
-	const deUint32								subpassCount				= static_cast<deUint32>(m_parameters.viewMasks.size());
-	Move<VkRenderPass>							renderPass;
-	vector<VkImageView>							attachments					(makeAttachmentsVector());
-	Move<VkFramebuffer>							frameBuffer;
-	Unique<VkPipelineLayout>					pipelineLayout				(makePipelineLayout(*m_device, *m_logicalDevice));
+	const deUint32								subpassCount	= static_cast<deUint32>(m_parameters.viewMasks.size());
+	Move<VkRenderPass>						renderPass;
+	vector<VkImageView>							attachments		(makeAttachmentsVector());
+	Move<VkFramebuffer>						frameBuffer;
+	Unique<VkPipelineLayout>					pipelineLayout	(makePipelineLayout(*m_device, *m_logicalDevice));
+	vector<PipelineSp>							pipelines		(subpassCount);
+	const vector<tcu::Vec2>						depthRanges		(getDepthRanges());
 	map<VkShaderStageFlagBits, ShaderModuleSP>	shaderModule;
-	vector<PipelineSp>							pipelines(subpassCount);
+
+	if (m_parameters.renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
+	{
+		renderPass	= makeRenderPassWithDepth(*m_device, *m_logicalDevice, m_parameters.colorFormat, m_parameters.viewMasks, m_dsFormat, m_parameters.renderingType);
+		frameBuffer	= makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, static_cast<deUint32>(attachments.size()), attachments.data(), m_parameters.extent.width, m_parameters.extent.height, 1u);
+	}
 
 	if (m_parameters.renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
 	{
@@ -3400,8 +3482,15 @@ tcu::TestStatus MultiViewDepthStencilTestInstance::iterate (void)
 		vector<VkPipelineShaderStageCreateInfo>	shaderStageParams;
 		madeShaderModule(shaderModule, shaderStageParams);
 		for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; ++subpassNdx)
-			pipelines[subpassNdx] = (PipelineSp(new Unique<VkPipeline>(makeGraphicsPipeline(*renderPass, *pipelineLayout, static_cast<deUint32>(shaderStageParams.size()), shaderStageParams.data(),
-				subpassNdx, VK_VERTEX_INPUT_RATE_VERTEX, m_depthTest, m_stencilTest, m_dsFormat))));
+		{
+			const tcu::Vec2& depthRange = depthRanges[subpassNdx];
+			const float depthMin		= depthRange[0];
+			const float depthMax		= depthRange[1];
+
+			pipelines[subpassNdx] = (PipelineSp(new Unique<VkPipeline>(makeGraphicsPipeline(
+				*renderPass, *pipelineLayout, static_cast<deUint32>(shaderStageParams.size()), shaderStageParams.data(),
+				subpassNdx, VK_VERTEX_INPUT_RATE_VERTEX, m_depthTest, m_stencilTest, depthMin, depthMax, m_dsFormat))));
+		}
 	}
 
 	createCommandBuffer();
@@ -3426,7 +3515,7 @@ tcu::TestStatus MultiViewDepthStencilTestInstance::iterate (void)
 void MultiViewDepthStencilTestInstance::createVertexData (void)
 {
 /*
-	partA
+	partA - draw vertical quads, marked with 1
 
 	ViewMasks
 	0011
@@ -3443,7 +3532,7 @@ void MultiViewDepthStencilTestInstance::createVertexData (void)
 	00|10   01|00   01|00   00|10
 
 
-	partB
+	partB - draw horizontal quads, marked with 2
 
 	ViewMasks
 	0110
@@ -3459,7 +3548,9 @@ void MultiViewDepthStencilTestInstance::createVertexData (void)
 	22|00   22|00   00|22   00|22
 	00|00   00|00   00|00   00|00
 
-	Final
+
+	Final - after drawing quads from partA and partB (3 marks where quads overlap)
+
 	Layer3  Layer2  Layer1  Layer0
 	  ^       ^       ^       ^
 	00|10   00|10   01|00   01|00
@@ -3469,53 +3560,87 @@ void MultiViewDepthStencilTestInstance::createVertexData (void)
 	00|10   01|00   01|00   00|10
 */
 	tcu::Vec4	color	(0.0f, 0.0f, 0.0f, 1.0f); // is not essential in this test
+	float		depth	(getQuarterRefColor(0u, 0u, 0u, true, 0u)[0]);
 
-	const tcu::Vec4	partAReference	= getQuarterRefColor(0u, 0u, 0u, true, 0u);
-	const tcu::Vec4	partBReference	= getQuarterRefColor(0u, 0u, 0u, true, 4u);
-	const float		depthA			= partAReference[0];
-	const float		depthB			= partBReference[0];
+	// part A - four horizontal quads
+	appendVertex(tcu::Vec4(-1.0f,-0.5f, depth, 1.0f), color);		// when testing TEST_TYPE_DEPTH_DIFFERENT_RANGES
+	appendVertex(tcu::Vec4(-1.0f, 0.0f, depth, 1.0f), color);		// this quad will have depth 1.2
+	appendVertex(tcu::Vec4( 0.0f,-0.5f, depth, 1.0f), color);		// and will be clipped in all views
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, depth, 1.0f), color);
 
-	// part A
-	appendVertex(tcu::Vec4(-1.0f,-0.5f, depthA, 1.0f), color);
-	appendVertex(tcu::Vec4(-1.0f, 0.0f, depthA, 1.0f), color);
-	appendVertex(tcu::Vec4( 0.0f,-0.5f, depthA, 1.0f), color);
-	appendVertex(tcu::Vec4( 0.0f, 0.0f, depthA, 1.0f), color);
+	depth = getQuarterRefColor(0u, 0u, 0u, true, 1u)[0];
+	appendVertex(tcu::Vec4(-1.0f, 0.0f, depth, 1.0f), color);
+	appendVertex(tcu::Vec4(-1.0f, 0.5f, depth, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, depth, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 0.5f, depth, 1.0f), color);
 
-	appendVertex(tcu::Vec4(-1.0f, 0.0f, depthA, 1.0f), color);
-	appendVertex(tcu::Vec4(-1.0f, 0.5f, depthA, 1.0f), color);
-	appendVertex(tcu::Vec4( 0.0f, 0.0f, depthA, 1.0f), color);
-	appendVertex(tcu::Vec4( 0.0f, 0.5f, depthA, 1.0f), color);
+	depth = getQuarterRefColor(0u, 0u, 0u, true, 2u)[0];
+	appendVertex(tcu::Vec4( 0.0f,-0.5f, depth, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, depth, 1.0f), color);
+	appendVertex(tcu::Vec4( 1.0f,-0.5f, depth, 1.0f), color);
+	appendVertex(tcu::Vec4( 1.0f, 0.0f, depth, 1.0f), color);
 
-	appendVertex(tcu::Vec4( 0.0f,-0.5f, depthA, 1.0f), color);
-	appendVertex(tcu::Vec4( 0.0f, 0.0f, depthA, 1.0f), color);
-	appendVertex(tcu::Vec4( 1.0f,-0.5f, depthA, 1.0f), color);
-	appendVertex(tcu::Vec4( 1.0f, 0.0f, depthA, 1.0f), color);
+	depth = getQuarterRefColor(0u, 0u, 0u, true, 3u)[0];
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, depth, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 0.5f, depth, 1.0f), color);
+	appendVertex(tcu::Vec4( 1.0f, 0.0f, depth, 1.0f), color);
+	appendVertex(tcu::Vec4( 1.0f, 0.5f, depth, 1.0f), color);
 
-	appendVertex(tcu::Vec4( 0.0f, 0.0f, depthA, 1.0f), color);
-	appendVertex(tcu::Vec4( 0.0f, 0.5f, depthA, 1.0f), color);
-	appendVertex(tcu::Vec4( 1.0f, 0.0f, depthA, 1.0f), color);
-	appendVertex(tcu::Vec4( 1.0f, 0.5f, depthA, 1.0f), color);
+	// part B - four vertical quads
+	depth = getQuarterRefColor(0u, 0u, 0u, true, 4u)[0];
+	appendVertex(tcu::Vec4(-0.5f,-1.0f, depth, 1.0f), color);
+	appendVertex(tcu::Vec4(-0.5f, 0.0f, depth, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f,-1.0f, depth, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, depth, 1.0f), color);
 
-	// part B
-	appendVertex(tcu::Vec4(-0.5f,-1.0f, depthB, 1.0f), color);
-	appendVertex(tcu::Vec4(-0.5f, 0.0f, depthB, 1.0f), color);
-	appendVertex(tcu::Vec4( 0.0f,-1.0f, depthB, 1.0f), color);
-	appendVertex(tcu::Vec4( 0.0f, 0.0f, depthB, 1.0f), color);
+	depth = getQuarterRefColor(0u, 0u, 0u, true, 5u)[0];
+	appendVertex(tcu::Vec4(-0.5f, 0.0f, depth, 1.0f), color);
+	appendVertex(tcu::Vec4(-0.5f, 1.0f, depth, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, depth, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 1.0f, depth, 1.0f), color);
 
-	appendVertex(tcu::Vec4(-0.5f, 0.0f, depthB, 1.0f), color);
-	appendVertex(tcu::Vec4(-0.5f, 1.0f, depthB, 1.0f), color);
-	appendVertex(tcu::Vec4( 0.0f, 0.0f, depthB, 1.0f), color);
-	appendVertex(tcu::Vec4( 0.0f, 1.0f, depthB, 1.0f), color);
+	depth = getQuarterRefColor(0u, 0u, 0u, true, 6u)[0];
+	appendVertex(tcu::Vec4( 0.0f,-1.0f, depth, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, depth, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.5f,-1.0f, depth, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.5f, 0.0f, depth, 1.0f), color);
 
-	appendVertex(tcu::Vec4( 0.0f,-1.0f, depthB, 1.0f), color);
-	appendVertex(tcu::Vec4( 0.0f, 0.0f, depthB, 1.0f), color);
-	appendVertex(tcu::Vec4( 0.5f,-1.0f, depthB, 1.0f), color);
-	appendVertex(tcu::Vec4( 0.5f, 0.0f, depthB, 1.0f), color);
+	depth = getQuarterRefColor(0u, 0u, 0u, true, 7u)[0];			// when testing TEST_TYPE_DEPTH_DIFFERENT_RANGES
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, depth, 1.0f), color);		// this quad will have depth -0.05
+	appendVertex(tcu::Vec4( 0.0f, 1.0f, depth, 1.0f), color);		// and will be clipped in all views
+	appendVertex(tcu::Vec4( 0.5f, 0.0f, depth, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.5f, 1.0f, depth, 1.0f), color);
+}
 
-	appendVertex(tcu::Vec4( 0.0f, 0.0f, depthB, 1.0f), color);
-	appendVertex(tcu::Vec4( 0.0f, 1.0f, depthB, 1.0f), color);
-	appendVertex(tcu::Vec4( 0.5f, 0.0f, depthB, 1.0f), color);
-	appendVertex(tcu::Vec4( 0.5f, 1.0f, depthB, 1.0f), color);
+vector<tcu::Vec2> MultiViewDepthStencilTestInstance::getDepthRanges(void) const
+{
+	if (TEST_TYPE_DEPTH_DIFFERENT_RANGES == m_parameters.viewIndex)
+	{
+		DE_ASSERT(m_parameters.viewMasks.size() == 12);
+		return
+		{
+			// ranges used when four quads from part A are drawn
+			{0.0f, 1.0f},
+			{0.5f, 1.0f},
+			{0.0f, 0.5f},
+			{0.0f, 1.0f},
+
+			// ranges used when four quads from part B are drawn
+			{0.0f, 0.5f},
+			{0.0f, 1.0f},
+			{0.5f, 1.0f},
+			{0.0f, 0.5f},
+
+			// ranges used when part B is drawn once again
+			{0.5f, 1.0f},
+			{0.0f, 0.5f},
+			{0.0f, 0.5f},
+			{0.0f, 1.0f},
+		};
+	}
+
+	// by defaul use <0; 1> range for all subpasses
+	return { m_parameters.viewMasks.size(), tcu::Vec2(0.0f, 1.0f) };
 }
 
 void MultiViewDepthStencilTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
@@ -3725,6 +3850,7 @@ private:
 			return new MultiViewReadbackTestInstance(context, m_parameters);
 
 		if (TEST_TYPE_DEPTH == m_parameters.viewIndex ||
+			TEST_TYPE_DEPTH_DIFFERENT_RANGES == m_parameters.viewIndex ||
 			TEST_TYPE_STENCIL == m_parameters.viewIndex)
 			return new MultiViewDepthStencilTestInstance(context, m_parameters);
 
@@ -3740,6 +3866,8 @@ private:
 			context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
 		context.requireDeviceFunctionality("VK_KHR_multiview");
+		if (m_parameters.viewIndex == TEST_TYPE_DEPTH_DIFFERENT_RANGES)
+			context.requireDeviceFunctionality("VK_EXT_depth_range_unrestricted");
 	}
 
 	void				initPrograms		(SourceCollections& programCollection) const
@@ -4000,6 +4128,7 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 		"readback_implicit_clear",
 		"readback_explicit_clear",
 		"depth",
+		"depth_different_ranges",
 		"stencil",
 	};
 	const VkExtent3D			extent3D[testCaseCount]		=
@@ -4084,7 +4213,9 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 			if ((testTypeNdx == TEST_TYPE_INPUT_ATTACHMENTS) && (renderPassType == RENDERING_TYPE_DYNAMIC_RENDERING))
 				continue;
 
-			if (testTypeNdx == TEST_TYPE_DEPTH || testTypeNdx == TEST_TYPE_STENCIL)
+			if (testTypeNdx == TEST_TYPE_DEPTH ||
+                                  testTypeNdx == TEST_TYPE_DEPTH_DIFFERENT_RANGES ||
+                                  testTypeNdx == TEST_TYPE_STENCIL)
 			{
 				const VkExtent3D		dsTestExtent3D	= { 64u, 64u, 4u };
 				const TestParameters	parameters		= { dsTestExtent3D, tripleDepthStencilMasks(depthStencilMasks), testType, sampleCountFlags, colorFormat, renderPassType };
@@ -4132,6 +4263,7 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 				case TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR:
 				case TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR:
 				case TEST_TYPE_DEPTH:
+				case TEST_TYPE_DEPTH_DIFFERENT_RANGES:
 				case TEST_TYPE_STENCIL:
 					targetGroupPtr->addChild(groupShader.release());
 					break;

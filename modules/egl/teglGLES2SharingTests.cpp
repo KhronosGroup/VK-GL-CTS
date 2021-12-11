@@ -467,11 +467,12 @@ void GLES2BufferSharingTest::renderResource (tcu::Surface* screen, tcu::Surface*
 class GLES2TextureSharingTest : public GLES2SharingTest
 {
 public:
-							GLES2TextureSharingTest	(EglTestContext& eglTestCtx, const char* name, const char* desc, const GLES2SharingTest::TestSpec& spec);
+							GLES2TextureSharingTest	(EglTestContext& eglTestCtx, const char* name, const char* desc, const GLES2SharingTest::TestSpec& spec, bool asColorAttachment);
 
 private:
 	GLuint					m_glTexture;
 	tcu::Texture2D			m_texture;
+	bool					m_glTextureAsColorAttachment;
 
 	virtual void	createResource		(void);
 	virtual void	destroyResource		(void);
@@ -479,10 +480,11 @@ private:
 
 };
 
-GLES2TextureSharingTest::GLES2TextureSharingTest (EglTestContext& eglTestCtx, const char* name, const char* desc, const GLES2SharingTest::TestSpec& spec)
+GLES2TextureSharingTest::GLES2TextureSharingTest (EglTestContext& eglTestCtx, const char* name, const char* desc, const GLES2SharingTest::TestSpec& spec,  bool asColorAttachment)
 	: GLES2SharingTest	(eglTestCtx, name, desc, spec)
 	, m_glTexture		(0)
 	, m_texture			(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), 1, 1)
+	, m_glTextureAsColorAttachment(asColorAttachment)
 {
 }
 
@@ -588,43 +590,101 @@ void GLES2TextureSharingTest::renderResource (tcu::Surface* screen, tcu::Surface
 	GLU_CHECK_GLW_CALL(m_gl, bindTexture(GL_TEXTURE_2D, m_glTexture));
 
 	GLU_CHECK_GLW_CALL(m_gl, uniform1i(samplerLocation, 0));
-
-	GLU_CHECK_GLW_CALL(m_gl, enableVertexAttribArray(texCoordLocation));
-	GLU_CHECK_GLW_CALL(m_gl, enableVertexAttribArray(coordLocation));
-
-	GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(texCoordLocation, 2, GL_FLOAT, GL_FALSE, 0, texCoords));
-	GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(coordLocation, 2, GL_FLOAT, GL_FALSE, 0, coords));
-
-	GLU_CHECK_GLW_CALL(m_gl, drawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices));
-	GLU_CHECK_GLW_CALL(m_gl, disableVertexAttribArray(coordLocation));
-	GLU_CHECK_GLW_CALL(m_gl, disableVertexAttribArray(texCoordLocation));
-
-	GLU_CHECK_GLW_CALL(m_gl, bindTexture(GL_TEXTURE_2D, 0));
-	GLU_CHECK_GLW_CALL(m_gl, useProgram(0));
-
-	if (screen)
+	if(!m_glTextureAsColorAttachment)
 	{
-		m_gl.readPixels(0, 0, screen->getWidth(), screen->getHeight(), GL_RGBA, GL_UNSIGNED_BYTE, screen->getAccess().getDataPtr());
 
-		for (int x = 0; x < width; x++)
+		GLU_CHECK_GLW_CALL(m_gl, enableVertexAttribArray(texCoordLocation));
+		GLU_CHECK_GLW_CALL(m_gl, enableVertexAttribArray(coordLocation));
+
+		GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(texCoordLocation, 2, GL_FLOAT, GL_FALSE, 0, texCoords));
+		GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(coordLocation, 2, GL_FLOAT, GL_FALSE, 0, coords));
+
+		GLU_CHECK_GLW_CALL(m_gl, drawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices));
+		GLU_CHECK_GLW_CALL(m_gl, disableVertexAttribArray(coordLocation));
+		GLU_CHECK_GLW_CALL(m_gl, disableVertexAttribArray(texCoordLocation));
+
+		GLU_CHECK_GLW_CALL(m_gl, bindTexture(GL_TEXTURE_2D, 0));
+		GLU_CHECK_GLW_CALL(m_gl, useProgram(0));
+
+		if (screen)
 		{
-			for (int y = 0; y < height; y++)
+			m_gl.readPixels(0, 0, screen->getWidth(), screen->getHeight(), GL_RGBA, GL_UNSIGNED_BYTE, screen->getAccess().getDataPtr());
+
+			for (int x = 0; x < width; x++)
 			{
-				float t = ((float)x / ((float)width - 1.0f));
-				float s = ((float)y / ((float)height - 1.0f));
-				float lod = 0.0f;
+				for (int y = 0; y < height; y++)
+				{
+					float t = ((float)x / ((float)width - 1.0f));
+					float s = ((float)y / ((float)height - 1.0f));
+					float lod = 0.0f;
 
-				tcu::Vec4 color = m_texture.sample(tcu::Sampler(tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::LINEAR, tcu::Sampler::LINEAR), t, s, lod);
+					tcu::Vec4 color = m_texture.sample(tcu::Sampler(tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::LINEAR, tcu::Sampler::LINEAR), t, s, lod);
 
-				int r = deClamp32((int)(255.0f * color.x()), 0, 255);
-				int g = deClamp32((int)(255.0f * color.y()), 0, 255);
-				int b = deClamp32((int)(255.0f * color.z()), 0, 255);
-				int a = deClamp32((int)(255.0f * color.w()), 0, 255);
+					int r = deClamp32((int)(255.0f * color.x()), 0, 255);
+					int g = deClamp32((int)(255.0f * color.y()), 0, 255);
+					int b = deClamp32((int)(255.0f * color.z()), 0, 255);
+					int a = deClamp32((int)(255.0f * color.w()), 0, 255);
 
-				reference->setPixel(x, y, tcu::RGBA(r, g, b, a));
+					reference->setPixel(x, y, tcu::RGBA(r, g, b, a));
+				}
 			}
 		}
 	}
+	else
+	{
+		DE_ASSERT(m_glTextureAsColorAttachment);
+
+		for(int i=0; i < 2; i++)
+		{
+			/* Draw left half of rectangle */
+			{
+				GLfloat vertices[] = { -1.0f, -1.0f, 0.0f, -1.0f, 0.0f, 1.0f, -1.0f, 1.0f };
+				GLfloat texcoords[] = {0.0f, 0.0f, 0.5f, 0.0f, 0.5f, 1.0f, 0.0f, 1.0f};
+				GLU_CHECK_GLW_CALL(m_gl, enableVertexAttribArray(texCoordLocation));
+				GLU_CHECK_GLW_CALL(m_gl, enableVertexAttribArray(coordLocation));
+
+				GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(texCoordLocation, 2, GL_FLOAT, GL_FALSE, 0, texcoords));
+				GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(coordLocation, 2, GL_FLOAT, GL_FALSE, 0, vertices));
+				GLU_CHECK_GLW_CALL(m_gl, drawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices));
+
+			}
+			/* Bind the m_glTexture as user fbo color attachments */
+			{
+				GLuint fbo = 0;
+				GLU_CHECK_GLW_CALL(m_gl, bindTexture(GL_TEXTURE_2D, m_glTexture));
+				GLU_CHECK_GLW_CALL(m_gl, genFramebuffers(1, &fbo));
+				GLU_CHECK_GLW_CALL(m_gl, bindFramebuffer(GL_FRAMEBUFFER, fbo));
+				GLU_CHECK_GLW_CALL(m_gl, framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_glTexture, 0));
+				GLU_CHECK_GLW_CALL(m_gl, checkFramebufferStatus(GL_FRAMEBUFFER));
+				GLubyte data[] = { 0, 0, 0, 0 };
+				m_gl.readPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, data);
+				GLU_CHECK_GLW_CALL(m_gl, bindFramebuffer(GL_FRAMEBUFFER, 0));
+				GLU_CHECK_GLW_CALL(m_gl, deleteFramebuffers(1, &fbo));
+			}
+			/* Draw right half of rectangle */
+			{
+				GLfloat vertices[] = { 0.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 0.0f, 1.0f};
+				GLfloat texcoords[] = {0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.5f, 1.0f};
+				GLU_CHECK_GLW_CALL(m_gl, enableVertexAttribArray(texCoordLocation));
+				GLU_CHECK_GLW_CALL(m_gl, enableVertexAttribArray(coordLocation));
+
+				GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(texCoordLocation, 2, GL_FLOAT, GL_FALSE, 0, texcoords));
+				GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(coordLocation, 2, GL_FLOAT, GL_FALSE, 0, vertices));
+				GLU_CHECK_GLW_CALL(m_gl, drawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices));
+			}
+
+			if(0 == i)
+			{
+				/* Get the reference data */
+				m_gl.readPixels(0, 0, screen->getWidth(), screen->getHeight(), GL_RGBA, GL_UNSIGNED_BYTE, reference->getAccess().getDataPtr());
+			}
+			else
+			{
+				m_gl.readPixels(0, 0, screen->getWidth(), screen->getHeight(), GL_RGBA, GL_UNSIGNED_BYTE, screen->getAccess().getDataPtr());
+			}
+		}
+	}
+
 }
 
 class GLES2ProgramSharingTest : public GLES2SharingTest
@@ -1164,7 +1224,7 @@ void SharingTests::init (void)
 		spec.verifyOnContexA		= false;
 		spec.verifyOnContexB		= false;
 
-		texture->addChild(new GLES2TextureSharingTest(m_eglTestCtx, "create_delete", "Create and delete on shared context", spec));
+		texture->addChild(new GLES2TextureSharingTest(m_eglTestCtx, "create_delete", "Create and delete on shared context", spec, false));
 	}
 	{
 		GLES2SharingTest::TestSpec spec;
@@ -1177,7 +1237,7 @@ void SharingTests::init (void)
 		spec.verifyOnContexA		= false;
 		spec.verifyOnContexB		= false;
 
-		texture->addChild(new GLES2TextureSharingTest(m_eglTestCtx, "create_delete_mixed", "Create and delete on different contexts", spec));
+		texture->addChild(new GLES2TextureSharingTest(m_eglTestCtx, "create_delete_mixed", "Create and delete on different contexts", spec, false));
 	}
 	{
 		GLES2SharingTest::TestSpec spec;
@@ -1190,9 +1250,21 @@ void SharingTests::init (void)
 		spec.verifyOnContexA		= true;
 		spec.verifyOnContexB		= true;
 
-		texture->addChild(new GLES2TextureSharingTest(m_eglTestCtx, "render", "Create, render in two contexts and delete", spec));
+		texture->addChild(new GLES2TextureSharingTest(m_eglTestCtx,"render", "Create, render in two contexts and delete" , spec, false));
 	}
+	{
+		GLES2SharingTest::TestSpec spec;
+		spec.destroyContextBFirst	= false;
+		spec.useResource			= true;
+		spec.destroyOnContexB		= false;
+		spec.initializeData			= true;
+		spec.renderOnContexA		= true;
+		spec.renderOnContexB		= false;
+		spec.verifyOnContexA		= true;
+		spec.verifyOnContexB		= false;
 
+		texture->addChild(new GLES2TextureSharingTest(m_eglTestCtx, "render_sample_mixed", "sampling, read pixels in different fbo", spec, true));
+	}
 	gles2->addChild(texture);
 
 	TestCaseGroup* program = new TestCaseGroup(m_eglTestCtx, "program", "Program creation, destruction and rendering test");

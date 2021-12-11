@@ -366,16 +366,12 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 		const string muxInput2					= isSingleInputBuffer	? " %inloc_a_2i_plus_1 " : " %inloc_b_i ";
 
 		// Set the proper extension features required for the test
-		if (physPtrs)
-		{
-			requiredFeatures.extVariablePointers = 0;
-		}
-		else
+		if (!physPtrs)
 		{
 			if (isSingleInputBuffer)
-				requiredFeatures.extVariablePointers	= EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
+				requiredFeatures.extVariablePointers.variablePointersStorageBuffer = true;
 			else
-				requiredFeatures.extVariablePointers	= EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS;
+				requiredFeatures.extVariablePointers.variablePointers = true;
 		}
 
 		{ // Variable Pointer Reads (using OpSelect)
@@ -958,16 +954,12 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* 
 	for (int isSingleInputBuffer = 0 ; isSingleInputBuffer < 2; ++isSingleInputBuffer)
 	{
 		// Set the proper extension features required for the test
-		if (physPtrs)
-		{
-			requiredFeatures.extVariablePointers = 0;
-		}
-		else
+		if (!physPtrs)
 		{
 			if (isSingleInputBuffer)
-				requiredFeatures.extVariablePointers	= EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
+				requiredFeatures.extVariablePointers.variablePointersStorageBuffer = true;
 			else
-				requiredFeatures.extVariablePointers	= EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS;
+				requiredFeatures.extVariablePointers.variablePointers = true;
 		}
 
 		for (int selectInputA = 0; selectInputA < 2; ++selectInputA)
@@ -1274,7 +1266,7 @@ void addNullptrVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 	VulkanFeatures					requiredFeatures;
 
 	// Requires the variable pointers feature.
-	requiredFeatures.extVariablePointers	= EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS;
+	requiredFeatures.extVariablePointers.variablePointers = true;
 
 	const string decorations (
 		// Decorations
@@ -1587,9 +1579,9 @@ void addVariablePointersGraphicsGroup (tcu::TestCaseGroup* testGroup)
 
 		// Set the proper extension features required for the test
 		if (isSingleInputBuffer)
-			requiredFeatures.extVariablePointers	= EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
+			requiredFeatures.extVariablePointers.variablePointersStorageBuffer = true;
 		else
-			requiredFeatures.extVariablePointers	= EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS;
+			requiredFeatures.extVariablePointers.variablePointers = true;
 
 		// All of the following tests write their results into an output SSBO, therefore they require the following features.
 		requiredFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
@@ -1820,7 +1812,7 @@ void addTwoInputBufferReadOnlyVariablePointersGraphicsGroup (tcu::TestCaseGroup*
 	getDefaultColors(defaultColors);
 
 	// Set the proper extension features required for the tests.
-	requiredFeatures.extVariablePointers = EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS;
+	requiredFeatures.extVariablePointers.variablePointers = true;
 
 	// Set the required extension.
 	extensions.push_back("VK_KHR_variable_pointers");
@@ -2218,7 +2210,7 @@ void addSingleInputBufferReadOnlyVariablePointersGraphicsGroup (tcu::TestCaseGro
 
 	// Set the proper extension features required for the tests.
 	// The following tests use variable pointers confined withing a single buffer.
-	requiredFeatures.extVariablePointers = EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
+	requiredFeatures.extVariablePointers.variablePointersStorageBuffer = true;
 
 	// Set the required extension.
 	extensions.push_back("VK_KHR_variable_pointers");
@@ -2651,7 +2643,7 @@ void addNullptrVariablePointersGraphicsGroup (tcu::TestCaseGroup* testGroup)
 	extensions.push_back("VK_KHR_variable_pointers");
 
 	// Requires the variable pointers feature.
-	requiredFeatures.extVariablePointers	= EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS;
+	requiredFeatures.extVariablePointers.variablePointers = true;
 
 	fragments["capability"]		=	"OpCapability VariablePointers							\n";
 	fragments["extension"]		=	"OpExtension \"SPV_KHR_variable_pointers\"				\n"

@@ -1148,6 +1148,11 @@ NegativeTexImage3DCase::IterateResult NegativeTexImage3DCase::iterate(void)
 
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
+	/* Integer textures supported for OpenGL ES 3.0+ */
+	int major = 0;
+	gl.getIntegerv(GL_MAJOR_VERSION, &major);
+	bool supportsIntegerTextures = major >= 3;
+
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
 	// negative usage
@@ -1185,8 +1190,11 @@ NegativeTexImage3DCase::IterateResult NegativeTexImage3DCase::iterate(void)
 		verifyError(GL_INVALID_OPERATION, message3);
 		callTexImage3D(GL_TEXTURE_3D, 0, GL_RGB10_A2, 1, 1, 1, 0, GL_RGB, GL_UNSIGNED_INT_2_10_10_10_REV, 0);
 		verifyError(GL_INVALID_OPERATION, message3);
-		callTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32UI, 1, 1, 1, 0, GL_RGBA_INTEGER, GL_INT, 0);
-		verifyError(GL_INVALID_OPERATION, message3);
+
+		if (supportsIntegerTextures) {
+			callTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32UI, 1, 1, 1, 0, GL_RGBA_INTEGER, GL_INT, 0);
+			verifyError(GL_INVALID_OPERATION, message3);
+		}
 	}
 
 	// invalid leve

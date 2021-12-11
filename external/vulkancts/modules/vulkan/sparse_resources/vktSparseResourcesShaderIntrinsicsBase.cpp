@@ -710,12 +710,40 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 		imageTexelsInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 	}
 
+	{
+		VkImageFormatProperties imageFormatProperties;
+		if (instance.getPhysicalDeviceImageFormatProperties(physicalDevice,
+			imageTexelsInfo.format,
+			imageTexelsInfo.imageType,
+			imageTexelsInfo.tiling,
+			imageTexelsInfo.usage,
+			imageTexelsInfo.flags,
+			&imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+		{
+			TCU_THROW(NotSupportedError, "Image format not supported for its usage ");
+		}
+	}
+
 	const Unique<VkImage>			imageTexels			(createImage(deviceInterface, getDevice(), &imageTexelsInfo));
 	const de::UniquePtr<Allocation>	imageTexelsAlloc	(bindImage(deviceInterface, getDevice(), getAllocator(), *imageTexels, MemoryRequirement::Any));
 
 	// Create image to store residency info copied from sparse image
 	imageResidencyInfo			= imageTexelsInfo;
 	imageResidencyInfo.format	= mapTextureFormat(m_residencyFormat);
+
+	{
+		VkImageFormatProperties imageFormatProperties;
+		if (instance.getPhysicalDeviceImageFormatProperties(physicalDevice,
+			imageResidencyInfo.format,
+			imageResidencyInfo.imageType,
+			imageResidencyInfo.tiling,
+			imageResidencyInfo.usage,
+			imageResidencyInfo.flags,
+			&imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+		{
+			TCU_THROW(NotSupportedError, "Image format not supported for its usage ");
+		}
+	}
 
 	const Unique<VkImage>			imageResidency		(createImage(deviceInterface, getDevice(), &imageResidencyInfo));
 	const de::UniquePtr<Allocation>	imageResidencyAlloc	(bindImage(deviceInterface, getDevice(), getAllocator(), *imageResidency, MemoryRequirement::Any));

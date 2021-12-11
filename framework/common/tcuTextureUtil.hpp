@@ -44,6 +44,8 @@ bool					hasStencilComponent			(TextureFormat::ChannelOrder order);
 bool					hasDepthComponent			(TextureFormat::ChannelOrder order);
 
 // sRGB - linear conversion.
+float					linearChannelToSRGB			(float cl);
+float					sRGBChannelToLinear			(float cl);
 Vec4					sRGBToLinear				(const Vec4& cs);
 Vec4					sRGB8ToLinear				(const UVec4& cs);
 Vec4					sRGBA8ToLinear				(const UVec4& cs);

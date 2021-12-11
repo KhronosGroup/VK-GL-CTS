@@ -57,6 +57,7 @@
 #include "glcShaderNegativeTests.hpp"
 #include "glcNearestEdgeTests.hpp"
 #include "glcFramebufferCompleteness.hpp"
+#include "glcCompressedFormatTests.hpp"
 
 #include "gluStateReset.hpp"
 #include "gluContextInfo.hpp"
@@ -215,6 +216,7 @@ void ES31TestPackage::init(void)
 		coreGroup->addChild(new glcts::InternalformatTests(getContext()));
 		coreGroup->addChild(new glcts::NearestEdgeCases(getContext()));
 		coreGroup->addChild(new glcts::FramebufferCompletenessTests(getContext()));
+		coreGroup->addChild(new glcts::CompressedFormatTests(getContext()));
 
 		glcts::ExtParameters extParams(glu::GLSL_VERSION_310_ES, glcts::EXTENSIONTYPE_OES);
 		coreGroup->addChild(new glcts::GeometryShaderTests(getContext(), extParams));

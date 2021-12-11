@@ -97,7 +97,8 @@ public:
 																			 const deUint32						apiVersion,
 																			 const VkPhysicalDevice				physicalDevice,
 																			 const std::vector<std::string>&	instanceExtensions,
-																			 const std::vector<std::string>&	deviceExtensions);
+																			 const std::vector<std::string>&	deviceExtensions,
+																			 const deBool						enableAllFeatures = DE_FALSE);
 
 												~DeviceFeatures				(void);
 

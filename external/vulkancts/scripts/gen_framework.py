@@ -150,6 +150,7 @@ def prefixName (prefix, name):
 	name = name.replace("_H_264_", "_H264_")
 	name = name.replace("_H_265_", "_H265_")
 	name = name.replace("RDMAFEATURES", "RDMA_FEATURES")
+	name = name.replace("RGBA_10_X_6", "RGBA10X6")
 
 
 	return prefix + name
@@ -1982,6 +1983,9 @@ def generateDeviceFeaturesDefs(src):
 			elif sType == 'RASTERIZATION_ORDER_ATTACHMENT_ACCESS':
 				# skip case that has const pNext pointer
 				continue
+			# skip cases that have const pNext pointer
+			if sType == 'RASTERIZATION_ORDER_ATTACHMENT_ACCESS':
+				continue
 			# end handling special cases
 			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sSuffix + '_' + sType + '_EXTENSION_NAME).+$'
 			matchExtensionName	= re.search(ptrnExtensionName, src, re.M)
@@ -2179,6 +2183,42 @@ def writeDeviceFeatures(api, dfDefs, filename):
 	stream.append('};\n')
 	stream.append(blobChecker)
 	stream.append('} // vk\n')
+	writeInlFile(filename, INL_HEADER, stream)
+
+def writeDeviceFeatureTest(api, filename):
+
+	coreFeaturesPattern = re.compile("^VkPhysicalDeviceVulkan([1-9][0-9])Features[0-9]*$")
+	featureItems = []
+	# iterate over all feature structures
+	allFeaturesPattern = re.compile("^VkPhysicalDevice\w+Features[1-9]*")
+	for structureType in api.compositeTypes:
+		# skip structures that are not feature structures
+		if not allFeaturesPattern.match(structureType.name):
+			continue
+		# skip alias structures
+		if structureType.isAlias:
+			continue
+		# skip sType and pNext and just grab third and next attributes
+		structureMembers = structureType.members[2:]
+
+		items = []
+		for member in structureMembers:
+			items.append("		FEATURE_ITEM ({0}, {1}),".format(structureType.name, member.name))
+
+		testBlock = \
+			"if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<{0}>()))\n" \
+			"{{\n" \
+			"	static const Feature features[] =\n" \
+			"	{{\n" \
+			"{1}\n" \
+			"	}};\n" \
+			"	auto* supportedFeatures = reinterpret_cast<const {0}*>(featuresStruct);\n" \
+			"	checkFeatures(vkp, instance, instanceDriver, physicalDevice, {2}, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, {3}, emptyDeviceFeatures);\n" \
+			"}}\n"
+		featureItems.append(testBlock.format(structureType.name, "\n".join(items), len(items), ("DE_NULL" if coreFeaturesPattern.match(structureType.name) else "&extensionNames")))
+
+	stream = ['']
+	stream.extend(featureItems)
 	writeInlFile(filename, INL_HEADER, stream)
 
 def writeDeviceProperties(api, dpDefs, filename):
@@ -2541,6 +2581,7 @@ if __name__ == "__main__":
 	writeDeviceFeaturesDefaultDeviceDefs	(dfd, os.path.join(outputPath, "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
 	writeDeviceFeaturesContextDecl			(dfd, os.path.join(outputPath, "vkDeviceFeaturesForContextDecl.inl"))
 	writeDeviceFeaturesContextDefs			(dfd, os.path.join(outputPath, "vkDeviceFeaturesForContextDefs.inl"))
+	writeDeviceFeatureTest					(api, os.path.join(outputPath, "vkDeviceFeatureTest.inl"))
 
 	dpd										= generateDevicePropertiesDefs(src)
 	writeDeviceProperties					(api, dpd, os.path.join(outputPath, "vkDeviceProperties.inl"))

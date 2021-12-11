@@ -6,6 +6,7 @@ dEQP-VK.multiview.non_precise_queries.8_1_1_8
 dEQP-VK.multiview.non_precise_queries.5_10_5_10
 dEQP-VK.multiview.non_precise_queries.1_2_4_8_16_32
 dEQP-VK.multiview.non_precise_queries.max_multi_view_view_count
+dEQP-VK.multiview.depth_different_ranges.3_6_12_9_6_12_9_3_6_12_9_3
 dEQP-VK.multiview.renderpass2.non_precise_queries.15
 dEQP-VK.multiview.renderpass2.non_precise_queries.8
 dEQP-VK.multiview.renderpass2.non_precise_queries.1_2_4_8
@@ -14,6 +15,7 @@ dEQP-VK.multiview.renderpass2.non_precise_queries.8_1_1_8
 dEQP-VK.multiview.renderpass2.non_precise_queries.5_10_5_10
 dEQP-VK.multiview.renderpass2.non_precise_queries.1_2_4_8_16_32
 dEQP-VK.multiview.renderpass2.non_precise_queries.max_multi_view_view_count
+dEQP-VK.multiview.renderpass2.depth_different_ranges.3_6_12_9_6_12_9_3_6_12_9_3
 dEQP-VK.multiview.dynamic_rendering.masks.15
 dEQP-VK.multiview.dynamic_rendering.masks.8
 dEQP-VK.multiview.dynamic_rendering.masks.1_2_4_8
@@ -143,6 +145,7 @@ dEQP-VK.multiview.dynamic_rendering.readback_explicit_clear.5_10_5_10
 dEQP-VK.multiview.dynamic_rendering.readback_explicit_clear.1_2_4_8_16_32
 dEQP-VK.multiview.dynamic_rendering.readback_explicit_clear.max_multi_view_view_count
 dEQP-VK.multiview.dynamic_rendering.depth.3_6_12_9_6_12_9_3_6_12_9_3
+dEQP-VK.multiview.dynamic_rendering.depth_different_ranges.3_6_12_9_6_12_9_3_6_12_9_3
 dEQP-VK.multiview.dynamic_rendering.stencil.3_6_12_9_6_12_9_3_6_12_9_3
 dEQP-VK.multiview.dynamic_rendering.index.vertex_shader.15
 dEQP-VK.multiview.dynamic_rendering.index.vertex_shader.8

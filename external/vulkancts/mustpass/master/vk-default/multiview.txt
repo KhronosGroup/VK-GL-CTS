@@ -135,6 +135,7 @@ dEQP-VK.multiview.readback_explicit_clear.5_10_5_10
 dEQP-VK.multiview.readback_explicit_clear.1_2_4_8_16_32
 dEQP-VK.multiview.readback_explicit_clear.max_multi_view_view_count
 dEQP-VK.multiview.depth.3_6_12_9_6_12_9_3_6_12_9_3
+dEQP-VK.multiview.depth_different_ranges.3_6_12_9_6_12_9_3_6_12_9_3
 dEQP-VK.multiview.stencil.3_6_12_9_6_12_9_3_6_12_9_3
 dEQP-VK.multiview.index.vertex_shader.15
 dEQP-VK.multiview.index.vertex_shader.8
@@ -305,6 +306,7 @@ dEQP-VK.multiview.renderpass2.readback_explicit_clear.5_10_5_10
 dEQP-VK.multiview.renderpass2.readback_explicit_clear.1_2_4_8_16_32
 dEQP-VK.multiview.renderpass2.readback_explicit_clear.max_multi_view_view_count
 dEQP-VK.multiview.renderpass2.depth.3_6_12_9_6_12_9_3_6_12_9_3
+dEQP-VK.multiview.renderpass2.depth_different_ranges.3_6_12_9_6_12_9_3_6_12_9_3
 dEQP-VK.multiview.renderpass2.stencil.3_6_12_9_6_12_9_3_6_12_9_3
 dEQP-VK.multiview.renderpass2.index.vertex_shader.15
 dEQP-VK.multiview.renderpass2.index.vertex_shader.8
@@ -467,6 +469,7 @@ dEQP-VK.multiview.dynamic_rendering.readback_explicit_clear.5_10_5_10
 dEQP-VK.multiview.dynamic_rendering.readback_explicit_clear.1_2_4_8_16_32
 dEQP-VK.multiview.dynamic_rendering.readback_explicit_clear.max_multi_view_view_count
 dEQP-VK.multiview.dynamic_rendering.depth.3_6_12_9_6_12_9_3_6_12_9_3
+dEQP-VK.multiview.dynamic_rendering.depth_different_ranges.3_6_12_9_6_12_9_3_6_12_9_3
 dEQP-VK.multiview.dynamic_rendering.stencil.3_6_12_9_6_12_9_3_6_12_9_3
 dEQP-VK.multiview.dynamic_rendering.index.vertex_shader.15
 dEQP-VK.multiview.dynamic_rendering.index.vertex_shader.8

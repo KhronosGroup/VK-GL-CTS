@@ -205,15 +205,15 @@ void addDotProductExtensionAndFeatures(ComputeShaderSpec &spec,
 	DE_ASSERT(!packingInfo.packed || elementSize == 8);
 	if ((!packingInfo.packed && elementSize == 8) || outSize == 8)
 	{
-		spec.requestedVulkanFeatures.extFloat16Int8 |= EXTFLOAT16INT8FEATURES_INT8;
-		spec.requestedVulkanFeatures.ext8BitStorage = EXT8BITSTORAGEFEATURES_STORAGE_BUFFER;
+		spec.requestedVulkanFeatures.extFloat16Int8.shaderInt8 = true;
+		spec.requestedVulkanFeatures.ext8BitStorage.storageBuffer8BitAccess = true;
 		spec.extensions.push_back("VK_KHR_8bit_storage");
 	}
 
 	if (elementSize == 16 || outSize == 16)
 	{
-		spec.requestedVulkanFeatures.coreFeatures.shaderInt16 = VK_TRUE;
-		spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		spec.requestedVulkanFeatures.coreFeatures.shaderInt16 = true;
+		spec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
 		spec.extensions.push_back("VK_KHR_16bit_storage");
 	}
 }

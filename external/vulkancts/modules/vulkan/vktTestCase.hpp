@@ -109,8 +109,9 @@ public:
 	bool											requireInstanceFunctionality		(const std::string& required) const;
 	bool											requireDeviceCoreFeature			(const DeviceCoreFeature requiredDeviceCoreFeature);
 
-	vk::VkFormatProperties3							getFormatProperties					(const vk::VkFormat&	format)	const;
-	vk::VkFormatProperties3							getRequiredFormatProperties			(const vk::VkFormat&	format)	const;
+
+	vk::VkFormatProperties3						getFormatProperties					(const vk::VkFormat&	format)	const;
+	vk::VkFormatProperties3						getRequiredFormatProperties			(const vk::VkFormat&	format)	const;
 
 	void*											getInstanceProcAddr					();
 

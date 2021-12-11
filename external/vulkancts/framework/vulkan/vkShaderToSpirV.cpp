@@ -62,6 +62,8 @@ EShLanguage getGlslangStage (glu::ShaderType type)
 		EShLangMiss,
 		EShLangIntersect,
 		EShLangCallable,
+		EShLangTaskNV,
+		EShLangMeshNV,
 	};
 	return de::getSizedArrayElement<glu::SHADERTYPE_LAST>(stageMap, type);
 }

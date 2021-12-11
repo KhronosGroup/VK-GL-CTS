@@ -36,7 +36,7 @@ using namespace vkt;
 void checkSupport (Context& context, const VkFormat format)
 {
 	DE_UNREF(format);
-	context.requireDeviceFunctionality("VK_KHR_format_feature_flags2");
+	context.requireDeviceFunctionality(VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME);
 	context.requireInstanceFunctionality(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 }
 
