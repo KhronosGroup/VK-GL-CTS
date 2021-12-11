@@ -81,6 +81,9 @@ enum TestType
 	TEST_TYPE_QUERY_COPY,
 	TEST_TYPE_QUERY_RESET,
 	TEST_TYPE_MULTIQUERY,
+	TEST_TYPE_DEPTH_CLIP_CONTROL_VERTEX,
+	TEST_TYPE_DEPTH_CLIP_CONTROL_GEOMETRY,
+	TEST_TYPE_DEPTH_CLIP_CONTROL_TESE,
 	TEST_TYPE_LAST
 };
 
@@ -173,15 +176,44 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 									   const VkShaderModule			tessellationControlModule,
 									   const VkShaderModule			tessellationEvalModule,
 									   const VkShaderModule			geometryModule,
-									   const VkShaderModule			fragmendModule,
+									   const VkShaderModule			fragmentModule,
 									   const VkExtent2D				renderSize,
 									   const deUint32				subpass,
 									   const deUint32*				rasterizationStreamPtr	= DE_NULL,
 									   const VkPrimitiveTopology	topology				= VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
-									   const bool					inputVertices			= false)
+									   const bool					inputVertices			= false,
+									   const bool					depthClipControl		= false)
 {
-	const std::vector<VkViewport>							viewports								(1, makeViewport(renderSize));
-	const std::vector<VkRect2D>								scissors								(1, makeRect2D(renderSize));
+	VkViewport												viewport							= makeViewport(renderSize);
+	VkRect2D												scissor								= makeRect2D(renderSize);
+
+	const VkPipelineViewportDepthClipControlCreateInfoEXT	depthClipControlCreateInfo			=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT,	// VkStructureType	sType;
+		DE_NULL,																// const void*		pNext;
+		VK_TRUE,																// VkBool32		negativeOneToOne;
+	};
+
+	const VkPipelineViewportStateCreateInfo					viewportStateCreateInfo				=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,		// VkStructureType                             sType
+		depthClipControl ? &depthClipControlCreateInfo : DE_NULL,	// const void*                                 pNext
+		(VkPipelineViewportStateCreateFlags)0,						// VkPipelineViewportStateCreateFlags          flags
+		1u,															// deUint32                                    viewportCount
+		&viewport,													// const VkViewport*                           pViewports
+		1u,															// deUint32                                    scissorCount
+		&scissor													// const VkRect2D*                             pScissors
+	};
+
+	const VkPipelineInputAssemblyStateCreateInfo			inputAssemblyStateCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType                            sType
+		DE_NULL,														// const void*                                pNext
+		0u,																// VkPipelineInputAssemblyStateCreateFlags    flags
+		topology,														// VkPrimitiveTopology                        topology
+		VK_FALSE														// VkBool32                                   primitiveRestartEnable
+	};
+
 	const VkPipelineVertexInputStateCreateInfo				vertexInputStateCreateInfo			=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,									//  VkStructureType									sType
@@ -192,9 +224,11 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		0u,																							//  deUint32										vertexAttributeDescriptionCount
 		DE_NULL,																					//  const VkVertexInputAttributeDescription*		pVertexAttributeDescriptions
 	};
+
 	const VkPipelineVertexInputStateCreateInfo*				vertexInputStateCreateInfoPtr		= (inputVertices) ? DE_NULL : &vertexInputStateCreateInfo;
-	const VkBool32											disableRasterization				= (fragmendModule == DE_NULL);
+	const VkBool32											disableRasterization				= (fragmentModule == DE_NULL);
 	const deUint32											rasterizationStream					= (rasterizationStreamPtr == DE_NULL) ? 0 : *rasterizationStreamPtr;
+
 	const VkPipelineRasterizationStateStreamCreateInfoEXT	rasterizationStateStreamCreateInfo	=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_STREAM_CREATE_INFO_EXT,						//  VkStructureType										sType;
@@ -202,40 +236,49 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		0,																							//  VkPipelineRasterizationStateStreamCreateFlagsEXT	flags;
 		rasterizationStream																			//  deUint32											rasterizationStream;
 	};
+
 	const VkPipelineRasterizationStateCreateInfo			rasterizationStateCreateInfo		=
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,									//  VkStructureType							sType;
-		&rasterizationStateStreamCreateInfo,														//  const void*								pNext;
-		0u,																							//  VkPipelineRasterizationStateCreateFlags	flags;
-		VK_FALSE,																					//  VkBool32								depthClampEnable;
-		disableRasterization,																		//  VkBool32								rasterizerDiscardEnable;
-		VK_POLYGON_MODE_FILL,																		//  VkPolygonMode							polygonMode;
-		VK_CULL_MODE_NONE,																			//  VkCullModeFlags							cullMode;
-		VK_FRONT_FACE_COUNTER_CLOCKWISE,															//  VkFrontFace								frontFace;
-		VK_FALSE,																					//  VkBool32								depthBiasEnable;
-		0.0f,																						//  float									depthBiasConstantFactor;
-		0.0f,																						//  float									depthBiasClamp;
-		0.0f,																						//  float									depthBiasSlopeFactor;
-		1.0f																						//  float									lineWidth;
+		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	//  VkStructureType							sType
+		&rasterizationStateStreamCreateInfo,						//  const void*								pNext
+		0u,															//  VkPipelineRasterizationStateCreateFlags	flags
+		VK_FALSE,													//  VkBool32								depthClampEnable
+		disableRasterization,										//  VkBool32								rasterizerDiscardEnable
+		VK_POLYGON_MODE_FILL,										//  VkPolygonMode							polygonMode
+		VK_CULL_MODE_NONE,											//  VkCullModeFlags							cullMode
+		VK_FRONT_FACE_COUNTER_CLOCKWISE,							//  VkFrontFace								frontFace
+		VK_FALSE,													//  VkBool32								depthBiasEnable
+		0.0f,														//  float									depthBiasConstantFactor
+		0.0f,														//  float									depthBiasClamp
+		0.0f,														//  float									depthBiasSlopeFactor
+		1.0f														//  float									lineWidth
 	};
+
 	const VkPipelineRasterizationStateCreateInfo*			rasterizationStateCreateInfoPtr		= (rasterizationStreamPtr == DE_NULL) ? DE_NULL : &rasterizationStateCreateInfo;
 
-	return makeGraphicsPipeline(vk,											// const DeviceInterface&							vk
-								device,										// const VkDevice									device
-								pipelineLayout,								// const VkPipelineLayout							pipelineLayout
-								vertexModule,								// const VkShaderModule								vertexShaderModule
-								tessellationControlModule,					// const VkShaderModule								tessellationControlModule
-								tessellationEvalModule,						// const VkShaderModule								tessellationEvalModule
-								geometryModule,								// const VkShaderModule								geometryShaderModule
-								fragmendModule,								// const VkShaderModule								fragmentShaderModule
-								renderPass,									// const VkRenderPass								renderPass
-								viewports,									// const std::vector<VkViewport>&					viewports
-								scissors,									// const std::vector<VkRect2D>&						scissors
-								topology,									// const VkPrimitiveTopology						topology
-								subpass,									// const deUint32									subpass
-								(tessellationEvalModule != DE_NULL) * 3u,	// const deUint32									patchControlPoints
-								vertexInputStateCreateInfoPtr,				// const VkPipelineVertexInputStateCreateInfo*		vertexInputStateCreateInfo
-								rasterizationStateCreateInfoPtr);			// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
+	const VkPipelineTessellationStateCreateInfo				tessStateCreateInfo					=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,	// VkStructureType                           sType
+		DE_NULL,													// const void*                               pNext
+		0u,															// VkPipelineTessellationStateCreateFlags    flags
+		3u															// deUint32                                  patchControlPoints
+	};
+
+	return makeGraphicsPipeline(vk,									// const DeviceInterface&							vk
+								device,								// const VkDevice									device
+								pipelineLayout,						// const VkPipelineLayout							pipelineLayout
+								vertexModule,						// const VkShaderModule								vertexShaderModule
+								tessellationControlModule,			// const VkShaderModule								tessellationControlModule
+								tessellationEvalModule,				// const VkShaderModule								tessellationEvalModule
+								geometryModule,						// const VkShaderModule								geometryShaderModule
+								fragmentModule,						// const VkShaderModule								fragmentShaderModule
+								renderPass,							// const VkRenderPass								renderPass
+								subpass,							// const deUint32									subpass
+								vertexInputStateCreateInfoPtr,		// const VkPipelineVertexInputStateCreateInfo*		vertexInputStateCreateInfo
+								&inputAssemblyStateCreateInfo,		// const VkPipelineInputAssemblyStateCreateInfo*	inputAssemblyStateCreateInfo
+								&tessStateCreateInfo,				// const VkPipelineTessellationStateCreateInfo*		tessStateCreateInfo
+								&viewportStateCreateInfo,			// const VkPipelineViewportStateCreateInfo*			viewportStateCreateInfo
+								rasterizationStateCreateInfoPtr);	// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
 }
 
 VkImageCreateInfo makeImageCreateInfo (const VkImageCreateFlags flags, const VkImageType type, const VkFormat format, const VkExtent2D size, const deUint32 numLayers, const VkImageUsageFlags usage)
@@ -1103,6 +1146,143 @@ tcu::TestStatus TransformFeedbackBuiltinTestInstance::iterate (void)
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	verifyTransformFeedbackBuffer(tfBufAllocation, tfBufBindingOffsets[m_parameters.partCount - 1], numPoints * perVertexDataSize);
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+class TransformFeedbackDepthClipControlTestInstance : public TransformFeedbackTestInstance
+{
+public:
+	TransformFeedbackDepthClipControlTestInstance		(Context& context, const TestParameters& parameters);
+
+protected:
+	tcu::TestStatus		iterate							(void);
+	void				verifyTransformFeedbackBuffer	(const MovePtr<Allocation>& bufAlloc, const VkDeviceSize offset, const deUint32 bufBytes);
+};
+
+TransformFeedbackDepthClipControlTestInstance::TransformFeedbackDepthClipControlTestInstance (Context& context, const TestParameters& parameters)
+		: TransformFeedbackTestInstance	(context, parameters)
+{
+	const InstanceInterface&		vki			= m_context.getInstanceInterface();
+	const VkPhysicalDevice			physDevice	= m_context.getPhysicalDevice();
+	const VkPhysicalDeviceFeatures	features	= getPhysicalDeviceFeatures(vki, physDevice);
+
+	const deUint32 tfBuffersSupported	= m_transformFeedbackProperties.maxTransformFeedbackBuffers;
+	const deUint32 tfBuffersRequired	= m_parameters.partCount;
+
+	if (!context.isDeviceFunctionalitySupported("VK_EXT_depth_clip_control"))
+		TCU_THROW(NotSupportedError, "VK_EXT_depth_clip_control is not supported");
+
+	if (parameters.testType == TEST_TYPE_DEPTH_CLIP_CONTROL_GEOMETRY && !features.geometryShader)
+		TCU_THROW(NotSupportedError, "Geometry shader not supported");
+
+	if (parameters.testType == TEST_TYPE_DEPTH_CLIP_CONTROL_TESE && !features.tessellationShader)
+		TCU_THROW(NotSupportedError, "Tessellation shader not supported");
+
+	if (tfBuffersSupported < tfBuffersRequired)
+		TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackBuffers=" + de::toString(tfBuffersSupported) + ", while test requires " + de::toString(tfBuffersRequired)).c_str());
+}
+
+void TransformFeedbackDepthClipControlTestInstance::verifyTransformFeedbackBuffer (const MovePtr<Allocation>& bufAlloc, const VkDeviceSize offset, const deUint32 bufBytes)
+{
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			device		= m_context.getDevice();
+
+	invalidateAlloc(vk, device, *bufAlloc);
+
+	const deUint32			numVertices	= bufBytes / static_cast<deUint32>(sizeof(float) * 4);
+	const deUint8*			tfDataBytes	= (deUint8*)bufAlloc->getHostPtr();
+	const float*			tfData		= (float*)&tfDataBytes[offset];
+	std::vector<float>		result;
+
+	// We only care about the depth (z) value.
+	for (deUint32 i = 0; i < numVertices; i++)
+		result.push_back(tfData[i * 4 + 2]);
+
+	// Tessellation generates triangles whose vertex data might be written into
+	// transform feedback buffer in a different order than generated by the vertex
+	// shader. Sort the values here to allow comparison.
+	if (m_parameters.testType == TEST_TYPE_DEPTH_CLIP_CONTROL_TESE)
+	{
+		std::sort(result.begin(), result.end());
+	}
+
+	// Verify the vertex depth values match with the ones written by the shader.
+	for (deUint32 i = 0; i < numVertices; i++)
+	{
+		const float	expected	= (float)i / 3.0f - 1.0f;
+		const float	epsilon		= 0.0001f;
+
+		if (deAbs(result[i] - expected) > epsilon)
+			TCU_FAIL(std::string("Failed at vertex ") + de::toString(i) + " depth. Received:" + de::toString(result[i]) + " expected:" + de::toString(expected));
+	}
+}
+
+tcu::TestStatus TransformFeedbackDepthClipControlTestInstance::iterate (void)
+{
+	const DeviceInterface&				vk						= m_context.getDeviceInterface();
+	const VkDevice						device					= m_context.getDevice();
+	const deUint32						queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue						queue					= m_context.getUniversalQueue();
+	Allocator&							allocator				= m_context.getDefaultAllocator();
+
+	const Unique<VkShaderModule>		vertexModule			(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
+	Move<VkShaderModule>				geomModule;
+	Move<VkShaderModule>				tescModule;
+	Move<VkShaderModule>				teseModule;
+	const bool							hasGeomShader			= m_parameters.testType == TEST_TYPE_DEPTH_CLIP_CONTROL_GEOMETRY;
+	const bool							hasTessellation			= m_parameters.testType == TEST_TYPE_DEPTH_CLIP_CONTROL_TESE;
+
+	if (hasGeomShader)
+		geomModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("geom"), 0u);
+
+	if (hasTessellation)
+	{
+		tescModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("tesc"), 0u);
+		teseModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("tese"), 0u);
+	}
+
+	const Unique<VkRenderPass>			renderPass				(makeRenderPass(vk, device, VK_FORMAT_UNDEFINED));
+	const Unique<VkFramebuffer>			framebuffer				(makeFramebuffer(vk, device, *renderPass, 0u, DE_NULL, m_imageExtent2D.width, m_imageExtent2D.height));
+	const Unique<VkPipelineLayout>		pipelineLayout			(TransformFeedback::makePipelineLayout	(vk, device));
+	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertexModule, hasTessellation ? *tescModule : DE_NULL, hasTessellation ? *teseModule : DE_NULL, hasGeomShader ? *geomModule : DE_NULL, DE_NULL, m_imageExtent2D, 0u, &m_parameters.streamId, m_parameters.primTopology, false, true));
+	const Unique<VkCommandPool>			cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const VkDeviceSize					tfBufSize				= m_parameters.bufferSize * m_parameters.partCount;
+	const VkBufferCreateInfo			tfBufCreateInfo			= makeBufferCreateInfo(tfBufSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);
+	const Move<VkBuffer>				tfBuf					= createBuffer(vk, device, &tfBufCreateInfo);
+	const std::vector<VkBuffer>			tfBufArray				= std::vector<VkBuffer>(m_parameters.partCount, *tfBuf);
+	const MovePtr<Allocation>			tfBufAllocation			= allocator.allocate(getBufferMemoryRequirements(vk, device, *tfBuf), MemoryRequirement::HostVisible);
+	const VkMemoryBarrier				tfMemoryBarrier			= makeMemoryBarrier(VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT, VK_ACCESS_HOST_READ_BIT);
+	const std::vector<VkDeviceSize>		tfBufBindingSizes		= std::vector<VkDeviceSize>(m_parameters.partCount, m_parameters.bufferSize);
+	const std::vector<VkDeviceSize>		tfBufBindingOffsets		= generateOffsetsList(tfBufBindingSizes);
+	const deUint32						perVertexDataSize		= static_cast<deUint32>(4u * sizeof(float));
+	const deUint32						numVertices				= m_parameters.bufferSize / perVertexDataSize;
+
+	VK_CHECK(vk.bindBufferMemory(device, *tfBuf, tfBufAllocation->getMemory(), tfBufAllocation->getOffset()));
+
+	beginCommandBuffer(vk, *cmdBuffer);
+	{
+		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(m_imageExtent2D));
+		{
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+
+			vk.cmdBindTransformFeedbackBuffersEXT(*cmdBuffer, 0, m_parameters.partCount, &tfBufArray[0], &tfBufBindingOffsets[0], &tfBufBindingSizes[0]);
+
+			vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, 0, 0, DE_NULL, DE_NULL);
+			{
+				vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
+			}
+			vk.cmdEndTransformFeedbackEXT(*cmdBuffer, 0, 0, DE_NULL, DE_NULL);
+		}
+		endRenderPass(vk, *cmdBuffer);
+
+		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &tfMemoryBarrier, 0u, DE_NULL, 0u, DE_NULL);
+	}
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	verifyTransformFeedbackBuffer(tfBufAllocation, tfBufBindingOffsets[m_parameters.partCount - 1], m_parameters.bufferSize);
 
 	return tcu::TestStatus::pass("Pass");
 }
@@ -2191,6 +2371,11 @@ vkt::TestInstance*	TransformFeedbackTestCase::createInstance (vkt::Context& cont
 	if (m_parameters.testType == TEST_TYPE_MULTIQUERY)
 		return new TransformFeedbackMultiQueryTestInstance(context, m_parameters);
 
+	if (m_parameters.testType == TEST_TYPE_DEPTH_CLIP_CONTROL_VERTEX	||
+		m_parameters.testType == TEST_TYPE_DEPTH_CLIP_CONTROL_GEOMETRY	||
+		m_parameters.testType == TEST_TYPE_DEPTH_CLIP_CONTROL_TESE)
+		return new TransformFeedbackDepthClipControlTestInstance(context, m_parameters);
+
 	TCU_THROW(InternalError, "Specified test type not found");
 }
 
@@ -2209,6 +2394,123 @@ void TransformFeedbackTestCase::initPrograms (SourceCollections& programCollecti
 									|| m_parameters.testType == TEST_TYPE_XFB_CLIPDISTANCE
 									|| m_parameters.testType == TEST_TYPE_XFB_CULLDISTANCE
 									|| m_parameters.testType == TEST_TYPE_XFB_CLIP_AND_CULL;
+
+	if (m_parameters.testType == TEST_TYPE_DEPTH_CLIP_CONTROL_VERTEX)
+	{
+		// Vertex shader
+		{
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+				<< "\n"
+				<< "layout(xfb_buffer = 0, xfb_offset = 0) out gl_PerVertex\n"
+				<< "{\n"
+				<< "    vec4 gl_Position;\n"
+				<< "};\n"
+				<< "\n"
+				<< "void main(void)\n"
+				<< "{\n"
+				<< "    gl_Position = vec4(1.0, 1.0, float(gl_VertexIndex) / 3.0 - 1.0, 1.0);\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+		}
+
+		return;
+	}
+
+	if (m_parameters.testType == TEST_TYPE_DEPTH_CLIP_CONTROL_GEOMETRY)
+	{
+		// Vertex shader
+		{
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+				<< "\n"
+				<< "void main(void)\n"
+				<< "{\n"
+				<< "    gl_Position = vec4(1.0, 1.0, float(gl_VertexIndex) / 3.0 - 1.0, 1.0);\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+		}
+
+		// Geometry shader
+		{
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+				<< "\n"
+				<< "layout(points) in;\n"
+				<< "layout(points, max_vertices = 1) out;\n"
+				<< "layout(xfb_buffer = 0, xfb_offset = 0) out gl_PerVertex\n"
+				<< "{\n"
+				<< "    vec4 gl_Position;\n"
+				<< "};\n"
+				<< "\n"
+				<< "void main(void)\n"
+				<< "{\n"
+				<< "    gl_Position = gl_in[0].gl_Position;\n"
+				<< "    EmitVertex();\n"
+				<< "    EndPrimitive();\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("geom") << glu::GeometrySource(src.str());
+		}
+
+		return;
+	}
+
+	if (m_parameters.testType == TEST_TYPE_DEPTH_CLIP_CONTROL_TESE)
+	{
+		// Vertex shader
+		{
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+				<< "\n"
+				<< "void main(void)\n"
+				<< "{\n"
+				<< "    gl_Position = vec4(1.0, 1.0, float(gl_VertexIndex) / 3.0 - 1.0, 1.0);\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+		}
+
+		// Tesselation control shader
+		{
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+				<< "layout(vertices = 3) out;\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "    gl_TessLevelInner[0] = 0.0;\n"
+				<< "    gl_TessLevelOuter[0] = 1.0;\n"
+				<< "    gl_TessLevelOuter[1] = 1.0;\n"
+				<< "    gl_TessLevelOuter[2] = 1.0;\n"
+				<< "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+				<< "}\n";
+			programCollection.glslSources.add("tesc") << glu::TessellationControlSource(src.str());
+		}
+
+		// Tessellation evaluation shader
+		{
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+				<< "layout(triangles, ccw) in;\n"
+				<< "layout(xfb_buffer = 0, xfb_offset = 0) out gl_PerVertex\n"
+				<< "{\n"
+				<< "    vec4 gl_Position;\n"
+				<< "};\n"
+				<< "\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "    vec4 p0 = gl_TessCoord.x * gl_in[0].gl_Position;\n"
+				<< "    vec4 p1 = gl_TessCoord.y * gl_in[1].gl_Position;\n"
+				<< "    vec4 p2 = gl_TessCoord.z * gl_in[2].gl_Position;\n"
+				<< "    gl_Position = p0 + p1 + p2;\n"
+				<< "}\n";
+			programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+		}
+
+		return;
+	}
 
 	if (vertexShaderOnly)
 	{
@@ -3007,6 +3309,23 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup* group)
 				}
 			}
 		}
+	}
+
+	// Depth clip control tests.
+	{
+		TestParameters	parameters	= { TEST_TYPE_DEPTH_CLIP_CONTROL_VERTEX, 96, 1u, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST };
+
+		group->addChild(new TransformFeedbackTestCase(group->getTestContext(), "depth_clip_control_vertex", "", parameters));
+	}
+	{
+		TestParameters	parameters	= { TEST_TYPE_DEPTH_CLIP_CONTROL_GEOMETRY, 96, 1u, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST };
+
+		group->addChild(new TransformFeedbackTestCase(group->getTestContext(), "depth_clip_control_geometry", "", parameters));
+	}
+	{
+		TestParameters	parameters	= { TEST_TYPE_DEPTH_CLIP_CONTROL_TESE, 96, 1u, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false, false, VK_PRIMITIVE_TOPOLOGY_PATCH_LIST };
+
+		group->addChild(new TransformFeedbackTestCase(group->getTestContext(), "depth_clip_control_tese", "", parameters));
 	}
 }
 
