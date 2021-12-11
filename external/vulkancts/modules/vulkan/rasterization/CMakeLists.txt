@@ -11,6 +11,8 @@ set(DEQP_VK_RASTERIZATION_SRCS
 	vktRasterizationFragShaderSideEffectsTests.hpp
 	vktRasterizationProvokingVertexTests.cpp
 	vktRasterizationProvokingVertexTests.hpp
+	vktRasterizationOrderAttachmentAccessTests.cpp
+	vktRasterizationOrderAttachmentAccessTests.hpp
 	)
 
 set(DEQP_VK_RASTERIZATION_LIBS

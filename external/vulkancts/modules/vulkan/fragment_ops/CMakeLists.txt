@@ -8,12 +8,16 @@ set(DEQP_VK_FRAGMENT_OPS_SRCS
 	vktFragmentOperationsEarlyFragmentTests.hpp
 	vktFragmentOperationsMakeUtil.cpp
 	vktFragmentOperationsMakeUtil.hpp
+	vktFragmentOperationsOcclusionQueryTests.cpp
+	vktFragmentOperationsOcclusionQueryTests.hpp
 	vktFragmentOperationsScissorMultiViewportTests.cpp
 	vktFragmentOperationsScissorMultiViewportTests.hpp
 	vktFragmentOperationsScissorTests.cpp
 	vktFragmentOperationsScissorTests.hpp
 	vktFragmentOperationsTests.cpp
 	vktFragmentOperationsTests.hpp
+	vktFragmentOperationsTransientAttachmentTests.cpp
+	vktFragmentOperationsTransientAttachmentTests.hpp
 	)
 
 set(DEQP_VK_FRAGMENT_OPS_LIBS

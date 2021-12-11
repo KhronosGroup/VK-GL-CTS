@@ -814,7 +814,7 @@ struct Resource
 			}
 		}
 
-		return tcu::nothing<deUint32>();
+		return tcu::Nothing;
 	}
 };
 
@@ -1846,7 +1846,7 @@ public:
 	{
 		if (lastBindingIsUnbounded())
 			return tcu::just(static_cast<deUint32>(bindings.back()->size()));
-		return tcu::nothing<deUint32>();
+		return tcu::Nothing;
 	}
 
 	// Check if the set contains a descriptor type of the given type at the given iteration.
@@ -2315,7 +2315,7 @@ void MutableTypesTest::initPrograms (vk::SourceCollections& programCollection) c
 			DE_ASSERT(!isArray || isUnbounded || bindingSize <= static_cast<size_t>(std::numeric_limits<deInt32>::max()));
 
 			const auto arraySize = (isArray ? (isUnbounded ? tcu::just(deInt32{-1}) : tcu::just(static_cast<deInt32>(bindingSize)))
-			                                : tcu::nothing<deInt32>());
+			                                : tcu::Nothing);
 
 			shader << binding->glslDeclarations(iter, 0u, static_cast<deUint32>(bindingIdx), inputAttachmentCount, arraySize);
 
@@ -2337,7 +2337,7 @@ void MutableTypesTest::initPrograms (vk::SourceCollections& programCollection) c
 		{
 			const auto binding = m_params.descriptorSet->getBinding(bindingIdx);
 			const auto idx32 = static_cast<deUint32>(bindingIdx);
-			shader << binding->glslCheckStatements(iter, 0u, idx32, getDescriptorNumericValue(iter, idx32), tcu::nothing<deUint32>(), usePushConstants);
+			shader << binding->glslCheckStatements(iter, 0u, idx32, getDescriptorNumericValue(iter, idx32), tcu::Nothing, usePushConstants);
 		}
 
 		shader

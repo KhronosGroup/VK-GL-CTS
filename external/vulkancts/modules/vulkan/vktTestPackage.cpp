@@ -499,6 +499,7 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 
 	// Amber GLSL tests.
 	glslTests->addChild(cts_amber::createCombinedOperationsGroup		(testCtx));
+	glslTests->addChild(cts_amber::createCrashTestGroup					(testCtx));
 }
 
 // TestPackage

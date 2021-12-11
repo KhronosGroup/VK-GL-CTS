@@ -112,7 +112,7 @@ public:
 															   , m_patchControlPoints		(1u)
 															   , m_blendEnable				(false)
 															   , m_primitiveTopology		(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-															   , m_tessellationDomainOrigin	(tcu::nothing<vk::VkTessellationDomainOrigin>()) {}
+															   , m_tessellationDomainOrigin	(tcu::Nothing) {}
 
 	GraphicsPipelineBuilder&	setRenderSize					(const tcu::IVec2& size) { m_renderSize = size; return *this; }
 	GraphicsPipelineBuilder&	setShader						(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkShaderStageFlagBits stage, const vk::ProgramBinary& binary, const vk::VkSpecializationInfo* specInfo);

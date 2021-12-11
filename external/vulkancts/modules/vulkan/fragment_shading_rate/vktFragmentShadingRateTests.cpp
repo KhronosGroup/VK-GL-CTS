@@ -25,6 +25,7 @@
 #include "vktFragmentShadingRateTests.hpp"
 #include "vktFragmentShadingRateBasic.hpp"
 #include "vktFragmentShadingRatePixelConsistency.hpp"
+#include "vktAttachmentRateTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "tcuTestLog.hpp"
@@ -426,6 +427,7 @@ void createMiscTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup)
 void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, bool useDynamicRendering)
 {
 	createBasicTests(testCtx, group, useDynamicRendering);
+	createAttachmentRateTests(testCtx, group, useDynamicRendering);
 
 	if (!useDynamicRendering)
 	{

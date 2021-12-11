@@ -750,21 +750,40 @@ void submitDummySignalAndGetFenceNative (	const vk::DeviceInterface&					vk,
 	VK_CHECK(vk.queueWaitIdle(queue));
 }
 
-tcu::TestStatus testSemaphoreQueries (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBits externalType)
+struct TestSemaphoreQueriesParameters
 {
-	const CustomInstance				instance		(createTestInstance(context, externalType, 0u, 0u));
+	vk::VkSemaphoreType							semaphoreType;
+	vk::VkExternalSemaphoreHandleTypeFlagBits	externalType;
+
+	TestSemaphoreQueriesParameters (vk::VkSemaphoreType							semaphoreType_,
+									vk::VkExternalSemaphoreHandleTypeFlagBits	externalType_)
+		: semaphoreType	(semaphoreType_)
+		, externalType	(externalType_)
+	{}
+};
+
+tcu::TestStatus testSemaphoreQueries (Context& context, const TestSemaphoreQueriesParameters params)
+{
+	const CustomInstance				instance		(createTestInstance(context, params.externalType, 0u, 0u));
 	const vk::InstanceDriver&			vki				(instance.getDriver());
 	const vk::VkPhysicalDevice			device			(vk::chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
 
 	TestLog&							log				= context.getTestContext().getLog();
 
-	const vk::VkPhysicalDeviceExternalSemaphoreInfo	info		=
+	const vk::VkSemaphoreTypeCreateInfo				semaphoreTypeInfo	=
+	{
+		vk::VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+		DE_NULL,
+		params.semaphoreType,
+		0,
+	};
+	const vk::VkPhysicalDeviceExternalSemaphoreInfo	info				=
 	{
 		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO,
-		DE_NULL,
-		externalType
+		&semaphoreTypeInfo,
+		params.externalType
 	};
-	vk::VkExternalSemaphoreProperties				properties	=
+	vk::VkExternalSemaphoreProperties				properties			=
 	{
 		vk::VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES,
 		DE_NULL,
@@ -778,6 +797,15 @@ tcu::TestStatus testSemaphoreQueries (Context& context, vk::VkExternalSemaphoreH
 
 	TCU_CHECK(properties.pNext == DE_NULL);
 	TCU_CHECK(properties.sType == vk::VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES);
+
+	if (params.semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE)
+	{
+		if (properties.compatibleHandleTypes & vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT)
+			return tcu::TestStatus::fail("Timeline semaphores are not compatible with SYNC_FD");
+
+		if (properties.exportFromImportedHandleTypes & vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT)
+			return tcu::TestStatus::fail("Timeline semaphores imported from SYNC_FD");
+	}
 
 	return tcu::TestStatus::pass("Pass");
 }
@@ -4352,10 +4380,24 @@ de::MovePtr<tcu::TestCaseGroup> createSemaphoreTests (tcu::TestContext& testCtx,
 		{ "temporary", PERMANENCE_TEMPORARY	},
 		{ "permanent", PERMANENCE_PERMANENT	}
 	};
+	const struct
+	{
+		const char* const	name;
+		vk::VkSemaphoreType	type;
+	} semaphoreTypes[] =
+	{
+		{ "binary",		vk::VK_SEMAPHORE_TYPE_BINARY },
+		{ "timeline",	vk::VK_SEMAPHORE_TYPE_TIMELINE },
+	};
 
 	de::MovePtr<tcu::TestCaseGroup> semaphoreGroup (new tcu::TestCaseGroup(testCtx, externalSemaphoreTypeToName(externalType), externalSemaphoreTypeToName(externalType)));
 
-	addFunctionCase(semaphoreGroup.get(), "info",	"Test external semaphore queries.",	testSemaphoreQueries,	externalType);
+	for (size_t semaphoreTypeIdx = 0; semaphoreTypeIdx < DE_LENGTH_OF_ARRAY(permanences); semaphoreTypeIdx++)
+	{
+		addFunctionCase(semaphoreGroup.get(), std::string("info_") + semaphoreTypes[semaphoreTypeIdx].name,
+						"Test external semaphore queries.",	testSemaphoreQueries,
+						TestSemaphoreQueriesParameters(semaphoreTypes[semaphoreTypeIdx].type, externalType));
+	}
 
 	for (size_t permanenceNdx = 0; permanenceNdx < DE_LENGTH_OF_ARRAY(permanences); permanenceNdx++)
 	{

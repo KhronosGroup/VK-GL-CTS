@@ -64,7 +64,6 @@ using tcu::Vec4;
 
 using tcu::Maybe;
 using tcu::just;
-using tcu::nothing;
 
 using tcu::ConstPixelBufferAccess;
 using tcu::PixelBufferAccess;

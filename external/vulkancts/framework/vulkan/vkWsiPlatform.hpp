@@ -54,7 +54,7 @@ class Display
 public:
 	virtual				~Display		(void) {}
 
-	virtual Window*		createWindow	(const tcu::Maybe<tcu::UVec2>& initialSize = tcu::nothing<tcu::UVec2>()) const = 0;
+	virtual Window*		createWindow	(const tcu::Maybe<tcu::UVec2>& initialSize = tcu::Nothing) const = 0;
 
 protected:
 						Display			(void) {}

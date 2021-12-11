@@ -351,7 +351,7 @@ By default the CTS package will contain libdeqp.so built for `armeabi-v7a`, `arm
 To pick which ABI to use at install time, following commands must be used
 instead:
 
-	adb install --abi <ABI name> <build root>/Khronos-CTS.apk /data/local/tmp/Khronos-CTS.apk
+	adb install -g --abi <ABI name> <build root>/Khronos-CTS.apk /data/local/tmp/Khronos-CTS.apk
 
 Porting
 ------------------------

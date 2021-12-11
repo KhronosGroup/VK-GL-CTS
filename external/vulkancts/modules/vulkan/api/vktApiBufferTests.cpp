@@ -658,6 +658,20 @@ void createBufferUsageCases (tcu::TestCaseGroup& testGroup, const deUint32 first
 	}
 }
 
+tcu::TestStatus testDepthStencilBufferFeatures(Context& context, VkFormat format)
+{
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	VkPhysicalDevice			physicalDevice	= context.getPhysicalDevice();
+	VkFormatProperties			formatProperties;
+
+	vki.getPhysicalDeviceFormatProperties(physicalDevice, format, &formatProperties);
+
+	if (formatProperties.bufferFeatures == 0x0)
+		return tcu::TestStatus::pass("Pass");
+	else
+		return tcu::TestStatus::fail("Fail");
+}
+
 struct LargeBufferParameters
 {
 	deUint64				bufferSize;
@@ -766,6 +780,30 @@ void checkMaintenance4Support(Context& context, LargeBufferParameters params)
 							0u
 						});
 		buffersTests->addChild(basicTests.release());
+	}
+
+	{
+		static const VkFormat dsFormats[] =
+		{
+			VK_FORMAT_S8_UINT,
+			VK_FORMAT_D16_UNORM,
+			VK_FORMAT_D16_UNORM_S8_UINT,
+			VK_FORMAT_D24_UNORM_S8_UINT,
+			VK_FORMAT_D32_SFLOAT,
+			VK_FORMAT_D32_SFLOAT_S8_UINT,
+			VK_FORMAT_X8_D24_UNORM_PACK32
+		};
+
+		de::MovePtr<tcu::TestCaseGroup>	invalidBufferFeatures(new tcu::TestCaseGroup(testCtx, "invalid_buffer_features", "Checks that drivers are not exposing undesired format features for depth/stencil formats."));
+
+		for (const auto& testFormat : dsFormats)
+		{
+			std::string formatName = de::toLower(getFormatName(testFormat));
+
+			addFunctionCase(invalidBufferFeatures.get(), formatName, formatName, testDepthStencilBufferFeatures, testFormat);
+		}
+
+		buffersTests->addChild(invalidBufferFeatures.release());
 	}
 
 	return buffersTests.release();

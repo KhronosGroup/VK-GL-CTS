@@ -195,10 +195,10 @@ void getDefaultBuiltInResources (TBuiltInResource* builtin)
 	builtin->maxSamples									= 4;
 	builtin->maxMeshOutputVerticesNV					= 256;
 	builtin->maxMeshOutputPrimitivesNV					= 256;
-	builtin->maxMeshWorkGroupSizeX_NV					= 32;
+	builtin->maxMeshWorkGroupSizeX_NV					= 256;
 	builtin->maxMeshWorkGroupSizeY_NV					= 1;
 	builtin->maxMeshWorkGroupSizeZ_NV					= 1;
-	builtin->maxTaskWorkGroupSizeX_NV					= 32;
+	builtin->maxTaskWorkGroupSizeX_NV					= 1024;
 	builtin->maxTaskWorkGroupSizeY_NV					= 1;
 	builtin->maxTaskWorkGroupSizeZ_NV					= 1;
 	builtin->maxMeshViewCountNV							= 4;

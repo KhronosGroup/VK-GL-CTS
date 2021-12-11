@@ -692,7 +692,7 @@ const vector<PresentAndWaitOps> PresentIdInterleavedInstance::sequence =
 		{	// presentOps vector
 			{ tcu::just<deUint64>(0),							tcu::just(vk::VK_SUCCESS) },
 			{ tcu::just<deUint64>(1),							tcu::just(vk::VK_SUCCESS) },
-			{ tcu::nothing<deUint64>(),							tcu::just(vk::VK_SUCCESS) },
+			{ tcu::Nothing,										tcu::just(vk::VK_SUCCESS) },
 			{ tcu::just(std::numeric_limits<deUint64>::max()),	tcu::just(vk::VK_SUCCESS) },
 		},
 		{	// waitOps vector
@@ -759,7 +759,7 @@ const vector<PresentAndWaitOps> PresentWaitPastFrameInstance::sequence =
 	// Submit some frames without id after having used the maximum value. This should also work.
 	{ // PresentAndWaitOps
 		{	// presentOps vector
-			{ tcu::nothing<deUint64>(),	tcu::just(vk::VK_SUCCESS) },
+			{ tcu::Nothing,				tcu::just(vk::VK_SUCCESS) },
 			{ tcu::just<deUint64>(0),	tcu::just(vk::VK_SUCCESS) },
 		},
 		{	// waitOps vector
@@ -812,7 +812,7 @@ const vector<PresentAndWaitOps> PresentWaitNoFrameIdInstance::sequence =
 	},
 	{ // PresentAndWaitOps
 		{	// presentOps vector
-			{ tcu::nothing<deUint64>(), tcu::just(vk::VK_SUCCESS) },
+			{ tcu::Nothing, tcu::just(vk::VK_SUCCESS) },
 		},
 		{	// waitOps vector
 			{ 1ull, 0ull,  true },

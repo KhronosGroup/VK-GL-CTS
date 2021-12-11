@@ -86,6 +86,7 @@
 #include "vktSpvAsmTrinaryMinMaxTests.hpp"
 #include "vktSpvAsmTerminateInvocationTests.hpp"
 #include "vktSpvAsmIntegerDotProductTests.hpp"
+#include "vktSpvAsmPhysicalStorageBufferPointerTests.hpp"
 
 #include <cmath>
 #include <limits>
@@ -20699,6 +20700,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createEmptyStructComputeGroup(testCtx));
 	computeTests->addChild(create64bitCompareComputeGroup(testCtx));
 	computeTests->addChild(createOpArrayLengthComputeGroup(testCtx));
+	computeTests->addChild(createPhysicalStorageBufferTestGroup(testCtx));
 
 	graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
 	graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));

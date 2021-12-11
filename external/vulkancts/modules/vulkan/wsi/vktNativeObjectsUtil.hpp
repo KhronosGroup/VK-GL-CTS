@@ -46,7 +46,7 @@ public:
 																 const Extensions&				supportedExtensions,
 																 vk::wsi::Type					wsiType,
 																 size_t							windowCount = 1u,
-																 const tcu::Maybe<tcu::UVec2>&	initialWindowSize = tcu::nothing<tcu::UVec2>());
+																 const tcu::Maybe<tcu::UVec2>&	initialWindowSize = tcu::Nothing);
 
 												NativeObjects	(NativeObjects&& other);
 

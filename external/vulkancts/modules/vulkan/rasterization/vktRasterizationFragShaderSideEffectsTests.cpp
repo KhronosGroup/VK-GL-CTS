@@ -675,7 +675,7 @@ tcu::TestCaseGroup* createFragSideEffectsTests (tcu::TestContext& testCtx)
 
 	const tcu::Vec4		kDefaultClearColor			(0.0f, 0.0f, 0.0f, 1.0f);
 	const tcu::Vec4		kDefaultDrawColor			(0.0f, 0.0f, 1.0f, 1.0f);
-	const auto			kDefaultDepthBoundsParams	= tcu::nothing<DepthBoundsParameters>();
+	const auto			kDefaultDepthBoundsParams	= tcu::Nothing;
 
 	static const struct
 	{
