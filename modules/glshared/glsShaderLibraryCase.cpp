@@ -751,7 +751,7 @@ void ShaderLibraryCase::init (void)
 			requireExtension(m_contextInfo, m_spec, "GL_ARB_ES3_2_compatibility");
 			break;
 		default:
-			DE_ASSERT(!"Unhandled version check");
+			DE_ASSERT(false);
 		}
 	} else {
 		if (!isGLSLVersionSupported(m_renderCtx.getType(), m_spec.targetVersion))
