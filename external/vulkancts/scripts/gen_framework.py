@@ -2387,10 +2387,10 @@ def preprocessTopInclude(src, dir):
 
 if __name__ == "__main__":
 
-	# Script requires output path to which .inl files will be written
-	if len(sys.argv) == 1:
-		sys.exit("Error - output path wasn't specified in argument")
-	outputPath = str(sys.argv[1])
+	outputPath = os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan")
+	# if argument was specified it is interpreted as a path to which .inl files will be written
+	if len(sys.argv) > 1:
+		outputPath = str(sys.argv[1])
 
 	# Generate vulkan headers from vk.xml
 	currentDir			= os.getcwd()

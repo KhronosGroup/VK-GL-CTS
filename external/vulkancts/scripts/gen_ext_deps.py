@@ -29,14 +29,12 @@ import khr_util.format
 from khr_util import registry
 from collections import defaultdict
 
-VK_INL_FILE						= os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "vkApiExtensionDependencyInfo.inl")
 VK_INL_HEADER					= """\
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  */\
 
 """
-
 
 def VK_MAKE_VERSION(major, minor, patch):
 	return (((major) << 22) | ((minor) << 12) | (patch))
@@ -167,12 +165,13 @@ def getExtInfoDict(vkRegistry):
 
 if __name__ == '__main__':
 
-	# script requires output path to which .inl files will be written
-	if len(sys.argv) == 1:
-		sys.exit("Error - output path wasn't specified in argument")
-	outputPath = str(sys.argv[1])
+	currentDir = os.path.dirname(__file__)
+	outputPath = os.path.join(currentDir, "..", "framework", "vulkan")
+	# if argument was specified it is interpreted as a path to which .inl files will be written
+	if len(sys.argv) > 1:
+		outputPath = str(sys.argv[1])
 
-	VULKAN_XML = os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "xml", "vk.xml")
+	VULKAN_XML = os.path.join(currentDir, "..", "..", "vulkan-docs", "src", "xml", "vk.xml")
 	vkRegistry = registry.parse(VULKAN_XML)
 
 	genExtDepInl(genExtDeps(getExtInfoDict(vkRegistry)), os.path.join(outputPath, "vkApiExtensionDependencyInfo.inl"))
