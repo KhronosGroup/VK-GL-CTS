@@ -46,6 +46,8 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageDepthStencilDescriptorTests.hpp
 	vktImageSampleCompressedTextureTests.cpp
 	vktImageSampleCompressedTextureTests.hpp
+	vktImageExtendedUsageBitTests.cpp
+	vktImageExtendedUsageBitTests.cpp
 	)
 
 set(DEQP_VK_IMAGE_LIBS
