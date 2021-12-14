@@ -1119,7 +1119,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 				"#version 460 core\n"
 				"#extension GL_EXT_nonuniform_qualifier : enable\n"
 				"#extension GL_EXT_ray_tracing : require\n"
-				"layout(location = 0) rayPayloadInEXT dummyPayload { vec4 dummy; };\n"
+				"layout(location = 0) rayPayloadInEXT vec3 hitValue;\n"
 				<< pushdecl.str()
 				<< decls.str() <<
 				"void main()\n"
