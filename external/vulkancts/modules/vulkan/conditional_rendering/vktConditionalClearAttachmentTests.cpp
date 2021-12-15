@@ -144,7 +144,7 @@ tcu::TestStatus ConditionalClearAttachmentTest::iterate (void)
 		1u,								// uint32_t    layerCount;
 	};
 
-	m_conditionalBuffer = createConditionalRenderingBuffer(m_context, m_conditionalData);
+	m_conditionalBuffer = createConditionalRenderingBuffer(m_context, m_conditionalData, *m_cmdPool);
 
 	if (m_conditionalData.conditionInSecondaryCommandBuffer)
 	{
