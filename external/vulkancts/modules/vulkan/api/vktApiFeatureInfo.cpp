@@ -212,7 +212,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		{ LIMIT(viewportBoundsRange[0]),							0, 0, 0, -8192.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MAX, -1, false },
 		{ LIMIT(viewportBoundsRange[1]),							0, 0, 0, 8191.0f, LIMIT_FORMAT_FLOAT, LIMIT_TYPE_MIN, -1, false },
 		{ LIMIT(viewportSubPixelBits),								0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1, false },
-		{ LIMIT(minMemoryMapAlignment),								64, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1, false },
+		{ LIMIT(minMemoryMapAlignment),								64, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1, true },
 		{ LIMIT(minTexelBufferOffsetAlignment),						0, 0, 1, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MIN, -1, true },
 		{ LIMIT(minTexelBufferOffsetAlignment),						0, 0, 256, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MAX, -1, true },
 		{ LIMIT(minUniformBufferOffsetAlignment),					0, 0, 1, 0.0f, LIMIT_FORMAT_DEVICE_SIZE, LIMIT_TYPE_MIN, -1, true },
@@ -339,7 +339,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 
 				if (featureLimitTable[ndx].pot)
 				{
-					if (!deIntIsPow2(*((deUint32*)((deUint8*)limits + featureLimitTable[ndx].offset))))
+					if (*((deUint32*)((deUint8*)limits + featureLimitTable[ndx].offset)) == 0 || !deIntIsPow2(*((deUint32*)((deUint8*)limits + featureLimitTable[ndx].offset))))
 					{
 						log << TestLog::Message << "limit Validation failed " << featureLimitTable[ndx].name
 							<< " is not a power of two." << TestLog::EndMessage;
@@ -4128,6 +4128,8 @@ tcu::TestStatus deviceProperties2 (Context& context)
 	const bool khr_descriptor_indexing				= checkExtension(properties, "VK_EXT_descriptor_indexing")				||	context.contextSupports(vk::ApiVersion(1, 2, 0));
 	const bool khr_sampler_filter_minmax			= checkExtension(properties, "VK_EXT_sampler_filter_minmax")			||	context.contextSupports(vk::ApiVersion(1, 2, 0));
 	const bool khr_integer_dot_product				= checkExtension(properties, "VK_KHR_shader_integer_dot_product");
+	const bool khr_texel_buffer_alignment			= checkExtension(properties, "VK_EXT_texel_buffer_alignment");
+	const bool khr_acceleration_structure			= checkExtension(properties, "VK_KHR_acceleration_structure");
 
 	VkPhysicalDeviceIDProperties							idProperties[count];
 	VkPhysicalDeviceMultiviewProperties						multiviewProperties[count];
@@ -4141,6 +4143,8 @@ tcu::TestStatus deviceProperties2 (Context& context)
 	VkPhysicalDeviceDescriptorIndexingProperties			descriptorIndexingProperties[count];
 	VkPhysicalDeviceSamplerFilterMinmaxProperties			samplerFilterMinmaxProperties[count];
 	VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR	integerDotProductProperties[count];
+	VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT		texelBufferAlignmentProperties[count];
+	VkPhysicalDeviceAccelerationStructurePropertiesKHR		accelerationStructureProperties[count];
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
@@ -4156,6 +4160,8 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		deMemset(&descriptorIndexingProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceDescriptorIndexingProperties	));
 		deMemset(&samplerFilterMinmaxProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceSamplerFilterMinmaxProperties	));
 		deMemset(&integerDotProductProperties[ndx],		0xFF*ndx, sizeof(VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR	));
+		deMemset(&texelBufferAlignmentProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT	));
+		deMemset(&accelerationStructureProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceAccelerationStructurePropertiesKHR	));
 
 		idProperties[ndx].sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
 		idProperties[ndx].pNext						= &multiviewProperties[ndx];
@@ -4191,7 +4197,13 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		samplerFilterMinmaxProperties[ndx].pNext	= &integerDotProductProperties[ndx];
 
 		integerDotProductProperties[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR;
-		integerDotProductProperties[ndx].pNext		= DE_NULL;
+		integerDotProductProperties[ndx].pNext		= &texelBufferAlignmentProperties[ndx];
+
+		texelBufferAlignmentProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT;
+		texelBufferAlignmentProperties[ndx].pNext	= &accelerationStructureProperties[ndx];
+
+		accelerationStructureProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR;
+		accelerationStructureProperties[ndx].pNext	= DE_NULL;
 
 		extProperties.pNext							= &idProperties[ndx];
 
@@ -4222,6 +4234,11 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		log << TestLog::Message << samplerFilterMinmaxProperties[0] << TestLog::EndMessage;
 	if (khr_integer_dot_product)
 		log << TestLog::Message << integerDotProductProperties[0] << TestLog::EndMessage;
+	if (khr_texel_buffer_alignment)
+		log << TestLog::Message << texelBufferAlignmentProperties[0] << TestLog::EndMessage;
+	if (khr_acceleration_structure)
+		log << TestLog::Message << accelerationStructureProperties[0] << TestLog::EndMessage;
+
 
 	if ( khr_external_fence_capabilities || khr_external_memory_capabilities || khr_external_semaphore_capabilities )
 	{
@@ -4392,6 +4409,47 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		TCU_FAIL("Mismatch between VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR");
 	}
 
+	if (khr_texel_buffer_alignment)
+	{
+		if (texelBufferAlignmentProperties[0].storageTexelBufferOffsetAlignmentBytes		!= texelBufferAlignmentProperties[1].storageTexelBufferOffsetAlignmentBytes ||
+			texelBufferAlignmentProperties[0].storageTexelBufferOffsetSingleTexelAlignment	!= texelBufferAlignmentProperties[1].storageTexelBufferOffsetSingleTexelAlignment ||
+			texelBufferAlignmentProperties[0].uniformTexelBufferOffsetAlignmentBytes		!= texelBufferAlignmentProperties[1].uniformTexelBufferOffsetAlignmentBytes ||
+			texelBufferAlignmentProperties[0].uniformTexelBufferOffsetSingleTexelAlignment	!= texelBufferAlignmentProperties[1].uniformTexelBufferOffsetSingleTexelAlignment)
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT");
+		}
+
+		if (texelBufferAlignmentProperties[0].storageTexelBufferOffsetAlignmentBytes == 0 || !deIntIsPow2((int)texelBufferAlignmentProperties[0].storageTexelBufferOffsetAlignmentBytes))
+		{
+			TCU_FAIL("limit Validation failed storageTexelBufferOffsetAlignmentBytes is not a power of two.");
+		}
+
+		if (texelBufferAlignmentProperties[0].uniformTexelBufferOffsetAlignmentBytes == 0 || !deIntIsPow2((int)texelBufferAlignmentProperties[0].uniformTexelBufferOffsetAlignmentBytes))
+		{
+			TCU_FAIL("limit Validation failed uniformTexelBufferOffsetAlignmentBytes is not a power of two.");
+		}
+	}
+
+	if (khr_acceleration_structure)
+	{
+		if (accelerationStructureProperties[0].maxGeometryCount												!= accelerationStructureProperties[1].maxGeometryCount ||
+			accelerationStructureProperties[0].maxInstanceCount												!= accelerationStructureProperties[1].maxInstanceCount ||
+			accelerationStructureProperties[0].maxPrimitiveCount											!= accelerationStructureProperties[1].maxPrimitiveCount ||
+			accelerationStructureProperties[0].maxPerStageDescriptorAccelerationStructures					!= accelerationStructureProperties[1].maxPerStageDescriptorAccelerationStructures ||
+			accelerationStructureProperties[0].maxPerStageDescriptorUpdateAfterBindAccelerationStructures	!= accelerationStructureProperties[1].maxPerStageDescriptorUpdateAfterBindAccelerationStructures ||
+			accelerationStructureProperties[0].maxDescriptorSetAccelerationStructures						!= accelerationStructureProperties[1].maxDescriptorSetAccelerationStructures ||
+			accelerationStructureProperties[0].maxDescriptorSetUpdateAfterBindAccelerationStructures		!= accelerationStructureProperties[1].maxDescriptorSetUpdateAfterBindAccelerationStructures ||
+			accelerationStructureProperties[0].minAccelerationStructureScratchOffsetAlignment				!= accelerationStructureProperties[1].minAccelerationStructureScratchOffsetAlignment)
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceAccelerationStructurePropertiesKHR");
+		}
+
+		if (accelerationStructureProperties[0].minAccelerationStructureScratchOffsetAlignment == 0 || !deIntIsPow2(accelerationStructureProperties[0].minAccelerationStructureScratchOffsetAlignment))
+		{
+			TCU_FAIL("limit Validation failed minAccelerationStructureScratchOffsetAlignment is not a power of two.");
+		}
+	}
+
 	if (isExtensionSupported(properties, RequiredExtension("VK_KHR_push_descriptor")))
 	{
 		VkPhysicalDevicePushDescriptorPropertiesKHR		pushDescriptorProperties[count];
@@ -4515,6 +4573,11 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		if (portabilitySubsetProperties[0].minVertexInputBindingStrideAlignment != portabilitySubsetProperties[1].minVertexInputBindingStrideAlignment)
 		{
 			TCU_FAIL("Mismatch between VkPhysicalDevicePortabilitySubsetPropertiesKHR");
+		}
+
+		if (portabilitySubsetProperties[0].minVertexInputBindingStrideAlignment == 0 || !deIntIsPow2(portabilitySubsetProperties[0].minVertexInputBindingStrideAlignment))
+		{
+			TCU_FAIL("limit Validation failed minVertexInputBindingStrideAlignment is not a power of two.");
 		}
 	}
 
