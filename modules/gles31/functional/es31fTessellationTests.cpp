@@ -1640,7 +1640,7 @@ void CommonEdgeCase::init (void)
 														"	gl_TessLevelOuter[1] = 1.0 + 59.0 * 0.5 * (in_tc_tessParam[1] + in_tc_tessParam[0]);\n"
 														"	gl_TessLevelOuter[2] = 1.0 + 59.0 * 0.5 * (in_tc_tessParam[3] + in_tc_tessParam[1]);\n"
 														"	gl_TessLevelOuter[3] = 1.0 + 59.0 * 0.5 * (in_tc_tessParam[2] + in_tc_tessParam[3]);\n"
-													  : DE_NULL) +
+													  : deFatalStr("Invalid TessPrimitiveType")) +
 												 "}\n");
 
 	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
@@ -1674,11 +1674,11 @@ void CommonEdgeCase::init (void)
 															"	highp vec2 c = (1.0-gl_TessCoord.x)*(    gl_TessCoord.y)*in_te_position[2];\n"
 															"	highp vec2 d = (    gl_TessCoord.x)*(    gl_TessCoord.y)*in_te_position[3];\n"
 															"	highp vec2 pos = a+b+c+d;\n"
-														 : DE_NULL) +
+														 : deFatalStr("Invalid CaseType")) +
 														"\n"
 														"	highp float f = sqrt(1.0 - 2.0 * max(abs(gl_TessCoord.x - 0.5), abs(gl_TessCoord.y - 0.5)))*0.5 + 0.5;\n"
 														"	in_f_color = vec4(0.1, gl_TessCoord.xy*f, 1.0);\n"
-													  : DE_NULL) +
+													  : deFatalStr("Invalid TessPrimitiveType")) +
 													 "\n"
 													 "	// Offset the position slightly, based on the parity of the bits in the float representation.\n"
 													 "	// This is done to detect possible small differences in edge vertex positions between patches.\n"
@@ -5742,7 +5742,7 @@ string UserDefinedIOCase::glslTraverseBasicTypes (const string&			rootName,
 	else
 	{
 		DE_ASSERT(false);
-		return DE_NULL;
+		return "";
 	}
 }
 
@@ -5861,7 +5861,7 @@ string UserDefinedIOCase::Variable::basicSubobjectAtIndex (int subobjectIndex, i
 		currentIndex++;
 	}
 	DE_ASSERT(false);
-	return DE_NULL;
+	return "";
 }
 
 string UserDefinedIOCase::IOBlock::basicSubobjectAtIndex (int subobjectIndex, int arraySize) const
@@ -5883,7 +5883,7 @@ string UserDefinedIOCase::IOBlock::basicSubobjectAtIndex (int subobjectIndex, in
 		}
 	}
 	DE_ASSERT(false);
-	return DE_NULL;
+	return "";
 }
 
 // Used as the 'visit' argument for glslTraverseBasicTypes.
@@ -5969,7 +5969,7 @@ void UserDefinedIOCase::init (void)
 	const string		vertexAttrArrayInputSize	= m_vertexIOArraySize == VERTEX_IO_ARRAY_SIZE_IMPLICIT					? ""
 													: m_vertexIOArraySize == VERTEX_IO_ARRAY_SIZE_EXPLICIT_SHADER_BUILTIN	? "gl_MaxPatchVertices"
 													: m_vertexIOArraySize == VERTEX_IO_ARRAY_SIZE_EXPLICIT_QUERY			? de::toString(m_context.getContextInfo().getInt(GL_MAX_PATCH_VERTICES))
-													: DE_NULL;
+													: deFatalStr("Invalid VertexIOArraySize");
 
 	const char* const	maybePatch					= isPerPatchIO ? "patch " : "";
 	const string		outMaybePatch				= string() + maybePatch + "out ";
