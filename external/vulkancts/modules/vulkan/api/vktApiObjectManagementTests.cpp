@@ -37,6 +37,7 @@
 #include "vkAllocationCallbackUtil.hpp"
 #include "vkObjTypeImpl.inl"
 #include "vkObjUtil.hpp"
+#include "vkBuilderUtil.hpp"
 #include "vkSafetyCriticalUtil.hpp"
 
 #include "vktTestGroupUtil.hpp"
@@ -1424,8 +1425,51 @@ struct PipelineCache
 		return getSafeObjectCount<PipelineCache>(context, params, MAX_CONCURRENT_PIPELINE_CACHES);
 	}
 
+	static void initPrograms(SourceCollections& dst, Parameters)
+	{
+		ShaderModule::initPrograms(dst, ShaderModule::Parameters(VK_SHADER_STAGE_COMPUTE_BIT, "comp"));
+	}
+
 	static Move<VkPipelineCache> create (const Environment& env, const Resources&, const Parameters&)
 	{
+#ifdef CTS_USES_VULKANSC
+		// creating dummy compute pipeline to ensure pipeline cache is not empty
+		if (!env.commandLine.isSubProcess())
+		{
+			const Unique<VkShaderModule>			shaderModule				(createShaderModule(env.vkd, env.device, env.programBinaries.get("comp"), 0u));
+
+			const Move<VkDescriptorSetLayout>		descriptorSetLayout			(DescriptorSetLayoutBuilder()
+																					.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+																					.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+																					.build(env.vkd, env.device));
+
+			const Move<VkPipelineLayout>			pipelineLayout				(makePipelineLayout(env.vkd, env.device, *descriptorSetLayout));
+
+			const VkPipelineShaderStageCreateInfo	stageCreateInfo				=
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,			// VkStructureType                     sType;
+				DE_NULL,														// const void*                         pNext;
+				0u,																// VkPipelineShaderStageCreateFlags    flags;
+				VK_SHADER_STAGE_COMPUTE_BIT,									// VkShaderStageFlagBits               stage;
+				*shaderModule,													// VkShaderModule                      module;
+				"main",															// const char*                         pName;
+				DE_NULL,														// const VkSpecializationInfo*         pSpecializationInfo;
+			};
+
+			const VkComputePipelineCreateInfo		pipelineInfo				=
+			{
+				VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,					// VkStructureType					sType
+				DE_NULL,														// const void*						pNext
+				(VkPipelineCreateFlags)0,										// VkPipelineCreateFlags			flags
+				stageCreateInfo,												// VkPipelineShaderStageCreateInfo	stage
+				*pipelineLayout,												// VkPipelineLayout					layout
+				DE_NULL,														// VkPipeline						basePipelineHandle
+				0u																// deInt32							basePipelineIndex
+			};
+
+			Move<VkPipeline>						pipeline					= createComputePipeline(env.vkd, env.device, DE_NULL, &pipelineInfo);
+		}
+#endif // CTS_USES_VULKANSC
 		const VkPipelineCacheCreateInfo	pipelineCacheInfo	=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,				// VkStructureType				sType;
@@ -1770,6 +1814,11 @@ struct GraphicsPipeline
 
 	static void initPrograms (SourceCollections& dst, Parameters)
 	{
+#ifdef CTS_USES_VULKANSC
+		// Pipeline cache dependency uses compute shader to ensure that pipeline cache is not empty in subprocess.
+		// We have to add this shader even if we don't plan to use it later in any *.graphics_pipeline test
+		ShaderModule::initPrograms(dst, ShaderModule::Parameters(VK_SHADER_STAGE_COMPUTE_BIT, "comp"));
+#endif // CTS_USES_VULKANSC
 		ShaderModule::initPrograms(dst, ShaderModule::Parameters(VK_SHADER_STAGE_VERTEX_BIT, "vert"));
 		ShaderModule::initPrograms(dst, ShaderModule::Parameters(VK_SHADER_STAGE_FRAGMENT_BIT, "frag"));
 	}
@@ -3368,7 +3417,11 @@ static void createTests (tcu::TestCaseGroup* group, CaseDescriptions cases)
 	addCases			(group, cases.queryPool);
 	addCases			(group, cases.sampler);
 	addCasesWithProgs	(group, cases.shaderModule);
+#ifndef CTS_USES_VULKANSC
 	addCases			(group, cases.pipelineCache);
+#else
+	addCasesWithProgs	(group, cases.pipelineCache);
+#endif // CTS_USES_VULKANSC
 	addCases			(group, cases.pipelineLayout);
 	addCases			(group, cases.renderPass);
 	addCasesWithProgs	(group, cases.graphicsPipeline);
@@ -3736,8 +3789,13 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	const CaseDescriptions	s_multithreadedCreateSharedResourcesGroup	=
 	{
 		EMPTY_CASE_DESC(Instance),
+#ifndef CTS_USES_VULKANSC
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<Device>,					s_deviceCases,				DE_NULL),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<DeviceGroup>,				s_deviceGroupCases,			DE_NULL),
+#else
+		EMPTY_CASE_DESC(Device),
+		EMPTY_CASE_DESC(DeviceGroup),
+#endif
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<DeviceMemory>,				s_deviceMemCases,			DE_NULL),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<Buffer>,					s_bufferCases,				DE_NULL),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<BufferView>,				s_bufferViewCases,			DE_NULL),

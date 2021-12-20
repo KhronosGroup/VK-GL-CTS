@@ -356,6 +356,9 @@ Bugfixes to the tests are allowed. Before being used for a submission,
 bugfixes must be accepted and merged into the CTS repository.
 `git cherry-pick` is strongly recommended as a method of applying bug fixes.
 
+If command line parameter --deqp-subprocess-cfg-file was used then the file
+pointed by this parameter must also be added to submission package.
+
 Other changes must be accompanied by a waiver (see below).
 
 NOTE: When cherry-picking patches on top of release tag, please use `git cherry-pick -x`

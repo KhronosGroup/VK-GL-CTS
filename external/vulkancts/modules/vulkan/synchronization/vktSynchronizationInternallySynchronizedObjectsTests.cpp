@@ -75,14 +75,35 @@ using de::Mutex;
 using de::Thread;
 using de::clamp;
 
-enum {EXECUTION_PER_THREAD = 100, BUFFER_ELEMENT_COUNT = 16, BUFFER_SIZE = BUFFER_ELEMENT_COUNT*4 };
+template<typename T>
+inline SharedPtr<Move<T> > makeVkSharedPtr(Move<T> move)
+{
+	return SharedPtr<Move<T> >(new Move<T>(move));
+}
+
+#ifndef CTS_USES_VULKANSC
+enum
+{
+	EXECUTION_PER_THREAD	= 100,
+	BUFFER_ELEMENT_COUNT	= 16,
+	BUFFER_SIZE				= BUFFER_ELEMENT_COUNT*4
+};
+#else
+enum
+{
+	EXECUTION_PER_THREAD	= 10,
+	BUFFER_ELEMENT_COUNT	= 16,
+	BUFFER_SIZE				= BUFFER_ELEMENT_COUNT*4
+};
+#endif // CTS_USES_VULKANSC
 
 class MultiQueues
 {
 	typedef struct QueueType
 	{
-		vector<VkQueue>	queues;
-		vector<bool>	available;
+		vector<VkQueue>							queues;
+		vector<bool>							available;
+		vector<SharedPtr<Move<VkCommandPool>>>	commandPools;
 	} Queues;
 
 public:
@@ -94,13 +115,14 @@ public:
 		temp.available.insert(it, count, false);
 
 		temp.queues.resize(count);
+
 		m_queues[queueFamilyIndex] = temp;
 	}
 
-	const deUint32& getQueueFamilyIndex		(const int index)
+	deUint32 getQueueFamilyIndex (const int index) const
 	{
-		map<deUint32,Queues>::iterator it = m_queues.begin();
-		advance (it, index);
+		map<deUint32,Queues>::const_iterator it = begin(m_queues);
+		std::advance(it, index);
 		return it->first;
 	}
 
@@ -109,14 +131,14 @@ public:
 		return m_queues.size();
 	}
 
-	Queues &		getQueues				(const int index)
+	Queues &		getQueues				(int index)
 	{
 		map<deUint32,Queues>::iterator it = m_queues.begin();
 		advance (it, index);
 		return it->second;
 	}
 
-	bool			getFreeQueue			(deUint32& returnQueueFamilyIndex, VkQueue& returnQueues, int& returnQueueIndex)
+	bool			getFreeQueue			(const DeviceInterface& vk, const VkDevice device, deUint32& returnQueueFamilyIndex, VkQueue& returnQueues, Move<VkCommandBuffer>& commandBuffer, int& returnQueueIndex)
 	{
 		for (int queueFamilyIndexNdx = 0 ; queueFamilyIndexNdx < static_cast<int>(m_queues.size()); ++queueFamilyIndexNdx)
 		{
@@ -129,6 +151,7 @@ public:
 					queue.available[queueNdx]	= false;
 					returnQueueFamilyIndex		= getQueueFamilyIndex(queueFamilyIndexNdx);
 					returnQueues				= queue.queues[queueNdx];
+					commandBuffer				= makeCommandBuffer(vk, device, queue.commandPools[queueNdx]->get());
 					returnQueueIndex			= queueNdx;
 					m_mutex.unlock();
 					return true;
@@ -176,7 +199,6 @@ protected:
 #endif // CTS_USES_VULKANSC
 	map<deUint32,Queues>			m_queues;
 	Mutex							m_mutex;
-
 };
 
 MovePtr<Allocator> createAllocator (const Context& context, const VkDevice& device)
@@ -321,6 +343,7 @@ MovePtr<MultiQueues> createQueues (Context& context, const VkQueueFlags& queueFl
 		{
 			vk.getDeviceQueue(queues.getDevice(), queues.getQueueFamilyIndex(queueFamilyIndex), queueReqNdx, &queues.getQueues(queueFamilyIndex).queues[queueReqNdx]);
 			queues.getQueues(queueFamilyIndex).available[queueReqNdx]=true;
+			queues.getQueues(queueFamilyIndex).commandPools.push_back(makeVkSharedPtr(createCommandPool(vk, queues.getDevice(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex)));
 		}
 	}
 
@@ -337,7 +360,8 @@ TestStatus executeComputePipeline (const Context& context, const VkPipeline& pip
 	deUint32						queueFamilyIndex;
 	VkQueue							queue;
 	int								queueIndex;
-	while(!queues.getFreeQueue(queueFamilyIndex, queue, queueIndex)){}
+	Move<VkCommandBuffer>			cmdBuffer;
+	while(!queues.getFreeQueue(vk, device, queueFamilyIndex, queue, cmdBuffer, queueIndex)){}
 
 	{
 		const Unique<VkDescriptorPool>	descriptorPool		(DescriptorPoolBuilder()
@@ -345,8 +369,6 @@ TestStatus executeComputePipeline (const Context& context, const VkPipeline& pip
 																.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 		Buffer							resultBuffer		(vk, device, *queues.m_allocator, makeBufferCreateInfo(BUFFER_SIZE, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 		const VkBufferMemoryBarrier		bufferBarrier		= makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *resultBuffer, 0ull, BUFFER_SIZE);
-		const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-		const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
 
 		{
 			const Allocation& alloc = resultBuffer.getAllocation();
@@ -412,7 +434,8 @@ TestStatus executeGraphicPipeline (const Context& context, const VkPipeline& pip
 	deUint32						queueFamilyIndex;
 	VkQueue							queue;
 	int								queueIndex;
-	while(!queues.getFreeQueue(queueFamilyIndex, queue, queueIndex)){}
+	Move<VkCommandBuffer>			cmdBuffer;
+	while (!queues.getFreeQueue(vk, device, queueFamilyIndex, queue, cmdBuffer, queueIndex)) {}
 
 	{
 		const Unique<VkDescriptorPool>	descriptorPool				(DescriptorPoolBuilder()
@@ -429,8 +452,6 @@ TestStatus executeGraphicPipeline (const Context& context, const VkPipeline& pip
 																		MemoryRequirement::Any));
 		Move<VkImageView>				colorAttachmentView			= makeImageView(vk, device, **colorAttachmentImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorImageSubresourceRange);
 		Move<VkFramebuffer>				framebuffer					= makeFramebuffer(vk, device, renderPass, *colorAttachmentView, colorImageExtent.width, colorImageExtent.height);
-		const Unique<VkCommandPool>		cmdPool						(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-		const Unique<VkCommandBuffer>	cmdBuffer					(makeCommandBuffer(vk, device, *cmdPool));
 		const VkDescriptorBufferInfo	outputBufferDescriptorInfo	= makeDescriptorBufferInfo(*resultBuffer, 0ull, BUFFER_SIZE);
 
 		DescriptorSetUpdateBuilder()
@@ -496,7 +517,6 @@ TestStatus executeGraphicPipeline (const Context& context, const VkPipeline& pip
 		return TestStatus::pass("Passed");
 	}
 }
-
 
 class ThreadGroupThread : private Thread
 {
@@ -708,7 +728,11 @@ public:
 																	};
 		Move<VkPipelineCache>					pipelineCache		= createPipelineCache(vk, device, &pipelineCacheInfo);
 		Move<VkPipeline>						pipeline			= createComputePipeline(vk, device, *pipelineCache, &pipelineInfo[0]);
+#ifndef CTS_USES_VULKANSC
 		const deUint32							numThreads			= clamp(deGetNumAvailableLogicalCores(), 4u, 32u);
+#else
+		const deUint32							numThreads			= 2u;
+#endif // CTS_USES_VULKANSC
 		ThreadGroup								threads;
 
 		executeComputePipeline(m_context, *pipeline, *pipelineLayout, *descriptorSetLayout, *queues, m_shadersExecutions[0]);
@@ -833,7 +857,11 @@ public:
 																		};
 		Move<VkPipelineCache>					pipelineCache			= createPipelineCache(vk, device, &pipelineCacheInfo);
 		Move<VkPipeline>						pipeline				= createGraphicsPipeline(vk, device, *pipelineCache, &pipelineInfo[0]);
+#ifndef CTS_USES_VULKANSC
 		const deUint32							numThreads				= clamp(deGetNumAvailableLogicalCores(), 4u, 32u);
+#else
+		const deUint32							numThreads				= 2u;
+#endif // CTS_USES_VULKANSC
 		ThreadGroup								threads;
 
 		executeGraphicPipeline(m_context, *pipeline, *pipelineLayout, *descriptorSetLayout, *queues, *renderPass, m_shadersExecutions[0]);
