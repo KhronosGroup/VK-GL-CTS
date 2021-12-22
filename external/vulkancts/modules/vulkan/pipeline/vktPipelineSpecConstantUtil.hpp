@@ -36,30 +36,6 @@ namespace vkt
 namespace pipeline
 {
 
-class GraphicsPipelineBuilder
-{
-public:
-														GraphicsPipelineBuilder			(void) : m_renderSize		(16, 16)
-																							   , m_shaderStageFlags	(0u) {}
-
-	GraphicsPipelineBuilder&							setRenderSize					(const tcu::IVec2& size) { m_renderSize = size; return *this; }
-	GraphicsPipelineBuilder&							setShader						(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkShaderStageFlagBits stage, const vk::ProgramBinary& binary, const vk::VkSpecializationInfo* specInfo);
-	vk::Move<vk::VkPipeline>							build							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkRenderPass renderPass);
-
-private:
-	tcu::IVec2											m_renderSize;
-	vk::Move<vk::VkShaderModule>						m_vertexShaderModule;
-	vk::Move<vk::VkShaderModule>						m_fragmentShaderModule;
-	vk::Move<vk::VkShaderModule>						m_geometryShaderModule;
-	vk::Move<vk::VkShaderModule>						m_tessControlShaderModule;
-	vk::Move<vk::VkShaderModule>						m_tessEvaluationShaderModule;
-	std::vector<vk::VkPipelineShaderStageCreateInfo>	m_shaderStages;
-	vk::VkShaderStageFlags								m_shaderStageFlags;
-
-														GraphicsPipelineBuilder			(const GraphicsPipelineBuilder&); // "deleted"
-	GraphicsPipelineBuilder&							operator=						(const GraphicsPipelineBuilder&);
-};
-
 enum FeatureFlagBits
 {
 	FEATURE_TESSELLATION_SHADER					= 1u << 0,

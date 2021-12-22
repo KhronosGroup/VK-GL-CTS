@@ -1156,7 +1156,7 @@ void PipelineLibraryTestCase::checkSupport (Context& context) const
 	{
 		context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
 
-		const VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT& graphicsPipelineLibraryFeaturesEXT	= context.getGraphicsPipelineLibraryFeaturesEXT();
+		const VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT& graphicsPipelineLibraryFeaturesEXT = context.getGraphicsPipelineLibraryFeaturesEXT();
 
 		if (!graphicsPipelineLibraryFeaturesEXT.graphicsPipelineLibrary)
 			TCU_THROW(NotSupportedError, "graphicsPipelineLibraryFeaturesEXT.graphicsPipelineLibrary required");

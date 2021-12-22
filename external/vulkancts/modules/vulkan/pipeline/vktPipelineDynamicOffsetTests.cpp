@@ -62,7 +62,6 @@ typedef de::SharedPtr<Allocation>				AllocationSp;
 typedef de::SharedPtr<Unique<VkCommandBuffer> >	VkCommandBufferSp;
 typedef de::SharedPtr<Unique<VkRenderPass> >	VkRenderPassSp;
 typedef de::SharedPtr<Unique<VkFramebuffer> >	VkFramebufferSp;
-typedef de::SharedPtr<Unique<VkPipeline> >		VkPipelineSp;
 
 enum class GroupingStrategy
 {
@@ -73,13 +72,14 @@ enum class GroupingStrategy
 
 struct TestParams
 {
-	VkDescriptorType	descriptorType;
-	deUint32			numCmdBuffers;
-	bool				reverseOrder;
-	deUint32			numDescriptorSetBindings;
-	deUint32			numDynamicBindings;
-	deUint32			numNonDynamicBindings;
-	GroupingStrategy	groupingStrategy;
+	PipelineConstructionType	pipelineConstructionType;
+	VkDescriptorType			descriptorType;
+	deUint32					numCmdBuffers;
+	bool						reverseOrder;
+	deUint32					numDescriptorSetBindings;
+	deUint32					numDynamicBindings;
+	deUint32					numNonDynamicBindings;
+	GroupingStrategy			groupingStrategy;
 };
 
 vector<Vertex4RGBA> createQuads (deUint32 numQuads, float size)
@@ -160,7 +160,7 @@ private:
 	Move<VkDescriptorPool>				m_descriptorPool;
 	vector<Move<VkDescriptorSet>>		m_descriptorSets;
 	Move<VkPipelineLayout>				m_pipelineLayout;
-	vector<VkPipelineSp>				m_graphicsPipelines;
+	vector<GraphicsPipelineWrapper>		m_graphicsPipelines;
 	Move<VkCommandPool>					m_cmdPool;
 	vector<VkCommandBufferSp>			m_cmdBuffers;
 	vector<Vertex4RGBA>					m_vertices;
@@ -523,6 +523,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 	}
 
 	// Create pipelines
+	m_graphicsPipelines.reserve(m_params.numCmdBuffers);
 	for (deUint32 pipelineIdx = 0; pipelineIdx < m_params.numCmdBuffers; pipelineIdx++)
 	{
 		const VkVertexInputBindingDescription		vertexInputBindingDescription		=
@@ -548,7 +549,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 			}
 		};
 
-		const VkPipelineVertexInputStateCreateInfo	vertexInputStateParams				=
+		const VkPipelineVertexInputStateCreateInfo	vertexInputStateParams
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType;
 			DE_NULL,													// const void*								pNext;
@@ -559,26 +560,24 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 			vertexInputAttributeDescriptions							// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
-		const VkPrimitiveTopology					topology							= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		const vector<VkViewport>	viewports	{ makeViewport(m_renderSize) };
+		const vector<VkRect2D>		scissors	{ makeRect2D(m_renderSize) };
 
-		const vector<VkViewport>					viewports							(1, makeViewport(m_renderSize));
-		const vector<VkRect2D>						scissors							(1, makeRect2D(m_renderSize));
-
-		m_graphicsPipelines.push_back(VkPipelineSp(new Unique<VkPipeline>(makeGraphicsPipeline(vk,								// const DeviceInterface&						vk
-																							   vkDevice,						// const VkDevice								device
-																							   *m_pipelineLayout,				// const VkPipelineLayout						pipelineLayout
-																							   *m_vertexShaderModule,			// const VkShaderModule							vertexShaderModule
-																							   DE_NULL,							// const VkShaderModule							tessellationControlShaderModule
-																							   DE_NULL,							// const VkShaderModule							tessellationEvalShaderModule
-																							   DE_NULL,							// const VkShaderModule							geometryShaderModule
-																							   *m_fragmentShaderModule,			// const VkShaderModule							fragmentShaderModule
-																							   **m_renderPasses[pipelineIdx],	// const VkRenderPass							renderPass
-																							   viewports,						// const std::vector<VkViewport>&				viewports
-																							   scissors,						// const std::vector<VkRect2D>&					scissors
-																							   topology,						// const VkPrimitiveTopology					topology
-																							   0u,								// const deUint32								subpass
-																							   0u,								// const deUint32								patchControlPoints
-																							   &vertexInputStateParams))));		// const VkPipelineVertexInputStateCreateInfo*	vertexInputStateCreateInfo
+		m_graphicsPipelines.emplace_back(vk, vkDevice, m_params.pipelineConstructionType);
+		m_graphicsPipelines.back().setDefaultRasterizationState()
+								  .setDefaultDepthStencilState()
+								  .setDefaultColorBlendState()
+								  .setDefaultMultisampleState()
+								  .setupVertexInputStete(&vertexInputStateParams)
+								  .setupPreRasterizationShaderState(viewports,
+																	scissors,
+																	*m_pipelineLayout,
+																	**m_renderPasses[pipelineIdx],
+																	0u,
+																	*m_vertexShaderModule)
+								  .setupFragmentShaderState(*m_pipelineLayout, **m_renderPasses[pipelineIdx], 0u, *m_fragmentShaderModule)
+								  .setupFragmentOutputState(**m_renderPasses[pipelineIdx])
+								  .buildPipeline();
 	}
 
 	// Create vertex buffer
@@ -620,7 +619,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 
 		beginCommandBuffer(vk, **m_cmdBuffers[idx], 0u);
 		beginRenderPass(vk, **m_cmdBuffers[idx], **m_renderPasses[idx], **m_framebuffers[idx], makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
-		vk.cmdBindPipeline(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_GRAPHICS, **m_graphicsPipelines[idx]);
+		vk.cmdBindPipeline(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipelines[idx].getPipeline());
 		vk.cmdBindVertexBuffers(**m_cmdBuffers[idx], 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 
 		for (deUint32 i = 0; i < m_params.numDescriptorSetBindings; i++)
@@ -722,6 +721,7 @@ public:
 						~DynamicOffsetGraphicsTest	(void);
 	void				initPrograms				(SourceCollections& sourceCollections) const;
 	TestInstance*		createInstance				(Context& context) const;
+	void				checkSupport				(Context& context) const;
 
 protected:
 	const TestParams	m_params;
@@ -743,6 +743,11 @@ DynamicOffsetGraphicsTest::~DynamicOffsetGraphicsTest (void)
 TestInstance* DynamicOffsetGraphicsTest::createInstance (Context& context) const
 {
 	return new DynamicOffsetGraphicsTestInstance(context, m_params);
+}
+
+void DynamicOffsetGraphicsTest::checkSupport(Context& context) const
+{
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void DynamicOffsetGraphicsTest::initPrograms (SourceCollections& sourceCollections) const
@@ -1409,7 +1414,7 @@ void DynamicOffsetComputeTest::initPrograms (SourceCollections& sourceCollection
 
 } // anonymous
 
-tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
 	const char*	pipelineTypes[]			= { "graphics", "compute" };
 
@@ -1495,6 +1500,10 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx)
 
 	for (deUint32 pipelineTypeIdx = 0; pipelineTypeIdx < DE_LENGTH_OF_ARRAY(pipelineTypes); pipelineTypeIdx++)
 	{
+		// VK_EXT_graphics_pipeline_library can't be tested with compute pipeline
+		if ((pipelineTypeIdx == 1) && (pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC))
+			continue;
+
 		de::MovePtr<tcu::TestCaseGroup>	pipelineTypeGroup	(new tcu::TestCaseGroup(testCtx, pipelineTypes[pipelineTypeIdx], ""));
 
 		for (deUint32 groupingTypeIdx = 0; groupingTypeIdx < DE_LENGTH_OF_ARRAY(groupingTypes); ++groupingTypeIdx)
@@ -1528,14 +1537,17 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx)
 
 								for (deUint32 numNonDynamicBindingsIdx = 0; numNonDynamicBindingsIdx < DE_LENGTH_OF_ARRAY(numNonDynamicBindings); numNonDynamicBindingsIdx++)
 								{
-									TestParams params;
-									params.descriptorType			= descriptorTypes[descriptorTypeIdx].type;
-									params.numCmdBuffers			= numCmdBuffers[numCmdBuffersIdx].num;
-									params.reverseOrder				= reverseOrders[reverseOrderIdx].reverse;
-									params.numDescriptorSetBindings	= numDescriptorSetBindings[numDescriptorSetBindingsIdx].num;
-									params.numDynamicBindings		= numDynamicBindings[numDynamicBindingsIdx].num;
-									params.numNonDynamicBindings	= numNonDynamicBindings[numNonDynamicBindingsIdx].num;
-									params.groupingStrategy			= groupingTypes[groupingTypeIdx].strategy;
+									TestParams params
+									{
+										pipelineConstructionType,
+										descriptorTypes[descriptorTypeIdx].type,
+										numCmdBuffers[numCmdBuffersIdx].num,
+										reverseOrders[reverseOrderIdx].reverse,
+										numDescriptorSetBindings[numDescriptorSetBindingsIdx].num,
+										numDynamicBindings[numDynamicBindingsIdx].num,
+										numNonDynamicBindings[numNonDynamicBindingsIdx].num,
+										groupingTypes[groupingTypeIdx].strategy
+									};
 
 									if (strcmp(pipelineTypes[pipelineTypeIdx], "graphics") == 0)
 										numDynamicBindingsGroup->addChild(new DynamicOffsetGraphicsTest(testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, "", params));

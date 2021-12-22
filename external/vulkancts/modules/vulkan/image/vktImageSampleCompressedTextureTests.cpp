@@ -473,7 +473,7 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 
 	invalidateAlloc(vk, device, *resultBufferMemory);
 
-	clear(resultImage.getAccess(), tcu::IVec4(0.));
+	clear(resultImage.getAccess(), tcu::IVec4(0));
 	copy(resultImage.getAccess(), ConstPixelBufferAccess(resultImage.getFormat(), resultImage.getSize(), resultBufferMemory->getHostPtr()));
 
 

@@ -69,6 +69,7 @@ bool isIdentitySwizzle (const VkComponentMapping& mapping)
 
 struct TestParams
 {
+	PipelineConstructionType		pipelineConstructionType;
 	VkFormat						textureFormat;
 	VkClearColorValue				textureColor;
 	VkComponentMapping				componentMapping;
@@ -159,6 +160,8 @@ void BorderSwizzleCase::checkSupport (Context& context) const
 
 	if (m_params.useSamplerSwizzleHint)
 		context.requireDeviceFunctionality("VK_EXT_border_color_swizzle");
+
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 
 	if (m_params.isCustom())
 	{
@@ -856,18 +859,6 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 	const auto vertShader = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
 	const auto fragShader = createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
 
-	// Pipeline.
-	const VkPipelineShaderStageCreateInfo vertStageInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	//	VkStructureType						sType;
-		nullptr,												//	const void*							pNext;
-		0u,														//	VkPipelineShaderStageCreateFlags	flags;
-		VK_SHADER_STAGE_VERTEX_BIT,								//	VkShaderStageFlagBits				stage;
-		vertShader.get(),										//	VkShaderModule						module;
-		"main",													//	const char*							pName;
-		nullptr,												//	const VkSpecializationInfo*			pSpecializationInfo;
-	};
-
 	const SpecConstants specConstantData =
 	{
 		m_params.textureCoordinates.x(),
@@ -892,71 +883,10 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 		&specConstantData,												//	const void*						pData;
 	};
 
-	const VkPipelineShaderStageCreateInfo fragStageInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	//	VkStructureType						sType;
-		nullptr,												//	const void*							pNext;
-		0u,														//	VkPipelineShaderStageCreateFlags	flags;
-		VK_SHADER_STAGE_FRAGMENT_BIT,							//	VkShaderStageFlagBits				stage;
-		fragShader.get(),										//	VkShaderModule						module;
-		"main",													//	const char*							pName;
-		&specializationInfo,									//	const VkSpecializationInfo*			pSpecializationInfo;
-	};
-
-	const VkPipelineShaderStageCreateInfo shaderStagesInfo[] = { vertStageInfo, fragStageInfo };
-
 	const VkPipelineVertexInputStateCreateInfo vertexInputInfo = initVulkanStructure();
 
-	VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo = initVulkanStructure();
-	inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
-
-	const auto viewport	= makeViewport(extent);
-	const auto scissor	= makeRect2D(extent);
-
-	const VkPipelineViewportStateCreateInfo viewportInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	//	VkStructureType						sType;
-		nullptr,												//	const void*							pNext;
-		0u,														//	VkPipelineViewportStateCreateFlags	flags;
-		1u,														//	deUint32							viewportCount;
-		&viewport,												//	const VkViewport*					pViewports;
-		1u,														//	deUint32							scissorCount;
-		&scissor,												//	const VkRect2D*						pScissors;
-	};
-
-	const VkPipelineTessellationStateCreateInfo tessInfo = initVulkanStructure();
-
-	const VkPipelineRasterizationStateCreateInfo rasterizationInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	//	VkStructureType							sType;
-		nullptr,													//	const void*								pNext;
-		0u,															//	VkPipelineRasterizationStateCreateFlags	flags;
-		VK_FALSE,													//	VkBool32								depthClampEnable;
-		VK_FALSE,													//	VkBool32								rasterizerDiscardEnable;
-		VK_POLYGON_MODE_FILL,										//	VkPolygonMode							polygonMode;
-		VK_CULL_MODE_NONE,											//	VkCullModeFlags							cullMode;
-		VK_FRONT_FACE_CLOCKWISE,									//	VkFrontFace								frontFace;
-		VK_FALSE,													//	VkBool32								depthBiasEnable;
-		0.0f,														//	float									depthBiasConstantFactor;
-		0.0f,														//	float									depthBiasClamp;
-		0.0f,														//	float									depthBiasSlopeFactor;
-		1.0f,														//	float									lineWidth;
-	};
-
-	const VkPipelineMultisampleStateCreateInfo multisampleInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	//	VkStructureType							sType;
-		nullptr,													//	const void*								pNext;
-		0u,															//	VkPipelineMultisampleStateCreateFlags	flags;
-		VK_SAMPLE_COUNT_1_BIT,										//	VkSampleCountFlagBits					rasterizationSamples;
-		VK_FALSE,													//	VkBool32								sampleShadingEnable;
-		1.0f,														//	float									minSampleShading;
-		nullptr,													//	const VkSampleMask*						pSampleMask;
-		VK_FALSE,													//	VkBool32								alphaToCoverageEnable;
-		VK_FALSE,													//	VkBool32								alphaToOneEnable;
-	};
-
-	const VkPipelineDepthStencilStateCreateInfo depthStencilInfo = initVulkanStructure();
+	const std::vector<VkViewport>	viewport	{ makeViewport(extent) };
+	const std::vector<VkRect2D>		scissor		{ makeRect2D(extent) };
 
 	VkPipelineColorBlendAttachmentState colorBlendAttachmentState;
 	deMemset(&colorBlendAttachmentState, 0, sizeof(colorBlendAttachmentState));
@@ -974,30 +904,28 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 		{ .0f, .0f, .0f, .0f },										//	float										blendConstants[4];
 	};
 
-	const VkGraphicsPipelineCreateInfo pipelineCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,				//	VkStructureType									sType;
-		nullptr,														//	const void*										pNext;
-		0u,																//	VkPipelineCreateFlags							flags;
-		static_cast<deUint32>(DE_LENGTH_OF_ARRAY(shaderStagesInfo)),	//	deUint32										stageCount;
-		shaderStagesInfo,												//	const VkPipelineShaderStageCreateInfo*			pStages;
-		&vertexInputInfo,												//	const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
-		&inputAssemblyInfo,												//	const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
-		&tessInfo,														//	const VkPipelineTessellationStateCreateInfo*	pTessellationState;
-		&viewportInfo,													//	const VkPipelineViewportStateCreateInfo*		pViewportState;
-		&rasterizationInfo,												//	const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
-		&multisampleInfo,												//	const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
-		&depthStencilInfo,												//	const VkPipelineDepthStencilStateCreateInfo*	pDepthStencilState;
-		&colorBlendInfo,												//	const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-		nullptr,														//	const VkPipelineDynamicStateCreateInfo*			pDynamicState;
-		pipelineLayout.get(),											//	VkPipelineLayout								layout;
-		renderPass.get(),												//	VkRenderPass									renderPass;
-		0u,																//	deUint32										subpass;
-		DE_NULL,														//	VkPipeline										basePipelineHandle;
-		0,																//	deInt32											basePipelineIndex;
-	};
-
-	const auto graphicsPipeline = createGraphicsPipeline(vkd, device, DE_NULL, &pipelineCreateInfo);
+	GraphicsPipelineWrapper graphicsPipeline(vkd, device, m_params.pipelineConstructionType);
+	graphicsPipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN)
+					.setDefaultDepthStencilState()
+					.setDefaultRasterizationState()
+					.setDefaultMultisampleState()
+					.setupVertexInputStete(&vertexInputInfo)
+					.setupPreRasterizationShaderState(viewport,
+									scissor,
+									*pipelineLayout,
+									*renderPass,
+									0u,
+									*vertShader)
+					.setupFragmentShaderState(*pipelineLayout,
+									*renderPass,
+									0u,
+									*fragShader,
+									DE_NULL,
+									DE_NULL,
+									DE_NULL,
+									&specializationInfo)
+					.setupFragmentOutputState(*renderPass, 0u, &colorBlendInfo)
+					.buildPipeline();
 
 	// Framebuffer.
 	const auto framebuffer = makeFramebuffer(vkd, device, renderPass.get(), colorAttachmentView.get(), extent.width, extent.height);
@@ -1037,8 +965,8 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &postClearBarrier);
 
 	// Read from the texture to render a full-screen quad to the color buffer.
-	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissor, zeroClearColor);
-	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.get());
+	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissor[0], zeroClearColor);
+	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.getPipeline());
 	vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
 	vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
 	endRenderPass(vkd, cmdBuffer);
@@ -1222,7 +1150,7 @@ VkClearColorValue getRandomClearColor (VkFormat format, de::Random& rnd)
 
 } // anonymous
 
-tcu::TestCaseGroup* createSamplerBorderSwizzleTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createSamplerBorderSwizzleTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
 	const deUint32 baseSeed = 1610707317u;
 
@@ -1408,8 +1336,9 @@ tcu::TestCaseGroup* createSamplerBorderSwizzleTests (tcu::TestContext& testCtx)
 						const deUint32	seed	= baseSeed + static_cast<deUint32>(format) + static_cast<deUint32>(mappingIdx) + static_cast<deUint32>(borderColorIdx) + static_cast<deUint32>(gatherIdx);
 						de::Random		rnd		(seed);
 
-						params.textureFormat	= format;
-						params.textureColor		= getRandomClearColor(format, rnd);
+						params.pipelineConstructionType	= pipelineConstructionType;
+						params.textureFormat			= format;
+						params.textureColor				= getRandomClearColor(format, rnd);
 
 						makeComponentMapping(params.componentMapping, mapping);
 						params.borderColor			= borderColor.borderType;
