@@ -175,6 +175,8 @@ struct TestParams
 	deUint32								workerThreadsCount;
 	EmptyAccelerationStructureCase			emptyASCase;
 	InstanceCustomIndexCase					instanceCustomIndexCase;
+	bool									useCullMask;
+	uint32_t								cullMask;
 };
 
 deUint32 getShaderGroupSize (const InstanceInterface&	vki,
@@ -537,7 +539,15 @@ de::MovePtr<TopLevelAccelerationStructure> CheckerboardConfiguration::initTopAcc
 			if (((x + y) % 2) == 0)
 				continue;
 			const deUint32 instanceCustomIndex = ((testParams.instanceCustomIndexCase != InstanceCustomIndexCase::NONE) ? (INSTANCE_CUSTOM_INDEX_BASE + x + y) : 0u);
-			result->addInstance(bottomLevelAccelerationStructures[currentInstanceIndex++], identityMatrix3x4, instanceCustomIndex, 0xFFu, 0u, instanceFlags);
+
+			if (testParams.useCullMask)
+			{
+				result->addInstance(bottomLevelAccelerationStructures[currentInstanceIndex++], identityMatrix3x4, instanceCustomIndex, testParams.cullMask, 0u, instanceFlags);
+			}
+			else
+			{
+				result->addInstance(bottomLevelAccelerationStructures[currentInstanceIndex++], identityMatrix3x4, instanceCustomIndex, 0xFFu, 0u, instanceFlags);
+			}
 		}
 	}
 
@@ -586,26 +596,49 @@ void CheckerboardConfiguration::initShaderBindingTables(de::MovePtr<RayTracingPi
 	missShaderBindingTable												= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 3, 1 );
 }
 
+deUint32 bitfieldReverse(deUint32 num)
+{
+	deUint32 reverse_num = 0;
+	deUint32 i;
+	for (i = 0; i < 32; i++)
+	{
+		if((num & (1 << i)))
+	reverse_num |= 1 << ((32 - 1) - i);
+	}
+	return reverse_num;
+}
+
 bool CheckerboardConfiguration::verifyImage(BufferWithMemory* resultBuffer, Context& context, TestParams& testParams)
 {
 	// Checkerboard configuration does not support empty geometry tests.
 	DE_ASSERT(testParams.emptyASCase == EmptyAccelerationStructureCase::NOT_EMPTY);
 
 	DE_UNREF(context);
-	const auto*						bufferPtr	= (deInt32*)resultBuffer->getAllocation().getHostPtr();
-	deUint32						pos			= 0;
-	deUint32						failures	= 0;
+	const auto*						bufferPtr		= (deInt32*)resultBuffer->getAllocation().getHostPtr();
+	deUint32						pos				= 0;
+	deUint32						failures		= 0;
 
 	// verify results - each test case should generate checkerboard pattern
 	for (deUint32 y = 0; y < testParams.height; ++y)
 	for (deUint32 x = 0; x < testParams.width; ++x)
 	{
 		// The hit value should match the shader code.
-		const deInt32 hitValue			= ((testParams.instanceCustomIndexCase != InstanceCustomIndexCase::NONE) ? static_cast<deInt32>(INSTANCE_CUSTOM_INDEX_BASE + x + y) : 2);
-		const deInt32 expectedResult	= ((x + y) % 2) ? hitValue : 1;
+		if (testParams.useCullMask)
+		{
+			const deInt32 hitValue			= testParams.cullMask & 0x000000FFu; // only 8 last bits are used by the cullMask
+			const deInt32 expectedResult	= ((x + y) % 2) ? hitValue : bitfieldReverse(testParams.cullMask &  0x000000FFu);
 
-		if (bufferPtr[pos] != expectedResult)
-			failures++;
+			if (bufferPtr[pos] != expectedResult)
+				failures++;
+		}
+		else
+		{
+			const deInt32 hitValue			= ((testParams.instanceCustomIndexCase != InstanceCustomIndexCase::NONE) ? static_cast<deInt32>(INSTANCE_CUSTOM_INDEX_BASE + x + y) : 2);
+			const deInt32 expectedResult	= ((x + y) % 2) ? hitValue : 1;
+
+			if (bufferPtr[pos] != expectedResult)
+				failures++;
+		}
 
 		++pos;
 	}
@@ -902,6 +935,9 @@ void RayTracingASBasicTestCase::checkSupport(Context& context) const
 	if (m_data.buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR && accelerationStructureFeaturesKHR.accelerationStructureHostCommands == DE_FALSE)
 		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructureHostCommands");
 
+	if (m_data.useCullMask)
+		context.requireDeviceFunctionality("VK_KHR_ray_tracing_maintenance1");
+
 	// Check supported vertex format.
 	checkAccelerationStructureVertexBufferFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_data.vertexFormat);
 }
@@ -922,8 +958,10 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 	default: DE_ASSERT(false); break;
 	}
 
+
 	const std::string				imageDeclaration	= "layout(r32i, set = 0, binding = 0) uniform iimage2D result;\n";
 	const std::string				storeCustomIndex	= "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), ivec4(gl_InstanceCustomIndexEXT, 0, 0, 1));\n";
+	const std::string				storeCullMask		= "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), ivec4(gl_CullMaskEXT, 0, 0, 1));\n";
 	const vk::ShaderBuildOptions	buildOptions		(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
 
 	{
@@ -946,7 +984,7 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 			<< "  vec3  origin    = vec3(float(gl_LaunchIDEXT.x) + 0.5f, float(gl_LaunchIDEXT.y) + 0.5f, 0.5);\n"
 			<< "  vec3  direction = vec3(0.0,0.0,-1.0);\n"
 			<< "  hitValue        = ivec4(0,0,0,0);\n"
-			<< "  traceRayEXT(topLevelAS, " << ((m_data.cullFlags == InstanceCullFlags::NONE) ? "0" : "gl_RayFlagsCullBackFacingTrianglesEXT") << ", 0xFF, 0, 0, 0, origin, tmin, direction, tmax, 0);\n";
+			<< "  traceRayEXT(topLevelAS, " << ((m_data.cullFlags == InstanceCullFlags::NONE) ? "0, " : "gl_RayFlagsCullBackFacingTrianglesEXT, ") << m_data.cullMask << ", 0, 0, 0, origin, tmin, direction, tmax, 0);\n";
 
 		if (storeInRGen)
 			css << "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), hitValue);\n";
@@ -961,6 +999,7 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 		css
 			<< "#version 460 core\n"
 			<< "#extension GL_EXT_ray_tracing : require\n"
+			<< ((m_data.useCullMask) ? "#extension GL_EXT_ray_cull_mask : require\n" : "\n")
 			<< "layout(location = 0) rayPayloadInEXT ivec4 hitValue;\n";
 
 		if (storeInCHit)
@@ -972,7 +1011,16 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 			<< "  hitValue = ivec4(2,0,0,1);\n";
 
 		if (storeInCHit)
-			css << storeCustomIndex;
+		{
+			if (m_data.useCullMask)
+			{
+				css << storeCullMask;
+			}
+			else
+			{
+				css << storeCustomIndex;
+			}
+		}
 
 		css << "}\n";
 
@@ -985,10 +1033,11 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 		css
 			<< "#version 460 core\n"
 			<< "#extension GL_EXT_ray_tracing : require\n"
+			<< ((m_data.useCullMask) ? "#extension GL_EXT_ray_cull_mask : require\n" : "\n")
 			<< imageDeclaration
 			<< "void main()\n"
 			<< "{\n"
-			<< storeCustomIndex
+			<< ((m_data.useCullMask) ? storeCullMask : storeCustomIndex)
 			<< "}\n";
 
 		programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
@@ -999,6 +1048,7 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 		css
 			<< "#version 460 core\n"
 			<< "#extension GL_EXT_ray_tracing : require\n"
+			<< ((m_data.useCullMask) ? "#extension GL_EXT_ray_cull_mask : require\n" : "\n")
 			<< "hitAttributeEXT ivec4 hitAttribute;\n";
 
 		if (storeInISec)
@@ -1009,9 +1059,17 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 			<< "{\n"
 			<< "  hitAttribute = ivec4(0,0,0,0);\n"
 			<< "  reportIntersectionEXT(0.5f, 0);\n";
-
 		if (storeInISec)
-			css << storeCustomIndex;
+		{
+			if (m_data.useCullMask)
+			{
+				css << storeCullMask;
+			}
+			else
+			{
+				css << storeCustomIndex;
+			}
+		}
 
 		css << "}\n";
 
@@ -1023,6 +1081,7 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 		css
 			<< "#version 460 core\n"
 			<< "#extension GL_EXT_ray_tracing : require\n"
+			<< ((m_data.useCullMask) ? "#extension GL_EXT_ray_cull_mask : require\n" : "\n")
 			<< "layout(location = 0) rayPayloadInEXT ivec4 hitValue;\n";
 
 		if (!storeInRGen)
@@ -1032,9 +1091,17 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 			<< "void main()\n"
 			<< "{\n"
 			<< "  hitValue = ivec4(1,0,0,1);\n";
-
 		if (!storeInRGen)
-			css << "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), hitValue);\n";
+		{
+			if (m_data.useCullMask)
+			{
+				css << "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), ivec4(bitfieldReverse(uint(gl_CullMaskEXT)), 0, 0, 1)); \n";
+			}
+			else
+			{
+				css << "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), hitValue);\n";
+			}
+		}
 
 		css << "}\n";
 
@@ -2766,7 +2833,7 @@ RayTracingHeaderBottomAddressTestInstance::prepareTopAccelerationStructure (cons
 				{ 0.0f, 0.0f, 1.0f, 0.0f },
 			}
 		};
-		tlas->addInstance(bottoms[i], transformMatrixKHR, 0, 0xFFu, 0u, getCullFlags((m_params->cullFlags)));
+		tlas->addInstance(bottoms[i], transformMatrixKHR, 0, m_params->cullMask, 0u, getCullFlags((m_params->cullFlags)));
 	}
 
 	tlas->createAndBuild(vk, device, cmdBuffer, allocator);
@@ -3026,6 +3093,8 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 											0u,
 											EmptyAccelerationStructureCase::NOT_EMPTY,
 											InstanceCustomIndexCase::NONE,
+											false,
+											0xFFu,
 										};
 										paddingGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), testName.c_str(), "", testParams));
 									}
@@ -3137,6 +3206,8 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 						0u,
 						EmptyAccelerationStructureCase::NOT_EMPTY,
 						InstanceCustomIndexCase::NONE,
+						false,
+						0xFFu,
 					};
 					paddingGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), indexFormats[indexFormatNdx].name, "", testParams));
 				}
@@ -3236,6 +3307,8 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 						workerThreads,
 						EmptyAccelerationStructureCase::NOT_EMPTY,
 						InstanceCustomIndexCase::NONE,
+						false,
+						0xFFu,
 					};
 					operationTargetGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), bottomTestTypes[testTypeNdx].name, "", testParams));
 				}
@@ -3308,6 +3381,8 @@ void addFuncArgTests (tcu::TestCaseGroup* group)
 			0u,
 			EmptyAccelerationStructureCase::NOT_EMPTY,
 			InstanceCustomIndexCase::NONE,
+			false,
+			0xFFu,
 		};
 
 		group->addChild(new RayTracingASFuncArgTestCase(ctx, buildTypes[buildTypeNdx].name, "", testParams));
@@ -3397,6 +3472,8 @@ void addInstanceTriangleCullingTests (tcu::TestCaseGroup* group)
 						0u,
 						EmptyAccelerationStructureCase::NOT_EMPTY,
 						InstanceCustomIndexCase::NONE,
+						false,
+						0xFFu,
 					};
 					indexTypeGroup->addChild(new RayTracingASBasicTestCase(ctx, testName.c_str(), "", testParams));
 				}
@@ -3483,6 +3560,8 @@ void addEmptyAccelerationStructureTests (tcu::TestCaseGroup* group)
 					0u,
 					emptyCases[emptyCaseIdx].emptyASCase,
 					InstanceCustomIndexCase::NONE,
+					false,
+					0xFFu,
 				};
 				indexTypeGroup->addChild(new RayTracingASBasicTestCase(ctx, emptyCases[emptyCaseIdx].name.c_str(), "", testParams));
 			}
@@ -3549,12 +3628,99 @@ void addInstanceIndexTests (tcu::TestCaseGroup* group)
 				0u,
 				EmptyAccelerationStructureCase::NOT_EMPTY,
 				customIndexCases[customIndexCaseIdx].customIndexCase,
+				false,
+				0xFFu,
 			};
 			buildTypeGroup->addChild(new RayTracingASBasicTestCase(ctx, customIndexCases[customIndexCaseIdx].name.c_str(), "", testParams));
 		}
 		group->addChild(buildTypeGroup.release());
 	}
 }
+
+
+void addInstanceRayCullMaskTests(tcu::TestCaseGroup* group)
+{
+	const struct
+	{
+		vk::VkAccelerationStructureBuildTypeKHR				buildType;
+		std::string											name;
+	} buildTypes[] =
+	{
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,	"cpu_built"	},
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu_built"	},
+	};
+
+	const struct
+	{
+		InstanceCustomIndexCase						customIndexCase;
+		std::string									name;
+	} customIndexCases[] =
+	{
+		{ InstanceCustomIndexCase::ANY_HIT,			"ahit"				},
+		{ InstanceCustomIndexCase::CLOSEST_HIT,		"chit"				},
+		{ InstanceCustomIndexCase::INTERSECTION,	"isec"				},
+	};
+
+	const struct
+	{
+		uint32_t		cullMask;
+		std::string		name;
+	} cullMask[] =
+	{
+		{ 0x000000AAu,	"4_bits"},
+		{ 0x00000055u,	"4_bits_reverse"},
+		{ 0xAAAAAAAAu,	"16_bits"},
+		{ 0x55555555u,	"16_bits_reverse"},
+	};
+
+	auto& ctx = group->getTestContext();
+
+	for (int buildTypeIdx = 0; buildTypeIdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeIdx)
+	{
+		de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str(), ""));
+
+		for (int customIndexCaseIdx = 0; customIndexCaseIdx < DE_LENGTH_OF_ARRAY(customIndexCases); ++customIndexCaseIdx)
+		{
+			de::MovePtr<tcu::TestCaseGroup> customIndexCaseGroup(new tcu::TestCaseGroup(ctx, customIndexCases[customIndexCaseIdx].name.c_str(), ""));
+
+			for (int cullMaskIdx = 0; cullMaskIdx < DE_LENGTH_OF_ARRAY(cullMask); ++cullMaskIdx)
+			{
+				const auto& idxCase = customIndexCases[customIndexCaseIdx].customIndexCase;
+				const auto	bottomGeometryType = ((idxCase == InstanceCustomIndexCase::INTERSECTION) ? BTT_AABBS : BTT_TRIANGLES);
+
+				TestParams testParams
+				{
+					buildTypes[buildTypeIdx].buildType,
+					VK_FORMAT_R32G32B32_SFLOAT,
+					false,
+					VK_INDEX_TYPE_NONE_KHR,
+					bottomGeometryType,
+					InstanceCullFlags::NONE,
+					false,
+					false,
+					TTT_IDENTICAL_INSTANCES,
+					false,
+					false,
+					VkBuildAccelerationStructureFlagsKHR(0u),
+					OT_NONE,
+					OP_NONE,
+					RTAS_DEFAULT_SIZE,
+					RTAS_DEFAULT_SIZE,
+					de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration()),
+					0u,
+					EmptyAccelerationStructureCase::NOT_EMPTY,
+					customIndexCases[customIndexCaseIdx].customIndexCase,
+					true,
+					cullMask[cullMaskIdx].cullMask,
+				};
+				customIndexCaseGroup->addChild(new RayTracingASBasicTestCase(ctx,  cullMask[cullMaskIdx].name.c_str(), "", testParams));
+			}
+			buildTypeGroup->addChild(customIndexCaseGroup.release());
+		}
+		group->addChild(buildTypeGroup.release());
+	}
+}
+
 
 void addGetDeviceAccelerationStructureCompabilityTests (tcu::TestCaseGroup* group)
 {
@@ -3610,6 +3776,8 @@ void addGetDeviceAccelerationStructureCompabilityTests (tcu::TestCaseGroup* grou
 				0u,																	// workerThreadsCount
 				EmptyAccelerationStructureCase::NOT_EMPTY,							// emptyASCase
 				InstanceCustomIndexCase::NONE,										// instanceCustomIndexCase
+				false,																// useCullMask
+				0xFFu,																// cullMask
 			};
 			buildTypeGroup->addChild(new RayTracingDeviceASCompabilityKHRTestCase(ctx, targets[targetIdx].name.c_str(), de::SharedPtr<TestParams>(new TestParams(testParams))));
 		}
@@ -3672,6 +3840,8 @@ void addUpdateHeaderBottomAddressTests (tcu::TestCaseGroup* group)
 				0u,																	// workerThreadsCount
 				EmptyAccelerationStructureCase::NOT_EMPTY,							// emptyASCase
 				InstanceCustomIndexCase::NONE,										// instanceCustomIndexCase
+				false,																// useCullMask
+				0xFFu,																// cullMask
 			};
 			buildTypeGroup->addChild(new RayTracingHeaderBottomAddressTestCase(ctx, instTypes[instTypeIdx].name.c_str(), de::SharedPtr<TestParams>(new TestParams(testParams))));
 		}
@@ -3689,6 +3859,7 @@ tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "host_threading", "Test host threading operations", addHostThreadingOperationTests);
 	addTestGroup(group.get(), "function_argument", "Test using AS as function argument using both pointers and bare values", addFuncArgTests);
 	addTestGroup(group.get(), "instance_triangle_culling", "Test building AS with counterclockwise triangles and/or disabling face culling", addInstanceTriangleCullingTests);
+	addTestGroup(group.get(), "ray_cull_mask", "Test for CullMaskKHR builtin as a part of VK_KHR_ray_tracing_maintenance1", addInstanceRayCullMaskTests);
 	addTestGroup(group.get(), "dynamic_indexing", "Exercise dynamic indexing of acceleration structures", addDynamicIndexingTests);
 	addTestGroup(group.get(), "empty", "Test building empty acceleration structures using different methods", addEmptyAccelerationStructureTests);
 	addTestGroup(group.get(), "instance_index", "Test using different values for the instance index and checking them in shaders", addInstanceIndexTests);
