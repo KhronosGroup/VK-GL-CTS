@@ -323,6 +323,9 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 	const VkPhysicalDevice							physDevice			= context.getPhysicalDevice();
 	const std::vector<VkExtensionProperties>		supportedExtensions = enumerateDeviceExtensionProperties(intf, physDevice, nullptr);
 
+	if (m_testConfig.useMethod2)
+		context.requireDeviceFunctionality("VK_KHR_get_memory_requirements2");
+
 	VkPhysicalDeviceProtectedMemoryFeatures			protectedMemFeatures
 	{
 		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES,	// VkStructureType	sType;
