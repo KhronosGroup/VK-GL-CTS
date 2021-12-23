@@ -321,7 +321,6 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 {
 	const InstanceInterface&						intf				= context.getInstanceInterface();
 	const VkPhysicalDevice							physDevice			= context.getPhysicalDevice();
-	const std::vector<VkExtensionProperties>		supportedExtensions = enumerateDeviceExtensionProperties(intf, physDevice, nullptr);
 
 	if (m_testConfig.useMethod2)
 		context.requireDeviceFunctionality("VK_KHR_get_memory_requirements2");
@@ -343,7 +342,6 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 	const VkPhysicalDeviceFeatures&	features					= extFeatures.features;
 	const VkBool32&					protectedMemFeatureEnabled	= protectedMemFeatures.protectedMemory;
 
-
 	// check the creating bits
 	{
 		std::ostringstream			str;
@@ -352,7 +350,6 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 
 		if (createBits.contains(VK_BUFFER_CREATE_SPARSE_BINDING_BIT) && (VK_FALSE == features.sparseBinding))
 		{
-			if (notSupported) str << std::endl;
 			str << INFOCREATE(getBufferCreateFlagsStr(VK_BUFFER_CREATE_SPARSE_BINDING_BIT));
 			notSupported = true;
 		}
@@ -394,7 +391,7 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 		}
 
 		std::ostringstream str;
-		std::array<bool, 5> msgs;
+		std::array<bool, 3> msgs;
 		bool notSupported	= false;
 		int  entryCount		= 0;
 		msgs.fill(false);
@@ -405,7 +402,7 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 
 			if (i->any({VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
 					   VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR, VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR})
-					&& !isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_acceleration_structure")))
+					&& !context.isDeviceFunctionalitySupported("VK_KHR_acceleration_structure"))
 			{
 				if (!msgs[0])
 				{
@@ -417,7 +414,7 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 			}
 
 			if (i->contains(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
-					&& !isExtensionSupported(supportedExtensions, RequiredExtension("VK_EXT_buffer_device_address")))
+					&& !context.isBufferDeviceAddressSupported())
 			{
 				if (!msgs[1])
 				{
@@ -429,9 +426,16 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 			}
 
 			if (i->any({VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR, VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR,
-					   VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR, VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR}))
+					   VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR, VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR}) &&
+					   !context.isDeviceFunctionalitySupported("VK_KHR_video_queue"))
 			{
-
+				if (!msgs[2])
+				{
+					if (entryCount++) str << std::endl;
+					str << INFOUSAGE("VK_KHR_video_queue not supported by device");
+					msgs[2] = true;
+				}
+				notSupported = true;
 			}
 
 			i = notSupported ? usageFlags.erase(i) : std::next(i);
