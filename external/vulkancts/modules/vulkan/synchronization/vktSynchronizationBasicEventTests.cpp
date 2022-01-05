@@ -102,7 +102,7 @@ tcu::TestStatus deviceResetSetEventCase (Context& context, TestConfig config)
 		VK_PIPELINE_STAGE_2_HOST_BIT_KHR,					// VkPipelineStageFlags2KHR			dstStageMask
 		VK_ACCESS_2_HOST_READ_BIT_KHR						// VkAccessFlags2KHR				dstAccessMask
 	};
-	VkDependencyInfoKHR					dependencyInfo			= makeCommonDependencyInfo(&memoryBarrier2);
+	VkDependencyInfoKHR					dependencyInfo			= makeCommonDependencyInfo(&memoryBarrier2, DE_NULL, DE_NULL, DE_TRUE);
 
 	{
 		SynchronizationWrapperPtr synchronizationWrapper = getSynchronizationWrapper(config.type, vk, DE_FALSE);
@@ -171,7 +171,7 @@ tcu::TestStatus singleSubmissionCase (Context& context, TestConfig config)
 																	makeCommonCommandBufferSubmitInfo(cmdBuffers[SET]),
 																	makeCommonCommandBufferSubmitInfo(cmdBuffers[WAIT])
 																};
-	VkDependencyInfoKHR				dependencyInfo				= makeCommonDependencyInfo();
+	VkDependencyInfoKHR				dependencyInfo				= makeCommonDependencyInfo(DE_NULL, DE_NULL, DE_NULL, DE_TRUE);
 	SynchronizationWrapperPtr		synchronizationWrapper		= getSynchronizationWrapper(config.type, vk, DE_FALSE);
 
 	synchronizationWrapper->addSubmitInfo(
@@ -224,8 +224,8 @@ tcu::TestStatus multiSubmissionCase(Context& context, TestConfig config)
 	};
 	VkDependencyInfoKHR				dependencyInfos[] =
 	{
-		makeCommonDependencyInfo(),
-		makeCommonDependencyInfo()
+		makeCommonDependencyInfo(DE_NULL, DE_NULL, DE_NULL, DE_TRUE),
+		makeCommonDependencyInfo(DE_NULL, DE_NULL, DE_NULL, DE_TRUE)
 	};
 
 	synchronizationWrapper[SET]->addSubmitInfo(
@@ -306,8 +306,8 @@ tcu::TestStatus secondaryCommandBufferCase (Context& context, TestConfig config)
 	VkCommandBufferSubmitInfoKHR			commandBufferSubmitInfo	= makeCommonCommandBufferSubmitInfo(*primaryCmdBuffer);
 	VkDependencyInfoKHR						dependencyInfos[]		=
 																	{
-																		makeCommonDependencyInfo(),
-																		makeCommonDependencyInfo()
+																		makeCommonDependencyInfo(DE_NULL, DE_NULL, DE_NULL, DE_TRUE),
+																		makeCommonDependencyInfo(DE_NULL, DE_NULL, DE_NULL, DE_TRUE)
 																	};
 	SynchronizationWrapperPtr				synchronizationWrapper	= getSynchronizationWrapper(config.type, vk, DE_FALSE);
 
