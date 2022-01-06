@@ -179,7 +179,7 @@ const T& instance (void)
 }
 
 /*--------------------------------------------------------------------*//*!
- * \brief Dummy placeholder type for unused template parameters.
+ * \brief Empty placeholder type for unused template parameters.
  *
  * In the precision tests we are dealing with functions of different arities.
  * To minimize code duplication, we only define templates with the maximum
@@ -1423,7 +1423,7 @@ public:
 template <typename T>
 class ExprP : public ExprPBase<T> {};
 
-// We treat Voids as containers since the dummy parameters in generalized
+// We treat Voids as containers since the unused parameters in generalized
 // vector functions are represented as Voids.
 template <>
 class ExprP<Void> : public ContainerExprPBase<Void> {};
@@ -6235,7 +6235,7 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate (void)
 
 	m_executor->execute(int(numValues), inputArr, outputArr);
 
-	// Initialize environment with dummy values so we don't need to bind in inner loop.
+	// Initialize environment with unused values so we don't need to bind in inner loop.
 	{
 		const typename Traits<In0>::IVal		in0;
 		const typename Traits<In1>::IVal		in1;
