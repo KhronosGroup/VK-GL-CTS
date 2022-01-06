@@ -160,6 +160,7 @@ ES31TestPackage::ES31TestPackage(tcu::TestContext& testCtx, const char* packageN
 
 ES31TestPackage::~ES31TestPackage(void)
 {
+	deqp::TestPackage::deinit();
 }
 
 class ShaderTests : public deqp::TestCaseGroup

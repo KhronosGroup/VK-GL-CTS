@@ -431,7 +431,7 @@ ShaderFloatPrecisionCase::IterateResult ShaderFloatPrecisionCase::iterate (void)
 class ShaderIntPrecisionCase : public TestCase
 {
 public:
-	typedef int					(*EvalFunc)					(int a, int b);
+	typedef deInt64				(*EvalFunc)					(deInt64 a, deInt64 b);
 
 								ShaderIntPrecisionCase		(Context& context, const char* name, const char* desc, const char* op, EvalFunc evalFunc, glu::Precision precision, int bits, const tcu::IVec2& rangeA, const tcu::IVec2& rangeB, bool isVertexCase);
 								~ShaderIntPrecisionCase		(void);
@@ -580,7 +580,7 @@ ShaderIntPrecisionCase::IterateResult ShaderIntPrecisionCase::iterate (void)
 	{
 		int		in0			= deSignExtendTo32(((isMaxRangeA ? (int)m_rnd.getUint32() : m_rnd.getInt(m_rangeA.x(), m_rangeA.y())) & mask), m_bits);
 		int		in1			= deSignExtendTo32(((isMaxRangeB ? (int)m_rnd.getUint32() : m_rnd.getInt(m_rangeB.x(), m_rangeB.y())) & mask), m_bits);
-		int		refMasked	= m_evalFunc(in0, in1) & mask;
+		int		refMasked	= static_cast<int>(m_evalFunc(in0, in1) & static_cast<deUint64>(mask));
 		int		refOut		= deSignExtendTo32(refMasked, m_bits);
 
 		log << TestLog::Message << "iter " << m_iterNdx << ", test " << testNdx << ": "
@@ -884,18 +884,18 @@ void ShaderPrecisionTests::init (void)
 	} intCases[] =
 	{
 		// Name				Op				Eval				Precision				Bits	RangeA			RangeB
-		{ "highp_add",		"in0 + in1",	add<int>,			glu::PRECISION_HIGHP,	32,		fullRange32I,	fullRange32I },
-		{ "highp_sub",		"in0 - in1",	sub<int>,			glu::PRECISION_HIGHP,	32,		fullRange32I,	fullRange32I },
-		{ "highp_mul",		"in0 * in1",	mul<int>,			glu::PRECISION_HIGHP,	32,		fullRange32I,	fullRange32I },
-		{ "highp_div",		"in0 / in1",	div<int>,			glu::PRECISION_HIGHP,	32,		fullRange32I,	IVec2(-10000, -1) },
-		{ "mediump_add",	"in0 + in1",	add<int>,			glu::PRECISION_MEDIUMP,	16,		fullRange16I,	fullRange16I },
-		{ "mediump_sub",	"in0 - in1",	sub<int>,			glu::PRECISION_MEDIUMP,	16,		fullRange16I,	fullRange16I },
-		{ "mediump_mul",	"in0 * in1",	mul<int>,			glu::PRECISION_MEDIUMP,	16,		fullRange16I,	fullRange16I },
-		{ "mediump_div",	"in0 / in1",	div<int>,			glu::PRECISION_MEDIUMP,	16,		fullRange16I,	IVec2(1, 1000) },
-		{ "lowp_add",		"in0 + in1",	add<int>,			glu::PRECISION_LOWP,	8,		fullRange8I,	fullRange8I },
-		{ "lowp_sub",		"in0 - in1",	sub<int>,			glu::PRECISION_LOWP,	8,		fullRange8I,	fullRange8I },
-		{ "lowp_mul",		"in0 * in1",	mul<int>,			glu::PRECISION_LOWP,	8,		fullRange8I,	fullRange8I },
-		{ "lowp_div",		"in0 / in1",	div<int>,			glu::PRECISION_LOWP,	8,		fullRange8I,	IVec2(-50, -1) }
+		{ "highp_add",		"in0 + in1",	add<deInt64>,		glu::PRECISION_HIGHP,	32,		fullRange32I,	fullRange32I },
+		{ "highp_sub",		"in0 - in1",	sub<deInt64>,		glu::PRECISION_HIGHP,	32,		fullRange32I,	fullRange32I },
+		{ "highp_mul",		"in0 * in1",	mul<deInt64>,		glu::PRECISION_HIGHP,	32,		fullRange32I,	fullRange32I },
+		{ "highp_div",		"in0 / in1",	div<deInt64>,		glu::PRECISION_HIGHP,	32,		fullRange32I,	IVec2(-10000, -1) },
+		{ "mediump_add",	"in0 + in1",	add<deInt64>,		glu::PRECISION_MEDIUMP,	16,		fullRange16I,	fullRange16I },
+		{ "mediump_sub",	"in0 - in1",	sub<deInt64>,		glu::PRECISION_MEDIUMP,	16,		fullRange16I,	fullRange16I },
+		{ "mediump_mul",	"in0 * in1",	mul<deInt64>,		glu::PRECISION_MEDIUMP,	16,		fullRange16I,	fullRange16I },
+		{ "mediump_div",	"in0 / in1",	div<deInt64>,		glu::PRECISION_MEDIUMP,	16,		fullRange16I,	IVec2(1, 1000) },
+		{ "lowp_add",		"in0 + in1",	add<deInt64>,		glu::PRECISION_LOWP,	8,		fullRange8I,	fullRange8I },
+		{ "lowp_sub",		"in0 - in1",	sub<deInt64>,		glu::PRECISION_LOWP,	8,		fullRange8I,	fullRange8I },
+		{ "lowp_mul",		"in0 * in1",	mul<deInt64>,		glu::PRECISION_LOWP,	8,		fullRange8I,	fullRange8I },
+		{ "lowp_div",		"in0 / in1",	div<deInt64>,		glu::PRECISION_LOWP,	8,		fullRange8I,	IVec2(-50, -1) }
 	};
 
 	static const struct

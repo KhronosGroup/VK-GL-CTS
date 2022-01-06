@@ -606,18 +606,21 @@ bool ConversionDatabase::convertNormalizedUnsignedFixedPoint(int* src_input_rgba
 
 	for (unsigned int n = 0; n < sizeof(bit_diffs_src_intermediate) / sizeof(bit_diffs_src_intermediate[0]); ++n)
 	{
-		float tmp = ((float)src_rgba_intermediate[n]) / ((1 << src_input_rgba_bits[n]) - 1);
-		if (tmp > 1.0f)
-			tmp = 1.0f;
-		tmp *= (float)((1 << src_attachment_rgba_bits[n]) - 1);
-		src_rgba_intermediate[n] = (int)(0.5 + tmp);
+		if (src_input_rgba_bits[n] != 0)
+		{
+			float tmp = ((float)src_rgba_intermediate[n]) / ((1 << src_input_rgba_bits[n]) - 1);
+			if (tmp > 1.0f)
+				tmp = 1.0f;
+			tmp *= (float)((1 << src_attachment_rgba_bits[n]) - 1);
+			src_rgba_intermediate[n] = (int)(0.5 + tmp);
+		}
 	}
 
 	// The following equations correspond to equation 2.1 from ES spec 3.0.2
-	r_f32 = ((float)src_rgba_intermediate[0]) / (float)((1 << src_attachment_rgba_bits[0]) - 1);
-	g_f32 = ((float)src_rgba_intermediate[1]) / (float)((1 << src_attachment_rgba_bits[1]) - 1);
-	b_f32 = ((float)src_rgba_intermediate[2]) / (float)((1 << src_attachment_rgba_bits[2]) - 1);
-	a_f32 = ((float)src_rgba_intermediate[3]) / (float)((1 << src_attachment_rgba_bits[3]) - 1);
+	if (src_attachment_rgba_bits[0] != 0) r_f32 = ((float)src_rgba_intermediate[0]) / (float)((1 << src_attachment_rgba_bits[0]) - 1);
+	if (src_attachment_rgba_bits[1] != 0) g_f32 = ((float)src_rgba_intermediate[1]) / (float)((1 << src_attachment_rgba_bits[1]) - 1);
+	if (src_attachment_rgba_bits[2] != 0) b_f32 = ((float)src_rgba_intermediate[2]) / (float)((1 << src_attachment_rgba_bits[2]) - 1);
+	if (src_attachment_rgba_bits[3] != 0) a_f32 = ((float)src_rgba_intermediate[3]) / (float)((1 << src_attachment_rgba_bits[3]) - 1);
 
 	// Clamp to <0, 1>. Since we're dealing with unsigned ints on input, there's
 	// no way we could be lower than 0.
@@ -665,11 +668,14 @@ bool ConversionDatabase::convertNormalizedUnsignedFixedPoint(int* src_input_rgba
 
 	for (unsigned int n = 0; n < 4 /* channels */; ++n)
 	{
-		float tmp = ((float)dst_rgba[n]) / ((1 << dst_attachment_rgba_bits[n]) - 1);
-		if (tmp > 1.0f)
-			tmp = 1.0f;
-		tmp *= (float)((1 << dst_output_rgba_bits[n]) - 1);
-		dst_rgba[n] = (int)(0.5 + tmp);
+		if (dst_attachment_rgba_bits[n] != 0)
+		{
+			float tmp = ((float)dst_rgba[n]) / ((1 << dst_attachment_rgba_bits[n]) - 1);
+			if (tmp > 1.0f)
+				tmp = 1.0f;
+			tmp *= (float)((1 << dst_output_rgba_bits[n]) - 1);
+			dst_rgba[n] = (int)(0.5 + tmp);
+		}
 	}
 
 	return true;
