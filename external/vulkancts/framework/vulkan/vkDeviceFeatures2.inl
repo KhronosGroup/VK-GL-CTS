@@ -56,7 +56,6 @@ VkPhysicalDeviceShaderClockFeaturesKHR							deviceShaderClockFeaturesKHR[count]
 VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures			deviceShaderDemoteToHelperInvocationFeatures[count];
 VkPhysicalDeviceShaderDrawParametersFeatures					deviceShaderDrawParametersFeatures[count];
 VkPhysicalDeviceShaderIntegerDotProductFeatures					deviceShaderIntegerDotProductFeatures[count];
-VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR				deviceShaderIntegerDotProductFeaturesKHR[count];
 VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures				deviceShaderSubgroupExtendedTypesFeatures[count];
 VkPhysicalDeviceShaderTerminateInvocationFeatures				deviceShaderTerminateInvocationFeatures[count];
 VkPhysicalDeviceSubgroupSizeControlFeatures						deviceSubgroupSizeControlFeatures[count];
@@ -130,7 +129,6 @@ const bool isShaderClockFeaturesKHR						= checkExtension(properties, "VK_KHR_sh
 const bool isShaderDemoteToHelperInvocationFeatures		= checkExtension(properties, "VK_EXT_shader_demote_to_helper_invocation")	|| context.contextSupports(vk::ApiVersion(1, 3, 0));
 const bool isShaderDrawParametersFeatures				=																			   context.contextSupports(vk::ApiVersion(1, 1, 0));
 const bool isShaderIntegerDotProductFeatures			= checkExtension(properties, "VK_KHR_shader_integer_dot_product")			|| context.contextSupports(vk::ApiVersion(1, 3, 0));
-const bool isShaderIntegerDotProductFeaturesKHR			=																			   context.contextSupports(vk::ApiVersion(1, 3, 0));
 const bool isShaderSubgroupExtendedTypesFeatures		= checkExtension(properties, "VK_KHR_shader_subgroup_extended_types")		|| context.contextSupports(vk::ApiVersion(1, 2, 0));
 const bool isShaderTerminateInvocationFeatures			= checkExtension(properties, "VK_KHR_shader_terminate_invocation")			|| context.contextSupports(vk::ApiVersion(1, 3, 0));
 const bool isSubgroupSizeControlFeatures				= checkExtension(properties, "VK_EXT_subgroup_size_control")				|| context.contextSupports(vk::ApiVersion(1, 3, 0));
@@ -206,7 +204,6 @@ for (int ndx = 0; ndx < count; ++ndx)
 	deMemset(&deviceShaderDemoteToHelperInvocationFeatures[ndx],	0xFF * ndx, sizeof(VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures));
 	deMemset(&deviceShaderDrawParametersFeatures[ndx],				0xFF * ndx, sizeof(VkPhysicalDeviceShaderDrawParametersFeatures));
 	deMemset(&deviceShaderIntegerDotProductFeatures[ndx],			0xFF * ndx, sizeof(VkPhysicalDeviceShaderIntegerDotProductFeatures));
-	deMemset(&deviceShaderIntegerDotProductFeaturesKHR[ndx],		0xFF * ndx, sizeof(VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR));
 	deMemset(&deviceShaderSubgroupExtendedTypesFeatures[ndx],		0xFF * ndx, sizeof(VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures));
 	deMemset(&deviceShaderTerminateInvocationFeatures[ndx],			0xFF * ndx, sizeof(VkPhysicalDeviceShaderTerminateInvocationFeatures));
 	deMemset(&deviceSubgroupSizeControlFeatures[ndx],				0xFF * ndx, sizeof(VkPhysicalDeviceSubgroupSizeControlFeatures));
@@ -386,10 +383,7 @@ for (int ndx = 0; ndx < count; ++ndx)
 	deviceShaderDrawParametersFeatures[ndx].pNext = &deviceShaderIntegerDotProductFeatures[ndx];
 
 	deviceShaderIntegerDotProductFeatures[ndx].sType = isShaderIntegerDotProductFeatures ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES : VK_STRUCTURE_TYPE_MAX_ENUM;
-	deviceShaderIntegerDotProductFeatures[ndx].pNext = &deviceShaderIntegerDotProductFeaturesKHR[ndx];
-
-	deviceShaderIntegerDotProductFeaturesKHR[ndx].sType = isShaderIntegerDotProductFeaturesKHR ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR : VK_STRUCTURE_TYPE_MAX_ENUM;
-	deviceShaderIntegerDotProductFeaturesKHR[ndx].pNext = &deviceShaderSubgroupExtendedTypesFeatures[ndx];
+	deviceShaderIntegerDotProductFeatures[ndx].pNext = &deviceShaderSubgroupExtendedTypesFeatures[ndx];
 
 	deviceShaderSubgroupExtendedTypesFeatures[ndx].sType = isShaderSubgroupExtendedTypesFeatures ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES : VK_STRUCTURE_TYPE_MAX_ENUM;
 	deviceShaderSubgroupExtendedTypesFeatures[ndx].pNext = &deviceShaderTerminateInvocationFeatures[ndx];
@@ -559,8 +553,6 @@ if (isShaderDrawParametersFeatures)
 	log << TestLog::Message << deviceShaderDrawParametersFeatures[0] << TestLog::EndMessage;
 if (isShaderIntegerDotProductFeatures)
 	log << TestLog::Message << deviceShaderIntegerDotProductFeatures[0] << TestLog::EndMessage;
-if (isShaderIntegerDotProductFeaturesKHR)
-	log << TestLog::Message << deviceShaderIntegerDotProductFeaturesKHR[0] << TestLog::EndMessage;
 if (isShaderSubgroupExtendedTypesFeatures)
 	log << TestLog::Message << deviceShaderSubgroupExtendedTypesFeatures[0] << TestLog::EndMessage;
 if (isShaderTerminateInvocationFeatures)
@@ -950,11 +942,6 @@ if (isShaderIntegerDotProductFeatures &&
 	(deviceShaderIntegerDotProductFeatures[0].shaderIntegerDotProduct != deviceShaderIntegerDotProductFeatures[1].shaderIntegerDotProduct))
 {
 		TCU_FAIL("Mismatch between VkPhysicalDeviceShaderIntegerDotProductFeatures");
-}
-if (isShaderIntegerDotProductFeaturesKHR &&
-	(deviceShaderIntegerDotProductFeaturesKHR[0].shaderIntegerDotProduct != deviceShaderIntegerDotProductFeaturesKHR[1].shaderIntegerDotProduct))
-{
-		TCU_FAIL("Mismatch between VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR");
 }
 if (isShaderSubgroupExtendedTypesFeatures &&
 	(deviceShaderSubgroupExtendedTypesFeatures[0].shaderSubgroupExtendedTypes != deviceShaderSubgroupExtendedTypesFeatures[1].shaderSubgroupExtendedTypes))
