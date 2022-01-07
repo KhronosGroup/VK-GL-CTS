@@ -68,7 +68,7 @@ const char* GL::shader_version_gpu5 = "#version 430 core\n\n";
 const char* GL::shader_version		= "#version 430 core\n\n";
 } /* namespace Interface */
 
-/* Dummy fragment shader source code.
+/* Minimal fragment shader source code.
  * Used when testing the vertex shader. */
 const std::string default_fragment_shader_source = "//default fragment shader\n"
 												   "out vec4 color;\n"
@@ -77,7 +77,7 @@ const std::string default_fragment_shader_source = "//default fragment shader\n"
 												   "    color = vec4(1.0);\n"
 												   "}\n";
 
-/* Dummy vertex shader source code.
+/* Minimal vertex shader source code.
  * Used when testing the fragment shader. */
 const std::string default_vertex_shader_source = "//default vertex shader\n"
 												 "\n"
@@ -86,7 +86,7 @@ const std::string default_vertex_shader_source = "//default vertex shader\n"
 												 "    gl_Position = vec4(0.0,0.0,0.0,1.0);\n"
 												 "}\n";
 
-/* Dummy geometry shader source code.
+/* Simple geometry shader source code.
  * Used when testing the other shaders. */
 const std::string default_geometry_shader_source = "//default geometry\n"
 												   "\n"
@@ -102,7 +102,7 @@ const std::string default_geometry_shader_source = "//default geometry\n"
 												   "    EmitVertex();\n"
 												   "}\n";
 
-/* Dummy tesselation control shader source code.
+/* Simple tesselation control shader source code.
  * Used when testing the other shaders. */
 const std::string default_tc_shader_source = "//default tcs\n"
 											 "\n"
@@ -116,7 +116,7 @@ const std::string default_tc_shader_source = "//default tcs\n"
 											 "    gl_TessLevelInner[1] = 1.0;\n"
 											 "}\n";
 
-/* Dummy tesselation evaluation shader source code.
+/* Minimal tesselation evaluation shader source code.
  * Used when testing the other shaders. */
 const std::string default_te_shader_source = "//default tes\n"
 											 "\n"

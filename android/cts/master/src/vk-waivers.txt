@@ -105,3 +105,9 @@ dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.normalized_coords.
 dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.unnormalized_coords.centered
 dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.unnormalized_coords.edge_left
 dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.unnormalized_coords.edge_right
+
+#
+# VK-GL-CTS CL: 7061
+# VK-GL-CTS issue: 2804
+#
+dEQP-VK.rasterization.depth_bias.d32_sfloat

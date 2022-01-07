@@ -3924,9 +3924,9 @@ std::string DepthDrawCase::genVertexSource (void) const
 	if (hasTessellation)
 		buf << "	gl_Position = a_position;\n";
 	else if (m_depthType == DEPTH_USER_DEFINED)
-		buf <<	"	highp float dummyZ = a_position.z;\n"
+		buf <<	"	highp float unusedZ = a_position.z;\n"
 				"	highp float writtenZ = a_position.w;\n"
-				"	gl_Position = vec4(a_position.xy, dummyZ, 1.0);\n"
+				"	gl_Position = vec4(a_position.xy, unusedZ, 1.0);\n"
 				"	v_fragDepth = writtenZ * u_depthScale + u_depthBias;\n";
 	else
 		buf <<	"	highp float writtenZ = a_position.w;\n"
@@ -4038,9 +4038,9 @@ std::string DepthDrawCase::genTessellationEvaluationSource (void) const
 			"	highp vec4 tessellatedPos = gl_TessCoord.x * gl_in[0].gl_Position + gl_TessCoord.y * gl_in[1].gl_Position + gl_TessCoord.z * gl_in[2].gl_Position;\n";
 
 	if (m_depthType == DEPTH_USER_DEFINED)
-		buf <<	"	highp float dummyZ = tessellatedPos.z;\n"
+		buf <<	"	highp float unusedZ = tessellatedPos.z;\n"
 				"	highp float writtenZ = tessellatedPos.w;\n"
-				"	gl_Position = vec4(tessellatedPos.xy, dummyZ, 1.0);\n"
+				"	gl_Position = vec4(tessellatedPos.xy, unusedZ, 1.0);\n"
 				"	v_fragDepth = writtenZ * u_depthScale + u_depthBias;\n";
 	else
 		buf <<	"	highp float writtenZ = tessellatedPos.w;\n"

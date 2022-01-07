@@ -1144,8 +1144,8 @@ void PushConstantGraphicsDisjointTest::initPrograms (SourceCollections& sourceCo
 									  << "} matInst;\n";
 							break;
 						case SIZE_CASE_48:
-							vertexSrc << "int dummy1;\n"
-									  << "vec4 dummy2;\n"
+							vertexSrc << "int unused1;\n"
+									  << "vec4 unused2;\n"
 									  << "vec4 color;\n"
 									  << "} matInst;\n";
 							break;
@@ -1474,8 +1474,8 @@ std::string PushConstantGraphicsOverlapTest::getPushConstantDeclarationStr (VkSh
 					src << "    layout(offset = " << m_pushConstantRange[rangeNdx].range.offset << ") vec4 color[2];\n";
 					break;
 				case SIZE_CASE_36:
-					src << "    layout(offset = " << m_pushConstantRange[rangeNdx].range.offset << ") int dummy1;\n"
-						<< "    layout(offset = " << (m_pushConstantRange[rangeNdx].range.offset + 4) << ") vec4 dummy2;\n"
+					src << "    layout(offset = " << m_pushConstantRange[rangeNdx].range.offset << ") int unused1;\n"
+						<< "    layout(offset = " << (m_pushConstantRange[rangeNdx].range.offset + 4) << ") vec4 unused2;\n"
 						<< "    layout(offset = " << (m_pushConstantRange[rangeNdx].range.offset + 20) << ") vec4 color;\n";
 					break;
 				case SIZE_CASE_128:

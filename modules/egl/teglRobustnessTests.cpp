@@ -65,7 +65,6 @@ namespace
 
 enum ContextResetType
 {
-	CONTEXTRESETTYPE_INFINITE_LOOP,
 	CONTEXTRESETTYPE_SHADER_OOB,
 	CONTEXTRESETTYPE_FIXED_FUNC_OOB,
 };
@@ -218,11 +217,6 @@ public:
 
 							Params					(const string&				name,
 													 const string&				description,
-													 const ContextResetType&	contextResetType,
-													 const ShaderType&			shaderType);
-
-							Params					(const string&				name,
-													 const string&				description,
 													 const RobustAccessType&	robustAccessType,
 													 const ContextResetType&	contextResetType,
 													 const ShaderType&			shaderType,
@@ -280,17 +274,6 @@ RobustnessTestCase::Params::Params (const string&				name,
 	, m_robustAccessType	(robustAccessType)
 	, m_contextResetType	(contextResetType)
 	, m_fixedFunctionType	(fixedFunctionType)
-{
-}
-
-RobustnessTestCase::Params::Params (const string&				name,
-									const string&				description,
-									const ContextResetType&		contextResetType,
-									const ShaderType&			shaderType)
-	: m_name				(name)
-	, m_description			(description)
-	, m_contextResetType	(contextResetType)
-	, m_shaderType			(shaderType)
 {
 }
 
@@ -568,7 +551,6 @@ class ContextReset
 {
 public:
 						ContextReset				(glw::Functions& gl, tcu::TestLog& log, FixedFunctionType fixedFunctionType);
-						ContextReset				(glw::Functions& gl, tcu::TestLog& log, ShaderType shaderType);
 						ContextReset				(glw::Functions& gl, tcu::TestLog& log, ShaderType shaderType, ResourceType resourceType, ReadWriteType readWriteType);
 
 	virtual				~ContextReset				(void) {};
@@ -578,14 +560,9 @@ public:
 	virtual void		teardown					(void) = 0;
 
 	void				finish						(void);
-	void				createSyncObject			(void);
-	glw::GLint			getSyncStatus				(void);
 
-	void				beginQuery					(void);
-	void				endQuery					(void);
 	glw::GLint			getError					(void);
 	glw::GLint			getGraphicsResetStatus		(void);
-	glw::GLuint			getQueryAvailability		(void);
 
 	glw::GLsync			getSyncObject				(void) const { return m_sync; }
 	glw::GLuint			getQueryID					(void) const { return m_queryID; }
@@ -621,22 +598,9 @@ ContextReset::ContextReset (glw::Functions& gl, tcu::TestLog& log, ShaderType sh
 {
 }
 
-ContextReset::ContextReset (glw::Functions& gl, tcu::TestLog& log, ShaderType shaderType)
-	: m_gl			(gl)
-	, m_log			(log)
-	, m_shaderType	(shaderType)
-{
-}
-
 void ContextReset::finish (void)
 {
 	GLU_CHECK_GLW_CALL(m_gl, finish());
-}
-
-void ContextReset::createSyncObject (void)
-{
-	m_sync = m_gl.fenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glFenceSync()");
 }
 
 glw::GLint ContextReset::getError (void)
@@ -653,257 +617,6 @@ glw::GLint ContextReset::getGraphicsResetStatus (void)
 	resetStatus = m_gl.getGraphicsResetStatus();
 
 	return resetStatus;
-}
-
-glw::GLint ContextReset::getSyncStatus (void)
-{
-	glw::GLint syncStatus;
-	m_gl.getSynciv(m_sync, GL_SYNC_STATUS, sizeof(glw::GLint), NULL, &syncStatus);
-
-	return syncStatus;
-}
-
-void ContextReset::beginQuery (void)
-{
-	GLU_CHECK_GLW_CALL(m_gl, genQueries(1, &m_queryID));
-	GLU_CHECK_GLW_CALL(m_gl, beginQuery(GL_ANY_SAMPLES_PASSED, m_queryID));
-}
-
-void ContextReset::endQuery (void)
-{
-	GLU_CHECK_GLW_CALL(m_gl, endQuery(GL_ANY_SAMPLES_PASSED));
-}
-
-glw::GLuint ContextReset::getQueryAvailability (void)
-{
-	glw::GLuint queryReady = GL_FALSE;
-	m_gl.getQueryObjectuiv(m_queryID, GL_QUERY_RESULT_AVAILABLE, &queryReady);
-
-	return queryReady;
-}
-
-class InfiniteLoop : public ContextReset
-{
-public:
-						InfiniteLoop			(glw::Functions& gl, tcu::TestLog& log, ShaderType shaderType);
-						~InfiniteLoop			(void);
-
-	virtual void		setup					(void);
-	virtual void		draw					(void);
-	virtual void		teardown				(void);
-
-private:
-	glu::ProgramSources genComputeSource		(void);
-	glu::ProgramSources genNonComputeSource		(void);
-	glu::ProgramSources	genSources				(void);
-
-	glw::GLuint			m_outputBuffer;
-	glw::GLuint			m_coordinatesBuffer;
-	glw::GLint			m_coordLocation;
-};
-
-InfiniteLoop::InfiniteLoop (glw::Functions& gl, tcu::TestLog& log, ShaderType shaderType)
-	: ContextReset(gl, log, shaderType)
-	, m_outputBuffer		(0)
-	, m_coordinatesBuffer	(0)
-	, m_coordLocation		(0)
-{
-}
-
-InfiniteLoop::~InfiniteLoop (void)
-{
-	try
-	{
-		// Reset GL_CONTEXT_LOST error before destroying resources
-		m_gl.getGraphicsResetStatus();
-		teardown();
-	}
-	catch (...)
-	{
-		// Ignore GL errors from teardown()
-	}
-}
-
-glu::ProgramSources InfiniteLoop::genSources(void)
-{
-	if (m_shaderType == SHADERTYPE_COMPUTE)
-		return genComputeSource();
-	else
-		return genNonComputeSource();
-}
-
-glu::ProgramSources InfiniteLoop::genComputeSource(void)
-{
-	const char* const computeSource =
-		"#version 310 es\n"
-		"layout(local_size_x = 1, local_size_y = 1) in;\n"
-		"uniform highp int u_iterCount;\n"
-		"writeonly buffer Output { highp int b_output_int; };\n"
-		"void main ()\n"
-		"{\n"
-		"	for (highp int i = 0; i < u_iterCount || u_iterCount < 0; ++i)\n"
-		"		b_output_int = u_iterCount;\n"
-		"}\n";
-
-	return glu::ProgramSources() << glu::ComputeSource(computeSource);
-}
-
-glu::ProgramSources InfiniteLoop::genNonComputeSource (void)
-{
-	const bool isVertCase			= m_shaderType == SHADERTYPE_VERT;
-	const bool isFragCase			= m_shaderType == SHADERTYPE_FRAG;
-	const bool isVertAndFragment	= m_shaderType == SHADERTYPE_VERT_AND_FRAG;
-
-	std::ostringstream vert, frag;
-
-	vert << "#version 300 es\n"
-		 << "in highp vec2 a_position;\n";
-
-	frag << "#version 300 es\n";
-
-	vert << "uniform highp int u_iterCount;\n";
-	if (isFragCase || isVertAndFragment)
-	{
-		vert << "flat out highp int v_iterCount;\n";
-		frag << "flat in highp int v_iterCount;\n";
-	}
-
-	if (isVertCase || isVertAndFragment)
-	{
-		vert << "out mediump vec4 v_color;\n";
-		frag << "in mediump vec4 v_color;\n";
-	}
-
-	frag << "out mediump vec4 o_color;\n";
-
-	vert << "\nvoid main (void)\n{\n"
-		 << "	gl_Position = vec4(a_position, 0.0, 1.0);\n"
-		 << "	gl_PointSize = 1.0;\n";
-
-	if (isFragCase || isVertAndFragment)
-		vert << "	v_iterCount = u_iterCount;\n";
-
-	frag << "\nvoid main (void)\n{\n";
-
-	const std::string	iterCount	= (isVertCase ? "u_iterCount" : "v_iterCount");
-	const std::string	loopHeader	= "	for (highp int i = 0; i < " + iterCount + " || " + iterCount + " < 0; ++i)\n";
-	const char* const	body		= "color = cos(sin(color*1.25)*0.8);";
-
-	if (isVertAndFragment)
-	{
-		vert << "	mediump vec4 color = " << "a_position.xyxy" << ";\n";
-		vert << loopHeader << "		" << body << "\n";
-
-		frag << "	mediump vec4 color = " << "gl_FragCoord" << ";\n";
-		frag << loopHeader << "		" << body << "\n";
-	}
-	else
-	{
-		std::ostringstream&	op			= isVertCase ? vert : frag;
-		op << "	mediump vec4 color = " << (isVertCase ? "a_position.xyxy" : "gl_FragCoord") << ";\n";
-		op << loopHeader << "		" << body << "\n";
-	}
-
-	if (isVertCase || isVertAndFragment)
-	{
-		vert << "	v_color = color;\n";
-		frag << "	o_color = v_color;\n";
-	}
-	else
-		frag << "	o_color = color;\n";
-
-	vert << "}\n";
-	frag << "}\n";
-
-	return glu::ProgramSources() << glu::VertexSource(vert.str()) << glu::FragmentSource(frag.str());
-}
-
-void InfiniteLoop::setup (void)
-{
-	glu::ShaderProgram program (m_gl, genSources());
-	m_log << program;
-
-	if (!program.isOk())
-		TCU_FAIL("Failed to compile shader program");
-
-	GLU_CHECK_GLW_CALL(m_gl, useProgram(program.getProgram()));
-
-	if (m_shaderType == SHADERTYPE_COMPUTE)
-	{
-		// Output buffer setup
-		m_outputBuffer = 0;
-		GLU_CHECK_GLW_CALL(m_gl, genBuffers(1, &m_outputBuffer));
-		GLU_CHECK_GLW_CALL(m_gl, bindBuffer(GL_SHADER_STORAGE_BUFFER, m_outputBuffer));
-		GLU_CHECK_GLW_CALL(m_gl, bufferData(GL_SHADER_STORAGE_BUFFER, sizeof(int), DE_NULL, GL_DYNAMIC_DRAW));
-		GLU_CHECK_GLW_CALL(m_gl, bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_outputBuffer));
-	}
-	else
-	{
-		const glw::GLfloat coords[] =
-		{
-			-1.0f, -1.0f,
-			+1.0f, -1.0f,
-			+1.0f, +1.0f,
-			-1.0f, +1.0f
-		};
-
-		m_coordLocation = m_gl.getAttribLocation(program.getProgram(), "a_position");
-		GLU_CHECK_GLW_MSG(m_gl, "glGetAttribLocation()");
-		TCU_CHECK(m_coordLocation != (glw::GLint)-1);
-
-		// Load the vertex data
-		m_coordinatesBuffer = 0;
-		GLU_CHECK_GLW_CALL(m_gl, genBuffers(1, &m_coordinatesBuffer));
-		GLU_CHECK_GLW_CALL(m_gl, bindBuffer(GL_ARRAY_BUFFER, m_coordinatesBuffer));
-		GLU_CHECK_GLW_CALL(m_gl, bufferData(GL_ARRAY_BUFFER, (glw::GLsizeiptr)sizeof(coords), coords, GL_STATIC_DRAW));
-		GLU_CHECK_GLW_CALL(m_gl, enableVertexAttribArray(m_coordLocation));
-		GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(m_coordLocation, 2, GL_FLOAT, GL_FALSE, 0, DE_NULL));
-	}
-
-	glw::GLint iterCountLocation = m_gl.getUniformLocation(program.getProgram(), "u_iterCount");
-	GLU_CHECK_GLW_MSG(m_gl, "glGetUniformLocation()");
-	TCU_CHECK(iterCountLocation != (glw::GLint)-1);
-
-	// Set the iteration count (infinite)
-	glw::GLint iterCount = -1;
-	GLU_CHECK_GLW_CALL(m_gl, uniform1i(iterCountLocation, iterCount));
-}
-
-void InfiniteLoop::draw (void)
-{
-	if (m_shaderType == SHADERTYPE_COMPUTE)
-		m_gl.dispatchCompute(1, 1, 1);
-	else
-	{
-		const glw::GLushort indices[] = { 0, 1, 2, 2, 3, 0 };
-		m_gl.drawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
-	}
-}
-
-void InfiniteLoop::teardown (void)
-{
-	if (m_shaderType != SHADERTYPE_COMPUTE)
-	{
-		if (m_coordLocation)
-		{
-			GLU_CHECK_GLW_CALL(m_gl, disableVertexAttribArray(m_coordLocation));
-			m_coordLocation = 0;
-		}
-	}
-
-	if (m_outputBuffer)
-	{
-		GLU_CHECK_GLW_CALL(m_gl, deleteBuffers(1, &m_outputBuffer));
-		m_outputBuffer = 0;
-	}
-
-	if (m_coordinatesBuffer)
-	{
-		GLU_CHECK_GLW_CALL(m_gl, deleteBuffers(1, &m_coordinatesBuffer));
-		m_coordinatesBuffer = 0;
-	}
-
-	GLU_CHECK_GLW_CALL(m_gl, useProgram(0));
 }
 
 class FixedFunctionOOB : public ContextReset
@@ -1337,7 +1050,7 @@ void ShadersOOB::setup (void)
 		GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(m_coordLocation, 2, GL_FLOAT, GL_FALSE, 0, DE_NULL));
 	}
 
-	// Create dummy data for filling buffer objects
+	// Create unused data for filling buffer objects
 	const std::vector<tcu::Vec4> refValues(s_numBindings, tcu::Vec4(0.0f, 1.0f, 1.0f, 1.0f));
 
 	if (m_isLocalArray && m_shaderType == SHADERTYPE_COMPUTE)
@@ -1582,9 +1295,6 @@ public:
 
 de::SharedPtr<ContextReset> contextResetFactory (const RobustnessTestCase::Params params, glw::Functions& gl, tcu::TestLog& log)
 {
-	if (params.getContextResetType() == CONTEXTRESETTYPE_INFINITE_LOOP)
-		return de::SharedPtr<ContextReset>(new InfiniteLoop(gl, log, params.getShaderType()));
-
 	if (params.getContextResetType() == CONTEXTRESETTYPE_FIXED_FUNC_OOB)
 		return de::SharedPtr<ContextReset>(new FixedFunctionOOB(gl, log, params.getFixedFunctionType()));
 
@@ -1656,37 +1366,7 @@ void ContextResetCase::execute (glw::Functions& gl)
 	GLU_CHECK_GLW_CALL(gl, getBooleanv(GL_CONTEXT_ROBUST_ACCESS_EXT, &isContextRobust));
 	provokeReset(contextReset);
 
-	if (m_params.getContextResetType() == CONTEXTRESETTYPE_INFINITE_LOOP)
-	{
-		try
-		{
-			waitForReset(contextReset);
-
-			const glw::GLenum	status	= gl.getGraphicsResetStatus();
-
-			if (status == GL_NO_ERROR)
-				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Context was NOT lost");
-			else
-			{
-				m_testCtx.getLog() << tcu::TestLog::Message << "glGetGraphicsResetStatus() returned " << glu::getGraphicsResetStatusStr(status) << tcu::TestLog::EndMessage;
-				m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Context was lost");
-			}
-		}
-		catch (const glu::Error& error)
-		{
-			if (error.getError() == GL_CONTEXT_LOST)
-				passAndLog(contextReset);
-			else
-			{
-				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-
-				m_testCtx.getLog()	<< tcu::TestLog::Message
-									<< "Warning: glGetError() returned wrong value [" << error.what() << ", expected " << glu::getErrorStr(GL_CONTEXT_LOST) << "]"
-									<< tcu::TestLog::EndMessage;
-			}
-		}
-	}
-	else if (m_params.getContextResetType() == CONTEXTRESETTYPE_SHADER_OOB || m_params.getContextResetType() == CONTEXTRESETTYPE_FIXED_FUNC_OOB)
+	if (m_params.getContextResetType() == CONTEXTRESETTYPE_SHADER_OOB || m_params.getContextResetType() == CONTEXTRESETTYPE_FIXED_FUNC_OOB)
 	{
 		try
 		{
@@ -1760,87 +1440,6 @@ public:
 				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Error flag not reset after calling getGraphicsResetStatus()");
 			else
 				m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-		}
-	}
-};
-
-class SyncObjectResetCase : public ContextResetCase
-{
-public:
-	SyncObjectResetCase (EglTestContext& eglTestCtx, const char* name, const char* description, Params params)
-		: ContextResetCase (eglTestCtx, name, description, params) {}
-
-	virtual void provokeReset (de::SharedPtr<ContextReset>& contextReset)
-	{
-		m_testCtx.getLog()	<< tcu::TestLog::Message
-							<< "Check the status of a sync object after a context reset returned by glGetSynciv() equals GL_SIGNALED\n\n"
-							<< tcu::TestLog::EndMessage;
-
-		contextReset->setup();
-		contextReset->draw();
-	}
-
-	virtual void waitForReset (de::SharedPtr<ContextReset>& contextReset)
-	{
-		contextReset->createSyncObject();
-		contextReset->teardown();
-		contextReset->finish();
-	}
-
-	virtual void passAndLog (de::SharedPtr<ContextReset>& contextReset)
-	{
-		const glw::GLint status = contextReset->getSyncStatus();
-		if (status != GL_SIGNALED)
-		{
-			m_testCtx.getLog()	<< tcu::TestLog::Message
-								<< "Test failed! glGetSynciv() returned wrong value [" << glu::getErrorStr(status) << ", expected " << glu::getErrorStr(GL_SIGNALED) << "]"
-								<< tcu::TestLog::EndMessage;
-
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-		}
-		else
-			m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	}
-};
-
-class QueryObjectResetCase : public ContextResetCase
-{
-public:
-	QueryObjectResetCase (EglTestContext& eglTestCtx, const char* name, const char* description, Params params)
-		: ContextResetCase (eglTestCtx, name, description, params) {}
-
-	virtual void provokeReset (de::SharedPtr<ContextReset>& contextReset)
-	{
-		m_testCtx.getLog()	<< tcu::TestLog::Message
-							<< "Check the status of a query object after a context reset returned by glGetQueryObjectuiv() equals GL_TRUE\n\n"
-							<< tcu::TestLog::EndMessage;
-
-		contextReset->setup();
-		contextReset->beginQuery();
-		contextReset->draw();
-	}
-
-	virtual void waitForReset (de::SharedPtr<ContextReset>& contextReset)
-	{
-		contextReset->endQuery();
-		contextReset->teardown();
-		contextReset->finish();
-	}
-
-	virtual void passAndLog (de::SharedPtr<ContextReset>& contextReset)
-	{
-		const glw::GLuint queryReady = contextReset->getQueryAvailability();
-		if (queryReady != GL_TRUE)
-		{
-			m_testCtx.getLog()	<< tcu::TestLog::Message
-								<< "Test failed! glGetQueryObjectuiv() returned wrong value [" << glu::getErrorStr(queryReady) << ", expected " << glu::getErrorStr(GL_TRUE) << "]"
-								<< tcu::TestLog::EndMessage;
-
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-		}
-		else
-		{
-			m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 		}
 	}
 };
@@ -1966,81 +1565,6 @@ public:
 	}
 };
 
-class SharedContextResetCase : public RobustnessTestCase
-{
-public:
-	SharedContextResetCase (EglTestContext& eglTestCtx, const char* name, const char* description, Params params)
-		: RobustnessTestCase (eglTestCtx, name, description, params) {}
-
-	TestCase::IterateResult	iterate	(void)
-	{
-		TestLog&	log		= m_testCtx.getLog();
-
-		log << tcu::TestLog::Message
-			<< "A reset in one context will result in a reset in all other contexts in its share group\n\n"
-			<< tcu::TestLog::EndMessage;
-
-		// Create two share contexts with the same reset notification strategies
-		const EGLint attribListShared[] =
-		{
-			EGL_CONTEXT_CLIENT_VERSION, 3,
-			EGL_CONTEXT_MINOR_VERSION_KHR, 0,
-			EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT, EGL_TRUE,
-			EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_EXT, EGL_LOSE_CONTEXT_ON_RESET,
-			EGL_NONE
-		};
-
-		checkRequiredEGLExtensions(attribListShared);
-
-		log << tcu::TestLog::Message << "Create context A (share_context = EGL_NO_CONTEXT)" << tcu::TestLog::EndMessage;
-		RenderingContext contextA(m_eglTestCtx, attribListShared, m_eglConfig, m_eglDisplay, EGL_NO_CONTEXT);
-
-		log << tcu::TestLog::Message << "Create context B (share_context = context A)" << tcu::TestLog::EndMessage;
-		RenderingContext contextB(m_eglTestCtx, attribListShared, m_eglConfig, m_eglDisplay, contextA.getContext());
-
-		contextA.makeCurrent(m_eglSurface);
-
-		glw::Functions gl;
-		contextA.initGLFunctions(&gl, paramsToApiType(m_params));
-		checkGLSupportForParams(gl, m_params);
-
-		DE_ASSERT(m_params.getContextResetType() == CONTEXTRESETTYPE_INFINITE_LOOP);
-		de::UniquePtr<ContextReset> contextReset(new InfiniteLoop(gl, log, m_params.getShaderType()));
-
-		contextReset->setup();
-		contextReset->draw();
-
-		try
-		{
-			contextReset->teardown();
-			contextReset->finish();
-		}
-		catch (const glu::Error& error)
-		{
-			if (error.getError() == GL_CONTEXT_LOST)
-			{
-				contextB.makeCurrent(m_eglSurface);
-
-				gl.getString(GL_VERSION); // arbitrary gl call
-
-				if (gl.getError() != GL_CONTEXT_LOST)
-				{
-					m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Test failed! glGetError() returned wrong value. Expected GL_CONTEXT_LOST in context B");
-					return STOP;
-				}
-			}
-			else
-			{
-				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Test failed! glGetError() returned wrong value. Expected GL_CONTEXT_LOST in context A");
-				return STOP;
-			}
-		}
-
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-		return STOP;
-	}
-};
-
 class InvalidContextCase : public RobustnessTestCase
 {
 public:
@@ -2096,110 +1620,6 @@ public:
 	}
 };
 
-class RecoverFromResetCase : public RobustnessTestCase
-{
-public:
-	RecoverFromResetCase (EglTestContext& eglTestCtx, const char* name, const char* description, Params params)
-		: RobustnessTestCase (eglTestCtx, name, description,  params) {}
-
-	TestCase::IterateResult	iterate	(void)
-	{
-		TestLog&	log		= m_testCtx.getLog();
-
-		log << tcu::TestLog::Message
-			<< "Provoke a context reset and wait for glGetGraphicsResetStatus() to return NO_ERROR_KHR.\n"
-			<< "Destroy the old context and successfully create a new context.\n\n"
-			<< tcu::TestLog::EndMessage;
-
-		const EGLint attribList[] =
-		{
-			EGL_CONTEXT_CLIENT_VERSION, 3,
-			EGL_CONTEXT_MINOR_VERSION_KHR, 0,
-			EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT, EGL_TRUE,
-			EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_EXT, EGL_LOSE_CONTEXT_ON_RESET,
-			EGL_NONE
-		};
-
-		checkRequiredEGLExtensions(attribList);
-
-		log << tcu::TestLog::Message << "Create context A" << tcu::TestLog::EndMessage;
-		RenderingContext contextA(m_eglTestCtx, attribList, m_eglConfig, m_eglDisplay, EGL_NO_CONTEXT);
-		contextA.makeCurrent(m_eglSurface);
-
-		glw::Functions gl;
-		contextA.initGLFunctions(&gl, paramsToApiType(m_params));
-		checkGLSupportForParams(gl, m_params);
-
-		DE_ASSERT(m_params.getContextResetType() == CONTEXTRESETTYPE_INFINITE_LOOP);
-		de::UniquePtr<ContextReset> contextReset(new InfiniteLoop(gl, log, m_params.getShaderType()));
-
-		contextReset->setup();
-		contextReset->draw();
-
-		try
-		{
-			contextReset->teardown();
-			contextReset->finish();
-		}
-		catch (const glu::Error& error)
-		{
-			if (error.getError() == GL_CONTEXT_LOST)
-			{
-				const glw::GLint status = gl.getGraphicsResetStatus();
-				if (status == GL_NO_ERROR)
-				{
-					log << tcu::TestLog::Message
-						<< "Test failed! glGetGraphicsResetStatus() returned wrong value [" << glu::getErrorStr(status) << ", expected " << glu::getErrorStr(GL_GUILTY_CONTEXT_RESET) << "]"
-						<< tcu::TestLog::EndMessage;
-
-					m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-					return STOP;
-				}
-
-				const int	sleepTimeMs		= 1000;				// (1 second)
-				int			timeout			= sleepTimeMs * 10; // (10 seconds)
-				int			reset_status	= -1;
-
-				// wait for context to reset
-				while ((reset_status = gl.getGraphicsResetStatus() != GL_NO_ERROR) && timeout > 0)
-				{
-					deSleep(sleepTimeMs);
-					timeout -= sleepTimeMs;
-				}
-
-				if (reset_status != GL_NO_ERROR)
-				{
-					log	<< tcu::TestLog::Message
-						<< "Test failed! Context did not reset. glGetGraphicsResetStatus() returned wrong value [" << glu::getErrorStr(reset_status) << ", expected " << glu::getErrorStr(GL_NO_ERROR) << "]"
-						<< tcu::TestLog::EndMessage;
-
-					m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-					return STOP;
-				}
-			}
-			else
-			{
-				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Test failed! glGetError() returned wrong value. Expected GL_CONTEXT_LOST in context A");
-				return STOP;
-			}
-		}
-
-		try
-		{
-			log << tcu::TestLog::Message << "Create context B" << tcu::TestLog::EndMessage;
-			RenderingContext contextB(m_eglTestCtx, attribList, m_eglConfig, m_eglDisplay, EGL_NO_CONTEXT);
-		}
-		catch (const glu::Error&)
-		{
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Test failed! Could not create new context. glGetError() returned wrong value. Expected GL_NO_ERROR");
-			return STOP;
-		}
-
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-		return STOP;
-	}
-};
-
 } // anonymous
 
 // Note: Tests limited to openGLES 3.1 contexts only
@@ -2215,49 +1635,11 @@ TestCaseGroup* createRobustnessTests (EglTestContext& eglTestCtx)
 	tcu::TestCaseGroup* const fixedFunctionTestGroup			= new TestCaseGroup(eglTestCtx, "fixed_function_pipeline",				"Fixed function pipeline context reset tests with robust context");
 	tcu::TestCaseGroup* const fixedFunctionNonRobustTestGroup	= new TestCaseGroup(eglTestCtx, "fixed_function_pipeline_non_robust",	"Fixed function pipeline context reset tests with non-robust context");
 
-	tcu::TestCaseGroup* const infiniteLoopTestGroup				= new TestCaseGroup(eglTestCtx, "infinite_loop",						"Infinite loop scenarios");
 	tcu::TestCaseGroup* const outOfBoundsTestGroup				= new TestCaseGroup(eglTestCtx, "out_of_bounds",						"Out of bounds access scenarios with robust context");
 
 	tcu::TestCaseGroup* const outOfBoundsNonRobustTestGroup		= new TestCaseGroup(eglTestCtx, "out_of_bounds_non_robust",				"Out of bounds access scenarios with non-robust context");
 
 	const string resetScenarioDescription	= "query error states and reset notifications";
-	const string syncScenarioDescription	= "query sync status with getSynciv()";
-	const string queryScenarioDescription	= "check availability of query result with getQueryObjectiv()";
-	const string sharedScenarioDescription	= "check reset notification is propagated to shared context";
-	const string recoverScenarioDescription	= "delete the old context and create a new one";
-
-	// infinite loop test cases
-	{
-		tcu::TestCaseGroup* const infiniteLoopResetTestGroup	= new TestCaseGroup(eglTestCtx, "reset_status",				"Tests that query the reset status after a context reset has occurred");
-		tcu::TestCaseGroup* const infiniteLoopSyncTestGroup		= new TestCaseGroup(eglTestCtx, "sync_status",				"Tests that query the sync status after a context reset has occurred");
-		tcu::TestCaseGroup* const infiniteLoopQueryTestGroup	= new TestCaseGroup(eglTestCtx, "query_status",				"Tests that query the state of a query object after a context reset has occurred");
-		tcu::TestCaseGroup* const infiniteLoopSharedTestGroup	= new TestCaseGroup(eglTestCtx, "shared_context_status",	"Tests that query the state of a shared context after a reset has occurred");
-		tcu::TestCaseGroup* const infiniteLoopRecoverTestGroup	= new TestCaseGroup(eglTestCtx, "recover_from_reset",		"Tests that attempt to create a new context after a context has occurred");
-
-		static const RobustnessTestCase::Params s_infiniteLoopCases[] =
-		{
-			RobustnessTestCase::Params("vertex",				"Provoke a context reset in vertex shader and ",				CONTEXTRESETTYPE_INFINITE_LOOP,	SHADERTYPE_VERT),
-			RobustnessTestCase::Params("fragment",				"Provoke a context reset in fragment shader and ",				CONTEXTRESETTYPE_INFINITE_LOOP,	SHADERTYPE_FRAG),
-			RobustnessTestCase::Params("vertex_and_fragment",	"Provoke a context reset in vertex and fragment shader and ",	CONTEXTRESETTYPE_INFINITE_LOOP,	SHADERTYPE_VERT_AND_FRAG),
-			RobustnessTestCase::Params("compute",				"Provoke a context reset in compute shader and ",				CONTEXTRESETTYPE_INFINITE_LOOP,	SHADERTYPE_COMPUTE),
-		};
-
-		for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(s_infiniteLoopCases); ++testNdx)
-		{
-			const RobustnessTestCase::Params& test = s_infiniteLoopCases[testNdx];
-			infiniteLoopResetTestGroup->addChild	(new BasicResetCase				(eglTestCtx, test.getName().c_str(), (test.getDescription() + resetScenarioDescription).c_str(), test));
-			infiniteLoopSyncTestGroup->addChild		(new SyncObjectResetCase		(eglTestCtx, test.getName().c_str(), (test.getDescription() + syncScenarioDescription).c_str(), test));
-			infiniteLoopQueryTestGroup->addChild	(new QueryObjectResetCase		(eglTestCtx, test.getName().c_str(), (test.getDescription() + queryScenarioDescription).c_str(), test));
-			infiniteLoopSharedTestGroup->addChild	(new SharedContextResetCase		(eglTestCtx, test.getName().c_str(), (test.getDescription() + sharedScenarioDescription).c_str(), test));
-			infiniteLoopRecoverTestGroup->addChild	(new RecoverFromResetCase		(eglTestCtx, test.getName().c_str(), (test.getDescription() + recoverScenarioDescription).c_str(), test));
-		}
-
-		infiniteLoopTestGroup->addChild(infiniteLoopResetTestGroup);
-		infiniteLoopTestGroup->addChild(infiniteLoopSyncTestGroup);
-		infiniteLoopTestGroup->addChild(infiniteLoopQueryTestGroup);
-		infiniteLoopTestGroup->addChild(infiniteLoopSharedTestGroup);
-		infiniteLoopTestGroup->addChild(infiniteLoopRecoverTestGroup);
-	}
 
 	// out-of-bounds test cases
 	{
@@ -2484,7 +1866,6 @@ TestCaseGroup* createRobustnessTests (EglTestContext& eglTestCtx)
 		negativeContextTestGroup->addChild(new InvalidNotificationEnumCase	(eglTestCtx, "invalid_notification_strategy_enum",		"Create a robust context using EGL 1.5 only enum with EGL versions <= 1.4" ));
 	}
 
-	shadersTestGroup->addChild(infiniteLoopTestGroup);
 	shadersTestGroup->addChild(outOfBoundsTestGroup);
 	shadersTestGroup->addChild(outOfBoundsNonRobustTestGroup);
 

@@ -105,7 +105,7 @@ struct CompareData
 	}
 };
 
-//! Make a dummy sampler.
+//! Make a (unused) sampler.
 Move<VkSampler> makeSampler (const DeviceInterface& vk, const VkDevice device)
 {
 	const VkSamplerCreateInfo samplerParams =

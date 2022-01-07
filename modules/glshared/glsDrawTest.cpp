@@ -58,6 +58,7 @@
 #include <vector>
 #include <sstream>
 #include <limits>
+#include <cstdint>
 
 #include "glwDefs.hpp"
 #include "glwEnums.hpp"
@@ -1962,11 +1963,12 @@ void AttributePack::render (DrawTestSpec::Primitive primitive, DrawTestSpec::Dra
 			DrawCommand command;
 
 			// index offset must be converted to firstIndex by dividing with the index element size
-			DE_ASSERT(((const deUint8*)indexOffset - (const deUint8*)DE_NULL) % gls::DrawTestSpec::indexTypeSize(indexType) == 0); // \note This is checked in spec validation
+			const auto offsetAsInteger = reinterpret_cast<uintptr_t>(indexOffset);
+			DE_ASSERT(offsetAsInteger % gls::DrawTestSpec::indexTypeSize(indexType) == 0); // \note This is checked in spec validation
 
 			command.count				= vertexCount;
 			command.primCount			= instanceCount;
-			command.firstIndex			= (glw::GLuint)(((const deUint8*)indexOffset - (const deUint8*)DE_NULL) / gls::DrawTestSpec::indexTypeSize(indexType));
+			command.firstIndex			= (glw::GLuint)(offsetAsInteger / gls::DrawTestSpec::indexTypeSize(indexType));
 			command.baseVertex			= baseVertex;
 			command.reservedMustBeZero	= 0;
 

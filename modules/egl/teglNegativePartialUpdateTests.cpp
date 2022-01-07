@@ -279,7 +279,7 @@ TestCase::IterateResult NotCurrentSurfaceTest::iterate (void)
 		EGL_HEIGHT,	64,
 		EGL_NONE
 	};
-	const eglu::UniqueSurface	dummyPbuffer		(egl, m_eglDisplay, egl.createPbufferSurface(m_eglDisplay, m_eglConfig, attribList));
+	const eglu::UniqueSurface	unusedPbuffer		(egl, m_eglDisplay, egl.createPbufferSurface(m_eglDisplay, m_eglConfig, attribList));
 	TestLog&					log					= m_testCtx.getLog();
 	CallLogWrapper				wrapper				(egl, log);
 	EGLint						damageRegion[]		= { 10, 10, 10, 10 };
@@ -287,7 +287,7 @@ TestCase::IterateResult NotCurrentSurfaceTest::iterate (void)
 
 	wrapper.enableLogging(true);
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, *dummyPbuffer, *dummyPbuffer, m_eglContext));
+	EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, *unusedPbuffer, *unusedPbuffer, m_eglContext));
 	{
 		tcu::ScopedLogSection(log, "Test2.1", "If query buffer age on a surface that is not the current draw surface --> EGL_BAD_SURFACE");
 		EGLU_CHECK_CALL(egl, surfaceAttrib(m_eglDisplay, m_eglSurface, EGL_SWAP_BEHAVIOR, EGL_BUFFER_DESTROYED));
@@ -502,7 +502,7 @@ TestCase::IterateResult NotCurrentSurfaceTest2::iterate (void)
 		EGL_HEIGHT,	64,
 		EGL_NONE
 	};
-	const eglu::UniqueSurface	dummyPbuffer	(egl, m_eglDisplay, egl.createPbufferSurface(m_eglDisplay, m_eglConfig, attribList));
+	const eglu::UniqueSurface	unusedPbuffer	(egl, m_eglDisplay, egl.createPbufferSurface(m_eglDisplay, m_eglConfig, attribList));
 	TestLog&					log				= m_testCtx.getLog();
 	CallLogWrapper				wrapper			(egl, log);
 	EGLint						damageRegion[]	= { 10, 10, 10, 10 };
@@ -516,7 +516,7 @@ TestCase::IterateResult NotCurrentSurfaceTest2::iterate (void)
 
 	{
 		tcu::ScopedLogSection(log, "Test7", "If call setDamageRegion() on a surface that is not the current draw surface --> EGL_BAD_MATCH");
-		EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, *dummyPbuffer, *dummyPbuffer, m_eglContext));
+		EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, *unusedPbuffer, *unusedPbuffer, m_eglContext));
 		expectFalse(wrapper.eglSetDamageRegionKHR(m_eglDisplay, m_eglSurface, damageRegion, 1));
 		expectError(EGL_BAD_MATCH);
 	}
