@@ -1392,7 +1392,7 @@ void initTests(tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 								useSeparateDepthStencilLayouts,
 								groupParams
 							};
-							formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
+							formatGroup->addChild(new DSResolveTestInstance(testCtx, testName, testName, testConfig));
 						}
 
 						if (hasStencil)
@@ -1421,7 +1421,7 @@ void initTests(tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 								useSeparateDepthStencilLayouts,
 								groupParams
 							};
-							formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
+							formatGroup->addChild(new DSResolveTestInstance(testCtx, testName, testName, testConfig));
 						}
 					}
 				}

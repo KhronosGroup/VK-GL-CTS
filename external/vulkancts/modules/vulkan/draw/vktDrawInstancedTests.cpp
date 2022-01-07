@@ -325,7 +325,7 @@ public:
 		{
 			context.requireDeviceFunctionality("VK_EXT_vertex_attribute_divisor");
 
-			const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT& vertexAttributeDivisorFeatures = context.getVertexAttributeDivisorFeaturesEXT();
+			const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT& vertexAttributeDivisorFeatures = context.getVertexAttributeDivisorFeatures();
 
 			if (m_params.attribDivisor != 1 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor)
 				TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisor");

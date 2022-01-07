@@ -1069,9 +1069,9 @@ void DeviceDriver::setLocalDimmingAMD (VkDevice device, VkSwapchainKHR swapChain
 	m_vk.setLocalDimmingAMD(device, swapChain, localDimmingEnable);
 }
 
-VkResult DeviceDriver::getCalibratedTimestampsEXT (VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const
+VkResult DeviceDriver::getCalibratedTimestampsKHR (VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoKHR* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const
 {
-	return m_vk.getCalibratedTimestampsEXT(device, timestampCount, pTimestampInfos, pTimestamps, pMaxDeviation);
+	return m_vk.getCalibratedTimestampsKHR(device, timestampCount, pTimestampInfos, pTimestamps, pMaxDeviation);
 }
 
 VkResult DeviceDriver::setDebugUtilsObjectNameEXT (VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo) const
@@ -2174,6 +2174,36 @@ VkResult DeviceDriver::getBufferCollectionPropertiesFUCHSIA (VkDevice device, Vk
 	return m_vk.getBufferCollectionPropertiesFUCHSIA(device, collection, pProperties);
 }
 
+VkResult DeviceDriver::createCudaModuleNV (VkDevice device, const VkCudaModuleCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaModuleNV* pModule) const
+{
+	return m_vk.createCudaModuleNV(device, pCreateInfo, pAllocator, pModule);
+}
+
+VkResult DeviceDriver::getCudaModuleCacheNV (VkDevice device, VkCudaModuleNV module, size_t* pCacheSize, void* pCacheData) const
+{
+	return m_vk.getCudaModuleCacheNV(device, module, pCacheSize, pCacheData);
+}
+
+VkResult DeviceDriver::createCudaFunctionNV (VkDevice device, const VkCudaFunctionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaFunctionNV* pFunction) const
+{
+	return m_vk.createCudaFunctionNV(device, pCreateInfo, pAllocator, pFunction);
+}
+
+void DeviceDriver::destroyCudaModuleNV (VkDevice device, VkCudaModuleNV module, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroyCudaModuleNV(device, module, pAllocator);
+}
+
+void DeviceDriver::destroyCudaFunctionNV (VkDevice device, VkCudaFunctionNV function, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroyCudaFunctionNV(device, function, pAllocator);
+}
+
+void DeviceDriver::cmdCudaLaunchKernelNV (VkCommandBuffer commandBuffer, const VkCudaLaunchInfoNV* pLaunchInfo) const
+{
+	m_vk.cmdCudaLaunchKernelNV(commandBuffer, pLaunchInfo);
+}
+
 void DeviceDriver::cmdBeginRendering (VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo) const
 {
 	m_vk.cmdBeginRendering(commandBuffer, pRenderingInfo);
@@ -2409,27 +2439,27 @@ void DeviceDriver::cmdDispatchGraphIndirectCountAMDX (VkCommandBuffer commandBuf
 	m_vk.cmdDispatchGraphIndirectCountAMDX(commandBuffer, scratch, countInfo);
 }
 
-VkResult DeviceDriver::setLatencySleepModeNV (VkDevice device, VkSwapchainKHR swapchain, VkLatencySleepModeInfoNV* pSleepModeInfo) const
+VkResult DeviceDriver::setLatencySleepModeNV (VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepModeInfoNV* pSleepModeInfo) const
 {
 	return m_vk.setLatencySleepModeNV(device, swapchain, pSleepModeInfo);
 }
 
-VkResult DeviceDriver::latencySleepNV (VkDevice device, VkSwapchainKHR swapchain, VkLatencySleepInfoNV* pSleepInfo) const
+VkResult DeviceDriver::latencySleepNV (VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepInfoNV* pSleepInfo) const
 {
 	return m_vk.latencySleepNV(device, swapchain, pSleepInfo);
 }
 
-void DeviceDriver::setLatencyMarkerNV (VkDevice device, VkSwapchainKHR swapchain, VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo) const
+void DeviceDriver::setLatencyMarkerNV (VkDevice device, VkSwapchainKHR swapchain, const VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo) const
 {
 	m_vk.setLatencyMarkerNV(device, swapchain, pLatencyMarkerInfo);
 }
 
-void DeviceDriver::getLatencyTimingsNV (VkDevice device, VkSwapchainKHR swapchain, uint32_t* pTimingCount, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo) const
+void DeviceDriver::getLatencyTimingsNV (VkDevice device, VkSwapchainKHR swapchain, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo) const
 {
-	m_vk.getLatencyTimingsNV(device, swapchain, pTimingCount, pLatencyMarkerInfo);
+	m_vk.getLatencyTimingsNV(device, swapchain, pLatencyMarkerInfo);
 }
 
-void DeviceDriver::queueNotifyOutOfBandNV (VkQueue queue, VkOutOfBandQueueTypeInfoNV pQueueTypeInfo) const
+void DeviceDriver::queueNotifyOutOfBandNV (VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo) const
 {
 	m_vk.queueNotifyOutOfBandNV(queue, pQueueTypeInfo);
 }

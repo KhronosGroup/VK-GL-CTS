@@ -366,6 +366,12 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR",
 		"vkGetEncodedVideoSessionParametersKHR",
 		"vkCmdEncodeVideoKHR",
+		"vkCreateCudaModuleNV",
+		"vkGetCudaModuleCacheNV",
+		"vkCreateCudaFunctionNV",
+		"vkDestroyCudaModuleNV",
+		"vkDestroyCudaFunctionNV",
+		"vkCmdCudaLaunchKernelNV",
 		"vkExportMetalObjectsEXT",
 		"vkCmdSetEvent2KHR",
 		"vkCmdResetEvent2KHR",
@@ -560,6 +566,8 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR",
 		"vkCmdSetAttachmentFeedbackLoopEnableEXT",
 		"vkGetScreenBufferPropertiesQNX",
+		"vkGetPhysicalDeviceCalibrateableTimeDomainsKHR",
+		"vkGetCalibratedTimestampsKHR",
 	};
 
 	bool fail = false;

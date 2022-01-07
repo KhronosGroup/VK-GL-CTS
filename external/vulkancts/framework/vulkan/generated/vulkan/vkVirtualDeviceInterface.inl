@@ -216,7 +216,7 @@ virtual VkResult			mergeValidationCachesEXT								(VkDevice device, VkValidatio
 virtual void				getDescriptorSetLayoutSupport							(VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, VkDescriptorSetLayoutSupport* pSupport) const = 0;
 virtual VkResult			getShaderInfoAMD										(VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, size_t* pInfoSize, void* pInfo) const = 0;
 virtual void				setLocalDimmingAMD										(VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable) const = 0;
-virtual VkResult			getCalibratedTimestampsEXT								(VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const = 0;
+virtual VkResult			getCalibratedTimestampsKHR								(VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoKHR* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const = 0;
 virtual VkResult			setDebugUtilsObjectNameEXT								(VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo) const = 0;
 virtual VkResult			setDebugUtilsObjectTagEXT								(VkDevice device, const VkDebugUtilsObjectTagInfoEXT* pTagInfo) const = 0;
 virtual void				queueBeginDebugUtilsLabelEXT							(VkQueue queue, const VkDebugUtilsLabelEXT* pLabelInfo) const = 0;
@@ -437,6 +437,12 @@ virtual VkResult			setBufferCollectionBufferConstraintsFUCHSIA				(VkDevice devi
 virtual VkResult			setBufferCollectionImageConstraintsFUCHSIA				(VkDevice device, VkBufferCollectionFUCHSIA collection, const VkImageConstraintsInfoFUCHSIA* pImageConstraintsInfo) const = 0;
 virtual void				destroyBufferCollectionFUCHSIA							(VkDevice device, VkBufferCollectionFUCHSIA collection, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual VkResult			getBufferCollectionPropertiesFUCHSIA					(VkDevice device, VkBufferCollectionFUCHSIA collection, VkBufferCollectionPropertiesFUCHSIA* pProperties) const = 0;
+virtual VkResult			createCudaModuleNV										(VkDevice device, const VkCudaModuleCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaModuleNV* pModule) const = 0;
+virtual VkResult			getCudaModuleCacheNV									(VkDevice device, VkCudaModuleNV module, size_t* pCacheSize, void* pCacheData) const = 0;
+virtual VkResult			createCudaFunctionNV									(VkDevice device, const VkCudaFunctionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaFunctionNV* pFunction) const = 0;
+virtual void				destroyCudaModuleNV										(VkDevice device, VkCudaModuleNV module, const VkAllocationCallbacks* pAllocator) const = 0;
+virtual void				destroyCudaFunctionNV									(VkDevice device, VkCudaFunctionNV function, const VkAllocationCallbacks* pAllocator) const = 0;
+virtual void				cmdCudaLaunchKernelNV									(VkCommandBuffer commandBuffer, const VkCudaLaunchInfoNV* pLaunchInfo) const = 0;
 virtual void				cmdBeginRendering										(VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo) const = 0;
 virtual void				cmdEndRendering											(VkCommandBuffer commandBuffer) const = 0;
 virtual void				getDescriptorSetLayoutHostMappingInfoVALVE				(VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping) const = 0;
@@ -484,8 +490,8 @@ virtual void				cmdInitializeGraphScratchMemoryAMDX						(VkCommandBuffer comman
 virtual void				cmdDispatchGraphAMDX									(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo) const = 0;
 virtual void				cmdDispatchGraphIndirectAMDX							(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo) const = 0;
 virtual void				cmdDispatchGraphIndirectCountAMDX						(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceAddress countInfo) const = 0;
-virtual VkResult			setLatencySleepModeNV									(VkDevice device, VkSwapchainKHR swapchain, VkLatencySleepModeInfoNV* pSleepModeInfo) const = 0;
-virtual VkResult			latencySleepNV											(VkDevice device, VkSwapchainKHR swapchain, VkLatencySleepInfoNV* pSleepInfo) const = 0;
-virtual void				setLatencyMarkerNV										(VkDevice device, VkSwapchainKHR swapchain, VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo) const = 0;
-virtual void				getLatencyTimingsNV										(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pTimingCount, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo) const = 0;
-virtual void				queueNotifyOutOfBandNV									(VkQueue queue, VkOutOfBandQueueTypeInfoNV pQueueTypeInfo) const = 0;
+virtual VkResult			setLatencySleepModeNV									(VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepModeInfoNV* pSleepModeInfo) const = 0;
+virtual VkResult			latencySleepNV											(VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepInfoNV* pSleepInfo) const = 0;
+virtual void				setLatencyMarkerNV										(VkDevice device, VkSwapchainKHR swapchain, const VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo) const = 0;
+virtual void				getLatencyTimingsNV										(VkDevice device, VkSwapchainKHR swapchain, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo) const = 0;
+virtual void				queueNotifyOutOfBandNV									(VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo) const = 0;

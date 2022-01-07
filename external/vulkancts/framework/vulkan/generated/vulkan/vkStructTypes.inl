@@ -1490,6 +1490,23 @@ struct VkValidationFeaturesEXT
 	const VkValidationFeatureDisableEXT*	pDisabledValidationFeatures;
 };
 
+struct VkLayerSettingEXT
+{
+	const char*				pLayerName;
+	const char*				pSettingName;
+	VkLayerSettingTypeEXT	type;
+	uint32_t				valueCount;
+	const void*				pValues;
+};
+
+struct VkLayerSettingsCreateInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	uint32_t					settingCount;
+	const VkLayerSettingEXT*	pSettings;
+};
+
 struct VkPipelineRasterizationStateRasterizationOrderAMD
 {
 	VkStructureType			sType;
@@ -3396,11 +3413,11 @@ struct VkPhysicalDeviceConservativeRasterizationPropertiesEXT
 	VkBool32		conservativeRasterizationPostDepthCoverage;
 };
 
-struct VkCalibratedTimestampInfoEXT
+struct VkCalibratedTimestampInfoKHR
 {
 	VkStructureType	sType;
 	const void*		pNext;
-	VkTimeDomainEXT	timeDomain;
+	VkTimeDomainKHR	timeDomain;
 };
 
 struct VkPhysicalDeviceShaderCorePropertiesAMD
@@ -3651,18 +3668,18 @@ struct VkSemaphoreSignalInfo
 	uint64_t		value;
 };
 
-struct VkVertexInputBindingDivisorDescriptionEXT
+struct VkVertexInputBindingDivisorDescriptionKHR
 {
 	uint32_t	binding;
 	uint32_t	divisor;
 };
 
-struct VkPipelineVertexInputDivisorStateCreateInfoEXT
+struct VkPipelineVertexInputDivisorStateCreateInfoKHR
 {
 	VkStructureType										sType;
 	const void*											pNext;
 	uint32_t											vertexBindingDivisorCount;
-	const VkVertexInputBindingDivisorDescriptionEXT*	pVertexBindingDivisors;
+	const VkVertexInputBindingDivisorDescriptionKHR*	pVertexBindingDivisors;
 };
 
 struct VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT
@@ -3670,6 +3687,14 @@ struct VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT
 	VkStructureType	sType;
 	void*			pNext;
 	uint32_t		maxVertexAttribDivisor;
+};
+
+struct VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxVertexAttribDivisor;
+	VkBool32		supportsNonZeroFirstInstance;
 };
 
 struct VkPhysicalDevicePCIBusInfoPropertiesEXT
@@ -3809,7 +3834,7 @@ struct VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT
 	VkBool32		sparseImageFloat32AtomicMinMax;
 };
 
-struct VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT
+struct VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -5902,6 +5927,13 @@ struct VkPhysicalDeviceClusterCullingShaderFeaturesHUAWEI
 	VkBool32		multiviewClusterCullingShader;
 };
 
+struct VkPhysicalDeviceClusterCullingShaderVrsFeaturesHUAWEI
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		clusterShadingRate;
+};
+
 struct VkBufferCopy2
 {
 	VkStructureType	sType;
@@ -7520,6 +7552,40 @@ struct VkImageConstraintsInfoFUCHSIA
 	VkImageConstraintsInfoFlagsFUCHSIA			flags;
 };
 
+struct VkCudaModuleCreateInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	size_t			dataSize;
+	const void*		pData;
+};
+
+struct VkCudaFunctionCreateInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkCudaModuleNV	module;
+	const char*		pName;
+};
+
+struct VkCudaLaunchInfoNV
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkCudaFunctionNV	function;
+	uint32_t			gridDimX;
+	uint32_t			gridDimY;
+	uint32_t			gridDimZ;
+	uint32_t			blockDimX;
+	uint32_t			blockDimY;
+	uint32_t			blockDimZ;
+	uint32_t			sharedMemBytes;
+	size_t				paramCount;
+	const void* const *	pParams;
+	size_t				extraCount;
+	const void* const *	pExtras;
+};
+
 struct VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT
 {
 	VkStructureType	sType;
@@ -7731,6 +7797,22 @@ struct VkDescriptorSetLayoutHostMappingInfoVALVE
 	void*			pNext;
 	size_t			descriptorOffset;
 	uint32_t		descriptorSize;
+};
+
+struct VkPhysicalDeviceNestedCommandBufferFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		nestedCommandBuffer;
+	VkBool32		nestedCommandBufferRendering;
+	VkBool32		nestedCommandBufferSimultaneousUse;
+};
+
+struct VkPhysicalDeviceNestedCommandBufferPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxCommandBufferNestingLevel;
 };
 
 struct VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT
@@ -8550,6 +8632,22 @@ struct VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV
 	VkRayTracingInvocationReorderModeNV	rayTracingInvocationReorderReorderingHint;
 };
 
+struct VkPhysicalDeviceExtendedSparseAddressSpaceFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		extendedSparseAddressSpace;
+};
+
+struct VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkDeviceSize		extendedSparseAddressSpaceSize;
+	VkImageUsageFlags	extendedSparseImageUsageFlags;
+	VkBufferUsageFlags	extendedSparseBufferUsageFlags;
+};
+
 struct VkDirectDriverLoadingInfoLUNARG
 {
 	VkStructureType						sType;
@@ -8561,7 +8659,7 @@ struct VkDirectDriverLoadingInfoLUNARG
 struct VkDirectDriverLoadingListLUNARG
 {
 	VkStructureType							sType;
-	void*									pNext;
+	const void*								pNext;
 	VkDirectDriverLoadingModeLUNARG			mode;
 	uint32_t								driverCount;
 	const VkDirectDriverLoadingInfoLUNARG*	pDrivers;
@@ -8975,6 +9073,7 @@ struct VkGetLatencyMarkerInfoNV
 {
 	VkStructureType					sType;
 	const void*						pNext;
+	uint32_t						timingCount;
 	VkLatencyTimingsFrameReportNV*	pTimings;
 };
 
@@ -9005,6 +9104,94 @@ struct VkLatencySurfaceCapabilitiesNV
 	const void*			pNext;
 	uint32_t			presentModeCount;
 	VkPresentModeKHR*	pPresentModes;
+};
+
+struct VkPhysicalDeviceCudaKernelLaunchFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		cudaKernelLaunchFeatures;
+};
+
+struct VkPhysicalDeviceCudaKernelLaunchPropertiesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		computeCapabilityMinor;
+	uint32_t		computeCapabilityMajor;
+};
+
+struct VkDeviceQueueShaderCoreControlCreateInfoARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		shaderCoreCount;
+};
+
+struct VkPhysicalDeviceSchedulingControlsFeaturesARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		schedulingControls;
+};
+
+struct VkPhysicalDeviceSchedulingControlsPropertiesARM
+{
+	VkStructureType								sType;
+	void*										pNext;
+	VkPhysicalDeviceSchedulingControlsFlagsARM	schedulingControlsFlags;
+};
+
+struct VkPhysicalDeviceRelaxedLineRasterizationFeaturesIMG
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		relaxedLineRasterization;
+};
+
+struct VkPhysicalDeviceRenderPassStripedFeaturesARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		renderPassStriped;
+};
+
+struct VkPhysicalDeviceRenderPassStripedPropertiesARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkExtent2D		renderPassStripeGranularity;
+	uint32_t		maxRenderPassStripes;
+};
+
+struct VkRenderPassStripeInfoARM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkRect2D		stripeArea;
+};
+
+struct VkRenderPassStripeBeginInfoARM
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	uint32_t					stripeInfoCount;
+	VkRenderPassStripeInfoARM*	pStripeInfos;
+};
+
+struct VkRenderPassStripeSubmitInfoARM
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	uint32_t						stripeSemaphoreInfoCount;
+	const VkSemaphoreSubmitInfo*	pStripeSemaphoreInfos;
+};
+
+struct VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderMaximalReconvergence;
 };
 
 struct StdVideoH264SpsVuiFlags
@@ -10148,6 +10335,8 @@ typedef VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR VkPhysicalDeviceGlobalPri
 
 typedef VkQueueFamilyGlobalPriorityPropertiesKHR VkQueueFamilyGlobalPriorityPropertiesEXT;
 
+typedef VkCalibratedTimestampInfoKHR VkCalibratedTimestampInfoEXT;
+
 typedef VkPhysicalDeviceDescriptorIndexingFeatures VkPhysicalDeviceDescriptorIndexingFeaturesEXT;
 
 typedef VkPhysicalDeviceDescriptorIndexingProperties VkPhysicalDeviceDescriptorIndexingPropertiesEXT;
@@ -10184,11 +10373,17 @@ typedef VkSemaphoreWaitInfo VkSemaphoreWaitInfoKHR;
 
 typedef VkSemaphoreSignalInfo VkSemaphoreSignalInfoKHR;
 
+typedef VkVertexInputBindingDivisorDescriptionKHR VkVertexInputBindingDivisorDescriptionEXT;
+
+typedef VkPipelineVertexInputDivisorStateCreateInfoKHR VkPipelineVertexInputDivisorStateCreateInfoEXT;
+
 typedef VkPhysicalDevice8BitStorageFeatures VkPhysicalDevice8BitStorageFeaturesKHR;
 
 typedef VkPhysicalDeviceVulkanMemoryModelFeatures VkPhysicalDeviceVulkanMemoryModelFeaturesKHR;
 
 typedef VkPhysicalDeviceShaderAtomicInt64Features VkPhysicalDeviceShaderAtomicInt64FeaturesKHR;
+
+typedef VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT;
 
 typedef VkPhysicalDeviceDepthStencilResolveProperties VkPhysicalDeviceDepthStencilResolvePropertiesKHR;
 

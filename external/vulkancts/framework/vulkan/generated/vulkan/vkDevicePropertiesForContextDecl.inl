@@ -28,7 +28,6 @@ const vk::VkPhysicalDeviceRayTracingPropertiesNV&					getRayTracingProperties			
 const vk::VkPhysicalDeviceMaintenance3Properties&					getMaintenance3Properties					(void) const;
 const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			getExternalMemoryHostPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceShaderCorePropertiesAMD&					getShaderCorePropertiesAMD					(void) const;
-const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT&		getVertexAttributeDivisorPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceDriverProperties&							getDriverProperties							(void) const;
 const vk::VkPhysicalDeviceFloatControlsProperties&					getFloatControlsProperties					(void) const;
 const vk::VkPhysicalDeviceDepthStencilResolveProperties&			getDepthStencilResolveProperties			(void) const;
@@ -48,6 +47,7 @@ const vk::VkPhysicalDeviceShaderIntegerDotProductProperties&		getShaderIntegerDo
 const vk::VkPhysicalDeviceTexelBufferAlignmentProperties&			getTexelBufferAlignmentProperties			(void) const;
 const vk::VkPhysicalDeviceRobustness2PropertiesEXT&					getRobustness2PropertiesEXT					(void) const;
 const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&			getCustomBorderColorPropertiesEXT			(void) const;
+const vk::VkPhysicalDeviceCudaKernelLaunchPropertiesNV&				getCudaKernelLaunchPropertiesNV				(void) const;
 const vk::VkPhysicalDeviceDescriptorBufferPropertiesEXT&			getDescriptorBufferPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&		getGraphicsPipelineLibraryPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR&	getFragmentShaderBarycentricProperties		(void) const;
@@ -63,10 +63,13 @@ const vk::VkPhysicalDeviceDisplacementMicromapPropertiesNV&			getDisplacementMic
 const vk::VkPhysicalDeviceClusterCullingShaderPropertiesHUAWEI&		getClusterCullingShaderPropertiesHUAWEI		(void) const;
 const vk::VkPhysicalDeviceMaintenance4Properties&					getMaintenance4Properties					(void) const;
 const vk::VkPhysicalDeviceShaderCorePropertiesARM&					getShaderCorePropertiesARM					(void) const;
+const vk::VkPhysicalDeviceSchedulingControlsPropertiesARM&			getSchedulingControlsPropertiesARM			(void) const;
+const vk::VkPhysicalDeviceRenderPassStripedPropertiesARM&			getRenderPassStripedPropertiesARM			(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM&	getFragmentDensityMapOffsetPropertiesQCOM	(void) const;
 const vk::VkPhysicalDeviceCopyMemoryIndirectPropertiesNV&			getCopyMemoryIndirectProperties				(void) const;
 const vk::VkPhysicalDeviceMemoryDecompressionPropertiesNV&			getMemoryDecompressionProperties			(void) const;
 const vk::VkPhysicalDeviceImageProcessingPropertiesQCOM&			getImageProcessingPropertiesQCOM			(void) const;
+const vk::VkPhysicalDeviceNestedCommandBufferPropertiesEXT&			getNestedCommandBufferPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceExtendedDynamicState3PropertiesEXT&		getExtendedDynamicState3PropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		getShaderModuleIdentifierPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceOpticalFlowPropertiesNV&					getOpticalFlowProperties					(void) const;
@@ -74,9 +77,11 @@ const vk::VkPhysicalDeviceExternalFormatResolvePropertiesANDROID&	getExternalFor
 const vk::VkPhysicalDeviceMaintenance5PropertiesKHR&				getMaintenance5Properties					(void) const;
 const vk::VkPhysicalDeviceShaderObjectPropertiesEXT&				getShaderObjectPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV&	getRayTracingInvocationReorderProperties	(void) const;
+const vk::VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV&	getExtendedSparseAddressSpacePropertiesNV	(void) const;
 const vk::VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM&			getShaderCoreBuiltinsPropertiesARM			(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesKHR&			getCooperativeMatrixProperties				(void) const;
 const vk::VkPhysicalDeviceImageProcessing2PropertiesQCOM&			getImageProcessing2PropertiesQCOM			(void) const;
+const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR&		getVertexAttributeDivisorProperties			(void) const;
 const vk::VkPhysicalDeviceLayeredDriverPropertiesMSFT&				getLayeredDriverPropertiesMSFT				(void) const;
 const vk::VkPhysicalDeviceSubgroupProperties&						getSubgroupProperties						(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				getProtectedMemoryProperties				(void) const;

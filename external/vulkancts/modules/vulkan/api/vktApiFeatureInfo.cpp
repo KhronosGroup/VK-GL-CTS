@@ -1358,16 +1358,20 @@ void checkSupportExtVertexAttributeDivisor (Context& context)
 tcu::TestStatus validateLimitsExtVertexAttributeDivisor (Context& context)
 {
 	const VkBool32												checkAlways							= VK_TRUE;
-	const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT&	vertexAttributeDivisorPropertiesEXT	= context.getVertexAttributeDivisorPropertiesEXT();
+#ifndef CTS_USES_VULKANSC
+	const VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR&	vertexAttributeDivisorProperties	= context.getVertexAttributeDivisorProperties();
+#else
+	const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT&	vertexAttributeDivisorProperties	= context.getVertexAttributeDivisorPropertiesEXT();
+#endif
 	TestLog&													log									= context.getTestContext().getLog();
 	bool														limitsOk							= true;
 
 	FeatureLimitTableItem featureLimitTable[] =
 	{
-		{ PN(checkAlways),	PN(vertexAttributeDivisorPropertiesEXT.maxVertexAttribDivisor),	LIM_MIN_UINT32((1<<16) - 1) },
+		{ PN(checkAlways),	PN(vertexAttributeDivisorProperties.maxVertexAttribDivisor),	LIM_MIN_UINT32((1<<16) - 1) },
 	};
 
-	log << TestLog::Message << vertexAttributeDivisorPropertiesEXT << TestLog::EndMessage;
+	log << TestLog::Message << vertexAttributeDivisorProperties << TestLog::EndMessage;
 
 	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
 		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
