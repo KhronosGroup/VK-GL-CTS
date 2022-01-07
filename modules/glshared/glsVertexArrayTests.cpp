@@ -1512,6 +1512,7 @@ char* RandomArrayGenerator::createQuads (int seed, int count, int componentCount
 			const T	minDiff		= minValue<T>() > minQuadSize
 								? minValue<T>()
 								: minQuadSize;
+			const T maxRounded	= roundTo(minDiff, max);
 
 			for (int quadNdx = 0; quadNdx < count; ++quadNdx)
 			{
@@ -1519,33 +1520,22 @@ char* RandomArrayGenerator::createQuads (int seed, int count, int componentCount
 				T y1, y2;
 				T z, w;
 
-				// attempt to find a good (i.e not extremely small) quad
-				for (int attemptNdx = 0; attemptNdx < 4; ++attemptNdx)
-				{
-					x1 = roundTo(minDiff, getRandom<T>(rnd, min, max - minDiff));
-					x2 = roundTo(minDiff, getRandom<T>(rnd, x1 + minDiff, max));
+				x1 = roundTo(minDiff, getRandom<T>(rnd, min, maxRounded - minDiff));
+				x2 = roundTo(minDiff, getRandom<T>(rnd, x1 + minDiff, maxRounded));
 
-					y1 = roundTo(minDiff, getRandom<T>(rnd, min, max - minDiff));
-					y2 = roundTo(minDiff, getRandom<T>(rnd, y1 + minDiff, max));
+				y1 = roundTo(minDiff, getRandom<T>(rnd, min, maxRounded - minDiff));
+				y2 = roundTo(minDiff, getRandom<T>(rnd, y1 + minDiff, maxRounded));
 
-					z = (componentCount > 2) ? roundTo(minDiff, (getRandom<T>(rnd, min, max))) : (T::create(0));
-					w = (componentCount > 3) ? roundTo(minDiff, (getRandom<T>(rnd, min, max))) : (T::create(1));
+				// Make sure the rounding doesn't drop the result below the original range of the random function.
+				if (x2 < x1 + minDiff) x2 = x1 + minDiff;
+				if (y2 < y1 + minDiff) y2 = y1 + minDiff;
 
-					// no additional components, all is good
-					if (componentCount <= 2)
-						break;
+				z = (componentCount > 2) ? roundTo(minDiff, (getRandom<T>(rnd, min, max))) : (T::create(0));
+				w = (componentCount > 3) ? roundTo(minDiff, (getRandom<T>(rnd, min, max))) : (T::create(1));
 
-					// The result quad is too thin?
-					if ((deFloatAbs(x2.template to<float>() - x1.template to<float>()) < minDiff.template to<float>()) ||
-						(deFloatAbs(y2.template to<float>() - y1.template to<float>()) < minDiff.template to<float>()))
-					{
-						DE_ASSERT(attemptNdx < 3);
-						continue;
-					}
-
-					// all ok
-					break;
-				}
+				// Make sure the quad is not too thin.
+				DE_ASSERT((deFloatAbs(x2.template to<float>() - x1.template to<float>()) >= minDiff.template to<float>() * 0.8f) &&
+					(deFloatAbs(y2.template to<float>() - y1.template to<float>()) >= minDiff.template to<float>() * 0.8f));
 
 				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride]), x1);
 				alignmentSafeAssignment<T>(&(resultData[quadNdx * quadStride + componentStride]), y1);

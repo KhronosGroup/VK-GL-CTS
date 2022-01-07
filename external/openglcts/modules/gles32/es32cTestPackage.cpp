@@ -91,6 +91,8 @@ void TestCaseWrapper::init(tcu::TestCase* testCase, const std::string& path)
 	if (m_waiverMechanism->isOnWaiverList(path))
 		throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
 
+	glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
+
 	testCase->init();
 }
 
@@ -107,7 +109,7 @@ tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase* testCase)
 	glu::RenderContext&			 renderCtx = m_testPackage.getContext().getRenderContext();
 	tcu::TestCase::IterateResult result;
 
-	// Clear to surrender-blue
+	// Clear to black
 	{
 		const glw::Functions& gl = renderCtx.getFunctions();
 		gl.clearColor(0.0f, 0.0f, 0.0f, 1.f);

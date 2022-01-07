@@ -178,6 +178,53 @@ template<typename T> inline T selection	(bool cond, T a, T b)	{ return cond ? a 
 template<int Size>				inline Vector<deUint32, Size>	subVecScalar			(const Vector<deUint32, Size>& v, deUint32 s)	{ return (v.asInt() - (int)s).asUint(); }
 
 template<typename T, int Size>	inline Vector<T, Size>			addVecScalar			(const Vector<T, Size>& v, T s)					{ return v + s; }
+
+// Specialize add, sub, and mul integer operations to use 64bit to avoid undefined signed integer overflows.
+inline int add			(int a, int b) { return static_cast<int>(static_cast<deInt64>(a) + static_cast<deInt64>(b)); }
+inline int sub			(int a, int b) { return static_cast<int>(static_cast<deInt64>(a) - static_cast<deInt64>(b)); }
+inline int mul			(int a, int b) { return static_cast<int>(static_cast<deInt64>(a) * static_cast<deInt64>(b)); }
+
+inline deUint32 add		(deUint32 a, deUint32 b) { return a + b; }
+inline deUint32 sub		(deUint32 a, deUint32 b) { return a - b; }
+inline deUint32 mul		(deUint32 a, deUint32 b) { return a * b; }
+
+#define DECLARE_IVEC_BINARY_FUNC(OP_NAME)	\
+template <int Size> inline Vector<int, Size> OP_NAME (const Vector<int, Size>& a, const Vector<int, Size>& b)	\
+{															\
+	Vector<int, Size> res;									\
+	for (int i = 0; i < Size; i++)							\
+		res.m_data[i] = OP_NAME(a.m_data[i], b.m_data[i]);	\
+	return res;												\
+}
+
+#define DECLARE_IVEC_INT_BINARY_FUNC(OP_NAME) \
+template<int Size> inline Vector<int, Size> OP_NAME##VecScalar (const Vector<int, Size>& v, int s) \
+{											\
+	Vector<int, Size> ret;					\
+	for (int i = 0; i < Size; i++)			\
+		ret[i] = OP_NAME(v.m_data[i], s);	\
+	return ret;								\
+};
+
+#define DECLARE_INT_IVEC_BINARY_FUNC(OP_NAME) \
+template<int Size> inline Vector<int, Size> OP_NAME##ScalarVec (int s, const Vector<int, Size>& v) \
+{											\
+	Vector<int, Size> ret;					\
+	for (int i = 0; i < Size; i++)			\
+		ret[i] = OP_NAME(s, v.m_data[i]);	\
+	return ret;								\
+};
+
+DECLARE_IVEC_BINARY_FUNC(add)
+DECLARE_IVEC_BINARY_FUNC(sub)
+DECLARE_IVEC_BINARY_FUNC(mul)
+DECLARE_IVEC_INT_BINARY_FUNC(add)
+DECLARE_IVEC_INT_BINARY_FUNC(sub)
+DECLARE_IVEC_INT_BINARY_FUNC(mul)
+DECLARE_INT_IVEC_BINARY_FUNC(add)
+DECLARE_INT_IVEC_BINARY_FUNC(sub)
+DECLARE_INT_IVEC_BINARY_FUNC(mul)
+
 template<typename T, int Size>	inline Vector<T, Size>			subVecScalar			(const Vector<T, Size>& v, T s)					{ return v - s; }
 template<typename T, int Size>	inline Vector<T, Size>			mulVecScalar			(const Vector<T, Size>& v, T s)					{ return v * s; }
 template<typename T, int Size>	inline Vector<T, Size>			divVecScalar			(const Vector<T, Size>& v, T s)					{ return v / s; }
