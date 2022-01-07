@@ -636,10 +636,6 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 
 	// Initialize Marker Buffer
 	{
-		VkImageAspectFlags	depthImageAspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
-		if (hasStencilComponent(mapVkFormat(m_format).order))
-			depthImageAspectFlags |= VK_IMAGE_ASPECT_STENCIL_BIT;
-
 		const VkImageMemoryBarrier imageBarrier[] =
 		{
 			{

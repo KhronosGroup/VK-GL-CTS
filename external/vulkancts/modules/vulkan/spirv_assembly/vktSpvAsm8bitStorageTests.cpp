@@ -1910,7 +1910,7 @@ void addCompute8bitStorageBuffer8To8Group (tcu::TestCaseGroup* group)
 	de::Random				rnd					(deStringHash(group->getName()));
 	const int				numElements			= 128;
 	const vector<deInt8>	int8Data			= getInt8s(rnd, numElements);
-	const vector<deInt8>	int8DummyData		(numElements, 0);
+	const vector<deInt8>	int8UnusedData		(numElements, 0);
 	ComputeShaderSpec		spec;
 	std::ostringstream		shaderTemplate;
 		shaderTemplate<<"OpCapability Shader\n"
@@ -1979,7 +1979,7 @@ void addCompute8bitStorageBuffer8To8Group (tcu::TestCaseGroup* group)
 	spec.verifyIO			= computeCheckBuffers;
 	spec.coherentMemory		= true;
 	spec.inputs.push_back(BufferSp(new Int8Buffer(int8Data)));
-	spec.outputs.push_back(BufferSp(new Int8Buffer(int8DummyData)));
+	spec.outputs.push_back(BufferSp(new Int8Buffer(int8UnusedData)));
 	spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 	spec.extensions.push_back("VK_KHR_8bit_storage");
 	spec.requestedVulkanFeatures.ext8BitStorage = EXT8BITSTORAGEFEATURES_STORAGE_BUFFER;

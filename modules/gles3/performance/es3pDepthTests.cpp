@@ -1380,7 +1380,7 @@ void FragmentWorkloadCullCase::logDescription (void)
 	log << TestLog::Message << "Testing effects of culled fragment workload on render time" << TestLog::EndMessage;
 	log << TestLog::Message << "Geometry consists of two fullsceen quads. The first (occluding) quad uses a trivial shader,"
 		"the second (occluded) contains significant fragment shader work" << TestLog::EndMessage;
-	log << TestLog::Message << "Workload indicates the number of iterations of dummy work done in the occluded quad's fragment shader"  << TestLog::EndMessage;
+	log << TestLog::Message << "Workload indicates the number of iterations of unused work done in the occluded quad's fragment shader"  << TestLog::EndMessage;
 	log << TestLog::Message << "The ratio of rendering times of this scene with/without depth testing are compared"  << TestLog::EndMessage;
 	log << TestLog::Message << "Successfull early Z-testing should result in no correlation between workload and render time"  << TestLog::EndMessage;
 	log << TestLog::EndSection;
@@ -1473,7 +1473,7 @@ private:
 		log << TestLog::Message << "Testing effects of culled fragment workload on render time" << TestLog::EndMessage;
 		log << TestLog::Message << "Geometry consists of two fullsceen quads. The first (occluding) quad uses a trivial shader,"
 			"the second (occluded) contains significant fragment shader work and a discard that is never triggers but has a dynamic condition" << TestLog::EndMessage;
-		log << TestLog::Message << "Workload indicates the number of iterations of dummy work done in the occluded quad's fragment shader"  << TestLog::EndMessage;
+		log << TestLog::Message << "Workload indicates the number of iterations of unused work done in the occluded quad's fragment shader"  << TestLog::EndMessage;
 		log << TestLog::Message << "The ratio of rendering times of this scene with/without depth testing are compared"  << TestLog::EndMessage;
 		log << TestLog::Message << "Successfull early Z-testing should result in no correlation between workload and render time"  << TestLog::EndMessage;
 		log << TestLog::EndSection;
@@ -1503,7 +1503,7 @@ private:
 		log << TestLog::Message << "Testing effects of partially discarded occluder on rendering time" << TestLog::EndMessage;
 		log << TestLog::Message << "Geometry consists of two fullsceen quads. The first (occluding) quad discards half the "
 			"fragments in a grid pattern, the second (partially occluded) contains significant fragment shader work" << TestLog::EndMessage;
-		log << TestLog::Message << "Workload indicates the number of iterations of dummy work done in the occluded quad's fragment shader"  << TestLog::EndMessage;
+		log << TestLog::Message << "Workload indicates the number of iterations of unused work done in the occluded quad's fragment shader"  << TestLog::EndMessage;
 		log << TestLog::Message << "The ratio of rendering times of this scene with/without depth testing are compared"  << TestLog::EndMessage;
 		log << TestLog::Message << "Successfull early Z-testing should result in depth testing halving the render time"  << TestLog::EndMessage;
 		log << TestLog::EndSection;
@@ -1535,7 +1535,7 @@ private:
 		log << TestLog::Message << "Testing effects of partial occluder on rendering time" << TestLog::EndMessage;
 		log << TestLog::Message << "Geometry consists of two quads. The first (occluding) quad covers " << m_coverage*100.0f
 			<< "% of the screen, while the second (partially occluded, fullscreen) contains significant fragment shader work" << TestLog::EndMessage;
-		log << TestLog::Message << "Workload indicates the number of iterations of dummy work done in the occluded quad's fragment shader"  << TestLog::EndMessage;
+		log << TestLog::Message << "Workload indicates the number of iterations of unused work done in the occluded quad's fragment shader"  << TestLog::EndMessage;
 		log << TestLog::Message << "The ratio of rendering times of this scene with/without depth testing are compared"  << TestLog::EndMessage;
 		log << TestLog::Message << "Successfull early Z-testing should result in render time increasing proportionally with unoccluded area"  << TestLog::EndMessage;
 		log << TestLog::EndSection;
@@ -1566,7 +1566,7 @@ private:
 		log << TestLog::Section("Description", "Test description");
 		log << TestLog::Message << "Testing effects of non-default frag depth on culling efficiency" << TestLog::EndMessage;
 		log << TestLog::Message << "Geometry consists of two fullscreen quads. The first (occluding) quad is trivial, while the second (occluded) contains significant fragment shader work" << TestLog::EndMessage;
-		log << TestLog::Message << "Workload indicates the number of iterations of dummy work done in the occluded quad's fragment shader"  << TestLog::EndMessage;
+		log << TestLog::Message << "Workload indicates the number of iterations of unused work done in the occluded quad's fragment shader"  << TestLog::EndMessage;
 		log << TestLog::Message << "The occluder quad has a static offset applied to gl_FragDepth" << TestLog::EndMessage;
 		log << TestLog::Message << "The ratio of rendering times of this scene with/without depth testing are compared"  << TestLog::EndMessage;
 		log << TestLog::Message << "Successfull early Z-testing should result in no correlation between workload and render time"  << TestLog::EndMessage;
@@ -1596,7 +1596,7 @@ private:
 		log << TestLog::Section("Description", "Test description");
 		log << TestLog::Message << "Testing effects of non-default frag depth on culling efficiency" << TestLog::EndMessage;
 		log << TestLog::Message << "Geometry consists of two fullscreen quads. The first (occluding) quad is trivial, while the second (occluded) contains significant fragment shader work" << TestLog::EndMessage;
-		log << TestLog::Message << "Workload indicates the number of iterations of dummy work done in the occluded quad's fragment shader"  << TestLog::EndMessage;
+		log << TestLog::Message << "Workload indicates the number of iterations of unused work done in the occluded quad's fragment shader"  << TestLog::EndMessage;
 		log << TestLog::Message << "The occluder quad has a dynamic offset applied to gl_FragDepth" << TestLog::EndMessage;
 		log << TestLog::Message << "The ratio of rendering times of this scene with/without depth testing are compared"  << TestLog::EndMessage;
 		log << TestLog::Message << "Successfull early Z-testing should result in no correlation between workload and render time"  << TestLog::EndMessage;
@@ -1626,7 +1626,7 @@ private:
 		log << TestLog::Section("Description", "Test description");
 		log << TestLog::Message << "Testing effects of non-default frag depth on rendering time" << TestLog::EndMessage;
 		log << TestLog::Message << "Geometry consists of two fullscreen quads. The first (occluding) quad is trivial, while the second (occluded) contains significant fragment shader work" << TestLog::EndMessage;
-		log << TestLog::Message << "Workload indicates the number of iterations of dummy work done in the occluded quad's fragment shader"  << TestLog::EndMessage;
+		log << TestLog::Message << "Workload indicates the number of iterations of unused work done in the occluded quad's fragment shader"  << TestLog::EndMessage;
 		log << TestLog::Message << "The occluded quad has a static offset applied to gl_FragDepth" << TestLog::EndMessage;
 		log << TestLog::Message << "The ratio of rendering times of this scene with/without depth testing are compared"  << TestLog::EndMessage;
 		log << TestLog::Message << "Successfull early Z-testing should result in no correlation between workload and render time"  << TestLog::EndMessage;
@@ -1656,7 +1656,7 @@ private:
 		log << TestLog::Section("Description", "Test description");
 		log << TestLog::Message << "Testing effects of non-default frag depth on rendering time" << TestLog::EndMessage;
 		log << TestLog::Message << "Geometry consists of two fullscreen quads. The first (occluding) quad is trivial, while the second (occluded) contains significant fragment shader work" << TestLog::EndMessage;
-		log << TestLog::Message << "Workload indicates the number of iterations of dummy work done in the occluded quad's fragment shader"  << TestLog::EndMessage;
+		log << TestLog::Message << "Workload indicates the number of iterations of unused work done in the occluded quad's fragment shader"  << TestLog::EndMessage;
 		log << TestLog::Message << "The occluded quad has a dynamic offset applied to gl_FragDepth" << TestLog::EndMessage;
 		log << TestLog::Message << "The ratio of rendering times of this scene with/without depth testing are compared"  << TestLog::EndMessage;
 		log << TestLog::Message << "Successfull early Z-testing should result in no correlation between workload and render time"  << TestLog::EndMessage;
@@ -1686,7 +1686,7 @@ private:
 		log << TestLog::Section("Description", "Test description");
 		log << TestLog::Message << "Testing effects of of back first rendering order on culling efficiency" << TestLog::EndMessage;
 		log << TestLog::Message << "Geometry consists of two fullscreen quads. The second (occluding) quad is trivial, while the first (occluded) contains significant fragment shader work" << TestLog::EndMessage;
-		log << TestLog::Message << "Workload indicates the number of iterations of dummy work done in the occluded quad's fragment shader"  << TestLog::EndMessage;
+		log << TestLog::Message << "Workload indicates the number of iterations of unused work done in the occluded quad's fragment shader"  << TestLog::EndMessage;
 		log << TestLog::Message << "The ratio of rendering times of this scene with/without depth testing are compared"  << TestLog::EndMessage;
 		log << TestLog::Message << "Successfull early Z-testing should result in no correlation between workload and render time"  << TestLog::EndMessage;
 		log << TestLog::EndSection;

@@ -11353,8 +11353,8 @@ tcu::TestCaseGroup* createFloat16LogicalSet (tcu::TestContext& testCtx, const bo
 	const vector<deFloat16>				float16Data2		= squarize(float16DataScalar, 1);
 	const vector<deFloat16>				float16DataVec1		= squarizeVector(float16DataVector, 0);		// Total Size: 2 * (square(square(sizeof(float16DataVector))))
 	const vector<deFloat16>				float16DataVec2		= squarizeVector(float16DataVector, 1);
-	const vector<deFloat16>				float16OutDummy		(float16Data1.size(), 0);
-	const vector<deFloat16>				float16OutVecDummy	(float16DataVec1.size(), 0);
+	const vector<deFloat16>				float16OutUnused	(float16Data1.size(), 0);
+	const vector<deFloat16>				float16OutVecUnused	(float16DataVec1.size(), 0);
 
 	struct TestOp
 	{
@@ -11493,7 +11493,7 @@ tcu::TestCaseGroup* createFloat16LogicalSet (tcu::TestContext& testCtx, const bo
 
 			specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data1)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data2)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
-			specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16OutDummy)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+			specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16OutUnused)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			specResource.verifyIO = nanSupported ? testOp.verifyFuncNan : testOp.verifyFuncNonNan;
 
 			extensions.push_back("VK_KHR_shader_float16_int8");
@@ -11622,7 +11622,7 @@ tcu::TestCaseGroup* createFloat16LogicalSet (tcu::TestContext& testCtx, const bo
 
 			specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16DataVec1)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16DataVec2)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
-			specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16OutVecDummy)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+			specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16OutVecUnused)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			specResource.verifyIO = nanSupported ? testOp.verifyFuncNan : testOp.verifyFuncNonNan;
 
 			extensions.push_back("VK_KHR_shader_float16_int8");
@@ -11678,7 +11678,7 @@ tcu::TestCaseGroup* createFloat16FuncSet (tcu::TestContext& testCtx)
 	const StringTemplate				capabilities		("OpCapability Float16\n");
 	const deUint32						numDataPoints		= 256;
 	const vector<deFloat16>				float16InputData	= getFloat16s(rnd, numDataPoints);
-	const vector<deFloat16>				float16OutputDummy	(float16InputData.size(), 0);
+	const vector<deFloat16>				float16OutputUnused	(float16InputData.size(), 0);
 	map<string, string>					fragments;
 
 	struct TestType
@@ -11835,7 +11835,7 @@ tcu::TestCaseGroup* createFloat16FuncSet (tcu::TestContext& testCtx)
 		fragments["testfun"]		+= StringTemplate(testType.storeFunc).specialize({{"var", "ssbo_dst"}});
 
 		specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16InputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
-		specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16OutputDummy)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+		specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16OutputUnused)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		specResource.verifyIO = compareFP16FunctionSetFunc;
 
 		extensions.push_back("VK_KHR_shader_float16_int8");
@@ -11900,7 +11900,7 @@ tcu::TestCaseGroup* createFloat16VectorExtractSet (tcu::TestContext& testCtx)
 	de::Random							rnd					(deStringHash(testGroup->getName()));
 	const deUint32						numDataPoints		= 256;
 	const vector<deFloat16>				float16InputData	= getFloat16s(rnd, numDataPoints);
-	const vector<deFloat16>				float16OutputDummy	(float16InputData.size(), 0);
+	const vector<deFloat16>				float16OutputUnused	(float16InputData.size(), 0);
 
 	struct TestType
 	{
@@ -12088,7 +12088,7 @@ tcu::TestCaseGroup* createFloat16VectorExtractSet (tcu::TestContext& testCtx)
 
 		specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16InputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		specResource.inputs.push_back(Resource(BufferSp(new Uint32Buffer(inputDataNdx)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
-		specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16OutputDummy)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+		specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16OutputUnused)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		specResource.verifyIO = compareFP16VectorExtractFunc;
 
 		extensions.push_back("VK_KHR_shader_float16_int8");
@@ -12161,7 +12161,7 @@ tcu::TestCaseGroup* createFloat16VectorInsertSet (tcu::TestContext& testCtx)
 	const deUint32						replacement			= 42;
 	const deUint32						numDataPoints		= 256;
 	const vector<deFloat16>				float16InputData	= getFloat16s(rnd, numDataPoints);
-	const vector<deFloat16>				float16OutputDummy	(float16InputData.size(), 0);
+	const vector<deFloat16>				float16OutputUnused	(float16InputData.size(), 0);
 
 	struct TestType
 	{
@@ -12345,7 +12345,7 @@ tcu::TestCaseGroup* createFloat16VectorInsertSet (tcu::TestContext& testCtx)
 
 		specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16InputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		specResource.inputs.push_back(Resource(BufferSp(new Uint32Buffer(inputDataNdx)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
-		specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16OutputDummy)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+		specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16OutputUnused)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		specResource.verifyIO = testType.verifyIOFunc;
 
 		extensions.push_back("VK_KHR_shader_float16_int8");
@@ -12660,7 +12660,7 @@ tcu::TestCaseGroup* createFloat16VectorShuffleSet (tcu::TestContext& testCtx)
 				const deUint32			outputStride		= (dstType.typeComponents == 3) ? 4 : dstType.typeComponents;
 				const vector<deFloat16>	float16Input0Data	= getFloat16s(rnd, input0Stride * numDataPoints);
 				const vector<deFloat16>	float16Input1Data	= getFloat16s(rnd, input1Stride * numDataPoints);
-				const vector<deFloat16>	float16OutputDummy	(outputStride * numDataPoints, 0);
+				const vector<deFloat16>	float16OutputUnused	(outputStride * numDataPoints, 0);
 				const string			testName			= de::toString(dstType.typeComponents) + de::toString(src0Type.typeComponents) + de::toString(src1Type.typeComponents);
 				deUint32				caseCount			= 0;
 				SpecResource			specResource;
@@ -12725,7 +12725,7 @@ tcu::TestCaseGroup* createFloat16VectorShuffleSet (tcu::TestContext& testCtx)
 
 				specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Input0Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Input1Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
-				specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16OutputDummy)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+				specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16OutputUnused)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				specResource.verifyIO = getFloat16VectorShuffleVerifyIOFunc(dstType.typeComponents, src0Type.typeComponents, src1Type.typeComponents);
 
 				extensions.push_back("VK_KHR_shader_float16_int8");
@@ -14099,14 +14099,14 @@ tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& te
 		map<string, string>	fragments;
 		vector<string>		extensions;
 		vector<deFloat16>	inputFP16;
-		vector<deFloat16>	dummyFP16Output;
+		vector<deFloat16>	unusedFP16Output;
 
 		// Generate values for input
 		inputFP16.reserve(structItemsCount);
 		for (deUint32 structItemNdx = 0; structItemNdx < structItemsCount; ++structItemNdx)
 			inputFP16.push_back((accessPath[structItemNdx] == DE_NULL) ? exceptionValue : tcu::Float16(float(structItemNdx)).bits());
 
-		dummyFP16Output.resize(structItemsCount);
+		unusedFP16Output.resize(structItemsCount);
 
 		// Generate cases for OpSwitch
 		{
@@ -14161,7 +14161,7 @@ tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& te
 		}
 
 		specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(inputFP16)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
-		specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(dummyFP16Output)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+		specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(unusedFP16Output)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		specResource.verifyIO = compareFP16CompositeFunc;
 
 		extensions.push_back("VK_KHR_shader_float16_int8");
@@ -15091,10 +15091,10 @@ struct fp16ModfInt : public fp16PerComponent
 		const fp16type	x		(*in[0]);
 		const double	d		(x.asDouble());
 		double			i		(0.0);
-		const double	dummy	(deModf(d, &i));
+		const double	unused	(deModf(d, &i));
 		const double	result	(i);
 
-		DE_UNREF(dummy);
+		DE_UNREF(unused);
 
 		if (x.isInf() || x.isNaN())
 			return false;
@@ -15136,10 +15136,10 @@ struct fp16FrexpE : public fp16PerComponent
 		const fp16type	x		(*in[0]);
 		const double	d		(x.asDouble());
 		int				e		(0);
-		const double	dummy	(deFrExp(d, &e));
+		const double	unused	(deFrExp(d, &e));
 		const double	result	(static_cast<double>(e));
 
-		DE_UNREF(dummy);
+		DE_UNREF(unused);
 
 		if (x.isNaN() || x.isInf())
 			return false;
@@ -18295,17 +18295,17 @@ void createFloat16ArithmeticFuncTest (tcu::TestContext& testCtx, tcu::TestCaseGr
 
 	const Math16ArgFragments	argFragmentModfInt	=
 	{
-		" %val_src0 = OpFunctionCall %${t0} %ld_arg_ssbo_src0 %ndx\n"
-		"%val_dummy = ${op} %${tr} ${ext_inst} %val_src0 %tmp\n"
-		"     %tmp0 = OpAccessChain %fp_tmp %tmp\n"
-		"  %val_dst = OpLoad %${tr} %tmp0\n"
-		"      %dst = OpFunctionCall %void %st_fn_ssbo_dst %val_dst %ndx\n",
+		" %val_src0  = OpFunctionCall %${t0} %ld_arg_ssbo_src0 %ndx\n"
+		"%val_unused = ${op} %${tr} ${ext_inst} %val_src0 %tmp\n"
+		"     %tmp0  = OpAccessChain %fp_tmp %tmp\n"
+		"  %val_dst  = OpLoad %${tr} %tmp0\n"
+		"      %dst  = OpFunctionCall %void %st_fn_ssbo_dst %val_dst %ndx\n",
 
-		"   %fp_tmp = OpTypePointer Function %${tr}\n",
+		"   %fp_tmp  = OpTypePointer Function %${tr}\n",
 
 		"",
 
-		"      %tmp = OpVariable %fp_tmp Function\n",
+		"      %tmp  = OpVariable %fp_tmp Function\n",
 	};
 
 	const Math16ArgFragments	argFragmentModfStruct	=
@@ -18386,18 +18386,18 @@ void createFloat16ArithmeticFuncTest (tcu::TestContext& testCtx, tcu::TestCaseGr
 
 	const Math16ArgFragments	argFragmentFrexpE		=
 	{
-		" %val_src0 = OpFunctionCall %${t0} %ld_arg_ssbo_src0 %ndx\n"
-		"  %out_exp = OpAccessChain %fp_${dr}i32 %tmp\n"
-		"%val_dummy = ${op} %${tr} ${ext_inst} %val_src0 %out_exp\n"
-		"%val_dst_i = OpLoad %${dr}i32 %out_exp\n"
-		"  %val_dst = OpConvertSToF %${tr} %val_dst_i\n"
-		"      %dst = OpFunctionCall %void %st_fn_ssbo_dst %val_dst %ndx\n",
+		" %val_src0  = OpFunctionCall %${t0} %ld_arg_ssbo_src0 %ndx\n"
+		"  %out_exp  = OpAccessChain %fp_${dr}i32 %tmp\n"
+		"%val_unused = ${op} %${tr} ${ext_inst} %val_src0 %out_exp\n"
+		"%val_dst_i  = OpLoad %${dr}i32 %out_exp\n"
+		"  %val_dst  = OpConvertSToF %${tr} %val_dst_i\n"
+		"      %dst  = OpFunctionCall %void %st_fn_ssbo_dst %val_dst %ndx\n",
 
 		"",
 
 		"",
 
-		"      %tmp = OpVariable %fp_${dr}i32 Function\n",
+		"      %tmp  = OpVariable %fp_${dr}i32 Function\n",
 	};
 
 	string load_funcs[MATH16_TYPE_LAST];
@@ -18439,7 +18439,7 @@ void createFloat16ArithmeticFuncTest (tcu::TestContext& testCtx, tcu::TestCaseGr
 	const size_t				numFloatsPerArg0Type	= testTypes[testFunc.typeArg0].typeArrayStride / sizeof(deFloat16);
 	const size_t				iterations				= numDataPoints / numFloatsPerArg0Type;
 	const size_t				numFloatsPerResultType	= testTypes[testFunc.typeResult].typeArrayStride / sizeof(deFloat16);
-	const vector<deFloat16>		float16DummyOutput		(iterations * numFloatsPerResultType, 0);
+	const vector<deFloat16>		float16UnusedOutput		(iterations * numFloatsPerResultType, 0);
 	VulkanFeatures				features;
 	SpecResource				specResource;
 	map<string, string>			specs;
@@ -18594,7 +18594,7 @@ void createFloat16ArithmeticFuncTest (tcu::TestContext& testCtx, tcu::TestCaseGr
 		specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 	}
 
-	specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16DummyOutput)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+	specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16UnusedOutput)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 	specResource.verifyIO = testFunc.verifyFunc;
 
 	extensions.push_back("VK_KHR_shader_float16_int8");

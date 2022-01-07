@@ -104,7 +104,7 @@ DE_INLINE void TYPENAME##_delete (DE_PTR_TYPE(TYPENAME) set, KEYTYPE key)    \
 	TYPENAME##_setKeyCount(set, key, oldCount - 1);	\
 }    \
 \
-struct TYPENAME##DeclareDummy_s { int dummy; }
+struct TYPENAME##DeclareUnused_s { int unused; }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Implement a template pool multiset class.
@@ -162,7 +162,7 @@ deBool TYPENAME##_setKeyCount (DE_PTR_TYPE(TYPENAME) set, KEYTYPE key, int newCo
 	return DE_TRUE;	\
 }	\
 \
-struct TYPENAME##ImplementDummy_s { int dummy; }
+struct TYPENAME##ImplementUnused_s { int unused; }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Declare set-wise operations for a multiset template.
@@ -197,7 +197,7 @@ struct TYPENAME##ImplementDummy_s { int dummy; }
 	deBool TYPENAME##_sumInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b);						\
 	deBool TYPENAME##_difference (DE_PTR_TYPE(TYPENAME) to, const TYPENAME* a, const TYPENAME* b);	\
 	void TYPENAME##_differenceInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b);					\
-	struct TYPENAME##SetwiseDeclareDummy_s { int dummy; }
+	struct TYPENAME##SetwiseDeclareUnused_s { int unused; }
 
 #define DE_IMPLEMENT_POOL_MULTISET_SETWISE_OPERATIONS(TYPENAME, KEYTYPE)	\
 deBool TYPENAME##_union (DE_PTR_TYPE(TYPENAME) to, const TYPENAME* a, const TYPENAME* b)	\
@@ -291,6 +291,6 @@ void TYPENAME##_differenceInplace (DE_PTR_TYPE(TYPENAME) a, const TYPENAME* b)	\
 	DE_FATAL("Not implemented.");	\
 }	\
 \
-struct TYPENAME##SetwiseImplementDummy_s { int dummy; }
+struct TYPENAME##SetwiseImplementUnused_s { int unused; }
 
 #endif /* _DEPOOLMULTISET_H */

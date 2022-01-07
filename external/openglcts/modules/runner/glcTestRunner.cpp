@@ -807,7 +807,7 @@ void TestRunner::initSession(const TestRunParams& runParams)
 
 	// Translate to argc, argv
 	vector<const char*> argv;
-	argv.push_back("cts-runner"); // Dummy binary name
+	argv.push_back("cts-runner"); // Assumed binary name
 	for (vector<string>::const_iterator i = args.begin(); i != args.end(); i++)
 		argv.push_back(i->c_str());
 

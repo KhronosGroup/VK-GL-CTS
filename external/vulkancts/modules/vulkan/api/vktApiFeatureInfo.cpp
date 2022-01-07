@@ -1600,13 +1600,13 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate (Context& context)
 	VkPhysicalDeviceBufferDeviceAddressFeatures			bufferDeviceAddressFeatures			= initVulkanStructure();
 	VkPhysicalDeviceVulkanMemoryModelFeatures			vulkanMemoryModelFeatures			= initVulkanStructure();
 
-	struct DummyExtensionFeatures
+	struct UnusedExtensionFeatures
 	{
 		VkStructureType		sType;
 		void*				pNext;
 		VkBool32			descriptorIndexing;
 		VkBool32			samplerFilterMinmax;
-	} dummyExtensionFeatures;
+	} unusedExtensionFeatures;
 
 	struct FeatureTable
 	{
@@ -1641,7 +1641,7 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate (Context& context)
 		FEATURE_TABLE_ITEM(vulkan12Features,	shaderAtomicInt64Features,				shaderSharedInt64Atomics,							"VK_KHR_shader_atomic_int64"),
 		FEATURE_TABLE_ITEM(vulkan12Features,	shaderFloat16Int8Features,				shaderFloat16,										"VK_KHR_shader_float16_int8"),
 		FEATURE_TABLE_ITEM(vulkan12Features,	shaderFloat16Int8Features,				shaderInt8,											"VK_KHR_shader_float16_int8"),
-		FEATURE_TABLE_ITEM(vulkan12Features,	dummyExtensionFeatures,					descriptorIndexing,									DE_NULL),
+		FEATURE_TABLE_ITEM(vulkan12Features,	unusedExtensionFeatures,				descriptorIndexing,									DE_NULL),
 		FEATURE_TABLE_ITEM(vulkan12Features,	descriptorIndexingFeatures,				shaderInputAttachmentArrayDynamicIndexing,			"VK_EXT_descriptor_indexing"),
 		FEATURE_TABLE_ITEM(vulkan12Features,	descriptorIndexingFeatures,				shaderUniformTexelBufferArrayDynamicIndexing,		"VK_EXT_descriptor_indexing"),
 		FEATURE_TABLE_ITEM(vulkan12Features,	descriptorIndexingFeatures,				shaderStorageTexelBufferArrayDynamicIndexing,		"VK_EXT_descriptor_indexing"),
@@ -1662,7 +1662,7 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate (Context& context)
 		FEATURE_TABLE_ITEM(vulkan12Features,	descriptorIndexingFeatures,				descriptorBindingPartiallyBound,					"VK_EXT_descriptor_indexing"),
 		FEATURE_TABLE_ITEM(vulkan12Features,	descriptorIndexingFeatures,				descriptorBindingVariableDescriptorCount,			"VK_EXT_descriptor_indexing"),
 		FEATURE_TABLE_ITEM(vulkan12Features,	descriptorIndexingFeatures,				runtimeDescriptorArray,								"VK_EXT_descriptor_indexing"),
-		FEATURE_TABLE_ITEM(vulkan12Features,	dummyExtensionFeatures,					samplerFilterMinmax,								"VK_EXT_sampler_filter_minmax"),
+		FEATURE_TABLE_ITEM(vulkan12Features,	unusedExtensionFeatures,				samplerFilterMinmax,								"VK_EXT_sampler_filter_minmax"),
 		FEATURE_TABLE_ITEM(vulkan12Features,	scalarBlockLayoutFeatures,				scalarBlockLayout,									"VK_EXT_scalar_block_layout"),
 		FEATURE_TABLE_ITEM(vulkan12Features,	imagelessFramebufferFeatures,			imagelessFramebuffer,								"VK_KHR_imageless_framebuffer"),
 		FEATURE_TABLE_ITEM(vulkan12Features,	uniformBufferStandardLayoutFeatures,	uniformBufferStandardLayout,						"VK_KHR_uniform_buffer_standard_layout"),
@@ -1712,7 +1712,7 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate (Context& context)
 		DEPENDENCY_DUAL_ITEM	(vulkan12Features,	vulkanMemoryModelFeatures,		vulkanMemoryModelAvailabilityVisibilityChains,		vulkanMemoryModel),
 	};
 
-	deMemset(&dummyExtensionFeatures, 0, sizeof(dummyExtensionFeatures));
+	deMemset(&unusedExtensionFeatures, 0, sizeof(unusedExtensionFeatures));
 
 	for (size_t featureTableNdx = 0; featureTableNdx < DE_LENGTH_OF_ARRAY(featureTable); ++featureTableNdx)
 	{
@@ -1726,7 +1726,7 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate (Context& context)
 			size_t		structSize	= testedFeature.coreStructSize;
 			VkBool32*	featurePtr	= testedFeature.coreFieldPtr;
 
-			if (structPtr != &dummyExtensionFeatures)
+			if (structPtr != &unusedExtensionFeatures)
 				features2.pNext	= structPtr;
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
@@ -1759,7 +1759,7 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate (Context& context)
 			VkBool32*	featurePtr		= testedFeature.extFieldPtr;
 			const char*	extStringPtr	= testedFeature.extString;
 
-			if (structPtr != &dummyExtensionFeatures)
+			if (structPtr != &unusedExtensionFeatures)
 				features2.pNext	= structPtr;
 
 			if (extStringPtr == DE_NULL || isExtensionSupported(deviceExtensionProperties, RequiredExtension(extStringPtr)))

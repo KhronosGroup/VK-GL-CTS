@@ -1417,26 +1417,26 @@ MovePtr<tcu::Texture2DArray> MultiViewRenderTestInstance::imageData (void)
 				if (TEST_TYPE_POINT_SIZE == m_parameters.viewIndex)
 				{
 					const deUint32	vertexPerPrimitive	= 1u;
-					const deUint32	dummyQuarterNdx		= 0u;
+					const deUint32	unusedQuarterNdx	= 0u;
 					const int		pointSize			= static_cast<int>(layerNdx == 0u ? TEST_POINT_SIZE_WIDE : TEST_POINT_SIZE_SMALL);
 
 					if (subpassCount == 1)
 						for (deUint32 drawNdx = 0u; drawNdx < m_squareCount; ++drawNdx)
-							setPoint(referenceFrame->getLevel(0), getQuarterRefColor(dummyQuarterNdx, vertexPerPrimitive * drawNdx, layerNdx, false), pointSize, layerNdx, drawNdx);
+							setPoint(referenceFrame->getLevel(0), getQuarterRefColor(unusedQuarterNdx, vertexPerPrimitive * drawNdx, layerNdx, false), pointSize, layerNdx, drawNdx);
 					else
-						setPoint(referenceFrame->getLevel(0), getQuarterRefColor(dummyQuarterNdx, vertexPerPrimitive * subpassQuarterNdx, layerNdx, false), pointSize, layerNdx, subpassQuarterNdx);
+						setPoint(referenceFrame->getLevel(0), getQuarterRefColor(unusedQuarterNdx, vertexPerPrimitive * subpassQuarterNdx, layerNdx, false), pointSize, layerNdx, subpassQuarterNdx);
 				}
 
 				if (TEST_TYPE_MULTISAMPLE == m_parameters.viewIndex)
 				{
 					const deUint32	vertexPerPrimitive	= 3u;
-					const deUint32	dummyQuarterNdx		= 0u;
+					const deUint32	unusedQuarterNdx	= 0u;
 
 					if (subpassCount == 1)
 						for (deUint32 drawNdx = 0u; drawNdx < m_squareCount; ++drawNdx)
-							fillTriangle(referenceFrame->getLevel(0), getQuarterRefColor(dummyQuarterNdx, vertexPerPrimitive * drawNdx, layerNdx, false), layerNdx, drawNdx);
+							fillTriangle(referenceFrame->getLevel(0), getQuarterRefColor(unusedQuarterNdx, vertexPerPrimitive * drawNdx, layerNdx, false), layerNdx, drawNdx);
 					else
-						fillTriangle(referenceFrame->getLevel(0), getQuarterRefColor(dummyQuarterNdx, vertexPerPrimitive * subpassQuarterNdx, layerNdx, false), layerNdx, subpassQuarterNdx);
+						fillTriangle(referenceFrame->getLevel(0), getQuarterRefColor(unusedQuarterNdx, vertexPerPrimitive * subpassQuarterNdx, layerNdx, false), layerNdx, subpassQuarterNdx);
 				}
 			}
 
@@ -3726,8 +3726,8 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 				// maxMultiviewViewCount case
 				{
 					const VkExtent3D		incompleteExtent3D	= { 16u, 16u, 0u };
-					const vector<deUint32>	dummyMasks;
-					const TestParameters	parameters			= { incompleteExtent3D, dummyMasks, testType, sampleCountFlags, colorFormat, renderPassType };
+					const vector<deUint32>	unusedMasks;
+					const TestParameters	parameters			= { incompleteExtent3D, unusedMasks, testType, sampleCountFlags, colorFormat, renderPassType };
 
 					groupShader->addChild(new MultiViewRenderTestsCase(testCtx, "max_multi_view_view_count", "", parameters));
 				}

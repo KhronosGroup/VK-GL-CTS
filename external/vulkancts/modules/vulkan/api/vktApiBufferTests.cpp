@@ -691,8 +691,6 @@ tcu::TestStatus testOverlyLargeBuffer(Context& context, deUint64 bufferSize)
 		return tcu::TestStatus::fail("Fail");
 	}
 
-	vk.destroyBuffer(vkDevice, rawBuffer, DE_NULL);
-
 	// check if one of the allowed errors was returned
 	if ((result == VK_ERROR_OUT_OF_DEVICE_MEMORY) ||
 		(result == VK_ERROR_OUT_OF_HOST_MEMORY))

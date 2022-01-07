@@ -2561,12 +2561,13 @@ tcu::TestStatus acquireTooManyTest (Context& context, Type wsiType)
 	const deUint32 numAcquirableImages = numImages - minImageCount + 1;
 
 	const auto fences = createFences(devHelper.vkd, *devHelper.device, numAcquirableImages + 1, false);
-	deUint32 dummy;
+	deUint32 unused;
+
 	for (deUint32 i = 0; i < numAcquirableImages; ++i) {
-		VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, std::numeric_limits<deUint64>::max(), (VkSemaphore)0, **fences[i], &dummy));
+		VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, std::numeric_limits<deUint64>::max(), (VkSemaphore)0, **fences[i], &unused));
 	}
 
-	const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, 0, (VkSemaphore)0, **fences[numAcquirableImages], &dummy);
+	const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, 0, (VkSemaphore)0, **fences[numAcquirableImages], &unused);
 
 	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_NOT_READY ){
 		return tcu::TestStatus::fail("Implementation failed to respond well acquiring too many images with 0 timeout");
@@ -2598,14 +2599,15 @@ tcu::TestStatus acquireTooManyTimeoutTest (Context& context, Type wsiType)
 	const deUint32 numAcquirableImages = numImages - minImageCount + 1;
 
 	const auto fences = createFences(devHelper.vkd, *devHelper.device, numAcquirableImages + 1, false);
-	deUint32 dummy;
+	deUint32 unused;
+
 	for (deUint32 i = 0; i < numAcquirableImages; ++i) {
-		VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, std::numeric_limits<deUint64>::max(), (VkSemaphore)0, **fences[i], &dummy));
+		VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, std::numeric_limits<deUint64>::max(), (VkSemaphore)0, **fences[i], &unused));
 	}
 
 	const deUint64 millisecond = 1000000;
 	const deUint64 timeout = 50 * millisecond; // arbitrary realistic non-0 non-infinite timeout
-	const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, timeout, (VkSemaphore)0, **fences[numAcquirableImages], &dummy);
+	const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, timeout, (VkSemaphore)0, **fences[numAcquirableImages], &unused);
 
 	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_TIMEOUT ){
 		return tcu::TestStatus::fail("Implementation failed to respond well acquiring too many images with timeout");

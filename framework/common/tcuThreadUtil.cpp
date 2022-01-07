@@ -177,14 +177,14 @@ Thread::~Thread (void)
 	m_operations.clear();
 }
 
-deUint8* Thread::getDummyData (size_t size)
+deUint8* Thread::getUnusedData (size_t size)
 {
-	if (m_dummyData.size() < size)
+	if (m_unusedData.size() < size)
 	{
-		m_dummyData.resize(size);
+		m_unusedData.resize(size);
 	}
 
-	return &(m_dummyData[0]);
+	return &(m_unusedData[0]);
 }
 
 void Thread::addOperation (Operation* operation)
