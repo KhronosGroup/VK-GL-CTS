@@ -137,7 +137,7 @@ static bool compareBlockImages (const Surface&		reference,
 								const Surface&		result,
 								const tcu::RGBA&	thresholdRGBA,
 								const IVec2&		blockSize,
-								int					numNonDummyBlocks,
+								int					numUsedBlocks,
 								IVec2&				firstFailedBlockCoordDst,
 								Surface&			errorMaskDst,
 								IVec4&				maxDiffDst)
@@ -161,7 +161,7 @@ static bool compareBlockImages (const Surface&		reference,
 	{
 		const IVec2 blockCoord = IVec2(x, y) / blockSize;
 
-		if (blockCoord.y()*numXBlocks + blockCoord.x() < numNonDummyBlocks)
+		if (blockCoord.y()*numXBlocks + blockCoord.x() < numUsedBlocks)
 		{
 			const IVec4 refPix = reference.getPixel(x, y).toIVec();
 
@@ -423,8 +423,8 @@ ASTCBlockCase2D::IterateResult ASTCBlockCase2D::iterate (void)
 	const int						imageWidth				= numXBlocksPerImage * blockSize.x();
 	const int						imageHeight				= numYBlocksPerImage * blockSize.y();
 	const int						numBlocksRemaining		= totalNumBlocks - m_numBlocksTested;
-	const int						curNumNonDummyBlocks	= de::min(numBlocksPerImage, numBlocksRemaining);
-	const int						curNumDummyBlocks		= numBlocksPerImage - curNumNonDummyBlocks;
+	const int						curNumUsedBlocks		= de::min(numBlocksPerImage, numBlocksRemaining);
+	const int						curNumUnusedBlocks		= numBlocksPerImage - curNumUsedBlocks;
 	const glu::RenderContext&		renderCtx				= m_context.getRenderContext();
 	const tcu::RGBA					threshold				= renderCtx.getRenderTarget().getPixelFormat().getColorThreshold() + (tcu::isAstcSRGBFormat(m_format) ? tcu::RGBA(2,2,2,2) : tcu::RGBA(1,1,1,1));
 	tcu::CompressedTexture			compressed				(m_format, imageWidth, imageHeight);
@@ -439,9 +439,9 @@ ASTCBlockCase2D::IterateResult ASTCBlockCase2D::iterate (void)
 	}
 
 	DE_ASSERT(compressed.getDataSize() == numBlocksPerImage*tcu::astc::BLOCK_SIZE_BYTES);
-	deMemcpy(compressed.getData(), &m_blockData[m_numBlocksTested*tcu::astc::BLOCK_SIZE_BYTES], curNumNonDummyBlocks*tcu::astc::BLOCK_SIZE_BYTES);
-	if (curNumDummyBlocks > 1)
-		tcu::astc::generateDummyVoidExtentBlocks((deUint8*)compressed.getData() + curNumNonDummyBlocks*tcu::astc::BLOCK_SIZE_BYTES, curNumDummyBlocks);
+	deMemcpy(compressed.getData(), &m_blockData[m_numBlocksTested*tcu::astc::BLOCK_SIZE_BYTES], curNumUsedBlocks*tcu::astc::BLOCK_SIZE_BYTES);
+	if (curNumUsedBlocks > 1)
+		tcu::astc::generateDefaultVoidExtentBlocks((deUint8*)compressed.getData() + curNumUsedBlocks*tcu::astc::BLOCK_SIZE_BYTES, curNumUnusedBlocks);
 
 	// Create texture and render.
 
@@ -461,7 +461,7 @@ ASTCBlockCase2D::IterateResult ASTCBlockCase2D::iterate (void)
 		Surface		errorMask;
 		IVec2		firstFailedBlockCoord;
 		IVec4		maxDiff;
-		const bool	compareOk = compareBlockImages(referenceFrame, renderedFrame, threshold, blockSize, curNumNonDummyBlocks, firstFailedBlockCoord, errorMask, maxDiff);
+		const bool	compareOk = compareBlockImages(referenceFrame, renderedFrame, threshold, blockSize, curNumUsedBlocks, firstFailedBlockCoord, errorMask, maxDiff);
 
 		if (m_currentIteration == 0 || !compareOk)
 		{
@@ -470,10 +470,10 @@ ASTCBlockCase2D::IterateResult ASTCBlockCase2D::iterate (void)
 
 			{
 				tcu::ScopedLogSection section(log, "Iteration " + de::toString(m_currentIteration),
-													"Blocks " + de::toString(m_numBlocksTested) + " to " + de::toString(m_numBlocksTested + curNumNonDummyBlocks - 1));
+													"Blocks " + de::toString(m_numBlocksTested) + " to " + de::toString(m_numBlocksTested + curNumUsedBlocks - 1));
 
-				if (curNumDummyBlocks > 0)
-					log << TestLog::Message << "Note: Only the first " << curNumNonDummyBlocks << " blocks in the image are relevant; rest " << curNumDummyBlocks << " are dummies and not checked" << TestLog::EndMessage;
+				if (curNumUsedBlocks > 0)
+					log << TestLog::Message << "Note: Only the first " << curNumUsedBlocks << " blocks in the image are relevant; rest " << curNumUnusedBlocks << " are dummies and not checked" << TestLog::EndMessage;
 
 				if (!compareOk)
 				{
@@ -501,13 +501,13 @@ ASTCBlockCase2D::IterateResult ASTCBlockCase2D::iterate (void)
 				}
 			}
 
-			if (m_numBlocksTested + curNumNonDummyBlocks < totalNumBlocks)
+			if (m_numBlocksTested + curNumUsedBlocks < totalNumBlocks)
 				log << TestLog::Message << "Note: not logging further images unless reference comparison fails" << TestLog::EndMessage;
 		}
 	}
 
 	m_currentIteration++;
-	m_numBlocksTested += curNumNonDummyBlocks;
+	m_numBlocksTested += curNumUsedBlocks;
 
 	if (m_numBlocksTested >= totalNumBlocks)
 	{
@@ -564,7 +564,7 @@ ASTCBlockSizeRemainderCase2D::IterateResult ASTCBlockSizeRemainderCase2D::iterat
 	tcu::CompressedTexture			compressed				(m_format, imageWidth, imageHeight);
 
 	DE_ASSERT(compressed.getDataSize() == totalNumBlocks*tcu::astc::BLOCK_SIZE_BYTES);
-	tcu::astc::generateDummyNormalBlocks((deUint8*)compressed.getData(), totalNumBlocks, blockSize.x(), blockSize.y());
+	tcu::astc::generateDefaultNormalBlocks((deUint8*)compressed.getData(), totalNumBlocks, blockSize.x(), blockSize.y());
 
 	// Create texture and render.
 

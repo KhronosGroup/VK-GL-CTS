@@ -174,7 +174,7 @@ int getDimensionNumBlocks (int dimensionSize, int blockSize)
 	return (dimensionSize + blockSize - 1) / blockSize;
 }
 
-void generateDummyCompressedData (tcu::CompressedTexture& dst, const tcu::CompressedTexFormat& format)
+void generateDefaultCompressedData (tcu::CompressedTexture& dst, const tcu::CompressedTexFormat& format)
 {
 	const int			blockByteSize	= tcu::getBlockSize(format);
 	const tcu::IVec3	blockPixelSize	= tcu::getBlockPixelSize(format);
@@ -281,7 +281,7 @@ struct TextureTraits<glu::Texture3D>
 };
 
 template <typename T>
-de::MovePtr<T> genDummyTexture (glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, deUint32 texFormat, const typename TextureTraits<T>::SizeType& size)
+de::MovePtr<T> genDefaultTexture (glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, deUint32 texFormat, const typename TextureTraits<T>::SizeType& size)
 {
 	de::MovePtr<T> texture;
 
@@ -338,7 +338,7 @@ de::MovePtr<T> genDummyTexture (glu::RenderContext& renderCtx, const glu::Contex
 		const bool						isAstcFormat		= tcu::isAstcFormat(compressedFormat);
 		tcu::TexDecompressionParams		decompressionParams	((isAstcFormat) ? (tcu::TexDecompressionParams::ASTCMODE_LDR) : (tcu::TexDecompressionParams::ASTCMODE_LAST));
 
-		generateDummyCompressedData(compressedLevel, compressedFormat);
+		generateDefaultCompressedData(compressedLevel, compressedFormat);
 
 		texture = TextureTraits<T>::createTextureFromCompressedData(renderCtx,
 																	ctxInfo,
@@ -673,7 +673,7 @@ void TextureBorderClampTest::init (void)
 
 	// resources
 
-	m_texture = genDummyTexture<glu::Texture2D>(m_context.getRenderContext(), m_context.getContextInfo(), m_texFormat, tcu::IVec2(m_texWidth, m_texHeight));
+	m_texture = genDefaultTexture<glu::Texture2D>(m_context.getRenderContext(), m_context.getContextInfo(), m_texFormat, tcu::IVec2(m_texWidth, m_texHeight));
 
 	m_testCtx.getLog()	<< tcu::TestLog::Message
 						<< "Created texture with format " << glu::getTextureFormatName(m_texFormat)
@@ -2089,7 +2089,7 @@ void TextureBorderClampPerAxisCase3D::init (void)
 	}
 
 	// resources
-	m_texture = genDummyTexture<glu::Texture3D>(m_context.getRenderContext(), m_context.getContextInfo(), m_texFormat, m_size);
+	m_texture = genDefaultTexture<glu::Texture3D>(m_context.getRenderContext(), m_context.getContextInfo(), m_texFormat, m_size);
 	m_renderer = de::MovePtr<gls::TextureTestUtil::TextureRenderer>(new gls::TextureTestUtil::TextureRenderer(m_context.getRenderContext(), m_testCtx.getLog(), glslVersion, glu::PRECISION_HIGHP));
 
 	// texture info

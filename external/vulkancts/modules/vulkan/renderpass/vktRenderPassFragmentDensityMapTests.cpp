@@ -70,7 +70,7 @@
 // Code of FragmentDensityMapTestInstance is also used to test subsampledLoads, subsampledCoarseReconstructionEarlyAccess,
 // maxDescriptorSetSubsampledSamplers properties.
 
-// set value of DRY_RUN_WITHOUT_FDM_EXTENSION to 1 for dummy run hat checks the correctness of the code without using VK_EXT_fragment_density_map extension
+// set value of DRY_RUN_WITHOUT_FDM_EXTENSION to 1 for empty run that checks the correctness of the code without using VK_EXT_fragment_density_map extension
 #define DRY_RUN_WITHOUT_FDM_EXTENSION 0
 
 namespace vkt

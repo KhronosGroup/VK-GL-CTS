@@ -290,7 +290,7 @@ void InputVariablesCannotBeModifiedTest::deinit()
 	} /* for (all created shader objects) */
 }
 
-/** Dummy init function */
+/** Empty init function */
 void InputVariablesCannotBeModifiedTest::init()
 {
 	/* Left blank on purpose */
@@ -1043,7 +1043,7 @@ void InvalidUseCasesForAllNotFuncsAndExclMarkOpTest::deinit()
 	}
 }
 
-/** Dummy init function */
+/** Empty init function */
 void InvalidUseCasesForAllNotFuncsAndExclMarkOpTest::init()
 {
 	/* Left blank on purpose */
@@ -1243,7 +1243,7 @@ void InvalidVSInputsTest::deinit()
 	}
 }
 
-/** Dummy init function */
+/** Empty init function */
 void InvalidVSInputsTest::init()
 {
 	/* Left blank on purpose */
@@ -1481,7 +1481,7 @@ void ParenthesisInLayoutQualifierIntegerValuesTest::deinit()
 	}
 }
 
-/** Dummy init function */
+/** Empty init function */
 void ParenthesisInLayoutQualifierIntegerValuesTest::init()
 {
 	/* Left blank on purpose */
@@ -2383,7 +2383,7 @@ void PerVertexValidationTest::getTestIterationProperties(glu::ContextType contex
 	} /* switch (iteration) */
 }
 
-/** Returns a dummy vertex shader body, with main() entry-point using code passed by
+/** Returns a vertex shader body, with main() entry-point using code passed by
  *  the @param main_body argument.
  *
  *  @param context_type Running rendering context's type.
@@ -2457,7 +2457,7 @@ std::string PerVertexValidationTest::getVertexShaderBody(glu::ContextType contex
 	return vs_body_sstream.str();
 }
 
-/** Dummy init function */
+/** Empty init function */
 void PerVertexValidationTest::init()
 {
 	/* Left blank on purpose */
@@ -5531,7 +5531,7 @@ bool ReservedNamesTest::isStructAllowed(_shader_type shader_type, _language_feat
 	return structAllowed;
 }
 
-/** Dummy init function */
+/** Empty init function */
 void ReservedNamesTest::init()
 {
 	/* Left blank on purpose */
@@ -5747,7 +5747,7 @@ void SparseBuffersWithCopyOpsTest::deinit()
 	}
 }
 
-/** Dummy init function */
+/** Empty init function */
 void SparseBuffersWithCopyOpsTest::init()
 {
 	/* Nothing to do here */

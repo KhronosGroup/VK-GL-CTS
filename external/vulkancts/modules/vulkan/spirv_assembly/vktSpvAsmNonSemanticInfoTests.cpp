@@ -40,7 +40,7 @@ using namespace vk;
 enum TestType
 {
 	TT_BASIC					= 0,
-	TT_DUMMY_INSTRUCTION_SET,
+	TT_NONEXISTING_INSTRUCTION_SET,
 	TT_LARGE_INSTRUCTION_NUMBER,
 	TT_MANY_PARAMETERS,
 	TT_ANY_CONSTANT_TYPE,
@@ -137,11 +137,11 @@ void SpvAsmSpirvNonSemanticInfoBasicCase::initPrograms (SourceCollections& progr
 			"%tmp = OpExtInst %void %extInstSet 1 %main %fileStr\n";
 		break;
 
-	case TT_DUMMY_INSTRUCTION_SET:
+	case TT_NONEXISTING_INSTRUCTION_SET:
 		// Testing non existing instruction set
 
 		extendedInstructions =
-			"%extInstSet = OpExtInstImport \"NonSemantic.P.B.DummySet\"\n";
+			"%extInstSet = OpExtInstImport \"NonSemantic.P.B.NonexistingSet\"\n";
 		additionalPreamble +=
 			"%testStrA = OpString \"this.is.test\"\n"
 			"%testStrB = OpString \"yet another test\"\n";
@@ -345,7 +345,7 @@ tcu::TestCaseGroup* createNonSemanticInfoGroup(tcu::TestContext& testCtx)
 	std::vector<TestData> testList =
 	{
 		{ "basic",						TT_BASIC },
-		{ "dummy_instruction_set",		TT_DUMMY_INSTRUCTION_SET },
+		{ "dummy_instruction_set",		TT_NONEXISTING_INSTRUCTION_SET },
 		{ "large_instruction_number",	TT_LARGE_INSTRUCTION_NUMBER },
 		{ "many_parameters",			TT_MANY_PARAMETERS },
 		{ "any_constant_type",			TT_ANY_CONSTANT_TYPE },

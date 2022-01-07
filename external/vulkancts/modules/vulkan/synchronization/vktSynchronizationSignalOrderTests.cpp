@@ -57,7 +57,6 @@ namespace
 
 using namespace vk;
 using namespace vkt::ExternalMemoryUtil;
-using tcu::TestLog;
 using de::MovePtr;
 using de::SharedPtr;
 using de::UniquePtr;

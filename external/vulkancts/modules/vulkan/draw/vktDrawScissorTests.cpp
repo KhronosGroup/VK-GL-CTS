@@ -217,7 +217,7 @@ vector<VkRect2D> DynamicScissorTestCommand::updateScissors (vector<VkRect2D> sci
 	for (size_t scissorIdx = 0; scissorIdx < m_scissors.size(); scissorIdx++)
 	{
 		while (scissors.size() <= m_firstScissor + scissorIdx)
-			scissors.push_back(makeRect2D(0, 0)); // Add dummy scissor
+			scissors.push_back(makeRect2D(0, 0)); // Add empty scissor
 
 		scissors[m_firstScissor + scissorIdx] = m_scissors[scissorIdx];
 	}

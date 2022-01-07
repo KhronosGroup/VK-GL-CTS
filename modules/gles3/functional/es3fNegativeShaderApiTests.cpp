@@ -421,7 +421,7 @@ void NegativeShaderApiTests::init (void)
 		{
 			glu::ShaderProgram		srcProgram		(m_context.getRenderContext(), glu::makeVtxFragSources(vertexShaderSource, fragmentShaderSource));
 			GLuint					dstProgram		= glCreateProgram();
-			GLuint					dummyShader		= glCreateShader(GL_VERTEX_SHADER);
+			GLuint					unusedShader	= glCreateShader(GL_VERTEX_SHADER);
 			GLenum					binaryFormat	= -1;
 			GLsizei					binaryLength	= -1;
 			std::vector<deUint8>	binaryBuf;
@@ -442,7 +442,7 @@ void NegativeShaderApiTests::init (void)
 				expectError			(GL_NO_ERROR);
 
 				m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if program is not the name of an existing program object.");
-				glProgramBinary		(dummyShader, binaryFormat, &binaryBuf[0], binaryLength);
+				glProgramBinary		(unusedShader, binaryFormat, &binaryBuf[0], binaryLength);
 				expectError			(GL_INVALID_OPERATION);
 				m_log << TestLog::EndSection;
 
@@ -452,7 +452,7 @@ void NegativeShaderApiTests::init (void)
 				m_log << TestLog::EndSection;
 			}
 
-			glDeleteShader(dummyShader);
+			glDeleteShader(unusedShader);
 			glDeleteProgram(dstProgram);
 		});
 	ES3F_ADD_API_CASE(program_parameteri, "Invalid glProgramParameteri() usage",

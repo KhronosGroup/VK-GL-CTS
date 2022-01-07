@@ -257,7 +257,7 @@ static std::string generateEmptyFragmentSource (glu::GLSLVersion version)
 
 	src << glu::getGLSLVersionDeclaration(version) << "\n";
 
-	// \todo [2013-08-05 pyry] Do we need one dummy output?
+	// \todo [2013-08-05 pyry] Do we need one unused output?
 
 	src << "void main (void)\n{\n";
 	if (!customOut)
