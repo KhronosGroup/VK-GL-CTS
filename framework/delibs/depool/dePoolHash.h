@@ -182,7 +182,7 @@ DE_INLINE VALUETYPE	TYPENAME##Iter_getValue	(const TYPENAME##Iter* iter)    \
 	return iter->curSlot->values[iter->curElemIndex];	\
 }	\
 \
-struct TYPENAME##Dummy_s { int dummy; }
+struct TYPENAME##Unused_s { int unused; }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Implement a template pool hash class.
@@ -416,13 +416,13 @@ void TYPENAME##_delete (DE_PTR_TYPE(TYPENAME) hash, KEYTYPE key)    \
 		DE_ASSERT(slot); \
 	} \
 }    \
-struct TYPENAME##Dummy2_s { int dummy; }
+struct TYPENAME##Unused2_s { int unused; }
 
 /* Copy-to-array templates. */
 
 #define DE_DECLARE_POOL_HASH_TO_ARRAY(HASHTYPENAME, KEYARRAYTYPENAME, VALUEARRAYTYPENAME)		\
 	deBool HASHTYPENAME##_copyToArray(const HASHTYPENAME* set, DE_PTR_TYPE(KEYARRAYTYPENAME) keyArray, DE_PTR_TYPE(VALUEARRAYTYPENAME) valueArray);	\
-	struct HASHTYPENAME##_##KEYARRAYTYPENAME##_##VALUEARRAYTYPENAME##_declare_dummy { int dummy; }
+	struct HASHTYPENAME##_##KEYARRAYTYPENAME##_##VALUEARRAYTYPENAME##_declare_unused { int unused; }
 
 #define DE_IMPLEMENT_POOL_HASH_TO_ARRAY(HASHTYPENAME, KEYARRAYTYPENAME, VALUEARRAYTYPENAME)		\
 deBool HASHTYPENAME##_copyToArray(const HASHTYPENAME* hash, DE_PTR_TYPE(KEYARRAYTYPENAME) keyArray, DE_PTR_TYPE(VALUEARRAYTYPENAME) valueArray)	\
@@ -455,6 +455,6 @@ deBool HASHTYPENAME##_copyToArray(const HASHTYPENAME* hash, DE_PTR_TYPE(KEYARRAY
 	DE_ASSERT(arrayNdx == numElements);	\
 	return DE_TRUE;	\
 }	\
-struct HASHTYPENAME##_##KEYARRAYTYPENAME##_##VALUEARRAYTYPENAME##_implement_dummy { int dummy; }
+struct HASHTYPENAME##_##KEYARRAYTYPENAME##_##VALUEARRAYTYPENAME##_implement_unused { int unused; }
 
 #endif /* _DEPOOLHASH_H */

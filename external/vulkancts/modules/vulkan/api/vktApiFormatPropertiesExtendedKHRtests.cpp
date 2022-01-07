@@ -42,8 +42,8 @@ void checkSupport (Context& context, const VkFormat format)
 
 tcu::TestStatus test (Context& context, const VkFormat format)
 {
-	const VkFormatPropertiesExtendedKHR formatProperties (context.getFormatProperties(format));
-	const VkFormatPropertiesExtendedKHR requiredProperties (context.getRequiredFormatProperties(format));
+	const VkFormatProperties3KHR formatProperties (context.getFormatProperties(format));
+	const VkFormatProperties3KHR requiredProperties (context.getRequiredFormatProperties(format));
 
 	bool allPass = true;
 	allPass = allPass && ((formatProperties.bufferFeatures			& requiredProperties.bufferFeatures) == requiredProperties.bufferFeatures);

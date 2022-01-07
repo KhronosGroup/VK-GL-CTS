@@ -1,4 +1,7 @@
-include_directories(..)
+include_directories(
+	..
+	${DEQP_INL_DIR}
+	)
 
 set(DEQP_VK_SPARSE_RESOURCES_SRCS
 	vktSparseResourcesBase.cpp
