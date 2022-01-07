@@ -1,6 +1,7 @@
 include_directories(
 	..
 	../util
+	${DEQP_INL_DIR}
 	)
 
 set(DEQP_VK_SYNCHRONIZATION_SRCS
@@ -35,6 +36,8 @@ set(DEQP_VK_SYNCHRONIZATION_SRCS
 	vktSynchronizationSignalOrderTests.hpp
 	vktSynchronizationWin32KeyedMutexTests.cpp
 	vktSynchronizationWin32KeyedMutexTests.hpp
+	vktSynchronizationImageLayoutTransitionTests.cpp
+	vktSynchronizationImageLayoutTransitionTests.cpp
 	)
 
 set(DEQP_VK_SYNCHRONIZATION_LIBS

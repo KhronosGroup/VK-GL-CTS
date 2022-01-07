@@ -899,8 +899,8 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 	VkDeviceSize					neededMemory		= static_cast<VkDeviceSize>(static_cast<float>(colorSize + depthStencilSize) * additionalMemory) + reserveForChecking;
 	VkDeviceSize					maxMemory			= getMaxDeviceHeapSize(context, caseDef) >> 2;
 
-	vk::PlatformMemoryLimits		memoryLimits;
-	context.getTestContext().getPlatform().getVulkanPlatform().getMemoryLimits(memoryLimits);
+	tcu::PlatformMemoryLimits		memoryLimits;
+	context.getTestContext().getPlatform().getMemoryLimits(memoryLimits);
 	maxMemory = std::min(maxMemory, VkDeviceSize(memoryLimits.totalSystemMemory));
 
 	const VkDeviceSize				deviceMemoryBudget	= std::min(neededMemory, maxMemory);

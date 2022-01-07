@@ -104,3 +104,4 @@ VK_KHR_maintenance4							DEVICE
 VK_KHR_dynamic_rendering					DEVICE
 VK_EXT_border_color_swizzle					DEVICE
 VK_NV_mesh_shader							DEVICE
+VK_KHR_portability_subset					DEVICE

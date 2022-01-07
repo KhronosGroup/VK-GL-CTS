@@ -317,7 +317,8 @@ TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 		subgroups::SSBOData::InitializeNonZero,	//  InputDataInitializeType		initializeType;
 		subgroups::SSBOData::LayoutStd140,		//  InputDataLayoutType			layout;
 		caseDef.format,							//  vk::VkFormat				format;
-		numElements,							//  vk::VkDeviceSize		numElements;
+		numElements,							//  vk::VkDeviceSize			numElements;
+		subgroups::SSBOData::BindingUBO,		//  BindingType					bindingType;
 	};
 
 	switch (caseDef.shaderStage)
@@ -358,7 +359,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			subgroups::SSBOData::LayoutStd430,		//  InputDataLayoutType			layout;
 			caseDef.format,							//  vk::VkFormat				format;
 			numElements,							//  vk::VkDeviceSize			numElements;
-			false,									//  bool						isImage;
+			subgroups::SSBOData::BindingSSBO,		//  bool						isImage;
 			4u,										//  deUint32					binding;
 			stages,									//  vk::VkShaderStageFlagBits	stages;
 		};
@@ -374,7 +375,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			subgroups::SSBOData::LayoutStd430,		//  InputDataLayoutType			layout;
 			caseDef.format,							//  vk::VkFormat				format;
 			numElements,							//  vk::VkDeviceSize			numElements;
-			false,									//  bool						isImage;
+			subgroups::SSBOData::BindingSSBO,		//  bool						isImage;
 			6u,										//  deUint32					binding;
 			stages,									//  vk::VkShaderStageFlagBits	stages;
 		};

@@ -601,6 +601,13 @@ public:
 						{}
 };
 
+class BufferCollectionFUCHSIA
+{
+public:
+						BufferCollectionFUCHSIA		(VkDevice, const VkBufferCollectionCreateInfoFUCHSIA*)
+						{}
+};
+
 class CommandPool
 {
 public:

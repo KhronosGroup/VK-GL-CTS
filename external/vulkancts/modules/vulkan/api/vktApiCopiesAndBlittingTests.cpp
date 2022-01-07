@@ -5406,14 +5406,18 @@ enum ResolveImageToImageOptions{NO_OPTIONAL_OPERATION,
 class ResolveImageToImage : public CopiesAndBlittingTestInstance
 {
 public:
-												ResolveImageToImage			(Context&							context,
-																			 TestParams							params,
-																			 const ResolveImageToImageOptions	options);
-	virtual tcu::TestStatus						iterate						(void);
+												ResolveImageToImage				(Context&							context,
+																				 TestParams							params,
+																				 const ResolveImageToImageOptions	options);
+	virtual tcu::TestStatus						iterate							(void);
+	static inline bool							shouldVerifyIntermediateResults	(ResolveImageToImageOptions option)
+	{
+		return option == COPY_MS_IMAGE_TO_MS_IMAGE || option == COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE || option == COPY_MS_IMAGE_LAYER_TO_MS_IMAGE;
+	}
 protected:
-	virtual tcu::TestStatus						checkTestResult				(tcu::ConstPixelBufferAccess result = tcu::ConstPixelBufferAccess());
-	void										copyMSImageToMSImage		(deUint32 copyArraySize);
-	tcu::TestStatus								checkIntermediateCopy		(void);
+	virtual tcu::TestStatus						checkTestResult					(tcu::ConstPixelBufferAccess result);
+	void										copyMSImageToMSImage			(deUint32 copyArraySize);
+	tcu::TestStatus								checkIntermediateCopy			(void);
 private:
 	Move<VkImage>								m_multisampledImage;
 	de::MovePtr<Allocation>						m_multisampledImageAlloc;
@@ -6050,7 +6054,7 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 
 	de::MovePtr<tcu::TextureLevel>	resultTextureLevel	= readImage(*m_destination, m_params.dst.image);
 
-	if (m_options == COPY_MS_IMAGE_TO_MS_IMAGE || m_options == COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE || m_options == COPY_MS_IMAGE_LAYER_TO_MS_IMAGE)
+	if (shouldVerifyIntermediateResults(m_options))
 	{
 		// Verify the intermediate multisample copy operation happens properly instead of, for example, shuffling samples around or
 		// resolving the image and giving every sample the same value.
@@ -6743,6 +6747,12 @@ public:
 	virtual void			checkSupport				(Context&				context) const
 	{
 		const VkSampleCountFlagBits	rasterizationSamples = m_params.samples;
+
+		// Intermediate result check uses fragmentStoresAndAtomics.
+		if (ResolveImageToImage::shouldVerifyIntermediateResults(m_options) && !context.getDeviceFeatures().fragmentStoresAndAtomics)
+		{
+			TCU_THROW(NotSupportedError, "fragmentStoresAndAtomics not supported");
+		}
 
 		if (!(context.getDeviceProperties().limits.framebufferColorSampleCounts & rasterizationSamples))
 			throw tcu::NotSupportedError("Unsupported number of rasterization samples");

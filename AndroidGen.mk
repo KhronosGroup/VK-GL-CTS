@@ -163,6 +163,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsScissorMultiViewportTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsScissorTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsTests.cpp \
+	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsTransientAttachmentTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_shader_interlock/vktFragmentShaderInterlockBasic.cpp \
 	external/vulkancts/modules/vulkan/fragment_shader_interlock/vktFragmentShaderInterlockTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_shading_rate/vktAttachmentRateTests.cpp \
@@ -308,6 +309,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolStatisticsTests.cpp \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolTests.cpp \
 	external/vulkancts/modules/vulkan/rasterization/vktRasterizationFragShaderSideEffectsTests.cpp \
+	external/vulkancts/modules/vulkan/rasterization/vktRasterizationOrderAttachmentAccessTests.cpp \
 	external/vulkancts/modules/vulkan/rasterization/vktRasterizationProvokingVertexTests.cpp \
 	external/vulkancts/modules/vulkan/rasterization/vktRasterizationTests.cpp \
 	external/vulkancts/modules/vulkan/ray_query/vktRayQueryAccelerationStructuresTests.cpp \
@@ -337,6 +339,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingMiscTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingNonUniformArgsTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingNullASTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingPipelineFlagsTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingPipelineLibraryTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingProceduralGeometryTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingShaderBindingTableTests.cpp \
@@ -461,6 +464,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsBuiltinMaskVarTests.cpp \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsBuiltinVarTests.cpp \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsClusteredTests.cpp \
+	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsMultipleDispatchesUniformSubgroupSizeTests.cpp \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsPartitionedTests.cpp \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsQuadTests.cpp \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsScanHelpers.cpp \
@@ -474,6 +478,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationBasicFenceTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationBasicSemaphoreTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationCrossInstanceSharingTests.cpp \
+	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationImageLayoutTransitionTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationInternallySynchronizedObjectsTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationNoneStageTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationOperation.cpp \

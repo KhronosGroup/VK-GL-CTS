@@ -46,6 +46,30 @@ namespace tcu
 class CommandLine;
 class FunctionLibrary;
 
+struct PlatformMemoryLimits
+{
+	// System memory properties
+	size_t			totalSystemMemory;					// #bytes of system memory (heap + HOST_LOCAL) tests must not exceed
+
+	// Device memory properties
+	std::uint64_t	totalDeviceLocalMemory;				// #bytes of total DEVICE_LOCAL memory tests must not exceed or 0 if DEVICE_LOCAL counts against system memory
+	std::uint64_t	deviceMemoryAllocationGranularity;	// VkDeviceMemory allocation granularity (typically page size)
+
+	// Device memory page table geometry
+	std::uint64_t	devicePageSize;						// Page size on device (must be rounded up to the nearest POT)
+	std::uint64_t	devicePageTableEntrySize;			// Number of bytes per page table size
+	size_t			devicePageTableHierarchyLevels;		// Number of levels in device page table hierarchy
+
+	PlatformMemoryLimits (void)
+		: totalSystemMemory					(0)
+		, totalDeviceLocalMemory			(0)
+		, deviceMemoryAllocationGranularity	(0)
+		, devicePageSize					(0)
+		, devicePageTableEntrySize			(0)
+		, devicePageTableHierarchyLevels	(0)
+	{}
+};
+
 /*--------------------------------------------------------------------*//*!
  * \brief Base class for platform implementation.
  *
@@ -61,7 +85,7 @@ class FunctionLibrary;
  * point, tcuMain.cpp can be used as is. In that case you only have to
  * implement createPlatform().
  *
- * API-specific platform interfaces (glu::Platform and eglu::Platform)
+ * API-specific platform interfaces (glu::Platform, eglu::Platform and vk::Platform)
  * can be provided by implementing get<API>Platform() functions.
  *//*--------------------------------------------------------------------*/
 class Platform
@@ -112,7 +136,16 @@ public:
 	virtual const eglu::Platform&	getEGLPlatform		(void) const;
 
 	virtual const vk::Platform&		getVulkanPlatform	(void) const;
+
+	virtual void					getMemoryLimits		(PlatformMemoryLimits& limits) const;
 };
+
+inline tcu::PlatformMemoryLimits getMemoryLimits (const tcu::Platform& platform)
+{
+	tcu::PlatformMemoryLimits limits;
+	platform.getMemoryLimits(limits);
+	return limits;
+}
 
 } // tcu
 

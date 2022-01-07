@@ -2912,6 +2912,11 @@ Vec2 projectToFace (CubeFace face, const Vec3& coord)
 			DE_ASSERT(DE_FALSE);
 	}
 
+	if (fabs(ma) < FLT_EPSILON)
+	{
+		return Vec2(0.0f);
+	}
+
 	// Compute s, t
 	s = ((sc / ma) + 1.0f) / 2.0f;
 	t = ((tc / ma) + 1.0f) / 2.0f;

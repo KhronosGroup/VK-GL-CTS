@@ -1,7 +1,8 @@
 include_directories(
 	..
 	../draw
-	)
+	${DEQP_INL_DIR}
+)
 
 set(DEQP_VK_DYNAMIC_STATE_SRCS
 	vktDynamicStateTestCaseUtil.hpp

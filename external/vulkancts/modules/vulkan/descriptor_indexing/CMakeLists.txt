@@ -1,4 +1,7 @@
-include_directories(..)
+include_directories(
+	..
+	${DEQP_INL_DIR}
+)
 
 set(DEQP_VK_DESCRIPTOR_INDEXING_SRCS
 	vktDescriptorIndexingTests.hpp

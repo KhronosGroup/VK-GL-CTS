@@ -763,21 +763,6 @@ void SingleTriangleConfiguration::initShaderBindingTables(de::MovePtr<RayTracing
 	missShaderBindingTable												= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 2, 1 );
 }
 
-bool pointInTriangle2D(const tcu::Vec3& p, const tcu::Vec3& p0, const tcu::Vec3& p1, const tcu::Vec3& p2)
-{
-	float s = p0.y() * p2.x() - p0.x() * p2.y() + (p2.y() - p0.y()) * p.x() + (p0.x() - p2.x()) * p.y();
-	float t = p0.x() * p1.y() - p0.y() * p1.x() + (p0.y() - p1.y()) * p.x() + (p1.x() - p0.x()) * p.y();
-
-	if ((s < 0) != (t < 0))
-		return false;
-
-	float a = -p1.y() * p2.x() + p0.y() * (p2.x() - p1.x()) + p0.x() * (p1.y() - p2.y()) + p1.x() * p2.y();
-
-	return a < 0 ?
-		(s <= 0 && s + t >= a) :
-		(s >= 0 && s + t <= a);
-}
-
 bool SingleTriangleConfiguration::verifyImage(BufferWithMemory* resultBuffer, Context& context, TestParams& testParams)
 {
 	tcu::TextureFormat			imageFormat		= vk::mapVkFormat(getResultImageFormat());
@@ -2530,7 +2515,7 @@ tcu::TestStatus RayTracingDeviceASCompabilityKHRTestInstance::iterate (void)
 	const VkQueue					queue				= m_context.getUniversalQueue();
 	Allocator&						allocator			= m_context.getDefaultAllocator();
 
-	const Move<VkCommandPool>		cmdPool				= createCommandPool(vkd, device, 0, queueFamilyIndex);
+	const Move<VkCommandPool>		cmdPool				= createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 	const Move<VkCommandBuffer>		cmdBuffer			= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	bool							result				= false;

@@ -130,11 +130,11 @@ static tcu::TestPackage* createdEQPES31Package(tcu::TestContext& testCtx)
 {
 	return new deqp::gles31::TestPackage(testCtx);
 }
+#endif
 static tcu::TestPackage* createdEQPGL45Package(tcu::TestContext& testCtx)
 {
 	return new deqp::gles31::TestPackageGL45(testCtx);
 }
-#endif
 static tcu::TestPackage* createES31Package(tcu::TestContext& testCtx)
 {
 	return new es31cts::ES31TestPackage(testCtx, "KHR-GLES31");
@@ -308,8 +308,8 @@ void registerPackages(void)
 
 #if DE_OS != DE_OS_ANDROID
 	registry->registerPackage("dEQP-GLES31", createdEQPES31Package);
-	registry->registerPackage("dEQP-GL45", createdEQPGL45Package);
 #endif
+	registry->registerPackage("dEQP-GL45", createdEQPGL45Package);
 	registry->registerPackage("KHR-GLES31", createES31Package);
 	registry->registerPackage("KHR-GLESEXT", createESEXTPackage);
 
