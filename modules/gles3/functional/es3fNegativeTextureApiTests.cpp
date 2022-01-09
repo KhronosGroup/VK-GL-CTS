@@ -510,18 +510,18 @@ void NegativeTextureApiTests::init (void)
 					const IVec3					blockPixels = getBlockPixelSize(tcuFormat);
 					{
 						const size_t			blockBytes	= getBlockSize(tcuFormat);
-						const vector<deUint8>	dummyData	(blockBytes);
+						const vector<deUint8>	unusedData	(blockBytes);
 
-						glCompressedTexImage2D(GL_TEXTURE_2D, 0, format, blockPixels.x(), blockPixels.y(), 0, (int)blockBytes, &dummyData[0]);
+						glCompressedTexImage2D(GL_TEXTURE_2D, 0, format, blockPixels.x(), blockPixels.y(), 0, (int)blockBytes, &unusedData[0]);
 						expectError(GL_INVALID_ENUM);
 					}
 					FOR_CUBE_FACES(faceGL,
 					{
 						const deInt32			cubeSize	= blockPixels.x() * blockPixels.y(); // Divisible by the block size and square
 						const size_t			blockBytes	= getBlockSize(tcuFormat) * cubeSize; // We have a x * y grid of blocks
-						const vector<deUint8>	dummyData	(blockBytes);
+						const vector<deUint8>	unusedData	(blockBytes);
 
-						glCompressedTexImage2D(faceGL, 0, format, cubeSize, cubeSize, 0, (int)blockBytes, &dummyData[0]);
+						glCompressedTexImage2D(faceGL, 0, format, cubeSize, cubeSize, 0, (int)blockBytes, &unusedData[0]);
 						expectError(GL_INVALID_ENUM);
 					});
 				}
@@ -2693,9 +2693,9 @@ void NegativeTextureApiTests::init (void)
 					const CompressedTexFormat	tcuFormat	= mapGLCompressedTexFormat(format);
 					const IVec3					blockPixels = getBlockPixelSize(tcuFormat);
 					const size_t				blockBytes	= getBlockSize(tcuFormat);
-					const vector<deUint8>		dummyData	(blockBytes);
+					const vector<deUint8>		unusedData	(blockBytes);
 
-					glCompressedTexImage3D(GL_TEXTURE_3D, 0, format, blockPixels.x(), blockPixels.y(), blockPixels.z(), 0, (int)blockBytes, &dummyData[0]);
+					glCompressedTexImage3D(GL_TEXTURE_3D, 0, format, blockPixels.x(), blockPixels.y(), blockPixels.z(), 0, (int)blockBytes, &unusedData[0]);
 					expectError(requiredError);
 				}
 			}

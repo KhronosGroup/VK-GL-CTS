@@ -590,7 +590,7 @@ struct VoidVulkanStruct
 	const void*		pNext;
 };
 
-tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
+tcu::TestStatus renderTriangleUnusedExtStructTest (Context& context)
 {
 	const VkDevice									vkDevice						= context.getDevice();
 	const DeviceInterface&							vk								= context.getDeviceInterface();
@@ -602,7 +602,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const tcu::Vec4									clearColor						(0.125f, 0.25f, 0.75f, 1.0f);
 
 	// This structure will stand in as an unknown extension structure that must be ignored by implementations.
-	VoidVulkanStruct								dummyExtStruct					=
+	VoidVulkanStruct								unusedExtStruct					=
 	{
 		VK_STRUCTURE_TYPE_MAX_ENUM,		// sType
 		DE_NULL							// pNext
@@ -618,7 +618,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkBufferCreateInfo						vertexBufferParams				=
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// sType
-		&dummyExtStruct,						// pNext
+		&unusedExtStruct,						// pNext
 		0u,										// flags
 		(VkDeviceSize)sizeof(vertices),			// size
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,		// usage
@@ -635,7 +635,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkBufferCreateInfo						readImageBufferParams			=
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// sType
-		&dummyExtStruct,						// pNext
+		&unusedExtStruct,						// pNext
 		(VkBufferCreateFlags)0u,				// flags
 		imageSizeBytes,							// size
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT,		// usage
@@ -651,7 +651,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkImageCreateInfo							imageParams						=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,									// sType
-		&dummyExtStruct,														// pNext
+		&unusedExtStruct,														// pNext
 		0u,																		// flags
 		VK_IMAGE_TYPE_2D,														// imageType
 		VK_FORMAT_R8G8B8A8_UNORM,												// format
@@ -709,7 +709,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkRenderPassCreateInfo					renderPassInfo						=
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType                   sType
-		&dummyExtStruct,							// const void*                       pNext
+		&unusedExtStruct,							// const void*                       pNext
 		(VkRenderPassCreateFlags)0,					// VkRenderPassCreateFlags           flags
 		1u,											// deUint32                          attachmentCount
 		&colorAttachmentDescription,				// const VkAttachmentDescription*    pAttachments
@@ -725,7 +725,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkImageViewCreateInfo						colorAttViewParams					=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	// sType
-		&dummyExtStruct,							// pNext
+		&unusedExtStruct,							// pNext
 		0u,											// flags
 		*image,										// image
 		VK_IMAGE_VIEW_TYPE_2D,						// viewType
@@ -750,7 +750,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkPipelineLayoutCreateInfo				pipelineLayoutParams				=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// sType
-		&dummyExtStruct,								// pNext
+		&unusedExtStruct,								// pNext
 		(vk::VkPipelineLayoutCreateFlags)0,
 		0u,												// setLayoutCount
 		DE_NULL,										// pSetLayouts
@@ -766,7 +766,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const struct VkShaderModuleCreateInfo			vertModuleInfo						=
 	{
 		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-		&dummyExtStruct,
+		&unusedExtStruct,
 		0,
 		(deUintptr)vertBin.getSize(),
 		(const deUint32*)vertBin.getBinary(),
@@ -775,7 +775,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const struct VkShaderModuleCreateInfo			fragModuleInfo						=
 	{
 		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-		&dummyExtStruct,
+		&unusedExtStruct,
 		0,
 		(deUintptr)fragBin.getSize(),
 		(const deUint32*)fragBin.getBinary(),
@@ -791,7 +791,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	VkPipelineShaderStageCreateInfo					stageCreateInfo						=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType                     sType
-		&dummyExtStruct,										// const void*                         pNext
+		&unusedExtStruct,										// const void*                         pNext
 		0u,														// VkPipelineShaderStageCreateFlags    flags
 		VK_SHADER_STAGE_VERTEX_BIT,								// VkShaderStageFlagBits               stage
 		DE_NULL,												// VkShaderModule                      module
@@ -827,7 +827,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkPipelineVertexInputStateCreateInfo		vertexInputStateCreateInfo			=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType                             sType
-		&dummyExtStruct,											// const void*                                 pNext
+		&unusedExtStruct,											// const void*                                 pNext
 		(VkPipelineVertexInputStateCreateFlags)0,					// VkPipelineVertexInputStateCreateFlags       flags
 		1u,															// deUint32                                    vertexBindingDescriptionCount
 		&vertexInputBindingDescription,								// const VkVertexInputBindingDescription*      pVertexBindingDescriptions
@@ -838,7 +838,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyStateCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType                            sType
-		&dummyExtStruct,												// const void*                                pNext
+		&unusedExtStruct,												// const void*                                pNext
 		0u,																// VkPipelineInputAssemblyStateCreateFlags    flags
 		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology                        topology
 		VK_FALSE														// VkBool32                                   primitiveRestartEnable
@@ -847,7 +847,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkPipelineViewportStateCreateInfo			viewportStateCreateInfo				=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	// VkStructureType                             sType
-		&dummyExtStruct,										// const void*                                 pNext
+		&unusedExtStruct,										// const void*                                 pNext
 		(VkPipelineViewportStateCreateFlags)0,					// VkPipelineViewportStateCreateFlags          flags
 		(deUint32)viewports.size(),								// deUint32                                    viewportCount
 		viewports.data(),										// const VkViewport*                           pViewports
@@ -858,7 +858,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkPipelineRasterizationStateCreateInfo	rasterizationStateCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	// VkStructureType                            sType
-		&dummyExtStruct,											// const void*                                pNext
+		&unusedExtStruct,											// const void*                                pNext
 		0u,															// VkPipelineRasterizationStateCreateFlags    flags
 		VK_FALSE,													// VkBool32                                   depthClampEnable
 		VK_FALSE,													// VkBool32                                   rasterizerDiscardEnable
@@ -875,7 +875,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkPipelineMultisampleStateCreateInfo		multisampleStateCreateInfo			=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType                          sType
-		&dummyExtStruct,											// const void*                              pNext
+		&unusedExtStruct,											// const void*                              pNext
 		0u,															// VkPipelineMultisampleStateCreateFlags    flags
 		VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits                    rasterizationSamples
 		VK_FALSE,													// VkBool32                                 sampleShadingEnable
@@ -899,7 +899,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkPipelineDepthStencilStateCreateInfo		depthStencilStateCreateInfo			=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType                          sType
-		&dummyExtStruct,											// const void*                              pNext
+		&unusedExtStruct,											// const void*                              pNext
 		0u,															// VkPipelineDepthStencilStateCreateFlags   flags
 		VK_FALSE,													// VkBool32                                 depthTestEnable
 		VK_FALSE,													// VkBool32                                 depthWriteEnable
@@ -930,7 +930,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkPipelineColorBlendStateCreateInfo		colorBlendStateCreateInfo			=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType                               sType
-		&dummyExtStruct,											// const void*                                   pNext
+		&unusedExtStruct,											// const void*                                   pNext
 		0u,															// VkPipelineColorBlendStateCreateFlags          flags
 		VK_FALSE,													// VkBool32                                      logicOpEnable
 		VK_LOGIC_OP_CLEAR,											// VkLogicOp                                     logicOp
@@ -942,7 +942,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkGraphicsPipelineCreateInfo				pipelineCreateInfo					=
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType                                  sType
-		&dummyExtStruct,									// const void*                                      pNext
+		&unusedExtStruct,									// const void*                                      pNext
 		0u,													// VkPipelineCreateFlags                            flags
 		(deUint32)pipelineShaderStageParams.size(),			// deUint32                                         stageCount
 		&pipelineShaderStageParams[0],						// const VkPipelineShaderStageCreateInfo*           pStages
@@ -968,7 +968,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkFramebufferCreateInfo					framebufferParams					=
 	{
 		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// sType
-		&dummyExtStruct,							// pNext
+		&unusedExtStruct,							// pNext
 		0u,											// flags
 		*renderPass,								// renderPass
 		1u,											// attachmentCount
@@ -983,7 +983,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkCommandPoolCreateInfo					cmdPoolParams						=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,			// sType
-		&dummyExtStruct,									// pNext
+		&unusedExtStruct,									// pNext
 		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,	// flags
 		queueFamilyIndex,									// queueFamilyIndex
 	};
@@ -992,7 +992,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkCommandBufferAllocateInfo				cmdBufParams						=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,		// sType
-		&dummyExtStruct,									// pNext
+		&unusedExtStruct,									// pNext
 		*cmdPool,											// pool
 		VK_COMMAND_BUFFER_LEVEL_PRIMARY,					// level
 		1u,													// bufferCount
@@ -1003,7 +1003,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkCommandBufferBeginInfo					commandBufBeginParams				=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType                  sType;
-		&dummyExtStruct,								// const void*                      pNext;
+		&unusedExtStruct,								// const void*                      pNext;
 		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags        flags;
 		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
@@ -1012,7 +1012,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkMemoryBarrier							vertFlushBarrier					=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_BARRIER,		// sType
-		&dummyExtStruct,						// pNext
+		&unusedExtStruct,						// pNext
 		VK_ACCESS_HOST_WRITE_BIT,				// srcAccessMask
 		VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,	// dstAccessMask
 	};
@@ -1020,7 +1020,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkImageMemoryBarrier						colorAttBarrier						=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// sType
-		&dummyExtStruct,							// pNext
+		&unusedExtStruct,							// pNext
 		0u,											// srcAccessMask
 		(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|
 			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),	// dstAccessMask
@@ -1043,7 +1043,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkRenderPassBeginInfo						renderPassBeginInfo					=
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,			// VkStructureType         sType;
-		&dummyExtStruct,									// const void*             pNext;
+		&unusedExtStruct,									// const void*             pNext;
 		*renderPass,										// VkRenderPass            renderPass;
 		*framebuffer,										// VkFramebuffer           framebuffer;
 		makeRect2D(0, 0, renderSize.x(), renderSize.y()),	// VkRect2D                renderArea;
@@ -1064,7 +1064,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkImageMemoryBarrier						imageBarrier						=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,									// VkStructureType			sType;
-		&dummyExtStruct,														// const void*				pNext;
+		&unusedExtStruct,														// const void*				pNext;
 		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,									// VkAccessFlags			srcAccessMask;
 		VK_ACCESS_TRANSFER_READ_BIT,											// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,								// VkImageLayout			oldLayout;
@@ -1101,7 +1101,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkBufferMemoryBarrier						bufferBarrier						=
 	{
 		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
-		&dummyExtStruct,							// const void*		pNext;
+		&unusedExtStruct,							// const void*		pNext;
 		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
 		VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
@@ -1120,7 +1120,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkMappedMemoryRange						flushRange							=
 	{
 		VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-		&dummyExtStruct,
+		&unusedExtStruct,
 		vertexBufferMemory->getMemory(),
 		vertexBufferMemory->getOffset(),
 		VK_WHOLE_SIZE
@@ -1132,7 +1132,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkFenceCreateInfo							createInfo							=
 	{
 		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		&dummyExtStruct,
+		&unusedExtStruct,
 		0u
 	};
 
@@ -1141,7 +1141,7 @@ tcu::TestStatus renderTriangleDummyExtStructTest (Context& context)
 	const VkSubmitInfo								submitInfo							=
 	{
 		VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType				sType;
-		&dummyExtStruct,						// const void*					pNext;
+		&unusedExtStruct,						// const void*					pNext;
 		0u,										// deUint32						waitSemaphoreCount;
 		DE_NULL,								// const VkSemaphore*			pWaitSemaphores;
 		(const VkPipelineStageFlags*)DE_NULL,	// const VkPipelineStageFlags*	pWaitDstStageMask;
@@ -1498,7 +1498,7 @@ tcu::TestCaseGroup* createSmokeTests (tcu::TestContext& testCtx)
 	addFunctionCase				(smokeTests.get(), "create_sampler",			"",	createSamplerTest);
 	addFunctionCaseWithPrograms	(smokeTests.get(), "create_shader",				"", createShaderProgs,		createShaderModuleTest);
 	addFunctionCaseWithPrograms	(smokeTests.get(), "triangle",					"", createTriangleProgs,	renderTriangleTest);
-	addFunctionCaseWithPrograms	(smokeTests.get(), "triangle_ext_structs",		"", createTriangleProgs,	renderTriangleDummyExtStructTest);
+	addFunctionCaseWithPrograms	(smokeTests.get(), "triangle_ext_structs",		"", createTriangleProgs,	renderTriangleUnusedExtStructTest);
 	addFunctionCaseWithPrograms	(smokeTests.get(), "asm_triangle",				"", createTriangleAsmProgs,	renderTriangleTest);
 	addFunctionCaseWithPrograms	(smokeTests.get(), "asm_triangle_no_opname",	"", createProgsNoOpName,	renderTriangleTest);
 	addFunctionCaseWithPrograms	(smokeTests.get(), "unused_resolve_attachment",	"", createTriangleProgs,	renderTriangleUnusedResolveAttachmentTest);

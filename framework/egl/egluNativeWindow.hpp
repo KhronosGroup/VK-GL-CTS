@@ -96,7 +96,7 @@ public:
 	//! Return native pointer that can be used with eglCreatePlatformWindowSurface(). Default implementation throws tcu::NotSupportedError().
 	virtual void*						getPlatformNative				(void);
 
-	// Process window events. Defaults to dummy implementation, that does nothing.
+	// Process window events. Defaults to empty implementation, that does nothing.
 	virtual void						processEvents					(void) {}
 
 	// Get current size of window's logical surface. Default implementation throws tcu::NotSupportedError()

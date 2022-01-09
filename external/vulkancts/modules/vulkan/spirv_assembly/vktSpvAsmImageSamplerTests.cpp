@@ -836,8 +836,8 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 					// Separate sampler for sampled images
 					if ((DescriptorType)descNdx == DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 					{
-						vector<tcu::Vec4> dummyData;
-						spec.inputs.push_back(Resource(BufferSp(new Vec4Buffer(dummyData))));
+						vector<tcu::Vec4> unusedData;
+						spec.inputs.push_back(Resource(BufferSp(new Vec4Buffer(unusedData))));
 						spec.inputs[1].setDescriptorType(VK_DESCRIPTOR_TYPE_SAMPLER);
 					}
 
@@ -1140,8 +1140,8 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 					// Separate sampler for sampled images
 					if ((DescriptorType)descNdx == DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 					{
-						vector<tcu::Vec4> dummyData;
-						resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(dummyData)), VK_DESCRIPTOR_TYPE_SAMPLER));
+						vector<tcu::Vec4> unusedData;
+						resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(unusedData)), VK_DESCRIPTOR_TYPE_SAMPLER));
 					}
 
 					// Second combined image sampler with different image data
@@ -1287,8 +1287,8 @@ void addGraphicsDepthPropertyTest (tcu::TestCaseGroup* group)
 				// Separate sampler for sampled images
 				if ((DescriptorType)descNdx == DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 				{
-					vector<Vec4> dummyData;
-					resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(dummyData)), VK_DESCRIPTOR_TYPE_SAMPLER));
+					vector<Vec4> unusedData;
+					resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(unusedData)), VK_DESCRIPTOR_TYPE_SAMPLER));
 				}
 
 				// Second combined image sampler with different image data
