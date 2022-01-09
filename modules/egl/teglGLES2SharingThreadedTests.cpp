@@ -978,14 +978,14 @@ TexImage2D::TexImage2D (SharedPtr<Texture> texture, GLint level, GLint internalF
 void TexImage2D::exec (tcu::ThreadUtil::Thread& t)
 {
 	EGLThread& thread = dynamic_cast<EGLThread&>(t);
-	void* dummyData = thread.getDummyData(m_width*m_height*4);
+	void* unusedData = thread.getUnusedData(m_width*m_height*4);
 
 	thread.newMessage() << "Begin -- glBindTexture(GL_TEXTURE_2D, " << m_texture->texture << ")" << tcu::ThreadUtil::Message::End;
 	GLU_CHECK_GLW_CALL(thread.gl, bindTexture(GL_TEXTURE_2D, m_texture->texture));
 	thread.newMessage() << "End -- glBindTexture()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glTexImage2D(GL_TEXTURE_2D, " << m_level << ", " << m_internalFormat << ", " << m_width << ", " << m_height << ", 0, " << m_format << ", " << m_type << ", data)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_GLW_CALL(thread.gl, texImage2D(GL_TEXTURE_2D, m_level, m_internalFormat, m_width, m_height, 0, m_format, m_type, dummyData));
+	GLU_CHECK_GLW_CALL(thread.gl, texImage2D(GL_TEXTURE_2D, m_level, m_internalFormat, m_width, m_height, 0, m_format, m_type, unusedData));
 	thread.newMessage() << "End -- glTexImage2D()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBindTexture(GL_TEXTURE_2D, 0)" << tcu::ThreadUtil::Message::End;
@@ -1030,14 +1030,14 @@ TexSubImage2D::TexSubImage2D (SharedPtr<Texture> texture, GLint level, GLint xof
 void TexSubImage2D::exec (tcu::ThreadUtil::Thread& t)
 {
 	EGLThread& thread = dynamic_cast<EGLThread&>(t);
-	void* dummyData = thread.getDummyData(m_width*m_height*4);
+	void* unusedData = thread.getUnusedData(m_width*m_height*4);
 
 	thread.newMessage() << "Begin -- glBindTexture(GL_TEXTURE_2D, " << m_texture->texture << ")" << tcu::ThreadUtil::Message::End;
 	GLU_CHECK_GLW_CALL(thread.gl, bindTexture(GL_TEXTURE_2D, m_texture->texture));
 	thread.newMessage() << "End -- glBindTexture()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glTexSubImage2D(GL_TEXTURE_2D, " << m_level << ", " << m_xoffset << ", " << m_yoffset << ", " << m_width << ", " << m_height << ", 0, " << m_format << ", " << m_type << ", <data>)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_GLW_CALL(thread.gl, texSubImage2D(GL_TEXTURE_2D, m_level, m_xoffset, m_yoffset, m_width, m_height, m_format, m_type, dummyData));
+	GLU_CHECK_GLW_CALL(thread.gl, texSubImage2D(GL_TEXTURE_2D, m_level, m_xoffset, m_yoffset, m_width, m_height, m_format, m_type, unusedData));
 	thread.newMessage() << "End -- glSubTexImage2D()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBindTexture(GL_TEXTURE_2D, 0)" << tcu::ThreadUtil::Message::End;
@@ -1255,14 +1255,14 @@ BufferData::BufferData (SharedPtr<Buffer> buffer, GLenum target, GLsizeiptr size
 void BufferData::exec (tcu::ThreadUtil::Thread& t)
 {
 	EGLThread& thread = dynamic_cast<EGLThread&>(t);
-	void* dummyData = thread.getDummyData(m_size);
+	void* unusedData = thread.getUnusedData(m_size);
 
 	thread.newMessage() << "Begin -- glBindBuffer(" << m_target << ", " << m_buffer->buffer << ")" << tcu::ThreadUtil::Message::End;
 	GLU_CHECK_GLW_CALL(thread.gl, bindBuffer(m_target, m_buffer->buffer));
 	thread.newMessage() << "End -- glBindBuffer()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBufferData(" << m_target << ", " << m_size << ", <DATA>, " << m_usage << ")" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_GLW_CALL(thread.gl, bufferData(m_target, m_size, dummyData, m_usage));
+	GLU_CHECK_GLW_CALL(thread.gl, bufferData(m_target, m_size, unusedData, m_usage));
 	thread.newMessage() << "End -- glBufferData()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBindBuffer(" << m_target << ", 0)" << tcu::ThreadUtil::Message::End;
@@ -1296,14 +1296,14 @@ BufferSubData::BufferSubData (SharedPtr<Buffer> buffer, GLenum target, GLintptr 
 void BufferSubData::exec (tcu::ThreadUtil::Thread& t)
 {
 	EGLThread& thread = dynamic_cast<EGLThread&>(t);
-	void* dummyData = thread.getDummyData(m_size);
+	void* unusedData = thread.getUnusedData(m_size);
 
 	thread.newMessage() << "Begin -- glBindBuffer(" << m_target << ", " << m_buffer->buffer << ")" << tcu::ThreadUtil::Message::End;
 	GLU_CHECK_GLW_CALL(thread.gl, bindBuffer(m_target, m_buffer->buffer));
 	thread.newMessage() << "End -- glBindBuffer()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBufferSubData(" << m_target << ", " << m_offset << ", " << m_size << ", <DATA>)" << tcu::ThreadUtil::Message::End;
-	GLU_CHECK_GLW_CALL(thread.gl, bufferSubData(m_target, m_offset, m_size, dummyData));
+	GLU_CHECK_GLW_CALL(thread.gl, bufferSubData(m_target, m_offset, m_size, unusedData));
 	thread.newMessage() << "End -- glBufferSubData()" << tcu::ThreadUtil::Message::End;
 
 	thread.newMessage() << "Begin -- glBindBuffer(" << m_target << ", 0)" << tcu::ThreadUtil::Message::End;

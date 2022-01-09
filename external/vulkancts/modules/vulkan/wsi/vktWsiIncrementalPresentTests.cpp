@@ -712,7 +712,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (vk::VkSurfac
 													? de::max(31u, properties.minImageExtent.height)
 													: de::min(deSmallestGreaterOrEquallPowerOfTwoU32(currentHeight+1), properties.maxImageExtent.height));
 	const vk::VkExtent2D		imageSize		= { imageWidth, imageHeight };
-	const vk::VkExtent2D		dummySize		= { de::max(31u, properties.minImageExtent.width), de::max(31u, properties.minImageExtent.height) };
+	const vk::VkExtent2D		unusedSize		= { de::max(31u, properties.minImageExtent.width), de::max(31u, properties.minImageExtent.height) };
 
 	{
 		size_t presentModeNdx;
@@ -764,8 +764,8 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (vk::VkSurfac
 
 		createInfos.push_back(createInfo);
 
-		// add an extra dummy swapchain
-		const vk::VkSwapchainCreateInfoKHR		dummyInfo		=
+		// add an extra unused swapchain
+		const vk::VkSwapchainCreateInfoKHR		unusedInfo		=
 		{
 			vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
 			DE_NULL,
@@ -774,7 +774,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (vk::VkSurfac
 			properties.minImageCount,
 			imageFormat,
 			imageColorSpace,
-			dummySize,
+			unusedSize,
 			imageLayers,
 			imageUsage,
 			vk::VK_SHARING_MODE_EXCLUSIVE,
@@ -787,7 +787,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (vk::VkSurfac
 			(vk::VkSwapchainKHR)0
 		};
 
-		createInfos.push_back(dummyInfo);
+		createInfos.push_back(unusedInfo);
 	}
 
 	return createInfos;

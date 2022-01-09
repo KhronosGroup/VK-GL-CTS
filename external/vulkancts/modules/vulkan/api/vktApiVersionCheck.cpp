@@ -183,23 +183,23 @@ public:
 				extFunctions.push_back(FunctionInfo("vkGetImageMemoryRequirements2KHR", FUNCTIONORIGIN_DEVICE));
 
 				log << tcu::TestLog::Message << "Disabled extensions check - tries to get functions of disabled extensions from proper vkGet*ProcAddr." << tcu::TestLog::EndMessage;
-				const char * const				result				= specialCasesCheck(ctx, log, failsQuantity, extFunctions) ? "Passed" : "Failed";
+				const char * const				result					= specialCasesCheck(ctx, log, failsQuantity, extFunctions) ? "Passed" : "Failed";
 				log << tcu::TestLog::Message << result << tcu::TestLog::EndMessage;
 			}
 
 			// Check special cases
 			{
-				FunctionInfosList				dummyFunctions		= FunctionInfosList();
+				FunctionInfosList				nonexistingFunctions	= FunctionInfosList();
 				for (deUint32 i = 0; i <= FUNCTIONORIGIN_DEVICE; ++i)
 				{
 					const FunctionOrigin origin = static_cast<FunctionOrigin>(i);
-					dummyFunctions.push_back(FunctionInfo("vkSomeName", origin));
-					dummyFunctions.push_back(FunctionInfo("vkNonexistingKHR", origin));
-					dummyFunctions.push_back(FunctionInfo("", origin));
+					nonexistingFunctions.push_back(FunctionInfo("vkSomeName", origin));
+					nonexistingFunctions.push_back(FunctionInfo("vkNonexistingKHR", origin));
+					nonexistingFunctions.push_back(FunctionInfo("", origin));
 				}
 
-				log << tcu::TestLog::Message << "Special check - tries to get some dummy functions from various vkGet*ProcAddr." << tcu::TestLog::EndMessage;
-				const char * const				result				= specialCasesCheck(ctx, log, failsQuantity, dummyFunctions) ? "Passed" : "Failed";
+				log << tcu::TestLog::Message << "Special check - tries to get some nonexisting functions from various vkGet*ProcAddr." << tcu::TestLog::EndMessage;
+				const char * const				result				= specialCasesCheck(ctx, log, failsQuantity, nonexistingFunctions) ? "Passed" : "Failed";
 				log << tcu::TestLog::Message << result << tcu::TestLog::EndMessage;
 			}
 		}

@@ -1851,7 +1851,7 @@ bool ShaderCompilerCase::goodEnoughMeasurements (const vector<Measurement>& meas
 
 ShaderCompilerCase::IterateResult ShaderCompilerCase::iterate (void)
 {
-	// Before actual measurements, compile and draw with a dummy shader to avoid possible initial slowdowns in the actual test.
+	// Before actual measurements, compile and draw with a minimal shader to avoid possible initial slowdowns in the actual test.
 	{
 		deUint32		specID = getSpecializationID(0);
 		ProgramContext	progCtx;
@@ -2459,7 +2459,7 @@ InvalidShaderCompilerCase::IterateResult InvalidShaderCompilerCase::iterate (voi
 
 	DE_ASSERT(shaderValidity != SHADER_VALIDITY_LAST);
 
-	// Before actual measurements, compile a dummy shader to avoid possible initial slowdowns in the actual test.
+	// Before actual measurements, compile a minimal shader to avoid possible initial slowdowns in the actual test.
 	{
 		deUint32		specID = getSpecializationID(0);
 		ProgramContext	progCtx;

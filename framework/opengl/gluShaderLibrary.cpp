@@ -1287,9 +1287,9 @@ void ShaderParser::parsePipelineProgram (ProgramSpecification& program)
 		}
 		else if (m_curToken == TOKEN_REQUIRE)
 		{
-			vector<RequiredCapability> dummyCaps;
+			vector<RequiredCapability> unusedCaps;
 			size_t size = program.requiredExtensions.size();
-			parseRequirement(dummyCaps, program.requiredExtensions);
+			parseRequirement(unusedCaps, program.requiredExtensions);
 
 			if (size == program.requiredExtensions.size())
 				parseError("only extension requirements are allowed inside pipeline program");

@@ -467,7 +467,7 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass(VkFormat vkformat, 
 		}
 		else
 		{
-			layout = VK_IMAGE_LAYOUT_GENERAL;
+			layout = m_config.sampleMask ? VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR : VK_IMAGE_LAYOUT_GENERAL;
 			stencilLayout.stencilLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR;
 			finalLayout = VK_IMAGE_LAYOUT_GENERAL;  // This aspect should be unused.
 			stencilFinalLayout.stencilFinalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;

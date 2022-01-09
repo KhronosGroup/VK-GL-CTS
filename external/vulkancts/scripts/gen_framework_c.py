@@ -73,10 +73,10 @@ def writeVulkanCHeader (src, filename):
 
 if __name__ == "__main__":
 
-	# script requires output path to which .inl files will be written
-	if len(sys.argv) == 1:
-		sys.exit("Error - output path wasn't specified in argument")
-	outputPath = str(sys.argv[1])
+	outputPath = os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan")
+	# if argument was specified it is interpreted as a path to which .inl files will be written
+	if len(sys.argv) > 1:
+		outputPath = str(sys.argv[1])
 
 	src = ""
 	for file in VULKAN_H:
