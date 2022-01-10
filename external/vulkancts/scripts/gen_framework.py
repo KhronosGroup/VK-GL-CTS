@@ -850,14 +850,22 @@ def parseInt (value):
 
 def areEnumValuesLinear (enum):
 	curIndex = 0
+	maxIntCount = 0
 	for name, value in enum.values:
 		if value[:2] != "VK":
 			intValue = parseInt(value)
 			if intValue != curIndex:
-				# consider enums containing *_MAX_ENUM = 0x7FFFFFFF as linear
-				if intValue == 0x7FFFFFFF:
-					return True
-				return False
+				# enum is linear when all items are in order
+				if intValue != 0x7FFFFFFF:
+					return False
+				# count number of items with 0x7FFFFFFF value;
+				# enum containing single 0x7FFFFFFF item are also
+				# considered as linear (this is usualy *_MAX_ENUM item)
+				maxIntCount += 1
+				# enums containing more then one 0x7FFFFFFF value
+				# are not considered as linear (vulkan video enums)
+				if maxIntCount > 1:
+					return False
 			curIndex += 1
 	return True
 
@@ -1141,7 +1149,14 @@ def writeStrUtilImpl (api, filename):
 			yield "{"
 			yield "\tswitch (value)"
 			yield "\t{"
-			for line in indentLines(["\t\tcase %s:\treturn \"%s\";" % (n, n) for n, v in enum.values if v[:2] != "VK"] + ["\t\tdefault:\treturn DE_NULL;"]):
+			enumValues = []
+			lastValue = 0x7FFFFFFF
+			for n, v in enum.values:
+				if (v[:2] != "VK") and (v != lastValue):
+					enumValues.append(f"\t\tcase {n}:\treturn \"{n}\";")
+				lastValue = v
+			enumValues.append("\t\tdefault:\treturn DE_NULL;")
+			for line in indentLines(enumValues):
 				yield line
 			yield "\t}"
 			yield "}"
@@ -2434,7 +2449,7 @@ if __name__ == "__main__":
 	currentDir			= os.getcwd()
 	pythonExecutable	= sys.executable or "python"
 	os.chdir(os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "..", "xml"))
-	targets = [
+	vkTargets = [
 		"vulkan_android.h",
 		"vulkan_beta.h",
 		"vulkan_core.h",
@@ -2450,19 +2465,35 @@ if __name__ == "__main__":
 		"vulkan_xlib.h",
 		"vulkan_xlib_xrandr.h",
 	]
-	for target in targets:
+	for target in vkTargets:
 		execute([pythonExecutable, "../scripts/genvk.py", "-o", "../include/vulkan", target])
+
+	videoDir = "../include/vk_video"
+	if (not os.path.isdir(videoDir)):
+		os.mkdir(videoDir)
+
+	videoTargets = [
+		'vulkan_video_codecs_common.h',
+		'vulkan_video_codec_h264std.h',
+		'vulkan_video_codec_h264std_decode.h',
+		'vulkan_video_codec_h264std_encode.h',
+		'vulkan_video_codec_h265std.h',
+		'vulkan_video_codec_h265std_decode.h',
+		'vulkan_video_codec_h265std_encode.h',
+	]
+	for target in videoTargets:
+		execute([pythonExecutable, "../scripts/genvk.py", "-registry", "video.xml", "-o", videoDir, target])
+
 	os.chdir(currentDir)
 
 	# Read all .h files and make sure vulkan_core.h is first out of vulkan files
-	targets.remove("vulkan_core.h")
-	targets.sort()
-	vkFilesWithCatalog =  [os.path.join("vulkan", f) for f in targets]
-	first = [os.path.join("vk_video", "vulkan_video_codecs_common.h"), os.path.join("vulkan", "vulkan_core.h")]
-	allFilesWithCatalog = first + vkFilesWithCatalog
+	vkTargets.remove("vulkan_core.h")
+	vkTargets.sort()
+	vkTargets.insert(0, "vulkan_core.h")
+	vkFilesWithCatalog =  [os.path.join("vulkan", f) for f in vkTargets]
 
 	src = ""
-	for file in allFilesWithCatalog:
+	for file in vkFilesWithCatalog:
 		src += preprocessTopInclude(readFile(os.path.join(VULKAN_HEADERS_INCLUDE_DIR,file)), VULKAN_HEADERS_INCLUDE_DIR)
 
 	src = re.sub('\s*//[^\n]*', '', src)
@@ -2479,7 +2510,7 @@ if __name__ == "__main__":
 	writeDeviceFeaturesDefaultDeviceDefs	(dfd, os.path.join(outputPath, "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
 	writeDeviceFeaturesContextDecl			(dfd, os.path.join(outputPath, "vkDeviceFeaturesForContextDecl.inl"))
 	writeDeviceFeaturesContextDefs			(dfd, os.path.join(outputPath, "vkDeviceFeaturesForContextDefs.inl"))
-	writeDeviceFeatureTest                                  (api, os.path.join(outputPath, "vkDeviceFeatureTest.inl"))
+	writeDeviceFeatureTest					(api, os.path.join(outputPath, "vkDeviceFeatureTest.inl"))
 
 	dpd										= generateDevicePropertiesDefs(src)
 	writeDeviceProperties					(api, dpd, os.path.join(outputPath, "vkDeviceProperties.inl"))

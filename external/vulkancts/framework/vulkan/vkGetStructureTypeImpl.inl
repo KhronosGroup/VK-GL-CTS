@@ -2422,6 +2422,26 @@ template<> VkStructureType getStructureType<VkPhysicalDevicePageableDeviceLocalM
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkSubpassFragmentDensityMapOffsetEndInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_SUBPASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceLinearColorAttachmentFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINEAR_COLOR_ATTACHMENT_FEATURES_NV;
+}
+
 template<> VkStructureType getStructureType<VkAccelerationStructureGeometryTrianglesDataKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
@@ -2565,6 +2585,11 @@ template<> VkStructureType getStructureType<VkExternalFormatANDROID> (void)
 template<> VkStructureType getStructureType<VkAndroidHardwareBufferFormatProperties2ANDROID> (void)
 {
 	return VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_2_ANDROID;
+}
+
+template<> VkStructureType getStructureType<VkQueueFamilyQueryResultStatusProperties2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_QUEUE_FAMILY_QUERY_RESULT_STATUS_PROPERTIES_2_KHR;
 }
 
 template<> VkStructureType getStructureType<VkVideoQueueFamilyProperties2KHR> (void)

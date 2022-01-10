@@ -119,7 +119,7 @@ const char*	getdVideoH265ProfileIdcName								(StdVideoH265ProfileIdc value);
 const char*	getdVideoH265LevelName									(StdVideoH265Level value);
 const char*	getdVideoH265SliceTypeName								(StdVideoH265SliceType value);
 const char*	getdVideoH265PictureTypeName							(StdVideoH265PictureType value);
-const char*	getdVideoDecodeH264FieldOrderCntName					(StdVideoDecodeH264FieldOrderCnt value);
+const char*	getdVideoDecodeH264FieldOrderCountName					(StdVideoDecodeH264FieldOrderCount value);
 const char*	getFullScreenExclusiveEXTName							(VkFullScreenExclusiveEXT value);
 
 inline tcu::Format::Enum<VkResult>											getResultStr										(VkResult value)										{ return tcu::Format::Enum<VkResult>(getResultName, value);																					}
@@ -239,7 +239,7 @@ inline tcu::Format::Enum<StdVideoH265ProfileIdc>							getdVideoH265ProfileIdcSt
 inline tcu::Format::Enum<StdVideoH265Level>									getdVideoH265LevelStr								(StdVideoH265Level value)								{ return tcu::Format::Enum<StdVideoH265Level>(getdVideoH265LevelName, value);																}
 inline tcu::Format::Enum<StdVideoH265SliceType>								getdVideoH265SliceTypeStr							(StdVideoH265SliceType value)							{ return tcu::Format::Enum<StdVideoH265SliceType>(getdVideoH265SliceTypeName, value);														}
 inline tcu::Format::Enum<StdVideoH265PictureType>							getdVideoH265PictureTypeStr							(StdVideoH265PictureType value)							{ return tcu::Format::Enum<StdVideoH265PictureType>(getdVideoH265PictureTypeName, value);													}
-inline tcu::Format::Enum<StdVideoDecodeH264FieldOrderCnt>					getdVideoDecodeH264FieldOrderCntStr					(StdVideoDecodeH264FieldOrderCnt value)					{ return tcu::Format::Enum<StdVideoDecodeH264FieldOrderCnt>(getdVideoDecodeH264FieldOrderCntName, value);									}
+inline tcu::Format::Enum<StdVideoDecodeH264FieldOrderCount>					getdVideoDecodeH264FieldOrderCountStr				(StdVideoDecodeH264FieldOrderCount value)				{ return tcu::Format::Enum<StdVideoDecodeH264FieldOrderCount>(getdVideoDecodeH264FieldOrderCountName, value);								}
 inline tcu::Format::Enum<VkFullScreenExclusiveEXT>							getFullScreenExclusiveEXTStr						(VkFullScreenExclusiveEXT value)						{ return tcu::Format::Enum<VkFullScreenExclusiveEXT>(getFullScreenExclusiveEXTName, value);													}
 
 inline std::ostream&	operator<<	(std::ostream& s, VkResult value)											{ return s << getResultStr(value);											}
@@ -359,7 +359,7 @@ inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265ProfileIdc value)	
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265Level value)									{ return s << getdVideoH265LevelStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265SliceType value)								{ return s << getdVideoH265SliceTypeStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265PictureType value)							{ return s << getdVideoH265PictureTypeStr(value);							}
-inline std::ostream&	operator<<	(std::ostream& s, StdVideoDecodeH264FieldOrderCnt value)					{ return s << getdVideoDecodeH264FieldOrderCntStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoDecodeH264FieldOrderCount value)					{ return s << getdVideoDecodeH264FieldOrderCountStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkFullScreenExclusiveEXT value)							{ return s << getFullScreenExclusiveEXTStr(value);							}
 
 tcu::Format::Bitfield<32>	getAccessFlagsStr											(VkAccessFlags value);
@@ -1125,6 +1125,10 @@ std::ostream&	operator<<	(std::ostream& s, const VkMultiDrawIndexedInfoEXT& valu
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceBorderColorSwizzleFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSamplerBorderColorComponentMappingCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSubpassFragmentDensityMapOffsetEndInfoQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLinearColorAttachmentFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildRangeInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryTrianglesDataKHR& value);
@@ -1159,6 +1163,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkImportAndroidHardwareBufferIn
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetAndroidHardwareBufferInfoANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExternalFormatANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferFormatProperties2ANDROID& value);
+std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyQueryResultStatusProperties2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoQueueFamilyProperties2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoProfileKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoProfilesKHR& value);

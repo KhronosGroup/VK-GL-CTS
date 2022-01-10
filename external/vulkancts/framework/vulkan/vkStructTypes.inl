@@ -5644,6 +5644,35 @@ struct VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT
 	VkBool32		pageableDeviceLocalMemory;
 };
 
+struct VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		fragmentDensityMapOffset;
+};
+
+struct VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkExtent2D		fragmentDensityOffsetGranularity;
+};
+
+struct VkSubpassFragmentDensityMapOffsetEndInfoQCOM
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	uint32_t			fragmentDensityOffsetCount;
+	const VkOffset2D*	pFragmentDensityOffsets;
+};
+
+struct VkPhysicalDeviceLinearColorAttachmentFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		linearColorAttachment;
+};
+
 union VkDeviceOrHostAddressKHR
 {
 	VkDeviceAddress	deviceAddress;
@@ -5967,6 +5996,13 @@ struct VkAndroidHardwareBufferFormatProperties2ANDROID
 	VkSamplerYcbcrRange				suggestedYcbcrRange;
 	VkChromaLocation				suggestedXChromaOffset;
 	VkChromaLocation				suggestedYChromaOffset;
+};
+
+struct VkQueueFamilyQueryResultStatusProperties2KHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		supported;
 };
 
 struct VkVideoQueueFamilyProperties2KHR
@@ -6507,6 +6543,7 @@ struct VkVideoEncodeH264RateControlInfoEXT
 	uint32_t											idrPeriod;
 	uint32_t											consecutiveBFrameCount;
 	VkVideoEncodeH264RateControlStructureFlagBitsEXT	rateControlStructure;
+	uint8_t												temporalLayerCount;
 };
 
 struct VkVideoEncodeH264QpEXT
@@ -7024,6 +7061,7 @@ struct VkVideoEncodeH265RateControlInfoEXT
 	uint32_t											idrPeriod;
 	uint32_t											consecutiveBFrameCount;
 	VkVideoEncodeH265RateControlStructureFlagBitsEXT	rateControlStructure;
+	uint8_t												subLayerCount;
 };
 
 struct VkVideoEncodeH265QpEXT
