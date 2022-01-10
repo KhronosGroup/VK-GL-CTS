@@ -174,7 +174,7 @@ public:
 
 	void					exec				(void);
 
-	deUint8*				getDummyData		(size_t size);	//!< Return data pointer that contains at least size bytes. Valid until next call
+	deUint8*				getUnusedData		(size_t size);	//!< Return data pointer that contains at least size bytes. Valid until next call
 
 	ThreadStatus			getStatus			(void) const { de::ScopedLock lock(m_statusLock); return m_status; }
 	void				setStatus			(ThreadStatus status) { de::ScopedLock lock(m_statusLock); m_status = status; }
@@ -199,7 +199,7 @@ private:
 	std::vector<Message>	m_messages;
 	mutable de::Mutex		m_statusLock;
 	ThreadStatus			m_status;
-	std::vector<deUint8>	m_dummyData;
+	std::vector<deUint8>	m_unusedData;
 
 	// Disabled
 							Thread				(const Thread&);

@@ -589,15 +589,15 @@ void generateRandomLayout(RandomLayout& randomLayout, const CaseDef &caseDef, de
 				{
 					if (numInlineUniformBlocks < caseDef.maxInlineUniformBlocks)
 					{
-						arraySizes[b] = randRange(&rnd, 1, (caseDef.maxInlineUniformBlockSize - 16) / 16); // subtract 16 for "ivec4 dummy"
+						arraySizes[b] = randRange(&rnd, 1, (caseDef.maxInlineUniformBlockSize - 16) / 16); // subtract 16 for "ivec4 unused"
 						arraySizes[b] = de::min(maxArray, arraySizes[b]);
-						binding.descriptorCount = (arraySizes[b] ? arraySizes[b] : 1) * 16 + 16; // add 16 for "ivec4 dummy"
+						binding.descriptorCount = (arraySizes[b] ? arraySizes[b] : 1) * 16 + 16; // add 16 for "ivec4 unused"
 						numInlineUniformBlocks++;
 					}
 				}
 				else
 				{
-					// Plug in a dummy descriptor type, so validation layers that don't
+					// Plug in an unused descriptor type, so validation layers that don't
 					// support inline_uniform_block don't crash.
 					binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 				}
@@ -761,7 +761,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 				switch (binding.descriptorType)
 				{
 				case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:
-					decls << "layout(set = " << s << ", binding = " << b << ") uniform inlineubodef" << s << "_" << b << " { ivec4 dummy; int val" << array.str() << "; } inlineubo" << s << "_" << b << ";\n";
+					decls << "layout(set = " << s << ", binding = " << b << ") uniform inlineubodef" << s << "_" << b << " { ivec4 unused; int val" << array.str() << "; } inlineubo" << s << "_" << b << ";\n";
 					break;
 				case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
 				case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
@@ -804,7 +804,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 					{
 						if (binding.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
 						{
-							// Convert to bytes and add 16 for "ivec4 dummy" in case of inline uniform block
+							// Convert to bytes and add 16 for "ivec4 unused" in case of inline uniform block
 							const deUint32 uboRange = ai*16 + 16;
 							if (uboRange >= variableDescriptorSizes[s])
 								continue;
@@ -1116,7 +1116,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 				"#version 460 core\n"
 				"#extension GL_EXT_nonuniform_qualifier : enable\n"
 				"#extension GL_EXT_ray_tracing : require\n"
-				"layout(location = 0) rayPayloadInEXT dummyPayload { vec4 dummy; };\n"
+				"layout(location = 0) rayPayloadInEXT vec3 hitValue;\n"
 				<< pushdecl.str()
 				<< decls.str() <<
 				"void main()\n"
@@ -1746,7 +1746,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 			}
 			else if (binding.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
 			{
-				// subtract 16 for "ivec4 dummy"
+				// subtract 16 for "ivec4 unused"
 				DE_ASSERT(binding.descriptorCount >= 16);
 				descriptor += binding.descriptorCount - 16;
 			}
@@ -1978,7 +1978,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 					{
 						if (binding.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
 						{
-							// Convert to bytes and add 16 for "ivec4 dummy" in case of inline uniform block
+							// Convert to bytes and add 16 for "ivec4 unused" in case of inline uniform block
 							const deUint32 uboRange = ai*16 + 16;
 							if (uboRange >= variableDescriptorSizes[s])
 								continue;
@@ -2049,7 +2049,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 						};
 
 						inlineInfoVec[vecIndex] = iuBlock;
-						w.dstArrayElement = ai*16 + 16; // add 16 to skip "ivec4 dummy"
+						w.dstArrayElement = ai*16 + 16; // add 16 to skip "ivec4 unused"
 						w.pNext = &inlineInfoVec[vecIndex];
 						w.descriptorCount = sizeof(deUint32);
 					}

@@ -333,7 +333,7 @@ void ShaderGenerator::generate (const ShaderParameters& shaderParams, Shader& sh
 	m_varManager.popVariableScope();
 	m_varManager.popValueScope();
 
-	// Fill undefined (unused) components in inputs with dummy values
+	// Fill undefined (unused) components in inputs with unused values
 	fillUndefinedShaderInputs(shader.getInputs());
 	fillUndefinedShaderInputs(shader.getUniforms());
 

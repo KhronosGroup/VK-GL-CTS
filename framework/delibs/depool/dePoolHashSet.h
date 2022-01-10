@@ -146,7 +146,7 @@ DE_INLINE deBool TYPENAME##_exists (const TYPENAME* hashSet, KEYTYPE key, VALUET
 		return DE_FALSE;																			\
 }																									\
 																									\
-struct TYPENAME##Dummy_s { int dummy; }
+struct TYPENAME##Unused_s { int unused; }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Implement a template pool hash-set class.
@@ -164,7 +164,7 @@ struct TYPENAME##Dummy_s { int dummy; }
 #define DE_IMPLEMENT_POOL_HASH_SET(TYPENAME, KEYTYPE, VALUETYPE, KEYHASHFUNC, KEYCMPFUNC, VALUEHASHFUNC, VALUECMPFUNC)	\
 DE_IMPLEMENT_POOL_SET(TYPENAME##Set, VALUETYPE, VALUEHASHFUNC, VALUECMPFUNC);											\
 DE_IMPLEMENT_POOL_HASH(TYPENAME##Hash, KEYTYPE, TYPENAME##Set*, KEYHASHFUNC, KEYCMPFUNC);								\
-struct TYPENAME##Dummy2_s { int dummy; }
+struct TYPENAME##Unused2_s { int unused; }
 
 /* Copy-to-array templates. */
 
@@ -172,7 +172,7 @@ struct TYPENAME##Dummy2_s { int dummy; }
 
 #define DE_DECLARE_POOL_HASH_TO_ARRAY(HASHTYPENAME, KEYARRAYTYPENAME, VALUEARRAYTYPENAME)		\
 	deBool HASHTYPENAME##_copyToArray(const HASHTYPENAME* set, KEYARRAYTYPENAME* keyArray, VALUEARRAYTYPENAME* valueArray);	\
-	struct HASHTYPENAME##_##KEYARRAYTYPENAME##_##VALUEARRAYTYPENAME##_declare_dummy { int dummy; }
+	struct HASHTYPENAME##_##KEYARRAYTYPENAME##_##VALUEARRAYTYPENAME##_declare_unused { int unused; }
 
 #define DE_IMPLEMENT_POOL_HASH_TO_ARRAY(HASHTYPENAME, KEYARRAYTYPENAME, VALUEARRAYTYPENAME)		\
 deBool HASHTYPENAME##_copyToArray(const HASHTYPENAME* hash, KEYARRAYTYPENAME* keyArray, VALUEARRAYTYPENAME* valueArray)	\
@@ -205,7 +205,7 @@ deBool HASHTYPENAME##_copyToArray(const HASHTYPENAME* hash, KEYARRAYTYPENAME* ke
 	DE_ASSERT(arrayNdx == numElements);	\
 	return DE_TRUE;	\
 }	\
-struct HASHTYPENAME##_##KEYARRAYTYPENAME##_##VALUEARRAYTYPENAME##_implement_dummy { int dummy; }
+struct HASHTYPENAME##_##KEYARRAYTYPENAME##_##VALUEARRAYTYPENAME##_implement_unused { int unused; }
 
 #endif
 

@@ -1121,7 +1121,7 @@ void GraphicsExecutablePropertiesTest::initPrograms (SourceCollections& programC
 			break;
 
 		case VK_SHADER_STAGE_GEOMETRY_BIT:
-			programCollection.glslSources.add("dummy_geo") << glu::GeometrySource(
+			programCollection.glslSources.add("unused_geo") << glu::GeometrySource(
 						"#version 450 \n"
 						"layout(triangles) in;\n"
 						"layout(triangle_strip, max_vertices = 3) out;\n"
@@ -1256,7 +1256,7 @@ GraphicsExecutablePropertiesTestInstance::GraphicsExecutablePropertiesTestInstan
 				}
 				else
 				{
-					m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "dummy_geo", "main");
+					m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "unused_geo", "main");
 				}
 				break;
 			case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:

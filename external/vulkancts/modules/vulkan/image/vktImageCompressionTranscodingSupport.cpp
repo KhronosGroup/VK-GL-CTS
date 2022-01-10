@@ -1678,9 +1678,9 @@ void GraphicsAttachmentsTestInstance::transcodeRead ()
 																	.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 	const Move<VkDescriptorSet>			descriptorSet			(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
-	const VkExtent2D					renderSizeDummy			(makeExtent2D(1u, 1u));
+	const VkExtent2D					renderSizeUnused		(makeExtent2D(1u, 1u));
 	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertShaderModule, *fragShaderModule, renderSizeDummy, 1u, true));
+	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertShaderModule, *fragShaderModule, renderSizeUnused, 1u, true));
 
 	const Unique<VkCommandPool>			cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -1812,9 +1812,9 @@ void GraphicsAttachmentsTestInstance::transcodeWrite ()
 																	.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 	const Move<VkDescriptorSet>			descriptorSet			(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
-	const VkExtent2D					renderSizeDummy			(makeExtent2D(1u, 1u));
+	const VkExtent2D					renderSizeUnused		(makeExtent2D(1u, 1u));
 	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertShaderModule, *fragShaderModule, renderSizeDummy, 1u, true));
+	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertShaderModule, *fragShaderModule, renderSizeUnused, 1u, true));
 
 	const Unique<VkCommandPool>			cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -2261,9 +2261,9 @@ void GraphicsTextureTestInstance::transcodeRead ()
 																	.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 	const Move<VkDescriptorSet>			descriptorSet			(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
-	const VkExtent2D					renderSizeDummy			(makeExtent2D(1u, 1u));
+	const VkExtent2D					renderSizeUnused			(makeExtent2D(1u, 1u));
 	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertShaderModule, *fragShaderModule, renderSizeDummy, 0u, true));
+	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertShaderModule, *fragShaderModule, renderSizeUnused, 0u, true));
 
 	const Unique<VkCommandPool>			cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -2401,9 +2401,9 @@ void GraphicsTextureTestInstance::transcodeWrite ()
 																	.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 	const Move<VkDescriptorSet>			descriptorSet			(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
-	const VkExtent2D					renderSizeDummy			(makeExtent2D(1u, 1u));
+	const VkExtent2D					renderSizeUnused		(makeExtent2D(1u, 1u));
 	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertShaderModule, *fragShaderModule, renderSizeDummy, 0u, true));
+	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertShaderModule, *fragShaderModule, renderSizeUnused, 0u, true));
 
 	const Unique<VkCommandPool>			cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));

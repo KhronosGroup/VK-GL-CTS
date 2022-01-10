@@ -717,7 +717,7 @@ void MultisampleRenderPassTestInstance::submit (void)
 				**m_singlesampleImages[dstNdx],
 				{
 					VK_IMAGE_ASPECT_COLOR_BIT,
-					0u,
+					m_renderLevel,
 					1u,
 					0u,
 					m_layerCount
