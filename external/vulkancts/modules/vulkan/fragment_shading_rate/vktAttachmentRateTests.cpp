@@ -148,6 +148,7 @@ private:
 	Move<VkPipelineLayout>			buildPipelineLayout			(const VkDescriptorSetLayout*			setLayouts = DE_NULL) const;
 	Move<VkPipeline>				buildGraphicsPipeline		(deUint32								subpass,
 																 VkRenderPass							renderPass,
+																 VkFormat								cbFormat,
 																 VkPipelineLayout						layout,
 																 VkShaderModule							vertShader,
 																 VkShaderModule							fragShader,
@@ -161,7 +162,9 @@ private:
 																 const VkRenderPass						renderPass,
 																 const VkFramebuffer					framebuffer,
 																 const VkRect2D&						renderArea,
-																 const std::vector<FBAttachmentInfo>&	attachmentInfo) const;
+																 const std::vector<FBAttachmentInfo>&	attachmentInfo,
+																 const deUint32							srTileWidth = 0,
+																 const deUint32							srTileHeight = 0) const;
 	void							finishRendering				(const VkCommandBuffer					commandBuffer) const;
 
 	bool							verifyUsingAtomicChecks		(deUint32						tileWidth,
@@ -539,7 +542,7 @@ Move<VkPipelineLayout> AttachmentRateInstance::buildPipelineLayout(const VkDescr
 	return createPipelineLayout(m_context.getDeviceInterface(), device, &pipelineLayoutCreateInfo, NULL);
 }
 
-Move<VkPipeline> AttachmentRateInstance::buildGraphicsPipeline(deUint32 subpass, VkRenderPass renderPass, VkPipelineLayout pipelineLayout,
+Move<VkPipeline> AttachmentRateInstance::buildGraphicsPipeline(deUint32 subpass, VkRenderPass renderPass, VkFormat cbFormat, VkPipelineLayout pipelineLayout,
 															   VkShaderModule vertShader, VkShaderModule fragShader, bool useShadingRate) const
 {
 	std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageParams(2,
@@ -700,7 +703,7 @@ Move<VkPipeline> AttachmentRateInstance::buildGraphicsPipeline(deUint32 subpass,
 		pNext,
 		0u,
 		1u,
-		&m_cbFormat,
+		&cbFormat,
 		VK_FORMAT_UNDEFINED,
 		VK_FORMAT_UNDEFINED
 	};
@@ -708,7 +711,7 @@ Move<VkPipeline> AttachmentRateInstance::buildGraphicsPipeline(deUint32 subpass,
 	if (m_params->useDynamicRendering)
 		pNext = &renderingCreateInfo;
 
-	const VkGraphicsPipelineCreateInfo pipelineCreateInfo
+	VkGraphicsPipelineCreateInfo pipelineCreateInfo
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,		// VkStructureType									sType
 		pNext,													// const void*										pNext
@@ -730,6 +733,9 @@ Move<VkPipeline> AttachmentRateInstance::buildGraphicsPipeline(deUint32 subpass,
 		DE_NULL,												// VkPipeline										basePipelineHandle
 		0														// deInt32											basePipelineIndex;
 	};
+
+	if (useShadingRate && m_params->useDynamicRendering)
+		pipelineCreateInfo.flags |= VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
 
 	VkDevice device = m_device.get() ? *m_device : m_context.getDevice();
 	return createGraphicsPipeline(m_context.getDeviceInterface(), device, DE_NULL, &pipelineCreateInfo);
@@ -779,7 +785,9 @@ void AttachmentRateInstance::startRendering(const VkCommandBuffer					commandBuf
 											const VkRenderPass						renderPass,
 											const VkFramebuffer						framebuffer,
 											const VkRect2D&							renderArea,
-											const std::vector<FBAttachmentInfo>&	attachmentInfo) const
+											const std::vector<FBAttachmentInfo>&	attachmentInfo,
+											const deUint32							srTileWidth,
+											const deUint32							srTileHeight) const
 {
 	const DeviceInterface&		vk			(m_context.getDeviceInterface());
 	std::vector<VkClearValue>	clearColor	(attachmentInfo.size(), makeClearValueColorU32(0, 0, 0, 0));
@@ -828,7 +836,7 @@ void AttachmentRateInstance::startRendering(const VkCommandBuffer					commandBuf
 			(attachmentInfo[1].usage & VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR))
 		{
 			shadingRateAttachmentInfo.imageView							= attachmentInfo[1].view;
-			shadingRateAttachmentInfo.shadingRateAttachmentTexelSize	= { attachmentInfo[1].width, attachmentInfo[1].height };
+			shadingRateAttachmentInfo.shadingRateAttachmentTexelSize	= { srTileWidth, srTileHeight };
 			renderingInfo.pNext											= &shadingRateAttachmentInfo;
 		}
 
@@ -1108,7 +1116,7 @@ bool AttachmentRateInstance::runComputeShaderMode(void)
 		Move<VkPipelineLayout>	graphicsPipelineLayout	= buildPipelineLayout(&(*m_counterBufferDescriptorSetLayout));
 		Move<VkPipeline>		computePipeline			= buildComputePipeline(*compShader, *computePipelineLayout);
 		Move<VkRenderPass>		renderPass				= buildRenderPass(m_cbFormat, tileWidth, tileHeight);
-		Move<VkPipeline>		graphicsPipeline		= buildGraphicsPipeline(0, *renderPass, *graphicsPipelineLayout, *vertShader, *fragShader);
+		Move<VkPipeline>		graphicsPipeline		= buildGraphicsPipeline(0, *renderPass, m_cbFormat, *graphicsPipelineLayout, *vertShader, *fragShader);
 
 		std::vector<FBAttachmentInfo> attachmentInfo
 		{
@@ -1165,7 +1173,7 @@ bool AttachmentRateInstance::runComputeShaderMode(void)
 				m_defaultImageSubresourceRange);
 		vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, 0, DE_NULL, 0, DE_NULL, 1, &cbImageBarrier);
 
-		startRendering(*cmdBuffer, *renderPass, *framebuffer, makeRect2D(m_cbWidth, m_cbHeight), attachmentInfo);
+		startRendering(*cmdBuffer, *renderPass, *framebuffer, makeRect2D(m_cbWidth, m_cbHeight), attachmentInfo, tileWidth, tileHeight);
 
 		// draw single triangle to cb
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipelineLayout, 0, 1, &(*m_counterBufferDescriptorSet), 0, DE_NULL);
@@ -1243,8 +1251,8 @@ bool AttachmentRateInstance::runFragmentShaderMode(void)
 		Move<VkPipelineLayout>	ratePipelineLayout	= buildPipelineLayout(&(*m_counterBufferDescriptorSetLayout));
 		Move<VkRenderPass>		setupRenderPass		= buildRenderPass(m_params->srFormat);
 		Move<VkRenderPass>		rateRenderPass		= buildRenderPass(m_cbFormat, tileWidth, tileHeight);
-		Move<VkPipeline>		setupPipeline		= buildGraphicsPipeline(0, *setupRenderPass, *setupPipelineLayout, *vertSetupShader, *fragSetupShader, DE_FALSE);
-		Move<VkPipeline>		ratePipeline		= buildGraphicsPipeline(0, *rateRenderPass, *ratePipelineLayout, *vertShader, *fragShader);
+		Move<VkPipeline>		setupPipeline		= buildGraphicsPipeline(0, *setupRenderPass, m_params->srFormat, *setupPipelineLayout, *vertSetupShader, *fragSetupShader, DE_FALSE);
+		Move<VkPipeline>		ratePipeline		= buildGraphicsPipeline(0, *rateRenderPass, m_cbFormat, *ratePipelineLayout, *vertShader, *fragShader);
 
 		std::vector<FBAttachmentInfo> setupAttachmentInfo
 		{
@@ -1308,7 +1316,7 @@ bool AttachmentRateInstance::runFragmentShaderMode(void)
 				m_defaultImageSubresourceRange);
 		vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, 0, DE_NULL, 0, DE_NULL, 1, &cbImageBarrier);
 
-		startRendering(*cmdBuffer, *rateRenderPass, *rateFramebuffer, makeRect2D(m_cbWidth, m_cbHeight), rateAttachmentInfo);
+		startRendering(*cmdBuffer, *rateRenderPass, *rateFramebuffer, makeRect2D(m_cbWidth, m_cbHeight), rateAttachmentInfo, tileWidth, tileHeight);
 
 		// draw single triangle to cb
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *ratePipelineLayout, 0, 1, &(*m_counterBufferDescriptorSet), 0, DE_NULL);
@@ -1383,7 +1391,7 @@ bool AttachmentRateInstance::runCopyMode (void)
 
 		Move<VkPipelineLayout>	graphicsPipelineLayout	= buildPipelineLayout(&(*m_counterBufferDescriptorSetLayout));
 		Move<VkRenderPass>		renderPass				= buildRenderPass(m_cbFormat, tileWidth, tileHeight);
-		Move<VkPipeline>		graphicsPipeline		= buildGraphicsPipeline(0, *renderPass, *graphicsPipelineLayout, *vertShader, *fragShader);
+		Move<VkPipeline>		graphicsPipeline		= buildGraphicsPipeline(0, *renderPass, m_cbFormat, *graphicsPipelineLayout, *vertShader, *fragShader);
 
 		std::vector<FBAttachmentInfo> attachmentInfo
 		{
@@ -1459,7 +1467,7 @@ bool AttachmentRateInstance::runCopyMode (void)
 				m_defaultImageSubresourceRange);
 		vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, 0, DE_NULL, 0, DE_NULL, 1, &cbImageBarrier);
 
-		startRendering(*cmdBuffer, *renderPass, *framebuffer, makeRect2D(m_cbWidth, m_cbHeight), attachmentInfo);
+		startRendering(*cmdBuffer, *renderPass, *framebuffer, makeRect2D(m_cbWidth, m_cbHeight), attachmentInfo, tileWidth, tileHeight);
 
 		// draw single triangle to cb
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipelineLayout, 0, 1, &(*m_counterBufferDescriptorSet), 0, DE_NULL);
@@ -1627,7 +1635,7 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 
 		Move<VkPipelineLayout>	graphicsPipelineLayout	= buildPipelineLayout(&(*m_counterBufferDescriptorSetLayout));
 		Move<VkRenderPass>		renderPass				= buildRenderPass(m_cbFormat, tileWidth, tileHeight);
-		Move<VkPipeline>		graphicsPipeline		= buildGraphicsPipeline(0, *renderPass, *graphicsPipelineLayout, *vertShader, *fragShader);
+		Move<VkPipeline>		graphicsPipeline		= buildGraphicsPipeline(0, *renderPass, m_cbFormat, *graphicsPipelineLayout, *vertShader, *fragShader);
 
 		std::vector<FBAttachmentInfo> attachmentInfo
 		{
@@ -1726,7 +1734,7 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 				m_defaultImageSubresourceRange);
 		vk.cmdPipelineBarrier(*graphicsCmdBuffer, srcStageMask, dstStageMask, 0, 0, DE_NULL, 0, DE_NULL, 1, &cbImageBarrier);
 
-		startRendering(*graphicsCmdBuffer, *renderPass, *framebuffer, makeRect2D(m_cbWidth, m_cbHeight), attachmentInfo);
+		startRendering(*graphicsCmdBuffer, *renderPass, *framebuffer, makeRect2D(m_cbWidth, m_cbHeight), attachmentInfo, tileWidth, tileHeight);
 
 		// draw single triangle to cb
 		vk.cmdBindDescriptorSets(*graphicsCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipelineLayout, 0, 1, &(*m_counterBufferDescriptorSet), 0, DE_NULL);
@@ -1845,7 +1853,7 @@ bool AttachmentRateInstance::runFillLinearTiledImage(void)
 
 		Move<VkPipelineLayout>	graphicsPipelineLayout	= buildPipelineLayout(&(*m_counterBufferDescriptorSetLayout));
 		Move<VkRenderPass>		renderPass				= buildRenderPass(m_cbFormat, tileWidth, tileHeight);
-		Move<VkPipeline>		graphicsPipeline		= buildGraphicsPipeline(0, *renderPass, *graphicsPipelineLayout, *vertShader, *fragShader);
+		Move<VkPipeline>		graphicsPipeline		= buildGraphicsPipeline(0, *renderPass, m_cbFormat, *graphicsPipelineLayout, *vertShader, *fragShader);
 
 		std::vector<FBAttachmentInfo> attachmentInfo
 		{
@@ -1882,7 +1890,7 @@ bool AttachmentRateInstance::runFillLinearTiledImage(void)
 				m_defaultImageSubresourceRange);
 		vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, 0, DE_NULL, 0, DE_NULL, 1, &cbImageBarrier);
 
-		startRendering(*cmdBuffer, *renderPass, *framebuffer, makeRect2D(m_cbWidth, m_cbHeight), attachmentInfo);
+		startRendering(*cmdBuffer, *renderPass, *framebuffer, makeRect2D(m_cbWidth, m_cbHeight), attachmentInfo, tileWidth, tileHeight);
 
 		// draw single triangle to cb
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipelineLayout, 0, 1, &(*m_counterBufferDescriptorSet), 0, DE_NULL);
@@ -1967,8 +1975,8 @@ bool AttachmentRateInstance::runTwoSubpassMode(void)
 
 	Move<VkRenderPass>		renderPass			= buildRenderPass(m_cbFormat, m_minTileSize.width, m_minTileSize.height, m_maxTileSize.width, m_maxTileSize.height);
 	Move<VkPipelineLayout>	pipelineLayout		= buildPipelineLayout(&(*m_counterBufferDescriptorSetLayout));
-	Move<VkPipeline>		graphicsPipeline0	= buildGraphicsPipeline(0, *renderPass, *pipelineLayout, *vertShader0, *fragShader);
-	Move<VkPipeline>		graphicsPipeline1	= buildGraphicsPipeline(1, *renderPass, *pipelineLayout, *vertShader1, *fragShader);
+	Move<VkPipeline>		graphicsPipeline0	= buildGraphicsPipeline(0, *renderPass, m_cbFormat, *pipelineLayout, *vertShader0, *fragShader);
+	Move<VkPipeline>		graphicsPipeline1	= buildGraphicsPipeline(1, *renderPass, m_cbFormat, *pipelineLayout, *vertShader1, *fragShader);
 
 	std::vector<FBAttachmentInfo> attachmentInfo
 	{
