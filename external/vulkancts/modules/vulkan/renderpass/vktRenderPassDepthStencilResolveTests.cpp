@@ -111,6 +111,7 @@ struct TestConfig
 	bool						separateDepthStencilLayouts;
 	bool						unusedResolve;
 	tcu::Maybe<VkFormat>		compatibleFormat;
+	bool						sampleMask;
 };
 
 // Auxiliar class to group depth formats by compatibility in bit size and format. Note there is at most one alternative format for
@@ -182,11 +183,11 @@ protected:
 	AllocationSp				createBufferMemory				(void);
 	VkBufferSp					createBuffer					(void);
 
-	Move<VkRenderPass>			createRenderPass				(VkFormat vkformat);
+	Move<VkRenderPass>			createRenderPass				(VkFormat vkformat, deUint32 renderPassNo);
 	Move<VkRenderPass>			createRenderPassCompatible		(void);
 	Move<VkFramebuffer>			createFramebuffer				(VkRenderPass renderPass, VkImageViewSp multisampleImageView, VkImageViewSp singlesampleImageView);
 	Move<VkPipelineLayout>		createRenderPipelineLayout		(void);
-	Move<VkPipeline>			createRenderPipeline			(VkRenderPass renderPass, VkPipelineLayout renderPipelineLayout);
+	Move<VkPipeline>			createRenderPipeline			(VkRenderPass renderPass, deUint32 renderPassNo, VkPipelineLayout renderPipelineLayout);
 
 	void						submit							(void);
 	bool						verifyDepth						(void);
@@ -212,11 +213,12 @@ protected:
 	VkBufferSp						m_buffer;
 	AllocationSp					m_bufferMemory;
 
-	Unique<VkRenderPass>			m_renderPass;
+	deUint32						m_numRenderPasses;
+	std::vector<Move<VkRenderPass>>	m_renderPass;
 	Unique<VkRenderPass>			m_renderPassCompatible;
-	Unique<VkFramebuffer>			m_framebuffer;
+	Move<VkFramebuffer>				m_framebuffer;
 	Unique<VkPipelineLayout>		m_renderPipelineLayout;
-	Unique<VkPipeline>				m_renderPipeline;
+	std::vector<Move<VkPipeline>>	m_renderPipeline;
 };
 
 DepthStencilResolveTest::DepthStencilResolveTest (Context& context, TestConfig config)
@@ -241,12 +243,16 @@ DepthStencilResolveTest::DepthStencilResolveTest (Context& context, TestConfig c
 	, m_buffer					(createBuffer())
 	, m_bufferMemory			(createBufferMemory())
 
-	, m_renderPass				(createRenderPass(m_config.format))
+	, m_numRenderPasses			((m_config.verifyBuffer == VB_DEPTH || !m_config.sampleMask) ? 1u : m_config.sampleCount)
 	, m_renderPassCompatible	(createRenderPassCompatible())
-	, m_framebuffer				(createFramebuffer(*m_renderPass, m_multisampleImageView, m_singlesampleImageView))
 	, m_renderPipelineLayout	(createRenderPipelineLayout())
-	, m_renderPipeline			(createRenderPipeline(*m_renderPass, *m_renderPipelineLayout))
 {
+	for (deUint32 i = 0; i < m_numRenderPasses; i++)
+	{
+		m_renderPass.push_back(createRenderPass(m_config.format, i));
+		m_renderPipeline.push_back(createRenderPipeline(*m_renderPass[i], i, *m_renderPipelineLayout));
+	}
+	m_framebuffer = createFramebuffer(*m_renderPass[0], m_multisampleImageView, m_singlesampleImageView);
 }
 
 DepthStencilResolveTest::~DepthStencilResolveTest (void)
@@ -428,70 +434,8 @@ VkImageViewSp DepthStencilResolveTest::createImageView (VkImageSp image, deUint3
 	return safeSharedPtr(new Unique<VkImageView>(vk::createImageView(m_vkd, m_device, &pCreateInfo)));
 }
 
-Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (VkFormat vkformat)
+Move<VkRenderPass> DepthStencilResolveTest::createRenderPass(VkFormat vkformat, deUint32 renderPassNo)
 {
-	// When the depth/stencil resolve attachment is unused, it needs to be cleared outside the render pass so it has the expected values.
-	if (m_config.unusedResolve)
-	{
-		const tcu::TextureFormat			format			(mapVkFormat(vkformat));
-		const Unique<VkCommandBuffer>		commandBuffer	(allocateCommandBuffer(m_vkd, m_device, *m_commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-		const vk::VkImageSubresourceRange	imageRange		=
-		{
-			((tcu::hasDepthComponent(format.order)		? static_cast<vk::VkImageAspectFlags>(vk::VK_IMAGE_ASPECT_DEPTH_BIT)	: 0u) |
-			 (tcu::hasStencilComponent(format.order)	? static_cast<vk::VkImageAspectFlags>(vk::VK_IMAGE_ASPECT_STENCIL_BIT)	: 0u)),
-			0u,
-			VK_REMAINING_MIP_LEVELS,
-			0u,
-			VK_REMAINING_ARRAY_LAYERS,
-		};
-		const vk::VkImageMemoryBarrier		preBarrier		=
-		{
-			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			nullptr,
-
-			// src and dst access masks.
-			0,
-			vk::VK_ACCESS_TRANSFER_WRITE_BIT,
-
-			// old and new layouts.
-			vk::VK_IMAGE_LAYOUT_UNDEFINED,
-			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-
-			VK_QUEUE_FAMILY_IGNORED,
-			VK_QUEUE_FAMILY_IGNORED,
-
-			**m_singlesampleImage,
-			imageRange,
-		};
-		const vk::VkImageMemoryBarrier		postBarrier		=
-		{
-			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			nullptr,
-
-			// src and dst access masks.
-			vk::VK_ACCESS_TRANSFER_WRITE_BIT,
-			0,
-
-			// old and new layouts.
-			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-
-			VK_QUEUE_FAMILY_IGNORED,
-			VK_QUEUE_FAMILY_IGNORED,
-
-			**m_singlesampleImage,
-			imageRange,
-		};
-
-		vk::beginCommandBuffer(m_vkd, commandBuffer.get());
-			m_vkd.cmdPipelineBarrier(commandBuffer.get(), vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &preBarrier);
-			m_vkd.cmdClearDepthStencilImage(commandBuffer.get(), **m_singlesampleImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_config.clearValue, 1u, &imageRange);
-			m_vkd.cmdPipelineBarrier(commandBuffer.get(), vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &postBarrier);
-		vk::endCommandBuffer(m_vkd, commandBuffer.get());
-
-		vk::submitCommandsAndWait(m_vkd, m_device, m_context.getUniversalQueue(), commandBuffer.get());
-	}
-
 	const VkSampleCountFlagBits samples(sampleCountBitFromSampleCount(m_config.sampleCount));
 
 	VkImageLayout layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
@@ -523,13 +467,24 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (VkFormat vkformat)
 		}
 		else
 		{
-			layout = VK_IMAGE_LAYOUT_GENERAL;
+			layout = m_config.sampleMask ? VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR : VK_IMAGE_LAYOUT_GENERAL;
 			stencilLayout.stencilLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR;
-			finalLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL_KHR; // This aspect should be unused.
+			finalLayout = VK_IMAGE_LAYOUT_GENERAL;  // This aspect should be unused.
 			stencilFinalLayout.stencilFinalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		}
 		attachmentRefStencil = &stencilLayout;
 		attachmentDescriptionStencil = &stencilFinalLayout;
+	}
+
+	if (renderPassNo != 0)
+	{
+		stencilFinalLayout.stencilInitialLayout = stencilLayout.stencilLayout;
+	}
+
+	if (renderPassNo != m_numRenderPasses - 1)
+	{
+		finalLayout = layout;
+		stencilFinalLayout.stencilFinalLayout = layout;
 	}
 
 	const AttachmentDescription2 multisampleAttachment		// VkAttachmentDescription2
@@ -539,11 +494,11 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (VkFormat vkformat)
 		0u,													// VkAttachmentDescriptionFlags		flags;
 		m_config.format,									// VkFormat							format;
 		samples,											// VkSampleCountFlagBits			samples;
-		VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp;
-		VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				storeOp;
-		VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				stencilLoadOp;
-		VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp;
-		VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout					initialLayout;
+		(renderPassNo == 0) ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,		// VkAttachmentLoadOp				loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,
+		(renderPassNo == 0) ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,		// VkAttachmentLoadOp				stencilLoadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,
+		(renderPassNo == 0) ? VK_IMAGE_LAYOUT_UNDEFINED : layout,							// VkImageLayout					initialLayout;
 		finalLayout											// VkImageLayout					finalLayout;
 	);
 	const AttachmentReference2 multisampleAttachmentRef		// VkAttachmentReference2
@@ -555,8 +510,9 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (VkFormat vkformat)
 		m_config.aspectFlag									// VkImageAspectFlags				aspectMask;
 	);
 
-	const vk::VkImageLayout		singleSampleInitialLayout = (m_config.unusedResolve ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED);
-
+	vk::VkImageLayout		singleSampleInitialLayout = (m_config.unusedResolve ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED);
+	if (renderPassNo != 0)
+		singleSampleInitialLayout = layout;
 
 	const tcu::TextureFormat			format			(mapVkFormat(vkformat));
 	VkImageAspectFlags aspectFlags =
@@ -580,8 +536,8 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (VkFormat vkformat)
 	AttachmentReference2 singlesampleAttachmentRef			// VkAttachmentReference2
 	(
 																// VkStructureType					sType;
-		attachmentRefStencil,									// const void*						pNext;
-		(m_config.unusedResolve ? VK_ATTACHMENT_UNUSED : 1u),	// deUint32							attachment;
+		attachmentRefStencil,                                                                   // const void*                                          pNext;
+		((m_config.unusedResolve || renderPassNo != m_numRenderPasses - 1) ? VK_ATTACHMENT_UNUSED : 1u),	// deUint32							attachment;
 		layout,													// VkImageLayout					layout;
 		aspectFlags												// VkImageAspectFlags				aspectMask;
 	);
@@ -602,7 +558,7 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (VkFormat vkformat)
 	const SubpassDescription2 subpass					// VkSubpassDescription2
 	(
 														// VkStructureType						sType;
-		&dsResolveDescription,							// const void*							pNext;
+		renderPassNo == m_numRenderPasses - 1 ? &dsResolveDescription : DE_NULL,	// const void*							pNext;
 		(VkSubpassDescriptionFlags)0,					// VkSubpassDescriptionFlags			flags;
 		VK_PIPELINE_BIND_POINT_GRAPHICS,				// VkPipelineBindPoint					pipelineBindPoint;
 		0u,												// deUint32								viewMask;
@@ -656,7 +612,7 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPassCompatible (void)
 	if (! m_config.compatibleFormat)
 		return {};
 
-	return createRenderPass(m_config.compatibleFormat.get());
+	return createRenderPass(m_config.compatibleFormat.get(), 0);
 }
 
 Move<VkFramebuffer> DepthStencilResolveTest::createFramebuffer (VkRenderPass renderPass, VkImageViewSp multisampleImageView, VkImageViewSp singlesampleImageView)
@@ -716,7 +672,7 @@ Move<VkPipelineLayout> DepthStencilResolveTest::createRenderPipelineLayout (void
 	return vk::createPipelineLayout(m_vkd, m_device, &createInfo);
 }
 
-Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline (VkRenderPass renderPass, VkPipelineLayout renderPipelineLayout)
+Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline (VkRenderPass renderPass, deUint32 renderPassNo, VkPipelineLayout renderPipelineLayout)
 {
 	const bool testingStencil = (m_config.verifyBuffer == VB_STENCIL);
 	const vk::BinaryCollection& binaryCollection = m_context.getBinaryCollection();
@@ -740,6 +696,9 @@ Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline (VkRenderPass ren
 	const tcu::UVec2				view		(m_config.width, m_config.height);
 	const std::vector<VkViewport>	viewports	(1, makeViewport(view));
 	const std::vector<VkRect2D>		scissors	(1, m_config.renderArea);
+	const VkSampleMask samplemask[2] = {
+		renderPassNo < 32 ? (1u << renderPassNo) : 0,
+		renderPassNo < 32 ? 0 : (1u << (renderPassNo - 32)) };
 
 	const VkPipelineMultisampleStateCreateInfo multisampleState =
 	{
@@ -750,7 +709,7 @@ Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline (VkRenderPass ren
 		sampleCountBitFromSampleCount(m_config.sampleCount),
 		VK_FALSE,
 		0.0f,
-		DE_NULL,
+		(m_config.sampleMask) ? &samplemask[0] : DE_NULL,
 		VK_FALSE,
 		VK_FALSE,
 	};
@@ -853,60 +812,151 @@ void DepthStencilResolveTest::submit (void)
 {
 	const DeviceInterface&						vkd					(m_context.getDeviceInterface());
 	const VkDevice								device				(m_context.getDevice());
-	const Unique<VkCommandBuffer>				commandBuffer		(allocateCommandBuffer(vkd, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	const RenderpassSubpass2::SubpassBeginInfo	subpassBeginInfo	(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
-	const RenderpassSubpass2::SubpassEndInfo	subpassEndInfo		(DE_NULL);
 
-	beginCommandBuffer(vkd, *commandBuffer);
-
+	// When the depth/stencil resolve attachment is unused, it needs to be cleared outside
+	// the render pass so it has the expected values.
+	if (m_config.unusedResolve)
 	{
-		VkClearValue clearValues[2];
-		clearValues[0].depthStencil = m_config.clearValue;
-		clearValues[1].depthStencil = m_config.clearValue;
-
-		const VkRenderPassBeginInfo beginInfo =
+		const tcu::TextureFormat			format			(mapVkFormat(m_config.format));
+		const Unique<VkCommandBuffer>		commandBuffer	(allocateCommandBuffer(m_vkd, m_device, *m_commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+		const vk::VkImageSubresourceRange	imageRange		=
 		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-			DE_NULL,
-
-			(m_config.compatibleFormat ? *m_renderPassCompatible : *m_renderPass),
-			*m_framebuffer,
-
-			{
-				{ 0u, 0u },
-				{ m_config.width, m_config.height }
-			},
-
-			2u,
-			clearValues
+			((tcu::hasDepthComponent(format.order)		? static_cast<vk::VkImageAspectFlags>(vk::VK_IMAGE_ASPECT_DEPTH_BIT)	: 0u) |
+			 (tcu::hasStencilComponent(format.order)	? static_cast<vk::VkImageAspectFlags>(vk::VK_IMAGE_ASPECT_STENCIL_BIT)	: 0u)),
+			0u,
+			VK_REMAINING_MIP_LEVELS,
+			0u,
+			VK_REMAINING_ARRAY_LAYERS,
 		};
-		RenderpassSubpass2::cmdBeginRenderPass(vkd, *commandBuffer, &beginInfo, &subpassBeginInfo);
+		const vk::VkImageMemoryBarrier		preBarrier		=
+		{
+			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			nullptr,
+
+			// src and dst access masks.
+			0,
+			vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+
+			// old and new layouts.
+			vk::VK_IMAGE_LAYOUT_UNDEFINED,
+			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+
+			**m_singlesampleImage,
+			imageRange,
+		};
+		const vk::VkImageMemoryBarrier		postBarrier		=
+		{
+			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			nullptr,
+
+			// src and dst access masks.
+			vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+			0,
+
+			// old and new layouts.
+			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+
+			**m_singlesampleImage,
+			imageRange,
+		};
+
+		vk::beginCommandBuffer(m_vkd, commandBuffer.get());
+		m_vkd.cmdPipelineBarrier(commandBuffer.get(), vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &preBarrier);
+		m_vkd.cmdClearDepthStencilImage(commandBuffer.get(), **m_singlesampleImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_config.clearValue, 1u, &imageRange);
+		m_vkd.cmdPipelineBarrier(commandBuffer.get(), vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &postBarrier);
+		vk::endCommandBuffer(m_vkd, commandBuffer.get());
+
+		vk::submitCommandsAndWait(m_vkd, m_device, m_context.getUniversalQueue(), commandBuffer.get());
 	}
 
-	// Render
+	const Unique<VkCommandBuffer>				commandBuffer(allocateCommandBuffer(vkd, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const RenderpassSubpass2::SubpassBeginInfo	subpassBeginInfo(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
+	const RenderpassSubpass2::SubpassEndInfo	subpassEndInfo(DE_NULL);
+
+	beginCommandBuffer(vkd, *commandBuffer);
 	bool testingDepth = (m_config.verifyBuffer == VB_DEPTH);
 	if (testingDepth)
 	{
-		vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
+		{
+			VkClearValue clearValues[2];
+			clearValues[0].depthStencil = m_config.clearValue;
+			clearValues[1].depthStencil = m_config.clearValue;
+
+			const VkRenderPassBeginInfo beginInfo =
+			{
+				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+				DE_NULL,
+
+					(m_config.compatibleFormat ? *m_renderPassCompatible : *m_renderPass[0]),
+				*m_framebuffer,
+
+				{
+					{ 0u, 0u },
+					{ m_config.width, m_config.height }
+				},
+
+				2u,
+				clearValues
+			};
+			RenderpassSubpass2::cmdBeginRenderPass(vkd, *commandBuffer, &beginInfo, &subpassBeginInfo);
+		}
+
+		// Render
+		vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline[0]);
 		vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
+		RenderpassSubpass2::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
 	}
 	else
 	{
-		// For stencil we can set reference value for just one sample at a time
-		// so we need to do as many passes as there are samples, first half
-		// of samples is initialized with 1 and second half with 255
-		const deUint32 halfOfSamples = m_config.sampleCount >> 1;
-		for (deUint32 renderPass = 0 ; renderPass < m_config.sampleCount ; renderPass++)
+		// Stencil
+		for (deUint32 i = 0; i < m_config.sampleCount; i++)
 		{
-			deUint32 stencilReference = 1 + 254 * (renderPass >= halfOfSamples);
-			vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
-			vkd.cmdPushConstants(*commandBuffer, *m_renderPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(renderPass), &renderPass);
+			if (i == 0 || m_config.sampleMask)
+			{
+				VkClearValue clearValues[2];
+				clearValues[0].depthStencil = m_config.clearValue;
+				clearValues[1].depthStencil = m_config.clearValue;
+
+				const VkRenderPassBeginInfo beginInfo =
+				{
+					VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+					DE_NULL,
+
+					(m_config.compatibleFormat ? *m_renderPassCompatible : *m_renderPass[i]),
+					*m_framebuffer,
+
+					{
+						{ 0u, 0u },
+						{ m_config.width, m_config.height }
+					},
+
+					2u,
+					clearValues
+				};
+				vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, 0, 0, 0, 0, 0);
+				RenderpassSubpass2::cmdBeginRenderPass(vkd, *commandBuffer, &beginInfo, &subpassBeginInfo);
+			}
+			// For stencil we can set reference value for just one sample at a time
+			// so we need to do as many passes as there are samples, first half
+			// of samples is initialized with 1 and second half with 255
+			const deUint32 halfOfSamples = m_config.sampleCount >> 1;
+
+			deUint32 stencilReference = 1 + 254 * (i >= halfOfSamples);
+			vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline[m_config.sampleMask ? i : 0]);
+			vkd.cmdPushConstants(*commandBuffer, *m_renderPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(i), &i);
 			vkd.cmdSetStencilReference(*commandBuffer, VK_STENCIL_FRONT_AND_BACK, stencilReference);
 			vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
+			if (i == m_config.sampleCount - 1 || m_config.sampleMask)
+				RenderpassSubpass2::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
 		}
 	}
-
-	RenderpassSubpass2::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
 
 	// Memory barriers between rendering and copying
 	{
@@ -1215,19 +1265,33 @@ struct Programs
 		}
 		else
 		{
-			dst.glslSources.add("quad-frag") << glu::FragmentSource(
-				"#version 450\n"
-				"precision highp float;\n"
-				"precision highp int;\n"
-				"layout(push_constant) uniform PushConstant {\n"
-				"  highp int sampleID;\n"
-				"} pushConstants;\n"
-				"void main (void)\n"
-				"{\n"
-				"  if(gl_SampleID != pushConstants.sampleID)\n"
-				"    discard;\n"
-				"  gl_FragDepth = 0.5;\n"
-				"}\n");
+			if (config.sampleMask)
+			{
+				dst.glslSources.add("quad-frag") << glu::FragmentSource(
+					"#version 450\n"
+					"precision highp float;\n"
+					"precision highp int;\n"
+					"void main (void)\n"
+					"{\n"
+					"  gl_FragDepth = 0.5;\n"
+					"}\n");
+			}
+			else
+			{
+				dst.glslSources.add("quad-frag") << glu::FragmentSource(
+					"#version 450\n"
+					"precision highp float;\n"
+					"precision highp int;\n"
+					"layout(push_constant) uniform PushConstant {\n"
+					"  highp int sampleID;\n"
+					"} pushConstants;\n"
+					"void main (void)\n"
+					"{\n"
+					"  if(gl_SampleID != pushConstants.sampleID)\n"
+					"    discard;\n"
+					"  gl_FragDepth = 0.5;\n"
+					"}\n");
+			}
 		}
 	}
 };
@@ -1487,7 +1551,8 @@ void initTests (tcu::TestCaseGroup* group)
 										0u,
 										useSeparateDepthStencilLayouts,
 										unusedResolve,
-										tcu::nothing<VkFormat>(),
+										tcu::Nothing,
+										false
 									};
 									formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
 
@@ -1530,9 +1595,18 @@ void initTests (tcu::TestCaseGroup* group)
 										expectedValue,
 										useSeparateDepthStencilLayouts,
 										unusedResolve,
-										tcu::nothing<VkFormat>(),
+										tcu::Nothing,
+										false
 									};
 									formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
+
+									if (dResolve.flag == VK_RESOLVE_MODE_SAMPLE_ZERO_BIT)
+									{
+										std::string samplemaskTestName = name + "_samplemask";
+										TestConfig samplemaskTestConfig = testConfig;
+										samplemaskTestConfig.sampleMask = true;
+										formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, samplemaskTestName.c_str(), samplemaskTestName.c_str(), samplemaskTestConfig));
+									}
 
 									// All formats with stencil and depth aspects have incompatible formats and sizes in the depth
 									// aspect, so their only alternative is the VK_FORMAT_S8_UINT format. Finally, that stencil-only
@@ -1632,7 +1706,8 @@ void initTests (tcu::TestCaseGroup* group)
 									0u,
 									useSeparateDepthStencilLayouts,
 									unusedResolve,
-									tcu::nothing<VkFormat>(),
+									tcu::Nothing,
+									false
 								};
 								formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
 							}
@@ -1665,7 +1740,8 @@ void initTests (tcu::TestCaseGroup* group)
 									expectedValue,
 									useSeparateDepthStencilLayouts,
 									unusedResolve,
-									tcu::nothing<VkFormat>(),
+									tcu::Nothing,
+									false
 								};
 								formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
 							}

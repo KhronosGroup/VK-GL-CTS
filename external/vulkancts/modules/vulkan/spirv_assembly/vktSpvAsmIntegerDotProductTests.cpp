@@ -73,23 +73,22 @@ template <typename T> T getEqualValue(T v1, T v2)
 template <class T>
 bool withinLimits(deInt64 val)
 {
-	return static_cast<deInt64>(std::numeric_limits<T>::min()) < val
-		   && val < static_cast<deInt64>(std::numeric_limits<T>::max());
+	return static_cast<deInt64>(std::numeric_limits<T>::min()) <= val
+		   && val <= static_cast<deInt64>(std::numeric_limits<T>::max());
 }
 
 template <class T, class LHSOperandT, class RHSOperandT>
 static T dotProduct(vector<LHSOperandT> lhs, vector<RHSOperandT> rhs)
 {
-	deInt64 res = 0;
-
-	size_t size = getEqualValue(lhs.size(), rhs.size());
+	uint64_t	res		= 0u;
+	size_t		size	= getEqualValue(lhs.size(), rhs.size());
 
 	for (size_t i = 0; i < size; ++i)
-	{
-		res += static_cast<deInt64>(lhs[i]) * static_cast<deInt64>(rhs[i]);
-	}
+		res += static_cast<uint64_t>(lhs[i]) * static_cast<uint64_t>(rhs[i]);
 
-	return static_cast<T>(res);
+	int64_t signedRes;
+	deMemcpy(&signedRes, &res, sizeof(res));
+	return static_cast<T>(signedRes);
 }
 
 template <class AddendT, class LHSOperandT, class RHSOperandT>
@@ -156,20 +155,21 @@ bool compareDotProductAccSat(const std::vector<Resource> &inputs, const vector<A
 		if (!outputOverflow)
 		{
 			AddendT expectedOutput = static_cast<AddendT>(PosProduct + NegProduct);
+			const auto& addend = addends[idx];
 
-			if (addends[idx] < 0)
+			if (addend < 0)
 			{
-				if (expectedOutput < std::numeric_limits<AddendT>::min() - addends[idx])
+				if (expectedOutput < std::numeric_limits<AddendT>::min() - addend)
 					expectedOutput = std::numeric_limits<AddendT>::min();
 				else
-					expectedOutput = static_cast<AddendT>(expectedOutput + addends[idx]);
+					expectedOutput = static_cast<AddendT>(expectedOutput + addend);
 			}
 			else
 			{
-				if (expectedOutput > std::numeric_limits<AddendT>::max() - addends[idx])
+				if (expectedOutput > std::numeric_limits<AddendT>::max() - addend)
 					expectedOutput = std::numeric_limits<AddendT>::max();
 				else
-					expectedOutput = static_cast<AddendT>(expectedOutput + addends[idx]);
+					expectedOutput = static_cast<AddendT>(expectedOutput + addend);
 			}
 
 			if (output[idx] != expectedOutput)
@@ -205,15 +205,15 @@ void addDotProductExtensionAndFeatures(ComputeShaderSpec &spec,
 	DE_ASSERT(!packingInfo.packed || elementSize == 8);
 	if ((!packingInfo.packed && elementSize == 8) || outSize == 8)
 	{
-		spec.requestedVulkanFeatures.extFloat16Int8 |= EXTFLOAT16INT8FEATURES_INT8;
-		spec.requestedVulkanFeatures.ext8BitStorage = EXT8BITSTORAGEFEATURES_STORAGE_BUFFER;
+		spec.requestedVulkanFeatures.extFloat16Int8.shaderInt8 = true;
+		spec.requestedVulkanFeatures.ext8BitStorage.storageBuffer8BitAccess = true;
 		spec.extensions.push_back("VK_KHR_8bit_storage");
 	}
 
 	if (elementSize == 16 || outSize == 16)
 	{
-		spec.requestedVulkanFeatures.coreFeatures.shaderInt16 = VK_TRUE;
-		spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		spec.requestedVulkanFeatures.coreFeatures.shaderInt16 = true;
+		spec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
 		spec.extensions.push_back("VK_KHR_16bit_storage");
 	}
 }
@@ -1105,16 +1105,17 @@ tcu::TestCaseGroup* createOpSDotAccSatKHRComputeGroup(tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opsdotaccsatkhr", "Test the OpSDotAccSatKHR instruction"));
 	de::Random						rnd		(deStringHash(group->getName()));
 
-	add8bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"),   std::numeric_limits<deInt8>::min(), std::numeric_limits<deInt8>::max());
-	add8bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits"),   (deInt8)(12), (deInt8)(20));
-	add8bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits-neg"),   (deInt8)(-20), (deInt8)(-12), false);
-	add8bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("small"), (deInt8)-20,  (deInt8)20);
-	add16bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"), std::numeric_limits<deInt16>::min(), std::numeric_limits<deInt16>::max());
-	add16bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits"),   (deInt16)(std::numeric_limits<deInt8>::max()-20), (deInt16)(std::numeric_limits<deInt8>::max()+20));
-	add16bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits-neg"),   (deInt16)(std::numeric_limits<deInt8>::min()-20), (deInt16)(std::numeric_limits<deInt8>::min()+20), false);
-	add32bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"), std::numeric_limits<deInt32>::min(), std::numeric_limits<deInt32>::max());
-	add32bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits"),   (deInt32)(std::numeric_limits<deInt16>::max()-20), (deInt32)(std::numeric_limits<deInt16>::max()+20));
-	add32bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits-neg"),   (deInt32)(std::numeric_limits<deInt16>::min()-20), (deInt32)(std::numeric_limits<deInt16>::min()+20), false);
+	add8bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"),         std::numeric_limits<deInt8>::min(), std::numeric_limits<deInt8>::max());
+	add8bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits"),      (deInt8)(12), (deInt8)(20));
+	add8bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits-neg"),  (deInt8)(-20), (deInt8)(-12), false);
+	add8bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("small"),       (deInt8)-4,  (deInt8)4);
+	add8bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("small-neg"),   (deInt8)-4,  (deInt8)4, false);
+	add16bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"),        std::numeric_limits<deInt16>::min(), std::numeric_limits<deInt16>::max());
+	add16bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits"),     (deInt16)(-20), (deInt16)(20));
+	add16bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits-neg"), (deInt16)(-20), (deInt16)(20), false);
+	add32bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"),        std::numeric_limits<deInt32>::min(), std::numeric_limits<deInt32>::max());
+	add32bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits"),     (deInt32)(std::numeric_limits<deInt8>::min()), (deInt32)(std::numeric_limits<deInt8>::max()));
+	add32bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits-neg"), (deInt32)(std::numeric_limits<deInt8>::min()), (deInt32)(std::numeric_limits<deInt8>::max()), false);
 
 	return group.release();
 }
@@ -1124,13 +1125,16 @@ tcu::TestCaseGroup* createOpUDotAccSatKHRComputeGroup(tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opudotaccsatkhr", "Test the OpUDotAccSatKHR instruction"));
 	de::Random						rnd		(deStringHash(group->getName()));
 
-	add8bitOpUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"),   std::numeric_limits<deUint8>::min(), std::numeric_limits<deUint8>::max());
-	add8bitOpUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits"),   (deUint8)(12), (deUint8)(20));
-	add8bitOpUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("small"), (deUint8)0,  (deUint8)20);
-	add16bitOpUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"), std::numeric_limits<deUint16>::min(), std::numeric_limits<deUint16>::max());
-	add16bitOpUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits"),   (deUint16)(std::numeric_limits<deUint8>::max()-40), (deUint16)(std::numeric_limits<deUint8>::max()-20));
-	add32bitOpUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"), std::numeric_limits<deUint32>::min(), std::numeric_limits<deUint32>::max());
-	add32bitOpUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits"),   (deUint32)(std::numeric_limits<deUint16>::max()-40), (deUint32)(std::numeric_limits<deUint16>::max()-20));
+	add8bitOpUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"),         std::numeric_limits<deUint8>::min(), std::numeric_limits<deUint8>::max());
+	add8bitOpUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits"),      (deUint8)(12), (deUint8)(20));
+	add8bitOpUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("small"),       (deUint8)1,  (deUint8)8);
+	add8bitOpUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("small-nosat"), (deUint8)1,  (deUint8)8, false);
+	add16bitOpUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"),        std::numeric_limits<deUint16>::min(), std::numeric_limits<deUint16>::max());
+	add16bitOpUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits"),     (deUint16)(12), (deUint16)(20));
+	add16bitOpUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("nosat"),      (deUint16)(12), (deUint16)(20), false);
+	add32bitOpUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"),        std::numeric_limits<deUint32>::min(), std::numeric_limits<deUint32>::max());
+	add32bitOpUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits"),     (deUint32)(std::numeric_limits<deUint8>::max()-40), (deUint32)(std::numeric_limits<deUint8>::max()-20));
+	add32bitOpUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("nosat"),      (deUint32)(std::numeric_limits<deUint8>::max()-40), (deUint32)(std::numeric_limits<deUint8>::max()-20), false);
 
 	return group.release();
 }
@@ -1140,16 +1144,17 @@ tcu::TestCaseGroup* createOpSUDotAccSatKHRComputeGroup(tcu::TestContext& testCtx
 	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opsudotaccsatkhr", "Test the OpSUDotAccSatKHR instruction"));
 	de::Random						rnd		(deStringHash(group->getName()));
 
-	add8bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"),   std::numeric_limits<deInt8>::min(), std::numeric_limits<deInt8>::max(), std::numeric_limits<deUint8>::min(), std::numeric_limits<deUint8>::max());
-	add8bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits"),   (deInt8)(12), (deInt8)(20), (deUint8)(12), (deUint8)(20));
-	add8bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits-neg"),   (deInt8)(-20), (deInt8)(-12), (deUint8)(12), (deUint8)(20), false);
-	add8bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("small"), (deInt8)-20,  (deInt8)20,  (deUint8)0, (deUint8)20);
-	add16bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"), std::numeric_limits<deInt16>::min(), std::numeric_limits<deInt16>::max(),  std::numeric_limits<deUint16>::min(), std::numeric_limits<deUint16>::max());
-	add16bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits"),   (deInt16)(std::numeric_limits<deInt8>::max()-20), (deInt16)(std::numeric_limits<deInt8>::max()+20), (deUint16)(std::numeric_limits<deUint8>::max()-40), (deUint16)(std::numeric_limits<deUint8>::max()-20));
-	add16bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits-neg"),   (deInt16)(std::numeric_limits<deInt8>::min()-20), (deInt16)(std::numeric_limits<deInt8>::min()+20), (deUint16)(std::numeric_limits<deUint8>::max()-40), (deUint16)(std::numeric_limits<deUint8>::max()-20), false);
-	add32bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"), std::numeric_limits<deInt32>::min(), std::numeric_limits<deInt32>::max(),  std::numeric_limits<deUint32>::min(), std::numeric_limits<deUint32>::max());
-	add32bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits"),   (deInt32)(std::numeric_limits<deInt16>::max()-20), (deInt32)(std::numeric_limits<deInt16>::max()+20), (deUint32)(std::numeric_limits<deUint16>::max()-40), (deUint32)(std::numeric_limits<deUint16>::max()-20));
-	add32bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits-neg"),   (deInt32)(std::numeric_limits<deInt16>::min()-20), (deInt32)(std::numeric_limits<deInt16>::min()+20), (deUint32)(std::numeric_limits<deUint16>::max()-40), (deUint32)(std::numeric_limits<deUint16>::max()-20), false);
+	add8bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"),         std::numeric_limits<deInt8>::min(), std::numeric_limits<deInt8>::max(), std::numeric_limits<deUint8>::min(), std::numeric_limits<deUint8>::max());
+	add8bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits"),      (deInt8)(12), (deInt8)(20), (deUint8)(12), (deUint8)(20));
+	add8bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits-neg"),  (deInt8)(-20), (deInt8)(-12), (deUint8)(12), (deUint8)(20), false);
+	add8bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("small"),       (deInt8)-4,  (deInt8)4,  (deUint8)1, (deUint8)8);
+	add8bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("small-neg"),   (deInt8)-4,  (deInt8)4,  (deUint8)1, (deUint8)8, false);
+	add16bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"),        std::numeric_limits<deInt16>::min(), std::numeric_limits<deInt16>::max(),  std::numeric_limits<deUint16>::min(), std::numeric_limits<deUint16>::max());
+	add16bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits"),     (deInt16)(-20), (deInt16)(20), (deUint16)(12), (deUint16)(20));
+	add16bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits-neg"), (deInt16)(-20), (deInt16)(20), (deUint16)(12), (deUint16)(20), false);
+	add32bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"),        std::numeric_limits<deInt32>::min(), std::numeric_limits<deInt32>::max(),  std::numeric_limits<deUint32>::min(), std::numeric_limits<deUint32>::max());
+	add32bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits"),     (deInt32)(std::numeric_limits<deInt8>::min()), (deInt32)(std::numeric_limits<deInt8>::max()), (deUint32)(std::numeric_limits<deUint8>::min()), (deUint32)(std::numeric_limits<deUint8>::max()));
+	add32bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("limits-neg"), (deInt32)(std::numeric_limits<deInt8>::min()), (deInt32)(std::numeric_limits<deInt8>::max()), (deUint32)(std::numeric_limits<deUint8>::max()), (deUint32)(std::numeric_limits<deUint8>::max()), false);
 
 	return group.release();
 }

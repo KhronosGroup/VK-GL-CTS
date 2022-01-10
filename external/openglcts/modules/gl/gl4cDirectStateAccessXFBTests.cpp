@@ -1123,7 +1123,7 @@ bool ErrorsTest::testQueriesForInvalidNameOfObject()
 	while (GL_TRUE == gl.isTransformFeedback(++invalid_name))
 		;
 
-	/* Dummy storage. */
+	/* unused storage. */
 	glw::GLint   buffer   = 314159;
 	glw::GLint64 buffer64 = 314159;
 
@@ -1249,7 +1249,7 @@ bool ErrorsTest::testGetTransformFeedbackivQueryForInvalidParameterName()
 	/* Generating invalid parameter name. */
 	glw::GLuint invalid_parameter_name = 0;
 
-	/* Dummy storage. */
+	/* Unused storage. */
 	glw::GLint buffer = 314159;
 
 	/* Error variable. */
@@ -1319,7 +1319,7 @@ bool ErrorsTest::testGetTransformFeedbacki_vQueryForInvalidParameterName()
 	/* Generating invalid parameter name. */
 	glw::GLuint invalid_parameter_name = 0;
 
-	/* Dummy storage. */
+	/* Unused storage. */
 	glw::GLint buffer = 314159;
 
 	/* Error variable. */
@@ -1390,7 +1390,7 @@ bool ErrorsTest::testGetTransformFeedbacki64_vQueryForInvalidParameterName()
 	/* Generating invalid parameter name. */
 	glw::GLuint invalid_parameter_name = 0;
 
-	/* Dummy storage. */
+	/* Unused storage. */
 	glw::GLint64 buffer = 314159;
 
 	/* Error variable. */
@@ -1467,7 +1467,7 @@ bool ErrorsTest::testIndexedQueriesForInvalidBindingPoint()
 	gl.createTransformFeedbacks(1, &xfb);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateTransformFeedbacks have failed");
 
-	/* Dummy storage. */
+	/* Unused storage. */
 	glw::GLint   buffer   = 314159;
 	glw::GLint64 buffer64 = 314159;
 
@@ -1959,7 +1959,7 @@ bool FunctionalTest::testTransformFeedbackStatus(glw::GLenum parameter_name, glw
 	/* Shortcut for GL functionality */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
-	/* Dummy storage. */
+	/* Unused storage. */
 	glw::GLint value = 314159;
 
 	/* Test of GetTransformFeedbackiv. */

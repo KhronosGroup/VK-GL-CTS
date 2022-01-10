@@ -68,6 +68,7 @@ struct PipelineState
 	deUint32						numPatchControlPoints	= 0;
 	bool							sampleShadingEnable		= false;
 	int								subpixelBits;
+	std::vector<deUint32>			sampleMasks;
 
 	// VK_EXT_depth_clip_enable
 	bool							explicitDepthClipEnable	= false;

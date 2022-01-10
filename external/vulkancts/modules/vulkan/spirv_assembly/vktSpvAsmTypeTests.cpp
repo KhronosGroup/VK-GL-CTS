@@ -1552,18 +1552,18 @@ void SpvAsmTypeTests<T>::createStageTests (const char*			testName,
 
 	if (uses8bit)
 	{
-		requiredFeatures.extFloat16Int8	|= EXTFLOAT16INT8FEATURES_INT8;
+		requiredFeatures.extFloat16Int8.shaderInt8 = true;
 	}
 
 	if (m_inputType == TYPE_I8 || m_inputType == TYPE_U8)
 	{
-		requiredFeatures.ext8BitStorage	|= EXT8BITSTORAGEFEATURES_UNIFORM_STORAGE_BUFFER;
+		requiredFeatures.ext8BitStorage.storageBuffer8BitAccess = true;
 		spirvExtensions					+= "OpExtension \"SPV_KHR_8bit_storage\"\n";
 	}
 
 	if (m_inputType == TYPE_I16 || m_inputType == TYPE_U16)
 	{
-		requiredFeatures.ext16BitStorage	|= EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		requiredFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
 		spirvExtensions						+= "OpExtension \"SPV_KHR_16bit_storage\"\n";
 	}
 
@@ -1631,9 +1631,13 @@ void SpvAsmTypeTests<T>::createStageTests (const char*			testName,
 	fragments["capability"]	= spirvCapabilities;
 
 	requiredFeaturesFromStrings(features, requiredFeatures);
-	computeResources.requestedVulkanFeatures = requiredFeatures;
 
 	createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, noExtensions, this, requiredFeatures);
+
+	computeResources.requestedVulkanFeatures = requiredFeatures;
+	computeResources.requestedVulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = false;
+	computeResources.requestedVulkanFeatures.coreFeatures.fragmentStoresAndAtomics = false;
+
 	createComputeTest(computeResources, computeShaderTemplate, fragments, *this, testName);
 }
 
@@ -2310,18 +2314,18 @@ void SpvAsmTypeTests<T>::createSwitchTests (void)
 
 	if (uses8bit)
 	{
-		requiredFeatures.extFloat16Int8	|= EXTFLOAT16INT8FEATURES_INT8;
+		requiredFeatures.extFloat16Int8.shaderInt8 = true;
 	}
 
 	if (m_inputType == TYPE_I8 || m_inputType == TYPE_U8)
 	{
-		requiredFeatures.ext8BitStorage		|= EXT8BITSTORAGEFEATURES_UNIFORM_STORAGE_BUFFER;
+		requiredFeatures.ext8BitStorage.storageBuffer8BitAccess = true;
 		spirvExtensions						+= "OpExtension \"SPV_KHR_8bit_storage\"\n";
 	}
 
 	if (m_inputType == TYPE_I16 || m_inputType == TYPE_U16)
 	{
-		requiredFeatures.ext16BitStorage	|= EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		requiredFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
 		spirvExtensions						+= "OpExtension \"SPV_KHR_16bit_storage\"\n";
 	}
 

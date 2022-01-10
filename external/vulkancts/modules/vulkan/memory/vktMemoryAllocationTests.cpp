@@ -539,8 +539,9 @@ struct MemoryType
 
 struct MemoryObject
 {
-	VkDeviceMemory	memory;
-	VkDeviceSize	size;
+	VkDeviceMemory			memory;
+	VkDeviceSize			size;
+	VkMemoryPropertyFlags	propertyFlags;
 };
 
 struct Heap
@@ -567,6 +568,7 @@ private:
 	const deUint32				m_totalDeviceMaskCombinations;
 
 	deUint32					m_memoryObjectCount;
+	deUint32					m_memoryProtectedObjectCount;
 	deUint32					m_currentDeviceMask;
 	size_t						m_opNdx;
 	de::Random					m_rng;
@@ -583,6 +585,7 @@ RandomAllocFreeTestInstance::RandomAllocFreeTestInstance (Context& context, Test
 	, m_memoryLimits				(getMemoryLimits(context.getTestContext().getPlatform().getVulkanPlatform()))
 	, m_totalDeviceMaskCombinations	(m_subsetAllocationAllowed ? (1 << m_numPhysDevices) - 1 : 1)
 	, m_memoryObjectCount			(0)
+	, m_memoryProtectedObjectCount	(0)
 	, m_currentDeviceMask			(m_subsetAllocationAllowed ? 1 : (1 << m_numPhysDevices) - 1)
 	, m_opNdx						(0)
 	, m_rng							(config.seed)
@@ -710,10 +713,20 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 		Heap&				heap			= m_heaps[heapNdx];
 		const MemoryType&	memoryType		= m_rng.choose<MemoryType>(heap.types.begin(), heap.types.end());
 		const bool			isDeviceLocal	= (heap.heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != 0;
-		const VkDeviceSize	maxAllocSize	= (isDeviceLocal && !isUMA)
+		const bool			isProtected		= memoryType.type.propertyFlags & VK_MEMORY_PROPERTY_PROTECTED_BIT;
+		VkDeviceSize		maxAllocSize	= (isDeviceLocal && !isUMA)
 											? de::min(heap.maxMemoryUsage - heap.memoryUsage, (VkDeviceSize)m_memoryLimits.totalDeviceLocalMemory - m_totalDeviceMem)
 											: de::min(heap.maxMemoryUsage - heap.memoryUsage, (VkDeviceSize)m_memoryLimits.totalSystemMemory - usedSysMem - m_allocSysMemSize);
-		const VkDeviceSize	allocationSize	= 1 + (m_rng.getUint64() % maxAllocSize);
+		const VkDeviceSize	maxProtectedAllocSize = 1 * 1024 * 1024;
+
+		// Some implementations might have limitations on protected heap, and these
+		// limitations don't show up in Vulkan queries. Use a hard coded limit for
+		// allocations of arbitrarily selected size of 1MB as per Note at "Device
+		// Memory Allocation" at the spec to use minimum-size allocations.
+		if(isProtected)
+			maxAllocSize = (maxAllocSize > maxProtectedAllocSize) ? maxProtectedAllocSize : maxAllocSize;
+
+		const VkDeviceSize allocationSize = 1 + (m_rng.getUint64() % maxAllocSize);
 
 		if ((allocationSize > (deUint64)(heap.maxMemoryUsage - heap.memoryUsage)) && (allocationSize != 1))
 			TCU_THROW(InternalError, "Test Error: trying to allocate memory more than the available heap size.");
@@ -721,7 +734,8 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 		const MemoryObject object =
 		{
 			(VkDeviceMemory)0,
-			allocationSize
+			allocationSize,
+			memoryType.type.propertyFlags
 		};
 
 		heap.objects.push_back(object);
@@ -735,13 +749,30 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 			memoryType.index									// memoryTypeIndex;
 		};
 
-		VK_CHECK(vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks*)DE_NULL, &heap.objects.back().memory));
-		TCU_CHECK(!!heap.objects.back().memory);
-		m_memoryObjectCount++;
+		VkResult	res	= vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks*)DE_NULL, &heap.objects.back().memory);
 
-		heap.memoryUsage										+= allocationSize;
-		(isDeviceLocal ? m_totalDeviceMem : m_totalSystemMem)	+= allocationSize;
-		m_totalSystemMem										+= m_allocSysMemSize;
+		// Some implementations might have limitations on protected heap, and these
+		// limitations don't show up in Vulkan queries. Use a hard coded threshold
+		// after which out of memory is allowed as per Note at "Device Memory Allocation"
+		// at the spec to support at least 80 allocations concurrently.
+		if (res == VK_ERROR_OUT_OF_DEVICE_MEMORY && isProtected && m_memoryProtectedObjectCount > 80)
+		{
+			heap.objects.pop_back();
+		}
+		else
+		{
+			VK_CHECK(res);
+
+			TCU_CHECK(!!heap.objects.back().memory);
+			m_memoryObjectCount++;
+
+			if (isProtected)
+				m_memoryProtectedObjectCount++;
+
+			heap.memoryUsage										+= allocationSize;
+			(isDeviceLocal ? m_totalDeviceMem : m_totalSystemMem)	+= allocationSize;
+			m_totalSystemMem										+= m_allocSysMemSize;
+		}
 	}
 	else
 	{
@@ -753,8 +784,15 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 		const bool			isDeviceLocal	= (heap.heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != 0;
 
 		vkd.freeMemory(device, memoryObject.memory, (const VkAllocationCallbacks*)DE_NULL);
+
 		memoryObject.memory = (VkDeviceMemory)0;
 		m_memoryObjectCount--;
+
+		if (memoryObject.propertyFlags & VK_MEMORY_PROPERTY_PROTECTED_BIT)
+		{
+			m_memoryProtectedObjectCount--;
+			memoryObject.propertyFlags = (VkMemoryPropertyFlags)0;
+		}
 
 		heap.memoryUsage										-= memoryObject.size;
 		(isDeviceLocal ? m_totalDeviceMem : m_totalSystemMem)	-= memoryObject.size;

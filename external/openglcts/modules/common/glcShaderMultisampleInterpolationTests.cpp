@@ -190,16 +190,17 @@ ShaderMultisampleInterpolationApiCase::IterateResult ShaderMultisampleInterpolat
 		isOk = false;
 	}
 
-	GLfloat maxFragmentInterpolationOffset = 0.0f;
-	gl.getFloatv(GL_MAX_FRAGMENT_INTERPOLATION_OFFSET, &maxFragmentInterpolationOffset);
-	if (maxFragmentInterpolationOffset < 0.5f)
-	{
-		isOk = false;
-	}
-
 	GLint fragmentInterpolationOffsetBits = 0;
 	gl.getIntegerv(GL_FRAGMENT_INTERPOLATION_OFFSET_BITS, &fragmentInterpolationOffsetBits);
 	if (fragmentInterpolationOffsetBits < 4)
+	{
+		isOk = false;
+	}
+	GLfloat ULP = 1.0f / powf(2, static_cast<float>(fragmentInterpolationOffsetBits));
+
+	GLfloat maxFragmentInterpolationOffset = 0.0f;
+	gl.getFloatv(GL_MAX_FRAGMENT_INTERPOLATION_OFFSET, &maxFragmentInterpolationOffset);
+	if (maxFragmentInterpolationOffset < 0.5f - ULP)
 	{
 		isOk = false;
 	}

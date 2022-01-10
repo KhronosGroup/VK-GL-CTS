@@ -105,7 +105,7 @@ struct CompareData
 	}
 };
 
-//! Make a dummy sampler.
+//! Make a (unused) sampler.
 Move<VkSampler> makeSampler (const DeviceInterface& vk, const VkDevice device)
 {
 	const VkSamplerCreateInfo samplerParams =
@@ -183,6 +183,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&					vk,
 									   const VkImageAspectFlags					depthStencilAspect,	//!< Used to determine which D/S tests to turn on
 									   const VkSampleCountFlagBits				numSamples,
 									   const bool								sampleShadingEnable,
+									   const bool								useFragmentShadingRate,
 									   const VkSampleLocationsInfoEXT*			pSampleLocationsInfo = DE_NULL)
 {
 	std::vector<VkVertexInputBindingDescription>	vertexInputBindingDescriptions;
@@ -358,27 +359,35 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&					vk,
 		}
 	};
 
+	VkPipelineFragmentShadingRateStateCreateInfoKHR shadingRateStateCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR,								// VkStructureType						sType;
+		DE_NULL,																							// const void*							pNext;
+		{ 2, 2 },																							// VkExtent2D							fragmentSize;
+		{ VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR, VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR },	// VkFragmentShadingRateCombinerOpKHR	combinerOps[2];
+	};
+
 	const VkGraphicsPipelineCreateInfo graphicsPipelineInfo =
 	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
-		DE_NULL,											// const void*										pNext;
-		(VkPipelineCreateFlags)0,							// VkPipelineCreateFlags							flags;
-		DE_LENGTH_OF_ARRAY(pShaderStages),					// deUint32											stageCount;
-		pShaderStages,										// const VkPipelineShaderStageCreateInfo*			pStages;
-		&vertexInputStateInfo,								// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
-		&pipelineInputAssemblyStateInfo,					// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
-		DE_NULL,											// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
-		&pipelineViewportStateInfo,							// const VkPipelineViewportStateCreateInfo*			pViewportState;
-		&pipelineRasterizationStateInfo,					// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
-		&pipelineMultisampleStateInfo,						// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
-		&pipelineDepthStencilStateInfo,						// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
-		&pipelineColorBlendStateInfo,						// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-		DE_NULL,											// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
-		pipelineLayout,										// VkPipelineLayout									layout;
-		renderPass,											// VkRenderPass										renderPass;
-		subpassNdx,											// deUint32											subpass;
-		DE_NULL,											// VkPipeline										basePipelineHandle;
-		-1,													// deInt32											basePipelineIndex;
+		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,					// VkStructureType									sType;
+		useFragmentShadingRate ? &shadingRateStateCreateInfo : DE_NULL,		// const void*										pNext;
+		(VkPipelineCreateFlags)0,											// VkPipelineCreateFlags							flags;
+		DE_LENGTH_OF_ARRAY(pShaderStages),									// deUint32											stageCount;
+		pShaderStages,														// const VkPipelineShaderStageCreateInfo*			pStages;
+		&vertexInputStateInfo,												// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
+		&pipelineInputAssemblyStateInfo,									// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
+		DE_NULL,															// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
+		&pipelineViewportStateInfo,											// const VkPipelineViewportStateCreateInfo*			pViewportState;
+		&pipelineRasterizationStateInfo,									// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
+		&pipelineMultisampleStateInfo,										// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
+		&pipelineDepthStencilStateInfo,										// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
+		&pipelineColorBlendStateInfo,										// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
+		DE_NULL,															// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
+		pipelineLayout,														// VkPipelineLayout									layout;
+		renderPass,															// VkRenderPass										renderPass;
+		subpassNdx,															// deUint32											subpass;
+		DE_NULL,															// VkPipeline										basePipelineHandle;
+		-1,																	// deInt32											basePipelineIndex;
 	};
 
 	return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
@@ -741,12 +750,14 @@ struct TestParams
 	VkFormat					colorFormat;					//!< Color attachment format
 	VkFormat					depthStencilFormat;				//!< D/S attachment format. Will test both aspects if it's a mixed format
 	bool						useProgrammableSampleLocations;	//!< Try to use VK_EXT_sample_locations if available
+	bool						useFragmentShadingRate;			//!< Try to use VK_KHR_fragment_shading_rate if available
 	std::vector<SampleCount>	perSubpassSamples;				//!< Will use multiple subpasses if more than one element
 
 	TestParams (void)
 		: colorFormat						()
 		, depthStencilFormat				()
 		, useProgrammableSampleLocations	()
+		, useFragmentShadingRate			()
 	{
 	}
 };
@@ -1088,7 +1099,7 @@ void draw (Context& context, const TestParams& params, WorkingData& wd)
 		pipelines.push_back(PipelineSp(new Unique<VkPipeline>(
 			makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule, /*use vertex input*/ true, subpassNdx,
 								 wd.renderSize, getImageAspectFlags(params.depthStencilFormat), params.perSubpassSamples[subpassNdx].numCoverageSamples,
-								 /*use sample shading*/ true, pSampleLocationsInfo))));
+								 /*use sample shading*/ true, params.useFragmentShadingRate, pSampleLocationsInfo))));
 	}
 
 	const Unique<VkCommandPool>		cmdPool		(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex()));
@@ -1351,6 +1362,49 @@ void checkRequirements (Context& context, TestParams params)
 	{
 		const TestParams::SampleCount& samples = params.perSubpassSamples[subpassNdx];
 		checkSampleRequirements(context, samples.numColorSamples, samples.numDepthStencilSamples, !params.useProgrammableSampleLocations);
+	}
+
+	if (params.useFragmentShadingRate)
+	{
+		const auto&	vki				= context.getInstanceInterface();
+		const auto	physicalDevice	= context.getPhysicalDevice();
+
+		context.requireDeviceFunctionality("VK_KHR_fragment_shading_rate");
+
+		if (!context.getFragmentShadingRateFeatures().pipelineFragmentShadingRate)
+			TCU_THROW(NotSupportedError, "pipelineFragmentShadingRate not supported");
+
+		// Fetch information about supported fragment shading rates
+		deUint32 supportedFragmentShadingRateCount = 0;
+		vki.getPhysicalDeviceFragmentShadingRatesKHR(physicalDevice, &supportedFragmentShadingRateCount, DE_NULL);
+
+		std::vector<vk::VkPhysicalDeviceFragmentShadingRateKHR> supportedFragmentShadingRates(supportedFragmentShadingRateCount,
+			{
+				vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_KHR,
+				DE_NULL,
+				vk::VK_SAMPLE_COUNT_1_BIT,
+				{1, 1}
+			});
+		vki.getPhysicalDeviceFragmentShadingRatesKHR(physicalDevice, &supportedFragmentShadingRateCount, supportedFragmentShadingRates.data());
+
+		deUint32 cumulativeNeededSamples = 0;
+		for (const TestParams::SampleCount& samples : params.perSubpassSamples)
+			cumulativeNeededSamples |= samples.numColorSamples;
+
+		bool requiredRateFound = false;
+		for (const auto& rate : supportedFragmentShadingRates)
+		{
+			if ((rate.fragmentSize.width == 2u) &&
+				(rate.fragmentSize.height == 2u) &&
+				(rate.sampleCounts & cumulativeNeededSamples))
+			{
+				requiredRateFound = true;
+				break;
+			}
+		}
+
+		if (!requiredRateFound)
+			TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
 	}
 }
 
@@ -1656,8 +1710,9 @@ void drawResolve (Context& context, const TestParams& params, WorkingData& wd)
 	const bool						useVertexInput	= false;
 	const bool						sampleShading	= (params.numColorSamples != VK_SAMPLE_COUNT_1_BIT);
 	const deUint32					subpassNdx		= 0u;
-	const Unique<VkPipeline>		pipeline		(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule, useVertexInput, subpassNdx,
-																		  wd.renderSize, getImageAspectFlags(params.depthStencilFormat), params.numCoverageSamples, sampleShading));
+	const Unique<VkPipeline>		pipeline		(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule, useVertexInput,
+																		  subpassNdx, wd.renderSize, getImageAspectFlags(params.depthStencilFormat),
+																		  params.numCoverageSamples, sampleShading, false));
 
 	const Unique<VkCommandPool>		cmdPool		(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex()));
 	const Unique<VkCommandBuffer>	cmdBuffer	(makeCommandBuffer(vk, device, *cmdPool));
@@ -1808,7 +1863,7 @@ std::string getFormatCaseName (const VkFormat colorFormat,
 	return str.str();
 }
 
-void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup)
+void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup, bool useFragmentShadingRate)
 {
 	const VkFormat colorFormatRange[] =
 	{
@@ -1945,6 +2000,7 @@ void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup)
 				VerifySamples::TestParams params;
 				params.perSubpassSamples.push_back(samples);
 				params.useProgrammableSampleLocations	= (locationsGroups[groupNdx] == programmableLocationsGroup.get());
+				params.useFragmentShadingRate = useFragmentShadingRate;
 
 				MovePtr<tcu::TestCaseGroup> sampleCaseGroup(new tcu::TestCaseGroup(
 					rootGroup->getTestContext(), getSampleCountGroupName(samples.numCoverageSamples, samples.numColorSamples, samples.numDepthStencilSamples).c_str(), ""));
@@ -1972,6 +2028,7 @@ void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup)
 			{
 				VerifySamples::TestParams params;
 				params.useProgrammableSampleLocations = (locationsGroups[groupNdx] == programmableLocationsGroup.get());
+				params.useFragmentShadingRate = useFragmentShadingRate;
 
 				for (deUint32 subpassNdx = 0; subpassNdx < subpassCases[caseNdx].numSampleCases; ++subpassNdx)
 				{
@@ -2008,6 +2065,7 @@ void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup)
 	}
 
 	// Test 2: Shader built-ins check
+	if (!useFragmentShadingRate)
 	{
 		MovePtr<tcu::TestCaseGroup> builtinsGroup (new tcu::TestCaseGroup(rootGroup->getTestContext(), "shader_builtins", ""));
 
@@ -2046,9 +2104,9 @@ void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup)
 
 } // anonymous ns
 
-tcu::TestCaseGroup* createMultisampleMixedAttachmentSamplesTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createMultisampleMixedAttachmentSamplesTests (tcu::TestContext& testCtx, bool useFragmentShadingRate)
 {
-	return createTestGroup(testCtx, "mixed_attachment_samples", "Test a graphics pipeline with varying sample count per color and depth/stencil attachments", createMixedAttachmentSamplesTestsInGroup);
+	return createTestGroup(testCtx, "mixed_attachment_samples", "Test a graphics pipeline with varying sample count per color and depth/stencil attachments", createMixedAttachmentSamplesTestsInGroup, useFragmentShadingRate);
 }
 
 } // pipeline

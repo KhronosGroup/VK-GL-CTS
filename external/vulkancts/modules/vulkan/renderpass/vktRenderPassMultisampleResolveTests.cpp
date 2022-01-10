@@ -717,7 +717,7 @@ void MultisampleRenderPassTestInstance::submit (void)
 				**m_singlesampleImages[dstNdx],
 				{
 					VK_IMAGE_ASPECT_COLOR_BIT,
-					0u,
+					m_renderLevel,
 					1u,
 					0u,
 					m_layerCount
@@ -841,6 +841,43 @@ void MultisampleRenderPassTestInstance::submit (void)
 	{
 		const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(DE_NULL);
 		RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
+	}
+
+	// Memory barriers to set single-sample image layout to TRANSFER_SRC_OPTIMAL
+	if (m_renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+	{
+		std::vector<VkImageMemoryBarrier> barriers;
+
+		for (size_t dstNdx = 0; dstNdx < m_singlesampleImages.size(); dstNdx++)
+		{
+			const VkImageMemoryBarrier barrier =
+			{
+				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				DE_NULL,
+
+				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+				VK_ACCESS_TRANSFER_READ_BIT,
+
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+
+				VK_QUEUE_FAMILY_IGNORED,
+				VK_QUEUE_FAMILY_IGNORED,
+
+				**m_singlesampleImages[dstNdx],
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,
+					0u,
+					1u,
+					0u,
+					m_layerCount
+				}
+			};
+
+			barriers.push_back(barrier);
+		}
+
+		vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, (deUint32)barriers.size(), &barriers[0]);
 	}
 
 	for (size_t dstNdx = 0; dstNdx < m_singlesampleImages.size(); dstNdx++)
@@ -2852,6 +2889,7 @@ void initTests (tcu::TestCaseGroup* group, RenderingType renderingType)
 		VK_FORMAT_R32G32B32A32_UINT,
 		VK_FORMAT_R32G32B32A32_SINT,
 		VK_FORMAT_R32G32B32A32_SFLOAT,
+		VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
 	};
 	const deUint32			sampleCounts[] =
 	{

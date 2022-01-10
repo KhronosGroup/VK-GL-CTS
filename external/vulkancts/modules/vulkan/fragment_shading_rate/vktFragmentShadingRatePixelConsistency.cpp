@@ -1308,7 +1308,6 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate (void)
 		{m_data.framebufferExtent.width, m_data.framebufferExtent.height, 1}	// VkExtent3D				imageExtent;
 	};
 
-
 	vk.cmdCopyImageToBuffer(*cmdBuffer, **cbImagePass1, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **colorOutputBuffer, 1u, &copyRegion);
 
 	const VkBufferMemoryBarrier	bufferBarrier =

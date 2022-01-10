@@ -145,11 +145,11 @@ VulkanFeatures	get8BitStorageFeatures	(const char* cap)
 {
 	VulkanFeatures features;
 	if (string(cap) == "storage_buffer")
-		features.ext8BitStorage = EXT8BITSTORAGEFEATURES_STORAGE_BUFFER;
+		features.ext8BitStorage.storageBuffer8BitAccess = true;
 	else if (string(cap) == "uniform")
-		features.ext8BitStorage = EXT8BITSTORAGEFEATURES_UNIFORM_STORAGE_BUFFER;
+		features.ext8BitStorage.uniformAndStorageBuffer8BitAccess = true;
 	else if  (string(cap) == "push_constant")
-		features.ext8BitStorage = EXT8BITSTORAGEFEATURES_PUSH_CONSTANT;
+		features.ext8BitStorage.storagePushConstant8 = true;
 	else
 		DE_ASSERT(false && "not supported");
 
@@ -1409,7 +1409,7 @@ void addCompute8bitStoragePushConstant8To32Group (tcu::TestCaseGroup* group)
 				spec.outputs.push_back(BufferSp(new Int32Buffer(uOutputs)));
 			spec.extensions.push_back("VK_KHR_8bit_storage");
 			spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-			spec.requestedVulkanFeatures.ext8BitStorage = EXT8BITSTORAGEFEATURES_PUSH_CONSTANT;
+			spec.requestedVulkanFeatures.ext8BitStorage.storagePushConstant8 = true;
 
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName, testName, spec));
 		}
@@ -1567,7 +1567,7 @@ void addCompute8bitStorage16To8Group (tcu::TestCaseGroup* group)
 			spec.extensions.push_back("VK_KHR_8bit_storage");
 			spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 			spec.requestedVulkanFeatures = get8BitStorageFeatures(CAPABILITIES[STORAGE_BUFFER_TEST].name);
-			spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM;
+			spec.requestedVulkanFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess = true;
 
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 		}
@@ -1725,7 +1725,7 @@ void addCompute8bitUniform8To16Group (tcu::TestCaseGroup* group)
 			spec.extensions.push_back("VK_KHR_16bit_storage");
 			spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 			spec.requestedVulkanFeatures = get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name);
-			spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM;
+			spec.requestedVulkanFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess = true;
 
 			if (cTypes[tyIdx].componentsCount == 4)
 				spec.verifyIO = checkUniformsArray<deInt8, deInt16, 4>;
@@ -1896,8 +1896,8 @@ void addCompute8bitStoragePushConstant8To16Group (tcu::TestCaseGroup* group)
 			spec.extensions.push_back("VK_KHR_8bit_storage");
 			spec.extensions.push_back("VK_KHR_16bit_storage");
 			spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-			spec.requestedVulkanFeatures.ext8BitStorage = EXT8BITSTORAGEFEATURES_PUSH_CONSTANT;
-			spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM;
+			spec.requestedVulkanFeatures.ext8BitStorage.storagePushConstant8 = true;
+			spec.requestedVulkanFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess = true;
 
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName, testName, spec));
 		}
@@ -1910,7 +1910,7 @@ void addCompute8bitStorageBuffer8To8Group (tcu::TestCaseGroup* group)
 	de::Random				rnd					(deStringHash(group->getName()));
 	const int				numElements			= 128;
 	const vector<deInt8>	int8Data			= getInt8s(rnd, numElements);
-	const vector<deInt8>	int8DummyData		(numElements, 0);
+	const vector<deInt8>	int8UnusedData		(numElements, 0);
 	ComputeShaderSpec		spec;
 	std::ostringstream		shaderTemplate;
 		shaderTemplate<<"OpCapability Shader\n"
@@ -1979,10 +1979,10 @@ void addCompute8bitStorageBuffer8To8Group (tcu::TestCaseGroup* group)
 	spec.verifyIO			= computeCheckBuffers;
 	spec.coherentMemory		= true;
 	spec.inputs.push_back(BufferSp(new Int8Buffer(int8Data)));
-	spec.outputs.push_back(BufferSp(new Int8Buffer(int8DummyData)));
+	spec.outputs.push_back(BufferSp(new Int8Buffer(int8UnusedData)));
 	spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 	spec.extensions.push_back("VK_KHR_8bit_storage");
-	spec.requestedVulkanFeatures.ext8BitStorage = EXT8BITSTORAGEFEATURES_STORAGE_BUFFER;
+	spec.requestedVulkanFeatures.ext8BitStorage.storageBuffer8BitAccess = true;
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "stress_test", "Granularity stress test", spec));
 }
@@ -3201,7 +3201,7 @@ void addGraphics8BitStoragePushConstantInt8To32Group (tcu::TestCaseGroup* testGr
 
 	requiredFeatures.coreFeatures.vertexPipelineStoresAndAtomics	= true;
 	requiredFeatures.coreFeatures.fragmentStoresAndAtomics			= true;
-	requiredFeatures.ext8BitStorage									= EXT8BITSTORAGEFEATURES_PUSH_CONSTANT;
+	requiredFeatures.ext8BitStorage.storagePushConstant8           = true;
 
 	fragments["capability"]				= "OpCapability StoragePushConstant8\n";
 	fragments["extension"]				= "OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n"
@@ -3696,7 +3696,7 @@ void addGraphics8BitStorageUniformInt16To8Group (tcu::TestCaseGroup* testGroup)
 			fragments["decoration"]			= categories[catIdx].decoration.specialize(specs);
 
 			features												= get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name);
-			features.ext16BitStorage								= EXT16BITSTORAGEFEATURES_UNIFORM;
+			features.ext16BitStorage.uniformAndStorageBuffer16BitAccess								= true;
 			features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
 			features.coreFeatures.fragmentStoresAndAtomics			= true;
 
@@ -3977,7 +3977,7 @@ void addGraphics8BitStorageUniformInt8To16Group (tcu::TestCaseGroup* testGroup)
 				}
 
 				features												= get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name);
-				features.ext16BitStorage								= EXT16BITSTORAGEFEATURES_UNIFORM;
+				features.ext16BitStorage.uniformAndStorageBuffer16BitAccess								= true;
 				features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
 				features.coreFeatures.fragmentStoresAndAtomics			= true;
 
@@ -4033,8 +4033,8 @@ void addGraphics8BitStoragePushConstantInt8To16Group (tcu::TestCaseGroup* testGr
 
 	requiredFeatures.coreFeatures.vertexPipelineStoresAndAtomics	= true;
 	requiredFeatures.coreFeatures.fragmentStoresAndAtomics			= true;
-	requiredFeatures.ext8BitStorage									= EXT8BITSTORAGEFEATURES_PUSH_CONSTANT;
-	requiredFeatures.ext16BitStorage								= EXT16BITSTORAGEFEATURES_UNIFORM;
+	requiredFeatures.ext8BitStorage.storagePushConstant8           = true;
+	requiredFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess								= true;
 
 	fragments["capability"]				= "OpCapability StoragePushConstant8\n"
 										  "OpCapability StorageUniform16\n";

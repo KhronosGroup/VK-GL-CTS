@@ -448,15 +448,15 @@ void VulkanDrawContext::registerDrawObject(const PipelineState& pipelineState, c
 
 		const VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateInfo =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType							sType;
-			DE_NULL,													// const void*								pNext;
-			(VkPipelineMultisampleStateCreateFlags)0,					// VkPipelineMultisampleStateCreateFlags	flags;
-			(VkSampleCountFlagBits)m_framebufferState.numSamples,		// VkSampleCountFlagBits					rasterizationSamples;
-			pipelineState.sampleShadingEnable ? VK_TRUE : VK_FALSE,		// VkBool32									sampleShadingEnable;
-			pipelineState.sampleShadingEnable ? 1.0f : 0.0f,			// float									minSampleShading;
-			DE_NULL,													// const VkSampleMask*						pSampleMask;
-			VK_FALSE,													// VkBool32									alphaToCoverageEnable;
-			VK_FALSE													// VkBool32									alphaToOneEnable;
+			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,							// VkStructureType							sType;
+			DE_NULL,																			// const void*								pNext;
+			(VkPipelineMultisampleStateCreateFlags)0,											// VkPipelineMultisampleStateCreateFlags	flags;
+			(VkSampleCountFlagBits)m_framebufferState.numSamples,								// VkSampleCountFlagBits					rasterizationSamples;
+			pipelineState.sampleShadingEnable ? VK_TRUE : VK_FALSE,								// VkBool32									sampleShadingEnable;
+			pipelineState.sampleShadingEnable ? 1.0f : 0.0f,									// float									minSampleShading;
+			!pipelineState.sampleMasks.empty() ? pipelineState.sampleMasks.data() : DE_NULL,	// const VkSampleMask*						pSampleMask;
+			VK_FALSE,																			// VkBool32									alphaToCoverageEnable;
+			VK_FALSE																			// VkBool32									alphaToOneEnable;
 		};
 
 		const VkStencilOpState stencilOpState = makeStencilOpState(
@@ -541,6 +541,8 @@ void VulkanDrawContext::registerDrawObject(const PipelineState& pipelineState, c
 				break;
 			}
 		}
+
+		DE_UNREF(stageFlags); // For release builds.
 
 		DE_ASSERT(
 			(drawCallData.topology != VK_PRIMITIVE_TOPOLOGY_PATCH_LIST) ||

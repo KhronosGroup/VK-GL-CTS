@@ -2,6 +2,7 @@ include_directories(
 	..
 	../image
 	../util
+	${DEQP_INL_DIR}
 	)
 
 set(DEQP_VK_MODIFIERS_SRCS

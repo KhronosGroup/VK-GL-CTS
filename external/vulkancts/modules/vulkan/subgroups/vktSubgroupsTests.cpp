@@ -39,6 +39,7 @@
 #include "vktSubgroupsBallotMasksTests.hpp"
 #include "vktSubgroupsSizeControlTests.hpp"
 #include "vktSubgroupUniformControlFlowTests.hpp"
+#include "vktSubgroupsMultipleDispatchesUniformSubgroupSizeTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -67,6 +68,7 @@ void createChildren(tcu::TestCaseGroup* subgroupsTests)
 	subgroupsTests->addChild(createSubgroupsQuadTests(testCtx));
 	subgroupsTests->addChild(createSubgroupsShapeTests(testCtx));
 	subgroupsTests->addChild(createSubgroupsBallotMasksTests(testCtx));
+	subgroupsTests->addChild(createMultipleDispatchesUniformSubgroupSizeTests(testCtx));
 	subgroupsTests->addChild(createSubgroupsSizeControlTests(testCtx));
 	subgroupsTests->addChild(createSubgroupUniformControlFlowTests(testCtx));
 }

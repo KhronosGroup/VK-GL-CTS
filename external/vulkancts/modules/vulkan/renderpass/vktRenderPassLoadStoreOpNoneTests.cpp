@@ -770,7 +770,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 				VkClearColorValue clearColor = att.usage & ATTACHMENT_USAGE_INTEGER ? makeClearValueColorU32(0u, 255u, 0u, 255u).color : makeClearValueColorF32(0.0f, 1.0f, 0.0f, 1.0f).color;
 				clearColorImage(vk, vkDevice, queue, queueFamilyIndex, *attachmentImages.back(), clearColor, VK_IMAGE_LAYOUT_UNDEFINED,
 								firstUsage & ATTACHMENT_USAGE_COLOR ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-								VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 1u);
+								VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 			}
 		}
 	}

@@ -36,6 +36,7 @@
 #include "vktRenderPassFragmentDensityMapTests.hpp"
 #include "vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.hpp"
 #include "vktRenderPassLoadStoreOpNoneTests.hpp"
+#include "vktDynamicRenderingTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -86,7 +87,6 @@ using tcu::Vec4;
 
 using tcu::Maybe;
 using tcu::just;
-using tcu::nothing;
 
 using tcu::ConstPixelBufferAccess;
 using tcu::PixelBufferAccess;
@@ -1740,8 +1740,8 @@ public:
 	VkImageLayout					getColorAttachmentLayout		(deUint32 attachmentNdx) const { return m_colorAttachments[attachmentNdx].getImageLayout(); }
 	deUint32						getColorAttachmentIndex			(deUint32 attachmentNdx) const { return m_colorAttachments[attachmentNdx].getAttachment(); }
 	const Attachment&				getColorAttachment				(deUint32 attachmentNdx) const { return m_colorAttachmentInfo[attachmentNdx]; }
-	Maybe<VkImageLayout>			getDepthStencilAttachmentLayout	(void) const { return m_depthStencilAttachment ? tcu::just(m_depthStencilAttachment->getImageLayout()) : tcu::nothing<VkImageLayout>(); }
-	Maybe<deUint32>					getDepthStencilAttachmentIndex	(void) const { return m_depthStencilAttachment ? tcu::just(m_depthStencilAttachment->getAttachment()) : tcu::nothing<deUint32>(); }
+	Maybe<VkImageLayout>			getDepthStencilAttachmentLayout	(void) const { return m_depthStencilAttachment ? tcu::just(m_depthStencilAttachment->getImageLayout()) : tcu::Nothing; }
+	Maybe<deUint32>					getDepthStencilAttachmentIndex	(void) const { return m_depthStencilAttachment ? tcu::just(m_depthStencilAttachment->getAttachment()) : tcu::Nothing; }
 	const Maybe<Attachment>&		getDepthStencilAttachment		(void) const { return m_depthStencilAttachmentInfo; }
 	VkSubpassDescriptionFlags		getSubpassFlags					(void) const { return m_flags; }
 
@@ -3215,10 +3215,10 @@ void pushReadImagesToBuffers (const DeviceInterface&								vk,
 class PixelValue
 {
 public:
-				PixelValue		(const Maybe<bool>&	x = nothing<bool>(),
-								 const Maybe<bool>&	y = nothing<bool>(),
-								 const Maybe<bool>&	z = nothing<bool>(),
-								 const Maybe<bool>&	w = nothing<bool>());
+				PixelValue		(const Maybe<bool>&	x = tcu::Nothing,
+								 const Maybe<bool>&	y = tcu::Nothing,
+								 const Maybe<bool>&	z = tcu::Nothing,
+								 const Maybe<bool>&	w = tcu::Nothing);
 
 	void		setUndefined	(size_t ndx);
 	void		setValue		(size_t ndx, bool value);
@@ -3284,7 +3284,7 @@ Maybe<bool> PixelValue::getValue (size_t ndx) const
 		return just((m_status & (0x1u << (deUint32)(ndx * 2 + 1))) != 0);
 	}
 	else
-		return nothing<bool>();
+		return tcu::Nothing;
 }
 
 void clearReferenceValues (vector<PixelValue>&	values,
@@ -3711,7 +3711,7 @@ void renderReferenceValues (vector<vector<PixelValue> >&		referenceAttachments,
 									if (!output)
 										break;
 									else if (!inputs[((outputValueNdx + compNdx) * inputsPerOutput + i) % inputs.size()])
-										output = tcu::nothing<bool>();
+										output = tcu::Nothing;
 									else
 										output = (*output) == (*inputs[((outputValueNdx + compNdx) * inputsPerOutput + i) % inputs.size()]);
 								}
@@ -3744,7 +3744,7 @@ void renderReferenceValues (vector<vector<PixelValue> >&		referenceAttachments,
 								else if (inputs[(outputValueNdx * inputsPerOutput + i) % inputs.size()])
 									output = (*output) == (*inputs[(outputValueNdx * inputsPerOutput + i) % inputs.size()]);
 								else
-									output = tcu::nothing<bool>();
+									output = tcu::Nothing;
 							}
 
 							if (output)
@@ -4769,7 +4769,7 @@ void initializeImageClearValues (de::Random& rng, vector<Maybe<VkClearValue> >& 
 		if (!isLazy[attachmentNdx])
 			clearValues.push_back(just(randomClearValue(attachments[attachmentNdx], rng, useFormatCompCount, depthValues)));
 		else
-			clearValues.push_back(nothing<VkClearValue>());
+			clearValues.push_back(tcu::Nothing);
 	}
 }
 
@@ -4783,7 +4783,7 @@ void initializeRenderPassClearValues (de::Random& rng, vector<Maybe<VkClearValue
 			clearValues.push_back(just(randomClearValue(attachments[attachmentNdx], rng, useFormatCompCount, depthValues)));
 		}
 		else
-			clearValues.push_back(nothing<VkClearValue>());
+			clearValues.push_back(tcu::Nothing);
 	}
 }
 
@@ -5263,12 +5263,6 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 	};
 
-	const VkImageLayout initialColorLayoutForDynamicRendering[] =
-	{
-		VK_IMAGE_LAYOUT_GENERAL,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-	};
-
 	const VkImageLayout initialAndFinalDepthStencilLayouts[] =
 	{
 		VK_IMAGE_LAYOUT_GENERAL,
@@ -5285,13 +5279,6 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 		VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-	};
-
-	const VkImageLayout initialDepthStencilLayoutForDynamicRendering[] =
-	{
-		VK_IMAGE_LAYOUT_GENERAL,
-		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
 	};
 
 	const VkImageLayout subpassLayouts[] =
@@ -5346,15 +5333,14 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 		UVec2(60, 47)
 	};
 
-	tcu::TestContext&	testCtx	= group->getTestContext();
-	de::Random			rng		(1433774382u);
+	tcu::TestContext&	testCtx					(group->getTestContext());
+	bool				useDynamicRendering		(testConfigExternal.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING);
+	de::Random			rng						(1433774382u);
 
 	for (size_t attachmentCountNdx = 0; attachmentCountNdx < DE_LENGTH_OF_ARRAY(attachmentCounts); attachmentCountNdx++)
 	{
 		const deUint32					attachmentCount			= attachmentCounts[attachmentCountNdx];
-		const deUint32					testCaseCount			= (testConfigExternal.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
-																	? (attachmentCount == 1 ?  50 : 100)	// for DR do less cases as there is less layout combinations
-																	: (attachmentCount == 1 ? 100 : 200);
+		const deUint32					testCaseCount			= (attachmentCount == 1 ? 100 : 200);
 		de::MovePtr<tcu::TestCaseGroup>	attachmentCountGroup	(new tcu::TestCaseGroup(testCtx, de::toString(attachmentCount).c_str(), de::toString(attachmentCount).c_str()));
 
 		for (size_t testCaseNdx = 0; testCaseNdx < testCaseCount; testCaseNdx++)
@@ -5365,6 +5351,12 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 			vector<Attachment>				attachments;
 			vector<AttachmentReference>		colorAttachmentReferences;
 
+			// we want to make sure that dynamic rendering test cases have corresponding renderpass
+			// cases as this will allow drivers to easily compare GPU batches; since configurations
+			// for those tests are generated we need to generate configurations for all cases
+			// even when we know earlier that for dynamic rendering we will skip it
+			bool executeForDynamicRendering = true;
+
 			for (size_t attachmentNdx = 0; attachmentNdx < attachmentCount; attachmentNdx++)
 			{
 				const VkSampleCountFlagBits	sampleCount		= VK_SAMPLE_COUNT_1_BIT;
@@ -5372,20 +5364,27 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 				const VkAttachmentLoadOp	loadOp			= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
 				const VkAttachmentStoreOp	storeOp			= rng.choose<VkAttachmentStoreOp>(DE_ARRAY_BEGIN(storeOps), DE_ARRAY_END(storeOps));
 
-				const VkImageLayout			initialLayout	= (testConfigExternal.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
-															? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialColorLayoutForDynamicRendering), DE_ARRAY_END(initialColorLayoutForDynamicRendering))
-															: ((imageMemory == TestConfig::IMAGEMEMORY_STRICT)
+				const VkImageLayout			initialLayout	= (imageMemory == TestConfig::IMAGEMEMORY_STRICT)
 																? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts))
-																: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayoutsLazy), DE_ARRAY_END(initialAndFinalColorLayoutsLazy)));
-				const VkImageLayout			finalizeLayout	= (testConfigExternal.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
-															? initialLayout
-															: ((imageMemory == TestConfig::IMAGEMEMORY_STRICT)
+																: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayoutsLazy), DE_ARRAY_END(initialAndFinalColorLayoutsLazy));
+				VkImageLayout				finalizeLayout	= (imageMemory == TestConfig::IMAGEMEMORY_STRICT)
 																? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts))
-																: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayoutsLazy), DE_ARRAY_END(initialAndFinalColorLayoutsLazy)));
+																: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayoutsLazy), DE_ARRAY_END(initialAndFinalColorLayoutsLazy));
 				const VkImageLayout			subpassLayout	= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayouts), DE_ARRAY_END(subpassLayouts));
 
 				const VkAttachmentLoadOp	stencilLoadOp	= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
 				const VkAttachmentStoreOp	stencilStoreOp	= rng.choose<VkAttachmentStoreOp>(DE_ARRAY_BEGIN(storeOps), DE_ARRAY_END(storeOps));
+
+				if (useDynamicRendering)
+				{
+					// with renderpass we can have automatic layout transitions; to do the same with dynamic rendering cases
+					// we would need to add addtional barries but since those tests won't add coverage we are skipping them
+					if ((initialLayout == VK_IMAGE_LAYOUT_GENERAL) ||
+						(initialLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL))
+						finalizeLayout = initialLayout;
+					else
+						executeForDynamicRendering = false;
+				}
 
 				attachments.push_back(Attachment(format, sampleCount, loadOp, storeOp, stencilLoadOp, stencilStoreOp, initialLayout, finalizeLayout));
 				colorAttachmentReferences.push_back(AttachmentReference((deUint32)attachmentNdx, subpassLayout));
@@ -5398,19 +5397,25 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 				const VkAttachmentLoadOp	loadOp			= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
 				const VkAttachmentStoreOp	storeOp			= rng.choose<VkAttachmentStoreOp>(DE_ARRAY_BEGIN(storeOps), DE_ARRAY_END(storeOps));
 
-				const VkImageLayout			initialLayout	= (testConfigExternal.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
-															? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialDepthStencilLayoutForDynamicRendering), DE_ARRAY_END(initialDepthStencilLayoutForDynamicRendering))
-															: ((imageMemory == TestConfig::IMAGEMEMORY_STRICT)
+				const VkImageLayout			initialLayout	= (imageMemory == TestConfig::IMAGEMEMORY_STRICT)
 																? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayouts), DE_ARRAY_END(initialAndFinalDepthStencilLayouts))
-																: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayoutsLazy), DE_ARRAY_END(initialAndFinalDepthStencilLayoutsLazy)));
-				const VkImageLayout			finalizeLayout	= (testConfigExternal.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
-															? initialLayout
-															: ((imageMemory == TestConfig::IMAGEMEMORY_STRICT)
+																: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayoutsLazy), DE_ARRAY_END(initialAndFinalDepthStencilLayoutsLazy));
+				VkImageLayout				finalizeLayout	= (imageMemory == TestConfig::IMAGEMEMORY_STRICT)
 																? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayouts), DE_ARRAY_END(initialAndFinalDepthStencilLayouts))
-																: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayoutsLazy), DE_ARRAY_END(initialAndFinalDepthStencilLayoutsLazy)));
+																: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayoutsLazy), DE_ARRAY_END(initialAndFinalDepthStencilLayoutsLazy));
 
 				const VkAttachmentLoadOp	stencilLoadOp	= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
 				const VkAttachmentStoreOp	stencilStoreOp	= rng.choose<VkAttachmentStoreOp>(DE_ARRAY_BEGIN(storeOps), DE_ARRAY_END(storeOps));
+
+				if (useDynamicRendering)
+				{
+					if ((initialLayout == VK_IMAGE_LAYOUT_GENERAL) ||
+						(initialLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) ||
+						(initialLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL))
+						finalizeLayout = initialLayout;
+					else
+						executeForDynamicRendering = false;
+				}
 
 				depthStencilLayout = rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(depthStencilLayouts), DE_ARRAY_END(depthStencilLayouts));
 				attachments.push_back(Attachment(format, sampleCount, loadOp, storeOp, stencilLoadOp, stencilStoreOp, initialLayout, finalizeLayout));
@@ -5421,12 +5426,19 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 				const TestConfig::CommandBufferTypes	commandBuffer	= rng.choose<TestConfig::CommandBufferTypes>(DE_ARRAY_BEGIN(commandBuffers), DE_ARRAY_END(commandBuffers));
 				const vector<Subpass>					subpasses		(1, Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, vector<AttachmentReference>(), colorAttachmentReferences, vector<AttachmentReference>(), AttachmentReference((useDepthStencil ? (deUint32)(attachments.size() - 1) : VK_ATTACHMENT_UNUSED), depthStencilLayout), vector<deUint32>()));
 				const vector<SubpassDependency>			deps;
-
 				const string							testCaseName	= de::toString(attachmentCountNdx * testCaseCount + testCaseNdx);
 				const RenderPass						renderPass		(attachments, subpasses, deps);
 				const UVec2								targetSize		= rng.choose<UVec2>(DE_ARRAY_BEGIN(targetSizes), DE_ARRAY_END(targetSizes));
 				const UVec2								renderPos		= rng.choose<UVec2>(DE_ARRAY_BEGIN(renderPositions), DE_ARRAY_END(renderPositions));
 				const UVec2								renderSize		= rng.choose<UVec2>(DE_ARRAY_BEGIN(renderSizes), DE_ARRAY_END(renderSizes));
+
+				// skip dynamic rendering cases (that don't add coverage)
+				// this can be done not earlier than after grabbing all random numbers as
+				// we need to make sure that those tests that will be created for dynamic
+				// rendering have corresponding renderpass tests with the same name
+				if (useDynamicRendering && !executeForDynamicRendering)
+					continue;
+
 				const TestConfig						testConfig		(renderPass,
 																		 render,
 																		 commandBuffer,
@@ -5738,7 +5750,7 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 						attachments.push_back(Attachment(format, sampleCount, loadOp, storeOp, stencilLoadOp, stencilStoreOp, initialLayout, finalizeLayout));
 					}
 				}
-				vector<Maybe<deUint32> >	lastUseOfAttachment	(attachments.size(), nothing<deUint32>());
+				vector<Maybe<deUint32> >	lastUseOfAttachment	(attachments.size(), tcu::Nothing);
 				vector<SubpassDependency>	deps;
 
 				for (deUint32 subpassIndex = 0; subpassIndex < subpassCount; subpassIndex++)
@@ -5752,7 +5764,7 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 					std::vector<deUint32>		subpassInputAttachments		(inputAttachmentCount);
 					Maybe<deUint32>				depthStencilAttachment		(useDepthStencilAttachment
 																			? just(chooseRandom(rng, depthStencilAttachments))
-																			: nothing<deUint32>());
+																			: tcu::Nothing);
 					std::vector<deUint32>		subpassPreserveAttachments;
 
 					rng.choose(colorAttachments.begin(), colorAttachments.end(), subpassColorAttachments.begin(), colorAttachmentCount);
@@ -5898,7 +5910,8 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 																	  | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 
 																	  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-																	  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+																	  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT
+																	  | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
 
 																	  dependencyFlags);
 								for (SubpassDependency& dependency : deps)
@@ -5906,7 +5919,7 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 									if (dependency.getSrcPass() == srcPass && dependency.getDstPass() == dstPass)
 									{
 										const VkAccessFlags newSrcFlags = dependency.getSrcAccessMask() | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-										const VkAccessFlags newDstFlags = dependency.getDstAccessMask() | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+										const VkAccessFlags newDstFlags = dependency.getDstAccessMask() | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
 										dependency.setDstAccessMask(newSrcFlags);
 										dependency.setDstAccessMask(newDstFlags);
 										foundDuplicate = true;
@@ -7545,7 +7558,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 {
 	const char*		renderingTestsGroupName		= (renderingType == RENDERING_TYPE_RENDERPASS_LEGACY) ? "renderpass" :
 												  (renderingType == RENDERING_TYPE_RENDERPASS2) ? "renderpass2" :
-												  (renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) ? "renderpass_with_dynamic_rendering" :
+												  (renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) ? "dynamic_rendering" :
 												  "";
 	const char*		renderingTestsGroupDescription	= (renderingType == RENDERING_TYPE_RENDERPASS_LEGACY) ? "RenderPass Tests" :
 													  (renderingType == RENDERING_TYPE_RENDERPASS2) ? "RenderPass2 Tests" :
@@ -7564,6 +7577,8 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 		suballocationTestGroup->addChild(createRenderPassSubpassDependencyTests(testCtx));
 		suballocationTestGroup->addChild(createRenderPassSampleReadTests(testCtx));
 		suballocationTestGroup->addChild(createRenderPassSparseRenderTargetTests(testCtx));
+
+		renderingTests->addChild(createRenderPassMultipleSubpassesMultipleCommandBuffersTests(testCtx));
 		break;
 
 	case RENDERING_TYPE_RENDERPASS2:
@@ -7572,11 +7587,15 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 		suballocationTestGroup->addChild(createRenderPass2SubpassDependencyTests(testCtx));
 		suballocationTestGroup->addChild(createRenderPass2SampleReadTests(testCtx));
 		suballocationTestGroup->addChild(createRenderPass2SparseRenderTargetTests(testCtx));
+
+		renderingTests->addChild(createRenderPass2DepthStencilResolveTests(testCtx));
 		break;
 
 	case RENDERING_TYPE_DYNAMIC_RENDERING:
 		suballocationTestGroup->addChild(createDynamicRenderingMultisampleResolveTests(testCtx));
 		suballocationTestGroup->addChild(createDynamicRenderingSparseRenderTargetTests(testCtx));
+
+		renderingTests->addChild(createDynamicRenderingBasicTests(testCtx));
 		break;
 	}
 
@@ -7584,10 +7603,6 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 	{
 		suballocationTestGroup->addChild(createRenderPassUnusedAttachmentTests(testCtx, renderingType));
 		suballocationTestGroup->addChild(createRenderPassUnusedAttachmentSparseFillingTests(testCtx, renderingType));
-
-		renderingTests->addChild(createRenderPassMultipleSubpassesMultipleCommandBuffersTests(testCtx));
-		renderingTests->addChild(createRenderPass2DepthStencilResolveTests(testCtx));
-		renderingTests->addChild(createFragmentDensityMapTests(testCtx));
 	}
 
 	suballocationTestGroup->addChild(createRenderPassUnusedClearAttachmentTests(testCtx, renderingType));
@@ -7595,6 +7610,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 
 	renderingTests->addChild(suballocationTestGroup.release());
 	renderingTests->addChild(dedicatedAllocationTestGroup.release());
+	renderingTests->addChild(createFragmentDensityMapTests(testCtx, renderingType));
 
 	return renderingTests.release();
 }

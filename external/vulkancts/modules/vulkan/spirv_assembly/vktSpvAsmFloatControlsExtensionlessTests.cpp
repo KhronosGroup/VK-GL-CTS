@@ -198,7 +198,8 @@ void SpvAsmFloatControlsExtensionlessCase::checkSupport (Context& context) const
 	if (m_fpWideness == 16)
 	{
 		context.requireDeviceFunctionality("VK_KHR_shader_float16_int8");
-		if (!isFloat16Int8FeaturesSupported(context, EXTFLOAT16INT8FEATURES_FLOAT16))
+		const VkPhysicalDeviceShaderFloat16Int8Features& extensionFeatures = context.getShaderFloat16Int8Features();
+		if (!extensionFeatures.shaderFloat16)
 			TCU_THROW(NotSupportedError, "Floating point number of width 16 bit are not supported");
 	}
 

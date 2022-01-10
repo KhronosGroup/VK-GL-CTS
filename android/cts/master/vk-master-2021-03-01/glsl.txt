@@ -375,6 +375,20 @@ dEQP-VK.glsl.builtin_var.fragcoord_msaa_input.8_bit
 dEQP-VK.glsl.builtin_var.fragcoord_msaa_input.16_bit
 dEQP-VK.glsl.builtin_var.fragcoord_msaa_input.32_bit
 dEQP-VK.glsl.builtin_var.fragcoord_msaa_input.64_bit
+dEQP-VK.glsl.builtin_var.fragcoord_msaa_input.1_bit_no_sample_shading
+dEQP-VK.glsl.builtin_var.fragcoord_msaa_input.2_bit_no_sample_shading
+dEQP-VK.glsl.builtin_var.fragcoord_msaa_input.4_bit_no_sample_shading
+dEQP-VK.glsl.builtin_var.fragcoord_msaa_input.8_bit_no_sample_shading
+dEQP-VK.glsl.builtin_var.fragcoord_msaa_input.16_bit_no_sample_shading
+dEQP-VK.glsl.builtin_var.fragcoord_msaa_input.32_bit_no_sample_shading
+dEQP-VK.glsl.builtin_var.fragcoord_msaa_input.64_bit_no_sample_shading
+dEQP-VK.glsl.builtin_var.fragcoord_msaa_input.1_bit_no_sample_shading_centroid_interpolation
+dEQP-VK.glsl.builtin_var.fragcoord_msaa_input.2_bit_no_sample_shading_centroid_interpolation
+dEQP-VK.glsl.builtin_var.fragcoord_msaa_input.4_bit_no_sample_shading_centroid_interpolation
+dEQP-VK.glsl.builtin_var.fragcoord_msaa_input.8_bit_no_sample_shading_centroid_interpolation
+dEQP-VK.glsl.builtin_var.fragcoord_msaa_input.16_bit_no_sample_shading_centroid_interpolation
+dEQP-VK.glsl.builtin_var.fragcoord_msaa_input.32_bit_no_sample_shading_centroid_interpolation
+dEQP-VK.glsl.builtin_var.fragcoord_msaa_input.64_bit_no_sample_shading_centroid_interpolation
 dEQP-VK.glsl.builtin.function.common.isnan.double_compute
 dEQP-VK.glsl.builtin.function.common.isnan.dvec2_compute
 dEQP-VK.glsl.builtin.function.common.isnan.dvec3_compute
@@ -999,3 +1013,5 @@ dEQP-VK.glsl.atomic_operations.xor_unsigned64bit_compute_shared
 dEQP-VK.glsl.atomic_operations.xor_unsigned64bit_compute_reference
 dEQP-VK.glsl.combined_operations.notxor
 dEQP-VK.glsl.combined_operations.negintdivand
+dEQP-VK.glsl.crash_test.divbyzero_frag
+dEQP-VK.glsl.crash_test.divbyzero_comp

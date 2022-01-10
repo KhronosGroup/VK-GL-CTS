@@ -457,6 +457,12 @@ static void sampleTextureNonProjected (const PixelAccess& dst, const tcu::Textur
 			float	t		= triangleInterpolate(triT[triNdx].x(), triT[triNdx].y(), triT[triNdx].z(), triX, triY);
 			float	lod		= triLod[triNdx];
 
+			if (params.float16TexCoord)
+			{
+				s   = tcu::Float16(s, tcu::ROUND_TO_ZERO).asFloat();
+				t   = tcu::Float16(t, tcu::ROUND_TO_ZERO).asFloat();
+			}
+
 			dst.setPixel(execSample(src, params, s, t, lod) * params.colorScale + params.colorBias, x, y);
 		}
 	}

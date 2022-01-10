@@ -485,6 +485,34 @@ tcu::TestStatus SparseRenderTargetTestInstance::iterateInternal (void)
 	VkRect2D renderArea = makeRect2D(m_width, m_height);
 	if (m_renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 	{
+		std::vector<VkImageMemoryBarrier> barriers;
+
+		const VkImageMemoryBarrier barrier =
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			DE_NULL,
+
+			0,
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+
+			*m_dstImage,
+			{
+				VK_IMAGE_ASPECT_COLOR_BIT,
+				0u,
+				1u,
+				0u,
+				1u
+			}
+		};
+
+		vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+
 		const VkClearValue clearValue = makeClearValueColor({ 0.0f, 0.0f, 0.0f, 1.0f });
 		beginRendering(vkd, *commandBuffer, *m_dstImageView, renderArea, clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE);
 	}
@@ -755,7 +783,8 @@ void initTests (tcu::TestCaseGroup* group, const RenderingType renderingType)
 		VK_FORMAT_R32G32_SFLOAT,
 		VK_FORMAT_R32G32B32A32_UINT,
 		VK_FORMAT_R32G32B32A32_SINT,
-		VK_FORMAT_R32G32B32A32_SFLOAT
+		VK_FORMAT_R32G32B32A32_SFLOAT,
+		VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16
 	};
 
 	tcu::TestContext&		testCtx		(group->getTestContext());

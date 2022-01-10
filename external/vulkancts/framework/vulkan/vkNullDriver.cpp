@@ -18,7 +18,7 @@
  *
  *//*!
  * \file
- * \brief Null (dummy) Vulkan implementation.
+ * \brief Null (do-nothing) Vulkan implementation.
  *//*--------------------------------------------------------------------*/
 
 #include "vkNullDriver.hpp"
@@ -598,6 +598,13 @@ class PrivateDataSlot
 {
 public:
 						PrivateDataSlot				(VkDevice, const VkPrivateDataSlotCreateInfo*)
+						{}
+};
+
+class BufferCollectionFUCHSIA
+{
+public:
+						BufferCollectionFUCHSIA		(VkDevice, const VkBufferCollectionCreateInfoFUCHSIA*)
 						{}
 };
 

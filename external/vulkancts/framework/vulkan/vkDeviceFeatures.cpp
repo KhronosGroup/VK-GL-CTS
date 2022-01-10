@@ -30,7 +30,8 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 								 const deUint32						apiVersion,
 								 const VkPhysicalDevice				physicalDevice,
 								 const std::vector<std::string>&	instanceExtensions,
-								 const std::vector<std::string>&	deviceExtensions)
+								 const std::vector<std::string>&	deviceExtensions,
+								 const deBool						enableAllFeatures)
 {
 	VkPhysicalDeviceRobustness2FeaturesEXT*			robustness2Features			= nullptr;
 	VkPhysicalDeviceImageRobustnessFeaturesEXT*		imageRobustnessFeatures		= nullptr;
@@ -131,30 +132,34 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 	else
 		m_coreFeatures2.features = getPhysicalDeviceFeatures(vki, physicalDevice);
 
-	// Disable robustness by default, as it has an impact on performance on some HW.
-	if (robustness2Features)
+	// 'enableAllFeatures' is used to create a complete list of supported features.
+	if (!enableAllFeatures)
 	{
-		robustness2Features->robustBufferAccess2	= false;
-		robustness2Features->robustImageAccess2		= false;
-		robustness2Features->nullDescriptor			= false;
-	}
-	if (imageRobustnessFeatures)
-	{
-		imageRobustnessFeatures->robustImageAccess	= false;
-	}
-	m_coreFeatures2.features.robustBufferAccess = false;
+		// Disable robustness by default, as it has an impact on performance on some HW.
+		if (robustness2Features)
+		{
+			robustness2Features->robustBufferAccess2	= false;
+			robustness2Features->robustImageAccess2		= false;
+			robustness2Features->nullDescriptor			= false;
+		}
+		if (imageRobustnessFeatures)
+		{
+			imageRobustnessFeatures->robustImageAccess	= false;
+		}
+		m_coreFeatures2.features.robustBufferAccess = false;
 
-	// Disable VK_EXT_fragment_density_map and VK_NV_shading_rate_image features
-	// that must: not be enabled if KHR fragment shading rate features are enabled.
-	if (fragmentShadingRateFeatures &&
-		(fragmentShadingRateFeatures->pipelineFragmentShadingRate ||
-			fragmentShadingRateFeatures->primitiveFragmentShadingRate ||
-			fragmentShadingRateFeatures->attachmentFragmentShadingRate))
-	{
-		if (shadingRateImageFeatures)
-			shadingRateImageFeatures->shadingRateImage = false;
-		if (fragmentDensityMapFeatures)
-			fragmentDensityMapFeatures->fragmentDensityMap = false;
+		// Disable VK_EXT_fragment_density_map and VK_NV_shading_rate_image features
+		// that must: not be enabled if KHR fragment shading rate features are enabled.
+		if (fragmentShadingRateFeatures &&
+			(fragmentShadingRateFeatures->pipelineFragmentShadingRate ||
+				fragmentShadingRateFeatures->primitiveFragmentShadingRate ||
+				fragmentShadingRateFeatures->attachmentFragmentShadingRate))
+		{
+			if (shadingRateImageFeatures)
+				shadingRateImageFeatures->shadingRateImage = false;
+			if (fragmentDensityMapFeatures)
+				fragmentDensityMapFeatures->fragmentDensityMap = false;
+		}
 	}
 }
 

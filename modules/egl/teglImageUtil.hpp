@@ -75,11 +75,12 @@ public:
 	virtual de::MovePtr<ClientBuffer>	createBuffer		(const eglw::Library& egl, const glw::Functions& gl, tcu::Texture2D* reference = DE_NULL) const = 0;
 	virtual eglw::EGLImageKHR			createImage			(const eglw::Library& egl, eglw::EGLDisplay dpy, eglw::EGLContext ctx, eglw::EGLClientBuffer clientBuffer) const = 0;
 	virtual glw::GLenum					getEffectiveFormat	(void) const = 0;
+	virtual bool						isYUVFormatImage	(void) const {return false;};
 };
 
 de::MovePtr<ImageSource> createTextureImageSource			(eglw::EGLenum source, glw::GLenum internalFormat, glw::GLenum format, glw::GLenum type, bool useTexLevel0 = false);
 de::MovePtr<ImageSource> createRenderbufferImageSource		(glw::GLenum format);
-de::MovePtr<ImageSource> createUnsupportedImageSource		(const std::string& message, glw::GLenum format);
+de::MovePtr<ImageSource> createUnsupportedImageSource		(const std::string& message, glw::GLenum format, bool isYUV);
 
 } // Image
 } // egl

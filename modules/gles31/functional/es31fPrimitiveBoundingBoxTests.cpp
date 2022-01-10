@@ -130,6 +130,7 @@ static std::string specializeShader(Context& context, const char* code)
 
 	if (glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
 	{
+		specializationMap["ARB_ES32_COMPATIBILITY_REQUIRE"] = "";
 		specializationMap["GEOMETRY_SHADER_REQUIRE"] = "";
 		specializationMap["GEOMETRY_POINT_SIZE"] = "#extension GL_EXT_geometry_point_size : require";
 		specializationMap["GPU_SHADER5_REQUIRE"] = "";
@@ -138,8 +139,20 @@ static std::string specializeShader(Context& context, const char* code)
 		specializationMap["PRIMITIVE_BOUNDING_BOX_REQUIRE"] = "";
 		specializationMap["PRIM_GL_BOUNDING_BOX"] = "gl_BoundingBox";
 	}
+	else if (glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::core(4, 5)))
+	{
+		specializationMap["ARB_ES32_COMPATIBILITY_REQUIRE"] = "#extension GL_ARB_ES3_2_compatibility : require";
+		specializationMap["GEOMETRY_SHADER_REQUIRE"] = "";
+		specializationMap["GEOMETRY_POINT_SIZE"] = "";
+		specializationMap["GPU_SHADER5_REQUIRE"] = "";
+		specializationMap["TESSELLATION_SHADER_REQUIRE"] = "";
+		specializationMap["TESSELLATION_POINT_SIZE_REQUIRE"] = "";
+		specializationMap["PRIMITIVE_BOUNDING_BOX_REQUIRE"] = "";
+		specializationMap["PRIM_GL_BOUNDING_BOX"] = "gl_BoundingBox";
+	}
 	else
 	{
+		specializationMap["ARB_ES32_COMPATIBILITY_REQUIRE"] = "";
 		specializationMap["GEOMETRY_SHADER_REQUIRE"] = "#extension GL_EXT_geometry_shader : require";
 		specializationMap["GEOMETRY_POINT_SIZE"] = "#extension GL_EXT_geometry_point_size : require";
 		specializationMap["GPU_SHADER5_REQUIRE"] = "#extension GL_EXT_gpu_shader5 : require";
@@ -150,6 +163,43 @@ static std::string specializeShader(Context& context, const char* code)
 	}
 
 	return tcu::StringTemplate(code).specialize(specializationMap);
+}
+
+static decltype(glw::Functions::primitiveBoundingBox)
+getBoundingBoxFunction(Context& context)
+{
+	decltype(glw::Functions::primitiveBoundingBox) boundingBoxFunc;
+	const glw::Functions& funcs = context.getRenderContext().getFunctions();
+
+	/* OpenGL ES is assumed to have it (extensions checks passed). */
+	if (glu::isContextTypeES(context.getRenderContext().getType()))
+		return funcs.primitiveBoundingBox;
+
+	boundingBoxFunc = (decltype(boundingBoxFunc))
+		context.getRenderContext().getProcAddress("glPrimitiveBoundingBoxARB");
+
+	DE_ASSERT(boundingBoxFunc);
+
+	return boundingBoxFunc;
+}
+
+static bool supportsES32OrGL45(Context& context)
+{
+	return glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+	       glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::core(4, 5));
+}
+
+static bool boundingBoxSupported(Context& context)
+{
+   /* Require one of:
+    *    - OpenGL ES 3.2
+    *    - OpenGL 4.5 + GL_ARB_ES3_2_compatibility
+    *    - OpenGL ES 3.1 + GL_EXT_primitive_bounding_box
+    */
+   return glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+	  ((glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::core(4, 5)) &&
+	   context.getContextInfo().isExtensionSupported("GL_ARB_ES3_2_compatibility")) ||
+	  context.getContextInfo().isExtensionSupported("GL_EXT_primitive_bounding_box"));
 }
 
 class InitialValueCase : public TestCase
@@ -168,9 +218,7 @@ InitialValueCase::InitialValueCase (Context& context, const char* name, const ch
 
 void InitialValueCase::init (void)
 {
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
-
-	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_primitive_bounding_box"))
+	if (!boundingBoxSupported(m_context))
 		throw tcu::NotSupportedError("Test requires GL_EXT_primitive_bounding_box extension");
 }
 
@@ -246,9 +294,7 @@ QueryCase::QueryCase (Context& context, const char* name, const char* desc, Quer
 
 void QueryCase::init (void)
 {
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
-
-	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_primitive_bounding_box"))
+	if (!boundingBoxSupported(m_context))
 		throw tcu::NotSupportedError("Test requires GL_EXT_primitive_bounding_box extension");
 }
 
@@ -284,13 +330,22 @@ QueryCase::IterateResult QueryCase::iterate (void)
 	gl.enableLogging(true);
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
+	auto boundingBoxFunc = getBoundingBoxFunction(m_context);
+
 	for (int caseNdx = 0; caseNdx < (int)cases.size(); ++caseNdx)
 	{
 		const tcu::ScopedLogSection	section		(m_testCtx.getLog(), "Iteration", "Iteration " + de::toString(caseNdx+1));
 		const BoundingBox&			boundingBox	= cases[caseNdx];
 
-		gl.glPrimitiveBoundingBox(boundingBox.min.x(), boundingBox.min.y(), boundingBox.min.z(), boundingBox.min.w(),
-								  boundingBox.max.x(), boundingBox.max.y(), boundingBox.max.z(), boundingBox.max.w());
+		/* On desktop GL, we cannot use call wrapper here but must use resolved extension function. */
+		if (!glu::isContextTypeES(m_context.getRenderContext().getType())) {
+			boundingBoxFunc(boundingBox.min.x(), boundingBox.min.y(), boundingBox.min.z(), boundingBox.min.w(),
+					boundingBox.max.x(), boundingBox.max.y(), boundingBox.max.z(), boundingBox.max.w());
+		}
+		else {
+			gl.glPrimitiveBoundingBox(boundingBox.min.x(), boundingBox.min.y(), boundingBox.min.z(), boundingBox.min.w(),
+						  boundingBox.max.x(), boundingBox.max.y(), boundingBox.max.z(), boundingBox.max.w());
+		}
 
 		if (!verifyState(gl, boundingBox))
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Unexpected query result");
@@ -594,6 +649,9 @@ protected:
 	de::MovePtr<glu::ShaderProgram>	m_program;
 	de::MovePtr<glu::Buffer>		m_vbo;
 	de::MovePtr<glu::Framebuffer>	m_fbo;
+	glw::GLuint			m_vao;
+
+	decltype(glw::Functions::primitiveBoundingBox)	m_boundingBoxFunc;
 
 private:
 	std::vector<IterationConfig>	m_iterationConfigs;
@@ -609,6 +667,8 @@ BBoxRenderCase::BBoxRenderCase (Context& context, const char* name, const char* 
 	, m_useGlobalState			((flags & FLAG_SET_BBOX_STATE) != 0)
 	, m_calcPerPrimitiveBBox	((flags & FLAG_PER_PRIMITIVE_BBOX) != 0)
 	, m_numIterations			(numIterations)
+	, m_vao					(0)
+	, m_boundingBoxFunc			(NULL)
 	, m_iteration				(0)
 {
 	// validate flags
@@ -639,18 +699,18 @@ BBoxRenderCase::~BBoxRenderCase (void)
 
 void BBoxRenderCase::init (void)
 {
-	const glw::Functions&	gl					= m_context.getRenderContext().getFunctions();
+	const glw::Functions&		gl			= m_context.getRenderContext().getFunctions();
 	const tcu::IVec2		renderTargetSize	= (m_renderTarget == RENDERTARGET_DEFAULT) ?
 													(tcu::IVec2(m_context.getRenderTarget().getWidth(), m_context.getRenderTarget().getHeight())) :
 													(tcu::IVec2(FBO_SIZE, FBO_SIZE));
-	const bool				supportsES32		= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool			hasES32OrGL45		= supportsES32OrGL45(m_context);
 
 	// requirements
-	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_primitive_bounding_box"))
+	if (!boundingBoxSupported(m_context))
 		throw tcu::NotSupportedError("Test requires GL_EXT_primitive_bounding_box extension");
-	if (!supportsES32 && m_hasTessellationStage && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+	if (!hasES32OrGL45 && m_hasTessellationStage && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
-	if (!supportsES32 && m_hasGeometryStage && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (!hasES32OrGL45 && m_hasGeometryStage && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_geometry_shader extension");
 	if (m_renderTarget == RENDERTARGET_DEFAULT && (renderTargetSize.x() < RENDER_TARGET_MIN_SIZE || renderTargetSize.y() < RENDER_TARGET_MIN_SIZE))
 		throw tcu::NotSupportedError(std::string() + "Test requires " + de::toString<int>(RENDER_TARGET_MIN_SIZE) + "x" + de::toString<int>(RENDER_TARGET_MIN_SIZE) + " default framebuffer");
@@ -717,10 +777,18 @@ void BBoxRenderCase::init (void)
 		gl.bindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	}
 
+	m_boundingBoxFunc = getBoundingBoxFunction(m_context);
+
 	{
 		std::vector<tcu::Vec4> data;
 
 		getAttributeData(data);
+
+		// Generate VAO for desktop OpenGL
+		if (!glu::isContextTypeES(m_context.getRenderContext().getType())) {
+			gl.genVertexArrays(1, &m_vao);
+			gl.bindVertexArray(m_vao);
+		}
 
 		m_vbo = de::MovePtr<glu::Buffer>(new glu::Buffer(m_context.getRenderContext()));
 		gl.bindBuffer(GL_ARRAY_BUFFER, **m_vbo);
@@ -738,6 +806,12 @@ void BBoxRenderCase::deinit (void)
 	m_program.clear();
 	m_vbo.clear();
 	m_fbo.clear();
+
+	if (m_vao)
+	{
+		m_context.getRenderContext().getFunctions().deleteVertexArrays(1, &m_vao);
+		m_vao = 0;
+	}
 }
 
 BBoxRenderCase::IterateResult BBoxRenderCase::iterate (void)
@@ -866,12 +940,11 @@ void BBoxRenderCase::setupRender (const IterationConfig& config)
 			<< tcu::TestLog::EndMessage;
 
 	if (m_useGlobalState)
-		gl.primitiveBoundingBox(config.bbox.min.x(), config.bbox.min.y(), config.bbox.min.z(), config.bbox.min.w(),
-								config.bbox.max.x(), config.bbox.max.y(), config.bbox.max.z(), config.bbox.max.w());
+		m_boundingBoxFunc(config.bbox.min.x(), config.bbox.min.y(), config.bbox.min.z(), config.bbox.min.w(),
+				  config.bbox.max.x(), config.bbox.max.y(), config.bbox.max.z(), config.bbox.max.w());
 	else
 		// state is overriden by the tessellation output, set bbox to invisible area to imitiate dirty state left by application
-		gl.primitiveBoundingBox(-2.0f, -2.0f, 0.0f, 1.0f,
-								-1.7f, -1.7f, 0.0f, 1.0f);
+		m_boundingBoxFunc(-2.0f, -2.0f, 0.0f, 1.0f, -1.7f, -1.7f, 0.0f, 1.0f);
 
 	if (m_fbo)
 		gl.bindFramebuffer(GL_DRAW_FRAMEBUFFER, **m_fbo);
@@ -881,6 +954,7 @@ void BBoxRenderCase::setupRender (const IterationConfig& config)
 	gl.clear(GL_COLOR_BUFFER_BIT);
 
 	gl.bindBuffer(GL_ARRAY_BUFFER, **m_vbo);
+
 	gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, (int)(VA_NUM_ATTRIB_VECS * sizeof(float[4])), glu::BufferOffsetAsPointer(4 * VA_POS_VEC_NDX * sizeof(float)));
 	gl.vertexAttribPointer(colLocation, 4, GL_FLOAT, GL_FALSE, (int)(VA_NUM_ATTRIB_VECS * sizeof(float[4])), glu::BufferOffsetAsPointer(4 * VA_COL_VEC_NDX * sizeof(float)));
 	gl.enableVertexAttribArray(posLocation);
@@ -1072,6 +1146,7 @@ std::string GridRenderCase::genTessellationControlSource (void) const
 	std::ostringstream	buf;
 
 	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${ARB_ES32_COMPATIBILITY_REQUIRE}\n"
 			"${TESSELLATION_SHADER_REQUIRE}\n"
 			"${PRIMITIVE_BOUNDING_BOX_REQUIRE}\n"
 			"layout(vertices=3) out;\n"
@@ -1580,6 +1655,7 @@ std::string LineRenderCase::genTessellationControlSource (void) const
 	std::ostringstream	buf;
 
 	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${ARB_ES32_COMPATIBILITY_REQUIRE}\n"
 			"${TESSELLATION_SHADER_REQUIRE}\n"
 			"${PRIMITIVE_BOUNDING_BOX_REQUIRE}\n"
 			"layout(vertices=2) out;"
@@ -2432,11 +2508,21 @@ void PointRenderCase::init (void)
 {
 	if (m_isWidePointCase)
 	{
-		// extensions
-		if (m_hasGeometryStage && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_point_size"))
-			throw tcu::NotSupportedError("Test requires GL_EXT_geometry_point_size extension");
-		if (m_hasTessellationStage && !m_hasGeometryStage && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_point_size"))
-			throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_point_size extension");
+		const bool supportsGL45 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
+
+		if (!supportsGL45) {
+			// extensions
+			if (m_hasGeometryStage && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_point_size"))
+				throw tcu::NotSupportedError("Test requires GL_EXT_geometry_point_size extension");
+			if (m_hasTessellationStage && !m_hasGeometryStage && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_point_size"))
+				throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_point_size extension");
+		}
+
+		// Enable program point size for desktop GL
+		if (supportsGL45) {
+			const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+			gl.enable(GL_PROGRAM_POINT_SIZE);
+		}
 
 		// point size range
 		{
@@ -2550,6 +2636,7 @@ std::string PointRenderCase::genTessellationControlSource (void) const
 	std::ostringstream	buf;
 
 	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${ARB_ES32_COMPATIBILITY_REQUIRE}\n"
 			"${TESSELLATION_SHADER_REQUIRE}\n"
 			"${PRIMITIVE_BOUNDING_BOX_REQUIRE}\n"
 		<<	((tessellationWidePoints) ? ("${TESSELLATION_POINT_SIZE_REQUIRE}\n") : (""))
@@ -3334,7 +3421,8 @@ private:
 	de::MovePtr<glu::Renderbuffer>	m_srcRbo;
 	de::MovePtr<glu::Renderbuffer>	m_dstRbo;
 	de::MovePtr<glu::ShaderProgram>	m_program;
-	de::MovePtr<glu::Buffer>		m_vbo;
+	de::MovePtr<glu::Buffer>	m_vbo;
+	glw::GLuint			m_vao;
 };
 
 BlitFboCase::BlitFboCase (Context& context, const char* name, const char* description, RenderTarget src, RenderTarget dst)
@@ -3342,6 +3430,7 @@ BlitFboCase::BlitFboCase (Context& context, const char* name, const char* descri
 	, m_src			(src)
 	, m_dst			(dst)
 	, m_iteration	(0)
+	, m_vao		(0)
 {
 	DE_ASSERT(src < TARGET_LAST);
 	DE_ASSERT(dst < TARGET_LAST);
@@ -3371,10 +3460,9 @@ void BlitFboCase::init (void)
 		<< "Source framebuffer is filled with green-yellow grid.\n"
 		<< tcu::TestLog::EndMessage;
 
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
-
-	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_primitive_bounding_box"))
+	if (!boundingBoxSupported(m_context))
 		throw tcu::NotSupportedError("Test requires GL_EXT_primitive_bounding_box extension");
+
 	if (m_dst == TARGET_DEFAULT && defaultFBMultisampled)
 		throw tcu::NotSupportedError("Test requires non-multisampled default framebuffer");
 
@@ -3432,6 +3520,14 @@ void BlitFboCase::init (void)
 			m_testCtx.getLog() << *m_program;
 			throw tcu::TestError("failed to build program");
 		}
+	}
+
+
+	// Generate VAO for desktop OpenGL
+	if (!glu::isContextTypeES(m_context.getRenderContext().getType()))
+	{
+		gl.genVertexArrays(1, &m_vao);
+		gl.bindVertexArray(m_vao);
 	}
 
 	{
@@ -3534,6 +3630,12 @@ void BlitFboCase::deinit (void)
 	m_dstRbo.clear();
 	m_program.clear();
 	m_vbo.clear();
+
+	if (m_vao)
+	{
+		m_context.getRenderContext().getFunctions().deleteVertexArrays(1, &m_vao);
+		m_vao = 0;
+	}
 }
 
 BlitFboCase::IterateResult BlitFboCase::iterate (void)
@@ -3560,9 +3662,10 @@ BlitFboCase::IterateResult BlitFboCase::iterate (void)
 		<<	"\tfilter: " << ((blitCfg.linear) ? ("linear") : ("nearest"))
 		<< tcu::TestLog::EndMessage;
 
-	gl.primitiveBoundingBox(blitCfg.bboxMin.x(), blitCfg.bboxMin.y(), blitCfg.bboxMin.z(), blitCfg.bboxMin.w(),
-							blitCfg.bboxMax.x(), blitCfg.bboxMax.y(), blitCfg.bboxMax.z(), blitCfg.bboxMax.w());
+	auto boundingBoxFunc = getBoundingBoxFunction(m_context);
 
+	boundingBoxFunc(blitCfg.bboxMin.x(), blitCfg.bboxMin.y(), blitCfg.bboxMin.z(), blitCfg.bboxMin.w(),
+			blitCfg.bboxMax.x(), blitCfg.bboxMax.y(), blitCfg.bboxMax.z(), blitCfg.bboxMax.w());
 	gl.bindFramebuffer(GL_DRAW_FRAMEBUFFER, (m_dst == TARGET_FBO) ? (**m_dstFbo) : (m_context.getRenderContext().getDefaultFramebuffer()));
 	gl.clearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	gl.clear(GL_COLOR_BUFFER_BIT);
@@ -3720,6 +3823,7 @@ private:
 
 	de::MovePtr<glu::ShaderProgram>	m_program;
 	de::MovePtr<glu::Buffer>		m_vbo;
+	glw::GLuint				m_vao;
 	std::vector<LayerInfo>			m_layers;
 };
 
@@ -3730,6 +3834,7 @@ DepthDrawCase::DepthDrawCase (Context& context, const char* name, const char* de
 	, m_depthType	(depthType)
 	, m_state		(state)
 	, m_bboxSize	(bboxSize)
+	, m_vao		(0)
 {
 	DE_ASSERT(depthType < DEPTH_LAST);
 	DE_ASSERT(state < STATE_LAST);
@@ -3744,13 +3849,12 @@ DepthDrawCase::~DepthDrawCase (void)
 void DepthDrawCase::init (void)
 {
 	const glw::Functions&	gl				= m_context.getRenderContext().getFunctions();
-	const bool				supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool		hasES32OrGL45			= supportsES32OrGL45(m_context);
 
 	// requirements
-
-	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_primitive_bounding_box"))
+	if (!boundingBoxSupported(m_context))
 		throw tcu::NotSupportedError("Test requires GL_EXT_primitive_bounding_box extension");
-	if (m_state == STATE_PER_PRIMITIVE && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+	if (m_state == STATE_PER_PRIMITIVE && !hasES32OrGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
 	if (m_context.getRenderTarget().getDepthBits() == 0)
 		throw tcu::NotSupportedError("Test requires depth buffer");
@@ -3797,6 +3901,13 @@ void DepthDrawCase::init (void)
 			throw tcu::TestError("failed to build program");
 	}
 
+	// Generate VAO for desktop OpenGL
+	if (!glu::isContextTypeES(m_context.getRenderContext().getType()))
+	{
+		gl.genVertexArrays(1, &m_vao);
+		gl.bindVertexArray(m_vao);
+	}
+
 	{
 		std::vector<tcu::Vec4> data;
 
@@ -3828,6 +3939,12 @@ void DepthDrawCase::deinit (void)
 {
 	m_program.clear();
 	m_vbo.clear();
+
+	if (m_vao)
+	{
+		m_context.getRenderContext().getFunctions().deleteVertexArrays(1, &m_vao);
+		m_vao = 0;
+	}
 }
 
 DepthDrawCase::IterateResult DepthDrawCase::iterate (void)
@@ -3859,6 +3976,8 @@ DepthDrawCase::IterateResult DepthDrawCase::iterate (void)
 	gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "setup viewport");
 
+	auto boundingBoxFunc = getBoundingBoxFunction(m_context);
+
 	gl.bindBuffer(GL_ARRAY_BUFFER, **m_vbo);
 	gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, (int)(8 * sizeof(float)), glu::BufferOffsetAsPointer(0 * sizeof(float)));
 	gl.vertexAttribPointer(colLocation, 4, GL_FLOAT, GL_FALSE, (int)(8 * sizeof(float)), glu::BufferOffsetAsPointer(4 * sizeof(float)));
@@ -3882,8 +4001,8 @@ DepthDrawCase::IterateResult DepthDrawCase::iterate (void)
 			const float negPadding = (m_bboxSize == BBOX_EQUAL) ? (0.0f) : (rnd.getFloat() * 0.3f);
 			const float posPadding = (m_bboxSize == BBOX_EQUAL) ? (0.0f) : (rnd.getFloat() * 0.3f);
 
-			gl.primitiveBoundingBox(-1.0f, -1.0f, m_layers[layerNdx].zOffset - negPadding, 1.0f,
-									1.0f,  1.0f, (m_layers[layerNdx].zOffset + m_layers[layerNdx].zScale + posPadding), 1.0f);
+			boundingBoxFunc(-1.0f, -1.0f, m_layers[layerNdx].zOffset - negPadding, 1.0f,
+					1.0f,  1.0f, (m_layers[layerNdx].zOffset + m_layers[layerNdx].zScale + posPadding), 1.0f);
 		}
 
 		gl.drawArrays((hasTessellation) ? (GL_PATCHES) : (GL_TRIANGLES), 0, m_gridSize * m_gridSize * 6);
@@ -3924,9 +4043,9 @@ std::string DepthDrawCase::genVertexSource (void) const
 	if (hasTessellation)
 		buf << "	gl_Position = a_position;\n";
 	else if (m_depthType == DEPTH_USER_DEFINED)
-		buf <<	"	highp float dummyZ = a_position.z;\n"
+		buf <<	"	highp float unusedZ = a_position.z;\n"
 				"	highp float writtenZ = a_position.w;\n"
-				"	gl_Position = vec4(a_position.xy, dummyZ, 1.0);\n"
+				"	gl_Position = vec4(a_position.xy, unusedZ, 1.0);\n"
 				"	v_fragDepth = writtenZ * u_depthScale + u_depthBias;\n";
 	else
 		buf <<	"	highp float writtenZ = a_position.w;\n"
@@ -3971,6 +4090,7 @@ std::string DepthDrawCase::genTessellationControlSource (void) const
 	std::ostringstream	buf;
 
 	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${ARB_ES32_COMPATIBILITY_REQUIRE}\n"
 			"${TESSELLATION_SHADER_REQUIRE}\n"
 			"${PRIMITIVE_BOUNDING_BOX_REQUIRE}\n"
 			"layout(vertices=3) out;\n"
@@ -4038,9 +4158,9 @@ std::string DepthDrawCase::genTessellationEvaluationSource (void) const
 			"	highp vec4 tessellatedPos = gl_TessCoord.x * gl_in[0].gl_Position + gl_TessCoord.y * gl_in[1].gl_Position + gl_TessCoord.z * gl_in[2].gl_Position;\n";
 
 	if (m_depthType == DEPTH_USER_DEFINED)
-		buf <<	"	highp float dummyZ = tessellatedPos.z;\n"
+		buf <<	"	highp float unusedZ = tessellatedPos.z;\n"
 				"	highp float writtenZ = tessellatedPos.w;\n"
-				"	gl_Position = vec4(tessellatedPos.xy, dummyZ, 1.0);\n"
+				"	gl_Position = vec4(tessellatedPos.xy, unusedZ, 1.0);\n"
 				"	v_fragDepth = writtenZ * u_depthScale + u_depthBias;\n";
 	else
 		buf <<	"	highp float writtenZ = tessellatedPos.w;\n"
@@ -4200,11 +4320,11 @@ ClearCase::~ClearCase (void)
 
 void ClearCase::init (void)
 {
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool hasES32OrGL45 = supportsES32OrGL45(m_context);
 
-	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_primitive_bounding_box"))
+	if (!boundingBoxSupported(m_context))
 		throw tcu::NotSupportedError("Test requires GL_EXT_primitive_bounding_box extension");
-	if (m_drawTriangles && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+	if (m_drawTriangles && !hasES32OrGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
 
 	m_testCtx.getLog()
@@ -4447,9 +4567,11 @@ void ClearCase::renderTo (tcu::Surface& dst, bool useBBox)
 		if (useBBox)
 		{
 			DE_ASSERT(m_useGlobalState || m_drawTriangles); // !m_useGlobalState -> m_drawTriangles
+
+			auto boundingBoxFunc = getBoundingBoxFunction(m_context);
 			if (m_useGlobalState)
-				gl.primitiveBoundingBox(bboxMin.x(), bboxMin.y(), bboxMin.z(), bboxMin.w(),
-										bboxMax.x(), bboxMax.y(), bboxMax.z(), bboxMax.w());
+				boundingBoxFunc(bboxMin.x(), bboxMin.y(), bboxMin.z(), bboxMin.w(),
+						bboxMax.x(), bboxMax.y(), bboxMax.z(), bboxMax.w());
 		}
 
 		if (m_drawTriangles)
@@ -4583,6 +4705,7 @@ std::string ClearCase::genTessellationControlSource (bool setBBox) const
 	std::ostringstream buf;
 
 	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${ARB_ES32_COMPATIBILITY_REQUIRE}\n"
 			"${TESSELLATION_SHADER_REQUIRE}\n";
 
 	if (setBBox)
@@ -4651,6 +4774,7 @@ private:
 	const CallOrder					m_callOrder;
 
 	de::MovePtr<glu::Buffer>		m_vbo;
+	glw::GLuint				m_vao;
 	de::MovePtr<glu::ShaderProgram>	m_program;
 	int								m_numVertices;
 };
@@ -4658,6 +4782,7 @@ private:
 ViewportCallOrderCase::ViewportCallOrderCase (Context& context, const char* name, const char* description, CallOrder callOrder)
 	: TestCase		(context, name, description)
 	, m_callOrder	(callOrder)
+	, m_vao		(0)
 	, m_numVertices	(-1)
 {
 	DE_ASSERT(m_callOrder < ORDER_LAST);
@@ -4670,12 +4795,12 @@ ViewportCallOrderCase::~ViewportCallOrderCase (void)
 
 void ViewportCallOrderCase::init (void)
 {
-	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool hasES32OrGL45 = supportsES32OrGL45(m_context);
 
-	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_primitive_bounding_box"))
+	if (!boundingBoxSupported(m_context))
 		throw tcu::NotSupportedError("Test requires GL_EXT_primitive_bounding_box extension");
 
-	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+	if (!hasES32OrGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
 
 	m_testCtx.getLog()
@@ -4700,6 +4825,12 @@ void ViewportCallOrderCase::deinit (void)
 {
 	m_vbo.clear();
 	m_program.clear();
+
+	if (m_vao)
+	{
+		m_context.getRenderContext().getFunctions().deleteVertexArrays(1, &m_vao);
+		m_vao = 0;
+	}
 }
 
 ViewportCallOrderCase::IterateResult ViewportCallOrderCase::iterate (void)
@@ -4734,8 +4865,9 @@ ViewportCallOrderCase::IterateResult ViewportCallOrderCase::iterate (void)
 				<< "\t(0.0, -1.0, -1.0, 1.0) .. (1.0, 1.0, 1.0f, 1.0)"
 				<< tcu::TestLog::EndMessage;
 
-			gl.primitiveBoundingBox(0.0f, -1.0f, -1.0f, 1.0f,
-									1.0f,  1.0f,  1.0f, 1.0f);
+			auto boundingBoxFunc = getBoundingBoxFunction(m_context);
+
+			boundingBoxFunc(0.0f, -1.0f, -1.0f, 1.0f, 1.0f,  1.0f,  1.0f, 1.0f);
 		}
 	}
 
@@ -4808,6 +4940,12 @@ void ViewportCallOrderCase::genVbo (void)
 			data[ndx * 3 + 1] = tcu::Vec4(float(cellX+1) / float(gridSize), (float(cellY+0) / float(gridSize)) * 2.0f - 1.0f, 0.0f, 1.0f);
 			data[ndx * 3 + 2] = tcu::Vec4(float(cellX+1) / float(gridSize), (float(cellY+1) / float(gridSize)) * 2.0f - 1.0f, 0.0f, 1.0f);
 		}
+	}
+
+	// Generate VAO for desktop OpenGL
+	if (!glu::isContextTypeES(m_context.getRenderContext().getType())) {
+		gl.genVertexArrays(1, &m_vao);
+		gl.bindVertexArray(m_vao);
 	}
 
 	m_vbo = de::MovePtr<glu::Buffer>(new glu::Buffer(m_context.getRenderContext()));
@@ -4896,6 +5034,7 @@ std::string ViewportCallOrderCase::genFragmentSource (void) const
 std::string ViewportCallOrderCase::genTessellationControlSource (void) const
 {
 	return	"${GLSL_VERSION_DECL}\n"
+			"${ARB_ES32_COMPATIBILITY_REQUIRE}\n"
 			"${TESSELLATION_SHADER_REQUIRE}\n"
 			"layout(vertices=3) out;\n"
 			"in highp vec4 v_vertex_color[];\n"

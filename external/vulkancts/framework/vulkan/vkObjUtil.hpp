@@ -80,6 +80,22 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo = DE_NULL,
 									   const void*										pNext = DE_NULL);
 
+Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
+									   const VkDevice									device,
+									   const VkPipelineLayout							pipelineLayout,
+									   const VkShaderModule								taskShaderModule,
+									   const VkShaderModule								meshShaderModule,
+									   const VkShaderModule								fragmentShaderModule,
+									   const VkRenderPass								renderPass,
+									   const std::vector<VkViewport>&					viewports,
+									   const std::vector<VkRect2D>&						scissors,
+									   const deUint32									subpass = 0u,
+									   const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo = nullptr,
+									   const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo = nullptr,
+									   const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo = nullptr,
+									   const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo = nullptr,
+									   const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo = nullptr);
+
 Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 								   const VkDevice						device,
 								   const VkFormat						colorFormat					= VK_FORMAT_UNDEFINED,

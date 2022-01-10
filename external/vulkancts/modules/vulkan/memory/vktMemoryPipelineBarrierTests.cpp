@@ -9030,7 +9030,7 @@ de::MovePtr<CmdCommand> createCmdCommand (de::Random&	rng,
 			if (type == PipelineBarrier::TYPE_IMAGE)
 				return de::MovePtr<CmdCommand>(new PipelineBarrier(srcStages, srcAccesses, dstStages, dstAccesses, type, tcu::just(state.imageLayout)));
 			else
-				return de::MovePtr<CmdCommand>(new PipelineBarrier(srcStages, srcAccesses, dstStages, dstAccesses, type, tcu::nothing<vk::VkImageLayout>()));
+				return de::MovePtr<CmdCommand>(new PipelineBarrier(srcStages, srcAccesses, dstStages, dstAccesses, type, tcu::Nothing));
 		}
 
 		default:
@@ -9190,7 +9190,7 @@ de::MovePtr<Command> createCmdCommands (const Memory&		memory,
 											   state.cache.getAllowedStages(),
 											   state.cache.getAllowedAcceses(),
 											   PipelineBarrier::TYPE_GLOBAL,
-											   tcu::nothing<vk::VkImageLayout>()));
+											   tcu::Nothing));
 
 		for (; opNdx < opCount; opNdx++)
 		{

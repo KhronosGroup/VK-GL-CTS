@@ -887,6 +887,7 @@ void ImageMemoryRequirementsOriginal::populateTestGroup (tcu::TestCaseGroup* gro
 
 		params.flags		=  imageFlagsCases[flagsNdx].flags;
 		params.transient	=  imageFlagsCases[flagsNdx].transient;
+		params.useMaint4	=  false;
 		caseName			<< imageFlagsCases[flagsNdx].name;
 
 		if (tilingNdx != 0)
@@ -1170,6 +1171,9 @@ bool ImageMemoryRequirementsOriginal::isImageSupported (const Context& context, 
 		if ((info.samples & imageFormatProperties.sampleCounts) == 0u)
 			return false;
 	}
+
+	if ((info.flags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT) && !checkSparseImageFormatSupport(physDevice, vki, info))
+		return false;
 
 	return result == VK_SUCCESS;
 }
@@ -1991,13 +1995,15 @@ tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
 
 					if (result.check(requirements.memoryRequirements.memoryTypeBits != 0, "No supported memory types"))
 					{
-						bool	hasHostVisibleType	= false;
+						typedef std::vector<deUint32>::const_iterator	IndexIterator;
+						const std::vector<deUint32>						usedMemoryTypeIndices	= bitsToIndices(requirements.memoryRequirements.memoryTypeBits);
+						bool											hasHostVisibleType		= false;
 
-						for (deUint32 memoryTypeIndex = 0; (0x1u << memoryTypeIndex) <= requirements.memoryRequirements.memoryTypeBits; memoryTypeIndex++)
+						for (IndexIterator memoryTypeNdx = usedMemoryTypeIndices.begin(); memoryTypeNdx != usedMemoryTypeIndices.end(); ++memoryTypeNdx)
 						{
-							if (result.check(memoryTypeIndex < memoryProperties.memoryTypeCount, "Unknown memory type bits set in memory requirements"))
+							if (result.check(*memoryTypeNdx < memoryProperties.memoryTypeCount, "Unknown memory type bits set in memory requirements"))
 							{
-								const VkMemoryPropertyFlags	propertyFlags	(memoryProperties.memoryTypes[memoryTypeIndex].propertyFlags);
+								const VkMemoryPropertyFlags	propertyFlags	(memoryProperties.memoryTypes[*memoryTypeNdx].propertyFlags);
 
 								if (propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
 									hasHostVisibleType = true;

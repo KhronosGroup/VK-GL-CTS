@@ -703,6 +703,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 	const auto	imageDim		= static_cast<deUint32>(deSqrt(static_cast<double>(triangleCount)));
 	const auto	imageExtent		= makeExtent3D(imageDim, imageDim, 1u);
 	const auto	imageLayers		= (m_params.multiview ? 2u : 1u);
+	const auto	imageViewType	= ((imageLayers > 1u) ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
 	const auto	colorUsage		= (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 	const auto	dsUsage			= (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 	const auto	pixelCount		= imageExtent.width * imageExtent.height;
@@ -740,7 +741,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 
 	ImageWithMemory	colorBuffer				(vkd, device, alloc, imageCreateInfo, MemoryRequirement::Any);
 	const auto		colorSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, imageLayers);
-	const auto		colorBufferView			= makeImageView(vkd, device, colorBuffer.get(), VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange);
+	const auto		colorBufferView			= makeImageView(vkd, device, colorBuffer.get(), imageViewType, colorFormat, colorSubresourceRange);
 
 	// Depth/stencil buffer.
 	const VkImageCreateInfo dsCreateInfo =
@@ -764,7 +765,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 
 	ImageWithMemory dsBuffer			(vkd, device, alloc, dsCreateInfo, MemoryRequirement::Any);
 	const auto		dsSubresourceRange	= makeImageSubresourceRange((VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT), 0u, 1u, 0u, imageLayers);
-	const auto		dsBufferView		= makeImageView(vkd, device, dsBuffer.get(), VK_IMAGE_VIEW_TYPE_2D, dsFormat, dsSubresourceRange);
+	const auto		dsBufferView		= makeImageView(vkd, device, dsBuffer.get(), imageViewType, dsFormat, dsSubresourceRange);
 
 	// Output buffers to verify attachments.
 	using BufferWithMemoryPtr = de::MovePtr<BufferWithMemory>;
@@ -887,6 +888,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 	pipelines.reserve(imageLayers);
 	for (deUint32 subpassIdx = 0u; subpassIdx < imageLayers; ++subpassIdx)
 	{
+		renderingCreateInfo.viewMask = m_params.multiview ? (1u << subpassIdx) : 0u;
 		pipelines.emplace_back(makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
 			vertModule.get(), tescModule.get(), teseModule.get(), geomModule.get(), fragModule.get(),
 			renderPass.get(), viewports, scissors, primitiveTopology, subpassIdx, patchControlPoints,
@@ -975,7 +977,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 	}
 
 	// Prepare draw information.
-	const auto offsetType	= (m_params.vertexOffset ? m_params.vertexOffset->offsetType : tcu::nothing<VertexOffsetType>());
+	const auto offsetType	= (m_params.vertexOffset ? tcu::just(m_params.vertexOffset->offsetType) : tcu::Nothing);
 	const auto vertexOffset	= static_cast<deInt32>(extraVertices);
 
 	DrawInfoPacker drawInfos(m_params.drawType, offsetType, m_params.stride, m_params.drawCount, m_params.seed);
@@ -1032,17 +1034,17 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 			(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT),
 			0u, 0u, nullptr, 0u, nullptr, 1u, &dsPreBarrier);
-
-		beginRendering(vkd, cmdBuffer, *colorBufferView, *dsBufferView, true, scissor, clearValues[0], clearValues[1],
-					   vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-					   VK_ATTACHMENT_LOAD_OP_CLEAR);
 	}
 	else
 		beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissor, static_cast<deUint32>(clearValues.size()), de::dataOrNull(clearValues));
 
 	for (deUint32 layerIdx = 0u; layerIdx < imageLayers; ++layerIdx)
 	{
-		if (layerIdx > 0u)
+		if (m_params.useDynamicRendering)
+			beginRendering(vkd, cmdBuffer, *colorBufferView, *dsBufferView, true, scissor, clearValues[0], clearValues[1],
+				vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+				VK_ATTACHMENT_LOAD_OP_CLEAR, 0, imageLayers, m_params.multiview ? (1u << layerIdx) : 0u);
+		else if (layerIdx > 0u)
 			vkd.cmdNextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
 		vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[layerIdx].get());
@@ -1061,11 +1063,12 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 			const auto drawInfoPtr = reinterpret_cast<const VkMultiDrawInfoEXT*>(drawInfos.drawInfoData());
 			vkd.cmdDrawMultiEXT(cmdBuffer, drawInfos.drawInfoCount(), drawInfoPtr, m_params.instanceCount, m_params.firstInstance, drawInfos.stride());
 		}
+
+		if (m_params.useDynamicRendering)
+			endRendering(vkd, cmdBuffer);
 	}
 
-	if (m_params.useDynamicRendering)
-		endRendering(vkd, cmdBuffer);
-	else
+	if (!m_params.useDynamicRendering)
 		endRenderPass(vkd, cmdBuffer);
 
 	// Prepare images for copying.
@@ -1229,7 +1232,7 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx, bool use
 		const char*						name;
 	} offsetTypeCases[] =
 	{
-		{ tcu::nothing<VertexOffsetType>(),		""			},
+		{ tcu::Nothing,							""			},
 		{ VertexOffsetType::MIXED,				"mixed"		},
 		{ VertexOffsetType::CONSTANT_RANDOM,	"random"	},
 		{ VertexOffsetType::CONSTANT_PACK,		"packed"	},
@@ -1336,16 +1339,13 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx, bool use
 
 								for (const auto& multiviewCase : multiviewCases)
 								{
-									if (useDynamicRendering && multiviewCase.multiview)
-										continue;
-
 									GroupPtr multiviewGroup(new tcu::TestCaseGroup(testCtx, multiviewCase.name, ""));
 
 									const auto	isIndexed	= (drawTypeCase.drawType == DrawType::INDEXED);
 									const auto	isPacked	= (offsetTypeCase.vertexOffsetType && *offsetTypeCase.vertexOffsetType == VertexOffsetType::CONSTANT_PACK);
 									const auto	baseStride	= ((isIndexed && !isPacked) ? sizeof(VkMultiDrawIndexedInfoEXT) : sizeof(VkMultiDrawInfoEXT));
 									const auto&	extraBytes	= strideCase.extraBytes;
-									const auto	testOffset	= (isIndexed ? VertexOffsetParams{*offsetTypeCase.vertexOffsetType, 0u } : tcu::nothing<VertexOffsetParams>());
+									const auto	testOffset	= (isIndexed ? tcu::just(VertexOffsetParams{*offsetTypeCase.vertexOffsetType, 0u }) : tcu::Nothing);
 									deUint32	testStride	= 0u;
 
 									if (extraBytes >= 0)

@@ -1357,9 +1357,9 @@ protected:
 	de::MovePtr<Image>					m_imageDst;
 	Move<VkDescriptorSetLayout>			m_descriptorSetLayout;
 	Move<VkDescriptorPool>				m_descriptorPool;
-	std::vector<SharedVkDescriptorSet>	m_allDescriptorSets;
-	std::vector<SharedVkImageView>		m_allSrcImageViews;
-	std::vector<SharedVkImageView>		m_allDstImageViews;
+	std::vector<SharedVkDescriptorSet> m_allDescriptorSets;
+	std::vector<SharedVkImageView>     m_allSrcImageViews;
+	std::vector<SharedVkImageView>     m_allDstImageViews;
 };
 
 ImageLoadStoreTestInstance::ImageLoadStoreTestInstance (Context&		context,

@@ -64,7 +64,6 @@ using tcu::Vec4;
 
 using tcu::Maybe;
 using tcu::just;
-using tcu::nothing;
 
 using tcu::ConstPixelBufferAccess;
 using tcu::PixelBufferAccess;
@@ -2161,6 +2160,7 @@ void initTests (tcu::TestCaseGroup* group, RenderingType renderingType)
 		VK_FORMAT_R32G32B32A32_UINT,
 		VK_FORMAT_R32G32B32A32_SINT,
 		VK_FORMAT_R32G32B32A32_SFLOAT,
+		VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
 
 		VK_FORMAT_D16_UNORM,
 		VK_FORMAT_X8_D24_UNORM_PACK32,

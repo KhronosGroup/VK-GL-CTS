@@ -3017,7 +3017,7 @@ void TestGroupBuilderBase::setupVulkanFeatures(FloatType		inFloatType,
 	features.coreFeatures.shaderFloat64 = float64FeatureRequired;
 
 	// request proper float controls features
-	ExtensionFloatControlsFeatures& floatControls = features.floatControlsProperties;
+	vk::VkPhysicalDeviceFloatControlsProperties& floatControls = features.floatControlsProperties;
 
 	// rounding mode should obey the destination type
 	bool rteRounding = (behaviorFlags & B_RTE_ROUNDING) != 0;
@@ -3620,14 +3620,14 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	if (float16FeatureRequired && !testCase.fp16Without16BitStorage)
 	{
 		csSpec.extensions.push_back("VK_KHR_16bit_storage");
-		csSpec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		csSpec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
 		needShaderFloat16 |= testOperation.floatUsage == FLOAT_ARITHMETIC;
 	}
 	needShaderFloat16 |= usesFP16Constants;
 	if (needShaderFloat16)
 	{
 		csSpec.extensions.push_back("VK_KHR_shader_float16_int8");
-		csSpec.requestedVulkanFeatures.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
+		csSpec.requestedVulkanFeatures.extFloat16Int8.shaderFloat16 = true;
 	}
 	if (float64FeatureRequired)
 		csSpec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = VK_TRUE;
@@ -3646,7 +3646,7 @@ void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo&	testCas
 	ValueId		fp32resultValue;
 	ValueId		fp64resultValue;
 
-	ExtensionFloatControlsFeatures& floatControls = csSpec.requestedVulkanFeatures.floatControlsProperties;
+	vk::VkPhysicalDeviceFloatControlsProperties& floatControls = csSpec.requestedVulkanFeatures.floatControlsProperties;
 	bool fp16Required	= testCaseInfo.fp16Option != SO_UNUSED;
 	bool fp32Required	= testCaseInfo.fp32Option != SO_UNUSED;
 	bool fp64Required	= testCaseInfo.fp64Option != SO_UNUSED;
@@ -3817,7 +3817,7 @@ void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo&	testCas
 			saveResult		+= fp16Data.snippets->multiStoreResultsFp16Snippet;
 
 			csSpec.extensions.push_back("VK_KHR_shader_float16_int8");
-			csSpec.requestedVulkanFeatures.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
+			csSpec.requestedVulkanFeatures.extFloat16Int8.shaderFloat16 = true;
 		}
 		else
 		{
@@ -3837,7 +3837,7 @@ void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo&	testCas
 			saveResult		+= fp16Data.snippets->multiStoreResultsSnippet;
 
 			csSpec.extensions.push_back("VK_KHR_16bit_storage");
-			csSpec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+			csSpec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
 		}
 
 		fp16Data.values->fillInputData(addArgs, inputData, inputOffset);
@@ -4383,8 +4383,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 		}
 
 		// varying is not used but it needs to be specified so lets use type_i32 for it
-		string dummyVertVarying = "%BP_vertex_result     = OpVariable %type_i32_optr Output\n";
-		string dummyFragVarying = "%BP_vertex_result     = OpVariable %type_i32_iptr Input\n";
+		string unusedVertVarying = "%BP_vertex_result     = OpVariable %type_i32_optr Output\n";
+		string unusedFragVarying = "%BP_vertex_result     = OpVariable %type_i32_iptr Input\n";
 
 		vertCapabilities	= "";
 		vertExtensions		= "";
@@ -4401,8 +4401,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 
 		vertExecutionMode	= "";
 		fragExecutionMode	= behaviorExecutionMode;
-		vertIODefinitions	= dummyVertVarying;
-		fragIODefinitions	= dummyFragVarying;
+		vertIODefinitions	= unusedVertVarying;
+		fragIODefinitions	= unusedFragVarying;
 
 		vertArguments		= "";
 		fragArguments		= specOpData.arguments;
@@ -4546,12 +4546,12 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 	if (needsShaderFloat16)
 	{
 		extensions.push_back("VK_KHR_shader_float16_int8");
-		vulkanFeatures.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
+		vulkanFeatures.extFloat16Int8.shaderFloat16 = true;
 	}
 	if (float16FeatureRequired && !testCase.fp16Without16BitStorage)
 	{
 		extensions.push_back("VK_KHR_16bit_storage");
-		vulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		vulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
 	}
 
 	InstanceContext ctx(defaultColors,

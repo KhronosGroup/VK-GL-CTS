@@ -120,6 +120,9 @@ set(GLCTS_COMMON_SRCS
 	glcGLSLVectorConstructorTests.hpp
 	glcFramebufferCompleteness.cpp
 	glcFramebufferCompleteness.hpp
+	glcCompressedFormatTests_data.inl
+	glcCompressedFormatTests.cpp
+	glcCompressedFormatTests.hpp
 	)
 
 set(GLCTS_COMMON_LIBS
@@ -145,6 +148,7 @@ set(GLCTS_COMMON_LIBS ${GLCTS_COMMON_LIBS} ${GLSLANG_LIBRARIES})
 # Add spirv-tools
 include_directories(${spirv-tools_SOURCE_DIR}/include)
 include_directories(${spirv-tools_SOURCE_DIR}/external/include)
+include_directories(${PROJECT_BINARY_DIR}/external/vulkancts/framework/vulkan)
 
 set(GLCTS_COMMON_LIBS ${GLCTS_COMMON_LIBS} SPIRV-Tools)
 
@@ -152,6 +156,7 @@ set(GLCTS_COMMON_LIBS ${GLCTS_COMMON_LIBS} SPIRV-Tools)
 PCH(GLCTS_COMMON_SRCS ../pch.cpp)
 
 add_library(glcts-common STATIC ${GLCTS_COMMON_SRCS})
+add_dependencies(glcts-common deqp-vk-inl)
 target_link_libraries(glcts-common ${GLCTS_COMMON_LIBS})
 
 set(GLCTS_COMMON_NOCONTEXTPACKAGE_SRCS

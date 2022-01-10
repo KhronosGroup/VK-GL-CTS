@@ -1,9 +1,10 @@
 # dEQP-VK.binding_model
 
 include_directories(
-        ..
-        ../amber
-        )
+	..
+	../amber
+	${DEQP_INL_DIR}
+	)
 
 set(DEQP_VK_BINDING_MODEL_SRCS
 	vktBindingModelTests.cpp

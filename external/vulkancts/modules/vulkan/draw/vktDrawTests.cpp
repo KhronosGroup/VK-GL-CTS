@@ -55,13 +55,8 @@ namespace Draw
 namespace
 {
 
-tcu::TestCaseGroup* createTestsInternal (tcu::TestContext& testCtx, bool useDynamicRendering)
+void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, bool useDynamicRendering)
 {
-	const char*		groupName[]			{ "draw",				"draw_with_dynamic_rendering" };
-	const char*		groupDescription[]	{ "Simple Draw tests",	"Simple Draw tests using VK_KHR_dynamic_rendering" };
-
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, groupName[useDynamicRendering], groupDescription[useDynamicRendering]));
-
 	group->addChild(new ConcurrentDrawTests					(testCtx, useDynamicRendering));
 	group->addChild(new SimpleDrawTests						(testCtx, useDynamicRendering));
 	group->addChild(new DrawIndexedTests					(testCtx, useDynamicRendering));
@@ -91,20 +86,23 @@ tcu::TestCaseGroup* createTestsInternal (tcu::TestContext& testCtx, bool useDyna
 		// subpasses can't be translated to dynamic rendering
 		group->addChild(createAhbTests						(testCtx));
 	}
-
-	return group.release();
 }
 
 } // anonymous
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
-	return createTestsInternal(testCtx, false);
-}
+	de::MovePtr<tcu::TestCaseGroup> mainGroup				(new tcu::TestCaseGroup(testCtx, "draw", "Simple Draw tests"));
+	de::MovePtr<tcu::TestCaseGroup> renderpassGroup			(new tcu::TestCaseGroup(testCtx, "renderpass", "Draw using render pass object"));
+	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup	(new tcu::TestCaseGroup(testCtx, "dynamic_rendering", "Draw using VK_KHR_dynamic_rendering"));
 
-tcu::TestCaseGroup* createDynamicRenderingTests (tcu::TestContext& testCtx)
-{
-	return createTestsInternal(testCtx, true);
+	createChildren(testCtx, renderpassGroup.get(), false);
+	createChildren(testCtx, dynamicRenderingGroup.get(), true);
+
+	mainGroup->addChild(renderpassGroup.release());
+	mainGroup->addChild(dynamicRenderingGroup.release());
+
+	return mainGroup.release();
 }
 
 } // Draw

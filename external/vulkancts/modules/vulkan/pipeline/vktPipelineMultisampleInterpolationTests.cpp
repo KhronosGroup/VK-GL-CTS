@@ -25,6 +25,7 @@
 #include "vktPipelineMultisampleBaseResolve.hpp"
 #include "vktPipelineMultisampleTestsUtil.hpp"
 #include "vktPipelineMakeUtil.hpp"
+#include "vktAmberTestCase.hpp"
 #include "vkQueryUtil.hpp"
 #include "tcuTestLog.hpp"
 #include <vector>
@@ -1074,6 +1075,14 @@ tcu::TestCaseGroup* createMultisampleInterpolationTests (tcu::TestContext& testC
 	centroidGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtCentroidConsistency> >	(testCtx, "pushc_component_0",	imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 0u}));
 	centroidGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtCentroidConsistency> >	(testCtx, "pushc_component_1",	imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 1u}));
 	testGroup->addChild(centroidGroup.release());
+
+	de::MovePtr<tcu::TestCaseGroup> reInterpolationGroup(new tcu::TestCaseGroup(testCtx, "reinterpolation_consistency", "Test consistency in reinterpolation"));
+	std::vector<std::string> requirements;
+	requirements.push_back("Features.sampleRateShading");
+	reInterpolationGroup->addChild(cts_amber::createAmberTestCase(testCtx, "interpolate_at_centroid", "", "pipeline", "reinterpolate_at_centroid.amber", requirements));
+	reInterpolationGroup->addChild(cts_amber::createAmberTestCase(testCtx, "interpolate_at_sample", "", "pipeline", "reinterpolate_at_sample.amber", requirements));
+	testGroup->addChild(reInterpolationGroup.release());
+
 
 	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseCentroidQualifierInsidePrimitive> >	(testCtx, "centroid_qualifier_inside_primitive",	imageSizes, sizesElemCount, imageSamples, samplesElemCount));
 	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetPixelCenter> >	(testCtx, "offset_interpolate_at_pixel_center",		imageSizes, sizesElemCount, imageSamples, samplesElemCount));

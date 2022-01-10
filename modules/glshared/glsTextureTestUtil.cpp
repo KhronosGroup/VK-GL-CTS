@@ -277,6 +277,11 @@ glu::ShaderProgram* ProgramLibrary::getProgram (Program program)
 	return progObj;
 }
 
+glu::Precision ProgramLibrary::getTexCoordPrecision()
+{
+	return m_texCoordPrecision;
+}
+
 TextureRenderer::TextureRenderer (const glu::RenderContext& context, tcu::TestLog& log, glu::GLSLVersion glslVersion, glu::Precision texCoordPrecision)
 	: m_renderCtx		(context)
 	, m_log				(log)
@@ -481,6 +486,10 @@ void TextureRenderer::renderQuad (int texUnit, const float* texCoord, const Rend
 	}
 }
 
+glu::Precision TextureRenderer::getTexCoordPrecision()
+{
+	return m_programLibrary.getTexCoordPrecision();
+}
 
 } // TextureTestUtil
 } // gls

@@ -373,7 +373,7 @@ void addComputePointerBufferMemoryTest (tcu::TestCaseGroup* group)
 	for (deUint32 numIdx = 0; numIdx < numFloats / 2; ++numIdx)
 		expectedOutput.push_back(2.0f);
 
-	requiredFeatures.extVariablePointers = EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
+	requiredFeatures.extVariablePointers.variablePointersStorageBuffer = true;
 
 	spec.outputs.push_back(BufferSp(new Float32Buffer(expectedOutput)));
 
@@ -502,7 +502,7 @@ void addComputePointerBufferMemoryVariablePointersTest (tcu::TestCaseGroup* grou
 	for (deUint32 numIdx = 0; numIdx < numFloats / 2; ++numIdx)
 		expectedOutput.push_back(2.0f);
 
-	requiredFeatures.extVariablePointers = EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
+	requiredFeatures.extVariablePointers.variablePointersStorageBuffer = true;
 	spec.outputs.push_back(BufferSp(new Float32Buffer(expectedOutput)));
 	spec.extensions.push_back("VK_KHR_variable_pointers");
 
@@ -674,7 +674,7 @@ void addComputePointerWorkgroupMemoryVariablePointersTest (tcu::TestCaseGroup* g
 	}
 
 	spec.outputs.push_back(BufferSp(new Float32Buffer(expectedOutput)));
-	requiredFeatures.extVariablePointers = EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS;
+	requiredFeatures.extVariablePointers.variablePointers = true;
 	spec.extensions.push_back("VK_KHR_variable_pointers");
 
 	spec.assembly					= shaderSource;
@@ -963,7 +963,7 @@ void addGraphicsPointerBufferMemoryTest (tcu::TestCaseGroup* group)
 	extensions.push_back("VK_KHR_variable_pointers");
 	requiredFeatures.coreFeatures.vertexPipelineStoresAndAtomics	= true;
 	requiredFeatures.coreFeatures.fragmentStoresAndAtomics			= true;
-	requiredFeatures.extVariablePointers							= EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
+	requiredFeatures.extVariablePointers.variablePointersStorageBuffer = true;
 	resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 	createTestsForAllStages("buffer_memory", defaultColors, defaultColors, fragments, resources, extensions, group, requiredFeatures);
@@ -1073,7 +1073,7 @@ void addGraphicsPointerBufferMemoryVariablePointersTest (tcu::TestCaseGroup* gro
 
 	extensions.push_back("VK_KHR_variable_pointers");
 	requiredFeatures.coreFeatures.fragmentStoresAndAtomics			= true;
-	requiredFeatures.extVariablePointers = EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
+	requiredFeatures.extVariablePointers.variablePointersStorageBuffer = true;
 	requiredFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
 	resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 

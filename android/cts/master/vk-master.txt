@@ -5,14 +5,12 @@ vk-master/compute.txt
 vk-master/conditional-rendering.txt
 vk-master/descriptor-indexing.txt
 vk-master/device-group.txt
-vk-master/draw-with-dynamic-rendering.txt
 vk-master/draw.txt
 vk-master/drm-format-modifiers.txt
 vk-master/dynamic-rendering.txt
 vk-master/dynamic-state.txt
 vk-master/fragment-operations.txt
 vk-master/fragment-shader-interlock.txt
-vk-master/fragment-shading-rate-with-dynamic-rendering.txt
 vk-master/fragment-shading-rate.txt
 vk-master/geometry.txt
 vk-master/glsl.txt
@@ -22,6 +20,7 @@ vk-master/imageless-framebuffer.txt
 vk-master/info.txt
 vk-master/memory-model.txt
 vk-master/memory.txt
+vk-master/mesh-shader.txt
 vk-master/multiview.txt
 vk-master/pipeline.txt
 vk-master/protected-memory.txt
@@ -30,7 +29,6 @@ vk-master/rasterization.txt
 vk-master/ray-query.txt
 vk-master/ray-tracing-pipeline.txt
 vk-master/reconvergence.txt
-vk-master/renderpass-with-dynamic-rendering.txt
 vk-master/renderpass.txt
 vk-master/renderpass2.txt
 vk-master/robustness.txt
