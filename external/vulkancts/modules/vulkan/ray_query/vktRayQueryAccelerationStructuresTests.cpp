@@ -2764,29 +2764,16 @@ bool RayQueryASBasicTestInstance::iterateWithWorkers (void)
 	de::SharedPtr<SceneBuilder> sceneBuilder = de::SharedPtr<SceneBuilder>(new CheckerboardSceneBuilder());
 
 	de::SharedPtr<TestConfiguration> testConfigurationS		= createTestConfiguration(m_data.shaderSourcePipeline);
-	const deUint64					singleThreadTimeStart	= deGetMicroseconds();
 	de::MovePtr<BufferWithMemory>	singleThreadBufferCPU	= runTest(testConfigurationS.get(), sceneBuilder.get(), 0);
 	const bool						singleThreadValidation	= testConfigurationS->verifyImage(singleThreadBufferCPU.get(), m_context, m_data);
-	const deUint64					singleThreadTime		= deGetMicroseconds() - singleThreadTimeStart;
 	testConfigurationS.clear();
 
 	de::SharedPtr<TestConfiguration> testConfigurationM		= createTestConfiguration(m_data.shaderSourcePipeline);
-	deUint64						multiThreadTimeStart	= deGetMicroseconds();
 	de::MovePtr<BufferWithMemory>	multiThreadBufferCPU	= runTest(testConfigurationM.get(), sceneBuilder.get(), m_data.workerThreadsCount);
 	const bool						multiThreadValidation	= testConfigurationM->verifyImage(multiThreadBufferCPU.get(), m_context, m_data);
-	deUint64						multiThreadTime			= deGetMicroseconds() - multiThreadTimeStart;
-	const deUint64					multiThreadTimeOut		= 10 * singleThreadTime;
 	testConfigurationM.clear();
 
 	const deUint32					result					= singleThreadValidation && multiThreadValidation;
-
-	if (multiThreadTime > multiThreadTimeOut)
-	{
-		std::string failMsg	= "Time of multithreaded test execution " + de::toString(multiThreadTime) +
-							  " that is longer than expected execution time " + de::toString(multiThreadTimeOut);
-
-		TCU_FAIL(failMsg);
-	}
 
 	return result;
 }
