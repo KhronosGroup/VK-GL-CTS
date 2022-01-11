@@ -1,7 +1,6 @@
 #ifndef _VULKAN_JSON_PARSER_HPP
 #define _VULKAN_JSON_PARSER_HPP
 
-
 /*
  * Copyright (c) 2021 The Khronos Group Inc.
  *
@@ -42,70 +41,73 @@ namespace vk_json_parser {
 
 template <typename T1, typename T2>
 class GlobalMem {
+    void grow() {
+        //push_back new single vector of size m_tabSize onto vec
+        void * p = calloc(m_tabSize, sizeof(T2));
+        assert(p);
+        m_vec.push_back(p);
+        m_pointer = 0U;
+    }
+    void * alloc(T1 size) {
+        void* result = static_cast<deUint8 *>(m_vec.back()) + m_pointer;
+        m_pointer += size;
+        return result;
+    }
 public:
 
     GlobalMem(T1 tabSize_ = 32768U)
       : m_tabSize(tabSize_), m_pointer(0U)
     {
-        // push_back a single vector of size m_tabSize onto vec
-        std::vector<T2> each_vec(m_tabSize, 0U);
-        m_vec.push_back(each_vec);
+        grow();
     }
 
     void* allocate (T1 size)
     {
-        if (m_pointer+size >= m_tabSize)
-        {
-            //push_back new single vector of size m_tabSize onto vec
-            std::vector<T2> each_vec(m_tabSize, 0U);
-            m_vec.push_back(each_vec);
-            m_pointer = 0U;
+        if (m_pointer+size >= m_tabSize) {
+            grow();
         }
-        void* result = m_vec.back().data() + m_pointer;
-        m_pointer += size;
-        return result;
-     }
+        return alloc(size);
+    }
 
-     void* allocate (T1 count, T1 size)
+    void* allocate (T1 count, T1 size)
     {
         T1 totalSize = count * size;
         if (m_pointer+totalSize >= m_tabSize)
         {
-            //push_back new single vector of size m_tabSize onto vec
-            std::vector<T2> each_vec(m_tabSize, 0U);
-            m_vec.push_back(each_vec);
-            m_pointer = 0U;
+            grow();
         }
-        void* result = m_vec.back().data() + m_pointer;
-        m_pointer += totalSize;
-        return result;
-     }
-
-     // deallocates all memory. Any use of earlier allocated elements is forbidden
-     void clear()
-     {
-         // remove all vectors from vec excluding the one with index 0
-         for (size_t i=1 ; i<m_vec.size(); i++) {
-             m_vec[i].clear();
-         }
-         m_pointer = 0;
-     }
+        return alloc(totalSize);
+    }
+    // deallocates all memory. Any use of earlier allocated elements is forbidden
+    void clear()
+    {
+        // remove all vectors from vec excluding the one with index 0
+        for (size_t i=1 ; i<m_vec.size(); i++) {
+            free(m_vec[i]);
+        }
+        m_vec.resize(1);
+        m_pointer = 0;
+    }
 
     ~GlobalMem()
     {
-        for (auto& it : m_vec) {
-            it.clear();
-        }
-        m_vec.clear();
+        clear();
+        free(m_vec[0]);
     }
 
 private:
-    std::vector< std::vector<T2> > m_vec;
+    std::vector< void * > m_vec;
     T1 m_tabSize;
     T1 m_pointer;
 };
 
+#if defined(USE_THREAD_LOCAL_WAR)
+// Workaround (off by default) for certain platforms that have a thread_local libc bug
+vk_json_parser::GlobalMem<deUint32, deUint8> & TLSGetGlobalMem();
+#define s_globalMem TLSGetGlobalMem()
+#else
 static thread_local GlobalMem<deUint32, deUint8> s_globalMem(32768U);
+#endif
 
 // To make sure the generated data is consistent across platforms,
 // we typecast to 32-bit.
@@ -211,6 +213,8 @@ static void parse_float(const char* s, Json::Value& obj, float& o)
      if (obj.isString())
           if (obj.asString() == "VK_LOD_CLAMP_NONE")
                o = 1000.0F;
+          else if (obj.asString() == "NaN")
+               o = std::numeric_limits<float>::quiet_NaN();
           else
                assert(false);
      else
@@ -673,6 +677,7 @@ static void parse_VkSurfaceFormatKHR(const char* s, Json::Value& obj, VkSurfaceF
 static void parse_VkSwapchainCreateInfoKHR(const char* s, Json::Value& obj, VkSwapchainCreateInfoKHR& o);
 static void parse_VkPresentInfoKHR(const char* s, Json::Value& obj, VkPresentInfoKHR& o);
 static void parse_VkValidationFeaturesEXT(const char* s, Json::Value& obj, VkValidationFeaturesEXT& o);
+static void parse_VkApplicationParametersEXT(const char* s, Json::Value& obj, VkApplicationParametersEXT& o);
 static void parse_VkPhysicalDeviceFeatures2(const char* s, Json::Value& obj, VkPhysicalDeviceFeatures2& o);
 static void parse_VkPhysicalDeviceProperties2(const char* s, Json::Value& obj, VkPhysicalDeviceProperties2& o);
 static void parse_VkFormatProperties2(const char* s, Json::Value& obj, VkFormatProperties2& o);
@@ -964,6 +969,12 @@ void* parsePNextChain(Json::Value& obj) {
              {
                 p = s_globalMem.allocate(sizeof(VkValidationFeaturesEXT));
                 parse_VkValidationFeaturesEXT("", pNextObj, *((VkValidationFeaturesEXT*)p));
+             }
+             break;
+             case VK_STRUCTURE_TYPE_APPLICATION_PARAMETERS_EXT:
+             {
+                p = s_globalMem.allocate(sizeof(VkApplicationParametersEXT));
+                parse_VkApplicationParametersEXT("", pNextObj, *((VkApplicationParametersEXT*)p));
              }
              break;
              case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2:
@@ -1963,7 +1974,7 @@ static void parse_VkDeviceAddress(const char* s, Json::Value& obj, VkDeviceAddre
 static void parse_VkDeviceSize(const char* s, Json::Value& obj, VkDeviceSize& o) {
      std::string _res = obj.asString();
      if (_res == "VK_WHOLE_SIZE")
-          o = VK_WHOLE_SIZE;
+          o = (~0ULL);
      else
           sscanf(_res.c_str(), "%" SCNu64, &o);
 }
@@ -2102,6 +2113,7 @@ static std::map<std::string, int> VkResult_map = {
     std::make_pair("VK_ERROR_INVALID_EXTERNAL_HANDLE", 1000072003),
     std::make_pair("VK_ERROR_FRAGMENTATION", 1000161000),
     std::make_pair("VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS", 1000257000),
+    std::make_pair("VK_ERROR_VALIDATION_FAILED", 1000011001),
     std::make_pair("VK_ERROR_INVALID_PIPELINE_CACHE_DATA", 1000298000),
     std::make_pair("VK_ERROR_NO_PIPELINE_MATCH", 1000298001),
     std::make_pair("VK_ERROR_SURFACE_LOST_KHR", 1000000000),
@@ -2109,7 +2121,6 @@ static std::map<std::string, int> VkResult_map = {
     std::make_pair("VK_SUBOPTIMAL_KHR", 1000001003),
     std::make_pair("VK_ERROR_OUT_OF_DATE_KHR", 1000001004),
     std::make_pair("VK_ERROR_INCOMPATIBLE_DISPLAY_KHR", 1000003001),
-    std::make_pair("VK_ERROR_VALIDATION_FAILED_EXT", 1000011001),
     std::make_pair("VK_ERROR_INVALID_SHADER_NV", 1000012000),
     std::make_pair("VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT", 1000158000),
     std::make_pair("VK_ERROR_NOT_PERMITTED_EXT", 1000174001),
@@ -2133,7 +2144,6 @@ static std::map<std::string, int> VkStructureType_map = {
     std::make_pair("VK_STRUCTURE_TYPE_SUBMIT_INFO", 4),
     std::make_pair("VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO", 5),
     std::make_pair("VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE", 6),
-    std::make_pair("VK_STRUCTURE_TYPE_BIND_SPARSE_INFO", 7),
     std::make_pair("VK_STRUCTURE_TYPE_FENCE_CREATE_INFO", 8),
     std::make_pair("VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO", 9),
     std::make_pair("VK_STRUCTURE_TYPE_EVENT_CREATE_INFO", 10),
@@ -2142,7 +2152,6 @@ static std::map<std::string, int> VkStructureType_map = {
     std::make_pair("VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO", 13),
     std::make_pair("VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO", 14),
     std::make_pair("VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO", 15),
-    std::make_pair("VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO", 16),
     std::make_pair("VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO", 17),
     std::make_pair("VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO", 18),
     std::make_pair("VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO", 19),
@@ -2354,6 +2363,8 @@ static std::map<std::string, int> VkStructureType_map = {
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_NALU_SLICE_EXT", 1000038006),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_EMIT_PICTURE_PARAMETERS_EXT", 1000038007),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_EXT", 1000038008),
+    std::make_pair("VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_INFO_EXT", 1000038009),
+    std::make_pair("VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_LAYER_INFO_EXT", 1000038010),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_CAPABILITIES_EXT", 1000039000),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_CREATE_INFO_EXT", 1000039001),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_CREATE_INFO_EXT", 1000039002),
@@ -2364,6 +2375,8 @@ static std::map<std::string, int> VkStructureType_map = {
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_EMIT_PICTURE_PARAMETERS_EXT", 1000039007),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PROFILE_EXT", 1000039008),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_REFERENCE_LISTS_EXT", 1000039009),
+    std::make_pair("VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_INFO_EXT", 1000039010),
+    std::make_pair("VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_LAYER_INFO_EXT", 1000039011),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_EXT", 1000040000),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_CREATE_INFO_EXT", 1000040001),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PICTURE_INFO_EXT", 1000040002),
@@ -2666,6 +2679,7 @@ static std::map<std::string, int> VkStructureType_map = {
     std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT", 1000297000),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_ENCODE_INFO_KHR", 1000299000),
     std::make_pair("VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_INFO_KHR", 1000299001),
+    std::make_pair("VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_LAYER_INFO_KHR", 1000299002),
     std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV", 1000300000),
     std::make_pair("VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV", 1000300001),
     std::make_pair("VK_STRUCTURE_TYPE_REFRESH_OBJECT_LIST_KHR", 1000308000),
@@ -2706,6 +2720,7 @@ static std::map<std::string, int> VkStructureType_map = {
     std::make_pair("VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2_KHR", 1000337009),
     std::make_pair("VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2_KHR", 1000337010),
     std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT", 1000340000),
+    std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_ARM", 1000342000),
     std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT", 1000344000),
     std::make_pair("VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT", 1000346000),
     std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE", 1000351000),
@@ -2714,6 +2729,8 @@ static std::map<std::string, int> VkStructureType_map = {
     std::make_pair("VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT", 1000352001),
     std::make_pair("VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT", 1000352002),
     std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT", 1000353000),
+    std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_CONTROL_FEATURES_EXT", 1000355000),
+    std::make_pair("VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT", 1000355001),
     std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT", 1000356000),
     std::make_pair("VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3_KHR", 1000360000),
     std::make_pair("VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA", 1000364000),
@@ -2743,6 +2760,8 @@ static std::map<std::string, int> VkStructureType_map = {
     std::make_pair("VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT", 1000381001),
     std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_EXT", 1000388000),
     std::make_pair("VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_EXT", 1000388001),
+    std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT", 1000391000),
+    std::make_pair("VK_STRUCTURE_TYPE_IMAGE_VIEW_MIN_LOD_CREATE_INFO_EXT", 1000391001),
     std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT", 1000392000),
     std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_PROPERTIES_EXT", 1000392001),
     std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BORDER_COLOR_SWIZZLE_FEATURES_EXT", 1000411000),
@@ -2752,6 +2771,7 @@ static std::map<std::string, int> VkStructureType_map = {
     std::make_pair("VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES_KHR", 1000413001),
     std::make_pair("VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS_KHR", 1000413002),
     std::make_pair("VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR", 1000413003),
+    std::make_pair("VK_STRUCTURE_TYPE_APPLICATION_PARAMETERS_EXT", 1000435000),
 };
 static void parse_VkStructureType(const char* s, Json::Value& obj, VkStructureType& o) {
      std::string _res = obj.asString();
@@ -2840,6 +2860,7 @@ static std::map<std::string, int> VkImageAspectFlagBits_map = {
     std::make_pair("VK_IMAGE_ASPECT_MEMORY_PLANE_1_BIT_EXT", 1UL << 8),
     std::make_pair("VK_IMAGE_ASPECT_MEMORY_PLANE_2_BIT_EXT", 1UL << 9),
     std::make_pair("VK_IMAGE_ASPECT_MEMORY_PLANE_3_BIT_EXT", 1UL << 10),
+    std::make_pair("VK_IMAGE_ASPECT_NONE_KHR", 0),
 };
 static void parse_VkImageAspectFlagBits(const char* s, Json::Value& obj, VkImageAspectFlagBits& o) {
      std::string _res = obj.asString();
@@ -2862,7 +2883,6 @@ static std::map<std::string, int> VkObjectType_map = {
     std::make_pair("VK_OBJECT_TYPE_QUERY_POOL", 12),
     std::make_pair("VK_OBJECT_TYPE_BUFFER_VIEW", 13),
     std::make_pair("VK_OBJECT_TYPE_IMAGE_VIEW", 14),
-    std::make_pair("VK_OBJECT_TYPE_SHADER_MODULE", 15),
     std::make_pair("VK_OBJECT_TYPE_PIPELINE_CACHE", 16),
     std::make_pair("VK_OBJECT_TYPE_PIPELINE_LAYOUT", 17),
     std::make_pair("VK_OBJECT_TYPE_RENDER_PASS", 18),
@@ -3390,7 +3410,6 @@ static std::map<std::string, int> VkQueueFlagBits_map = {
     std::make_pair("VK_QUEUE_GRAPHICS_BIT", 1UL << 0),
     std::make_pair("VK_QUEUE_COMPUTE_BIT", 1UL << 1),
     std::make_pair("VK_QUEUE_TRANSFER_BIT", 1UL << 2),
-    std::make_pair("VK_QUEUE_SPARSE_BINDING_BIT", 1UL << 3),
     std::make_pair("VK_QUEUE_PROTECTED_BIT", 1UL << 4),
     std::make_pair("VK_QUEUE_VIDEO_DECODE_BIT_KHR", 1UL << 5),
     std::make_pair("VK_QUEUE_VIDEO_ENCODE_BIT_KHR", 1UL << 6),
@@ -3718,11 +3737,10 @@ static void parse_VkCompareOp(const char* s, Json::Value& obj, VkCompareOp& o) {
 static std::map<std::string, int> VkPipelineCreateFlagBits_map = {
     std::make_pair("VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT", 1UL << 0),
     std::make_pair("VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT", 1UL << 1),
-    std::make_pair("VK_PIPELINE_CREATE_DERIVATIVE_BIT", 1UL << 2),
     std::make_pair("VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT", 1UL << 3),
     std::make_pair("VK_PIPELINE_CREATE_DISPATCH_BASE_BIT", 1UL << 4),
-    std::make_pair("VK_PIPELINE_RASTERIZATION_STATE_CREATE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR", 1UL << 21),
-    std::make_pair("VK_PIPELINE_RASTERIZATION_STATE_CREATE_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_EXT", 1UL << 22),
+    std::make_pair("VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR", 1UL << 21),
+    std::make_pair("VK_PIPELINE_CREATE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_EXT", 1UL << 22),
     std::make_pair("VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_ANY_HIT_SHADERS_BIT_KHR", 1UL << 14),
     std::make_pair("VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_CLOSEST_HIT_SHADERS_BIT_KHR", 1UL << 15),
     std::make_pair("VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_MISS_SHADERS_BIT_KHR", 1UL << 16),
@@ -4095,6 +4113,9 @@ static std::map<std::string, int> VkSubpassDescriptionFlagBits_map = {
     std::make_pair("VK_SUBPASS_DESCRIPTION_PER_VIEW_POSITION_X_ONLY_BIT_NVX", 1UL << 1),
     std::make_pair("VK_SUBPASS_DESCRIPTION_FRAGMENT_REGION_BIT_QCOM", 1UL << 2),
     std::make_pair("VK_SUBPASS_DESCRIPTION_SHADER_RESOLVE_BIT_QCOM", 1UL << 3),
+    std::make_pair("VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_BIT_ARM", 1UL << 4),
+    std::make_pair("VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_ARM", 1UL << 5),
+    std::make_pair("VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_ARM", 1UL << 6),
 };
 static void parse_VkSubpassDescriptionFlagBits(const char* s, Json::Value& obj, VkSubpassDescriptionFlagBits& o) {
      std::string _res = obj.asString();
@@ -4112,7 +4133,7 @@ static void parse_VkCommandPoolCreateFlagBits(const char* s, Json::Value& obj, V
 }
 
 static std::map<std::string, int> VkCommandPoolResetFlagBits_map = {
-    std::make_pair("VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT", 1UL << 0),
+    std::make_pair("VK_COMMAND_POOL_RESET_RESERVED_1_BIT_COREAVI", 1UL << 1),
 };
 static void parse_VkCommandPoolResetFlagBits(const char* s, Json::Value& obj, VkCommandPoolResetFlagBits& o) {
      std::string _res = obj.asString();
@@ -8328,6 +8349,7 @@ static std::map<std::string, int> VkDriverId_map = {
     std::make_pair("VK_DRIVER_ID_MESA_TURNIP", 18),
     std::make_pair("VK_DRIVER_ID_MESA_V3DV", 19),
     std::make_pair("VK_DRIVER_ID_MESA_PANVK", 20),
+    std::make_pair("VK_DRIVER_ID_SAMSUNG_PROPRIETARY", 21),
 };
 static void parse_VkDriverId(const char* s, Json::Value& obj, VkDriverId& o) {
      std::string _res = obj.asString();
@@ -11105,6 +11127,7 @@ static std::map<std::string, deUint64> VkAccessFlagBits2KHR_map = {
     std::make_pair("VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR", 1ULL << 22),
     std::make_pair("VK_ACCESS_2_FRAGMENT_DENSITY_MAP_READ_BIT_EXT", 1ULL << 24),
     std::make_pair("VK_ACCESS_2_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT", 1ULL << 19),
+    std::make_pair("VK_ACCESS_2_RESERVED_41_BIT_AMD", 1ULL << 41),
     std::make_pair("VK_ACCESS_2_INVOCATION_MASK_READ_BIT_HUAWEI", 1ULL << 39),
     std::make_pair("VK_ACCESS_2_RESERVED_387_BIT_KHR", 1ULL << 40),
 };
@@ -12334,7 +12357,7 @@ static void parse_VkFormatFeatureFlags2KHR(const char* s, Json::Value& obj, VkFo
      if (obj.isString()) {
           std::string _res = obj.asString();
           sscanf(_res.c_str(), "%" SCNd64, &o);
-	 }
+     }
      else {
           o = obj.asUInt();
      }
@@ -13107,7 +13130,22 @@ static void parse_VkPipelineColorWriteCreateInfoEXT(const char* s, Json::Value& 
 
 }
 
-}//End of namespace vk_json_parser
+static void parse_VkApplicationParametersEXT(const char* s, Json::Value& obj, VkApplicationParametersEXT& o) {
 
+     parse_VkStructureType("sType", obj["sType"], (o.sType));
+
+     o.pNext = (VkApplicationParametersEXT*)parsePNextChain(obj);
+
+     parse_uint32_t("vendorID", obj["vendorID"], (o.vendorID));
+
+     parse_uint32_t("deviceID", obj["deviceID"], (o.deviceID));
+
+     parse_uint32_t("key", obj["key"], (o.key));
+
+     parse_uint64_t("value", obj["value"], (o.value));
+
+}
+
+}//End of namespace vk_json_parser
 
 #endif // _VULKAN_JSON_PARSER_HPP

@@ -3935,7 +3935,11 @@ tcu::TestStatus vkt::subgroups::makeComputeTestRequiredSubgroupSize (Context&			
 																								*pipelineLayout,
 																								*shaderModule,
 																								pipelineShaderStageCreateFlags,
+#ifndef CTS_USES_VULKANSC
 																								VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,
+#else
+																								0u,
+#endif // CTS_USES_VULKANSC
 																								(VkPipeline) DE_NULL,
 																								localSizesToTest[0][0],
 																								localSizesToTest[0][1],
@@ -3956,7 +3960,11 @@ tcu::TestStatus vkt::subgroups::makeComputeTestRequiredSubgroupSize (Context&			
 																										*pipelineLayout,
 																										*shaderModule,
 																										pipelineShaderStageCreateFlags,
+#ifndef CTS_USES_VULKANSC
 																										VK_PIPELINE_CREATE_DERIVATIVE_BIT,
+#else
+																										0u,
+#endif // CTS_USES_VULKANSC
 																										**pipelines[0],
 																										nextX,
 																										nextY,

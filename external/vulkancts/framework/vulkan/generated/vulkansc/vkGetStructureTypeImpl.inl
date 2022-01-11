@@ -1526,3 +1526,8 @@ template<> VkStructureType getStructureType<VkPipelineColorWriteCreateInfoEXT> (
 	return VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkApplicationParametersEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_APPLICATION_PARAMETERS_EXT;
+}
+

@@ -9,8 +9,6 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineCombinationsIterator.hpp
 	vktPipelineDepthTests.cpp
 	vktPipelineDepthTests.hpp
-	vktPipelineDerivativeTests.cpp
-	vktPipelineDerivativeTests.hpp
 	vktPipelineDynamicOffsetTests.cpp
 	vktPipelineDynamicOffsetTests.hpp
 	vktPipelineEarlyDestroyTests.cpp
@@ -115,6 +113,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineCacheTests.hpp
 	vktPipelineCreationFeedbackTests.cpp
 	vktPipelineCreationFeedbackTests.hpp
+	vktPipelineDerivativeTests.cpp
+	vktPipelineDerivativeTests.hpp
 	vktPipelineExecutablePropertiesTests.cpp
 	vktPipelineExecutablePropertiesTests.hpp
 	vktPipelineCreationCacheControlTests.cpp

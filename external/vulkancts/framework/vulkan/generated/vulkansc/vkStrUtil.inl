@@ -683,3 +683,4 @@ std::ostream&	operator<<	(std::ostream& s, const VkVertexInputAttributeDescripti
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExtendedDynamicState2FeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceColorWriteEnableFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineColorWriteCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkApplicationParametersEXT& value);

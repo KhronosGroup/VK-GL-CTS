@@ -375,7 +375,11 @@ void GraphicsAttachmentsTestInstance::transcode (std::vector<deUint8>& srcData, 
 	const VkExtent2D						renderSize				(makeExtent2D(m_parameters.size[0], m_parameters.size[1]));
 	const Unique<VkPipelineLayout>			pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
 	const Unique<VkPipeline>				pipeline				(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertShaderModule, *fragShaderModule, renderSize, 1u));
+#ifndef CTS_USES_VULKANSC
 	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT, queueFamilyIndex));
+#else
+	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, device, VkCommandPoolCreateFlags(0u), queueFamilyIndex));
+#endif // CTS_USES_VULKANSC
 	const Unique<VkCommandBuffer>			cmdBuffer				(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkBufferImageCopy					srcCopyRegion			= makeBufferImageCopy(m_parameters.size[0], m_parameters.size[1]);
@@ -631,7 +635,12 @@ void GraphicsTextureTestInstance::transcode (std::vector<deUint8>& srcData, std:
 	const VkExtent2D						renderSize				(makeExtent2D(m_parameters.size[0], m_parameters.size[1]));
 	const Unique<VkPipelineLayout>			pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
 	const Unique<VkPipeline>				pipeline				(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertShaderModule, *fragShaderModule, renderSize, 0u));
+#ifndef CTS_USES_VULKANSC
 	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT, queueFamilyIndex));
+#else
+	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, device, VkCommandPoolCreateFlags(0u), queueFamilyIndex));
+#endif // CTS_USES_VULKANSC
+
 	const Unique<VkCommandBuffer>			cmdBuffer				(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkBufferImageCopy					srcCopyRegion			= makeBufferImageCopy(m_parameters.size[0], m_parameters.size[1]);

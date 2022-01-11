@@ -2080,7 +2080,11 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	const VkExtent2D					renderSize					(makeExtent2D(mipmapDims.x(), mipmapDims.y()));
 	const Unique<VkPipelineLayout>		pipelineLayout				(makePipelineLayout(vk, device, *descriptorSetLayout));
 	const Unique<VkPipeline>			pipeline					(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertShaderModule, *fragShaderModule, renderSize, 0u));
+#ifndef CTS_USES_VULKANSC
 	const Unique<VkCommandPool>			cmdPool						(createCommandPool(vk, device, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT, queueFamilyIndex));
+#else
+	const Unique<VkCommandPool>			cmdPool						(createCommandPool(vk, device, VkCommandPoolCreateFlags(0u), queueFamilyIndex));
+#endif // CTS_USES_VULKANSC
 	const Unique<VkCommandBuffer>		cmdBuffer					(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkBufferImageCopy				copyBufferToImageRegion		= makeBufferImageCopy(mipmapDimsBlocked.x(), mipmapDimsBlocked.y(), 0u, 0u, mipmapDimsBlocked.x(), mipmapDimsBlocked.y());

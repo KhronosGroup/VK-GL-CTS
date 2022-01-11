@@ -68,7 +68,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 7
+#define VK_HEADER_VERSION 8
 
 // Vulkan SC variant number
 #define VKSC_API_VARIANT 1
@@ -150,6 +150,7 @@ typedef enum VkResult {
     VK_ERROR_INVALID_EXTERNAL_HANDLE = -1000072003,
     VK_ERROR_FRAGMENTATION = -1000161000,
     VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS = -1000257000,
+    VK_ERROR_VALIDATION_FAILED = -1000011001,
     VK_ERROR_INVALID_PIPELINE_CACHE_DATA = -1000298000,
     VK_ERROR_NO_PIPELINE_MATCH = -1000298001,
     VK_ERROR_SURFACE_LOST_KHR = -1000000000,
@@ -170,7 +171,6 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_SUBMIT_INFO = 4,
     VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO = 5,
     VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE = 6,
-    VK_STRUCTURE_TYPE_BIND_SPARSE_INFO = 7,
     VK_STRUCTURE_TYPE_FENCE_CREATE_INFO = 8,
     VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO = 9,
     VK_STRUCTURE_TYPE_EVENT_CREATE_INFO = 10,
@@ -179,7 +179,6 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO = 13,
     VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO = 14,
     VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO = 15,
-    VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO = 16,
     VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO = 17,
     VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO = 18,
     VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO = 19,
@@ -472,6 +471,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT = 1000377000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT = 1000381000,
     VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT = 1000381001,
+    VK_STRUCTURE_TYPE_APPLICATION_PARAMETERS_EXT = 1000435000,
     VK_STRUCTURE_TYPE_MAX_ENUM = 0x7FFFFFFF
 } VkStructureType;
 
@@ -515,7 +515,6 @@ typedef enum VkObjectType {
     VK_OBJECT_TYPE_QUERY_POOL = 12,
     VK_OBJECT_TYPE_BUFFER_VIEW = 13,
     VK_OBJECT_TYPE_IMAGE_VIEW = 14,
-    VK_OBJECT_TYPE_SHADER_MODULE = 15,
     VK_OBJECT_TYPE_PIPELINE_CACHE = 16,
     VK_OBJECT_TYPE_PIPELINE_LAYOUT = 17,
     VK_OBJECT_TYPE_RENDER_PASS = 18,
@@ -1287,7 +1286,6 @@ typedef enum VkQueueFlagBits {
     VK_QUEUE_GRAPHICS_BIT = 0x00000001,
     VK_QUEUE_COMPUTE_BIT = 0x00000002,
     VK_QUEUE_TRANSFER_BIT = 0x00000004,
-    VK_QUEUE_SPARSE_BINDING_BIT = 0x00000008,
     VK_QUEUE_PROTECTED_BIT = 0x00000010,
     VK_QUEUE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkQueueFlagBits;
@@ -1415,7 +1413,6 @@ typedef VkFlags VkColorComponentFlags;
 typedef enum VkPipelineCreateFlagBits {
     VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT = 0x00000001,
     VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT = 0x00000002,
-    VK_PIPELINE_CREATE_DERIVATIVE_BIT = 0x00000004,
     VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT = 0x00000008,
     VK_PIPELINE_CREATE_DISPATCH_BASE_BIT = 0x00000010,
     VK_PIPELINE_CREATE_DISPATCH_BASE = VK_PIPELINE_CREATE_DISPATCH_BASE_BIT,
@@ -1520,7 +1517,6 @@ typedef enum VkCommandPoolCreateFlagBits {
 typedef VkFlags VkCommandPoolCreateFlags;
 
 typedef enum VkCommandPoolResetFlagBits {
-    VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT = 0x00000001,
     VK_COMMAND_POOL_RESET_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkCommandPoolResetFlagBits;
 typedef VkFlags VkCommandPoolResetFlags;
@@ -4201,6 +4197,7 @@ typedef enum VkDriverId {
     VK_DRIVER_ID_MESA_TURNIP = 18,
     VK_DRIVER_ID_MESA_V3DV = 19,
     VK_DRIVER_ID_MESA_PANVK = 20,
+    VK_DRIVER_ID_SAMSUNG_PROPRIETARY = 21,
     VK_DRIVER_ID_MAX_ENUM = 0x7FFFFFFF
 } VkDriverId;
 
@@ -6240,12 +6237,12 @@ typedef struct VkCheckpointData2NV {
 } VkCheckpointData2NV;
 
 typedef void (VKAPI_PTR *PFN_vkCmdSetEvent2KHR)(VkCommandBuffer                   commandBuffer, VkEvent                                             event, const VkDependencyInfoKHR*                          pDependencyInfo);
-typedef void (VKAPI_PTR *PFN_vkCmdResetEvent2KHR)(VkCommandBuffer                   commandBuffer, VkEvent                                             event, VkPipelineStageFlags2KHR                            stageMask);
+typedef void (VKAPI_PTR *PFN_vkCmdResetEvent2KHR)(VkCommandBuffer                   commandBuffer, VkEvent                                             event, VkPipelineStageFlags2KHR            stageMask);
 typedef void (VKAPI_PTR *PFN_vkCmdWaitEvents2KHR)(VkCommandBuffer                   commandBuffer, deUint32                                            eventCount, const VkEvent*                     pEvents, const VkDependencyInfoKHR*         pDependencyInfos);
 typedef void (VKAPI_PTR *PFN_vkCmdPipelineBarrier2KHR)(VkCommandBuffer                   commandBuffer, const VkDependencyInfoKHR*                                pDependencyInfo);
-typedef void (VKAPI_PTR *PFN_vkCmdWriteTimestamp2KHR)(VkCommandBuffer                   commandBuffer, VkPipelineStageFlags2KHR                            stage, VkQueryPool                                         queryPool, deUint32                                            query);
+typedef void (VKAPI_PTR *PFN_vkCmdWriteTimestamp2KHR)(VkCommandBuffer                   commandBuffer, VkPipelineStageFlags2KHR            stage, VkQueryPool                                         queryPool, deUint32                                            query);
 typedef VkResult (VKAPI_PTR *PFN_vkQueueSubmit2KHR)(VkQueue                           queue, deUint32                            submitCount, const VkSubmitInfo2KHR*           pSubmits, VkFence           fence);
-typedef void (VKAPI_PTR *PFN_vkCmdWriteBufferMarker2AMD)(VkCommandBuffer                   commandBuffer, VkPipelineStageFlags2KHR                            stage, VkBuffer                                            dstBuffer, VkDeviceSize                                        dstOffset, deUint32                                            marker);
+typedef void (VKAPI_PTR *PFN_vkCmdWriteBufferMarker2AMD)(VkCommandBuffer                   commandBuffer, VkPipelineStageFlags2KHR            stage, VkBuffer                                            dstBuffer, VkDeviceSize                                        dstOffset, deUint32                                            marker);
 typedef void (VKAPI_PTR *PFN_vkGetQueueCheckpointData2NV)(VkQueue queue, deUint32* pCheckpointDataCount, VkCheckpointData2NV* pCheckpointData);
 
 #ifndef VK_NO_PROTOTYPES
@@ -7759,6 +7756,20 @@ VKAPI_ATTR void                                    VKAPI_CALL vkCmdSetColorWrite
     deUint32                                    attachmentCount,
     const VkBool32*                             pColorWriteEnables);
 #endif
+
+
+#define VK_EXT_application_parameters 1
+#define VK_EXT_APPLICATION_PARAMETERS_SPEC_VERSION 1
+#define VK_EXT_APPLICATION_PARAMETERS_EXTENSION_NAME "VK_EXT_application_parameters"
+typedef struct VkApplicationParametersEXT {
+    VkStructureType    sType;
+    const void*        pNext;
+    deUint32           vendorID;
+    deUint32           deviceID;
+    deUint32           key;
+    deUint64           value;
+} VkApplicationParametersEXT;
+
 
 #ifdef __cplusplus
 }

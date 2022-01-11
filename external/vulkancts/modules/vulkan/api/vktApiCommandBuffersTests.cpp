@@ -416,6 +416,7 @@ tcu::TestStatus createPoolResetBitTest(Context& context)
 	return tcu::TestStatus::pass("Command Pool allocated correctly.");
 }
 
+#ifndef CTS_USES_VULKANSC
 tcu::TestStatus resetPoolReleaseResourcesBitTest(Context& context)
 {
 	const VkDevice							vkDevice				= context.getDevice();
@@ -436,6 +437,7 @@ tcu::TestStatus resetPoolReleaseResourcesBitTest(Context& context)
 
 	return tcu::TestStatus::pass("Command Pool allocated correctly.");
 }
+#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus resetPoolNoFlagsTest(Context& context)
 {
@@ -481,6 +483,7 @@ bool executeCommandBuffer (const VkDevice			device,
 	return result == VK_EVENT_SET;
 }
 
+#ifndef CTS_USES_VULKANSC
 tcu::TestStatus resetPoolReuseTest (Context& context)
 {
 	const VkDevice						vkDevice			= context.getDevice();
@@ -536,6 +539,7 @@ tcu::TestStatus resetPoolReuseTest (Context& context)
 
 	return tcu::TestStatus::pass("Passed");
 }
+#endif // CTS_USES_VULKANSC
 
 /******** 19.2. Command Buffer Lifetime (5.2 in VK 1.0 Spec) ******************/
 tcu::TestStatus allocatePrimaryBufferTest(Context& context)
@@ -4865,9 +4869,13 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 #endif // CTS_USES_VULKANSC
 	addFunctionCase				(commandBuffersTests.get(), "pool_create_transient_bit",		"",	createPoolTransientBitTest);
 	addFunctionCase				(commandBuffersTests.get(), "pool_create_reset_bit",			"",	createPoolResetBitTest);
+#ifndef CTS_USES_VULKANSC
 	addFunctionCase				(commandBuffersTests.get(), "pool_reset_release_res",			"",	resetPoolReleaseResourcesBitTest);
+#endif // CTS_USES_VULKANSC
 	addFunctionCase				(commandBuffersTests.get(), "pool_reset_no_flags_res",			"",	resetPoolNoFlagsTest);
+#ifndef CTS_USES_VULKANSC
 	addFunctionCase				(commandBuffersTests.get(), "pool_reset_reuse",					"",	checkEventSupport, resetPoolReuseTest);
+#endif // CTS_USES_VULKANSC
 	/* 19.2. Command Buffer Lifetime (5.2 in VK 1.0 Spec) */
 	addFunctionCase				(commandBuffersTests.get(), "allocate_single_primary",			"", allocatePrimaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "allocate_many_primary",			"",	allocateManyPrimaryBuffersTest);

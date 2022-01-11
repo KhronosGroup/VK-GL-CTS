@@ -182,6 +182,8 @@ private:
 	tcu::TestRunStatus							m_status;
 
 #ifdef CTS_USES_VULKANSC
+	int											m_subprocessCount;
+
 	std::unique_ptr<vksc_server::ipc::Parent>	m_parentIPC;
 	std::vector<DetailedSubprocessTestCount>	m_detailedSubprocessTestCount;
 #endif // CTS_USES_VULKANSC
@@ -233,6 +235,9 @@ TestCaseExecutor::TestCaseExecutor (tcu::TestContext& testCtx)
 	, m_resourceInterface	(new vk::ResourceInterfaceStandard(testCtx))
 #endif // CTS_USES_VULKANSC
 	, m_instance			(DE_NULL)
+#if defined CTS_USES_VULKANSC
+	, m_subprocessCount		(0)
+#endif // CTS_USES_VULKANSC
 {
 #ifdef CTS_USES_VULKANSC
 	std::vector<int> caseFraction = testCtx.getCommandLine().getCaseFraction();
@@ -473,7 +478,7 @@ void TestCaseExecutor::deinit (tcu::TestCase* testCase)
 	if (!m_context->getTestContext().getCommandLine().isSubProcess())
 	{
 		int currentSubprocessCount = getCurrentSubprocessCount(m_context->getResourceInterface()->getCasePath(), m_context->getTestContext().getCommandLine().getSubprocessTestCount());
-		if (m_testsForSubprocess.size() >= std::size_t(currentSubprocessCount) )
+		if (m_testsForSubprocess.size() >= std::size_t(currentSubprocessCount) || (m_subprocessCount && currentSubprocessCount != m_subprocessCount))
 		{
 			runTestsInSubprocess(m_context->getTestContext());
 
@@ -489,6 +494,7 @@ void TestCaseExecutor::deinit (tcu::TestCase* testCase)
 			suppressStandardOutput();
 			m_context->getTestContext().getLog().supressLogging(true);
 		}
+		m_subprocessCount = currentSubprocessCount;
 	}
 #endif // CTS_USES_VULKANSC
 }

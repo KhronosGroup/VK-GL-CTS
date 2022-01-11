@@ -87,6 +87,7 @@ const char* getResultName (VkResult value)
 		case VK_ERROR_INVALID_EXTERNAL_HANDLE:						return "VK_ERROR_INVALID_EXTERNAL_HANDLE";
 		case VK_ERROR_FRAGMENTATION:								return "VK_ERROR_FRAGMENTATION";
 		case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS:				return "VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS";
+		case VK_ERROR_VALIDATION_FAILED:							return "VK_ERROR_VALIDATION_FAILED";
 		case VK_ERROR_INVALID_PIPELINE_CACHE_DATA:					return "VK_ERROR_INVALID_PIPELINE_CACHE_DATA";
 		case VK_ERROR_NO_PIPELINE_MATCH:							return "VK_ERROR_NO_PIPELINE_MATCH";
 		case VK_ERROR_SURFACE_LOST_KHR:								return "VK_ERROR_SURFACE_LOST_KHR";
@@ -112,7 +113,6 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SUBMIT_INFO:														return "VK_STRUCTURE_TYPE_SUBMIT_INFO";
 		case VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO:											return "VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO";
 		case VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE:												return "VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE";
-		case VK_STRUCTURE_TYPE_BIND_SPARSE_INFO:												return "VK_STRUCTURE_TYPE_BIND_SPARSE_INFO";
 		case VK_STRUCTURE_TYPE_FENCE_CREATE_INFO:												return "VK_STRUCTURE_TYPE_FENCE_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO:											return "VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_EVENT_CREATE_INFO:												return "VK_STRUCTURE_TYPE_EVENT_CREATE_INFO";
@@ -121,7 +121,6 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO:											return "VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO:												return "VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO:											return "VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO";
-		case VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO:										return "VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO:										return "VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO:								return "VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO:							return "VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO";
@@ -414,6 +413,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_APPLICATION_PARAMETERS_EXT:										return "VK_STRUCTURE_TYPE_APPLICATION_PARAMETERS_EXT";
 		case VK_STRUCTURE_TYPE_MAX_ENUM:														return "VK_STRUCTURE_TYPE_MAX_ENUM";
 		default:																				return DE_NULL;
 	}
@@ -467,7 +467,6 @@ const char* getObjectTypeName (VkObjectType value)
 		case VK_OBJECT_TYPE_QUERY_POOL:					return "VK_OBJECT_TYPE_QUERY_POOL";
 		case VK_OBJECT_TYPE_BUFFER_VIEW:				return "VK_OBJECT_TYPE_BUFFER_VIEW";
 		case VK_OBJECT_TYPE_IMAGE_VIEW:					return "VK_OBJECT_TYPE_IMAGE_VIEW";
-		case VK_OBJECT_TYPE_SHADER_MODULE:				return "VK_OBJECT_TYPE_SHADER_MODULE";
 		case VK_OBJECT_TYPE_PIPELINE_CACHE:				return "VK_OBJECT_TYPE_PIPELINE_CACHE";
 		case VK_OBJECT_TYPE_PIPELINE_LAYOUT:			return "VK_OBJECT_TYPE_PIPELINE_LAYOUT";
 		case VK_OBJECT_TYPE_RENDER_PASS:				return "VK_OBJECT_TYPE_RENDER_PASS";
@@ -1347,6 +1346,7 @@ const char* getDriverIdName (VkDriverId value)
 		case VK_DRIVER_ID_MESA_TURNIP:					return "VK_DRIVER_ID_MESA_TURNIP";
 		case VK_DRIVER_ID_MESA_V3DV:					return "VK_DRIVER_ID_MESA_V3DV";
 		case VK_DRIVER_ID_MESA_PANVK:					return "VK_DRIVER_ID_MESA_PANVK";
+		case VK_DRIVER_ID_SAMSUNG_PROPRIETARY:			return "VK_DRIVER_ID_SAMSUNG_PROPRIETARY";
 		case VK_DRIVER_ID_MAX_ENUM:						return "VK_DRIVER_ID_MAX_ENUM";
 		default:										return DE_NULL;
 	}
@@ -1857,7 +1857,6 @@ tcu::Format::Bitfield<32> getQueueFlagsStr (VkQueueFlags value)
 		tcu::Format::BitDesc(VK_QUEUE_GRAPHICS_BIT,			"VK_QUEUE_GRAPHICS_BIT"),
 		tcu::Format::BitDesc(VK_QUEUE_COMPUTE_BIT,			"VK_QUEUE_COMPUTE_BIT"),
 		tcu::Format::BitDesc(VK_QUEUE_TRANSFER_BIT,			"VK_QUEUE_TRANSFER_BIT"),
-		tcu::Format::BitDesc(VK_QUEUE_SPARSE_BINDING_BIT,	"VK_QUEUE_SPARSE_BINDING_BIT"),
 		tcu::Format::BitDesc(VK_QUEUE_PROTECTED_BIT,		"VK_QUEUE_PROTECTED_BIT"),
 		tcu::Format::BitDesc(VK_QUEUE_FLAG_BITS_MAX_ENUM,	"VK_QUEUE_FLAG_BITS_MAX_ENUM"),
 	};
@@ -2028,7 +2027,6 @@ tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value
 	{
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,			"VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,				"VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DERIVATIVE_BIT,						"VK_PIPELINE_CREATE_DERIVATIVE_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT,	"VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE_BIT,					"VK_PIPELINE_CREATE_DISPATCH_BASE_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE,						"VK_PIPELINE_CREATE_DISPATCH_BASE"),
@@ -2174,8 +2172,7 @@ tcu::Format::Bitfield<32> getCommandPoolResetFlagsStr (VkCommandPoolResetFlags v
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT,	"VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT"),
-		tcu::Format::BitDesc(VK_COMMAND_POOL_RESET_FLAG_BITS_MAX_ENUM,		"VK_COMMAND_POOL_RESET_FLAG_BITS_MAX_ENUM"),
+		tcu::Format::BitDesc(VK_COMMAND_POOL_RESET_FLAG_BITS_MAX_ENUM,	"VK_COMMAND_POOL_RESET_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -7627,6 +7624,19 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineColorWriteCreateInfoE
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tattachmentCount = " << value.attachmentCount << '\n';
 	s << "\tpColorWriteEnables = " << value.pColorWriteEnables << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkApplicationParametersEXT& value)
+{
+	s << "VkApplicationParametersEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvendorID = " << value.vendorID << '\n';
+	s << "\tdeviceID = " << value.deviceID << '\n';
+	s << "\tkey = " << value.key << '\n';
+	s << "\tvalue = " << value.value << '\n';
 	s << '}';
 	return s;
 }

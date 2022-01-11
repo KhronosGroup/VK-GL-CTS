@@ -3802,6 +3802,16 @@ struct VkPipelineColorWriteCreateInfoEXT
 	const VkBool32*	pColorWriteEnables;
 };
 
+struct VkApplicationParametersEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		vendorID;
+	uint32_t		deviceID;
+	uint32_t		key;
+	uint64_t		value;
+};
+
 typedef VkPhysicalDeviceVariablePointersFeatures VkPhysicalDeviceVariablePointerFeatures;
 
 typedef VkPhysicalDeviceShaderDrawParametersFeatures VkPhysicalDeviceShaderDrawParameterFeatures;

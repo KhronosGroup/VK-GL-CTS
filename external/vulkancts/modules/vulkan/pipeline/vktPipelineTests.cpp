@@ -47,7 +47,6 @@
 #include "vktPipelineRenderToImageTests.hpp"
 #include "vktPipelineFramebufferAttachmentTests.hpp"
 #include "vktPipelineStencilExportTests.hpp"
-#include "vktPipelineDerivativeTests.hpp"
 #include "vktPipelineCreationFeedbackTests.hpp"
 #include "vktPipelineDepthRangeUnrestrictedTests.hpp"
 #include "vktPipelineExecutablePropertiesTests.hpp"
@@ -58,6 +57,7 @@
 #ifndef CTS_USES_VULKANSC
 #include "vktPipelineCreationCacheControlTests.hpp"
 #include "vktPipelineBindPointTests.hpp"
+#include "vktPipelineDerivativeTests.hpp"
 #endif // CTS_USES_VULKANSC
 #include "vktPipelineNoPositionTests.hpp"
 #include "vktPipelineColorWriteEnableTests.hpp"
@@ -104,8 +104,8 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createRenderToImageTests			(testCtx));
 	pipelineTests->addChild(createFramebufferAttachmentTests	(testCtx));
 	pipelineTests->addChild(createStencilExportTests			(testCtx));
-	pipelineTests->addChild(createDerivativeTests				(testCtx));
 #ifndef CTS_USES_VULKANSC
+	pipelineTests->addChild(createDerivativeTests				(testCtx));
 	pipelineTests->addChild(createCreationFeedbackTests			(testCtx));
 #endif // CTS_USES_VULKANSC
 	pipelineTests->addChild(createDepthRangeUnrestrictedTests	(testCtx));
