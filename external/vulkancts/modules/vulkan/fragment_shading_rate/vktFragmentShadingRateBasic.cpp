@@ -1865,7 +1865,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				0.0f,						// float			maxDepthBounds;
 			};
 
-			const VkGraphicsPipelineCreateInfo				graphicsPipelineCreateInfo		=
+			VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo	=
 			{
 				VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
 				&shadingRateStateCreateInfo,						// const void*										pNext;
@@ -1887,6 +1887,9 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				DE_NULL,											// VkPipeline										basePipelineHandle;
 				0													// int												basePipelineIndex;
 			};
+
+			if (m_data.useDynamicRendering)
+				graphicsPipelineCreateInfo.flags |= VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
 
 			VkImageMemoryBarrier imageBarrier =
 			{
