@@ -21,7 +21,7 @@ VkPhysicalDeviceExtendedDynamicState2FeaturesEXT				deviceExtendedDynamicState2F
 VkPhysicalDeviceFragmentDensityMapFeaturesEXT					deviceFragmentDensityMapFeaturesEXT[count];
 VkPhysicalDeviceFragmentDensityMap2FeaturesEXT					deviceFragmentDensityMap2FeaturesEXT[count];
 VkPhysicalDeviceFragmentShadingRateFeaturesKHR					deviceFragmentShadingRateFeaturesKHR[count];
-VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT					deviceGlobalPriorityQueryFeaturesEXT[count];
+VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR					deviceGlobalPriorityQueryFeaturesKHR[count];
 VkPhysicalDeviceInlineUniformBlockFeatures						deviceInlineUniformBlockFeatures[count];
 VkPhysicalDeviceIndexTypeUint8FeaturesEXT						deviceIndexTypeUint8FeaturesEXT[count];
 VkPhysicalDeviceImagelessFramebufferFeatures					deviceImagelessFramebufferFeatures[count];
@@ -95,7 +95,7 @@ const bool isExtendedDynamicState2FeaturesEXT			= checkExtension(properties, "VK
 const bool isFragmentDensityMapFeaturesEXT				= checkExtension(properties, "VK_EXT_fragment_density_map");
 const bool isFragmentDensityMap2FeaturesEXT				= checkExtension(properties, "VK_EXT_fragment_density_map2");
 const bool isFragmentShadingRateFeaturesKHR				= checkExtension(properties, "VK_KHR_fragment_shading_rate");
-const bool isGlobalPriorityQueryFeaturesEXT				= checkExtension(properties, "VK_EXT_global_priority_query");
+const bool isGlobalPriorityQueryFeaturesKHR				= checkExtension(properties, "VK_KHR_global_priority");
 const bool isInlineUniformBlockFeatures					= checkExtension(properties, "VK_EXT_inline_uniform_block")					|| context.contextSupports(vk::ApiVersion(1, 3, 0));
 const bool isIndexTypeUint8FeaturesEXT					= checkExtension(properties, "VK_EXT_index_type_uint8");
 const bool isImagelessFramebufferFeatures				= checkExtension(properties, "VK_KHR_imageless_framebuffer")				|| context.contextSupports(vk::ApiVersion(1, 2, 0));
@@ -171,7 +171,7 @@ for (int ndx = 0; ndx < count; ++ndx)
 	deMemset(&deviceFragmentDensityMapFeaturesEXT[ndx],				0xFF * ndx, sizeof(VkPhysicalDeviceFragmentDensityMapFeaturesEXT));
 	deMemset(&deviceFragmentDensityMap2FeaturesEXT[ndx],			0xFF * ndx, sizeof(VkPhysicalDeviceFragmentDensityMap2FeaturesEXT));
 	deMemset(&deviceFragmentShadingRateFeaturesKHR[ndx],			0xFF * ndx, sizeof(VkPhysicalDeviceFragmentShadingRateFeaturesKHR));
-	deMemset(&deviceGlobalPriorityQueryFeaturesEXT[ndx],			0xFF * ndx, sizeof(VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT));
+	deMemset(&deviceGlobalPriorityQueryFeaturesKHR[ndx],			0xFF * ndx, sizeof(VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR));
 	deMemset(&deviceInlineUniformBlockFeatures[ndx],				0xFF * ndx, sizeof(VkPhysicalDeviceInlineUniformBlockFeatures));
 	deMemset(&deviceIndexTypeUint8FeaturesEXT[ndx],					0xFF * ndx, sizeof(VkPhysicalDeviceIndexTypeUint8FeaturesEXT));
 	deMemset(&deviceImagelessFramebufferFeatures[ndx],				0xFF * ndx, sizeof(VkPhysicalDeviceImagelessFramebufferFeatures));
@@ -281,10 +281,10 @@ for (int ndx = 0; ndx < count; ++ndx)
 	deviceFragmentDensityMap2FeaturesEXT[ndx].pNext = &deviceFragmentShadingRateFeaturesKHR[ndx];
 
 	deviceFragmentShadingRateFeaturesKHR[ndx].sType = isFragmentShadingRateFeaturesKHR ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR : VK_STRUCTURE_TYPE_MAX_ENUM;
-	deviceFragmentShadingRateFeaturesKHR[ndx].pNext = &deviceGlobalPriorityQueryFeaturesEXT[ndx];
+	deviceFragmentShadingRateFeaturesKHR[ndx].pNext = &deviceGlobalPriorityQueryFeaturesKHR[ndx];
 
-	deviceGlobalPriorityQueryFeaturesEXT[ndx].sType = isGlobalPriorityQueryFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
-	deviceGlobalPriorityQueryFeaturesEXT[ndx].pNext = &deviceInlineUniformBlockFeatures[ndx];
+	deviceGlobalPriorityQueryFeaturesKHR[ndx].sType = isGlobalPriorityQueryFeaturesKHR ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_KHR : VK_STRUCTURE_TYPE_MAX_ENUM;
+	deviceGlobalPriorityQueryFeaturesKHR[ndx].pNext = &deviceInlineUniformBlockFeatures[ndx];
 
 	deviceInlineUniformBlockFeatures[ndx].sType = isInlineUniformBlockFeatures ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES : VK_STRUCTURE_TYPE_MAX_ENUM;
 	deviceInlineUniformBlockFeatures[ndx].pNext = &deviceIndexTypeUint8FeaturesEXT[ndx];
@@ -489,8 +489,8 @@ if (isFragmentDensityMap2FeaturesEXT)
 	log << TestLog::Message << deviceFragmentDensityMap2FeaturesEXT[0] << TestLog::EndMessage;
 if (isFragmentShadingRateFeaturesKHR)
 	log << TestLog::Message << deviceFragmentShadingRateFeaturesKHR[0] << TestLog::EndMessage;
-if (isGlobalPriorityQueryFeaturesEXT)
-	log << TestLog::Message << deviceGlobalPriorityQueryFeaturesEXT[0] << TestLog::EndMessage;
+if (isGlobalPriorityQueryFeaturesKHR)
+	log << TestLog::Message << deviceGlobalPriorityQueryFeaturesKHR[0] << TestLog::EndMessage;
 if (isInlineUniformBlockFeatures)
 	log << TestLog::Message << deviceInlineUniformBlockFeatures[0] << TestLog::EndMessage;
 if (isIndexTypeUint8FeaturesEXT)
@@ -734,10 +734,10 @@ if (isFragmentShadingRateFeaturesKHR &&
 {
 		TCU_FAIL("Mismatch between VkPhysicalDeviceFragmentShadingRateFeaturesKHR");
 }
-if (isGlobalPriorityQueryFeaturesEXT &&
-	(deviceGlobalPriorityQueryFeaturesEXT[0].globalPriorityQuery != deviceGlobalPriorityQueryFeaturesEXT[1].globalPriorityQuery))
+if (isGlobalPriorityQueryFeaturesKHR &&
+	(deviceGlobalPriorityQueryFeaturesKHR[0].globalPriorityQuery != deviceGlobalPriorityQueryFeaturesKHR[1].globalPriorityQuery))
 {
-		TCU_FAIL("Mismatch between VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT");
+		TCU_FAIL("Mismatch between VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR");
 }
 if (isInlineUniformBlockFeatures &&
 	(deviceInlineUniformBlockFeatures[0].inlineUniformBlock != deviceInlineUniformBlockFeatures[1].inlineUniformBlock ||

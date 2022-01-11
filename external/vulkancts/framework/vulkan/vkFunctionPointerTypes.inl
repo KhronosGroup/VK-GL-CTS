@@ -197,7 +197,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyBufferToImage2Func)												(
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyImageToBuffer2Func)												(VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2* pCopyImageToBufferInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBlitImage2Func)														(VkCommandBuffer commandBuffer, const VkBlitImageInfo2* pBlitImageInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdResolveImage2Func)													(VkCommandBuffer commandBuffer, const VkResolveImageInfo2* pResolveImageInfo);
-typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginRenderingFunc)													(VkCommandBuffer commandBuffer, const VkRenderingInfoKHR* pRenderingInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginRenderingFunc)													(VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRenderingFunc)													(VkCommandBuffer commandBuffer);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetCullModeFunc)													(VkCommandBuffer commandBuffer, VkCullModeFlags cullMode);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetFrontFaceFunc)													(VkCommandBuffer commandBuffer, VkFrontFace frontFace);
@@ -239,7 +239,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateDisplayModeKHRFunc)											
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDisplayPlaneCapabilitiesKHRFunc)									(VkPhysicalDevice physicalDevice, VkDisplayModeKHR mode, uint32_t planeIndex, VkDisplayPlaneCapabilitiesKHR* pCapabilities);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateDisplayPlaneSurfaceKHRFunc)										(VkInstance instance, const VkDisplaySurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateSharedSwapchainsKHRFunc)											(VkDevice device, uint32_t swapchainCount, const VkSwapchainCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchains);
-typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginRenderingKHRFunc)												(VkCommandBuffer commandBuffer, const VkRenderingInfoKHR* pRenderingInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginRenderingKHRFunc)												(VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRenderingKHRFunc)												(VkCommandBuffer commandBuffer);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceFeatures2KHRFunc)										(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures2* pFeatures);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceProperties2KHRFunc)									(VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties2* pProperties);
@@ -315,7 +315,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdWaitEvents2KHRFunc)													(VkC
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdPipelineBarrier2KHRFunc)											(VkCommandBuffer commandBuffer, const VkDependencyInfo* pDependencyInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdWriteTimestamp2KHRFunc)												(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkQueryPool queryPool, uint32_t query);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* QueueSubmit2KHRFunc)													(VkQueue queue, uint32_t submitCount, const VkSubmitInfo2* pSubmits, VkFence fence);
-typedef VKAPI_ATTR void					(VKAPI_CALL* CmdWriteBufferMarker2AMDFunc)											(VkCommandBuffer commandBuffer, VkPipelineStageFlags2KHR stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdWriteBufferMarker2AMDFunc)											(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetQueueCheckpointData2NVFunc)											(VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointData2NV* pCheckpointData);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyBuffer2KHRFunc)													(VkCommandBuffer commandBuffer, const VkCopyBufferInfo2* pCopyBufferInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyImage2KHRFunc)													(VkCommandBuffer commandBuffer, const VkCopyImageInfo2* pCopyImageInfo);

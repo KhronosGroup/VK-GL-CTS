@@ -33,11 +33,12 @@ const vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&				getExtendedDynami
 const vk::VkPhysicalDeviceExternalMemoryRDMAFeaturesNV&					getExternalMemoryRDMAFeatures				(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT&				getFragmentDensityMapFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&				getFragmentDensityMap2FeaturesEXT			(void) const;
+const vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM&			getFragmentDensityMapOffsetFeaturesQCOM		(void) const;
 const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV&			getFragmentShaderBarycentricFeatures		(void) const;
 const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&			getFragmentShaderInterlockFeaturesEXT		(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&				getFragmentShadingRateFeatures				(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV&			getFragmentShadingRateEnumsFeatures			(void) const;
-const vk::VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT&				getGlobalPriorityQueryFeaturesEXT			(void) const;
+const vk::VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR&				getGlobalPriorityQueryFeatures				(void) const;
 const vk::VkPhysicalDeviceHostQueryResetFeatures&						getHostQueryResetFeatures					(void) const;
 const vk::VkPhysicalDeviceImagelessFramebufferFeatures&					getImagelessFramebufferFeatures				(void) const;
 const vk::VkPhysicalDeviceImageRobustnessFeatures&						getImageRobustnessFeatures					(void) const;
@@ -46,6 +47,7 @@ const vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT&					getIndexTypeUint8Featur
 const vk::VkPhysicalDeviceInheritedViewportScissorFeaturesNV&			getInheritedViewportScissorFeatures			(void) const;
 const vk::VkPhysicalDeviceInlineUniformBlockFeatures&					getInlineUniformBlockFeatures				(void) const;
 const vk::VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&					getInvocationMaskFeaturesHUAWEI				(void) const;
+const vk::VkPhysicalDeviceLinearColorAttachmentFeaturesNV&				getLinearColorAttachmentFeatures			(void) const;
 const vk::VkPhysicalDeviceLineRasterizationFeaturesEXT&					getLineRasterizationFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceMaintenance4Features&							getMaintenance4Features						(void) const;
 const vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT&					getMemoryPriorityFeaturesEXT				(void) const;

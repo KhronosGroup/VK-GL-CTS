@@ -330,10 +330,10 @@ PACKAGES = [
 		"git@gitlab.khronos.org:spirv/SPIRV-Headers.git",
 		"7445cca32fa418a40dbc8b433734a1d3079200ac",
 		"spirv-headers"),
-        GitRepo(
+	GitRepo(
 		"https://gitlab.khronos.org/vulkan/vulkan.git",
 		"git@gitlab.khronos.org:vulkan/vulkan.git",
-		"c7226880e6083dfd087131e09027cf1030bc002d",
+		"bd713a32d9952c80ff9bd1164c560df7ed9cc6a2",
 		"vulkan-docs"),
 	GitRepo(
 		"https://gitlab.khronos.org/spirv/amber.git",

@@ -481,6 +481,16 @@ if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(de
 	checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
 }
 
+if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR>()))
+{
+	static const Feature features[] =
+	{
+		FEATURE_ITEM (VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR, globalPriorityQuery),
+	};
+	auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR*>(featuresStruct);
+	checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
+}
+
 if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceFragmentShadingRateFeaturesKHR>()))
 {
 	static const Feature features[] =
@@ -1150,16 +1160,6 @@ if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(de
 	checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
 }
 
-if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT>()))
-{
-	static const Feature features[] =
-	{
-		FEATURE_ITEM (VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT, globalPriorityQuery),
-	};
-	auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT*>(featuresStruct);
-	checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
-}
-
 if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceImageViewMinLodFeaturesEXT>()))
 {
 	static const Feature features[] =
@@ -1198,6 +1198,26 @@ if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(de
 		FEATURE_ITEM (VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT, pageableDeviceLocalMemory),
 	};
 	auto* supportedFeatures = reinterpret_cast<const VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT*>(featuresStruct);
+	checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
+}
+
+if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM>()))
+{
+	static const Feature features[] =
+	{
+		FEATURE_ITEM (VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM, fragmentDensityMapOffset),
+	};
+	auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM*>(featuresStruct);
+	checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
+}
+
+if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceLinearColorAttachmentFeaturesNV>()))
+{
+	static const Feature features[] =
+	{
+		FEATURE_ITEM (VkPhysicalDeviceLinearColorAttachmentFeaturesNV, linearColorAttachment),
+	};
+	auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceLinearColorAttachmentFeaturesNV*>(featuresStruct);
 	checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
 }
 

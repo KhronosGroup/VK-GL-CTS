@@ -54,6 +54,7 @@ const char*	getColorSpaceKHRName									(VkColorSpaceKHR value);
 const char*	getPerformanceCounterUnitKHRName						(VkPerformanceCounterUnitKHR value);
 const char*	getPerformanceCounterScopeKHRName						(VkPerformanceCounterScopeKHR value);
 const char*	getPerformanceCounterStorageKHRName						(VkPerformanceCounterStorageKHR value);
+const char*	getQueueGlobalPriorityKHRName							(VkQueueGlobalPriorityKHR value);
 const char*	getFragmentShadingRateCombinerOpKHRName					(VkFragmentShadingRateCombinerOpKHR value);
 const char*	getPipelineExecutableStatisticFormatKHRName				(VkPipelineExecutableStatisticFormatKHR value);
 const char*	getDebugReportObjectTypeEXTName							(VkDebugReportObjectTypeEXT value);
@@ -76,7 +77,6 @@ const char*	getGeometryTypeKHRName									(VkGeometryTypeKHR value);
 const char*	getAccelerationStructureTypeKHRName						(VkAccelerationStructureTypeKHR value);
 const char*	getCopyAccelerationStructureModeKHRName					(VkCopyAccelerationStructureModeKHR value);
 const char*	getAccelerationStructureMemoryRequirementsTypeNVName	(VkAccelerationStructureMemoryRequirementsTypeNV value);
-const char*	getQueueGlobalPriorityEXTName							(VkQueueGlobalPriorityEXT value);
 const char*	getTimeDomainEXTName									(VkTimeDomainEXT value);
 const char*	getMemoryOverallocationBehaviorAMDName					(VkMemoryOverallocationBehaviorAMD value);
 const char*	getPerformanceConfigurationTypeINTELName				(VkPerformanceConfigurationTypeINTEL value);
@@ -119,7 +119,7 @@ const char*	getdVideoH265ProfileIdcName								(StdVideoH265ProfileIdc value);
 const char*	getdVideoH265LevelName									(StdVideoH265Level value);
 const char*	getdVideoH265SliceTypeName								(StdVideoH265SliceType value);
 const char*	getdVideoH265PictureTypeName							(StdVideoH265PictureType value);
-const char*	getdVideoDecodeH264FieldOrderCntName					(StdVideoDecodeH264FieldOrderCnt value);
+const char*	getdVideoDecodeH264FieldOrderCountName					(StdVideoDecodeH264FieldOrderCount value);
 const char*	getFullScreenExclusiveEXTName							(VkFullScreenExclusiveEXT value);
 
 inline tcu::Format::Enum<VkResult>											getResultStr										(VkResult value)										{ return tcu::Format::Enum<VkResult>(getResultName, value);																					}
@@ -174,6 +174,7 @@ inline tcu::Format::Enum<VkColorSpaceKHR>									getColorSpaceKHRStr									(V
 inline tcu::Format::Enum<VkPerformanceCounterUnitKHR>						getPerformanceCounterUnitKHRStr						(VkPerformanceCounterUnitKHR value)						{ return tcu::Format::Enum<VkPerformanceCounterUnitKHR>(getPerformanceCounterUnitKHRName, value);											}
 inline tcu::Format::Enum<VkPerformanceCounterScopeKHR>						getPerformanceCounterScopeKHRStr					(VkPerformanceCounterScopeKHR value)					{ return tcu::Format::Enum<VkPerformanceCounterScopeKHR>(getPerformanceCounterScopeKHRName, value);											}
 inline tcu::Format::Enum<VkPerformanceCounterStorageKHR>					getPerformanceCounterStorageKHRStr					(VkPerformanceCounterStorageKHR value)					{ return tcu::Format::Enum<VkPerformanceCounterStorageKHR>(getPerformanceCounterStorageKHRName, value);										}
+inline tcu::Format::Enum<VkQueueGlobalPriorityKHR>							getQueueGlobalPriorityKHRStr						(VkQueueGlobalPriorityKHR value)						{ return tcu::Format::Enum<VkQueueGlobalPriorityKHR>(getQueueGlobalPriorityKHRName, value);													}
 inline tcu::Format::Enum<VkFragmentShadingRateCombinerOpKHR>				getFragmentShadingRateCombinerOpKHRStr				(VkFragmentShadingRateCombinerOpKHR value)				{ return tcu::Format::Enum<VkFragmentShadingRateCombinerOpKHR>(getFragmentShadingRateCombinerOpKHRName, value);								}
 inline tcu::Format::Enum<VkPipelineExecutableStatisticFormatKHR>			getPipelineExecutableStatisticFormatKHRStr			(VkPipelineExecutableStatisticFormatKHR value)			{ return tcu::Format::Enum<VkPipelineExecutableStatisticFormatKHR>(getPipelineExecutableStatisticFormatKHRName, value);						}
 inline tcu::Format::Enum<VkDebugReportObjectTypeEXT>						getDebugReportObjectTypeEXTStr						(VkDebugReportObjectTypeEXT value)						{ return tcu::Format::Enum<VkDebugReportObjectTypeEXT>(getDebugReportObjectTypeEXTName, value);												}
@@ -196,7 +197,6 @@ inline tcu::Format::Enum<VkGeometryTypeKHR>									getGeometryTypeKHRStr							
 inline tcu::Format::Enum<VkAccelerationStructureTypeKHR>					getAccelerationStructureTypeKHRStr					(VkAccelerationStructureTypeKHR value)					{ return tcu::Format::Enum<VkAccelerationStructureTypeKHR>(getAccelerationStructureTypeKHRName, value);										}
 inline tcu::Format::Enum<VkCopyAccelerationStructureModeKHR>				getCopyAccelerationStructureModeKHRStr				(VkCopyAccelerationStructureModeKHR value)				{ return tcu::Format::Enum<VkCopyAccelerationStructureModeKHR>(getCopyAccelerationStructureModeKHRName, value);								}
 inline tcu::Format::Enum<VkAccelerationStructureMemoryRequirementsTypeNV>	getAccelerationStructureMemoryRequirementsTypeNVStr	(VkAccelerationStructureMemoryRequirementsTypeNV value)	{ return tcu::Format::Enum<VkAccelerationStructureMemoryRequirementsTypeNV>(getAccelerationStructureMemoryRequirementsTypeNVName, value);	}
-inline tcu::Format::Enum<VkQueueGlobalPriorityEXT>							getQueueGlobalPriorityEXTStr						(VkQueueGlobalPriorityEXT value)						{ return tcu::Format::Enum<VkQueueGlobalPriorityEXT>(getQueueGlobalPriorityEXTName, value);													}
 inline tcu::Format::Enum<VkTimeDomainEXT>									getTimeDomainEXTStr									(VkTimeDomainEXT value)									{ return tcu::Format::Enum<VkTimeDomainEXT>(getTimeDomainEXTName, value);																	}
 inline tcu::Format::Enum<VkMemoryOverallocationBehaviorAMD>					getMemoryOverallocationBehaviorAMDStr				(VkMemoryOverallocationBehaviorAMD value)				{ return tcu::Format::Enum<VkMemoryOverallocationBehaviorAMD>(getMemoryOverallocationBehaviorAMDName, value);								}
 inline tcu::Format::Enum<VkPerformanceConfigurationTypeINTEL>				getPerformanceConfigurationTypeINTELStr				(VkPerformanceConfigurationTypeINTEL value)				{ return tcu::Format::Enum<VkPerformanceConfigurationTypeINTEL>(getPerformanceConfigurationTypeINTELName, value);							}
@@ -239,7 +239,7 @@ inline tcu::Format::Enum<StdVideoH265ProfileIdc>							getdVideoH265ProfileIdcSt
 inline tcu::Format::Enum<StdVideoH265Level>									getdVideoH265LevelStr								(StdVideoH265Level value)								{ return tcu::Format::Enum<StdVideoH265Level>(getdVideoH265LevelName, value);																}
 inline tcu::Format::Enum<StdVideoH265SliceType>								getdVideoH265SliceTypeStr							(StdVideoH265SliceType value)							{ return tcu::Format::Enum<StdVideoH265SliceType>(getdVideoH265SliceTypeName, value);														}
 inline tcu::Format::Enum<StdVideoH265PictureType>							getdVideoH265PictureTypeStr							(StdVideoH265PictureType value)							{ return tcu::Format::Enum<StdVideoH265PictureType>(getdVideoH265PictureTypeName, value);													}
-inline tcu::Format::Enum<StdVideoDecodeH264FieldOrderCnt>					getdVideoDecodeH264FieldOrderCntStr					(StdVideoDecodeH264FieldOrderCnt value)					{ return tcu::Format::Enum<StdVideoDecodeH264FieldOrderCnt>(getdVideoDecodeH264FieldOrderCntName, value);									}
+inline tcu::Format::Enum<StdVideoDecodeH264FieldOrderCount>					getdVideoDecodeH264FieldOrderCountStr				(StdVideoDecodeH264FieldOrderCount value)				{ return tcu::Format::Enum<StdVideoDecodeH264FieldOrderCount>(getdVideoDecodeH264FieldOrderCountName, value);								}
 inline tcu::Format::Enum<VkFullScreenExclusiveEXT>							getFullScreenExclusiveEXTStr						(VkFullScreenExclusiveEXT value)						{ return tcu::Format::Enum<VkFullScreenExclusiveEXT>(getFullScreenExclusiveEXTName, value);													}
 
 inline std::ostream&	operator<<	(std::ostream& s, VkResult value)											{ return s << getResultStr(value);											}
@@ -294,6 +294,7 @@ inline std::ostream&	operator<<	(std::ostream& s, VkColorSpaceKHR value)								
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceCounterUnitKHR value)						{ return s << getPerformanceCounterUnitKHRStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceCounterScopeKHR value)						{ return s << getPerformanceCounterScopeKHRStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceCounterStorageKHR value)						{ return s << getPerformanceCounterStorageKHRStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkQueueGlobalPriorityKHR value)							{ return s << getQueueGlobalPriorityKHRStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkFragmentShadingRateCombinerOpKHR value)					{ return s << getFragmentShadingRateCombinerOpKHRStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkPipelineExecutableStatisticFormatKHR value)				{ return s << getPipelineExecutableStatisticFormatKHRStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportObjectTypeEXT value)							{ return s << getDebugReportObjectTypeEXTStr(value);						}
@@ -316,7 +317,6 @@ inline std::ostream&	operator<<	(std::ostream& s, VkGeometryTypeKHR value)						
 inline std::ostream&	operator<<	(std::ostream& s, VkAccelerationStructureTypeKHR value)						{ return s << getAccelerationStructureTypeKHRStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkCopyAccelerationStructureModeKHR value)					{ return s << getCopyAccelerationStructureModeKHRStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkAccelerationStructureMemoryRequirementsTypeNV value)	{ return s << getAccelerationStructureMemoryRequirementsTypeNVStr(value);	}
-inline std::ostream&	operator<<	(std::ostream& s, VkQueueGlobalPriorityEXT value)							{ return s << getQueueGlobalPriorityEXTStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkTimeDomainEXT value)									{ return s << getTimeDomainEXTStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, VkMemoryOverallocationBehaviorAMD value)					{ return s << getMemoryOverallocationBehaviorAMDStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceConfigurationTypeINTEL value)				{ return s << getPerformanceConfigurationTypeINTELStr(value);				}
@@ -359,7 +359,7 @@ inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265ProfileIdc value)	
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265Level value)									{ return s << getdVideoH265LevelStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265SliceType value)								{ return s << getdVideoH265SliceTypeStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265PictureType value)							{ return s << getdVideoH265PictureTypeStr(value);							}
-inline std::ostream&	operator<<	(std::ostream& s, StdVideoDecodeH264FieldOrderCnt value)					{ return s << getdVideoDecodeH264FieldOrderCntStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoDecodeH264FieldOrderCount value)					{ return s << getdVideoDecodeH264FieldOrderCountStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkFullScreenExclusiveEXT value)							{ return s << getFullScreenExclusiveEXTStr(value);							}
 
 tcu::Format::Bitfield<32>	getAccessFlagsStr											(VkAccessFlags value);
@@ -856,6 +856,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkDisplayModeProperties2KHR& va
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayPlaneInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayPlaneCapabilities2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderClockFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceQueueGlobalPriorityCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyGlobalPriorityPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkFragmentShadingRateAttachmentInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineFragmentShadingRateStateCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShadingRateFeaturesKHR& value);
@@ -984,7 +987,6 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRepresentativeF
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRepresentativeFragmentTestStateCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageViewImageFormatInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkFilterCubicImageViewImageFormatPropertiesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDeviceQueueGlobalPriorityCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImportMemoryHostPointerInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryHostPointerPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalMemoryHostPropertiesEXT& value);
@@ -1116,8 +1118,6 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalMemoryR
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExtendedDynamicState2FeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceColorWriteEnableFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineColorWriteCreateInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyGlobalPriorityPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageViewMinLodFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageViewMinLodCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiDrawFeaturesEXT& value);
@@ -1127,6 +1127,10 @@ std::ostream&	operator<<	(std::ostream& s, const VkMultiDrawIndexedInfoEXT& valu
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceBorderColorSwizzleFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSamplerBorderColorComponentMappingCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSubpassFragmentDensityMapOffsetEndInfoQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLinearColorAttachmentFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildRangeInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryTrianglesDataKHR& value);
@@ -1161,6 +1165,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkImportAndroidHardwareBufferIn
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetAndroidHardwareBufferInfoANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExternalFormatANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferFormatProperties2ANDROID& value);
+std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyQueryResultStatusProperties2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoQueueFamilyProperties2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoProfileKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoProfilesKHR& value);

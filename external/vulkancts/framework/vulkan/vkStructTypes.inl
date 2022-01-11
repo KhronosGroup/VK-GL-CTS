@@ -3388,6 +3388,28 @@ struct VkPhysicalDeviceShaderClockFeaturesKHR
 	VkBool32		shaderDeviceClock;
 };
 
+struct VkDeviceQueueGlobalPriorityCreateInfoKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkQueueGlobalPriorityKHR	globalPriority;
+};
+
+struct VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		globalPriorityQuery;
+};
+
+struct VkQueueFamilyGlobalPriorityPropertiesKHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	uint32_t					priorityCount;
+	VkQueueGlobalPriorityKHR	priorities[VK_MAX_GLOBAL_PRIORITY_SIZE_KHR];
+};
+
 struct VkFragmentShadingRateAttachmentInfoKHR
 {
 	VkStructureType					sType;
@@ -3544,17 +3566,17 @@ struct VkPhysicalDevicePresentIdFeaturesKHR
 
 struct VkQueueFamilyCheckpointProperties2NV
 {
-	VkStructureType				sType;
-	void*						pNext;
-	VkPipelineStageFlags2KHR	checkpointExecutionStageMask;
+	VkStructureType			sType;
+	void*					pNext;
+	VkPipelineStageFlags2	checkpointExecutionStageMask;
 };
 
 struct VkCheckpointData2NV
 {
-	VkStructureType				sType;
-	void*						pNext;
-	VkPipelineStageFlags2KHR	stage;
-	void*						pCheckpointMarker;
+	VkStructureType			sType;
+	void*					pNext;
+	VkPipelineStageFlags2	stage;
+	void*					pCheckpointMarker;
 };
 
 struct VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR
@@ -4246,9 +4268,9 @@ struct VkImageDrmFormatModifierPropertiesEXT
 
 struct VkDrmFormatModifierProperties2EXT
 {
-	uint64_t					drmFormatModifier;
-	uint32_t					drmFormatModifierPlaneCount;
-	VkFormatFeatureFlags2KHR	drmFormatModifierTilingFeatures;
+	uint64_t				drmFormatModifier;
+	uint32_t				drmFormatModifierPlaneCount;
+	VkFormatFeatureFlags2	drmFormatModifierTilingFeatures;
 };
 
 struct VkDrmFormatModifierPropertiesList2EXT
@@ -4511,13 +4533,6 @@ struct VkFilterCubicImageViewImageFormatPropertiesEXT
 	void*			pNext;
 	VkBool32		filterCubic;
 	VkBool32		filterCubicMinmax;
-};
-
-struct VkDeviceQueueGlobalPriorityCreateInfoEXT
-{
-	VkStructureType				sType;
-	const void*					pNext;
-	VkQueueGlobalPriorityEXT	globalPriority;
 };
 
 struct VkImportMemoryHostPointerInfoEXT
@@ -5637,21 +5652,6 @@ struct VkPipelineColorWriteCreateInfoEXT
 	const VkBool32*	pColorWriteEnables;
 };
 
-struct VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT
-{
-	VkStructureType	sType;
-	void*			pNext;
-	VkBool32		globalPriorityQuery;
-};
-
-struct VkQueueFamilyGlobalPriorityPropertiesEXT
-{
-	VkStructureType				sType;
-	void*						pNext;
-	uint32_t					priorityCount;
-	VkQueueGlobalPriorityEXT	priorities[VK_MAX_GLOBAL_PRIORITY_SIZE_EXT];
-};
-
 struct VkPhysicalDeviceImageViewMinLodFeaturesEXT
 {
 	VkStructureType	sType;
@@ -5714,6 +5714,35 @@ struct VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		pageableDeviceLocalMemory;
+};
+
+struct VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		fragmentDensityMapOffset;
+};
+
+struct VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkExtent2D		fragmentDensityOffsetGranularity;
+};
+
+struct VkSubpassFragmentDensityMapOffsetEndInfoQCOM
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	uint32_t			fragmentDensityOffsetCount;
+	const VkOffset2D*	pFragmentDensityOffsets;
+};
+
+struct VkPhysicalDeviceLinearColorAttachmentFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		linearColorAttachment;
 };
 
 union VkDeviceOrHostAddressKHR
@@ -6033,12 +6062,19 @@ struct VkAndroidHardwareBufferFormatProperties2ANDROID
 	void*							pNext;
 	VkFormat						format;
 	uint64_t						externalFormat;
-	VkFormatFeatureFlags2KHR		formatFeatures;
+	VkFormatFeatureFlags2			formatFeatures;
 	VkComponentMapping				samplerYcbcrConversionComponents;
 	VkSamplerYcbcrModelConversion	suggestedYcbcrModel;
 	VkSamplerYcbcrRange				suggestedYcbcrRange;
 	VkChromaLocation				suggestedXChromaOffset;
 	VkChromaLocation				suggestedYChromaOffset;
+};
+
+struct VkQueueFamilyQueryResultStatusProperties2KHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		supported;
 };
 
 struct VkVideoQueueFamilyProperties2KHR
@@ -6579,6 +6615,7 @@ struct VkVideoEncodeH264RateControlInfoEXT
 	uint32_t											idrPeriod;
 	uint32_t											consecutiveBFrameCount;
 	VkVideoEncodeH264RateControlStructureFlagBitsEXT	rateControlStructure;
+	uint8_t												temporalLayerCount;
 };
 
 struct VkVideoEncodeH264QpEXT
@@ -7096,6 +7133,7 @@ struct VkVideoEncodeH265RateControlInfoEXT
 	uint32_t											idrPeriod;
 	uint32_t											consecutiveBFrameCount;
 	VkVideoEncodeH265RateControlStructureFlagBitsEXT	rateControlStructure;
+	uint8_t												subLayerCount;
 };
 
 struct VkVideoEncodeH265QpEXT
@@ -8063,6 +8101,12 @@ typedef VkDeviceBufferMemoryRequirements VkDeviceBufferMemoryRequirementsKHR;
 typedef VkDeviceImageMemoryRequirements VkDeviceImageMemoryRequirementsKHR;
 
 typedef VkAttachmentSampleCountInfoAMD VkAttachmentSampleCountInfoNV;
+
+typedef VkDeviceQueueGlobalPriorityCreateInfoKHR VkDeviceQueueGlobalPriorityCreateInfoEXT;
+
+typedef VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT;
+
+typedef VkQueueFamilyGlobalPriorityPropertiesKHR VkQueueFamilyGlobalPriorityPropertiesEXT;
 
 typedef VkTransformMatrixKHR VkTransformMatrixNV;
 

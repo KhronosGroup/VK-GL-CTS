@@ -33,11 +33,12 @@ const vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&				Context::getExten
 const vk::VkPhysicalDeviceExternalMemoryRDMAFeaturesNV&					Context::getExternalMemoryRDMAFeatures					(void) const { return m_device->getExternalMemoryRDMAFeatures();				}
 const vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT&				Context::getFragmentDensityMapFeaturesEXT				(void) const { return m_device->getFragmentDensityMapFeaturesEXT();				}
 const vk::VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&				Context::getFragmentDensityMap2FeaturesEXT				(void) const { return m_device->getFragmentDensityMap2FeaturesEXT();			}
+const vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM&			Context::getFragmentDensityMapOffsetFeaturesQCOM		(void) const { return m_device->getFragmentDensityMapOffsetFeaturesQCOM();		}
 const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV&			Context::getFragmentShaderBarycentricFeatures			(void) const { return m_device->getFragmentShaderBarycentricFeatures();			}
 const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&			Context::getFragmentShaderInterlockFeaturesEXT			(void) const { return m_device->getFragmentShaderInterlockFeaturesEXT();		}
 const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&				Context::getFragmentShadingRateFeatures					(void) const { return m_device->getFragmentShadingRateFeatures();				}
 const vk::VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV&			Context::getFragmentShadingRateEnumsFeatures			(void) const { return m_device->getFragmentShadingRateEnumsFeatures();			}
-const vk::VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT&				Context::getGlobalPriorityQueryFeaturesEXT				(void) const { return m_device->getGlobalPriorityQueryFeaturesEXT();			}
+const vk::VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR&				Context::getGlobalPriorityQueryFeatures					(void) const { return m_device->getGlobalPriorityQueryFeatures();				}
 const vk::VkPhysicalDeviceHostQueryResetFeatures&						Context::getHostQueryResetFeatures						(void) const { return m_device->getHostQueryResetFeatures();					}
 const vk::VkPhysicalDeviceImagelessFramebufferFeatures&					Context::getImagelessFramebufferFeatures				(void) const { return m_device->getImagelessFramebufferFeatures();				}
 const vk::VkPhysicalDeviceImageRobustnessFeatures&						Context::getImageRobustnessFeatures						(void) const { return m_device->getImageRobustnessFeatures();					}
@@ -46,6 +47,7 @@ const vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT&					Context::getIndexTypeUi
 const vk::VkPhysicalDeviceInheritedViewportScissorFeaturesNV&			Context::getInheritedViewportScissorFeatures			(void) const { return m_device->getInheritedViewportScissorFeatures();			}
 const vk::VkPhysicalDeviceInlineUniformBlockFeatures&					Context::getInlineUniformBlockFeatures					(void) const { return m_device->getInlineUniformBlockFeatures();				}
 const vk::VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&					Context::getInvocationMaskFeaturesHUAWEI				(void) const { return m_device->getInvocationMaskFeaturesHUAWEI();				}
+const vk::VkPhysicalDeviceLinearColorAttachmentFeaturesNV&				Context::getLinearColorAttachmentFeatures				(void) const { return m_device->getLinearColorAttachmentFeatures();				}
 const vk::VkPhysicalDeviceLineRasterizationFeaturesEXT&					Context::getLineRasterizationFeaturesEXT				(void) const { return m_device->getLineRasterizationFeaturesEXT();				}
 const vk::VkPhysicalDeviceMaintenance4Features&							Context::getMaintenance4Features						(void) const { return m_device->getMaintenance4Features();						}
 const vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT&					Context::getMemoryPriorityFeaturesEXT					(void) const { return m_device->getMemoryPriorityFeaturesEXT();					}
