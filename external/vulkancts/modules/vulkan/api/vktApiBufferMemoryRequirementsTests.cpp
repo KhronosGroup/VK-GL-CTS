@@ -598,23 +598,33 @@ BufferMemoryRequirementsInstance::chainVkStructure<VkExternalMemoryBufferCreateI
 
 template<> void* BufferMemoryRequirementsInstance::chainVkStructure<VkVideoProfilesKHR> (void* pNext) const
 {
-	static const VkVideoProfileKHR		videoProfile
-	{
-		VK_STRUCTURE_TYPE_VIDEO_PROFILE_KHR,					// VkStructureType					sType;
-		nullptr,												// void*							pNext;
-		VK_VIDEO_CODEC_OPERATION_INVALID_BIT_KHR,				// VkVideoCodecOperationFlagBitsKHR	videoCodecOperation;
-		VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR,			// VkVideoChromaSubsamplingFlagsKHR	chromaSubsampling;
-		VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,					// VkVideoComponentBitDepthFlagsKHR	lumaBitDepth;
-		VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR					// VkVideoComponentBitDepthFlagsKHR	chromaBitDepth;
+	static const VkVideoProfileKHR		videoProfiles[2] {
+		{
+			VK_STRUCTURE_TYPE_VIDEO_PROFILE_KHR,					// VkStructureType					sType
+			nullptr,												// void*							pNext
+			VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT,			// VkVideoCodecOperationFlagBitsKHR	videoCodecOperation
+			VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR,			// VkVideoChromaSubsamplingFlagsKHR	chromaSubsampling
+			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,					// VkVideoComponentBitDepthFlagsKHR	lumaBitDepth
+			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR					// VkVideoComponentBitDepthFlagsKHR	chromaBitDepth
+		},
+		{
+			VK_STRUCTURE_TYPE_VIDEO_PROFILE_KHR,					// VkStructureType					sType
+			nullptr,												// void*							pNext
+			VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT,			// VkVideoCodecOperationFlagBitsKHR	videoCodecOperation
+			VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR,			// VkVideoChromaSubsamplingFlagsKHR	chromaSubsampling
+			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,					// VkVideoComponentBitDepthFlagsKHR	lumaBitDepth
+			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR					// VkVideoComponentBitDepthFlagsKHR	chromaBitDepth
+		}
 	};
 
-	 static VkVideoProfilesKHR	profiles;
-	 profiles.sType			= VK_STRUCTURE_TYPE_VIDEO_PROFILES_KHR;
-	 profiles.pNext			= pNext;
-	 profiles.profileCount	= 1u;
-	 profiles.pProfiles		= &videoProfile;
+	static VkVideoProfilesKHR			profiles {
+		VK_STRUCTURE_TYPE_VIDEO_PROFILES_KHR,	// VkStructureType			sType
+		pNext,									// void*					pNext
+		2u,										// uint32_t					profileCount
+		videoProfiles							// const VkVideoProfileKHR*	pProfiles
+	};
 
-	 return &profiles;
+	return &profiles;
 }
 
 TestStatus	BufferMemoryRequirementsInstance::iterate (void)
