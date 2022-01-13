@@ -247,6 +247,7 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 	const VkQueue		drawQueue			= m_context.getUniversalQueue();
 	const VkDevice		drawDevice			= m_context.getDevice();
 
+	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 	beginRender();
 
 	const VkDeviceSize	vertexBufferOffset	= 0;

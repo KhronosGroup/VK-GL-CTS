@@ -218,6 +218,7 @@ tcu::TestStatus DrawTest::iterate (void)
 {
 	// Draw
 	{
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 		beginRender();
 
 		const vk::VkDeviceSize	vertexBufferOffset	= 0;

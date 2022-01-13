@@ -138,6 +138,7 @@ tcu::TestStatus DrawIndexed::iterate (void)
 	const vk::VkQueue	queue	= m_context.getUniversalQueue();
 	const vk::VkDevice	device	= m_context.getDevice();
 
+	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 	beginRender();
 
 	const vk::VkDeviceSize dataSize = m_indexes.size() * sizeof(deUint32);
@@ -220,6 +221,7 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 	const vk::VkQueue	queue	= m_context.getUniversalQueue();
 	const vk::VkDevice	device	= m_context.getDevice();
 
+	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 	beginRender();
 
 	const vk::VkDeviceSize dataSize = m_indexes.size() * sizeof(deUint32);
