@@ -102,3 +102,4 @@ VK_KHR_shader_integer_dot_product			DEVICE
 VK_KHR_format_feature_flags2				DEVICE
 VK_KHR_maintenance4							DEVICE
 VK_EXT_border_color_swizzle					DEVICE
+VK_KHR_global_priority		        		DEVICE
