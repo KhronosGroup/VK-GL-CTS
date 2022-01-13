@@ -79,6 +79,7 @@ enum TestType
 	TEST_TYPE_BACKWARD_DEPENDENCY,
 	TEST_TYPE_QUERY_GET,
 	TEST_TYPE_QUERY_COPY,
+	TEST_TYPE_QUERY_COPY_STRIDE_ZERO,
 	TEST_TYPE_QUERY_RESET,
 	TEST_TYPE_MULTIQUERY,
 	TEST_TYPE_DEPTH_CLIP_CONTROL_VERTEX,
@@ -1931,7 +1932,7 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 
 	DE_ASSERT(numVerticesInBuffer * bytesPerVertex == m_parameters.bufferSize);
 
-	if (m_parameters.testType == TEST_TYPE_QUERY_COPY)
+	if (m_parameters.testType == TEST_TYPE_QUERY_COPY || m_parameters.testType == TEST_TYPE_QUERY_COPY_STRIDE_ZERO)
 	{
 		const VkBufferCreateInfo bufferParams =
 		{
@@ -1980,9 +1981,12 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 		}
 		endRenderPass(vk, *cmdBuffer);
 
-		if (m_parameters.testType == TEST_TYPE_QUERY_COPY)
+		if (m_parameters.testType == TEST_TYPE_QUERY_COPY || m_parameters.testType == TEST_TYPE_QUERY_COPY_STRIDE_ZERO)
 		{
-			vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPool, queryIndex, queryCountersNumber, *queryPoolResultsBuffer, 0u, queryDataSize, (vk::VK_QUERY_RESULT_WAIT_BIT | queryExtraFlags));
+			VkDeviceSize copyStride = queryDataSize;
+			if (queryCountersNumber == 1u && m_parameters.testType == TEST_TYPE_QUERY_COPY_STRIDE_ZERO)
+				copyStride = 0;
+			vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPool, queryIndex, queryCountersNumber, *queryPoolResultsBuffer, 0u, copyStride, (vk::VK_QUERY_RESULT_WAIT_BIT | queryExtraFlags));
 
 			const VkBufferMemoryBarrier bufferBarrier =
 			{
@@ -2016,7 +2020,7 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 		std::vector<deUint8>	queryData		(queryDataSize, 0u);
 		const Results*			queryResults	= reinterpret_cast<Results*>(queryData.data());
 
-		if (m_parameters.testType != TEST_TYPE_QUERY_COPY)
+		if (m_parameters.testType != TEST_TYPE_QUERY_COPY && m_parameters.testType != TEST_TYPE_QUERY_COPY_STRIDE_ZERO)
 		{
 			vk.getQueryPoolResults(device, *queryPool, queryIndex, queryCountersNumber, queryDataSize, queryData.data(), queryDataSize, (vk::VK_QUERY_RESULT_WAIT_BIT | queryExtraFlags));
 		}
@@ -2363,8 +2367,9 @@ vkt::TestInstance*	TransformFeedbackTestCase::createInstance (vkt::Context& cont
 	if (m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY)
 		return new TransformFeedbackBackwardDependencyTestInstance(context, m_parameters);
 
-	if (m_parameters.testType == TEST_TYPE_QUERY_GET	||
-		m_parameters.testType == TEST_TYPE_QUERY_COPY	||
+	if (m_parameters.testType == TEST_TYPE_QUERY_GET				||
+		m_parameters.testType == TEST_TYPE_QUERY_COPY				||
+		m_parameters.testType == TEST_TYPE_QUERY_COPY_STRIDE_ZERO	||
 	    m_parameters.testType == TEST_TYPE_QUERY_RESET)
 		return new TransformFeedbackQueryTestInstance(context, m_parameters);
 
@@ -2889,8 +2894,9 @@ void TransformFeedbackTestCase::initPrograms (SourceCollections& programCollecti
 		return;
 	}
 
-	if (m_parameters.testType == TEST_TYPE_QUERY_GET	||
-		m_parameters.testType == TEST_TYPE_QUERY_COPY	||
+	if (m_parameters.testType == TEST_TYPE_QUERY_GET				||
+		m_parameters.testType == TEST_TYPE_QUERY_COPY				||
+		m_parameters.testType == TEST_TYPE_QUERY_COPY_STRIDE_ZERO	||
 		m_parameters.testType == TEST_TYPE_QUERY_RESET)
 	{
 		struct TopologyShaderInfo
@@ -3247,8 +3253,8 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup* group)
 		const deUint32		vertexCounts[]			= { 6u, 61u, 127u, 251u, 509u }; // Lowest value has to be at least 6. Otherwise the triangles with adjacency can't be generated.
 		const TestType		testType				= TEST_TYPE_QUERY_GET;
 		const std::string	testName				= "query";
-		const TestType		testTypeCopy			= TEST_TYPE_QUERY_COPY;
-		const std::string	testNameCopy			= "query_copy";
+		const TestType		testTypeCopy[]			= { TEST_TYPE_QUERY_COPY, TEST_TYPE_QUERY_COPY_STRIDE_ZERO };
+		const std::string	testNameCopy[]			= { "query_copy", "query_copy_stride_zero" };
 		const TestType		testTypeHostQueryReset	= TEST_TYPE_QUERY_RESET;
 		const std::string	testNameHostQueryReset	= "host_query_reset";
 
@@ -3286,9 +3292,12 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup* group)
 						const std::string		fullTestName	= testName + "_" + topology.second.topologyName + de::toString(streamId) + "_" + de::toString(vertexCount) + widthStr;
 						group->addChild(new TransformFeedbackTestCase(group->getTestContext(), fullTestName.c_str(), "Written primitives query test", parameters));
 
-						const TestParameters	parametersCopy		= { testTypeCopy, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits, false, topology.first };
-						const std::string		fullTestNameCopy	= testNameCopy + "_" + topology.second.topologyName + de::toString(streamId) + "_" + de::toString(vertexCount) + widthStr;
-						group->addChild(new TransformFeedbackTestCase(group->getTestContext(), fullTestNameCopy.c_str(), "Written primitives query test", parametersCopy));
+						for (deUint32 testTypeCopyNdx = 0; testTypeCopyNdx < DE_LENGTH_OF_ARRAY(testTypeCopy); testTypeCopyNdx++)
+						{
+							const TestParameters	parametersCopy		= { testTypeCopy[testTypeCopyNdx], bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits, false, topology.first };
+							const std::string		fullTestNameCopy	= testNameCopy[testTypeCopyNdx] + "_" + topology.second.topologyName + de::toString(streamId) + "_" + de::toString(vertexCount) + widthStr;
+							group->addChild(new TransformFeedbackTestCase(group->getTestContext(), fullTestNameCopy.c_str(), "Written primitives query test", parametersCopy));
+						}
 
 						const TestParameters	parametersHostQueryReset	= { testTypeHostQueryReset, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits, false, topology.first };
 						const std::string		fullTestNameHostQueryReset	= testNameHostQueryReset + "_" + topology.second.topologyName + de::toString(streamId) + "_" + de::toString(vertexCount) + widthStr;
