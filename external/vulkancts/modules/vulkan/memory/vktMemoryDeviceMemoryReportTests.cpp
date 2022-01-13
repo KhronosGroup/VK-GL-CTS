@@ -42,6 +42,7 @@
 
 #include <set>
 #include <vector>
+#include <limits>
 
 namespace vkt
 {

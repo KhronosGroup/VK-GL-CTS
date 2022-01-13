@@ -43,6 +43,9 @@
 #include "tcuImageCompare.hpp"
 #include "tcuFloat.hpp"
 
+#include <set>
+#include <limits>
+
 namespace vkt
 {
 namespace RayTracing

@@ -38,6 +38,8 @@
 
 #include "deClock.h"
 
+#include <limits>
+
 namespace vkt
 {
 namespace RayTracing
