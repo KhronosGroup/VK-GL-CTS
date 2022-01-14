@@ -127,6 +127,11 @@ tcu::TestStatus validateGetter (Context& context)
 
 		std::vector<VkPhysicalDeviceToolPropertiesEXT>	deviceToolPropertiesEXTArray(toolCountSecondCall);
 
+		for (size_t toolNdx = 0; toolNdx < deviceToolPropertiesEXTArray.size(); ++toolNdx)
+		{
+			deviceToolPropertiesEXTArray[toolNdx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT;
+		}
+
 		result = context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCountSecondCall, &deviceToolPropertiesEXTArray[0]);
 
 		if (result != VK_SUCCESS)
@@ -182,6 +187,11 @@ tcu::TestStatus validateGetter (Context& context)
 
 		std::vector<VkPhysicalDeviceToolPropertiesEXT>	deviceToolPropertiesEXTArray(toolCountSecondCall);
 
+		for (size_t toolNdx = 0; toolNdx < deviceToolPropertiesEXTArray.size(); ++toolNdx)
+		{
+			deviceToolPropertiesEXTArray[toolNdx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT;
+		}
+
 		result = context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCountSecondCall, &deviceToolPropertiesEXTArray[0]);
 
 		if (result != VK_INCOMPLETE)
@@ -210,6 +220,11 @@ tcu::TestStatus validateToolsProperties (Context& context)
 	{
 		std::vector<VkPhysicalDeviceToolPropertiesEXT>	deviceToolPropertiesEXTArray(toolCount);
 
+		for (size_t toolNdx = 0; toolNdx < deviceToolPropertiesEXTArray.size(); ++toolNdx)
+		{
+			deviceToolPropertiesEXTArray[toolNdx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT;
+		}
+
 		VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCount, &deviceToolPropertiesEXTArray[0]));
 
 		if (checkToolsProperties(context, deviceToolPropertiesEXTArray) == false)
@@ -237,6 +252,11 @@ tcu::TestStatus validateInstanceLayers (Context& context)
 		if (toolCount > 0)
 		{
 			std::vector<VkPhysicalDeviceToolPropertiesEXT>	deviceToolPropertiesEXTArray(toolCount);
+
+			for (size_t toolNdx = 0; toolNdx < deviceToolPropertiesEXTArray.size(); ++toolNdx)
+			{
+				deviceToolPropertiesEXTArray[toolNdx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT;
+			}
 
 			VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(physicalDevice, &toolCount, &deviceToolPropertiesEXTArray[0]));
 
@@ -272,6 +292,11 @@ tcu::TestStatus validateInstanceLayers (Context& context)
 		if (toolCount > 0)
 		{
 			std::vector<VkPhysicalDeviceToolPropertiesEXT>	deviceToolPropertiesEXTArray(toolCount);
+
+			for (size_t toolNdx = 0; toolNdx < deviceToolPropertiesEXTArray.size(); ++toolNdx)
+			{
+				deviceToolPropertiesEXTArray[toolNdx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT;
+			}
 
 			VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(physicalDevice, &toolCount, &deviceToolPropertiesEXTArray[0]));
 
