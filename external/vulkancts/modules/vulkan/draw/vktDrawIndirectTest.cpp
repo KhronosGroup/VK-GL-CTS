@@ -248,7 +248,7 @@ void IndirectDraw::setFirstInstanceVertexBuffer (void)
 }
 
 IndirectDraw::IndirectDraw (Context &context, TestSpec testSpec)
-	: DrawTestsBaseClass				(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.topology)
+	: DrawTestsBaseClass				(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.useDynamicRendering, testSpec.topology)
 	, m_testIndirectCountExt			(testSpec.testIndirectCountExt)
 	, m_indirectCountExtDrawPadding		(1u)
 	, m_drawType						(testSpec.drawType)
@@ -474,7 +474,7 @@ tcu::TestStatus IndirectDraw::iterate (void)
 		m_strideInBuffer = 2 * (deUint32)sizeof(vk::VkDrawIndexedIndirectCommand);
 	}
 
-	beginRenderPass();
+	beginRender();
 
 	const vk::VkDeviceSize vertexBufferOffset	= 0;
 	const vk::VkBuffer vertexBuffer				= m_vertexBuffer->object();
@@ -596,7 +596,7 @@ tcu::TestStatus IndirectDraw::iterate (void)
 			}
 		}
 	}
-	endRenderPass(m_vk, *m_cmdBuffer);
+	endRender();
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -819,7 +819,7 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 		m_strideInBuffer = 2 * (deUint32)sizeof(vk::VkDrawIndexedIndirectCommand);
 	}
 
-	beginRenderPass();
+	beginRender();
 
 	const vk::VkDeviceSize vertexBufferOffset = 0;
 	const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
@@ -941,7 +941,7 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 			}
 		}
 	}
-	endRenderPass(m_vk, *m_cmdBuffer);
+	endRender();
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -991,15 +991,20 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
-void checkIndirectCountExt (Context& context)
+void checkSupport(Context& context, IndirectDraw::TestSpec testSpec)
 {
-	context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
+	if (testSpec.testIndirectCountExt != IndirectCountType::NONE)
+		context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
+
+	if (testSpec.useDynamicRendering)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 }
 
 }	// anonymous
 
-IndirectDrawTests::IndirectDrawTests (tcu::TestContext& testCtx)
-	: TestCaseGroup(testCtx, "indirect_draw", "indirect drawing simple geometry")
+IndirectDrawTests::IndirectDrawTests (tcu::TestContext& testCtx, bool useDynamicRendering)
+	: TestCaseGroup			(testCtx, "indirect_draw", "indirect drawing simple geometry")
+	, m_useDynamicRendering	(useDynamicRendering)
 {
 	/* Left blank on purpose */
 }
@@ -1032,24 +1037,32 @@ void IndirectDrawTests::init (void)
 			{
 				IndirectDraw::TestSpec testSpec;
 				testSpec.drawType = static_cast<DrawType>(drawTypeIdx);
+				testSpec.useDynamicRendering = m_useDynamicRendering;
 				testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetch.vert";
 				testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
+
 				testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-				indirectDrawGroup->addChild(new InstanceFactory<IndirectDraw>(m_testCtx, "triangle_list", "Draws triangle list", testSpec));
+				indirectDrawGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+					(m_testCtx, "triangle_list", "Draws triangle list", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
 				testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-				indirectDrawGroup->addChild(new InstanceFactory<IndirectDraw>(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec));
+				indirectDrawGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+					(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
 
 				testSpec.testIndirectCountExt = IndirectCountType::BUFFER_LIMIT;
 				testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-				indirectDrawCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport0>(m_testCtx, "triangle_list", "Draws triangle list", testSpec, FunctionSupport0(checkIndirectCountExt)));
+				indirectDrawCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+					(m_testCtx, "triangle_list", "Draws triangle list", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
 				testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-				indirectDrawCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport0>(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec, FunctionSupport0(checkIndirectCountExt)));
+				indirectDrawCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+					(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
 
 				testSpec.testIndirectCountExt = IndirectCountType::PARAM_LIMIT;
 				testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-				indirectDrawParamCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport0>(m_testCtx, "triangle_list", "Draws triangle list", testSpec, FunctionSupport0(checkIndirectCountExt)));
+				indirectDrawParamCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+					(m_testCtx, "triangle_list", "Draws triangle list", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
 				testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-				indirectDrawParamCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport0>(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec, FunctionSupport0(checkIndirectCountExt)));
+				indirectDrawParamCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+					(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
 			}
 			drawTypeGroup->addChild(indirectDrawGroup);
 			drawTypeGroup->addChild(indirectDrawCountGroup);
@@ -1063,24 +1076,32 @@ void IndirectDrawTests::init (void)
 					IndirectDraw::TestSpec testSpec;
 					testSpec.testFirstInstanceNdx = true;
 					testSpec.drawType = static_cast<DrawType>(drawTypeIdx);
+					testSpec.useDynamicRendering = m_useDynamicRendering;
 					testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchInstanceIndex.vert";
 					testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
+
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-					indirectDrawFirstInstanceGroup->addChild(new InstanceFactory<IndirectDraw>(m_testCtx, "triangle_list", "Draws triangle list", testSpec));
+					indirectDrawFirstInstanceGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+						(m_testCtx, "triangle_list", "Draws triangle list", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-					indirectDrawFirstInstanceGroup->addChild(new InstanceFactory<IndirectDraw>(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec));
+					indirectDrawFirstInstanceGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+						(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
 
 					testSpec.testIndirectCountExt = IndirectCountType::BUFFER_LIMIT;
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-					indirectDrawCountFirstInstanceGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport0>(m_testCtx, "triangle_list", "Draws triangle list", testSpec, FunctionSupport0(checkIndirectCountExt)));
+					indirectDrawCountFirstInstanceGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+						(m_testCtx, "triangle_list", "Draws triangle list", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-					indirectDrawCountFirstInstanceGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport0>(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec, FunctionSupport0(checkIndirectCountExt)));
+					indirectDrawCountFirstInstanceGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+						(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
 
 					testSpec.testIndirectCountExt = IndirectCountType::PARAM_LIMIT;
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-					indirectDrawParamCountFirstInstanceGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport0>(m_testCtx, "triangle_list", "Draws triangle list", testSpec, FunctionSupport0(checkIndirectCountExt)));
+					indirectDrawParamCountFirstInstanceGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+						(m_testCtx, "triangle_list", "Draws triangle list", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-					indirectDrawParamCountFirstInstanceGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport0>(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec, FunctionSupport0(checkIndirectCountExt)));
+					indirectDrawParamCountFirstInstanceGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+						(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
 				}
 				drawTypeGroup->addChild(indirectDrawFirstInstanceGroup);
 				drawTypeGroup->addChild(indirectDrawCountFirstInstanceGroup);
@@ -1095,28 +1116,37 @@ void IndirectDrawTests::init (void)
 				tcu::TestCaseGroup*	indirectDrawCountNoFirstInstanceGroup		= new tcu::TestCaseGroup(m_testCtx, "no_first_instance", "Use 0 as firstInstance");
 				tcu::TestCaseGroup*	indirectDrawParamCountNoFirstInstanceGroup	= new tcu::TestCaseGroup(m_testCtx, "no_first_instance", "Use 0 as firstInstance");
 				{
-					IndirectDrawInstanced<FirstInstanceNotSupported>::TestSpec testSpec;
+					typedef IndirectDrawInstanced<FirstInstanceNotSupported> IDFirstInstanceNotSupported;
+
+					IDFirstInstanceNotSupported::TestSpec testSpec;
 					testSpec.drawType = static_cast<DrawType>(drawTypeIdx);
+					testSpec.useDynamicRendering = m_useDynamicRendering;
 
 					testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchInstanced.vert";
 					testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
 
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-					indirectDrawNoFirstInstanceGroup->addChild(new InstanceFactory<IndirectDrawInstanced<FirstInstanceNotSupported> >(m_testCtx, "triangle_list", "Draws an instanced triangle list", testSpec));
+					indirectDrawNoFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceNotSupported, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec> >
+						(m_testCtx, "triangle_list", "Draws an instanced triangle list", testSpec, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec>::Args(checkSupport, testSpec)));
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-					indirectDrawNoFirstInstanceGroup->addChild(new InstanceFactory<IndirectDrawInstanced<FirstInstanceNotSupported> >(m_testCtx, "triangle_strip", "Draws an instanced triangle strip", testSpec));
+					indirectDrawNoFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceNotSupported, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec> >
+						(m_testCtx, "triangle_strip", "Draws an instanced triangle strip", testSpec, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec>::Args(checkSupport, testSpec)));
 
 					testSpec.testIndirectCountExt = IndirectCountType::BUFFER_LIMIT;
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-					indirectDrawCountNoFirstInstanceGroup->addChild(new InstanceFactory<IndirectDrawInstanced<FirstInstanceNotSupported>, FunctionSupport0>(m_testCtx, "triangle_list", "Draws an instanced triangle list", testSpec, FunctionSupport0(checkIndirectCountExt)));
+					indirectDrawCountNoFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceNotSupported, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec> >
+						(m_testCtx, "triangle_list", "Draws an instanced triangle list", testSpec, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec>::Args(checkSupport, testSpec)));
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-					indirectDrawCountNoFirstInstanceGroup->addChild(new InstanceFactory<IndirectDrawInstanced<FirstInstanceNotSupported>, FunctionSupport0>(m_testCtx, "triangle_strip", "Draws an instanced triangle strip", testSpec, FunctionSupport0(checkIndirectCountExt)));
+					indirectDrawCountNoFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceNotSupported, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec> >
+						(m_testCtx, "triangle_strip", "Draws an instanced triangle strip", testSpec, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec>::Args(checkSupport, testSpec)));
 
 					testSpec.testIndirectCountExt = IndirectCountType::PARAM_LIMIT;
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-					indirectDrawParamCountNoFirstInstanceGroup->addChild(new InstanceFactory<IndirectDrawInstanced<FirstInstanceNotSupported>, FunctionSupport0>(m_testCtx, "triangle_list", "Draws an instanced triangle list", testSpec, FunctionSupport0(checkIndirectCountExt)));
+					indirectDrawParamCountNoFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceNotSupported, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec> >
+						(m_testCtx, "triangle_list", "Draws an instanced triangle list", testSpec, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec>::Args(checkSupport, testSpec)));
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-					indirectDrawParamCountNoFirstInstanceGroup->addChild(new InstanceFactory<IndirectDrawInstanced<FirstInstanceNotSupported>, FunctionSupport0>(m_testCtx, "triangle_strip", "Draws an instanced triangle strip", testSpec, FunctionSupport0(checkIndirectCountExt)));
+					indirectDrawParamCountNoFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceNotSupported, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec> >
+						(m_testCtx, "triangle_strip", "Draws an instanced triangle strip", testSpec, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec>::Args(checkSupport, testSpec)));
 				}
 				indirectDrawInstancedGroup->addChild(indirectDrawNoFirstInstanceGroup);
 				indirectDrawCountInstancedGroup->addChild(indirectDrawCountNoFirstInstanceGroup);
@@ -1126,28 +1156,37 @@ void IndirectDrawTests::init (void)
 				tcu::TestCaseGroup*	indirectDrawCountFirstInstanceGroup			= new tcu::TestCaseGroup(m_testCtx, "first_instance", "Use drawIndirectFirstInstance optional feature");
 				tcu::TestCaseGroup*	indirectDrawParamCountFirstInstanceGroup	= new tcu::TestCaseGroup(m_testCtx, "first_instance", "Use drawIndirectFirstInstance optional feature");
 				{
-					IndirectDrawInstanced<FirstInstanceSupported>::TestSpec testSpec;
+					typedef IndirectDrawInstanced<FirstInstanceSupported> IDFirstInstanceSupported;
+
+					IDFirstInstanceSupported::TestSpec testSpec;
 					testSpec.drawType = static_cast<DrawType>(drawTypeIdx);
+					testSpec.useDynamicRendering = m_useDynamicRendering;
 
 					testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchInstancedFirstInstance.vert";
 					testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
 
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-					indirectDrawFirstInstanceGroup->addChild(new InstanceFactory<IndirectDrawInstanced<FirstInstanceSupported> >(m_testCtx, "triangle_list", "Draws an instanced triangle list", testSpec));
+					indirectDrawFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceSupported, FunctionSupport1<IDFirstInstanceSupported::TestSpec> >
+						(m_testCtx, "triangle_list", "Draws an instanced triangle list", testSpec, FunctionSupport1<IDFirstInstanceSupported::TestSpec>::Args(checkSupport, testSpec)));
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-					indirectDrawFirstInstanceGroup->addChild(new InstanceFactory<IndirectDrawInstanced<FirstInstanceSupported> >(m_testCtx, "triangle_strip", "Draws an instanced triangle strip", testSpec));
+					indirectDrawFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceSupported, FunctionSupport1<IDFirstInstanceSupported::TestSpec> >
+						(m_testCtx, "triangle_strip", "Draws an instanced triangle strip", testSpec, FunctionSupport1<IDFirstInstanceSupported::TestSpec>::Args(checkSupport, testSpec)));
 
 					testSpec.testIndirectCountExt = IndirectCountType::BUFFER_LIMIT;
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-					indirectDrawCountFirstInstanceGroup->addChild(new InstanceFactory<IndirectDrawInstanced<FirstInstanceSupported>, FunctionSupport0>(m_testCtx, "triangle_list", "Draws an instanced triangle list", testSpec, FunctionSupport0(checkIndirectCountExt)));
+					indirectDrawCountFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceSupported, FunctionSupport1<IDFirstInstanceSupported::TestSpec> >
+						(m_testCtx, "triangle_list", "Draws an instanced triangle list", testSpec, FunctionSupport1<IDFirstInstanceSupported::TestSpec>::Args(checkSupport, testSpec)));
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-					indirectDrawCountFirstInstanceGroup->addChild(new InstanceFactory<IndirectDrawInstanced<FirstInstanceSupported>, FunctionSupport0>(m_testCtx, "triangle_strip", "Draws an instanced triangle strip", testSpec, FunctionSupport0(checkIndirectCountExt)));
+					indirectDrawCountFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceSupported, FunctionSupport1<IDFirstInstanceSupported::TestSpec> >
+						(m_testCtx, "triangle_strip", "Draws an instanced triangle strip", testSpec, FunctionSupport1<IDFirstInstanceSupported::TestSpec>::Args(checkSupport, testSpec)));
 
 					testSpec.testIndirectCountExt = IndirectCountType::PARAM_LIMIT;
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-					indirectDrawParamCountFirstInstanceGroup->addChild(new InstanceFactory<IndirectDrawInstanced<FirstInstanceSupported>, FunctionSupport0>(m_testCtx, "triangle_list", "Draws an instanced triangle list", testSpec, FunctionSupport0(checkIndirectCountExt)));
+					indirectDrawParamCountFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceSupported, FunctionSupport1<IDFirstInstanceSupported::TestSpec> >
+						(m_testCtx, "triangle_list", "Draws an instanced triangle list", testSpec, FunctionSupport1<IDFirstInstanceSupported::TestSpec>::Args(checkSupport, testSpec)));
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-					indirectDrawParamCountFirstInstanceGroup->addChild(new InstanceFactory<IndirectDrawInstanced<FirstInstanceSupported>, FunctionSupport0>(m_testCtx, "triangle_strip", "Draws an instanced triangle strip", testSpec, FunctionSupport0(checkIndirectCountExt)));
+					indirectDrawParamCountFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceSupported, FunctionSupport1<IDFirstInstanceSupported::TestSpec> >
+						(m_testCtx, "triangle_strip", "Draws an instanced triangle strip", testSpec, FunctionSupport1<IDFirstInstanceSupported::TestSpec>::Args(checkSupport, testSpec)));
 				}
 				indirectDrawInstancedGroup->addChild(indirectDrawFirstInstanceGroup);
 				indirectDrawCountInstancedGroup->addChild(indirectDrawCountFirstInstanceGroup);

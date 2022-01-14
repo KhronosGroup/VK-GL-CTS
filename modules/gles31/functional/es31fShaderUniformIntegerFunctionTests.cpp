@@ -148,16 +148,6 @@ static std::string getCaseName (glu::Precision precision, glu::ShaderType shader
 	return string(getPrecisionName(precision)) + getShaderTypePostfix(shaderType);
 }
 
-static int findMSB (deInt32 value)
-{
-	if (value > 0)
-		return 31 - deClz32((deUint32)value);
-	else if (value < 0)
-		return 31 - deClz32(~(deUint32)value);
-	else
-		return -1;
-}
-
 class FindMSBEdgeCase : public UniformIntegerFunctionCase {
 public:
 	FindMSBEdgeCase(Context& context, int inputValue, glu::Precision precision, glu::ShaderType shaderType)
@@ -171,19 +161,9 @@ protected:
 	}
 
 	int computeExpectedResult(deInt32 input) {
-		return findMSB(input);
+		return de::findMSB(input);
 	}
 };
-
-static int findLSB (deUint32 value)
-{
-	for (int i = 0; i < 32; i++)
-	{
-		if (value & (1u<<i))
-			return i;
-	}
-	return -1;
-}
 
 class FindLSBEdgeCase : public UniformIntegerFunctionCase {
 public:
@@ -198,7 +178,7 @@ protected:
 	}
 
 	int computeExpectedResult(deInt32 input) {
-		return findLSB(input);
+		return de::findLSB(input);
 	}
 };
 

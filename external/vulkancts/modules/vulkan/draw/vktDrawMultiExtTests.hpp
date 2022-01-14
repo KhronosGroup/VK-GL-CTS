@@ -31,7 +31,7 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx, bool useDynamicRendering);
 
 } // Draw
 } // vkt

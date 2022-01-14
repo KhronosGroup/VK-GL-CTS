@@ -1126,7 +1126,7 @@ LongStressCase::~LongStressCase (void)
 
 void LongStressCase::init (void)
 {
-	// Generate dummy texture data for each texture spec in m_programContexts.
+	// Generate unused texture data for each texture spec in m_programContexts.
 
 	DE_ASSERT(!m_programContexts.empty());
 	DE_ASSERT(m_programResources.empty());
@@ -1144,32 +1144,32 @@ void LongStressCase::init (void)
 
 			// If texture data with the same format has already been generated, re-use that (don't care much about contents).
 
-			SharedPtr<TextureLevel> dummyTex;
+			SharedPtr<TextureLevel> unusedTex;
 
 			for (int prevProgCtxNdx = 0; prevProgCtxNdx < (int)m_programResources.size(); prevProgCtxNdx++)
 			{
-				const vector<SharedPtr<TextureLevel> >& prevProgCtxTextures = m_programResources[prevProgCtxNdx].dummyTextures;
+				const vector<SharedPtr<TextureLevel> >& prevProgCtxTextures = m_programResources[prevProgCtxNdx].unusedTextures;
 
 				for (int texNdx = 0; texNdx < (int)prevProgCtxTextures.size(); texNdx++)
 				{
 					if (prevProgCtxTextures[texNdx]->getFormat() == format)
 					{
-						dummyTex = prevProgCtxTextures[texNdx];
+						unusedTex = prevProgCtxTextures[texNdx];
 						break;
 					}
 				}
 			}
 
-			if (!dummyTex)
-				dummyTex = SharedPtr<TextureLevel>(new TextureLevel(format));
+			if (!unusedTex)
+				unusedTex = SharedPtr<TextureLevel>(new TextureLevel(format));
 
-			if (dummyTex->getWidth() < spec.width || dummyTex->getHeight() < spec.height)
+			if (unusedTex->getWidth() < spec.width || unusedTex->getHeight() < spec.height)
 			{
-				dummyTex->setSize(spec.width, spec.height);
-				tcu::fillWithComponentGradients(dummyTex->getAccess(), spec.minValue, spec.maxValue);
+				unusedTex->setSize(spec.width, spec.height);
+				tcu::fillWithComponentGradients(unusedTex->getAccess(), spec.minValue, spec.maxValue);
 			}
 
-			progRes.dummyTextures.push_back(dummyTex);
+			progRes.unusedTextures.push_back(unusedTex);
 		}
 	}
 
@@ -1314,9 +1314,9 @@ LongStressCase::IterateResult LongStressCase::iterate (void)
 			m_textures->removeGarbageUntilUnder(m_maxTexMemoryUsageBytes - texture.getApproxMemUsageDiff(spec.width, spec.height, spec.internalFormat, spec.useMipmap), m_rnd);
 
 			if (!hadTexture || m_rnd.getFloat() < m_probabilities.reuploadWithTexImage)
-				texture.setData(programResources.dummyTextures[texNdx]->getAccess(), spec.width, spec.height, spec.internalFormat, spec.useMipmap);
+				texture.setData(programResources.unusedTextures[texNdx]->getAccess(), spec.width, spec.height, spec.internalFormat, spec.useMipmap);
 			else
-				texture.setSubData(programResources.dummyTextures[texNdx]->getAccess(), 0, 0, spec.width, spec.height);
+				texture.setSubData(programResources.unusedTextures[texNdx]->getAccess(), 0, 0, spec.width, spec.height);
 
 			texture.toUnit(0);
 			texture.setWrap(spec.sWrap, spec.tWrap);

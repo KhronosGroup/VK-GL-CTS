@@ -101,6 +101,8 @@ static bool isFeatureSupported(const vkt::Context& ctx, const std::string& featu
 		return ctx.getDeviceFeatures().fillModeNonSolid;
 	if (feature == "Features.shaderStorageImageMultisample")
 		return ctx.getDeviceFeatures().shaderStorageImageMultisample;
+	if (feature == "Features.sampleRateShading")
+		return ctx.getDeviceFeatures().sampleRateShading;
 	if (feature == "VariablePointerFeatures.variablePointersStorageBuffer")
 		return ctx.getVariablePointersFeatures().variablePointersStorageBuffer;
 	if (feature == "VariablePointerFeatures.variablePointers")
@@ -330,8 +332,10 @@ void AmberTestCase::initPrograms (vk::SourceCollections& programCollection) cons
 		const amber::ShaderInfo& shader = shaders[i];
 
 		vk::SpirvVersion spirvVersion = vk::SPIRV_VERSION_1_0;
-		DE_STATIC_ASSERT(vk::SPIRV_VERSION_LAST == vk::SPIRV_VERSION_1_5 + 1);
-		if (shader.target_env == "spv1.5")
+		DE_STATIC_ASSERT(vk::SPIRV_VERSION_LAST == vk::SPIRV_VERSION_1_6 + 1);
+		if (shader.target_env == "spv1.6")
+			spirvVersion = vk::SPIRV_VERSION_1_6;
+		else if (shader.target_env == "spv1.5")
 			spirvVersion = vk::SPIRV_VERSION_1_5;
 		else if (shader.target_env == "spv1.4")
 			spirvVersion = vk::SPIRV_VERSION_1_4;

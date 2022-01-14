@@ -88,6 +88,7 @@ struct TestParams
 	VkFormat		srFormat;
 	VkExtent2D		srRate;
 
+	bool			useDynamicRendering;
 	bool			useImagelessFramebuffer;
 };
 
@@ -343,6 +344,9 @@ Move<VkRenderPass> AttachmentRateInstance::buildRenderPass(VkFormat cbFormat,
 														   deUint32 sr0TileWidth, deUint32 sr0TileHeight,
 														   deUint32 sr1TileWidth, deUint32 sr1TileHeight) const
 {
+	if (m_params->useDynamicRendering)
+		return Move<VkRenderPass>();
+
 	const bool		useShadingRate0		= (sr0TileWidth * sr0TileHeight > 0);
 	const bool		useShadingRate1		= (sr1TileWidth * sr1TileHeight > 0);
 
@@ -449,6 +453,9 @@ Move<VkRenderPass> AttachmentRateInstance::buildRenderPass(VkFormat cbFormat,
 
 Move<VkFramebuffer> AttachmentRateInstance::buildFramebuffer(VkRenderPass renderPass, const std::vector<FBAttachmentInfo>& attachmentInfo) const
 {
+	if (m_params->useDynamicRendering)
+		return Move<VkFramebuffer>();
+
 	VkDevice device = m_device.get() ? *m_device : m_context.getDevice();
 
 	VkFramebufferCreateInfo framebufferParams
@@ -686,27 +693,42 @@ Move<VkPipeline> AttachmentRateInstance::buildGraphicsPipeline(deUint32 subpass,
 		  VK_FRAGMENT_SHADING_RATE_COMBINER_OP_REPLACE_KHR }					// VkFragmentShadingRateCombinerOpKHR	combinerOps[2];
 	};
 
+	void* pNext = useShadingRate ? &shadingRateStateCreateInfo : DE_NULL;
+	VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+		pNext,
+		0u,
+		1u,
+		&m_cbFormat,
+		VK_FORMAT_UNDEFINED,
+		VK_FORMAT_UNDEFINED
+	};
+
+	if (m_params->useDynamicRendering)
+		pNext = &renderingCreateInfo;
+
 	const VkGraphicsPipelineCreateInfo pipelineCreateInfo
 	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,				// VkStructureType									sType
-		useShadingRate ? &shadingRateStateCreateInfo : DE_NULL,			// const void*										pNext
-		0u,																// VkPipelineCreateFlags							flags
-		(deUint32)pipelineShaderStageParams.size(),						// deUint32											stageCount
-		&pipelineShaderStageParams[0],									// const VkPipelineShaderStageCreateInfo*			pStages
-		&vertexInputStateCreateInfo,									// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState
-		&inputAssemblyStateCreateInfo,									// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState
-		DE_NULL,														// const VkPipelineTessellationStateCreateInfo*		pTessellationState
-		&viewportStateCreateInfo,										// const VkPipelineViewportStateCreateInfo*			pViewportState
-		&rasterizationStateCreateInfo,									// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState
-		&multisampleStateCreateInfo,									// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState
-		&depthStencilStateCreateInfo,									// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState
-		&colorBlendStateCreateInfo,										// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState
-		&dynamicStateCreateInfo,										// const VkPipelineDynamicStateCreateInfo*			pDynamicState
-		pipelineLayout,													// VkPipelineLayout									layout
-		renderPass,														// VkRenderPass										renderPass
-		subpass,														// deUint32											subpass
-		DE_NULL,														// VkPipeline										basePipelineHandle
-		0																// deInt32											basePipelineIndex;
+		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,		// VkStructureType									sType
+		pNext,													// const void*										pNext
+		0u,														// VkPipelineCreateFlags							flags
+		(deUint32)pipelineShaderStageParams.size(),				// deUint32											stageCount
+		&pipelineShaderStageParams[0],							// const VkPipelineShaderStageCreateInfo*			pStages
+		&vertexInputStateCreateInfo,							// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState
+		&inputAssemblyStateCreateInfo,							// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState
+		DE_NULL,												// const VkPipelineTessellationStateCreateInfo*		pTessellationState
+		&viewportStateCreateInfo,								// const VkPipelineViewportStateCreateInfo*			pViewportState
+		&rasterizationStateCreateInfo,							// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState
+		&multisampleStateCreateInfo,							// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState
+		&depthStencilStateCreateInfo,							// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState
+		&colorBlendStateCreateInfo,								// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState
+		&dynamicStateCreateInfo,								// const VkPipelineDynamicStateCreateInfo*			pDynamicState
+		pipelineLayout,											// VkPipelineLayout									layout
+		renderPass,												// VkRenderPass										renderPass
+		subpass,												// deUint32											subpass
+		DE_NULL,												// VkPipeline										basePipelineHandle
+		0														// deInt32											basePipelineIndex;
 	};
 
 	VkDevice device = m_device.get() ? *m_device : m_context.getDevice();
@@ -759,11 +781,65 @@ void AttachmentRateInstance::startRendering(const VkCommandBuffer					commandBuf
 											const VkRect2D&							renderArea,
 											const std::vector<FBAttachmentInfo>&	attachmentInfo) const
 {
-	const DeviceInterface&				vk								(m_context.getDeviceInterface());
-	std::vector<VkClearValue>			clearColor						(attachmentInfo.size(), makeClearValueColorU32(0, 0, 0, 0));
-	std::vector<VkImageView>			attachments						(attachmentInfo.size(), 0);
+	const DeviceInterface&		vk			(m_context.getDeviceInterface());
+	std::vector<VkClearValue>	clearColor	(attachmentInfo.size(), makeClearValueColorU32(0, 0, 0, 0));
+
+	if (m_params->useDynamicRendering)
+	{
+		VkRenderingFragmentShadingRateAttachmentInfoKHR shadingRateAttachmentInfo
+		{
+			VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR,	// VkStructureType		sType;
+			DE_NULL,																// const void*			pNext;
+			DE_NULL,																// VkImageView			imageView;
+			VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR,			// VkImageLayout		imageLayout;
+			{ 0, 0 }																// VkExtent2D			shadingRateAttachmentTexelSize;
+		};
+
+		VkRenderingAttachmentInfoKHR colorAttachment
+		{
+			vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,	// VkStructureType						sType;
+			DE_NULL,												// const void*							pNext;
+			attachmentInfo[0].view,									// VkImageView							imageView;
+			VK_IMAGE_LAYOUT_GENERAL,								// VkImageLayout						imageLayout;
+			VK_RESOLVE_MODE_NONE,									// VkResolveModeFlagBits				resolveMode;
+			DE_NULL,												// VkImageView							resolveImageView;
+			VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout						resolveImageLayout;
+			VK_ATTACHMENT_LOAD_OP_CLEAR,							// VkAttachmentLoadOp					loadOp;
+			VK_ATTACHMENT_STORE_OP_STORE,							// VkAttachmentStoreOp					storeOp;
+			clearColor[0]											// VkClearValue							clearValue;
+		};
+
+		VkRenderingInfoKHR renderingInfo
+		{
+			vk::VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+			DE_NULL,
+			0,														// VkRenderingFlagsKHR					flags;
+			renderArea,												// VkRect2D								renderArea;
+			1u,														// deUint32								layerCount;
+			0u,														// deUint32								viewMask;
+			1u,														// deUint32								colorAttachmentCount;
+			&colorAttachment,										// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+			DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+			DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+		};
+
+		// when shading rate is used it is defined as a second entry in attachmentInfo
+		if ((attachmentInfo.size() == 2) &&
+			(attachmentInfo[1].usage & VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR))
+		{
+			shadingRateAttachmentInfo.imageView							= attachmentInfo[1].view;
+			shadingRateAttachmentInfo.shadingRateAttachmentTexelSize	= { attachmentInfo[1].width, attachmentInfo[1].height };
+			renderingInfo.pNext											= &shadingRateAttachmentInfo;
+		}
+
+		vk.cmdBeginRendering(commandBuffer, &renderingInfo);
+
+		return;
+	}
+
+	std::vector<VkImageView>			attachments(attachmentInfo.size(), 0);
 	VkRenderPassAttachmentBeginInfo		renderPassAttachmentBeginInfo;
-	void*								pNext							(DE_NULL);
+	void*								pNext(DE_NULL);
 
 	if (m_params->useImagelessFramebuffer)
 	{
@@ -790,7 +866,10 @@ void AttachmentRateInstance::finishRendering(const VkCommandBuffer commandBuffer
 {
 	const DeviceInterface& vk = m_context.getDeviceInterface();
 
-	endRenderPass(vk, commandBuffer);
+	if (m_params->useDynamicRendering)
+		endRendering(vk, commandBuffer);
+	else
+		endRenderPass(vk, commandBuffer);
 }
 
 tcu::TestStatus AttachmentRateInstance::iterate(void)
@@ -2025,6 +2104,9 @@ AttachmentRateTestCase::AttachmentRateTestCase(tcu::TestContext& context, const 
 void AttachmentRateTestCase::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_fragment_shading_rate");
+
+	if (m_params->useDynamicRendering)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 	if (m_params->useImagelessFramebuffer)
 		context.requireDeviceFunctionality("VK_KHR_imageless_framebuffer");
 
@@ -2193,7 +2275,7 @@ TestInstance* AttachmentRateTestCase::createInstance(Context& context) const
 
 }	// anonymous
 
-void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup)
+void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup, bool useDynamicRendering)
 {
 	struct SRFormat
 	{
@@ -2273,21 +2355,26 @@ void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* pa
 						testModeParam.mode,						// TestMode			mode;
 						srFormat.format,						// VkFormat			srFormat;
 						srRate.count,							// VkExtent2D		srRate;
+						useDynamicRendering,					// bool				useDynamicRendering;
 						false									// bool				useImagelessFramebuffer;
 					}
 				)));
 
 				// duplicate all tests for imageless framebuffer
-				std::string imagelessName = std::string(srRate.name) + "_imageless";
-				formatGroup->addChild(new AttachmentRateTestCase(testCtx, imagelessName.c_str(), de::SharedPtr<TestParams>(
-					new TestParams
-					{
-						testModeParam.mode,						// TestMode			mode;
-						srFormat.format,						// VkFormat			srFormat;
-						srRate.count,							// VkExtent2D		srRate;
-						true									// bool				useImagelessFramebuffer;
-					}
-				)));
+				if (!useDynamicRendering)
+				{
+					std::string imagelessName = std::string(srRate.name) + "_imageless";
+					formatGroup->addChild(new AttachmentRateTestCase(testCtx, imagelessName.c_str(), de::SharedPtr<TestParams>(
+						new TestParams
+						{
+							testModeParam.mode,					// TestMode			mode;
+							srFormat.format,					// VkFormat			srFormat;
+							srRate.count,						// VkExtent2D		srRate;
+							false,								// bool				useDynamicRendering;
+							true								// bool				useImagelessFramebuffer;
+						}
+					)));
+				}
 			}
 
 			testModeGroup->addChild(formatGroup.release());
@@ -2296,17 +2383,21 @@ void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* pa
 		mainGroup->addChild(testModeGroup.release());
 	}
 
-	de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
-	miscGroup->addChild(new AttachmentRateTestCase(testCtx, "two_subpass", de::SharedPtr<TestParams>(
-		new TestParams
-		{
-			TM_TWO_SUBPASS,										// TestMode			mode;
-			VK_FORMAT_R8_UINT,									// VkFormat			srFormat;
-			{0, 0},												// VkExtent2D		srRate;						// not used in TM_TWO_SUBPASS
-			false												// bool				useImagelessFramebuffer;
-		}
-	)));
-	mainGroup->addChild(miscGroup.release());
+	if (!useDynamicRendering)
+	{
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
+		miscGroup->addChild(new AttachmentRateTestCase(testCtx, "two_subpass", de::SharedPtr<TestParams>(
+			new TestParams
+			{
+				TM_TWO_SUBPASS,									// TestMode			mode;
+				VK_FORMAT_R8_UINT,								// VkFormat			srFormat;
+				{0, 0},											// VkExtent2D		srRate;					// not used in TM_TWO_SUBPASS
+				false,											// bool				useDynamicRendering;
+				false											// bool				useImagelessFramebuffer;
+			}
+		)));
+		mainGroup->addChild(miscGroup.release());
+	}
 
 	parentGroup->addChild(mainGroup.release());
 }

@@ -161,7 +161,9 @@ static const EnumMapEntry s_shaderTypeFromTagMap[] =
 	{ 0x8c64a6be,	"ClosestHitShader",		ri::Shader::SHADERTYPE_CLOSEST_HIT		},
 	{ 0xb30ed398,	"MissShader",			ri::Shader::SHADERTYPE_MISS				},
 	{ 0x26150e53,	"IntersectionShader",	ri::Shader::SHADERTYPE_INTERSECTION		},
-	{ 0x7e50944c,	"CallableShader",		ri::Shader::SHADERTYPE_CALLABLE			}
+	{ 0x7e50944c,	"CallableShader",		ri::Shader::SHADERTYPE_CALLABLE			},
+	{ 0xc3a35d6f,	"TaskShader",			ri::Shader::SHADERTYPE_TASK				},
+	{ 0x925c7349,	"MeshShader",			ri::Shader::SHADERTYPE_MESH				},
 };
 
 static const EnumMapEntry s_testTypeMap[] =

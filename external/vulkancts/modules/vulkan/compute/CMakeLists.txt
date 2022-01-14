@@ -1,7 +1,8 @@
 include_directories(
-        ..
-        ../amber
-        )
+	..
+	../amber
+	${DEQP_INL_DIR}
+	)
 
 set(DEQP_VK_COMPUTE_SRCS
 	vktComputeTests.cpp

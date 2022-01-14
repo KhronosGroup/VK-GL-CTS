@@ -32,7 +32,7 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup*		createShaderLayerTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*		createShaderLayerTests	(tcu::TestContext& testCtx, bool useDynamicRendering);
 
 } // Draw
 } // vkt

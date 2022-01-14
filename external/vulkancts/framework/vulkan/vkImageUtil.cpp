@@ -4429,7 +4429,7 @@ void clearColorImage (const DeviceInterface&	vk,
 					  const VkQueue				queue,
 					  deUint32					queueFamilyIndex,
 					  VkImage					image,
-					  tcu::Vec4					clearColor,
+					  VkClearColorValue			clearColor,
 					  VkImageLayout				oldLayout,
 					  VkImageLayout				newLayout,
 					  VkPipelineStageFlags		dstStageFlags,
@@ -4438,8 +4438,6 @@ void clearColorImage (const DeviceInterface&	vk,
 {
 	Move<VkCommandPool>				cmdPool				= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 	Move<VkCommandBuffer>			cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-	const VkClearColorValue			clearColorValue		= makeClearValueColor(clearColor).color;
 
 	const VkImageSubresourceRange	subresourceRange	=
 	{
@@ -4486,7 +4484,7 @@ void clearColorImage (const DeviceInterface&	vk,
 						  0, (const VkMemoryBarrier*)DE_NULL,
 						  0, (const VkBufferMemoryBarrier*)DE_NULL,
 						  1, &preImageBarrier);
-	vk.cmdClearColorImage(*cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColorValue, 1, &subresourceRange);
+	vk.cmdClearColorImage(*cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1, &subresourceRange);
 	vk.cmdPipelineBarrier(*cmdBuffer,
 						  VK_PIPELINE_STAGE_TRANSFER_BIT,
 						  dstStageFlags,
@@ -4497,6 +4495,21 @@ void clearColorImage (const DeviceInterface&	vk,
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+}
+
+void clearColorImage (const DeviceInterface&	vk,
+					  const VkDevice			device,
+					  const VkQueue				queue,
+					  deUint32					queueFamilyIndex,
+					  VkImage					image,
+					  tcu::Vec4					clearColor,
+					  VkImageLayout				oldLayout,
+					  VkImageLayout				newLayout,
+					  VkPipelineStageFlags		dstStageFlags,
+					  deUint32					baseArrayLayer,
+					  deUint32					layerCount)
+{
+	clearColorImage(vk, device, queue, queueFamilyIndex, image, makeClearValueColor(clearColor).color, oldLayout, newLayout, dstStageFlags, baseArrayLayer, layerCount);
 }
 
 std::vector<VkBufferImageCopy> generateChessboardCopyRegions (deUint32				tileSize,

@@ -255,10 +255,10 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 									 VkFormat				srcFormat,
 									 VkFormat				dstFormat,
 									 deUint32				sampleCount,
-									 RenderPassType			renderPassType)
+									 RenderingType			renderingType)
 {
 	const VkSampleCountFlagBits			samples							(sampleCountBitFromSampleCount(sampleCount));
-	const VkImageAspectFlagBits			aspectFlag						((renderPassType == RENDERPASS_TYPE_RENDERPASS2) ?	VK_IMAGE_ASPECT_COLOR_BIT :
+	const VkImageAspectFlagBits			aspectFlag						((renderingType == RENDERING_TYPE_RENDERPASS2) ?	VK_IMAGE_ASPECT_COLOR_BIT :
 																															static_cast<VkImageAspectFlagBits>(0u));
 	const AttachmentRef					srcAttachmentRef		//  VkAttachmentReference										||  VkAttachmentReference2KHR
 	(
@@ -413,14 +413,14 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 									 VkFormat				srcFormat,
 									 VkFormat				dstFormat,
 									 deUint32				sampleCount,
-									 RenderPassType			renderPassType)
+									 RenderingType			renderingType)
 {
-	switch (renderPassType)
+	switch (renderingType)
 	{
-		case RENDERPASS_TYPE_LEGACY:
-			return createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vkd, device, srcFormat, dstFormat, sampleCount, renderPassType);
-		case RENDERPASS_TYPE_RENDERPASS2:
-			return createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vkd, device, srcFormat, dstFormat, sampleCount, renderPassType);
+		case RENDERING_TYPE_RENDERPASS_LEGACY:
+			return createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vkd, device, srcFormat, dstFormat, sampleCount, renderingType);
+		case RENDERING_TYPE_RENDERPASS2:
+			return createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vkd, device, srcFormat, dstFormat, sampleCount, renderingType);
 		default:
 			TCU_THROW(InternalError, "Impossible");
 	}
@@ -727,18 +727,18 @@ enum TestMode
 
 struct TestConfig
 {
-	TestConfig (deUint32 sampleCount_, TestMode testMode_, deUint32 selectedSample_, RenderPassType	renderPassType_)
+	TestConfig (deUint32 sampleCount_, TestMode testMode_, deUint32 selectedSample_, RenderingType	renderingType_)
 	: sampleCount		(sampleCount_)
 	, testMode			(testMode_)
 	, selectedSample	(selectedSample_)
-	, renderPassType	(renderPassType_)
+	, renderingType		(renderingType_)
 	{
 	}
 
 	deUint32		sampleCount;
 	TestMode		testMode;
 	deUint32		selectedSample;
-	RenderPassType	renderPassType;
+	RenderingType	renderingType;
 };
 
 class SampleReadTestInstance : public TestInstance
@@ -754,7 +754,7 @@ public:
 
 private:
 	const bool								m_extensionSupported;
-	const RenderPassType					m_renderPassType;
+	const RenderingType						m_renderingType;
 
 	const deUint32							m_sampleCount;
 	const deUint32							m_width;
@@ -797,8 +797,8 @@ private:
 SampleReadTestInstance::SampleReadTestInstance (Context& context, TestConfig config)
 	: TestInstance					(context)
 	, m_extensionSupported			(context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING) &&
-									 ((config.renderPassType != RENDERPASS_TYPE_RENDERPASS2) || context.requireDeviceFunctionality("VK_KHR_create_renderpass2")))
-	, m_renderPassType				(config.renderPassType)
+									 ((config.renderingType != RENDERING_TYPE_RENDERPASS2) || context.requireDeviceFunctionality("VK_KHR_create_renderpass2")))
+	, m_renderingType				(config.renderingType)
 	, m_sampleCount					(config.sampleCount)
 	, m_width						(32u)
 	, m_height						(32u)
@@ -816,7 +816,7 @@ SampleReadTestInstance::SampleReadTestInstance (Context& context, TestConfig con
 	, m_dstSinglesampleImageView	(createImageView(context.getDeviceInterface(), context.getDevice(), *m_dstSinglesampleImage, VK_FORMAT_R32_UINT, VK_IMAGE_ASPECT_COLOR_BIT))
 	, m_dstBuffer					(createBuffer(context.getDeviceInterface(), context.getDevice(), VK_FORMAT_R32_UINT, m_width, m_height))
 	, m_dstBufferMemory				(createBufferMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), *m_dstBuffer))
-	, m_renderPass					(createRenderPass(context.getDeviceInterface(), context.getDevice(), VK_FORMAT_R32_UINT, VK_FORMAT_R32_UINT, m_sampleCount, config.renderPassType))
+	, m_renderPass					(createRenderPass(context.getDeviceInterface(), context.getDevice(), VK_FORMAT_R32_UINT, VK_FORMAT_R32_UINT, m_sampleCount, config.renderingType))
 	, m_framebuffer					(createFramebuffer(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_srcImageView, *m_dstMultisampleImageView, *m_dstSinglesampleImageView, m_width, m_height))
 	, m_renderPipelineLayout		(createRenderPipelineLayout(context.getDeviceInterface(), context.getDevice()))
 	, m_renderPipeline				(createRenderPipeline(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_renderPipelineLayout, context.getBinaryCollection(), m_width, m_height, m_sampleCount))
@@ -835,11 +835,11 @@ SampleReadTestInstance::~SampleReadTestInstance (void)
 
 tcu::TestStatus SampleReadTestInstance::iterate (void)
 {
-	switch (m_renderPassType)
+	switch (m_renderingType)
 	{
-		case RENDERPASS_TYPE_LEGACY:
+		case RENDERING_TYPE_RENDERPASS_LEGACY:
 			return iterateInternal<RenderpassSubpass1>();
-		case RENDERPASS_TYPE_RENDERPASS2:
+		case RENDERING_TYPE_RENDERPASS2:
 			return iterateInternal<RenderpassSubpass2>();
 		default:
 			TCU_THROW(InternalError, "Impossible");
@@ -980,7 +980,7 @@ struct Programs
 	}
 };
 
-void initTests (tcu::TestCaseGroup* group, RenderPassType renderPassType)
+void initTests (tcu::TestCaseGroup* group, RenderingType renderingType)
 {
 	const deUint32			sampleCounts[]	= { 2u, 4u, 8u, 16u, 32u };
 	tcu::TestContext&		testCtx			(group->getTestContext());
@@ -989,7 +989,7 @@ void initTests (tcu::TestCaseGroup* group, RenderPassType renderPassType)
 	{
 		const deUint32		sampleCount	(sampleCounts[sampleCountNdx]);
 		{
-			const TestConfig	testConfig	(sampleCount, TESTMODE_ADD, 0, renderPassType);
+			const TestConfig	testConfig	(sampleCount, TESTMODE_ADD, 0, renderingType);
 			const std::string	testName	("numsamples_" + de::toString(sampleCount) + "_add");
 
 			group->addChild(new InstanceFactory1<SampleReadTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
@@ -997,7 +997,7 @@ void initTests (tcu::TestCaseGroup* group, RenderPassType renderPassType)
 
 		for (deUint32 sample = 0; sample < sampleCount; sample++)
 		{
-			const TestConfig	testConfig	(sampleCount, TESTMODE_SELECT, sample, renderPassType);
+			const TestConfig	testConfig	(sampleCount, TESTMODE_SELECT, sample, renderingType);
 			const std::string	testName	("numsamples_" + de::toString(sampleCount) + "_selected_sample_" + de::toString(sample));
 
 			group->addChild(new InstanceFactory1<SampleReadTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
@@ -1009,12 +1009,12 @@ void initTests (tcu::TestCaseGroup* group, RenderPassType renderPassType)
 
 tcu::TestCaseGroup* createRenderPassSampleReadTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "sampleread", "Sample reading tests", initTests, RENDERPASS_TYPE_LEGACY);
+	return createTestGroup(testCtx, "sampleread", "Sample reading tests", initTests, RENDERING_TYPE_RENDERPASS_LEGACY);
 }
 
 tcu::TestCaseGroup* createRenderPass2SampleReadTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "sampleread", "Sample reading tests", initTests, RENDERPASS_TYPE_RENDERPASS2);
+	return createTestGroup(testCtx, "sampleread", "Sample reading tests", initTests, RENDERING_TYPE_RENDERPASS2);
 }
 
 } // vkt

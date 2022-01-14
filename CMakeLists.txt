@@ -331,6 +331,7 @@ add_subdirectory(external/openglcts)
 # Single-binary targets
 if (DE_OS_IS_ANDROID)
 	include_directories(executor)
+	include_directories(${PROJECT_BINARY_DIR}/external/vulkancts/framework/vulkan)
 
 	set(DEQP_SRCS
 		framework/platform/android/tcuAndroidMain.cpp

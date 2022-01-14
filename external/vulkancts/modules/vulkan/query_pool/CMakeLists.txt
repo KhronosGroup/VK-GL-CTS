@@ -1,6 +1,7 @@
 include_directories(
 	..
 	../draw
+	${DEQP_INL_DIR}
 	)
 
 set(DEQP_VK_QUERY_POOL_SRCS

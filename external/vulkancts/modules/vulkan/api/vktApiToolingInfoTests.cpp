@@ -94,7 +94,7 @@ bool checkToolsProperties (Context& context, const std::vector<VkPhysicalDeviceT
 			testLog << tcu::TestLog::Message << "Tool name: " << deviceToolPropertiesEXTArray[i].name << tcu::TestLog::EndMessage;
 			testLog << tcu::TestLog::Message << "Version: " << deviceToolPropertiesEXTArray[i].version << tcu::TestLog::EndMessage;
 			testLog << tcu::TestLog::Message << "Description: " << deviceToolPropertiesEXTArray[i].description << tcu::TestLog::EndMessage;
-			testLog << tcu::TestLog::Message << "Purposes: " << getToolPurposeFlagsEXTStr(deviceToolPropertiesEXTArray[i].purposes) << tcu::TestLog::EndMessage;
+			testLog << tcu::TestLog::Message << "Purposes: " << getToolPurposeFlagsStr(deviceToolPropertiesEXTArray[i].purposes) << tcu::TestLog::EndMessage;
 			if (layerSize > 0)
 			{
 				testLog << tcu::TestLog::Message << "Corresponding Layer: " << deviceToolPropertiesEXTArray[i].layer << tcu::TestLog::EndMessage;
@@ -113,7 +113,7 @@ tcu::TestStatus validateGetter (Context& context)
 	VkResult result		= VK_SUCCESS;
 	deUint32 toolCount	= 0;
 
-	result = context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCount, DE_NULL);
+	result = context.getInstanceInterface().getPhysicalDeviceToolProperties(context.getPhysicalDevice(), &toolCount, DE_NULL);
 
 	if(result != VK_SUCCESS)
 	{
@@ -127,7 +127,7 @@ tcu::TestStatus validateGetter (Context& context)
 
 		std::vector<VkPhysicalDeviceToolPropertiesEXT>	deviceToolPropertiesEXTArray(toolCountSecondCall);
 
-		result = context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCountSecondCall, &deviceToolPropertiesEXTArray[0]);
+		result = context.getInstanceInterface().getPhysicalDeviceToolProperties(context.getPhysicalDevice(), &toolCountSecondCall, &deviceToolPropertiesEXTArray[0]);
 
 		if (result != VK_SUCCESS)
 		{
@@ -145,7 +145,7 @@ tcu::TestStatus validateGetter (Context& context)
 
 		deviceToolPropertiesEXTArray.resize(toolCountSecondCall);
 
-		result = context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCountSecondCall, &deviceToolPropertiesEXTArray[0]);
+		result = context.getInstanceInterface().getPhysicalDeviceToolProperties(context.getPhysicalDevice(), &toolCountSecondCall, &deviceToolPropertiesEXTArray[0]);
 
 		if (result != VK_SUCCESS)
 		{
@@ -161,7 +161,7 @@ tcu::TestStatus validateGetter (Context& context)
 
 		toolCountSecondCall = 0;
 
-		result = context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCountSecondCall, &deviceToolPropertiesEXTArray[0]);
+		result = context.getInstanceInterface().getPhysicalDeviceToolProperties(context.getPhysicalDevice(), &toolCountSecondCall, &deviceToolPropertiesEXTArray[0]);
 
 		if (result != VK_INCOMPLETE)
 		{
@@ -182,7 +182,7 @@ tcu::TestStatus validateGetter (Context& context)
 
 		std::vector<VkPhysicalDeviceToolPropertiesEXT>	deviceToolPropertiesEXTArray(toolCountSecondCall);
 
-		result = context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCountSecondCall, &deviceToolPropertiesEXTArray[0]);
+		result = context.getInstanceInterface().getPhysicalDeviceToolProperties(context.getPhysicalDevice(), &toolCountSecondCall, &deviceToolPropertiesEXTArray[0]);
 
 		if (result != VK_INCOMPLETE)
 		{
@@ -204,13 +204,13 @@ tcu::TestStatus validateToolsProperties (Context& context)
 {
 	deUint32 toolCount	= 0;
 
-	VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCount, DE_NULL));
+	VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolProperties(context.getPhysicalDevice(), &toolCount, DE_NULL));
 
 	if (toolCount > 0)
 	{
 		std::vector<VkPhysicalDeviceToolPropertiesEXT>	deviceToolPropertiesEXTArray(toolCount);
 
-		VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCount, &deviceToolPropertiesEXTArray[0]));
+		VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolProperties(context.getPhysicalDevice(), &toolCount, &deviceToolPropertiesEXTArray[0]));
 
 		if (checkToolsProperties(context, deviceToolPropertiesEXTArray) == false)
 			return tcu::TestStatus::fail("Fail");
@@ -229,7 +229,7 @@ tcu::TestStatus validateInstanceLayers (Context& context)
 		CustomInstance		instance		(createCustomInstance(context, true));
 		VkPhysicalDevice	physicalDevice	= chooseDevice(instance.getDriver(), instance, context.getTestContext().getCommandLine());
 
-		VK_CHECK(instance.getDriver().getPhysicalDeviceToolPropertiesEXT(physicalDevice, &toolCount, DE_NULL));
+		VK_CHECK(instance.getDriver().getPhysicalDeviceToolProperties(physicalDevice, &toolCount, DE_NULL));
 
 		if (toolCount < layers.size())
 			qualityWarning = true;
@@ -238,7 +238,7 @@ tcu::TestStatus validateInstanceLayers (Context& context)
 		{
 			std::vector<VkPhysicalDeviceToolPropertiesEXT>	deviceToolPropertiesEXTArray(toolCount);
 
-			VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(physicalDevice, &toolCount, &deviceToolPropertiesEXTArray[0]));
+			VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolProperties(physicalDevice, &toolCount, &deviceToolPropertiesEXTArray[0]));
 
 			if (checkToolsProperties(context, deviceToolPropertiesEXTArray) == false)
 				return tcu::TestStatus::fail("Fail");
@@ -267,13 +267,13 @@ tcu::TestStatus validateInstanceLayers (Context& context)
 		CustomInstance		instance		(createCustomInstance(context, false));
 		VkPhysicalDevice	physicalDevice	= chooseDevice(instance.getDriver(), instance, context.getTestContext().getCommandLine());
 
-		VK_CHECK(instance.getDriver().getPhysicalDeviceToolPropertiesEXT(physicalDevice, &toolCount, DE_NULL));
+		VK_CHECK(instance.getDriver().getPhysicalDeviceToolProperties(physicalDevice, &toolCount, DE_NULL));
 
 		if (toolCount > 0)
 		{
 			std::vector<VkPhysicalDeviceToolPropertiesEXT>	deviceToolPropertiesEXTArray(toolCount);
 
-			VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(physicalDevice, &toolCount, &deviceToolPropertiesEXTArray[0]));
+			VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolProperties(physicalDevice, &toolCount, &deviceToolPropertiesEXTArray[0]));
 
 			if (checkToolsProperties(context, deviceToolPropertiesEXTArray) == false)
 				return tcu::TestStatus::fail("Fail");

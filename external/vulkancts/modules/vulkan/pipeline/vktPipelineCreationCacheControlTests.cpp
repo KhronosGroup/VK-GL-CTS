@@ -317,7 +317,7 @@ void checkSupport(Context& context, const TestParams&)
 		TCU_THROW(NotSupportedError, "Extension 'VK_EXT_pipeline_creation_cache_control' is not supported");
 	}
 
-	const auto features = context.getPipelineCreationCacheControlFeaturesEXT();
+	const auto features = context.getPipelineCreationCacheControlFeatures();
 	if (features.pipelineCreationCacheControl == DE_FALSE)
 	{
 		TCU_THROW(NotSupportedError, "Feature 'pipelineCreationCacheControl' is not enabled");
@@ -608,7 +608,7 @@ VkGraphicsPipelineCreateInfo getPipelineCreateInfoCommon()
 		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // sType
 		DE_NULL,													// pNext
 		VkPipelineRasterizationStateCreateFlags{},					// flags
-		VK_TRUE,													// depthClampEnable
+		VK_FALSE,													// depthClampEnable
 		VK_TRUE,													// rasterizerDiscardEnable
 		VK_POLYGON_MODE_FILL,										// polygonMode
 		VK_CULL_MODE_NONE,											// cullMode

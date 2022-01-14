@@ -2847,6 +2847,11 @@ Vec2 projectToFace (CubeFace face, const Vec3& coord)
 			DE_ASSERT(DE_FALSE);
 	}
 
+	if (fabs(ma) < FLT_EPSILON)
+	{
+		return Vec2(0.0f);
+	}
+
 	// Compute s, t
 	s = ((sc / ma) + 1.0f) / 2.0f;
 	t = ((tc / ma) + 1.0f) / 2.0f;
@@ -3568,25 +3573,28 @@ void Texture1D::allocLevel (int levelNdx)
 
 Texture2D::Texture2D (const TextureFormat& format, int width, int height, bool es2)
 	: TextureLevelPyramid	(format, computeMipPyramidLevels(width, height))
-	, m_width				(width)
-	, m_height				(height)
-	, m_view				(getNumLevels(), getLevels(), es2)
+	, m_yuvTextureUsed	(false)
+	, m_width		(width)
+	, m_height		(height)
+	, m_view		(getNumLevels(), getLevels(), es2)
 {
 }
 
 Texture2D::Texture2D (const TextureFormat& format, int width, int height, int mipmaps)
 	: TextureLevelPyramid	(format, mipmaps)
-	, m_width				(width)
-	, m_height				(height)
-	, m_view				(getNumLevels(), getLevels())
+	, m_yuvTextureUsed	(false)
+	, m_width		(width)
+	, m_height		(height)
+	, m_view		(getNumLevels(), getLevels())
 {
 }
 
 Texture2D::Texture2D (const Texture2D& other)
 	: TextureLevelPyramid	(other)
-	, m_width				(other.m_width)
-	, m_height				(other.m_height)
-	, m_view				(getNumLevels(), getLevels(), other.getView().isES2())
+	, m_yuvTextureUsed	(other.m_yuvTextureUsed)
+	, m_width		(other.m_width)
+	, m_height		(other.m_height)
+	, m_view		(getNumLevels(), getLevels(), other.getView().isES2())
 {
 }
 
@@ -3600,7 +3608,7 @@ Texture2D& Texture2D::operator= (const Texture2D& other)
 	m_width		= other.m_width;
 	m_height	= other.m_height;
 	m_view		= Texture2DView(getNumLevels(), getLevels(), other.getView().isES2());
-
+	m_yuvTextureUsed = other.m_yuvTextureUsed;
 	return *this;
 }
 

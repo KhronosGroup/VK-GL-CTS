@@ -755,10 +755,12 @@ tcu::TestStatus EarlyFragmentDiscardTestInstance::iterate (void)
 			int		stencilValue	= (m_testMode == MODE_STENCIL) ? dsPixelAccess.getPixStencil(x, y, z) : 0;
 
 			// Depth test should write to the depth buffer even when there is a discard in the fragment shader,
-			// when early fragment tests are enabled.
+			// when early fragment tests are enabled. We allow some tolerance to account for precision error
+			// on depth writes.
 			if (m_testMode == MODE_DEPTH)
 			{
-				if (m_useEarlyTests && ((x + y) < 31) && depthValue >= 0.5f)
+				float tolerance = 0.0001f;
+				if (m_useEarlyTests && ((x + y) < 31) && depthValue >= 0.50 + tolerance)
 				{
 					std::ostringstream error;
 					error << "Rendered depth value [ "<< x << ", " << y << ", " << z << "] is not correct: " << depthValue << " >= 0.5f";
@@ -766,7 +768,7 @@ tcu::TestStatus EarlyFragmentDiscardTestInstance::iterate (void)
 				}
 				// When early fragment tests are disabled, the depth test happens after the fragment shader, but as we are discarding
 				// all fragments, the stored value in the depth buffer should be the clear one (0.5f).
-				if (!m_useEarlyTests && deAbs(depthValue - 0.5f) > 0.01f)
+				if (!m_useEarlyTests && deAbs(depthValue - 0.5f) > tolerance)
 				{
 					std::ostringstream error;
 					error << "Rendered depth value [ "<< x << ", " << y << ", " << z << "] is not correct: " << depthValue << " != 0.5f";
@@ -1519,15 +1521,12 @@ tcu::TestStatus EarlyFragmentSampleMaskTestInstance::iterate (void)
 		const int  expectedCounter	   = expectPartialResult ? renderSize.x() * renderSize.y() / 2 : renderSize.x() * renderSize.y();
 		const int  tolerance		   = expectPartialResult ? de::max(renderSize.x(), renderSize.y()) * 3	: 0;
 		const int  expectedMin         = de::max(0, expectedCounter - tolerance);
-		const int  expectedMax		   = expectedCounter + tolerance;
 
 		tcu::TestLog& log = m_context.getTestContext().getLog();
-		log << tcu::TestLog::Message << "Expected value"
-			<< (expectPartialResult ? " in range: [" + de::toString(expectedMin) + ", " + de::toString(expectedMax) + "]" : ": " + de::toString(expectedCounter))
-			<< tcu::TestLog::EndMessage;
+		log << tcu::TestLog::Message << "Minimum expected value: " + de::toString(expectedMin) << tcu::TestLog::EndMessage;
 		log << tcu::TestLog::Message << "Result value: " << de::toString(actualCounter) << tcu::TestLog::EndMessage;
 
-		if (expectedMin <= actualCounter && actualCounter <= expectedMax)
+		if (expectedMin <= actualCounter)
 			return tcu::TestStatus::pass("Success");
 		else
 			return tcu::TestStatus::fail("Value out of range");

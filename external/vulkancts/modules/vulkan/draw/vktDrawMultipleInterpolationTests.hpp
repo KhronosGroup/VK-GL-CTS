@@ -31,7 +31,7 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup*	createMultipleInterpolationTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup*	createMultipleInterpolationTests (tcu::TestContext& testCtx, bool useDynamicRendering);
 
 } // Draw
 } // vkt

@@ -92,6 +92,7 @@ struct TestParams
 	bool							useTessellation;
 	bool							useGeometry;
 	bool							multiview;
+	bool							useDynamicRendering;
 
 	deUint32 maxInstanceIndex () const
 	{
@@ -375,6 +376,9 @@ void MultiDrawTest::checkSupport (Context& context) const
 		if (m_params.useGeometry && !multiviewFeatures.multiviewGeometryShader)
 			TCU_THROW(NotSupportedError, "Multiview not supported with geometry shaders");
 	}
+
+	if (m_params.useDynamicRendering)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 }
 
 void MultiDrawTest::initPrograms (vk::SourceCollections& programCollection) const
@@ -803,12 +807,16 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 	const auto					descriptorSetLayout	= layoutBuilder.build(vkd, device);
 	const auto					pipelineLayout		= makePipelineLayout(vkd, device, descriptorSetLayout.get());
 
-	// Render pass.
-	const auto renderPass = makeMultidrawRenderPass(vkd, device, colorFormat, dsFormat, imageLayers);
+	Move<VkRenderPass>			renderPass;
+	Move<VkFramebuffer>			framebuffer;
 
-	// Framebuffer (note layers is always 1 as required by the spec).
-	const std::vector<VkImageView> attachments { colorBufferView.get(), dsBufferView.get() };
-	const auto framebuffer = makeFramebuffer(vkd, device, renderPass.get(), static_cast<deUint32>(attachments.size()), de::dataOrNull(attachments), imageExtent.width, imageExtent.height, 1u);
+	// Render pass and Framebuffer (note layers is always 1 as required by the spec).
+	if (!m_params.useDynamicRendering)
+	{
+		renderPass = makeMultidrawRenderPass(vkd, device, colorFormat, dsFormat, imageLayers);
+		const std::vector<VkImageView> attachments { colorBufferView.get(), dsBufferView.get() };
+		framebuffer = makeFramebuffer(vkd, device, renderPass.get(), static_cast<deUint32>(attachments.size()), de::dataOrNull(attachments), imageExtent.width, imageExtent.height, 1u);
+	}
 
 	// Viewports and scissors.
 	const auto						viewport	= makeViewport(imageExtent);
@@ -857,6 +865,21 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 		1.0f,															//	float									maxDepthBounds;
 	};
 
+	vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+		DE_NULL,
+		0u,
+		1u,
+		&colorFormat,
+		dsFormat,
+		dsFormat
+	};
+
+	vk::VkPipelineRenderingCreateInfoKHR* nextPtr = nullptr;
+	if (m_params.useDynamicRendering)
+		nextPtr = &renderingCreateInfo;
+
 	const auto primitiveTopology	= (m_params.useTessellation ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 	const auto patchControlPoints	= (m_params.useTessellation ? 3u : 0u);
 
@@ -865,10 +888,12 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 	pipelines.reserve(imageLayers);
 	for (deUint32 subpassIdx = 0u; subpassIdx < imageLayers; ++subpassIdx)
 	{
+		renderingCreateInfo.viewMask = m_params.multiview ? (1u << subpassIdx) : 0u;
 		pipelines.emplace_back(makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
 			vertModule.get(), tescModule.get(), teseModule.get(), geomModule.get(), fragModule.get(),
 			renderPass.get(), viewports, scissors, primitiveTopology, subpassIdx, patchControlPoints,
-			nullptr/*vertexInputStateCreateInfo*/, &rasterizationInfo, nullptr/*multisampleStateCreateInfo*/, &depthStencilInfo));
+			nullptr/*vertexInputStateCreateInfo*/, &rasterizationInfo, nullptr/*multisampleStateCreateInfo*/, &depthStencilInfo,
+			nullptr/*colorBlendStateCreateInfo*/, nullptr/*dynamicStateCreateInfo*/, nextPtr));
 	}
 
 	// Command pool and buffer.
@@ -981,11 +1006,45 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 	clearValues.push_back(makeClearValueColorU32(0u, 0u, 0u, 0u));
 	clearValues.push_back(makeClearValueDepthStencil(((isMosaic || isIndexed) ? 0.0f : 1.0f), 0u));
 
-	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissor, static_cast<deUint32>(clearValues.size()), de::dataOrNull(clearValues));
+	if (m_params.useDynamicRendering)
+	{
+		// Transition color and depth stencil attachment to the proper initial layout for dynamic rendering
+		const auto colorPreBarrier = makeImageMemoryBarrier(
+			0u,
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			colorBuffer.get(), colorSubresourceRange);
+
+		vkd.cmdPipelineBarrier(
+			cmdBuffer,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+			0u, 0u, nullptr, 0u, nullptr, 1u, &colorPreBarrier);
+
+		const auto dsPreBarrier = makeImageMemoryBarrier(
+			0u,
+			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+			dsBuffer.get(), dsSubresourceRange);
+
+		vkd.cmdPipelineBarrier(
+			cmdBuffer,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT),
+			0u, 0u, nullptr, 0u, nullptr, 1u, &dsPreBarrier);
+	}
+	else
+		beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissor, static_cast<deUint32>(clearValues.size()), de::dataOrNull(clearValues));
 
 	for (deUint32 layerIdx = 0u; layerIdx < imageLayers; ++layerIdx)
 	{
-		if (layerIdx > 0u)
+		if (m_params.useDynamicRendering)
+			beginRendering(vkd, cmdBuffer, *colorBufferView, *dsBufferView, true, scissor, clearValues[0], clearValues[1],
+				vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+				VK_ATTACHMENT_LOAD_OP_CLEAR, 0, imageLayers, m_params.multiview ? (1u << layerIdx) : 0u);
+		else if (layerIdx > 0u)
 			vkd.cmdNextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
 		vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[layerIdx].get());
@@ -1004,9 +1063,13 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 			const auto drawInfoPtr = reinterpret_cast<const VkMultiDrawInfoEXT*>(drawInfos.drawInfoData());
 			vkd.cmdDrawMultiEXT(cmdBuffer, drawInfos.drawInfoCount(), drawInfoPtr, m_params.instanceCount, m_params.firstInstance, drawInfos.stride());
 		}
+
+		if (m_params.useDynamicRendering)
+			endRendering(vkd, cmdBuffer);
 	}
 
-	endRenderPass(vkd, cmdBuffer);
+	if (!m_params.useDynamicRendering)
+		endRenderPass(vkd, cmdBuffer);
 
 	// Prepare images for copying.
 	const auto colorBufferBarrier = makeImageMemoryBarrier(
@@ -1137,7 +1200,7 @@ tcu::TestStatus MultiDrawInstance::iterate (void)
 
 } // anonymous
 
-tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx, bool useDynamicRendering)
 {
 	using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
@@ -1305,6 +1368,7 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx)
 										shaderCase.useTessellation,		//	bool							useTessellation;
 										shaderCase.useGeometry,			//	bool							useGeometry;
 										multiviewCase.multiview,		//	bool							multiview;
+										useDynamicRendering,			//	bool							useDynamicRendering;
 									};
 
 									multiviewGroup->addChild(new MultiDrawTest(testCtx, "no_offset", "", params));

@@ -2827,7 +2827,7 @@ tcu::TestNode::IterateResult CullDistance::FunctionalTest::iterate()
 
 				if (clipdistances_array_size == 0 && culldistances_array_size == 0)
 				{
-					/* Skip the dummy iteration */
+					/* Skip the empty iteration */
 					continue;
 				}
 

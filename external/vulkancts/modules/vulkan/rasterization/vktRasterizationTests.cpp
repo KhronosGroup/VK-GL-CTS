@@ -52,6 +52,7 @@
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkBarrierUtil.hpp"
+#include "vktRasterizationOrderAttachmentAccessTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -7377,6 +7378,11 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 	// Fragment shader side effects.
 	{
 		rasterizationTests->addChild(createFragSideEffectsTests(testCtx));
+	}
+
+	// Rasterization order attachment access tests
+	{
+		rasterizationTests->addChild(createRasterizationOrderAttachmentAccessTests(testCtx));
 	}
 }
 

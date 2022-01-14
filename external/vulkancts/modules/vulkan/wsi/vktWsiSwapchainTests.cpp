@@ -729,7 +729,7 @@ template<typename T> static deUint64 HandleToInt(T t) { return t.getInternal(); 
 
 tcu::TestStatus createSwapchainPrivateDataTest (Context& context, TestParameters params)
 {
-	if (!context.getPrivateDataFeaturesEXT().privateData)
+	if (!context.getPrivateDataFeatures().privateData)
 		TCU_THROW(NotSupportedError, "privateData not supported");
 
 	tcu::TestLog&							log			= context.getTestContext().getLog();
@@ -802,7 +802,7 @@ tcu::TestStatus createSwapchainPrivateDataTest (Context& context, TestParameters
 
 				for (int i = 0; i < numSlots; ++i)
 				{
-					Move<VkPrivateDataSlotEXT> s = createPrivateDataSlotEXT(devHelper.vkd, *devHelper.device, &createInfo, DE_NULL);
+					Move<VkPrivateDataSlotEXT> s = createPrivateDataSlot(devHelper.vkd, *devHelper.device, &createInfo, DE_NULL);
 					slots.push_back(PrivateDataSlotSp(new PrivateDataSlotUp(s)));
 				}
 
@@ -814,7 +814,7 @@ tcu::TestStatus createSwapchainPrivateDataTest (Context& context, TestParameters
 					for (int i = 0; i < numSlots; ++i)
 					{
 						data = 1234;
-						devHelper.vkd.getPrivateDataEXT(*devHelper.device, getObjectType<VkSwapchainKHR>(), HandleToInt(swapchain.get()), **slots[i], &data);
+						devHelper.vkd.getPrivateData(*devHelper.device, getObjectType<VkSwapchainKHR>(), HandleToInt(swapchain.get()), **slots[i], &data);
 						// Don't test default value of zero on Android, due to spec erratum
 						if (params.wsiType != TYPE_ANDROID)
 						{
@@ -824,12 +824,12 @@ tcu::TestStatus createSwapchainPrivateDataTest (Context& context, TestParameters
 					}
 
 					for (int i = 0; i < numSlots; ++i)
-						VK_CHECK(devHelper.vkd.setPrivateDataEXT(*devHelper.device, getObjectType<VkSwapchainKHR>(), HandleToInt(swapchain.get()), **slots[i], i*i*i + 1));
+						VK_CHECK(devHelper.vkd.setPrivateData(*devHelper.device, getObjectType<VkSwapchainKHR>(), HandleToInt(swapchain.get()), **slots[i], i*i*i + 1));
 
 					for (int i = 0; i < numSlots; ++i)
 					{
 						data = 1234;
-						devHelper.vkd.getPrivateDataEXT(*devHelper.device, getObjectType<VkSwapchainKHR>(), HandleToInt(swapchain.get()), **slots[i], &data);
+						devHelper.vkd.getPrivateData(*devHelper.device, getObjectType<VkSwapchainKHR>(), HandleToInt(swapchain.get()), **slots[i], &data);
 						if (data != (deUint64)(i*i*i + 1))
 							return tcu::TestStatus::fail("Didn't read back set value");
 					}
@@ -838,7 +838,7 @@ tcu::TestStatus createSwapchainPrivateDataTest (Context& context, TestParameters
 					slots.clear();
 					for (int i = 0; i < numSlots; ++i)
 					{
-						Move<VkPrivateDataSlotEXT> s = createPrivateDataSlotEXT(devHelper.vkd, *devHelper.device, &createInfo, DE_NULL);
+						Move<VkPrivateDataSlotEXT> s = createPrivateDataSlot(devHelper.vkd, *devHelper.device, &createInfo, DE_NULL);
 						slots.push_back(PrivateDataSlotSp(new PrivateDataSlotUp(s)));
 					}
 				}
@@ -2524,12 +2524,13 @@ tcu::TestStatus acquireTooManyTest (Context& context, Type wsiType)
 	const deUint32 numAcquirableImages = numImages - minImageCount + 1;
 
 	const auto fences = createFences(devHelper.vkd, *devHelper.device, numAcquirableImages + 1, false);
-	deUint32 dummy;
+	deUint32 unused;
+
 	for (deUint32 i = 0; i < numAcquirableImages; ++i) {
-		VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, std::numeric_limits<deUint64>::max(), (VkSemaphore)0, **fences[i], &dummy));
+		VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, std::numeric_limits<deUint64>::max(), (VkSemaphore)0, **fences[i], &unused));
 	}
 
-	const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, 0, (VkSemaphore)0, **fences[numAcquirableImages], &dummy);
+	const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, 0, (VkSemaphore)0, **fences[numAcquirableImages], &unused);
 
 	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_NOT_READY ){
 		return tcu::TestStatus::fail("Implementation failed to respond well acquiring too many images with 0 timeout");
@@ -2561,14 +2562,15 @@ tcu::TestStatus acquireTooManyTimeoutTest (Context& context, Type wsiType)
 	const deUint32 numAcquirableImages = numImages - minImageCount + 1;
 
 	const auto fences = createFences(devHelper.vkd, *devHelper.device, numAcquirableImages + 1, false);
-	deUint32 dummy;
+	deUint32 unused;
+
 	for (deUint32 i = 0; i < numAcquirableImages; ++i) {
-		VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, std::numeric_limits<deUint64>::max(), (VkSemaphore)0, **fences[i], &dummy));
+		VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, std::numeric_limits<deUint64>::max(), (VkSemaphore)0, **fences[i], &unused));
 	}
 
 	const deUint64 millisecond = 1000000;
 	const deUint64 timeout = 50 * millisecond; // arbitrary realistic non-0 non-infinite timeout
-	const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, timeout, (VkSemaphore)0, **fences[numAcquirableImages], &dummy);
+	const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, timeout, (VkSemaphore)0, **fences[numAcquirableImages], &unused);
 
 	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_TIMEOUT ){
 		return tcu::TestStatus::fail("Implementation failed to respond well acquiring too many images with timeout");
