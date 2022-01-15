@@ -1839,26 +1839,13 @@ bool RayTracingASBasicTestInstance::iterateNoWorkers (void)
 
 bool RayTracingASBasicTestInstance::iterateWithWorkers (void)
 {
-	const deUint64					singleThreadTimeStart	= deGetMicroseconds();
 	de::MovePtr<BufferWithMemory>	singleThreadBufferCPU	= runTest(0);
 	const bool						singleThreadValidation	= m_data.testConfiguration->verifyImage(singleThreadBufferCPU.get(), m_context, m_data);
-	const deUint64					singleThreadTime		= deGetMicroseconds() - singleThreadTimeStart;
 
-	deUint64						multiThreadTimeStart	= deGetMicroseconds();
 	de::MovePtr<BufferWithMemory>	multiThreadBufferCPU	= runTest(m_data.workerThreadsCount);
 	const bool						multiThreadValidation	= m_data.testConfiguration->verifyImage(multiThreadBufferCPU.get(), m_context, m_data);
-	deUint64						multiThreadTime			= deGetMicroseconds() - multiThreadTimeStart;
-	const deUint64					multiThreadTimeOut		= 10 * singleThreadTime;
 
 	const deUint32					result					= singleThreadValidation && multiThreadValidation;
-
-	if (multiThreadTime > multiThreadTimeOut)
-	{
-		std::string failMsg	= "Time of multithreaded test execution " + de::toString(multiThreadTime) +
-							  " that is longer than expected execution time " + de::toString(multiThreadTimeOut);
-
-		TCU_FAIL(failMsg);
-	}
 
 	return result;
 }
