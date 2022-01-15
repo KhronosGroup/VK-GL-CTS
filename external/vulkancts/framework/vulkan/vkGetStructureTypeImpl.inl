@@ -1277,6 +1277,21 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderClockFeaturesK
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkDeviceQueueGlobalPriorityCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkQueueFamilyGlobalPriorityPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkFragmentShadingRateAttachmentInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR;
@@ -1805,11 +1820,6 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceImageViewImageFormat
 template<> VkStructureType getStructureType<VkFilterCubicImageViewImageFormatPropertiesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_FILTER_CUBIC_IMAGE_VIEW_IMAGE_FORMAT_PROPERTIES_EXT;
-}
-
-template<> VkStructureType getStructureType<VkDeviceQueueGlobalPriorityCreateInfoEXT> (void)
-{
-	return VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkImportMemoryHostPointerInfoEXT> (void)
@@ -2387,16 +2397,6 @@ template<> VkStructureType getStructureType<VkPipelineColorWriteCreateInfoEXT> (
 	return VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT> (void)
-{
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_EXT;
-}
-
-template<> VkStructureType getStructureType<VkQueueFamilyGlobalPriorityPropertiesEXT> (void)
-{
-	return VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_EXT;
-}
-
 template<> VkStructureType getStructureType<VkPhysicalDeviceImageViewMinLodFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
@@ -2430,6 +2430,26 @@ template<> VkStructureType getStructureType<VkSamplerBorderColorComponentMapping
 template<> VkStructureType getStructureType<VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkSubpassFragmentDensityMapOffsetEndInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_SUBPASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceLinearColorAttachmentFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINEAR_COLOR_ATTACHMENT_FEATURES_NV;
 }
 
 template<> VkStructureType getStructureType<VkAccelerationStructureGeometryTrianglesDataKHR> (void)
@@ -2575,6 +2595,11 @@ template<> VkStructureType getStructureType<VkExternalFormatANDROID> (void)
 template<> VkStructureType getStructureType<VkAndroidHardwareBufferFormatProperties2ANDROID> (void)
 {
 	return VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_2_ANDROID;
+}
+
+template<> VkStructureType getStructureType<VkQueueFamilyQueryResultStatusProperties2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_QUEUE_FAMILY_QUERY_RESULT_STATUS_PROPERTIES_2_KHR;
 }
 
 template<> VkStructureType getStructureType<VkVideoQueueFamilyProperties2KHR> (void)

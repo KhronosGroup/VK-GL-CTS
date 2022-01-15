@@ -17,6 +17,7 @@ const VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			getExternalMemoryHostPr
 const VkPhysicalDeviceFloatControlsProperties&					getFloatControlsProperties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFloatControlsProperties>();					}
 const VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			getFragmentDensityMapPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentDensityMapPropertiesEXT>();			}
 const VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&			getFragmentDensityMap2PropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentDensityMap2PropertiesEXT>();			}
+const VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM&	getFragmentDensityMapOffsetPropertiesQCOM	(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM>();		}
 const VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			getFragmentShadingRateProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentShadingRatePropertiesKHR>();			}
 const VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV&		getFragmentShadingRateEnumsProperties		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV>();		}
 const VkPhysicalDeviceIDProperties&								getIDProperties								(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceIDProperties>();								}

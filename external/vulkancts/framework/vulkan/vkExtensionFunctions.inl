@@ -226,6 +226,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_global_priority")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_driver_properties")
 	{
 		return;
@@ -982,6 +986,18 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_QCOM_fragment_density_map_offset")
+	{
+		return;
+	}
+	if (extName == "VK_NV_linear_color_attachment")
+	{
+		return;
+	}
+	if (extName == "VK_GOOGLE_surfaceless_query")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_acceleration_structure")
 	{
 		return;
@@ -1378,6 +1394,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_KHR_shader_clock")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_global_priority")
 	{
 		return;
 	}
@@ -2266,6 +2286,18 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	if (extName == "VK_EXT_pageable_device_local_memory")
 	{
 		functions.push_back("vkSetDeviceMemoryPriorityEXT");
+		return;
+	}
+	if (extName == "VK_QCOM_fragment_density_map_offset")
+	{
+		return;
+	}
+	if (extName == "VK_NV_linear_color_attachment")
+	{
+		return;
+	}
+	if (extName == "VK_GOOGLE_surfaceless_query")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_acceleration_structure")

@@ -521,7 +521,7 @@ inline VkDrmFormatModifierPropertiesEXT makeDrmFormatModifierPropertiesEXT (uint
 	return res;
 }
 
-inline VkDrmFormatModifierProperties2EXT makeDrmFormatModifierProperties2EXT (uint64_t drmFormatModifier, uint32_t drmFormatModifierPlaneCount, VkFormatFeatureFlags2KHR drmFormatModifierTilingFeatures)
+inline VkDrmFormatModifierProperties2EXT makeDrmFormatModifierProperties2EXT (uint64_t drmFormatModifier, uint32_t drmFormatModifierPlaneCount, VkFormatFeatureFlags2 drmFormatModifierTilingFeatures)
 {
 	VkDrmFormatModifierProperties2EXT res;
 	res.drmFormatModifier				= drmFormatModifier;

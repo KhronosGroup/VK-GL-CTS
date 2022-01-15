@@ -833,7 +833,7 @@ void DeviceDriver::cmdResolveImage2 (VkCommandBuffer commandBuffer, const VkReso
 	m_vk.cmdResolveImage2(commandBuffer, pResolveImageInfo);
 }
 
-void DeviceDriver::cmdBeginRendering (VkCommandBuffer commandBuffer, const VkRenderingInfoKHR* pRenderingInfo) const
+void DeviceDriver::cmdBeginRendering (VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo) const
 {
 	m_vk.cmdBeginRendering(commandBuffer, pRenderingInfo);
 }
@@ -1083,7 +1083,7 @@ VkResult DeviceDriver::getPipelineExecutableInternalRepresentationsKHR (VkDevice
 	return m_vk.getPipelineExecutableInternalRepresentationsKHR(device, pExecutableInfo, pInternalRepresentationCount, pInternalRepresentations);
 }
 
-void DeviceDriver::cmdWriteBufferMarker2AMD (VkCommandBuffer commandBuffer, VkPipelineStageFlags2KHR stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker) const
+void DeviceDriver::cmdWriteBufferMarker2AMD (VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker) const
 {
 	m_vk.cmdWriteBufferMarker2AMD(commandBuffer, stage, dstBuffer, dstOffset, marker);
 }

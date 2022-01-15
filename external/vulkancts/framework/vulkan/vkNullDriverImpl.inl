@@ -1518,7 +1518,7 @@ VKAPI_ATTR void VKAPI_CALL cmdResolveImage2 (VkCommandBuffer commandBuffer, cons
 	DE_UNREF(pResolveImageInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBeginRendering (VkCommandBuffer commandBuffer, const VkRenderingInfoKHR* pRenderingInfo)
+VKAPI_ATTR void VKAPI_CALL cmdBeginRendering (VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pRenderingInfo);
@@ -2013,7 +2013,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPipelineExecutableInternalRepresentationsKHR (
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdWriteBufferMarker2AMD (VkCommandBuffer commandBuffer, VkPipelineStageFlags2KHR stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker)
+VKAPI_ATTR void VKAPI_CALL cmdWriteBufferMarker2AMD (VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(stage);

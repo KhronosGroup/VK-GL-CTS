@@ -168,7 +168,7 @@ virtual void				cmdCopyBufferToImage2							(VkCommandBuffer commandBuffer, cons
 virtual void				cmdCopyImageToBuffer2							(VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2* pCopyImageToBufferInfo) const;
 virtual void				cmdBlitImage2									(VkCommandBuffer commandBuffer, const VkBlitImageInfo2* pBlitImageInfo) const;
 virtual void				cmdResolveImage2								(VkCommandBuffer commandBuffer, const VkResolveImageInfo2* pResolveImageInfo) const;
-virtual void				cmdBeginRendering								(VkCommandBuffer commandBuffer, const VkRenderingInfoKHR* pRenderingInfo) const;
+virtual void				cmdBeginRendering								(VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo) const;
 virtual void				cmdEndRendering									(VkCommandBuffer commandBuffer) const;
 virtual void				cmdSetCullMode									(VkCommandBuffer commandBuffer, VkCullModeFlags cullMode) const;
 virtual void				cmdSetFrontFace									(VkCommandBuffer commandBuffer, VkFrontFace frontFace) const;
@@ -218,7 +218,7 @@ virtual VkResult			deferredOperationJoinKHR						(VkDevice device, VkDeferredOpe
 virtual VkResult			getPipelineExecutablePropertiesKHR				(VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, uint32_t* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties) const;
 virtual VkResult			getPipelineExecutableStatisticsKHR				(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, uint32_t* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics) const;
 virtual VkResult			getPipelineExecutableInternalRepresentationsKHR	(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, uint32_t* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations) const;
-virtual void				cmdWriteBufferMarker2AMD						(VkCommandBuffer commandBuffer, VkPipelineStageFlags2KHR stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker) const;
+virtual void				cmdWriteBufferMarker2AMD						(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker) const;
 virtual void				getQueueCheckpointData2NV						(VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointData2NV* pCheckpointData) const;
 virtual VkResult			debugMarkerSetObjectTagEXT						(VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const;
 virtual VkResult			debugMarkerSetObjectNameEXT						(VkDevice device, const VkDebugMarkerObjectNameInfoEXT* pNameInfo) const;
