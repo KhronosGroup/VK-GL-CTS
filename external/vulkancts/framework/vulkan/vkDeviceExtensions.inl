@@ -99,6 +99,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_EXT_tooling_info",
 	"VK_EXT_ycbcr_2plane_444_formats",
 	"VK_EXT_border_color_swizzle",
+	"VK_KHR_global_priority",
 	"VK_NV_mesh_shader",
 	"VK_KHR_portability_subset",
 };

@@ -117,5 +117,6 @@ VK_EXT_texture_compression_astc_hdr			DEVICE 1_3_0
 VK_EXT_tooling_info							DEVICE 1_3_0
 VK_EXT_ycbcr_2plane_444_formats				DEVICE
 VK_EXT_border_color_swizzle					DEVICE
+VK_KHR_global_priority		        		DEVICE
 VK_NV_mesh_shader							DEVICE
 VK_KHR_portability_subset					DEVICE
