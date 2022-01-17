@@ -1664,6 +1664,8 @@ public:
 	tcu::TestStatus		iterate									(void);
 
 private:
+	tcu::TextureLevel	generateReferenceColorImage				(const tcu::TextureFormat format, const tcu::IVec2& renderSize);
+
 	Move<VkRenderPass>	makeRenderPass							(const DeviceInterface&		vk,
 																 const VkDevice				device,
 																 const VkFormat				colorFormat,
@@ -1845,6 +1847,16 @@ Move<VkRenderPass> EarlyFragmentSampleCountTestInstance::makeRenderPass	(const D
 	};
 
 	return createRenderPass(vk, device, &renderPassInfo, DE_NULL);
+}
+
+tcu::TextureLevel EarlyFragmentSampleCountTestInstance::generateReferenceColorImage(const tcu::TextureFormat format, const tcu::IVec2 &renderSize)
+{
+	tcu::TextureLevel	image		(format, renderSize.x(), renderSize.y());
+	const tcu::Vec4		clearColor	= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+	tcu::clear(image.getAccess(), clearColor);
+
+	return image;
 }
 
 tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
@@ -2056,6 +2068,17 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
 
 		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+	}
+
+	// When early fragment test is enabled, all samples are killed in fragment shader. The result color should be black.
+	{
+		invalidateAlloc(vk, device, *colorBufferAllocEarly);
+
+		const tcu::ConstPixelBufferAccess	imagePixelAccess(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, colorBufferAllocEarly->getHostPtr());
+		const tcu::TextureLevel				referenceImage = generateReferenceColorImage(mapVkFormat(colorFormat), renderSize);
+
+		if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Compare color output", "Early fragment image result comparison", referenceImage.getAccess(), imagePixelAccess, tcu::Vec4(0.02f), tcu::COMPARE_LOG_RESULT))
+			return tcu::TestStatus::fail("Rendered color image is not correct");
 	}
 
 	// The image has 32x32 pixels and each pixel has m_sampleCount samples. Half of these samples are discarded before sample counting.
