@@ -394,11 +394,11 @@ void TestShaderBindingTablesConfiguration::initShaderBindingTables (de::MovePtr<
 			DE_NULL											//VkBuffer           buffer;
 		};
 		deviceAddressInfo.buffer										= pipelineData.pipelines[0].raygenShaderBindingTable->get();
-		sbtSavedRaygenAddress											= vkd.getBufferDeviceAddress( device, &deviceAddressInfo);
+		sbtSavedRaygenAddress											= vkd.getBufferOpaqueCaptureAddress( device, &deviceAddressInfo);
 		deviceAddressInfo.buffer										= pipelineData.pipelines[0].missShaderBindingTable->get();
-		sbtSavedMissAddress												= vkd.getBufferDeviceAddress( device, &deviceAddressInfo);
+		sbtSavedMissAddress												= vkd.getBufferOpaqueCaptureAddress( device, &deviceAddressInfo);
 		deviceAddressInfo.buffer										= pipelineData.pipelines[0].hitShaderBindingTable->get();
-		sbtSavedHitAddress												= vkd.getBufferDeviceAddress( device, &deviceAddressInfo);
+		sbtSavedHitAddress												= vkd.getBufferOpaqueCaptureAddress( device, &deviceAddressInfo);
 	}
 	else // replay phase
 	{

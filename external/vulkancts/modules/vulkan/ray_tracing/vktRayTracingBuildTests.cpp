@@ -558,28 +558,11 @@ deUint32 RayTracingBuildTestInstance::validateBuffer (de::MovePtr<BufferWithMemo
 
 deUint32 RayTracingBuildTestInstance::iterateWithWorkers (void)
 {
-	const deUint64					singleThreadTimeStart	= deGetMicroseconds();
 	de::MovePtr<BufferWithMemory>	singleThreadBufferCPU	= runTest(false, 0);
 	const deUint32					singleThreadFailures	= validateBuffer(singleThreadBufferCPU);
-	const deUint64					singleThreadTime		= deGetMicroseconds() - singleThreadTimeStart;
-
-	deUint64						multiThreadTimeStart	= deGetMicroseconds();
 	de::MovePtr<BufferWithMemory>	multiThreadBufferCPU	= runTest(false, m_data.workerThreadsCount);
 	const deUint32					multiThreadFailures		= validateBuffer(multiThreadBufferCPU);
-	deUint64						multiThreadTime			= deGetMicroseconds() - multiThreadTimeStart;
-	const deUint64					multiThreadTimeOut		= 10 * singleThreadTime;
-
 	const deUint32					failures				= singleThreadFailures + multiThreadFailures;
-
-	DE_ASSERT(multiThreadTimeOut > singleThreadTime);
-
-	if (multiThreadTime > multiThreadTimeOut)
-	{
-		string failMsg	= "Time of multithreaded test execution " + de::toString(multiThreadTime) +
-						  " that is longer than expected execution time " + de::toString(multiThreadTimeOut);
-
-		TCU_FAIL(failMsg);
-	}
 
 	return failures;
 }
