@@ -45,6 +45,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkBarrierUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "deRandom.hpp"
 
@@ -213,7 +214,7 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 	const Unique<VkShaderModule>		shaderModule(createShaderModule(vk, *computeDevice, m_context.getBinaryCollection().get("vulkan/draw/ConcurrentPayload.comp"), 0u));
 
 	const Unique<VkPipelineLayout>		pipelineLayout(makePipelineLayout(vk, *computeDevice, *descriptorSetLayout));
-	const Unique<VkPipeline>			pipeline(vkt::compute::makeComputePipeline(vk, *computeDevice, *pipelineLayout, *shaderModule));
+	const Unique<VkPipeline>			pipeline(makeComputePipeline(vk, *computeDevice, *pipelineLayout, *shaderModule));
 	const VkBufferMemoryBarrier			hostWriteBarrier	= makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *buffer, 0ull, bufferSizeBytes);
 	const VkBufferMemoryBarrier			shaderWriteBarrier	= makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer, 0ull, bufferSizeBytes);
 	const Unique<VkCommandPool>			cmdPool(makeCommandPool(vk, *computeDevice, computeQueue.queueFamilyIndex));

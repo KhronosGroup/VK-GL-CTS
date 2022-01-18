@@ -6,8 +6,6 @@ include_directories(
 set(DEQP_VK_FRAGMENT_OPS_SRCS
 	vktFragmentOperationsEarlyFragmentTests.cpp
 	vktFragmentOperationsEarlyFragmentTests.hpp
-	vktFragmentOperationsMakeUtil.cpp
-	vktFragmentOperationsMakeUtil.hpp
 	vktFragmentOperationsOcclusionQueryTests.cpp
 	vktFragmentOperationsOcclusionQueryTests.hpp
 	vktFragmentOperationsScissorMultiViewportTests.cpp

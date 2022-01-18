@@ -215,7 +215,7 @@ bool ImageValidator::validateImage (ProtectedContext& ctx, const ValidationData&
 	// Reset helper SSBO
 	{
 		const vk::Unique<vk::VkFence>		fence				(vk::createFence(vk, device));
-		vk::Unique<vk::VkPipeline>			resetSSBOPipeline	(makeComputePipeline(vk, device, *pipelineLayout, *resetSSBOShader, DE_NULL));
+		vk::Unique<vk::VkPipeline>			resetSSBOPipeline	(makeComputePipeline(vk, device, *pipelineLayout, *resetSSBOShader));
 		vk::Unique<vk::VkCommandBuffer>		resetCmdBuffer		(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 		beginCommandBuffer(vk, *resetCmdBuffer);
 
@@ -231,7 +231,7 @@ bool ImageValidator::validateImage (ProtectedContext& ctx, const ValidationData&
 	vk::VkResult							queueSubmitResult;
 	{
 		const vk::Unique<vk::VkFence>		fence				(vk::createFence(vk, device));
-		vk::Unique<vk::VkPipeline>			validationPipeline	(makeComputePipeline(vk, device, *pipelineLayout, *validatorShader, DE_NULL));
+		vk::Unique<vk::VkPipeline>			validationPipeline	(makeComputePipeline(vk, device, *pipelineLayout, *validatorShader));
 		vk::Unique<vk::VkCommandBuffer>		cmdBuffer			(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		beginCommandBuffer(vk, *cmdBuffer);

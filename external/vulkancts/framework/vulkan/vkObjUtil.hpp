@@ -35,7 +35,12 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
 									  const VkPipelineCreateFlags				pipelineFlags,
 									  const VkShaderModule						shaderModule,
 									  const VkPipelineShaderStageCreateFlags	shaderFlags,
-									  const VkSpecializationInfo*				specializationInfo);
+									  const VkSpecializationInfo*				specializationInfo = DE_NULL);
+
+Move<VkPipeline> makeComputePipeline (const DeviceInterface&	vk,
+									  VkDevice					device,
+									  VkPipelineLayout			pipelineLayout,
+									  VkShaderModule			shaderModule);
 
 Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkDevice									device,

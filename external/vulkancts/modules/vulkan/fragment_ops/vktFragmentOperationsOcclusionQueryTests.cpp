@@ -23,7 +23,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktFragmentOperationsOcclusionQueryTests.hpp"
-#include "vktFragmentOperationsMakeUtil.hpp"
 #include "vktTestCaseUtil.hpp"
 
 #include "vkDefs.hpp"

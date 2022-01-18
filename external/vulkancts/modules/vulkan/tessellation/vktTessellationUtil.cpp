@@ -34,35 +34,6 @@ namespace tessellation
 
 using namespace vk;
 
-Move<VkPipeline> makeComputePipeline (const DeviceInterface&		vk,
-									  const VkDevice				device,
-									  const VkPipelineLayout		pipelineLayout,
-									  const VkShaderModule			shaderModule,
-									  const VkSpecializationInfo*	specInfo)
-{
-	const VkPipelineShaderStageCreateInfo shaderStageInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType					sType;
-		DE_NULL,												// const void*						pNext;
-		(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags	flags;
-		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits			stage;
-		shaderModule,											// VkShaderModule					module;
-		"main",													// const char*						pName;
-		specInfo,												// const VkSpecializationInfo*		pSpecializationInfo;
-	};
-	const VkComputePipelineCreateInfo pipelineInfo =
-	{
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType					sType;
-		DE_NULL,											// const void*						pNext;
-		(VkPipelineCreateFlags)0,							// VkPipelineCreateFlags			flags;
-		shaderStageInfo,									// VkPipelineShaderStageCreateInfo	stage;
-		pipelineLayout,										// VkPipelineLayout					layout;
-		DE_NULL,											// VkPipeline						basePipelineHandle;
-		0,													// deInt32							basePipelineIndex;
-	};
-	return createComputePipeline(vk, device, DE_NULL , &pipelineInfo);
-}
-
 VkImageCreateInfo makeImageCreateInfo (const tcu::IVec2& size, const VkFormat format, const VkImageUsageFlags usage, const deUint32 numArrayLayers)
 {
 	const VkImageCreateInfo imageInfo =

@@ -210,7 +210,6 @@ enum FeatureFlagBits
 typedef deUint32 FeatureFlags;
 
 vk::VkImageCreateInfo			makeImageCreateInfo							(const tcu::IVec2& size, const vk::VkFormat format, const vk::VkImageUsageFlags usage, const deUint32 numArrayLayers);
-vk::Move<vk::VkPipeline>		makeComputePipeline							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkShaderModule shaderModule, const vk::VkSpecializationInfo* specInfo);
 vk::Move<vk::VkRenderPass>		makeRenderPassWithoutAttachments			(const vk::DeviceInterface& vk, const vk::VkDevice device);
 vk::VkBufferImageCopy			makeBufferImageCopy							(const vk::VkExtent3D extent, const vk::VkImageSubresourceLayers subresourceLayers);
 void							beginRenderPassWithRasterizationDisabled	(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const vk::VkFramebuffer framebuffer);

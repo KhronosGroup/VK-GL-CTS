@@ -294,7 +294,7 @@ void IndirectDraw::negateDataUsingCompute(vk::VkDeviceSize indirectBufferSize, v
 
 	m_computeShaderModule	= vk::createShaderModule(m_vk, m_context.getDevice(), m_context.getBinaryCollection().get("vulkan/draw/NegateData.comp"), 0u);
 	m_pipelineLayout		= vk::makePipelineLayout(m_vk, m_context.getDevice(), *m_descriptorSetLayout);
-	m_computePipeline		= vkt::compute::makeComputePipeline(m_vk, m_context.getDevice(), *m_pipelineLayout, *m_computeShaderModule);
+	m_computePipeline		= makeComputePipeline(m_vk, m_context.getDevice(), *m_pipelineLayout, *m_computeShaderModule);
 
 	const vk::VkBufferMemoryBarrier		hostWriteBarrier	= vk::makeBufferMemoryBarrier(vk::VK_ACCESS_HOST_WRITE_BIT, vk::VK_ACCESS_SHADER_READ_BIT, m_indirectBuffer->object(), 0ull, indirectBufferSize);
 	const vk::VkBufferMemoryBarrier		indirectDrawBarrier	= vk::makeBufferMemoryBarrier(vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_INDIRECT_COMMAND_READ_BIT, m_indirectBuffer->object(), 0ull, indirectBufferSize);

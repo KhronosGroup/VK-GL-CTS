@@ -158,7 +158,6 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateVPTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsEarlyFragmentTests.cpp \
-	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsMakeUtil.cpp \
 	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsOcclusionQueryTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsScissorMultiViewportTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsScissorTests.cpp \

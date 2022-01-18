@@ -25,7 +25,6 @@
 #include "vktFragmentOperationsTransientAttachmentTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
-#include "vktFragmentOperationsMakeUtil.hpp"
 
 #include "vkDefs.hpp"
 #include "vkBuilderUtil.hpp"
