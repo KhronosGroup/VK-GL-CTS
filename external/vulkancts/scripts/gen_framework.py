@@ -253,6 +253,7 @@ class Function:
 	def __init__ (self, name, returnType = None, arguments = None):
 		self.name			= name
 		self.aliasList		= []
+		self.queuesList		= []
 		self.returnType		= returnType
 		self.arguments		= arguments				# list of FunctionArgument objects
 		self.functionType	= Function.TYPE_PLATFORM
@@ -442,6 +443,8 @@ class API:
 			return
 		# memorize all parameters
 		functionParams = []
+		queuesList = []
+
 		for paramNode in commandNode:
 			# memorize prototype node
 			if paramNode.tag == "proto":
@@ -463,12 +466,20 @@ class API:
 				nameNode.tail,
 				lenAttr
 			))
+
+		queuesAttr = commandNode.get("queues")
+		if queuesAttr:
+			queuesList = queuesAttr.split(",")
+
 		# memorize whole function
-		self.functions.append(Function(
+		func = Function(
 			protoNode.find("name").text,
 			protoNode.find("type").text,
 			functionParams,
-		))
+		)
+
+		func.queuesList = queuesList
+		self.functions.append(func)
 
 	def readExtension (self, extensionNode):
 		# check to which list this extension should be added
@@ -1507,13 +1518,48 @@ def writeInitFunctionPointers (api, filename, functionTypes, cond = None):
 	lines = makeInitFunctionPointers()
 	writeInlFile(filename, INL_HEADER, lines)
 
+# List pre filled manually with commands forbidden for computation only implementations
+computeOnlyForbiddenCommands = [
+	"destroyRenderPass",
+	"createRenderPass2",
+	"createRenderPass",
+	"createGraphicsPipelines"
+]
+
+computeOnlyRestrictedCommands = {
+	"createComputePipelines"	: "\t\tfor (deUint32 i=0; i<createInfoCount; ++i)\n\t\t\tif ((pCreateInfos[i].stage.stage & VK_SHADER_STAGE_ALL_GRAPHICS) != 0) THROW_NOT_SUPPORTED_COMPUTE_ONLY();",
+	"createBuffer"				: "\t\tif ((pCreateInfo->usage & ( VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT )) !=0) THROW_NOT_SUPPORTED_COMPUTE_ONLY();",
+}
+
 def writeFuncPtrInterfaceImpl (api, filename, functionTypes, className):
+
+	# populate compute only forbidden commands
+	for fun in api.functions:
+		if "graphics" in fun.queuesList and "compute" not in fun.queuesList:
+			# remove the 'vk' prefix and change the first character of the remaining string to lowercase
+			commandName = fun.name[2:3].lower() + fun.name[3:]
+			computeOnlyForbiddenCommands.append(commandName)
+
+			# if the command has an alias, also add it
+			for alias_name in fun.aliasList:
+				alias_name_without_vk = alias_name[2:3].lower() + alias_name[3:]
+				computeOnlyForbiddenCommands.append(alias_name_without_vk)
+
 	def makeFuncPtrInterfaceImpl ():
 		for function in api.functions:
 			if function.getType() in functionTypes:
 				yield ""
 				yield "%s %s::%s (%s) const" % (function.returnType, className, getInterfaceName(function.name), argListToStr(function.arguments))
 				yield "{"
+				# Check for compute only forbidden commands
+				if getInterfaceName(function.name) in computeOnlyForbiddenCommands:
+					yield "	if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();"
+				# Check for compute only restricted commands
+				if getInterfaceName(function.name) in computeOnlyRestrictedCommands:
+					yield "\tif( m_computeOnlyMode )"
+					yield "\t{"
+					yield computeOnlyRestrictedCommands[getInterfaceName(function.name)]
+					yield "\t}"
 				if function.name == "vkEnumerateInstanceVersion":
 					yield "	if (m_vk.enumerateInstanceVersion)"
 					yield "		return m_vk.enumerateInstanceVersion(pApiVersion);"
@@ -1610,6 +1656,7 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
 		"VkDeviceAddress"	: "return 0u;",
 		"uint64_t"			: "return 0u;",
 	}
+
 	def makeFuncPtrInterfaceStatisticsImpl ():
 		for function in api.functions:
 			if function.getType() in functionTypes:
@@ -1617,6 +1664,15 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
 				yield ""
 				yield "%s %s::%s (%s) const" % (function.returnType, className, ifaceName, argListToStr(function.arguments))
 				yield "{"
+				# Check for compute only forbidden commands
+				if ifaceName in computeOnlyForbiddenCommands:
+					yield "\tif( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();"
+				# Check for compute only restricted commands
+				if ifaceName in computeOnlyRestrictedCommands:
+					yield "\tif( m_computeOnlyMode )"
+					yield "\t{"
+					yield computeOnlyRestrictedCommands[ifaceName]
+					yield "\t}"
 				if ( ifaceName in normFuncs ) or ( ifaceName in statFuncs ):
 					yield "\tstd::lock_guard<std::mutex> lock(functionMutex);"
 				if ifaceName != "getDeviceProcAddr" :
@@ -2583,7 +2639,7 @@ def writeDeviceFeatures2(api, filename):
 	};
 
 	const Unique<VkDevice>			device			(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver				deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
+	const DeviceDriver				deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 	const VkQueue					queue			= getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
 
 	VK_CHECK(deviceDriver.queueWaitIdle(queue));
@@ -2832,7 +2888,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest{4} (Context& context)
 	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
 	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
 	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	const tcu::CommandLine&					commandLine				= context.getTestContext().getCommandLine();
+	bool									isSubProcess			= context.getTestContext().getCommandLine().isSubProcess();
 {6}
 
 	VkPhysicalDeviceFeatures emptyDeviceFeatures;
@@ -2849,7 +2906,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest{4} (Context& context)
 {1}
 		}};
 		auto* supportedFeatures = reinterpret_cast<const {0}*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, {2}, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, {3}, emptyDeviceFeatures, {5}, context.getUsedApiVersion());
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, {2}, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, {3}, emptyDeviceFeatures, {5}, context.getUsedApiVersion(), commandLine);
 	}}
 
 	if (numErrors > 0)
@@ -3655,7 +3712,7 @@ def writeGetDeviceProcAddr(api, filename):
 		DE_NULL,									//  const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	const Unique<VkDevice>					device			(createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
+	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 
 	const std::vector<std::string> functions{'''
 	testBlockEnd = '''	};

@@ -4877,7 +4877,7 @@ tcu::TestStatus createDeviceWithPromoted11Structures (Context& context)
 	};
 
 	const Unique<VkDevice>			device			(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver				deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
+	const DeviceDriver				deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 	const VkQueue					queue			= getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
 
 	VK_CHECK(deviceDriver.queueWaitIdle(queue));
@@ -4943,7 +4943,7 @@ tcu::TestStatus createDeviceWithPromoted12Structures (Context& context)
 	};
 
 	const Unique<VkDevice>			device			(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver				deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
+	const DeviceDriver				deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 	const VkQueue					queue			= getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
 
 	VK_CHECK(deviceDriver.queueWaitIdle(queue));
@@ -5009,7 +5009,7 @@ tcu::TestStatus createDeviceWithPromoted13Structures (Context& context)
 	};
 
 	const Unique<VkDevice>			device			(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver				deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
+	const DeviceDriver				deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 	const VkQueue					queue			= getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
 
 	VK_CHECK(deviceDriver.queueWaitIdle(queue));

@@ -811,7 +811,7 @@ IncrementalPresentTestInstance::IncrementalPresentTestInstance (Context& context
 	, m_queueFamilyIndex		(vk::wsi::chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
 	, m_deviceExtensions		(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
 	, m_device					(createDeviceWithWsi(m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, testConfig.useIncrementalPresent, context.getTestContext().getCommandLine().isValidationEnabled()))
-	, m_vkd						(m_vkp, m_instance, *m_device, context.getUsedApiVersion())
+	, m_vkd						(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
 	, m_queue					(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 
 	, m_commandPool				(createCommandPool(m_vkd, *m_device, m_queueFamilyIndex))

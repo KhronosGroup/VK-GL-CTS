@@ -268,7 +268,7 @@ class SingletonDevice
 			&createInfo,
 			nullptr);
 
-		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, *m_logicalDevice, m_context.getUsedApiVersion()));
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, *m_logicalDevice, m_context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 	}
 
 public:

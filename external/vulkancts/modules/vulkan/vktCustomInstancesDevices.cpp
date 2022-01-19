@@ -910,7 +910,7 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 	};
 
 	m_logicalDevice			= createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceCreateInfo);
-	m_deviceDriver			= de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(vkp, instance, *m_logicalDevice, apiVersion));
+	m_deviceDriver			= de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(vkp, instance, *m_logicalDevice, apiVersion, m_context.getTestContext().getCommandLine()));
 	m_allocator				= de::MovePtr<vk::Allocator>(new vk::SimpleAllocator(*m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	m_queueFamilyTransfer	= queueFamilyTransfer;
 	m_queueFamilyDecode		= queueFamilyDecode;

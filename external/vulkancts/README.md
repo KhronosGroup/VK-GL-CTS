@@ -213,6 +213,10 @@ from output into log by specifying:
 
 	--deqp-log-empty-loginfo=disable
 
+Vulkan compute-only implementations must be tested using option
+
+	--deqp-compute-only=enable
+
 There are several additional options used only in conjunction with Vulkan SC tests
 ( for Vulkan SC CTS tests deqp-vksc application should be used ).
 
@@ -844,6 +848,9 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
 
   --deqp-terminate-on-device-lost=[enable|disable]
     Terminate the run on first device lost error
+
+  --deqp-compute-only=[enable|disable]
+    Perform tests for devices implementing compute-only functionality
     default: 'disable'
 
   --deqp-subprocess=[enable|disable]

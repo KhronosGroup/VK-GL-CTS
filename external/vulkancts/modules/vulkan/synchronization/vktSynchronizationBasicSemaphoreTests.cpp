@@ -692,7 +692,7 @@ tcu::TestStatus basicMultiQueueCase (Context& context, TestConfig config)
 	logicalDevice = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), instance, instanceInterface, physicalDevice, &deviceInfo);
 
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<vk::DeviceDriver>								deviceDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance, *logicalDevice, context.getUsedApiVersion()));
+	de::MovePtr<vk::DeviceDriver>								deviceDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance, *logicalDevice, context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 #else
 	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver	= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), instance, *logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *logicalDevice));
 	const DeviceInterface&										vk				= *deviceDriver;

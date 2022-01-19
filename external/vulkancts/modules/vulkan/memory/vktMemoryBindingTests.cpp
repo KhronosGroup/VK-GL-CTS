@@ -507,7 +507,7 @@ public:
 			m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, m_context.getPhysicalDevice(), &deviceInfo);
 		}
 #endif // CTS_USES_VULKANSC
-		m_logicalDeviceInterface = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), getDevice(), m_context.getUsedApiVersion()));
+		m_logicalDeviceInterface = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), getDevice(), m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine()));
 		m_logicalDeviceInterface->getDeviceQueue(getDevice(), m_context.getUniversalQueueFamilyIndex(), 0, &m_logicalDeviceQueue);
 	};
 

@@ -100,7 +100,7 @@ tcu::TestStatus ShaderObjectApiInstance::iterate (void)
 
 	const auto								device			= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &deviceInfo);
 
-	de::MovePtr<vk::DeviceDriver>			vkd				(new vk::DeviceDriver(vkp, instance, device.get(), m_context.getUsedApiVersion()));
+	de::MovePtr<vk::DeviceDriver>			vkd				(new vk::DeviceDriver(vkp, instance, device.get(), m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine()));
 	const auto&								vk				= *vkd.get();
 
 	const std::vector<std::string> functions = {

@@ -1157,7 +1157,7 @@ tcu::TestStatus testSemaphores (Context& context, SemaphoreTestConfig config)
 	vk::Move<VkDevice>			device				(createTestDevice(context, config, instance, instanceDriver, &queueFamilyIdx));
 
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<vk::DeviceDriver>	deviceInterfacePtr = de::MovePtr<DeviceDriver>(new DeviceDriver(platformInterface, instance, *device, context.getUsedApiVersion()));
+	de::MovePtr<vk::DeviceDriver>	deviceInterfacePtr = de::MovePtr<DeviceDriver>(new DeviceDriver(platformInterface, instance, *device, context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 #else
 	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceInterfacePtr = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(platformInterface, instance, *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
 #endif // CTS_USES_VULKANSC

@@ -443,7 +443,7 @@ void DrawIndexedTestCase::createDeviceAndDriver (Context& context,
 
 #ifndef CTS_USES_VULKANSC
 		device = createRobustBufferAccessDevice(context, &features2);
-		driver = DeviceDriverPtr(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion()));
+		driver = DeviceDriverPtr(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 #else
 		customInstance = de::MovePtr(new CustomInstance(createCustomInstanceFromContext(context)));
 		device = createRobustBufferAccessDevice(context, *customInstance, &features2);

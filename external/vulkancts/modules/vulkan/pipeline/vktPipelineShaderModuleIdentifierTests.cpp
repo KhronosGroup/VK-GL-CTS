@@ -1547,7 +1547,7 @@ struct DeviceHelper
 
 		// Create custom device and related objects
 		device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &createInfo);
-		vkd.reset(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion()));
+		vkd.reset(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 		queue = getDeviceQueue(*vkd, *device, queueFamilyIndex, 0u);
 		allocator.reset(new SimpleAllocator(*vkd, device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	}

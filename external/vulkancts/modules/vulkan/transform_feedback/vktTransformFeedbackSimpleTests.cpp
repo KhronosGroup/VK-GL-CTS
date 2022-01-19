@@ -288,7 +288,7 @@ public:
 		const auto enableValidation = context.getTestContext().getCommandLine().isValidationEnabled();
 
 		m_device	= createCustomDevice(enableValidation, vkp, instance, vki, physicalDevice, &createInfo);
-		m_vkd		.reset(new DeviceDriver(vkp, instance, *m_device, context.getUsedApiVersion()));
+		m_vkd		.reset(new DeviceDriver(vkp, instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 		m_queue		= getDeviceQueue(*m_vkd, *m_device, m_queueFamilyIndex, 0u);
 		m_allocator	.reset(new SimpleAllocator(*m_vkd, *m_device, getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	}

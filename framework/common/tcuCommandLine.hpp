@@ -328,6 +328,9 @@ public:
 	//! File that provides a default set of application parameters
 	const char*						getAppParamsInputFilePath(void) const;
 
+	//! Perform tests for devices implementing compute-only functionality
+	bool							isComputeOnly				(void) const;
+
 	/*--------------------------------------------------------------------*//*!
 	 * \brief Creates case list filter
 	 * \param archive Resources

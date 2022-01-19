@@ -177,7 +177,6 @@ public:
 				extFunctions.push_back(FunctionInfo("vkTrimCommandPoolKHR", FUNCTIONORIGIN_DEVICE));
 				extFunctions.push_back(FunctionInfo("vkCmdPushDescriptorSetKHR", FUNCTIONORIGIN_DEVICE));
 				extFunctions.push_back(FunctionInfo("vkCreateSamplerYcbcrConversionKHR", FUNCTIONORIGIN_DEVICE));
-				extFunctions.push_back(FunctionInfo("vkGetSwapchainStatusKHR", FUNCTIONORIGIN_DEVICE));
 				extFunctions.push_back(FunctionInfo("vkCreateSwapchainKHR", FUNCTIONORIGIN_DEVICE));
 				extFunctions.push_back(FunctionInfo("vkGetImageSparseMemoryRequirements2KHR", FUNCTIONORIGIN_DEVICE));
 				extFunctions.push_back(FunctionInfo("vkBindBufferMemory2KHR", FUNCTIONORIGIN_DEVICE));
@@ -342,7 +341,7 @@ private:
 		VkPhysicalDevice			physicalDevice	= chooseDevice(context.getInstanceInterface(), instance, cmdLine);
 		vector<const char*>			extensionPtrs;
 		const float					queuePriority	= 1.0f;
-		const deUint32				queueIndex		= findQueueFamilyIndex(vki, physicalDevice, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+		const deUint32				queueIndex		= findQueueFamilyIndex(vki, physicalDevice, cmdLine.isComputeOnly() ? VK_QUEUE_COMPUTE_BIT : VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
 
 		for (size_t i = 0; i < extensions.size(); i++)
 			extensionPtrs.push_back(extensions[i].c_str());
@@ -563,10 +562,10 @@ public:
 
 	virtual tcu::TestStatus iterate(void)
 	{
-		const vk::PlatformInterface&	vkp					= m_context.getPlatformInterface();
-		tcu::TestLog&					log					= m_context.getTestContext().getLog();
-		const auto						supportedApiVersion	= m_context.getUsedApiVersion();
-		bool							testPassed			= true;
+		const vk::PlatformInterface&	vkp						= m_context.getPlatformInterface();
+		tcu::TestLog&					log						= m_context.getTestContext().getLog();
+		const auto						supportedApiVersion		= m_context.getUsedApiVersion();
+		bool							testPassed				= true;
 
 		ApisMap functionsPerVersion;
 		initApisMap(functionsPerVersion);
@@ -626,7 +625,7 @@ public:
 
 			// create custom device
 			const Unique<VkDevice>	device			(createCustomDevice(false, vkp, *customInstance, *instanceDriver, physicalDevice, &deviceCreateInfo));
-			const DeviceDriver		deviceDriver	(vkp, *customInstance, *device, supportedApiVersion);
+			const DeviceDriver		deviceDriver	(vkp, *customInstance, *device, supportedApiVersion, m_context.getTestContext().getCommandLine());
 
 			log << tcu::TestLog::Message << "Checking apiVersion("
 				<< VK_API_VERSION_MAJOR(testedApiVersion.first) << ", "

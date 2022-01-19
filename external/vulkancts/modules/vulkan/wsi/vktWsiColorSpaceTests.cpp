@@ -219,7 +219,7 @@ struct DeviceHelper
 												 queueFamilyIndex,
 												 pAllocator,
 												 context.getTestContext().getCommandLine().isValidationEnabled()))
-		, vkd				(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion())
+		, vkd				(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
 		, queue				(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
 	{
 	}

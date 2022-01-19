@@ -228,7 +228,7 @@ class MultiQueues
 
 			m_logicalDevice	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
 #ifndef CTS_USES_VULKANSC
-			m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance, *m_logicalDevice, context.getUsedApiVersion()));
+			m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance, *m_logicalDevice, context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 #else
 			m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), instance, *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
 #endif // CTS_USES_VULKANSC
