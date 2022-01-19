@@ -259,6 +259,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampleImageTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampleInterpolationTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampleMixedAttachmentSamplesTests.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampleResolveRenderAreaTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampleSampleLocationsExtTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampleShaderBuiltInTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampleShaderFragmentMaskTests.cpp \
