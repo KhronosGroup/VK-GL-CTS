@@ -64,6 +64,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createBuildTests(testCtx));
 	group->addChild(createCallableShadersTests(testCtx));
 	group->addChild(createTraceRaysTests(testCtx));
+	group->addChild(createTraceRaysMaintenance1Tests(testCtx));
 	group->addChild(createShaderBindingTableTests(testCtx));
 	group->addChild(createTraversalControlTests(testCtx));
 	group->addChild(createAccelerationStructuresTests(testCtx));

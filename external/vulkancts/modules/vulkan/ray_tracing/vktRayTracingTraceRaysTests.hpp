@@ -32,6 +32,7 @@ namespace RayTracing
 {
 
 tcu::TestCaseGroup*	createTraceRaysTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*	createTraceRaysMaintenance1Tests(tcu::TestContext& testCtx);
 
 } // RayTracing
 } // vkt
