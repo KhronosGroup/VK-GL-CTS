@@ -1414,7 +1414,7 @@ std::string ResourceTestCase::genMultilineDescription (const ResourceDefinition:
 	}
 
 	DE_ASSERT(false);
-	return DE_NULL;
+	return "";
 }
 
 class ResourceNameBufferLimitCase : public TestCase
