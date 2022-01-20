@@ -108,7 +108,7 @@ static inline string getShaderPrecision (CaseShaderType shaderType)
 		case CASESHADERTYPE_FRAGMENT:	return "mediump";
 		default:
 			DE_ASSERT(false);
-			return DE_NULL;
+			return "";
 	}
 }
 
@@ -336,7 +336,7 @@ private:
 			case CASETYPE_DEPENDENT:	return "value = sin(value)";
 			default:
 				DE_ASSERT(false);
-				return DE_NULL;
+				return "";
 		}
 	}
 
@@ -451,7 +451,7 @@ protected:
 		const string	statements		= m_caseType == CASETYPE_BUILT_IN_FUNCTIONS		? builtinFunctionsCaseStatements	(optimized, m_useConstantExpressionsOnly, precision, isVertexCase)
 										: m_caseType == CASETYPE_ARRAY					? arrayCaseStatements				(optimized, precision, isVertexCase)
 										: m_caseType == CASETYPE_STRUCT					? structCaseStatements				(optimized, m_useConstantExpressionsOnly, precision, isVertexCase)
-										: DE_NULL;
+										: deFatalStr("Invalid CaseType");
 
 		return defaultProgramData(m_caseShaderType, statements);
 	}
@@ -552,7 +552,7 @@ protected:
 										: m_caseType == CASETYPE_MULTIPLE_STATEMENTS	? multipleStatementsCaseStatements	(optimized, precision, isVertexCase)
 										: m_caseType == CASETYPE_STATIC_BRANCH			? staticBranchCaseStatements		(optimized, precision, isVertexCase)
 										: m_caseType == CASETYPE_LOOP					? loopCaseStatements				(optimized, precision, isVertexCase)
-										: DE_NULL;
+										: deFatalStr("Invalid CaseType");
 
 		return defaultProgramData(m_caseShaderType, statements);
 	}
@@ -702,7 +702,7 @@ protected:
 										: m_caseType == CASETYPE_UNUSED_VALUE_DEAD_BRANCH		? unusedValueDeadBranchCaseStatements		(optimized, precision, isVertexCase)
 										: m_caseType == CASETYPE_UNUSED_VALUE_AFTER_RETURN		? unusedValueAfterReturnCaseStatements		()
 										: m_caseType == CASETYPE_UNUSED_VALUE_MUL_ZERO			? unusedValueMulZeroCaseStatements			(optimized, precision, isVertexCase)
-										: DE_NULL;
+										: deFatalStr("Invalid CaseType");
 
 		return defaultProgramData(m_caseShaderType, funcDefs, statements);
 	}

@@ -1181,7 +1181,7 @@ std::string BuiltinVariableShader::genFragmentSource (const glu::ContextType& co
 	else
 	{
 		DE_ASSERT(DE_FALSE);
-		return DE_NULL;
+		return "";
 	}
 }
 
