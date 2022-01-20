@@ -423,8 +423,9 @@ void createMiscTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup)
 	parentGroup->addChild(group.release());
 }
 
-void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, bool useDynamicRendering)
+void createChildren (tcu::TestCaseGroup* group, bool useDynamicRendering)
 {
+	tcu::TestContext&	testCtx		= group->getTestContext();
 	createBasicTests(testCtx, group, useDynamicRendering);
 
 	if (!useDynamicRendering)
@@ -442,11 +443,8 @@ void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, bool 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> mainGroup				(new tcu::TestCaseGroup(testCtx, "fragment_shading_rate", "Fragment shading rate tests"));
-	de::MovePtr<tcu::TestCaseGroup> renderpass2Group		(new tcu::TestCaseGroup(testCtx, "renderpass2", "Draw using render pass object"));
-	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup	(new tcu::TestCaseGroup(testCtx, "dynamic_rendering", "Draw using VK_KHR_dynamic_rendering"));
-
-	createChildren(testCtx, renderpass2Group.get(), false);
-	createChildren(testCtx, dynamicRenderingGroup.get(), true);
+	de::MovePtr<tcu::TestCaseGroup> renderpass2Group		(createTestGroup(testCtx, "renderpass2", "Draw using render pass object", createChildren, false));
+	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup	(createTestGroup(testCtx, "dynamic_rendering", "Draw using VK_KHR_dynamic_rendering", createChildren, true));
 
 	mainGroup->addChild(renderpass2Group.release());
 	mainGroup->addChild(dynamicRenderingGroup.release());
