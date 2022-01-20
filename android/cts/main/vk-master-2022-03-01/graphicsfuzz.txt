@@ -76,6 +76,7 @@ dEQP-VK.graphicsfuzz.cov-function-variable-plus-one-minus-one
 dEQP-VK.graphicsfuzz.cov-function-vec2-never-discard
 dEQP-VK.graphicsfuzz.cov-function-with-nested-loops-called-from-nested-loops
 dEQP-VK.graphicsfuzz.cov-global-loop-bound-true-logical-or
+dEQP-VK.graphicsfuzz.cov-global-loop-counter-accumulate-integer-condition-large-array-elements
 dEQP-VK.graphicsfuzz.cov-global-loop-counter-exhaust-calling-function-twice
 dEQP-VK.graphicsfuzz.cov-global-loop-counter-float-accumulate-matrix
 dEQP-VK.graphicsfuzz.cov-global-loop-counter-for-loop-function-call-inside-never-called

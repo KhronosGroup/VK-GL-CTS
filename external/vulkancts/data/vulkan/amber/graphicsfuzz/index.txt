@@ -186,6 +186,7 @@
 {	"cov-function-vec2-never-discard.amber",													"cov-function-vec2-never-discard",													"A fragment shader that covers specific BRW code paths"								},
 {	"cov-function-with-nested-loops-called-from-nested-loops.amber",							"cov-function-with-nested-loops-called-from-nested-loops",							"A fragment shader that covers specific BRW code paths"								},
 {	"cov-global-loop-bound-true-logical-or.amber",												"cov-global-loop-bound-true-logical-or",											"A fragment shader that covers specific NIR code paths"								},
+{	"cov-global-loop-counter-accumulate-integer-condition-large-array-elements.amber",			"cov-global-loop-counter-accumulate-integer-condition-large-array-elements",		"A fragment shader that covers specific LLVM code paths"							},
 {	"cov-global-loop-counter-exhaust-calling-function-twice.amber",								"cov-global-loop-counter-exhaust-calling-function-twice",							"A fragment shader that covers specific LLVM code paths"							},
 {	"cov-global-loop-counter-float-accumulate-matrix.amber",									"cov-global-loop-counter-float-accumulate-matrix",									"A fragment shader that covers specific BRW code paths"								},
 {	"cov-global-loop-counter-for-loop-function-call-inside-never-called.amber",					"cov-global-loop-counter-for-loop-function-call-inside-never-called",				"A fragment shader that covers specific LLVM code paths"							},
