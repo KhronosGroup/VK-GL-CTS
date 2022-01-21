@@ -323,13 +323,12 @@ TestCaseExecutor::TestCaseExecutor (tcu::TestContext& testCtx)
 #ifdef CTS_USES_VULKANSC
 	if (!std::string(testCtx.getCommandLine().getServerAddress()).empty())
 	{
-		vksc_server::Server server(testCtx.getCommandLine().getServerAddress());
 		vksc_server::AppendRequest request;
 		request.fileName = testCtx.getCommandLine().getLogFileName();
 
 		std::ostringstream str;
 		str << "#sessionInfo releaseName " << qpGetReleaseName() << std::endl;
-		str << "#sessionInfo releaseId 0x" << std::hex << qpGetReleaseId() << std::endl;
+		str << "#sessionInfo releaseId 0x" << std::hex << std::setw(8) << std::setfill('0') << qpGetReleaseId() << std::endl;
 		str << "#sessionInfo targetName \"" << qpGetTargetName() << "\"" << std::endl;
 		str << sessionInfo.get() << std::endl;
 		str << "#beginSession" << std::endl;
@@ -337,7 +336,7 @@ TestCaseExecutor::TestCaseExecutor (tcu::TestContext& testCtx)
 		std::string output = str.str();
 		request.data.assign(output.begin(), output.end());
 		request.clear = true;
-		server.SendRequest(request);
+		vksc_server::StandardOutputServerSingleton()->SendRequest(request);
 	}
 	else
 #endif // CTS_USES_VULKANSC
@@ -381,7 +380,29 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 		TCU_THROW(InternalError, "Test node not an instance of vkt::TestCase");
 
 	if (!m_context->getTestContext().getCommandLine().isSubProcess())
+	{
+#ifdef CTS_USES_VULKANSC
+		int currentSubprocessCount = getCurrentSubprocessCount(casePath, m_context->getTestContext().getCommandLine().getSubprocessTestCount());
+		if (m_subprocessCount && currentSubprocessCount != m_subprocessCount)
+		{
+			runTestsInSubprocess(m_context->getTestContext());
+
+			// Clean up data after performing tests in subprocess and prepare system for another batch of tests
+			m_testsForSubprocess.clear();
+			const vk::DeviceInterface&				vkd = m_context->getDeviceInterface();
+			const vk::DeviceDriverSC*				dds = dynamic_cast<const vk::DeviceDriverSC*>(&vkd);
+			if (dds == DE_NULL)
+				TCU_THROW(InternalError, "Undefined device driver for Vulkan SC");
+			dds->reset();
+			m_resourceInterface->resetObjects();
+
+			suppressStandardOutput();
+			m_context->getTestContext().getLog().supressLogging(true);
+		}
+		m_subprocessCount = currentSubprocessCount;
+#endif // CTS_USES_VULKANSC
 		m_testsForSubprocess.push_back(casePath);
+	}
 
 	m_resourceInterface->initTestCase(casePath);
 
@@ -478,7 +499,7 @@ void TestCaseExecutor::deinit (tcu::TestCase* testCase)
 	if (!m_context->getTestContext().getCommandLine().isSubProcess())
 	{
 		int currentSubprocessCount = getCurrentSubprocessCount(m_context->getResourceInterface()->getCasePath(), m_context->getTestContext().getCommandLine().getSubprocessTestCount());
-		if (m_testsForSubprocess.size() >= std::size_t(currentSubprocessCount) || (m_subprocessCount && currentSubprocessCount != m_subprocessCount))
+		if (m_testsForSubprocess.size() >= std::size_t(currentSubprocessCount))
 		{
 			runTestsInSubprocess(m_context->getTestContext());
 
@@ -494,7 +515,6 @@ void TestCaseExecutor::deinit (tcu::TestCase* testCase)
 			suppressStandardOutput();
 			m_context->getTestContext().getLog().supressLogging(true);
 		}
-		m_subprocessCount = currentSubprocessCount;
 	}
 #endif // CTS_USES_VULKANSC
 }
@@ -609,7 +629,6 @@ void TestCaseExecutor::reportDurations(tcu::TestContext& testCtx, const std::str
 {
 #ifdef CTS_USES_VULKANSC
 	// Send it to server to append to its log
-	vksc_server::Server server(testCtx.getCommandLine().getServerAddress());
 	vksc_server::AppendRequest request;
 	request.fileName = testCtx.getCommandLine().getLogFileName();
 
@@ -632,7 +651,7 @@ void TestCaseExecutor::reportDurations(tcu::TestContext& testCtx, const std::str
 
 	std::string output = str.str();
 	request.data.assign(output.begin(), output.end());
-	server.SendRequest(request);
+	vksc_server::StandardOutputServerSingleton()->SendRequest(request);
 #else
 	DE_UNREF(testCtx);
 	DE_UNREF(packageName);
@@ -863,11 +882,10 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 			if (!std::string(testCtx.getCommandLine().getServerAddress()).empty())
 			{
 				// Send it to server to append to its log
-				vksc_server::Server server(testCtx.getCommandLine().getServerAddress());
 				vksc_server::AppendRequest request;
 				request.fileName = testCtx.getCommandLine().getLogFileName();
 				request.data.assign(subQpaCopy.begin(), subQpaCopy.end());
-				server.SendRequest(request);
+				vksc_server::StandardOutputServerSingleton()->SendRequest(request);
 			}
 			else
 			{
