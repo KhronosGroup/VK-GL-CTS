@@ -39,6 +39,7 @@
 #include "tcuTextureUtil.hpp"
 
 #include <cmath>
+#include <limits>
 
 namespace vkt
 {

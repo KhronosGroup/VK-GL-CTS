@@ -25,6 +25,7 @@
 
 #include <array>
 #include <set>
+#include <limits>
 
 #include "vkDefs.hpp"
 #include "deClock.h"

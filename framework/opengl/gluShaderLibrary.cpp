@@ -1316,7 +1316,7 @@ void ShaderParser::parsePipelineProgram (ProgramSpecification& program)
 				case TOKEN_TESSELLATION_EVALUATION:	program.sources.sources[SHADERTYPE_TESSELLATION_EVALUATION].push_back(source);	break;
 				case TOKEN_GEOMETRY:				program.sources.sources[SHADERTYPE_GEOMETRY].push_back(source);					break;
 				default:
-					parseError(DE_FALSE);
+					DE_FATAL("Unreachable");
 			}
 		}
 		else
@@ -1418,7 +1418,7 @@ void ShaderParser::parseShaderCase (vector<tcu::TestNode*>& shaderNodeList)
 				}
 
 				default:
-					parseError(DE_FALSE);
+					DE_FATAL("Unreachable");
 			}
 		}
 		else if (m_curToken == TOKEN_VERSION)

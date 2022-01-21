@@ -1204,7 +1204,7 @@ ImageStoreCase::IterateResult ImageStoreCase::iterate (void)
 															"	imageStore(u_image, ivec2(gx, gy), " + colorExpr + ");\n"
 														 : shaderImageType == TEXTURETYPE_3D || shaderImageType == TEXTURETYPE_CUBE || shaderImageType == TEXTURETYPE_2D_ARRAY ?
 															"	imageStore(u_image, ivec3(gx, gy, gz), " + colorExpr + ");\n"
-														 : DE_NULL) +
+														 : deFatalStr("Invalid TextureType")) +
 														"}\n"));
 
 		UniformAccessLogger uniforms(renderCtx.getFunctions(), log, program.getProgram());
@@ -1455,7 +1455,7 @@ ImageLoadAndStoreCase::IterateResult ImageLoadAndStoreCase::iterate (void)
 														 : shaderImageType == TEXTURETYPE_3D || shaderImageType == TEXTURETYPE_CUBE || shaderImageType == TEXTURETYPE_2D_ARRAY ?
 															"	ivec3 pos = ivec3(gl_GlobalInvocationID);\n"
 															"	imageStore(u_image1, pos, imageLoad(u_image0, ivec3(" + toString(imageSize.x()-1) + "-pos.x, pos.y, pos.z)));\n"
-														 : DE_NULL) +
+														 : deFatalStr("Invalid TextureType")) +
 														"}\n"));
 
 		UniformAccessLogger uniforms(renderCtx.getFunctions(), log, program.getProgram());
@@ -1698,7 +1698,7 @@ string BinaryAtomicOperationCase::getAtomicFuncArgumentShaderStr (AtomicOperatio
 
 		default:
 			DE_ASSERT(false);
-			return DE_NULL;
+			return "";
 	}
 }
 
@@ -2051,7 +2051,7 @@ BinaryAtomicOperationCase::IterateResult BinaryAtomicOperationCase::iterate (voi
 															"	imageStore(u_returnValues, " + invocationCoord + ", " + colorVecTypeName + "(" + atomicInvocation + "));\n"
 														 : m_caseType == ATOMIC_OPERATION_CASE_TYPE_END_RESULT ?
 															"	" + atomicInvocation + ";\n"
-														 : DE_NULL) +
+														 : deFatalStr("Invalid AtomicOperationCaseType")) +
 														"}\n"));
 
 		UniformAccessLogger uniforms(renderCtx.getFunctions(), log, program.getProgram());
@@ -3313,7 +3313,7 @@ void ShaderImageLoadStoreTests::init (void)
 					const char* const					imageAccessStr	= imageAccess == ImageSizeCase::IMAGEACCESS_READ_ONLY				? "readonly"
 																		: imageAccess == ImageSizeCase::IMAGEACCESS_WRITE_ONLY				? "writeonly"
 																		: imageAccess == ImageSizeCase::IMAGEACCESS_READ_ONLY_WRITE_ONLY	? "readonly_writeonly"
-																		: DE_NULL;
+																		: deFatalStr("Invalid ImageAccess");
 
 					for (int imageSizeNdx = 0; imageSizeNdx < DE_LENGTH_OF_ARRAY(baseImageSizes); imageSizeNdx++)
 					{
@@ -3330,7 +3330,7 @@ void ShaderImageLoadStoreTests::init (void)
 													: imageType == TEXTURETYPE_CUBE			? toString(imageSize.x()) + "x" + toString(imageSize.y())
 													: imageType == TEXTURETYPE_3D			? toString(imageSize.x()) + "x" + toString(imageSize.y()) + "x" + toString(imageSize.z())
 													: imageType == TEXTURETYPE_2D_ARRAY		? toString(imageSize.x()) + "x" + toString(imageSize.y()) + "x" + toString(imageSize.z())
-													: DE_NULL;
+													: deFatalStr("Invalid TextureType");
 
 						const string	caseName	= string() + imageAccessStr + "_" + sizeStr;
 
