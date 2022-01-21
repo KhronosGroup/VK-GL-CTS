@@ -3001,7 +3001,7 @@ private:
 class CompressedTextureForBlit
 {
 public:
-	CompressedTextureForBlit(const tcu::CompressedTexFormat& srcFormat, int width, int height, int depth, VkFormat dstFormat);
+	CompressedTextureForBlit(const tcu::CompressedTexFormat& srcFormat, int width, int height, int depth);
 
 	tcu::PixelBufferAccess			getDecompressedAccess() const;
 	const tcu::CompressedTexture&	getCompressedTexture() const;
@@ -3013,7 +3013,7 @@ protected:
 	tcu::PixelBufferAccess		m_decompressedAccess;
 };
 
-CompressedTextureForBlit::CompressedTextureForBlit(const tcu::CompressedTexFormat& srcFormat, int width, int height, int depth, VkFormat dstFormat)
+CompressedTextureForBlit::CompressedTextureForBlit(const tcu::CompressedTexFormat& srcFormat, int width, int height, int depth)
 	: m_compressedTexture(srcFormat, width, height, depth)
 {
 	de::Random			random					(123);
@@ -3031,11 +3031,10 @@ CompressedTextureForBlit::CompressedTextureForBlit(const tcu::CompressedTexForma
 		tcu::astc::generateRandomValidBlocks(compressedData, compressedDataSize / tcu::astc::BLOCK_SIZE_BYTES,
 											 srcFormat, tcu::TexDecompressionParams::ASTCMODE_LDR, random.getUint32());
 	}
-	else if ((dstFormat == VK_FORMAT_E5B9G9R9_UFLOAT_PACK32) &&
-			((srcFormat == tcu::COMPRESSEDTEXFORMAT_BC6H_UFLOAT_BLOCK) ||
-			 (srcFormat == tcu::COMPRESSEDTEXFORMAT_BC6H_SFLOAT_BLOCK)))
+	else if ((srcFormat == tcu::COMPRESSEDTEXFORMAT_BC6H_UFLOAT_BLOCK) ||
+			 (srcFormat == tcu::COMPRESSEDTEXFORMAT_BC6H_SFLOAT_BLOCK))
 	{
-		// special case - when we are blitting compressed image to RGB999E5 image we can't have both big and small values
+		// special case - when we are blitting compressed floating-point image we can't have both big and small values
 		// in compressed image; to resolve this we are constructing source texture out of set of predefined compressed
 		// blocks that after decompression will have components in proper range
 
@@ -3261,7 +3260,7 @@ tcu::TestStatus BlittingImages::iterate (void)
 	{
 		// for compressed images srcImageParams.fillMode is not used - we are using random data
 		tcu::CompressedTexFormat compressedFormat = mapVkCompressedFormat(srcImageParams.format);
-		m_sourceCompressedTexture = CompressedTextureForBlitSp(new CompressedTextureForBlit(compressedFormat, srcWidth, srcHeight, srcDepth, dstImageParams.format));
+		m_sourceCompressedTexture = CompressedTextureForBlitSp(new CompressedTextureForBlit(compressedFormat, srcWidth, srcHeight, srcDepth));
 		uploadCompressedImage(m_source.get(), srcImageParams);
 	}
 	else
@@ -3278,7 +3277,7 @@ tcu::TestStatus BlittingImages::iterate (void)
 	{
 		// compressed images are filled with random data
 		tcu::CompressedTexFormat compressedFormat = mapVkCompressedFormat(dstImageParams.format);
-		m_destinationCompressedTexture = CompressedTextureForBlitSp(new CompressedTextureForBlit(compressedFormat, srcWidth, srcHeight, srcDepth, VK_FORMAT_UNDEFINED));
+		m_destinationCompressedTexture = CompressedTextureForBlitSp(new CompressedTextureForBlit(compressedFormat, srcWidth, srcHeight, srcDepth));
 		uploadCompressedImage(m_destination.get(), dstImageParams);
 	}
 	else
