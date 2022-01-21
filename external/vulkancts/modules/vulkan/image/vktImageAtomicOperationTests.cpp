@@ -129,7 +129,7 @@ static string getCoordStr (const ImageType		imageType,
 			return string("ivec3(" + x + "," + y + "," + z + ")");
 		default:
 			DE_ASSERT(false);
-			return DE_NULL;
+			return "";
 	}
 }
 
@@ -188,7 +188,7 @@ static string getAtomicFuncArgumentShaderStr (const AtomicOperation	op,
 			return string("((" + z + "*" + toString(gridSize.x()) + " + " + x + ")*" + toString(gridSize.y()) + " + " + y + ")");
 		default:
 			DE_ASSERT(false);
-			return DE_NULL;
+			return "";
 	}
 }
 
@@ -209,7 +209,7 @@ static string getAtomicOperationCaseName (const AtomicOperation op)
 		case ATOMIC_OPERATION_COMPARE_EXCHANGE:	return string("compare_exchange");
 		default:
 			DE_ASSERT(false);
-			return DE_NULL;
+			return "";
 	}
 }
 
@@ -227,7 +227,7 @@ static string getAtomicOperationShaderFuncName (const AtomicOperation op)
 		case ATOMIC_OPERATION_COMPARE_EXCHANGE:	return string("imageAtomicCompSwap");
 		default:
 			DE_ASSERT(false);
-			return DE_NULL;
+			return "";
 	}
 }
 
