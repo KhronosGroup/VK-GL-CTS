@@ -50,7 +50,9 @@
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuFloat.hpp"
+#include "tcuFloatFormat.hpp"
 #include "tcuStringTemplate.hpp"
+#include "tcuVectorUtil.hpp"
 
 #include <string>
 #include <vector>
@@ -171,7 +173,10 @@ bool comparePixelBuffers (tcu::TestLog&						log,
 			case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 			{
 				// Allow error of minimum representable difference
-				const tcu::Vec4 threshold (1.0f / ((tcu::UVec4(1u) << tcu::getTextureFormatMantissaBitDepth(mapVkFormat(format)).cast<deUint32>()) - 1u).cast<float>());
+				tcu::Vec4 threshold(1.0f / ((tcu::UVec4(1u) << tcu::getTextureFormatMantissaBitDepth(mapVkFormat(format)).cast<deUint32>()) - 1u).cast<float>());
+
+				// Add 1 ULP of fp32 imprecision to account for image comparison fp32 math with unorm->float conversions.
+				threshold += tcu::Vec4(std::numeric_limits<float>::epsilon());
 
 				ok = tcu::floatThresholdCompare(log, comparisonName.c_str(), comparisonDesc.c_str(), refLayer, resultLayer, threshold, tcu::COMPARE_LOG_RESULT);
 				break;
@@ -262,7 +267,19 @@ void replaceSnormReinterpretValues (const tcu::PixelBufferAccess access)
 	}
 }
 
-tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkFormat imageFormat, const VkFormat readFormat)
+tcu::Vec4 getMiddleValue(VkFormat imageFormat)
+{
+	tcu::TextureFormat		format	= mapVkFormat(imageFormat);
+	tcu::TextureFormatInfo	fmtInfo	= tcu::getTextureFormatInfo(format);
+	tcu::Vec4				val		= (fmtInfo.valueMax - fmtInfo.valueMin) * tcu::Vec4(0.5f);
+
+	if (isIntegerFormat(imageFormat))
+		val = floor(val);
+
+	return val;
+}
+
+tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkFormat imageFormat, const VkFormat readFormat, bool constantValue)
 {
 	// Generate a reference image data using the storage format
 
@@ -281,15 +298,22 @@ tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkF
 	for (int y = 0; y < imageSize.y(); ++y)
 	for (int x = 0; x < imageSize.x(); ++x)
 	{
-		tcu::IVec4 color(x^y^z, (xMax - x)^y^z, x^(yMax - y)^z, (xMax - x)^(yMax - y)^z);
-
-		if (storeNegativeValues)
-			color -= tcu::IVec4(deRoundFloatToInt32((float)de::max(xMax, yMax) / 2.0f));
-
-		if (intFormat)
-			access.setPixel(color, x, y, z);
+		if (constantValue)
+		{
+			access.setPixel(getMiddleValue(imageFormat), x, y, z);
+		}
 		else
-			access.setPixel(color.asFloat()*storeColorScale + storeColorBias, x, y, z);
+		{
+			tcu::IVec4 color = tcu::IVec4(x ^ y ^ z, (xMax - x) ^ y ^ z, x ^ (yMax - y) ^ z, (xMax - x) ^ (yMax - y) ^ z);
+
+			if (storeNegativeValues)
+				color -= tcu::IVec4(deRoundFloatToInt32((float)de::max(xMax, yMax) / 2.0f));
+
+			if (intFormat)
+				access.setPixel(color, x, y, z);
+			else
+				access.setPixel(color.asFloat()*storeColorScale + storeColorBias, x, y, z);
+		}
 	}
 
 	// If the image is to be accessed as a float texture, get rid of invalid values
@@ -302,9 +326,9 @@ tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkF
 	return reference;
 }
 
-inline tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkFormat imageFormat)
+inline tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkFormat imageFormat, bool constantValue = false)
 {
-	return generateReferenceImage(imageSize, imageFormat, imageFormat);
+	return generateReferenceImage(imageSize, imageFormat, imageFormat, constantValue);
 }
 
 void flipHorizontally (const tcu::PixelBufferAccess access)
@@ -439,6 +463,7 @@ public:
 		FLAG_SINGLE_LAYER_BIND				= 0x1,	//!< Run the shader multiple times, each time binding a different layer.
 		FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER	= 0x2,	//!< Declare the format of the images in the shader code
 		FLAG_MINALIGN						= 0x4,	//!< Use bufferview offset that matches the advertised minimum alignment
+		FLAG_STORE_CONSTANT_VALUE			= 0x8,	//!< Store constant value
 	};
 
 							StoreTest			(tcu::TestContext&	testCtx,
@@ -458,6 +483,7 @@ private:
 	const bool				m_declareImageFormatInShader;
 	const bool				m_singleLayerBind;
 	const bool				m_minalign;
+	const bool				m_storeConstantValue;
 };
 
 StoreTest::StoreTest (tcu::TestContext&		testCtx,
@@ -472,6 +498,7 @@ StoreTest::StoreTest (tcu::TestContext&		testCtx,
 	, m_declareImageFormatInShader	((flags & FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER) != 0)
 	, m_singleLayerBind				((flags & FLAG_SINGLE_LAYER_BIND) != 0)
 	, m_minalign					((flags & FLAG_MINALIGN) != 0)
+	, m_storeConstantValue			((flags & FLAG_STORE_CONSTANT_VALUE) != 0)
 {
 	if (m_singleLayerBind)
 		DE_ASSERT(m_texture.numLayers() > 1);
@@ -505,59 +532,87 @@ void StoreTest::initPrograms (SourceCollections& programCollection) const
 	const std::string signednessPrefix = isUintFormat(m_format) ? "u" : isIntFormat(m_format) ? "i" : "";
 	const bool storeNegativeValues = isSignedFormat(m_format) && (storeColorBias == 0);
 	bool useClamp = false;
-	std::string colorBaseExpr = signednessPrefix + "vec4("
-		+ "gx^gy^gz, "
-		+ "(" + de::toString(xMax) + "-gx)^gy^gz, "
-		+ "gx^(" + de::toString(yMax) + "-gy)^gz, "
-		+ "(" + de::toString(xMax) + "-gx)^(" + de::toString(yMax) + "-gy)^gz)";
+	std::string colorBaseExpr = signednessPrefix + "vec4(";
 
-	// Large integer values may not be represented with formats with low bit depths
-	if (isIntegerFormat(m_format))
+	std::string colorExpr;
+
+	if (m_storeConstantValue)
 	{
-		const deInt64 minStoreValue = storeNegativeValues ? 0 - deRoundFloatToInt64((float)de::max(xMax, yMax) / 2.0f) : 0;
-		const deInt64 maxStoreValue = storeNegativeValues ? deRoundFloatToInt64((float)de::max(xMax, yMax) / 2.0f) : de::max(xMax, yMax);
+		tcu::Vec4 val = getMiddleValue(m_format);
 
-		useClamp = !isRepresentableIntegerValue(tcu::Vector<deInt64, 4>(minStoreValue), mapVkFormat(m_format)) ||
-				   !isRepresentableIntegerValue(tcu::Vector<deInt64, 4>(maxStoreValue), mapVkFormat(m_format));
-	}
-
-	// Clamp if integer value cannot be represented with the current format
-	if (useClamp)
-	{
-		const tcu::IVec4 bitDepths = tcu::getTextureFormatBitDepth(mapVkFormat(m_format));
-		tcu::IVec4 minRepresentableValue;
-		tcu::IVec4 maxRepresentableValue;
-
-		switch (tcu::getTextureChannelClass(mapVkFormat(m_format).type))
+		if (isIntegerFormat(m_format))
 		{
-			case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
-			{
-				minRepresentableValue = tcu::IVec4(0);
-				maxRepresentableValue = (tcu::IVec4(1) << bitDepths) - tcu::IVec4(1);
-				break;
-			}
+			colorExpr = colorBaseExpr
+						+ de::toString(static_cast<deInt64>(val.x())) + ", "
+						+ de::toString(static_cast<deInt64>(val.y())) + ", "
+						+ de::toString(static_cast<deInt64>(val.z())) + ", "
+						+ de::toString(static_cast<deInt64>(val.w())) + ")";
+		}
+		else
+		{
+			colorExpr = colorBaseExpr
+						+ de::toString(val.x()) + ", "
+						+ de::toString(val.y()) + ", "
+						+ de::toString(val.z()) + ", "
+						+ de::toString(val.w()) + ")";
+		}
+	}
+	else
+	{
+		colorBaseExpr = colorBaseExpr
+						+ "gx^gy^gz, "
+						+ "(" + de::toString(xMax) + "-gx)^gy^gz, "
+						+ "gx^(" + de::toString(yMax) + "-gy)^gz, "
+						+ "(" + de::toString(xMax) + "-gx)^(" + de::toString(yMax) + "-gy)^gz)";
 
-			case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
-			{
-				minRepresentableValue = -(tcu::IVec4(1) << bitDepths - tcu::IVec4(1));
-				maxRepresentableValue = (tcu::IVec4(1) << (bitDepths - tcu::IVec4(1))) - tcu::IVec4(1);
-				break;
-			}
+		// Large integer values may not be represented with formats with low bit depths
+		if (isIntegerFormat(m_format))
+		{
+			const deInt64 minStoreValue = storeNegativeValues ? 0 - deRoundFloatToInt64((float)de::max(xMax, yMax) / 2.0f) : 0;
+			const deInt64 maxStoreValue = storeNegativeValues ? deRoundFloatToInt64((float)de::max(xMax, yMax) / 2.0f) : de::max(xMax, yMax);
 
-			default:
-				DE_ASSERT(isIntegerFormat(m_format));
+			useClamp = !isRepresentableIntegerValue(tcu::Vector<deInt64, 4>(minStoreValue), mapVkFormat(m_format)) ||
+					   !isRepresentableIntegerValue(tcu::Vector<deInt64, 4>(maxStoreValue), mapVkFormat(m_format));
 		}
 
-		colorBaseExpr = "clamp(" + colorBaseExpr + ", "
-						+ signednessPrefix + "vec4" + de::toString(minRepresentableValue) + ", "
-						+ signednessPrefix + "vec4" + de::toString(maxRepresentableValue) + ")";
+		// Clamp if integer value cannot be represented with the current format
+		if (useClamp)
+		{
+			const tcu::IVec4 bitDepths = tcu::getTextureFormatBitDepth(mapVkFormat(m_format));
+			tcu::IVec4 minRepresentableValue;
+			tcu::IVec4 maxRepresentableValue;
+
+			switch (tcu::getTextureChannelClass(mapVkFormat(m_format).type))
+			{
+				case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+				{
+					minRepresentableValue = tcu::IVec4(0);
+					maxRepresentableValue = (tcu::IVec4(1) << bitDepths) - tcu::IVec4(1);
+					break;
+				}
+
+				case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+				{
+					minRepresentableValue = -(tcu::IVec4(1) << bitDepths - tcu::IVec4(1));
+					maxRepresentableValue = (tcu::IVec4(1) << (bitDepths - tcu::IVec4(1))) - tcu::IVec4(1);
+					break;
+				}
+
+				default:
+					DE_ASSERT(isIntegerFormat(m_format));
+			}
+
+			colorBaseExpr = "clamp(" + colorBaseExpr + ", "
+							+ signednessPrefix + "vec4" + de::toString(minRepresentableValue) + ", "
+							+ signednessPrefix + "vec4" + de::toString(maxRepresentableValue) + ")";
+		}
+
+		colorExpr = colorBaseExpr + (storeColorScale == 1.0f ? "" : "*" + de::toString(storeColorScale))
+					+ (storeColorBias == 0.0f ? "" : " + float(" + de::toString(storeColorBias) + ")");
+
+		if (storeNegativeValues)
+			colorExpr += "-" + de::toString(deRoundFloatToInt32((float)deMax32(xMax, yMax) / 2.0f));
 	}
-
-	std::string colorExpr = colorBaseExpr + (storeColorScale == 1.0f ? "" : "*" + de::toString(storeColorScale))
-							+ (storeColorBias == 0.0f ? "" : " + float(" + de::toString(storeColorBias) + ")");
-
-	if (storeNegativeValues)
-		colorExpr += "-" + de::toString(deRoundFloatToInt32((float)deMax32(xMax, yMax) / 2.0f));
 
 	const int dimension = (m_singleLayerBind ? m_texture.layerDimension() : m_texture.dimension());
 	const std::string texelCoordStr = (dimension == 1 ? "gx" : dimension == 2 ? "ivec2(gx, gy)" : dimension == 3 ? "ivec3(gx, gy, gz)" : "");
@@ -699,7 +754,8 @@ public:
 																			 const VkFormat	format,
 																			 const bool		declareImageFormatInShader,
 																			 const bool		singleLayerBind,
-																			 const bool		minalign);
+																			 const bool		minalign,
+																			 const bool		storeConstantValue);
 
 protected:
 	virtual tcu::TestStatus			verifyResult							(void);
@@ -711,6 +767,7 @@ protected:
 
 	de::MovePtr<Buffer>				m_imageBuffer;
 	const VkDeviceSize				m_imageSizeBytes;
+	bool							m_storeConstantValue;
 };
 
 deUint32 BaseTestInstance::getViewOffset(Context&			context,
@@ -749,9 +806,10 @@ deUint32 BaseTestInstance::getViewOffset(Context&			context,
 	return 0;
 }
 
-StoreTestInstance::StoreTestInstance (Context& context, const Texture& texture, const VkFormat format, const bool declareImageFormatInShader, const bool singleLayerBind, const bool minalign)
+StoreTestInstance::StoreTestInstance (Context& context, const Texture& texture, const VkFormat format, const bool declareImageFormatInShader, const bool singleLayerBind, const bool minalign, const bool storeConstantValue)
 	: BaseTestInstance		(context, texture, format, declareImageFormatInShader, singleLayerBind, minalign, false)
 	, m_imageSizeBytes		(getImageSizeBytes(texture.size(), format))
+	, m_storeConstantValue	(storeConstantValue)
 {
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 	const VkDevice			device		= m_context.getDevice();
@@ -771,7 +829,7 @@ tcu::TestStatus StoreTestInstance::verifyResult	(void)
 	const VkDevice			device	= m_context.getDevice();
 
 	const tcu::IVec3 imageSize = m_texture.size();
-	const tcu::TextureLevel reference = generateReferenceImage(imageSize, m_format);
+	const tcu::TextureLevel reference = generateReferenceImage(imageSize, m_format, m_storeConstantValue);
 
 	const Allocation& alloc = m_imageBuffer->getAllocation();
 	invalidateAlloc(vk, device, alloc);
@@ -792,7 +850,8 @@ public:
 																				 const VkFormat			format,
 																				 const bool				declareImageFormatInShader,
 																				 const bool				singleLayerBind,
-																				 const bool				minalign);
+																				 const bool				minalign,
+																				 const bool				storeConstantValue);
 
 protected:
 	VkDescriptorSetLayout				prepareDescriptors						(void);
@@ -818,8 +877,9 @@ ImageStoreTestInstance::ImageStoreTestInstance (Context&		context,
 												const VkFormat	format,
 												const bool		declareImageFormatInShader,
 												const bool		singleLayerBind,
-												const bool		minalign)
-	: StoreTestInstance					(context, texture, format, declareImageFormatInShader, singleLayerBind, minalign)
+												const bool		minalign,
+												const bool		storeConstantValue)
+	: StoreTestInstance					(context, texture, format, declareImageFormatInShader, singleLayerBind, minalign, storeConstantValue)
 	, m_constantsBufferChunkSizeBytes	(getOptimalUniformBufferChunkSize(context.getInstanceInterface(), context.getPhysicalDevice(), sizeof(deUint32)))
 	, m_allDescriptorSets				(texture.numLayers())
 	, m_allImageViews					(texture.numLayers())
@@ -952,7 +1012,8 @@ public:
 																			 const Texture&			texture,
 																			 const VkFormat			format,
 																			 const bool				declareImageFormatInShader,
-																			 const bool				minalign);
+																			 const bool				minalign,
+																			 const bool				storeConstantValue);
 
 protected:
 	VkDescriptorSetLayout			prepareDescriptors						(void);
@@ -972,8 +1033,9 @@ BufferStoreTestInstance::BufferStoreTestInstance (Context&			context,
 												  const Texture&	texture,
 												  const VkFormat	format,
 												  const bool		declareImageFormatInShader,
-												  const bool		minalign)
-	: StoreTestInstance(context, texture, format, declareImageFormatInShader, false, minalign)
+												  const bool		minalign,
+												  const bool		storeConstantValue)
+	: StoreTestInstance(context, texture, format, declareImageFormatInShader, false, minalign, storeConstantValue)
 {
 }
 
@@ -1896,9 +1958,9 @@ void BufferLoadStoreTestInstance::commandAfterCompute (const VkCommandBuffer cmd
 TestInstance* StoreTest::createInstance (Context& context) const
 {
 	if (m_texture.type() == IMAGE_TYPE_BUFFER)
-		return new BufferStoreTestInstance(context, m_texture, m_format, m_declareImageFormatInShader, m_minalign);
+		return new BufferStoreTestInstance(context, m_texture, m_format, m_declareImageFormatInShader, m_minalign, m_storeConstantValue);
 	else
-		return new ImageStoreTestInstance(context, m_texture, m_format, m_declareImageFormatInShader, m_singleLayerBind, m_minalign);
+		return new ImageStoreTestInstance(context, m_texture, m_format, m_declareImageFormatInShader, m_singleLayerBind, m_minalign, m_storeConstantValue);
 }
 
 TestInstance* LoadStoreTest::createInstance (Context& context) const
@@ -2560,7 +2622,11 @@ tcu::TestCaseGroup* createImageStoreTests (tcu::TestContext& testCtx)
 			const bool hasSpirvFmt = hasSpirvFormat(s_formats[formatNdx]);
 
 			if (hasSpirvFmt)
-				groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx]));
+			{
+				groupWithFormatByImageViewType->addChild( new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx]));
+				// Additional tests where the shader uses constant data for imageStore.
+				groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_constant", "", texture, s_formats[formatNdx], StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER | StoreTest::FLAG_STORE_CONSTANT_VALUE));
+			}
 			groupWithoutFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], 0));
 
 			if (isLayered && hasSpirvFmt)
