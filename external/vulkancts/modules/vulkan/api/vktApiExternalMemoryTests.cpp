@@ -1163,31 +1163,6 @@ tcu::TestStatus testSemaphoreSignalWaitImport (Context&						context,
 	}
 }
 
-tcu::TestStatus testSemaphoreImportSyncFdSignaled (Context&						context,
-												   const SemaphoreTestConfig	config)
-{
-	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const CustomInstance				instance			(createTestInstance(context, config.externalType, 0u, 0u));
-	const vk::InstanceDriver&			vki					(instance.getDriver());
-	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
-	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
-	const vk::VkSemaphoreImportFlags	flags				= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT : (vk::VkSemaphoreImportFlagBits)0u;
-
-	checkSemaphoreSupport(vki, physicalDevice, config.externalType);
-
-	{
-		const vk::Unique<vk::VkDevice>		device		(createTestDevice(context, vkp, instance, vki, physicalDevice, config.externalType, 0u, 0u, queueFamilyIndex));
-		const vk::DeviceDriver				vkd			(vkp, instance, *device);
-		const vk::VkQueue					queue		(getQueue(vkd, *device, queueFamilyIndex));
-		NativeHandle						handle		= -1;
-		const vk::Unique<vk::VkSemaphore>	semaphore	(createAndImportSemaphore(vkd, *device, config.externalType, handle, flags));
-
-		submitEmptyWait(vkd, queue, *semaphore);
-
-		return tcu::TestStatus::pass("Pass");
-	}
-}
-
 tcu::TestStatus testSemaphoreMultipleExports (Context&					context,
 											  const SemaphoreTestConfig	config)
 {
