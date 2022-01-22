@@ -1749,6 +1749,7 @@ const char* getDriverIdName (VkDriverId value)
 		case VK_DRIVER_ID_MESA_V3DV:					return "VK_DRIVER_ID_MESA_V3DV";
 		case VK_DRIVER_ID_MESA_PANVK:					return "VK_DRIVER_ID_MESA_PANVK";
 		case VK_DRIVER_ID_SAMSUNG_PROPRIETARY:			return "VK_DRIVER_ID_SAMSUNG_PROPRIETARY";
+		case VK_DRIVER_ID_MESA_VENUS:					return "VK_DRIVER_ID_MESA_VENUS";
 		case VK_DRIVER_ID_MAX_ENUM:						return "VK_DRIVER_ID_MAX_ENUM";
 		default:										return DE_NULL;
 	}

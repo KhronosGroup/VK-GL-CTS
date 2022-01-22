@@ -5,7 +5,7 @@
 #define VULKAN_VIDEO_CODECS_COMMON_H_ 1
 
 /*
-** Copyright 2015-2021 The Khronos Group Inc.
+** Copyright 2015-2022 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -36,7 +36,7 @@ extern "C" {
 #define VULKAN_VIDEO_CODEC_H264STD_H_ 1
 
 /*
-** Copyright 2015-2021 The Khronos Group Inc.
+** Copyright 2015-2022 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -344,7 +344,7 @@ typedef struct StdVideoH264PictureParameterSet {
 #define VULKAN_VIDEO_CODEC_H264STD_ENCODE_H_ 1
 
 /*
-** Copyright 2015-2021 The Khronos Group Inc.
+** Copyright 2015-2022 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -441,7 +441,7 @@ typedef struct StdVideoEncodeH264SliceHeader {
 #define VULKAN_VIDEO_CODEC_H265STD_H_ 1
 
 /*
-** Copyright 2015-2021 The Khronos Group Inc.
+** Copyright 2015-2022 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -801,7 +801,7 @@ typedef struct StdVideoH265PictureParameterSet {
 #define VULKAN_VIDEO_CODEC_H264STD_DECODE_H_ 1
 
 /*
-** Copyright 2015-2021 The Khronos Group Inc.
+** Copyright 2015-2022 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -899,7 +899,7 @@ typedef struct StdVideoDecodeH264Mvc {
 #define VULKAN_VIDEO_CODEC_H265STD_DECODE_H_ 1
 
 /*
-** Copyright 2015-2021 The Khronos Group Inc.
+** Copyright 2015-2022 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -959,7 +959,7 @@ typedef struct StdVideoDecodeH265ReferenceInfo {
 #define VULKAN_CORE_H_ 1
 
 /*
-** Copyright 2015-2021 The Khronos Group Inc.
+** Copyright 2015-2022 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -1029,7 +1029,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 203
+#define VK_HEADER_VERSION 204
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 3, VK_HEADER_VERSION)
@@ -6460,6 +6460,7 @@ typedef enum VkDriverId {
     VK_DRIVER_ID_MESA_V3DV = 19,
     VK_DRIVER_ID_MESA_PANVK = 20,
     VK_DRIVER_ID_SAMSUNG_PROPRIETARY = 21,
+    VK_DRIVER_ID_MESA_VENUS = 22,
     VK_DRIVER_ID_AMD_PROPRIETARY_KHR = VK_DRIVER_ID_AMD_PROPRIETARY,
     VK_DRIVER_ID_AMD_OPEN_SOURCE_KHR = VK_DRIVER_ID_AMD_OPEN_SOURCE,
     VK_DRIVER_ID_MESA_RADV_KHR = VK_DRIVER_ID_MESA_RADV,
