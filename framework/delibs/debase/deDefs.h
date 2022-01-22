@@ -385,6 +385,8 @@ DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 #	define DE_UNUSED_FUNCTION
 #endif
 
+DE_INLINE const char* deFatalStr (const char* reason) { DE_ASSERT(0); return reason; }
+
 #ifdef __cplusplus
 }
 #endif
