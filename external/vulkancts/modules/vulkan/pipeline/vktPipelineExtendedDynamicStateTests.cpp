@@ -2904,6 +2904,10 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 			}
 
 			// Dynamic stride of 0
+			//
+			// The "two_draws" variants are invalid because the non-zero vertex stride will cause out-of-bounds access
+			// when drawing more than one vertex.
+			if (kOrdering != SequenceOrdering::TWO_DRAWS_STATIC && kOrdering != SequenceOrdering::TWO_DRAWS_DYNAMIC)
 			{
 				TestConfig config(kOrdering, getVertexWithExtraAttributesGenerator());
 				config.strideConfig.staticValue		= config.getActiveVertexGenerator()->getVertexDataStrides();
