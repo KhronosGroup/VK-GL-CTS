@@ -45,6 +45,7 @@
 #include "tcuFloat.hpp"
 
 #include <set>
+#include <limits>
 
 namespace vkt
 {
