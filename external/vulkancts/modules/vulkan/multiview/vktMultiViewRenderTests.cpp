@@ -296,6 +296,7 @@ protected:
 	void									fillTriangle			(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx, const deUint32 quarter) const;
 	void									fillLayer				(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx) const;
 	void									fillQuarter				(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx, const deUint32 quarter, const deUint32 subpassNdx) const;
+	void                                    addRenderingSubpassDependencyIfRequired (deUint32 currentSubpassNdx);
 
 	const TestParameters			m_parameters;
 	const bool						m_useDynamicRendering;
@@ -436,6 +437,41 @@ void MultiViewRenderTestInstance::afterDraw (void)
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 }
 
+void MultiViewRenderTestInstance::addRenderingSubpassDependencyIfRequired (deUint32 currentSubpassNdx)
+{
+	// Get the combined view mask since the last pipeline barrier.
+	deUint32 viewMask = 0;
+
+	for (deUint32 subpassNdx = 0; subpassNdx < currentSubpassNdx; ++subpassNdx)
+	{
+		if ((viewMask & m_parameters.viewMasks[subpassNdx]) != 0)
+		{
+			viewMask = 0; // This subpass should have a pipeline barrier so reset the view mask.
+		}
+
+		viewMask |= m_parameters.viewMasks[subpassNdx];
+	}
+
+	// Add a pipeline barrier if the view mask for this subpass contains bits used in previous subpasses
+	// since the last pipeline barrier.
+	if ((viewMask & m_parameters.viewMasks[currentSubpassNdx]) != 0)
+	{
+		const VkImageSubresourceRange	subresourceRange		=
+		{
+			VK_IMAGE_ASPECT_COLOR_BIT,	//VkImageAspectFlags	aspectMask;
+			0u,							//deUint32				baseMipLevel;
+			1u,							//deUint32				levelCount;
+			0u,							//deUint32				baseArrayLayer;
+			m_parameters.extent.depth,	//deUint32				layerCount;
+		};
+
+		imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange,
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+	}
+}
+
 void MultiViewRenderTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
 	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
@@ -472,6 +508,8 @@ void MultiViewRenderTestInstance::draw (const deUint32 subpassCount, VkRenderPas
 	{
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			beginRendering(
 				*m_device,
 				*m_cmdBuffer,
@@ -1815,6 +1853,8 @@ void MultiViewInstancedTestInstance::draw (const deUint32 subpassCount, VkRender
 	{
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			beginRendering(
 				*m_device,
 				*m_cmdBuffer,
@@ -1906,6 +1946,8 @@ void MultiViewInputRateInstanceTestInstance::draw (const deUint32 subpassCount, 
 	{
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			beginRendering(
 				*m_device,
 				*m_cmdBuffer,
@@ -2058,6 +2100,8 @@ void MultiViewDrawIndirectTestInstance::draw (const deUint32 subpassCount, VkRen
 	{
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			beginRendering(
 				*m_device,
 				*m_cmdBuffer,
@@ -2187,6 +2231,8 @@ void MultiViewClearAttachmentsTestInstance::draw (const deUint32 subpassCount, V
 
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			beginRendering(
 				*m_device,
 				*m_cmdBuffer,
@@ -2325,6 +2371,8 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			beginRendering(
 				*m_device,
 				*m_cmdBuffer,
@@ -2447,6 +2495,8 @@ void MultiViewPointSizeTestInstance::draw (const deUint32 subpassCount, VkRender
 
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			beginRendering(
 				*m_device,
 				*m_cmdBuffer,
@@ -2625,6 +2675,8 @@ void MultiViewMultsampleTestInstance::draw (const deUint32 subpassCount, VkRende
 
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			beginRendering(
 				*m_device,
 				*m_cmdBuffer,
@@ -2935,6 +2987,8 @@ void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPa
 
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			beginRendering(
 				*m_device,
 				*m_cmdBuffer,
@@ -3141,6 +3195,8 @@ void MultiViewReadbackTestInstance::drawClears (const deUint32 subpassCount, VkR
 
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			VkAttachmentLoadOp loadOperation = VK_ATTACHMENT_LOAD_OP_LOAD;
 			if (clearPass)
 			{
@@ -3681,6 +3737,8 @@ void MultiViewDepthStencilTestInstance::draw (const deUint32 subpassCount, VkRen
 
 		if (m_useDynamicRendering)
 		{
+			addRenderingSubpassDependencyIfRequired(subpassNdx);
+
 			VkRenderingAttachmentInfoKHR colorAttachment
 			{
 				vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,	// VkStructureType						sType;
