@@ -905,7 +905,7 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 
 	// Queue commands and read results.
 	{
-		const tcu::IVec2					renderSize					= { RENDER_SIZE_WIDTH, RENDER_SIZE_HEIGHT };
+		const tcu::UVec2					renderSize					= { RENDER_SIZE_WIDTH, RENDER_SIZE_HEIGHT };
 		const VkRect2D						renderArea					= makeRect2D(renderSize.x(), renderSize.y());
 		const de::MovePtr<BufferWithMemory>	vertexBuffer				= makeVertexBuffer();
 		const deUint32						vertexCount					= static_cast<deUint32>(m_vertexData.size());
@@ -942,8 +942,9 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 			}
 			endRenderPass(vk, *cmdBuffer);
 
-			copyImageToBuffer(vk, *cmdBuffer, *colorImage, *colorBuffer, renderSize);
-			copyImageToBuffer(vk, *cmdBuffer, *depthImage, *depthBuffer, renderSize, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1u, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
+			const tcu::IVec2 size = { (deInt32)renderSize.x(), (deInt32)renderSize.y() };
+			copyImageToBuffer(vk, *cmdBuffer, *colorImage, *colorBuffer, size);
+			copyImageToBuffer(vk, *cmdBuffer, *depthImage, *depthBuffer, size, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1u, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
 		}
 		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), cmdBuffer.get());

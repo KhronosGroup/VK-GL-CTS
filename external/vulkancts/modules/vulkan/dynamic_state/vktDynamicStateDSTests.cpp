@@ -58,12 +58,14 @@ namespace
 class DepthStencilBaseCase : public TestInstance
 {
 public:
-	DepthStencilBaseCase (Context& context, const char* vertexShaderName, const char* fragmentShaderName)
+	DepthStencilBaseCase (Context& context, vk::PipelineConstructionType pipelineConstructionType, const char* vertexShaderName, const char* fragmentShaderName)
 		: TestInstance						(context)
 		, m_colorAttachmentFormat			(vk::VK_FORMAT_R8G8B8A8_UNORM)
 		, m_depthStencilAttachmentFormat	(vk::VK_FORMAT_UNDEFINED)
 		, m_topology						(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 		, m_vk								(context.getDeviceInterface())
+		, m_pipeline_1						(m_vk, context.getDevice(), pipelineConstructionType)
+		, m_pipeline_2						(m_vk, context.getDevice(), pipelineConstructionType)
 		, m_vertexShaderName				(vertexShaderName)
 		, m_fragmentShaderName				(fragmentShaderName)
 	{
@@ -84,8 +86,8 @@ protected:
 
 	const vk::DeviceInterface&						m_vk;
 
-	vk::Move<vk::VkPipeline>						m_pipeline_1;
-	vk::Move<vk::VkPipeline>						m_pipeline_2;
+	vk::GraphicsPipelineWrapper						m_pipeline_1;
+	vk::GraphicsPipelineWrapper						m_pipeline_2;
 	vk::Move<vk::VkPipelineLayout>					m_pipelineLayout;
 
 	de::SharedPtr<Image>							m_colorTargetImage;
@@ -236,34 +238,43 @@ protected:
 			2,
 			vertexInputAttributeDescriptions);
 
-		const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
+		std::vector<vk::VkViewport>		viewports	{ { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } };
+		std::vector<vk::VkRect2D>		scissors	{ { { 0u, 0u }, { 0u, 0u } } };
 
-		PipelineCreateInfo pipelineCreateInfo_1(*m_pipelineLayout, *m_renderPass, 0, 0);
-		pipelineCreateInfo_1.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
-		pipelineCreateInfo_1.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
-		pipelineCreateInfo_1.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
-		pipelineCreateInfo_1.addState(PipelineCreateInfo::InputAssemblerState(m_topology));
-		pipelineCreateInfo_1.addState(PipelineCreateInfo::ColorBlendState(1, &vkCbAttachmentState));
-		pipelineCreateInfo_1.addState(PipelineCreateInfo::ViewportState(1));
-		pipelineCreateInfo_1.addState(m_depthStencilState_1);
-		pipelineCreateInfo_1.addState(PipelineCreateInfo::RasterizerState());
-		pipelineCreateInfo_1.addState(PipelineCreateInfo::MultiSampleState());
-		pipelineCreateInfo_1.addState(PipelineCreateInfo::DynamicState());
+		const PipelineCreateInfo::ColorBlendState::Attachment	attachmentState;
+		const PipelineCreateInfo::ColorBlendState				colorBlendState(1u, static_cast<const vk::VkPipelineColorBlendAttachmentState*>(&attachmentState));
+		const PipelineCreateInfo::RasterizerState				rasterizerState;
+		PipelineCreateInfo::DynamicState						dynamicState;
 
-		PipelineCreateInfo pipelineCreateInfo_2(*m_pipelineLayout, *m_renderPass, 0, 0);
-		pipelineCreateInfo_2.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
-		pipelineCreateInfo_2.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
-		pipelineCreateInfo_2.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
-		pipelineCreateInfo_2.addState(PipelineCreateInfo::InputAssemblerState(m_topology));
-		pipelineCreateInfo_2.addState(PipelineCreateInfo::ColorBlendState(1, &vkCbAttachmentState));
-		pipelineCreateInfo_2.addState(PipelineCreateInfo::ViewportState(1));
-		pipelineCreateInfo_2.addState(m_depthStencilState_2);
-		pipelineCreateInfo_2.addState(PipelineCreateInfo::RasterizerState());
-		pipelineCreateInfo_2.addState(PipelineCreateInfo::MultiSampleState());
-		pipelineCreateInfo_2.addState(PipelineCreateInfo::DynamicState());
+		m_pipeline_1.setDefaultTopology(m_topology)
+					.setDynamicState(static_cast<const vk::VkPipelineDynamicStateCreateInfo*>(&dynamicState))
+					.setDefaultMultisampleState()
+					.setupVertexInputStete(&m_vertexInputState)
+					.setupPreRasterizationShaderState(viewports,
+													  scissors,
+													  *m_pipelineLayout,
+													  *m_renderPass,
+													  0u,
+													  *vs,
+													  static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState))
+					.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&m_depthStencilState_1))
+					.setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState))
+					.buildPipeline();
 
-		m_pipeline_1 = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo_1);
-		m_pipeline_2 = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo_2);
+		m_pipeline_2.setDefaultTopology(m_topology)
+					.setDynamicState(static_cast<const vk::VkPipelineDynamicStateCreateInfo*>(&dynamicState))
+					.setDefaultMultisampleState()
+					.setupVertexInputStete(&m_vertexInputState)
+					.setupPreRasterizationShaderState(viewports,
+													  scissors,
+													  *m_pipelineLayout,
+													  *m_renderPass,
+													  0u,
+													  *vs,
+													  static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState))
+					.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&m_depthStencilState_2))
+					.setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState))
+					.buildPipeline();
 
 		std::vector<vk::VkImageView> attachments(2);
 		attachments[0] = *m_colorTargetView;
@@ -391,8 +402,8 @@ protected:
 class DepthBoundsParamTestInstance : public DepthStencilBaseCase
 {
 public:
-	DepthBoundsParamTestInstance (Context &context, ShaderMap shaders)
-		: DepthStencilBaseCase (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+	DepthBoundsParamTestInstance (Context &context, vk::PipelineConstructionType pipelineConstructionType, ShaderMap shaders)
+		: DepthStencilBaseCase (context, pipelineConstructionType, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 	{
 		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, 0.375f, 1.0f), tcu::RGBA::green().toVec()));
 		m_data.push_back(PositionColorVertex(tcu::Vec4(0.0f, 1.0f, 0.375f, 1.0f), tcu::RGBA::green().toVec()));
@@ -437,11 +448,11 @@ public:
 		const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
 		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline_1);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline_1.getPipeline());
 		m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
 		m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 4, 0);
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline_2);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline_2.getPipeline());
 		m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 8, 0);
 
 		endRenderPass(m_vk, *m_cmdBuffer);
@@ -501,8 +512,9 @@ public:
 	};
 	static const float					depthBounds[DEPTH_BOUNDS_COUNT];
 
-								DepthBoundsTestInstance		(Context&				context,
-															 ShaderMap				shaders);
+								DepthBoundsTestInstance		(Context&						context,
+															 vk::PipelineConstructionType	pipelineConstructionType,
+															 ShaderMap						shaders);
 	virtual void				initRenderPass				(const vk::VkDevice		device);
 	virtual void				initFramebuffer				(const vk::VkDevice		device);
 	virtual void				initPipeline				(const vk::VkDevice		device);
@@ -520,8 +532,8 @@ const float DepthBoundsTestInstance::depthBounds[DEPTH_BOUNDS_COUNT] =
 	0.9f
 };
 
-DepthBoundsTestInstance::DepthBoundsTestInstance(Context& context, ShaderMap shaders)
-	: DynamicStateBaseClass		(context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+DepthBoundsTestInstance::DepthBoundsTestInstance(Context& context, vk::PipelineConstructionType pipelineConstructionType, ShaderMap shaders)
+	: DynamicStateBaseClass		(context, pipelineConstructionType, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 	, m_depthAttachmentFormat	(vk::VK_FORMAT_D16_UNORM)
 {
 	const vk::VkDevice device = m_context.getDevice();
@@ -607,26 +619,32 @@ void DepthBoundsTestInstance::initFramebuffer (const vk::VkDevice device)
 
 void DepthBoundsTestInstance::initPipeline (const vk::VkDevice device)
 {
-	const vk::Unique<vk::VkShaderModule> vs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
-	const vk::Unique<vk::VkShaderModule> fs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
+	const vk::Unique<vk::VkShaderModule>	vs			(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
+	const vk::Unique<vk::VkShaderModule>	fs			(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
+	std::vector<vk::VkViewport>				viewports	{ { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } };
+	std::vector<vk::VkRect2D>				scissors	{ { { 0u, 0u }, { 0u, 0u } } };
 
-	const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
+	const PipelineCreateInfo::ColorBlendState::Attachment	attachmentState;
+	const PipelineCreateInfo::ColorBlendState				colorBlendState(1u, static_cast<const vk::VkPipelineColorBlendAttachmentState*>(&attachmentState));
+	const PipelineCreateInfo::RasterizerState				rasterizerState;
+	const PipelineCreateInfo::DepthStencilState				depthStencilState(false, false, vk::VK_COMPARE_OP_NEVER, true);
+	const PipelineCreateInfo::DynamicState					dynamicState;
 
-	PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, 0);
-	pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
-	pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
-	pipelineCreateInfo.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
-	pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(m_topology));
-	pipelineCreateInfo.addState(PipelineCreateInfo::ColorBlendState(1, &vkCbAttachmentState));
-	pipelineCreateInfo.addState(PipelineCreateInfo::ViewportState(1));
-	pipelineCreateInfo.addState(PipelineCreateInfo::DepthStencilState(false, false, vk::VK_COMPARE_OP_NEVER, true));
-	pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
-	pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
-	pipelineCreateInfo.addState(PipelineCreateInfo::DynamicState());
-
-	m_pipeline = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo);
+	m_pipeline.setDefaultTopology(m_topology)
+			  .setDynamicState(static_cast<const vk::VkPipelineDynamicStateCreateInfo*>(&dynamicState))
+			  .setDefaultMultisampleState()
+			  .setupVertexInputStete(&m_vertexInputState)
+			  .setupPreRasterizationShaderState(viewports,
+												scissors,
+												*m_pipelineLayout,
+												*m_renderPass,
+												0u,
+												*vs,
+												static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState))
+			  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&depthStencilState))
+			  .setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState))
+			  .buildPipeline();
 }
-
 
 tcu::TestStatus DepthBoundsTestInstance::iterate (void)
 {
@@ -684,7 +702,7 @@ tcu::TestStatus DepthBoundsTestInstance::iterate (void)
 	setDynamicBlendState();
 	setDynamicDepthStencilState(depthBounds[DEPTH_BOUNDS_MIN], depthBounds[DEPTH_BOUNDS_MAX]);
 
-	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.getPipeline());
 
 	const vk::VkDeviceSize	vertexBufferOffset	= 0;
 	const vk::VkBuffer		vertexBuffer		= m_vertexBuffer->object();
@@ -737,10 +755,11 @@ protected:
 	tcu::Vec4 m_expectedColor;
 
 public:
-	StencilParamsBasicTestInstance (Context& context, const char* vertexShaderName, const char* fragmentShaderName,
+	StencilParamsBasicTestInstance (Context& context, vk::PipelineConstructionType pipelineConstructionType,
+									const char* vertexShaderName, const char* fragmentShaderName,
 									const deUint32 writeMask, const deUint32 readMask,
 									const deUint32 expectedValue, const tcu::Vec4 expectedColor)
-		: DepthStencilBaseCase  (context, vertexShaderName, fragmentShaderName)
+		: DepthStencilBaseCase  (context, pipelineConstructionType, vertexShaderName, fragmentShaderName)
 		, m_expectedColor		(1.0f, 1.0f, 1.0f, 1.0f)
 	{
 		m_writeMask = writeMask;
@@ -813,11 +832,11 @@ public:
 		const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
 		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline_1);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline_1.getPipeline());
 		setDynamicDepthStencilState(-1.0f, 1.0f, 0xFF, m_writeMask, 0x0F, 0xFF, m_writeMask, 0x0F);
 		m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline_2);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline_2.getPipeline());
 		setDynamicDepthStencilState(-1.0f, 1.0f, m_readMask, 0xFF, m_expectedValue, m_readMask, 0xFF, m_expectedValue);
 		m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 4, 0);
 
@@ -868,7 +887,7 @@ class StencilParamsBasicTestCase : public TestCase
 protected:
 	TestInstance* createInstance(Context& context) const
 	{
-		return new StencilParamsBasicTestInstance(context, "VertexFetch.vert", "VertexFetch.frag",
+		return new StencilParamsBasicTestInstance(context, m_pipelineConstructionType, "VertexFetch.vert", "VertexFetch.frag",
 			m_writeMask, m_readMask, m_expectedValue, m_expectedColor);
 	}
 
@@ -881,20 +900,34 @@ protected:
 			glu::FragmentSource(ShaderSourceProvider::getSource(m_testCtx.getArchive(), "vulkan/dynamic_state/VertexFetch.frag"));
 	}
 
-	deUint32 m_writeMask;
-	deUint32 m_readMask;
-	deUint32 m_expectedValue;
-	tcu::Vec4 m_expectedColor;
+	virtual void checkSupport(Context& context) const
+	{
+		if (m_pipelineConstructionType != vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+		{
+			context.requireDeviceFunctionality("VK_KHR_graphics_pipeline_library");
+			if ((m_pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY) &&
+				!context.getGraphicsPipelineLibraryProperties().graphicsPipelineLibraryFastLinking)
+				TCU_THROW(NotSupportedError, "graphicsPipelineLibraryFastLinking is not supported");
+		}
+	}
+
+	vk::PipelineConstructionType	m_pipelineConstructionType;
+	deUint32						m_writeMask;
+	deUint32						m_readMask;
+	deUint32						m_expectedValue;
+	tcu::Vec4						m_expectedColor;
 
 public:
 	StencilParamsBasicTestCase (tcu::TestContext& context, const char *name, const char *description,
+								const vk::PipelineConstructionType pipelineConstructionType,
 								const deUint32 writeMask, const deUint32 readMask,
 								const deUint32 expectedValue, const tcu::Vec4 expectedColor)
-		: TestCase				(context, name, description)
-		, m_writeMask			(writeMask)
-		, m_readMask			(readMask)
-		, m_expectedValue		(expectedValue)
-		, m_expectedColor		(expectedColor)
+		: TestCase						(context, name, description)
+		, m_pipelineConstructionType	(pipelineConstructionType)
+		, m_writeMask					(writeMask)
+		, m_readMask					(readMask)
+		, m_expectedValue				(expectedValue)
+		, m_expectedColor				(expectedColor)
 	{
 	}
 };
@@ -902,8 +935,8 @@ public:
 class StencilParamsAdvancedTestInstance : public DepthStencilBaseCase
 {
 public:
-	StencilParamsAdvancedTestInstance (Context& context, ShaderMap shaders)
-		: DepthStencilBaseCase (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+	StencilParamsAdvancedTestInstance (Context& context, vk::PipelineConstructionType pipelineConstructionType, ShaderMap shaders)
+		: DepthStencilBaseCase (context, pipelineConstructionType, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 	{
 		m_data.push_back(PositionColorVertex(tcu::Vec4(-0.5f, 0.5f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
 		m_data.push_back(PositionColorVertex(tcu::Vec4(0.5f, 0.5f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
@@ -970,11 +1003,11 @@ public:
 		const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
 		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline_1);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline_1.getPipeline());
 		setDynamicDepthStencilState(-1.0f, 1.0f, 0xFF, 0x0E, 0x0F, 0xFF, 0x0E, 0x0F);
 		m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline_2);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline_2.getPipeline());
 		setDynamicDepthStencilState(-1.0f, 1.0f, 0xFF, 0xFF, 0x0E, 0xFF, 0xFF, 0x0E);
 		m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 4, 0);
 
@@ -1029,8 +1062,9 @@ void checkDepthBoundsSupport (Context& context)
 
 } //anonymous
 
-DynamicStateDSTests::DynamicStateDSTests (tcu::TestContext& testCtx)
-	: TestCaseGroup (testCtx, "ds_state", "Tests for depth stencil state")
+DynamicStateDSTests::DynamicStateDSTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
+	: TestCaseGroup					(testCtx, "ds_state", "Tests for depth stencil state")
+	, m_pipelineConstructionType	(pipelineConstructionType)
 {
 	/* Left blank on purpose */
 }
@@ -1045,11 +1079,11 @@ void DynamicStateDSTests::init (void)
 	shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/dynamic_state/VertexFetch.vert";
 	shaderPaths[glu::SHADERTYPE_FRAGMENT] = "vulkan/dynamic_state/VertexFetch.frag";
 
-	addChild(new InstanceFactory<DepthBoundsParamTestInstance, FunctionSupport0>(m_testCtx, "depth_bounds_1", "Perform depth bounds test 1", shaderPaths, checkDepthBoundsSupport));
-	addChild(new InstanceFactory<DepthBoundsTestInstance, FunctionSupport0>(m_testCtx, "depth_bounds_2", "Perform depth bounds test 1", shaderPaths, checkDepthBoundsSupport));
-	addChild(new StencilParamsBasicTestCase(m_testCtx, "stencil_params_basic_1", "Perform basic stencil test 1", 0x0D, 0x06, 0x05, tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f)));
-	addChild(new StencilParamsBasicTestCase(m_testCtx, "stencil_params_basic_2", "Perform basic stencil test 2", 0x06, 0x02, 0x05, tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f)));
-	addChild(new InstanceFactory<StencilParamsAdvancedTestInstance>(m_testCtx, "stencil_params_advanced", "Perform advanced stencil test", shaderPaths));
+	addChild(new InstanceFactory<DepthBoundsParamTestInstance, FunctionSupport0>(m_testCtx, "depth_bounds_1", "Perform depth bounds test 1", m_pipelineConstructionType, shaderPaths, checkDepthBoundsSupport));
+	addChild(new InstanceFactory<DepthBoundsTestInstance, FunctionSupport0>(m_testCtx, "depth_bounds_2", "Perform depth bounds test 1", m_pipelineConstructionType, shaderPaths, checkDepthBoundsSupport));
+	addChild(new StencilParamsBasicTestCase(m_testCtx, "stencil_params_basic_1", "Perform basic stencil test 1", m_pipelineConstructionType, 0x0D, 0x06, 0x05, tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f)));
+	addChild(new StencilParamsBasicTestCase(m_testCtx, "stencil_params_basic_2", "Perform basic stencil test 2", m_pipelineConstructionType, 0x06, 0x02, 0x05, tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f)));
+	addChild(new InstanceFactory<StencilParamsAdvancedTestInstance>(m_testCtx, "stencil_params_advanced", "Perform advanced stencil test", m_pipelineConstructionType, shaderPaths));
 }
 
 } // DynamicState

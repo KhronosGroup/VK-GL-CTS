@@ -77,6 +77,8 @@ set(VKUTILNOSHADER_SRCS
 	vkDeviceProperties.inl
 	vkRayTracingUtil.hpp
 	vkRayTracingUtil.cpp
+	vkPipelineConstructionUtil.hpp
+	vkPipelineConstructionUtil.cpp
 	)
 
 set(VKUTIL_SRCS

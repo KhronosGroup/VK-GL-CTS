@@ -31,6 +31,7 @@
 #include "vktDrawImageObjectUtil.hpp"
 #include "vktDrawBufferObjectUtil.hpp"
 #include "vktDrawCreateInfoUtil.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
 {
@@ -40,7 +41,8 @@ namespace DynamicState
 class DynamicStateBaseClass : public TestInstance
 {
 public:
-	DynamicStateBaseClass (Context& context, const char* vertexShaderName, const char* fragmentShaderName);
+	DynamicStateBaseClass (Context& context, vk::PipelineConstructionType pipelineConstructionType,
+						   const char* vertexShaderName, const char* fragmentShaderName);
 
 protected:
 	void					initialize						(void);
@@ -91,7 +93,7 @@ protected:
 
 	const vk::DeviceInterface&						m_vk;
 
-	vk::Move<vk::VkPipeline>						m_pipeline;
+	vk::GraphicsPipelineWrapper						m_pipeline;
 	vk::Move<vk::VkPipelineLayout>					m_pipelineLayout;
 
 	de::SharedPtr<Draw::Image>						m_colorTargetImage;

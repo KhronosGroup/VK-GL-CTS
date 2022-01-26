@@ -42,6 +42,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkNoRenderDocUtil.cpp \
 	external/vulkancts/framework/vulkan/vkNullDriver.cpp \
 	external/vulkancts/framework/vulkan/vkObjUtil.cpp \
+	external/vulkancts/framework/vulkan/vkPipelineConstructionUtil.cpp \
 	external/vulkancts/framework/vulkan/vkPlatform.cpp \
 	external/vulkancts/framework/vulkan/vkPrograms.cpp \
 	external/vulkancts/framework/vulkan/vkQueryUtil.cpp \

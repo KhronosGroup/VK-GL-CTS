@@ -1,6 +1,7 @@
 include_directories(
 	..
 	../draw
+	../util
 	)
 
 set(DEQP_VK_DYNAMIC_STATE_SRCS
