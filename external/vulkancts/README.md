@@ -826,6 +826,10 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
     Define minimum size of the command pool (in bytes) to use (Vulkan SC only)
 	default: '0'
 
+  --deqp-command-buffer-min-size=<value>
+    Define minimum size of the command buffer (in bytes) to use (Vulkan SC only)
+	default: '0'
+
   --deqp-command-default-size=<value>
     Define default single command size (in bytes) to use (Vulkan SC only)
 	default: '256'

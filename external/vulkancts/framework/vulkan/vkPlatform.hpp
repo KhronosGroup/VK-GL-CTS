@@ -338,6 +338,7 @@ protected:
 
 	VkDeviceSize																m_commandDefaultSize;
 	VkDeviceSize																m_commandBufferMinimumSize;
+	VkDeviceSize																m_commandPoolMinimumSize;
 };
 
 class DeinitDeviceDeleter : public Deleter<DeviceDriverSC>

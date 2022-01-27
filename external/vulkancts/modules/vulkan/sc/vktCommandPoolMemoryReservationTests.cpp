@@ -84,6 +84,9 @@ tcu::TestStatus verifyCommandPoolReservedSize (Context& context, TestParams test
 	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 
+	if ( testParams.commandBufferCount >  context.getDeviceVulkanSC10Properties().maxCommandPoolCommandBuffers )
+		TCU_THROW(NotSupportedError, "commandBufferCount is greater than maxCommandPoolCommandBuffers");
+
 	VkDeviceSize							commandPoolReservedSize	= 0u;
 	switch (testParams.commandPoolReservedSize)
 	{
@@ -96,6 +99,7 @@ tcu::TestStatus verifyCommandPoolReservedSize (Context& context, TestParams test
 		default:
 			TCU_THROW(InternalError, "Unsupported commandPoolReservedSize value");
 	}
+	commandPoolReservedSize = de::max(commandPoolReservedSize, VkDeviceSize(testParams.commandBufferCount * context.getTestContext().getCommandLine().getCommandBufferMinSize()));
 
 	// Create command pool with declared size
 	// By connecting our own VkCommandPoolMemoryReservationCreateInfo we avoid getting unknown data from DeviceDriverSC::createCommandPoolHandlerNorm()
@@ -149,12 +153,13 @@ tcu::TestStatus verifyCommandPoolAllocEqualsCommandBufferAlloc (Context& context
 			eventCount				= 1u;
 			break;
 		case CPS_BIG:
-			eventCount				= 64u;
+			eventCount				= 32u;
 			break;
 		default:
 			TCU_THROW(InternalError, "Unsupported commandPoolReservedSize value");
 	}
 	VkDeviceSize							commandPoolReservedSize	= de::max(VkDeviceSize(eventCount * context.getTestContext().getCommandLine().getCommandDefaultSize()), VkDeviceSize(context.getTestContext().getCommandLine().getCommandPoolMinSize()));
+	commandPoolReservedSize											= de::max(commandPoolReservedSize, VkDeviceSize(testParams.commandBufferCount * context.getTestContext().getCommandLine().getCommandBufferMinSize()));
 
 	// Create command pool with declared size
 	// By connecting our own VkCommandPoolMemoryReservationCreateInfo we avoid getting unknown data from DeviceDriverSC::createCommandPoolHandlerNorm()
@@ -262,6 +267,9 @@ void checkSupport (Context& context, TestParams testParams)
 		TCU_THROW(NotSupportedError, "commandPoolResetCommandBuffer is not supported");
 	if (testParams.multipleRecording && context.getDeviceVulkanSC10Properties().commandPoolMultipleCommandBuffersRecording == VK_FALSE)
 		TCU_THROW(NotSupportedError, "commandPoolMultipleCommandBuffersRecording is not supported");
+	if (testParams.commandBufferCount > context.getDeviceVulkanSC10Properties().maxCommandPoolCommandBuffers)
+		TCU_THROW(NotSupportedError, "commandBufferCount is greater than maxCommandPoolCommandBuffers");
+
 }
 
 } // anonymous
@@ -277,9 +285,11 @@ tcu::TestCaseGroup*	createCommandPoolMemoryReservationTests (tcu::TestContext& t
 		const char*					name;
 	} maxCommandBuffers[] =
 	{
-		{ 1,						"cb_single"		},
-		{ 4,						"cb_few"		},
-		{ 21,						"cb_many"		},
+		{ 1,						"cb_single"				},
+		{ 4,						"cb_few"				},
+		{ 21,						"cb_many"				},
+		{ 256,						"cb_min_limit"			},
+		{ 1024,						"cb_above_min_limit"	},
 	};
 
 	const struct

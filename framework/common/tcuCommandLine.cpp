@@ -110,6 +110,7 @@ DE_DECLARE_COMMAND_LINE_OPT(SubprocessTestCount,		int);
 DE_DECLARE_COMMAND_LINE_OPT(SubprocessConfigFile,		std::string);
 DE_DECLARE_COMMAND_LINE_OPT(ServerAddress,				std::string);
 DE_DECLARE_COMMAND_LINE_OPT(CommandPoolMinSize,			int);
+DE_DECLARE_COMMAND_LINE_OPT(CommandBufferMinSize,		int);
 DE_DECLARE_COMMAND_LINE_OPT(CommandDefaultSize,			int);
 DE_DECLARE_COMMAND_LINE_OPT(PipelineDefaultSize,		int);
 DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerPath,		std::string);
@@ -235,6 +236,7 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<SubprocessConfigFile>			(DE_NULL,	"deqp-subprocess-cfg-file",					"Config file defining number of tests performed in subprocess for specific test branches (Vulkan SC only)", "")
 		<< Option<ServerAddress>				(DE_NULL,	"deqp-server-address",						"Server address (host:port) responsible for shader compilation (Vulkan SC only)", "")
 		<< Option<CommandPoolMinSize>			(DE_NULL,	"deqp-command-pool-min-size",				"Define minimum size of the command pool (in bytes) to use (Vulkan SC only)","0")
+		<< Option<CommandBufferMinSize>			(DE_NULL,	"deqp-command-buffer-min-size",				"Define minimum size of the command buffer (in bytes) to use (Vulkan SC only)", "0")
 		<< Option<CommandDefaultSize>			(DE_NULL,	"deqp-command-default-size",				"Define default single command size (in bytes) to use (Vulkan SC only)",	"256")
 		<< Option<PipelineDefaultSize>			(DE_NULL,	"deqp-pipeline-default-size",				"Define default pipeline size (in bytes) to use (Vulkan SC only)",		"16384")
 		<< Option<PipelineCompilerPath>			(DE_NULL,	"deqp-pipeline-compiler",					"Path to offline pipeline compiler (Vulkan SC only)", "")
@@ -972,6 +974,7 @@ bool					CommandLine::isTerminateOnFailEnabled		(void) const	{ return m_cmdLine.
 bool					CommandLine::isSubProcess					(void) const	{ return m_cmdLine.getOption<opt::SubProcess>();							}
 int						CommandLine::getSubprocessTestCount			(void) const	{ return m_cmdLine.getOption<opt::SubprocessTestCount>();					}
 int						CommandLine::getCommandPoolMinSize			(void) const	{ return m_cmdLine.getOption<opt::CommandPoolMinSize>();					}
+int						CommandLine::getCommandBufferMinSize		(void) const	{ return m_cmdLine.getOption<opt::CommandBufferMinSize>();					}
 int						CommandLine::getCommandDefaultSize			(void) const	{ return m_cmdLine.getOption<opt::CommandDefaultSize>();					}
 int						CommandLine::getPipelineDefaultSize			(void) const	{ return m_cmdLine.getOption<opt::PipelineDefaultSize>();					}
 

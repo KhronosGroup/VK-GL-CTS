@@ -286,8 +286,11 @@ public:
 	//! Optional server address that will be responsible for (among other things) compiling shaders ( Vulkan SC )
 	const char*						getServerAddress			(void) const;
 
-	//! Define minimum size of a single command buffer ( Vulkan SC )
+	//! Define minimum size of a single command pool ( Vulkan SC )
 	int								getCommandPoolMinSize(void) const;
+
+	//! Define minimum size of a single command buffer ( Vulkan SC )
+	int								getCommandBufferMinSize(void) const;
 
 	//! Define default size for single command in command buffer ( Vulkan SC )
 	int								getCommandDefaultSize(void) const;

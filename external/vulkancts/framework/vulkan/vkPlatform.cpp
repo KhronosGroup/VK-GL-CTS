@@ -185,7 +185,8 @@ DeviceDriverSC::DeviceDriverSC (const PlatformInterface&					platformInterface,
 	, m_resourceInterface(resourceInterface)
 	, m_physicalDeviceVulkanSC10Properties(physicalDeviceVulkanSC10Properties)
 	, m_commandDefaultSize((VkDeviceSize)cmdLine.getCommandDefaultSize())
-	, m_commandBufferMinimumSize( de::max((VkDeviceSize)cmdLine.getCommandDefaultSize(), (VkDeviceSize)cmdLine.getCommandPoolMinSize()))
+	, m_commandBufferMinimumSize( de::max((VkDeviceSize)cmdLine.getCommandDefaultSize(), (VkDeviceSize)cmdLine.getCommandBufferMinSize()))
+	, m_commandPoolMinimumSize((VkDeviceSize)cmdLine.getCommandPoolMinSize())
 {
 	if(!cmdLine.isSubProcess())
 		m_falseMemory.resize(64u * 1024u * 1024u, 0u);
@@ -706,11 +707,13 @@ VkResult DeviceDriverSC::createCommandPoolHandlerNorm (VkDevice								device,
 	VkCommandPoolMemoryReservationCreateInfo	cpMemReservationCI;
 	if (chainedMemoryReservation == DE_NULL)
 	{
-		cpMemReservationCI	=
+		VkDeviceSize cmdPoolSize	= de::max(memC.maxCommandPoolReservedSize, m_commandPoolMinimumSize);
+		cmdPoolSize					= de::max(cmdPoolSize, memC.commandBufferCount * m_commandBufferMinimumSize);
+		cpMemReservationCI			=
 		{
 			VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_RESERVATION_CREATE_INFO,			// VkStructureType		sType
 			DE_NULL,																// const void*			pNext
-			de::max(memC.maxCommandPoolReservedSize, m_commandBufferMinimumSize),	// VkDeviceSize			commandPoolReservedSize
+			de::max(cmdPoolSize , m_commandBufferMinimumSize),						// VkDeviceSize			commandPoolReservedSize
 			de::max(memC.commandBufferCount, 1u)									// uint32_t				commandPoolMaxCommandBuffers
 		};
 		cpMemReservationCI.pNext									= pCreateInfoCopy.pNext;

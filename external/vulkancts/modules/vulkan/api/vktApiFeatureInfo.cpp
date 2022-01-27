@@ -914,6 +914,8 @@ tcu::TestStatus validateLimits12 (Context& context)
 		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxDescriptorSetLayoutBindings),										LIM_MIN_UINT32(64) },
 		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxQueryFaultCount),													LIM_MIN_UINT32(16) },
 		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxCallbackFaultCount),													LIM_MIN_UINT32(1) },
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxCommandPoolCommandBuffers),											LIM_MIN_UINT32(256) },
+		{ PN(checkVulkanSC10Limit),						PN(vulkanSC10Properties.maxCommandBufferSize),													LIM_MIN_UINT32(1048576) },
 #endif // CTS_USES_VULKANSC
 	};
 

@@ -210,6 +210,7 @@ tcu::TestStatus createInstanceTest (Context& context)
 	return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
+#ifndef CTS_USES_VULKANSC
 tcu::TestStatus createInstanceWithInvalidApiVersionTest (Context& context)
 {
 	tcu::TestLog&				log						= context.getTestContext().getLog();
@@ -295,6 +296,7 @@ tcu::TestStatus createInstanceWithInvalidApiVersionTest (Context& context)
 
 	return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
+#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus createInstanceWithNullApplicationInfoTest (Context& context)
 {
@@ -2239,7 +2241,9 @@ tcu::TestCaseGroup* createDeviceInitializationTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	deviceInitializationTests (new tcu::TestCaseGroup(testCtx, "device_init", "Device Initialization Tests"));
 
 	addFunctionCase(deviceInitializationTests.get(), "create_instance_name_version",					"", createInstanceTest);
+#ifndef CTS_USES_VULKANSC
 	addFunctionCase(deviceInitializationTests.get(), "create_instance_invalid_api_version",				"", createInstanceWithInvalidApiVersionTest);
+#endif // CTS_USES_VULKANSC
 	addFunctionCase(deviceInitializationTests.get(), "create_instance_null_appinfo",					"", createInstanceWithNullApplicationInfoTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_instance_unsupported_extensions",			"", createInstanceWithUnsupportedExtensionsTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_instance_extension_name_abuse",			"", createInstanceWithExtensionNameAbuseTest);
