@@ -1,0 +1,2 @@
+# AOSP bug 21620051
+KHR-GL42.ext_texture_shadow_lod.texture.sampler2darrayshadow_vertex

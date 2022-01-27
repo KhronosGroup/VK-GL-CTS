@@ -1161,17 +1161,18 @@ tcu::TestNode::IterateResult RenderbufferCase::iterate(void)
 	{
 		GLint hasDepthBuffer	= 0;
 		GLint hasStencilBuffer	= 0;
+		bool  defaultFboIsZero	= m_context.getRenderContext().getDefaultFramebuffer() == 0;
 
 		if (separateDepth)
-			gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_DEPTH, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &hasDepthBuffer);
+			gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, (defaultFboIsZero) ? GL_DEPTH : GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &hasDepthBuffer);
 		if (separateStencil)
-			gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_STENCIL, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &hasStencilBuffer);
+			gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, (defaultFboIsZero) ? GL_STENCIL : GL_STENCIL_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &hasStencilBuffer);
 
 		if (hasDepthBuffer != GL_NONE)
-			gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_DEPTH, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE,
+			gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, (defaultFboIsZero) ? GL_DEPTH : GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE,
 							       &defaultFramebufferDepthBits);
 		if (hasStencilBuffer != GL_NONE)
-			gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_STENCIL, GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE,
+			gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, (defaultFboIsZero) ? GL_STENCIL : GL_STENCIL_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE,
 							       &defaultFramebufferStencilBits);
 	}
 
