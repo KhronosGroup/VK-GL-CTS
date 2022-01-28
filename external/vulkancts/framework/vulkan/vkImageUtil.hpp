@@ -284,6 +284,7 @@ void	clearColorImage							(const DeviceInterface&							vk,
 												 vk::VkClearColorValue							clearColor,
 												 vk::VkImageLayout								oldLayout,
 												 vk::VkImageLayout								newLayout,
+												 vk::VkAccessFlags								dstAccessFlags,
 												 vk::VkPipelineStageFlags						dstStageFlags,
 												 deUint32										baseArrayLayer = 0u,
 												 deUint32										layerCount = 1u);
@@ -329,10 +330,12 @@ void	clearDepthStencilImage					(const DeviceInterface&							vk,
 												 const vk::VkQueue								queue,
 												 deUint32										queueFamilyIndex,
 												 vk::VkImage									image,
+												 vk::VkFormat									format,
 												 float											depthValue,
 												 deUint32										stencilValue,
 												 vk::VkImageLayout								oldLayout,
 												 vk::VkImageLayout								newLayout,
+												 vk::VkAccessFlags								dstAccessFlags,
 												 vk::VkPipelineStageFlags						dstStageFlags);
 
 /*--------------------------------------------------------------------*//*!
