@@ -597,7 +597,7 @@ void PrimitivesGeneratedQueryTestCase::checkSupport (vkt::Context& context) cons
 	if (pgqFeatures.primitivesGeneratedQuery != VK_TRUE)
 		TCU_THROW(NotSupportedError, "VK_QUERY_TYPE_PRIMITIVES_GENERATED_EXT not supported");
 
-	if (m_parameters.rasterization && (pgqFeatures.primitivesGeneratedQueryWithRasterizerDiscard != VK_TRUE))
+	if (!m_parameters.rasterization && (pgqFeatures.primitivesGeneratedQueryWithRasterizerDiscard != VK_TRUE))
 		TCU_THROW(NotSupportedError, "primitivesGeneratedQueryWithRasterizerDiscard not supported");
 
 	if (m_parameters.queryResetType == QUERY_RESET_TYPE_HOST)
@@ -726,6 +726,9 @@ void PrimitivesGeneratedQueryTestCase::initPrograms (vk::SourceCollections& prog
 		if (outputPoints)
 			src	<<	"    gl_PointSize = 1.0;\n";
 
+		if (m_parameters.transformFeedback)
+			src	<<	"    xfb = vec4(42);\n";
+
 		for (VkDeviceSize i = 0; i < outputPrimSize; i++)
 			src	<<	"    " << pgqEmitCommand << ";\n";
 
@@ -734,10 +737,7 @@ void PrimitivesGeneratedQueryTestCase::initPrograms (vk::SourceCollections& prog
 		if (m_parameters.transformFeedback && m_parameters.multipleStreams())
 		{
 			for (VkDeviceSize i = 0; i < outputPrimSize; i++)
-			{
-				src	<<	"    xfb = vec4(42);\n"
-					<<	"    " << xfbEmitCommand << ";\n";
-			}
+				src	<<	"    " << xfbEmitCommand << ";\n";
 
 			src	<<	"    " << xfbEndCommand << ";\n";
 		}
