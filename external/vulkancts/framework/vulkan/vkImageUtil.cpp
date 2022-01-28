@@ -4439,6 +4439,7 @@ void clearColorImage (const DeviceInterface&	vk,
 					  VkClearColorValue			clearColor,
 					  VkImageLayout				oldLayout,
 					  VkImageLayout				newLayout,
+					  VkAccessFlags				dstAccessFlags,
 					  VkPipelineStageFlags		dstStageFlags,
 					  deUint32					baseArrayLayer,
 					  deUint32					layerCount)
@@ -4474,7 +4475,7 @@ void clearColorImage (const DeviceInterface&	vk,
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
 		DE_NULL,									// const void*				pNext;
 		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_SHADER_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
+		dstAccessFlags,								// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
 		newLayout,									// VkImageLayout			newLayout;
 		queueFamilyIndex,							// deUint32					srcQueueFamilyIndex;
@@ -4516,7 +4517,7 @@ void clearColorImage (const DeviceInterface&	vk,
 					  deUint32					baseArrayLayer,
 					  deUint32					layerCount)
 {
-	clearColorImage(vk, device, queue, queueFamilyIndex, image, makeClearValueColor(clearColor).color, oldLayout, newLayout, dstStageFlags, baseArrayLayer, layerCount);
+	clearColorImage(vk, device, queue, queueFamilyIndex, image, makeClearValueColor(clearColor).color, oldLayout, newLayout, VK_ACCESS_SHADER_WRITE_BIT, dstStageFlags, baseArrayLayer, layerCount);
 }
 
 std::vector<VkBufferImageCopy> generateChessboardCopyRegions (deUint32				tileSize,
@@ -4795,24 +4796,27 @@ void clearDepthStencilImage (const DeviceInterface&	vk,
 							 const VkQueue			queue,
 							 deUint32				queueFamilyIndex,
 							 VkImage				image,
+							 VkFormat				format,
 							 float					depthValue,
 							 deUint32				stencilValue,
 							 VkImageLayout			oldLayout,
 							 VkImageLayout			newLayout,
+							 VkAccessFlags			dstAccessFlags,
 							 VkPipelineStageFlags	dstStageFlags)
 {
 	Move<VkCommandPool>				cmdPool				= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 	Move<VkCommandBuffer>			cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	const VkClearDepthStencilValue	clearValue			= makeClearValueDepthStencil(depthValue, stencilValue).depthStencil;
+	const auto						aspectMask			= getImageAspectFlags(mapVkFormat(format));
 
 	const VkImageSubresourceRange	subresourceRange	=
 	{
-		VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,	// VkImageAspectFlags	aspectMask
-		0u,															// deUint32				baseMipLevel
-		1u,															// deUint32				levelCount
-		0u,															// deUint32				baseArrayLayer
-		1u															// deUint32				layerCount
+		aspectMask,	// VkImageAspectFlags	aspectMask
+		0u,			// deUint32				baseMipLevel
+		1u,			// deUint32				levelCount
+		0u,			// deUint32				baseArrayLayer
+		1u			// deUint32				layerCount
 	};
 
 	const VkImageMemoryBarrier		preImageBarrier		=
@@ -4834,7 +4838,7 @@ void clearDepthStencilImage (const DeviceInterface&	vk,
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
 		DE_NULL,									// const void*				pNext;
 		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_SHADER_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
+		dstAccessFlags,								// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
 		newLayout,									// VkImageLayout			newLayout;
 		queueFamilyIndex,							// deUint32					srcQueueFamilyIndex;
