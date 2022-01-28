@@ -5747,37 +5747,35 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context& context)
 	if (!context.contextSupports(vk::ApiVersion(1, 3, 0)))
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.3 required to run test");
 
-	VkPhysicalDeviceVulkan13Features	vulkan13Features	= initVulkanStructure();
-	VkPhysicalDeviceFeatures2			extFeatures			= initVulkanStructure(&vulkan13Features);
+	VkPhysicalDeviceVulkan13Features					vulkan13Features				= initVulkanStructure();
+	VkPhysicalDeviceFeatures2							extFeatures						= initVulkanStructure(&vulkan13Features);
 
 	vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
 
 	log << TestLog::Message << vulkan13Features << TestLog::EndMessage;
 
-	// Validate if required VkPhysicalDeviceVulkan13Features fields are set and that corresponding extensions are present
-	std::pair<std::pair<const char*,const char*>, VkBool32> extensions2validate[] =
+	// Validate if required VkPhysicalDeviceVulkan13Features fields are set
+	std::pair<const char*, VkBool32> features2validate[]
 	{
-		{ { "VK_EXT_image_robustness",						"VkPhysicalDeviceVulkan13Features.robustImageAccess" },						vulkan13Features.robustImageAccess },
-		{ { "VK_EXT_inline_uniform_block",					"VkPhysicalDeviceVulkan13Features.inlineUniformBlock" },					vulkan13Features.inlineUniformBlock },
-		{ { "VK_EXT_pipeline_creation_cache_control",		"VkPhysicalDeviceVulkan13Features.pipelineCreationCacheControl" },			vulkan13Features.pipelineCreationCacheControl },
-		{ { "VK_EXT_private_data",							"VkPhysicalDeviceVulkan13Features.privateData" },							vulkan13Features.privateData },
-		{ { "VK_EXT_shader_demote_to_helper_invocation",	"VkPhysicalDeviceVulkan13Features.shaderDemoteToHelperInvocation" },		vulkan13Features.shaderDemoteToHelperInvocation },
-		{ { "VK_KHR_shader_terminate_invocation",			"VkPhysicalDeviceVulkan13Features.shaderTerminateInvocation" },				vulkan13Features.shaderTerminateInvocation },
-		{ { "VK_EXT_subgroup_size_control",					"VkPhysicalDeviceVulkan13Features.subgroupSizeControl" },					vulkan13Features.subgroupSizeControl },
-		{ { "VK_EXT_subgroup_size_control",					"VkPhysicalDeviceVulkan13Features.computeFullSubgroups" },					vulkan13Features.computeFullSubgroups },
-		{ { "VK_KHR_synchronization2",						"VkPhysicalDeviceVulkan13Features.synchronization2" },						vulkan13Features.synchronization2 },
-		{ { "VK_KHR_zero_initialize_workgroup_memory",		"VkPhysicalDeviceVulkan13Features.shaderZeroInitializeWorkgroupMemory" },	vulkan13Features.shaderZeroInitializeWorkgroupMemory },
-		{ { "VK_KHR_dynamic_rendering",						"VkPhysicalDeviceVulkan13Features.dynamicRendering" },						vulkan13Features.dynamicRendering },
-		{ { "VK_KHR_shader_integer_dot_product",			"VkPhysicalDeviceVulkan13Features.shaderIntegerDotProduct" },				vulkan13Features.shaderIntegerDotProduct },
-		{ { "VK_KHR_maintenance4",							"VkPhysicalDeviceVulkan13Features.maintenance4" },							vulkan13Features.maintenance4 },
+		{ { "VkPhysicalDeviceVulkan13Features.robustImageAccess" },										vulkan13Features.robustImageAccess },
+		{ { "VkPhysicalDeviceVulkan13Features.inlineUniformBlock" },									vulkan13Features.inlineUniformBlock },
+		{ { "VkPhysicalDeviceVulkan13Features.descriptorBindingInlineUniformBlockUpdateAfterBind" },	vulkan13Features.descriptorBindingInlineUniformBlockUpdateAfterBind },
+		{ { "VkPhysicalDeviceVulkan13Features.pipelineCreationCacheControl" },							vulkan13Features.pipelineCreationCacheControl },
+		{ { "VkPhysicalDeviceVulkan13Features.privateData" },											vulkan13Features.privateData },
+		{ { "VkPhysicalDeviceVulkan13Features.shaderDemoteToHelperInvocation" },						vulkan13Features.shaderDemoteToHelperInvocation },
+		{ { "VkPhysicalDeviceVulkan13Features.shaderTerminateInvocation" },								vulkan13Features.shaderTerminateInvocation },
+		{ { "VkPhysicalDeviceVulkan13Features.subgroupSizeControl" },									vulkan13Features.subgroupSizeControl },
+		{ { "VkPhysicalDeviceVulkan13Features.computeFullSubgroups" },									vulkan13Features.computeFullSubgroups },
+		{ { "VkPhysicalDeviceVulkan13Features.synchronization2" },										vulkan13Features.synchronization2 },
+		{ { "VkPhysicalDeviceVulkan13Features.shaderZeroInitializeWorkgroupMemory" },					vulkan13Features.shaderZeroInitializeWorkgroupMemory },
+		{ { "VkPhysicalDeviceVulkan13Features.dynamicRendering" },										vulkan13Features.dynamicRendering },
+		{ { "VkPhysicalDeviceVulkan13Features.shaderIntegerDotProduct" },								vulkan13Features.shaderIntegerDotProduct },
+		{ { "VkPhysicalDeviceVulkan13Features.maintenance4" },											vulkan13Features.maintenance4 },
 	};
-	vector<VkExtensionProperties> extensionProperties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
-	for (const auto& ext : extensions2validate)
+	for (const auto& feature : features2validate)
 	{
-		if (!checkExtension(extensionProperties, ext.first.first))
-			TCU_FAIL(string("Mising extension ") + ext.first.first);
-		if (!ext.second)
-			TCU_FAIL(string("Required feature ") + ext.first.second + " is not set");
+		if (!feature.second)
+			TCU_FAIL(string("Required feature ") + feature.first + " is not set");
 	}
 
 	// collect all extension features

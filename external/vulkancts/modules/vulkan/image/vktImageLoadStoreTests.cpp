@@ -2863,7 +2863,7 @@ tcu::TestCaseGroup* createImageNontemporalOperandTests(tcu::TestContext& testCtx
 	{
 		const std::string	caseName	= getFormatShortString(format);
 		const auto			readFormat	= format;
-		const auto			writeFormat	= getShaderExtensionOperandFormat(false, is64BitIntegerFormat(format));
+		const auto			writeFormat	= getShaderExtensionOperandFormat(isIntFormat(format), is64BitIntegerFormat(format));
 
 		if (!hasSpirvFormat(readFormat) || !hasSpirvFormat(writeFormat))
 			continue;

@@ -597,6 +597,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceVulkan12Features.pNext;
 	}
 
+	vk::VkPhysicalDeviceVulkan13Features physicalDeviceVulkan13Features;
+	deMemset(&physicalDeviceVulkan13Features, 0, sizeof(physicalDeviceVulkan13Features));
+
+	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
+	{
+		physicalDeviceVulkan13Features.sType = getStructureType<VkPhysicalDeviceVulkan13Features>();
+		*nextPtr = &physicalDeviceVulkan13Features;
+		nextPtr  = &physicalDeviceVulkan13Features.pNext;
+	}
+
 	vk::VkPhysicalDeviceVulkanMemoryModelFeaturesKHR physicalDeviceVulkanMemoryModelFeaturesKHR;
 	deMemset(&physicalDeviceVulkanMemoryModelFeaturesKHR, 0, sizeof(physicalDeviceVulkanMemoryModelFeaturesKHR));
 
@@ -1968,6 +1978,132 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceBorderColorSwizzleFeaturesEXT.borderColorSwizzle == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature borderColorSwizzle not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
+	{
+		if ( physicalDeviceVulkan13Features.robustImageAccess == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature robustImageAccess not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
+	{
+		if ( physicalDeviceVulkan13Features.inlineUniformBlock == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature inlineUniformBlock not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
+	{
+		if ( physicalDeviceVulkan13Features.descriptorBindingInlineUniformBlockUpdateAfterBind == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature descriptorBindingInlineUniformBlockUpdateAfterBind not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
+	{
+		if ( physicalDeviceVulkan13Features.pipelineCreationCacheControl == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature pipelineCreationCacheControl not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
+	{
+		if ( physicalDeviceVulkan13Features.privateData == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature privateData not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
+	{
+		if ( physicalDeviceVulkan13Features.shaderDemoteToHelperInvocation == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderDemoteToHelperInvocation not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
+	{
+		if ( physicalDeviceVulkan13Features.shaderTerminateInvocation == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderTerminateInvocation not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
+	{
+		if ( physicalDeviceVulkan13Features.subgroupSizeControl == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature subgroupSizeControl not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
+	{
+		if ( physicalDeviceVulkan13Features.computeFullSubgroups == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature computeFullSubgroups not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
+	{
+		if ( physicalDeviceVulkan13Features.synchronization2 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature synchronization2 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
+	{
+		if ( physicalDeviceVulkan13Features.shaderZeroInitializeWorkgroupMemory == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderZeroInitializeWorkgroupMemory not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
+	{
+		if ( physicalDeviceVulkan13Features.dynamicRendering == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature dynamicRendering not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
+	{
+		if ( physicalDeviceVulkan13Features.shaderIntegerDotProduct == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderIntegerDotProduct not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 3, 0)) )
+	{
+		if ( physicalDeviceVulkan13Features.maintenance4 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature maintenance4 not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
