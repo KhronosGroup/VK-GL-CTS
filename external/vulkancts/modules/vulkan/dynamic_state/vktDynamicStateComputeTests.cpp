@@ -382,18 +382,25 @@ void setViewportShadingRatePalette (const DeviceInterface* vkd, VkCommandBuffer 
 
 void setCoarseSamplingOrder (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
-	const VkCoarseSampleLocationNV location =
+	const VkCoarseSampleLocationNV locations[2] =
 	{
-		0u,	//	deUint32	pixelX;
-		0u,	//	deUint32	pixelY;
-		0u,	//	deUint32	sample;
+		{
+			0u,	//	deUint32	pixelX;
+			0u,	//	deUint32	pixelY;
+			0u,	//	deUint32	sample;
+		},
+		{
+			0u,	//	deUint32	pixelX;
+			1u,	//	deUint32	pixelY;
+			1u,	//	deUint32	sample;
+		},
 	};
 	const VkCoarseSampleOrderCustomNV order =
 	{
-		VK_SHADING_RATE_PALETTE_ENTRY_1_INVOCATION_PER_PIXEL_NV,	//	VkShadingRatePaletteEntryNV		shadingRate;
-		1u,															//	deUint32						sampleCount;
-		1u,															//	deUint32						sampleLocationCount;
-		&location													//	const VkCoarseSampleLocationNV*	pSampleLocations;
+		VK_SHADING_RATE_PALETTE_ENTRY_1_INVOCATION_PER_1X2_PIXELS_NV,	//	VkShadingRatePaletteEntryNV		shadingRate;
+		1u,																//	deUint32						sampleCount;
+		2u,																//	deUint32						sampleLocationCount;
+		locations														//	const VkCoarseSampleLocationNV*	pSampleLocations;
 	};
 	vkd->cmdSetCoarseSampleOrderNV(cmdBuffer, VK_COARSE_SAMPLE_ORDER_TYPE_CUSTOM_NV, 1u, &order);
 }
