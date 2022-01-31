@@ -2119,7 +2119,7 @@ void AttachmentRateTestCase::checkSupport(Context& context) const
 		context.requireDeviceFunctionality("VK_KHR_imageless_framebuffer");
 
 	if (!context.getFragmentShadingRateFeatures().attachmentFragmentShadingRate)
-		TCU_THROW(NotSupportedError, "pipelineFragmentShadingRate not supported");
+		TCU_THROW(NotSupportedError, "attachmentFragmentShadingRate not supported");
 
 	const vk::InstanceInterface&	vk					= context.getInstanceInterface();
 	const vk::VkPhysicalDevice		pd					= context.getPhysicalDevice();
