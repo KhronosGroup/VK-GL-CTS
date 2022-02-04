@@ -29,6 +29,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkBuilderUtil.hpp"
@@ -40,8 +41,10 @@
 #include "tcuRGBA.hpp"
 
 #include "../draw/vktDrawCreateInfoUtil.hpp"
+#include "deMath.h"
 
 #include <vector>
+#include <chrono>
 #include <set>
 
 namespace vkt
@@ -361,7 +364,8 @@ public:
 };
 
 void updateVertexInputInterface (Context&						context,
-								 GraphicsPipelineCreateInfo&	graphicsPipelineCreateInfo)
+								 GraphicsPipelineCreateInfo&	graphicsPipelineCreateInfo,
+								 VkPrimitiveTopology			topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 {
 	DE_UNREF(context);
 
@@ -394,7 +398,7 @@ void updateVertexInputInterface (Context&						context,
 		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType							sType;
 		DE_NULL,														// const void*								pNext;
 		0u,																// VkPipelineInputAssemblyStateCreateFlags	flags;
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology						topology;
+		topology,														// VkPrimitiveTopology						topology;
 		VK_FALSE,														// VkBool32									primitiveRestartEnable;
 	};
 
@@ -404,7 +408,8 @@ void updateVertexInputInterface (Context&						context,
 
 void updatePreRasterization (Context&						context,
 							 GraphicsPipelineCreateInfo&	graphicsPipelineCreateInfo,
-							 bool							delayedShaderCreate)
+							 bool							delayedShaderCreate,
+							 VkPolygonMode					polygonMode = VK_POLYGON_MODE_FILL)
 {
 	const ProgramBinary&		shaderBinary			= context.getBinaryCollection().get("vert");
 	VkShaderModuleCreateInfo&	shaderModuleCreateInfo	= graphicsPipelineCreateInfo.m_shaderModuleCreateInfo[graphicsPipelineCreateInfo.m_shaderModuleCreateInfoCount];
@@ -467,7 +472,7 @@ void updatePreRasterization (Context&						context,
 		0u,																// VkPipelineRasterizationStateCreateFlags	flags;
 		VK_FALSE,														// VkBool32									depthClampEnable;
 		VK_FALSE,														// VkBool32									rasterizerDiscardEnable;
-		VK_POLYGON_MODE_FILL,											// VkPolygonMode							polygonMode;
+		polygonMode,													// VkPolygonMode							polygonMode;
 		VK_CULL_MODE_NONE,												// VkCullModeFlags							cullMode;
 		VK_FRONT_FACE_COUNTER_CLOCKWISE,								// VkFrontFace								frontFace;
 		VK_FALSE,														// VkBool32									depthBiasEnable;
@@ -486,7 +491,8 @@ void updatePreRasterization (Context&						context,
 
 void updatePostRasterization (Context&						context,
 							  GraphicsPipelineCreateInfo&	graphicsPipelineCreateInfo,
-							  bool							delayedShaderCreate)
+							  bool							delayedShaderCreate,
+							  bool							enableDepth = true)
 {
 	const ProgramBinary&		shaderBinary			= context.getBinaryCollection().get("frag");
 	VkShaderModuleCreateInfo&	shaderModuleCreateInfo	= graphicsPipelineCreateInfo.m_shaderModuleCreateInfo[graphicsPipelineCreateInfo.m_shaderModuleCreateInfoCount];
@@ -536,8 +542,8 @@ void updatePostRasterization (Context&						context,
 		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, //  VkStructureType							sType;
 		DE_NULL,													//  const void*								pNext;
 		0u,															//  VkPipelineDepthStencilStateCreateFlags	flags;
-		VK_TRUE,													//  VkBool32								depthTestEnable;
-		VK_TRUE,													//  VkBool32								depthWriteEnable;
+		enableDepth,												//  VkBool32								depthTestEnable;
+		enableDepth,												//  VkBool32								depthWriteEnable;
 		VK_COMPARE_OP_LESS_OR_EQUAL,								//  VkCompareOp								depthCompareOp;
 		VK_FALSE,													//  VkBool32								depthBoundsTestEnable;
 		VK_FALSE,													//  VkBool32								stencilTestEnable;
@@ -578,7 +584,8 @@ void updatePostRasterization (Context&						context,
 }
 
 void updateFragmentOutputInterface (Context&					context,
-									GraphicsPipelineCreateInfo& graphicsPipelineCreateInfo)
+									GraphicsPipelineCreateInfo& graphicsPipelineCreateInfo,
+									VkColorComponentFlags		colorWriteMask = COLOR_COMPONENTS_NO_RED)
 {
 	DE_UNREF(context);
 
@@ -592,7 +599,7 @@ void updateFragmentOutputInterface (Context&					context,
 		VK_BLEND_FACTOR_ONE,			// VkBlendFactor			srcAlphaBlendFactor;
 		VK_BLEND_FACTOR_ZERO,			// VkBlendFactor			dstAlphaBlendFactor;
 		VK_BLEND_OP_ADD,				// VkBlendOp				alphaBlendOp;
-		COLOR_COMPONENTS_NO_RED,		// VkColorComponentFlags	colorWriteMask;
+		colorWriteMask,					// VkColorComponentFlags	colorWriteMask;
 	};
 	const VkPipelineColorBlendStateCreateInfo	pipelineColorBlendStateCreateInfo	=
 	{
@@ -931,7 +938,7 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 		const VkFramebufferCreateInfo		framebufferCreateInfo		= makeFramebufferCreateInfo(*renderPass, DE_LENGTH_OF_ARRAY(attachments), attachments, renderSize.x(), renderSize.y());
 		const Move<VkFramebuffer>			framebuffer					= createFramebuffer(vk, device, &framebufferCreateInfo);
 
-		beginCommandBuffer(vk, *cmdBuffer, 0u);
+		vk::beginCommandBuffer(vk, *cmdBuffer, 0u);
 		{
 			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, colorClearColor, depthClearDepth, depthClearStencil);
 			{
@@ -946,11 +953,11 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 			copyImageToBuffer(vk, *cmdBuffer, *colorImage, *colorBuffer, size);
 			copyImageToBuffer(vk, *cmdBuffer, *depthImage, *depthBuffer, size, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1u, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
 		}
-		endCommandBuffer(vk, *cmdBuffer);
-		submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), cmdBuffer.get());
+		vk::endCommandBuffer(vk, *cmdBuffer);
+		vk::submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), cmdBuffer.get());
 
-		invalidateAlloc(vk, device, colorBuffer.getAllocation());
-		invalidateAlloc(vk, device, depthBuffer.getAllocation());
+		vk::invalidateAlloc(vk, device, colorBuffer.getAllocation());
+		vk::invalidateAlloc(vk, device, depthBuffer.getAllocation());
 
 		const tcu::ConstPixelBufferAccess colorPixelAccess(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, colorBuffer.getAllocation().getHostPtr());
 		const tcu::ConstPixelBufferAccess depthPixelAccess(mapVkFormat(depthFormat), renderSize.x(), renderSize.y(), 1, depthBuffer.getAllocation().getHostPtr());
@@ -1209,6 +1216,531 @@ TestInstance* PipelineLibraryTestCase::createInstance (Context& context) const
 	return new PipelineLibraryTestInstance(context, m_data);
 }
 
+enum class MiscTestMode
+{
+	INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED = 0,
+	INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE,
+	INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_NULL_HANDLE,
+	COMPARE_LINK_TIMES
+};
+
+struct MiscTestParams
+{
+	MiscTestMode	mode;
+};
+
+class PipelineLibraryMiscTestInstance : public TestInstance
+{
+public:
+						PipelineLibraryMiscTestInstance		(Context&					context,
+															 const MiscTestParams&		params);
+						~PipelineLibraryMiscTestInstance	(void) = default;
+	tcu::TestStatus		iterate								(void);
+
+protected:
+
+	tcu::TestStatus		runIndependentPipelineLayoutSets	(bool useLinkTimeOptimization = false, bool useNullLayout = false);
+	tcu::TestStatus		runCompareLinkTimes					(void);
+
+private:
+	MiscTestParams					m_testParams;
+	const VkFormat					m_colorFormat;
+	const Vec4						m_colorClearColor;
+	const VkRect2D					m_renderArea;
+
+	de::MovePtr<ImageWithMemory>	m_colorImage;
+	Move<VkImageView>				m_colorImageView;
+
+	Move<VkRenderPass>				m_renderPass;
+	Move<VkFramebuffer>				m_framebuffer;
+
+	Move<VkCommandPool>				m_cmdPool;
+	Move<VkCommandBuffer>			m_cmdBuffer;
+};
+
+PipelineLibraryMiscTestInstance::PipelineLibraryMiscTestInstance(Context& context, const MiscTestParams& params)
+	: vkt::TestInstance		(context)
+	, m_testParams			(params)
+	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_colorClearColor		(0.0f, 0.0f, 0.0f, 1.0f)
+	, m_renderArea			(makeRect2D(RENDER_SIZE_WIDTH, RENDER_SIZE_HEIGHT))
+{
+}
+
+tcu::TestStatus PipelineLibraryMiscTestInstance::iterate (void)
+{
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			device		= m_context.getDevice();
+	Allocator&				allocator	= m_context.getDefaultAllocator();
+
+	// create image and image view that will hold rendered frame
+	const VkImageCreateInfo colorImageCreateInfo = makeColorImageCreateInfo(m_colorFormat, m_renderArea.extent.width, m_renderArea.extent.height);
+	m_colorImage = de::MovePtr<ImageWithMemory>(new ImageWithMemory(vk, device, allocator, colorImageCreateInfo, MemoryRequirement::Any));
+	const VkImageViewCreateInfo		colorImageViewCreateInfo	= makeImageViewCreateInfo(**m_colorImage, m_colorFormat, static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_COLOR_BIT));
+	const Move<VkImageView>			colorImageView				= createImageView(vk, device, &colorImageViewCreateInfo);
+
+	// create renderpass and framebuffer
+	m_renderPass = makeRenderPass(vk, device, m_colorFormat);
+	const VkFramebufferCreateInfo framebufferCreateInfo = makeFramebufferCreateInfo(*m_renderPass, 1u, &*colorImageView, m_renderArea.extent.width, m_renderArea.extent.height);
+	m_framebuffer = createFramebuffer(vk, device, &framebufferCreateInfo);
+
+	// create command pool and command buffer
+	const deUint32 queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+	m_cmdPool	= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+	m_cmdBuffer	= allocateCommandBuffer(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	// run selected test
+	if (m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED)
+		return runIndependentPipelineLayoutSets();
+	else if (m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE)
+		return runIndependentPipelineLayoutSets(true);
+	else if (m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_NULL_HANDLE)
+		return runIndependentPipelineLayoutSets(true, true);
+	else if (m_testParams.mode == MiscTestMode::COMPARE_LINK_TIMES)
+		return runCompareLinkTimes();
+
+	DE_ASSERT(DE_FALSE);
+	return tcu::TestStatus::fail("Fail");
+}
+
+tcu::TestStatus PipelineLibraryMiscTestInstance::runIndependentPipelineLayoutSets (bool useLinkTimeOptimization, bool useNullLayout)
+{
+	const DeviceInterface&			vk							= m_context.getDeviceInterface();
+	const VkDevice					device						= m_context.getDevice();
+	Allocator&						allocator					= m_context.getDefaultAllocator();
+
+	const VkDeviceSize				colorBufferDataSize			= static_cast<VkDeviceSize>(m_renderArea.extent.width * m_renderArea.extent.height * tcu::getPixelSize(mapVkFormat(m_colorFormat)));
+	const VkBufferCreateInfo		colorBufferCreateInfo		= makeBufferCreateInfo(colorBufferDataSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	const BufferWithMemory			colorBuffer					(vk, device, allocator, colorBufferCreateInfo, MemoryRequirement::HostVisible);
+
+	VkDeviceSize					uniformBufferDataSize		= sizeof(tcu::Vec4);
+	const VkBufferCreateInfo		uniformBufferCreateInfo		= makeBufferCreateInfo(uniformBufferDataSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+
+	de::MovePtr<BufferWithMemory>	uniformBuffer[3];
+
+	// setup data in uniform buffers that will give us expected result for validation
+	const tcu::Vec4 uniformBuffData[3]
+	{
+		{  4.00f,  3.00f, -1.0f,  4.00f },
+		{  0.10f,  0.25f, -0.5f,  0.05f },
+		{ -5.00f, -2.00f,  3.0f, -6.00f },
+	};
+
+	for (deUint32 i = 0; i < 3; ++i)
+	{
+		uniformBuffer[i] = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, uniformBufferCreateInfo, MemoryRequirement::HostVisible));
+		deMemcpy(uniformBuffer[i]->getAllocation().getHostPtr(), uniformBuffData[i].getPtr(), (size_t)uniformBufferDataSize);
+		flushAlloc(vk, device, uniformBuffer[i]->getAllocation());
+	}
+
+	// create three descriptor set layouts
+	Move<VkDescriptorSetLayout>	descriptorSetLayouts[3];
+	descriptorSetLayouts[0] = DescriptorSetLayoutBuilder()
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+		.build(vk, device);
+	descriptorSetLayouts[1] = DescriptorSetLayoutBuilder()
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.build(vk, device);
+	descriptorSetLayouts[2] = DescriptorSetLayoutBuilder()
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+		.build(vk, device);
+
+	// for the link time opt (and when null handle is used) use total pipeline layout recreated without the INDEPENDENT SETS bit
+	deUint32 allLayoutsFlag = deUint32(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+	if (useLinkTimeOptimization && !useNullLayout)
+		allLayoutsFlag = 0u;
+
+	// Pre-rasterization stage library has sets 0, 1, 2
+	// * set 0 has descriptors
+	// * set 1 has no descriptors
+	// * set 2 has descriptors
+	// Fragment stage library has sets 0, 1
+	// * set 0 has descriptors
+	// * set 1 has descriptors
+	VkDescriptorSetLayout vertDescriptorSetLayouts[]	= { *descriptorSetLayouts[0], DE_NULL, *descriptorSetLayouts[2] };
+	VkDescriptorSetLayout fragDescriptorSetLayouts[]	= { *descriptorSetLayouts[0], *descriptorSetLayouts[1] };
+	VkDescriptorSetLayout allDescriptorSetLayouts[]		= { *descriptorSetLayouts[0], *descriptorSetLayouts[1], *descriptorSetLayouts[2] };
+
+	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo	= initVulkanStructure();
+	pipelineLayoutCreateInfo.flags						= allLayoutsFlag;
+	pipelineLayoutCreateInfo.setLayoutCount				= 3u;
+	pipelineLayoutCreateInfo.pSetLayouts				= allDescriptorSetLayouts;
+	Move<VkPipelineLayout> allLayouts					= createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
+	pipelineLayoutCreateInfo.flags						= deUint32(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+	pipelineLayoutCreateInfo.pSetLayouts				= vertDescriptorSetLayouts;
+	Move<VkPipelineLayout> vertLayouts					= createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
+	pipelineLayoutCreateInfo.setLayoutCount				= 2u;
+	pipelineLayoutCreateInfo.pSetLayouts				= fragDescriptorSetLayouts;
+	Move<VkPipelineLayout> fragLayouts					= createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
+
+	Move<VkDescriptorPool> allDescriptorPool = DescriptorPoolBuilder()
+		.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3)
+		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 3);
+
+	// create three descriptor sets
+	Move<VkDescriptorSet>	descriptorSetA			= makeDescriptorSet(vk, device, *allDescriptorPool, *descriptorSetLayouts[0]);
+	Move<VkDescriptorSet>	descriptorSetB			= makeDescriptorSet(vk, device, *allDescriptorPool, *descriptorSetLayouts[1]);
+	Move<VkDescriptorSet>	descriptorSetC			= makeDescriptorSet(vk, device, *allDescriptorPool, *descriptorSetLayouts[2]);
+	VkDescriptorSet			allDescriptorSets[]		= { *descriptorSetA , *descriptorSetB , *descriptorSetC };
+
+	// update descriptors with actual buffers
+	const VkDescriptorBufferInfo shaderBufferAInfo = makeDescriptorBufferInfo(**uniformBuffer[0], 0u, uniformBufferDataSize);
+	const VkDescriptorBufferInfo shaderBufferBInfo = makeDescriptorBufferInfo(**uniformBuffer[1], 0u, uniformBufferDataSize);
+	const VkDescriptorBufferInfo shaderBufferCInfo = makeDescriptorBufferInfo(**uniformBuffer[2], 0u, uniformBufferDataSize);
+	DescriptorSetUpdateBuilder()
+		.writeSingle(*descriptorSetA, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &shaderBufferAInfo)
+		.writeSingle(*descriptorSetB, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &shaderBufferBInfo)
+		.writeSingle(*descriptorSetC, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &shaderBufferCInfo)
+		.update(vk, device);
+
+	deUint32 commonPipelinePartFlags	= deUint32(VK_PIPELINE_CREATE_LIBRARY_BIT_KHR);
+	deUint32 finalPipelineFlag			= 0u;
+	if (useLinkTimeOptimization)
+	{
+		commonPipelinePartFlags |= deUint32(VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT);
+		finalPipelineFlag		 = deUint32(VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT);
+	}
+
+	GraphicsPipelineCreateInfo partialPipelineCreateInfo[]
+	{
+		{ DE_NULL,		*m_renderPass, 0, commonPipelinePartFlags },
+		{ *vertLayouts,	*m_renderPass, 0, commonPipelinePartFlags },
+		{ *fragLayouts,	*m_renderPass, 0, commonPipelinePartFlags },
+		{ DE_NULL,		*m_renderPass, 0, commonPipelinePartFlags }
+	};
+
+	// fill proper portion of pipeline state
+	updateVertexInputInterface		(m_context, partialPipelineCreateInfo[0], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+	updatePreRasterization			(m_context, partialPipelineCreateInfo[1], false);
+	updatePostRasterization			(m_context, partialPipelineCreateInfo[2], false);
+	updateFragmentOutputInterface	(m_context, partialPipelineCreateInfo[3]);
+
+	// extend pNext chain and create all partial pipelines
+	std::vector<VkPipeline>			rawParts(4u, DE_NULL);
+	std::vector<Move<VkPipeline> >	pipelineParts;
+	pipelineParts.reserve(4u);
+	VkGraphicsPipelineLibraryCreateInfoEXT libraryCreateInfo = makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT);
+	for (deUint32 i = 0 ; i < 4u ; ++i)
+	{
+		libraryCreateInfo.flags = GRAPHICS_PIPELINE_LIBRARY_FLAGS[i];
+		appendStructurePtrToVulkanChain(&partialPipelineCreateInfo[i].pNext, &libraryCreateInfo);
+		pipelineParts.emplace_back(createGraphicsPipeline(vk, device, DE_NULL, &partialPipelineCreateInfo[i]));
+		rawParts[i] = *pipelineParts[i];
+	}
+
+	// create final pipeline out of four parts
+	VkPipelineLibraryCreateInfoKHR	linkingInfo			= makePipelineLibraryCreateInfo(rawParts);
+	VkGraphicsPipelineCreateInfo	finalPipelineInfo	= initVulkanStructure();
+
+	finalPipelineInfo.flags		= finalPipelineFlag;
+	finalPipelineInfo.layout	= useNullLayout ? DE_NULL : *allLayouts;
+
+	appendStructurePtrToVulkanChain(&finalPipelineInfo.pNext, &linkingInfo);
+	Move<VkPipeline> pipeline = createGraphicsPipeline(vk, device, DE_NULL, &finalPipelineInfo);
+
+	vk::beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+	{
+		// change color image layout
+		const VkImageMemoryBarrier initialImageBarrier = makeImageMemoryBarrier(
+			0,													// VkAccessFlags					srcAccessMask;
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,				// VkAccessFlags					dstAccessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout					oldLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout					newLayout;
+			**m_colorImage,										// VkImage							image;
+			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }		// VkImageSubresourceRange			subresourceRange;
+		);
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, DE_NULL, 0, DE_NULL, 1, &initialImageBarrier);
+
+		// wait for uniform buffers
+		std::vector<VkBufferMemoryBarrier> initialBufferBarriers(3u, makeBufferMemoryBarrier(
+			VK_ACCESS_HOST_WRITE_BIT,							// VkAccessFlags2KHR				srcAccessMask
+			VK_ACCESS_TRANSFER_READ_BIT,						// VkAccessFlags2KHR				dstAccessMask
+			uniformBuffer[0]->get(),							// VkBuffer							buffer
+			0u,													// VkDeviceSize						offset
+			uniformBufferDataSize								// VkDeviceSize						size
+		));
+		initialBufferBarriers[1].buffer = uniformBuffer[1]->get();
+		initialBufferBarriers[2].buffer = uniformBuffer[2]->get();
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, (VkDependencyFlags)0, 0, DE_NULL, 3, initialBufferBarriers.data(), 0, DE_NULL);
+
+		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, m_renderArea, m_colorClearColor);
+
+		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *allLayouts, 0u, 3u, allDescriptorSets, 0u, DE_NULL);
+		vk.cmdDraw(*m_cmdBuffer, 4, 1u, 0u, 0u);
+
+		endRenderPass(vk, *m_cmdBuffer);
+
+		const tcu::IVec2 size{ (deInt32)m_renderArea.extent.width, (deInt32)m_renderArea.extent.height };
+		copyImageToBuffer(vk, *m_cmdBuffer, **m_colorImage, *colorBuffer, size);
+	}
+	vk::endCommandBuffer(vk, *m_cmdBuffer);
+	vk::submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *m_cmdBuffer);
+
+	vk::invalidateAlloc(vk, device, colorBuffer.getAllocation());
+	const tcu::ConstPixelBufferAccess colorPixelAccess(mapVkFormat(m_colorFormat), m_renderArea.extent.width, m_renderArea.extent.height, 1, colorBuffer.getAllocation().getHostPtr());
+
+	// just check few pixels
+	deInt32 width	= (deInt32)m_renderArea.extent.width;
+	deInt32 height	= (deInt32)m_renderArea.extent.height;
+	struct VerificationData
+	{
+		const tcu::IVec2	point;
+		const tcu::IVec4	color;
+	};
+	const std::vector<VerificationData> verificationData
+	{
+		{ { 1, 1 },						{ 0, 191, 127, 51 } },		// note COLOR_COMPONENTS_NO_RED is used
+		{ { width / 2, height / 2 },	{ 0, 191, 127, 51 } },
+		{ { width - 2, height - 2 },	{ 0, 0, 0, 255 } }			// clear color
+	};
+	const deInt32 epsilon = 1;
+	for (const auto& v : verificationData)
+	{
+		const IVec4		pixel	= colorPixelAccess.getPixelInt(v.point.x(), v.point.y());
+		const IVec4		diff	= pixel - v.color;
+		for (deUint32 compNdx = 0; compNdx < 4u; ++compNdx)
+		{
+			if (de::abs(diff[compNdx]) > epsilon)
+			{
+				const Vec4		pixelBias	(0.0f, 0.0f, 0.0f, 0.0f);
+				const Vec4		pixelScale	(1.0f, 1.0f, 1.0f, 1.0f);
+				tcu::TestLog&	log			(m_context.getTestContext().getLog());
+
+				log << TestLog::Image("Result", "Result", colorPixelAccess, pixelScale, pixelBias)
+					<< tcu::TestLog::Message
+					<< "For texel " << v.point << " expected color "
+					<< v.color << " got: " << pixel
+					<< tcu::TestLog::EndMessage;
+
+				return tcu::TestStatus::fail("Fail");
+			}
+		}
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+tcu::TestStatus PipelineLibraryMiscTestInstance::runCompareLinkTimes (void)
+{
+	const deUint32				uniqueLibrariesCount	= 2u;
+	const deUint32				pipelinesCount			= 4u * uniqueLibrariesCount;
+
+	const DeviceInterface&		vk						= m_context.getDeviceInterface();
+	const VkDevice				device					= m_context.getDevice();
+	tcu::TestLog&				log						= m_context.getTestContext().getLog();
+	bool						allChecksPassed			= true;
+	VkPipelineLayoutCreateInfo	pipelineLayoutParams	= initVulkanStructure();
+	Move<VkPipelineLayout>		layout					= createPipelineLayout(vk, device, &pipelineLayoutParams);
+
+	GraphicsPipelineCreateInfo partialPipelineCreateInfo[]
+	{
+		{ *layout, *m_renderPass, 0, VK_PIPELINE_CREATE_LIBRARY_BIT_KHR },
+		{ *layout, *m_renderPass, 0, VK_PIPELINE_CREATE_LIBRARY_BIT_KHR },
+		{ *layout, *m_renderPass, 0, VK_PIPELINE_CREATE_LIBRARY_BIT_KHR },
+		{ *layout, *m_renderPass, 0, VK_PIPELINE_CREATE_LIBRARY_BIT_KHR },
+		{ *layout, *m_renderPass, 0, VK_PIPELINE_CREATE_LIBRARY_BIT_KHR },
+		{ *layout, *m_renderPass, 0, VK_PIPELINE_CREATE_LIBRARY_BIT_KHR },
+		{ *layout, *m_renderPass, 0, VK_PIPELINE_CREATE_LIBRARY_BIT_KHR },
+		{ *layout, *m_renderPass, 0, VK_PIPELINE_CREATE_LIBRARY_BIT_KHR },
+	};
+
+	// fill proper portion of pipeline state - this cant be easily done in a scalable loop
+	updateVertexInputInterface		(m_context, partialPipelineCreateInfo[0], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+	updateVertexInputInterface		(m_context, partialPipelineCreateInfo[1], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	updatePreRasterization			(m_context, partialPipelineCreateInfo[2], false, VK_POLYGON_MODE_FILL);
+	updatePreRasterization			(m_context, partialPipelineCreateInfo[3], false, VK_POLYGON_MODE_LINE);
+	updatePostRasterization			(m_context, partialPipelineCreateInfo[4], false, true);
+	updatePostRasterization			(m_context, partialPipelineCreateInfo[5], false, false);
+	updateFragmentOutputInterface	(m_context, partialPipelineCreateInfo[6], 0xf);
+	updateFragmentOutputInterface	(m_context, partialPipelineCreateInfo[7]);
+
+	// construct all pipeline parts and mesure time it took
+	struct PipelinePartData
+	{
+		Move<VkPipeline>							pipelineHandle;
+		std::chrono::duration<deInt64, std::nano>	creationDuration;
+	};
+	std::vector<PipelinePartData> pipelinePartData(pipelinesCount);
+	VkGraphicsPipelineLibraryCreateInfoEXT libraryCreateInfo = makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT);
+	for (deUint32 i = 0; i < pipelinesCount; ++i)
+	{
+		appendStructurePtrToVulkanChain(&partialPipelineCreateInfo[i].pNext, &libraryCreateInfo);
+		libraryCreateInfo.flags = GRAPHICS_PIPELINE_LIBRARY_FLAGS[i / 2];
+
+		auto&	partData	= pipelinePartData[i];
+		auto	timeStart	= std::chrono::high_resolution_clock::now();
+		partData.pipelineHandle		= createGraphicsPipeline(vk, device, DE_NULL, partialPipelineCreateInfo + i);
+		partData.creationDuration	= std::chrono::high_resolution_clock::now() - timeStart;
+	}
+
+	// iterate over all combinations of parts
+	for (deUint32 i = 0u ; i < (deUint32)dePow(4, uniqueLibrariesCount) ; ++i)
+	{
+		// select new unique combination of parts
+		deUint32 vertexInputIndex		= (i    ) % 2;
+		deUint32 preRasterizationIndex	= (i / 2) % 2;
+		deUint32 fragmentStateIndex		= (i / 4) % 2;
+		deUint32 fragmentOutputIndex	= (i / 8) % 2;
+
+		const auto& vertexInputData			= pipelinePartData[                           vertexInputIndex];
+		const auto& preRasterizationData	= pipelinePartData[    uniqueLibrariesCount + preRasterizationIndex];
+		const auto& fragmentStateData		= pipelinePartData[2 * uniqueLibrariesCount + fragmentStateIndex];
+		const auto& fragmentOutputData		= pipelinePartData[3 * uniqueLibrariesCount + fragmentOutputIndex];
+
+		std::vector<VkPipeline> pipelinesToLink
+		{
+			*vertexInputData.pipelineHandle,
+			*preRasterizationData.pipelineHandle,
+			*fragmentStateData.pipelineHandle,
+			*fragmentOutputData.pipelineHandle,
+		};
+
+		VkPipelineLibraryCreateInfoKHR	linkingInfo			= makePipelineLibraryCreateInfo(pipelinesToLink);
+		VkGraphicsPipelineCreateInfo	finalPipelineInfo	= initVulkanStructure();
+
+		appendStructurePtrToVulkanChain(&finalPipelineInfo.pNext, &linkingInfo);
+
+		// link pipeline without the optimised bit, and record the time taken to link it
+		auto				timeStart		= std::chrono::high_resolution_clock::now();
+		Move<VkPipeline>	pipeline		= createGraphicsPipeline(vk, device, DE_NULL, &finalPipelineInfo);
+		const auto			linkingTime		= std::chrono::high_resolution_clock::now() - timeStart;
+		const auto			creationTime	= preRasterizationData.creationDuration + fragmentStateData.creationDuration;
+
+		if (linkingTime > (10 * creationTime))
+		{
+			allChecksPassed = false;
+			log << tcu::TestLog::Message
+				<< "Liking time (" << linkingTime.count() << ") of combination " << i
+				<< " is more then ten times greater than creation of both pre-rasterization and fragment states (" << creationTime.count() << ")"
+				<< tcu::TestLog::EndMessage;
+		}
+	}
+
+	if (allChecksPassed)
+		return tcu::TestStatus::pass("Pass");
+
+	return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Liking of one or more combinations took to long");
+}
+
+class PipelineLibraryMiscTestCase : public TestCase
+{
+public:
+	PipelineLibraryMiscTestCase			(tcu::TestContext& context, const char* name, const MiscTestParams data);
+	~PipelineLibraryMiscTestCase		(void) = default;
+
+	void			checkSupport		(Context& context) const;
+	void			initPrograms		(SourceCollections& programCollection) const;
+	TestInstance*	createInstance		(Context& context) const;
+
+private:
+	MiscTestParams		m_testParams;
+};
+
+PipelineLibraryMiscTestCase::PipelineLibraryMiscTestCase(tcu::TestContext& context, const char* name, const MiscTestParams params)
+	: TestCase			(context, name, "")
+	, m_testParams		(params)
+{
+}
+
+void PipelineLibraryMiscTestCase::checkSupport(Context& context) const
+{
+	context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
+
+	// VK_KHR_pipeline_library must be supported if the VK_EXT_graphics_pipeline_library extension is supported.
+	// Note that vktTestCase skips enabling VK_KHR_pipeline_library by default and we can't use requireDeviceFunctionality for it.
+	const auto supportedExtensions = enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), DE_NULL);
+	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_pipeline_library")))
+		TCU_FAIL("VK_KHR_pipeline_library not supported but VK_EXT_graphics_pipeline_library supported");
+
+	if ((m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED) &&
+		!context.getGraphicsPipelineLibraryPropertiesEXT().graphicsPipelineLibraryFastLinking)
+		TCU_THROW(NotSupportedError, "graphicsPipelineLibraryFastLinking is not supported");
+}
+
+void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollection) const
+{
+	if ((m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED) ||
+		(m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_NULL_HANDLE) ||
+		(m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE))
+	{
+		programCollection.glslSources.add("vert") << glu::VertexSource(
+			"#version 450\n"
+			"precision mediump int; precision highp float;"
+			"layout(location = 0) in vec4 in_position;\n"
+			"layout(set = 0, binding = 0) uniform bufA\n"
+			"{\n"
+			"  vec4 valueA;\n"
+			"};\n"
+			"layout(set = 2, binding = 0) uniform bufC\n"
+			"{\n"
+			"  vec4 valueC;\n"
+			"};\n"
+			"out gl_PerVertex\n"
+			"{\n"
+			"  vec4 gl_Position;\n"
+			"};\n\n"
+			"void main()\n"
+			"{\n"
+			// note: values in buffers were set to get vec4(-1, 1, 2, -2)
+			"  const vec4  v = valueA + valueC;\n"
+			"  const float x = (v.x+v.z*((gl_VertexIndex & 2)>>1));\n"
+			"  const float y = (v.y+v.w* (gl_VertexIndex % 2));\n"
+
+			// note: there won't be full screen quad because of used scissors
+			"  gl_Position = vec4(x, y, 0.0, 1.0);\n"
+			"}\n");
+
+		programCollection.glslSources.add("frag") << glu::FragmentSource(
+			"#version 450\n"
+			"precision mediump int; precision highp float;"
+			"layout(location = 0) out highp vec4 o_color;\n"
+			"layout(set = 0, binding = 0) uniform bufA\n"
+			"{\n"
+			"  vec4 valueA;\n"
+			"};\n"
+			"layout(set = 1, binding = 0) uniform bufB\n"
+			"{\n"
+			"  vec4 valueB;\n"
+			"};\n\n"
+			"void main()\n"
+			"{\n"
+			// note: values in buffers were set to get vec4(0.0, 0.75, 0.5, 0.2)
+			"  o_color = valueA * valueB;\n"
+			"}\n");
+	}
+	if (m_testParams.mode == MiscTestMode::COMPARE_LINK_TIMES)
+	{
+		programCollection.glslSources.add("vert") << glu::VertexSource(
+			"#version 450\n"
+			"precision mediump int; precision highp float;"
+			"layout(location = 0) in vec4 in_position;\n"
+			"out gl_PerVertex\n"
+			"{\n"
+			"  vec4 gl_Position;\n"
+			"};\n\n"
+			"void main()\n"
+			"{\n"
+			"   gl_Position = vec4(float(1 - 2 * int(gl_VertexIndex != 1)),\n"
+			"                      float(1 - 2 * int(gl_VertexIndex > 0)), 0.0, 1.0);\n"
+			"}\n");
+
+		programCollection.glslSources.add("frag") << glu::FragmentSource(
+			"#version 450\n"
+			"precision mediump int; precision highp float;"
+			"layout(location = 0) out highp vec4 o_color;\n"
+			"void main()\n"
+			"{\n"
+			"  o_color = vec4(0.0, 1.0, 0.5, 1.0);\n"
+			"}\n");
+	}
+}
+
+TestInstance* PipelineLibraryMiscTestCase::createInstance(Context& context) const
+{
+	return new PipelineLibraryMiscTestInstance(context, m_testParams);
+}
+
 }	// anonymous
 
 void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group, bool optimize)
@@ -1347,6 +1879,13 @@ tcu::TestCaseGroup*	createPipelineLibraryTests(tcu::TestContext& testCtx)
 
 	addTestGroup(group.get(), "fast", "Tests graphics pipeline libraries linkage without optimization", addPipelineLibraryConfigurationsTests, false);
 	addTestGroup(group.get(), "optimize", "Tests graphics pipeline libraries linkage with optimization", addPipelineLibraryConfigurationsTests, true);
+
+	de::MovePtr<tcu::TestCaseGroup>	miscTests(new tcu::TestCaseGroup(testCtx, "misc", "Miscellaneous graphics pipeline library tests"));
+	miscTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "independent_pipeline_layout_sets_fast_linked",			{ MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED }));
+	miscTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "independent_pipeline_layout_sets_link_opt_union_handle",	{ MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE }));
+	miscTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "independent_pipeline_layout_sets_link_opt_null_handle",	{ MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_NULL_HANDLE }));
+	miscTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "compare_link_times",										{ MiscTestMode::COMPARE_LINK_TIMES }));
+	group->addChild(miscTests.release());
 
 	return group.release();
 }
