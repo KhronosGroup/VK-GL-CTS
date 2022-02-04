@@ -1902,7 +1902,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 				DE_NULL,											// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 			};
 
-			vk.cmdBeginRenderingKHR(*m_cmdBuffer, &renderingInfo);
+			vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
 		}
 		else
 		{
@@ -1926,7 +1926,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 
 		if (isDynamicRendering)
 		{
-			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
 
 			// barrier that will change layout of density map
 			VkImageMemoryBarrier densityMapImageBarrier = makeImageMemoryBarrier(
@@ -1997,7 +1997,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 			DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 		};
 
-		vk.cmdBeginRenderingKHR(*m_cmdBuffer, &renderingInfo);
+		vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
 	}
 	else
 	{
@@ -2030,7 +2030,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 	}
 
 	if (isDynamicRendering)
-		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 	else
 		renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
 
@@ -2074,7 +2074,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 				DE_NULL,																// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
 				DE_NULL,																// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 			};
-			vk.cmdBeginRenderingKHR(*m_cmdBuffer, &renderingInfo);
+			vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
 		}
 		else
 		{
@@ -2097,7 +2097,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
 
 		if (isDynamicRendering)
-			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
 		else
 			renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
 	}
@@ -2145,7 +2145,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 			DE_NULL,															// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
 			DE_NULL,															// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 		};
-		vk.cmdBeginRenderingKHR(*m_cmdBuffer, &renderingInfo);
+		vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
 	}
 	else
 	{
@@ -2168,7 +2168,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 	vk.cmdDraw(*m_cmdBuffer, (deUint32)m_verticesOutput.size(), 1, 0, 0);
 
 	if (isDynamicRendering)
-		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 	else
 		renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
 

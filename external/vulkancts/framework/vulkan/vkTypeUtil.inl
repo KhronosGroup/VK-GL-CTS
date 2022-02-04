@@ -409,6 +409,14 @@ inline VkConformanceVersion makeConformanceVersion (uint8_t major, uint8_t minor
 	return res;
 }
 
+inline VkPipelineCreationFeedback makePipelineCreationFeedback (VkPipelineCreationFeedbackFlags flags, uint64_t duration)
+{
+	VkPipelineCreationFeedback res;
+	res.flags		= flags;
+	res.duration	= duration;
+	return res;
+}
+
 inline VkSurfaceFormatKHR makeSurfaceFormatKHR (VkFormat format, VkColorSpaceKHR colorSpace)
 {
 	VkSurfaceFormatKHR res;
@@ -513,7 +521,7 @@ inline VkDrmFormatModifierPropertiesEXT makeDrmFormatModifierPropertiesEXT (uint
 	return res;
 }
 
-inline VkDrmFormatModifierProperties2EXT makeDrmFormatModifierProperties2EXT (uint64_t drmFormatModifier, uint32_t drmFormatModifierPlaneCount, VkFormatFeatureFlags2KHR drmFormatModifierTilingFeatures)
+inline VkDrmFormatModifierProperties2EXT makeDrmFormatModifierProperties2EXT (uint64_t drmFormatModifier, uint32_t drmFormatModifierPlaneCount, VkFormatFeatureFlags2 drmFormatModifierTilingFeatures)
 {
 	VkDrmFormatModifierProperties2EXT res;
 	res.drmFormatModifier				= drmFormatModifier;
@@ -566,14 +574,6 @@ inline VkVertexInputBindingDivisorDescriptionEXT makeVertexInputBindingDivisorDe
 	VkVertexInputBindingDivisorDescriptionEXT res;
 	res.binding	= binding;
 	res.divisor	= divisor;
-	return res;
-}
-
-inline VkPipelineCreationFeedbackEXT makePipelineCreationFeedbackEXT (VkPipelineCreationFeedbackFlagsEXT flags, uint64_t duration)
-{
-	VkPipelineCreationFeedbackEXT res;
-	res.flags		= flags;
-	res.duration	= duration;
 	return res;
 }
 

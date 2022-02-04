@@ -132,6 +132,12 @@ void Deleter<VkDescriptorUpdateTemplate>::operator() (VkDescriptorUpdateTemplate
 }
 
 template<>
+void Deleter<VkPrivateDataSlot>::operator() (VkPrivateDataSlot obj) const
+{
+	m_deviceIface->destroyPrivateDataSlot(m_device, obj, m_allocator);
+}
+
+template<>
 void Deleter<VkSwapchainKHR>::operator() (VkSwapchainKHR obj) const
 {
 	m_deviceIface->destroySwapchainKHR(m_device, obj, m_allocator);
@@ -171,12 +177,6 @@ template<>
 void Deleter<VkIndirectCommandsLayoutNV>::operator() (VkIndirectCommandsLayoutNV obj) const
 {
 	m_deviceIface->destroyIndirectCommandsLayoutNV(m_device, obj, m_allocator);
-}
-
-template<>
-void Deleter<VkPrivateDataSlotEXT>::operator() (VkPrivateDataSlotEXT obj) const
-{
-	m_deviceIface->destroyPrivateDataSlotEXT(m_device, obj, m_allocator);
 }
 
 template<>
@@ -366,6 +366,13 @@ Move<VkRenderPass> createRenderPass2 (const DeviceInterface& vk, VkDevice device
 	return Move<VkRenderPass>(check<VkRenderPass>(object), Deleter<VkRenderPass>(vk, device, pAllocator));
 }
 
+Move<VkPrivateDataSlot> createPrivateDataSlot (const DeviceInterface& vk, VkDevice device, const VkPrivateDataSlotCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkPrivateDataSlot object = 0;
+	VK_CHECK(vk.createPrivateDataSlot(device, pCreateInfo, pAllocator, &object));
+	return Move<VkPrivateDataSlot>(check<VkPrivateDataSlot>(object), Deleter<VkPrivateDataSlot>(vk, device, pAllocator));
+}
+
 Move<VkSwapchainKHR> createSwapchainKHR (const DeviceInterface& vk, VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator)
 {
 	VkSwapchainKHR object = 0;
@@ -448,13 +455,6 @@ Move<VkIndirectCommandsLayoutNV> createIndirectCommandsLayoutNV (const DeviceInt
 	VkIndirectCommandsLayoutNV object = 0;
 	VK_CHECK(vk.createIndirectCommandsLayoutNV(device, pCreateInfo, pAllocator, &object));
 	return Move<VkIndirectCommandsLayoutNV>(check<VkIndirectCommandsLayoutNV>(object), Deleter<VkIndirectCommandsLayoutNV>(vk, device, pAllocator));
-}
-
-Move<VkPrivateDataSlotEXT> createPrivateDataSlotEXT (const DeviceInterface& vk, VkDevice device, const VkPrivateDataSlotCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)
-{
-	VkPrivateDataSlotEXT object = 0;
-	VK_CHECK(vk.createPrivateDataSlotEXT(device, pCreateInfo, pAllocator, &object));
-	return Move<VkPrivateDataSlotEXT>(check<VkPrivateDataSlotEXT>(object), Deleter<VkPrivateDataSlotEXT>(vk, device, pAllocator));
 }
 
 Move<VkAccelerationStructureKHR> createAccelerationStructureKHR (const DeviceInterface& vk, VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator)

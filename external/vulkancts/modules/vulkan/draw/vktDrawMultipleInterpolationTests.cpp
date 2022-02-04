@@ -618,7 +618,7 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 					vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 			}
 
-			vk.cmdBeginRenderingKHR(*cmdBuffer, &renderingInfo);
+			vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
 		}
 		else
 		{

@@ -25,6 +25,7 @@ GetPhysicalDeviceSparseImageFormatProperties2Func					getPhysicalDeviceSparseIma
 GetPhysicalDeviceExternalBufferPropertiesFunc						getPhysicalDeviceExternalBufferProperties;
 GetPhysicalDeviceExternalFencePropertiesFunc						getPhysicalDeviceExternalFenceProperties;
 GetPhysicalDeviceExternalSemaphorePropertiesFunc					getPhysicalDeviceExternalSemaphoreProperties;
+GetPhysicalDeviceToolPropertiesFunc									getPhysicalDeviceToolProperties;
 DestroySurfaceKHRFunc												destroySurfaceKHR;
 GetPhysicalDeviceSurfaceSupportKHRFunc								getPhysicalDeviceSurfaceSupportKHR;
 GetPhysicalDeviceSurfaceCapabilitiesKHRFunc							getPhysicalDeviceSurfaceCapabilitiesKHR;

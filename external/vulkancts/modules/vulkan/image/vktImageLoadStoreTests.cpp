@@ -479,7 +479,7 @@ StoreTest::StoreTest (tcu::TestContext&		testCtx,
 
 void StoreTest::checkSupport (Context& context) const
 {
-	const VkFormatProperties3KHR formatProperties (context.getFormatProperties(m_format));
+	const VkFormatProperties3 formatProperties (context.getFormatProperties(m_format));
 
 	if (!m_declareImageFormatInShader && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format not supported for unformatted stores via storage images");
@@ -1079,8 +1079,8 @@ LoadStoreTest::LoadStoreTest (tcu::TestContext&		testCtx,
 
 void LoadStoreTest::checkSupport (Context& context) const
 {
-	const VkFormatProperties3KHR formatProperties (context.getFormatProperties(m_format));
-	const VkFormatProperties3KHR imageFormatProperties (context.getFormatProperties(m_imageFormat));
+	const VkFormatProperties3 formatProperties (context.getFormatProperties(m_format));
+	const VkFormatProperties3 imageFormatProperties (context.getFormatProperties(m_imageFormat));
 
 	if (m_imageLoadStoreLodAMD)
 		context.requireDeviceFunctionality("VK_AMD_shader_image_load_store_lod");
@@ -1107,7 +1107,7 @@ void LoadStoreTest::checkSupport (Context& context) const
 	{
 		// When the source buffer is three-component, the destination buffer is single-component.
 		VkFormat dstFormat = getSingleComponentFormat(m_format);
-		const VkFormatProperties3KHR dstFormatProperties (context.getFormatProperties(dstFormat));
+		const VkFormatProperties3 dstFormatProperties (context.getFormatProperties(dstFormat));
 
 		if (m_texture.type() == IMAGE_TYPE_BUFFER && !(dstFormatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
 			TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
@@ -1357,9 +1357,9 @@ protected:
 	de::MovePtr<Image>					m_imageDst;
 	Move<VkDescriptorSetLayout>			m_descriptorSetLayout;
 	Move<VkDescriptorPool>				m_descriptorPool;
-	std::vector<SharedVkDescriptorSet>	m_allDescriptorSets;
-	std::vector<SharedVkImageView>		m_allSrcImageViews;
-	std::vector<SharedVkImageView>		m_allDstImageViews;
+	std::vector<SharedVkDescriptorSet> m_allDescriptorSets;
+	std::vector<SharedVkImageView>     m_allSrcImageViews;
+	std::vector<SharedVkImageView>     m_allDstImageViews;
 };
 
 ImageLoadStoreTestInstance::ImageLoadStoreTestInstance (Context&		context,
@@ -1538,9 +1538,9 @@ protected:
 	de::MovePtr<Image>					m_imageDst;
 	Move<VkDescriptorSetLayout>			m_descriptorSetLayout;
 	Move<VkDescriptorPool>				m_descriptorPool;
-	std::vector<SharedVkDescriptorSet>  m_allDescriptorSets;
-	std::vector<SharedVkImageView>      m_allSrcImageViews;
-	std::vector<SharedVkImageView>      m_allDstImageViews;
+	std::vector<SharedVkDescriptorSet>	m_allDescriptorSets;
+	std::vector<SharedVkImageView>		m_allSrcImageViews;
+	std::vector<SharedVkImageView>		m_allDstImageViews;
 
 };
 
@@ -1556,9 +1556,9 @@ ImageLoadStoreLodAMDTestInstance::ImageLoadStoreLodAMDTestInstance (Context&		co
 	, m_imageSizeBytes			(getMipmapImageTotalSizeBytes(texture, format))
 	, m_imageFormat				(imageFormat)
 	, m_bufferLoadUniform		(bufferLoadUniform)
-	, m_allDescriptorSets       (texture.numLayers())
-	, m_allSrcImageViews        (texture.numLayers())
-	, m_allDstImageViews        (texture.numLayers())
+	, m_allDescriptorSets		(texture.numLayers())
+	, m_allSrcImageViews		(texture.numLayers())
+	, m_allDstImageViews		(texture.numLayers())
 {
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
 	const VkDevice				device				= m_context.getDevice();
@@ -1633,7 +1633,7 @@ ImageLoadStoreLodAMDTestInstance::ImageLoadStoreLodAMDTestInstance (Context&		co
 			(deUint32)m_texture.numLayers(),																	// deUint32					arrayLayers;
 			samples,																							// VkSampleCountFlagBits	samples;
 			VK_IMAGE_TILING_OPTIMAL,																			// VkImageTiling			tiling;
-		    VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,										// VkImageUsageFlags		usage;
+			VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,										// VkImageUsageFlags		usage;
 			VK_SHARING_MODE_EXCLUSIVE,																			// VkSharingMode			sharingMode;
 			0u,																									// deUint32					queueFamilyIndexCount;
 			DE_NULL,																							// const deUint32*			pQueueFamilyIndices;
@@ -2159,8 +2159,9 @@ tcu::TestStatus ImageExtendOperandTestInstance::verifyResult (void)
 
 enum class ExtendTestType
 {
-	READ  = 0,
-	WRITE = 1,
+	READ				= 0,
+	WRITE,
+	WRITE_NONTEMPORAL,
 };
 
 enum class ExtendOperand
@@ -2186,7 +2187,8 @@ public:
 	TestInstance*			createInstance			(Context&				context) const;
 
 private:
-	bool					isWriteTest				() const { return (m_extendTestType == ExtendTestType::WRITE); }
+	bool					isWriteTest				() const { return (m_extendTestType == ExtendTestType::WRITE) ||
+																	  (m_extendTestType == ExtendTestType::WRITE_NONTEMPORAL); }
 
 	const Texture			m_texture;
 	VkFormat				m_readFormat;
@@ -2216,7 +2218,7 @@ ImageExtendOperandTest::ImageExtendOperandTest (tcu::TestContext&				testCtx,
 
 void checkFormatProperties (Context& context, VkFormat format)
 {
-	const VkFormatProperties3KHR formatProperties (context.getFormatProperties(format));
+	const VkFormatProperties3 formatProperties (context.getFormatProperties(format));
 
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for storage images");
@@ -2236,6 +2238,10 @@ void ImageExtendOperandTest::checkSupport (Context& context) const
 {
 	if (!context.requireDeviceFunctionality("VK_KHR_spirv_1_4"))
 		TCU_THROW(NotSupportedError, "VK_KHR_spirv_1_4 not supported");
+
+	if ((m_extendTestType == ExtendTestType::WRITE_NONTEMPORAL) &&
+		(context.getUsedApiVersion() < VK_API_VERSION_1_3))
+		TCU_THROW(NotSupportedError, "Vulkan 1.3 or higher is required for this test to run");
 
 	check64BitSupportIfNeeded(context, m_readFormat, m_writeFormat);
 
@@ -2351,7 +2357,7 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 	const std::string	sampledTypePostfix	= (signedSampleType ? "i" : "u") + bits;
 	const std::string	extendOperandStr	= (isSigned ? "SignExtend" : "ZeroExtend");
 
-	std::map<std::string, std::string> specializations =
+	std::map<std::string, std::string> specializations
 	{
 		{ "image_type_id",			"%type_image" },
 		{ "image_uni_ptr_type_id",	"%type_ptr_uniform_const_image" },
@@ -2367,6 +2373,15 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 		{ "read_extend_operand",	(!isWriteTest() ? extendOperandStr : "") },
 		{ "write_extend_operand",	(isWriteTest()  ? extendOperandStr : "") },
 	};
+
+	SpirvVersion	spirvVersion	= SPIRV_VERSION_1_4;
+	bool			allowSpirv14	= true;
+	if (m_extendTestType == ExtendTestType::WRITE_NONTEMPORAL)
+	{
+		spirvVersion	= SPIRV_VERSION_1_6;
+		allowSpirv14	= false;
+		specializations["write_extend_operand"] = "Nontemporal";
+	}
 
 	// Addidtional parametrization is needed for a case when source and destination textures have same format
 	tcu::StringTemplate imageTypeTemplate(
@@ -2423,7 +2438,7 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 
 	// Specialize whole shader and add it to program collection
 	programCollection.spirvAsmSources.add("comp") << shaderTemplate.specialize(specializations)
-		<< vk::SpirVAsmBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, true);
+		<< vk::SpirVAsmBuildOptions(programCollection.usedVulkanVersion, spirvVersion, allowSpirv14);
 }
 
 TestInstance* ImageExtendOperandTest::createInstance(Context& context) const
@@ -2772,8 +2787,8 @@ tcu::TestCaseGroup* createImageExtendOperandsTests(tcu::TestContext& testCtx)
 		const char*		name;
 	} testTypes[] =
 	{
-		{ ExtendTestType::READ,		"read"	},
-		{ ExtendTestType::WRITE,	"write"	},
+		{ ExtendTestType::READ,					"read"	},
+		{ ExtendTestType::WRITE,				"write"	},
 	};
 
 	const auto texture		= Texture(IMAGE_TYPE_2D, tcu::IVec3(8, 8, 1), 1);
@@ -2830,6 +2845,32 @@ tcu::TestCaseGroup* createImageExtendOperandsTests(tcu::TestContext& testCtx)
 		}
 
 		testGroup->addChild(formatGroup.release());
+	}
+
+	return testGroup.release();
+}
+
+tcu::TestCaseGroup* createImageNontemporalOperandTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "nontemporal_operand", "Cases with Nontemporal image operand for SPOIR-V 1.6"));
+
+	const auto texture = Texture(IMAGE_TYPE_2D, tcu::IVec3(8, 8, 1), 1);
+
+	// using just integer formats for tests so that ImageExtendOperandTest could be reused
+	const auto formatList = getExtensionOperandFormatList();
+
+	for (const auto format : formatList)
+	{
+		const std::string	caseName	= getFormatShortString(format);
+		const auto			readFormat	= format;
+		const auto			writeFormat	= getShaderExtensionOperandFormat(isIntFormat(format), is64BitIntegerFormat(format));
+
+		if (!hasSpirvFormat(readFormat) || !hasSpirvFormat(writeFormat))
+			continue;
+
+		// note: just testing OpImageWrite as OpImageRead is tested with addComputeImageSamplerTest
+		testGroup->addChild(new ImageExtendOperandTest(testCtx, caseName, texture,
+			readFormat, writeFormat, false, false, ExtendTestType::WRITE_NONTEMPORAL));
 	}
 
 	return testGroup.release();

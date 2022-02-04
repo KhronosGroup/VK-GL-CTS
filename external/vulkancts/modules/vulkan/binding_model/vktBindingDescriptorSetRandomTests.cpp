@@ -298,7 +298,7 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 	// Get needed features.
 	auto features				= context.getDeviceFeatures2();
 	auto indexingFeatures		= context.getDescriptorIndexingFeatures();
-	auto inlineUniformFeatures	= context.getInlineUniformBlockFeaturesEXT();
+	auto inlineUniformFeatures	= context.getInlineUniformBlockFeatures();
 
 	// Check needed properties and features
 	if (m_data.stage == STAGE_VERTEX && !features.features.vertexPipelineStoresAndAtomics)
@@ -1272,7 +1272,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	// Get needed features.
 	auto descriptorIndexingSupported	= m_context.isDeviceFunctionalitySupported("VK_EXT_descriptor_indexing");
 	auto indexingFeatures				= m_context.getDescriptorIndexingFeatures();
-	auto inlineUniformFeatures			= m_context.getInlineUniformBlockFeaturesEXT();
+	auto inlineUniformFeatures			= m_context.getInlineUniformBlockFeatures();
 
 	VkPipelineBindPoint bindPoint;
 

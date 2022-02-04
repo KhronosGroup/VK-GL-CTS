@@ -458,7 +458,7 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 	if ((m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER || m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) &&
 		!m_data.formatQualifier)
 	{
-		const VkFormatProperties3KHR formatProperties = context.getFormatProperties(m_data.format);
+		const VkFormatProperties3 formatProperties = context.getFormatProperties(m_data.format);
 		if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
 			TCU_THROW(NotSupportedError, "Format does not support reading without format");
 		if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))

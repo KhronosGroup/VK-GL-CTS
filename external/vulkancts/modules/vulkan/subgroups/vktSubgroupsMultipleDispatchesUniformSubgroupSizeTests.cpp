@@ -264,7 +264,7 @@ MultipleDispatchesUniformSubgroupSize::MultipleDispatchesUniformSubgroupSize (tc
 
 void MultipleDispatchesUniformSubgroupSize::checkSupport (Context& context) const
 {
-	const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&	subgroupSizeControlFeatures	= context.getSubgroupSizeControlFeaturesEXT();
+	const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&	subgroupSizeControlFeatures	= context.getSubgroupSizeControlFeatures();
 
 	if (subgroupSizeControlFeatures.subgroupSizeControl == DE_FALSE)
 		TCU_THROW(NotSupportedError, "Device does not support varying subgroup sizes");

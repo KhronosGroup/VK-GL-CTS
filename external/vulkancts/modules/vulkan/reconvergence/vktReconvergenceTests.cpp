@@ -1741,7 +1741,7 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 	flushAlloc(vk, device, buffers[2]->getAllocation());
 
 	const VkBool32 computeFullSubgroups = subgroupProperties.subgroupSize <= 64 &&
-										  m_context.getSubgroupSizeControlFeaturesEXT().computeFullSubgroups;
+										  m_context.getSubgroupSizeControlFeatures().computeFullSubgroups;
 
 	const VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroupSizeCreateInfo =
 	{
