@@ -32,9 +32,9 @@ layout(location = 0) out vec4 _GLF_color;
 void main()
 {
  _GLF_color = vec4(
- gl_FragCoord.x * (1.0 / 256.0),
- (int(gl_FragCoord.x) ^ int(gl_FragCoord.y)) * (1.0 / 256.0),
- gl_FragCoord.y * (1.0 / 256.0),
+ floor(gl_FragCoord.x) * (1.0 / 255.0),
+ (int(gl_FragCoord.x) ^ int(gl_FragCoord.y)) * (1.0 / 255.0),
+ floor(gl_FragCoord.y) * (1.0 / 255.0),
  1.0);
 }
 END

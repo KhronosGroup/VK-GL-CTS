@@ -1057,19 +1057,20 @@ VkSemaphoreSubmitInfo makeCommonSemaphoreSubmitInfo(VkSemaphore semaphore, deUin
 	};
 }
 
-VkDependencyInfo makeCommonDependencyInfo(const VkMemoryBarrier2* pMemoryBarrier, const VkBufferMemoryBarrier2* pBufferMemoryBarrier, const VkImageMemoryBarrier2* pImageMemoryBarrier)
+VkDependencyInfo makeCommonDependencyInfo(const VkMemoryBarrier2* pMemoryBarrier, const VkBufferMemoryBarrier2* pBufferMemoryBarrier, const VkImageMemoryBarrier2* pImageMemoryBarrier,
+                                                                                   bool eventDependency)
 {
 	return
 	{
-		VK_STRUCTURE_TYPE_DEPENDENCY_INFO,			// VkStructureType					sType
-		DE_NULL,									// const void*						pNext
-		VK_DEPENDENCY_BY_REGION_BIT,				// VkDependencyFlags				dependencyFlags
-		!!pMemoryBarrier,							// deUint32							memoryBarrierCount
-		pMemoryBarrier,								// const VkMemoryBarrier2*		pMemoryBarriers
-		!!pBufferMemoryBarrier,						// deUint32							bufferMemoryBarrierCount
-		pBufferMemoryBarrier,						// const VkBufferMemoryBarrier2* pBufferMemoryBarriers
-		!!pImageMemoryBarrier,						// deUint32							imageMemoryBarrierCount
-		pImageMemoryBarrier							// const VkImageMemoryBarrier2*	pImageMemoryBarriers
+		VK_STRUCTURE_TYPE_DEPENDENCY_INFO,				// VkStructureType					sType
+		DE_NULL,											// const void*						pNext
+		eventDependency ? (VkDependencyFlags)0u : (VkDependencyFlags)VK_DEPENDENCY_BY_REGION_BIT,	// VkDependencyFlags				dependencyFlags
+		!!pMemoryBarrier,									// deUint32							memoryBarrierCount
+		pMemoryBarrier,										// const VkMemoryBarrier2KHR*		pMemoryBarriers
+		!!pBufferMemoryBarrier,								// deUint32							bufferMemoryBarrierCount
+		pBufferMemoryBarrier,								// const VkBufferMemoryBarrier2KHR* pBufferMemoryBarriers
+		!!pImageMemoryBarrier,								// deUint32							imageMemoryBarrierCount
+		pImageMemoryBarrier									// const VkImageMemoryBarrier2KHR*	pImageMemoryBarriers
 	};
 }
 
