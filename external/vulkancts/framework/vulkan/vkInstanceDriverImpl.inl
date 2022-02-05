@@ -168,6 +168,16 @@ void InstanceDriver::getPhysicalDeviceExternalSemaphoreProperties (VkPhysicalDev
 		m_vk.getPhysicalDeviceExternalSemaphorePropertiesKHR(physicalDevice, pExternalSemaphoreInfo, pExternalSemaphoreProperties);
 }
 
+VkResult InstanceDriver::getPhysicalDeviceToolProperties (VkPhysicalDevice physicalDevice, uint32_t* pToolCount, VkPhysicalDeviceToolProperties* pToolProperties) const
+{
+	vk::VkPhysicalDeviceProperties props;
+	m_vk.getPhysicalDeviceProperties(physicalDevice, &props);
+	if (props.apiVersion >= VK_API_VERSION_1_1)
+		return m_vk.getPhysicalDeviceToolProperties(physicalDevice, pToolCount, pToolProperties);
+	else
+		return m_vk.getPhysicalDeviceToolPropertiesEXT(physicalDevice, pToolCount, pToolProperties);
+}
+
 void InstanceDriver::destroySurfaceKHR (VkInstance instance, VkSurfaceKHR surface, const VkAllocationCallbacks* pAllocator) const
 {
 	m_vk.destroySurfaceKHR(instance, surface, pAllocator);
@@ -331,11 +341,6 @@ void InstanceDriver::getPhysicalDeviceMultisamplePropertiesEXT (VkPhysicalDevice
 VkResult InstanceDriver::getPhysicalDeviceCalibrateableTimeDomainsEXT (VkPhysicalDevice physicalDevice, uint32_t* pTimeDomainCount, VkTimeDomainEXT* pTimeDomains) const
 {
 	return m_vk.getPhysicalDeviceCalibrateableTimeDomainsEXT(physicalDevice, pTimeDomainCount, pTimeDomains);
-}
-
-VkResult InstanceDriver::getPhysicalDeviceToolPropertiesEXT (VkPhysicalDevice physicalDevice, uint32_t* pToolCount, VkPhysicalDeviceToolPropertiesEXT* pToolProperties) const
-{
-	return m_vk.getPhysicalDeviceToolPropertiesEXT(physicalDevice, pToolCount, pToolProperties);
 }
 
 VkResult InstanceDriver::getPhysicalDeviceCooperativeMatrixPropertiesNV (VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties) const

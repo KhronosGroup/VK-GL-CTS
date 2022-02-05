@@ -1245,7 +1245,7 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 			imageCopies2KHR.data()						// const VkImageCopy2KHR*	pRegions;
 		};
 
-		vk.cmdCopyImage2KHR(*m_cmdBuffer, &copyImageInfo2KHR);
+		vk.cmdCopyImage2(*m_cmdBuffer, &copyImageInfo2KHR);
 	}
 
 	endCommandBuffer(vk, *m_cmdBuffer);
@@ -1690,7 +1690,7 @@ tcu::TestStatus CopyImageToImageMipmap::iterate (void)
 			imageCopies2KHR.data()						// const VkImageCopy2KHR*	pRegions;
 		};
 
-		vk.cmdCopyImage2KHR(*m_cmdBuffer, &copyImageInfo2KHR);
+		vk.cmdCopyImage2(*m_cmdBuffer, &copyImageInfo2KHR);
 	}
 
 	endCommandBuffer(vk, *m_cmdBuffer);
@@ -2097,7 +2097,7 @@ tcu::TestStatus CopyBufferToBuffer::iterate (void)
 			&bufferCopies2KHR[0]						// const VkBufferCopy2KHR*	pRegions;
 		};
 
-		vk.cmdCopyBuffer2KHR(*m_cmdBuffer, &copyBufferInfo2KHR);
+		vk.cmdCopyBuffer2(*m_cmdBuffer, &copyBufferInfo2KHR);
 	}
 
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
@@ -2321,7 +2321,7 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 			&bufferImageCopies2KHR[0]							// const VkBufferImageCopy2KHR*	pRegions;
 		};
 
-		vk.cmdCopyImageToBuffer2KHR(*m_cmdBuffer, &copyImageToBufferInfo2KHR);
+		vk.cmdCopyImageToBuffer2(*m_cmdBuffer, &copyImageToBufferInfo2KHR);
 	}
 
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
@@ -2554,7 +2554,7 @@ tcu::TestStatus CopyBufferToImage::iterate (void)
 			bufferImageCopies2KHR.data()						// const VkBufferImageCopy2KHR*	pRegions;
 		};
 
-		vk.cmdCopyBufferToImage2KHR(*m_cmdBuffer, &copyBufferToImageInfo2KHR);
+		vk.cmdCopyBufferToImage2(*m_cmdBuffer, &copyBufferToImageInfo2KHR);
 	}
 
 
@@ -2936,7 +2936,7 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 				(deUint32)m_params.regions.size(),					// uint32_t						regionCount;
 				bufferImageCopies2KHR.data()						// const VkBufferImageCopy2KHR*	pRegions;
 			};
-			vk.cmdCopyBufferToImage2KHR(*m_cmdBuffer, &copyBufferToImageInfo2KHR);
+			vk.cmdCopyBufferToImage2(*m_cmdBuffer, &copyBufferToImageInfo2KHR);
 		}
 		else
 		{
@@ -2954,7 +2954,7 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 					&bufferImageCopies2KHR[i]							// const VkBufferImageCopy2KHR*	pRegions;
 				};
 				// Issue a single copy command with regions defined by the test.
-				vk.cmdCopyBufferToImage2KHR(*m_cmdBuffer, &copyBufferToImageInfo2KHR);
+				vk.cmdCopyBufferToImage2(*m_cmdBuffer, &copyBufferToImageInfo2KHR);
 			}
 		}
 	}
@@ -3372,7 +3372,7 @@ tcu::TestStatus BlittingImages::iterate (void)
 			&regions2KHR[0],							// const VkImageBlit2KHR*		pRegions;
 			m_params.filter,							// VkFilter						filter;
 		};
-		vk.cmdBlitImage2KHR(*m_cmdBuffer, &blitImageInfo2KHR);
+		vk.cmdBlitImage2(*m_cmdBuffer, &blitImageInfo2KHR);
 	}
 
 	endCommandBuffer(vk, *m_cmdBuffer);
@@ -4854,7 +4854,7 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 					&regions2KHR[0],							// const VkImageBlit2KHR*		pRegions;
 					m_params.filter								// VkFilter						filter;
 				};
-				vk.cmdBlitImage2KHR(*m_cmdBuffer, &BlitImageInfo2KHR);
+				vk.cmdBlitImage2(*m_cmdBuffer, &BlitImageInfo2KHR);
 			}
 		}
 	}
@@ -4967,7 +4967,7 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 					&regions2KHR[regionNdx],					// const VkImageBlit2KHR*		pRegions;
 					m_params.filter								// VkFilter						filter;
 				};
-				vk.cmdBlitImage2KHR(*m_cmdBuffer, &BlitImageInfo2KHR);
+				vk.cmdBlitImage2(*m_cmdBuffer, &BlitImageInfo2KHR);
 			}
 
 			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
@@ -6063,7 +6063,7 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 			(deUint32)m_params.regions.size(),			// uint32_t						regionCount;
 			imageResolves2KHR.data()					// const  VkImageResolve2KHR*	pRegions;
 		};
-		vk.cmdResolveImage2KHR(*m_cmdBuffer, &ResolveImageInfo2KHR);
+		vk.cmdResolveImage2(*m_cmdBuffer, &ResolveImageInfo2KHR);
 	}
 
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
@@ -6713,9 +6713,9 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 				imageCopies2KHR.data()						// const VkImageCopy2KHR*	pRegions;
 			};
 
-			vk.cmdCopyImage2KHR(*m_cmdBuffer, &copyImageInfo2KHR);
+			vk.cmdCopyImage2(*m_cmdBuffer, &copyImageInfo2KHR);
 			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &betweenCopyImageBarrier);
-			vk.cmdCopyImage2KHR(*m_cmdBuffer, &copyImageInfo2KHRCopy);
+			vk.cmdCopyImage2(*m_cmdBuffer, &copyImageInfo2KHRCopy);
 		}
 		else
 		{
@@ -6732,7 +6732,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 				imageCopies2KHR.data()						// const VkImageCopy2KHR*	pRegions;
 			};
 
-			vk.cmdCopyImage2KHR(*m_cmdBuffer, &copyImageInfo2KHR);
+			vk.cmdCopyImage2(*m_cmdBuffer, &copyImageInfo2KHR);
 		}
 	}
 
@@ -7488,7 +7488,7 @@ tcu::TestStatus DepthStencilMSAA::iterate (void)
 				imageCopies2KHR.data()						// const VkImageCopy2KHR*	pRegions;
 			};
 
-			vk.cmdCopyImage2KHR(*cmdBuffer, &copyImageInfo2KHR);
+			vk.cmdCopyImage2(*cmdBuffer, &copyImageInfo2KHR);
 		}
 	}
 	endCommandBuffer(vk, *cmdBuffer);

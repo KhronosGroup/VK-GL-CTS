@@ -237,7 +237,7 @@ void beginRendering(const DeviceInterface&		vk,
 		DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 	};
 
-	vk.cmdBeginRenderingKHR(commandBuffer, &renderingInfo);
+	vk.cmdBeginRendering(commandBuffer, &renderingInfo);
 }
 
 void beginRendering(const DeviceInterface&		vk,
@@ -297,13 +297,13 @@ void beginRendering(const DeviceInterface&		vk,
 		useStencilAttachment ? &depthStencilAttachment : DE_NULL,	// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 	};
 
-	vk.cmdBeginRenderingKHR(commandBuffer, &renderingInfo);
+	vk.cmdBeginRendering(commandBuffer, &renderingInfo);
 }
 
 void endRendering(const DeviceInterface&	vk,
 				  const VkCommandBuffer		commandBuffer)
 {
-	vk.cmdEndRenderingKHR(commandBuffer);
+	vk.cmdEndRendering(commandBuffer);
 }
 
 void submitCommandsAndWait (const DeviceInterface&		vk,

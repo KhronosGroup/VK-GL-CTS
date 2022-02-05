@@ -32,6 +32,30 @@ void getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char
 		dst.push_back("VK_EXT_separate_stencil_usage");
 		dst.push_back("VK_EXT_host_query_reset");
 	}
+	if (coreVersion >= VK_API_VERSION_1_3)
+	{
+		dst.push_back("VK_KHR_dynamic_rendering");
+		dst.push_back("VK_KHR_shader_terminate_invocation");
+		dst.push_back("VK_KHR_shader_integer_dot_product");
+		dst.push_back("VK_KHR_shader_non_semantic_info");
+		dst.push_back("VK_KHR_synchronization2");
+		dst.push_back("VK_KHR_zero_initialize_workgroup_memory");
+		dst.push_back("VK_KHR_copy_commands2");
+		dst.push_back("VK_KHR_format_feature_flags2");
+		dst.push_back("VK_KHR_maintenance4");
+		dst.push_back("VK_EXT_texture_compression_astc_hdr");
+		dst.push_back("VK_EXT_inline_uniform_block");
+		dst.push_back("VK_EXT_pipeline_creation_feedback");
+		dst.push_back("VK_EXT_subgroup_size_control");
+		dst.push_back("VK_EXT_tooling_info");
+		dst.push_back("VK_EXT_extended_dynamic_state");
+		dst.push_back("VK_EXT_shader_demote_to_helper_invocation");
+		dst.push_back("VK_EXT_texel_buffer_alignment");
+		dst.push_back("VK_EXT_private_data");
+		dst.push_back("VK_EXT_pipeline_creation_cache_control");
+		dst.push_back("VK_EXT_image_robustness");
+		dst.push_back("VK_EXT_4444_formats");
+	}
 	if (coreVersion >= VK_API_VERSION_1_1)
 	{
 		dst.push_back("VK_KHR_multiview");

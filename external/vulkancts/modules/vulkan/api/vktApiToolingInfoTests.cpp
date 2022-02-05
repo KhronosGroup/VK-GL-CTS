@@ -68,7 +68,7 @@ tcu::TestStatus validateGetter(Context& context)
 	VkResult result		= VK_SUCCESS;
 	deUint32 toolCount	= 0;
 
-	result = context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCount, DE_NULL);
+	result = context.getInstanceInterface().getPhysicalDeviceToolProperties(context.getPhysicalDevice(), &toolCount, DE_NULL);
 
 	if(result != VK_SUCCESS)
 	{
@@ -87,7 +87,7 @@ tcu::TestStatus validateGetter(Context& context)
 			deviceToolPropertiesEXTArray[toolNdx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT;
 		}
 
-		result = context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCountSecondCall, &deviceToolPropertiesEXTArray[0]);
+		result = context.getInstanceInterface().getPhysicalDeviceToolProperties(context.getPhysicalDevice(), &toolCountSecondCall, &deviceToolPropertiesEXTArray[0]);
 
 		if (result != VK_SUCCESS)
 		{
@@ -110,7 +110,7 @@ tcu::TestStatus validateGetter(Context& context)
 			deviceToolPropertiesEXTArray[toolNdx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT;
 		}
 
-		result = context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCountSecondCall, &deviceToolPropertiesEXTArray[0]);
+		result = context.getInstanceInterface().getPhysicalDeviceToolProperties(context.getPhysicalDevice(), &toolCountSecondCall, &deviceToolPropertiesEXTArray[0]);
 
 		if (result != VK_SUCCESS)
 		{
@@ -126,7 +126,7 @@ tcu::TestStatus validateGetter(Context& context)
 
 		toolCountSecondCall = 0;
 
-		result = context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCountSecondCall, &deviceToolPropertiesEXTArray[0]);
+		result = context.getInstanceInterface().getPhysicalDeviceToolProperties(context.getPhysicalDevice(), &toolCountSecondCall, &deviceToolPropertiesEXTArray[0]);
 
 		if (result != VK_INCOMPLETE)
 		{
@@ -152,7 +152,7 @@ tcu::TestStatus validateGetter(Context& context)
 			deviceToolPropertiesEXTArray[toolNdx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT;
 		}
 
-		result = context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCountSecondCall, &deviceToolPropertiesEXTArray[0]);
+		result = context.getInstanceInterface().getPhysicalDeviceToolProperties(context.getPhysicalDevice(), &toolCountSecondCall, &deviceToolPropertiesEXTArray[0]);
 
 		if (result != VK_INCOMPLETE)
 		{
@@ -177,7 +177,7 @@ tcu::TestStatus validateToolsProperties (Context& context)
 	bool	 result		= true;
 	deUint32 toolCount	= 0;
 
-	VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCount, DE_NULL));
+	VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolProperties(context.getPhysicalDevice(), &toolCount, DE_NULL));
 
 	if (toolCount > 0)
 	{
@@ -188,7 +188,7 @@ tcu::TestStatus validateToolsProperties (Context& context)
 			deviceToolPropertiesEXTArray[toolNdx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT;
 		}
 
-		VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolPropertiesEXT(context.getPhysicalDevice(), &toolCount, &deviceToolPropertiesEXTArray[0]));
+		VK_CHECK(context.getInstanceInterface().getPhysicalDeviceToolProperties(context.getPhysicalDevice(), &toolCount, &deviceToolPropertiesEXTArray[0]));
 
 		for (deUint32 i = 0; i < toolCount; ++i)
 		{
@@ -210,7 +210,7 @@ tcu::TestStatus validateToolsProperties (Context& context)
 				testLog << tcu::TestLog::Message << "Tool name: " << deviceToolPropertiesEXTArray[i].name << tcu::TestLog::EndMessage;
 				testLog << tcu::TestLog::Message << "Version: " << deviceToolPropertiesEXTArray[i].version << tcu::TestLog::EndMessage;
 				testLog << tcu::TestLog::Message << "Description: " << deviceToolPropertiesEXTArray[i].description << tcu::TestLog::EndMessage;
-				testLog << tcu::TestLog::Message << "Purposes: " << getToolPurposeFlagsEXTStr(deviceToolPropertiesEXTArray[i].purposes) << tcu::TestLog::EndMessage;
+				testLog << tcu::TestLog::Message << "Purposes: " << getToolPurposeFlagsStr(deviceToolPropertiesEXTArray[i].purposes) << tcu::TestLog::EndMessage;
 				if (layerSize > 0)
 				{
 					testLog << tcu::TestLog::Message << "Corresponding Layer: " << deviceToolPropertiesEXTArray[i].layer << tcu::TestLog::EndMessage;

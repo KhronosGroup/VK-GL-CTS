@@ -620,7 +620,7 @@ void LoadStoreOpNoneTestInstance::createCommandBuffer	(const DeviceInterface&			
 			useStencil ? &dsAttachment : DE_NULL							// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 		};
 
-		vk.cmdBeginRenderingKHR(*m_cmdBuffer, &renderingInfo);
+		vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
 	}
 	else
 	{
@@ -692,7 +692,7 @@ void LoadStoreOpNoneTestInstance::createCommandBuffer	(const DeviceInterface&			
 		}
 	}
 	if (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
-		vk.cmdEndRenderingKHR(*m_cmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 	else
 		RenderpassSubpass::cmdEndRenderPass(vk, *m_cmdBuffer, &subpassEndInfo);
 	endCommandBuffer(vk, *m_cmdBuffer);

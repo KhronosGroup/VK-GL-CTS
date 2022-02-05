@@ -287,7 +287,7 @@ tcu::TestStatus SynchronizationImageLayoutTransitionTestInstance::iterate (void)
 		targetSubresourceRange							// VkImageSubresourceRange     subresourceRange
 	);
 	VkDependencyInfoKHR							dependencyInfo			= makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
-	vk.cmdPipelineBarrier2KHR(cmdBuffer.get(), &dependencyInfo);
+	vk.cmdPipelineBarrier2(cmdBuffer.get(), &dependencyInfo);
 
 	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), 0, DE_NULL);
 	vk.cmdDraw(*cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);

@@ -2999,7 +2999,7 @@ void pushDynamicRenderingCommands (const DeviceInterface&								vk,
 		pStencilAttachment													// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 	};
 
-	vk.cmdBeginRenderingKHR(commandBuffer, &renderingInfo);
+	vk.cmdBeginRendering(commandBuffer, &renderingInfo);
 
 	if (render)
 	{
@@ -3012,7 +3012,7 @@ void pushDynamicRenderingCommands (const DeviceInterface&								vk,
 			subpassRenderers[0]->pushRenderCommands(vk, commandBuffer);
 	}
 
-	vk.cmdEndRenderingKHR(commandBuffer);
+	vk.cmdEndRendering(commandBuffer);
 
 	if (!imageBarriersAfterRendering.empty())
 		vk.cmdPipelineBarrier(commandBuffer,
