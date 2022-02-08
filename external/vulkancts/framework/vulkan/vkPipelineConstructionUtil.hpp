@@ -123,7 +123,7 @@ public:
 																	 const VkShaderModule								tessellationEvalShaderModule = DE_NULL,
 																	 const VkShaderModule								geometryShaderModule = DE_NULL,
 																	 const VkSpecializationInfo*						specializationInfo = DE_NULL,
-																	 /*VkPipelineRenderingCreateInfoKHR*				rendering = DE_NULL,*/
+																	 VkPipelineRenderingCreateInfoKHR*					rendering = DE_NULL,
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
 																	 VkPipelineCreationFeedbackCreateInfoEXT*			partCreationFeedback = DE_NULL);
 
@@ -146,7 +146,6 @@ public:
 																	 const VkPipelineMultisampleStateCreateInfo*		multisampleState = DE_NULL,
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
 																	 VkPipelineCreationFeedbackCreateInfoEXT*			partCreationFeedback = DE_NULL);
-
 
 	// Build pipeline object out of provided state.
 	void						buildPipeline						(const VkPipelineCache								pipelineCache = DE_NULL,

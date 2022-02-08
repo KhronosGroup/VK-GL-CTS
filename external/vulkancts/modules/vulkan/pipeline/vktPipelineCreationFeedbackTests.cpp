@@ -637,6 +637,7 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 			teseShaderModule,
 			geomShaderModule,
 			DE_NULL,
+			DE_NULL,
 			*m_cache,
 			&pipelineCreationFeedbackCreateInfo[1])
 	   .setupFragmentShaderState(

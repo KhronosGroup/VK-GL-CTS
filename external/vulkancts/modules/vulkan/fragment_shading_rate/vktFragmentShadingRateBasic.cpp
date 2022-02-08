@@ -55,6 +55,7 @@
 #include "tcuTestCase.hpp"
 #include "tcuTestLog.hpp"
 
+#include <set>
 #include <string>
 #include <sstream>
 
@@ -78,6 +79,7 @@ enum class AttachmentUsage
 
 struct CaseDef
 {
+	PipelineConstructionType pipelineConstructionType;
 	deInt32 seed;
 	VkExtent2D framebufferDim;
 	VkSampleCountFlagBits samples;
@@ -231,6 +233,8 @@ static VkImageUsageFlags cbUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
 void FSRTestCase::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_fragment_shading_rate");
+
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_data.pipelineConstructionType);
 
 	if (m_data.useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
@@ -1636,15 +1640,6 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				&vertexInputAttributeDescription							// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 			};
 
-			const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyStateCreateInfo	=
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType							sType;
-				DE_NULL,														// const void*								pNext;
-				(VkPipelineInputAssemblyStateCreateFlags)0,						// VkPipelineInputAssemblyStateCreateFlags	flags;
-				VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology						topology;
-				VK_FALSE														// VkBool32									primitiveRestartEnable;
-			};
-
 			const VkPipelineRasterizationConservativeStateCreateInfoEXT consRastState =
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT,	// VkStructureType										   sType;
@@ -1727,79 +1722,11 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				scissors.push_back(makeRect2D(m_data.framebufferDim.width, m_data.framebufferDim.height));
 			}
 
-			const VkPipelineViewportStateCreateInfo			viewportStateCreateInfo				=
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,		// VkStructureType							sType
-				DE_NULL,													// const void*								pNext
-				(VkPipelineViewportStateCreateFlags)0,						// VkPipelineViewportStateCreateFlags		flags
-				(deUint32)viewports.size(),									// deUint32									viewportCount
-				&viewports[0],												// const VkViewport*						pViewports
-				(deUint32)scissors.size(),									// deUint32									scissorCount
-				&scissors[0]												// const VkRect2D*							pScissors
-			};
-
 			Move<VkShaderModule> fragShader = createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0);
 			Move<VkShaderModule> vertShader = createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0);
 			Move<VkShaderModule> geomShader;
 			if (m_data.geometryShader)
 				geomShader = createShaderModule(vk, device, m_context.getBinaryCollection().get("geom"), 0);
-
-			deUint32 numStages = m_data.geometryShader ? 3 : 2u;
-
-			const VkPipelineShaderStageCreateInfo	shaderCreateInfo[3] =
-			{
-				{
-					VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-					DE_NULL,
-					(VkPipelineShaderStageCreateFlags)0,
-					VK_SHADER_STAGE_VERTEX_BIT,									// stage
-					*vertShader,												// shader
-					"main",
-					DE_NULL,													// pSpecializationInfo
-				},
-				{
-					VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-					DE_NULL,
-					(VkPipelineShaderStageCreateFlags)0,
-					VK_SHADER_STAGE_FRAGMENT_BIT,								// stage
-					*fragShader,												// shader
-					"main",
-					DE_NULL,													// pSpecializationInfo
-				},
-				{
-					VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-					DE_NULL,
-					(VkPipelineShaderStageCreateFlags)0,
-					VK_SHADER_STAGE_GEOMETRY_BIT,								// stage
-					*geomShader,												// shader
-					"main",
-					DE_NULL,													// pSpecializationInfo
-				}
-			};
-
-			const VkPipelineColorBlendAttachmentState		colorBlendAttachmentState		=
-			{
-				VK_FALSE,				// VkBool32					 blendEnable;
-				VK_BLEND_FACTOR_ZERO,	// VkBlendFactor			srcColorBlendFactor;
-				VK_BLEND_FACTOR_ZERO,	// VkBlendFactor			dstColorBlendFactor;
-				VK_BLEND_OP_ADD,		// VkBlendOp				colorBlendOp;
-				VK_BLEND_FACTOR_ZERO,	// VkBlendFactor			srcAlphaBlendFactor;
-				VK_BLEND_FACTOR_ZERO,	// VkBlendFactor			dstAlphaBlendFactor;
-				VK_BLEND_OP_ADD,		// VkBlendOp				alphaBlendOp;
-				0xf						// VkColorComponentFlags	colorWriteMask;
-			};
-
-			const VkPipelineColorBlendStateCreateInfo		colorBlendStateCreateInfo		=
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
-				DE_NULL,													// const void*									pNext;
-				0u,															// VkPipelineColorBlendStateCreateFlags			flags;
-				VK_FALSE,													// VkBool32										logicOpEnable;
-				VK_LOGIC_OP_COPY,											// VkLogicOp									logicOp;
-				1u,															// deUint32										attachmentCount;
-				&colorBlendAttachmentState,									// const VkPipelineColorBlendAttachmentState*	pAttachments;
-				{ 1.0f, 1.0f, 1.0f, 1.0f }									// float										blendConstants[4];
-			};
 
 			const deUint32 fragSizeWH = m_data.sampleMaskTest ? 2 : 0;
 
@@ -1814,10 +1741,10 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				m_data.useDepthStencil ? dsFormat : VK_FORMAT_UNDEFINED
 			};
 
-			VkPipelineFragmentShadingRateStateCreateInfoKHR shadingRateStateCreateInfo =
+			VkPipelineFragmentShadingRateStateCreateInfoKHR shadingRateStateCreateInfo
 			{
 				VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR,	// VkStructureType						sType;
-				m_data.useDynamicRendering ? &renderingCreateInfo : DE_NULL,			// const void*							pNext;
+				DE_NULL,																// const void*							pNext;
 				{ fragSizeWH, fragSizeWH },												// VkExtent2D							fragmentSize;
 				{ m_data.combinerOp[0], m_data.combinerOp[1] },							// VkFragmentShadingRateCombinerOpKHR	combinerOps[2];
 			};
@@ -1867,31 +1794,9 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				0.0f,						// float			maxDepthBounds;
 			};
 
-			VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo	=
-			{
-				VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
-				&shadingRateStateCreateInfo,						// const void*										pNext;
-				(VkPipelineCreateFlags)0,							// VkPipelineCreateFlags							flags;
-				numStages,											// deUint32											stageCount;
-				&shaderCreateInfo[0],								// const VkPipelineShaderStageCreateInfo*			pStages;
-				&vertexInputStateCreateInfo,						// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
-				&inputAssemblyStateCreateInfo,						// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
-				DE_NULL,											// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
-				&viewportStateCreateInfo,							// const VkPipelineViewportStateCreateInfo*			pViewportState;
-				&rasterizationStateCreateInfo,						// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
-				&multisampleStateCreateInfo,						// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
-				&depthStencilStateParams,							// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
-				&colorBlendStateCreateInfo,							// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-				&dynamicStateCreateInfo,							// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
-				pipelineLayout.get(),								// VkPipelineLayout									layout;
-				renderPass.get(),									// VkRenderPass										renderPass;
-				0u,													// deUint32											subpass;
-				DE_NULL,											// VkPipeline										basePipelineHandle;
-				0													// int												basePipelineIndex;
-			};
-
+			VkPipelineCreateFlags pipelineCreateFlags = (VkPipelineCreateFlags)0;
 			if (m_data.useDynamicRendering)
-				graphicsPipelineCreateInfo.flags |= VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+				pipelineCreateFlags |= VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
 
 			VkImageMemoryBarrier imageBarrier =
 			{
@@ -2036,13 +1941,41 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 
 			vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0, 1, &descriptorSet.get(), 0, DE_NULL);
 
-			vector<Move<VkPipeline>> pipelines;
+			vector<GraphicsPipelineWrapper> pipelines;
+			pipelines.reserve(m_data.useDynamicState ? 1u : NUM_TRIANGLES);
 
 			// If using dynamic state, create a single graphics pipeline and bind it
+			vk::VkPipelineRenderingCreateInfoKHR* pDynamicRendering = (m_data.useDynamicRendering ? &renderingCreateInfo : DE_NULL);
 			if (m_data.useDynamicState)
 			{
-				pipelines.push_back(createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo));
-				vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelines[0]);
+				pipelines.emplace_back(vk, device, m_data.pipelineConstructionType, pipelineCreateFlags);
+				pipelines.back()
+					.setDefaultColorBlendState()
+					.setDynamicState(&dynamicStateCreateInfo)
+					.setupVertexInputStete(&vertexInputStateCreateInfo)
+					.setupPreRasterizationShaderState(viewports,
+						scissors,
+						*pipelineLayout,
+						*renderPass,
+						0u,
+						*vertShader,
+						&rasterizationStateCreateInfo,
+						DE_NULL,
+						DE_NULL,
+						*geomShader,
+						DE_NULL,
+						pDynamicRendering)
+					.setupFragmentShaderState(
+						*pipelineLayout,
+						*renderPass,
+						0u,
+						*fragShader,
+						&depthStencilStateParams,
+						&multisampleStateCreateInfo,
+						&shadingRateStateCreateInfo)
+					.setupFragmentOutputState(*renderPass, 0u, DE_NULL, &multisampleStateCreateInfo)
+					.buildPipeline();
+				vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.back().getPipeline());
 			}
 
 			VkRect2D renderArea = makeRect2D(m_data.framebufferDim.width, m_data.framebufferDim.height);
@@ -2135,8 +2068,34 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				{
 					// Create a new pipeline with the desired pipeline shading rate
 					shadingRateStateCreateInfo.fragmentSize = ShadingRateEnumToExtent(PrimIDToPipelineShadingRate(i));
-					pipelines.push_back(createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo));
-					vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelines.back());
+					pipelines.emplace_back(vk, device, m_data.pipelineConstructionType, pipelineCreateFlags);
+					pipelines.back()
+						.setDefaultColorBlendState()
+						.setDynamicState(&dynamicStateCreateInfo)
+						.setupVertexInputStete(&vertexInputStateCreateInfo)
+						.setupPreRasterizationShaderState(viewports,
+							scissors,
+							*pipelineLayout,
+							*renderPass,
+							0u,
+							*vertShader,
+							&rasterizationStateCreateInfo,
+							DE_NULL,
+							DE_NULL,
+							*geomShader,
+							DE_NULL,
+							pDynamicRendering)
+						.setupFragmentShaderState(
+							*pipelineLayout,
+							*renderPass,
+							0u,
+							*fragShader,
+							&depthStencilStateParams,
+							&multisampleStateCreateInfo,
+							&shadingRateStateCreateInfo)
+						.setupFragmentOutputState(*renderPass, 0u, DE_NULL, &multisampleStateCreateInfo)
+						.buildPipeline();
+					vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.back().getPipeline());
 				}
 
 				// Draw one triangle, with "primitive ID" in gl_InstanceIndex
@@ -2454,7 +2413,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 
 }	// anonymous
 
-void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup, bool useDynamicRendering)
+void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup, vk::PipelineConstructionType pipelineConstructionType, bool useDynamicRendering)
 {
 	typedef struct
 	{
@@ -2557,6 +2516,13 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 		if (useDynamicRendering && groupNdx == 12)
 			continue;
 
+		if (pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+		{
+			// for graphics pipeline library we need to repeat only selected groups
+			if (std::set<int> { 2, 3, 4, 10, 11, 12, 13, 14, 15 }.count(groupNdx) == 0)
+				continue;
+		}
+
 		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, groupCases[groupNdx].name, groupCases[groupNdx].description));
 		for (int dynNdx = 0; dynNdx < DE_LENGTH_OF_ARRAY(dynCases); dynNdx++)
 		{
@@ -2578,6 +2544,10 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 							de::MovePtr<tcu::TestCaseGroup> cmb1Group(new tcu::TestCaseGroup(testCtx, combCases[cmb1Ndx].name, combCases[cmb1Ndx].description));
 							for (int extNdx = 0; extNdx < DE_LENGTH_OF_ARRAY(extentCases); extNdx++)
 							{
+								// to reduce number of cases repeat every other extent case for graphics pipeline library
+								if ((pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) && ((extNdx % 2) == 1))
+									continue;
+
 								de::MovePtr<tcu::TestCaseGroup> extGroup(new tcu::TestCaseGroup(testCtx, extentCases[extNdx].name, extentCases[extNdx].description));
 								for (int sampNdx = 0; sampNdx < DE_LENGTH_OF_ARRAY(sampCases); sampNdx++)
 								{
@@ -2630,6 +2600,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 
 										CaseDef c =
 										{
+											pipelineConstructionType,								// PipelineConstructionType pipelineConstructionType;
 											seed++,													// deInt32 seed;
 											extentCases[extNdx].count,								// VkExtent2D framebufferDim;
 											(VkSampleCountFlagBits)sampCases[sampNdx].count,		// VkSampleCountFlagBits samples;
@@ -2683,6 +2654,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "misc_tests", "Single tests that don't need to be part of above test matrix"));
 	group->addChild(new FSRTestCase(testCtx, "sample_mask_test", "", {
+		pipelineConstructionType,								// PipelineConstructionType pipelineConstructionType;
 		123,													// deInt32 seed;
 		{32,  33},												// VkExtent2D framebufferDim;
 		VK_SAMPLE_COUNT_4_BIT,									// VkSampleCountFlagBits samples;
