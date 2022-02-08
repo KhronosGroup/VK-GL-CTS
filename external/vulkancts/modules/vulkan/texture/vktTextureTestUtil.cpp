@@ -475,7 +475,7 @@ void TextureBinding::updateTextureViewMipLevels (deUint32 baseLevel, deUint32 ma
 	{
 		vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,						// VkStructureType			sType;
 #ifndef CTS_USES_VULKANSC
-		imageViewMinLod >= 0.0f ? &imageViewMinLodCreateInfo : DE_NULL,		// const void*				pNext;
+		imageViewMinLod > 0.0f ? &imageViewMinLodCreateInfo : DE_NULL,		// const void*				pNext;
 #else
 		DE_NULL,															// const void*				pNext;
 #endif // CTS_USES_VULKANSC
