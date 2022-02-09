@@ -49,7 +49,6 @@ namespace
 enum PipelineCacheTestType
 {
 	PCTT_UNUSED = 0,
-	PCTT_INITIAL_SIZE_0,
 	PCTT_WRONG_VENDOR_ID,
 	PCTT_WRONG_DEVICE_ID
 };
@@ -244,11 +243,6 @@ tcu::TestStatus createPipelineCacheTest (Context& context, TestParams testParams
 
 	switch (testParams.type)
 	{
-		case PCTT_INITIAL_SIZE_0:
-		{
-			initialDataSize = 0u;
-			break;
-		}
 		case PCTT_WRONG_VENDOR_ID:
 		{
 			pcHeader->headerVersionOne.vendorID = deUint32(VK_VENDOR_ID_MAX_ENUM);
@@ -341,7 +335,6 @@ tcu::TestStatus createPipelineCacheTest (Context& context, TestParams testParams
 		VkResult		result	= instanceDriver.createDevice(physicalDevice, &deviceCreateInfo, DE_NULL, &object);
 		switch (testParams.type)
 		{
-			case PCTT_INITIAL_SIZE_0:
 			case PCTT_WRONG_VENDOR_ID:
 			case PCTT_WRONG_DEVICE_ID:
 				if (result != VK_ERROR_INVALID_PIPELINE_CACHE_DATA)
@@ -365,7 +358,6 @@ tcu::TestStatus createPipelineCacheTest (Context& context, TestParams testParams
 
 	switch (testParams.type)
 	{
-		case PCTT_INITIAL_SIZE_0:
 		case PCTT_WRONG_VENDOR_ID:
 		case PCTT_WRONG_DEVICE_ID:
 			if (result != VK_ERROR_INVALID_PIPELINE_CACHE_DATA)
@@ -393,7 +385,6 @@ tcu::TestCaseGroup*	createPipelineCacheTests (tcu::TestContext& testCtx)
 		const char*									name;
 	} tests[] =
 	{
-		{ PCTT_INITIAL_SIZE_0,	"zero_initial_data_size"	},
 		{ PCTT_WRONG_VENDOR_ID,	"incorrect_vendor_id"		},
 		{ PCTT_WRONG_DEVICE_ID,	"incorrect_device_id"		},
 	};

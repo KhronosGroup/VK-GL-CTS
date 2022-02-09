@@ -52,7 +52,6 @@ dEQP-VKSC.sc.pipeline_identifier.compute.nonexisting_pid.exact_match.single
 dEQP-VKSC.sc.pipeline_identifier.compute.nonexisting_pid.exact_match.multiple
 dEQP-VKSC.sc.pipeline_identifier.compute.match_control.exact_match.single
 dEQP-VKSC.sc.pipeline_identifier.compute.match_control.exact_match.multiple
-dEQP-VKSC.sc.pipeline_cache.zero_initial_data_size
 dEQP-VKSC.sc.pipeline_cache.incorrect_vendor_id
 dEQP-VKSC.sc.pipeline_cache.incorrect_device_id
 dEQP-VKSC.sc.fault_handling.get_fault_data.get_and_clear_all_faults.null

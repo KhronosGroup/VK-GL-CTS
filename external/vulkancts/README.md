@@ -213,6 +213,10 @@ To define minimum size of the command pool use parameter:
 
 	--deqp-command-pool-min-size=<value>
 
+To define minimum size of a single command buffer use parameter:
+
+	--deqp-command-buffer-min-size=<value>
+
 If minimum size will not be defined, then the size of single command buffer will be estimated
 from number of commands multiplied by value of parameter deqp-command-default-size.
 Default size of a single command may be defined using:

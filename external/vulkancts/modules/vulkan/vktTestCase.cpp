@@ -342,11 +342,15 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 		}
 	}
 
-	dmrCI.pNext = deviceInfo.pNext;
-
+	dmrCI.pNext										= deviceInfo.pNext;
 	VkPhysicalDeviceVulkanSC10Features sc10Features	= createDefaultSC10Features();
-	sc10Features.pNext								= &dmrCI;
-	deviceInfo.pNext								= &sc10Features;
+	if (findStructureInChain(dmrCI.pNext, getStructureType<VkPhysicalDeviceVulkanSC10Features>()) == nullptr)
+	{
+		sc10Features.pNext = &dmrCI;
+		deviceInfo.pNext = &sc10Features;
+	}
+	else
+		deviceInfo.pNext = &dmrCI;
 #else
 	DE_UNREF(resourceInterface);
 #endif // CTS_USES_VULKANSC
