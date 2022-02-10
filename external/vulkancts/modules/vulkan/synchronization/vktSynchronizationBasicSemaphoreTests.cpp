@@ -405,7 +405,8 @@ tcu::TestStatus basicMultiQueueCase(Context& context, TestConfig config)
 	std::vector<const char*> deviceExtensions;
 	if (isTimelineSemaphore)
 	{
-		deviceExtensions.push_back("VK_KHR_timeline_semaphore");
+		if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_timeline_semaphore"))
+			deviceExtensions.push_back("VK_KHR_timeline_semaphore");
 		addToChainVulkanStructure(&nextPtr, timelineSemaphoreFeatures);
 	}
 	if (config.type == SynchronizationType::SYNCHRONIZATION2)

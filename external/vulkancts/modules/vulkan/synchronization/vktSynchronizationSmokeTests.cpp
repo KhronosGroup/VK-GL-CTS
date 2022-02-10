@@ -148,7 +148,8 @@ Move<VkDevice> createTestDevice (Context& context, SemaphoreTestConfig& config, 
 	vector<const char*> deviceExtensions;
 	if (config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE)
 	{
-		deviceExtensions.push_back("VK_KHR_timeline_semaphore");
+		if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_timeline_semaphore"))
+			deviceExtensions.push_back("VK_KHR_timeline_semaphore");
 		addToChainVulkanStructure(&nextPtr, timelineSemaphoreFeatures);
 	}
 	if (config.synchronizationType == SynchronizationType::SYNCHRONIZATION2)
