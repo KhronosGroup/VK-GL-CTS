@@ -1,3 +1,6 @@
+dEQP-VK.memory_model.message_passing.permuted_index.barrier
+dEQP-VK.memory_model.message_passing.permuted_index.release_acquire
+dEQP-VK.memory_model.message_passing.permuted_index.release_acquire_atomic_payload
 dEQP-VK.memory_model.message_passing.ext.f32.coherent.atomic_atomic.atomicwrite.device.payload_nonlocal.buffer.guard_nonlocal.buffer.comp
 dEQP-VK.memory_model.message_passing.ext.f32.coherent.atomic_atomic.atomicwrite.device.payload_nonlocal.buffer.guard_nonlocal.buffer.vert
 dEQP-VK.memory_model.message_passing.ext.f32.coherent.atomic_atomic.atomicwrite.device.payload_nonlocal.buffer.guard_nonlocal.buffer.frag
