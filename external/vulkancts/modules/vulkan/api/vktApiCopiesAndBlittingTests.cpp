@@ -3659,7 +3659,7 @@ bool BlittingImages::checkCompressedNonNearestFilteredResult(const tcu::ConstPix
 
 	// there are rare cases wher one or few pixels have slightly bigger error
 	// in one of channels this accepted error allows those casses to pass
-	const tcu::Vec4				acceptedError	(0.04f);
+	const tcu::Vec4				acceptedError	(0.06f);
 
 	const tcu::Vec4				srcMaxDiff		= getCompressedFormatThreshold(format);
 	const tcu::Vec4				dstMaxDiff		= m_destinationCompressedTexture ?
