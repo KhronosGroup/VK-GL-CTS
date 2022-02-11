@@ -4,8 +4,11 @@ OpenGL and OpenGL ES 2.0/3.X Conformance Test Instructions
 This document describes how to build, port, and run the OpenGL and OpenGL ES
 2.0/3.X conformance tests, and how to verify and submit test results.
 
-The Conformance Tests are built on dEQP framework. dEQP documentation is
-available at http://source.android.com/devices/graphics/testing.html
+The Conformance Tests are built on the dEQP framework.
+Up-to-date documentation for dEQP is available at:
+
+* [The VK-GL-CTS wiki for Khronos members](https://gitlab.khronos.org/Tracker/vk-gl-cts/wikis/home)
+* [The VK-GL-CTS wiki for non-Khronos members](https://github.com/KhronosGroup/VK-GL-CTS/wiki)
 
 
 Contents

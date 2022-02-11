@@ -99,6 +99,7 @@ struct CaseDef
 	bool srLayered; // colorLayered must also be true
 	deUint32 numColorLayers;
 	bool multiView;
+	bool correlationMask;
 	bool interlock;
 	bool sampleLocations;
 	bool sampleShadingEnable;
@@ -1524,6 +1525,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 					}
 					);
 
+				const deUint32					correlatedViewMask = 0x3;
 				const VkRenderPassCreateInfo2	renderPassParams	=
 				{
 					VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,			// sType
@@ -1535,8 +1537,8 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 					&subpassDesc,											// pSubpasses
 					0u,														// dependencyCount
 					DE_NULL,												// pDependencies
-					0u,														// correlatedViewMaskCount
-					DE_NULL,												// pCorrelatedViewMasks
+					m_data.correlationMask,									// correlatedViewMaskCount
+					m_data.correlationMask ? &correlatedViewMask : DE_NULL	// pCorrelatedViewMasks
 				};
 
 				renderPass = createRenderPass2(vk, device, &renderPassParams);
@@ -1865,7 +1867,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				0.0f,						// float			maxDepthBounds;
 			};
 
-			const VkGraphicsPipelineCreateInfo				graphicsPipelineCreateInfo		=
+			VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo	=
 			{
 				VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
 				&shadingRateStateCreateInfo,						// const void*										pNext;
@@ -1887,6 +1889,9 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				DE_NULL,											// VkPipeline										basePipelineHandle;
 				0													// int												basePipelineIndex;
 			};
+
+			if (m_data.useDynamicRendering)
+				graphicsPipelineCreateInfo.flags |= VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
 
 			VkImageMemoryBarrier imageBarrier =
 			{
@@ -2094,7 +2099,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 					m_data.useDepthStencil ? &depthStencilAttachments[1] : DE_NULL,			// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 				};
 
-				vk.cmdBeginRenderingKHR(*cmdBuffer, &renderingInfo);
+				vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
 			}
 			else
 			{
@@ -2486,10 +2491,11 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 		{ 9,	"srlayered",			"multiple layer color, multiple layers shading rate"	},
 		{ 10,	"multiview",			"multiview"	},
 		{ 11,	"multiviewsrlayered",	"multiview and multilayer shading rate"	},
-		{ 12,	"interlock",			"fragment shader interlock"	},
-		{ 13,	"samplelocations",		"custom sample locations"	},
-		{ 14,	"sampleshadingenable",	"enable sample shading in createinfo"	},
-		{ 15,	"sampleshadinginput",	"enable sample shading by using gl_SampleID"	},
+		{ 12,	"multiviewcorrelation", "multiview with correlation mask"	},
+		{ 13,	"interlock",			"fragment shader interlock"	},
+		{ 14,	"samplelocations",		"custom sample locations"	},
+		{ 15,	"sampleshadingenable",	"enable sample shading in createinfo"	},
+		{ 16,	"sampleshadinginput",	"enable sample shading by using gl_SampleID"	},
 	};
 
 	TestGroupCase dynCases[] =
@@ -2548,6 +2554,9 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 
 	for (int groupNdx = 0; groupNdx < DE_LENGTH_OF_ARRAY(groupCases); groupNdx++)
 	{
+		if (useDynamicRendering && groupNdx == 12)
+			continue;
+
 		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, groupCases[groupNdx].name, groupCases[groupNdx].description));
 		for (int dynNdx = 0; dynNdx < DE_LENGTH_OF_ARRAY(dynCases); dynNdx++)
 		{
@@ -2583,11 +2592,12 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 										bool multiViewport = groupNdx == 7;
 										bool colorLayered = groupNdx == 8 || groupNdx == 9;
 										bool srLayered = groupNdx == 9 || groupNdx == 11;
-										bool multiView = groupNdx == 10 || groupNdx == 11;
-										bool interlock = groupNdx == 12;
-										bool sampleLocations = groupNdx == 13;
-										bool sampleShadingEnable = groupNdx == 14;
-										bool sampleShadingInput = groupNdx == 15;
+										bool multiView = groupNdx == 10 || groupNdx == 11 || groupNdx == 12;
+										bool correlationMask = groupNdx == 12;
+										bool interlock = groupNdx == 13;
+										bool sampleLocations = groupNdx == 14;
+										bool sampleShadingEnable = groupNdx == 15;
+										bool sampleShadingInput = groupNdx == 16;
 										VkConservativeRasterizationModeEXT conservativeMode = (groupNdx == 3) ? VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT : VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT;
 										deUint32 numColorLayers = (colorLayered || multiView) ? 2u : 1u;
 
@@ -2644,6 +2654,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 											srLayered,												// bool srLayered;
 											numColorLayers,											// deUint32 numColorLayers;
 											multiView,												// bool multiView;
+											correlationMask,										// bool correlationMask;
 											interlock,												// bool interlock;
 											sampleLocations,										// bool sampleLocations;
 											sampleShadingEnable,									// bool sampleShadingEnable;
@@ -2696,6 +2707,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 		false,													// bool srLayered;
 		1u,														// deUint32 numColorLayers;
 		false,													// bool multiView;
+		false,													// bool correlationMask;
 		false,													// bool interlock;
 		false,													// bool sampleLocations;
 		false,													// bool sampleShadingEnable;

@@ -983,7 +983,7 @@ namespace
 		SETUNIFORM(loc, 1, vec.getPtr());                                                                    \
 		CHECK_SET_UNIFORM(name);                                                                             \
 	}                                                                                                        \
-	struct SetUniform##VECTYPE##Dummy_s                                                                      \
+	struct SetUniform##VECTYPE##Unused_s                                                                     \
 	{                                                                                                        \
 		int unused;                                                                                          \
 	}
@@ -996,7 +996,7 @@ namespace
 		SETUNIFORM(loc, arraySize, vec->getPtr());                                                           \
 		CHECK_SET_UNIFORM(name);                                                                             \
 	}                                                                                                        \
-	struct SetUniformPtr##VECTYPE##Dummy_s                                                                   \
+	struct SetUniformPtr##VECTYPE##Unused_s                                                                  \
 	{                                                                                                        \
 		int unused;                                                                                          \
 	}

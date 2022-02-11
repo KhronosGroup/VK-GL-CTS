@@ -218,7 +218,7 @@ vector<VkRect2D> DynamicScissorTestCommand::updateScissors (vector<VkRect2D> sci
 	for (size_t scissorIdx = 0; scissorIdx < m_scissors.size(); scissorIdx++)
 	{
 		while (scissors.size() <= m_firstScissor + scissorIdx)
-			scissors.push_back(makeRect2D(0, 0)); // Add dummy scissor
+			scissors.push_back(makeRect2D(0, 0)); // Add empty scissor
 
 		scissors[m_firstScissor + scissorIdx] = m_scissors[scissorIdx];
 	}
@@ -523,7 +523,7 @@ TestStatus ScissorTestInstance::iterate (void)
 		clearColorImage(vk, device, m_context.getUniversalQueue(), m_context.getUniversalQueueFamilyIndex(), colorTargetImage->object(), clearColor,
 						VK_IMAGE_LAYOUT_UNDEFINED,
 						VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-						VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+						VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 1u);
 
 		beginCommandBuffer(vk, *cmdBuffer, 0u);
 

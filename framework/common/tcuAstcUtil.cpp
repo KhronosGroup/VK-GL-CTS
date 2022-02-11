@@ -1973,9 +1973,9 @@ static void writeBlockMode (AssignBlock128& dst, const NormalBlockParams& blockP
 			if (de::inRange(blockParams.weightGridWidth, widthMin, widthMax) &&
 				de::inRange(blockParams.weightGridHeight, heightMin, heightMax))
 			{
-				deUint32	dummy			= 0;
-				deUint32&	widthVariable	= layout.gridWidthVariableTerm == A  ? a : layout.gridWidthVariableTerm == B  ? b : dummy;
-				deUint32&	heightVariable	= layout.gridHeightVariableTerm == A ? a : layout.gridHeightVariableTerm == B ? b : dummy;
+				deUint32	defaultvalue	= 0;
+				deUint32&	widthVariable	= layout.gridWidthVariableTerm == A  ? a : layout.gridWidthVariableTerm == B  ? b : defaultvalue;
+				deUint32&	heightVariable	= layout.gridHeightVariableTerm == A ? a : layout.gridHeightVariableTerm == B ? b : defaultvalue;
 
 				widthVariable	= blockParams.weightGridWidth  - layout.gridWidthConstantTerm;
 				heightVariable	= blockParams.weightGridHeight - layout.gridHeightConstantTerm;
@@ -2896,15 +2896,15 @@ void generateRandomValidBlocks (deUint8* dst, size_t numBlocks, CompressedTexFor
 	}
 }
 
-// Generate a number of trivial dummy blocks to fill unneeded space in a texture.
-void generateDummyVoidExtentBlocks (deUint8* dst, size_t numBlocks)
+// Generate a number of trivial blocks to fill unneeded space in a texture.
+void generateDefaultVoidExtentBlocks (deUint8* dst, size_t numBlocks)
 {
 	AssignBlock128 block = generateVoidExtentBlock(VoidExtentParams(false, 0, 0, 0, 0));
 	for (size_t ndx = 0; ndx < numBlocks; ndx++)
 		block.assignToMemory(&dst[ndx * BLOCK_SIZE_BYTES]);
 }
 
-void generateDummyNormalBlocks (deUint8* dst, size_t numBlocks, int blockWidth, int blockHeight)
+void generateDefaultNormalBlocks (deUint8* dst, size_t numBlocks, int blockWidth, int blockHeight)
 {
 	NormalBlockParams blockParams;
 

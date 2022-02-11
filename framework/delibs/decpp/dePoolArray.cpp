@@ -39,7 +39,7 @@ static void intArrayTest (void)
 	/* Test pushBack(). */
 	for (i = 0; i < 5000; i++)
 	{
-		/* Dummy alloc to try to break alignments. */
+		/* Unused alloc to try to break alignments. */
 		pool.alloc(1);
 
 		arr.pushBack(i);
@@ -113,7 +113,7 @@ static void alignedIntArrayTest (void)
 	/* Test pushBack(). */
 	for (i = 0; i < 5000; i++)
 	{
-		/* Dummy alloc to try to break alignments. */
+		/* Unused alloc to try to break alignments. */
 		pool.alloc(1);
 
 		arr.pushBack(i);

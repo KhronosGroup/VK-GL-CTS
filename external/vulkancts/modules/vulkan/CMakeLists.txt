@@ -176,7 +176,7 @@ add_deqp_module(deqp-vk "${DEQP_VK_SRCS}" "${DEQP_VK_LIBS}" vktTestPackageEntry.
 
 
 add_data_dir(deqp-vk ../../data/vulkan vulkan)
-add_data_dir(deqp-vk ../../mustpass/master/vk-default vk-default)
+add_data_dir(deqp-vk ../../mustpass/main/vk-default vk-default)
 
 # add all directories containing android mustpass
 file(GLOB PATHS_MATCHING_PATTERN ${CMAKE_SOURCE_DIR}/android/cts/master/vk-*/)

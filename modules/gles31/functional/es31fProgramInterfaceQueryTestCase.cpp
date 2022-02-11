@@ -1160,8 +1160,8 @@ void VariableReferencedByShaderValidator::validate (const ProgramInterfaceDefini
 {
 	DE_UNREF(implementationName);
 
-	std::vector<VariablePathComponent>	dummyPath;
-	const bool							referencedByShader = findProgramVariablePathByPathName(dummyPath, program, resource, m_filter);
+	std::vector<VariablePathComponent>	unusedPath;
+	const bool							referencedByShader = findProgramVariablePathByPathName(unusedPath, program, resource, m_filter);
 
 	m_testCtx.getLog()
 		<< tcu::TestLog::Message

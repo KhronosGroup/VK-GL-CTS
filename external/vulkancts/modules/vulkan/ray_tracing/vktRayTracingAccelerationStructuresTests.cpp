@@ -47,6 +47,7 @@
 #include <cmath>
 #include <cstddef>
 #include <set>
+#include <limits>
 
 namespace vkt
 {
@@ -797,21 +798,6 @@ void SingleTriangleConfiguration::initShaderBindingTables(de::MovePtr<RayTracing
 	raygenShaderBindingTable											= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1 );
 	hitShaderBindingTable												= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1 );
 	missShaderBindingTable												= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 2, 1 );
-}
-
-bool pointInTriangle2D(const tcu::Vec3& p, const tcu::Vec3& p0, const tcu::Vec3& p1, const tcu::Vec3& p2)
-{
-	float s = p0.y() * p2.x() - p0.x() * p2.y() + (p2.y() - p0.y()) * p.x() + (p0.x() - p2.x()) * p.y();
-	float t = p0.x() * p1.y() - p0.y() * p1.x() + (p0.y() - p1.y()) * p.x() + (p1.x() - p0.x()) * p.y();
-
-	if ((s < 0) != (t < 0))
-		return false;
-
-	float a = -p1.y() * p2.x() + p0.y() * (p2.x() - p1.x()) + p0.x() * (p1.y() - p2.y()) + p1.x() * p2.y();
-
-	return a < 0 ?
-		(s <= 0 && s + t >= a) :
-		(s >= 0 && s + t <= a);
 }
 
 bool SingleTriangleConfiguration::verifyImage(BufferWithMemory* resultBuffer, Context& context, TestParams& testParams)
@@ -1909,26 +1895,13 @@ bool RayTracingASBasicTestInstance::iterateNoWorkers (void)
 
 bool RayTracingASBasicTestInstance::iterateWithWorkers (void)
 {
-	const deUint64					singleThreadTimeStart	= deGetMicroseconds();
 	de::MovePtr<BufferWithMemory>	singleThreadBufferCPU	= runTest(0);
 	const bool						singleThreadValidation	= m_data.testConfiguration->verifyImage(singleThreadBufferCPU.get(), m_context, m_data);
-	const deUint64					singleThreadTime		= deGetMicroseconds() - singleThreadTimeStart;
 
-	deUint64						multiThreadTimeStart	= deGetMicroseconds();
 	de::MovePtr<BufferWithMemory>	multiThreadBufferCPU	= runTest(m_data.workerThreadsCount);
 	const bool						multiThreadValidation	= m_data.testConfiguration->verifyImage(multiThreadBufferCPU.get(), m_context, m_data);
-	deUint64						multiThreadTime			= deGetMicroseconds() - multiThreadTimeStart;
-	const deUint64					multiThreadTimeOut		= 10 * singleThreadTime;
 
 	const deUint32					result					= singleThreadValidation && multiThreadValidation;
-
-	if (multiThreadTime > multiThreadTimeOut)
-	{
-		std::string failMsg	= "Time of multithreaded test execution " + de::toString(multiThreadTime) +
-							  " that is longer than expected execution time " + de::toString(multiThreadTimeOut);
-
-		TCU_FAIL(failMsg);
-	}
 
 	return result;
 }
@@ -3702,9 +3675,9 @@ auto CopyBlasInstance::getRefImage (BlasPtr blas) const -> de::MovePtr<BufferWit
 	beginCommandBuffer(vk, *cmdBuffer);
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1, &descriptorSet.get(), 0, nullptr);
-		vk.cmdPipelineBarrier2KHR(*cmdBuffer, &preClearImageDependency);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &preClearImageDependency);
 		vk.cmdClearColorImage(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.color, 1, &imageSubresourceRange);
-		vk.cmdPipelineBarrier2KHR(*cmdBuffer, &postClearImageDependency);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postClearImageDependency);
 		cmdTraceRays(vk,
 			*cmdBuffer,
 			&rgenRegion,	// rgen
@@ -3712,9 +3685,9 @@ auto CopyBlasInstance::getRefImage (BlasPtr blas) const -> de::MovePtr<BufferWit
 			&chitRegion,	// hit
 			&callRegion,	// call
 			m_params->width, m_params->height, 1);
-		vk.cmdPipelineBarrier2KHR(*cmdBuffer, &postTraceRaysDependency);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postTraceRaysDependency);
 		vk.cmdCopyImageToBuffer(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **buffer, 1u, &bufferCopyImageRegion);
-		vk.cmdPipelineBarrier2KHR(*cmdBuffer, &postCopyImageDependency);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postCopyImageDependency);
 	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
@@ -3857,7 +3830,7 @@ TestStatus CopyBlasInstance::iterate (void)
 		if (m_params->build == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 		{
 			vk.cmdCopyAccelerationStructureKHR(*cmdBuffer, &copyBlasInfo);
-			vk.cmdPipelineBarrier2KHR(*cmdBuffer, &copyBlasDependency);
+			vk.cmdPipelineBarrier2(*cmdBuffer, &copyBlasDependency);
 		}
 		else VK_CHECK(vk.copyAccelerationStructureKHR(device, VkDeferredOperationKHR(0), &copyBlasInfo));
 
@@ -3877,9 +3850,9 @@ TestStatus CopyBlasInstance::iterate (void)
 			.writeSingle(VkDescriptorSet(), DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &writeDescriptorTlas)
 			.updateWithPush(vk, *cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 0, 2);
 
-		vk.cmdPipelineBarrier2KHR(*cmdBuffer, &preClearImageDependency);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &preClearImageDependency);
 		vk.cmdClearColorImage(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.color, 1, &imageSubresourceRange);
-		vk.cmdPipelineBarrier2KHR(*cmdBuffer, &postClearImageDependency);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postClearImageDependency);
 
 		cmdTraceRays(vk,
 			*cmdBuffer,
@@ -3889,9 +3862,9 @@ TestStatus CopyBlasInstance::iterate (void)
 			&callRegion,	// call
 			m_params->width, m_params->height, 1);
 
-		vk.cmdPipelineBarrier2KHR(*cmdBuffer, &postTraceRaysDependency);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postTraceRaysDependency);
 		vk.cmdCopyImageToBuffer(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **resultImageBuffer, 1u, &bufferCopyImageRegion);
-		vk.cmdPipelineBarrier2KHR(*cmdBuffer, &postCopyImageDependency);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postCopyImageDependency);
 
 	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -4039,9 +4012,9 @@ TestStatus CopySBTInstance::iterate (void)
 	beginCommandBuffer(vk, *cmdBuffer);
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1, &descriptorSet.get(), 0, nullptr);
-		vk.cmdPipelineBarrier2KHR(*cmdBuffer, &preClearImageDependency);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &preClearImageDependency);
 		vk.cmdClearColorImage(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.color, 1, &imageSubresourceRange);
-		vk.cmdPipelineBarrier2KHR(*cmdBuffer, &postClearImageDependency);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postClearImageDependency);
 		cmdTraceRays(vk,
 			*cmdBuffer,
 			&sourceRgenRegion,	// rgen
@@ -4049,9 +4022,9 @@ TestStatus CopySBTInstance::iterate (void)
 			&chitRegion,		// hit
 			&callRegion,		// call
 			m_params->width, m_params->height, 1);
-		vk.cmdPipelineBarrier2KHR(*cmdBuffer, &postTraceRaysDependency);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postTraceRaysDependency);
 		vk.cmdCopyImageToBuffer(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **referenceImageBuffer, 1u, &bufferCopyImageRegion);
-		vk.cmdPipelineBarrier2KHR(*cmdBuffer, &postCopyImageDependency);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postCopyImageDependency);
 	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
@@ -4073,7 +4046,7 @@ TestStatus CopySBTInstance::iterate (void)
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1, &descriptorSet.get(), 0, nullptr);
 		vk.cmdClearColorImage(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.color, 1, &imageSubresourceRange);
 		vk.cmdCopyBuffer(*cmdBuffer, **sourceRgenSbt, **copyRgenSbt, 1, &bufferCopy);
-		vk.cmdPipelineBarrier2KHR(*cmdBuffer, &postClearImgCopySBTDependency);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postClearImgCopySBTDependency);
 		cmdTraceRays(vk,
 			*cmdBuffer,
 			&copyRgenRegion,	// rgen
@@ -4081,9 +4054,9 @@ TestStatus CopySBTInstance::iterate (void)
 			&chitRegion,		// hit
 			&callRegion,		// call
 			m_params->width, m_params->height, 1);
-		vk.cmdPipelineBarrier2KHR(*cmdBuffer, &postTraceRaysDependency);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postTraceRaysDependency);
 		vk.cmdCopyImageToBuffer(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **resultImageBuffer, 1u, &bufferCopyImageRegion);
-		vk.cmdPipelineBarrier2KHR(*cmdBuffer, &postCopyImageDependency);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postCopyImageDependency);
 	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 

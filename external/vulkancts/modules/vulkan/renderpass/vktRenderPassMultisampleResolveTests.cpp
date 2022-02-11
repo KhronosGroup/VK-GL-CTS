@@ -717,7 +717,7 @@ void MultisampleRenderPassTestInstance::submit (void)
 				**m_singlesampleImages[dstNdx],
 				{
 					VK_IMAGE_ASPECT_COLOR_BIT,
-					0u,
+					m_renderLevel,
 					1u,
 					0u,
 					m_layerCount
@@ -805,7 +805,7 @@ void MultisampleRenderPassTestInstance::submit (void)
 			DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 		};
 
-		vkd.cmdBeginRenderingKHR(*commandBuffer, &renderingInfo);
+		vkd.cmdBeginRendering(*commandBuffer, &renderingInfo);
 	}
 	else
 	{
@@ -836,7 +836,7 @@ void MultisampleRenderPassTestInstance::submit (void)
 	}
 
 	if (m_renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
-		vkd.cmdEndRenderingKHR(*commandBuffer);
+		vkd.cmdEndRendering(*commandBuffer);
 	else
 	{
 		const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(DE_NULL);

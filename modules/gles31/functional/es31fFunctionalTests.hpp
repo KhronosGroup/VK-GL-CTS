@@ -46,17 +46,17 @@ private:
 	GLES31FunctionalTests&	operator=				(const GLES31FunctionalTests& other);
 };
 
-class GL45FunctionalTests : public TestCaseGroup
+class GL45ES31FunctionalTests : public TestCaseGroup
 {
 public:
-							GL45FunctionalTests		(Context& context);
-							~GL45FunctionalTests	(void);
+								GL45ES31FunctionalTests		(Context& context);
+								~GL45ES31FunctionalTests	(void);
 
-	void					init					(void);
+	void						init						(void);
 
 private:
-							GL45FunctionalTests		(const GL45FunctionalTests& other);
-	GL45FunctionalTests&	operator=				(const GL45FunctionalTests& other);
+								GL45ES31FunctionalTests		(const GL45ES31FunctionalTests& other);
+	GL45ES31FunctionalTests&	operator=					(const GL45ES31FunctionalTests& other);
 };
 
 } // Functional

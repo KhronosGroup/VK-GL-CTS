@@ -1191,11 +1191,11 @@ VkDeviceSize getHostPageSize (void)
 class MemoryHeap
 {
 public:
-	MemoryHeap (const VkMemoryHeap&			heap,
-				const vector<MemoryType>&	memoryTypes,
-				const PlatformMemoryLimits&	memoryLimits,
-				const VkDeviceSize			nonCoherentAtomSize,
-				TotalMemoryTracker&			totalMemTracker)
+	MemoryHeap (const VkMemoryHeap&					heap,
+				const vector<MemoryType>&			memoryTypes,
+				const tcu::PlatformMemoryLimits&	memoryLimits,
+				const VkDeviceSize					nonCoherentAtomSize,
+				TotalMemoryTracker&					totalMemTracker)
 		: m_heap				(heap)
 		, m_memoryTypes			(memoryTypes)
 		, m_limits				(memoryLimits)
@@ -1243,15 +1243,15 @@ private:
 			return MEMORY_CLASS_SYSTEM;
 	}
 
-	const VkMemoryHeap			m_heap;
-	const vector<MemoryType>	m_memoryTypes;
-	const PlatformMemoryLimits&	m_limits;
-	const VkDeviceSize			m_nonCoherentAtomSize;
-	const VkDeviceSize			m_minAtomSize;
-	TotalMemoryTracker&			m_totalMemTracker;
+	const VkMemoryHeap					m_heap;
+	const vector<MemoryType>			m_memoryTypes;
+	const tcu::PlatformMemoryLimits&	m_limits;
+	const VkDeviceSize					m_nonCoherentAtomSize;
+	const VkDeviceSize					m_minAtomSize;
+	TotalMemoryTracker&					m_totalMemTracker;
 
-	VkDeviceSize				m_usage;
-	vector<MemoryObject*>		m_objects;
+	VkDeviceSize						m_usage;
+	vector<MemoryObject*>				m_objects;
 };
 
 // Heap is full if there is not enough memory to allocate minimal memory object.
@@ -1430,7 +1430,7 @@ public:
 		: TestInstance				(context)
 		, m_memoryObjectSysMemSize	(getMemoryObjectSystemSize(context))
 		, m_memoryMappingSysMemSize	(getMemoryMappingSystemSize())
-		, m_memoryLimits			(getMemoryLimits(context.getTestContext().getPlatform().getVulkanPlatform()))
+		, m_memoryLimits			(tcu::getMemoryLimits(context.getTestContext().getPlatform()))
 		, m_rng						(seed)
 		, m_opNdx					(0)
 	{
@@ -1634,7 +1634,7 @@ public:
 private:
 	const size_t						m_memoryObjectSysMemSize;
 	const size_t						m_memoryMappingSysMemSize;
-	const PlatformMemoryLimits			m_memoryLimits;
+	const tcu::PlatformMemoryLimits		m_memoryLimits;
 
 	de::Random							m_rng;
 	size_t								m_opNdx;

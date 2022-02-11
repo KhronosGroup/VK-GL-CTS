@@ -149,7 +149,7 @@ CLANG_VERSION		= getClangVersion()
 
 # Always ran before any receipe
 PREREQUISITES		= [
-	RunScript(os.path.join("external", "fetch_sources.py"))
+	RunScript(os.path.join("external", "fetch_sources.py"), lambda env: ["--force"])
 ]
 
 # Always ran after any receipe
@@ -188,6 +188,9 @@ EARLY_SPECIAL_RECIPES	= [
 	('gen-inl-files', [
 			RunScript(os.path.join("scripts", "gen_egl.py")),
 			RunScript(os.path.join("scripts", "opengl", "gen_all.py")),
+			RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework.py")),
+			RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework_c.py")),
+			RunScript(os.path.join("external", "vulkancts", "scripts", "gen_ext_deps.py")),
 			RunScript(os.path.join("scripts", "gen_android_mk.py"))
 		]),
 ]

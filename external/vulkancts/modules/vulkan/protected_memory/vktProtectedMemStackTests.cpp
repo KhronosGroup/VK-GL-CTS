@@ -334,7 +334,7 @@ tcu::TestStatus StackTestInstance::iterate (void)
 	for (int i = 0; (i < 8) && (result == true); i++)
 	{
 		const vk::Unique<vk::VkFence>		fence		(vk::createFence(vk, device));
-		vk::Unique<vk::VkPipeline>			pipeline	(makeComputePipeline(vk, device, *pipelineLayout, *computeShader, DE_NULL));
+		vk::Unique<vk::VkPipeline>			pipeline	(makeComputePipeline(vk, device, *pipelineLayout, *computeShader));
 		vk::Unique<vk::VkCommandBuffer>		cmdBuffer	(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		beginCommandBuffer(vk, *cmdBuffer);

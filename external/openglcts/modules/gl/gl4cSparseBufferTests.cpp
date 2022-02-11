@@ -3207,7 +3207,7 @@ bool PixelPackBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags
  */
 bool PixelPackBufferStorageTestCase::initTestCaseGlobal()
 {
-	/* Determine dummy vertex shader and fragment shader that will generate black-to-white gradient. */
+	/* Determine vertex shader and fragment shader that will generate black-to-white gradient. */
 	const char* gradient_fs_code = "#version 330 core\n"
 								   "\n"
 								   "out vec4 result;\n"
@@ -5700,7 +5700,7 @@ bool TransformFeedbackBufferStorageTestCase::execute(glw::GLuint sparse_bo_stora
 
 						/* Only perform the check if the offsets refer to pages with physical backing.
 						 *
-						 * Note that, on platforms, whose page size % 4 != 0, the values can land partially in the no-man's land,
+						 * Note that, on platforms, whose page size % 4 != 0, the values can land partially out of bounds,
 						 * and partially in the safe zone. In such cases, skip the verification. */
 						const bool result_instance_id_page_has_physical_backing =
 							(((((char*)result_instance_id_traveller_ptr - (char*)result_ptr) / m_page_size) % 2) ==

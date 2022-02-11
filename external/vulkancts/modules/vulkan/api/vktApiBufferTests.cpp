@@ -53,18 +53,18 @@ enum AllocationKind
 	ALLOCATION_KIND_LAST,
 };
 
-PlatformMemoryLimits getPlatformMemoryLimits (Context& context)
+tcu::PlatformMemoryLimits getPlatformMemoryLimits (Context& context)
 {
-	PlatformMemoryLimits	memoryLimits;
+	tcu::PlatformMemoryLimits memoryLimits;
 
-	context.getTestContext().getPlatform().getVulkanPlatform().getMemoryLimits(memoryLimits);
+	context.getTestContext().getPlatform().getMemoryLimits(memoryLimits);
 
 	return memoryLimits;
 }
 
 VkDeviceSize getMaxBufferSize(const VkDeviceSize& bufferSize,
 							  const VkDeviceSize& alignment,
-							  const PlatformMemoryLimits& limits)
+							  const tcu::PlatformMemoryLimits& limits)
 {
 	VkDeviceSize size = bufferSize;
 
@@ -714,8 +714,6 @@ tcu::TestStatus testLargeBuffer(Context& context, LargeBufferParameters params)
 			return tcu::TestStatus::pass("Pass");
 		return tcu::TestStatus::fail("Fail");
 	}
-
-	vk.destroyBuffer(vkDevice, rawBuffer, DE_NULL);
 
 	// check if one of the allowed errors was returned
 	if ((result == VK_ERROR_OUT_OF_DEVICE_MEMORY) ||

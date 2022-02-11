@@ -148,7 +148,7 @@ std::string glslTraverseBasicTypes (const std::string&			rootName,
 	else
 	{
 		DE_ASSERT(false);
-		return DE_NULL;
+		return "";
 	}
 }
 
@@ -311,7 +311,7 @@ std::string Variable::basicSubobjectAtIndex (const int subobjectIndex, const int
 		++currentIndex;
 	}
 	DE_ASSERT(false);
-	return DE_NULL;
+	return "";
 }
 
 class IOBlock : public TopLevelObject
@@ -428,7 +428,7 @@ std::string IOBlock::basicSubobjectAtIndex (const int subobjectIndex, const int 
 		}
 	}
 	DE_ASSERT(false);
-	return DE_NULL;
+	return "";
 }
 
 class UserDefinedIOTest : public TestCase
@@ -470,7 +470,7 @@ UserDefinedIOTest::UserDefinedIOTest (tcu::TestContext& testCtx, const std::stri
 	const std::string	vertexAttrArrayInputSize	= m_caseDef.vertexIOArraySize == VERTEX_IO_ARRAY_SIZE_IMPLICIT					? ""
 													: m_caseDef.vertexIOArraySize == VERTEX_IO_ARRAY_SIZE_EXPLICIT_SHADER_BUILTIN	? "gl_MaxPatchVertices"
 													: m_caseDef.vertexIOArraySize == VERTEX_IO_ARRAY_SIZE_EXPLICIT_SPEC_MIN			? de::toString(MAX_TESSELLATION_PATCH_SIZE)
-													: DE_NULL;
+													: deFatalStr("Invalid vertexIOArraySize");
 
 	const char* const	maybePatch					= isPerPatchIO ? "patch " : "";
 	const std::string	outMaybePatch				= std::string() + maybePatch + "out ";

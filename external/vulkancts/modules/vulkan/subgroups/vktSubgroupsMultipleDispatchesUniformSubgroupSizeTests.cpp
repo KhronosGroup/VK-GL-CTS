@@ -191,6 +191,10 @@ tcu::TestStatus MultipleDispatchesUniformSubgroupSizeInstance::iterate (void)
 			// Clears the values written on the previous iteration.
 			vk.cmdFillBuffer(*cmdBuffer, *resultBuffer, 0u, VK_WHOLE_SIZE, 0);
 
+			const auto								fillBarrier				= makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_WRITE_BIT, *resultBuffer, 0ull, bufferSize);
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags) 0,
+								  0, (const VkMemoryBarrier *) DE_NULL, 1, &fillBarrier, 0, (const VkImageMemoryBarrier *) DE_NULL);
+
 			const deUint32							zero					= 0u;
 			vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u, &descriptorSet.get(), 1, &zero);
 			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
@@ -260,7 +264,7 @@ MultipleDispatchesUniformSubgroupSize::MultipleDispatchesUniformSubgroupSize (tc
 
 void MultipleDispatchesUniformSubgroupSize::checkSupport (Context& context) const
 {
-	const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&	subgroupSizeControlFeatures	= context.getSubgroupSizeControlFeaturesEXT();
+	const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&	subgroupSizeControlFeatures	= context.getSubgroupSizeControlFeatures();
 
 	if (subgroupSizeControlFeatures.subgroupSizeControl == DE_FALSE)
 		TCU_THROW(NotSupportedError, "Device does not support varying subgroup sizes");

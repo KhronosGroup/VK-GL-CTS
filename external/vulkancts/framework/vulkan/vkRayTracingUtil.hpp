@@ -81,6 +81,9 @@ std::string getCommonRayGenerationShader (void);
 // Get lowercase version of the format name with no VK_FORMAT_ prefix.
 std::string getFormatSimpleName (vk::VkFormat format);
 
+// Test whether given poin p belons to the triangle (p0, p1, p2)
+bool pointInTriangle2D(const tcu::Vec3& p, const tcu::Vec3& p0, const tcu::Vec3& p1, const tcu::Vec3& p2);
+
 // Checks the given vertex buffer format is valid for acceleration structures.
 // Note: VK_KHR_get_physical_device_properties2 and VK_KHR_acceleration_structure are supposed to be supported.
 void checkAccelerationStructureVertexBufferFormat (const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice, vk::VkFormat format);

@@ -258,7 +258,6 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 	bool									success							= true;
 	const deBool							isDedicatedAllocationSupported	= m_context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation");
 	const deBool							isYcbcrSupported				= m_context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion");
-	const deBool							isYcbcrExtensionSupported		= m_context.isDeviceFunctionalitySupported("VK_EXT_ycbcr_2plane_444_formats");
 	std::vector<int>						optimalFormats;
 	std::vector<int>						linearFormats;
 	std::vector<int>						memoryTypes;
@@ -506,9 +505,6 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 	for (int i = 0; i < formatCount; i++)
 	{
 		if (isYCbCrFormat((VkFormat)formatlist[i]) && !isYcbcrSupported)
-			continue;
-
-		if (isYCbCrExtensionFormat((VkFormat)formatlist[i]) && !isYcbcrExtensionSupported)
 			continue;
 
 		vk::VkImageFormatProperties imageformatprops;
@@ -785,13 +781,13 @@ tcu::TestStatus AlignmentMatchingInstance::iterate(void)
 			DE_NULL,
 			&bufferCreateInfo
 		};
-		vk.getDeviceBufferMemoryRequirementsKHR(device, &bufferMemInfo, &requirements2[1]);
+		vk.getDeviceBufferMemoryRequirements(device, &bufferMemInfo, &requirements2[1]);
 
 		if (!areRequirementsTheSame(requirements2[0], requirements2[1]))
 		{
 			success = false;
 			log << tcu::TestLog::Message
-				<< "vkGetDeviceBufferMemoryRequirementsKHR and vkGetBufferMemoryRequirements2\n"
+				<< "vkGetDeviceBufferMemoryRequirements and vkGetBufferMemoryRequirements2\n"
 				   "report diferent memory requirements\n"
 				<< tcu::TestLog::EndMessage;
 		}
@@ -806,13 +802,13 @@ tcu::TestStatus AlignmentMatchingInstance::iterate(void)
 			&imageCreateInfo,
 			vk::VkImageAspectFlagBits(0)
 		};
-		vk.getDeviceImageMemoryRequirementsKHR(device, &imageMemInfo, &requirements2[1]);
+		vk.getDeviceImageMemoryRequirements(device, &imageMemInfo, &requirements2[1]);
 
 		if (!areRequirementsTheSame(requirements2[0], requirements2[1]))
 		{
 			success = false;
 			log << tcu::TestLog::Message
-				<< "vkGetDeviceImageMemoryRequirementsKHR and vkGetImageMemoryRequirements2\n"
+				<< "vkGetDeviceImageMemoryRequirements and vkGetImageMemoryRequirements2\n"
 				   "report diferent memory requirements\n"
 				<< tcu::TestLog::EndMessage;
 		}

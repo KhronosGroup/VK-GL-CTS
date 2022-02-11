@@ -478,35 +478,6 @@ vk::VkResult queueSubmit (ProtectedContext&		context,
 	return vk.waitForFences(device, 1u, &fence, DE_TRUE, timeout);
 }
 
-vk::Move<vk::VkPipeline> makeComputePipeline (const vk::DeviceInterface&		vk,
-											  const vk::VkDevice				device,
-											  const vk::VkPipelineLayout		pipelineLayout,
-											  const vk::VkShaderModule			shaderModule,
-											  const vk::VkSpecializationInfo*	specInfo)
-{
-	const vk::VkPipelineShaderStageCreateInfo shaderStageInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType					sType;
-		DE_NULL,													// const void*						pNext;
-		(vk::VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags	flags;
-		vk::VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits			stage;
-		shaderModule,												// VkShaderModule					module;
-		"main",														// const char*						pName;
-		specInfo,													// const VkSpecializationInfo*		pSpecializationInfo;
-	};
-	const vk::VkComputePipelineCreateInfo pipelineInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,	// VkStructureType					sType;
-		DE_NULL,											// const void*						pNext;
-		(vk::VkPipelineCreateFlags)0,						// VkPipelineCreateFlags			flags;
-		shaderStageInfo,									// VkPipelineShaderStageCreateInfo	stage;
-		pipelineLayout,										// VkPipelineLayout					layout;
-		DE_NULL,											// VkPipeline						basePipelineHandle;
-		0,													// deInt32							basePipelineIndex;
-	};
-	return vk::createComputePipeline(vk, device, DE_NULL , &pipelineInfo);
-}
-
 vk::Move<vk::VkSampler> makeSampler (const vk::DeviceInterface& vk, const vk::VkDevice& device)
 {
 	const vk::VkSamplerCreateInfo createInfo =

@@ -623,7 +623,7 @@ tcu::TestStatus DiscardRectanglesTestInstance::iterate	(void)
 		vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_vertices.size()), 1u, 0u, 0u);	// two triangles
 
 		if (m_params.useDynamicRendering)
-			vk.cmdEndRenderingKHR(*m_cmdBuffer);
+			vk.cmdEndRendering(*m_cmdBuffer);
 		else
 			vk.cmdEndRenderPass(*m_cmdBuffer);
 

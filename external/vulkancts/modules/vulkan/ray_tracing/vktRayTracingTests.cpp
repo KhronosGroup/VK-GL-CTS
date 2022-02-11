@@ -44,6 +44,7 @@
 #include "vktRayTracingDirectionTests.hpp"
 #include "vktRayTracingBarycentricCoordinatesTests.hpp"
 #include "vktRayTracingNonUniformArgsTests.hpp"
+#include "vktRayTracingPipelineFlagsTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -83,6 +84,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createInsideAABBsTests(testCtx));
 	group->addChild(createBarycentricCoordinatesTests(testCtx));
 	group->addChild(createNonUniformArgsTests(testCtx));
+	group->addChild(createPipelineFlagsTests(testCtx));
 
 	return group.release();
 }

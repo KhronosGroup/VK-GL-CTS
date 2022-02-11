@@ -572,7 +572,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 				DE_NULL,																		// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 			};
 
-			vk.cmdBeginRenderingKHR(*cmdBuffer, &renderingInfo);
+			vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
 		}
 		else
 		{

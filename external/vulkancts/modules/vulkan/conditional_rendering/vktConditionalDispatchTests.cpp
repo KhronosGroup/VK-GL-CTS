@@ -220,7 +220,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 
 	const vk::Unique<vk::VkShaderModule>	shaderModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
 	const vk::Unique<vk::VkPipelineLayout>	pipelineLayout		(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const vk::Unique<vk::VkPipeline>		pipeline			(compute::makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+	const vk::Unique<vk::VkPipeline>		pipeline			(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
 
 	const vk::Unique<vk::VkCommandPool>		cmdPool				(makeCommandPool(vk, device, queueFamilyIndex));
 	const vk::Unique<vk::VkCommandBuffer>	cmdBuffer			(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));

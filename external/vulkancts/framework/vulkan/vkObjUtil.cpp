@@ -66,6 +66,20 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
 	return createComputePipeline(vk, device, DE_NULL , &pipelineCreateInfo);
 }
 
+Move<VkPipeline> makeComputePipeline (const DeviceInterface&	vk,
+									  const VkDevice			device,
+									  const VkPipelineLayout	pipelineLayout,
+									  const VkShaderModule		shaderModule)
+{
+	return makeComputePipeline(vk,
+							   device,
+							   pipelineLayout,
+							   static_cast<VkPipelineCreateFlags>(0u),
+							   shaderModule,
+							   static_cast<VkPipelineShaderStageCreateFlags>(0u),
+							   DE_NULL);
+}
+
 Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface&						vk,
 									  const VkDevice								device,
 									  const VkPipelineLayout						pipelineLayout,

@@ -123,12 +123,6 @@ vk::VkResult						queueSubmit							(ProtectedContext&					context,
 																		 vk::VkFence						fence,
 																		 deUint64							timeout);
 
-vk::Move<vk::VkPipeline>			makeComputePipeline					(const vk::DeviceInterface&			vk,
-																		 const vk::VkDevice					device,
-																		 const vk::VkPipelineLayout			pipelineLayout,
-																		 const vk::VkShaderModule			shaderModule,
-																		 const vk::VkSpecializationInfo*	specInfo);
-
 vk::Move<vk::VkSampler>				makeSampler							(const vk::DeviceInterface&			vk,
 																		 const vk::VkDevice&				device);
 vk::Move<vk::VkCommandPool>			makeCommandPool						(const vk::DeviceInterface&			vk,

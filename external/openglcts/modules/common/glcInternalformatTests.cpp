@@ -1134,6 +1134,11 @@ tcu::TestNode::IterateResult RenderbufferCase::iterate(void)
 	bool stencilRenderbufferAvailable =
 		(m_testFormat.type == RENDERBUFFER_STENCIL) || (m_testFormat.type == RENDERBUFFER_DEPTH_STENCIL);
 
+	bool separateDepth =
+		(m_testFormat.type == RENDERBUFFER_DEPTH);
+	bool separateStencil =
+		(m_testFormat.type == RENDERBUFFER_STENCIL);
+
 	GLenum	testFormat = getUnsizedFormatFromInternalFormat(m_testFormat.format);
 	GLenum	testType = getTypeFromInternalFormat(m_testFormat.format);
 	const bool isSRGB	= m_testFormat.format == GL_SRGB8 || m_testFormat.format == GL_SRGB8_ALPHA8;
@@ -1156,16 +1161,18 @@ tcu::TestNode::IterateResult RenderbufferCase::iterate(void)
 	{
 		GLint hasDepthBuffer	= 0;
 		GLint hasStencilBuffer	= 0;
+		bool  defaultFboIsZero	= m_context.getRenderContext().getDefaultFramebuffer() == 0;
 
-		gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_DEPTH, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &hasDepthBuffer);
-		gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_STENCIL, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &hasStencilBuffer);
+		if (separateDepth)
+			gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, (defaultFboIsZero) ? GL_DEPTH : GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &hasDepthBuffer);
+		if (separateStencil)
+			gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, (defaultFboIsZero) ? GL_STENCIL : GL_STENCIL_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &hasStencilBuffer);
 
 		if (hasDepthBuffer != GL_NONE)
-			gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_DEPTH, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE,
+			gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, (defaultFboIsZero) ? GL_DEPTH : GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE,
 							       &defaultFramebufferDepthBits);
-
 		if (hasStencilBuffer != GL_NONE)
-			gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_STENCIL, GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE,
+			gl.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, (defaultFboIsZero) ? GL_STENCIL : GL_STENCIL_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE,
 							       &defaultFramebufferStencilBits);
 	}
 

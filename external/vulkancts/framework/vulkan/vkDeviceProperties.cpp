@@ -35,6 +35,7 @@ DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 	m_coreProperties2		= initVulkanStructure();
 	m_vulkan11Properties	= initVulkanStructure();
 	m_vulkan12Properties	= initVulkanStructure();
+	m_vulkan13Properties	= initVulkanStructure();
 
 	if (isInstanceExtensionSupported(apiVersion, instanceExtensions, "VK_KHR_get_physical_device_properties2"))
 	{
@@ -42,8 +43,9 @@ DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 		void**										nextPtr						= &m_coreProperties2.pNext;
 		std::vector<PropertyStructWrapperBase*>		propertiesToFillFromBlob;
 		std::vector<PropertyStructWrapperBase*>		propertiesAddedWithVK;
-		bool										vk11Supported				= (apiVersion >= VK_MAKE_VERSION(1, 1, 0));
-		bool										vk12Supported				= (apiVersion >= VK_MAKE_VERSION(1, 2, 0));
+		bool										vk11Supported				= (apiVersion >= VK_API_VERSION_1_1);
+		bool										vk12Supported				= (apiVersion >= VK_API_VERSION_1_2);
+		bool										vk13Supported				= (apiVersion >= VK_API_VERSION_1_3);
 
 		// there are 3 properies structures that were added with vk11 (without being first part of extension)
 		if (vk11Supported)
@@ -64,12 +66,15 @@ DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 			}
 		}
 
-		// in vk12 we have blob structures combining properties of couple previously
-		// available property structures, that now in vk12 must be removed from chain
+		// since vk12 we have blob structures combining properties of couple previously
+		// available property structures, that now in vk12 and above must be removed from chain
 		if (vk12Supported)
 		{
 			addToChainVulkanStructure(&nextPtr, m_vulkan11Properties);
 			addToChainVulkanStructure(&nextPtr, m_vulkan12Properties);
+
+			if (vk13Supported)
+				addToChainVulkanStructure(&nextPtr, m_vulkan13Properties);
 		}
 
 		// iterate over data for all property that are defined in specification
@@ -88,7 +93,11 @@ DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 				// we dont add it to the chain but store and fill later from blob data
 				bool propertyFilledFromBlob = false;
 				if (vk12Supported)
-					propertyFilledFromBlob = isPartOfBlobProperties(p->getPropertyDesc().sType);
+				{
+					deUint32 blobApiVersion = getBlobPropertiesVersion(p->getPropertyDesc().sType);
+					if (blobApiVersion)
+						propertyFilledFromBlob = (apiVersion >= blobApiVersion);
+				}
 
 				if (propertyFilledFromBlob)
 					propertiesToFillFromBlob.push_back(p);
@@ -103,13 +112,14 @@ DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 
 		vki.getPhysicalDeviceProperties2(physicalDevice, &m_coreProperties2);
 
-		// fill data from VkPhysicalDeviceVulkan1{1,2}Properties
+		// fill data from VkPhysicalDeviceVulkan1{1,2,3}Properties
 		if (vk12Supported)
 		{
 			AllPropertiesBlobs allBlobs =
 			{
 				m_vulkan11Properties,
 				m_vulkan12Properties,
+				m_vulkan13Properties,
 				// add blobs from future vulkan versions here
 			};
 
