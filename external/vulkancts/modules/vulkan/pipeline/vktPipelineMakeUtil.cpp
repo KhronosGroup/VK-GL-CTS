@@ -60,35 +60,6 @@ Move<VkCommandBuffer> makeCommandBuffer (const DeviceInterface& vk, const VkDevi
 	return allocateCommandBuffer(vk, device, commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 }
 
-Move<VkPipeline> makeComputePipeline (const DeviceInterface&		vk,
-									  const VkDevice				device,
-									  const VkPipelineLayout		pipelineLayout,
-									  const VkShaderModule			shaderModule,
-									  const VkSpecializationInfo*	specInfo)
-{
-	const VkPipelineShaderStageCreateInfo shaderStageInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType					sType;
-		DE_NULL,												// const void*						pNext;
-		(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags	flags;
-		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits			stage;
-		shaderModule,											// VkShaderModule					module;
-		"main",													// const char*						pName;
-		specInfo,												// const VkSpecializationInfo*		pSpecializationInfo;
-	};
-	const VkComputePipelineCreateInfo pipelineInfo =
-	{
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType					sType;
-		DE_NULL,											// const void*						pNext;
-		(VkPipelineCreateFlags)0,							// VkPipelineCreateFlags			flags;
-		shaderStageInfo,									// VkPipelineShaderStageCreateInfo	stage;
-		pipelineLayout,										// VkPipelineLayout					layout;
-		DE_NULL,											// VkPipeline						basePipelineHandle;
-		0,													// deInt32							basePipelineIndex;
-	};
-	return createComputePipeline(vk, device, DE_NULL , &pipelineInfo);
-}
-
 MovePtr<Allocation> bindImageDedicated (const InstanceInterface& vki, const DeviceInterface& vkd, const VkPhysicalDevice physDevice, const VkDevice device, const VkImage image, const MemoryRequirement requirement)
 {
 	MovePtr<Allocation> alloc(allocateDedicated(vki, vkd, physDevice, device, image, requirement));

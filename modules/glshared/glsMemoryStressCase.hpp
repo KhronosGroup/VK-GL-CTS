@@ -50,7 +50,7 @@ struct MemObjectConfig
 	int minTextureSize;
 	int maxTextureSize;
 
-	bool useDummyData;
+	bool useUnusedData;
 	bool write;
 	bool use;
 };
@@ -58,7 +58,7 @@ struct MemObjectConfig
 class MemoryStressCase : public tcu::TestCase
 {
 public:
-							MemoryStressCase		(tcu::TestContext& testCtx, glu::RenderContext& renderContext, deUint32 objectTypes, int minTextureSize, int maxTextureSize, int minBufferSize, int maxBufferSize, bool write, bool use, bool useDummyData, bool clearAfterOOM, const char* name, const char* desc);
+							MemoryStressCase		(tcu::TestContext& testCtx, glu::RenderContext& renderContext, deUint32 objectTypes, int minTextureSize, int maxTextureSize, int minBufferSize, int maxBufferSize, bool write, bool use, bool useUnusedData, bool clearAfterOOM, const char* name, const char* desc);
 							~MemoryStressCase		(void);
 
 	void					init					(void);

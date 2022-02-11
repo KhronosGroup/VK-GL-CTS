@@ -189,27 +189,27 @@ public:
 	virtual ~SynchronizationWrapperBase() = default;
 
 	virtual void			addSubmitInfo		(deUint32									waitSemaphoreInfoCount,
-												 const vk::VkSemaphoreSubmitInfoKHR*		pWaitSemaphoreInfos,
+												 const vk::VkSemaphoreSubmitInfo*			pWaitSemaphoreInfos,
 												 deUint32									commandBufferInfoCount,
-												 const vk::VkCommandBufferSubmitInfoKHR*	pCommandBufferInfos,
+												 const vk::VkCommandBufferSubmitInfo*		pCommandBufferInfos,
 												 deUint32									signalSemaphoreInfoCount,
-												 const vk::VkSemaphoreSubmitInfoKHR*		pSignalSemaphoreInfos,
+												 const vk::VkSemaphoreSubmitInfo*			pSignalSemaphoreInfos,
 												 bool										usingWaitTimelineSemaphore = DE_FALSE,
 												 bool										usingSignalTimelineSemaphore = DE_FALSE) = 0;
 
 	virtual void			cmdPipelineBarrier	(vk::VkCommandBuffer						commandBuffer,
-												 const vk::VkDependencyInfoKHR*				pDependencyInfo) const = 0;
+												 const vk::VkDependencyInfo*				pDependencyInfo) const = 0;
 
 	virtual void			cmdSetEvent			(vk::VkCommandBuffer						commandBuffer,
 												 vk::VkEvent								event,
-												 const vk::VkDependencyInfoKHR*				pDependencyInfo) const = 0;
+												 const vk::VkDependencyInfo*				pDependencyInfo) const = 0;
 	virtual void			cmdResetEvent		(vk::VkCommandBuffer						commandBuffer,
 												 vk::VkEvent								event,
-												 vk::VkPipelineStageFlags2KHR				flag) const = 0;
+												 vk::VkPipelineStageFlags2					flag) const = 0;
 	virtual void			cmdWaitEvents		(vk::VkCommandBuffer						commandBuffer,
 												 deUint32									eventCount,
 												 const vk::VkEvent*							pEvents,
-												 const vk::VkDependencyInfoKHR*				pDependencyInfo) const = 0;
+												 const vk::VkDependencyInfo*				pDependencyInfo) const = 0;
 
 	virtual vk::VkResult	queueSubmit			(vk::VkQueue								queue,
 												 vk::VkFence								fence) = 0;
@@ -299,7 +299,7 @@ std::string							getResourceName								(const ResourceDescription& resource);
 bool								isIndirectBuffer							(const ResourceType type);
 vk::VkCommandBufferSubmitInfoKHR	makeCommonCommandBufferSubmitInfo			(const vk::VkCommandBuffer cmdBuf);
 vk::VkSemaphoreSubmitInfoKHR		makeCommonSemaphoreSubmitInfo				(vk::VkSemaphore semaphore, deUint64 value, vk::VkPipelineStageFlags2KHR stageMask);
-vk::VkDependencyInfoKHR				makeCommonDependencyInfo					(const vk::VkMemoryBarrier2KHR* pMemoryBarrier = DE_NULL, const vk::VkBufferMemoryBarrier2KHR* pBufferMemoryBarrier = DE_NULL, const vk::VkImageMemoryBarrier2KHR* pImageMemoryBarrier = DE_NULL);
+vk::VkDependencyInfoKHR				makeCommonDependencyInfo					(const vk::VkMemoryBarrier2KHR* pMemoryBarrier = DE_NULL, const vk::VkBufferMemoryBarrier2KHR* pBufferMemoryBarrier = DE_NULL, const vk::VkImageMemoryBarrier2KHR* pImageMemoryBarrier = DE_NULL, bool eventDependency = DE_FALSE);
 
 } // synchronization
 } // vkt

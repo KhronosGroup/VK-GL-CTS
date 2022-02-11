@@ -105,7 +105,7 @@ struct CompareData
 	}
 };
 
-//! Make a dummy sampler.
+//! Make a (unused) sampler.
 Move<VkSampler> makeSampler (const DeviceInterface& vk, const VkDevice device)
 {
 	const VkSamplerCreateInfo samplerParams =
@@ -1149,7 +1149,7 @@ void dispatchImageCheck (Context& context, const TestParams& params, WorkingData
 	const std::string				shaderName		("comp_" + getSampleCountString(params.perSubpassSamples[subpassNdx]));
 	const Unique<VkShaderModule>	shaderModule	(createShaderModule(vk, device, context.getBinaryCollection().get(shaderName), 0u));
 	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline>		pipeline		(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule, DE_NULL));
+	const Unique<VkPipeline>		pipeline		(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
 
 	const Unique<VkCommandPool>		cmdPool		(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex()));
 	const Unique<VkCommandBuffer>	cmdBuffer	(makeCommandBuffer(vk, device, *cmdPool));

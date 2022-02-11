@@ -589,6 +589,8 @@ void DualSourceBlendTest::initPrograms (SourceCollections& sourceCollections) co
 		"{\n"
 		"	fragColor0 = vtxColor0;\n"
 		"	fragColor1 = vtxColor1;\n"
+		"   if (int(gl_FragCoord.x) == 2 || int(gl_FragCoord.y) == 3)\n"
+		"      discard;\n"
 		"}\n";
 
 	sourceCollections.glslSources.add("color_frag") << glu::FragmentSource(fragmentSource.str());
@@ -1494,9 +1496,17 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage (void)
 	ReferenceRenderer					refRenderer64		(m_renderSize.x(), m_renderSize.y(), 1, tcuColorFormat64, tcuDepthFormat, &program);
 	ReferenceRenderer					refRenderer8		(m_renderSize.x(), m_renderSize.y(), 1, tcuColorFormat8, tcuDepthFormat, &program);
 	bool								compareOk			= false;
+	tcu::PixelBufferAccess				access				= refRenderer.getAccess();
+	tcu::PixelBufferAccess				access8				= refRenderer8.getAccess();
+	tcu::PixelBufferAccess				access64			= refRenderer64.getAccess();
 
 	// Render reference image
 	{
+		// read clear color
+		tcu::Vec4 discardColor		= access.getPixel(0, 0);
+		tcu::Vec4 discardColor8		= access8.getPixel(0, 0);
+		tcu::Vec4 discardColor64	= access64.getPixel(0, 0);
+
 		for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
 		{
 			const VkPipelineColorBlendAttachmentState& blendState = m_blendStates[quadNdx];
@@ -1532,6 +1542,37 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage (void)
 									  m_vertices.begin() + (quadNdx + 1) * 6));
 			}
 		}
+
+		// re-request the pixel access; copies various formats to accessable ones
+		// (if we don't do this, the above draws don't matter)
+		access = refRenderer.getAccess();
+		access8 = refRenderer8.getAccess();
+		access64 = refRenderer64.getAccess();
+
+		// Paint back the discarded pixels with the clear color. The reference
+		// renderer doesn't actually run the shader, and doesn't know about discard,
+		// so this is a way to get to the images we wanted.
+		for (int i = 0; i < access.getWidth(); i++)
+		{
+			access.setPixel(discardColor, i, 3);
+			if (isLegalExpandableFormat(tcuColorFormat.type))
+			{
+				access64.setPixel(discardColor64, i, 3);
+				if (isSmallerThan8BitFormat(tcuColorFormat.type))
+					access8.setPixel(discardColor8, i, 3);
+			}
+		}
+
+		for (int i = 0; i < access.getHeight(); i++)
+		{
+			access.setPixel(discardColor, 2, i);
+			if (isLegalExpandableFormat(tcuColorFormat.type))
+			{
+				access64.setPixel(discardColor64, 2, i);
+				if (isSmallerThan8BitFormat(tcuColorFormat.type))
+					access8.setPixel(discardColor8, 2, i);
+			}
+		}
 	}
 
 	// Compare result with reference image
@@ -1557,7 +1598,7 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage (void)
 		compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(),
 											   "FloatImageCompare",
 											   "Image comparison",
-											   refRenderer.getAccess(),
+											   access,
 											   result->getAccess(),
 											   threshold,
 											   tcu::COMPARE_LOG_RESULT);
@@ -1567,7 +1608,7 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage (void)
 			if (!compareOk && isSmallerThan8BitFormat(tcuColorFormat.type))
 			{
 				// Convert to target format
-				tcu::copy(refLevel.getAccess(), refRenderer8.getAccess());
+				tcu::copy(refLevel.getAccess(), access8);
 
 				compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(),
 													   "FloatImageCompare",
@@ -1581,7 +1622,7 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage (void)
 			if (!compareOk)
 			{
 				// Convert to target format
-				tcu::copy(refLevel.getAccess(), refRenderer64.getAccess());
+				tcu::copy(refLevel.getAccess(), access64);
 
 				compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(),
 													   "FloatImageCompare",

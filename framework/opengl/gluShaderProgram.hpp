@@ -337,6 +337,16 @@ struct CallableSource : public ShaderSource
 	CallableSource(const std::string& source_) : ShaderSource(glu::SHADERTYPE_CALLABLE, source_) {}
 };
 
+struct TaskSource : public ShaderSource
+{
+	TaskSource(const std::string& source_) : ShaderSource(glu::SHADERTYPE_TASK, source_) {}
+};
+
+struct MeshSource : public ShaderSource
+{
+	MeshSource(const std::string& source_) : ShaderSource(glu::SHADERTYPE_MESH, source_) {}
+};
+
 struct ProgramSources
 {
 	std::vector<std::string>			sources[SHADERTYPE_LAST];

@@ -198,6 +198,114 @@ void endRenderPass (const DeviceInterface&	vk,
 	vk.cmdEndRenderPass(commandBuffer);
 }
 
+void beginRendering(const DeviceInterface&		vk,
+					const VkCommandBuffer		commandBuffer,
+					const VkImageView			colorImageView,
+					const VkRect2D&				renderArea,
+					const VkClearValue&			clearValue,
+					const VkImageLayout			imageLayout,
+					const VkAttachmentLoadOp	loadOperation,
+					VkRenderingFlagsKHR			renderingFlags,
+					const deUint32				layerCount,
+					const deUint32				viewMask)
+{
+	VkRenderingAttachmentInfoKHR colorAttachment
+	{
+		VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,		// VkStructureType						sType;
+		DE_NULL,												// const void*							pNext;
+		colorImageView,											// VkImageView							imageView;
+		imageLayout,											// VkImageLayout						imageLayout;
+		VK_RESOLVE_MODE_NONE,									// VkResolveModeFlagBits				resolveMode;
+		DE_NULL,												// VkImageView							resolveImageView;
+		VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout						resolveImageLayout;
+		loadOperation,											// VkAttachmentLoadOp					loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,							// VkAttachmentStoreOp					storeOp;
+		clearValue												// VkClearValue							clearValue;
+	};
+
+	VkRenderingInfoKHR renderingInfo
+	{
+		VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+		DE_NULL,
+		renderingFlags,											// VkRenderingFlagsKHR					flags;
+		renderArea,												// VkRect2D								renderArea;
+		layerCount,												// deUint32								layerCount;
+		viewMask,												// deUint32								viewMask;
+		1u,														// deUint32								colorAttachmentCount;
+		&colorAttachment,										// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+		DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+		DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+	};
+
+	vk.cmdBeginRendering(commandBuffer, &renderingInfo);
+}
+
+void beginRendering(const DeviceInterface&		vk,
+					const VkCommandBuffer		commandBuffer,
+					const VkImageView			colorImageView,
+					const VkImageView			depthStencilImageView,
+					const bool					useStencilAttachment,
+					const VkRect2D&				renderArea,
+					const VkClearValue&			clearColorValue,
+					const VkClearValue&			clearDepthValue,
+					const VkImageLayout			colorImageLayout,
+					const VkImageLayout			depthImageLayout,
+					const VkAttachmentLoadOp	loadOperation,
+					VkRenderingFlagsKHR			renderingFlags,
+					const deUint32				layerCount,
+					const deUint32				viewMask)
+{
+	VkRenderingAttachmentInfoKHR colorAttachment
+	{
+		VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,		// VkStructureType						sType;
+		DE_NULL,												// const void*							pNext;
+		colorImageView,											// VkImageView							imageView;
+		colorImageLayout,										// VkImageLayout						imageLayout;
+		VK_RESOLVE_MODE_NONE,									// VkResolveModeFlagBits				resolveMode;
+		DE_NULL,												// VkImageView							resolveImageView;
+		VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout						resolveImageLayout;
+		loadOperation,											// VkAttachmentLoadOp					loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,							// VkAttachmentStoreOp					storeOp;
+		clearColorValue											// VkClearValue							clearValue;
+	};
+
+	VkRenderingAttachmentInfoKHR depthStencilAttachment
+	{
+		VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,		// VkStructureType						sType;
+		DE_NULL,												// const void*							pNext;
+		depthStencilImageView,									// VkImageView							imageView;
+		depthImageLayout,										// VkImageLayout						imageLayout;
+		VK_RESOLVE_MODE_NONE,									// VkResolveModeFlagBits				resolveMode;
+		DE_NULL,												// VkImageView							resolveImageView;
+		VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout						resolveImageLayout;
+		loadOperation,											// VkAttachmentLoadOp					loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,							// VkAttachmentStoreOp					storeOp;
+		clearDepthValue											// VkClearValue							clearValue;
+	};
+
+	VkRenderingInfoKHR renderingInfo
+	{
+		VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+		DE_NULL,
+		renderingFlags,												// VkRenderingFlagsKHR					flags;
+		renderArea,													// VkRect2D								renderArea;
+		layerCount,													// deUint32								layerCount;
+		viewMask,													// deUint32								viewMask;
+		1u,															// deUint32								colorAttachmentCount;
+		&colorAttachment,											// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+		&depthStencilAttachment,									// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+		useStencilAttachment ? &depthStencilAttachment : DE_NULL,	// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+	};
+
+	vk.cmdBeginRendering(commandBuffer, &renderingInfo);
+}
+
+void endRendering(const DeviceInterface&	vk,
+				  const VkCommandBuffer		commandBuffer)
+{
+	vk.cmdEndRendering(commandBuffer);
+}
+
 void submitCommandsAndWait (const DeviceInterface&		vk,
 							const VkDevice				device,
 							const VkQueue				queue,

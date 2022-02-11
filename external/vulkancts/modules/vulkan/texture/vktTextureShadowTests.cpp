@@ -207,7 +207,7 @@ bool verifyTexCompareResult (tcu::TestContext&						testCtx,
 
 void checkTextureSupport (Context& context, const Texture2DShadowTestCaseParameters& testParameters)
 {
-	const VkFormatPropertiesExtendedKHR formatProperties = context.getFormatProperties(testParameters.format);
+	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
 }
@@ -419,7 +419,7 @@ struct TextureCubeShadowTestCaseParameters : public TextureShadowCommonTestCaseP
 
 void checkTextureSupport (Context& context, const TextureCubeShadowTestCaseParameters& testParameters)
 {
-	const VkFormatPropertiesExtendedKHR formatProperties = context.getFormatProperties(testParameters.format);
+	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
 }
@@ -645,7 +645,7 @@ struct Texture2DArrayShadowTestCaseParameters : public TextureShadowCommonTestCa
 
 void checkTextureSupport (Context& context, const Texture2DArrayShadowTestCaseParameters& testParameters)
 {
-	const VkFormatPropertiesExtendedKHR formatProperties = context.getFormatProperties(testParameters.format);
+	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
 }
@@ -863,7 +863,7 @@ struct Texture1DShadowTestCaseParameters : public Texture1DTestCaseParameters, p
 
 void checkTextureSupport (Context& context, const Texture1DShadowTestCaseParameters& testParameters)
 {
-	const VkFormatPropertiesExtendedKHR formatProperties = context.getFormatProperties(testParameters.format);
+	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
 }
@@ -1074,7 +1074,7 @@ struct Texture1DArrayShadowTestCaseParameters : public TextureShadowCommonTestCa
 
 void checkTextureSupport (Context& context, const Texture1DArrayShadowTestCaseParameters& testParameters)
 {
-	const VkFormatPropertiesExtendedKHR formatProperties = context.getFormatProperties(testParameters.format);
+	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
 }
@@ -1289,7 +1289,7 @@ struct TextureCubeArrayShadowTestCaseParameters : public TextureShadowCommonTest
 
 void checkTextureSupport (Context& context, const TextureCubeArrayShadowTestCaseParameters& testParameters)
 {
-	const VkFormatPropertiesExtendedKHR formatProperties = context.getFormatProperties(testParameters.format);
+	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
 }

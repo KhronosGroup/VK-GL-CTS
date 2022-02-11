@@ -23,7 +23,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktFragmentOperationsEarlyFragmentTests.hpp"
-#include "vktFragmentOperationsMakeUtil.hpp"
 #include "vktTestCaseUtil.hpp"
 
 #include "vkDefs.hpp"
@@ -475,10 +474,51 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 	{
 		invalidateAlloc(vk, device, *colorBufferAlloc);
 
-		const tcu::ConstPixelBufferAccess imagePixelAccess(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, colorBufferAlloc->getHostPtr());
+		const tcu::ConstPixelBufferAccess	imagePixelAccess(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, colorBufferAlloc->getHostPtr());
+		tcu::TextureLevel					referenceImage(mapVkFormat(colorFormat), renderSize.x(), renderSize.y());
 
-		tcu::TestLog& log = m_context.getTestContext().getLog();
-		log << tcu::TestLog::Image("color0", "Rendered image", imagePixelAccess);
+		if (m_useTestAttachment == true)
+		{
+			const tcu::Vec4	fillColor	= tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f);
+			const tcu::Vec4	clearColor	= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+			tcu::clear(referenceImage.getAccess(), clearColor);
+
+			if (m_testMode == MODE_DEPTH)
+			{
+				int xOffset = 0;
+
+				for (int y = 0; y < renderSize.y() - 1; y++)
+				{
+					for (int x = 0; x < renderSize.x() - 1 - xOffset; x++)
+					{
+						referenceImage.getAccess().setPixel(fillColor, x, y);
+					}
+
+					xOffset++;
+				}
+			}
+
+			if (m_testMode == MODE_STENCIL)
+			{
+				for (int y = 0; y < renderSize.y(); y++)
+				{
+					for (int x = 0; x < renderSize.x() / 2; x++)
+					{
+						referenceImage.getAccess().setPixel(fillColor, x, y);
+					}
+				}
+			}
+		}
+		else
+		{
+			const tcu::Vec4	clearColor = tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f);
+
+			tcu::clear(referenceImage.getAccess(), clearColor);
+		}
+
+		if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison", referenceImage.getAccess(), imagePixelAccess, tcu::Vec4(0.02f), tcu::COMPARE_LOG_RESULT))
+			return tcu::TestStatus::fail("Rendered color image is not correct");
 	}
 
 	// Verify results
@@ -755,10 +795,12 @@ tcu::TestStatus EarlyFragmentDiscardTestInstance::iterate (void)
 			int		stencilValue	= (m_testMode == MODE_STENCIL) ? dsPixelAccess.getPixStencil(x, y, z) : 0;
 
 			// Depth test should write to the depth buffer even when there is a discard in the fragment shader,
-			// when early fragment tests are enabled.
+			// when early fragment tests are enabled. We allow some tolerance to account for precision error
+			// on depth writes.
 			if (m_testMode == MODE_DEPTH)
 			{
-				if (m_useEarlyTests && ((x + y) < 31) && depthValue >= 0.5f)
+				float tolerance = 0.0001f;
+				if (m_useEarlyTests && ((x + y) < 31) && depthValue >= 0.50 + tolerance)
 				{
 					std::ostringstream error;
 					error << "Rendered depth value [ "<< x << ", " << y << ", " << z << "] is not correct: " << depthValue << " >= 0.5f";
@@ -766,7 +808,7 @@ tcu::TestStatus EarlyFragmentDiscardTestInstance::iterate (void)
 				}
 				// When early fragment tests are disabled, the depth test happens after the fragment shader, but as we are discarding
 				// all fragments, the stored value in the depth buffer should be the clear one (0.5f).
-				if (!m_useEarlyTests && deAbs(depthValue - 0.5f) > 0.01f)
+				if (!m_useEarlyTests && deAbs(depthValue - 0.5f) > tolerance)
 				{
 					std::ostringstream error;
 					error << "Rendered depth value [ "<< x << ", " << y << ", " << z << "] is not correct: " << depthValue << " != 0.5f";
@@ -1519,15 +1561,12 @@ tcu::TestStatus EarlyFragmentSampleMaskTestInstance::iterate (void)
 		const int  expectedCounter	   = expectPartialResult ? renderSize.x() * renderSize.y() / 2 : renderSize.x() * renderSize.y();
 		const int  tolerance		   = expectPartialResult ? de::max(renderSize.x(), renderSize.y()) * 3	: 0;
 		const int  expectedMin         = de::max(0, expectedCounter - tolerance);
-		const int  expectedMax		   = expectedCounter + tolerance;
 
 		tcu::TestLog& log = m_context.getTestContext().getLog();
-		log << tcu::TestLog::Message << "Expected value"
-			<< (expectPartialResult ? " in range: [" + de::toString(expectedMin) + ", " + de::toString(expectedMax) + "]" : ": " + de::toString(expectedCounter))
-			<< tcu::TestLog::EndMessage;
+		log << tcu::TestLog::Message << "Minimum expected value: " + de::toString(expectedMin) << tcu::TestLog::EndMessage;
 		log << tcu::TestLog::Message << "Result value: " << de::toString(actualCounter) << tcu::TestLog::EndMessage;
 
-		if (expectedMin <= actualCounter && actualCounter <= expectedMax)
+		if (expectedMin <= actualCounter)
 			return tcu::TestStatus::pass("Success");
 		else
 			return tcu::TestStatus::fail("Value out of range");
@@ -1616,6 +1655,598 @@ void EarlyFragmentSampleMaskTest::checkSupport(Context& context) const
 	context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
 }
 
+class EarlyFragmentSampleCountTestInstance : public EarlyFragmentTestInstance
+{
+public:
+						EarlyFragmentSampleCountTestInstance	(Context& context, const deUint32 sampleCount);
+
+	tcu::TestStatus		iterate									(void);
+
+private:
+	tcu::TextureLevel	generateReferenceColorImage				(const tcu::TextureFormat format, const tcu::IVec2& renderSize);
+
+	Move<VkRenderPass>	makeRenderPass							(const DeviceInterface&		vk,
+																 const VkDevice				device,
+																 const VkFormat				colorFormat,
+																 const VkFormat				depthStencilFormat);
+
+	Move<VkPipeline>	makeGraphicsPipeline					(const DeviceInterface&		vk,
+																 const VkDevice				device,
+																 const VkPipelineLayout		pipelineLayout,
+																 const VkRenderPass			renderPass,
+																 const VkShaderModule		vertexModule,
+																 const VkShaderModule		fragmentModule,
+																 const tcu::IVec2&			renderSize,
+																 const VkSampleMask			sampleMask);
+
+	const deUint32		m_sampleCount;
+};
+
+EarlyFragmentSampleCountTestInstance::EarlyFragmentSampleCountTestInstance (Context& context, const deUint32 sampleCount)
+	: EarlyFragmentTestInstance	(context, FLAG_TEST_DEPTH)
+	, m_sampleCount				(sampleCount)
+{
+}
+
+Move<VkPipeline> EarlyFragmentSampleCountTestInstance::makeGraphicsPipeline	(const DeviceInterface&	vk,
+																			const VkDevice			device,
+																			const VkPipelineLayout	pipelineLayout,
+																			const VkRenderPass		renderPass,
+																			const VkShaderModule	vertexModule,
+																			const VkShaderModule	fragmentModule,
+																			const tcu::IVec2&		renderSize,
+																			const VkSampleMask		sampleMask)
+{
+	const std::vector<VkViewport>				viewports					(1, makeViewport(renderSize));
+	const std::vector<VkRect2D>					scissors					(1, makeRect2D(renderSize));
+
+	const VkPipelineDepthStencilStateCreateInfo	depthStencilStateCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType							sType
+		DE_NULL,													// const void*								pNext
+		0u,															// VkPipelineDepthStencilStateCreateFlags	flags
+		VK_TRUE,													// VkBool32									depthTestEnable
+		VK_TRUE,													// VkBool32									depthWriteEnable
+		VK_COMPARE_OP_LESS,											// VkCompareOp								depthCompareOp
+		VK_FALSE,													// VkBool32									depthBoundsTestEnable
+		VK_FALSE,													// VkBool32									stencilTestEnable
+		{},															// VkStencilOpState							front
+		{},															// VkStencilOpState							back
+		0.0f,														// float									minDepthBounds
+		1.0f														// float									maxDepthBounds
+	};
+
+	const VkPipelineMultisampleStateCreateInfo	multisampleStateCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType							sType
+		DE_NULL,													// const void*								pNext
+		0u,															// VkPipelineMultisampleStateCreateFlags	flags
+		(VkSampleCountFlagBits)m_sampleCount,						// VkSampleCountFlagBits					rasterizationSamples
+		DE_FALSE,													// VkBool32									sampleShadingEnable
+		0.0f,														// float									minSampleShading
+		&sampleMask,												// const VkSampleMask*						pSampleMask
+		DE_FALSE,													// VkBool32									alphaToCoverageEnable
+		DE_FALSE,													// VkBool32									alphaToOneEnable
+	};
+
+	return vk::makeGraphicsPipeline(vk,										// const DeviceInterface&							vk
+									device,									// const VkDevice									device
+									pipelineLayout,							// const VkPipelineLayout							pipelineLayout
+									vertexModule,							// const VkShaderModule								vertexShaderModule
+									DE_NULL,								// const VkShaderModule								tessellationControlModule
+									DE_NULL,								// const VkShaderModule								tessellationEvalModule
+									DE_NULL,								// const VkShaderModule								geometryShaderModule
+									fragmentModule,							// const VkShaderModule								fragmentShaderModule
+									renderPass,								// const VkRenderPass								renderPass
+									viewports,								// const std::vector<VkViewport>&					viewports
+									scissors,								// const std::vector<VkRect2D>&						scissors
+									VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology						topology
+									0u,										// const deUint32									subpass
+									0u,										// const deUint32									patchControlPoints
+									DE_NULL,								// const VkPipelineVertexInputStateCreateInfo*		vertexInputStateCreateInfo
+									DE_NULL,								// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
+									&multisampleStateCreateInfo,			// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
+									&depthStencilStateCreateInfo);			// const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo
+}
+
+Move<VkRenderPass> EarlyFragmentSampleCountTestInstance::makeRenderPass	(const DeviceInterface&	vk,
+																		 const VkDevice			device,
+																		 const VkFormat			colorFormat,
+																		 const VkFormat			depthStencilFormat)
+{
+	const VkAttachmentDescription			colorAttachmentDescription			=
+	{
+		(VkAttachmentDescriptionFlags)0,			// VkAttachmentDescriptionFlags	flags;
+		colorFormat,								// VkFormat						format;
+		(VkSampleCountFlagBits)m_sampleCount,		// VkSampleCountFlagBits		samples;
+		VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp			loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp			storeOp;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp			stencilLoadOp
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp			stencilStoreOp
+		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout				initialLayout
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout				finalLayout
+	};
+
+	const VkAttachmentDescription			depthStencilAttachmentDescription	=
+	{
+		(VkAttachmentDescriptionFlags)0,					// VkStructureType			sType;
+		depthStencilFormat,									// VkFormat					format
+		(VkSampleCountFlagBits)m_sampleCount,				// VkSampleCountFlagBits	samples
+		VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp		loadOp
+		VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp		storeOp
+		VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp		stencilLoadOp
+		VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp		stencilStoreOp
+		VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout			initialLayout
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL	// VkImageLayout			finalLayout
+	};
+
+	const VkAttachmentDescription			resolveAttachmentDescription		=
+	{
+
+		(VkAttachmentDescriptionFlags)0,			// VkSubpassDescriptionFlags	flags
+		colorFormat,								// VkFormat						format
+		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits		samples
+		VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp			loadOp
+		VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp			storeOp
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp			stencilLoadOp
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp			stencilStoreOp
+		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout				initialLayout
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout				finalLayout
+	};
+
+	std::vector<VkAttachmentDescription>	attachmentDescriptions;
+
+	attachmentDescriptions.push_back(colorAttachmentDescription);
+	attachmentDescriptions.push_back(depthStencilAttachmentDescription);
+	attachmentDescriptions.push_back(resolveAttachmentDescription);
+
+	const VkAttachmentReference				colorAttachmentRef					=
+	{
+		0u,											// deUint32			attachment
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout	layout
+	};
+
+	const VkAttachmentReference				depthStencilAttachmentRef			=
+	{
+	    1u,													// deUint32			attachment
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout	layout
+	};
+
+	const VkAttachmentReference				resolveAttachmentRef				=
+	{
+		2u,											// deUint32			attachment
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout	layout
+	};
+
+	const VkSubpassDescription				subpassDescription					=
+	{
+		(VkSubpassDescriptionFlags)0,		// VkSubpassDescriptionFlags		flags
+		VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint				pipelineBindPoint
+		0u,									// deUint32							inputAttachmentCount
+		DE_NULL,							// const VkAttachmentReference2*	pInputAttachments
+		1u,									// deUint32							colorAttachmentCount
+		&colorAttachmentRef,				// const VkAttachmentReference2*	pColorAttachments
+		&resolveAttachmentRef,				// const VkAttachmentReference2*	pResolveAttachments
+		&depthStencilAttachmentRef,			// const VkAttachmentReference2*	pDepthStencilAttachment
+		0u,									// deUint32							preserveAttachmentCount
+		DE_NULL								// const deUint32*					pPreserveAttachments
+	};
+
+	const VkRenderPassCreateInfo			renderPassInfo						=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType					sType;
+		DE_NULL,									// const void*						pNext;
+		(VkRenderPassCreateFlags)0,					// VkRenderPassCreateFlags			flags;
+		(deUint32)attachmentDescriptions.size(),	// uint32_t							attachmentCount;
+		attachmentDescriptions.data(),				// const VkAttachmentDescription*	pAttachments;
+		1u,											// uint32_t							subpassCount;
+		&subpassDescription,						// const VkSubpassDescription*		pSubpasses;
+		0u,											// uint32_t							dependencyCount;
+		DE_NULL										// const VkSubpassDependency*		pDependencies;
+	};
+
+	return createRenderPass(vk, device, &renderPassInfo, DE_NULL);
+}
+
+tcu::TextureLevel EarlyFragmentSampleCountTestInstance::generateReferenceColorImage(const tcu::TextureFormat format, const tcu::IVec2 &renderSize)
+{
+	tcu::TextureLevel	image		(format, renderSize.x(), renderSize.y());
+	const tcu::Vec4		clearColor	= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+	tcu::clear(image.getAccess(), clearColor);
+
+	return image;
+}
+
+tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
+{
+	const DeviceInterface&				vk							= m_context.getDeviceInterface();
+	const VkDevice						device						= m_context.getDevice();
+	const VkQueue						queue						= m_context.getUniversalQueue();
+	const deUint32						queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
+	Allocator&							allocator					= m_context.getDefaultAllocator();
+	const VkFormat						colorFormat					= VK_FORMAT_R8G8B8A8_UNORM;
+	const VkFormat						depthFormat					= VK_FORMAT_D16_UNORM;
+	VkQueryPool							queryPool;
+	const deUint32						queryCount					= 2u;
+	std::vector<VkDeviceSize>			sampleCounts				(queryCount);
+
+	// Create a query pool for storing the occlusion query result
+	{
+		VkQueryPoolCreateInfo			queryPoolInfo
+		{
+			VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,	// VkStructureType					sType;
+			DE_NULL,									// const void*						pNext;
+			(VkQueryPoolCreateFlags)0,					// VkQueryPoolCreateFlags			flags;
+			VK_QUERY_TYPE_OCCLUSION,					// VkQueryType						queryType;
+			queryCount,									// uint32_t							queryCount;
+			0u,											// VkQueryPipelineStatisticFlags	pipelineStatistics;
+		};
+
+		VK_CHECK(vk.createQueryPool(device, &queryPoolInfo, NULL, &queryPool));
+	}
+
+	m_context.getTestContext().getLog() << tcu::TestLog::Message << "Using depth format " << getFormatName(VK_FORMAT_D16_UNORM) << tcu::TestLog::EndMessage;
+
+	// Color attachment
+	const tcu::IVec2					renderSize					= tcu::IVec2(32, 32);
+	const VkImageSubresourceRange		colorSubresourceRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+
+	const VkImageCreateInfo				imageParams =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,				// VkStructureType			sType;
+		DE_NULL,											// const void*				pNext;
+		(VkImageCreateFlags)0,								// VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,									// VkImageType				imageType;
+		colorFormat,										// VkFormat					format;
+		makeExtent3D(renderSize.x(), renderSize.y(), 1),	// VkExtent3D				extent;
+		1u,													// deUint32					mipLevels;
+		1u,													// deUint32					arrayLayers;
+		(VkSampleCountFlagBits)m_sampleCount,				// VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,							// VkImageTiling			tiling;
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,				// VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,							// VkSharingMode			sharingMode;
+		0u,													// deUint32					queueFamilyIndexCount;
+		DE_NULL,											// const deUint32*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout			initialLayout;
+	};
+
+	const Unique<VkImage>				colorImage					(makeImage(vk, device, imageParams));
+	const UniquePtr<Allocation>			colorImageAlloc				(bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any));
+	const Unique<VkImageView>			colorImageView				(makeImageView(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange));
+
+	const Unique<VkImage>				resolveColorImage			(makeImage(vk, device, makeImageCreateInfo(renderSize, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)));
+	const UniquePtr<Allocation>			resolveColorImageAlloc		(bindImage(vk, device, allocator, *resolveColorImage, MemoryRequirement::Any));
+	const Unique<VkImageView>			resolveColorImageView		(makeImageView(vk, device, *resolveColorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange));
+
+	// Depth-Stencil attachment
+	const VkImageSubresourceRange		depthSubresourceRange		= makeImageSubresourceRange(getImageAspectFlags(depthFormat), 0u, 1u, 0u, 1u);
+
+	const VkImageCreateInfo				depthImageParams			=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,				// VkStructureType			sType;
+		DE_NULL,											// const void*				pNext;
+		(VkImageCreateFlags)0,								// VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,									// VkImageType				imageType;
+		depthFormat,										// VkFormat					format;
+		makeExtent3D(renderSize.x(), renderSize.y(), 1),	// VkExtent3D				extent;
+		1u,													// deUint32					mipLevels;
+		1u,													// deUint32					arrayLayers;
+		(VkSampleCountFlagBits)m_sampleCount,				// VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,							// VkImageTiling			tiling;
+		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,		// VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,							// VkSharingMode			sharingMode;
+		0u,													// deUint32					queueFamilyIndexCount;
+		DE_NULL,											// const deUint32*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout			initialLayout;
+	};
+
+	const Unique<VkImage>				depthImage					(makeImage(vk, device, depthImageParams));
+	const UniquePtr<Allocation>			depthImageAlloc				(bindImage(vk, device, allocator, *depthImage, MemoryRequirement::Any));
+	const Unique<VkImageView>			depthImageView				(makeImageView(vk, device, *depthImage, VK_IMAGE_VIEW_TYPE_2D, depthFormat, depthSubresourceRange));
+
+	const VkImageView					attachmentImages[]			= { *colorImageView, *depthImageView, *resolveColorImageView };
+	const deUint32						numUsedAttachmentImages		= DE_LENGTH_OF_ARRAY(attachmentImages);
+
+	// Vertex buffer
+	const deUint32						numVertices					= 6u;
+	const VkDeviceSize					vertexBufferSizeBytes		= 256 * numVertices;
+	const Unique<VkBuffer>				vertexBuffer				(makeBuffer(vk, device, vertexBufferSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+	const UniquePtr<Allocation>			vertexBufferAlloc			(bindBuffer(vk, device, allocator, *vertexBuffer, MemoryRequirement::HostVisible));
+
+	{
+		tcu::Vec4* const pVertices = reinterpret_cast<tcu::Vec4*>(vertexBufferAlloc->getHostPtr());
+
+		pVertices[0] = tcu::Vec4( 1.0f, -1.0f,  0.0f,  1.0f);
+		pVertices[1] = tcu::Vec4(-1.0f, -1.0f,  0.0f,  1.0f);
+		pVertices[2] = tcu::Vec4(-1.0f,  1.0f,  0.0f,  1.0f);
+
+		pVertices[3] = tcu::Vec4(-1.0f,  1.0f,  1.0f,  1.0f);
+		pVertices[4] = tcu::Vec4( 1.0f,  1.0f,  1.0f,  1.0f);
+		pVertices[5] = tcu::Vec4( 1.0f, -1.0f,  1.0f,  1.0f);
+
+		flushAlloc(vk, device, *vertexBufferAlloc);
+		// No barrier needed, flushed memory is automatically visible
+	}
+
+	// Render result buffer (to retrieve color attachment contents)
+
+	const VkDeviceSize					colorBufferSizeBytes		= tcu::getPixelSize(mapVkFormat(colorFormat)) * renderSize.x() * renderSize.y();
+	const Unique<VkBuffer>				colorBufferNoEarlyResults	(makeBuffer(vk, device, colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+	const UniquePtr<Allocation>			colorBufferAllocNoEarly		(bindBuffer(vk, device, allocator, *colorBufferNoEarlyResults, MemoryRequirement::HostVisible));
+	const Unique<VkBuffer>				colorBufferEarlyResults		(makeBuffer(vk, device, colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+	const UniquePtr<Allocation>			colorBufferAllocEarly		(bindBuffer(vk, device, allocator, *colorBufferEarlyResults, MemoryRequirement::HostVisible));
+
+	// Pipeline
+
+	const Unique<VkShaderModule>		vertexModule				(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
+	const Unique<VkShaderModule>		fragmentModuleNoEarly		(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
+	const Unique<VkShaderModule>		fragmentModuleEarlyFrag		(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag_early"), 0u));
+
+	const Unique<VkRenderPass>			renderPass					(makeRenderPass(vk, device, colorFormat, depthFormat));
+
+	const Unique<VkFramebuffer>			framebuffer					(makeFramebuffer(vk, device, *renderPass, numUsedAttachmentImages, attachmentImages, renderSize.x(), renderSize.y()));
+
+	const Unique<VkPipelineLayout>		pipelineLayout				(makePipelineLayout(vk, device, DE_NULL));
+
+	// When we are creating a pipeline for runs without early fragment test, we are enabling all the samples for full coverage.
+	// Sample mask will be modified in a fragment shader.
+	const Unique<VkPipeline>			pipelineNoEarlyFrag			(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertexModule, *fragmentModuleNoEarly, renderSize, 0xFFFFFFFF));
+
+	// For early fragment tests, we are enabling only half of the samples.
+	const Unique<VkPipeline>			pipelineEarlyFrag			(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertexModule, *fragmentModuleEarlyFrag, renderSize, 0xAAAAAAAA));
+
+	// Build a command buffer
+
+	const Unique<VkCommandPool>			cmdPool						(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>		cmdBuffer					(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+	{
+		const VkRect2D					renderArea					=
+		{
+			makeOffset2D(0, 0),
+			makeExtent2D(renderSize.x(), renderSize.y()),
+		};
+
+		const tcu::Vec4					clearColor					(0.0f, 0.0f, 0.0f, 1.0f);
+		const VkDeviceSize				vertexBufferOffset			= 0ull;
+
+		beginCommandBuffer(vk, *cmdBuffer);
+
+		const VkClearValue				clearValues[]				=
+		{
+			makeClearValueColor(clearColor),		// attachment 0
+			makeClearValueDepthStencil(0.5f, 3u),	// attachment 1
+			makeClearValueColor(clearColor),		// attachment 2
+			makeClearValueDepthStencil(0.5f, 3u),	// attachment 3
+		};
+
+		const VkRenderPassBeginInfo		renderPassBeginInfo			=
+		{
+			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
+			DE_NULL,									// const void*			pNext;
+			*renderPass,								// VkRenderPass			renderPass;
+			*framebuffer,								// VkFramebuffer		framebuffer;
+			renderArea,									// VkRect2D				renderArea;
+			DE_LENGTH_OF_ARRAY(clearValues),			// deUint32				clearValueCount;
+			clearValues,								// const VkClearValue*	pClearValues;
+		};
+
+		// Reset query pool. Must be done outside of render pass
+		vk.cmdResetQueryPool(*cmdBuffer, queryPool, 0, queryCount);
+
+		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+
+		// Run without early fragment test.
+		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineNoEarlyFrag);
+
+		vk.cmdBeginQuery(cmdBuffer.get(), queryPool, 0, VK_QUERY_CONTROL_PRECISE_BIT);
+		vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
+		vk.cmdEndQuery(cmdBuffer.get(), queryPool, 0);
+
+		endRenderPass(vk, *cmdBuffer);
+
+		copyImageToBuffer(vk, *cmdBuffer, *resolveColorImage, *colorBufferNoEarlyResults, renderSize, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+
+		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+
+		// Run with early fragment test.
+		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineEarlyFrag);
+
+		vk.cmdBeginQuery(cmdBuffer.get(), queryPool, 1, VK_QUERY_CONTROL_PRECISE_BIT);
+		vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
+		vk.cmdEndQuery(cmdBuffer.get(), queryPool, 1);
+
+		endRenderPass(vk, *cmdBuffer);
+
+		copyImageToBuffer(vk, *cmdBuffer, *resolveColorImage, *colorBufferEarlyResults, renderSize, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+
+		endCommandBuffer(vk, *cmdBuffer);
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+	}
+
+	// When early fragment test is enabled, all samples are killed in fragment shader. The result color should be black.
+	{
+		invalidateAlloc(vk, device, *colorBufferAllocEarly);
+
+		const tcu::ConstPixelBufferAccess	imagePixelAccess(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, colorBufferAllocEarly->getHostPtr());
+		const tcu::TextureLevel				referenceImage = generateReferenceColorImage(mapVkFormat(colorFormat), renderSize);
+
+		if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Compare color output", "Early fragment image result comparison", referenceImage.getAccess(), imagePixelAccess, tcu::Vec4(0.02f), tcu::COMPARE_LOG_RESULT))
+			return tcu::TestStatus::fail("Rendered color image is not correct");
+	}
+
+	// The image has 32x32 pixels and each pixel has m_sampleCount samples. Half of these samples are discarded before sample counting.
+	// This means the reference value for passed samples is ((32 x 32) / 2 / 2) * sampleCount.
+	{
+		deUint64	refValue	= deUint64(deUint32((renderSize.x() * renderSize.y()) / 4) * m_sampleCount);
+		deUint64	tolerance	= deUint64(refValue * 5 / 100);
+		deUint64	minValue	= refValue - tolerance;
+		deUint64	maxValue	= refValue + tolerance;
+
+		VK_CHECK(vk.getQueryPoolResults(device, queryPool, 0u, queryCount, queryCount * sizeof(VkDeviceSize), sampleCounts.data(), sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+
+		// Log test results
+		{
+			tcu::TestLog& log = m_context.getTestContext().getLog();
+
+			log << tcu::TestLog::Message << "\nAcceptable range: " << minValue << " - " << maxValue << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Passed Samples (without early fragment test) : " << de::toString(sampleCounts[0]) << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Passed Samples (with early fragment test)    : " << de::toString(sampleCounts[1]) << tcu::TestLog::EndMessage;
+		}
+
+		vk.destroyQueryPool(device, queryPool, nullptr);
+
+		// Check that number of the all passed samples are within an acceptable range.
+		if (sampleCounts[0] >= minValue && sampleCounts[0] <= maxValue && sampleCounts[1] >= minValue && sampleCounts[1] <= maxValue)
+		{
+			return tcu::TestStatus::pass("Success");
+		}
+		else
+		{
+			// Log no early frag test images
+			{
+				tcu::TestLog& log = m_context.getTestContext().getLog();
+
+				invalidateAlloc(vk, device, *colorBufferAllocNoEarly);
+
+				const tcu::ConstPixelBufferAccess	imagePixelAccess	(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, colorBufferAllocNoEarly->getHostPtr());
+
+				log << tcu::LogImageSet("No Early Frag Test Images", "No Early Fragment Test Images")
+					<< tcu::TestLog::Image("color", "Rendered image (color)", imagePixelAccess)
+					<< tcu::TestLog::EndImageSet;
+			}
+
+			// Log early frag test images
+			{
+				tcu::TestLog& log = m_context.getTestContext().getLog();
+
+				invalidateAlloc(vk, device, *colorBufferAllocEarly);
+
+				const tcu::ConstPixelBufferAccess	imagePixelAccess	(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, colorBufferAllocEarly->getHostPtr());
+
+				log << tcu::LogImageSet("Early Frag Test Images", "Early Fragment Test Images")
+					<< tcu::TestLog::Image("color", "Rendered image (color)", imagePixelAccess)
+					<< tcu::TestLog::EndImageSet;
+			}
+
+			return tcu::TestStatus::fail("Sample count value outside expected range.");
+		}
+	}
+}
+
+class EarlyFragmentSampleCountTest : public EarlyFragmentTest
+{
+public:
+	EarlyFragmentSampleCountTest		(tcu::TestContext&	testCtx,
+										 const std::string	name,
+										 const deUint32		sampleCount);
+
+	void				initPrograms	(SourceCollections& programCollection) const override;
+	TestInstance*		createInstance	(Context& context) const override;
+	void				checkSupport	(Context& context) const override;
+
+private:
+	const deUint32		m_sampleCount;
+};
+
+EarlyFragmentSampleCountTest::EarlyFragmentSampleCountTest(tcu::TestContext& testCtx, const std::string name, const deUint32 sampleCount)
+	: EarlyFragmentTest	(testCtx, name, FLAG_TEST_DEPTH)
+	, m_sampleCount		(sampleCount)
+{
+}
+
+TestInstance* EarlyFragmentSampleCountTest::createInstance (Context& context) const
+{
+	return new EarlyFragmentSampleCountTestInstance(context, m_sampleCount);
+}
+
+void EarlyFragmentSampleCountTest::initPrograms(SourceCollections& programCollection) const
+{
+	// Vertex shader
+	{
+		std::ostringstream vrt;
+
+		vrt << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(location = 0) in highp vec4 position;\n"
+			<< "\n"
+			<< "out gl_PerVertex {\n"
+			<< "   vec4 gl_Position;\n"
+			<< "};\n"
+			<< "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    gl_Position = position;\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("vert") << glu::VertexSource(vrt.str());
+	}
+
+	// Fragment shader for runs without early fragment test
+	{
+		std::ostringstream frg;
+
+		frg << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(location = 0) out highp vec4 fragColor;\n"
+			<< "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    // This will kill half of the samples.\n"
+			<< "    gl_SampleMask[0] = 0xAAAAAAAA;\n"
+			<< "    fragColor = vec4(1.0, 1.0, 0.0, 1.0);\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("frag") << glu::FragmentSource(frg.str());
+	}
+
+	// Fragment shader for early fragment tests
+	{
+		std::ostringstream frg;
+
+		frg << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(early_fragment_tests) in;\n"
+			<< "\n"
+			<< "layout(location = 0) out highp vec4 fragColor;\n"
+			<< "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    // Sample mask kills all the samples, but the sample counting has already happened.\n"
+			<< "    gl_SampleMask[0] = 0x0;\n"
+			<< "    fragColor = vec4(1.0, 1.0, 0.0, 1.0);\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("frag_early") << glu::FragmentSource(frg.str());
+	}
+}
+
+void EarlyFragmentSampleCountTest::checkSupport(Context& context) const
+{
+	EarlyFragmentTest::checkSupport(context);
+
+	// Check support for MSAA image formats used in the test.
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	const VkPhysicalDevice		physDevice		= context.getPhysicalDevice();
+	const VkFormat				colorFormat		= VK_FORMAT_R8G8B8A8_UNORM;
+	const VkFormat				depthFormat		= VK_FORMAT_D16_UNORM;
+
+	VkImageFormatProperties		formatProperties;
+
+	vki.getPhysicalDeviceImageFormatProperties(physDevice, colorFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u, &formatProperties);
+	if ((formatProperties.sampleCounts & m_sampleCount) == 0)
+		TCU_THROW(NotSupportedError, "Format does not support this number of samples for color format");
+
+	vki.getPhysicalDeviceImageFormatProperties(physDevice, depthFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u, &formatProperties);
+	if ((formatProperties.sampleCounts & m_sampleCount) == 0)
+		TCU_THROW(NotSupportedError, "Format does not support this number of samples for depth format");
+}
+
 } // anonymous ns
 
 tcu::TestCaseGroup* createEarlyFragmentTests (tcu::TestContext& testCtx)
@@ -1681,6 +2312,17 @@ tcu::TestCaseGroup* createEarlyFragmentTests (tcu::TestContext& testCtx)
 			for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
 				testGroup->addChild(new EarlyFragmentSampleMaskTest(testCtx, cases[i].caseName + "_" + sampleCountsStr[sampleCountsNdx], cases[i].flags, sampleCounts[sampleCountsNdx]));
         }
+	}
+
+	// We kill half of the samples at different points in the pipeline depending on early frag test, and then we verify the sample counting works as expected.
+	{
+		const VkSampleCountFlags	sampleCounts[]		= { VK_SAMPLE_COUNT_2_BIT, VK_SAMPLE_COUNT_4_BIT, VK_SAMPLE_COUNT_8_BIT, VK_SAMPLE_COUNT_16_BIT };
+		const std::string			sampleCountsStr[]	= { "samples_2", "samples_4", "samples_8", "samples_16" };
+
+		for (deUint32 sampleCountsNdx = 0; sampleCountsNdx < DE_LENGTH_OF_ARRAY(sampleCounts); sampleCountsNdx++)
+		{
+			testGroup->addChild(new EarlyFragmentSampleCountTest(testCtx, "sample_count_early_fragment_tests_depth_" + sampleCountsStr[sampleCountsNdx], sampleCounts[sampleCountsNdx]));
+		}
 	}
 
 	return testGroup.release();

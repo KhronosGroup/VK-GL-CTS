@@ -573,17 +573,21 @@ std::string getFunctionDstParamStr (ReadOp readOp, TestType testType)
 }
 
 // Get read operation
-std::string getImageReadOpStr (ReadOp readOp)
+std::string getImageReadOpStr (ReadOp readOp, bool useNontemporal = false)
 {
+	std::string imageOperand = useNontemporal ? " Nontemporal" : "";
+
 	switch (readOp)
 	{
 		case READOP_IMAGEREAD:
-			return "OpImageRead %v4f32 %func_img %coord";
+			return std::string("OpImageRead %v4f32 %func_img %coord") + imageOperand;
 
 		case READOP_IMAGEFETCH:
-			return "OpImageFetch %v4f32 %func_img %coord";
+			return std::string("OpImageFetch %v4f32 %func_img %coord") + imageOperand;
 
 		case READOP_IMAGESAMPLE:
+			if (useNontemporal)
+				return "OpImageSampleExplicitLod %v4f32 %func_smi %normalcoordf Lod|Nontemporal %c_f32_0";
 			return "OpImageSampleExplicitLod %v4f32 %func_smi %normalcoordf Lod %c_f32_0";
 
 		case READOP_IMAGESAMPLE_DREF_IMPLICIT_LOD:
@@ -710,6 +714,27 @@ std::string getImageSamplerTypeStr (DescriptorType descType, ReadOp readOp, deUi
 	}
 }
 
+std::string getInterfaceList (DescriptorType descType)
+{
+	std::string list = " %InputData %OutputData";
+	switch (descType)
+	{
+		case DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_VARIABLES:
+			list += " %SamplerData";
+			break;
+
+		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS:
+			list += " %SamplerData %InputData2 %SamplerData2";
+			break;
+
+		default:
+			break;
+	}
+
+	return list;
+}
+
 std::string getSamplerDecoration (DescriptorType descType)
 {
 	switch (descType)
@@ -761,6 +786,17 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 	for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
 		inputData.push_back(tcu::randomVec4(rnd));
 
+	struct SpirvData
+	{
+		SpirvVersion	version;
+		std::string		postfix;
+	};
+	const std::vector<SpirvData> spirvDataVect
+	{
+		{ SPIRV_VERSION_1_0, "" },
+		{ SPIRV_VERSION_1_6, "_nontemporal" },
+	};
+
 	for (deUint32 opNdx = 0u; opNdx <= READOP_IMAGESAMPLE; opNdx++)
 	{
 		de::MovePtr<tcu::TestCaseGroup> readOpGroup	(new tcu::TestCaseGroup(testCtx, getReadOpName((ReadOp)opNdx), ""));
@@ -780,9 +816,6 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 
 				for (deUint32 formatIndex = 0; formatIndex < numFormats; formatIndex++)
 				{
-
-					const std::string	imageReadOp = getImageReadOpStr((ReadOp)opNdx);
-
 					const std::string	imageSamplerTypes = getImageSamplerTypeStr((DescriptorType)descNdx, (ReadOp)opNdx, DEPTH_PROPERTY_NON_DEPTH, (TestType)testNdx, formatIndex);
 					const std::string	functionParamTypes = getFunctionParamTypeStr((TestType)testNdx);
 
@@ -803,8 +836,8 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 					// Separate sampler for sampled images
 					if ((DescriptorType)descNdx == DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 					{
-						vector<tcu::Vec4> dummyData;
-						spec.inputs.push_back(Resource(BufferSp(new Vec4Buffer(dummyData))));
+						vector<tcu::Vec4> unusedData;
+						spec.inputs.push_back(Resource(BufferSp(new Vec4Buffer(unusedData))));
 						spec.inputs[1].setDescriptorType(VK_DESCRIPTOR_TYPE_SAMPLER);
 					}
 
@@ -821,105 +854,126 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 					// Shader is expected to pass the input image data to the output buffer
 					spec.outputs.push_back(BufferSp(new Vec4Buffer(inputData)));
 
-					const std::string	samplerDecoration = getSamplerDecoration((DescriptorType)descNdx);
+					const std::string	samplerDecoration	= getSamplerDecoration((DescriptorType)descNdx);
 
-					const string		shaderSource =
-						"                       OpCapability Shader\n"
-						"                  %1 = OpExtInstImport \"GLSL.std.450\"\n"
-						"                       OpMemoryModel Logical GLSL450\n"
-						"                       OpEntryPoint GLCompute %main \"main\" %id\n"
-						"                       OpExecutionMode %main LocalSize 1 1 1\n"
-						"                       OpSource GLSL 430\n"
-						"                       OpDecorate %id BuiltIn GlobalInvocationId\n"
-						"                       OpDecorate %_arr_v4f_u32_64 ArrayStride 16\n"
-						"                       OpMemberDecorate %Output 0 Offset 0\n"
-						"                       OpDecorate %Output BufferBlock\n"
-						"                       OpDecorate %InputData DescriptorSet 0\n"
-						"                       OpDecorate %InputData Binding 0\n"
+					for (auto spirvData : spirvDataVect)
+					{
+						spec.spirvVersion = spirvData.version;
 
-						+ samplerDecoration +
+						bool		useSpirV16			(spirvData.version == SPIRV_VERSION_1_6);
+						std::string	interfaceList		("");
+						std::string	outputDecoration	("BufferBlock");
+						std::string	outputType			("Uniform");
+						std::string	imageReadOp			(getImageReadOpStr((ReadOp)opNdx, useSpirV16));
 
-						"                       OpDecorate %OutputData DescriptorSet 0\n"
-						"                       OpDecorate %OutputData Binding " + de::toString(spec.inputs.size()) + "\n"
+						// adjust shader code to spv16
+						if (useSpirV16)
+						{
+							interfaceList		= getInterfaceList((DescriptorType)descNdx);
+							outputDecoration	= "Block";
+							outputType			= "StorageBuffer";
+						}
 
-						"               %void = OpTypeVoid\n"
-						"                  %3 = OpTypeFunction %void\n"
-						"                %u32 = OpTypeInt 32 0\n"
-						"                %i32 = OpTypeInt 32 1\n"
-						"                %f32 = OpTypeFloat 32\n"
-						" %_ptr_Function_uint = OpTypePointer Function %u32\n"
-						"              %v3u32 = OpTypeVector %u32 3\n"
-						"   %_ptr_Input_v3u32 = OpTypePointer Input %v3u32\n"
-						"                 %id = OpVariable %_ptr_Input_v3u32 Input\n"
-						"            %c_f32_0 = OpConstant %f32 0.0\n"
-						"            %c_u32_0 = OpConstant %u32 0\n"
-						"            %c_i32_0 = OpConstant %i32 0\n"
-						"    %_ptr_Input_uint = OpTypePointer Input %u32\n"
-						"              %v2u32 = OpTypeVector %u32 2\n"
-						"              %v2f32 = OpTypeVector %f32 2\n"
-						"              %v4f32 = OpTypeVector %f32 4\n"
-						"           %uint_128 = OpConstant %u32 128\n"
-						"           %c_u32_64 = OpConstant %u32 64\n"
-						"            %c_u32_8 = OpConstant %u32 8\n"
-						"            %c_f32_8 = OpConstant %f32 8.0\n"
-						"        %c_v2f32_8_8 = OpConstantComposite %v2f32 %c_f32_8 %c_f32_8\n"
-						"    %_arr_v4f_u32_64 = OpTypeArray %v4f32 %c_u32_64\n"
-						"   %_ptr_Uniform_v4f = OpTypePointer Uniform %v4f32\n"
-						"             %Output = OpTypeStruct %_arr_v4f_u32_64\n"
-						"%_ptr_Uniform_Output = OpTypePointer Uniform %Output\n"
-						"         %OutputData = OpVariable %_ptr_Uniform_Output Uniform\n"
+						const string shaderSource =
+							"                       OpCapability Shader\n"
+							"                  %1 = OpExtInstImport \"GLSL.std.450\"\n"
+							"                       OpMemoryModel Logical GLSL450\n"
+							"                       OpEntryPoint GLCompute %main \"main\" %id" + interfaceList + "\n"
+							"                       OpExecutionMode %main LocalSize 1 1 1\n"
+							"                       OpSource GLSL 430\n"
+							"                       OpDecorate %id BuiltIn GlobalInvocationId\n"
+							"                       OpDecorate %_arr_v4f_u32_64 ArrayStride 16\n"
+							"                       OpMemberDecorate %Output 0 Offset 0\n"
+							"                       OpDecorate %Output " + outputDecoration + "\n"
+							"                       OpDecorate %InputData DescriptorSet 0\n"
+							"                       OpDecorate %InputData Binding 0\n"
 
-						+ imageSamplerTypes +
+							+ samplerDecoration +
 
-						"     %read_func_type = OpTypeFunction %void %u32" + functionParamTypes + "\n"
+							"                       OpDecorate %OutputData DescriptorSet 0\n"
+							"                       OpDecorate %OutputData Binding " + de::toString(spec.inputs.size()) + "\n"
 
-						"          %read_func = OpFunction %void None %read_func_type\n"
-						"           %func_ndx = OpFunctionParameter %u32\n"
+							"               %void = OpTypeVoid\n"
+							"                  %3 = OpTypeFunction %void\n"
+							"                %u32 = OpTypeInt 32 0\n"
+							"                %i32 = OpTypeInt 32 1\n"
+							"                %f32 = OpTypeFloat 32\n"
+							" %_ptr_Function_uint = OpTypePointer Function %u32\n"
+							"              %v3u32 = OpTypeVector %u32 3\n"
+							"   %_ptr_Input_v3u32 = OpTypePointer Input %v3u32\n"
+							"                 %id = OpVariable %_ptr_Input_v3u32 Input\n"
+							"            %c_f32_0 = OpConstant %f32 0.0\n"
+							"            %c_u32_0 = OpConstant %u32 0\n"
+							"            %c_i32_0 = OpConstant %i32 0\n"
+							"    %_ptr_Input_uint = OpTypePointer Input %u32\n"
+							"              %v2u32 = OpTypeVector %u32 2\n"
+							"              %v2f32 = OpTypeVector %f32 2\n"
+							"              %v4f32 = OpTypeVector %f32 4\n"
+							"           %uint_128 = OpConstant %u32 128\n"
+							"           %c_u32_64 = OpConstant %u32 64\n"
+							"            %c_u32_8 = OpConstant %u32 8\n"
+							"            %c_f32_8 = OpConstant %f32 8.0\n"
+							"        %c_v2f32_8_8 = OpConstantComposite %v2f32 %c_f32_8 %c_f32_8\n"
+							"    %_arr_v4f_u32_64 = OpTypeArray %v4f32 %c_u32_64\n"
+							"   %_ptr_Uniform_v4f = OpTypePointer " + outputType + " %v4f32\n"
+							"             %Output = OpTypeStruct %_arr_v4f_u32_64\n"
+							"%_ptr_Uniform_Output = OpTypePointer " + outputType + " %Output\n"
+							"         %OutputData = OpVariable %_ptr_Uniform_Output " + outputType + "\n"
 
-						+ functionDstParams +
+							+ imageSamplerTypes +
 
-						"          %funcentry = OpLabel\n"
-						"                %row = OpUMod %u32 %func_ndx %c_u32_8\n"
-						"                %col = OpUDiv %u32 %func_ndx %c_u32_8\n"
-						"              %coord = OpCompositeConstruct %v2u32 %row %col\n"
-						"             %coordf = OpConvertUToF %v2f32 %coord\n"
-						"       %normalcoordf = OpFDiv %v2f32 %coordf %c_v2f32_8_8\n"
+							"     %read_func_type = OpTypeFunction %void %u32" + functionParamTypes + "\n"
 
-						+ functionDstVariables +
+							"          %read_func = OpFunction %void None %read_func_type\n"
+							"           %func_ndx = OpFunctionParameter %u32\n"
 
-						"              %color = " + imageReadOp + "\n"
-						"                 %36 = OpAccessChain %_ptr_Uniform_v4f %OutputData %c_u32_0 %func_ndx\n"
-						"                       OpStore %36 %color\n"
-						"                       OpReturn\n"
-						"                       OpFunctionEnd\n"
+							+ functionDstParams +
 
-						"               %main = OpFunction %void None %3\n"
-						"                  %5 = OpLabel\n"
-						"                  %i = OpVariable %_ptr_Function_uint Function\n"
-						"                 %14 = OpAccessChain %_ptr_Input_uint %id %c_u32_0\n"
-						"                 %15 = OpLoad %u32 %14\n"
-						"                       OpStore %i %15\n"
-						"              %index = OpLoad %u32 %14\n"
+							"          %funcentry = OpLabel\n"
+							"                %row = OpUMod %u32 %func_ndx %c_u32_8\n"
+							"                %col = OpUDiv %u32 %func_ndx %c_u32_8\n"
+							"              %coord = OpCompositeConstruct %v2u32 %row %col\n"
+							"             %coordf = OpConvertUToF %v2f32 %coord\n"
+							"       %normalcoordf = OpFDiv %v2f32 %coordf %c_v2f32_8_8\n"
 
-						+ functionSrcVariables +
+							+ functionDstVariables +
 
-						"                %res = OpFunctionCall %void %read_func %index" + functionSrcParams + "\n"
-						"                       OpReturn\n"
-						"                       OpFunctionEnd\n";
+							"              %color = " + imageReadOp + "\n"
+							"                 %36 = OpAccessChain %_ptr_Uniform_v4f %OutputData %c_u32_0 %func_ndx\n"
+							"                       OpStore %36 %color\n"
+							"                       OpReturn\n"
+							"                       OpFunctionEnd\n"
 
-					spec.assembly = shaderSource;
+							"               %main = OpFunction %void None %3\n"
+							"                  %5 = OpLabel\n"
+							"                  %i = OpVariable %_ptr_Function_uint Function\n"
+							"                 %14 = OpAccessChain %_ptr_Input_uint %id %c_u32_0\n"
+							"                 %15 = OpLoad %u32 %14\n"
+							"                       OpStore %i %15\n"
+							"              %index = OpLoad %u32 %14\n"
 
-					// If testing for mismatched optypeimage, ignore the
-					// result (we're only interested to see if we crash)
-					if (testNdx == TESTTYPE_OPTYPEIMAGE_MISMATCH)
-						spec.verifyIO = nopVerifyFunction;
+							+ functionSrcVariables +
 
-					string testname = getTestTypeName((TestType)testNdx);
+							"                %res = OpFunctionCall %void %read_func %index" + functionSrcParams + "\n"
+							"                       OpReturn\n"
+							"                       OpFunctionEnd\n";
 
-					if (testNdx == TESTTYPE_OPTYPEIMAGE_MISMATCH)
-						testname = testname + string("_") + string(optypeimageFormatMismatchCase[formatIndex]);
+						spec.assembly = shaderSource;
 
-					descGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testname.c_str(), "", spec));
+						string testname = getTestTypeName((TestType)testNdx);
+
+						if (testNdx == TESTTYPE_OPTYPEIMAGE_MISMATCH)
+						{
+							// If testing for mismatched optypeimage, ignore the
+							// result (we're only interested to see if we crash)
+							spec.verifyIO = nopVerifyFunction;
+
+							testname = testname + string("_") + string(optypeimageFormatMismatchCase[formatIndex]);
+						}
+
+						testname += spirvData.postfix;
+						descGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testname.c_str(), "", spec));
+					}
 				}
 			}
 			readOpGroup->addChild(descGroup.release());
@@ -1086,8 +1140,8 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 					// Separate sampler for sampled images
 					if ((DescriptorType)descNdx == DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 					{
-						vector<tcu::Vec4> dummyData;
-						resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(dummyData)), VK_DESCRIPTOR_TYPE_SAMPLER));
+						vector<tcu::Vec4> unusedData;
+						resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(unusedData)), VK_DESCRIPTOR_TYPE_SAMPLER));
 					}
 
 					// Second combined image sampler with different image data
@@ -1233,8 +1287,8 @@ void addGraphicsDepthPropertyTest (tcu::TestCaseGroup* group)
 				// Separate sampler for sampled images
 				if ((DescriptorType)descNdx == DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 				{
-					vector<Vec4> dummyData;
-					resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(dummyData)), VK_DESCRIPTOR_TYPE_SAMPLER));
+					vector<Vec4> unusedData;
+					resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(unusedData)), VK_DESCRIPTOR_TYPE_SAMPLER));
 				}
 
 				// Second combined image sampler with different image data

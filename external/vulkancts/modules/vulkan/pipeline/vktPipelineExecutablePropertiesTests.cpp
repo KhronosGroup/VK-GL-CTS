@@ -839,7 +839,6 @@ void GraphicsExecutablePropertiesTest::initPrograms (SourceCollections& programC
 					"  EndPrimitive();\n"
 						"}\n");
 	}
-
 	if (m_param.getShaderFlags() & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
 	{
 		programCollection.glslSources.add("basic_tcs") << glu::TessellationControlSource(
@@ -913,9 +912,9 @@ void GraphicsExecutablePropertiesTest::checkSupport(Context& context) const
 GraphicsExecutablePropertiesTestInstance::GraphicsExecutablePropertiesTestInstance (Context&					context,
 																const ExecutablePropertiesTestParam*	param)
 	: ExecutablePropertiesTestInstance		(context, param)
-	, m_renderSize			(32u, 32u)
-	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_depthFormat			(VK_FORMAT_D16_UNORM)
+	, m_renderSize							(32u, 32u)
+	, m_colorFormat							(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_depthFormat							(VK_FORMAT_D16_UNORM)
 	, m_pipelineWrapper
 	{
 		{ m_context.getDeviceInterface(), m_context.getDevice(), param->getPipelineConstructionType(),

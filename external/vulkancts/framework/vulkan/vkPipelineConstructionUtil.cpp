@@ -406,7 +406,6 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDefaultScissorsCount(deUint
 	return *this;
 }
 
-/*
 GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDepthClipControl(const VkPipelineViewportDepthClipControlCreateInfoEXT* depthClipControlCreateInfo)
 {
 	// ViewportState is used in pre-rasterization shader state, make sure pre-rasterization state was not setup yet
@@ -416,7 +415,6 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDepthClipControl(const VkPi
 
 	return *this;
 }
-*/
 
 GraphicsPipelineWrapper& GraphicsPipelineWrapper::disableViewportState()
 {

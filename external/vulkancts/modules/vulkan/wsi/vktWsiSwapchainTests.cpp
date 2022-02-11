@@ -346,6 +346,7 @@ enum TestDimension
 	TEST_DIMENSION_COMPOSITE_ALPHA,
 	TEST_DIMENSION_PRESENT_MODE,
 	TEST_DIMENSION_CLIPPED,
+	TEST_DIMENSION_EXCLUSIVE_NONZERO,	//!< Test VK_SHARING_MODE_EXCLUSIVE and a nonzero queue count.
 
 	TEST_DIMENSION_LAST
 };
@@ -363,8 +364,11 @@ const char* getTestDimensionName (TestDimension dimension)
 		"pre_transform",
 		"composite_alpha",
 		"present_mode",
-		"clipped"
+		"clipped",
+		"exclusive_nonzero_queues",
 	};
+	static_assert(static_cast<int>(de::arrayLength(s_names)) == TEST_DIMENSION_LAST,
+		"Array of names does not provide a 1:1 mapping to TestDimension");
 	return de::getSizedArrayElement<TEST_DIMENSION_LAST>(s_names, dimension);
 }
 
@@ -410,7 +414,7 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (const Instance
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 		VK_SHARING_MODE_EXCLUSIVE,
 		0u,
-		(const deUint32*)DE_NULL,
+		nullptr,
 		defaultTransform,
 		VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 		VK_PRESENT_MODE_FIFO_KHR,
@@ -591,6 +595,15 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (const Instance
 			break;
 		}
 
+		case TEST_DIMENSION_EXCLUSIVE_NONZERO:
+		{
+			// Test the implementation doesn't attempt to do anything with the queue index array in exclusive sharing mode.
+			cases.push_back(baseParameters);
+			cases.back().queueFamilyIndexCount = 2u;
+
+			break;
+		}
+
 		default:
 			DE_FATAL("Impossible");
 	}
@@ -637,20 +650,16 @@ tcu::TestStatus createSwapchainTest (Context& context, TestParameters params)
 
 		if (curParams.imageSharingMode == VK_SHARING_MODE_CONCURRENT)
 		{
-			const deUint32 numFamilies = static_cast<deUint32>(devHelper.queueFamilyIndices.size());
+			const auto numFamilies = static_cast<deUint32>(devHelper.queueFamilyIndices.size());
 			if (numFamilies < 2u)
 				TCU_THROW(NotSupportedError, "Only " + de::toString(numFamilies) + " queue families available for VK_SHARING_MODE_CONCURRENT");
+
 			curParams.queueFamilyIndexCount	= numFamilies;
+			curParams.pQueueFamilyIndices	= devHelper.queueFamilyIndices.data();
 		}
-		else
-		{
-			// Take only the first queue.
-			if (devHelper.queueFamilyIndices.empty())
-				TCU_THROW(NotSupportedError, "No queue families compatible with the given surface");
-			curParams.queueFamilyIndexCount	= 1u;
-		}
-		curParams.pQueueFamilyIndices	= devHelper.queueFamilyIndices.data();
-		curParams.surface				= *surface;
+
+		// Overwrite surface.
+		curParams.surface = *surface;
 
 		log << TestLog::Message << subcase.str() << curParams << TestLog::EndMessage;
 
@@ -720,7 +729,7 @@ template<typename T> static deUint64 HandleToInt(T t) { return t.getInternal(); 
 
 tcu::TestStatus createSwapchainPrivateDataTest (Context& context, TestParameters params)
 {
-	if (!context.getPrivateDataFeaturesEXT().privateData)
+	if (!context.getPrivateDataFeatures().privateData)
 		TCU_THROW(NotSupportedError, "privateData not supported");
 
 	tcu::TestLog&							log			= context.getTestContext().getLog();
@@ -793,7 +802,7 @@ tcu::TestStatus createSwapchainPrivateDataTest (Context& context, TestParameters
 
 				for (int i = 0; i < numSlots; ++i)
 				{
-					Move<VkPrivateDataSlotEXT> s = createPrivateDataSlotEXT(devHelper.vkd, *devHelper.device, &createInfo, DE_NULL);
+					Move<VkPrivateDataSlotEXT> s = createPrivateDataSlot(devHelper.vkd, *devHelper.device, &createInfo, DE_NULL);
 					slots.push_back(PrivateDataSlotSp(new PrivateDataSlotUp(s)));
 				}
 
@@ -805,7 +814,7 @@ tcu::TestStatus createSwapchainPrivateDataTest (Context& context, TestParameters
 					for (int i = 0; i < numSlots; ++i)
 					{
 						data = 1234;
-						devHelper.vkd.getPrivateDataEXT(*devHelper.device, getObjectType<VkSwapchainKHR>(), HandleToInt(swapchain.get()), **slots[i], &data);
+						devHelper.vkd.getPrivateData(*devHelper.device, getObjectType<VkSwapchainKHR>(), HandleToInt(swapchain.get()), **slots[i], &data);
 						// Don't test default value of zero on Android, due to spec erratum
 						if (params.wsiType != TYPE_ANDROID)
 						{
@@ -815,12 +824,12 @@ tcu::TestStatus createSwapchainPrivateDataTest (Context& context, TestParameters
 					}
 
 					for (int i = 0; i < numSlots; ++i)
-						VK_CHECK(devHelper.vkd.setPrivateDataEXT(*devHelper.device, getObjectType<VkSwapchainKHR>(), HandleToInt(swapchain.get()), **slots[i], i*i*i + 1));
+						VK_CHECK(devHelper.vkd.setPrivateData(*devHelper.device, getObjectType<VkSwapchainKHR>(), HandleToInt(swapchain.get()), **slots[i], i*i*i + 1));
 
 					for (int i = 0; i < numSlots; ++i)
 					{
 						data = 1234;
-						devHelper.vkd.getPrivateDataEXT(*devHelper.device, getObjectType<VkSwapchainKHR>(), HandleToInt(swapchain.get()), **slots[i], &data);
+						devHelper.vkd.getPrivateData(*devHelper.device, getObjectType<VkSwapchainKHR>(), HandleToInt(swapchain.get()), **slots[i], &data);
 						if (data != (deUint64)(i*i*i + 1))
 							return tcu::TestStatus::fail("Didn't read back set value");
 					}
@@ -829,7 +838,7 @@ tcu::TestStatus createSwapchainPrivateDataTest (Context& context, TestParameters
 					slots.clear();
 					for (int i = 0; i < numSlots; ++i)
 					{
-						Move<VkPrivateDataSlotEXT> s = createPrivateDataSlotEXT(devHelper.vkd, *devHelper.device, &createInfo, DE_NULL);
+						Move<VkPrivateDataSlotEXT> s = createPrivateDataSlot(devHelper.vkd, *devHelper.device, &createInfo, DE_NULL);
 						slots.push_back(PrivateDataSlotSp(new PrivateDataSlotUp(s)));
 					}
 				}
@@ -2515,12 +2524,13 @@ tcu::TestStatus acquireTooManyTest (Context& context, Type wsiType)
 	const deUint32 numAcquirableImages = numImages - minImageCount + 1;
 
 	const auto fences = createFences(devHelper.vkd, *devHelper.device, numAcquirableImages + 1, false);
-	deUint32 dummy;
+	deUint32 unused;
+
 	for (deUint32 i = 0; i < numAcquirableImages; ++i) {
-		VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, std::numeric_limits<deUint64>::max(), (VkSemaphore)0, **fences[i], &dummy));
+		VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, std::numeric_limits<deUint64>::max(), (VkSemaphore)0, **fences[i], &unused));
 	}
 
-	const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, 0, (VkSemaphore)0, **fences[numAcquirableImages], &dummy);
+	const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, 0, (VkSemaphore)0, **fences[numAcquirableImages], &unused);
 
 	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_NOT_READY ){
 		return tcu::TestStatus::fail("Implementation failed to respond well acquiring too many images with 0 timeout");
@@ -2552,14 +2562,15 @@ tcu::TestStatus acquireTooManyTimeoutTest (Context& context, Type wsiType)
 	const deUint32 numAcquirableImages = numImages - minImageCount + 1;
 
 	const auto fences = createFences(devHelper.vkd, *devHelper.device, numAcquirableImages + 1, false);
-	deUint32 dummy;
+	deUint32 unused;
+
 	for (deUint32 i = 0; i < numAcquirableImages; ++i) {
-		VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, std::numeric_limits<deUint64>::max(), (VkSemaphore)0, **fences[i], &dummy));
+		VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, std::numeric_limits<deUint64>::max(), (VkSemaphore)0, **fences[i], &unused));
 	}
 
 	const deUint64 millisecond = 1000000;
 	const deUint64 timeout = 50 * millisecond; // arbitrary realistic non-0 non-infinite timeout
-	const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, timeout, (VkSemaphore)0, **fences[numAcquirableImages], &dummy);
+	const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, timeout, (VkSemaphore)0, **fences[numAcquirableImages], &unused);
 
 	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_TIMEOUT ){
 		return tcu::TestStatus::fail("Implementation failed to respond well acquiring too many images with timeout");

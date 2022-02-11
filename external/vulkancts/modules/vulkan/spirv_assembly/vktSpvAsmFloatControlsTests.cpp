@@ -4383,8 +4383,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 		}
 
 		// varying is not used but it needs to be specified so lets use type_i32 for it
-		string dummyVertVarying = "%BP_vertex_result     = OpVariable %type_i32_optr Output\n";
-		string dummyFragVarying = "%BP_vertex_result     = OpVariable %type_i32_iptr Input\n";
+		string unusedVertVarying = "%BP_vertex_result     = OpVariable %type_i32_optr Output\n";
+		string unusedFragVarying = "%BP_vertex_result     = OpVariable %type_i32_iptr Input\n";
 
 		vertCapabilities	= "";
 		vertExtensions		= "";
@@ -4401,8 +4401,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 
 		vertExecutionMode	= "";
 		fragExecutionMode	= behaviorExecutionMode;
-		vertIODefinitions	= dummyVertVarying;
-		fragIODefinitions	= dummyFragVarying;
+		vertIODefinitions	= unusedVertVarying;
+		fragIODefinitions	= unusedFragVarying;
 
 		vertArguments		= "";
 		fragArguments		= specOpData.arguments;

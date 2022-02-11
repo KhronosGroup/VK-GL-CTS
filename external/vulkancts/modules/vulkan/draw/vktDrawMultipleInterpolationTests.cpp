@@ -57,6 +57,7 @@ struct DrawParams
 	// instead of plain ids.
 	bool						useStructure;
 	bool						includeSampleDecoration;
+	bool						useDynamicRendering;
 };
 
 template<typename T>
@@ -287,6 +288,9 @@ void DrawTestCase::checkSupport (Context& context) const
 
 	if (m_params.includeSampleDecoration && !context.getDeviceFeatures().sampleRateShading)
 		TCU_THROW(NotSupportedError, "Sample rate shading not supported");
+
+	if (m_params.useDynamicRendering)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 }
 
 TestInstance* DrawTestCase::createInstance (Context& context) const
@@ -355,7 +359,25 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 		}
 	}
 
+	{
+		const ImageViewCreateInfo colorTargetViewInfo(colorTargetImage->object(),
+													  vk::VK_IMAGE_VIEW_TYPE_2D,
+													  m_params.format);
+
+		colorTargetViews.push_back(makeSharedPtr(createImageView(vk, device, &colorTargetViewInfo)));
+
+		if (useMultisampling)
+		{
+			const ImageViewCreateInfo multisamplingTargetViewInfo(multisampleImage->object(),
+																  vk::VK_IMAGE_VIEW_TYPE_2D,
+																  m_params.format);
+
+			multisampleViews.push_back(makeSharedPtr(createImageView(vk, device, &multisamplingTargetViewInfo)));
+		}
+	}
+
 	// Create render pass and framebuffer
+	if (!m_params.useDynamicRendering)
 	{
 		RenderPassCreateInfo					renderPassCreateInfo;
 		std::vector<vk::VkImageView>			attachments;
@@ -364,17 +386,12 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 		deUint32								attachmentNdx				= 0;
 
 		{
-			const ImageViewCreateInfo		colorTargetViewInfo			(colorTargetImage->object(),
-																		 vk::VK_IMAGE_VIEW_TYPE_2D,
-																		 m_params.format);
-
 			const vk::VkAttachmentReference	colorAttachmentReference	=
 			{
 				attachmentNdx++,
 				vk::VK_IMAGE_LAYOUT_GENERAL
 			};
 
-			colorTargetViews.push_back(makeSharedPtr(createImageView(vk, device, &colorTargetViewInfo)));
 			colorAttachmentRefs.push_back(colorAttachmentReference);
 
 			renderPassCreateInfo.addAttachment(AttachmentDescription(m_params.format,
@@ -388,17 +405,12 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 
 			if (useMultisampling)
 			{
-				const ImageViewCreateInfo		multisamplingTargetViewInfo		(multisampleImage->object(),
-																				 vk::VK_IMAGE_VIEW_TYPE_2D,
-																				 m_params.format);
-
 				const vk::VkAttachmentReference	multiSampleAttachmentReference	=
 				{
 					attachmentNdx++,
 					vk::VK_IMAGE_LAYOUT_GENERAL
 				};
 
-				multisampleViews.push_back(makeSharedPtr(createImageView(vk, device, &multisamplingTargetViewInfo)));
 				multisampleAttachmentRefs.push_back(multiSampleAttachmentReference);
 
 				renderPassCreateInfo.addAttachment(AttachmentDescription(m_params.format,
@@ -523,6 +535,21 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 		pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
 		pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState(m_params.samples, sampleShadingEnable, 1.0f));
 
+		std::vector<vk::VkFormat> colorAttachmentFormats(colorTargetViews.size(), m_params.format);
+		vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+		{
+			vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+			DE_NULL,
+			0u,
+			static_cast<deUint32>(colorAttachmentFormats.size()),
+			colorAttachmentFormats.data(),
+			vk::VK_FORMAT_UNDEFINED,
+			vk::VK_FORMAT_UNDEFINED
+		};
+
+		if (m_params.useDynamicRendering)
+			pipelineCreateInfo.pNext = &renderingCreateInfo;
+
 		pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 	}
 
@@ -534,19 +561,80 @@ void DrawTestInstance::render (de::SharedPtr<Image>& colorTargetImage,
 		const vk::VkBuffer				buffer				= vertexBuffer->object();
 		const vk::VkOffset3D			zeroOffset			= { 0, 0, 0 };
 		const auto						clearValueColor		= vk::makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
-		std::vector<vk::VkClearValue>	clearValues;
-
-		clearValues.push_back(clearValueColor);
-		if (useMultisampling)
-			clearValues.push_back(clearValueColor);
+		std::vector<vk::VkClearValue>	clearValues			(2, clearValueColor);
 
 		beginCommandBuffer(vk, *cmdBuffer, 0u);
-		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, (deUint32)clearValues.size(), &clearValues[0]);
+
+		if (m_params.useDynamicRendering)
+		{
+			const deUint32 imagesCount = static_cast<deUint32>(colorTargetViews.size());
+			std::vector<vk::VkRenderingAttachmentInfoKHR> colorAttachments(imagesCount,
+			{
+				vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,	// VkStructureType						sType;
+				DE_NULL,												// const void*							pNext;
+				DE_NULL,												// VkImageView							imageView;
+				vk::VK_IMAGE_LAYOUT_GENERAL,							// VkImageLayout						imageLayout;
+				vk::VK_RESOLVE_MODE_NONE,								// VkResolveModeFlagBits				resolveMode;
+				DE_NULL,												// VkImageView							resolveImageView;
+				vk::VK_IMAGE_LAYOUT_GENERAL,							// VkImageLayout						resolveImageLayout;
+				vk::VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp					loadOp;
+				vk::VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp					storeOp;
+				clearValueColor											// VkClearValue							clearValue;
+			});
+
+			for (deUint32 i = 0; i < imagesCount; ++i)
+			{
+				if (useMultisampling)
+				{
+					colorAttachments[i].imageView			= **multisampleViews[i];
+					colorAttachments[i].resolveMode			= vk::VK_RESOLVE_MODE_AVERAGE_BIT;
+					colorAttachments[i].resolveImageView	= **colorTargetViews[i];
+				}
+				else
+					colorAttachments[i].imageView = **colorTargetViews[i];
+			}
+
+			vk::VkRenderingInfoKHR renderingInfo
+			{
+				vk::VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+				DE_NULL,
+				0,														// VkRenderingFlagsKHR					flags;
+				renderArea,												// VkRect2D								renderArea;
+				1u,														// deUint32								layerCount;
+				0u,														// deUint32								viewMask;
+				imagesCount,											// deUint32								colorAttachmentCount;
+				colorAttachments.data(),								// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+				DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+				DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+			};
+
+			// Transition Images
+			initialTransitionColor2DImage(vk, *cmdBuffer, colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
+				vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+			if (useMultisampling)
+			{
+				initialTransitionColor2DImage(vk, *cmdBuffer, multisampleImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
+					vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+			}
+
+			vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
+		}
+		else
+		{
+			const deUint32 imagesCount = static_cast<deUint32>(colorTargetViews.size() + multisampleViews.size());
+			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, imagesCount, &clearValues[0]);
+		}
+
 		vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &buffer, &vertexBufferOffset);
 		vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 		vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, vk::VK_SHADER_STAGE_FRAGMENT_BIT, 0u, pcDataSize, &pcData);
 		vk.cmdDraw(*cmdBuffer, 3u, 1u, 0u, 0u);
-		endRenderPass(vk, *cmdBuffer);
+
+		if (m_params.useDynamicRendering)
+			endRendering(vk, *cmdBuffer);
+		else
+			endRenderPass(vk, *cmdBuffer);
 
 		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
@@ -674,7 +762,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 	return tcu::TestStatus::pass("Results differ and references match");
 }
 
-void createTests (tcu::TestCaseGroup* testGroup)
+void createTests (tcu::TestCaseGroup* testGroup, bool useDynamicRendering)
 {
 	tcu::TestContext&	testCtx	= testGroup->getTestContext();
 	const vk::VkFormat	format	= vk::VK_FORMAT_R8G8B8A8_UNORM;
@@ -730,7 +818,7 @@ void createTests (tcu::TestCaseGroup* testGroup)
 
 			for (const auto& testVariant : testVariants)
 			{
-				const DrawParams params {format, size, testVariant.samples, grpVariant.useStructure, sampleVariant.includeSampleDecoration};
+				const DrawParams params {format, size, testVariant.samples, grpVariant.useStructure, sampleVariant.includeSampleDecoration, useDynamicRendering};
 				sampleGroup->addChild(new DrawTestCase(testCtx, testVariant.name, testVariant.desc, params));
 			}
 
@@ -743,12 +831,13 @@ void createTests (tcu::TestCaseGroup* testGroup)
 
 }	// anonymous
 
-tcu::TestCaseGroup* createMultipleInterpolationTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createMultipleInterpolationTests (tcu::TestContext& testCtx, bool useDynamicRendering)
 {
 	return createTestGroup(testCtx,
 						   "multiple_interpolation",
 						   "Tests for multiple interpolation decorations in a shader stage.",
-						   createTests);
+						   createTests,
+						   useDynamicRendering);
 }
 
 }	// Draw

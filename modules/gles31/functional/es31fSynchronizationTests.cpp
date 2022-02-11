@@ -3118,14 +3118,14 @@ std::string ConcurrentSSBOAtomicCounterMixedCase::genSSBOComputeSource (void) co
 		<< "layout (binding = 1, std430) volatile buffer WorkBuffer\n"
 		<< "{\n"
 		<< "	highp uint targetValue;\n"
-		<< "	highp uint dummy;\n"
+		<< "	highp uint unused;\n"
 		<< "} sb_work;\n"
 		<< "\n"
 		<< "void main ()\n"
 		<< "{\n"
 		<< "	// flip high bits\n"
 		<< "	highp uint mask = uint(1) << (24u + (gl_GlobalInvocationID.x % 8u));\n"
-		<< "	sb_work.dummy = atomicXor(sb_work.targetValue, mask);\n"
+		<< "	sb_work.unused = atomicXor(sb_work.targetValue, mask);\n"
 		<< "}";
 
 	return specializeShader(m_context, buf.str().c_str());

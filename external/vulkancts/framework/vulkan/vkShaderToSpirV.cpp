@@ -62,6 +62,8 @@ EShLanguage getGlslangStage (glu::ShaderType type)
 		EShLangMiss,
 		EShLangIntersect,
 		EShLangCallable,
+		EShLangTaskNV,
+		EShLangMeshNV,
 	};
 	return de::getSizedArrayElement<glu::SHADERTYPE_LAST>(stageMap, type);
 }
@@ -193,10 +195,10 @@ void getDefaultBuiltInResources (TBuiltInResource* builtin)
 	builtin->maxSamples									= 4;
 	builtin->maxMeshOutputVerticesNV					= 256;
 	builtin->maxMeshOutputPrimitivesNV					= 256;
-	builtin->maxMeshWorkGroupSizeX_NV					= 32;
+	builtin->maxMeshWorkGroupSizeX_NV					= 256;
 	builtin->maxMeshWorkGroupSizeY_NV					= 1;
 	builtin->maxMeshWorkGroupSizeZ_NV					= 1;
-	builtin->maxTaskWorkGroupSizeX_NV					= 32;
+	builtin->maxTaskWorkGroupSizeX_NV					= 1024;
 	builtin->maxTaskWorkGroupSizeY_NV					= 1;
 	builtin->maxTaskWorkGroupSizeZ_NV					= 1;
 	builtin->maxMeshViewCountNV							= 4;
@@ -299,6 +301,9 @@ bool compileShaderToSpirV (const std::vector<std::string>* sources, const Shader
 				break;
 			case SPIRV_VERSION_1_5:
 				shader.setEnvTarget(glslang::EshTargetSpv, (glslang::EShTargetLanguageVersion)0x10500);
+				break;
+			case SPIRV_VERSION_1_6:
+				shader.setEnvTarget(glslang::EshTargetSpv, (glslang::EShTargetLanguageVersion)0x10600);
 				break;
 			default:
 				TCU_THROW(InternalError, "Unsupported SPIR-V target version");

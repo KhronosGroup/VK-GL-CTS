@@ -27,6 +27,7 @@
 #include "vktPipelineMultisampleImageTests.hpp"
 #include "vktPipelineMultisampleSampleLocationsExtTests.hpp"
 #include "vktPipelineMultisampleMixedAttachmentSamplesTests.hpp"
+#include "vktPipelineMultisampleResolveRenderAreaTests.hpp"
 #include "vktPipelineMultisampleShaderFragmentMaskTests.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
@@ -5466,6 +5467,10 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 
 		// VK_AMD_shader_fragment_mask
 		multisampleTests->addChild(createMultisampleShaderFragmentMaskTests(testCtx, pipelineConstructionType));
+
+		// Multisample resolve tests where a render area is less than an attachment size.
+		if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+			multisampleTests->addChild(createMultisampleResolveRenderpassRenderAreaTests(testCtx));
 	}
 
 	// VK_EXT_sample_locations

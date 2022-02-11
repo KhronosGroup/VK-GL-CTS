@@ -65,7 +65,7 @@ namespace vkt
 				deUint32	instancesGroupCount;
 				deUint32	randomSeed;
 				deUint32	depth;
-				deUint32    useManyBottomASes;
+				deUint32    useManyGeometries;
 			};
 
 			VkFormat getImageFormat (void)
@@ -95,7 +95,6 @@ namespace vkt
 				RAYGEN_GROUP = FIRST_GROUP,
 				MISS_GROUP,
 				HIT_GROUP,
-				GROUP_COUNT
 			};
 
 			static inline tcu::Vec3 mixVec3(const tcu::Vec3& a, const tcu::Vec3& b, const float alpha)
@@ -132,15 +131,18 @@ namespace vkt
 				VkPipelineLayout					pipelineLayout,
 				const deUint32					raygenGroup,
 				const deUint32					missGroup,
-				const deUint32					hitGroup)
+				const deUint32					hitGroup,
+				const deUint32					hitGroupCount)
 			{
 				Move<VkShaderModule>	raygenShader = createShaderModule(vkd, device, collection.get("rgen"), 0);
 				Move<VkShaderModule>	hitShader = createShaderModule(vkd, device, collection.get("ahit"), 0);
 				Move<VkShaderModule>	missShader = createShaderModule(vkd, device, collection.get("miss"), 0);
 
-				rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, raygenShader, raygenGroup);
-				rayTracingPipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR, hitShader, hitGroup);
-				rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, missShader, missGroup);
+				rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, raygenShader.get(), raygenGroup);
+				rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, missShader.get(), missGroup);
+
+				for (deUint32 i = 0u; i < hitGroupCount; ++i)
+					rayTracingPipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR, hitShader.get(), hitGroup + i);
 
 				Move<VkPipeline> pipeline = rayTracingPipeline->createPipeline(vkd, device, pipelineLayout);
 
@@ -278,6 +280,8 @@ namespace vkt
 					}
 					else
 					{
+						const char* zCoord = (m_data.useManyGeometries ? "gl_GeometryIndexEXT" : "gl_PrimitiveID");
+
 						css << "#version 460 core\n"
 							"\n"
 							"#extension GL_EXT_ray_tracing : require\n"
@@ -289,7 +293,7 @@ namespace vkt
 							"\n"
 							"void main()\n"
 							"{\n"
-							"    imageAtomicAdd(result, ivec3(gl_LaunchIDEXT.xy, gl_PrimitiveID), 1);\n"
+							"    imageAtomicAdd(result, ivec3(gl_LaunchIDEXT.xy, " << zCoord << "), 1);\n"
 							"}\n";
 					}
 
@@ -361,11 +365,14 @@ namespace vkt
 						"        return;\n"
 						"    }\n"
 						"\n"
-						"    float angleDiff    = 2.0 * 3.14159265 / " << de::toString(nSharedEdges) << ";\n"
+						"    float kPi          = 3.141592653589;\n"
+						"    float angleDiff    = 2.0 * kPi / " << de::toString(nSharedEdges) << ";\n"
+						"    float angle        = ((nRay == 0) ? 0.0\n"
+						"                                      : (angleDiff * (nRay - 1) - kPi));\n"
 						"    vec2  sharedEdgeP1 = vec2(0, 0);\n"
-						"    vec2  sharedEdgeP2 = (nRay == 0) ? vec2     (0, 0)\n"
-						"                                     : vec2     (sin(angleDiff * (nRay - 1) ), cos(angleDiff * (nRay - 1) ));\n"
-						"    vec3  target       = vec3     (mix(sharedEdgeP1, sharedEdgeP2, vec2(0.5) ), 0.0);\n"
+						"    vec2  sharedEdgeP2 = ((nRay == 0) ? vec2     (0, 0)\n"
+						"                                      : vec2     (sin(angle), cos(angle)));\n"
+						"    vec3  target       = vec3     (mix(sharedEdgeP1, sharedEdgeP2, vec2(0.5)), 0.0);\n"
 						"    vec3  direct       = normalize(target - origin);\n"
 						"\n"
 						"    traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin, tmin, direct, tmax, 0);\n"
@@ -412,94 +419,54 @@ namespace vkt
 
 				result->setGeometryCount(1u);
 
-				if (!m_useClosedFan)
+				DE_ASSERT(!m_useClosedFan);
+
+				vertices.reserve(3u * m_data.squaresGroupCount);
+
+				vertices.push_back(tcu::Vec3(0.0f, 0.0f, -1.0f));
+				vertices.push_back(tcu::Vec3(0.0f, 1.0f, -1.0f));
+				vertices.push_back(tcu::Vec3(1.0f, 0.0f, -1.0f));
+				vertices.push_back(tcu::Vec3(1.0f, 1.0f, -1.0f));
+
+				triangles.reserve(m_data.squaresGroupCount);
+
+				triangles.push_back(tcu::UVec3(0, 1, 2));
+				triangles.push_back(tcu::UVec3(3, 2, 1));
+
+				while (triangles.size() < m_data.squaresGroupCount)
 				{
-					vertices.reserve(3u * m_data.squaresGroupCount);
+					const deUint32		n = (deUint32)rng.getInt(0, (deUint32)triangles.size() - 1);
+					tcu::UVec3& t = triangles[n];
+					const tcu::Vec3& a = vertices[t.x()];
+					const tcu::Vec3& b = vertices[t.y()];
+					const tcu::Vec3& c = vertices[t.z()];
+					const float			alfa = rng.getFloat(0.01f, 0.99f);
+					const float			beta = rng.getFloat(0.01f, 0.99f);
+					const tcu::Vec3		mixed = mixVec3(mixVec3(a, b, alfa), c, beta);
+					const float			z = -rng.getFloat(0.01f, 0.99f);
+					const tcu::Vec3		d = tcu::Vec3(mixed.x(), mixed.y(), z);
+					const deUint32& p = t.x();
+					const deUint32& q = t.y();
+					deUint32& r = t.z();
+					const deUint32		R = (deUint32)vertices.size();
 
-					vertices.push_back(tcu::Vec3(0.0f, 0.0f, -1.0f));
-					vertices.push_back(tcu::Vec3(0.0f, 1.0f, -1.0f));
-					vertices.push_back(tcu::Vec3(1.0f, 0.0f, -1.0f));
-					vertices.push_back(tcu::Vec3(1.0f, 1.0f, -1.0f));
+					vertices.push_back(d);
 
-					triangles.reserve(m_data.squaresGroupCount);
-
-					triangles.push_back(tcu::UVec3(0, 1, 2));
-					triangles.push_back(tcu::UVec3(3, 2, 1));
-
-					while (triangles.size() < m_data.squaresGroupCount)
-					{
-						const deUint32		n = (deUint32)rng.getInt(0, (deUint32)triangles.size() - 1);
-						tcu::UVec3& t = triangles[n];
-						const tcu::Vec3& a = vertices[t.x()];
-						const tcu::Vec3& b = vertices[t.y()];
-						const tcu::Vec3& c = vertices[t.z()];
-						const float			alfa = rng.getFloat(0.01f, 0.99f);
-						const float			beta = rng.getFloat(0.01f, 0.99f);
-						const tcu::Vec3		mixed = mixVec3(mixVec3(a, b, alfa), c, beta);
-						const float			z = -rng.getFloat(0.01f, 0.99f);
-						const tcu::Vec3		d = tcu::Vec3(mixed.x(), mixed.y(), z);
-						const deUint32& p = t.x();
-						const deUint32& q = t.y();
-						deUint32& r = t.z();
-						const deUint32		R = (deUint32)vertices.size();
-
-						vertices.push_back(d);
-
-						triangles.push_back(tcu::UVec3(q, r, R));
-						triangles.push_back(tcu::UVec3(p, r, R));
-						r = R;
-					}
-
-					geometryData.reserve(3u * triangles.size());
-
-					for (size_t i = 0; i < triangles.size(); ++i)
-					{
-						geometryData.push_back(vertices[triangles[i].x()]);
-						geometryData.push_back(vertices[triangles[i].y()]);
-						geometryData.push_back(vertices[triangles[i].z()]);
-					}
-
-					result->addGeometry(geometryData, triangle);
-				}
-				else
-				{
-					// Build a closed fan.
-					vertices.push_back(tcu::Vec3(0.0f, 0.0f, 0.0f));
-
-					for (deUint32 nSharedEdge = 0; nSharedEdge < m_data.squaresGroupCount; ++nSharedEdge)
-					{
-						const auto newVertex = tcu::Vec3(
-							deFloatSin(2.0f * float(nSharedEdge) * 3.14159265f / float(m_data.squaresGroupCount)),
-							deFloatCos(2.0f * float(nSharedEdge) * 3.14159265f / float(m_data.squaresGroupCount)),
-							0.0f);
-
-						vertices.push_back(newVertex);
-					}
-
-					for (deUint32 nSharedEdge = 0; nSharedEdge < m_data.squaresGroupCount; ++nSharedEdge)
-					{
-						const auto newTri = tcu::UVec3(
-							0,
-							1 + nSharedEdge,
-							(nSharedEdge != m_data.squaresGroupCount - 1)	? (2 + nSharedEdge)
-																			: 1
-						);
-
-						triangles.push_back(newTri);
-					}
-
-					geometryData.reserve(3u * triangles.size());
-
-					for (size_t i = 0; i < triangles.size(); ++i)
-					{
-						geometryData.push_back(vertices[triangles[i].x()]);
-						geometryData.push_back(vertices[triangles[i].y()]);
-						geometryData.push_back(vertices[triangles[i].z()]);
-					}
-
-					result->addGeometry(geometryData, triangle, VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
+					triangles.push_back(tcu::UVec3(q, r, R));
+					triangles.push_back(tcu::UVec3(p, r, R));
+					r = R;
 				}
 
+				geometryData.reserve(3u * triangles.size());
+
+				for (size_t i = 0; i < triangles.size(); ++i)
+				{
+					geometryData.push_back(vertices[triangles[i].x()]);
+					geometryData.push_back(vertices[triangles[i].y()]);
+					geometryData.push_back(vertices[triangles[i].z()]);
+				}
+
+				result->addGeometry(geometryData, triangle);
 				result->createAndBuild(vkd, device, cmdBuffer, allocator);
 
 				return result;
@@ -523,15 +490,14 @@ namespace vkt
 					// Build a closed fan.
 					std::vector<tcu::Vec3>	vertices;
 					std::vector<tcu::UVec3>	triangles;
+					const float				angleDiff	= 2.0f * DE_PI / static_cast<float>(m_data.squaresGroupCount);
 
 					vertices.push_back(tcu::Vec3(0.0f, 0.0f, 0.0f));
 
 					for (deUint32 nSharedEdge = 0; nSharedEdge < m_data.squaresGroupCount; ++nSharedEdge)
 					{
-						const auto newVertex = tcu::Vec3(
-							deFloatSin(2.0f * float(nSharedEdge) * 3.14159265f / float(m_data.squaresGroupCount)),
-							deFloatCos(2.0f * float(nSharedEdge) * 3.14159265f / float(m_data.squaresGroupCount)),
-							0.0f);
+						const auto angle		= static_cast<float>(nSharedEdge) * angleDiff - DE_PI;
+						const auto newVertex	= tcu::Vec3(deFloatSin(angle), deFloatCos(angle), 0.0f);
 
 						vertices.push_back(newVertex);
 					}
@@ -553,21 +519,22 @@ namespace vkt
 						const VkDevice			device		= m_context.getDevice			();
 						const DeviceInterface&	vkd			= m_context.getDeviceInterface	();
 
-						if (!m_data.useManyBottomASes)
+						if (!m_data.useManyGeometries)
 						{
-							std::vector<tcu::Vec3>							geometryData;
 							de::MovePtr<BottomLevelAccelerationStructure>	resultBLAS	= makeBottomLevelAccelerationStructure();
-
-							geometryData.reserve(3u * triangles.size());
 
 							for (size_t i = 0; i < triangles.size(); ++i)
 							{
+								std::vector<tcu::Vec3> geometryData;
+								geometryData.reserve(3u);
+
 								geometryData.push_back(vertices[triangles[i].x()]);
 								geometryData.push_back(vertices[triangles[i].y()]);
 								geometryData.push_back(vertices[triangles[i].z()]);
+
+								resultBLAS->addGeometry(geometryData, true /* triangles */, VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
 							}
 
-							resultBLAS->addGeometry		(geometryData, true /* triangles */, VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
 							resultBLAS->createAndBuild	(vkd, device, cmdBuffer, allocator);
 
 							result.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(resultBLAS.release()));
@@ -623,13 +590,14 @@ namespace vkt
 				const Move<VkCommandBuffer>			cmdBuffer = allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 				de::MovePtr<RayTracingPipeline>		rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
-				const Move<VkPipeline>				pipeline = makePipeline(vkd, device, m_context.getBinaryCollection(), rayTracingPipeline, *pipelineLayout, RAYGEN_GROUP, MISS_GROUP, HIT_GROUP);
+				const auto							hitGroupCount = (m_data.useManyGeometries ? m_data.squaresGroupCount : 1u);
+				const Move<VkPipeline>				pipeline = makePipeline(vkd, device, m_context.getBinaryCollection(), rayTracingPipeline, *pipelineLayout, RAYGEN_GROUP, MISS_GROUP, HIT_GROUP, hitGroupCount);
 				const de::MovePtr<BufferWithMemory>	raygenShaderBindingTable = rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, RAYGEN_GROUP, 1u);
 				const de::MovePtr<BufferWithMemory>	missShaderBindingTable = rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, MISS_GROUP, 1u);
-				const de::MovePtr<BufferWithMemory>	hitShaderBindingTable = rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, HIT_GROUP, 1u);
+				const de::MovePtr<BufferWithMemory>	hitShaderBindingTable = rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, HIT_GROUP, hitGroupCount);
 				const VkStridedDeviceAddressRegionKHR	raygenShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
 				const VkStridedDeviceAddressRegionKHR	missShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
-				const VkStridedDeviceAddressRegionKHR	hitShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+				const VkStridedDeviceAddressRegionKHR	hitShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize * hitGroupCount);
 				const VkStridedDeviceAddressRegionKHR	callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
 
 				const VkImageCreateInfo				imageCreateInfo = makeImageCreateInfo(m_data.width, m_data.height, m_data.depth, format);

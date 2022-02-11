@@ -157,19 +157,19 @@ bool hasDepthStencil(DepthStencilType type)
 
 struct TestParams
 {
-	TestParams(size_t numColorAttachments, DepthStencilType depthStencilType_, deBool depthStencilUsed_, VkFormat depthStencilFormat_, RenderPassType renderPassType_)
+	TestParams(size_t numColorAttachments, DepthStencilType depthStencilType_, deBool depthStencilUsed_, VkFormat depthStencilFormat_, RenderingType renderingType_)
 		: colorUsed(numColorAttachments, DE_FALSE)
 		, depthStencilType(depthStencilType_)
 		, depthStencilUsed(depthStencilUsed_)
 		, depthStencilFormat(depthStencilFormat_)
-		, renderPassType(renderPassType_)
+		, renderingType(renderingType_)
 		{}
 
 	std::vector<deBool>	colorUsed;
 	DepthStencilType	depthStencilType;
 	deBool				depthStencilUsed;
-	VkFormat		depthStencilFormat;
-	RenderPassType		renderPassType;
+	VkFormat			depthStencilFormat;
+	RenderingType		renderingType;
 };
 
 class UnusedClearAttachmentTestInstance : public vkt::TestInstance
@@ -252,8 +252,12 @@ void checkFormatSupported(Context& context, VkFormat format, VkImageUsageFlags u
 void UnusedClearAttachmentTest::checkSupport (Context& context) const
 {
 	// Check for renderpass2 extension if used
-	if (m_testParams.renderPassType == RENDERPASS_TYPE_RENDERPASS2)
+	if (m_testParams.renderingType == RENDERING_TYPE_RENDERPASS2)
 		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
+
+	// Check for dynamic_rendering extension if used
+	if (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
 	// Check support for the needed color, depth and stencil formats.
 	if (!m_testParams.colorUsed.empty())
@@ -679,13 +683,14 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context&			
 		}
 	}
 
-	// Create render pass.
-	if (testParams.renderPassType == RENDERPASS_TYPE_LEGACY)
+	// Create render pass when dynamic_rendering is not tested
+	if (testParams.renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
 		m_renderPass = createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vk, vkDevice, testParams);
-	else
+	else if (testParams.renderingType == RENDERING_TYPE_RENDERPASS2)
 		m_renderPass = createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vk, vkDevice, testParams);
 
 	// Create framebuffer
+	if (testParams.renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
 	{
 		std::vector<VkImageView>		imageViews;
 
@@ -776,6 +781,22 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context&			
 			{ 0.0f, 0.0f, 0.0f, 0.0f }															// float										blendConstants[4]
 		};
 
+		VkPipelineRenderingCreateInfoKHR* pNext = DE_NULL;
+		const std::vector<VkFormat> colorAttachmentFormats(testParams.colorUsed.size(), FORMAT_COLOR);
+		VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+			DE_NULL,
+			0u,
+			static_cast<deUint32>(colorAttachmentFormats.size()),
+			colorAttachmentFormats.data(),
+			(hasDepthStencil(m_testParams.depthStencilType) ? m_testParams.depthStencilFormat : vk::VK_FORMAT_UNDEFINED),
+			(hasDepthStencil(m_testParams.depthStencilType) ? m_testParams.depthStencilFormat : vk::VK_FORMAT_UNDEFINED),
+		};
+
+		if (testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+			pNext = &renderingCreateInfo;
+
 		m_graphicsPipeline = makeGraphicsPipeline(vk,									// const DeviceInterface&							vk
 												  vkDevice,								// const VkDevice									device
 												  *m_pipelineLayout,					// const VkPipelineLayout							pipelineLayout
@@ -794,14 +815,16 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context&			
 												  DE_NULL,								// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
 												  DE_NULL,								// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
 												  DE_NULL,								// const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo
-												  &colorBlendStateCreateInfo);			// const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo
+												  &colorBlendStateCreateInfo,			// const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo
+												  DE_NULL,								// const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo
+												  pNext);								// const void*										pNext
 	}
 
 	// Create command pool
 	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
 	// Create command buffer
-	if (testParams.renderPassType == RENDERPASS_TYPE_LEGACY)
+	if (testParams.renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
 		createCommandBuffer<RenderpassSubpass1>(vk, vkDevice);
 	else
 		createCommandBuffer<RenderpassSubpass2>(vk, vkDevice);
@@ -811,20 +834,6 @@ template <typename RenderpassSubpass>
 void UnusedClearAttachmentTestInstance::createCommandBuffer (const DeviceInterface&	vk,
 															 VkDevice				vkDevice)
 {
-	const typename RenderpassSubpass::SubpassBeginInfo	subpassBeginInfo	(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
-	const typename RenderpassSubpass::SubpassEndInfo	subpassEndInfo		(DE_NULL);
-
-	const VkRenderPassBeginInfo							renderPassBeginInfo	=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
-		DE_NULL,									// const void*			pNext;
-		*m_renderPass,								// VkRenderPass			renderPass;
-		*m_framebuffer,								// VkFramebuffer		framebuffer;
-		makeRect2D(m_renderSize),					// VkRect2D				renderArea;
-		0u,											// uint32_t				clearValueCount;
-		DE_NULL										// const VkClearValue*	pClearValues;
-	};
-
 	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	const VkClearRect									clearRect			=
@@ -859,10 +868,90 @@ void UnusedClearAttachmentTestInstance::createCommandBuffer (const DeviceInterfa
 	}
 
 	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+
+	VkRect2D renderArea = makeRect2D(m_renderSize);
+	if (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+	{
+		std::vector<VkRenderingAttachmentInfoKHR> colorAttachments;
+		for (size_t i = 0; i < m_colorAttachmentViews.size() ; ++i)
+		{
+			colorAttachments.push_back({
+				VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,				// VkStructureType						sType;
+				DE_NULL,														// const void*							pNext;
+				(m_testParams.colorUsed[i]) ? *m_colorAttachmentViews[i] : 0,	// VkImageView							imageView;
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,						// VkImageLayout						imageLayout;
+				VK_RESOLVE_MODE_NONE,											// VkResolveModeFlagBits				resolveMode;
+				DE_NULL,														// VkImageView							resolveImageView;
+				VK_IMAGE_LAYOUT_UNDEFINED,										// VkImageLayout						resolveImageLayout;
+				VK_ATTACHMENT_LOAD_OP_LOAD,										// VkAttachmentLoadOp					loadOp;
+				VK_ATTACHMENT_STORE_OP_STORE,									// VkAttachmentStoreOp					storeOp;
+				m_clearColor													// VkClearValue							clearValue;
+			});
+		}
+
+		vk::VkRenderingAttachmentInfoKHR depthAttachment
+		{
+			VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,				// VkStructureType						sType;
+			DE_NULL,														// const void*							pNext;
+			(m_testParams.depthStencilUsed) ? *m_depthAttachmentView : 0,	// VkImageView							imageView;
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
+			VK_RESOLVE_MODE_NONE,											// VkResolveModeFlagBits				resolveMode;
+			DE_NULL,														// VkImageView							resolveImageView;
+			VK_IMAGE_LAYOUT_UNDEFINED,										// VkImageLayout						resolveImageLayout;
+			VK_ATTACHMENT_LOAD_OP_LOAD,										// VkAttachmentLoadOp					loadOp;
+			VK_ATTACHMENT_STORE_OP_STORE,									// VkAttachmentStoreOp					storeOp;
+			m_clearColorDepth												// VkClearValue							clearValue;
+		};
+
+		const bool hasDepth		= m_testParams.depthStencilType == DEPTH_STENCIL_BOTH ||
+								  m_testParams.depthStencilType == DEPTH_STENCIL_DEPTH_ONLY;
+		const bool hasStencil	= m_testParams.depthStencilType == DEPTH_STENCIL_BOTH ||
+								  m_testParams.depthStencilType == DEPTH_STENCIL_STENCIL_ONLY;
+
+		vk::VkRenderingInfoKHR renderingInfo
+		{
+			vk::VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+			DE_NULL,
+			0u,																	// VkRenderingFlagsKHR					flags;
+			renderArea,															// VkRect2D								renderArea;
+			1u,																	// deUint32								layerCount;
+			0u,																	// deUint32								viewMask;
+			static_cast<deUint32>(colorAttachments.size()),						// deUint32								colorAttachmentCount;
+			colorAttachments.empty() ? DE_NULL : colorAttachments.data(),		// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+			hasDepth ? &depthAttachment : DE_NULL,								// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+			hasStencil ? &depthAttachment : DE_NULL,							// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+		};
+
+		vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
+	}
+	else
+	{
+		const VkRenderPassBeginInfo renderPassBeginInfo
+		{
+			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
+			DE_NULL,									// const void*			pNext;
+			*m_renderPass,								// VkRenderPass			renderPass;
+			*m_framebuffer,								// VkFramebuffer		framebuffer;
+			renderArea,									// VkRect2D				renderArea;
+			0u,											// uint32_t				clearValueCount;
+			DE_NULL										// const VkClearValue*	pClearValues;
+		};
+
+		const typename RenderpassSubpass::SubpassBeginInfo subpassBeginInfo(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
 		RenderpassSubpass::cmdBeginRenderPass(vk, *m_cmdBuffer, &renderPassBeginInfo, &subpassBeginInfo);
-		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
-		vk.cmdClearAttachments(*m_cmdBuffer, static_cast<deUint32>(clearAttachments.size()), (clearAttachments.empty() ? DE_NULL : clearAttachments.data()), 1u, &clearRect);
+	}
+
+	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
+	vk.cmdClearAttachments(*m_cmdBuffer, static_cast<deUint32>(clearAttachments.size()), (clearAttachments.empty() ? DE_NULL : clearAttachments.data()), 1u, &clearRect);
+
+	if (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+		vk.cmdEndRendering(*m_cmdBuffer);
+	else
+	{
+		const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(DE_NULL);
 		RenderpassSubpass::cmdEndRenderPass(vk, *m_cmdBuffer, &subpassEndInfo);
+	}
+
 	endCommandBuffer(vk, *m_cmdBuffer);
 }
 
@@ -1001,7 +1090,7 @@ std::string getCombName(const std::vector<deBool>& array)
 } // anonymous
 
 
-tcu::TestCaseGroup* createRenderPassUnusedClearAttachmentTests (tcu::TestContext& testCtx, const RenderPassType renderPassType)
+tcu::TestCaseGroup* createRenderPassUnusedClearAttachmentTests (tcu::TestContext& testCtx, const RenderingType renderingType)
 {
 	de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "unused_clear_attachments", "Unused attachments with vkCmdClearAttachments"));
 
@@ -1019,9 +1108,9 @@ tcu::TestCaseGroup* createRenderPassUnusedClearAttachmentTests (tcu::TestContext
 				std::vector<TestParams>	testTypes;
 
 				if (hasDepthStencil(dsType))
-					testTypes.emplace_back(0, dsType, depthStencilUse, dsFormat, renderPassType);						// No color attachments.
-				testTypes.emplace_back(1, dsType, depthStencilUse, dsFormat, renderPassType);							// Single color attachment.
-				testTypes.emplace_back(COLOR_ATTACHMENTS_NUMBER, dsType, depthStencilUse, dsFormat, renderPassType);	// Multiple color attachments.
+					testTypes.emplace_back(0, dsType, depthStencilUse, dsFormat, renderingType);						// No color attachments.
+				testTypes.emplace_back(1, dsType, depthStencilUse, dsFormat, renderingType);							// Single color attachment.
+				testTypes.emplace_back(COLOR_ATTACHMENTS_NUMBER, dsType, depthStencilUse, dsFormat, renderingType);		// Multiple color attachments.
 
 				for (auto& params : testTypes)
 				{

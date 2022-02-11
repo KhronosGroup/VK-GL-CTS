@@ -548,7 +548,7 @@ tcu::TestStatus ComputeTestInstance::iterate (void)
 
 	const Unique<VkShaderModule>   shaderModule  (createShaderModule (vk, device, m_context.getBinaryCollection().get("comp"), 0));
 	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout (vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline>       pipeline      (makeComputePipeline(vk, device, *pipelineLayout, *shaderModule, pSpecInfo));
+	const Unique<VkPipeline>       pipeline      (makeComputePipeline(vk, device, *pipelineLayout, (VkPipelineCreateFlags) 0u, *shaderModule, (VkPipelineShaderStageCreateFlags) 0u, pSpecInfo));
 	const Unique<VkCommandPool>    cmdPool       (createCommandPool  (vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>  cmdBuffer     (makeCommandBuffer  (vk, device, *cmdPool));
 

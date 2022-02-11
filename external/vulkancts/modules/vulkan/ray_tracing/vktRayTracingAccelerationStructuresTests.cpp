@@ -45,6 +45,7 @@
 #include "tcuFloat.hpp"
 
 #include <set>
+#include <limits>
 
 namespace vkt
 {
@@ -761,21 +762,6 @@ void SingleTriangleConfiguration::initShaderBindingTables(de::MovePtr<RayTracing
 	raygenShaderBindingTable											= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1 );
 	hitShaderBindingTable												= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1 );
 	missShaderBindingTable												= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 2, 1 );
-}
-
-bool pointInTriangle2D(const tcu::Vec3& p, const tcu::Vec3& p0, const tcu::Vec3& p1, const tcu::Vec3& p2)
-{
-	float s = p0.y() * p2.x() - p0.x() * p2.y() + (p2.y() - p0.y()) * p.x() + (p0.x() - p2.x()) * p.y();
-	float t = p0.x() * p1.y() - p0.y() * p1.x() + (p0.y() - p1.y()) * p.x() + (p1.x() - p0.x()) * p.y();
-
-	if ((s < 0) != (t < 0))
-		return false;
-
-	float a = -p1.y() * p2.x() + p0.y() * (p2.x() - p1.x()) + p0.x() * (p1.y() - p2.y()) + p1.x() * p2.y();
-
-	return a < 0 ?
-		(s <= 0 && s + t >= a) :
-		(s >= 0 && s + t <= a);
 }
 
 bool SingleTriangleConfiguration::verifyImage(BufferWithMemory* resultBuffer, Context& context, TestParams& testParams)
@@ -1839,26 +1825,13 @@ bool RayTracingASBasicTestInstance::iterateNoWorkers (void)
 
 bool RayTracingASBasicTestInstance::iterateWithWorkers (void)
 {
-	const deUint64					singleThreadTimeStart	= deGetMicroseconds();
 	de::MovePtr<BufferWithMemory>	singleThreadBufferCPU	= runTest(0);
 	const bool						singleThreadValidation	= m_data.testConfiguration->verifyImage(singleThreadBufferCPU.get(), m_context, m_data);
-	const deUint64					singleThreadTime		= deGetMicroseconds() - singleThreadTimeStart;
 
-	deUint64						multiThreadTimeStart	= deGetMicroseconds();
 	de::MovePtr<BufferWithMemory>	multiThreadBufferCPU	= runTest(m_data.workerThreadsCount);
 	const bool						multiThreadValidation	= m_data.testConfiguration->verifyImage(multiThreadBufferCPU.get(), m_context, m_data);
-	deUint64						multiThreadTime			= deGetMicroseconds() - multiThreadTimeStart;
-	const deUint64					multiThreadTimeOut		= 10 * singleThreadTime;
 
 	const deUint32					result					= singleThreadValidation && multiThreadValidation;
-
-	if (multiThreadTime > multiThreadTimeOut)
-	{
-		std::string failMsg	= "Time of multithreaded test execution " + de::toString(multiThreadTime) +
-							  " that is longer than expected execution time " + de::toString(multiThreadTimeOut);
-
-		TCU_FAIL(failMsg);
-	}
 
 	return result;
 }
@@ -1920,13 +1893,12 @@ void RayTracingASDynamicIndexingTestCase::initPrograms(SourceCollections& progra
 	// #version 460 core
 	// #extension GL_EXT_ray_tracing : require
 	// #extension GL_EXT_nonuniform_qualifier : enable
-	// #extension GL_ARB_gpu_shader_int64 : enable			// needed only to generate spir-v
 	// #define ARRAY_SIZE 500
 	// layout(location = 0) rayPayloadEXT uvec2 payload;	// offset and flag indicating if we are using descriptors or pointers
 
 	// layout(set = 0, binding = 0) uniform accelerationStructureEXT tlasArray[ARRAY_SIZE];
 	// layout(set = 0, binding = 1) readonly buffer topLevelASPointers {
-	//     uint64_t ptr[];
+	//     uvec2 ptr[];
 	// } tlasPointers;
 	// layout(set = 0, binding = 2) readonly buffer topLevelASIndices {
 	//     uint idx[];
@@ -1956,7 +1928,6 @@ void RayTracingASDynamicIndexingTestCase::initPrograms(SourceCollections& progra
 	// };
 
 	const std::string rgenSource =
-		"OpCapability Int64\n"
 		"OpCapability RayTracingKHR\n"
 		"OpCapability ShaderNonUniform\n"
 		"OpExtension \"SPV_EXT_descriptor_indexing\"\n"
@@ -2048,12 +2019,11 @@ void RayTracingASDynamicIndexingTestCase::initPrograms(SourceCollections& progra
 		"%91							= OpConstant %type_uint32 3\n"
 
 		// <changed_section>
-		"%type_uint64					= OpTypeInt 64 0\n"
-		"%104							= OpTypeRuntimeArray %type_uint64\n"
+		"%104							= OpTypeRuntimeArray %58\n"
 		"%105							= OpTypeStruct %104\n"
 		"%106							= OpTypePointer StorageBuffer %105\n"
 		"%var_as_pointers_ssbo			= OpVariable %106 StorageBuffer\n"
-		"%type_uint64_ssbo_ptr			= OpTypePointer StorageBuffer %type_uint64\n"
+		"%type_uint64_ssbo_ptr			= OpTypePointer StorageBuffer %58\n"
 		// </changed_section>
 
 		// void main()
@@ -2123,7 +2093,7 @@ void RayTracingASDynamicIndexingTestCase::initPrograms(SourceCollections& progra
 
 		// <changed_section> OLD
 		"%as_device_addres_ptr			= OpAccessChain %type_uint64_ssbo_ptr %var_as_pointers_ssbo %c_int32_0 %as_index\n"
-		"%as_device_addres				= OpLoad %type_uint64 %as_device_addres_ptr Aligned 8\n"
+		"%as_device_addres				= OpLoad %58 %as_device_addres_ptr\n"
 		"%as_to_use						= OpConvertUToAccelerationStructureKHR %type_as %as_device_addres\n"
 		// </changed_section>
 
@@ -2533,7 +2503,7 @@ tcu::TestStatus RayTracingDeviceASCompabilityKHRTestInstance::iterate (void)
 	const VkQueue					queue				= m_context.getUniversalQueue();
 	Allocator&						allocator			= m_context.getDefaultAllocator();
 
-	const Move<VkCommandPool>		cmdPool				= createCommandPool(vkd, device, 0, queueFamilyIndex);
+	const Move<VkCommandPool>		cmdPool				= createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 	const Move<VkCommandBuffer>		cmdBuffer			= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	bool							result				= false;

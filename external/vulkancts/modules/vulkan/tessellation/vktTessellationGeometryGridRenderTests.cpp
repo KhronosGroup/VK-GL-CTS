@@ -98,70 +98,29 @@ GridRenderTestCase::GridRenderTestCase (tcu::TestContext& testCtx, const std::st
 {
 	DE_ASSERT(((flags & (FLAG_GEOMETRY_SCATTER_PRIMITIVES | FLAG_GEOMETRY_SCATTER_LAYERS)) != 0) == ((flags & FLAG_GEOMETRY_SEPARATE_PRIMITIVES) != 0));
 
-	testCtx.getLog()
-		<< tcu::TestLog::Message
-		<< "Testing tessellation and geometry shaders that output a large number of primitives.\n"
-		<< getDescription()
-		<< tcu::TestLog::EndMessage;
-
-	if (m_flags & FLAG_GEOMETRY_SCATTER_LAYERS)
-		m_testCtx.getLog() << tcu::TestLog::Message << "Rendering to 2d texture array, numLayers = " << m_numLayers << tcu::TestLog::EndMessage;
-
-	m_testCtx.getLog()
-		<< tcu::TestLog::Message
-		<< "Tessellation level: " << m_tessGenLevel << ", mode = quad.\n"
-		<< "\tEach input patch produces " << (m_tessGenLevel*m_tessGenLevel) << " (" << (m_tessGenLevel*m_tessGenLevel*2) << " triangles)\n"
-		<< tcu::TestLog::EndMessage;
-
-	int geometryOutputComponents	  = 0;
 	int geometryOutputVertices		  = 0;
 	int geometryTotalOutputComponents = 0;
 
 	if (m_flags & FLAG_GEOMETRY_MAX_SPEC)
 	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "Using geometry shader minimum maximum output limits." << tcu::TestLog::EndMessage;
-
-		geometryOutputComponents	  = 64;
 		geometryOutputVertices		  = 256;
 		geometryTotalOutputComponents = 1024;
 	}
 	else
 	{
-		geometryOutputComponents	  = 64;
 		geometryOutputVertices		  = 16;
 		geometryTotalOutputComponents = 1024;
 	}
 
-	if ((m_flags & FLAG_GEOMETRY_MAX_SPEC) || (m_flags & FLAG_GEOMETRY_INVOCATIONS_MAX_SPEC))
-	{
-		tcu::MessageBuilder msg(&m_testCtx.getLog());
-
-		msg << "Geometry shader, targeting following limits:\n";
-
-		if (m_flags & FLAG_GEOMETRY_MAX_SPEC)
-			msg	<< "\tmaxGeometryOutputComponents = "	   << geometryOutputComponents << "\n"
-				<< "\tmaxGeometryOutputVertices = "		   << geometryOutputVertices << "\n"
-				<< "\tmaxGeometryTotalOutputComponents = " << geometryTotalOutputComponents << "\n";
-
-		if (m_flags & FLAG_GEOMETRY_INVOCATIONS_MAX_SPEC)
-			msg << "\tmaxGeometryShaderInvocations = "	   << m_numGeometryInvocations;
-
-		msg << tcu::TestLog::EndMessage;
-	}
-
 	const bool	separatePrimitives				  = (m_flags & FLAG_GEOMETRY_SEPARATE_PRIMITIVES) != 0;
 	const int	numComponentsPerVertex			  = 8; // vec4 pos, vec4 color
-	int			numVerticesPerInvocation		  = 0;
-	int			geometryVerticesPerPrimitive	  = 0;
-	int			geometryPrimitivesOutPerPrimitive = 0;
 
 	if (separatePrimitives)
 	{
-		const int	numComponentLimit		 = geometryTotalOutputComponents / (4 * numComponentsPerVertex);
-		const int	numOutputLimit			 = geometryOutputVertices / 4;
+		const int	numComponentLimit	= geometryTotalOutputComponents / (4 * numComponentsPerVertex);
+		const int	numOutputLimit		= geometryOutputVertices / 4;
 
 		m_numGeometryPrimitivesPerInvocation = de::min(numComponentLimit, numOutputLimit);
-		numVerticesPerInvocation			 = m_numGeometryPrimitivesPerInvocation * 4;
 	}
 	else
 	{
@@ -172,33 +131,13 @@ GridRenderTestCase::GridRenderTestCase (tcu::TestContext& testCtx, const std::st
 		//    |\ |\ |\ |
 		//    |_\|_\|_\|
 
-		const int	numSliceNodesComponentLimit	= geometryTotalOutputComponents / (2 * numComponentsPerVertex);			// each node 2 vertices
+		const int	numSliceNodesComponentLimit	= geometryTotalOutputComponents / (2 * numComponentsPerVertex + 2);		// each node 2 vertices
 		const int	numSliceNodesOutputLimit	= geometryOutputVertices / 2;											// each node 2 vertices
 		const int	numSliceNodes				= de::min(numSliceNodesComponentLimit, numSliceNodesOutputLimit);
 
-		numVerticesPerInvocation				= numSliceNodes * 2;
 		m_numGeometryPrimitivesPerInvocation	= (numSliceNodes - 1) * 2;
 	}
 
-	geometryVerticesPerPrimitive	  = numVerticesPerInvocation * m_numGeometryInvocations;
-	geometryPrimitivesOutPerPrimitive = m_numGeometryPrimitivesPerInvocation * m_numGeometryInvocations;
-
-	m_testCtx.getLog()
-		<< tcu::TestLog::Message
-		<< "Geometry shader:\n"
-		<< "\tTotal output vertex count per invocation: "		  << numVerticesPerInvocation << "\n"
-		<< "\tTotal output primitive count per invocation: "	  << m_numGeometryPrimitivesPerInvocation << "\n"
-		<< "\tNumber of invocations per primitive: "			  << m_numGeometryInvocations << "\n"
-		<< "\tTotal output vertex count per input primitive: "	  << geometryVerticesPerPrimitive << "\n"
-		<< "\tTotal output primitive count per input primitive: " << geometryPrimitivesOutPerPrimitive << "\n"
-		<< tcu::TestLog::EndMessage;
-
-	m_testCtx.getLog()
-		<< tcu::TestLog::Message
-		<< "Program:\n"
-		<< "\tTotal program output vertices count per input patch: "  << (m_tessGenLevel*m_tessGenLevel*2 * geometryVerticesPerPrimitive) << "\n"
-		<< "\tTotal program output primitive count per input patch: " << (m_tessGenLevel*m_tessGenLevel*2 * geometryPrimitivesOutPerPrimitive) << "\n"
-		<< tcu::TestLog::EndMessage;
 }
 
 void GridRenderTestCase::initPrograms (SourceCollections& programCollection) const
@@ -459,24 +398,134 @@ class GridRenderTestInstance : public TestInstance
 public:
 	struct Params
 	{
-		Flags	flags;
-		int		numLayers;
+		tcu::TestContext&	testCtx;
+		Flags				flags;
+		const char*			description;
+		int					tessGenLevel;
+		int					numGeometryInvocations;
+		int					numLayers;
+		int					numGeometryPrimitivesPerInvocation;
 
-		Params (void) : flags(), numLayers() {}
+		Params (tcu::TestContext& testContext) : testCtx(testContext), flags(), description(), tessGenLevel(), numGeometryInvocations(), numLayers(), numGeometryPrimitivesPerInvocation() {}
 	};
-						GridRenderTestInstance	(Context& context, const Params& params) : TestInstance(context), m_params(params) {}
+						GridRenderTestInstance	(Context& context, const Params& params);
 	tcu::TestStatus		iterate					(void);
 
 private:
 	Params				m_params;
 };
 
+GridRenderTestInstance::GridRenderTestInstance (Context& context, const Params& params) : TestInstance(context), m_params(params)
+{
+	tcu::TestContext& testCtx = m_params.testCtx;
+	testCtx.getLog()
+		<< tcu::TestLog::Message
+		<< "Testing tessellation and geometry shaders that output a large number of primitives.\n"
+		<< m_params.description
+		<< tcu::TestLog::EndMessage;
+
+	if (m_params.flags & FLAG_GEOMETRY_SCATTER_LAYERS)
+		testCtx.getLog() << tcu::TestLog::Message << "Rendering to 2d texture array, numLayers = " << m_params.numLayers << tcu::TestLog::EndMessage;
+
+	testCtx.getLog()
+		<< tcu::TestLog::Message
+		<< "Tessellation level: " << m_params.tessGenLevel << ", mode = quad.\n"
+		<< "\tEach input patch produces " << (m_params.tessGenLevel * m_params.tessGenLevel) << " (" << (m_params.tessGenLevel * m_params.tessGenLevel * 2) << " triangles)\n"
+		<< tcu::TestLog::EndMessage;
+
+	int geometryOutputComponents		= 0;
+	int geometryOutputVertices			= 0;
+	int geometryTotalOutputComponents	= 0;
+
+	if (m_params.flags & FLAG_GEOMETRY_MAX_SPEC)
+	{
+		testCtx.getLog() << tcu::TestLog::Message << "Using geometry shader minimum maximum output limits." << tcu::TestLog::EndMessage;
+
+		geometryOutputComponents		= 64;
+		geometryOutputVertices			= 256;
+		geometryTotalOutputComponents	= 1024;
+	}
+	else
+	{
+		geometryOutputComponents		= 64;
+		geometryOutputVertices			= 16;
+		geometryTotalOutputComponents	= 1024;
+	}
+
+	if ((m_params.flags & FLAG_GEOMETRY_MAX_SPEC) || (m_params.flags & FLAG_GEOMETRY_INVOCATIONS_MAX_SPEC))
+	{
+		tcu::MessageBuilder msg(&testCtx.getLog());
+
+		msg << "Geometry shader, targeting following limits:\n";
+
+		if (m_params.flags & FLAG_GEOMETRY_MAX_SPEC)
+			msg << "\tmaxGeometryOutputComponents = "		<< geometryOutputComponents << "\n"
+				<< "\tmaxGeometryOutputVertices = "			<< geometryOutputVertices << "\n"
+				<< "\tmaxGeometryTotalOutputComponents = "	<< geometryTotalOutputComponents << "\n";
+
+		if (m_params.flags & FLAG_GEOMETRY_INVOCATIONS_MAX_SPEC)
+			msg << "\tmaxGeometryShaderInvocations = " << m_params.numGeometryInvocations;
+
+		msg << tcu::TestLog::EndMessage;
+	}
+
+	const bool	separatePrimitives					= (m_params.flags & FLAG_GEOMETRY_SEPARATE_PRIMITIVES) != 0;
+	const int	numComponentsPerVertex				= 8; // vec4 pos, vec4 color
+	int			numVerticesPerInvocation			= 0;
+	int			geometryVerticesPerPrimitive		= 0;
+	int			geometryPrimitivesOutPerPrimitive	= 0;
+
+	if (separatePrimitives)
+	{
+		numVerticesPerInvocation = m_params.numGeometryPrimitivesPerInvocation * 4;
+	}
+	else
+	{
+		// If FLAG_GEOMETRY_SEPARATE_PRIMITIVES is not set, geometry shader fills a rectangle area in slices.
+		// Each slice is a triangle strip and is generated by a single shader invocation.
+		// One slice with 4 segment ends (nodes) and 3 segments:
+		//    .__.__.__.
+		//    |\ |\ |\ |
+		//    |_\|_\|_\|
+
+		const int	numSliceNodesComponentLimit		= geometryTotalOutputComponents / (2 * numComponentsPerVertex);			// each node 2 vertices
+		const int	numSliceNodesOutputLimit		= geometryOutputVertices / 2;											// each node 2 vertices
+		const int	numSliceNodes					= de::min(numSliceNodesComponentLimit, numSliceNodesOutputLimit);
+
+		numVerticesPerInvocation = numSliceNodes * 2;
+	}
+
+	geometryVerticesPerPrimitive		= numVerticesPerInvocation * m_params.numGeometryInvocations;
+	geometryPrimitivesOutPerPrimitive	= m_params.numGeometryPrimitivesPerInvocation * m_params.numGeometryInvocations;
+
+	testCtx.getLog()
+		<< tcu::TestLog::Message
+		<< "Geometry shader:\n"
+		<< "\tTotal output vertex count per invocation: " << numVerticesPerInvocation << "\n"
+		<< "\tTotal output primitive count per invocation: " << m_params.numGeometryPrimitivesPerInvocation << "\n"
+		<< "\tNumber of invocations per primitive: " << m_params.numGeometryInvocations << "\n"
+		<< "\tTotal output vertex count per input primitive: " << geometryVerticesPerPrimitive << "\n"
+		<< "\tTotal output primitive count per input primitive: " << geometryPrimitivesOutPerPrimitive << "\n"
+		<< tcu::TestLog::EndMessage;
+
+	testCtx.getLog()
+		<< tcu::TestLog::Message
+		<< "Program:\n"
+		<< "\tTotal program output vertices count per input patch: " << (m_params.tessGenLevel * m_params.tessGenLevel * 2 * geometryVerticesPerPrimitive) << "\n"
+		<< "\tTotal program output primitive count per input patch: " << (m_params.tessGenLevel * m_params.tessGenLevel * 2 * geometryPrimitivesOutPerPrimitive) << "\n"
+		<< tcu::TestLog::EndMessage;
+}
+
 TestInstance* GridRenderTestCase::createInstance (Context& context) const
 {
-	GridRenderTestInstance::Params params;
+	GridRenderTestInstance::Params params(m_testCtx);
 
-	params.flags	 = m_flags;
-	params.numLayers = m_numLayers;
+	params.flags								= m_flags;
+	params.description							= getDescription();
+	params.tessGenLevel							= m_tessGenLevel;
+	params.numGeometryInvocations				= m_numGeometryInvocations;
+	params.numLayers							= m_numLayers;
+	params.numGeometryPrimitivesPerInvocation	= m_numGeometryPrimitivesPerInvocation;
 
 	return new GridRenderTestInstance(context, params);
 }

@@ -312,7 +312,7 @@ void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) cons
 	VkShaderStageFlags shaderFlag = m_param.getShaderFlags();
 	if (shaderFlag & VK_SHADER_STAGE_GEOMETRY_BIT)
 	{
-		programCollection.glslSources.add("dummy_geo") << glu::GeometrySource(
+		programCollection.glslSources.add("unused_geo") << glu::GeometrySource(
 				"#version 450 \n"
 				"layout(triangles) in;\n"
 				"layout(triangle_strip, max_vertices = 3) out;\n"
@@ -449,7 +449,7 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&				context,
 
 	VkShaderStageFlags shaderFlags = m_param->getShaderFlags();
 	if (shaderFlags & VK_SHADER_STAGE_GEOMETRY_BIT)
-		geomShaderModule = createShaderModule(vk, vkDevice, context.getBinaryCollection().get("dummy_geo"), 0);
+		geomShaderModule = createShaderModule(vk, vkDevice, context.getBinaryCollection().get("unused_geo"), 0);
 	if (shaderFlags & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
 		tescShaderModule = createShaderModule(vk, vkDevice, context.getBinaryCollection().get("basic_tcs"), 0);
 	if (shaderFlags & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)

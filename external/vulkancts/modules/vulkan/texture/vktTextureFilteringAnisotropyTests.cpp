@@ -299,7 +299,7 @@ tcu::TestCaseGroup* createFilteringAnisotropyTests (tcu::TestContext& testCtx)
 			for (int minFilterNdx = 0; minFilterNdx < DE_LENGTH_OF_ARRAY(minFilters); minFilterNdx++)
 			for (int magFilterNdx = 0; magFilterNdx < DE_LENGTH_OF_ARRAY(magFilters); magFilterNdx++)
 			{
-				AnisotropyParams	refParams	(TEXTURETYPE_2D, maxAnisotropy[anisotropyNdx] ,minFilters[minFilterNdx], magFilters[magFilterNdx], true);
+				AnisotropyParams	refParams	(TEXTURETYPE_2D, maxAnisotropy[anisotropyNdx] ,minFilters[minFilterNdx], magFilters[magFilterNdx], false, true);
 				levelAnisotropyGroups->addChild(new FilteringAnisotropyTests(testCtx,
 														"mag_" + string(magFilterName[magFilterNdx]) + "_min_" + string(minFilterName[minFilterNdx]),
 														"Texture filtering anisotropy basic tests", refParams));

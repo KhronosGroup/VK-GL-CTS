@@ -945,13 +945,8 @@ bool SparseTexture2CommitmentTestCase::sparseAllocateTexture(const Functions& gl
 
 	prepareTexture(gl, target, format, texture);
 
-	GLint maxLevels;
 	gl.texParameteri(target, GL_TEXTURE_SPARSE_ARB, GL_TRUE);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "texParameteri error occurred for GL_TEXTURE_SPARSE_ARB");
-	gl.getTexParameteriv(target, GL_NUM_SPARSE_LEVELS_ARB, &maxLevels);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetTexParameteriv");
-	if (levels > maxLevels)
-		levels = maxLevels;
 
 	//GL_TEXTURE_RECTANGLE, GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_2D_MULTISAMPLE_ARRAY can have only one level
 	if (target != GL_TEXTURE_RECTANGLE && target != GL_TEXTURE_2D_MULTISAMPLE &&

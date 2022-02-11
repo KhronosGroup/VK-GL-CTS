@@ -1185,8 +1185,8 @@ void PushConstantGraphicsDisjointTest::initPrograms (SourceCollections& sourceCo
 									  << "} matInst;\n";
 							break;
 						case SIZE_CASE_48:
-							vertexSrc << "int dummy1;\n"
-									  << "vec4 dummy2;\n"
+							vertexSrc << "int unused1;\n"
+									  << "vec4 unused2;\n"
 									  << "vec4 color;\n"
 									  << "} matInst;\n";
 							break;
@@ -1517,8 +1517,8 @@ std::string PushConstantGraphicsOverlapTest::getPushConstantDeclarationStr (VkSh
 					src << "    layout(offset = " << m_pushConstantRange[rangeNdx].range.offset << ") vec4 color[2];\n";
 					break;
 				case SIZE_CASE_36:
-					src << "    layout(offset = " << m_pushConstantRange[rangeNdx].range.offset << ") int dummy1;\n"
-						<< "    layout(offset = " << (m_pushConstantRange[rangeNdx].range.offset + 4) << ") vec4 dummy2;\n"
+					src << "    layout(offset = " << m_pushConstantRange[rangeNdx].range.offset << ") int unused1;\n"
+						<< "    layout(offset = " << (m_pushConstantRange[rangeNdx].range.offset + 4) << ") vec4 unused2;\n"
 						<< "    layout(offset = " << (m_pushConstantRange[rangeNdx].range.offset + 20) << ") vec4 color;\n";
 					break;
 				case SIZE_CASE_128:
@@ -2778,9 +2778,9 @@ void OverwriteTestCase::initPrograms (vk::SourceCollections& programCollection) 
 			<< "\n"
 			<< "void main()\n"
 			<< "{\n"
-			// Full-screen clockwise triangle fan with 4 vertices.
-			<< "    const float x = (-1.0+2.0*(((gl_VertexIndex+1)&2)>>1));\n"
-			<< "    const float y = (-1.0+2.0*(( gl_VertexIndex   &2)>>1));\n"
+			// Full-screen clockwise triangle strip with 4 vertices.
+			<< "	const float x = (-1.0+2.0*((gl_VertexIndex & 2)>>1));\n"
+			<< "	const float y = ( 1.0-2.0* (gl_VertexIndex % 2));\n"
 			<< "	gl_Position = vec4(x, y, 0.0, 1.0);\n"
 			<< "}\n"
 			;
@@ -2912,7 +2912,7 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 		renderPass	= makeRenderPass(vkd, device);
 		framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), 0u, nullptr, imageExtent.width, imageExtent.height);
 
-		pipelineWrapper.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN)
+		pipelineWrapper.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 					   .setDefaultRasterizationState()
 					   .setDefaultColorBlendState()
 					   .setDefaultDepthStencilState()

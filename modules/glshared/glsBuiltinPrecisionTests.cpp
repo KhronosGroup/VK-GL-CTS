@@ -132,7 +132,7 @@ const T& instance (void)
 }
 
 /*--------------------------------------------------------------------*//*!
- * \brief Dummy placeholder type for unused template parameters.
+ * \brief A placeholder type for unused template parameters.
  *
  * In the precision tests we are dealing with functions of different arities.
  * To minimize code duplication, we only define templates with the maximum
@@ -923,7 +923,7 @@ public:
 template <typename T>
 class ExprP : public ExprPBase<T> {};
 
-// We treat Voids as containers since the dummy parameters in generalized
+// We treat Voids as containers since the unused parameters in generalized
 // vector functions are represented as Voids.
 template <>
 class ExprP<Void> : public ContainerExprPBase<Void> {};
@@ -1167,7 +1167,7 @@ public:
 	virtual			~FuncBase				(void)					{}
 	virtual string	getName					(void)					const = 0;
 	//! Name of extension that this function requires, or empty.
-	virtual string	getRequiredExtension	(void)					const { return ""; }
+	virtual string	getRequiredExtension	(const RenderContext &)			const { return ""; }
 	virtual void	print					(ostream&,
 											 const BaseArgExprs&)	const = 0;
 	//! Index of output parameter, or -1 if none of the parameters is output.
@@ -1927,7 +1927,7 @@ public:
 							 const IArgs&		iargs) const
 	{
 		// Fast-path for common case
-		if (iargs.a.isOrdinary() && iargs.b.isOrdinary())
+		if (iargs.a.isOrdinary(ctx.format.getMaxValue()) && iargs.b.isOrdinary(ctx.format.getMaxValue()))
 		{
 			Interval ret;
 			TCU_SET_INTERVAL_BOUNDS(ret, sum,
@@ -1954,7 +1954,7 @@ public:
 		Interval b = iargs.b;
 
 		// Fast-path for common case
-		if (a.isOrdinary() && b.isOrdinary())
+		if (a.isOrdinary(ctx.format.getMaxValue()) && b.isOrdinary(ctx.format.getMaxValue()))
 		{
 			Interval ret;
 			if (a.hi() < 0)
@@ -2002,7 +2002,7 @@ public:
 	Interval	doApply		(const EvalContext&	ctx, const IArgs& iargs) const
 	{
 		// Fast-path for common case
-		if (iargs.a.isOrdinary() && iargs.b.isOrdinary())
+		if (iargs.a.isOrdinary(ctx.format.getMaxValue()) && iargs.b.isOrdinary(ctx.format.getMaxValue()))
 		{
 			Interval ret;
 
@@ -2487,7 +2487,7 @@ public:
 				ATan2			(void) : CFloatFunc2 ("atan", deAtan2) {}
 
 protected:
-	Interval	innerExtrema	(const EvalContext&,
+	Interval	innerExtrema	(const EvalContext&		ctx,
 								 const Interval&		yi,
 								 const Interval&		xi) const
 	{
@@ -2501,7 +2501,7 @@ protected:
 				ret |= Interval(-DE_PI_DOUBLE, DE_PI_DOUBLE);
 		}
 
-		if ((!yi.isFinite() || !xi.isFinite()))
+		if (!yi.isFinite(ctx.format.getMaxValue()) || !xi.isFinite(ctx.format.getMaxValue()))
 		{
 			// Infinities may not be supported, allow anything, including NaN
 			ret |= TCU_NAN;
@@ -3320,7 +3320,7 @@ public:
 	}
 
 protected:
-	IRet	doApply				(const EvalContext&, const IArgs& iargs) const
+	IRet	doApply				(const EvalContext& ctx, const IArgs& iargs) const
 	{
 		Interval	fracIV;
 		Interval&	wholeIV		= const_cast<Interval&>(iargs.b);
@@ -3330,7 +3330,7 @@ protected:
 		TCU_INTERVAL_APPLY_MONOTONE1(wholeIV, x, iargs.a, whole,
 									 deModf(x, &intPart); whole = intPart);
 
-		if (!iargs.a.isFinite())
+		if (!iargs.a.isFinite(ctx.format.getMaxValue()))
 		{
 			// Behavior on modf(Inf) not well-defined, allow anything as a fractional part
 			// See Khronos bug 13907
@@ -3925,9 +3925,9 @@ public:
 		return "fma";
 	}
 
-	string			getRequiredExtension	(void) const
+	string			getRequiredExtension	(const RenderContext&   context) const
 	{
-		return "GL_EXT_gpu_shader5";
+		return (glu::contextSupports(context.getType(), glu::ApiType::core(4, 5))) ? "" : "GL_EXT_gpu_shader5";
 	}
 
 protected:
@@ -3996,9 +3996,9 @@ public:
 		return m_func.getOutParamIndex();
 	}
 
-	string	getRequiredExtension	(void) const
+	string	getRequiredExtension	(const RenderContext &context) const
 	{
-		return m_func.getRequiredExtension();
+		return m_func.getRequiredExtension(context);
 	}
 
 protected:
@@ -4736,7 +4736,7 @@ void PrecisionCase::testStatement (const Variables<In, Out>&	variables,
 		executor->execute(int(numValues), inputArr, outputArr);
 	}
 
-	// Initialize environment with dummy values so we don't need to bind in inner loop.
+	// Initialize environment with unused values so we don't need to bind in inner loop.
 	{
 		const typename Traits<In0>::IVal		in0;
 		const typename Traits<In1>::IVal		in1;
@@ -5057,7 +5057,7 @@ protected:
 					FuncCaseBase	(const Context&		context,
 									 const string&		name,
 									 const FuncBase&	func)
-						: PrecisionCase	(context, name, func.getRequiredExtension()) {}
+						: PrecisionCase	(context, name, func.getRequiredExtension(context.renderContext)) {}
 };
 
 IterateResult FuncCaseBase::iterate (void)

@@ -34,14 +34,15 @@ namespace deqp
 namespace gles3
 {
 
-Context::Context (tcu::TestContext& testCtx)
+Context::Context (tcu::TestContext& testCtx, glu::ApiType apiType)
 	: m_testCtx		(testCtx)
 	, m_renderCtx	(DE_NULL)
 	, m_contextInfo	(DE_NULL)
+	, m_apiType		(apiType)
 {
 	try
 	{
-		m_renderCtx		= glu::createDefaultRenderContext(m_testCtx.getPlatform(), m_testCtx.getCommandLine(), glu::ApiType::es(3,0));
+		m_renderCtx		= glu::createDefaultRenderContext(m_testCtx.getPlatform(), m_testCtx.getCommandLine(), m_apiType);
 		m_contextInfo	= glu::ContextInfo::create(*m_renderCtx);
 
 		// Set up function table for transparent wrapper.

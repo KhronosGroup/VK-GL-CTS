@@ -46,6 +46,7 @@ void createChildren (tcu::TestCaseGroup* memoryTests)
 
 	memoryTests->addChild(createAllocationTests					(testCtx));
 	memoryTests->addChild(createDeviceGroupAllocationTests		(testCtx));
+	memoryTests->addChild(createPageableAllocationTests			(testCtx));
 	memoryTests->addChild(createMappingTests					(testCtx));
 	memoryTests->addChild(createPipelineBarrierTests			(testCtx));
 	memoryTests->addChild(createRequirementsTests				(testCtx));

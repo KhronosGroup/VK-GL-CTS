@@ -240,7 +240,7 @@ inline bool isInInitialClearRange (deUint32 mipLevel, deUint32 arrayLayer, Layer
 int calcFloatDiff (float a, float b)
 {
 	const int			asign	= Float32(a).sign();
-	const int			bsign	= Float32(a).sign();
+	const int			bsign	= Float32(b).sign();
 
 	const deUint32		avalue	= (Float32(a).bits() & ((0x1u << 31u) - 1u));
 	const deUint32		bvalue	= (Float32(b).bits() & ((0x1u << 31u) - 1u));

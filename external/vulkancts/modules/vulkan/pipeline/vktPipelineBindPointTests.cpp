@@ -208,9 +208,9 @@ void BindPointTest::initPrograms (vk::SourceCollections& programCollection) cons
 			<< "\n"
 			<< "void main()\n"
 			<< "{\n"
-			// Full-screen clockwise triangle fan with 4 vertices.
-			<< "    const float x = (-1.0+2.0*(((gl_VertexIndex+1)&2)>>1));\n"
-			<< "    const float y = (-1.0+2.0*(( gl_VertexIndex   &2)>>1));\n"
+			// Full-screen clockwise triangle strip with 4 vertices.
+			<< "	const float x = (-1.0+2.0*((gl_VertexIndex & 2)>>1));\n"
+			<< "	const float y = ( 1.0-2.0* (gl_VertexIndex % 2));\n"
 			<< "	gl_Position = vec4(x, y, 0.0, 1.0);\n"
 			<< "}\n"
 			;
@@ -513,7 +513,7 @@ tcu::TestStatus BindPointInstance::iterate (void)
 			nullptr,													// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
 		};
 
-		graphicsPipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN)
+		graphicsPipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 						.setDefaultRasterizationState()
 						.setDefaultMultisampleState()
 						.setDefaultDepthStencilState()

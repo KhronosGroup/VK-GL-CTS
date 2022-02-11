@@ -26,16 +26,15 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
 
 import khr_util.format
-import khr_util.registry_cache
+from khr_util import registry
 from collections import defaultdict
 
-VK_SOURCE						= khr_util.registry_cache.RegistrySource(
-									"https://github.com/KhronosGroup/Vulkan-Docs.git",
-									"xml/vk.xml",
-									"b4e8cd820b2487bc892b391fb26b49501473a6a6",
-									"09c543ece64a965811ffb635caa52c13fdf9873f824cec4986a93d3d7380c8f0")
-VK_INL_FILE						= os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "vkApiExtensionDependencyInfo.inl")
-VK_INL_HEADER					= khr_util.format.genInlHeader("Khronos Vulkan API description (vk.xml)", VK_SOURCE.getRevision())
+VK_INL_HEADER					= """\
+/* WARNING: This is auto-generated file. Do not modify, since changes will
+ * be lost! Modify the generating script instead.
+ */\
+
+"""
 
 def VK_MAKE_VERSION(major, minor, patch):
 	return (((major) << 22) | ((minor) << 12) | (patch))
@@ -85,7 +84,7 @@ def genRequiredCoreVersions(name, coreVersionsDict):
 		yield '\tstd::make_tuple({}, {}, "{}"),'.format(major, minor, extName)
 	yield '};'
 
-def genExtDepInl(dependenciesAndVersions):
+def genExtDepInl(dependenciesAndVersions, filename):
 	allExtDepsDict, apiVersions, allExtCoreVersions = dependenciesAndVersions
 	apiVersions.reverse()
 	lines = []
@@ -95,7 +94,7 @@ def genExtDepInl(dependenciesAndVersions):
 	lines.extend(genApiVersions(VK_EXT_API_VERSIONS, apiVersions))
 	lines.extend(genRequiredCoreVersions(VK_EXT_CORE_VERSIONS, allExtCoreVersions))
 
-	writeInlFile(VK_INL_FILE, lines)
+	writeInlFile(filename, lines)
 
 class extInfo:
 	def __init__(self):
@@ -185,8 +184,15 @@ def getExtInfoDict(vkRegistry):
 
 	return extInfoDict, apiVersionID
 
-def getVKRegistry():
-	return khr_util.registry_cache.getRegistry(VK_SOURCE)
-
 if __name__ == '__main__':
-	genExtDepInl(genExtDeps(getExtInfoDict(getVKRegistry())))
+
+	currentDir = os.path.dirname(__file__)
+	outputPath = os.path.join(currentDir, "..", "framework", "vulkan")
+	# if argument was specified it is interpreted as a path to which .inl files will be written
+	if len(sys.argv) > 1:
+		outputPath = str(sys.argv[1])
+
+	VULKAN_XML = os.path.join(currentDir, "..", "..", "vulkan-docs", "src", "xml", "vk.xml")
+	vkRegistry = registry.parse(VULKAN_XML)
+
+	genExtDepInl(genExtDeps(getExtInfoDict(vkRegistry)), os.path.join(outputPath, "vkApiExtensionDependencyInfo.inl"))

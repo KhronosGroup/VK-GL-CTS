@@ -75,12 +75,19 @@ struct SSBOData
 		LayoutPacked
 	};
 
+	enum BindingType
+	{
+		BindingSSBO,
+		BindingImage,
+		BindingUBO,
+	};
+
 	SSBOData() :
 		initializeType	(InitializeNone),
 		layout			(LayoutStd140),
 		format			(vk::VK_FORMAT_UNDEFINED),
 		numElements		(0),
-		isImage			(false),
+		bindingType		(BindingSSBO),
 		binding			(0u),
 		stages			((vk::VkShaderStageFlags)0u)
 	{}
@@ -89,23 +96,36 @@ struct SSBOData
 			  InputDataLayoutType		layout_,
 			  vk::VkFormat				format_,
 			  vk::VkDeviceSize			numElements_,
-			  bool						isImage_	= false,
-			  deUint32					binding_	= 0u,
-			  vk::VkShaderStageFlags	stages_		= static_cast<vk::VkShaderStageFlags>(0u))
+			  BindingType				bindingType_	= BindingSSBO,
+			  deUint32					binding_		= 0u,
+			  vk::VkShaderStageFlags	stages_			= static_cast<vk::VkShaderStageFlags>(0u))
 		: initializeType	(initializeType_)
 		, layout			(layout_)
 		, format			(format_)
 		, numElements		(numElements_)
-		, isImage			(isImage_)
+		, bindingType		(bindingType_)
 		, binding			(binding_)
 		, stages			(stages_)
-	{}
+	{
+		if (bindingType == BindingUBO)
+			DE_ASSERT(layout == LayoutStd140);
+	}
+
+	bool isImage () const
+	{
+		return (bindingType == BindingImage);
+	}
+
+	bool isUBO () const
+	{
+		return (bindingType == BindingUBO);
+	}
 
 	InputDataInitializeType		initializeType;
 	InputDataLayoutType			layout;
 	vk::VkFormat				format;
 	vk::VkDeviceSize			numElements;
-	bool						isImage;
+	BindingType					bindingType;
 	deUint32					binding;
 	vk::VkShaderStageFlags		stages;
 };

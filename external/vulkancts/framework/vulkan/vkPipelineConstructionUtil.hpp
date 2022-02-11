@@ -98,7 +98,7 @@ public:
 	GraphicsPipelineWrapper&	setDefaultScissorsCount				(deUint32 scissorCount = 0u);
 
 	// Pre-rasterization shader state uses default ViewportState, this method extends it with VkPipelineViewportDepthClipControlCreateInfoEXT.
-	//GraphicsPipelineWrapper&	setDepthClipControl					(const VkPipelineViewportDepthClipControlCreateInfoEXT* depthClipControlCreateInfo);
+	GraphicsPipelineWrapper&	setDepthClipControl					(const VkPipelineViewportDepthClipControlCreateInfoEXT* depthClipControlCreateInfo);
 
 	// Pre-rasterization shader state uses provieded viewports and scissors to create ViewportState. When disableViewportState
 	// is used then ViewportState won't be constructed and NULL will be used.
