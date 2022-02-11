@@ -44,6 +44,7 @@
 #include "deThread.hpp"
 #include "deMutex.hpp"
 #include "deSharedPtr.hpp"
+#include "deSpinBarrier.hpp"
 
 
 #include <limits>
@@ -529,6 +530,7 @@ public:
 								, m_descriptorSetLayout	(descriptorSetLayout)
 								, m_queues				(queues)
 								, m_shadersExecutions	(shadersExecutions)
+								, m_barrier				(DE_NULL)
 	{
 	}
 
@@ -541,7 +543,7 @@ public:
 		return m_resultCollector;
 	}
 
-	using Thread::start;
+	void					start				(de::SpinBarrier* groupBarrier);
 	using Thread::join;
 
 protected:
@@ -552,6 +554,8 @@ protected:
 	const VkDescriptorSetLayout&			m_descriptorSetLayout;
 	MultiQueues&							m_queues;
 	const vector<deUint32>&					m_shadersExecutions;
+
+	void					barrier				(void);
 
 private:
 							ThreadGroupThread	(const ThreadGroupThread&);
@@ -576,16 +580,31 @@ private:
 		{
 			m_resultCollector.addResult(QP_TEST_RESULT_FAIL, "Exception");
 		}
+
+		m_barrier->removeThread(de::SpinBarrier::WAIT_MODE_AUTO);
 	}
 
 	ResultCollector							m_resultCollector;
+	de::SpinBarrier*						m_barrier;
 };
+
+void ThreadGroupThread::start (de::SpinBarrier* groupBarrier)
+{
+	m_barrier = groupBarrier;
+	de::Thread::start();
+}
+
+inline void ThreadGroupThread::barrier (void)
+{
+	m_barrier->sync(de::SpinBarrier::WAIT_MODE_AUTO);
+}
 
 class ThreadGroup
 {
 	typedef vector<SharedPtr<ThreadGroupThread> >	ThreadVector;
 public:
 							ThreadGroup			(void)
+								: m_barrier(1)
 	{
 	}
 							~ThreadGroup		(void)
@@ -601,8 +620,10 @@ public:
 	{
 		ResultCollector	resultCollector;
 
+		m_barrier.reset((int)m_threads.size());
+
 		for (ThreadVector::iterator threadIter = m_threads.begin(); threadIter != m_threads.end(); ++threadIter)
-			(*threadIter)->start();
+			(*threadIter)->start(&m_barrier);
 
 		for (ThreadVector::iterator threadIter = m_threads.begin(); threadIter != m_threads.end(); ++threadIter)
 		{
@@ -616,6 +637,7 @@ public:
 
 private:
 	ThreadVector							m_threads;
+	de::SpinBarrier							m_barrier;
 };
 
 
@@ -641,6 +663,15 @@ public:
 			Move<VkPipeline>		pipeline	= createComputePipeline(vk,device,m_pipelineCache, &m_pipelineInfo[shaderNdx]);
 
 			TestStatus result = executeComputePipeline(m_context, *pipeline, m_pipelineLayout, m_descriptorSetLayout, m_queues, m_shadersExecutions[shaderNdx]);
+
+#ifdef CTS_USES_VULKANSC
+			// While collecting pipelines, synchronize between all threads for each pipeline that gets
+			// created, so we will reserve the maximum amount of pipeline pool space that could need.
+			if (!m_context.getTestContext().getCommandLine().isSubProcess()) {
+				barrier();
+			}
+#endif
+
 			resultCollector.addResult(result.getCode(), result.getDescription());
 		}
 		return TestStatus(resultCollector.getResult(), resultCollector.getMessage());
@@ -671,6 +702,15 @@ public:
 			Move<VkPipeline>		pipeline	= createGraphicsPipeline(vk,device, m_pipelineCache, &m_pipelineInfo[shaderNdx]);
 
 			TestStatus result = executeGraphicPipeline(m_context, *pipeline, m_pipelineLayout, m_descriptorSetLayout, m_queues, m_renderPass, m_shadersExecutions[shaderNdx]);
+
+#ifdef CTS_USES_VULKANSC
+			// While collecting pipelines, synchronize between all threads for each pipeline that gets
+			// created, so we will reserve the maximum amount of pipeline pool space that could need.
+			if (!m_context.getTestContext().getCommandLine().isSubProcess()) {
+				barrier();
+			}
+#endif
+
 			resultCollector.addResult(result.getCode(), result.getDescription());
 		}
 		return TestStatus(resultCollector.getResult(), resultCollector.getMessage());
