@@ -1627,7 +1627,6 @@ tcu::TestStatus validateRoadmap2022(Context& context)
 		ROADMAP_FEATURE_ITEM(vk12Features, shaderStorageImageArrayNonUniformIndexing),
 		ROADMAP_FEATURE_ITEM(vk12Features, shaderUniformTexelBufferArrayNonUniformIndexing),
 		ROADMAP_FEATURE_ITEM(vk12Features, shaderStorageTexelBufferArrayNonUniformIndexing),
-		ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingUniformBufferUpdateAfterBind),
 		ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingSampledImageUpdateAfterBind),
 		ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingStorageImageUpdateAfterBind),
 		ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingStorageBufferUpdateAfterBind),
