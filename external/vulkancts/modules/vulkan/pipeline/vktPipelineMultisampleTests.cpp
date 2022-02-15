@@ -5469,8 +5469,7 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 		multisampleTests->addChild(createMultisampleShaderFragmentMaskTests(testCtx, pipelineConstructionType));
 
 		// Multisample resolve tests where a render area is less than an attachment size.
-		if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
-			multisampleTests->addChild(createMultisampleResolveRenderpassRenderAreaTests(testCtx));
+		multisampleTests->addChild(createMultisampleResolveRenderpassRenderAreaTests(testCtx, pipelineConstructionType));
 	}
 
 	// VK_EXT_sample_locations

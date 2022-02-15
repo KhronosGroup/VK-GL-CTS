@@ -1147,25 +1147,21 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 	}
 	depthTests->addChild(noColorAttachmentTests.release());
 
-	// those tests will be added in commit on top of merge
-	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+	de::MovePtr<tcu::TestCaseGroup>	depthClipControlTests		(new tcu::TestCaseGroup(testCtx, "depth_clip_control", "Depth tests with depth clip control enabled"));
 	{
-		de::MovePtr<tcu::TestCaseGroup>	depthClipControlTests		(new tcu::TestCaseGroup(testCtx, "depth_clip_control", "Depth tests with depth clip control enabled"));
-		{
-			const VkCompareOp compareOps[] = { VK_COMPARE_OP_ALWAYS, VK_COMPARE_OP_LESS };
+		const VkCompareOp compareOps[] = { VK_COMPARE_OP_ALWAYS, VK_COMPARE_OP_LESS };
 
-			for (const auto& format : depthFormats)
-				for (const auto& compareOp : compareOps)
-				{
-					std::string testName = getFormatCaseName(format) + "_" + de::toLower(std::string(getCompareOpName(compareOp)).substr(14));
+		for (const auto& format : depthFormats)
+			for (const auto& compareOp : compareOps)
+			{
+				std::string testName = getFormatCaseName(format) + "_" + de::toLower(std::string(getCompareOpName(compareOp)).substr(14));
 
-					const VkCompareOp ops[DepthTest::QUAD_COUNT] = { compareOp, compareOp, compareOp, compareOp };
-					depthClipControlTests->addChild(new DepthTest(testCtx, testName, "", pipelineConstructionType,
-													format, ops, false, false, 0.0f, 1.0f, true, false, true, true));
-				}
-		}
-		depthTests->addChild(depthClipControlTests.release());
+				const VkCompareOp ops[DepthTest::QUAD_COUNT] = { compareOp, compareOp, compareOp, compareOp };
+				depthClipControlTests->addChild(new DepthTest(testCtx, testName, "", pipelineConstructionType,
+												format, ops, false, false, 0.0f, 1.0f, true, false, true, true));
+			}
 	}
+	depthTests->addChild(depthClipControlTests.release());
 
 	return depthTests.release();
 }
