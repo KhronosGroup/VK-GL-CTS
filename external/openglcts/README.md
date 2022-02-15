@@ -260,23 +260,23 @@ command line examples in the next steps:
 
 Building GL, ES2, or ES3.x conformance tests:
 
-	cmake <path to openglcts> -DDEQP_TARGET=default -G"<Generator Name>"
-	cmake --build .
+	cmake <path to VK-GL-CTS> -DDEQP_TARGET=default -G"<Generator Name>"
+	cmake --build external/openglcts
 
 Khronos Confidential CTS doesn't support run-time selection of API context.
 If you intend to run it you need to additionally supply `GLCTS_GTF_TARGET`
 option to you cmake command, e.g.:
 
-	cmake <path to openglcts> -DDEQP_TARGET=default -DGLCTS_GTF_TARGET=<target> -G"<Generator Name>"
+	cmake <path to VK-GL-CTS> -DDEQP_TARGET=default -DGLCTS_GTF_TARGET=<target> -G"<Generator Name>"
 
 Available `<target>`s are `gles2`, `gles3`, `gles31`, `gles32`, and `gl`.
 The default `<target>` is `gles32`.
 
 It's also possible to build `GL-CTS.sln` in Visual Studio instead of running
-the `cmake --build .` command.
+the `cmake --build external/openglcts` command.
 
 **NOTE**: Do not create the build directory under the source directory
-(i.e anywhere under `<path to openglcts>`) on Windows, since it causes
+(i.e anywhere under `<path to VK-GL-CTS>`) on Windows, since it causes
 random build failures when copying data files around.
 
 **NOTE**: You can use the CMake for Windows GUI to do configuration and project
@@ -302,13 +302,13 @@ Required tools:
 
 Building ES2 or ES3.x conformance tests:
 
-	cmake <path to openglcts> -DDEQP_TARGET=null -DGLCTS_GTF_TARGET=gles32
-	cmake --build .
+	cmake <path to VK-GL-CTS> -DDEQP_TARGET=null -DGLCTS_GTF_TARGET=gles32
+	cmake --build external/openglcts
 
 Building OpenGL conformance tests:
 
-	cmake <path to openglcts> -DDEQP_TARGET=null -DGLCTS_GTF_TARGET=gl
-	cmake --build .
+	cmake <path to VK-GL-CTS> -DDEQP_TARGET=null -DGLCTS_GTF_TARGET=gl
+	cmake --build external/openglcts
 
 Khronos Confidential CTS doesn't support run-time selection of API context.
 If you intend to run it then the `GLCTS_GTF_TARGET` option is necessary.
