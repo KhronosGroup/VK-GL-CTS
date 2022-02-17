@@ -142,6 +142,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/draw/vktDrawMultiExtTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawMultipleClearsWithinRenderPass.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawMultipleInterpolationTests.cpp \
+	external/vulkancts/modules/vulkan/draw/vktDrawMultisampleLinearInterpolationTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawNegativeViewportHeightTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawOutputLocationTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawScissorTests.cpp \

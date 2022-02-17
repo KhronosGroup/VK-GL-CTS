@@ -45,6 +45,8 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawScissorTests.cpp
 	vktDrawMultipleInterpolationTests.hpp
 	vktDrawMultipleInterpolationTests.cpp
+	vktDrawMultisampleLinearInterpolationTests.hpp
+	vktDrawMultisampleLinearInterpolationTests.cpp
 	vktDrawDiscardRectanglesTests.hpp
 	vktDrawDiscardRectanglesTests.cpp
 	vktDrawExplicitVertexParameterTests.cpp
