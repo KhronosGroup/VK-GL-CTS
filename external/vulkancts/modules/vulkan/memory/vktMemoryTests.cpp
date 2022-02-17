@@ -51,6 +51,7 @@ void createChildren (tcu::TestCaseGroup* memoryTests)
 	// As a consequence - random memory allocation tests start to report ResourceError ( VK_ERROR_OUT_OF_*_MEMORY )
 	memoryTests->addChild(createAllocationTests					(testCtx));
 	memoryTests->addChild(createDeviceGroupAllocationTests		(testCtx));
+	memoryTests->addChild(createPageableAllocationTests			(testCtx));
 	memoryTests->addChild(createMappingTests					(testCtx));
 	memoryTests->addChild(createPipelineBarrierTests			(testCtx));
 #endif // CTS_USES_VULKANSC

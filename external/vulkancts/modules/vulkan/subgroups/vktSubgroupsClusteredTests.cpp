@@ -192,8 +192,13 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	{
 		context.requireDeviceFunctionality("VK_EXT_subgroup_size_control");
 
-		const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&	subgroupSizeControlFeatures		= context.getSubgroupSizeControlFeaturesEXT();
-		const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context.getSubgroupSizeControlPropertiesEXT();
+#ifndef CTS_USES_VULKANSC
+		const VkPhysicalDeviceSubgroupSizeControlFeatures&		subgroupSizeControlFeatures = context.getSubgroupSizeControlFeatures();
+		const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties = context.getSubgroupSizeControlProperties();
+#else
+		const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&	subgroupSizeControlFeatures = context.getSubgroupSizeControlFeaturesEXT();
+		const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties = context.getSubgroupSizeControlPropertiesEXT();
+#endif // CTS_USES_VULKANSC
 
 		if (subgroupSizeControlFeatures.subgroupSizeControl == DE_FALSE)
 			TCU_THROW(NotSupportedError, "Device does not support varying subgroup sizes nor required subgroup size");
@@ -225,6 +230,7 @@ TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 		subgroups::SSBOData::LayoutStd140,		//  InputDataLayoutType			layout;
 		caseDef.format,							//  vk::VkFormat				format;
 		subgroups::maxSupportedSubgroupSize(),	//  vk::VkDeviceSize			numElements;
+		subgroups::SSBOData::BindingUBO,		//  BindingType					bindingType;
 	};
 
 	switch (caseDef.shaderStage)
@@ -241,7 +247,11 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 {
 	if (isAllComputeStages(caseDef.shaderStage))
 	{
+#ifndef CTS_USES_VULKANSC
+		const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context.getSubgroupSizeControlProperties();
+#else
 		const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context.getSubgroupSizeControlPropertiesEXT();
+#endif // CTS_USES_VULKANSC
 		TestLog&												log								= context.getTestContext().getLog();
 
 		subgroups::SSBOData inputData;
@@ -279,7 +289,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			subgroups::SSBOData::LayoutStd430,			//  InputDataLayoutType			layout;
 			caseDef.format,								//  vk::VkFormat				format;
 			subgroups::maxSupportedSubgroupSize(),		//  vk::VkDeviceSize			numElements;
-			false,										//  bool						isImage;
+			subgroups::SSBOData::BindingSSBO,			//  bool						isImage;
 			4u,											//  deUint32					binding;
 			stages,										//  vk::VkShaderStageFlags		stages;
 		};
@@ -296,7 +306,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			subgroups::SSBOData::LayoutStd430,		//  InputDataLayoutType			layout;
 			caseDef.format,							//  vk::VkFormat				format;
 			subgroups::maxSupportedSubgroupSize(),	//  vk::VkDeviceSize			numElements;
-			false,									//  bool						isImage;
+			subgroups::SSBOData::BindingSSBO,		//  bool						isImage;
 			6u,										//  deUint32					binding;
 			stages,									//  vk::VkShaderStageFlags		stages;
 		};

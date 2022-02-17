@@ -66,6 +66,8 @@ static const char* getShaderTypeSuffix (const xe::ri::Shader::ShaderType shaderT
 		case xe::ri::Shader::SHADERTYPE_MISS:				return "miss";
 		case xe::ri::Shader::SHADERTYPE_INTERSECTION:		return "sect";
 		case xe::ri::Shader::SHADERTYPE_CALLABLE:			return "call";
+		case xe::ri::Shader::SHADERTYPE_TASK:				return "task";
+		case xe::ri::Shader::SHADERTYPE_MESH:				return "mesh";
 
 		default:
 			throw xe::Error("Invalid shader type");

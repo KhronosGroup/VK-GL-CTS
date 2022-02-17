@@ -105,12 +105,13 @@ struct ReferenceImageInstancedCoordinates
 class DrawTestsBaseClass : public TestInstance
 {
 public:
-								DrawTestsBaseClass	(Context& context, const char* vertexShaderName, const char* fragmentShaderName, vk::VkPrimitiveTopology topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+								DrawTestsBaseClass	(Context& context, const char* vertexShaderName, const char* fragmentShaderName, bool useDynamicRendering, vk::VkPrimitiveTopology topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
 
 protected:
 	void						initialize			(void);
 	virtual void				initPipeline		(const vk::VkDevice device);
-	void						beginRenderPass		(const vk::VkSubpassContents content = vk::VK_SUBPASS_CONTENTS_INLINE);
+	void						beginRender			(const vk::VkSubpassContents content = vk::VK_SUBPASS_CONTENTS_INLINE);
+	void						endRender			(void);
 	virtual tcu::TestStatus		iterate				(void)						{ TCU_FAIL("Implement iterate() method!");	}
 
 	enum
@@ -121,6 +122,7 @@ protected:
 
 	vk::VkFormat									m_colorAttachmentFormat;
 
+	const bool										m_useDynamicRendering;
 	const vk::VkPrimitiveTopology					m_topology;
 
 	const vk::DeviceInterface&						m_vk;

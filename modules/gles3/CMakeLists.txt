@@ -26,6 +26,9 @@ set(DEQP_GLES3_SRCS
 	tes3TestCase.hpp
 	tes3TestPackage.cpp
 	tes3TestPackage.hpp
+	tes3TestCaseWrapper.hpp
+	tgl45es3TestPackage.cpp
+	tgl45es3TestPackage.hpp
 	)
 
 set(DEQP_GLES3_LIBS

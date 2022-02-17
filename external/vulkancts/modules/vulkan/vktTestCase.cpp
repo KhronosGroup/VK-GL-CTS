@@ -69,9 +69,9 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_EXT_",
 		"VK_KHX_",
 		"VK_NV_cooperative_matrix",
-		"VK_EXT_extended_dynamic_state2",
 		"VK_NV_ray_tracing",
-        "VK_NV_inherited_viewport_scissor",
+		"VK_NV_inherited_viewport_scissor",
+		"VK_NV_mesh_shader",
 		"VK_AMD_mixed_attachment_samples",
 		"VK_AMD_shader_fragment_mask",
 		"VK_AMD_buffer_marker",
@@ -81,6 +81,10 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_AMD_texture_gather_bias_lod",
 		"VK_ANDROID_external_memory_android_hardware_buffer",
 		"VK_VALVE_mutable_descriptor_type",
+		"VK_NV_shader_subgroup_partitioned",
+		"VK_NV_clip_space_w_scaling",
+		"VK_NV_scissor_exclusive",
+		"VK_NV_shading_rate_image",
 	};
 
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
@@ -381,6 +385,9 @@ public:
 	const VkPhysicalDeviceFeatures2&								getDeviceFeatures2						(void) const { return m_deviceFeatures.getCoreFeatures2();					}
 	const VkPhysicalDeviceVulkan11Features&							getVulkan11Features						(void) const { return m_deviceFeatures.getVulkan11Features();				}
 	const VkPhysicalDeviceVulkan12Features&							getVulkan12Features						(void) const { return m_deviceFeatures.getVulkan12Features();				}
+#ifndef CTS_USES_VULKANSC
+	const VkPhysicalDeviceVulkan13Features&							getVulkan13Features						(void) const { return m_deviceFeatures.getVulkan13Features();				}
+#endif // CTS_USES_VULKANSC
 
 #include "vkDeviceFeaturesForDefaultDeviceDefs.inl"
 
@@ -389,6 +396,9 @@ public:
 	const VkPhysicalDeviceProperties2&								getDeviceProperties2					(void) const { return m_deviceProperties.getCoreProperties2();				}
 	const VkPhysicalDeviceVulkan11Properties&						getDeviceVulkan11Properties				(void) const { return m_deviceProperties.getVulkan11Properties();			}
 	const VkPhysicalDeviceVulkan12Properties&						getDeviceVulkan12Properties				(void) const { return m_deviceProperties.getVulkan12Properties();			}
+#ifndef CTS_USES_VULKANSC
+	const VkPhysicalDeviceVulkan13Properties&						getDeviceVulkan13Properties				(void) const { return m_deviceProperties.getVulkan13Properties();			}
+#endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
 	const VkPhysicalDeviceVulkanSC10Properties&						getDeviceVulkanSC10Properties			(void) const { return m_deviceProperties.getVulkanSC10Properties(); }
 #endif // CTS_USES_VULKANSC
@@ -585,6 +595,9 @@ const vk::VkPhysicalDeviceFeatures&				Context::getDeviceFeatures						(void) co
 const vk::VkPhysicalDeviceFeatures2&			Context::getDeviceFeatures2						(void) const { return m_device->getDeviceFeatures2();						}
 const vk::VkPhysicalDeviceVulkan11Features&		Context::getDeviceVulkan11Features				(void) const { return m_device->getVulkan11Features();						}
 const vk::VkPhysicalDeviceVulkan12Features&		Context::getDeviceVulkan12Features				(void) const { return m_device->getVulkan12Features();						}
+#ifndef CTS_USES_VULKANSC
+const vk::VkPhysicalDeviceVulkan13Features&		Context::getDeviceVulkan13Features				(void) const { return m_device->getVulkan13Features();						}
+#endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
 const vk::VkPhysicalDeviceVulkanSC10Features&	Context::getDeviceVulkanSC10Features			(void) const { return m_device->getVulkanSC10Features();					}
 #endif // CTS_USES_VULKANSC
@@ -636,6 +649,36 @@ bool Context::isDeviceFunctionalitySupported (const std::string& extension) cons
 			if (extension == "VK_EXT_shader_viewport_index_layer")
 				return !!vk12Features.shaderOutputViewportIndex && !!vk12Features.shaderOutputLayer;
 
+#ifndef CTS_USES_VULKANSC
+			const auto& vk13Features = m_device->getVulkan13Features();
+			if (extension == "VK_EXT_image_robustness")
+				return !!vk13Features.robustImageAccess;
+			if (extension == "VK_EXT_inline_uniform_block")
+				return !!vk13Features.inlineUniformBlock;
+			if (extension == "VK_EXT_pipeline_creation_cache_control")
+				return !!vk13Features.pipelineCreationCacheControl;
+			if (extension == "VK_EXT_private_data")
+				return !!vk13Features.privateData;
+			if (extension == "VK_EXT_shader_demote_to_helper_invocation")
+				return !!vk13Features.shaderDemoteToHelperInvocation;
+			if (extension == "VK_KHR_shader_terminate_invocation")
+				return !!vk13Features.shaderTerminateInvocation;
+			if (extension == "VK_EXT_subgroup_size_control")
+				return !!vk13Features.subgroupSizeControl;
+			if (extension == "VK_KHR_synchronization2")
+				return !!vk13Features.synchronization2;
+			if (extension == "VK_EXT_texture_compression_astc_hdr")
+				return !!vk13Features.textureCompressionASTC_HDR;
+			if (extension == "VK_KHR_zero_initialize_workgroup_memory")
+				return !!vk13Features.shaderZeroInitializeWorkgroupMemory;
+			if (extension == "VK_KHR_dynamic_rendering")
+				return !!vk13Features.dynamicRendering;
+			if (extension == "VK_KHR_shader_integer_dot_product")
+				return !!vk13Features.shaderIntegerDotProduct;
+			if (extension == "VK_KHR_maintenance4")
+				return !!vk13Features.maintenance4;
+#endif // CTS_USES_VULKANSC
+
 #ifdef CTS_USES_VULKANSC
 			const auto& vk12Properties = m_device->getDeviceVulkan12Properties();
 			if (extension == "VK_KHR_depth_stencil_resolve")
@@ -657,9 +700,9 @@ bool Context::isDeviceFunctionalitySupported (const std::string& extension) cons
 			return !!getSynchronization2Features().synchronization2;
 		if (extension == "VK_EXT_extended_dynamic_state")
 			return !!getExtendedDynamicStateFeaturesEXT().extendedDynamicState;
-		if (extension == "VK_EXT_shader_demote_to_helper_invocation")
-			return !!getShaderDemoteToHelperInvocationFeaturesEXT().shaderDemoteToHelperInvocation;
 #ifndef CTS_USES_VULKANSC
+		if (extension == "VK_EXT_shader_demote_to_helper_invocation")
+			return !!getShaderDemoteToHelperInvocationFeatures().shaderDemoteToHelperInvocation;
 		if (extension == "VK_KHR_workgroup_memory_explicit_layout")
 			return !!getWorkgroupMemoryExplicitLayoutFeatures().workgroupMemoryExplicitLayout;
 #endif // CTS_USES_VULKANSC
@@ -684,6 +727,9 @@ const vk::VkPhysicalDeviceProperties&			Context::getDeviceProperties				(void) c
 const vk::VkPhysicalDeviceProperties2&			Context::getDeviceProperties2				(void) const { return m_device->getDeviceProperties2();			}
 const vk::VkPhysicalDeviceVulkan11Properties&	Context::getDeviceVulkan11Properties		(void) const { return m_device->getDeviceVulkan11Properties();	}
 const vk::VkPhysicalDeviceVulkan12Properties&	Context::getDeviceVulkan12Properties		(void) const { return m_device->getDeviceVulkan12Properties();	}
+#ifndef CTS_USES_VULKANSC
+const vk::VkPhysicalDeviceVulkan13Properties&	Context::getDeviceVulkan13Properties		(void) const { return m_device->getDeviceVulkan13Properties();	}
+#endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
 const vk::VkPhysicalDeviceVulkanSC10Properties&	Context::getDeviceVulkanSC10Properties		(void) const { return m_device->getDeviceVulkanSC10Properties(); }
 #endif // CTS_USES_VULKANSC
@@ -811,6 +857,8 @@ bool Context::requireDeviceCoreFeature (const DeviceCoreFeature requiredFeature)
 	return true;
 }
 
+#ifndef CTS_USES_VULKANSC
+
 static bool isExtendedStorageFormat (VkFormat format)
 {
 	switch(format)
@@ -876,11 +924,10 @@ static bool isDepthFormat (VkFormat format)
 	}
 }
 
-#ifndef CTS_USES_VULKANSC
-vk::VkFormatPropertiesExtendedKHR Context::getRequiredFormatProperties(const vk::VkFormat& format) const
+vk::VkFormatProperties3 Context::getRequiredFormatProperties(const vk::VkFormat& format) const
 {
-	vk::VkFormatPropertiesExtendedKHR p;
-	p.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_EXTENDED_KHR;
+	vk::VkFormatProperties3 p;
+	p.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
 	p.pNext = DE_NULL;
 
 	vk::VkFormatProperties properties;
@@ -912,12 +959,12 @@ vk::VkFormatPropertiesExtendedKHR Context::getRequiredFormatProperties(const vk:
 	return p;
 }
 
-vk::VkFormatPropertiesExtendedKHR Context::getFormatProperties(const vk::VkFormat& format) const
+vk::VkFormatProperties3 Context::getFormatProperties(const vk::VkFormat& format) const
 {
-	if (isDeviceFunctionalitySupported(VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME)) // "VK_KHR_format_feature_flags2"
+	if (isDeviceFunctionalitySupported("VK_KHR_format_feature_flags2"))
 	{
-		vk::VkFormatPropertiesExtendedKHR p;
-		p.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_EXTENDED_KHR;
+		vk::VkFormatProperties3 p;
+		p.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
 		p.pNext = DE_NULL;
 
 		vk::VkFormatProperties2 properties;
@@ -930,6 +977,7 @@ vk::VkFormatPropertiesExtendedKHR Context::getFormatProperties(const vk::VkForma
 	else
 		return Context::getRequiredFormatProperties(format);
 }
+
 #endif // CTS_USES_VULKANSC
 
 void* Context::getInstanceProcAddr	()

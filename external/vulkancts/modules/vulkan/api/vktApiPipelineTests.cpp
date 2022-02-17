@@ -1490,6 +1490,8 @@ tcu::TestStatus destroyAfterCreateGraphicsPipelineTest(Context& context)
 	return drawTriangleTest(context, DTM_DESTROY_PIPELINE_LAYOUT_AFTER_CREATING_PIPELINE);
 }
 
+#ifndef CTS_USES_VULKANSC
+
 Move<VkPipeline> createSimpleGraphicsPipelineInvalidPointers (const DeviceInterface& vk, const VkDevice& device, deUint32 numShaderStages, const VkPipelineShaderStageCreateInfo* shaderStageCreateInfos, VkPipelineLayout pipelineLayout, VkRenderPass renderPass, de::SharedPtr<vk::ResourceInterface> resourceInterface)
 {
 #ifndef CTS_USES_VULKANSC
@@ -1814,6 +1816,8 @@ tcu::TestStatus pipelineInvalidPointersUnusedStructsComputeTest (Context& contex
 	return pipelineInvalidPointersUnusedStructsTest(context, VK_PIPELINE_BIND_POINT_COMPUTE);
 }
 
+#endif // CTS_USES_VULKANSC
+
 tcu::TestCaseGroup* createrenderpassTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> renderPassTests(new tcu::TestCaseGroup(testCtx, "renderpass", "Renderpass tests"));
@@ -1846,6 +1850,7 @@ tcu::TestCaseGroup* createPipelineLayoutTests (tcu::TestContext& testCtx)
 	return pipelineLayoutTests.release();
 }
 
+#ifndef CTS_USES_VULKANSC
 tcu::TestCaseGroup* createPipelineInvalidPointersUnusedStructsTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> pipelineInvalidPointersUnusedStructsTests(new tcu::TestCaseGroup(testCtx, "pipeline_invalid_pointers_unused_structs", "Create pipelines with invalid pointers for unused structs"));
@@ -1855,6 +1860,7 @@ tcu::TestCaseGroup* createPipelineInvalidPointersUnusedStructsTests (tcu::TestCo
 
 	return pipelineInvalidPointersUnusedStructsTests.release();
 }
+#endif // CTS_USES_VULKANSC
 
 } // anonymous
 

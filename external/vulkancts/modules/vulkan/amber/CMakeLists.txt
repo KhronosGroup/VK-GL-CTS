@@ -28,6 +28,8 @@ elseif (DE_COMPILER_IS_MSC)
 	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} /wd4068")
 endif ()
 
+include_directories(${DEQP_INL_DIR})
+
 add_library(deqp-vk-amber STATIC ${DEQP_VK_AMBER_SRCS})
 target_include_directories(deqp-vk-amber PUBLIC ${PROJECT_SOURCE_DIR}/external/amber/src/include)
 target_include_directories(deqp-vk-amber PUBLIC ${PROJECT_SOURCE_DIR}/external/vulkancts/framework/vulkan ${PROJECT_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkan)

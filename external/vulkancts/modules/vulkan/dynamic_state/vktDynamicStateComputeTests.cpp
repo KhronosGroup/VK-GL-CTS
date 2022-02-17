@@ -280,17 +280,29 @@ void setLineStipple (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, cons
 
 void setCullMode (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetCullMode(cmdBuffer, VK_CULL_MODE_FRONT_AND_BACK);
+#else
 	vkd->cmdSetCullModeEXT(cmdBuffer, VK_CULL_MODE_FRONT_AND_BACK);
+#endif // CTS_USES_VULKANSC
 }
 
 void setFrontFace (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetFrontFace(cmdBuffer, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+#else
 	vkd->cmdSetFrontFaceEXT(cmdBuffer, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+#endif // CTS_USES_VULKANSC
 }
 
 void setPrimitiveTopology (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetPrimitiveTopology(cmdBuffer, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+#else
 	vkd->cmdSetPrimitiveTopologyEXT(cmdBuffer, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+#endif // CTS_USES_VULKANSC
 }
 
 void setViewportWithCount (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
@@ -304,7 +316,11 @@ void setViewportWithCount (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer
 		0.0f,	//	float	minDepth;
 		1.0f,	//	float	maxDepth;
 	};
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetViewportWithCount(cmdBuffer, 1u, &viewport);
+#else
 	vkd->cmdSetViewportWithCountEXT(cmdBuffer, 1u, &viewport);
+#endif // CTS_USES_VULKANSC
 }
 
 void setScissorWithCount (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
@@ -314,7 +330,11 @@ void setScissorWithCount (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer,
 		{ 0, 0 },	//	VkOffset2D	offset;
 		{ 1u, 1u },	//	VkExtent2D	extent;
 	};
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetScissorWithCount(cmdBuffer, 1u, &scissor);
+#else
 	vkd->cmdSetScissorWithCountEXT(cmdBuffer, 1u, &scissor);
+#endif // CTS_USES_VULKANSC
 }
 
 void bindVertexBuffers (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData* data)
@@ -328,37 +348,65 @@ void bindVertexBuffers (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, c
 	const auto pipeline			= bindData->getPipeline();
 
 	vkd->cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdBindVertexBuffers2(cmdBuffer, 0u, 1u, &vertexBuffer->get(), &bufferOffset, &dataSize, &stride);
+#else
 	vkd->cmdBindVertexBuffers2EXT(cmdBuffer, 0u, 1u, &vertexBuffer->get(), &bufferOffset, &dataSize, &stride);
+#endif // CTS_USES_VULKANSC
 }
 
 void setDepthTestEnable (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetDepthTestEnable(cmdBuffer, VK_TRUE);
+#else
 	vkd->cmdSetDepthTestEnableEXT(cmdBuffer, VK_TRUE);
+#endif // CTS_USES_VULKANSC
 }
 
 void setDepthWriteEnable (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetDepthWriteEnable(cmdBuffer, VK_TRUE);
+#else
 	vkd->cmdSetDepthWriteEnableEXT(cmdBuffer, VK_TRUE);
+#endif // CTS_USES_VULKANSC
 }
 
 void setDepthCompareOp (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetDepthCompareOp(cmdBuffer, VK_COMPARE_OP_LESS);
+#else
 	vkd->cmdSetDepthCompareOpEXT(cmdBuffer, VK_COMPARE_OP_LESS);
+#endif // CTS_USES_VULKANSC
 }
 
 void setDepthBoundsTestEnable (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetDepthBoundsTestEnable(cmdBuffer, VK_TRUE);
+#else
 	vkd->cmdSetDepthBoundsTestEnableEXT(cmdBuffer, VK_TRUE);
+#endif // CTS_USES_VULKANSC
 }
 
 void setStencilTestEnable (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetStencilTestEnable(cmdBuffer, VK_TRUE);
+#else
 	vkd->cmdSetStencilTestEnableEXT(cmdBuffer, VK_TRUE);
+#endif // CTS_USES_VULKANSC
 }
 
 void setStencilOp (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetStencilOp(cmdBuffer, VK_STENCIL_FACE_FRONT_AND_BACK, VK_STENCIL_OP_ZERO, VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_ALWAYS);
+#else
 	vkd->cmdSetStencilOpEXT(cmdBuffer, VK_STENCIL_FACE_FRONT_AND_BACK, VK_STENCIL_OP_ZERO, VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_ALWAYS);
+#endif // CTS_USES_VULKANSC
 }
 
 #ifndef CTS_USES_VULKANSC
@@ -386,18 +434,25 @@ void setViewportShadingRatePalette (const DeviceInterface* vkd, VkCommandBuffer 
 
 void setCoarseSamplingOrder (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
-	const VkCoarseSampleLocationNV location =
+	const VkCoarseSampleLocationNV locations[2] =
 	{
-		0u,	//	deUint32	pixelX;
-		0u,	//	deUint32	pixelY;
-		0u,	//	deUint32	sample;
+		{
+			0u,	//	deUint32	pixelX;
+			0u,	//	deUint32	pixelY;
+			0u,	//	deUint32	sample;
+		},
+		{
+			0u,	//	deUint32	pixelX;
+			1u,	//	deUint32	pixelY;
+			1u,	//	deUint32	sample;
+		},
 	};
 	const VkCoarseSampleOrderCustomNV order =
 	{
-		VK_SHADING_RATE_PALETTE_ENTRY_1_INVOCATION_PER_PIXEL_NV,	//	VkShadingRatePaletteEntryNV		shadingRate;
-		1u,															//	deUint32						sampleCount;
-		1u,															//	deUint32						sampleLocationCount;
-		&location													//	const VkCoarseSampleLocationNV*	pSampleLocations;
+		VK_SHADING_RATE_PALETTE_ENTRY_1_INVOCATION_PER_1X2_PIXELS_NV,	//	VkShadingRatePaletteEntryNV		shadingRate;
+		1u,																//	deUint32						sampleCount;
+		2u,																//	deUint32						sampleLocationCount;
+		locations														//	const VkCoarseSampleLocationNV*	pSampleLocations;
 	};
 	vkd->cmdSetCoarseSampleOrderNV(cmdBuffer, VK_COARSE_SAMPLE_ORDER_TYPE_CUSTOM_NV, 1u, &order);
 }

@@ -467,7 +467,11 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass(VkFormat vkformat, 
 		}
 		else
 		{
+#ifndef CTS_USES_VULKANSC
+			layout = m_config.sampleMask ? VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR : VK_IMAGE_LAYOUT_GENERAL;
+#else
 			layout = VK_IMAGE_LAYOUT_GENERAL;
+#endif // CTS_USES_VULKANSC
 			stencilLayout.stencilLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
 			finalLayout = VK_IMAGE_LAYOUT_GENERAL;  // This aspect should be unused.
 			stencilFinalLayout.stencilFinalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;

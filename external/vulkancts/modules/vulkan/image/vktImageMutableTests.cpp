@@ -651,35 +651,6 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 									&vertexInputStateCreateInfo);		// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
 }
 
-Move<VkPipeline> makeComputePipeline (const DeviceInterface&		vk,
-									  const VkDevice				device,
-									  const VkPipelineLayout		pipelineLayout,
-									  const VkShaderModule			shaderModule,
-									  const VkSpecializationInfo*	specInfo)
-{
-	const VkPipelineShaderStageCreateInfo shaderStageInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType					sType;
-		DE_NULL,												// const void*						pNext;
-		(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags	flags;
-		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits			stage;
-		shaderModule,											// VkShaderModule					module;
-		"main",													// const char*						pName;
-		specInfo,												// const VkSpecializationInfo*		pSpecializationInfo;
-	};
-	const VkComputePipelineCreateInfo pipelineInfo =
-	{
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,			// VkStructureType					sType;
-		DE_NULL,												// const void*						pNext;
-		(VkPipelineCreateFlags)0,								// VkPipelineCreateFlags			flags;
-		shaderStageInfo,										// VkPipelineShaderStageCreateInfo	stage;
-		pipelineLayout,											// VkPipelineLayout					layout;
-		DE_NULL,												// VkPipeline						basePipelineHandle;
-		0,														// deInt32							basePipelineIndex;
-	};
-	return createComputePipeline(vk, device, DE_NULL , &pipelineInfo);
-}
-
 Move<VkRenderPass> makeRenderPass (const DeviceInterface&	vk,
 								   const VkDevice			device,
 								   const VkFormat			colorFormat,
@@ -1171,7 +1142,7 @@ void UploadDownloadExecutor::uploadStore(Context& context)
 	m_uStore.descriptorSet			= makeDescriptorSet(m_vk, m_device, *m_uStore.descriptorPool, *m_uStore.descriptorSetLayout);
 	m_uStore.imageDescriptorInfo	= makeDescriptorImageInfo(DE_NULL, *m_uStore.imageView, VK_IMAGE_LAYOUT_GENERAL);
 	m_uStore.computeModule			= createShaderModule(m_vk, m_device, context.getBinaryCollection().get("uploadStoreComp"), 0);
-	m_uStore.computePipeline		= makeComputePipeline(m_vk, m_device, *m_uStore.pipelineLayout, *m_uStore.computeModule, DE_NULL);
+	m_uStore.computePipeline		= makeComputePipeline(m_vk, m_device, *m_uStore.pipelineLayout, *m_uStore.computeModule);
 
 	DescriptorSetUpdateBuilder()
 		.writeSingle(*m_uStore.descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &m_uStore.imageDescriptorInfo)
@@ -1424,7 +1395,7 @@ void UploadDownloadExecutor::downloadTexture(Context& context, VkBuffer buffer)
 	m_dTex.inImageDescriptorInfo		= makeDescriptorImageInfo(DE_NULL, *m_dTex.inImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	m_dTex.outImageDescriptorInfo		= makeDescriptorImageInfo(DE_NULL, *m_dTex.outImageView, VK_IMAGE_LAYOUT_GENERAL);
 	m_dTex.computeModule				= createShaderModule(m_vk, m_device, context.getBinaryCollection().get("downloadTextureComp"), 0);
-	m_dTex.computePipeline				= makeComputePipeline(m_vk, m_device, *m_dTex.pipelineLayout, *m_dTex.computeModule, DE_NULL);
+	m_dTex.computePipeline				= makeComputePipeline(m_vk, m_device, *m_dTex.pipelineLayout, *m_dTex.computeModule);
 
 	DescriptorSetUpdateBuilder()
 		.writeSingle(*m_dTex.descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &m_dTex.inImageDescriptorInfo)
@@ -1504,7 +1475,7 @@ void UploadDownloadExecutor::downloadLoad(Context& context, VkBuffer buffer)
 	m_dLoad.inImageDescriptorInfo		= makeDescriptorImageInfo(DE_NULL, *m_dLoad.inImageView, VK_IMAGE_LAYOUT_GENERAL);
 	m_dLoad.outImageDescriptorInfo		= makeDescriptorImageInfo(DE_NULL, *m_dLoad.outImageView, VK_IMAGE_LAYOUT_GENERAL);
 	m_dLoad.computeModule				= createShaderModule(m_vk, m_device, context.getBinaryCollection().get("downloadLoadComp"), 0);
-	m_dLoad.computePipeline				= makeComputePipeline(m_vk, m_device, *m_dLoad.pipelineLayout, *m_dLoad.computeModule, DE_NULL);
+	m_dLoad.computePipeline				= makeComputePipeline(m_vk, m_device, *m_dLoad.pipelineLayout, *m_dLoad.computeModule);
 
 	DescriptorSetUpdateBuilder()
 		.writeSingle(*m_dLoad.descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &m_dLoad.inImageDescriptorInfo)

@@ -44,7 +44,8 @@
 #include "es31cTestPackage.hpp"
 #include "esextcTestPackage.hpp"
 #include "tes31TestPackage.hpp"
-#include "tgl45TestPackage.hpp"
+#include "tgl45es31TestPackage.hpp"
+#include "tgl45es3TestPackage.hpp"
 
 #if defined(DEQP_GTF_AVAILABLE)
 #include "gtfES31TestPackage.hpp"
@@ -130,11 +131,16 @@ static tcu::TestPackage* createdEQPES31Package(tcu::TestContext& testCtx)
 {
 	return new deqp::gles31::TestPackage(testCtx);
 }
-static tcu::TestPackage* createdEQPGL45Package(tcu::TestContext& testCtx)
-{
-	return new deqp::gles31::TestPackageGL45(testCtx);
-}
 #endif
+
+static tcu::TestPackage* createdEQPGL45ES31Package(tcu::TestContext& testCtx)
+{
+	return new deqp::gles31::TestPackageGL45ES31(testCtx);
+}
+static tcu::TestPackage* createdEQPGL45ES3Package(tcu::TestContext& testCtx)
+{
+	return new deqp::gles3::TestPackageGL45ES3(testCtx);
+}
 static tcu::TestPackage* createES31Package(tcu::TestContext& testCtx)
 {
 	return new es31cts::ES31TestPackage(testCtx, "KHR-GLES31");
@@ -308,8 +314,9 @@ void registerPackages(void)
 
 #if DE_OS != DE_OS_ANDROID
 	registry->registerPackage("dEQP-GLES31", createdEQPES31Package);
-	registry->registerPackage("dEQP-GL45", createdEQPGL45Package);
 #endif
+	registry->registerPackage("dEQP-GL45-GLES31", createdEQPGL45ES31Package);
+	registry->registerPackage("dEQP-GL45-GLES3", createdEQPGL45ES3Package);
 	registry->registerPackage("KHR-GLES31", createES31Package);
 	registry->registerPackage("KHR-GLESEXT", createESEXTPackage);
 

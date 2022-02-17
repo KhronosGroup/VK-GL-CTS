@@ -1,7 +1,8 @@
 include_directories(
-		..
-		../amber
-		)
+	..
+	../amber
+	${DEQP_INL_DIR}
+	)
 
 set(DEQP_VK_VKSC_RASTERIZATION_SRCS
 	vktRasterizationTests.cpp
@@ -13,7 +14,9 @@ set(DEQP_VK_VKSC_RASTERIZATION_SRCS
 set(DEQP_VK_RASTERIZATION_SRCS
 	vktRasterizationProvokingVertexTests.cpp
 	vktRasterizationProvokingVertexTests.hpp
-)
+	vktRasterizationOrderAttachmentAccessTests.cpp
+	vktRasterizationOrderAttachmentAccessTests.hpp
+	)
 
 include_directories("../../../../../external/amber/src/include")
 add_library(deqp-vk-rasterization STATIC ${DEQP_VK_VKSC_RASTERIZATION_SRCS} ${DEQP_VK_RASTERIZATION_SRCS})

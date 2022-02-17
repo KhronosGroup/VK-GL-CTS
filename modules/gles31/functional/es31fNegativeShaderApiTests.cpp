@@ -522,7 +522,7 @@ void program_binary (NegativeTestContext& ctx)
 {
 	glu::ShaderProgram		srcProgram		(ctx.getRenderContext(), glu::makeVtxFragSources(vertexShaderSource, fragmentShaderSource));
 	GLuint					dstProgram		= ctx.glCreateProgram();
-	GLuint					dummyShader		= ctx.glCreateShader(GL_VERTEX_SHADER);
+	GLuint					unusedShader		= ctx.glCreateShader(GL_VERTEX_SHADER);
 	GLenum					binaryFormat	= -1;
 	GLsizei					binaryLength	= -1;
 	std::vector<deUint8>	binaryBuf;
@@ -542,7 +542,7 @@ void program_binary (NegativeTestContext& ctx)
 		ctx.expectError			(GL_NO_ERROR);
 
 		ctx.beginSection("GL_INVALID_OPERATION is generated if program is not the name of an existing program object.");
-		ctx.glProgramBinary		(dummyShader, binaryFormat, &binaryBuf[0], binaryLength);
+		ctx.glProgramBinary		(unusedShader, binaryFormat, &binaryBuf[0], binaryLength);
 		ctx.expectError			(GL_INVALID_OPERATION);
 		ctx.endSection();
 
@@ -552,7 +552,7 @@ void program_binary (NegativeTestContext& ctx)
 		ctx.endSection();
 	}
 
-	ctx.glDeleteShader(dummyShader);
+	ctx.glDeleteShader(unusedShader);
 	ctx.glDeleteProgram(dstProgram);
 }
 
@@ -672,18 +672,18 @@ void get_sampler_parameterIiv (NegativeTestContext& ctx)
 	if (!supportsES32orGL45(ctx))
 		throw tcu::NotSupportedError("glGetSamplerParameterIiv is not supported.", DE_NULL, __FILE__, __LINE__);
 
-	GLuint	sampler		= 0x1234;
-	GLint	borderColor	= 0x1234;
+	GLuint	sampler			= 0x1234;
+	GLint	borderColor[]	= { 0x1234, 0x4123, 0x3412, 0x2341 };
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if sampler is not the name of a sampler object returned from a previous call to ctx.glGenSamplers.");
-	ctx.glGetSamplerParameterIiv(sampler, GL_TEXTURE_BORDER_COLOR, &borderColor);
+	ctx.glGetSamplerParameterIiv(sampler, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.endSection();
 
 	ctx.glGenSamplers(1, &sampler);
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not an accepted value.");
-	ctx.glGetSamplerParameterIiv(sampler, -1, &borderColor);
+	ctx.glGetSamplerParameterIiv(sampler, -1, &borderColor[0]);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
@@ -695,18 +695,18 @@ void get_sampler_parameterIuiv (NegativeTestContext& ctx)
 	if (!supportsES32orGL45(ctx))
 		throw tcu::NotSupportedError("glGetSamplerParameterIuiv is not supported.", DE_NULL, __FILE__, __LINE__);
 
-	GLuint	sampler		= 0x1234;
-	GLuint	borderColor	= 0x1234;
+	GLuint	sampler			= 0x1234;
+	GLuint	borderColor[]	= { 0x1234, 0x4123, 0x3412, 0x2341 };
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if sampler is not the name of a sampler object returned from a previous call to ctx.glGenSamplers.");
-	ctx.glGetSamplerParameterIuiv(sampler, GL_TEXTURE_BORDER_COLOR, &borderColor);
+	ctx.glGetSamplerParameterIuiv(sampler, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.endSection();
 
 	ctx.glGenSamplers(1, &sampler);
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if pname is not an accepted value.");
-	ctx.glGetSamplerParameterIuiv(sampler, -1, &borderColor);
+	ctx.glGetSamplerParameterIuiv(sampler, -1, &borderColor[0]);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 

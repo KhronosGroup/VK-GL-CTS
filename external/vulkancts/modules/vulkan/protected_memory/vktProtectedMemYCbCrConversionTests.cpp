@@ -572,7 +572,7 @@ bool validateImage (ProtectedContext&							ctx,
 	// Reset helper SSBO
 	{
 		const vk::Unique<vk::VkFence>			fence				(vk::createFence(vk, device));
-		const vk::Unique<vk::VkPipeline>		resetSSBOPipeline	(makeComputePipeline(vk, device, *pipelineLayout, *resetSSBOShader, DE_NULL));
+		const vk::Unique<vk::VkPipeline>		resetSSBOPipeline	(makeComputePipeline(vk, device, *pipelineLayout, *resetSSBOShader));
 		const vk::Unique<vk::VkCommandBuffer>	resetCmdBuffer		(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 		beginCommandBuffer(vk, *resetCmdBuffer);
 
@@ -588,7 +588,7 @@ bool validateImage (ProtectedContext&							ctx,
 	vk::VkResult							queueSubmitResult;
 	{
 		const vk::Unique<vk::VkFence>			fence				(vk::createFence(vk, device));
-		const vk::Unique<vk::VkPipeline>		validationPipeline	(makeComputePipeline(vk, device, *pipelineLayout, *validatorShader, DE_NULL));
+		const vk::Unique<vk::VkPipeline>		validationPipeline	(makeComputePipeline(vk, device, *pipelineLayout, *validatorShader));
 		const vk::Unique<vk::VkCommandBuffer>	cmdBuffer			(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		beginCommandBuffer(vk, *cmdBuffer);
@@ -646,13 +646,13 @@ void testShaders (vk::SourceCollections& dst, const TestConfig config)
 		"layout(std140, set = 0, binding = 2) buffer ProtectedHelper\n"
 		"{\n"
 		"    highp uint zero;\n"
-		"    highp uint dummyOut;\n"
+		"    highp uint unusedOut;\n"
 		"} helper;\n"
 		"\n"
 		"void error()\n"
 		"{\n"
 		"    for (uint x = 0u; x < 10u; x += helper.zero)\n"
-		"        atomicAdd(helper.dummyOut, 1u);\n"
+		"        atomicAdd(helper.unusedOut, 1u);\n"
 		"}\n"
 		"\n"
 		"${COMPARE_FUNCTION}"
@@ -674,13 +674,13 @@ void testShaders (vk::SourceCollections& dst, const TestConfig config)
 		"layout(std140, set=0, binding=2) buffer ProtectedHelper\n"
 		"{\n"
 		"    highp uint zero; // set to 0\n"
-		"    highp uint dummyOut;\n"
+		"    highp uint unusedOut;\n"
 		"} helper;\n"
 		"\n"
 		"void main (void)\n"
 		"{\n"
 		"    helper.zero = 0;\n"
-		"    helper.dummyOut = 0;\n"
+		"    helper.unusedOut = 0;\n"
 		"}\n";
 
 	dst.glslSources.add("ResetSSBO") << glu::ComputeSource(resetSSBOShader);

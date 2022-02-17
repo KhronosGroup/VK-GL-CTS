@@ -221,7 +221,7 @@ bool					validateProgram		(const ProgramBinary& program, std::ostream* dst, cons
 	typedef deUint32 VkShaderModuleCreateFlags;
 #endif // CTS_USES_VULKANSC
 
-Move<VkShaderModule>	createShaderModule	(const DeviceInterface& deviceInterface, VkDevice device, const ProgramBinary& binary, VkShaderModuleCreateFlags flags);
+Move<VkShaderModule>	createShaderModule	(const DeviceInterface& deviceInterface, VkDevice device, const ProgramBinary& binary, VkShaderModuleCreateFlags flags = 0u);
 
 glu::ShaderType			getGluShaderType	(VkShaderStageFlagBits shaderStage);
 VkShaderStageFlagBits	getVkShaderStage	(glu::ShaderType shaderType);

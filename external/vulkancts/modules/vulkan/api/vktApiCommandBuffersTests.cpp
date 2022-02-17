@@ -460,6 +460,7 @@ tcu::TestStatus resetPoolNoFlagsTest(Context& context)
 	return tcu::TestStatus::pass("Command Pool allocated correctly.");
 }
 
+#ifndef CTS_USES_VULKANSC
 bool executeCommandBuffer (const VkDevice			device,
 						   const DeviceInterface&	vk,
 						   const VkQueue			queue,
@@ -483,7 +484,6 @@ bool executeCommandBuffer (const VkDevice			device,
 	return result == VK_EVENT_SET;
 }
 
-#ifndef CTS_USES_VULKANSC
 tcu::TestStatus resetPoolReuseTest (Context& context)
 {
 	const VkDevice						vkDevice			= context.getDevice();

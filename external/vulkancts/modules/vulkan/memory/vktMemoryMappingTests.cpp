@@ -24,12 +24,14 @@
 #include "vktMemoryMappingTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "tcuMaybe.hpp"
 #include "tcuResultCollector.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuPlatform.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "vkDeviceUtil.hpp"
 #include "vkPlatform.hpp"
@@ -573,18 +575,77 @@ bool compareAndLogBuffer (TestLog& log, size_t size, size_t referenceSize, const
 		return true;
 }
 
+static Move<VkDevice> createProtectedMemoryDevice(const Context& context, const VkPhysicalDeviceFeatures2& features2)
+{
+	auto&											cmdLine					= context.getTestContext().getCommandLine();
+	const InstanceInterface&						vki						= context.getInstanceInterface();
+	const float										queuePriority			= 1.0f;
+	deUint32										queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+
+	VkDeviceQueueCreateInfo							queueInfo		=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,					// VkStructureType					sType;
+		DE_NULL,													// const void*						pNext;
+		vk::VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT,					// VkDeviceQueueCreateFlags			flags;
+		queueFamilyIndex,											// deUint32							queueFamilyIndex;
+		1u,															// deUint32							queueCount;
+		&queuePriority												// const float*						pQueuePriorities;
+	};
+
+	const VkDeviceCreateInfo						deviceInfo		=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,						// VkStructureType					sType;
+		&features2,													// const void*						pNext;
+		(VkDeviceCreateFlags)0,										// VkDeviceCreateFlags				flags;
+		1u,															// uint32_t							queueCreateInfoCount;
+		&queueInfo,													// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+		0u,															// uint32_t							enabledLayerCount;
+		DE_NULL,													// const char* const*				ppEnabledLayerNames;
+		0u,															// uint32_t							enabledExtensionCount;
+		DE_NULL,													// const char* const*				ppEnabledExtensionNames;
+		DE_NULL														// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+	};
+
+	return createCustomDevice(cmdLine.isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), vki, context.getPhysicalDevice(), &deviceInfo);
+}
+
 tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 {
 	TestLog&								log							= context.getTestContext().getLog();
 	tcu::ResultCollector					result						(log);
 	bool									atLeastOneTestPerformed		= false;
 	const VkPhysicalDevice					physicalDevice				= context.getPhysicalDevice();
-	const VkDevice							device						= context.getDevice();
 	const InstanceInterface&				vki							= context.getInstanceInterface();
 	const DeviceInterface&					vkd							= context.getDeviceInterface();
 	const VkPhysicalDeviceMemoryProperties	memoryProperties			= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
 	const VkDeviceSize						nonCoherentAtomSize			= context.getDeviceProperties().limits.nonCoherentAtomSize;
 	const deUint32							queueFamilyIndex			= context.getUniversalQueueFamilyIndex();
+
+	//Create protected memory device if protected memory is supported
+	//otherwise use the default device
+	Move<VkDevice>	protectMemoryDevice;
+	VkDevice		device;
+	{
+		VkPhysicalDeviceProtectedMemoryFeatures		protectedFeatures;
+		protectedFeatures.sType				= vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES;
+		protectedFeatures.pNext				= DE_NULL;
+		protectedFeatures.protectedMemory	= VK_FALSE;
+
+		VkPhysicalDeviceFeatures2					deviceFeatures2;
+		deviceFeatures2.sType		= vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		deviceFeatures2.pNext		= &protectedFeatures;
+
+		vki.getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &deviceFeatures2);
+		if(protectedFeatures.protectedMemory && config.implicitUnmap)
+		{
+			protectMemoryDevice = createProtectedMemoryDevice(context, deviceFeatures2);
+			device = *protectMemoryDevice;
+		}
+		else
+		{
+			device = context.getDevice();
+		}
+	}
 
 	{
 		const tcu::ScopedLogSection	section	(log, "TestCaseInfo", "TestCaseInfo");
@@ -1130,11 +1191,11 @@ VkDeviceSize getHostPageSize (void)
 class MemoryHeap
 {
 public:
-	MemoryHeap (const VkMemoryHeap&			heap,
-				const vector<MemoryType>&	memoryTypes,
-				const PlatformMemoryLimits&	memoryLimits,
-				const VkDeviceSize			nonCoherentAtomSize,
-				TotalMemoryTracker&			totalMemTracker)
+	MemoryHeap (const VkMemoryHeap&					heap,
+				const vector<MemoryType>&			memoryTypes,
+				const tcu::PlatformMemoryLimits&	memoryLimits,
+				const VkDeviceSize					nonCoherentAtomSize,
+				TotalMemoryTracker&					totalMemTracker)
 		: m_heap				(heap)
 		, m_memoryTypes			(memoryTypes)
 		, m_limits				(memoryLimits)
@@ -1182,15 +1243,15 @@ private:
 			return MEMORY_CLASS_SYSTEM;
 	}
 
-	const VkMemoryHeap			m_heap;
-	const vector<MemoryType>	m_memoryTypes;
-	const PlatformMemoryLimits&	m_limits;
-	const VkDeviceSize			m_nonCoherentAtomSize;
-	const VkDeviceSize			m_minAtomSize;
-	TotalMemoryTracker&			m_totalMemTracker;
+	const VkMemoryHeap					m_heap;
+	const vector<MemoryType>			m_memoryTypes;
+	const tcu::PlatformMemoryLimits&	m_limits;
+	const VkDeviceSize					m_nonCoherentAtomSize;
+	const VkDeviceSize					m_minAtomSize;
+	TotalMemoryTracker&					m_totalMemTracker;
 
-	VkDeviceSize				m_usage;
-	vector<MemoryObject*>		m_objects;
+	VkDeviceSize						m_usage;
+	vector<MemoryObject*>				m_objects;
 };
 
 // Heap is full if there is not enough memory to allocate minimal memory object.
@@ -1369,7 +1430,7 @@ public:
 		: TestInstance				(context)
 		, m_memoryObjectSysMemSize	(getMemoryObjectSystemSize(context))
 		, m_memoryMappingSysMemSize	(getMemoryMappingSystemSize())
-		, m_memoryLimits			(getMemoryLimits(context.getTestContext().getPlatform().getVulkanPlatform()))
+		, m_memoryLimits			(tcu::getMemoryLimits(context.getTestContext().getPlatform()))
 		, m_rng						(seed)
 		, m_opNdx					(0)
 	{
@@ -1573,7 +1634,7 @@ public:
 private:
 	const size_t						m_memoryObjectSysMemSize;
 	const size_t						m_memoryMappingSysMemSize;
-	const PlatformMemoryLimits			m_memoryLimits;
+	const tcu::PlatformMemoryLimits		m_memoryLimits;
 
 	de::Random							m_rng;
 	size_t								m_opNdx;

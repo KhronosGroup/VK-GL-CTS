@@ -386,36 +386,6 @@ static bool supportsStores(int descriptorType)
 	}
 }
 
-Move<VkPipeline> makeComputePipeline (const DeviceInterface&	vk,
-									  const VkDevice			device,
-									  const VkPipelineLayout	pipelineLayout,
-									  const VkShaderModule		shaderModule)
-{
-	const VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-		DE_NULL,												// const void*							pNext;
-		(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags		flags;
-		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
-		shaderModule,											// VkShaderModule						module;
-		"main",													// const char*							pName;
-		DE_NULL,												// const VkSpecializationInfo*			pSpecializationInfo;
-	};
-
-	const VkComputePipelineCreateInfo pipelineCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType					sType;
-		DE_NULL,											// const void*						pNext;
-		0u,													// VkPipelineCreateFlags			flags;
-		pipelineShaderStageParams,							// VkPipelineShaderStageCreateInfo	stage;
-		pipelineLayout,										// VkPipelineLayout					layout;
-		(vk::VkPipeline)0,									// VkPipeline						basePipelineHandle;
-		0,													// deInt32							basePipelineIndex;
-	};
-
-	return createComputePipeline(vk, device, DE_NULL , &pipelineCreateInfo);
-}
-
 void RobustnessExtsTestCase::checkSupport(Context& context) const
 {
 	const auto&	vki				= context.getInstanceInterface();
@@ -546,7 +516,7 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 	if ((m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER || m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) &&
 		!m_data.formatQualifier)
 	{
-		const VkFormatPropertiesExtendedKHR formatProperties = context.getFormatProperties(m_data.format);
+		const VkFormatProperties3 formatProperties = context.getFormatProperties(m_data.format);
 		if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
 			TCU_THROW(NotSupportedError, "Format does not support reading without format");
 		if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
@@ -564,6 +534,9 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 
 	if (m_data.viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY && !features2.features.imageCubeArray)
 		TCU_THROW(NotSupportedError, "Cube array image view type not supported");
+
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getDeviceFeatures().robustBufferAccess)
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: robustBufferAccess not supported by this implementation");
 }
 
 void generateLayout(Layout &layout, const CaseDef &caseDef)

@@ -45,6 +45,14 @@ enum OpType
 	OPTYPE_LAST
 };
 
+// For the second arguments of Xor, Up and Down.
+enum class ArgType
+{
+	DYNAMIC = 0,
+	DYNAMICALLY_UNIFORM,
+	CONSTANT
+};
+
 struct CaseDefinition
 {
 	OpType				opType;
@@ -52,6 +60,7 @@ struct CaseDefinition
 	VkFormat			format;
 	de::SharedPtr<bool>	geometryPointSizeSupported;
 	deBool				requiredSubgroupSize;
+	ArgType				argType;
 };
 
 static bool checkVertexPipelineStages (const void*			internalData,
@@ -118,13 +127,16 @@ vector<string> getPerStageHeadDeclarations (const CaseDefinition& caseDef)
 									  "  uint result[];\n"
 									  "};\n";
 
+		const string	b2Layout	= ((caseDef.argType == ArgType::DYNAMIC) ? "std430"				: "std140");
+		const string	b2Type		= ((caseDef.argType == ArgType::DYNAMIC) ? "readonly buffer"	: "uniform");
+
 		result[i] =
 			buffer1 +
 			"layout(set = 0, binding = " + de::toString(binding1) + ", std430) readonly buffer Buffer2\n"
 			"{\n"
 			"  " + formatName + " data1[];\n"
 			"};\n"
-			"layout(set = 0, binding = " + de::toString(binding2) + ", std430) readonly buffer Buffer3\n"
+			"layout(set = 0, binding = " + de::toString(binding2) + ", " + b2Layout + ") " + b2Type + " Buffer3\n"
 			"{\n"
 			"  uint data2[];\n"
 			"};\n";
@@ -138,6 +150,7 @@ vector<string> getFramebufferPerStageHeadDeclarations (const CaseDefinition& cas
 	const string	formatName	= subgroups::getFormatNameForGLSL(caseDef.format);
 	const deUint32	stageCount	= subgroups::getStagesCount(caseDef.shaderStage);
 	vector<string>	result		(stageCount, string());
+	const auto		b2Len		= ((caseDef.argType == ArgType::DYNAMIC) ? subgroups::maxSupportedSubgroupSize() : 1u);
 	const string	buffer2
 	{
 		"layout(set = 0, binding = 0) uniform Buffer1\n"
@@ -146,7 +159,7 @@ vector<string> getFramebufferPerStageHeadDeclarations (const CaseDefinition& cas
 		"};\n"
 		"layout(set = 0, binding = 1) uniform Buffer2\n"
 		"{\n"
-		"  uint data2[" + de::toString(subgroups::maxSupportedSubgroupSize()) + "];\n"
+		"  uint data2[" + de::toString(b2Len) + "];\n"
 		"};\n"
 	};
 
@@ -172,10 +185,14 @@ const string getTestSource (const CaseDefinition& caseDef)
 								: caseDef.opType == OPTYPE_SHUFFLE_UP	? "gl_SubgroupInvocationID - id_in"
 								: caseDef.opType == OPTYPE_SHUFFLE_DOWN	? "gl_SubgroupInvocationID + id_in"
 								: "";
+	const string	idInSource	= caseDef.argType == ArgType::DYNAMIC				? "data2[gl_SubgroupInvocationID] & (gl_SubgroupSize - 1)"
+								: caseDef.argType == ArgType::DYNAMICALLY_UNIFORM	? "data2[0] % 32"
+								: caseDef.argType == ArgType::CONSTANT				? "5"
+								: "";
 	const string	testSource	=
 		"  uint temp_res;\n"
 		"  uvec4 mask = subgroupBallot(true);\n"
-		"  uint id_in = data2[gl_SubgroupInvocationID] & (gl_SubgroupSize - 1);\n"
+		"  uint id_in = " + idInSource + ";\n"
 		"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " op = "
 		+ getOpTypeName(caseDef.opType) + "(data1[gl_SubgroupInvocationID], id_in);\n"
 		"  uint id = " + id + ";\n"
@@ -249,8 +266,13 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	{
 		context.requireDeviceFunctionality("VK_EXT_subgroup_size_control");
 
+#ifndef CTS_USES_VULKANSC
+		const VkPhysicalDeviceSubgroupSizeControlFeatures&		subgroupSizeControlFeatures		= context.getSubgroupSizeControlFeatures();
+		const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context.getSubgroupSizeControlProperties();
+#else
 		const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&	subgroupSizeControlFeatures		= context.getSubgroupSizeControlFeaturesEXT();
 		const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context.getSubgroupSizeControlPropertiesEXT();
+#endif // CTS_USES_VULKANSC
 
 		if (subgroupSizeControlFeatures.subgroupSizeControl == DE_FALSE)
 			TCU_THROW(NotSupportedError, "Device does not support varying subgroup sizes nor required subgroup size");
@@ -276,6 +298,7 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 
 TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 {
+	const VkDeviceSize			secondBufferSize = ((caseDef.argType == ArgType::DYNAMIC) ? subgroups::maxSupportedSubgroupSize() : 1u);
 	const subgroups::SSBOData	inputData[2]
 	{
 		{
@@ -283,12 +306,14 @@ TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 			subgroups::SSBOData::LayoutStd140,		//  InputDataLayoutType			layout;
 			caseDef.format,							//  vk::VkFormat				format;
 			subgroups::maxSupportedSubgroupSize(),	//  vk::VkDeviceSize			numElements;
+			subgroups::SSBOData::BindingUBO,		//  BindingType					bindingType;
 		},
 		{
 			subgroups::SSBOData::InitializeNonZero,	//  InputDataInitializeType		initializeType;
 			subgroups::SSBOData::LayoutStd140,		//  InputDataLayoutType			layout;
 			VK_FORMAT_R32_UINT,						//  vk::VkFormat				format;
-			subgroups::maxSupportedSubgroupSize(),	//  vk::VkDeviceSize			numElements;
+			secondBufferSize,						//  vk::VkDeviceSize			numElements;
+			subgroups::SSBOData::BindingUBO,		//  BindingType					bindingType;
 		}
 	};
 
@@ -304,9 +329,23 @@ TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 
 TestStatus test (Context& context, const CaseDefinition caseDef)
 {
+	const auto			secondBufferLayout	= ((caseDef.argType == ArgType::DYNAMIC)
+											? subgroups::SSBOData::LayoutStd430
+											: subgroups::SSBOData::LayoutStd140);
+	const VkDeviceSize	secondBufferElems	= ((caseDef.argType == ArgType::DYNAMIC)
+											? subgroups::maxSupportedSubgroupSize()
+											: 1u);
+	const auto			secondBufferType	= ((caseDef.argType == ArgType::DYNAMIC)
+											? subgroups::SSBOData::BindingSSBO
+											: subgroups::SSBOData::BindingUBO);
+
 	if (isAllComputeStages(caseDef.shaderStage))
 	{
+#ifndef CTS_USES_VULKANSC
+		const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context.getSubgroupSizeControlProperties();
+#else
 		const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context.getSubgroupSizeControlPropertiesEXT();
+#endif // CTS_USES_VULKANSC
 		TestLog&												log								= context.getTestContext().getLog();
 		const subgroups::SSBOData								inputData[2]
 		{
@@ -318,9 +357,10 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 			},
 			{
 				subgroups::SSBOData::InitializeNonZero,	//  InputDataInitializeType		initializeType;
-				subgroups::SSBOData::LayoutStd430,		//  InputDataLayoutType			layout;
+				secondBufferLayout,						//  InputDataLayoutType			layout;
 				VK_FORMAT_R32_UINT,						//  vk::VkFormat				format;
-				subgroups::maxSupportedSubgroupSize(),	//  vk::VkDeviceSize			numElements;
+				secondBufferElems,						//  vk::VkDeviceSize			numElements;
+				secondBufferType,
 			},
 		};
 
@@ -354,16 +394,16 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 				subgroups::SSBOData::LayoutStd430,		//  InputDataLayoutType			layout;
 				caseDef.format,							//  vk::VkFormat				format;
 				subgroups::maxSupportedSubgroupSize(),	//  vk::VkDeviceSize			numElements;
-				false,									//  bool						isImage;
+				subgroups::SSBOData::BindingSSBO,		//  bool						isImage;
 				4u,										//  deUint32					binding;
 				stages,									//  vk::VkShaderStageFlags		stages;
 			},
 			{
 				subgroups::SSBOData::InitializeNonZero,	//  InputDataInitializeType		initializeType;
-				subgroups::SSBOData::LayoutStd430,		//  InputDataLayoutType			layout;
+				secondBufferLayout,						//  InputDataLayoutType			layout;
 				VK_FORMAT_R32_UINT,						//  vk::VkFormat				format;
-				subgroups::maxSupportedSubgroupSize(),	//  vk::VkDeviceSize			numElements;
-				false,									//  bool						isImage;
+				secondBufferElems,						//  vk::VkDeviceSize			numElements;
+				secondBufferType,						//  bool						isImage;
 				5u,										//  deUint32					binding;
 				stages,									//  vk::VkShaderStageFlags		stages;
 			},
@@ -382,16 +422,16 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 				subgroups::SSBOData::LayoutStd430,		//  InputDataLayoutType			layout;
 				caseDef.format,							//  vk::VkFormat				format;
 				subgroups::maxSupportedSubgroupSize(),	//  vk::VkDeviceSize			numElements;
-				false,									//  bool						isImage;
+				subgroups::SSBOData::BindingSSBO,		//  bool						isImage;
 				6u,										//  deUint32					binding;
 				stages,									//  vk::VkShaderStageFlags		stages;
 			},
 			{
 				subgroups::SSBOData::InitializeNonZero,	//  InputDataInitializeType		initializeType;
-				subgroups::SSBOData::LayoutStd430,		//  InputDataLayoutType			layout;
+				secondBufferLayout,						//  InputDataLayoutType			layout;
 				VK_FORMAT_R32_UINT,						//  vk::VkFormat				format;
-				subgroups::maxSupportedSubgroupSize(),	//  vk::VkDeviceSize			numElements;
-				false,									//  bool						isImage;
+				secondBufferElems,						//  vk::VkDeviceSize			numElements;
+				secondBufferType,						//  bool						isImage;
 				7u,										//  deUint32					binding;
 				stages,									//  vk::VkShaderStageFlags		stages;
 			},
@@ -412,6 +452,7 @@ namespace subgroups
 TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 {
 	de::MovePtr<TestCaseGroup>	group				(new TestCaseGroup(testCtx, "shuffle", "Subgroup shuffle category tests"));
+
 	de::MovePtr<TestCaseGroup>	graphicGroup		(new TestCaseGroup(testCtx, "graphics", "Subgroup shuffle category tests: graphics"));
 	de::MovePtr<TestCaseGroup>	computeGroup		(new TestCaseGroup(testCtx, "compute", "Subgroup shuffle category tests: compute"));
 	de::MovePtr<TestCaseGroup>	framebufferGroup	(new TestCaseGroup(testCtx, "framebuffer", "Subgroup shuffle category tests: framebuffer"));
@@ -425,10 +466,22 @@ TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
 		VK_SHADER_STAGE_GEOMETRY_BIT,
 	};
+
 	const deBool				boolValues[]		=
 	{
 		DE_FALSE,
 		DE_TRUE
+	};
+
+	const struct
+	{
+		ArgType		argType;
+		const char*	suffix;
+	} argCases[] =
+	{
+		{	ArgType::DYNAMIC,				""						},
+		{	ArgType::DYNAMICALLY_UNIFORM,	"_dynamically_uniform"	},
+		{	ArgType::CONSTANT,				"_constant"				},
 	};
 
 	{
@@ -441,51 +494,61 @@ TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 
 			for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
 			{
-				const OpType	opType	= static_cast<OpType>(opTypeIndex);
-				const string	name	= de::toLower(getOpTypeName(opType)) + "_" + formatName;
-
+				for (const auto& argCase : argCases)
 				{
-					const CaseDefinition	caseDef		=
+					const OpType opType = static_cast<OpType>(opTypeIndex);
+
+					if (opType == OPTYPE_SHUFFLE && argCase.argType != ArgType::DYNAMIC)
+						continue;
+
+					const string name = de::toLower(getOpTypeName(opType)) + "_" + formatName + argCase.suffix;
+
 					{
-						opType,							//  OpType				opType;
-						VK_SHADER_STAGE_ALL_GRAPHICS,	//  VkShaderStageFlags	shaderStage;
-						format,							//  VkFormat			format;
-						de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
-						DE_FALSE						//  deBool				requiredSubgroupSize;
-					};
+						const CaseDefinition	caseDef		=
+						{
+							opType,							//  OpType				opType;
+							VK_SHADER_STAGE_ALL_GRAPHICS,	//  VkShaderStageFlags	shaderStage;
+							format,							//  VkFormat			format;
+							de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
+							DE_FALSE,						//  deBool				requiredSubgroupSize;
+							argCase.argType,				//  ArgType				argType;
+						};
 
-					addFunctionCaseWithPrograms(graphicGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
-				}
+						addFunctionCaseWithPrograms(graphicGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
+					}
 
-				for (size_t groupSizeNdx = 0; groupSizeNdx < DE_LENGTH_OF_ARRAY(boolValues); ++groupSizeNdx)
-				{
-					const deBool			requiredSubgroupSize	= boolValues[groupSizeNdx];
-					const string			testName				= name + (requiredSubgroupSize ? "_requiredsubgroupsize" : "");
-					const CaseDefinition	caseDef					=
+					for (size_t groupSizeNdx = 0; groupSizeNdx < DE_LENGTH_OF_ARRAY(boolValues); ++groupSizeNdx)
 					{
-						opType,							//  OpType				opType;
-						VK_SHADER_STAGE_COMPUTE_BIT,	//  VkShaderStageFlags	shaderStage;
-						format,							//  VkFormat			format;
-						de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
-						requiredSubgroupSize,			//  deBool				requiredSubgroupSize;
-					};
+						const deBool			requiredSubgroupSize	= boolValues[groupSizeNdx];
+						const string			testName				= name + (requiredSubgroupSize ? "_requiredsubgroupsize" : "");
+						const CaseDefinition	caseDef					=
+						{
+							opType,							//  OpType				opType;
+							VK_SHADER_STAGE_COMPUTE_BIT,	//  VkShaderStageFlags	shaderStage;
+							format,							//  VkFormat			format;
+							de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
+							requiredSubgroupSize,			//  deBool				requiredSubgroupSize;
+							argCase.argType,				//  ArgType				argType;
+						};
 
-					addFunctionCaseWithPrograms(computeGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
-				}
+						addFunctionCaseWithPrograms(computeGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+					}
 
-				for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
-				{
-					const CaseDefinition	caseDef		=
+					for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 					{
-						opType,							//  OpType				opType;
-						stages[stageIndex],				//  VkShaderStageFlags	shaderStage;
-						format,							//  VkFormat			format;
-						de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
-						DE_FALSE						//  deBool				requiredSubgroupSize;
-					};
-					const string			testName	= name + "_" + getShaderStageName(caseDef.shaderStage);
+						const CaseDefinition	caseDef		=
+						{
+							opType,							//  OpType				opType;
+							stages[stageIndex],				//  VkShaderStageFlags	shaderStage;
+							format,							//  VkFormat			format;
+							de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
+							DE_FALSE,						//  deBool				requiredSubgroupSize;
+							argCase.argType,				//  ArgType				argType;
+						};
+						const string			testName	= name + "_" + getShaderStageName(caseDef.shaderStage);
 
-					addFunctionCaseWithPrograms(framebufferGroup.get(), testName, "", supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
+						addFunctionCaseWithPrograms(framebufferGroup.get(), testName, "", supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
+					}
 				}
 			}
 		}
@@ -502,18 +565,26 @@ TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 
 			for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
 			{
-				const OpType			opType	= static_cast<OpType>(opTypeIndex);
-				const string			name	= de::toLower(getOpTypeName(opType)) + "_" + formatName;
-				const CaseDefinition	caseDef	=
+				for (const auto& argCase : argCases)
 				{
-					opType,							//  OpType				opType;
-					SHADER_STAGE_ALL_RAY_TRACING,	//  VkShaderStageFlags	shaderStage;
-					format,							//  VkFormat			format;
-					de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
-					DE_FALSE						//  deBool				requiredSubgroupSize;
-				};
+					const OpType opType = static_cast<OpType>(opTypeIndex);
 
-				addFunctionCaseWithPrograms(raytracingGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
+					if (opType == OPTYPE_SHUFFLE && argCase.argType != ArgType::DYNAMIC)
+						continue;
+
+					const string			name	= de::toLower(getOpTypeName(opType)) + "_" + formatName + argCase.suffix;
+					const CaseDefinition	caseDef	=
+					{
+						opType,							//  OpType				opType;
+						SHADER_STAGE_ALL_RAY_TRACING,	//  VkShaderStageFlags	shaderStage;
+						format,							//  VkFormat			format;
+						de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
+						DE_FALSE,						//  deBool				requiredSubgroupSize;
+						argCase.argType,				//  ArgType				argType;
+					};
+
+					addFunctionCaseWithPrograms(raytracingGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
+				}
 			}
 		}
 	}

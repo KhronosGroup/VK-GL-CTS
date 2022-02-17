@@ -50,6 +50,10 @@ enum TestType
 static const VkConformanceVersion knownConformanceVersions[] =
 {
 #ifndef CTS_USES_VULKANSC
+	makeConformanceVersion(1, 3, 1, 0),
+	makeConformanceVersion(1, 3, 0, 0),
+	makeConformanceVersion(1, 2, 8, 0),
+	makeConformanceVersion(1, 2, 7, 2),
 	makeConformanceVersion(1, 2, 7, 1),
 	makeConformanceVersion(1, 2, 7, 0),
 	makeConformanceVersion(1, 2, 6, 2),

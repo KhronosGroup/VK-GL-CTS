@@ -51,5 +51,22 @@ tcu::TestCaseGroup*	createCombinedOperationsGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+tcu::TestCaseGroup*	createCrashTestGroup (tcu::TestContext& testCtx)
+{
+	static const std::string										kGroupName				= "crash_test";
+	static const std::vector<std::pair<std::string, std::string>>	crashTests	=
+	{
+		{ "divbyzero_frag",		"Fragment shader division by zero tests"		},
+		{ "divbyzero_comp",		"Compute shader division by zero tests"			},
+	};
+
+	de::MovePtr<tcu::TestCaseGroup> group{new tcu::TestCaseGroup{testCtx, kGroupName.c_str(), "Crash test group"}};
+	for (const auto& test : crashTests)
+	{
+		group->addChild(createAmberTestCase(testCtx, test.first.c_str(), test.second.c_str(), kGroupName.c_str(), test.first + ".amber"));
+	}
+	return group.release();
+}
+
 } // cts_amber
 } // vkt

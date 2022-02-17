@@ -78,7 +78,9 @@ public:
 	virtual void						checkSupport			(Context& context) const;
 	virtual TestInstance*				createInstance			(Context& context) const;
 	static bool							isRestartIndex			(VkIndexType indexType, deUint32 indexValue);
+#ifndef CTS_USES_VULKANSC
 	static deUint32						getRestartIndex			(VkIndexType indexType);
+#endif // CTS_USES_VULKANSC
 
 protected:
 	virtual void						createBufferData		(VkPrimitiveTopology		topology,
@@ -358,6 +360,7 @@ bool InputAssemblyTest::isRestartIndex (VkIndexType indexType, deUint32 indexVal
 		return indexValue == s_restartIndex32;
 }
 
+#ifndef CTS_USES_VULKANSC
 deUint32 InputAssemblyTest::getRestartIndex (VkIndexType indexType)
 {
 	if (indexType == VK_INDEX_TYPE_UINT16)
@@ -367,7 +370,7 @@ deUint32 InputAssemblyTest::getRestartIndex (VkIndexType indexType)
 	else
 		return InputAssemblyTest::s_restartIndex32;
 }
-
+#endif // CTS_USES_VULKANSC
 
 // PrimitiveTopologyTest
 

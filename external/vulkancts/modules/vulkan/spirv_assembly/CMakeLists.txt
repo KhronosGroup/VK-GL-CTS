@@ -1,6 +1,9 @@
 # SPIR-V assembly tests
 
-include_directories(..)
+include_directories(
+	..
+	${DEQP_INL_DIR}
+)
 
 set(DEQP_VK_VKSC_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsm8bitStorageTests.cpp
@@ -75,6 +78,8 @@ set(DEQP_VK_VKSC_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmFloatControlsExtensionlessTests.hpp
 	vktSpvAsmTrinaryMinMaxTests.cpp
 	vktSpvAsmTrinaryMinMaxTests.hpp
+	vktSpvAsmPhysicalStorageBufferPointerTests.cpp
+	vktSpvAsmPhysicalStorageBufferPointerTests.hpp
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_SRCS

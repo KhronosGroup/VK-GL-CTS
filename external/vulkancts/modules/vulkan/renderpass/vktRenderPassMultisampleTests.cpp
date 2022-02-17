@@ -536,7 +536,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 									 VkFormat				srcFormat,
 									 VkFormat				dstFormat,
 									 deUint32				sampleCount,
-									 RenderPassType			renderPassType,
+									 RenderingType			renderingType,
 									 TestSeparateUsage		separateStencilUsage)
 {
 	const VkSampleCountFlagBits		samples						(sampleCountBitFromomSampleCount(sampleCount));
@@ -567,7 +567,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 		DE_NULL,													//																||  const void*							pNext;
 		0u,															//  deUint32						attachment;					||  deUint32							attachment;
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,					//  VkImageLayout					layout;						||  VkImageLayout						layout;
-		(renderPassType == RENDERPASS_TYPE_RENDERPASS2)				//																||  VkImageAspectFlags					aspectMask;
+		(renderingType == RENDERING_TYPE_RENDERPASS2)				//																||  VkImageAspectFlags					aspectMask;
 			? inputAspect
 			: 0u
 	);
@@ -758,15 +758,15 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&		vkd,
 									 VkFormat					srcFormat,
 									 VkFormat					dstFormat,
 									 deUint32					sampleCount,
-									 const RenderPassType		renderPassType,
+									 const RenderingType		renderingType,
 									 const TestSeparateUsage	separateStencilUsage)
 {
-	switch (renderPassType)
+	switch (renderingType)
 	{
-		case RENDERPASS_TYPE_LEGACY:
-			return createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vkd, device, srcFormat, dstFormat, sampleCount, renderPassType, separateStencilUsage);
-		case RENDERPASS_TYPE_RENDERPASS2:
-			return createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vkd, device, srcFormat, dstFormat, sampleCount, renderPassType, separateStencilUsage);
+		case RENDERING_TYPE_RENDERPASS_LEGACY:
+			return createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vkd, device, srcFormat, dstFormat, sampleCount, renderingType, separateStencilUsage);
+		case RENDERING_TYPE_RENDERPASS2:
+			return createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vkd, device, srcFormat, dstFormat, sampleCount, renderingType, separateStencilUsage);
 		default:
 			TCU_THROW(InternalError, "Impossible");
 	}
@@ -1225,18 +1225,18 @@ struct TestConfig
 {
 				TestConfig		(VkFormat			format_,
 								 deUint32			sampleCount_,
-								 RenderPassType		renderPassType_,
+								 RenderingType		renderingType_,
 								 TestSeparateUsage	separateStencilUsage_ = (TestSeparateUsage)0u)
 		: format			(format_)
 		, sampleCount		(sampleCount_)
-		, renderPassType	(renderPassType_)
+		, renderingType		(renderingType_)
 		, separateStencilUsage(separateStencilUsage_)
 	{
 	}
 
 	VkFormat			format;
 	deUint32			sampleCount;
-	RenderPassType		renderPassType;
+	RenderingType		renderingType;
 	TestSeparateUsage	separateStencilUsage;
 };
 
@@ -1266,10 +1266,9 @@ VkFormat getDstFormat (VkFormat vkFormat, TestSeparateUsage separateStencilUsage
 		return vkFormat;
 }
 
-bool isExtensionSupported(Context& context, RenderPassType renderPassType, TestSeparateUsage separateStencilUsage)
+bool isExtensionSupported(Context& context, RenderingType renderingType, TestSeparateUsage separateStencilUsage)
 {
-
-	if (renderPassType == RENDERPASS_TYPE_RENDERPASS2)
+	if (renderingType == RENDERING_TYPE_RENDERPASS2)
 		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
 	if (separateStencilUsage)
@@ -1295,7 +1294,7 @@ public:
 
 private:
 	const bool										m_extensionSupported;
-	const RenderPassType							m_renderPassType;
+	const RenderingType								m_renderingType;
 	const TestSeparateUsage							m_separateStencilUsage;
 
 	const VkFormat									m_srcFormat;
@@ -1341,8 +1340,8 @@ private:
 
 MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& context, TestConfig config)
 	: TestInstance					(context)
-	, m_extensionSupported			(isExtensionSupported(context, config.renderPassType, config.separateStencilUsage))
-	, m_renderPassType				(config.renderPassType)
+	, m_extensionSupported			(isExtensionSupported(context, config.renderingType, config.separateStencilUsage))
+	, m_renderingType				(config.renderingType)
 	, m_separateStencilUsage		(config.separateStencilUsage)
 	, m_srcFormat					(config.format)
 	, m_dstFormat					(getDstFormat(config.format, config.separateStencilUsage))
@@ -1369,7 +1368,7 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& c
 	, m_dstBuffers					(createBuffers(context.getDeviceInterface(), context.getDevice(), m_dstFormat, m_sampleCount, m_width, m_height))
 	, m_dstBufferMemory				(createBufferMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), m_dstBuffers))
 
-	, m_renderPass					(createRenderPass(context.getDeviceInterface(), context.getDevice(), m_srcFormat, m_dstFormat, m_sampleCount, config.renderPassType, m_separateStencilUsage))
+	, m_renderPass					(createRenderPass(context.getDeviceInterface(), context.getDevice(), m_srcFormat, m_dstFormat, m_sampleCount, config.renderingType, m_separateStencilUsage))
 	, m_framebuffer					(createFramebuffer(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_srcImageView, m_dstMultisampleImageViews, m_dstSinglesampleImageViews, m_width, m_height))
 
 	, m_renderPipelineLayout		(createRenderPipelineLayout(context.getDeviceInterface(), context.getDevice()))
@@ -1390,11 +1389,11 @@ MultisampleRenderPassTestInstance::~MultisampleRenderPassTestInstance (void)
 
 tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 {
-	switch (m_renderPassType)
+	switch (m_renderingType)
 	{
-		case RENDERPASS_TYPE_LEGACY:
+		case RENDERING_TYPE_RENDERPASS_LEGACY:
 			return iterateInternal<RenderpassSubpass1>();
-		case RENDERPASS_TYPE_RENDERPASS2:
+		case RENDERING_TYPE_RENDERPASS2:
 			return iterateInternal<RenderpassSubpass2>();
 		default:
 			TCU_THROW(InternalError, "Impossible");
@@ -2109,7 +2108,7 @@ std::string formatToName (VkFormat format)
 	return de::toLower(formatStr.substr(prefix.length()));
 }
 
-void initTests (tcu::TestCaseGroup* group, RenderPassType renderPassType)
+void initTests (tcu::TestCaseGroup* group, RenderingType renderingType)
 {
 	static const VkFormat	formats[]	=
 	{
@@ -2190,7 +2189,7 @@ void initTests (tcu::TestCaseGroup* group, RenderPassType renderPassType)
 		for (size_t sampleCountNdx = 0; sampleCountNdx < DE_LENGTH_OF_ARRAY(sampleCounts); sampleCountNdx++)
 		{
 			const deUint32		sampleCount	(sampleCounts[sampleCountNdx]);
-			const TestConfig	testConfig	(format, sampleCount, renderPassType);
+			const TestConfig	testConfig	(format, sampleCount, renderingType);
 			const std::string	testName	("samples_" + de::toString(sampleCount));
 
 			formatGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
@@ -2200,10 +2199,10 @@ void initTests (tcu::TestCaseGroup* group, RenderPassType renderPassType)
 			{
 				de::MovePtr<tcu::TestCaseGroup>	sampleGroup	(new tcu::TestCaseGroup(testCtx, testName.c_str(), testName.c_str()));
 				{
-					const TestConfig	separateUsageDepthTestConfig	(format, sampleCount, renderPassType, TEST_DEPTH);
+					const TestConfig	separateUsageDepthTestConfig	(format, sampleCount, renderingType, TEST_DEPTH);
 					sampleGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "test_depth", "depth with input attachment bit", separateUsageDepthTestConfig));
 
-					const TestConfig	separateUsageStencilTestConfig	(format, sampleCount, renderPassType, TEST_STENCIL);
+					const TestConfig	separateUsageStencilTestConfig	(format, sampleCount, renderingType, TEST_STENCIL);
 					sampleGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "test_stencil", "stencil with input attachment bit", separateUsageStencilTestConfig));
 				}
 
@@ -2222,12 +2221,12 @@ void initTests (tcu::TestCaseGroup* group, RenderPassType renderPassType)
 
 tcu::TestCaseGroup* createRenderPassMultisampleTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "multisample", "Multisample render pass tests", initTests, RENDERPASS_TYPE_LEGACY);
+	return createTestGroup(testCtx, "multisample", "Multisample render pass tests", initTests, RENDERING_TYPE_RENDERPASS_LEGACY);
 }
 
 tcu::TestCaseGroup* createRenderPass2MultisampleTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "multisample", "Multisample render pass tests", initTests, RENDERPASS_TYPE_RENDERPASS2);
+	return createTestGroup(testCtx, "multisample", "Multisample render pass tests", initTests, RENDERING_TYPE_RENDERPASS2);
 }
 
 } // vkt

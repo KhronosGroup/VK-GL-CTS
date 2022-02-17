@@ -4,6 +4,7 @@ include_directories(
 	..
 	../shaderexecutor
 	../util
+	${DEQP_INL_DIR}
 	)
 
 set(DEQP_VK_YCBCR_SRCS

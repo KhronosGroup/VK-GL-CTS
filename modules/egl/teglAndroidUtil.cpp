@@ -48,10 +48,10 @@ using namespace eglw;
 
 #if (DE_OS != DE_OS_ANDROID)
 
-MovePtr<ImageSource> createAndroidNativeImageSource	(GLenum format, deUint32 numLayers)
+MovePtr<ImageSource> createAndroidNativeImageSource	(GLenum format, deUint32 numLayers, bool isYUV)
 {
 	DE_UNREF(numLayers);
-	return createUnsupportedImageSource("Not Android platform", format);
+	return createUnsupportedImageSource("Not Android platform", format, isYUV);
 }
 
 #else // DE_OS == DE_OS_ANDROID
@@ -60,12 +60,16 @@ MovePtr<ImageSource> createAndroidNativeImageSource	(GLenum format, deUint32 num
 #	define BUILT_WITH_ANDROID_HARDWARE_BUFFER 1
 #endif
 
+#if defined(__ANDROID_API_P__) && (DE_ANDROID_API >= __ANDROID_API_P__)
+#	define BUILT_WITH_ANDROID_P_HARDWARE_BUFFER 1
+#endif
+
 #if !defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
 
-MovePtr<ImageSource> createAndroidNativeImageSource	(GLenum format, deUint32 numLayers)
+MovePtr<ImageSource> createAndroidNativeImageSource	(GLenum format, deUint32 numLayers, bool isYUV)
 {
 	DE_UNREF(numLayers);
-	return createUnsupportedImageSource("AHB API not supported", format);
+	return createUnsupportedImageSource("AHB API not supported", format, isYUV);
 }
 
 #else // defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
@@ -76,6 +80,8 @@ namespace
 #include <sys/system_properties.h>
 #include <android/hardware_buffer.h>
 #include "deDynamicLibrary.hpp"
+
+const deUint32 AHB_FORMAT_Y8Cb8Cr8_420 = 0x23;
 
 deInt32 androidGetSdkVersion (void)
 {
@@ -107,7 +113,7 @@ struct AhbFunctions
 
 AhbFunctions ahbFunctions;
 
-bool ahbFunctionsLoaded (AhbFunctions* pAhbFunctions)
+bool ahbFunctionsLoaded (AhbFunctions* pAhbFunctions, deInt32 sdkVersion)
 {
 	static bool ahbApiLoaded = false;
 	if (ahbApiLoaded ||
@@ -115,7 +121,7 @@ bool ahbFunctionsLoaded (AhbFunctions* pAhbFunctions)
 			 (pAhbFunctions->describe != DE_NULL) &&
 			 (pAhbFunctions->acquire  != DE_NULL) &&
 			 (pAhbFunctions->release  != DE_NULL) &&
-			 (pAhbFunctions->isSupported  != DE_NULL)))
+			 (pAhbFunctions->isSupported != DE_NULL || sdkVersion < 29)))
 	{
 		ahbApiLoaded = true;
 		return true;
@@ -123,24 +129,27 @@ bool ahbFunctionsLoaded (AhbFunctions* pAhbFunctions)
 	return false;
 }
 
-bool loadAhbDynamicApis (void)
+bool loadAhbDynamicApis (deInt32 sdkVersion)
 {
-	if (!ahbFunctionsLoaded(&ahbFunctions))
+	if (!ahbFunctionsLoaded(&ahbFunctions, sdkVersion))
 	{
 		static de::DynamicLibrary libnativewindow("libnativewindow.so");
 		ahbFunctions.allocate = reinterpret_cast<pfnAHardwareBuffer_allocate>(libnativewindow.getFunction("AHardwareBuffer_allocate"));
 		ahbFunctions.describe = reinterpret_cast<pfnAHardwareBuffer_describe>(libnativewindow.getFunction("AHardwareBuffer_describe"));
 		ahbFunctions.acquire  = reinterpret_cast<pfnAHardwareBuffer_acquire>(libnativewindow.getFunction("AHardwareBuffer_acquire"));
 		ahbFunctions.release  = reinterpret_cast<pfnAHardwareBuffer_release>(libnativewindow.getFunction("AHardwareBuffer_release"));
-		ahbFunctions.isSupported  = reinterpret_cast<pfnAHardwareBuffer_isSupported>(libnativewindow.getFunction("AHardwareBuffer_isSupported"));
+		if (sdkVersion >= 29)
+			ahbFunctions.isSupported = reinterpret_cast<pfnAHardwareBuffer_isSupported>(libnativewindow.getFunction("AHardwareBuffer_isSupported"));
+		else
+			ahbFunctions.isSupported = DE_NULL;
 
-		return ahbFunctionsLoaded(&ahbFunctions);
+		return ahbFunctionsLoaded(&ahbFunctions, sdkVersion);
 	}
 
 	return true;
 }
 
-AHardwareBuffer_Format getPixelFormat (GLenum format)
+deUint32 getPixelFormat (GLenum format)
 {
 	switch (format)
 	{
@@ -163,11 +172,11 @@ AHardwareBuffer_Format getPixelFormat (GLenum format)
 class AndroidNativeClientBuffer : public ClientBuffer
 {
 public:
-							AndroidNativeClientBuffer	(const Library& egl, GLenum format, deUint32 numLayers);
-							~AndroidNativeClientBuffer	(void);
-	EGLClientBuffer			get							(void) const;
-	void					lock						(void** data);
-	void					unlock						(void);
+						AndroidNativeClientBuffer	(const Library& egl, GLenum format, deUint32 numLayers, bool isYUV);
+						~AndroidNativeClientBuffer	(void);
+	EGLClientBuffer		get							(void) const;
+	void				lock						(void** data);
+	void				unlock						(void);
 	AHardwareBuffer_Desc	describe					(void);
 
 private:
@@ -175,15 +184,20 @@ private:
 	AHardwareBuffer*		m_hardwareBuffer;
 };
 
-AndroidNativeClientBuffer::AndroidNativeClientBuffer (const Library& egl, GLenum format, deUint32 numLayers)
+AndroidNativeClientBuffer::AndroidNativeClientBuffer (const Library& egl, GLenum format, deUint32 numLayers, bool isYUV)
 	: m_egl(egl)
 {
 	deInt32 sdkVersion = androidGetSdkVersion();
 
-    if (sdkVersion < __ANDROID_API_Q__)
-        TCU_THROW(NotSupportedError, "Android API version 29 or higher required.");
+#if defined(BUILT_WITH_ANDROID_P_HARDWARE_BUFFER)
+	// When testing AHB on Android-P and newer the CTS must be compiled against API28 or newer.
+	DE_TEST_ASSERT(sdkVersion >= 28); /*__ANDROID_API_P__ */
+#else
+	// When testing AHB on Android-O and newer the CTS must be compiled against API26 or newer.
+	DE_TEST_ASSERT(sdkVersion >= 26); /* __ANDROID_API_O__ */
+#endif // !defined(BUILT_WITH_ANDROID_P_HARDWARE_BUFFER)
 
-	if (!loadAhbDynamicApis())
+	if (!loadAhbDynamicApis(sdkVersion))
 	{
 		// Couldn't load Android AHB system APIs.
 		DE_TEST_ASSERT(false);
@@ -193,20 +207,29 @@ AndroidNativeClientBuffer::AndroidNativeClientBuffer (const Library& egl, GLenum
 		64u,
 		64u,
 		numLayers,
-		getPixelFormat(format),
+		isYUV ? AHB_FORMAT_Y8Cb8Cr8_420 : getPixelFormat(format),
 		AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN	|
 		AHARDWAREBUFFER_USAGE_CPU_WRITE_RARELY	|
 		AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE	|
-		AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER,
+		AHARDWAREBUFFER_USAGE_GPU_COLOR_OUTPUT,
 		0u,		// Stride in pixels, ignored for AHardwareBuffer_allocate()
 		0u,		// Initialize to zero, reserved for future use
 		0u		// Initialize to zero, reserved for future use
 	};
 
-	if (!ahbFunctions.isSupported(&hbufferdesc))
-		TCU_THROW(NotSupportedError, "Texture format unsupported");
+	// If we have AHardwareBuffer_isSupported use that before trying the allocation.
+	if (ahbFunctions.isSupported != DE_NULL)
+	{
+		if (!ahbFunctions.isSupported(&hbufferdesc))
+			TCU_THROW(NotSupportedError, "Texture format unsupported");
+	}
 
-	ahbFunctions.allocate(&hbufferdesc, &m_hardwareBuffer);
+	if (ahbFunctions.allocate(&hbufferdesc, &m_hardwareBuffer) != 0)
+	{
+		// Throw unsupported instead of failing the test as the texture format or the number
+		// of layers might be unsupported.
+		TCU_THROW(NotSupportedError, "AHB allocation failed");
+	}
 }
 
 AndroidNativeClientBuffer::~AndroidNativeClientBuffer (void)
@@ -246,16 +269,17 @@ AHardwareBuffer_Desc AndroidNativeClientBuffer::describe (void)
 class AndroidNativeImageSource : public ImageSource
 {
 public:
-							AndroidNativeImageSource	(GLenum format, deUint32 numLayers) : m_format(format), m_numLayers(numLayers) {}
+							AndroidNativeImageSource	(GLenum format, deUint32 numLayers, bool isYUV) : m_format(format), m_numLayers(numLayers), m_isY8Cb8Cr8_420(isYUV) {}
 							~AndroidNativeImageSource	(void);
 	MovePtr<ClientBuffer>	createBuffer				(const Library& egl, const glw::Functions&, Texture2D*) const;
 	string					getRequiredExtension		(void) const { return "EGL_ANDROID_get_native_client_buffer"; }
 	EGLImageKHR				createImage					(const Library& egl, EGLDisplay dpy, EGLContext ctx, EGLClientBuffer clientBuffer) const;
 	GLenum					getEffectiveFormat			(void) const { return m_format; }
-
+	bool					isYUVFormatImage			(void) const { return m_isY8Cb8Cr8_420;	}
 protected:
 	GLenum					m_format;
 	deUint32				m_numLayers;
+	bool					m_isY8Cb8Cr8_420;
 };
 
 AndroidNativeImageSource::~AndroidNativeImageSource (void)
@@ -264,7 +288,7 @@ AndroidNativeImageSource::~AndroidNativeImageSource (void)
 
 MovePtr<ClientBuffer> AndroidNativeImageSource::createBuffer (const Library& egl, const glw::Functions&, Texture2D* ref) const
 {
-	MovePtr<AndroidNativeClientBuffer> buffer (new AndroidNativeClientBuffer(egl, m_format, m_numLayers));
+	MovePtr<AndroidNativeClientBuffer> buffer (new AndroidNativeClientBuffer(egl, m_format, m_numLayers, m_isY8Cb8Cr8_420));
 
 	if (ref != DE_NULL)
 	{
@@ -272,6 +296,7 @@ MovePtr<ClientBuffer> AndroidNativeImageSource::createBuffer (const Library& egl
 		void*				bufferData	= DE_NULL;
 
 		*ref = Texture2D(texFormat, 64, 64);
+		ref->m_yuvTextureUsed = m_isY8Cb8Cr8_420;
 		ref->allocLevel(0);
 		tcu::fillWithComponentGradients(ref->getLevel(0),
 										tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
@@ -279,7 +304,9 @@ MovePtr<ClientBuffer> AndroidNativeImageSource::createBuffer (const Library& egl
 
 		// AHB doesn't allow locking a layered image. In that case the data
 		// will be initialized later using OpenGL API.
-		if (m_numLayers == 1u)
+		// YUV format texture will be initialized by glClear.
+
+		if (m_numLayers == 1u && !m_isY8Cb8Cr8_420)
 		{
 			buffer->lock(&bufferData);
 			{
@@ -307,15 +334,15 @@ EGLImageKHR AndroidNativeImageSource::createImage (const Library& egl, EGLDispla
 
 } // anonymous
 
-MovePtr<ImageSource> createAndroidNativeImageSource	(GLenum format, deUint32 numLayers)
+MovePtr<ImageSource> createAndroidNativeImageSource	(GLenum format, deUint32 numLayers, bool isYUV)
 {
 	try
 	{
-		return MovePtr<ImageSource>(new AndroidNativeImageSource(format, numLayers));
+		return MovePtr<ImageSource>(new AndroidNativeImageSource(format, numLayers, isYUV));
 	}
 	catch (const std::runtime_error& exc)
 	{
-		return createUnsupportedImageSource(string("Android native buffers unsupported: ") + exc.what(), format);
+		return createUnsupportedImageSource(string("Android native buffers unsupported: ") + exc.what(), format, isYUV);
 	}
 }
 

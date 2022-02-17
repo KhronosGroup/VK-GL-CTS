@@ -86,7 +86,7 @@ static void getCompressedTexSubImage2DFormat(const vector<deInt32>& supported, v
 		0x8C03	// GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG
 	};
 
-	for (int i = 0; i < (int)supported.size(); i++)
+	for (int i = 0; i < DE_LENGTH_OF_ARRAY(compressedTexSubImage2DFormats); i++)
 	{
 		vector<deInt32>::const_iterator fmt = std::find(supported.begin(), supported.end(), compressedTexSubImage2DFormats[i]);
 		if (fmt != supported.end())

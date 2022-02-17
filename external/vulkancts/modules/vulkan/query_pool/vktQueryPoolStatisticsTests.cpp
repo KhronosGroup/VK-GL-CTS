@@ -83,6 +83,12 @@ enum CopyType
 	COPY_TYPE_CMD,
 };
 
+enum StrideType
+{
+	STRIDE_TYPE_VALID = 0,
+	STRIDE_TYPE_ZERO,
+};
+
 std::string inputTypeToGLString (const VkPrimitiveTopology& inputType)
 {
 	switch (inputType)
@@ -294,9 +300,10 @@ struct GenericParameters
 	CopyType	copyType;
 	deBool		query64Bits;
 	deBool		dstOffset;
+	StrideType	strideType;
 
-	GenericParameters (ResetType resetType_, CopyType copyType_, deBool query64Bits_, deBool dstOffset_)
-		: resetType{resetType_}, copyType{copyType_}, query64Bits{query64Bits_}, dstOffset{dstOffset_}
+	GenericParameters (ResetType resetType_, CopyType copyType_, deBool query64Bits_, deBool dstOffset_, StrideType strideType_)
+		: resetType{resetType_}, copyType{copyType_}, query64Bits{query64Bits_}, dstOffset{dstOffset_}, strideType{strideType_}
 		{}
 
 	VkQueryResultFlags querySizeFlags () const
@@ -492,8 +499,8 @@ class ComputeInvocationsTestInstance : public StatisticQueryTestInstance
 public:
 	struct ParametersCompute : public GenericParameters
 	{
-		ParametersCompute (const tcu::UVec3& localSize_, const tcu::UVec3& groupSize_, const std::string& shaderName_, ResetType resetType_, CopyType copyType_, deBool query64Bits_, bool dstOffset_)
-			: GenericParameters{resetType_, copyType_, query64Bits_, dstOffset_}
+		ParametersCompute (const tcu::UVec3& localSize_, const tcu::UVec3& groupSize_, const std::string& shaderName_, ResetType resetType_, CopyType copyType_, deBool query64Bits_, bool dstOffset_, StrideType strideType_)
+			: GenericParameters{resetType_, copyType_, query64Bits_, dstOffset_, strideType_}
 			, localSize(localSize_)
 			, groupSize(groupSize_)
 			, shaderName(shaderName_)
@@ -660,7 +667,12 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest (const VkCommandPool
 				}
 
 				VkDeviceSize dstOffsetQuery = (m_parameters[0].dstOffset) ? stride : 0;
-				vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPool, 0, 1u, m_resetBuffer->object(), dstOffsetQuery, stride, flags);
+				VkDeviceSize copyStride = stride;
+
+				if (m_parameters[0].strideType == STRIDE_TYPE_ZERO)
+					copyStride = 0u;
+
+				vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPool, 0, 1u, m_resetBuffer->object(), dstOffsetQuery, copyStride, flags);
 
 				const VkBufferMemoryBarrier barrier =
 				{
@@ -884,7 +896,11 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest (const VkCo
 			}
 
 			VkDeviceSize dstOffsetQuery = (m_parameters[0].dstOffset) ? stride : 0;
-			vk.cmdCopyQueryPoolResults(*secondaryCmdBuffer, *queryPool, 0, 1u, m_resetBuffer->object(), dstOffsetQuery, stride, flags);
+			VkDeviceSize copyStride = stride;
+			if (m_parameters[0].strideType == STRIDE_TYPE_ZERO)
+				copyStride = 0u;
+
+			vk.cmdCopyQueryPoolResults(*secondaryCmdBuffer, *queryPool, 0, 1u, m_resetBuffer->object(), dstOffsetQuery, copyStride, flags);
 
 			const VkBufferMemoryBarrier barrier =
 			{
@@ -1150,7 +1166,11 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest (c
 			}
 
 			VkDeviceSize dstOffsetQuery = (m_parameters[0].dstOffset) ? stride : 0;
-			vk.cmdCopyQueryPoolResults(*primaryCmdBuffer, *queryPool, 0, 1u, m_resetBuffer->object(), dstOffsetQuery, stride, flags);
+			VkDeviceSize copyStride = stride;
+			if (m_parameters[0].strideType == STRIDE_TYPE_ZERO)
+				copyStride = 0u;
+
+			vk.cmdCopyQueryPoolResults(*primaryCmdBuffer, *queryPool, 0, 1u, m_resetBuffer->object(), dstOffsetQuery, copyStride, flags);
 
 			const VkBufferMemoryBarrier barrier =
 			{
@@ -1192,8 +1212,8 @@ public:
 
 	struct ParametersGraphic : public GenericParameters
 	{
-		ParametersGraphic (const VkQueryPipelineStatisticFlags queryStatisticFlags_, const VkPrimitiveTopology primitiveTopology_, const ResetType resetType_, const CopyType copyType_, const deBool query64Bits_, const deBool vertexOnlyPipe_ = DE_FALSE, const deBool dstOffset_ = DE_FALSE)
-			: GenericParameters		{resetType_, copyType_, query64Bits_, dstOffset_}
+		ParametersGraphic (const VkQueryPipelineStatisticFlags queryStatisticFlags_, const VkPrimitiveTopology primitiveTopology_, const ResetType resetType_, const CopyType copyType_, const deBool query64Bits_, const deBool vertexOnlyPipe_ = DE_FALSE, const deBool dstOffset_ = DE_FALSE, const StrideType strideType_ = STRIDE_TYPE_VALID)
+			: GenericParameters		{resetType_, copyType_, query64Bits_, dstOffset_, strideType_}
 			, queryStatisticFlags	(queryStatisticFlags_)
 			, primitiveTopology		(primitiveTopology_)
 			, vertexOnlyPipe		(vertexOnlyPipe_)
@@ -3075,7 +3095,7 @@ template<class Instance>
 class QueryPoolStatisticsTest : public TestCase
 {
 public:
-	QueryPoolStatisticsTest (tcu::TestContext &context, const std::string& name, const std::string& description, const ResetType resetType, const CopyType copyType, deBool query64Bits, deBool dstOffset = DE_FALSE)
+	QueryPoolStatisticsTest (tcu::TestContext &context, const std::string& name, const std::string& description, const ResetType resetType, const CopyType copyType, deBool query64Bits, deBool dstOffset = DE_FALSE, const StrideType strideType = STRIDE_TYPE_VALID)
 		: TestCase			(context, name.c_str(), description.c_str())
 	{
 		const tcu::UVec3	localSize[]		=
@@ -3105,7 +3125,8 @@ public:
 				resetType,
 				copyType,
 				query64Bits,
-				dstOffset
+				dstOffset,
+				strideType
 			);
 			m_parameters.push_back(parameters);
 		}
@@ -3406,8 +3427,8 @@ public:
 
 	struct ParametersGraphic : public GenericParameters
 	{
-		ParametersGraphic (const VkQueryPipelineStatisticFlags queryStatisticFlags_, const VkQueryResultFlags queryFlags_, const deUint32 queryCount_, const deBool vertexOnlyPipe_, const CopyType copyType_, const deUint32 dstOffset_)
-			: GenericParameters		{ RESET_TYPE_NORMAL, copyType_, (queryFlags_ & VK_QUERY_RESULT_64_BIT) != 0u, dstOffset_ != 0u}
+		ParametersGraphic (const VkQueryPipelineStatisticFlags queryStatisticFlags_, const VkQueryResultFlags queryFlags_, const deUint32 queryCount_, const deBool vertexOnlyPipe_, const CopyType copyType_, const deUint32 dstOffset_, const StrideType strideType_)
+			: GenericParameters		{ RESET_TYPE_NORMAL, copyType_, (queryFlags_ & VK_QUERY_RESULT_64_BIT) != 0u, dstOffset_ != 0u, strideType_ }
 			, queryStatisticFlags	(queryStatisticFlags_)
 			, vertexOnlyPipe		(vertexOnlyPipe_)
 			, queryFlags			(queryFlags_)
@@ -3703,7 +3724,11 @@ tcu::TestStatus VertexShaderMultipleQueryTestInstance::executeTest (void)
 
 		if (m_parametersGraphic.copyType == COPY_TYPE_CMD)
 		{
-			vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPool, 0, m_parametersGraphic.queryCount, m_queryBuffer->object(), m_parametersGraphic.dstOffset, NUM_QUERY_STATISTICS * sizeof(deUint64), m_parametersGraphic.queryFlags);
+			VkDeviceSize copyStride = NUM_QUERY_STATISTICS * sizeof(deUint64);
+			if (m_parametersGraphic.queryCount == 1u && m_parametersGraphic.strideType == STRIDE_TYPE_ZERO)
+				copyStride = 0u;
+
+			vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPool, 0, m_parametersGraphic.queryCount, m_queryBuffer->object(), m_parametersGraphic.dstOffset, copyStride, m_parametersGraphic.queryFlags);
 
 			const VkDeviceSize bufferSize = NUM_QUERY_STATISTICS * sizeof(deUint64) * m_parametersGraphic.queryCount;
 			const VkBufferMemoryBarrier barrier =
@@ -4021,6 +4046,9 @@ void QueryPoolStatisticsTests::init (void)
 	CopyType copyType[]															= { COPY_TYPE_GET,	COPY_TYPE_CMD };
 	std::string copyTypeStr[]													= { "",			"cmdcopyquerypoolresults_" };
 
+	StrideType	strideType[]													= { STRIDE_TYPE_VALID, STRIDE_TYPE_ZERO };
+	std::string	strideTypeStr[]													= { "",			"stride_zero_" };
+
 	for (deUint32 copyTypeIdx = 0; copyTypeIdx < DE_LENGTH_OF_ARRAY(copyType); copyTypeIdx++)
 	{
 		for (deUint32 i = 0; i < 4; ++i)
@@ -4033,9 +4061,15 @@ void QueryPoolStatisticsTests::init (void)
 			if (copyType[copyTypeIdx] == COPY_TYPE_GET && dstOffset)
 				continue;
 
-			computeShaderInvocationsGroup->addChild(new QueryPoolStatisticsTest<ComputeInvocationsTestInstance>						(m_testCtx,	prefix + copyTypeStr[copyTypeIdx] + "primary",				"", RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, dstOffset));
-			computeShaderInvocationsGroup->addChild(new QueryPoolStatisticsTest<ComputeInvocationsSecondaryTestInstance>			(m_testCtx,	prefix + copyTypeStr[copyTypeIdx] + "secondary",			"", RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, dstOffset));
-			computeShaderInvocationsGroup->addChild(new QueryPoolStatisticsTest<ComputeInvocationsSecondaryInheritedTestInstance>	(m_testCtx,	prefix + copyTypeStr[copyTypeIdx] + "secondary_inherited",	"", RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, dstOffset));
+			for (deUint32 strideTypeIdx = 0; strideTypeIdx < DE_LENGTH_OF_ARRAY(strideType); strideTypeIdx++)
+			{
+				if (strideType[strideTypeIdx] == STRIDE_TYPE_ZERO && copyType[copyTypeIdx] != COPY_TYPE_CMD)
+					continue;
+
+				computeShaderInvocationsGroup->addChild(new QueryPoolStatisticsTest<ComputeInvocationsTestInstance>						(m_testCtx,	prefix + copyTypeStr[copyTypeIdx] + strideTypeStr[strideTypeIdx] + "primary",				"", RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, dstOffset, strideType[strideTypeIdx]));
+				computeShaderInvocationsGroup->addChild(new QueryPoolStatisticsTest<ComputeInvocationsSecondaryTestInstance>			(m_testCtx,	prefix + copyTypeStr[copyTypeIdx] + strideTypeStr[strideTypeIdx] + "secondary",			"", RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, dstOffset, strideType[strideTypeIdx]));
+				computeShaderInvocationsGroup->addChild(new QueryPoolStatisticsTest<ComputeInvocationsSecondaryInheritedTestInstance>	(m_testCtx,	prefix + copyTypeStr[copyTypeIdx] + strideTypeStr[strideTypeIdx] + "secondary_inherited",	"", RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, dstOffset, strideType[strideTypeIdx]));
+			}
 
 			computeShaderInvocationsGroupHostQueryReset->addChild(new QueryPoolStatisticsTest<ComputeInvocationsTestInstance>					(m_testCtx,	prefix + copyTypeStr[copyTypeIdx] + "primary",				"", RESET_TYPE_HOST, copyType[copyTypeIdx], query64Bits, dstOffset));
 			computeShaderInvocationsGroupHostQueryReset->addChild(new QueryPoolStatisticsTest<ComputeInvocationsSecondaryTestInstance>			(m_testCtx,	prefix + copyTypeStr[copyTypeIdx] + "secondary",			"", RESET_TYPE_HOST, copyType[copyTypeIdx], query64Bits, dstOffset));
@@ -4525,11 +4559,14 @@ void QueryPoolStatisticsTests::init (void)
     {
 		VkQueryResultFlags	partialFlags[]		=	{ 0u, VK_QUERY_RESULT_PARTIAL_BIT };
 		const char* const	partialFlagsStr[]	=	{ "", "_partial" };
-		VkQueryResultFlags	waitFlags[]		=	{ 0u, VK_QUERY_RESULT_WAIT_BIT };
-		const char* const	waitFlagsStr[]	=	{ "", "_wait" };
+		VkQueryResultFlags	waitFlags[]			=	{ 0u, VK_QUERY_RESULT_WAIT_BIT };
+		const char* const	waitFlagsStr[]		=	{ "", "_wait" };
 
-		const CopyType	copyTypes[]		=	{ COPY_TYPE_GET, COPY_TYPE_CMD, COPY_TYPE_CMD };
-		const char* const   copyTypesStr[]	=	{ "", "_cmdcopy", "_cmdcopy_dstoffset" };
+		const CopyType		copyTypes[]			=	{ COPY_TYPE_GET, COPY_TYPE_CMD, COPY_TYPE_CMD };
+		const char* const   copyTypesStr[]		=	{ "", "_cmdcopy", "_cmdcopy_dstoffset" };
+
+		const StrideType	strideTypes[]		=	{ STRIDE_TYPE_VALID, STRIDE_TYPE_ZERO };
+		const char* const   strideTypesStr[]	=	{ "", "_stride_zero" };
 
 		const VkQueryPipelineStatisticFlags statisticsFlags =
 			VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT |
@@ -4541,35 +4578,47 @@ void QueryPoolStatisticsTests::init (void)
 			{
 				for (deUint32 copyTypesIdx = 0u; copyTypesIdx < DE_LENGTH_OF_ARRAY(copyTypes); copyTypesIdx++)
 				{
-					deUint32 dstOffset = copyTypesIdx == 2u ? deUint32(NUM_QUERY_STATISTICS * sizeof(deUint64)) : 0u;
-					/* Avoid waiting infinite time for the queries, when one of them is not going to be issued in
-					 * the partial case.
-					 */
-					if ((deBool)(partialFlags[partialFlagsIdx] & VK_QUERY_RESULT_PARTIAL_BIT) &&
-						(deBool)(waitFlags[waitFlagsIdx] & VK_QUERY_RESULT_WAIT_BIT))
-						continue;
-
-					VkQueryResultFlags	queryFlags	= VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT | partialFlags[partialFlagsIdx] | waitFlags[waitFlagsIdx];
-					deUint32			queryCount	= partialFlagsIdx ? 2u : 1u;
+					for (deUint32 strideTypesIdx = 0u; strideTypesIdx < DE_LENGTH_OF_ARRAY(strideTypes); strideTypesIdx++)
 					{
-						std::ostringstream testName;
-						testName	<< "input_assembly_vertex_fragment"
-									<< partialFlagsStr[partialFlagsIdx]
-									<< waitFlagsStr[waitFlagsIdx]
-									<< copyTypesStr[copyTypesIdx];
-						GraphicBasicMultipleQueryTestInstance::ParametersGraphic param(statisticsFlags | VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT, queryFlags, queryCount, DE_FALSE, copyTypes[copyTypesIdx], dstOffset);
-						vertexShaderMultipleQueries->addChild(new QueryPoolGraphicMultipleQueryStatisticsTest<VertexShaderMultipleQueryTestInstance>(m_testCtx, testName.str().c_str(), "", param));
-					}
+						deUint32 dstOffset = copyTypesIdx == 2u ? deUint32(NUM_QUERY_STATISTICS * sizeof(deUint64)) : deUint32(0u);
+						/* Avoid waiting infinite time for the queries, when one of them is not going to be issued in
+						 * the partial case.
+						 */
+						if ((deBool)(partialFlags[partialFlagsIdx] & VK_QUERY_RESULT_PARTIAL_BIT) &&
+							(deBool)(waitFlags[waitFlagsIdx] & VK_QUERY_RESULT_WAIT_BIT))
+							continue;
 
-					{
-						// No fragment shader case
-						std::ostringstream testName;
-						testName	<< "input_assembly_vertex"
-									<< partialFlagsStr[partialFlagsIdx]
-									<< waitFlagsStr[waitFlagsIdx]
-									<< copyTypesStr[copyTypesIdx];
-						GraphicBasicMultipleQueryTestInstance::ParametersGraphic param(statisticsFlags | VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT, queryFlags, queryCount, DE_TRUE, copyTypes[copyTypesIdx], dstOffset);
-						vertexShaderMultipleQueries->addChild(new QueryPoolGraphicMultipleQueryStatisticsTest<VertexShaderMultipleQueryTestInstance>(m_testCtx, testName.str().c_str(), "", param));
+						// Skip stride bogus tests when there are more than one query count.
+						if (partialFlags[partialFlagsIdx] && strideTypes[strideTypesIdx] == STRIDE_TYPE_ZERO)
+							continue;
+
+						if (strideTypes[strideTypesIdx] == STRIDE_TYPE_ZERO && copyType[copyTypesIdx] != COPY_TYPE_CMD)
+							continue;
+
+						VkQueryResultFlags	queryFlags	= VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT | partialFlags[partialFlagsIdx] | waitFlags[waitFlagsIdx];
+						deUint32			queryCount	= partialFlagsIdx ? 2u : 1u;
+						{
+							std::ostringstream testName;
+							testName	<< "input_assembly_vertex_fragment"
+										<< partialFlagsStr[partialFlagsIdx]
+										<< waitFlagsStr[waitFlagsIdx]
+										<< copyTypesStr[copyTypesIdx]
+										<< strideTypesStr[strideTypesIdx];
+							GraphicBasicMultipleQueryTestInstance::ParametersGraphic param(statisticsFlags | VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT, queryFlags, queryCount, DE_FALSE, copyTypes[copyTypesIdx], dstOffset, strideType[strideTypesIdx]);
+							vertexShaderMultipleQueries->addChild(new QueryPoolGraphicMultipleQueryStatisticsTest<VertexShaderMultipleQueryTestInstance>(m_testCtx, testName.str().c_str(), "", param));
+						}
+
+						{
+							// No fragment shader case
+							std::ostringstream testName;
+							testName	<< "input_assembly_vertex"
+										<< partialFlagsStr[partialFlagsIdx]
+										<< waitFlagsStr[waitFlagsIdx]
+										<< copyTypesStr[copyTypesIdx]
+										<< strideTypesStr[strideTypesIdx];
+							GraphicBasicMultipleQueryTestInstance::ParametersGraphic param(statisticsFlags | VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT, queryFlags, queryCount, DE_TRUE, copyTypes[copyTypesIdx], dstOffset, strideType[strideTypesIdx]);
+							vertexShaderMultipleQueries->addChild(new QueryPoolGraphicMultipleQueryStatisticsTest<VertexShaderMultipleQueryTestInstance>(m_testCtx, testName.str().c_str(), "", param));
+						}
 					}
 				}
 			}

@@ -83,9 +83,9 @@ enum
 class TextureWrapCase : public tcu::TestCase
 {
 public:
-									TextureWrapCase			(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, const char* name, const char* description, deUint32 format, deUint32 dataType, deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter, int width, int height);
-									TextureWrapCase			(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, const char* name, const char* description, deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter, const std::vector<std::string>& filenames);
-									TextureWrapCase			(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, const char* name, const char* description, CompressedTexFormat compressedFormat, deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter, int width, int height);
+									TextureWrapCase			(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, const char* name, const char* description, deUint32 format, deUint32 dataType, deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter, int width, int height, bool enableRelaxedRef = false);
+									TextureWrapCase			(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, const char* name, const char* description, deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter, const std::vector<std::string>& filenames, bool enableRelaxedRef = false);
+									TextureWrapCase			(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, const char* name, const char* description, CompressedTexFormat compressedFormat, deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter, int width, int height, bool enableRelaxedRef = false);
 									~TextureWrapCase		(void);
 
 	void							init					(void);
@@ -125,9 +125,11 @@ private:
 
 	glu::Texture2D*					m_texture;
 	TextureRenderer					m_renderer;
+
+	bool							m_enableRelaxedRef;
 };
 
-TextureWrapCase::TextureWrapCase (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, const char* name, const char* description, deUint32 format, deUint32 dataType, deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter, int width, int height)
+TextureWrapCase::TextureWrapCase (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, const char* name, const char* description, deUint32 format, deUint32 dataType, deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter, int width, int height, bool enableRelaxedRef)
 	: TestCase				(testCtx, name, description)
 	, m_renderCtx			(renderCtx)
 	, m_renderCtxInfo		(ctxInfo)
@@ -143,10 +145,11 @@ TextureWrapCase::TextureWrapCase (tcu::TestContext& testCtx, glu::RenderContext&
 	, m_caseNdx				(0)
 	, m_texture				(DE_NULL)
 	, m_renderer			(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_MEDIUMP)
+	, m_enableRelaxedRef	(enableRelaxedRef)
 {
 }
 
-TextureWrapCase::TextureWrapCase (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, const char* name, const char* description, deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter, const std::vector<std::string>& filenames)
+TextureWrapCase::TextureWrapCase (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, const char* name, const char* description, deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter, const std::vector<std::string>& filenames, bool enableRelaxedRef)
 	: TestCase				(testCtx, name, description)
 	, m_renderCtx			(renderCtx)
 	, m_renderCtxInfo		(ctxInfo)
@@ -163,10 +166,11 @@ TextureWrapCase::TextureWrapCase (tcu::TestContext& testCtx, glu::RenderContext&
 	, m_caseNdx				(0)
 	, m_texture				(DE_NULL)
 	, m_renderer			(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_MEDIUMP)
+	, m_enableRelaxedRef	(enableRelaxedRef)
 {
 }
 
-TextureWrapCase::TextureWrapCase (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, const char* name, const char* description, CompressedTexFormat compressedFormat, deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter, int width, int height)
+TextureWrapCase::TextureWrapCase (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, const char* name, const char* description, CompressedTexFormat compressedFormat, deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter, int width, int height, bool enableRelaxedRef)
 	: TestCase				(testCtx, name, description)
 	, m_renderCtx			(renderCtx)
 	, m_renderCtxInfo		(ctxInfo)
@@ -182,6 +186,7 @@ TextureWrapCase::TextureWrapCase (tcu::TestContext& testCtx, glu::RenderContext&
 	, m_caseNdx				(0)
 	, m_texture				(DE_NULL)
 	, m_renderer			(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_MEDIUMP)
+	, m_enableRelaxedRef	(enableRelaxedRef)
 {
 }
 
@@ -355,8 +360,17 @@ TextureWrapCase::IterateResult TextureWrapCase::iterate (void)
 
 		log << TestLog::Message << "Note: lookup coordinates: bottom-left " << m_cases[m_caseNdx].bottomLeft << ", top-right " << m_cases[m_caseNdx].topRight << TestLog::EndMessage;
 
-		const bool isOk = verifyTextureResult(m_testCtx, renderedFrame.getAccess(), m_texture->getRefTexture(),
-											  &texCoord[0], refParams, lookupPrecision, lodPrecision, pixelFormat);
+		bool isOk = verifyTextureResult(m_testCtx, renderedFrame.getAccess(), m_texture->getRefTexture(),
+										&texCoord[0], refParams, lookupPrecision, lodPrecision, pixelFormat);
+
+		if ((isOk == false) &&
+			m_enableRelaxedRef &&
+			m_renderer.getTexCoordPrecision() != PRECISION_HIGHP)
+		{
+			refParams.float16TexCoord = true;
+			isOk |= verifyTextureResult(m_testCtx, renderedFrame.getAccess(), m_texture->getRefTexture(),
+										&texCoord[0], refParams, lookupPrecision, lodPrecision, pixelFormat);
+		}
 
 		if (!isOk)
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Image verification failed");
@@ -450,11 +464,17 @@ void TextureWrapTests::init (void)
 		FOR_EACH(filter,	filteringModes,
 			{
 				const string name = string("") + wrapModes[wrapS].name + "_" + wrapModes[wrapT].name + "_" + filteringModes[filter].name + "_pot";
+
+				bool enableRelaxedPrecisionRef = wrapModes[wrapS].mode == GL_REPEAT ||
+												 wrapModes[wrapT].mode == GL_REPEAT ||
+												 wrapModes[wrapS].mode == GL_MIRRORED_REPEAT ||
+												 wrapModes[wrapT].mode == GL_MIRRORED_REPEAT;
+
 				etc1Group->addChild(new TextureWrapCase(m_testCtx, m_context.getRenderContext(), m_context.getContextInfo(), name.c_str(), "",
 														wrapModes[wrapS].mode,
 														wrapModes[wrapT].mode,
 														filteringModes[filter].mode, filteringModes[filter].mode,
-														potFilenames));
+														potFilenames, enableRelaxedPrecisionRef));
 
 			})))
 
@@ -467,11 +487,17 @@ void TextureWrapTests::init (void)
 		FOR_EACH(filter,	filteringModes,
 			{
 				const string name = string("") + wrapModes[wrapS].name + "_" + wrapModes[wrapT].name + "_" + filteringModes[filter].name + "_npot";
+
+				bool enableRelaxedPrecisionRef = wrapModes[wrapS].mode == GL_REPEAT ||
+												 wrapModes[wrapT].mode == GL_REPEAT ||
+												 wrapModes[wrapS].mode == GL_MIRRORED_REPEAT ||
+												 wrapModes[wrapT].mode == GL_MIRRORED_REPEAT;
+
 				etc1Group->addChild(new TextureWrapCase(m_testCtx, m_context.getRenderContext(), m_context.getContextInfo(), name.c_str(), "",
 														wrapModes[wrapS].mode,
 														wrapModes[wrapT].mode,
 														filteringModes[filter].mode, filteringModes[filter].mode,
-														npotFilenames));
+														npotFilenames, enableRelaxedPrecisionRef));
 			})))
 	}
 
@@ -517,12 +543,18 @@ void TextureWrapTests::init (void)
 			FOR_EACH(filter,	filteringModes,
 				{
 					const string name = string("") + wrapModes[wrapS].name + "_" + wrapModes[wrapT].name + "_" + filteringModes[filter].name + "_" + etc2Sizes[size].name;
+
+					bool enableRelaxedPrecisionRef = wrapModes[wrapS].mode == GL_REPEAT ||
+													 wrapModes[wrapT].mode == GL_REPEAT ||
+													 wrapModes[wrapS].mode == GL_MIRRORED_REPEAT ||
+													 wrapModes[wrapT].mode == GL_MIRRORED_REPEAT;
+
 					formatGroup->addChild(new TextureWrapCase(m_testCtx, m_context.getRenderContext(), m_context.getContextInfo(), name.c_str(), "",
 															  etc2Formats[formatNdx].format,
 															  wrapModes[wrapS].mode,
 															  wrapModes[wrapT].mode,
 															  filteringModes[filter].mode, filteringModes[filter].mode,
-															  etc2Sizes[size].width, etc2Sizes[size].height));
+															  etc2Sizes[size].width, etc2Sizes[size].height, enableRelaxedPrecisionRef));
 				}))))
 		}
 	}
@@ -562,12 +594,18 @@ void TextureWrapTests::init (void)
 				FOR_EACH(filter,	filteringModes,
 					{
 						string name = string("") + wrapModes[wrapS].name + "_" + wrapModes[wrapT].name + "_" + filteringModes[filter].name + "_" + formatSizes[size].name;
+
+						bool enableRelaxedPrecisionRef = wrapModes[wrapS].mode == GL_REPEAT ||
+														 wrapModes[wrapT].mode == GL_REPEAT ||
+														 wrapModes[wrapS].mode == GL_MIRRORED_REPEAT ||
+														 wrapModes[wrapT].mode == GL_MIRRORED_REPEAT;
+
 						formatGroup->addChild(new TextureWrapCase(m_testCtx, m_context.getRenderContext(), m_context.getContextInfo(), name.c_str(), "",
 																  format,
 																  wrapModes[wrapS].mode,
 																  wrapModes[wrapT].mode,
 																  filteringModes[filter].mode, filteringModes[filter].mode,
-																  formatSizes[size].width, formatSizes[size].height));
+																  formatSizes[size].width, formatSizes[size].height, enableRelaxedPrecisionRef));
 					}))))
 			}
 		}

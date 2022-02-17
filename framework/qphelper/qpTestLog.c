@@ -249,6 +249,8 @@ static const qpKeyStringMap s_qpShaderTypeMap[] =
 	{ QP_SHADER_TYPE_MISS,				"MissShader"			},
 	{ QP_SHADER_TYPE_INTERSECTION,		"IntersectionShader"	},
 	{ QP_SHADER_TYPE_CALLABLE,			"CallableShader"		},
+	{ QP_SHADER_TYPE_TASK,				"TaskShader"			},
+	{ QP_SHADER_TYPE_MESH,				"MeshShader"			},
 
 	{ QP_SHADER_TYPE_LAST,				DE_NULL					}
 };

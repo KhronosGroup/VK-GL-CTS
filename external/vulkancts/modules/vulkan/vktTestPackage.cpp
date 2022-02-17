@@ -114,6 +114,7 @@
 #include "vktPostmortemTests.hpp"
 #include "vktFragmentShadingRateTests.hpp"
 #include "vktReconvergenceTests.hpp"
+#include "vktMeshShaderTests.hpp"
 #ifdef CTS_USES_VULKANSC
 #include "vktSafetyCriticalTests.hpp"
 #endif // CTS_USES_VULKANSC
@@ -994,7 +995,9 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 	// ShaderRenderCase-based tests
 	glslTests->addChild(sr::createDerivateTests			(testCtx));
 	glslTests->addChild(sr::createDiscardTests			(testCtx));
+#ifndef CTS_USES_VULKANSC
 	glslTests->addChild(sr::createDemoteTests			(testCtx));
+#endif // CTS_USES_VULKANSC
 	glslTests->addChild(sr::createIndexingTests			(testCtx));
 	glslTests->addChild(sr::createShaderInvarianceTests	(testCtx));
 	glslTests->addChild(sr::createLimitTests			(testCtx));
@@ -1017,6 +1020,7 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 #ifndef CTS_USES_VULKANSC
 	// Amber GLSL tests.
 	glslTests->addChild(cts_amber::createCombinedOperationsGroup		(testCtx));
+	glslTests->addChild(cts_amber::createCrashTestGroup					(testCtx));
 #endif // CTS_USES_VULKANSC
 }
 
@@ -1084,6 +1088,7 @@ void TestPackage::init (void)
 	addChild(createTestGroup					(m_testCtx, "glsl", "GLSL shader execution tests", createGlslTests));
 	addChild(createRenderPassTests				(m_testCtx));
 	addChild(createRenderPass2Tests				(m_testCtx));
+	addChild(createDynamicRenderingTests		(m_testCtx));
 	addChild(ubo::createTests					(m_testCtx));
 	addChild(DynamicState::createTests			(m_testCtx));
 	addChild(ssbo::createTests					(m_testCtx));
@@ -1119,6 +1124,7 @@ void TestPackage::init (void)
 	addChild(RayQuery::createTests				(m_testCtx));
 	addChild(FragmentShadingRate::createTests	(m_testCtx));
 	addChild(Reconvergence::createTests			(m_testCtx, false));
+	addChild(MeshShader::createTests			(m_testCtx));
 }
 
 void ExperimentalTestPackage::init (void)

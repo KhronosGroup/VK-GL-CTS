@@ -952,12 +952,13 @@ tcu::TestStatus createDeviceWithVariousQueueCountsTest (Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
-void checkGlobalPrioritySupport (Context& context)
+void checkGlobalPrioritySupport (Context& context, bool useKhrGlobalPriority)
 {
-	context.requireDeviceFunctionality("VK_EXT_global_priority");
+	const std::string extName = (useKhrGlobalPriority ? "VK_KHR_global_priority" : "VK_EXT_global_priority");
+	context.requireDeviceFunctionality(extName);
 }
 
-tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context)
+tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context, bool)
 {
 	tcu::TestLog&							log						= context.getTestContext().getLog();
 	const PlatformInterface&				platformInterface		= context.getPlatformInterface();
@@ -1063,9 +1064,10 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context)
 }
 
 #ifndef CTS_USES_VULKANSC
-void checkGlobalPriorityQuerySupport (Context& context)
+void checkGlobalPriorityQuerySupport (Context& context, bool useKhrGlobalPriority)
 {
-	context.requireDeviceFunctionality("VK_EXT_global_priority_query");
+	const std::string extName = (useKhrGlobalPriority ? "VK_KHR_global_priority" : "VK_EXT_global_priority_query");
+	context.requireDeviceFunctionality(extName);
 }
 
 deBool isValidGlobalPriority(VkQueueGlobalPriorityEXT priority)
@@ -1096,7 +1098,7 @@ void checkGlobalPriorityProperties(const VkQueueFamilyGlobalPriorityPropertiesEX
 #endif // CTS_USES_VULKANSC
 
 #ifndef CTS_USES_VULKANSC
-tcu::TestStatus createDeviceWithQueriedGlobalPriorityTest (Context& context)
+tcu::TestStatus createDeviceWithQueriedGlobalPriorityTest (Context& context, bool useKhrGlobalPriority)
 {
 	tcu::TestLog&					log							= context.getTestContext().getLog();
 	const PlatformInterface&		platformInterface			= context.getPlatformInterface();
@@ -1105,7 +1107,6 @@ tcu::TestStatus createDeviceWithQueriedGlobalPriorityTest (Context& context)
 	const VkPhysicalDevice			physicalDevice				= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
 	const VkQueueGlobalPriorityEXT	globalPriorities[]			= { VK_QUEUE_GLOBAL_PRIORITY_LOW_EXT, VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT, VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT, VK_QUEUE_GLOBAL_PRIORITY_REALTIME_EXT };
 	const vector<float>				queuePriorities				(1, 1.0f);
-	std::vector<const char*>		enabledExtensions			= {"VK_EXT_global_priority", "VK_EXT_global_priority_query"};
 	deUint32						queueFamilyPropertyCount	= ~0u;
 
 	instanceDriver.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyPropertyCount, DE_NULL);
@@ -1124,6 +1125,10 @@ tcu::TestStatus createDeviceWithQueriedGlobalPriorityTest (Context& context)
 
 	instanceDriver.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyPropertyCount, queueFamilyProperties2.data());
 	TCU_CHECK((size_t)queueFamilyPropertyCount == queueFamilyProperties2.size());
+
+	std::vector<const char*> enabledExtensions = { "VK_EXT_global_priority", "VK_EXT_global_priority_query" };
+	if (useKhrGlobalPriority)
+		enabledExtensions = { "VK_KHR_global_priority" };
 
 	if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
 	{
@@ -2255,9 +2260,11 @@ tcu::TestCaseGroup* createDeviceInitializationTests (tcu::TestContext& testCtx)
 	addFunctionCase(deviceInitializationTests.get(), "create_multiple_devices",							"", createMultipleDevicesTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_extensions",			"", createDeviceWithUnsupportedExtensionsTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_various_queue_counts",				"", createDeviceWithVariousQueueCountsTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_global_priority",					"", checkGlobalPrioritySupport, createDeviceWithGlobalPriorityTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_device_global_priority",					"", checkGlobalPrioritySupport, createDeviceWithGlobalPriorityTest, false);
 #ifndef CTS_USES_VULKANSC
-	addFunctionCase(deviceInitializationTests.get(), "create_device_global_priority_query",				"", checkGlobalPriorityQuerySupport, createDeviceWithQueriedGlobalPriorityTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_device_global_priority_khr",				"", checkGlobalPrioritySupport, createDeviceWithGlobalPriorityTest, true);
+	addFunctionCase(deviceInitializationTests.get(), "create_device_global_priority_query",				"", checkGlobalPriorityQuerySupport, createDeviceWithQueriedGlobalPriorityTest, false);
+	addFunctionCase(deviceInitializationTests.get(), "create_device_global_priority_query_khr",			"", checkGlobalPriorityQuerySupport, createDeviceWithQueriedGlobalPriorityTest, true);
 #endif // CTS_USES_VULKANSC
 	addFunctionCase(deviceInitializationTests.get(), "create_device_features2",							"", createDeviceFeatures2Test);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_features",				"", createDeviceWithUnsupportedFeaturesTest);

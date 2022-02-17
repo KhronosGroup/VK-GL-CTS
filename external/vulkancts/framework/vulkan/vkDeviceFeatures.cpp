@@ -33,17 +33,21 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 								 const std::vector<std::string>&	deviceExtensions,
 								 const deBool						enableAllFeatures)
 {
-	VkPhysicalDeviceRobustness2FeaturesEXT*			robustness2Features			= nullptr;
-	VkPhysicalDeviceImageRobustnessFeaturesEXT*		imageRobustnessFeatures		= nullptr;
+	VkPhysicalDeviceRobustness2FeaturesEXT*					robustness2Features			= nullptr;
+	VkPhysicalDeviceImageRobustnessFeaturesEXT*				imageRobustnessFeatures		= nullptr;
 #ifndef CTS_USES_VULKANSC
-	VkPhysicalDeviceFragmentShadingRateFeaturesKHR*	fragmentShadingRateFeatures = nullptr;
-	VkPhysicalDeviceShadingRateImageFeaturesNV*		shadingRateImageFeatures	= nullptr;
-	VkPhysicalDeviceFragmentDensityMapFeaturesEXT*	fragmentDensityMapFeatures	= nullptr;
+	VkPhysicalDeviceFragmentShadingRateFeaturesKHR*			fragmentShadingRateFeatures = nullptr;
+	VkPhysicalDeviceShadingRateImageFeaturesNV*				shadingRateImageFeatures	= nullptr;
+	VkPhysicalDeviceFragmentDensityMapFeaturesEXT*			fragmentDensityMapFeatures	= nullptr;
+	VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT*	pageableDeviceLocalMemoryFeatures	= nullptr;
 #endif // CTS_USES_VULKANSC
 
 	m_coreFeatures2			= initVulkanStructure();
 	m_vulkan11Features		= initVulkanStructure();
 	m_vulkan12Features		= initVulkanStructure();
+#ifndef CTS_USES_VULKANSC
+	m_vulkan13Features		= initVulkanStructure();
+#endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
 	m_vulkanSC10Features	= initVulkanStructure();
 #endif // CTS_USES_VULKANSC
@@ -54,17 +58,25 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 		const std::vector<VkExtensionProperties>	deviceExtensionProperties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 		void**										nextPtr						= &m_coreFeatures2.pNext;
 		std::vector<FeatureStructWrapperBase*>		featuresToFillFromBlob;
+#ifndef CTS_USES_VULKANSC
+		bool										vk13Supported				= (apiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0));
+#endif // CTS_USES_VULKANSC
 		bool										vk12Supported				= (apiVersion >= VK_MAKE_API_VERSION(0, 1, 2, 0));
 #ifdef CTS_USES_VULKANSC
 		bool										vksc10Supported				= (apiVersion >= VK_MAKE_API_VERSION(1, 1, 0, 0));
 #endif // CTS_USES_VULKANSC
 
-		// in vk12 we have blob structures combining features of couple previously
-		// available feature structures, that now in vk12 must be removed from chain
+		// since vk12 we have blob structures combining features of couple previously
+		// available feature structures, that now in vk12+ must be removed from chain
 		if (vk12Supported)
 		{
 			addToChainVulkanStructure(&nextPtr, m_vulkan11Features);
 			addToChainVulkanStructure(&nextPtr, m_vulkan12Features);
+
+#ifndef CTS_USES_VULKANSC
+			if (vk13Supported)
+				addToChainVulkanStructure(&nextPtr, m_vulkan13Features);
+#endif // CTS_USES_VULKANSC
 		}
 #ifdef CTS_USES_VULKANSC
 		if (vksc10Supported)
@@ -96,11 +108,15 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 				if (p == DE_NULL)
 					continue;
 
-				// if feature struct is part of VkPhysicalDeviceVulkan1{1,2}Features
+				// if feature struct is part of VkPhysicalDeviceVulkan1{1,2,3}Features
 				// we dont add it to the chain but store and fill later from blob data
 				bool featureFilledFromBlob = false;
 				if (vk12Supported)
-					featureFilledFromBlob = isPartOfBlobFeatures(p->getFeatureDesc().sType);
+				{
+					deUint32 blobApiVersion = getBlobFeaturesVersion(p->getFeatureDesc().sType);
+					if (blobApiVersion)
+						featureFilledFromBlob = (apiVersion >= blobApiVersion);
+				}
 
 				if (featureFilledFromBlob)
 					featuresToFillFromBlob.push_back(p);
@@ -120,6 +136,8 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 						shadingRateImageFeatures = reinterpret_cast<VkPhysicalDeviceShadingRateImageFeaturesNV*>(rawStructPtr);
 					else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_EXT)
 						fragmentDensityMapFeatures = reinterpret_cast<VkPhysicalDeviceFragmentDensityMapFeaturesEXT*>(rawStructPtr);
+					else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT)
+						pageableDeviceLocalMemoryFeatures = reinterpret_cast<VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT*>(rawStructPtr);
 #endif // CTS_USES_VULKANSC
 					// add to chain
 					*nextPtr	= rawStructPtr;
@@ -131,13 +149,16 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 
 		vki.getPhysicalDeviceFeatures2(physicalDevice, &m_coreFeatures2);
 
-		// fill data from VkPhysicalDeviceVulkan1{1,2}Features
+		// fill data from VkPhysicalDeviceVulkan1{1,2,3}Features
 		if (vk12Supported)
 		{
 			AllFeaturesBlobs allBlobs =
 			{
 				m_vulkan11Features,
 				m_vulkan12Features,
+#ifndef CTS_USES_VULKANSC
+				m_vulkan13Features,
+#endif // CTS_USES_VULKANSC
 				// add blobs from future vulkan versions here
 			};
 
@@ -179,6 +200,14 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 		}
 #endif // CTS_USES_VULKANSC
 	}
+
+	// Disable pageableDeviceLocalMemory by default since it may modify the behavior
+	// of device-local, and even host-local, memory allocations for all tests.
+	// pageableDeviceLocalMemory will use targetted testing on a custom device.
+#ifndef CTS_USES_VULKANSC
+	if (pageableDeviceLocalMemoryFeatures)
+		pageableDeviceLocalMemoryFeatures->pageableDeviceLocalMemory = false;
+#endif // CTS_USES_VULKANSC
 }
 
 bool DeviceFeatures::verifyFeatureAddCriteria (const FeatureStructCreationData& item, const std::vector<VkExtensionProperties>& properties)

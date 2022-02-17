@@ -227,9 +227,9 @@ void BorderSwizzleCase::initPrograms (vk::SourceCollections& programCollection) 
 		<< "\n"
 		<< "void main()\n"
 		<< "{\n"
-		// Full-screen clockwise triangle fan with 4 vertices.
-		<< "    const float x = (-1.0+2.0*(((gl_VertexIndex+1)&2)>>1));\n"
-		<< "    const float y = (-1.0+2.0*(( gl_VertexIndex   &2)>>1));\n"
+		// Full-screen clockwise triangle strip with 4 vertices.
+		<< "	const float x = (-1.0+2.0*((gl_VertexIndex & 2)>>1));\n"
+		<< "	const float y = ( 1.0-2.0* (gl_VertexIndex % 2));\n"
 		<< "	gl_Position = vec4(x, y, 0.0, 1.0);\n"
 		<< "}\n"
 		;
@@ -908,7 +908,7 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 	const VkPipelineVertexInputStateCreateInfo vertexInputInfo = initVulkanStructure();
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo = initVulkanStructure();
-	inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+	inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 
 	const auto viewport	= makeViewport(extent);
 	const auto scissor	= makeRect2D(extent);
@@ -1187,19 +1187,19 @@ VkClearColorValue getRandomClearColor (VkFormat format, de::Random& rnd)
 
 	const auto		tcuFormat		= mapVkFormat(format);
 	const auto		numComponents	= tcu::getNumUsedChannels(tcuFormat.order);
-	const auto		componentSize	= tcu::getChannelSize(tcuFormat.type);
-
-	DE_ASSERT(componentSize > 0);
-
-	const deUint64	mask			= (1ull << (componentSize*8)) - 1ull;
-	const deUint64	signBit			= (1ull << (componentSize*8-1));
-	const deUint64	signMask		= (~mask); // Used to extend the sign bit.
 	const auto		formatType		= getFormatType(format);
 
 	for (int i = 0; i < numComponents; ++i)
 	{
 		if (formatType == FormatType::SIGNED_INT || formatType == FormatType::UNSIGNED_INT)
 		{
+			const auto		componentSize	= tcu::getChannelSize(tcuFormat.type);
+
+			DE_ASSERT(componentSize > 0);
+
+			const deUint64	mask			= (1ull << (componentSize*8)) - 1ull;
+			const deUint64	signBit			= (1ull << (componentSize*8-1));
+			const deUint64	signMask		= (~mask); // Used to extend the sign bit.
 			const auto value = rnd.getUint64();
 
 			if (formatType == FormatType::SIGNED_INT)
@@ -1229,14 +1229,14 @@ tcu::TestCaseGroup* createSamplerBorderSwizzleTests (tcu::TestContext& testCtx)
 	const VkFormat textureFormats[] =
 	{
 		//VK_FORMAT_UNDEFINED,
-		//VK_FORMAT_R4G4_UNORM_PACK8,
-		//VK_FORMAT_R4G4B4A4_UNORM_PACK16,
-		//VK_FORMAT_B4G4R4A4_UNORM_PACK16,
-		//VK_FORMAT_R5G6B5_UNORM_PACK16,
-		//VK_FORMAT_B5G6R5_UNORM_PACK16,
-		//VK_FORMAT_R5G5B5A1_UNORM_PACK16,
-		//VK_FORMAT_B5G5R5A1_UNORM_PACK16,
-		//VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+		VK_FORMAT_R4G4_UNORM_PACK8,
+		VK_FORMAT_R4G4B4A4_UNORM_PACK16,
+		VK_FORMAT_B4G4R4A4_UNORM_PACK16,
+		VK_FORMAT_R5G6B5_UNORM_PACK16,
+		VK_FORMAT_B5G6R5_UNORM_PACK16,
+		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
+		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
+		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		//VK_FORMAT_R8_USCALED,
@@ -1279,21 +1279,21 @@ tcu::TestCaseGroup* createSamplerBorderSwizzleTests (tcu::TestContext& testCtx)
 		VK_FORMAT_B8G8R8A8_UINT,
 		VK_FORMAT_B8G8R8A8_SINT,
 		VK_FORMAT_B8G8R8A8_SRGB,
-		// VK_FORMAT_A8B8G8R8_UNORM_PACK32,
-		// VK_FORMAT_A8B8G8R8_SNORM_PACK32,
+		 VK_FORMAT_A8B8G8R8_UNORM_PACK32,
+		 VK_FORMAT_A8B8G8R8_SNORM_PACK32,
 		// VK_FORMAT_A8B8G8R8_USCALED_PACK32,
 		// VK_FORMAT_A8B8G8R8_SSCALED_PACK32,
 		// VK_FORMAT_A8B8G8R8_UINT_PACK32,
 		// VK_FORMAT_A8B8G8R8_SINT_PACK32,
 		// VK_FORMAT_A8B8G8R8_SRGB_PACK32,
-		// VK_FORMAT_A2R10G10B10_UNORM_PACK32,
-		// VK_FORMAT_A2R10G10B10_SNORM_PACK32,
+		VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+		VK_FORMAT_A2R10G10B10_SNORM_PACK32,
 		// VK_FORMAT_A2R10G10B10_USCALED_PACK32,
 		// VK_FORMAT_A2R10G10B10_SSCALED_PACK32,
 		// VK_FORMAT_A2R10G10B10_UINT_PACK32,
 		// VK_FORMAT_A2R10G10B10_SINT_PACK32,
-		// VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-		// VK_FORMAT_A2B10G10R10_SNORM_PACK32,
+		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+		VK_FORMAT_A2B10G10R10_SNORM_PACK32,
 		// VK_FORMAT_A2B10G10R10_USCALED_PACK32,
 		// VK_FORMAT_A2B10G10R10_SSCALED_PACK32,
 		// VK_FORMAT_A2B10G10R10_UINT_PACK32,

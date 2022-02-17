@@ -1,4 +1,7 @@
-include_directories(..)
+include_directories(
+  ..
+  ${DEQP_INL_DIR}
+  )
 
 set(DEQP_VK_VKSC_SUBGROUPS_SRCS
   vktSubgroupsTests.cpp
@@ -35,6 +38,8 @@ set(DEQP_VK_VKSC_SUBGROUPS_SRCS
   vktSubgroupsBallotMasksTests.hpp
   vktSubgroupsSizeControlTests.cpp
   vktSubgroupsSizeControlTests.hpp
+  vktSubgroupsMultipleDispatchesUniformSubgroupSizeTests.cpp
+  vktSubgroupsMultipleDispatchesUniformSubgroupSizeTests.hpp
   )
 
 set(DEQP_VK_SUBGROUPS_SRCS

@@ -158,6 +158,8 @@ const char* getShaderTypeName (ShaderType shaderType)
 		"miss",
 		"intersection",
 		"callable",
+		"task",
+		"mesh",
 	};
 
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_names) == SHADERTYPE_LAST);

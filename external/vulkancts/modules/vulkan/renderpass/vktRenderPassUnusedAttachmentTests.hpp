@@ -33,7 +33,7 @@ namespace vkt
 namespace renderpass
 {
 
-tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& testCtx, const RenderPassType renderPassType);
+tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& testCtx, const RenderingType renderingType);
 
 } // renderpass
 } // vkt

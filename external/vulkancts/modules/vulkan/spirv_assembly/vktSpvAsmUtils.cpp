@@ -310,6 +310,10 @@ deUint32 getMinRequiredVulkanVersion (const SpirvVersion version)
 		return VK_API_VERSION_1_1;
 	case SPIRV_VERSION_1_5:
 		return VK_API_VERSION_1_2;
+#ifndef CTS_USES_VULKANSC
+	case SPIRV_VERSION_1_6:
+		return VK_API_VERSION_1_3;
+#endif // CTS_USES_VULKANSC
 	default:
 		DE_ASSERT(0);
 	}
@@ -318,7 +322,13 @@ deUint32 getMinRequiredVulkanVersion (const SpirvVersion version)
 
 std::string	getVulkanName (const deUint32 version)
 {
-	return std::string(version == VK_API_VERSION_1_1 ? "1.1" : "1.0");
+	if (version == VK_API_VERSION_1_1)	return "1.1";
+	if (version == VK_API_VERSION_1_2)	return "1.2";
+#ifndef CTS_USES_VULKANSC
+	if (version == VK_API_VERSION_1_3)	return "1.3";
+#endif // CTS_USES_VULKANSC
+
+	return "1.0";
 }
 
 // Generate and return 64-bit integers.

@@ -239,35 +239,6 @@ static VkImageCreateInfo makeImageCreateInfo (VkFormat			format,
 	return imageCreateInfo;
 }
 
-static Move<VkPipeline> makeComputePipeline (const DeviceInterface&		vk,
-											 const VkDevice				device,
-											 const VkPipelineLayout		pipelineLayout,
-											 const VkShaderModule		shaderModule)
-{
-	const VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-		DE_NULL,												// const void*							pNext;
-		0u,														// VkPipelineShaderStageCreateFlags		flags;
-		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
-		shaderModule,											// VkShaderModule						module;
-		"main",													// const char*							pName;
-		DE_NULL,												// const VkSpecializationInfo*			pSpecializationInfo;
-	};
-	const VkComputePipelineCreateInfo pipelineCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType					sType;
-		DE_NULL,											// const void*						pNext;
-		0u,													// VkPipelineCreateFlags			flags;
-		pipelineShaderStageParams,							// VkPipelineShaderStageCreateInfo	stage;
-		pipelineLayout,										// VkPipelineLayout					layout;
-		DE_NULL,											// VkPipeline						basePipelineHandle;
-		0,													// deInt32							basePipelineIndex;
-	};
-
-	return createComputePipeline(vk, device, DE_NULL , &pipelineCreateInfo);
-}
-
 static const std::string getMissPassthrough (void)
 {
 	std::ostringstream src;

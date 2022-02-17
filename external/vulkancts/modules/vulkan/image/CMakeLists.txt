@@ -1,4 +1,7 @@
-include_directories(..)
+include_directories(
+	..
+	${DEQP_INL_DIR}
+)
 
 set(DEQP_VK_IMAGE_SRCS
 	vktImageTests.cpp
@@ -43,6 +46,8 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageDepthStencilDescriptorTests.hpp
 	vktImageSampleCompressedTextureTests.cpp
 	vktImageSampleCompressedTextureTests.hpp
+	vktImageExtendedUsageBitTests.cpp
+	vktImageExtendedUsageBitTests.cpp
 	)
 
 PCH(DEQP_VK_IMAGE_SRCS ../pch.cpp)

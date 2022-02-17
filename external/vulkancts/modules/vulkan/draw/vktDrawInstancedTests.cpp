@@ -66,6 +66,7 @@ struct TestParams
 
 	DrawFunction			function;
 	vk::VkPrimitiveTopology	topology;
+	deBool					useDynamicRendering;
 
 	deBool					testAttribDivisor;
 	deUint32				attribDivisor;
@@ -312,6 +313,9 @@ public:
 		}
 
 #ifndef CTS_USES_VULKANSC
+		if (m_params.useDynamicRendering)
+			context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
 		if (m_params.topology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
 			context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 			!context.getPortabilitySubsetFeatures().triangleFans)
@@ -372,67 +376,66 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 	const ImageViewCreateInfo colorTargetViewInfo(m_colorTargetImage->object(), imageViewType, m_colorAttachmentFormat, subresourceRange);
 	m_colorTargetView						= vk::createImageView(m_vk, device, &colorTargetViewInfo);
 
-	RenderPassCreateInfo renderPassCreateInfo;
-	renderPassCreateInfo.addAttachment(AttachmentDescription(m_colorAttachmentFormat,
-															 vk::VK_SAMPLE_COUNT_1_BIT,
-															 vk::VK_ATTACHMENT_LOAD_OP_LOAD,
-															 vk::VK_ATTACHMENT_STORE_OP_STORE,
-															 vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-															 vk::VK_ATTACHMENT_STORE_OP_STORE,
-															 vk::VK_IMAGE_LAYOUT_GENERAL,
-															 vk::VK_IMAGE_LAYOUT_GENERAL));
-
-	const vk::VkAttachmentReference colorAttachmentReference =
+	if (!m_params.useDynamicRendering)
 	{
-		0,
-		vk::VK_IMAGE_LAYOUT_GENERAL
-	};
+		RenderPassCreateInfo renderPassCreateInfo;
+		renderPassCreateInfo.addAttachment(AttachmentDescription(m_colorAttachmentFormat,
+																 vk::VK_SAMPLE_COUNT_1_BIT,
+																 vk::VK_ATTACHMENT_LOAD_OP_LOAD,
+																 vk::VK_ATTACHMENT_STORE_OP_STORE,
+																 vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+																 vk::VK_ATTACHMENT_STORE_OP_STORE,
+																 vk::VK_IMAGE_LAYOUT_GENERAL,
+																 vk::VK_IMAGE_LAYOUT_GENERAL));
 
-	renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
-													   0,
-													   0,
-													   DE_NULL,
-													   1,
-													   &colorAttachmentReference,
-													   DE_NULL,
-													   AttachmentReference(),
-													   0,
-													   DE_NULL));
+		const vk::VkAttachmentReference colorAttachmentReference =
+		{
+			0,
+			vk::VK_IMAGE_LAYOUT_GENERAL
+		};
 
-	vk::VkRenderPassMultiviewCreateInfo renderPassMultiviewCreateInfo;
-	// Bit mask that specifies which view rendering is broadcast to
-	// 0011 = Broadcast to first and second view (layer)
-	const deUint32 viewMask = 0x3;
-	// Bit mask that specifices correlation between views
-	// An implementation may use this for optimizations (concurrent render)
-	const deUint32 correlationMask = 0x3;
+		renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
+														   0,
+														   0,
+														   DE_NULL,
+														   1,
+														   &colorAttachmentReference,
+														   DE_NULL,
+														   AttachmentReference(),
+														   0,
+														   DE_NULL));
 
-	if (m_params.testMultiview)
-	{
-		DE_ASSERT(renderPassCreateInfo.subpassCount == 1);
+		vk::VkRenderPassMultiviewCreateInfo renderPassMultiviewCreateInfo;
+		// Bit mask that specifies which view rendering is broadcast to
+		// 0011 = Broadcast to first and second view (layer)
+		const deUint32 viewMask = 0x3;
+		// Bit mask that specifices correlation between views
+		// An implementation may use this for optimizations (concurrent render)
+		const deUint32 correlationMask = 0x3;
 
+		if (m_params.testMultiview)
+		{
+			DE_ASSERT(renderPassCreateInfo.subpassCount == 1);
 
+			renderPassMultiviewCreateInfo.sType = vk::VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO;
+			renderPassMultiviewCreateInfo.pNext = DE_NULL;
+			renderPassMultiviewCreateInfo.subpassCount = renderPassCreateInfo.subpassCount;
+			renderPassMultiviewCreateInfo.pViewMasks = &viewMask;
+			renderPassMultiviewCreateInfo.correlationMaskCount = 1u;
+			renderPassMultiviewCreateInfo.pCorrelationMasks = &correlationMask;
+			renderPassMultiviewCreateInfo.pViewOffsets = DE_NULL;
+			renderPassMultiviewCreateInfo.dependencyCount = 0u;
 
-		renderPassMultiviewCreateInfo.sType = vk::VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO;
-		renderPassMultiviewCreateInfo.pNext = DE_NULL;
-		renderPassMultiviewCreateInfo.subpassCount = renderPassCreateInfo.subpassCount;
-		renderPassMultiviewCreateInfo.pViewMasks = &viewMask;
-		renderPassMultiviewCreateInfo.correlationMaskCount = 1u;
-		renderPassMultiviewCreateInfo.pCorrelationMasks = &correlationMask;
-		renderPassMultiviewCreateInfo.pViewOffsets = DE_NULL;
-		renderPassMultiviewCreateInfo.dependencyCount = 0u;
+			renderPassCreateInfo.pNext = &renderPassMultiviewCreateInfo;
+		}
 
-		renderPassCreateInfo.pNext = &renderPassMultiviewCreateInfo;
+		m_renderPass = vk::createRenderPass(m_vk, device, &renderPassCreateInfo);
+
+		// create framebuffer
+		std::vector<vk::VkImageView>	colorAttachments { *m_colorTargetView };
+		const FramebufferCreateInfo		framebufferCreateInfo(*m_renderPass, colorAttachments, WIDTH, HEIGHT, 1);
+		m_framebuffer = vk::createFramebuffer(m_vk, device, &framebufferCreateInfo);
 	}
-
-	m_renderPass		= vk::createRenderPass(m_vk, device, &renderPassCreateInfo);
-
-	std::vector<vk::VkImageView> colorAttachments(1);
-	colorAttachments[0] = *m_colorTargetView;
-
-	const FramebufferCreateInfo framebufferCreateInfo(*m_renderPass, colorAttachments, WIDTH, HEIGHT, 1);
-
-	m_framebuffer		= vk::createFramebuffer(m_vk, device, &framebufferCreateInfo);
 
 	const vk::VkVertexInputBindingDescription vertexInputBindingDescription[2] =
 	{
@@ -507,6 +510,27 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 	pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
 	pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
 
+#ifndef CTS_USES_VULKANSC
+	vk::VkPipelineRenderingCreateInfoKHR renderingFormatCreateInfo
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+		DE_NULL,
+		0u,
+		1u,
+		&m_colorAttachmentFormat,
+		vk::VK_FORMAT_UNDEFINED,
+		vk::VK_FORMAT_UNDEFINED
+	};
+
+	if (m_params.useDynamicRendering)
+	{
+		pipelineCreateInfo.pNext = &renderingFormatCreateInfo;
+
+		if (m_params.testMultiview)
+			renderingFormatCreateInfo.viewMask = 3u;
+	}
+#endif // CTS_USES_VULKANSC
+
 	m_pipeline = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo);
 }
 
@@ -520,7 +544,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 
 	qpTestResult			res						= QP_TEST_RESULT_PASS;
 
-	const vk::VkClearColorValue clearColor = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+	const vk::VkClearValue clearColor = { { { 0.0f, 0.0f, 0.0f, 1.0f } } };
 	int firstInstanceIndicesCount = DE_LENGTH_OF_ARRAY(firstInstanceIndices);
 
 	// Require 'drawIndirectFirstInstance' feature to run non-zero firstInstance indirect draw tests.
@@ -575,7 +599,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 
 			const ImageSubresourceRange subresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, numLayers);
 			m_vk.cmdClearColorImage(*m_cmdBuffer, m_colorTargetImage->object(),
-				vk::VK_IMAGE_LAYOUT_GENERAL, &clearColor, 1, &subresourceRange);
+				vk::VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &subresourceRange);
 
 			const vk::VkMemoryBarrier memBarrier =
 			{
@@ -590,7 +614,12 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 				0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 
 			const vk::VkRect2D renderArea = vk::makeRect2D(WIDTH, HEIGHT);
-			beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea);
+#ifndef CTS_USES_VULKANSC
+			if (m_params.useDynamicRendering)
+				beginRendering(m_vk, *m_cmdBuffer, *m_colorTargetView, renderArea, clearColor, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_LOAD, 0, (m_params.testMultiview) ? 2u : 1u, (m_params.testMultiview) ? 3u : 0u);
+			else
+#endif // CTS_USES_VULKANSC
+				beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea);
 
 			if (m_params.function == TestParams::FUNCTION_DRAW_INDEXED || m_params.function == TestParams::FUNCTION_DRAW_INDEXED_INDIRECT)
 			{
@@ -664,7 +693,13 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 					DE_ASSERT(false);
 			}
 
-			endRenderPass(m_vk, *m_cmdBuffer);
+#ifndef CTS_USES_VULKANSC
+			if (m_params.useDynamicRendering)
+				endRendering(m_vk, *m_cmdBuffer);
+			else
+#endif // CTS_USES_VULKANSC
+				endRenderPass(m_vk, *m_cmdBuffer);
+
 			endCommandBuffer(m_vk, *m_cmdBuffer);
 
 			submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -824,8 +859,9 @@ void InstancedDrawInstance::prepareVertexData(int instanceCount, int firstInstan
 
 } // anonymus
 
-InstancedTests::InstancedTests(tcu::TestContext& testCtx)
-	: TestCaseGroup	(testCtx, "instanced", "Instanced drawing tests")
+InstancedTests::InstancedTests(tcu::TestContext& testCtx, bool useDynamicRendering)
+	: TestCaseGroup			(testCtx, "instanced", "Instanced drawing tests")
+	, m_useDynamicRendering	(useDynamicRendering)
 {
 	static const vk::VkPrimitiveTopology	topologies[]			=
 	{
@@ -865,6 +901,7 @@ InstancedTests::InstancedTests(tcu::TestContext& testCtx)
 						TestParams param;
 						param.function = functions[functionNdx];
 						param.topology = topologies[topologyNdx];
+						param.useDynamicRendering = useDynamicRendering;
 						param.testAttribDivisor = testAttribDivisor ? DE_TRUE : DE_FALSE;
 						param.attribDivisor = divisors[divisorNdx];
 						param.testMultiview = multiviews[multiviewNdx];

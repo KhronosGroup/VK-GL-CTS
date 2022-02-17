@@ -1,6 +1,10 @@
 # Render pass tests
 
-include_directories(..)
+include_directories(
+	..
+	../draw
+	${DEQP_INL_DIR}
+	)
 
 set(DEQP_VK_VKSC_RENDER_PASS_SRCS
 	vktRenderPassTests.cpp
@@ -34,13 +38,15 @@ set(DEQP_VK_RENDER_PASS_SRCS
 	vktRenderPassSparseRenderTargetTests.hpp
 	vktRenderPassLoadStoreOpNoneTests.cpp
 	vktRenderPassLoadStoreOpNoneTests.hpp
+	vktDynamicRenderingTests.cpp
+	vktDynamicRenderingTests.hpp
 	)
 
 PCH(DEQP_VK_RENDER_PASS_SRCS ../pch.cpp)
 
 add_library(deqp-vk-render-pass STATIC ${DEQP_VK_VKSC_RENDER_PASS_SRCS} ${DEQP_VK_RENDER_PASS_SRCS})
-target_link_libraries(deqp-vk-render-pass tcutil vkutil)
+target_link_libraries(deqp-vk-render-pass tcutil vkutil deqp-vk-draw)
 
 add_library(deqp-vksc-render-pass STATIC ${DEQP_VK_VKSC_RENDER_PASS_SRCS})
 target_include_directories(deqp-vksc-render-pass BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
-target_link_libraries(deqp-vksc-render-pass PUBLIC deqp-vksc-util tcutil vkscutil)
+target_link_libraries(deqp-vksc-render-pass PUBLIC deqp-vksc-util tcutil vkscutil deqp-vksc-draw)

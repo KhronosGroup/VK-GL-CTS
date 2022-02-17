@@ -1441,7 +1441,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         }
 
         final String command = String.format(
-                "am instrument %s -w -e deqpLogFileName \"%s\" -e deqpCmdLine \"%s\""
+                "am instrument %s -w -e deqpLogFilename \"%s\" -e deqpCmdLine \"%s\""
                     + " -e deqpLogData \"%s\" %s",
                 AbiUtils.createAbiFlag(mAbi.getName()), APP_DIR + LOG_FILE_NAME,
                 deqpCmdLine.toString(), mLogData, instrumentationName);

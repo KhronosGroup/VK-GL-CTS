@@ -147,7 +147,10 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 	endif ()
 endif ()
 
+include_directories(${PROJECT_BINARY_DIR}/external/vulkancts/framework/vulkan)
+
 add_library(tcutil-platform STATIC ${TCUTIL_PLATFORM_SRCS})
+
 
 # Add vkutil to the deps before tcutil so that it picks up the c++11 dependencies
 target_link_libraries(tcutil-platform vkutil)

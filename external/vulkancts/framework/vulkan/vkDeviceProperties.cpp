@@ -35,6 +35,9 @@ DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 	m_coreProperties2		= initVulkanStructure();
 	m_vulkan11Properties	= initVulkanStructure();
 	m_vulkan12Properties	= initVulkanStructure();
+#ifndef CTS_USES_VULKANSC
+	m_vulkan13Properties	= initVulkanStructure();
+#endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
 	m_vulkanSC10Properties	= initVulkanStructure();
 #endif // CTS_USES_VULKANSC
@@ -47,6 +50,9 @@ DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 		std::vector<PropertyStructWrapperBase*>		propertiesAddedWithVK;
 		bool										vk11Supported				= (apiVersion >= VK_MAKE_API_VERSION(0, 1, 1, 0));
 		bool										vk12Supported				= (apiVersion >= VK_MAKE_API_VERSION(0, 1, 2, 0));
+#ifndef CTS_USES_VULKANSC
+		bool										vk13Supported				= (apiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0));
+#endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
 		bool										vksc10Supported				= (apiVersion >= VK_MAKE_API_VERSION(1, 1, 0, 0));
 #endif // CTS_USES_VULKANSC
@@ -70,12 +76,17 @@ DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 			}
 		}
 
-		// in vk12 we have blob structures combining properties of couple previously
-		// available property structures, that now in vk12 must be removed from chain
+		// since vk12 we have blob structures combining properties of couple previously
+		// available property structures, that now in vk12 and above must be removed from chain
 		if (vk12Supported)
 		{
 			addToChainVulkanStructure(&nextPtr, m_vulkan11Properties);
 			addToChainVulkanStructure(&nextPtr, m_vulkan12Properties);
+
+#ifndef CTS_USES_VULKANSC
+			if (vk13Supported)
+				addToChainVulkanStructure(&nextPtr, m_vulkan13Properties);
+#endif // CTS_USES_VULKANSC
 		}
 
 		std::vector<std::string> allDeviceExtensions = deviceExtensions;
@@ -106,7 +117,11 @@ DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 				// we dont add it to the chain but store and fill later from blob data
 				bool propertyFilledFromBlob = false;
 				if (vk12Supported)
-					propertyFilledFromBlob = isPartOfBlobProperties(p->getPropertyDesc().sType);
+				{
+					deUint32 blobApiVersion = getBlobPropertiesVersion(p->getPropertyDesc().sType);
+					if (blobApiVersion)
+						propertyFilledFromBlob = (apiVersion >= blobApiVersion);
+				}
 
 				if (propertyFilledFromBlob)
 					propertiesToFillFromBlob.push_back(p);
@@ -121,13 +136,16 @@ DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 
 		vki.getPhysicalDeviceProperties2(physicalDevice, &m_coreProperties2);
 
-		// fill data from VkPhysicalDeviceVulkan1{1,2}Properties
+		// fill data from VkPhysicalDeviceVulkan1{1,2,3}Properties
 		if (vk12Supported)
 		{
 			AllPropertiesBlobs allBlobs =
 			{
 				m_vulkan11Properties,
 				m_vulkan12Properties,
+#ifndef CTS_USES_VULKANSC
+				m_vulkan13Properties,
+#endif // CTS_USES_VULKANSC
 				// add blobs from future vulkan versions here
 			};
 

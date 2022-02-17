@@ -1708,8 +1708,13 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	{
 		context.requireDeviceFunctionality("VK_EXT_subgroup_size_control");
 
-		const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&	subgroupSizeControlFeatures		= context.getSubgroupSizeControlFeaturesEXT();
+#ifndef CTS_USES_VULKANSC
+		const VkPhysicalDeviceSubgroupSizeControlFeatures&		subgroupSizeControlFeatures		= context.getSubgroupSizeControlFeatures();
+		const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context.getSubgroupSizeControlProperties();
+#else
+		const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&		subgroupSizeControlFeatures	= context.getSubgroupSizeControlFeaturesEXT();
 		const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context.getSubgroupSizeControlPropertiesEXT();
+#endif // CTS_USES_VULKANSC
 
 		if (subgroupSizeControlFeatures.subgroupSizeControl == DE_FALSE)
 			TCU_THROW(NotSupportedError, "Device does not support varying subgroup sizes nor required subgroup size");
@@ -1750,11 +1755,13 @@ TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 	inputDatas[0].layout = subgroups::SSBOData::LayoutStd140;
 	inputDatas[0].numElements = SHADER_BUFFER_SIZE/4ull;
 	inputDatas[0].initializeType = subgroups::SSBOData::InitializeNonZero;
+	inputDatas[0].bindingType = subgroups::SSBOData::BindingUBO;
 
 	inputDatas[1].format = VK_FORMAT_R32_UINT;
 	inputDatas[1].layout = subgroups::SSBOData::LayoutStd140;
 	inputDatas[1].numElements = 1ull;
 	inputDatas[1].initializeType = subgroups::SSBOData::InitializeNonZero;
+	inputDatas[1].bindingType = subgroups::SSBOData::BindingUBO;
 
 	if(OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType )
 	{
@@ -1762,7 +1769,7 @@ TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 		inputDatas[2].layout = subgroups::SSBOData::LayoutPacked;
 		inputDatas[2].numElements = SHADER_BUFFER_SIZE;
 		inputDatas[2].initializeType = subgroups::SSBOData::InitializeNone;
-		inputDatas[2].isImage = true;
+		inputDatas[2].bindingType = subgroups::SSBOData::BindingImage;
 	}
 
 	if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
@@ -1814,7 +1821,11 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 {
 	if (isAllComputeStages(caseDef.shaderStage))
 	{
+#ifndef CTS_USES_VULKANSC
+		const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context.getSubgroupSizeControlProperties();
+#else
 		const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context.getSubgroupSizeControlPropertiesEXT();
+#endif // CTS_USES_VULKANSC
 		TestLog&												log								= context.getTestContext().getLog();
 
 		if (OPTYPE_ELECT == caseDef.opType)
@@ -1861,7 +1872,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 					subgroups::SSBOData::LayoutPacked,		//  InputDataLayoutType			layout;
 					VK_FORMAT_R32_UINT,						//  vk::VkFormat				format;
 					SHADER_BUFFER_SIZE,						//  vk::VkDeviceSize			numElements;
-					true,									//  bool						isImage;
+					subgroups::SSBOData::BindingImage,		//  bool						isImage;
 				},
 			};
 
@@ -1916,7 +1927,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 					subgroups::SSBOData::LayoutStd430,		//  InputDataLayoutType			layout;
 					VK_FORMAT_R32_UINT,						//  vk::VkFormat				format;
 					1,										//  vk::VkDeviceSize			numElements;
-					false,									//  bool						isImage;
+					subgroups::SSBOData::BindingSSBO,		//  bool						isImage;
 					4 + ndx,								//  deUint32					binding;
 					stagesBits[ndx],						//  vk::VkShaderStageFlags		stages;
 				};
@@ -1958,7 +1969,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 				inputDatas[index + 3].layout			= subgroups::SSBOData::LayoutStd430;
 				inputDatas[index + 3].numElements		= SHADER_BUFFER_SIZE;
 				inputDatas[index + 3].initializeType	= subgroups::SSBOData::InitializeNone;
-				inputDatas[index + 3].isImage			= true;
+				inputDatas[index + 3].bindingType		= subgroups::SSBOData::BindingImage;
 				inputDatas[index + 3].binding			= index + 7u;
 				inputDatas[index + 3].stages			= stagesBits[ndx];
 			}
@@ -2010,10 +2021,10 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 
 				for (deUint32 perStageNdx = 0; perStageNdx < datasPerStage; ++perStageNdx)
 				{
-					inputDatas[index + perStageNdx].format	= VK_FORMAT_R32_UINT;
-					inputDatas[index + perStageNdx].layout	= subgroups::SSBOData::LayoutStd430;
-					inputDatas[index + perStageNdx].stages	= stagesBits[ndx];
-					inputDatas[index + perStageNdx].isImage	= false;
+					inputDatas[index + perStageNdx].format		= VK_FORMAT_R32_UINT;
+					inputDatas[index + perStageNdx].layout		= subgroups::SSBOData::LayoutStd430;
+					inputDatas[index + perStageNdx].stages		= stagesBits[ndx];
+					inputDatas[index + perStageNdx].bindingType	= subgroups::SSBOData::BindingSSBO;
 				}
 
 				inputDatas[index + 0].numElements		= SHADER_BUFFER_SIZE;
@@ -2030,7 +2041,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 
 				inputDatas[index + 3].numElements		= SHADER_BUFFER_SIZE;
 				inputDatas[index + 3].initializeType	= subgroups::SSBOData::InitializeNone;
-				inputDatas[index + 3].isImage			= true;
+				inputDatas[index + 3].bindingType		= subgroups::SSBOData::BindingImage;
 				inputDatas[index + 3].binding			= index + stagesCount + 3u;
 			}
 

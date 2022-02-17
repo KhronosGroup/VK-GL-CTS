@@ -79,6 +79,9 @@ public:
 	const vk::VkPhysicalDeviceFeatures2&			getDeviceFeatures2					(void) const;
 	const vk::VkPhysicalDeviceVulkan11Features&		getDeviceVulkan11Features			(void) const;
 	const vk::VkPhysicalDeviceVulkan12Features&		getDeviceVulkan12Features			(void) const;
+#ifndef CTS_USES_VULKANSC
+	const vk::VkPhysicalDeviceVulkan13Features&		getDeviceVulkan13Features			(void) const;
+#endif
 #ifdef CTS_USES_VULKANSC
 	const vk::VkPhysicalDeviceVulkanSC10Features&	getDeviceVulkanSC10Features			(void) const;
 #endif // CTS_USES_VULKANSC
@@ -93,6 +96,9 @@ public:
 	const vk::VkPhysicalDeviceProperties2&			getDeviceProperties2				(void) const;
 	const vk::VkPhysicalDeviceVulkan11Properties&	getDeviceVulkan11Properties			(void) const;
 	const vk::VkPhysicalDeviceVulkan12Properties&	getDeviceVulkan12Properties			(void) const;
+#ifndef CTS_USES_VULKANSC
+	const vk::VkPhysicalDeviceVulkan13Properties&	getDeviceVulkan13Properties			(void) const;
+#endif
 #ifdef CTS_USES_VULKANSC
 	const vk::VkPhysicalDeviceVulkanSC10Properties&	getDeviceVulkanSC10Properties		(void) const;
 #endif // CTS_USES_VULKANSC
@@ -117,9 +123,10 @@ public:
 	bool										requireDeviceCoreFeature			(const DeviceCoreFeature requiredDeviceCoreFeature);
 
 #ifndef CTS_USES_VULKANSC
-	vk::VkFormatPropertiesExtendedKHR				getFormatProperties					(const vk::VkFormat&	format)	const;
-	vk::VkFormatPropertiesExtendedKHR				getRequiredFormatProperties			(const vk::VkFormat&	format)	const;
+	vk::VkFormatProperties3						getFormatProperties					(const vk::VkFormat&	format)	const;
+	vk::VkFormatProperties3						getRequiredFormatProperties			(const vk::VkFormat&	format)	const;
 #endif // CTS_USES_VULKANSC
+
 
 	void*											getInstanceProcAddr					();
 

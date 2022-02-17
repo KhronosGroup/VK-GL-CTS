@@ -1741,7 +1741,7 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 	flushAlloc(vk, device, buffers[2]->getAllocation());
 
 	const VkBool32 computeFullSubgroups = subgroupProperties.subgroupSize <= 64 &&
-										  m_context.getSubgroupSizeControlFeaturesEXT().computeFullSubgroups;
+										  m_context.getSubgroupSizeControlFeatures().computeFullSubgroups;
 
 	const VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroupSizeCreateInfo =
 	{
@@ -1873,9 +1873,18 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 	qpTestResult res = QP_TEST_RESULT_PASS;
 
 	// Simulate execution on the CPU, and compare against the GPU result
-	deUint64 *ref = new deUint64 [maxLoc];
-	deMemset(ref, 0, maxLoc*sizeof(deUint64));
-	program.simulate(false, subgroupSize, invocationStride, ref);
+	std::vector<deUint64> ref;
+	try
+	{
+		ref.resize(maxLoc, 0ull);
+	}
+	catch (const std::bad_alloc&)
+	{
+		// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
+		return tcu::TestStatus(QP_TEST_RESULT_NOT_SUPPORTED, "Failed system memory allocation " + de::toString(maxLoc * sizeof(deUint64)) + " bytes");
+	}
+
+	program.simulate(false, subgroupSize, invocationStride, &ref[0]);
 
 	const deUint64 *result = (const deUint64 *)ptrs[1];
 
@@ -1957,8 +1966,6 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 			}
 		}
 	}
-
-	delete []ref;
 
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }

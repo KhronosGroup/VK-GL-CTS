@@ -119,26 +119,32 @@ enum LodMode
 struct ReferenceParams : public RenderParams
 {
 	ReferenceParams (TextureType texType_)
-		: RenderParams	(texType_)
-		, sampler		()
-		, lodMode		(LODMODE_EXACT)
-		, minLod		(-1000.0f)
-		, maxLod		(1000.0f)
-		, baseLevel		(0)
-		, maxLevel		(1000)
-		, unnormal		(false)
+		: RenderParams		(texType_)
+		, sampler			()
+		, lodMode			(LODMODE_EXACT)
+		, minLod			(-1000.0f)
+		, maxLod			(1000.0f)
+		, baseLevel			(0)
+		, maxLevel			(1000)
+		, unnormal			(false)
+		, float16TexCoord	(false)
+		, imageViewMinLod (0.0f)
+		, lodTexelFetch  (0)
 	{
 	}
 
 	ReferenceParams (TextureType texType_, const tcu::Sampler& sampler_, LodMode lodMode_ = LODMODE_EXACT)
-		: RenderParams	(texType_)
-		, sampler		(sampler_)
-		, lodMode		(lodMode_)
-		, minLod		(-1000.0f)
-		, maxLod		(1000.0f)
-		, baseLevel		(0)
-		, maxLevel		(1000)
-		, unnormal		(false)
+		: RenderParams		(texType_)
+		, sampler			(sampler_)
+		, lodMode			(lodMode_)
+		, minLod			(-1000.0f)
+		, maxLod			(1000.0f)
+		, baseLevel			(0)
+		, maxLevel			(1000)
+		, unnormal			(false)
+		, float16TexCoord	(false)
+		, imageViewMinLod (0.0f)
+		, lodTexelFetch  (0)
 	{
 	}
 
@@ -149,6 +155,9 @@ struct ReferenceParams : public RenderParams
 	int					baseLevel;
 	int					maxLevel;
 	bool				unnormal;
+	bool				float16TexCoord;
+	float				imageViewMinLod;
+	int					lodTexelFetch;
 };
 
 
@@ -182,6 +191,7 @@ float			computeNonProjectedTriLod	(LodMode mode, const tcu::IVec2& dstSize, cons
 void			computeQuadTexCoord1D			(std::vector<float>& dst, float left, float right);
 void			computeQuadTexCoord1DArray		(std::vector<float>& dst, int layerNdx, float left, float right);
 void			computeQuadTexCoord2D			(std::vector<float>& dst, const tcu::Vec2& bottomLeft, const tcu::Vec2& topRight);
+void			computeQuadTexCoord2D			(std::vector<float>& dst, const tcu::IVec2& bottomLeft, const tcu::IVec2& topRight);
 void			computeQuadTexCoord2DArray		(std::vector<float>& dst, int layerNdx, const tcu::Vec2& bottomLeft, const tcu::Vec2& topRight);
 void			computeQuadTexCoord3D			(std::vector<float>& dst, const tcu::Vec3& p0, const tcu::Vec3& p1, const tcu::IVec3& dirSwz);
 void			computeQuadTexCoordCube			(std::vector<float>& dst, tcu::CubeFace face);

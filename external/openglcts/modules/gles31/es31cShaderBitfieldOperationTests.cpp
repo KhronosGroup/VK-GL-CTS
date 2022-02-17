@@ -551,7 +551,7 @@ private:
 		for (int i = 0; i < m_components; ++i)
 		{
 			GLuint expected =
-				(data->inUvec4[i] >> data->offset) & (data->bits == 32 ? 0xFFFFFFFF : ((1 << data->bits) - 1));
+				(data->inUvec4[i] >> data->offset) & (data->bits == 32 ? 0xFFFFFFFF : ((1u << data->bits) - 1));
 			if (data->outUvec4[i] != expected)
 			{
 				return false;

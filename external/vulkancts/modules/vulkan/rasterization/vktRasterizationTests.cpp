@@ -54,6 +54,9 @@
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkBarrierUtil.hpp"
+#ifndef CTS_USES_VULKANSC
+#include "vktRasterizationOrderAttachmentAccessTests.hpp"
+#endif // CTS_USES_VULKANSC
 
 #include <vector>
 #include <sstream>
@@ -7407,6 +7410,13 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 	{
 		rasterizationTests->addChild(createFragSideEffectsTests(testCtx));
 	}
+
+#ifndef CTS_USES_VULKANSC
+	// Rasterization order attachment access tests
+	{
+		rasterizationTests->addChild(createRasterizationOrderAttachmentAccessTests(testCtx));
+	}
+#endif // CTS_USES_VULKANSC
 }
 
 } // anonymous

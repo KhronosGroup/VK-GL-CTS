@@ -672,7 +672,7 @@ protected:
 
 struct Buffer : public BufferOrImage
 {
-	explicit Buffer (Context& context, VkDeviceSize sizeInBytes, VkBufferUsageFlags usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
+	explicit Buffer (Context& context, VkDeviceSize sizeInBytes, VkBufferUsageFlags usage)
 		: BufferOrImage		(false)
 		, m_sizeInBytes		(sizeInBytes)
 		, m_usage			(usage)
@@ -2371,7 +2371,7 @@ void initializeMemory (Context& context, const Allocation& alloc, const subgroup
 {
 	const vk::VkFormat format = data.format;
 	const vk::VkDeviceSize size = data.numElements *
-		(data.isImage ? getFormatSizeInBytes(format) : getElementSizeInBytes(format, data.layout));
+		(data.isImage() ? getFormatSizeInBytes(format) : getElementSizeInBytes(format, data.layout));
 	if (subgroups::SSBOData::InitializeNonZero == data.initializeType)
 	{
 		de::Random rnd(context.getTestContext().getCommandLine().getBaseSeed());
@@ -2591,12 +2591,13 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTestRequire
 
 	for (deUint32 i = 0u; i < extraDataCount; i++)
 	{
-		if (extraData[i].isImage)
+		if (extraData[i].isImage())
 		{
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Image(context, static_cast<deUint32>(extraData[i].numElements), 1u, extraData[i].format));
 		}
 		else
 		{
+			DE_ASSERT(extraData[i].isUBO());
 			vk::VkDeviceSize size = getElementSizeInBytes(extraData[i].format, extraData[i].layout) * extraData[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
 		}
@@ -2828,12 +2829,13 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTestRequiredSubgroupSize 
 
 	for (deUint32 i = 0u; i < extraDataCount; i++)
 	{
-		if (extraData[i].isImage)
+		if (extraData[i].isImage())
 		{
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Image(context, static_cast<deUint32>(extraData[i].numElements), 1u, extraData[i].format));
 		}
 		else
 		{
+			DE_ASSERT(extraData[i].isUBO());
 			vk::VkDeviceSize size = getElementSizeInBytes(extraData[i].format, extraData[i].layout) * extraData[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
 		}
@@ -3110,12 +3112,13 @@ tcu::TestStatus vkt::subgroups::allStagesRequiredSubgroupSize (Context&						con
 	std::vector< de::SharedPtr<BufferOrImage> > inputBuffers(stagesCount + extraDatasCount);
 
 	DescriptorSetLayoutBuilder layoutBuilder;
+
 	// The implicit result SSBO we use to store our outputs from the shader
 	for (deUint32 ndx = 0u; ndx < stagesCount; ++ndx)
 	{
 		const VkDeviceSize shaderSize = (stagesVector[ndx] == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ? maxWidth * 2 : maxWidth;
 		const VkDeviceSize size = getElementSizeInBytes(format, SSBOData::LayoutStd430) * shaderSize;
-		inputBuffers[ndx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
+		inputBuffers[ndx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
 
 		layoutBuilder.addIndexedBinding(inputBuffers[ndx]->getType(), 1, stagesVector[ndx], getResultBinding(stagesVector[ndx]), DE_NULL);
 	}
@@ -3123,14 +3126,15 @@ tcu::TestStatus vkt::subgroups::allStagesRequiredSubgroupSize (Context&						con
 	for (deUint32 ndx = stagesCount; ndx < stagesCount + extraDatasCount; ++ndx)
 	{
 		const deUint32 datasNdx = ndx - stagesCount;
-		if (extraDatas[datasNdx].isImage)
+		if (extraDatas[datasNdx].isImage())
 		{
 			inputBuffers[ndx] = de::SharedPtr<BufferOrImage>(new Image(context, static_cast<deUint32>(extraDatas[datasNdx].numElements), 1, extraDatas[datasNdx].format));
 		}
 		else
 		{
-			const vk::VkDeviceSize size = getElementSizeInBytes(extraDatas[datasNdx].format, extraDatas[datasNdx].layout) * extraDatas[datasNdx].numElements;
-			inputBuffers[ndx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
+			const auto usage	= (extraDatas[datasNdx].isUBO() ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+			const auto size		= getElementSizeInBytes(extraDatas[datasNdx].format, extraDatas[datasNdx].layout) * extraDatas[datasNdx].numElements;
+			inputBuffers[ndx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, usage));
 		}
 
 		const Allocation& alloc = inputBuffers[ndx]->getAllocation();
@@ -3392,12 +3396,13 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTestRequiredSubgroupSize (C
 
 	for (deUint32 i = 0u; i < extraDataCount; i++)
 	{
-		if (extraData[i].isImage)
+		if (extraData[i].isImage())
 		{
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Image(context, static_cast<deUint32>(extraData[i].numElements), 1u, extraData[i].format));
 		}
 		else
 		{
+			DE_ASSERT(extraData[i].isUBO());
 			vk::VkDeviceSize size = getElementSizeInBytes(extraData[i].format, extraData[i].layout) * extraData[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
 		}
@@ -3598,12 +3603,14 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTestRequiredSubgroupSize 
 
 	for (deUint32 i = 0; i < extraDatasCount; i++)
 	{
-		if (extraDatas[i].isImage)
+		if (extraDatas[i].isImage())
 		{
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Image(context, static_cast<deUint32>(extraDatas[i].numElements), 1, extraDatas[i].format));
 		}
 		else
 		{
+			DE_ASSERT(extraDatas[i].isUBO());
+
 			const vk::VkDeviceSize	size	= getElementSizeInBytes(extraDatas[i].format, extraDatas[i].layout) * extraDatas[i].numElements;
 
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
@@ -3841,27 +3848,31 @@ tcu::TestStatus vkt::subgroups::makeComputeTestRequiredSubgroupSize (Context&			
 	const VkDevice											device							= context.getDevice();
 	const VkQueue											queue							= context.getUniversalQueue();
 	const deUint32											queueFamilyIndex				= context.getUniversalQueueFamilyIndex();
+#ifndef CTS_USES_VULKANSC
+	const VkPhysicalDeviceSubgroupSizeControlProperties&	subgroupSizeControlProperties	= context.getSubgroupSizeControlProperties();
+#else
 	const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&	subgroupSizeControlProperties	= context.getSubgroupSizeControlPropertiesEXT();
+#endif // CTS_USES_VULKANSC
 	const VkDeviceSize										elementSize						= getFormatSizeInBytes(format);
 	const VkDeviceSize										maxSubgroupSize					= isRequiredSubgroupSize
 																							? deMax32(subgroupSizeControlProperties.maxSubgroupSize, maxSupportedSubgroupSize())
 																							: maxSupportedSubgroupSize();
 	const VkDeviceSize										resultBufferSize				= maxSubgroupSize * maxSubgroupSize * maxSubgroupSize;
 	const VkDeviceSize										resultBufferSizeInBytes			= resultBufferSize * elementSize;
-	Buffer													resultBuffer					(context, resultBufferSizeInBytes);
+	Buffer													resultBuffer					(context, resultBufferSizeInBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 	std::vector< de::SharedPtr<BufferOrImage> >				inputBuffers					(inputsCount);
 
 	for (deUint32 i = 0; i < inputsCount; i++)
 	{
-		if (inputs[i].isImage)
+		if (inputs[i].isImage())
 		{
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Image(context, static_cast<deUint32>(inputs[i].numElements), 1, inputs[i].format));
 		}
 		else
 		{
-			const vk::VkDeviceSize size = getElementSizeInBytes(inputs[i].format, inputs[i].layout) * inputs[i].numElements;
-
-			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
+			const auto usage	= (inputs[i].isUBO() ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+			const auto size		= getElementSizeInBytes(inputs[i].format, inputs[i].layout) * inputs[i].numElements;
+			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, usage));
 		}
 
 		const Allocation& alloc = inputBuffers[i]->getAllocation();
@@ -4282,21 +4293,21 @@ static vectorBufferOrImage makeRayTracingInputBuffers (Context&								context,
 
 	// The implicit result SSBO we use to store our outputs from the shader
 	for (size_t stageNdx = 0u; stageNdx < stagesCount; ++stageNdx)
-		inputBuffers[stageNdx]	= de::SharedPtr<BufferOrImage>(new Buffer(context, inputBufferSize));
+		inputBuffers[stageNdx]	= de::SharedPtr<BufferOrImage>(new Buffer(context, inputBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
 
 	for (size_t stageNdx = stagesCount; stageNdx < stagesCount + extraDatasCount; ++stageNdx)
 	{
 		const size_t	datasNdx	= stageNdx - stagesCount;
 
-		if (extraDatas[datasNdx].isImage)
+		if (extraDatas[datasNdx].isImage())
 		{
 			inputBuffers[stageNdx] = de::SharedPtr<BufferOrImage>(new Image(context, static_cast<deUint32>(extraDatas[datasNdx].numElements), 1, extraDatas[datasNdx].format));
 		}
 		else
 		{
-			const VkDeviceSize size = getElementSizeInBytes(extraDatas[datasNdx].format, extraDatas[datasNdx].layout) * extraDatas[datasNdx].numElements;
-
-			inputBuffers[stageNdx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
+			const auto usage	= (extraDatas[datasNdx].isUBO() ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+			const auto size		= getElementSizeInBytes(extraDatas[datasNdx].format, extraDatas[datasNdx].layout) * extraDatas[datasNdx].numElements;
+			inputBuffers[stageNdx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, usage));
 		}
 
 		initializeMemory(context, inputBuffers[stageNdx]->getAllocation(), extraDatas[datasNdx]);

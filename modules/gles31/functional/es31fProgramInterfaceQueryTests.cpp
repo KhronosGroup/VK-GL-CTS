@@ -1034,10 +1034,10 @@ bool ResourceListTestCase::verifyResourceList (const std::vector<std::string>& r
 
 	for (int ndx = 0; ndx < (int)resourceList.size(); ++ndx)
 	{
-		// dummyZero is a uniform that may be added by
+		// unusedZero is a uniform that may be added by
 		// generateProgramInterfaceProgramSources.  Omit it here to avoid
 		// confusion about the output.
-		if (resourceList[ndx] != getDummyZeroUniformName())
+		if (resourceList[ndx] != getUnusedZeroUniformName())
 			m_testCtx.getLog() << tcu::TestLog::Message << "\t" << ndx << ": " << resourceList[ndx] << tcu::TestLog::EndMessage;
 	}
 
@@ -1061,11 +1061,11 @@ bool ResourceListTestCase::verifyResourceList (const std::vector<std::string>& r
 	{
 		if (!de::contains(expectedResources.begin(), expectedResources.end(), resourceList[ndx]))
 		{
-			// Ignore all builtin variables or the variable dummyZero,
-			// mismatch causes errors otherwise.  dummyZero is a uniform that
+			// Ignore all builtin variables or the variable unusedZero,
+			// mismatch causes errors otherwise.  unusedZero is a uniform that
 			// may be added by generateProgramInterfaceProgramSources.
 			if (deStringBeginsWith(resourceList[ndx].c_str(), "gl_") == DE_FALSE &&
-				resourceList[ndx] != getDummyZeroUniformName())
+				resourceList[ndx] != getUnusedZeroUniformName())
 			{
 				m_testCtx.getLog() << tcu::TestLog::Message << "Error, resource list contains unexpected resource name " << resourceList[ndx] << tcu::TestLog::EndMessage;
 				error = true;
@@ -1421,7 +1421,7 @@ std::string ResourceTestCase::genMultilineDescription (const ResourceDefinition:
 	}
 
 	DE_ASSERT(false);
-	return DE_NULL;
+	return "";
 }
 
 class ResourceNameBufferLimitCase : public TestCase
@@ -4738,35 +4738,35 @@ static void generateBufferBackedInterfaceResourceBasicBlockTypes (Context& conte
 	// .named_block
 	{
 		const ResourceDefinition::Node::SharedPtr block			(new ResourceDefinition::InterfaceBlock(binding, true));
-		const ResourceDefinition::Node::SharedPtr dummyVariable	(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
+		const ResourceDefinition::Node::SharedPtr unusedVariable(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
 
-		blockContentGenerator(context, dummyVariable, targetGroup, programInterface, "named_block");
+		blockContentGenerator(context, unusedVariable, targetGroup, programInterface, "named_block");
 	}
 
 	// .unnamed_block
 	{
 		const ResourceDefinition::Node::SharedPtr block			(new ResourceDefinition::InterfaceBlock(binding, false));
-		const ResourceDefinition::Node::SharedPtr dummyVariable	(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
+		const ResourceDefinition::Node::SharedPtr unusedVariable(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
 
-		blockContentGenerator(context, dummyVariable, targetGroup, programInterface, "unnamed_block");
+		blockContentGenerator(context, unusedVariable, targetGroup, programInterface, "unnamed_block");
 	}
 
 	// .block_array
 	{
 		const ResourceDefinition::Node::SharedPtr arrayElement	(new ResourceDefinition::ArrayElement(binding, 3));
 		const ResourceDefinition::Node::SharedPtr block			(new ResourceDefinition::InterfaceBlock(arrayElement, true));
-		const ResourceDefinition::Node::SharedPtr dummyVariable	(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
+		const ResourceDefinition::Node::SharedPtr unusedVariable(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
 
-		blockContentGenerator(context, dummyVariable, targetGroup, programInterface, "block_array");
+		blockContentGenerator(context, unusedVariable, targetGroup, programInterface, "block_array");
 	}
 
 	// .block_array_single_element
 	{
 		const ResourceDefinition::Node::SharedPtr arrayElement	(new ResourceDefinition::ArrayElement(binding, 1));
 		const ResourceDefinition::Node::SharedPtr block			(new ResourceDefinition::InterfaceBlock(arrayElement, true));
-		const ResourceDefinition::Node::SharedPtr dummyVariable	(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
+		const ResourceDefinition::Node::SharedPtr unusedVariable(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
 
-		blockContentGenerator(context, dummyVariable, targetGroup, programInterface, "block_array_single_element");
+		blockContentGenerator(context, unusedVariable, targetGroup, programInterface, "block_array_single_element");
 	}
 }
 
@@ -4788,26 +4788,26 @@ static void generateBufferBackedInterfaceResourceBufferBindingCases (Context& co
 		// .named_block*
 		{
 			const ResourceDefinition::Node::SharedPtr block			(new ResourceDefinition::InterfaceBlock(binding, true));
-			const ResourceDefinition::Node::SharedPtr dummyVariable	(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
+			const ResourceDefinition::Node::SharedPtr unusedVariable(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
 
-			targetGroup->addChild(new ResourceTestCase(context, dummyVariable, ProgramResourceQueryTestTarget(programInterface, PROGRAMRESOURCEPROP_BUFFER_BINDING), ("named_block" + nameSuffix).c_str()));
+			targetGroup->addChild(new ResourceTestCase(context, unusedVariable, ProgramResourceQueryTestTarget(programInterface, PROGRAMRESOURCEPROP_BUFFER_BINDING), ("named_block" + nameSuffix).c_str()));
 		}
 
 		// .unnamed_block*
 		{
 			const ResourceDefinition::Node::SharedPtr block			(new ResourceDefinition::InterfaceBlock(binding, false));
-			const ResourceDefinition::Node::SharedPtr dummyVariable	(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
+			const ResourceDefinition::Node::SharedPtr unusedVariable(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
 
-			targetGroup->addChild(new ResourceTestCase(context, dummyVariable, ProgramResourceQueryTestTarget(programInterface, PROGRAMRESOURCEPROP_BUFFER_BINDING), ("unnamed_block" + nameSuffix).c_str()));
+			targetGroup->addChild(new ResourceTestCase(context, unusedVariable, ProgramResourceQueryTestTarget(programInterface, PROGRAMRESOURCEPROP_BUFFER_BINDING), ("unnamed_block" + nameSuffix).c_str()));
 		}
 
 		// .block_array*
 		{
 			const ResourceDefinition::Node::SharedPtr arrayElement	(new ResourceDefinition::ArrayElement(binding, 3));
 			const ResourceDefinition::Node::SharedPtr block			(new ResourceDefinition::InterfaceBlock(arrayElement, true));
-			const ResourceDefinition::Node::SharedPtr dummyVariable	(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
+			const ResourceDefinition::Node::SharedPtr unusedVariable(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
 
-			targetGroup->addChild(new ResourceTestCase(context, dummyVariable, ProgramResourceQueryTestTarget(programInterface, PROGRAMRESOURCEPROP_BUFFER_BINDING), ("block_array" + nameSuffix).c_str()));
+			targetGroup->addChild(new ResourceTestCase(context, unusedVariable, ProgramResourceQueryTestTarget(programInterface, PROGRAMRESOURCEPROP_BUFFER_BINDING), ("block_array" + nameSuffix).c_str()));
 		}
 	}
 }
@@ -4828,26 +4828,26 @@ static void generateBufferBlockReferencedByShaderSingleBlockContentCases (Contex
 	// .named_block
 	{
 		const ResourceDefinition::Node::SharedPtr block			(new ResourceDefinition::InterfaceBlock(storage, true));
-		const ResourceDefinition::Node::SharedPtr dummyVariable	(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
+		const ResourceDefinition::Node::SharedPtr unusedVariable(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
 
-		targetGroup->addChild(new ResourceTestCase(context, dummyVariable, ProgramResourceQueryTestTarget(programInterface, PROGRAMRESOURCEPROP_REFERENCED_BY_SHADER), "named_block"));
+		targetGroup->addChild(new ResourceTestCase(context, unusedVariable, ProgramResourceQueryTestTarget(programInterface, PROGRAMRESOURCEPROP_REFERENCED_BY_SHADER), "named_block"));
 	}
 
 	// .unnamed_block
 	{
 		const ResourceDefinition::Node::SharedPtr block			(new ResourceDefinition::InterfaceBlock(storage, false));
-		const ResourceDefinition::Node::SharedPtr dummyVariable	(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
+		const ResourceDefinition::Node::SharedPtr unusedVariable(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
 
-		targetGroup->addChild(new ResourceTestCase(context, dummyVariable, ProgramResourceQueryTestTarget(programInterface, PROGRAMRESOURCEPROP_REFERENCED_BY_SHADER), "unnamed_block"));
+		targetGroup->addChild(new ResourceTestCase(context, unusedVariable, ProgramResourceQueryTestTarget(programInterface, PROGRAMRESOURCEPROP_REFERENCED_BY_SHADER), "unnamed_block"));
 	}
 
 	// .block_array
 	{
 		const ResourceDefinition::Node::SharedPtr arrayElement	(new ResourceDefinition::ArrayElement(storage, 3));
 		const ResourceDefinition::Node::SharedPtr block			(new ResourceDefinition::InterfaceBlock(arrayElement, true));
-		const ResourceDefinition::Node::SharedPtr dummyVariable	(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
+		const ResourceDefinition::Node::SharedPtr unusedVariable(new ResourceDefinition::Variable(block, glu::TYPE_BOOL_VEC3));
 
-		targetGroup->addChild(new ResourceTestCase(context, dummyVariable, ProgramResourceQueryTestTarget(programInterface, PROGRAMRESOURCEPROP_REFERENCED_BY_SHADER), "block_array"));
+		targetGroup->addChild(new ResourceTestCase(context, unusedVariable, ProgramResourceQueryTestTarget(programInterface, PROGRAMRESOURCEPROP_REFERENCED_BY_SHADER), "block_array"));
 	}
 }
 

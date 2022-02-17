@@ -36,6 +36,7 @@
 #include "vktSynchronizationWin32KeyedMutexTests.hpp"
 #include "vktSynchronizationNoneStageTests.hpp"
 #include "vktSynchronizationUtil.hpp"
+#include "vktSynchronizationImageLayoutTransitionTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -104,6 +105,7 @@ tcu::TestCaseGroup* createTestsInternal (tcu::TestContext& testCtx, Synchronizat
 #ifndef CTS_USES_VULKANSC
 		testGroup->addChild(createNoneStageTests(testCtx));
 #endif // CTS_USES_VULKANSC
+		testGroup->addChild(createImageLayoutTransitionTests(testCtx));
 	}
 	else // legacy synchronization
 	{

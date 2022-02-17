@@ -645,6 +645,8 @@ static void infNanRandomFloats(int numValues, void* const* values, const char *n
 	const bool				isDouble		= glu::isDataTypeDoubleOrDVec(type);
 	const deUint64			exponentBias	= (isDouble ? static_cast<deUint64>(tcu::Float64::EXPONENT_BIAS) : static_cast<deUint64>(tcu::Float32::EXPONENT_BIAS));
 
+	int numInf = 0;
+	int numNan = 0;
 	for (int valNdx = 0; valNdx < numValues*scalarSize; valNdx++)
 	{
 		// Roughly 25% chance of each of Inf and NaN
@@ -657,6 +659,8 @@ static void infNanRandomFloats(int numValues, void* const* values, const char *n
 		const deUint64	mantissa	= isInf ? 0 : (isNan ? ((kOne<<(numMantissaBits-1)) | m) : m);
 		const deUint64	exp			= (isNan || isInf) ? exponentMask : std::min(e, exponentBias);
 		const deUint64	value		= (sign << (numMantissaBits + exponentBits)) | (exp << numMantissaBits) | static_cast<deUint32>(mantissa);
+		if (isInf) numInf++;
+		if (isNan) numNan++;
 
 		if (isDouble)
 		{
@@ -670,6 +674,10 @@ static void infNanRandomFloats(int numValues, void* const* values, const char *n
 			((deUint32*)values[0])[valNdx] = value32;
 		}
 	}
+	// Check for minimal coverage of intended cases.
+	DE_ASSERT(0 < numInf);
+	DE_ASSERT(0 < numNan);
+	DE_ASSERT(numInf + numNan < numValues*scalarSize);
 }
 
 class IsnanCaseInstance : public CommonFunctionTestInstance

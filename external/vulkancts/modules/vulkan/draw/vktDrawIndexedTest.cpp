@@ -69,7 +69,7 @@ public:
 };
 
 DrawIndexed::DrawIndexed (Context &context, TestSpec testSpec)
-	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.topology)
+	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.useDynamicRendering, testSpec.topology)
 {
 	switch (m_topology)
 	{
@@ -138,7 +138,8 @@ tcu::TestStatus DrawIndexed::iterate (void)
 	const vk::VkQueue	queue	= m_context.getUniversalQueue();
 	const vk::VkDevice	device	= m_context.getDevice();
 
-	beginRenderPass();
+	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+	beginRender();
 
 	const vk::VkDeviceSize dataSize = m_indexes.size() * sizeof(deUint32);
 	m_indexBuffer = Buffer::createAndAlloc(	m_vk, m_context.getDevice(),
@@ -162,7 +163,7 @@ tcu::TestStatus DrawIndexed::iterate (void)
 
 	m_vk.cmdDrawIndexed(*m_cmdBuffer, 6, 1, 2, VERTEX_OFFSET, 0);
 
-	endRenderPass(m_vk, *m_cmdBuffer);
+	endRender();
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -220,7 +221,8 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 	const vk::VkQueue	queue	= m_context.getUniversalQueue();
 	const vk::VkDevice	device	= m_context.getDevice();
 
-	beginRenderPass();
+	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+	beginRender();
 
 	const vk::VkDeviceSize dataSize = m_indexes.size() * sizeof(deUint32);
 	m_indexBuffer = Buffer::createAndAlloc(	m_vk, m_context.getDevice(),
@@ -267,7 +269,7 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 			break;
 	}
 
-	endRenderPass(m_vk, *m_cmdBuffer);
+	endRender();
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -314,13 +316,19 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 	}
 
 	return tcu::TestStatus(res, qpGetTestResultName(res));
+}
 
+void checkSupport(Context& context, DrawIndexed::TestSpec testSpec)
+{
+	if (testSpec.useDynamicRendering)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 }
 
 }	// anonymous
 
-DrawIndexedTests::DrawIndexedTests (tcu::TestContext &testCtx)
-	: TestCaseGroup	(testCtx, "indexed_draw", "drawing indexed geometry")
+DrawIndexedTests::DrawIndexedTests (tcu::TestContext &testCtx, bool useDynamicRendering)
+	: TestCaseGroup			(testCtx, "indexed_draw", "drawing indexed geometry")
+	, m_useDynamicRendering	(useDynamicRendering)
 {
 	/* Left blank on purpose */
 }
@@ -333,21 +341,27 @@ void DrawIndexedTests::init (void)
 		DrawIndexed::TestSpec testSpec;
 		testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetch.vert";
 		testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
+		testSpec.useDynamicRendering = m_useDynamicRendering;
 
 		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		addChild(new InstanceFactory<DrawIndexed>(m_testCtx, "draw_indexed_triangle_list", "Draws indexed triangle list", testSpec));
+		addChild(new InstanceFactory<DrawIndexed, FunctionSupport1<DrawIndexed::TestSpec> >
+			(m_testCtx, "draw_indexed_triangle_list", "Draws indexed triangle list", testSpec, FunctionSupport1<DrawIndexed::TestSpec>::Args(checkSupport, testSpec)));
 		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-		addChild(new InstanceFactory<DrawIndexed>(m_testCtx, "draw_indexed_triangle_strip", "Draws indexed triangle strip", testSpec));
+		addChild(new InstanceFactory<DrawIndexed, FunctionSupport1<DrawIndexed::TestSpec> >
+			(m_testCtx, "draw_indexed_triangle_strip", "Draws indexed triangle strip", testSpec, FunctionSupport1<DrawIndexed::TestSpec>::Args(checkSupport, testSpec)));
 	}
 	{
 		DrawInstancedIndexed::TestSpec testSpec;
 		testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchInstancedFirstInstance.vert";
 		testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
+		testSpec.useDynamicRendering = m_useDynamicRendering;
 
 		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		addChild(new InstanceFactory<DrawInstancedIndexed>(m_testCtx, "draw_instanced_indexed_triangle_list", "Draws indexed triangle list", testSpec));
+		addChild(new InstanceFactory<DrawInstancedIndexed, FunctionSupport1<DrawInstancedIndexed::TestSpec> >
+			(m_testCtx, "draw_instanced_indexed_triangle_list", "Draws indexed triangle list", testSpec, FunctionSupport1<DrawInstancedIndexed::TestSpec>::Args(checkSupport, testSpec)));
 		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-		addChild(new InstanceFactory<DrawInstancedIndexed>(m_testCtx, "draw_instanced_indexed_triangle_strip", "Draws indexed triangle strip", testSpec));
+		addChild(new InstanceFactory<DrawInstancedIndexed, FunctionSupport1<DrawInstancedIndexed::TestSpec> >
+			(m_testCtx, "draw_instanced_indexed_triangle_strip", "Draws indexed triangle strip", testSpec, FunctionSupport1<DrawInstancedIndexed::TestSpec>::Args(checkSupport, testSpec)));
 	}
 }
 

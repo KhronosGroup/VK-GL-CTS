@@ -31,7 +31,7 @@ namespace vkt
 namespace FragmentShadingRate
 {
 
-void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* group);
+void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* group, bool useDynamicRendering);
 
 } // FragmentShadingRate
 } // vkt
