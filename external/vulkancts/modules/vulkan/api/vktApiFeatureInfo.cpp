@@ -5759,7 +5759,6 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context& context)
 	{
 		{ { "VkPhysicalDeviceVulkan13Features.robustImageAccess" },										vulkan13Features.robustImageAccess },
 		{ { "VkPhysicalDeviceVulkan13Features.inlineUniformBlock" },									vulkan13Features.inlineUniformBlock },
-		{ { "VkPhysicalDeviceVulkan13Features.descriptorBindingInlineUniformBlockUpdateAfterBind" },	vulkan13Features.descriptorBindingInlineUniformBlockUpdateAfterBind },
 		{ { "VkPhysicalDeviceVulkan13Features.pipelineCreationCacheControl" },							vulkan13Features.pipelineCreationCacheControl },
 		{ { "VkPhysicalDeviceVulkan13Features.privateData" },											vulkan13Features.privateData },
 		{ { "VkPhysicalDeviceVulkan13Features.shaderDemoteToHelperInvocation" },						vulkan13Features.shaderDemoteToHelperInvocation },
