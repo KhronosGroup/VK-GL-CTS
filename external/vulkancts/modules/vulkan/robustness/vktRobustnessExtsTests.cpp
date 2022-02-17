@@ -827,6 +827,9 @@ string genCoord(string c, int numCoords, VkSampleCountFlagBits samples, int dim)
 // Normalized coordinates. Divide by "imageDim" and add 0.25 so we're not on a pixel boundary.
 string genCoordNorm(const CaseDef &caseDef, string c, int numCoords, int numNormalizedCoords, int dim)
 {
+	// dim can be 3 for cube_array. Reuse the number of layers in that case.
+	dim = std::min(dim, 2);
+
 	if (numCoords == 1)
 		return c + " / float(" + to_string(caseDef.imageDim[dim]) + ")";
 
@@ -3192,7 +3195,6 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 											de::MovePtr<tcu::TestCaseGroup> sampGroup(new tcu::TestCaseGroup(testCtx, sampCases[sampNdx].name, sampCases[sampNdx].name));
 											for (int viewNdx = 0; viewNdx < DE_LENGTH_OF_ARRAY(viewCases); viewNdx++)
 											{
-#ifndef CTS_USES_VULKANSC
 												if (viewCases[viewNdx].count != VK_IMAGE_VIEW_TYPE_1D &&
 													descCases[descNdx].count != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE &&
 													descCases[descNdx].count != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
@@ -3200,7 +3202,6 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 													// buffer descriptors don't have different dimensionalities. Only test "1D"
 													continue;
 												}
-#endif
 
 												if (viewCases[viewNdx].count != VK_IMAGE_VIEW_TYPE_2D && viewCases[viewNdx].count != VK_IMAGE_VIEW_TYPE_2D_ARRAY &&
 													sampCases[sampNdx].count != VK_SAMPLE_COUNT_1_BIT)
