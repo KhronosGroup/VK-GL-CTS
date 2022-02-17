@@ -298,7 +298,7 @@ tcu::TestStatus SampleDrawnCubeFaceTestInstance::iterate (void)
 	de::MovePtr<Allocation>			uvBufferAlloc			= bindBuffer(vk, device, allocator, *uvBuffer, MemoryRequirement::HostVisible);
 	const VkDeviceSize				uvBufferOffset			= 0ull;
 
-	deMemcpy(uvBufferAlloc->getHostPtr(), &uvCoordinates[0], static_cast<size_t>(bufferSize));
+	deMemcpy(uvBufferAlloc->getHostPtr(), &uvCoordinates[0], uvCoordinates.size() * sizeof (Vertex));
 	flushAlloc(vk, device, *uvBufferAlloc);
 
 	// Sampled values will be written to this image.

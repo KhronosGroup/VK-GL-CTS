@@ -1627,7 +1627,6 @@ tcu::TestStatus validateRoadmap2022(Context& context)
 		ROADMAP_FEATURE_ITEM(vk12Features, shaderStorageImageArrayNonUniformIndexing),
 		ROADMAP_FEATURE_ITEM(vk12Features, shaderUniformTexelBufferArrayNonUniformIndexing),
 		ROADMAP_FEATURE_ITEM(vk12Features, shaderStorageTexelBufferArrayNonUniformIndexing),
-		ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingUniformBufferUpdateAfterBind),
 		ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingSampledImageUpdateAfterBind),
 		ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingStorageImageUpdateAfterBind),
 		ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingStorageBufferUpdateAfterBind),
@@ -5810,7 +5809,6 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context& context)
 	{
 		{ { "VkPhysicalDeviceVulkan13Features.robustImageAccess" },										vulkan13Features.robustImageAccess },
 		{ { "VkPhysicalDeviceVulkan13Features.inlineUniformBlock" },									vulkan13Features.inlineUniformBlock },
-		{ { "VkPhysicalDeviceVulkan13Features.descriptorBindingInlineUniformBlockUpdateAfterBind" },	vulkan13Features.descriptorBindingInlineUniformBlockUpdateAfterBind },
 		{ { "VkPhysicalDeviceVulkan13Features.pipelineCreationCacheControl" },							vulkan13Features.pipelineCreationCacheControl },
 		{ { "VkPhysicalDeviceVulkan13Features.privateData" },											vulkan13Features.privateData },
 		{ { "VkPhysicalDeviceVulkan13Features.shaderDemoteToHelperInvocation" },						vulkan13Features.shaderDemoteToHelperInvocation },

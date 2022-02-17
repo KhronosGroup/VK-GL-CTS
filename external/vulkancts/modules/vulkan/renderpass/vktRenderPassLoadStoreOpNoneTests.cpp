@@ -565,12 +565,13 @@ void LoadStoreOpNoneTestInstance::createCommandBuffer	(const DeviceInterface&			
 			if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_MULTISAMPLE)
 			{
 				DE_ASSERT(m_testParams.attachments[i+1].usage & ATTACHMENT_USAGE_RESOLVE_TARGET);
+				const auto resolveMode = ((m_testParams.attachments[i].usage & ATTACHMENT_USAGE_INTEGER) ? VK_RESOLVE_MODE_SAMPLE_ZERO_BIT : VK_RESOLVE_MODE_AVERAGE_BIT);
 				colorAttachments.push_back({
 					VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,		// VkStructureType						sType;
 					DE_NULL,												// const void*							pNext;
 					*imageViews[i],											// VkImageView							imageView;
 					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
-					VK_RESOLVE_MODE_AVERAGE_BIT,							// VkResolveModeFlagBits				resolveMode;
+					resolveMode,											// VkResolveModeFlagBits				resolveMode;
 					*imageViews[i+1],										// VkImageView							resolveImageView;
 					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout						resolveImageLayout;
 					m_testParams.attachments[i].loadOp,						// VkAttachmentLoadOp					loadOp;
