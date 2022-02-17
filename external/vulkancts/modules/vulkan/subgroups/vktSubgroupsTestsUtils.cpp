@@ -1616,7 +1616,7 @@ void vkt::subgroups::initStdPrograms (vk::SourceCollections&			programCollection
 			"{\n"
 			+ tempRes
 			+ testSrc +
-			"  reportIntersectionEXT(0.75f, gl_HitKindFrontFacingTriangleEXT);\n"
+			"  reportIntersectionEXT(0.75f, 0x7Eu);\n"
 			"  result[gl_LaunchIDEXT.x] = tempRes;\n"
 			"}\n";
 		const std::string	callShader	=
@@ -4182,7 +4182,7 @@ void addRayTracingNoSubgroupShader (SourceCollections& programCollection)
 		"\n"
 		"void main()\n"
 		"{\n"
-		"  reportIntersectionEXT(0.75f, gl_HitKindFrontFacingTriangleEXT);\n"
+		"  reportIntersectionEXT(0.75f, 0x7Eu);\n"
 		"}\n";
 	const std::string callShaderNoSubgroups =
 		"#version 460 core\n"

@@ -778,7 +778,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 	const string	r64			= formatIsR64(format) ? "64" : "";
 	const string	i64Type		= formatIsR64(format) ? "64_t" : "";
 	const string	vecType		= formatIsFloat(format) ? "vec4" : (formatIsSignedInt(format) ? ("i" + r64 + "vec4") : ("u" + r64 + "vec4"));
-	const string	qLevelType	= vecType == "vec4" ? "float" : ((vecType == "ivec4") | (vecType == "i64vec4")) ? ("int" + i64Type) : ("uint" + i64Type);
+	const string	qLevelType	= vecType == "vec4" ? "float" : ((vecType == "ivec4") || (vecType == "i64vec4")) ? ("int" + i64Type) : ("uint" + i64Type);
 
 	decls << "uvec4 abs(uvec4 x) { return x; }\n";
 	if (formatIsR64(format))
