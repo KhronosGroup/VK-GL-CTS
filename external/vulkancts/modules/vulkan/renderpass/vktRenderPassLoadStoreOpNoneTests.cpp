@@ -565,12 +565,13 @@ void LoadStoreOpNoneTestInstance::createCommandBuffer	(const DeviceInterface&			
 			if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_MULTISAMPLE)
 			{
 				DE_ASSERT(m_testParams.attachments[i+1].usage & ATTACHMENT_USAGE_RESOLVE_TARGET);
+				const auto resolveMode = ((m_testParams.attachments[i].usage & ATTACHMENT_USAGE_INTEGER) ? VK_RESOLVE_MODE_SAMPLE_ZERO_BIT : VK_RESOLVE_MODE_AVERAGE_BIT);
 				colorAttachments.push_back({
 					VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,		// VkStructureType						sType;
 					DE_NULL,												// const void*							pNext;
 					*imageViews[i],											// VkImageView							imageView;
 					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
-					VK_RESOLVE_MODE_AVERAGE_BIT,							// VkResolveModeFlagBits				resolveMode;
+					resolveMode,											// VkResolveModeFlagBits				resolveMode;
 					*imageViews[i+1],										// VkImageView							resolveImageView;
 					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout						resolveImageLayout;
 					m_testParams.attachments[i].loadOp,						// VkAttachmentLoadOp					loadOp;
@@ -1444,11 +1445,14 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_none_resolve", "", params));
 	}
 
-	std::vector<VkFormat>	formats = { VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT };
+	std::vector<VkFormat>	formats = { VK_FORMAT_D16_UNORM, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_S8_UINT };
 
 	for (deUint32 f = 0; f < formats.size(); ++f)
 	{
-		const std::string	formatName = getFormatCaseName(formats[f]);
+		const auto			tcuFormat	= mapVkFormat(formats[f]);
+		const bool			hasDepth	= tcu::hasDepthComponent(tcuFormat.order);
+		const bool			hasStencil	= tcu::hasStencilComponent(tcuFormat.order);
+		const std::string	formatName	= getFormatCaseName(formats[f]);
 
 		// Preinitialize attachment 0 (color) to green and attachment 1 (depth) to 0.5.
 		// Draw a red rectangle using depth 1.0 and depth op 'greater'. Depth test will pass and update
@@ -1458,6 +1462,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		// After the renderpass the red color should remain inside the render area of the color buffer.
 		// Store op 'store' for depth buffer makes the written values undefined, but the pixels outside
 		// render area should still contain the original value of 0.5.
+		if (hasDepth)
 		{
 			TestParams params;
 			params.alphaBlend = false;
@@ -1483,6 +1488,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		// Preinitialize depth attachment to 0.5. Use a render pass with load and store ops none for the depth, but
 		// disable depth test which also disables depth writes. The depth attachment should have the original
 		// preinitialized value after the render pass.
+		if (hasDepth)
 		{
 			TestParams params;
 			params.alphaBlend = false;
@@ -1509,6 +1515,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		// using cmdClearAttachments. Draw a red rectangle using depth 1.0 and depth op 'greater'. Depth test will pass and update
 		// depth buffer to 1.0. After the renderpass the color buffer should have red inside the render area and depth should have the
 		// shader updated value of 1.0.
+		if (hasDepth)
 		{
 			TestParams params;
 			params.alphaBlend = false;
@@ -1535,6 +1542,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		// using cmdClearAttachments. Draw a red rectangle using depth 1.0 and depth op 'greater' which will pass.
 		// After the renderpass the color buffer should have red inside the render area. Depth buffer contents inside render
 		// are is undefined because of store op 'don't care', but the outside should have the original value of 0.5.
+		if (hasDepth)
 		{
 			TestParams params;
 			params.alphaBlend = false;
@@ -1564,6 +1572,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		// After the renderpass the red color should remain inside the render area of the color buffer.
 		// Store op 'store' for stencil buffer makes the written values undefined, but the pixels outside
 		// render area should still contain the original value of 128.
+		if (hasStencil)
 		{
 			TestParams params;
 			params.alphaBlend = false;
@@ -1589,6 +1598,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		// Preinitialize stencil attachment to 128. Use a render pass with load and store ops none for the stencil, but
 		// disable stencil test which also disables stencil writes. The stencil attachment should have the original
 		// preinitialized value after the render pass.
+		if (hasStencil)
 		{
 			TestParams params;
 			params.alphaBlend = false;
@@ -1615,6 +1625,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		// using cmdClearAttachments. Draw a red rectangle using stencil reference of 255 and stencil op 'greater'. Stencil test will pass and update
 		// stencil buffer to 255. After the renderpass the color buffer should have red inside the render area and stencil should have the
 		// shader updated value of 255.
+		if (hasStencil)
 		{
 			TestParams params;
 			params.alphaBlend = false;
@@ -1641,6 +1652,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		// using cmdClearAttachments. Draw a red rectangle using stencil reference 255 and stencil op 'greater' which will pass.
 		// After the renderpass the color buffer should have red inside the render area. Stencil buffer contents inside render
 		// are is undefined because of store op 'don't care', but the outside should have the original value of 128.
+		if (hasStencil)
 		{
 			TestParams params;
 			params.alphaBlend = false;
