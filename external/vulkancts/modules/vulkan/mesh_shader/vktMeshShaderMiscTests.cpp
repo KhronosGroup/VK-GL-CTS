@@ -1509,7 +1509,7 @@ void SimpleBarrierCase::initPrograms (vk::SourceCollections& programCollection) 
 		<< "${BODY}"
 		<< "}\n"
 		;
-	const tcu::StringTemplate meshTemplate = meshTemplateStr.str();
+	const tcu::StringTemplate meshTemplate(meshTemplateStr.str());
 
 	if (m_params->needsTaskShader())
 	{
@@ -1703,7 +1703,7 @@ void MemoryBarrierCase::initPrograms (vk::SourceCollections& programCollection) 
 		<< "${BODY}"
 		<< "}\n"
 		;
-	const tcu::StringTemplate meshTemplate = meshTemplateStr.str();
+	const tcu::StringTemplate meshTemplate(meshTemplateStr.str());
 
 	if (params->needsTaskShader())
 	{

@@ -447,14 +447,22 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass(VkFormat vkformat, 
 	};
 	void * attachmentRefStencil = DE_NULL;
 	VkImageLayout finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-	VkAttachmentDescriptionStencilLayoutKHR stencilFinalLayout =
+	VkAttachmentDescriptionStencilLayoutKHR multisampleStencilFinalLayout =
 	{
 		VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_STENCIL_LAYOUT_KHR,
 		DE_NULL,
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 	};
-	void * attachmentDescriptionStencil = DE_NULL;
+	VkAttachmentDescriptionStencilLayoutKHR singlesampleStencilFinalLayout =
+	{
+		VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_STENCIL_LAYOUT_KHR,
+		DE_NULL,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+	};
+	void * multisampleAttachmentDescriptionStencil = DE_NULL;
+	void * singlesampleAttachmentDescriptionStencil = DE_NULL;
 
 	if (m_config.separateDepthStencilLayouts)
 	{
@@ -463,34 +471,39 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass(VkFormat vkformat, 
 			layout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR;
 			stencilLayout.stencilLayout = VK_IMAGE_LAYOUT_GENERAL;
 			finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-			stencilFinalLayout.stencilFinalLayout = VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL_KHR; // This aspect should be unused.
+			multisampleStencilFinalLayout.stencilFinalLayout = VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL_KHR; // This aspect should be unused.
+			singlesampleStencilFinalLayout.stencilFinalLayout = VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL_KHR; // This aspect should be unused.
 		}
 		else
 		{
 			layout = m_config.sampleMask ? VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR : VK_IMAGE_LAYOUT_GENERAL;
 			stencilLayout.stencilLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR;
 			finalLayout = VK_IMAGE_LAYOUT_GENERAL;  // This aspect should be unused.
-			stencilFinalLayout.stencilFinalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			multisampleStencilFinalLayout.stencilFinalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			singlesampleStencilFinalLayout.stencilFinalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		}
 		attachmentRefStencil = &stencilLayout;
-		attachmentDescriptionStencil = &stencilFinalLayout;
+		multisampleAttachmentDescriptionStencil = &multisampleStencilFinalLayout;
+		singlesampleAttachmentDescriptionStencil = &singlesampleStencilFinalLayout;
 	}
 
 	if (renderPassNo != 0)
 	{
-		stencilFinalLayout.stencilInitialLayout = stencilLayout.stencilLayout;
+		multisampleStencilFinalLayout.stencilInitialLayout = stencilLayout.stencilLayout;
+		singlesampleStencilFinalLayout.stencilInitialLayout = stencilLayout.stencilLayout;
 	}
 
 	if (renderPassNo != m_numRenderPasses - 1)
 	{
 		finalLayout = layout;
-		stencilFinalLayout.stencilFinalLayout = layout;
+		multisampleStencilFinalLayout.stencilFinalLayout = layout;
+		singlesampleStencilFinalLayout.stencilFinalLayout = layout;
 	}
 
 	const AttachmentDescription2 multisampleAttachment		// VkAttachmentDescription2
 	(
 															// VkStructureType					sType;
-		attachmentDescriptionStencil,						// const void*						pNext;
+		multisampleAttachmentDescriptionStencil,			// const void*						pNext;
 		0u,													// VkAttachmentDescriptionFlags		flags;
 		m_config.format,									// VkFormat							format;
 		samples,											// VkSampleCountFlagBits			samples;
@@ -513,6 +526,8 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass(VkFormat vkformat, 
 	vk::VkImageLayout		singleSampleInitialLayout = (m_config.unusedResolve ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED);
 	if (renderPassNo != 0)
 		singleSampleInitialLayout = layout;
+	if (m_config.separateDepthStencilLayouts && m_config.verifyBuffer == VB_STENCIL)
+		singlesampleStencilFinalLayout.stencilInitialLayout = singleSampleInitialLayout;
 
 	const tcu::TextureFormat			format			(mapVkFormat(vkformat));
 	VkImageAspectFlags aspectFlags =
@@ -522,7 +537,7 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass(VkFormat vkformat, 
 	const AttachmentDescription2 singlesampleAttachment		// VkAttachmentDescription2
 	(
 															// VkStructureType					sType;
-		attachmentDescriptionStencil,						// const void*						pNext;
+		singlesampleAttachmentDescriptionStencil,			// const void*						pNext;
 		0u,													// VkAttachmentDescriptionFlags		flags;
 		vkformat,											// VkFormat							format;
 		VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits			samples;
