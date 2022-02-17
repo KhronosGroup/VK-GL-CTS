@@ -6242,7 +6242,7 @@ bool UniformBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 	bool result = true;
 
 	m_gl.bindBufferRange(GL_UNIFORM_BUFFER, 0, /* index */
-						 m_sparse_bo, m_sparse_bo_data_start_offset, m_sparse_bo_data_size);
+						 m_sparse_bo, m_sparse_bo_data_start_offset, m_n_ubo_uints * 4 * sizeof(unsigned int));
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBufferBase() call failed.");
 
 	/* Run the test in three iterations:
