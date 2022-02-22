@@ -72,7 +72,7 @@ tcu::TestStatus runCompute(Context& context, deUint32 bufferSize,
 	VkDeviceSize size = bufferSize;
 	buffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 		vk, device, allocator, makeBufferCreateInfo(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
-		MemoryRequirement::HostVisible | MemoryRequirement::Cached));
+		MemoryRequirement::HostVisible));
 	bufferDescriptor = makeDescriptorBufferInfo(**buffer, 0, size);
 
 	deUint32* ptr = (deUint32*)buffer->getAllocation().getHostPtr();
