@@ -41,6 +41,7 @@ dEQP-VK.rasterization.primitives.no_stipple.smooth_line_strip_wide_factor_large
 dEQP-VK.rasterization.primitives.stride_zero.single_point
 dEQP-VK.rasterization.primitives.stride_zero.four_points
 dEQP-VK.rasterization.primitives.stride_zero.many_points
+dEQP-VK.rasterization.culling.primitive_id
 dEQP-VK.rasterization.conservative.overestimate.samples_1.triangles.normal.0_00
 dEQP-VK.rasterization.conservative.overestimate.samples_1.triangles.normal.0_25
 dEQP-VK.rasterization.conservative.overestimate.samples_1.triangles.normal.0_50
