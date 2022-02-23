@@ -93,10 +93,6 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 	{
 		const auto& extName = extensions[extNdx].extensionName;
 
-		// Skip enabling VK_KHR_pipeline_library unless needed.
-		if (deStringEqual(extName, "VK_KHR_pipeline_library"))
-			continue;
-
 		// VK_EXT_buffer_device_address is deprecated and must not be enabled if VK_KHR_buffer_device_address is enabled
 		if (khrBufferDeviceAddress && deStringEqual(extName, "VK_EXT_buffer_device_address"))
 			continue;
