@@ -2687,7 +2687,6 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 		{ "raynoskipflags",			false,	false	},
 		{ "rayskiptriangles",		true,	false	},
 		{ "rayskipaabbs",			false,	true	},
-		{ "rayskipboth",			true,	true	},
 	};
 	const struct PipelineFlags
 	{
@@ -2699,7 +2698,6 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 		{ "pipelinenoskipflags",	static_cast<VkPipelineCreateFlags>(0)																		},
 		{ "pipelineskiptriangles",	VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR														},
 		{ "pipelineskipaabbs",		VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR															},
-		{ "pipelineskipboth",		VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR | VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR	},
 	};
 
 	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, de::toLower(name).c_str(), ""));
@@ -2715,6 +2713,13 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 
 			for (size_t pipelineFlagsNdx = 0; pipelineFlagsNdx < DE_LENGTH_OF_ARRAY(pipelineFlags); ++pipelineFlagsNdx)
 			{
+				const bool skipTriangles	= (skipRayFlags[skipRayFlagsNdx].skipTriangles	|| (pipelineFlags[pipelineFlagsNdx].flag & VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR));
+				const bool skipAABBs		= (skipRayFlags[skipRayFlagsNdx].skipAABBs		|| (pipelineFlags[pipelineFlagsNdx].flag & VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR));
+
+				// Skipping both triangles and AABBs is not legal according to the spec.
+				if (skipTriangles && skipAABBs)
+					continue;
+
 				de::MovePtr<tcu::TestCaseGroup>	pipelineFlagsGroup	(new tcu::TestCaseGroup(testCtx, pipelineFlags[pipelineFlagsNdx].name, ""));
 
 				for (size_t opaquesNdx = 0; opaquesNdx < DE_LENGTH_OF_ARRAY(opaques); ++opaquesNdx)
