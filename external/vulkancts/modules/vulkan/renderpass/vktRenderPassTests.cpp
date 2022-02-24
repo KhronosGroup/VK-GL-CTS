@@ -43,6 +43,7 @@
 #endif // CTS_USES_VULKANSC
 #include "vktRenderPassDepthStencilWriteConditionsTests.hpp"
 #include "vktRenderPassSubpassMergeFeedbackTests.hpp"
+#include "vktDynamicRenderingRandomTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -7634,6 +7635,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 		suballocationTestGroup->addChild(createDynamicRenderingSparseRenderTargetTests(testCtx));
 
 		renderingTests->addChild(createDynamicRenderingBasicTests(testCtx));
+		renderingTests->addChild(createDynamicRenderingRandomTests(testCtx));
 		break;
 #endif // CTS_USES_VULKANSC
 	default:
