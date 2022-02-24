@@ -30,6 +30,7 @@
 #include "vkTypeUtil.hpp"
 #include "vktDrawBaseClass.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "tcuVectorUtil.hpp"
 
 namespace vkt
 {
@@ -653,10 +654,22 @@ bool DrawTestInstance::compare (const tcu::ConstPixelBufferAccess& result, const
 {
 	DE_ASSERT(result.getSize() == reference.getSize());
 
-	const size_t	size	= result.getWidth() * result.getHeight() * vk::mapVkFormat(m_params.format).getPixelSize();
-	const int		res		= deMemCmp(result.getDataPtr(), reference.getDataPtr(), size);
+	const tcu::IVec4	threshold	(1u, 1u, 1u, 1u);
 
-	return (res == 0);
+	for (int y = 0; y < result.getHeight(); y++)
+	{
+		for (int x = 0; x < result.getWidth(); x++)
+		{
+			tcu::IVec4	refPix	= reference.getPixelInt(x, y);
+			tcu::IVec4	cmpPix	= result.getPixelInt(x, y);
+			tcu::IVec4	diff	= tcu::abs(refPix - cmpPix);
+
+			if (!tcu::boolAll(tcu::lessThanEqual(diff, threshold)))
+				return false;
+		}
+	}
+
+	return true;
 }
 
 tcu::TestStatus DrawTestInstance::iterate (void)
