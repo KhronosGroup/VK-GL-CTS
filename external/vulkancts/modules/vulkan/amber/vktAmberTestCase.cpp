@@ -224,6 +224,9 @@ void AmberTestCase::checkSupport(Context& ctx) const
 				TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Stride is not multiply of minVertexInputBindingStrideAlignment");
 		}
 	}
+
+	if (m_checkSupportCallback)
+		(m_checkSupportCallback)(ctx, m_name);
 }
 
 class Delegate : public amber::Delegate

@@ -647,6 +647,58 @@ protected:
 
 de::MovePtr<BottomLevelAccelerationStructure> makeBottomLevelAccelerationStructure ();
 
+/**
+ * @brief Implements a pool of BottomLevelAccelerationStructure
+ */
+class BottomLevelAccelerationStructurePool
+{
+public:
+	typedef de::SharedPtr<BottomLevelAccelerationStructure>	BlasPtr;
+	struct BlasInfo {
+		VkDeviceSize	structureSize;
+		VkDeviceAddress	deviceAddress;
+	};
+
+	BottomLevelAccelerationStructurePool();
+	virtual ~BottomLevelAccelerationStructurePool();
+
+	BlasPtr	at					(deUint32 index) const	{ return m_structs[index]; }
+	BlasPtr	operator[]			(deUint32 index) const	{ return m_structs[index]; }
+	auto	structures			() const -> const std::vector<BlasPtr>& { return m_structs; }
+	size_t	structCount			() const { return m_structs.size(); }
+
+	size_t	batchStructCount	() const {return m_batchStructCount; }
+	void	batchStructCount	(const	size_t& value);
+
+	size_t	batchGeomCount		() const {return m_batchGeomCount; }
+	void	batchGeomCount		(const	size_t& value) { m_batchGeomCount = value; }
+
+	BlasPtr	add					(VkDeviceSize			structureSize = 0,
+								 VkDeviceAddress		deviceAddress = 0);
+	/**
+	 * @brief Creates previously added bottoms at a time.
+	 * @note  All geometries must be known before call this method.
+	 */
+	void	batchCreate			(const DeviceInterface& vk,
+								 const VkDevice			device,
+								 Allocator&				allocator);
+	void	batchBuild			(const DeviceInterface& vk,
+								 const VkDevice			device,
+								 VkCommandBuffer		cmdBuffer);
+	size_t	getAllocationCount	() const;
+
+protected:
+	size_t					m_batchStructCount; // default is 4
+	size_t					m_batchGeomCount; // default is 0, if zero then batchStructCount is used
+	std::vector<BlasInfo>	m_infos;
+	std::vector<BlasPtr>	m_structs;
+	bool					m_createOnce;
+
+protected:
+	struct Impl;
+	Impl*					m_impl;
+};
+
 struct InstanceData
 {
 								InstanceData (VkTransformMatrixKHR							matrix_,
@@ -903,6 +955,7 @@ void cmdTraceRaysIndirect	(const DeviceInterface&					vk,
 							 const VkStridedDeviceAddressRegionKHR*	hitShaderBindingTableRegion,
 							 const VkStridedDeviceAddressRegionKHR*	callableShaderBindingTableRegion,
 							 VkDeviceAddress						indirectDeviceAddress);
+
 } // vk
 
 #endif // _VKRAYTRACINGUTIL_HPP
