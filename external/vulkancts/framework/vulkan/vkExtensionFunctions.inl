@@ -306,7 +306,7 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
-	if (extName == "VK_KHR_graphics_pipeline_library")
+	if (extName == "VK_EXT_graphics_pipeline_library")
 	{
 		return;
 	}
@@ -1460,7 +1460,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkQueueSubmit2KHR");
 		return;
 	}
-	if (extName == "VK_KHR_graphics_pipeline_library")
+	if (extName == "VK_EXT_graphics_pipeline_library")
 	{
 		return;
 	}

@@ -21,7 +21,7 @@
  *//*!
  * \file
  * \brief Wrapper that can construct monolithic pipeline or use
-          VK_KHR_graphics_pipeline_library for pipeline construction.
+          VK_EXT_graphics_pipeline_library for pipeline construction.
  *//*--------------------------------------------------------------------*/
 
 #include "vkRef.hpp"
@@ -36,9 +36,13 @@ namespace vk
 enum PipelineConstructionType
 {
 	PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC			= 0,	// Construct legacy - monolithic pipeline
-	PIPELINE_CONSTRUCTION_TYPE_OPTIMISED_LIBRARY,			// Use VK_KHR_graphics_pipeline_library and construc pipeline out of 4 pipeline parts
+	PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY,	// Use VK_EXT_graphics_pipeline_library and construc pipeline out of 4 pipeline parts
 	PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY			// Same as PIPELINE_CONSTRUCTION_TYPE_OPTIMISED_LIBRARY but with fast linking
 };
+
+void checkPipelineLibraryRequirements (const InstanceInterface&		vki,
+									   VkPhysicalDevice				physicalDevice,
+									   PipelineConstructionType		pipelineConstructionType);
 
 // Class that can build monolithic pipeline or fully separated pipeline libraries
 // depending on PipelineType specified in the constructor.
@@ -52,7 +56,7 @@ public:
 																	 const PipelineConstructionType		pipelineConstructionType,
 																	 const VkPipelineCreateFlags		flags = 0u);
 
-								GraphicsPipelineWrapper				(GraphicsPipelineWrapper&&);
+								GraphicsPipelineWrapper				(GraphicsPipelineWrapper&&) noexcept;
 
 								~GraphicsPipelineWrapper			(void) = default;
 
@@ -93,6 +97,9 @@ public:
 	GraphicsPipelineWrapper&	setDefaultViewportsCount			(deUint32 viewportCount = 0u);
 	GraphicsPipelineWrapper&	setDefaultScissorsCount				(deUint32 scissorCount = 0u);
 
+	// Pre-rasterization shader state uses default ViewportState, this method extends it with VkPipelineViewportDepthClipControlCreateInfoEXT.
+	//GraphicsPipelineWrapper&	setDepthClipControl					(const VkPipelineViewportDepthClipControlCreateInfoEXT* depthClipControlCreateInfo);
+
 	// Pre-rasterization shader state uses provieded viewports and scissors to create ViewportState. When disableViewportState
 	// is used then ViewportState won't be constructed and NULL will be used.
 	GraphicsPipelineWrapper&	disableViewportState				(void);
@@ -100,7 +107,9 @@ public:
 
 	// Setup vertex input state. When VertexInputState or InputAssemblyState are not provided then default structures will be used.
 	GraphicsPipelineWrapper&	setupVertexInputStete				(const VkPipelineVertexInputStateCreateInfo*		vertexInputState = DE_NULL,
-																	 const VkPipelineInputAssemblyStateCreateInfo*		inputAssemblyState = DE_NULL);
+																	 const VkPipelineInputAssemblyStateCreateInfo*		inputAssemblyState = DE_NULL,
+																	 const VkPipelineCache								partPipelineCache = DE_NULL,
+																	 VkPipelineCreationFeedbackCreateInfoEXT*			partCreationFeedback = DE_NULL);
 
 	// Setup pre-rasterization shader state.
 	GraphicsPipelineWrapper&	setupPreRasterizationShaderState	(const std::vector<VkViewport>&						viewports,
@@ -113,7 +122,10 @@ public:
 																	 const VkShaderModule								tessellationControlShaderModule = DE_NULL,
 																	 const VkShaderModule								tessellationEvalShaderModule = DE_NULL,
 																	 const VkShaderModule								geometryShaderModule = DE_NULL,
-																	 const VkSpecializationInfo*						specializationInfo = DE_NULL);
+																	 const VkSpecializationInfo*						specializationInfo = DE_NULL,
+																	 /*VkPipelineRenderingCreateInfoKHR*				rendering = DE_NULL,*/
+																	 const VkPipelineCache								partPipelineCache = DE_NULL,
+																	 VkPipelineCreationFeedbackCreateInfoEXT*			partCreationFeedback = DE_NULL);
 
 	// Setup fragment shader state.
 	GraphicsPipelineWrapper&	setupFragmentShaderState			(const VkPipelineLayout								layout,
@@ -123,21 +135,24 @@ public:
 																	 const VkPipelineDepthStencilStateCreateInfo*		depthStencilState = DE_NULL,
 																	 const VkPipelineMultisampleStateCreateInfo*		multisampleState = DE_NULL,
 																	 VkPipelineFragmentShadingRateStateCreateInfoKHR*	fragmentShadingRateState = DE_NULL,
-																	 const VkSpecializationInfo*						specializationInfo = DE_NULL);
+																	 const VkSpecializationInfo*						specializationInfo = DE_NULL,
+																	 const VkPipelineCache								partPipelineCache = DE_NULL,
+																	 VkPipelineCreationFeedbackCreateInfoEXT*			partCreationFeedback = DE_NULL);
 
 	// Setup fragment output state.
 	GraphicsPipelineWrapper&	setupFragmentOutputState			(const VkRenderPass									renderPass,
 																	 const deUint32										subpass = 0u,
 																	 const VkPipelineColorBlendStateCreateInfo*			colorBlendState = DE_NULL,
-																	 const VkPipelineMultisampleStateCreateInfo*		multisampleState = DE_NULL/*,
-																	 const VkPipelineRenderingCreateInfoKHR*			rendering = DE_NULL*/);
+																	 const VkPipelineMultisampleStateCreateInfo*		multisampleState = DE_NULL,
+																	 const VkPipelineCache								partPipelineCache = DE_NULL,
+																	 VkPipelineCreationFeedbackCreateInfoEXT*			partCreationFeedback = DE_NULL);
 
 
 	// Build pipeline object out of provided state.
 	void						buildPipeline						(const VkPipelineCache								pipelineCache = DE_NULL,
 																	 const VkPipeline									basePipelineHandle = DE_NULL,
 																	 const deInt32										basePipelineIndex = 0,
-																	 const VkPipelineCreationFeedbackCreateInfoEXT*		creationFeedback = DE_NULL);
+																	 VkPipelineCreationFeedbackCreateInfoEXT*			creationFeedback = DE_NULL);
 
 	// Returns true when pipeline was build using buildPipeline method.
 	deBool						wasBuild							(void) const;
@@ -166,6 +181,7 @@ protected:
 	// Store internal data that is needed only for pipeline construction.
 	de::SharedPtr<InternalData>		m_internalData;
 };
+
 } // vk
 
 #endif // _VKPIPELINECONSTRUCTIONUTIL_HPP

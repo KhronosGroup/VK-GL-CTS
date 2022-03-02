@@ -35,7 +35,7 @@ const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&			Context::getFrag
 const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&				Context::getFragmentShadingRateFeatures					(void) const { return m_device->getFragmentShadingRateFeatures();				}
 const vk::VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV&			Context::getFragmentShadingRateEnumsFeatures			(void) const { return m_device->getFragmentShadingRateEnumsFeatures();			}
 const vk::VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT&				Context::getGlobalPriorityQueryFeaturesEXT				(void) const { return m_device->getGlobalPriorityQueryFeaturesEXT();			}
-const vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesKHR&			Context::getGraphicsPipelineLibraryFeatures				(void) const { return m_device->getGraphicsPipelineLibraryFeatures();			}
+const vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT&			Context::getGraphicsPipelineLibraryFeaturesEXT			(void) const { return m_device->getGraphicsPipelineLibraryFeaturesEXT();		}
 const vk::VkPhysicalDeviceHostQueryResetFeatures&						Context::getHostQueryResetFeatures						(void) const { return m_device->getHostQueryResetFeatures();					}
 const vk::VkPhysicalDeviceImagelessFramebufferFeatures&					Context::getImagelessFramebufferFeatures				(void) const { return m_device->getImagelessFramebufferFeatures();				}
 const vk::VkPhysicalDeviceImageRobustnessFeaturesEXT&					Context::getImageRobustnessFeaturesEXT					(void) const { return m_device->getImageRobustnessFeaturesEXT();				}

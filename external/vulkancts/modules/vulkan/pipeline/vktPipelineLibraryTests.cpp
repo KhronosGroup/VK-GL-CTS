@@ -58,17 +58,17 @@ using namespace tcu;
 static const deUint32								RENDER_SIZE_WIDTH							= 16u;
 static const deUint32								RENDER_SIZE_HEIGHT							= 16u;
 static const VkColorComponentFlags					COLOR_COMPONENTS_NO_RED						= VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-static const VkGraphicsPipelineLibraryFlagBitsKHR	GRAPHICS_PIPELINE_LIBRARY_FLAGS[]			=
+static const VkGraphicsPipelineLibraryFlagBitsEXT	GRAPHICS_PIPELINE_LIBRARY_FLAGS[]			=
 {
-	VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_KHR,
-	VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_KHR,
-	VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_KHR,
-	VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_KHR,
+	VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT,
+	VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT,
+	VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT,
+	VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT,
 };
-static const VkGraphicsPipelineLibraryFlagsKHR		ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS			= static_cast<VkGraphicsPipelineLibraryFlagsKHR>(VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_KHR)
-																								| static_cast<VkGraphicsPipelineLibraryFlagsKHR>(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_KHR)
-																								| static_cast<VkGraphicsPipelineLibraryFlagsKHR>(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_KHR)
-																								| static_cast<VkGraphicsPipelineLibraryFlagsKHR>(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_KHR);
+static const VkGraphicsPipelineLibraryFlagsEXT		ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS			= static_cast<VkGraphicsPipelineLibraryFlagsEXT>(VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT)
+																								| static_cast<VkGraphicsPipelineLibraryFlagsEXT>(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT)
+																								| static_cast<VkGraphicsPipelineLibraryFlagsEXT>(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT)
+																								| static_cast<VkGraphicsPipelineLibraryFlagsEXT>(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT);
 
 struct PipelineTreeNode
 {
@@ -88,8 +88,8 @@ struct TestParams
 struct RuntimePipelineTreeNode
 {
 	deInt32								parentIndex;
-	VkGraphicsPipelineLibraryFlagsKHR	graphicsPipelineLibraryFlags;
-	VkGraphicsPipelineLibraryFlagsKHR	subtreeGraphicsPipelineLibraryFlags;
+	VkGraphicsPipelineLibraryFlagsEXT	graphicsPipelineLibraryFlags;
+	VkGraphicsPipelineLibraryFlagsEXT	subtreeGraphicsPipelineLibraryFlags;
 	Move<VkPipeline>					pipeline;
 	std::vector<VkPipeline>				pipelineLibraries;
 };
@@ -150,32 +150,32 @@ inline VkPipelineCreateFlags calcPipelineCreateFlags (bool optimize, bool buildL
 	if (optimize)
 	{
 		if (buildLibrary)
-			result |= static_cast<VkPipelineCreateFlags>(VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_KHR);
+			result |= static_cast<VkPipelineCreateFlags>(VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT);
 		else
-			result |= static_cast<VkPipelineCreateFlags>(VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_KHR);
+			result |= static_cast<VkPipelineCreateFlags>(VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT);
 	}
 
 	return result;
 }
 
-inline VkRenderPass getRenderPass (VkGraphicsPipelineLibraryFlagsKHR subset, VkRenderPass renderPass)
+inline VkRenderPass getRenderPass (VkGraphicsPipelineLibraryFlagsEXT subset, VkRenderPass renderPass)
 {
-	static const VkGraphicsPipelineLibraryFlagsKHR	subsetRequiresRenderPass	= static_cast<VkGraphicsPipelineLibraryFlagsKHR>(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_KHR)
-																				| static_cast<VkGraphicsPipelineLibraryFlagsKHR>(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_KHR)
-																				| static_cast<VkGraphicsPipelineLibraryFlagsKHR>(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_KHR);
+	static const VkGraphicsPipelineLibraryFlagsEXT	subsetRequiresRenderPass	= static_cast<VkGraphicsPipelineLibraryFlagsEXT>(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT)
+																				| static_cast<VkGraphicsPipelineLibraryFlagsEXT>(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT)
+																				| static_cast<VkGraphicsPipelineLibraryFlagsEXT>(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT);
 	if ((subsetRequiresRenderPass & subset) != 0)
 		return renderPass;
 
 	return DE_NULL;
 }
 
-inline VkGraphicsPipelineLibraryCreateInfoKHR makeGraphicsPipelineLibraryCreateInfo (const VkGraphicsPipelineLibraryFlagsKHR flags)
+inline VkGraphicsPipelineLibraryCreateInfoEXT makeGraphicsPipelineLibraryCreateInfo (const VkGraphicsPipelineLibraryFlagsEXT flags)
 {
-	const VkGraphicsPipelineLibraryCreateInfoKHR	graphicsPipelineLibraryCreateInfo =
+	const VkGraphicsPipelineLibraryCreateInfoEXT	graphicsPipelineLibraryCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_KHR,	//  VkStructureType						sType;
+		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT,	//  VkStructureType						sType;
 		DE_NULL,														//  void*								pNext;
-		flags,															//  VkGraphicsPipelineLibraryFlagsKHR	flags;
+		flags,															//  VkGraphicsPipelineLibraryFlagsEXT	flags;
 	};
 
 	return graphicsPipelineLibraryCreateInfo;
@@ -196,14 +196,14 @@ inline VkPipelineLibraryCreateInfoKHR makePipelineLibraryCreateInfo (const std::
 	return pipelineLibraryCreateInfo;
 }
 
-inline std::string getGraphicsPipelineLibraryFlagsString (const VkGraphicsPipelineLibraryFlagsKHR flags)
+inline std::string getGraphicsPipelineLibraryFlagsString (const VkGraphicsPipelineLibraryFlagsEXT flags)
 {
 	std::string result;
 
-	if ((flags & VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_KHR) != 0)		result += "VERTEX_INPUT_INTERFACE ";
-	if ((flags & VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_KHR) != 0)	result += "PRE_RASTERIZATION_SHADERS ";
-	if ((flags & VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_KHR) != 0)			result += "FRAGMENT_SHADER ";
-	if ((flags & VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_KHR) != 0)	result += "FRAGMENT_OUTPUT_INTERFACE ";
+	if ((flags & VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT) != 0)		result += "VERTEX_INPUT_INTERFACE ";
+	if ((flags & VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT) != 0)	result += "PRE_RASTERIZATION_SHADERS ";
+	if ((flags & VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT) != 0)			result += "FRAGMENT_SHADER ";
+	if ((flags & VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT) != 0)	result += "FRAGMENT_OUTPUT_INTERFACE ";
 
 	if (!result.empty())
 		result.resize(result.size() - 1);
@@ -817,9 +817,9 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 	tcu::TestLog&							log						= m_context.getTestContext().getLog();
 	const VkFormat							colorFormat				= VK_FORMAT_R8G8B8A8_UNORM;
 	const VkFormat							depthFormat				= VK_FORMAT_D32_SFLOAT;
-	const VkGraphicsPipelineLibraryFlagsKHR	vertPipelineFlags		= static_cast<VkGraphicsPipelineLibraryFlagsKHR>(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_KHR);
-	const VkGraphicsPipelineLibraryFlagsKHR	fragPipelineFlags		= static_cast<VkGraphicsPipelineLibraryFlagsKHR>(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_KHR);
-	const VkGraphicsPipelineLibraryFlagsKHR	samePipelineFlags		= vertPipelineFlags | fragPipelineFlags;
+	const VkGraphicsPipelineLibraryFlagsEXT	vertPipelineFlags		= static_cast<VkGraphicsPipelineLibraryFlagsEXT>(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT);
+	const VkGraphicsPipelineLibraryFlagsEXT	fragPipelineFlags		= static_cast<VkGraphicsPipelineLibraryFlagsEXT>(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT);
+	const VkGraphicsPipelineLibraryFlagsEXT	samePipelineFlags		= vertPipelineFlags | fragPipelineFlags;
 	const deInt32							nodeNdxLast				= static_cast<deInt32>(runtimePipelineTreeConfiguration.size()) - 1;
 	const Move<VkRenderPass>				renderPass				= makeRenderPass(vk, device, colorFormat, depthFormat);
 	const de::MovePtr<BufferWithMemory>		zCoordBuffer			= makeZCoordBuffer();
@@ -853,7 +853,7 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 		RuntimePipelineTreeNode&				node								= runtimePipelineTreeConfiguration[nodeNdx];
 		const bool								buildLibrary						= (nodeNdx != 0);
 		const VkPipelineCreateFlags				pipelineCreateFlags					= calcPipelineCreateFlags(optimize, buildLibrary);
-		const VkGraphicsPipelineLibraryFlagsKHR	subtreeGraphicsPipelineLibraryFlags	= node.subtreeGraphicsPipelineLibraryFlags | node.graphicsPipelineLibraryFlags;
+		const VkGraphicsPipelineLibraryFlagsEXT	subtreeGraphicsPipelineLibraryFlags	= node.subtreeGraphicsPipelineLibraryFlags | node.graphicsPipelineLibraryFlags;
 		bool									samePipelineLayout					= samePipelineFlags == (samePipelineFlags & subtreeGraphicsPipelineLibraryFlags);
 		bool									vertPipelineLayout					= vertPipelineFlags == (vertPipelineFlags & subtreeGraphicsPipelineLibraryFlags);
 		bool									fragPipelineLayout					= fragPipelineFlags == (fragPipelineFlags & subtreeGraphicsPipelineLibraryFlags);
@@ -862,7 +862,7 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 																					: fragPipelineLayout ? *pipelineLayoutFrag
 																					: DE_NULL;
 		const VkRenderPass						renderPassHandle					= getRenderPass(node.graphicsPipelineLibraryFlags, *renderPass);
-		VkGraphicsPipelineLibraryCreateInfoKHR	graphicsPipelineLibraryCreateInfo	= makeGraphicsPipelineLibraryCreateInfo(node.graphicsPipelineLibraryFlags);
+		VkGraphicsPipelineLibraryCreateInfoEXT	graphicsPipelineLibraryCreateInfo	= makeGraphicsPipelineLibraryCreateInfo(node.graphicsPipelineLibraryFlags);
 		VkPipelineLibraryCreateInfoKHR			linkingInfo							= makePipelineLibraryCreateInfo(node.pipelineLibraries);
 		GraphicsPipelineCreateInfo				graphicsPipelineCreateInfo			(pipelineLayout, renderPassHandle, 0, pipelineCreateFlags);
 
@@ -872,10 +872,10 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 			{
 				switch (subsetFlag)
 				{
-					case VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_KHR:		updateVertexInputInterface(m_context, graphicsPipelineCreateInfo);					break;
-					case VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_KHR:	updatePreRasterization(m_context, graphicsPipelineCreateInfo, delayedShaderCreate);	break;
-					case VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_KHR:				updatePostRasterization(m_context, graphicsPipelineCreateInfo, delayedShaderCreate);break;
-					case VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_KHR:	updateFragmentOutputInterface(m_context, graphicsPipelineCreateInfo);				break;
+					case VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT:		updateVertexInputInterface(m_context, graphicsPipelineCreateInfo);					break;
+					case VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT:	updatePreRasterization(m_context, graphicsPipelineCreateInfo, delayedShaderCreate);	break;
+					case VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT:				updatePostRasterization(m_context, graphicsPipelineCreateInfo, delayedShaderCreate);break;
+					case VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT:	updateFragmentOutputInterface(m_context, graphicsPipelineCreateInfo);				break;
 					default:																TCU_THROW(InternalError, "Unknown pipeline subset");
 				}
 			}
@@ -1046,12 +1046,12 @@ bool PipelineLibraryTestInstance::verifyDepthImage (const ConstPixelBufferAccess
 
 tcu::TestStatus PipelineLibraryTestInstance::iterate (void)
 {
-	VkGraphicsPipelineLibraryFlagBitsKHR	graphicsPipelineLibraryFlags[]		=
+	VkGraphicsPipelineLibraryFlagBitsEXT	graphicsPipelineLibraryFlags[]		=
 	{
-		VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_KHR,
-		VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_KHR,
-		VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_KHR,
-		VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_KHR,
+		VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT,
+		VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT,
+		VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT,
+		VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT,
 	};
 	const auto								graphicsPipelineLibraryFlagsBegin	= graphicsPipelineLibraryFlags;
 	const auto								graphicsPipelineLibraryFlagsEnd		= graphicsPipelineLibraryFlags + DE_LENGTH_OF_ARRAY(graphicsPipelineLibraryFlags);
@@ -1074,7 +1074,7 @@ tcu::TestStatus PipelineLibraryTestInstance::iterate (void)
 			node.graphicsPipelineLibraryFlags	= 0u;
 
 			for (size_t subsetNdx = 0; subsetNdx < shaderCount; ++subsetNdx)
-				node.graphicsPipelineLibraryFlags |= static_cast<VkGraphicsPipelineLibraryFlagsKHR>(graphicsPipelineLibraryFlags[subsetNdxStart + subsetNdx]);
+				node.graphicsPipelineLibraryFlags |= static_cast<VkGraphicsPipelineLibraryFlagsEXT>(graphicsPipelineLibraryFlags[subsetNdxStart + subsetNdx]);
 
 			if (node.parentIndex > 0)
 				runtimePipelineTreeConfiguration[node.parentIndex].subtreeGraphicsPipelineLibraryFlags |= node.graphicsPipelineLibraryFlags;
@@ -1154,12 +1154,12 @@ void PipelineLibraryTestCase::checkSupport (Context& context) const
 {
 	if (m_data.delayedShaderCreate || (m_data.pipelineTreeConfiguration.size() > 1))
 	{
-		context.requireDeviceFunctionality("VK_KHR_graphics_pipeline_library");
+		context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
 
-		const VkPhysicalDeviceGraphicsPipelineLibraryFeaturesKHR& graphicsPipelineLibraryFeaturesKHR	= context.getGraphicsPipelineLibraryFeatures();
+		const VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT& graphicsPipelineLibraryFeaturesEXT	= context.getGraphicsPipelineLibraryFeaturesEXT();
 
-		if (!graphicsPipelineLibraryFeaturesKHR.graphicsPipelineLibrary)
-			TCU_THROW(NotSupportedError, "graphicsPipelineLibraryFeaturesKHR.graphicsPipelineLibrary required");
+		if (!graphicsPipelineLibraryFeaturesEXT.graphicsPipelineLibrary)
+			TCU_THROW(NotSupportedError, "graphicsPipelineLibraryFeaturesEXT.graphicsPipelineLibrary required");
 	}
 }
 

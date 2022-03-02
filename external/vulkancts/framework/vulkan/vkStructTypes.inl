@@ -3080,14 +3080,14 @@ struct VkCheckpointData2NV
 	void*						pCheckpointMarker;
 };
 
-struct VkPhysicalDeviceGraphicsPipelineLibraryFeaturesKHR
+struct VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		graphicsPipelineLibrary;
 };
 
-struct VkPhysicalDeviceGraphicsPipelineLibraryPropertiesKHR
+struct VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -3095,11 +3095,11 @@ struct VkPhysicalDeviceGraphicsPipelineLibraryPropertiesKHR
 	VkBool32		graphicsPipelineLibraryIndependentInterpolationDecoration;
 };
 
-struct VkGraphicsPipelineLibraryCreateInfoKHR
+struct VkGraphicsPipelineLibraryCreateInfoEXT
 {
 	VkStructureType						sType;
 	void*								pNext;
-	VkGraphicsPipelineLibraryFlagsKHR	flags;
+	VkGraphicsPipelineLibraryFlagsEXT	flags;
 };
 
 struct VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR

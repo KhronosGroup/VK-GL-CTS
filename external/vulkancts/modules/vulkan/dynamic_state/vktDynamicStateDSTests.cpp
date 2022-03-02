@@ -902,13 +902,7 @@ protected:
 
 	virtual void checkSupport(Context& context) const
 	{
-		if (m_pipelineConstructionType != vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
-		{
-			context.requireDeviceFunctionality("VK_KHR_graphics_pipeline_library");
-			if ((m_pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY) &&
-				!context.getGraphicsPipelineLibraryProperties().graphicsPipelineLibraryFastLinking)
-				TCU_THROW(NotSupportedError, "graphicsPipelineLibraryFastLinking is not supported");
-		}
+		checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 	}
 
 	vk::PipelineConstructionType	m_pipelineConstructionType;
