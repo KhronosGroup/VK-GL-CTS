@@ -1382,7 +1382,10 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries (const DeviceInterfa
 			if (m_vertexBuffer.get() != DE_NULL)
 			{
 				vertexData			= makeDeviceOrHostAddressConstKHR(vk, device, m_vertexBuffer->get(), vertexBufferOffset);
-				vertexBufferOffset	+= deAlignSize(geometryData->getVertexByteSize(), 8);
+				if (m_indirectBuffer == DE_NULL )
+				{
+					vertexBufferOffset	+= deAlignSize(geometryData->getVertexByteSize(), 8);
+				}
 			}
 			else
 				vertexData			= makeDeviceOrHostAddressConstKHR(DE_NULL);
