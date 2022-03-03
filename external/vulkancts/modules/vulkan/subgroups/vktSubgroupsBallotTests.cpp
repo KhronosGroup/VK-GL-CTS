@@ -869,8 +869,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 		// According to the spec, requiredSubgroupSize must be a power-of-two integer.
 		for (deUint32 size = subgroupSizeControlProperties.minSubgroupSize; size <= subgroupSizeControlProperties.maxSubgroupSize; size *= 2)
 		{
-			TestStatus result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkCompute,
-																size, VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT);
+			TestStatus result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkCompute, size);
 			if (result.getCode() != QP_TEST_RESULT_PASS)
 			{
 				log << TestLog::Message << "subgroupSize " << size << " failed" << TestLog::EndMessage;

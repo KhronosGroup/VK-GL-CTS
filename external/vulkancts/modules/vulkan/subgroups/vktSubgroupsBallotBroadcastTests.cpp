@@ -345,7 +345,7 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 		};
 
 		if (caseDef.subgroupSizeControl)
-			return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkCompute, caseDef.requiredSubgroupSize, VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT);
+			return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkCompute, caseDef.requiredSubgroupSize);
 		else
 			return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkCompute);
 	}
