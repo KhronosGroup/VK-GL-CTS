@@ -487,7 +487,10 @@ const vk::VkPhysicalDeviceVulkan13Features&		Context::getDeviceVulkan13Features	
 
 bool Context::isDeviceFunctionalitySupported (const std::string& extension) const
 {
-	// check if extension was promoted to core
+	// If extension was promoted to core then check using the core mechanism. This is required so that
+	// all core implementations have the functionality tested, even if they don't support the extension.
+	// (It also means that core-optional extensions will not be reported as supported unless the
+	// features are really supported if the CTS code adds all core extensions to the extension list).
 	deUint32 apiVersion = getUsedApiVersion();
 	if (isCoreDeviceExtension(apiVersion, extension))
 	{
@@ -565,25 +568,9 @@ bool Context::isDeviceFunctionalitySupported (const std::string& extension) cons
 		return true;
 	}
 
-	// check if extension is on the list of extensions for current device
+	// If this is not a core extension then just return whether the implementation says it's supported.
 	const auto& extensions = getDeviceExtensions();
-	if (de::contains(extensions.begin(), extensions.end(), extension))
-	{
-		if (extension == "VK_KHR_timeline_semaphore")
-			return !!getTimelineSemaphoreFeatures().timelineSemaphore;
-		if (extension == "VK_KHR_synchronization2")
-			return !!getSynchronization2Features().synchronization2;
-		if (extension == "VK_EXT_extended_dynamic_state")
-			return !!getExtendedDynamicStateFeaturesEXT().extendedDynamicState;
-		if (extension == "VK_EXT_shader_demote_to_helper_invocation")
-			return !!getShaderDemoteToHelperInvocationFeatures().shaderDemoteToHelperInvocation;
-		if (extension == "VK_KHR_workgroup_memory_explicit_layout")
-			return !!getWorkgroupMemoryExplicitLayoutFeatures().workgroupMemoryExplicitLayout;
-
-		return true;
-	}
-
-	return false;
+	return de::contains(extensions.begin(), extensions.end(), extension);
 }
 
 bool Context::isInstanceFunctionalitySupported(const std::string& extension) const
