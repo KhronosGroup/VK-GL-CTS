@@ -787,7 +787,7 @@ void supportedCheck (Context& context, MaxVaryingsParam param)
 		}
 	}
 
-	checkPipelineLibraryRequirements(vki, context.getPhysicalDevice(), param.pipelineConstructionType);
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), param.pipelineConstructionType);
 }
 
 VkImageCreateInfo makeImageCreateInfo (const tcu::IVec2& size, const VkFormat format, const VkImageUsageFlags usage)

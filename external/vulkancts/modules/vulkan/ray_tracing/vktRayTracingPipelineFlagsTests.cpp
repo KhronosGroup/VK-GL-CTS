@@ -554,28 +554,24 @@ PipelineFlagsCase::PipelineFlagsCase (tcu::TestContext& testCtx, const std::stri
 
 void PipelineFlagsCase::checkSupport (Context& context) const
 {
-	const auto& vki = context.getInstanceInterface();
-	const auto	physicalDevice = context.getPhysicalDevice();
-	const auto	supportedExtensions = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
-
 	if ((VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_INTERSECTION_SHADERS_BIT_KHR & m_params.flags)
 		&& (GeometryTypes::Triangle == m_params.geomTypes))
 	{
 		TCU_THROW(InternalError, "Illegal params combination: VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_INTERSECTION_SHADERS_BIT_KHR and Triangles");
 	}
 
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_ray_tracing_pipeline")))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_ray_tracing_pipeline"))
 		TCU_THROW(NotSupportedError, "VK_KHR_ray_tracing_pipeline not supported");
 
 	// VK_KHR_acceleration_structure is required by VK_KHR_ray_tracing_pipeline.
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_acceleration_structure")))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_acceleration_structure"))
 		TCU_FAIL("VK_KHR_acceleration_structure not supported but VK_KHR_ray_tracing_pipeline supported");
 
 	// The same for VK_KHR_buffer_device_address.
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_buffer_device_address")))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
 		TCU_FAIL("VK_KHR_buffer_device_address not supported but VK_KHR_acceleration_structure supported");
 
-	if (m_params.useLibs && !isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_pipeline_library")))
+	if (m_params.useLibs && !context.isDeviceFunctionalitySupported("VK_KHR_pipeline_library"))
 		TCU_FAIL("VK_KHR_pipeline_library not supported but VK_KHR_ray_tracing_pipeline supported");
 
 	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR& rayTracingPipelineFeaturesKHR = context.getRayTracingPipelineFeatures();

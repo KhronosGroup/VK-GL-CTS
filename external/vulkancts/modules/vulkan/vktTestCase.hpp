@@ -33,6 +33,7 @@
 #include "vkPlatform.hpp"
 #include "vkResourceInterface.hpp"
 #include "vktTestCaseDefs.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 #include <vector>
 #include <string>
 
@@ -139,6 +140,8 @@ public:
 	bool										hasDebugReportRecorder			() const;
 	vk::DebugReportRecorder&					getDebugReportRecorder			() const;
 #endif // CTS_USES_VULKANSC
+
+	void checkPipelineLibraryRequirements (const vk::PipelineConstructionType		pipelineConstructionType);
 
 protected:
 	tcu::TestContext&								m_testCtx;

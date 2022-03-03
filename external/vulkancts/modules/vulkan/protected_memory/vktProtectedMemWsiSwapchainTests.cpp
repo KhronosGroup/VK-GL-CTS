@@ -74,7 +74,7 @@ void checkAllSupported (const Extensions& supportedExtensions, const std::vector
 		 requiredExtName != requiredExtensions.end();
 		 ++requiredExtName)
 	{
-		if (!isExtensionSupported(supportedExtensions, vk::RequiredExtension(*requiredExtName)))
+		if (!isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(*requiredExtName)))
 			TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
 	}
 }
@@ -97,7 +97,7 @@ std::vector<std::string> getRequiredWsiExtensions (const Extensions&	supportedEx
 	// 2) Enable VK_EXT_swapchain colorspace if advertised by the driver.
 	//
 	// We opt for (2) as it provides basic coverage for the extension as a bonus.
-	if (isExtensionSupported(supportedExtensions, vk::RequiredExtension("VK_EXT_swapchain_colorspace")))
+	if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_EXT_swapchain_colorspace")))
 		extensions.push_back("VK_EXT_swapchain_colorspace");
 
 	// VK_KHR_surface_protected_capabilities adds a way to check if swapchain can be
@@ -105,7 +105,7 @@ std::vector<std::string> getRequiredWsiExtensions (const Extensions&	supportedEx
 	// check for that capability.
 	// To check this capability, vkGetPhysicalDeviceSurfaceCapabilities2KHR needs
 	// to be called so add VK_KHR_get_surface_capabilities2 for this.
-	if (isExtensionSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
+	if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
 	{
 		extensions.push_back("VK_KHR_get_surface_capabilities2");
 		extensions.push_back("VK_KHR_surface_protected_capabilities");
@@ -126,7 +126,7 @@ de::MovePtr<vk::wsi::Display> createDisplay (const vk::Platform&	platform,
 	}
 	catch (const tcu::NotSupportedError& e)
 	{
-		if (isExtensionSupported(supportedExtensions, vk::RequiredExtension(getExtensionName(wsiType))) &&
+		if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(getExtensionName(wsiType))) &&
 		    platform.hasDisplay(wsiType))
 		{
 			// If VK_KHR_{platform}_surface was supported, vk::Platform implementation
@@ -1175,7 +1175,7 @@ tcu::TestStatus basicRenderTest (Context& baseCtx, vk::wsi::Type wsiType)
 																								vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 																								maxQueuedFrames));
 
-	if (isExtensionSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
+	if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
 	{
 		// Check if swapchain can be created for protected surface
 		const vk::InstanceInterface&			vki			= context.getInstanceDriver();

@@ -1219,7 +1219,7 @@ void WriteSampleTest::checkSupport (Context& context) const
 	if (!(imgProps.sampleCounts & m_params.sampleCount))
 		TCU_THROW(NotSupportedError, "Format does not support the required sample count");
 
-	checkPipelineLibraryRequirements(vki, physicalDevice, m_params.pipelineConstructionType);
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void WriteSampleTest::initPrograms (vk::SourceCollections& programCollection) const
@@ -1572,7 +1572,7 @@ void WriteSampleMaskTestCase::checkSupport (Context& context) const
 	if (!(imgProps.sampleCounts & m_params.sampleCount))
 		TCU_THROW(NotSupportedError, "Format does not support the required sample count");
 
-	checkPipelineLibraryRequirements(vki, physicalDevice, m_params.pipelineConstructionType);
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void WriteSampleMaskTestCase::initPrograms (vk::SourceCollections& programCollection) const

@@ -159,7 +159,7 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::PlatformInterface&		vkp
 	for (deUint32 ndx = 0; ndx < extensions.size(); ++ndx)
 	{
 		bool notInCore = !isCoreDeviceExtension(apiVersion, extensions[ndx]);
-		if (notInCore && !isExtensionSupported(supportedExtensions.begin(), supportedExtensions.end(), RequiredExtension(extensions[ndx])))
+		if (notInCore && !isExtensionStructSupported(supportedExtensions.begin(), supportedExtensions.end(), RequiredExtension(extensions[ndx])))
 			TCU_THROW(NotSupportedError, (extensions[ndx] + " is not supported").c_str());
 
 		if (notInCore)

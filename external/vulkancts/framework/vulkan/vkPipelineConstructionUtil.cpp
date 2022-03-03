@@ -142,11 +142,11 @@ void checkPipelineLibraryRequirements (const InstanceInterface&		vki,
 		return;
 
 	const auto supportedExtensions = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_EXT_graphics_pipeline_library")))
+	if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_graphics_pipeline_library")))
 		TCU_THROW(NotSupportedError, "VK_EXT_graphics_pipeline_library not supported");
 
 	// VK_KHR_pipeline_library must be supported if the VK_EXT_graphics_pipeline_library extension is supported
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_pipeline_library")))
+	if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_pipeline_library")))
 		TCU_FAIL("VK_KHR_pipeline_library not supported but VK_EXT_graphics_pipeline_library supported");
 
 #ifndef CTS_USES_VULKANSC

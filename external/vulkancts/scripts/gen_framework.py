@@ -2826,7 +2826,7 @@ def writeMandatoryFeatures(api, filename):
 				if (req.startswith("ApiVersion")):
 					cond = cond + 'context.contextSupports(vk::' + req + ')'
 				else:
-					cond = cond + 'isExtensionSupported(deviceExtensions, RequiredExtension("' + req + '"))'
+					cond = cond + 'isExtensionStructSupported(deviceExtensions, RequiredExtension("' + req + '"))'
 				if i+1 < len(reqs) :
 					cond = cond + ' || '
 			cond = cond + ' )'
@@ -2866,7 +2866,7 @@ def writeMandatoryFeatures(api, filename):
 				elif '.' in req:
 					condition = condition + req
 				else:
-					condition = condition + 'isExtensionSupported(deviceExtensions, RequiredExtension("' + req + '"))'
+					condition = condition + 'isExtensionStructSupported(deviceExtensions, RequiredExtension("' + req + '"))'
 				if i+1 < len(v[2]) :
 					condition = condition + ' && '
 			condition = condition + ' )'
