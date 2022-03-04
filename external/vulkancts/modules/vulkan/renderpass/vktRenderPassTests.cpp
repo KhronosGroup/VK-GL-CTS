@@ -37,6 +37,7 @@
 #include "vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.hpp"
 #include "vktRenderPassLoadStoreOpNoneTests.hpp"
 #include "vktDynamicRenderingTests.hpp"
+#include "vktRenderPassDepthStencilWriteConditionsTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -7579,6 +7580,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 		suballocationTestGroup->addChild(createRenderPassSparseRenderTargetTests(testCtx));
 
 		renderingTests->addChild(createRenderPassMultipleSubpassesMultipleCommandBuffersTests(testCtx));
+		renderingTests->addChild(createDepthStencilWriteConditionsTests(testCtx));
 		break;
 
 	case RENDERING_TYPE_RENDERPASS2:

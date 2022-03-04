@@ -37,6 +37,8 @@ set(DEQP_VK_RENDER_PASS_SRCS
 	vktRenderPassLoadStoreOpNoneTests.hpp
 	vktDynamicRenderingTests.cpp
 	vktDynamicRenderingTests.hpp
+	vktRenderPassDepthStencilWriteConditionsTests.cpp
+	vktRenderPassDepthStencilWriteConditionsTests.hpp
 	)
 
 set(DEQP_VK_RENDER_PASS_LIBS
