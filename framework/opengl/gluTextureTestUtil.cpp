@@ -561,7 +561,10 @@ void sampleTexture (const tcu::PixelBufferAccess& dst, const tcu::Texture2DView&
 	tcu::ImageViewMinLodParams	minLodParams =
 	{
 		params.baseLevel,								// int		baseLevel;
-		params.imageViewMinLod,							// float	minLod;
+		{
+			params.imageViewMinLod,							// float	minLod;
+			params.imageViewMinLodMode,						// ImageViewMinLodMode
+		},
 		params.samplerType == SAMPLERTYPE_FETCH_FLOAT	// bool	intTexCoord;
 	};
 
@@ -580,8 +583,11 @@ void sampleTexture (const tcu::SurfaceAccess& dst, const tcu::Texture2DView& src
 	tcu::ImageViewMinLodParams	minLodParams =
 	{
 		params.baseLevel,								// int		baseLevel;
-		params.imageViewMinLod,							// float	minLod;
-		params.samplerType == SAMPLERTYPE_FETCH_FLOAT	// bool	intTexCoord;
+		{
+			params.imageViewMinLod,							// float	minLod;
+			params.imageViewMinLodMode,						// ImageViewMinLodMode
+		},
+		params.samplerType == SAMPLERTYPE_FETCH_FLOAT	// bool		intTexCoord;
 	};
 
 	const tcu::Texture2DView	view	= getSubView(src, params.baseLevel, params.maxLevel, params.imageViewMinLod != 0.0f ? &minLodParams : DE_NULL);
@@ -698,7 +704,10 @@ void sampleTexture (const tcu::SurfaceAccess& dst, const tcu::TextureCubeView& s
 	tcu::ImageViewMinLodParams	minLodParams =
 	{
 		params.baseLevel,								// int		baseLevel;
-		params.imageViewMinLod,							// float	minLod;
+		{
+			params.imageViewMinLod,							// float	minLod;
+			params.imageViewMinLodMode,						// ImageViewMinLodMode
+		},
 		params.samplerType == SAMPLERTYPE_FETCH_FLOAT	// bool	intTexCoord;
 	};
 
@@ -900,7 +909,10 @@ void sampleTexture (const tcu::SurfaceAccess& dst, const tcu::Texture3DView& src
 	tcu::ImageViewMinLodParams	minLodParams =
 	{
 		params.baseLevel,								// int		baseLevel;
-		params.imageViewMinLod,							// float	minLod;
+		{
+			params.imageViewMinLod,							// float	minLod;
+			params.imageViewMinLodMode,						// ImageViewMinLodMode
+		},
 		params.samplerType == SAMPLERTYPE_FETCH_FLOAT	// bool	intTexCoord;
 	};
 
@@ -1396,7 +1408,10 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 	tcu::ImageViewMinLodParams	minLodParams =
 	{
 		sampleParams.baseLevel,								// int		baseLevel;
-		sampleParams.imageViewMinLod,						// float	minLod;
+		{
+			sampleParams.imageViewMinLod,							// float	minLod;
+			sampleParams.imageViewMinLodMode,						// ImageViewMinLodMode
+		},
 		sampleParams.samplerType == SAMPLERTYPE_FETCH_FLOAT	// bool	intTexCoord;
 	};
 
@@ -1611,7 +1626,10 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 	tcu::ImageViewMinLodParams	minLodParams =
 	{
 		sampleParams.baseLevel,								// int		baseLevel;
-		sampleParams.imageViewMinLod,						// float	minLod;
+		{
+			sampleParams.imageViewMinLod,					// float	minLod;
+			sampleParams.imageViewMinLodMode,				// ImageViewMinLodMode
+		},
 		sampleParams.samplerType == SAMPLERTYPE_FETCH_FLOAT	// bool	intTexCoord;
 	};
 
@@ -1805,7 +1823,10 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 	tcu::ImageViewMinLodParams	minLodParams =
 	{
 		sampleParams.baseLevel,									// int		baseLevel;
-		sampleParams.imageViewMinLod,							// float	minLod;
+		{
+			sampleParams.imageViewMinLod,						// float	minLod;
+			sampleParams.imageViewMinLodMode,					// ImageViewMinLodMode
+		},
 		sampleParams.samplerType == SAMPLERTYPE_FETCH_FLOAT		// bool	intTexCoord;
 	};
 
@@ -2284,7 +2305,10 @@ int computeTextureLookupDiff (const tcu::ConstPixelBufferAccess&	result,
 	tcu::ImageViewMinLodParams	minLodParams =
 	{
 		sampleParams.baseLevel,									// int		baseLevel;
-		sampleParams.imageViewMinLod,							// float	minLod;
+		{
+			sampleParams.imageViewMinLod,							// float	minLod;
+			sampleParams.imageViewMinLodMode,						// ImageViewMinLodMode
+		},
 		sampleParams.samplerType == SAMPLERTYPE_FETCH_FLOAT		// bool	intTexCoord;
 	};
 
