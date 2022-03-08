@@ -132,17 +132,6 @@ inline std::string getTestName (const PipelineTreeConfiguration& pipelineTreeCon
 	return result;
 }
 
-inline bool isPartialFlagSubset (const VkFlags test, const VkFlags fullSet)
-{
-	if ((test & fullSet) == 0)
-		return false;
-
-	if ((test & fullSet) == fullSet)
-		return false;
-
-	return true;
-}
-
 inline VkPipelineCreateFlags calcPipelineCreateFlags (bool optimize, bool buildLibrary)
 {
 	VkPipelineCreateFlags	result = 0;
@@ -888,7 +877,7 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 			}
 		}
 
-		if (isPartialFlagSubset(graphicsPipelineLibraryCreateInfo.flags, ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS))
+		if (graphicsPipelineLibraryCreateInfo.flags != ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS)
 			appendStructurePtrToVulkanChain(&graphicsPipelineCreateInfo.pNext, &graphicsPipelineLibraryCreateInfo);
 
 		if (linkingInfo.libraryCount != 0)
