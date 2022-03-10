@@ -976,6 +976,16 @@ void TestTexture::populateCompressedLevels (tcu::CompressedTexFormat format, con
 			if (format != tcu::COMPRESSEDTEXFORMAT_ETC1_RGB8)
 				for (int byteNdx = 0; byteNdx < compressedLevel->getDataSize(); byteNdx++)
 					compressedData[byteNdx] = 0xFF & random.getUint32();
+
+			// BC7 mode 8 (LSB==0x00) should not be tested as it is underspecified
+			if (format == tcu::COMPRESSEDTEXFORMAT_BC7_UNORM_BLOCK || format == tcu::COMPRESSEDTEXFORMAT_BC7_SRGB_BLOCK)
+			{
+				const int blockSize = tcu::getBlockSize(format);
+
+				for (int byteNdx = 0; byteNdx < compressedLevel->getDataSize(); byteNdx += blockSize)
+					while (compressedData[byteNdx] == 0x00)
+						compressedData[byteNdx] = 0xFF & random.getUint32();
+			}
 		}
 
 		m_compressedLevels.push_back(compressedLevel);
