@@ -31831,6 +31831,8 @@ dEQP-GLES3.functional.fbo.blit.conversion.r16f_to_rg32f
 dEQP-GLES3.functional.fbo.blit.conversion.r16f_to_rg16f
 dEQP-GLES3.functional.fbo.blit.conversion.r16f_to_r32f
 dEQP-GLES3.functional.fbo.blit.conversion.r16f_to_r16f
+dEQP-GLES3.functional.fbo.blit.depth_stencil.stencil_index8_basic
+dEQP-GLES3.functional.fbo.blit.depth_stencil.stencil_index8_scale
 dEQP-GLES3.functional.fbo.blit.depth_stencil.depth_component32f_basic
 dEQP-GLES3.functional.fbo.blit.depth_stencil.depth_component32f_scale
 dEQP-GLES3.functional.fbo.blit.depth_stencil.depth_component24_basic
@@ -31845,8 +31847,6 @@ dEQP-GLES3.functional.fbo.blit.depth_stencil.depth24_stencil8_basic
 dEQP-GLES3.functional.fbo.blit.depth_stencil.depth24_stencil8_scale
 dEQP-GLES3.functional.fbo.blit.depth_stencil.depth24_stencil8_depth_only
 dEQP-GLES3.functional.fbo.blit.depth_stencil.depth24_stencil8_stencil_only
-dEQP-GLES3.functional.fbo.blit.depth_stencil.stencil_index8_basic
-dEQP-GLES3.functional.fbo.blit.depth_stencil.stencil_index8_scale
 dEQP-GLES3.functional.fbo.blit.default_framebuffer.rgba8
 dEQP-GLES3.functional.fbo.blit.default_framebuffer.rgba8_nearest_scale_blit_from_default
 dEQP-GLES3.functional.fbo.blit.default_framebuffer.rgba8_nearest_scale_blit_to_default
