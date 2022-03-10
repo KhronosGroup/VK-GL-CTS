@@ -867,6 +867,153 @@ tcu::TestStatus querySurfaceFormats2Test (Context& context, Type wsiType)
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
+void validateSurfacePresentModes (tcu::ResultCollector& results, Type wsiType, const vector<VkPresentModeKHR>& modes)
+{
+	results.check(de::contains(modes.begin(), modes.end(), VK_PRESENT_MODE_FIFO_KHR),
+				  "VK_PRESENT_MODE_FIFO_KHR is not supported");
+
+	if (wsiType == TYPE_ANDROID)
+		results.check(de::contains(modes.begin(), modes.end(), VK_PRESENT_MODE_MAILBOX_KHR),
+					  "VK_PRESENT_MODE_MAILBOX_KHR is not supported");
+}
+
+tcu::TestStatus querySurfacePresentModes2Test (Context& context, Type wsiType)
+{
+	tcu::TestLog&					log				= context.getTestContext().getLog();
+	tcu::ResultCollector			results			(log);
+
+	const InstanceHelper			instHelper		(context, wsiType);
+	const NativeObjects				native			(context, instHelper.supportedExtensions, wsiType);
+	const Unique<VkSurfaceKHR>		surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow()));
+	const vector<VkPhysicalDevice>	physicalDevices	= enumeratePhysicalDevices(instHelper.vki, instHelper.instance);
+	const std::vector<VkExtensionProperties>	deviceExtensions(enumerateDeviceExtensionProperties(instHelper.vki, context.getPhysicalDevice(), DE_NULL));
+	if (!isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_full_screen_exclusive")))
+		TCU_THROW(NotSupportedError, "Extension VK_EXT_full_screen_exclusive not supported");
+
+	for (size_t deviceNdx = 0; deviceNdx < physicalDevices.size(); ++deviceNdx)
+	{
+		if (isSupportedByAnyQueue(instHelper.vki, physicalDevices[deviceNdx], *surface))
+		{
+			const VkPhysicalDeviceSurfaceInfo2KHR	surfaceInfo =
+			{
+				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,
+				DE_NULL,
+				*surface
+			};
+
+			deUint32	numModesRef = 0;
+			deUint32	numModes    = 0;
+
+			VK_CHECK(instHelper.vki.getPhysicalDeviceSurfacePresentModesKHR(physicalDevices[deviceNdx], *surface, &numModesRef, DE_NULL));
+			VK_CHECK(instHelper.vki.getPhysicalDeviceSurfacePresentModes2EXT(physicalDevices[deviceNdx], &surfaceInfo, &numModes, DE_NULL));
+
+			if (numModes != numModesRef)
+			{
+				results.fail("Number of modes do not match");
+				continue;
+			}
+
+			vector<VkPresentModeKHR>	modes	(numModes + 1);
+
+			if (numModes > 0)
+			{
+				const deUint32 numModesOrig = numModes;
+
+				// check if below call properly overwrites mode count
+				numModes++;
+
+				VK_CHECK(instHelper.vki.getPhysicalDeviceSurfacePresentModes2EXT(physicalDevices[deviceNdx], &surfaceInfo, &numModes, &modes[0]));
+
+				if ((size_t)numModes != numModesOrig)
+					TCU_FAIL("Mode count changed between calls");
+			}
+
+			modes.pop_back();
+
+			log << TestLog::Message << "Device " << deviceNdx << ": " << tcu::formatArray(modes.begin(), modes.end()) << TestLog::EndMessage;
+
+			validateSurfacePresentModes(results, wsiType, modes);
+			if (numModes > 1)
+			{
+				numModes /= 2;
+				vk::VkResult res = instHelper.vki.getPhysicalDeviceSurfacePresentModes2EXT(physicalDevices[deviceNdx], &surfaceInfo, &numModes, &modes[0]);
+				if (res != VK_INCOMPLETE)
+					TCU_FAIL("Failed to fetch incomplete results");
+			}
+		}
+		// else skip query as surface is not supported by the device
+	}
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
+tcu::TestStatus querySurfacePresentModes2TestSurfaceless (Context& context, Type wsiType)
+{
+	tcu::TestLog&					log				= context.getTestContext().getLog();
+	tcu::ResultCollector			results			(log);
+
+	const InstanceHelper			instHelper		(context, wsiType, vector<string>(1, string("VK_GOOGLE_surfaceless_query")));
+	const NativeObjects				native			(context, instHelper.supportedExtensions, wsiType);
+	const Unique<VkSurfaceKHR>		surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow()));
+	const VkSurfaceKHR				nullSurface		= 0;
+	const vector<VkPhysicalDevice>	physicalDevices	= enumeratePhysicalDevices(instHelper.vki, instHelper.instance);
+	const std::vector<VkExtensionProperties>	deviceExtensions(enumerateDeviceExtensionProperties(instHelper.vki, context.getPhysicalDevice(), DE_NULL));
+	if (!isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_full_screen_exclusive")))
+		TCU_THROW(NotSupportedError, "Extension VK_EXT_full_screen_exclusive not supported");
+
+	for (size_t deviceNdx = 0; deviceNdx < physicalDevices.size(); ++deviceNdx)
+	{
+		if (isSupportedByAnyQueue(instHelper.vki, physicalDevices[deviceNdx], *surface))
+		{
+			const VkPhysicalDeviceSurfaceInfo2KHR	surfaceInfo =
+			{
+				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,
+				DE_NULL,
+				*surface
+			};
+			const VkPhysicalDeviceSurfaceInfo2KHR	nullSurfaceInfo =
+			{
+				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,
+				DE_NULL,
+				nullSurface
+			};
+			deUint32	numModesSurface = 0;
+			deUint32	numModesNull	= 0;
+
+			VK_CHECK(instHelper.vki.getPhysicalDeviceSurfacePresentModes2EXT(physicalDevices[deviceNdx], &surfaceInfo, &numModesSurface, DE_NULL));
+			VK_CHECK(instHelper.vki.getPhysicalDeviceSurfacePresentModes2EXT(physicalDevices[deviceNdx], &nullSurfaceInfo, &numModesNull, DE_NULL));
+
+			if (numModesSurface != numModesNull)
+			{
+				results.fail("Number of modes does not match");
+				continue;
+			}
+
+			vector<VkPresentModeKHR>	modesSurface(numModesSurface + 1);
+			vector<VkPresentModeKHR>	modesNull(numModesSurface + 1);
+
+			if (numModesSurface > 0)
+			{
+				VK_CHECK(instHelper.vki.getPhysicalDeviceSurfacePresentModes2EXT(physicalDevices[deviceNdx], &surfaceInfo, &numModesSurface, &modesSurface[0]));
+				VK_CHECK(instHelper.vki.getPhysicalDeviceSurfacePresentModes2EXT(physicalDevices[deviceNdx], &nullSurfaceInfo, &numModesSurface, &modesNull[0]));
+			}
+
+			modesSurface.pop_back();
+			modesNull.pop_back();
+
+			for (deUint32 i = 0; i < modesSurface.size(); i++)
+			{
+				if (modesSurface[i] != modesNull[i])
+				{
+					results.fail("Present modes mismatch");
+				}
+			}
+		}
+	}
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
 tcu::TestStatus querySurfaceFormats2TestSurfaceless (Context& context, Type wsiType)
 {
 	tcu::TestLog&					log				= context.getTestContext().getLog();
@@ -938,16 +1085,6 @@ tcu::TestStatus querySurfaceFormats2TestSurfaceless (Context& context, Type wsiT
 	}
 
 	return tcu::TestStatus(results.getResult(), results.getMessage());
-}
-
-void validateSurfacePresentModes (tcu::ResultCollector& results, Type wsiType, const vector<VkPresentModeKHR>& modes)
-{
-	results.check(de::contains(modes.begin(), modes.end(), VK_PRESENT_MODE_FIFO_KHR),
-				  "VK_PRESENT_MODE_FIFO_KHR is not supported");
-
-	if (wsiType == TYPE_ANDROID)
-		results.check(de::contains(modes.begin(), modes.end(), VK_PRESENT_MODE_MAILBOX_KHR),
-					  "VK_PRESENT_MODE_MAILBOX_KHR is not supported");
 }
 
 tcu::TestStatus querySurfacePresentModesTest (Context& context, Type wsiType)
@@ -1441,6 +1578,7 @@ void createSurfaceTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 	addFunctionCase(testGroup, "query_formats",							"Query surface formats",									querySurfaceFormatsTest,					wsiType);
 	addFunctionCase(testGroup, "query_formats2",						"Query extended surface formats",							querySurfaceFormats2Test,					wsiType);
 	addFunctionCase(testGroup, "query_present_modes",					"Query surface present modes",								querySurfacePresentModesTest,				wsiType);
+	addFunctionCase(testGroup, "query_present_modes2",					"Query extended surface present modes",						querySurfacePresentModes2Test,				wsiType);
 	addFunctionCase(testGroup, "query_devgroup_present_capabilities",	"Query surface present modes capabilities in device groups",queryDevGroupSurfacePresentCapabilitiesTest,wsiType);
 	addFunctionCase(testGroup, "query_devgroup_present_modes",			"Query surface present modes for device groups",			queryDevGroupSurfacePresentModesTest,		wsiType);
 	addFunctionCase(testGroup, "destroy_null_handle",					"Destroy VK_NULL_HANDLE surface",							destroyNullHandleSurfaceTest,				wsiType);
@@ -1453,6 +1591,7 @@ void createSurfaceTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 
 	addFunctionCase(testGroup, "query_formats_surfaceless", "Query surface formats without surface", querySurfaceFormatsTestSurfaceless, wsiType);
 	addFunctionCase(testGroup, "query_present_modes_surfaceless", "Query surface present modes without surface", querySurfacePresentModesTestSurfaceless, wsiType);
+	addFunctionCase(testGroup, "query_present_modes2_surfaceless", "Query extended surface present modes without surface", querySurfacePresentModes2TestSurfaceless, wsiType);
 	addFunctionCase(testGroup, "query_formats2_surfaceless", "Query extended surface formats without surface", querySurfaceFormats2TestSurfaceless, wsiType);
 }
 
