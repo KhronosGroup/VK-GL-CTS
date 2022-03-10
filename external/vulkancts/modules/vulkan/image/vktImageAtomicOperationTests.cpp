@@ -540,7 +540,9 @@ static void initDataForImage (const VkDevice			device,
 void commonCheckSupport (Context& context, const tcu::TextureFormat& tcuFormat, ImageType imageType, AtomicOperation operation, bool useTransfer, ShaderReadType readType, ImageBackingType backingType)
 {
 	const VkFormat				format				= mapTextureFormat(tcuFormat);
+#ifndef CTS_USES_VULKANSC
 	const VkImageType			vkImgType			= mapImageType(imageType);
+#endif // CTS_USES_VULKANSC
 	const VkFormatFeatureFlags	texelBufferSupport	= (VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT | VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT);
 	const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
 																						context.getPhysicalDevice(), format);
@@ -552,6 +554,7 @@ void commonCheckSupport (Context& context, const tcu::TextureFormat& tcuFormat, 
 	if (imageType == IMAGE_TYPE_CUBE_ARRAY)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
 
+#ifndef CTS_USES_VULKANSC
 	if (backingType == ImageBackingType::SPARSE)
 	{
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
@@ -566,6 +569,7 @@ void commonCheckSupport (Context& context, const tcu::TextureFormat& tcuFormat, 
 		if (!checkSparseImageFormatSupport(context.getPhysicalDevice(), context.getInstanceInterface(), format, vkImgType, VK_SAMPLE_COUNT_1_BIT, getUsageFlags(useTransfer), VK_IMAGE_TILING_OPTIMAL))
 			TCU_THROW(NotSupportedError, "Format does not support sparse images");
 	}
+#endif // CTS_USES_VULKANSC
 
 	if (isFloatFormat(format))
 	{
@@ -583,10 +587,12 @@ void commonCheckSupport (Context& context, const tcu::TextureFormat& tcuFormat, 
 		if (operation == ATOMIC_OPERATION_MIN || operation == ATOMIC_OPERATION_MAX)
 		{
 			context.requireDeviceFunctionality("VK_EXT_shader_atomic_float2");
+#ifndef CTS_USES_VULKANSC
 			if (!context.getShaderAtomicFloat2FeaturesEXT().shaderImageFloat32AtomicMinMax)
 			{
 				TCU_THROW(NotSupportedError, "shaderImageFloat32AtomicMinMax not supported");
 			}
+#endif // CTS_USES_VULKANSC
 		}
 
 		if ((formatProperties.optimalTilingFeatures & requiredFeatures) != requiredFeatures)
@@ -1251,6 +1257,7 @@ void BinaryAtomicInstanceBase::createImageAndView	(VkFormat						imageFormat,
 		VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout			initialLayout;
 	};
 
+#ifndef CTS_USES_VULKANSC
 	if (m_backingType == ImageBackingType::SPARSE)
 	{
 		const auto&		vki				= m_context.getInstanceInterface();
@@ -1274,6 +1281,7 @@ void BinaryAtomicInstanceBase::createImageAndView	(VkFormat						imageFormat,
 		imagePtr = de::MovePtr<Image>(sparseImage);
 	}
 	else
+#endif // CTS_USES_VULKANSC
 		imagePtr = de::MovePtr<Image>(new Image(deviceInterface, device, allocator, createInfo, MemoryRequirement::Any));
 
 	const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, numLayers);
@@ -1927,7 +1935,9 @@ tcu::TestCaseGroup* createImageAtomicOperationTests (tcu::TestContext& testCtx)
 	} readTypes[] =
 	{
 		{	ShaderReadType::NORMAL,	"normal_read"	},
+#ifndef CTS_USES_VULKANSC
 		{	ShaderReadType::SPARSE,	"sparse_read"	},
+#endif // CTS_USES_VULKANSC
 	};
 
 	const struct
@@ -1937,7 +1947,9 @@ tcu::TestCaseGroup* createImageAtomicOperationTests (tcu::TestContext& testCtx)
 	} backingTypes[] =
 	{
 		{	ImageBackingType::NORMAL,	"normal_img"	},
+#ifndef CTS_USES_VULKANSC
 		{	ImageBackingType::SPARSE,	"sparse_img"	},
+#endif // CTS_USES_VULKANSC
 	};
 
 	for (deUint32 operationI = 0; operationI < ATOMIC_OPERATION_LAST; operationI++)
@@ -1992,9 +2004,11 @@ tcu::TestCaseGroup* createImageAtomicOperationTests (tcu::TestContext& testCtx)
 							if (format.type == tcu::TextureFormat::FLOAT)
 							{
 								if (operation != ATOMIC_OPERATION_ADD &&
-									operation != ATOMIC_OPERATION_EXCHANGE &&
+#ifndef CTS_USES_VULKANSC
 									operation != ATOMIC_OPERATION_MIN &&
-									operation != ATOMIC_OPERATION_MAX)
+									operation != ATOMIC_OPERATION_MAX &&
+#endif // CTS_USES_VULKANSC
+									operation != ATOMIC_OPERATION_EXCHANGE)
 								{
 									continue;
 								}

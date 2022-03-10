@@ -2,7 +2,7 @@
 	"register_extension":
 	{
 		"type": "device",
-		"core": "1.2.0"
+		"core": "0.1.2.0"
 	},
 	"mandatory_features":
 	{

@@ -733,6 +733,7 @@ VkShaderStageFlagBits getVkShaderStage (glu::ShaderType shaderType)
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
 		VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
 		VK_SHADER_STAGE_COMPUTE_BIT,
+#ifndef CTS_USES_VULKANSC
 		VK_SHADER_STAGE_RAYGEN_BIT_NV,
 		VK_SHADER_STAGE_ANY_HIT_BIT_NV,
 		VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV,
@@ -741,6 +742,16 @@ VkShaderStageFlagBits getVkShaderStage (glu::ShaderType shaderType)
 		VK_SHADER_STAGE_CALLABLE_BIT_NV,
 		VK_SHADER_STAGE_TASK_BIT_NV,
 		VK_SHADER_STAGE_MESH_BIT_NV,
+#else // CTS_USES_VULKANSC
+		(VkShaderStageFlagBits)64u,
+		(VkShaderStageFlagBits)128u,
+		(VkShaderStageFlagBits)256u,
+		(VkShaderStageFlagBits)512u,
+		(VkShaderStageFlagBits)1024u,
+		(VkShaderStageFlagBits)2048u,
+		(VkShaderStageFlagBits)4096u,
+		(VkShaderStageFlagBits)8192u
+#endif // CTS_USES_VULKANSC
 	};
 
 	return de::getSizedArrayElement<glu::SHADERTYPE_LAST>(s_shaderStages, shaderType);
@@ -757,15 +768,20 @@ vk::SpirvVersion getMaxSpirvVersionForVulkan (const deUint32 vulkanVersion)
 {
 	vk::SpirvVersion	result			= vk::SPIRV_VERSION_LAST;
 
-	deUint32 vulkanVersionMajorMinor = VK_MAKE_VERSION(VK_API_VERSION_MAJOR(vulkanVersion), VK_API_VERSION_MINOR(vulkanVersion), 0);
-	if (vulkanVersionMajorMinor == VK_API_VERSION_1_0)
+	deUint32 vulkanVersionVariantMajorMinor = VK_MAKE_API_VERSION(VK_API_VERSION_VARIANT(vulkanVersion), VK_API_VERSION_MAJOR(vulkanVersion), VK_API_VERSION_MINOR(vulkanVersion), 0);
+	if (vulkanVersionVariantMajorMinor == VK_API_VERSION_1_0)
 		result = vk::SPIRV_VERSION_1_0;
-	else if (vulkanVersionMajorMinor == VK_API_VERSION_1_1)
+	else if (vulkanVersionVariantMajorMinor == VK_API_VERSION_1_1)
 		result = vk::SPIRV_VERSION_1_3;
-	else if (vulkanVersionMajorMinor == VK_API_VERSION_1_2)
+#ifndef CTS_USES_VULKANSC
+	else if (vulkanVersionVariantMajorMinor == VK_API_VERSION_1_2)
 		result = vk::SPIRV_VERSION_1_5;
-	else if (vulkanVersionMajorMinor >= VK_API_VERSION_1_3)
+	else if (vulkanVersionVariantMajorMinor >= VK_API_VERSION_1_3)
 		result = vk::SPIRV_VERSION_1_6;
+#else
+	else if (vulkanVersionVariantMajorMinor >= VK_API_VERSION_1_2)
+		result = vk::SPIRV_VERSION_1_5;
+#endif // CTS_USES_VULKANSC
 
 	DE_ASSERT(result < vk::SPIRV_VERSION_LAST);
 

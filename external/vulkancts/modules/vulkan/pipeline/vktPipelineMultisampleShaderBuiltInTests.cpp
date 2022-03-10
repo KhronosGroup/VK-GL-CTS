@@ -195,12 +195,13 @@ public:
 												 const std::string&		name,
 												 const ImageMSParams&	imageMSParams);
 };
-
+#ifndef CTS_USES_VULKANSC
 template <typename CaseClassName>
 void MSCase<CaseClassName>::checkSupport(Context& context) const
 {
 	checkGraphicsPipelineLibrarySupport(context);
 }
+#endif // CTS_USES_VULKANSC
 
 template <typename CaseClassName>
 MultisampleCaseBase* MSCase<CaseClassName>::createCase (tcu::TestContext& testCtx, const std::string& name, const ImageMSParams& imageMSParams)

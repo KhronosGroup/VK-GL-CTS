@@ -258,10 +258,12 @@ void setSampleLocations (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, 
 	vkd->cmdSetSampleLocationsEXT(cmdBuffer, &info);
 }
 
+#ifndef CTS_USES_VULKANSC
 void setRTPipelineStatckSize (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
 	vkd->cmdSetRayTracingPipelineStackSizeKHR(cmdBuffer, 4096u);
 }
+#endif // CTS_USES_VULKANSC
 
 void setFragmentShadingRage (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
@@ -281,17 +283,29 @@ void setLineStipple (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, cons
 
 void setCullMode (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
 	vkd->cmdSetCullMode(cmdBuffer, VK_CULL_MODE_FRONT_AND_BACK);
+#else
+	vkd->cmdSetCullModeEXT(cmdBuffer, VK_CULL_MODE_FRONT_AND_BACK);
+#endif // CTS_USES_VULKANSC
 }
 
 void setFrontFace (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
 	vkd->cmdSetFrontFace(cmdBuffer, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+#else
+	vkd->cmdSetFrontFaceEXT(cmdBuffer, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+#endif // CTS_USES_VULKANSC
 }
 
 void setPrimitiveTopology (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
 	vkd->cmdSetPrimitiveTopology(cmdBuffer, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+#else
+	vkd->cmdSetPrimitiveTopologyEXT(cmdBuffer, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+#endif // CTS_USES_VULKANSC
 }
 
 void setViewportWithCount (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
@@ -305,7 +319,11 @@ void setViewportWithCount (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer
 		0.0f,	//	float	minDepth;
 		1.0f,	//	float	maxDepth;
 	};
+#ifndef CTS_USES_VULKANSC
 	vkd->cmdSetViewportWithCount(cmdBuffer, 1u, &viewport);
+#else
+	vkd->cmdSetViewportWithCountEXT(cmdBuffer, 1u, &viewport);
+#endif // CTS_USES_VULKANSC
 }
 
 void setScissorWithCount (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
@@ -315,7 +333,11 @@ void setScissorWithCount (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer,
 		{ 0, 0 },	//	VkOffset2D	offset;
 		{ 1u, 1u },	//	VkExtent2D	extent;
 	};
+#ifndef CTS_USES_VULKANSC
 	vkd->cmdSetScissorWithCount(cmdBuffer, 1u, &scissor);
+#else
+	vkd->cmdSetScissorWithCountEXT(cmdBuffer, 1u, &scissor);
+#endif // CTS_USES_VULKANSC
 }
 
 void bindVertexBuffers (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData* data)
@@ -329,38 +351,68 @@ void bindVertexBuffers (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, c
 	const auto pipeline			= bindData->getPipeline();
 
 	vkd->cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+#ifndef CTS_USES_VULKANSC
 	vkd->cmdBindVertexBuffers2(cmdBuffer, 0u, 1u, &vertexBuffer->get(), &bufferOffset, &dataSize, &stride);
+#else
+	vkd->cmdBindVertexBuffers2EXT(cmdBuffer, 0u, 1u, &vertexBuffer->get(), &bufferOffset, &dataSize, &stride);
+#endif // CTS_USES_VULKANSC
 }
 
 void setDepthTestEnable (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
 	vkd->cmdSetDepthTestEnable(cmdBuffer, VK_TRUE);
+#else
+	vkd->cmdSetDepthTestEnableEXT(cmdBuffer, VK_TRUE);
+#endif // CTS_USES_VULKANSC
 }
 
 void setDepthWriteEnable (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
 	vkd->cmdSetDepthWriteEnable(cmdBuffer, VK_TRUE);
+#else
+	vkd->cmdSetDepthWriteEnableEXT(cmdBuffer, VK_TRUE);
+#endif // CTS_USES_VULKANSC
 }
 
 void setDepthCompareOp (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
 	vkd->cmdSetDepthCompareOp(cmdBuffer, VK_COMPARE_OP_LESS);
+#else
+	vkd->cmdSetDepthCompareOpEXT(cmdBuffer, VK_COMPARE_OP_LESS);
+#endif // CTS_USES_VULKANSC
 }
 
 void setDepthBoundsTestEnable (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
 	vkd->cmdSetDepthBoundsTestEnable(cmdBuffer, VK_TRUE);
+#else
+	vkd->cmdSetDepthBoundsTestEnableEXT(cmdBuffer, VK_TRUE);
+#endif // CTS_USES_VULKANSC
 }
 
 void setStencilTestEnable (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
+#ifndef CTS_USES_VULKANSC
 	vkd->cmdSetStencilTestEnable(cmdBuffer, VK_TRUE);
+#else
+	vkd->cmdSetStencilTestEnableEXT(cmdBuffer, VK_TRUE);
+#endif // CTS_USES_VULKANSC
 }
 
 void setStencilOp (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
-	vkd->cmdSetStencilOp(cmdBuffer, VK_STENCIL_FRONT_AND_BACK, VK_STENCIL_OP_ZERO, VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_ALWAYS);
+#ifndef CTS_USES_VULKANSC
+	vkd->cmdSetStencilOp(cmdBuffer, VK_STENCIL_FACE_FRONT_AND_BACK, VK_STENCIL_OP_ZERO, VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_ALWAYS);
+#else
+	vkd->cmdSetStencilOpEXT(cmdBuffer, VK_STENCIL_FACE_FRONT_AND_BACK, VK_STENCIL_OP_ZERO, VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_ALWAYS);
+#endif // CTS_USES_VULKANSC
 }
+
+#ifndef CTS_USES_VULKANSC
 
 void setViewportWScaling (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
@@ -418,6 +470,8 @@ void setExclusiveScissor (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer,
 	vkd->cmdSetExclusiveScissorNV(cmdBuffer, 0u, 1u, &scissor);
 }
 
+#endif // CTS_USES_VULKANSC
+
 const VkDynamicState dynamicStateList[] =
 {
 	VK_DYNAMIC_STATE_VIEWPORT,
@@ -431,7 +485,9 @@ const VkDynamicState dynamicStateList[] =
 	VK_DYNAMIC_STATE_STENCIL_REFERENCE,
 	VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT,
 	VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT,
+#ifndef CTS_USES_VULKANSC
 	VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR,
+#endif // CTS_USES_VULKANSC
 	VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR,
 	VK_DYNAMIC_STATE_LINE_STIPPLE_EXT,
 	VK_DYNAMIC_STATE_CULL_MODE_EXT,
@@ -446,10 +502,12 @@ const VkDynamicState dynamicStateList[] =
 	VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE_EXT,
 	VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT,
 	VK_DYNAMIC_STATE_STENCIL_OP_EXT,
+#ifndef CTS_USES_VULKANSC
 	VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV,
 	VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV,
 	VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV,
 	VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV,
+#endif // CTS_USES_VULKANSC
 };
 
 // Information about a dynamic state.
@@ -478,7 +536,9 @@ const StateInfo& getDynamicStateInfo (VkDynamicState state)
 		{	VK_DYNAMIC_STATE_STENCIL_REFERENCE,						{	{},										setStencilReference				}	},
 		{	VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT,					{	{ "VK_EXT_discard_rectangles" },		setDiscardRectangle				}	},
 		{	VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT,					{	{ "VK_EXT_sample_locations" },			setSampleLocations				}	},
+#ifndef CTS_USES_VULKANSC
 		{	VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR,	{	{ "VK_KHR_ray_tracing_pipeline" },		setRTPipelineStatckSize			}	},
+#endif // CTS_USES_VULKANSC
 		{	VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR,				{	{ "VK_KHR_fragment_shading_rate" },		setFragmentShadingRage			}	},
 		{	VK_DYNAMIC_STATE_LINE_STIPPLE_EXT,						{	{ "VK_EXT_line_rasterization" },		setLineStipple					}	},
 		{	VK_DYNAMIC_STATE_CULL_MODE_EXT,							{	{ "VK_EXT_extended_dynamic_state" },	setCullMode						}	},
@@ -493,10 +553,12 @@ const StateInfo& getDynamicStateInfo (VkDynamicState state)
 		{	VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE_EXT,			{	{ "VK_EXT_extended_dynamic_state" },	setDepthBoundsTestEnable		}	},
 		{	VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT,				{	{ "VK_EXT_extended_dynamic_state" },	setStencilTestEnable			}	},
 		{	VK_DYNAMIC_STATE_STENCIL_OP_EXT,						{	{ "VK_EXT_extended_dynamic_state" },	setStencilOp					}	},
+#ifndef CTS_USES_VULKANSC
 		{	VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV,					{	{ "VK_NV_clip_space_w_scaling" },		setViewportWScaling				}	},
 		{	VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV,		{	{ "VK_NV_shading_rate_image"},			setViewportShadingRatePalette	}	},
 		{	VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV,		{	{ "VK_NV_shading_rate_image"},			setCoarseSamplingOrder			}	},
 		{	VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV,					{	{ "VK_NV_scissor_exclusive"},			setExclusiveScissor				}	},
+#endif // CTS_USES_VULKANSC
 	};
 
 	const auto itr = result.find(state);
@@ -530,15 +592,21 @@ VkDevice getDevice(Context& context, VkDynamicState dynamicState)
 				"VK_NV_shading_rate_image",
 			};
 
+#ifndef CTS_USES_VULKANSC
 			VkPhysicalDeviceShadingRateImageFeaturesNV			shadingRateImageFeatures = initVulkanStructure();
 			VkPhysicalDeviceFeatures2							features2 = initVulkanStructure(&shadingRateImageFeatures);
 
 			context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+#endif // CTS_USES_VULKANSC
 
 			const VkDeviceCreateInfo					deviceCreateInfo =
 			{
 				VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//sType;
+#ifndef CTS_USES_VULKANSC
 				&features2,														//pNext;
+#else
+				DE_NULL,														//pNext;
+#endif // CTS_USES_VULKANSC
 				(VkDeviceCreateFlags)0u,										//flags
 				1,																//queueRecordCount;
 				&queueParams,													//pRequestedQueues;

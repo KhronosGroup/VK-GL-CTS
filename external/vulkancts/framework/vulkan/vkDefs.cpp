@@ -95,9 +95,10 @@ void checkWsiResult (VkResult result, const char* msg, const char* file, int lin
 {
 	if (result == VK_SUBOPTIMAL_KHR)
 		return;
-
+#ifndef CTS_USES_VULKANSC
 	if (result == VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT)
 		return;
+#endif // CTS_USES_VULKANSC
 
 	checkResult(result, msg, file, line);
 }

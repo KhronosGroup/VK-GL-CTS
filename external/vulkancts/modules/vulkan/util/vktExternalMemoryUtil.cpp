@@ -23,6 +23,8 @@
 
 #include "vkQueryUtil.hpp"
 
+#ifndef CTS_USES_VULKANSC
+
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 #	include <unistd.h>
 #	include <fcntl.h>
@@ -1633,3 +1635,5 @@ vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT getPhysicalDeviceExternalMem
 
 } // ExternalMemoryUtil
 } // vkt
+
+#endif // CTS_USES_VULKANSC

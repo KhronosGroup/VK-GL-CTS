@@ -157,7 +157,12 @@ void*					mapMemory					(const DeviceInterface& vkd, VkDevice device, VkDeviceMe
 void					flushMappedMemoryRange		(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
 void					invalidateMappedMemoryRange	(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
 
+deUint32				selectMatchingMemoryType	(const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 allowedMemTypeBits, MemoryRequirement requirement);
 deUint32				getCompatibleMemoryTypes	(const VkPhysicalDeviceMemoryProperties& deviceMemProps, MemoryRequirement requirement);
+#ifdef CTS_USES_VULKANSC
+deUint32				getSEUSafeMemoryTypes		(const VkPhysicalDeviceMemoryProperties& deviceMemProps);
+#endif // CTS_USES_VULKANSC
+
 void					bindImagePlanesMemory		(const vk::DeviceInterface&					vkd,
 													 const vk::VkDevice							device,
 													 const vk::VkImage							image,

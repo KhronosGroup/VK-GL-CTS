@@ -651,11 +651,15 @@ tcu::TestStatus test (Context& context, TestParams testParams)
 
 void checkSupportTess(Context& context, const TestParams)
 {
+#ifndef CTS_USES_VULKANSC
 	if (const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR* const features = getPortability(context))
 	{
 		checkPointMode(*features);
 		checkIsolines(*features);
 	}
+#else
+	DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
 }
 
 } // anonymous

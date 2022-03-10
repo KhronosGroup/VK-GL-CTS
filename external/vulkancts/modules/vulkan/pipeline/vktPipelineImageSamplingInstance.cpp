@@ -260,7 +260,7 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 		const VkStructureType nextType = *reinterpret_cast<const VkStructureType*>(pNext);
 		switch (nextType)
 		{
-			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT:
+			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO:
 			{
 				context.requireDeviceFunctionality("VK_EXT_sampler_filter_minmax");
 
@@ -326,6 +326,7 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 	if (params.allocationKind == ALLOCATION_KIND_DEDICATED)
 		context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
 
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
 	{
 		const auto portabilitySubsetFeatures	= context.getPortabilitySubsetFeatures();
@@ -339,6 +340,7 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support remapping format components");
 		}
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 ImageSamplingInstance::ImageSamplingInstance (Context&						context,
@@ -376,11 +378,11 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 		const VkStructureType nextType = *reinterpret_cast<const VkStructureType*>(pNext);
 		switch (nextType)
 		{
-			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT:
+			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO:
 			{
 				VkPhysicalDeviceSamplerFilterMinmaxProperties	physicalDeviceSamplerMinMaxProperties =
 				{
-					VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES_EXT,
+					VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES,
 					DE_NULL,
 					DE_FALSE,
 					DE_FALSE
@@ -689,7 +691,11 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 
 	// Create pipeline layout
 	{
-		VkPipelineLayoutCreateFlags	pipelineLayoutFlags = (params.pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) ? 0u : deUint32(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+#ifndef CTS_USES_VULKANSC
+		VkPipelineLayoutCreateFlags pipelineLayoutFlags = (params.pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) ? 0u : deUint32(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+#else
+		VkPipelineLayoutCreateFlags pipelineLayoutFlags = 0u;
+#endif // CTS_USES_VULKANSC
 		VkPipelineLayoutCreateInfo	pipelineLayoutParams
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;

@@ -388,6 +388,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 	return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
 
+#ifndef CTS_USES_VULKANSC
+
 Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkDevice									device,
 									   const VkPipelineLayout							pipelineLayout,
@@ -501,6 +503,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 
 	return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
+
+#endif // CTS_USES_VULKANSC
 
 Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 								   const VkDevice						device,
@@ -720,7 +724,11 @@ Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
 		DE_NULL,											// const void*						pNext;
+#ifndef CTS_USES_VULKANSC
 		VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT,	// VkPipelineLayoutCreateFlags		flags;
+#else
+		0u,													// VkPipelineLayoutCreateFlags		flags;
+#endif // CTS_USES_VULKANSC
 		setLayoutCount,										// deUint32							setLayoutCount;
 		descriptorSetLayout,								// const VkDescriptorSetLayout*		pSetLayouts;
 		0u,													// deUint32							pushConstantRangeCount;
@@ -741,7 +749,11 @@ Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
 		DE_NULL,											// const void*						pNext;
+#ifndef CTS_USES_VULKANSC
 		VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT,	// VkPipelineLayoutCreateFlags		flags;
+#else
+		0u,													// VkPipelineLayoutCreateFlags		flags;
+#endif // CTS_USES_VULKANSC
 		setLayoutCount,										// deUint32							setLayoutCount;
 		descriptorSetLayout,								// const VkDescriptorSetLayout*		pSetLayouts;
 		pushConstantRangeCount,								// deUint32							pushConstantRangeCount;

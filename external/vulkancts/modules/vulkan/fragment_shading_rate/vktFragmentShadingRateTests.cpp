@@ -429,7 +429,9 @@ void createMiscTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup)
 void createTests (tcu::TestCaseGroup* group, SharedGroupParams groupParams)
 {
 	tcu::TestContext& testCtx = group->getTestContext();
+#ifndef CTS_USES_VULKANSC
 	createBasicTests(testCtx, group, groupParams);
+#endif // CTS_USES_VULKANSC
 
 	// attachmentFragmentShadingRate feature is tested with basic tests so there is no need to
 	// duplicating those tests for secondary command buffer;
@@ -495,6 +497,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 				vk::PipelineConstructionType(0)		// placeholder					// PipelineConstructionType		pipelineConstructionType;
 			}));
 
+#ifndef CTS_USES_VULKANSC
 	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup(new tcu::TestCaseGroup(testCtx, "dynamic_rendering", "Draw using VK_KHR_dynamic_rendering"));
 	de::MovePtr<tcu::TestCaseGroup> drPrimaryCmdBuffGroup(new tcu::TestCaseGroup(testCtx, "primary_cmd_buff", "Draw using Draw commands are recorded in primary command buffer"));
 	createPipelineConstructionTypePermutations(testCtx, drPrimaryCmdBuffGroup.get(),
@@ -528,9 +531,12 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	dynamicRenderingGroup->addChild(drPrimaryCmdBuffGroup.release());
 	dynamicRenderingGroup->addChild(drPartialSecondaryCmdBuffGroup.release());
 	dynamicRenderingGroup->addChild(drCompleteSecondaryCmdBuffGroup.release());
+#endif // CTS_USES_VULKANSC
 
 	mainGroup->addChild(renderpass2Group.release());
+#ifndef CTS_USES_VULKANSC
 	mainGroup->addChild(dynamicRenderingGroup.release());
+#endif // CTS_USES_VULKANSC
 
 	return mainGroup.release();
 }

@@ -337,9 +337,11 @@ tcu::TestStatus emptyDescriptorSetLayoutTest (Context& context, VkDescriptorSetL
 	const DeviceInterface&					vk								= context.getDeviceInterface();
 	const VkDevice							device							= context.getDevice();
 
+#ifndef CTS_USES_VULKANSC
 	if (descriptorSetLayoutCreateFlags == VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR)
 		if (!context.isDeviceFunctionalitySupported("VK_KHR_push_descriptor"))
 			TCU_THROW(NotSupportedError, "VK_KHR_push_descriptor extension not supported");
+#endif // CTS_USES_VULKANSC
 
 	const VkDescriptorSetLayoutCreateInfo	descriptorSetLayoutCreateInfo	=
 	{
@@ -658,8 +660,10 @@ tcu::TestCaseGroup* createEmptyDescriptorSetLayoutTests (tcu::TestContext& testC
 	de::MovePtr<tcu::TestCaseGroup> emptyDescriptorSetLayoutTests(new tcu::TestCaseGroup(testCtx, "empty_set", "Create empty descriptor set layout tests"));
 
 	addFunctionCase(emptyDescriptorSetLayoutTests.get(), "normal", "Create empty desciptor set layout", emptyDescriptorSetLayoutTest, (VkDescriptorSetLayoutCreateFlags)0u);
+#ifndef CTS_USES_VULKANSC
+	// Removed from Vulkan SC test set: VK_KHR_push_descriptor extension removed from Vulkan SC
 	addFunctionCase(emptyDescriptorSetLayoutTests.get(), "push_descriptor", "Create empty push descriptor set layout", emptyDescriptorSetLayoutTest, (VkDescriptorSetLayoutCreateFlags)VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR);
-
+#endif // CTS_USES_VULKANSC
 	return emptyDescriptorSetLayoutTests.release();
 }
 
@@ -668,8 +672,10 @@ tcu::TestCaseGroup* createDescriptorSetLayoutBindingOrderingTests (tcu::TestCont
 	de::MovePtr<tcu::TestCaseGroup> descriptorSetLayoutBindingOrderingTests(new tcu::TestCaseGroup(testCtx, "descriptor_set_layout_binding", "Create descriptor set layout ordering tests"));
 	addFunctionCaseWithPrograms(descriptorSetLayoutBindingOrderingTests.get(), "update_subsequent_binding", "Test subsequent binding update with remaining elements", createDescriptorSetLayoutBindingOrderingSource, descriptorSetLayoutBindingOrderingTest);
 
+#ifndef CTS_USES_VULKANSC
 	static const char dataDir[] = "api/descriptor_set/descriptor_set_layout_binding";
 	descriptorSetLayoutBindingOrderingTests->addChild(cts_amber::createAmberTestCase(testCtx, "layout_binding_order", "Test descriptor set layout binding order", dataDir, "layout_binding_order.amber"));
+#endif // CTS_USES_VULKANSC
 
 	return descriptorSetLayoutBindingOrderingTests.release();
 }

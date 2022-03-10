@@ -177,7 +177,7 @@ MemoryModelTestCase::~MemoryModelTestCase	(void)
 
 void MemoryModelTestCase::checkSupport(Context& context) const
 {
-	if (!context.contextSupports(vk::ApiVersion(1, 1, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
 	{
 		TCU_THROW(NotSupportedError, "Vulkan 1.1 not supported");
 	}
@@ -1660,25 +1660,33 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 
 		if (m_data.payloadSC == SC_PHYSBUFFER)
 		{
-			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 			addrInfo.buffer = **buffers[0];
 			VkDeviceAddress addr;
+#ifndef CTS_USES_VULKANSC
+			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 			if (useKHR)
 				addr = vk.getBufferDeviceAddress(device, &addrInfo);
 			else
 				addr = vk.getBufferDeviceAddressEXT(device, &addrInfo);
+#else
+			addr = vk.getBufferDeviceAddress(device, &addrInfo);
+#endif
 			vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages,
 								0, sizeof(VkDeviceSize), &addr);
 		}
 		if (m_data.guardSC == SC_PHYSBUFFER)
 		{
-			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 			addrInfo.buffer = **buffers[1];
 			VkDeviceAddress addr;
+#ifndef CTS_USES_VULKANSC
+			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 			if (useKHR)
 				addr = vk.getBufferDeviceAddress(device, &addrInfo);
 			else
 				addr = vk.getBufferDeviceAddressEXT(device, &addrInfo);
+#else
+			addr = vk.getBufferDeviceAddress(device, &addrInfo);
+#endif
 			vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages,
 								8, sizeof(VkDeviceSize), &addr);
 		}
@@ -1769,6 +1777,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
+#ifndef CTS_USES_VULKANSC
 void checkPermutedIndexTestSupport (Context& context, std::string testName)
 {
 	DE_UNREF(testName);
@@ -1808,6 +1817,7 @@ tcu::TestCaseGroup* createPermutedIndexTests (tcu::TestContext& testCtx)
 
 	return permutedIndex.release();
 }
+#endif // CTS_USES_VULKANSC
 
 }	// anonymous
 
@@ -1822,7 +1832,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 		const char*				name;
 		const char*				description;
 	} TestGroupCase;
-
+#ifndef CTS_USES_VULKANSC
 	TestGroupCase ttCases[] =
 	{
 		{ TT_MP,	"message_passing",	"message passing"		},
@@ -1842,7 +1852,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 		{ DATA_TYPE_FLOAT32,	"f32",	"float32 atomics"		},
 		{ DATA_TYPE_FLOAT64,	"f64",	"float64 atomics"		},
 	};
-
+#endif // CTS_USES_VULKANSC
 	TestGroupCase cohCases[] =
 	{
 		{ 1,	"coherent",		"coherent payload variable"			},
@@ -1858,7 +1868,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 		{ ST_CONTROL_BARRIER,				"control_barrier",				"control barrier"						},
 		{ ST_CONTROL_AND_MEMORY_BARRIER,	"control_and_memory_barrier",	"control barrier with release/acquire"	},
 	};
-
+#ifndef CTS_USES_VULKANSC
 	TestGroupCase rmwCases[] =
 	{
 		{ 0,	"atomicwrite",		"atomic write"		},
@@ -1872,7 +1882,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 		{ SCOPE_WORKGROUP,		"workgroup",	"workgroup scope"		},
 		{ SCOPE_SUBGROUP,		"subgroup",		"subgroup scope"		},
 	};
-
+#endif // CTS_USES_VULKANSC
 	TestGroupCase plCases[] =
 	{
 		{ 0,	"payload_nonlocal",		"payload variable in non-local memory"		},
@@ -1900,14 +1910,13 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 		{ SC_WORKGROUP,	"workgroup",	"guard variable in workgroup memory"		},
 		{ SC_PHYSBUFFER,"physbuffer",	"guard variable in physical storage buffer memory"	},
 	};
-
+#ifndef CTS_USES_VULKANSC
 	TestGroupCase stageCases[] =
 	{
 		{ STAGE_COMPUTE,	"comp",		"compute shader"			},
 		{ STAGE_VERTEX,		"vert",		"vertex shader"				},
 		{ STAGE_FRAGMENT,	"frag",		"fragment shader"			},
 	};
-
 
 	for (int ttNdx = 0; ttNdx < DE_LENGTH_OF_ARRAY(ttCases); ttNdx++)
 	{
@@ -2065,6 +2074,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 		}
 		group->addChild(ttGroup.release());
 	}
+#endif // CTS_USES_VULKANSC
 
 	TestGroupCase transVisCases[] =
 	{

@@ -28,9 +28,11 @@
 #include "vktBindingDescriptorSetRandomTests.hpp"
 #include "vktBindingDescriptorCopyTests.hpp"
 #include "vktBindingBufferDeviceAddressTests.hpp"
-#include "vktBindingDynamicOffsetTests.hpp"
 #include "vktTestGroupUtil.hpp"
+#ifndef CTS_USES_VULKANSC
+#include "vktBindingDynamicOffsetTests.hpp"
 #include "vktBindingValveMutableTests.hpp"
+#endif // CTS_USES_VULKANSC
 
 namespace vkt
 {
@@ -49,8 +51,10 @@ void createChildren (tcu::TestCaseGroup* group)
 	group->addChild(createDescriptorSetRandomTests(testCtx));
 	group->addChild(createDescriptorCopyTests(testCtx));
 	group->addChild(createBufferDeviceAddressTests(testCtx));
+#ifndef CTS_USES_VULKANSC
 	group->addChild(createDynamicOffsetTests(testCtx));
 	group->addChild(createDescriptorValveMutableTests(testCtx));
+#endif
 
 	// \todo [2015-07-30 jarkko] .change_binding.{between_renderpasses, within_pass}
 	// \todo [2015-07-30 jarkko] .descriptor_set_chain

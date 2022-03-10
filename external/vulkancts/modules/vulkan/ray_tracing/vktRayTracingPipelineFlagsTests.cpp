@@ -806,7 +806,7 @@ PipelineFlagsInstance::prepareBoxGeometries (const float zFront, const float zBa
 		{
 			const float x = float(boxX) * boxWidth;
 			const float y = float(boxY) * boxHeight;
-			BoxGeometry box = { tcu::Vec3(x, y, zFront), tcu::Vec3((x + boxWidth), (y + boxHeight), zBack) };
+			BoxGeometry box = { { tcu::Vec3(x, y, zFront), tcu::Vec3((x + boxWidth), (y + boxHeight), zBack) } };
 			boxes[boxIdx].swap(box);
 		}
 	}
@@ -901,8 +901,8 @@ std::vector<PipelineFlagsInstance::ShaderRecordEntry> PipelineFlagsInstance::pre
 
 	std::vector<ShaderRecordEntry>	shaderRecords(totalGroupCount);
 
-	shaderRecords[0] = { VK_SHADER_STAGE_RAYGEN_BIT_KHR, {}, {} };
-	shaderRecords[1] = { VK_SHADER_STAGE_MISS_BIT_KHR, {}, { GeometryTypes::Box, (~0u), tcu::IVec4(0, defMissRetGreenComp, 0, 0) } };
+	shaderRecords[0] = std::tuple<VkShaderStageFlags, HitGroup, ShaderRecordEXT>( VK_SHADER_STAGE_RAYGEN_BIT_KHR, {}, {} );
+	shaderRecords[1] = std::tuple<VkShaderStageFlags, HitGroup, ShaderRecordEXT>( VK_SHADER_STAGE_MISS_BIT_KHR, {}, { GeometryTypes::Box, (~0u), tcu::IVec4(0, defMissRetGreenComp, 0, 0) } );
 
 	de::SharedPtr<AnyHitShader>			ahit(new AnyHitShader);
 	de::SharedPtr<ClosestHitShader>		chit(new ClosestHitShader);
@@ -933,7 +933,7 @@ std::vector<PipelineFlagsInstance::ShaderRecordEntry> PipelineFlagsInstance::pre
 						flags |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
 						hitGroup.chit = chit;
 					}
-					shaderRecords[shaderGroupIndex] = { flags, hitGroup, { GeometryTypes::Triangle, geometryIndex, tcu::IVec4(0, greenComp++, 0, 0) } };
+					shaderRecords[shaderGroupIndex] = std::tuple<VkShaderStageFlags, HitGroup, ShaderRecordEXT>( flags, hitGroup, { GeometryTypes::Triangle, geometryIndex, tcu::IVec4(0, greenComp++, 0, 0) } );
 					usedIndexes.insert(shaderGroupIndex);
 				}
 			}
@@ -969,7 +969,7 @@ std::vector<PipelineFlagsInstance::ShaderRecordEntry> PipelineFlagsInstance::pre
 						flags |= VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
 						hitGroup.isect = isect;
 					}
-					shaderRecords[shaderGroupIndex] = { flags, hitGroup, { GeometryTypes::Box, geometryIndex, tcu::IVec4(0, greenComp++, 0, 0) } };
+					shaderRecords[shaderGroupIndex] = std::tuple<VkShaderStageFlags, HitGroup, ShaderRecordEXT>( flags, hitGroup, { GeometryTypes::Box, geometryIndex, tcu::IVec4(0, greenComp++, 0, 0) } );
 					usedIndexes.insert(shaderGroupIndex);
 				}
 			}

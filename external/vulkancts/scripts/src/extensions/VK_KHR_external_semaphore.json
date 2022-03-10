@@ -2,6 +2,6 @@
 	"register_extension":
 	{
 		"type": "device",
-		"core": "1.1.0"
+		"core": "0.1.1.0"
 	}
 }

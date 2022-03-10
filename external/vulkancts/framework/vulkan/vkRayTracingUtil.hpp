@@ -38,6 +38,9 @@
 
 namespace vk
 {
+
+#ifndef CTS_USES_VULKANSC
+
 constexpr VkShaderStageFlags	SHADER_STAGE_ALL_RAY_TRACING	= VK_SHADER_STAGE_RAYGEN_BIT_KHR
 																| VK_SHADER_STAGE_ANY_HIT_BIT_KHR
 																| VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
@@ -955,6 +958,12 @@ void cmdTraceRaysIndirect	(const DeviceInterface&					vk,
 							 const VkStridedDeviceAddressRegionKHR*	hitShaderBindingTableRegion,
 							 const VkStridedDeviceAddressRegionKHR*	callableShaderBindingTableRegion,
 							 VkDeviceAddress						indirectDeviceAddress);
+
+#else
+
+deUint32 rayTracingDefineAnything();
+
+#endif // CTS_USES_VULKANSC
 
 } // vk
 

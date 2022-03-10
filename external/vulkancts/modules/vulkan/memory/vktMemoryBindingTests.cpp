@@ -303,7 +303,7 @@ ConstDedicatedInfo						makeDedicatedAllocationInfo			(VkBuffer				buffer)
 {
 	ConstDedicatedInfo					dedicatedAllocationInfo				=
 	{
-		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,				// VkStructureType		sType
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,					// VkStructureType		sType
 		DE_NULL,															// const void*			pNext
 		DE_NULL,															// VkImage				image
 		buffer																// VkBuffer				buffer
@@ -315,7 +315,7 @@ ConstDedicatedInfo						makeDedicatedAllocationInfo			(VkImage				image)
 {
 	ConstDedicatedInfo					dedicatedAllocationInfo				=
 	{
-		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,				// VkStructureType		sType
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,					// VkStructureType		sType
 		DE_NULL,															// const void*			pNext
 		image,																// VkImage				image
 		DE_NULL																// VkBuffer				buffer
@@ -328,7 +328,7 @@ const VkBindBufferMemoryInfo			makeBufferMemoryBindingInfo			(VkBuffer				buffer
 {
 	const VkBindBufferMemoryInfo		bufferMemoryBinding					=
 	{
-		VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO_KHR,						// VkStructureType		sType;
+		VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO,							// VkStructureType		sType;
 		DE_NULL,															// const void*			pNext;
 		buffer,																// VkBuffer				buffer;
 		memory,																// VkDeviceMemory		memory;
@@ -342,7 +342,7 @@ const VkBindImageMemoryInfo				makeImageMemoryBindingInfo			(VkImage				image,
 {
 	const VkBindImageMemoryInfo		imageMemoryBinding					=
 	{
-		VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHR,						// VkStructureType		sType;
+		VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO,							// VkStructureType		sType;
 		DE_NULL,															// const void*			pNext;
 		image,																// VkImage				image;
 		memory,																// VkDeviceMemory		memory;
@@ -351,6 +351,7 @@ const VkBindImageMemoryInfo				makeImageMemoryBindingInfo			(VkImage				image,
 	return imageMemoryBinding;
 }
 
+#ifndef CTS_USES_VULKANSC
 const VkMemoryPriorityAllocateInfoEXT	makeMemoryPriorityAllocateInfo		(const void *	pNext,
 																			 float			priority)
 {
@@ -362,6 +363,7 @@ const VkMemoryPriorityAllocateInfoEXT	makeMemoryPriorityAllocateInfo		(const voi
 	};
 	return info;
 }
+#endif
 
 enum TransferDirection
 {
@@ -443,6 +445,7 @@ public:
 		: TestInstance	(ctx)
 		, m_params		(params)
 	{
+#ifndef CTS_USES_VULKANSC
 		if (m_params.priorityMode == PRIORITY_MODE_DYNAMIC)
 		{
 			VkInstance										instance				(m_context.getInstance());
@@ -502,6 +505,7 @@ public:
 
 			m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, m_context.getPhysicalDevice(), &deviceInfo);
 		}
+#endif // CTS_USES_VULKANSC
 	};
 
 protected:
@@ -589,14 +593,20 @@ void					BaseTestInstance::createMemory<VkBuffer, DE_FALSE>	(BuffersList&			targ
 
 		vk.getBufferMemoryRequirements(vkDevice, **targets[i], &memReqs);
 
+#ifdef CTS_USES_VULKANSC
+		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, DE_NULL);
+#else
 		VkMemoryPriorityAllocateInfoEXT	priority							= makeMemoryPriorityAllocateInfo(DE_NULL, ((float)i)/((float)count));
 		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, (m_params.priorityMode == PRIORITY_MODE_STATIC) ? &priority : DE_NULL);
+#endif
 		VkDeviceMemory					rawMemory							= DE_NULL;
 
 		vk.allocateMemory(vkDevice, &memAlloc, (VkAllocationCallbacks*)DE_NULL, &rawMemory);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_params.priorityMode == PRIORITY_MODE_DYNAMIC)
 			vk.setDeviceMemoryPriorityEXT(vkDevice, rawMemory, priority.priority);
+#endif // CTS_USES_VULKANSC
 
 		memory.push_back(MemoryRegionPtr(new Move<VkDeviceMemory>(check<VkDeviceMemory>(rawMemory), Deleter<VkDeviceMemory>(vk, vkDevice, DE_NULL))));
 	}
@@ -616,14 +626,21 @@ void				BaseTestInstance::createMemory<VkImage, DE_FALSE>		(ImagesList&			target
 		VkMemoryRequirements			memReqs;
 		vk.getImageMemoryRequirements(vkDevice, **targets[i], &memReqs);
 
+#ifdef CTS_USES_VULKANSC
+		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, DE_NULL);
+#else
 		VkMemoryPriorityAllocateInfoEXT	priority							= makeMemoryPriorityAllocateInfo(DE_NULL, ((float)i)/((float)count));
 		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, (m_params.priorityMode == PRIORITY_MODE_STATIC) ? &priority : DE_NULL);
+#endif
+
 		VkDeviceMemory					rawMemory							= DE_NULL;
 
 		vk.allocateMemory(vkDevice, &memAlloc, (VkAllocationCallbacks*)DE_NULL, &rawMemory);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_params.priorityMode == PRIORITY_MODE_DYNAMIC)
 			vk.setDeviceMemoryPriorityEXT(vkDevice, rawMemory, priority.priority);
+#endif // CTS_USES_VULKANSC
 
 		memory.push_back(de::SharedPtr<Move<VkDeviceMemory> >(new Move<VkDeviceMemory>(check<VkDeviceMemory>(rawMemory), Deleter<VkDeviceMemory>(vk, vkDevice, DE_NULL))));
 	}
@@ -645,14 +662,21 @@ void				BaseTestInstance::createMemory<VkBuffer, DE_TRUE>		(BuffersList&			targe
 		vk.getBufferMemoryRequirements(vkDevice, **targets[i], &memReqs);
 
 		ConstDedicatedInfo				dedicatedAllocationInfo				= makeDedicatedAllocationInfo(**targets[i]);
+#ifdef CTS_USES_VULKANSC
+		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, (const void *)&dedicatedAllocationInfo);
+#else
 		VkMemoryPriorityAllocateInfoEXT	priority							= makeMemoryPriorityAllocateInfo(&dedicatedAllocationInfo, ((float)i)/((float)count));
 		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, (m_params.priorityMode == PRIORITY_MODE_STATIC) ? &priority : (const void *)&dedicatedAllocationInfo);
+#endif
+
 		VkDeviceMemory					rawMemory							= DE_NULL;
 
 		vk.allocateMemory(vkDevice, &memAlloc, static_cast<VkAllocationCallbacks*>(DE_NULL), &rawMemory);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_params.priorityMode == PRIORITY_MODE_DYNAMIC)
 			vk.setDeviceMemoryPriorityEXT(vkDevice, rawMemory, priority.priority);
+#endif // CTS_USES_VULKANSC
 
 		memory.push_back(MemoryRegionPtr(new Move<VkDeviceMemory>(check<VkDeviceMemory>(rawMemory), Deleter<VkDeviceMemory>(vk, vkDevice, DE_NULL))));
 	}
@@ -673,14 +697,22 @@ void				BaseTestInstance::createMemory<VkImage, DE_TRUE>		(ImagesList&			targets
 		vk.getImageMemoryRequirements(vkDevice, **targets[i], &memReqs);
 
 		ConstDedicatedInfo				dedicatedAllocationInfo				= makeDedicatedAllocationInfo(**targets[i]);
-		VkMemoryPriorityAllocateInfoEXT	priority							= makeMemoryPriorityAllocateInfo(&dedicatedAllocationInfo, ((float)i)/((float)count));
-		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, (m_params.priorityMode == PRIORITY_MODE_STATIC) ? &priority : (const void *)&dedicatedAllocationInfo);
-		VkDeviceMemory					rawMemory							= DE_NULL;
+
+#ifdef CTS_USES_VULKANSC
+		const VkMemoryAllocateInfo		memAlloc						= makeMemoryAllocateInfo(memReqs, (const void *)&dedicatedAllocationInfo);
+#else
+		VkMemoryPriorityAllocateInfoEXT	priority						= makeMemoryPriorityAllocateInfo(&dedicatedAllocationInfo, ((float)i)/((float)count));
+		const VkMemoryAllocateInfo		memAlloc						= makeMemoryAllocateInfo(memReqs, m_params.priorityMode ? &priority : (const void *)&dedicatedAllocationInfo);
+#endif
+
+		VkDeviceMemory					rawMemory						= DE_NULL;
 
 		vk.allocateMemory(vkDevice, &memAlloc, static_cast<VkAllocationCallbacks*>(DE_NULL), &rawMemory);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_params.priorityMode == PRIORITY_MODE_DYNAMIC)
 			vk.setDeviceMemoryPriorityEXT(vkDevice, rawMemory, priority.priority);
+#endif // CTS_USES_VULKANSC
 
 		memory.push_back(MemoryRegionPtr(new Move<VkDeviceMemory>(check<VkDeviceMemory>(rawMemory), Deleter<VkDeviceMemory>(vk, vkDevice, DE_NULL))));
 	}
@@ -1004,10 +1036,12 @@ public:
 	{
 		ctx.requireDeviceFunctionality("VK_KHR_bind_memory2");
 
+#ifndef CTS_USES_VULKANSC
 		if ((m_params.priorityMode != PRIORITY_MODE_DEFAULT) && !ctx.getMemoryPriorityFeaturesEXT().memoryPriority)
 			TCU_THROW(NotSupportedError, "VK_EXT_memory_priority Not supported");
 		if ((m_params.priorityMode == PRIORITY_MODE_DYNAMIC) &&  !ctx.isDeviceFunctionalitySupported("VK_EXT_pageable_device_local_memory"))
 			TCU_THROW(NotSupportedError, "VK_EXT_pageable_device_local_memory Not supported");
+#endif
 	}
 
 private:
@@ -1020,9 +1054,16 @@ tcu::TestCaseGroup* createMemoryBindingTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>		group								(new tcu::TestCaseGroup(testCtx, "binding", "Memory binding tests."));
 
-	for (int i = 0; i < 3; ++i)
+#ifdef CTS_USES_VULKANSC
+	const int iterations = 1;
+#else
+	const int iterations = 3;
+#endif
+
+	for (int i = 0; i < iterations; ++i)
 	{
 		PriorityMode priorityMode = PriorityMode(i);
+
 		de::MovePtr<tcu::TestCaseGroup>		regular								(new tcu::TestCaseGroup(testCtx, "regular", "Basic memory binding tests."));
 		de::MovePtr<tcu::TestCaseGroup>		aliasing							(new tcu::TestCaseGroup(testCtx, "aliasing", "Memory binding tests with aliasing of two resources."));
 

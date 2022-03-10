@@ -4244,10 +4244,24 @@ void copyBufferToImage (const DeviceInterface&					vk,
 						VkImage									destImage,
 						VkImageLayout							destImageLayout,
 						VkPipelineStageFlags					destImageDstStageFlags,
+						const VkCommandPool*					externalCommandPool,
 						deUint32								baseMipLevel)
 {
-	Move<VkCommandPool>		cmdPool		= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
-	Move<VkCommandBuffer>	cmdBuffer	= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	Move<VkCommandPool>		cmdPool;
+	VkCommandPool			activeCmdPool;
+	if (externalCommandPool == DE_NULL)
+	{
+		// Create local command pool
+		cmdPool = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+		activeCmdPool = *cmdPool;
+	}
+	else
+	{
+		// Use external command pool if available
+		activeCmdPool = *externalCommandPool;
+	}
+
+	Move<VkCommandBuffer>	cmdBuffer	= allocateCommandBuffer(vk, device, activeCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	Move<VkFence>			fence		= createFence(vk, device);
 
 	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
@@ -5032,6 +5046,8 @@ void initDepthStencilImageChessboardPattern (const DeviceInterface&	vk,
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 }
 
+#ifndef CTS_USES_VULKANSC
+
 void allocateAndBindSparseImage (const DeviceInterface&						vk,
 								 VkDevice									device,
 								 const VkPhysicalDevice						physicalDevice,
@@ -5292,5 +5308,6 @@ bool checkSparseImageFormatSupport (const VkPhysicalDevice		physicalDevice,
 {
 	return checkSparseImageFormatSupport(physicalDevice, instance, imageCreateInfo.format, imageCreateInfo.imageType, imageCreateInfo.samples, imageCreateInfo.usage, imageCreateInfo.tiling);
 }
+#endif // CTS_USES_VULKANSC
 
 } // vk

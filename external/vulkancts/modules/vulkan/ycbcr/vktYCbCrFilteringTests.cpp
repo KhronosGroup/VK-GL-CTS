@@ -562,10 +562,10 @@ tcu::TestStatus LinearFilteringTestInstance::iterate(void)
 		}
 	}
 
-	if (!isOk)
-		return tcu::TestStatus::fail("Result comparison failed");
 	if (++m_caseIndex < (int)m_cases.size())
 		return tcu::TestStatus::incomplete();
+	if (!isOk)
+		return tcu::TestStatus::fail("Result comparison failed");
 	return tcu::TestStatus::pass("Pass");
 }
 
@@ -594,6 +594,10 @@ LinearFilteringTestCase::LinearFilteringTestCase(tcu::TestContext &context, cons
 void LinearFilteringTestCase::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_sampler_ycbcr_conversion");
+
+	const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures	features = context.getSamplerYcbcrConversionFeatures();
+	if (features.samplerYcbcrConversion == VK_FALSE)
+		TCU_THROW(NotSupportedError, "samplerYcbcrConversion feature is not supported");
 
 	const auto&					instInt				= context.getInstanceInterface();
 	auto						physicalDevice		= context.getPhysicalDevice();

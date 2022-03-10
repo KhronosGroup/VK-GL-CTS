@@ -288,7 +288,6 @@ void ColorWriteEnableTest::checkSupport (Context& context) const
 
 	if ((colorProperties.optimalTilingFeatures & kColorFeatures) != kColorFeatures)
 		TCU_THROW(NotSupportedError, "Required color image features not supported");
-
 	checkPipelineLibraryRequirements(vki, physicalDevice, m_testConfig.pipelineConstructionType);
 }
 

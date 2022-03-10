@@ -2099,7 +2099,9 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
 			log << tcu::TestLog::Message << "Passed Samples (with early fragment test)    : " << de::toString(sampleCounts[1]) << tcu::TestLog::EndMessage;
 		}
 
+#ifndef CTS_USES_VULKANSC
 		vk.destroyQueryPool(device, queryPool, nullptr);
+#endif // CTS_USES_VULKANSC
 
 		// Check that number of the all passed samples are within an acceptable range.
 		if (sampleCounts[0] >= minValue && sampleCounts[0] <= maxValue && sampleCounts[1] >= minValue && sampleCounts[1] <= maxValue)

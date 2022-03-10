@@ -994,6 +994,7 @@ tcu::TestStatus test(Context& context, const MaxVaryingsParam param)
 
 	deInt32		data		= 0u;
 	size_t		dataSize	= sizeof(data);
+
 	deInt32		maxOutput	= getMaxIOComponents(false, param.outputStage, properties);
 	deInt32		maxInput	= getMaxIOComponents(true, param.inputStage, properties);
 

@@ -604,6 +604,7 @@ TestInstance* VertexInputTest::createInstance (Context& context) const
 	}
 
 	// Portability requires stride to be multiply of minVertexInputBindingStrideAlignment
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
 	{
 		deUint32 minStrideAlignment = context.getPortabilitySubsetProperties().minVertexInputBindingStrideAlignment;
@@ -613,6 +614,7 @@ TestInstance* VertexInputTest::createInstance (Context& context) const
 				TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: stride is not multiply of minVertexInputBindingStrideAlignment");
 		}
 	}
+#endif // CTS_USES_VULKANSC
 
 	return new VertexInputInstance(context, m_pipelineConstructionType, attributeDescriptions, bindingDescriptions, bindingOffsets);
 }
@@ -1085,7 +1087,6 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 		0,														// uint32_t							offset
 		sizeof(specializationData),								// uint32_t							size
 	};
-
 	const VkSpecializationInfo specializationInfo =
 	{
 		1,														// uint32_t							mapEntryCount

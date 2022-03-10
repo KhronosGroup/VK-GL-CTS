@@ -1231,6 +1231,7 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 	{
 		vk.cmdCopyImage(*m_cmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
 	}
+#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -1248,6 +1249,7 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 
 		vk.cmdCopyImage2(*m_cmdBuffer, &copyImageInfo2KHR);
 	}
+#endif // CTS_USES_VULKANSC
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 
@@ -1675,6 +1677,7 @@ tcu::TestStatus CopyImageToImageMipmap::iterate (void)
 	{
 		vk.cmdCopyImage(*m_cmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
 	}
+#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -1692,6 +1695,7 @@ tcu::TestStatus CopyImageToImageMipmap::iterate (void)
 
 		vk.cmdCopyImage2(*m_cmdBuffer, &copyImageInfo2KHR);
 	}
+#endif // CTS_USES_VULKANSC
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 
@@ -2083,6 +2087,7 @@ tcu::TestStatus CopyBufferToBuffer::iterate (void)
 	{
 		vk.cmdCopyBuffer(*m_cmdBuffer, m_source.get(), m_destination.get(), (deUint32)m_params.regions.size(), &bufferCopies[0]);
 	}
+#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -2098,6 +2103,7 @@ tcu::TestStatus CopyBufferToBuffer::iterate (void)
 
 		vk.cmdCopyBuffer2(*m_cmdBuffer, &copyBufferInfo2KHR);
 	}
+#endif // CTS_USES_VULKANSC
 
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	endCommandBuffer(vk, *m_cmdBuffer);
@@ -2305,6 +2311,7 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 	{
 		vk.cmdCopyImageToBuffer(*m_cmdBuffer, m_source.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination.get(), (deUint32)m_params.regions.size(), &bufferImageCopies[0]);
 	}
+#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -2321,6 +2328,7 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 
 		vk.cmdCopyImageToBuffer2(*m_cmdBuffer, &copyImageToBufferInfo2KHR);
 	}
+#endif // CTS_USES_VULKANSC
 
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	endCommandBuffer(vk, *m_cmdBuffer);
@@ -2537,6 +2545,7 @@ tcu::TestStatus CopyBufferToImage::iterate (void)
 	{
 		vk.cmdCopyBufferToImage(*m_cmdBuffer, m_source.get(), m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), bufferImageCopies.data());
 	}
+#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -2553,7 +2562,7 @@ tcu::TestStatus CopyBufferToImage::iterate (void)
 
 		vk.cmdCopyBufferToImage2(*m_cmdBuffer, &copyBufferToImageInfo2KHR);
 	}
-
+#endif // CTS_USES_VULKANSC
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 
@@ -2915,6 +2924,7 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 			}
 		}
 	}
+#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -2954,6 +2964,8 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 			}
 		}
 	}
+#endif // CTS_USES_VULKANSC
+
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
@@ -3062,14 +3074,14 @@ CompressedTextureForBlit::CompressedTextureForBlit(const tcu::CompressedTexForma
 			// define set of few valid blocks that contain values from <0; 1> range
 			validBlocks =
 			{
-				{ 1686671500, 3957317723, 3010132342, 2420137890 },
-				{ 3538027716, 298848033, 1925786021, 2022072301 },
-				{ 2614043466, 1636155440, 1023731774, 1894349986 },
-				{ 3433039318, 1294346072, 1587319645, 1738449906 },
-				{ 1386298160, 1639492154, 1273285776, 361562050 },
-				{ 1310110688, 526460754, 3630858047, 537617591 },
-				{ 3270356556, 2432993217, 2415924417, 1792488857 },
-				{ 1204947583, 353249154, 3739153467, 2068076443 },
+				{ { 1686671500, 3957317723, 3010132342, 2420137890 } },
+				{ { 3538027716, 298848033, 1925786021, 2022072301 } },
+				{ { 2614043466, 1636155440, 1023731774, 1894349986 } },
+				{ { 3433039318, 1294346072, 1587319645, 1738449906 } },
+				{ { 1386298160, 1639492154, 1273285776, 361562050 } },
+				{ { 1310110688, 526460754, 3630858047, 537617591 } },
+				{ { 3270356556, 2432993217, 2415924417, 1792488857 } },
+				{ { 1204947583, 353249154, 3739153467, 2068076443 } },
 			};
 		}
 		else
@@ -3077,14 +3089,14 @@ CompressedTextureForBlit::CompressedTextureForBlit(const tcu::CompressedTexForma
 			// define set of few valid blocks that contain values from <-1; 1> range
 			validBlocks =
 			{
-				{ 2120678840, 3264271120, 4065378848, 3479743703 },
-				{ 1479697556, 3480872527, 3369382558, 568252340 },
-				{ 1301480032, 1607738094, 3055221704, 3663953681 },
-				{ 3531657186, 2285472028, 1429601507, 1969308187 },
-				{ 73229044, 650504649, 1120954865, 2626631975 },
-				{ 3872486086, 15326178, 2565171269, 2857722432 },
-				{ 1301480032, 1607738094, 3055221704, 3663953681 },
-				{ 73229044, 650504649, 1120954865, 2626631975 },
+				{ { 2120678840, 3264271120, 4065378848, 3479743703 } },
+				{ { 1479697556, 3480872527, 3369382558, 568252340 } },
+				{ { 1301480032, 1607738094, 3055221704, 3663953681 } },
+				{ { 3531657186, 2285472028, 1429601507, 1969308187 } },
+				{ { 73229044, 650504649, 1120954865, 2626631975 } },
+				{ { 3872486086, 15326178, 2565171269, 2857722432 } },
+				{ { 1301480032, 1607738094, 3055221704, 3663953681 } },
+				{ { 73229044, 650504649, 1120954865, 2626631975 } },
 			};
 		}
 
@@ -3351,6 +3363,7 @@ tcu::TestStatus BlittingImages::iterate (void)
 	{
 		vk.cmdBlitImage(*m_cmdBuffer, m_source.get(), srcImageParams.operationLayout, m_destination.get(), dstImageParams.operationLayout, (deUint32)m_params.regions.size(), &regions[0], m_params.filter);
 	}
+#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -3368,6 +3381,7 @@ tcu::TestStatus BlittingImages::iterate (void)
 		};
 		vk.cmdBlitImage2(*m_cmdBuffer, &blitImageInfo2KHR);
 	}
+#endif // CTS_USES_VULKANSC
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
@@ -4831,6 +4845,7 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 			{
 				vk.cmdBlitImage(*m_cmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)m_params.regions.size(), &regions[0], m_params.filter);
 			}
+#ifndef CTS_USES_VULKANSC
 			else
 			{
 				DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -4848,6 +4863,7 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 				};
 				vk.cmdBlitImage2(*m_cmdBuffer, &BlitImageInfo2KHR);
 			}
+#endif // CTS_USES_VULKANSC
 		}
 	}
 	// Blit mip levels with multiple blit commands
@@ -4944,6 +4960,7 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 			{
 				vk.cmdBlitImage(*m_cmdBuffer, m_destination.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, 1u, &regions[regionNdx], m_params.filter);
 			}
+#ifndef CTS_USES_VULKANSC
 			else
 			{
 				DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -4961,6 +4978,7 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 				};
 				vk.cmdBlitImage2(*m_cmdBuffer, &BlitImageInfo2KHR);
 			}
+#endif // CTS_USES_VULKANSC
 
 			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 		}
@@ -6192,6 +6210,7 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 	{
 		vk.cmdResolveImage(*m_cmdBuffer, sourceImage, m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)m_params.regions.size(), imageResolves.data());
 	}
+#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -6208,6 +6227,7 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 		};
 		vk.cmdResolveImage2(*m_cmdBuffer, &ResolveImageInfo2KHR);
 	}
+#endif // CTS_USES_VULKANSC
 
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 	endCommandBuffer(vk, *m_cmdBuffer);
@@ -6870,6 +6890,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 			vk.cmdCopyImage(commandBuffer, m_multisampledImage.get(), m_params.src.image.operationLayout, m_multisampledCopyImage.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
 		}
 	}
+#ifndef CTS_USES_VULKANSC
 	else
 	{
 		if (m_options == COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB)
@@ -6919,6 +6940,7 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 			vk.cmdCopyImage2(commandBuffer, &copyImageInfo2KHR);
 		}
 	}
+#endif // CTS_USES_VULKANSC
 
 	if (useTwoQueues)
 	{
@@ -7757,6 +7779,7 @@ tcu::TestStatus DepthStencilMSAA::iterate (void)
 		{
 			vk.cmdCopyImage(*cmdBuffer, srcImage.get(), m_srcImage.operationLayout, dstImage.get(), m_dstImage.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
 		}
+#ifndef CTS_USES_VULKANSC
 		else
 		{
 			DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -7774,6 +7797,7 @@ tcu::TestStatus DepthStencilMSAA::iterate (void)
 
 			vk.cmdCopyImage2(*cmdBuffer, &copyImageInfo2KHR);
 		}
+#endif // CTS_USES_VULKANSC
 	}
 	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait (vk, vkDevice, queue, *cmdBuffer);
@@ -14316,10 +14340,12 @@ void addDedicatedAllocationCopiesAndBlittingTests (tcu::TestCaseGroup* group)
 	addCopiesAndBlittingTests(group, ALLOCATION_KIND_DEDICATED, EXTENSION_USE_NONE);
 }
 
+#ifndef CTS_USES_VULKANSC
 void addExtensionCopiesAndBlittingTests(tcu::TestCaseGroup* group)
 {
 	addCopiesAndBlittingTests(group, ALLOCATION_KIND_DEDICATED, EXTENSION_USE_COPY_COMMANDS2);
 }
+#endif // CTS_USES_VULKANSC
 
 } // anonymous
 
@@ -14329,7 +14355,9 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "core", "Core Copies And Blitting Tests", addCoreCopiesAndBlittingTests));
 	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Copies And Blitting Tests For Dedicated Memory Allocation",	addDedicatedAllocationCopiesAndBlittingTests));
+#ifndef CTS_USES_VULKANSC
 	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "copy_commands2", "Copies And Blitting Tests using KHR_copy_commands2", addExtensionCopiesAndBlittingTests));
+#endif // CTS_USES_VULKANSC
 
 	return copiesAndBlittingTests.release();
 }

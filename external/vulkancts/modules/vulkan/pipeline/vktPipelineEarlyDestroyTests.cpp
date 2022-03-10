@@ -172,9 +172,16 @@ tcu::TestStatus testEarlyDestroy (Context& context, const TestParams& params, bo
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,								// VkStructureType				sType;
 			DE_NULL,																	// const void*					pNext;
-			0u,																			// VkPipelineCacheCreateFlags	flags;
+#ifndef CTS_USES_VULKANSC
+			(VkPipelineCacheCreateFlags)0u,												// VkPipelineCacheCreateFlags	flags;
 			0u,																			// size_t						initialDataSize;
 			DE_NULL																		// const void*					pInitialData;
+#else
+			VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+				VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,					// VkPipelineCacheCreateFlags	flags;
+			context.getResourceInterface()->getCacheDataSize(),							// deUintptr					initialDataSize;
+			context.getResourceInterface()->getCacheData()								// const void*					pInitialData;
+#endif // CTS_USES_VULKANSC
 		};
 		const Unique<VkPipelineCache>					pipelineCache					(createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo));
 
@@ -291,15 +298,20 @@ tcu::TestStatus testEarlyDestroy (Context& context, const TestParams& params, bo
 			const auto									imageBufferPtr					= reinterpret_cast<const char*>(imageBufferAlloc.getHostPtr()) + imageBufferAlloc.getOffset();
 			const tcu::ConstPixelBufferAccess			imagePixels						(textureFormat, framebufferWidth, framebufferHeight, 1u, imageBufferPtr);
 
-			for (int z = 0; z < imagePixels.getDepth(); ++z)
-			for (int y = 0; y < imagePixels.getHeight(); ++y)
-			for (int x = 0; x < imagePixels.getWidth(); ++x)
+#ifdef CTS_USES_VULKANSC
+			if (context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 			{
-				const auto pixel = imagePixels.getPixel(x, y, z);
-				if (pixel != clearColor) {
-									std::ostringstream msg; msg << "Pixel value mismatch after framebuffer clear." << " diff: " << pixel << " vs " << clearColor;
+				for (int z = 0; z < imagePixels.getDepth(); ++z)
+				for (int y = 0; y < imagePixels.getHeight(); ++y)
+				for (int x = 0; x < imagePixels.getWidth(); ++x)
+				{
+					const auto pixel = imagePixels.getPixel(x, y, z);
+					if (pixel != clearColor) {
+										std::ostringstream msg; msg << "Pixel value mismatch after framebuffer clear." << " diff: " << pixel << " vs " << clearColor;
 
-					return tcu::TestStatus::fail(msg.str()/*"Pixel value mismatch after framebuffer clear."*/);
+						return tcu::TestStatus::fail(msg.str()/*"Pixel value mismatch after framebuffer clear."*/);
+					}
 				}
 			}
 		}

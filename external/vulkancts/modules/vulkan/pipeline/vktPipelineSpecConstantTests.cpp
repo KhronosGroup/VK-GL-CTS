@@ -802,7 +802,6 @@ FeatureFlags getShaderStageRequirements (const VkShaderStageFlags stageFlags)
 void SpecConstantTest::checkSupport (Context& context) const
 {
 	requireFeatures(context, m_caseDef.requirements | getShaderStageRequirements(m_stage));
-
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 

@@ -131,7 +131,7 @@ bool isFloat16Int8FeaturesSupported(const Context& context, const vk::VkPhysical
 
 bool is8BitStorageFeaturesSupported(const Context& context, const vk::VkPhysicalDevice8BitStorageFeatures& toCheck, const char **missingFeature)
 {
-	const VkPhysicalDevice8BitStorageFeaturesKHR& extensionFeatures = context.get8BitStorageFeatures();
+	const VkPhysicalDevice8BitStorageFeatures& extensionFeatures = context.get8BitStorageFeatures();
 
 	IS_AVAIL("8BitStorage.", storageBuffer8BitAccess);
 	IS_AVAIL("8BitStorage.", uniformAndStorageBuffer8BitAccess);
@@ -164,7 +164,7 @@ bool isVariablePointersFeaturesSupported(const Context& context, const vk::VkPhy
 
 bool isVulkanMemoryModelFeaturesSupported(const Context& context, const vk::VkPhysicalDeviceVulkanMemoryModelFeatures& toCheck, const char **missingFeature)
 {
-	const VkPhysicalDeviceVulkanMemoryModelFeaturesKHR& extensionFeatures = context.getVulkanMemoryModelFeatures();
+	const VkPhysicalDeviceVulkanMemoryModelFeatures& extensionFeatures = context.getVulkanMemoryModelFeatures();
 
 	IS_AVAIL("VulkanMemoryModel.", vulkanMemoryModel);
 	IS_AVAIL("VulkanMemoryModel.", vulkanMemoryModelDeviceScope);
@@ -173,6 +173,7 @@ bool isVulkanMemoryModelFeaturesSupported(const Context& context, const vk::VkPh
 	return true;
 }
 
+#ifndef CTS_USES_VULKANSC
 bool isIntegerDotProductFeaturesSupported(const Context& context, const vk::VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR& toCheck, const char **missingFeature)
 {
 	const VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR& extensionFeatures = context.getShaderIntegerDotProductFeatures();
@@ -181,6 +182,7 @@ bool isIntegerDotProductFeaturesSupported(const Context& context, const vk::VkPh
 
 	return true;
 }
+#endif // CTS_USES_VULKANSC
 
 #undef IS_AVAIL
 
@@ -213,7 +215,7 @@ bool isFloatControlsFeaturesSupported (const Context& context, const vk::VkPhysi
 	// perform query to get supported float control properties
    vk::VkPhysicalDeviceFloatControlsProperties refControls;
 	{
-		refControls.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR;
+		refControls.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES;
 		refControls.pNext = DE_NULL;
 
 		VkPhysicalDeviceProperties2 deviceProperties;
@@ -227,9 +229,9 @@ bool isFloatControlsFeaturesSupported (const Context& context, const vk::VkPhysi
 	}
 
 	using FCIndependence = VkShaderFloatControlsIndependence;
-	FCIndependence fcInd32		= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY_KHR;
-	FCIndependence fcIndAll		= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL_KHR;
-	FCIndependence fcIndNone	= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR;
+	FCIndependence fcInd32		= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY;
+	FCIndependence fcIndAll		= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL;
+	FCIndependence fcIndNone	= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE;
 
 	bool requiredDenormBehaviorNotSupported =
 		((toCheck.denormBehaviorIndependence == fcIndAll) && (refControls.denormBehaviorIndependence != fcIndAll)) ||
@@ -287,8 +289,10 @@ bool isVulkanFeaturesSupported(const Context& context, const VulkanFeatures& req
 	if (!isFloatControlsFeaturesSupported(context, requested.floatControlsProperties, missingFeature))
 		return false;
 
+#ifndef CTS_USES_VULKANSC
 	if (!isIntegerDotProductFeaturesSupported(context, requested.extIntegerDotProduct, missingFeature))
 		return false;
+#endif // CTS_USES_VULKANSC
 
 	return true;
 }
@@ -306,8 +310,10 @@ deUint32 getMinRequiredVulkanVersion (const SpirvVersion version)
 		return VK_API_VERSION_1_1;
 	case SPIRV_VERSION_1_5:
 		return VK_API_VERSION_1_2;
+#ifndef CTS_USES_VULKANSC
 	case SPIRV_VERSION_1_6:
 		return VK_API_VERSION_1_3;
+#endif // CTS_USES_VULKANSC
 	default:
 		DE_ASSERT(0);
 	}
@@ -318,7 +324,9 @@ std::string	getVulkanName (const deUint32 version)
 {
 	if (version == VK_API_VERSION_1_1)	return "1.1";
 	if (version == VK_API_VERSION_1_2)	return "1.2";
+#ifndef CTS_USES_VULKANSC
 	if (version == VK_API_VERSION_1_3)	return "1.3";
+#endif // CTS_USES_VULKANSC
 
 	return "1.0";
 }

@@ -697,6 +697,7 @@ Move<VkPipeline> AttachmentRateInstance::buildGraphicsPipeline(deUint32 subpass,
 	};
 
 	void* pNext = useShadingRate ? &shadingRateStateCreateInfo : DE_NULL;
+#ifndef CTS_USES_VULKANSC
 	VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -710,6 +711,9 @@ Move<VkPipeline> AttachmentRateInstance::buildGraphicsPipeline(deUint32 subpass,
 
 	if (m_params->useDynamicRendering)
 		pNext = &renderingCreateInfo;
+#else
+	DE_UNREF(cbFormat);
+#endif // CTS_USES_VULKANSC
 
 	VkGraphicsPipelineCreateInfo pipelineCreateInfo
 	{
@@ -734,8 +738,10 @@ Move<VkPipeline> AttachmentRateInstance::buildGraphicsPipeline(deUint32 subpass,
 		0														// deInt32											basePipelineIndex;
 	};
 
+#ifndef CTS_USES_VULKANSC
 	if (useShadingRate && m_params->useDynamicRendering)
 		pipelineCreateInfo.flags |= VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+#endif // CTS_USES_VULKANSC
 
 	VkDevice device = m_device.get() ? *m_device : m_context.getDevice();
 	return createGraphicsPipeline(m_context.getDeviceInterface(), device, DE_NULL, &pipelineCreateInfo);
@@ -792,6 +798,7 @@ void AttachmentRateInstance::startRendering(const VkCommandBuffer					commandBuf
 	const DeviceInterface&		vk			(m_context.getDeviceInterface());
 	std::vector<VkClearValue>	clearColor	(attachmentInfo.size(), makeClearValueColorU32(0, 0, 0, 0));
 
+#ifndef CTS_USES_VULKANSC
 	if (m_params->useDynamicRendering)
 	{
 		VkRenderingFragmentShadingRateAttachmentInfoKHR shadingRateAttachmentInfo
@@ -844,6 +851,10 @@ void AttachmentRateInstance::startRendering(const VkCommandBuffer					commandBuf
 
 		return;
 	}
+#else
+	DE_UNREF(srTileWidth);
+	DE_UNREF(srTileHeight);
+#endif // CTS_USES_VULKANSC
 
 	std::vector<VkImageView>			attachments(attachmentInfo.size(), 0);
 	VkRenderPassAttachmentBeginInfo		renderPassAttachmentBeginInfo;
@@ -874,9 +885,11 @@ void AttachmentRateInstance::finishRendering(const VkCommandBuffer commandBuffer
 {
 	const DeviceInterface& vk = m_context.getDeviceInterface();
 
+#ifndef CTS_USES_VULKANSC
 	if (m_params->useDynamicRendering)
 		endRendering(vk, commandBuffer);
 	else
+#endif // CTS_USES_VULKANSC
 		endRenderPass(vk, commandBuffer);
 }
 
@@ -1553,7 +1566,7 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 		vki.getPhysicalDeviceFeatures(pd, &deviceFeatures);
 
 		VkPhysicalDeviceFragmentShadingRateFeaturesKHR	fsrFeatures				{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR, DE_NULL, DE_FALSE, DE_FALSE, DE_TRUE };
-		VkPhysicalDeviceImagelessFramebufferFeaturesKHR	ifbFeatures				{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES, DE_NULL, DE_TRUE };
+		VkPhysicalDeviceImagelessFramebufferFeatures	ifbFeatures				{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES, DE_NULL, DE_TRUE };
 		VkPhysicalDeviceFeatures2						createPhysicalFeature	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &fsrFeatures, deviceFeatures };
 
 		std::vector<const char*> enabledExtensions = { "VK_KHR_fragment_shading_rate" };

@@ -42,7 +42,9 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 										deUint32						apiVersion,
 										const vector<string>&			enabledLayers,
 										const vector<string>&			enabledExtensions,
+#ifndef CTS_USES_VULKANSC
 										DebugReportRecorder*			recorder,
+#endif // CTS_USES_VULKANSC
 										const VkAllocationCallbacks*	pAllocator)
 {
 	bool			validationEnabled	= (!enabledLayers.empty());
@@ -51,6 +53,7 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
     // Enumerate once, pass it in to the various functions that require the list of available extensions
 	vector<vk::VkExtensionProperties> availableExtensions = enumerateInstanceExtensionProperties(vkPlatform, DE_NULL);
 
+#ifndef CTS_USES_VULKANSC
 	if (validationEnabled)
 	{
 		// Make sure the debug report extension is enabled when validation is enabled.
@@ -62,6 +65,7 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 
 		DE_ASSERT(recorder);
 	}
+#endif // CTS_USES_VULKANSC
 
 	// Make sure portability enumeration is enabled whenever it is available
 	bool portability_enumeration_available = isExtensionSupported(availableExtensions, RequiredExtension("VK_KHR_portability_enumeration"));
@@ -90,12 +94,18 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 		apiVersion								// apiVersion
 	};
 
+#ifndef CTS_USES_VULKANSC
 	const VkDebugReportCallbackCreateInfoEXT callbackInfo = (validationEnabled ? recorder->makeCreateInfo() : initVulkanStructure());
+#endif // CTS_USES_VULKANSC
 
 	const struct VkInstanceCreateInfo	instanceInfo	=
 	{
 		VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+#ifndef CTS_USES_VULKANSC
 		(validationEnabled ? &callbackInfo : nullptr),
+#else
+		nullptr,
+#endif // CTS_USES_VULKANSC
 		(VkInstanceCreateFlags)0,
 		&appInfo,
 		(deUint32)layerNamePtrs.size(),
@@ -109,7 +119,11 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 
 Move<VkInstance> createDefaultInstance (const PlatformInterface& vkPlatform, deUint32 apiVersion)
 {
+#ifndef CTS_USES_VULKANSC
 	return createDefaultInstance(vkPlatform, apiVersion, vector<string>(), vector<string>(), nullptr, nullptr);
+#else
+	return createDefaultInstance(vkPlatform, apiVersion, vector<string>(), vector<string>(), nullptr);
+#endif
 }
 
 deUint32 chooseDeviceIndex (const InstanceInterface& vkInstance, const VkInstance instance, const tcu::CommandLine& cmdLine)

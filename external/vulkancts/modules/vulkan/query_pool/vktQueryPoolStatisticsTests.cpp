@@ -3196,12 +3196,16 @@ public:
 
 	void checkSupport (vkt::Context& context) const
 	{
+#ifndef CTS_USES_VULKANSC
 		if (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
 			context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 			!context.getPortabilitySubsetFeatures().triangleFans)
 		{
 			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
 		}
+#else
+		DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
 	}
 
 	vkt::TestInstance* createInstance (vkt::Context& context) const
@@ -4576,7 +4580,7 @@ void QueryPoolStatisticsTests::init (void)
 				{
 					for (deUint32 strideTypesIdx = 0u; strideTypesIdx < DE_LENGTH_OF_ARRAY(strideTypes); strideTypesIdx++)
 					{
-						deUint32 dstOffset = copyTypesIdx == 2u ? NUM_QUERY_STATISTICS * sizeof(deUint64) : 0u;
+						deUint32 dstOffset = copyTypesIdx == 2u ? deUint32(NUM_QUERY_STATISTICS * sizeof(deUint64)) : deUint32(0u);
 						/* Avoid waiting infinite time for the queries, when one of them is not going to be issued in
 						 * the partial case.
 						 */

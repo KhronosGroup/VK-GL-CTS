@@ -63,4 +63,7 @@
 		<Configuration caseListFile="vk-master-2022-03-01.txt" commandLine="--deqp-watchdog=enable" name="master-2022-03-01"/>
 		<Configuration caseListFile="vk-incremental-deqp.txt" commandLine="--deqp-watchdog=enable" name="incremental-deqp"/>
 	</TestPackage>
+	<TestPackage name="dEQP-VKSC">
+		<Configuration caseListFile="vksc-main.txt" commandLine="--deqp-watchdog=enable" name="main"/>
+	</TestPackage>
 </Mustpass>

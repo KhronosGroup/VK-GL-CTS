@@ -443,6 +443,7 @@ DepthClampTestInstance::DepthClampTestInstance (Context& context, const TestPara
 	pipelineCreateInfo.addState (PipelineCreateInfo::MultiSampleState	());
 	pipelineCreateInfo.addState (PipelineCreateInfo::DynamicState		(dynamicStates));
 
+#ifndef CTS_USES_VULKANSC
 	VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -456,6 +457,7 @@ DepthClampTestInstance::DepthClampTestInstance (Context& context, const TestPara
 
 	if (m_useDynamicRendering)
 		pipelineCreateInfo.pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
 
 	m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
@@ -508,6 +510,7 @@ tcu::ConstPixelBufferAccess DepthClampTestInstance::draw ()
 	}
 
 	const VkRect2D renderArea = makeRect2D(0, 0, WIDTH, HEIGHT);
+#ifndef CTS_USES_VULKANSC
 	if (m_useDynamicRendering)
 	{
 		VkRenderingAttachmentInfoKHR depthAttachment
@@ -541,7 +544,8 @@ tcu::ConstPixelBufferAccess DepthClampTestInstance::draw ()
 		vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
 	}
 	else
-		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT));
+#endif // CTS_USES_VULKANSC
+		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, renderArea);
 
 	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 	const VkDeviceSize		offset							= 0;
@@ -549,9 +553,11 @@ tcu::ConstPixelBufferAccess DepthClampTestInstance::draw ()
 	vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &buffer, &offset);
 	vk.cmdDraw(*cmdBuffer, DE_LENGTH_OF_ARRAY(vertices), 1, 0, 0);
 
+#ifndef CTS_USES_VULKANSC
 	if (m_useDynamicRendering)
 		endRendering(vk, *cmdBuffer);
 	else
+#endif // CTS_USES_VULKANSC
 		endRenderPass(vk, *cmdBuffer);
 
 	transition2DImage(vk, *cmdBuffer, m_depthTargetImage->object(), aspectBits,
@@ -671,7 +677,11 @@ public:
 			context.requireDeviceFunctionality(extensionName);
 
 		if (m_params.viewportData.size() > 1)
+		{
 			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_VIEWPORT);
+			if (!context.getDeviceFeatures().geometryShader)
+				throw tcu::NotSupportedError("Geometry shader is not supported");
+		}
 
 		VkImageFormatProperties imageFormatProperties;
 		const auto&	vki		= context.getInstanceInterface();

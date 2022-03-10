@@ -375,7 +375,11 @@ void GraphicsAttachmentsTestInstance::transcode (std::vector<deUint8>& srcData, 
 	const VkExtent2D						renderSize				(makeExtent2D(m_parameters.size[0], m_parameters.size[1]));
 	const Unique<VkPipelineLayout>			pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
 	const Unique<VkPipeline>				pipeline				(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertShaderModule, *fragShaderModule, renderSize, 1u));
+#ifndef CTS_USES_VULKANSC
 	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT, queueFamilyIndex));
+#else
+	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, device, VkCommandPoolCreateFlags(0u), queueFamilyIndex));
+#endif // CTS_USES_VULKANSC
 	const Unique<VkCommandBuffer>			cmdBuffer				(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkBufferImageCopy					srcCopyRegion			= makeBufferImageCopy(m_parameters.size[0], m_parameters.size[1]);
@@ -452,7 +456,7 @@ VkImageCreateInfo GraphicsAttachmentsTestInstance::makeCreateImageInfo (const Vk
 {
 	const VkImageType			imageType				= mapImageType(type);
 	const VkImageCreateFlags	imageCreateFlagsBase	= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
-	const VkImageCreateFlags	imageCreateFlagsAddOn	= extendedImageCreateFlag ? VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR : 0;
+	const VkImageCreateFlags	imageCreateFlagsAddOn	= extendedImageCreateFlag ? VK_IMAGE_CREATE_EXTENDED_USAGE_BIT : 0;
 	const VkImageCreateFlags	imageCreateFlags		= imageCreateFlagsBase | imageCreateFlagsAddOn;
 
 	const VkImageCreateInfo createImageInfo =
@@ -481,7 +485,7 @@ VkImageViewUsageCreateInfo GraphicsAttachmentsTestInstance::makeImageViewUsageCr
 {
 	VkImageViewUsageCreateInfo imageViewUsageCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	//VkStructureType		sType;
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,		//VkStructureType		sType;
 		DE_NULL,											//const void*			pNext;
 		imageUsageFlags,									//VkImageUsageFlags		usage;
 	};
@@ -631,7 +635,12 @@ void GraphicsTextureTestInstance::transcode (std::vector<deUint8>& srcData, std:
 	const VkExtent2D						renderSize				(makeExtent2D(m_parameters.size[0], m_parameters.size[1]));
 	const Unique<VkPipelineLayout>			pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
 	const Unique<VkPipeline>				pipeline				(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertShaderModule, *fragShaderModule, renderSize, 0u));
+#ifndef CTS_USES_VULKANSC
 	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT, queueFamilyIndex));
+#else
+	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, device, VkCommandPoolCreateFlags(0u), queueFamilyIndex));
+#endif // CTS_USES_VULKANSC
+
 	const Unique<VkCommandBuffer>			cmdBuffer				(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkBufferImageCopy					srcCopyRegion			= makeBufferImageCopy(m_parameters.size[0], m_parameters.size[1]);
@@ -821,7 +830,7 @@ bool ImageTranscodingCase::isFormatUsageFlagSupported (Context& context, const V
 															mapImageType(m_parameters.imageType),
 															VK_IMAGE_TILING_OPTIMAL,
 															formatUsageFlags,
-															VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR,
+															VK_IMAGE_CREATE_EXTENDED_USAGE_BIT,
 															&imageFormatProperties);
 
 	return (queryResult == VK_SUCCESS);
@@ -865,6 +874,7 @@ TestInstance* ImageTranscodingCase::createInstance (Context& context) const
 
 	if (differenceFound)
 	{
+#ifndef CTS_USES_VULKANSC
 		if ((context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 			!context.getPortabilitySubsetFeatures().imageViewFormatReinterpretation))
 		{
@@ -874,6 +884,7 @@ TestInstance* ImageTranscodingCase::createInstance (Context& context) const
 			if (tcu::getTextureFormatBitDepth(textureImageFormat) != tcu::getTextureFormatBitDepth(textureViewFormat))
 				TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Format must not contain a different number of bits in each component, than the format of the VkImage");
 		}
+#endif // CTS_USES_VULKANSC
 
 		TestParameters	calculatedParameters	=
 		{

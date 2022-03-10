@@ -43,6 +43,7 @@
 #include "tcuVectorUtil.hpp"
 #include "tcuFloatFormat.hpp"
 #include "tcuFloat.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "deRandom.hpp"
 #include "deSTLUtil.hpp"
@@ -561,11 +562,15 @@ void evalShader (Context&												context,
 	const ShaderSpec									spec				(createShaderSpec(samplerBinding, colorModels));
 	const de::UniquePtr<ShaderExecutor>					executor			(createExecutor(context, shaderType, spec, *layout));
 
-	if (imageTiling == vk::VK_IMAGE_TILING_OPTIMAL)
-		uploadImage(vkd, device, context.getUniversalQueueFamilyIndex(), context.getDefaultAllocator(), *image, imageData, vk::VK_ACCESS_SHADER_READ_BIT, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	else
-		fillImageMemory(vkd, device, context.getUniversalQueueFamilyIndex(), *image, imageMemory, imageData, vk::VK_ACCESS_SHADER_READ_BIT, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
+#ifdef CTS_USES_VULKANSC
+	if (context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+	{
+		if (imageTiling == vk::VK_IMAGE_TILING_OPTIMAL)
+			uploadImage(vkd, device, context.getUniversalQueueFamilyIndex(), context.getDefaultAllocator(), *image, imageData, vk::VK_ACCESS_SHADER_READ_BIT, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		else
+			fillImageMemory(vkd, device, context.getUniversalQueueFamilyIndex(), *image, imageMemory, imageData, vk::VK_ACCESS_SHADER_READ_BIT, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	}
 	for(int i=0; i<(int)results.size(); i++)
 		results[i].resize(sts.size());
 
@@ -608,6 +613,12 @@ void checkSupport (Context& context, const TestConfig config)
 #if !defined(FAKE_COLOR_CONVERSION)
 	if (!context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion"))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_sampler_ycbcr_conversion not supported");
+
+	{
+		const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures	features = context.getSamplerYcbcrConversionFeatures();
+		if (features.samplerYcbcrConversion == VK_FALSE)
+			TCU_THROW(NotSupportedError, "samplerYcbcrConversion feature is not supported");
+	}
 
 	try
 	{
@@ -708,7 +719,7 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 		ChannelAccess						bChannelAccess			(planeInfo.hasChannelNdx(2) ? getChannelAccess(src, planeInfo, srcSize, 2) : nullAccess);
 		ChannelAccess						aChannelAccess			(planeInfo.hasChannelNdx(3) ? getChannelAccess(src, planeInfo, srcSize, 3) : nullAccessAlpha);
 		const bool							implicitNearestCosited	((config.chromaFilter == vk::VK_FILTER_NEAREST && !config.explicitReconstruction) &&
-																	 (config.xChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR || config.yChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR));
+																	 (config.xChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN || config.yChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN));
 
 		vector<Vec2>						sts;
 		vector<vector<Vec4> >				results;
@@ -783,7 +794,7 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 
 			if (implicitNearestCosited)
 			{
-				calculateBounds(rChannelAccess, gChannelAccess, bChannelAccess, aChannelAccess, bitDepth, sts, filteringPrecision, conversionPrecision, subTexelPrecisionBits, config.textureFilter, colorModels[i], config.colorRange, config.chromaFilter, vk::VK_CHROMA_LOCATION_MIDPOINT_KHR, vk::VK_CHROMA_LOCATION_MIDPOINT_KHR, config.componentMapping, explicitReconstruction, config.addressModeU, config.addressModeV, minMidpointBound, maxMidpointBound, uvBound, ijBound);
+				calculateBounds(rChannelAccess, gChannelAccess, bChannelAccess, aChannelAccess, bitDepth, sts, filteringPrecision, conversionPrecision, subTexelPrecisionBits, config.textureFilter, colorModels[i], config.colorRange, config.chromaFilter, vk::VK_CHROMA_LOCATION_MIDPOINT, vk::VK_CHROMA_LOCATION_MIDPOINT, config.componentMapping, explicitReconstruction, config.addressModeU, config.addressModeV, minMidpointBound, maxMidpointBound, uvBound, ijBound);
 			}
 			results.push_back			(vector<Vec4>());
 			minBounds.push_back			(minBound);
@@ -1841,7 +1852,7 @@ struct YCbCrConversionTestBuilder
 
 			de::MovePtr<tcu::TestCaseGroup>				oneToOneGroup(new tcu::TestCaseGroup(testCtx, "one_to_one", "Ycbcr images sampled to a frame buffer of the same dimentions."));
 
-			const vk::VkFormat							format(vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR);
+			const vk::VkFormat							format(vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM);
 			const vk::VkFilter							filter(vk::VK_FILTER_NEAREST);
 
 			for (size_t sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(imageSizes); sizeNdx++)

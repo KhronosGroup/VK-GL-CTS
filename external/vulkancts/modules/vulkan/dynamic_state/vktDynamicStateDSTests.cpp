@@ -1075,8 +1075,10 @@ void DynamicStateDSTests::init (void)
 
 	addChild(new InstanceFactory<DepthBoundsParamTestInstance, FunctionSupport0>(m_testCtx, "depth_bounds_1", "Perform depth bounds test 1", m_pipelineConstructionType, shaderPaths, checkDepthBoundsSupport));
 	addChild(new InstanceFactory<DepthBoundsTestInstance, FunctionSupport0>(m_testCtx, "depth_bounds_2", "Perform depth bounds test 1", m_pipelineConstructionType, shaderPaths, checkDepthBoundsSupport));
+#ifndef CTS_USES_VULKANSC
 	addChild(new StencilParamsBasicTestCase(m_testCtx, "stencil_params_basic_1", "Perform basic stencil test 1", m_pipelineConstructionType, 0x0D, 0x06, 0x05, tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f)));
 	addChild(new StencilParamsBasicTestCase(m_testCtx, "stencil_params_basic_2", "Perform basic stencil test 2", m_pipelineConstructionType, 0x06, 0x02, 0x05, tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f)));
+#endif // CTS_USES_VULKANSC
 	addChild(new InstanceFactory<StencilParamsAdvancedTestInstance>(m_testCtx, "stencil_params_advanced", "Perform advanced stencil test", m_pipelineConstructionType, shaderPaths));
 }
 

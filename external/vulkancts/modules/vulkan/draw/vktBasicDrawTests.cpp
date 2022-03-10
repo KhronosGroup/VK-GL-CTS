@@ -441,6 +441,7 @@ void DrawTestInstanceBase::initPipeline (const vk::VkDevice device)
 	pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
 	pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
 
+#ifndef CTS_USES_VULKANSC
 	vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -454,6 +455,7 @@ void DrawTestInstanceBase::initPipeline (const vk::VkDevice device)
 
 	if (m_data.useDynamicRendering)
 		pipelineCreateInfo.pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
 
 	m_pipeline = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo);
 }
@@ -484,18 +486,21 @@ void DrawTestInstanceBase::beginRenderPass (void)
 		0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 
 	const vk::VkRect2D	renderArea	= vk::makeRect2D(WIDTH, HEIGHT);
-
+#ifndef CTS_USES_VULKANSC
 	if (m_data.useDynamicRendering)
 		vk::beginRendering(m_vk, *m_cmdBuffer, *m_colorTargetView, renderArea, clearColor);
 	else
+#endif // CTS_USES_VULKANSC
 		vk::beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea, 1u, &clearColor);
 }
 
 void DrawTestInstanceBase::endRenderPass (void)
 {
+#ifndef CTS_USES_VULKANSC
 	if (m_data.useDynamicRendering)
 		vk::endRendering(m_vk, *m_cmdBuffer);
 	else
+#endif // CTS_USES_VULKANSC
 		vk::endRenderPass(m_vk, *m_cmdBuffer);
 }
 
@@ -610,6 +615,7 @@ void DrawTestCase<T>::checkSupport (Context& context) const
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 	}
 
+#ifndef CTS_USES_VULKANSC
 	if (m_data.useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
@@ -619,6 +625,7 @@ void DrawTestCase<T>::checkSupport (Context& context) const
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 template<typename T>

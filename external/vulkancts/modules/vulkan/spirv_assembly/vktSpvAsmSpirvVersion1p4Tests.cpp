@@ -70,12 +70,13 @@ struct CaseGroup
 
 void addTestsForAmberFiles (tcu::TestCaseGroup* tests, CaseGroup group)
 {
+#ifndef CTS_USES_VULKANSC
 	tcu::TestContext& testCtx = tests->getTestContext();
 	const std::string data_dir(group.data_dir);
 	const std::string subdir(group.subdir);
 	const std::string category = data_dir + "/" + subdir;
 	std::vector<Case> cases(group.cases);
-	vk::SpirVAsmBuildOptions asm_options(VK_MAKE_VERSION(1, 1, 0), vk::SPIRV_VERSION_1_4);
+	vk::SpirVAsmBuildOptions asm_options(VK_MAKE_API_VERSION(0, 1, 1, 0), vk::SPIRV_VERSION_1_4);
 	asm_options.supports_VK_KHR_spirv_1_4 = true;
 
 	for (unsigned i = 0; i < cases.size() ; ++i)
@@ -111,6 +112,10 @@ void addTestsForAmberFiles (tcu::TestCaseGroup* tests, CaseGroup group)
 		testCase->setSpirVAsmBuildOptions(asm_options);
 		tests->addChild(testCase);
 	}
+#else
+	DE_UNREF(tests);
+	DE_UNREF(group);
+#endif
 }
 
 } // anonymous

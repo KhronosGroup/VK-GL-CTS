@@ -37,9 +37,11 @@
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkObjUtil.hpp"
+
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
+#include "tcuCommandLine.hpp"
 
 #include <sstream>
 #include <vector>
@@ -979,8 +981,13 @@ tcu::TestStatus DepthRangeUnrestrictedTestInstance::verifyTestResult (void)
 															  tcu::IVec3(1, 1, 0),
 															  true,
 															  tcu::COMPARE_LOG_RESULT);
-		if (!compareOk)
-			return tcu::TestStatus::fail("Image mismatch");
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+		{
+			if (!compareOk)
+				return tcu::TestStatus::fail("Image mismatch");
+		}
 	}
 
 	// Check depth buffer contents
@@ -1073,7 +1080,6 @@ tcu::TestStatus DepthRangeUnrestrictedTestInstance::verifyTestResult (void)
 				compareOk = DE_FALSE;
 			}
 		}
-
 		if (!compareOk)
 			return tcu::TestStatus::fail("Depth buffer mismatch");
 	}
@@ -1162,8 +1168,14 @@ tcu::TestStatus DepthBoundsRangeUnrestrictedTestInstance::iterate (void)
 	prepareCommandBuffer(true);
 	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 	tcu::TestStatus status = verifyTestResult(true);
-	if (status.getCode() != QP_TEST_RESULT_PASS)
-		return status;
+
+#ifdef CTS_USES_VULKANSC
+	if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+	{
+		if (status.getCode() != QP_TEST_RESULT_PASS)
+			return status;
+	}
 
 	prepareCommandBuffer(false);
 	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
@@ -1271,8 +1283,13 @@ tcu::TestStatus DepthBoundsRangeUnrestrictedTestInstance::verifyTestResult (bool
 															  tcu::IVec3(1, 1, 0),
 															  true,
 															  tcu::COMPARE_LOG_RESULT);
-		if (!compareOk)
-			return tcu::TestStatus::fail("Image mismatch");
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+		{
+			if (!compareOk)
+				return tcu::TestStatus::fail("Image mismatch");
+		}
 	}
 
 	// Check depth buffer contents

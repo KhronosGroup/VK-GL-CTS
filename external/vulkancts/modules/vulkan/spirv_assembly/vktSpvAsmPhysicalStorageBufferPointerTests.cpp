@@ -503,7 +503,7 @@ private:
 
 void SpvAsmPhysicalStorageBufferTestCase::checkSupport (Context& context) const
 {
-	context.requireInstanceFunctionality(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME); // "VK_KHR_get_physical_device_properties2"
+	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 
 	if (!context.isBufferDeviceAddressSupported())
 		TCU_THROW(NotSupportedError, "Request physical storage buffer feature not supported");

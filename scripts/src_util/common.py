@@ -55,6 +55,7 @@ BINARY_FILE_EXTENSION = [
     ".pkm",
     ".xcf",
     ".nspv",
+	".diff"
     ]
 
 def isTextFile (filePath):

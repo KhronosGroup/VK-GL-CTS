@@ -50,6 +50,8 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkRef.cpp \
 	external/vulkancts/framework/vulkan/vkRefUtil.cpp \
 	external/vulkancts/framework/vulkan/vkRenderDocUtil.cpp \
+	external/vulkancts/framework/vulkan/vkResourceInterface.cpp \
+	external/vulkancts/framework/vulkan/vkSafetyCriticalUtil.cpp \
 	external/vulkancts/framework/vulkan/vkShaderProgram.cpp \
 	external/vulkancts/framework/vulkan/vkShaderToSpirV.cpp \
 	external/vulkancts/framework/vulkan/vkSpirVAsm.cpp \
@@ -378,6 +380,14 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessUtil.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessVertexAccessTests.cpp \
+	external/vulkancts/modules/vulkan/sc/vktCommandPoolMemoryReservationTests.cpp \
+	external/vulkancts/modules/vulkan/sc/vktDeviceObjectReservationTests.cpp \
+	external/vulkancts/modules/vulkan/sc/vktFaultHandlingTests.cpp \
+	external/vulkancts/modules/vulkan/sc/vktObjectRefreshTests.cpp \
+	external/vulkancts/modules/vulkan/sc/vktPipelineCacheSCTests.cpp \
+	external/vulkancts/modules/vulkan/sc/vktPipelineIdentifierTests.cpp \
+	external/vulkancts/modules/vulkan/sc/vktSafetyCriticalApiTests.cpp \
+	external/vulkancts/modules/vulkan/sc/vktSafetyCriticalTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktAtomicOperationTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktOpaqueTypeIndexingTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderBuiltinPrecisionTests.cpp \
@@ -549,6 +559,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/vktTestGroupUtil.cpp \
 	external/vulkancts/modules/vulkan/vktTestPackage.cpp \
 	external/vulkancts/modules/vulkan/vktTestPackageEntry.cpp \
+	external/vulkancts/modules/vulkan/vktTestPackageEntrySC.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktNativeObjectsUtil.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiColorSpaceTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiDisplayControlTests.cpp \
@@ -570,6 +581,14 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrTests.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrUtil.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrViewTests.cpp \
+	external/vulkancts/vkscpc/vkscpc.cpp \
+	external/vulkancts/vkscserver/server.cpp \
+	external/vulkancts/vkscserver/tests.cpp \
+	external/vulkancts/vkscserver/vksCacheBuilder.cpp \
+	external/vulkancts/vkscserver/vksIPC.cpp \
+	external/vulkancts/vkscserver/vksJson.cpp \
+	external/vulkancts/vkscserver/vksNetwork.cpp \
+	external/vulkancts/vkscserver/vksServices.cpp \
 	framework/common/tcuApp.cpp \
 	framework/common/tcuArray.cpp \
 	framework/common/tcuAstcUtil.cpp \
@@ -1291,6 +1310,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/reconvergence \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/renderpass \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/robustness \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/sc \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/shaderexecutor \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/shaderrender \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/sparse_resources \
@@ -1305,6 +1325,8 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/util \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/wsi \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ycbcr \
+	$(deqp_dir)/external/vulkancts/vkscpc \
+	$(deqp_dir)/external/vulkancts/vkscserver \
 	$(deqp_dir)/framework/common \
 	$(deqp_dir)/framework/delibs/debase \
 	$(deqp_dir)/framework/delibs/decpp \

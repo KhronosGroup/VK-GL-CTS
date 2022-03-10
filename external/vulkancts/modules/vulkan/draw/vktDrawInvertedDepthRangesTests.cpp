@@ -292,6 +292,7 @@ InvertedDepthRangesTestInstance::InvertedDepthRangesTestInstance (Context& conte
 	pipelineCreateInfo.addState (PipelineCreateInfo::MultiSampleState	());
 	pipelineCreateInfo.addState (PipelineCreateInfo::DynamicState		(dynamicStates));
 
+#ifndef CTS_USES_VULKANSC
 	VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -305,6 +306,7 @@ InvertedDepthRangesTestInstance::InvertedDepthRangesTestInstance (Context& conte
 
 	if (m_params.useDynamicRendering)
 		pipelineCreateInfo.pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
 
 	m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
@@ -361,9 +363,11 @@ InvertedDepthRangesTestInstance::ColorAndDepth InvertedDepthRangesTestInstance::
 		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT), 0, 1, &depthBarrier, 0, DE_NULL, 0, DE_NULL);
 	}
 
+#ifndef CTS_USES_VULKANSC
 	if (m_params.useDynamicRendering)
 		beginRendering(vk, *cmdBuffer, *m_colorTargetView, *m_depthTargetView, false, makeRect2D(kImageExtent), clearColor, clearDepth);
 	else
+#endif // CTS_USES_VULKANSC
 		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(kImageExtent));
 
 	{
@@ -376,9 +380,11 @@ InvertedDepthRangesTestInstance::ColorAndDepth InvertedDepthRangesTestInstance::
 	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 	vk.cmdDraw(*cmdBuffer, 3, 1, 0, 0);
 
+#ifndef CTS_USES_VULKANSC
 	if (m_params.useDynamicRendering)
 		endRendering(vk, *cmdBuffer);
 	else
+#endif // CTS_USES_VULKANSC
 		endRenderPass(vk, *cmdBuffer);
 
 	endCommandBuffer(vk, *cmdBuffer);

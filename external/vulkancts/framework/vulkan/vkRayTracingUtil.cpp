@@ -41,6 +41,8 @@
 namespace vk
 {
 
+#ifndef CTS_USES_VULKANSC
+
 struct DeferredThreadParams
 {
 	const DeviceInterface&	vk;
@@ -573,6 +575,7 @@ SerialStorage::SerialStorage (const DeviceInterface&									vk,
 							  const VkDeviceSize										storageSize)
 	: m_buildType		(buildType)
 	, m_storageSize		(storageSize)
+	, m_serialInfo		()
 {
 	const VkBufferCreateInfo	bufferCreateInfo	= makeBufferCreateInfo(storageSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 	try
@@ -3483,5 +3486,14 @@ void cmdTraceRaysIndirect (const DeviceInterface&					vk,
 								   callableShaderBindingTableRegion,
 								   indirectDeviceAddress);
 }
+
+#else
+
+deUint32 rayTracingDefineAnything()
+{
+	return 0;
+}
+
+#endif // CTS_USES_VULKANSC
 
 } // vk

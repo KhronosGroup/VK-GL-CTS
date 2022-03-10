@@ -356,6 +356,9 @@ void NoPositionCase::checkSupport (Context& context) const
 
 		if (hasGeom && !multiviewFeatures.multiviewGeometryShader)
 			TCU_THROW(NotSupportedError, "Multiview not supported with geometry shaders");
+
+		if (m_params.numViews > context.getMultiviewProperties().maxMultiviewViewCount)
+			TCU_THROW(NotSupportedError, "Not enough views supported");
 	}
 
 	if (m_params.useSSBO)
@@ -363,7 +366,6 @@ void NoPositionCase::checkSupport (Context& context) const
 		if (!features.vertexPipelineStoresAndAtomics)
 			TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
 	}
-
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 

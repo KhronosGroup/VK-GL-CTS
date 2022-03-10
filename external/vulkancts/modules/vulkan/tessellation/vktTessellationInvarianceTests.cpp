@@ -1029,8 +1029,12 @@ public:
 
 	void checkSupport (Context& context) const
 	{
+#ifndef CTS_USES_VULKANSC
 		if (const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR* const features = getPortability(context))
 			checkPointMode(*features);
+#else
+		DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
 	}
 
 private:

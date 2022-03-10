@@ -731,11 +731,18 @@ struct PipelineCache
 	{
 		const VkPipelineCacheCreateInfo	pipelineCacheCreateInfo	=
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,	// VkStructureType				sType;
-			DE_NULL,										// const void*					pNext;
-			(VkPipelineCacheCreateFlags)0u,					// VkPipelineCacheCreateFlags	flags;
-			0u,												// size_t						initialDataSize;
-			DE_NULL,										// const void*					pInitialData;
+			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,			// VkStructureType				sType;
+			DE_NULL,												// const void*					pNext;
+#ifndef CTS_USES_VULKANSC
+		(VkPipelineCacheCreateFlags)0u,								// VkPipelineCacheCreateFlags	flags;
+		0,															// size_t						initialDataSize;
+		DE_NULL														// const void*					pInitialData;
+#else
+		VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+			VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+		env.resourceInterface->getCacheDataSize(),						// deUintptr					initialDataSize;
+		env.resourceInterface->getCacheData()							// const void*					pInitialData;
+#endif // CTS_USES_VULKANSC
 		};
 
 		return createPipelineCache(env.vkd, env.device, &pipelineCacheCreateInfo);

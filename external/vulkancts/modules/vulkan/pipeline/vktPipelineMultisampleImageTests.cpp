@@ -263,10 +263,14 @@ std::vector<PipelineSp> makeGraphicsPipelines (const DeviceInterface&		vk,
 	std::vector<VkPipeline>						rawPipelines			(numSubpasses, DE_NULL);
 
 	{
-		const VkPipelineCreateFlags firstPipelineFlags = (numSubpasses > 1u ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT
-																			: (VkPipelineCreateFlagBits)0);
+#ifndef CTS_USES_VULKANSC
+		const VkPipelineCreateFlags firstPipelineFlags	= (numSubpasses > 1u ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT
+																			: VkPipelineCreateFlagBits(0));
+#else
+		const VkPipelineCreateFlags firstPipelineFlags	= VkPipelineCreateFlagBits(0);
+#endif // CTS_USES_VULKANSC
 
-		VkGraphicsPipelineCreateInfo createInfo =
+		VkGraphicsPipelineCreateInfo createInfo			=
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
 			DE_NULL,											// const void*										pNext;
@@ -289,10 +293,12 @@ std::vector<PipelineSp> makeGraphicsPipelines (const DeviceInterface&		vk,
 			-1,													// deInt32											basePipelineIndex;
 		};
 
-		graphicsPipelineInfos.push_back(createInfo);
+		graphicsPipelineInfos.push_back					(createInfo);
 
-		createInfo.flags				= VK_PIPELINE_CREATE_DERIVATIVE_BIT;
-		createInfo.basePipelineIndex	= 0;
+#ifndef CTS_USES_VULKANSC
+		createInfo.flags								= VK_PIPELINE_CREATE_DERIVATIVE_BIT;
+		createInfo.basePipelineIndex					= 0;
+#endif // CTS_USES_VULKANSC
 
 		for (deUint32 subpassNdx = 1u; subpassNdx < numSubpasses; ++subpassNdx)
 		{
@@ -1135,12 +1141,14 @@ void checkSupport (Context& context, const CaseDef caseDef)
 	checkImageFormatRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.numSamples, caseDef.colorFormat, colorImageUsage);
 	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
 
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().multisampleArrayImage &&
 		(caseDef.numSamples != VK_SAMPLE_COUNT_1_BIT) && (caseDef.numLayers != 1))
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support image array with multiple samples per texel");
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 tcu::TestStatus test (Context& context, const CaseDef caseDef)

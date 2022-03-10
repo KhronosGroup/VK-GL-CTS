@@ -27,7 +27,9 @@
 #include "vktAmberTestCase.hpp"
 #include "vktRasterizationTests.hpp"
 #include "vktRasterizationFragShaderSideEffectsTests.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktRasterizationProvokingVertexTests.hpp"
+#endif // CTS_USES_VULKANSC
 #include "tcuRasterizationVerifier.hpp"
 #include "tcuSurface.hpp"
 #include "tcuRenderTarget.hpp"
@@ -53,7 +55,9 @@
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkBarrierUtil.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktRasterizationOrderAttachmentAccessTests.hpp"
+#endif // CTS_USES_VULKANSC
 
 #include <vector>
 #include <sstream>
@@ -749,7 +753,7 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 
 		const VkPipelineRasterizationLineStateCreateInfoEXT* lineRasterizationStateInfo = getLineRasterizationStateCreateInfo();
 
-		if (lineRasterizationStateInfo != DE_NULL)
+		if (lineRasterizationStateInfo != DE_NULL && lineRasterizationStateInfo->sType != 0)
 			appendStructurePtrToVulkanChain(&rasterizationStateInfo.pNext, lineRasterizationStateInfo);
 
 		VkPipelineDynamicStateCreateInfo			dynamicStateCreateInfo =
@@ -1828,6 +1832,9 @@ tcu::TestStatus PointSizeTestInstance::iterate (void)
 	drawPoint(access, point);
 
 	// Compare
+#ifdef CTS_USES_VULKANSC
+	if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 	{
 		// pointSize must either be specified pointSize or clamped to device limit pointSizeRange[1]
 		const float	pointSize	(deFloatMin(m_pointSize, m_maxPointSize));
@@ -1839,6 +1846,7 @@ tcu::TestStatus PointSizeTestInstance::iterate (void)
 		else
 			return tcu::TestStatus::fail("Incorrect rasterization");
 	}
+	return tcu::TestStatus::pass("Pass");
 }
 
 float PointSizeTestInstance::getPointSize (void) const
@@ -2013,7 +2021,12 @@ void PointSizeTestInstance::drawPoint (tcu::PixelBufferAccess& result, PointScen
 	submitCommandsAndWait(vkd, vkDevice, queue, commandBuffer.get());
 
 	invalidateAlloc(vkd, vkDevice, *m_resultBufferMemory);
-	tcu::copy(result, tcu::ConstPixelBufferAccess(m_textureFormat, tcu::IVec3(m_renderSize, m_renderSize, 1), m_resultBufferMemory->getHostPtr()));
+#ifdef CTS_USES_VULKANSC
+	if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+	{
+		tcu::copy(result, tcu::ConstPixelBufferAccess(m_textureFormat, tcu::IVec3(m_renderSize, m_renderSize, 1), m_resultBufferMemory->getHostPtr()));
+	}
 }
 
 bool PointSizeTestInstance::verifyPoint (tcu::TestLog& log, tcu::PixelBufferAccess& image, float pointSize)
@@ -2234,11 +2247,13 @@ public:
 TriangleFanTestInstance::TriangleFanTestInstance (Context& context, VkSampleCountFlagBits sampleCount)
 	: BaseTriangleTestInstance(context, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN, sampleCount)
 {
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().triangleFans)
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 void TriangleFanTestInstance::generateTriangles (int iteration, std::vector<tcu::Vec4>& outData, std::vector<TriangleSceneSpec::SceneTriangle>& outTriangles)
@@ -5293,6 +5308,7 @@ protected:
 
 void CullingTestCase::checkSupport (Context& context) const
 {
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
 	{
 		const VkPhysicalDevicePortabilitySubsetFeaturesKHR& subsetFeatures = context.getPortabilitySubsetFeatures();
@@ -5301,6 +5317,9 @@ void CullingTestCase::checkSupport (Context& context) const
 		if (m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN && !subsetFeatures.triangleFans)
 			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
 	}
+#else
+	DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
 }
 
 class DiscardTestInstance : public BaseRenderingTestInstance
@@ -5774,10 +5793,12 @@ public:
 									if (m_queryFragmentShaderInvocations)
 										context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_PIPELINE_STATISTICS_QUERY);
 
+#ifndef CTS_USES_VULKANSC
 									if (m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
 											context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 											!context.getPortabilitySubsetFeatures().triangleFans)
 										TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
+#endif // CTS_USES_VULKANSC
 								}
 
 protected:
@@ -6020,12 +6041,16 @@ public:
 
 	virtual	void				checkSupport		(Context& context) const
 								{
+#ifndef CTS_USES_VULKANSC
 									if (m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
 										context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 										!context.getPortabilitySubsetFeatures().triangleFans)
 									{
 										TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
 									}
+#else
+	DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
 								}
 protected:
 	const VkPrimitiveTopology	m_primitiveTopology;
@@ -7531,11 +7556,14 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 	}
 
 	// .provoking_vertex
+#ifndef CTS_USES_VULKANSC
 	{
 		rasterizationTests->addChild(createProvokingVertexTests(testCtx));
 	}
+#endif
 
 	// .line_continuity
+#ifndef CTS_USES_VULKANSC
 	{
 		tcu::TestCaseGroup* const	lineContinuity	= new tcu::TestCaseGroup(testCtx, "line_continuity", "Test line continuity");
 		static const char			dataDir[]		= "rasterization/line_continuity";
@@ -7568,8 +7596,10 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			lineContinuity->addChild(testCase);
 		}
 	}
+#endif
 
 	// .depth bias
+#ifndef CTS_USES_VULKANSC
 	{
 		tcu::TestCaseGroup* const	depthBias	= new tcu::TestCaseGroup(testCtx, "depth_bias", "Test depth bias");
 		static const char			dataDir[]	= "rasterization/depth_bias";
@@ -7617,16 +7647,19 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 		rasterizationTests->addChild(depthBias);
 	}
+#endif // CTS_USES_VULKANSC
 
 	// Fragment shader side effects.
 	{
 		rasterizationTests->addChild(createFragSideEffectsTests(testCtx));
 	}
 
+#ifndef CTS_USES_VULKANSC
 	// Rasterization order attachment access tests
 	{
 		rasterizationTests->addChild(createRasterizationOrderAttachmentAccessTests(testCtx));
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 } // anonymous
