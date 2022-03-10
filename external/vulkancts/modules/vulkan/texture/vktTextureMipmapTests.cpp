@@ -1053,11 +1053,8 @@ tcu::TestStatus Texture2DLodControlTestInstance::iterate (void)
 		const tcu::IVec4		formatBitDepth	= getTextureFormatBitDepth(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
 		const tcu::PixelFormat	pixelFormat		(formatBitDepth[0], formatBitDepth[1], formatBitDepth[2], formatBitDepth[3]);
 		const bool				isTrilinear		= m_minFilter == Sampler::NEAREST_MIPMAP_LINEAR || m_minFilter == Sampler::LINEAR_MIPMAP_LINEAR;
-		tcu::Surface			referenceFrame	(viewportWidth, viewportHeight);
-		tcu::Surface			errorMask		(viewportWidth, viewportHeight);
 		tcu::LookupPrecision	lookupPrec;
 		tcu::LodPrecision		lodPrec;
-		int						numFailedPixels	= 0;
 
 		lookupPrec.coordBits		= tcu::IVec3(20, 20, 0);
 		lookupPrec.uvwBits			= tcu::IVec3(16, 16, 0); // Doesn't really matter since pixels are unicolored.
@@ -1066,50 +1063,67 @@ tcu::TestStatus Texture2DLodControlTestInstance::iterate (void)
 		lodPrec.derivateBits		= 10;
 		lodPrec.lodBits				= 8;
 
-		for (int gridY = 0; gridY < gridHeight; gridY++)
+		auto compareAndLogImages = [&] (tcu::ImageViewMinLodMode imageViewLodMode = tcu::IMAGEVIEWMINLODMODE_PREFERRED)
 		{
-			for (int gridX = 0; gridX < gridWidth; gridX++)
+			tcu::Surface			referenceFrame	(viewportWidth, viewportHeight);
+			tcu::Surface			errorMask		(viewportWidth, viewportHeight);
+
+			int						numFailedPixels = 0;
+
+			for (int gridY = 0; gridY < gridHeight; gridY++)
 			{
-				const int	curX		= cellWidth*gridX;
-				const int	curY		= cellHeight*gridY;
-				const int	curW		= gridX+1 == gridWidth ? (viewportWidth-curX) : cellWidth;
-				const int	curH		= gridY+1 == gridHeight ? (viewportHeight-curY) : cellHeight;
-				const int	cellNdx		= gridY*gridWidth + gridX;
+				for (int gridX = 0; gridX < gridWidth; gridX++)
+				{
+					const int	curX		= cellWidth*gridX;
+					const int	curY		= cellHeight*gridY;
+					const int	curW		= gridX+1 == gridWidth ? (viewportWidth-curX) : cellWidth;
+					const int	curH		= gridY+1 == gridHeight ? (viewportHeight-curY) : cellHeight;
+					const int	cellNdx		= gridY*gridWidth + gridX;
 
-				getReferenceParams(refParams,cellNdx);
+					getReferenceParams(refParams,cellNdx);
 
-				// Compute texcoord.
-				if (refParams.samplerType == glu::TextureTestUtil::SAMPLERTYPE_FETCH_FLOAT)
-					getBasicTexCoord2DImageViewMinLodIntTexCoord(texCoord);
-				else
-					getBasicTexCoord2D(texCoord, cellNdx);
+					refParams.imageViewMinLodMode = imageViewLodMode;
 
-				// Render ideal result
-				sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat, curX, curY, curW, curH),
-							  refTexture, &texCoord[0], refParams);
+					// Compute texcoord.
+					if (refParams.samplerType == glu::TextureTestUtil::SAMPLERTYPE_FETCH_FLOAT)
+						getBasicTexCoord2DImageViewMinLodIntTexCoord(texCoord);
+					else
+						getBasicTexCoord2D(texCoord, cellNdx);
 
-				// Compare this cell
-				numFailedPixels += computeTextureLookupDiff(tcu::getSubregion(renderedFrame.getAccess(), curX, curY, curW, curH),
-															tcu::getSubregion(referenceFrame.getAccess(), curX, curY, curW, curH),
-															tcu::getSubregion(errorMask.getAccess(), curX, curY, curW, curH),
-															m_texture->getTexture(), &texCoord[0], refParams,
-															lookupPrec, lodPrec, m_context.getTestContext().getWatchDog());
+					// Render ideal result
+					sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat, curX, curY, curW, curH),
+								  refTexture, &texCoord[0], refParams);
+
+					// Compare this cell
+					numFailedPixels += computeTextureLookupDiff(tcu::getSubregion(renderedFrame.getAccess(), curX, curY, curW, curH),
+																tcu::getSubregion(referenceFrame.getAccess(), curX, curY, curW, curH),
+																tcu::getSubregion(errorMask.getAccess(), curX, curY, curW, curH),
+																m_texture->getTexture(), &texCoord[0], refParams,
+																lookupPrec, lodPrec, m_context.getTestContext().getWatchDog());
+				}
 			}
-		}
 
-		if (numFailedPixels > 0)
-			m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Image verification failed, found " << numFailedPixels << " invalid pixels!" << TestLog::EndMessage;
+			if (numFailedPixels > 0)
+			{
+				m_context.getTestContext().getLog() << TestLog::Image("Reference", "Ideal reference", referenceFrame)
+													<< TestLog::Image("ErrorMask", "Error mask", errorMask);
+			}
+			return numFailedPixels;
+		};
 
 		m_context.getTestContext().getLog() << TestLog::ImageSet("Result", "Verification result")
 											<< TestLog::Image("Rendered", "Rendered image", renderedFrame);
 
-		if (numFailedPixels > 0)
-		{
-			m_context.getTestContext().getLog() << TestLog::Image("Reference", "Ideal reference", referenceFrame)
-												<< TestLog::Image("ErrorMask", "Error mask", errorMask);
-		}
+		int numFailedPixels = compareAndLogImages();
 
+		if (numFailedPixels > 0 && refParams.imageViewMinLod > 0.0f)
+		{
+			numFailedPixels = compareAndLogImages(tcu::IMAGEVIEWMINLODMODE_ALTERNATIVE);
+		}
 		m_context.getTestContext().getLog() << TestLog::EndImageSet;
+
+		if (numFailedPixels > 0)
+			m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Image verification failed, found " << numFailedPixels << " invalid pixels!" << TestLog::EndMessage;
 
 		{
 			const bool isOk = numFailedPixels == 0;
@@ -1315,9 +1329,6 @@ tcu::TestStatus TextureCubeLodControlTestInstance::iterate (void)
 	{
 		const tcu::IVec4		formatBitDepth		= getTextureFormatBitDepth(mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
 		const tcu::PixelFormat	pixelFormat			(formatBitDepth[0], formatBitDepth[1], formatBitDepth[2], formatBitDepth[3]);
-		tcu::Surface			referenceFrame		(viewportWidth, viewportHeight);
-		tcu::Surface			errorMask			(viewportWidth, viewportHeight);
-		int						numFailedPixels		= 0;
 		tcu::LookupPrecision	lookupPrec;
 		tcu::LodPrecision		lodPrec;
 
@@ -1334,44 +1345,59 @@ tcu::TestStatus TextureCubeLodControlTestInstance::iterate (void)
 		lodPrec.derivateBits				= 10;
 		lodPrec.lodBits						= 6;
 
-		for (int cellNdx = 0; cellNdx < (int)gridLayout.size(); cellNdx++)
+		auto compareAndLogImages = [&](tcu::ImageViewMinLodMode imageViewLodMode = tcu::IMAGEVIEWMINLODMODE_PREFERRED)
 		{
-			const int				curX		= gridLayout[cellNdx].x();
-			const int				curY		= gridLayout[cellNdx].y();
-			const int				curW		= gridLayout[cellNdx].z();
-			const int				curH		= gridLayout[cellNdx].w();
-			const tcu::CubeFace		cubeFace	= (tcu::CubeFace)(cellNdx % tcu::CUBEFACE_LAST);
+			tcu::Surface			referenceFrame(viewportWidth, viewportHeight);
+			tcu::Surface			errorMask(viewportWidth, viewportHeight);
+			int						numFailedPixels = 0;
 
-			computeQuadTexCoordCube(texCoord, cubeFace);
-			getReferenceParams(refParams, cellNdx);
-
-			// Render ideal reference.
+			for (int cellNdx = 0; cellNdx < (int)gridLayout.size(); cellNdx++)
 			{
-				tcu::SurfaceAccess idealDst(referenceFrame, pixelFormat, curX, curY, curW, curH);
-				sampleTexture(idealDst, refTexture, &texCoord[0], refParams);
+				const int				curX		= gridLayout[cellNdx].x();
+				const int				curY		= gridLayout[cellNdx].y();
+				const int				curW		= gridLayout[cellNdx].z();
+				const int				curH		= gridLayout[cellNdx].w();
+				const tcu::CubeFace		cubeFace	= (tcu::CubeFace)(cellNdx % tcu::CUBEFACE_LAST);
+
+				computeQuadTexCoordCube(texCoord, cubeFace);
+				getReferenceParams(refParams, cellNdx);
+
+				refParams.imageViewMinLodMode = imageViewLodMode;
+
+				// Render ideal reference.
+				{
+					tcu::SurfaceAccess idealDst(referenceFrame, pixelFormat, curX, curY, curW, curH);
+					sampleTexture(idealDst, refTexture, &texCoord[0], refParams);
+				}
+
+				// Compare this cell
+				numFailedPixels += computeTextureLookupDiff(tcu::getSubregion(renderedFrame.getAccess(), curX, curY, curW, curH),
+															tcu::getSubregion(referenceFrame.getAccess(), curX, curY, curW, curH),
+															tcu::getSubregion(errorMask.getAccess(), curX, curY, curW, curH),
+															m_texture->getTexture(), &texCoord[0], refParams,
+															lookupPrec, lodPrec,  m_context.getTestContext().getWatchDog());
 			}
+			if (numFailedPixels > 0)
+			{
+				m_context.getTestContext().getLog() << TestLog::Image("Reference", "Ideal reference", referenceFrame)
+													<< TestLog::Image("ErrorMask", "Error mask", errorMask);
+			}
+			return numFailedPixels;
+		};
 
-			// Compare this cell
-			numFailedPixels += computeTextureLookupDiff(tcu::getSubregion(renderedFrame.getAccess(), curX, curY, curW, curH),
-														tcu::getSubregion(referenceFrame.getAccess(), curX, curY, curW, curH),
-														tcu::getSubregion(errorMask.getAccess(), curX, curY, curW, curH),
-														m_texture->getTexture(), &texCoord[0], refParams,
-														lookupPrec, lodPrec,  m_context.getTestContext().getWatchDog());
-		}
+		m_context.getTestContext().getLog() << TestLog::ImageSet("Result", "Verification result")
+											<< TestLog::Image("Rendered", "Rendered image", renderedFrame);
 
-		if (numFailedPixels > 0)
-			 m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Image verification failed, found " << numFailedPixels << " invalid pixels!" << TestLog::EndMessage;
+		int numFailedPixels = compareAndLogImages();
 
-		 m_context.getTestContext().getLog() << TestLog::ImageSet("Result", "Verification result")
-											 << TestLog::Image("Rendered", "Rendered image", renderedFrame);
-
-		if (numFailedPixels > 0)
+		if (numFailedPixels > 0 && refParams.imageViewMinLod > 0.0f)
 		{
-			 m_context.getTestContext().getLog() << TestLog::Image("Reference", "Ideal reference", referenceFrame)
-												 << TestLog::Image("ErrorMask", "Error mask", errorMask);
+			numFailedPixels = compareAndLogImages(tcu::IMAGEVIEWMINLODMODE_ALTERNATIVE);
 		}
+		m_context.getTestContext().getLog() << TestLog::EndImageSet;
 
-		 m_context.getTestContext().getLog() << TestLog::EndImageSet;
+		if (numFailedPixels > 0)
+			m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Image verification failed, found " << numFailedPixels << " invalid pixels!" << TestLog::EndMessage;
 
 		{
 			const bool isOk = numFailedPixels == 0;
@@ -1584,11 +1610,8 @@ tcu::TestStatus Texture3DLodControlTestInstance::iterate (void)
 		const tcu::IVec4		formatBitDepth	= getTextureFormatBitDepth(mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
 		const tcu::PixelFormat	pixelFormat		(formatBitDepth[0], formatBitDepth[1], formatBitDepth[2], formatBitDepth[3]);
 		const bool				isTrilinear		= m_minFilter == Sampler::NEAREST_MIPMAP_LINEAR || m_minFilter == Sampler::LINEAR_MIPMAP_LINEAR;
-		tcu::Surface			referenceFrame	(viewportWidth, viewportHeight);
-		tcu::Surface			errorMask		(viewportWidth, viewportHeight);
 		tcu::LookupPrecision	lookupPrec;
 		tcu::LodPrecision		lodPrec;
-		int						numFailedPixels	= 0;
 
 		lookupPrec.coordBits		= tcu::IVec3(20, 20, 20);
 		lookupPrec.uvwBits			= tcu::IVec3(16, 16, 16); // Doesn't really matter since pixels are unicolored.
@@ -1597,52 +1620,66 @@ tcu::TestStatus Texture3DLodControlTestInstance::iterate (void)
 		lodPrec.derivateBits		= 10;
 		lodPrec.lodBits				= 8;
 
-		for (int gridY = 0; gridY < gridHeight; gridY++)
+		auto compareAndLogImages = [&](tcu::ImageViewMinLodMode imageViewLodMode = tcu::IMAGEVIEWMINLODMODE_PREFERRED)
 		{
-			for (int gridX = 0; gridX < gridWidth; gridX++)
+			tcu::Surface			referenceFrame	(viewportWidth, viewportHeight);
+			tcu::Surface			errorMask		(viewportWidth, viewportHeight);
+			int						numFailedPixels = 0;
+
+			for (int gridY = 0; gridY < gridHeight; gridY++)
 			{
-				const int	curX		= cellWidth*gridX;
-				const int	curY		= cellHeight*gridY;
-				const int	curW		= gridX+1 == gridWidth ? (viewportWidth-curX) : cellWidth;
-				const int	curH		= gridY+1 == gridHeight ? (viewportHeight-curY) : cellHeight;
-				const int	cellNdx		= gridY*gridWidth + gridX;
+				for (int gridX = 0; gridX < gridWidth; gridX++)
+				{
+					const int	curX		= cellWidth*gridX;
+					const int	curY		= cellHeight*gridY;
+					const int	curW		= gridX+1 == gridWidth ? (viewportWidth-curX) : cellWidth;
+					const int	curH		= gridY+1 == gridHeight ? (viewportHeight-curY) : cellHeight;
+					const int	cellNdx		= gridY*gridWidth + gridX;
 
-				getReferenceParams(refParams, cellNdx);
+					getReferenceParams(refParams, cellNdx);
 
-				// Compute texcoord.
-				if (refParams.samplerType == glu::TextureTestUtil::SAMPLERTYPE_FETCH_FLOAT)
-					getBasicTexCoord3DImageViewMinlodIntTexCoord(texCoord);
-				else
-					getBasicTexCoord3D(texCoord, cellNdx);
+					refParams.imageViewMinLodMode = imageViewLodMode;
 
-				// Render ideal result
-				sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat, curX, curY, curW, curH),
-							  refTexture, &texCoord[0], refParams);
+					// Compute texcoord.
+					if (refParams.samplerType == glu::TextureTestUtil::SAMPLERTYPE_FETCH_FLOAT)
+						getBasicTexCoord3DImageViewMinlodIntTexCoord(texCoord);
+					else
+						getBasicTexCoord3D(texCoord, cellNdx);
 
-				// Compare this cell
-				numFailedPixels += computeTextureLookupDiff(tcu::getSubregion(renderedFrame.getAccess(), curX, curY, curW, curH),
-															tcu::getSubregion(referenceFrame.getAccess(), curX, curY, curW, curH),
-															tcu::getSubregion(errorMask.getAccess(), curX, curY, curW, curH),
-															m_texture->getTexture(), &texCoord[0], refParams,
-															lookupPrec, lodPrec, m_context.getTestContext().getWatchDog());
+					// Render ideal result
+					sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat, curX, curY, curW, curH),
+								  refTexture, &texCoord[0], refParams);
+
+					// Compare this cell
+					numFailedPixels += computeTextureLookupDiff(tcu::getSubregion(renderedFrame.getAccess(), curX, curY, curW, curH),
+																tcu::getSubregion(referenceFrame.getAccess(), curX, curY, curW, curH),
+																tcu::getSubregion(errorMask.getAccess(), curX, curY, curW, curH),
+																m_texture->getTexture(), &texCoord[0], refParams,
+																lookupPrec, lodPrec, m_context.getTestContext().getWatchDog());
+				}
 			}
-		}
+			if (numFailedPixels > 0)
+			{
+				m_context.getTestContext().getLog() << TestLog::Image("Reference", "Ideal reference", referenceFrame)
+													<< TestLog::Image("ErrorMask", "Error mask", errorMask);
+			}
 
-		if (numFailedPixels > 0)
-		{
-			m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Image verification failed, found " << numFailedPixels << " invalid pixels!" << TestLog::EndMessage;
-		}
+			return numFailedPixels;
+		};
 
 		m_context.getTestContext().getLog() << TestLog::ImageSet("Result", "Verification result")
 											<< TestLog::Image("Rendered", "Rendered image", renderedFrame);
 
-		if (numFailedPixels > 0)
-		{
-			m_context.getTestContext().getLog() << TestLog::Image("Reference", "Ideal reference", referenceFrame)
-												<< TestLog::Image("ErrorMask", "Error mask", errorMask);
-		}
+		int numFailedPixels = compareAndLogImages();
 
+		if (numFailedPixels > 0 && refParams.imageViewMinLod > 0.0f)
+		{
+			numFailedPixels = compareAndLogImages(tcu::IMAGEVIEWMINLODMODE_ALTERNATIVE);
+		}
 		m_context.getTestContext().getLog() << TestLog::EndImageSet;
+
+		if (numFailedPixels > 0)
+			m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Image verification failed, found " << numFailedPixels << " invalid pixels!" << TestLog::EndMessage;
 
 		{
 			const bool isOk = numFailedPixels == 0;

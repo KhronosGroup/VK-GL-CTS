@@ -588,6 +588,11 @@ bool isColorOrder (TextureFormat::ChannelOrder order)
 	}
 }
 
+float getImageViewMinLod(ImageViewMinLod& l)
+{
+	return (l.mode == IMAGEVIEWMINLODMODE_PREFERRED) ? l.value : deFloatFloor(l.value);
+}
+
 } // anonymous
 
 bool isValid (TextureFormat format)
@@ -2535,7 +2540,7 @@ Vec4 sampleLevelArray2DOffset (const ConstPixelBufferAccess* levels, int numLeve
 	bool					magnified;
 	// minLodRelative is used to calculate the image level to sample from, when VK_EXT_image_view_min_lod extension is enabled.
 	// The value is relative to baseLevel as the Texture*View was created as the baseLevel being level[0].
-	const float				minLodRelative	= (minLodParams != DE_NULL) ? minLodParams->minLod - (float)minLodParams->baseLevel : 0.0f;
+	const float				minLodRelative	= (minLodParams != DE_NULL) ? getImageViewMinLod(minLodParams->minLod) - (float)minLodParams->baseLevel : 0.0f;
 
 	if (es2 && sampler.magFilter == Sampler::LINEAR &&
 		(sampler.minFilter == Sampler::NEAREST_MIPMAP_NEAREST || sampler.minFilter == Sampler::NEAREST_MIPMAP_LINEAR))
@@ -2634,7 +2639,7 @@ Vec4 sampleLevelArray3DOffset (const ConstPixelBufferAccess* levels, int numLeve
 {
 	// minLodRelative is used to calculate the image level to sample from, when VK_EXT_image_view_min_lod extension is enabled.
 	// The value is relative to baseLevel as the Texture*View was created as the baseLevel being level[0].
-	const float				minLodRelative	= (minLodParams != DE_NULL) ? minLodParams->minLod - (float)minLodParams->baseLevel : 0.0f;
+	const float				minLodRelative	= (minLodParams != DE_NULL) ? getImageViewMinLod(minLodParams->minLod) - (float)minLodParams->baseLevel : 0.0f;
 	bool					magnified	= lod <= sampler.lodThreshold;
 	Sampler::FilterMode		filterMode	= magnified ? sampler.magFilter : sampler.minFilter;
 
@@ -3078,7 +3083,7 @@ static Vec4 sampleLevelArrayCubeSeamless (const ConstPixelBufferAccess* const (&
 {
 	// minLodRelative is used to calculate the image level to sample from, when VK_EXT_image_view_min_lod extension is enabled.
 	// The value is relative to baseLevel as the Texture*View was created as the baseLevel being level[0].
-	const float				minLodRelative	= (minLodParams != DE_NULL) ? minLodParams->minLod - (float)minLodParams->baseLevel : 0.0f;
+	const float				minLodRelative	= (minLodParams != DE_NULL) ? getImageViewMinLod(minLodParams->minLod) - (float)minLodParams->baseLevel : 0.0f;
 	bool					magnified	= lod <= sampler.lodThreshold;
 	Sampler::FilterMode		filterMode	= magnified ? sampler.magFilter : sampler.minFilter;
 
