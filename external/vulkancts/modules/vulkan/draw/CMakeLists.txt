@@ -4,6 +4,7 @@ include_directories(
 )
 
 set(DEQP_VK_VKSC_DRAW_SRCS
+	vktDrawGroupParams.hpp
 	vktDrawTests.hpp
 	vktDrawTests.cpp
 	vktDrawIndexedTest.hpp

@@ -39,10 +39,6 @@ dEQP-VK.draw.renderpass.shader_viewport_index.fragment_shader_15
 dEQP-VK.draw.renderpass.shader_viewport_index.fragment_shader_16
 dEQP-VK.draw.renderpass.scissor.static_scissor_framebuffer_border_in
 dEQP-VK.draw.renderpass.scissor.dynamic_scissor_framebuffer_border_in
-dEQP-VK.draw.renderpass.scissor.static_scissor_framebuffer_border_out
-dEQP-VK.draw.renderpass.scissor.dynamic_scissor_framebuffer_border_out
-dEQP-VK.draw.renderpass.scissor.static_scissor_oversized
-dEQP-VK.draw.renderpass.scissor.dynamic_scissor_oversized
 dEQP-VK.draw.renderpass.multiple_interpolation.structured.with_sample_decoration.1_sample
 dEQP-VK.draw.renderpass.multiple_interpolation.structured.with_sample_decoration.2_samples
 dEQP-VK.draw.renderpass.multiple_interpolation.structured.with_sample_decoration.4_samples
