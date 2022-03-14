@@ -120,12 +120,14 @@ static const struct {
 static const struct {
 	const int	width;
 	const int	height;
-	const int   depth;		// 2D test ignore depth value
+	const int	depth;		// 2D test ignore depth value
+	const bool	mipmaps;
 	const char*	name;
 } sizes[] =
 {
-	{ 128, 64, 8,  "pot"  },
-	{ 51,  65, 17, "npot" },
+	{ 128, 64, 8,  false, "pot"  },
+	{ 51,  65, 17, false, "npot" },
+	{ 51,  65, 17, true,  "npot_mip1" },
 };
 
 static const struct {
@@ -204,6 +206,11 @@ tcu::TestStatus Compressed2DTestInstance::iterate (void)
 	sampleParams.sampler			= util::createSampler(m_testParameters.wrapS, m_testParameters.wrapT, m_testParameters.minFilter, m_testParameters.magFilter);
 	sampleParams.samplerType		= SAMPLERTYPE_FLOAT;
 	sampleParams.lodMode			= LODMODE_EXACT;
+
+	if (m_testParameters.mipmaps) {
+		sampleParams.minLod = 1;
+		sampleParams.maxLod = 1;
+	}
 
 	if (isAstcFormat(m_compressedFormat)
 		|| m_compressedFormat == tcu::COMPRESSEDTEXFORMAT_BC4_UNORM_BLOCK
@@ -325,6 +332,11 @@ tcu::TestStatus Compressed3DTestInstance::iterate (void)
 	sampleParams.samplerType		= SAMPLERTYPE_FLOAT;
 	sampleParams.lodMode			= LODMODE_EXACT;
 
+	if (m_testParameters.mipmaps) {
+		sampleParams.minLod = 1;
+		sampleParams.maxLod = 1;
+	}
+
 	if (isAstcFormat(m_compressedFormat)
 		|| m_compressedFormat == tcu::COMPRESSEDTEXFORMAT_BC4_UNORM_BLOCK
 		|| m_compressedFormat == tcu::COMPRESSEDTEXFORMAT_BC5_UNORM_BLOCK)
@@ -410,10 +422,11 @@ void populateTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTexture
 		testParameters.backingMode	= backingModes[backingNdx].backingMode;
 		testParameters.width		= sizes[sizeNdx].width;
 		testParameters.height		= sizes[sizeNdx].height;
-		testParameters.minFilter	= tcu::Sampler::NEAREST;
+		testParameters.minFilter	= tcu::Sampler::NEAREST_MIPMAP_NEAREST;
 		testParameters.magFilter	= tcu::Sampler::NEAREST;
 		testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 		testParameters.programs.push_back(PROGRAM_2D_FLOAT);
+		testParameters.mipmaps		= sizes[sizeNdx].mipmaps;
 
 		compressedTextureTests->addChild(new TextureTestCase<Compressed2DTestInstance>(testCtx, (nameBase + "_2d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(), (formatStr + ", TEXTURETYPE_2D").c_str(), testParameters));
 	}
@@ -435,11 +448,12 @@ void populate3DTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTextu
 		testParameters.backingMode	= backingModes[backingNdx].backingMode;
 		testParameters.width		= sizes[sizeNdx].width;
 		testParameters.height		= sizes[sizeNdx].height;
-		testParameters.depth        = sizes[sizeNdx].depth;
-		testParameters.minFilter	= tcu::Sampler::NEAREST;
+		testParameters.depth		= sizes[sizeNdx].depth;
+		testParameters.minFilter	= tcu::Sampler::NEAREST_MIPMAP_NEAREST;
 		testParameters.magFilter	= tcu::Sampler::NEAREST;
 		testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 		testParameters.programs.push_back(PROGRAM_3D_FLOAT);
+		testParameters.mipmaps		= sizes[sizeNdx].mipmaps;
 
 		compressedTextureTests->addChild(new TextureTestCase<Compressed3DTestInstance>(testCtx, (nameBase + "_3d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(), (formatStr + ", TEXTURETYPE_3D").c_str(), testParameters));
 	}
