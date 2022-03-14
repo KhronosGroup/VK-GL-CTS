@@ -479,7 +479,7 @@ GLSLVectorConstructorTestCase::IterateResult GLSLVectorConstructorTestCase::iter
 
 	const vector<glu::VertexArrayBinding>	vertexArrays	=
 	{
-		glu::va::Float("vPosition", 2, positions.size(), 0, positions.data()),
+		glu::va::Float("vPosition", 2, positions.size() / 2, 0, positions.data()),
 	};
 
 	gl.useProgram(program.getProgram());
