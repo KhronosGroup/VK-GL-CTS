@@ -620,7 +620,7 @@ bool exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat f
 		DE_NULL,									// const void*				pNext;
 		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
 		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
-		VK_IMAGE_LAYOUT_PREINITIALIZED,		// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			oldLayout;
 		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,			// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_FOREIGN_EXT,					// deUint32					srcQueueFamilyIndex;
 		context.getUniversalQueueFamilyIndex(),			// deUint32					dstQueueFamilyIndex;
