@@ -43,6 +43,7 @@ const VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR&				getGlobalPriorityQueryF
 const VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT&			getGraphicsPipelineLibraryFeaturesEXT		(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT>();			}
 const VkPhysicalDeviceHostQueryResetFeatures&						getHostQueryResetFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceHostQueryResetFeatures>();						}
 const VkPhysicalDeviceImagelessFramebufferFeatures&					getImagelessFramebufferFeatures				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceImagelessFramebufferFeatures>();					}
+const VkPhysicalDeviceImage2DViewOf3DFeaturesEXT&					getImage2DViewOf3DFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceImage2DViewOf3DFeaturesEXT>();					}
 const VkPhysicalDeviceImageRobustnessFeatures&						getImageRobustnessFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceImageRobustnessFeatures>();						}
 const VkPhysicalDeviceImageViewMinLodFeaturesEXT&					getImageViewMinLodFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceImageViewMinLodFeaturesEXT>();					}
 const VkPhysicalDeviceIndexTypeUint8FeaturesEXT&					getIndexTypeUint8FeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceIndexTypeUint8FeaturesEXT>();						}

@@ -43,6 +43,7 @@ const vk::VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR&				Context::getGlobalP
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT&			Context::getGraphicsPipelineLibraryFeaturesEXT			(void) const { return m_device->getGraphicsPipelineLibraryFeaturesEXT();		}
 const vk::VkPhysicalDeviceHostQueryResetFeatures&						Context::getHostQueryResetFeatures						(void) const { return m_device->getHostQueryResetFeatures();					}
 const vk::VkPhysicalDeviceImagelessFramebufferFeatures&					Context::getImagelessFramebufferFeatures				(void) const { return m_device->getImagelessFramebufferFeatures();				}
+const vk::VkPhysicalDeviceImage2DViewOf3DFeaturesEXT&					Context::getImage2DViewOf3DFeaturesEXT					(void) const { return m_device->getImage2DViewOf3DFeaturesEXT();				}
 const vk::VkPhysicalDeviceImageRobustnessFeatures&						Context::getImageRobustnessFeatures						(void) const { return m_device->getImageRobustnessFeatures();					}
 const vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT&					Context::getImageViewMinLodFeaturesEXT					(void) const { return m_device->getImageViewMinLodFeaturesEXT();				}
 const vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT&					Context::getIndexTypeUint8FeaturesEXT					(void) const { return m_device->getIndexTypeUint8FeaturesEXT();					}

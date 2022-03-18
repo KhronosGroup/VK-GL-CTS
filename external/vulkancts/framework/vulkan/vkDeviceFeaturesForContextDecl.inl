@@ -43,6 +43,7 @@ const vk::VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR&				getGlobalPriorityQu
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT&			getGraphicsPipelineLibraryFeaturesEXT		(void) const;
 const vk::VkPhysicalDeviceHostQueryResetFeatures&						getHostQueryResetFeatures					(void) const;
 const vk::VkPhysicalDeviceImagelessFramebufferFeatures&					getImagelessFramebufferFeatures				(void) const;
+const vk::VkPhysicalDeviceImage2DViewOf3DFeaturesEXT&					getImage2DViewOf3DFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceImageRobustnessFeatures&						getImageRobustnessFeatures					(void) const;
 const vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT&					getImageViewMinLodFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT&					getIndexTypeUint8FeaturesEXT				(void) const;

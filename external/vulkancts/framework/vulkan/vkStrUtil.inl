@@ -1128,6 +1128,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiDrawFeatur
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiDrawPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMultiDrawInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMultiDrawIndexedInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImage2DViewOf3DFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceBorderColorSwizzleFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSamplerBorderColorComponentMappingCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT& value);

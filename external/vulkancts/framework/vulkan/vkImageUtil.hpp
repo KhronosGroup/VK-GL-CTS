@@ -219,7 +219,8 @@ void	copyBufferToImage						(const DeviceInterface&							vk,
 												 deUint32										arrayLayers,
 												 vk::VkImage									destImage,
 												 VkImageLayout									destImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-												 VkPipelineStageFlags							destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+												 VkPipelineStageFlags							destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+												 deUint32										baseMipLevel = 0);
 
 void	copyBufferToImage						(const DeviceInterface&							vk,
 												 const VkCommandBuffer&							cmdBuffer,
@@ -231,7 +232,8 @@ void	copyBufferToImage						(const DeviceInterface&							vk,
 												 deUint32										arrayLayers,
 												 VkImage										destImage,
 												 VkImageLayout									destImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-												 VkPipelineStageFlags							destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+												 VkPipelineStageFlags							destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+												 deUint32										baseMipLevel = 0);
 
 /*--------------------------------------------------------------------*//*!
  * Copies image data into a buffer. The buffer is expected to be
@@ -274,7 +276,9 @@ void	clearColorImage							(const DeviceInterface&							vk,
 												 vk::VkImageLayout								newLayout,
 												 vk::VkPipelineStageFlags						dstStageFlags,
 												 deUint32										baseArrayLayer = 0u,
-												 deUint32										layerCount = 1u);
+												 deUint32										layerCount = 1u,
+												 deUint32										baseMipLevel = 0u,
+												 deUint32										levelCount = 1u);
 
 void	clearColorImage							(const DeviceInterface&							vk,
 												 const vk::VkDevice								device,
@@ -287,7 +291,9 @@ void	clearColorImage							(const DeviceInterface&							vk,
 												 vk::VkAccessFlags								dstAccessFlags,
 												 vk::VkPipelineStageFlags						dstStageFlags,
 												 deUint32										baseArrayLayer = 0u,
-												 deUint32										layerCount = 1u);
+												 deUint32										layerCount = 1u,
+												 deUint32										baseMipLevel = 0u,
+												 deUint32										levelCount = 1u);
 
 /*--------------------------------------------------------------------*//*!
  * Initialize color image with a chessboard pattern

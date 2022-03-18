@@ -986,6 +986,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_image_2d_view_of_3d")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_load_store_op_none")
 	{
 		return;
@@ -2301,6 +2305,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		functions.push_back("vkCmdDrawMultiEXT");
 		functions.push_back("vkCmdDrawMultiIndexedEXT");
+		return;
+	}
+	if (extName == "VK_EXT_image_2d_view_of_3d")
+	{
 		return;
 	}
 	if (extName == "VK_EXT_load_store_op_none")

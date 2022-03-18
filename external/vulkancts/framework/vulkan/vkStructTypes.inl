@@ -5724,6 +5724,14 @@ struct VkMultiDrawIndexedInfoEXT
 	int32_t		vertexOffset;
 };
 
+struct VkPhysicalDeviceImage2DViewOf3DFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		image2DViewOf3D;
+	VkBool32		sampler2DViewOf3D;
+};
+
 struct VkPhysicalDeviceBorderColorSwizzleFeaturesEXT
 {
 	VkStructureType	sType;
@@ -6290,8 +6298,6 @@ struct VkVideoDecodeInfoKHR
 	VkStructureType					sType;
 	const void*						pNext;
 	VkVideoDecodeFlagsKHR			flags;
-	VkOffset2D						codedOffset;
-	VkExtent2D						codedExtent;
 	VkBuffer						srcBuffer;
 	VkDeviceSize					srcBufferOffset;
 	VkDeviceSize					srcBufferRange;
@@ -6335,7 +6341,6 @@ struct VkVideoEncodeInfoKHR
 	const void*						pNext;
 	VkVideoEncodeFlagsKHR			flags;
 	uint32_t						qualityLevel;
-	VkExtent2D						codedExtent;
 	VkBuffer						dstBitstreamBuffer;
 	VkDeviceSize					dstBitstreamBufferOffset;
 	VkDeviceSize					dstBitstreamBufferMaxRange;
@@ -6349,7 +6354,7 @@ struct VkVideoEncodeInfoKHR
 struct VkVideoEncodeCapabilitiesKHR
 {
 	VkStructureType							sType;
-	const void*								pNext;
+	void*									pNext;
 	VkVideoEncodeCapabilityFlagsKHR			flags;
 	VkVideoEncodeRateControlModeFlagsKHR	rateControlModes;
 	uint8_t									rateControlLayerCount;
@@ -6623,7 +6628,7 @@ struct StdVideoEncodeH264SliceHeader
 struct VkVideoEncodeH264CapabilitiesEXT
 {
 	VkStructureType						sType;
-	const void*							pNext;
+	void*								pNext;
 	VkVideoEncodeH264CapabilityFlagsEXT	flags;
 	VkVideoEncodeH264InputModeFlagsEXT	inputModeFlags;
 	VkVideoEncodeH264OutputModeFlagsEXT	outputModeFlags;
@@ -7139,7 +7144,7 @@ struct StdVideoEncodeH265ReferenceInfo
 struct VkVideoEncodeH265CapabilitiesEXT
 {
 	VkStructureType								sType;
-	const void*									pNext;
+	void*										pNext;
 	VkVideoEncodeH265CapabilityFlagsEXT			flags;
 	VkVideoEncodeH265InputModeFlagsEXT			inputModeFlags;
 	VkVideoEncodeH265OutputModeFlagsEXT			outputModeFlags;
@@ -7359,10 +7364,10 @@ struct VkVideoDecodeH264ProfileEXT
 
 struct VkVideoDecodeH264CapabilitiesEXT
 {
-	VkStructureType	sType;
-	void*			pNext;
-	uint32_t		maxLevel;
-	VkOffset2D		fieldOffsetGranularity;
+	VkStructureType		sType;
+	void*				pNext;
+	StdVideoH264Level	maxLevel;
+	VkOffset2D			fieldOffsetGranularity;
 };
 
 struct VkVideoDecodeH264SessionParametersAddInfoEXT
@@ -7452,9 +7457,9 @@ struct VkVideoDecodeH265ProfileEXT
 
 struct VkVideoDecodeH265CapabilitiesEXT
 {
-	VkStructureType	sType;
-	void*			pNext;
-	uint32_t		maxLevel;
+	VkStructureType		sType;
+	void*				pNext;
+	StdVideoH265Level	maxLevel;
 };
 
 struct VkVideoDecodeH265SessionParametersAddInfoEXT

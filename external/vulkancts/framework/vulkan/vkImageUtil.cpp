@@ -4167,7 +4167,8 @@ void copyBufferToImage (const DeviceInterface&					vk,
 						deUint32								arrayLayers,
 						VkImage									destImage,
 						VkImageLayout							destImageLayout,
-						VkPipelineStageFlags					destImageDstStageFlags)
+						VkPipelineStageFlags					destImageDstStageFlags,
+						deUint32								baseMipLevel)
 {
 	// Barriers for copying buffer to image
 	const VkBufferMemoryBarrier preBufferBarrier =
@@ -4196,7 +4197,7 @@ void copyBufferToImage (const DeviceInterface&					vk,
 		destImage,										// VkImage					image;
 		{												// VkImageSubresourceRange	subresourceRange;
 			imageAspectFlags,							// VkImageAspectFlags		aspect;
-			0u,											// deUint32					baseMipLevel;
+			baseMipLevel,								// deUint32					baseMipLevel;
 			mipLevels,									// deUint32					mipLevels;
 			0u,											// deUint32					baseArraySlice;
 			arrayLayers									// deUint32					arraySize;
@@ -4216,7 +4217,7 @@ void copyBufferToImage (const DeviceInterface&					vk,
 		destImage,										// VkImage					image;
 		{												// VkImageSubresourceRange	subresourceRange;
 			imageAspectFlags,							// VkImageAspectFlags		aspect;
-			0u,											// deUint32					baseMipLevel;
+			baseMipLevel,								// deUint32					baseMipLevel;
 			mipLevels,									// deUint32					mipLevels;
 			0u,											// deUint32					baseArraySlice;
 			arrayLayers									// deUint32					arraySize;
@@ -4242,7 +4243,8 @@ void copyBufferToImage (const DeviceInterface&					vk,
 						deUint32								arrayLayers,
 						VkImage									destImage,
 						VkImageLayout							destImageLayout,
-						VkPipelineStageFlags					destImageDstStageFlags)
+						VkPipelineStageFlags					destImageDstStageFlags,
+						deUint32								baseMipLevel)
 {
 	Move<VkCommandPool>		cmdPool		= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 	Move<VkCommandBuffer>	cmdBuffer	= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -4257,7 +4259,7 @@ void copyBufferToImage (const DeviceInterface&					vk,
 	};
 
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
-	copyBufferToImage(vk, *cmdBuffer, buffer, bufferSize, copyRegions, imageAspectFlags, mipLevels, arrayLayers, destImage, destImageLayout, destImageDstStageFlags);
+	copyBufferToImage(vk, *cmdBuffer, buffer, bufferSize, copyRegions, imageAspectFlags, mipLevels, arrayLayers, destImage, destImageLayout, destImageDstStageFlags, baseMipLevel);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
 	const VkPipelineStageFlags pipelineStageFlags = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
@@ -4442,7 +4444,9 @@ void clearColorImage (const DeviceInterface&	vk,
 					  VkAccessFlags				dstAccessFlags,
 					  VkPipelineStageFlags		dstStageFlags,
 					  deUint32					baseArrayLayer,
-					  deUint32					layerCount)
+					  deUint32					layerCount,
+					  deUint32					baseMipLevel,
+					  deUint32					levelCount)
 {
 	Move<VkCommandPool>				cmdPool				= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 	Move<VkCommandBuffer>			cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -4450,10 +4454,10 @@ void clearColorImage (const DeviceInterface&	vk,
 	const VkImageSubresourceRange	subresourceRange	=
 	{
 		VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask
-		0u,							// deUint32				baseMipLevel
-		1u,							// deUint32				levelCount
-		baseArrayLayer,							// deUint32				baseArrayLayer
-		layerCount,							// deUint32				layerCount
+		baseMipLevel,				// deUint32				baseMipLevel
+		levelCount,					// deUint32				levelCount
+		baseArrayLayer,				// deUint32				baseArrayLayer
+		layerCount,					// deUint32				layerCount
 	};
 
 	const VkImageMemoryBarrier		preImageBarrier		=
@@ -4515,9 +4519,11 @@ void clearColorImage (const DeviceInterface&	vk,
 					  VkImageLayout				newLayout,
 					  VkPipelineStageFlags		dstStageFlags,
 					  deUint32					baseArrayLayer,
-					  deUint32					layerCount)
+					  deUint32					layerCount,
+					  deUint32					baseMipLevel,
+					  deUint32					levelCount)
 {
-	clearColorImage(vk, device, queue, queueFamilyIndex, image, makeClearValueColor(clearColor).color, oldLayout, newLayout, VK_ACCESS_SHADER_WRITE_BIT, dstStageFlags, baseArrayLayer, layerCount);
+	clearColorImage(vk, device, queue, queueFamilyIndex, image, makeClearValueColor(clearColor).color, oldLayout, newLayout, VK_ACCESS_SHADER_WRITE_BIT, dstStageFlags, baseArrayLayer, layerCount, baseMipLevel, levelCount);
 }
 
 std::vector<VkBufferImageCopy> generateChessboardCopyRegions (deUint32				tileSize,
