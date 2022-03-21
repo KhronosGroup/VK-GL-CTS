@@ -2283,7 +2283,7 @@ TestInstance* AttachmentRateTestCase::createInstance(Context& context) const
 
 }	// anonymous
 
-void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup, bool useDynamicRendering)
+void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup, SharedGroupParams groupParams)
 {
 	struct SRFormat
 	{
@@ -2363,14 +2363,14 @@ void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* pa
 						testModeParam.mode,						// TestMode			mode;
 						srFormat.format,						// VkFormat			srFormat;
 						srRate.count,							// VkExtent2D		srRate;
-						useDynamicRendering,					// bool				useDynamicRendering;
+						groupParams->useDynamicRendering,		// bool				useDynamicRendering;
 						false									// bool				useImagelessFramebuffer;
 					}
 				)));
 
-				// duplicate all tests for imageless framebuffer
-				if (!useDynamicRendering)
+				if (!groupParams->useDynamicRendering)
 				{
+					// duplicate all tests for imageless framebuffer
 					std::string imagelessName = std::string(srRate.name) + "_imageless";
 					formatGroup->addChild(new AttachmentRateTestCase(testCtx, imagelessName.c_str(), de::SharedPtr<TestParams>(
 						new TestParams
@@ -2391,7 +2391,7 @@ void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* pa
 		mainGroup->addChild(testModeGroup.release());
 	}
 
-	if (!useDynamicRendering)
+	if (!groupParams->useDynamicRendering)
 	{
 		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
 		miscGroup->addChild(new AttachmentRateTestCase(testCtx, "two_subpass", de::SharedPtr<TestParams>(
