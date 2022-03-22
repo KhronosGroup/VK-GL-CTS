@@ -5,8 +5,6 @@ dEQP-VK.synchronization.timeline_semaphore.sparse_bind.no_wait_sig
 dEQP-VK.synchronization.timeline_semaphore.sparse_bind.wait_no_sig
 dEQP-VK.synchronization.timeline_semaphore.sparse_bind.wait_and_sig
 dEQP-VK.synchronization.timeline_semaphore.sparse_bind.wait_and_sig_2
-dEQP-VK.synchronization.basic.fence.one_signaled
-dEQP-VK.synchronization.basic.fence.multiple_signaled
 dEQP-VK.synchronization.basic.timeline_semaphore.two_threads
 dEQP-VK.synchronization.op.single_queue.fence.write_image_compute_multisample_read_resolve_image.image_64x64_r32_uint
 dEQP-VK.synchronization.op.single_queue.fence.write_update_index_buffer_read_index_input.buffer_20

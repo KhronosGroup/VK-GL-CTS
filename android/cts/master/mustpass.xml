@@ -20,17 +20,21 @@
      -->
 	<TestPackage name="dEQP-EGL">
 		<Configuration caseListFile="egl-master.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master"/>
+		<Configuration caseListFile="egl-master-2021-03-01.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-2021-03-01"/>
+		<Configuration caseListFile="egl-master-2022-03-01.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-2022-03-01"/>
 		<Configuration caseListFile="egl-master-risky.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-risky"/>
 	</TestPackage>
 	<TestPackage name="dEQP-GLES2">
 		<Configuration caseListFile="gles2-master.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master"/>
 		<Configuration caseListFile="gles2-master-2020-03-01.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-2020-03-01"/>
 		<Configuration caseListFile="gles2-master-2021-03-01.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-2021-03-01"/>
+		<Configuration caseListFile="gles2-master-2022-03-01.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-2022-03-01"/>
 	</TestPackage>
 	<TestPackage name="dEQP-GLES3">
 		<Configuration caseListFile="gles3-master.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master"/>
 		<Configuration caseListFile="gles3-master-2020-03-01.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-2020-03-01"/>
 		<Configuration caseListFile="gles3-master-2021-03-01.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-2021-03-01"/>
+		<Configuration caseListFile="gles3-master-2022-03-01.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-2022-03-01"/>
 		<Configuration caseListFile="gles3-rotate-portrait.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=0 --deqp-surface-type=window --deqp-watchdog=enable" name="rotate-portrait"/>
 		<Configuration caseListFile="gles3-rotate-landscape.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=90 --deqp-surface-type=window --deqp-watchdog=enable" name="rotate-landscape"/>
 		<Configuration caseListFile="gles3-rotate-reverse-portrait.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=180 --deqp-surface-type=window --deqp-watchdog=enable" name="rotate-reverse-portrait"/>
@@ -43,6 +47,7 @@
 		<Configuration caseListFile="gles31-master.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master"/>
 		<Configuration caseListFile="gles31-master-2020-03-01.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-2020-03-01"/>
 		<Configuration caseListFile="gles31-master-2021-03-01.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-2021-03-01"/>
+		<Configuration caseListFile="gles31-master-2022-03-01.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-2022-03-01"/>
 		<Configuration caseListFile="gles31-rotate-portrait.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=0 --deqp-surface-type=window --deqp-watchdog=enable" name="rotate-portrait"/>
 		<Configuration caseListFile="gles31-rotate-landscape.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=90 --deqp-surface-type=window --deqp-watchdog=enable" name="rotate-landscape"/>
 		<Configuration caseListFile="gles31-rotate-reverse-portrait.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=180 --deqp-surface-type=window --deqp-watchdog=enable" name="rotate-reverse-portrait"/>
@@ -55,6 +60,7 @@
 		<Configuration caseListFile="vk-master-2019-03-01.txt" commandLine="--deqp-watchdog=enable" name="master-2019-03-01"/>
 		<Configuration caseListFile="vk-master-2020-03-01.txt" commandLine="--deqp-watchdog=enable" name="master-2020-03-01"/>
 		<Configuration caseListFile="vk-master-2021-03-01.txt" commandLine="--deqp-watchdog=enable" name="master-2021-03-01"/>
+		<Configuration caseListFile="vk-master-2022-03-01.txt" commandLine="--deqp-watchdog=enable" name="master-2022-03-01"/>
 		<Configuration caseListFile="vk-incremental-deqp.txt" commandLine="--deqp-watchdog=enable" name="incremental-deqp"/>
 	</TestPackage>
 </Mustpass>
