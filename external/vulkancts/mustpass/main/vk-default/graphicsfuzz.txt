@@ -181,12 +181,14 @@ dEQP-VK.graphicsfuzz.cov-fragcoord-multiply
 dEQP-VK.graphicsfuzz.cov-function-argument-uniform-float-loop-never-return
 dEQP-VK.graphicsfuzz.cov-function-clamp-min-identical-shift-right
 dEQP-VK.graphicsfuzz.cov-function-call-twice-clamp-global-variable
+dEQP-VK.graphicsfuzz.cov-function-divide-argument-until-lt-one
 dEQP-VK.graphicsfuzz.cov-function-find-lsb-ivec2-one
 dEQP-VK.graphicsfuzz.cov-function-fragcoord-condition-always-return
 dEQP-VK.graphicsfuzz.cov-function-infinite-loop-always-return
 dEQP-VK.graphicsfuzz.cov-function-infinite-loop-return-identical-condition
 dEQP-VK.graphicsfuzz.cov-function-large-array-max-clamp
 dEQP-VK.graphicsfuzz.cov-function-large-loop-break-argument-lte-global-loop-bound
+dEQP-VK.graphicsfuzz.cov-function-loop-check-determinant-zero-return-vector
 dEQP-VK.graphicsfuzz.cov-function-loop-condition-uniform-shift-right
 dEQP-VK.graphicsfuzz.cov-function-loop-condition-variable-less-than-min-itself
 dEQP-VK.graphicsfuzz.cov-function-loop-copy-array-elements-based-on-arguments
@@ -199,6 +201,9 @@ dEQP-VK.graphicsfuzz.cov-function-nested-do-whiles-looped-once
 dEQP-VK.graphicsfuzz.cov-function-nested-loops-break-early-never-discard
 dEQP-VK.graphicsfuzz.cov-function-nested-loops-limit-uniform-xor-uniform
 dEQP-VK.graphicsfuzz.cov-function-set-struct-field-zero-loop-reset-first-element
+dEQP-VK.graphicsfuzz.cov-function-parameter-zero-divided-by-uniform
+dEQP-VK.graphicsfuzz.cov-function-round-unpack-half-2x16
+dEQP-VK.graphicsfuzz.cov-function-switch-case-constant-clamp-transpose-identity-matrices
 dEQP-VK.graphicsfuzz.cov-function-trivial-switch-case
 dEQP-VK.graphicsfuzz.cov-function-two-loops-limit-using-arguments-array-element-copies
 dEQP-VK.graphicsfuzz.cov-function-undefined-shift-left-index-array-with-return-value
@@ -228,6 +233,7 @@ dEQP-VK.graphicsfuzz.cov-if-true-float-bits-to-int-one
 dEQP-VK.graphicsfuzz.cov-inc-array-element-loop-lsb
 dEQP-VK.graphicsfuzz.cov-inc-inside-switch-and-for
 dEQP-VK.graphicsfuzz.cov-increment-array-element-in-loop
+dEQP-VK.graphicsfuzz.cov-increment-array-element-usub-borrow
 dEQP-VK.graphicsfuzz.cov-increment-float-in-loop-abs
 dEQP-VK.graphicsfuzz.cov-increment-global-counter-loop-function
 dEQP-VK.graphicsfuzz.cov-increment-inside-clamp
@@ -297,6 +303,7 @@ dEQP-VK.graphicsfuzz.cov-large-for-loop-exit-early-set-iterator-array-element
 dEQP-VK.graphicsfuzz.cov-large-int-array-nested-loops-set-ivec-index-component-sum
 dEQP-VK.graphicsfuzz.cov-large-loop-break-early-condition-iterator-divided
 dEQP-VK.graphicsfuzz.cov-large-loop-multiply-integer-by-uniform-one
+dEQP-VK.graphicsfuzz.cov-large-number-of-false-conditions-return-discard-continue
 dEQP-VK.graphicsfuzz.cov-ldexp-exponent-undefined-divided-fragcoord-never-executed
 dEQP-VK.graphicsfuzz.cov-ldexp-undefined-mat-vec-multiply
 dEQP-VK.graphicsfuzz.cov-left-shift-array-access
@@ -337,6 +344,7 @@ dEQP-VK.graphicsfuzz.cov-loop-increment-matrix-element-break-after-first-iterati
 dEQP-VK.graphicsfuzz.cov-loop-increment-or-divide-by-loop-index
 dEQP-VK.graphicsfuzz.cov-loop-index-array-max-negative-zero
 dEQP-VK.graphicsfuzz.cov-loop-integer-half-minus-one
+dEQP-VK.graphicsfuzz.cov-loop-iterator-bitwise-negate
 dEQP-VK.graphicsfuzz.cov-loop-iterator-plus-one-variable-outside-index-array
 dEQP-VK.graphicsfuzz.cov-loop-large-array-index-clamp-negative-value
 dEQP-VK.graphicsfuzz.cov-loop-limiter-min-findlsb
@@ -345,6 +353,7 @@ dEQP-VK.graphicsfuzz.cov-loop-logical-xor
 dEQP-VK.graphicsfuzz.cov-loop-multiple-iterator-variables-copy-array-elements
 dEQP-VK.graphicsfuzz.cov-loop-read-array-index-from-array-data
 dEQP-VK.graphicsfuzz.cov-loop-max-divide-integer-by-ten
+dEQP-VK.graphicsfuzz.cov-loop-overwrite-sample-texture-as-color-output
 dEQP-VK.graphicsfuzz.cov-loop-replace-output-color-restore-original
 dEQP-VK.graphicsfuzz.cov-loop-returns-behind-true-and-false
 dEQP-VK.graphicsfuzz.cov-loop-sampled-texel-integer-counter
@@ -372,6 +381,7 @@ dEQP-VK.graphicsfuzz.cov-merge-return-condition-twice
 dEQP-VK.graphicsfuzz.cov-min-intbitstofloat-undefined-never-used
 dEQP-VK.graphicsfuzz.cov-min-negative-constant-always-below-one
 dEQP-VK.graphicsfuzz.cov-min-nested-loop-same-value-for-variables
+dEQP-VK.graphicsfuzz.cov-min-vec2-transpose-mat2-identity
 dEQP-VK.graphicsfuzz.cov-missing-return-value-function-never-called
 dEQP-VK.graphicsfuzz.cov-mix-uninitialized-float-never-selected
 dEQP-VK.graphicsfuzz.cov-mix-uninitialized-vector-select-only-defined-data
@@ -395,6 +405,7 @@ dEQP-VK.graphicsfuzz.cov-nested-loop-initializer-value-increased-inside
 dEQP-VK.graphicsfuzz.cov-nested-loop-large-array-index-using-vector-components
 dEQP-VK.graphicsfuzz.cov-nested-loop-not-greater-than-increment-array-element
 dEQP-VK.graphicsfuzz.cov-nested-loop-undefined-smoothstep-never-executed
+dEQP-VK.graphicsfuzz.cov-nested-loops-assign-vector-elements-from-matrix-no-negative-indexing
 dEQP-VK.graphicsfuzz.cov-nested-loops-clamp-ivec-push-constant-increment-global-counter
 dEQP-VK.graphicsfuzz.cov-nested-loops-copy-array-elements-skip-first
 dEQP-VK.graphicsfuzz.cov-nested-loops-decrease-ivec-component
@@ -403,6 +414,7 @@ dEQP-VK.graphicsfuzz.cov-nested-loops-divide-integer-constant-always-zero
 dEQP-VK.graphicsfuzz.cov-nested-loops-decrease-vector-component-by-matrix-element-global-loop-counter
 dEQP-VK.graphicsfuzz.cov-nested-loops-float-array-select-by-fragcoord
 dEQP-VK.graphicsfuzz.cov-nested-loops-float-bits-to-int-increment-array
+dEQP-VK.graphicsfuzz.cov-nested-loops-fragcoord-conditions-empty-blocks
 dEQP-VK.graphicsfuzz.cov-nested-loops-fragcoord-never-return-descending-loop
 dEQP-VK.graphicsfuzz.cov-nested-loops-global-counter-func-set-struct-field
 dEQP-VK.graphicsfuzz.cov-nested-loops-global-counter-increment-single-element
@@ -430,6 +442,7 @@ dEQP-VK.graphicsfuzz.cov-nir-array-access
 dEQP-VK.graphicsfuzz.cov-nir-opt-large-constants-for-clamp-vector-access
 dEQP-VK.graphicsfuzz.cov-nir-opt-loop-unroll-if-if-if-if-do-while
 dEQP-VK.graphicsfuzz.cov-nouble-negation-fragcoord-cast-ivec2-bitwise-and
+dEQP-VK.graphicsfuzz.cov-one-bitwise-and-bitwise-or-full-bits
 dEQP-VK.graphicsfuzz.cov-one-minus-clamp-always-one-cast-to-int
 dEQP-VK.graphicsfuzz.cov-optimize-phis-for
 dEQP-VK.graphicsfuzz.cov-optimize-phis-for-for-do-while-if-if
@@ -462,6 +475,7 @@ dEQP-VK.graphicsfuzz.cov-scaled-number-nested-loops-array-access
 dEQP-VK.graphicsfuzz.cov-schedule-dag-rrlist-mix-log-cos
 dEQP-VK.graphicsfuzz.cov-selection-dag-inverse-clamp
 dEQP-VK.graphicsfuzz.cov-selection-dag-same-cond-twice
+dEQP-VK.graphicsfuzz.cov-set-array-elements-to-uniform-check-value-break
 dEQP-VK.graphicsfuzz.cov-set-output-color-function-call-nested-loop
 dEQP-VK.graphicsfuzz.cov-set-vector-cos-fragcoord
 dEQP-VK.graphicsfuzz.cov-sign-array-access-uaddcarry
@@ -485,6 +499,7 @@ dEQP-VK.graphicsfuzz.cov-sin-mul-mat-mat-mul-vec-mat
 dEQP-VK.graphicsfuzz.cov-single-block-elim-self-assign
 dEQP-VK.graphicsfuzz.cov-single-store-elim-assume-store
 dEQP-VK.graphicsfuzz.cov-sinh-ldexp
+dEQP-VK.graphicsfuzz.cov-small-array-overwrite-most-uniform-value-check-data-break
 dEQP-VK.graphicsfuzz.cov-ssa-rewrite-case-with-default
 dEQP-VK.graphicsfuzz.cov-step-sinh
 dEQP-VK.graphicsfuzz.cov-struct-float-array-mix-uniform-vectors
