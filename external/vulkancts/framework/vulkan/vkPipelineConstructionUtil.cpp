@@ -459,7 +459,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputStete(const Vk
 		pipelinePartCreateInfo.pInputAssemblyState	= pInputAssemblyState;
 		pipelinePartCreateInfo.pDynamicState		= m_internalData->pDynamicState;
 
-		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY)
+		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 			pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
 
 		m_pipelineParts[0] = createGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
