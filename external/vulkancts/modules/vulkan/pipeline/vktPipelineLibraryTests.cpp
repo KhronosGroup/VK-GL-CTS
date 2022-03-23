@@ -1221,12 +1221,17 @@ enum class MiscTestMode
 	INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED = 0,
 	INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE,
 	INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_NULL_HANDLE,
+	BIND_NULL_DESCRIPTOR_SET,
 	COMPARE_LINK_TIMES
 };
 
 struct MiscTestParams
 {
 	MiscTestMode	mode;
+
+	// attributes used in BIND_NULL_DESCRIPTOR_SET mode
+	deUint32		layoutsCount;
+	deUint32		layoutsBits;
 };
 
 class PipelineLibraryMiscTestInstance : public TestInstance
@@ -1239,8 +1244,17 @@ public:
 
 protected:
 
+	tcu::TestStatus		runNullDescriptorSet				(void);
 	tcu::TestStatus		runIndependentPipelineLayoutSets	(bool useLinkTimeOptimization = false, bool useNullLayout = false);
 	tcu::TestStatus		runCompareLinkTimes					(void);
+
+	struct VerificationData
+	{
+		const tcu::IVec2	point;
+		const tcu::IVec4	color;
+	};
+	tcu::TestStatus		verifyResult						(const std::vector<VerificationData>&	verificationData,
+															 const tcu::ConstPixelBufferAccess&		colorPixelAccess) const;
 
 private:
 	MiscTestParams					m_testParams;
@@ -1290,7 +1304,9 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::iterate (void)
 	m_cmdBuffer	= allocateCommandBuffer(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	// run selected test
-	if (m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED)
+	if (m_testParams.mode == MiscTestMode::BIND_NULL_DESCRIPTOR_SET)
+		return runNullDescriptorSet();
+	else if (m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED)
 		return runIndependentPipelineLayoutSets();
 	else if (m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE)
 		return runIndependentPipelineLayoutSets(true);
@@ -1301,6 +1317,227 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::iterate (void)
 
 	DE_ASSERT(DE_FALSE);
 	return tcu::TestStatus::fail("Fail");
+}
+
+tcu::TestStatus PipelineLibraryMiscTestInstance::runNullDescriptorSet(void)
+{
+	const DeviceInterface&			vk						= m_context.getDeviceInterface();
+	const VkDevice					device					= m_context.getDevice();
+	Allocator&						allocator				= m_context.getDefaultAllocator();
+
+	const VkDeviceSize				colorBufferDataSize		= static_cast<VkDeviceSize>(m_renderArea.extent.width * m_renderArea.extent.height * tcu::getPixelSize(mapVkFormat(m_colorFormat)));
+	const VkBufferCreateInfo		colorBufferCreateInfo	= makeBufferCreateInfo(colorBufferDataSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	const BufferWithMemory			colorBuffer				(vk, device, allocator, colorBufferCreateInfo, MemoryRequirement::HostVisible);
+
+	VkDeviceSize					uniformBufferDataSize	= sizeof(tcu::Vec4);
+	const VkBufferCreateInfo		uniformBufferCreateInfo	= makeBufferCreateInfo(uniformBufferDataSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+	de::MovePtr<BufferWithMemory>	uniformBuffer[2];
+
+	// setup data in uniform buffers that will give us expected result for validation
+	const tcu::Vec4 uniformBuffData[]
+	{
+		{ -1.00f,  1.00f,  2.0f, -2.00f },
+		{  0.00f,  0.20f,  0.6f,  0.75f },
+	};
+
+	for (deUint32 i = 0; i < 2; ++i)
+	{
+		uniformBuffer[i] = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, uniformBufferCreateInfo, MemoryRequirement::HostVisible));
+		deMemcpy(uniformBuffer[i]->getAllocation().getHostPtr(), uniformBuffData[i].getPtr(), (size_t)uniformBufferDataSize);
+		flushAlloc(vk, device, uniformBuffer[i]->getAllocation());
+	}
+
+	const deUint32 maxBitsCount = 8 * sizeof(m_testParams.layoutsBits);
+	VkDescriptorSetLayout vertDescriptorSetLayouts[maxBitsCount];
+	VkDescriptorSetLayout fragDescriptorSetLayouts[maxBitsCount];
+	VkDescriptorSetLayout allDescriptorSetLayouts[maxBitsCount];
+
+	// set all layouts to NULL
+	deMemset(&vertDescriptorSetLayouts, DE_NULL, maxBitsCount * sizeof(VkDescriptorSetLayout));
+	deMemset(&fragDescriptorSetLayouts, DE_NULL, maxBitsCount * sizeof(VkDescriptorSetLayout));
+
+	// create used descriptor set layouts
+	Move<VkDescriptorSetLayout> usedDescriptorSetLayouts[]
+	{
+		DescriptorSetLayoutBuilder()
+			.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+			.build(vk, device),
+		DescriptorSetLayoutBuilder()
+			.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+			.build(vk, device)
+	};
+
+	// create descriptor set layouts that are not used by shaders in test - finalPipelineLayout,
+	// needs to always be the complete pipeline layout with no holes; we can put NULLs in
+	// DescriptorSetLayouts used by partial pipelines (vertDescriptorSetLayouts and fragDescriptorSetLayouts)
+	Move<VkDescriptorSetLayout> unusedDescriptorSetLayouts[maxBitsCount];
+	for (deUint32 i = 0u; i < m_testParams.layoutsCount; ++i)
+	{
+		unusedDescriptorSetLayouts[i] = DescriptorSetLayoutBuilder().build(vk, device);
+
+		// by default allDescriptorSetLayouts is filled with unused layouts but later
+		// if test requires this proper indexes are replaced with used layouts
+		allDescriptorSetLayouts[i] = *unusedDescriptorSetLayouts[i];
+	}
+
+	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = initVulkanStructure();
+	pipelineLayoutCreateInfo.flags = VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT;
+
+	// find set bits
+	std::vector<deUint32> bitsThatAreSet;
+	for (deUint32 i = 0u; i < m_testParams.layoutsCount; ++i)
+	{
+		if (m_testParams.layoutsBits & (1 << (maxBitsCount - 1 - i)))
+			bitsThatAreSet.push_back(i);
+	}
+
+	deUint32 usedDescriptorSets = static_cast<deUint32>(bitsThatAreSet.size());
+	DE_ASSERT(usedDescriptorSets && (usedDescriptorSets < 3u));
+
+	deUint32 vertSetIndex						= bitsThatAreSet[0];
+	deUint32 fragSetIndex						= 0u;
+	vertDescriptorSetLayouts[vertSetIndex]		= *usedDescriptorSetLayouts[0];
+	allDescriptorSetLayouts[vertSetIndex]		= *usedDescriptorSetLayouts[0];
+	pipelineLayoutCreateInfo.setLayoutCount		= vertSetIndex + 1u;
+	pipelineLayoutCreateInfo.pSetLayouts		= vertDescriptorSetLayouts;
+
+	Move<VkPipelineLayout>	vertPipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
+	Move<VkPipelineLayout>	fragPipelineLayout;
+
+	if (usedDescriptorSets == 2u)
+	{
+		fragSetIndex							= bitsThatAreSet[1];
+		fragDescriptorSetLayouts[fragSetIndex]	= *usedDescriptorSetLayouts[1];
+		allDescriptorSetLayouts[fragSetIndex]	= *usedDescriptorSetLayouts[1];
+		pipelineLayoutCreateInfo.setLayoutCount	= fragSetIndex + 1u;
+		pipelineLayoutCreateInfo.pSetLayouts	= fragDescriptorSetLayouts;
+
+		fragPipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
+	}
+
+	// create descriptor pool
+	Move<VkDescriptorPool> descriptorPool = DescriptorPoolBuilder()
+		.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, usedDescriptorSets)
+		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, usedDescriptorSets);
+
+	const VkDescriptorBufferInfo	vertShaderBufferInfo	= makeDescriptorBufferInfo(**uniformBuffer[0], 0u, uniformBufferDataSize);
+	Move<VkDescriptorSet>			vertDescriptorSet		= makeDescriptorSet(vk, device, *descriptorPool, *usedDescriptorSetLayouts[0]);
+	Move<VkDescriptorSet>			fragDescriptorSet;
+
+	if (usedDescriptorSets == 1u)
+	{
+		// update single descriptors with actual buffer
+		DescriptorSetUpdateBuilder()
+			.writeSingle(*vertDescriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &vertShaderBufferInfo)
+			.update(vk, device);
+	}
+	else
+	{
+		const VkDescriptorBufferInfo fragShaderBufferInfo = makeDescriptorBufferInfo(**uniformBuffer[1], 0u, uniformBufferDataSize);
+		fragDescriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *usedDescriptorSetLayouts[1]);
+
+		// update both descriptors with actual buffers
+		DescriptorSetUpdateBuilder()
+			.writeSingle(*vertDescriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &vertShaderBufferInfo)
+			.writeSingle(*fragDescriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &fragShaderBufferInfo)
+			.update(vk, device);
+	}
+
+	pipelineLayoutCreateInfo.setLayoutCount		= m_testParams.layoutsCount;
+	pipelineLayoutCreateInfo.pSetLayouts		= allDescriptorSetLayouts;
+	Move<VkPipelineLayout> finalPipelineLayout	= createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
+
+	const deUint32 commonPipelinePartFlags = deUint32(VK_PIPELINE_CREATE_LIBRARY_BIT_KHR);
+	GraphicsPipelineCreateInfo partialPipelineCreateInfo[]
+	{
+		{ *vertPipelineLayout,	*m_renderPass, 0, commonPipelinePartFlags },
+		{ *fragPipelineLayout,	*m_renderPass, 0, commonPipelinePartFlags },
+	};
+
+	// fill proper portion of pipeline state
+	updateVertexInputInterface(m_context, partialPipelineCreateInfo[0], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+	updatePreRasterization(m_context, partialPipelineCreateInfo[0], false);
+	updatePostRasterization(m_context, partialPipelineCreateInfo[1], false);
+	updateFragmentOutputInterface(m_context, partialPipelineCreateInfo[1]);
+
+	Move<VkPipeline> vertPipelinePart;
+	Move<VkPipeline> fragPipelinePart;
+
+	// extend pNext chain and create partial pipelines
+	{
+		VkGraphicsPipelineLibraryCreateInfoEXT libraryCreateInfo = makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT | VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT);
+		appendStructurePtrToVulkanChain(&partialPipelineCreateInfo[0].pNext, &libraryCreateInfo);
+		vertPipelinePart = createGraphicsPipeline(vk, device, DE_NULL, &partialPipelineCreateInfo[0]);
+
+		libraryCreateInfo.flags = VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT | VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT,
+		appendStructurePtrToVulkanChain(&partialPipelineCreateInfo[1].pNext, &libraryCreateInfo);
+		fragPipelinePart = createGraphicsPipeline(vk, device, DE_NULL, &partialPipelineCreateInfo[1]);
+	}
+
+	// create final pipeline out of two parts
+	std::vector<VkPipeline>			rawParts			= { *vertPipelinePart, *fragPipelinePart };
+	VkPipelineLibraryCreateInfoKHR	linkingInfo			= makePipelineLibraryCreateInfo(rawParts);
+	VkGraphicsPipelineCreateInfo	finalPipelineInfo	= initVulkanStructure();
+
+	finalPipelineInfo.layout = *finalPipelineLayout;
+	appendStructurePtrToVulkanChain(&finalPipelineInfo.pNext, &linkingInfo);
+	Move<VkPipeline> pipeline = createGraphicsPipeline(vk, device, DE_NULL, &finalPipelineInfo);
+
+	vk::beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+	{
+		// change color image layout
+		const VkImageMemoryBarrier initialImageBarrier = makeImageMemoryBarrier(
+			0,													// VkAccessFlags					srcAccessMask;
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,				// VkAccessFlags					dstAccessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout					oldLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout					newLayout;
+			**m_colorImage,										// VkImage							image;
+			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }		// VkImageSubresourceRange			subresourceRange;
+		);
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, DE_NULL, 0, DE_NULL, 1, &initialImageBarrier);
+
+		// wait for uniform buffers
+		std::vector<VkBufferMemoryBarrier> initialBufferBarriers(2u, makeBufferMemoryBarrier(
+			VK_ACCESS_HOST_WRITE_BIT,							// VkAccessFlags2KHR				srcAccessMask
+			VK_ACCESS_TRANSFER_READ_BIT,						// VkAccessFlags2KHR				dstAccessMask
+			uniformBuffer[0]->get(),							// VkBuffer							buffer
+			0u,													// VkDeviceSize						offset
+			uniformBufferDataSize								// VkDeviceSize						size
+		));
+		initialBufferBarriers[1].buffer = uniformBuffer[1]->get();
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, (VkDependencyFlags)0, 0, DE_NULL, 2, initialBufferBarriers.data(), 0, DE_NULL);
+
+		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, m_renderArea, m_colorClearColor);
+
+		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+
+		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *finalPipelineLayout, vertSetIndex, 1u, &*vertDescriptorSet, 0u, DE_NULL);
+		if (usedDescriptorSets == 2u)
+			vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *finalPipelineLayout, fragSetIndex, 1u, &*fragDescriptorSet, 0u, DE_NULL);
+
+		vk.cmdDraw(*m_cmdBuffer, 4, 1u, 0u, 0u);
+
+		endRenderPass(vk, *m_cmdBuffer);
+
+		const tcu::IVec2 size { (deInt32)m_renderArea.extent.width, (deInt32)m_renderArea.extent.height };
+		copyImageToBuffer(vk, *m_cmdBuffer, **m_colorImage, *colorBuffer, size);
+	}
+	vk::endCommandBuffer(vk, *m_cmdBuffer);
+	vk::submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *m_cmdBuffer);
+
+	vk::invalidateAlloc(vk, device, colorBuffer.getAllocation());
+	const tcu::ConstPixelBufferAccess colorPixelAccess(mapVkFormat(m_colorFormat), m_renderArea.extent.width, m_renderArea.extent.height, 1, colorBuffer.getAllocation().getHostPtr());
+
+	// verify result
+	deInt32 width	= (deInt32)m_renderArea.extent.width;
+	deInt32 height	= (deInt32)m_renderArea.extent.height;
+	const std::vector<VerificationData> verificationData
+	{
+		{ { 1, 1 },						{ 0, 51, 153, 191 } },		// note COLOR_COMPONENTS_NO_RED is used
+		{ { width / 2, height / 2 },	{ 0, 51, 153, 191 } },
+		{ { width - 2, height - 2 },	{ 0, 0, 0, 255 } }			// clear color
+	};
+	return verifyResult(verificationData, colorPixelAccess);
 }
 
 tcu::TestStatus PipelineLibraryMiscTestInstance::runIndependentPipelineLayoutSets (bool useLinkTimeOptimization, bool useNullLayout)
@@ -1480,45 +1717,16 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runIndependentPipelineLayoutSet
 	vk::invalidateAlloc(vk, device, colorBuffer.getAllocation());
 	const tcu::ConstPixelBufferAccess colorPixelAccess(mapVkFormat(m_colorFormat), m_renderArea.extent.width, m_renderArea.extent.height, 1, colorBuffer.getAllocation().getHostPtr());
 
-	// just check few pixels
+	// verify result
 	deInt32 width	= (deInt32)m_renderArea.extent.width;
 	deInt32 height	= (deInt32)m_renderArea.extent.height;
-	struct VerificationData
-	{
-		const tcu::IVec2	point;
-		const tcu::IVec4	color;
-	};
 	const std::vector<VerificationData> verificationData
 	{
 		{ { 1, 1 },						{ 0, 191, 127, 51 } },		// note COLOR_COMPONENTS_NO_RED is used
 		{ { width / 2, height / 2 },	{ 0, 191, 127, 51 } },
 		{ { width - 2, height - 2 },	{ 0, 0, 0, 255 } }			// clear color
 	};
-	const deInt32 epsilon = 1;
-	for (const auto& v : verificationData)
-	{
-		const IVec4		pixel	= colorPixelAccess.getPixelInt(v.point.x(), v.point.y());
-		const IVec4		diff	= pixel - v.color;
-		for (deUint32 compNdx = 0; compNdx < 4u; ++compNdx)
-		{
-			if (de::abs(diff[compNdx]) > epsilon)
-			{
-				const Vec4		pixelBias	(0.0f, 0.0f, 0.0f, 0.0f);
-				const Vec4		pixelScale	(1.0f, 1.0f, 1.0f, 1.0f);
-				tcu::TestLog&	log			(m_context.getTestContext().getLog());
-
-				log << TestLog::Image("Result", "Result", colorPixelAccess, pixelScale, pixelBias)
-					<< tcu::TestLog::Message
-					<< "For texel " << v.point << " expected color "
-					<< v.color << " got: " << pixel
-					<< tcu::TestLog::EndMessage;
-
-				return tcu::TestStatus::fail("Fail");
-			}
-		}
-	}
-
-	return tcu::TestStatus::pass("Pass");
+	return verifyResult(verificationData, colorPixelAccess);
 }
 
 tcu::TestStatus PipelineLibraryMiscTestInstance::runCompareLinkTimes (void)
@@ -1623,6 +1831,35 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runCompareLinkTimes (void)
 	return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Liking of one or more combinations took to long");
 }
 
+tcu::TestStatus PipelineLibraryMiscTestInstance::verifyResult(const std::vector<VerificationData>& verificationData, const tcu::ConstPixelBufferAccess& colorPixelAccess) const
+{
+	const deInt32 epsilon = 1;
+	for (const auto& v : verificationData)
+	{
+		const IVec4	pixel = colorPixelAccess.getPixelInt(v.point.x(), v.point.y());
+		const IVec4	diff = pixel - v.color;
+		for (deUint32 compNdx = 0; compNdx < 4u; ++compNdx)
+		{
+			if (de::abs(diff[compNdx]) > epsilon)
+			{
+				const Vec4 pixelBias(0.0f);
+				const Vec4 pixelScale(1.0f);
+
+				m_context.getTestContext().getLog()
+					<< TestLog::Image("Result", "Result", colorPixelAccess, pixelScale, pixelBias)
+					<< tcu::TestLog::Message
+					<< "For texel " << v.point << " expected color "
+					<< v.color << " got: " << pixel
+					<< tcu::TestLog::EndMessage;
+
+				return tcu::TestStatus::fail("Fail");
+			}
+		}
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 class PipelineLibraryMiscTestCase : public TestCase
 {
 public:
@@ -1660,9 +1897,80 @@ void PipelineLibraryMiscTestCase::checkSupport(Context& context) const
 
 void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollection) const
 {
-	if ((m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED) ||
-		(m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_NULL_HANDLE) ||
-		(m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE))
+	if (m_testParams.mode == MiscTestMode::BIND_NULL_DESCRIPTOR_SET)
+	{
+		std::string vertDefinition	= "";
+		std::string fragDefinition	= "";
+		std::string vertValue		= "  vec4 v = vec4(-1.0, 1.0, 2.0, -2.0);\n";
+		std::string fragValue		= "  vec4 v = vec4(0.0, 0.2, 0.6, 0.75);\n";
+
+		if (m_testParams.layoutsBits > 0u)
+		{
+			std::vector<deUint32>	bitsThatAreSet;
+			const deUint32			maxBitsCount	= 8 * sizeof(m_testParams.layoutsBits);
+
+			// find set bits
+			for (deUint32 i = 0u; i < m_testParams.layoutsCount; ++i)
+			{
+				if (m_testParams.layoutsBits & (1 << (maxBitsCount - 1 - i)))
+					bitsThatAreSet.push_back(i);
+			}
+
+			// there should be 1 or 2 bits set
+			DE_ASSERT((bitsThatAreSet.size() > 0) && (bitsThatAreSet.size() < 3));
+
+			// define lambda that creates proper uniform buffer definition
+			auto constructBufferDefinition = [](deUint32 setIndex)
+			{
+				return std::string("layout(set = ") + std::to_string(setIndex) + ", binding = 0) uniform buf\n"
+								   "{\n"
+								   "  vec4 v;\n"
+								   "};\n\n";
+			};
+
+			vertDefinition	= constructBufferDefinition(bitsThatAreSet[0]);
+			vertValue		= "";
+
+			if (bitsThatAreSet.size() == 2u)
+			{
+				fragDefinition	= constructBufferDefinition(bitsThatAreSet[1]);
+				fragValue		= "";
+			}
+		}
+
+		programCollection.glslSources.add("vert") << glu::VertexSource(
+			std::string("#version 450\n"
+			"precision mediump int; precision highp float;"
+			"layout(location = 0) in vec4 in_position;\n") +
+			vertDefinition +
+			"out gl_PerVertex\n"
+			"{\n"
+			"  vec4 gl_Position;\n"
+			"};\n\n"
+			"void main()\n"
+			"{\n" +
+			vertValue +
+			"  const float x = (v.x+v.z*((gl_VertexIndex & 2)>>1));\n"
+			"  const float y = (v.y+v.w* (gl_VertexIndex % 2));\n"
+
+			// note: there won't be full screen quad because of used scissors
+			"  gl_Position = vec4(x, y, 0.0, 1.0);\n"
+			"}\n");
+
+		programCollection.glslSources.add("frag") << glu::FragmentSource(
+			std::string("#version 450\n"
+			"precision mediump int; precision highp float;"
+			"layout(location = 0) out highp vec4 o_color;\n") +
+			fragDefinition +
+			"void main()\n"
+			"{\n" +
+			fragValue +
+			"  o_color = v;\n"
+			"}\n");
+	}
+	else if ((m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED) ||
+			 (m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_NULL_HANDLE) ||
+			 (m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE))
 	{
 		programCollection.glslSources.add("vert") << glu::VertexSource(
 			"#version 450\n"
@@ -1875,16 +2183,52 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group, bool opti
 
 tcu::TestCaseGroup*	createPipelineLibraryTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, "graphics_library", "Tests verifying graphics pipeline libraries"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "graphics_library", "Tests verifying graphics pipeline libraries"));
 
 	addTestGroup(group.get(), "fast", "Tests graphics pipeline libraries linkage without optimization", addPipelineLibraryConfigurationsTests, false);
 	addTestGroup(group.get(), "optimize", "Tests graphics pipeline libraries linkage with optimization", addPipelineLibraryConfigurationsTests, true);
 
-	de::MovePtr<tcu::TestCaseGroup>	miscTests(new tcu::TestCaseGroup(testCtx, "misc", "Miscellaneous graphics pipeline library tests"));
-	miscTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "independent_pipeline_layout_sets_fast_linked",			{ MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED }));
-	miscTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "independent_pipeline_layout_sets_link_opt_union_handle",	{ MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE }));
-	miscTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "independent_pipeline_layout_sets_link_opt_null_handle",	{ MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_NULL_HANDLE }));
-	miscTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "compare_link_times",										{ MiscTestMode::COMPARE_LINK_TIMES }));
+	de::MovePtr<tcu::TestCaseGroup> miscTests(new tcu::TestCaseGroup(testCtx, "misc", "Miscellaneous graphics pipeline library tests"));
+
+	de::MovePtr<tcu::TestCaseGroup> independentLayoutSetsTests(new tcu::TestCaseGroup(testCtx, "independent_pipeline_layout_sets", ""));
+	independentLayoutSetsTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "fast_linked", { MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED, 0u, 0u }));
+	independentLayoutSetsTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "link_opt_union_handle", { MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE, 0u, 0u }));
+	independentLayoutSetsTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "link_opt_null_handle", { MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_NULL_HANDLE, 0u, 0u }));
+	miscTests->addChild(independentLayoutSetsTests.release());
+
+	de::MovePtr<tcu::TestCaseGroup> bindNullDescriptorCombinationsTests(new tcu::TestCaseGroup(testCtx, "bind_null_descriptor_set", ""));
+	const std::vector<const char*> bindNullDescriptorCombinations
+	{
+		// note: there will be as many descriptor sets layouts in pipeline layout as there are chcaracters in the case name;
+		// '0' represents unused descriptor set layout, '1' represents used one;
+		// location of first '1' represents index of layout used in vertex shader;
+		// if present second '1' represents index of layout used in fragment shader
+		"1",
+		"11",
+		"01",
+		"10",
+		"101",
+		"1010",
+		"1001"		// descriptor sets layouts for first pipeline part will be (&layoutA, NULL, NULL, NULL),
+					//									 for second pipeline part (NULL, NULL, NULL, &layoutB)
+	};
+	for (const char* name : bindNullDescriptorCombinations)
+	{
+		deUint32 layoutsCount	= static_cast<deUint32>(strlen(name));
+		deUint32 layoutsBits	= 0u;
+
+		// construct deUint32 with bits sets based on case name
+		for (deUint32 i = 0; i < layoutsCount; ++i)
+			layoutsBits |= (name[i] == '1') * (1 << (8 * sizeof(layoutsBits) - i - 1));
+
+		bindNullDescriptorCombinationsTests->addChild(new PipelineLibraryMiscTestCase(testCtx, name, { MiscTestMode::BIND_NULL_DESCRIPTOR_SET, layoutsCount, layoutsBits }));
+	}
+	miscTests->addChild(bindNullDescriptorCombinationsTests.release());
+
+	de::MovePtr<tcu::TestCaseGroup> timingTests(new tcu::TestCaseGroup(testCtx, "timing", ""));
+	timingTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "compare_link_times", { MiscTestMode::COMPARE_LINK_TIMES, 0u, 0u }));
+	miscTests->addChild(timingTests.release());
+
 	group->addChild(miscTests.release());
 
 	return group.release();
