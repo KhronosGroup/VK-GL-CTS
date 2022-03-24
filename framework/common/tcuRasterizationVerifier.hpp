@@ -92,6 +92,7 @@ struct LineSceneSpec
 	bool					isStrip;
 	bool					isSmooth;
 	bool					isRectangular;
+	bool					allowNonProjectedInterpolation;
 	bool					stippleEnable;
 	deUint32				stippleFactor;
 	deUint16				stipplePattern;
