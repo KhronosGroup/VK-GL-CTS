@@ -6761,6 +6761,7 @@ dEQP-VK.draw.renderpass.output_location.array.r8g8-uint-mediump
 dEQP-VK.draw.renderpass.output_location.array.r8g8-uint-mediump-output-uint
 dEQP-VK.draw.renderpass.output_location.shuffle.inputs-outputs
 dEQP-VK.draw.renderpass.output_location.shuffle.inputs-outputs-mod
+dEQP-VK.draw.renderpass.shader_invocation.helper_invocation
 dEQP-VK.draw.renderpass.ahb.triangle_list
 dEQP-VK.draw.renderpass.ahb.triangle_list_layers_3
 dEQP-VK.draw.renderpass.ahb.triangle_list_layers_5

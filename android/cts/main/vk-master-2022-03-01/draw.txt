@@ -5729,6 +5729,7 @@ dEQP-VK.draw.renderpass.depth_bias.depth_bias_triangle_list_point
 dEQP-VK.draw.renderpass.depth_bias.depth_bias_patch_list_tri_fill
 dEQP-VK.draw.renderpass.depth_bias.depth_bias_patch_list_tri_line
 dEQP-VK.draw.renderpass.depth_bias.depth_bias_patch_list_tri_point
+dEQP-VK.draw.renderpass.shader_invocation.helper_invocation
 dEQP-VK.draw.dynamic_rendering.concurrent.compute_and_triangle_list
 dEQP-VK.draw.dynamic_rendering.simple_draw.simple_draw_triangle_list
 dEQP-VK.draw.dynamic_rendering.simple_draw.simple_draw_triangle_strip

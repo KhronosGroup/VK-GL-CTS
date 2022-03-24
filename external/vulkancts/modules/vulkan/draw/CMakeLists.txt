@@ -18,6 +18,8 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawMultiExtTests.cpp
 	vktDrawShaderDrawParametersTests.hpp
 	vktDrawShaderDrawParametersTests.cpp
+	vktDrawShaderInvocationTests.hpp
+	vktDrawShaderInvocationTests.cpp
 	vktDrawShaderLayerTests.hpp
 	vktDrawShaderLayerTests.cpp
 	vktDrawShaderViewportIndexTests.hpp

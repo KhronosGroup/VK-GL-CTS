@@ -147,6 +147,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/draw/vktDrawOutputLocationTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawScissorTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawShaderDrawParametersTests.cpp \
+	external/vulkancts/modules/vulkan/draw/vktDrawShaderInvocationTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawShaderLayerTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawShaderViewportIndexTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawSimpleTest.cpp \

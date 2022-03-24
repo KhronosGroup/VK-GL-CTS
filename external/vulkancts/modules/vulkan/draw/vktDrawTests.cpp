@@ -32,6 +32,7 @@
 #include "vktTestGroupUtil.hpp"
 #include "vktBasicDrawTests.hpp"
 #include "vktDrawShaderDrawParametersTests.hpp"
+#include "vktDrawShaderInvocationTests.hpp"
 #include "vktDrawNegativeViewportHeightTests.hpp"
 #include "vktDrawInvertedDepthRangesTests.hpp"
 #include "vktDrawDifferingInterpolationTests.hpp"
@@ -86,6 +87,7 @@ void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, bool 
 		// amber tests - no support for dynamic rendering
 		group->addChild(createDepthBiasTests				(testCtx));
 		group->addChild(createOutputLocationTests			(testCtx));
+		group->addChild(createShaderInvocationTests			(testCtx));
 
 		// subpasses can't be translated to dynamic rendering
 		group->addChild(createAhbTests						(testCtx));
