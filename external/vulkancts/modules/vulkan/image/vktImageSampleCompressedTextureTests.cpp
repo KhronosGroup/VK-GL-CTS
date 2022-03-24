@@ -279,6 +279,12 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 																					.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 																					.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 3u));
 	const VkFormat					renderedImageFormat		= VK_FORMAT_R8G8B8A8_UNORM;
+	tcu::CompressedTexFormat		compressedFormat		(mapVkCompressedFormat(m_imageFormat));
+	IVec3							blockSize				= tcu::getBlockPixelSize(compressedFormat);
+
+	DE_ASSERT(blockSize.z() == 1);
+
+	IVec3							storageImageViewSize = imageSize / blockSize;
 
 	// Create a storage image. The first pipeline fills it with pure blue and the second pipeline
 	// uses it as a sampling source.
@@ -438,7 +444,7 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate (void)
 			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
 			vk.cmdPushConstants(*cmdBuffer, *computePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(deInt32), &pass);
 
-			vk.cmdDispatch(*cmdBuffer, WIDTH, HEIGHT, 1u);
+			vk.cmdDispatch(*cmdBuffer, storageImageViewSize.x(), storageImageViewSize.y(), 1u);
 
 			const auto barrier2 = makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
 														 VK_IMAGE_LAYOUT_GENERAL, storageImage.get(), imageSubresourceRange);
@@ -558,11 +564,6 @@ void SampleDrawnTextureTest::initPrograms (SourceCollections& programCollection)
 	std::string					bc3_red				= " uvec4(4294967295u, 4294967295u, 4160813056u, 0u);\n";
 	std::string					bc3_blue			= "uvec4(4294967295u, 4294967295u, 2031647, 0u);\n";
 
-	tcu::CompressedTexFormat	compressedFormat	(mapVkCompressedFormat(m_imageFormat));
-	IVec3						blockSize			= tcu::getBlockPixelSize(compressedFormat);
-
-	DE_ASSERT(blockSize.z() == 1);
-
 	std::ostringstream			computeSrc;
 	computeSrc
 		<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
@@ -592,11 +593,7 @@ void SampleDrawnTextureTest::initPrograms (SourceCollections& programCollection)
 			computeSrc << "    }\n";
 		}
 		computeSrc
-		<< "    for (int x = 0; x < " << WIDTH / blockSize << "; x++) {\n"
-		<< "        for (int y = 0; y < " << HEIGHT / blockSize << "; y++) {\n"
-		<< "            imageStore(img, ivec2(x, y), color);\n"
-		<< "        }\n"
-		<< "    }\n"
+		<< "	imageStore(img, ivec2(gl_GlobalInvocationID.xy), color);\n"
 		<< "}\n";
 
 	std::ostringstream			vertexSrc;
