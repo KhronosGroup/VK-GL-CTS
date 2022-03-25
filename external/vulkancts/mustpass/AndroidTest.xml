@@ -20,20 +20,26 @@
 		<option name="cleanup-apks" value="true"/>
 		<option name="test-file-name" value="com.drawelements.deqp.apk"/>
 	</target_preparer>
+	<target_preparer class="com.android.compatibility.common.tradefed.targetprep.IncrementalDeqpPreparer">
+		<option name="disable" value="true"/>
+	</target_preparer>
 	<option name="test-suite-tag" value="cts"/>
 	<option key="component" name="config-descriptor:metadata" value="deqp"/>
 	<option key="parameter" name="config-descriptor:metadata" value="not_instant_app"/>
 	<option key="parameter" name="config-descriptor:metadata" value="multi_abi"/>
 	<option key="parameter" name="config-descriptor:metadata" value="secondary_user"/>
+	<option key="parameter" name="config-descriptor:metadata" value="no_foldable_states"/>
 	<object class="com.android.tradefed.testtype.suite.module.TestFailureModuleController" type="module_controller">
 		<option name="screenshot-on-failure" value="false"/>
 	</object>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-VK"/>
 		<option name="deqp-caselist-file" value="vk-default.txt"/>
+		<option name="incremental-deqp-include-file" value="vk-incremental-deqp.txt"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-VK"/>
 		<option name="deqp-caselist-file" value="vk-fraction-mandatory-tests.txt"/>
+		<option name="incremental-deqp-include-file" value="vk-incremental-deqp.txt"/>
 	</test>
 </configuration>
