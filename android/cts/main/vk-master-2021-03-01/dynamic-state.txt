@@ -1,5 +1,3 @@
-dEQP-VK.dynamic_state.rs_state.nonzero_depth_bias_constant
-dEQP-VK.dynamic_state.rs_state.nonzero_depth_bias_clamp
 dEQP-VK.dynamic_state.compute_transfer.single.compute.viewport.before
 dEQP-VK.dynamic_state.compute_transfer.single.compute.viewport.after
 dEQP-VK.dynamic_state.compute_transfer.single.compute.scissor.before

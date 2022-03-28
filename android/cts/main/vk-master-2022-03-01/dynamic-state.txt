@@ -1,0 +1,2 @@
+dEQP-VK.dynamic_state.rs_state.nonzero_depth_bias_constant
+dEQP-VK.dynamic_state.rs_state.nonzero_depth_bias_clamp
