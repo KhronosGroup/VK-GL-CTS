@@ -820,6 +820,8 @@ struct Resource
 
 struct BindingInterface
 {
+	virtual ~BindingInterface () {}
+
 	// Minimum number of iterations to test all mutable types.
 	virtual deUint32 maxTypes () const = 0;
 
