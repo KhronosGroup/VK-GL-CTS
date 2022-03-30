@@ -96,7 +96,7 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 	{
 		VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 		(validationEnabled ? &callbackInfo : nullptr),
-		(VkInstanceCreateFlags)0,
+		(VkInstanceCreateFlags)(portability_enumeration_available ? VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR : 0),
 		&appInfo,
 		(deUint32)layerNamePtrs.size(),
 		(validationEnabled ? layerNamePtrs.data() : nullptr),
