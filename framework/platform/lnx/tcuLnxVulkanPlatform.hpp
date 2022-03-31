@@ -38,7 +38,7 @@ class VulkanPlatform : public vk::Platform
 public:
 						VulkanPlatform		(EventState& eventState);
 	vk::wsi::Display*	createWsiDisplay	(vk::wsi::Type wsiType) const;
-	vk::Library*		createLibrary		(const char* libraryPath) const;
+	vk::Library*		createLibrary		(LibraryType libraryType = LIBRARY_TYPE_VULKAN, const char* libraryPath = DE_NULL) const;
 	bool				hasDisplay			(vk::wsi::Type wsiType) const;
 	void				describePlatform	(std::ostream& dst) const;
 

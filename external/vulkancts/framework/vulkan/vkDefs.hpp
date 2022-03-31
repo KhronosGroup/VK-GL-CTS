@@ -66,6 +66,9 @@ struct NAME {											\
 #define VK_CHECK_MSG(EXPR, MSG)					vk::checkResult((EXPR), MSG, __FILE__, __LINE__)
 #define VK_CHECK_WSI(EXPR)						vk::checkWsiResult((EXPR), #EXPR, __FILE__, __LINE__)
 
+#define VK_MAKE_VIDEO_STD_VERSION(major, minor, patch) \
+    ((((deUint32)(major)) << 22) | (((deUint32)(minor)) << 12) | ((deUint32)(patch)))
+
 /*--------------------------------------------------------------------*//*!
  * \brief Vulkan utilities
  *//*--------------------------------------------------------------------*/
@@ -188,6 +191,8 @@ typedef VKAPI_ATTR VkBool32	(VKAPI_CALL* PFN_vkDebugReportCallbackEXT)			(VkDebu
 																				 const char*				pLayerPrefix,
 																				 const char*				pMessage,
 																				 void*						pUserData);
+
+typedef VKAPI_ATTR PFN_vkVoidFunction (VKAPI_CALL* PFN_vkGetInstanceProcAddrLUNARG)	(VkInstance instance, const char pName);
 
 #endif // CTS_USES_VULKANSC
 

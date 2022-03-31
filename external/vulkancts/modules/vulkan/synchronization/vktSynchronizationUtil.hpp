@@ -33,6 +33,7 @@
 #include "deMutex.hpp"
 #include <memory>
 #include "vkResourceInterface.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 namespace vkt
 {
@@ -337,6 +338,10 @@ vk::VkCommandBufferSubmitInfoKHR	makeCommonCommandBufferSubmitInfo			(const vk::
 vk::VkSemaphoreSubmitInfoKHR		makeCommonSemaphoreSubmitInfo				(vk::VkSemaphore semaphore, deUint64 value, vk::VkPipelineStageFlags2KHR stageMask);
 vk::VkDependencyInfoKHR				makeCommonDependencyInfo					(const vk::VkMemoryBarrier2KHR* pMemoryBarrier = DE_NULL, const vk::VkBufferMemoryBarrier2KHR* pBufferMemoryBarrier = DE_NULL, const vk::VkImageMemoryBarrier2KHR* pImageMemoryBarrier = DE_NULL, bool eventDependency = DE_FALSE);
 
+vk::VkDevice						getSyncDevice								(de::MovePtr<VideoDevice>& device, Context& context);
+const vk::DeviceInterface&			getSyncDeviceInterface						(de::MovePtr<VideoDevice>& device, Context& context);
+deUint32							getSyncQueueFamilyIndex						(de::MovePtr<VideoDevice>& device, Context& context);
+vk::VkQueue							getSyncQueue								(de::MovePtr<VideoDevice>& device, Context& context);
 } // synchronization
 } // vkt
 

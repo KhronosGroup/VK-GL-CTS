@@ -1566,12 +1566,12 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_REFERENCE_LISTS_INFO_EXT:							return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_REFERENCE_LISTS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_INFO_EXT:								return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_LAYER_INFO_EXT:						return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_LAYER_INFO_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PICTURE_INFO_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PICTURE_INFO_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_CREATE_INFO_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_ADD_INFO_EXT:					return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_ADD_INFO_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_DPB_SLOT_INFO_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_DPB_SLOT_INFO_EXT";
+		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PICTURE_INFO_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PICTURE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_CREATE_INFO_KHR:				return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_ADD_INFO_KHR:					return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_ADD_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_DPB_SLOT_INFO_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_DPB_SLOT_INFO_KHR";
 		case VK_STRUCTURE_TYPE_TEXTURE_LOD_GATHER_FORMAT_PROPERTIES_AMD:							return "VK_STRUCTURE_TYPE_TEXTURE_LOD_GATHER_FORMAT_PROPERTIES_AMD";
 		case VK_STRUCTURE_TYPE_RENDERING_INFO:														return "VK_STRUCTURE_TYPE_RENDERING_INFO";
 		case VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO:											return "VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO";
@@ -1832,12 +1832,12 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PIPELINE_COMPILER_CONTROL_CREATE_INFO_AMD:							return "VK_STRUCTURE_TYPE_PIPELINE_COMPILER_CONTROL_CREATE_INFO_AMD";
 		case VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT:										return "VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD";
-		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_CAPABILITIES_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_CAPABILITIES_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_CREATE_INFO_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_ADD_INFO_EXT:					return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_ADD_INFO_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_INFO_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_INFO_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PICTURE_INFO_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PICTURE_INFO_EXT";
-		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_DPB_SLOT_INFO_EXT:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_DPB_SLOT_INFO_EXT";
+		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_CAPABILITIES_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_CAPABILITIES_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_CREATE_INFO_KHR:				return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_ADD_INFO_KHR:					return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_ADD_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_INFO_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PICTURE_INFO_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PICTURE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_DPB_SLOT_INFO_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_DPB_SLOT_INFO_KHR";
 		case VK_STRUCTURE_TYPE_DEVICE_MEMORY_OVERALLOCATION_CREATE_INFO_AMD:						return "VK_STRUCTURE_TYPE_DEVICE_MEMORY_OVERALLOCATION_CREATE_INFO_AMD";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT:					return "VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT";
@@ -1941,6 +1941,15 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR:									return "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR:						return "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT:											return "VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT";
+		case VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT:							return "VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT";
+		case VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_COMPATIBILITY_EXT:								return "VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_COMPATIBILITY_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT:									return "VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODE_INFO_EXT:										return "VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_RELEASE_SWAPCHAIN_IMAGES_INFO_EXT:									return "VK_STRUCTURE_TYPE_RELEASE_SWAPCHAIN_IMAGES_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_GRAPHICS_SHADER_GROUP_CREATE_INFO_NV:								return "VK_STRUCTURE_TYPE_GRAPHICS_SHADER_GROUP_CREATE_INFO_NV";
@@ -2157,6 +2166,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_CONTROL_EXT:									return "VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_CONTROL_EXT";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_FEEDBACK_CREATE_INFO_EXT:						return "VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_FEEDBACK_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_SUBPASS_FEEDBACK_CREATE_INFO_EXT:						return "VK_STRUCTURE_TYPE_RENDER_PASS_SUBPASS_FEEDBACK_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_DIRECT_DRIVER_LOADING_INFO_LUNARG:									return "VK_STRUCTURE_TYPE_DIRECT_DRIVER_LOADING_INFO_LUNARG";
+		case VK_STRUCTURE_TYPE_DIRECT_DRIVER_LOADING_LIST_LUNARG:									return "VK_STRUCTURE_TYPE_DIRECT_DRIVER_LOADING_LIST_LUNARG";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_MODULE_IDENTIFIER_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_MODULE_IDENTIFIER_CREATE_INFO_EXT";
@@ -2174,6 +2185,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM:												return "VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC";
 		case VK_STRUCTURE_TYPE_AMIGO_PROFILING_SUBMIT_INFO_SEC:										return "VK_STRUCTURE_TYPE_AMIGO_PROFILING_SUBMIT_INFO_SEC";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_VIEWPORTS_FEATURES_QCOM:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_VIEWPORTS_FEATURES_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM";
@@ -3450,6 +3462,16 @@ tcu::Format::Bitfield<64> getMemoryDecompressionMethodFlagsNVStr (VkMemoryDecomp
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+const char* getDirectDriverLoadingModeLUNARGName (VkDirectDriverLoadingModeLUNARG value)
+{
+	switch (value)
+	{
+		case VK_DIRECT_DRIVER_LOADING_MODE_EXCLUSIVE_LUNARG:	return "VK_DIRECT_DRIVER_LOADING_MODE_EXCLUSIVE_LUNARG";
+		case VK_DIRECT_DRIVER_LOADING_MODE_INCLUSIVE_LUNARG:	return "VK_DIRECT_DRIVER_LOADING_MODE_INCLUSIVE_LUNARG";
+		default:												return DE_NULL;
+	}
+}
+
 const char* getColorSpaceKHRName (VkColorSpaceKHR value)
 {
 	switch (value)
@@ -3850,6 +3872,7 @@ tcu::Format::Bitfield<32> getSwapchainCreateFlagsKHRStr (VkSwapchainCreateFlagsK
 		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR,	"VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR"),
 		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR,						"VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR"),
 		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR,				"VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_EXT,	"VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4119,6 +4142,28 @@ const char* getDeviceFaultAddressTypeEXTName (VkDeviceFaultAddressTypeEXT value)
 	}
 }
 
+tcu::Format::Bitfield<32> getPresentScalingFlagsEXTStr (VkPresentScalingFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_PRESENT_SCALING_ONE_TO_ONE_BIT_EXT,				"VK_PRESENT_SCALING_ONE_TO_ONE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PRESENT_SCALING_ASPECT_RATIO_STRETCH_BIT_EXT,	"VK_PRESENT_SCALING_ASPECT_RATIO_STRETCH_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PRESENT_SCALING_STRETCH_BIT_EXT,				"VK_PRESENT_SCALING_STRETCH_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getPresentGravityFlagsEXTStr (VkPresentGravityFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_PRESENT_GRAVITY_MIN_BIT_EXT,		"VK_PRESENT_GRAVITY_MIN_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PRESENT_GRAVITY_MAX_BIT_EXT,		"VK_PRESENT_GRAVITY_MAX_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PRESENT_GRAVITY_CENTERED_BIT_EXT,	"VK_PRESENT_GRAVITY_CENTERED_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 const char* getVendorIdName (VkVendorId value)
 {
 	switch (value)
@@ -4214,8 +4259,8 @@ tcu::Format::Bitfield<32> getVideoCodecOperationFlagsKHRStr (VkVideoCodecOperati
 	static const tcu::Format::BitDesc s_desc[] =
 	{
 		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_NONE_KHR,				"VK_VIDEO_CODEC_OPERATION_NONE_KHR"),
-		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT,	"VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT"),
-		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_EXT,	"VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR,	"VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR,	"VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT,	"VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT,	"VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT"),
 	};
@@ -4310,13 +4355,13 @@ tcu::Format::Bitfield<32> getVideoDecodeCapabilityFlagsKHRStr (VkVideoDecodeCapa
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getVideoDecodeH264PictureLayoutFlagsEXTStr (VkVideoDecodeH264PictureLayoutFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoDecodeH264PictureLayoutFlagsKHRStr (VkVideoDecodeH264PictureLayoutFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_EXT,						"VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_EXT"),
-		tcu::Format::BitDesc(VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_INTERLEAVED_LINES_BIT_EXT,	"VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_INTERLEAVED_LINES_BIT_EXT"),
-		tcu::Format::BitDesc(VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_SEPARATE_PLANES_BIT_EXT,	"VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_SEPARATE_PLANES_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_KHR,						"VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_INTERLEAVED_LINES_BIT_KHR,	"VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_INTERLEAVED_LINES_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_SEPARATE_PLANES_BIT_KHR,	"VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_SEPARATE_PLANES_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4958,6 +5003,11 @@ tcu::Format::Bitfield<32> getAccelerationStructureMotionInfoFlagsNVStr (VkAccele
 }
 
 tcu::Format::Bitfield<32> getAccelerationStructureMotionInstanceFlagsNVStr (VkAccelerationStructureMotionInstanceFlagsNV value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getDirectDriverLoadingFlagsLUNARGStr (VkDirectDriverLoadingFlagsLUNARG value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -13569,9 +13619,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoDecodeInfoKHR& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264ProfileInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264ProfileInfoKHR& value)
 {
-	s << "VkVideoDecodeH264ProfileInfoEXT = {\n";
+	s << "VkVideoDecodeH264ProfileInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tstdProfileIdc = " << value.stdProfileIdc << '\n';
@@ -13580,9 +13630,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264ProfileInfoEXT
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264CapabilitiesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264CapabilitiesKHR& value)
 {
-	s << "VkVideoDecodeH264CapabilitiesEXT = {\n";
+	s << "VkVideoDecodeH264CapabilitiesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmaxLevelIdc = " << value.maxLevelIdc << '\n';
@@ -13591,9 +13641,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264CapabilitiesEX
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264SessionParametersAddInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264SessionParametersAddInfoKHR& value)
 {
-	s << "VkVideoDecodeH264SessionParametersAddInfoEXT = {\n";
+	s << "VkVideoDecodeH264SessionParametersAddInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tstdSPSCount = " << value.stdSPSCount << '\n';
@@ -13604,9 +13654,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264SessionParamet
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264SessionParametersCreateInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264SessionParametersCreateInfoKHR& value)
 {
-	s << "VkVideoDecodeH264SessionParametersCreateInfoEXT = {\n";
+	s << "VkVideoDecodeH264SessionParametersCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmaxStdSPSCount = " << value.maxStdSPSCount << '\n';
@@ -13616,9 +13666,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264SessionParamet
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264PictureInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264PictureInfoKHR& value)
 {
-	s << "VkVideoDecodeH264PictureInfoEXT = {\n";
+	s << "VkVideoDecodeH264PictureInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpStdPictureInfo = " << value.pStdPictureInfo << '\n';
@@ -13628,9 +13678,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264PictureInfoEXT
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264DpbSlotInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264DpbSlotInfoKHR& value)
 {
-	s << "VkVideoDecodeH264DpbSlotInfoEXT = {\n";
+	s << "VkVideoDecodeH264DpbSlotInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpStdReferenceInfo = " << value.pStdReferenceInfo << '\n';
@@ -13638,9 +13688,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH264DpbSlotInfoEXT
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265ProfileInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265ProfileInfoKHR& value)
 {
-	s << "VkVideoDecodeH265ProfileInfoEXT = {\n";
+	s << "VkVideoDecodeH265ProfileInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tstdProfileIdc = " << value.stdProfileIdc << '\n';
@@ -13648,9 +13698,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265ProfileInfoEXT
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265CapabilitiesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265CapabilitiesKHR& value)
 {
-	s << "VkVideoDecodeH265CapabilitiesEXT = {\n";
+	s << "VkVideoDecodeH265CapabilitiesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmaxLevelIdc = " << value.maxLevelIdc << '\n';
@@ -13658,9 +13708,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265CapabilitiesEX
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265SessionParametersAddInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265SessionParametersAddInfoKHR& value)
 {
-	s << "VkVideoDecodeH265SessionParametersAddInfoEXT = {\n";
+	s << "VkVideoDecodeH265SessionParametersAddInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tstdVPSCount = " << value.stdVPSCount << '\n';
@@ -13673,9 +13723,9 @@ std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265SessionParamet
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265SessionParametersCreateInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265SessionParametersCreateInfoKHR& value)
 {
-	s << "VkVideoDecodeH265SessionParametersCreateInfoEXT = {\n";
+	s << "VkVideoDecodeH265SessionParametersCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmaxStdVPSCount = " << value.maxStdVPSCount << '\n';
@@ -13686,21 +13736,21 @@ std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265SessionParamet
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265PictureInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265PictureInfoKHR& value)
 {
-	s << "VkVideoDecodeH265PictureInfoEXT = {\n";
+	s << "VkVideoDecodeH265PictureInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpStdPictureInfo = " << value.pStdPictureInfo << '\n';
-	s << "\tsliceCount = " << value.sliceCount << '\n';
-	s << "\tpSliceOffsets = " << value.pSliceOffsets << '\n';
+	s << "\tsliceSegmentCount = " << value.sliceSegmentCount << '\n';
+	s << "\tpSliceSegmentOffsets = " << value.pSliceSegmentOffsets << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265DpbSlotInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVideoDecodeH265DpbSlotInfoKHR& value)
 {
-	s << "VkVideoDecodeH265DpbSlotInfoEXT = {\n";
+	s << "VkVideoDecodeH265DpbSlotInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpStdReferenceInfo = " << value.pStdReferenceInfo << '\n';
@@ -15955,6 +16005,108 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderCoreBuilt
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkSurfacePresentModeEXT& value)
+{
+	s << "VkSurfacePresentModeEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpresentMode = " << value.presentMode << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSurfacePresentScalingCapabilitiesEXT& value)
+{
+	s << "VkSurfacePresentScalingCapabilitiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsupportedPresentScaling = " << getPresentScalingFlagsEXTStr(value.supportedPresentScaling) << '\n';
+	s << "\tsupportedPresentGravityX = " << getPresentGravityFlagsEXTStr(value.supportedPresentGravityX) << '\n';
+	s << "\tsupportedPresentGravityY = " << getPresentGravityFlagsEXTStr(value.supportedPresentGravityY) << '\n';
+	s << "\tminScaledImageExtent = " << value.minScaledImageExtent << '\n';
+	s << "\tmaxScaledImageExtent = " << value.maxScaledImageExtent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSurfacePresentModeCompatibilityEXT& value)
+{
+	s << "VkSurfacePresentModeCompatibilityEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpresentModeCount = " << value.presentModeCount << '\n';
+	s << "\tpPresentModes = " << value.pPresentModes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tswapchainMaintenance1 = " << value.swapchainMaintenance1 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSwapchainPresentFenceInfoEXT& value)
+{
+	s << "VkSwapchainPresentFenceInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tswapchainCount = " << value.swapchainCount << '\n';
+	s << "\tpFences = " << value.pFences << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSwapchainPresentModesCreateInfoEXT& value)
+{
+	s << "VkSwapchainPresentModesCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpresentModeCount = " << value.presentModeCount << '\n';
+	s << "\tpPresentModes = " << value.pPresentModes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSwapchainPresentModeInfoEXT& value)
+{
+	s << "VkSwapchainPresentModeInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tswapchainCount = " << value.swapchainCount << '\n';
+	s << "\tpPresentModes = " << value.pPresentModes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSwapchainPresentScalingCreateInfoEXT& value)
+{
+	s << "VkSwapchainPresentScalingCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tscalingBehavior = " << getPresentScalingFlagsEXTStr(value.scalingBehavior) << '\n';
+	s << "\tpresentGravityX = " << getPresentGravityFlagsEXTStr(value.presentGravityX) << '\n';
+	s << "\tpresentGravityY = " << getPresentGravityFlagsEXTStr(value.presentGravityY) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkReleaseSwapchainImagesInfoEXT& value)
+{
+	s << "VkReleaseSwapchainImagesInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tswapchain = " << value.swapchain << '\n';
+	s << "\timageIndexCount = " << value.imageIndexCount << '\n';
+	s << "\tpImageIndices = " << value.pImageIndices << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV& value)
 {
 	s << "VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV = {\n";
@@ -15971,6 +16123,39 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayTracingInvoc
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\trayTracingInvocationReorderReorderingHint = " << value.rayTracingInvocationReorderReorderingHint << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDirectDriverLoadingInfoLUNARG& value)
+{
+	s << "VkDirectDriverLoadingInfoLUNARG = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getDirectDriverLoadingFlagsLUNARGStr(value.flags) << '\n';
+	s << "\tpfnGetInstanceProcAddr = " << value.pfnGetInstanceProcAddr << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDirectDriverLoadingListLUNARG& value)
+{
+	s << "VkDirectDriverLoadingListLUNARG = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmode = " << value.mode << '\n';
+	s << "\tdriverCount = " << value.driverCount << '\n';
+	s << "\tpDrivers = " << value.pDrivers << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM& value)
+{
+	s << "VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmultiviewPerViewViewports = " << value.multiviewPerViewViewports << '\n';
 	s << '}';
 	return s;
 }

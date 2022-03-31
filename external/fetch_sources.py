@@ -24,6 +24,7 @@ import os
 import sys
 import shutil
 import tarfile
+import zipfile
 import hashlib
 import argparse
 import subprocess
@@ -51,9 +52,9 @@ class Source:
 	def clean (self):
 		fullDstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
 		# Remove read-only first
-		readonlydir = os.path.join(fullDstPath, ".git", "objects", "pack")
+		readonlydir = os.path.join(fullDstPath, ".git")
 		if os.path.exists(readonlydir):
-			shutil.rmtree(readonlydir, onerror = onReadonlyRemoveError )
+			shutil.rmtree(readonlydir, onerror = onReadonlyRemoveError)
 		if os.path.exists(fullDstPath):
 			shutil.rmtree(fullDstPath, ignore_errors=False)
 
@@ -65,6 +66,12 @@ class SourcePackage (Source):
 		self.checksum		= checksum
 		self.archiveDir		= "packages"
 		self.postExtract	= postExtract
+
+		if ("FFmpeg" in url):
+			ndx = {"Windows":0, "Linux":1}[platform.system()]
+			self.url = self.url.split()[ndx]
+			self.checksum =	self.checksum.split()[ndx]
+			self.filename =	self.filename.split()[ndx]
 
 	def clean (self):
 		Source.clean(self)
@@ -145,7 +152,11 @@ class SourcePackage (Source):
 		srcPath	= os.path.join(EXTERNAL_DIR, self.baseDir, self.archiveDir, self.filename)
 		tmpPath	= os.path.join(EXTERNAL_DIR, ".extract-tmp-%s" % self.baseDir)
 		dstPath	= os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
-		archive	= tarfile.open(srcPath)
+
+		if self.filename.endswith(".zip"):
+			archive	= zipfile.ZipFile(srcPath)
+		else:
+			archive	= tarfile.open(srcPath)
 
 		if os.path.exists(tmpPath):
 			shutil.rmtree(tmpPath, ignore_errors=False)
@@ -291,6 +302,11 @@ PACKAGES = [
 		"c9d164ec247f426a525a7b89936694aefbc91fb7a50182b198898b8fc91174b4",
 		"libpng",
 		postExtract = postExtractLibpng),
+	SourcePackage(
+		"http://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2021-05-31-13-09/ffmpeg-N-102631-gbaf5cc5b7a-win64-lgpl-shared.zip https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2021-05-31-13-09/ffmpeg-N-102631-gbaf5cc5b7a-linux64-lgpl-shared.tar.xz",
+		"ffmpeg-N-102631-gbaf5cc5b7a-win64-lgpl-shared.zip ffmpeg-N-102631-gbaf5cc5b7a-linux64-lgpl-shared.tar.xz",
+		"9c1855b066d75de6ea6b2c3bb2c1cb87d3bd51dee056adfdcb00e4eaa1e437ad 22454a9a9639898171351b07b6f6c17288249596f96a28b7da67823988a316f9",
+		"ffmpeg"),
 	SourceFile(
 		"https://raw.githubusercontent.com/baldurk/renderdoc/v1.1/renderdoc/api/app/renderdoc_app.h",
 		"renderdoc_app.h",
@@ -315,7 +331,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/Vulkan-Docs.git",
 		"git@github.com:KhronosGroup/Vulkan-Docs.git",
-		"d4987d251a1f63f184ea6ed9b20f5125cfd6a2d5",
+		"9a2e576a052a1e65a5d41b593e693ff02745604b",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",
@@ -327,6 +343,11 @@ PACKAGES = [
 		"git@github.com:open-source-parsers/jsoncpp.git",
 		"9059f5cad030ba11d37818847443a53918c327b1",
 		"jsoncpp"),
+	GitRepo(
+		"https://github.com/nvpro-samples/vk_video_samples.git",
+		None,
+		"68398ce672fb3b331ee6c998392951bba37e7e4d",
+		"video-parser"),
 ]
 
 def parseArgs ():
@@ -356,11 +377,34 @@ def parseArgs ():
 
 	return args
 
-if __name__ == "__main__":
-	args = parseArgs()
+def run(*popenargs, **kwargs):
+	process = subprocess.Popen(*popenargs, **kwargs)
 
-	for pkg in PACKAGES:
-		if args.clean:
-			pkg.clean()
-		else:
-			pkg.update(args.protocol, args.force)
+	try:
+		stdout, stderr = process.communicate(None)
+	except:
+		process.kill()
+		process.wait()
+		raise
+
+	retcode = process.poll()
+
+	if retcode:
+		raise subprocess.CalledProcessError(retcode, process.args, output=stdout, stderr=stderr)
+
+	return retcode, stdout, stderr
+
+if __name__ == "__main__":
+	# Rerun script with python3 as python2 does not have lzma (xz) decompression support
+	if sys.version_info < (3, 0):
+		cmd = {"Windows": ['py', '-3'], "Linux": ['python3']}[platform.system()]
+		cmd = cmd + sys.argv
+		run(cmd)
+	else:
+		args = parseArgs()
+
+		for pkg in PACKAGES:
+			if args.clean:
+				pkg.clean()
+			else:
+				pkg.update(args.protocol, args.force)

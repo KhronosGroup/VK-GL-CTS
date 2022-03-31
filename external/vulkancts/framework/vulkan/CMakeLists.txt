@@ -12,6 +12,7 @@ else()
 	set(VKRENDERDOC_SRC vkNoRenderDocUtil.cpp)
 endif(HAVE_RENDERDOC_APP_H)
 
+
 # Build inl files
 set(DEQP_VULKAN_INL_GEN_INPUT ${PROJECT_SOURCE_DIR}/external/vulkan-docs/src/xml/vk.xml)
 set(DEQP_VULKAN_INL_GEN_OUTPUTS_DIR ${PROJECT_SOURCE_DIR}/external/vulkancts/framework/vulkan)
@@ -227,6 +228,8 @@ PCH(VKUTILNOSHADER_INLS ../../modules/vulkan/pch.cpp)
 PCH(VKSCUTILNOSHADER_INLS ../../modules/vulkan/pch.cpp)
 
 add_library(vkutilnoshader STATIC ${VKUTILNOSHADER_SRCS} ${VKUTILNOSHADER_INLS})
+
+
 target_compile_definitions(vkutilnoshader PUBLIC CTS_USES_VULKAN)
 target_link_libraries(vkutilnoshader PUBLIC ${VKUTILNOSHADER_LIBS})
 add_dependencies(vkutilnoshader deqp-vk-inl)
@@ -266,3 +269,4 @@ add_library(vkscutil STATIC ${VKUTIL_SRCS})
 target_include_directories(vkscutil BEFORE PUBLIC generated/vulkansc)
 target_include_directories(vkscutil PUBLIC ${GLSLANG_INCLUDE_PATH} ${spirv-tools_SOURCE_DIR}/include ${spirv-tools_SOURCE_DIR}/external/include )
 target_link_libraries(vkscutil PUBLIC vkscutilnoshader ${GLSLANG_LIBRARIES} SPIRV-Tools SPIRV-Tools-opt)
+

@@ -587,6 +587,14 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/util/vktDrawUtil.cpp \
 	external/vulkancts/modules/vulkan/util/vktExternalMemoryUtil.cpp \
 	external/vulkancts/modules/vulkan/util/vktTypeComparisonUtil.cpp \
+	external/vulkancts/modules/vulkan/video/vktVideoBaseDecodeUtils.cpp \
+	external/vulkancts/modules/vulkan/video/vktVideoCapabilitiesTests.cpp \
+	external/vulkancts/modules/vulkan/video/vktVideoDecodeTests.cpp \
+	external/vulkancts/modules/vulkan/video/vktVideoPictureUtils.cpp \
+	external/vulkancts/modules/vulkan/video/vktVideoSessionFfmpegUtils.cpp \
+	external/vulkancts/modules/vulkan/video/vktVideoSessionNvUtils.cpp \
+	external/vulkancts/modules/vulkan/video/vktVideoTestUtils.cpp \
+	external/vulkancts/modules/vulkan/video/vktVideoTests.cpp \
 	external/vulkancts/modules/vulkan/vktCustomInstancesDevices.cpp \
 	external/vulkancts/modules/vulkan/vktInfoTests.cpp \
 	external/vulkancts/modules/vulkan/vktShaderLibrary.cpp \
@@ -1365,6 +1373,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/transform_feedback \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ubo \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/util \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/video \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/wsi \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ycbcr \
 	$(deqp_dir)/external/vulkancts/vkscpc \

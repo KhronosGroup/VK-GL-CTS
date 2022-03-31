@@ -669,9 +669,10 @@ class API:
 				structMembers
 			))
 		elif category == "define":
-			if typeNode.get("requires") == "VK_MAKE_API_VERSION":
+			requires = typeNode.get("requires")
+			if requires == "VK_MAKE_API_VERSION" or requires == "VK_MAKE_VIDEO_STD_VERSION":
 				value = typeNode.find("type").tail
-				value = 'VK_MAKE_API_VERSION' + value[:value.find(')')+1]
+				value = requires + value[:value.find(')')+1]
 				self.defines.append(Define(
 					typeNode.find("name").text,
 					"uint32_t",
@@ -1694,8 +1695,9 @@ def writeTypeUtil (api, filename):
 			"StdVideoEncodeH265SliceSegmentHeaderFlags",
 			"StdVideoEncodeH265ReferenceModificationFlags",
 			"StdVideoEncodeH265ReferenceInfoFlags",
+			"StdVideoEncodeH265SliceSegmentHeaderFlags",
 			"StdVideoH265ProfileTierLevelFlags",
-			"StdVideoH265ShortTermRefPicSetFlags"
+			"StdVideoH265ShortTermRefPicSetFlags",
 		])
 
 	def isSimpleStruct (type):

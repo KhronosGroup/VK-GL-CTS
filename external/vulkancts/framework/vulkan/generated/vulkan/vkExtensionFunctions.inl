@@ -157,7 +157,7 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
-	if (extName == "VK_EXT_video_decode_h264")
+	if (extName == "VK_KHR_video_decode_h264")
 	{
 		return;
 	}
@@ -657,7 +657,7 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
-	if (extName == "VK_EXT_video_decode_h265")
+	if (extName == "VK_KHR_video_decode_h265")
 	{
 		return;
 	}
@@ -913,6 +913,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_shader_atomic_float2")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_surface_maintenance1")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_swapchain_maintenance1")
 	{
 		return;
 	}
@@ -1266,6 +1274,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_LUNARG_direct_driver_loading")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_module_identifier")
 	{
 		return;
@@ -1292,6 +1304,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_SEC_amigo_profiling")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_multiview_per_view_viewports")
 	{
 		return;
 	}
@@ -1502,7 +1518,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
-	if (extName == "VK_EXT_video_decode_h264")
+	if (extName == "VK_KHR_video_decode_h264")
 	{
 		return;
 	}
@@ -2072,7 +2088,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
-	if (extName == "VK_EXT_video_decode_h265")
+	if (extName == "VK_KHR_video_decode_h265")
 	{
 		return;
 	}
@@ -2353,6 +2369,15 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_EXT_shader_atomic_float2")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_surface_maintenance1")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_swapchain_maintenance1")
+	{
+		functions.push_back("vkReleaseSwapchainImagesEXT");
 		return;
 	}
 	if (extName == "VK_EXT_shader_demote_to_helper_invocation")
@@ -2787,6 +2812,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_LUNARG_direct_driver_loading")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_module_identifier")
 	{
 		functions.push_back("vkGetShaderModuleIdentifierEXT");
@@ -2820,6 +2849,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_SEC_amigo_profiling")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_multiview_per_view_viewports")
 	{
 		return;
 	}
@@ -2899,10 +2932,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_surface_protected_capabilities",
 	"VK_EXT_validation_features",
 	"VK_EXT_headless_surface",
+	"VK_EXT_surface_maintenance1",
 	"VK_EXT_acquire_drm_display",
 	"VK_QNX_screen_surface",
 	"VK_KHR_portability_enumeration",
 	"VK_GOOGLE_surfaceless_query",
+	"VK_LUNARG_direct_driver_loading",
 };
 
 ::std::string deviceExtensionNames[] =
@@ -2930,7 +2965,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_AMD_shader_ballot",
 	"VK_EXT_video_encode_h264",
 	"VK_EXT_video_encode_h265",
-	"VK_EXT_video_decode_h264",
+	"VK_KHR_video_decode_h264",
 	"VK_AMD_texture_gather_bias_lod",
 	"VK_AMD_shader_info",
 	"VK_KHR_dynamic_rendering",
@@ -3031,7 +3066,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_AMD_pipeline_compiler_control",
 	"VK_EXT_calibrated_timestamps",
 	"VK_AMD_shader_core_properties",
-	"VK_EXT_video_decode_h265",
+	"VK_KHR_video_decode_h265",
 	"VK_KHR_global_priority",
 	"VK_AMD_memory_overallocation_behavior",
 	"VK_EXT_vertex_attribute_divisor",
@@ -3089,6 +3124,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_deferred_host_operations",
 	"VK_KHR_pipeline_executable_properties",
 	"VK_EXT_shader_atomic_float2",
+	"VK_EXT_swapchain_maintenance1",
 	"VK_EXT_shader_demote_to_helper_invocation",
 	"VK_NV_device_generated_commands",
 	"VK_NV_inherited_viewport_scissor",
@@ -3178,6 +3214,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_pipeline_protected_access",
 	"VK_QCOM_tile_properties",
 	"VK_SEC_amigo_profiling",
+	"VK_QCOM_multiview_per_view_viewports",
 	"VK_NV_ray_tracing_invocation_reorder",
 	"VK_EXT_mutable_descriptor_type",
 	"VK_ARM_shader_core_builtins",

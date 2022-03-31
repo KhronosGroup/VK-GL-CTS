@@ -24,6 +24,7 @@
 #include "vktSynchronizationBasicEventTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktSynchronizationUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "vkDefs.hpp"
 #include "vkPlatform.hpp"
@@ -41,16 +42,20 @@ using namespace vk;
 #define SHORT_FENCE_WAIT	1000ull
 #define LONG_FENCE_WAIT		~0ull
 
+using vkt::synchronization::VideoCodecOperationFlags;
+
 struct TestConfig
 {
-	SynchronizationType		type;
-	VkEventCreateFlags		flags;
+	SynchronizationType			type;
+	VkEventCreateFlags			flags;
+	VideoCodecOperationFlags	videoCodecOperationFlags;
 };
 
 tcu::TestStatus hostResetSetEventCase (Context& context, TestConfig config)
 {
-	const DeviceInterface&		vk			= context.getDeviceInterface();
-	const VkDevice				device		= context.getDevice();
+	de::MovePtr<VideoDevice>	videoDevice	(config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : DE_NULL);
+	const VkDevice				device		= getSyncDevice(videoDevice, context);
+	const DeviceInterface&		vk			= getSyncDeviceInterface(videoDevice, context);
 	const VkEventCreateInfo		eventInfo	=
 											{
 												VK_STRUCTURE_TYPE_EVENT_CREATE_INFO,
@@ -87,10 +92,11 @@ tcu::TestStatus hostResetSetEventCase (Context& context, TestConfig config)
 
 tcu::TestStatus deviceResetSetEventCase (Context& context, TestConfig config)
 {
-	const DeviceInterface&				vk						= context.getDeviceInterface();
-	const VkDevice						device					= context.getDevice();
-	const VkQueue						queue					= context.getUniversalQueue();
-	const deUint32						queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+	de::MovePtr<VideoDevice>			videoDevice				(config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : DE_NULL);
+	const VkDevice						device					= getSyncDevice(videoDevice, context);
+	const DeviceInterface&				vk						= getSyncDeviceInterface(videoDevice, context);
+	const VkQueue						queue					= getSyncQueue(videoDevice, context);
+	const deUint32						queueFamilyIndex		= getSyncQueueFamilyIndex(videoDevice, context);
 	const Unique<VkCommandPool>			cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>		cmdBuffer				(makeCommandBuffer(vk, device, *cmdPool));
 	const Unique<VkEvent>				event					(createEvent(vk, device));
@@ -229,10 +235,11 @@ tcu::TestStatus eventSetResetNoneStage (Context& context, TestConfig)
 tcu::TestStatus singleSubmissionCase (Context& context, TestConfig config)
 {
 	enum {SET=0, WAIT, COUNT};
-	const DeviceInterface&			vk							= context.getDeviceInterface();
-	const VkDevice					device						= context.getDevice();
-	const VkQueue					queue						= context.getUniversalQueue();
-	const deUint32					queueFamilyIndex			= context.getUniversalQueueFamilyIndex();
+	de::MovePtr<VideoDevice>		videoDevice					(config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : DE_NULL);
+	const DeviceInterface&			vk							= getSyncDeviceInterface(videoDevice, context);
+	const VkDevice					device						= getSyncDevice(videoDevice, context);
+	const VkQueue					queue						= getSyncQueue(videoDevice, context);
+	const deUint32					queueFamilyIndex			= getSyncQueueFamilyIndex(videoDevice, context);
 	const Unique<VkFence>			fence						(createFence(vk, device));
 	const Unique<VkCommandPool>		cmdPool						(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Move<VkCommandBuffer>		ptrCmdBuffer[COUNT]			= { makeCommandBuffer(vk, device, *cmdPool), makeCommandBuffer(vk, device, *cmdPool) };
@@ -273,10 +280,11 @@ tcu::TestStatus singleSubmissionCase (Context& context, TestConfig config)
 tcu::TestStatus multiSubmissionCase(Context& context, TestConfig config)
 {
 	enum { SET = 0, WAIT, COUNT };
-	const DeviceInterface&			vk					= context.getDeviceInterface();
-	const VkDevice					device				= context.getDevice();
-	const VkQueue					queue				= context.getUniversalQueue();
-	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	de::MovePtr<VideoDevice>		videoDevice			(config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : DE_NULL);
+	const DeviceInterface&			vk					= getSyncDeviceInterface(videoDevice, context);
+	const VkDevice					device				= getSyncDevice(videoDevice, context);
+	const VkQueue					queue				= getSyncQueue(videoDevice, context);
+	const deUint32					queueFamilyIndex	= getSyncQueueFamilyIndex(videoDevice, context);
 	const Move<VkFence>				ptrFence[COUNT]		= { createFence(vk, device), createFence(vk, device) };
 	VkFence							fence[COUNT]		= { *ptrFence[SET], *ptrFence[WAIT] };
 	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
@@ -337,10 +345,11 @@ tcu::TestStatus multiSubmissionCase(Context& context, TestConfig config)
 tcu::TestStatus secondaryCommandBufferCase (Context& context, TestConfig config)
 {
 	enum {SET=0, WAIT, COUNT};
-	const DeviceInterface&					vk						= context.getDeviceInterface();
-	const VkDevice							device					= context.getDevice();
-	const VkQueue							queue					= context.getUniversalQueue();
-	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+	de::MovePtr<VideoDevice>				videoDevice				(config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : DE_NULL);
+	const DeviceInterface&					vk						= getSyncDeviceInterface(videoDevice, context);
+	const VkDevice							device					= getSyncDevice(videoDevice, context);
+	const VkQueue							queue					= getSyncQueue(videoDevice, context);
+	const deUint32							queueFamilyIndex		= getSyncQueueFamilyIndex(videoDevice, context);
 	const Unique<VkFence>					fence					(createFence(vk, device));
 	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Move<VkCommandBuffer>				primaryCmdBuffer		(makeCommandBuffer(vk, device, *cmdPool));
@@ -413,6 +422,9 @@ tcu::TestStatus secondaryCommandBufferCase (Context& context, TestConfig config)
 
 void checkSupport (Context& context, TestConfig config)
 {
+	if (config.videoCodecOperationFlags != 0)
+		VideoDevice::checkSupport(context, config.videoCodecOperationFlags);
+
 	if (config.type == SynchronizationType::SYNCHRONIZATION2)
 		context.requireDeviceFunctionality("VK_KHR_synchronization2");
 
@@ -425,21 +437,22 @@ void checkSupport (Context& context, TestConfig config)
 void checkSecondaryBufferSupport (Context& context, TestConfig config)
 {
 	checkSupport(context, config);
+
 #ifdef CTS_USES_VULKANSC
 	if (context.getDeviceVulkanSC10Properties().secondaryCommandBufferNullOrImagelessFramebuffer == VK_FALSE)
 		TCU_THROW(NotSupportedError, "secondaryCommandBufferNullFramebuffer is not supported");
 #endif // CTS_USES_VULKANSC
-
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createBasicEventTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createBasicEventTests (tcu::TestContext& testCtx, VideoCodecOperationFlags videoCodecOperationFlags)
 {
 	TestConfig config
 	{
 		SynchronizationType::LEGACY,
-		0U
+		0U,
+		videoCodecOperationFlags
 	};
 
 	de::MovePtr<tcu::TestCaseGroup> basicTests (new tcu::TestCaseGroup(testCtx, "event", "Basic event tests"));
@@ -448,17 +461,20 @@ tcu::TestCaseGroup* createBasicEventTests (tcu::TestContext& testCtx)
 	addFunctionCase(basicTests.get(), "device_set_reset", "Basic event tests set and reset on device", checkSupport, deviceResetSetEventCase, config);
 	addFunctionCase(basicTests.get(), "single_submit_multi_command_buffer", "Wait and set event single submission on device", checkSupport, singleSubmissionCase, config);
 	addFunctionCase(basicTests.get(), "multi_submit_multi_command_buffer", "Wait and set event mutli submission on device", checkSupport, multiSubmissionCase, config);
-	addFunctionCase(basicTests.get(), "multi_secondary_command_buffer", "Event used on secondary command buffer ", checkSecondaryBufferSupport, secondaryCommandBufferCase, config);
+	// Secondary command buffer does not apply to video queues and should not be a part of test plan
+	if (!videoCodecOperationFlags)
+		addFunctionCase(basicTests.get(), "multi_secondary_command_buffer", "Event used on secondary command buffer ", checkSecondaryBufferSupport, secondaryCommandBufferCase, config);
 
 	return basicTests.release();
 }
 
-tcu::TestCaseGroup* createSynchronization2BasicEventTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createSynchronization2BasicEventTests (tcu::TestContext& testCtx, VideoCodecOperationFlags videoCodecOperationFlags)
 {
 	TestConfig config
 	{
 		SynchronizationType::SYNCHRONIZATION2,
-		0U
+		0U,
+		videoCodecOperationFlags
 	};
 
 	de::MovePtr<tcu::TestCaseGroup> basicTests (new tcu::TestCaseGroup(testCtx, "event", "Basic event tests"));

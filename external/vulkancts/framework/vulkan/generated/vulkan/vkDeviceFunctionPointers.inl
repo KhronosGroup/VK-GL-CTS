@@ -451,3 +451,4 @@ DestroyOpticalFlowSessionNVFunc								destroyOpticalFlowSessionNV;
 BindOpticalFlowSessionImageNVFunc							bindOpticalFlowSessionImageNV;
 CmdOpticalFlowExecuteNVFunc									cmdOpticalFlowExecuteNV;
 GetDeviceFaultInfoEXTFunc									getDeviceFaultInfoEXT;
+ReleaseSwapchainImagesEXTFunc								releaseSwapchainImagesEXT;

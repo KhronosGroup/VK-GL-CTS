@@ -99,6 +99,14 @@ inline VkComponentMapping makeComponentMappingRGBA (void)
 								VK_COMPONENT_SWIZZLE_A);
 }
 
+inline VkComponentMapping makeComponentMappingIdentity (void)
+{
+	return makeComponentMapping(VK_COMPONENT_SWIZZLE_IDENTITY,
+								VK_COMPONENT_SWIZZLE_IDENTITY,
+								VK_COMPONENT_SWIZZLE_IDENTITY,
+								VK_COMPONENT_SWIZZLE_IDENTITY);
+}
+
 inline VkExtent3D makeExtent3D (const tcu::IVec3& vec)
 {
 	return makeExtent3D((deUint32)vec.x(), (deUint32)vec.y(), (deUint32)vec.z());
@@ -178,6 +186,19 @@ inline VkViewport makeViewport(const VkExtent2D& extent)
 inline VkViewport makeViewport(const deUint32 width, const deUint32 height)
 {
 	return makeViewport(0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f);
+}
+
+inline VkSemaphoreSubmitInfoKHR makeSemaphoreSubmitInfo (VkSemaphore semaphore, VkPipelineStageFlags2KHR stageMask, uint64_t value = 0, uint32_t deviceIndex = 0)
+{
+	return VkSemaphoreSubmitInfoKHR
+	{
+		VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR,	//  VkStructureType				sType;
+		DE_NULL,										//  const void*					pNext;
+		semaphore,										//  VkSemaphore					semaphore;
+		value,											//  uint64_t					value;
+		stageMask,										//  VkPipelineStageFlags2KHR	stageMask;
+		deviceIndex,									//  uint32_t					deviceIndex;
+	};
 }
 
 inline VkPrimitiveTopology primitiveTopologyCastToList (const VkPrimitiveTopology primitiveTopology)
