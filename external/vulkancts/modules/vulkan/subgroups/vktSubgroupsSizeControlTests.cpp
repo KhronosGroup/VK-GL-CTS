@@ -850,15 +850,18 @@ tcu::TestStatus testRequireSubgroupSize (Context& context, const CaseDefinition 
 		deUint32 localSizeX, localSizeY, localSizeZ;
 		getLocalSizes(physicalDeviceProperties, maxTotalLocalSize, localSizeX, localSizeY, localSizeZ);
 
-		const deUint32 localSizesToTestCount = 5;
-		deUint32 localSizesToTest[localSizesToTestCount][3] =
+		deUint32 localSizesToTest[5][3] =
 		{
+			{localSizeX, localSizeY, localSizeZ},
 			{requiredSubgroupSize, 1, 1},
 			{1, requiredSubgroupSize, 1},
 			{1, 1, requiredSubgroupSize},
-			{localSizeX, localSizeY, localSizeZ},
 			{1, 1, 1} // Isn't used, just here to make double buffering checks easier
 		};
+
+		deUint32 localSizesToTestCount = 5;
+		if (caseDef.pipelineShaderStageCreateFlags & VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT)
+			localSizesToTestCount = 3;
 
 		struct internalDataStruct internalData =
 		{
