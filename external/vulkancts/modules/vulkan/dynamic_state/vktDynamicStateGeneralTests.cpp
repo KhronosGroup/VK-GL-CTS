@@ -56,8 +56,8 @@ namespace
 class StateSwitchTestInstance : public DynamicStateBaseClass
 {
 public:
-	StateSwitchTestInstance (Context &context, ShaderMap shaders)
-		: DynamicStateBaseClass (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+	StateSwitchTestInstance (Context &context, vk::PipelineConstructionType pipelineConstructionType, ShaderMap shaders)
+		: DynamicStateBaseClass (context, pipelineConstructionType, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 	{
 		m_topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 
@@ -86,7 +86,7 @@ public:
 		setDynamicBlendState();
 		setDynamicDepthStencilState();
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.getPipeline());
 
 		const vk::VkDeviceSize vertexBufferOffset	= 0;
 		const vk::VkBuffer vertexBuffer				= m_vertexBuffer->object();
@@ -148,8 +148,8 @@ public:
 class BindOrderTestInstance : public DynamicStateBaseClass
 {
 public:
-	BindOrderTestInstance (Context& context, ShaderMap shaders)
-		: DynamicStateBaseClass (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+	BindOrderTestInstance (Context& context, vk::PipelineConstructionType pipelineConstructionType, ShaderMap shaders)
+		: DynamicStateBaseClass (context, pipelineConstructionType, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 	{
 		m_topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 
@@ -179,7 +179,7 @@ public:
 		setDynamicDepthStencilState();
 		setDynamicViewportState(1, &viewport, &scissor_1);
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.getPipeline());
 
 		const vk::VkDeviceSize vertexBufferOffset = 0;
 		const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
@@ -243,11 +243,12 @@ public:
 class StatePersistenceTestInstance : public DynamicStateBaseClass
 {
 protected:
-	vk::Move<vk::VkPipeline> m_pipelineAdditional;
+	vk::GraphicsPipelineWrapper	m_pipelineAdditional;
 
 public:
-	StatePersistenceTestInstance (Context& context, ShaderMap shaders)
-		: DynamicStateBaseClass (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+	StatePersistenceTestInstance (Context& context, vk::PipelineConstructionType pipelineConstructionType, ShaderMap shaders)
+		: DynamicStateBaseClass	(context, pipelineConstructionType, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+		, m_pipelineAdditional	(context.getDeviceInterface(), context.getDevice(), pipelineConstructionType)
 	{
 		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
 		m_data.push_back(PositionColorVertex(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
@@ -265,38 +266,46 @@ public:
 	}
 	virtual void initPipeline (const vk::VkDevice device)
 	{
-		// shaders
-		const vk::Unique<vk::VkShaderModule> vs (createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
-		const vk::Unique<vk::VkShaderModule> fs (createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
+		const vk::Unique<vk::VkShaderModule>	vs			(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
+		const vk::Unique<vk::VkShaderModule>	fs			(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
+		std::vector<vk::VkViewport>				viewports	{ { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } };
+		std::vector<vk::VkRect2D>				scissors	{ { { 0u, 0u }, { 0u, 0u } } };
 
-		const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
+		const PipelineCreateInfo::ColorBlendState::Attachment	attachmentState;
+		const PipelineCreateInfo::ColorBlendState				colorBlendState(1, static_cast<const vk::VkPipelineColorBlendAttachmentState*>(&attachmentState));
+		const PipelineCreateInfo::RasterizerState				rasterizerState;
+		const PipelineCreateInfo::DepthStencilState				depthStencilState;
+		const PipelineCreateInfo::DynamicState					dynamicState;
 
-		PipelineCreateInfo pipelineCreateInfo_1(*m_pipelineLayout, *m_renderPass, 0, 0);
-		pipelineCreateInfo_1.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
-		pipelineCreateInfo_1.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
-		pipelineCreateInfo_1.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
-		pipelineCreateInfo_1.addState(PipelineCreateInfo::InputAssemblerState(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
-		pipelineCreateInfo_1.addState(PipelineCreateInfo::ColorBlendState(1, &vkCbAttachmentState));
-		pipelineCreateInfo_1.addState(PipelineCreateInfo::ViewportState(1));
-		pipelineCreateInfo_1.addState(PipelineCreateInfo::DepthStencilState());
-		pipelineCreateInfo_1.addState(PipelineCreateInfo::RasterizerState());
-		pipelineCreateInfo_1.addState(PipelineCreateInfo::MultiSampleState());
-		pipelineCreateInfo_1.addState(PipelineCreateInfo::DynamicState());
+		m_pipeline.setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+				  .setDynamicState(static_cast<const vk::VkPipelineDynamicStateCreateInfo*>(&dynamicState))
+				  .setDefaultMultisampleState()
+				  .setupVertexInputStete(&m_vertexInputState)
+				  .setupPreRasterizationShaderState(viewports,
+													scissors,
+													*m_pipelineLayout,
+													*m_renderPass,
+													0u,
+													*vs,
+													static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState))
+				  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&depthStencilState))
+				  .setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState))
+				  .buildPipeline();
 
-		PipelineCreateInfo pipelineCreateInfo_2(*m_pipelineLayout, *m_renderPass, 0, 0);
-		pipelineCreateInfo_2.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
-		pipelineCreateInfo_2.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
-		pipelineCreateInfo_2.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
-		pipelineCreateInfo_2.addState(PipelineCreateInfo::InputAssemblerState(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
-		pipelineCreateInfo_2.addState(PipelineCreateInfo::ColorBlendState(1, &vkCbAttachmentState));
-		pipelineCreateInfo_2.addState(PipelineCreateInfo::ViewportState(1));
-		pipelineCreateInfo_2.addState(PipelineCreateInfo::DepthStencilState());
-		pipelineCreateInfo_2.addState(PipelineCreateInfo::RasterizerState());
-		pipelineCreateInfo_2.addState(PipelineCreateInfo::MultiSampleState());
-		pipelineCreateInfo_2.addState(PipelineCreateInfo::DynamicState());
-
-		m_pipeline = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo_1);
-		m_pipelineAdditional = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo_2);
+		m_pipelineAdditional.setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+				  .setDynamicState(static_cast<const vk::VkPipelineDynamicStateCreateInfo*>(&dynamicState))
+				  .setDefaultMultisampleState()
+				  .setupVertexInputStete(&m_vertexInputState)
+				  .setupPreRasterizationShaderState(viewports,
+													scissors,
+													*m_pipelineLayout,
+													*m_renderPass,
+													0u,
+													*vs,
+													static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState))
+				  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&depthStencilState))
+				  .setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState))
+				  .buildPipeline();
 	}
 
 	virtual tcu::TestStatus iterate(void)
@@ -316,7 +325,7 @@ public:
 		setDynamicBlendState();
 		setDynamicDepthStencilState();
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.getPipeline());
 
 		const vk::VkDeviceSize vertexBufferOffset = 0;
 		const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
@@ -327,7 +336,7 @@ public:
 		// draw quad using vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP
 		m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineAdditional);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineAdditional.getPipeline());
 
 		// bind second state
 		setDynamicViewportState(1, &viewport, &scissor_2);
@@ -380,8 +389,9 @@ public:
 
 } //anonymous
 
-DynamicStateGeneralTests::DynamicStateGeneralTests (tcu::TestContext& testCtx)
-	: TestCaseGroup (testCtx, "general_state", "General tests for dynamic states")
+DynamicStateGeneralTests::DynamicStateGeneralTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
+	: TestCaseGroup					(testCtx, "general_state", "General tests for dynamic states")
+	, m_pipelineConstructionType	(pipelineConstructionType)
 {
 	/* Left blank on purpose */
 }
@@ -394,9 +404,9 @@ void DynamicStateGeneralTests::init (void)
 	shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/dynamic_state/VertexFetch.vert";
 	shaderPaths[glu::SHADERTYPE_FRAGMENT] = "vulkan/dynamic_state/VertexFetch.frag";
 
-	addChild(new InstanceFactory<StateSwitchTestInstance>(m_testCtx, "state_switch", "Perform multiple draws with different VP states (scissor test)", shaderPaths));
-	addChild(new InstanceFactory<BindOrderTestInstance>(m_testCtx, "bind_order", "Check if binding order is not important for pipeline configuration", shaderPaths));
-	addChild(new InstanceFactory<StatePersistenceTestInstance>(m_testCtx, "state_persistence", "Check if bound states are persistent across pipelines", shaderPaths));
+	addChild(new InstanceFactory<StateSwitchTestInstance>(m_testCtx, "state_switch", "Perform multiple draws with different VP states (scissor test)", m_pipelineConstructionType, shaderPaths));
+	addChild(new InstanceFactory<BindOrderTestInstance>(m_testCtx, "bind_order", "Check if binding order is not important for pipeline configuration", m_pipelineConstructionType, shaderPaths));
+	addChild(new InstanceFactory<StatePersistenceTestInstance>(m_testCtx, "state_persistence", "Check if bound states are persistent across pipelines", m_pipelineConstructionType, shaderPaths));
 }
 
 } // DynamicState

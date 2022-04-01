@@ -42,6 +42,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkNoRenderDocUtil.cpp \
 	external/vulkancts/framework/vulkan/vkNullDriver.cpp \
 	external/vulkancts/framework/vulkan/vkObjUtil.cpp \
+	external/vulkancts/framework/vulkan/vkPipelineConstructionUtil.cpp \
 	external/vulkancts/framework/vulkan/vkPlatform.cpp \
 	external/vulkancts/framework/vulkan/vkPrograms.cpp \
 	external/vulkancts/framework/vulkan/vkQueryUtil.cpp \
@@ -249,6 +250,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineImageViewTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineInputAssemblyTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineInterfaceMatchingTests.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineLibraryTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineLogicOpTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMakeUtil.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMatchedAttachmentsTests.cpp \

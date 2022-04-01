@@ -31,6 +31,7 @@
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineReferenceRenderer.hpp"
 #include "vktPipelineVertexUtil.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 #include "tcuVectorUtil.hpp"
 #include "deSharedPtr.hpp"
 
@@ -47,36 +48,39 @@ enum AllocationKind
 
 struct ImageSamplingInstanceParams
 {
-	ImageSamplingInstanceParams	(const tcu::UVec2&					renderSize_,
-								 vk::VkImageViewType				imageViewType_,
-								 vk::VkFormat						imageFormat_,
-								 const tcu::IVec3&					imageSize_,
-								 int								layerCount_,
-								 const vk::VkComponentMapping&		componentMapping_,
-								 const vk::VkImageSubresourceRange&	subresourceRange_,
-								 const vk::VkSamplerCreateInfo&		samplerParams_,
-								 float								samplerLod_,
-								 const std::vector<Vertex4Tex4>&	vertices_,
-								 bool								separateStencilUsage_ = false,
-								 vk::VkDescriptorType				samplingType_ = vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-								 int								imageCount_ = 1,
-								 AllocationKind						allocationKind_ = ALLOCATION_KIND_SUBALLOCATED)
-	: renderSize			(renderSize_)
-	, imageViewType			(imageViewType_)
-	, imageFormat			(imageFormat_)
-	, imageSize				(imageSize_)
-	, layerCount			(layerCount_)
-	, componentMapping		(componentMapping_)
-	, subresourceRange		(subresourceRange_)
-	, samplerParams			(samplerParams_)
-	, samplerLod			(samplerLod_)
-	, vertices				(vertices_)
-	, separateStencilUsage	(separateStencilUsage_)
-	, samplingType			(samplingType_)
-	, imageCount			(imageCount_)
-	, allocationKind		(allocationKind_)
+	ImageSamplingInstanceParams	(const vk::PipelineConstructionType		pipelineConstructionType_,
+								 const tcu::UVec2&						renderSize_,
+								 vk::VkImageViewType					imageViewType_,
+								 vk::VkFormat							imageFormat_,
+								 const tcu::IVec3&						imageSize_,
+								 int									layerCount_,
+								 const vk::VkComponentMapping&			componentMapping_,
+								 const vk::VkImageSubresourceRange&		subresourceRange_,
+								 const vk::VkSamplerCreateInfo&			samplerParams_,
+								 float									samplerLod_,
+								 const std::vector<Vertex4Tex4>&		vertices_,
+								 bool									separateStencilUsage_ = false,
+								 vk::VkDescriptorType					samplingType_ = vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+								 int									imageCount_ = 1,
+								 AllocationKind							allocationKind_ = ALLOCATION_KIND_SUBALLOCATED)
+	: pipelineConstructionType	(pipelineConstructionType_)
+	, renderSize				(renderSize_)
+	, imageViewType				(imageViewType_)
+	, imageFormat				(imageFormat_)
+	, imageSize					(imageSize_)
+	, layerCount				(layerCount_)
+	, componentMapping			(componentMapping_)
+	, subresourceRange			(subresourceRange_)
+	, samplerParams				(samplerParams_)
+	, samplerLod				(samplerLod_)
+	, vertices					(vertices_)
+	, separateStencilUsage		(separateStencilUsage_)
+	, samplingType				(samplingType_)
+	, imageCount				(imageCount_)
+	, allocationKind			(allocationKind_)
 	{}
 
+	const vk::PipelineConstructionType	pipelineConstructionType;
 	const tcu::UVec2					renderSize;
 	vk::VkImageViewType					imageViewType;
 	vk::VkFormat						imageFormat;
@@ -156,8 +160,9 @@ private:
 	std::vector<Vertex4Tex4>					m_vertices;
 	de::MovePtr<vk::Allocation>					m_vertexBufferAlloc;
 
-	vk::Move<vk::VkPipelineLayout>				m_pipelineLayout;
-	vk::Move<vk::VkPipeline>					m_graphicsPipeline;
+	vk::Move<vk::VkPipelineLayout>				m_preRasterizationStatePipelineLayout;
+	vk::Move<vk::VkPipelineLayout>				m_fragmentStatePipelineLayout;
+	vk::GraphicsPipelineWrapper					m_graphicsPipeline;
 
 	vk::Move<vk::VkCommandPool>					m_cmdPool;
 	vk::Move<vk::VkCommandBuffer>				m_cmdBuffer;

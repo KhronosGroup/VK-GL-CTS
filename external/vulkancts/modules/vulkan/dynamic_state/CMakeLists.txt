@@ -1,6 +1,7 @@
 include_directories(
 	..
 	../draw
+	../util
 	${DEQP_INL_DIR}
 )
 

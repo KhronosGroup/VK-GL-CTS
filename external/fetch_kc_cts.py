@@ -32,7 +32,11 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "scripts"))
 from build.common import *
 
 EXTERNAL_DIR	= os.path.realpath(os.path.normpath(os.path.dirname(__file__)))
+<<<<<<< HEAD
+SHA1 = "a30aef1aef9af1e4d557e1f3c55b46a308b24631"
+=======
 SHA1 = "3059c07a20ac64f636296a7ef200dadc1ce7d37a"
+>>>>>>> khronos/main
 
 PACKAGES = [
 	GitRepo(

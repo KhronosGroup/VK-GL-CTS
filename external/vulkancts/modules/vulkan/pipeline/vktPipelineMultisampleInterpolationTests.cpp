@@ -98,6 +98,8 @@ public:
 template <typename CaseClassName>
 void MSCase<CaseClassName>::checkSupport (Context& context) const
 {
+	checkGraphicsPipelineLibrarySupport(context);
+
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().shaderSampleRateInterpolationFunctions)
 	{
@@ -241,6 +243,7 @@ template<> void MSCase<MSCaseSampleQualifierDistinctValues>::initPrograms (vk::S
 
 template<> void MSCase<MSCaseSampleQualifierDistinctValues>::checkSupport (Context& context) const
 {
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_imageMSParams.pipelineConstructionType);
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
@@ -1002,8 +1005,9 @@ template<> void MSCase<MSCaseCentroidQualifierInsidePrimitive>::initPrograms (vk
 	programCollection.glslSources.add("fragment_shader") << glu::FragmentSource(fs.str());
 }
 
-template<> void MSCase<MSCaseCentroidQualifierInsidePrimitive>::checkSupport (Context&) const
+template<> void MSCase<MSCaseCentroidQualifierInsidePrimitive>::checkSupport (Context& context) const
 {
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_imageMSParams.pipelineConstructionType);
 }
 
 template<> TestInstance* MSCase<MSCaseCentroidQualifierInsidePrimitive>::createInstance (Context& context) const
@@ -1013,7 +1017,7 @@ template<> TestInstance* MSCase<MSCaseCentroidQualifierInsidePrimitive>::createI
 
 } // multisample
 
-tcu::TestCaseGroup* createMultisampleInterpolationTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createMultisampleInterpolationTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "multisample_interpolation", "Multisample Interpolation"));
 
@@ -1048,51 +1052,61 @@ tcu::TestCaseGroup* createMultisampleInterpolationTests (tcu::TestContext& testC
 
 		de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, imageSizeStream.str().c_str(), ""));
 
-		sizeGroup->addChild(multisample::MSCase<multisample::MSCaseInterpolateAtSampleSingleSample>::createCase(testCtx, "samples_" + de::toString(1), multisample::ImageMSParams(vk::VK_SAMPLE_COUNT_1_BIT, imageSize)));
+		multisample::ImageMSParams imageParams
+		{
+			pipelineConstructionType,
+			vk::VK_SAMPLE_COUNT_1_BIT,
+			imageSize,
+			multisample::ComponentData{}
+		};
+		sizeGroup->addChild(multisample::MSCase<multisample::MSCaseInterpolateAtSampleSingleSample>::createCase(testCtx, "samples_" + de::toString(1), imageParams));
 
 		caseGroup->addChild(sizeGroup.release());
 	}
 
 	testGroup->addChild(caseGroup.release());
 
-	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleDistinctValues> >	(testCtx, "sample_interpolate_at_distinct_values",	imageSizes, sizesElemCount, imageSamples, samplesElemCount));
-	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleIgnoresCentroid> >(testCtx, "sample_interpolate_at_ignores_centroid",	imageSizes, sizesElemCount, imageSamples, samplesElemCount));
+	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleDistinctValues> >	(testCtx, "sample_interpolate_at_distinct_values", pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount));
+	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleIgnoresCentroid> >(testCtx, "sample_interpolate_at_ignores_centroid", pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount));
 
 	de::MovePtr<tcu::TestCaseGroup> sampleGroup(new tcu::TestCaseGroup(testCtx, "sample_interpolation_consistency", "Test consistency in sample interpolation function"));
-	sampleGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleConsistency> >	(testCtx, "all_components",		imageSizes, sizesElemCount, imageSamples, samplesElemCount));
-	sampleGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleConsistency> >	(testCtx, "component_0",		imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 0u}));
-	sampleGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleConsistency> >	(testCtx, "component_1",		imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 1u}));
-	sampleGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleConsistency> >	(testCtx, "pushc_component_0",	imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 0u}));
-	sampleGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleConsistency> >	(testCtx, "pushc_component_1",	imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 1u}));
+	sampleGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleConsistency> >	(testCtx, "all_components",		pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount));
+	sampleGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleConsistency> >	(testCtx, "component_0",		pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 0u}));
+	sampleGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleConsistency> >	(testCtx, "component_1",		pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 1u}));
+	sampleGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleConsistency> >	(testCtx, "pushc_component_0",	pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 0u}));
+	sampleGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleConsistency> >	(testCtx, "pushc_component_1",	pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 1u}));
 	testGroup->addChild(sampleGroup.release());
 
-	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleQualifierDistinctValues> >		(testCtx, "sample_qualifier_distinct_values",		imageSizes, sizesElemCount, imageSamples, samplesElemCount));
+	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleQualifierDistinctValues> >		(testCtx, "sample_qualifier_distinct_values", pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount));
 
 	de::MovePtr<tcu::TestCaseGroup> centroidGroup(new tcu::TestCaseGroup(testCtx, "centroid_interpolation_consistency", "Test consistency in centroid interpolation function"));
-	centroidGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtCentroidConsistency> >	(testCtx, "all_components",		imageSizes, sizesElemCount, imageSamples, samplesElemCount));
-	centroidGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtCentroidConsistency> >	(testCtx, "component_0",		imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 0u}));
-	centroidGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtCentroidConsistency> >	(testCtx, "component_1",		imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 1u}));
-	centroidGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtCentroidConsistency> >	(testCtx, "pushc_component_0",	imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 0u}));
-	centroidGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtCentroidConsistency> >	(testCtx, "pushc_component_1",	imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 1u}));
+	centroidGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtCentroidConsistency> >	(testCtx, "all_components",		pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount));
+	centroidGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtCentroidConsistency> >	(testCtx, "component_0",		pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 0u}));
+	centroidGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtCentroidConsistency> >	(testCtx, "component_1",		pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 1u}));
+	centroidGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtCentroidConsistency> >	(testCtx, "pushc_component_0",	pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 0u}));
+	centroidGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtCentroidConsistency> >	(testCtx, "pushc_component_1",	pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 1u}));
 	testGroup->addChild(centroidGroup.release());
 
-	de::MovePtr<tcu::TestCaseGroup> reInterpolationGroup(new tcu::TestCaseGroup(testCtx, "reinterpolation_consistency", "Test consistency in reinterpolation"));
-	std::vector<std::string> requirements;
-	requirements.push_back("Features.sampleRateShading");
-	reInterpolationGroup->addChild(cts_amber::createAmberTestCase(testCtx, "interpolate_at_centroid", "", "pipeline", "reinterpolate_at_centroid.amber", requirements));
-	reInterpolationGroup->addChild(cts_amber::createAmberTestCase(testCtx, "interpolate_at_sample", "", "pipeline", "reinterpolate_at_sample.amber", requirements));
-	testGroup->addChild(reInterpolationGroup.release());
+	// there is no support for pipelineConstructionType in amber
+	if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+	{
+		de::MovePtr<tcu::TestCaseGroup> reInterpolationGroup(new tcu::TestCaseGroup(testCtx, "reinterpolation_consistency", "Test consistency in reinterpolation"));
+		std::vector<std::string> requirements;
+		requirements.push_back("Features.sampleRateShading");
+		reInterpolationGroup->addChild(cts_amber::createAmberTestCase(testCtx, "interpolate_at_centroid", "", "pipeline", "reinterpolate_at_centroid.amber", requirements));
+		reInterpolationGroup->addChild(cts_amber::createAmberTestCase(testCtx, "interpolate_at_sample", "", "pipeline", "reinterpolate_at_sample.amber", requirements));
+		testGroup->addChild(reInterpolationGroup.release());
+	}
 
-
-	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseCentroidQualifierInsidePrimitive> >	(testCtx, "centroid_qualifier_inside_primitive",	imageSizes, sizesElemCount, imageSamples, samplesElemCount));
-	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetPixelCenter> >	(testCtx, "offset_interpolate_at_pixel_center",		imageSizes, sizesElemCount, imageSamples, samplesElemCount));
+	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseCentroidQualifierInsidePrimitive> >	(testCtx, "centroid_qualifier_inside_primitive",	pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount));
+	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetPixelCenter> >	(testCtx, "offset_interpolate_at_pixel_center",		pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount));
 
 	de::MovePtr<tcu::TestCaseGroup> offsetGroup(new tcu::TestCaseGroup(testCtx, "offset_interpolation_at_sample_position", "Test interpolation at offset function works for sample positions"));
-	offsetGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetSamplePosition> >	(testCtx, "all_components",		imageSizes, sizesElemCount, imageSamples, samplesElemCount));
-	offsetGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetSamplePosition> >	(testCtx, "component_0",		imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 0u}));
-	offsetGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetSamplePosition> >	(testCtx, "component_1",		imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 1u}));
-	offsetGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetSamplePosition> >	(testCtx, "pushc_component_0",	imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 0u}));
-	offsetGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetSamplePosition> >	(testCtx, "pushc_component_1",	imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 1u}));
+	offsetGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetSamplePosition> >	(testCtx, "all_components",		pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount));
+	offsetGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetSamplePosition> >	(testCtx, "component_0",		pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 0u}));
+	offsetGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetSamplePosition> >	(testCtx, "component_1",		pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 1u}));
+	offsetGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetSamplePosition> >	(testCtx, "pushc_component_0",	pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 0u}));
+	offsetGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetSamplePosition> >	(testCtx, "pushc_component_1",	pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 1u}));
 	testGroup->addChild(offsetGroup.release());
 
 	return testGroup.release();

@@ -469,7 +469,7 @@ public:
 	PipelineCreateInfo& addState	(const vk::VkPipelineMultisampleStateCreateInfo&	state);
 	PipelineCreateInfo& addState	(const vk::VkPipelineDynamicStateCreateInfo&		state);
 
-private:
+protected:
 	std::vector<vk::VkPipelineShaderStageCreateInfo>		m_shaders;
 
 	vk::VkPipelineVertexInputStateCreateInfo				m_vertexInputState;
