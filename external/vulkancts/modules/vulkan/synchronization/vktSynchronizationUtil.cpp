@@ -91,7 +91,8 @@ VkImageCreateInfo makeImageCreateInfo (const VkImageType			imageType,
 									   const VkExtent3D&			extent,
 									   const VkFormat				format,
 									   const VkImageUsageFlags		usage,
-									   const VkSampleCountFlagBits	samples)
+									   const VkSampleCountFlagBits	samples,
+									   const VkImageTiling			tiling)
 {
 	return
 	{
@@ -104,7 +105,7 @@ VkImageCreateInfo makeImageCreateInfo (const VkImageType			imageType,
 		1u,											// uint32_t                 mipLevels;
 		1u,											// uint32_t                 arrayLayers;
 		samples,									// VkSampleCountFlagBits    samples;
-		VK_IMAGE_TILING_OPTIMAL,					// VkImageTiling            tiling;
+		tiling,										// VkImageTiling            tiling;
 		usage,										// VkImageUsageFlags        usage;
 		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode            sharingMode;
 		0u,											// uint32_t                 queueFamilyIndexCount;
@@ -988,10 +989,12 @@ void requireFeatures (const InstanceInterface& vki, const VkPhysicalDevice physD
 		throw tcu::NotSupportedError("Tessellation and geometry shaders don't support PointSize built-in");
 }
 
-void requireStorageImageSupport(const InstanceInterface& vki, const VkPhysicalDevice physDevice, const VkFormat fmt)
+void requireStorageImageSupport(const InstanceInterface& vki, const VkPhysicalDevice physDevice, const VkFormat fmt, const VkImageTiling tiling)
 {
-	const VkFormatProperties p = getPhysicalDeviceFormatProperties(vki, physDevice, fmt);
-	if ((p.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
+	const VkFormatProperties	p			= getPhysicalDeviceFormatProperties(vki, physDevice, fmt);
+	const auto&					features	= ((tiling == VK_IMAGE_TILING_LINEAR) ? p.linearTilingFeatures : p.optimalTilingFeatures);
+
+	if ((features & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
 		throw tcu::NotSupportedError("Storage image format not supported");
 }
 

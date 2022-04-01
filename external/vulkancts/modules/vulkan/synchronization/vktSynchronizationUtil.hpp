@@ -260,6 +260,10 @@ struct ResourceDescription
 
 struct BufferResource
 {
+	BufferResource (vk::VkBuffer handle_, vk::VkDeviceSize offset_, vk::VkDeviceSize size_)
+		: handle(handle_), offset(offset_), size(size_)
+		{}
+
 	vk::VkBuffer					handle;
 	vk::VkDeviceSize				offset;
 	vk::VkDeviceSize				size;
@@ -267,12 +271,30 @@ struct BufferResource
 
 struct ImageResource
 {
+	ImageResource (
+		vk::VkImage handle_,
+		vk::VkExtent3D extent_,
+		vk::VkImageType imageType_,
+		vk::VkFormat format_,
+		vk::VkImageSubresourceRange subresourceRange_,
+		vk::VkImageSubresourceLayers subresourceLayers_,
+		vk::VkImageTiling tiling_)
+		: handle(handle_)
+		, extent(extent_)
+		, imageType(imageType_)
+		, format(format_)
+		, subresourceRange(subresourceRange_)
+		, subresourceLayers(subresourceLayers_)
+		, tiling(tiling_)
+		{}
+
 	vk::VkImage						handle;
 	vk::VkExtent3D					extent;
 	vk::VkImageType					imageType;
 	vk::VkFormat					format;
 	vk::VkImageSubresourceRange		subresourceRange;
 	vk::VkImageSubresourceLayers	subresourceLayers;
+	vk::VkImageTiling				tiling;
 };
 
 typedef std::shared_ptr<SynchronizationWrapperBase> SynchronizationWrapperPtr;
@@ -289,12 +311,13 @@ vk::VkImageCreateInfo				makeImageCreateInfo							(const vk::VkImageType				ima
 																				 const vk::VkExtent3D&				extent,
 																				 const vk::VkFormat					format,
 																				 const vk::VkImageUsageFlags		usage,
-																				 const vk::VkSampleCountFlagBits	samples = vk::VK_SAMPLE_COUNT_1_BIT);
+																				 const vk::VkSampleCountFlagBits	samples,
+																				 const vk::VkImageTiling			tiling);
 vk::Move<vk::VkCommandBuffer>		makeCommandBuffer							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkCommandPool commandPool);
 vk::Move<vk::VkPipeline>			makeComputePipeline							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkShaderModule shaderModule, const vk::VkSpecializationInfo* specInfo, PipelineCacheData& pipelineCacheData);
 void								beginRenderPassWithRasterizationDisabled	(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const vk::VkFramebuffer framebuffer);
 void								requireFeatures								(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const FeatureFlags flags);
-void								requireStorageImageSupport					(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const vk::VkFormat fmt);
+void								requireStorageImageSupport					(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const vk::VkFormat fmt, const vk::VkImageTiling tiling);
 std::string							getResourceName								(const ResourceDescription& resource);
 bool								isIndirectBuffer							(const ResourceType type);
 vk::VkCommandBufferSubmitInfoKHR	makeCommonCommandBufferSubmitInfo			(const vk::VkCommandBuffer cmdBuf);
