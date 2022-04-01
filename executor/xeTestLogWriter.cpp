@@ -30,8 +30,6 @@
 namespace xe
 {
 
-static const char* TEST_LOG_VERSION = "0.3.3";
-
 /* Batch result writer. */
 
 struct ContainerValue
@@ -502,7 +500,7 @@ void writeTestResult (const TestCaseResult& result, xe::xml::Writer& xmlWriter)
 	using xml::Writer;
 
 	xmlWriter << Writer::BeginElement("TestCaseResult")
-			  << Writer::Attribute("Version", TEST_LOG_VERSION)
+			  << Writer::Attribute("Version", result.caseVersion)
 			  << Writer::Attribute("CasePath", result.casePath)
 			  << Writer::Attribute("CaseType", getTestCaseTypeName(result.caseType));
 
