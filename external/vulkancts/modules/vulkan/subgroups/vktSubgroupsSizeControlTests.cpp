@@ -731,16 +731,20 @@ TestStatus testRequireSubgroupSize (Context& context, const CaseDefinition caseD
 		const deUint64											maxSubgroupLimitSize						= (deUint64)requiredSubgroupSize * subgroupSizeControlProperties.maxComputeWorkgroupSubgroups;
 		const deUint32											maxTotalLocalSize							= (deUint32)min<deUint64>(maxSubgroupLimitSize, physicalDeviceProperties.limits.maxComputeWorkGroupInvocations);
 		const UVec3												localSize									= getLocalSizes(physicalDeviceProperties, maxTotalLocalSize);
-		const deUint32											localSizesToTestCount						= 5;
-		const deUint32											localSizesToTest[localSizesToTestCount][3]	=
+		const deUint32											localSizesToTest[5][3]	=
 		{
+			{localSize.x(), localSize.y(), localSize.z()},
 			{requiredSubgroupSize, 1, 1},
 			{1, requiredSubgroupSize, 1},
 			{1, 1, requiredSubgroupSize},
-			{localSize.x(), localSize.y(), localSize.z()},
 			{1, 1, 1} // Isn't used, just here to make double buffering checks easier
 		};
-		struct internalDataStruct								internalData								=
+
+		deUint32 localSizesToTestCount = 5;
+		if (caseDef.pipelineShaderStageCreateFlags & VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT)
+			localSizesToTestCount = 3;
+
+		struct internalDataStruct internalData =
 		{
 			&context,				//  const Context*			context;
 			caseDef,				//  struct CaseDefinition	caseDef;

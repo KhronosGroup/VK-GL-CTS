@@ -206,20 +206,21 @@ public:
 										 vk::VkImageType				imageType,
 										 vk::VkFormat					format,
 										 vk::VkImageSubresourceRange	subresourceRange,
-										 vk::VkImageSubresourceLayers	subresourceLayers);
+										 vk::VkImageSubresourceLayers	subresourceLayers,
+										 vk::VkImageTiling				tiling);
 
 	ResourceType			getType		(void) const { return m_type; }
-	const BufferResource&	getBuffer	(void) const { return m_bufferData; }
-	const ImageResource&	getImage	(void) const { return m_imageData; }
+	const BufferResource&	getBuffer	(void) const { DE_ASSERT(m_bufferData.get()); return *m_bufferData; }
+	const ImageResource&	getImage	(void) const { DE_ASSERT(m_imageData.get()); return *m_imageData; }
 
 	vk::VkDeviceMemory		getMemory	(void) const;
 
 private:
-	const ResourceType		m_type;
-	de::MovePtr<Buffer>		m_buffer;
-	BufferResource			m_bufferData;
-	de::MovePtr<Image>		m_image;
-	ImageResource			m_imageData;
+	const ResourceType			m_type;
+	de::MovePtr<Buffer>			m_buffer;
+	de::MovePtr<BufferResource>	m_bufferData;
+	de::MovePtr<Image>			m_image;
+	de::MovePtr<ImageResource>	m_imageData;
 };
 
 // \note Meaning of image layout is different for read and write types of operations:
